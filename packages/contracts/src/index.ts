@@ -24,9 +24,22 @@ export interface InventoryItem {
   iconUrl: string;
 }
 
+export interface HeroEnergy {
+  current: number;
+  max: number;
+  percent: number;
+  state: string;
+  inField: boolean;
+  inCasa: boolean;
+  recovering: boolean;
+}
+
 export interface HeroSummary {
   id: string;
   name: string;
+  level?: number;
+  inField?: boolean;
+  energy?: HeroEnergy;
 }
 
 export interface Snapshot {
@@ -37,6 +50,142 @@ export interface Snapshot {
   bagCapacity: number;
   items: InventoryItem[];
   heroes: HeroSummary[];
+  phase?: number;
+}
+
+export type GameReaderStatus = 'connected' | 'not_running' | 'stale';
+
+export interface GameStatusInfo {
+  status: GameReaderStatus;
+  updatedAt: string;
+  staleAgeMs?: number;
+  processName?: string;
+}
+
+export interface RawGameState {
+  t?: string;
+  gold?: string | number;
+  phase?: number;
+  wave?: number;
+  heroes?: RawStateHero[];
+  bombs?: RawBomb[];
+  hits?: RawHit[];
+  explosions?: RawExplosion[];
+  kinds?: number[];
+  hps?: number[];
+  [key: string]: unknown;
+}
+
+export interface RawStateHero {
+  id: string;
+  c: number;
+  x?: number;
+  y?: number;
+  s?: number;
+  w?: number;
+  e?: number;
+  z?: boolean;
+  sk?: number;
+}
+
+export interface RawBomb {
+  c: number;
+  r: number;
+  f?: number;
+  ft: number;
+}
+
+export interface RawHit {
+  c: number;
+  cr: boolean;
+  d: number;
+}
+
+export interface RawExplosion {
+  c: number;
+  r: number;
+}
+
+export interface RawInventoryItem {
+  id: string;
+  def_id: string;
+  set?: string;
+  rarity?: number;
+  slot?: number | null;
+  level?: number;
+  stats?: { stat: number; value: number; effective: number }[];
+  power?: number;
+  sell_value?: string | number | null;
+  upgrade?: number;
+  tradable?: boolean | null;
+  market_state?: number;
+  market?: boolean;
+  locked?: boolean;
+  equipped_on?: string | null;
+  equip_slot?: number | null;
+  [key: string]: unknown;
+}
+
+export interface RawInventoryBag {
+  items: RawInventoryItem[];
+  pending_chests?: unknown[];
+  bag_tabs?: number;
+  bag_capacity?: number;
+  items_count?: number;
+  [key: string]: unknown;
+}
+
+export interface RawHeroRecord {
+  id: string;
+  name?: string;
+  level?: number;
+  in_field?: boolean;
+  stats?: {
+    cooldown_reduction?: number;
+    [key: string]: number | undefined;
+  };
+  slots?: (string | null)[];
+  [key: string]: unknown;
+}
+
+export interface RawHeroEnergy {
+  id: string;
+  energia_atual?: number;
+  energia_max?: number;
+  energia_pct?: number;
+  state?: string;
+  in_field?: boolean;
+  in_casa?: boolean;
+  recovering?: boolean;
+  [key: string]: unknown;
+}
+
+export interface GameSnapshotPayload {
+  status: GameStatusInfo;
+  mapped: Snapshot | null;
+  raw: {
+    state: RawGameState | null;
+    inventory: RawInventoryBag | null;
+  };
+}
+
+export type DmgIdentifiedBy =
+  | 'dying_bomb_footprint'
+  | 'invisible_cell_cross'
+  | 'unattributed';
+
+export interface DamageChunk {
+  cell: number;
+  amount: number;
+  heroId: string | null;
+  identifiedBy: DmgIdentifiedBy;
+}
+
+export interface DamageAttributionResult {
+  chunks: DamageChunk[];
+  perHero: Record<string, number>;
+  unattributed: number;
+  total: number;
 }
 
 export interface AppSettings {
@@ -54,6 +203,8 @@ export interface IpcChannels {
   'app:ping': { args: []; result: { ok: true; from: 'main' } };
   'settings:get': { args: []; result: AppSettings };
   'storage:health': { args: []; result: { binding: string; ok: boolean } };
+  'game:getStatus': { args: []; result: GameStatusInfo };
+  'game:getSnapshot': { args: []; result: GameSnapshotPayload };
 }
 
 export type IpcInvokeChannel = keyof IpcChannels;
@@ -66,10 +217,28 @@ export const IPC_CHANNELS = [
   'app:ping',
   'settings:get',
   'storage:health',
+  'game:getStatus',
+  'game:getSnapshot',
 ] as const satisfies readonly IpcInvokeChannel[];
+
+export type IpcEventChannel = 'game:status' | 'snapshot:updated';
+
+export interface IpcEvents {
+  'game:status': GameStatusInfo;
+  'snapshot:updated': GameSnapshotPayload;
+}
+
+export const IPC_EVENT_CHANNELS = [
+  'game:status',
+  'snapshot:updated',
+] as const satisfies readonly IpcEventChannel[];
 
 export function isIpcChannel(value: string): value is IpcInvokeChannel {
   return (IPC_CHANNELS as readonly string[]).includes(value);
+}
+
+export function isIpcEventChannel(value: string): value is IpcEventChannel {
+  return (IPC_EVENT_CHANNELS as readonly string[]).includes(value);
 }
 
 export function createPingResponse(from: 'main' | 'preload' | 'renderer'): {

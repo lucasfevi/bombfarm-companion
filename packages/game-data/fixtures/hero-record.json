@@ -1,0 +1,85 @@
+{
+  "id": "2762",
+  "rarity": 1,
+  "rank": "S",
+  "skin": 0,
+  "name": "Lorne",
+  "level": 34,
+  "xp": "951",
+  "stars": 0,
+  "in_field": true,
+  "battle_allowed": true,
+  "slots": [
+    "33950",
+    "30065",
+    null,
+    null,
+    null,
+    "22704",
+    "32988",
+    "59520"
+  ],
+  "stats": {
+    "dmg": 372.56340169652174,
+    "energia": 528.7695182695514,
+    "speed": 50.721930560489135,
+    "luck": 0.06423815889217249,
+    "crit_chance": 0.0552959265299012,
+    "crit_dmg": 1.6733909798577802,
+    "penetration": 5.7236511062906725,
+    "cooldown_reduction": 0.0954247480529463,
+    "power": 3226.9150840084794
+  },
+  "ability_points_total": 34,
+  "ability_points_spent": 20,
+  "stat_points_available": 0,
+  "stat_ranges": {
+    "dmg": {
+      "min": 65,
+      "max": 110
+    },
+    "energia": {
+      "min": 140,
+      "max": 200
+    },
+    "speed": {
+      "min": 47,
+      "max": 51.5
+    },
+    "luck": {
+      "min": 0.01,
+      "max": 0.07
+    },
+    "crit_chance": {
+      "min": 0.03,
+      "max": 0.09
+    },
+    "crit_dmg": {
+      "min": 1.45,
+      "max": 1.7
+    },
+    "penetration": {
+      "min": 0.5,
+      "max": 2.5
+    },
+    "cooldown_reduction": {
+      "min": 0.005,
+      "max": 0.03
+    }
+  },
+  "abilities": [
+    {
+      "code": "contra_relogio",
+      "slot": 9,
+      "level": 10,
+      "max": 10
+    },
+    {
+      "code": "olho_lapidador",
+      "slot": 14,
+      "level": 10,
+      "max": 10
+    }
+  ],
+  "marketable": false
+}

@@ -1,0 +1,12 @@
+{
+  "id": "2762",
+  "level": 34,
+  "energia_atual": 294.0984935439614,
+  "energia_max": 605.5083145422598,
+  "energia_pct": 0.4857051282050325,
+  "state": "DESCANSANDO",
+  "in_field": false,
+  "in_casa": true,
+  "recovering": true,
+  "battle_allowed": true
+}

@@ -13,6 +13,8 @@ describe('contracts IPC surface', () => {
       'app:ping',
       'settings:get',
       'storage:health',
+      'game:getStatus',
+      'game:getSnapshot',
     ]);
   });
 

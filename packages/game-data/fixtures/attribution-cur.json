@@ -1,0 +1,9 @@
+{
+  "t": "snap",
+  "gold": "1000",
+  "phase": 1,
+  "kinds": [0, 0, -1, -1],
+  "hps": [70, 30, 0, 0],
+  "bombs": [],
+  "heroes": [{ "id": "hero-a", "c": 0 }, { "id": "hero-b", "c": 2 }]
+}

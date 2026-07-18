@@ -1,0 +1,101 @@
+{
+  "items": [
+    {
+      "id": "6812",
+      "def_id": "wooden_arma",
+      "set": "wooden",
+      "rarity": 2,
+      "slot": 0,
+      "level": 10,
+      "stats": [
+        {
+          "stat": 0,
+          "value": 27.500000000000004,
+          "effective": 49.50000000000001
+        },
+        {
+          "stat": 1,
+          "value": 0.05,
+          "effective": 0.09000000000000001
+        },
+        {
+          "stat": 3,
+          "value": 0.044,
+          "effective": 0.07919999999999999
+        }
+      ],
+      "power": 372.83137007260575,
+      "sell_value": "180",
+      "upgrade": 10,
+      "tradable": true,
+      "market_state": 0,
+      "locked": false,
+      "equipped_on": "13788",
+      "equip_slot": 0
+    },
+    {
+      "id": "9321",
+      "def_id": "time_part_incomum",
+      "set": "",
+      "rarity": 1,
+      "level": 0,
+      "stats": [],
+      "power": 0,
+      "sell_value": "140",
+      "upgrade": 0,
+      "tradable": false,
+      "market_state": 0,
+      "locked": false,
+      "equipped_on": null,
+      "equip_slot": null
+    },
+    {
+      "id": "9425",
+      "def_id": "forest_arma",
+      "set": "forest",
+      "rarity": 1,
+      "slot": 0,
+      "level": 10,
+      "stats": [
+        {
+          "stat": 0,
+          "value": 27.500000000000004,
+          "effective": 29.700000000000006
+        },
+        {
+          "stat": 3,
+          "value": 0.044,
+          "effective": 0.04752
+        }
+      ],
+      "power": 213.02913198129818,
+      "sell_value": "140",
+      "upgrade": 1,
+      "tradable": false,
+      "market_state": 0,
+      "locked": false,
+      "equipped_on": null,
+      "equip_slot": null
+    },
+    {
+      "id": "13435",
+      "def_id": "time_part_incomum",
+      "set": "",
+      "rarity": 1,
+      "level": 0,
+      "stats": [],
+      "power": 0,
+      "sell_value": "140",
+      "upgrade": 0,
+      "tradable": false,
+      "market_state": 0,
+      "locked": false,
+      "equipped_on": null,
+      "equip_slot": null
+    }
+  ],
+  "pending_chests": [],
+  "bag_tabs": 4,
+  "bag_capacity": 100,
+  "items_count": 26
+}
