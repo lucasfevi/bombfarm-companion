@@ -53,12 +53,18 @@ importers:
       '@bombfarm/contracts':
         specifier: workspace:*
         version: link:../../packages/contracts
+      '@bombfarm/game-data':
+        specifier: workspace:*
+        version: link:../../packages/game-data
       '@bombfarm/ui':
         specifier: workspace:*
         version: link:../../packages/ui
       electron-log:
         specifier: ^5.4.1
         version: 5.4.4
+      koffi:
+        specifier: ^2.12.2
+        version: 2.16.2
       next:
         specifier: ^15.4.2
         version: 15.5.20(@playwright/test@1.61.1)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
@@ -120,6 +126,10 @@ importers:
         version: 3.2.7(@types/debug@4.1.13)(@types/node@22.20.1)(jiti@2.7.0)(lightningcss@1.32.0)
 
   packages/game-data:
+    dependencies:
+      '@bombfarm/contracts':
+        specifier: workspace:*
+        version: link:../contracts
     devDependencies:
       typescript:
         specifier: ^5.8.3
@@ -2165,6 +2175,9 @@ packages:
 
   keyv@4.5.4:
     resolution: {integrity: sha512-oxVHkHR/EJf2CNXnWxRLW6mg7JyCCUcG0DtEGmL2ctUo1PNTin1PUil+r/+4r5MpVgC/fn1kjsx7mjSujKqIpw==}
+
+  koffi@2.16.2:
+    resolution: {integrity: sha512-owU0MRwv6xkrVqCd+33uw6BaYppkTRXbO/rVdJNI2dvZG0gzyRhYwW25eWtc5pauwK8TGh3AbkFONSezdykfSA==}
 
   lazy-val@1.0.5:
     resolution: {integrity: sha512-0/BnGCCfyUMkBpeDgWihanIAF9JmZhHBgUhEqzvf+adhNGLoP6TaiI5oF8oyb3I45P+PcnrqihSf01M0l0G5+Q==}
@@ -5090,6 +5103,8 @@ snapshots:
   keyv@4.5.4:
     dependencies:
       json-buffer: 3.0.1
+
+  koffi@2.16.2: {}
 
   lazy-val@1.0.5: {}
 

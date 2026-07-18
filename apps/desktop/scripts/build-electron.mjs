@@ -19,6 +19,7 @@ const shared = {
     'electron-log',
     'electron-log/main.js',
     'electron-log/renderer.js',
+    'koffi',
   ],
   logLevel: 'info',
 };

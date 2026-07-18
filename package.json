@@ -37,7 +37,8 @@
       "electron",
       "esbuild",
       "sharp",
-      "better-sqlite3"
+      "better-sqlite3",
+      "koffi"
     ]
   }
 }

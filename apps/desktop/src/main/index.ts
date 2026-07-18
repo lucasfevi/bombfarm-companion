@@ -6,11 +6,13 @@ import {
   type IpcInvokeChannel,
 } from '@bombfarm/contracts';
 import { resolveAppEnv, RENDERER_DEV_URL } from './env.js';
+import { GameReaderService } from './game-reader/game-reader-service.js';
 import { configureLogging, log, logBootLine } from './logging.js';
 import { createStorage, type Storage } from './storage/index.js';
 
 let mainWindow: BrowserWindow | null = null;
 let storage: Storage | null = null;
+let gameReader: GameReaderService | null = null;
 
 function configurePaths(): void {
   const env = resolveAppEnv();
@@ -28,6 +30,18 @@ function registerIpcHandlers(): void {
     'app:ping': () => ({ ok: true as const, from: 'main' as const }),
     'settings:get': () => DEFAULT_SETTINGS,
     'storage:health': () => storage?.healthCheck() ?? { binding: 'unknown', ok: false },
+    'game:getStatus': () => gameReader?.getStatus() ?? {
+      status: 'not_running' as const,
+      updatedAt: new Date().toISOString(),
+    },
+    'game:getSnapshot': () => gameReader?.getSnapshot() ?? {
+      status: {
+        status: 'not_running' as const,
+        updatedAt: new Date().toISOString(),
+      },
+      mapped: null,
+      raw: { state: null, inventory: null },
+    },
   };
 
   ipcMain.handle('bfc:invoke', (_event, channel: string) => {
@@ -53,6 +67,8 @@ async function createMainWindow(): Promise<void> {
       sandbox: false,
     },
   });
+
+  gameReader?.setWindowProvider(() => mainWindow);
 
   mainWindow.on('ready-to-show', () => {
     mainWindow?.show();
@@ -83,8 +99,15 @@ async function bootstrap(): Promise<void> {
   const health = storage.healthCheck();
   log.info({ scope: 'main', event: 'storage.ready', ...health });
 
+  gameReader = new GameReaderService(app.getPath('userData'));
   registerIpcHandlers();
   await createMainWindow();
+  gameReader.start();
+  log.info({
+    scope: 'main',
+    event: 'game-reader.started',
+    mode: process.env.BFC_GAME_READER === 'fixture' ? 'fixture' : 'memory',
+  });
 }
 
 const gotLock = app.requestSingleInstanceLock();
@@ -112,6 +135,8 @@ if (!gotLock) {
   });
 
   app.on('before-quit', () => {
+    gameReader?.stop();
+    gameReader = null;
     storage?.close();
     storage = null;
   });
