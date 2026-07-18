@@ -1,0 +1,9 @@
+@import 'tailwindcss';
+
+@theme {
+  --color-bf-bg: var(--bf-bg);
+  --color-bf-fg: var(--bf-fg);
+  --color-bf-accent: var(--bf-accent);
+  --color-bf-muted: var(--bf-muted);
+  --font-sans: var(--font-geist-sans, ui-sans-serif, system-ui, sans-serif);
+}
