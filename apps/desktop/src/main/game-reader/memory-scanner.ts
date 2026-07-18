@@ -37,7 +37,13 @@ const VirtualQueryEx = kernel32.func('__stdcall', 'VirtualQueryEx', 'uint64', [
   'uint64',
 ]);
 
-const ptrToBig = (p: unknown): bigint => (p === null ? 0n : BigInt(p as bigint | number));
+/** koffi 2.x returns Externals for `void *`; use `koffi.address` (BigInt/`number` also accepted). */
+const ptrToBig = (p: unknown): bigint => {
+  if (p === null || p === undefined) return 0n;
+  if (typeof p === 'bigint') return p;
+  if (typeof p === 'number') return BigInt(p);
+  return BigInt(koffi.address(p as object));
+};
 const PROCESS_VM_READ = 0x0010;
 const PROCESS_QUERY_INFORMATION = 0x0400;
 const MEM_COMMIT = 0x1000;
@@ -130,7 +136,7 @@ export class MemoryScanner {
 
     while (addr < maxAddr) {
       const mbi: Record<string, unknown> = {};
-      const ok = VirtualQueryEx(this.handle, koffi.as(addr, 'void *'), mbi, koffi.sizeof(MBI));
+      const ok = VirtualQueryEx(this.handle, addr, mbi, koffi.sizeof(MBI));
       if (!ok) break;
       const regionSize = ptrToBig(mbi.RegionSize);
       if (regionSize === 0n) break;
@@ -146,7 +152,7 @@ export class MemoryScanner {
           const bytesReadOut = [0n];
           const okRead = ReadProcessMemory(
             this.handle,
-            koffi.as(base + off, 'void *'),
+            base + off,
             readBuf,
             BigInt(toRead),
             bytesReadOut,
@@ -200,7 +206,7 @@ export class MemoryScanner {
     const bytesReadOut = [0n];
     const okRead = ReadProcessMemory(
       this.handle,
-      koffi.as(target.addr, 'void *'),
+      target.addr,
       this.readBuf,
       BigInt(this.readBuf.length),
       bytesReadOut,
@@ -245,7 +251,7 @@ export class MemoryScanner {
     const bytesReadOut = [0n];
     const okRead = ReadProcessMemory(
       this.handle,
-      koffi.as(target.addr, 'void *'),
+      target.addr,
       buf,
       BigInt(buf.length),
       bytesReadOut,
@@ -272,7 +278,7 @@ export class MemoryScanner {
 
     while (addr < maxAddr && candidates.length < MAX_CANDIDATES) {
       const mbi: Record<string, unknown> = {};
-      const ok = VirtualQueryEx(this.handle, koffi.as(addr, 'void *'), mbi, koffi.sizeof(MBI));
+      const ok = VirtualQueryEx(this.handle, addr, mbi, koffi.sizeof(MBI));
       if (!ok) break;
       const regionSize = ptrToBig(mbi.RegionSize);
       if (regionSize === 0n) break;
@@ -288,7 +294,7 @@ export class MemoryScanner {
           const bytesReadOut = [0n];
           const okRead = ReadProcessMemory(
             this.handle,
-            koffi.as(base + off, 'void *'),
+            base + off,
             readBuf,
             BigInt(toRead),
             bytesReadOut,

@@ -70,15 +70,33 @@ async function createMainWindow(): Promise<void> {
 
   gameReader?.setWindowProvider(() => mainWindow);
 
-  mainWindow.on('ready-to-show', () => {
-    mainWindow?.show();
-  });
+  const reveal = (): void => {
+    if (!mainWindow || mainWindow.isDestroyed() || mainWindow.isVisible()) return;
+    mainWindow.show();
+    mainWindow.focus();
+    log.info({ scope: 'main', event: 'window.shown' });
+  };
 
+  mainWindow.on('ready-to-show', reveal);
+  // Fallback: under heavy HMR, ready-to-show can lag; still surface the window after load.
   mainWindow.webContents.on('did-finish-load', () => {
     log.info({ scope: 'main', event: 'renderer.loaded' });
+    reveal();
+  });
+
+  mainWindow.webContents.on('did-fail-load', (_event, errorCode, errorDescription, validatedURL) => {
+    log.error({
+      scope: 'main',
+      event: 'renderer.load_failed',
+      errorCode,
+      errorDescription,
+      validatedURL,
+    });
+    reveal();
   });
 
   if (env.isDev) {
+    log.info({ scope: 'main', event: 'renderer.load_url', url: RENDERER_DEV_URL });
     await mainWindow.loadURL(RENDERER_DEV_URL);
     if (process.env.BFC_OPEN_DEVTOOLS === '1') {
       mainWindow.webContents.openDevTools({ mode: 'detach' });

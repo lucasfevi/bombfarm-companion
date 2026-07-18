@@ -112,7 +112,19 @@ export class GameReaderService {
       this.tickFixture();
       return;
     }
-    this.tickMemory();
+    try {
+      this.tickMemory();
+    } catch (err) {
+      log.error({ scope: 'game-reader', event: 'tick.failed', err });
+      this.scanner?.close();
+      this.scanner = null;
+      this.target = null;
+      this.updateStatus({
+        status: 'stale',
+        updatedAt: new Date().toISOString(),
+        processName: this.config.processName,
+      });
+    }
   }
 
   private tickFixture(): void {
