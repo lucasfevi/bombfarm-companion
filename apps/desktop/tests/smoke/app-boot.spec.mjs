@@ -22,6 +22,7 @@ test.describe('app boot smoke', () => {
         ...process.env,
         NODE_ENV: 'production',
         BFC_FLAVOR: 'dev',
+        BFC_GAME_READER: 'fixture',
         ELECTRON_ENABLE_LOGGING: '1',
       },
     });
@@ -29,6 +30,10 @@ test.describe('app boot smoke', () => {
     try {
       const page = await app.firstWindow();
       await page.waitForSelector('[data-testid="app-ready"]', { timeout: 60_000 });
+      await expect(page.getByTestId('game-status-chip')).toHaveText('Connected', { timeout: 15_000 });
+
+      const snapshotJson = await page.getByTestId('game-snapshot-json').innerText();
+      expect(snapshotJson).toContain('"gold"');
 
       const flavor = await page.evaluate(async () => {
         const bridge = window.bfc;

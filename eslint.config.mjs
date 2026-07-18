@@ -11,6 +11,7 @@ export default tseslint.config(
       '**/.next/**',
       '**/release/**',
       '**/node_modules/**',
+      '**/next-env.d.ts',
     ],
   },
   eslint.configs.recommended,
