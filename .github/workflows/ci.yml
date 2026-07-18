@@ -1,0 +1,113 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  quality:
+    name: Typecheck, lint, unit
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build workspace packages
+        run: pnpm -r --filter @bombfarm/contracts --filter @bombfarm/ui --filter @bombfarm/game-data --filter @bombfarm/pricing build
+
+      - name: Typecheck
+        run: pnpm typecheck
+
+      - name: Lint
+        run: pnpm lint
+
+      - name: Unit tests
+        run: pnpm test
+
+  smoke-windows:
+    name: App boot smoke (Windows)
+    runs-on: windows-latest
+    needs: quality
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build packages and desktop shell
+        run: pnpm --filter @bombfarm/desktop build
+        env:
+          NODE_ENV: production
+          BFC_FLAVOR: dev
+
+      - name: Install Playwright
+        run: pnpm --filter @bombfarm/desktop exec playwright install
+
+      - name: App boot smoke test
+        run: pnpm --filter @bombfarm/desktop exec playwright test -c playwright.config.ts
+        env:
+          NODE_ENV: production
+          BFC_FLAVOR: dev
+
+  package-windows:
+    name: Package DEV and PROD (Windows)
+    runs-on: windows-latest
+    needs: smoke-windows
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Package DEV flavor
+        run: pnpm --filter @bombfarm/desktop package:dev
+        env:
+          NODE_ENV: production
+          BFC_FLAVOR: dev
+
+      - name: Package PROD flavor
+        run: pnpm --filter @bombfarm/desktop package:prod
+        env:
+          NODE_ENV: production
+          BFC_FLAVOR: prod
+
+      - name: Upload installers
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-installers
+          path: apps/desktop/release/**/*
