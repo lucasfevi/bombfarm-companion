@@ -1,0 +1,47 @@
+{
+  "name": "@bombfarm/desktop",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Bomb Farm Companion desktop shell",
+  "main": "dist/main/index.cjs",
+  "scripts": {
+    "build:electron": "node scripts/build-electron.mjs",
+    "build:renderer": "pnpm exec next build renderer",
+    "predev": "node scripts/ensure-electron.mjs && pnpm --filter @bombfarm/contracts build && pnpm --filter @bombfarm/ui build",
+    "prebuild": "node scripts/ensure-electron.mjs && pnpm -r --filter @bombfarm/contracts --filter @bombfarm/ui build",
+    "pretest:smoke": "cross-env NODE_ENV=production BFC_FLAVOR=dev pnpm build",
+    "build": "pnpm build:electron && pnpm build:renderer",
+    "dev": "pnpm build:electron && node scripts/dev.mjs",
+    "typecheck": "tsc -p tsconfig.main.json --noEmit && tsc -p renderer/tsconfig.json --noEmit",
+    "lint": "pnpm --dir ../.. exec eslint apps/desktop/src apps/desktop/renderer",
+    "test:smoke": "playwright test -c playwright.config.ts",
+    "package:dev": "cross-env BFC_FLAVOR=dev NODE_ENV=production pnpm build && electron-builder --config electron-builder.config.mjs",
+    "package:prod": "cross-env BFC_FLAVOR=prod NODE_ENV=production pnpm build && electron-builder --config electron-builder.config.mjs"
+  },
+  "dependencies": {
+    "@base-ui/react": "^1.6.0",
+    "@bombfarm/contracts": "workspace:*",
+    "@bombfarm/ui": "workspace:*",
+    "electron-log": "^5.4.1",
+    "next": "^15.4.2",
+    "react": "^19.1.0",
+    "react-dom": "^19.1.0"
+  },
+  "optionalDependencies": {
+    "better-sqlite3": "^11.10.0"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.54.1",
+    "@tailwindcss/postcss": "^4.1.11",
+    "@types/better-sqlite3": "^7.6.13",
+    "@types/react": "^19.1.8",
+    "@types/react-dom": "^19.1.6",
+    "cross-env": "^7.0.3",
+    "electron": "^35.7.5",
+    "electron-builder": "^26.0.12",
+    "esbuild": "^0.25.8",
+    "playwright": "^1.54.1",
+    "tailwindcss": "^4.1.11",
+    "typescript": "^5.8.3"
+  }
+}
