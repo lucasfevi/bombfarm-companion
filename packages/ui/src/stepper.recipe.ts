@@ -30,7 +30,3 @@ export const numSpinBtnClass =
   'flex flex-1 cursor-pointer items-center justify-center border-none bg-transparent p-0 text-muted hover:bg-[color-mix(in_oklch,var(--accent)_18%,var(--bg-2))] hover:text-accent motion-safe:transition-[background-color,color] motion-safe:duration-[120ms]';
 export const numInputClass =
   'min-w-0 flex-1 border-0 bg-transparent px-1.5 py-1.5 text-right text-[13px] text-ink tabular-nums outline-none [appearance:textfield] [&::-webkit-inner-spin-button]:m-0 [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:m-0 [&::-webkit-outer-spin-button]:appearance-none';
-
-/** Read-only numeric readout — same shell/width as `Num`, no spin column. */
-export const readonlyNumClass =
-  'inline-flex min-h-[34px] w-full min-w-0 items-center justify-end rounded-sm border border-line bg-bg px-1.5 py-1.5 text-right text-[13px] text-ink tabular-nums';

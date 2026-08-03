@@ -52,7 +52,6 @@ All exported from the barrel [`packages/ui/src/index.ts`](../packages/ui/src/ind
 | `Fields` | `<div>` | `layout`: `inline` \| `inline-dense` \| `stack` | `panel-field.recipe.ts` |
 | `Bar` | `<div>` | `pct` + `variant`: `fill` \| `best` | `bar.recipe.ts` |
 | `Num` | `@base-ui/react/button` spin + `<input type="number">` | composite numeric field — left chevron steppers, right-aligned value; hide native spinners; optional `decimals` is **display-only** (never round committed values) | `stepper.recipe.ts` (`num*`) |
-| `ReadonlyNum` | `<span data-readonly-num>` | read-only numeric readout sized like `Num` — for import-sourced floats that must keep store precision | `stepper.recipe.ts` (`readonlyNumClass`) |
 | `Select` | `@base-ui/react/select` | `size`: `default` \| `compact`; left chevron trigger; **ported popup** (themed options) | `select.recipe.ts` |
 | `Switch` | `@base-ui/react/switch` | boolean on/off; Root + Thumb; planner token track/thumb | `switch.recipe.ts` |
 | `Accordion` | `@base-ui/react/accordion` | compound `Root`/`Item`/`Header`/`Trigger`/`Panel`; `multiple`; Trigger `tone`: `section` \| `row`, `size`: `default` \| `compact`; `Panel` open/close animates via Motion (`motion/react`), not a CSS transition — see [`animation.md`](animation.md) | `accordion.recipe.ts` |
@@ -94,23 +93,23 @@ Asset paths: [`abilityIconSrc`](../packages/domain/src/wiki-assets.ts) → `publ
 
 Asset path helpers: [`packages/domain/src/wiki-assets.ts`](../packages/domain/src/wiki-assets.ts) (domain helper, not under `design-system/`).
 
-### Form controls (`Num` / `ReadonlyNum` / `Select`)
+### Form controls (`Num` / `Select`)
 
-Both `Num` and `Select` are **composite shells** (not bare browser widgets). `ReadonlyNum` shares the stack slot geometry without steppers or write-back:
+Both are **composite shells** (not bare browser widgets):
 
-| Piece | `Num` | `ReadonlyNum` | `Select` |
-| --- | --- | --- | --- |
-| Outer / trigger | `[data-num]` bordered `bg-bg` shell | `[data-readonly-num]` bordered `bg-bg` shell | `[data-select]` bordered `bg-bg` trigger |
-| Left affix | Interactive ▲/▼ on `bg-bg-2` (accent hover) | — | Chevron on `bg-bg-2` |
-| Control / value | Borderless `type="number"`, `text-right`, tabular nums | Text readout, `text-right`, tabular nums | `Select.Value` label for the chosen item |
-| Popup | — | — | Portaled list on `bg-surface` / `text-ink` (native `<option>` menus are **not** used — OS chrome cannot match dark tokens) |
-| Fields wiring | Stack/inline size the shell via `[data-num]` | Stack/inline size via `[data-readonly-num]` | Stack/inline size the trigger via `[data-select]` |
+| Piece | `Num` | `Select` |
+| --- | --- | --- |
+| Outer / trigger | `[data-num]` bordered `bg-bg` shell | `[data-select]` bordered `bg-bg` trigger |
+| Left affix | Interactive ▲/▼ on `bg-bg-2` (accent hover) | Chevron on `bg-bg-2` |
+| Control / value | Borderless `type="number"`, `text-right`, tabular nums | `Select.Value` label for the chosen item |
+| Popup | — | Portaled list on `bg-surface` / `text-ink` (native `<option>` menus are **not** used — OS chrome cannot match dark tokens) |
+| Fields wiring | Stack/inline size the shell via `[data-num]` | Stack/inline size the trigger via `[data-select]` |
 
-**`Num` `decimals`:** WHEN set, round **only the displayed** input text. Do **not** round values passed to `onChange` — rounding on commit silently truncates full-precision store floats (e.g. imported skill-tree totals). Prefer `ReadonlyNum` for import-sourced account floats that must never be edited from the panel.
+**`Num` `decimals`:** WHEN set, round **only the displayed** input text. Do **not** round values passed to `onChange` — rounding on commit silently truncates full-precision store floats (e.g. imported skill-tree totals). Import-sourced Account Skill Tree floats are plain text (`[data-account-tree-value]`), not `Num`.
 
 Call sites may keep `<option>` children; the primitive converts them to Base UI items and still emits a synthetic `onChange` with `target.value` as a string.
 
-Do **not** restyle native `::-webkit-inner-spin-button` or OS `<select>` menus in `globals.css` — compose these primitives instead. Prefer `Select` / `Num` / `ReadonlyNum` over raw `<select>` / `<input type="number">` in feature UI. Prefer `Switch` over inventing Button/checkbox toggles for boolean flags.
+Do **not** restyle native `::-webkit-inner-spin-button` or OS `<select>` menus in `globals.css` — compose these primitives instead. Prefer `Select` / `Num` over raw `<select>` / `<input type="number">` in feature UI. Prefer `Switch` over inventing Button/checkbox toggles for boolean flags.
 
 **Before adding a new interactive primitive or inventing a toggle/control pattern:** follow [`base-ui-first.md`](base-ui-first.md) — check Base UI, wrap with cva + tokens, prefer `Switch` for boolean flags. Prefer `Accordion` / `Collapsible` over inventing `<details>`/`<summary>` disclosures.
 

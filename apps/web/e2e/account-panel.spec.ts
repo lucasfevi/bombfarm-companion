@@ -86,7 +86,7 @@ test.describe('account panel chrome', () => {
     expect(max - min).toBeLessThan(2);
   });
 
-  test('Skill Tree numeric totals are read-only (no Num steppers)', async ({ page }) => {
+  test('Skill Tree numeric totals are plain text (no inputs)', async ({ page }) => {
     await seedLocalStorage(page, { ...importedRoster, lang: 'en' });
     await page.goto('/');
     await selectSavedHero(page, 'Cora');
@@ -98,8 +98,9 @@ test.describe('account panel chrome', () => {
       .filter({ has: page.getByRole('heading', { name: /^Skill Tree$/i, level: 3 }) })
       .first();
 
-    await expect(treeBlock.locator('[data-readonly-num]')).toHaveCount(6);
+    await expect(treeBlock.locator('[data-account-tree-value]')).toHaveCount(6);
     await expect(treeBlock.locator('[data-num]')).toHaveCount(0);
+    await expect(treeBlock.locator('input')).toHaveCount(0);
     await expect(treeBlock.locator('[data-keystone-control]')).toHaveCount(2);
   });
 
