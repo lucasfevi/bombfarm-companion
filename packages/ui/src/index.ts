@@ -31,6 +31,7 @@ export { Panel, type PanelProps } from './panel';
 export { Fields, type FieldsProps, type FieldsLayout } from './fields';
 export { Bar, type BarProps } from './bar';
 export { Num } from './num';
+export { ReadonlyNum } from './readonly-num';
 export { Select, type SelectProps } from './select';
 export { Switch, type SwitchProps } from './switch';
 export { Accordion } from './accordion';

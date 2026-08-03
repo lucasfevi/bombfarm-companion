@@ -38,15 +38,9 @@ export type AccountSlice = {
   rankMode: RankMode;
   targetProp: string | null;
 
-  setTreeDanoTotal: (value: number) => void;
-  setTreeCritChance: (value: number) => void;
-  setTreeCritDmg: (value: number) => void;
-  setTreeSpeed: (value: number) => void;
-  setTreeEnergy: (value: number) => void;
-  setTreeTeamCoinPct: (value: number) => void;
+  /** Keystones stay editable for what-if; numeric tree totals are import/hydrate only. */
   setTreeGlassCannon: (value: boolean) => void;
   setTreeTempoDobrado: (value: boolean) => void;
-  setTreeLuckFlatPct: (value: number) => void;
   setTeamBuffs: (value: Record<TeamBuffId, number>) => void;
   setHouseIdx: (value: number) => void;
   setHouseLevel: (value: number) => void;
@@ -85,30 +79,6 @@ export const createAccountSlice: StateCreator<
   rankMode: defaultCtx.rankMode,
   targetProp: defaultCtx.targetProp,
 
-  setTreeDanoTotal: (value) => {
-    if (get().treeDanoTotal === value) return;
-    set({ treeDanoTotal: value });
-  },
-  setTreeCritChance: (value) => {
-    if (get().treeCritChance === value) return;
-    set({ treeCritChance: value });
-  },
-  setTreeCritDmg: (value) => {
-    if (get().treeCritDmg === value) return;
-    set({ treeCritDmg: value });
-  },
-  setTreeSpeed: (value) => {
-    if (get().treeSpeed === value) return;
-    set({ treeSpeed: value });
-  },
-  setTreeEnergy: (value) => {
-    if (get().treeEnergy === value) return;
-    set({ treeEnergy: value });
-  },
-  setTreeTeamCoinPct: (value) => {
-    if (get().treeTeamCoinPct === value) return;
-    set({ treeTeamCoinPct: value });
-  },
   setTreeGlassCannon: (value) => {
     if (get().treeGlassCannon === value) return;
     set({ treeGlassCannon: value });
@@ -116,10 +86,6 @@ export const createAccountSlice: StateCreator<
   setTreeTempoDobrado: (value) => {
     if (get().treeTempoDobrado === value) return;
     set({ treeTempoDobrado: value });
-  },
-  setTreeLuckFlatPct: (value) => {
-    if (get().treeLuckFlatPct === value) return;
-    set({ treeLuckFlatPct: value });
   },
   setTeamBuffs: (value) => {
     if (teamBuffsEqual(get().teamBuffs, value)) return;

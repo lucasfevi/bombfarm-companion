@@ -20,8 +20,12 @@ export function Num({
   const shown =
     decimals != null && Number.isFinite(value) ? Number(value.toFixed(decimals)) : value;
 
+  // `decimals` is display-only — never round a committed value. Rounding here would
+  // quietly downgrade precision that didn't come from the display (e.g. an imported
+  // save's full-float skill-tree bonus) every time the field is nudged, even by a single
+  // step click, permanently losing digits the display never had a chance to show anyway.
   function commit(next: number) {
-    onChange(decimals != null && Number.isFinite(next) ? Number(next.toFixed(decimals)) : next);
+    if (Number.isFinite(next)) onChange(next);
   }
 
   return (
@@ -55,6 +59,24 @@ export function Num({
         onChange={(event) => {
           const raw = Number(event.target.value);
           commit(raw);
+        }}
+        onWheel={(event) => {
+          // Focused number inputs step natively on scroll — easy to trigger by accident
+          // while scrolling the page. Blur so the wheel event scrolls the page instead of
+          // silently nudging the field from its rounded `shown` display baseline.
+          event.currentTarget.blur();
+        }}
+        onKeyDown={(event) => {
+          // Native Up/Down stepping computes from the input's displayed (rounded) text,
+          // not the full-precision `value` prop — route it through the same precise
+          // commit the chevron buttons use instead of letting the browser step it.
+          if (event.key === 'ArrowUp') {
+            event.preventDefault();
+            commit(value + step);
+          } else if (event.key === 'ArrowDown') {
+            event.preventDefault();
+            commit(value - step);
+          }
         }}
       />
     </div>

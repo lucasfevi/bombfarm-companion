@@ -36,14 +36,41 @@ describe('account persistence subscription', () => {
   });
 
   it('boot gate closed → no write; after boot one write per quiet period', () => {
-    usePlannerStore.getState().setTreeDanoTotal(1.5);
+    usePlannerStore.getState().applyAccountImport({
+      tree: {
+        danoTotal: 1.5,
+        critChance: 0,
+        critDmg: 0,
+        speed: 0,
+        energy: 0,
+        teamCoinPct: 0,
+        glassCannon: false,
+        tempoDobrado: false,
+        luckFlatPct: 0,
+      },
+      houseIdx: null,
+      houseLevel: null,
+    });
     vi.advanceTimersByTime(AUTOSAVE_MS);
     expect(localStorage.getItem('bf-hp-account-v1')).toBeNull();
 
     usePlannerStore.getState().setBooted(true);
     usePlannerStore.getState().skipNextAccountToast();
-    usePlannerStore.getState().setTreeCritChance(3);
-    usePlannerStore.getState().setTreeSpeed(2);
+    usePlannerStore.getState().applyAccountImport({
+      tree: {
+        danoTotal: 1.5,
+        critChance: 3,
+        critDmg: 0,
+        speed: 2,
+        energy: 0,
+        teamCoinPct: 0,
+        glassCannon: false,
+        tempoDobrado: false,
+        luckFlatPct: 0,
+      },
+      houseIdx: null,
+      houseLevel: null,
+    });
     vi.advanceTimersByTime(AUTOSAVE_MS - 1);
     expect(localStorage.getItem('bf-hp-account-v1')).toBeNull();
     vi.advanceTimersByTime(1);
@@ -60,14 +87,14 @@ describe('account persistence subscription', () => {
   it('toasts account saved unless skip one-shot', () => {
     usePlannerStore.getState().setBooted(true);
     usePlannerStore.getState().consumeSkipAccountToast();
-    usePlannerStore.getState().setTreeEnergy(9);
+    usePlannerStore.getState().setTreeGlassCannon(true);
     vi.advanceTimersByTime(AUTOSAVE_MS);
     expect(usePlannerStore.getState().toast).toBe(STRINGS.pt.toastAccountSaved);
   });
 
   it('detach cancels pending timer', () => {
     usePlannerStore.getState().setBooted(true);
-    usePlannerStore.getState().setTreeEnergy(1);
+    usePlannerStore.getState().setTreeTempoDobrado(true);
     detach();
     vi.advanceTimersByTime(AUTOSAVE_MS);
     expect(localStorage.getItem('bf-hp-account-v1')).toBeNull();

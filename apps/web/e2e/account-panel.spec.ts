@@ -86,6 +86,23 @@ test.describe('account panel chrome', () => {
     expect(max - min).toBeLessThan(2);
   });
 
+  test('Skill Tree numeric totals are read-only (no Num steppers)', async ({ page }) => {
+    await seedLocalStorage(page, { ...importedRoster, lang: 'en' });
+    await page.goto('/');
+    await selectSavedHero(page, 'Cora');
+    await page.getByRole('tab', { name: /^account$|^conta$/i }).click();
+
+    const account = accountPanel(page, 'en');
+    const treeBlock = account
+      .locator('div')
+      .filter({ has: page.getByRole('heading', { name: /^Skill Tree$/i, level: 3 }) })
+      .first();
+
+    await expect(treeBlock.locator('[data-readonly-num]')).toHaveCount(6);
+    await expect(treeBlock.locator('[data-num]')).toHaveCount(0);
+    await expect(treeBlock.locator('[data-keystone-control]')).toHaveCount(2);
+  });
+
   test('PT: Conta panel has no Da conta chip; no obrigatório at tree ×1', async ({ page }) => {
     await seedLocalStorage(page, treeDefaultState('pt'));
     await page.goto('/');
