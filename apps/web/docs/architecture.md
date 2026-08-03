@@ -30,7 +30,7 @@ Six feature slices, each with a required `index.ts` public-API barrel — nothin
 | Slice | Owns |
 | --- | --- |
 | `planner/` | Composer, tab stage (`PlannerTabs`), per-tab panels (Abilities / Gear / Account / Points), hero-draft action hooks, `planner-tab` model |
-| `account/` | Account column — house/level, skill tree, team buffs |
+| `account/` | Account column — house/level, plain-text skill-tree totals (import-sourced), editable keystones + team buffs |
 | `gear/` | `SlotEditor`, gear slots grid, gear domain UI |
 | `roster/` | Roster table / sort / open-state hooks (see the dead-code note below), hero picker |
 | `phases/` | Phase explorer + phase page-state model |

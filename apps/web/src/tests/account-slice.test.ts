@@ -4,6 +4,18 @@ import { normalizeAccount, type AccountShared } from '@/shared/lib/storage';
 import { selectAccountShared } from '@/shared/stores/selectors/account-selectors';
 import { resetPlannerStoreForTests, usePlannerStore } from '@/shared/stores';
 
+const sampleTree = {
+  danoTotal: 1.2,
+  critChance: 5,
+  critDmg: 10,
+  speed: 3,
+  energy: 4,
+  teamCoinPct: 7,
+  glassCannon: true,
+  tempoDobrado: false,
+  luckFlatPct: 6,
+} as const;
+
 describe('account slice', () => {
   beforeEach(() => {
     resetPlannerStoreForTests();
@@ -26,11 +38,12 @@ describe('account slice', () => {
     expect(s.targetProp).toBe('stone');
   });
 
-  it('AC-10: setTreeLuckFlatPct is a no-op setter mirroring setTreeCritDmg', () => {
-    const before = usePlannerStore.getState();
-    before.setTreeLuckFlatPct(0);
-    expect(usePlannerStore.getState()).toBe(before);
-    usePlannerStore.getState().setTreeLuckFlatPct(5.3);
+  it('AC-10: applyAccountImport writes luckFlatPct (no per-field tree setter)', () => {
+    usePlannerStore.getState().applyAccountImport({
+      tree: { ...sampleTree, luckFlatPct: 5.3 },
+      houseIdx: null,
+      houseLevel: null,
+    });
     expect(usePlannerStore.getState().treeLuckFlatPct).toBe(5.3);
   });
 
@@ -66,7 +79,11 @@ describe('account slice', () => {
     const a = selectAccountShared(usePlannerStore.getState());
     const b = selectAccountShared(usePlannerStore.getState());
     expect(a).toBe(b);
-    usePlannerStore.getState().setTreeDanoTotal(1.5);
+    usePlannerStore.getState().applyAccountImport({
+      tree: { ...sampleTree, danoTotal: 1.5 },
+      houseIdx: null,
+      houseLevel: null,
+    });
     const c = selectAccountShared(usePlannerStore.getState());
     expect(c).not.toBe(a);
     expect(c.tree.danoTotal).toBe(1.5);
@@ -74,17 +91,7 @@ describe('account slice', () => {
 
   it('hydrateAccount → selectAccountShared round-trips through normalizeAccount', () => {
     const shared: AccountShared = normalizeAccount({
-      tree: {
-        danoTotal: 1.2,
-        critChance: 5,
-        critDmg: 10,
-        speed: 3,
-        energy: 4,
-        teamCoinPct: 7,
-        glassCannon: true,
-        tempoDobrado: false,
-        luckFlatPct: 6,
-      },
+      tree: { ...sampleTree },
       teamBuffs: { ...zeroTeamBuffs(), grito_guerra: 2 },
       context: {
         houseIdx: 1,
@@ -141,9 +148,27 @@ describe('account slice', () => {
     expect(usePlannerStore.getState().teamBuffs).toBe(ref);
   });
 
-  it('setters are no-ops when value is unchanged', () => {
+  it('keystone setters are no-ops when value is unchanged', () => {
     const before = usePlannerStore.getState();
-    before.setTreeDanoTotal(1);
+    before.setTreeGlassCannon(false);
     expect(usePlannerStore.getState()).toBe(before);
+  });
+
+  it('preserves full-precision tree floats through applyAccountImport (no UI round-trip)', () => {
+    const precise = 2.60988968151606;
+    usePlannerStore.getState().applyAccountImport({
+      tree: {
+        ...sampleTree,
+        danoTotal: precise,
+        critChance: 12.3456789,
+        speed: 0.987654321,
+      },
+      houseIdx: null,
+      houseLevel: null,
+    });
+    const s = usePlannerStore.getState();
+    expect(s.treeDanoTotal).toBe(precise);
+    expect(s.treeCritChance).toBe(12.3456789);
+    expect(s.treeSpeed).toBe(0.987654321);
   });
 });
