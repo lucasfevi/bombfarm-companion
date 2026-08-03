@@ -15,6 +15,7 @@ import {
   setActiveHeroId,
   type HeroRecord,
 } from '@/shared/lib/storage';
+import { WEB_PACKAGE_ROOT } from './helpers/web-package-root';
 
 function memoryLocalStorage() {
   const store = new Map<string, string>();
@@ -177,7 +178,7 @@ describe('importHeroes — full roster sync (BSPW5-08)', () => {
   });
 
   it('AC-27: the sync mechanism never reads account_id or generated_at (source inspection — importHeroes takes no such input)', () => {
-    const content = readFileSync(join(process.cwd(), 'src/shared/lib/storage.ts'), 'utf8');
+    const content = readFileSync(join(WEB_PACKAGE_ROOT, 'src/shared/lib/storage.ts'), 'utf8');
     expect(content).not.toMatch(/account_id/);
     expect(content).not.toMatch(/generated_at/);
   });

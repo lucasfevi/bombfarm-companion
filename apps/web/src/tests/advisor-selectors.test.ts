@@ -16,6 +16,7 @@ import {
   selectDps,
 } from '@/shared/stores/selectors/advisor-selectors';
 import { resetPlannerStoreForTests, usePlannerStore } from '@/shared/stores';
+import { WEB_PACKAGE_ROOT } from './helpers/web-package-root';
 
 describe('selectAdvisorPipeline', () => {
   beforeEach(() => {
@@ -79,7 +80,7 @@ describe('selectAdvisorPipeline', () => {
   });
 
   it('persistence modules do not import advisor selectors (W5-08)', () => {
-    const dir = join(process.cwd(), 'src/shared/stores/persistence');
+    const dir = join(WEB_PACKAGE_ROOT, 'src/shared/stores/persistence');
     for (const file of readdirSync(dir)) {
       if (!file.endsWith('.ts')) continue;
       const content = readFileSync(join(dir, file), 'utf8');

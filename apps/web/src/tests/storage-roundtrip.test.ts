@@ -10,8 +10,9 @@ import { resetPlannerStoreForTests } from '@/shared/stores';
 import { selectAccountShared } from '@/shared/stores/selectors/account-selectors';
 import { saveAccountShared, saveHeroes, setActiveHeroId } from '@/shared/lib/storage';
 import { usePlannerStore } from '@/shared/stores/planner-store';
+import { WEB_PACKAGE_ROOT } from './helpers/web-package-root';
 
-const fixturePath = join(process.cwd(), 'src/tests/fixtures/storage-roundtrip-20260729.json');
+const fixturePath = join(WEB_PACKAGE_ROOT, 'src/tests/fixtures/storage-roundtrip-20260729.json');
 const fixture = JSON.parse(readFileSync(fixturePath, 'utf8')) as {
   _meta: { comment: string; build: string };
   'bf-hp-heroes-v1': string;

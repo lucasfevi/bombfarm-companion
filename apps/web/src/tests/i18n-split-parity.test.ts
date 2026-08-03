@@ -21,8 +21,9 @@ import * as breakdown from '@/shared/i18n/namespaces/breakdown';
 import * as phases from '@/shared/i18n/namespaces/phases';
 import * as importNs from '@/shared/i18n/namespaces/import';
 import * as stats from '@/shared/i18n/namespaces/stats';
+import { WEB_PACKAGE_ROOT } from './helpers/web-package-root';
 
-const fixturePath = join(process.cwd(), 'src/tests/fixtures/i18n-strings-main.json');
+const fixturePath = join(WEB_PACKAGE_ROOT, 'src/tests/fixtures/i18n-strings-main.json');
 const fixture = JSON.parse(readFileSync(fixturePath, 'utf8')) as {
   en: Strings;
   pt: Strings;

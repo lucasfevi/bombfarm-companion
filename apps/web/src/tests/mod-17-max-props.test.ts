@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import fs from 'node:fs';
 import path from 'node:path';
+import { WEB_PACKAGE_ROOT } from './helpers/web-package-root';
 
 /**
  * MOD-17 — no component's *own* props exceed 8 members (error; no allowlist escape hatch).
@@ -99,7 +100,7 @@ function walk(dir: string, acc: string[] = []): string[] {
 type Hit = { key: string; file: string; name: string; count: number };
 
 function collectHits(): Hit[] {
-  const root = path.resolve('.');
+  const root = WEB_PACKAGE_ROOT;
   const files = walk(path.join(root, 'src'));
   const hits: Hit[] = [];
 
@@ -137,7 +138,7 @@ function collectHits(): Hit[] {
 }
 
 function countPropsFor(fileRel: string, exportName: string): number {
-  const abs = path.resolve(fileRel);
+  const abs = path.join(WEB_PACKAGE_ROOT, fileRel);
   const text = fs.readFileSync(abs, 'utf8');
   const fnRe = new RegExp(
     `(?:export (?:default )?function|memo\\(function) ${exportName}\\s*\\(\\s*\\{([^}]*)\\}`,

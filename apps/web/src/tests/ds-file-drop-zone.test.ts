@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileDropZoneRecipe } from '@bombfarm/ui/file-drop-zone.recipe';
+import { WEB_PACKAGE_ROOT } from './helpers/web-package-root';
 
 const IDLE =
   'flex cursor-pointer flex-col items-center gap-2.5 border border-dashed border-line bg-bg px-4 py-8 text-center text-xs text-muted';
@@ -16,7 +17,7 @@ describe('FileDropZone', () => {
 
   it('keeps role=button, tabIndex, Enter/Space, and input value reset in source', () => {
     const src = fs.readFileSync(
-      path.resolve('../../packages/ui/src/file-drop-zone.tsx'),
+      path.resolve(WEB_PACKAGE_ROOT, '../../packages/ui/src/file-drop-zone.tsx'),
       'utf8',
     );
     expect(src).toContain('role="button"');
