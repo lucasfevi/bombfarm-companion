@@ -4,7 +4,17 @@
     "jsx": "react-jsx",
     "lib": ["ES2022", "DOM", "DOM.Iterable"],
     "outDir": "dist",
-    "rootDir": "src"
+    "rootDir": "src",
+    "exactOptionalPropertyTypes": false,
+    "noUncheckedIndexedAccess": false,
+    "baseUrl": ".",
+    "paths": {
+      "@/shared/lib/cn": ["./src/cn.ts"],
+      "@/shared/lib/escape-reg-exp": ["./src/escape-reg-exp.ts"],
+      "@/shared/lib/mask-reveal": ["./src/mask-reveal.ts"],
+      "@/shared/design-system": ["./src/index.ts"],
+      "@/shared/design-system/*": ["./src/*"]
+    }
   },
   "include": ["src/**/*.ts", "src/**/*.tsx"],
   "exclude": [
