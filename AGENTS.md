@@ -16,7 +16,9 @@ This repository contains **application code only**. Product specs and research l
 - **Next.js 15** static web planner — `@bombfarm/web` (`output: 'export'`)
 - **TypeScript strict**, **Vitest**, **Playwright** (desktop `_electron` smoke; web e2e)
 - **Tailwind CSS 4** + **@base-ui/react** — design system in `@bombfarm/ui`
-- Shared math in `@bombfarm/domain`
+- Shared math in `@bombfarm/domain` (phase/economy wiki rows ship as committed
+  `packages/domain/src/data/phase-wiki.json` — refresh via the private research
+  wiki-sync pipeline; this repo has no wiki HTTP client)
 - **electron-log** (main/preload/renderer)
 - **SQLite** via `Storage` wrapper (`node:sqlite` when Electron's Node supports it, else `better-sqlite3`)
 
@@ -37,6 +39,9 @@ pnpm test:smoke   # Windows — builds static renderer + launches Electron
 - Conventional Commits (`feat:`, `fix:`, `chore:`, …) — enforced by commitlint
 - IPC types live in `@bombfarm/contracts`; both main and renderer import from there
 - No Node integration in the renderer; use preload `contextBridge`
+- TypeScript strict at the monorepo base; planner-origin packages `@bombfarm/domain`
+  and `@bombfarm/ui` intentionally keep a documented exception (see
+  [`docs/typescript-planner-origin.md`](docs/typescript-planner-origin.md))
 - No secrets in the repo
 - Do not mention other fan tools in user-facing docs
 - Never add `.specs/` to this repository

@@ -3,9 +3,9 @@
  * invariant (`AC-57`): `reoptDps >= currentDps`, always, by construction.
  *
  * `findGateCandidate` (Tier 1) is `AD-BSP-08` verbatim — bounded greedy, seed-compared
- * against the current vector — and is the only tier wired into `computeAdvisorPipeline` this
- * wave (`ASM-09`). `optimizeBuild` (Tier 2) is a multi-start, best-improvement local search;
- * it ships **unwired** — Wave 6 places the "Optimize build" control (`AC-64m`).
+ * against the current vector — and is the tier wired into `computeAdvisorPipeline`
+ * (`ASM-09`). `optimizeBuild` (Tier 2) is a multi-start, best-improvement local search;
+ * the Points tab "Optimize build" control calls it on demand (`AC-64m`).
  *
  * Shared primitives (the affine scorer, `REOPT_KEYS`, the greedy walk) live in
  * `points-reopt-core.ts`; Tier 2's seeds/neighbourhood/local-search live in
@@ -163,8 +163,8 @@ export function findGateCandidate(input: ReoptInput): ReoptResult {
 /**
  * Tier 2 — on-demand multi-start optimiser. Seven seeds (`AC-62`) x best-improvement local
  * search over a three-family neighbourhood (`AC-63`), bounded by `REOPT_FULL_MAX_SWEEPS` per
- * seed and `REOPT_FULL_MAX_EVALUATIONS` overall (`AC-64`, `AC-64b`). Ships **unwired** —
- * Wave 6 places the "Optimize build" control on the Points tab (`AC-64m`).
+ * seed and `REOPT_FULL_MAX_EVALUATIONS` overall (`AC-64`, `AC-64b`). Called from the
+ * Points tab "Optimize build" control (`AC-64m`).
  *
  * `AC-64a` (tier monotonicity): this tier's seed set and neighbourhood are supersets of
  * Tier 1's (`S1`/`S2` are shared seeds; Tier 1 has no neighbourhood at all), so

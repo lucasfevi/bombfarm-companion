@@ -10,7 +10,7 @@ const companionNativePackages = [
   'packages/pricing/**/*.{ts,tsx}',
 ];
 
-/** Planner-origin packages (`domain`, `ui`) ship under recommendedTypeChecked. */
+/** Planner-origin packages (`domain`, `ui`) — recommendedTypeChecked; see docs/typescript-planner-origin.md */
 const plannerOriginPackages = [
   'packages/domain/**/*.{ts,tsx}',
   'packages/ui/**/*.{ts,tsx}',
