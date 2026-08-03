@@ -42,16 +42,17 @@ export const IntegerStep: Story = {
 
 export const InFieldStack: Story = {
   render: function Render() {
-    const [buff, setBuff] = useState(20);
+    const [dmg, setDmg] = useState(2.156);
+    const [crit, setCrit] = useState(65.68);
     return (
       <Fields layout="stack" className="max-w-sm">
         <label>
-          <span>War Cry %</span>
-          <Num value={buff} onChange={setBuff} step={1} decimals={0} />
+          <span>Total damage ×</span>
+          <Num value={dmg} onChange={setDmg} step={0.001} decimals={3} />
         </label>
         <label>
-          <span>Forced March %</span>
-          <Num value={15} onChange={() => undefined} step={1} decimals={0} />
+          <span>Crit chance +% base</span>
+          <Num value={crit} onChange={setCrit} decimals={2} />
         </label>
       </Fields>
     );

@@ -51,7 +51,7 @@ All exported from the barrel [`packages/ui/src/index.ts`](../packages/ui/src/ind
 | `Panel` | `<section>` | `focus` / `aligned` / `unverified` booleans (`need` is a no-op — required uses `FieldRequired`) | `panel-field.recipe.ts` |
 | `Fields` | `<div>` | `layout`: `inline` \| `inline-dense` \| `stack` | `panel-field.recipe.ts` |
 | `Bar` | `<div>` | `pct` + `variant`: `fill` \| `best` | `bar.recipe.ts` |
-| `Num` | `@base-ui/react/button` spin + `<input type="number">` | composite numeric field — left chevron steppers, right-aligned value; hide native spinners; optional `decimals` is **display-only** (never round committed values) | `stepper.recipe.ts` (`num*`) |
+| `Num` | `@base-ui/react/button` spin + `<input type="number">` | composite numeric field — left chevron steppers, right-aligned value; hide native spinners | `stepper.recipe.ts` (`num*`) |
 | `Select` | `@base-ui/react/select` | `size`: `default` \| `compact`; left chevron trigger; **ported popup** (themed options) | `select.recipe.ts` |
 | `Switch` | `@base-ui/react/switch` | boolean on/off; Root + Thumb; planner token track/thumb | `switch.recipe.ts` |
 | `Accordion` | `@base-ui/react/accordion` | compound `Root`/`Item`/`Header`/`Trigger`/`Panel`; `multiple`; Trigger `tone`: `section` \| `row`, `size`: `default` \| `compact`; `Panel` open/close animates via Motion (`motion/react`), not a CSS transition — see [`animation.md`](animation.md) | `accordion.recipe.ts` |
@@ -104,8 +104,6 @@ Both are **composite shells** (not bare browser widgets):
 | Control / value | Borderless `type="number"`, `text-right`, tabular nums | `Select.Value` label for the chosen item |
 | Popup | — | Portaled list on `bg-surface` / `text-ink` (native `<option>` menus are **not** used — OS chrome cannot match dark tokens) |
 | Fields wiring | Stack/inline size the shell via `[data-num]` | Stack/inline size the trigger via `[data-select]` |
-
-**`Num` `decimals`:** WHEN set, round **only the displayed** input text. Do **not** round values passed to `onChange` — rounding on commit silently truncates full-precision store floats (e.g. imported skill-tree totals). Import-sourced Account Skill Tree floats are plain text (`[data-account-tree-value]`), not `Num`.
 
 Call sites may keep `<option>` children; the primitive converts them to Base UI items and still emits a synthetic `onChange` with `target.value` as a string.
 
