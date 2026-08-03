@@ -2,13 +2,21 @@
 
 This repository contains **application code only**. Product specs and research live in a separate private planning workspace — do not reference or link to those paths from this repo.
 
+## Hard truths
+
+| Scope | Index |
+| --- | --- |
+| Shared (desktop + web + packages) | [`docs/README.md`](docs/README.md) |
+| Web planner only | [`apps/web/docs/README.md`](apps/web/docs/README.md) |
+
 ## Stack
 
-- **pnpm** monorepo (`apps/desktop`, `packages/*`)
-- **Electron 35+** main/preload (esbuild bundle)
-- **Next.js 15** renderer (`output: 'export'` — no API routes / SSR)
-- **TypeScript strict**, **Vitest**, **Playwright** (`_electron` smoke)
-- **Tailwind CSS 4** + **@base-ui/react** (design system expands in M2)
+- **pnpm** monorepo (`apps/desktop`, `apps/web`, `packages/*`)
+- **Electron 35+** main/preload (esbuild bundle) — `@bombfarm/desktop`
+- **Next.js 15** static web planner — `@bombfarm/web` (`output: 'export'`)
+- **TypeScript strict**, **Vitest**, **Playwright** (desktop `_electron` smoke; web e2e)
+- **Tailwind CSS 4** + **@base-ui/react** — design system in `@bombfarm/ui`
+- Shared math in `@bombfarm/domain`
 - **electron-log** (main/preload/renderer)
 - **SQLite** via `Storage` wrapper (`node:sqlite` when Electron's Node supports it, else `better-sqlite3`)
 
@@ -19,6 +27,8 @@ pnpm install
 pnpm typecheck
 pnpm lint
 pnpm test
+pnpm --filter @bombfarm/domain test
+pnpm --filter @bombfarm/web test
 pnpm test:smoke   # Windows — builds static renderer + launches Electron
 ```
 
@@ -29,6 +39,7 @@ pnpm test:smoke   # Windows — builds static renderer + launches Electron
 - No Node integration in the renderer; use preload `contextBridge`
 - No secrets in the repo
 - Do not mention other fan tools in user-facing docs
+- Never add `.specs/` to this repository
 
 ## Flavors
 
