@@ -1,0 +1,8 @@
+---
+description: No layout shift hard truth
+alwaysApply: true
+---
+
+# No layout shift
+
+**Canonical hard truth:** [`docs/no-layout-shift.md`](../../docs/no-layout-shift.md)

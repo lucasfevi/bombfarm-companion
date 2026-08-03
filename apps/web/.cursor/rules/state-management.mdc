@@ -1,0 +1,8 @@
+---
+description: Zustand planner store hard truth
+alwaysApply: true
+---
+
+# State management
+
+**Canonical hard truth:** [`docs/state-management.md`](../../docs/state-management.md)
