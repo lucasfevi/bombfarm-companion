@@ -1,17 +1,46 @@
-name: CI
+name: CI Desktop
+
+# Path-filtered desktop quality + Windows smoke; package on main push.
+# Paths documented for CIV-02 / CIV-03 (see plan mp1-ci-vercel-rebrand design).
 
 on:
   push:
     branches: [main]
+    paths:
+      - 'apps/desktop/**'
+      - 'packages/contracts/**'
+      - 'packages/game-data/**'
+      - 'packages/pricing/**'
+      - 'packages/ui/**'
+      - 'pnpm-lock.yaml'
+      - 'pnpm-workspace.yaml'
+      - 'package.json'
+      - 'tsconfig.base.json'
+      - 'eslint.config.mjs'
+      - 'vitest.config.ts'
+      - '.github/workflows/ci-desktop.yml'
   pull_request:
+    paths:
+      - 'apps/desktop/**'
+      - 'packages/contracts/**'
+      - 'packages/game-data/**'
+      - 'packages/pricing/**'
+      - 'packages/ui/**'
+      - 'pnpm-lock.yaml'
+      - 'pnpm-workspace.yaml'
+      - 'package.json'
+      - 'tsconfig.base.json'
+      - 'eslint.config.mjs'
+      - 'vitest.config.ts'
+      - '.github/workflows/ci-desktop.yml'
 
 concurrency:
-  group: ci-${{ github.ref }}
+  group: ci-desktop-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
   quality:
-    name: Typecheck, lint, unit
+    name: Typecheck, lint, unit (desktop path)
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -26,16 +55,22 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Build workspace packages
+      - name: Build workspace packages (desktop deps)
         run: pnpm -r --filter @bombfarm/contracts --filter @bombfarm/ui --filter @bombfarm/game-data --filter @bombfarm/pricing build
 
-      - name: Typecheck
-        run: pnpm typecheck
+      - name: Typecheck desktop + deps
+        run: >
+          pnpm --filter @bombfarm/contracts --filter @bombfarm/ui
+          --filter @bombfarm/game-data --filter @bombfarm/pricing
+          --filter @bombfarm/desktop typecheck
 
-      - name: Lint
-        run: pnpm lint
+      - name: Lint desktop + deps
+        run: >
+          pnpm --filter @bombfarm/contracts --filter @bombfarm/ui
+          --filter @bombfarm/game-data --filter @bombfarm/pricing
+          --filter @bombfarm/desktop lint
 
-      - name: Unit tests
+      - name: Unit tests (root vitest — packages touched by desktop)
         run: pnpm test
 
   smoke-windows:
