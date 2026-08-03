@@ -54,7 +54,6 @@ export function TabsPanels({ className, children, transition = contentsTransitio
               // react-compiler cannot trace ref mutability through a custom hook's return
               // value (itemRefs is a real useRef() array owned by useTabsPanelsHeight); this
               // callback-ref population pattern is standard and was unflagged before the split.
-              // eslint-disable-next-line react-compiler/react-compiler
               itemRefs.current[index] = element;
             }}
             className="w-full shrink-0 overflow-clip"

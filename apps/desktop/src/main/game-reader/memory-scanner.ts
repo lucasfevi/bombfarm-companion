@@ -42,7 +42,8 @@ const ptrToBig = (p: unknown): bigint => {
   if (p === null || p === undefined) return 0n;
   if (typeof p === 'bigint') return p;
   if (typeof p === 'number') return BigInt(p);
-  return BigInt(koffi.address(p as object));
+  const address = koffi.address(p as object);
+  return typeof address === 'bigint' ? address : BigInt(address);
 };
 const PROCESS_VM_READ = 0x0010;
 const PROCESS_QUERY_INFORMATION = 0x0400;
