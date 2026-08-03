@@ -1,4 +1,4 @@
-import type { RarityKey } from '@/shared/domain/model/rarity-constants';
+import type { RarityKey } from './rarity-constants';
 
 export interface HeroSheet {
   rarity: RarityKey;

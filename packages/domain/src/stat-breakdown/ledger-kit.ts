@@ -1,13 +1,13 @@
-import { levelPowerMult } from '@/shared/domain/model';
-import { starsMult, type SheetOtherPct } from '@/shared/domain/gear';
-import { TEAM_MULT_BONUS_CAP } from '@/shared/domain/derive';
-import type { SheetDisplayKey } from '@/shared/domain/planner-constants';
+import { levelPowerMult } from '../model';
+import { starsMult, type SheetOtherPct } from '../gear';
+import { TEAM_MULT_BONUS_CAP } from '../derive';
+import type { SheetDisplayKey } from '../planner-constants';
 import type {
   LedgerNote,
   LedgerSource,
   LedgerStep,
   PipelineFacts,
-} from '@/shared/domain/stat-breakdown/types';
+} from './types';
 
 export const EPS = 1e-9;
 

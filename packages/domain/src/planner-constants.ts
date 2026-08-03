@@ -1,5 +1,5 @@
-import { BASE_ROLLS, type RarityKey } from '@/shared/domain/model';
-import type { SheetStats } from '@/shared/domain/gear';
+import { BASE_ROLLS, type RarityKey } from './model';
+import type { SheetStats } from './gear';
 
 export const RARITIES = Object.keys(BASE_ROLLS) as RarityKey[];
 

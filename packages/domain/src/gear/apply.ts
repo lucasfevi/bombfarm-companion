@@ -1,6 +1,6 @@
-import { attackPointGain, POINT_GAIN } from '@/shared/domain/model';
-import { emptySheetOther, starsMult, sumGearBonuses } from '@/shared/domain/gear/catalog';
-import type { Loadout, PointAlloc, SheetOtherPct, SheetStats } from '@/shared/domain/gear/types';
+import { attackPointGain, POINT_GAIN } from '../model';
+import { emptySheetOther, starsMult, sumGearBonuses } from './catalog';
+import type { Loadout, PointAlloc, SheetOtherPct, SheetStats } from './types';
 
 /**
  * Shared bonus pool: sheet = base × (1 + other + gear [+ points]).

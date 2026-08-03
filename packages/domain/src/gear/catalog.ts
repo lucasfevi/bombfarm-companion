@@ -1,6 +1,6 @@
-import catalog from '@/shared/domain/data/catalog.json';
-import type { Lang } from '@/shared/i18n';
-import { formatItemDisplay } from '@/shared/domain/game-labels';
+import catalog from '../data/catalog.json';
+import type { Lang } from '../shims/i18n';
+import { formatItemDisplay } from '../game-labels';
 import type {
   EquippedItem,
   GearBonuses,
@@ -8,7 +8,7 @@ import type {
   Loadout,
   SheetOtherPct,
   Slot,
-} from '@/shared/domain/gear/types';
+} from './types';
 
 /** Forja upgrade: +0…+15. `upgrade_mult = 1 + 0.08 × N` (wiki itens.forja.bonus). */
 export const FORJA_BONUS = 0.08;

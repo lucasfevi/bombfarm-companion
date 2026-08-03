@@ -1,9 +1,115 @@
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import type { NextConfig } from 'next';
+import type { Configuration as WebpackConfig } from 'webpack';
+
+const projectRoot = path.dirname(fileURLToPath(import.meta.url));
+
+/**
+ * Dev HMR is fragile on Windows when agents (or editors) write many files in a
+ * burst. Next webpack's default watch aggregateTimeout is 5ms, which lets
+ * overlapping Fast Refresh applies corrupt the module graph
+ * (`__webpack_modules__[moduleId] is not a function`).
+ *
+ * Prefer Turbopack for `pnpm dev` (see package.json) — it uses a different HMR
+ * path. Keep these webpack watch guards for `pnpm dev:webpack`.
+ *
+ * Ignore specs, e2e, Storybook, tests, and build artifacts that agents touch
+ * constantly but never belong in the Next module graph.
+ */
+const DEV_WATCH_IGNORED = [
+  '**/node_modules/**',
+  '**/.git/**',
+  '**/.next/**',
+  '**/.specs/**',
+  '**/.storybook/**',
+  '**/e2e/**',
+  '**/storybook-static/**',
+  '**/test-results/**',
+  '**/playwright-report/**',
+  '**/coverage/**',
+  '**/out/**',
+  '**/src/**/__tests__/**',
+  '**/src/tests/**',
+  '**/src/**/*.test.ts',
+  '**/src/**/*.test.tsx',
+  '**/src/**/*.stories.ts',
+  '**/src/**/*.stories.tsx',
+] as const;
+
+/**
+ * RES-05 — set by `pnpm perf:build:profile` to produce a *measurement* build: production
+ * React (via `next build --profile`) with component names retained. Off for every normal
+ * build, so shipped output is unaffected.
+ */
+const PERF_PROFILE = process.env.PERF_PROFILE === '1';
 
 const nextConfig: NextConfig = {
+  // Client-only planner (localStorage). Ready for Vercel; no Node runtime needed.
   output: 'export',
   reactStrictMode: true,
   transpilePackages: ['@bombfarm/domain', '@bombfarm/ui'],
+  // Pin Turbopack's resolve root to this package (multi-root Cursor workspace).
+  turbopack: {
+    root: projectRoot,
+  },
+  // React 19 — babel-plugin-react-compiler; no react-compiler-runtime / target 18.
+  // Next 15.5 still nests this under experimental (top-level key is unrecognized).
+  experimental: {
+    reactCompiler: true,
+    // Segment explorer wraps every App Router segment with SegmentViewNode in
+    // the RSC payload. After bursty HMR that wrapper often drops out of the
+    // React Client Manifest and hard-crashes the page until `pnpm dev` restart.
+    // Disable until Next's HMR/manifest race is more stable on Windows.
+    devtoolSegmentExplorer: false,
+  },
+  webpack: (config: WebpackConfig, { dev }) => {
+    if (!dev && PERF_PROFILE) {
+      // RES-05 — perf-measurement build only, never a shipped artifact.
+      //
+      // `next build --profile` swaps in React's profiling build so the Profiler API
+      // reports in production, but it does not stop SWC mangling function names — and
+      // the perf harness keys every row on `componentKey`, i.e. the component's name.
+      // That is exactly why W1's spike rejected production-profile and locked the
+      // baseline to `dev-strict`, which measures dev + StrictMode double-invoke rather
+      // than production.
+      //
+      // Disabling minification is what actually retains the names. It changes bundle
+      // size and parse time, but not React's runtime semantics: this is still the
+      // production React build, with no dev warnings and no StrictMode double-render.
+      // Render counts and commit durations are therefore representative in a way
+      // `dev-strict` can never be. Never use this build to judge bundle size — that is
+      // what `bundle-delta.md` and a normal `pnpm build` are for.
+      config.optimization = { ...config.optimization, minimize: false };
+    }
+    if (!dev) {
+      // RES-02 — keep zustand's `devtools` middleware out of the production bundle.
+      // The runtime `NODE_ENV` guard is not enough on its own: webpack marks a
+      // statically-imported binding as used at module-graph time, so the middleware
+      // ships whole even though the branch using it is provably dead. Measured leak:
+      // 1,517 B gzip. Swapping the module is the only reliable fix.
+      // Guarded by src/tests/devtools-not-in-production-bundle.test.ts.
+      config.resolve = config.resolve ?? {};
+      config.resolve.alias = {
+        ...config.resolve.alias,
+        [path.resolve(projectRoot, 'src/shared/stores/devtools-middleware.ts')]: path.resolve(
+          projectRoot,
+          'src/shared/stores/devtools-middleware-noop.ts',
+        ),
+      };
+    }
+    if (dev) {
+      // Stale filesystem cache + HMR swaps is a common source of moduleId
+      // mismatches on Windows after rapid multi-file edits.
+      config.cache = false;
+      config.watchOptions = {
+        ...config.watchOptions,
+        aggregateTimeout: 1000,
+        ignored: [...DEV_WATCH_IGNORED],
+      };
+    }
+    return config;
+  },
 };
 
 export default nextConfig;

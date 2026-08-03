@@ -1,5 +1,5 @@
-import { POINT_GAIN, STAT_CAPS } from '@/shared/domain/model/rarity-constants';
-import type { Context, HeroSheet } from '@/shared/domain/model/types';
+import { POINT_GAIN, STAT_CAPS } from './rarity-constants';
+import type { Context, HeroSheet } from './types';
 
 const GRID_SPEED_COEF = 0.0386;
 const EFF_IA = 0.9;

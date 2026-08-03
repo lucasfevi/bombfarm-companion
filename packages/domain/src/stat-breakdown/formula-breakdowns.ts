@@ -5,9 +5,9 @@ import {
   fuseSeconds,
   mitigationFactor,
   predictHitDamage,
-} from '@/shared/domain/model';
-import { formatBreakdownNumber } from '@/shared/domain/stat-breakdown/ledger-kit';
-import type { FormulaBreakdown, PipelineFacts } from '@/shared/domain/stat-breakdown/types';
+} from '../model';
+import { formatBreakdownNumber } from './ledger-kit';
+import type { FormulaBreakdown, PipelineFacts } from './types';
 
 export function formulaMitF(facts: PipelineFacts): FormulaBreakdown {
   const mit = facts.context.mitigation;

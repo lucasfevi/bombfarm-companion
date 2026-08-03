@@ -3,16 +3,16 @@
 // fields degrade gracefully (skip the hero or the affected part, never throw)
 // so a save file from any account — not just the one used to build this — works.
 
-import catalog from '@/shared/domain/data/catalog.json';
-import { ABILITIES, RarityKey, abilityMods } from '@/shared/domain/model';
-import { EquippedItem, Loadout, emptyLoadout, emptySheetOther } from '@/shared/domain/gear';
-import { ZERO_PTS, type SheetKey } from '@/shared/domain/planner-constants';
-import { HeroRecord } from '@/shared/lib/storage';
-import { isKnownSkin } from '@/shared/domain/wiki-assets';
-import { birthFromSave, hasUsableBirthStats, saveSheetUnits, treeTotalsFromSave } from '@/shared/domain/save-units';
-import { composeSheetFromBirth, nakedFromBirth, type BirthStats, type TreeSheetTotals } from '@/shared/domain/birth-sheet';
-import { inferSpentPoints, type PointInferenceIssue } from '@/shared/domain/point-inference';
-import { unmodelledTreeFindings } from '@/shared/domain/tree-guards';
+import catalog from './data/catalog.json';
+import { ABILITIES, RarityKey, abilityMods } from './model';
+import { EquippedItem, Loadout, emptyLoadout, emptySheetOther } from './gear';
+import { ZERO_PTS, type SheetKey } from './planner-constants';
+import { HeroRecord } from './shims/storage';
+import { isKnownSkin } from './wiki-assets';
+import { birthFromSave, hasUsableBirthStats, saveSheetUnits, treeTotalsFromSave } from './save-units';
+import { composeSheetFromBirth, nakedFromBirth, type BirthStats, type TreeSheetTotals } from './birth-sheet';
+import { inferSpentPoints, type PointInferenceIssue } from './point-inference';
+import { unmodelledTreeFindings } from './tree-guards';
 
 const RARITY_BY_IDX: RarityKey[] = ['Comum', 'Incomum', 'Raro', 'Épico', 'Lendária', 'Mítico'];
 

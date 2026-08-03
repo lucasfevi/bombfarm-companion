@@ -25,10 +25,10 @@
 // resolving to the same public surface (module-scope private helpers stay
 // inside their concern module).
 
-export type { RarityKey, BaseRoll } from '@/shared/domain/model/rarity-constants';
-export { BASE_ROLLS, POINT_GAIN, STAT_CAPS } from '@/shared/domain/model/rarity-constants';
+export type { RarityKey, BaseRoll } from './rarity-constants';
+export { BASE_ROLLS, POINT_GAIN, STAT_CAPS } from './rarity-constants';
 
-export { HOUSES, houseRestSeconds, splitHouseRest } from '@/shared/domain/model/house';
+export { HOUSES, houseRestSeconds, splitHouseRest } from './house';
 
 export type {
   HeroSheet,
@@ -40,8 +40,8 @@ export type {
   EffectiveDeltas,
   RankMode,
   RankOptions,
-} from '@/shared/domain/model/types';
-export { STAT_LABELS } from '@/shared/domain/model/types';
+} from './types';
+export { STAT_LABELS } from './types';
 
 export {
   staminaFactor,
@@ -61,35 +61,35 @@ export {
   sustainedDps,
   activeDps,
   gateDamage,
-} from '@/shared/domain/model/combat';
+} from './combat';
 
-export { rankNextPoint, energySwitchPoint } from '@/shared/domain/model/points-rank';
+export { rankNextPoint, energySwitchPoint } from './points-rank';
 
-export type { BirthStats, TreeSheetTotals, ComposeSheetFromBirthInput } from '@/shared/domain/birth-sheet';
+export type { BirthStats, TreeSheetTotals, ComposeSheetFromBirthInput } from '../birth-sheet';
 export {
   nakedFromBirth,
   applySkillTree,
   composeSheetFromBirth,
   sheetsFromBirth,
-} from '@/shared/domain/birth-sheet';
+} from '../birth-sheet';
 
-export type { SourceLines, SheetSourceLines, PeelSheetSourcesInput } from '@/shared/domain/sheet-peel';
-export { peelSheetSources } from '@/shared/domain/sheet-peel';
+export type { SourceLines, SheetSourceLines, PeelSheetSourcesInput } from '../sheet-peel';
+export { peelSheetSources } from '../sheet-peel';
 
-export type { SheetStageRow, SheetStageTable, PeelSheetStagesInput } from '@/shared/domain/sheet-stages';
-export { peelSheetStages } from '@/shared/domain/sheet-stages';
+export type { SheetStageRow, SheetStageTable, PeelSheetStagesInput } from '../sheet-stages';
+export { peelSheetStages } from '../sheet-stages';
 
 export type {
   PointInferenceIssue,
   PointInferenceResult,
   InferSpentPointsInput,
-} from '@/shared/domain/point-inference';
-export { POINT_INFERENCE_EPS, inferSpentPoints } from '@/shared/domain/point-inference';
+} from '../point-inference';
+export { POINT_INFERENCE_EPS, inferSpentPoints } from '../point-inference';
 
-export type { UnmodelledTreeInput } from '@/shared/domain/tree-guards';
-export { unmodelledTreeFindings } from '@/shared/domain/tree-guards';
+export type { UnmodelledTreeInput } from '../tree-guards';
+export { unmodelledTreeFindings } from '../tree-guards';
 
-export type { ReoptInput, ReoptResult } from '@/shared/domain/points-reopt';
+export type { ReoptInput, ReoptResult } from '../points-reopt';
 export {
   REOPT_KEYS,
   REOPT_GATE_MAX_EVALUATIONS,
@@ -99,12 +99,12 @@ export {
   REOPT_REFUND_ROUNDS,
   findGateCandidate,
   optimizeBuild,
-} from '@/shared/domain/points-reopt';
+} from '../points-reopt';
 
-export type { ResetAdviceInput } from '@/shared/domain/reset-advice';
-export { RESET_RECOMMEND_DPS_PCT, RESET_GATE_EPSILON_PCT, shouldRecommendReset } from '@/shared/domain/reset-advice';
+export type { ResetAdviceInput } from '../reset-advice';
+export { RESET_RECOMMEND_DPS_PCT, RESET_GATE_EPSILON_PCT, shouldRecommendReset } from '../reset-advice';
 
-export type { AbilityEffect, AbilityDef, AbilityMods, Milestone } from '@/shared/domain/model/abilities';
+export type { AbilityEffect, AbilityDef, AbilityMods, Milestone } from './abilities';
 export {
   ABILITIES,
   isSheetAbility,
@@ -115,4 +115,4 @@ export {
   abilityPointBudget,
   abilityMods,
   critMilestones,
-} from '@/shared/domain/model/abilities';
+} from './abilities';

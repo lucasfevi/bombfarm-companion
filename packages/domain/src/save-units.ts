@@ -9,8 +9,8 @@
  * percent here (× 100); `crit_dmg` is a multiplier in the save, excess percentage points
  * here (`(x − 1) × 100`) — e.g. Bellatrix's `1.67344467136338` → `67.344467136338…`.
  */
-import type { BirthStats, TreeSheetTotals } from '@/shared/domain/birth-sheet';
-import type { SheetStats } from '@/shared/domain/gear';
+import type { BirthStats, TreeSheetTotals } from './birth-sheet';
+import type { SheetStats } from './gear';
 
 function isObject(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null;

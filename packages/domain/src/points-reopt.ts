@@ -11,8 +11,8 @@
  * `points-reopt-core.ts`; Tier 2's seeds/neighbourhood/local-search live in
  * `points-reopt-search.ts` — both split out to keep this file under the 300-line ESLint cap.
  */
-import { sustainedDps, type Context, type EffectiveDeltas, type HeroSheet } from '@/shared/domain/model';
-import type { SheetKey } from '@/shared/domain/planner-constants';
+import { sustainedDps, type Context, type EffectiveDeltas, type HeroSheet } from './model';
+import type { SheetKey } from './planner-constants';
 import {
   budgetOf,
   buildCandidateSheet,
@@ -20,13 +20,13 @@ import {
   greedyWalk,
   REOPT_GATE_MAX_EVALUATIONS,
   REOPT_KEYS,
-} from '@/shared/domain/points-reopt-core';
+} from './points-reopt-core';
 import {
   buildSeeds,
   generateMoves,
   localSearch,
   REOPT_FULL_MAX_EVALUATIONS,
-} from '@/shared/domain/points-reopt-search';
+} from './points-reopt-search';
 
 export {
   REOPT_KEYS,
@@ -35,14 +35,14 @@ export {
   cappedStatsOf,
   budgetOf,
   greedyWalk,
-} from '@/shared/domain/points-reopt-core';
-export type { GreedyWalkResult } from '@/shared/domain/points-reopt-core';
+} from './points-reopt-core';
+export type { GreedyWalkResult } from './points-reopt-core';
 export {
   REOPT_FULL_MAX_EVALUATIONS,
   REOPT_FULL_MAX_SWEEPS,
   REOPT_BLOCK_SIZES,
   REOPT_REFUND_ROUNDS,
-} from '@/shared/domain/points-reopt-search';
+} from './points-reopt-search';
 
 export type ReoptInput = {
   /** Full 8-key current allocation. `pts.luck` is copied through untouched (`AD-BSP-21`). */

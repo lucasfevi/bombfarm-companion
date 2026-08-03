@@ -12,20 +12,20 @@ import {
   type PointValue,
   type RankMode,
   type RarityKey,
-} from '@/shared/domain/model';
-import { applyPoints, emptySheetOther, projectGearedOntoLoadout, type Loadout, type SheetOtherPct, type SheetStats } from '@/shared/domain/gear';
-import { SHEET_KEYS, type SheetKey } from '@/shared/domain/planner-constants';
-import { computeCombatMults, derive, type DeriveResult } from '@/shared/domain/derive';
-import { applySkillTree, type BirthStats, type TreeSheetTotals } from '@/shared/domain/birth-sheet';
-import { resolveDeriveSheets } from '@/shared/domain/advisor-pipeline-sheets';
+} from './model';
+import { applyPoints, emptySheetOther, projectGearedOntoLoadout, type Loadout, type SheetOtherPct, type SheetStats } from './gear';
+import { SHEET_KEYS, type SheetKey } from './planner-constants';
+import { computeCombatMults, derive, type DeriveResult } from './derive';
+import { applySkillTree, type BirthStats, type TreeSheetTotals } from './birth-sheet';
+import { resolveDeriveSheets } from './advisor-pipeline-sheets';
 import {
   effectiveFarmPhase,
   effectiveMitigationPct,
   effectiveTargetProp,
   FARM_CYCLE_MODEL,
   FARM_WALK_DELAY_SEC,
-} from '@/shared/domain/farm-context';
-import { PROPS, BOSS_HP_MULT, phaseLine, propHp, hitsToKill, weightedAvgPropHp } from '@/shared/domain/phases';
+} from './farm-context';
+import { PROPS, BOSS_HP_MULT, phaseLine, propHp, hitsToKill, weightedAvgPropHp } from './phases';
 import {
   propHtkRows,
   gateRows as buildGateRows,
@@ -33,9 +33,9 @@ import {
   type PropHtkRow,
   type GateRow,
   type ResetAdvice,
-} from '@/shared/domain/advisor-tables';
-import { findGateCandidate } from '@/shared/domain/points-reopt';
-import type { TeamBuffId } from '@/shared/domain/team-buffs';
+} from './advisor-tables';
+import { findGateCandidate } from './points-reopt';
+import type { TeamBuffId } from './team-buffs';
 
 /** Increments each time the pipeline invokes `energySwitchPoint` (tests / DEBUG). */
 // MOD-36: mutable by design — Vitest imports and reassigns/reads this counter directly

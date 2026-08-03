@@ -3,12 +3,12 @@
  * `AD-BSP-19` block. `BSP-04a`: every failure mode is a typed issue, never a throw, a
  * silent scale, or a redistributed residual.
  */
-import { nakedFromBirth, type BirthStats, type TreeSheetTotals } from '@/shared/domain/birth-sheet';
-import { attackPointGain } from '@/shared/domain/model/combat';
-import { POINT_GAIN, STAT_CAPS } from '@/shared/domain/model/rarity-constants';
-import { starsMult, sumGearBonuses } from '@/shared/domain/gear/catalog';
-import type { Loadout, SheetOtherPct, SheetStats } from '@/shared/domain/gear/types';
-import { SHEET_KEYS, type SheetKey } from '@/shared/domain/planner-constants';
+import { nakedFromBirth, type BirthStats, type TreeSheetTotals } from './birth-sheet';
+import { attackPointGain } from './model/combat';
+import { POINT_GAIN, STAT_CAPS } from './model/rarity-constants';
+import { starsMult, sumGearBonuses } from './gear/catalog';
+import type { Loadout, SheetOtherPct, SheetStats } from './gear/types';
+import { SHEET_KEYS, type SheetKey } from './planner-constants';
 
 /**
  * `DEC-04` — six orders of magnitude above the measured worst residual (8.9e-13) and six

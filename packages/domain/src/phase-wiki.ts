@@ -1,5 +1,5 @@
-import wiki from '@/shared/domain/data/phase-wiki.json';
-import phaseMapNamesEn from '@/shared/domain/data/phase-map-names-en.json';
+import wiki from './data/phase-wiki.json';
+import phaseMapNamesEn from './data/phase-map-names-en.json';
 
 export type WikiPhaseLine = (typeof wiki.lines)[number];
 export type WikiProp = (typeof wiki.props)[number];

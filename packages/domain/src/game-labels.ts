@@ -2,11 +2,11 @@
  * Bilingual display maps for game terms. Internal ids/keys stay PT-key stable;
  * only labels follow `Lang`.
  */
-import type { Lang } from '@/shared/i18n';
-import type { RarityKey, StatKey } from '@/shared/domain/model';
-import { type Slot } from '@/shared/domain/gear';
-import type { TeamBuffId } from '@/shared/domain/team-buffs';
-import catalog from '@/shared/domain/data/catalog.json';
+import type { Lang } from './shims/i18n';
+import type { RarityKey, StatKey } from './model';
+import { type Slot } from './gear';
+import type { TeamBuffId } from './team-buffs';
+import catalog from './data/catalog.json';
 
 type Bilingual = { pt: string; en: string };
 

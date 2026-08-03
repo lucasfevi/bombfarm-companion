@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://bombfarm-hero-planner.vercel.app/sitemap.xml

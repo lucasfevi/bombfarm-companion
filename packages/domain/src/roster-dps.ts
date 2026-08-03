@@ -1,6 +1,6 @@
-import { computeAdvisorPipeline } from '@/shared/domain/advisor-pipeline';
-import { computeHeroPhaseFit } from '@/shared/domain/phase-intel';
-import type { HeroRecord, AccountShared } from '@/shared/lib/storage';
+import { computeAdvisorPipeline } from './advisor-pipeline';
+import { computeHeroPhaseFit } from './phase-intel';
+import type { HeroRecord, AccountShared } from './shims/storage';
 
 export type RosterDpsRow = {
   heroId: string;

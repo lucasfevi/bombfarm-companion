@@ -1,4 +1,4 @@
-import { POINT_GAIN } from '@/shared/domain/model';
+import { POINT_GAIN } from '../model';
 import {
   EPS,
   pushAdd,
@@ -7,13 +7,13 @@ import {
   pushBirthThenGear,
   pushMul,
   teamMultNote,
-} from '@/shared/domain/stat-breakdown/ledger-kit';
+} from './ledger-kit';
 import type {
   LedgerNote,
   LedgerStep,
   PipelineFacts,
   StatBreakdown,
-} from '@/shared/domain/stat-breakdown/types';
+} from './types';
 
 const TEMPO_FACTOR = 1.33333;
 

@@ -1,13 +1,13 @@
-import { BASE_ROLLS, levelPowerMult, type AbilityEffect, type AbilityMods, type RarityKey } from '@/shared/domain/model';
-import { applyGear } from '@/shared/domain/gear/apply';
-import { emptySheetOther, starsMult } from '@/shared/domain/gear/catalog';
+import { BASE_ROLLS, levelPowerMult, type AbilityEffect, type AbilityMods, type RarityKey } from '../model';
+import { applyGear } from './apply';
+import { emptySheetOther, starsMult } from './catalog';
 import type {
   HeroSheetRescale,
   Loadout,
   SheetOtherPct,
   SheetStats,
-} from '@/shared/domain/gear/types';
-import { SHEET_KEYS } from '@/shared/domain/planner-constants';
+} from './types';
+import { SHEET_KEYS } from '../planner-constants';
 
 /**
  * The naked (unequipped, in-game) sheet midpoints per rarity. Attack scales with level

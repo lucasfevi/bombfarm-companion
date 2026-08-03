@@ -11,11 +11,11 @@ import {
   type BirthStats,
   type ComposeSheetFromBirthInput,
   nakedFromBirth,
-} from '@/shared/domain/birth-sheet';
-import { applyGear, applyPoints, starsMult } from '@/shared/domain/gear';
-import { levelPowerMult } from '@/shared/domain/model/combat';
-import { SHEET_KEYS, type SheetKey } from '@/shared/domain/planner-constants';
-import type { SheetStats } from '@/shared/domain/gear/types';
+} from './birth-sheet';
+import { applyGear, applyPoints, starsMult } from './gear';
+import { levelPowerMult } from './model/combat';
+import { SHEET_KEYS, type SheetKey } from './planner-constants';
+import type { SheetStats } from './gear/types';
 
 /** One sheet key's birth absolute + six marginal Δs + composed Total. */
 export type SheetStageRow = {

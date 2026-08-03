@@ -1,6 +1,6 @@
-import type { CycleModel } from '@/shared/domain/model';
-import type { HeroContext } from '@/shared/lib/storage';
-import { wikiPhaseLine } from '@/shared/domain/phase-wiki';
+import type { CycleModel } from './model';
+import type { HeroContext } from './shims/storage';
+import { wikiPhaseLine } from './phase-wiki';
 
 /** Fixed serial bomb cycle — not user-editable. */
 export const FARM_CYCLE_MODEL = 'serial' as const satisfies CycleModel;

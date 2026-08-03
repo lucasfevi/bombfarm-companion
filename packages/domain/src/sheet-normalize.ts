@@ -1,5 +1,5 @@
-import { emptySheet, type PointAlloc, type SheetStats } from '@/shared/domain/gear';
-import { ZERO_PTS } from '@/shared/domain/planner-constants';
+import { emptySheet, type PointAlloc, type SheetStats } from './gear';
+import { ZERO_PTS } from './planner-constants';
 
 /** Coerce a stored value to a finite number, defaulting a missing/invalid value to `fallback`. */
 function finite(value: unknown, fallback = 0): number {

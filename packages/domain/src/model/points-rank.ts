@@ -4,8 +4,8 @@ import {
   mitigationFactor,
   sustainedDps,
   sustainedDpsWithFuse,
-} from '@/shared/domain/model/combat';
-import { BASE_ROLLS, POINT_GAIN, STAT_CAPS } from '@/shared/domain/model/rarity-constants';
+} from './combat';
+import { BASE_ROLLS, POINT_GAIN, STAT_CAPS } from './rarity-constants';
 import {
   STAT_LABELS,
   type Context,
@@ -14,7 +14,7 @@ import {
   type PointValue,
   type RankOptions,
   type StatKey,
-} from '@/shared/domain/model/types';
+} from './types';
 
 function hitSize(hero: HeroSheet, mitigation: number, hitDmgMult: number): number {
   return hero.attack * mitigationFactor(mitigation, hero.penetration) * hitDmgMult * critFactor(hero.critChance, hero.critDmg);

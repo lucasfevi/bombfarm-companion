@@ -14,7 +14,7 @@ export type {
   SheetOtherPct,
   PointAlloc,
   HeroSheetRescale,
-} from '@/shared/domain/gear/types';
+} from './types';
 
 export {
   FORJA_BONUS,
@@ -35,7 +35,7 @@ export {
   itemValores,
   emptySheetOther,
   starsMult,
-} from '@/shared/domain/gear/catalog';
+} from './catalog';
 
 export {
   applyGear,
@@ -44,7 +44,7 @@ export {
   applyPoints,
   reverseSheet,
   emptySheet,
-} from '@/shared/domain/gear/apply';
+} from './apply';
 
 export {
   defaultNaked,
@@ -62,4 +62,4 @@ export {
   canStarUp,
   nextLevelStep,
   nextStarsStep,
-} from '@/shared/domain/gear/naked-rescale';
+} from './naked-rescale';

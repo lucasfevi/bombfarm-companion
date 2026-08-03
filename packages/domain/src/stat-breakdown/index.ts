@@ -19,14 +19,14 @@ export type {
   FormulaBreakdown,
   StatBreakdown,
   PipelineFacts,
-} from '@/shared/domain/stat-breakdown/types';
+} from './types';
 
-export { LEDGER_SOURCE_GROUP } from '@/shared/domain/stat-breakdown/types';
+export { LEDGER_SOURCE_GROUP } from './types';
 
-export { foldLedger } from '@/shared/domain/stat-breakdown/ledger-kit';
+export { foldLedger } from './ledger-kit';
 
 export {
   BREAKDOWN_SHEET_IDS,
   BREAKDOWN_DERIVED_IDS,
   buildStatBreakdown,
-} from '@/shared/domain/stat-breakdown/build';
+} from './build';

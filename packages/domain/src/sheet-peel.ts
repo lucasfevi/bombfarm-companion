@@ -13,11 +13,11 @@
  * multiplicative-subtotal keys (attack, energy) and the flat-addend key (luck), where the
  * tree line is `(hero+gear+ability) × (factor−1)` / `luck_add × 100` respectively.
  */
-import { attackPointGain, levelPowerMult } from '@/shared/domain/model/combat';
-import { POINT_GAIN } from '@/shared/domain/model/rarity-constants';
-import { starsMult, sumGearBonuses } from '@/shared/domain/gear/catalog';
-import type { ComposeSheetFromBirthInput } from '@/shared/domain/birth-sheet';
-import { type SheetKey } from '@/shared/domain/planner-constants';
+import { attackPointGain, levelPowerMult } from './model/combat';
+import { POINT_GAIN } from './model/rarity-constants';
+import { starsMult, sumGearBonuses } from './gear/catalog';
+import type { ComposeSheetFromBirthInput } from './birth-sheet';
+import { type SheetKey } from './planner-constants';
 
 /** The game's four tooltip lines for one sheet key, in tooltip order. */
 export type SourceLines = { hero: number; gear: number; ability: number; skillTree: number };

@@ -1,5 +1,5 @@
-import { sub, type Strings } from '@/shared/i18n';
-import { isTargetPropUnset } from '@/shared/domain/farm-context';
+import { sub, type Strings } from './shims/i18n';
+import { isTargetPropUnset } from './farm-context';
 
 /** Per-tab trust chrome — soft/warn dot + tooltip body (no in-flow banner). */
 export type TabStatus = {

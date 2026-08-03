@@ -8,11 +8,11 @@ import {
   type Context,
   type HeroSheet,
   type RarityKey,
-} from '@/shared/domain/model';
-import type { TreeSheetTotals } from '@/shared/domain/birth-sheet';
-import { starsMult, type SheetOtherPct, type SheetStats } from '@/shared/domain/gear';
-import { SHEET_KEYS, type SheetKey } from '@/shared/domain/planner-constants';
-import type { TeamBuffId } from '@/shared/domain/team-buffs';
+} from './model';
+import type { TreeSheetTotals } from './birth-sheet';
+import { starsMult, type SheetOtherPct, type SheetStats } from './gear';
+import { SHEET_KEYS, type SheetKey } from './planner-constants';
+import type { TeamBuffId } from './team-buffs';
 
 export type CombatMults = {
   teamAtkMult: number;

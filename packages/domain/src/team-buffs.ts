@@ -1,5 +1,5 @@
-import { ABILITIES } from '@/shared/domain/model';
-import type { HeroRecord } from '@/shared/lib/storage';
+import { ABILITIES } from './model';
+import type { HeroRecord } from './shims/storage';
 
 export const TEAM_BUFF_ABILITY_IDS = [
   'grito_guerra',

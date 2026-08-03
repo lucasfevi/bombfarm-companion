@@ -5,15 +5,13 @@
   "type": "module",
   "exports": {
     ".": {
-      "types": "./dist/index.d.ts",
-      "import": "./dist/index.js",
+      "types": "./src/index.ts",
       "default": "./src/index.ts"
     },
     "./styles.css": "./src/styles.css",
     "./*": {
-      "types": "./dist/*.d.ts",
-      "import": "./dist/*.js",
-      "default": "./src/*.ts"
+      "types": "./src/*",
+      "default": "./src/*"
     }
   },
   "scripts": {

@@ -1,5 +1,5 @@
-import catalog from '@/shared/domain/data/catalog.json';
-import type { Slot } from '@/shared/domain/gear';
+import catalog from './data/catalog.json';
+import type { Slot } from './gear';
 
 /** Bundled mirror of Grimório static assets under `public/wiki-assets/`. */
 export const WIKI_ASSETS_BASE = '/wiki-assets';

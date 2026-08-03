@@ -1,0 +1,141 @@
+{
+  "heroes": [
+    {
+      "id": "1001",
+      "name": "Cora",
+      "level": 47,
+      "rank": "S",
+      "rarity": 1,
+      "stars": 2,
+      "in_field": true,
+      "abilities": [
+        { "code": "detonacao_dupla", "level": 10, "max": 10, "slot": 11 },
+        { "code": "passagem_bastao", "level": 10, "max": 10, "slot": 13 }
+      ],
+      "stat_points_available": 47,
+      "birth_stats": {
+        "dmg": 114.06190895428932,
+        "energia": 274.6874478366024,
+        "speed": 48.968693182230105,
+        "crit_chance": 0.04191926839593434,
+        "crit_dmg": 1.2606688103229156,
+        "penetration": 0.31976744186046513,
+        "cooldown_reduction": 0.0157,
+        "luck": 0.0429471685082873
+      },
+      "stats": {
+        "dmg": 1470.4,
+        "energia": 836.4,
+        "speed": 50.3,
+        "crit_chance": 0.127,
+        "crit_dmg": 1.6236,
+        "penetration": 1.1,
+        "cooldown_reduction": 0.0314,
+        "power": 13133.6,
+        "luck": 0.0995
+      }
+    },
+    {
+      "id": "1002",
+      "name": "Lorne",
+      "level": 11,
+      "rank": "C",
+      "rarity": 1,
+      "abilities": [
+        { "code": "marcha_acelerada", "level": 0, "max": 10, "slot": 3 },
+        { "code": "olho_clinico", "level": 10, "max": 10, "slot": 10 }
+      ],
+      "stat_points_available": 11,
+      "birth_stats": {
+        "dmg": 54.603306316301044,
+        "energia": 132.87726135185238,
+        "speed": 48.38457358164685,
+        "crit_chance": 0.06321484218247807,
+        "crit_dmg": 1.4572990354285915,
+        "penetration": 1.53,
+        "cooldown_reduction": 0.0068,
+        "luck": 0
+      },
+      "stats": {
+        "dmg": 150.5,
+        "energia": 202.3,
+        "speed": 49.7,
+        "crit_chance": 0.1005,
+        "crit_dmg": 1.547,
+        "penetration": 1.53,
+        "cooldown_reduction": 0.0068,
+        "power": 996.2
+      }
+    },
+    {
+      "id": "1004",
+      "name": "Brenna",
+      "level": 30,
+      "rank": "A",
+      "rarity": 2,
+      "stars": 0,
+      "abilities": [{ "code": "ponta_diamante", "level": 10, "max": 10, "slot": 5 }],
+      "stat_points_available": 30,
+      "birth_stats": {
+        "dmg": 63.11752219141445,
+        "energia": 203.61814641163735,
+        "speed": 47.216334380480326,
+        "crit_chance": 0.034067361701466355,
+        "crit_dmg": 1.41800643092193,
+        "penetration": 5.622837370242214,
+        "cooldown_reduction": 0.02,
+        "luck": 0
+      },
+      "stats": {
+        "dmg": 420,
+        "energia": 310,
+        "speed": 48.5,
+        "crit_chance": 0.06,
+        "crit_dmg": 1.5,
+        "penetration": 65,
+        "cooldown_reduction": 0.02,
+        "power": 2500
+      }
+    }
+  ],
+  "items": [
+    {
+      "def_id": "steel_amuleto",
+      "equip_slot": 7,
+      "equipped_on": "1001",
+      "id": "27133",
+      "level": 20,
+      "rarity": 2,
+      "upgrade": 10
+    },
+    {
+      "def_id": "steel_anel",
+      "equip_slot": 2,
+      "equipped_on": "1004",
+      "id": "27134",
+      "level": 20,
+      "rarity": 2,
+      "upgrade": 5
+    }
+  ],
+  "casa": {
+    "active_casa": 3,
+    "cycle_secs": 748.421052631579,
+    "levels": [20, 20, 6, 0, 0],
+    "slots": 9
+  },
+  "skills": {
+    "totals": {
+      "abisso_base": 0,
+      "crit_chance_add": 0.5148165135,
+      "crit_dmg_add": 0.196153846,
+      "crit_dmg_mult": 1,
+      "dmg_static": 1.96874525101619,
+      "energia_add": 0.522457627,
+      "geo_mult": 1.1912403335401,
+      "keystones": [],
+      "speed_add": 0.027186897,
+      "team_dmg_add": 0.652685185
+    }
+  }
+}

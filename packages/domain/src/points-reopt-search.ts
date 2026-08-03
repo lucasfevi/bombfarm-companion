@@ -4,9 +4,9 @@
  * file under the 300-line ESLint cap; `optimizeBuild` (Tier 2's public entry point) orchestrates
  * these from there.
  */
-import { rankNextPoint, sustainedDps, type Context, type EffectiveDeltas, type HeroSheet } from '@/shared/domain/model';
-import type { SheetKey } from '@/shared/domain/planner-constants';
-import { buildCandidateSheet, greedyWalk, REOPT_KEYS } from '@/shared/domain/points-reopt-core';
+import { rankNextPoint, sustainedDps, type Context, type EffectiveDeltas, type HeroSheet } from './model';
+import type { SheetKey } from './planner-constants';
+import { buildCandidateSheet, greedyWalk, REOPT_KEYS } from './points-reopt-core';
 
 export const REOPT_FULL_MAX_EVALUATIONS = 200_000;
 export const REOPT_FULL_MAX_SWEEPS = 24;

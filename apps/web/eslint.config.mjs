@@ -1,0 +1,436 @@
+import eslint from '@eslint/js';
+import globals from 'globals';
+import tseslint from 'typescript-eslint';
+import react from 'eslint-plugin-react';
+import reactHooks from 'eslint-plugin-react-hooks';
+import reactCompiler from 'eslint-plugin-react-compiler';
+import unicorn from 'eslint-plugin-unicorn';
+import boundaries from 'eslint-plugin-boundaries';
+
+export default tseslint.config(
+  {
+    ignores: ['**/.next/**', '**/node_modules/**', '**/out/**', '**/next-env.d.ts', '**/coverage/**'],
+  },
+  eslint.configs.recommended,
+  ...tseslint.configs.recommendedTypeChecked,
+  {
+    files: ['src/**/*.{ts,tsx}'],
+    languageOptions: {
+      parserOptions: {
+        projectService: true,
+        tsconfigRootDir: import.meta.dirname,
+      },
+      globals: globals.browser,
+    },
+    plugins: {
+      react,
+      'react-hooks': reactHooks,
+      'react-compiler': reactCompiler,
+      unicorn,
+      boundaries,
+    },
+    settings: {
+      react: { version: 'detect' },
+      'import/resolver': {
+        typescript: { alwaysTryTypes: true },
+      },
+      // Folder-mode patterns match the element folder (right-to-left); children inherit.
+      // Use path suffixes without requiring a full-root match (plugin default).
+      'boundaries/elements': [
+        { type: 'app', pattern: 'src/app' },
+        {
+          type: 'feature',
+          pattern: 'src/features/*',
+          capture: ['feature'],
+        },
+        { type: 'shared-design-system', pattern: 'src/shared/design-system' },
+        { type: 'shared-game-art', pattern: 'src/shared/game-art' },
+        { type: 'shared-context', pattern: 'src/shared/context' },
+        // W4 owns shared/stores — pattern reserved, folder not created in W3 (Q-4).
+        { type: 'shared-stores', pattern: 'src/shared/stores' },
+        { type: 'shared-domain', pattern: 'src/shared/domain' },
+        { type: 'shared-i18n', pattern: 'src/shared/i18n' },
+        { type: 'shared-lib', pattern: 'src/shared/lib' },
+      ],
+    },
+    rules: {
+      ...reactHooks.configs.recommended.rules,
+      ...reactCompiler.configs.recommended.rules,
+      '@typescript-eslint/no-unused-vars': [
+        'error',
+        { argsIgnorePattern: '^_', varsIgnorePattern: '^_' },
+      ],
+      '@typescript-eslint/no-misused-promises': [
+        'error',
+        { checksVoidReturn: { attributes: false } },
+      ],
+      'react-hooks/exhaustive-deps': 'warn',
+      // MOD-32 (W6): no component defined inside another component's render.
+      'react/no-unstable-nested-components': 'error',
+      // MOD-16 (W4): bare usePlannerStore() subscribes to the entire store — always pass a selector.
+      // ASM-05 (W5): selectAdvisorPipeline is intentionally used WITHOUT useShallow — it returns
+      // stable identity on cache hits; shallow compare would defeat MOD-18.
+      'no-restricted-syntax': [
+        'error',
+        {
+          selector: "CallExpression[callee.name='usePlannerStore'][arguments.length=0]",
+          message:
+            'Bare usePlannerStore() is forbidden (MOD-16). Pass a selector, e.g. usePlannerStore(selectHeroes).',
+        },
+      ],
+      // W1 guardrail (MOD-23) — warn in W1; W7 flips to error.
+      'unicorn/filename-case': ['error', { case: 'kebabCase' }],
+      // W1 guardrail (MOD-26) — warn in W1; W7 flips to error.
+      // W7 id-length exceptions (reviewed, minimal — see size-ledger/spec):
+      //   'cn'  — classnames-merge helper (@/shared/lib/cn); clsx/tailwind-merge-ecosystem
+      //           convention, imported at 60+ call sites across every component tree level.
+      //           Renaming the export is pure mechanical churn with no readability gain and
+      //           would touch nearly every design-system/feature component for zero benefit.
+      //   'en', 'pt' — i18n namespace language exports (shared/i18n/namespaces/*, strings.ts);
+      //           these ARE the `Lang` codes ('pt' | 'en') the whole i18n module is keyed by —
+      //           already fully self-documenting in context, and renaming would touch every
+      //           mirrored namespace file's declaration plus every aggregation site in
+      //           strings.ts for the same zero-benefit trade as `cn`.
+      'id-length': [
+        'error',
+        {
+          min: 3,
+          properties: 'never',
+          exceptions: ['_', 'cn', 'en', 'pt'],
+        },
+      ],
+      // MOD-26 companion. `id-length` uses min:3, so it is blind to 3-letter
+      // abbreviations like `fmt`/`idx`/`cmp` — which spec AC-2 named ("`fmt` →
+      // spelled format helpers", "loop counters → `index`") but no rule caught.
+      // Each name below is at zero occurrences in non-test `src/`; the denylist
+      // keeps it that way. Declarations only, so external data fields such as
+      // the JSON catalog's `rarity.idx` are unaffected.
+      'id-denylist': [
+        'error',
+        'fmt',
+        'idx',
+        'cmp',
+        'mul',
+        'dir',
+        'tmp',
+        'res',
+        'req',
+        'cfg',
+        'cnt',
+        'acc',
+        'amt',
+        'qty',
+        'tot',
+        'lbl',
+        'txt',
+        'ctx',
+        'prev',
+        'def',
+        'cur',
+        'opts',
+        'avg',
+        'str',
+        'arr',
+        'val',
+        'msg',
+        'img',
+        'btn',
+        'elem',
+        'obj',
+        'num',
+        'len',
+        'pos',
+        'evt',
+        'attr',
+        'desc',
+        'src',
+        'dst',
+        'buf',
+      ],
+      // W1 guardrail (MOD-29) — warn in W1; W7 flips to error (residuals allowlisted below).
+      'max-lines': [
+        'error',
+        { max: 300, skipBlankLines: true, skipComments: true },
+      ],
+      // MOD-17 (W5): ≤8 props — enforced by src/tests/mod-17-max-props.test.ts
+      // (warn-equivalent allowlist for DS Switch/Select; W7 burns allowlist).
+      // Cross-feature allowlist is four dated edges only (Approach A / Q-1).
+      'boundaries/element-types': [
+        'error',
+        {
+          default: 'disallow',
+          checkAllOrigins: true,
+          policies: [
+            // MOD-08: app → features → shared
+            {
+              from: { element: { type: 'app' } },
+              allow: {
+                to: {
+                  element: {
+                    type: [
+                      'feature',
+                      'shared-design-system',
+                      'shared-game-art',
+                      'shared-context',
+                      'shared-stores',
+                      'shared-domain',
+                      'shared-i18n',
+                      'shared-lib',
+                    ],
+                  },
+                },
+              },
+            },
+            // MOD-09: feature → shared only (cross-feature denied by default)
+            {
+              from: { element: { type: 'feature' } },
+              allow: {
+                to: {
+                  element: {
+                    type: [
+                      'shared-design-system',
+                      'shared-game-art',
+                      'shared-context',
+                      'shared-stores',
+                      'shared-domain',
+                      'shared-i18n',
+                      'shared-lib',
+                    ],
+                  },
+                },
+              },
+            },
+            // Allowlisted cross-feature edge — retires in W5/W6 (build-column → SlotEditor)
+            {
+              from: { element: { type: 'feature', captured: { feature: 'planner' } } },
+              allow: {
+                to: { element: { type: 'feature', captured: { feature: 'gear' } } },
+              },
+            },
+            // Allowlisted cross-feature edge — retires in W5/W6 (build-column/tabs → AccountColumn)
+            {
+              from: { element: { type: 'feature', captured: { feature: 'planner' } } },
+              allow: {
+                to: { element: { type: 'feature', captured: { feature: 'account' } } },
+              },
+            },
+            // Allowlisted cross-feature edge — retires in W6 (hero-strip → HeroPickerDialog)
+            {
+              from: { element: { type: 'feature', captured: { feature: 'planner' } } },
+              allow: {
+                to: { element: { type: 'feature', captured: { feature: 'roster' } } },
+              },
+            },
+            // Allowlisted cross-feature edge — retires in W6 (phases-hero-switcher → HeroPickerDialog)
+            {
+              from: { element: { type: 'feature', captured: { feature: 'phases' } } },
+              allow: {
+                to: { element: { type: 'feature', captured: { feature: 'roster' } } },
+              },
+            },
+            // MOD-10: design-system → itself + shared/lib only
+            {
+              from: { element: { type: 'shared-design-system' } },
+              allow: {
+                to: {
+                  element: { type: ['shared-design-system', 'shared-lib'] },
+                },
+              },
+            },
+            // game-art → domain / i18n / DS / lib (game-aware presentational)
+            {
+              from: { element: { type: 'shared-game-art' } },
+              allow: {
+                to: {
+                  element: {
+                    type: [
+                      'shared-game-art',
+                      'shared-design-system',
+                      'shared-domain',
+                      'shared-i18n',
+                      'shared-lib',
+                    ],
+                  },
+                },
+              },
+            },
+            // Temporary providers (W5 deletes bridge); useAppLang reads the store (W4).
+            {
+              from: { element: { type: 'shared-context' } },
+              allow: {
+                to: {
+                  element: {
+                    type: [
+                      'shared-context',
+                      'shared-stores',
+                      'shared-domain',
+                      'shared-i18n',
+                      'shared-lib',
+                      'shared-design-system',
+                    ],
+                  },
+                },
+              },
+            },
+            {
+              from: { element: { type: 'shared-stores' } },
+              allow: {
+                to: {
+                  element: {
+                    type: [
+                      'shared-stores',
+                      'shared-domain',
+                      'shared-i18n',
+                      'shared-lib',
+                      'shared-design-system',
+                    ],
+                  },
+                },
+              },
+            },
+            {
+              from: { element: { type: 'shared-i18n' } },
+              allow: {
+                to: {
+                  element: { type: ['shared-i18n', 'shared-lib'] },
+                },
+              },
+            },
+            // shared/lib may reach domain (storage carries game types — MOD-19 / A-18)
+            {
+              from: { element: { type: 'shared-lib' } },
+              allow: {
+                to: {
+                  element: { type: ['shared-lib', 'shared-domain'] },
+                },
+              },
+            },
+            // MOD-11: domain → i18n / lib / itself; not React / DS / features / app
+            {
+              from: { element: { type: 'shared-domain' } },
+              allow: {
+                to: {
+                  element: {
+                    type: ['shared-domain', 'shared-i18n', 'shared-lib'],
+                  },
+                },
+              },
+            },
+            {
+              allow: { to: { module: { origin: 'external' } } },
+            },
+            {
+              from: { element: { type: 'shared-domain' } },
+              disallow: {
+                to: { module: { origin: 'external', source: 'react' } },
+              },
+            },
+          ],
+        },
+      ],
+      // MOD-12: public API barrels + DS-05 recipe carve-out (Q-5).
+      'boundaries/entry-point': [
+        'error',
+        {
+          default: 'disallow',
+          policies: [
+            {
+              target: { element: { type: 'feature' } },
+              allow: 'index.{ts,tsx}',
+            },
+            {
+              target: { element: { type: 'shared-design-system' } },
+              allow: '{index.{ts,tsx},*.recipe.ts}',
+            },
+            {
+              target: { element: { type: 'shared-game-art' } },
+              allow: '{index.{ts,tsx},game-art.recipe.ts}',
+            },
+            // Domain / i18n / lib / context have no single barrel requirement (deep OK).
+            // '**' (not '*'): W7 turns shared-domain modules into directories with an
+            // index.ts barrel, so the allowed entry path can be nested (e.g. model/index.ts).
+            {
+              target: {
+                element: {
+                  type: ['shared-domain', 'shared-i18n', 'shared-lib', 'shared-context', 'shared-stores'],
+                },
+              },
+              allow: '**',
+            },
+            {
+              target: { element: { type: 'app' } },
+              allow: '*',
+            },
+          ],
+        },
+      ],
+    },
+  },
+  // MOD-26: tests excluded from id-length.
+  // Tests may deep-import internals under frozen assertions (MOD-03); stories too.
+  {
+    files: [
+      'src/**/__tests__/**',
+      'src/tests/**',
+      'src/**/*.{test,spec}.{ts,tsx}',
+      'src/**/*.stories.{ts,tsx}',
+    ],
+    rules: {
+      'id-length': 'off',
+      // Same MOD-26 scope carve-out as `id-length`: conventions apply to non-test `src/`.
+      'id-denylist': 'off',
+      'boundaries/element-types': 'off',
+      'boundaries/entry-point': 'off',
+    },
+  },
+  // MOD-29: feature/UI components ≤200 (tighter than the 300 hard cap).
+  {
+    files: ['src/features/**/components/**/*.{ts,tsx}', 'src/app/_shell/**/*.{ts,tsx}'],
+    ignores: ['src/**/use-*.ts'],
+    rules: {
+      'max-lines': [
+        'error',
+        { max: 200, skipBlankLines: true, skipComments: true },
+      ],
+    },
+  },
+  // MOD-29: hooks ≤150.
+  {
+    files: ['src/**/use-*.ts'],
+    rules: {
+      'max-lines': [
+        'error',
+        { max: 150, skipBlankLines: true, skipComments: true },
+      ],
+    },
+  },
+  // W7 max-lines allowlist (MOD-29 error-flip residual, reviewed — see
+  // .specs/features/modular-architecture/lint-error-inventory-w7.md):
+  //
+  // src/tests/** — Vitest suites for gear/import-save/model/stat-breakdown/storage-i18n
+  // legitimately run long (comprehensive fixture-driven assertions covering every branch
+  // of the domain math they lock down). Splitting a test file is not W7 scope (no task
+  // covers it) and MOD-03 forbids touching assertions to "shrink" a suite. Current max
+  // observed (ESLint count, skipBlank/skipComments): storage-i18n.test.ts at 644 lines.
+  // Raised cap, not disabled — a genuinely runaway test file still trips this.
+  {
+    files: ['src/tests/**'],
+    rules: {
+      'max-lines': ['error', { max: 650, skipBlankLines: true, skipComments: true }],
+    },
+  },
+  // src/shared/lib/storage.ts — persistence/migration module, pre-existing overage
+  // (344 lines, ESLint count) inherited from before W7; not caused by this wave's
+  // changes (W7 does not touch shared/lib). Splitting persistence code is out of
+  // W7 scope (component/domain splits only — see spec Out of Scope).
+  {
+    files: ['src/shared/lib/storage.ts'],
+    rules: {
+      'max-lines': ['error', { max: 350, skipBlankLines: true, skipComments: true }],
+    },
+  },
+  {
+    files: ['*.{mjs,js}', 'vitest.config.ts', 'next.config.ts'],
+    ...tseslint.configs.disableTypeChecked,
+  },
+);

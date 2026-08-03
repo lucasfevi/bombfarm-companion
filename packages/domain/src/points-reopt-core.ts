@@ -4,8 +4,8 @@
  * Split out so `points-reopt.ts` (Tier 1 + orchestration) and `points-reopt-search.ts`
  * (Tier 2 internals) can both depend on it without a cycle between them.
  */
-import { rankNextPoint, STAT_CAPS, type Context, type EffectiveDeltas, type HeroSheet } from '@/shared/domain/model';
-import type { SheetKey } from '@/shared/domain/planner-constants';
+import { rankNextPoint, STAT_CAPS, type Context, type EffectiveDeltas, type HeroSheet } from './model';
+import type { SheetKey } from './planner-constants';
 
 /**
  * `AD-BSP-21` — Luck is excluded from the reallocatable budget and from both sides of the

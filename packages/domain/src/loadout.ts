@@ -9,7 +9,7 @@ import {
   type SheetOtherPct,
   type SheetStats,
   type Slot,
-} from '@/shared/domain/gear';
+} from './gear';
 
 /** Pure slot patcher shared by the main loadout and the compare clone. */
 export function patchSlot(previous: Loadout, slot: Slot, patch: Partial<EquippedItem> | null): Loadout {

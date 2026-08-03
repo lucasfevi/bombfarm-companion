@@ -1,6 +1,6 @@
-import type { AbilityMods, Context, HeroSheet } from '@/shared/domain/model';
-import type { SheetOtherPct, SheetStats } from '@/shared/domain/gear';
-import type { SheetKey, SheetPanelKey } from '@/shared/domain/planner-constants';
+import type { AbilityMods, Context, HeroSheet } from '../model';
+import type { SheetOtherPct, SheetStats } from '../gear';
+import type { SheetKey, SheetPanelKey } from '../planner-constants';
 
 export type BreakdownStatId =
   | SheetPanelKey

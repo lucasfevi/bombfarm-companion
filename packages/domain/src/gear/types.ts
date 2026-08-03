@@ -1,4 +1,4 @@
-import catalog from '@/shared/domain/data/catalog.json';
+import catalog from '../data/catalog.json';
 
 export type Slot = (typeof catalog.slots)[number];
 export type ItemStat = (typeof catalog.itemStats)[number];

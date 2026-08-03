@@ -1,6 +1,6 @@
-import { applyGear, emptySheetOther, type SheetStats } from '@/shared/domain/gear';
-import { abilityMods } from '@/shared/domain/model';
-import type { HeroRecord } from '@/shared/lib/storage';
+import { applyGear, emptySheetOther, type SheetStats } from './gear';
+import { abilityMods } from './model';
+import type { HeroRecord } from './shims/storage';
 
 /** Rebuild the pre-points geared sheet from preserved naked + (new) loadout. */
 export function recomputeGearedSheet(

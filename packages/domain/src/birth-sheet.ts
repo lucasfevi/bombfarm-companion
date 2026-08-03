@@ -7,11 +7,11 @@
  * multiplicative-subtotal shapes; luck's tree term is a flat percentage-point addend
  * (AD-BSP-22). See `docs/architecture.md` ownership rule 2 — pure math, no React.
  */
-import { levelPowerMult } from '@/shared/domain/model/combat';
-import { applyPoints } from '@/shared/domain/gear/apply';
-import { starsMult } from '@/shared/domain/gear/catalog';
-import type { Loadout, PointAlloc, SheetOtherPct, SheetStats } from '@/shared/domain/gear/types';
-import { ZERO_PTS } from '@/shared/domain/planner-constants';
+import { levelPowerMult } from './model/combat';
+import { applyPoints } from './gear/apply';
+import { starsMult } from './gear/catalog';
+import type { Loadout, PointAlloc, SheetOtherPct, SheetStats } from './gear/types';
+import { ZERO_PTS } from './planner-constants';
 
 /**
  * lv1 ★0 rolls in PLANNER units (AD-BSP-19a already applied — crit chance/luck/CDR are

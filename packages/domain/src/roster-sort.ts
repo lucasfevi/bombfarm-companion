@@ -1,5 +1,5 @@
-import type { RarityKey } from '@/shared/domain/model';
-import { RANK_ORDER, RARITIES } from '@/shared/domain/planner-constants';
+import type { RarityKey } from './model';
+import { RANK_ORDER, RARITIES } from './planner-constants';
 
 export function raritySortIdx(rarity: RarityKey): number {
   const index = RARITIES.indexOf(rarity);

@@ -1,5 +1,5 @@
-import { mitigationFactor, critFactor } from '@/shared/domain/model';
-import { propHp, weightedAvgPropHp, hitsToKill, PROPS } from '@/shared/domain/phases';
+import { mitigationFactor, critFactor } from './model';
+import { propHp, weightedAvgPropHp, hitsToKill, PROPS } from './phases';
 import {
   wikiPhaseLine,
   WIKI_PROPS,
@@ -15,7 +15,7 @@ import {
   HERO_CHEST_RARITY_BY_ATO,
   JAULA,
   type WikiProp,
-} from '@/shared/domain/phase-wiki';
+} from './phase-wiki';
 
 export type PropSpawnRow = WikiProp & {
   hp: number;

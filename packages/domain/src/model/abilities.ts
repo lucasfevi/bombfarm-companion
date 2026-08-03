@@ -4,8 +4,8 @@
 // own points (1/level, same budget shown as "Pontos a Distribuir" in game).
 // Ability effects are FLAT game units applied outside the sheet (confirmed by
 // Ponta de Diamante "+2 de Penetração (pontos)" matching observed sheets).
-import { critFactor } from '@/shared/domain/model/combat';
-import { BASE_ROLLS, POINT_GAIN, type RarityKey } from '@/shared/domain/model/rarity-constants';
+import { critFactor } from './combat';
+import { BASE_ROLLS, POINT_GAIN, type RarityKey } from './rarity-constants';
 
 export type AbilityEffect =
   | { kind: 'drainPct'; perLevel: number } // − energy drain %

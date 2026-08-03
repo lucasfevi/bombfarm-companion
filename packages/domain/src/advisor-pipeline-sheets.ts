@@ -2,8 +2,8 @@ import {
   sheetsFromBirth,
   type BirthStats,
   type TreeSheetTotals,
-} from '@/shared/domain/birth-sheet';
-import type { Loadout, SheetOtherPct, SheetStats } from '@/shared/domain/gear';
+} from './birth-sheet';
+import type { Loadout, SheetOtherPct, SheetStats } from './gear';
 
 export type ResolveDeriveSheetsInput = {
   naked: SheetStats;

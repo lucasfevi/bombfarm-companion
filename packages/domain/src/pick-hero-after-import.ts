@@ -1,4 +1,4 @@
-import type { HeroRecord } from '@/shared/lib/storage';
+import type { HeroRecord } from './shims/storage';
 
 /** Which hero the editor should load after a save import merges into storage. */
 export function pickHeroAfterImport(

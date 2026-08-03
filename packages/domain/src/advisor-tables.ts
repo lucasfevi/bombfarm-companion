@@ -4,10 +4,10 @@
  * No literal or formula changed — see `advisor-pipeline.test.ts` for the discrimination
  * check proving this is a pure move.
  */
-import { gateDamage, type Context, type HeroSheet, type ReoptResult } from '@/shared/domain/model';
-import { GATES } from '@/shared/domain/planner-constants';
-import { PROPS, hitsToKill, oneshotGapPct, propHp } from '@/shared/domain/phases';
-import { shouldRecommendReset } from '@/shared/domain/reset-advice';
+import { gateDamage, type Context, type HeroSheet, type ReoptResult } from './model';
+import { GATES } from './planner-constants';
+import { PROPS, hitsToKill, oneshotGapPct, propHp } from './phases';
+import { shouldRecommendReset } from './reset-advice';
 
 export type PropHtkRow = {
   name: string;

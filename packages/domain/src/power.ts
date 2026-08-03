@@ -1,6 +1,6 @@
-import { critFactor, fuseSeconds } from '@/shared/domain/model';
-import type { SheetStats } from '@/shared/domain/gear';
-import type { HeroRecord } from '@/shared/lib/storage';
+import { critFactor, fuseSeconds } from './model';
+import type { SheetStats } from './gear';
+import type { HeroRecord } from './shims/storage';
 
 /** The hero's current geared sheet — the one stat block the user types in. */
 export function heroGearedSheet(hero: HeroRecord): SheetStats {

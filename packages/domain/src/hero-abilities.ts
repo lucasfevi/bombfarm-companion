@@ -1,4 +1,4 @@
-import { ABILITIES, type AbilityDef, isSheetAbility } from '@/shared/domain/model';
+import { ABILITIES, type AbilityDef, isSheetAbility } from './model';
 
 /** Catalog ids assigned to this hero (includes level 0 slots). */
 export function heroAbilityIds(abilities: Record<string, number>): string[] {
