@@ -404,8 +404,7 @@ export default tseslint.config(
       ],
     },
   },
-  // W7 max-lines allowlist (MOD-29 error-flip residual, reviewed — see
-  // .specs/features/modular-architecture/lint-error-inventory-w7.md):
+  // W7 max-lines allowlist (MOD-29 error-flip residual, reviewed historically):
   //
   // src/tests/** — Vitest suites for gear/import-save/model/stat-breakdown/storage-i18n
   // legitimately run long (comprehensive fixture-driven assertions covering every branch

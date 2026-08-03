@@ -19,6 +19,7 @@ These are **current truth**. Do not invent planning/spec paths in this repo.
 | [validation.md](validation.md) | Author ≠ validator |
 | [git-commits.md](git-commits.md) | Atomic commits by default; commitlint |
 | [hard-truths.md](hard-truths.md) | How to propose / accept new hard truths |
+| [typescript-planner-origin.md](typescript-planner-origin.md) | Documented TS/ESLint exception for `@bombfarm/domain` + `@bombfarm/ui` |
 
 ## Web-only
 

@@ -9,10 +9,7 @@ import { importedRoster, seedLocalStorage, selectSavedHero } from '../fixtures/s
 import { installCollector, readPerfApi } from './collect-commits'
 import { scenarios, ensurePlannerTab } from './scenarios'
 
-const SELECTOR_EVIDENCE = path.join(
-  process.cwd(),
-  '.specs/features/modular-architecture-w1-guardrails/t4-selector-evidence.json',
-)
+const SELECTOR_EVIDENCE = path.join(process.cwd(), 'e2e/perf/out/t4-selector-evidence.json')
 
 test.describe.configure({ mode: 'serial' })
 

@@ -1,0 +1,8 @@
+---
+description: Playwright e2e + visual hard truth
+alwaysApply: true
+---
+
+# E2E visual
+
+**Canonical hard truth:** [`docs/e2e-visual.md`](../../docs/e2e-visual.md)

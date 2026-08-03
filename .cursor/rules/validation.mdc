@@ -1,0 +1,10 @@
+---
+description: Author ≠ validator hard truth
+alwaysApply: true
+---
+
+# Validation
+
+**Canonical hard truth:** [`docs/validation.md`](../../docs/validation.md)
+
+Author ≠ validator. Fresh validator subagent; evidence-or-zero; do not self-PASS.

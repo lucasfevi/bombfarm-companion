@@ -1,0 +1,10 @@
+---
+description: Atomic Conventional Commits hard truth
+alwaysApply: true
+---
+
+# Git commits
+
+**Canonical hard truth:** [`docs/git-commits.md`](../../docs/git-commits.md)
+
+When the user asks to commit: **atomic commits by default** — one logical change per commit, Conventional Commits. Do not commit unless asked.

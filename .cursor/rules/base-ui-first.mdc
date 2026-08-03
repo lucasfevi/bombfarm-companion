@@ -1,0 +1,8 @@
+---
+description: Prefer Base UI hard truth
+alwaysApply: true
+---
+
+# Base UI first
+
+**Canonical hard truth:** [`docs/base-ui-first.md`](../../docs/base-ui-first.md)

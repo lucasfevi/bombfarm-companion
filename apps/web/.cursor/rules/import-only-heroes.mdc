@@ -1,0 +1,8 @@
+---
+description: Import-only roster hard truth
+alwaysApply: true
+---
+
+# Import-only heroes
+
+**Canonical hard truth:** [`docs/import-only-heroes.md`](../../docs/import-only-heroes.md)

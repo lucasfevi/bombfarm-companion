@@ -1,0 +1,8 @@
+---
+description: localStorage compat hard truth
+alwaysApply: true
+---
+
+# Local data compat
+
+**Canonical hard truth:** [`docs/local-data-compat.md`](../../docs/local-data-compat.md)

@@ -1,0 +1,8 @@
+---
+description: React performance hard truth
+alwaysApply: true
+---
+
+# React performance
+
+**Canonical hard truth:** [`docs/react-performance.md`](../../docs/react-performance.md)
