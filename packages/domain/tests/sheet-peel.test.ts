@@ -6,14 +6,14 @@
  * recover a real spent-point vector for the sum-identity check (AC-10).
  */
 import { describe, expect, it } from 'vitest';
-import { composeSheetFromBirth, nakedFromBirth } from '@/shared/domain/birth-sheet';
-import { peelSheetSources, type SourceLines } from '@/shared/domain/sheet-peel';
-import type { TreeSheetTotals } from '@/shared/domain/birth-sheet';
-import { attackPointGain, POINT_GAIN } from '@/shared/domain/model';
-import { starsMult, sumGearBonuses } from '@/shared/domain/gear';
-import { SHEET_KEYS, type SheetKey } from '@/shared/domain/planner-constants';
-import type { SaveHeroSheet } from '@/tests/helpers/sheet-math-fixtures';
-import { extractHero, loadFixtureJson, treeTotalsFromSave } from '@/tests/helpers/sheet-math-fixtures';
+import { composeSheetFromBirth, nakedFromBirth } from '@bombfarm/domain/birth-sheet';
+import { peelSheetSources, type SourceLines } from '@bombfarm/domain/sheet-peel';
+import type { TreeSheetTotals } from '@bombfarm/domain/birth-sheet';
+import { attackPointGain, POINT_GAIN } from '@bombfarm/domain/model';
+import { starsMult, sumGearBonuses } from '@bombfarm/domain/gear';
+import { SHEET_KEYS, type SheetKey } from '@bombfarm/domain/planner-constants';
+import type { SaveHeroSheet } from './helpers/sheet-math-fixtures';
+import { extractHero, loadFixtureJson, treeTotalsFromSave } from './helpers/sheet-math-fixtures';
 
 function poolFactor(percent: number): number {
   return 1 + Math.max(0, percent);

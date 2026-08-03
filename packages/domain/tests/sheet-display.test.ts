@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { sheetsClose } from '@/shared/domain/sheet-display';
-import type { SheetStats } from '@/shared/domain/gear';
+import { sheetsClose } from '@bombfarm/domain/sheet-display';
+import type { SheetStats } from '@bombfarm/domain/gear';
 
 const sample = (): SheetStats => ({
   attack: 100.14,

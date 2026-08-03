@@ -15,7 +15,7 @@
 // Tolerances are loose (±0.5 abs or ±0.5% rel) because the naked inputs below are
 // only known to the precision the game's UI displays (1 decimal / whole numbers).
 import { describe, expect, it } from 'vitest';
-import { applyGear, emptyLoadout, type EquippedItem, type Loadout, type SheetStats } from '@/shared/domain/gear';
+import { applyGear, emptyLoadout, type EquippedItem, type Loadout, type SheetStats } from '@bombfarm/domain/gear';
 
 function closeEnough(actual: number, expected: number) {
   const tol = Math.max(0.5, Math.abs(expected) * 0.005);

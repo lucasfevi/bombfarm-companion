@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react';
-import { GlossedText } from '@/shared/design-system';
+import { GlossedText } from './index';
 
 const meta = {
   title: 'UI/GlossedText',

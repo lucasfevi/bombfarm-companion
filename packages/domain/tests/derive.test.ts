@@ -1,11 +1,11 @@
 import { describe, expect, it } from 'vitest';
-import { abilityMods, predictHitDamage, sustainedDps, type Context } from '@/shared/domain/model';
-import { emptySheet, emptySheetOther, type SheetStats } from '@/shared/domain/gear';
-import { computeCombatMults, derive, stackTeamBonusMult, TEAM_MULT_BONUS_CAP, type DeriveInput } from '@/shared/domain/derive';
-import type { TreeSheetTotals } from '@/shared/domain/birth-sheet';
-import { ZERO_PTS } from '@/shared/domain/planner-constants';
-import { zeroTeamBuffs } from '@/shared/domain/team-buffs';
-import { extractHero, loadFixtureJson, treeTotalsFromSave } from '@/tests/helpers/sheet-math-fixtures';
+import { abilityMods, predictHitDamage, sustainedDps, type Context } from '@bombfarm/domain/model';
+import { emptySheet, emptySheetOther, type SheetStats } from '@bombfarm/domain/gear';
+import { computeCombatMults, derive, stackTeamBonusMult, TEAM_MULT_BONUS_CAP, type DeriveInput } from '@bombfarm/domain/derive';
+import type { TreeSheetTotals } from '@bombfarm/domain/birth-sheet';
+import { ZERO_PTS } from '@bombfarm/domain/planner-constants';
+import { zeroTeamBuffs } from '@bombfarm/domain/team-buffs';
+import { extractHero, loadFixtureJson, treeTotalsFromSave } from './helpers/sheet-math-fixtures';
 
 const baseCtx = (): Context => ({
   restSeconds: 12 * 60,

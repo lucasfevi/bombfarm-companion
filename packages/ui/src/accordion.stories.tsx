@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react';
 import type { Meta, StoryObj } from '@storybook/react';
-import { Accordion } from '@/shared/design-system';
+import { Accordion } from './index';
 
 const meta = {
   title: 'UI/Accordion',

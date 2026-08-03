@@ -15,17 +15,17 @@ import {
   nakedFromBirth,
   type BirthStats,
   type TreeSheetTotals,
-} from '@/shared/domain/birth-sheet';
-import { attackPointGain, POINT_GAIN } from '@/shared/domain/model';
-import { emptyLoadout, emptySheetOther, starsMult, sumGearBonuses, type SheetOtherPct } from '@/shared/domain/gear';
-import { SHEET_KEYS, ZERO_PTS, type SheetKey } from '@/shared/domain/planner-constants';
-import type { SaveHeroSheet } from '@/tests/helpers/sheet-math-fixtures';
+} from '@bombfarm/domain/birth-sheet';
+import { attackPointGain, POINT_GAIN } from '@bombfarm/domain/model';
+import { emptyLoadout, emptySheetOther, starsMult, sumGearBonuses, type SheetOtherPct } from '@bombfarm/domain/gear';
+import { SHEET_KEYS, ZERO_PTS, type SheetKey } from '@bombfarm/domain/planner-constants';
+import type { SaveHeroSheet } from './helpers/sheet-math-fixtures';
 import {
   birthFromSaveUnits,
   extractHero,
   loadFixtureJson,
   treeTotalsFromSave,
-} from '@/tests/helpers/sheet-math-fixtures';
+} from './helpers/sheet-math-fixtures';
 
 const WAVE0_ZERO_TREE: TreeSheetTotals = {
   danoStatic: 1,

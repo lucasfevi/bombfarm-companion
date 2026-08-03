@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/react';
 import { BiCoffee } from 'react-icons/bi';
-import { Button } from '@/shared/design-system';
+import { Button } from './index';
 
 const meta = {
   title: 'UI/Button',

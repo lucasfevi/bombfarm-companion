@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react';
-import { Bar } from '@/shared/design-system';
+import { Bar } from './index';
 
 const meta = {
   title: 'UI/Bar',

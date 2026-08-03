@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react';
 import type { Meta, StoryObj } from '@storybook/react';
-import { Collapsible } from '@/shared/design-system';
+import { Collapsible } from './index';
 
 const meta = {
   title: 'UI/Collapsible',

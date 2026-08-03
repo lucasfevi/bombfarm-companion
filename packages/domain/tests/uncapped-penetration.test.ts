@@ -14,12 +14,12 @@ import {
   STAT_CAPS,
   type Context,
   type HeroSheet,
-} from '@/shared/domain/model';
-import { applyGear, applyPoints, emptySheetOther, reverseSheet } from '@/shared/domain/gear';
-import { computeCombatMults, derive } from '@/shared/domain/derive';
-import { ZERO_PTS } from '@/shared/domain/planner-constants';
-import { zeroTeamBuffs } from '@/shared/domain/team-buffs';
-import { extractHero, loadFixtureJson, treeTotalsFromSave } from '@/tests/helpers/sheet-math-fixtures';
+} from '@bombfarm/domain/model';
+import { applyGear, applyPoints, emptySheetOther, reverseSheet } from '@bombfarm/domain/gear';
+import { computeCombatMults, derive } from '@bombfarm/domain/derive';
+import { ZERO_PTS } from '@bombfarm/domain/planner-constants';
+import { zeroTeamBuffs } from '@bombfarm/domain/team-buffs';
+import { extractHero, loadFixtureJson, treeTotalsFromSave } from './helpers/sheet-math-fixtures';
 
 describe('uncapped penetration (BSPW4-09)', () => {
   it('AC-53/AC-54/AC-55: sheet pen 141.23 survives every stage unclamped, and ranks at 0', () => {

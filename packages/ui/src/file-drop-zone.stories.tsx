@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react';
-import { FileDropZone } from '@/shared/design-system';
+import { FileDropZone } from './index';
 
 const meta = {
   title: 'UI/FileDropZone',

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { ABILITY_LEVEL_MAX, ABILITY_QUOTA, abilityPointBudget } from '@/shared/domain/model';
+import { ABILITY_LEVEL_MAX, ABILITY_QUOTA, abilityPointBudget } from '@bombfarm/domain/model';
 import { loadFixtureJson } from './helpers/sheet-math-fixtures';
 
 const RARITY_BY_IDX = ['Comum', 'Incomum', 'Raro', 'Épico', 'Lendária', 'Mítico'] as const;

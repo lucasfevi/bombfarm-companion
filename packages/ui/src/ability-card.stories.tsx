@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react';
-import { AbilityCard } from '@/shared/design-system';
+import { AbilityCard } from './index';
 
 const meta = {
   title: 'UI/AbilityCard',

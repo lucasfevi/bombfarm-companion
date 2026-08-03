@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import type { Meta, StoryObj } from '@storybook/react';
-import { Fields, Select } from '@/shared/design-system';
+import { Fields, Select } from './index';
 
 const meta = {
   title: 'UI/Select',

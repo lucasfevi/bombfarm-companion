@@ -5,14 +5,14 @@
 import { describe, expect, it } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
-import { starsMult } from '@/shared/domain/gear';
+import { starsMult } from '@bombfarm/domain/gear';
 import {
   ABILITIES,
   COMBAT_ABILITIES,
   SHEET_ABILITIES,
   abilityMods,
   isSheetAbility,
-} from '@/shared/domain/model';
+} from '@bombfarm/domain/model';
 import { loadFixtureJson } from './helpers/sheet-math-fixtures';
 
 const root = resolve(__dirname, '..');

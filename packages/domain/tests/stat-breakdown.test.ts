@@ -1,10 +1,10 @@
 import { describe, expect, it } from 'vitest';
-import { abilityMods, levelPowerMult, mitigationFactor, type Context } from '@/shared/domain/model';
-import { emptySheetOther, starsMult, type SheetOtherPct, type SheetStats } from '@/shared/domain/gear';
-import { computeCombatMults, derive } from '@/shared/domain/derive';
-import type { TreeSheetTotals } from '@/shared/domain/birth-sheet';
-import { ZERO_PTS, SHEET_DISPLAY_KEYS, type SheetKey } from '@/shared/domain/planner-constants';
-import { zeroTeamBuffs } from '@/shared/domain/team-buffs';
+import { abilityMods, levelPowerMult, mitigationFactor, type Context } from '@bombfarm/domain/model';
+import { emptySheetOther, starsMult, type SheetOtherPct, type SheetStats } from '@bombfarm/domain/gear';
+import { computeCombatMults, derive } from '@bombfarm/domain/derive';
+import type { TreeSheetTotals } from '@bombfarm/domain/birth-sheet';
+import { ZERO_PTS, SHEET_DISPLAY_KEYS, type SheetKey } from '@bombfarm/domain/planner-constants';
+import { zeroTeamBuffs } from '@bombfarm/domain/team-buffs';
 import {
   BREAKDOWN_DERIVED_IDS,
   buildStatBreakdown,
@@ -13,7 +13,7 @@ import {
   type LedgerSource,
   type PipelineFacts,
   type StatBreakdown,
-} from '@/shared/domain/stat-breakdown';
+} from '@bombfarm/domain/stat-breakdown';
 
 const TOL = 0.05;
 

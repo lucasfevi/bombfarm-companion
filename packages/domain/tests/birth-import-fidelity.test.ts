@@ -14,14 +14,14 @@
  * BSP-01 real-file reject fixture in import-save.test.ts) — never here.
  */
 import { describe, expect, it } from 'vitest';
-import catalog from '@/shared/domain/data/catalog.json';
-import { parseSaveFile } from '@/shared/domain/import-save';
-import { composeSheetFromBirth, type TreeSheetTotals } from '@/shared/domain/birth-sheet';
-import { birthFromSave, saveSheetUnits, treeTotalsFromSave } from '@/shared/domain/save-units';
-import { abilityMods } from '@/shared/domain/model';
-import { derive } from '@/shared/domain/derive';
-import { emptySheetOther, scaledValores, type SheetOtherPct } from '@/shared/domain/gear';
-import { SHEET_KEYS } from '@/shared/domain/planner-constants';
+import catalog from '@bombfarm/domain/data/catalog.json';
+import { parseSaveFile } from '@bombfarm/domain/import-save';
+import { composeSheetFromBirth, type TreeSheetTotals } from '@bombfarm/domain/birth-sheet';
+import { birthFromSave, saveSheetUnits, treeTotalsFromSave } from '@bombfarm/domain/save-units';
+import { abilityMods } from '@bombfarm/domain/model';
+import { derive } from '@bombfarm/domain/derive';
+import { emptySheetOther, scaledValores, type SheetOtherPct } from '@bombfarm/domain/gear';
+import { SHEET_KEYS } from '@bombfarm/domain/planner-constants';
 import { loadFixtureJson } from './helpers/sheet-math-fixtures';
 
 /** DEC-01 — the 7 birth-capable fixtures, and only these. */

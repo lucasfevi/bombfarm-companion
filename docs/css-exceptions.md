@@ -6,7 +6,7 @@
 
 `globals.css` may contain only `@theme` / base element styles + the exceptions below. Do not add new named widget/layout CSS.
 
-`src/app/globals.css` is **267** lines (`wc -l` / `(Get-Content src\app\globals.css).Count`) after `tailwind-finalize` + the `.explain-summary::before` retirement (`ui-accordion`) (down from ~1949 pre-migration). Re-verify with a line count when changing exceptions.
+`apps/web/src/app/globals.css` is **267** lines (`wc -l` / `(Get-Content src\app\globals.css).Count`) after `tailwind-finalize` + the `.explain-summary::before` retirement (`ui-accordion`) (down from ~1949 pre-migration). Re-verify with a line count when changing exceptions.
 
 ## Base element styling (not an exception)
 

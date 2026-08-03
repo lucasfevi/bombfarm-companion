@@ -1,8 +1,8 @@
 import { readdirSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { unmodelledTreeFindings } from '@/shared/domain/tree-guards';
-import { loadFixtureJson } from '@/tests/helpers/sheet-math-fixtures';
+import { unmodelledTreeFindings } from '@bombfarm/domain/tree-guards';
+import { loadFixtureJson } from './helpers/sheet-math-fixtures';
 
 const FIXTURES_DIR = join(__dirname, 'fixtures', 'sheet-math');
 

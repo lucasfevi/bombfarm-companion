@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import type { Meta, StoryObj } from '@storybook/react';
-import { Stepper } from '@/shared/design-system';
+import { Stepper } from './index';
 
 const meta = {
   title: 'UI/Stepper',

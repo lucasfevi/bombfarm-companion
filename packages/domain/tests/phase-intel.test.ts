@@ -3,7 +3,7 @@ import {
   computePhaseIntelGlobal,
   estimateClearSeconds,
   penGap,
-} from '@/shared/domain/phase-intel';
+} from '@bombfarm/domain/phase-intel';
 
 describe('phase-intel', () => {
   it('computes phase 1 globals from wiki snapshot', () => {

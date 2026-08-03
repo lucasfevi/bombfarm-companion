@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import type { Meta, StoryObj } from '@storybook/react';
-import { Fields, Switch } from '@/shared/design-system';
+import { Fields, Switch } from './index';
 
 const meta = {
   title: 'UI/Switch',

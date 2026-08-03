@@ -1,16 +1,16 @@
 import { describe, expect, it, beforeEach } from 'vitest';
-import { findGateCandidate, type Context } from '@/shared/domain/model';
-import { applyGear, emptyLoadout, type Loadout, type SheetStats } from '@/shared/domain/gear';
-import { ZERO_PTS, GATES } from '@/shared/domain/planner-constants';
-import { zeroTeamBuffs } from '@/shared/domain/team-buffs';
-import { PROPS, propHp, hitsToKill, oneshotGapPct } from '@/shared/domain/phases';
-import { gateDamage } from '@/shared/domain/model';
+import { findGateCandidate, type Context } from '@bombfarm/domain/model';
+import { applyGear, emptyLoadout, type Loadout, type SheetStats } from '@bombfarm/domain/gear';
+import { ZERO_PTS, GATES } from '@bombfarm/domain/planner-constants';
+import { zeroTeamBuffs } from '@bombfarm/domain/team-buffs';
+import { PROPS, propHp, hitsToKill, oneshotGapPct } from '@bombfarm/domain/phases';
+import { gateDamage } from '@bombfarm/domain/model';
 import {
   computeAdvisorPipeline,
   energySwitchPointCallCount,
   resetEnergySwitchPointCallCount,
   type AdvisorPipelineInput,
-} from '@/shared/domain/advisor-pipeline';
+} from '@bombfarm/domain/advisor-pipeline';
 
 const sampleNaked = (): SheetStats => ({
   attack: 200,

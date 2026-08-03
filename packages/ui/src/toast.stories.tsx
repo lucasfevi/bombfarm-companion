@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react';
-import { Toast } from '@/shared/design-system';
+import { Toast } from './index';
 
 const meta = {
   title: 'UI/Toast',

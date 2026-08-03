@@ -7,7 +7,7 @@ import {
   weightedAvgPropHp,
   BOSS_HP_MULT,
   PROPS,
-} from '@/shared/domain/phases';
+} from '@bombfarm/domain/phases';
 
 describe('phaseLine', () => {
   it('clamps phase into 1..600', () => {

@@ -2,16 +2,16 @@
  * BSPW4-03 (AC-19…AC-27) — integer spent-point recovery from the sheet.
  */
 import { describe, expect, it } from 'vitest';
-import { composeSheetFromBirth, type BirthStats, type TreeSheetTotals } from '@/shared/domain/birth-sheet';
+import { composeSheetFromBirth, type BirthStats, type TreeSheetTotals } from '@bombfarm/domain/birth-sheet';
 import {
   inferSpentPoints,
   POINT_INFERENCE_EPS,
   type InferSpentPointsInput,
-} from '@/shared/domain/point-inference';
-import { STAT_CAPS } from '@/shared/domain/model';
-import { emptyLoadout, emptySheetOther, type Loadout, type SheetOtherPct } from '@/shared/domain/gear';
-import { SHEET_KEYS, ZERO_PTS, type SheetKey } from '@/shared/domain/planner-constants';
-import { extractHero, loadFixtureJson, treeTotalsFromSave } from '@/tests/helpers/sheet-math-fixtures';
+} from '@bombfarm/domain/point-inference';
+import { STAT_CAPS } from '@bombfarm/domain/model';
+import { emptyLoadout, emptySheetOther, type Loadout, type SheetOtherPct } from '@bombfarm/domain/gear';
+import { SHEET_KEYS, ZERO_PTS, type SheetKey } from '@bombfarm/domain/planner-constants';
+import { extractHero, loadFixtureJson, treeTotalsFromSave } from './helpers/sheet-math-fixtures';
 
 const WAVE0_ZERO_TREE: TreeSheetTotals = {
   danoStatic: 1,

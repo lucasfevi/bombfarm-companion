@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react';
-import { Fields, Num, Select } from '@/shared/design-system';
+import { Fields, Num, Select } from './index';
 
 const meta = {
   title: 'UI/Fields',

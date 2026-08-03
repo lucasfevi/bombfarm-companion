@@ -2,15 +2,15 @@
  * Sheet stage peel — Birth + Δ columns sum to Total (= composeSheetFromBirth).
  */
 import { describe, expect, it } from 'vitest';
-import { composeSheetFromBirth, type TreeSheetTotals } from '@/shared/domain/birth-sheet';
-import { peelSheetStages } from '@/shared/domain/sheet-stages';
-import { SHEET_KEYS } from '@/shared/domain/planner-constants';
-import type { SaveHeroSheet } from '@/tests/helpers/sheet-math-fixtures';
-import { extractHero, loadFixtureJson, treeTotalsFromSave } from '@/tests/helpers/sheet-math-fixtures';
-import { nakedFromBirth } from '@/shared/domain/birth-sheet';
-import { attackPointGain, POINT_GAIN } from '@/shared/domain/model';
-import { starsMult, sumGearBonuses } from '@/shared/domain/gear';
-import type { SheetKey } from '@/shared/domain/planner-constants';
+import { composeSheetFromBirth, type TreeSheetTotals } from '@bombfarm/domain/birth-sheet';
+import { peelSheetStages } from '@bombfarm/domain/sheet-stages';
+import { SHEET_KEYS } from '@bombfarm/domain/planner-constants';
+import type { SaveHeroSheet } from './helpers/sheet-math-fixtures';
+import { extractHero, loadFixtureJson, treeTotalsFromSave } from './helpers/sheet-math-fixtures';
+import { nakedFromBirth } from '@bombfarm/domain/birth-sheet';
+import { attackPointGain, POINT_GAIN } from '@bombfarm/domain/model';
+import { starsMult, sumGearBonuses } from '@bombfarm/domain/gear';
+import type { SheetKey } from '@bombfarm/domain/planner-constants';
 
 const SUM_TOL = 1e-6;
 

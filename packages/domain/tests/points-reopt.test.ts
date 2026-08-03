@@ -10,18 +10,18 @@ import {
   type Context,
   type EffectiveDeltas,
   type HeroSheet,
-} from '@/shared/domain/model';
-import { computeCombatMults, derive } from '@/shared/domain/derive';
+} from '@bombfarm/domain/model';
+import { computeCombatMults, derive } from '@bombfarm/domain/derive';
 import {
   findGateCandidate,
   optimizeBuild,
   REOPT_FULL_MAX_EVALUATIONS,
   REOPT_GATE_MAX_EVALUATIONS,
   REOPT_KEYS,
-} from '@/shared/domain/points-reopt';
-import { SHEET_KEYS, ZERO_PTS, type SheetKey } from '@/shared/domain/planner-constants';
-import { zeroTeamBuffs } from '@/shared/domain/team-buffs';
-import { extractHero, loadFixtureJson, treeTotalsFromSave } from '@/tests/helpers/sheet-math-fixtures';
+} from '@bombfarm/domain/points-reopt';
+import { SHEET_KEYS, ZERO_PTS, type SheetKey } from '@bombfarm/domain/planner-constants';
+import { zeroTeamBuffs } from '@bombfarm/domain/team-buffs';
+import { extractHero, loadFixtureJson, treeTotalsFromSave } from './helpers/sheet-math-fixtures';
 
 const FIXTURES = [
   { file: 'bellatrix-02-pts-each-1.json', names: [

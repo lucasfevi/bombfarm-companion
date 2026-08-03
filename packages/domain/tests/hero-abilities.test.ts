@@ -6,7 +6,7 @@ import {
   heroAbilityIds,
   heroAbilitySlotsUsed,
   resetHeroAbilities,
-} from '@/shared/domain/hero-abilities';
+} from '@bombfarm/domain/hero-abilities';
 
 describe('hero-abilities', () => {
   it('keeps level-0 slots in the pool', () => {

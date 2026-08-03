@@ -6,7 +6,7 @@ import {
   FARM_CYCLE_MODEL,
   FARM_WALK_DELAY_SEC,
   isTargetPropUnset,
-} from '@/shared/domain/farm-context';
+} from '@bombfarm/domain/farm-context';
 import {
   formatPhaseLabel,
   firstPhaseForAto,
@@ -15,7 +15,7 @@ import {
   phaseMapCoord,
   phaseMapDisplayName,
   phaseSubIndex,
-} from '@/shared/domain/phase-wiki';
+} from '@bombfarm/domain/phase-wiki';
 
 describe('farm-context', () => {
   it('defaults farm phase to 1 when unset', () => {

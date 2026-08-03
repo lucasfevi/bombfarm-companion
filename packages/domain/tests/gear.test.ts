@@ -27,7 +27,7 @@ import {
   type EquippedItem,
   type GearBonuses,
   type SheetOtherPct,
-} from '@/shared/domain/gear';
+} from '@bombfarm/domain/gear';
 import {
   BASE_ROLLS,
   POINT_GAIN,
@@ -35,8 +35,8 @@ import {
   attackPointGain,
   levelPowerMult,
   nakedFromBirth,
-} from '@/shared/domain/model';
-import { SHEET_KEYS } from '@/shared/domain/planner-constants';
+} from '@bombfarm/domain/model';
+import { SHEET_KEYS } from '@bombfarm/domain/planner-constants';
 
 const naked = (): SheetStats => ({
   attack: 200,

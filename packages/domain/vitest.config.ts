@@ -11,10 +11,7 @@ export default defineConfig({
   },
   resolve: {
     alias: {
-      '@/shared/domain': path.resolve(root, './src'),
-      '@/shared/lib/storage': path.resolve(root, './src/shims/storage.ts'),
-      '@/shared/i18n': path.resolve(root, './src/shims/i18n.ts'),
-      '@/tests': path.resolve(root, './tests'),
+      '@bombfarm/domain': path.resolve(root, './src'),
     },
   },
 });

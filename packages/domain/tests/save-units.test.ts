@@ -5,7 +5,7 @@
  * both sides (design.md's stated risk).
  */
 import { describe, expect, it } from 'vitest';
-import { birthFromSave, hasUsableBirthStats, saveSheetUnits, treeTotalsFromSave } from '@/shared/domain/save-units';
+import { birthFromSave, hasUsableBirthStats, saveSheetUnits, treeTotalsFromSave } from '@bombfarm/domain/save-units';
 
 describe('saveSheetUnits / birthFromSave (AC-08 — hand-computed literals)', () => {
   it('dmg / energia / speed convert 1:1', () => {

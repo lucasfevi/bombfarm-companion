@@ -24,10 +24,6 @@ const config: StorybookConfig = {
       ...webpackConfig.resolve.alias,
       '@bombfarm/ui': uiSrc,
       '@bombfarm/domain': path.resolve(webRoot, '../../../packages/domain/src'),
-      '@/shared/design-system': uiSrc,
-      '@/shared/lib/cn': path.join(uiSrc, 'cn.ts'),
-      '@/shared/lib/escape-reg-exp': path.join(uiSrc, 'escape-reg-exp.ts'),
-      '@/shared/lib/mask-reveal': path.join(uiSrc, 'mask-reveal.ts'),
     };
     return webpackConfig;
   },

@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react';
-import { Dialog } from '@/shared/design-system';
+import { Dialog } from './index';
 
 const meta = {
   title: 'UI/Dialog',

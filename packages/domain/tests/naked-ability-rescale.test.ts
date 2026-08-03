@@ -6,8 +6,8 @@ import {
   rescaleNakedCritDmg,
   rescaleNakedPen,
   type SheetStats,
-} from '@/shared/domain/gear';
-import { abilityMods } from '@/shared/domain/model';
+} from '@bombfarm/domain/gear';
+import { abilityMods } from '@bombfarm/domain/model';
 
 const naked = (): SheetStats => ({
   attack: 200,

@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react';
-import { Chip } from '@/shared/design-system';
+import { Chip } from './index';
 
 const meta = {
   title: 'UI/Chip',

@@ -9,7 +9,7 @@ Policy: named layout/widget/overlay CSS migrates into **Tailwind v4 utilities + 
 
 1. Prefer Tailwind v4 utilities for layout, spacing, typography, and color (theme tokens).
 2. Design tokens live in `@theme` (`--color-*`, `--font-*`, …). Use theme utilities — no hardcoded palette except documented brand exceptions (Ko-fi coffee hex). Existing named CSS may keep `var(--bg)` via `:root` aliases until deleted.
-3. Prefer `@base-ui/react` + utilities for simple, single-state elements. Use `cva` for **multi-variant primitives** in `src/shared/design-system/*` (typed `variants` + `defaultVariants`); compose final class strings through a `cn()` helper backed by `tailwind-merge`. Do not scatter cva calls across leaf feature components — keep variant definitions in the primitive. See [`design-system.md`](design-system.md).
+3. Prefer `@base-ui/react` + utilities for simple, single-state elements. Use `cva` for **multi-variant primitives** in `packages/ui/src/*` (typed `variants` + `defaultVariants`); compose final class strings through a `cn()` helper backed by `tailwind-merge`. Do not scatter cva calls across leaf feature components — keep variant definitions in the primitive. See [`design-system.md`](design-system.md).
 4. **Migrate** when the class is mostly flex/grid/gap/padding/typography/simple hover-focus-disabled. **Keep (temporary or permanent)** when it needs complex `::before`/`::after`, scrollbar pseudos, multi-layer `color-mix` walls, or keyframes not yet in `@theme`.
 5. **Collision gate (hard):** Until the named CSS is renamed or removed, do **not** adopt Tailwind utilities that collide with live short class names (historically `.col`, `.fill`, …). Audit before adopting.
 6. Delete CSS only after grep shows zero references.

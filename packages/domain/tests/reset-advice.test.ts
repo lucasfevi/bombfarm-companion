@@ -3,7 +3,7 @@ import {
   RESET_GATE_EPSILON_PCT,
   RESET_RECOMMEND_DPS_PCT,
   shouldRecommendReset,
-} from '@/shared/domain/reset-advice';
+} from '@bombfarm/domain/reset-advice';
 
 describe('shouldRecommendReset (BSPW4-11)', () => {
   it('exports the named constants (ASM-04)', () => {

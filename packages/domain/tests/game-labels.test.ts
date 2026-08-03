@@ -13,13 +13,13 @@ import {
   slotLabel,
   statLabel,
   teamBuffLabel,
-} from '@/shared/domain/game-labels';
-import { ABILITIES, HOUSES, STAT_LABELS, type RarityKey, type StatKey } from '@/shared/domain/model';
-import { ITEM_RARITIES, SLOTS, type Slot } from '@/shared/domain/gear';
-import { TEAM_BUFF_ABILITY_IDS, TEAM_BUFF_FIELDS } from '@/shared/domain/team-buffs';
-import { PROPS } from '@/shared/domain/phases';
-import { RARITIES } from '@/shared/domain/planner-constants';
-import catalog from '@/shared/domain/data/catalog.json';
+} from '@bombfarm/domain/game-labels';
+import { ABILITIES, HOUSES, STAT_LABELS, type RarityKey, type StatKey } from '@bombfarm/domain/model';
+import { ITEM_RARITIES, SLOTS, type Slot } from '@bombfarm/domain/gear';
+import { TEAM_BUFF_ABILITY_IDS, TEAM_BUFF_FIELDS } from '@bombfarm/domain/team-buffs';
+import { PROPS } from '@bombfarm/domain/phases';
+import { RARITIES } from '@bombfarm/domain/planner-constants';
+import catalog from '@bombfarm/domain/data/catalog.json';
 
 describe('abilityName / abilityEffectText', () => {
   it('covers every ABILITIES id for pt and en', () => {

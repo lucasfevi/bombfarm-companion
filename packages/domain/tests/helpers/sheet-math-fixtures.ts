@@ -4,22 +4,22 @@
  */
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import catalog from '@/shared/domain/data/catalog.json';
+import catalog from '@bombfarm/domain/data/catalog.json';
 import {
   emptyLoadout,
   emptySheetOther,
   type Loadout,
   type SheetOtherPct,
   type SheetStats,
-} from '@/shared/domain/gear';
-import { ABILITIES, abilityMods, type RarityKey } from '@/shared/domain/model';
-import type { BirthStats } from '@/shared/domain/birth-sheet';
-import { SHEET_KEYS, type SheetKey } from '@/shared/domain/planner-constants';
+} from '@bombfarm/domain/gear';
+import { ABILITIES, abilityMods, type RarityKey } from '@bombfarm/domain/model';
+import type { BirthStats } from '@bombfarm/domain/birth-sheet';
+import { SHEET_KEYS, type SheetKey } from '@bombfarm/domain/planner-constants';
 import {
   birthFromSave,
   saveSheetUnits,
   treeTotalsFromSave as treeTotalsFromSaveUnits,
-} from '@/shared/domain/save-units';
+} from '@bombfarm/domain/save-units';
 import { expect } from 'vitest';
 
 const FIXTURES_DIR = join(__dirname, '..', 'fixtures', 'sheet-math');

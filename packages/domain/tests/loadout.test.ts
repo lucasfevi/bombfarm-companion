@@ -4,8 +4,8 @@ import {
   type EquippedItem,
   type Loadout,
   type SheetStats,
-} from '@/shared/domain/gear';
-import { gearedAfterLoadoutChange, loadoutsEqual, patchSlot } from '@/shared/domain/loadout';
+} from '@bombfarm/domain/gear';
+import { gearedAfterLoadoutChange, loadoutsEqual, patchSlot } from '@bombfarm/domain/loadout';
 
 function item(defId: string, rarityIdx: number, level: number, upgrade: number): EquippedItem {
   return { defId, rarityIdx, level, upgrade };

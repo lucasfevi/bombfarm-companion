@@ -1,10 +1,10 @@
 import { describe, expect, it } from 'vitest';
-import { STRINGS, sub } from '@/shared/i18n';
+import { STRINGS, sub } from '../src/shims/i18n';
 import {
   computePlannerTabStatuses,
   tabStatus,
   type PlannerTabStatusInput,
-} from '@/shared/domain/planner-tab-status';
+} from '@bombfarm/domain/planner-tab-status';
 
 const t = STRINGS.en;
 

@@ -26,7 +26,7 @@ import {
   type Context,
   type AbilityMods,
   type EffectiveDeltas,
-} from '@/shared/domain/model';
+} from '@bombfarm/domain/model';
 
 const baseCtx = (): Context => ({
   restSeconds: 12 * 60,

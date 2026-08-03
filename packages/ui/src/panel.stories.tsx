@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react';
-import { Panel } from '@/shared/design-system';
+import { Panel } from './index';
 
 const meta = {
   title: 'UI/Panel',

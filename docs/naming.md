@@ -9,7 +9,7 @@ Canonical reference for modular-architecture naming (MOD-23..MOD-27). Written ag
 
 ### MOD-23 — kebab-case filenames
 
-Every file under `src/` uses kebab-case basenames (including `src/shared/design-system/*`).
+Every file under `src/` uses kebab-case basenames (including `packages/ui/src/*`).
 
 | | |
 | --- | --- |

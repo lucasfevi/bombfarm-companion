@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/react';
 import { useState } from 'react';
-import { DataTable, type SortDir } from '@/shared/design-system';
+import { DataTable, type SortDir } from './index';
 
 type DemoSortKey = 'name' | 'level' | 'dps';
 

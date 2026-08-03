@@ -3,14 +3,14 @@
 **Status:** reference (durable) · **Feature:** `design-system`
 
 The planner's visual language is encoded as a small set of typed primitives under
-[`src/shared/design-system/`](../src/shared/design-system). Primitives wrap `@base-ui/react` where an
+[`packages/ui/src/`](../packages/ui/src). Primitives wrap `@base-ui/react` where an
 interactive equivalent exists and dress it via [`class-variance-authority`](https://cva.style)
 recipes; conflicting utilities are resolved by `cn()` (`clsx` + `tailwind-merge`).
 
 ## Tokens
 
 Design tokens are the single source of truth for color/type/spacing and live in the `@theme`
-block of [`src/app/globals.css`](../src/app/globals.css). The planner is **dark-only at runtime**:
+block of [`apps/web/src/app/globals.css`](../apps/web/src/app/globals.css). The planner is **dark-only at runtime**:
 `@theme` holds the dark `--color-*` palette directly (no `prefers-color-scheme` toggle). Primitives
 reference tokens **only** through Tailwind theme utilities (`bg-surface`, `text-muted`, `border-line`, …)
 or `color-mix(... var(--token) ...)`
@@ -38,7 +38,7 @@ sort chrome). Do not hand-roll `<table>` markup in feature code.
 
 ## Primitive inventory
 
-All exported from the barrel [`src/shared/design-system/index.ts`](../src/shared/design-system/index.ts).
+All exported from the barrel [`packages/ui/src/index.ts`](../packages/ui/src/index.ts).
 
 | Primitive | Base UI wrap | Variants / props | Recipe |
 | --- | --- | --- | --- |
@@ -66,9 +66,9 @@ All exported from the barrel [`src/shared/design-system/index.ts`](../src/shared
 | `GlossedText` | `<span>` | renders `template` with `terms: ReadonlyMap<token, tip>` tokens wrapped in `GlossaryTerm`; longest-token-first split; empty `terms` renders a plain wrapper — promoted from the planner's `GlossedFormula` (W6); the i18n glossary itself stays in `features/planner/model/formula-glossary.ts` | inline Tailwind |
 | `FileDropZone` | `<div role="button">` | click / keyboard / drag-drop file target; idle vs drag-over chrome via recipe; keeps Enter/Space and `input.value = ''` reset — promoted from import dialog (W6) | `file-drop-zone.recipe.ts` |
 
-### Game art (`src/shared/game-art/`)
+### Game art (`apps/web/src/shared/game-art/`)
 
-Wiki-sourced game assets (heroes, items, abilities, …). **Rarity is border-only** on gear/hero frames — do not overlay crystal gems on item art (border colour matches `rar-0`…`rar-5` tokens). Export from [`src/shared/game-art/index.ts`](../src/shared/game-art/index.ts).
+Wiki-sourced game assets (heroes, items, abilities, …). **Rarity is border-only** on gear/hero frames — do not overlay crystal gems on item art (border colour matches `rar-0`…`rar-5` tokens). Export from [`apps/web/src/shared/game-art/index.ts`](../apps/web/src/shared/game-art/index.ts).
 
 | Component | Role | Recipe |
 | --- | --- | --- |
@@ -85,13 +85,13 @@ Wiki-sourced game assets (heroes, items, abilities, …). **Rarity is border-onl
 
 **Ability icon sizes** (`abilityIconRecipe` `size`): `xs` (20px) roster / picker rows · `sm` (24px) · `md` (32px) compact · `lg` (44px) abilities tab cards.
 
-Asset paths: [`abilityIconSrc`](../src/shared/domain/wiki-assets.ts) → `public/wiki-assets/abilities/{id}.png` (16 wiki icons, id matches catalog ability code).
+Asset paths: [`abilityIconSrc`](../packages/domain/src/wiki-assets.ts) → `public/wiki-assets/abilities/{id}.png` (16 wiki icons, id matches catalog ability code).
 
 **Forge badge** (`forgeUpgradeBadgeClass`): transparent — no box border or fill; `text-shadow` halo on the `+N` glyphs only for legibility on busy pixel art.
 
 **Gear slot chrome** ([`slot-editor.tsx`](../src/features/gear/components/slot-editor.tsx)): outer slot card stays **neutral** (`border-line`); equipped rarity reads from the item frame only. Empty slots show a dashed placeholder sharing `artFrameRadiusClass`.
 
-Asset path helpers: [`src/shared/domain/wiki-assets.ts`](../src/shared/domain/wiki-assets.ts) (domain helper, not under `design-system/`).
+Asset path helpers: [`packages/domain/src/wiki-assets.ts`](../packages/domain/src/wiki-assets.ts) (domain helper, not under `design-system/`).
 
 ### Form controls (`Num` / `Select`)
 
@@ -124,7 +124,7 @@ the sanctioned MOD-12 carve-out; every other design-system module is barrel-only
 ## Compound namespace file layout (W6)
 
 `Dialog`, `Collapsible`, `Accordion`, `Tabs`, `Tooltip`, and `DataTable` are each a **directory**
-under `src/shared/design-system/`, not a single module — e.g. `dialog/`, not `dialog.tsx`:
+under `packages/ui/src/`, not a single module — e.g. `dialog/`, not `dialog.tsx`:
 
 - **One `.tsx` (or `.ts` for non-component internals) per part.** Every file exports exactly one
   component; the file's kebab-case name matches its export (`dialog-root.tsx` → `DialogRoot`,
@@ -145,7 +145,7 @@ under `src/shared/design-system/`, not a single module — e.g. `dialog/`, not `
   more than one family (`accordion.recipe.ts` also dresses `Collapsible`; `data-table.recipe.ts`
   also backs the deprecated `SortableTableHeader` shim), and moving them would turn a shared
   constant into a cross-folder import.
-- **The barrel (`src/shared/design-system/index.ts`) keeps writing `from './dialog'`, `from
+- **The barrel (`packages/ui/src/index.ts`) keeps writing `from './dialog'`, `from
   './tabs'`, etc.** — Node/TypeScript resolve a bare specifier to `<name>/index.ts` automatically,
   so replacing the file with a same-named directory is a zero-diff change from the barrel's point
   of view, as long as the old file is deleted in the same commit (a stale `<name>.tsx` sitting next
@@ -172,7 +172,7 @@ This convention is [`AD-021`](../.specs/STATE.md) and applies to every future co
 
 ## `cn()` usage
 
-[`src/shared/lib/cn.ts`](../src/shared/lib/cn.ts) = `twMerge(clsx(inputs))` (also re-exported from the design-system barrel).
+[`packages/ui/src/cn.ts`](../packages/ui/src/cn.ts) = `twMerge(clsx(inputs))` (also re-exported from the design-system barrel).
 
 ```ts
 export function cn(...inputs: ClassValue[]): string {
@@ -189,8 +189,8 @@ export function cn(...inputs: ClassValue[]): string {
 
 ## Reuse boundary (DS-09)
 
-`src/shared/design-system` is a **self-contained module** with a single public entry,
-[`src/shared/design-system/index.ts`](../src/shared/design-system/index.ts). The boundary exists so the
+`packages/ui/src` is a **self-contained module** with a single public entry,
+[`packages/ui/src/index.ts`](../packages/ui/src/index.ts). The boundary exists so the
 system can later be extracted for the Bomb Farm companion (same Tailwind 4 + `@base-ui/react`
 stack) with minimal churn.
 
@@ -240,7 +240,7 @@ once the primitive API surface stops churning.
 
 ## Storybook catalog
 
-Local catalog for `src/shared/design-system` primitives (dark-only preview, desktop/tablet viewports).
+Local catalog for `packages/ui/src` primitives (dark-only preview, desktop/tablet viewports).
 
 | Command | Purpose |
 | --- | --- |

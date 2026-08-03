@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { raritySortIdx, rankSortIdx } from '@/shared/domain/roster-sort';
-import { RANK_ORDER, RARITIES } from '@/shared/domain/planner-constants';
+import { raritySortIdx, rankSortIdx } from '@bombfarm/domain/roster-sort';
+import { RANK_ORDER, RARITIES } from '@bombfarm/domain/planner-constants';
 
 describe('raritySortIdx', () => {
   it('follows RARITIES order', () => {

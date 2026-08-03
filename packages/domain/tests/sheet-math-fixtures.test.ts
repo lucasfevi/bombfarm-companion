@@ -26,17 +26,17 @@ import {
   projectGearedOntoLoadout,
   reverseGear,
   type SheetStats,
-} from '@/shared/domain/gear';
-import { attackPointGain } from '@/shared/domain/model';
-import { starsMult } from '@/shared/domain/gear';
-import { ZERO_PTS } from '@/shared/domain/planner-constants';
-import { gearedAfterLoadoutChange } from '@/shared/domain/loadout';
+} from '@bombfarm/domain/gear';
+import { attackPointGain } from '@bombfarm/domain/model';
+import { starsMult } from '@bombfarm/domain/gear';
+import { ZERO_PTS } from '@bombfarm/domain/planner-constants';
+import { gearedAfterLoadoutChange } from '@bombfarm/domain/loadout';
 import {
   expectSheetsClose,
   loadHero,
   SHEET_ABS_TOL,
-} from '@/tests/helpers/sheet-math-fixtures';
-import { SHEET_KEYS } from '@/shared/domain/planner-constants';
+} from './helpers/sheet-math-fixtures';
+import { SHEET_KEYS } from '@bombfarm/domain/planner-constants';
 
 const BRENNA = 'Brenna';
 const GALE = 'Gale';

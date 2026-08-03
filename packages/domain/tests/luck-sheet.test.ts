@@ -6,7 +6,7 @@ import {
   ZERO_PTS,
   ZERO_PTS_TEMPLATE,
   type SheetKey,
-} from '@/shared/domain/planner-constants';
+} from '@bombfarm/domain/planner-constants';
 import {
   applyGear,
   applyPoints,
@@ -20,9 +20,9 @@ import {
   sumGearBonuses,
   type Loadout,
   type SheetStats,
-} from '@/shared/domain/gear';
-import { BASE_ROLLS, POINT_GAIN, STAT_LABELS, rankNextPoint, type Context, type HeroSheet } from '@/shared/domain/model';
-import { loadFixtureJson } from '@/tests/helpers/sheet-math-fixtures';
+} from '@bombfarm/domain/gear';
+import { BASE_ROLLS, POINT_GAIN, STAT_LABELS, rankNextPoint, type Context, type HeroSheet } from '@bombfarm/domain/model';
+import { loadFixtureJson } from './helpers/sheet-math-fixtures';
 
 // Wave 6 (DEC-12, BSPW6-AC-24) rewrites this block's W2 AC-02 assertion: SHEET_DISPLAY_KEYS
 // (7, combat/mismatch) no longer stands alone — SHEET_PANEL_KEYS (8, display surfaces) now

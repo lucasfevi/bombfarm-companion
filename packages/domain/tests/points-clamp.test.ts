@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { clampPointStep, SHEET_KEYS, ZERO_PTS, type SheetKey } from '@/shared/domain/planner-constants';
+import { clampPointStep, SHEET_KEYS, ZERO_PTS, type SheetKey } from '@bombfarm/domain/planner-constants';
 
 /** A hand-authored `Σ pts < level` fixture — BSP-25's "remaining-unspent" branch, which no
  *  real save exercises (every imported hero either has `spentDelta === level` or overspends). */
