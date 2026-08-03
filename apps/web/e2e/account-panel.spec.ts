@@ -93,15 +93,15 @@ test.describe('account panel chrome', () => {
     await page.getByRole('tab', { name: /^account$|^conta$/i }).click();
 
     const account = accountPanel(page, 'en');
-    const treeBlock = account
-      .locator('div')
-      .filter({ has: page.getByRole('heading', { name: /^Skill Tree$/i, level: 3 }) })
-      .first();
+    const treeRows = account.locator('label').filter({
+      has: page.locator('[data-account-tree-value]'),
+    });
 
-    await expect(treeBlock.locator('[data-account-tree-value]')).toHaveCount(6);
-    await expect(treeBlock.locator('[data-num]')).toHaveCount(0);
-    await expect(treeBlock.locator('input')).toHaveCount(0);
-    await expect(treeBlock.locator('[data-keystone-control]')).toHaveCount(2);
+    await expect(account.locator('[data-account-tree-value]')).toHaveCount(6);
+    await expect(treeRows).toHaveCount(6);
+    await expect(treeRows.locator('[data-num]')).toHaveCount(0);
+    await expect(treeRows.locator('input')).toHaveCount(0);
+    await expect(account.locator('[data-keystone-control]')).toHaveCount(2);
   });
 
   test('PT: Conta panel has no Da conta chip; no obrigatório at tree ×1', async ({ page }) => {

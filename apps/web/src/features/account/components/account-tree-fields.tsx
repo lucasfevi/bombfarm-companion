@@ -21,14 +21,6 @@ import {
   accountTreeValueClass,
 } from '@bombfarm/ui/panel-field.recipe';
 
-function TreeValue({ value, decimals }: { value: number; decimals: number }) {
-  return (
-    <output data-account-tree-value className={accountTreeValueClass}>
-      {formatNumber(value, decimals)}
-    </output>
-  );
-}
-
 export function AccountTreeFields() {
   const { t } = useAppLang();
   const treeDanoTotal = usePlannerStore(selectTreeDanoTotal);
@@ -46,30 +38,42 @@ export function AccountTreeFields() {
     <Fields layout="stack" className={accountStackAlignClass}>
       <label>
         <span>{t.treeDano}</span>
-        <TreeValue value={treeDanoTotal} decimals={3} />
+        <output data-account-tree-value className={accountTreeValueClass}>
+          {formatNumber(treeDanoTotal, 3)}
+        </output>
       </label>
       <label>
         <span>{t.treeCrit}</span>
-        <TreeValue value={treeCritChance} decimals={2} />
+        <output data-account-tree-value className={accountTreeValueClass}>
+          {formatNumber(treeCritChance, 2)}
+        </output>
       </label>
       <label>
         <span>{t.treeCritDmg}</span>
-        <TreeValue value={treeCritDmg} decimals={2} />
+        <output data-account-tree-value className={accountTreeValueClass}>
+          {formatNumber(treeCritDmg, 2)}
+        </output>
       </label>
       <label>
         <span>{t.treeSpeed}</span>
-        <TreeValue value={treeSpeed} decimals={2} />
+        <output data-account-tree-value className={accountTreeValueClass}>
+          {formatNumber(treeSpeed, 2)}
+        </output>
       </label>
       <label>
         <span>{t.treeEnergy}</span>
-        <TreeValue value={treeEnergy} decimals={2} />
+        <output data-account-tree-value className={accountTreeValueClass}>
+          {formatNumber(treeEnergy, 2)}
+        </output>
       </label>
       <label>
         <span>
           {t.treeTeamCoin}
           <span data-field-hint>{t.treeTeamCoinHint}</span>
         </span>
-        <TreeValue value={treeTeamCoinPct} decimals={2} />
+        <output data-account-tree-value className={accountTreeValueClass}>
+          {formatNumber(treeTeamCoinPct, 2)}
+        </output>
       </label>
       <label>
         <span>
