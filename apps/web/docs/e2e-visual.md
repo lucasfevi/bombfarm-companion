@@ -28,7 +28,7 @@ Browser-level smoke and visual baselines for the static export. Unit math stays 
 ## Prerequisites
 
 - [Docker Desktop](https://www.docker.com/products/docker-desktop/) (or Docker Engine on Linux) **running**
-- First run builds `bombfarm-hero-planner-e2e:local` from `e2e/Dockerfile` (Playwright version pinned to `@playwright/test` in `package.json`)
+- First run builds `bombfarm-companion-web-e2e:local` from `e2e/Dockerfile` (Playwright version pinned to `@playwright/test` in `package.json`)
 
 ## Scripts
 
@@ -82,7 +82,7 @@ Same test commands on `ubuntu-latest`; build artifact shared across smoke shards
 **Review CI diffs — no download:**
 
 1. The **PR comment** shows each diff image inline and links the merged report.
-2. **[Published report](https://lucasfevi.github.io/bombfarm-hero-planner/)** — `reports/<run_id>/`, the full Playwright comparator (expected / actual / diff slider) for every failing test across all shards. Kept for the newest 20 runs.
+2. **[Published report](https://lucasfevi.github.io/bombfarm-companion/)** — `reports/<run_id>/`, the full Playwright comparator (expected / actual / diff slider) for every failing test across all shards. Kept for the newest 20 runs.
 3. `pnpm test:e2e:report:ci` — downloads the single **`e2e-report`** artifact and opens it locally. This is the only copy with **traces**.
 
 > The Pages site is public even though the repo is private. Trace files are stripped from the published copy because they embed page snapshots, network payloads and source; screenshots of the already-public app are published as-is.
@@ -141,7 +141,7 @@ pnpm test:e2e:visual -- e2e/visual.spec.ts
 | Issue | Fix |
 | --- | --- |
 | Docker not running | Start Docker Desktop; retry |
-| Stale Linux deps after lockfile change | `docker volume rm bombfarm-hero-planner-e2e-node-modules` then re-run |
+| Stale Linux deps after lockfile change | `docker volume rm bombfarm-companion-web-e2e-node-modules` then re-run |
 | Playwright version bump | `pnpm test:e2e:docker:build` |
 | Need CI diffs without local Docker | PR comment → inline images, or the published report URL |
 | Diff images render broken in a comment | Never use `data:` URIs — GitHub strips them. Reference the published `https` URL |

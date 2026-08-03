@@ -5,10 +5,10 @@ import { SpeedInsights } from '@vercel/speed-insights/next';
 import { ClarityAnalytics } from '@/app/_shell/clarity';
 import './globals.css';
 
-const SITE_URL = 'https://bombfarm-hero-planner.vercel.app';
-const SITE_TITLE = 'BombFarm Hero Planner';
+const SITE_URL = 'https://bombfarm-companion.vercel.app';
+const SITE_TITLE = 'Bomb Farm Companion';
 const SITE_DESCRIPTION =
-  'Unofficial Bomb Farm hero planner — recreate your sheet, gear, skill points and buffs, then get next-point DPS advice. Runs entirely in the browser.';
+  'Unofficial Bomb Farm companion — recreate your sheet, gear, skill points and buffs, then get next-point DPS advice. Runs entirely in the browser.';
 
 const dmSans = DM_Sans({
   subsets: ['latin'],
@@ -30,6 +30,7 @@ export const metadata: Metadata = {
   applicationName: SITE_TITLE,
   keywords: [
     'Bomb Farm',
+    'companion',
     'hero planner',
     'DPS',
     'gear',
@@ -37,8 +38,8 @@ export const metadata: Metadata = {
     'build planner',
     'fan tool',
   ],
-  authors: [{ name: 'BombFarm Hero Planner contributors' }],
-  creator: 'BombFarm Hero Planner contributors',
+  authors: [{ name: 'Bomb Farm Companion contributors' }],
+  creator: 'Bomb Farm Companion contributors',
   robots: { index: true, follow: true },
   icons: {
     icon: '/favicon.svg',
@@ -54,7 +55,7 @@ export const metadata: Metadata = {
         url: '/og.png',
         width: 1200,
         height: 630,
-        alt: 'BombFarm Hero Planner — plan gear, skill points and DPS in the browser',
+        alt: 'Bomb Farm Companion — plan gear, skill points and DPS in the browser',
       },
     ],
     locale: 'en_US',

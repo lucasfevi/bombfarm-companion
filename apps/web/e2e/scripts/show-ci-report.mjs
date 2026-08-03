@@ -25,7 +25,7 @@ const PLAYWRIGHT_CLI = path.join(ROOT, 'node_modules', '@playwright', 'test', 'c
 const REPORT_ARTIFACT = 'e2e-report';
 const LEGACY_ARTIFACTS = ['playwright-report-visual', 'playwright-report-visual-merged'];
 const ARTIFACT_PREFIX = 'playwright-report';
-const PAGES_ROOT = 'https://lucasfevi.github.io/bombfarm-hero-planner';
+const PAGES_ROOT = 'https://lucasfevi.github.io/bombfarm-companion';
 
 function usage(exitCode = 0) {
   const text = `Usage: node e2e/scripts/show-ci-report.mjs [--pr <n>] [--run <id>] [--url-only] [--help]

@@ -6,6 +6,6 @@ import { test, expect } from '@playwright/test';
  */
 test('harness serves the static export', async ({ page }) => {
   await page.goto('/');
-  await expect(page).toHaveTitle(/BombFarm Hero Planner/i);
+  await expect(page).toHaveTitle(/Bomb Farm Companion/i);
   await expect(page.getByRole('heading', { name: /nenhum herói adicionado|no heroes added yet/i })).toBeVisible();
 });
