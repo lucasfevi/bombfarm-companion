@@ -17,9 +17,10 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-// e2e/scripts/ → repo root
-const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
-const IMAGE_NAME = 'bombfarm-hero-planner-e2e';
+// e2e/scripts/ → apps/web → monorepo root
+const WEB_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
+const ROOT = path.resolve(WEB_ROOT, '..', '..');
+const IMAGE_NAME = 'bombfarm-companion-web-e2e';
 const NODE_MODULES_VOLUME = `${IMAGE_NAME}-node-modules`;
 const PNPM_STORE_VOLUME = `${IMAGE_NAME}-pnpm-store`;
 
@@ -43,7 +44,7 @@ Requires Docker Desktop (or Docker Engine) running.`;
 }
 
 function readPlaywrightVersion() {
-  const pkg = JSON.parse(fs.readFileSync(path.join(ROOT, 'package.json'), 'utf8'));
+  const pkg = JSON.parse(fs.readFileSync(path.join(WEB_ROOT, 'package.json'), 'utf8'));
   const raw = pkg.devDependencies?.['@playwright/test'] ?? pkg.dependencies?.['@playwright/test'];
   if (!raw) {
     console.error('Could not read @playwright/test version from package.json');
@@ -78,10 +79,11 @@ function dockerMountPath(dir) {
   return resolved;
 }
 
-function run(cmd, args, { allowFail = false, inherit = true } = {}) {
+function run(cmd, args, { allowFail = false, inherit = true, cwd } = {}) {
   const result = spawnSync(cmd, args, {
     stdio: inherit ? 'inherit' : 'pipe',
     encoding: 'utf8',
+    cwd,
   });
   if (result.error) {
     if (result.error.code === 'ENOENT' && cmd === 'docker') {
@@ -109,13 +111,13 @@ function buildImage(tag, playwrightVersion) {
   run('docker', [
     'build',
     '-f',
-    'e2e/Dockerfile',
+    'apps/web/e2e/Dockerfile',
     '--build-arg',
     `PLAYWRIGHT_VERSION=${playwrightVersion}`,
     '-t',
     tag,
     '.',
-  ]);
+  ], { cwd: ROOT });
 }
 
 function ensureImage(tag, { rebuild = false } = {}) {
@@ -150,27 +152,26 @@ function dockerRunArgs(tag, innerCommand, { interactive = false } = {}) {
 function playwrightInvocation(mode, extra) {
   const install = [
     'pnpm install --frozen-lockfile',
-    'pnpm exec playwright install --with-deps chromium',
+    'pnpm --filter @bombfarm/web exec playwright install --with-deps chromium',
   ].join(' && ');
 
   let testCmd;
   switch (mode) {
     case 'smoke':
-      testCmd = 'pnpm exec playwright test --project=smoke';
+      testCmd = 'pnpm --filter @bombfarm/web exec playwright test --project=smoke';
       break;
     case 'visual':
-      testCmd = 'pnpm exec playwright test --project=chromium';
+      testCmd = 'pnpm --filter @bombfarm/web exec playwright test --project=chromium';
       break;
     case 'update':
-      testCmd = 'pnpm exec playwright test --project=chromium --update-snapshots=changed';
+      testCmd =
+        'pnpm --filter @bombfarm/web exec playwright test --project=chromium --update-snapshots=changed';
       break;
     case 'perf':
-      // captureMode `dev-strict`: Playwright webServer starts `next:dev` (webpack).
-      // Do not set E2E_PREBUILT — static export is not used for perf.
-      testCmd = 'PERF=1 CI=1 pnpm exec playwright test --project=perf';
+      testCmd = 'PERF=1 CI=1 pnpm --filter @bombfarm/web exec playwright test --project=perf';
       return `${install} && ${testCmd}${extra.length > 0 ? ` ${extra.map(shellQuote).join(' ')}` : ''}`;
     default:
-      testCmd = 'pnpm exec playwright test';
+      testCmd = 'pnpm --filter @bombfarm/web exec playwright test';
       break;
   }
 
@@ -178,7 +179,7 @@ function playwrightInvocation(mode, extra) {
     testCmd += ` ${extra.map(shellQuote).join(' ')}`;
   }
 
-  return `${install} && pnpm build:e2e && E2E_PREBUILT=1 ${testCmd}`;
+  return `${install} && pnpm --filter @bombfarm/web build:e2e && E2E_PREBUILT=1 ${testCmd}`;
 }
 
 function shellQuote(value) {

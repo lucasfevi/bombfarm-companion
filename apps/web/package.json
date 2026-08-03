@@ -15,6 +15,8 @@
     "test:e2e": "node e2e/scripts/docker-run.mjs test",
     "test:e2e:smoke": "node e2e/scripts/docker-run.mjs smoke",
     "test:e2e:visual": "node e2e/scripts/docker-run.mjs visual",
+    "test:e2e:host": "playwright test",
+    "test:e2e:host:smoke": "playwright test --project=smoke",
     "storybook": "storybook dev -p 6006",
     "build-storybook": "storybook build -o storybook-static"
   },
