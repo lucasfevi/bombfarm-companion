@@ -1,7 +1,6 @@
 # Tailwind-first styling
 
-**Status:** hard truth  
-**Cursor stub:** [`.cursor/rules/tailwind-first.mdc`](../.cursor/rules/tailwind-first.mdc)
+**Status:** hard truth
 
 Policy: named layout/widget/overlay CSS migrates into **Tailwind v4 utilities + `@theme` tokens**. `globals.css` may contain only `@theme` / base element styles + **documented irreducible exceptions**.
 
@@ -43,4 +42,4 @@ button, input, select {
 ## Related
 
 - Exception catalog (living): [`css-exceptions.md`](css-exceptions.md)
-- Feature inventory / collision audit history: `.specs/features/tailwind-migration/`
+- Feature inventory / collision audit history: private planning archive (tailwind-migration delivery notes)

@@ -89,7 +89,7 @@ Asset paths: [`abilityIconSrc`](../packages/domain/src/wiki-assets.ts) → `publ
 
 **Forge badge** (`forgeUpgradeBadgeClass`): transparent — no box border or fill; `text-shadow` halo on the `+N` glyphs only for legibility on busy pixel art.
 
-**Gear slot chrome** ([`slot-editor.tsx`](../src/features/gear/components/slot-editor.tsx)): outer slot card stays **neutral** (`border-line`); equipped rarity reads from the item frame only. Empty slots show a dashed placeholder sharing `artFrameRadiusClass`.
+**Gear slot chrome** ([`slot-editor.tsx`](../apps/web/src/features/gear/components/slot-editor.tsx)): outer slot card stays **neutral** (`border-line`); equipped rarity reads from the item frame only. Empty slots show a dashed placeholder sharing `artFrameRadiusClass`.
 
 Asset path helpers: [`packages/domain/src/wiki-assets.ts`](../packages/domain/src/wiki-assets.ts) (domain helper, not under `design-system/`).
 
@@ -155,7 +155,7 @@ under `packages/ui/src/`, not a single module — e.g. `dialog/`, not `dialog.ts
   own file each, calling the real part they forward to, and the namespace `index.ts` re-exports them
   alongside the compound object so the barrel line is unaffected.
 
-This convention is [`AD-021`](../.specs/STATE.md) and applies to every future compound primitive.
+This convention is **AD-021** (recorded in the private planning STATE log) and applies to every future compound primitive.
 
 ## cva conventions
 
@@ -198,7 +198,7 @@ stack) with minimal churn.
 transitive imports) may import from planner feature code:
 
 - feature folders: `features/planner`, `features/roster`, `features/gear`, `features/account`, …
-- planner domain/model: `shared/domain/*`, `shared/lib/storage`, … (game logic)
+- planner domain/model: `@bombfarm/domain`, `apps/web/src/shared/lib/storage`, … (game logic)
 
 Features import **from** `design-system/`; `design-system/` never imports back. Keep Electron / IPC / game-server
 concerns out of primitives entirely. Imports of `shared/lib/**` (e.g. `cn`) remain legal.
@@ -207,10 +207,12 @@ concerns out of primitives entirely. Imports of `shared/lib/**` (e.g. `cn`) rema
 
 The boundary is **lint-enforced, not grep-checked** — `eslint-plugin-boundaries`'
 `boundaries/element-types` rule (`eslint.config.mjs`, `error`) declares
-`shared-design-system` as its own element type and allows it to depend on only itself and
-`shared-lib`; every other edge (into a feature, into `shared/domain`, `shared/game-art`,
-`shared/context`, `shared/i18n`) is `disallow` by default. Run `pnpm lint` — a violation
-fails the build, it does not need a manual grep pass.
+`@bombfarm/ui` sources as a boundary and allows them to depend on only themselves and
+shared lib helpers; every other edge (into a feature, into `@bombfarm/domain`, `shared/game-art`,
+`shared/context`, `shared/i18n`) is `disallow` by default. Package-aware element mapping is
+tracked debt for `mp1-ci-vercel-rebrand` / hygiene — until then, treat the reuse boundary as
+convention + review, not a fully wired package path. Run `pnpm lint` — a violation of still-mapped
+web `src/` elements fails the build.
 
 **To see it fail:** add an import from a feature into any `design-system/` file and run
 `pnpm lint`. It reports, verbatim:
@@ -247,6 +249,6 @@ Local catalog for `packages/ui/src` primitives (dark-only preview, desktop/table
 | `pnpm storybook` | Dev server on `:6006` |
 | `pnpm build-storybook` | Static build → `storybook-static/` (gitignored) |
 
-Authoring rules (colocate stories, barrel imports only, no light/phone matrix): [`.storybook/README.md`](../.storybook/README.md).
+Authoring rules (colocate stories under `packages/ui/src`, barrel imports only, no light/phone matrix): [`apps/web/.storybook/README.md`](../apps/web/.storybook/README.md).
 
-Preview must load Tailwind via [`.storybook/preview.css`](../.storybook/preview.css) (imports `globals.css` + `@source` for `design-system/`). Canvas uses app tokens (`bg-bg` / `text-ink` / `font-sans`) and `next/font` variables on `<html>` — if stories look like unstyled browser defaults, the CSS entry or PostCSS pipeline is broken.
+Preview must load Tailwind via [`apps/web/.storybook/preview.css`](../apps/web/.storybook/preview.css) (imports web `globals.css` + `@source` for `packages/ui/src`). Canvas uses app tokens (`bg-bg` / `text-ink` / `font-sans`) and `next/font` variables on `<html>` — if stories look like unstyled browser defaults, the CSS entry or PostCSS pipeline is broken.

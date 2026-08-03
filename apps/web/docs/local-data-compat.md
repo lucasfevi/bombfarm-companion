@@ -1,7 +1,6 @@
 # Local data compatibility (public users)
 
 **Status:** hard truth  
-**Cursor stub:** [`.cursor/rules/local-data-compat.mdc`](../.cursor/rules/local-data-compat.mdc)  
 **Sources:** public-release readiness review (2026-07-23); patterns in [`src/shared/lib/storage.ts`](../src/shared/lib/storage.ts)
 
 Browser `localStorage` is the only user persistence. After public release, updates must be seamless for existing saves.
@@ -23,8 +22,8 @@ UI chrome prefs (`bf_lang`, guide/roster open state, etc.) are separate and must
 1. **Never break existing public saves.** After an update, every previously saved hero/account under the current public keys must load without data loss. Prefer additive changes.
 2. **All domain persistence goes through `src/shared/lib/storage.ts`.** New hero/account fields land on `HeroRecord` / `AccountShared` (or nested types), not new ad-hoc domain keys.
 3. **Normalize every load.** Extend `normalizeHero` / `normalizeAccount` (and helpers) so missing fields get safe defaults. Do not assume every saved record has every field.
-4. **New fields: default empty/null + show “missing” when it matters.** Choose a sentinel that means “user never set this” (often `0`, `null`, or `{}`). When advice or math depends on that field, wire **`FieldRequired` beside the label** (and a tab soft/warn **dot + Tooltip** when the tab’s data would be wrong — see [`animation.md`](animation.md) rule 8). Do **not** use warn outlines/borders on panels or inputs for required state. Do **not** invent a “looks filled” default that hides a real gap — but identity defaults that are valid for new users (e.g. skill tree `danoTotal === 1`) are **not** missing and must not get required chrome.
-5. **Do not rename or remove persisted field names without a migrator.** JSON field names on hero/account records, and game ids used as keys (rarity, ability, slot, …), stay stable — same spirit as [`i18n.md`](i18n.md) id stability. Breaking renames require reading the old shape → writing the new shape. Keep temporary `@deprecated` readers only until that migrator is proven, then remove them.
+4. **New fields: default empty/null + show “missing” when it matters.** Choose a sentinel that means “user never set this” (often `0`, `null`, or `{}`). When advice or math depends on that field, wire **`FieldRequired` beside the label** (and a tab soft/warn **dot + Tooltip** when the tab’s data would be wrong — see [`animation.md`](../../../docs/animation.md) rule 8). Do **not** use warn outlines/borders on panels or inputs for required state. Do **not** invent a “looks filled” default that hides a real gap — but identity defaults that are valid for new users (e.g. skill tree `danoTotal === 1`) are **not** missing and must not get required chrome.
+5. **Do not rename or remove persisted field names without a migrator.** JSON field names on hero/account records, and game ids used as keys (rarity, ability, slot, …), stay stable — same spirit as [`i18n.md`](../../../docs/i18n.md) id stability. Breaking renames require reading the old shape → writing the new shape. Keep temporary `@deprecated` readers only until that migrator is proven, then remove them.
 6. **Bump the storage key version only for incompatible shapes.** Additive fields stay on `-v1` via normalize. Incompatible layout → new key (`-v2`) + one-shot migrate from the previous public key.
 7. **Prove it.** Add or adjust unit tests for: partial record → normalize; old public shape → migrate when you change shape; optional new field absent → default + missing-UX predicate when applicable.
 8. **UI chrome prefs may stay separate.** They must remain tolerant of absence; never put hero/account domain data there.

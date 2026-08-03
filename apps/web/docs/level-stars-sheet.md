@@ -1,7 +1,6 @@
 # Level / stars sheet sync
 
 **Status:** hard truth  
-**Cursor stub:** [`.cursor/rules/level-stars-sheet.mdc`](../.cursor/rules/level-stars-sheet.mdc)  
 **Sources:** AD-004; feature `level-stars-auto-stats`
 
 Changing **level** or **stars** must keep naked, geared, and derived combat consistent without forcing a save reimport.

@@ -1,7 +1,6 @@
 # Import-only heroes
 
 **Status:** hard truth  
-**Cursor stub:** [`.cursor/rules/import-only-heroes.mdc`](../.cursor/rules/import-only-heroes.mdc)
 
 ## Policy
 
@@ -19,7 +18,7 @@
 ## UI / copy
 
 - Empty workspace copy stays **import-only** ([`emptyTitle` / `emptyBody`](../src/shared/i18n)).
-- Ability panel, roster icons, and picker rows use [`hero-abilities.ts`](../src/shared/domain/hero-abilities.ts) — pool keys only.
+- Ability panel, roster icons, and picker rows use [`hero-abilities.ts`](../../../packages/domain/src/hero-abilities.ts) — pool keys only.
 
 ## Tests
 

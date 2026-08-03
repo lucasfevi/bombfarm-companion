@@ -1,7 +1,6 @@
 # Naming conventions
 
 **Status:** hard truth — accepted 2026-07-30 (W8, MOD-42)
-**Cursor stub:** [`.cursor/rules/naming.mdc`](../.cursor/rules/naming.mdc)
 
 Canonical reference for modular-architecture naming (MOD-23..MOD-27). Written against the lint rules **as landed in W1** (`warn` only). W8 promotes this doc via [`hard-truths.md`](hard-truths.md) after the waves that make each rule real.
 
@@ -17,7 +16,7 @@ Every file under `src/` uses kebab-case basenames (including `packages/ui/src/*`
 | **Severity today** | `error` |
 | **Makes real** | **W2** (ui/ kebab renames landed); **W7** flips the rule to `error` |
 
-Inventory: [`.specs/features/modular-architecture/lint-warning-inventory.md`](../.specs/features/modular-architecture/lint-warning-inventory.md).
+Inventory lived in the modular-architecture lint-warning delivery notes (private planning archive).
 
 ### MOD-24 — reserved suffixes and name ↔ export
 
@@ -89,6 +88,6 @@ Case-only renames use two-step `git mv` through a temporary name so Windows and 
 ## Enforcement status (post-W7)
 
 - Every rule above that has a lint rule is at **`error`**: `unicorn/filename-case`, `id-length`, `id-denylist`, and the `max-lines` budgets (300 hard cap / 200 feature-UI / 150 hooks). W1 landed them at `warn`; **W7** flipped them and burned the findings to zero.
-- Allowlists are small and each entry carries a written reason — see [`lint-error-inventory-w7.md`](../.specs/features/modular-architecture/lint-error-inventory-w7.md).
+- Allowlists are small and each entry carries a written reason — see the W7 lint-error inventory in the private planning archive.
 - MOD-25's casing conventions are still **review-enforced**; no lint rule covers them.
-- This doc is not listed under hard truths and has no `.cursor/rules/` stub until W8 promotion (MOD-42) is accepted.
+- This doc is a hard truth; Cursor rule stubs may be added under `.cursor/rules/` later.
