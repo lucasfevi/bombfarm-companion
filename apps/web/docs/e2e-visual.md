@@ -75,7 +75,7 @@ Agents must **not** run `test:e2e:update` or commit screenshot changes until a h
 
 Playwright serves `out/` via `e2e/scripts/serve-static.mjs` (port **4321**), same as CI.
 
-### CI (`.github/workflows/e2e.yml`)
+### CI (`.github/workflows/e2e-web.yml`)
 
 Same test commands on `ubuntu-latest`; build artifact shared across smoke shards. Every test job writes a **blob report**; the `report` job merges all of them — 4 smoke shards + visual — into **one** HTML report.
 

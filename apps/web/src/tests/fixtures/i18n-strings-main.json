@@ -1,7 +1,7 @@
 {
   "en": {
     "tagline": "build → gear → points",
-    "appSuiteTag": "Hero planner",
+    "appSuiteTag": "Companion",
     "siteNavAria": "Main sections",
     "navPlanner": "Planner",
     "navPhases": "Phases",
@@ -493,7 +493,7 @@
   },
   "pt": {
     "tagline": "build → equipamento → pontos",
-    "appSuiteTag": "Planejador de heróis",
+    "appSuiteTag": "Companion",
     "siteNavAria": "Seções principais",
     "navPlanner": "Planner",
     "navPhases": "Fases",

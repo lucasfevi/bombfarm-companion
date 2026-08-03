@@ -1,6 +1,6 @@
 export const en = {
   tagline: "build → gear → points",
-  appSuiteTag: "Hero planner",
+  appSuiteTag: "Companion",
   siteNavAria: "Main sections",
   navPlanner: "Planner",
   navPhases: "Phases",
@@ -37,7 +37,7 @@ export const en = {
 
 export const pt: typeof en = {
   tagline: "build → equipamento → pontos",
-  appSuiteTag: "Planejador de heróis",
+  appSuiteTag: "Companion",
   siteNavAria: "Seções principais",
   navPlanner: "Planner",
   navPhases: "Fases",
