@@ -5,7 +5,7 @@
  * Zero commits ⇒ hard failure (never write a zero baseline).
  *
  * Output path: PERF_OUT env, or --out=path via Playwright grep-less argv parse,
- * default `.specs/features/modular-architecture/perf-baseline.raw.json`.
+ * default `e2e/perf/out/perf-baseline.raw.json`.
  * Set PERF_FORCE=1 to overwrite an existing file.
  */
 import fs from 'node:fs'
@@ -54,10 +54,7 @@ const FIXTURE = USE_LARGE_ROSTER ? largeRoster : importedRoster
 const CAPTURE_MODE: 'dev-strict' | 'prod-profile' =
   process.env.PERF_PROFILE === '1' ? 'prod-profile' : 'dev-strict'
 
-const DEFAULT_OUT = path.join(
-  process.cwd(),
-  '.specs/features/modular-architecture/perf-baseline.raw.json',
-)
+const DEFAULT_OUT = path.join(process.cwd(), 'e2e/perf/out/perf-baseline.raw.json')
 
 function resolveOutPath(): string {
   if (process.env.PERF_OUT) return path.resolve(process.env.PERF_OUT)

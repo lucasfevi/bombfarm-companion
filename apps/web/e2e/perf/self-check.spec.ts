@@ -22,10 +22,7 @@ import {
   PERFORMED_WORK,
 } from './collect-commits'
 
-const EVIDENCE_PATH = path.join(
-  process.cwd(),
-  '.specs/features/modular-architecture-w1-guardrails/t2-self-check-evidence.json',
-)
+const EVIDENCE_PATH = path.join(process.cwd(), 'e2e/perf/out/t2-self-check-evidence.json')
 
 /** Locked after prod-profile name spike failed (see evidence.prodProfileSpike). */
 /**
@@ -124,7 +121,7 @@ test.describe('perf harness self-check', () => {
           'W1 spike (2026-07-29) rejected prod-profile: `next build --profile` still mangled ~49% ' +
           'of component keys. RES-05 resolved it — pairing that flag with PERF_PROFILE=1, which ' +
           'disables minification for the measurement build only, retains the names. Both modes ' +
-          'are now supported; see .specs/prds/planner-residuals/perf-prod-profile-baseline.md.',
+          'are now supported; see apps/web docs and e2e/perf harness notes.',
       },
       devtoolsCrossCheck: {
         agreed: crossCheck.setsEqual,
