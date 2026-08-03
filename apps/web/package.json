@@ -1,0 +1,27 @@
+{
+  "name": "@bombfarm/web",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Bomb Farm Companion web planner (static Next export)",
+  "scripts": {
+    "dev": "next dev --turbopack",
+    "build": "next build",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "lint": "eslint src",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@bombfarm/domain": "workspace:*",
+    "@bombfarm/ui": "workspace:*",
+    "next": "^15.4.2",
+    "react": "^19.1.0",
+    "react-dom": "^19.1.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.16.5",
+    "@types/react": "^19.1.8",
+    "@types/react-dom": "^19.1.6",
+    "typescript": "^5.8.3",
+    "vitest": "^3.2.4"
+  }
+}
