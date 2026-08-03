@@ -1,0 +1,344 @@
+import {
+  abilityMods,
+  houseRestSeconds,
+  rankNextPoint,
+  energySwitchPoint,
+  mitigationFactor,
+  critFactor,
+  fieldSeconds,
+  type AbilityMods,
+  type Context,
+  type HeroSheet,
+  type PointValue,
+  type RankMode,
+  type RarityKey,
+} from '@/shared/domain/model';
+import { applyPoints, emptySheetOther, projectGearedOntoLoadout, type Loadout, type SheetOtherPct, type SheetStats } from '@/shared/domain/gear';
+import { SHEET_KEYS, type SheetKey } from '@/shared/domain/planner-constants';
+import { computeCombatMults, derive, type DeriveResult } from '@/shared/domain/derive';
+import { applySkillTree, type BirthStats, type TreeSheetTotals } from '@/shared/domain/birth-sheet';
+import { resolveDeriveSheets } from '@/shared/domain/advisor-pipeline-sheets';
+import {
+  effectiveFarmPhase,
+  effectiveMitigationPct,
+  effectiveTargetProp,
+  FARM_CYCLE_MODEL,
+  FARM_WALK_DELAY_SEC,
+} from '@/shared/domain/farm-context';
+import { PROPS, BOSS_HP_MULT, phaseLine, propHp, hitsToKill, weightedAvgPropHp } from '@/shared/domain/phases';
+import {
+  propHtkRows,
+  gateRows as buildGateRows,
+  buildResetAdvice,
+  type PropHtkRow,
+  type GateRow,
+  type ResetAdvice,
+} from '@/shared/domain/advisor-tables';
+import { findGateCandidate } from '@/shared/domain/points-reopt';
+import type { TeamBuffId } from '@/shared/domain/team-buffs';
+
+/** Increments each time the pipeline invokes `energySwitchPoint` (tests / DEBUG). */
+// MOD-36: mutable by design — Vitest imports and reassigns/reads this counter directly
+// (memoization-invariant assertions); a const/closure cell would break that test API.
+export let energySwitchPointCallCount = 0;
+
+export function resetEnergySwitchPointCallCount(): void {
+  energySwitchPointCallCount = 0;
+}
+
+export type AdvisorPipelineInput = {
+  naked: SheetStats;
+  geared: SheetStats;
+  loadout: Loadout;
+  altLoadout: Loadout | null;
+  pts: Record<SheetKey, number>;
+  abilities: Record<string, number>;
+  rarity: RarityKey;
+  level: number;
+  stars: number;
+  treeDanoTotal: number;
+  treeCritChance: number;
+  treeCritDmg: number;
+  treeSpeed: number;
+  treeEnergy: number;
+  treeGlassCannon: boolean;
+  treeTempoDobrado: boolean;
+  /** `skills.totals.luck_add × 100` — flat Luck percentage points (BSPW5-03, ASM-01). */
+  treeLuckFlatPct: number;
+  teamBuffs: Record<TeamBuffId, number>;
+  houseIdx: number;
+  houseLevel: number;
+  phase: number | null;
+  mitigationPct: number;
+  rankMode: RankMode;
+  targetProp: string | null;
+  /**
+   * When set, naked/geared for derive are recomposed from birth (tree-inclusive zero-pts
+   * geared) so Points After / DPS stay aligned with Stats Total after level/stars/tree edits.
+   */
+  birth?: BirthStats | null;
+};
+
+export type AdvisorPipelineResult = {
+  mods: AbilityMods;
+  sheetOther: SheetOtherPct;
+  rest: number;
+  context: Context;
+  gateAttackMult: number;
+  dmgMult: number;
+  /** Combat mults already computed by `computeCombatMults` — surfaced for breakdown (additive). */
+  attackMult: number;
+  energyMult: number;
+  speedMult: number;
+  critDmgMult: number;
+  teamCritPctOfBase: number;
+  /** The whole skill tree, once (BSP-23c) — surfaced for Wave 6's breakdown. */
+  treeSheet: TreeSheetTotals;
+  A: DeriveResult;
+  B: DeriveResult | null;
+  dps: number;
+  active: number;
+  predHit: number;
+  pointDelta: Record<SheetKey, number>;
+  adjusted: SheetStats;
+  effective: HeroSheet;
+  bDiff: number;
+  bHitDiff: number;
+  ranking: PointValue[];
+  best: PointValue;
+  eSwitch: number;
+  spentDelta: number;
+  uptime: number;
+  mitF: number;
+  predCrit: number;
+  avgHit: number;
+  expectedSheet: SheetStats;
+  stoneHp: number;
+  targetPropDefName: string;
+  targetHp: number;
+  propRows: PropHtkRow[];
+  bossHp: number;
+  bossHits: number;
+  avgPropHp: number;
+  gateRows: GateRow[];
+  resetAdvice: ResetAdvice;
+};
+
+/**
+ * Pure advisor math: derive A/B, expected sheet, point ranking, energy switch,
+ * prop HTK table, and gate rows. Call from `useMemo` with primitive/stable deps only.
+ */
+export function computeAdvisorPipeline(input: AdvisorPipelineInput): AdvisorPipelineResult {
+  const {
+    naked,
+    geared,
+    loadout,
+    altLoadout,
+    pts,
+    abilities,
+    rarity,
+    level,
+    stars,
+    treeDanoTotal,
+    treeCritChance,
+    treeCritDmg,
+    treeSpeed,
+    treeEnergy,
+    treeGlassCannon,
+    treeTempoDobrado,
+    treeLuckFlatPct,
+    teamBuffs,
+    houseIdx,
+    houseLevel,
+    phase,
+    mitigationPct,
+    rankMode,
+    targetProp,
+    birth,
+  } = input;
+
+  const farmPhase = effectiveFarmPhase(phase);
+  const mitPct = effectiveMitigationPct({ phase, mitigationPct });
+  const propName = effectiveTargetProp(targetProp);
+
+  const mods = abilityMods(abilities);
+  const sheetOther: SheetOtherPct = {
+    ...emptySheetOther(),
+    critChance: mods.sheetCritChancePctOfBase / 100,
+    penetration: mods.sheetPenetrationRaw,
+    critDmg: mods.sheetCritDmgPctOfBase,
+  };
+
+  const { treeSheet, nakedForDerive, gearedForDerive } = resolveDeriveSheets({
+    naked,
+    geared,
+    loadout,
+    level,
+    stars,
+    sheetOther,
+    treeDanoTotal,
+    treeCritChance,
+    treeCritDmg,
+    treeSpeed,
+    treeEnergy,
+    treeLuckFlatPct,
+    birth,
+  });
+
+  const mults = computeCombatMults({
+    mods,
+    teamBuffs,
+    treeGlassCannon,
+    treeTempoDobrado,
+    extraDmgPct: 0,
+  });
+  const {
+    attackMult,
+    speedMult,
+    gateAttackMult,
+    energyMult,
+    critDmgMult,
+    teamCritPctOfBase,
+    teamDrainMult,
+    dmgMult,
+  } = mults;
+
+  const rest = houseRestSeconds(houseIdx, houseLevel);
+  const context: Context = {
+    restSeconds: rest,
+    mitigation: mitPct / 100,
+    blastRange: 1 + mods.rangeCells,
+    cycleModel: FARM_CYCLE_MODEL,
+    walkDelay: FARM_WALK_DELAY_SEC,
+    drainMult: mods.drainMult * teamDrainMult * (treeTempoDobrado ? 2 : 1),
+  };
+
+  const deriveArgs = {
+    naked: nakedForDerive,
+    sheetOther,
+    pts,
+    rarity,
+    level,
+    stars,
+    attackMult,
+    energyMult,
+    speedMult,
+    critDmgMult,
+    teamCritPctOfBase,
+    treeSheet,
+    combatCritChancePctOfBase: mods.combatCritChancePctOfBase,
+    penetrationPp: mods.penetrationPp,
+    context,
+    dmgMult,
+    mitigationPct: mitPct,
+  } as const;
+
+  const equippedResult = derive({ ...deriveArgs, geared: gearedForDerive });
+  const { delta: pointDelta, adjusted, effective } = equippedResult;
+  const dps = equippedResult.dps;
+  const active = equippedResult.active;
+  const predHit = equippedResult.hit;
+  // Compare against the observed sheet projected onto the clone loadout — not
+  // applyGear(naked, alt), which drifts when typed geared ≠ catalog gear math.
+  const cloneResult = altLoadout
+    ? derive({
+        ...deriveArgs,
+        geared: projectGearedOntoLoadout(gearedForDerive, loadout, altLoadout, sheetOther),
+      })
+    : null;
+  const bDiff = cloneResult ? (cloneResult.dps / dps - 1) * 100 || 0 : 0;
+  const bHitDiff = cloneResult ? (cloneResult.hit / predHit - 1) * 100 || 0 : 0;
+
+  const line = phaseLine(farmPhase);
+  const stoneHp = line?.hp ?? 0;
+  const targetPropDef = PROPS.find((prop) => prop.name === propName) ?? PROPS[1];
+  const targetHp = propHp(stoneHp, targetPropDef.hpMult);
+
+  const ranking = rankNextPoint(effective, context, {
+    effectiveDeltas: equippedResult.effectiveDelta,
+    mode: rankMode,
+    targetPropHp: targetHp,
+    hitDmgMult: dmgMult,
+    mitigation: mitPct / 100,
+  });
+
+  // DEBUG: name/toast/guide/roster edits must not bump this when deps are stable.
+  energySwitchPointCallCount += 1;
+  const eSwitch = energySwitchPoint(effective, context);
+  const best = ranking[0];
+  const spentDelta = SHEET_KEYS.reduce((sum, key) => sum + pts[key], 0);
+  const field = fieldSeconds(effective, context);
+  const uptime = (100 * field) / (field + rest);
+
+  const mitF = mitigationFactor(mitPct / 100, effective.penetration);
+  const predCrit = predHit * (1 + effective.critDmg / 100);
+  const avgHit = predHit * critFactor(effective.critChance, effective.critDmg);
+  // The tree must apply here too, exactly once (BSP-23c) — `adjusted`/`geared` are already
+  // tree-inclusive (AD-BSP-12), and AC-33/AC-34 now scale `delta.attack`/`delta.energy` by
+  // the same tree factors. Without this, `expectedSheet` (the pure gear+points catalog
+  // projection used by the Gear tab's sheet-mismatch check) would silently diverge from
+  // `adjusted` by exactly the tree's factor for every hero with any spent attack/energy
+  // point, false-triggering a "sheet mismatch" warning that has nothing to do with gear.
+  const expectedSheet = applySkillTree(
+    applyPoints(nakedForDerive, loadout, pts, sheetOther, level, stars),
+    nakedForDerive,
+    sheetOther,
+    treeSheet,
+  );
+
+  const propRows: PropHtkRow[] = propHtkRows(stoneHp, avgHit, targetProp);
+  const bossHp = propHp(stoneHp, BOSS_HP_MULT);
+  const bossHits = hitsToKill(avgHit, bossHp);
+  const avgPropHp = weightedAvgPropHp(stoneHp);
+
+  const gateRows: GateRow[] = buildGateRows(effective, context, field, dmgMult, gateAttackMult);
+
+  // AC-64l/AC-69/AC-70: Tier 1 only, reusing this call's own effective/effectiveDelta (no
+  // extra derive pass); always scored sustainedDps — findGateCandidate has no rankMode input
+  // for a caller to set, so this is unaffected by the UI's rankMode regardless.
+  const gate = findGateCandidate({ pts, effective, effectiveDelta: equippedResult.effectiveDelta, context });
+  const resetAdvice = buildResetAdvice(gate);
+
+  return {
+    mods,
+    sheetOther,
+    rest,
+    context,
+    gateAttackMult,
+    dmgMult,
+    attackMult,
+    energyMult,
+    speedMult,
+    critDmgMult,
+    teamCritPctOfBase,
+    treeSheet,
+    A: equippedResult,
+    B: cloneResult,
+    dps,
+    active,
+    predHit,
+    pointDelta,
+    adjusted,
+    effective,
+    bDiff,
+    bHitDiff,
+    ranking,
+    best,
+    eSwitch,
+    spentDelta,
+    uptime,
+    mitF,
+    predCrit,
+    avgHit,
+    expectedSheet,
+    stoneHp,
+    targetPropDefName: targetPropDef.name,
+    targetHp,
+    propRows,
+    bossHp,
+    bossHits,
+    avgPropHp,
+    gateRows,
+    resetAdvice,
+  };
+}

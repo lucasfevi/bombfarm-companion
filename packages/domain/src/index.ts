@@ -1,2 +1,5 @@
-/** @bombfarm/domain — hero/gear/DPS/sheet math (scaffold; sources land in T4). */
+/**
+ * @bombfarm/domain public root.
+ * Prefer deep imports: `@bombfarm/domain/<module>`.
+ */
 export {};
