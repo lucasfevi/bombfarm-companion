@@ -1,0 +1,511 @@
+name: Playwright e2e (web)
+
+on:
+  pull_request:
+    paths:
+      - 'apps/web/**'
+      - 'packages/domain/**'
+      - 'packages/ui/**'
+      - 'pnpm-lock.yaml'
+      - 'pnpm-workspace.yaml'
+      - 'package.json'
+      - '.github/workflows/e2e-web.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'apps/web/**'
+      - 'packages/domain/**'
+      - 'packages/ui/**'
+      - 'pnpm-lock.yaml'
+      - 'pnpm-workspace.yaml'
+      - 'package.json'
+      - '.github/workflows/e2e-web.yml'
+
+concurrency:
+  group: e2e-web-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  pull-requests: write
+
+env:
+  SHARD_TOTAL: 4
+  PAGES_ROOT: https://lucasfevi.github.io/bombfarm-companion
+
+jobs:
+  changes:
+    runs-on: ubuntu-latest
+    outputs:
+      e2e: ${{ steps.filter.outputs.e2e }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Detect e2e-relevant paths
+        uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            e2e:
+              - 'apps/web/src/**'
+              - 'apps/web/e2e/**'
+              - 'apps/web/public/**'
+              - 'apps/web/playwright.config.ts'
+              - 'apps/web/next.config.ts'
+              - 'apps/web/package.json'
+              - 'packages/domain/**'
+              - 'packages/ui/**'
+              - 'pnpm-lock.yaml'
+              - '.github/workflows/e2e-web.yml'
+
+  build-e2e:
+    needs: changes
+    if: needs.changes.outputs.e2e == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build static export
+        run: pnpm --filter @bombfarm/web build:e2e
+
+      - name: Upload static export
+        uses: actions/upload-artifact@v4
+        with:
+          name: e2e-static-out
+          path: apps/web/out/
+          retention-days: 1
+
+  smoke-shard:
+    needs: [changes, build-e2e]
+    if: needs.changes.outputs.e2e == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1, 2, 3, 4]
+    defaults:
+      run:
+        working-directory: apps/web
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install dependencies
+        working-directory: .
+        run: pnpm install --frozen-lockfile
+
+      - name: Install Playwright Chromium
+        run: pnpm exec playwright install --with-deps chromium
+
+      - name: Download static export
+        uses: actions/download-artifact@v4
+        with:
+          name: e2e-static-out
+          path: apps/web/out
+
+      - name: Run smoke e2e (shard ${{ matrix.shard }}/${{ env.SHARD_TOTAL }})
+        id: smoke-test
+        env:
+          CI: '1'
+          E2E_PREBUILT: '1'
+          PLAYWRIGHT_BLOB: '1'
+        run: pnpm exec playwright test --project=smoke --shard=${{ matrix.shard }}/${{ env.SHARD_TOTAL }}
+
+      - name: Upload blob report
+        if: always() && steps.smoke-test.outcome == 'failure'
+        uses: actions/upload-artifact@v4
+        with:
+          name: blob-smoke-${{ matrix.shard }}
+          path: apps/web/blob-report/
+          if-no-files-found: ignore
+          retention-days: 1
+
+      - name: Collect screenshot diffs
+        if: always() && steps.smoke-test.outcome == 'failure'
+        run: node e2e/scripts/collect-visual-diffs.mjs
+
+      - name: Upload screenshot diffs
+        if: always() && steps.smoke-test.outcome == 'failure'
+        uses: actions/upload-artifact@v4
+        with:
+          name: diffs-smoke-${{ matrix.shard }}
+          path: apps/web/visual-diffs/
+          if-no-files-found: ignore
+          retention-days: 1
+
+  visual-e2e:
+    needs: [changes, build-e2e]
+    if: needs.changes.outputs.e2e == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: apps/web
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install dependencies
+        working-directory: .
+        run: pnpm install --frozen-lockfile
+
+      - name: Install Playwright Chromium
+        run: pnpm exec playwright install --with-deps chromium
+
+      - name: Download static export
+        uses: actions/download-artifact@v4
+        with:
+          name: e2e-static-out
+          path: apps/web/out
+
+      - name: Run visual e2e
+        id: visual-test
+        env:
+          CI: '1'
+          E2E_PREBUILT: '1'
+          PLAYWRIGHT_BLOB: '1'
+        run: pnpm exec playwright test --project=chromium
+
+      - name: Upload blob report
+        if: always() && steps.visual-test.outcome == 'failure'
+        uses: actions/upload-artifact@v4
+        with:
+          name: blob-visual
+          path: apps/web/blob-report/
+          if-no-files-found: ignore
+          retention-days: 1
+
+      - name: Collect screenshot diffs
+        if: always() && steps.visual-test.outcome == 'failure'
+        run: node e2e/scripts/collect-visual-diffs.mjs
+
+      - name: Upload screenshot diffs
+        if: always() && steps.visual-test.outcome == 'failure'
+        uses: actions/upload-artifact@v4
+        with:
+          name: diffs-visual
+          path: apps/web/visual-diffs/
+          if-no-files-found: ignore
+          retention-days: 1
+
+  report:
+    needs: [changes, build-e2e, smoke-shard, visual-e2e]
+    if: >
+      always() && needs.changes.outputs.e2e == 'true' &&
+      (needs.smoke-shard.result == 'failure' || needs.visual-e2e.result == 'failure')
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: write
+      pull-requests: write
+      actions: write
+    defaults:
+      run:
+        working-directory: apps/web
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install dependencies
+        working-directory: .
+        run: pnpm install --frozen-lockfile
+
+      - name: Download blob reports
+        continue-on-error: true
+        uses: actions/download-artifact@v4
+        with:
+          pattern: blob-*
+          path: apps/web/all-blob-reports
+          merge-multiple: true
+
+      - name: Download screenshot diffs
+        continue-on-error: true
+        uses: actions/download-artifact@v4
+        with:
+          pattern: diffs-*
+          path: apps/web/visual-diffs
+          merge-multiple: true
+
+      - name: Check merge inputs
+        id: inputs
+        run: |
+          mkdir -p visual-diffs all-blob-reports
+          if [ -n "$(find all-blob-reports -name '*.zip' -print -quit)" ]; then
+            echo "blobs=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "blobs=false" >> "$GITHUB_OUTPUT"
+            echo "::warning::No blob reports found — the failure happened before any test ran."
+          fi
+
+      - name: Merge blob reports into one HTML report
+        if: steps.inputs.outputs.blobs == 'true'
+        run: pnpm exec playwright merge-reports --reporter html ./all-blob-reports
+
+      - name: Upload merged report (single artifact)
+        if: steps.inputs.outputs.blobs == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: e2e-report
+          path: |
+            apps/web/playwright-report/
+            apps/web/visual-diffs/
+          if-no-files-found: warn
+          retention-days: 14
+
+      - name: Delete intermediate shard artifacts
+        continue-on-error: true
+        working-directory: .
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          RUN_ID: ${{ github.run_id }}
+        run: |
+          ids=$(gh api "repos/${REPO}/actions/runs/${RUN_ID}/artifacts" --paginate \
+            --jq '.artifacts[] | select(.name | startswith("blob-") or startswith("diffs-")) | .id')
+          for id in $ids; do
+            gh api -X DELETE "repos/${REPO}/actions/artifacts/${id}" && echo "deleted artifact ${id}"
+          done
+
+      - name: Resolve publish eligibility
+        id: publish
+        env:
+          IS_FORK: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name != github.repository }}
+          HAS_BLOBS: ${{ steps.inputs.outputs.blobs }}
+        run: |
+          if [ "$IS_FORK" = "true" ] || [ "$HAS_BLOBS" != "true" ]; then
+            echo "eligible=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "eligible=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Stage publishable copy (no traces)
+        if: steps.publish.outputs.eligible == 'true'
+        run: node e2e/scripts/stage-published-report.mjs
+
+      - name: Publish report to GitHub Pages
+        id: pages
+        if: steps.publish.outputs.eligible == 'true'
+        continue-on-error: true
+        working-directory: .
+        env:
+          RUN_ID: ${{ github.run_id }}
+          KEEP_REPORTS: '20'
+        run: |
+          set -euo pipefail
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          tmp=$(mktemp -d)
+          git clone --depth 1 --branch gh-pages \
+            "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}.git" "$tmp" 2>/dev/null || {
+            git clone --depth 1 "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}.git" "$tmp"
+            git -C "$tmp" checkout --orphan gh-pages
+            git -C "$tmp" rm -rf . >/dev/null 2>&1 || true
+          }
+
+          touch "$tmp/.nojekyll"
+          mkdir -p "$tmp/reports"
+          rm -rf "$tmp/reports/${RUN_ID}"
+          cp -r apps/web/publish-report "$tmp/reports/${RUN_ID}"
+
+          stale=$(ls -1 "$tmp/reports" | sort -n | head -n "-${KEEP_REPORTS}" || true)
+          for old in $stale; do
+            rm -rf "$tmp/reports/$old"
+            echo "pruned reports/$old"
+          done
+
+          git -C "$tmp" add -A
+          if git -C "$tmp" diff --staged --quiet; then
+            echo "Nothing to publish — this run's report is already on gh-pages."
+            echo "published=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          git -C "$tmp" commit -m "ci: visual report for run ${RUN_ID}"
+
+          for attempt in 1 2 3 4 5; do
+            if git -C "$tmp" push origin gh-pages; then
+              echo "published on attempt ${attempt}"
+              echo "published=true" >> "$GITHUB_OUTPUT"
+              exit 0
+            fi
+            echo "push rejected, rebasing (attempt ${attempt})"
+            git -C "$tmp" fetch origin gh-pages
+            git -C "$tmp" rebase origin/gh-pages || git -C "$tmp" rebase --abort
+            sleep $((attempt * 5))
+          done
+          echo "::warning::Could not push the report to gh-pages after 5 attempts."
+
+      - name: Build review summary and PR comment
+        if: always()
+        env:
+          REPORT_URL: ${{ steps.pages.outputs.published == 'true' && format('{0}/reports/{1}', env.PAGES_ROOT, github.run_id) || '' }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          SMOKE_RESULT: ${{ needs.smoke-shard.result }}
+          VISUAL_RESULT: ${{ needs.visual-e2e.result }}
+        run: node e2e/scripts/build-report-comment.mjs
+
+      - name: Append review summary to job summary
+        if: always()
+        run: cat pr-comment.md >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upsert PR comment
+        if: always() && github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const marker = '<!-- e2e-visual-report -->';
+            const body = `${marker}\n${fs.readFileSync('apps/web/pr-comment.md', 'utf8')}`;
+            const { owner, repo } = context.repo;
+            const issue_number = context.issue.number;
+            const comments = await github.paginate(github.rest.issues.listComments, {
+              owner, repo, issue_number, per_page: 100,
+            });
+            const mine = comments.filter(
+              (c) => c.user.type === 'Bot' && c.body?.includes(marker),
+            );
+            const [existing, ...duplicates] = mine;
+            if (existing) {
+              await github.rest.issues.updateComment({ owner, repo, comment_id: existing.id, body });
+            } else {
+              await github.rest.issues.createComment({ owner, repo, issue_number, body });
+            }
+            const stale = [
+              ...duplicates,
+              ...comments.filter(
+                (c) =>
+                  c.user.type === 'Bot' &&
+                  !c.body?.includes(marker) &&
+                  c.body?.startsWith('## Playwright visual diffs'),
+              ),
+            ];
+            for (const c of stale) {
+              await github.rest.issues.deleteComment({ owner, repo, comment_id: c.id });
+            }
+
+  report-resolved:
+    needs: [changes, smoke-shard, visual-e2e]
+    if: >
+      always() && github.event_name == 'pull_request' &&
+      needs.changes.outputs.e2e == 'true' &&
+      needs.smoke-shard.result == 'success' && needs.visual-e2e.result == 'success'
+    runs-on: ubuntu-latest
+    permissions:
+      pull-requests: write
+    steps:
+      - name: Mark existing report comment resolved
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const marker = '<!-- e2e-visual-report -->';
+            const { owner, repo } = context.repo;
+            const issue_number = context.issue.number;
+            const comments = await github.paginate(github.rest.issues.listComments, {
+              owner, repo, issue_number, per_page: 100,
+            });
+            const existing = comments.find(
+              (c) => c.user.type === 'Bot' && c.body?.includes(marker),
+            );
+            if (!existing) return;
+            const runUrl = `${context.serverUrl}/${owner}/${repo}/actions/runs/${context.runId}`;
+            await github.rest.issues.updateComment({
+              owner, repo, comment_id: existing.id,
+              body: `${marker}\n## Playwright e2e — review\n\n✅ Smoke and visual both pass on the latest commit ([run](${runUrl})). No diffs to review.`,
+            });
+
+  e2e-smoke:
+    name: e2e-smoke
+    needs: [changes, build-e2e, smoke-shard]
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Require path detection
+        if: needs.changes.result != 'success'
+        run: exit 1
+
+      - name: Skip — no e2e-relevant changes
+        if: needs.changes.outputs.e2e != 'true'
+        run: echo "No e2e-relevant file changes."
+
+      - name: Require smoke suite
+        if: needs.changes.outputs.e2e == 'true'
+        run: |
+          if [ "${{ needs.build-e2e.result }}" != "success" ]; then
+            echo "build-e2e: ${{ needs.build-e2e.result }}"
+            exit 1
+          fi
+          if [ "${{ needs.smoke-shard.result }}" != "success" ]; then
+            echo "smoke-shard: ${{ needs.smoke-shard.result }}"
+            exit 1
+          fi
+
+  e2e-visual:
+    name: e2e-visual
+    needs: [changes, build-e2e, visual-e2e]
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Require path detection
+        if: needs.changes.result != 'success'
+        run: exit 1
+
+      - name: Skip — no e2e-relevant changes
+        if: needs.changes.outputs.e2e != 'true'
+        run: echo "No e2e-relevant file changes."
+
+      - name: Require visual suite
+        if: needs.changes.outputs.e2e == 'true'
+        run: |
+          if [ "${{ needs.build-e2e.result }}" != "success" ]; then
+            echo "build-e2e: ${{ needs.build-e2e.result }}"
+            exit 1
+          fi
+          if [ "${{ needs.visual-e2e.result }}" != "success" ]; then
+            echo "visual-e2e: ${{ needs.visual-e2e.result }}"
+            exit 1
+          fi

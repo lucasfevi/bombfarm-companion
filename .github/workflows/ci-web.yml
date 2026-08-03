@@ -1,0 +1,66 @@
+name: CI Web
+
+# Path-filtered web quality including next build (CIV-DEBT-01) before Vercel deploy.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'apps/web/**'
+      - 'packages/domain/**'
+      - 'packages/ui/**'
+      - 'docs/**'
+      - 'pnpm-lock.yaml'
+      - 'pnpm-workspace.yaml'
+      - 'package.json'
+      - 'tsconfig.base.json'
+      - 'eslint.config.mjs'
+      - 'vitest.config.ts'
+      - '.github/workflows/ci-web.yml'
+  pull_request:
+    paths:
+      - 'apps/web/**'
+      - 'packages/domain/**'
+      - 'packages/ui/**'
+      - 'docs/**'
+      - 'pnpm-lock.yaml'
+      - 'pnpm-workspace.yaml'
+      - 'package.json'
+      - 'tsconfig.base.json'
+      - 'eslint.config.mjs'
+      - 'vitest.config.ts'
+      - '.github/workflows/ci-web.yml'
+
+concurrency:
+  group: ci-web-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  quality:
+    name: Typecheck, lint, unit, build (web)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Typecheck web + domain + ui
+        run: pnpm --filter @bombfarm/domain --filter @bombfarm/ui --filter @bombfarm/web typecheck
+
+      - name: Lint web + domain + ui
+        run: pnpm --filter @bombfarm/domain --filter @bombfarm/ui --filter @bombfarm/web lint
+
+      - name: Unit tests (domain + web)
+        run: pnpm --filter @bombfarm/domain test && pnpm --filter @bombfarm/web test
+
+      - name: Build web static export
+        run: pnpm --filter @bombfarm/web build

@@ -43,12 +43,11 @@ export default tseslint.config(
           pattern: 'src/features/*',
           capture: ['feature'],
         },
-        { type: 'shared-design-system', pattern: 'src/shared/design-system' },
+        // Design-system + domain live in workspace packages (@bombfarm/ui, @bombfarm/domain)
+        // and are treated as external modules (see allow external policy below). CIV-DEBT-02.
         { type: 'shared-game-art', pattern: 'src/shared/game-art' },
         { type: 'shared-context', pattern: 'src/shared/context' },
-        // W4 owns shared/stores — pattern reserved, folder not created in W3 (Q-4).
         { type: 'shared-stores', pattern: 'src/shared/stores' },
-        { type: 'shared-domain', pattern: 'src/shared/domain' },
         { type: 'shared-i18n', pattern: 'src/shared/i18n' },
         { type: 'shared-lib', pattern: 'src/shared/lib' },
       ],
@@ -161,7 +160,7 @@ export default tseslint.config(
           default: 'disallow',
           checkAllOrigins: true,
           policies: [
-            // MOD-08: app → features → shared
+            // MOD-08: app → features → shared (+ workspace packages via external)
             {
               from: { element: { type: 'app' } },
               allow: {
@@ -169,11 +168,9 @@ export default tseslint.config(
                   element: {
                     type: [
                       'feature',
-                      'shared-design-system',
                       'shared-game-art',
                       'shared-context',
                       'shared-stores',
-                      'shared-domain',
                       'shared-i18n',
                       'shared-lib',
                     ],
@@ -188,11 +185,9 @@ export default tseslint.config(
                 to: {
                   element: {
                     type: [
-                      'shared-design-system',
                       'shared-game-art',
                       'shared-context',
                       'shared-stores',
-                      'shared-domain',
                       'shared-i18n',
                       'shared-lib',
                     ],
@@ -228,33 +223,17 @@ export default tseslint.config(
                 to: { element: { type: 'feature', captured: { feature: 'roster' } } },
               },
             },
-            // MOD-10: design-system → itself + shared/lib only
-            {
-              from: { element: { type: 'shared-design-system' } },
-              allow: {
-                to: {
-                  element: { type: ['shared-design-system', 'shared-lib'] },
-                },
-              },
-            },
-            // game-art → domain / i18n / DS / lib (game-aware presentational)
+            // game-art → i18n / lib (DS + domain via @bombfarm/* externals)
             {
               from: { element: { type: 'shared-game-art' } },
               allow: {
                 to: {
                   element: {
-                    type: [
-                      'shared-game-art',
-                      'shared-design-system',
-                      'shared-domain',
-                      'shared-i18n',
-                      'shared-lib',
-                    ],
+                    type: ['shared-game-art', 'shared-i18n', 'shared-lib'],
                   },
                 },
               },
             },
-            // Temporary providers (W5 deletes bridge); useAppLang reads the store (W4).
             {
               from: { element: { type: 'shared-context' } },
               allow: {
@@ -263,10 +242,8 @@ export default tseslint.config(
                     type: [
                       'shared-context',
                       'shared-stores',
-                      'shared-domain',
                       'shared-i18n',
                       'shared-lib',
-                      'shared-design-system',
                     ],
                   },
                 },
@@ -277,13 +254,7 @@ export default tseslint.config(
               allow: {
                 to: {
                   element: {
-                    type: [
-                      'shared-stores',
-                      'shared-domain',
-                      'shared-i18n',
-                      'shared-lib',
-                      'shared-design-system',
-                    ],
+                    type: ['shared-stores', 'shared-i18n', 'shared-lib'],
                   },
                 },
               },
@@ -296,34 +267,17 @@ export default tseslint.config(
                 },
               },
             },
-            // shared/lib may reach domain (storage carries game types — MOD-19 / A-18)
             {
               from: { element: { type: 'shared-lib' } },
               allow: {
                 to: {
-                  element: { type: ['shared-lib', 'shared-domain'] },
+                  element: { type: ['shared-lib'] },
                 },
               },
             },
-            // MOD-11: domain → i18n / lib / itself; not React / DS / features / app
-            {
-              from: { element: { type: 'shared-domain' } },
-              allow: {
-                to: {
-                  element: {
-                    type: ['shared-domain', 'shared-i18n', 'shared-lib'],
-                  },
-                },
-              },
-            },
+            // Workspace packages (@bombfarm/ui, @bombfarm/domain) + npm deps
             {
               allow: { to: { module: { origin: 'external' } } },
-            },
-            {
-              from: { element: { type: 'shared-domain' } },
-              disallow: {
-                to: { module: { origin: 'external', source: 'react' } },
-              },
             },
           ],
         },
@@ -339,20 +293,13 @@ export default tseslint.config(
               allow: 'index.{ts,tsx}',
             },
             {
-              target: { element: { type: 'shared-design-system' } },
-              allow: '{index.{ts,tsx},*.recipe.ts}',
-            },
-            {
               target: { element: { type: 'shared-game-art' } },
               allow: '{index.{ts,tsx},game-art.recipe.ts}',
             },
-            // Domain / i18n / lib / context have no single barrel requirement (deep OK).
-            // '**' (not '*'): W7 turns shared-domain modules into directories with an
-            // index.ts barrel, so the allowed entry path can be nested (e.g. model/index.ts).
             {
               target: {
                 element: {
-                  type: ['shared-domain', 'shared-i18n', 'shared-lib', 'shared-context', 'shared-stores'],
+                  type: ['shared-i18n', 'shared-lib', 'shared-context', 'shared-stores'],
                 },
               },
               allow: '**',
