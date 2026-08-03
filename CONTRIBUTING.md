@@ -21,7 +21,7 @@ CI is **path-filtered**: web-only PRs run `ci-web` / `e2e-web`; desktop-only PRs
 
 ## Web deploy (maintainers)
 
-Production web: **https://bombfarm-companion.vercel.app** via a **new** Vercel project (Root Directory `apps/web`, branch `main`). Required GitHub Actions secrets: `VERCEL_TOKEN`, `VERCEL_ORG_ID`, `VERCEL_PROJECT_ID`. Do not commit secret values. Old planner host redirect is manual later.
+Production + PR previews: **https://bombfarm-companion.vercel.app** via the **Vercel Git integration** on this repo (Root Directory `apps/web`, production branch `main`). GitHub Actions runs path-filtered CI only — there is no Actions deploy workflow and no Vercel deploy secrets in GitHub. Old planner host redirect is manual later.
 
 ## Code style
 

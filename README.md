@@ -34,22 +34,15 @@ pnpm dev:web      # web planner only
 
 ## CI / deploy
 
-Path-filtered GitHub Actions:
+Path-filtered GitHub Actions (quality only — **no** deploy workflow):
 
 | Workflow | When |
 |---|---|
 | `ci-web.yml` | `apps/web`, `packages/domain`, `packages/ui`, shared root configs |
 | `ci-desktop.yml` | `apps/desktop`, contracts/game-data/pricing/ui, shared root configs |
 | `e2e-web.yml` | Web Playwright smoke + visual |
-| `deploy-web.yml` | `main` + web paths → Vercel CLI production deploy |
 
-**Vercel (human setup):** create a **new** project linked to `bombfarm-companion` (do not retarget the old hero-planner project). Framework: Next.js. **Root Directory:** `apps/web`. Production branch: `main`. Add repo secrets (never commit values):
-
-- `VERCEL_TOKEN`
-- `VERCEL_ORG_ID`
-- `VERCEL_PROJECT_ID`
-
-Prefer landing `ci-web` (including `pnpm --filter @bombfarm/web build`) before pointing the project at `main`.
+**Vercel (Git integration):** project linked to this repo deploys **production** on `main` and **PR previews** automatically. Framework: Next.js. **Root Directory:** `apps/web`. Intended host: [https://bombfarm-companion.vercel.app](https://bombfarm-companion.vercel.app). No `VERCEL_TOKEN` / org / project GitHub Actions secrets required for deploy. Prefer green `ci-web` (including `pnpm --filter @bombfarm/web build`) before treating prod as healthy.
 
 ## DEV vs PROD flavors (desktop)
 
