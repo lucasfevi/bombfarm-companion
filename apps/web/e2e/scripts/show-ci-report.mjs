@@ -18,7 +18,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 
 const OUT_DIR = path.resolve(process.cwd(), 'tmp-e2e-report');
-const WORKFLOW_FILE = 'e2e.yml';
+const WORKFLOW_FILE = 'e2e-web.yml';
 const ROOT = process.cwd();
 const PLAYWRIGHT_CLI = path.join(ROOT, 'node_modules', '@playwright', 'test', 'cli.js');
 

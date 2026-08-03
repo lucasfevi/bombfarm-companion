@@ -65,7 +65,7 @@ File-size lint budgets (also `error`, not a "rough target"): general `src/` file
 
 ## Routes
 
-- `/` — Hero planner (import-only roster, tab stage: Abilities / Gear / Account / Points). Workspace lives in the `@planner` slot.
+- `/` — Web planner (import-only roster, tab stage: Abilities / Gear / Account / Points). Workspace lives in the `@planner` slot.
 - `/phases` — Phase explorer (wiki snapshot + roster-aware intel). Phase picker is **independent** of the account's farm phase until the user clicks **Use as farm phase** (`src/features/phases/model/phases-page.ts` → `bf-hp-account-v1`). The planner slot stays mounted but hidden.
 
 Top nav (`SiteHeader` in the shell): **Planner · Phases**.

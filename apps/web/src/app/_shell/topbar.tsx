@@ -32,8 +32,8 @@ export function Topbar({
             priority
           />
           <div>
-            <div className="text-sm leading-[1.1] font-bold">Hero planner</div>
-            <div className="text-[11px] tracking-[0.04em] text-muted uppercase">{t.tagline}</div>
+            <div className="text-sm leading-[1.1] font-bold">Bomb Farm</div>
+            <div className="text-[11px] tracking-[0.04em] text-muted uppercase">{t.appSuiteTag}</div>
           </div>
         </div>
         <div className="flex flex-nowrap items-center justify-end gap-1.5 max-[720px]:flex-wrap max-[720px]:justify-start">
