@@ -5,10 +5,14 @@
   "type": "module",
   "exports": {
     ".": {
-      "types": "./dist/index.d.ts",
-      "import": "./dist/index.js"
+      "types": "./src/index.ts",
+      "default": "./src/index.ts"
     },
-    "./styles.css": "./src/styles.css"
+    "./styles.css": "./src/styles.css",
+    "./*": {
+      "types": "./src/*",
+      "default": "./src/*"
+    }
   },
   "scripts": {
     "build": "tsc -p tsconfig.json",
@@ -17,14 +21,26 @@
     "test": "vitest run"
   },
   "peerDependencies": {
+    "@base-ui/react": "^1.6.0",
+    "class-variance-authority": "^0.7.1",
+    "clsx": "^2.1.1",
+    "motion": "^12.0.0",
     "react": "^19.0.0",
-    "react-dom": "^19.0.0"
+    "react-dom": "^19.0.0",
+    "react-icons": "^5.5.0",
+    "tailwind-merge": "^3.6.0"
   },
   "devDependencies": {
+    "@base-ui/react": "^1.6.0",
     "@types/react": "^19.1.8",
     "@types/react-dom": "^19.1.6",
+    "class-variance-authority": "^0.7.1",
+    "clsx": "^2.1.1",
+    "motion": "^12.42.2",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
+    "react-icons": "^5.5.0",
+    "tailwind-merge": "^3.6.0",
     "typescript": "^5.8.3",
     "vitest": "^3.2.4"
   }

@@ -1,0 +1,6 @@
+/* Storybook preview entry — must go through PostCSS (@tailwindcss/postcss).
+   Explicit @source so Tailwind v4 scans ui recipes even when the CSS module
+   graph does not walk story TSX imports the same way Next does. */
+@import '../src/app/globals.css';
+
+@source '../src/shared/design-system/**/*.{ts,tsx}';

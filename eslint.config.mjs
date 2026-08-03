@@ -3,6 +3,19 @@ import globals from 'globals';
 import tseslint from 'typescript-eslint';
 import reactHooks from 'eslint-plugin-react-hooks';
 
+/** Companion-native packages keep the pre-merge strict typed lint bar. */
+const companionNativePackages = [
+  'packages/contracts/**/*.{ts,tsx}',
+  'packages/game-data/**/*.{ts,tsx}',
+  'packages/pricing/**/*.{ts,tsx}',
+];
+
+/** Planner-origin packages (`domain`, `ui`) ship under recommendedTypeChecked. */
+const plannerOriginPackages = [
+  'packages/domain/**/*.{ts,tsx}',
+  'packages/ui/**/*.{ts,tsx}',
+];
+
 export default tseslint.config(
   {
     ignores: [
@@ -12,12 +25,31 @@ export default tseslint.config(
       '**/release/**',
       '**/node_modules/**',
       '**/next-env.d.ts',
+      // Stories/tests are excluded from package tsconfigs; lint via Storybook/web Vitest instead.
+      'packages/ui/**/*.stories.{ts,tsx}',
+      'packages/ui/**/*.{test,spec}.{ts,tsx}',
     ],
   },
   eslint.configs.recommended,
-  ...tseslint.configs.strictTypeChecked,
   {
-    files: ['packages/**/*.{ts,tsx}'],
+    files: companionNativePackages,
+    extends: [...tseslint.configs.strictTypeChecked],
+    languageOptions: {
+      parserOptions: {
+        projectService: true,
+        tsconfigRootDir: import.meta.dirname,
+      },
+    },
+    rules: {
+      '@typescript-eslint/no-unused-vars': [
+        'error',
+        { argsIgnorePattern: '^_', varsIgnorePattern: '^_' },
+      ],
+    },
+  },
+  {
+    files: plannerOriginPackages,
+    extends: [...tseslint.configs.recommendedTypeChecked],
     languageOptions: {
       parserOptions: {
         projectService: true,
@@ -33,6 +65,7 @@ export default tseslint.config(
   },
   {
     files: ['apps/desktop/src/**/*.ts', 'apps/desktop/renderer/**/*.{ts,tsx}'],
+    extends: [...tseslint.configs.strictTypeChecked],
     languageOptions: {
       parserOptions: {
         project: './apps/desktop/tsconfig.eslint.json',

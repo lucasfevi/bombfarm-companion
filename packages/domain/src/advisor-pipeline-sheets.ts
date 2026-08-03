@@ -1,0 +1,90 @@
+import {
+  sheetsFromBirth,
+  type BirthStats,
+  type TreeSheetTotals,
+} from './birth-sheet';
+import type { Loadout, SheetOtherPct, SheetStats } from './gear';
+
+export type ResolveDeriveSheetsInput = {
+  naked: SheetStats;
+  geared: SheetStats;
+  loadout: Loadout;
+  level: number;
+  stars: number;
+  sheetOther: SheetOtherPct;
+  treeDanoTotal: number;
+  treeCritChance: number;
+  treeCritDmg: number;
+  treeSpeed: number;
+  treeEnergy: number;
+  /** `skills.totals.luck_add × 100` — flat Luck percentage points (BSPW5-03, ASM-01). */
+  treeLuckFlatPct: number;
+  /**
+   * When set, naked/geared for derive are recomposed from birth (tree-inclusive zero-pts
+   * geared) so Points After / DPS stay aligned with Stats Total after level/stars/tree edits.
+   */
+  birth?: BirthStats | null;
+};
+
+export type ResolvedDeriveSheets = {
+  treeSheet: TreeSheetTotals;
+  nakedForDerive: SheetStats;
+  gearedForDerive: SheetStats;
+};
+
+/**
+ * Builds the pipeline's skill-tree sheet and picks which naked/geared sheets `derive` should
+ * use — birth-recomposed when `birth` is present, stored naked/gearedOverride otherwise.
+ * Extracted from `computeAdvisorPipeline` (advisor-pipeline.ts) to keep that file under the
+ * repo's max-lines budget; behavior is unchanged.
+ */
+export function resolveDeriveSheets(input: ResolveDeriveSheetsInput): ResolvedDeriveSheets {
+  const {
+    naked,
+    geared,
+    loadout,
+    level,
+    stars,
+    sheetOther,
+    treeDanoTotal,
+    treeCritChance,
+    treeCritDmg,
+    treeSpeed,
+    treeEnergy,
+    treeLuckFlatPct,
+    birth,
+  } = input;
+
+  // BSPW5-03: luckFlatPct now comes from the account slice (skills.totals.luck_add × 100,
+  // wired by mapAccountData/hydrateAccount) — Wave 4's ASM-01 literal 0 is gone. critDmgMult
+  // stays 1: it is unstored (ASM-01 in birth-sheet.ts) and 1.0 in every fixture repo-wide;
+  // `unmodelledTreeFindings` (BSPW4-13) fails loudly the day a save disagrees.
+  const treeSheet: TreeSheetTotals = {
+    danoStatic: treeDanoTotal,
+    energyPct: treeEnergy,
+    speedPct: treeSpeed,
+    critChancePct: treeCritChance,
+    critDmgPct: treeCritDmg,
+    luckFlatPct: treeLuckFlatPct,
+    critDmgMult: 1,
+  };
+
+  // Birth-backed heroes: ignore stored naked/gearedOverride for math — residual level/stars
+  // rescale understates multiplicative tree (dmg_static) on the catalog Δ.
+  const birthSheets = birth
+    ? sheetsFromBirth({
+        birth,
+        level,
+        stars,
+        sheetOther,
+        loadout,
+        tree: treeSheet,
+      })
+    : null;
+
+  return {
+    treeSheet,
+    nakedForDerive: birthSheets?.naked ?? naked,
+    gearedForDerive: birthSheets?.geared ?? geared,
+  };
+}

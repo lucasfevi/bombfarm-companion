@@ -1,0 +1,73 @@
+export const en = {
+  tagline: "build → gear → points",
+  appSuiteTag: "Hero planner",
+  siteNavAria: "Main sections",
+  navPlanner: "Planner",
+  navPhases: "Phases",
+  guideToggleTitle: "Show / hide the quick guide",
+  hide: "hide",
+  guideTitle: "Quick guide — from game to best build",
+  guideSteps: [
+    {
+      t: "1 · Export",
+      d: "In BombFarm, export your save file — a .json with your account, heroes and items. No need to reset points first: the planner reads each hero's birth roll straight from the save, so your current spend stays intact. If a reset is actually worth it, the app tells you — look for the warn border on the hero strip and the gain line on the <em>Points</em> tab. Everything is read locally in your browser; nothing is uploaded anywhere.",
+    },
+    {
+      t: "2 · Import",
+      d: "Hit <em>Import</em> in the top bar, drop the file in, and review what will change — created, updated, removed — then confirm. Every hero in your save syncs: heroes you imported before are updated in place, heroes no longer in the save are removed, never duplicated. Each imported hero comes with the exact geared stats, full gear (slot, set, level, forge), abilities, level, rarity, rank and stars. Skill tree stats and current house arrive automatically with the import.",
+    },
+    {
+      t: "3 · Points",
+      d: "The app already works out your next best point automatically — see <em>Next point</em> on the hero strip above the tabs. Bump that same stat's stepper in the <em>Points</em> panel to watch DPS climb, then spend the real point in-game to match.",
+    },
+    {
+      t: "4 · Compare & save",
+      d: "Everything auto-saves in this browser; use <em>Gear compare</em> to clone your set and A/B the DPS. Use <em>Phases</em> in the top bar to inspect any map.",
+    },
+  ],
+  toastHeroSaved: "Hero saved",
+  toastAccountSaved: "Account saved",
+  toastSaveFailed: "Could not save — browser storage is full or unavailable",
+  disclaimer: "This is an unofficial, fan-made tool. It is not affiliated with, endorsed by or connected to the BombFarm developers in any way.",
+  wikiArtCredit: "Assets are from the official BombFarm wiki.",
+  wikiArtCreditLink: "wiki.bombfarm.net",
+  heroAvatarCol: "Avatar",
+  coffee: "Buy me a coffee",
+};
+
+export const pt: typeof en = {
+  tagline: "build → equipamento → pontos",
+  appSuiteTag: "Planejador de heróis",
+  siteNavAria: "Seções principais",
+  navPlanner: "Planner",
+  navPhases: "Fases",
+  guideToggleTitle: "Mostrar / ocultar o guia rápido",
+  hide: "ocultar",
+  guideTitle: "Guia rápido — do jogo à melhor build",
+  guideSteps: [
+    {
+      t: "1 · Exportar",
+      d: "No BombFarm, exporte seu arquivo de save — um .json com sua conta, heróis e itens. Não precisa zerar os pontos antes: o planner lê o roll de nascimento de cada herói direto do save, então seu gasto atual fica intacto. Se um reset realmente valer a pena, o app avisa — veja a borda de alerta na faixa do herói e a linha de ganho na aba <em>Pontos</em>. Tudo é lido localmente no seu navegador; nada é enviado a lugar nenhum.",
+    },
+    {
+      t: "2 · Importar",
+      d: "Clique em <em>Importar</em> na barra superior, solte o arquivo e revise o que vai mudar — criados, atualizados, removidos — depois confirme. Todo herói do seu save é sincronizado: heróis já importados são atualizados no mesmo cadastro, heróis que saíram do save são removidos, nunca duplicados. Cada herói importado chega com os stats equipados exatamente como no jogo, equipamento completo (slot, conjunto, nível, forja), habilidades, nível, raridade, rank e estrelas. Stats da árvore de habilidades e a casa atual vêm junto na importação.",
+    },
+    {
+      t: "3 · Pontos",
+      d: "O app já calcula sozinho o seu próximo melhor ponto — veja <em>Próximo ponto</em> na faixa do herói acima das abas. Aumente esse mesmo atributo no painel <em>Pontos</em> para ver o DPS subir e, no jogo, gaste o ponto de verdade para acompanhar.",
+    },
+    {
+      t: "4 · Comparar & salvar",
+      d: "Tudo salva sozinho neste navegador; use <em>Comparar equipamento</em> para clonar o equipamento e comparar o DPS lado a lado. Use <em>Fases</em> na barra superior para inspecionar qualquer mapa.",
+    },
+  ],
+  toastHeroSaved: "Herói salvo",
+  toastAccountSaved: "Conta salva",
+  toastSaveFailed: "Não foi possível salvar — o armazenamento do navegador está cheio ou indisponível",
+  disclaimer: "Este é um app não oficial, feito por fã. Não tem afiliação, endosso nem qualquer ligação com os desenvolvedores do BombFarm.",
+  wikiArtCredit: "Assets vêm da wiki oficial do BombFarm.",
+  wikiArtCreditLink: "wiki.bombfarm.net",
+  heroAvatarCol: "Avatar",
+  coffee: "Me pague um café",
+};
