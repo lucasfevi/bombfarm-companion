@@ -13,11 +13,11 @@ import {
   type RankMode,
   type RarityKey,
 } from './model';
-import { applyPoints, emptySheetOther, projectGearedOntoLoadout, type Loadout, type SheetOtherPct, type SheetStats } from './gear';
+import { applyPoints, emptySheetOther, type Loadout, type SheetOtherPct, type SheetStats } from './gear';
 import { SHEET_KEYS, type SheetKey } from './planner-constants';
 import { computeCombatMults, derive, type DeriveResult } from './derive';
 import { applySkillTree, type BirthStats, type TreeSheetTotals } from './birth-sheet';
-import { resolveDeriveSheets } from './advisor-pipeline-sheets';
+import { resolveCloneGeared, resolveDeriveSheets } from './advisor-pipeline-sheets';
 import {
   effectiveFarmPhase,
   effectiveMitigationPct,
@@ -238,12 +238,22 @@ export function computeAdvisorPipeline(input: AdvisorPipelineInput): AdvisorPipe
   const dps = equippedResult.dps;
   const active = equippedResult.active;
   const predHit = equippedResult.hit;
-  // Compare against the observed sheet projected onto the clone loadout — not
-  // applyGear(naked, alt), which drifts when typed geared ≠ catalog gear math.
+  // Birth-backed: recompose clone from birth (same path as Apply to current).
+  // Without birth: project the observed sheet so typed drift stays a 0% delta
+  // when clone === current.
   const cloneResult = altLoadout
     ? derive({
         ...deriveArgs,
-        geared: projectGearedOntoLoadout(gearedForDerive, loadout, altLoadout, sheetOther),
+        geared: resolveCloneGeared({
+          birth,
+          gearedForDerive,
+          loadout,
+          altLoadout,
+          sheetOther,
+          level,
+          stars,
+          treeSheet,
+        }),
       })
     : null;
   const bDiff = cloneResult ? (cloneResult.dps / dps - 1) * 100 || 0 : 0;
