@@ -29,8 +29,8 @@ describe('hero-abilities', () => {
   it('lists unspent pool slots in roster icons', () => {
     const entries = heroAbilityIconEntries({ marcha_acelerada: 0, olho_clinico: 10 });
     expect(entries).toEqual([
-      { id: 'marcha_acelerada', level: 0 },
-      { id: 'olho_clinico', level: 10 },
+      { id: 'marcha_acelerada', level: 0, max: 20 },
+      { id: 'olho_clinico', level: 10, max: 20 },
     ]);
   });
 

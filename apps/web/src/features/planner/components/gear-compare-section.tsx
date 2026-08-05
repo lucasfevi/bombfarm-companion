@@ -13,6 +13,7 @@ import {
   tipClass,
 } from '@bombfarm/ui/panel-field.recipe';
 import { SlotEditor, slotsGridClass } from '@/features/gear';
+import { GearSlotStatsGrid } from './gear-slot-stats-grid';
 import { AnimatePresence, motion, MotionConfig } from 'motion/react';
 import { maskRevealStyle } from '@/shared/lib/mask-reveal';
 import { GearTotalsTable } from './gear-totals-table';
@@ -180,6 +181,7 @@ export function GearCompareSection() {
                   );
                 })}
               </div>
+              <GearSlotStatsGrid loadout={altLoadout} t={t} formatNumber={formatNumber} />
             </motion.div>
           )}
         </AnimatePresence>

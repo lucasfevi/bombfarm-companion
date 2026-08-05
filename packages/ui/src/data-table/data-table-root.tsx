@@ -5,16 +5,22 @@ import type { DataTableRootProps } from './types';
 
 export function DataTableRoot({
   scrollable = false,
-  maxRows = 11,
+  maxRows,
+  minRows,
   rowHeight = '2rem',
   className,
   children,
 }: DataTableRootProps) {
+  const style =
+    scrollable && (maxRows != null || minRows != null)
+      ? {
+          ...(maxRows != null ? { maxHeight: `calc(${rowHeight} * ${maxRows})` } : {}),
+          ...(minRows != null ? { minHeight: `calc(${rowHeight} * ${minRows})` } : {}),
+        }
+      : undefined;
+
   return (
-    <div
-      className={cn(scrollable && 'overflow-auto', className)}
-      style={scrollable ? { maxHeight: `calc(${rowHeight} * ${maxRows})` } : undefined}
-    >
+    <div className={cn(scrollable && 'isolate min-h-0 overflow-auto', className)} style={style}>
       {children}
     </div>
   );

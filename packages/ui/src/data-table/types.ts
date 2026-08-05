@@ -4,11 +4,13 @@ import type { DataTableCellVariants } from '../data-table.recipe';
 export type SortDir = 'asc' | 'desc';
 
 export type DataTableRootProps = {
-  /** Cap height and scroll the body under sticky headers. */
+  /** Scroll the body under sticky headers. Parent height wins unless `maxRows` is set. */
   scrollable?: boolean;
-  /** Max visible rows (header + body) when `scrollable`. */
+  /** Optional max height in row units when `scrollable`. Omit to fill the parent. */
   maxRows?: number;
-  /** Body row height driving the max-height cap when `scrollable`. */
+  /** Optional min height in row units when `scrollable`. */
+  minRows?: number;
+  /** Body row height driving min/max caps when `scrollable`. */
   rowHeight?: string;
   className?: string;
   children: ReactNode;

@@ -23,8 +23,13 @@ export function abilitiesForHeroOrdered(abilities: Record<string, number>): Abil
 /** Roster / picker — every pool slot, including unspent (level 0). */
 export function heroAbilityIconEntries(
   abilities: Record<string, number>,
-): Array<{ id: string; level: number }> {
-  return heroAbilityIds(abilities).map((abilityId) => ({ id: abilityId, level: abilities[abilityId] ?? 0 }));
+): Array<{ id: string; level: number; max: number }> {
+  const maxById = new Map(ABILITIES.map((ability) => [ability.id, ability.max]));
+  return heroAbilityIds(abilities).map((abilityId) => ({
+    id: abilityId,
+    level: abilities[abilityId] ?? 0,
+    max: maxById.get(abilityId) ?? 20,
+  }));
 }
 
 /** Slot quota from the hero’s fixed pool size. */

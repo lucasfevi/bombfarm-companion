@@ -1,6 +1,8 @@
 'use client';
 
 import type { HTMLAttributes } from 'react';
+import { cn } from '../cn';
+import { dataTableHeadSectionClass } from '../data-table.recipe';
 
 export function DataTableHead({
   className,
@@ -8,7 +10,7 @@ export function DataTableHead({
   ...props
 }: HTMLAttributes<HTMLTableSectionElement>) {
   return (
-    <thead className={className} {...props}>
+    <thead className={cn(dataTableHeadSectionClass, className)} {...props}>
       {children}
     </thead>
   );

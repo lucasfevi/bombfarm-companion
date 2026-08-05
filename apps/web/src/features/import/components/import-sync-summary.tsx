@@ -18,7 +18,7 @@ export function ImportSyncSummary({
 }) {
   const { created, updated, removed } = summarizeImportSync(candidates, existing);
   return (
-    <div className="mb-2 text-xs">
+    <div className="mb-2 shrink-0 text-xs">
       <p className="m-0 text-muted">{sub(t.importSyncSummary, { created, updated, removed })}</p>
       {removed > 0 ? <p className="m-0 mt-1 text-warn">{t.importRemovedNote}</p> : null}
     </div>

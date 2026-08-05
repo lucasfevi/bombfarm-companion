@@ -91,7 +91,13 @@ export function HeroAbilitiesTab() {
             return (
               <AbilityCard selected={selected} onSheet={onSheet} lockedOut={lockedOut} key={ability.id}>
                 <div className={abilHeadClass}>
-                  <AbilityIcon code={ability.id} size="lg" className="shrink-0 self-start" />
+                  <AbilityIcon
+                    code={ability.id}
+                    size="xl"
+                    level={level}
+                    max={ability.max}
+                    className="shrink-0 self-start"
+                  />
                   <div className={abilMetaClass}>
                     <span className={abilNameClass} title={aFx}>
                       {aName}

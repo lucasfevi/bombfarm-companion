@@ -19,6 +19,8 @@
 
 - Empty workspace copy stays **import-only** ([`emptyTitle` / `emptyBody`](../src/shared/i18n)).
 - Ability panel, roster icons, and picker rows use [`hero-abilities.ts`](../../../packages/domain/src/hero-abilities.ts) — pool keys only.
+- After a file parses, the dialog switches to `importPreviewTitle` / `importPreviewDesc` (not the upload-step strings), fills `h-[min(85vh,900px)]`, and uses one table scroller (`flex-1`, no `maxRows`, no nested page overflow).
+- Account preview includes skill-tree gold gain (`tree.teamCoinPct` → `treeTeamCoin`) and does **not** show `importAccountLead` / `importAccountVerify`.
 
 ## Tests
 

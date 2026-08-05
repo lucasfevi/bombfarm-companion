@@ -9,9 +9,7 @@ import {
   importAccountBlockClass,
   importAccountClass,
   importAccountGridClass,
-  importAccountLeadClass,
   statListClass,
-  tipClass,
 } from '@bombfarm/ui/panel-field.recipe';
 
 export function ImportAccountSummary({
@@ -39,7 +37,6 @@ export function ImportAccountSummary({
 
   return (
     <div className={importAccountClass}>
-      <p className={importAccountLeadClass}>{t.importAccountLead}</p>
       <div className={importAccountGridClass}>
         {accountData.tree && (
           <section className={importAccountBlockClass} aria-label={t.panelTree}>
@@ -64,6 +61,10 @@ export function ImportAccountSummary({
               <div>
                 <dt>{t.treeEnergy}</dt>
                 <dd>+{formatNumber(accountData.tree.energy, 2)}%</dd>
+              </div>
+              <div>
+                <dt>{t.treeTeamCoin}</dt>
+                <dd>+{formatNumber(accountData.tree.teamCoinPct ?? 0, 2)}%</dd>
               </div>
               {accountData.tree.glassCannon && (
                 <div>
@@ -102,7 +103,6 @@ export function ImportAccountSummary({
           </section>
         )}
       </div>
-      {accountData.tree && <p className={tipClass}>{t.importAccountVerify}</p>}
     </div>
   );
 }

@@ -53,10 +53,18 @@ export function HeroPickerTable({
 
   return (
     <Tooltip.Provider delay={200} closeDelay={80}>
-      <DataTable.Root scrollable className="-mx-4 flex-1 border-y border-line">
+      <DataTable.Root
+        scrollable
+        minRows={8}
+        rowHeight="4.5rem"
+        className="-mx-4 min-h-0 flex-1 border-y border-line"
+      >
         <DataTable.Table>
           <DataTable.Head>
             <DataTable.Row>
+              <DataTable.Header className="w-14" aria-label={t.heroAvatarCol}>
+                <span className="sr-only">{t.heroAvatarCol}</span>
+              </DataTable.Header>
               <RosterSortHeader
                 col="rank"
                 label={t.importColRank}
@@ -65,9 +73,6 @@ export function HeroPickerTable({
                 onSort={handleSort}
                 className="w-10 max-[560px]:hidden"
               />
-              <DataTable.Header className="w-11" aria-label={t.heroAvatarCol}>
-                <span className="sr-only">{t.heroAvatarCol}</span>
-              </DataTable.Header>
               <RosterSortHeader
                 col="name"
                 label={t.importColName}
@@ -105,9 +110,9 @@ export function HeroPickerTable({
                 sortKey={sortKey}
                 sortDir={sortDir}
                 onSort={handleSort}
-                className="min-w-62 max-[720px]:hidden"
+                className="min-w-100 max-[720px]:hidden"
               />
-              <DataTable.Header className="min-w-34 max-[960px]:hidden">
+              <DataTable.Header className="min-w-44 max-[960px]:hidden">
                 {t.rosterColAbilities}
               </DataTable.Header>
               <DataTable.Header className="max-[720px]:hidden">{t.rosterColStatus}</DataTable.Header>

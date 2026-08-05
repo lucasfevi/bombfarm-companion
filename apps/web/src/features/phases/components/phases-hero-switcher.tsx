@@ -40,7 +40,7 @@ export function PhasesHeroSwitcher({ t, lang, heroes, hero, formatNumber, onSele
         <HeroAvatar
           skin={hero.skin ?? 0}
           rarityIdx={rarIdx}
-          size="md"
+          size="lg"
           name={hero.name}
           className="shrink-0"
         />

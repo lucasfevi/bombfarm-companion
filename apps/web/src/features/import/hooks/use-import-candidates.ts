@@ -44,7 +44,6 @@ export function useImportCandidates({
   const [candidates, setCandidates] = useState<ImportCandidate[] | null>(null);
   const [warnings, setWarnings] = useState<string[]>([]);
   const [rejected, setRejected] = useState<ParseRejection | null>(null);
-  const [expanded, setExpanded] = useState<string | null>(null);
   const [fileError, setFileError] = useState<string | null>(null);
   const [accountData, setAccountData] = useState<AccountImportData | null>(null);
   const [sortKey, setSortKey] = useState<ImportSortKey>('power');
@@ -59,7 +58,6 @@ export function useImportCandidates({
     setCandidates(null);
     setWarnings([]);
     setRejected(null);
-    setExpanded(null);
     setFileError(null);
     setAccountData(null);
     setSortKey('power');
@@ -115,8 +113,6 @@ export function useImportCandidates({
     candidates,
     warnings,
     rejected,
-    expanded,
-    setExpanded,
     fileError,
     accountData,
     sortKey,

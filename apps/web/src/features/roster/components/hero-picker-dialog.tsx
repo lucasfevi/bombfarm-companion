@@ -9,7 +9,7 @@ import { dialogDescClass } from '@bombfarm/ui/panel-field.recipe';
 import { HeroPickerTable } from './hero-picker-table';
 
 /** Hero roster picker — wider than default import dialog for gear + ability icon columns. */
-const heroPickerPopupClass = '!w-[min(94vw,980px)]';
+const heroPickerPopupClass = '!w-[min(96vw,1240px)]';
 
 type Props = {
   open: boolean;

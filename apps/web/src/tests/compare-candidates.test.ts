@@ -46,4 +46,11 @@ describe('compareCandidates', () => {
       a.name.localeCompare(b.name, undefined, { sensitivity: 'base' }),
     );
   });
+
+  it('sorts by gear count', () => {
+    const a = cand({ sourceId: 'a', name: 'A', gearCount: 2 });
+    const b = cand({ sourceId: 'b', name: 'B', gearCount: 8 });
+    expect(compareCandidates(a, b, 'gear', 'asc')).toBeLessThan(0);
+    expect(compareCandidates(a, b, 'gear', 'desc')).toBeGreaterThan(0);
+  });
 });

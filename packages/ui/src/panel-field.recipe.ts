@@ -240,7 +240,7 @@ export const dialogDescClass = 'm-0 mb-3 text-xs leading-normal text-muted';
 export const dialogActionsClass =
   'mt-3.5 flex flex-wrap items-center justify-end gap-2 border-t border-line pt-3';
 export const importAccountClass =
-  'mb-3.5 border border-[color-mix(in_oklch,var(--accent)_28%,var(--line))] bg-[linear-gradient(135deg,color-mix(in_oklch,var(--accent)_9%,var(--surface)),color-mix(in_oklch,var(--bg)_40%,var(--surface)))] px-3.5 py-3 text-xs';
+  'mb-3.5 shrink-0 border border-[color-mix(in_oklch,var(--accent)_28%,var(--line))] bg-[linear-gradient(135deg,color-mix(in_oklch,var(--accent)_9%,var(--surface)),color-mix(in_oklch,var(--bg)_40%,var(--surface)))] px-3.5 py-3 text-xs';
 export const importAccountLeadClass = 'm-0 mb-2.5 text-[11px] tracking-[0.01em] text-muted';
 export const importAccountGridClass =
   'grid grid-cols-[minmax(0,1.35fr)_minmax(0,1fr)] gap-x-5 gap-y-3.5 max-[560px]:grid-cols-1';
@@ -254,7 +254,7 @@ export const phasesStatListClass =
   'm-0 grid gap-0 [&_>div]:grid [&_>div]:grid-cols-[minmax(0,1fr)_auto] [&_>div]:items-start [&_>div]:gap-x-3 [&_>div]:border-b [&_>div]:border-[color-mix(in_oklch,var(--line)_70%,transparent)] [&_>div]:py-1.5 [&_>div:last-child]:border-b-0 [&_>div:last-child]:pb-0 [&_dt]:m-0 [&_dt]:pt-0.5 [&_dt]:text-[11px] [&_dt]:leading-[1.35] [&_dt]:text-muted [&_dd]:m-0 [&_dd]:min-w-[7rem] [&_dd]:text-right [&_dd]:font-mono [&_dd]:text-xs [&_dd]:font-semibold [&_dd]:text-ink [&_dd]:tabular-nums [&_dd]:leading-snug [&_dd]:whitespace-nowrap';
 export const statListCompareClass =
   'm-0 grid gap-[5px] [&_>div]:grid [&_>div]:grid-cols-[minmax(0,1fr)_auto] [&_>div]:items-baseline [&_>div]:gap-x-3 [&_>div]:gap-y-2 [&_>div]:border-b [&_>div]:border-[color-mix(in_oklch,var(--line)_70%,transparent)] [&_>div]:py-1 [&_>div:last-child]:border-b-0 [&_>div:last-child]:pb-0 [&_dt]:m-0 [&_dt]:text-[11px] [&_dt]:leading-[1.35] [&_dt]:text-muted [&_dd]:m-0 [&_dd]:flex [&_dd]:flex-row [&_dd]:items-baseline [&_dd]:justify-end [&_dd]:gap-1.5 [&_dd]:whitespace-nowrap [&_dd_strong]:text-xs [&_dd_strong]:font-semibold [&_dd_strong]:text-accent [&_dd_em]:font-mono [&_dd_em]:text-[11px] [&_dd_em]:font-medium [&_dd_em]:not-italic';
-export const importWarningsClass = 'mt-2.5 text-xs text-muted [&_summary]:cursor-pointer';
+export const importWarningsClass = 'mt-2.5 shrink-0 text-xs text-muted [&_summary]:cursor-pointer';
 export const importActionsClass =
   'mt-0 flex shrink-0 flex-wrap items-center justify-between gap-2.5 border-t border-line bg-surface py-3 pb-4';
 export const importActionsEndClass =

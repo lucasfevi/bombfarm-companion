@@ -15,15 +15,16 @@ async function openImportDialog(page: import('@playwright/test').Page) {
  * the save's own sourceId set, in the same write.
  */
 test.describe('import dialog reviews, does not curate (BSPW6-07)', () => {
-  test('no checkbox anywhere in the dialog (AC-31)', async ({ page }) => {
+  test('has no selection checkboxes; status switches are read-only (AC-31)', async ({ page }) => {
     await page.goto('/');
     await openImportDialog(page);
     await page.locator('input[type="file"]').setInputFiles(sampleSave);
     await expect(page.getByRole('dialog').getByText('Cora')).toBeVisible();
 
     const dialog = page.getByRole('dialog');
-    await expect(dialog.locator('input[type="checkbox"]')).toHaveCount(0);
-    await expect(dialog.getByRole('checkbox')).toHaveCount(0);
+    await expect(dialog.locator('input[type="checkbox"]:not([disabled])')).toHaveCount(0);
+    await expect(dialog.getByRole('checkbox', { disabled: false })).toHaveCount(0);
+    await expect(dialog.locator('input[type="checkbox"][disabled]')).toHaveCount(3);
   });
 
   test('confirm is enabled with no selection action required (AC-31)', async ({ page }) => {

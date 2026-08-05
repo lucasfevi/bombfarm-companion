@@ -5,8 +5,8 @@ import { heroAvatarSrc, itemIconSrc, normalizeSkin, rarityCrystalSrc, abilityIco
 describe('wiki-assets', () => {
   it('maps save skin to bundled avatar paths', () => {
     expect(heroAvatarSrc(0)).toBe('/wiki-assets/hero/hero1_avatar.png');
-    expect(heroAvatarSrc(1)).toBe('/wiki-assets/hero/hero2_avatar.png');
-    expect(heroAvatarSrc(2)).toBe('/wiki-assets/hero/hero3_avatar.png');
+    expect(heroAvatarSrc(1)).toBe('/wiki-assets/hero/hero3_avatar.png');
+    expect(heroAvatarSrc(2)).toBe('/wiki-assets/hero/hero2_avatar.png');
     expect(heroAvatarSrc(3)).toBe('/wiki-assets/hero/hero4_avatar.png');
     expect(heroAvatarSrc(4)).toBe('/wiki-assets/hero/hero5_avatar.png');
     expect(heroAvatarSrc(5)).toBe('/wiki-assets/hero/hero6_avatar.png');
@@ -47,5 +47,12 @@ describe('normalizeHero skin', () => {
     expect(normalizeHero({ id: 'a', name: 'A' }).skin).toBe(0);
     expect(normalizeHero({ id: 'b', name: 'B', skin: 3 }).skin).toBe(3);
     expect(normalizeHero({ id: 'c', name: 'C', skin: 5 }).skin).toBe(5);
+  });
+
+  it('keeps save skin 1 and 2 on disk (display remap only)', () => {
+    expect(normalizeHero({ id: 'd', name: 'D', skin: 1 }).skin).toBe(1);
+    expect(normalizeHero({ id: 'e', name: 'E', skin: 2 }).skin).toBe(2);
+    expect(heroAvatarSrc(1)).toBe('/wiki-assets/hero/hero3_avatar.png');
+    expect(heroAvatarSrc(2)).toBe('/wiki-assets/hero/hero2_avatar.png');
   });
 });

@@ -44,11 +44,11 @@ describe('account house keystones (AHK-11)', () => {
     expect(sub(STRINGS.pt.houseRestHint, { minutes: 9, seconds: 22 })).toBe('Descanso 9 min 22 s');
   });
 
-  it('importAccountLead references Account/Conta not Context/Contexto (AHK-13)', () => {
-    expect(STRINGS.en.importAccountLead).toMatch(/Account on import/i);
-    expect(STRINGS.en.importAccountLead).not.toMatch(/Context on import/i);
-    expect(STRINGS.pt.importAccountLead).toMatch(/Conta na importação/i);
-    expect(STRINGS.pt.importAccountLead).not.toMatch(/Contexto na importação/i);
+  it('import preview chrome is distinct from the upload step', () => {
+    expect(STRINGS.en.importPreviewTitle).not.toBe(STRINGS.en.importDialogTitle);
+    expect(STRINGS.pt.importPreviewTitle).not.toBe(STRINGS.pt.importDialogTitle);
+    expect(STRINGS.en.importPreviewDesc).not.toBe(STRINGS.en.importDialogDesc);
+    expect(STRINGS.pt.importPreviewDesc).not.toBe(STRINGS.pt.importDialogDesc);
   });
 
   it('keeps official keystone game names in both langs (AHK-10)', () => {
