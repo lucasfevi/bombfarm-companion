@@ -36,10 +36,17 @@ const defById = new Map(catalog.defs.map((definition) => [definition.id, definit
  */
 export const HERO_SKIN_COUNT = 7;
 
+/**
+ * Save `skin` → bundled `hero{N}_avatar.png` N.
+ * Wiki filenames `hero2` / `hero3` are swapped vs in-game skin 1 / 2.
+ */
+const SKIN_AVATAR_FILE = [1, 3, 2, 4, 5, 6, 7] as const;
+
 /** Save `skin` 0..(HERO_SKIN_COUNT-1) → bundled avatar path. */
 export function heroAvatarSrc(skin: number): string {
   const index = normalizeSkin(skin);
-  return `${WIKI_ASSETS_BASE}/hero/hero${index + 1}_avatar.png`;
+  const file = SKIN_AVATAR_FILE[index] ?? 1;
+  return `${WIKI_ASSETS_BASE}/hero/hero${file}_avatar.png`;
 }
 
 /** Wiki item icon for a catalog definition — uses native set level, not equipped instance level. */
