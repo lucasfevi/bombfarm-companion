@@ -1,6 +1,12 @@
 'use client';
 
-import { HeroAbilityIcons, HeroAvatar, HeroGearIcons, rarityTextClass } from '@/shared/game-art';
+import {
+  HeroAbilityIcons,
+  HeroAvatar,
+  HeroGearIcons,
+  rarityTextClass,
+  rosterInactiveChromeClass,
+} from '@/shared/game-art';
 import { cn, DataTable, Tooltip } from '@bombfarm/ui';
 import type { Lang, Strings } from '@/shared/i18n';
 import { RARITIES } from '@bombfarm/domain/planner-constants';
@@ -33,21 +39,26 @@ export function PhasesTop9Table({
 }: Props) {
   return (
     <Tooltip.Provider delay={200} closeDelay={80}>
-      <DataTable.Root scrollable maxRows={10} className="mt-3 rounded-sm border border-line">
+      <DataTable.Root
+        scrollable
+        maxRows={10}
+        rowHeight="4.5rem"
+        className="mt-3 rounded-sm border border-line"
+      >
         <DataTable.Table className="min-w-xl">
           <DataTable.Head>
             <DataTable.Row>
               <DataTable.Header className="w-8">#</DataTable.Header>
-              <DataTable.Header className="w-11 px-0" aria-label={t.heroAvatarCol}>
+              <DataTable.Header className="w-14 px-0" aria-label={t.heroAvatarCol}>
                 <span className="sr-only">{t.heroAvatarCol}</span>
               </DataTable.Header>
               <DataTable.Header>{t.importColName}</DataTable.Header>
               <DataTable.Header>{t.importColLevel}</DataTable.Header>
               <DataTable.Header align="right">{t.importColPower}</DataTable.Header>
-              <DataTable.Header className="min-w-40 max-[900px]:hidden">
+              <DataTable.Header className="min-w-100 max-[900px]:hidden">
                 {t.rosterColGear}
               </DataTable.Header>
-              <DataTable.Header className="min-w-26 max-[1100px]:hidden">
+              <DataTable.Header className="min-w-44 max-[1100px]:hidden">
                 {t.rosterColAbilities}
               </DataTable.Header>
               <DataTable.Header align="right">{t.modeDps}</DataTable.Header>
@@ -62,6 +73,8 @@ export function PhasesTop9Table({
               const rarText = rarityTextClass(rarIdx) ?? 'text-muted';
               const powerShown = hero.power ?? heroPowerIndex(hero);
               const starCount = Math.max(0, Math.min(3, Math.round(hero.stars ?? 0)));
+              const battleAllowed = hero.battleAllowed ?? true;
+              const inactiveChrome = !battleAllowed ? rosterInactiveChromeClass : undefined;
               return (
                 <DataTable.Row
                   key={hero.id}
@@ -70,6 +83,7 @@ export function PhasesTop9Table({
                     selected
                       ? 'bg-[color-mix(in_oklch,var(--accent)_10%,transparent)] shadow-[inset_3px_0_0_var(--accent)]'
                       : 'hover:bg-[color-mix(in_oklch,var(--accent)_6%,transparent)]',
+                    !battleAllowed && 'bg-[color-mix(in_oklch,var(--bg)_45%,transparent)]',
                   )}
                   tabIndex={0}
                   aria-current={selected ? 'true' : undefined}
@@ -82,33 +96,37 @@ export function PhasesTop9Table({
                     }
                   }}
                 >
-                  <DataTable.Cell className="font-bold text-accent" numeric>
+                  <DataTable.Cell className={cn('font-bold text-accent', inactiveChrome)} numeric>
                     {index + 1}
                   </DataTable.Cell>
-                  <DataTable.Cell className="w-11 px-1" nowrap={false}>
-                    <HeroAvatar skin={hero.skin ?? 0} rarityIdx={rarIdx} size="sm" name={hero.name} />
+                  <DataTable.Cell className="w-14 px-1" nowrap={false}>
+                    <span className={inactiveChrome}>
+                      <HeroAvatar skin={hero.skin ?? 0} rarityIdx={rarIdx} size="lg" name={hero.name} />
+                    </span>
                   </DataTable.Cell>
-                  <DataTable.Cell>
-                    <span className={cn('font-semibold', rarText)}>
+                  <DataTable.Cell className={inactiveChrome}>
+                    <span className={cn('text-base leading-none font-bold', rarText)}>
                       {hero.name}
                       {starCount > 0 ? (
-                        <span className="ml-1 text-rar-4" aria-hidden="true">
+                        <span className="ml-1 text-[0.92em] tracking-tight text-rar-4" aria-hidden="true">
                           {'★'.repeat(starCount)}
                         </span>
                       ) : null}
                     </span>
                   </DataTable.Cell>
-                  <DataTable.Cell numeric>L{hero.level}</DataTable.Cell>
-                  <DataTable.Cell align="right" numeric>
+                  <DataTable.Cell numeric className={inactiveChrome}>
+                    L{hero.level}
+                  </DataTable.Cell>
+                  <DataTable.Cell align="right" numeric className={inactiveChrome}>
                     {formatNumber(powerShown, 0)}
                   </DataTable.Cell>
-                  <DataTable.Cell className="max-[900px]:hidden py-2" nowrap={false} data-roster-wrap>
+                  <DataTable.Cell className={cn('max-[900px]:hidden py-2', inactiveChrome)} nowrap={false} data-roster-wrap>
                     <HeroGearIcons loadout={hero.loadout} lang={lang} t={t} />
                   </DataTable.Cell>
-                  <DataTable.Cell className="max-[1100px]:hidden py-2" nowrap={false} data-roster-wrap>
-                    <HeroAbilityIcons abilities={hero.abilities} lang={lang} t={t} />
+                  <DataTable.Cell className={cn('max-[1100px]:hidden py-2', inactiveChrome)} nowrap={false} data-roster-wrap>
+                    <HeroAbilityIcons abilities={hero.abilities} lang={lang} />
                   </DataTable.Cell>
-                  <DataTable.Cell align="right" numeric className="font-semibold text-ink">
+                  <DataTable.Cell align="right" numeric className={cn('font-semibold text-ink', inactiveChrome)}>
                     {formatNumber(row.dps, 0)}
                   </DataTable.Cell>
                 </DataTable.Row>

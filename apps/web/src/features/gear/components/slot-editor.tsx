@@ -44,7 +44,7 @@ export const slotStatsGridClass = `${slotsGridClass} mt-1.5`;
 export const slotStatRowClass =
   'flex items-baseline justify-between gap-1.5 text-muted leading-snug [&_b]:shrink-0 [&_b]:font-semibold [&_b]:text-ink';
 const slotHeadLabelClass =
-  'min-w-0 truncate text-[10px] font-bold tracking-wider uppercase';
+  'text-center text-[10px] leading-tight font-bold tracking-wider uppercase';
 
 export const SlotEditor = memo(function SlotEditor({
   slot,
@@ -68,30 +68,27 @@ export const SlotEditor = memo(function SlotEditor({
   const defs = defsForSlot(slot, setId);
 
   return (
-    <div className={slotChromeClassName(equipped, changed)}>
-      <div className="flex items-center gap-1.5">
+    <div className={cn(slotChromeClassName(equipped, changed), 'relative')}>
+      {equipped ? (
+        <Button
+          type="button"
+          variant="icon"
+          className="absolute -top-1 -right-1 z-10"
+          aria-label={t.clear}
+          title={t.clear}
+          onClick={() => onPatch(slot, null)}
+        >
+          <HiMiniXMark size={14} aria-hidden="true" />
+        </Button>
+      ) : null}
+      <div className="flex justify-center">
         {equipped ? (
-          <ItemIcon equipped={equipped} size="lg" className="shrink-0" />
+          <ItemIcon equipped={equipped} size="xl" className="shrink-0" />
         ) : (
-          <span
-            className="size-12 shrink-0 rounded-sm border border-dashed border-line bg-[color-mix(in_oklch,var(--bg)_55%,var(--surface))]"
-            aria-hidden="true"
-          />
+          <span className="flex w-16 aspect-[18/19] max-[720px]:w-14 shrink-0 items-center justify-center rounded-sm border border-dashed border-line bg-[color-mix(in_oklch,var(--bg)_55%,var(--surface))] px-0.5">
+            <b className={slotHeadLabelClass}>{slotLabel(slot, lang)}</b>
+          </span>
         )}
-        <div className="flex min-w-0 flex-1 items-center justify-between gap-1">
-          <b className={slotHeadLabelClass}>{slotLabel(slot, lang)}</b>
-          {equipped ? (
-            <Button
-              type="button"
-              variant="icon"
-              aria-label={t.clear}
-              title={t.clear}
-              onClick={() => onPatch(slot, null)}
-            >
-              <HiMiniXMark size={14} aria-hidden="true" />
-            </Button>
-          ) : null}
-        </div>
       </div>
       <Select
         size="compact"

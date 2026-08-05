@@ -3,7 +3,7 @@
 import { HiMiniXMark } from 'react-icons/hi2';
 import type { Lang, Strings } from '@/shared/i18n';
 import type { HeroRecord } from '@/shared/lib/storage';
-import { Dialog, FileDropZone } from '@bombfarm/ui';
+import { cn, Dialog, FileDropZone } from '@bombfarm/ui';
 import { dialogDescClass, importResetWarningClass } from '@bombfarm/ui/panel-field.recipe';
 import { useImportCandidates, type ImportDialogResult } from '../hooks/use-import-candidates';
 import { rejectionText } from '../model/compare-candidates';
@@ -27,22 +27,26 @@ export function ImportHeroesDialog({ open, onOpenChange, existing, t, lang, onIm
 
   if (!open) return null;
 
-  const hasAccountData = !!(importState.accountData && (importState.accountData.tree || importState.accountData.houseIdx != null));
+  const previewReady = importState.candidates != null;
+  const hasAccountData = !!(
+    importState.accountData &&
+    (importState.accountData.tree || importState.accountData.houseIdx != null)
+  );
 
   return (
     <Dialog.Root open={open} onOpenChange={importState.handleClose}>
       <Dialog.Portal>
         <Dialog.Backdrop />
-        <Dialog.Popup>
+        <Dialog.Popup className={cn('!w-[min(96vw,1240px)]', previewReady && '!h-[min(85vh,900px)]')}>
           <Dialog.Head>
-            <Dialog.Title>{t.importDialogTitle}</Dialog.Title>
+            <Dialog.Title>{previewReady ? t.importPreviewTitle : t.importDialogTitle}</Dialog.Title>
             <Dialog.Close aria-label={t.importClose}>
               <HiMiniXMark size={16} aria-hidden="true" />
             </Dialog.Close>
           </Dialog.Head>
 
-          <div className="min-h-0 flex-1 overflow-auto pr-0.5">
-            <p className={dialogDescClass}>{t.importDialogDesc}</p>
+          <div className="flex min-h-0 flex-1 flex-col">
+            <p className={dialogDescClass}>{previewReady ? t.importPreviewDesc : t.importDialogDesc}</p>
 
             {!importState.candidates && (
               <FileDropZone
@@ -54,9 +58,8 @@ export function ImportHeroesDialog({ open, onOpenChange, existing, t, lang, onIm
             )}
 
             {importState.candidates && (
-              <div>
+              <div className="flex min-h-0 flex-1 flex-col">
                 {importState.rejected ? (
-                  // BSP-06/DEC-09/AC-36: a rejected file shows WHY, not "no heroes found".
                   <div className={importResetWarningClass} role="status">
                     <p className="m-0">{rejectionText(t, importState.rejected)}</p>
                   </div>
@@ -64,9 +67,9 @@ export function ImportHeroesDialog({ open, onOpenChange, existing, t, lang, onIm
                   <p className="m-0 text-xs text-down">{importState.fileError ?? t.importNoHeroesFound}</p>
                 ) : (
                   <>
-                    {hasAccountData && importState.accountData && (
+                    {hasAccountData && importState.accountData ? (
                       <ImportAccountSummary accountData={importState.accountData} t={t} lang={lang} />
-                    )}
+                    ) : null}
 
                     <ImportSyncSummary candidates={importState.candidates} existing={existing} t={t} />
 
@@ -77,10 +80,6 @@ export function ImportHeroesDialog({ open, onOpenChange, existing, t, lang, onIm
                         sortDir: importState.sortDir,
                         onSort: importState.handleSort,
                       }}
-                      expanded={importState.expanded}
-                      onToggleExpand={(candidateId) =>
-                        importState.setExpanded(importState.expanded === candidateId ? null : candidateId)
-                      }
                     />
                     <ImportWarnings warnings={importState.warnings} t={t} />
                   </>

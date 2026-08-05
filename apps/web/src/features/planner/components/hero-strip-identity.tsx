@@ -45,7 +45,7 @@ export function HeroStripIdentity({ onOpenPicker }: { onOpenPicker: () => void }
         onClick={onOpenPicker}
         aria-label={t.heroStripSwitch}
       >
-        <HeroAvatar skin={heroSkin} rarityIdx={rarIdx} size="md" name={heroName} className="shrink-0" />
+        <HeroAvatar skin={heroSkin} rarityIdx={rarIdx} size="lg" name={heroName} className="shrink-0" />
 
         <div className="min-w-0">
           <div className="flex min-w-0 items-baseline gap-2">

@@ -15,7 +15,7 @@ export const STAT_KEYS: StatKey[] = [
   'cdr',
 ];
 
-export type ImportSortKey = 'level' | 'name' | 'rarity' | 'rank' | 'power';
+export type ImportSortKey = 'level' | 'name' | 'rarity' | 'rank' | 'power' | 'gear';
 export type ImportSortDir = 'asc' | 'desc';
 
 function compareByKey(
@@ -34,6 +34,8 @@ function compareByKey(
       return rankSortIdx(left.rank) - rankSortIdx(right.rank);
     case 'power':
       return left.power - right.power;
+    case 'gear':
+      return left.gearCount - right.gearCount;
     default:
       // Unreachable for `ImportSortKey`; mirrors the pre-refactor fallthrough
       // where an unmatched key left the comparison at 0 and fell to the tiebreak.
