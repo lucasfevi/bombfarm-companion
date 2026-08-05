@@ -25,6 +25,7 @@ export function createBuilderConfig(flavor) {
     },
     artifactName: '${name}-${version}-setup.${ext}',
     publish,
+    generateUpdatesFilesForAllChannels: publish !== null,
     win: {
       target: [{ target: 'nsis', arch: ['x64'] }],
     },
