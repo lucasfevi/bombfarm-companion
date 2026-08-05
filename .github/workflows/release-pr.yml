@@ -132,6 +132,16 @@ jobs:
             echo 'No packages are scheduled to release. Any open release PR will be closed.'
           } >> "$GITHUB_STEP_SUMMARY"
 
+      - name: Upload release metadata
+        if: steps.parity.outputs.state != 'develop-behind'
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-metadata
+          path: |
+            release-plan.json
+            release-metadata.json
+          retention-days: 1
+
   close-empty:
     name: Close stale release PR
     needs: plan
@@ -188,16 +198,6 @@ jobs:
             echo ''
             echo 'No release PR remains open for \`release/next\` → \`main\`.'
           } >> "$GITHUB_STEP_SUMMARY"
-
-      - name: Upload release metadata
-        if: steps.parity.outputs.state != 'develop-behind'
-        uses: actions/upload-artifact@v4
-        with:
-          name: release-metadata
-          path: |
-            release-plan.json
-            release-metadata.json
-          retention-days: 1
 
   version-and-pr:
     name: Version and upsert PR
