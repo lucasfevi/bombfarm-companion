@@ -19,6 +19,7 @@ on:
       - 'tsconfig.base.json'
       - 'eslint.config.mjs'
       - 'vitest.config.ts'
+      - 'tools/**'
       - '.github/workflows/ci-desktop.yml'
   pull_request:
 
@@ -57,6 +58,7 @@ jobs:
               - 'tsconfig.base.json'
               - 'eslint.config.mjs'
               - 'vitest.config.ts'
+              - 'tools/**'
               - '.github/workflows/ci-desktop.yml'
 
   quality:

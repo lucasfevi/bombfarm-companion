@@ -6,7 +6,7 @@ Desktop companion and web planner for [Bomb Farm](https://store.steampowered.com
 
 Monorepo with `@bombfarm/desktop` (Electron) and `@bombfarm/web` (Next.js static export). Shared math lives in `@bombfarm/domain`; UI primitives in `@bombfarm/ui`.
 
-**Web production host (intended):** [https://bombfarm-companion.vercel.app](https://bombfarm-companion.vercel.app) — new Vercel project on this repo, Root Directory `apps/web`, production branch `main`. DNS/redirect from the old planner host is manual and out of band.
+**Web hosts:** production [https://bombfarm-companion.vercel.app](https://bombfarm-companion.vercel.app) (`main`); pre-production preview [https://bombfarm-companion-git-develop-lucasfevi-projects.vercel.app](https://bombfarm-companion-git-develop-lucasfevi-projects.vercel.app) (`develop`, Vercel Authentication). DNS/redirect from the old planner host is manual and out of band.
 
 ## Requirements
 
@@ -38,11 +38,11 @@ Path-filtered GitHub Actions (quality only — **no** deploy workflow):
 
 | Workflow | When |
 |---|---|
-| `ci-web.yml` | `apps/web`, `packages/domain`, `packages/ui`, shared root configs |
-| `ci-desktop.yml` | `apps/desktop`, contracts/game-data/pricing/ui, shared root configs |
-| `e2e-web.yml` | Web Playwright smoke + visual |
+| `ci-web.yml` | push to `main` / `develop` and PRs — `apps/web`, `packages/domain`, `packages/ui`, shared root configs |
+| `ci-desktop.yml` | push to `main` / `develop` and PRs — `apps/desktop`, contracts/game-data/pricing/ui, shared root configs |
+| `e2e-web.yml` | push to `main` / `develop` and PRs — Web Playwright smoke + visual |
 
-**Vercel (Git integration):** project linked to this repo deploys **production** on `main` and **PR previews** automatically. Framework: Next.js. **Root Directory:** `apps/web`. Intended host: [https://bombfarm-companion.vercel.app](https://bombfarm-companion.vercel.app). No `VERCEL_TOKEN` / org / project GitHub Actions secrets required for deploy. Prefer green `ci-web` (including `pnpm --filter @bombfarm/web build`) before treating prod as healthy.
+**Vercel (Git integration):** production deploys from `main` to [https://bombfarm-companion.vercel.app](https://bombfarm-companion.vercel.app). Every push to `develop` updates the pre-production preview at [https://bombfarm-companion-git-develop-lucasfevi-projects.vercel.app](https://bombfarm-companion-git-develop-lucasfevi-projects.vercel.app). That preview is behind **Vercel Authentication** and is not a shareable playtester link. No Custom Environment, custom domain, or new GitHub Actions secret is involved. Framework: Next.js. **Root Directory:** `apps/web`. Branching: [`docs/branching.md`](docs/branching.md). Prefer green `ci-web` (including `pnpm --filter @bombfarm/web build`) before treating prod as healthy.
 
 ## DEV vs PROD flavors (desktop)
 

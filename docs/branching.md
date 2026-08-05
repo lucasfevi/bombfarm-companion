@@ -82,7 +82,7 @@ If you have local branches or open PRs from before the cutover:
 | Surface | Branch | URL | Access |
 | --- | --- | --- | --- |
 | Production | `main` | [bombfarm-companion.vercel.app](https://bombfarm-companion.vercel.app) | Public |
-| Pre-production preview | `develop` | Vercel Git branch alias (`<project>-git-develop-<scope>.vercel.app`) — record the **actual** host after the first deploy | Gated by **Vercel Authentication** (owner-only today; not a shareable playtester link) |
+| Pre-production preview | `develop` | [bombfarm-companion-git-develop-lucasfevi-projects.vercel.app](https://bombfarm-companion-git-develop-lucasfevi-projects.vercel.app) | Gated by **Vercel Authentication** (owner-only today; not a shareable playtester link) |
 
 No Custom Environment, no custom domain, no new GitHub Actions secret, and no change to the Vercel Git integration is required for the develop preview.
 
