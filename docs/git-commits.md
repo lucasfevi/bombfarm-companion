@@ -45,11 +45,12 @@ git commit -m "feat: bundle wiki assets and path helpers" \
 
 ## PR workflow (reminder)
 
-- Branch from up-to-date `main`; never commit directly to `main`.
+- See [`branching.md`](branching.md) for branch roles, merge directions, and the hotfix path — feature work targets `develop`, not `main`.
 - Push the branch; open a PR; wait for CI green.
 - A PR may contain many atomic commits — that is **preferred** over one squashed mega-commit unless the user requests squash-on-merge only.
 
 ## Related
 
+- [`branching.md`](branching.md) — `develop` integration, `main` release-only
 - [`AGENTS.md`](../AGENTS.md) — Git / PR workflow index
 - [`validation.md`](validation.md) — author ≠ validator (separate from commit granularity)

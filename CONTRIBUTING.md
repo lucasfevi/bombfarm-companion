@@ -10,7 +10,7 @@ Thank you for your interest in contributing!
 
 ## Pull requests
 
-- Branch from `main`; keep PRs focused.
+- Branch from an up-to-date `develop` and open the PR against `develop`. See [`docs/branching.md`](docs/branching.md) — `main` is release-only.
 - Ensure `pnpm typecheck`, `pnpm lint`, and `pnpm test` pass locally.
 - Web changes: also run `pnpm --filter @bombfarm/web build` (CI runs this before Vercel).
 - On Windows, run `pnpm test:smoke` when touching boot/IPC/renderer wiring.
@@ -21,7 +21,11 @@ CI is **path-filtered**: web-only PRs run `ci-web` / `e2e-web`; desktop-only PRs
 
 ## Web deploy (maintainers)
 
-Production + PR previews: **https://bombfarm-companion.vercel.app** via the **Vercel Git integration** on this repo (Root Directory `apps/web`, production branch `main`). GitHub Actions runs path-filtered CI only — there is no Actions deploy workflow and no Vercel deploy secrets in GitHub. Old planner host redirect is manual later.
+**Production** ([https://bombfarm-companion.vercel.app](https://bombfarm-companion.vercel.app)): Vercel Git integration on this repo, Root Directory `apps/web`, production branch `main`.
+
+**Pre-production preview:** every push to `develop` deploys a Vercel branch preview at the stable Git alias (`<project>-git-develop-<scope>.vercel.app` — see [`docs/branching.md`](docs/branching.md) for the recorded host). Access is gated by **Vercel Authentication** (owner-only today; not a shareable playtester link).
+
+GitHub Actions runs path-filtered CI only — there is no Actions deploy workflow and no Vercel deploy secrets in GitHub. Old planner host redirect is manual later.
 
 ## Code style
 

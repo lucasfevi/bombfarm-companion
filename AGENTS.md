@@ -37,6 +37,7 @@ pnpm test:smoke   # Windows — builds static renderer + launches Electron
 ## Conventions
 
 - Conventional Commits (`feat:`, `fix:`, `chore:`, …) — enforced by commitlint
+- Feature work branches from and merges into `develop`; `main` is release-only — see [`docs/branching.md`](docs/branching.md)
 - IPC types live in `@bombfarm/contracts`; both main and renderer import from there
 - No Node integration in the renderer; use preload `contextBridge`
 - TypeScript strict at the monorepo base; planner-origin packages `@bombfarm/domain`

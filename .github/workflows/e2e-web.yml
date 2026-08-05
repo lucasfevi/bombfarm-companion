@@ -2,16 +2,8 @@ name: Playwright e2e (web)
 
 on:
   pull_request:
-    paths:
-      - 'apps/web/**'
-      - 'packages/domain/**'
-      - 'packages/ui/**'
-      - 'pnpm-lock.yaml'
-      - 'pnpm-workspace.yaml'
-      - 'package.json'
-      - '.github/workflows/e2e-web.yml'
   push:
-    branches: [main]
+    branches: [main, develop]
     paths:
       - 'apps/web/**'
       - 'packages/domain/**'
