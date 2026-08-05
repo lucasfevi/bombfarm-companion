@@ -1,13 +1,16 @@
 import { readFileSync, readdirSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import {
   APP_FLAVORS,
   FLAVORS,
   getFlavorDescriptor,
 } from '@bombfarm/contracts';
-import { createBuilderConfig } from './builder-config.mjs';
+import {
+  createBuilderConfig,
+  InvalidVersionOverrideError,
+} from './builder-config.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const desktopRoot = path.join(__dirname, '..');
@@ -32,6 +35,10 @@ function collectSourceFiles(dir) {
 }
 
 describe('createBuilderConfig', () => {
+  beforeEach(() => {
+    delete process.env.BFC_VERSION_OVERRIDE;
+  });
+
   for (const flavor of APP_FLAVORS) {
     describe(flavor, () => {
       const descriptor = getFlavorDescriptor(flavor);
@@ -125,6 +132,78 @@ describe('createBuilderConfig', () => {
     for (const flavor of APP_FLAVORS) {
       expect(createBuilderConfig(flavor).directories?.output).toBe(FLAVORS[flavor].outputDir);
     }
+  });
+});
+
+describe('BFC_VERSION_OVERRIDE', () => {
+  const originalOverride = process.env.BFC_VERSION_OVERRIDE;
+
+  afterEach(() => {
+    if (originalOverride === undefined) {
+      delete process.env.BFC_VERSION_OVERRIDE;
+    } else {
+      process.env.BFC_VERSION_OVERRIDE = originalOverride;
+    }
+  });
+
+  it('applies override to extraMetadata.version when set', () => {
+    delete process.env.BFC_VERSION_OVERRIDE;
+    process.env.BFC_VERSION_OVERRIDE = '0.1.0-nightly.20260805.abc1234';
+
+    const config = createBuilderConfig('nightly');
+    const descriptor = getFlavorDescriptor('nightly');
+
+    expect(config.extraMetadata).toEqual({
+      name: descriptor.packageName,
+      bfcFlavor: 'nightly',
+      version: '0.1.0-nightly.20260805.abc1234',
+    });
+  });
+
+  it('omits version from extraMetadata when unset', () => {
+    delete process.env.BFC_VERSION_OVERRIDE;
+
+    const config = createBuilderConfig('nightly');
+
+    expect(config.extraMetadata).toEqual({
+      name: getFlavorDescriptor('nightly').packageName,
+      bfcFlavor: 'nightly',
+    });
+    expect(config.extraMetadata).not.toHaveProperty('version');
+  });
+
+  it('treats an empty override as unset', () => {
+    process.env.BFC_VERSION_OVERRIDE = '';
+
+    const config = createBuilderConfig('nightly');
+
+    expect(config.extraMetadata).not.toHaveProperty('version');
+  });
+
+  it('throws InvalidVersionOverrideError for a non-semver override', () => {
+    process.env.BFC_VERSION_OVERRIDE = 'not-semver';
+
+    expect(() => createBuilderConfig('nightly')).toThrow(InvalidVersionOverrideError);
+    expect(() => createBuilderConfig('nightly')).toThrow(/not valid semver/);
+  });
+});
+
+describe('generateUpdatesFilesForAllChannels', () => {
+  const originalOverride = process.env.BFC_VERSION_OVERRIDE;
+
+  afterEach(() => {
+    if (originalOverride === undefined) {
+      delete process.env.BFC_VERSION_OVERRIDE;
+    } else {
+      process.env.BFC_VERSION_OVERRIDE = originalOverride;
+    }
+  });
+
+  it('stays enabled for beta and nightly flavors', () => {
+    delete process.env.BFC_VERSION_OVERRIDE;
+
+    expect(createBuilderConfig('beta').generateUpdatesFilesForAllChannels).toBe(true);
+    expect(createBuilderConfig('nightly').generateUpdatesFilesForAllChannels).toBe(true);
   });
 });
 
