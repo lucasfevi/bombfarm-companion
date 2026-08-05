@@ -20,6 +20,7 @@ type Props = {
   t: Strings;
   formatNumber: (n: number, d?: number) => string;
   onSelectHero: (h: HeroRecord) => void;
+  onBattleAllowedChange: (heroId: string, battleAllowed: boolean) => void;
 };
 
 export function HeroPickerDialog({
@@ -31,6 +32,7 @@ export function HeroPickerDialog({
   t,
   formatNumber,
   onSelectHero,
+  onBattleAllowedChange,
 }: Props) {
   function pick(hero: HeroRecord) {
     onSelectHero(hero);
@@ -56,6 +58,7 @@ export function HeroPickerDialog({
             t={t}
             formatNumber={formatNumber}
             onPick={pick}
+            onBattleAllowedChange={onBattleAllowedChange}
           />
         </Dialog.Popup>
       </Dialog.Portal>

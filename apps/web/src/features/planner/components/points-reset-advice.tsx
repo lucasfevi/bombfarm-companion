@@ -16,12 +16,15 @@ export function PointsResetAdvice({
   t,
   resetAdvice,
   formatNumber,
+  enabled = true,
 }: {
   t: Strings;
   resetAdvice: ResetAdvice;
   formatNumber: (n: number, d?: number) => string;
+  /** When false (disabled hero), hide advice without unmounting (no layout shift). */
+  enabled?: boolean;
 }) {
-  const show = resetAdvice.recommend;
+  const show = resetAdvice.recommend && enabled;
   return (
     <p className={cn(mutedClass, 'mb-2', !show && 'invisible')} aria-hidden={!show}>
       {renderTemplateWithPct(t.resetAdviceGainLine, formatNumber(resetAdvice.gainPct, 1))}

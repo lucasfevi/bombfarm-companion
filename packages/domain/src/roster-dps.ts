@@ -83,6 +83,7 @@ export function listHeroesWithResetAdvice(
   mitigationPct: number,
 ): { heroId: string; heroName: string; level: number }[] {
   return heroes
+    .filter((hero) => hero.battleAllowed !== false)
     .filter((hero) => pipelineForHero(hero, account, phase, mitigationPct).resetAdvice.recommend)
     .map((hero) => ({ heroId: hero.id, heroName: hero.name, level: hero.level }));
 }

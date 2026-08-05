@@ -37,6 +37,7 @@ export function PointsTable() {
   const pts = usePlannerStore((state) => state.pts);
   const setPts = usePlannerStore((state) => state.setPts);
   const pipeline = usePlannerStore(selectAdvisorPipeline);
+  const heroBattleAllowed = usePlannerStore((state) => state.heroBattleAllowed);
   const { spentDelta, pointDelta, adjusted, resetAdvice } = pipeline;
 
   const [preview, setPreview] = useState<PointsPreview | null>(null);
@@ -97,7 +98,12 @@ export function PointsTable() {
           </Button>
         </div>
       </div>
-      <PointsResetAdvice t={t} resetAdvice={resetAdvice} formatNumber={formatNumber} />
+      <PointsResetAdvice
+        t={t}
+        resetAdvice={resetAdvice}
+        formatNumber={formatNumber}
+        enabled={heroBattleAllowed}
+      />
       <DataTable.Root>
         <DataTable.Table className="table-fixed">
           <colgroup>
@@ -142,6 +148,7 @@ export function PointsTable() {
         preview={preview}
         justApplied={justApplied}
         optimize={{ disabled: budget <= 0, disabledReason: budget <= 0 ? t.optimizeBuildNoBudgetReason : null }}
+        heroEnabled={heroBattleAllowed}
         formatNumber={formatNumber}
         onOptimize={handleOptimize}
         onApply={handleApply}

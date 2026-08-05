@@ -34,6 +34,7 @@ function readTabStatusDepTuple(state: PlannerStore): readonly unknown[] {
     state.stars,
     state.abilities,
     state.targetProp,
+    state.heroBattleAllowed,
     pipeline.spentDelta,
     pipeline.sheetOther,
     pipeline.resetAdvice.recommend,
@@ -57,6 +58,7 @@ export function selectPlannerTabStatuses(state: PlannerStore): PlannerTabStatuse
   const abilityPointsMax = abilityPointBudget(state.rarity, state.level);
   const ptsLeft = Math.max(0, state.level - spentDelta);
   const abilityPtsLeft = Math.max(0, abilityPointsMax - abilityPointsSpent);
+  const resetAdviceRecommend = pipeline.resetAdvice.recommend && state.heroBattleAllowed;
 
   const result = computePlannerTabStatuses({
     hasGear,
@@ -66,7 +68,7 @@ export function selectPlannerTabStatuses(state: PlannerStore): PlannerTabStatuse
     abilityPtsLeft,
     abilityPointsMax,
     targetProp: state.targetProp,
-    resetAdviceRecommend: pipeline.resetAdvice.recommend,
+    resetAdviceRecommend,
     t: selectStrings(state),
   });
   cache = { deps, result };

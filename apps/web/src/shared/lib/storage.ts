@@ -91,7 +91,11 @@ export type HeroRecord = {
   power?: number;
   /** Whether this hero is currently deployed in the squad (from save `in_field` or roster toggle). */
   deployed?: boolean;
-  /** Whether the game allows this hero in battle (`battle_allowed` in save exports). Display-only. */
+  /**
+   * Whether this hero is enabled in the planner (`battle_allowed` from save exports).
+   * Toggleable in the hero strip and roster picker. Disabled heroes are excluded from
+   * roster respec recommendations. Defaults to `true` when absent.
+   */
   battleAllowed?: boolean;
   /** Cosmetic avatar skin from save `skin` (0–6; see `HERO_SKIN_COUNT`). Display-only. */
   skin?: number;
@@ -442,6 +446,21 @@ export function updateHeroDeployed(
   const next = [...heroes];
   const existingIndex = next.findIndex((hero) => hero.id === heroId);
   if (existingIndex >= 0) next[existingIndex] = { ...next[existingIndex], deployed };
+  saveHeroes(next);
+  return next;
+}
+
+/** Toggle a hero's planner-enabled flag (`battleAllowed`) and persist the roster. */
+export function updateHeroBattleAllowed(
+  heroes: HeroRecord[],
+  heroId: string,
+  battleAllowed: boolean,
+): HeroRecord[] {
+  const next = [...heroes];
+  const existingIndex = next.findIndex((hero) => hero.id === heroId);
+  if (existingIndex < 0) return heroes;
+  if ((next[existingIndex].battleAllowed ?? true) === battleAllowed) return heroes;
+  next[existingIndex] = { ...next[existingIndex], battleAllowed };
   saveHeroes(next);
   return next;
 }

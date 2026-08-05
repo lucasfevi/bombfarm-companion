@@ -9,7 +9,10 @@ type Props = {
   className?: string;
 };
 
-/** Save `battle_allowed` — whether the game lists this hero as battle-eligible. */
+/**
+ * Read-only Active/Inactive badge for surfaces that must not toggle
+ * (prefer `HeroActiveToggle` in the strip and roster picker).
+ */
 export function HeroBattleStatusChip({ battleAllowed, t, className }: Props) {
   return (
     <Chip

@@ -24,8 +24,9 @@ export const en = {
   fieldRequired: "required",
   heroBattleActive: "Active",
   heroBattleInactive: "Inactive",
-  heroBattleActiveTitle: "Battle allowed in-game",
-  heroBattleInactiveTitle: "Not battle-eligible in-game",
+  heroBattleActiveTitle: "Enabled in the planner",
+  heroBattleInactiveTitle: "Disabled in the planner",
+  heroBattleToggleAria: "Enable or disable this hero in the planner",
   heroStripStatus: "Status",
   rosterColStatus: "Status",
   // Roster-wide Tier 1 gate — lower bound only; names Optimize build as the definitive check.
@@ -60,8 +61,9 @@ export const pt: typeof en = {
   fieldRequired: "obrigatório",
   heroBattleActive: "Ativo",
   heroBattleInactive: "Inativo",
-  heroBattleActiveTitle: "Liberado para combate no jogo",
-  heroBattleInactiveTitle: "Não elegível para combate no jogo",
+  heroBattleActiveTitle: "Ativado no planejador",
+  heroBattleInactiveTitle: "Desativado no planejador",
+  heroBattleToggleAria: "Ativar ou desativar este herói no planejador",
   heroStripStatus: "Status",
   rosterColStatus: "Status",
   resetAdviceRosterBanner:

@@ -26,6 +26,7 @@ export function PointsPreviewActions({
   preview,
   justApplied,
   optimize,
+  heroEnabled = true,
   formatNumber,
   onOptimize,
   onApply,
@@ -35,6 +36,8 @@ export function PointsPreviewActions({
   preview: PointsPreview | null;
   justApplied: boolean;
   optimize: OptimizeAvailability;
+  /** When false, show a muted note that automatic respec advice skips this hero. */
+  heroEnabled?: boolean;
   formatNumber: (n: number, d?: number) => string;
   onOptimize: () => void;
   onApply: () => void;
@@ -42,6 +45,7 @@ export function PointsPreviewActions({
 }) {
   const resultDisplay = preview ? optimizeResultDisplay(t, preview.result, formatNumber) : null;
   const showBudgetExhausted = !!preview?.result.budgetExhausted;
+  const showDisabledNote = !heroEnabled;
 
   return (
     <div className="mt-2.5 flex flex-col items-end gap-1.5">
@@ -62,6 +66,12 @@ export function PointsPreviewActions({
           {t.previewClearButton}
         </Button>
       </div>
+      <p
+        className={cn(mutedClass, 'm-0 max-w-prose text-right', !showDisabledNote && 'invisible')}
+        aria-hidden={!showDisabledNote}
+      >
+        {t.optimizeBuildHeroDisabledNote}
+      </p>
       <p
         className={cn(mutedClass, 'm-0 text-right', !preview && 'invisible')}
         aria-hidden={!preview}

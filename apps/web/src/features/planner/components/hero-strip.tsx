@@ -8,6 +8,7 @@ import { formatNumber } from '@/shared/lib/format-number';
 import {
   usePlannerStore,
   selectHeroName,
+  selectHeroBattleAllowed,
   selectAdvisorPipeline,
 } from '@/shared/stores';
 import { useHeroDraftActions } from '../hooks/use-hero-draft-actions';
@@ -32,6 +33,8 @@ export function HeroStrip() {
   const heroes = usePlannerStore((state) => state.heroes);
   const heroId = usePlannerStore((state) => state.activeHeroId);
   const heroName = usePlannerStore(selectHeroName);
+  const heroBattleAllowed = usePlannerStore(selectHeroBattleAllowed);
+  const setHeroBattleAllowedOnHero = usePlannerStore((state) => state.setHeroBattleAllowedOnHero);
   const resetAdvice = usePlannerStore((state) => selectAdvisorPipeline(state).resetAdvice);
 
   const onSelectHero = applyHero;
@@ -39,7 +42,7 @@ export function HeroStrip() {
   const [pickerOpen, setPickerOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
 
-  const showResetAdvice = resetAdvice.recommend;
+  const showResetAdvice = resetAdvice.recommend && heroBattleAllowed;
 
   return (
     <>
@@ -82,6 +85,7 @@ export function HeroStrip() {
         t={t}
         formatNumber={formatNumber}
         onSelectHero={onSelectHero}
+        onBattleAllowedChange={setHeroBattleAllowedOnHero}
       />
 
       <ConfirmDialog
