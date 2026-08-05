@@ -32,6 +32,41 @@ test.describe('core client flow', () => {
     expect(footerBox!.height).toBeLessThan(120);
   });
 
+  test('long version label fits the footer slot without clipping', async ({ page }) => {
+    const longLabel = 'v0.10.0-dev.abcdef1';
+    await page.goto('/');
+
+    const version = page.getByTestId('app-version');
+    await version.evaluate((element, label) => {
+      element.textContent = label;
+    }, longLabel);
+    await expect(version).toHaveText(longLabel);
+
+    const layout = await version.evaluate((element) => {
+      const style = window.getComputedStyle(element);
+      return {
+        scrollWidth: element.scrollWidth,
+        clientWidth: element.clientWidth,
+        overflowX: style.overflowX,
+        textOverflow: style.textOverflow,
+      };
+    });
+
+    expect(layout.clientWidth).toBeGreaterThanOrEqual(152);
+    expect(layout.scrollWidth).toBeLessThanOrEqual(layout.clientWidth + 1);
+
+    const footer = page.locator('footer');
+    const coffee = footer.getByRole('link', { name: /coffee|café/i });
+    const versionBox = await version.boundingBox();
+    const coffeeBox = await coffee.boundingBox();
+    const footerBox = await footer.boundingBox();
+    expect(versionBox).toBeTruthy();
+    expect(coffeeBox).toBeTruthy();
+    expect(footerBox).toBeTruthy();
+    expect(versionBox!.x + versionBox!.width).toBeLessThanOrEqual(coffeeBox!.x + 4);
+    expect(footerBox!.height).toBeLessThan(120);
+  });
+
   test('import → select → level/stars → DPS updates → explain toggle', async ({ page }) => {
     await page.goto('/');
 

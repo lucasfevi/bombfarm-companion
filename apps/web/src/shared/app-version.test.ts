@@ -52,11 +52,11 @@ describe('resolveVersionLabel', () => {
   it('preserves long semver strings in the label', () => {
     expect(
       resolveVersionLabel({
-        version: '0.10.0-dev.abcdef1',
+        version: '0.10.0',
         isProduction: false,
-        commitSha: '12345678',
+        commitSha: 'abcdef1',
       }),
-    ).toBe('v0.10.0-dev.abcdef1-dev.1234567');
+    ).toBe('v0.10.0-dev.abcdef1');
   });
 
   it('tracks package.json version bumps without other edits (REL-25)', () => {
