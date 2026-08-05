@@ -1,0 +1,10 @@
+---
+description: develop/main branching hard truth
+alwaysApply: true
+---
+
+# Branching
+
+**Canonical hard truth:** [`docs/branching.md`](../../docs/branching.md)
+
+Feature work branches from and merges into `develop`; `main` is release-only.
