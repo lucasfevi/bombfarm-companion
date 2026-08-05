@@ -354,7 +354,7 @@ test.describe('points panel preview / apply (BSPW6-02)', () => {
 
     await panel.getByRole('button', { name: /^Otimizar build$/i }).click();
     await expect(respecNote).not.toBeVisible();
-    await expect(panel.getByText(/melhor alocação encontrada por essa busca/i)).toBeVisible();
+    await expect(panel.getByText(/essa busca não superou sua alocação atual/i)).toBeVisible();
   });
 
   test('Clear preview discards the candidate without touching pts', async ({ page }) => {
