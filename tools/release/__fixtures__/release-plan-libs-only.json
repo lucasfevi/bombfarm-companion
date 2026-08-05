@@ -1,0 +1,25 @@
+{
+  "changesets": [
+    {
+      "id": "contracts-change",
+      "summary": "IPC contract tweak"
+    }
+  ],
+  "releases": [
+    {
+      "name": "@bombfarm/contracts",
+      "type": "patch",
+      "oldVersion": "0.0.0",
+      "newVersion": "0.0.1",
+      "changesets": ["contracts-change"]
+    },
+    {
+      "name": "@bombfarm/desktop",
+      "type": "none",
+      "oldVersion": "0.0.0",
+      "newVersion": "0.0.0",
+      "changesets": ["contracts-change"]
+    }
+  ],
+  "preState": null
+}

@@ -1,0 +1,32 @@
+{
+  "changesets": [
+    {
+      "id": "ui-shared-change",
+      "summary": "Shared UI component"
+    }
+  ],
+  "releases": [
+    {
+      "name": "@bombfarm/desktop",
+      "type": "patch",
+      "oldVersion": "0.0.0",
+      "newVersion": "0.0.1",
+      "changesets": ["ui-shared-change"]
+    },
+    {
+      "name": "@bombfarm/ui",
+      "type": "patch",
+      "oldVersion": "0.0.0",
+      "newVersion": "0.0.1",
+      "changesets": ["ui-shared-change"]
+    },
+    {
+      "name": "@bombfarm/web",
+      "type": "patch",
+      "oldVersion": "0.0.0",
+      "newVersion": "0.0.1",
+      "changesets": ["ui-shared-change"]
+    }
+  ],
+  "preState": null
+}
