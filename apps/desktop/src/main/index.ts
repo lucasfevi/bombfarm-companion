@@ -27,6 +27,7 @@ function registerIpcHandlers(): void {
         badgeLabel: env.descriptor.badgeLabel,
         updateChannel: env.descriptor.updateChannel,
         isPackaged: env.isPackaged,
+        version: app.getVersion(),
       };
     },
     'app:ping': () => ({ ok: true as const, from: 'main' as const }),
