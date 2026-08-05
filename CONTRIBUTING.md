@@ -17,7 +17,30 @@ Thank you for your interest in contributing!
 - Use [Conventional Commits](https://www.conventionalcommits.org/) for commit messages.
 - Describe which product requirement IDs your change addresses when applicable.
 
-CI is **path-filtered**: web-only PRs run `ci-web` / `e2e-web`; desktop-only PRs run `ci-desktop` (Windows package job on `main` push). Changes under `packages/ui` wake both.
+CI is **path-filtered**: web-only PRs run `ci-web` / `e2e-web`; desktop-only PRs run `ci-desktop`. Changes under `packages/ui` wake both.
+
+## Changesets
+
+User-visible changes need a [changeset](https://github.com/changesets/changesets) before merge:
+
+```bash
+pnpm changeset
+```
+
+Commit the generated file under `.changeset/`. CI ([`.github/workflows/changesets.yml`](.github/workflows/changesets.yml)) validates frontmatter and requires a pending changeset on PRs that touch shipping paths under `apps/**` or `packages/**`.
+
+### Shared packages and the release set
+
+When you bump a shared package (`packages/*`) that **reaches users**, the consuming app must end up in the release set:
+
+- **`dependencies` edge** (the usual case): changesets adds consuming apps as automatic `patch` dependents — e.g. a `@bombfarm/ui` bump includes both `@bombfarm/web` and `@bombfarm/desktop` without separate app changesets.
+- **`devDependencies` only**: the dependent is recorded with bump type `none` and is **not** released. If users still see the change, add an explicit changeset for the app (`@bombfarm/web` and/or `@bombfarm/desktop`).
+
+### `skip-changeset` escape
+
+Add the **`skip-changeset`** label when the PR changes docs, tests, or CI inside a versioned package but should not trigger a version bump (e.g. comment-only edits in `packages/ui`). The check re-runs when labels change.
+
+Full release maintainer steps: [`docs/releases.md`](docs/releases.md).
 
 ## Web deploy (maintainers)
 
