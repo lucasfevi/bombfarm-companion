@@ -49,4 +49,4 @@ pnpm test:smoke   # Windows — builds static renderer + launches Electron
 
 ## Flavors
 
-`BFC_FLAVOR=dev|prod` selects app ID and isolated user-data paths (see README).
+`BFC_FLAVOR` selects one of `dev`, `nightly`, `beta`, or `prod` for app ID, product name, user-data path, and packaging identity. Unpackaged local runs default to `dev` when unset. See README for the full matrix and package scripts.
