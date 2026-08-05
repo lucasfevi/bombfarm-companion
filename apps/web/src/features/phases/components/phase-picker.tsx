@@ -50,7 +50,7 @@ export function PhasePicker({
   return (
     <Panel focus>
       <div className="flex flex-wrap items-end gap-3">
-        <label className={`${fieldLabelClass} w-[7.25rem] shrink-0`}>
+        <label className={`${fieldLabelClass} w-29 shrink-0`}>
           <span>{t.phasesDifficultyLabel}</span>
           <Select
             size="compact"
@@ -69,11 +69,11 @@ export function PhasePicker({
             })}
           </Select>
         </label>
-        <label className={`${fieldLabelClass} w-[16rem] shrink-0`}>
+        <label className={`${fieldLabelClass} w-3xs shrink-0`}>
           <span>{t.phasesMapLabel}</span>
           <Select
             size="compact"
-            className="w-[16rem]"
+            className="w-3xs"
             aria-label={t.phasesMapLabel}
             value={String(phase)}
             onChange={(event) => onPhase(Number(event.target.value))}

@@ -105,9 +105,9 @@ export function HeroPickerTable({
                 sortKey={sortKey}
                 sortDir={sortDir}
                 onSort={handleSort}
-                className="min-w-[15.5rem] max-[720px]:hidden"
+                className="min-w-62 max-[720px]:hidden"
               />
-              <DataTable.Header className="min-w-[8.5rem] max-[960px]:hidden">
+              <DataTable.Header className="min-w-34 max-[960px]:hidden">
                 {t.rosterColAbilities}
               </DataTable.Header>
               <DataTable.Header className="max-[720px]:hidden">{t.rosterColStatus}</DataTable.Header>

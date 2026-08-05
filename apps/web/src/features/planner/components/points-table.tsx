@@ -102,11 +102,11 @@ export function PointsTable() {
         <DataTable.Table className="table-fixed">
           <colgroup>
             <col />
-            <col className="w-[10.5rem]" />
+            <col className="w-42" />
             {/* content-fit-ui.md: widened for the 2 dp precision sweep (BSP-29). */}
-            <col className="w-[4rem]" />
-            <col className="w-[6rem]" />
-            <col className="w-[6rem]" />
+            <col className="w-16" />
+            <col className="w-24" />
+            <col className="w-24" />
           </colgroup>
           <DataTable.Head>
             <DataTable.Row>

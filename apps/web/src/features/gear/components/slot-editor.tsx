@@ -44,7 +44,7 @@ export const slotStatsGridClass = `${slotsGridClass} mt-1.5`;
 export const slotStatRowClass =
   'flex items-baseline justify-between gap-1.5 text-muted leading-snug [&_b]:shrink-0 [&_b]:font-semibold [&_b]:text-ink';
 const slotHeadLabelClass =
-  'min-w-0 truncate text-[10px] font-bold tracking-[0.05em] uppercase';
+  'min-w-0 truncate text-[10px] font-bold tracking-wider uppercase';
 
 export const SlotEditor = memo(function SlotEditor({
   slot,

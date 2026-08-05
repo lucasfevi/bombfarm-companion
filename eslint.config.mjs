@@ -1,7 +1,12 @@
 import eslint from '@eslint/js';
+import path from 'node:path';
 import globals from 'globals';
 import tseslint from 'typescript-eslint';
 import reactHooks from 'eslint-plugin-react-hooks';
+import eslintPluginTailwindcss from 'eslint-plugin-tailwindcss';
+
+/** Absolute Tailwind v4 entry — packages/ui lint cwd is not the repo root. */
+const webTailwindCss = path.join(import.meta.dirname, 'apps/web/src/app/globals.css');
 
 /** Companion-native packages keep the pre-merge strict typed lint bar. */
 const companionNativePackages = [
@@ -87,6 +92,21 @@ export default tseslint.config(
     },
     rules: {
       ...reactHooks.configs.recommended.rules,
+    },
+  },
+  {
+    files: ['packages/ui/**/*.{ts,tsx}'],
+    plugins: { tailwindcss: eslintPluginTailwindcss },
+    settings: {
+      tailwindcss: {
+        // Web app owns the Tailwind v4 entry; recipes in packages/ui are scanned from there.
+        cssConfigPath: webTailwindCss,
+      },
+    },
+    rules: {
+      // Prefer named Tailwind utilities over equivalent arbitrary values
+      // (e.g. tracking-[0.05em] → tracking-wider). Autofixable.
+      'tailwindcss/no-unnecessary-arbitrary-value': 'error',
     },
   },
   {

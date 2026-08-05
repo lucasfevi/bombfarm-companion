@@ -34,7 +34,7 @@ export function PhasesTop9Table({
   return (
     <Tooltip.Provider delay={200} closeDelay={80}>
       <DataTable.Root scrollable maxRows={10} className="mt-3 rounded-sm border border-line">
-        <DataTable.Table className="min-w-[36rem]">
+        <DataTable.Table className="min-w-xl">
           <DataTable.Head>
             <DataTable.Row>
               <DataTable.Header className="w-8">#</DataTable.Header>
@@ -44,10 +44,10 @@ export function PhasesTop9Table({
               <DataTable.Header>{t.importColName}</DataTable.Header>
               <DataTable.Header>{t.importColLevel}</DataTable.Header>
               <DataTable.Header align="right">{t.importColPower}</DataTable.Header>
-              <DataTable.Header className="min-w-[10rem] max-[900px]:hidden">
+              <DataTable.Header className="min-w-40 max-[900px]:hidden">
                 {t.rosterColGear}
               </DataTable.Header>
-              <DataTable.Header className="min-w-[6.5rem] max-[1100px]:hidden">
+              <DataTable.Header className="min-w-26 max-[1100px]:hidden">
                 {t.rosterColAbilities}
               </DataTable.Header>
               <DataTable.Header align="right">{t.modeDps}</DataTable.Header>
