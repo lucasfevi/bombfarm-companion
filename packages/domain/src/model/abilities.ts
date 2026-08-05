@@ -45,7 +45,7 @@ export const ABILITIES: AbilityDef[] = [
   { id: 'olho_clinico', name: 'Olho Clínico', max: 20, effectText: '+0.75% chance de crítico/nível (% da base, altera atributos)', effect: { kind: 'critChancePctOfBase', perLevel: 0.75, onSheet: true } },
   { id: 'detonacao_dupla', name: 'Detonação Dupla', max: 20, effectText: '+1.5% chance de 2ª explosão (50% dano)/nível', effect: { kind: 'secondBlastPct', perLevel: 1.5 } },
   { id: 'folego_mineiro', name: 'Fôlego de Mineiro', max: 20, effectText: '−1% energia gasta do TIME/nível', effect: { kind: 'drainPct', perLevel: 1 } },
-  { id: 'passagem_bastao', name: 'Passagem de Bastão', max: 10, effectText: '+3% Velocidade ao time que entra/nível (não modelado)', effect: { kind: 'none' } },
+  { id: 'passagem_bastao', name: 'Passagem de Bastão', max: 20, effectText: '+4% de Dano ao ENTRAR no rodízio (dura 120s)/nível (não modelado)', effect: { kind: 'none' } },
   { id: 'olho_lapidador', name: 'Olho de Lapidador', max: 20, effectText: '+2.5% chance de baú subir raridade/nível (loot)', effect: { kind: 'none' } },
   { id: 'veia_ouro', name: 'Veia de Ouro', max: 20, effectText: '+4% ouro/nível (loot)', effect: { kind: 'none' } },
   { id: 'grito_guerra', name: 'Grito de Guerra', max: 20, effectText: '+1% Ataque do TIME/nível', effect: { kind: 'attackPct', perLevel: 1 } },

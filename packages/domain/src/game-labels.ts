@@ -181,8 +181,8 @@ const ABILITY_EFFECTS: Record<string, Bilingual> = {
     en: '−1% TEAM energy spent/level',
   },
   passagem_bastao: {
-    pt: '+3% Velocidade ao time que entra/nível (não modelado)',
-    en: '+3% Speed to incoming team/level (not modeled)',
+    pt: '+4% de Dano ao ENTRAR no rodízio (dura 120s)/nível (não modelado)',
+    en: '+4% Damage on ENTERING rotation (lasts 120s)/level (not modeled)',
   },
   olho_lapidador: {
     pt: '+2.5% chance de baú subir raridade/nível (loot)',

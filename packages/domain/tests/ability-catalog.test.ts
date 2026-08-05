@@ -87,12 +87,8 @@ describe('catalog completeness (T2, BSP-32 / BSP-32a)', () => {
 });
 
 describe('rank-20 migration (T3, AD-BSP-18, BSPW3-02/-03)', () => {
-  it('AC-05: every AbilityDef.max is 20, except passagem_bastao (deferred to Wave 5, user override)', () => {
+  it('AC-05: every AbilityDef.max is 20', () => {
     for (const a of ABILITIES) {
-      if (a.id === 'passagem_bastao') {
-        expect(a.max, a.id).toBe(10); // deliberately untouched — see the dedicated test below
-        continue;
-      }
       expect(a.max, a.id).toBe(20);
     }
   });
@@ -154,18 +150,14 @@ describe('rank-20 migration (T3, AD-BSP-18, BSPW3-02/-03)', () => {
     expect(abilityMods({ marcha_acelerada: 17 }).speedMult).toBeCloseTo(1 + (0.185 * 17) / 100, 10);
   });
 
-  it('passagem_bastao is deferred entirely to Wave 5 — byte-identical to pre-wave (user override on DEC-01/AC-10)', () => {
-    // AC-10 in spec.md asks for max: 20 and corrected damage/120s copy under DEC-01. A user
-    // decision made after the spec was written overrides that: passagem_bastao is left
-    // completely untouched this wave (max stays 10, effectText keeps the stale speed
-    // wording) because modelling it properly needs casa.cycle_secs import (Wave 5) plus a
-    // W0-12 trigger-cadence tooltip that does not exist yet. This is deliberate, not a
-    // missed catalog entry — see spec.md's Assumptions & Decisions (DEC-01 residues) and
-    // this test file's own header comment for the two known residues left in place.
+  it('passagem_bastao is rank-20 damage-on-enter copy and stays unmodeled', () => {
     const def = ABILITIES.find((a) => a.id === 'passagem_bastao')!;
-    expect(def.max).toBe(10);
+    expect(def.max).toBe(20);
     expect(def.effect).toEqual({ kind: 'none' });
-    expect(def.effectText).toBe('+3% Velocidade ao time que entra/nível (não modelado)');
+    expect(def.effectText).toMatch(/4%/);
+    expect(def.effectText).toMatch(/120/);
+    expect(def.effectText).not.toMatch(/velocidade/i);
+    expect(abilityMods({ passagem_bastao: 20 })).toMatchObject(IDENTITY_MODS);
   });
 
   it('AC-09a: caca_hero and fantasma keep { kind: none } — no numeric perLevel invented for uncaptured inputs', () => {

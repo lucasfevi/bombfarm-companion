@@ -50,6 +50,10 @@ describe('abilityName / abilityEffectText', () => {
     expect(abilityEffectText('folego_mineiro', 'en')).toMatch(/1%/);
     expect(abilityEffectText('grito_guerra', 'en')).toMatch(/1%/);
     expect(abilityEffectText('golpe_brutal', 'en')).toMatch(/4%/);
+    expect(abilityEffectText('passagem_bastao', 'en')).toMatch(/4%/);
+    expect(abilityEffectText('passagem_bastao', 'en')).toMatch(/120/);
+    expect(abilityEffectText('passagem_bastao', 'en')).not.toMatch(/speed/i);
+    expect(abilityEffectText('passagem_bastao', 'pt')).not.toMatch(/velocidade/i);
   });
 
   it('falls back to raw id for unknown ability', () => {
