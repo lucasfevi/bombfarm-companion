@@ -55,7 +55,7 @@ GitHub Actions runs path-filtered CI only — there is no Actions deploy workflo
 - TypeScript strict at the monorepo base — see [`docs/typescript-planner-origin.md`](docs/typescript-planner-origin.md) for the documented planner-origin package exception.
 - Match existing formatting and naming in the package you edit.
 - IPC contract changes require updates to `@bombfarm/contracts` and tests.
-- Never add a `.specs/` directory to this repository.
+- Never add private TLC spec directories to this repository.
 
 ## Community
 

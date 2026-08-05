@@ -37,7 +37,7 @@ The release set comes from `pnpm changeset status` (all pending changesets aggre
 | Release set | Version bumps | Beta installer | On merge to `main` |
 | --- | --- | --- | --- |
 | Web only | `@bombfarm/web` + web-side libs | Skipped — reason in PR body | Vercel prod deploy; no desktop job |
-| Desktop only | `@bombfarm/desktop` + its libs | Built — PR artifact + `beta-installer` check | Prod installer artifact; GitHub Release only if flag on |
+| Desktop only | `@bombfarm/desktop` + its libs | Built — PR artifact, GitHub prerelease, and `beta-installer` check | Prod installer artifact; GitHub Release only if flag on |
 | Both (e.g. `packages/ui` bump) | Both apps + shared libs, one PR | Built | One merge covers web + desktop |
 | Libs only | Shared packages only | Skipped | No app-specific release artifacts |
 | No pending changesets | — | — | No release PR opened |
@@ -46,7 +46,7 @@ Logic lives in [`tools/release/release-plan.mjs`](../tools/release/release-plan.
 
 ## Version sync and parity guard
 
-After a release PR merges, `release-sync.yml` opens `chore(release): sync versions to develop` (`release/next` → `develop`), dispatches required CI on that head, and auto-merges with squash.
+After a release PR merges, `release-sync.yml` recreates `release/next` from the merged PR head SHA (so version sync survives `delete_branch_on_merge`), opens `chore(release): sync versions to develop` (`release/next` → `develop`), dispatches required CI on that head, and auto-merges with squash.
 
 While `develop` is **behind** `main` on package versions (sync PR pending or failed), [release-pr.yml](../.github/workflows/release-pr.yml) **skips** creating or updating the release PR and writes a job summary: *waiting on version-sync PR*. This prevents double-bumping.
 
@@ -90,7 +90,7 @@ Local packaging: `pnpm --filter @bombfarm/desktop package:nightly|beta|prod` (se
 The repository is **private** until the desktop app is production-ready. Testers do **not** receive auto-updates.
 
 - **Nightly:** GitHub Releases tagged `desktop-v<version>-nightly.<YYYYMMDD>.<sha7>` — download manually from the repo Releases page. Retention keeps the **7** newest nightlies.
-- **Beta:** default path is a **PR workflow artifact** (`bombfarm-companion-beta-<version>-<sha7>`) plus a PR comment with the artifact name and head SHA. An optional `publish_prerelease` dispatch input can create a GitHub prerelease instead.
+- **Beta:** GitHub **prerelease** (`desktop-v<version>-beta.<run>`) with all `release/beta/*` assets, plus a PR workflow artifact (`bombfarm-companion-beta-<version>-<sha7>`) and PR comment with the head SHA. A `publish_prerelease` dispatch input can force-republish an existing beta release tag.
 - **Prod:** installer artifact on every qualifying `main` push; public GitHub Release only when the flag is on (below).
 
 ## Going public (desktop GitHub Release)
