@@ -1,9 +1,12 @@
 @import 'tailwindcss';
 
-/* Explicit sources so Storybook (and any non-Next CSS entry) still scans recipes/stories. */
+/* Explicit sources so Storybook (and any non-Next CSS entry) still scans recipes/stories.
+   packages/ui must be listed — recipe class strings live there after the MP1 monorepo merge;
+   without it, unique utilities (e.g. ability-card auto-fill grid) never enter the CSS bundle. */
 @source '../features/**/*.{ts,tsx}';
 @source '../shared/**/*.{ts,tsx}';
 @source '../app/**/*.{ts,tsx}';
+@source '../../../../packages/ui/src/**/*.{ts,tsx}';
 
 /* Design tokens — Tailwind namespaces only. Dark-only runtime tokens; no prefers-color-scheme toggle. */
 @theme {
