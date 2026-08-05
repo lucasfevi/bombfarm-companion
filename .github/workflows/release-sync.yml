@@ -39,6 +39,27 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
+      - name: Recreate release/next from merged PR head
+        id: recreate
+        env:
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          git fetch origin
+          if ! git push --force origin "${HEAD_SHA}:refs/heads/release/next"; then
+            {
+              echo '::error::Failed to recreate release/next from merged PR head'
+              echo '## Release sync — manual action required'
+              echo ''
+              echo 'Recreate the versioned branch, then open the sync PR:'
+              echo ''
+              echo '```bash'
+              echo "git push --force origin ${HEAD_SHA}:refs/heads/release/next"
+              echo 'gh pr create --head release/next --base develop --title "chore(release): sync versions to develop"'
+              echo '```'
+            } >> "$GITHUB_STEP_SUMMARY"
+            exit 1
+          fi
+
       - name: Open sync PR to develop
         id: open-pr
         env:
