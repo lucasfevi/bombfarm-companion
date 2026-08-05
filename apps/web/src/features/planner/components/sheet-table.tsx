@@ -77,7 +77,7 @@ export function SheetTable() {
         <FieldRequired show={missingBirth}>{t.fieldRequired}</FieldRequired>
       </div>
       <p className={tipClass}>{missingBirth ? t.sheetTipNeedBirth : t.sheetTip}</p>
-      <DataTable.Root scrollable className="overflow-x-auto">
+      <DataTable.Root scrollable maxRows={11} className="overflow-x-auto">
         <DataTable.Table className="table-fixed min-w-4xl">
           <colgroup>
             <col className="w-30" />
