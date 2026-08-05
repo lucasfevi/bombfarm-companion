@@ -130,7 +130,7 @@ jobs:
           BFC_FLAVOR: dev
 
   package-windows:
-    name: Package DEV and PROD (Windows)
+    name: Package BETA and PROD (Windows)
     runs-on: windows-latest
     needs: smoke-windows
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
@@ -147,11 +147,11 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Package DEV flavor
-        run: pnpm --filter @bombfarm/desktop package:dev
+      - name: Package BETA flavor
+        run: pnpm --filter @bombfarm/desktop package:beta
         env:
           NODE_ENV: production
-          BFC_FLAVOR: dev
+          BFC_FLAVOR: beta
 
       - name: Package PROD flavor
         run: pnpm --filter @bombfarm/desktop package:prod
@@ -159,11 +159,17 @@ jobs:
           NODE_ENV: production
           BFC_FLAVOR: prod
 
-      - name: Upload installers
+      - name: Upload beta installer
         uses: actions/upload-artifact@v4
         with:
-          name: windows-installers
-          path: apps/desktop/release/**/*
+          name: windows-installer-beta
+          path: apps/desktop/release/beta/**
+
+      - name: Upload prod installer
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-installer-prod
+          path: apps/desktop/release/prod/**
 
   ci-desktop-required:
     name: ci-desktop-required
