@@ -6,7 +6,7 @@ import {
   readReleaseSet,
   resolveArtifactPlan,
 } from './release-plan.mjs';
-import { REPORT_MARKER, renderReleaseReport } from './release-report.mjs';
+import { REPORT_MARKER, renderReleaseReport, renderNightlySummary, renderNightlyNoOpSummary } from './release-report.mjs';
 
 const fixturesDir = join(fileURLToPath(new URL('.', import.meta.url)), '__fixtures__');
 const loadFixture = (name) =>
@@ -91,5 +91,40 @@ describe('renderReleaseReport', () => {
     const report = renderForFixture('release-plan-desktop-only.json');
     expect(report).toContain('not a required GitHub check');
     expect(report).toContain('24 hours');
+  });
+});
+
+describe('renderNightlySummary', () => {
+  it('lists version bumps, produced assets, and skipped web deploy', () => {
+    const summary = renderNightlySummary({
+      packageName: '@bombfarm/desktop',
+      oldVersion: '0.0.0',
+      newVersion: '0.0.0-nightly.20260805.abcdef1',
+      headSha: 'abcdef1234567890abcdef1234567890abcdef12',
+      tag: 'desktop-v0.0.0-nightly.20260805.abcdef1',
+      assets: ['nightly.yml', 'setup.exe'],
+    });
+
+    expect(summary).toContain('| @bombfarm/desktop | 0.0.0 → 0.0.0-nightly.20260805.abcdef1 |');
+    expect(summary).toContain('| Desktop nightly installer | produced — 2 asset(s) |');
+    expect(summary).toContain('| Web production deploy | skipped — N/A for nightly |');
+    expect(summary).toContain('nightly.yml');
+  });
+});
+
+describe('renderNightlyNoOpSummary', () => {
+  it('explains skipped artifacts when no new commits exist', () => {
+    const summary = renderNightlyNoOpSummary({
+      packageName: '@bombfarm/desktop',
+      oldVersion: '0.0.0',
+      newVersion: '0.0.0-nightly.20260805.abcdef1',
+      headSha: 'abcdef1234567890abcdef1234567890abcdef12',
+      tag: 'desktop-v0.0.0-nightly.20260805.abcdef1',
+      reason: 'no_new_commits',
+    });
+
+    expect(summary).toContain('No new commits on `develop`');
+    expect(summary).toContain('| Desktop nightly installer | skipped — no publish |');
+    expect(summary).toContain('(not published)');
   });
 });

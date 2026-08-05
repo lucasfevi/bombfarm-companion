@@ -23,6 +23,8 @@ jobs:
       tag: ${{ steps.plan.outputs.tag }}
       head_sha: ${{ steps.plan.outputs.head_sha }}
       sha7: ${{ steps.plan.outputs.sha7 }}
+      base_version: ${{ steps.plan.outputs.base_version }}
+      no_op_reason: ${{ steps.plan.outputs.no_op_reason }}
     steps:
       - name: Checkout develop
         uses: actions/checkout@v4
@@ -55,8 +57,13 @@ jobs:
           let decision = { proceed: true, reason: '' };
 
           try {
-            execSync(`gh release view ${tag}`, { stdio: 'pipe' });
-            decision = { proceed: false, reason: 'tag_exists' };
+            const viewOutput = execSync(`gh release view ${tag} --json isDraft`, { encoding: 'utf8' });
+            const { isDraft } = JSON.parse(viewOutput);
+            if (isDraft) {
+              execSync(`gh release delete ${tag} --yes --cleanup-tag`, { stdio: 'inherit' });
+            } else {
+              decision = { proceed: false, reason: 'tag_exists' };
+            }
           } catch {
             const repo = process.env.GITHUB_REPOSITORY;
             const raw = execSync(`gh api repos/${repo}/releases --paginate`, { encoding: 'utf8' });
@@ -125,6 +132,7 @@ jobs:
           TAG=$(node -p "JSON.parse(require('node:fs').readFileSync('nightly-plan.json','utf8')).tag")
           HEAD_SHA=$(node -p "JSON.parse(require('node:fs').readFileSync('nightly-plan.json','utf8')).headSha")
           SHA7=$(node -p "JSON.parse(require('node:fs').readFileSync('nightly-plan.json','utf8')).sha7")
+          BASE_VERSION=$(node -p "JSON.parse(require('node:fs').readFileSync('nightly-plan.json','utf8')).baseVersion")
 
           {
             echo "proceed=${PROCEED}"
@@ -132,24 +140,27 @@ jobs:
             echo "tag=${TAG}"
             echo "head_sha=${HEAD_SHA}"
             echo "sha7=${SHA7}"
+            echo "base_version=${BASE_VERSION}"
+            echo "no_op_reason=${REASON}"
           } >> "$GITHUB_OUTPUT"
 
           if [ "$PROCEED" != "true" ]; then
-            {
-              echo '## Nightly — no-op'
-              echo ''
-              if [ "$REASON" = "tag_exists" ]; then
-                echo "Tag \`${TAG}\` already exists for develop HEAD \`${SHA7}\`."
-              else
-                echo "No new commits on \`develop\` since the latest nightly (\`${SHA7}\`)."
-              fi
-              echo ''
-              echo "| Field | Value |"
-              echo "| --- | --- |"
-              echo "| Version | \`${VERSION}\` |"
-              echo "| Tag | \`${TAG}\` |"
-              echo "| SHA | \`${HEAD_SHA}\` |"
-            } >> "$GITHUB_STEP_SUMMARY"
+            node --input-type=module <<'NODE' >> "$GITHUB_STEP_SUMMARY"
+          import { readFileSync } from 'node:fs';
+          import { renderNightlyNoOpSummary } from './tools/release/release-report.mjs';
+
+          const plan = JSON.parse(readFileSync('nightly-plan.json', 'utf8'));
+          process.stdout.write(
+            renderNightlyNoOpSummary({
+              packageName: '@bombfarm/desktop',
+              oldVersion: plan.baseVersion,
+              newVersion: plan.version,
+              headSha: plan.headSha,
+              tag: plan.tag,
+              reason: plan.reason === 'tag_exists' ? 'tag_exists' : 'no_new_commits',
+            }),
+          );
+          NODE
           fi
 
   build:
@@ -215,9 +226,30 @@ jobs:
           SHA7: ${{ needs.plan.outputs.sha7 }}
         shell: bash
         run: |
-          gh release create "$TAG" apps/desktop/release/nightly/* \
+          set -euo pipefail
+
+          cleanup_failed_release() {
+            gh release delete "$TAG" --yes --cleanup-tag 2>/dev/null || true
+          }
+
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            echo "Replacing existing draft or failed release for ${TAG}"
+            gh release delete "$TAG" --yes --cleanup-tag
+          fi
+
+          gh release create "$TAG" \
             --prerelease \
+            --draft \
             --title "Desktop ${VERSION} nightly (${SHA7})"
+
+          trap cleanup_failed_release ERR
+
+          for asset in apps/desktop/release/nightly/*; do
+            gh release upload "$TAG" "$asset"
+          done
+
+          gh release edit "$TAG" --draft=false
+          trap - ERR
 
       - name: Prune nightly releases beyond retention
         id: prune
@@ -254,32 +286,37 @@ jobs:
           VERSION: ${{ needs.plan.outputs.version }}
           TAG: ${{ needs.plan.outputs.tag }}
           HEAD_SHA: ${{ needs.plan.outputs.head_sha }}
-          SHA7: ${{ needs.plan.outputs.sha7 }}
+          BASE_VERSION: ${{ needs.plan.outputs.base_version }}
           ASSETS: ${{ steps.list.outputs.assets }}
-          NIGHTLY_YML: ${{ steps.list.outputs.nightly_yml_present }}
           PRUNED_TAGS: ${{ steps.prune.outputs.pruned_tags }}
         shell: bash
         run: |
-          {
-            echo '## Nightly — published'
-            echo ''
-            echo '| Field | Value |'
-            echo '| --- | --- |'
-            echo "| Version | \`${VERSION}\` |"
-            echo "| Tag | \`${TAG}\` |"
-            echo "| SHA | \`${HEAD_SHA}\` (\`${SHA7}\`) |"
-            echo "| nightly.yml emitted | \`${NIGHTLY_YML}\` |"
-            echo ''
-            echo '### Assets'
-            echo '```'
-            echo "$ASSETS"
-            echo '```'
-            echo ''
-            if [ -n "$PRUNED_TAGS" ]; then
-              echo "### Pruned tags"
+          node --input-type=module <<'NODE' >> "$GITHUB_STEP_SUMMARY"
+          import { renderNightlySummary } from './tools/release/release-report.mjs';
+
+          const assets = (process.env.ASSETS ?? '').split(/\r?\n/).filter(Boolean);
+          process.stdout.write(
+            renderNightlySummary({
+              packageName: '@bombfarm/desktop',
+              oldVersion: process.env.BASE_VERSION ?? '',
+              newVersion: process.env.VERSION ?? '',
+              headSha: process.env.HEAD_SHA ?? '',
+              tag: process.env.TAG ?? '',
+              assets,
+            }),
+          );
+          NODE
+
+          if [ -n "$PRUNED_TAGS" ]; then
+            {
+              echo ''
+              echo '### Pruned tags'
               echo "$PRUNED_TAGS"
-            else
+            } >> "$GITHUB_STEP_SUMMARY"
+          else
+            {
+              echo ''
               echo '### Pruned tags'
               echo 'none'
-            fi
-          } >> "$GITHUB_STEP_SUMMARY"
+            } >> "$GITHUB_STEP_SUMMARY"
+          fi
