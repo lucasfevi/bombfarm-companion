@@ -105,7 +105,7 @@ async function createMainWindow(): Promise<void> {
 
 async function bootstrap(): Promise<void> {
   const env = resolveAppEnv();
-  configureLogging(env.flavor);
+  configureLogging(env);
   logBootLine('main');
 
   const dbPath = path.join(app.getPath('userData'), 'companion.db');
