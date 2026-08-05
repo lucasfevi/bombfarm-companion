@@ -126,6 +126,9 @@ export function resolveRuntimeFlavor(input: ResolveRuntimeFlavorInput): ResolveR
     }
 
     const parsedEnv = parseFlavorToken(raw);
+    if (raw !== undefined && raw.trim() !== '' && parsedEnv === null) {
+      throw new InvalidFlavorError(raw.trim());
+    }
     if (parsedEnv !== null && parsedEnv !== effective) {
       return {
         flavor: effective,

@@ -200,6 +200,15 @@ describe('resolveRuntimeFlavor', () => {
     });
   });
 
+  it('throws for packaged unlisted env tokens naming the rejected value', () => {
+    expect(() =>
+      resolveRuntimeFlavor({ raw: 'beeta', isPackaged: true, bakedFlavor: 'prod' }),
+    ).toThrow(/beeta/);
+    expect(() =>
+      resolveRuntimeFlavor({ raw: 'production', isPackaged: true, bakedFlavor: 'beta' }),
+    ).toThrow(/production/);
+  });
+
   it('throws when packaged stamp is missing or invalid', () => {
     expect(() =>
       resolveRuntimeFlavor({ raw: undefined, isPackaged: true, bakedFlavor: null }),

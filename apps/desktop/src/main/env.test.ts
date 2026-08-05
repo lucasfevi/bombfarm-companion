@@ -57,6 +57,17 @@ describe('buildAppEnv', () => {
     expect(env.envConflict).toEqual({ requested: 'nightly', effective: 'prod' });
   });
 
+  it('throws for an invalid packaged flavor token', () => {
+    expect(() =>
+      buildAppEnv({
+        ...baseDeps,
+        isPackaged: true,
+        bakedFlavor: 'prod',
+        rawFlavor: 'beeta',
+      }),
+    ).toThrowError(/Invalid BFC_FLAVOR: beeta/);
+  });
+
   it('throws when a packaged build has a missing baked stamp', () => {
     expect(() =>
       buildAppEnv({
