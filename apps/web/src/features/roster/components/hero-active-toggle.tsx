@@ -25,6 +25,7 @@ export function HeroActiveToggle({
 }: Props) {
   const label = battleAllowed ? t.heroBattleActive : t.heroBattleInactive;
   const title = battleAllowed ? t.heroBattleActiveTitle : t.heroBattleInactiveTitle;
+  const labelClass = 'col-start-1 row-start-1 text-[11px] leading-none font-bold tracking-wider uppercase';
 
   return (
     <div
@@ -39,14 +40,16 @@ export function HeroActiveToggle({
         title={title}
       />
       {showLabel ? (
-        <span
-          className={cn(
-            'text-[11px] leading-none font-bold tracking-wider uppercase',
-            battleAllowed ? 'text-accent' : 'text-warn',
-          )}
-          title={title}
-        >
-          {label}
+        <span className="grid justify-items-start" title={title}>
+          <span className={cn(labelClass, 'invisible')} aria-hidden>
+            {t.heroBattleActive}
+          </span>
+          <span className={cn(labelClass, 'invisible')} aria-hidden>
+            {t.heroBattleInactive}
+          </span>
+          <span className={cn(labelClass, battleAllowed ? 'text-accent' : 'text-warn')}>
+            {label}
+          </span>
         </span>
       ) : null}
     </div>

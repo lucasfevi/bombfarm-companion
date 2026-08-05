@@ -2,5 +2,4 @@
 export type { RosterSortDir, RosterSortKey } from './components/roster-sort-header';
 export { RosterSortHeader } from './components/roster-sort-header';
 export { HeroPickerDialog } from './components/hero-picker-dialog';
-export { HeroBattleStatusChip } from './components/hero-battle-status-chip';
 export { HeroActiveToggle } from './components/hero-active-toggle';
