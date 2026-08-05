@@ -15,7 +15,9 @@ test.describe.skip('visual baselines', () => {
     await seedLocalStorage(page, { heroes: [], lang: 'pt', guideHidden: true });
     await page.goto('/');
     await expect(page.getByRole('region', { name: /nenhum herói adicionado/i })).toBeVisible();
-    await expect(page).toHaveScreenshot('empty-workspace.png');
+    await expect(page).toHaveScreenshot('empty-workspace.png', {
+      mask: [page.getByTestId('app-version')],
+    });
   });
 
   test('hero strip with imported roster', async ({ page }) => {

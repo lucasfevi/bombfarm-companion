@@ -13,6 +13,25 @@ async function importSampleSave(page: import('@playwright/test').Page) {
 
 /** PW-05: core client flow — sole chromium project (color-independent). */
 test.describe('core client flow', () => {
+  test('footer shows a stable app version label on every route', async ({ page }) => {
+    await page.goto('/');
+
+    const version = page.getByTestId('app-version');
+    await expect(version).toBeVisible();
+    await expect(version).toHaveText(/^v\d+\.\d+\.\d+/);
+
+    const footer = page.locator('footer');
+    const coffee = footer.getByRole('link', { name: /coffee|café/i });
+    const versionBox = await version.boundingBox();
+    const coffeeBox = await coffee.boundingBox();
+    const footerBox = await footer.boundingBox();
+    expect(versionBox).toBeTruthy();
+    expect(coffeeBox).toBeTruthy();
+    expect(footerBox).toBeTruthy();
+    expect(versionBox!.x + versionBox!.width).toBeLessThanOrEqual(coffeeBox!.x + 4);
+    expect(footerBox!.height).toBeLessThan(120);
+  });
+
   test('import → select → level/stars → DPS updates → explain toggle', async ({ page }) => {
     await page.goto('/');
 
