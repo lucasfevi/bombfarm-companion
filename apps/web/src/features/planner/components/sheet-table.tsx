@@ -78,14 +78,14 @@ export function SheetTable() {
       </div>
       <p className={tipClass}>{missingBirth ? t.sheetTipNeedBirth : t.sheetTip}</p>
       <DataTable.Root scrollable className="overflow-x-auto">
-        <DataTable.Table className="table-fixed min-w-[56rem]">
+        <DataTable.Table className="table-fixed min-w-4xl">
           <colgroup>
-            <col className="w-[7.5rem]" />
-            <col className="w-[5.5rem]" />
+            <col className="w-30" />
+            <col className="w-22" />
             {STAGE_DELTA_KEYS.map((key) => (
-              <col key={key} className="w-[5.25rem]" />
+              <col key={key} className="w-21" />
             ))}
-            <col className="w-[5.5rem]" />
+            <col className="w-22" />
           </colgroup>
           <DataTable.Head>
             <DataTable.Row>

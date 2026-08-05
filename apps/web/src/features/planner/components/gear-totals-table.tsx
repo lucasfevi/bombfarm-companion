@@ -26,11 +26,11 @@ export function GearTotalsTable({
         <DataTable.Caption>{t.gearTotals}</DataTable.Caption>
         <DataTable.Head>
           <DataTable.Row className="border-b border-line">
-            <DataTable.Header className="w-[6.5rem]">
+            <DataTable.Header className="w-26">
               <span className="sr-only">{t.gearTotals}</span>
             </DataTable.Header>
             {cols.map((col) => (
-              <DataTable.Header key={col.key} align="right" className="min-w-[4.75rem]">
+              <DataTable.Header key={col.key} align="right" className="min-w-19">
                 {col.label}
               </DataTable.Header>
             ))}

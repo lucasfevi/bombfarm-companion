@@ -2,7 +2,7 @@
 
 import { cn } from '@bombfarm/ui';
 
-const microLabelClass = 'text-[9px] font-bold leading-none tracking-[0.1em] text-muted uppercase';
+const microLabelClass = 'text-[9px] font-bold leading-none tracking-widest text-muted uppercase';
 
 export function UpgradeField({
   label,

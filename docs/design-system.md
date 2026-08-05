@@ -251,4 +251,4 @@ Local catalog for `packages/ui/src` primitives (dark-only preview, desktop/table
 
 Authoring rules (colocate stories under `packages/ui/src`, barrel imports only, no light/phone matrix): [`apps/web/.storybook/README.md`](../apps/web/.storybook/README.md).
 
-Preview must load Tailwind via [`apps/web/.storybook/preview.css`](../apps/web/.storybook/preview.css) (imports web `globals.css` + `@source` for `packages/ui/src`). Canvas uses app tokens (`bg-bg` / `text-ink` / `font-sans`) and `next/font` variables on `<html>` — if stories look like unstyled browser defaults, the CSS entry or PostCSS pipeline is broken.
+Preview must load Tailwind via [`apps/web/.storybook/preview.css`](../apps/web/.storybook/preview.css) (imports web `globals.css`, which `@source`s `packages/ui/src`). Canvas uses app tokens (`bg-bg` / `text-ink` / `font-sans`) and `next/font` variables on `<html>` — if stories look like unstyled browser defaults, the CSS entry or PostCSS pipeline is broken. See also [`tailwind-first.md`](tailwind-first.md) rule 11.

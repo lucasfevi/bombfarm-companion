@@ -63,5 +63,5 @@ export const abilHeadClass = 'grid grid-cols-[auto_minmax(0,1fr)] items-start ga
 export const abilNameClass =
   'flex flex-wrap items-center gap-1.5 text-[13px] leading-[1.25] font-semibold text-ink';
 export const abilTagClass =
-  'rounded-sm border border-[color-mix(in_oklch,var(--up)_30%,transparent)] bg-[color-mix(in_oklch,var(--up)_14%,transparent)] px-[5px] py-0.5 text-[9px] font-bold tracking-[0.05em] text-up not-italic uppercase';
+  'rounded-sm border border-[color-mix(in_oklch,var(--up)_30%,transparent)] bg-[color-mix(in_oklch,var(--up)_14%,transparent)] px-[5px] py-0.5 text-[9px] font-bold tracking-wider text-up not-italic uppercase';
 export const abilEffectClass = 'line-clamp-2 text-[11px] leading-[1.3] text-muted';

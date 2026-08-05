@@ -18,8 +18,8 @@ export function GuideSection({ t, onHide }: { t: Strings; onHide: () => void }) 
       </div>
       <ol className="m-0 grid list-none grid-cols-[repeat(auto-fit,minmax(230px,1fr))] gap-x-3.5 gap-y-2.5 p-0">
         {t.guideSteps.map((step) => (
-          <li key={step.t} className="flex flex-col gap-[3px] text-[12.5px] leading-[1.45]">
-            <b className="text-[11px] font-bold tracking-[0.05em] text-accent uppercase">{step.t}</b>
+          <li key={step.t} className="flex flex-col gap-[3px] text-[12.5px] leading-1.45">
+            <b className="text-[11px] font-bold tracking-wider text-accent uppercase">{step.t}</b>
             <span className="text-ink">
               {parseEmphasis(step.d).map((part, index) =>
                 part.kind === 'em' ? (

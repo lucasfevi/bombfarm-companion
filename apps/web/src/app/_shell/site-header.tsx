@@ -43,7 +43,7 @@ export function SiteHeader({
               priority
             />
             <div>
-              <div className="text-sm leading-[1.1] font-bold text-ink">Bomb Farm</div>
+              <div className="text-sm leading-1.1 font-bold text-ink">Bomb Farm</div>
               <div className="text-[11px] tracking-[0.04em] text-muted uppercase">{t.appSuiteTag}</div>
             </div>
           </Link>

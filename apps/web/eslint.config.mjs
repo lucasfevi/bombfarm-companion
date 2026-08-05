@@ -6,6 +6,7 @@ import reactHooks from 'eslint-plugin-react-hooks';
 import reactCompiler from 'eslint-plugin-react-compiler';
 import unicorn from 'eslint-plugin-unicorn';
 import boundaries from 'eslint-plugin-boundaries';
+import eslintPluginTailwindcss from 'eslint-plugin-tailwindcss';
 
 export default tseslint.config(
   {
@@ -28,11 +29,16 @@ export default tseslint.config(
       'react-compiler': reactCompiler,
       unicorn,
       boundaries,
+      tailwindcss: eslintPluginTailwindcss,
     },
     settings: {
       react: { version: 'detect' },
       'import/resolver': {
         typescript: { alwaysTryTypes: true },
+      },
+      tailwindcss: {
+        // Tailwind v4 entry — required by eslint-plugin-tailwindcss@4.
+        cssConfigPath: './src/app/globals.css',
       },
       // Folder-mode patterns match the element folder (right-to-left); children inherit.
       // Use path suffixes without requiring a full-root match (plugin default).
@@ -64,6 +70,9 @@ export default tseslint.config(
         { checksVoidReturn: { attributes: false } },
       ],
       'react-hooks/exhaustive-deps': 'warn',
+      // Prefer named Tailwind utilities over equivalent arbitrary values
+      // (e.g. tracking-[0.05em] → tracking-wider). Autofixable.
+      'tailwindcss/no-unnecessary-arbitrary-value': 'error',
       // MOD-32 (W6): no component defined inside another component's render.
       'react/no-unstable-nested-components': 'error',
       // MOD-16 (W4): bare usePlannerStore() subscribes to the entire store — always pass a selector.

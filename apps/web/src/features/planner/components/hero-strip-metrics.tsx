@@ -25,28 +25,28 @@ export function HeroStripMetrics() {
         railDividerClass,
       )}
     >
-      <div className="flex min-w-[3.25rem] flex-col gap-0.5">
+      <div className="flex min-w-13 flex-col gap-0.5">
         <span className={metricLabelClass}>{t.metricSustained}</span>
         <strong className={metricValueClass} title={formatNumber(dps, 0)}>
           {fmtCompact(dps)}
         </strong>
       </div>
-      <div className="flex min-w-[3.25rem] flex-col gap-0.5">
+      <div className="flex min-w-13 flex-col gap-0.5">
         <span className={metricLabelClass}>{t.metricActive}</span>
         <strong className={metricValueClass} title={formatNumber(active, 0)}>
           {fmtCompact(active)}
         </strong>
       </div>
-      <div className="flex min-w-[3.25rem] flex-col gap-0.5">
+      <div className="flex min-w-13 flex-col gap-0.5">
         <span className={metricLabelClass}>{t.metricUptime}</span>
         <strong className={metricValueClass}>{formatNumber(uptime, 1)}%</strong>
       </div>
-      <div className="flex min-w-[3.5rem] flex-col gap-0.5">
+      <div className="flex min-w-14 flex-col gap-0.5">
         <span className={metricLabelClass}>{t.metricNextPoint}</span>
         <strong className={cn(metricValueClass, 'text-accent')}>{t.statFull[bestStat]}</strong>
         <em className={metricEmClass}>+{formatNumber(bestGainPct, 1)}%</em>
       </div>
-      <div className="flex min-w-[3.25rem] flex-col gap-0.5">
+      <div className="flex min-w-13 flex-col gap-0.5">
         <span className={metricLabelClass}>{t.metricHit}</span>
         <strong className={metricValueClass} title={formatNumber(predHit, 0)}>
           {fmtCompact(predHit)}
