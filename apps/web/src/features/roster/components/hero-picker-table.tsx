@@ -20,7 +20,6 @@ export function HeroPickerTable({
   t,
   formatNumber,
   onPick,
-  onBattleAllowedChange,
 }: {
   heroes: HeroRecord[];
   heroId: string | null;
@@ -28,7 +27,6 @@ export function HeroPickerTable({
   t: Strings;
   formatNumber: (n: number, d?: number) => string;
   onPick: (h: HeroRecord) => void;
-  onBattleAllowedChange: (heroId: string, battleAllowed: boolean) => void;
 }) {
   const [sortKey, setSortKey] = useState<RosterSortKey>('power');
   const [sortDir, setSortDir] = useState<RosterSortDir>('desc');
@@ -129,7 +127,6 @@ export function HeroPickerTable({
                   formatNumber={formatNumber}
                   powerShown={powerShown}
                   onPick={onPick}
-                  onBattleAllowedChange={onBattleAllowedChange}
                 />
               );
             })}

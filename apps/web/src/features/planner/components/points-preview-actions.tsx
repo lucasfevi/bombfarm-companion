@@ -6,6 +6,7 @@ import type { Strings } from '@/shared/i18n';
 import { Button } from '@bombfarm/ui';
 import { mutedClass } from '@bombfarm/ui/panel-field.recipe';
 import { cn } from '@bombfarm/ui';
+import { usePlannerStore, selectHeroBattleAllowed } from '@/shared/stores';
 import { optimizeResultDisplay } from '../model/points-preview-copy';
 
 export type PointsPreview = { pts: Record<SheetKey, number>; result: ReoptResult };
@@ -26,7 +27,6 @@ export function PointsPreviewActions({
   preview,
   justApplied,
   optimize,
-  heroEnabled = true,
   formatNumber,
   onOptimize,
   onApply,
@@ -36,13 +36,12 @@ export function PointsPreviewActions({
   preview: PointsPreview | null;
   justApplied: boolean;
   optimize: OptimizeAvailability;
-  /** When false, show a muted note that automatic respec advice skips this hero. */
-  heroEnabled?: boolean;
   formatNumber: (n: number, d?: number) => string;
   onOptimize: () => void;
   onApply: () => void;
   onClear: () => void;
 }) {
+  const heroEnabled = usePlannerStore(selectHeroBattleAllowed);
   const resultDisplay = preview ? optimizeResultDisplay(t, preview.result, formatNumber) : null;
   const showBudgetExhausted = !!preview?.result.budgetExhausted;
   const showDisabledNote = !heroEnabled;

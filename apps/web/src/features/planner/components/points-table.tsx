@@ -148,7 +148,6 @@ export function PointsTable() {
         preview={preview}
         justApplied={justApplied}
         optimize={{ disabled: budget <= 0, disabledReason: budget <= 0 ? t.optimizeBuildNoBudgetReason : null }}
-        heroEnabled={heroBattleAllowed}
         formatNumber={formatNumber}
         onOptimize={handleOptimize}
         onApply={handleApply}

@@ -34,7 +34,6 @@ export function HeroStrip() {
   const heroId = usePlannerStore((state) => state.activeHeroId);
   const heroName = usePlannerStore(selectHeroName);
   const heroBattleAllowed = usePlannerStore(selectHeroBattleAllowed);
-  const setHeroBattleAllowedOnHero = usePlannerStore((state) => state.setHeroBattleAllowedOnHero);
   const resetAdvice = usePlannerStore((state) => selectAdvisorPipeline(state).resetAdvice);
 
   const onSelectHero = applyHero;
@@ -85,7 +84,6 @@ export function HeroStrip() {
         t={t}
         formatNumber={formatNumber}
         onSelectHero={onSelectHero}
-        onBattleAllowedChange={setHeroBattleAllowedOnHero}
       />
 
       <ConfirmDialog
