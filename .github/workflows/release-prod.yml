@@ -21,6 +21,7 @@ jobs:
       desktop_version: ${{ steps.plan.outputs.desktop_version }}
       desktop_old_version: ${{ steps.plan.outputs.desktop_old_version }}
       prod_release_enabled: ${{ steps.plan.outputs.prod_release_enabled }}
+      version_diffs_json: ${{ steps.plan.outputs.version_diffs_json }}
     steps:
       - name: Checkout main
         uses: actions/checkout@v4
@@ -68,6 +69,7 @@ jobs:
               hasDesktop,
               desktopVersion: desktopDiff?.newVersion ?? null,
               desktopOldVersion: desktopDiff?.oldVersion ?? null,
+              diffs,
             }),
           );
           NODE
@@ -76,12 +78,16 @@ jobs:
           HAS_DESKTOP=$(node -p "JSON.parse(require('node:fs').readFileSync('prod-plan.json','utf8')).hasDesktop")
           DESKTOP_VERSION=$(node -p "JSON.parse(require('node:fs').readFileSync('prod-plan.json','utf8')).desktopVersion ?? ''")
           DESKTOP_OLD_VERSION=$(node -p "JSON.parse(require('node:fs').readFileSync('prod-plan.json','utf8')).desktopOldVersion ?? ''")
+          VERSION_DIFFS_JSON=$(node -p "JSON.stringify(JSON.parse(require('node:fs').readFileSync('prod-plan.json','utf8')).diffs)")
 
           {
             echo "has_desktop=${HAS_DESKTOP}"
             echo "desktop_version=${DESKTOP_VERSION}"
             echo "desktop_old_version=${DESKTOP_OLD_VERSION}"
             echo "prod_release_enabled=${PROD_RELEASE_ENABLED}"
+            echo "version_diffs_json<<EOF"
+            echo "${VERSION_DIFFS_JSON}"
+            echo "EOF"
           } >> "$GITHUB_OUTPUT"
 
           if [ "$HAS_DESKTOP" != "true" ]; then
@@ -153,6 +159,8 @@ jobs:
     steps:
       - name: Checkout main
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Download prod installer artifact
         uses: actions/download-artifact@v4
@@ -163,19 +171,17 @@ jobs:
       - name: Extract changelog notes
         id: notes
         env:
-          VERSION: ${{ needs.plan.outputs.desktop_version }}
+          VERSION_DIFFS_JSON: ${{ needs.plan.outputs.version_diffs_json }}
         run: |
           node --input-type=module <<'NODE' > release-notes.md
-          import { readFileSync } from 'node:fs';
-          import { extractChangelogSection } from './tools/release/changelog-section.mjs';
+          import { buildAggregatedReleaseNotes } from './tools/release/aggregated-release-notes.mjs';
 
-          const version = process.env.VERSION;
-          const changelog = readFileSync('apps/desktop/CHANGELOG.md', 'utf8');
-          const section = extractChangelogSection(changelog, version);
-          if (section === null) {
-            throw new Error(`No changelog section found for ${version} in apps/desktop/CHANGELOG.md`);
+          const diffs = JSON.parse(process.env.VERSION_DIFFS_JSON ?? '[]');
+          const notes = await buildAggregatedReleaseNotes(diffs, '.');
+          if (!notes.trim()) {
+            throw new Error('No aggregated release notes were produced for the released package set');
           }
-          process.stdout.write(section);
+          process.stdout.write(notes);
           NODE
 
       - name: Create GitHub Release
@@ -185,8 +191,13 @@ jobs:
         run: |
           TAG="desktop-v${VERSION}"
 
+          if git ls-remote --tags origin "refs/tags/${TAG}" | grep -q .; then
+            echo "::error::Git tag ${TAG} already exists on origin"
+            exit 1
+          fi
+
           if gh release view "$TAG" >/dev/null 2>&1; then
-            echo "::error::GitHub Release tag ${TAG} already exists"
+            echo "::error::GitHub Release ${TAG} already exists"
             exit 1
           fi
 
