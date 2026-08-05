@@ -417,7 +417,7 @@ test.describe('points panel reset advice gain line + Optimize build result (BSPW
     const panel = pointsPanel(page);
     const note = panel.getByText(/não entra nas recomendações automáticas de reset/i);
     await expect(note).toBeVisible();
-    await expect(note).toHaveClass(/text-muted/);
+    await expect(note).toHaveClass(/text-warn/);
     await expect(panel.getByText(/checagem rápida encontrou um possível ganho/i)).not.toBeVisible();
   });
 

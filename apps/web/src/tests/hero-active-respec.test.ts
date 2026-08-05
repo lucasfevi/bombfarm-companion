@@ -134,6 +134,13 @@ describe('disabled heroes and automatic respec advice', () => {
 });
 
 describe('disabled-hero copy + Points chrome contracts', () => {
+  it('toggle labels use enabled / disabled copy in both langs', () => {
+    expect(STRINGS.en.heroBattleActive).toBe('Enabled');
+    expect(STRINGS.en.heroBattleInactive).toBe('Disabled');
+    expect(STRINGS.pt.heroBattleActive).toBe('Ativado');
+    expect(STRINGS.pt.heroBattleInactive).toBe('Desativado');
+  });
+
   it('toggle titles do not mention respec inclusion', () => {
     for (const lang of ['en', 'pt'] as const) {
       expect(STRINGS[lang].heroBattleActiveTitle).not.toMatch(/respec|reset|recomenda/i);
@@ -148,15 +155,24 @@ describe('disabled-hero copy + Points chrome contracts', () => {
     expect(STRINGS.pt.optimizeBuildHeroDisabledNote).toMatch(/recomendações automáticas/i);
   });
 
-  it('Points preview keeps the disabled note mounted and toggles invisible', () => {
-    const source = readFileSync(
+  it('Points preview notices animate via Collapsible and stay left-aligned', () => {
+    const actions = readFileSync(
       join(WEB_PACKAGE_ROOT, 'src/features/planner/components/points-preview-actions.tsx'),
       'utf8',
     );
-    expect(source).toContain('optimizeBuildHeroDisabledNote');
-    expect(source).toContain('!showDisabledNote && \'invisible\'');
-    expect(source).toContain('aria-hidden={!showDisabledNote}');
-    expect(source).toContain('mutedClass');
+    const notice = readFileSync(
+      join(WEB_PACKAGE_ROOT, 'src/features/planner/components/points-preview-notice.tsx'),
+      'utf8',
+    );
+    expect(actions).toContain('optimizeBuildHeroDisabledNote');
+    expect(actions).toContain('PointsPreviewNotice');
+    expect(actions).toContain('optimizeBuildBudgetExhausted');
+    expect(actions).toContain('previewRespecNote');
+    expect(actions).not.toMatch(/['"]invisible['"]/);
+    expect(actions).not.toMatch(/text-right/);
+    expect(notice).toContain('Collapsible');
+    expect(notice).toContain('text-left');
+    expect(notice).not.toMatch(/text-right/);
   });
 
   it('strip and picker both render HeroActiveToggle', () => {
