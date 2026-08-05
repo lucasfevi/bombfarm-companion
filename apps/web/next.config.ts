@@ -4,6 +4,8 @@ import type { NextConfig } from 'next';
 import type { Configuration as WebpackConfig } from 'webpack';
 
 const projectRoot = path.dirname(fileURLToPath(import.meta.url));
+/** Monorepo root — pnpm hoists `next` here; Turbopack must resolve from this tree. */
+const monorepoRoot = path.resolve(projectRoot, '../..');
 
 /**
  * Dev HMR is fragile on Windows when agents (or editors) write many files in a
@@ -49,9 +51,10 @@ const nextConfig: NextConfig = {
   output: 'export',
   reactStrictMode: true,
   transpilePackages: ['@bombfarm/domain', '@bombfarm/ui'],
-  // Pin Turbopack's resolve root to this package (multi-root Cursor workspace).
+  // Pin Turbopack's resolve root to the pnpm workspace (multi-root Cursor workspace).
+  // apps/web alone breaks when `next` is hoisted to the repo root (`Next.js package not found`).
   turbopack: {
-    root: projectRoot,
+    root: monorepoRoot,
   },
   // React 19 — babel-plugin-react-compiler; no react-compiler-runtime / target 18.
   // Next 15.5 still nests this under experimental (top-level key is unrecognized).
