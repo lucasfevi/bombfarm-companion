@@ -78,6 +78,7 @@ function hero( partial: Partial<HeroRecord> & Pick<HeroRecord, 'id' | 'name'>): 
     rank: partial.rank,
     power: partial.power,
     deployed: partial.deployed ?? false,
+    battleAllowed: partial.battleAllowed,
   };
 }
 

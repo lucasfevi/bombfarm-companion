@@ -128,11 +128,13 @@ test.describe('planner tabs IA (PTI)', () => {
 test.describe('HeroStrip reset-advice warn chrome + roster banner', () => {
   // Confirmed directly against computeAdvisorPipeline (not guessed): pts.cdr = level fires the
   // reset gate (~251% gainPct) on this seeded hero; pts.attack = level does not (~0%).
-  function heroStripHero(pts: Record<string, number>) {
+  function heroStripHero(pts: Record<string, number>, battleAllowed?: boolean) {
     return {
       ...importedRoster,
       lang: 'en' as const,
-      heroes: importedRoster.heroes.map((h) => (h.id === 'seed-cora' ? { ...h, level: 38, pts } : h)),
+      heroes: importedRoster.heroes.map((h) =>
+        h.id === 'seed-cora' ? { ...h, level: 38, pts, battleAllowed } : h,
+      ),
     };
   }
   const firingPts = {
@@ -213,6 +215,29 @@ test.describe('HeroStrip reset-advice warn chrome + roster banner', () => {
     await page.goto('/');
     await selectSavedHero(page, 'Cora');
 
+    await expect(page.getByRole('tab', { name: /^Points$/i }).locator('[data-tab-badge="warn"]')).toBeVisible();
+  });
+
+  test('a disabled hero is left out of banner, strip warn, and Points tab warn', async ({ page }) => {
+    await seedLocalStorage(page, heroStripHero(firingPts, false));
+    await page.goto('/');
+    await selectSavedHero(page, 'Cora');
+
+    await expect(page.getByRole('status').filter({ hasText: /Optimize build/i })).toHaveCount(0);
+    await expect(heroStripSection(page)).toHaveClass(/\bborder-line\b/);
+    await expect(heroStripSection(page)).not.toHaveClass(/border-\[color-mix/);
+    await expect(page.getByRole('tab', { name: /^Points$/i }).locator('[data-tab-badge="warn"]')).toHaveCount(0);
+  });
+
+  test('enabling a disabled hero restores automatic respec chrome', async ({ page }) => {
+    await seedLocalStorage(page, heroStripHero(firingPts, false));
+    await page.goto('/');
+    await selectSavedHero(page, 'Cora');
+
+    await page.getByRole('switch', { name: /enable or disable this hero/i }).click();
+
+    await expect(page.getByRole('status').filter({ hasText: /Cora \(Lv 38\)/i })).toBeVisible();
+    await expect(heroStripSection(page)).toHaveClass(/border-\[color-mix/);
     await expect(page.getByRole('tab', { name: /^Points$/i }).locator('[data-tab-badge="warn"]')).toBeVisible();
   });
 
