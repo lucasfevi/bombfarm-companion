@@ -17,11 +17,7 @@ let gameReader: GameReaderService | null = null;
 function configurePaths(): void {
   const env = resolveAppEnv();
   app.setName(env.productName);
-
-  const baseUserData = app.getPath('userData');
-  if (env.userDataSuffix && !baseUserData.endsWith(env.userDataSuffix)) {
-    app.setPath('userData', `${baseUserData}${env.userDataSuffix}`);
-  }
+  app.setPath('userData', env.userDataPath);
 }
 
 function registerIpcHandlers(): void {
