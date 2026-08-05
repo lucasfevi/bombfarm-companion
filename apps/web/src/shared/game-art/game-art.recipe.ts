@@ -1,7 +1,7 @@
 import { cva } from 'class-variance-authority';
 
 /** Shared corner radius for wiki-sourced hero/item inventory frames. */
-export const artFrameRadiusClass = 'rounded-[4px]';
+export const artFrameRadiusClass = 'rounded-sm';
 
 const artFrameBase =
   'relative inline-grid shrink-0 place-items-center overflow-hidden border-2 bg-[color-mix(in_oklch,var(--bg)_55%,var(--surface))]';
@@ -88,4 +88,4 @@ export function rarityDotClass(index: number): string | undefined {
  * `tabIndex={-1}` on the trigger keeps one tab stop per picker row (the `<tr>`).
  */
 export const rosterIconTooltipTriggerClass =
-  'inline-flex cursor-default rounded-[4px] border-0 bg-transparent p-0 focus-visible:[outline:2px_solid_var(--accent)] focus-visible:[outline-offset:1px]';
+  'inline-flex cursor-default rounded-sm border-0 bg-transparent p-0 focus-visible:[outline:2px_solid_var(--accent)] focus-visible:[outline-offset:1px]';

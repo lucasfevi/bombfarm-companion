@@ -4,7 +4,7 @@ import { artFrameRecipe, abilityIconRecipe, forgeUpgradeBadgeClass, rosterIconTo
 describe('game-art.recipe', () => {
   it('artFrameRecipe encodes rarity border and radius', () => {
     expect(artFrameRecipe({ size: 'md', rarity: 3 })).toContain('border-rar-3');
-    expect(artFrameRecipe({ size: 'xl', rarity: 0 })).toContain('rounded-[4px]');
+    expect(artFrameRecipe({ size: 'xl', rarity: 0 })).toContain('rounded-sm');
     expect(artFrameRecipe({ size: 'xs', rarity: 0 })).toContain('size-7');
   });
 
@@ -16,7 +16,7 @@ describe('game-art.recipe', () => {
 
   it('abilityIconRecipe uses neutral border and shared radius', () => {
     expect(abilityIconRecipe({ size: 'xs' })).toContain('border-line');
-    expect(abilityIconRecipe({ size: 'lg' })).toContain('rounded-[4px]');
+    expect(abilityIconRecipe({ size: 'lg' })).toContain('rounded-sm');
     expect(abilityIconRecipe({ size: 'lg' })).toContain('size-11');
   });
 

@@ -20,7 +20,7 @@ export function Topbar({
   onLangChange: (lang: Lang) => void;
 }) {
   return (
-    <header className="sticky top-0 z-30 min-h-top border-b border-line bg-[color-mix(in_oklch,var(--surface)_88%,transparent)] px-4 py-2 backdrop-blur-[12px]">
+    <header className="sticky top-0 z-30 min-h-top border-b border-line bg-[color-mix(in_oklch,var(--surface)_88%,transparent)] px-4 py-2 backdrop-blur-md">
       <div className="mx-auto flex max-w-app flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-2.5">
           <Image
@@ -28,7 +28,7 @@ export function Topbar({
             alt=""
             width={34}
             height={34}
-            className="size-[34px] shrink-0"
+            className="size-8.5 shrink-0"
             priority
           />
           <div>
@@ -66,7 +66,7 @@ export function Topbar({
           >
             <button
               type="button"
-              className={`cursor-pointer border-0 px-[9px] text-[11px] font-bold tracking-[0.03em] ${
+              className={`cursor-pointer border-0 px-2.25 text-[11px] font-bold tracking-[0.03em] ${
                 lang === 'pt' ? 'bg-accent text-accent-ink' : 'bg-transparent'
               }`}
               onClick={() => onLangChange('pt')}
@@ -75,7 +75,7 @@ export function Topbar({
             </button>
             <button
               type="button"
-              className={`cursor-pointer border-0 px-[9px] text-[11px] font-bold tracking-[0.03em] ${
+              className={`cursor-pointer border-0 px-2.25 text-[11px] font-bold tracking-[0.03em] ${
                 lang === 'en' ? 'bg-accent text-accent-ink' : 'bg-transparent'
               }`}
               onClick={() => onLangChange('en')}

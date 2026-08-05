@@ -39,7 +39,7 @@ export function SiteHeader({
               alt=""
               width={34}
               height={34}
-              className="size-[34px] shrink-0"
+              className="size-8.5 shrink-0"
               priority
             />
             <div>
@@ -93,7 +93,7 @@ export function SiteHeader({
           >
             <button
               type="button"
-              className={`cursor-pointer border-0 px-[9px] text-[11px] font-bold tracking-[0.03em] ${
+              className={`cursor-pointer border-0 px-2.25 text-[11px] font-bold tracking-[0.03em] ${
                 lang === 'pt' ? 'bg-accent text-accent-ink' : 'bg-transparent'
               }`}
               onClick={() => onLangChange('pt')}
@@ -102,7 +102,7 @@ export function SiteHeader({
             </button>
             <button
               type="button"
-              className={`cursor-pointer border-0 px-[9px] text-[11px] font-bold tracking-[0.03em] ${
+              className={`cursor-pointer border-0 px-2.25 text-[11px] font-bold tracking-[0.03em] ${
                 lang === 'en' ? 'bg-accent text-accent-ink' : 'bg-transparent'
               }`}
               onClick={() => onLangChange('en')}

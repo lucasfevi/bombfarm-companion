@@ -74,7 +74,7 @@ export const SlotEditor = memo(function SlotEditor({
           <ItemIcon equipped={equipped} size="lg" className="shrink-0" />
         ) : (
           <span
-            className="size-12 shrink-0 rounded-[4px] border border-dashed border-line bg-[color-mix(in_oklch,var(--bg)_55%,var(--surface))]"
+            className="size-12 shrink-0 rounded-sm border border-dashed border-line bg-[color-mix(in_oklch,var(--bg)_55%,var(--surface))]"
             aria-hidden="true"
           />
         )}

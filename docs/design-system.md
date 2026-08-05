@@ -72,7 +72,7 @@ Wiki-sourced game assets (heroes, items, abilities, …). **Rarity is border-onl
 
 | Component | Role | Recipe |
 | --- | --- | --- |
-| `ArtFrame` | Rarity-tinted square frame (`rounded-[4px]`) | `game-art.recipe.ts` → `artFrameRecipe` |
+| `ArtFrame` | Rarity-tinted square frame (`rounded-sm`) | `game-art.recipe.ts` → `artFrameRecipe` |
 | `HeroAvatar` | Save `skin` portrait inside `ArtFrame` | composes `ArtFrame` |
 | `ItemIcon` | Catalog item PNG + optional `+upgrade` badge | composes `ArtFrame` + `forgeUpgradeBadgeClass` |
 | `AbilityIcon` | Wiki ability PNG in neutral frame (no rarity) | `game-art.recipe.ts` → `abilityIconRecipe` |
