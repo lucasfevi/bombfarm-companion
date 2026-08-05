@@ -338,6 +338,25 @@ test.describe('points panel preview / apply (BSPW6-02)', () => {
     expect(storageAfterApply).toContain('"cdr"');
   });
 
+  test('a new Optimize run hides the applied-respec note', async ({ page }) => {
+    const pts = { ...zeroPts(), cdr: 38 };
+    await seedLocalStorage(page, pointsHero({ level: 38, pts }));
+    await page.goto('/');
+    await selectSavedHero(page, 'Cora');
+    await openPointsTab(page);
+
+    const panel = pointsPanel(page);
+    await panel.getByRole('button', { name: /^Otimizar build$/i }).click();
+    await panel.getByRole('button', { name: /^Aplicar prévia$/i }).click();
+
+    const respecNote = panel.getByText(/Aplicado no planner/i);
+    await expect(respecNote).toBeVisible();
+
+    await panel.getByRole('button', { name: /^Otimizar build$/i }).click();
+    await expect(respecNote).not.toBeVisible();
+    await expect(panel.getByText(/melhor alocação encontrada por essa busca/i)).toBeVisible();
+  });
+
   test('Clear preview discards the candidate without touching pts', async ({ page }) => {
     const pts = { ...zeroPts(), cdr: 38 };
     await seedLocalStorage(page, pointsHero({ level: 38, pts }));

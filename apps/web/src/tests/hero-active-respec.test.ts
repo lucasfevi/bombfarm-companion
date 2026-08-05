@@ -175,6 +175,14 @@ describe('disabled-hero copy + Points chrome contracts', () => {
     expect(notice).not.toMatch(/text-right/);
   });
 
+  it('a new Optimize run clears the applied-respec note', () => {
+    const source = readFileSync(
+      join(WEB_PACKAGE_ROOT, 'src/features/planner/components/points-table.tsx'),
+      'utf8',
+    );
+    expect(source).toMatch(/function handleOptimize\([\s\S]*?setJustApplied\(false\)/);
+  });
+
   it('strip and picker both render HeroActiveToggle', () => {
     const strip = readFileSync(
       join(WEB_PACKAGE_ROOT, 'src/features/planner/components/hero-strip-identity.tsx'),

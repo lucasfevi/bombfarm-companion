@@ -57,6 +57,7 @@ export function PointsTable() {
       effectiveDelta: pipeline.A.effectiveDelta,
       context: pipeline.context,
     });
+    setJustApplied(false);
     setPreview({ pts: result.pts, result });
   }
 
