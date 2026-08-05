@@ -4,7 +4,8 @@ name: CI Web
 
 on:
   push:
-    branches: [main]
+    branches: [main, develop]
+    # Keep in sync with the dorny/paths-filter list in the changes job below.
     paths:
       - 'apps/web/**'
       - 'packages/domain/**'
@@ -18,26 +19,43 @@ on:
       - 'vitest.config.ts'
       - '.github/workflows/ci-web.yml'
   pull_request:
-    paths:
-      - 'apps/web/**'
-      - 'packages/domain/**'
-      - 'packages/ui/**'
-      - 'docs/**'
-      - 'pnpm-lock.yaml'
-      - 'pnpm-workspace.yaml'
-      - 'package.json'
-      - 'tsconfig.base.json'
-      - 'eslint.config.mjs'
-      - 'vitest.config.ts'
-      - '.github/workflows/ci-web.yml'
 
 concurrency:
   group: ci-web-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
+  changes:
+    runs-on: ubuntu-latest
+    outputs:
+      web: ${{ steps.filter.outputs.web }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          # Keep in sync with on.push.paths above.
+          filters: |
+            web:
+              - 'apps/web/**'
+              - 'packages/domain/**'
+              - 'packages/ui/**'
+              - 'docs/**'
+              - 'pnpm-lock.yaml'
+              - 'pnpm-workspace.yaml'
+              - 'package.json'
+              - 'tsconfig.base.json'
+              - 'eslint.config.mjs'
+              - 'vitest.config.ts'
+              - '.github/workflows/ci-web.yml'
+
   quality:
     name: Typecheck, lint, unit, build (web)
+    needs: changes
+    if: github.event_name == 'push' || needs.changes.outputs.web == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
@@ -64,3 +82,17 @@ jobs:
 
       - name: Build web static export
         run: pnpm --filter @bombfarm/web build
+
+  ci-web-required:
+    name: ci-web-required
+    needs: [changes, quality]
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Require path detection
+        if: needs.changes.result != 'success'
+        run: exit 1
+
+      - name: Require web quality
+        if: needs.quality.result == 'failure' || needs.quality.result == 'cancelled'
+        run: exit 1
