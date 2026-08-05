@@ -1,0 +1,243 @@
+name: Release prod
+
+on:
+  push:
+    branches: [main]
+
+concurrency:
+  group: release-prod
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+
+jobs:
+  plan:
+    name: Detect desktop release
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    outputs:
+      has_desktop: ${{ steps.plan.outputs.has_desktop }}
+      desktop_version: ${{ steps.plan.outputs.desktop_version }}
+      desktop_old_version: ${{ steps.plan.outputs.desktop_old_version }}
+      prod_release_enabled: ${{ steps.plan.outputs.prod_release_enabled }}
+    steps:
+      - name: Checkout main
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Detect released desktop version
+        id: plan
+        env:
+          BEFORE: ${{ github.event.before }}
+          AFTER: ${{ github.sha }}
+          PROD_RELEASE_ENABLED: ${{ vars.BFC_ENABLE_PROD_RELEASE == 'true' }}
+        run: |
+          if [ "$BEFORE" = "0000000000000000000000000000000000000000" ]; then
+            echo "has_desktop=false" >> "$GITHUB_OUTPUT"
+            echo "desktop_version=" >> "$GITHUB_OUTPUT"
+            echo "desktop_old_version=" >> "$GITHUB_OUTPUT"
+            echo "prod_release_enabled=${PROD_RELEASE_ENABLED}" >> "$GITHUB_OUTPUT"
+            {
+              echo '## Production release — skipped'
+              echo ''
+              echo 'Initial push to `main` has no prior commit to diff.'
+            } >> "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+
+          git worktree add ../before-tree "$BEFORE"
+          node --input-type=module <<'NODE'
+          import { writeFileSync } from 'node:fs';
+          import { diffVersions, readWorkspaceVersions } from './tools/release/version-diff.mjs';
+
+          const beforeVersions = readWorkspaceVersions('../before-tree');
+          const afterVersions = readWorkspaceVersions('.');
+          const diffs = diffVersions(beforeVersions, afterVersions);
+          const desktopDiff = diffs.find((diff) => diff.name === '@bombfarm/desktop');
+
+          const hasDesktop =
+            desktopDiff !== undefined &&
+            desktopDiff.newVersion !== null &&
+            desktopDiff.oldVersion !== desktopDiff.newVersion;
+
+          writeFileSync(
+            'prod-plan.json',
+            JSON.stringify({
+              hasDesktop,
+              desktopVersion: desktopDiff?.newVersion ?? null,
+              desktopOldVersion: desktopDiff?.oldVersion ?? null,
+            }),
+          );
+          NODE
+          git worktree remove ../before-tree --force
+
+          HAS_DESKTOP=$(node -p "JSON.parse(require('node:fs').readFileSync('prod-plan.json','utf8')).hasDesktop")
+          DESKTOP_VERSION=$(node -p "JSON.parse(require('node:fs').readFileSync('prod-plan.json','utf8')).desktopVersion ?? ''")
+          DESKTOP_OLD_VERSION=$(node -p "JSON.parse(require('node:fs').readFileSync('prod-plan.json','utf8')).desktopOldVersion ?? ''")
+
+          {
+            echo "has_desktop=${HAS_DESKTOP}"
+            echo "desktop_version=${DESKTOP_VERSION}"
+            echo "desktop_old_version=${DESKTOP_OLD_VERSION}"
+            echo "prod_release_enabled=${PROD_RELEASE_ENABLED}"
+          } >> "$GITHUB_OUTPUT"
+
+          if [ "$HAS_DESKTOP" != "true" ]; then
+            {
+              echo '## Production release — no desktop bump'
+              echo ''
+              echo '`@bombfarm/desktop` was not in the pushed release set. No desktop packaging job will run.'
+            } >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+  package:
+    name: Package prod installer
+    needs: plan
+    if: needs.plan.outputs.has_desktop == 'true'
+    runs-on: windows-latest
+    timeout-minutes: 45
+    steps:
+      - name: Checkout main
+        uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Package prod installer
+        env:
+          NODE_ENV: production
+          BFC_FLAVOR: prod
+        run: pnpm --filter @bombfarm/desktop package:prod
+
+      - name: List prod release output
+        id: list
+        shell: bash
+        working-directory: apps/desktop
+        run: |
+          {
+            echo '## Production release output (`release/prod/`)'
+            echo '```'
+            ls -la release/prod/
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+          ASSETS=$(ls -1 release/prod/)
+          echo "assets<<EOF" >> "$GITHUB_OUTPUT"
+          echo "$ASSETS" >> "$GITHUB_OUTPUT"
+          echo "EOF" >> "$GITHUB_OUTPUT"
+
+      - name: Upload prod installer artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: bombfarm-companion-prod-${{ needs.plan.outputs.desktop_version }}-${{ github.sha }}
+          path: apps/desktop/release/prod/**
+
+  publish:
+    name: Publish GitHub release
+    needs: [plan, package]
+    if: >-
+      needs.plan.outputs.has_desktop == 'true' &&
+      needs.plan.outputs.prod_release_enabled == 'true' &&
+      needs.package.result == 'success'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout main
+        uses: actions/checkout@v4
+
+      - name: Download prod installer artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: bombfarm-companion-prod-${{ needs.plan.outputs.desktop_version }}-${{ github.sha }}
+          path: release/prod
+
+      - name: Extract changelog notes
+        id: notes
+        env:
+          VERSION: ${{ needs.plan.outputs.desktop_version }}
+        run: |
+          node --input-type=module <<'NODE' > release-notes.md
+          import { readFileSync } from 'node:fs';
+          import { extractChangelogSection } from './tools/release/changelog-section.mjs';
+
+          const version = process.env.VERSION;
+          const changelog = readFileSync('apps/desktop/CHANGELOG.md', 'utf8');
+          const section = extractChangelogSection(changelog, version);
+          if (section === null) {
+            throw new Error(`No changelog section found for ${version} in apps/desktop/CHANGELOG.md`);
+          }
+          process.stdout.write(section);
+          NODE
+
+      - name: Create GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ needs.plan.outputs.desktop_version }}
+        run: |
+          TAG="desktop-v${VERSION}"
+
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            echo "::error::GitHub Release tag ${TAG} already exists"
+            exit 1
+          fi
+
+          gh release create "$TAG" release/prod/* \
+            --latest \
+            --title "Desktop ${VERSION}" \
+            --notes-file release-notes.md
+
+  summary:
+    name: Production release summary
+    needs: [plan, package, publish]
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout main
+        if: needs.plan.outputs.has_desktop == 'true'
+        uses: actions/checkout@v4
+
+      - name: Write production release summary
+        if: needs.plan.outputs.has_desktop == 'true'
+        env:
+          HAS_DESKTOP: ${{ needs.plan.outputs.has_desktop }}
+          VERSION: ${{ needs.plan.outputs.desktop_version }}
+          OLD_VERSION: ${{ needs.plan.outputs.desktop_old_version }}
+          PROD_ENABLED: ${{ needs.plan.outputs.prod_release_enabled }}
+          PACKAGE_RESULT: ${{ needs.package.result }}
+          PUBLISH_RESULT: ${{ needs.publish.result }}
+          SHA: ${{ github.sha }}
+        run: |
+          {
+            echo '## Production desktop release'
+            echo ''
+            echo '| Field | Value |'
+            echo '| --- | --- |'
+            echo "| Desktop version | \`${OLD_VERSION}\` → \`${VERSION}\` |"
+            echo "| SHA | \`${SHA}\` |"
+            echo "| CI artifact | \`${PACKAGE_RESULT}\` |"
+            echo "| \`BFC_ENABLE_PROD_RELEASE\` | \`${PROD_ENABLED}\` |"
+            echo ''
+          } >> "$GITHUB_STEP_SUMMARY"
+
+          if [ "$PROD_ENABLED" != "true" ]; then
+            {
+              echo 'Prod GitHub Release skipped — `vars.BFC_ENABLE_PROD_RELEASE` is not `true`.'
+              echo 'No tag, draft, or GitHub Release was created.'
+            } >> "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+
+          if [ "$PUBLISH_RESULT" = "success" ]; then
+            echo "GitHub Release \`desktop-v${VERSION}\` published." >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "GitHub Release publish result: \`${PUBLISH_RESULT}\`." >> "$GITHUB_STEP_SUMMARY"
+          fi
