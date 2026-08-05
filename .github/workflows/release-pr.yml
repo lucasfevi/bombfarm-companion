@@ -6,7 +6,7 @@ on:
   workflow_dispatch:
     inputs:
       publish_prerelease:
-        description: Publish a GitHub prerelease for the beta installer
+        description: Force-republish the GitHub beta prerelease for this run
         required: false
         default: false
         type: boolean
@@ -129,7 +129,64 @@ jobs:
           {
             echo '## Release PR — no pending changesets'
             echo ''
-            echo 'No packages are scheduled to release. No release PR was created or updated.'
+            echo 'No packages are scheduled to release. Any open release PR will be closed.'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+  close-empty:
+    name: Close stale release PR
+    needs: plan
+    if: needs.plan.outputs.proceed == 'true' && needs.plan.outputs.is_empty == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Close open release/next → main PR
+        id: close
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          existing=$(gh pr list --head release/next --base main --state open --json number --jq '.[0].number // empty')
+          if [ -n "$existing" ]; then
+            gh pr comment "$existing" --body "Closing: no pending changesets remain on \`develop\`. The release rail will open a new PR when changesets are added again."
+            gh pr close "$existing"
+            echo "closed_pr=${existing}" >> "$GITHUB_OUTPUT"
+          else
+            echo "closed_pr=" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Delete remote release/next when safe
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if git ls-remote --heads origin release/next | grep -q release/next; then
+            git push origin --delete release/next || true
+          fi
+
+      - name: Confirm no release PR remains open
+        env:
+          GH_TOKEN: ${{ github.token }}
+          CLOSED_PR: ${{ steps.close.outputs.closed_pr }}
+        run: |
+          remaining=$(gh pr list --head release/next --base main --state open --json number --jq 'length')
+          if [ "$remaining" != "0" ]; then
+            echo "::error::An open release/next → main PR still exists after cleanup"
+            exit 1
+          fi
+
+          {
+            echo '## Release PR — empty set cleanup'
+            echo ''
+            if [ -n "$CLOSED_PR" ]; then
+              echo "Closed stale release PR #${CLOSED_PR}."
+            else
+              echo 'No open release PR was found.'
+            fi
+            echo ''
+            echo 'No release PR remains open for \`release/next\` → \`main\`.'
           } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Upload release metadata
@@ -395,19 +452,38 @@ jobs:
             -f output[title]="Beta installer failed" \
             -f output[summary]="Beta packaging failed. No artifact was uploaded."
 
-      - name: Publish optional GitHub prerelease
-        if: >-
-          success() &&
-          github.event_name == 'workflow_dispatch' &&
-          inputs.publish_prerelease == true
+      - name: Publish GitHub beta prerelease
+        if: success()
         env:
           GH_TOKEN: ${{ github.token }}
           VERSION: ${{ steps.meta.outputs.version }}
+          HEAD_SHA: ${{ needs.version-and-pr.outputs.head_sha }}
+        shell: bash
         run: |
+          set -euo pipefail
           tag="desktop-v${VERSION}-beta.${GITHUB_RUN_NUMBER}"
-          gh release create "$tag" apps/desktop/release/beta/* \
+
+          cleanup_failed_release() {
+            gh release delete "$tag" --yes --cleanup-tag 2>/dev/null || true
+          }
+
+          if gh release view "$tag" >/dev/null 2>&1; then
+            gh release delete "$tag" --yes --cleanup-tag
+          fi
+
+          gh release create "$tag" \
             --prerelease \
-            --title "Desktop ${VERSION} beta (run ${GITHUB_RUN_NUMBER})"
+            --draft \
+            --title "Desktop ${VERSION} beta (${HEAD_SHA:0:7})"
+
+          trap cleanup_failed_release ERR
+
+          for asset in apps/desktop/release/beta/*; do
+            gh release upload "$tag" "$asset"
+          done
+
+          gh release edit "$tag" --draft=false
+          trap - ERR
 
   summary:
     name: Release summary
