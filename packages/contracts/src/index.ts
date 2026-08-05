@@ -1,4 +1,22 @@
-export type AppFlavor = 'dev' | 'prod';
+import type { AppFlavor } from './flavors.js';
+
+export type {
+  AppFlavor,
+  FlavorDescriptor,
+  ResolveRuntimeFlavorInput,
+  ResolveRuntimeFlavorResult,
+  UpdateChannel,
+} from './flavors.js';
+export {
+  APP_FLAVORS,
+  FLAVORS,
+  InvalidFlavorError,
+  getFlavorDescriptor,
+  isAppFlavor,
+  parseFlavorToken,
+  resolveBuildFlavor,
+  resolveRuntimeFlavor,
+} from './flavors.js';
 
 export type Rarity = 0 | 1 | 2 | 3 | 4 | 5;
 export type Slot = 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7;
