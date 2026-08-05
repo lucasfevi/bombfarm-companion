@@ -33,8 +33,9 @@ Because the token block is self-contained it is the first thing extractable as
 Bare-element `table` / `th` / `td` rules in `globals.css` `@layer base` are **base element
 styling**, not a design-system primitive and not a named CSS exception — see
 [`css-exceptions.md`](css-exceptions.md) (TW-07). **All planner tables** use the `DataTable`
-compound primitive under `design-system/` (`scrollable` for sticky capped lists; `Header sortable` for
-sort chrome). Do not hand-roll `<table>` markup in feature code.
+compound primitive under `design-system/` (`scrollable` for sticky lists that fill the parent or
+optionally `maxRows`/`minRows` rem caps; sticky heads are `z-20` with `border-separate` so row chrome
+cannot overlay labels; `Header sortable` for sort chrome). Do not hand-roll `<table>` markup in feature code.
 
 ## Primitive inventory
 
@@ -60,7 +61,7 @@ All exported from the barrel [`packages/ui/src/index.ts`](../packages/ui/src/ind
 | `FieldRequired` | `<span>` | always-mounted “required” badge; `show` toggles `invisible` (no CLS) | `panel-field.recipe.ts` (`reqClass`) |
 | `HelpTip` | Base UI `Popover` | always-mounted `?` help; `show` / `active` for status-linked tips | `help-popover.recipe.ts` |
 | `Tooltip` | `@base-ui/react/tooltip` + Motion | compound `Provider`/`Root`/`Trigger`/`Portal`/`Positioner`/`Popup`/`Arrow`/`StatusBody`; Animate UI spring scale enter/exit — see [`animation.md`](animation.md) | `tooltip.recipe.ts` |
-| `DataTable` | `<table>` compound | `Root` (`scrollable` + `maxRows`), `Table`/`Head`/`Body`/`Row`/`Header`/`Cell`/`RowHeader`/`Caption`; `Header sortable` shows stacked ▲▼ when idle, single chevron when active | `data-table.recipe.ts` |
+| `DataTable` | `<table>` compound | `Root` (`scrollable` + optional `maxRows`/`minRows`), `Table`/`Head`/`Body`/`Row`/`Header`/`Cell`/`RowHeader`/`Caption`; sticky heads `z-20` + `border-separate`; `Header sortable` shows stacked ▲▼ when idle, single chevron when active | `data-table.recipe.ts` |
 | `GlossaryTerm` | DS `Tooltip` | inline dotted-underline formula token + tip | `glossary-term.recipe.ts` + `tooltip.recipe.ts` |
 | `MetricScoreboard` | `<div>` grid | equal-column KPI cells: `cells[]` of `{ id, label, value, tone, delta, deltaTone }`; keeps the invisible `+0.0%` placeholder for delta-less cells (no CLS) — promoted from the planner's `CompareMetricsStrip` (W6) | `metric-scoreboard.recipe.ts` |
 | `GlossedText` | `<span>` | renders `template` with `terms: ReadonlyMap<token, tip>` tokens wrapped in `GlossaryTerm`; longest-token-first split; empty `terms` renders a plain wrapper — promoted from the planner's `GlossedFormula` (W6); the i18n glossary itself stays in `features/planner/model/formula-glossary.ts` | inline Tailwind |
@@ -68,30 +69,28 @@ All exported from the barrel [`packages/ui/src/index.ts`](../packages/ui/src/ind
 
 ### Game art (`apps/web/src/shared/game-art/`)
 
-Wiki-sourced game assets (heroes, items, abilities, …). **Rarity is border-only** on gear/hero frames — do not overlay crystal gems on item art (border colour matches `rar-0`…`rar-5` tokens). Export from [`apps/web/src/shared/game-art/index.ts`](../apps/web/src/shared/game-art/index.ts).
+Wiki-sourced game assets (heroes, items, abilities, …). **Do not overlay crystal gems** on item art. Hero avatars stay square with a **neutral fill + rarity border**. Gear frames are **portrait `18/19`** (in-game inventory pitch) with a **radial rarity plate** (`--rar-slot-N-glow/mid/edge`, legendary adds faint vertical rays) plus the matching rarity border. Export from [`apps/web/src/shared/game-art/index.ts`](../apps/web/src/shared/game-art/index.ts).
 
 | Component | Role | Recipe |
 | --- | --- | --- |
-| `ArtFrame` | Rarity-tinted square frame (`rounded-sm`) | `game-art.recipe.ts` → `artFrameRecipe` |
-| `HeroAvatar` | Save `skin` portrait inside `ArtFrame` | composes `ArtFrame` |
-| `ItemIcon` | Catalog item PNG + optional `+upgrade` badge | composes `ArtFrame` + `forgeUpgradeBadgeClass` |
-| `AbilityIcon` | Wiki ability PNG in neutral frame (no rarity) | `game-art.recipe.ts` → `abilityIconRecipe` |
-| `HeroAbilityIcons` | Roster row of equipped abilities + name/Lv tooltip | composes `AbilityIcon` + DS `Tooltip` |
+| `ArtFrame` | Rarity-tinted frame (`rounded-sm`); `shape` square/portrait; `fill` neutral/rarity | `game-art.recipe.ts` → `artFrameRecipe` |
+| `HeroAvatar` | Save `skin` portrait inside square `ArtFrame` (display map swaps wiki `hero2`/`hero3` vs save skins 1/2) | composes `ArtFrame` |
+| `ItemIcon` | Catalog item PNG in portrait frame + halo level / `+N` | composes `ArtFrame` + `iconMetaGlyphRecipe` |
+| `AbilityIcon` | Wiki ability PNG in neutral square frame + halo `n/20` | `game-art.recipe.ts` → `abilityIconRecipe` + `iconMetaGlyphRecipe` |
+| `HeroAbilityIcons` | Roster row of pool abilities + name/`n/20` tooltip | composes `AbilityIcon` + DS `Tooltip` |
 | `HeroGearIcons` | Roster row of all 8 slots (item or empty) + slot/item tooltip | composes `ItemIcon` + DS `Tooltip` |
 
 **Roster picker interaction:** each hero row is **one keyboard tab stop** (`<tr tabIndex={0}>` + `aria-label`, no `role="button"`). Gear/ability icon tooltips use DS `Tooltip.Trigger` as `type="button"` with `tabIndex={-1}` — hover/pointer supplementary detail without nested tab traps. Row `Enter`/`Space` still selects the hero; icon clicks `stopPropagation` so tooltips never fire row pick.
 
-**Sizes** (`artFrameRecipe` `size`): `xs` (28px) roster gear row · `sm` (32px) roster avatar · `md` (44px) hero strip · `lg` (48px) gear slot header · `xl` (64px) detail / large previews.
+**Roster columns:** avatar (unsorted) · rank · name+★ · rarity · lv · power · gear · abilities · status. Table avatars use `lg` (same width token as gear/ability). Switch-hero / import name uses `text-base leading-none font-bold` (same as the planner hero strip); rarity uses `text-sm leading-none font-bold`. Disabled (`battleAllowed === false`) rows use `rosterInactiveChromeClass` (`opacity-55 grayscale`) on scan chrome; the status toggle stays full chroma.
 
-**Ability icon sizes** (`abilityIconRecipe` `size`): `xs` (20px) roster / picker rows · `sm` (24px) · `md` (32px) compact · `lg` (44px) abilities tab cards.
+**Sizes** (`artFrameRecipe` width tokens / `abilityIconRecipe` squares): `xs` (28px) compact · `sm` (32px) · `md` (44px) · `lg` (48px wide) roster / import / phases / hero strip · `xl` (64px wide) Gear tab + Ability tab. Gear `shape: portrait` is `aspect-[18/19]` (e.g. `lg` → 48×51). Abilities stay square at the same width token.
 
-Asset paths: [`abilityIconSrc`](../packages/domain/src/wiki-assets.ts) → `public/wiki-assets/abilities/{id}.png` (16 wiki icons, id matches catalog ability code).
+**Inventory meta glyphs** (`iconMetaGlyphRecipe`): no plaque fill — halo `text-shadow` only. Gear: level `top-end`, forge `+N` `bottom-end` in `text-rar-4` (hide `+0`). Abilities: `n/20` `bottom-center`. `compact` (10px) on `xs`/`sm`; `roomy` (11px) on `md`+.
 
-**Forge badge** (`forgeUpgradeBadgeClass`): transparent — no box border or fill; `text-shadow` halo on the `+N` glyphs only for legibility on busy pixel art.
+**Gear slot chrome** ([`slot-editor.tsx`](../apps/web/src/features/gear/components/slot-editor.tsx)): outer slot card stays **neutral** (`border-line`); equipped rarity reads from the item frame only. Filled slots hide the slot-name label, center the `xl` icon, and pin clear at `absolute -top-1 -right-1`. Empty slots show the slot name inside a dashed placeholder sharing `artFrameRadiusClass`. Gear compare clones reuse `GearSlotStatsGrid` under the alt-loadout editors.
 
-**Gear slot chrome** ([`slot-editor.tsx`](../apps/web/src/features/gear/components/slot-editor.tsx)): outer slot card stays **neutral** (`border-line`); equipped rarity reads from the item frame only. Empty slots show a dashed placeholder sharing `artFrameRadiusClass`.
-
-Asset path helpers: [`packages/domain/src/wiki-assets.ts`](../packages/domain/src/wiki-assets.ts) (domain helper, not under `design-system/`).
+Asset path helpers: [`packages/domain/src/wiki-assets.ts`](../packages/domain/src/wiki-assets.ts) (domain helper, not under `design-system/`). Save `skin` is the in-game index; `heroAvatarSrc` remaps display paths (`[1,3,2,4,5,6,7]`) so wiki filenames stay canonical.
 
 ### Form controls (`Num` / `Select`)
 

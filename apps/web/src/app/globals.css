@@ -21,12 +21,13 @@
   --color-up: oklch(72% 0.14 150);
   --color-down: oklch(70% 0.15 25);
   --color-warn: oklch(55% 0.14 70);
-  --color-rar-0: oklch(70% 0.04 220);
-  --color-rar-1: oklch(72% 0.16 145);
-  --color-rar-2: oklch(72% 0.16 250);
-  --color-rar-3: oklch(72% 0.18 300);
-  --color-rar-4: oklch(78% 0.14 75);
-  --color-rar-5: oklch(72% 0.18 25);
+  /* Rarity chrome — sampled from in-game inventory plates (2026-08-05). */
+  --color-rar-0: #9aa0a6;
+  --color-rar-1: #7dce55;
+  --color-rar-2: #4c79b4;
+  --color-rar-3: #b176e0;
+  --color-rar-4: #e3bc6f;
+  --color-rar-5: #f08b68;
 
   --font-sans: var(--font-dm-sans), 'DM Sans', system-ui, sans-serif;
   --font-mono: var(--font-ibm-plex-mono), 'IBM Plex Mono', ui-monospace, monospace;
@@ -78,6 +79,26 @@ html {
   --rar-3: var(--color-rar-3);
   --rar-4: var(--color-rar-4);
   --rar-5: var(--color-rar-5);
+
+  /* Inventory slot plates — glow / mid / edge (radial). Common/uncommon/mythic inferred. */
+  --rar-slot-0-glow: #8b9198;
+  --rar-slot-0-mid: #3d4248;
+  --rar-slot-0-edge: #1a1d21;
+  --rar-slot-1-glow: #8fd86a;
+  --rar-slot-1-mid: #2f5a24;
+  --rar-slot-1-edge: #0d1a0c;
+  --rar-slot-2-glow: #8eb0d4;
+  --rar-slot-2-mid: #2f527a;
+  --rar-slot-2-edge: #0b1522;
+  --rar-slot-3-glow: #c59aec;
+  --rar-slot-3-mid: #4c2b60;
+  --rar-slot-3-edge: #18061e;
+  --rar-slot-4-glow: #f0d48a;
+  --rar-slot-4-mid: #a86d23;
+  --rar-slot-4-edge: #3d2408;
+  --rar-slot-5-glow: #f0a080;
+  --rar-slot-5-mid: #8c3e3f;
+  --rar-slot-5-edge: #2a1012;
   --top: var(--spacing-top);
   --maxw: var(--container-app);
   --font: var(--font-sans);

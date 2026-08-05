@@ -21,7 +21,7 @@ type Props = {
 };
 
 const emptyGearClass = cn(
-  'inline-grid size-7 shrink-0 border border-dashed border-line bg-[color-mix(in_oklch,var(--bg)_55%,var(--surface))]',
+  'inline-grid w-12 aspect-[18/19] shrink-0 border border-dashed border-line bg-[color-mix(in_oklch,var(--bg)_55%,var(--surface))]',
   artFrameRadiusClass,
 );
 
@@ -77,7 +77,7 @@ export function HeroGearIcons({ loadout, lang, t, className }: Props) {
               onClick={stopRowActivation}
               onKeyDown={stopRowActivation}
             >
-              <ItemIcon equipped={equipped} size="xs" showUpgrade={false} />
+              <ItemIcon equipped={equipped} size="lg" />
             </Tooltip.Trigger>
             <Tooltip.Portal>
               <Tooltip.Positioner sideOffset={6}>

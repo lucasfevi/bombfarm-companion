@@ -3,7 +3,7 @@
 import type { SyntheticEvent } from 'react';
 import { abilityName } from '@bombfarm/domain/game-labels';
 import { heroAbilityIconEntries } from '@bombfarm/domain/hero-abilities';
-import type { Lang, Strings } from '@/shared/i18n';
+import type { Lang } from '@/shared/i18n';
 
 import { cn, Tooltip } from '@bombfarm/ui';
 import { AbilityIcon } from '@/shared/game-art/ability-icon';
@@ -12,7 +12,6 @@ import { rosterIconTooltipTriggerClass } from '@/shared/game-art/game-art.recipe
 type Props = {
   abilities: Record<string, number>;
   lang: Lang;
-  t: Strings;
   className?: string;
 };
 
@@ -20,7 +19,7 @@ function stopRowActivation(event: SyntheticEvent) {
   event.stopPropagation();
 }
 
-export function HeroAbilityIcons({ abilities, lang, t, className }: Props) {
+export function HeroAbilityIcons({ abilities, lang, className }: Props) {
   const entries = heroAbilityIconEntries(abilities);
 
   if (entries.length === 0) {
@@ -33,9 +32,9 @@ export function HeroAbilityIcons({ abilities, lang, t, className }: Props) {
       onClick={stopRowActivation}
       onKeyDown={stopRowActivation}
     >
-      {entries.map(({ id, level }) => {
+      {entries.map(({ id, level, max }) => {
         const name = abilityName(id, lang);
-        const label = `${name}, ${t.rankLv} ${level}`;
+        const label = `${name}, ${level}/${max}`;
         return (
           <Tooltip.Root key={id}>
             <Tooltip.Trigger
@@ -46,14 +45,14 @@ export function HeroAbilityIcons({ abilities, lang, t, className }: Props) {
               onClick={stopRowActivation}
               onKeyDown={stopRowActivation}
             >
-              <AbilityIcon code={id} />
+              <AbilityIcon code={id} size="lg" level={level} max={max} />
             </Tooltip.Trigger>
             <Tooltip.Portal>
               <Tooltip.Positioner sideOffset={6}>
                 <Tooltip.Popup>
                   <p className="m-0 font-semibold text-ink">{name}</p>
                   <p className="m-0 text-xs text-muted">
-                    {t.rankLv} {level}
+                    {level}/{max}
                   </p>
                 </Tooltip.Popup>
               </Tooltip.Positioner>
