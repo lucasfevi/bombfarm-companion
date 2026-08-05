@@ -1,12 +1,9 @@
 import type { StateCreator } from 'zustand';
-import {
-  patchHeroInList,
-  updateHeroBattleAllowed,
-  type HeroRecord,
-} from '@/shared/lib/storage';
+import { patchHeroInList, type HeroRecord } from '@/shared/lib/storage';
 import type { PlannerStore } from '@/shared/stores/planner-store';
 import {
   writeActiveHeroId,
+  writeHeroBattleAllowed,
   writeImportedRoster,
   writeRosterAfterDelete,
 } from '@/shared/stores/persistence/persist-roster';
@@ -65,7 +62,7 @@ export const createRosterSlice: StateCreator<
 
   setHeroBattleAllowedOnHero: (heroId, battleAllowed) => {
     const state = get();
-    const next = updateHeroBattleAllowed(state.heroes, heroId, battleAllowed);
+    const next = writeHeroBattleAllowed(state.heroes, heroId, battleAllowed);
     if (next === state.heroes) return;
     if (state.activeHeroId === heroId) {
       state.skipNextHeroToast();
@@ -77,7 +74,18 @@ export const createRosterSlice: StateCreator<
 
   importHeroRecords: (records) => {
     const result = writeImportedRoster(get().heroes, records);
-    set({ heroes: result.heroes });
+    const activeId = get().activeHeroId;
+    const active = activeId
+      ? result.heroes.find((hero) => hero.id === activeId)
+      : undefined;
+    if (!active) {
+      set({ heroes: result.heroes });
+      return result;
+    }
+    set({
+      heroes: result.heroes,
+      heroBattleAllowed: active.battleAllowed ?? true,
+    });
     return result;
   },
 });

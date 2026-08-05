@@ -1,10 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import {
-  normalizeHero,
-  updateHeroBattleAllowed,
-  upsertHero,
-  type HeroRecord,
-} from '@/shared/lib/storage';
+import { normalizeHero, upsertHero, type HeroRecord } from '@/shared/lib/storage';
+import { writeHeroBattleAllowed } from '@/shared/stores/persistence/persist-roster';
 import * as gear from '@bombfarm/domain/gear';
 import { emptyLoadout, emptySheet } from '@bombfarm/domain/gear';
 
@@ -184,7 +180,7 @@ describe('normalizeHero — per-key sheet defaults (docs/local-data-compat.md ru
   });
 });
 
-describe('updateHeroBattleAllowed', () => {
+describe('writeHeroBattleAllowed', () => {
   beforeEach(() => {
     vi.stubGlobal('localStorage', memoryLocalStorage());
   });
@@ -198,7 +194,7 @@ describe('updateHeroBattleAllowed', () => {
     const roster = [makeHero('a', 's-a')];
     expect(roster[0]?.battleAllowed).toBe(true);
 
-    const next = updateHeroBattleAllowed(roster, 'a', false);
+    const next = writeHeroBattleAllowed(roster, 'a', false);
     expect(next).not.toBe(roster);
     expect(next[0]?.battleAllowed).toBe(false);
     const stored = JSON.parse(localStorage.getItem(HEROES_KEY)!) as HeroRecord[];
@@ -210,8 +206,8 @@ describe('updateHeroBattleAllowed', () => {
     localStorage.setItem(HEROES_KEY, JSON.stringify(roster));
     const setItem = vi.spyOn(localStorage, 'setItem');
 
-    expect(updateHeroBattleAllowed(roster, 'missing', false)).toBe(roster);
-    expect(updateHeroBattleAllowed(roster, 'a', true)).toBe(roster);
+    expect(writeHeroBattleAllowed(roster, 'missing', false)).toBe(roster);
+    expect(writeHeroBattleAllowed(roster, 'a', true)).toBe(roster);
     expect(setItem).not.toHaveBeenCalled();
   });
 });

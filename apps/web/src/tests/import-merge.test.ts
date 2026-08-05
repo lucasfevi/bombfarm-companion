@@ -316,6 +316,17 @@ describe('importHeroes re-import overwrite (BSPW5-07 through storage)', () => {
     vi.unstubAllGlobals();
   });
 
+  it('re-import overwrites a locally toggled battleAllowed from the save', () => {
+    const existing = hero({ id: 'local-1', name: 'Gale', battleAllowed: false });
+    localStorage.setItem('bf-hp-heroes-v1', JSON.stringify([existing]));
+
+    const incoming = asIncoming(hero({ id: 'new', name: 'Gale', sourceId: 'game-1', battleAllowed: true }));
+    const { heroes } = importHeroes(loadHeroes(), [{ ...incoming, sourceId: 'game-1' }]);
+
+    expect(heroes[0]?.battleAllowed).toBe(true);
+    expect(loadHeroes()[0]?.battleAllowed).toBe(true);
+  });
+
   it('re-importing an existing hero overwrites naked/gearedOverride/pts/level, preserving altLoadout', () => {
     const existing = hero({ id: 'local-1', name: 'Gale', altLoadout: weaponLoadout() });
     localStorage.setItem('bf-hp-heroes-v1', JSON.stringify([existing]));
