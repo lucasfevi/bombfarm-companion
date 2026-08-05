@@ -72,6 +72,23 @@ describe('workspace package privacy', () => {
   }
 });
 
+describe('changeset package selector coverage', () => {
+  it('offers the same seven workspace packages changesets would version', async () => {
+    const { getPackages } = await import('@manypkg/get-packages');
+    const { packages } = await getPackages(root);
+    const discoveredNames = packages
+      .map((pkg) => pkg.packageJson.name)
+      .filter((name) => typeof name === 'string')
+      .sort((left, right) => left.localeCompare(right));
+    const expectedNames = WORKSPACE_PACKAGES.map((pkg) => pkg.name).sort((left, right) =>
+      left.localeCompare(right),
+    );
+
+    expect(discoveredNames).toEqual(expectedNames);
+    expect(discoveredNames).toHaveLength(7);
+  });
+});
+
 describe('no publish commands in automation', () => {
   it('root scripts do not invoke publish', () => {
     const { scripts = {} } = readJson('package.json');
