@@ -19,8 +19,10 @@
     "typecheck": "tsc -p tsconfig.main.json --noEmit && tsc -p renderer/tsconfig.json --noEmit",
     "lint": "pnpm --dir ../.. exec eslint apps/desktop/src apps/desktop/renderer",
     "test:smoke": "playwright test -c playwright.config.ts",
-    "package:dev": "cross-env BFC_FLAVOR=dev NODE_ENV=production pnpm build && electron-builder --config electron-builder.config.mjs",
-    "package:prod": "cross-env BFC_FLAVOR=prod NODE_ENV=production pnpm build && electron-builder --config electron-builder.config.mjs"
+    "package:dev": "cross-env BFC_FLAVOR=dev NODE_ENV=production node scripts/package.mjs",
+    "package:nightly": "cross-env BFC_FLAVOR=nightly NODE_ENV=production node scripts/package.mjs",
+    "package:beta": "cross-env BFC_FLAVOR=beta NODE_ENV=production node scripts/package.mjs",
+    "package:prod": "cross-env BFC_FLAVOR=prod NODE_ENV=production node scripts/package.mjs"
   },
   "dependencies": {
     "@base-ui/react": "^1.6.0",
