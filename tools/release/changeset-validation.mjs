@@ -170,7 +170,7 @@ export function runCli(argv = process.argv.slice(2)) {
   const requestedFiles = argv.length > 0
     ? argv.map((path) => resolve(root, path))
     : readdirSync(changesetDir)
-        .filter((name) => name.endsWith('.md'))
+        .filter((name) => name.endsWith('.md') && name !== 'README.md')
         .map((name) => join(changesetDir, name));
 
   const problems = validateChangesets({
