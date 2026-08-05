@@ -37,6 +37,7 @@ export function PointsTable() {
   const pts = usePlannerStore((state) => state.pts);
   const setPts = usePlannerStore((state) => state.setPts);
   const pipeline = usePlannerStore(selectAdvisorPipeline);
+  const heroBattleAllowed = usePlannerStore((state) => state.heroBattleAllowed);
   const { spentDelta, pointDelta, adjusted, resetAdvice } = pipeline;
 
   const [preview, setPreview] = useState<PointsPreview | null>(null);
@@ -56,6 +57,7 @@ export function PointsTable() {
       effectiveDelta: pipeline.A.effectiveDelta,
       context: pipeline.context,
     });
+    setJustApplied(false);
     setPreview({ pts: result.pts, result });
   }
 
@@ -97,7 +99,12 @@ export function PointsTable() {
           </Button>
         </div>
       </div>
-      <PointsResetAdvice t={t} resetAdvice={resetAdvice} formatNumber={formatNumber} />
+      <PointsResetAdvice
+        t={t}
+        resetAdvice={resetAdvice}
+        formatNumber={formatNumber}
+        enabled={heroBattleAllowed}
+      />
       <DataTable.Root>
         <DataTable.Table className="table-fixed">
           <colgroup>

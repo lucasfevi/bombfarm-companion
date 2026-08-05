@@ -16,6 +16,7 @@ function pointsHero(opts: {
   lang?: 'pt' | 'en';
   level: number;
   pts: ReturnType<typeof zeroPts>;
+  battleAllowed?: boolean;
 }): SeededState {
   return {
     ...importedRoster,
@@ -26,6 +27,7 @@ function pointsHero(opts: {
             ...h,
             level: opts.level,
             pts: opts.pts,
+            battleAllowed: opts.battleAllowed,
           }
         : h,
     ),
@@ -336,6 +338,25 @@ test.describe('points panel preview / apply (BSPW6-02)', () => {
     expect(storageAfterApply).toContain('"cdr"');
   });
 
+  test('a new Optimize run hides the applied-respec note', async ({ page }) => {
+    const pts = { ...zeroPts(), cdr: 38 };
+    await seedLocalStorage(page, pointsHero({ level: 38, pts }));
+    await page.goto('/');
+    await selectSavedHero(page, 'Cora');
+    await openPointsTab(page);
+
+    const panel = pointsPanel(page);
+    await panel.getByRole('button', { name: /^Otimizar build$/i }).click();
+    await panel.getByRole('button', { name: /^Aplicar prévia$/i }).click();
+
+    const respecNote = panel.getByText(/Aplicado no planner/i);
+    await expect(respecNote).toBeVisible();
+
+    await panel.getByRole('button', { name: /^Otimizar build$/i }).click();
+    await expect(respecNote).not.toBeVisible();
+    await expect(panel.getByText(/essa busca não superou sua alocação atual/i)).toBeVisible();
+  });
+
   test('Clear preview discards the candidate without touching pts', async ({ page }) => {
     const pts = { ...zeroPts(), cdr: 38 };
     await seedLocalStorage(page, pointsHero({ level: 38, pts }));
@@ -403,6 +424,36 @@ test.describe('points panel reset advice gain line + Optimize build result (BSPW
     const optimizeBtn = panel.getByRole('button', { name: /^Otimizar build$/i });
     await expect(optimizeBtn).toBeVisible();
     await expect(optimizeBtn).toBeEnabled();
+  });
+
+  test('disabled hero shows a muted exclusion note under Optimize build', async ({ page }) => {
+    const pts = { ...zeroPts(), cdr: 38 };
+    await seedLocalStorage(page, pointsHero({ level: 38, pts, battleAllowed: false }));
+    await page.goto('/');
+    await selectSavedHero(page, 'Cora');
+    await openPointsTab(page);
+
+    const panel = pointsPanel(page);
+    const note = panel.getByText(/não entra nas recomendações automáticas de reset/i);
+    await expect(note).toBeVisible();
+    await expect(note).toHaveClass(/text-warn/);
+    await expect(panel.getByText(/checagem rápida encontrou um possível ganho/i)).not.toBeVisible();
+  });
+
+  test('enabling a disabled hero hides the exclusion note and shows the gain line', async ({ page }) => {
+    const pts = { ...zeroPts(), cdr: 38 };
+    await seedLocalStorage(page, pointsHero({ level: 38, pts, battleAllowed: false }));
+    await page.goto('/');
+    await selectSavedHero(page, 'Cora');
+    await openPointsTab(page);
+
+    const panel = pointsPanel(page);
+    const note = panel.getByText(/não entra nas recomendações automáticas de reset/i);
+    await expect(note).toBeVisible();
+
+    await page.getByRole('switch', { name: /ativar ou desativar este herói/i }).click();
+    await expect(note).not.toBeVisible();
+    await expect(panel.getByText(/checagem rápida encontrou um possível ganho/i)).toBeVisible();
   });
 
   test('Optimize build is disabled with a reason when nothing is spent (AC-15)', async ({ page }) => {

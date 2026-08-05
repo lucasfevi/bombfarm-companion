@@ -110,4 +110,62 @@ describe('roster slice', () => {
     expect(usePlannerStore.getState().heroes[0]?.name).toBe('Updated');
     expect(localStorage.getItem('bf-hp-active-hero-v1')).toBe(beforeActive);
   });
+
+  it('importHeroRecords overwrites a local battleAllowed toggle from the save and syncs the open draft', () => {
+    const a = hero('local-1', 'game-1');
+    usePlannerStore.getState().hydrateRoster([{ ...a, battleAllowed: false }], 'local-1');
+    usePlannerStore.getState().applyHero({ ...a, battleAllowed: false });
+    expect(usePlannerStore.getState().heroBattleAllowed).toBe(false);
+
+    const incoming = {
+      ...hero('new', 'game-1'),
+      id: undefined as unknown as string,
+      battleAllowed: true,
+    };
+    usePlannerStore.getState().importHeroRecords([{ ...incoming, sourceId: 'game-1' }]);
+
+    expect(usePlannerStore.getState().heroes[0]?.battleAllowed).toBe(true);
+    expect(usePlannerStore.getState().heroBattleAllowed).toBe(true);
+  });
+
+  it('setHeroBattleAllowedOnHero persists and syncs the active draft', () => {
+    const a = hero('a', 's-a');
+    const b = hero('b', 's-b');
+    usePlannerStore.getState().hydrateRoster([a, b], 'a');
+    usePlannerStore.getState().applyHero(a);
+
+    usePlannerStore.getState().setHeroBattleAllowedOnHero('a', false);
+    expect(usePlannerStore.getState().heroes.find((h) => h.id === 'a')?.battleAllowed).toBe(false);
+    expect(usePlannerStore.getState().heroBattleAllowed).toBe(false);
+    const stored = JSON.parse(localStorage.getItem('bf-hp-heroes-v1')!) as HeroRecord[];
+    expect(stored.find((h) => h.id === 'a')?.battleAllowed).toBe(false);
+
+    usePlannerStore.getState().setHeroBattleAllowedOnHero('b', false);
+    expect(usePlannerStore.getState().heroes.find((h) => h.id === 'b')?.battleAllowed).toBe(false);
+    expect(usePlannerStore.getState().heroBattleAllowed).toBe(false);
+  });
+
+  it('setHeroBattleAllowedOnHero re-enables the open hero and leaves other drafts alone', () => {
+    const a = hero('a', 's-a');
+    const b = hero('b', 's-b');
+    usePlannerStore.getState().hydrateRoster([a, b], 'a');
+    usePlannerStore.getState().applyHero(a);
+
+    usePlannerStore.getState().setHeroBattleAllowedOnHero('a', false);
+    usePlannerStore.getState().setHeroBattleAllowedOnHero('a', true);
+    expect(usePlannerStore.getState().heroBattleAllowed).toBe(true);
+    expect(usePlannerStore.getState().heroes.find((h) => h.id === 'a')?.battleAllowed).toBe(true);
+
+    usePlannerStore.getState().setHeroBattleAllowedOnHero('b', false);
+    expect(usePlannerStore.getState().heroBattleAllowed).toBe(true);
+    expect(usePlannerStore.getState().heroes.find((h) => h.id === 'b')?.battleAllowed).toBe(false);
+  });
+
+  it('setHeroBattleAllowedOnHero is a no-op when the flag already matches', () => {
+    const a = hero('a', 's-a');
+    usePlannerStore.getState().hydrateRoster([a], 'a');
+    const before = usePlannerStore.getState().heroes;
+    usePlannerStore.getState().setHeroBattleAllowedOnHero('a', true);
+    expect(usePlannerStore.getState().heroes).toBe(before);
+  });
 });

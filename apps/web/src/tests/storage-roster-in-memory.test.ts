@@ -1,9 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import {
-  normalizeHero,
-  upsertHero,
-  type HeroRecord,
-} from '@/shared/lib/storage';
+import { normalizeHero, upsertHero, type HeroRecord } from '@/shared/lib/storage';
+import { writeHeroBattleAllowed } from '@/shared/stores/persistence/persist-roster';
 import * as gear from '@bombfarm/domain/gear';
 import { emptyLoadout, emptySheet } from '@bombfarm/domain/gear';
 
@@ -180,6 +177,38 @@ describe('normalizeHero — per-key sheet defaults (docs/local-data-compat.md ru
     expect(Number.isFinite(hero.pts.critDmg)).toBe(true);
     expect(hero.pts.attack).toBe(2);
     expect(hero.pts.energy).toBe(1);
+  });
+});
+
+describe('writeHeroBattleAllowed', () => {
+  beforeEach(() => {
+    vi.stubGlobal('localStorage', memoryLocalStorage());
+  });
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
+    vi.restoreAllMocks();
+  });
+
+  it('persists a toggle and treats a missing flag as enabled', () => {
+    const roster = [makeHero('a', 's-a')];
+    expect(roster[0]?.battleAllowed).toBe(true);
+
+    const next = writeHeroBattleAllowed(roster, 'a', false);
+    expect(next).not.toBe(roster);
+    expect(next[0]?.battleAllowed).toBe(false);
+    const stored = JSON.parse(localStorage.getItem(HEROES_KEY)!) as HeroRecord[];
+    expect(stored[0]?.battleAllowed).toBe(false);
+  });
+
+  it('returns the same array when the hero is missing or the value is unchanged', () => {
+    const roster = [makeHero('a', 's-a')];
+    localStorage.setItem(HEROES_KEY, JSON.stringify(roster));
+    const setItem = vi.spyOn(localStorage, 'setItem');
+
+    expect(writeHeroBattleAllowed(roster, 'missing', false)).toBe(roster);
+    expect(writeHeroBattleAllowed(roster, 'a', true)).toBe(roster);
+    expect(setItem).not.toHaveBeenCalled();
   });
 });
 

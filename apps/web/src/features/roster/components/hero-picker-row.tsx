@@ -6,7 +6,8 @@ import { RARITIES } from '@bombfarm/domain/planner-constants';
 import type { Lang, Strings } from '@/shared/i18n';
 import { rarityLabel } from '@bombfarm/domain/game-labels';
 import { cn, DataTable } from '@bombfarm/ui';
-import { HeroBattleStatusChip } from './hero-battle-status-chip';
+import { usePlannerStore } from '@/shared/stores';
+import { HeroActiveToggle } from './hero-active-toggle';
 import {
   HeroAvatar,
   HeroAbilityIcons,
@@ -47,6 +48,7 @@ export const HeroPickerRow = memo(function HeroPickerRow({
   powerShown: number;
   onPick: (hero: HeroRecord) => void;
 }) {
+  const setHeroBattleAllowedOnHero = usePlannerStore((state) => state.setHeroBattleAllowedOnHero);
   const rarIdx = RARITIES.indexOf(hero.rarity);
 
   return (
@@ -110,7 +112,11 @@ export const HeroPickerRow = memo(function HeroPickerRow({
       </DataTable.Cell>
       <DataTable.Cell className="max-[720px]:hidden">
         {hero.sourceId ? (
-          <HeroBattleStatusChip battleAllowed={hero.battleAllowed ?? true} t={t} />
+          <HeroActiveToggle
+            battleAllowed={hero.battleAllowed ?? true}
+            t={t}
+            onCheckedChange={(checked) => setHeroBattleAllowedOnHero(hero.id, checked)}
+          />
         ) : (
           <span className="text-muted">—</span>
         )}

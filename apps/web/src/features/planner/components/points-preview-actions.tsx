@@ -4,22 +4,19 @@ import type { SheetKey } from '@bombfarm/domain/planner-constants';
 import type { ReoptResult } from '@bombfarm/domain/points-reopt';
 import type { Strings } from '@/shared/i18n';
 import { Button } from '@bombfarm/ui';
-import { mutedClass } from '@bombfarm/ui/panel-field.recipe';
-import { cn } from '@bombfarm/ui';
+import { usePlannerStore, selectHeroBattleAllowed } from '@/shared/stores';
 import { optimizeResultDisplay } from '../model/points-preview-copy';
+import { PointsPreviewNotice } from './points-preview-notice';
 
 export type PointsPreview = { pts: Record<SheetKey, number>; result: ReoptResult };
 
 export type OptimizeAvailability = { disabled: boolean; disabledReason: string | null };
 
 /**
- * `DEC-10` — the Optimize build / Apply preview / Clear preview controls, the Tier 2 result
- * line (best-found / kept-current / budget-exhausted, `AC-13`), and the always-mounted respec
- * note (`DEC-03`). Component-local preview state (`DEC-02`) lives in the shell
- * (`points-table.tsx`); this is a controlled renderer over it. Apply/Clear stay MOUNTED and
- * `disabled` rather than hidden — the `Button` primitive already dresses `disabled` (no CLS
- * either way); the result line and respec note have no other sensible "off" state, so they
- * toggle `invisible` + `aria-hidden` instead.
+ * `DEC-10` — Optimize / Apply / Clear plus typed preview notices (`DEC-03`, `AC-13`).
+ * Preview state lives in `points-table.tsx` (`DEC-02`). Apply/Clear stay mounted and
+ * `disabled`. Notices are a left-aligned rail under the actions — each line animates
+ * through `PointsPreviewNotice` instead of an always-reserved invisible slot.
  */
 export function PointsPreviewActions({
   t,
@@ -40,11 +37,13 @@ export function PointsPreviewActions({
   onApply: () => void;
   onClear: () => void;
 }) {
+  const heroEnabled = usePlannerStore(selectHeroBattleAllowed);
   const resultDisplay = preview ? optimizeResultDisplay(t, preview.result, formatNumber) : null;
   const showBudgetExhausted = !!preview?.result.budgetExhausted;
+  const showDisabledNote = !heroEnabled;
 
   return (
-    <div className="mt-2.5 flex flex-col items-end gap-1.5">
+    <div className="mt-2.5 flex flex-col gap-1.5">
       <div className="flex flex-wrap items-center justify-end gap-2">
         <Button
           type="button"
@@ -62,28 +61,24 @@ export function PointsPreviewActions({
           {t.previewClearButton}
         </Button>
       </div>
-      <p
-        className={cn(mutedClass, 'm-0 text-right', !preview && 'invisible')}
-        aria-hidden={!preview}
-      >
-        {resultDisplay?.kind === 'kept'
-          ? resultDisplay.text
-          : resultDisplay?.kind === 'delta'
-            ? resultDisplay.node
-            : ' '}
-      </p>
-      <p
-        className={cn(mutedClass, 'm-0 text-right', !showBudgetExhausted && 'invisible')}
-        aria-hidden={!showBudgetExhausted}
-      >
-        {t.optimizeBuildBudgetExhausted}
-      </p>
-      <p
-        className={cn(mutedClass, 'm-0 text-right', !justApplied && 'invisible')}
-        aria-hidden={!justApplied}
-      >
-        {t.previewRespecNote}
-      </p>
+      <div className="flex w-full min-w-0 flex-col">
+        <PointsPreviewNotice open={showDisabledNote} tone="warn">
+          {t.optimizeBuildHeroDisabledNote}
+        </PointsPreviewNotice>
+        <PointsPreviewNotice open={!!resultDisplay} tone={resultDisplay?.kind === 'delta' ? 'up' : 'muted'}>
+          {resultDisplay?.kind === 'kept'
+            ? resultDisplay.text
+            : resultDisplay?.kind === 'delta'
+              ? resultDisplay.node
+              : null}
+        </PointsPreviewNotice>
+        <PointsPreviewNotice open={showBudgetExhausted} tone="warn">
+          {t.optimizeBuildBudgetExhausted}
+        </PointsPreviewNotice>
+        <PointsPreviewNotice open={justApplied} tone="muted">
+          {t.previewRespecNote}
+        </PointsPreviewNotice>
+      </div>
     </div>
   );
 }

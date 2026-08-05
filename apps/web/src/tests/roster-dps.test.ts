@@ -120,4 +120,24 @@ describe('pipelineForHero forwards birth (roster-dps ↔ Points tab parity)', ()
     const inRoster = rosterRows.some((row) => row.heroId === hero.id);
     expect(inRoster).toBe(withBirth.resetAdvice.recommend);
   });
+
+  it('listHeroesWithResetAdvice excludes heroes with battleAllowed false', () => {
+    const inactive = { ...hero, battleAllowed: false };
+    const active = { ...hero, battleAllowed: true };
+    const inactiveRows = listHeroesWithResetAdvice([inactive], account, phase, mitigationPct);
+    const activeRows = listHeroesWithResetAdvice([active], account, phase, mitigationPct);
+    expect(inactiveRows).toEqual([]);
+    expect(activeRows.some((row) => row.heroId === hero.id)).toBe(
+      directPipeline(true).resetAdvice.recommend,
+    );
+  });
+
+  it('listHeroesWithResetAdvice treats a missing battleAllowed as enabled', () => {
+    const unset = { ...hero };
+    delete unset.battleAllowed;
+    const rows = listHeroesWithResetAdvice([unset], account, phase, mitigationPct);
+    expect(rows.some((row) => row.heroId === hero.id)).toBe(
+      directPipeline(true).resetAdvice.recommend,
+    );
+  });
 });

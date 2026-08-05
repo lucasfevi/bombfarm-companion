@@ -40,6 +40,8 @@ export const en = {
   optimizeBuildKeptCurrent: "This search did not beat your current allocation.",
   optimizeBuildBudgetExhausted: "The search was bounded and stopped early — this is the best it found within that budget.",
   optimizeBuildNoBudgetReason: "Nothing spent to move yet.",
+  optimizeBuildHeroDisabledNote:
+    "This hero is disabled, so it is not included in automatic respec recommendations.",
   previewApplyButton: "Apply preview",
   previewClearButton: "Clear preview",
   previewRespecNote: "Applied on the planner — spend a real in-game reset to match this build.",
@@ -159,6 +161,8 @@ export const pt: typeof en = {
   optimizeBuildKeptCurrent: "Essa busca não superou sua alocação atual.",
   optimizeBuildBudgetExhausted: "A busca tinha um limite e parou antes do fim — este é o melhor resultado dentro desse limite.",
   optimizeBuildNoBudgetReason: "Nada gasto para realocar ainda.",
+  optimizeBuildHeroDisabledNote:
+    "Este herói está desativado, então não entra nas recomendações automáticas de reset.",
   previewApplyButton: "Aplicar prévia",
   previewClearButton: "Limpar prévia",
   previewRespecNote: "Aplicado no planner — use um reset de verdade no jogo para bater com essa build.",

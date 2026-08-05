@@ -25,3 +25,18 @@ export function writeImportedRoster(
 export function writeRosterAfterDelete(heroes: HeroRecord[], heroId: string): HeroRecord[] {
   return deleteHero(heroes, heroId);
 }
+
+/** Persist a planner enable/disable toggle (`battleAllowed`) without touching the active pointer. */
+export function writeHeroBattleAllowed(
+  heroes: HeroRecord[],
+  heroId: string,
+  battleAllowed: boolean,
+): HeroRecord[] {
+  const existingIndex = heroes.findIndex((hero) => hero.id === heroId);
+  if (existingIndex < 0) return heroes;
+  if ((heroes[existingIndex].battleAllowed ?? true) === battleAllowed) return heroes;
+  const next = [...heroes];
+  next[existingIndex] = { ...next[existingIndex], battleAllowed };
+  saveHeroes(next);
+  return next;
+}
