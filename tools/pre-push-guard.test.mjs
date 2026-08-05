@@ -1,5 +1,9 @@
 import { describe, expect, it } from 'vitest';
-import { evaluatePushRefs, formatRefusalMessage } from './pre-push-guard.mjs';
+import {
+  DEFAULT_PROTECTED_BRANCHES,
+  evaluatePushRefs,
+  formatRefusalMessage,
+} from './pre-push-guard.mjs';
 
 const protectedBranches = ['main', 'develop'];
 const sha = 'a'.repeat(40);
@@ -10,6 +14,10 @@ function line(localRef, localSha, remoteRef, remoteSha = sha) {
 }
 
 describe('evaluatePushRefs', () => {
+  it('pins main and develop as the default protected branches', () => {
+    expect(DEFAULT_PROTECTED_BRANCHES).toEqual(['main', 'develop']);
+  });
+
   it('blocks a push to main and names the develop PR flow', () => {
     const result = evaluatePushRefs(
       line('refs/heads/main', sha, 'refs/heads/main'),
