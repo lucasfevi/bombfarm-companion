@@ -19,6 +19,16 @@ let gameReader: GameReaderService | null = null;
 function registerIpcHandlers(): void {
   const handlers: Record<IpcInvokeChannel, () => unknown> = {
     'app:getFlavor': () => resolveAppEnv().flavor,
+    'app:getEnvironment': () => {
+      const env = resolveAppEnv();
+      return {
+        flavor: env.flavor,
+        productName: env.productName,
+        badgeLabel: env.descriptor.badgeLabel,
+        updateChannel: env.descriptor.updateChannel,
+        isPackaged: env.isPackaged,
+      };
+    },
     'app:ping': () => ({ ok: true as const, from: 'main' as const }),
     'settings:get': () => DEFAULT_SETTINGS,
     'storage:health': () => storage?.healthCheck() ?? { binding: 'unknown', ok: false },
