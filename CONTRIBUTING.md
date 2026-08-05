@@ -23,7 +23,7 @@ CI is **path-filtered**: web-only PRs run `ci-web` / `e2e-web`; desktop-only PRs
 
 **Production** ([https://bombfarm-companion.vercel.app](https://bombfarm-companion.vercel.app)): Vercel Git integration on this repo, Root Directory `apps/web`, production branch `main`.
 
-**Pre-production preview:** every push to `develop` deploys a Vercel branch preview at the stable Git alias (`<project>-git-develop-<scope>.vercel.app` — see [`docs/branching.md`](docs/branching.md) for the recorded host). Access is gated by **Vercel Authentication** (owner-only today; not a shareable playtester link).
+**Pre-production preview:** every push to `develop` deploys a Vercel branch preview — host and access model are in [`docs/branching.md`](docs/branching.md). Access is gated by **Vercel Authentication** (owner-only today; not a shareable playtester link).
 
 GitHub Actions runs path-filtered CI only — there is no Actions deploy workflow and no Vercel deploy secrets in GitHub. Old planner host redirect is manual later.
 
