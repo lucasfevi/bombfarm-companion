@@ -17,9 +17,13 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "test:smoke": "pnpm --filter @bombfarm/desktop test:smoke",
+    "changeset": "changeset",
+    "changeset:status": "changeset status",
+    "changeset:version": "changeset version",
     "prepare": "husky"
   },
   "devDependencies": {
+    "@changesets/cli": "^2.29.5",
     "@commitlint/cli": "^19.8.1",
     "@commitlint/config-conventional": "^19.8.1",
     "@eslint/js": "^9.31.0",
