@@ -5,28 +5,30 @@ import {
   isIpcChannel,
   type IpcInvokeChannel,
 } from '@bombfarm/contracts';
-import { resolveAppEnv, RENDERER_DEV_URL } from './env.js';
+import { applyAppIdentity } from './app-identity.js';
+import { createBootRecord } from './boot-record.js';
+import { InvalidFlavorError, resolveAppEnv, RENDERER_DEV_URL, type AppEnv } from './env.js';
 import { GameReaderService } from './game-reader/game-reader-service.js';
-import { configureLogging, log, logBootLine } from './logging.js';
+import { configureLogging, log } from './logging.js';
 import { createStorage, type Storage } from './storage/index.js';
 
 let mainWindow: BrowserWindow | null = null;
 let storage: Storage | null = null;
 let gameReader: GameReaderService | null = null;
 
-function configurePaths(): void {
-  const env = resolveAppEnv();
-  app.setName(env.productName);
-
-  const baseUserData = app.getPath('userData');
-  if (env.userDataSuffix && !baseUserData.endsWith(env.userDataSuffix)) {
-    app.setPath('userData', `${baseUserData}${env.userDataSuffix}`);
-  }
-}
-
 function registerIpcHandlers(): void {
   const handlers: Record<IpcInvokeChannel, () => unknown> = {
     'app:getFlavor': () => resolveAppEnv().flavor,
+    'app:getEnvironment': () => {
+      const env = resolveAppEnv();
+      return {
+        flavor: env.flavor,
+        productName: env.productName,
+        badgeLabel: env.descriptor.badgeLabel,
+        updateChannel: env.descriptor.updateChannel,
+        isPackaged: env.isPackaged,
+      };
+    },
     'app:ping': () => ({ ok: true as const, from: 'main' as const }),
     'settings:get': () => DEFAULT_SETTINGS,
     'storage:health': () => storage?.healthCheck() ?? { binding: 'unknown', ok: false },
@@ -108,10 +110,6 @@ async function createMainWindow(): Promise<void> {
 }
 
 async function bootstrap(): Promise<void> {
-  const env = resolveAppEnv();
-  configureLogging(env.flavor);
-  logBootLine('main');
-
   const dbPath = path.join(app.getPath('userData'), 'companion.db');
   storage = createStorage(dbPath);
   const health = storage.healthCheck();
@@ -128,15 +126,48 @@ async function bootstrap(): Promise<void> {
   });
 }
 
-const gotLock = app.requestSingleInstanceLock();
+function resolveBootEnv(): AppEnv {
+  try {
+    return resolveAppEnv();
+  } catch (error: unknown) {
+    if (error instanceof InvalidFlavorError) {
+      process.stderr.write(`Invalid BFC_FLAVOR: ${error.rejectedValue}\n`);
+    } else {
+      process.stderr.write(`${String(error)}\n`);
+    }
+    app.exit(1);
+    throw error;
+  }
+}
+
+const env = resolveBootEnv();
+const { gotLock } = applyAppIdentity(app, {
+  productName: env.productName,
+  appId: env.appId,
+  userDataPath: env.userDataPath,
+});
+
+configureLogging(env);
+
+if (env.envConflict) {
+  log.warn({
+    scope: 'main',
+    event: 'flavor.env_ignored',
+    requested: env.envConflict.requested,
+    effective: env.envConflict.effective,
+  });
+}
+
+log.info(createBootRecord(env, 'main'));
+
 if (!gotLock) {
   app.quit();
 } else {
-  configurePaths();
-
   app.on('second-instance', () => {
+    log.info({ scope: 'main', event: 'app.second_instance' });
     if (mainWindow) {
       if (mainWindow.isMinimized()) mainWindow.restore();
+      if (!mainWindow.isVisible()) mainWindow.show();
       mainWindow.focus();
     }
   });

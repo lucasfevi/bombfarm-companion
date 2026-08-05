@@ -49,4 +49,11 @@ pnpm test:smoke   # Windows — builds static renderer + launches Electron
 
 ## Flavors
 
-`BFC_FLAVOR=dev|prod` selects app ID and isolated user-data paths (see README).
+`BFC_FLAVOR` selects one of `dev`, `nightly`, `beta`, or `prod`. Unpackaged local runs default to `dev` when unset. Invalid tokens fail fast (never fall back to `prod`).
+
+| Flavor | App ID | User data (`%APPDATA%`) | How obtained | Distributed |
+| --- | --- | --- | --- | --- |
+| `dev` | `net.bombfarm.companion.dev` | `Bomb Farm Companion (Dev)` | Local run / `package:dev` | No |
+| `nightly` | `net.bombfarm.companion.nightly` | `Bomb Farm Companion (Nightly)` | Installed / `package:nightly` | Yes (`nightly` channel) |
+| `beta` | `net.bombfarm.companion.beta` | `Bomb Farm Companion (Beta)` | Installed / `package:beta` | Yes (`beta` channel) |
+| `prod` | `net.bombfarm.companion` | `Bomb Farm Companion` | Installed / `package:prod` | Yes (`latest` channel) |
