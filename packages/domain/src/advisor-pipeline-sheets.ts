@@ -3,7 +3,7 @@ import {
   type BirthStats,
   type TreeSheetTotals,
 } from './birth-sheet';
-import type { Loadout, SheetOtherPct, SheetStats } from './gear';
+import { projectGearedOntoLoadout, type Loadout, type SheetOtherPct, type SheetStats } from './gear';
 
 export type ResolveDeriveSheetsInput = {
   naked: SheetStats;
@@ -87,4 +87,44 @@ export function resolveDeriveSheets(input: ResolveDeriveSheetsInput): ResolvedDe
     nakedForDerive: birthSheets?.naked ?? naked,
     gearedForDerive: birthSheets?.geared ?? geared,
   };
+}
+
+/**
+ * Geared sheet for gear-compare clone DPS.
+ *
+ * Birth-backed heroes must recompose from birth on the alt loadout — the same
+ * path Apply to current uses. `projectGearedOntoLoadout` only reverses catalog
+ * gear off `gearedForDerive`, which already includes the skill tree, so attack
+ * `dmg_static` and pooled tree `_add` terms distort whenever gear deltas are
+ * nonzero — clone preview DPS then disagrees with post-apply DPS.
+ *
+ * Without birth, keep projecting the observed sheet so typed drift still yields
+ * a 0% delta when clone === current.
+ */
+export function resolveCloneGeared(input: {
+  birth?: BirthStats | null;
+  gearedForDerive: SheetStats;
+  loadout: Loadout;
+  altLoadout: Loadout;
+  sheetOther: SheetOtherPct;
+  level: number;
+  stars: number;
+  treeSheet: TreeSheetTotals;
+}): SheetStats {
+  if (input.birth) {
+    return sheetsFromBirth({
+      birth: input.birth,
+      level: input.level,
+      stars: input.stars,
+      sheetOther: input.sheetOther,
+      loadout: input.altLoadout,
+      tree: input.treeSheet,
+    }).geared;
+  }
+  return projectGearedOntoLoadout(
+    input.gearedForDerive,
+    input.loadout,
+    input.altLoadout,
+    input.sheetOther,
+  );
 }

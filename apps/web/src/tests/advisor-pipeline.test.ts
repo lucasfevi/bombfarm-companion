@@ -261,6 +261,40 @@ describe('computeAdvisorPipeline', () => {
     expect(out.adjusted.attack).not.toBeCloseTo(staleGeared.attack + 1, 0);
   });
 
+  it('birth-backed clone preview DPS matches applying the alt loadout (tree × gear)', () => {
+    // reverseGear+applyGear on a tree-inclusive sheet understates/overstates
+    // dmg_static and pooled tree adds whenever flat/pool gear changes.
+    // Apply to current recomposes from birth — preview must use that same path.
+    const birth = sampleNaked();
+    const danoStatic = 1.78324567735483;
+    const loadout: Loadout = emptyLoadout();
+    loadout.peito = { defId: 'clay_peito', rarityIdx: 3, level: 40, upgrade: 10 };
+    loadout.arma = { defId: 'crimson_arma', rarityIdx: 1, level: 50, upgrade: 10 };
+    const altLoadout: Loadout = emptyLoadout();
+    altLoadout.peito = { defId: 'crimson_peito', rarityIdx: 3, level: 50, upgrade: 10 };
+    altLoadout.arma = { defId: 'crimson_arma', rarityIdx: 1, level: 50, upgrade: 10 };
+    const shared = {
+      birth,
+      treeDanoTotal: danoStatic,
+      treeEnergy: 81.27,
+      treeCritChance: 15,
+      treeSpeed: 10,
+      level: 50,
+      stars: 1,
+      pts: { ...ZERO_PTS(), attack: 12, energy: 4, critChance: 8 },
+    } as const;
+
+    const preview = computeAdvisorPipeline(baseInput({ ...shared, loadout, altLoadout }));
+    const applied = computeAdvisorPipeline(
+      baseInput({ ...shared, loadout: altLoadout, altLoadout: structuredClone(altLoadout) }),
+    );
+
+    expect(preview.B).not.toBeNull();
+    expect(preview.B!.dps).toBeCloseTo(applied.dps, 6);
+    expect(preview.B!.hit).toBeCloseTo(applied.predHit, 6);
+    expect(preview.B!.dps).not.toBeCloseTo(preview.dps, 0);
+  });
+
   it('ranks crit chance at zero gain when the SHEET already fills the 100% cap (BSP-22)', () => {
     // REWRITTEN (was: reached the cap THROUGH `treeCritChance: 25` on top of a naked 80% —
     // `derive` no longer adds a tree addend to `effective.critChance`, since the tree is
