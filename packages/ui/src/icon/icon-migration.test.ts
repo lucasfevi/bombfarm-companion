@@ -36,3 +36,18 @@ describe('icon migration parity — num spinner chevrons (rows 2–3)', () => {
     expect(src).not.toMatch(/from ['"]react-icons/);
   });
 });
+
+describe('icon migration parity — confirm-dialog close mark (row 4)', () => {
+  const src = readUiSource('confirm-dialog.tsx');
+
+  it('renders the close mark through Icon at default sm size', () => {
+    expect(src).toContain('<Icon name="x-mark" />');
+    expect(src).not.toMatch(/<Icon name="x-mark"[^>]*className/);
+    expect(src).not.toMatch(/<Icon name="x-mark"[^>]*size/);
+  });
+
+  it('keeps Dialog.Close label and drops react-icons', () => {
+    expect(src).toContain('<Dialog.Close aria-label={cancelLabel}>');
+    expect(src).not.toMatch(/from ['"]react-icons/);
+  });
+});
