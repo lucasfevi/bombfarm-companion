@@ -116,7 +116,7 @@ export function rankNextPoint(hero: HeroSheet, context: Context, optionsOrBases?
     // MOD-36: single-pass branch assign — the CDR-fuse special case vs. the plain-DPS
     // ratio below each set this exactly once before it's read.
     let dpsGain: number;
-    // Real fuse floors at 70% CDR, but stat cap is 80% — rank CDR with linear fuse until cap.
+    // Fuse floor (0.4s) lands at the 80% CDR cap — rank with linear fuse until cap.
     if (stat === 'cdr' && hero.cdr < STAT_CAPS.cdr - 1e-9 && context.cycleModel === 'serial') {
       const curFuse = marginalFuseSeconds(hero.cdr);
       const nextFuse = marginalFuseSeconds(next.cdr);

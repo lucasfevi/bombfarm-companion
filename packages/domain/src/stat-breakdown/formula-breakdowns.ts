@@ -2,6 +2,7 @@ import {
   bombsPerSecond,
   critFactor,
   fieldSeconds,
+  FUSE_FLOOR,
   fuseSeconds,
   mitigationFactor,
   predictHitDamage,
@@ -86,7 +87,7 @@ export function formulaFuse(facts: PipelineFacts): FormulaBreakdown {
   return {
     kind: 'formula',
     expressionKey: 'bdFormulaFuse',
-    substituted: `max(2 × (1 − ${formatBreakdownNumber(cdr, 1)}/100), 0.6) = ${formatBreakdownNumber(value, 2)}s`,
+    substituted: `max(2 × (1 − ${formatBreakdownNumber(cdr, 1)}/100), ${FUSE_FLOOR}) = ${formatBreakdownNumber(value, 2)}s`,
     value,
   };
 }

@@ -259,11 +259,11 @@
       {
         "h": "3 · Bombs per second",
         "p": [
-          "Default Serial model (measured frame by frame in combat recordings): each hero keeps exactly one live bomb; only one bomb may occupy a cell at a time. Fuse time is 2 s reduced by CDR with a 0.6 s floor — this is why CDR is a real damage stat here. Walk delay (serial only) covers retreat out of blast range plus travel to the next plant — default 0.15 s is a lower bound; dodge AI often adds more, especially with wide Explosão Ampla.",
+          "Default Serial model (measured frame by frame in combat recordings): each hero keeps exactly one live bomb; only one bomb may occupy a cell at a time. Fuse time is 2 s reduced by CDR with a 0.4 s floor (20% of cycle / 80% CDR cap) — this is why CDR is a real damage stat here. Walk delay (serial only) covers retreat out of blast range plus travel to the next plant — default 0.15 s is a lower bound; dodge AI often adds more, especially with wide Explosão Ampla.",
           "Blocks per bomb uses the wiki expected coefficient (1 + 0.5 × range ≈ 2.5 at max range), not the geometric cross maximum (~13 cells). Early in a map, packed props can yield much higher burst DPS; the last corner prop caps at ~2 simultaneous bombers.",
           "The legacy Wiki bombs/s model remains available as an account-level toggle for comparison."
         ],
-        "code": "serial: bombs/s = 1 / (max(2 × (1 − min(cdr, 80%)), 0.6) + walk)\nwiki:   bombs/s = (0.3 + 0.12 × speed × 0.0386) × stamina(energy)"
+        "code": "serial: bombs/s = 1 / (max(2 × (1 − min(cdr, 80%)), 0.4) + walk)\nwiki:   bombs/s = (0.3 + 0.12 × speed × 0.0386) × stamina(energy)"
       },
       {
         "h": "4 · Active DPS",
@@ -328,7 +328,7 @@
     "bdFormulaHit": "atk × mit × damage",
     "bdFormulaCriticalHit": "hit × (1 + cd/100)",
     "bdFormulaCritFactor": "1 + (cc/100) × (cd/100)",
-    "bdFormulaFuse": "max(2 × (1 − cdr/100), 0.6)",
+    "bdFormulaFuse": "max(2 × (1 − cdr/100), 0.4)",
     "bdFormulaBombsSerial": "1 / (fuse + walk)",
     "bdFormulaBombsWiki": "(0.3 + 0.12 × speed × 0.0386) × sf(energy)",
     "bdFormulaField": "energy / drain",
@@ -751,11 +751,11 @@
       {
         "h": "3 · Bombas por segundo",
         "p": [
-          "Modelo em série (padrão, medido quadro a quadro em gravações de combate): cada herói mantém exatamente uma bomba ativa; só pode haver uma bomba por célula. O pavio é 2 s reduzido pela redução de recarga, com piso de 0.6 s — por isso redução de recarga conta de verdade no dano. A caminhada (só no modelo em série) inclui sair do alcance da explosão e ir até o próximo plantio — o padrão 0.15 s é um piso; a IA de esquiva costuma somar mais, sobretudo com Explosão Ampla larga.",
+          "Modelo em série (padrão, medido quadro a quadro em gravações de combate): cada herói mantém exatamente uma bomba ativa; só pode haver uma bomba por célula. O pavio é 2 s reduzido pela redução de recarga, com piso de 0.4 s (20% do ciclo / teto de 80%) — por isso redução de recarga conta de verdade no dano. A caminhada (só no modelo em série) inclui sair do alcance da explosão e ir até o próximo plantio — o padrão 0.15 s é um piso; a IA de esquiva costuma somar mais, sobretudo com Explosão Ampla larga.",
           "Blocos por bomba usa o coeficiente esperado da wiki (1 + 0.5 × alcance ≈ 2.5 no máximo), não o máximo geométrico da cruz (~13 células). No início do mapa, props densos geram burst bem acima do DPS sustentado; o último prop no canto limita a ~2 bombardeiros simultâneos.",
           "O modo Wiki de bombas/s permanece disponível como opção a nível de conta só para comparação."
         ],
-        "code": "série: bombas/s = 1 / (max(2 × (1 − min(cdr, 80%)), 0.6) + caminhada)\nwiki:  bombas/s = (0.3 + 0.12 × vel × 0.0386) × stamina(energia)"
+        "code": "série: bombas/s = 1 / (max(2 × (1 − min(cdr, 80%)), 0.4) + caminhada)\nwiki:  bombas/s = (0.3 + 0.12 × vel × 0.0386) × stamina(energia)"
       },
       {
         "h": "4 · DPS ativo",
@@ -820,7 +820,7 @@
     "bdFormulaHit": "atk × mit × dano",
     "bdFormulaCriticalHit": "hit × (1 + cd/100)",
     "bdFormulaCritFactor": "1 + (cc/100) × (cd/100)",
-    "bdFormulaFuse": "max(2 × (1 − cdr/100), 0.6)",
+    "bdFormulaFuse": "max(2 × (1 − cdr/100), 0.4)",
     "bdFormulaBombsSerial": "1 / (pavio + caminhada)",
     "bdFormulaBombsWiki": "(0.3 + 0.12 × vel × 0.0386) × sf(energia)",
     "bdFormulaField": "energia / dreno",
