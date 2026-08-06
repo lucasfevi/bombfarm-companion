@@ -1,0 +1,69 @@
+{
+  "changesets": [
+    {
+      "releases": [
+        {
+          "name": "@bombfarm/desktop",
+          "type": "patch"
+        }
+      ],
+      "summary": "Allow Windows packaging to spawn pnpm.cmd under Node 20+ (shell: true for CVE-2024-27980).",
+      "id": "brave-windows-spawn"
+    },
+    {
+      "releases": [
+        {
+          "name": "@bombfarm/web",
+          "type": "minor"
+        },
+        {
+          "name": "@bombfarm/desktop",
+          "type": "minor"
+        },
+        {
+          "name": "@bombfarm/contracts",
+          "type": "minor"
+        }
+      ],
+      "summary": "Show the app version in the web footer and desktop shell, and carry version over the typed app-environment IPC boundary. Lands the changesets release rail (release PR, nightly, dormant prod).",
+      "id": "mellow-cups-dance"
+    }
+  ],
+  "releases": [
+    {
+      "name": "@bombfarm/desktop",
+      "type": "minor",
+      "oldVersion": "0.0.0",
+      "changesets": [
+        "brave-windows-spawn",
+        "mellow-cups-dance"
+      ],
+      "newVersion": "0.1.0"
+    },
+    {
+      "name": "@bombfarm/web",
+      "type": "minor",
+      "oldVersion": "0.0.0",
+      "changesets": [
+        "mellow-cups-dance"
+      ],
+      "newVersion": "0.1.0"
+    },
+    {
+      "name": "@bombfarm/contracts",
+      "type": "minor",
+      "oldVersion": "0.0.0",
+      "changesets": [
+        "mellow-cups-dance"
+      ],
+      "newVersion": "0.1.0"
+    },
+    {
+      "name": "@bombfarm/game-data",
+      "type": "patch",
+      "oldVersion": "0.0.0",
+      "changesets": [],
+      "newVersion": "0.0.1"
+    }
+  ]
+}
