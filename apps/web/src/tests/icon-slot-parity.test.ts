@@ -28,7 +28,7 @@ describe('slot glyph ids mirror domain SLOTS (ICO-18)', () => {
     }
 
     for (const id of glyphSlots) {
-      if (!domainSlots.has(id as (typeof SLOTS)[number])) {
+      if (!domainSlots.has(id)) {
         expect.fail(`glyph id "slot-${id}" is not a domain Slot key`);
       }
     }
