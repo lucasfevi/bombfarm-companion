@@ -21,3 +21,18 @@ describe('icon migration parity — select affix chevron (row 1)', () => {
     expect(src).not.toMatch(/from ['"]react-icons/);
   });
 });
+
+describe('icon migration parity — num spinner chevrons (rows 2–3)', () => {
+  const src = readUiSource('num.tsx');
+
+  it('renders increment and decrement chevrons through Icon at 14px', () => {
+    expect(src).toContain('<Icon name="chevron-up" className="size-3.5" />');
+    expect(src).toContain('<Icon name="chevron-down" className="size-3.5" />');
+  });
+
+  it('keeps parent button labels and drops react-icons', () => {
+    expect(src).toContain('aria-label="Increment"');
+    expect(src).toContain('aria-label="Decrement"');
+    expect(src).not.toMatch(/from ['"]react-icons/);
+  });
+});
