@@ -46,7 +46,7 @@ Logic lives in [`tools/release/release-plan.mjs`](../tools/release/release-plan.
 
 ## Version sync and parity guard
 
-After a release PR merges, `release-sync.yml` recreates `release/next` from the merged PR head SHA (so version sync survives `delete_branch_on_merge`), opens `chore(release): sync versions to develop` (`release/next` → `develop`), dispatches required CI on that head, and auto-merges with squash.
+After a release PR merges, `release-sync.yml` recreates `release/next` from the merged PR head (fetching `pull/<n>/head` so the SHA remains reachable after `delete_branch_on_merge`), opens `chore(release): sync versions to develop` (`release/next` → `develop`), dispatches required CI on that head, and enables auto-merge when the repository setting allows it.
 
 While `develop` is **behind** `main` on package versions (sync PR pending or failed), [release-pr.yml](../.github/workflows/release-pr.yml) **skips** creating or updating the release PR and writes a job summary: *waiting on version-sync PR*. This prevents double-bumping.
 
