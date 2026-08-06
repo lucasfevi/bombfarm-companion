@@ -119,7 +119,7 @@ Version bumps and changelogs on `main` remain the source of truth.
 ## Changeset policy
 
 - Contributors run `pnpm changeset` on PRs that touch shipping paths under `apps/**` or `packages/**`.
-- [changesets.yml](../.github/workflows/changesets.yml) validates frontmatter and requires a pending changeset unless the PR has the **`skip-changeset`** label.
+- [changesets.yml](../.github/workflows/changesets.yml) validates frontmatter and requires a pending changeset unless the PR has the **`skip-changeset`** label. The bot release PR (`release/next` → `main`) is exempt — changesets were already consumed when that head was versioned.
 - Use `skip-changeset` for docs-only, test-only, or CI-only changes inside a versioned package when no user-visible release is intended.
 
 See [`CONTRIBUTING.md`](../CONTRIBUTING.md) for shared-package rules.
