@@ -1,6 +1,9 @@
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
+import { createElement } from 'react';
+import { renderToStaticMarkup } from 'react-dom/server';
 import { describe, expect, it } from 'vitest';
+import { SortIdleIcon } from '../data-table/sort-idle-icon';
 
 const uiSrc = resolve(import.meta.dirname, '..');
 
@@ -77,6 +80,19 @@ describe('icon migration parity — collapsible trigger chevron (row 6)', () => 
   });
 
   it('drops react-icons from collapsible trigger', () => {
+    expect(src).not.toMatch(/from ['"]react-icons/);
+  });
+});
+
+describe('icon migration parity — data-table sort chevrons (row 7)', () => {
+  const src = readUiSource('data-table/data-table-header.tsx');
+
+  it('renders active sort chevrons through Icon at xs size', () => {
+    expect(src).toContain('<Icon name="chevron-up" size="xs" />');
+    expect(src).toContain('<Icon name="chevron-down" size="xs" />');
+  });
+
+  it('drops react-icons from data-table header', () => {
     expect(src).not.toMatch(/from ['"]react-icons/);
   });
 });
