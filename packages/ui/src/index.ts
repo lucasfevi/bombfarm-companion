@@ -20,7 +20,8 @@
 export { cn } from './cn';
 export { AppShell } from './AppShell';
 export type { AppShellProps } from './AppShell';
-export { cssVariables, tokens } from './tokens';
+export { cssVariables, tokens, colorTokens, breakpoints, motionTokens, contrastPairs, DEFAULT_HUE } from './tokens';
+export type { ColorTokenKey, ContrastPair } from './tokens';
 
 export { Button, type ButtonProps } from './button';
 export { Chip, type ChipProps } from './chip';
