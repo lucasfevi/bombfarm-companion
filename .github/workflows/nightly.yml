@@ -245,6 +245,7 @@ jobs:
           trap cleanup_failed_release ERR
 
           for asset in apps/desktop/release/nightly/*; do
+            [ -f "$asset" ] || continue
             gh release upload "$TAG" "$asset"
           done
 

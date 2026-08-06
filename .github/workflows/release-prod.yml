@@ -201,7 +201,17 @@ jobs:
             exit 1
           fi
 
-          gh release create "$TAG" release/prod/* \
+          assets=()
+          for asset in release/prod/*; do
+            [ -f "$asset" ] || continue
+            assets+=("$asset")
+          done
+          if [ "${#assets[@]}" -eq 0 ]; then
+            echo "::error::No files found under release/prod/ to attach"
+            exit 1
+          fi
+
+          gh release create "$TAG" "${assets[@]}" \
             --latest \
             --title "Desktop ${VERSION}" \
             --notes-file release-notes.md
