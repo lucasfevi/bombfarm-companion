@@ -51,3 +51,18 @@ describe('icon migration parity — confirm-dialog close mark (row 4)', () => {
     expect(src).not.toMatch(/from ['"]react-icons/);
   });
 });
+
+describe('icon migration parity — accordion trigger chevron (row 5)', () => {
+  const src = readUiSource('accordion/accordion-trigger.tsx');
+
+  it('renders the trigger chevron through Icon with data-accordion-icon', () => {
+    expect(src).toContain(
+      '<Icon name="chevron-down" data-accordion-icon className={accordionIconClass} />',
+    );
+  });
+
+  it('keeps accordionIconClass verbatim and drops react-icons', () => {
+    expect(src).toContain('accordionIconClass');
+    expect(src).not.toMatch(/from ['"]react-icons/);
+  });
+});

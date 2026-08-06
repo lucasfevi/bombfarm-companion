@@ -1,6 +1,6 @@
 import { Accordion as BaseAccordion } from '@base-ui/react/accordion';
-import { HiMiniChevronDown } from 'react-icons/hi2';
 import { cn } from '../cn';
+import { Icon } from '../icon';
 import { accordionIconClass, accordionRecipe } from '../accordion.recipe';
 import type { AccordionTriggerProps } from './types';
 
@@ -13,7 +13,9 @@ export function AccordionTrigger({
   children,
   'aria-label': ariaLabel,
 }: AccordionTriggerProps) {
-  const icon = <HiMiniChevronDown data-accordion-icon className={accordionIconClass} aria-hidden />;
+  const icon = (
+    <Icon name="chevron-down" data-accordion-icon className={accordionIconClass} />
+  );
   return (
     <BaseAccordion.Trigger
       disabled={disabled}
