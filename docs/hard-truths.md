@@ -12,7 +12,7 @@ Product PRDs, feature specs, tasks, validations, waves, and decision logs live i
 - a hard truth
 - something agents should prefer over `docs/` or application source
 
-On conflict, **`docs/` and code win**. Do not “fix” product behavior to match an old planning file. Promote durable rules into `docs/` via the process below — never leave “the real rule” only in a private archive. Do not add planning-tree paths (or `.specs/` directories) to this repo.
+On conflict, **`docs/` and code win**. Do not “fix” product behavior to match an old planning file. Promote durable rules into `docs/` via the process below — never leave “the real rule” only in a private archive. Do not add private planning workspace directories to this repo.
 
 ## When to suggest one
 

@@ -1,0 +1,18 @@
+{
+  "changesets": [
+    {
+      "id": "desktop-only-change",
+      "summary": "Desktop shell tweak"
+    }
+  ],
+  "releases": [
+    {
+      "name": "@bombfarm/desktop",
+      "type": "patch",
+      "oldVersion": "0.0.0",
+      "newVersion": "0.0.1",
+      "changesets": ["desktop-only-change"]
+    }
+  ],
+  "preState": null
+}

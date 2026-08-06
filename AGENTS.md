@@ -45,7 +45,7 @@ pnpm test:smoke   # Windows — builds static renderer + launches Electron
   [`docs/typescript-planner-origin.md`](docs/typescript-planner-origin.md))
 - No secrets in the repo
 - Do not mention other fan tools in user-facing docs
-- Never add `.specs/` to this repository
+- Never add private TLC spec directories to this repository
 
 ## Flavors
 

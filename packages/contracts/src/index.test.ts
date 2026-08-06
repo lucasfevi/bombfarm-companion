@@ -35,6 +35,7 @@ describe('contracts IPC surface', () => {
       badgeLabel: descriptor.badgeLabel,
       updateChannel: descriptor.updateChannel,
       isPackaged: false,
+      version: '0.0.0',
     };
     expect(info).toEqual({
       flavor: 'dev',
@@ -42,6 +43,7 @@ describe('contracts IPC surface', () => {
       badgeLabel: 'DEV',
       updateChannel: null,
       isPackaged: false,
+      version: '0.0.0',
     });
   });
 
@@ -53,6 +55,7 @@ describe('contracts IPC surface', () => {
       badgeLabel: descriptor.badgeLabel,
       updateChannel: descriptor.updateChannel,
       isPackaged: true,
+      version: '1.2.3',
     };
     expect(info).toEqual({
       flavor: 'prod',
@@ -60,7 +63,21 @@ describe('contracts IPC surface', () => {
       badgeLabel: null,
       updateChannel: 'latest',
       isPackaged: true,
+      version: '1.2.3',
     });
+  });
+
+  it('includes version on the app:getEnvironment channel surface', () => {
+    expect(isIpcChannel('app:getEnvironment')).toBe(true);
+    const env: AppEnvironmentInfo = {
+      flavor: 'beta',
+      productName: FLAVORS.beta.productName,
+      badgeLabel: FLAVORS.beta.badgeLabel,
+      updateChannel: FLAVORS.beta.updateChannel,
+      isPackaged: true,
+      version: '0.0.0',
+    };
+    expect(env.version).toMatch(/^\d+\.\d+\.\d+/);
   });
 
   it('creates typed ping payloads', () => {

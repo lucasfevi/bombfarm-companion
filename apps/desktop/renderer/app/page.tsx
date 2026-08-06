@@ -113,6 +113,17 @@ export default function HomePage() {
           </pre>
         </div>
       </section>
+
+      {environment ? (
+        <div className="mt-6 flex justify-end gap-2 border-t border-white/10 pt-3 text-xs text-bf-muted">
+          <span data-testid="app-version" className="font-mono tabular-nums">
+            v{environment.version}
+          </span>
+          {environment.flavor !== 'prod' && environment.badgeLabel ? (
+            <span className="font-semibold uppercase tracking-wide">{environment.badgeLabel}</span>
+          ) : null}
+        </div>
+      ) : null}
     </AppShell>
   );
 }

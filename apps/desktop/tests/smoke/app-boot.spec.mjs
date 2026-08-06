@@ -53,9 +53,11 @@ test.describe('app boot smoke', () => {
         badgeLabel: 'DEV',
         updateChannel: null,
         isPackaged: false,
+        version: expect.stringMatching(/^\d+\.\d+\.\d+/),
       });
 
       await expect(page.getByTestId('flavor-badge')).toHaveText('DEV');
+      await expect(page.getByTestId('app-version')).toHaveText(/^v\d+\.\d+\.\d+/);
 
       const ping = await page.evaluate(async () => {
         const bridge = window.bfc;

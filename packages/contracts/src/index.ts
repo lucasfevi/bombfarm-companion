@@ -222,6 +222,7 @@ export interface AppEnvironmentInfo {
   badgeLabel: string | null;
   updateChannel: UpdateChannel | null;
   isPackaged: boolean;
+  version: string;
 }
 
 export interface IpcChannels {

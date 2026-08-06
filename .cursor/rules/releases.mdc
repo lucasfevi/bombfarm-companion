@@ -1,0 +1,10 @@
+---
+description: Release rail and changesets runbook
+alwaysApply: true
+---
+
+# Releases
+
+**Canonical hard truth:** [`docs/releases.md`](../../docs/releases.md)
+
+Changesets on feature PRs → `develop` → release PR to `main` → version sync. Never hand-edit `version` fields.

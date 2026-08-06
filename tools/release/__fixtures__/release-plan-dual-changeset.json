@@ -1,0 +1,22 @@
+{
+  "changesets": [
+    {
+      "id": "ui-patch",
+      "summary": "Small UI fix"
+    },
+    {
+      "id": "ui-minor",
+      "summary": "New UI surface"
+    }
+  ],
+  "releases": [
+    {
+      "name": "@bombfarm/ui",
+      "type": "minor",
+      "oldVersion": "0.1.0",
+      "newVersion": "0.2.0",
+      "changesets": ["ui-patch", "ui-minor"]
+    }
+  ],
+  "preState": null
+}
