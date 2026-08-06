@@ -8,15 +8,19 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const desktopRoot = path.join(__dirname, '..');
 const repoRoot = path.join(desktopRoot, '..', '..');
 
-/** Spawn without `shell: true` so paths with spaces stay intact on Windows. */
+/**
+ * Spawn a package-manager / CLI shim.
+ * On Windows, Node refuses direct `.cmd` spawn without `shell: true`
+ * (CVE-2024-27980 → EINVAL). Args here are fixed literals, not user input.
+ */
 function run(command, args, options = {}) {
-  const executable =
-    process.platform === 'win32' && !path.extname(command) ? `${command}.cmd` : command;
+  const isWindows = process.platform === 'win32';
+  const executable = isWindows && !path.extname(command) ? `${command}.cmd` : command;
 
   return new Promise((resolve, reject) => {
     const child = spawn(executable, args, {
       stdio: 'inherit',
-      shell: false,
+      shell: isWindows,
       cwd: desktopRoot,
       ...options,
     });
