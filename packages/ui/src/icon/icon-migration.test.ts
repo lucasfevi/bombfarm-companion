@@ -120,3 +120,16 @@ describe('icon migration parity — sort idle chevrons (row 8)', () => {
     expect(html).not.toContain('size-4');
   });
 });
+
+describe('icon migration parity — button coffee story (row 9)', () => {
+  const src = readUiSource('button.stories.tsx');
+
+  it('imports Icon as UiIcon to avoid story export collision', () => {
+    expect(src).toContain('Icon as UiIcon');
+    expect(src).toContain('<UiIcon name="coffee" />');
+  });
+
+  it('drops react-icons from button stories', () => {
+    expect(src).not.toMatch(/from ['"]react-icons/);
+  });
+});
