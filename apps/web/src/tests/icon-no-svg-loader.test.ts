@@ -15,7 +15,6 @@ const svgLoaderPattern = /svgr|@svgr\/webpack|\.svg['"`]/;
 
 const runtimeFetchPattern = /\bfetch\(|<img\b|new Image\(/;
 const networkUrlPattern = /https?:\/\//;
-const generatedGameDir = resolve(iconModuleRoot, 'game');
 
 function readConfigOrFail(path: string): string {
   if (!existsSync(path)) {
@@ -40,7 +39,7 @@ function listSourceFiles(dir: string): string[] {
   return files;
 }
 
-describe('icon pipeline has no bundler SVG loader (ICO-17)', () => {
+describe('icon pipeline has no bundler SVG loader', () => {
   it('does not configure svgr or an .svg loader in apps/web/next.config.ts', () => {
     const source = readConfigOrFail(bundlerConfigs[0]);
     expect(source).not.toMatch(svgLoaderPattern);
@@ -56,7 +55,7 @@ describe('icon pipeline has no bundler SVG loader (ICO-17)', () => {
     expect(source).not.toMatch(svgLoaderPattern);
   });
 
-  it('does not fetch or image-load glyphs under packages/ui/src/icon', () => {
+  it('does not fetch or image-load icons under packages/ui/src/icon', () => {
     const runtimeOffenders: string[] = [];
     const networkOffenders: string[] = [];
     for (const file of listSourceFiles(iconModuleRoot)) {
@@ -65,7 +64,7 @@ describe('icon pipeline has no bundler SVG loader (ICO-17)', () => {
       if (runtimeFetchPattern.test(source)) {
         runtimeOffenders.push(relative);
       }
-      if (!file.startsWith(generatedGameDir) && networkUrlPattern.test(source)) {
+      if (networkUrlPattern.test(source)) {
         networkOffenders.push(relative);
       }
     }

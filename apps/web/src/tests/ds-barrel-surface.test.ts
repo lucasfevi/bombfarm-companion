@@ -6,7 +6,7 @@ import * as DesignSystem from '@bombfarm/ui';
 // this list; they are covered separately by ds-compound-namespaces.test.ts's
 // compile-time assertion. A dropped or renamed value export while replacing a
 // module with a directory (ASM-03) fails this test (MOD-28, W6-01).
-// M2-icons (T16): Icon, glyphApproval, iconSources, isIconName added.
+// M2-icons: Icon, iconSources, isIconName added (UI-chrome only; no game glyphs).
 const FROZEN_BARREL_VALUE_EXPORTS = [
   'AbilityCard',
   'Accordion',
@@ -25,7 +25,6 @@ const FROZEN_BARREL_VALUE_EXPORTS = [
   'FileDropZone',
   'GlossaryTerm',
   'GlossedText',
-  'glyphApproval',
   'HelpTip',
   'Icon',
   'iconSources',

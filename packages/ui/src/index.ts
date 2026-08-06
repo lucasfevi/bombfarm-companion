@@ -19,11 +19,8 @@
 
 export {
   Icon,
-  glyphApproval,
   iconSources,
   isIconName,
-  type GameGlyphName,
-  type GlyphApproval,
   type IconName,
   type IconProps,
   type IconSize,

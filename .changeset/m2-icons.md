@@ -3,4 +3,4 @@
 "@bombfarm/web": patch
 ---
 
-Add the `Icon` seam to `@bombfarm/ui`: closed `IconName` union, UI-chrome registry, 17 placeholder game glyphs (SVGR codegen), design-system migrations, Storybook galleries, and lint enforcement.
+Add the `Icon` seam to `@bombfarm/ui`: closed `IconName` union over a UI-chrome registry (`react-icons`), design-system migrations, Storybook gallery, and lint enforcement. Game glyphs are out of scope.

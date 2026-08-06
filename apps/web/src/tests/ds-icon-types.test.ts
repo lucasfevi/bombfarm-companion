@@ -2,23 +2,20 @@ import { describe, expect, it } from 'vitest';
 import type { IconProps } from '@bombfarm/ui';
 
 export const _validDecorativeIconProps: IconProps = {
-  name: 'gem',
+  name: 'chevron-down',
 };
 
 export const _validLabeledIconProps: IconProps = {
-  name: 'gem',
-  label: 'Gem',
+  name: 'x-mark',
+  label: 'Close',
 };
-
-// @ts-expect-error label and aria-hidden are mutually exclusive (ICO-07)
-export const _invalidLabeledAndHidden: IconProps = { name: 'gem', label: 'x', 'aria-hidden': true };
 
 // @ts-expect-error unknown name is not assignable to IconProps
 export const _invalidUnknownName: IconProps = { name: 'not-a-glyph' };
 
-describe('Icon prop types (ICO-07)', () => {
+describe('Icon prop types', () => {
   it('exports valid decorative and labeled prop shapes', () => {
-    expect(_validDecorativeIconProps.name).toBe('gem');
-    expect(_validLabeledIconProps.label).toBe('Gem');
+    expect(_validDecorativeIconProps.name).toBe('chevron-down');
+    expect(_validLabeledIconProps.label).toBe('Close');
   });
 });

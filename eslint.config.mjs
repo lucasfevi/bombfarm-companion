@@ -34,7 +34,7 @@ const rawIconImportRule = [
       {
         group: ['*.svg', '**/*.svg'],
         message:
-          'Do not import SVG files. Author the glyph under packages/ui/icons/game/, run pnpm --filter @bombfarm/ui icons:generate, and render it via <Icon name="…" />.',
+          'Do not import SVG files into app/UI code. Use <Icon name="…" /> from @bombfarm/ui for chrome icons.',
       },
     ],
   },

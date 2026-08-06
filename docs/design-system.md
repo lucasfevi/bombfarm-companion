@@ -231,15 +231,13 @@ presentational helpers it fully owns.
 All icon rendering goes through the `Icon` primitive exported from `@bombfarm/ui`. Call sites pass a
 closed `IconName` string — never a vendor component or a raw `.svg` import.
 
-### Two sources (licensing split)
+### Source
 
 | Source | Module | Contents |
 | --- | --- | --- |
 | UI chrome | `packages/ui/src/icon/ui-registry.ts` | The **only** file in `packages/ui` allowed to import `react-icons` (chevrons, close mark, coffee story icon) |
-| Game glyphs | `packages/ui/src/icon/game-registry.ts` | Original line art authored under `packages/ui/icons/game/`, compiled to committed `.tsx` components |
 
-The registries stay in separate modules so a vendor swap or art approval never crosses the D12
-licensing boundary. `registry.ts` merges them into one lookup map and enforces disjoint keys.
+`registry.ts` exposes that map as the public `IconName` union. Companion v1 does **not** ship original game-glyph SVGs (slots, rarity ornaments, gem/key/gold) — inventory chrome can use text/badges or wiki art decisions later; do not reintroduce a second icon source without an explicit product decision.
 
 ### Size scale
 
@@ -255,29 +253,19 @@ hatch** merged last via `cn()` — do not add ad-hoc steps to the public `IconSi
 
 ### Accessibility
 
-- **Decorative by default:** omit `label` → `aria-hidden="true"` + `focusable="false"`.
-- **Meaningful icons:** pass `label="…"` (already-translated) → `role="img"` + `aria-label`.
-- `label` and `aria-hidden` are **mutually exclusive** at the type level (`IconProps` discriminated union).
+Semantics live on a wrapping `<span>`; the inner `react-icons` SVG is always decorative
+(`aria-hidden`), because those components force `aria-hidden` on the SVG after prop spread.
 
-### Glyph authoring contract
-
-Author under `packages/ui/icons/game/` only:
-
-- 24×24 `viewBox`, `fill="currentColor"` only
-- No `width`/`height`, `<style>`, `<use>`, raster/base64, or hardcoded colour literals
-- After any `.svg` edit run `pnpm --filter @bombfarm/ui icons:generate` and commit the regenerated `src/icon/game/*.tsx` output
-- `pnpm --filter @bombfarm/ui icons:check` regenerates into a temp dir and byte-compares against committed output (CI-adoptable P2 gate)
-
-Approval state lives in [`packages/ui/src/icon/glyph-manifest.ts`](../packages/ui/src/icon/glyph-manifest.ts).
-**17 of 17** glyphs are still `placeholder` at M2 ship — flip one row to `{ approval: 'approved', approvedOn: 'YYYY-MM-DD' }` when art is signed off (no enum/API change).
+- **Decorative by default:** omit `label` (or pass `""`) → wrapper `aria-hidden="true"`.
+- **Meaningful icons:** pass `label="…"` (already-translated) → wrapper `role="img"` + `aria-label`.
 
 ### Lint seam
 
 - `packages/ui/**` and `apps/desktop/**`: raw `react-icons` or `*.svg` imports fail lint outside `packages/ui/src/icon/**`.
 - `apps/web/**`: nine planner files are **grandfathered** in `apps/web/eslint.config.mjs` (`site-header`, `topbar`, `footer`, `slot-editor`, `import-heroes-dialog`, `hero-picker-dialog`, `hero-strip`, `hero-strip-identity`, `phases-hero-switcher`). Delete an entry when that file migrates to `<Icon />`; any **new** web call site errors immediately.
-- **Known gap (D-05):** root ESLint ignores `packages/ui/**/*.stories.tsx`, so a raw icon import in a story is caught by review/tests only — closing that gap is owned by `m2-storybook-ci`.
+- **Known gap:** root ESLint ignores `packages/ui/**/*.stories.tsx`, so a raw icon import in a story is caught by review/tests only — closing that gap is owned by `m2-storybook-ci`.
 
-Storybook galleries: [`packages/ui/src/icon.stories.tsx`](../packages/ui/src/icon.stories.tsx) (enum-driven per source, placeholder badges).
+Storybook gallery: [`packages/ui/src/icon.stories.tsx`](../packages/ui/src/icon.stories.tsx) (enum-driven UI chrome).
 
 ## Companion reuse strategy (decided)
 

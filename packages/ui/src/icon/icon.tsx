@@ -11,14 +11,19 @@ export function Icon({ name, size = 'sm', className, label, ...dataProps }: Icon
   if (!Glyph) return null;
 
   const labeled = typeof label === 'string' && label.length > 0;
+  const boxClass = cn('inline-flex shrink-0', iconSizeClass[size], className);
 
+  // react-icons forces `aria-hidden` on the SVG after prop spread, so semantics
+  // live on a wrapping span; the glyph stays decorative.
   return (
-    <Glyph
+    <span
+      className={boxClass}
       {...dataProps}
-      className={cn('shrink-0', iconSizeClass[size], className)}
       {...(labeled
         ? { role: 'img' as const, 'aria-label': label }
-        : { 'aria-hidden': true as const, focusable: 'false' as const })}
-    />
+        : { 'aria-hidden': true as const })}
+    >
+      <Glyph aria-hidden focusable="false" className="size-full" />
+    </span>
   );
 }
