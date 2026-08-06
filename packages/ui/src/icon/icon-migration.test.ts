@@ -96,3 +96,27 @@ describe('icon migration parity — data-table sort chevrons (row 7)', () => {
     expect(src).not.toMatch(/from ['"]react-icons/);
   });
 });
+
+describe('icon migration parity — sort idle chevrons (row 8)', () => {
+  const src = readUiSource('data-table/sort-idle-icon.tsx');
+
+  it('renders stacked idle chevrons through Icon at 8px', () => {
+    expect(src).toContain('<Icon name="chevron-up" className="size-2 -mb-0.5" />');
+    expect(src).toContain('<Icon name="chevron-down" className="size-2 -mt-0.5" />');
+    expect(src).toContain('dataTableSortIdleIconClass');
+    expect(src).toContain('aria-hidden="true"');
+  });
+
+  it('drops react-icons from sort-idle-icon', () => {
+    expect(src).not.toMatch(/from ['"]react-icons/);
+  });
+
+  it('renders markup with size-2 utilities and no duplicate size-4 recipe', () => {
+    const html = renderToStaticMarkup(createElement(SortIdleIcon));
+    expect(html).toContain('size-2');
+    expect(html).toContain('-mb-0.5');
+    expect(html).toContain('-mt-0.5');
+    expect(html).toContain('aria-hidden="true"');
+    expect(html).not.toContain('size-4');
+  });
+});
