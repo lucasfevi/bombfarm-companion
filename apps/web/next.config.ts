@@ -1,9 +1,13 @@
+import { readFileSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import type { NextConfig } from 'next';
 import type { Configuration as WebpackConfig } from 'webpack';
 
 const projectRoot = path.dirname(fileURLToPath(import.meta.url));
+const webPackage = JSON.parse(
+  readFileSync(path.join(projectRoot, 'package.json'), 'utf8'),
+) as { version: string };
 /** Monorepo root — pnpm hoists `next` here; Turbopack must resolve from this tree. */
 const monorepoRoot = path.resolve(projectRoot, '../..');
 
@@ -49,6 +53,13 @@ const PERF_PROFILE = process.env.PERF_PROFILE === '1';
 const nextConfig: NextConfig = {
   // Client-only planner (localStorage). Ready for Vercel; no Node runtime needed.
   output: 'export',
+  env: {
+    NEXT_PUBLIC_APP_VERSION: webPackage.version,
+    NEXT_PUBLIC_APP_IS_PRODUCTION: String(process.env.VERCEL_ENV === 'production'),
+    NEXT_PUBLIC_APP_COMMIT_SHA:
+      process.env.VERCEL_GIT_COMMIT_SHA ?? process.env.GITHUB_SHA ?? '',
+    NEXT_PUBLIC_APP_VERSION_LABEL_OVERRIDE: process.env.BFC_VERSION_LABEL_OVERRIDE ?? '',
+  },
   reactStrictMode: true,
   transpilePackages: ['@bombfarm/domain', '@bombfarm/ui'],
   // Pin Turbopack's resolve root to the pnpm workspace (multi-root Cursor workspace).

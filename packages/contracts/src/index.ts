@@ -1,4 +1,22 @@
-export type AppFlavor = 'dev' | 'prod';
+import type { AppFlavor, UpdateChannel } from './flavors.js';
+
+export type {
+  AppFlavor,
+  FlavorDescriptor,
+  ResolveRuntimeFlavorInput,
+  ResolveRuntimeFlavorResult,
+  UpdateChannel,
+} from './flavors.js';
+export {
+  APP_FLAVORS,
+  FLAVORS,
+  InvalidFlavorError,
+  getFlavorDescriptor,
+  isAppFlavor,
+  parseFlavorToken,
+  resolveBuildFlavor,
+  resolveRuntimeFlavor,
+} from './flavors.js';
 
 export type Rarity = 0 | 1 | 2 | 3 | 4 | 5;
 export type Slot = 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7;
@@ -198,8 +216,18 @@ export const DEFAULT_SETTINGS: AppSettings = {
   locale: 'en',
 };
 
+export interface AppEnvironmentInfo {
+  flavor: AppFlavor;
+  productName: string;
+  badgeLabel: string | null;
+  updateChannel: UpdateChannel | null;
+  isPackaged: boolean;
+  version: string;
+}
+
 export interface IpcChannels {
   'app:getFlavor': { args: []; result: AppFlavor };
+  'app:getEnvironment': { args: []; result: AppEnvironmentInfo };
   'app:ping': { args: []; result: { ok: true; from: 'main' } };
   'settings:get': { args: []; result: AppSettings };
   'storage:health': { args: []; result: { binding: string; ok: boolean } };
@@ -214,6 +242,7 @@ export type IpcInvokeResult<C extends IpcInvokeChannel> = IpcChannels[C]['result
 
 export const IPC_CHANNELS = [
   'app:getFlavor',
+  'app:getEnvironment',
   'app:ping',
   'settings:get',
   'storage:health',

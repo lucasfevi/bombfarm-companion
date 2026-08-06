@@ -1,0 +1,323 @@
+name: Nightly
+
+on:
+  schedule:
+    - cron: '0 6 * * *'
+  workflow_dispatch:
+
+concurrency:
+  group: nightly
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+
+jobs:
+  plan:
+    name: Plan nightly release
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    outputs:
+      proceed: ${{ steps.plan.outputs.proceed }}
+      version: ${{ steps.plan.outputs.version }}
+      tag: ${{ steps.plan.outputs.tag }}
+      head_sha: ${{ steps.plan.outputs.head_sha }}
+      sha7: ${{ steps.plan.outputs.sha7 }}
+      base_version: ${{ steps.plan.outputs.base_version }}
+      no_op_reason: ${{ steps.plan.outputs.no_op_reason }}
+    steps:
+      - name: Checkout develop
+        uses: actions/checkout@v4
+        with:
+          ref: develop
+          fetch-depth: 0
+
+      - name: Derive nightly version and check idempotency
+        id: plan
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+        run: |
+          node --input-type=module <<'NODE'
+          import { execSync } from 'node:child_process';
+          import { readFileSync, writeFileSync } from 'node:fs';
+          import { buildNightlyVersion, buildNightlyTag } from './tools/release/nightly-version.mjs';
+
+          const headSha = execSync('git rev-parse HEAD', { encoding: 'utf8' }).trim();
+          const sha7 = headSha.slice(0, 7);
+          const baseVersion = JSON.parse(readFileSync('apps/desktop/package.json', 'utf8')).version;
+          const version = buildNightlyVersion({
+            baseVersion,
+            date: new Date(),
+            commitSha: headSha,
+          });
+          const tag = buildNightlyTag(version);
+
+          /** @type {{ proceed: boolean, reason: string }} */
+          let decision = { proceed: true, reason: '' };
+
+          try {
+            const viewOutput = execSync(`gh release view ${tag} --json isDraft`, { encoding: 'utf8' });
+            const { isDraft } = JSON.parse(viewOutput);
+            if (isDraft) {
+              execSync(`gh release delete ${tag} --yes --cleanup-tag`, { stdio: 'inherit' });
+            } else {
+              decision = { proceed: false, reason: 'tag_exists' };
+            }
+          } catch {
+            const repo = process.env.GITHUB_REPOSITORY;
+            const raw = execSync(`gh api repos/${repo}/releases --paginate`, { encoding: 'utf8' });
+            const releases = JSON.parse(raw);
+            const latestSha7 = findLatestNightlySha7(releases);
+            if (latestSha7 !== null && latestSha7 === sha7) {
+              decision = { proceed: false, reason: 'no_new_commits' };
+            }
+          }
+
+          writeFileSync(
+            'nightly-plan.json',
+            JSON.stringify({
+              headSha,
+              sha7,
+              version,
+              tag,
+              baseVersion,
+              proceed: decision.proceed,
+              reason: decision.reason,
+            }),
+          );
+
+          /**
+           * @param {Array<{ tag_name: string, created_at: string }>} releases
+           * @returns {string | null}
+           */
+          function findLatestNightlySha7(releases) {
+            const nightlyReleases = releases
+              .map((release) => ({
+                tag: release.tag_name,
+                createdAt: release.created_at,
+                sha7: extractSha7FromNightlyTag(release.tag_name),
+              }))
+              .filter((release) => release.sha7 !== null)
+              .sort((left, right) => right.createdAt.localeCompare(left.createdAt));
+
+            return nightlyReleases[0]?.sha7 ?? null;
+          }
+
+          /**
+           * @param {string} tag
+           * @returns {string | null}
+           */
+          function extractSha7FromNightlyTag(tag) {
+            if (!tag.startsWith('desktop-v')) {
+              return null;
+            }
+
+            const version = tag.slice('desktop-v'.length);
+            const marker = '-nightly.';
+            const index = version.indexOf(marker);
+            if (index === -1) {
+              return null;
+            }
+
+            const tail = version.slice(index + marker.length);
+            const parts = tail.split('.');
+            return parts.length >= 2 ? parts[parts.length - 1] : null;
+          }
+          NODE
+
+          PROCEED=$(node -p "JSON.parse(require('node:fs').readFileSync('nightly-plan.json','utf8')).proceed")
+          REASON=$(node -p "JSON.parse(require('node:fs').readFileSync('nightly-plan.json','utf8')).reason")
+          VERSION=$(node -p "JSON.parse(require('node:fs').readFileSync('nightly-plan.json','utf8')).version")
+          TAG=$(node -p "JSON.parse(require('node:fs').readFileSync('nightly-plan.json','utf8')).tag")
+          HEAD_SHA=$(node -p "JSON.parse(require('node:fs').readFileSync('nightly-plan.json','utf8')).headSha")
+          SHA7=$(node -p "JSON.parse(require('node:fs').readFileSync('nightly-plan.json','utf8')).sha7")
+          BASE_VERSION=$(node -p "JSON.parse(require('node:fs').readFileSync('nightly-plan.json','utf8')).baseVersion")
+
+          {
+            echo "proceed=${PROCEED}"
+            echo "version=${VERSION}"
+            echo "tag=${TAG}"
+            echo "head_sha=${HEAD_SHA}"
+            echo "sha7=${SHA7}"
+            echo "base_version=${BASE_VERSION}"
+            echo "no_op_reason=${REASON}"
+          } >> "$GITHUB_OUTPUT"
+
+          if [ "$PROCEED" != "true" ]; then
+            node --input-type=module <<'NODE' >> "$GITHUB_STEP_SUMMARY"
+          import { readFileSync } from 'node:fs';
+          import { renderNightlyNoOpSummary } from './tools/release/release-report.mjs';
+
+          const plan = JSON.parse(readFileSync('nightly-plan.json', 'utf8'));
+          process.stdout.write(
+            renderNightlyNoOpSummary({
+              packageName: '@bombfarm/desktop',
+              oldVersion: plan.baseVersion,
+              newVersion: plan.version,
+              headSha: plan.headSha,
+              tag: plan.tag,
+              reason: plan.reason === 'tag_exists' ? 'tag_exists' : 'no_new_commits',
+            }),
+          );
+          NODE
+          fi
+
+  build:
+    name: Build and publish nightly
+    needs: plan
+    if: needs.plan.outputs.proceed == 'true'
+    runs-on: windows-latest
+    timeout-minutes: 45
+    steps:
+      - name: Checkout develop
+        uses: actions/checkout@v4
+        with:
+          ref: develop
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Package nightly installer
+        env:
+          NODE_ENV: production
+          BFC_FLAVOR: nightly
+          BFC_VERSION_OVERRIDE: ${{ needs.plan.outputs.version }}
+        run: pnpm --filter @bombfarm/desktop package:nightly
+
+      - name: List nightly release output
+        id: list
+        shell: bash
+        working-directory: apps/desktop
+        run: |
+          {
+            echo '## Nightly release output (`release/nightly/`)'
+            echo '```'
+            ls -la release/nightly/
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+          ASSETS=$(ls -1 release/nightly/)
+          echo "assets<<EOF" >> "$GITHUB_OUTPUT"
+          echo "$ASSETS" >> "$GITHUB_OUTPUT"
+          echo "EOF" >> "$GITHUB_OUTPUT"
+
+          if [ -f release/nightly/nightly.yml ]; then
+            echo "nightly_yml_present=true" >> "$GITHUB_OUTPUT"
+            echo "nightly.yml is present under --publish never."
+          else
+            echo "nightly_yml_present=false" >> "$GITHUB_OUTPUT"
+            echo "::error::nightly.yml is missing from release/nightly/ under --publish never"
+            exit 1
+          fi
+
+      - name: Publish GitHub prerelease
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ needs.plan.outputs.tag }}
+          VERSION: ${{ needs.plan.outputs.version }}
+          SHA7: ${{ needs.plan.outputs.sha7 }}
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          cleanup_failed_release() {
+            gh release delete "$TAG" --yes --cleanup-tag 2>/dev/null || true
+          }
+
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            echo "Replacing existing draft or failed release for ${TAG}"
+            gh release delete "$TAG" --yes --cleanup-tag
+          fi
+
+          gh release create "$TAG" \
+            --prerelease \
+            --draft \
+            --title "Desktop ${VERSION} nightly (${SHA7})"
+
+          trap cleanup_failed_release ERR
+
+          for asset in apps/desktop/release/nightly/*; do
+            [ -f "$asset" ] || continue
+            gh release upload "$TAG" "$asset"
+          done
+
+          gh release edit "$TAG" --draft=false
+          trap - ERR
+
+      - name: Prune nightly releases beyond retention
+        id: prune
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+        shell: bash
+        run: |
+          node --input-type=module <<'NODE'
+          import { execSync } from 'node:child_process';
+          import { writeFileSync } from 'node:fs';
+          import { selectNightlyReleasesToPrune } from './tools/release/nightly-retention.mjs';
+
+          const repo = process.env.GITHUB_REPOSITORY;
+          const raw = execSync(`gh api repos/${repo}/releases --paginate`, { encoding: 'utf8' });
+          const releases = JSON.parse(raw).map((release) => ({
+            tag: release.tag_name,
+            createdAt: release.created_at,
+          }));
+          const toPrune = selectNightlyReleasesToPrune(releases);
+          writeFileSync('pruned-tags.json', JSON.stringify(toPrune));
+
+          for (const tag of toPrune) {
+            console.log(`Pruning ${tag}`);
+            execSync(`gh release delete ${tag} --yes --cleanup-tag`, { stdio: 'inherit' });
+          }
+          NODE
+
+          PRUNED=$(node -p "JSON.parse(require('node:fs').readFileSync('pruned-tags.json','utf8')).join(', ')")
+          echo "pruned_tags=${PRUNED}" >> "$GITHUB_OUTPUT"
+
+      - name: Write publish summary
+        env:
+          VERSION: ${{ needs.plan.outputs.version }}
+          TAG: ${{ needs.plan.outputs.tag }}
+          HEAD_SHA: ${{ needs.plan.outputs.head_sha }}
+          BASE_VERSION: ${{ needs.plan.outputs.base_version }}
+          ASSETS: ${{ steps.list.outputs.assets }}
+          PRUNED_TAGS: ${{ steps.prune.outputs.pruned_tags }}
+        shell: bash
+        run: |
+          node --input-type=module <<'NODE' >> "$GITHUB_STEP_SUMMARY"
+          import { renderNightlySummary } from './tools/release/release-report.mjs';
+
+          const assets = (process.env.ASSETS ?? '').split(/\r?\n/).filter(Boolean);
+          process.stdout.write(
+            renderNightlySummary({
+              packageName: '@bombfarm/desktop',
+              oldVersion: process.env.BASE_VERSION ?? '',
+              newVersion: process.env.VERSION ?? '',
+              headSha: process.env.HEAD_SHA ?? '',
+              tag: process.env.TAG ?? '',
+              assets,
+            }),
+          );
+          NODE
+
+          if [ -n "$PRUNED_TAGS" ]; then
+            {
+              echo ''
+              echo '### Pruned tags'
+              echo "$PRUNED_TAGS"
+            } >> "$GITHUB_STEP_SUMMARY"
+          else
+            {
+              echo ''
+              echo '### Pruned tags'
+              echo 'none'
+            } >> "$GITHUB_STEP_SUMMARY"
+          fi

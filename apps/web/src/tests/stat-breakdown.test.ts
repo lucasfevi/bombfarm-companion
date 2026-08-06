@@ -255,9 +255,9 @@ function assertFormulasMatch(facts: PipelineFacts): void {
               : id === 'critFactor'
                 ? 1 + (facts.effective.critChance / 100) * (facts.effective.critDmg / 100)
                 : id === 'fuse'
-                  ? Math.max(2 * (1 - facts.effective.cdr / 100), 0.6)
+                  ? Math.max(2 * (1 - facts.effective.cdr / 100), 0.4)
                   : id === 'bombsPerSecond'
-                    ? 1 / (Math.max(2 * (1 - facts.effective.cdr / 100), 0.6) + facts.context.walkDelay)
+                    ? 1 / (Math.max(2 * (1 - facts.effective.cdr / 100), 0.4) + facts.context.walkDelay)
                     : id === 'fieldSeconds'
                       ? facts.effective.energy / facts.context.drainMult
                       : id === 'rest'

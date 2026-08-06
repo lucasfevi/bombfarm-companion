@@ -1,15 +1,17 @@
 import log from 'electron-log/main.js';
-import type { AppFlavor } from '@bombfarm/contracts';
+import { createBootRecord } from './boot-record.js';
+import type { AppEnv } from './env.js';
 import { resolveAppEnv } from './env.js';
 
-export function configureLogging(flavor: AppFlavor): typeof log {
-  log.transports.file.level = flavor === 'dev' ? 'debug' : 'info';
-  log.transports.console.level = flavor === 'dev' ? 'debug' : false;
+export function configureLogging(env: AppEnv): typeof log {
+  const { console: consoleLevel, file: fileLevel } = env.descriptor.logLevel;
+  log.transports.file.level = fileLevel;
+  log.transports.console.level = consoleLevel;
 
   log.info({
     scope: 'main',
     event: 'logging.configured',
-    flavor,
+    flavor: env.flavor,
     node: process.versions.node,
     electron: process.versions.electron,
   });
@@ -18,13 +20,7 @@ export function configureLogging(flavor: AppFlavor): typeof log {
 }
 
 export function logBootLine(scope: 'main' | 'preload' | 'renderer'): void {
-  const env = resolveAppEnv();
-  log.info({
-    scope,
-    event: 'boot',
-    flavor: env.flavor,
-    productName: env.productName,
-  });
+  log.info(createBootRecord(resolveAppEnv(), scope));
 }
 
 export { log };

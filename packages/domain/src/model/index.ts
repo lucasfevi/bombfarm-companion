@@ -15,10 +15,10 @@
 // plant lands 0.0–0.5s after the previous explosion (avg 6.7 concurrent bombs
 // for 9 heroes; measured cycle ≈ fuse + ~0.15s). The wiki bombas/s formula
 // predicts a slower cycle than measured and appears stale post-rebalance.
-// Serial model: rate = 1/(ft + walkDelay), ft = 2 × (1 − cdr) floored at 0.6s
-// ("piso de 30% do ciclo" — the 0.6s cluster in the fuse histogram sits exactly
-// on that floor). Under this model CDR is a real throughput stat. The legacy
-// wiki-formula mode is kept as a toggle for comparison.
+// Serial model: rate = 1/(ft + walkDelay), ft = 2 × (1 − cdr) floored at 0.4s
+// ("piso de 20% do ciclo" / CDR teto 80% — floor lands exactly at the 80% stat
+// cap). Under this model CDR is a real throughput stat through the full cap.
+// The legacy wiki-formula mode is kept as a toggle for comparison.
 
 // Public barrel for shared/domain/model — split by concern (W7). Every
 // pre-split export is re-exported here so `@/shared/domain/model` keeps

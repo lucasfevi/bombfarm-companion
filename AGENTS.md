@@ -37,6 +37,7 @@ pnpm test:smoke   # Windows — builds static renderer + launches Electron
 ## Conventions
 
 - Conventional Commits (`feat:`, `fix:`, `chore:`, …) — enforced by commitlint
+- Feature work branches from and merges into `develop`; `main` is release-only — see [`docs/branching.md`](docs/branching.md)
 - IPC types live in `@bombfarm/contracts`; both main and renderer import from there
 - No Node integration in the renderer; use preload `contextBridge`
 - TypeScript strict at the monorepo base; planner-origin packages `@bombfarm/domain`
@@ -44,8 +45,15 @@ pnpm test:smoke   # Windows — builds static renderer + launches Electron
   [`docs/typescript-planner-origin.md`](docs/typescript-planner-origin.md))
 - No secrets in the repo
 - Do not mention other fan tools in user-facing docs
-- Never add `.specs/` to this repository
+- Never add private TLC spec directories to this repository
 
 ## Flavors
 
-`BFC_FLAVOR=dev|prod` selects app ID and isolated user-data paths (see README).
+`BFC_FLAVOR` selects one of `dev`, `nightly`, `beta`, or `prod`. Unpackaged local runs default to `dev` when unset. Invalid tokens fail fast (never fall back to `prod`).
+
+| Flavor | App ID | User data (`%APPDATA%`) | How obtained | Distributed |
+| --- | --- | --- | --- | --- |
+| `dev` | `net.bombfarm.companion.dev` | `Bomb Farm Companion (Dev)` | Local run / `package:dev` | No |
+| `nightly` | `net.bombfarm.companion.nightly` | `Bomb Farm Companion (Nightly)` | Installed / `package:nightly` | Yes (`nightly` channel) |
+| `beta` | `net.bombfarm.companion.beta` | `Bomb Farm Companion (Beta)` | Installed / `package:beta` | Yes (`beta` channel) |
+| `prod` | `net.bombfarm.companion` | `Bomb Farm Companion` | Installed / `package:prod` | Yes (`latest` channel) |

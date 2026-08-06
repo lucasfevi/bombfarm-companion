@@ -248,8 +248,8 @@ describe('effective stats panel chrome (EST-*)', () => {
     const ptCodes = STRINGS.pt.explainSections.map((s) => s.code).join('\n');
     expect(enCodes).toMatch(/critChance|critDmg|cdr|bombs\/s|walk/i);
     expect(ptCodes).toMatch(/cdr|bombs|walk|pavio|fuse|crit/i);
-    expect(STRINGS.en.bdFormulaFuse).toContain('0.6');
-    expect(STRINGS.en.explainSections.some((s) => s.code?.includes('0.6'))).toBe(true);
+    expect(STRINGS.en.bdFormulaFuse).toContain('0.4');
+    expect(STRINGS.en.explainSections.some((s) => s.code?.includes('0.4'))).toBe(true);
   });
 });
 

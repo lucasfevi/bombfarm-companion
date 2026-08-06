@@ -3,6 +3,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import net from 'node:net';
 import process from 'node:process';
+import { parseFlavorToken } from '@bombfarm/contracts';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const desktopRoot = path.join(__dirname, '..');
@@ -49,8 +50,19 @@ function isPortFree(port) {
   });
 }
 
-// Dev script defaults to the isolated DEV flavor unless the caller overrides.
-const flavor = process.env.BFC_FLAVOR === 'prod' ? 'prod' : 'dev';
+// Dev launcher defaults unpackaged runs to dev; any other token must be valid.
+const rawFlavor = process.env.BFC_FLAVOR;
+const parsedFlavor = parseFlavorToken(rawFlavor);
+/** @type {import('@bombfarm/contracts').AppFlavor} */
+let flavor;
+if (parsedFlavor !== null) {
+  flavor = parsedFlavor;
+} else if (rawFlavor === undefined || rawFlavor.trim() === '') {
+  flavor = 'dev';
+} else {
+  console.error(`Invalid BFC_FLAVOR: ${rawFlavor.trim()}`);
+  process.exit(1);
+}
 
 if (!(await isPortFree(DEV_PORT))) {
   console.error(

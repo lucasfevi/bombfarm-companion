@@ -16,7 +16,12 @@ Browser-level smoke and visual baselines for the static export. Unit math stays 
 > where a screenshot only fails with a picture. `e2e/__screenshots__/` was asserted
 > byte-unchanged (`git diff --exit-code`) rather than treated as a passing gate.
 >
-> **What a re-record session must cover** before re-enabling: the Points panel (new preview
+> **Version chrome (m15-release-automation):** the persistent footer now renders
+> `data-testid="app-version"`. When the visual suite is re-enabled,
+> `empty-workspace.png` will include that chrome — `visual.spec.ts` masks the
+> element so baselines stay byte-stable until a human review pass accepts the
+> updated screenshot.
+>
 > column, Optimize-build result line, ±5 steppers, Luck row), the HeroStrip warn border and its
 > tab-switch activation, the Effective-stats panel and sheet table's Luck row and 2 dp precision
 > sweep, the stat-breakdown ledger's four-line grouping, the Abilities tab's granted/spendable

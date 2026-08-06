@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
-import type { GameSnapshotPayload, GameStatusInfo } from '@bombfarm/contracts';
+import type { AppEnvironmentInfo, GameSnapshotPayload, GameStatusInfo } from '@bombfarm/contracts';
 import { AppShell } from '@bombfarm/ui';
 
 function formatStatus(status: GameStatusInfo['status']): string {
@@ -29,6 +29,7 @@ function statusClass(status: GameStatusInfo['status']): string {
 }
 
 export default function HomePage() {
+  const [environment, setEnvironment] = useState<AppEnvironmentInfo | null>(null);
   const [status, setStatus] = useState<GameStatusInfo | null>(null);
   const [snapshot, setSnapshot] = useState<GameSnapshotPayload | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -42,10 +43,12 @@ export default function HomePage() {
 
     void (async () => {
       try {
-        const [initialStatus, initialSnapshot] = await Promise.all([
+        const [nextEnvironment, initialStatus, initialSnapshot] = await Promise.all([
+          bridge.invoke('app:getEnvironment'),
           bridge.invoke('game:getStatus'),
           bridge.invoke('game:getSnapshot'),
         ]);
+        setEnvironment(nextEnvironment);
         setStatus(initialStatus);
         setSnapshot(initialSnapshot);
       } catch (err) {
@@ -81,7 +84,10 @@ export default function HomePage() {
   }, [snapshot]);
 
   return (
-    <AppShell>
+    <AppShell
+      title={environment?.productName}
+      badge={environment?.badgeLabel ?? null}
+    >
       <section data-testid="app-ready" className="space-y-4">
         <div className="flex items-center gap-3">
           <span
@@ -107,6 +113,17 @@ export default function HomePage() {
           </pre>
         </div>
       </section>
+
+      {environment ? (
+        <div className="mt-6 flex justify-end gap-2 border-t border-white/10 pt-3 text-xs text-bf-muted">
+          <span data-testid="app-version" className="font-mono tabular-nums">
+            v{environment.version}
+          </span>
+          {environment.flavor !== 'prod' && environment.badgeLabel ? (
+            <span className="font-semibold uppercase tracking-wide">{environment.badgeLabel}</span>
+          ) : null}
+        </div>
+      ) : null}
     </AppShell>
   );
 }

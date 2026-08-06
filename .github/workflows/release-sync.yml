@@ -1,0 +1,130 @@
+name: Release sync
+
+on:
+  pull_request:
+    types: [closed]
+    branches: [main]
+
+concurrency:
+  group: release-sync
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+  pull-requests: write
+  checks: write
+  actions: write
+
+jobs:
+  sync:
+    name: Sync versions to develop
+    if: >-
+      github.event.pull_request.merged == true &&
+      github.event.pull_request.head.ref == 'release/next'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Recreate release/next from merged PR head
+        id: recreate
+        env:
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          git fetch origin
+          if ! git push --force origin "${HEAD_SHA}:refs/heads/release/next"; then
+            {
+              echo '::error::Failed to recreate release/next from merged PR head'
+              echo '## Release sync — manual action required'
+              echo ''
+              echo 'Recreate the versioned branch, then open the sync PR:'
+              echo ''
+              echo '```bash'
+              echo "git push --force origin ${HEAD_SHA}:refs/heads/release/next"
+              echo 'gh pr create --head release/next --base develop --title "chore(release): sync versions to develop"'
+              echo '```'
+            } >> "$GITHUB_STEP_SUMMARY"
+            exit 1
+          fi
+
+      - name: Open sync PR to develop
+        id: open-pr
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          existing=$(gh pr list --head release/next --base develop --state open --json number --jq '.[0].number // empty')
+          if [ -n "$existing" ]; then
+            echo "number=${existing}" >> "$GITHUB_OUTPUT"
+          else
+            if ! gh pr create \
+              --head release/next \
+              --base develop \
+              --title "chore(release): sync versions to develop" \
+              --body "Automated version sync after releasing \`release/next\` to \`main\`."; then
+              {
+                echo '::error::Failed to create sync PR release/next → develop'
+                echo '## Release sync — manual action required'
+                echo ''
+                echo 'Create the sync PR manually:'
+                echo ''
+                echo '```bash'
+                echo 'gh pr create --head release/next --base develop --title "chore(release): sync versions to develop"'
+                echo '```'
+              } >> "$GITHUB_STEP_SUMMARY"
+              exit 1
+            fi
+            number=$(gh pr list --head release/next --base develop --state open --json number --jq '.[0].number')
+            echo "number=${number}" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Dispatch required CI on sync head
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          for workflow in ci-web.yml ci-desktop.yml e2e-web.yml; do
+            echo "Dispatching ${workflow} on release/next"
+            gh workflow run "$workflow" --ref release/next
+          done
+
+      - name: Enable auto-merge on sync PR
+        id: merge
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR_NUMBER: ${{ steps.open-pr.outputs.number }}
+        run: |
+          if ! gh pr merge "$PR_NUMBER" --auto --squash; then
+            {
+              echo '::error::Auto-merge is unavailable for the sync PR'
+              echo '## Release sync — manual action required'
+              echo ''
+              echo "Auto-merge could not be enabled for PR #${PR_NUMBER}. After required checks pass, run:"
+              echo ''
+              echo '```bash'
+              echo "gh pr merge ${PR_NUMBER} --squash"
+              echo '```'
+            } >> "$GITHUB_STEP_SUMMARY"
+            exit 1
+          fi
+
+      - name: Record successful sync kickoff
+        if: success()
+        run: |
+          {
+            echo '## Release sync'
+            echo ''
+            echo "Sync PR #${{ steps.open-pr.outputs.number }} (\`release/next\` → \`develop\`) is queued."
+            echo 'Required CI workflows were dispatched and auto-merge (squash) was enabled.'
+          } >> "$GITHUB_STEP_SUMMARY"

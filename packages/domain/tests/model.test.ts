@@ -51,11 +51,12 @@ const sampleHero = (): HeroSheet => ({
 });
 
 describe('fuseSeconds', () => {
-  it('applies CDR and respects the 0.6s floor', () => {
+  it('applies CDR and respects the 0.4s floor (20% of cycle / 80% CDR cap)', () => {
     expect(fuseSeconds(0)).toBe(2);
     expect(fuseSeconds(25)).toBe(1.5);
-    expect(fuseSeconds(70)).toBeCloseTo(FUSE_FLOOR, 6);
+    expect(fuseSeconds(70)).toBeCloseTo(0.6, 6);
     expect(fuseSeconds(80)).toBe(FUSE_FLOOR);
+    expect(fuseSeconds(90)).toBe(FUSE_FLOOR);
   });
 });
 
@@ -217,7 +218,7 @@ describe('rankNextPoint', () => {
     expect(cdr?.dpsGainPct).toBe(0);
   });
 
-  it('still ranks CDR above zero at 70% (below 80% cap, fuse-saturated in real DPS)', () => {
+  it('still ranks CDR above zero at 70% and real DPS still improves toward the 80% cap', () => {
     const h: HeroSheet = { ...sampleHero(), cdr: 70 };
     const deltas: EffectiveDeltas = {
       attack: 10,
@@ -232,10 +233,10 @@ describe('rankNextPoint', () => {
     const ranking = rankNextPoint(h, ctx, { effectiveDeltas: deltas });
     const cdr = ranking.find((r) => r.stat === 'cdr')!;
     expect(cdr.dpsGainPct).toBeGreaterThan(0);
-    // Real sustained DPS unchanged once fuse hits floor — ranking uses marginal fuse.
+    // Floor is 0.4s at 80% CDR — 70→75 still shortens real fuse.
     const cur = sustainedDps(h, ctx);
     const next = sustainedDps({ ...h, cdr: 75 }, ctx);
-    expect(next).toBeCloseTo(cur, 6);
+    expect(next).toBeGreaterThan(cur);
   });
 
   it('CDR gain stays positive from 70% up to 79% (zero only at 80% cap)', () => {

@@ -42,6 +42,23 @@ test.describe('app boot smoke', () => {
       });
       expect(flavor).toBe('dev');
 
+      const environment = await page.evaluate(async () => {
+        const bridge = window.bfc;
+        if (!bridge) throw new Error('preload bridge missing');
+        return bridge.invoke('app:getEnvironment');
+      });
+      expect(environment).toEqual({
+        flavor: 'dev',
+        productName: 'Bomb Farm Companion (Dev)',
+        badgeLabel: 'DEV',
+        updateChannel: null,
+        isPackaged: false,
+        version: expect.stringMatching(/^\d+\.\d+\.\d+/),
+      });
+
+      await expect(page.getByTestId('flavor-badge')).toHaveText('DEV');
+      await expect(page.getByTestId('app-version')).toHaveText(/^v\d+\.\d+\.\d+/);
+
       const ping = await page.evaluate(async () => {
         const bridge = window.bfc;
         if (!bridge) throw new Error('preload bridge missing');
