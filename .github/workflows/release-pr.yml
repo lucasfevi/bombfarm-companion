@@ -236,6 +236,9 @@ jobs:
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
 
       - name: Version packages on release/next
+        env:
+          # Bot commits must not run local husky/commitlint (COMMIT_EDITMSG path + no TTY).
+          HUSKY: '0'
         run: |
           git switch -C release/next
           pnpm changeset version
