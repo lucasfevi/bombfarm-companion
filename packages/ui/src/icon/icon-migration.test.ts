@@ -11,6 +11,11 @@ function readUiSource(relativePath: string): string {
   return readFileSync(resolve(uiSrc, relativePath), 'utf8');
 }
 
+function expectNoVendorIconImports(src: string) {
+  const vendorIcons = 'react' + '-icons';
+  expect(src).not.toMatch(new RegExp(`from ['"]${vendorIcons}`));
+}
+
 describe('icon migration parity — select affix chevron (row 1)', () => {
   const src = readUiSource('select.tsx');
 
@@ -18,10 +23,10 @@ describe('icon migration parity — select affix chevron (row 1)', () => {
     expect(src).toContain('<Icon name="chevron-down" className="size-3.5" />');
   });
 
-  it('keeps the decorative affix wrapper and drops react-icons', () => {
+  it('keeps the decorative affix wrapper and drops vendor icon imports', () => {
     expect(src).toContain('selectAffixClass');
     expect(src).toContain('aria-hidden');
-    expect(src).not.toMatch(/from ['"]react-icons/);
+    expectNoVendorIconImports(src);
   });
 });
 
@@ -33,10 +38,10 @@ describe('icon migration parity — num spinner chevrons (rows 2–3)', () => {
     expect(src).toContain('<Icon name="chevron-down" className="size-3.5" />');
   });
 
-  it('keeps parent button labels and drops react-icons', () => {
+  it('keeps parent button labels and drops vendor icon imports', () => {
     expect(src).toContain('aria-label="Increment"');
     expect(src).toContain('aria-label="Decrement"');
-    expect(src).not.toMatch(/from ['"]react-icons/);
+    expectNoVendorIconImports(src);
   });
 });
 
@@ -49,9 +54,9 @@ describe('icon migration parity — confirm-dialog close mark (row 4)', () => {
     expect(src).not.toMatch(/<Icon name="x-mark"[^>]*size/);
   });
 
-  it('keeps Dialog.Close label and drops react-icons', () => {
+  it('keeps Dialog.Close label and drops vendor icon imports', () => {
     expect(src).toContain('<Dialog.Close aria-label={cancelLabel}>');
-    expect(src).not.toMatch(/from ['"]react-icons/);
+    expectNoVendorIconImports(src);
   });
 });
 
@@ -64,9 +69,9 @@ describe('icon migration parity — accordion trigger chevron (row 5)', () => {
     );
   });
 
-  it('keeps accordionIconClass verbatim and drops react-icons', () => {
+  it('keeps accordionIconClass verbatim and drops vendor icon imports', () => {
     expect(src).toContain('accordionIconClass');
-    expect(src).not.toMatch(/from ['"]react-icons/);
+    expectNoVendorIconImports(src);
   });
 });
 
@@ -79,8 +84,8 @@ describe('icon migration parity — collapsible trigger chevron (row 6)', () => 
     );
   });
 
-  it('drops react-icons from collapsible trigger', () => {
-    expect(src).not.toMatch(/from ['"]react-icons/);
+  it('drops vendor icon imports from collapsible trigger', () => {
+    expectNoVendorIconImports(src);
   });
 });
 
@@ -92,8 +97,8 @@ describe('icon migration parity — data-table sort chevrons (row 7)', () => {
     expect(src).toContain('<Icon name="chevron-down" size="xs" />');
   });
 
-  it('drops react-icons from data-table header', () => {
-    expect(src).not.toMatch(/from ['"]react-icons/);
+  it('drops vendor icon imports from data-table header', () => {
+    expectNoVendorIconImports(src);
   });
 });
 
@@ -107,8 +112,8 @@ describe('icon migration parity — sort idle chevrons (row 8)', () => {
     expect(src).toContain('aria-hidden="true"');
   });
 
-  it('drops react-icons from sort-idle-icon', () => {
-    expect(src).not.toMatch(/from ['"]react-icons/);
+  it('drops vendor icon imports from sort-idle-icon', () => {
+    expectNoVendorIconImports(src);
   });
 
   it('renders markup with size-2 utilities and no duplicate size-4 recipe', () => {
@@ -129,7 +134,7 @@ describe('icon migration parity — button coffee story (row 9)', () => {
     expect(src).toContain('<UiIcon name="coffee" />');
   });
 
-  it('drops react-icons from button stories', () => {
-    expect(src).not.toMatch(/from ['"]react-icons/);
+  it('drops vendor icon imports from button stories', () => {
+    expectNoVendorIconImports(src);
   });
 });

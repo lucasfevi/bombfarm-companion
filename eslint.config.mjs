@@ -21,6 +21,25 @@ const plannerOriginPackages = [
   'packages/ui/**/*.{ts,tsx}',
 ];
 
+/** Ban raw react-icons / SVG imports outside the Icon seam (ICO-23, ICO-24, D12). */
+const rawIconImportRule = [
+  'error',
+  {
+    patterns: [
+      {
+        group: ['react-icons', 'react-icons/*'],
+        message:
+          'Import { Icon } from @bombfarm/ui instead (D12). react-icons is reachable only from packages/ui/src/icon/ui-registry.ts.',
+      },
+      {
+        group: ['*.svg', '**/*.svg'],
+        message:
+          'Do not import SVG files. Author the glyph under packages/ui/icons/game/, run pnpm --filter @bombfarm/ui icons:generate, and render it via <Icon name="…" />.',
+      },
+    ],
+  },
+];
+
 export default tseslint.config(
   {
     ignores: [
@@ -118,5 +137,14 @@ export default tseslint.config(
   {
     files: ['apps/desktop/**/*.mjs'],
     ...tseslint.configs.disableTypeChecked,
+  },
+  {
+    files: ['packages/ui/**/*.{ts,tsx}'],
+    ignores: ['packages/ui/src/icon/**'],
+    rules: { 'no-restricted-imports': rawIconImportRule },
+  },
+  {
+    files: ['apps/desktop/**/*.{ts,tsx}'],
+    rules: { 'no-restricted-imports': rawIconImportRule },
   },
 );
