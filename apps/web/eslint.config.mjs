@@ -388,4 +388,39 @@ export default tseslint.config(
     files: ['*.{mjs,js}', 'vitest.config.ts', 'next.config.ts'],
     ...tseslint.configs.disableTypeChecked,
   },
+  // Grandfathered raw react-icons call sites (ICO-25, ASM-11). Burn-down: delete
+  // entries as planner features migrate to <Icon />. Any NEW web file errors.
+  {
+    files: ['src/**/*.{ts,tsx}'],
+    ignores: [
+      'src/app/_shell/site-header.tsx',
+      'src/app/_shell/topbar.tsx',
+      'src/app/_shell/footer.tsx',
+      'src/features/gear/components/slot-editor.tsx',
+      'src/features/import/components/import-heroes-dialog.tsx',
+      'src/features/roster/components/hero-picker-dialog.tsx',
+      'src/features/planner/components/hero-strip.tsx',
+      'src/features/planner/components/hero-strip-identity.tsx',
+      'src/features/phases/components/phases-hero-switcher.tsx',
+    ],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          patterns: [
+            {
+              group: ['react-icons', 'react-icons/*'],
+              message:
+                'Import { Icon } from @bombfarm/ui instead (D12). react-icons is reachable only from packages/ui/src/icon/ui-registry.ts.',
+            },
+            {
+              group: ['*.svg', '**/*.svg'],
+              message:
+                'Do not import SVG files. Author the glyph under packages/ui/icons/game/, run pnpm --filter @bombfarm/ui icons:generate, and render it via <Icon name="…" />.',
+            },
+          ],
+        },
+      ],
+    },
+  },
 );
