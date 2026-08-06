@@ -33,11 +33,20 @@ function oklchToRgb(lPercent: number, c: number, hDeg: number): Rgb {
   return oklabToLinearRgb(lPercent / 100, a, b);
 }
 
+function hexToRgb(hexBody: string): Rgb {
+  const n = parseInt(hexBody, 16);
+  return [
+    ((n >> 16) & 255) / 255,
+    ((n >> 8) & 255) / 255,
+    (n & 255) / 255,
+  ];
+}
+
 export function parseColor(input: string): Rgb {
   const hex = HEX_RE.exec(input.trim());
-  if (hex) {
-    const n = parseInt(hex[1]!, 16);
-    return [(n >> 16) & 255, (n >> 8) & 255, n & 255].map((v) => v / 255) as unknown as Rgb;
+  const hexBody = hex?.[1];
+  if (hexBody) {
+    return hexToRgb(hexBody);
   }
 
   const oklch = OKLCH_RE.exec(input.trim());
@@ -48,12 +57,15 @@ export function parseColor(input: string): Rgb {
   throw new Error(`Unsupported color format: ${input}`);
 }
 
+function linearizeChannel(v: number): number {
+  return v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4;
+}
+
 export function relativeLuminance(rgb: Rgb): number {
-  const [r, g, b] = rgb.map((v) => {
-    const c = v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4;
-    return c;
-  });
-  return 0.2126 * r! + 0.7152 * g! + 0.0722 * b!;
+  const [r, g, b] = rgb;
+  return (
+    0.2126 * linearizeChannel(r) + 0.7152 * linearizeChannel(g) + 0.0722 * linearizeChannel(b)
+  );
 }
 
 export function contrastRatio(fg: string, bg: string): number {
