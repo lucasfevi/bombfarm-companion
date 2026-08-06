@@ -20,7 +20,7 @@ feature PR (changeset) → merge to develop
 ### Maintainer steps
 
 1. **On a feature PR into `develop`:** ensure a changeset exists (or add the `skip-changeset` label when appropriate — see [Changeset policy](#changeset-policy)).
-2. **Merge the feature PR to `develop`.** The [Release PR workflow](../.github/workflows/release-pr.yml) runs on every `develop` push.
+2. **Merge the feature PR to `develop`.** The [Release PR workflow](../.github/workflows/release-pr.yml) runs on every `develop` push. The bump commit on `release/next` sets `HUSKY=0` so Actions is not blocked by local commit hooks.
 3. **Open the release PR** (`release/next` → `main`) if one was created or updated. Its body lists every package bump, artifact plan, head SHA, and the pre-merge soak checklist.
 4. **Review** version bumps and generated `CHANGELOG.md` entries. Confirm required CI checks are green on the release head (`ci-web-required`, `ci-desktop-required`, `e2e-smoke`, `e2e-visual`, and `beta-installer` when desktop is in the set).
 5. **When desktop is in the release set:** download the beta installer from the PR workflow artifact or the upserted PR comment. Verify the build matches the head SHA shown in the report.
