@@ -66,3 +66,17 @@ describe('icon migration parity — accordion trigger chevron (row 5)', () => {
     expect(src).not.toMatch(/from ['"]react-icons/);
   });
 });
+
+describe('icon migration parity — collapsible trigger chevron (row 6)', () => {
+  const src = readUiSource('collapsible/collapsible-trigger.tsx');
+
+  it('renders the trigger chevron through Icon with data-accordion-icon', () => {
+    expect(src).toContain(
+      '<Icon name="chevron-down" data-accordion-icon className={accordionIconClass} />',
+    );
+  });
+
+  it('drops react-icons from collapsible trigger', () => {
+    expect(src).not.toMatch(/from ['"]react-icons/);
+  });
+});
