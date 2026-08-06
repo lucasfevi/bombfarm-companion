@@ -1,4 +1,4 @@
-import { mkdtempSync, mkdirSync, writeFileSync } from 'node:fs';
+import { mkdtempSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -14,9 +14,19 @@ const repoRoot = fileURLToPath(new URL('../../', import.meta.url));
 describe('readWorkspaceVersions', () => {
   it('reads every workspace package version from the repo root', () => {
     const versions = readWorkspaceVersions(repoRoot);
-    expect(versions['@bombfarm/web']).toBe('0.0.0');
-    expect(versions['@bombfarm/desktop']).toBe('0.0.0');
-    expect(versions['@bombfarm/ui']).toBe('0.0.0');
+    const expectedWeb = JSON.parse(
+      readFileSync(join(repoRoot, 'apps/web/package.json'), 'utf8'),
+    ).version;
+    const expectedDesktop = JSON.parse(
+      readFileSync(join(repoRoot, 'apps/desktop/package.json'), 'utf8'),
+    ).version;
+    const expectedUi = JSON.parse(
+      readFileSync(join(repoRoot, 'packages/ui/package.json'), 'utf8'),
+    ).version;
+
+    expect(versions['@bombfarm/web']).toBe(expectedWeb);
+    expect(versions['@bombfarm/desktop']).toBe(expectedDesktop);
+    expect(versions['@bombfarm/ui']).toBe(expectedUi);
     expect(Object.keys(versions).length).toBeGreaterThanOrEqual(7);
   });
 
