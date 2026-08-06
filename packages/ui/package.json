@@ -19,7 +19,7 @@
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "lint": "eslint src",
     "test": "vitest run",
-    "icons:generate": "svgr --config-file svgr.config.cjs --out-dir src/icon/game icons/game",
+    "icons:generate": "svgr --config-file svgr.config.cjs --out-dir src/icon/game icons/game && node scripts/icons-stamp-headers.mjs",
     "icons:check": "node scripts/icons-check.mjs"
   },
   "peerDependencies": {
