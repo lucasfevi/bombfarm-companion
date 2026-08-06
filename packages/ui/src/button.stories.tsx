@@ -1,6 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react';
-import { BiCoffee } from 'react-icons/bi';
-import { Button } from './index';
+import { Button, Icon as UiIcon } from './index';
 
 const meta = {
   title: 'UI/Button',
@@ -42,7 +41,7 @@ export const Icon: Story = {
 export const Coffee: Story = {
   args: {
     variant: 'coffee',
-    children: <BiCoffee size={16} aria-hidden="true" />,
+    children: <UiIcon name="coffee" />,
     'aria-label': 'Buy me a coffee',
   },
 };
@@ -52,7 +51,7 @@ export const CoffeeFull: Story = {
     variant: 'coffee-full',
     children: (
       <>
-        <BiCoffee size={16} aria-hidden="true" />
+        <UiIcon name="coffee" />
         Buy me a coffee
       </>
     ),

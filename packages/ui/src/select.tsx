@@ -7,8 +7,8 @@ import {
   type ReactNode,
 } from 'react';
 import { Select as BaseSelect } from '@base-ui/react/select';
-import { HiMiniChevronDown } from 'react-icons/hi2';
 import { cn } from './cn';
+import { Icon } from './icon';
 import {
   selectAffixClass,
   selectFieldRecipe,
@@ -106,7 +106,7 @@ export function Select({
         className={cn(selectFieldRecipe({ size }), className)}
       >
         <span className={selectAffixClass} aria-hidden>
-          <HiMiniChevronDown className="size-3.5" />
+          <Icon name="chevron-down" className="size-3.5" />
         </span>
         <BaseSelect.Value className={selectValueClass} />
       </BaseSelect.Trigger>

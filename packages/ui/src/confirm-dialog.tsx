@@ -1,8 +1,7 @@
 'use client';
 
 import type { ReactNode } from 'react';
-import { HiMiniXMark } from 'react-icons/hi2';
-import { Button, Dialog } from './index';
+import { Button, Dialog, Icon } from './index';
 import {
   dialogActionsClass,
   dialogDescClass,
@@ -47,7 +46,7 @@ export function ConfirmDialog({
           <Dialog.Head>
             <Dialog.Title>{title}</Dialog.Title>
             <Dialog.Close aria-label={cancelLabel}>
-              <HiMiniXMark size={16} aria-hidden="true" />
+              <Icon name="x-mark" />
             </Dialog.Close>
           </Dialog.Head>
           {description ? (

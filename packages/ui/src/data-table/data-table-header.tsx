@@ -1,7 +1,7 @@
 'use client';
 
-import { HiMiniChevronDown, HiMiniChevronUp } from 'react-icons/hi2';
 import { cn } from '../cn';
+import { Icon } from '../icon';
 import { dataTableHeadButtonClass, dataTableHeadClass, dataTableHeadInnerClass } from '../data-table.recipe';
 import { headAlignClass } from './head-align';
 import { SortIdleIcon } from './sort-idle-icon';
@@ -44,9 +44,9 @@ export function DataTableHeader<T extends string>(props: DataTableHeaderProps<T>
           <span>{children}</span>
           {active ? (
             sortDir === 'asc' ? (
-              <HiMiniChevronUp size={12} aria-hidden="true" />
+              <Icon name="chevron-up" size="xs" />
             ) : (
-              <HiMiniChevronDown size={12} aria-hidden="true" />
+              <Icon name="chevron-down" size="xs" />
             )
           ) : (
             <SortIdleIcon />

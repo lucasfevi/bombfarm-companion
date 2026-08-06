@@ -17,6 +17,14 @@
  * `*.recipe.ts` module inside this boundary.
  */
 
+export {
+  Icon,
+  iconSources,
+  isIconName,
+  type IconName,
+  type IconProps,
+  type IconSize,
+} from './icon';
 export { cn } from './cn';
 export { AppShell } from './AppShell';
 export type { AppShellProps } from './AppShell';

@@ -223,8 +223,49 @@ to elements of type "feature" and captured values: feature="planner"  boundaries
 ```
 
 `design-system/` may depend only on React, `@base-ui/react`, `cva`/`clsx`/`tailwind-merge`,
-`react-icons`, `@theme` tokens (via utility class names), `shared/lib/**`, plus pure
+`react-icons` **via `src/icon/` only** (lint-enforced — see [Icons](#icons)), `@theme` tokens (via utility class names), `shared/lib/**`, plus pure
 presentational helpers it fully owns.
+
+## Icons
+
+All icon rendering goes through the `Icon` primitive exported from `@bombfarm/ui`. Call sites pass a
+closed `IconName` string — never a vendor component or a raw `.svg` import.
+
+### Source
+
+| Source | Module | Contents |
+| --- | --- | --- |
+| UI chrome | `packages/ui/src/icon/ui-registry.ts` | The **only** file in `packages/ui` allowed to import `react-icons` (chevrons, close mark, coffee story icon) |
+
+`registry.ts` exposes that map as the public `IconName` union. Companion v1 does **not** ship original game-glyph SVGs (slots, rarity ornaments, gem/key/gold) — inventory chrome can use text/badges or wiki art decisions later; do not reintroduce a second icon source without an explicit product decision.
+
+### Size scale
+
+| `size` prop | Tailwind utility | Pixels | Default |
+| --- | --- | --- | --- |
+| `xs` | `size-3` | 12px | |
+| `sm` | `size-4` | 16px | yes |
+| `md` | `size-5` | 20px | |
+| `lg` | `size-6` | 24px | |
+
+Off-scale boxes (8px idle sort chevrons, 14px select/num affixes) use the **`className` escape
+hatch** merged last via `cn()` — do not add ad-hoc steps to the public `IconSize` enum.
+
+### Accessibility
+
+Semantics live on a wrapping `<span>`; the inner `react-icons` SVG is always decorative
+(`aria-hidden`), because those components force `aria-hidden` on the SVG after prop spread.
+
+- **Decorative by default:** omit `label` (or pass `""`) → wrapper `aria-hidden="true"`.
+- **Meaningful icons:** pass `label="…"` (already-translated) → wrapper `role="img"` + `aria-label`.
+
+### Lint seam
+
+- `packages/ui/**` and `apps/desktop/**`: raw `react-icons` or `*.svg` imports fail lint outside `packages/ui/src/icon/**`.
+- `apps/web/**`: nine planner files are **grandfathered** in `apps/web/eslint.config.mjs` (`site-header`, `topbar`, `footer`, `slot-editor`, `import-heroes-dialog`, `hero-picker-dialog`, `hero-strip`, `hero-strip-identity`, `phases-hero-switcher`). Delete an entry when that file migrates to `<Icon />`; any **new** web call site errors immediately.
+- **Known gap:** root ESLint ignores `packages/ui/**/*.stories.tsx`, so a raw icon import in a story is caught by review/tests only — closing that gap is owned by `m2-storybook-ci`.
+
+Storybook gallery: [`packages/ui/src/icon.stories.tsx`](../packages/ui/src/icon.stories.tsx) (enum-driven UI chrome).
 
 ## Companion reuse strategy (decided)
 
