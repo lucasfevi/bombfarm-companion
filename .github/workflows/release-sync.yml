@@ -43,8 +43,14 @@ jobs:
         id: recreate
         env:
           HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
         run: |
-          git fetch origin
+          # After merge with delete_branch_on_merge, the head SHA may be
+          # unreachable via a plain `git fetch origin`. Prefer the retained
+          # pull/<n>/head ref, then fall back to fetching the SHA directly.
+          if ! git fetch --no-tags origin "pull/${PR_NUMBER}/head"; then
+            git fetch --no-tags origin "${HEAD_SHA}"
+          fi
           if ! git push --force origin "${HEAD_SHA}:refs/heads/release/next"; then
             {
               echo '::error::Failed to recreate release/next from merged PR head'
@@ -53,6 +59,7 @@ jobs:
               echo 'Recreate the versioned branch, then open the sync PR:'
               echo ''
               echo '```bash'
+              echo "git fetch origin pull/${PR_NUMBER}/head"
               echo "git push --force origin ${HEAD_SHA}:refs/heads/release/next"
               echo 'gh pr create --head release/next --base develop --title "chore(release): sync versions to develop"'
               echo '```'
