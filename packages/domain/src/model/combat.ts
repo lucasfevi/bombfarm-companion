@@ -8,7 +8,7 @@ export function staminaFactor(energy: number): number {
   return 1 - 0.5 / (1.3 + 0.003 * energy);
 }
 
-export const FUSE_FLOOR = 0.6; // "piso de 30% do ciclo" — 30% of the 2s base
+export const FUSE_FLOOR = 0.4; // "piso de 20% do ciclo" — 20% of the 2s base (CDR teto 80%)
 
 export function fuseSeconds(cdrPct: number): number {
   const cdr = clampCdrPct(cdrPct);
