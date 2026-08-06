@@ -1,14 +1,8 @@
 @import '@bombfarm/ui/styles.css';
 
-:root {
-  --bf-bg: #0b1020;
-  --bf-fg: #e8edf7;
-  --bf-accent: #f59e0b;
-  --bf-muted: #64748b;
-}
-
 body {
   margin: 0;
-  background: var(--bf-bg);
-  color: var(--bf-fg);
+  min-height: 100vh;
+  background: var(--bg);
+  color: var(--ink);
 }

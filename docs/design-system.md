@@ -9,11 +9,12 @@ recipes; conflicting utilities are resolved by `cn()` (`clsx` + `tailwind-merge`
 
 ## Tokens
 
-Design tokens are the single source of truth for color/type/spacing and live in the `@theme`
-block of [`apps/web/src/app/globals.css`](../apps/web/src/app/globals.css). The planner is **dark-only at runtime**:
-`@theme` holds the dark `--color-*` palette directly (no `prefers-color-scheme` toggle). Primitives
-reference tokens **only** through Tailwind theme utilities (`bg-surface`, `text-muted`, `border-line`, …)
-or `color-mix(... var(--token) ...)`
+Design tokens are authored once in [`packages/ui/src/styles.css`](../packages/ui/src/styles.css)
+(`@theme` + `:root` aliases) with a typed mirror in
+[`packages/ui/src/tokens.ts`](../packages/ui/src/tokens.ts). Apps import
+`@bombfarm/ui/styles.css` and add their own `@source` scan paths. The planner is **dark-only at runtime**:
+no `prefers-color-scheme` toggle. Primitives reference tokens **only** through Tailwind theme utilities
+(`bg-surface`, `text-muted`, `border-line`, …) or `color-mix(... var(--token) ...)`
 arbitrary values — never hardcoded palette literals (the one documented exception is the Ko-fi
 brand button, `AD-003`).
 
