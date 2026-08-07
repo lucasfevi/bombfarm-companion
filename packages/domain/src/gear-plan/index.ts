@@ -44,3 +44,4 @@ export {
   MAX_ROUNDS,
   runGearPlan,
 } from './solver';
+export { buildWaterfall, baselineAssignmentFromInput } from './waterfall';

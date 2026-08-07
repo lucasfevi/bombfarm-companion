@@ -12,6 +12,7 @@ import {
   type SolverBudget,
 } from './solver-search';
 import { loadoutsFromAssignment } from './solver-assignment';
+import { buildWaterfall } from './waterfall';
 import type { GearPlan, GearPlanInput, GearPlanResult, HeroPlanContext } from './types';
 
 export {
@@ -148,31 +149,32 @@ export function runGearPlan(
     itemById,
   );
 
-  const perHero = optimizeContexts.map((ctx) => {
-    const before = currentEval.perHero[ctx.heroId]?.sustained ?? 0;
-    const after = best.evaluation.perHero[ctx.heroId]?.sustained ?? 0;
-    return {
-      heroId: ctx.heroId,
-      heroName: ctx.name,
-      level: ctx.level,
-      before,
-      after,
-      delta: after - before,
-    };
+  const waterfall = buildWaterfall({
+    gearInput: input,
+    contexts,
+    currentAssignment: baseAssignment,
+    planAssignment: best.assignment,
+    finalPtsByHeroId: best.ptsByHeroId,
+    itemById,
+    currentDps,
+    planDps,
   });
 
+  const waterfallCurrentDps = waterfall.steps[0]?.objective ?? currentDps;
+  const waterfallPlanDps = waterfall.steps[3]?.objective ?? planDps;
+
   const plan: GearPlan = {
-    steps: [],
-    forgeList: [],
-    moveList: [],
-    pointResets: [],
-    perHero,
+    steps: waterfall.steps,
+    forgeList: waterfall.forgeList,
+    moveList: waterfall.moveList,
+    pointResets: waterfall.pointResets,
+    perHero: waterfall.perHero,
     proposedLoadouts,
     regime: best.evaluation.regime,
     sumDuty: best.evaluation.sumDuty,
     slots: best.evaluation.slots,
-    currentDps,
-    planDps,
+    currentDps: waterfallCurrentDps,
+    planDps: waterfallPlanDps,
     disclosures: {
       unmodelledAbilities: unmodelledAbilitiesInScope(contexts),
       loadoutDriftHeroNames: loadoutDriftHeroNames(input),
