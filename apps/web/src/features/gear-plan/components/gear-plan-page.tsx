@@ -15,7 +15,8 @@ import { defaultScopeForHero } from '@/shared/stores/gear-plan/types';
 import { useGearPlanRunner } from '@/features/gear-plan/hooks/use-gear-plan-runner';
 import { GearPlanEmptyPanel } from './gear-plan-empty';
 import { GearPlanToolbar } from './gear-plan-toolbar';
-import { ForgeFloorField } from './forge-floor-field';
+import { GearPlanRunSummary } from './gear-plan-run-summary';
+import { GearPlanOptimizingModal } from './gear-plan-optimizing-modal';
 import { ScopeList } from './scope-list';
 import { WaterfallPanel } from './waterfall-panel';
 import { HeroDeltaTable } from './hero-delta-table';
@@ -69,16 +70,21 @@ export function GearPlanPage({
 
   const setupAndScope = (
     <>
-      <div className="grid grid-cols-1 gap-4 lg:grid-cols-[1fr_auto]">
-        <GearPlanToolbar t={t} runner={runner} />
-        <ForgeFloorField t={t} />
-      </div>
+      <GearPlanToolbar t={t} runner={runner} />
       <ScopeList t={t} lang={lang} />
     </>
   );
 
   return (
     <div className={workspaceClass}>
+      <GearPlanOptimizingModal
+        open={isRunning}
+        t={t}
+        onCancel={() => {
+          runner.cancel();
+          clearPlan();
+        }}
+      />
       <section role="region" aria-label={t.gearPlanPageLandmark}>
         <header className="mb-4">
           <h1 className="m-0 text-lg font-bold text-ink">{t.gearPlanPageTitle}</h1>
@@ -147,6 +153,11 @@ export function GearPlanPage({
                   {t.gearPlanResultsSectionTitle}
                 </h2>
                 <div className="flex flex-col gap-4">
+                  <GearPlanRunSummary
+                    t={t}
+                    plan={displayPlan}
+                    ranOnMainThread={runner.ranOnMainThread}
+                  />
                   <WaterfallPanel t={t} plan={displayPlan} />
                   <HeroDeltaTable t={t} plan={displayPlan} />
                   <ForgeList t={t} plan={displayPlan} />

@@ -73,10 +73,7 @@ export async function setAccountForgeFloor(page: Page, forgeFloor: number) {
 }
 
 export async function readForgeFloorValue(page: Page): Promise<string> {
-  const value = page
-    .getByRole('heading', { name: /^Forge floor$/i, level: 2 })
-    .locator('xpath=ancestor::section[1]//b')
-    .first();
+  const value = page.locator('label').filter({ hasText: /^Forge floor$/i }).locator('b').first();
   await expect(value).toBeVisible();
   return (await value.textContent()) ?? '';
 }

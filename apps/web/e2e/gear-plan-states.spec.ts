@@ -5,6 +5,7 @@ import {
   clickOptimize,
   gotoGearPlan,
   setE2eForceError,
+  setE2eMaxEvaluations,
   snapshotHeroesJson,
   waitForOptimizeDone,
 } from './fixtures/gear-plan-e2e';
@@ -49,5 +50,17 @@ test.describe('Gear plan page states', () => {
     await clickOptimize(page);
     await expect(page.getByRole('heading', { name: /Search failed/i })).toBeVisible({ timeout: 120_000 });
     await expect(page.getByRole('button', { name: /Try again/i })).toBeVisible();
+  });
+
+  test('optimizing modal can cancel the run', async ({ page }) => {
+    await setE2eMaxEvaluations(page, 50_000);
+    await seedLocalStorage(page, gearPlanFixtureSeed('en'));
+    await gotoGearPlan(page);
+    await clickOptimize(page);
+    await expect(page.getByRole('dialog', { name: /Searching/i })).toBeVisible();
+    await expect(page.getByText(/^Elapsed /i)).toBeVisible();
+    await page.getByRole('button', { name: /^Cancel$/i }).click();
+    await expect(page.getByRole('dialog', { name: /Searching/i })).toBeHidden();
+    await expect(page.getByRole('button', { name: /Run the roster gear search/i })).toBeEnabled();
   });
 });

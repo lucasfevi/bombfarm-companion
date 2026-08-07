@@ -5,16 +5,17 @@ import { Button, Panel } from '@bombfarm/ui';
 import { panelHClass, panelTitleClass } from '@bombfarm/ui/panel-field.recipe';
 import type { Strings } from '@/shared/i18n';
 import type { GearPlanRunner } from '@/features/gear-plan/hooks/use-gear-plan-runner';
-import { countOptimizeScopeHeroes } from '@/features/gear-plan/model/build-gear-plan-input';
-import { buildGearPlanInputFromStore } from '@/features/gear-plan/model/build-gear-plan-input';
+import {
+  buildGearPlanInputFromStore,
+  countOptimizeScopeHeroes,
+} from '@/features/gear-plan/model/build-gear-plan-input';
 import { usePlannerStore } from '@/shared/stores';
-import { GearPlanRunSummary } from './gear-plan-run-summary';
+import { ForgeFloorField } from './forge-floor-field';
 
 export function GearPlanToolbar({ t, runner }: { t: Strings; runner: GearPlanRunner }) {
   const startRun = usePlannerStore((state) => state.startRun);
   const applyPlan = usePlannerStore((state) => state.applyPlan);
   const resolveRun = usePlannerStore((state) => state.resolveRun);
-  const plan = usePlannerStore((state) => state.plan);
   const runStatus = usePlannerStore((state) => state.runStatus);
   const handledRunId = useRef<string | null>(null);
 
@@ -48,28 +49,26 @@ export function GearPlanToolbar({ t, runner }: { t: Strings; runner: GearPlanRun
   }, [runner, startRun, applyPlan, resolveRun]);
 
   const busy = runner.status === 'running' || runStatus === 'running';
-  const displayPlan = runner.plan ?? plan;
 
   return (
     <Panel focus>
       <div className={panelHClass}>
-        <h2 className={panelTitleClass}>{t.gearPlanOptimize}</h2>
+        <h2 className={panelTitleClass}>{t.gearPlanSetupSectionTitle}</h2>
       </div>
-      <div className="flex flex-wrap items-center gap-3">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between sm:gap-6">
+        <ForgeFloorField t={t} />
         <Button
           type="button"
           variant="primary"
           disabled={busy}
           aria-busy={busy}
           aria-label={t.gearPlanOptimizeAria}
+          className="min-h-12 w-full shrink-0 px-8 text-sm sm:w-auto sm:min-w-48"
           onClick={handleOptimize}
         >
           {busy ? t.gearPlanOptimizing : t.gearPlanOptimize}
         </Button>
       </div>
-      {displayPlan ? (
-        <GearPlanRunSummary t={t} plan={displayPlan} ranOnMainThread={runner.ranOnMainThread} />
-      ) : null}
     </Panel>
   );
 }

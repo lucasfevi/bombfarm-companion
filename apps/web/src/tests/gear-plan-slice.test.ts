@@ -182,6 +182,13 @@ describe('gear-plan slice', () => {
     expect(usePlannerStore.getState().runStatus).toBe('idle');
   });
 
+  it('clearPlan resets a running search with no plan yet', () => {
+    usePlannerStore.setState({ plan: null, planInputSignature: null, runId: 'run-cancel', runStatus: 'running' });
+    usePlannerStore.getState().clearPlan();
+    expect(usePlannerStore.getState().runId).toBeNull();
+    expect(usePlannerStore.getState().runStatus).toBe('idle');
+  });
+
   it('selectGearPlanIsStale is false without a stored signature', () => {
     expect(selectGearPlanIsStale(usePlannerStore.getState())).toBe(false);
   });

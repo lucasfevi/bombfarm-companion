@@ -1,23 +1,20 @@
 'use client';
 
 import { FORJA_MAX } from '@bombfarm/domain/gear';
-import { Panel, Stepper } from '@bombfarm/ui';
-import { panelHClass, panelTitleClass } from '@bombfarm/ui/panel-field.recipe';
+import { Stepper } from '@bombfarm/ui';
 import type { Strings } from '@/shared/i18n';
 import { usePlannerStore, selectForgeFloor } from '@/shared/stores';
 
 const fieldLabelClass =
-  'flex flex-col gap-[3px] text-[11px] tracking-[0.03em] text-muted uppercase';
+  'flex min-w-0 flex-col gap-[3px] text-[11px] tracking-[0.03em] text-muted uppercase';
 
+/** Forge-floor stepper + hint — no panel chrome (lives inside the search setup bar). */
 export function ForgeFloorField({ t }: { t: Strings }) {
   const forgeFloor = usePlannerStore(selectForgeFloor);
   const setForgeFloor = usePlannerStore((state) => state.setForgeFloor);
 
   return (
-    <Panel>
-      <div className={panelHClass}>
-        <h2 className={panelTitleClass}>{t.gearPlanForgeFloorLabel}</h2>
-      </div>
+    <div className="min-w-0 max-w-sm flex-1">
       <label className={fieldLabelClass}>
         <span>{t.gearPlanForgeFloorLabel}</span>
         <Stepper
@@ -29,6 +26,6 @@ export function ForgeFloorField({ t }: { t: Strings }) {
         />
       </label>
       <p className="m-0 mt-2 text-[12px] text-muted">{t.gearPlanForgeFloorHint}</p>
-    </Panel>
+    </div>
   );
 }

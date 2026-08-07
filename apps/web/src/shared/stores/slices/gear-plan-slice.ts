@@ -124,7 +124,14 @@ export const createGearPlanSlice: StateCreator<
   },
 
   clearPlan: () => {
-    if (get().plan === null && get().planInputSignature === null) return;
+    if (
+      get().plan === null &&
+      get().planInputSignature === null &&
+      get().runStatus === 'idle' &&
+      get().runId === null
+    ) {
+      return;
+    }
     set({ plan: null, planInputSignature: null, runStatus: 'idle', runId: null });
   },
 
