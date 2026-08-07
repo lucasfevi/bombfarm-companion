@@ -14,6 +14,10 @@ The collapsible **How the math works** / **Como calculamos tudo** block (`Explai
 5. Keep EN and PT **concept-aligned** (same section order and claims); follow [`i18n.md`](../../../docs/i18n.md) for PT chrome quality.
 6. Add or extend a Vitest contract in `src/tests/storage-i18n.test.ts` (or a focused neighbor) when the change would otherwise regress explain wording that already bit us (retired panels, wrong share model, placeholder guide copy).
 
+## Roster gear plan (`@bombfarm/domain/gear-plan` + Gear plan page)
+
+WHEN the roster gear-plan objective, duty weighting (`drainMult`), forge-floor normalization (`effectiveUpgrade`), saturated vs under-saturated regime, or related UI copy changes, THEN update this doc and **both** `explainSections` entries **9 · Roster gear plan** / **9 · Plano de gear do roster** in `src/shared/i18n/namespaces/advice.ts`, and extend `storage-i18n.test.ts` so EN + PT mention duty weighting and forge floor in that section.
+
 ## Out of scope
 
 - Deep dumps of every derive branch — explain stays a readable summary, not a second `model.ts`.

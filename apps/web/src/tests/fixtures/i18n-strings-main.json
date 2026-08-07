@@ -302,6 +302,15 @@
           "Loot abilities (Lapidary Eye, Gold Vein), Hero Hunter, Ghost and Baton Pass are outside the DPS math. Ability crit bonuses apply as % of the base roll, per the Heroes page rule. Deadly Eye's keystone (+25% crit chance) is also deliberately unmodelled: no save in this app has reached its Stage-120 unlock yet, so it's unknown whether the exporter already folds that bonus into crit_chance_add — modelling it here risks double-counting if it does.",
           "If in-game damage still diverges from the model, check Team buffs in Account (another hero’s War Cry is a common ~20% / 40% gap)."
         ]
+      },
+      {
+        "h": "9 · Roster gear plan",
+        "p": [
+          "The Gear plan page searches forge upgrades and gear moves across a scoped roster to maximize combined sustained roster DPS — the same uptime-weighted number the advisor uses, summed over every hero you mark Optimize. Donate puts a hero's items in the shared pool without changing their build; Leave alone removes them from the search.",
+          "Each in-scope hero carries a duty weight (drainMult) from energy drain and house rest time. Team auras on that page are recomputed from the scoped roster, exclude the scored hero, and blend by duty — manual Account Team buffs are ignored there but still apply in the Planner. When Σ duty exceeds field slots, throughput uses the fair-share saturated regime; otherwise heroes keep their full active DPS.",
+          "Scoring assumes every pool item is forged to at least your forge floor (effectiveUpgrade = max(item upgrade, floor)). Results are shown as four steps — today, forge to floor, moves, optional point resets — plus forge/move chore lists. Copy always says the best roster DPS found by this search, never a claim of true optimality. Send to alt loadout writes proposed gear to each hero's clone row only after you confirm."
+        ],
+        "code": "objective = Σ sustainedDPS × duty (saturated: fair-share active-DPS)\neffectiveUpgrade = max(upgrade, forgeFloor)"
       }
     ],
     "bdSrcBase": "Birth roll",
@@ -871,6 +880,15 @@
           "Habilidades de loot (Olho de Lapidador, Veia de Ouro), Caça-Hero, Fantasma e Passagem de Bastão ficam fora da conta de DPS. Bônus de crítico de habilidades entram como % do roll base, pela regra da página Heróis. O keystone Deadly Eye (+25% de chance de crítico) também é deliberadamente não modelado: nenhum save deste app chegou ainda ao desbloqueio da Fase 120, então não dá pra saber se o exportador já inclui esse bônus em crit_chance_add — modelar aqui arriscaria contar em dobro.",
           "Se o dano no jogo ainda divergir do modelo, confira Buffs de time em Conta (Grito de Guerra de outro herói é um gap comum de ~20% / 40%)."
         ]
+      },
+      {
+        "h": "9 · Plano de gear do roster",
+        "p": [
+          "A página Plano de gear do roster busca upgrades de forja e movimentações de equipamento num roster com escopo para maximizar o DPS efetivo combinado — o mesmo número com peso de tempo em campo que o conselheiro usa, somado sobre cada herói marcado como Otimizar. Doar coloca os itens do herói no pool compartilhado sem mudar a build; Deixar quieto remove o herói da busca.",
+          "Cada herói no escopo carrega um peso de duty (drainMult) a partir do gasto de energia e do tempo de descanso da casa. As auras de time nessa página são recalculadas a partir do roster em escopo, excluem o herói pontuado e misturam por duty — os buffs manuais de time em Conta são ignorados ali, mas ainda valem no Planner. Quando Σ duty passa dos slots de campo, o throughput usa o regime saturado de DPS ativo justo; caso contrário, cada herói mantém o DPS ativo integral.",
+          "A pontuação assume que cada item do pool está forjado até o piso de forja (effectiveUpgrade = max(upgrade do item, piso)). O resultado aparece em quatro passos — hoje, forjar até o piso, movimentos, resets de pontos opcionais — mais listas de forja e movimentos. O texto sempre diz o melhor DPS de roster encontrado por essa busca, nunca uma garantia de ótimo verdadeiro. Enviar para alt loadout grava o gear proposto na linha clone de cada herói só depois da confirmação."
+        ],
+        "code": "objetivo = Σ DPS efetivo × duty (saturado: DPS ativo justo)\neffectiveUpgrade = max(upgrade, piso de forja)"
       }
     ],
     "bdSrcBase": "Roll base",
