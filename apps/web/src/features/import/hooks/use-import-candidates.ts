@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from 'react';
 import { parseSaveFile, type AccountImportData, type ImportCandidate, type ParseRejection } from '@bombfarm/domain/import-save';
+import type { InventoryItem } from '@bombfarm/domain/inventory';
 import { importHeroes, type HeroRecord } from '@/shared/lib/storage';
 import { usePlannerStore } from '@/shared/stores';
 import type { Strings } from '@/shared/i18n';
@@ -46,6 +47,7 @@ export function useImportCandidates({
   const [rejected, setRejected] = useState<ParseRejection | null>(null);
   const [fileError, setFileError] = useState<string | null>(null);
   const [accountData, setAccountData] = useState<AccountImportData | null>(null);
+  const [inventoryItems, setInventoryItems] = useState<InventoryItem[]>([]);
   const [sortKey, setSortKey] = useState<ImportSortKey>('power');
   const [sortDir, setSortDir] = useState<ImportSortDir>('desc');
 
@@ -60,6 +62,7 @@ export function useImportCandidates({
     setRejected(null);
     setFileError(null);
     setAccountData(null);
+    setInventoryItems([]);
     setSortKey('power');
     setSortDir('desc');
   }
@@ -78,11 +81,18 @@ export function useImportCandidates({
       setFileError(t.importInvalidJson);
       return;
     }
-    const { candidates: found, warnings: warn, account, rejected: rejectedResult } = parseSaveFile(raw, existing);
+    const {
+      candidates: found,
+      warnings: warn,
+      account,
+      rejected: rejectedResult,
+      inventory,
+    } = parseSaveFile(raw, existing);
     setCandidates(found);
     setWarnings(warn);
     setRejected(rejectedResult);
     setAccountData(account);
+    setInventoryItems(inventory);
     setSortKey('power');
     setSortDir('desc');
   }
@@ -105,6 +115,7 @@ export function useImportCandidates({
     // any existing hero whose sourceId is absent from it, in the same write (BSP-48).
     const saveSourceIds = new Set(candidates.map((candidate) => candidate.sourceId));
     const result = importHeroes(usePlannerStore.getState().heroes, records, saveSourceIds);
+    usePlannerStore.getState().replaceInventoryFromImport(inventoryItems);
     onImported({ ...result, account: accountData });
     handleClose(false);
   }
