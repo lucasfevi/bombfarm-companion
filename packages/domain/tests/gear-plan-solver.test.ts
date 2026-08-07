@@ -1,48 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
 import * as advisorPipeline from '@bombfarm/domain/advisor-pipeline';
-import { parseSaveFile } from '@bombfarm/domain/import-save';
-import { treeTotalsFromSave } from '@bombfarm/domain/save-units';
 import { GEAR_PLAN_MAX_EVALUATIONS, runGearPlan } from '@bombfarm/domain/gear-plan/solver';
-import type { GearPlanHeroInput, GearPlanInput } from '@bombfarm/domain/gear-plan/types';
-import { loadFixtureJson } from './helpers/sheet-math-fixtures';
-
-export function gearPlanInputFromFixture(file: string, forgeFloor = 10): GearPlanInput {
-  const raw = loadFixtureJson(file);
-  const { inventory, candidates, account } = parseSaveFile(raw, []);
-  const totals = (raw.skills as { totals: Record<string, unknown> }).totals;
-  const treeSheet = treeTotalsFromSave(totals);
-  const heroes: GearPlanHeroInput[] = candidates
-    .filter((c) => !c.blocked)
-    .map((c) => ({
-      heroId: c.sourceId,
-      name: c.name,
-      level: c.level,
-      stars: c.record.stars,
-      rarity: c.rarity,
-      birth: c.record.birth,
-      abilities: c.record.abilities,
-      pts: c.record.pts,
-      loadout: c.record.loadout,
-      battleAllowed: c.record.battleAllowed,
-    }));
-  const scopeByHeroId = Object.fromEntries(heroes.map((h) => [h.heroId, 'optimize' as const]));
-  return {
-    heroes,
-    inventory,
-    account: {
-      treeSheet,
-      treeGlassCannon: Boolean(account.tree?.glassCannon),
-      treeTempoDobrado: Boolean(account.tree?.tempoDobrado),
-      houseIdx: account.houseIdx ?? 0,
-      houseLevel: account.houseLevel ?? 1,
-      phase: 1,
-      mitigationPct: 6.7,
-      slots: account.slots ?? 9,
-    },
-    scopeByHeroId,
-    forgeFloor,
-  };
-}
+import { gearPlanInputFromFixture } from './helpers/gear-plan-fixtures';
 
 function assertOk(result: ReturnType<typeof runGearPlan>): asserts result is { blocked: false; plan: NonNullable<import('@bombfarm/domain/gear-plan/types').GearPlan> } {
   expect(result.blocked).toBe(false);

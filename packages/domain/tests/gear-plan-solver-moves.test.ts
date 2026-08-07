@@ -2,7 +2,6 @@ import { readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
-import { parseSaveFile } from '@bombfarm/domain/import-save';
 import { SLOTS } from '@bombfarm/domain/gear';
 import { buildHeroPlanContexts } from '@bombfarm/domain/gear-plan/hero-context';
 import { buildPool, eligibleForHero } from '@bombfarm/domain/gear-plan/pool';
@@ -12,54 +11,8 @@ import {
   type AssignmentState,
 } from '@bombfarm/domain/gear-plan/solver-assignment';
 import { generateMoves } from '@bombfarm/domain/gear-plan/solver-moves';
-import type { GearPlanHeroInput, GearPlanInput, HeroPlanContext } from '@bombfarm/domain/gear-plan/types';
-import { loadFixtureJson } from './helpers/sheet-math-fixtures';
-
-function gearPlanInputFromFixture(file: string, forgeFloor = 10): GearPlanInput {
-  const raw = loadFixtureJson(file);
-  const { inventory, candidates, account } = parseSaveFile(raw, []);
-  const totals = (raw.skills as { totals: Record<string, unknown> }).totals;
-  const treeSheet = {
-    danoStatic: Number(totals.dano_static ?? 1),
-    energyPct: Number(totals.energy_pct ?? 0),
-    speedPct: Number(totals.speed_pct ?? 0),
-    critChancePct: Number(totals.crit_chance_pct ?? 0),
-    critDmgPct: Number(totals.crit_dmg_pct ?? 0),
-    luckFlatPct: Number(totals.luck_add ?? 0) * 100,
-    critDmgMult: Number(totals.crit_dmg_mult ?? 1),
-  };
-  const heroes: GearPlanHeroInput[] = candidates
-    .filter((c) => !c.blocked)
-    .map((c) => ({
-      heroId: c.sourceId,
-      name: c.name,
-      level: c.level,
-      stars: c.record.stars,
-      rarity: c.rarity,
-      birth: c.record.birth,
-      abilities: c.record.abilities,
-      pts: c.record.pts,
-      loadout: c.record.loadout,
-      battleAllowed: c.record.battleAllowed,
-    }));
-  const scopeByHeroId = Object.fromEntries(heroes.map((h) => [h.heroId, 'optimize' as const]));
-  return {
-    heroes,
-    inventory,
-    account: {
-      treeSheet,
-      treeGlassCannon: Boolean(account.tree?.glassCannon),
-      treeTempoDobrado: Boolean(account.tree?.tempoDobrado),
-      houseIdx: account.houseIdx ?? 0,
-      houseLevel: account.houseLevel ?? 1,
-      phase: 1,
-      mitigationPct: 6.7,
-      slots: account.slots ?? 9,
-    },
-    scopeByHeroId,
-    forgeFloor,
-  };
-}
+import type { GearPlanInput, HeroPlanContext } from '@bombfarm/domain/gear-plan/types';
+import { gearPlanInputFromFixture } from './helpers/gear-plan-fixtures';
 
 function poolEntryFromItem(
   item: GearPlanInput['inventory'][number],

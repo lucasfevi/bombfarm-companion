@@ -9,7 +9,7 @@ import {
   syntheticRegressionPerHero,
 } from '@bombfarm/domain/gear-plan/waterfall';
 import { buildHeroPlanContexts } from '@bombfarm/domain/gear-plan/hero-context';
-import { gearPlanInputFromFixture } from './gear-plan-solver.test';
+import { gearPlanInputFromFixture } from './helpers/gear-plan-fixtures';
 
 function waterfallFromFixture(file: string) {
   const input = gearPlanInputFromFixture(file);
