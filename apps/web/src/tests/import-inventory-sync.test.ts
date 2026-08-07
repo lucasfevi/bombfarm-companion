@@ -11,8 +11,8 @@ const fixturePath = join(
   '../../packages/domain/tests/fixtures/sheet-math/save-20260731-11heroes.json',
 );
 
-function loadFixture() {
-  return JSON.parse(readFileSync(fixturePath, 'utf8'));
+function loadFixture(): Record<string, unknown> {
+  return JSON.parse(readFileSync(fixturePath, 'utf8')) as Record<string, unknown>;
 }
 
 describe('import inventory sync', () => {
