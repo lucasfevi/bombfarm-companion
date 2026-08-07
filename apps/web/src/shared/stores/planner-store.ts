@@ -18,6 +18,10 @@ import {
   type RosterSlice,
 } from '@/shared/stores/slices/roster-slice';
 import {
+  createGearPlanSlice,
+  type GearPlanSlice,
+} from '@/shared/stores/slices/gear-plan-slice';
+import {
   clearSessionTimersForTests,
   createSessionSlice,
   type SessionSlice,
@@ -30,7 +34,8 @@ export type PlannerStore = SessionSlice &
   AccountSlice &
   RosterSlice &
   PhasesSlice &
-  HeroDraftSlice;
+  HeroDraftSlice &
+  GearPlanSlice;
 
 const composeSlices: StateCreator<
   PlannerStore,
@@ -43,6 +48,7 @@ const composeSlices: StateCreator<
   ...createRosterSlice(...args),
   ...createPhasesSlice(...args),
   ...createHeroDraftSlice(...args),
+  ...createGearPlanSlice(...args),
 });
 
 /**

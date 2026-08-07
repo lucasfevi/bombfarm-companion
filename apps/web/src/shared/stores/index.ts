@@ -36,7 +36,15 @@ export {
   selectMitigationPct,
   selectRankMode,
   selectTargetProp,
+  selectSlots,
 } from '@/shared/stores/selectors/account-selectors';
+export {
+  selectGearPlanIsStale,
+  selectInventoryItems,
+  selectScopeByHeroId,
+  selectForgeFloor,
+} from '@/shared/stores/selectors/gear-plan-selectors';
+export type { GearPlanSlice } from '@/shared/stores/slices/gear-plan-slice';
 export {
   selectHeroes,
   selectActiveHeroId,

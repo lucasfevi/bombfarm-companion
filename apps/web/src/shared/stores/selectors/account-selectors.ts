@@ -17,6 +17,7 @@ export const selectHouseLevel = (state: PlannerStore) => state.houseLevel;
 export const selectFarmPhase = (state: PlannerStore) => state.phase;
 export const selectMitigationPct = (state: PlannerStore) => state.mitigationPct;
 export const selectRankMode = (state: PlannerStore) => state.rankMode;
+export const selectSlots = (state: PlannerStore) => state.slots;
 export const selectTargetProp = (state: PlannerStore) => state.targetProp;
 
 /** Nested AccountShared for persistence writes — inverse of hydrateAccount. */
@@ -67,6 +68,8 @@ export function selectAccountShared(state: PlannerStore): AccountShared {
       rankMode: state.rankMode,
       targetProp: state.targetProp,
     },
+    slots: state.slots,
+    forgeFloor: state.forgeFloor,
   };
   return accountSharedCache;
 }
@@ -90,6 +93,8 @@ export function selectAccountTuple(state: PlannerStore) {
     state.mitigationPct,
     state.rankMode,
     state.targetProp,
+    state.slots,
+    state.forgeFloor,
   ] as const;
 }
 

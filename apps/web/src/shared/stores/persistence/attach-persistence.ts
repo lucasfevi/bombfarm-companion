@@ -10,6 +10,7 @@ import { selectStrings } from '@/shared/stores/selectors/session-selectors';
 import { clearSessionTimersForTests } from '@/shared/stores/slices/session-slice';
 import { attachAccountPersistence } from '@/shared/stores/persistence/persist-account';
 import { attachHeroDraftPersistence } from '@/shared/stores/persistence/persist-hero-draft';
+import { attachInventoryPersistence } from '@/shared/stores/persistence/persist-inventory';
 
 type Store = typeof usePlannerStore;
 
@@ -23,6 +24,7 @@ export function attachPlannerPersistence(store: Store): () => void {
 
   const detachAccount = attachAccountPersistence(store);
   const detachHero = attachHeroDraftPersistence(store);
+  const detachInventory = attachInventoryPersistence(store);
 
   const unsubWriteError = onStorageWriteError(() => {
     const state = store.getState();
@@ -32,6 +34,7 @@ export function attachPlannerPersistence(store: Store): () => void {
   const detach = () => {
     detachAccount();
     detachHero();
+    detachInventory();
     unsubWriteError();
     clearSessionTimersForTests();
     attached = false;

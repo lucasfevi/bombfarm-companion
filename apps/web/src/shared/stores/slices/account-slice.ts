@@ -1,5 +1,6 @@
 import type { StateCreator } from 'zustand';
 import type { RankMode } from '@bombfarm/domain/model';
+import { DEFAULT_CASA_SLOTS } from '@bombfarm/domain/casa-slots';
 import type { AccountImportData } from '@bombfarm/domain/import-save';
 import { phaseLine } from '@bombfarm/domain/phases';
 import { zeroTeamBuffs, type TeamBuffId } from '@bombfarm/domain/team-buffs';
@@ -37,6 +38,7 @@ export type AccountSlice = {
   mitigationPct: number;
   rankMode: RankMode;
   targetProp: string | null;
+  slots: number;
 
   /** Keystones stay editable for what-if; numeric tree totals are import/hydrate only. */
   setTreeGlassCannon: (value: boolean) => void;
@@ -78,6 +80,7 @@ export const createAccountSlice: StateCreator<
   mitigationPct: defaultCtx.mitigationPct,
   rankMode: defaultCtx.rankMode,
   targetProp: defaultCtx.targetProp,
+  slots: DEFAULT_CASA_SLOTS,
 
   setTreeGlassCannon: (value) => {
     if (get().treeGlassCannon === value) return;
@@ -143,6 +146,7 @@ export const createAccountSlice: StateCreator<
       mitigationPct: shared.context.mitigationPct,
       rankMode: shared.context.rankMode,
       targetProp: shared.context.targetProp,
+      slots: shared.slots ?? DEFAULT_CASA_SLOTS,
     });
   },
 
@@ -163,6 +167,7 @@ export const createAccountSlice: StateCreator<
       patch.houseIdx = data.houseIdx;
       if (data.houseLevel != null) patch.houseLevel = data.houseLevel;
     }
+    if (data.slots != null) patch.slots = data.slots;
     if (Object.keys(patch).length > 0) set(patch);
   },
 });
