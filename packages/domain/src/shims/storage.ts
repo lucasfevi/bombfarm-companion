@@ -32,6 +32,8 @@ export type AccountShared = {
   tree: TreeState;
   teamBuffs: Record<string, number>;
   context: HeroContext;
+  slots?: number;
+  forgeFloor?: number;
 };
 
 export type HeroRecord = {
