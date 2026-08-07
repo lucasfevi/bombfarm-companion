@@ -4,6 +4,8 @@
 // so a save file from any account — not just the one used to build this — works.
 
 import catalog from './data/catalog.json';
+import { resolveCasaSlots } from './casa-slots';
+import { mapInventoryItem, type InventoryItem } from './inventory';
 import { ABILITIES, RarityKey, abilityMods } from './model';
 import { EquippedItem, Loadout, emptyLoadout, emptySheetOther } from './gear';
 import { ZERO_PTS, type SheetKey } from './planner-constants';
@@ -59,6 +61,8 @@ export type AccountImportData = {
   } | null;
   houseIdx: number | null;
   houseLevel: number | null;
+  /** Casa field slots from the save (`casa.slots` ladder) when `casa` is present. */
+  slots?: number | null;
 };
 
 /**
@@ -75,6 +79,7 @@ export type ParseResult = {
   candidates: ImportCandidate[];
   warnings: string[];
   account: AccountImportData;
+  inventory: InventoryItem[];
   rejected: ParseRejection | null;
 };
 
@@ -139,6 +144,12 @@ function mapAccountData(raw: Record<string, unknown>): AccountImportData {
       const levels = Array.isArray(casa.levels) ? casa.levels : [];
       houseLevel = Math.max(1, Math.round(asNumber(levels[houseIdx], 1)));
     }
+    return {
+      tree,
+      houseIdx,
+      houseLevel,
+      slots: resolveCasaSlots(casa, houseIdx),
+    };
   }
 
   return { tree, houseIdx, houseLevel };
@@ -153,6 +164,7 @@ export function parseSaveFile(raw: unknown, existing: HeroRecord[]): ParseResult
       candidates: [],
       warnings: ['This does not look like a BombFarm save file (missing a "heroes" list).'],
       account: EMPTY_ACCOUNT_DATA,
+      inventory: [],
       rejected: { reason: 'notASaveFile', heroNames: [] },
     };
   }
@@ -178,6 +190,7 @@ export function parseSaveFile(raw: unknown, existing: HeroRecord[]): ParseResult
       candidates: [],
       warnings,
       account: EMPTY_ACCOUNT_DATA,
+      inventory: [],
       rejected: { reason: 'missingBirthStats', heroNames: missingBirthHeroNames },
     };
   }
@@ -185,6 +198,27 @@ export function parseSaveFile(raw: unknown, existing: HeroRecord[]): ParseResult
   const items: Record<string, unknown>[] = Array.isArray(raw.items) ? raw.items.filter(isObject) : [];
   if (!Array.isArray(raw.items)) {
     warnings.push('Save file has no "items" list — imported heroes will have no gear equipped.');
+  }
+
+  const inventory: InventoryItem[] = [];
+  let unresolvedUnequipped = 0;
+  let marketBlockedCount = 0;
+  for (const item of items) {
+    const mapped = mapInventoryItem(item);
+    if (!mapped) continue;
+    if (!mapped.defResolved && !mapped.equipped) unresolvedUnequipped++;
+    if (mapped.marketBlocked) marketBlockedCount++;
+    inventory.push(mapped);
+  }
+  if (unresolvedUnequipped > 0) {
+    warnings.push(
+      `${unresolvedUnequipped} unequipped gear item(s) could not be resolved in the catalog — they are excluded from the pool.`,
+    );
+  }
+  if (marketBlockedCount > 0) {
+    warnings.push(
+      `${marketBlockedCount} gear item(s) are market-blocked and will be excluded from the optimizer pool.`,
+    );
   }
 
   const existingBySourceId = new Map(
@@ -375,5 +409,5 @@ export function parseSaveFile(raw: unknown, existing: HeroRecord[]): ParseResult
     });
   }
 
-  return { candidates, warnings, account: mapAccountData(raw), rejected: null };
+  return { candidates, warnings, account: mapAccountData(raw), inventory, rejected: null };
 }
