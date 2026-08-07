@@ -31,6 +31,21 @@ export type GearPlanRunner = GearPlanRunnerState & {
   cancel: () => void;
 };
 
+const E2E_MAX_EVAL_KEY = 'bf-e2e-gear-plan-max-eval';
+const E2E_FORCE_ERROR_KEY = 'bf-e2e-gear-plan-force-error';
+
+function readE2eMaxEvaluations(): number | undefined {
+  if (typeof localStorage === 'undefined') return undefined;
+  const raw = localStorage.getItem(E2E_MAX_EVAL_KEY);
+  if (!raw) return undefined;
+  const value = Number(raw);
+  return Number.isFinite(value) && value > 0 ? value : undefined;
+}
+
+function readE2eForceError(): boolean {
+  return typeof localStorage !== 'undefined' && localStorage.getItem(E2E_FORCE_ERROR_KEY) === '1';
+}
+
 function defaultWorkerFactory(): GearPlanWorkerLike {
   return createGearPlanWorkerModule();
 }
@@ -89,8 +104,23 @@ export function createGearPlanRunner(options?: {
   };
 
   const runOnMainThread = (runId: string, input: GearPlanInput) => {
+    if (readE2eForceError()) {
+      if (state.runId !== runId) return;
+      setState({
+        ...state,
+        status: 'error',
+        plan: null,
+        errorMessage: 'forced e2e error',
+        ranOnMainThread: true,
+        runId,
+      });
+      return;
+    }
     try {
-      const result = runGearPlan(input);
+      const result = runGearPlan(
+        input,
+        readE2eMaxEvaluations() ? { maxEvaluations: readE2eMaxEvaluations() } : undefined,
+      );
       if (state.runId !== runId) return;
       setState({
         ...applyResult(state, result),
@@ -186,7 +216,13 @@ export function createGearPlanRunner(options?: {
         runOnMainThread(runId, input);
       };
       worker.onmessage = (event) => handleWorkerMessage(runId, event.data);
-      worker.postMessage({ kind: 'run', runId, input });
+      worker.postMessage({
+        kind: 'run',
+        runId,
+        input,
+        maxEvaluations: readE2eMaxEvaluations(),
+        forceError: readE2eForceError(),
+      });
     },
     cancel() {
       terminateWorker();
