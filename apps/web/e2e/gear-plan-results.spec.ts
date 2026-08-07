@@ -4,7 +4,6 @@ import { seedLocalStorage } from './fixtures/seed';
 import {
   clickOptimize,
   gotoGearPlan,
-  readForgeFloorValue,
   waitForOptimizeDone,
 } from './fixtures/gear-plan-e2e';
 

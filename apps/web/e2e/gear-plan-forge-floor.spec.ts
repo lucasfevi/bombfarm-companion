@@ -6,7 +6,6 @@ import {
   clickOptimize,
   gotoGearPlan,
   readForgeFloorValue,
-  scopePanel,
   waitForOptimizeDone,
 } from './fixtures/gear-plan-e2e';
 

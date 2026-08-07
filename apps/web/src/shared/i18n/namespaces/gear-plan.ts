@@ -31,9 +31,23 @@ export const en = {
   gearPlanScopeOptimize: 'Optimize',
   gearPlanScopeDonate: 'Donate',
   gearPlanScopeLeaveAlone: 'Leave alone',
+  gearPlanScopeOptimizeTip:
+    'Scored in the plan. These heroes can receive better gear and may give gear up.',
+  gearPlanScopeDonateTip:
+    'Not scored. Their gear joins the pool for Optimize heroes; they receive nothing back.',
+  gearPlanScopeLeaveAloneTip:
+    'Frozen. Gear stays put and this hero is ignored by the search.',
+  gearPlanScopeBoardTip:
+    'Drag a card into a column — or use the menu on the card. Optimize at least one hero to run a plan.',
+  gearPlanScopeColumnEmpty: 'Drop heroes here',
+  gearPlanScopeDragHandleAria: 'Drag to change scope',
   gearPlanScopeDonateHint: 'Battle disabled — gear can be donated to the pool by default.',
   gearPlanScopeNothingInScope: 'Nothing in scope — set at least one hero to Optimize.',
   gearPlanHeroRowLabel: '{name} · L{level} · #{id}',
+  gearPlanResultsSectionTitle: 'Plan results',
+  gearPlanResultsSectionAria: 'Gear plan results',
+  gearPlanTotalGainLabel: 'Total gain',
+  gearPlanTotalGainValue: '{delta} dps ({pct}%)',
   gearPlanWaterfallTitle: 'Gain breakdown',
   gearPlanResultsHeader: 'Best roster DPS found by this search',
   gearPlanStepToday: 'Today',
@@ -86,8 +100,6 @@ export const en = {
   gearPlanSendDone: 'Alt loadouts updated for {count} hero(es).',
   gearPlanCurrentDps: 'Current roster DPS',
   gearPlanPlanDps: 'Planned roster DPS',
-  gearPlanScopeListTip:
-    'Optimize heroes are scored; Donate heroes lend gear; Leave alone keeps gear and DPS out of the plan.',
 };
 
 export const pt: typeof en = {
@@ -124,9 +136,23 @@ export const pt: typeof en = {
   gearPlanScopeOptimize: 'Otimizar',
   gearPlanScopeDonate: 'Doar',
   gearPlanScopeLeaveAlone: 'Não mexer',
+  gearPlanScopeOptimizeTip:
+    'Entram no plano. Podem receber gear melhor e também ceder peças.',
+  gearPlanScopeDonateTip:
+    'Não pontuam. O gear vai para o pool dos Otimizar; eles não recebem nada de volta.',
+  gearPlanScopeLeaveAloneTip:
+    'Congelados. O gear fica onde está e a busca ignora o herói.',
+  gearPlanScopeBoardTip:
+    'Arraste o card para uma coluna — ou use o menu no card. Deixe pelo menos um herói em Otimizar.',
+  gearPlanScopeColumnEmpty: 'Solte heróis aqui',
+  gearPlanScopeDragHandleAria: 'Arrastar para mudar o escopo',
   gearPlanScopeDonateHint: 'Batalha desativada — o gear pode ir para o pool por padrão.',
   gearPlanScopeNothingInScope: 'Nada no escopo — marque pelo menos um herói como Otimizar.',
   gearPlanHeroRowLabel: '{name} · Nv{level} · #{id}',
+  gearPlanResultsSectionTitle: 'Resultados do plano',
+  gearPlanResultsSectionAria: 'Resultados do plano de gear',
+  gearPlanTotalGainLabel: 'Ganho total',
+  gearPlanTotalGainValue: '{delta} dps ({pct}%)',
   gearPlanWaterfallTitle: 'Decomposição do ganho',
   gearPlanResultsHeader: 'Melhor DPS de roster encontrado por esta busca',
   gearPlanStepToday: 'Hoje',
@@ -180,6 +206,4 @@ export const pt: typeof en = {
   gearPlanSendDone: 'Alt loadouts atualizados para {count} herói(s).',
   gearPlanCurrentDps: 'DPS atual do roster',
   gearPlanPlanDps: 'DPS planejado do roster',
-  gearPlanScopeListTip:
-    'Otimizar pontua o herói; Doar empresta o gear; Não mexer mantém gear e DPS fora do plano.',
 };

@@ -1,5 +1,6 @@
 'use client';
 
+import { useEffect, useRef } from 'react';
 import { Button } from '@bombfarm/ui';
 import { workspaceClass } from '@bombfarm/ui/panel-field.recipe';
 import type { Lang, Strings } from '@/shared/i18n';
@@ -26,7 +27,7 @@ import { SendToAltLoadout } from './send-to-alt-loadout';
 
 export function GearPlanPage({
   t,
-  lang: _lang,
+  lang,
   onImport,
 }: {
   t: Strings;
@@ -41,6 +42,7 @@ export function GearPlanPage({
   const isStale = usePlannerStore(selectGearPlanIsStale);
   const clearPlan = usePlannerStore((state) => state.clearPlan);
   const runner = useGearPlanRunner();
+  const resultsRef = useRef<HTMLElement | null>(null);
 
   const hasRoster = heroes.length > 0;
   const hasInventory = inventory.length > 0;
@@ -51,6 +53,11 @@ export function GearPlanPage({
 
   const displayPlan = runner.plan ?? plan;
   const blockedNames = runner.blockedHeroNames;
+
+  useEffect(() => {
+    if (!displayPlan || runStatus === 'running' || runner.status === 'running') return;
+    resultsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }, [displayPlan, runStatus, runner.status]);
 
   return (
     <div className={workspaceClass}>
@@ -74,19 +81,25 @@ export function GearPlanPage({
             onImport={onImport}
           />
         ) : allLeaveAlone ? (
-          <GearPlanEmptyPanel
-            title={t.gearPlanEmptyAllLeaveAloneTitle}
-            body={t.gearPlanEmptyAllLeaveAloneBody}
-            cta={t.gearPlanImportCta}
-            onImport={onImport}
-          />
+          <div className="flex flex-col gap-4">
+            <div className="grid grid-cols-1 gap-4 lg:grid-cols-[1fr_auto]">
+              <GearPlanToolbar t={t} runner={runner} />
+              <ForgeFloorField t={t} />
+            </div>
+            <ScopeList t={t} lang={lang} />
+            <GearPlanEmptyPanel
+              title={t.gearPlanEmptyAllLeaveAloneTitle}
+              body={t.gearPlanEmptyAllLeaveAloneBody}
+              cta={t.gearPlanImportCta}
+              onImport={onImport}
+            />
+          </div>
         ) : (
           <div className="flex flex-col gap-4">
             <div className="grid grid-cols-1 gap-4 lg:grid-cols-[1fr_auto]">
               <GearPlanToolbar t={t} runner={runner} />
               <ForgeFloorField t={t} />
             </div>
-            <ScopeList t={t} />
 
             {(runStatus === 'blocked' || runner.status === 'blocked') && blockedNames.length > 0 ? (
               <div className="rounded-sm border border-warn/50 bg-[color-mix(in_oklch,var(--warn)_10%,transparent)] px-4 py-3">
@@ -114,16 +127,27 @@ export function GearPlanPage({
             ) : null}
 
             {displayPlan ? (
-              <>
-                <WaterfallPanel t={t} plan={displayPlan} />
-                <HeroDeltaTable t={t} plan={displayPlan} />
-                <ForgeList t={t} plan={displayPlan} />
-                <MoveList t={t} plan={displayPlan} />
-                <PointResetList t={t} plan={displayPlan} />
-                <PlanDisclosures t={t} plan={displayPlan} />
-                <SendToAltLoadout t={t} plan={displayPlan} />
-              </>
+              <section
+                ref={resultsRef}
+                aria-label={t.gearPlanResultsSectionAria}
+                className="scroll-mt-20 rounded-sm border border-accent/35 bg-[color-mix(in_oklch,var(--accent)_6%,transparent)] p-3"
+              >
+                <h2 className="m-0 mb-3 text-sm font-bold tracking-wide text-ink uppercase">
+                  {t.gearPlanResultsSectionTitle}
+                </h2>
+                <div className="flex flex-col gap-4">
+                  <WaterfallPanel t={t} plan={displayPlan} />
+                  <HeroDeltaTable t={t} plan={displayPlan} />
+                  <ForgeList t={t} plan={displayPlan} />
+                  <MoveList t={t} plan={displayPlan} />
+                  <PointResetList t={t} plan={displayPlan} />
+                  <PlanDisclosures t={t} plan={displayPlan} />
+                  <SendToAltLoadout t={t} plan={displayPlan} />
+                </div>
+              </section>
             ) : null}
+
+            <ScopeList t={t} lang={lang} />
           </div>
         )}
       </section>

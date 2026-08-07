@@ -5,7 +5,6 @@ import {
   clickOptimize,
   disclosuresPanel,
   gotoGearPlan,
-  scopePanel,
   waitForOptimizeDone,
 } from './fixtures/gear-plan-e2e';
 

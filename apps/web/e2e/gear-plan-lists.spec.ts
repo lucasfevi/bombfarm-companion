@@ -5,7 +5,6 @@ import {
   clickOptimize,
   gotoGearPlan,
   readForgeFloorValue,
-  snapshotHeroesJson,
   waitForOptimizeDone,
 } from './fixtures/gear-plan-e2e';
 
