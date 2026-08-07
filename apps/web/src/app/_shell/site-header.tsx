@@ -8,7 +8,7 @@ import type { Strings, Lang } from '@/shared/i18n';
 import { Button, buttonRecipe } from '@bombfarm/ui';
 import { NavLink } from './site-nav-link';
 
-export type SiteSection = 'planner' | 'phases';
+export type SiteSection = 'planner' | 'phases' | 'gearPlan';
 
 export function SiteHeader({
   t,
@@ -28,6 +28,7 @@ export function SiteHeader({
   const pathname = usePathname();
   const plannerActive = pathname === '/';
   const phasesActive = pathname.startsWith('/phases');
+  const gearPlanActive = pathname.startsWith('/gear-plan');
 
   return (
     <header className="sticky top-0 z-30 min-h-top border-b border-line bg-[color-mix(in_oklch,var(--surface)_92%,transparent)] px-4 py-2.5 backdrop-blur-[14px]">
@@ -56,6 +57,9 @@ export function SiteHeader({
             </NavLink>
             <NavLink href="/phases" active={phasesActive}>
               {t.navPhases}
+            </NavLink>
+            <NavLink href="/gear-plan" active={gearPlanActive}>
+              {t.navGearPlan}
             </NavLink>
           </nav>
         </div>
