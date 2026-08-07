@@ -37,3 +37,10 @@ export {
   eligibleForHero,
 } from './pool';
 export { createScoreMemo, scoreHeroLoadout, type ScoreMemo } from './score';
+export {
+  GEAR_PLAN_MAX_EVALUATIONS,
+  GEAR_PLAN_WORKER_MARKER,
+  IMPROVEMENT_EPSILON,
+  MAX_ROUNDS,
+  runGearPlan,
+} from './solver';
