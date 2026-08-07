@@ -1,6 +1,5 @@
 import {
   abilityMods,
-  houseRestSeconds,
   rankNextPoint,
   energySwitchPoint,
   mitigationFactor,
@@ -22,8 +21,7 @@ import {
   effectiveFarmPhase,
   effectiveMitigationPct,
   effectiveTargetProp,
-  FARM_CYCLE_MODEL,
-  FARM_WALK_DELAY_SEC,
+  farmContextForHero,
 } from './farm-context';
 import { PROPS, BOSS_HP_MULT, phaseLine, propHp, hitsToKill, weightedAvgPropHp } from './phases';
 import {
@@ -203,15 +201,16 @@ export function computeAdvisorPipeline(input: AdvisorPipelineInput): AdvisorPipe
     dmgMult,
   } = mults;
 
-  const rest = houseRestSeconds(houseIdx, houseLevel);
-  const context: Context = {
-    restSeconds: rest,
-    mitigation: mitPct / 100,
-    blastRange: 1 + mods.rangeCells,
-    cycleModel: FARM_CYCLE_MODEL,
-    walkDelay: FARM_WALK_DELAY_SEC,
-    drainMult: mods.drainMult * teamDrainMult * (treeTempoDobrado ? 2 : 1),
-  };
+  const context = farmContextForHero({
+    mods,
+    teamDrainMult,
+    treeTempoDobrado,
+    houseIdx,
+    houseLevel,
+    mitigationPct: mitPct,
+    phase,
+  });
+  const rest = context.restSeconds;
 
   const deriveArgs = {
     naked: nakedForDerive,
