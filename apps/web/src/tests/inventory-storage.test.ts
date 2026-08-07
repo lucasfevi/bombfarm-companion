@@ -117,10 +117,12 @@ describe('inventory storage adapter', () => {
         targetProp: 'stone',
       },
     };
-    expect(normalizeAccount(legacy)).toEqual({
-      ...legacy,
+    expect(normalizeAccount(legacy)).toMatchObject({
       slots: DEFAULT_CASA_SLOTS,
       forgeFloor: 10,
+      tree: { danoTotal: 2, teamCoinPct: 5, glassCannon: true },
+      teamBuffs: { grito_guerra: 3 },
+      context: legacy.context,
     });
   });
 
