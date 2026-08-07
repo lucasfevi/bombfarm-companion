@@ -7,6 +7,7 @@ import * as account from './namespaces/account';
 import * as advice from './namespaces/advice';
 import * as breakdown from './namespaces/breakdown';
 import * as phases from './namespaces/phases';
+import * as gearPlan from './namespaces/gear-plan';
 import * as importNs from './namespaces/import';
 import * as stats from './namespaces/stats';
 
@@ -19,6 +20,7 @@ const en = {
   ...advice.en,
   ...breakdown.en,
   ...phases.en,
+  ...gearPlan.en,
   ...importNs.en,
   ...stats.en,
 };
@@ -31,6 +33,7 @@ const pt = {
   ...advice.pt,
   ...breakdown.pt,
   ...phases.pt,
+  ...gearPlan.pt,
   ...importNs.pt,
   ...stats.pt,
 };
