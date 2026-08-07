@@ -15,7 +15,7 @@ These are **current truth**. Do not invent planning/spec paths in this repo.
 | [css-exceptions.md](css-exceptions.md) | Allowed named CSS leftovers |
 | [react-performance.md](react-performance.md) | React performance boundaries |
 | [naming.md](naming.md) | Filenames, identifier conventions, no terse names |
-| [i18n.md](i18n.md) | Lang policy, game-labels |
+| [i18n.md](i18n.md) | Lang policy, game-labels, plain-language player copy |
 | [validation.md](validation.md) | Author ≠ validator |
 | [git-commits.md](git-commits.md) | Atomic commits by default; commitlint |
 | [branching.md](branching.md) | `develop` integration, `main` release-only |
