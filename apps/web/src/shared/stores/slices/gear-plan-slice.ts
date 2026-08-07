@@ -2,14 +2,17 @@ import type { StateCreator } from 'zustand';
 import type { InventoryItem } from '@bombfarm/domain/inventory';
 import { normalizeInventorySnapshot } from '@bombfarm/domain/inventory';
 import type { PlannerStore } from '@/shared/stores/planner-store';
+import type {
+  GearPlan,
+  GearPlanRunStatus,
+  InventorySnapshot,
+  ScopeState,
+} from '@/shared/stores/gear-plan/types';
+import type { GearPlan as DomainGearPlan } from '@bombfarm/domain/gear-plan/types';
 import {
   buildDefaultScopeMap,
   clampForgeFloor,
   computeGearPlanInputSignature,
-  type GearPlan,
-  type GearPlanRunStatus,
-  type InventorySnapshot,
-  type ScopeState,
 } from '@/shared/stores/gear-plan/types';
 
 const EMPTY_INVENTORY: InventorySnapshot = { version: 1, importedAt: 0, items: [] };
@@ -29,6 +32,7 @@ export type GearPlanSlice = {
   setForgeFloor: (value: number) => void;
   startRun: (runId: string) => void;
   resolveRun: (runId: string, status: Exclude<GearPlanRunStatus, 'running'>) => void;
+  applyPlan: (runId: string, plan: DomainGearPlan) => void;
   clearPlan: () => void;
   syncScopeForRoster: () => void;
 };
@@ -107,6 +111,16 @@ export const createGearPlanSlice: StateCreator<
   resolveRun: (runId, status) => {
     if (get().runId !== runId) return;
     set({ runStatus: status });
+  },
+
+  applyPlan: (runId, plan) => {
+    if (get().runId !== runId) return;
+    set({
+      plan,
+      planInputSignature: selectLiveGearPlanInputSignature(get()),
+      runStatus: 'done',
+      runId,
+    });
   },
 
   clearPlan: () => {

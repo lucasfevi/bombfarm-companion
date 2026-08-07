@@ -1,12 +1,12 @@
 import type { InventoryItem, InventorySnapshot } from '@bombfarm/domain/inventory';
+import type { GearPlan as DomainGearPlan } from '@bombfarm/domain/gear-plan/types';
 import { FORJA_MAX } from '@bombfarm/domain/gear';
 
 export type ScopeState = 'optimize' | 'donate' | 'leaveAlone';
 
 export type GearPlanRunStatus = 'idle' | 'running' | 'done' | 'blocked' | 'error';
 
-/** Placeholder until the solver lands in Phase 3 — plan stays null in W1. */
-export type GearPlan = null;
+export type GearPlan = DomainGearPlan | null;
 
 export function clampForgeFloor(value: number): number {
   if (!Number.isFinite(value)) return 10;
