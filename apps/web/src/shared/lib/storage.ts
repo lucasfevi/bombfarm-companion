@@ -1,4 +1,6 @@
 import type { RankMode, RarityKey } from '@bombfarm/domain/model';
+import { DEFAULT_CASA_SLOTS } from '@bombfarm/domain/casa-slots';
+import { FORJA_MAX } from '@bombfarm/domain/gear';
 import { abilityMods } from '@bombfarm/domain/model';
 import type { Loadout, SheetStats } from '@bombfarm/domain/gear';
 import { applyGear, emptyLoadout, emptySheet, emptySheetOther } from '@bombfarm/domain/gear';
@@ -62,6 +64,10 @@ export type AccountShared = {
   tree: TreeState;
   teamBuffs: Record<string, number>;
   context: HeroContext;
+  /** Casa field slots — defaults to {@link DEFAULT_CASA_SLOTS} when absent on load. */
+  slots?: number;
+  /** Optimizer forge floor — defaults to `10` when absent; import never overwrites. */
+  forgeFloor?: number;
 };
 
 export type HeroRecord = {
@@ -144,7 +150,7 @@ function uid(): string {
   return `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
 }
 
-function readJson<T>(key: string, fallback: T): T {
+export function readJson<T>(key: string, fallback: T): T {
   try {
     const raw = localStorage.getItem(key);
     if (!raw) return fallback;
@@ -186,7 +192,7 @@ function notifyWriteError(key: string, error: unknown): void {
 }
 
 /** Returns true on success, false on any setItem throw — never rethrows (MOD-45). */
-function writeJson(key: string, value: unknown): boolean {
+export function writeJson(key: string, value: unknown): boolean {
   try {
     localStorage.setItem(key, JSON.stringify(value));
     return true;
@@ -224,11 +230,23 @@ function normalizeContext(raw?: Partial<HeroContext> | null): HeroContext {
   };
 }
 
+function normalizeForgeFloor(raw?: number): number {
+  const value = typeof raw === 'number' && Number.isFinite(raw) ? raw : 10;
+  return Math.max(0, Math.min(FORJA_MAX, Math.round(value)));
+}
+
+function normalizeSlots(raw?: number): number {
+  const value = typeof raw === 'number' && Number.isFinite(raw) ? raw : DEFAULT_CASA_SLOTS;
+  return Math.max(1, Math.round(value));
+}
+
 export function normalizeAccount(raw?: Partial<AccountShared> | null): AccountShared {
   return {
     tree: normalizeTree(raw?.tree),
     teamBuffs: raw?.teamBuffs ?? {},
     context: normalizeContext(raw?.context),
+    slots: normalizeSlots(raw?.slots),
+    forgeFloor: normalizeForgeFloor(raw?.forgeFloor),
   };
 }
 
