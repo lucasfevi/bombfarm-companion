@@ -159,6 +159,15 @@ describe('normalizeInventorySnapshot', () => {
     });
   });
 
+  it('re-resolves defResolved from defId on load', () => {
+    const snapshot = normalizeInventorySnapshot({
+      version: 1,
+      importedAt: 0,
+      items: [{ ...sampleItem, defId: 'missing_def', defResolved: true }],
+    });
+    expect(snapshot.items[0]?.defResolved).toBe(false);
+  });
+
   it('drops items missing id or defId', () => {
     const snapshot = normalizeInventorySnapshot({
       version: 1,
