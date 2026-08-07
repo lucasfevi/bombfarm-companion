@@ -20,13 +20,18 @@ export function WaterfallPanel({ t, plan }: { t: Strings; plan: DomainGearPlan }
   const totalSign = totalDelta >= 0 ? '+' : '';
   const pctSign = totalPct >= 0 ? '+' : '';
 
-  const cells: MetricScoreboardCell[] = plan.steps.map((step) => ({
-    id: step.id,
-    label: stepLabels[step.id](t),
-    value: formatNumber(step.objective, 0),
-    delta: `${step.delta >= 0 ? '+' : ''}${formatNumber(step.delta, 0)}`,
-    deltaTone: step.delta < 0 ? 'down' : 'up',
-  }));
+  const cells: MetricScoreboardCell[] = plan.steps.map((step) => {
+    const showDelta = step.id !== 'today' && step.delta !== 0;
+    return {
+      id: step.id,
+      label: stepLabels[step.id](t),
+      value: formatNumber(step.objective, 0),
+      delta: showDelta
+        ? `${step.delta >= 0 ? '+' : ''}${formatNumber(step.delta, 0)}`
+        : null,
+      deltaTone: step.delta < 0 ? 'down' : 'up',
+    };
+  });
 
   return (
     <Panel>
