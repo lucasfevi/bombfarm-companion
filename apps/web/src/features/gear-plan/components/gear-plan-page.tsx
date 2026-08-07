@@ -10,6 +10,7 @@ import {
   selectHeroes,
   selectInventoryItems,
   selectGearPlanIsStale,
+  selectForgeFloor,
 } from '@/shared/stores';
 import { defaultScopeForHero } from '@/shared/stores/gear-plan/types';
 import { useGearPlanRunner } from '@/features/gear-plan/hooks/use-gear-plan-runner';
@@ -41,6 +42,7 @@ export function GearPlanPage({
   const runStatus = usePlannerStore((state) => state.runStatus);
   const scopeByHeroId = usePlannerStore((state) => state.scopeByHeroId);
   const isStale = usePlannerStore(selectGearPlanIsStale);
+  const forgeFloor = usePlannerStore(selectForgeFloor);
   const clearPlan = usePlannerStore((state) => state.clearPlan);
   const runner = useGearPlanRunner();
   const resultsRef = useRef<HTMLElement | null>(null);
@@ -163,7 +165,7 @@ export function GearPlanPage({
                   <ForgeList t={t} plan={displayPlan} />
                   <MoveList t={t} plan={displayPlan} />
                   <PointResetList t={t} plan={displayPlan} />
-                  <PlanDisclosures t={t} plan={displayPlan} />
+                  <PlanDisclosures t={t} plan={displayPlan} requestedForgeFloor={forgeFloor} />
                   <SendToAltLoadout t={t} plan={displayPlan} />
                 </div>
               </section>

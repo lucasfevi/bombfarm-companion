@@ -7,6 +7,7 @@ import type { Strings } from '@/shared/i18n';
 import { sub } from '@/shared/i18n';
 import { usePlannerStore, selectHeroes } from '@/shared/stores';
 import { heroScopeKey } from '@/features/gear-plan/model/build-gear-plan-input';
+import { formatNumber } from '@/shared/lib/format-number';
 
 export function SendToAltLoadout({ t, plan }: { t: Strings; plan: GearPlan }) {
   const heroes = usePlannerStore(selectHeroes);
@@ -24,6 +25,14 @@ export function SendToAltLoadout({ t, plan }: { t: Strings; plan: GearPlan }) {
   const count = Object.keys(updates).length;
   if (count === 0) return null;
 
+  // This action only ever pushes `proposedLoadouts` (gear) — never points. When the gear step
+  // requires the full plan (option B: it dips below current until the resets land), the player
+  // is sent exactly into that dipped state, so the confirm dialog must say so plainly. The push
+  // itself is never blocked — this is disclosure only.
+  const confirmBody = plan.requiresFullPlan
+    ? sub(t.gearPlanSendConfirmBodyDip, { delta: formatNumber(plan.gearDipDps, 0) })
+    : t.gearPlanSendConfirmBody;
+
   return (
     <>
       <Button type="button" variant="primary" onClick={() => setOpen(true)}>
@@ -33,7 +42,7 @@ export function SendToAltLoadout({ t, plan }: { t: Strings; plan: GearPlan }) {
         open={open}
         onOpenChange={setOpen}
         title={t.gearPlanSendConfirmTitle}
-        description={t.gearPlanSendConfirmBody}
+        description={confirmBody}
         confirmLabel={sub(t.gearPlanSendConfirmCount, { count: String(count) })}
         cancelLabel={t.importCancel}
         onConfirm={() => {

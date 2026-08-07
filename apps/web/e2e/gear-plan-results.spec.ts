@@ -15,13 +15,12 @@ test.describe('Gear plan results panels', () => {
     await waitForOptimizeDone(page);
   });
 
-  test('waterfall shows four steps and deltas sum to total gain', async ({ page }) => {
+  test('waterfall shows three steps and deltas sum to total gain', async ({ page }) => {
     const panel = page
       .getByRole('heading', { name: /^Gain breakdown$/i, level: 2 })
       .locator('xpath=ancestor::section[1]');
     await expect(panel.getByText(/^Today$/i)).toBeVisible();
-    await expect(panel.getByText(/^Forge to floor$/i)).toBeVisible();
-    await expect(panel.getByText(/^Moves$/i)).toBeVisible();
+    await expect(panel.getByText(/^Gear$/i)).toBeVisible();
     await expect(panel.getByText(/^Reset points$/i)).toBeVisible();
     await expect(page.getByText(/Best roster DPS found by this search/i)).toBeVisible();
   });

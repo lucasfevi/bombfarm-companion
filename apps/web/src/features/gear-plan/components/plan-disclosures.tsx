@@ -5,11 +5,25 @@ import { Panel } from '@bombfarm/ui';
 import { panelHClass, panelTitleClass } from '@bombfarm/ui/panel-field.recipe';
 import type { Strings } from '@/shared/i18n';
 import { sub } from '@/shared/i18n';
+import { formatNumber } from '@/shared/lib/format-number';
 
-export function PlanDisclosures({ t, plan }: { t: Strings; plan: GearPlan }) {
+function signed(value: number): string {
+  return `${value >= 0 ? '+' : ''}${formatNumber(value, 0)}`;
+}
+
+export function PlanDisclosures({
+  t,
+  plan,
+  requestedForgeFloor,
+}: {
+  t: Strings;
+  plan: GearPlan;
+  requestedForgeFloor: number;
+}) {
   const unmodelled = plan.disclosures.unmodelledAbilities
     .map((row) => `${row.abilityId} (${row.heroNames.join(', ')})`)
     .join('; ');
+  const forgeSkipped = requestedForgeFloor > 0 && plan.forgeFloorApplied === 0;
 
   return (
     <Panel>
@@ -44,6 +58,17 @@ export function PlanDisclosures({ t, plan }: { t: Strings; plan: GearPlan }) {
             foreign: String(plan.disclosures.foreignOwnedItemCount),
           })}
         </p>
+        {forgeSkipped ? <p className="m-0">{t.gearPlanForgeSkippedNote}</p> : null}
+        {plan.gearBreakdown.forgeDelta !== 0 ? (
+          <p className="m-0">
+            {sub(t.gearPlanGearBreakdownForge, { delta: signed(plan.gearBreakdown.forgeDelta) })}
+          </p>
+        ) : null}
+        {plan.gearBreakdown.moveDelta !== 0 ? (
+          <p className="m-0">
+            {sub(t.gearPlanGearBreakdownMoves, { delta: signed(plan.gearBreakdown.moveDelta) })}
+          </p>
+        ) : null}
       </div>
     </Panel>
   );

@@ -9,6 +9,10 @@ export default defineConfig({
   test: {
     environment: 'node',
     include: ['src/**/*.test.ts'],
+    // gear-plan-runner.test.ts calls the real solver — letting the gear-plan search converge
+    // to local optimality (roster gear optimizer monotonicity fix) raised a single
+    // `runGearPlan` call from sub-second to several seconds on the committed fixtures.
+    testTimeout: 60_000,
   },
   esbuild: {
     jsx: 'automatic',

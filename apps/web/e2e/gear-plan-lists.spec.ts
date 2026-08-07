@@ -46,7 +46,7 @@ test.describe('Gear plan chore lists', () => {
   });
 
   test('point reset list is hidden until expanded', async ({ page }) => {
-    const title = page.getByRole('heading', { name: /Point resets \(step 4 only\)/i });
+    const title = page.getByRole('heading', { name: /^Point resets$/i });
     await expect(title).toBeVisible();
     await expect(page.getByText(/from a reset/i)).toHaveCount(0);
     await title.click();

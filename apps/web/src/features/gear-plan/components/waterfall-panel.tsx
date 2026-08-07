@@ -9,8 +9,7 @@ import { formatNumber } from '@/shared/lib/format-number';
 
 const stepLabels: Record<WaterfallStep['id'], (strings: Strings) => string> = {
   today: (strings) => strings.gearPlanStepToday,
-  forged: (strings) => strings.gearPlanStepForged,
-  moved: (strings) => strings.gearPlanStepMoved,
+  gear: (strings) => strings.gearPlanStepGear,
   respec: (strings) => strings.gearPlanStepRespec,
 };
 
@@ -55,6 +54,11 @@ export function WaterfallPanel({ t, plan }: { t: Strings; plan: DomainGearPlan }
         </p>
       </div>
       <MetricScoreboard aria-label={t.gearPlanWaterfallTitle} cells={cells} />
+      {plan.requiresFullPlan ? (
+        <p className="m-0 mt-2 text-[12px] text-muted" role="status">
+          {sub(t.gearPlanGearDipNote, { delta: formatNumber(plan.gearDipDps, 0) })}
+        </p>
+      ) : null}
     </Panel>
   );
 }

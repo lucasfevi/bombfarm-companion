@@ -55,6 +55,7 @@ export const en = {
   gearPlanWaterfallTitle: 'Gain breakdown',
   gearPlanResultsHeader: 'Best roster DPS found by this search',
   gearPlanStepToday: 'Today',
+  gearPlanStepGear: 'Gear',
   gearPlanStepForged: 'Forge to floor',
   gearPlanStepMoved: 'Moves',
   gearPlanStepRespec: 'Reset points',
@@ -73,9 +74,13 @@ export const en = {
   gearPlanMoveEquipGroup: 'Then equip',
   gearPlanMoveRowUnequip: 'Unequip {defId} from {hero}',
   gearPlanMoveRowEquip: 'Equip {defId} on {hero} ({slot})',
-  gearPlanPointResetTitle: 'Point resets (step 4 only)',
+  gearPlanPointResetTitle: 'Point resets',
   gearPlanPointResetEmpty: 'No point reset buys extra DPS on the final build.',
-  gearPlanPointResetRow: '{hero} · ~{gain}% from a reset',
+  gearPlanPointResetRow: '{hero} · {gain}% from a reset',
+  gearPlanPointResetValueCost: 'Worth +{dps} roster dps · {gold} gold to reset in-game',
+  gearPlanPointResetTotalCost: 'Total reset cost: {gold} gold',
+  gearPlanGearDipNote:
+    'Temporarily behind by {delta} dps — the point resets below bring it past today.',
   gearPlanDisclosuresTitle: 'Assumptions & limits',
   gearPlanSaturationCallout:
     'Field slots are saturated (Σ duty {duty} ≥ {slots} slots). Throughput uses the fair-share active-DPS regime — advice only; this page will not bench or donate heroes for you.',
@@ -88,6 +93,10 @@ export const en = {
     'Stored loadout differs from the inventory snapshot for: {heroes}. This page treats the inventory as authoritative.',
   gearPlanExcludedItems:
     'Excluded from the pool — market-blocked: {market}, unresolved items: {unresolved}, foreign owners: {foreign}.',
+  gearPlanForgeSkippedNote:
+    'Forging to your floor was left out of this plan — it did not improve roster DPS.',
+  gearPlanGearBreakdownForge: 'Forging changed roster DPS by {delta}.',
+  gearPlanGearBreakdownMoves: 'Gear moves changed roster DPS by {delta}.',
   gearPlanStaleNotice: 'Inputs changed since this plan was computed — re-run Optimize to refresh.',
   gearPlanBlockedTitle: 'Cannot run — missing birth stats',
   gearPlanBlockedBody:
@@ -100,6 +109,8 @@ export const en = {
   gearPlanSendConfirmTitle: 'Overwrite alt loadouts?',
   gearPlanSendConfirmBody:
     'This writes the proposed gear to each hero’s alt loadout only — nothing else on the roster changes.',
+  gearPlanSendConfirmBodyDip:
+    'This writes the proposed gear only — no point resets. Until you do those resets in-game, this roster sits about {delta} dps behind where it is now.',
   gearPlanSendConfirmCount: 'Update {count} hero(es)',
   gearPlanSendDone: 'Alt loadouts updated for {count} hero(es).',
   gearPlanCurrentDps: 'Current roster DPS',
@@ -163,6 +174,7 @@ export const pt: typeof en = {
   gearPlanWaterfallTitle: 'Decomposição do ganho',
   gearPlanResultsHeader: 'Melhor DPS de roster encontrado por esta busca',
   gearPlanStepToday: 'Hoje',
+  gearPlanStepGear: 'Equipamento',
   gearPlanStepForged: 'Forjar até o piso',
   gearPlanStepMoved: 'Movimentos',
   gearPlanStepRespec: 'Resetar pontos',
@@ -181,9 +193,13 @@ export const pt: typeof en = {
   gearPlanMoveEquipGroup: 'Depois equipar',
   gearPlanMoveRowUnequip: 'Desequipar {defId} de {hero}',
   gearPlanMoveRowEquip: 'Equipar {defId} em {hero} ({slot})',
-  gearPlanPointResetTitle: 'Reset de pontos (só passo 4)',
+  gearPlanPointResetTitle: 'Reset de pontos',
   gearPlanPointResetEmpty: 'Nenhum reset de pontos compra DPS extra na build final.',
-  gearPlanPointResetRow: '{hero} · ~{gain}% com reset',
+  gearPlanPointResetRow: '{hero} · {gain}% com reset',
+  gearPlanPointResetValueCost: 'Vale +{dps} dps de roster · {gold} de ouro para resetar no jogo',
+  gearPlanPointResetTotalCost: 'Custo total de reset: {gold} de ouro',
+  gearPlanGearDipNote:
+    'Temporariamente atrás em {delta} dps — os resets de pontos abaixo levam além de hoje.',
   gearPlanDisclosuresTitle: 'Premissas e limites',
   gearPlanSaturationCallout:
     'Os slots de campo estão saturados (Σ duty {duty} ≥ {slots} slots). A vazão usa o regime de DPS ativo em fatia justa — só orientação; esta página não banca nem doa heróis por você.',
@@ -196,6 +212,10 @@ export const pt: typeof en = {
     'O loadout salvo difere do inventário para: {heroes}. Esta página usa o inventário como verdade.',
   gearPlanExcludedItems:
     'Fora do pool — bloqueados no mercado: {market}, itens sem definição: {unresolved}, donos fora do roster: {foreign}.',
+  gearPlanForgeSkippedNote:
+    'A forja até o seu piso ficou de fora deste plano — ela não melhorou o DPS do roster.',
+  gearPlanGearBreakdownForge: 'A forja mudou o DPS do roster em {delta}.',
+  gearPlanGearBreakdownMoves: 'As trocas de gear mudaram o DPS do roster em {delta}.',
   gearPlanStaleNotice:
     'Os inputs mudaram desde este plano — rode Otimizar de novo para atualizar.',
   gearPlanBlockedTitle: 'Não foi possível rodar — falta roll de nascimento',
@@ -209,6 +229,8 @@ export const pt: typeof en = {
   gearPlanSendConfirmTitle: 'Sobrescrever alt loadouts?',
   gearPlanSendConfirmBody:
     'Isso grava o gear proposto só no alt loadout de cada herói — nada mais no roster muda.',
+  gearPlanSendConfirmBodyDip:
+    'Isso grava só o gear proposto — sem resets de pontos. Até você fazer esses resets no jogo, o roster fica cerca de {delta} dps abaixo de onde está agora.',
   gearPlanSendConfirmCount: 'Atualizar {count} herói(s)',
   gearPlanSendDone: 'Alt loadouts atualizados para {count} herói(s).',
   gearPlanCurrentDps: 'DPS atual do roster',
