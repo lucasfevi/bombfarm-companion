@@ -11,7 +11,8 @@ Canonical keys (current):
 | --- | --- |
 | `bf-hp-heroes-v1` | `HeroRecord[]` |
 | `bf-hp-active-hero-v1` | active hero id |
-| `bf-hp-account-v1` | `AccountShared` (tree, team buffs, context) |
+| `bf-hp-account-v1` | `AccountShared` (tree, team buffs, context, slots, forgeFloor) |
+| `bf-hp-inventory-v1` | `InventorySnapshot` (`version`, `importedAt`, `items[]`) |
 
 UI chrome prefs (`bf_lang`, guide/roster open state, etc.) are separate and must tolerate absence.
 
@@ -20,7 +21,7 @@ UI chrome prefs (`bf_lang`, guide/roster open state, etc.) are separate and must
 ## Rules
 
 1. **Never break existing public saves.** After an update, every previously saved hero/account under the current public keys must load without data loss. Prefer additive changes.
-2. **All domain persistence goes through `src/shared/lib/storage.ts`.** New hero/account fields land on `HeroRecord` / `AccountShared` (or nested types), not new ad-hoc domain keys.
+2. **All domain persistence goes through `src/shared/lib/storage.ts`.** New hero/account fields land on `HeroRecord` / `AccountShared` (or nested types), not new ad-hoc domain keys. **Exception:** the gear-optimizer item inventory is account-scoped, replaced wholesale on every import, and never merged hero-by-hero — see [`bf-hp-inventory-v1`](#bf-hp-inventory-v1-account-scoped-collection) below.
 3. **Normalize every load.** Extend `normalizeHero` / `normalizeAccount` (and helpers) so missing fields get safe defaults. Do not assume every saved record has every field.
 4. **New fields: default empty/null + show “missing” when it matters.** Choose a sentinel that means “user never set this” (often `0`, `null`, or `{}`). When advice or math depends on that field, wire **`FieldRequired` beside the label** (and a tab soft/warn **dot + Tooltip** when the tab’s data would be wrong — see [`animation.md`](../../../docs/animation.md) rule 8). Do **not** use warn outlines/borders on panels or inputs for required state. Do **not** invent a “looks filled” default that hides a real gap — but identity defaults that are valid for new users (e.g. skill tree `danoTotal === 1`) are **not** missing and must not get required chrome.
 5. **Do not rename or remove persisted field names without a migrator.** JSON field names on hero/account records, and game ids used as keys (rarity, ability, slot, …), stay stable — same spirit as [`i18n.md`](../../../docs/i18n.md) id stability. Breaking renames require reading the old shape → writing the new shape. Keep temporary `@deprecated` readers only until that migrator is proven, then remove them.
@@ -32,7 +33,7 @@ UI chrome prefs (`bf_lang`, guide/roster open state, etc.) are separate and must
 
 | Field | Default | Notes |
 | --- | --- | --- |
-| `battleAllowed` | `true` | From save `battle_allowed` — the save is always source of truth. Toggleable in the hero strip and roster picker; a local toggle is overwritten when a later import carries a different `battle_allowed`. Disabled heroes (`false`) are excluded from roster respec recommendations; does not change DPS math. |
+| `battleAllowed` | `true` | From save `battle_allowed` — the save is always source of truth. Toggleable in the hero strip and roster picker; a local toggle is overwritten when a later import carries a different `battle_allowed`. Disabled heroes (`false`) are excluded from roster respec recommendations. On the gear optimizer (W1+), `battleAllowed === false` seeds that hero's default scope to **Donate** (`scopeByHeroId`); Phases DPS math still treats the hero like any other unless a surface explicitly filters them. |
 | `skin` | `0` | From save `skin` (0–6; `HERO_SKIN_COUNT` in `wiki-assets.ts`). Stored index stays the save value — do **not** rewrite `1`↔`2` on disk. Display remaps via `heroAvatarSrc` because wiki filenames `hero2`/`hero3` are swapped vs in-game skins 1/2. |
 | `sourceId` | **required for roster** | Save export hero id. Heroes without a non-empty `sourceId` are **dropped on load** (see [`import-only-heroes.md`](import-only-heroes.md)). `importHeroes()` always sets it; `normalizeHero` keeps it when present. |
 | `luck` | `0` | On `naked`, `gearedOverride` and `pts` (`SheetStats` / `PointAlloc`, BSP-40). Stored in **percent** (Bellatrix ≈ 17.76), not the save's fraction — see `AD-BSP-19a`. Pre-`luck` records load with `0` filled by `normalizeSheetStats` / `normalizePointAlloc`; the key stays `bf-hp-heroes-v1` (additive, rule 6). Displayed as an eighth sheet stat since Wave 6 (`SHEET_PANEL_KEYS`, sheet table / Points table / Effective panel / ledger breakdown via `ledgerLuck`) but deliberately **never scored for DPS** — `AD-BSP-20`'s "not displayed yet" is stale after this wave. |
@@ -56,6 +57,25 @@ Imported heroes store their **fixed ability pool** in `abilities`, including **l
 | Field | Default | Notes |
 | --- | --- | --- |
 | `targetProp` | `'stone'` (was `null`) | Ranking/HTK prop on `HeroContext` (`AccountShared.context`, key `bf-hp-account-v1`). Previously normalized absent/empty-string to `null`, which `isTargetPropUnset` read as true and the Account tab soft-dotted. `DEFAULT_CONTEXT` and `normalizeContext` (`storage.ts`) now coerce absence/`''` to `DEFAULT_TARGET_PROP` (`'stone'`, `farm-context.ts`) — matching the Account target-prop `Select`'s own default, which can no longer emit `''`. `isTargetPropUnset` still exists as a guard, but is now reachable only via hand-edited localStorage that bypasses normalization, not through any normal load/import/UI path. Records with an explicit non-empty `targetProp` are unaffected either way. |
+
+### AccountShared fields (additive on `-v1`)
+
+| Field | Default | Notes |
+| --- | --- | --- |
+| `slots` | `9` (`DEFAULT_CASA_SLOTS`) | Casa field-slot count from save `casa` (`resolveCasaSlots`). Written on import when the save carries a `casa` block; absent records normalize to `9`. Clamped to `>= 1`. Drives Phases squad ranking (`rankRosterByDps`) and optimizer slot limits. |
+| `forgeFloor` | `10` | Optimizer forge floor (`clampForgeFloor`, bounded by `FORJA_MAX`). Persisted on `bf-hp-account-v1` and hydrated into the gear-plan slice. **Import never overwrites** an existing browser value — only `normalizeAccount` / explicit UI edits change it. |
+
+### `bf-hp-inventory-v1` (account-scoped collection)
+
+**Stated exception to rule 2:** item inventory is not folded into `HeroRecord` or `AccountShared` because it is an account-wide multiset with a different lifecycle — wholesale replace on every successful import, never per-hero merge. Load/save lives in [`inventory-storage.ts`](../src/shared/lib/inventory-storage.ts); shapes and `normalizeInventorySnapshot` live in `@bombfarm/domain/inventory`. Rules 1, 3, 5, 6, and 7 still apply: normalize on load, stable field names, additive-on-`-v1`, unit-tested.
+
+| Field | Default | Notes |
+| --- | --- | --- |
+| `version` | `1` | Snapshot schema version. |
+| `importedAt` | `0` | Epoch ms of the last wholesale replace. |
+| `items` | `[]` | `InventoryItem[]` from `mapInventoryItem` (`category === 0` only). Malformed snapshots normalize to an empty list. |
+
+Import confirm calls `replaceInventoryFromImport`, which clears any in-progress optimizer plan (`RGO-4`).
 
 ### Removed fields
 
