@@ -27,6 +27,13 @@ Browser-level smoke and visual baselines for the static export. Unit math stays 
 > sweep, the stat-breakdown ledger's four-line grouping, the Abilities tab's granted/spendable
 > and dead-points line, the import dialog's checkbox-free layout and sync summary, and the
 > updated quick-guide copy. All of it is currently covered by smoke specs only.
+>
+> **`/gear-plan` (roster gear optimizer, RGO-24):** no committed visual baseline yet. The visual
+> project remains globally `describe.skip`; agents may not run `test:e2e:update` or accept
+> baselines. Before enabling `e2e/visual.spec.ts` for this route, a human should review:
+> empty states (no roster / no inventory / all leave alone), the scope list with two same-name
+> heroes, post-run waterfall + per-hero delta table, forge/move lists, disclosures callouts,
+> and the Send to alt loadout confirm dialog. Smoke coverage lives under `e2e/gear-plan-*.spec.ts`.
 
 **Local e2e runs in Docker** — same Ubuntu + Chromium stack as CI. Any machine (Windows, macOS, Linux) produces identical pixels when you run the scripts below. CI is a verification gate: if you ran the local workflow, the PR checks should pass.
 
