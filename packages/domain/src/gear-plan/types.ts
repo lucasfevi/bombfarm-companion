@@ -194,4 +194,5 @@ export type EvaluateRosterInput = {
   ptsByHeroId: Record<string, PointAlloc>;
   slots: number;
   farm: FarmContext;
+  forgeFloor: number;
 };
