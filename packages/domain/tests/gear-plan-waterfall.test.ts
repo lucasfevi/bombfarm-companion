@@ -66,7 +66,7 @@ describe('buildWaterfall', () => {
     expect(result.plan.forgeList).toEqual([]);
   });
 
-  it('includes point resets only when final pts differ from current', () => {
+  it('includes point resets only when final pts differ and the hero gains sustained DPS', () => {
     const { plan } = waterfallFromFixture('save-20260801-crit-dmg-tree.json');
     for (const reset of plan.pointResets) {
       const hero = gearPlanInputFromFixture('save-20260801-crit-dmg-tree.json').heroes.find(
@@ -77,7 +77,15 @@ describe('buildWaterfall', () => {
         ([key, value]) => value !== hero!.pts[key as keyof typeof hero.pts],
       );
       expect(changed).toBe(true);
+      expect(reset.gainPct).toBeGreaterThan(0);
     }
+  });
+
+  it('never attributes a negative roster delta to the respec step', () => {
+    const { plan } = waterfallFromFixture('save-20260731-11heroes.json');
+    const respec = plan.steps.find((step) => step.id === 'respec');
+    expect(respec).toBeDefined();
+    expect(respec!.delta).toBeGreaterThanOrEqual(-1e-9);
   });
 
   it('keeps negative per-hero deltas in the table', () => {

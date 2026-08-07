@@ -170,18 +170,24 @@ function buildForgeList(
 function buildPointResets(
   contexts: HeroPlanContext[],
   finalPtsByHeroId: Record<string, PointAlloc>,
-  todayEval: ReturnType<typeof evaluateRoster>,
+  movedEval: ReturnType<typeof evaluateRoster>,
   respecEval: ReturnType<typeof evaluateRoster>,
+  currentPtsByHero: Record<string, PointAlloc>,
 ): WaterfallResult['pointResets'] {
   const out: WaterfallResult['pointResets'] = [];
   for (const ctx of contexts) {
     if (ctx.scope !== 'optimize') continue;
     const finalPts = finalPtsByHeroId[ctx.heroId] ?? ctx.pts;
-    const changed = (Object.keys(finalPts) as (keyof PointAlloc)[]).some((key) => finalPts[key] !== ctx.pts[key]);
+    const currentPts = currentPtsByHero[ctx.heroId] ?? ctx.pts;
+    const changed = (Object.keys(finalPts) as (keyof PointAlloc)[]).some(
+      (key) => finalPts[key] !== currentPts[key],
+    );
     if (!changed) continue;
-    const before = todayEval.perHero[ctx.heroId]?.sustained ?? 0;
+    const before = movedEval.perHero[ctx.heroId]?.sustained ?? 0;
     const after = respecEval.perHero[ctx.heroId]?.sustained ?? 0;
-    const gainPct = before > 0 ? Math.max(0, (after / before - 1) * 100) : 0;
+    // Never recommend a reset that does not improve this hero on the plan gear.
+    if (after <= before + 1e-9) continue;
+    const gainPct = before > 0 ? (after / before - 1) * 100 : 0;
     out.push({ heroId: ctx.heroId, pts: finalPts, gainPct });
   }
   out.sort((a, b) => a.heroId.localeCompare(b.heroId));
@@ -239,7 +245,7 @@ export function buildWaterfall(input: BuildWaterfallInput): WaterfallResult {
     steps,
     forgeList: buildForgeList(gearInput.inventory, gearInput.forgeFloor, rosterIds),
     moveList: buildMoveList(currentAssignment, planAssignment, itemById, contexts),
-    pointResets: buildPointResets(contexts, finalPtsByHeroId, todayEval, respecEval),
+    pointResets: buildPointResets(contexts, finalPtsByHeroId, movedEval, respecEval, pts),
     perHero: buildPerHeroTable(contexts, todayEval, respecEval),
   };
 }

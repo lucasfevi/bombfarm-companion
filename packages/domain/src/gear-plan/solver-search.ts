@@ -229,8 +229,10 @@ export function runSeedSearch(input: SeedRunnerInput): SeedResult {
     prevObjective = evaluation.objective;
   }
 
+  const ptsBeforeFinal = ptsByHeroId;
+  const evalBeforeFinal = evaluation;
   ptsByHeroId = pointsPass(evaluation, input.contexts, ptsByHeroId, true);
-  evaluation = evaluateAssignment(
+  const afterFinalPts = evaluateAssignment(
     assignment,
     input.contexts,
     ptsByHeroId,
@@ -238,6 +240,14 @@ export function runSeedSearch(input: SeedRunnerInput): SeedResult {
     input.itemById,
     input.budget,
   );
+  // optimizeBuild is per-hero; reject a final pass that lowers roster objective
+  // (e.g. under saturated fair-share) so we never recommend a DPS-down respec.
+  if (afterFinalPts.objective + 1e-9 >= evalBeforeFinal.objective) {
+    evaluation = afterFinalPts;
+  } else {
+    ptsByHeroId = ptsBeforeFinal;
+    evaluation = evalBeforeFinal;
+  }
 
   return { name: input.name, assignment, evaluation, ptsByHeroId, rounds };
 }

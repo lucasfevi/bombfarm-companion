@@ -16,7 +16,14 @@ The collapsible **How the math works** / **Como calculamos tudo** block (`Explai
 
 ## Roster gear plan (`@bombfarm/domain/gear-plan` + Gear plan page)
 
-WHEN the roster gear-plan objective, duty weighting (`drainMult`), forge-floor normalization (`effectiveUpgrade`), saturated vs under-saturated regime, or related UI copy changes, THEN update this doc and **both** `explainSections` entries **9 · Roster gear plan** / **9 · Plano de gear do roster** in `src/shared/i18n/namespaces/advice.ts`, and extend `storage-i18n.test.ts` so EN + PT mention duty weighting and forge floor in that section.
+WHEN the roster gear-plan objective, duty weighting (`drainMult`), forge-floor normalization (`effectiveUpgrade`), saturated vs under-saturated regime, final points-pass acceptance, or related UI copy changes, THEN update this doc and **both** `explainSections` entries **9 · Roster gear plan** / **9 · Plano de gear do roster** in `src/shared/i18n/namespaces/advice.ts`, and extend `storage-i18n.test.ts` so EN + PT mention duty weighting and forge floor in that section.
+
+Player-facing prose in that section must stay plain language ([`i18n.md`](../../../docs/i18n.md)): put `effectiveUpgrade = max(…)` (and similar) only in the section `code` block, never inline in the paragraph. The forge-floor chrome tip follows the same rule.
+
+**Solver / waterfall product rules (current truth):**
+
+- Waterfall steps are `today → forged → moved → respec`. The **Today** cell is the baseline — UI omits a `+0` delta (and any other step whose delta is exactly `0`).
+- The final per-hero `optimizeBuild` pass is kept only when it does **not** lower roster objective. Point-reset chore rows list only heroes whose sustained DPS improves on the plan gear; a DPS-down respec is never recommended.
 
 ## Out of scope
 
