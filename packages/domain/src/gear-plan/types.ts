@@ -117,9 +117,9 @@ export type GearPlanInput = {
 };
 
 export type WaterfallStep = {
-  id: 'today' | 'forged' | 'moved' | 'respec';
+  id: 'today' | 'gear' | 'respec';
   objective: number;
-  /** Delta vs the previous step. Can be 0; never silently dropped. */
+  /** Delta vs the previous step. Always >= 0 at the roster level. Can be 0. */
   delta: number;
 };
 
@@ -138,7 +138,16 @@ export type GearPlan = {
   steps: WaterfallStep[];
   forgeList: ForgeAction[];
   moveList: MoveAction[];
-  pointResets: { heroId: string; pts: Record<string, number>; gainPct: number }[];
+  pointResets: {
+    heroId: string;
+    pts: Record<string, number>;
+    /** Per-hero sustained % change, MAY be negative — the roster can still gain. Not floored. */
+    gainPct: number;
+    /** Marginal ROSTER objective gain at the moment this reset was accepted. Display-only. */
+    rosterGainDps: number;
+    /** `heroLevel * 1000` gold. Display-only — never in the objective, never a filter or gate. */
+    resetCostGold: number;
+  }[];
   perHero: {
     heroId: string;
     heroName: string;
@@ -154,6 +163,14 @@ export type GearPlan = {
   slots: number;
   currentDps: number;
   planDps: number;
+  /** The forge floor the plan actually adopted — 0 when forging was rejected. */
+  forgeFloorApplied: number;
+  /** Internal split of the single `gear` step. EITHER may be negative; disclosure-only. */
+  gearBreakdown: { forgeDelta: number; moveDelta: number };
+  /** True when the gear step sits below today. The plan is only ahead once the resets land. */
+  requiresFullPlan: boolean;
+  /** How far below today the gear step sits, as a POSITIVE number. 0 when requiresFullPlan is false. */
+  gearDipDps: number;
   disclosures: {
     unmodelledAbilities: { abilityId: string; heroNames: string[] }[];
     loadoutDriftHeroNames: string[];

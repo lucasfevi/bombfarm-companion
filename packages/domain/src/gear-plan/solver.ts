@@ -108,7 +108,6 @@ export function runGearPlan(
     itemById,
     budget,
   );
-  const currentDps = currentEval.objective;
   const seeds = buildSeedAssignments(
     baseAssignment,
     contexts,
@@ -143,12 +142,6 @@ export function runGearPlan(
     }
   }
 
-  const planDps = Math.max(best.evaluation.objective, currentDps);
-  const proposedLoadouts: Record<string, Loadout> = loadoutsFromAssignment(
-    best.assignment,
-    itemById,
-  );
-
   const waterfall = buildWaterfall({
     gearInput: input,
     contexts,
@@ -156,12 +149,15 @@ export function runGearPlan(
     planAssignment: best.assignment,
     finalPtsByHeroId: best.ptsByHeroId,
     itemById,
-    currentDps,
-    planDps,
   });
 
-  const waterfallCurrentDps = waterfall.steps[0]?.objective ?? currentDps;
-  const waterfallPlanDps = waterfall.steps[3]?.objective ?? planDps;
+  // The waterfall is the decision point (AC-RGO monotonicity fix) — it may reject the search's
+  // assignment/points in favor of the baseline, so `regime`/`sumDuty`/`slots`/`proposedLoadouts`
+  // must describe the winning state, not `best.evaluation` / `best.assignment` directly.
+  const proposedLoadouts: Record<string, Loadout> = loadoutsFromAssignment(
+    waterfall.assignment,
+    itemById,
+  );
 
   const plan: GearPlan = {
     steps: waterfall.steps,
@@ -170,11 +166,15 @@ export function runGearPlan(
     pointResets: waterfall.pointResets,
     perHero: waterfall.perHero,
     proposedLoadouts,
-    regime: best.evaluation.regime,
-    sumDuty: best.evaluation.sumDuty,
-    slots: best.evaluation.slots,
-    currentDps: waterfallCurrentDps,
-    planDps: waterfallPlanDps,
+    regime: waterfall.finalEvaluation.regime,
+    sumDuty: waterfall.finalEvaluation.sumDuty,
+    slots: waterfall.finalEvaluation.slots,
+    currentDps: waterfall.steps[0]?.objective ?? 0,
+    planDps: waterfall.steps[2]?.objective ?? 0,
+    forgeFloorApplied: waterfall.forgeFloorApplied,
+    gearBreakdown: waterfall.gearBreakdown,
+    requiresFullPlan: waterfall.requiresFullPlan,
+    gearDipDps: waterfall.gearDipDps,
     disclosures: {
       unmodelledAbilities: unmodelledAbilitiesInScope(contexts),
       loadoutDriftHeroNames: loadoutDriftHeroNames(input),

@@ -5,24 +5,31 @@ import { evaluateRoster } from './evaluate';
 import { optimizeBuild } from '../points-reopt';
 import {
   buildInitialAssignment,
-  loadoutsFromAssignment,
   type AssignmentState,
 } from './solver-assignment';
+import { chooseGearCandidate, evaluateAt } from './waterfall-guards';
 import type {
-  EvaluateRosterInput,
-  FarmContext,
   ForgeAction,
   GearPlanInput,
   HeroPlanContext,
   MoveAction,
+  RosterEvaluation,
   WaterfallStep,
 } from './types';
+
+const EPS = 1e-9;
 
 export type WaterfallResult = {
   steps: WaterfallStep[];
   forgeList: ForgeAction[];
   moveList: MoveAction[];
-  pointResets: { heroId: string; pts: Record<string, number>; gainPct: number }[];
+  pointResets: {
+    heroId: string;
+    pts: Record<string, number>;
+    gainPct: number;
+    rosterGainDps: number;
+    resetCostGold: number;
+  }[];
   perHero: {
     heroId: string;
     heroName: string;
@@ -31,6 +38,17 @@ export type WaterfallResult = {
     after: number;
     delta: number;
   }[];
+  /** The winning candidate's assignment/points — what `runGearPlan` should actually propose. */
+  assignment: AssignmentState;
+  ptsByHeroId: Record<string, PointAlloc>;
+  /** The respec-step evaluation — source of truth for `regime` / `sumDuty` / `slots` on screen. */
+  finalEvaluation: RosterEvaluation;
+  forgeFloorApplied: number;
+  gearBreakdown: { forgeDelta: number; moveDelta: number };
+  /** True when the gear step sits below today — transient until the respec resets land. */
+  requiresFullPlan: boolean;
+  /** How far below today the gear step sits, as a POSITIVE number. 0 when requiresFullPlan is false. */
+  gearDipDps: number;
 };
 
 export type BuildWaterfallInput = {
@@ -40,39 +58,7 @@ export type BuildWaterfallInput = {
   planAssignment: AssignmentState;
   finalPtsByHeroId: Record<string, PointAlloc>;
   itemById: ReadonlyMap<string, InventoryItem>;
-  currentDps: number;
-  planDps: number;
 };
-
-function farmFromAccount(input: GearPlanInput): FarmContext {
-  return {
-    houseIdx: input.account.houseIdx,
-    houseLevel: input.account.houseLevel,
-    phase: input.account.phase,
-    mitigationPct: input.account.mitigationPct,
-    treeGlassCannon: input.account.treeGlassCannon,
-    treeTempoDobrado: input.account.treeTempoDobrado,
-  };
-}
-
-function evaluateAt(
-  contexts: HeroPlanContext[],
-  assignment: AssignmentState,
-  ptsByHeroId: Record<string, PointAlloc>,
-  gearInput: GearPlanInput,
-  itemById: ReadonlyMap<string, InventoryItem>,
-  forgeFloor: number,
-) {
-  const evalInput: EvaluateRosterInput = {
-    contexts,
-    loadoutsByHeroId: loadoutsFromAssignment(assignment, itemById),
-    ptsByHeroId,
-    slots: gearInput.account.slots,
-    farm: farmFromAccount(gearInput),
-    forgeFloor,
-  };
-  return evaluateRoster(evalInput);
-}
 
 function currentPtsByHeroId(input: GearPlanInput): Record<string, PointAlloc> {
   return Object.fromEntries(input.heroes.map((hero) => [hero.heroId, hero.pts]));
@@ -168,30 +154,35 @@ function buildForgeList(
 }
 
 function buildPointResets(
-  contexts: HeroPlanContext[],
+  acceptedHeroIds: string[],
   finalPtsByHeroId: Record<string, PointAlloc>,
-  movedEval: ReturnType<typeof evaluateRoster>,
-  respecEval: ReturnType<typeof evaluateRoster>,
-  currentPtsByHero: Record<string, PointAlloc>,
+  gearStateEval: RosterEvaluation,
+  respecStateEval: RosterEvaluation,
+  gainByHeroId: Record<string, number>,
+  heroLevelById: ReadonlyMap<string, number>,
 ): WaterfallResult['pointResets'] {
-  const out: WaterfallResult['pointResets'] = [];
-  for (const ctx of contexts) {
-    if (ctx.scope !== 'optimize') continue;
-    const finalPts = finalPtsByHeroId[ctx.heroId] ?? ctx.pts;
-    const currentPts = currentPtsByHero[ctx.heroId] ?? ctx.pts;
-    const changed = (Object.keys(finalPts) as (keyof PointAlloc)[]).some(
-      (key) => finalPts[key] !== currentPts[key],
-    );
-    if (!changed) continue;
-    const before = movedEval.perHero[ctx.heroId]?.sustained ?? 0;
-    const after = respecEval.perHero[ctx.heroId]?.sustained ?? 0;
-    // Never recommend a reset that does not improve this hero on the plan gear.
-    if (after <= before + 1e-9) continue;
+  // A listed reset MAY show a negative gainPct: acceptPointResets accepts against the ROSTER
+  // objective, so a hero can be kept even when it personally loses sustained DPS. Do not floor
+  // this at 0 and do not filter on it — that filter is what caused the original bug.
+  //
+  // Emitted in ACCEPTANCE order (acceptedHeroIds, as produced by the greedy loop in
+  // acceptPointResets) — NOT sorted by heroId. Acceptance order is a real priority ranking: it
+  // lets a player who stops partway through the resets still have taken the best value first.
+  return acceptedHeroIds.map((heroId) => {
+    const before = gearStateEval.perHero[heroId]?.sustained ?? 0;
+    const after = respecStateEval.perHero[heroId]?.sustained ?? 0;
     const gainPct = before > 0 ? (after / before - 1) * 100 : 0;
-    out.push({ heroId: ctx.heroId, pts: finalPts, gainPct });
-  }
-  out.sort((a, b) => a.heroId.localeCompare(b.heroId));
-  return out;
+    const level = heroLevelById.get(heroId) ?? 0;
+    return {
+      heroId,
+      pts: finalPtsByHeroId[heroId] ?? {},
+      gainPct,
+      rosterGainDps: gainByHeroId[heroId] ?? 0,
+      // Confirmed real in-game cost. Ability resets cost the same again, separately, but we never
+      // recommend ability resets here. Display-only — never enters the objective or any filter.
+      resetCostGold: level * 1000,
+    };
+  });
 }
 
 function buildPerHeroTable(
@@ -222,31 +213,78 @@ export function buildWaterfall(input: BuildWaterfallInput): WaterfallResult {
   const pts = currentPtsByHeroId(gearInput);
   const rosterIds = new Set(gearInput.heroes.map((h) => h.heroId));
 
-  const todayEval = evaluateAt(contexts, currentAssignment, pts, gearInput, itemById, 0);
-  const forgedEval = evaluateAt(contexts, currentAssignment, pts, gearInput, itemById, gearInput.forgeFloor);
-  const movedEval = evaluateAt(contexts, planAssignment, pts, gearInput, itemById, gearInput.forgeFloor);
-  const respecEval = evaluateAt(
+  const chosen = chooseGearCandidate({
     contexts,
-    planAssignment,
-    finalPtsByHeroId,
     gearInput,
     itemById,
-    gearInput.forgeFloor,
-  );
+    baselineAssignment: currentAssignment,
+    planAssignment,
+    currentPts: pts,
+    finalPtsByHeroId,
+    rosterHeroIds: rosterIds,
+  });
+  const { candidate, gearEvaluation, respec, todayEvaluation } = chosen;
+  const todayObjective = todayEvaluation.objective;
+  const gearObjective = gearEvaluation.objective;
 
   const steps: WaterfallStep[] = [
-    { id: 'today', objective: todayEval.objective, delta: 0 },
-    { id: 'forged', objective: forgedEval.objective, delta: forgedEval.objective - todayEval.objective },
-    { id: 'moved', objective: movedEval.objective, delta: movedEval.objective - forgedEval.objective },
-    { id: 'respec', objective: respecEval.objective, delta: respecEval.objective - movedEval.objective },
+    { id: 'today', objective: todayObjective, delta: 0 },
+    { id: 'gear', objective: gearObjective, delta: gearObjective - todayObjective },
+    { id: 'respec', objective: respec.objective, delta: respec.objective - gearObjective },
   ];
+
+  // Measured along the winning composition — individually these may be negative (disclosure
+  // only); the roster-level guarantee lives in `steps`, not in this split. `forgeOnly` and
+  // `movesOnly` need no extra evaluation: the whole `gear` step delta IS that one component.
+  // Only `forgeMoves` needs one extra evaluation (baseline assignment at the forge floor) to
+  // split the joint gear delta into its forge and move parts.
+  let forgeDelta = 0;
+  let moveDelta = 0;
+  if (candidate.key === 'forgeOnly') {
+    forgeDelta = gearObjective - todayObjective;
+  } else if (candidate.key === 'movesOnly') {
+    moveDelta = gearObjective - todayObjective;
+  } else if (candidate.key === 'forgeMoves') {
+    const baselineAtFloor = evaluateAt(
+      contexts,
+      currentAssignment,
+      pts,
+      gearInput,
+      itemById,
+      gearInput.forgeFloor,
+    ).objective;
+    forgeDelta = baselineAtFloor - todayObjective;
+    moveDelta = gearObjective - baselineAtFloor;
+  }
+
+  // Option B: the gear step MAY sit below today — it is transient, climbed back out once the
+  // resets land. Disclose it rather than hide it; the final (respec) objective is still
+  // guaranteed >= today by `chooseGearCandidate` (the 'none' candidate is always in the running).
+  const requiresFullPlan = gearObjective < todayObjective - EPS;
+  const gearDipDps = requiresFullPlan ? todayObjective - gearObjective : 0;
+
+  const heroLevelById = new Map(contexts.map((ctx) => [ctx.heroId, ctx.level]));
 
   return {
     steps,
-    forgeList: buildForgeList(gearInput.inventory, gearInput.forgeFloor, rosterIds),
-    moveList: buildMoveList(currentAssignment, planAssignment, itemById, contexts),
-    pointResets: buildPointResets(contexts, finalPtsByHeroId, movedEval, respecEval, pts),
-    perHero: buildPerHeroTable(contexts, todayEval, respecEval),
+    forgeList: buildForgeList(gearInput.inventory, candidate.floor, rosterIds),
+    moveList: buildMoveList(currentAssignment, candidate.assignment, itemById, contexts),
+    pointResets: buildPointResets(
+      respec.acceptedHeroIds,
+      finalPtsByHeroId,
+      gearEvaluation,
+      respec.evaluation,
+      respec.gainByHeroId,
+      heroLevelById,
+    ),
+    perHero: buildPerHeroTable(contexts, todayEvaluation, respec.evaluation),
+    assignment: candidate.assignment,
+    ptsByHeroId: respec.ptsByHeroId,
+    finalEvaluation: respec.evaluation,
+    forgeFloorApplied: candidate.floor,
+    gearBreakdown: { forgeDelta, moveDelta },
+    requiresFullPlan,
+    gearDipDps,
   };
 }
 

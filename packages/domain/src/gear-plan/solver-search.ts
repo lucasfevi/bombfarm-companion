@@ -18,9 +18,13 @@ import type {
   RosterEvaluation,
 } from './types';
 
-export const GEAR_PLAN_MAX_EVALUATIONS = 150_000;
-export const MAX_ROUNDS = 6;
-export const IMPROVEMENT_EPSILON = 1e-4;
+export const GEAR_PLAN_MAX_EVALUATIONS = 500_000;
+// Counts gear<->points alternations, not moves, now that gearPass climbs to local optimality
+// (Change 2a) — the convergence break below normally exits well before this cap.
+export const MAX_ROUNDS = 30;
+// The old 1e-4 was ~148,000 DPS on a 1.48B roster — larger than the steps it was meant to
+// arbitrate, so it broke the round loop long before the search actually converged.
+export const IMPROVEMENT_EPSILON = 1e-7;
 export const GEAR_PLAN_WORKER_MARKER = 'runGearPlan';
 
 const EPS = 1e-9;
@@ -96,6 +100,12 @@ function heroDpsMap(evaluation: RosterEvaluation): Record<string, number> {
   return out;
 }
 
+/**
+ * Climbs to local optimality: applies the single best move, then regenerates the move list
+ * (both `assignment.slots` and `assignment.pool` changed, so a stale list is wrong) and repeats
+ * until no improving move exists or the budget runs out. Best-improvement semantics and the
+ * deterministic move ordering from `generateMoves` are preserved at every iteration.
+ */
 function gearPass(
   assignment: AssignmentState,
   contexts: HeroPlanContext[],
@@ -105,38 +115,48 @@ function gearPass(
   budget: SolverBudget,
   startEval: RosterEvaluation,
 ): { assignment: AssignmentState; evaluation: RosterEvaluation } {
-  let bestMove: GearMove | null = null;
-  let bestAssignment = assignment;
-  let bestEval = startEval;
-  const moves = generateMoves({
-    contexts,
-    slots: assignment.slots,
-    pool: assignment.pool,
-    itemById,
-    heroDpsById: heroDpsMap(startEval),
-    forgeFloor: input.forgeFloor,
-  });
-  for (const move of moves) {
+  let currentAssignment = assignment;
+  let currentEval = startEval;
+
+  for (;;) {
     if (budget.exhausted) break;
-    const candidateAssignment = applyMove(assignment, move);
-    const candidateEval = evaluateAssignment(
-      candidateAssignment,
+    const moves = generateMoves({
       contexts,
-      ptsByHeroId,
-      input,
+      slots: currentAssignment.slots,
+      pool: currentAssignment.pool,
       itemById,
-      budget,
-    );
-    if (candidateEval.objective > bestEval.objective + EPS) {
-      bestEval = candidateEval;
-      bestMove = move;
-      bestAssignment = candidateAssignment;
+      heroDpsById: heroDpsMap(currentEval),
+      forgeFloor: input.forgeFloor,
+    });
+
+    let bestMove: GearMove | null = null;
+    let bestAssignment = currentAssignment;
+    let bestEval = currentEval;
+
+    for (const move of moves) {
+      if (budget.exhausted) break;
+      const candidateAssignment = applyMove(currentAssignment, move);
+      const candidateEval = evaluateAssignment(
+        candidateAssignment,
+        contexts,
+        ptsByHeroId,
+        input,
+        itemById,
+        budget,
+      );
+      if (candidateEval.objective > bestEval.objective + EPS) {
+        bestEval = candidateEval;
+        bestMove = move;
+        bestAssignment = candidateAssignment;
+      }
     }
+
+    if (!bestMove) break;
+    currentAssignment = bestAssignment;
+    currentEval = bestEval;
   }
-  if (bestMove) {
-    return { assignment: bestAssignment, evaluation: bestEval };
-  }
-  return { assignment, evaluation: startEval };
+
+  return { assignment: currentAssignment, evaluation: currentEval };
 }
 
 function pointsPass(
@@ -213,15 +233,26 @@ export function runSeedSearch(input: SeedRunnerInput): SeedResult {
     );
     assignment = gearResult.assignment;
     evaluation = gearResult.evaluation;
-    ptsByHeroId = pointsPass(evaluation, input.contexts, ptsByHeroId, false);
-    evaluation = evaluateAssignment(
+    const prePointsObjective = evaluation.objective;
+    const prePointsVector = ptsByHeroId;
+    const nextPts = pointsPass(evaluation, input.contexts, ptsByHeroId, false);
+    const nextEval = evaluateAssignment(
       assignment,
       input.contexts,
-      ptsByHeroId,
+      nextPts,
       input.gearInput,
       input.itemById,
       input.budget,
     );
+    // Guard: pointsPass is per-hero and can lower the ROSTER objective (saturated fair-share).
+    // The old code let this degraded vector survive whenever the round loop broke right after
+    // on IMPROVEMENT_EPSILON — revert both the vector and the evaluation when that happens.
+    if (nextEval.objective + EPS >= prePointsObjective) {
+      ptsByHeroId = nextPts;
+      evaluation = nextEval;
+    } else {
+      ptsByHeroId = prePointsVector;
+    }
     rounds += 1;
     const improvement =
       prevObjective > 0 ? (evaluation.objective - prevObjective) / prevObjective : evaluation.objective;
