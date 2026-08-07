@@ -142,7 +142,7 @@ export function ScopeList({ t, lang }: { t: Strings; lang: Lang }) {
         </div>
         <DragOverlay dropAnimation={null}>
           {activeHero ? (
-            <div className="w-[min(100vw-2rem,16rem)]">
+            <div className="w-[min(100vw-2rem,13rem)]">
               <ScopeHeroCard
                 hero={activeHero}
                 scope={resolvedScope[activeHero.id] ?? 'optimize'}

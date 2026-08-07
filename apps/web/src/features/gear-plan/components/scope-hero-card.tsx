@@ -1,7 +1,7 @@
 'use client';
 
 import { useDraggable } from '@dnd-kit/core';
-import { cn } from '@bombfarm/ui';
+import { Select, cn } from '@bombfarm/ui';
 import { RARITIES } from '@bombfarm/domain/planner-constants';
 import { rarityLabel } from '@bombfarm/domain/game-labels';
 import { HeroAvatar, rarityTextClass } from '@/shared/game-art';
@@ -72,41 +72,44 @@ export function ScopeHeroCard({
           <div className="flex min-w-0 flex-wrap items-baseline gap-x-1.5 gap-y-0.5">
             <span
               className={cn(
-                'text-base leading-none font-black tracking-tight',
+                'shrink-0 text-[15px] leading-none font-black tracking-tight',
                 hero.rank?.trim() ? 'text-accent' : 'text-muted',
               )}
             >
               {hero.rank?.trim() || '—'}
             </span>
-            <span className={cn('truncate text-sm leading-none font-bold', battleAllowed ? 'text-ink' : 'text-muted')}>
+            <span
+              className={cn(
+                'truncate text-[13px] leading-none font-bold',
+                battleAllowed ? 'text-ink' : 'text-muted',
+              )}
+            >
               {hero.name}
             </span>
             {stars > 0 ? (
-              <span className="text-[0.85em] leading-none tracking-tight text-rar-4" aria-hidden>
+              <span className="shrink-0 text-[11px] leading-none tracking-tight text-rar-4" aria-hidden>
                 {'★'.repeat(stars)}
               </span>
             ) : null}
           </div>
-          <div className={cn('mt-1 text-[12px] leading-none font-bold', rarityTextClass(rarIdx) ?? 'text-muted')}>
-            {rarityLabel(hero.rarity, lang)}
+          <div className="mt-1 flex min-w-0 flex-wrap items-center gap-x-1.5 gap-y-0.5 text-[11px] leading-none">
+            <span className={cn('truncate font-bold', rarityTextClass(rarIdx) ?? 'text-muted')}>
+              {rarityLabel(hero.rarity, lang)}
+            </span>
+            <span className="shrink-0 text-muted">
+              L{hero.level}
+              <span aria-hidden> · </span>#{shortId}
+            </span>
           </div>
-          <div className="mt-1 flex flex-wrap gap-x-2 text-[11px] leading-none text-muted">
-            <span>L{hero.level}</span>
-            <span aria-hidden>·</span>
-            <span>#{shortId}</span>
-          </div>
-          {!battleAllowed ? (
-            <p className="m-0 mt-1 text-[10px] leading-snug text-muted">{t.gearPlanScopeDonateHint}</p>
-          ) : null}
           {!overlay ? (
-            <label
-              className="mt-2 block"
+            <div
+              className="mt-1 md:hidden"
               onPointerDown={(event) => event.stopPropagation()}
               onMouseDown={(event) => event.stopPropagation()}
             >
-              <span className="sr-only">{label}</span>
-              <select
-                className="w-full cursor-pointer rounded-sm border border-line bg-[color-mix(in_oklch,var(--surface-2)_70%,transparent)] px-1.5 py-1 text-[11px] text-ink"
+              <Select
+                className="w-full"
+                size="compact"
                 value={scope}
                 aria-label={label}
                 onChange={(event) => onScope(event.target.value as ScopeState)}
@@ -116,8 +119,8 @@ export function ScopeHeroCard({
                     {scopeLabel(option, t)}
                   </option>
                 ))}
-              </select>
-            </label>
+              </Select>
+            </div>
           ) : null}
         </div>
       </div>

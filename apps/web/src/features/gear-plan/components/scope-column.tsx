@@ -48,9 +48,9 @@ export function ScopeColumn({
         </div>
         <p className="m-0 mt-1 text-[11px] leading-snug text-muted">{tip}</p>
       </header>
-      <div className="flex min-h-0 flex-1 flex-col gap-2 overflow-y-auto p-2">
+      <div className="grid min-h-0 flex-1 grid-cols-1 content-start gap-2 overflow-y-auto p-2 md:grid-cols-2">
         {heroes.length === 0 ? (
-          <p className="m-0 flex flex-1 items-center justify-center px-1 py-6 text-center text-[11px] text-muted">
+          <p className="col-span-full m-0 flex min-h-24 items-center justify-center px-1 py-6 text-center text-[11px] text-muted md:col-span-2">
             {t.gearPlanScopeColumnEmpty}
           </p>
         ) : (
