@@ -26,15 +26,19 @@ export function ScopeColumn({
   lang: Lang;
   onScope: (heroId: string, scope: ScopeState) => void;
 }) {
-  const { setNodeRef, isOver } = useDroppable({ id: scope });
+  const { setNodeRef, isOver } = useDroppable({
+    id: scope,
+    data: { type: 'column', scope },
+  });
 
   return (
     <section
       ref={setNodeRef}
       aria-label={title}
+      data-scope-column={scope}
       className={cn(
-        'flex min-h-40 min-w-0 flex-col rounded-sm border border-line bg-[color-mix(in_oklch,var(--bg)_35%,transparent)]',
-        isOver && 'border-accent/70 bg-[color-mix(in_oklch,var(--accent)_8%,transparent)]',
+        'flex min-h-56 min-w-0 flex-col rounded-sm border border-line bg-[color-mix(in_oklch,var(--bg)_35%,transparent)] transition-[border-color,background-color]',
+        isOver && 'border-accent bg-[color-mix(in_oklch,var(--accent)_12%,transparent)]',
       )}
     >
       <header className="border-b border-line px-2.5 py-2">
@@ -44,9 +48,11 @@ export function ScopeColumn({
         </div>
         <p className="m-0 mt-1 text-[11px] leading-snug text-muted">{tip}</p>
       </header>
-      <div className="flex max-h-72 flex-col gap-2 overflow-y-auto p-2">
+      <div className="flex min-h-0 flex-1 flex-col gap-2 overflow-y-auto p-2">
         {heroes.length === 0 ? (
-          <p className="m-0 px-1 py-3 text-center text-[11px] text-muted">{t.gearPlanScopeColumnEmpty}</p>
+          <p className="m-0 flex flex-1 items-center justify-center px-1 py-6 text-center text-[11px] text-muted">
+            {t.gearPlanScopeColumnEmpty}
+          </p>
         ) : (
           heroes.map((hero) => (
             <ScopeHeroCard

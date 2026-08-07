@@ -5,9 +5,11 @@ import {
   DndContext,
   DragOverlay,
   PointerSensor,
-  closestCenter,
+  pointerWithin,
+  rectIntersection,
   useSensor,
   useSensors,
+  type CollisionDetection,
   type DragEndEvent,
   type DragStartEvent,
 } from '@dnd-kit/core';
@@ -22,8 +24,33 @@ import { ScopeHeroCard } from './scope-hero-card';
 
 const COLUMNS: ScopeState[] = ['optimize', 'donate', 'leaveAlone'];
 
-function isScopeState(value: string | number): value is ScopeState {
+function isScopeState(value: string): value is ScopeState {
   return value === 'optimize' || value === 'donate' || value === 'leaveAlone';
+}
+
+/** Prefer the column/card under the pointer; fall back to rect intersection for empty lanes. */
+const scopeCollision: CollisionDetection = (args) => {
+  const pointerHits = pointerWithin(args);
+  if (pointerHits.length > 0) return pointerHits;
+  return rectIntersection(args);
+};
+
+function resolveDropScope(
+  overId: string,
+  overData: unknown,
+  scopeByHeroId: Record<string, ScopeState>,
+): ScopeState | null {
+  if (overData && typeof overData === 'object') {
+    const data = overData as { type?: unknown; scope?: unknown };
+    if (data.type === 'column' && typeof data.scope === 'string' && isScopeState(data.scope)) {
+      return data.scope;
+    }
+    if (data.type === 'hero' && typeof data.scope === 'string' && isScopeState(data.scope)) {
+      return data.scope;
+    }
+  }
+  if (isScopeState(overId)) return overId;
+  return scopeByHeroId[overId] ?? null;
 }
 
 export function ScopeList({ t, lang }: { t: Strings; lang: Lang }) {
@@ -34,7 +61,7 @@ export function ScopeList({ t, lang }: { t: Strings; lang: Lang }) {
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
-      activationConstraint: { distance: 6 },
+      activationConstraint: { distance: 8 },
     }),
   );
 
@@ -68,12 +95,9 @@ export function ScopeList({ t, lang }: { t: Strings; lang: Lang }) {
   const onDragEnd = (event: DragEndEvent) => {
     setActiveId(null);
     const heroId = String(event.active.id);
-    const overId = event.over?.id;
-    if (overId == null) return;
-    const overKey = String(overId);
-    const target = isScopeState(overKey)
-      ? overKey
-      : (resolvedScope[overKey] ?? null);
+    const over = event.over;
+    if (!over) return;
+    const target = resolveDropScope(String(over.id), over.data.current, resolvedScope);
     if (!target) return;
     if ((resolvedScope[heroId] ?? 'optimize') === target) return;
     setScope(heroId, target);
@@ -96,7 +120,7 @@ export function ScopeList({ t, lang }: { t: Strings; lang: Lang }) {
       ) : null}
       <DndContext
         sensors={sensors}
-        collisionDetection={closestCenter}
+        collisionDetection={scopeCollision}
         onDragStart={onDragStart}
         onDragEnd={onDragEnd}
         onDragCancel={() => setActiveId(null)}
@@ -118,13 +142,14 @@ export function ScopeList({ t, lang }: { t: Strings; lang: Lang }) {
         </div>
         <DragOverlay dropAnimation={null}>
           {activeHero ? (
-            <div className="w-64 opacity-95">
+            <div className="w-[min(100vw-2rem,16rem)]">
               <ScopeHeroCard
                 hero={activeHero}
                 scope={resolvedScope[activeHero.id] ?? 'optimize'}
                 t={t}
                 lang={lang}
                 onScope={() => {}}
+                overlay
               />
             </div>
           ) : null}

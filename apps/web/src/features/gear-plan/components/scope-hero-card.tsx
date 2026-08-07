@@ -1,7 +1,6 @@
 'use client';
 
 import { useDraggable } from '@dnd-kit/core';
-import { CSS } from '@dnd-kit/utilities';
 import { cn } from '@bombfarm/ui';
 import { RARITIES } from '@bombfarm/domain/planner-constants';
 import { rarityLabel } from '@bombfarm/domain/game-labels';
@@ -26,16 +25,20 @@ export function ScopeHeroCard({
   t,
   lang,
   onScope,
+  overlay = false,
 }: {
   hero: HeroRecord;
   scope: ScopeState;
   t: Strings;
   lang: Lang;
   onScope: (scope: ScopeState) => void;
+  /** Render-only clone for DragOverlay — no sensors. */
+  overlay?: boolean;
 }) {
-  const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
+  const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
     id: hero.id,
-    data: { heroId: hero.id, scope },
+    data: { type: 'hero', heroId: hero.id, scope },
+    disabled: overlay,
   });
   const rarIdx = RARITIES.indexOf(hero.rarity);
   const stars = Math.max(0, Math.min(3, Math.round(hero.stars ?? 0)));
@@ -49,29 +52,22 @@ export function ScopeHeroCard({
 
   return (
     <article
-      ref={setNodeRef}
-      style={{
-        transform: CSS.Translate.toString(transform),
-        zIndex: isDragging ? 20 : undefined,
-      }}
+      ref={overlay ? undefined : setNodeRef}
       className={cn(
         'touch-manipulation rounded-sm border border-line bg-[color-mix(in_oklch,var(--surface)_92%,transparent)] px-2 py-1.5 shadow-[inset_0_1px_0_color-mix(in_oklch,var(--line)_28%,transparent)]',
-        isDragging && 'opacity-80 ring-1 ring-accent',
+        !overlay && 'cursor-grab active:cursor-grabbing',
+        isDragging && !overlay && 'opacity-30',
+        overlay && 'cursor-grabbing shadow-lg ring-1 ring-accent',
         !battleAllowed && 'bg-[color-mix(in_oklch,var(--bg)_50%,transparent)]',
       )}
       aria-label={label}
       title={hero.sourceId ?? hero.id}
+      {...(overlay ? {} : { ...listeners, ...attributes })}
     >
       <div className="flex items-start gap-2">
-        <button
-          type="button"
-          className="mt-0.5 cursor-grab touch-none rounded-sm border-0 bg-transparent p-0 active:cursor-grabbing"
-          aria-label={t.gearPlanScopeDragHandleAria}
-          {...listeners}
-          {...attributes}
-        >
+        <div className="mt-0.5 shrink-0" aria-hidden={overlay || undefined}>
           <HeroAvatar skin={hero.skin ?? 0} rarityIdx={rarIdx} size="md" name={hero.name} />
-        </button>
+        </div>
         <div className="min-w-0 flex-1">
           <div className="flex min-w-0 flex-wrap items-baseline gap-x-1.5 gap-y-0.5">
             <span
@@ -102,21 +98,27 @@ export function ScopeHeroCard({
           {!battleAllowed ? (
             <p className="m-0 mt-1 text-[10px] leading-snug text-muted">{t.gearPlanScopeDonateHint}</p>
           ) : null}
-          <label className="mt-2 block">
-            <span className="sr-only">{label}</span>
-            <select
-              className="w-full rounded-sm border border-line bg-[color-mix(in_oklch,var(--surface-2)_70%,transparent)] px-1.5 py-1 text-[11px] text-ink"
-              value={scope}
-              aria-label={label}
-              onChange={(event) => onScope(event.target.value as ScopeState)}
+          {!overlay ? (
+            <label
+              className="mt-2 block"
+              onPointerDown={(event) => event.stopPropagation()}
+              onMouseDown={(event) => event.stopPropagation()}
             >
-              {SCOPE_OPTIONS.map((option) => (
-                <option key={option} value={option}>
-                  {scopeLabel(option, t)}
-                </option>
-              ))}
-            </select>
-          </label>
+              <span className="sr-only">{label}</span>
+              <select
+                className="w-full cursor-pointer rounded-sm border border-line bg-[color-mix(in_oklch,var(--surface-2)_70%,transparent)] px-1.5 py-1 text-[11px] text-ink"
+                value={scope}
+                aria-label={label}
+                onChange={(event) => onScope(event.target.value as ScopeState)}
+              >
+                {SCOPE_OPTIONS.map((option) => (
+                  <option key={option} value={option}>
+                    {scopeLabel(option, t)}
+                  </option>
+                ))}
+              </select>
+            </label>
+          ) : null}
         </div>
       </div>
     </article>

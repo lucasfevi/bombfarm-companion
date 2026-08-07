@@ -38,7 +38,7 @@ export const en = {
   gearPlanScopeLeaveAloneTip:
     'Frozen. Gear stays put and this hero is ignored by the search.',
   gearPlanScopeBoardTip:
-    'Drag a card into a column — or use the menu on the card. Optimize at least one hero to run a plan.',
+    'Drag a hero card into another column. The menu on the card is a backup for keyboard and touch.',
   gearPlanScopeColumnEmpty: 'Drop heroes here',
   gearPlanScopeDragHandleAria: 'Drag to change scope',
   gearPlanScopeDonateHint: 'Battle disabled — gear can be donated to the pool by default.',
@@ -143,7 +143,7 @@ export const pt: typeof en = {
   gearPlanScopeLeaveAloneTip:
     'Congelados. O gear fica onde está e a busca ignora o herói.',
   gearPlanScopeBoardTip:
-    'Arraste o card para uma coluna — ou use o menu no card. Deixe pelo menos um herói em Otimizar.',
+    'Arraste o card do herói para outra coluna. O menu no card é reserva para teclado e toque.',
   gearPlanScopeColumnEmpty: 'Solte heróis aqui',
   gearPlanScopeDragHandleAria: 'Arrastar para mudar o escopo',
   gearPlanScopeDonateHint: 'Batalha desativada — o gear pode ir para o pool por padrão.',

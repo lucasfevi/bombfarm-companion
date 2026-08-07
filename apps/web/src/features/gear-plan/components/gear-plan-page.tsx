@@ -43,6 +43,7 @@ export function GearPlanPage({
   const clearPlan = usePlannerStore((state) => state.clearPlan);
   const runner = useGearPlanRunner();
   const resultsRef = useRef<HTMLElement | null>(null);
+  const wasRunningRef = useRef(false);
 
   const hasRoster = heroes.length > 0;
   const hasInventory = inventory.length > 0;
@@ -53,11 +54,28 @@ export function GearPlanPage({
 
   const displayPlan = runner.plan ?? plan;
   const blockedNames = runner.blockedHeroNames;
+  const isRunning = runStatus === 'running' || runner.status === 'running';
 
   useEffect(() => {
-    if (!displayPlan || runStatus === 'running' || runner.status === 'running') return;
-    resultsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-  }, [displayPlan, runStatus, runner.status]);
+    const finishedRun = wasRunningRef.current && !isRunning && !!displayPlan;
+    wasRunningRef.current = isRunning;
+    if (!finishedRun) return;
+    // Defer one frame so the results section is mounted before scrolling.
+    const frame = window.requestAnimationFrame(() => {
+      resultsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
+    return () => window.cancelAnimationFrame(frame);
+  }, [isRunning, displayPlan]);
+
+  const setupAndScope = (
+    <>
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-[1fr_auto]">
+        <GearPlanToolbar t={t} runner={runner} />
+        <ForgeFloorField t={t} />
+      </div>
+      <ScopeList t={t} lang={lang} />
+    </>
+  );
 
   return (
     <div className={workspaceClass}>
@@ -82,11 +100,7 @@ export function GearPlanPage({
           />
         ) : allLeaveAlone ? (
           <div className="flex flex-col gap-4">
-            <div className="grid grid-cols-1 gap-4 lg:grid-cols-[1fr_auto]">
-              <GearPlanToolbar t={t} runner={runner} />
-              <ForgeFloorField t={t} />
-            </div>
-            <ScopeList t={t} lang={lang} />
+            {setupAndScope}
             <GearPlanEmptyPanel
               title={t.gearPlanEmptyAllLeaveAloneTitle}
               body={t.gearPlanEmptyAllLeaveAloneBody}
@@ -96,10 +110,7 @@ export function GearPlanPage({
           </div>
         ) : (
           <div className="flex flex-col gap-4">
-            <div className="grid grid-cols-1 gap-4 lg:grid-cols-[1fr_auto]">
-              <GearPlanToolbar t={t} runner={runner} />
-              <ForgeFloorField t={t} />
-            </div>
+            {setupAndScope}
 
             {(runStatus === 'blocked' || runner.status === 'blocked') && blockedNames.length > 0 ? (
               <div className="rounded-sm border border-warn/50 bg-[color-mix(in_oklch,var(--warn)_10%,transparent)] px-4 py-3">
@@ -146,8 +157,6 @@ export function GearPlanPage({
                 </div>
               </section>
             ) : null}
-
-            <ScopeList t={t} lang={lang} />
           </div>
         )}
       </section>
