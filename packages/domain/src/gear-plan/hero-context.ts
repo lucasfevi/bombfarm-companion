@@ -1,6 +1,6 @@
 import { abilityMods, type AbilityMods } from '../model';
 import { emptySheetOther } from '../gear';
-import { composeSheetFromBirth, nakedFromBirth, type BirthStats, type TreeSheetTotals } from '../birth-sheet';
+import { composeSheetFromBirth, nakedFromBirth } from '../birth-sheet';
 import type { GearPlanAccountInput, GearPlanHeroInput, HeroPlanContext, ScopeState } from './types';
 
 export type GearPlanBlocked = {

@@ -17,23 +17,24 @@ type WorkerSelf = {
   postMessage: (message: GearPlanWorkerResponse) => void;
 };
 
-const ctx = self as unknown as WorkerSelf;
+const workerScope = self as unknown as WorkerSelf;
 
-// Bundler smoke marker — referenced by gear-plan-worker-bundle.test.ts (T22).
-void GEAR_PLAN_WORKER_MARKER;
+if (GEAR_PLAN_WORKER_MARKER !== 'runGearPlan') {
+  throw new Error('gear-plan worker marker mismatch');
+}
 
-ctx.onmessage = (event: MessageEvent<GearPlanWorkerRequest>) => {
+workerScope.onmessage = (event: MessageEvent<GearPlanWorkerRequest>) => {
   const message = event.data;
   if (!message || message.kind !== 'run') return;
   try {
     const result = runGearPlan(message.input);
     if (result.blocked) {
-      ctx.postMessage({ kind: 'blocked', runId: message.runId, heroNames: result.heroNames });
+      workerScope.postMessage({ kind: 'blocked', runId: message.runId, heroNames: result.heroNames });
       return;
     }
-    ctx.postMessage({ kind: 'done', runId: message.runId, result });
+    workerScope.postMessage({ kind: 'done', runId: message.runId, result });
   } catch (error) {
-    ctx.postMessage({
+    workerScope.postMessage({
       kind: 'error',
       runId: message.runId,
       message: error instanceof Error ? error.message : String(error),

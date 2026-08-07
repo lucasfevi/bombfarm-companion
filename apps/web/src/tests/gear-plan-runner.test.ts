@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { runGearPlan } from '@bombfarm/domain/gear-plan';
-import type { GearPlanInput, GearPlanResult } from '@bombfarm/domain/gear-plan/types';
+import type { GearPlan, GearPlanInput } from '@bombfarm/domain/gear-plan/types';
 import {
   createGearPlanRunner,
   type GearPlanWorkerLike,
@@ -8,8 +8,16 @@ import {
 import type { GearPlanWorkerResponse } from '@/features/gear-plan/worker/gear-plan.worker';
 import { gearPlanInputFromFixture } from './helpers/gear-plan-fixture';
 
+function cloneJson<T>(value: T): T {
+  return JSON.parse(JSON.stringify(value)) as T;
+}
+
 function cloneInput(input: GearPlanInput): GearPlanInput {
-  return JSON.parse(JSON.stringify(input)) as GearPlanInput;
+  return cloneJson(input);
+}
+
+function asWorkerMessage(data: GearPlanWorkerResponse): MessageEvent<GearPlanWorkerResponse> {
+  return { data } as unknown as MessageEvent<GearPlanWorkerResponse>;
 }
 
 async function flushMicrotasks(): Promise<void> {
@@ -28,7 +36,7 @@ function createRespondingWorker(
       postMessage(message) {
         const response = handler(message.input);
         queueMicrotask(() => {
-          worker.onmessage?.({ data: { ...response, runId: message.runId } } as MessageEvent<GearPlanWorkerResponse>);
+          worker.onmessage?.(asWorkerMessage({ ...response, runId: message.runId }));
         });
       },
     };
@@ -39,46 +47,57 @@ function createRespondingWorker(
 describe('createGearPlanRunner', () => {
   it('drops stale worker responses when a newer run supersedes', async () => {
     const input = gearPlanInputFromFixture('save-20260731-11heroes.json');
-    let lateReply: ((runId: string) => void) | null = null;
-    const factory = () => ({
-      onmessage: null as GearPlanWorkerLike['onmessage'],
-      onerror: null,
-      terminate() {},
-      postMessage(message: { runId: string; input: GearPlanInput }) {
-        if (message.runId === '1') {
-          lateReply = (runId) => {
-            this.onmessage?.({
-              data: {
+    const lateReplyBox: { fn: ((runId: string) => void) | null } = { fn: null };
+    const factory = () => {
+      const worker: GearPlanWorkerLike = {
+        onmessage: null,
+        onerror: null,
+        terminate() {},
+        postMessage(message) {
+          if (message.runId === '1') {
+            lateReplyBox.fn = (runId: string) => {
+              worker.onmessage?.(
+                asWorkerMessage({
+                  kind: 'done',
+                  runId,
+                  result: {
+                    blocked: false,
+                    plan: { planDps: 1, currentDps: 0 } as unknown as GearPlan,
+                  },
+                }),
+              );
+            };
+            return;
+          }
+          // Avoid a full solver pass — supersession only needs a distinct planDps.
+          queueMicrotask(() => {
+            worker.onmessage?.(
+              asWorkerMessage({
                 kind: 'done',
-                runId,
-                result: { blocked: false, plan: { planDps: 1, currentDps: 0 } as never },
-              },
-            } as MessageEvent<GearPlanWorkerResponse>);
-          };
-          return;
-        }
-        const result = runGearPlan(message.input);
-        queueMicrotask(() => {
-          this.onmessage?.({
-            data:
-              result.blocked
-                ? { kind: 'blocked', runId: message.runId, heroNames: result.heroNames }
-                : { kind: 'done', runId: message.runId, result },
-          } as MessageEvent<GearPlanWorkerResponse>);
-        });
-      },
-    });
+                runId: message.runId,
+                result: {
+                  blocked: false,
+                  plan: { planDps: 42, currentDps: 0 } as unknown as GearPlan,
+                },
+              }),
+            );
+          });
+        },
+      };
+      return worker;
+    };
 
     const runner = createGearPlanRunner({ createWorker: factory });
     runner.run(cloneInput(input));
     runner.run(cloneInput(input));
-    await new Promise((resolve) => setTimeout(resolve, 2500));
+    await flushMicrotasks();
     expect(runner.runId).toBe('2');
     expect(runner.status).toBe('done');
-    lateReply?.('1');
-    await new Promise((resolve) => setTimeout(resolve, 10));
+    expect(runner.plan?.planDps).toBe(42);
+    lateReplyBox.fn?.('1');
+    await flushMicrotasks();
     expect(runner.runId).toBe('2');
-    expect(runner.plan?.planDps).not.toBe(1);
+    expect(runner.plan?.planDps).toBe(42);
   });
 
   it('falls back to main thread when worker construction throws', () => {
@@ -117,7 +136,9 @@ describe('createGearPlanRunner', () => {
 
   it('surfaces blocked results with hero names and no plan', async () => {
     const input = gearPlanInputFromFixture('save-20260731-11heroes.json');
-    input.heroes[0] = { ...input.heroes[0]!, birth: undefined };
+    const firstHero = input.heroes[0];
+    if (!firstHero) throw new Error('fixture must include at least one hero');
+    input.heroes[0] = { ...firstHero, birth: undefined };
     const runner = createGearPlanRunner({
       createWorker: createRespondingWorker(() => ({
         kind: 'blocked',
@@ -140,7 +161,7 @@ describe('createGearPlanRunner', () => {
     const result = runGearPlan(clonedInput);
     expect(result.blocked).toBe(false);
     if (!result.blocked) {
-      const clonedPlan = JSON.parse(JSON.stringify(result.plan));
+      const clonedPlan = cloneJson(result.plan);
       expect(clonedPlan.planDps).toBe(result.plan.planDps);
       expect(clonedPlan.currentDps).toBe(result.plan.currentDps);
     }

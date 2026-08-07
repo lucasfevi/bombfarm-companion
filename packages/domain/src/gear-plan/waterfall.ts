@@ -1,5 +1,5 @@
 import { SLOTS } from '../gear/catalog';
-import type { Loadout, PointAlloc } from '../gear/types';
+import type { PointAlloc } from '../gear/types';
 import type { InventoryItem } from '../inventory';
 import { evaluateRoster } from './evaluate';
 import { optimizeBuild } from '../points-reopt';
@@ -142,7 +142,7 @@ function buildMoveList(
     const rightHero = right.fromHeroId ?? right.toHeroId ?? '';
     const nameDiff = (names.get(leftHero) ?? leftHero).localeCompare(names.get(rightHero) ?? rightHero);
     if (nameDiff !== 0) return nameDiff;
-    return SLOTS.indexOf(left.slot as (typeof SLOTS)[number]) - SLOTS.indexOf(right.slot as (typeof SLOTS)[number]);
+    return SLOTS.indexOf(left.slot) - SLOTS.indexOf(right.slot);
   };
 
   unequips.sort(sortMoves);

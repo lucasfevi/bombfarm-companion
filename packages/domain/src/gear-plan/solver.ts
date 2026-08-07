@@ -118,8 +118,8 @@ export function runGearPlan(
   );
 
   let best = runSeedSearch({
-    name: seeds[0]!.name,
-    assignment: seeds[0]!.assignment,
+    name: seeds[0].name,
+    assignment: seeds[0].assignment,
     contexts,
     ptsByHeroId: currentPtsByHeroId(input),
     gearInput: input,
@@ -128,7 +128,7 @@ export function runGearPlan(
   });
 
   for (let i = 1; i < seeds.length && !budget.exhausted; i++) {
-    const seed = seeds[i]!;
+    const seed = seeds[i];
     const candidate = runSeedSearch({
       name: seed.name,
       assignment: seed.assignment,

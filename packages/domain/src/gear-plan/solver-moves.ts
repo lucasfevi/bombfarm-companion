@@ -31,7 +31,7 @@ function poolEntryForItem(item: InventoryItem, forgeFloor: number): PoolEntry {
 }
 
 function slotIndex(slot: string): number {
-  const index = SLOTS.indexOf(slot as (typeof SLOTS)[number]);
+  const index = SLOTS.indexOf(slot);
   return index >= 0 ? index : SLOTS.length;
 }
 
@@ -49,8 +49,8 @@ function sortKey(
 
 function compareKeys(a: MoveSortKey, b: MoveSortKey): number {
   for (let i = 0; i < a.length; i++) {
-    if (a[i]! < b[i]!) return -1;
-    if (a[i]! > b[i]!) return 1;
+    if (a[i] < b[i]) return -1;
+    if (a[i] > b[i]) return 1;
   }
   return 0;
 }
@@ -74,7 +74,6 @@ export function generateMoves(input: GenerateMovesInput): GearMove[] {
   const moves: { move: GearMove; key: MoveSortKey }[] = [];
 
   for (const ctx of heroOrder) {
-    const heroSlots = input.slots[ctx.heroId] ?? {};
     for (const slot of SLOTS) {
       const poolIds = [...input.pool].sort();
       for (const itemId of poolIds) {
@@ -92,8 +91,8 @@ export function generateMoves(input: GenerateMovesInput): GearMove[] {
 
   for (let i = 0; i < heroOrder.length; i++) {
     for (let j = i + 1; j < heroOrder.length; j++) {
-      const heroA = heroOrder[i]!;
-      const heroB = heroOrder[j]!;
+      const heroA = heroOrder[i];
+      const heroB = heroOrder[j];
       const slotsA = input.slots[heroA.heroId] ?? {};
       const slotsB = input.slots[heroB.heroId] ?? {};
       for (const slot of SLOTS) {

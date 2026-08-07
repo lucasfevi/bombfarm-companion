@@ -2,6 +2,10 @@
   "name": "@bombfarm/web",
   "version": "0.1.0",
   "private": true,
+  "sideEffects": [
+    "src/features/gear-plan/index.ts",
+    "src/features/gear-plan/worker/register-chunk.ts"
+  ],
   "description": "Bomb Farm Companion web planner (static Next export)",
   "scripts": {
     "dev": "next dev --turbopack",

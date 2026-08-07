@@ -75,16 +75,16 @@ export function applyMove(state: AssignmentState, move: GearMove): AssignmentSta
     const displaced = next.slots[move.heroId]?.[move.slot] ?? null;
     next.pool.delete(move.itemId);
     if (displaced) next.pool.add(displaced);
-    next.slots[move.heroId]![move.slot] = move.itemId;
+    next.slots[move.heroId][move.slot] = move.itemId;
     return next;
   }
   if (move.kind === 'unassign') {
-    next.slots[move.heroId]![move.slot] = null;
+    next.slots[move.heroId][move.slot] = null;
     next.pool.add(move.itemId);
     return next;
   }
-  next.slots[move.heroA]![move.slot] = move.itemB;
-  next.slots[move.heroB]![move.slot] = move.itemA;
+  next.slots[move.heroA][move.slot] = move.itemB;
+  next.slots[move.heroB][move.slot] = move.itemA;
   return next;
 }
 
@@ -100,10 +100,7 @@ export function buildInitialAssignment(
 
   const slots: AssignmentState['slots'] = {};
   for (const ctx of optimizeContexts) {
-    slots[ctx.heroId] = Object.fromEntries(SLOTS.map((slot) => [slot, null])) as Record<
-      string,
-      string | null
-    >;
+    slots[ctx.heroId] = Object.fromEntries(SLOTS.map((slot) => [slot, null]));
   }
 
   const spare = new Set<string>();
@@ -126,9 +123,9 @@ export function buildInitialAssignment(
         spare.add(itemId);
         continue;
       }
-      const current = slots[owner]![item.slot];
+      const current = slots[owner][item.slot];
       if (!current) {
-        slots[owner]![item.slot] = itemId;
+        slots[owner][item.slot] = itemId;
       } else {
         spare.add(itemId);
       }

@@ -1,5 +1,4 @@
 import { FORJA_MAX } from '../gear/catalog';
-import type { InventoryItem } from '../inventory';
 import type { BuildPoolInput, GearPool, HeroPlanContext, PoolEntry, ScopeState } from './types';
 
 const DEFAULT_FORGE_FLOOR = 10;

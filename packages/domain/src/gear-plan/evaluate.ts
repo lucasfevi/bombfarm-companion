@@ -13,10 +13,10 @@ function loadoutForScoring(loadout: Loadout, forgeFloor: number): Loadout {
   const out: Loadout = {};
   for (const [slot, item] of Object.entries(loadout)) {
     if (!item) {
-      out[slot as keyof Loadout] = null;
+      out[slot] = null;
       continue;
     }
-    out[slot as keyof Loadout] = {
+    out[slot] = {
       ...item,
       upgrade: effectiveUpgrade(item.upgrade, forgeFloor),
     };
