@@ -48,7 +48,7 @@ export function GearPlanOptimizingModal({
     >
       <Dialog.Portal>
         <Dialog.Backdrop />
-        <Dialog.Popup className="!max-h-none !w-[min(92vw,380px)] !p-4">
+        <Dialog.Popup className="max-h-none! w-[min(92vw,380px)]! p-4!">
           <Dialog.Head>
             <Dialog.Title>{t.gearPlanOptimizingTitle}</Dialog.Title>
           </Dialog.Head>
