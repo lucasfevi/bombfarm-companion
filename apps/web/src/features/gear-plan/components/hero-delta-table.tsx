@@ -34,13 +34,29 @@ export function HeroDeltaTable({ t, lang, plan }: { t: Strings; lang: Lang; plan
     flowGroups.filter((group) => group.heroId).map((group) => [group.heroId as string, group.rows]),
   );
 
+  const firstHeroId = plan.perHero[0]?.heroId;
+  // Remount when a new plan lands so the first row opens again after Optimize.
+  const accordionKey = [
+    plan.planDps,
+    plan.currentDps,
+    plan.run.rounds,
+    plan.run.evaluations,
+    plan.run.elapsedMs,
+    plan.perHero.map((row) => row.heroId).join(','),
+  ].join(':');
+
   return (
     <Panel>
       <div className={panelHClass}>
         <h2 className={panelTitleClass}>{t.gearPlanHeroDeltaTitle}</h2>
       </div>
       <Tooltip.Provider delay={200} closeDelay={80}>
-        <Accordion.Root multiple className={accordionStackClass}>
+        <Accordion.Root
+          key={accordionKey}
+          multiple
+          defaultValue={firstHeroId ? [firstHeroId] : []}
+          className={accordionStackClass}
+        >
           {plan.perHero.map((row) => {
             const hero = heroByScopeKey.get(row.heroId);
             const disambiguatedName = hero

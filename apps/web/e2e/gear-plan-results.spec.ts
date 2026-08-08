@@ -58,11 +58,23 @@ test.describe('Gear plan results panels', () => {
     await expect(korinRow.first()).toBeVisible();
   });
 
-  test('expanding a hero row reveals the stat breakdown and proposed gear', async ({ page }) => {
+  test('first hero row starts expanded so the breakdown is discoverable', async ({ page }) => {
     const panel = page
       .getByRole('heading', { name: /Per-hero changes/i, level: 2 })
       .locator('xpath=ancestor::section[1]');
     const trigger = panel.getByRole('button', { name: /^Detailed breakdown for/i }).first();
+    await expect(trigger).toHaveAttribute('aria-expanded', 'true');
+    await expect(panel.getByText(/^Stat breakdown$/i)).toBeVisible();
+    await expect(panel.getByText(/^Proposed items$/i)).toBeVisible();
+  });
+
+  test('collapsing then expanding a hero row still reveals the breakdown', async ({ page }) => {
+    const panel = page
+      .getByRole('heading', { name: /Per-hero changes/i, level: 2 })
+      .locator('xpath=ancestor::section[1]');
+    const trigger = panel.getByRole('button', { name: /^Detailed breakdown for/i }).first();
+    await trigger.click();
+    await expect(trigger).toHaveAttribute('aria-expanded', 'false');
     await trigger.click();
     await expect(panel.getByText(/^Stat breakdown$/i)).toBeVisible();
     await expect(panel.getByText(/^Proposed items$/i)).toBeVisible();
