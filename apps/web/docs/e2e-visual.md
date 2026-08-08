@@ -35,7 +35,8 @@ Browser-level smoke and visual baselines for the static export. Unit math stays 
 > (desktop DnD; mobile per-card Select), Search setup (Min forge (+) + Optimize), the
 > optimizing modal (hero6 bomb-activation loop, Cancel), post-run Run summary (plain-language
 > seed + elapsed seconds) + gain scoreboard / waterfall (no Today `+0`; no negative respec
-> recommendation) + expandable per-hero rows with proposed gear and point-reset details, and
+> recommendation) + expandable per-hero rows with proposed gear (including kept existing
+> items labeled as no-change) and point-reset details, and
 > disclosures callouts. The gear-plan page does not write heroes (no alt-loadout push). Smoke
 > coverage lives under `e2e/gear-plan-*.spec.ts`.
 

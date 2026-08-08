@@ -52,6 +52,19 @@ test.describe('Gear plan per-hero proposed gear', () => {
     await expect(panel.locator('img').first()).toBeVisible();
   });
 
+  test('kept items stay visible and say they are existing with no change', async ({ page }) => {
+    for (let i = 0; i < 10; i++) {
+      await page.getByRole('button', { name: /Min forge \(\+\) −/i }).click();
+    }
+    await expect(await readForgeFloorValue(page)).toBe('0');
+    await clickOptimize(page);
+    await waitForOptimizeDone(page);
+
+    const panel = heroDeltaPanel(page);
+    await expandAllHeroRows(panel);
+    await expect(panel.getByText(/^Existing item — no change$/i).first()).toBeVisible();
+  });
+
   test('a moved item shows where it came from', async ({ page }) => {
     const panel = heroDeltaPanel(page);
     await expandAllHeroRows(panel);

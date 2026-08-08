@@ -2,7 +2,8 @@ import { SLOTS } from '@bombfarm/domain/gear';
 import type { GearPlan } from '@bombfarm/domain/gear-plan/types';
 import type { InventoryItem } from '@bombfarm/domain/inventory';
 
-/** One item's full journey: where it sits today, what forging happens, where it ends up. */
+/** One item's full journey: where it sits today, what forging happens, where it ends up.
+ *  Rows include forge/move chores and equipped pieces the plan leaves untouched. */
 export type GearFlowRow = {
   itemId: string;
   defId: string;
@@ -24,7 +25,14 @@ export type GearFlowGroup = {
   rows: GearFlowRow[];
 };
 
-/** Merges `forgeList` and `moveList` into one row per item — the union of both plans (RGO). */
+/** True when the plan leaves this item on the same hero with no forge chore. */
+export function isKeptExistingGearFlowRow(row: GearFlowRow): boolean {
+  return (
+    row.originHeroId != null && row.originHeroId === row.destHeroId && row.forge === null
+  );
+}
+
+/** Merges `forgeList`, `moveList`, and unchanged equipped keepers into one row per item. */
 export function buildGearFlowRows(plan: GearPlan, inventory: InventoryItem[]): GearFlowRow[] {
   const itemById = new Map(inventory.map((item) => [item.id, item]));
   const forgeByItemId = new Map(plan.forgeList.map((row) => [row.itemId, row]));
@@ -40,6 +48,15 @@ export function buildGearFlowRows(plan: GearPlan, inventory: InventoryItem[]): G
     ...plan.moveList.map((row) => row.itemId),
   ]);
 
+  // Equipped pieces the plan never touches still belong in the proposed loadout — otherwise a
+  // hero who keeps gear looks empty. Skip anything already covered by forge/move above.
+  for (const item of inventory) {
+    if (!item.equippedBy || !item.slot) continue;
+    if (itemIds.has(item.id)) continue;
+    if (unequipByItemId.has(item.id) || equipByItemId.has(item.id)) continue;
+    itemIds.add(item.id);
+  }
+
   const rows: GearFlowRow[] = [];
   for (const itemId of itemIds) {
     const forgeAction = forgeByItemId.get(itemId);
@@ -49,7 +66,7 @@ export function buildGearFlowRows(plan: GearPlan, inventory: InventoryItem[]): G
 
     // An `equip` entry carries both ends of the move — prefer it. A lone `unequip` means the
     // item lands back in the pool (no equip entry was generated for it). Neither present means
-    // the item isn't moving at all — only its forge level changes.
+    // the item isn't moving at all — forge-only, or a pure keep of today's equipped piece.
     let originHeroId: string | null;
     let destHeroId: string | null;
     let slot: string | null;

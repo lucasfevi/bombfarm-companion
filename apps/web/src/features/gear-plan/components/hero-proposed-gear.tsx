@@ -1,17 +1,23 @@
 'use client';
 
 import { formatItemRosterTooltip } from '@bombfarm/domain/game-labels';
-import { Tooltip } from '@bombfarm/ui';
+import { cn, Tooltip } from '@bombfarm/ui';
 import { mutedClass } from '@bombfarm/ui/panel-field.recipe';
 import { ItemIcon } from '@/shared/game-art';
 import { rosterIconTooltipTriggerClass } from '@/shared/game-art/game-art.recipe';
 import type { Lang, Strings } from '@/shared/i18n';
 import { sub } from '@/shared/i18n';
 import type { HeroRecord } from '@/shared/lib/storage';
-import type { GearFlowRow } from '@/features/gear-plan/model/gear-flow-rows';
+import {
+  isKeptExistingGearFlowRow,
+  type GearFlowRow,
+} from '@/features/gear-plan/model/gear-flow-rows';
 import { HeroOriginTag } from './hero-origin-tag';
 
-/** One card per item the plan actually touches — nothing changing means no card. */
+/**
+ * One card per item that ends on this hero — including pieces already equipped that the plan
+ * leaves alone. Unchanged keepers stay visible and say so explicitly.
+ */
 export function HeroProposedGear({
   t,
   lang,
@@ -40,18 +46,24 @@ export function HeroProposedGear({
         };
         const tip = formatItemRosterTooltip(equipped, lang, t.rankLv);
         const moved = row.originHeroId !== row.destHeroId;
+        const keptExisting = isKeptExistingGearFlowRow(row);
 
         return (
           <div
             key={row.itemId}
-            className="flex flex-col items-center gap-1 rounded-sm border border-line bg-bg px-2 py-2.5 text-center"
+            className={cn(
+              'flex flex-col items-center gap-1 rounded-sm border px-2 py-2.5 text-center',
+              keptExisting
+                ? 'border-dashed border-line bg-transparent'
+                : 'border-solid border-line bg-bg',
+            )}
           >
             <Tooltip.Root>
               <Tooltip.Trigger
                 type="button"
                 tabIndex={-1}
-                aria-label={`${tip.title}. ${tip.subtitle}`}
-                className={rosterIconTooltipTriggerClass}
+                aria-label={`${tip.title}. ${tip.subtitle}${keptExisting ? `. ${t.gearPlanFlowRowExisting}` : ''}`}
+                className={cn(rosterIconTooltipTriggerClass, keptExisting && 'opacity-80')}
               >
                 <ItemIcon equipped={equipped} size="lg" />
               </Tooltip.Trigger>
@@ -60,11 +72,22 @@ export function HeroProposedGear({
                   <Tooltip.Popup>
                     <p className="m-0 font-semibold text-ink">{tip.title}</p>
                     <p className="m-0 text-xs text-muted">{tip.subtitle}</p>
+                    {keptExisting ? (
+                      <p className="m-0 mt-1 text-xs text-muted">{t.gearPlanFlowRowExisting}</p>
+                    ) : null}
                   </Tooltip.Popup>
                 </Tooltip.Positioner>
               </Tooltip.Portal>
             </Tooltip.Root>
-            <div className="text-[12px] leading-tight font-bold text-ink">{tip.title}</div>
+            <div
+              className={cn(
+                'text-[12px] leading-tight font-bold',
+                keptExisting ? 'text-muted' : 'text-ink',
+              )}
+            >
+              {tip.title}
+            </div>
+            {keptExisting ? <div className={mutedClass}>{t.gearPlanFlowRowExisting}</div> : null}
             {moved ? (
               <div className={mutedClass}>
                 {t.gearPlanFlowRowFromLabel}{' '}
