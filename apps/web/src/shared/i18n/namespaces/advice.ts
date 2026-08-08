@@ -124,9 +124,9 @@ export const en = {
       ],
     },
     {
-      h: "9 · Roster gear plan",
+      h: "9 · Team plan",
       p: [
-        "The Gear plan page searches forge upgrades and gear moves across a scoped roster to maximize combined sustained roster DPS — the same uptime-weighted number the advisor uses, summed over every hero you mark Optimize. Donate puts a hero's items in the shared pool without changing their build; Leave alone removes them from the search.",
+        "The Team plan page searches forge upgrades, gear moves, and point resets across a scoped roster for the best combined sustained roster DPS this search can find — the same uptime-weighted number the advisor uses, summed over every hero you mark Optimize. Donate puts a hero's items in the shared pool without changing their build; Leave alone removes them from the search.",
         "Each in-scope hero carries a duty weight (drainMult) from energy drain and house rest time. Team auras on that page are recomputed from the scoped roster, exclude the scored hero, and blend by duty — manual Account Team buffs are ignored there but still apply in the Planner. When Σ duty exceeds field slots, throughput uses the fair-share saturated regime; otherwise heroes keep their full active DPS.",
         "The search treats every pool item as forged up to at least your minimum forge. Results are shown as three steps — today, gear, optional point resets — with forge and move details on each hero. The final result and the point-reset step never lose ground compared to today; the gear step can dip below today for a moment before the point resets catch it back up, and the page tells you plainly when that happens. A hero can still personally lose DPS when that trade grows the roster total. Copy always says the best roster DPS found by this search, never a claim of true optimality.",
       ],
@@ -254,9 +254,9 @@ export const pt: typeof en = {
       ],
     },
     {
-      h: "9 · Plano de itens do roster",
+      h: "9 · Plano do time",
       p: [
-        "A página Plano de itens do roster busca upgrades de forja e movimentações de itens num roster com escopo para maximizar o DPS efetivo combinado — o mesmo número com peso de tempo em campo que o conselheiro usa, somado sobre cada herói marcado como Otimizar. Doar coloca os itens do herói no pool compartilhado sem mudar a build; Deixar quieto remove o herói da busca.",
+        "A página Plano do time busca upgrades de forja, movimentações de itens e resets de pontos num roster com escopo em busca do melhor DPS efetivo combinado que essa busca conseguir encontrar — o mesmo número com peso de tempo em campo que o conselheiro usa, somado sobre cada herói marcado como Otimizar. Doar coloca os itens do herói no pool compartilhado sem mudar a build; Deixar quieto remove o herói da busca.",
         "Cada herói no escopo carrega um peso de duty (drainMult) a partir do gasto de energia e do tempo de descanso da casa. As auras de time nessa página são recalculadas a partir do roster em escopo, excluem o herói pontuado e misturam por duty — os buffs manuais de time em Conta são ignorados ali, mas ainda valem no Planner. Quando Σ duty passa dos slots de campo, o throughput usa o regime saturado de DPS ativo justo; caso contrário, cada herói mantém o DPS ativo integral.",
         "A busca trata cada item do pool como forjado pelo menos até a forja mínima. O resultado aparece em três passos — hoje, itens, resets de pontos opcionais — com detalhes de forja e movimento em cada herói. O resultado final e o passo de reset de pontos nunca ficam abaixo de hoje; o passo de itens pode cair por um momento antes que os resets de pontos recuperem, e a página avisa claramente quando isso acontece. Um herói ainda pode perder DPS pessoalmente quando essa troca aumenta o total do roster. O texto sempre diz o melhor DPS de roster encontrado por essa busca, nunca uma garantia de ótimo verdadeiro.",
       ],

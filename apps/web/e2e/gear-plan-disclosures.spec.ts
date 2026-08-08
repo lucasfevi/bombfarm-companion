@@ -15,7 +15,7 @@ function saturatedSeed() {
   return { ...base, account: { ...base.account!, slots: 2 } };
 }
 
-test.describe('Gear plan disclosures', () => {
+test.describe('Team plan disclosures', () => {
   test('saturated account shows saturation callout without action button', async ({ page }) => {
     await seedLocalStorage(page, saturatedSeed());
     await gotoGearPlan(page);

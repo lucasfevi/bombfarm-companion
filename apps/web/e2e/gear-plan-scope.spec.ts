@@ -20,7 +20,7 @@ async function pickScope(combobox: Locator, page: Page, optionName: RegExp) {
   await page.getByRole('option', { name: optionName }).click();
 }
 
-test.describe('Gear plan hero scope', () => {
+test.describe('Team plan hero scope', () => {
   test('two Korin rows are distinguishable by accessible name', async ({ page }) => {
     await seedLocalStorage(page, gearPlanFixtureSeed('en'));
     await gotoGearPlan(page);
@@ -61,7 +61,9 @@ test.describe('Gear plan hero scope', () => {
       await pickScope(openSelect, page, /^Leave alone$/i);
     }
     await expect(page.getByRole('heading', { name: /Nothing in scope/i })).toBeVisible();
-    await expect(page.getByRole('button', { name: /Run the roster gear search/i })).toHaveCount(0);
+    await expect(
+      page.getByRole('button', { name: /Build a team plan of gear moves and point resets/i }),
+    ).toHaveCount(0);
   });
 
   test('scope change marks plan stale after a run', async ({ page }) => {

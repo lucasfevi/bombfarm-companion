@@ -14,9 +14,9 @@ The collapsible **How the math works** / **Como calculamos tudo** block (`Explai
 5. Keep EN and PT **concept-aligned** (same section order and claims); follow [`i18n.md`](../../../docs/i18n.md) for PT chrome quality.
 6. Add or extend a Vitest contract in `src/tests/storage-i18n.test.ts` (or a focused neighbor) when the change would otherwise regress explain wording that already bit us (retired panels, wrong share model, placeholder guide copy).
 
-## Roster gear plan (`@bombfarm/domain/gear-plan` + Gear plan page)
+## Team plan (`@bombfarm/domain/gear-plan` + Team plan page)
 
-WHEN the roster gear-plan objective, duty weighting (`drainMult`), min-forge normalization (`effectiveUpgrade` / account `forgeFloor`), saturated vs under-saturated regime, final points-pass acceptance, or related UI copy changes, THEN update this doc and **both** `explainSections` entries **9 · Roster gear plan** / **9 · Plano de itens do roster** in `src/shared/i18n/namespaces/advice.ts`, and keep `explain-math-gear-plan.test.ts` asserting EN + PT mention duty weighting and minimum forge / forja mínima in that section.
+WHEN the roster gear-plan objective, duty weighting (`drainMult`), min-forge normalization (`effectiveUpgrade` / account `forgeFloor`), saturated vs under-saturated regime, final points-pass acceptance, or related UI copy changes, THEN update this doc and **both** `explainSections` entries **9 · Team plan** / **9 · Plano do time** in `src/shared/i18n/namespaces/advice.ts`, and keep `explain-math-gear-plan.test.ts` asserting EN + PT mention duty weighting and minimum forge / forja mínima in that section.
 
 Player-facing prose in that section must stay plain language ([`i18n.md`](../../../docs/i18n.md)): put `effectiveUpgrade = max(…)` (and similar) only in the section `code` block, never inline in the paragraph. The Min forge (+) chrome tip follows the same rule.
 

@@ -8,7 +8,7 @@ import {
   waitForOptimizeDone,
 } from './fixtures/gear-plan-e2e';
 
-test.describe('Gear plan optimize run', () => {
+test.describe('Team plan optimize run', () => {
   test('optimize shows a plain-language search summary', async ({ page }) => {
     await seedLocalStorage(page, gearPlanFixtureSeed('en'));
     await gotoGearPlan(page);
@@ -31,7 +31,9 @@ test.describe('Gear plan optimize run', () => {
   test('second click while running does not duplicate summaries', async ({ page }) => {
     await seedLocalStorage(page, gearPlanFixtureSeed('en'));
     await gotoGearPlan(page);
-    const button = page.getByRole('button', { name: /Run the roster gear search/i });
+    const button = page.getByRole('button', {
+      name: /Build a team plan of gear moves and point resets/i,
+    });
     await button.click();
     await button.click({ force: true });
     await waitForOptimizeDone(page);

@@ -16,7 +16,7 @@ function seedWithForgeFloor(floor: number) {
   return { ...base, account: { ...base.account!, forgeFloor: floor } };
 }
 
-test.describe('Gear plan min forge', () => {
+test.describe('Team plan min forge', () => {
   test('stepper increments min forge in the UI', async ({ page }) => {
     await seedLocalStorage(page, gearPlanFixtureSeed('en'));
     await gotoGearPlan(page);
@@ -31,11 +31,11 @@ test.describe('Gear plan min forge', () => {
     await expect(await readForgeFloorValue(page)).toBe('15');
 
     await seedLocalStorage(page, seedWithForgeFloor(99));
-    await page.goto('/gear-plan');
+    await page.goto('/team-plan');
     await expect(await readForgeFloorValue(page)).toBe('15');
 
     await seedLocalStorage(page, seedWithForgeFloor(-1));
-    await page.goto('/gear-plan');
+    await page.goto('/team-plan');
     await expect(await readForgeFloorValue(page)).toBe('0');
   });
 
@@ -56,7 +56,7 @@ test.describe('Gear plan min forge', () => {
     await page.getByRole('button', { name: /^Import/i }).click();
     await page.locator('input[type="file"]').setInputFiles(sampleSave);
     await page.getByRole('button', { name: /import \d+ hero/i }).click();
-    await page.goto('/gear-plan');
+    await page.goto('/team-plan');
     await expect(await readForgeFloorValue(page)).toBe('12');
   });
 });

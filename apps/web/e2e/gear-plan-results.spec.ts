@@ -7,7 +7,7 @@ import {
   waitForOptimizeDone,
 } from './fixtures/gear-plan-e2e';
 
-test.describe('Gear plan results panels', () => {
+test.describe('Team plan results panels', () => {
   test.beforeEach(async ({ page }) => {
     await seedLocalStorage(page, gearPlanFixtureSeed('en'));
     await gotoGearPlan(page);

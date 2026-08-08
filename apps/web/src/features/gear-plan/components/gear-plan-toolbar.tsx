@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef } from 'react';
 import { Button, Panel } from '@bombfarm/ui';
-import { panelHClass, panelTitleClass } from '@bombfarm/ui/panel-field.recipe';
+import { panelHClass, panelTitleClass, tipClass } from '@bombfarm/ui/panel-field.recipe';
 import type { Strings } from '@/shared/i18n';
 import type { GearPlanRunner } from '@/features/gear-plan/hooks/use-gear-plan-runner';
 import {
@@ -55,6 +55,7 @@ export function GearPlanToolbar({ t, runner }: { t: Strings; runner: GearPlanRun
       <div className={panelHClass}>
         <h2 className={panelTitleClass}>{t.gearPlanSetupSectionTitle}</h2>
       </div>
+      <p className={tipClass}>{t.gearPlanSetupSectionBody}</p>
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between sm:gap-6">
         <ForgeFloorField t={t} />
         <Button
@@ -63,7 +64,7 @@ export function GearPlanToolbar({ t, runner }: { t: Strings; runner: GearPlanRun
           disabled={busy}
           aria-busy={busy}
           aria-label={t.gearPlanOptimizeAria}
-          className="min-h-12 w-full shrink-0 px-8 text-sm sm:w-auto sm:min-w-48"
+          className="min-h-12 w-full shrink-0 px-8 text-sm sm:w-auto sm:min-w-52"
           onClick={handleOptimize}
         >
           {busy ? t.gearPlanOptimizing : t.gearPlanOptimize}

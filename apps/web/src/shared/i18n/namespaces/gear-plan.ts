@@ -1,7 +1,7 @@
 export const en = {
-  navGearPlan: 'Gear plan',
-  gearPlanPageLandmark: 'Roster gear plan',
-  gearPlanPageTitle: 'Roster gear plan',
+  navGearPlan: 'Team plan',
+  gearPlanPageLandmark: 'Team plan',
+  gearPlanPageTitle: 'Team plan',
   gearPlanEmptyNoRosterTitle: 'Import heroes first',
   gearPlanEmptyNoRosterBody:
     'Export your save in Bomb Farm, then use Import in the top bar to load your roster and item inventory.',
@@ -12,16 +12,18 @@ export const en = {
   gearPlanEmptyAllLeaveAloneBody:
     'Set at least one hero to Optimize before running a plan.',
   gearPlanImportCta: 'Import save',
-  gearPlanOptimize: 'Optimize',
-  gearPlanOptimizeAria: 'Run the roster gear search',
-  gearPlanOptimizing: 'Optimizing…',
-  gearPlanOptimizingTitle: 'Optimizing…',
+  gearPlanOptimize: 'Build team plan',
+  gearPlanOptimizeAria: 'Build a team plan of gear moves and point resets',
+  gearPlanOptimizing: 'Building plan…',
+  gearPlanOptimizingTitle: 'Building plan…',
   gearPlanOptimizingBody:
     'Looking for the best mix of gear and point resets across the heroes you set to Optimize.',
   gearPlanOptimizingElapsed: 'Elapsed {time}',
   gearPlanOptimizingCancel: 'Cancel',
-  gearPlanOptimizingProgressAria: 'Optimization in progress',
+  gearPlanOptimizingProgressAria: 'Building team plan',
   gearPlanSetupSectionTitle: 'Search setup',
+  gearPlanSetupSectionBody:
+    'Builds a plan of gear moves, forge work, and point resets for the heroes you mark Optimize — scored for combined roster DPS.',
   gearPlanRunSummaryTitle: 'Search summary',
   gearPlanRunSummaryFieldStatus: 'Field status',
   gearPlanRunSummaryDuty: 'Battle load',
@@ -57,7 +59,7 @@ export const en = {
   gearPlanScopeNothingInScope: 'Nothing in scope — set at least one hero to Optimize.',
   gearPlanHeroRowLabel: '{name} · Lv {level} · #{id}',
   gearPlanResultsSectionTitle: 'Plan results',
-  gearPlanResultsSectionAria: 'Gear plan results',
+  gearPlanResultsSectionAria: 'Team plan results',
   gearPlanTotalGainLabel: 'Total gain',
   gearPlanTotalGainValue: '{delta} dps ({pct}%)',
   gearPlanWaterfallTitle: 'Gain breakdown',
@@ -76,7 +78,7 @@ export const en = {
   gearPlanRunSeedFallback: 'started from an alternate setup',
   gearPlanHeroDeltaTitle: 'Per-hero changes',
   gearPlanHeroDeltaNote:
-    'These are combat-effective stats, not the in-game hero panel — team auras are applied and values aren’t clamped to the game’s display caps (100% crit chance, 80% cooldown reduction). That’s deliberate: the uncapped, aura-inclusive view is what lets Optimize find the best real DPS.',
+    'These are combat-effective stats, not the in-game hero panel — team auras are applied and values aren’t clamped to the game’s display caps (100% crit chance, 80% cooldown reduction). That’s deliberate: the uncapped, aura-inclusive view is what lets this search find the best real DPS.',
   gearPlanColBefore: 'Before',
   gearPlanColAfter: 'After',
   gearPlanColDelta: 'Δ',
@@ -106,7 +108,8 @@ export const en = {
     'Excluded from the pool — market-blocked: {market}, unresolved items: {unresolved}, foreign owners: {foreign}.',
   gearPlanForgeSkippedNote:
     'Forging to your minimum was left out of this plan — it did not improve roster DPS.',
-  gearPlanStaleNotice: 'Inputs changed since this plan was computed — re-run Optimize to refresh.',
+  gearPlanStaleNotice:
+    'Inputs changed since this plan was computed — run Build team plan again to refresh.',
   gearPlanBlockedTitle: 'Cannot run — missing birth stats',
   gearPlanBlockedBody:
     'Re-export your save so these heroes include a birth roll: {heroes}.',
@@ -117,9 +120,9 @@ export const en = {
 };
 
 export const pt: typeof en = {
-  navGearPlan: 'Plano de itens',
-  gearPlanPageLandmark: 'Plano de itens do roster',
-  gearPlanPageTitle: 'Plano de itens do roster',
+  navGearPlan: 'Plano do time',
+  gearPlanPageLandmark: 'Plano do time',
+  gearPlanPageTitle: 'Plano do time',
   gearPlanEmptyNoRosterTitle: 'Importe heróis primeiro',
   gearPlanEmptyNoRosterBody:
     'Exporte o save no Bomb Farm e use Importar na barra superior para carregar o roster e o inventário de itens.',
@@ -130,16 +133,18 @@ export const pt: typeof en = {
   gearPlanEmptyAllLeaveAloneBody:
     'Marque pelo menos um herói como Otimizar antes de rodar um plano.',
   gearPlanImportCta: 'Importar save',
-  gearPlanOptimize: 'Otimizar',
-  gearPlanOptimizeAria: 'Rodar a busca de itens do roster',
-  gearPlanOptimizing: 'Otimizando…',
-  gearPlanOptimizingTitle: 'Otimizando…',
+  gearPlanOptimize: 'Montar plano do time',
+  gearPlanOptimizeAria: 'Montar um plano do time com movimentações de itens e resets de pontos',
+  gearPlanOptimizing: 'Montando plano…',
+  gearPlanOptimizingTitle: 'Montando plano…',
   gearPlanOptimizingBody:
     'Procurando a melhor combinação de itens e resets de pontos entre os heróis marcados como Otimizar.',
   gearPlanOptimizingElapsed: 'Decorrido {time}',
   gearPlanOptimizingCancel: 'Cancelar',
-  gearPlanOptimizingProgressAria: 'Otimização em andamento',
+  gearPlanOptimizingProgressAria: 'Montando plano do time',
   gearPlanSetupSectionTitle: 'Configurar busca',
+  gearPlanSetupSectionBody:
+    'Monta um plano de movimentações de itens, forjas e resets de pontos para os heróis marcados como Otimizar — pontuado pelo DPS de roster combinado.',
   gearPlanRunSummaryTitle: 'Resumo da busca',
   gearPlanRunSummaryFieldStatus: 'Situação do campo',
   gearPlanRunSummaryDuty: 'Carga de batalha',
@@ -175,7 +180,7 @@ export const pt: typeof en = {
   gearPlanScopeNothingInScope: 'Nada no escopo — marque pelo menos um herói como Otimizar.',
   gearPlanHeroRowLabel: '{name} · Lv {level} · #{id}',
   gearPlanResultsSectionTitle: 'Resultados do plano',
-  gearPlanResultsSectionAria: 'Resultados do plano de itens',
+  gearPlanResultsSectionAria: 'Resultados do plano do time',
   gearPlanTotalGainLabel: 'Ganho total',
   gearPlanTotalGainValue: '{delta} dps ({pct}%)',
   gearPlanWaterfallTitle: 'Decomposição do ganho',
@@ -194,7 +199,7 @@ export const pt: typeof en = {
   gearPlanRunSeedFallback: 'começou por uma montagem alternativa',
   gearPlanHeroDeltaTitle: 'Mudanças por herói',
   gearPlanHeroDeltaNote:
-    'Estes são status de combate, não o painel do herói no jogo — as auras de time são aplicadas e os valores não seguem os tetos de exibição do jogo (100% de chance de crítico, 80% de redução de recarga). É proposital: essa visão sem teto e com auras é o que permite ao Otimizar achar o melhor DPS real.',
+    'Estes são status de combate, não o painel do herói no jogo — as auras de time são aplicadas e os valores não seguem os tetos de exibição do jogo (100% de chance de crítico, 80% de redução de recarga). É proposital: essa visão sem teto e com auras é o que permite a esta busca achar o melhor DPS real.',
   gearPlanColBefore: 'Antes',
   gearPlanColAfter: 'Depois',
   gearPlanColDelta: 'Δ',
@@ -225,7 +230,7 @@ export const pt: typeof en = {
   gearPlanForgeSkippedNote:
     'A forja até o seu mínimo ficou de fora deste plano — ela não melhorou o DPS do roster.',
   gearPlanStaleNotice:
-    'Os inputs mudaram desde este plano — rode Otimizar de novo para atualizar.',
+    'Os inputs mudaram desde este plano — rode Montar plano do time de novo para atualizar.',
   gearPlanBlockedTitle: 'Não foi possível rodar — falta roll de nascimento',
   gearPlanBlockedBody:
     'Reexporte o save para estes heróis incluírem o roll de nascimento: {heroes}.',

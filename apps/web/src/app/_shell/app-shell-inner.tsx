@@ -23,7 +23,7 @@ export function AppShellInner({
 }) {
   const pathname = usePathname();
   const onPhases = pathname.startsWith('/phases');
-  const onGearPlan = pathname.startsWith('/gear-plan');
+  const onGearPlan = pathname.startsWith('/team-plan');
   const onSectionPage = onPhases || onGearPlan;
   const { lang, setLang, t } = useAppLang();
   const importDialogOpen = usePlannerStore((state) => state.importDialogOpen);

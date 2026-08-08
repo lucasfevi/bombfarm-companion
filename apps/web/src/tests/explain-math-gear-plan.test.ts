@@ -8,7 +8,7 @@ describe('explain-math roster gear-plan section', () => {
     const enCode = STRINGS.en.explainSections[8].code ?? '';
     const ptCode = STRINGS.pt.explainSections[8].code ?? '';
 
-    expect(STRINGS.en.explainSections[8].h).toBe('9 · Roster gear plan');
+    expect(STRINGS.en.explainSections[8].h).toBe('9 · Team plan');
     expect(enProse).toMatch(/drainMult|duty/);
     expect(enProse).toMatch(/minimum forge/i);
     expect(enProse).toMatch(/saturated/i);
@@ -17,7 +17,7 @@ describe('explain-math roster gear-plan section', () => {
     expect(enCode).toMatch(/effectiveUpgrade/);
     expect(enCode).toMatch(/forgeFloor/);
 
-    expect(STRINGS.pt.explainSections[8].h).toBe('9 · Plano de itens do roster');
+    expect(STRINGS.pt.explainSections[8].h).toBe('9 · Plano do time');
     expect(ptProse).toMatch(/drainMult|duty/i);
     expect(ptProse).toMatch(/forja mínima/i);
     expect(ptProse).toMatch(/saturado/i);

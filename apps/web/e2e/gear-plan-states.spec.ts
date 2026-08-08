@@ -10,7 +10,7 @@ import {
   waitForOptimizeDone,
 } from './fixtures/gear-plan-e2e';
 
-test.describe('Gear plan page states', () => {
+test.describe('Team plan page states', () => {
   test('no inventory shows empty state', async ({ page }) => {
     await seedLocalStorage(page, { ...importedRoster, lang: 'en' });
     await gotoGearPlan(page);
@@ -66,6 +66,8 @@ test.describe('Gear plan page states', () => {
     await expect(page.getByText(/^Elapsed /i)).toBeVisible();
     await page.getByRole('button', { name: /^Cancel$/i }).click();
     await expect(page.getByRole('dialog', { name: /Optimizing/i })).toBeHidden();
-    await expect(page.getByRole('button', { name: /Run the roster gear search/i })).toBeEnabled();
+    await expect(
+      page.getByRole('button', { name: /Build a team plan of gear moves and point resets/i }),
+    ).toBeEnabled();
   });
 });

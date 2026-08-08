@@ -23,7 +23,7 @@ async function expandAllHeroRows(panel: Locator) {
   }
 }
 
-test.describe('Gear plan per-hero proposed gear', () => {
+test.describe('Team plan per-hero proposed gear', () => {
   test.beforeEach(async ({ page }) => {
     await seedLocalStorage(page, gearPlanFixtureSeed('en'));
     await gotoGearPlan(page);
