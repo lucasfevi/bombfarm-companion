@@ -5,7 +5,7 @@ import { cn } from '@bombfarm/ui';
 import { rarityTextClass } from '@/shared/game-art';
 import type { HeroRecord } from '@/shared/lib/storage';
 
-/** `{rarityColor}Name ★★★ Lv{level}` — condensed hero identity for a card's "From" line. */
+/** `{rarityColor}Name ★★★ Lv {level}` — condensed hero identity for a card's "From" line. */
 export function HeroOriginTag({
   heroId,
   heroByScopeKey,
@@ -28,7 +28,7 @@ export function HeroOriginTag({
     <span>
       <span className={cn('font-semibold', rarityTextClass(rarIdx) ?? 'text-ink')}>{hero.name}</span>
       {stars > 0 ? <span className="text-rar-4"> {'★'.repeat(stars)}</span> : null}
-      <span> Lv{hero.level}</span>
+      <span> Lv {hero.level}</span>
     </span>
   );
 }

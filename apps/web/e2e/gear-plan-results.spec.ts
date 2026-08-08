@@ -54,7 +54,7 @@ test.describe('Gear plan results panels', () => {
     const panel = page
       .getByRole('heading', { name: /Per-hero changes/i, level: 2 })
       .locator('xpath=ancestor::section[1]');
-    const korinRow = panel.getByRole('button', { name: /^Detailed breakdown for Korin · Lv\d+ · #\d+/i });
+    const korinRow = panel.getByRole('button', { name: /^Detailed breakdown for Korin · Lv ?\d+ · #\d+/i });
     await expect(korinRow.first()).toBeVisible();
   });
 

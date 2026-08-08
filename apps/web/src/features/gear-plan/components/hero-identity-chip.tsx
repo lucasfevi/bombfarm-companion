@@ -53,7 +53,7 @@ export function HeroIdentityChip({
             {rarityLabel(hero.rarity, lang)}
           </span>
           <span className="shrink-0 text-muted">
-            L{hero.level}
+            Lv {hero.level}
             <span aria-hidden> · </span>#{shortId}
           </span>
         </div>
