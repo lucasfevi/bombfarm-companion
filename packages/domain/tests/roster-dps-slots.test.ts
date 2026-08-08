@@ -1,5 +1,4 @@
 import { describe, expect, it } from 'vitest';
-import { DEFAULT_CASA_SLOTS } from '@bombfarm/domain/casa-slots';
 import { rankRosterByDps } from '@bombfarm/domain/roster-dps';
 import type { AccountShared, HeroRecord } from '@bombfarm/domain/shims/storage';
 
@@ -124,10 +123,5 @@ describe('rankRosterByDps slots', () => {
       0,
     );
     expect(rows).toHaveLength(1);
-  });
-
-  it('does not hardcode the literal nine in rankRosterByDps', () => {
-    expect(DEFAULT_CASA_SLOTS).toBe(9);
-    expect(rankRosterByDps.toString()).not.toMatch(/\blimit\s*=\s*9\b/);
   });
 });

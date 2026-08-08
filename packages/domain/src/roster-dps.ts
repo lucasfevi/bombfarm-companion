@@ -62,9 +62,9 @@ export function computeHeroSoloDps(
   return pipelineForHero(hero, account, phase, mitigationPct).dps;
 }
 
-/** Top heroes by solo DPS — limit defaults to {@link DEFAULT_CASA_SLOTS}. */
-export function rankRosterByDps(input: RosterDpsInput, limit = DEFAULT_CASA_SLOTS): RosterDpsRow[] {
-  const effectiveLimit = arguments.length >= 2 ? limit : (input.account.slots ?? limit);
+/** Top heroes by solo DPS — an omitted `limit` falls back to `account.slots`, then {@link DEFAULT_CASA_SLOTS}. */
+export function rankRosterByDps(input: RosterDpsInput, limit?: number): RosterDpsRow[] {
+  const effectiveLimit = limit ?? input.account.slots ?? DEFAULT_CASA_SLOTS;
   const clampedLimit = Number.isFinite(effectiveLimit) && effectiveLimit >= 1 ? Math.round(effectiveLimit) : 1;
   const rows = input.heroes.map((hero) => ({
     heroId: hero.id,
