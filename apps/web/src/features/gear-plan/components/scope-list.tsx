@@ -18,7 +18,7 @@ import { panelHClass, panelTitleClass } from '@bombfarm/ui/panel-field.recipe';
 import type { Lang, Strings } from '@/shared/i18n';
 import { usePlannerStore, selectHeroes, selectScopeByHeroId } from '@/shared/stores';
 import type { ScopeState } from '@/shared/stores/gear-plan/types';
-import { defaultScopeForHero } from '@/shared/stores/gear-plan/types';
+import { resolveHeroScope } from '@/shared/stores/gear-plan/types';
 import { ScopeColumn } from './scope-column';
 import { ScopeHeroCard } from './scope-hero-card';
 
@@ -68,7 +68,7 @@ export function ScopeList({ t, lang }: { t: Strings; lang: Lang }) {
   const resolvedScope = useMemo(() => {
     const map: Record<string, ScopeState> = {};
     for (const hero of heroes) {
-      map[hero.id] = scopeByHeroId[hero.id] ?? defaultScopeForHero(hero.battleAllowed);
+      map[hero.id] = resolveHeroScope(hero, scopeByHeroId);
     }
     return map;
   }, [heroes, scopeByHeroId]);

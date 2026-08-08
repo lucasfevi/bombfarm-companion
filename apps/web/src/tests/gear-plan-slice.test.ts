@@ -203,6 +203,35 @@ describe('gear-plan slice', () => {
     expect(usePlannerStore.getState().scopeByHeroId).toEqual({ a: 'leaveAlone' });
   });
 
+  // Dragging one hero must rewrite the whole roster map. A partial map made the board show
+  // battle-disabled heroes in Donate (UI default) while the solver treated missing keys as Optimize.
+  it('setScope rewrites the full roster scope map, not only the moved hero', () => {
+    usePlannerStore.getState().hydrateRoster([hero('a'), hero('b', false), hero('c')], 'a');
+    usePlannerStore.setState({ scopeByHeroId: { a: 'optimize' } });
+    usePlannerStore.getState().setScope('a', 'leaveAlone');
+    expect(usePlannerStore.getState().scopeByHeroId).toEqual({
+      a: 'leaveAlone',
+      b: 'donate',
+      c: 'optimize',
+    });
+  });
+
+  it('syncScopeForRoster seeds defaults for new heroes without wiping prior choices', () => {
+    usePlannerStore.getState().hydrateRoster([hero('a')], 'a');
+    usePlannerStore.getState().hydrateInventory({ version: 1, importedAt: 0, items: [] }, 10);
+    usePlannerStore.getState().setScope('a', 'leaveAlone');
+    usePlannerStore.getState().setHeroes([hero('a'), hero('b', false)]);
+    expect(usePlannerStore.getState().scopeByHeroId).toEqual({ a: 'leaveAlone', b: 'donate' });
+  });
+
+  it('syncScopeForRoster does not reset an explicit Optimize on a battle-disabled hero', () => {
+    usePlannerStore.getState().hydrateRoster([hero('a', false)], 'a');
+    usePlannerStore.getState().hydrateInventory({ version: 1, importedAt: 0, items: [] }, 10);
+    usePlannerStore.getState().setScope('a', 'optimize');
+    usePlannerStore.getState().syncScopeForRoster();
+    expect(usePlannerStore.getState().scopeByHeroId).toEqual({ a: 'optimize' });
+  });
+
   it('setForgeFloor clamps to 0…FORJA_MAX', () => {
     usePlannerStore.getState().setForgeFloor(99);
     expect(usePlannerStore.getState().forgeFloor).toBe(FORJA_MAX);

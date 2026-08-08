@@ -12,7 +12,7 @@ import {
   selectGearPlanIsStale,
   selectForgeFloor,
 } from '@/shared/stores';
-import { defaultScopeForHero } from '@/shared/stores/gear-plan/types';
+import { resolveHeroScope } from '@/shared/stores/gear-plan/types';
 import { useGearPlanRunner } from '@/features/gear-plan/hooks/use-gear-plan-runner';
 import { GearPlanEmptyPanel } from './gear-plan-empty';
 import { GearPlanToolbar } from './gear-plan-toolbar';
@@ -47,7 +47,7 @@ export function GearPlanPage({
   const hasRoster = heroes.length > 0;
   const hasInventory = inventory.length > 0;
   const optimizeCount = heroes.filter(
-    (hero) => (scopeByHeroId[hero.id] ?? defaultScopeForHero(hero.battleAllowed)) === 'optimize',
+    (hero) => resolveHeroScope(hero, scopeByHeroId) === 'optimize',
   ).length;
   const allLeaveAlone = hasRoster && optimizeCount === 0;
 

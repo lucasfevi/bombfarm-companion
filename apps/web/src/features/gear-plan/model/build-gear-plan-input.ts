@@ -1,5 +1,6 @@
 import type { GearPlanInput } from '@bombfarm/domain/gear-plan/types';
 import type { PlannerStore } from '@/shared/stores/planner-store';
+import { resolveHeroScope } from '@/shared/stores/gear-plan/types';
 import { selectTreeSheetTotals } from '@/shared/stores/selectors/tree-sheet-selectors';
 
 export function buildGearPlanInputFromStore(state: PlannerStore): GearPlanInput {
@@ -32,10 +33,12 @@ export function buildGearPlanInputFromStore(state: PlannerStore): GearPlanInput 
       mitigationPct: state.mitigationPct,
       slots: state.slots,
     },
+    // Must match the scope board: missing keys use battleAllowed defaults (Donate when
+    // disabled), never a hard-coded Optimize — that silently scored Donate-looking heroes.
     scopeByHeroId: Object.fromEntries(
       state.heroes.map((hero) => {
         const key = hero.sourceId ?? hero.id;
-        return [key, state.scopeByHeroId[hero.id] ?? 'optimize'];
+        return [key, resolveHeroScope(hero, state.scopeByHeroId)];
       }),
     ),
     forgeFloor: state.forgeFloor,
@@ -43,7 +46,7 @@ export function buildGearPlanInputFromStore(state: PlannerStore): GearPlanInput 
 }
 
 export function countOptimizeScopeHeroes(state: PlannerStore): number {
-  return state.heroes.filter((hero) => (state.scopeByHeroId[hero.id] ?? 'optimize') === 'optimize')
+  return state.heroes.filter((hero) => resolveHeroScope(hero, state.scopeByHeroId) === 'optimize')
     .length;
 }
 

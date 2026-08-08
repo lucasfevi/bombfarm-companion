@@ -13,6 +13,7 @@ import {
   buildDefaultScopeMap,
   clampForgeFloor,
   computeGearPlanInputSignature,
+  mergeScopeForRoster,
 } from '@/shared/stores/gear-plan/types';
 
 const EMPTY_INVENTORY: InventorySnapshot = { version: 1, importedAt: 0, items: [] };
@@ -81,13 +82,7 @@ export const createGearPlanSlice: StateCreator<
   // the roster. Runs once at boot, after `hydrateInventory` has already set the defaults — without
   // this, a page reload silently forgot every Donate/Leave alone choice.
   hydrateScope: (persisted) => {
-    const heroes = get().heroes;
-    const merged = buildDefaultScopeMap(heroes);
-    for (const hero of heroes) {
-      const stored = persisted[hero.id];
-      if (stored) merged[hero.id] = stored;
-    }
-    set({ scopeByHeroId: merged });
+    set({ scopeByHeroId: mergeScopeForRoster(get().heroes, persisted) });
   },
 
   replaceInventoryFromImport: (items) => {
@@ -110,15 +105,20 @@ export const createGearPlanSlice: StateCreator<
   // battle load can reference a hero that's no longer in scope. A "stale" banner over that is
   // misleading — it reads as "still counted" — so this matches hydrateInventory's pattern of
   // clearing outright on inputs that reshape the problem, not just shift its numbers.
+  // Always rewrite the *full* roster map (defaults + prior choices + this move). A partial
+  // map left Donate-looking heroes (UI default) as Optimize in the solver input.
   setScope: (heroId, scope) => {
-    const current = get().scopeByHeroId[heroId];
-    if (current === scope) return;
+    const heroes = get().heroes;
+    const previous = get().scopeByHeroId;
+    const previousResolved = mergeScopeForRoster(heroes, previous);
+    const next = { ...previousResolved, [heroId]: scope };
+    if (scopeMapsEqual(previous, next)) return;
+    const assignmentChanged = previousResolved[heroId] !== scope;
     set({
-      scopeByHeroId: { ...get().scopeByHeroId, [heroId]: scope },
-      plan: null,
-      planInputSignature: null,
-      runStatus: 'idle',
-      runId: null,
+      scopeByHeroId: next,
+      ...(assignmentChanged
+        ? { plan: null, planInputSignature: null, runStatus: 'idle' as const, runId: null }
+        : {}),
     });
   },
 
@@ -160,8 +160,10 @@ export const createGearPlanSlice: StateCreator<
     set({ plan: null, planInputSignature: null, runStatus: 'idle', runId: null });
   },
 
+  // Keep prior per-hero choices; seed defaults only for heroes missing from the map (import /
+  // roster churn). Never wipe Donate/Leave alone back to battleAllowed defaults.
   syncScopeForRoster: () => {
-    const next = buildDefaultScopeMap(get().heroes);
+    const next = mergeScopeForRoster(get().heroes, get().scopeByHeroId);
     if (scopeMapsEqual(get().scopeByHeroId, next)) return;
     set({ scopeByHeroId: next });
   },
