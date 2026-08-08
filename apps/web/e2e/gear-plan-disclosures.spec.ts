@@ -10,7 +10,9 @@ import {
 
 function saturatedSeed() {
   const base = gearPlanFixtureSeed('en');
-  return { ...base, account: { ...base.account!, slots: 3 } };
+  // 2 slots against this fixture's ~2.5-3.2 sumDuty range comfortably forces the
+  // saturated regime; 3 sat right at the boundary and could tip under-saturated.
+  return { ...base, account: { ...base.account!, slots: 2 } };
 }
 
 test.describe('Gear plan disclosures', () => {

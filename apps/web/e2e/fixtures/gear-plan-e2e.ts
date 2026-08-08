@@ -36,7 +36,7 @@ export async function waitForOptimizeDone(page: Page, timeout = 120_000) {
   await expect(page.getByRole('button', { name: /Run the roster gear search/i })).toBeEnabled({
     timeout,
   });
-  await expect(page.getByText(/^Regime:/i)).toBeVisible({ timeout });
+  await expect(page.getByText(/^Field status:/i)).toBeVisible({ timeout });
 }
 
 export async function setE2eMaxEvaluations(page: Page, maxEvaluations: number | null) {
@@ -73,7 +73,9 @@ export async function setAccountForgeFloor(page: Page, forgeFloor: number) {
 }
 
 export async function readForgeFloorValue(page: Page): Promise<string> {
-  const value = page.locator('label').filter({ hasText: /^Min forge \(\+\)$/i }).locator('b').first();
+  // The label wraps the whole Stepper (−/value/+), so its full text content is more than
+  // just the field name — match on containment, not full equality.
+  const value = page.locator('label').filter({ hasText: /Min forge \(\+\)/i }).locator('b').first();
   await expect(value).toBeVisible();
   return (await value.textContent()) ?? '';
 }

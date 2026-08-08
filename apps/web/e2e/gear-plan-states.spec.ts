@@ -33,6 +33,11 @@ test.describe('Gear plan page states', () => {
   });
 
   test('optimize without confirm leaves heroes storage unchanged', async ({ page }) => {
+    // Runs the real solver at its default (uncapped) evaluation budget on the 11-hero
+    // fixture — the only test in this file that does. waitForOptimizeDone's 120s expect
+    // timeout needs a matching test-level timeout, or Playwright's 30s default kills the
+    // test first (same pattern as perf.spec.ts's long-running capture).
+    test.setTimeout(150_000);
     await seedLocalStorage(page, gearPlanFixtureSeed('en'));
     await gotoGearPlan(page);
     const before = await snapshotHeroesJson(page);
