@@ -70,7 +70,7 @@ describe('buildGearFlowRows — kept existing items', () => {
       destHeroId: 'hero-a',
       forge: null,
     });
-    expect(isKeptExistingGearFlowRow(rows[0]!)).toBe(true);
+    expect(isKeptExistingGearFlowRow(rows[0])).toBe(true);
   });
 
   it('still emits forge-only keeps without marking them as unchanged', () => {
@@ -85,7 +85,7 @@ describe('buildGearFlowRows — kept existing items', () => {
     );
     expect(rows).toHaveLength(1);
     expect(rows[0]?.forge).toEqual({ from: 4, to: 10 });
-    expect(isKeptExistingGearFlowRow(rows[0]!)).toBe(false);
+    expect(isKeptExistingGearFlowRow(rows[0])).toBe(false);
   });
 
   it('does not double-count an item that both moves and was already equipped', () => {
@@ -121,7 +121,7 @@ describe('buildGearFlowRows — kept existing items', () => {
       originHeroId: 'hero-a',
       destHeroId: 'hero-b',
     });
-    expect(isKeptExistingGearFlowRow(rows[0]!)).toBe(false);
+    expect(isKeptExistingGearFlowRow(rows[0])).toBe(false);
   });
 
   it('groups kept rows under the destination hero with moved rows', () => {
@@ -145,15 +145,14 @@ describe('buildGearFlowRows — kept existing items', () => {
       inventory,
     );
     const groups = groupGearFlowRows(rows, ['hero-a']);
-    expect(groups).toEqual([
-      {
-        heroId: 'hero-a',
-        rows: expect.arrayContaining([
-          expect.objectContaining({ itemId: 'keep-1' }),
-          expect.objectContaining({ itemId: 'in-1' }),
-        ]),
-      },
-    ]);
+    expect(groups).toHaveLength(1);
+    expect(groups[0]?.heroId).toBe('hero-a');
+    expect(groups[0]?.rows).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ itemId: 'keep-1' }),
+        expect.objectContaining({ itemId: 'in-1' }),
+      ]),
+    );
     expect(groups[0]?.rows).toHaveLength(2);
   });
 });
