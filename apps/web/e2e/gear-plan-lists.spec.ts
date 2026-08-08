@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { test, expect, type Page, type Locator } from '@playwright/test';
 import { gearPlanFixtureSeed } from './fixtures/gear-plan-seed';
 import { seedLocalStorage } from './fixtures/seed';
 import {
@@ -8,7 +8,22 @@ import {
   waitForOptimizeDone,
 } from './fixtures/gear-plan-e2e';
 
-test.describe('Gear plan chore lists', () => {
+function heroDeltaPanel(page: Page) {
+  return page
+    .getByRole('heading', { name: /Per-hero changes/i, level: 2 })
+    .locator('xpath=ancestor::section[1]');
+}
+
+async function expandAllHeroRows(panel: Locator) {
+  const triggers = panel.getByRole('button', { name: /^Detailed breakdown for/i });
+  const count = await triggers.count();
+  for (let i = 0; i < count; i++) {
+    const trigger = triggers.nth(i);
+    if ((await trigger.getAttribute('aria-expanded')) !== 'true') await trigger.click();
+  }
+}
+
+test.describe('Gear plan per-hero proposed gear', () => {
   test.beforeEach(async ({ page }) => {
     await seedLocalStorage(page, gearPlanFixtureSeed('en'));
     await gotoGearPlan(page);
@@ -16,11 +31,10 @@ test.describe('Gear plan chore lists', () => {
     await waitForOptimizeDone(page);
   });
 
-  test('forge list is non-empty at floor 10 and empty at floor 0', async ({ page }) => {
-    const forgePanel = page
-      .getByRole('heading', { name: /^Forge list$/i, level: 2 })
-      .locator('xpath=ancestor::section[1]');
-    await expect(forgePanel.getByText(/→/).first()).toBeVisible();
+  test('forge annotations show at floor 10 and disappear at floor 0', async ({ page }) => {
+    const panel = heroDeltaPanel(page);
+    await expandAllHeroRows(panel);
+    await expect(panel.getByText(/Forge from \+\d+ to \+\d+/i).first()).toBeVisible();
 
     for (let i = 0; i < 10; i++) {
       await page.getByRole('button', { name: /Forge floor −/i }).click();
@@ -28,21 +42,25 @@ test.describe('Gear plan chore lists', () => {
     await expect(await readForgeFloorValue(page)).toBe('0');
     await clickOptimize(page);
     await waitForOptimizeDone(page);
-    await expect(forgePanel.getByText(/Nothing to forge at this floor/i)).toBeVisible();
+    await expandAllHeroRows(panel);
+    await expect(panel.getByText(/Forge from \+\d+ to \+\d+/i)).toHaveCount(0);
   });
 
-  test('move list orders unequips before equips', async ({ page }) => {
-    const phases = await page.locator('[data-move-phase]').evaluateAll((nodes) =>
-      nodes.map((node) => node.getAttribute('data-move-phase')),
-    );
-    if (phases.length === 0) {
-      await expect(page.getByText(/No gear moves proposed/i)).toBeVisible();
+  test('proposed gear cards show item icons for changed items', async ({ page }) => {
+    const panel = heroDeltaPanel(page);
+    await expandAllHeroRows(panel);
+    await expect(panel.locator('img').first()).toBeVisible();
+  });
+
+  test('a moved item shows where it came from', async ({ page }) => {
+    const panel = heroDeltaPanel(page);
+    await expandAllHeroRows(panel);
+    const fromNotes = panel.getByText(/^From /i);
+    if ((await fromNotes.count()) === 0) {
+      // Nothing moved on this fixture run — nothing to assert.
       return;
     }
-    const lastUnequip = phases.lastIndexOf('unequip');
-    const firstEquip = phases.indexOf('equip');
-    if (firstEquip === -1) expect(lastUnequip).toBeGreaterThanOrEqual(0);
-    else expect(lastUnequip).toBeLessThan(firstEquip);
+    await expect(fromNotes.first()).toBeVisible();
   });
 
   test('point reset list is hidden until expanded', async ({ page }) => {

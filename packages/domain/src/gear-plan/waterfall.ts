@@ -132,17 +132,28 @@ function buildMoveList(
   return [...unequips, ...equips];
 }
 
-function buildForgeList(
+export function buildForgeList(
   inventory: InventoryItem[],
   forgeFloor: number,
   rosterHeroIds: ReadonlySet<string>,
+  finalAssignment: AssignmentState,
 ): ForgeAction[] {
   if (forgeFloor <= 0) return [];
+  // An item outside the solver's pool (e.g. a leaveAlone hero's gear) has no entry here — its
+  // final spot is wherever it is today, via the `item.equippedBy` fallback below. Must use
+  // `.has`/ternary rather than `?? `: a present entry with `heroId: null` (in the shared pool)
+  // is a real answer and must NOT fall through to the `item.equippedBy` fallback below it.
+  const finalLocation = itemLocation(finalAssignment);
   const list: ForgeAction[] = [];
   for (const item of inventory) {
     if (!item.defResolved || item.marketBlocked) continue;
     if (item.equippedBy && !rosterHeroIds.has(item.equippedBy)) continue;
     if (item.upgrade >= forgeFloor) continue;
+    // Never recommend forging gear the plan leaves sitting in the shared pool — it isn't in
+    // combat, so the forge floor buys nothing (RGO ask: don't list what won't be worn).
+    const location = finalLocation.get(item.id);
+    const finalHeroId = location ? location.heroId : item.equippedBy;
+    if (!finalHeroId) continue;
     list.push({ itemId: item.id, defId: item.defId, from: item.upgrade, to: forgeFloor });
   }
   list.sort((a, b) => a.itemId.localeCompare(b.itemId));
@@ -279,7 +290,7 @@ export function buildWaterfall(input: BuildWaterfallInput): WaterfallResult {
 
   return {
     steps,
-    forgeList: buildForgeList(gearInput.inventory, candidate.floor, rosterIds),
+    forgeList: buildForgeList(gearInput.inventory, candidate.floor, rosterIds, candidate.assignment),
     moveList: buildMoveList(currentAssignment, candidate.assignment, itemById, contexts),
     pointResets: buildPointResets(
       respec.acceptedHeroIds,

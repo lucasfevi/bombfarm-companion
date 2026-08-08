@@ -34,9 +34,9 @@ Browser-level smoke and visual baselines for the static export. Unit math stays 
 > empty states (no roster / no inventory / all leave alone), the three-column scope board
 > (desktop DnD; mobile per-card Select), Search setup (forge floor + Optimize), the
 > optimizing modal (hero6 bomb-activation loop, elapsed time, Cancel), post-run Run summary +
-> waterfall (no Today `+0`; no negative respec recommendation) + per-hero delta table,
-> forge/move lists, disclosures callouts, and the Send to alt loadout confirm dialog. Smoke
-> coverage lives under `e2e/gear-plan-*.spec.ts`.
+> waterfall (no Today `+0`; no negative respec recommendation) + per-hero delta table with its
+> expanded proposed-gear cards (forge/move info), disclosures callouts, and the Send to alt
+> loadout confirm dialog. Smoke coverage lives under `e2e/gear-plan-*.spec.ts`.
 
 **Local e2e runs in Docker** — same Ubuntu + Chromium stack as CI. Any machine (Windows, macOS, Linux) produces identical pixels when you run the scripts below. CI is a verification gate: if you ran the local workflow, the PR checks should pass.
 

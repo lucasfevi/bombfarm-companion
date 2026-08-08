@@ -7,9 +7,9 @@ import { mutedClass, panelHClass, panelTitleClass } from '@bombfarm/ui/panel-fie
 import { accordionStackClass } from '@bombfarm/ui/accordion.recipe';
 import type { Lang, Strings } from '@/shared/i18n';
 import { sub } from '@/shared/i18n';
-import { usePlannerStore, selectHeroes } from '@/shared/stores';
+import { usePlannerStore, selectHeroes, selectInventoryItems } from '@/shared/stores';
 import { shortHeroRecordId } from '@/features/gear-plan/model/build-gear-plan-input';
-import { withExpectedForge } from '@/features/gear-plan/model/proposed-gear-forecast';
+import { buildGearFlowRows, groupGearFlowRows } from '@/features/gear-plan/model/gear-flow-rows';
 import { HeroIdentityChip } from './hero-identity-chip';
 import { HeroDetailPanel } from './hero-detail-panel';
 import { AbbreviatedNumber } from './abbreviated-number';
@@ -19,7 +19,20 @@ const metricValueClass = 'font-mono text-[13px] font-semibold leading-none tabul
 
 export function HeroDeltaTable({ t, lang, plan }: { t: Strings; lang: Lang; plan: GearPlan }) {
   const heroes = usePlannerStore(selectHeroes);
+  const inventory = usePlannerStore(selectInventoryItems);
   const heroByScopeKey = new Map(heroes.map((hero) => [hero.sourceId ?? hero.id, hero]));
+
+  const heroNameFallback = (heroId: string) =>
+    plan.perHero.find((row) => row.heroId === heroId)?.heroName ?? heroId;
+
+  const flowRows = buildGearFlowRows(plan, inventory);
+  const flowGroups = groupGearFlowRows(
+    flowRows,
+    plan.perHero.map((row) => row.heroId),
+  );
+  const flowRowsByHero = new Map(
+    flowGroups.filter((group) => group.heroId).map((group) => [group.heroId as string, group.rows]),
+  );
 
   return (
     <Panel>
@@ -38,10 +51,6 @@ export function HeroDeltaTable({ t, lang, plan }: { t: Strings; lang: Lang; plan
                   id: shortHeroRecordId(hero),
                 })
               : row.heroName;
-            const loadout = withExpectedForge(
-              plan.proposedLoadouts[row.heroId] ?? {},
-              plan.forgeFloorApplied,
-            );
             const pointReset = plan.pointResets.find((reset) => reset.heroId === row.heroId);
             const pointsReset =
               pointReset && hero
@@ -85,7 +94,9 @@ export function HeroDeltaTable({ t, lang, plan }: { t: Strings; lang: Lang; plan
                     lang={lang}
                     statsBefore={row.statsBefore}
                     statsAfter={row.statsAfter}
-                    loadout={loadout}
+                    flowRows={flowRowsByHero.get(row.heroId) ?? []}
+                    heroByScopeKey={heroByScopeKey}
+                    heroNameFallback={heroNameFallback}
                     pointsReset={pointsReset}
                   />
                 </Accordion.Panel>
