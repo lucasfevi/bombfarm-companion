@@ -161,7 +161,7 @@ export function GearPlanPage({
                     ranOnMainThread={runner.ranOnMainThread}
                   />
                   <WaterfallPanel t={t} plan={displayPlan} />
-                  <HeroDeltaTable t={t} plan={displayPlan} />
+                  <HeroDeltaTable t={t} lang={lang} plan={displayPlan} />
                   <ForgeList t={t} plan={displayPlan} />
                   <MoveList t={t} plan={displayPlan} />
                   <PointResetList t={t} plan={displayPlan} />

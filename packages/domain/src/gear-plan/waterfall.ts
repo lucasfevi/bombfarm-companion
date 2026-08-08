@@ -1,6 +1,7 @@
 import { SLOTS } from '../gear/catalog';
 import type { PointAlloc } from '../gear/types';
 import type { InventoryItem } from '../inventory';
+import type { HeroSheet } from '../model';
 import { evaluateRoster } from './evaluate';
 import { optimizeBuild } from '../points-reopt';
 import {
@@ -10,7 +11,9 @@ import {
 import { chooseGearCandidate, evaluateAt } from './waterfall-guards';
 import type {
   ForgeAction,
+  GearPlanHeroStats,
   GearPlanInput,
+  GearPlanPerHeroRow,
   HeroPlanContext,
   MoveAction,
   RosterEvaluation,
@@ -30,14 +33,7 @@ export type WaterfallResult = {
     rosterGainDps: number;
     resetCostGold: number;
   }[];
-  perHero: {
-    heroId: string;
-    heroName: string;
-    level: number;
-    before: number;
-    after: number;
-    delta: number;
-  }[];
+  perHero: GearPlanPerHeroRow[];
   /** The winning candidate's assignment/points — what `runGearPlan` should actually propose. */
   assignment: AssignmentState;
   ptsByHeroId: Record<string, PointAlloc>;
@@ -185,6 +181,18 @@ function buildPointResets(
   });
 }
 
+function heroStatsFromEffective(effective: HeroSheet | undefined): GearPlanHeroStats {
+  return {
+    attack: effective?.attack ?? 0,
+    energy: effective?.energy ?? 0,
+    speed: effective?.speed ?? 0,
+    critChance: effective?.critChance ?? 0,
+    critDmg: effective?.critDmg ?? 0,
+    penetration: effective?.penetration ?? 0,
+    cdr: effective?.cdr ?? 0,
+  };
+}
+
 function buildPerHeroTable(
   contexts: HeroPlanContext[],
   todayEval: ReturnType<typeof evaluateRoster>,
@@ -193,8 +201,10 @@ function buildPerHeroTable(
   return contexts
     .filter((ctx) => ctx.scope === 'optimize')
     .map((ctx) => {
-      const before = todayEval.perHero[ctx.heroId]?.sustained ?? 0;
-      const after = respecEval.perHero[ctx.heroId]?.sustained ?? 0;
+      const beforeScore = todayEval.perHero[ctx.heroId];
+      const afterScore = respecEval.perHero[ctx.heroId];
+      const before = beforeScore?.sustained ?? 0;
+      const after = afterScore?.sustained ?? 0;
       return {
         heroId: ctx.heroId,
         heroName: ctx.name,
@@ -202,6 +212,8 @@ function buildPerHeroTable(
         before,
         after,
         delta: after - before,
+        statsBefore: heroStatsFromEffective(beforeScore?.effective),
+        statsAfter: heroStatsFromEffective(afterScore?.effective),
       };
     })
     .sort((a, b) => a.heroName.localeCompare(b.heroName) || a.heroId.localeCompare(b.heroId));
@@ -302,6 +314,16 @@ export function baselineAssignmentFromInput(
   );
 }
 
+const ZERO_HERO_STATS: GearPlanHeroStats = {
+  attack: 0,
+  energy: 0,
+  speed: 0,
+  critChance: 0,
+  critDmg: 0,
+  penetration: 0,
+  cdr: 0,
+};
+
 /** Synthetic regression case for per-hero negative delta assertions. */
 export function syntheticRegressionPerHero(): WaterfallResult['perHero'][number] {
   return {
@@ -311,6 +333,8 @@ export function syntheticRegressionPerHero(): WaterfallResult['perHero'][number]
     before: 1000,
     after: 900,
     delta: -100,
+    statsBefore: ZERO_HERO_STATS,
+    statsAfter: ZERO_HERO_STATS,
   };
 }
 

@@ -1,15 +1,23 @@
 'use client';
 
 import type { GearPlan } from '@bombfarm/domain/gear-plan/types';
-import { DataTable, Panel } from '@bombfarm/ui';
-import { panelHClass, panelTitleClass } from '@bombfarm/ui/panel-field.recipe';
-import type { Strings } from '@/shared/i18n';
+import type { PointAlloc } from '@bombfarm/domain/gear';
+import { Accordion, Panel, Tooltip } from '@bombfarm/ui';
+import { mutedClass, panelHClass, panelTitleClass } from '@bombfarm/ui/panel-field.recipe';
+import { accordionStackClass } from '@bombfarm/ui/accordion.recipe';
+import type { Lang, Strings } from '@/shared/i18n';
 import { sub } from '@/shared/i18n';
-import { formatNumber } from '@/shared/lib/format-number';
 import { usePlannerStore, selectHeroes } from '@/shared/stores';
 import { shortHeroRecordId } from '@/features/gear-plan/model/build-gear-plan-input';
+import { withExpectedForge } from '@/features/gear-plan/model/proposed-gear-forecast';
+import { HeroIdentityChip } from './hero-identity-chip';
+import { HeroDetailPanel } from './hero-detail-panel';
+import { AbbreviatedNumber } from './abbreviated-number';
 
-export function HeroDeltaTable({ t, plan }: { t: Strings; plan: GearPlan }) {
+const metricLabelClass = 'text-[9px] font-bold leading-none tracking-[0.06em] text-muted uppercase';
+const metricValueClass = 'font-mono text-[13px] font-semibold leading-none tabular-nums';
+
+export function HeroDeltaTable({ t, lang, plan }: { t: Strings; lang: Lang; plan: GearPlan }) {
   const heroes = usePlannerStore(selectHeroes);
   const heroByScopeKey = new Map(heroes.map((hero) => [hero.sourceId ?? hero.id, hero]));
 
@@ -18,49 +26,74 @@ export function HeroDeltaTable({ t, plan }: { t: Strings; plan: GearPlan }) {
       <div className={panelHClass}>
         <h2 className={panelTitleClass}>{t.gearPlanHeroDeltaTitle}</h2>
       </div>
-      <DataTable.Root scrollable maxRows={12} className="rounded-sm border border-line">
-        <DataTable.Table>
-          <DataTable.Head>
-            <DataTable.Row>
-              <DataTable.Header>{t.importColName}</DataTable.Header>
-              <DataTable.Header align="right">{t.gearPlanColBefore}</DataTable.Header>
-              <DataTable.Header align="right">{t.gearPlanColAfter}</DataTable.Header>
-              <DataTable.Header align="right">{t.gearPlanColDelta}</DataTable.Header>
-            </DataTable.Row>
-          </DataTable.Head>
-          <DataTable.Body>
-            {plan.perHero.map((row) => {
-              const hero = heroByScopeKey.get(row.heroId);
-              const label = hero
-                ? sub(t.gearPlanHeroRowLabel, {
-                    name: row.heroName,
-                    level: String(row.level),
-                    id: shortHeroRecordId(hero),
-                  })
-                : row.heroName;
-              return (
-                <DataTable.Row key={row.heroId}>
-                  <DataTable.Cell>{label}</DataTable.Cell>
-                  <DataTable.Cell align="right" numeric>
-                    {formatNumber(row.before, 0)}
-                  </DataTable.Cell>
-                  <DataTable.Cell align="right" numeric>
-                    {formatNumber(row.after, 0)}
-                  </DataTable.Cell>
-                  <DataTable.Cell
-                    align="right"
-                    numeric
-                    className={row.delta < 0 ? 'text-down' : row.delta > 0 ? 'text-up' : undefined}
-                  >
-                    {row.delta >= 0 ? '+' : ''}
-                    {formatNumber(row.delta, 0)}
-                  </DataTable.Cell>
-                </DataTable.Row>
-              );
-            })}
-          </DataTable.Body>
-        </DataTable.Table>
-      </DataTable.Root>
+      <p className={`m-0 mb-2 ${mutedClass}`}>{t.gearPlanCompactNumberHint}</p>
+      <Tooltip.Provider delay={200} closeDelay={80}>
+        <Accordion.Root multiple className={accordionStackClass}>
+          {plan.perHero.map((row) => {
+            const hero = heroByScopeKey.get(row.heroId);
+            const disambiguatedName = hero
+              ? sub(t.gearPlanHeroRowLabel, {
+                  name: row.heroName,
+                  level: String(row.level),
+                  id: shortHeroRecordId(hero),
+                })
+              : row.heroName;
+            const loadout = withExpectedForge(
+              plan.proposedLoadouts[row.heroId] ?? {},
+              plan.forgeFloorApplied,
+            );
+            const pointReset = plan.pointResets.find((reset) => reset.heroId === row.heroId);
+            const pointsReset =
+              pointReset && hero
+                ? // `pointReset.pts` is always a full absolute PointAlloc (buildPointResets uses
+                  // `finalPtsByHeroId[heroId]`) — the domain type just widens it for storage ease.
+                  { before: hero.pts, after: pointReset.pts as PointAlloc }
+                : null;
+
+            return (
+              <Accordion.Item key={row.heroId} value={row.heroId}>
+                <Accordion.Trigger
+                  tone="row"
+                  aria-label={sub(t.gearPlanHeroDeltaExpandAria, { name: disambiguatedName })}
+                >
+                  <div className="flex min-w-0 flex-1 flex-wrap items-center gap-3">
+                    <HeroIdentityChip hero={hero} fallbackName={row.heroName} lang={lang} />
+                    <div className="ml-auto flex items-center gap-3">
+                      <div className="flex flex-col items-end gap-0.5">
+                        <span className={metricLabelClass}>{t.gearPlanColBefore}</span>
+                        <AbbreviatedNumber value={row.before} className={metricValueClass} disableFocus />
+                      </div>
+                      <div className="flex flex-col items-end gap-0.5">
+                        <span className={metricLabelClass}>{t.gearPlanColAfter}</span>
+                        <AbbreviatedNumber value={row.after} className={metricValueClass} disableFocus />
+                      </div>
+                      <div className="flex flex-col items-end gap-0.5">
+                        <span className={metricLabelClass}>{t.gearPlanColDelta}</span>
+                        <AbbreviatedNumber
+                          value={row.delta}
+                          signed
+                          disableFocus
+                          className={`${metricValueClass} ${row.delta < 0 ? 'text-down' : row.delta > 0 ? 'text-up' : ''}`}
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </Accordion.Trigger>
+                <Accordion.Panel>
+                  <HeroDetailPanel
+                    t={t}
+                    lang={lang}
+                    statsBefore={row.statsBefore}
+                    statsAfter={row.statsAfter}
+                    loadout={loadout}
+                    pointsReset={pointsReset}
+                  />
+                </Accordion.Panel>
+              </Accordion.Item>
+            );
+          })}
+        </Accordion.Root>
+      </Tooltip.Provider>
     </Panel>
   );
 }

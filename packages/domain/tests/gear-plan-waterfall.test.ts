@@ -205,6 +205,19 @@ describe('buildWaterfall', () => {
     expect(result.plan.perHero).toHaveLength(optimizeCount);
   });
 
+  it('perHero rows carry a before/after breakdown for every HeroSheet stat', () => {
+    const input = gearPlanInputFromFixture('save-20260731-11heroes.json');
+    const result = runGearPlan(input);
+    if (result.blocked) throw new Error('blocked');
+    expect(result.plan.perHero.length).toBeGreaterThan(0);
+    for (const row of result.plan.perHero) {
+      for (const key of ['attack', 'energy', 'speed', 'critChance', 'critDmg', 'penetration', 'cdr'] as const) {
+        expect(typeof row.statsBefore[key]).toBe('number');
+        expect(typeof row.statsAfter[key]).toBe('number');
+      }
+    }
+  });
+
   it('baselineAssignmentFromInput matches buildInitialAssignment', () => {
     const input = gearPlanInputFromFixture('save-20260731-11heroes.json');
     const built = buildHeroPlanContexts(input.heroes, input.account, input.scopeByHeroId);

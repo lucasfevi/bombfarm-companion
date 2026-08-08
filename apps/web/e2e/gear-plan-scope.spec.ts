@@ -45,7 +45,7 @@ test.describe('Gear plan hero scope', () => {
     await pickScope(scopePanel(page).getByRole('combobox').first(), page, /^Leave alone$/i);
     await clickOptimize(page);
     await waitForOptimizeDone(page);
-    await expect(page.getByRole('heading', { name: /Per-hero DPS/i })).toBeVisible();
+    await expect(page.getByRole('heading', { name: /Per-hero changes/i })).toBeVisible();
   });
 
   test('all leave alone blocks optimize', async ({ page }) => {

@@ -25,24 +25,32 @@ test.describe('Gear plan results panels', () => {
     await expect(page.getByText(/Best roster DPS found by this search/i)).toBeVisible();
   });
 
-  test('per-hero table renders signed delta column', async ({ page }) => {
-    const table = page
-      .getByRole('heading', { name: /Per-hero DPS/i, level: 2 })
+  test('per-hero panel renders a signed delta value', async ({ page }) => {
+    const panel = page
+      .getByRole('heading', { name: /Per-hero changes/i, level: 2 })
       .locator('xpath=ancestor::section[1]');
-    await expect(table).toBeVisible();
-    const deltaCells = table.locator('tbody td:nth-child(4)');
-    const texts = await deltaCells.allTextContents();
-    expect(texts.length).toBeGreaterThan(0);
-    expect(texts.some((text) => /^[+-]/.test(text.trim()))).toBe(true);
+    await expect(panel).toBeVisible();
+    const rows = panel.getByRole('button', { name: /^Detailed breakdown for/i });
+    await expect(rows.first()).toBeVisible();
+    const text = await panel.innerText();
+    expect(/[+-]\d/.test(text)).toBe(true);
   });
 
   test('in-scope heroes with duplicate names use disambiguated labels', async ({ page }) => {
-    const table = page
-      .getByRole('heading', { name: /Per-hero DPS/i, level: 2 })
+    const panel = page
+      .getByRole('heading', { name: /Per-hero changes/i, level: 2 })
       .locator('xpath=ancestor::section[1]');
-    const korinCells = table.getByRole('cell', { name: /Korin · L\d+ · #/i });
-    await expect(korinCells.first()).toBeVisible();
-    const label = await korinCells.first().textContent();
-    expect(label).toMatch(/#\d+/);
+    const korinRow = panel.getByRole('button', { name: /^Detailed breakdown for Korin · L\d+ · #\d+/i });
+    await expect(korinRow.first()).toBeVisible();
+  });
+
+  test('expanding a hero row reveals the stat breakdown and proposed gear', async ({ page }) => {
+    const panel = page
+      .getByRole('heading', { name: /Per-hero changes/i, level: 2 })
+      .locator('xpath=ancestor::section[1]');
+    const trigger = panel.getByRole('button', { name: /^Detailed breakdown for/i }).first();
+    await trigger.click();
+    await expect(panel.getByText(/^Stat breakdown$/i)).toBeVisible();
+    await expect(panel.getByText(/^Proposed gear$/i)).toBeVisible();
   });
 });

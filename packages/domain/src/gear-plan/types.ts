@@ -116,6 +116,28 @@ export type GearPlanInput = {
   forgeFloor: number;
 };
 
+/** The subset of `HeroSheet` shown in the per-hero stat breakdown — excludes the per-point rates. */
+export type GearPlanHeroStats = {
+  attack: number;
+  energy: number;
+  speed: number;
+  critChance: number;
+  critDmg: number;
+  penetration: number;
+  cdr: number;
+};
+
+export type GearPlanPerHeroRow = {
+  heroId: string;
+  heroName: string;
+  level: number;
+  before: number;
+  after: number;
+  delta: number;
+  statsBefore: GearPlanHeroStats;
+  statsAfter: GearPlanHeroStats;
+};
+
 export type WaterfallStep = {
   id: 'today' | 'gear' | 'respec';
   objective: number;
@@ -148,14 +170,7 @@ export type GearPlan = {
     /** `heroLevel * 1000` gold. Display-only — never in the objective, never a filter or gate. */
     resetCostGold: number;
   }[];
-  perHero: {
-    heroId: string;
-    heroName: string;
-    level: number;
-    before: number;
-    after: number;
-    delta: number;
-  }[];
+  perHero: GearPlanPerHeroRow[];
   /** Per-hero proposed loadouts — the payload of the confirmed altLoadout push (RGO-18). */
   proposedLoadouts: Record<string, Loadout>;
   regime: RosterRegime;
