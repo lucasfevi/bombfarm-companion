@@ -19,7 +19,7 @@ import * as account from '@/shared/i18n/namespaces/account';
 import * as advice from '@/shared/i18n/namespaces/advice';
 import * as breakdown from '@/shared/i18n/namespaces/breakdown';
 import * as phases from '@/shared/i18n/namespaces/phases';
-import * as gearPlan from '@/shared/i18n/namespaces/gear-plan';
+import * as teamPlan from '@/shared/i18n/namespaces/team-plan';
 import * as importNs from '@/shared/i18n/namespaces/import';
 import * as stats from '@/shared/i18n/namespaces/stats';
 import { WEB_PACKAGE_ROOT } from './helpers/web-package-root';
@@ -39,7 +39,7 @@ const namespaces = [
   advice,
   breakdown,
   phases,
-  gearPlan,
+  teamPlan,
   importNs,
   stats,
 ] as const;

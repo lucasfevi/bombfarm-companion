@@ -1,11 +1,11 @@
 import { describe, expect, it } from 'vitest';
-import type { GearPlan } from '@bombfarm/domain/gear-plan/types';
+import type { TeamPlan } from '@bombfarm/domain/team-plan/types';
 import type { InventoryItem } from '@bombfarm/domain/inventory';
 import {
   buildGearFlowRows,
   groupGearFlowRows,
   isKeptExistingGearFlowRow,
-} from '@/features/gear-plan/model/gear-flow-rows';
+} from '@/features/team-plan/model/gear-flow-rows';
 
 function item(partial: Partial<InventoryItem> & Pick<InventoryItem, 'id' | 'defId'>): InventoryItem {
   return {
@@ -21,7 +21,7 @@ function item(partial: Partial<InventoryItem> & Pick<InventoryItem, 'id' | 'defI
   };
 }
 
-function emptyPlan(overrides: Partial<GearPlan> = {}): GearPlan {
+function emptyPlan(overrides: Partial<TeamPlan> = {}): TeamPlan {
   return {
     steps: [],
     forgeList: [],

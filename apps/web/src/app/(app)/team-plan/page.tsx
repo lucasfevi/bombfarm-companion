@@ -1,12 +1,12 @@
 'use client';
 
 import { useAppLang } from '@/shared/context/app-lang';
-import { GearPlanPage } from '@/features/gear-plan';
+import { TeamPlanPage } from '@/features/team-plan';
 import { usePlannerStore } from '@/shared/stores';
 
 export default function TeamPlanRoutePage() {
   const { t, lang } = useAppLang();
   const openImportDialog = usePlannerStore((state) => state.openImportDialog);
 
-  return <GearPlanPage t={t} lang={lang} onImport={openImportDialog} />;
+  return <TeamPlanPage t={t} lang={lang} onImport={openImportDialog} />;
 }

@@ -3,8 +3,8 @@
   "version": "0.1.0",
   "private": true,
   "sideEffects": [
-    "src/features/gear-plan/index.ts",
-    "src/features/gear-plan/worker/register-chunk.ts"
+    "src/features/team-plan/index.ts",
+    "src/features/team-plan/worker/register-chunk.ts"
   ],
   "description": "Bomb Farm Companion web planner (static Next export)",
   "scripts": {

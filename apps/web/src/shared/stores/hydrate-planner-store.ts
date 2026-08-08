@@ -1,7 +1,7 @@
 import { loadLang } from '@/shared/i18n';
 import { loadPhasesView } from '@/shared/lib/phases-view-storage';
 import { loadInventory } from '@/shared/lib/inventory-storage';
-import { loadGearPlanScope } from '@/shared/lib/gear-plan-scope-storage';
+import { loadTeamPlanScope } from '@/shared/lib/team-plan-scope-storage';
 import {
   getActiveHeroId,
   loadAccountShared,
@@ -29,7 +29,7 @@ export function hydratePlannerStore(): void {
 
   const inventory = loadInventory();
   state.hydrateInventory(inventory, account.forgeFloor ?? 10);
-  state.hydrateScope(loadGearPlanScope());
+  state.hydrateScope(loadTeamPlanScope());
 
   state.setBooted(true);
 }

@@ -13,6 +13,7 @@ Canonical keys (current):
 | `bf-hp-active-hero-v1` | active hero id |
 | `bf-hp-account-v1` | `AccountShared` (tree, team buffs, context, slots, forgeFloor) |
 | `bf-hp-inventory-v1` | `InventorySnapshot` (`version`, `importedAt`, `items[]`) |
+| `bf-hp-gear-scope-v1` | Team plan per-hero scope map (`Record<heroId, ScopeState>`) — see below |
 
 UI chrome prefs (`bf_lang`, guide/roster open state, etc.) are separate and must tolerate absence.
 
@@ -21,7 +22,7 @@ UI chrome prefs (`bf_lang`, guide/roster open state, etc.) are separate and must
 ## Rules
 
 1. **Never break existing public saves.** After an update, every previously saved hero/account under the current public keys must load without data loss. Prefer additive changes.
-2. **All domain persistence goes through `src/shared/lib/storage.ts`.** New hero/account fields land on `HeroRecord` / `AccountShared` (or nested types), not new ad-hoc domain keys. **Exception:** the gear-optimizer item inventory is account-scoped, replaced wholesale on every import, and never merged hero-by-hero — see [`bf-hp-inventory-v1`](#bf-hp-inventory-v1-account-scoped-collection) below.
+2. **All domain persistence goes through `src/shared/lib/storage.ts`.** New hero/account fields land on `HeroRecord` / `AccountShared` (or nested types), not new ad-hoc domain keys. **Exceptions:** (a) the gear-optimizer item inventory is account-scoped, replaced wholesale on every import, and never merged hero-by-hero — see [`bf-hp-inventory-v1`](#bf-hp-inventory-v1-account-scoped-collection) below; (b) Team plan per-hero scope is a separate UI-pref map under [`bf-hp-gear-scope-v1`](#bf-hp-gear-scope-v1-team-plan-hero-scope) (key string kept for compat).
 3. **Normalize every load.** Extend `normalizeHero` / `normalizeAccount` (and helpers) so missing fields get safe defaults. Do not assume every saved record has every field.
 4. **New fields: default empty/null + show “missing” when it matters.** Choose a sentinel that means “user never set this” (often `0`, `null`, or `{}`). When advice or math depends on that field, wire **`FieldRequired` beside the label** (and a tab soft/warn **dot + Tooltip** when the tab’s data would be wrong — see [`animation.md`](../../../docs/animation.md) rule 8). Do **not** use warn outlines/borders on panels or inputs for required state. Do **not** invent a “looks filled” default that hides a real gap — but identity defaults that are valid for new users (e.g. skill tree `danoTotal === 1`) are **not** missing and must not get required chrome.
 5. **Do not rename or remove persisted field names without a migrator.** JSON field names on hero/account records, and game ids used as keys (rarity, ability, slot, …), stay stable — same spirit as [`i18n.md`](../../../docs/i18n.md) id stability. Breaking renames require reading the old shape → writing the new shape. Keep temporary `@deprecated` readers only until that migrator is proven, then remove them.
@@ -63,7 +64,7 @@ Imported heroes store their **fixed ability pool** in `abilities`, including **l
 | Field | Default | Notes |
 | --- | --- | --- |
 | `slots` | `9` (`DEFAULT_CASA_SLOTS`) | Casa field-slot count from save `casa` (`resolveCasaSlots`). Written on import when the save carries a `casa` block; absent records normalize to `9`. Clamped to `>= 1`. Drives Phases squad ranking (`rankRosterByDps`) and optimizer slot limits. |
-| `forgeFloor` | `10` | Optimizer forge floor (`clampForgeFloor`, bounded by `FORJA_MAX`). Persisted on `bf-hp-account-v1` and hydrated into the gear-plan slice. **Import never overwrites** an existing browser value — only `normalizeAccount` / explicit UI edits change it. |
+| `forgeFloor` | `10` | Optimizer forge floor (`clampForgeFloor`, bounded by `FORJA_MAX`). Persisted on `bf-hp-account-v1` and hydrated into the team-plan slice. **Import never overwrites** an existing browser value — only `normalizeAccount` / explicit UI edits change it. |
 
 ### `bf-hp-inventory-v1` (account-scoped collection)
 
@@ -76,6 +77,10 @@ Imported heroes store their **fixed ability pool** in `abilities`, including **l
 | `items` | `[]` | `InventoryItem[]` from `mapInventoryItem` (`category === 0` only). Malformed snapshots normalize to an empty list. |
 
 Import confirm calls `replaceInventoryFromImport`, which clears any in-progress optimizer plan (`RGO-4`).
+
+### `bf-hp-gear-scope-v1` (Team plan hero scope)
+
+**Stated exception to rule 2:** Team plan Optimize / Donate / Leave-alone choices are account-wide UI prefs for the optimizer, not fields on `HeroRecord` / `AccountShared`. Load/save lives in [`team-plan-scope-storage.ts`](../src/shared/lib/team-plan-scope-storage.ts) (`TEAM_PLAN_SCOPE_KEY`). The **storage key string stays `bf-hp-gear-scope-v1`** for backward compatibility (module renamed gear-plan → team-plan; renaming the key would break existing public saves without a migrator). Payload shape is additive-stable: `Record<string, 'optimize' \| 'donate' \| 'leaveAlone'>`. Unknown hero ids are ignored on use; malformed values are dropped on load. Absent key → empty map → defaults from `battleAllowed` when the page builds scope.
 
 ### Removed fields
 

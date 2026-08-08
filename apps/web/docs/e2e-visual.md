@@ -38,7 +38,7 @@ Browser-level smoke and visual baselines for the static export. Unit math stays 
 > recommendation) + expandable per-hero rows with proposed gear (including kept existing
 > items labeled as no-change) and point-reset details, and
 > disclosures callouts. The Team plan page does not write heroes (no alt-loadout push). Smoke
-> coverage lives under `e2e/gear-plan-*.spec.ts`.
+> coverage lives under `e2e/team-plan-*.spec.ts`.
 
 **Local e2e runs in Docker** — same Ubuntu + Chromium stack as CI. Any machine (Windows, macOS, Linux) produces identical pixels when you run the scripts below. CI is a verification gate: if you ran the local workflow, the PR checks should pass.
 

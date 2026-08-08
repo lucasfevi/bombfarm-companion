@@ -119,6 +119,7 @@ describe('account slice', () => {
         energy: 4,
         glassCannon: true,
         tempoDobrado: true,
+        abisso: false,
         teamCoinPct: 9,
         luckFlatPct: 5.3,
       },

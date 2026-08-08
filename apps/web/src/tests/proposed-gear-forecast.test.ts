@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { FORJA_MAX } from '@bombfarm/domain/gear';
 import type { Loadout } from '@bombfarm/domain/gear';
-import { withExpectedForge } from '@/features/gear-plan/model/proposed-gear-forecast';
+import { withExpectedForge } from '@/features/team-plan/model/proposed-gear-forecast';
 
 function item(upgrade: number) {
   return { defId: 'ember_arma', rarityIdx: 2, level: 30, upgrade };

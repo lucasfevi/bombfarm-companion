@@ -15,7 +15,7 @@ function trimCompactFraction(text: string): string {
 }
 
 /**
- * Compact metric display for dense chrome (hero strip, gear plan): `90200` → `90.2k`,
+ * Compact metric display for dense chrome (hero strip, team plan): `90200` → `90.2k`,
  * `1_200_000` → `1.2m`, `24_000_000_000` → `24bi`. Values under 1k render with `formatNumber`.
  */
 export function formatCompactNumber(value: number, decimals = 1): string {

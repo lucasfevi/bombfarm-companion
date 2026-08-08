@@ -40,12 +40,12 @@ export {
   selectSlots,
 } from '@/shared/stores/selectors/account-selectors';
 export {
-  selectGearPlanIsStale,
+  selectTeamPlanIsStale,
   selectInventoryItems,
   selectScopeByHeroId,
   selectForgeFloor,
-} from '@/shared/stores/selectors/gear-plan-selectors';
-export type { GearPlanSlice } from '@/shared/stores/slices/gear-plan-slice';
+} from '@/shared/stores/selectors/team-plan-selectors';
+export type { TeamPlanSlice } from '@/shared/stores/slices/team-plan-slice';
 export {
   selectHeroes,
   selectActiveHeroId,
