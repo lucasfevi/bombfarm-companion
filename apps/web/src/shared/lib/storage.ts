@@ -28,10 +28,15 @@ export type TreeState = {
   energy: number;
   /** Account-wide team_coin total as % (Ouro por Alvo nodes) — scales gold per prop. */
   teamCoinPct: number;
-  /** C15 Glass Cannon: crit dmg ×2, energy ×0.5. */
+  /** C15 Glass Cannon: crit dmg ×2 (unless Abisso), energy ×0.5. */
   glassCannon: boolean;
   /** V15 Tempo Dobrado: field pace ×1.333, drain ×2. */
   tempoDobrado: boolean;
+  /**
+   * D15 Abisso — cancels tree Crit/GEO sheet adds and Glass Cannon crit ×2; energy ×0.5 still
+   * applies. Additive on `bf-hp-account-v1` (default false).
+   */
+  abisso?: boolean;
   /**
    * Flat Luck percentage points from `skills.totals.luck_add × 100` (AD-BSP-22, ASM-01).
    * Additive on `bf-hp-account-v1` — optional (not `number`) so pre-Wave-5 literals (e.g.
@@ -128,6 +133,7 @@ export const DEFAULT_TREE = (): TreeState => ({
   teamCoinPct: 0,
   glassCannon: false,
   tempoDobrado: false,
+  abisso: false,
   luckFlatPct: 0,
 });
 

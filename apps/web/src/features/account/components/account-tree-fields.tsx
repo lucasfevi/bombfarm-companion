@@ -5,6 +5,7 @@ import { Fields, Switch } from '@bombfarm/ui';
 import { formatNumber } from '@/shared/lib/format-number';
 import {
   usePlannerStore,
+  selectTreeAbisso,
   selectTreeCritChance,
   selectTreeCritDmg,
   selectTreeDanoTotal,
@@ -31,8 +32,10 @@ export function AccountTreeFields() {
   const treeTeamCoinPct = usePlannerStore(selectTreeTeamCoinPct);
   const treeGlassCannon = usePlannerStore(selectTreeGlassCannon);
   const treeTempoDobrado = usePlannerStore(selectTreeTempoDobrado);
+  const treeAbisso = usePlannerStore(selectTreeAbisso);
   const setTreeGlassCannon = usePlannerStore((state) => state.setTreeGlassCannon);
   const setTreeTempoDobrado = usePlannerStore((state) => state.setTreeTempoDobrado);
+  const setTreeAbisso = usePlannerStore((state) => state.setTreeAbisso);
 
   return (
     <Fields layout="stack" className={accountStackAlignClass}>
@@ -74,6 +77,18 @@ export function AccountTreeFields() {
         <output data-account-tree-value className={accountTreeValueClass}>
           {formatNumber(treeTeamCoinPct, 2)}
         </output>
+      </label>
+      <label>
+        <span>
+          {t.treeAbisso}
+          <span data-field-hint>{t.treeAbissoHint}</span>
+        </span>
+        <div data-keystone-control className={accountKeystoneControlClass}>
+          <span className={accountKeystoneStatusClass} aria-hidden>
+            {treeAbisso ? t.keystoneOn : t.keystoneOff}
+          </span>
+          <Switch checked={treeAbisso} onCheckedChange={setTreeAbisso} aria-label={t.treeAbisso} />
+        </div>
       </label>
       <label>
         <span>

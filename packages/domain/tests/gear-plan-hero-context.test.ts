@@ -23,8 +23,9 @@ function accountFromFixture(raw: Record<string, unknown>): GearPlanAccountInput 
     : [];
   return {
     treeSheet,
-    treeGlassCannon: keystones.some((k) => k.includes('glass') || k === 'v14'),
+    treeGlassCannon: keystones.some((k) => k.includes('glass') || k === 'c15' || k === 'v14'),
     treeTempoDobrado: keystones.some((k) => k.includes('tempo') || k === 'v15'),
+    treeAbisso: keystones.some((k) => k === 'd15' || k.includes('abisso')),
     houseIdx: 0,
     houseLevel: 1,
     phase: 1,

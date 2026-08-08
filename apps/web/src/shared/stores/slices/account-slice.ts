@@ -30,6 +30,7 @@ export type AccountSlice = {
   treeTeamCoinPct: number;
   treeGlassCannon: boolean;
   treeTempoDobrado: boolean;
+  treeAbisso: boolean;
   treeLuckFlatPct: number;
   teamBuffs: Record<TeamBuffId, number>;
   houseIdx: number;
@@ -43,6 +44,7 @@ export type AccountSlice = {
   /** Keystones stay editable for what-if; numeric tree totals are import/hydrate only. */
   setTreeGlassCannon: (value: boolean) => void;
   setTreeTempoDobrado: (value: boolean) => void;
+  setTreeAbisso: (value: boolean) => void;
   setTeamBuffs: (value: Record<TeamBuffId, number>) => void;
   setHouseIdx: (value: number) => void;
   setHouseLevel: (value: number) => void;
@@ -72,6 +74,7 @@ export const createAccountSlice: StateCreator<
   treeTeamCoinPct: defaultTree.teamCoinPct,
   treeGlassCannon: defaultTree.glassCannon,
   treeTempoDobrado: defaultTree.tempoDobrado,
+  treeAbisso: defaultTree.abisso ?? false,
   treeLuckFlatPct: defaultTree.luckFlatPct ?? 0,
   teamBuffs: zeroTeamBuffs(),
   houseIdx: defaultCtx.houseIdx,
@@ -89,6 +92,10 @@ export const createAccountSlice: StateCreator<
   setTreeTempoDobrado: (value) => {
     if (get().treeTempoDobrado === value) return;
     set({ treeTempoDobrado: value });
+  },
+  setTreeAbisso: (value) => {
+    if (get().treeAbisso === value) return;
+    set({ treeAbisso: value });
   },
   setTeamBuffs: (value) => {
     if (teamBuffsEqual(get().teamBuffs, value)) return;
@@ -135,6 +142,7 @@ export const createAccountSlice: StateCreator<
       treeTeamCoinPct: shared.tree.teamCoinPct ?? 0,
       treeGlassCannon: shared.tree.glassCannon,
       treeTempoDobrado: shared.tree.tempoDobrado,
+      treeAbisso: shared.tree.abisso ?? false,
       treeLuckFlatPct: shared.tree.luckFlatPct ?? 0,
       teamBuffs: {
         ...zeroTeamBuffs(),
@@ -161,6 +169,7 @@ export const createAccountSlice: StateCreator<
       patch.treeTeamCoinPct = data.tree.teamCoinPct ?? 0;
       patch.treeGlassCannon = data.tree.glassCannon;
       patch.treeTempoDobrado = data.tree.tempoDobrado;
+      patch.treeAbisso = data.tree.abisso;
       patch.treeLuckFlatPct = data.tree.luckFlatPct;
     }
     if (data.houseIdx != null) {

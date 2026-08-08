@@ -82,6 +82,7 @@ export function scoreHeroLoadout(
     teamBuffs: auras,
     treeGlassCannon: farm.treeGlassCannon,
     treeTempoDobrado: farm.treeTempoDobrado,
+    treeAbisso: farm.treeAbisso,
     extraDmgPct: 0,
   });
 

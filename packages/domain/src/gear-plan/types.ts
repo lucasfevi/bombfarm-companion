@@ -46,6 +46,7 @@ export type FarmContext = {
   mitigationPct: number;
   treeGlassCannon: boolean;
   treeTempoDobrado: boolean;
+  treeAbisso?: boolean;
 };
 
 export type HeroPlanContext = {
@@ -101,6 +102,7 @@ export type GearPlanAccountInput = {
   treeSheet: TreeSheetTotals;
   treeGlassCannon: boolean;
   treeTempoDobrado: boolean;
+  treeAbisso?: boolean;
   houseIdx: number;
   houseLevel: number;
   phase: number | null;

@@ -13,6 +13,7 @@ const sampleTree = {
   teamCoinPct: 7,
   glassCannon: true,
   tempoDobrado: false,
+  abisso: false,
   luckFlatPct: 6,
 } as const;
 
@@ -25,12 +26,13 @@ describe('account slice', () => {
     resetPlannerStoreForTests();
   });
 
-  it('owns all 16 flat account fields with defaults', () => {
+  it('owns account tree defaults including Abisso off', () => {
     const s = usePlannerStore.getState();
     expect(s.treeDanoTotal).toBe(1);
     expect(s.treeCritChance).toBe(0);
     expect(s.treeTeamCoinPct).toBe(0);
     expect(s.treeLuckFlatPct).toBe(0);
+    expect(s.treeAbisso).toBe(false);
     expect(s.teamBuffs).toEqual(zeroTeamBuffs());
     expect(s.houseIdx).toBe(0);
     expect(s.phase).toBeNull();
@@ -152,6 +154,25 @@ describe('account slice', () => {
     const before = usePlannerStore.getState();
     before.setTreeGlassCannon(false);
     expect(usePlannerStore.getState()).toBe(before);
+    before.setTreeAbisso(false);
+    expect(usePlannerStore.getState()).toBe(before);
+  });
+
+  it('setTreeAbisso toggles the Abisso flag', () => {
+    usePlannerStore.getState().setTreeAbisso(true);
+    expect(usePlannerStore.getState().treeAbisso).toBe(true);
+    usePlannerStore.getState().setTreeAbisso(false);
+    expect(usePlannerStore.getState().treeAbisso).toBe(false);
+  });
+
+  it('applyAccountImport hydrates Abisso from the save sniff', () => {
+    usePlannerStore.getState().applyAccountImport({
+      tree: { ...sampleTree, abisso: true, glassCannon: true },
+      houseIdx: null,
+      houseLevel: null,
+    });
+    expect(usePlannerStore.getState().treeAbisso).toBe(true);
+    expect(usePlannerStore.getState().treeGlassCannon).toBe(true);
   });
 
   it('preserves full-precision tree floats through applyAccountImport (no UI round-trip)', () => {

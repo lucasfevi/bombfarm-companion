@@ -29,6 +29,7 @@ export {
   selectTreeTeamCoinPct,
   selectTreeGlassCannon,
   selectTreeTempoDobrado,
+  selectTreeAbisso,
   selectTeamBuffs,
   selectHouseIdx,
   selectHouseLevel,

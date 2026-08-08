@@ -31,14 +31,16 @@ export type CombatMults = {
 /**
  * `treeEnergy` and `treeDanoTotal` are GONE (BSP-23c, DEC-01) — both now live on the sheet
  * only (`applySkillTree`), never in a combat multiplier. `treeGlassCannon` /
- * `treeTempoDobrado` are unrelated mechanics (booleans sniffed off the account tree, not
- * `skills.totals` percentages) and stay exactly as-is (DEC-08).
+ * `treeTempoDobrado` / `treeAbisso` are boolean account keystones sniffed off the save
+ * (not `skills.totals` percentage fields).
  */
 export type ComputeCombatMultsInput = {
   mods: AbilityMods;
   teamBuffs: Record<TeamBuffId, number>;
   treeGlassCannon: boolean;
   treeTempoDobrado: boolean;
+  /** When true, Glass Cannon’s crit ×2 is suppressed; energy ×0.5 still applies. */
+  treeAbisso?: boolean;
   extraDmgPct: number;
 };
 
@@ -62,19 +64,14 @@ export function stackTeamBonusMult(ownMult: number, otherHeroesBuffPct: number):
  * contributes anything here (BSP-23c) — `dmg_static` and `energia_add` are sheet-level
  * factors applied once by `applySkillTree`, not a second time on top of the combat sheet.
  *
- * BSP-61 (deliberately unmodelled, DEC-07): Deadly Eye's keystone +25% crit chance is NOT
- * applied anywhere in this function. `keystones` is `[]` in every fixture in this repo and
- * the account's `max_phase` (93) still sits below the Stage-120 unlock, so the exporter's
- * handling of the node is entirely unobserved — it is unknown whether the +25% would already
- * be folded into `crit_chance_add` (in which case modelling it here would double-count) or
- * not (in which case omitting it understates). `tree-guards.ts`'s `unmodelledTreeFindings`
- * fails loudly the day a save disagrees with either premise (`crit_dmg_mult !== 1` or a
- * non-empty `keystones`); until then, deferral is the only choice that adds no unevidenced
- * number. `critDmgMult` below is Glass Cannon (a different keystone, sniffed as a boolean),
- * left exactly as-is per DEC-08.
+ * Glass Cannon (C15): energy ×0.5 always when on; crit dmg ×2 only when Abisso is off.
+ * Abisso (D15) zeroes Crit/GEO sheet adds in the exporter but leaves a stale
+ * `crit_dmg_mult: 2` — combat must ignore ×2 while Abisso is on. Do not separately add
+ * Glass Cannon’s +25% crit here: when Abisso is off it is already inside imported
+ * `crit_chance_add`; when Abisso is on the export zeroes that add.
  */
 export function computeCombatMults(input: ComputeCombatMultsInput): CombatMults {
-  const { mods, teamBuffs, treeGlassCannon, treeTempoDobrado, extraDmgPct } = input;
+  const { mods, teamBuffs, treeGlassCannon, treeTempoDobrado, treeAbisso, extraDmgPct } = input;
   const teamAtkMult = stackTeamBonusMult(1, teamBuffs.grito_guerra || 0);
   const teamSpeedMult = stackTeamBonusMult(1, teamBuffs.marcha_acelerada || 0);
   const teamDrainMult = Math.max(0.01, 1 - (teamBuffs.folego_mineiro || 0) / 100);
@@ -90,7 +87,7 @@ export function computeCombatMults(input: ComputeCombatMultsInput): CombatMults 
     speedMult: stackTeamBonusMult(mods.speedMult, teamBuffs.marcha_acelerada || 0) * (treeTempoDobrado ? 1.33333 : 1),
     gateAttackMult: stackTeamBonusMult(mods.gateAttackMult, teamBuffs.contra_relogio || 0),
     energyMult: treeGlassCannon ? 0.5 : 1,
-    critDmgMult: treeGlassCannon ? 2 : 1,
+    critDmgMult: treeGlassCannon && !treeAbisso ? 2 : 1,
     dmgMult: mods.dmgMult * (1 + extraDmgPct / 100),
   };
 }

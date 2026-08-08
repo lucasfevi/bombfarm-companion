@@ -30,6 +30,7 @@ export function farmFromAccount(input: GearPlanInput): FarmContext {
     mitigationPct: input.account.mitigationPct,
     treeGlassCannon: input.account.treeGlassCannon,
     treeTempoDobrado: input.account.treeTempoDobrado,
+    treeAbisso: input.account.treeAbisso,
   };
 }
 

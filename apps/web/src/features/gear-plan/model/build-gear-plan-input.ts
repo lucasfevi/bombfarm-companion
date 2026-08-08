@@ -25,6 +25,7 @@ export function buildGearPlanInputFromStore(state: PlannerStore): GearPlanInput 
       treeSheet,
       treeGlassCannon: state.treeGlassCannon,
       treeTempoDobrado: state.treeTempoDobrado,
+      treeAbisso: state.treeAbisso,
       houseIdx: state.houseIdx,
       houseLevel: state.houseLevel,
       phase: state.phase,

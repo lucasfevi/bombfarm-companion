@@ -119,7 +119,7 @@ export const en = {
     {
       h: "8 · What the app does not model",
       p: [
-        "Loot abilities (Lapidary Eye, Gold Vein), Hero Hunter, Ghost and Baton Pass are outside the DPS math. Ability crit bonuses apply as % of the base roll, per the Heroes page rule. Deadly Eye's keystone (+25% crit chance) is also deliberately unmodelled: no save in this app has reached its Stage-120 unlock yet, so it's unknown whether the exporter already folds that bonus into crit_chance_add — modelling it here risks double-counting if it does.",
+        "Loot abilities (Lapidary Eye, Gold Vein), Hero Hunter, Ghost and Baton Pass are outside the DPS math. Ability crit bonuses apply as % of the base roll, per the Heroes page rule. Glass Cannon’s +25% crit chance is not added again in combat — when Abisso is off it is already inside imported crit_chance_add; when Abisso is on the export zeroes Crit tree adds and combat ignores Glass Cannon’s ×2 crit while keeping energy ×0.5.",
         "If in-game damage still diverges from the model, check Team buffs in Account (another hero’s War Cry is a common ~20% / 40% gap).",
       ],
     },
@@ -249,7 +249,7 @@ export const pt: typeof en = {
     {
       h: "8 · O que o app não modela",
       p: [
-        "Habilidades de loot (Olho de Lapidador, Veia de Ouro), Caça-Hero, Fantasma e Passagem de Bastão ficam fora da conta de DPS. Bônus de crítico de habilidades entram como % do roll base, pela regra da página Heróis. O keystone Deadly Eye (+25% de chance de crítico) também é deliberadamente não modelado: nenhum save deste app chegou ainda ao desbloqueio da Fase 120, então não dá pra saber se o exportador já inclui esse bônus em crit_chance_add — modelar aqui arriscaria contar em dobro.",
+        "Habilidades de loot (Olho de Lapidador, Veia de Ouro), Caça-Hero, Fantasma e Passagem de Bastão ficam fora da conta de DPS. Bônus de crítico de habilidades entram como % do roll base, pela regra da página Heróis. Os +25% de chance de crítico do Glass Cannon não são somados de novo no combate — com Abisso desligado já vêm no crit_chance_add importado; com Abisso ligado o export zera os adds de Crítico da árvore e o combate ignora o ×2 de crítico do Glass Cannon, mantendo a energia ×0.5.",
         "Se o dano no jogo ainda divergir do modelo, confira Buffs de time em Conta (Grito de Guerra de outro herói é um gap comum de ~20% / 40%).",
       ],
     },

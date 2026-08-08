@@ -30,6 +30,7 @@ export function gearPlanInputFromFixture(file: string, forgeFloor = 10): GearPla
       treeSheet,
       treeGlassCannon: Boolean(account.tree?.glassCannon),
       treeTempoDobrado: Boolean(account.tree?.tempoDobrado),
+      treeAbisso: Boolean(account.tree?.abisso),
       houseIdx: account.houseIdx ?? 0,
       houseLevel: account.houseLevel ?? 1,
       phase: 1,

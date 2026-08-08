@@ -50,7 +50,7 @@ Imported heroes store their **fixed ability pool** in `abilities`, including **l
 | --- | --- | --- |
 | Numeric totals (`danoTotal`, `critChance`, `critDmg`, `speed`, `energy`, `teamCoinPct`) | identity / `0` | From save `skills.totals` via `mapAccountData` → `applyAccountImport` / `hydrateAccount`. **Account UI shows plain text** for these floats (not an input) so display chrome cannot mutate store precision — re-import to refresh. There are **no** per-field `setTree*` writers for them; only keystone toggles remain editable in the panel. |
 | `luckFlatPct` | `0` | From save `skills.totals.luck_add × 100` — flat Luck percentage points added after gear/points (`AD-BSP-22`, `ASM-01`). Populated by `mapAccountData` (`import-save.ts`) and threaded into `computeAdvisorPipeline`'s `treeSheet.luckFlatPct` (Wave 5, `BSPW5-03`). Pre-Wave-5 records load with `0` via `normalizeAccount`'s default spread; the key stays `bf-hp-account-v1` (additive, rule 6). Import-sourced only — no Account UI field yet (`CARRY-05`, Wave 6). |
-| `glassCannon` / `tempoDobrado` | `false` | Import-sourced defaults; **Account UI keeps Switch toggles** for what-if. |
+| `glassCannon` / `tempoDobrado` / `abisso` | `false` | Import-sourced defaults; **Account UI keeps Switch toggles** for what-if. Abisso cancels tree Crit/GEO sheet adds and Glass Cannon’s crit ×2 while leaving energy ×0.5. |
 
 ### HeroContext fields (behavior change on `-v1`)
 

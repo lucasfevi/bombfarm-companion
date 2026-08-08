@@ -71,6 +71,7 @@ export {
   applySkillTree,
   composeSheetFromBirth,
   sheetsFromBirth,
+  effectiveTreeSheetForAbisso,
 } from '../birth-sheet';
 
 export type { SourceLines, SheetSourceLines, PeelSheetSourcesInput } from '../sheet-peel';

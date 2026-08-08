@@ -40,6 +40,7 @@ function pipelineForHero(
     treeEnergy: account.tree.energy,
     treeGlassCannon: account.tree.glassCannon,
     treeTempoDobrado: account.tree.tempoDobrado,
+    treeAbisso: account.tree.abisso ?? false,
     treeLuckFlatPct: account.tree.luckFlatPct ?? 0,
     teamBuffs: account.teamBuffs,
     houseIdx: context.houseIdx,

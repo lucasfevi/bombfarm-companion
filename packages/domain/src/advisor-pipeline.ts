@@ -61,6 +61,8 @@ export type AdvisorPipelineInput = {
   treeEnergy: number;
   treeGlassCannon: boolean;
   treeTempoDobrado: boolean;
+  /** Abisso — suppresses Glass Cannon crit ×2 and Crit tree sheet adds. */
+  treeAbisso?: boolean;
   /** `skills.totals.luck_add × 100` — flat Luck percentage points (BSPW5-03, ASM-01). */
   treeLuckFlatPct: number;
   teamBuffs: Record<TeamBuffId, number>;
@@ -144,6 +146,7 @@ export function computeAdvisorPipeline(input: AdvisorPipelineInput): AdvisorPipe
     treeEnergy,
     treeGlassCannon,
     treeTempoDobrado,
+    treeAbisso = false,
     treeLuckFlatPct,
     teamBuffs,
     houseIdx,
@@ -180,6 +183,7 @@ export function computeAdvisorPipeline(input: AdvisorPipelineInput): AdvisorPipe
     treeSpeed,
     treeEnergy,
     treeLuckFlatPct,
+    treeAbisso,
     birth,
   });
 
@@ -188,6 +192,7 @@ export function computeAdvisorPipeline(input: AdvisorPipelineInput): AdvisorPipe
     teamBuffs,
     treeGlassCannon,
     treeTempoDobrado,
+    treeAbisso,
     extraDmgPct: 0,
   });
   const {
