@@ -2,6 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { FORJA_MAX } from '@bombfarm/domain/gear';
 import type { InventoryItem } from '@bombfarm/domain/inventory';
 import { attachInventoryPersistence } from '@/shared/stores/persistence/persist-inventory';
+import { attachGearPlanScopePersistence } from '@/shared/stores/persistence/persist-gear-plan-scope';
 import { AUTOSAVE_MS } from '@/shared/stores/persistence/debounced-writer';
 import { hydratePlannerStore } from '@/shared/stores/hydrate-planner-store';
 import { selectGearPlanIsStale } from '@/shared/stores/selectors/gear-plan-selectors';
@@ -9,6 +10,7 @@ import { selectLiveGearPlanInputSignature } from '@/shared/stores/slices/gear-pl
 import { buildDefaultScopeMap } from '@/shared/stores/gear-plan/types';
 import { resetPlannerStoreForTests, usePlannerStore } from '@/shared/stores';
 import { INVENTORY_KEY } from '@/shared/lib/inventory-storage';
+import { GEAR_PLAN_SCOPE_KEY } from '@/shared/lib/gear-plan-scope-storage';
 
 function memoryLocalStorage() {
   const store = new Map<string, string>();
@@ -151,6 +153,21 @@ describe('gear-plan slice', () => {
     expect(usePlannerStore.getState().scopeByHeroId.a).toBe('leaveAlone');
   });
 
+  it('hydrateScope merges persisted choices over the battleAllowed defaults', () => {
+    usePlannerStore.getState().hydrateRoster([hero('a'), hero('b'), hero('c', false)], 'a');
+    usePlannerStore.getState().hydrateInventory({ version: 1, importedAt: 0, items: [] }, 10);
+    usePlannerStore.getState().hydrateScope({ a: 'donate', b: 'leaveAlone' });
+    const state = usePlannerStore.getState();
+    expect(state.scopeByHeroId).toEqual({ a: 'donate', b: 'leaveAlone', c: 'donate' });
+  });
+
+  it('hydrateScope ignores persisted entries for heroes no longer on the roster', () => {
+    usePlannerStore.getState().hydrateRoster([hero('a')], 'a');
+    usePlannerStore.getState().hydrateInventory({ version: 1, importedAt: 0, items: [] }, 10);
+    usePlannerStore.getState().hydrateScope({ a: 'leaveAlone', ghost: 'donate' });
+    expect(usePlannerStore.getState().scopeByHeroId).toEqual({ a: 'leaveAlone' });
+  });
+
   it('setForgeFloor clamps to 0…FORJA_MAX', () => {
     usePlannerStore.getState().setForgeFloor(99);
     expect(usePlannerStore.getState().forgeFloor).toBe(FORJA_MAX);
@@ -257,5 +274,33 @@ describe('gear-plan slice', () => {
     usePlannerStore.getState().replaceInventoryFromImport([sampleItem]);
     vi.advanceTimersByTime(AUTOSAVE_MS);
     expect(localStorage.getItem(INVENTORY_KEY)).toBeNull();
+  });
+
+  it('gear-plan scope persists after boot and debounce', () => {
+    usePlannerStore.getState().hydrateRoster([hero('a')], 'a');
+    const detach = attachGearPlanScopePersistence(usePlannerStore);
+    usePlannerStore.getState().setBooted(true);
+    usePlannerStore.getState().setScope('a', 'leaveAlone');
+    vi.advanceTimersByTime(AUTOSAVE_MS);
+    expect(JSON.parse(localStorage.getItem(GEAR_PLAN_SCOPE_KEY) ?? '{}')).toEqual({
+      a: 'leaveAlone',
+    });
+    detach();
+  });
+
+  it('gear-plan scope persistence does not write before boot', () => {
+    usePlannerStore.getState().hydrateRoster([hero('a')], 'a');
+    attachGearPlanScopePersistence(usePlannerStore);
+    usePlannerStore.getState().setScope('a', 'leaveAlone');
+    vi.advanceTimersByTime(AUTOSAVE_MS);
+    expect(localStorage.getItem(GEAR_PLAN_SCOPE_KEY)).toBeNull();
+  });
+
+  it('a reload restores a scope choice made before the previous reload', () => {
+    localStorage.setItem('bf-hp-heroes-v1', JSON.stringify([hero('a')]));
+    localStorage.setItem('bf-hp-active-hero-v1', JSON.stringify('a'));
+    localStorage.setItem(GEAR_PLAN_SCOPE_KEY, JSON.stringify({ a: 'leaveAlone' }));
+    hydratePlannerStore();
+    expect(usePlannerStore.getState().scopeByHeroId.a).toBe('leaveAlone');
   });
 });

@@ -27,6 +27,7 @@ export type GearPlanSlice = {
   planInputSignature: string | null;
 
   hydrateInventory: (snapshot: InventorySnapshot, forgeFloor: number) => void;
+  hydrateScope: (persisted: Record<string, ScopeState>) => void;
   replaceInventoryFromImport: (items: InventoryItem[]) => void;
   setScope: (heroId: string, scope: ScopeState) => void;
   setForgeFloor: (value: number) => void;
@@ -74,6 +75,19 @@ export const createGearPlanSlice: StateCreator<
       runStatus: 'idle',
       runId: null,
     });
+  },
+
+  // Merges persisted scope choices over the battleAllowed-derived defaults, for heroes still on
+  // the roster. Runs once at boot, after `hydrateInventory` has already set the defaults — without
+  // this, a page reload silently forgot every Donate/Leave alone choice.
+  hydrateScope: (persisted) => {
+    const heroes = get().heroes;
+    const merged = buildDefaultScopeMap(heroes);
+    for (const hero of heroes) {
+      const stored = persisted[hero.id];
+      if (stored) merged[hero.id] = stored;
+    }
+    set({ scopeByHeroId: merged });
   },
 
   replaceInventoryFromImport: (items) => {
