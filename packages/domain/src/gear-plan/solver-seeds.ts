@@ -1,27 +1,12 @@
 import { scaledValores, SLOTS } from '../gear/catalog';
 import type { InventoryItem } from '../inventory';
-import { eligibleForHero, effectiveUpgrade } from './pool';
+import { eligibleForHero, poolEntryForItem } from './pool';
 import {
   applyMove,
   cloneAssignment,
   type AssignmentState,
 } from './solver-assignment';
-import type { GearPlanInput, HeroPlanContext, PoolEntry, RosterEvaluation } from './types';
-
-function poolEntryForItem(item: InventoryItem, forgeFloor: number): PoolEntry {
-  const eff = effectiveUpgrade(item.upgrade, forgeFloor);
-  return {
-    key: `${item.defId}|${item.rarityIdx}|${item.level}|${eff}`,
-    defId: item.defId,
-    rarityIdx: item.rarityIdx,
-    level: item.level,
-    upgrade: item.upgrade,
-    effectiveUpgrade: eff,
-    slot: item.slot ?? '',
-    count: 1,
-    itemIds: [item.id],
-  };
-}
+import type { GearPlanInput, HeroPlanContext, RosterEvaluation } from './types';
 
 function itemValue(item: InventoryItem): number {
   return scaledValores(item.defId, item.rarityIdx, item.level, item.upgrade)

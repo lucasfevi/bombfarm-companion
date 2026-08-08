@@ -1,8 +1,8 @@
 import { SLOTS } from '../gear/catalog';
 import type { EquippedItem, Loadout } from '../gear/types';
 import type { InventoryItem } from '../inventory';
-import { eligibleForHero, effectiveUpgrade } from './pool';
-import type { GearPool, HeroPlanContext, PoolEntry } from './types';
+import { eligibleForHero, poolEntryForItem } from './pool';
+import type { GearPool, HeroPlanContext } from './types';
 
 export type AssignmentState = {
   /** optimize-hero slot → equipped item id (or empty). */
@@ -15,21 +15,6 @@ export type GearMove =
   | { kind: 'assign'; itemId: string; heroId: string; slot: string }
   | { kind: 'swap'; heroA: string; heroB: string; slot: string; itemA: string; itemB: string }
   | { kind: 'unassign'; itemId: string; heroId: string; slot: string };
-
-function poolEntryForItem(item: InventoryItem, forgeFloor: number): PoolEntry {
-  const eff = effectiveUpgrade(item.upgrade, forgeFloor);
-  return {
-    key: `${item.defId}|${item.rarityIdx}|${item.level}|${eff}`,
-    defId: item.defId,
-    rarityIdx: item.rarityIdx,
-    level: item.level,
-    upgrade: item.upgrade,
-    effectiveUpgrade: eff,
-    slot: item.slot ?? '',
-    count: 1,
-    itemIds: [item.id],
-  };
-}
 
 export function itemToEquipped(item: InventoryItem): EquippedItem {
   return {

@@ -35,6 +35,7 @@ export {
   clampForgeFloor,
   effectiveUpgrade,
   eligibleForHero,
+  poolEntryForItem,
 } from './pool';
 export { createScoreMemo, scoreHeroLoadout, type ScoreMemo } from './score';
 export {

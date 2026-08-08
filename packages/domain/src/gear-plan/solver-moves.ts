@@ -1,8 +1,8 @@
 import { SLOTS } from '../gear/catalog';
 import type { InventoryItem } from '../inventory';
-import { eligibleForHero, effectiveUpgrade } from './pool';
+import { eligibleForHero, poolEntryForItem } from './pool';
 import type { GearMove } from './solver-assignment';
-import type { HeroPlanContext, PoolEntry } from './types';
+import type { HeroPlanContext } from './types';
 
 export type GenerateMovesInput = {
   contexts: HeroPlanContext[];
@@ -14,21 +14,6 @@ export type GenerateMovesInput = {
 };
 
 export type AssignmentSlots = Record<string, Record<string, string | null>>;
-
-function poolEntryForItem(item: InventoryItem, forgeFloor: number): PoolEntry {
-  const eff = effectiveUpgrade(item.upgrade, forgeFloor);
-  return {
-    key: `${item.defId}|${item.rarityIdx}|${item.level}|${eff}`,
-    defId: item.defId,
-    rarityIdx: item.rarityIdx,
-    level: item.level,
-    upgrade: item.upgrade,
-    effectiveUpgrade: eff,
-    slot: item.slot ?? '',
-    count: 1,
-    itemIds: [item.id],
-  };
-}
 
 function slotIndex(slot: string): number {
   const index = SLOTS.indexOf(slot);

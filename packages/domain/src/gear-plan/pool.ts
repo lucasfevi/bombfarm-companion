@@ -1,4 +1,5 @@
 import { FORJA_MAX } from '../gear/catalog';
+import type { InventoryItem } from '../inventory';
 import type { BuildPoolInput, GearPool, HeroPlanContext, PoolEntry, ScopeState } from './types';
 
 const DEFAULT_FORGE_FLOOR = 10;
@@ -16,6 +17,23 @@ export function effectiveUpgrade(upgrade: number, forgeFloor: number): number {
 
 function poolKey(defId: string, rarityIdx: number, level: number, effectiveUp: number): string {
   return `${defId}|${rarityIdx}|${level}|${effectiveUp}`;
+}
+
+/** A single item's own `PoolEntry` shape — the same tuple `buildPool` groups by, for callers
+ * that need to eligibility-check or key one item at a time (assign/swap/seed move generation). */
+export function poolEntryForItem(item: InventoryItem, forgeFloor: number): PoolEntry {
+  const eff = effectiveUpgrade(item.upgrade, forgeFloor);
+  return {
+    key: poolKey(item.defId, item.rarityIdx, item.level, eff),
+    defId: item.defId,
+    rarityIdx: item.rarityIdx,
+    level: item.level,
+    upgrade: item.upgrade,
+    effectiveUpgrade: eff,
+    slot: item.slot ?? '',
+    count: 1,
+    itemIds: [item.id],
+  };
 }
 
 function ownerScope(scopeByHeroId: Record<string, ScopeState>, ownerId: string | null): ScopeState | null {

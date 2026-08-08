@@ -4,7 +4,7 @@ import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 import { SLOTS } from '@bombfarm/domain/gear';
 import { buildHeroPlanContexts } from '@bombfarm/domain/gear-plan/hero-context';
-import { buildPool, eligibleForHero } from '@bombfarm/domain/gear-plan/pool';
+import { buildPool, eligibleForHero, poolEntryForItem } from '@bombfarm/domain/gear-plan/pool';
 import {
   applyMove,
   buildInitialAssignment,
@@ -13,24 +13,6 @@ import {
 import { generateMoves } from '@bombfarm/domain/gear-plan/solver-moves';
 import type { GearPlanInput, HeroPlanContext } from '@bombfarm/domain/gear-plan/types';
 import { gearPlanInputFromFixture } from './helpers/gear-plan-fixtures';
-
-function poolEntryFromItem(
-  item: GearPlanInput['inventory'][number],
-  forgeFloor: number,
-) {
-  const eff = Math.min(15, Math.max(item.upgrade, forgeFloor));
-  return {
-    key: `${item.defId}|${item.rarityIdx}|${item.level}|${eff}`,
-    defId: item.defId,
-    rarityIdx: item.rarityIdx,
-    level: item.level,
-    upgrade: item.upgrade,
-    effectiveUpgrade: eff,
-    slot: item.slot ?? '',
-    count: 1,
-    itemIds: [item.id],
-  };
-}
 
 function assertMoveConstraints(
   state: AssignmentState,
@@ -45,7 +27,7 @@ function assertMoveConstraints(
     const item = itemById.get(move.itemId);
     expect(ctx).toBeDefined();
     expect(item).toBeDefined();
-    expect(eligibleForHero(poolEntryFromItem(item!, forgeFloor), ctx!, move.slot)).toBe(true);
+    expect(eligibleForHero(poolEntryForItem(item!, forgeFloor), ctx!, move.slot)).toBe(true);
     expect(state.pool.has(move.itemId)).toBe(true);
   }
   if (move.kind === 'unassign') {
