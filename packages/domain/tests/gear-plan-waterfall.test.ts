@@ -175,11 +175,20 @@ describe('buildWaterfall', () => {
     }
   });
 
-  it('permits a listed point reset with a negative gainPct (roster gains, hero personally loses)', () => {
-    // Found empirically on this fixture (floor 10, slots 9, hero 37446, gainPct ~ -1.02%):
-    // acceptPointResets accepts against the ROSTER objective, not each hero's own `sustained`.
-    // A reset that slightly lowers one hero's own DPS can still raise the roster total through
-    // duty/aura crosstalk, and the old `after <= before` filter would have wrongly dropped it.
+  // Was found empirically on this fixture (floor 10, slots 9, hero 37446, gainPct ~ -1.02%).
+  // generateMoves' swap family (solver-moves.ts) used to hand out items without rechecking
+  // level eligibility on the item's NEW hero — only assign-from-pool moves were checked. That
+  // let an over-level item reach an under-level hero via a swap, which is not a legal move in
+  // the game and apparently was a contributing path to reaching this negative-gainPct case on
+  // this fixture/config. With the swap eligibility check fixed, a scan of both fixtures across
+  // 43 floor/slots combos (including this exact one) no longer reproduces a negative gainPct
+  // row. The underlying invariant this test wants — acceptPointResets accepts against the
+  // ROSTER objective, not each hero's own `sustained`, so a personally-losing reset MAY still be
+  // kept — is unchanged in the code and still covered by 'every listed point reset is
+  // roster-justified' above. Skipped rather than deleted: re-enable if a fresh empirical example
+  // turns up, or replace with a synthetic scenario that engineers the duty/aura crosstalk
+  // directly (needs ability-driven aura modelling, not attempted here).
+  it.skip('permits a listed point reset with a negative gainPct (roster gains, hero personally loses)', () => {
     const { plan } = waterfallFromFixture('save-20260801-crit-dmg-tree.json', 10, 9);
     const negativeRow = plan.pointResets.find((reset) => reset.gainPct < 0);
     expect(negativeRow).toBeDefined();

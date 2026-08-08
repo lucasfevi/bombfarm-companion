@@ -99,6 +99,13 @@ export function generateMoves(input: GenerateMovesInput): GearMove[] {
         const itemA = slotsA[slot];
         const itemB = slotsB[slot];
         if (!itemA || !itemB || itemA === itemB) continue;
+        const objA = input.itemById.get(itemA);
+        const objB = input.itemById.get(itemB);
+        if (!objA || !objB) continue;
+        // Swapping crosses ownership — recheck level eligibility for each item on its NEW hero,
+        // not just its current one (an item eligible for its owner can be over-level for the peer).
+        if (!eligibleForHero(poolEntryForItem(objA, input.forgeFloor), heroB, slot)) continue;
+        if (!eligibleForHero(poolEntryForItem(objB, input.forgeFloor), heroA, slot)) continue;
         const primary = heroA;
         moves.push({
           move: { kind: 'swap', heroA: heroA.heroId, heroB: heroB.heroId, slot, itemA, itemB },

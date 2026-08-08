@@ -207,6 +207,65 @@ describe('generateMoves', () => {
     expect(moves.length).toBeGreaterThan(0);
   });
 
+  it('does not propose a swap that hands an over-level item to the lower-level hero', () => {
+    // hero-low (L82) holds a level-70 ring; hero-high (L90) holds a level-90 amulet.
+    // Swapping their `anel` slots would leave the level-90 amulet on hero-low — illegal.
+    const contexts = [
+      { heroId: 'hero-low', name: 'Low', level: 82, scope: 'optimize' },
+      { heroId: 'hero-high', name: 'High', level: 90, scope: 'optimize' },
+    ] as unknown as HeroPlanContext[];
+
+    const itemById = new Map<string, GearPlanInput['inventory'][number]>([
+      [
+        'ring-70',
+        {
+          id: 'ring-70',
+          defId: 'ring_def',
+          rarityIdx: 0,
+          level: 70,
+          upgrade: 0,
+          slot: 'anel',
+          equipped: true,
+          equippedBy: 'hero-low',
+          defResolved: true,
+          marketBlocked: false,
+        } as GearPlanInput['inventory'][number],
+      ],
+      [
+        'amulet-90',
+        {
+          id: 'amulet-90',
+          defId: 'amulet_def',
+          rarityIdx: 0,
+          level: 90,
+          upgrade: 0,
+          slot: 'anel',
+          equipped: true,
+          equippedBy: 'hero-high',
+          defResolved: true,
+          marketBlocked: false,
+        } as GearPlanInput['inventory'][number],
+      ],
+    ]);
+
+    const slots = {
+      'hero-low': { ...Object.fromEntries(SLOTS.map((s) => [s, null])), anel: 'ring-70' },
+      'hero-high': { ...Object.fromEntries(SLOTS.map((s) => [s, null])), anel: 'amulet-90' },
+    };
+
+    const moves = generateMoves({
+      contexts,
+      slots,
+      pool: new Set(),
+      itemById,
+      heroDpsById: { 'hero-low': 1, 'hero-high': 1 },
+      forgeFloor: 0,
+    });
+
+    const swaps = moves.filter((m) => m.kind === 'swap');
+    expect(swaps).toHaveLength(0);
+  });
+
   it('applyMove assign displaces the incumbent to the pool', () => {
     const state: AssignmentState = {
       slots: { h1: Object.fromEntries(SLOTS.map((s) => [s, s === 'arma' ? 'old' : null])) },
