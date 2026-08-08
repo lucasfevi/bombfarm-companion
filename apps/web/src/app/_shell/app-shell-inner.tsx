@@ -23,6 +23,8 @@ export function AppShellInner({
 }) {
   const pathname = usePathname();
   const onPhases = pathname.startsWith('/phases');
+  const onTeamPlan = pathname.startsWith('/team-plan');
+  const onSectionPage = onPhases || onTeamPlan;
   const { lang, setLang, t } = useAppLang();
   const importDialogOpen = usePlannerStore((state) => state.importDialogOpen);
   const setImportDialogOpen = usePlannerStore((state) => state.setImportDialogOpen);
@@ -80,9 +82,9 @@ export function AppShellInner({
       <SiteHeader
         t={t}
         lang={lang}
-        showGuide={onPhases ? undefined : showGuide}
+        showGuide={onSectionPage ? undefined : showGuide}
         onImport={openImportDialog}
-        onToggleGuide={onPhases ? undefined : toggleGuide}
+        onToggleGuide={onSectionPage ? undefined : toggleGuide}
         onLangChange={setLang}
       />
 
@@ -95,11 +97,11 @@ export function AppShellInner({
         onImported={handleImported}
       />
 
-      {!onPhases && showGuide ? <GuideSection t={t} onHide={() => toggleGuide(false)} /> : null}
+      {!onSectionPage && showGuide ? <GuideSection t={t} onHide={() => toggleGuide(false)} /> : null}
 
       <div className={workspaceShellClass}>
-        {onPhases ? children : null}
-        <div hidden={onPhases} aria-hidden={onPhases} inert={onPhases ? true : undefined}>
+        {onSectionPage ? children : null}
+        <div hidden={onSectionPage} aria-hidden={onSectionPage} inert={onSectionPage ? true : undefined}>
           {planner}
         </div>
       </div>

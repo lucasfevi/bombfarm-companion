@@ -1,4 +1,5 @@
 import { computeAdvisorPipeline } from './advisor-pipeline';
+import { DEFAULT_CASA_SLOTS } from './casa-slots';
 import { computeHeroPhaseFit } from './phase-intel';
 import type { HeroRecord, AccountShared } from './shims/storage';
 
@@ -39,6 +40,7 @@ function pipelineForHero(
     treeEnergy: account.tree.energy,
     treeGlassCannon: account.tree.glassCannon,
     treeTempoDobrado: account.tree.tempoDobrado,
+    treeAbisso: account.tree.abisso ?? false,
     treeLuckFlatPct: account.tree.luckFlatPct ?? 0,
     teamBuffs: account.teamBuffs,
     houseIdx: context.houseIdx,
@@ -61,15 +63,17 @@ export function computeHeroSoloDps(
   return pipelineForHero(hero, account, phase, mitigationPct).dps;
 }
 
-/** Top N heroes by solo DPS (default 9). */
-export function rankRosterByDps(input: RosterDpsInput, limit = 9): RosterDpsRow[] {
+/** Top heroes by solo DPS — an omitted `limit` falls back to `account.slots`, then {@link DEFAULT_CASA_SLOTS}. */
+export function rankRosterByDps(input: RosterDpsInput, limit?: number): RosterDpsRow[] {
+  const effectiveLimit = limit ?? input.account.slots ?? DEFAULT_CASA_SLOTS;
+  const clampedLimit = Number.isFinite(effectiveLimit) && effectiveLimit >= 1 ? Math.round(effectiveLimit) : 1;
   const rows = input.heroes.map((hero) => ({
     heroId: hero.id,
     heroName: hero.name,
     dps: computeHeroSoloDps(hero, input.account, input.phase, input.mitigationPct),
   }));
   rows.sort((left, right) => right.dps - left.dps);
-  return rows.slice(0, limit);
+  return rows.slice(0, clampedLimit);
 }
 
 export function sumTopDps(rows: RosterDpsRow[]): number {

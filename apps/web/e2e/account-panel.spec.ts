@@ -101,7 +101,7 @@ test.describe('account panel chrome', () => {
     await expect(treeRows).toHaveCount(6);
     await expect(treeRows.locator('[data-num]')).toHaveCount(0);
     await expect(treeRows.locator('input')).toHaveCount(0);
-    await expect(account.locator('[data-keystone-control]')).toHaveCount(2);
+    await expect(account.locator('[data-keystone-control]')).toHaveCount(3);
   });
 
   test('PT: Conta panel has no Da conta chip; no obrigatório at tree ×1', async ({ page }) => {

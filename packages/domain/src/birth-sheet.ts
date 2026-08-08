@@ -41,14 +41,26 @@ export type TreeSheetTotals = {
   /** `luck_add × 100` — FLAT percentage points, added after gear and points (AD-BSP-22). */
   luckFlatPct: number;
   /**
-   * `crit_dmg_mult` — 1.0 in every export today; unexercised. Not consumed by
-   * {@link applySkillTree} (DEC-08 keeps the Glass Cannon combat-path multiplier, a
-   * different mechanic, exactly as-is in `derive.ts`/`computeCombatMults`). Carried here
-   * only so `tree-guards.ts`'s `unmodelledTreeFindings` has a single typed home to check
-   * against — see `BSPW4-13`.
+   * `crit_dmg_mult` from the export. Glass Cannon’s live combat ×2 is applied in
+   * `computeCombatMults` (and suppressed when Abisso is on). The exporter may leave
+   * `crit_dmg_mult: 2` even under Abisso while zeroing crit sheet adds — do not treat
+   * this field as the combat multiplier. Not consumed by {@link applySkillTree}.
    */
   critDmgMult: number;
 };
+
+/**
+ * Abisso (D15) zeroes tree Crit-arm sheet adds (`crit_chance_add` / `crit_dmg_add`) in the
+ * live exporter. Apply the same gate for Account what-if when Abisso is toggled on after an
+ * import that still carries non-zero crit tree totals.
+ */
+export function effectiveTreeSheetForAbisso(
+  tree: TreeSheetTotals,
+  abisso: boolean,
+): TreeSheetTotals {
+  if (!abisso) return tree;
+  return { ...tree, critChancePct: 0, critDmgPct: 0 };
+}
 
 /** `1 + max(0, percent)` — the shared-pool clamp already used by `gear/apply.ts`. */
 function poolFactor(percent: number): number {

@@ -73,8 +73,10 @@ describe('account form UX chrome (AFU-10/11)', () => {
 
   it('keystone hints avoid abbreviated EN tokens (AFU-11)', () => {
     const en = STRINGS.en;
-    expect(en.treeGlassCannonHint).toBe('critical damage ×2 · energy ×0.5');
+    expect(en.treeGlassCannonHint).toBe('critical damage ×2 (off under Abisso) · energy ×0.5');
     expect(en.treeTempoDobradoHint).toBe('attack pace ×1.333 · energy drain ×2');
+    expect(en.treeAbisso).toBe('Abisso');
+    expect(en.treeAbissoHint).toMatch(/Glass Cannon/i);
     expect(en.treeGlassCannonHint).not.toMatch(/\bcrit dmg\b/i);
     expect(en.treeTempoDobradoHint).not.toMatch(/(^| · )pace\b/);
     expect(en.treeTempoDobradoHint).not.toMatch(/(^| · )drain\b/);

@@ -110,15 +110,19 @@ test.describe('account house fields and keystone toggles (AHK)', () => {
 
     const account = accountPanel(page);
     await expect(account.getByRole('checkbox')).toHaveCount(0);
-    await expect(account.locator('[data-switch]')).toHaveCount(2);
+    await expect(account.locator('[data-switch]')).toHaveCount(3);
 
-    const glass = account.getByRole('switch', { name: /Glass Cannon/i });
+    const glass = account.getByRole('switch', { name: /^Glass Cannon/i });
     await glass.scrollIntoViewIfNeeded();
     await expect(glass).toHaveAttribute('aria-checked', 'false');
-    await expect(account.locator('[data-keystone-control]').first()).toContainText('Não');
+    await expect(glass.locator('xpath=ancestor::label[1]//div[@data-keystone-control]')).toContainText(
+      'Não',
+    );
     await glass.click();
     await expect(glass).toHaveAttribute('aria-checked', 'true');
-    await expect(account.locator('[data-keystone-control]').first()).toContainText('Sim');
+    await expect(glass.locator('xpath=ancestor::label[1]//div[@data-keystone-control]')).toContainText(
+      'Sim',
+    );
 
     const tempo = account.getByRole('switch', { name: /Tempo Dobrado/i });
     await tempo.scrollIntoViewIfNeeded();
@@ -149,10 +153,12 @@ test.describe('account house fields and keystone toggles (AHK)', () => {
     await expect(account.getByRole('heading', { name: /^House$/i, level: 3 })).toBeVisible();
     await expect(account.getByText(restHint('en', 2, 6))).toBeVisible();
 
-    const glass = account.getByRole('switch', { name: /Glass Cannon/i });
+    const glass = account.getByRole('switch', { name: /^Glass Cannon/i });
     await glass.scrollIntoViewIfNeeded();
     await expect(glass).toHaveAttribute('aria-checked', 'false');
-    await expect(account.locator('[data-keystone-control]').first()).toContainText('Off');
+    await expect(glass.locator('xpath=ancestor::label[1]//div[@data-keystone-control]')).toContainText(
+      'Off',
+    );
 
     const houseBlock = account.locator('div').filter({
       has: page.getByRole('heading', { name: /^House$/i, level: 3 }),

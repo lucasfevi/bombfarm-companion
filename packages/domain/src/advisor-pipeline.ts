@@ -1,6 +1,5 @@
 import {
   abilityMods,
-  houseRestSeconds,
   rankNextPoint,
   energySwitchPoint,
   mitigationFactor,
@@ -22,8 +21,7 @@ import {
   effectiveFarmPhase,
   effectiveMitigationPct,
   effectiveTargetProp,
-  FARM_CYCLE_MODEL,
-  FARM_WALK_DELAY_SEC,
+  farmContextForHero,
 } from './farm-context';
 import { PROPS, BOSS_HP_MULT, phaseLine, propHp, hitsToKill, weightedAvgPropHp } from './phases';
 import {
@@ -63,6 +61,8 @@ export type AdvisorPipelineInput = {
   treeEnergy: number;
   treeGlassCannon: boolean;
   treeTempoDobrado: boolean;
+  /** Abisso — suppresses Glass Cannon crit ×2 and Crit tree sheet adds. */
+  treeAbisso?: boolean;
   /** `skills.totals.luck_add × 100` — flat Luck percentage points (BSPW5-03, ASM-01). */
   treeLuckFlatPct: number;
   teamBuffs: Record<TeamBuffId, number>;
@@ -146,6 +146,7 @@ export function computeAdvisorPipeline(input: AdvisorPipelineInput): AdvisorPipe
     treeEnergy,
     treeGlassCannon,
     treeTempoDobrado,
+    treeAbisso = false,
     treeLuckFlatPct,
     teamBuffs,
     houseIdx,
@@ -182,6 +183,7 @@ export function computeAdvisorPipeline(input: AdvisorPipelineInput): AdvisorPipe
     treeSpeed,
     treeEnergy,
     treeLuckFlatPct,
+    treeAbisso,
     birth,
   });
 
@@ -190,6 +192,7 @@ export function computeAdvisorPipeline(input: AdvisorPipelineInput): AdvisorPipe
     teamBuffs,
     treeGlassCannon,
     treeTempoDobrado,
+    treeAbisso,
     extraDmgPct: 0,
   });
   const {
@@ -203,15 +206,16 @@ export function computeAdvisorPipeline(input: AdvisorPipelineInput): AdvisorPipe
     dmgMult,
   } = mults;
 
-  const rest = houseRestSeconds(houseIdx, houseLevel);
-  const context: Context = {
-    restSeconds: rest,
-    mitigation: mitPct / 100,
-    blastRange: 1 + mods.rangeCells,
-    cycleModel: FARM_CYCLE_MODEL,
-    walkDelay: FARM_WALK_DELAY_SEC,
-    drainMult: mods.drainMult * teamDrainMult * (treeTempoDobrado ? 2 : 1),
-  };
+  const context = farmContextForHero({
+    mods,
+    teamDrainMult,
+    treeTempoDobrado,
+    houseIdx,
+    houseLevel,
+    mitigationPct: mitPct,
+    phase,
+  });
+  const rest = context.restSeconds;
 
   const deriveArgs = {
     naked: nakedForDerive,

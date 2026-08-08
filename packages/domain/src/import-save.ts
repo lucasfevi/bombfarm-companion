@@ -4,6 +4,8 @@
 // so a save file from any account — not just the one used to build this — works.
 
 import catalog from './data/catalog.json';
+import { resolveCasaSlots } from './casa-slots';
+import { mapInventoryItem, type InventoryItem } from './inventory';
 import { ABILITIES, RarityKey, abilityMods } from './model';
 import { EquippedItem, Loadout, emptyLoadout, emptySheetOther } from './gear';
 import { ZERO_PTS, type SheetKey } from './planner-constants';
@@ -53,12 +55,16 @@ export type AccountImportData = {
     energy: number;
     glassCannon: boolean;
     tempoDobrado: boolean;
+    /** Abisso (D15) — cancels Crit/GEO sheet adds and Glass Cannon crit ×2. */
+    abisso: boolean;
     teamCoinPct?: number;
     /** `luck_add × 100` — flat percentage points (AD-BSP-22, ASM-01, BSPW5-03). */
     luckFlatPct: number;
   } | null;
   houseIdx: number | null;
   houseLevel: number | null;
+  /** Casa field slots from the save (`casa.slots` ladder) when `casa` is present. */
+  slots?: number | null;
 };
 
 /**
@@ -75,6 +81,7 @@ export type ParseResult = {
   candidates: ImportCandidate[];
   warnings: string[];
   account: AccountImportData;
+  inventory: InventoryItem[];
   rejected: ParseRejection | null;
 };
 
@@ -98,13 +105,14 @@ function bool(value: unknown, fallback = false): boolean {
  * Maps `skills.totals` (skill-tree aggregate bonuses) and `casa` (current house)
  * into the app's account-wide TreeState/HeroContext shape.
  *
- * `danoTotal` and the two keystone flags are best-effort: `dmg_static` matches
- * `(1 + team_dmg_add) * geo_mult` almost exactly in every save sampled so far,
- * which is why it's used directly as the in-game "Total damage x" figure —
- * worth double-checking against the tree screen once. Glass Cannon is detected
- * from `crit_dmg_mult` (a direct mechanical signal); Tempo Dobrado has no such
- * signal and only lights up if `keystones` contains an id we recognize, so it
- * defaults to off (safe: the user can still tick it manually).
+ * `danoTotal` and the keystone flags are best-effort: `dmg_static` matches
+ * `(1 + team_dmg_add) * geo_mult` almost exactly in every save sampled so far
+ * (and already includes Abisso geometric damage when D15 is owned). Glass Cannon
+ * is detected from `crit_dmg_mult` (a direct mechanical signal — still `2` under
+ * Abisso even though combat must ignore ×2). Abisso is `abisso_base > 0` or
+ * `keystones` contains `d15`. Tempo Dobrado has no numeric signal and only lights
+ * up if `keystones` contains an id we recognize, so it defaults to off (safe: the
+ * user can still tick it manually).
  */
 function mapAccountData(raw: Record<string, unknown>): AccountImportData {
   const skills = isObject(raw.skills) ? raw.skills : null;
@@ -121,8 +129,9 @@ function mapAccountData(raw: Record<string, unknown>): AccountImportData {
       critDmg: asNumber(totals.crit_dmg_add) * 100,
       speed: asNumber(totals.speed_add) * 100,
       energy: asNumber(totals.energia_add) * 100,
-      glassCannon: asNumber(totals.crit_dmg_mult, 1) >= 1.5,
+      glassCannon: asNumber(totals.crit_dmg_mult, 1) >= 1.5 || keystones.some((k) => k === 'c15'),
       tempoDobrado: keystones.some((keystone) => keystone.includes('tempo') || keystone === 'v15'),
+      abisso: asNumber(totals.abisso_base) > 0 || keystones.some((k) => k === 'd15'),
       teamCoinPct: asNumber(totals.coin_add ?? totals.team_coin_add) * 100,
       // BSPW5-03 (ASM-01): flat Luck percentage points — absent key defaults to 0.
       luckFlatPct: asNumber(totals.luck_add) * 100,
@@ -139,6 +148,12 @@ function mapAccountData(raw: Record<string, unknown>): AccountImportData {
       const levels = Array.isArray(casa.levels) ? casa.levels : [];
       houseLevel = Math.max(1, Math.round(asNumber(levels[houseIdx], 1)));
     }
+    return {
+      tree,
+      houseIdx,
+      houseLevel,
+      slots: resolveCasaSlots(casa, houseIdx),
+    };
   }
 
   return { tree, houseIdx, houseLevel };
@@ -153,6 +168,7 @@ export function parseSaveFile(raw: unknown, existing: HeroRecord[]): ParseResult
       candidates: [],
       warnings: ['This does not look like a BombFarm save file (missing a "heroes" list).'],
       account: EMPTY_ACCOUNT_DATA,
+      inventory: [],
       rejected: { reason: 'notASaveFile', heroNames: [] },
     };
   }
@@ -178,6 +194,7 @@ export function parseSaveFile(raw: unknown, existing: HeroRecord[]): ParseResult
       candidates: [],
       warnings,
       account: EMPTY_ACCOUNT_DATA,
+      inventory: [],
       rejected: { reason: 'missingBirthStats', heroNames: missingBirthHeroNames },
     };
   }
@@ -185,6 +202,27 @@ export function parseSaveFile(raw: unknown, existing: HeroRecord[]): ParseResult
   const items: Record<string, unknown>[] = Array.isArray(raw.items) ? raw.items.filter(isObject) : [];
   if (!Array.isArray(raw.items)) {
     warnings.push('Save file has no "items" list — imported heroes will have no gear equipped.');
+  }
+
+  const inventory: InventoryItem[] = [];
+  let unresolvedUnequipped = 0;
+  let marketBlockedCount = 0;
+  for (const item of items) {
+    const mapped = mapInventoryItem(item);
+    if (!mapped) continue;
+    if (!mapped.defResolved && !mapped.equipped) unresolvedUnequipped++;
+    if (mapped.marketBlocked) marketBlockedCount++;
+    inventory.push(mapped);
+  }
+  if (unresolvedUnequipped > 0) {
+    warnings.push(
+      `${unresolvedUnequipped} unequipped gear item(s) could not be resolved in the catalog — they are excluded from the pool.`,
+    );
+  }
+  if (marketBlockedCount > 0) {
+    warnings.push(
+      `${marketBlockedCount} gear item(s) are market-blocked and will be excluded from the optimizer pool.`,
+    );
   }
 
   const existingBySourceId = new Map(
@@ -375,5 +413,5 @@ export function parseSaveFile(raw: unknown, existing: HeroRecord[]): ParseResult
     });
   }
 
-  return { candidates, warnings, account: mapAccountData(raw), rejected: null };
+  return { candidates, warnings, account: mapAccountData(raw), inventory, rejected: null };
 }

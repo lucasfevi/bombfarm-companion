@@ -168,4 +168,5 @@ describe('roster slice', () => {
     usePlannerStore.getState().setHeroBattleAllowedOnHero('a', true);
     expect(usePlannerStore.getState().heroes).toBe(before);
   });
+
 });

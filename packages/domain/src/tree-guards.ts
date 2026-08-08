@@ -1,25 +1,21 @@
 /**
- * BSPW4-13 (BSP-61, DEC-07, DEC-08) — a loud-failing guard for the two skill-tree
- * clauses this wave deliberately does NOT model:
+ * Loud findings for skill-tree export fields the companion still does not fully model.
  *
- * - Deadly Eye's `+25%` crit chance keystone (`DEC-07`). `computeCombatMults` applies
- *   nothing for it — the exporter's handling is entirely unobserved (Stage-120 blocker,
- *   `account.max_phase` is 93 in the newest fixture), and it is unknown whether the bonus
- *   is already folded into `crit_chance_add` (modelling it here would double-count) or not
- *   (omitting it understates). Deferral is the only choice that adds no unevidenced number.
- * - Glass Cannon's `crit_dmg_mult` (`DEC-08`). It is `1.0` in every export; `computeCombatMults`
- *   still applies a boolean `treeGlassCannon` sniff unrelated to this field, left exactly as-is.
+ * Known keystones (`D15` Abisso, `C15` Glass Cannon, `V15` Tempo Dobrado, plus O15/S15/G07)
+ * and a non-1 `crit_dmg_mult` from Glass Cannon are **expected** — combat applies Glass Cannon
+ * via the boolean sniff, and Abisso zeroes Crit/GEO adds in the exporter while leaving a stale
+ * `crit_dmg_mult: 2` (combat must ignore ×2 while Abisso is on).
  *
- * Both are `[]` / `1` in every fixture in this repo today. `unmodelledTreeFindings` turns that
- * silent assumption into a loud one: the day a save disagrees, this function returns a finding
- * naming the clause, so a maintainer is forced to decide `BSP-61` with real data instead of the
- * deferral quietly drifting into a bug.
+ * Findings fire only for **unknown** keystone ids so a future node still surfaces loudly.
  */
 
 export type UnmodelledTreeInput = {
   keystones?: unknown;
   crit_dmg_mult?: unknown;
 };
+
+/** Wiki node ids the companion already knows how to interpret (import sniff / combat flags). */
+const KNOWN_KEYSTONE_IDS = new Set(['d15', 'c15', 'v15', 'o15', 's15', 'g07']);
 
 /**
  * Reports every unmodelled skill-tree clause found live in `totals` (a `skills.totals`-shaped
@@ -30,22 +26,15 @@ export function unmodelledTreeFindings(totals: UnmodelledTreeInput): string[] {
 
   const keystones = totals.keystones;
   if (Array.isArray(keystones) && keystones.length > 0) {
-    findings.push(
-      `BSP-61: skills.totals.keystones is non-empty (${JSON.stringify(keystones)}) — ` +
-        `Deadly Eye's +25% crit chance is deliberately unmodelled (DEC-07). Decide whether ` +
-        `the exporter already folds it into crit_chance_add before modelling it in ` +
-        `computeCombatMults, or double-counting results.`,
-    );
-  }
-
-  const critDmgMult = totals.crit_dmg_mult;
-  if (typeof critDmgMult === 'number' && Number.isFinite(critDmgMult) && critDmgMult !== 1) {
-    findings.push(
-      `DEC-08: skills.totals.crit_dmg_mult is ${critDmgMult} (expected 1) — Glass Cannon's ` +
-        `crit-damage multiplier is now exercised in real data. Decide whether ` +
-        `applySkillTree's critDmgMult shape (AD-BSP-19) needs to consume this value before ` +
-        `it silently diverges from the sheet.`,
-    );
+    const unknown = keystones
+      .map((keystone) => String(keystone).toLowerCase())
+      .filter((id) => !KNOWN_KEYSTONE_IDS.has(id));
+    if (unknown.length > 0) {
+      findings.push(
+        `skills.totals.keystones has unknown id(s) (${JSON.stringify(unknown)}) — ` +
+          `decide whether to sniff a new account flag or leave them display-only.`,
+      );
+    }
   }
 
   return findings;

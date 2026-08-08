@@ -119,9 +119,18 @@ export const en = {
     {
       h: "8 · What the app does not model",
       p: [
-        "Loot abilities (Lapidary Eye, Gold Vein), Hero Hunter, Ghost and Baton Pass are outside the DPS math. Ability crit bonuses apply as % of the base roll, per the Heroes page rule. Deadly Eye's keystone (+25% crit chance) is also deliberately unmodelled: no save in this app has reached its Stage-120 unlock yet, so it's unknown whether the exporter already folds that bonus into crit_chance_add — modelling it here risks double-counting if it does.",
+        "Loot abilities (Lapidary Eye, Gold Vein), Hero Hunter, Ghost and Baton Pass are outside the DPS math. Ability crit bonuses apply as % of the base roll, per the Heroes page rule. Glass Cannon’s +25% crit chance is not added again in combat — when Abisso is off it is already inside imported crit_chance_add; when Abisso is on the export zeroes Crit tree adds and combat ignores Glass Cannon’s ×2 crit while keeping energy ×0.5.",
         "If in-game damage still diverges from the model, check Team buffs in Account (another hero’s War Cry is a common ~20% / 40% gap).",
       ],
+    },
+    {
+      h: "9 · Team plan",
+      p: [
+        "The Team plan page searches forge upgrades, gear moves, and point resets across a scoped roster for the best combined sustained roster DPS this search can find — the same uptime-weighted number the advisor uses, summed over every hero you mark Optimize. Donate puts a hero's items in the shared pool without changing their build; Leave alone removes them from the search.",
+        "Each in-scope hero carries a duty weight (drainMult) from energy drain and house rest time. Team auras on that page are recomputed from the scoped roster, exclude the scored hero, and blend by duty — manual Account Team buffs are ignored there but still apply in the Planner. When Σ duty exceeds field slots, throughput uses the fair-share saturated regime; otherwise heroes keep their full active DPS.",
+        "The search treats every pool item as forged up to at least your minimum forge. Results are shown as three steps — today, gear, optional point resets — with forge and move details on each hero. The final result and the point-reset step never lose ground compared to today; the gear step can dip below today for a moment before the point resets catch it back up, and the page tells you plainly when that happens. A hero can still personally lose DPS when that trade grows the roster total. Copy always says the best roster DPS found by this search, never a claim of true optimality.",
+      ],
+      code: "objective = Σ sustainedDPS × duty (saturated: fair-share active-DPS)\neffectiveUpgrade = max(upgrade, forgeFloor)",
     },
   ] as ExplainSection[],
 };
@@ -240,9 +249,18 @@ export const pt: typeof en = {
     {
       h: "8 · O que o app não modela",
       p: [
-        "Habilidades de loot (Olho de Lapidador, Veia de Ouro), Caça-Hero, Fantasma e Passagem de Bastão ficam fora da conta de DPS. Bônus de crítico de habilidades entram como % do roll base, pela regra da página Heróis. O keystone Deadly Eye (+25% de chance de crítico) também é deliberadamente não modelado: nenhum save deste app chegou ainda ao desbloqueio da Fase 120, então não dá pra saber se o exportador já inclui esse bônus em crit_chance_add — modelar aqui arriscaria contar em dobro.",
+        "Habilidades de loot (Olho de Lapidador, Veia de Ouro), Caça-Hero, Fantasma e Passagem de Bastão ficam fora da conta de DPS. Bônus de crítico de habilidades entram como % do roll base, pela regra da página Heróis. Os +25% de chance de crítico do Glass Cannon não são somados de novo no combate — com Abisso desligado já vêm no crit_chance_add importado; com Abisso ligado o export zera os adds de Crítico da árvore e o combate ignora o ×2 de crítico do Glass Cannon, mantendo a energia ×0.5.",
         "Se o dano no jogo ainda divergir do modelo, confira Buffs de time em Conta (Grito de Guerra de outro herói é um gap comum de ~20% / 40%).",
       ],
+    },
+    {
+      h: "9 · Plano do time",
+      p: [
+        "A página Plano do time busca upgrades de forja, movimentações de itens e resets de pontos num roster com escopo em busca do melhor DPS efetivo combinado que essa busca conseguir encontrar — o mesmo número com peso de tempo em campo que o conselheiro usa, somado sobre cada herói marcado como Otimizar. Doar coloca os itens do herói no pool compartilhado sem mudar a build; Deixar quieto remove o herói da busca.",
+        "Cada herói no escopo carrega um peso de duty (drainMult) a partir do gasto de energia e do tempo de descanso da casa. As auras de time nessa página são recalculadas a partir do roster em escopo, excluem o herói pontuado e misturam por duty — os buffs manuais de time em Conta são ignorados ali, mas ainda valem no Planner. Quando Σ duty passa dos slots de campo, o throughput usa o regime saturado de DPS ativo justo; caso contrário, cada herói mantém o DPS ativo integral.",
+        "A busca trata cada item do pool como forjado pelo menos até a forja mínima. O resultado aparece em três passos — hoje, itens, resets de pontos opcionais — com detalhes de forja e movimento em cada herói. O resultado final e o passo de reset de pontos nunca ficam abaixo de hoje; o passo de itens pode cair por um momento antes que os resets de pontos recuperem, e a página avisa claramente quando isso acontece. Um herói ainda pode perder DPS pessoalmente quando essa troca aumenta o total do roster. O texto sempre diz o melhor DPS de roster encontrado por essa busca, nunca uma garantia de ótimo verdadeiro.",
+      ],
+      code: "objetivo = Σ DPS efetivo × duty (saturado: DPS ativo justo)\neffectiveUpgrade = max(upgrade, forgeFloor)",
     },
   ] as ExplainSection[],
 };

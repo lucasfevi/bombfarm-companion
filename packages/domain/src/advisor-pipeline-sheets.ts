@@ -1,5 +1,6 @@
 import {
   sheetsFromBirth,
+  effectiveTreeSheetForAbisso,
   type BirthStats,
   type TreeSheetTotals,
 } from './birth-sheet';
@@ -19,6 +20,8 @@ export type ResolveDeriveSheetsInput = {
   treeEnergy: number;
   /** `skills.totals.luck_add × 100` — flat Luck percentage points (BSPW5-03, ASM-01). */
   treeLuckFlatPct: number;
+  /** Abisso — zeroes Crit tree sheet adds before applySkillTree / birth recompose. */
+  treeAbisso?: boolean;
   /**
    * When set, naked/geared for derive are recomposed from birth (tree-inclusive zero-pts
    * geared) so Points After / DPS stay aligned with Stats Total after level/stars/tree edits.
@@ -52,22 +55,24 @@ export function resolveDeriveSheets(input: ResolveDeriveSheetsInput): ResolvedDe
     treeSpeed,
     treeEnergy,
     treeLuckFlatPct,
+    treeAbisso = false,
     birth,
   } = input;
 
-  // BSPW5-03: luckFlatPct now comes from the account slice (skills.totals.luck_add × 100,
-  // wired by mapAccountData/hydrateAccount) — Wave 4's ASM-01 literal 0 is gone. critDmgMult
-  // stays 1: it is unstored (ASM-01 in birth-sheet.ts) and 1.0 in every fixture repo-wide;
-  // `unmodelledTreeFindings` (BSPW4-13) fails loudly the day a save disagrees.
-  const treeSheet: TreeSheetTotals = {
-    danoStatic: treeDanoTotal,
-    energyPct: treeEnergy,
-    speedPct: treeSpeed,
-    critChancePct: treeCritChance,
-    critDmgPct: treeCritDmg,
-    luckFlatPct: treeLuckFlatPct,
-    critDmgMult: 1,
-  };
+  // luckFlatPct from account slice (skills.totals.luck_add × 100). critDmgMult on the sheet
+  // stays 1 — Glass Cannon's ×2 is a combat mult in computeCombatMults (suppressed by Abisso).
+  const treeSheet: TreeSheetTotals = effectiveTreeSheetForAbisso(
+    {
+      danoStatic: treeDanoTotal,
+      energyPct: treeEnergy,
+      speedPct: treeSpeed,
+      critChancePct: treeCritChance,
+      critDmgPct: treeCritDmg,
+      luckFlatPct: treeLuckFlatPct,
+      critDmgMult: 1,
+    },
+    treeAbisso,
+  );
 
   // Birth-backed heroes: ignore stored naked/gearedOverride for math — residual level/stars
   // rescale understates multiplicative tree (dmg_static) on the catalog Δ.

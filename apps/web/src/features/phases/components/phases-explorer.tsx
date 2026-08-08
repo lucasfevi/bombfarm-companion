@@ -28,6 +28,7 @@ import {
   selectActiveHeroId,
   selectAccountShared,
   selectPhasesViewPhase,
+  selectSlots,
   commitActiveHero,
 } from '@/shared/stores';
 
@@ -37,6 +38,7 @@ export function PhasesExplorer({ t, lang }: { t: Strings; lang: Lang }) {
   const heroes = usePlannerStore(selectHeroes);
   const activeHeroId = usePlannerStore(selectActiveHeroId);
   const account = usePlannerStore(useShallow(selectAccountShared));
+  const casaSlots = usePlannerStore(selectSlots);
 
   const teamCoinPct = account.tree.teamCoinPct ?? 0;
 
@@ -45,22 +47,25 @@ export function PhasesExplorer({ t, lang }: { t: Strings; lang: Lang }) {
     [phase, teamCoinPct],
   );
 
-  const topNine = useMemo(
+  const topSquadRows = useMemo(
     () =>
       intel
-        ? rankRosterByDps({
-            heroes,
-            account,
-            phase: intel.phase,
-            mitigationPct: intel.mitigationPct,
-          })
+        ? rankRosterByDps(
+            {
+              heroes,
+              account,
+              phase: intel.phase,
+              mitigationPct: intel.mitigationPct,
+            },
+            casaSlots,
+          )
         : [],
-    [heroes, account, intel],
+    [heroes, account, intel, casaSlots],
   );
 
   const heroesById = useMemo(() => new Map(heroes.map((hero) => [hero.id, hero])), [heroes]);
 
-  const squadDps = sumTopDps(topNine);
+  const squadDps = sumTopDps(topSquadRows);
   const clearSecs = intel ? estimateClearSeconds(intel.totalMapHp, squadDps) : null;
 
   const activeHero =
@@ -109,7 +114,8 @@ export function PhasesExplorer({ t, lang }: { t: Strings; lang: Lang }) {
                 onSelectHero={selectHero}
               />
               <PhasesSquadPanel
-                topNine={topNine}
+                topSquadRows={topSquadRows}
+                casaSlots={casaSlots}
                 heroesById={heroesById}
                 activeHeroId={activeHero.id}
                 squadDps={squadDps}

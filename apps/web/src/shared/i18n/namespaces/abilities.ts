@@ -43,7 +43,7 @@ export const pt: typeof en = {
   starUpgrade: "Subir estrela",
   abilitiesTip: "Habilidades deste herói — o limite é o menor entre o nível do herói e slots da raridade × 20 (pontos além disso são concedidos, mas ficam parados). Olho Clínico, Ponta de Diamante e Golpe Brutal alteram chance de crítico, penetração e dano crítico nos stats do herói no jogo. Marcha, Presságio e outras habilidades são contabilizadas apenas durante o combate. Buffs de outros heróis ficam em Buffs de time.",
   sheetAbilityTag: "Altera atributos",
-  rankLv: "Nv",
+  rankLv: "Lv",
   abilitiesSpent: "{spent} / {max} pontos",
   abilitiesSlots: "{used} / {max} habilidades",
   abilitiesSelected: "Selecionadas",

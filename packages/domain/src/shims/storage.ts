@@ -13,6 +13,8 @@ export type TreeState = {
   teamCoinPct: number;
   glassCannon: boolean;
   tempoDobrado: boolean;
+  /** Abisso (D15) — cancels tree Crit/GEO sheet adds and Glass Cannon crit ×2; energy ×0.5 still applies. */
+  abisso?: boolean;
   luckFlatPct?: number;
 };
 
@@ -32,6 +34,8 @@ export type AccountShared = {
   tree: TreeState;
   teamBuffs: Record<string, number>;
   context: HeroContext;
+  slots?: number;
+  forgeFloor?: number;
 };
 
 export type HeroRecord = {

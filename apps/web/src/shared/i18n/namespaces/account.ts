@@ -19,7 +19,10 @@ export const en = {
   treeSpeed: "Speed +% base",
   treeEnergy: "Energy +%",
   treeGlassCannon: "Glass Cannon",
-  treeGlassCannonHint: "critical damage ×2 · energy ×0.5",
+  treeGlassCannonHint: "critical damage ×2 (off under Abisso) · energy ×0.5",
+  treeAbisso: "Abisso",
+  treeAbissoHint:
+    "disables tree Crit/GEO bonuses (including Glass Cannon ×2 critical damage); energy ×0.5 still applies",
   treeTempoDobrado: "Tempo Dobrado",
   treeTempoDobradoHint: "attack pace ×1.333 · energy drain ×2",
   accountWide: "Account-wide",
@@ -56,7 +59,10 @@ export const pt: typeof en = {
   treeSpeed: "Velocidade +% base",
   treeEnergy: "Energia +%",
   treeGlassCannon: "Glass Cannon",
-  treeGlassCannonHint: "dano crítico ×2 · energia ×0.5",
+  treeGlassCannonHint: "dano crítico ×2 (off com Abisso) · energia ×0.5",
+  treeAbisso: "Abisso",
+  treeAbissoHint:
+    "desliga bônus de Crítico/GEO da árvore (incluindo ×2 de dano crítico do Glass Cannon); energia ×0.5 continua",
   treeTempoDobrado: "Tempo Dobrado",
   treeTempoDobradoHint: "ritmo de ataque ×1.333 · dreno de energia ×2",
   accountWide: "Da conta",

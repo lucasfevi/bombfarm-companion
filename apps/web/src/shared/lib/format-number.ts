@@ -11,17 +11,20 @@ export function formatNumber(value: number, decimals = 1): string {
 
 /** Drop redundant `.0` before unit suffix (e.g. `90.0k` → `90k`). */
 function trimCompactFraction(text: string): string {
-  return text.replace(/\.0+(?=[km]|$)/, '');
+  return text.replace(/\.0+$/, '');
 }
 
 /**
- * Compact metric display for dense chrome (hero strip): `90200` → `90.2k`,
- * `1_200_000` → `1.2m`. Values under 1k render with `formatNumber`.
+ * Compact metric display for dense chrome (hero strip, team plan): `90200` → `90.2k`,
+ * `1_200_000` → `1.2m`, `24_000_000_000` → `24bi`. Values under 1k render with `formatNumber`.
  */
 export function formatCompactNumber(value: number, decimals = 1): string {
   const sign = value < 0 ? '-' : '';
   const abs = Math.abs(value);
 
+  if (abs >= 1_000_000_000) {
+    return `${sign}${trimCompactFraction((abs / 1_000_000_000).toFixed(decimals))}bi`;
+  }
   if (abs >= 1_000_000) {
     return `${sign}${trimCompactFraction((abs / 1_000_000).toFixed(decimals))}m`;
   }
