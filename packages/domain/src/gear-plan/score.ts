@@ -2,6 +2,7 @@ import { fieldSeconds } from '../model';
 import { computeCombatMults, derive } from '../derive';
 import { farmContextForHero } from '../farm-context';
 import { composeSheetFromBirth, nakedFromBirth } from '../birth-sheet';
+import { ZERO_PTS } from '../planner-constants';
 import type { FarmContext, HeroPlanContext, HeroScore } from './types';
 import type { Loadout, PointAlloc } from '../gear/types';
 import type { TeamBuffId } from '../team-buffs';
@@ -61,13 +62,18 @@ export function scoreHeroLoadout(
   }
 
   const naked = nakedFromBirth(ctx.birth, ctx.level, ctx.stars, ctx.sheetOther);
+  // `derive()` (see its doc comment) adds spent points itself via `pts * delta` — its
+  // `geared` input must therefore be the zero-points sheet, same contract as
+  // `sheetsFromBirth`'s `geared` (birth-sheet.ts) and import-save.ts's `gearedOverride`.
+  // Composing with the real `pts` here would double-count every spent point (once via
+  // `applyPoints` inside `composeSheetFromBirth`, once via `derive`'s own delta formula).
   const geared = composeSheetFromBirth({
     birth: ctx.birth,
     level: ctx.level,
     stars: ctx.stars,
     sheetOther: ctx.sheetOther,
     loadout,
-    pts,
+    pts: ZERO_PTS(),
     tree: ctx.treeSheet,
   });
 

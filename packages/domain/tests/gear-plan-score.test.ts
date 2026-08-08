@@ -6,6 +6,8 @@ import { stackTeamBonusMult, TEAM_MULT_BONUS_CAP } from '@bombfarm/domain/derive
 import { zeroTeamBuffs, type TeamBuffId } from '@bombfarm/domain/team-buffs';
 import { PROPS } from '@bombfarm/domain/phases';
 import { ZERO_PTS } from '@bombfarm/domain/planner-constants';
+import { composeSheetFromBirth } from '@bombfarm/domain/birth-sheet';
+import type { PointAlloc } from '@bombfarm/domain/gear/types';
 import {
   createScoreMemo,
   scoreHeroLoadout,
@@ -198,5 +200,95 @@ describe('scoreHeroLoadout', () => {
     scoreHeroLoadout(ctx, hero.loadout, ZERO_PTS(), auras, farm, memo);
     expect(deriveSpy).toHaveBeenCalledTimes(1);
     deriveSpy.mockRestore();
+  });
+
+  // Regression for the double-counted-points bug: `scoreHeroLoadout` used to compose its
+  // `geared` sheet with the REAL `pts` and then hand that same `pts` to `derive()`, which
+  // adds `pts * delta` on top — every spent point counted twice. With all combat multipliers
+  // neutral (no team auras, no glass cannon, no ability mods), `scoreHeroLoadout`'s effective
+  // sheet must equal `composeSheetFromBirth`'s sheet for the SAME non-zero pts exactly once —
+  // matching the `sheetsFromBirth` / import-save `gearedOverride` contract `derive()` documents.
+  it('counts spent points exactly once (no double-count vs composeSheetFromBirth)', () => {
+    const pts: PointAlloc = {
+      attack: 12,
+      energy: 3,
+      speed: 4,
+      critChance: 2,
+      critDmg: 5,
+      penetration: 1,
+      cdr: 1,
+      luck: 0,
+    };
+    const ctx: HeroPlanContext = {
+      heroId: 'pt-dbl-count',
+      name: 'PointDoubleCount',
+      level: 40,
+      stars: 3,
+      rarity: 'Épico',
+      birth: {
+        attack: 200,
+        energy: 500,
+        speed: 60,
+        critChance: 15,
+        critDmg: 60,
+        penetration: 5,
+        cdr: 10,
+        luck: 2,
+      },
+      sheetOther: { speed: 0, critChance: 0, critDmg: 0, penetration: 0, cdr: 0 },
+      mods: {
+        drainMult: 1,
+        combatCritChancePctOfBase: 0,
+        penetrationPp: 0,
+        rangeCells: 0,
+        dmgMult: 1,
+        attackMult: 1,
+        speedMult: 1,
+        gateAttackMult: 1,
+        sheetCritChancePctOfBase: 0,
+        sheetPenetrationRaw: 0,
+        sheetCritDmgPctOfBase: 0,
+      },
+      treeSheet: {
+        danoStatic: 1,
+        energyPct: 0,
+        speedPct: 0,
+        critChancePct: 0,
+        critDmgPct: 0,
+        luckFlatPct: 0,
+        critDmgMult: 1,
+      },
+      scope: 'optimize',
+      abilities: {},
+      pts,
+    };
+    const farm: FarmContext = {
+      houseIdx: 0,
+      houseLevel: 1,
+      phase: 1,
+      mitigationPct: 6.7,
+      treeGlassCannon: false,
+      treeTempoDobrado: false,
+    };
+
+    const expectedSheet = composeSheetFromBirth({
+      birth: ctx.birth,
+      level: ctx.level,
+      stars: ctx.stars,
+      sheetOther: ctx.sheetOther,
+      loadout: {},
+      pts,
+      tree: ctx.treeSheet,
+    });
+
+    const score = scoreHeroLoadout(ctx, {}, pts, zeroTeamBuffs(), farm);
+
+    expect(score.effective.attack).toBeCloseTo(expectedSheet.attack, 6);
+    expect(score.effective.energy).toBeCloseTo(expectedSheet.energy, 6);
+    expect(score.effective.speed).toBeCloseTo(expectedSheet.speed, 6);
+    expect(score.effective.critChance).toBeCloseTo(expectedSheet.critChance, 6);
+    expect(score.effective.critDmg).toBeCloseTo(expectedSheet.critDmg, 6);
+    expect(score.effective.penetration).toBeCloseTo(expectedSheet.penetration, 6);
+    expect(score.effective.cdr).toBeCloseTo(expectedSheet.cdr, 6);
   });
 });
