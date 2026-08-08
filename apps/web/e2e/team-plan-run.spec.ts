@@ -24,7 +24,9 @@ test.describe('Team plan optimize run', () => {
     await expect(summary.getByText(/Took [\d.]+s/i)).toBeVisible();
     await expect(summary.getByText(/search passes/i)).toBeVisible();
     await expect(summary.getByText(/builds checked/i)).toBeVisible();
-    await expect(summary.getByText(/started from today's gear|started with/i)).toBeVisible();
+    await expect(
+      summary.getByText(/started from today's items|started from an alternate setup/i),
+    ).toBeVisible();
     await expect(summary.getByRole('button', { name: /Search details/i })).toHaveCount(0);
   });
 

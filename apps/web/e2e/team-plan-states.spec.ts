@@ -62,10 +62,10 @@ test.describe('Team plan page states', () => {
     await seedLocalStorage(page, teamPlanFixtureSeed('en'));
     await gotoTeamPlan(page);
     await clickOptimize(page);
-    await expect(page.getByRole('dialog', { name: /Optimizing/i })).toBeVisible();
+    await expect(page.getByRole('dialog', { name: /Building plan/i })).toBeVisible();
     await expect(page.getByText(/^Elapsed /i)).toBeVisible();
     await page.getByRole('button', { name: /^Cancel$/i }).click();
-    await expect(page.getByRole('dialog', { name: /Optimizing/i })).toBeHidden();
+    await expect(page.getByRole('dialog', { name: /Building plan/i })).toBeHidden();
     await expect(
       page.getByRole('button', { name: /Build a team plan of gear moves and point resets/i }),
     ).toBeEnabled();

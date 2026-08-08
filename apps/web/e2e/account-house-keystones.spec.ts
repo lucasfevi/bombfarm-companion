@@ -112,7 +112,7 @@ test.describe('account house fields and keystone toggles (AHK)', () => {
     await expect(account.getByRole('checkbox')).toHaveCount(0);
     await expect(account.locator('[data-switch]')).toHaveCount(3);
 
-    const glass = account.getByRole('switch', { name: /Glass Cannon/i });
+    const glass = account.getByRole('switch', { name: /^Glass Cannon/i });
     await glass.scrollIntoViewIfNeeded();
     await expect(glass).toHaveAttribute('aria-checked', 'false');
     await expect(glass.locator('xpath=ancestor::label[1]//div[@data-keystone-control]')).toContainText(
@@ -153,7 +153,7 @@ test.describe('account house fields and keystone toggles (AHK)', () => {
     await expect(account.getByRole('heading', { name: /^House$/i, level: 3 })).toBeVisible();
     await expect(account.getByText(restHint('en', 2, 6))).toBeVisible();
 
-    const glass = account.getByRole('switch', { name: /Glass Cannon/i });
+    const glass = account.getByRole('switch', { name: /^Glass Cannon/i });
     await glass.scrollIntoViewIfNeeded();
     await expect(glass).toHaveAttribute('aria-checked', 'false');
     await expect(glass.locator('xpath=ancestor::label[1]//div[@data-keystone-control]')).toContainText(

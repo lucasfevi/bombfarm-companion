@@ -17,6 +17,7 @@ export function TeamPlanToolbar({ t, runner }: { t: Strings; runner: TeamPlanRun
   const applyPlan = usePlannerStore((state) => state.applyPlan);
   const resolveRun = usePlannerStore((state) => state.resolveRun);
   const runStatus = usePlannerStore((state) => state.runStatus);
+  const scopeEmpty = usePlannerStore((state) => countOptimizeScopeHeroes(state) === 0);
   const handledRunId = useRef<string | null>(null);
 
   const handleOptimize = useCallback(() => {
@@ -61,7 +62,7 @@ export function TeamPlanToolbar({ t, runner }: { t: Strings; runner: TeamPlanRun
         <Button
           type="button"
           variant="primary"
-          disabled={busy}
+          disabled={busy || scopeEmpty}
           aria-busy={busy}
           aria-label={t.teamPlanOptimizeAria}
           className="min-h-12 w-full shrink-0 px-8 text-sm sm:w-auto sm:min-w-52"

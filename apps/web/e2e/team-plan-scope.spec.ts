@@ -63,15 +63,18 @@ test.describe('Team plan hero scope', () => {
     await expect(page.getByRole('heading', { name: /Nothing in scope/i })).toBeVisible();
     await expect(
       page.getByRole('button', { name: /Build a team plan of gear moves and point resets/i }),
-    ).toHaveCount(0);
+    ).toBeDisabled();
   });
 
-  test('scope change marks plan stale after a run', async ({ page }) => {
+  test('scope change clears the plan outright (reshapes the search, not just its numbers)', async ({
+    page,
+  }) => {
     await gotoTeamPlanMobile(page);
     await clickOptimize(page);
     await waitForOptimizeDone(page);
+    await expect(page.getByRole('heading', { name: /^Plan results$/i, level: 2 })).toBeVisible();
     await pickScope(scopePanel(page).getByRole('combobox').first(), page, /^Donate$/i);
-    await expect(page.getByText(/Inputs changed since this plan/i)).toBeVisible();
+    await expect(page.getByRole('heading', { name: /^Plan results$/i, level: 2 })).toHaveCount(0);
   });
 
   test('scope board exposes three explained columns', async ({ page }) => {

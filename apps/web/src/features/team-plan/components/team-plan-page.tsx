@@ -36,6 +36,7 @@ export function TeamPlanPage({
   const inventory = usePlannerStore(selectInventoryItems);
   const plan = usePlannerStore((state) => state.plan);
   const runStatus = usePlannerStore((state) => state.runStatus);
+  const storeRunId = usePlannerStore((state) => state.runId);
   const scopeByHeroId = usePlannerStore((state) => state.scopeByHeroId);
   const isStale = usePlannerStore(selectTeamPlanIsStale);
   const forgeFloor = usePlannerStore(selectForgeFloor);
@@ -51,7 +52,11 @@ export function TeamPlanPage({
   ).length;
   const allLeaveAlone = hasRoster && optimizeCount === 0;
 
-  const displayPlan = runner.plan ?? plan;
+  // Only trust the runner's in-flight/just-finished plan while it matches the store's current
+  // run — setScope/clearPlan reset the store's runId (and plan) to invalidate stale results
+  // without also reaching into the runner hook, so a runId mismatch means the runner is still
+  // holding a plan the store has since cleared.
+  const displayPlan = runner.runId !== null && runner.runId === storeRunId ? (runner.plan ?? plan) : plan;
   const blockedNames = runner.blockedHeroNames;
   const isRunning = runStatus === 'running' || runner.status === 'running';
 
