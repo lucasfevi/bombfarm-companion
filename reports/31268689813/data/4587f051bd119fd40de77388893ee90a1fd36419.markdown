@@ -1,0 +1,411 @@
+# Instructions
+
+- Following Playwright test failed.
+- Explain why, be concise, respect Playwright best practices.
+- Provide a snippet of code with the fix, if possible.
+
+# Test info
+
+- Name: team-plan-scope.spec.ts >> Team plan hero scope >> all leave alone blocks optimize
+- Location: e2e/team-plan-scope.spec.ts:51:7
+
+# Error details
+
+```
+Error: expect(locator).toHaveCount(expected) failed
+
+Locator:  getByRole('button', { name: /Build a team plan of gear moves and point resets/i })
+Expected: 0
+Received: 1
+Timeout:  5000ms
+
+Call log:
+  - Expect "toHaveCount" with timeout 5000ms
+  - waiting for getByRole('button', { name: /Build a team plan of gear moves and point resets/i })
+    14 × locator resolved to 1 element
+       - unexpected value "1"
+
+```
+
+# Page snapshot
+
+```yaml
+- generic [active] [ref=e1]:
+  - alert [ref=e2]
+  - generic [ref=e3]:
+    - banner [ref=e4]:
+      - generic [ref=e5]:
+        - generic [ref=e6]:
+          - link "Bomb Farm Companion" [ref=e7] [cursor=pointer]:
+            - /url: /
+            - generic [ref=e8]:
+              - generic [ref=e9]: Bomb Farm
+              - generic [ref=e10]: Companion
+          - navigation "Main sections" [ref=e11]:
+            - link "Planner" [ref=e12] [cursor=pointer]:
+              - /url: /
+            - link "Phases" [ref=e13] [cursor=pointer]:
+              - /url: /phases
+            - link "Team plan" [ref=e14] [cursor=pointer]:
+              - /url: /team-plan
+        - generic [ref=e15]:
+          - button "Import" [ref=e16] [cursor=pointer]
+          - link "Buy me a coffee" [ref=e17] [cursor=pointer]:
+            - /url: https://buymeacoffee.com/lucasfevi
+            - img [ref=e18]
+          - group "Language" [ref=e20]:
+            - button "PT" [ref=e21] [cursor=pointer]
+            - button "EN" [ref=e22] [cursor=pointer]
+    - region "Team plan" [ref=e25]:
+      - heading "Team plan" [level=1] [ref=e27]
+      - generic [ref=e28]:
+        - generic [ref=e29]:
+          - heading "Search setup" [level=2] [ref=e31]
+          - paragraph [ref=e32]: Builds a plan of gear moves, forge work, and point resets for the heroes you mark Optimize — scored for combined roster DPS.
+          - generic [ref=e33]:
+            - generic [ref=e34]:
+              - generic [ref=e35]:
+                - generic [ref=e36]: Min forge (+)
+                - generic [ref=e37]:
+                  - button "Min forge (+) −" [ref=e38] [cursor=pointer]: −
+                  - generic [ref=e39]: "10"
+                  - button "Min forge (+) +" [ref=e40] [cursor=pointer]: +
+              - paragraph [ref=e41]: Every item is scored as if forged to at least this level. Anything lower shows up as a forge chore on that hero.
+            - button "Build a team plan of gear moves and point resets" [ref=e42] [cursor=pointer]: Build team plan
+        - generic [ref=e43]:
+          - heading "Hero scope" [level=2] [ref=e45]
+          - paragraph [ref=e46]: Drag hero cards between columns. On small screens, use the menu on each card. Battle-disabled heroes start in Donate by default.
+          - paragraph [ref=e47]: Nothing in scope — set at least one hero to Optimize.
+          - generic [ref=e48]:
+            - region "Optimize" [ref=e49]:
+              - generic [ref=e50]:
+                - generic [ref=e51]:
+                  - heading "Optimize" [level=3] [ref=e52]
+                  - generic [ref=e53]: "0"
+                - paragraph [ref=e54]: Scored in the plan. These heroes can receive better items and may give items up.
+              - paragraph [ref=e56]: Drop heroes here
+            - region "Donate" [ref=e57]:
+              - generic [ref=e58]:
+                - generic [ref=e59]:
+                  - heading "Donate" [level=3] [ref=e60]
+                  - generic [ref=e61]: "0"
+                - paragraph [ref=e62]: Not scored. Their items join the pool for Optimize heroes; they receive nothing back.
+              - paragraph [ref=e64]: Drop heroes here
+            - region "Leave alone" [ref=e65]:
+              - generic [ref=e66]:
+                - generic [ref=e67]:
+                  - heading "Leave alone" [level=3] [ref=e68]
+                  - generic [ref=e69]: "11"
+                - paragraph [ref=e70]: Frozen. Items stay put and this hero is ignored by the search.
+              - generic [ref=e71]:
+                - 'button "Bram · Lv 49 · #18606" [ref=e72]':
+                  - generic [ref=e73]:
+                    - img "Bram" [ref=e76]
+                    - generic [ref=e77]:
+                      - generic [ref=e78]:
+                        - generic [ref=e79]: E
+                        - generic [ref=e80]: Bram
+                      - generic [ref=e81]:
+                        - generic [ref=e82]: Uncommon
+                        - generic [ref=e83]: "Lv 49 · #18606"
+                      - generic [ref=e84]:
+                        - 'combobox "Bram · Lv 49 · #18606" [ref=e85]':
+                          - generic:
+                            - generic:
+                              - img
+                          - generic [ref=e86]: Leave alone
+                        - textbox [ref=e87]: leaveAlone
+                - 'button "Bellatrix · Lv 59 · #25812" [ref=e88]':
+                  - generic [ref=e89]:
+                    - img "Bellatrix" [ref=e92]
+                    - generic [ref=e93]:
+                      - generic [ref=e94]:
+                        - generic [ref=e95]: A
+                        - generic [ref=e96]: Bellatrix
+                        - generic [ref=e97]: ★
+                      - generic [ref=e98]:
+                        - generic [ref=e99]: Rare
+                        - generic [ref=e100]: "Lv 59 · #25812"
+                      - generic [ref=e101]:
+                        - 'combobox "Bellatrix · Lv 59 · #25812" [ref=e102]':
+                          - generic:
+                            - generic:
+                              - img
+                          - generic [ref=e103]: Leave alone
+                        - textbox [ref=e104]: leaveAlone
+                - 'button "Torin · Lv 45 · #29018" [ref=e105]':
+                  - generic [ref=e106]:
+                    - img "Torin" [ref=e109]
+                    - generic [ref=e110]:
+                      - generic [ref=e111]:
+                        - generic [ref=e112]: B
+                        - generic [ref=e113]: Torin
+                      - generic [ref=e114]:
+                        - generic [ref=e115]: Uncommon
+                        - generic [ref=e116]: "Lv 45 · #29018"
+                      - generic [ref=e117]:
+                        - 'combobox "Torin · Lv 45 · #29018" [ref=e118]':
+                          - generic:
+                            - generic:
+                              - img
+                          - generic [ref=e119]: Leave alone
+                        - textbox [ref=e120]: leaveAlone
+                - 'button "Rowan · Lv 24 · #37446" [ref=e121]':
+                  - generic [ref=e122]:
+                    - img "Rowan" [ref=e125]
+                    - generic [ref=e126]:
+                      - generic [ref=e127]:
+                        - generic [ref=e128]: E
+                        - generic [ref=e129]: Rowan
+                      - generic [ref=e130]:
+                        - generic [ref=e131]: Uncommon
+                        - generic [ref=e132]: "Lv 24 · #37446"
+                      - generic [ref=e133]:
+                        - 'combobox "Rowan · Lv 24 · #37446" [ref=e134]':
+                          - generic:
+                            - generic:
+                              - img
+                          - generic [ref=e135]: Leave alone
+                        - textbox [ref=e136]: leaveAlone
+                - 'button "Zane · Lv 30 · #37455" [ref=e137]':
+                  - generic [ref=e138]:
+                    - img "Zane" [ref=e141]
+                    - generic [ref=e142]:
+                      - generic [ref=e143]:
+                        - generic [ref=e144]: S
+                        - generic [ref=e145]: Zane
+                      - generic [ref=e146]:
+                        - generic [ref=e147]: Uncommon
+                        - generic [ref=e148]: "Lv 30 · #37455"
+                      - generic [ref=e149]:
+                        - 'combobox "Zane · Lv 30 · #37455" [ref=e150]':
+                          - generic:
+                            - generic:
+                              - img
+                          - generic [ref=e151]: Leave alone
+                        - textbox [ref=e152]: leaveAlone
+                - 'button "Vera · Lv 17 · #39625" [ref=e153]':
+                  - generic [ref=e154]:
+                    - img "Vera" [ref=e157]
+                    - generic [ref=e158]:
+                      - generic [ref=e159]:
+                        - generic [ref=e160]: D
+                        - generic [ref=e161]: Vera
+                      - generic [ref=e162]:
+                        - generic [ref=e163]: Uncommon
+                        - generic [ref=e164]: "Lv 17 · #39625"
+                      - generic [ref=e165]:
+                        - 'combobox "Vera · Lv 17 · #39625" [ref=e166]':
+                          - generic:
+                            - generic:
+                              - img
+                          - generic [ref=e167]: Leave alone
+                        - textbox [ref=e168]: leaveAlone
+                - 'button "Korin · Lv 20 · #43040" [ref=e169]':
+                  - generic [ref=e170]:
+                    - img "Korin" [ref=e173]
+                    - generic [ref=e174]:
+                      - generic [ref=e175]:
+                        - generic [ref=e176]: A
+                        - generic [ref=e177]: Korin
+                        - generic [ref=e178]: ★
+                      - generic [ref=e179]:
+                        - generic [ref=e180]: Rare
+                        - generic [ref=e181]: "Lv 20 · #43040"
+                      - generic [ref=e182]:
+                        - 'combobox "Korin · Lv 20 · #43040" [ref=e183]':
+                          - generic:
+                            - generic:
+                              - img
+                          - generic [ref=e184]: Leave alone
+                        - textbox [ref=e185]: leaveAlone
+                - 'button "Korin · Lv 2 · #43041" [ref=e186]':
+                  - generic [ref=e187]:
+                    - img "Korin" [ref=e190]
+                    - generic [ref=e191]:
+                      - generic [ref=e192]:
+                        - generic [ref=e193]: C
+                        - generic [ref=e194]: Korin
+                      - generic [ref=e195]:
+                        - generic [ref=e196]: Common
+                        - generic [ref=e197]: "Lv 2 · #43041"
+                      - generic [ref=e198]:
+                        - 'combobox "Korin · Lv 2 · #43041" [ref=e199]':
+                          - generic:
+                            - generic:
+                              - img
+                          - generic [ref=e200]: Leave alone
+                        - textbox [ref=e201]: leaveAlone
+                - 'button "Nyx · Lv 4 · #43043" [ref=e202]':
+                  - generic [ref=e203]:
+                    - img "Nyx" [ref=e206]
+                    - generic [ref=e207]:
+                      - generic [ref=e208]:
+                        - generic [ref=e209]: D
+                        - generic [ref=e210]: Nyx
+                      - generic [ref=e211]:
+                        - generic [ref=e212]: Common
+                        - generic [ref=e213]: "Lv 4 · #43043"
+                      - generic [ref=e214]:
+                        - 'combobox "Nyx · Lv 4 · #43043" [ref=e215]':
+                          - generic:
+                            - generic:
+                              - img
+                          - generic [ref=e216]: Leave alone
+                        - textbox [ref=e217]: leaveAlone
+                - 'button "Mira · Lv 1 · #43675" [ref=e218]':
+                  - generic [ref=e219]:
+                    - img "Mira" [ref=e222]
+                    - generic [ref=e223]:
+                      - generic [ref=e224]:
+                        - generic [ref=e225]: C
+                        - generic [ref=e226]: Mira
+                      - generic [ref=e227]:
+                        - generic [ref=e228]: Common
+                        - generic [ref=e229]: "Lv 1 · #43675"
+                      - generic [ref=e230]:
+                        - 'combobox "Mira · Lv 1 · #43675" [ref=e231]':
+                          - generic:
+                            - generic:
+                              - img
+                          - generic [ref=e232]: Leave alone
+                        - textbox [ref=e233]: leaveAlone
+                - 'button "Finn · Lv 1 · #44238" [ref=e234]':
+                  - generic [ref=e235]:
+                    - img "Finn" [ref=e238]
+                    - generic [ref=e239]:
+                      - generic [ref=e240]:
+                        - generic [ref=e241]: E
+                        - generic [ref=e242]: Finn
+                      - generic [ref=e243]:
+                        - generic [ref=e244]: Common
+                        - generic [ref=e245]: "Lv 1 · #44238"
+                      - generic [ref=e246]:
+                        - 'combobox "Finn · Lv 1 · #44238" [ref=e247]':
+                          - generic:
+                            - generic:
+                              - img
+                          - generic [ref=e248]: Leave alone
+                        - textbox [ref=e249]: leaveAlone
+          - status [ref=e250]
+        - generic [ref=e251]:
+          - heading "Nothing in scope" [level=2] [ref=e252]
+          - paragraph [ref=e253]: Set at least one hero to Optimize before running a plan.
+          - button "Import save" [ref=e254] [cursor=pointer]
+    - contentinfo [ref=e255]:
+      - generic [ref=e256]:
+        - paragraph [ref=e257]: This is an unofficial, fan-made tool. It is not affiliated with, endorsed by or connected to the BombFarm developers in any way.
+        - paragraph [ref=e258]:
+          - text: Assets are from the official BombFarm wiki.
+          - link "wiki.bombfarm.net" [ref=e259] [cursor=pointer]:
+            - /url: https://wiki.bombfarm.net
+          - text: .
+      - generic [ref=e260]:
+        - generic [ref=e261]: v0.0.0-e2e
+        - link "Buy me a coffee" [ref=e262] [cursor=pointer]:
+          - /url: https://buymeacoffee.com/lucasfevi
+          - img [ref=e263]
+          - text: Buy me a coffee
+```
+
+# Test source
+
+```ts
+  1  | import { test, expect, type Locator, type Page } from '@playwright/test';
+  2  | import { teamPlanFixtureSeed } from './fixtures/team-plan-seed';
+  3  | import { seedLocalStorage } from './fixtures/seed';
+  4  | import {
+  5  |   clickOptimize,
+  6  |   gotoTeamPlan,
+  7  |   scopePanel,
+  8  |   waitForOptimizeDone,
+  9  | } from './fixtures/team-plan-e2e';
+  10 | 
+  11 | async function gotoTeamPlanMobile(page: Page) {
+  12 |   await page.setViewportSize({ width: 390, height: 844 });
+  13 |   await seedLocalStorage(page, teamPlanFixtureSeed('en'));
+  14 |   await gotoTeamPlan(page);
+  15 | }
+  16 | 
+  17 | /** DS Select is Base UI combobox — not a native `<select>`. */
+  18 | async function pickScope(combobox: Locator, page: Page, optionName: RegExp) {
+  19 |   await combobox.click();
+  20 |   await page.getByRole('option', { name: optionName }).click();
+  21 | }
+  22 | 
+  23 | test.describe('Team plan hero scope', () => {
+  24 |   test('two Korin rows are distinguishable by accessible name', async ({ page }) => {
+  25 |     await seedLocalStorage(page, teamPlanFixtureSeed('en'));
+  26 |     await gotoTeamPlan(page);
+  27 | 
+  28 |     const korinCards = scopePanel(page).locator('article[aria-label*="Korin · Lv"]');
+  29 |     await expect(korinCards).toHaveCount(2);
+  30 |     const names = await korinCards.evaluateAll((nodes) =>
+  31 |       nodes.map((node) => node.getAttribute('aria-label')),
+  32 |     );
+  33 |     expect(new Set(names).size).toBe(2);
+  34 |   });
+  35 | 
+  36 |   test('desktop hides the per-card scope select', async ({ page }) => {
+  37 |     await seedLocalStorage(page, teamPlanFixtureSeed('en'));
+  38 |     await gotoTeamPlan(page);
+  39 |     await expect(scopePanel(page).getByRole('combobox').first()).toBeHidden();
+  40 |   });
+  41 | 
+  42 |   test('leave alone excludes hero from scope messaging', async ({ page }) => {
+  43 |     await gotoTeamPlanMobile(page);
+  44 | 
+  45 |     await pickScope(scopePanel(page).getByRole('combobox').first(), page, /^Leave alone$/i);
+  46 |     await clickOptimize(page);
+  47 |     await waitForOptimizeDone(page);
+  48 |     await expect(page.getByRole('heading', { name: /Per-hero changes/i })).toBeVisible();
+  49 |   });
+  50 | 
+  51 |   test('all leave alone blocks optimize', async ({ page }) => {
+  52 |     await gotoTeamPlanMobile(page);
+  53 | 
+  54 |     for (let safety = 0; safety < 40; safety += 1) {
+  55 |       const openSelect = scopePanel(page)
+  56 |         .locator(
+  57 |           '[data-scope-column="optimize"] [data-select], [data-scope-column="donate"] [data-select]',
+  58 |         )
+  59 |         .first();
+  60 |       if ((await openSelect.count()) === 0) break;
+  61 |       await pickScope(openSelect, page, /^Leave alone$/i);
+  62 |     }
+  63 |     await expect(page.getByRole('heading', { name: /Nothing in scope/i })).toBeVisible();
+  64 |     await expect(
+  65 |       page.getByRole('button', { name: /Build a team plan of gear moves and point resets/i }),
+> 66 |     ).toHaveCount(0);
+     |       ^ Error: expect(locator).toHaveCount(expected) failed
+  67 |   });
+  68 | 
+  69 |   test('scope change marks plan stale after a run', async ({ page }) => {
+  70 |     await gotoTeamPlanMobile(page);
+  71 |     await clickOptimize(page);
+  72 |     await waitForOptimizeDone(page);
+  73 |     await pickScope(scopePanel(page).getByRole('combobox').first(), page, /^Donate$/i);
+  74 |     await expect(page.getByText(/Inputs changed since this plan/i)).toBeVisible();
+  75 |   });
+  76 | 
+  77 |   test('scope board exposes three explained columns', async ({ page }) => {
+  78 |     await seedLocalStorage(page, teamPlanFixtureSeed('en'));
+  79 |     await gotoTeamPlan(page);
+  80 |     await expect(scopePanel(page).getByRole('region', { name: /^Optimize$/i })).toBeVisible();
+  81 |     await expect(scopePanel(page).getByRole('region', { name: /^Donate$/i })).toBeVisible();
+  82 |     await expect(scopePanel(page).getByRole('region', { name: /^Leave alone$/i })).toBeVisible();
+  83 |     await expect(scopePanel(page).getByText(/Scored in the plan/i)).toBeVisible();
+  84 |   });
+  85 | 
+  86 |   test('mobile keeps the scope select on each card', async ({ page }) => {
+  87 |     await gotoTeamPlanMobile(page);
+  88 |     const firstSelect = scopePanel(page).getByRole('combobox').first();
+  89 |     await expect(firstSelect).toBeVisible();
+  90 |     await pickScope(firstSelect, page, /^Donate$/i);
+  91 |     await expect(
+  92 |       scopePanel(page).getByRole('region', { name: /^Donate$/i }).locator('article'),
+  93 |     ).not.toHaveCount(0);
+  94 |   });
+  95 | });
+  96 | 
+```
