@@ -105,10 +105,21 @@ export const createGearPlanSlice: StateCreator<
     });
   },
 
+  // Clears any existing plan outright rather than just marking it stale: scope moves a hero
+  // in or out of the search entirely, so the last plan's per-hero rows, proposed items, and
+  // battle load can reference a hero that's no longer in scope. A "stale" banner over that is
+  // misleading — it reads as "still counted" — so this matches hydrateInventory's pattern of
+  // clearing outright on inputs that reshape the problem, not just shift its numbers.
   setScope: (heroId, scope) => {
     const current = get().scopeByHeroId[heroId];
     if (current === scope) return;
-    set({ scopeByHeroId: { ...get().scopeByHeroId, [heroId]: scope } });
+    set({
+      scopeByHeroId: { ...get().scopeByHeroId, [heroId]: scope },
+      plan: null,
+      planInputSignature: null,
+      runStatus: 'idle',
+      runId: null,
+    });
   },
 
   setForgeFloor: (value) => {

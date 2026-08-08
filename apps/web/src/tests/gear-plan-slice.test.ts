@@ -153,6 +153,41 @@ describe('gear-plan slice', () => {
     expect(usePlannerStore.getState().scopeByHeroId.a).toBe('leaveAlone');
   });
 
+  // A moved-to-Donate hero must not linger in the results the way "stale" inputs (forge floor,
+  // points) do — the old plan's per-hero rows, proposed items, and battle load still reference
+  // that hero, which reads as "still counted" rather than "needs a re-run."
+  it('setScope clears an existing plan when the scope actually changes', () => {
+    usePlannerStore.getState().hydrateRoster([hero('a')], 'a');
+    usePlannerStore.getState().hydrateInventory({ version: 1, importedAt: 0, items: [] }, 10);
+    usePlannerStore.setState({
+      plan: {} as never,
+      planInputSignature: 'sig',
+      runStatus: 'done',
+      runId: 'run-1',
+    });
+    usePlannerStore.getState().setScope('a', 'donate');
+    const state = usePlannerStore.getState();
+    expect(state.plan).toBeNull();
+    expect(state.planInputSignature).toBeNull();
+    expect(state.runStatus).toBe('idle');
+    expect(state.runId).toBeNull();
+  });
+
+  it('setScope no-op leaves an existing plan untouched', () => {
+    usePlannerStore.getState().hydrateRoster([hero('a')], 'a');
+    usePlannerStore.getState().hydrateInventory({ version: 1, importedAt: 0, items: [] }, 10);
+    usePlannerStore.setState({
+      plan: {} as never,
+      planInputSignature: 'sig',
+      runStatus: 'done',
+      runId: 'run-1',
+    });
+    usePlannerStore.getState().setScope('a', 'optimize');
+    const state = usePlannerStore.getState();
+    expect(state.plan).not.toBeNull();
+    expect(state.planInputSignature).toBe('sig');
+  });
+
   it('hydrateScope merges persisted choices over the battleAllowed defaults', () => {
     usePlannerStore.getState().hydrateRoster([hero('a'), hero('b'), hero('c', false)], 'a');
     usePlannerStore.getState().hydrateInventory({ version: 1, importedAt: 0, items: [] }, 10);
