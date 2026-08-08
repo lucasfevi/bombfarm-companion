@@ -3,7 +3,7 @@
 import type { GearPlan } from '@bombfarm/domain/gear-plan/types';
 import type { PointAlloc } from '@bombfarm/domain/gear';
 import { Accordion, Panel, Tooltip } from '@bombfarm/ui';
-import { panelHClass, panelTitleClass } from '@bombfarm/ui/panel-field.recipe';
+import { panelHClass, panelTitleClass, tipClass } from '@bombfarm/ui/panel-field.recipe';
 import { accordionStackClass } from '@bombfarm/ui/accordion.recipe';
 import type { Lang, Strings } from '@/shared/i18n';
 import { sub } from '@/shared/i18n';
@@ -50,6 +50,7 @@ export function HeroDeltaTable({ t, lang, plan }: { t: Strings; lang: Lang; plan
       <div className={panelHClass}>
         <h2 className={panelTitleClass}>{t.gearPlanHeroDeltaTitle}</h2>
       </div>
+      <p className={tipClass}>{t.gearPlanHeroDeltaNote}</p>
       <Tooltip.Provider delay={200} closeDelay={80}>
         <Accordion.Root
           key={accordionKey}

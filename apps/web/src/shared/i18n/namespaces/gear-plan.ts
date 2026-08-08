@@ -75,6 +75,8 @@ export const en = {
   gearPlanRunSeedBestItemFirst: 'started with the best items first',
   gearPlanRunSeedFallback: 'started from an alternate setup',
   gearPlanHeroDeltaTitle: 'Per-hero changes',
+  gearPlanHeroDeltaNote:
+    'These are combat-effective stats, not the in-game hero panel — team auras are applied and values aren’t clamped to the game’s display caps (100% crit chance, 80% cooldown reduction). That’s deliberate: the uncapped, aura-inclusive view is what lets Optimize find the best real DPS.',
   gearPlanColBefore: 'Before',
   gearPlanColAfter: 'After',
   gearPlanColDelta: 'Δ',
@@ -190,6 +192,8 @@ export const pt: typeof en = {
   gearPlanRunSeedBestItemFirst: 'começou pelos melhores itens',
   gearPlanRunSeedFallback: 'começou por uma montagem alternativa',
   gearPlanHeroDeltaTitle: 'Mudanças por herói',
+  gearPlanHeroDeltaNote:
+    'Estes são status de combate, não o painel do herói no jogo — as auras de time são aplicadas e os valores não seguem os tetos de exibição do jogo (100% de chance de crítico, 80% de redução de recarga). É proposital: essa visão sem teto e com auras é o que permite ao Otimizar achar o melhor DPS real.',
   gearPlanColBefore: 'Antes',
   gearPlanColAfter: 'Depois',
   gearPlanColDelta: 'Δ',
