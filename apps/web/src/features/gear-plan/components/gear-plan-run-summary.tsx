@@ -7,22 +7,22 @@ import type { Strings } from '@/shared/i18n';
 import { parseEmphasis, sub } from '@/shared/i18n';
 import { formatNumber } from '@/shared/lib/format-number';
 
-function formatElapsedSeconds(ms: number): string {
-  return formatNumber(ms / 1000, 1);
+function formatElapsedSeconds(elapsedMs: number): string {
+  return formatNumber(elapsedMs / 1000, 1);
 }
 
-function seedStartLabel(t: Strings, seedUsed: string): string {
+function seedStartLabel(strings: Strings, seedUsed: string): string {
   switch (seedUsed) {
     case 'current':
-      return t.gearPlanRunSeedCurrent;
+      return strings.gearPlanRunSeedCurrent;
     case 'greedyHeroDps':
-      return t.gearPlanRunSeedGreedyHeroDps;
+      return strings.gearPlanRunSeedGreedyHeroDps;
     case 'greedySlotValue':
-      return t.gearPlanRunSeedGreedySlotValue;
+      return strings.gearPlanRunSeedGreedySlotValue;
     case 'bestItemFirst':
-      return t.gearPlanRunSeedBestItemFirst;
+      return strings.gearPlanRunSeedBestItemFirst;
     default:
-      return t.gearPlanRunSeedFallback;
+      return strings.gearPlanRunSeedFallback;
   }
 }
 

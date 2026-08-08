@@ -7,8 +7,8 @@ import type { Strings } from '@/shared/i18n';
 import { sub } from '@/shared/i18n';
 import { Hero6BombActivationSprite } from './hero6-bomb-activation-sprite';
 
-function formatElapsed(ms: number): string {
-  const totalSec = Math.floor(ms / 1000);
+function formatElapsed(elapsedMs: number): string {
+  const totalSec = Math.floor(elapsedMs / 1000);
   const min = Math.floor(totalSec / 60);
   const sec = totalSec % 60;
   if (min <= 0) return `${sec}s`;
@@ -33,8 +33,8 @@ export function GearPlanOptimizingModal({
     }
     const started = Date.now();
     setElapsedMs(0);
-    const id = window.setInterval(() => setElapsedMs(Date.now() - started), 250);
-    return () => window.clearInterval(id);
+    const intervalId = window.setInterval(() => setElapsedMs(Date.now() - started), 250);
+    return () => window.clearInterval(intervalId);
   }, [open]);
 
   if (!open) return null;

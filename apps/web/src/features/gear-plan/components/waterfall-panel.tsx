@@ -3,18 +3,12 @@
 import type { ReactNode } from 'react';
 import type { GearPlan as DomainGearPlan, WaterfallStep } from '@bombfarm/domain/gear-plan/types';
 import { Panel, Tooltip, cn } from '@bombfarm/ui';
-import {
-  metricScoreboardCellClass,
-  metricScoreboardDeltaRecipe,
-  metricScoreboardLabelClass,
-  metricScoreboardRowClass,
-  metricScoreboardValueRecipe,
-} from '@bombfarm/ui/metric-scoreboard.recipe';
 import { panelHClass, panelTitleClass } from '@bombfarm/ui/panel-field.recipe';
 import type { Strings } from '@/shared/i18n';
 import { sub } from '@/shared/i18n';
 import { formatCompactNumber, formatNumber } from '@/shared/lib/format-number';
 import { AbbreviatedNumber } from './abbreviated-number';
+import { StepCell } from './step-cell';
 
 const stepLabels: Record<WaterfallStep['id'], (strings: Strings) => string> = {
   today: (strings) => strings.gearPlanStepToday,
@@ -30,30 +24,6 @@ function withDeltaPlaceholder(template: string, delta: ReactNode) {
       {delta}
       {after}
     </>
-  );
-}
-
-function StepCell({
-  label,
-  value,
-  delta,
-  deltaTone,
-}: {
-  label: string;
-  value: ReactNode;
-  delta?: ReactNode | null;
-  deltaTone?: 'up' | 'down';
-}) {
-  return (
-    <div className={cn(metricScoreboardCellClass, 'items-center text-center')}>
-      <span className={metricScoreboardLabelClass}>{label}</span>
-      <div className={cn(metricScoreboardRowClass, 'justify-center')}>
-        <strong className={metricScoreboardValueRecipe({ tone: 'ink' })}>{value}</strong>
-        {delta != null ? (
-          <span className={metricScoreboardDeltaRecipe({ deltaTone: deltaTone ?? 'up' })}>{delta}</span>
-        ) : null}
-      </div>
-    </div>
   );
 }
 

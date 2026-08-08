@@ -17,9 +17,9 @@ export function Hero6BombActivationSprite({ className }: { className?: string })
   const [reduced, setReduced] = useState(false);
 
   useEffect(() => {
-    for (const src of HERO6_BOMB_ACTIVATION_FRAMES) {
+    for (const frameSrc of HERO6_BOMB_ACTIVATION_FRAMES) {
       const image = new window.Image();
-      image.src = src;
+      image['src'] = frameSrc;
     }
   }, []);
 
@@ -33,18 +33,18 @@ export function Hero6BombActivationSprite({ className }: { className?: string })
 
   useEffect(() => {
     if (reduced) return;
-    const id = window.setInterval(() => {
-      setFrame((prev) => (prev + 1) % HERO6_BOMB_ACTIVATION_FRAMES.length);
+    const intervalId = window.setInterval(() => {
+      setFrame((current) => (current + 1) % HERO6_BOMB_ACTIVATION_FRAMES.length);
     }, HERO6_BOMB_ACTIVATION_FRAME_MS);
-    return () => window.clearInterval(id);
+    return () => window.clearInterval(intervalId);
   }, [reduced]);
 
-  const src = HERO6_BOMB_ACTIVATION_FRAMES[reduced ? 0 : frame] ?? HERO6_BOMB_ACTIVATION_FRAMES[0];
+  const frameSrc =
+    HERO6_BOMB_ACTIVATION_FRAMES[reduced ? 0 : frame] ?? HERO6_BOMB_ACTIVATION_FRAMES[0];
 
   return (
-    // eslint-disable-next-line @next/next/no-img-element -- local public PNG sprite sheet frames
     <img
-      src={src}
+      src={frameSrc}
       alt=""
       width={192}
       height={192}
