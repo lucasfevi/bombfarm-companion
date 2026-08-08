@@ -57,10 +57,10 @@ test.describe('Gear plan page states', () => {
     await seedLocalStorage(page, gearPlanFixtureSeed('en'));
     await gotoGearPlan(page);
     await clickOptimize(page);
-    await expect(page.getByRole('dialog', { name: /Searching/i })).toBeVisible();
+    await expect(page.getByRole('dialog', { name: /Optimizing/i })).toBeVisible();
     await expect(page.getByText(/^Elapsed /i)).toBeVisible();
     await page.getByRole('button', { name: /^Cancel$/i }).click();
-    await expect(page.getByRole('dialog', { name: /Searching/i })).toBeHidden();
+    await expect(page.getByRole('dialog', { name: /Optimizing/i })).toBeHidden();
     await expect(page.getByRole('button', { name: /Run the roster gear search/i })).toBeEnabled();
   });
 });

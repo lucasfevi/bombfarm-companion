@@ -21,7 +21,7 @@ test.describe('Gear plan disclosures', () => {
     await waitForOptimizeDone(page);
 
     const panel = disclosuresPanel(page);
-    await expect(panel.getByText(/Σ duty/i)).toBeVisible();
+    await expect(panel.getByText(/battle load/i)).toBeVisible();
     await expect(panel.getByRole('button')).toHaveCount(0);
   });
 
@@ -34,7 +34,7 @@ test.describe('Gear plan disclosures', () => {
     const panel = disclosuresPanel(page);
     await expect(panel.getByText(/scoped roster/i)).toBeVisible();
     await expect(panel.getByText(/Account tab.*Team buffs/i)).toBeVisible();
-    await expect(panel.getByText(/Passagem de Bastão/i)).toBeVisible();
+    await expect(panel.getByText(/Baton Pass/i)).toBeVisible();
   });
 
   test('excluded item counts render', async ({ page }) => {

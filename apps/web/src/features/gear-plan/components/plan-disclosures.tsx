@@ -1,27 +1,25 @@
 'use client';
 
 import type { GearPlan } from '@bombfarm/domain/gear-plan/types';
+import { abilityName } from '@bombfarm/domain/game-labels';
 import { Panel } from '@bombfarm/ui';
 import { panelHClass, panelTitleClass } from '@bombfarm/ui/panel-field.recipe';
-import type { Strings } from '@/shared/i18n';
+import type { Lang, Strings } from '@/shared/i18n';
 import { sub } from '@/shared/i18n';
-import { formatNumber } from '@/shared/lib/format-number';
-
-function signed(value: number): string {
-  return `${value >= 0 ? '+' : ''}${formatNumber(value, 0)}`;
-}
 
 export function PlanDisclosures({
   t,
+  lang,
   plan,
   requestedForgeFloor,
 }: {
   t: Strings;
+  lang: Lang;
   plan: GearPlan;
   requestedForgeFloor: number;
 }) {
   const unmodelled = plan.disclosures.unmodelledAbilities
-    .map((row) => `${row.abilityId} (${row.heroNames.join(', ')})`)
+    .map((row) => `${abilityName(row.abilityId, lang)} (${row.heroNames.join(', ')})`)
     .join('; ');
   const forgeSkipped = requestedForgeFloor > 0 && plan.forgeFloorApplied === 0;
 
@@ -40,7 +38,11 @@ export function PlanDisclosures({
           </p>
         ) : null}
         <p className="m-0">{t.gearPlanAuraDisclosure}</p>
-        <p className="m-0">{t.gearPlanPlannerDivergence}</p>
+        <p className="m-0">
+          {sub(t.gearPlanPlannerDivergence, {
+            ability: abilityName('passagem_bastao', lang),
+          })}
+        </p>
         {unmodelled ? (
           <p className="m-0">{sub(t.gearPlanUnmodelledAbilities, { list: unmodelled })}</p>
         ) : null}
@@ -59,16 +61,6 @@ export function PlanDisclosures({
           })}
         </p>
         {forgeSkipped ? <p className="m-0">{t.gearPlanForgeSkippedNote}</p> : null}
-        {plan.gearBreakdown.forgeDelta !== 0 ? (
-          <p className="m-0">
-            {sub(t.gearPlanGearBreakdownForge, { delta: signed(plan.gearBreakdown.forgeDelta) })}
-          </p>
-        ) : null}
-        {plan.gearBreakdown.moveDelta !== 0 ? (
-          <p className="m-0">
-            {sub(t.gearPlanGearBreakdownMoves, { delta: signed(plan.gearBreakdown.moveDelta) })}
-          </p>
-        ) : null}
       </div>
     </Panel>
   );

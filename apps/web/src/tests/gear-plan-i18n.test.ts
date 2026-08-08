@@ -62,6 +62,6 @@ describe('gear-plan i18n namespace', () => {
 
   it('includes nav label in chrome-adjacent namespace keys', () => {
     expect(STRINGS.en.navGearPlan).toBe('Gear plan');
-    expect(STRINGS.pt.navGearPlan).toBe('Plano de gear');
+    expect(STRINGS.pt.navGearPlan).toBe('Plano de itens');
   });
 });

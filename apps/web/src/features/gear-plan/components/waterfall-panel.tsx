@@ -1,8 +1,16 @@
 'use client';
 
+import type { ReactNode } from 'react';
 import type { GearPlan as DomainGearPlan, WaterfallStep } from '@bombfarm/domain/gear-plan/types';
-import { MetricScoreboard, Panel, Tooltip, type MetricScoreboardCell } from '@bombfarm/ui';
-import { mutedClass, panelHClass, panelTitleClass } from '@bombfarm/ui/panel-field.recipe';
+import { Panel, Tooltip, cn } from '@bombfarm/ui';
+import {
+  metricScoreboardCellClass,
+  metricScoreboardDeltaRecipe,
+  metricScoreboardLabelClass,
+  metricScoreboardRowClass,
+  metricScoreboardValueRecipe,
+} from '@bombfarm/ui/metric-scoreboard.recipe';
+import { panelHClass, panelTitleClass } from '@bombfarm/ui/panel-field.recipe';
 import type { Strings } from '@/shared/i18n';
 import { sub } from '@/shared/i18n';
 import { formatCompactNumber, formatNumber } from '@/shared/lib/format-number';
@@ -14,22 +22,46 @@ const stepLabels: Record<WaterfallStep['id'], (strings: Strings) => string> = {
   respec: (strings) => strings.gearPlanStepRespec,
 };
 
+function withDeltaPlaceholder(template: string, delta: ReactNode) {
+  const [before = '', after = ''] = template.split('{delta}');
+  return (
+    <>
+      {before}
+      {delta}
+      {after}
+    </>
+  );
+}
+
+function StepCell({
+  label,
+  value,
+  delta,
+  deltaTone,
+}: {
+  label: string;
+  value: ReactNode;
+  delta?: ReactNode | null;
+  deltaTone?: 'up' | 'down';
+}) {
+  return (
+    <div className={cn(metricScoreboardCellClass, 'items-center text-center')}>
+      <span className={metricScoreboardLabelClass}>{label}</span>
+      <div className={cn(metricScoreboardRowClass, 'justify-center')}>
+        <strong className={metricScoreboardValueRecipe({ tone: 'ink' })}>{value}</strong>
+        {delta != null ? (
+          <span className={metricScoreboardDeltaRecipe({ deltaTone: deltaTone ?? 'up' })}>{delta}</span>
+        ) : null}
+      </div>
+    </div>
+  );
+}
+
 export function WaterfallPanel({ t, plan }: { t: Strings; plan: DomainGearPlan }) {
   const totalDelta = plan.planDps - plan.currentDps;
   const totalPct = plan.currentDps > 0 ? (totalDelta / plan.currentDps) * 100 : 0;
   const totalSign = totalDelta >= 0 ? '+' : '';
   const pctSign = totalPct >= 0 ? '+' : '';
-
-  const cells: MetricScoreboardCell[] = plan.steps.map((step) => {
-    const showDelta = step.id !== 'today' && step.delta !== 0;
-    return {
-      id: step.id,
-      label: stepLabels[step.id](t),
-      value: <AbbreviatedNumber value={step.objective} />,
-      delta: showDelta ? <AbbreviatedNumber value={step.delta} signed /> : null,
-      deltaTone: step.delta < 0 ? 'down' : 'up',
-    };
-  });
 
   return (
     <Panel>
@@ -38,50 +70,68 @@ export function WaterfallPanel({ t, plan }: { t: Strings; plan: DomainGearPlan }
         <p className="m-0 text-[12px] font-normal text-muted">{t.gearPlanResultsHeader}</p>
       </div>
       <Tooltip.Provider delay={200} closeDelay={80}>
-        <p className={`m-0 mb-2 ${mutedClass}`}>{t.gearPlanCompactNumberHint}</p>
-        <div className="mb-3 border-b border-line pb-3">
-          <p className="m-0 text-[11px] tracking-wide text-muted uppercase">{t.gearPlanTotalGainLabel}</p>
-          <Tooltip.Root>
-            <Tooltip.Trigger
-              render={
-                <p
-                  className={`m-0 mt-1 text-2xl leading-tight font-black tracking-tight tabular-nums ${totalDelta < 0 ? 'text-down' : 'text-up'}`}
-                />
-              }
-            >
-              {sub(t.gearPlanTotalGainValue, {
-                delta: `${totalSign}${formatCompactNumber(totalDelta, 1)}`,
-                pct: `${pctSign}${formatNumber(totalPct, 1)}`,
-              })}
-            </Tooltip.Trigger>
-            <Tooltip.Portal>
-              <Tooltip.Positioner sideOffset={6}>
-                <Tooltip.Popup>
-                  <p className="m-0 font-mono">
-                    {sub(t.gearPlanTotalGainValue, {
-                      delta: `${totalSign}${formatNumber(totalDelta, 0)}`,
-                      pct: `${pctSign}${formatNumber(totalPct, 1)}`,
-                    })}
-                  </p>
-                </Tooltip.Popup>
-              </Tooltip.Positioner>
-            </Tooltip.Portal>
-          </Tooltip.Root>
-          <p className="m-0 mt-1 text-[12px] text-muted">
-            {t.gearPlanCurrentDps}: <AbbreviatedNumber value={plan.currentDps} />
-            {' → '}
-            {t.gearPlanPlanDps}: <AbbreviatedNumber value={plan.planDps} />
-          </p>
-        </div>
-        <MetricScoreboard
+        <div
+          className="mt-1 grid gap-px overflow-hidden rounded-sm border border-line bg-line"
+          role="group"
           aria-label={t.gearPlanWaterfallTitle}
-          cells={cells}
-          className="sm:grid-cols-3 lg:grid-cols-3"
-        />
+        >
+          <div className="flex flex-col items-center justify-center bg-[color-mix(in_oklch,var(--accent)_8%,var(--surface))] px-4 py-5 text-center sm:px-5 sm:py-6">
+            <p className="m-0 text-[11px] font-bold tracking-[0.08em] text-muted uppercase">
+              {t.gearPlanTotalGainLabel}
+            </p>
+            <Tooltip.Root>
+              <Tooltip.Trigger
+                render={
+                  <p
+                    className={cn(
+                      'm-0 mt-2 text-[clamp(1.75rem,4vw,2.35rem)] leading-none font-black tracking-tight tabular-nums',
+                      totalDelta < 0 ? 'text-down' : 'text-up',
+                    )}
+                  />
+                }
+              >
+                {sub(t.gearPlanTotalGainValue, {
+                  delta: `${totalSign}${formatCompactNumber(totalDelta, 1)}`,
+                  pct: `${pctSign}${formatNumber(totalPct, 1)}`,
+                })}
+              </Tooltip.Trigger>
+              <Tooltip.Portal>
+                <Tooltip.Positioner sideOffset={6}>
+                  <Tooltip.Popup>
+                    <p className="m-0 font-mono">
+                      {sub(t.gearPlanTotalGainValue, {
+                        delta: `${totalSign}${formatNumber(totalDelta, 0)}`,
+                        pct: `${pctSign}${formatNumber(totalPct, 1)}`,
+                      })}
+                    </p>
+                  </Tooltip.Popup>
+                </Tooltip.Positioner>
+              </Tooltip.Portal>
+            </Tooltip.Root>
+          </div>
+
+          <div className="grid grid-cols-1 gap-px sm:grid-cols-3">
+            {plan.steps.map((step) => {
+              const showDelta = step.id !== 'today' && step.delta !== 0;
+              return (
+                <StepCell
+                  key={step.id}
+                  label={stepLabels[step.id](t)}
+                  value={<AbbreviatedNumber value={step.objective} />}
+                  delta={showDelta ? <AbbreviatedNumber value={step.delta} signed /> : null}
+                  deltaTone={step.delta < 0 ? 'down' : 'up'}
+                />
+              );
+            })}
+          </div>
+        </div>
       </Tooltip.Provider>
       {plan.requiresFullPlan ? (
-        <p className="m-0 mt-2 text-[12px] text-muted" role="status">
-          {sub(t.gearPlanGearDipNote, { delta: formatNumber(plan.gearDipDps, 0) })}
+        <p className="m-0 mt-2 text-center text-[12px] text-muted" role="status">
+          {withDeltaPlaceholder(
+            t.gearPlanGearDipNote,
+            <AbbreviatedNumber value={plan.gearDipDps} />,
+          )}
         </p>
       ) : null}
     </Panel>

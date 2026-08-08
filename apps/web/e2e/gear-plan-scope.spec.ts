@@ -25,7 +25,7 @@ test.describe('Gear plan hero scope', () => {
     await seedLocalStorage(page, gearPlanFixtureSeed('en'));
     await gotoGearPlan(page);
 
-    const korinCards = scopePanel(page).locator('article[aria-label*="Korin · L"]');
+    const korinCards = scopePanel(page).locator('article[aria-label*="Korin · Lv"]');
     await expect(korinCards).toHaveCount(2);
     const names = await korinCards.evaluateAll((nodes) =>
       nodes.map((node) => node.getAttribute('aria-label')),

@@ -16,16 +16,16 @@ function seedWithForgeFloor(floor: number) {
   return { ...base, account: { ...base.account!, forgeFloor: floor } };
 }
 
-test.describe('Gear plan forge floor', () => {
-  test('stepper increments forge floor in the UI', async ({ page }) => {
+test.describe('Gear plan min forge', () => {
+  test('stepper increments min forge in the UI', async ({ page }) => {
     await seedLocalStorage(page, gearPlanFixtureSeed('en'));
     await gotoGearPlan(page);
-    const increment = page.getByRole('button', { name: /Forge floor \+/i });
+    const increment = page.getByRole('button', { name: /Min forge \(\+\) \+/i });
     for (let i = 0; i < 5; i++) await increment.click();
     await expect(await readForgeFloorValue(page)).toBe('15');
   });
 
-  test('loads persisted forge floor and clamps out of range', async ({ page }) => {
+  test('loads persisted min forge and clamps out of range', async ({ page }) => {
     await seedLocalStorage(page, seedWithForgeFloor(15));
     await gotoGearPlan(page);
     await expect(await readForgeFloorValue(page)).toBe('15');
@@ -39,16 +39,16 @@ test.describe('Gear plan forge floor', () => {
     await expect(await readForgeFloorValue(page)).toBe('0');
   });
 
-  test('changing forge floor marks plan stale', async ({ page }) => {
+  test('changing min forge marks plan stale', async ({ page }) => {
     await seedLocalStorage(page, gearPlanFixtureSeed('en'));
     await gotoGearPlan(page);
     await clickOptimize(page);
     await waitForOptimizeDone(page);
-    await page.getByRole('button', { name: /Forge floor \+/i }).click();
+    await page.getByRole('button', { name: /Min forge \(\+\) \+/i }).click();
     await expect(page.getByText(/Inputs changed since this plan/i)).toBeVisible();
   });
 
-  test('import does not reset forge floor', async ({ page }) => {
+  test('import does not reset min forge', async ({ page }) => {
     await seedLocalStorage(page, seedWithForgeFloor(12));
     await gotoGearPlan(page);
     await expect(await readForgeFloorValue(page)).toBe('12');

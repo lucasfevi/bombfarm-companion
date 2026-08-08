@@ -37,7 +37,7 @@ test.describe('Gear plan per-hero proposed gear', () => {
     await expect(panel.getByText(/Forge from \+\d+ to \+\d+/i).first()).toBeVisible();
 
     for (let i = 0; i < 10; i++) {
-      await page.getByRole('button', { name: /Forge floor −/i }).click();
+      await page.getByRole('button', { name: /Min forge \(\+\) −/i }).click();
     }
     await expect(await readForgeFloorValue(page)).toBe('0');
     await clickOptimize(page);
@@ -61,17 +61,5 @@ test.describe('Gear plan per-hero proposed gear', () => {
       return;
     }
     await expect(fromNotes.first()).toBeVisible();
-  });
-
-  test('point reset list is hidden until expanded', async ({ page }) => {
-    const title = page.getByRole('heading', { name: /^Point resets$/i });
-    await expect(title).toBeVisible();
-    await expect(page.getByText(/from a reset/i)).toHaveCount(0);
-    await title.click();
-    const panel = title.locator('xpath=ancestor::section[1]');
-    const items = panel.locator('li');
-    const count = await items.count();
-    const empty = panel.getByText(/No point reset buys extra DPS/i);
-    expect(count > 0 || (await empty.isVisible())).toBe(true);
   });
 });

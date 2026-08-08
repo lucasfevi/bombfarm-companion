@@ -25,6 +25,20 @@ test.describe('Gear plan results panels', () => {
     await expect(page.getByText(/Best roster DPS found by this search/i)).toBeVisible();
   });
 
+  test('waterfall shows total gain above the three steps', async ({ page }) => {
+    const panel = page
+      .getByRole('heading', { name: /^Gain breakdown$/i, level: 2 })
+      .locator('xpath=ancestor::section[1]');
+    await expect(panel.getByText(/^Total gain$/i)).toBeVisible();
+    await expect(panel.getByText(/^Forge /i)).toHaveCount(0);
+    await expect(panel.getByText(/^Moves /i)).toHaveCount(0);
+  });
+
+  test('point resets panel is gone from results', async ({ page }) => {
+    await expect(page.getByRole('heading', { name: /^Point resets$/i })).toHaveCount(0);
+    await expect(page.getByRole('button', { name: /Send to alt loadout/i })).toHaveCount(0);
+  });
+
   test('per-hero panel renders a signed delta value', async ({ page }) => {
     const panel = page
       .getByRole('heading', { name: /Per-hero changes/i, level: 2 })
@@ -40,7 +54,7 @@ test.describe('Gear plan results panels', () => {
     const panel = page
       .getByRole('heading', { name: /Per-hero changes/i, level: 2 })
       .locator('xpath=ancestor::section[1]');
-    const korinRow = panel.getByRole('button', { name: /^Detailed breakdown for Korin · L\d+ · #\d+/i });
+    const korinRow = panel.getByRole('button', { name: /^Detailed breakdown for Korin · Lv\d+ · #\d+/i });
     await expect(korinRow.first()).toBeVisible();
   });
 
@@ -51,6 +65,6 @@ test.describe('Gear plan results panels', () => {
     const trigger = panel.getByRole('button', { name: /^Detailed breakdown for/i }).first();
     await trigger.click();
     await expect(panel.getByText(/^Stat breakdown$/i)).toBeVisible();
-    await expect(panel.getByText(/^Proposed gear$/i)).toBeVisible();
+    await expect(panel.getByText(/^Proposed items$/i)).toBeVisible();
   });
 });

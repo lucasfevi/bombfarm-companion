@@ -32,11 +32,12 @@ Browser-level smoke and visual baselines for the static export. Unit math stays 
 > project remains globally `describe.skip`; agents may not run `test:e2e:update` or accept
 > baselines. Before enabling `e2e/visual.spec.ts` for this route, a human should review:
 > empty states (no roster / no inventory / all leave alone), the three-column scope board
-> (desktop DnD; mobile per-card Select), Search setup (forge floor + Optimize), the
-> optimizing modal (hero6 bomb-activation loop, elapsed time, Cancel), post-run Run summary +
-> waterfall (no Today `+0`; no negative respec recommendation) + per-hero delta table with its
-> expanded proposed-gear cards (forge/move info), disclosures callouts, and the Send to alt
-> loadout confirm dialog. Smoke coverage lives under `e2e/gear-plan-*.spec.ts`.
+> (desktop DnD; mobile per-card Select), Search setup (Min forge (+) + Optimize), the
+> optimizing modal (hero6 bomb-activation loop, Cancel), post-run Run summary (plain-language
+> seed + elapsed seconds) + gain scoreboard / waterfall (no Today `+0`; no negative respec
+> recommendation) + expandable per-hero rows with proposed gear and point-reset details, and
+> disclosures callouts. The gear-plan page does not write heroes (no alt-loadout push). Smoke
+> coverage lives under `e2e/gear-plan-*.spec.ts`.
 
 **Local e2e runs in Docker** — same Ubuntu + Chromium stack as CI. Any machine (Windows, macOS, Linux) produces identical pixels when you run the scripts below. CI is a verification gate: if you ran the local workflow, the PR checks should pass.
 

@@ -9,18 +9,23 @@ import {
 } from './fixtures/gear-plan-e2e';
 
 test.describe('Gear plan optimize run', () => {
-  test('optimize shows run summary with regime', async ({ page }) => {
+  test('optimize shows a plain-language search summary', async ({ page }) => {
     await seedLocalStorage(page, gearPlanFixtureSeed('en'));
     await gotoGearPlan(page);
     await clickOptimize(page);
     await waitForOptimizeDone(page);
 
-    await expect(page.getByText(/^Regime:/i)).toBeVisible();
-    await expect(page.getByText(/Under-saturated|Saturated/i)).toBeVisible();
-    await expect(page.getByText(/Σ duty vs slots/i)).toBeVisible();
-    await expect(page.getByText(/Rounds:/i)).toBeVisible();
-    await expect(page.getByText(/Evaluations:/i)).toBeVisible();
-    await expect(page.getByText(/Elapsed:/i)).toBeVisible();
+    const summary = page
+      .getByRole('heading', { name: /^Search summary$/i, level: 2 })
+      .locator('xpath=ancestor::section[1]');
+    await expect(summary.getByText(/^Field status:/i)).toBeVisible();
+    await expect(summary.getByText(/Fits the field|Field is full/i)).toBeVisible();
+    await expect(summary.getByText(/^Battle load:/i)).toBeVisible();
+    await expect(summary.getByText(/Took [\d.]+s/i)).toBeVisible();
+    await expect(summary.getByText(/search passes/i)).toBeVisible();
+    await expect(summary.getByText(/builds checked/i)).toBeVisible();
+    await expect(summary.getByText(/started from today's gear|started with/i)).toBeVisible();
+    await expect(summary.getByRole('button', { name: /Search details/i })).toHaveCount(0);
   });
 
   test('second click while running does not duplicate summaries', async ({ page }) => {
@@ -30,7 +35,7 @@ test.describe('Gear plan optimize run', () => {
     await button.click();
     await button.click({ force: true });
     await waitForOptimizeDone(page);
-    await expect(page.getByText(/^Regime:/i)).toHaveCount(1);
+    await expect(page.getByRole('heading', { name: /^Search summary$/i, level: 2 })).toHaveCount(1);
   });
 
   test('budget exhausted shows truncation notice', async ({ page }) => {
@@ -39,8 +44,6 @@ test.describe('Gear plan optimize run', () => {
     await gotoGearPlan(page);
     await clickOptimize(page);
     await waitForOptimizeDone(page);
-    await expect(
-      page.getByText(/Search stopped at the evaluation cap/i),
-    ).toBeVisible();
+    await expect(page.getByText(/Search stopped early to save time/i)).toBeVisible();
   });
 });

@@ -1,6 +1,5 @@
 import type { StateCreator } from 'zustand';
 import { patchHeroInList, type HeroRecord } from '@/shared/lib/storage';
-import type { Loadout } from '@bombfarm/domain/gear';
 import type { PlannerStore } from '@/shared/stores/planner-store';
 import {
   writeActiveHeroId,
@@ -8,7 +7,6 @@ import {
   writeImportedRoster,
   writeRosterAfterDelete,
 } from '@/shared/stores/persistence/persist-roster';
-import { saveHeroes } from '@/shared/lib/storage';
 
 export type RosterSlice = {
   heroes: HeroRecord[];
@@ -24,8 +22,6 @@ export type RosterSlice = {
   importHeroRecords: (
     records: (Omit<HeroRecord, 'id' | 'updatedAt'> & { sourceId: string })[],
   ) => { heroes: HeroRecord[]; created: number; updated: number };
-  /** Writes only `altLoadout` for heroes present in the map. */
-  setAltLoadouts: (updates: Record<string, Loadout>) => void;
 };
 
 export const createRosterSlice: StateCreator<
@@ -91,34 +87,5 @@ export const createRosterSlice: StateCreator<
       heroBattleAllowed: active.battleAllowed ?? true,
     });
     return result;
-  },
-
-  setAltLoadouts: (updates) => {
-    const state = get();
-    let next = state.heroes;
-    let changed = false;
-    for (const hero of state.heroes) {
-      const loadout = updates[hero.id];
-      if (!loadout) continue;
-      const saved: HeroRecord = {
-        ...hero,
-        altLoadout: loadout,
-        updatedAt: Date.now(),
-      };
-      const patched = patchHeroInList(next, saved);
-      if (patched !== next) {
-        next = patched;
-        changed = true;
-      }
-    }
-    if (!changed) return;
-    saveHeroes(next);
-    if (state.activeHeroId && updates[state.activeHeroId]) {
-      const active = next.find((hero) => hero.id === state.activeHeroId);
-      if (active) {
-        state.setAltLoadout(active.altLoadout);
-      }
-    }
-    set({ heroes: next });
   },
 });

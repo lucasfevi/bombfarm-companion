@@ -21,9 +21,7 @@ import { GearPlanOptimizingModal } from './gear-plan-optimizing-modal';
 import { ScopeList } from './scope-list';
 import { WaterfallPanel } from './waterfall-panel';
 import { HeroDeltaTable } from './hero-delta-table';
-import { PointResetList } from './point-reset-list';
 import { PlanDisclosures } from './plan-disclosures';
-import { SendToAltLoadout } from './send-to-alt-loadout';
 
 export function GearPlanPage({
   t,
@@ -160,9 +158,12 @@ export function GearPlanPage({
                   />
                   <WaterfallPanel t={t} plan={displayPlan} />
                   <HeroDeltaTable t={t} lang={lang} plan={displayPlan} />
-                  <PointResetList t={t} plan={displayPlan} />
-                  <PlanDisclosures t={t} plan={displayPlan} requestedForgeFloor={forgeFloor} />
-                  <SendToAltLoadout t={t} plan={displayPlan} />
+                  <PlanDisclosures
+                    t={t}
+                    lang={lang}
+                    plan={displayPlan}
+                    requestedForgeFloor={forgeFloor}
+                  />
                 </div>
               </section>
             ) : null}

@@ -1,7 +1,7 @@
 'use client';
 
 import { useDraggable } from '@dnd-kit/core';
-import { Select, cn } from '@bombfarm/ui';
+import { Select, Tooltip, cn } from '@bombfarm/ui';
 import { RARITIES } from '@bombfarm/domain/planner-constants';
 import { rarityLabel } from '@bombfarm/domain/game-labels';
 import { HeroAvatar, rarityTextClass } from '@/shared/game-art';
@@ -44,6 +44,7 @@ export function ScopeHeroCard({
   const stars = Math.max(0, Math.min(3, Math.round(hero.stars ?? 0)));
   const battleAllowed = hero.battleAllowed ?? true;
   const shortId = shortHeroRecordId(hero);
+  const sourceId = hero.sourceId ?? hero.id;
   const label = sub(t.gearPlanHeroRowLabel, {
     name: hero.name,
     level: String(hero.level),
@@ -61,7 +62,6 @@ export function ScopeHeroCard({
         !battleAllowed && 'bg-[color-mix(in_oklch,var(--bg)_50%,transparent)]',
       )}
       aria-label={label}
-      title={hero.sourceId ?? hero.id}
       {...(overlay ? {} : { ...listeners, ...attributes })}
     >
       <div className="flex items-start gap-2">
@@ -96,10 +96,26 @@ export function ScopeHeroCard({
             <span className={cn('truncate font-bold', rarityTextClass(rarIdx) ?? 'text-muted')}>
               {rarityLabel(hero.rarity, lang)}
             </span>
-            <span className="shrink-0 text-muted">
-              L{hero.level}
-              <span aria-hidden> · </span>#{shortId}
-            </span>
+            <Tooltip.Root>
+              <Tooltip.Trigger
+                render={
+                  <span
+                    className="shrink-0 cursor-help text-muted"
+                    onPointerDown={(event) => event.stopPropagation()}
+                  />
+                }
+              >
+                Lv{hero.level}
+                <span aria-hidden> · </span>#{shortId}
+              </Tooltip.Trigger>
+              <Tooltip.Portal>
+                <Tooltip.Positioner sideOffset={6}>
+                  <Tooltip.Popup>
+                    <p className="m-0 font-mono text-[12px]">{sourceId}</p>
+                  </Tooltip.Popup>
+                </Tooltip.Positioner>
+              </Tooltip.Portal>
+            </Tooltip.Root>
           </div>
           {!overlay ? (
             <div

@@ -55,7 +55,7 @@ export function GearPlanToolbar({ t, runner }: { t: Strings; runner: GearPlanRun
       <div className={panelHClass}>
         <h2 className={panelTitleClass}>{t.gearPlanSetupSectionTitle}</h2>
       </div>
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between sm:gap-6">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between sm:gap-6">
         <ForgeFloorField t={t} />
         <Button
           type="button"

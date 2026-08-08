@@ -5,7 +5,7 @@ import { RARITIES } from '@bombfarm/domain/planner-constants';
 import { rarityLabel } from '@bombfarm/domain/game-labels';
 import { formatNumber } from '@/shared/lib/format-number';
 import type { Lang, Strings } from '@/shared/i18n';
-import { cn, DataTable, Switch } from '@bombfarm/ui';
+import { cn, DataTable, Switch, Tooltip } from '@bombfarm/ui';
 import {
   HeroAbilityIcons,
   HeroAvatar,
@@ -81,7 +81,7 @@ export function ImportCandidateRow({
         </span>
       </DataTable.Cell>
       <DataTable.Cell numeric className={inactiveChrome}>
-        L{candidate.level}
+        Lv{candidate.level}
       </DataTable.Cell>
       <DataTable.Cell align="right" numeric className={inactiveChrome}>
         {formatNumber(candidate.power, 0)}
@@ -93,26 +93,34 @@ export function ImportCandidateRow({
         <HeroAbilityIcons abilities={candidate.record.abilities} lang={lang} />
       </DataTable.Cell>
       <DataTable.Cell className="max-[720px]:hidden">
-        <div className="inline-flex items-center gap-1.5">
-          <Switch
-            checked={battleAllowed}
-            readOnly
-            disabled
-            aria-label={t.heroBattleToggleAria}
-            title={statusTitle}
-          />
-          <span className="grid justify-items-start" title={statusTitle}>
-            <span className={cn(statusLabelClass, 'invisible')} aria-hidden>
-              {t.heroBattleActive}
+        <Tooltip.Root>
+          <Tooltip.Trigger render={<span />} className="inline-flex items-center gap-1.5">
+            <Switch
+              checked={battleAllowed}
+              readOnly
+              disabled
+              aria-label={t.heroBattleToggleAria}
+            />
+            <span className="grid justify-items-start">
+              <span className={cn(statusLabelClass, 'invisible')} aria-hidden>
+                {t.heroBattleActive}
+              </span>
+              <span className={cn(statusLabelClass, 'invisible')} aria-hidden>
+                {t.heroBattleInactive}
+              </span>
+              <span className={cn(statusLabelClass, battleAllowed ? 'text-accent' : 'text-warn')}>
+                {statusLabel}
+              </span>
             </span>
-            <span className={cn(statusLabelClass, 'invisible')} aria-hidden>
-              {t.heroBattleInactive}
-            </span>
-            <span className={cn(statusLabelClass, battleAllowed ? 'text-accent' : 'text-warn')}>
-              {statusLabel}
-            </span>
-          </span>
-        </div>
+          </Tooltip.Trigger>
+          <Tooltip.Portal>
+            <Tooltip.Positioner sideOffset={6}>
+              <Tooltip.Popup>
+                <p className="m-0 text-[12px]">{statusTitle}</p>
+              </Tooltip.Popup>
+            </Tooltip.Positioner>
+          </Tooltip.Portal>
+        </Tooltip.Root>
       </DataTable.Cell>
     </DataTable.Row>
   );

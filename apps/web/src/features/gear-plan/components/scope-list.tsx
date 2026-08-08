@@ -13,7 +13,7 @@ import {
   type DragEndEvent,
   type DragStartEvent,
 } from '@dnd-kit/core';
-import { Panel } from '@bombfarm/ui';
+import { Panel, Tooltip } from '@bombfarm/ui';
 import { panelHClass, panelTitleClass } from '@bombfarm/ui/panel-field.recipe';
 import type { Lang, Strings } from '@/shared/i18n';
 import { usePlannerStore, selectHeroes, selectScopeByHeroId } from '@/shared/stores';
@@ -125,35 +125,37 @@ export function ScopeList({ t, lang }: { t: Strings; lang: Lang }) {
         onDragEnd={onDragEnd}
         onDragCancel={() => setActiveId(null)}
       >
-        <div className="grid grid-cols-1 gap-2 md:grid-cols-3">
-          {COLUMNS.map((scope) => (
-            <ScopeColumn
-              key={scope}
-              scope={scope}
-              title={columnCopy[scope].title}
-              tip={columnCopy[scope].tip}
-              heroes={byColumn[scope]}
-              scopeByHeroId={resolvedScope}
-              t={t}
-              lang={lang}
-              onScope={setScope}
-            />
-          ))}
-        </div>
-        <DragOverlay dropAnimation={null}>
-          {activeHero ? (
-            <div className="w-[min(100vw-2rem,13rem)]">
-              <ScopeHeroCard
-                hero={activeHero}
-                scope={resolvedScope[activeHero.id] ?? 'optimize'}
+        <Tooltip.Provider delay={200} closeDelay={80}>
+          <div className="grid grid-cols-1 gap-2 md:grid-cols-3">
+            {COLUMNS.map((scope) => (
+              <ScopeColumn
+                key={scope}
+                scope={scope}
+                title={columnCopy[scope].title}
+                tip={columnCopy[scope].tip}
+                heroes={byColumn[scope]}
+                scopeByHeroId={resolvedScope}
                 t={t}
                 lang={lang}
-                onScope={() => {}}
-                overlay
+                onScope={setScope}
               />
-            </div>
-          ) : null}
-        </DragOverlay>
+            ))}
+          </div>
+          <DragOverlay dropAnimation={null}>
+            {activeHero ? (
+              <div className="w-[min(100vw-2rem,13rem)]">
+                <ScopeHeroCard
+                  hero={activeHero}
+                  scope={resolvedScope[activeHero.id] ?? 'optimize'}
+                  t={t}
+                  lang={lang}
+                  onScope={() => {}}
+                  overlay
+                />
+              </div>
+            ) : null}
+          </DragOverlay>
+        </Tooltip.Provider>
       </DndContext>
     </Panel>
   );

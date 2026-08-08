@@ -1,7 +1,7 @@
 'use client';
 
 import type { Strings } from '@/shared/i18n';
-import { Switch, cn } from '@bombfarm/ui';
+import { Switch, Tooltip, cn } from '@bombfarm/ui';
 
 type Props = {
   battleAllowed: boolean;
@@ -24,7 +24,7 @@ export function HeroActiveToggle({
   showLabel = true,
 }: Props) {
   const label = battleAllowed ? t.heroBattleActive : t.heroBattleInactive;
-  const title = battleAllowed ? t.heroBattleActiveTitle : t.heroBattleInactiveTitle;
+  const tip = battleAllowed ? t.heroBattleActiveTitle : t.heroBattleInactiveTitle;
   const labelClass = 'col-start-1 row-start-1 text-[11px] leading-none font-bold tracking-wider uppercase';
 
   return (
@@ -33,25 +33,40 @@ export function HeroActiveToggle({
       onClick={(event) => event.stopPropagation()}
       onKeyDown={(event) => event.stopPropagation()}
     >
-      <Switch
-        checked={battleAllowed}
-        onCheckedChange={onCheckedChange}
-        aria-label={t.heroBattleToggleAria}
-        title={title}
-      />
-      {showLabel ? (
-        <span className="grid justify-items-start" title={title}>
-          <span className={cn(labelClass, 'invisible')} aria-hidden>
-            {t.heroBattleActive}
-          </span>
-          <span className={cn(labelClass, 'invisible')} aria-hidden>
-            {t.heroBattleInactive}
-          </span>
-          <span className={cn(labelClass, battleAllowed ? 'text-accent' : 'text-warn')}>
-            {label}
-          </span>
-        </span>
-      ) : null}
+      <Tooltip.Provider delay={200} closeDelay={80}>
+        <Tooltip.Root>
+          <Tooltip.Trigger
+            render={<span />}
+            className="inline-flex items-center gap-1.5"
+          >
+            <Switch
+              checked={battleAllowed}
+              onCheckedChange={onCheckedChange}
+              aria-label={t.heroBattleToggleAria}
+            />
+            {showLabel ? (
+              <span className="grid justify-items-start">
+                <span className={cn(labelClass, 'invisible')} aria-hidden>
+                  {t.heroBattleActive}
+                </span>
+                <span className={cn(labelClass, 'invisible')} aria-hidden>
+                  {t.heroBattleInactive}
+                </span>
+                <span className={cn(labelClass, battleAllowed ? 'text-accent' : 'text-warn')}>
+                  {label}
+                </span>
+              </span>
+            ) : null}
+          </Tooltip.Trigger>
+          <Tooltip.Portal>
+            <Tooltip.Positioner sideOffset={6}>
+              <Tooltip.Popup>
+                <p className="m-0 text-[12px]">{tip}</p>
+              </Tooltip.Popup>
+            </Tooltip.Positioner>
+          </Tooltip.Portal>
+        </Tooltip.Root>
+      </Tooltip.Provider>
     </div>
   );
 }
