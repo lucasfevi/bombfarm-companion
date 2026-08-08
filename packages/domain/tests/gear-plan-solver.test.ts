@@ -116,6 +116,33 @@ describe('runGearPlan', () => {
     expect(Array.isArray(result.plan.disclosures.unmodelledAbilities)).toBe(true);
     expect(result.plan.disclosures.marketBlockedItemCount).toBeGreaterThanOrEqual(0);
     expect(result.plan.disclosures.foreignOwnedItemCount).toBeGreaterThanOrEqual(0);
+    expect(result.plan.disclosures.unresolvedDefItemCount).toBeGreaterThanOrEqual(0);
+  });
+
+  it('surfaces an item with an unresolvable defId in unresolvedDefItemCount', () => {
+    const input = gearPlanInputFromFixture('save-20260731-11heroes.json');
+    const before = runGearPlan(input);
+    assertOk(before);
+    input.inventory = [
+      ...input.inventory,
+      {
+        id: 'unresolved-probe',
+        defId: 'this_def_id_does_not_exist_in_the_catalog',
+        rarityIdx: 0,
+        level: 10,
+        upgrade: 0,
+        slot: null,
+        equipped: false,
+        equippedBy: null,
+        defResolved: false,
+        marketBlocked: false,
+      },
+    ];
+    const after = runGearPlan(input);
+    assertOk(after);
+    expect(after.plan.disclosures.unresolvedDefItemCount).toBe(
+      before.plan.disclosures.unresolvedDefItemCount + 1,
+    );
   });
 
   it('records elapsedMs as a non-negative number', () => {

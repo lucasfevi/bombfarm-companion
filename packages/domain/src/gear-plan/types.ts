@@ -191,6 +191,7 @@ export type GearPlan = {
     loadoutDriftHeroNames: string[];
     foreignOwnedItemCount: number;
     marketBlockedItemCount: number;
+    unresolvedDefItemCount: number;
   };
   run: {
     rounds: number;

@@ -56,7 +56,7 @@ export function PlanDisclosures({
         <p className="m-0">
           {sub(t.gearPlanExcludedItems, {
             market: String(plan.disclosures.marketBlockedItemCount),
-            unresolved: '0',
+            unresolved: String(plan.disclosures.unresolvedDefItemCount),
             foreign: String(plan.disclosures.foreignOwnedItemCount),
           })}
         </p>

@@ -180,6 +180,7 @@ export function runGearPlan(
       loadoutDriftHeroNames: loadoutDriftHeroNames(input),
       foreignOwnedItemCount: gearPool.excluded.foreignOwner,
       marketBlockedItemCount: gearPool.excluded.marketBlocked,
+      unresolvedDefItemCount: gearPool.excluded.unresolvedDef,
     },
     run: {
       rounds: best.rounds,
