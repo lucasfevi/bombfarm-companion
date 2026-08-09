@@ -20,6 +20,13 @@ export type ResolveDeriveSheetsInput = {
   treeEnergy: number;
   /** `skills.totals.luck_add × 100` — flat Luck percentage points (BSPW5-03, ASM-01). */
   treeLuckFlatPct: number;
+  /**
+   * Glass Cannon (C15) / Tempo Dobrado (V15) — same booleans `computeCombatMults` used to take
+   * before the keystone sheet-math correction moved their effects to `applySkillTree`. Default
+   * `false` for callers that predate this field (identity: no keystone effect).
+   */
+  treeGlassCannon?: boolean;
+  treeTempoDobrado?: boolean;
   /** Abisso — zeroes Crit tree sheet adds before applySkillTree / birth recompose. */
   treeAbisso?: boolean;
   /**
@@ -55,12 +62,17 @@ export function resolveDeriveSheets(input: ResolveDeriveSheetsInput): ResolvedDe
     treeSpeed,
     treeEnergy,
     treeLuckFlatPct,
+    treeGlassCannon = false,
+    treeTempoDobrado = false,
     treeAbisso = false,
     birth,
   } = input;
 
-  // luckFlatPct from account slice (skills.totals.luck_add × 100). critDmgMult on the sheet
-  // stays 1 — Glass Cannon's ×2 is a combat mult in computeCombatMults (suppressed by Abisso).
+  // luckFlatPct from account slice (skills.totals.luck_add × 100). Glass Cannon's crit_dmg_mult
+  // is always exactly 2 in every observed save when C15 is owned (never a different scaled
+  // value) — the same literal computeCombatMults used to apply as a (now-removed) combat
+  // multiplier before the keystone sheet-math correction moved it into applySkillTree.
+  // effectiveTreeSheetForAbisso does NOT gate critDmgMult — Abisso doesn't suppress it.
   const treeSheet: TreeSheetTotals = effectiveTreeSheetForAbisso(
     {
       danoStatic: treeDanoTotal,
@@ -69,7 +81,9 @@ export function resolveDeriveSheets(input: ResolveDeriveSheetsInput): ResolvedDe
       critChancePct: treeCritChance,
       critDmgPct: treeCritDmg,
       luckFlatPct: treeLuckFlatPct,
-      critDmgMult: 1,
+      critDmgMult: treeGlassCannon ? 2 : 1,
+      glassCannon: treeGlassCannon,
+      tempoDobrado: treeTempoDobrado,
     },
     treeAbisso,
   );

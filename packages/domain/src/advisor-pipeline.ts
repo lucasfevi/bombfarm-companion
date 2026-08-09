@@ -183,6 +183,8 @@ export function computeAdvisorPipeline(input: AdvisorPipelineInput): AdvisorPipe
     treeSpeed,
     treeEnergy,
     treeLuckFlatPct,
+    treeGlassCannon,
+    treeTempoDobrado,
     treeAbisso,
     birth,
   });

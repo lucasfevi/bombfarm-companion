@@ -11,7 +11,14 @@ import { EquippedItem, Loadout, emptyLoadout, emptySheetOther } from './gear';
 import { ZERO_PTS, type SheetKey } from './planner-constants';
 import { HeroRecord } from './shims/storage';
 import { isKnownSkin } from './wiki-assets';
-import { birthFromSave, hasUsableBirthStats, saveSheetUnits, treeTotalsFromSave } from './save-units';
+import {
+  birthFromSave,
+  detectGlassCannon,
+  detectTempoDobrado,
+  hasUsableBirthStats,
+  saveSheetUnits,
+  treeTotalsFromSave,
+} from './save-units';
 import { composeSheetFromBirth, nakedFromBirth, type BirthStats, type TreeSheetTotals } from './birth-sheet';
 import { inferSpentPoints, type PointInferenceIssue } from './point-inference';
 import { unmodelledTreeFindings } from './tree-guards';
@@ -105,14 +112,15 @@ function bool(value: unknown, fallback = false): boolean {
  * Maps `skills.totals` (skill-tree aggregate bonuses) and `casa` (current house)
  * into the app's account-wide TreeState/HeroContext shape.
  *
- * `danoTotal` and the keystone flags are best-effort: `dmg_static` matches
- * `(1 + team_dmg_add) * geo_mult` almost exactly in every save sampled so far
- * (and already includes Abisso geometric damage when D15 is owned). Glass Cannon
- * is detected from `crit_dmg_mult` (a direct mechanical signal — still `2` under
- * Abisso even though combat must ignore ×2). Abisso is `abisso_base > 0` or
- * `keystones` contains `d15`. Tempo Dobrado has no numeric signal and only lights
- * up if `keystones` contains an id we recognize, so it defaults to off (safe: the
- * user can still tick it manually).
+ * `danoTotal` is `dmg_static` taken as an OPAQUE, already-computed total — do not try to
+ * reconstruct it from `(1 + team_dmg_add) * geo_mult`. That product does not match: measured
+ * `2.797` predicted vs `3624.70` actual on a real save. `dmg_static` is also NOT live with
+ * respect to Abisso/geo phase — it read identically across two exports of the same account
+ * taken at different phases, so whatever composes it server-side is not simply
+ * `team_dmg_add`/`geo_mult` reflected here. Glass Cannon / Tempo Dobrado detection is shared
+ * with the per-hero sheet mapper (`treeTotalsFromSave`) via `detectGlassCannon` /
+ * `detectTempoDobrado` (save-units.ts) so the two never drift apart. Abisso is
+ * `abisso_base > 0` or `keystones` contains `d15`.
  */
 function mapAccountData(raw: Record<string, unknown>): AccountImportData {
   const skills = isObject(raw.skills) ? raw.skills : null;
@@ -129,8 +137,8 @@ function mapAccountData(raw: Record<string, unknown>): AccountImportData {
       critDmg: asNumber(totals.crit_dmg_add) * 100,
       speed: asNumber(totals.speed_add) * 100,
       energy: asNumber(totals.energia_add) * 100,
-      glassCannon: asNumber(totals.crit_dmg_mult, 1) >= 1.5 || keystones.some((k) => k === 'c15'),
-      tempoDobrado: keystones.some((keystone) => keystone.includes('tempo') || keystone === 'v15'),
+      glassCannon: detectGlassCannon(totals),
+      tempoDobrado: detectTempoDobrado(totals),
       abisso: asNumber(totals.abisso_base) > 0 || keystones.some((k) => k === 'd15'),
       teamCoinPct: asNumber(totals.coin_add ?? totals.team_coin_add) * 100,
       // BSPW5-03 (ASM-01): flat Luck percentage points — absent key defaults to 0.

@@ -30,16 +30,20 @@ export type CombatMults = {
 
 /**
  * `treeEnergy` and `treeDanoTotal` are GONE (BSP-23c, DEC-01) — both now live on the sheet
- * only (`applySkillTree`), never in a combat multiplier. `treeGlassCannon` /
- * `treeTempoDobrado` / `treeAbisso` are boolean account keystones sniffed off the save
- * (not `skills.totals` percentage fields).
+ * only (`applySkillTree`), never in a combat multiplier. `treeGlassCannon` / `treeTempoDobrado`
+ * / `treeAbisso` are boolean account keystones sniffed off the save (not `skills.totals`
+ * percentage fields); they are accepted here for call-site compatibility (`team-plan`,
+ * `advisor-pipeline.ts`, `farm-context.ts`'s drain-rate use) but are no longer read by this
+ * function — Glass Cannon's energy ×0.5 / crit-damage ×2 and Tempo Dobrado's speed ×1.33333
+ * are all sheet-layer effects now (`TreeSheetTotals.glassCannon` / `.tempoDobrado` /
+ * `.critDmgMult`, applied once in `applySkillTree`). Applying them here too would double them.
  */
 export type ComputeCombatMultsInput = {
   mods: AbilityMods;
   teamBuffs: Record<TeamBuffId, number>;
   treeGlassCannon: boolean;
   treeTempoDobrado: boolean;
-  /** When true, Glass Cannon’s crit ×2 is suppressed; energy ×0.5 still applies. */
+  /** Unused by this function (see the type doc above) — kept for call-site compatibility. */
   treeAbisso?: boolean;
   extraDmgPct: number;
 };
@@ -64,14 +68,19 @@ export function stackTeamBonusMult(ownMult: number, otherHeroesBuffPct: number):
  * contributes anything here (BSP-23c) — `dmg_static` and `energia_add` are sheet-level
  * factors applied once by `applySkillTree`, not a second time on top of the combat sheet.
  *
- * Glass Cannon (C15): energy ×0.5 always when on; crit dmg ×2 only when Abisso is off.
- * Abisso (D15) zeroes Crit/GEO sheet adds in the exporter but leaves a stale
- * `crit_dmg_mult: 2` — combat must ignore ×2 while Abisso is on. Do not separately add
- * Glass Cannon’s +25% crit here: when Abisso is off it is already inside imported
- * `crit_chance_add`; when Abisso is on the export zeroes that add.
+ * Glass Cannon (C15) and Tempo Dobrado (V15) ALSO contribute nothing here as of the keystone
+ * sheet-math correction: energy ×0.5, crit-damage ×2 (`crit_dmg_mult`), and speed ×1.33333 are
+ * all sheet-layer factors now (`applySkillTree` via `TreeSheetTotals.glassCannon` /
+ * `.tempoDobrado` / `.critDmgMult`), applied once when the sheet is composed. Applying them
+ * again here — the previous design — double-counted them and, worse, scaled the WHOLE
+ * running total (ability/tree/point contributions included) instead of only the birth base,
+ * which is not what the game does (verified against real save exports). Abisso does NOT
+ * suppress Glass Cannon's crit-damage ×2 either way — `treeGlassCannon` / `treeTempoDobrado` /
+ * `treeAbisso` stay on this input purely for call-site compatibility (team-plan,
+ * advisor-pipeline.ts, farm-context.ts's unrelated drain-rate use).
  */
 export function computeCombatMults(input: ComputeCombatMultsInput): CombatMults {
-  const { mods, teamBuffs, treeGlassCannon, treeTempoDobrado, treeAbisso, extraDmgPct } = input;
+  const { mods, teamBuffs, extraDmgPct } = input;
   const teamAtkMult = stackTeamBonusMult(1, teamBuffs.grito_guerra || 0);
   const teamSpeedMult = stackTeamBonusMult(1, teamBuffs.marcha_acelerada || 0);
   const teamDrainMult = Math.max(0.01, 1 - (teamBuffs.folego_mineiro || 0) / 100);
@@ -84,10 +93,10 @@ export function computeCombatMults(input: ComputeCombatMultsInput): CombatMults 
     teamGateMult,
     teamCritPctOfBase,
     attackMult: stackTeamBonusMult(mods.attackMult, teamBuffs.grito_guerra || 0),
-    speedMult: stackTeamBonusMult(mods.speedMult, teamBuffs.marcha_acelerada || 0) * (treeTempoDobrado ? 1.33333 : 1),
+    speedMult: stackTeamBonusMult(mods.speedMult, teamBuffs.marcha_acelerada || 0),
     gateAttackMult: stackTeamBonusMult(mods.gateAttackMult, teamBuffs.contra_relogio || 0),
-    energyMult: treeGlassCannon ? 0.5 : 1,
-    critDmgMult: treeGlassCannon && !treeAbisso ? 2 : 1,
+    energyMult: 1,
+    critDmgMult: 1,
     dmgMult: mods.dmgMult * (1 + extraDmgPct / 100),
   };
 }
@@ -137,7 +146,13 @@ export type DeriveResult = {
  * already post-`dmg_static` (AD-BSP-12) and attack has no ratio-based analogue to cancel it.
  * `delta.energy` needs no explicit tree factor (BSPW5-11/DISC-01) — `gem = geared.energy /
  * naked.energy` already carries `energia_add` once `naked` is `nakedFromBirth`'s tree-free
- * output; an explicit `(1 + energyPct/100)` on top would double it.
+ * output; an explicit `(1 + energyPct/100)` on top would double it. Glass Cannon's energy
+ * ×0.5 rides along in the same ratio for free (`naked` is keystone-free too, `geared` carries
+ * it via `applySkillTree`) — this is also why `energyMult` here must stay `1` for Glass
+ * Cannon (`computeCombatMults` no longer sets it otherwise). Similarly, `naked.critDmg` /
+ * `naked.speed` stay `critDmgMult`/Tempo-Dobrado-free by construction, so `delta.critDmg` /
+ * `delta.speed` below are already the correct un-multiplied per-point gain — no change needed
+ * for either correction.
  */
 export function derive(input: DeriveInput): DeriveResult {
   const {
