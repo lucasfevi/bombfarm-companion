@@ -3,6 +3,7 @@ name: Playwright e2e (web)
 on:
   workflow_dispatch:
   pull_request:
+    types: [opened, synchronize, reopened, labeled]
   push:
     branches: [main, develop]
     paths:
@@ -23,7 +24,7 @@ permissions:
   pull-requests: write
 
 env:
-  SHARD_TOTAL: 4
+  SHARD_TOTAL: 2
   PAGES_ROOT: https://lucasfevi.github.io/bombfarm-companion
 
 jobs:
@@ -93,7 +94,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        shard: [1, 2, 3, 4]
+        shard: [1, 2]
     defaults:
       run:
         working-directory: apps/web
@@ -155,7 +156,12 @@ jobs:
 
   visual-e2e:
     needs: [changes, build-e2e]
-    if: github.event_name != 'pull_request' || needs.changes.outputs.e2e == 'true'
+    if: >
+      (github.event_name != 'pull_request' || needs.changes.outputs.e2e == 'true') &&
+      (
+        github.event_name != 'pull_request' ||
+        contains(join(github.event.pull_request.labels.*.name, ','), 'visual-ci')
+      )
     runs-on: ubuntu-latest
     timeout-minutes: 15
     defaults:
@@ -491,14 +497,25 @@ jobs:
         if: needs.changes.outputs.e2e != 'true'
         run: echo "No e2e-relevant file changes."
 
-      - name: Require visual suite
-        if: needs.changes.outputs.e2e == 'true'
+      - name: Skip — visual gated on PRs without visual-ci
+        if: needs.visual-e2e.result == 'skipped'
+        run: echo "Visual e2e skipped (runs on develop/main, or add label visual-ci)."
+
+      - name: Require visual suite when it ran
+        if: needs.visual-e2e.result == 'failure' || needs.visual-e2e.result == 'cancelled'
         run: |
           if [ "${{ needs.build-e2e.result }}" != "success" ]; then
             echo "build-e2e: ${{ needs.build-e2e.result }}"
             exit 1
           fi
-          if [ "${{ needs.visual-e2e.result }}" != "success" ]; then
-            echo "visual-e2e: ${{ needs.visual-e2e.result }}"
+          echo "visual-e2e: ${{ needs.visual-e2e.result }}"
+          exit 1
+
+      - name: Require visual suite success
+        if: needs.visual-e2e.result == 'success'
+        run: |
+          if [ "${{ needs.build-e2e.result }}" != "success" ]; then
+            echo "build-e2e: ${{ needs.build-e2e.result }}"
             exit 1
           fi
+          echo "visual-e2e passed."

@@ -46,22 +46,28 @@ Logic lives in [`tools/release/release-plan.mjs`](../tools/release/release-plan.
 
 ## Version sync and parity guard
 
-After a release PR merges, `release-sync.yml` recreates `release/next` from the merged PR head (fetching `pull/<n>/head` so the SHA remains reachable after `delete_branch_on_merge`), opens `chore(release): sync versions to develop` (`release/next` → `develop`), dispatches required CI on that head, and enables auto-merge when the repository setting allows it.
+After a release PR merges, `release-sync.yml` recreates `release/next` from the merged PR head (fetching `pull/<n>/head` so the SHA remains reachable after `delete_branch_on_merge`), opens `chore(release): sync versions to develop` (`release/next` → `develop`) with **`RELEASE_PAT`** so normal PR checks run, and enables auto-merge when the repository setting allows it.
 
 While `develop` is **behind** `main` on package versions (sync PR pending or failed), [release-pr.yml](../.github/workflows/release-pr.yml) **skips** creating or updating the release PR and writes a job summary: *waiting on version-sync PR*. This prevents double-bumping.
 
 If sync PR creation or auto-merge fails, the job fails loudly and prints manual commands. Fix the sync PR before the next release run.
 
-## Required CI fan-out
+## Required CI on the release PR
 
-GitHub does not run workflows on PRs opened by `GITHUB_TOKEN`. The release rail therefore **dispatches** `ci-web.yml`, `ci-desktop.yml`, and `e2e-web.yml` onto `release/next` after upserting the release PR. All three are dispatched even when the release set is web-only or desktop-only, because each workflow owns a required check context that must report on the release head.
+Release version commits and the `release/next` → `main` PR are authored with the
+repository secret **`RELEASE_PAT`** (classic PAT or fine-grained token with
+`contents` + `pull_requests` write) so GitHub runs normal `pull_request` checks on
+that head. Do **not** use `GITHUB_TOKEN` for those steps — token-authored PRs do
+not receive check runs from other workflows.
 
-Heavy jobs use `github.event_name != 'pull_request'` so a `workflow_dispatch` run executes the full job set (not a green-but-empty aggregator).
+Required contexts on the release head: `ci-web-required`, `ci-desktop-required`,
+`e2e-smoke`, `e2e-visual` (and `beta-installer` when desktop is in the set).
 
-### Accepted consequences
+### Cost notes
 
-1. **`e2e-web` path filter on dispatch:** `dorny/paths-filter` has no explicit `base` on `workflow_dispatch`, so it compares against the previous commit on `release/next` (typically `develop` HEAD vs the bump commit). That is the intended comparison for a release PR, but it is narrower than a full `develop`↔`main` diff.
-2. **Dispatch cost:** a dispatched run consumes the same runner minutes as a push run (including Windows when desktop jobs run).
+1. **Windows smoke** on feature PRs is opt-in via the `windows-ci` label (always on `develop`/`main` pushes).
+2. **Visual e2e** on feature PRs is opt-in via the `visual-ci` label (always on `develop`/`main` pushes when e2e paths match).
+3. Smoke e2e uses **2** shards.
 
 ## Pre-merge soak checklist
 
@@ -79,7 +85,7 @@ Installers are **not** built on every `main` push. Packaging is exercised by:
 
 | Path | Workflow | When |
 | --- | --- | --- |
-| Nightly prerelease | [nightly.yml](../.github/workflows/nightly.yml) | Daily schedule (06:00 UTC) or manual dispatch from `develop` |
+| Nightly prerelease | [nightly.yml](../.github/workflows/nightly.yml) | Manual `workflow_dispatch` from `develop` (schedule paused) |
 | Beta installer | [release-pr.yml](../.github/workflows/release-pr.yml) `beta-installer` job | When desktop is in the release set (PR artifact) |
 | Production | [release-prod.yml](../.github/workflows/release-prod.yml) | After merge to `main` when desktop was released |
 
@@ -87,13 +93,13 @@ Local packaging: `pnpm --filter @bombfarm/desktop package:nightly|beta|prod` (se
 
 ## Nightly and beta access
 
-The repository is **private** until the desktop app is production-ready. Testers do **not** receive auto-updates.
+Nightly and beta builds are published as GitHub Releases / prereleases. Testers download manually — they do **not** receive auto-updates until a production release channel is enabled.
 
-- **Nightly:** GitHub Releases tagged `desktop-v<version>-nightly.<YYYYMMDD>.<sha7>` — download manually from the repo Releases page. Retention keeps the **7** newest nightlies.
+- **Nightly:** GitHub Releases tagged `desktop-v<version>-nightly.<YYYYMMDD>.<sha7>` — download from the repo Releases page. Retention keeps the **7** newest nightlies. The scheduled nightly workflow is paused; run via `workflow_dispatch` when needed.
 - **Beta:** GitHub **prerelease** (`desktop-v<version>-beta.<run>`) with all `release/beta/*` assets, plus a PR workflow artifact (`bombfarm-companion-beta-<version>-<sha7>`) and PR comment with the head SHA. A `publish_prerelease` dispatch input can force-republish an existing beta release tag.
 - **Prod:** installer artifact on every qualifying `main` push; public GitHub Release only when the flag is on (below).
 
-## Going public (desktop GitHub Release)
+## Production desktop GitHub Release
 
 Production desktop publishing is gated by the repository variable **`BFC_ENABLE_PROD_RELEASE`**. When unset or not `true`:
 
@@ -148,7 +154,7 @@ A changesets bump updates the displayed version without additional code edits.
 | [changesets.yml](../.github/workflows/changesets.yml) | PRs + `develop` push | Validate changesets; require changeset on shipping PRs |
 | [release-pr.yml](../.github/workflows/release-pr.yml) | `develop` push, dispatch | Upsert `release/next` → `main` PR; beta artifact |
 | [release-sync.yml](../.github/workflows/release-sync.yml) | Release PR merged to `main` | Sync versions to `develop` |
-| [nightly.yml](../.github/workflows/nightly.yml) | Schedule + dispatch | Nightly desktop prerelease |
+| [nightly.yml](../.github/workflows/nightly.yml) | Manual dispatch | Nightly desktop prerelease (schedule paused) |
 | [release-prod.yml](../.github/workflows/release-prod.yml) | `main` push | Prod desktop artifact + optional GitHub Release |
 | [ci-web.yml](../.github/workflows/ci-web.yml) | push, PR, dispatch | Web quality gate |
 | [ci-desktop.yml](../.github/workflows/ci-desktop.yml) | push, PR, dispatch | Desktop quality gate |

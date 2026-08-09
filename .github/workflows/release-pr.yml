@@ -214,6 +214,8 @@ jobs:
         with:
           ref: develop
           fetch-depth: 0
+          # PAT so commits/PR updates trigger pull_request checks (GITHUB_TOKEN does not).
+          token: ${{ secrets.RELEASE_PAT }}
 
       - uses: pnpm/action-setup@v4
 
@@ -274,7 +276,7 @@ jobs:
       - name: Upsert release PR
         id: pr
         env:
-          GH_TOKEN: ${{ github.token }}
+          GH_TOKEN: ${{ secrets.RELEASE_PAT }}
         run: |
           existing=$(gh pr list --head release/next --base main --state open --json number --jq '.[0].number // empty')
           if [ -n "$existing" ]; then
@@ -289,34 +291,6 @@ jobs:
             number=$(gh pr list --head release/next --base main --state open --json number --jq '.[0].number')
             echo "number=${number}" >> "$GITHUB_OUTPUT"
           fi
-
-  dispatch-required-ci:
-    name: Dispatch required CI
-    needs: [plan, version-and-pr]
-    if: >-
-      needs.plan.outputs.proceed == 'true' &&
-      needs.plan.outputs.is_empty == 'false' &&
-      needs.version-and-pr.result == 'success'
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Download release metadata
-        uses: actions/download-artifact@v4
-        with:
-          name: release-metadata
-
-      - name: Dispatch path-filtered CI workflows
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          workflows=$(node -p "JSON.parse(require('node:fs').readFileSync('release-metadata.json','utf8')).workflows.join(' ')")
-          for workflow in $workflows; do
-            echo "Dispatching ${workflow} on release/next"
-            gh workflow run "$workflow" --ref release/next
-          done
 
   beta-installer:
     name: Beta installer
@@ -493,7 +467,7 @@ jobs:
 
   summary:
     name: Release summary
-    needs: [plan, version-and-pr, dispatch-required-ci, beta-installer]
+    needs: [plan, version-and-pr, beta-installer]
     if: always()
     runs-on: ubuntu-latest
     steps:

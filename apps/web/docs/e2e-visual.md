@@ -94,7 +94,7 @@ Playwright serves `out/` via `e2e/scripts/serve-static.mjs` (port **4321**), sam
 
 ### CI (`.github/workflows/e2e-web.yml`)
 
-Same test commands on `ubuntu-latest`; build artifact shared across smoke shards. Every test job writes a **blob report**; the `report` job merges all of them — 4 smoke shards + visual — into **one** HTML report.
+Same test commands on `ubuntu-latest`; build artifact shared across smoke shards. Every test job writes a **blob report**; the `report` job merges all of them — 2 smoke shards + visual (when run) — into **one** HTML report.
 
 **Review CI diffs — no download:**
 
@@ -102,7 +102,7 @@ Same test commands on `ubuntu-latest`; build artifact shared across smoke shards
 2. **[Published report](https://lucasfevi.github.io/bombfarm-companion/)** — `reports/<run_id>/`, the full Playwright comparator (expected / actual / diff slider) for every failing test across all shards. Kept for the newest 20 runs.
 3. `pnpm test:e2e:report:ci` — downloads the single **`e2e-report`** artifact and opens it locally. This is the only copy with **traces**.
 
-> The Pages site is public even though the repo is private. Trace files are stripped from the published copy because they embed page snapshots, network payloads and source; screenshots of the already-public app are published as-is.
+> Trace files are stripped from the published Pages copy because they embed page snapshots, network payloads and source; screenshots of the already-public app are published as-is. Full traces stay in the Actions `e2e-report` artifact.
 
 Diff images are referenced by `https` URL, never base64 — GitHub's markdown sanitizer strips `data:` URIs from job summaries and comments, so inline base64 always renders broken.
 
@@ -119,8 +119,8 @@ Both use `colorScheme: 'dark'`, viewport `1280×800`, DSR 1, `reducedMotion: 're
 | --- | --- |
 | `changes` | Path filter — skips e2e when only unrelated files change |
 | `build-e2e` | Single `pnpm build:e2e` → artifact `e2e-static-out` |
-| `smoke-shard` | Matrix 4 shards — smoke project → blob report |
-| `visual-e2e` | Single job — visual project (specs currently **skipped**; job still green) → blob report |
+| `smoke-shard` | Matrix **2** shards — smoke project → blob report |
+| `visual-e2e` | Visual project on `develop`/`main` (or PR label `visual-ci`); specs may still be `describe.skip` → blob report |
 | `report` | On failure: merge all blobs → publish to Pages, upload one artifact, upsert PR comment |
 | `report-resolved` | On green: rewrite the PR comment so an approved run stops showing stale diffs |
 | **`e2e-smoke`** | Required gate |

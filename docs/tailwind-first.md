@@ -44,4 +44,4 @@ button, input, select {
 ## Related
 
 - Exception catalog (living): [`css-exceptions.md`](css-exceptions.md)
-- Feature inventory / collision audit history: private planning archive (tailwind-migration delivery notes)
+- Feature inventory / collision audit history: historical delivery notes (not in this repo)

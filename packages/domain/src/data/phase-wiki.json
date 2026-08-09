@@ -1,6 +1,6 @@
 {
   "syncedAt": "2026-08-03",
-  "source": "bombfarm-research/data/wiki/api-data.json",
+  "source": "official-wiki-export",
   "props": [
     {
       "name": "bush",

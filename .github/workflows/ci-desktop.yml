@@ -1,7 +1,7 @@
 name: CI Desktop
 
-# Path-filtered desktop quality + Windows smoke.
-# Paths documented for CIV-02 / CIV-03 (see plan mp1-ci-vercel-rebrand design).
+# Path-filtered desktop quality + optional Windows smoke.
+# Windows smoke runs on push to develop/main, workflow_dispatch, or PRs labeled `windows-ci`.
 
 on:
   workflow_dispatch:
@@ -23,6 +23,7 @@ on:
       - 'tools/**'
       - '.github/workflows/ci-desktop.yml'
   pull_request:
+    types: [opened, synchronize, reopened, labeled]
 
 concurrency:
   group: ci-desktop-${{ github.ref }}
@@ -102,6 +103,12 @@ jobs:
     name: App boot smoke (Windows)
     runs-on: windows-latest
     needs: quality
+    if: >
+      needs.quality.result == 'success' &&
+      (
+        github.event_name != 'pull_request' ||
+        contains(join(github.event.pull_request.labels.*.name, ','), 'windows-ci')
+      )
     steps:
       - uses: actions/checkout@v4
 
@@ -144,6 +151,6 @@ jobs:
         if: needs.quality.result == 'failure' || needs.quality.result == 'cancelled'
         run: exit 1
 
-      - name: Require Windows smoke
+      - name: Require Windows smoke when it ran
         if: needs.smoke-windows.result == 'failure' || needs.smoke-windows.result == 'cancelled'
         run: exit 1
