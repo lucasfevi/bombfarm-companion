@@ -39,6 +39,8 @@ const FILES = ['save-20260731-11heroes.json', 'save-20260801-crit-dmg-tree.json'
 const FORGE_FLOORS = [0, 10, 15, 20];
 const SLOT_COUNTS = [1, 2, 3, 5, 9];
 const GRID_TIMEOUT_MS = 30_000;
+/** Full-budget reproduction cases need more headroom on GitHub-hosted runners. */
+const FULL_BUDGET_TIMEOUT_MS = 90_000;
 
 /** Small enough to run in well under a second per config; large enough to still search. */
 const REDUCED_MAX_EVALUATIONS = 3_000;
@@ -116,7 +118,7 @@ describe('team plan step monotonicity (roster level)', () => {
             input.account.slots = slots;
             assertStepInvariants(runAtBudget(input, key), input);
           },
-          GRID_TIMEOUT_MS,
+          FULL_BUDGET_CASES.has(key) ? FULL_BUDGET_TIMEOUT_MS : GRID_TIMEOUT_MS,
         );
       }
     }
