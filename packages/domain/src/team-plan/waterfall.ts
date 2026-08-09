@@ -2,6 +2,7 @@ import { SLOTS } from '../gear/catalog';
 import type { PointAlloc } from '../gear/types';
 import type { InventoryItem } from '../inventory';
 import type { HeroSheet } from '../model';
+import { canonicalizeAssignment } from './canonicalize-assignment';
 import { evaluateRoster } from './evaluate';
 import { optimizeBuild } from '../points-reopt';
 import {
@@ -288,10 +289,27 @@ export function buildWaterfall(input: BuildWaterfallInput): WaterfallResult {
 
   const heroLevelById = new Map(contexts.map((ctx) => [ctx.heroId, ctx.level]));
 
+  // The chosen candidate names pool GROUPS, not concrete items: within a group the search picks a
+  // member arbitrarily, and the move list below diffs concrete ids, so an arbitrary pick reads as
+  // a real "unequip from A, equip on B" chore that changes nothing. Re-bind ids to destinations
+  // now — AFTER the candidate is chosen, so the search and every evaluation above it are
+  // untouched, and BEFORE the three consumers below. Grouping MUST use `candidate.floor` (the
+  // floor this candidate is actually scored at, 0 for the no-forge candidates) and not
+  // `gearInput.forgeFloor`: grouping above the floor the plan is scored at would merge items the
+  // objective still tells apart, and the plan would ship worth less than the DPS it reports.
+  // The forge list usually shrinks too, since pass 2 prefers to equip the already-forged member of
+  // a group — but that preference yields to pass 1, so the list can occasionally grow by one.
+  const finalAssignment = canonicalizeAssignment(
+    candidate.assignment,
+    currentAssignment,
+    itemById,
+    candidate.floor,
+  );
+
   return {
     steps,
-    forgeList: buildForgeList(gearInput.inventory, candidate.floor, rosterIds, candidate.assignment),
-    moveList: buildMoveList(currentAssignment, candidate.assignment, itemById, contexts),
+    forgeList: buildForgeList(gearInput.inventory, candidate.floor, rosterIds, finalAssignment),
+    moveList: buildMoveList(currentAssignment, finalAssignment, itemById, contexts),
     pointResets: buildPointResets(
       respec.acceptedHeroIds,
       finalPtsByHeroId,
@@ -301,7 +319,7 @@ export function buildWaterfall(input: BuildWaterfallInput): WaterfallResult {
       heroLevelById,
     ),
     perHero: buildPerHeroTable(contexts, todayEvaluation, respec.evaluation),
-    assignment: candidate.assignment,
+    assignment: finalAssignment,
     ptsByHeroId: respec.ptsByHeroId,
     finalEvaluation: respec.evaluation,
     forgeFloorApplied: candidate.floor,
