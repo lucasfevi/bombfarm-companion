@@ -28,6 +28,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
+          token: ${{ secrets.RELEASE_PAT }}
 
       - uses: pnpm/action-setup@v4
 
@@ -70,7 +71,7 @@ jobs:
       - name: Open sync PR to develop
         id: open-pr
         env:
-          GH_TOKEN: ${{ github.token }}
+          GH_TOKEN: ${{ secrets.RELEASE_PAT }}
         run: |
           existing=$(gh pr list --head release/next --base develop --state open --json number --jq '.[0].number // empty')
           if [ -n "$existing" ]; then
@@ -97,19 +98,10 @@ jobs:
             echo "number=${number}" >> "$GITHUB_OUTPUT"
           fi
 
-      - name: Dispatch required CI on sync head
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          for workflow in ci-web.yml ci-desktop.yml e2e-web.yml; do
-            echo "Dispatching ${workflow} on release/next"
-            gh workflow run "$workflow" --ref release/next
-          done
-
       - name: Enable auto-merge on sync PR
         id: merge
         env:
-          GH_TOKEN: ${{ github.token }}
+          GH_TOKEN: ${{ secrets.RELEASE_PAT }}
           PR_NUMBER: ${{ steps.open-pr.outputs.number }}
         run: |
           if ! gh pr merge "$PR_NUMBER" --auto --squash; then
@@ -133,5 +125,5 @@ jobs:
             echo '## Release sync'
             echo ''
             echo "Sync PR #${{ steps.open-pr.outputs.number }} (\`release/next\` → \`develop\`) is queued."
-            echo 'Required CI workflows were dispatched and auto-merge (squash) was enabled.'
+            echo 'Normal pull_request CI should run on the sync head (RELEASE_PAT). Auto-merge (squash) was enabled.'
           } >> "$GITHUB_STEP_SUMMARY"

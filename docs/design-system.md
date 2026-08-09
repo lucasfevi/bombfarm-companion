@@ -157,7 +157,7 @@ under `packages/ui/src/`, not a single module — e.g. `dialog/`, not `dialog.ts
   own file each, calling the real part they forward to, and the namespace `index.ts` re-exports them
   alongside the compound object so the barrel line is unaffected.
 
-This convention is **AD-021** (recorded in the private planning STATE log) and applies to every future compound primitive.
+This convention is **AD-021** and applies to every future compound primitive.
 
 ## cva conventions
 

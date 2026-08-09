@@ -1,8 +1,9 @@
 name: Nightly
 
 on:
-  schedule:
-    - cron: '0 6 * * *'
+  # Scheduled nightly paused to save Actions minutes; re-enable when needed.
+  # schedule:
+  #   - cron: '0 6 * * *'
   workflow_dispatch:
 
 concurrency:

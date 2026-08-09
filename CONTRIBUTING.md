@@ -15,9 +15,14 @@ Thank you for your interest in contributing!
 - Web changes: also run `pnpm --filter @bombfarm/web build` (CI runs this before Vercel).
 - On Windows, run `pnpm test:smoke` when touching boot/IPC/renderer wiring.
 - Use [Conventional Commits](https://www.conventionalcommits.org/) for commit messages.
-- Describe which product requirement IDs your change addresses when applicable.
+- Summarize the user-visible change and link related issues when applicable.
 
 CI is **path-filtered**: web-only PRs run `ci-web` / `e2e-web`; desktop-only PRs run `ci-desktop`. Changes under `packages/ui` wake both.
+
+Optional heavy gates on PRs (always run on `develop`/`main` pushes):
+
+- Label **`windows-ci`** — desktop Windows smoke
+- Label **`visual-ci`** — Playwright visual e2e
 
 ## Changesets
 
@@ -55,7 +60,6 @@ GitHub Actions runs path-filtered CI only — there is no Actions deploy workflo
 - TypeScript strict at the monorepo base — see [`docs/typescript-planner-origin.md`](docs/typescript-planner-origin.md) for the documented planner-origin package exception.
 - Match existing formatting and naming in the package you edit.
 - IPC contract changes require updates to `@bombfarm/contracts` and tests.
-- Never add private TLC spec directories to this repository.
 
 ## Community
 
