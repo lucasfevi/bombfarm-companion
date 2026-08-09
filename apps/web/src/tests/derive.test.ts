@@ -70,12 +70,15 @@ describe('computeCombatMults', () => {
     expect(m.teamGateMult).toBeCloseTo(1.15, 6);
     expect(m.teamCritPctOfBase).toBe(8);
     expect(m.attackMult).toBeCloseTo(1.2, 6); // +10% own + +10% team
-    expect(m.speedMult).toBeCloseTo(1.1 * 1.33333, 5); // +5% own + +5% team, then Tempo
+    // No more Tempo factor here (the keystone sheet-math correction moved Tempo Dobrado's
+    // ×1.33333 to applySkillTree) — just +5% own + +5% team, same shape as attackMult.
+    expect(m.speedMult).toBeCloseTo(1.1, 6);
     expect(m.gateAttackMult).toBeCloseTo(1.35, 6); // +20% own + +15% team
-    // Glass Cannon halves energy; no `treeEnergy` term exists anymore (BSP-23c) —
-    // `energia_add` lives on the sheet only, applied once by `applySkillTree`.
-    expect(m.energyMult).toBeCloseTo(0.5, 6);
-    expect(m.critDmgMult).toBe(2);
+    // Glass Cannon's energy ×0.5 / crit-damage ×2 are ALSO gone from here (same correction) —
+    // both are sheet-layer factors now (TreeSheetTotals.glassCannon / .critDmgMult, applied
+    // once in applySkillTree), so this function returns identity regardless of the tree flags.
+    expect(m.energyMult).toBe(1);
+    expect(m.critDmgMult).toBe(1);
     // REWRITTEN (was `1.25 * 1.15 * 1.1` — the 1.25 was `treeDanoTotal`, which no longer
     // participates here; `dmg_static` now lives on the sheet only, applied once). `dmgMult`
     // is exactly `mods.dmgMult × (1 + extraDmgPct/100)`.
