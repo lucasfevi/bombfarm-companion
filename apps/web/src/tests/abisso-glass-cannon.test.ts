@@ -1,8 +1,15 @@
 import { describe, expect, it } from 'vitest';
 import { unmodelledTreeFindings } from '@bombfarm/domain/tree-guards';
 import { computeCombatMults } from '@bombfarm/domain/derive';
-import { effectiveTreeSheetForAbisso, type TreeSheetTotals } from '@bombfarm/domain/birth-sheet';
+import {
+  applySkillTree,
+  effectiveTreeSheetForAbisso,
+  nakedFromBirth,
+  type BirthStats,
+  type TreeSheetTotals,
+} from '@bombfarm/domain/birth-sheet';
 import { abilityMods } from '@bombfarm/domain/model';
+import { emptySheetOther } from '@bombfarm/domain/gear';
 import { zeroTeamBuffs } from '@bombfarm/domain/team-buffs';
 import { parseSaveFile } from '@bombfarm/domain/import-save';
 
@@ -16,8 +23,12 @@ const ZERO_TREE: TreeSheetTotals = {
   critDmgMult: 1,
 };
 
-describe('Abisso × Glass Cannon combat gate', () => {
-  it('Glass Cannon alone applies energy ×0.5 and crit dmg ×2', () => {
+describe('Abisso × Glass Cannon — computeCombatMults no longer applies either keystone', () => {
+  // Post keystone sheet-math correction: Glass Cannon's energy ×0.5 / crit-damage ×2 and
+  // Tempo Dobrado's speed ×1.33333 are all applied ONCE, at the sheet layer (applySkillTree
+  // via TreeSheetTotals.glassCannon/.critDmgMult/.tempoDobrado) — never here, regardless of
+  // the tree/Abisso flags. Applying them again in combat would double-count them.
+  it('Glass Cannon alone: identity mults', () => {
     const m = computeCombatMults({
       mods: abilityMods({}),
       teamBuffs: zeroTeamBuffs(),
@@ -26,11 +37,11 @@ describe('Abisso × Glass Cannon combat gate', () => {
       treeAbisso: false,
       extraDmgPct: 0,
     });
-    expect(m.energyMult).toBe(0.5);
-    expect(m.critDmgMult).toBe(2);
+    expect(m.energyMult).toBe(1);
+    expect(m.critDmgMult).toBe(1);
   });
 
-  it('Abisso + Glass Cannon keeps energy ×0.5 and suppresses crit ×2', () => {
+  it('Abisso + Glass Cannon: still identity mults', () => {
     const m = computeCombatMults({
       mods: abilityMods({}),
       teamBuffs: zeroTeamBuffs(),
@@ -39,11 +50,11 @@ describe('Abisso × Glass Cannon combat gate', () => {
       treeAbisso: true,
       extraDmgPct: 0,
     });
-    expect(m.energyMult).toBe(0.5);
+    expect(m.energyMult).toBe(1);
     expect(m.critDmgMult).toBe(1);
   });
 
-  it('Abisso alone applies neither Glass Cannon mult', () => {
+  it('Abisso alone: identity mults', () => {
     const m = computeCombatMults({
       mods: abilityMods({}),
       teamBuffs: zeroTeamBuffs(),
@@ -62,6 +73,23 @@ describe('Abisso × Glass Cannon combat gate', () => {
     expect(gated.critDmgPct).toBe(0);
     expect(gated.danoStatic).toBe(1);
     expect(effectiveTreeSheetForAbisso(ZERO_TREE, false)).toEqual(ZERO_TREE);
+  });
+
+  it('Abisso does NOT gate critDmgMult — applySkillTree keeps Glass Cannon\'s ×2 live under Abisso', () => {
+    // effectiveTreeSheetForAbisso zeroes critChancePct/critDmgPct (the exporter really does
+    // zero those) but must NOT touch critDmgMult — the verified save has both D15 and C15, and
+    // the ×2 is plainly present in the exported sheet regardless.
+    const birth: BirthStats = {
+      attack: 100, energy: 200, speed: 50, critChance: 8, critDmg: 60, penetration: 3, cdr: 2, luck: 5,
+    };
+    const sheetOther = emptySheetOther();
+    const naked = nakedFromBirth(birth, 1, 0, sheetOther);
+    const rawTree: TreeSheetTotals = { ...ZERO_TREE, critChancePct: 12, critDmgPct: 8, critDmgMult: 2 };
+    const gatedTree = effectiveTreeSheetForAbisso(rawTree, true);
+    expect(gatedTree.critDmgMult).toBe(2);
+    const composed = applySkillTree(naked, naked, sheetOther, gatedTree);
+    // base × (critDmgMult − 1), base = naked.critDmg here (empty sheetOther).
+    expect(composed.critDmg).toBeCloseTo(naked.critDmg + naked.critDmg * (2 - 1), 9);
   });
 });
 
