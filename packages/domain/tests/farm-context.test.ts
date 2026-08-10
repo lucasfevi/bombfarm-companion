@@ -65,6 +65,7 @@ describe('farmContextForHero', () => {
       loadout: hero.loadout,
       altLoadout: null,
       pts: {},
+      statPointsAvailable: 0,
       abilities: hero.abilities,
       rarity: hero.rarity,
       level: hero.level,

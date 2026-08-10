@@ -76,6 +76,7 @@ export {
   selectHeroRank,
   selectHeroBattleAllowed,
   selectHeroSkin,
+  selectHeroStatPointsAvailable,
   selectShouldShowEmptyState,
   selectFormatNumber,
 } from '@/shared/stores/selectors/hero-selectors';

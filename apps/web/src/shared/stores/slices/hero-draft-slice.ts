@@ -34,6 +34,8 @@ export type HeroDraftSlice = {
   heroDeployed: boolean;
   heroBattleAllowed: boolean;
   heroSkin: number;
+  /** Banked, unspent stat points from the save (`HeroRecord.statPointsAvailable`). Display-only — not user-editable. */
+  statPointsAvailable: number;
   /** Suppresses phase→mitigation sync during applyHero / reset (ASM-10). */
   skipPhaseMitigationSync: boolean;
 
@@ -54,6 +56,7 @@ export type HeroDraftSlice = {
   setHeroDeployed: (value: boolean) => void;
   setHeroBattleAllowed: (value: boolean) => void;
   setHeroSkin: (value: number) => void;
+  setStatPointsAvailable: (value: number) => void;
   setSkipPhaseMitigationSync: (value: boolean) => void;
   applyHero: (hero: HeroRecord) => void;
   resetDraftToDefaults: () => void;
@@ -79,6 +82,7 @@ export const defaultHeroDraftFields = (): Pick<
   | 'heroDeployed'
   | 'heroBattleAllowed'
   | 'heroSkin'
+  | 'statPointsAvailable'
   | 'skipPhaseMitigationSync'
 > => ({
   heroName: 'Hero',
@@ -98,6 +102,7 @@ export const defaultHeroDraftFields = (): Pick<
   heroDeployed: false,
   heroBattleAllowed: true,
   heroSkin: 0,
+  statPointsAvailable: 0,
   skipPhaseMitigationSync: false,
 });
 
@@ -206,6 +211,10 @@ export const createHeroDraftSlice: StateCreator<
     if (get().heroSkin === value) return;
     set({ heroSkin: value });
   },
+  setStatPointsAvailable: (value) => {
+    if (get().statPointsAvailable === value) return;
+    set({ statPointsAvailable: value });
+  },
   setSkipPhaseMitigationSync: (value) => {
     if (get().skipPhaseMitigationSync === value) return;
     set({ skipPhaseMitigationSync: value });
@@ -230,6 +239,7 @@ export const createHeroDraftSlice: StateCreator<
       heroDeployed: hero.deployed ?? false,
       heroBattleAllowed: hero.battleAllowed ?? true,
       heroSkin: hero.skin ?? 0,
+      statPointsAvailable: hero.statPointsAvailable ?? 0,
     });
   },
 
@@ -258,6 +268,7 @@ export const createHeroDraftSlice: StateCreator<
       deployed: state.heroDeployed,
       battleAllowed: state.heroBattleAllowed,
       skin: state.heroSkin,
+      statPointsAvailable: state.statPointsAvailable,
     };
   },
 });

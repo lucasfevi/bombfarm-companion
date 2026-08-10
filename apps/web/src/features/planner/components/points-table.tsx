@@ -6,7 +6,7 @@ import { budgetOf, optimizeBuild } from '@bombfarm/domain/points-reopt';
 import { sub } from '@/shared/i18n';
 import { useAppLang } from '@/shared/context/app-lang';
 import { formatNumber } from '@/shared/lib/format-number';
-import { usePlannerStore, selectAdvisorPipeline } from '@/shared/stores';
+import { usePlannerStore, selectAdvisorPipeline, selectHeroStatPointsAvailable } from '@/shared/stores';
 import { Button, DataTable, Panel } from '@bombfarm/ui';
 import {
   mutedClass,
@@ -38,6 +38,7 @@ export function PointsTable() {
   const setPts = usePlannerStore((state) => state.setPts);
   const pipeline = usePlannerStore(selectAdvisorPipeline);
   const heroBattleAllowed = usePlannerStore((state) => state.heroBattleAllowed);
+  const statPointsAvailable = usePlannerStore(selectHeroStatPointsAvailable);
   const { spentDelta, pointDelta, adjusted, resetAdvice } = pipeline;
 
   const [preview, setPreview] = useState<PointsPreview | null>(null);
@@ -56,6 +57,7 @@ export function PointsTable() {
       effective: pipeline.effective,
       effectiveDelta: pipeline.A.effectiveDelta,
       context: pipeline.context,
+      statPointsAvailable,
     });
     setJustApplied(false);
     setPreview({ pts: result.pts, result });
@@ -77,7 +79,10 @@ export function PointsTable() {
     setPreview(null);
   }
 
-  const budget = budgetOf(pts);
+  // Banked stat points count toward the search budget too — a hero with 0 spent and N unspent
+  // still has something to optimize, so the button must not read as disabled (mirrors the same
+  // budgetOf(pts) + statPointsAvailable sum points-reopt.ts's two tiers now use internally).
+  const budget = budgetOf(pts) + statPointsAvailable;
   const previewValueFor = (key: SheetKey): number | null => {
     if (!preview) return null;
     // Same shared-pool shape as `adjusted[key] = gearedX[key] + pts[key] × delta[key]`
@@ -94,6 +99,13 @@ export function PointsTable() {
           <span className={spentDelta > level ? warnClass : mutedClass}>
             {sub(t.abilitiesSpent, { spent: spentDelta, max: level })}
           </span>
+          {statPointsAvailable > 0 && (
+            // Banked points from the save are invisible in the spent/level counter above (they
+            // are not in `pts` at all) — without this note, a hero the optimizer reallocates
+            // despite `spentDelta` looking untouched reads as a bug rather than banked points
+            // finally being spent.
+            <span className={mutedClass}>{sub(t.pointsUnspentBanked, { count: statPointsAvailable })}</span>
+          )}
           <Button type="button" onClick={() => handlePtsMutate(ZERO_PTS())}>
             {t.reset}
           </Button>

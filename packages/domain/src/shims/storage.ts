@@ -55,6 +55,13 @@ export type HeroRecord = {
   gearedOverride: SheetStats;
   abilities: Record<string, number>;
   pts: Record<keyof SheetStats, number>;
+  /**
+   * `stat_points_available` from the save — banked stat points the player has earned but not
+   * yet spent, NOT reflected anywhere in `pts`. Read on import for the budget-mismatch check
+   * (`point-inference.ts`) and persisted here so the reopt budget (`ReoptInput.statPointsAvailable`)
+   * can account for them too. Defaults to 0 for pre-existing records (back-compat).
+   */
+  statPointsAvailable?: number;
   sourceId?: string;
   rank?: string;
   power?: number;

@@ -27,6 +27,9 @@ export const en = {
   colPerPt: "/pt",
   colAfter: "After",
   colPreview: "Preview",
+  // Banked stat points from the save, not reflected in the spent/level counter next to it —
+  // {count} is HeroRecord.statPointsAvailable, shown only when > 0.
+  pointsUnspentBanked: "+{count} unspent",
   // BSPW4-15/AC-04 — Tier 1 (the automatic gate) is a lower bound: "at least ~{pct}%", never a
   // bare percentage or a future-tense promise, and it names Optimize build as the definitive
   // answer. `{pct}` is Tier 1's own gainPct, already floored at 0 by the seed comparison.
@@ -162,6 +165,7 @@ export const pt: typeof en = {
   colPerPt: "/pt",
   colAfter: "Depois",
   colPreview: "Prévia",
+  pointsUnspentBanked: "+{count} não gastos",
   resetAdviceGainLine: "Uma checagem rápida encontrou um possível ganho de pelo menos ~{pct}%. Otimizar build dá a resposta definitiva.",
   pointsStepMinusFiveAria: "Remover 5 pontos de {stat}",
   pointsStepPlusFiveAria: "Adicionar 5 pontos a {stat}",

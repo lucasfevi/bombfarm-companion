@@ -43,6 +43,7 @@ function pipelineInputFor(
     loadout: record.loadout,
     altLoadout: null,
     pts: record.pts,
+    statPointsAvailable: record.statPointsAvailable ?? 0,
     abilities: record.abilities,
     rarity: record.rarity,
     level: record.level,

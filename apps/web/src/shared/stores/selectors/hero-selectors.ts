@@ -10,6 +10,7 @@ export const selectHeroSourceId = (state: PlannerStore) => state.heroSourceId;
 export const selectHeroRank = (state: PlannerStore) => state.heroRank;
 export const selectHeroBattleAllowed = (state: PlannerStore) => state.heroBattleAllowed;
 export const selectHeroSkin = (state: PlannerStore) => state.heroSkin;
+export const selectHeroStatPointsAvailable = (state: PlannerStore) => state.statPointsAvailable;
 
 export const selectShouldShowEmptyState = (state: PlannerStore) =>
   shouldShowEmptyState(state.heroes.length);
