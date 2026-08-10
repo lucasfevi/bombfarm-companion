@@ -12,11 +12,17 @@ import { HeroProposedGear } from './hero-proposed-gear';
 
 const sectionTitleClass = 'm-0 mb-1.5 text-[10px] font-bold tracking-[0.08em] text-accent uppercase';
 
+export type HeroDetailPanelStats = {
+  sheetBefore: TeamPlanHeroStats;
+  sheetAfter: TeamPlanHeroStats;
+  combatBefore: TeamPlanHeroStats;
+  combatAfter: TeamPlanHeroStats;
+};
+
 export function HeroDetailPanel({
   t,
   lang,
-  statsBefore,
-  statsAfter,
+  stats,
   flowRows,
   heroByScopeKey,
   heroNameFallback,
@@ -24,8 +30,7 @@ export function HeroDetailPanel({
 }: {
   t: Strings;
   lang: Lang;
-  statsBefore: TeamPlanHeroStats;
-  statsAfter: TeamPlanHeroStats;
+  stats: HeroDetailPanelStats;
   flowRows: GearFlowRow[];
   heroByScopeKey: Map<string, HeroRecord>;
   heroNameFallback: (heroId: string) => string;
@@ -55,7 +60,13 @@ export function HeroDetailPanel({
           </section>
           <section className="min-w-0">
             <h3 className={sectionTitleClass}>{t.teamPlanHeroBreakdownStatsTitle}</h3>
-            <HeroStatBreakdown t={t} statsBefore={statsBefore} statsAfter={statsAfter} />
+            <HeroStatBreakdown
+              t={t}
+              sheetBefore={stats.sheetBefore}
+              sheetAfter={stats.sheetAfter}
+              combatBefore={stats.combatBefore}
+              combatAfter={stats.combatAfter}
+            />
           </section>
         </div>
       </div>

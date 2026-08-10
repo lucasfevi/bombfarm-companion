@@ -30,6 +30,7 @@ export {
   selectTreeGlassCannon,
   selectTreeTempoDobrado,
   selectTreeAbisso,
+  selectTreeCritDmgMult,
   selectTeamBuffs,
   selectHouseIdx,
   selectHouseLevel,

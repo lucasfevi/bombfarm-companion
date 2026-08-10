@@ -337,7 +337,9 @@ test.describe('effective stats panel (EST / ESB)', () => {
     // Stats composes from birth now, not from gearedOverride: birth.luck 20 × starsMult(2)
     // = 40 (Δ stars +20.00), then the tree's flat luckFlatPct 3 (Δ tree +3.00) → Total 43.00.
     await expect(luckRow.locator('td').nth(1)).toHaveText('20.00');
-    await expect(luckRow.locator('td').last()).toHaveText('43.00');
+    // Total is second-to-last: an "Over cap" column now trails it (rendered "—" for a stat
+    // under its cap, and Luck has no cap at all), so `.last()` would read that instead.
+    await expect(luckRow.locator('td').nth(-2)).toHaveText('43.00');
 
     const panel = effectivePanel(page, 'en');
     await expect(panel.getByRole('button', { name: /Show breakdown of Luck/i })).toHaveCount(0);

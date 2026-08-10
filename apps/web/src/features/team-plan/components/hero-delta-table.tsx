@@ -108,8 +108,12 @@ export function HeroDeltaTable({ t, lang, plan }: { t: Strings; lang: Lang; plan
                   <HeroDetailPanel
                     t={t}
                     lang={lang}
-                    statsBefore={row.statsBefore}
-                    statsAfter={row.statsAfter}
+                    stats={{
+                      sheetBefore: row.sheetStatsBefore,
+                      sheetAfter: row.sheetStatsAfter,
+                      combatBefore: row.combatStatsBefore,
+                      combatAfter: row.combatStatsAfter,
+                    }}
                     flowRows={flowRowsByHero.get(row.heroId) ?? []}
                     heroByScopeKey={heroByScopeKey}
                     heroNameFallback={heroNameFallback}

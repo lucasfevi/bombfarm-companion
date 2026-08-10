@@ -71,6 +71,13 @@ export type AccountImportData = {
      * (a bare `0 ** phase` would zero every hit).
      */
     abissoBase: number;
+    /**
+     * `skills.totals.crit_dmg_mult` — Glass Cannon's crit-damage multiplier on the birth base
+     * (2 when C15 is owned, 1 otherwise). Persisted rather than derived from `glassCannon`
+     * alone so a future save with a different observed multiplier is not silently coerced to
+     * 2 (mirrors `abissoBase`'s persist-the-real-numeric precedent).
+     */
+    critDmgMult: number;
     teamCoinPct?: number;
     /** `luck_add × 100` — flat percentage points (AD-BSP-22, ASM-01, BSPW5-03). */
     luckFlatPct: number;
@@ -163,6 +170,7 @@ function mapAccountData(raw: Record<string, unknown>): AccountImportData {
       tempoDobrado: detectTempoDobrado(totals),
       abisso: asNumber(totals.abisso_base) > 0 || keystones.some((k) => k === 'd15'),
       abissoBase: asNumber(totals.abisso_base, 0),
+      critDmgMult: asNumber(totals.crit_dmg_mult, 1),
       teamCoinPct: asNumber(totals.coin_add ?? totals.team_coin_add) * 100,
       // BSPW5-03 (ASM-01): flat Luck percentage points — absent key defaults to 0.
       luckFlatPct: asNumber(totals.luck_add) * 100,

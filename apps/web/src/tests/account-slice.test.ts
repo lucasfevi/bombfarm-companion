@@ -15,6 +15,7 @@ const sampleTree = {
   tempoDobrado: false,
   abisso: false,
   abissoBase: 0,
+  critDmgMult: 2,
   luckFlatPct: 6,
 } as const;
 
@@ -34,6 +35,7 @@ describe('account slice', () => {
     expect(s.treeTeamCoinPct).toBe(0);
     expect(s.treeLuckFlatPct).toBe(0);
     expect(s.treeAbisso).toBe(false);
+    expect(s.treeCritDmgMult).toBe(1);
     expect(s.teamBuffs).toEqual(zeroTeamBuffs());
     expect(s.houseIdx).toBe(0);
     expect(s.phase).toBeNull();
@@ -124,6 +126,7 @@ describe('account slice', () => {
         tempoDobrado: true,
         abisso: false,
         abissoBase: 0,
+        critDmgMult: 1,
         teamCoinPct: 9,
         luckFlatPct: 5.3,
       },
@@ -210,6 +213,16 @@ describe('account slice', () => {
       phase: null,
     });
     expect(usePlannerStore.getState().treeAbissoBase).toBe(1.008);
+  });
+
+  it('applyAccountImport writes critDmgMult from the save sniff (Glass Cannon numeric)', () => {
+    usePlannerStore.getState().applyAccountImport({
+      tree: { ...sampleTree, glassCannon: true, critDmgMult: 2 },
+      houseIdx: null,
+      houseLevel: null,
+      phase: null,
+    });
+    expect(usePlannerStore.getState().treeCritDmgMult).toBe(2);
   });
 
   describe('applyAccountImport phase wiring (account.phase → store phase)', () => {

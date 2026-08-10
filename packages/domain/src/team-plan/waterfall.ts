@@ -1,5 +1,5 @@
 import { SLOTS } from '../gear/catalog';
-import type { PointAlloc } from '../gear/types';
+import type { PointAlloc, SheetStats } from '../gear/types';
 import type { InventoryItem } from '../inventory';
 import type { HeroSheet } from '../model';
 import { canonicalizeAssignment } from './canonicalize-assignment';
@@ -205,6 +205,19 @@ function heroStatsFromEffective(effective: HeroSheet | undefined): TeamPlanHeroS
   };
 }
 
+/** Same picked-field shape as {@link heroStatsFromEffective}, sourced from the sheet (no `luck`). */
+function heroStatsFromSheet(adjusted: SheetStats | undefined): TeamPlanHeroStats {
+  return {
+    attack: adjusted?.attack ?? 0,
+    energy: adjusted?.energy ?? 0,
+    speed: adjusted?.speed ?? 0,
+    critChance: adjusted?.critChance ?? 0,
+    critDmg: adjusted?.critDmg ?? 0,
+    penetration: adjusted?.penetration ?? 0,
+    cdr: adjusted?.cdr ?? 0,
+  };
+}
+
 function buildPerHeroTable(
   contexts: HeroPlanContext[],
   todayEval: ReturnType<typeof evaluateRoster>,
@@ -224,8 +237,10 @@ function buildPerHeroTable(
         before,
         after,
         delta: after - before,
-        statsBefore: heroStatsFromEffective(beforeScore?.effective),
-        statsAfter: heroStatsFromEffective(afterScore?.effective),
+        combatStatsBefore: heroStatsFromEffective(beforeScore?.effective),
+        combatStatsAfter: heroStatsFromEffective(afterScore?.effective),
+        sheetStatsBefore: heroStatsFromSheet(beforeScore?.adjusted),
+        sheetStatsAfter: heroStatsFromSheet(afterScore?.adjusted),
       };
     })
     .sort((a, b) => a.heroName.localeCompare(b.heroName) || a.heroId.localeCompare(b.heroId));
@@ -362,8 +377,10 @@ export function syntheticRegressionPerHero(): WaterfallResult['perHero'][number]
     before: 1000,
     after: 900,
     delta: -100,
-    statsBefore: ZERO_HERO_STATS,
-    statsAfter: ZERO_HERO_STATS,
+    combatStatsBefore: ZERO_HERO_STATS,
+    combatStatsAfter: ZERO_HERO_STATS,
+    sheetStatsBefore: ZERO_HERO_STATS,
+    sheetStatsAfter: ZERO_HERO_STATS,
   };
 }
 

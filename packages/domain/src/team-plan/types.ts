@@ -1,5 +1,5 @@
 import type { BirthStats, TreeSheetTotals } from '../birth-sheet';
-import type { Loadout, PointAlloc } from '../gear/types';
+import type { Loadout, PointAlloc, SheetStats } from '../gear/types';
 import type { InventoryItem } from '../inventory';
 import type {
   AbilityMods,
@@ -74,6 +74,16 @@ export type HeroScore = {
   effective: HeroSheet;
   effectiveDelta: EffectiveDeltas;
   context: Context;
+  /**
+   * `derive()`'s sheet-layer result — the geared+points sheet BEFORE combat multipliers/team
+   * auras/Presságio Mortal-style additions (`effective` above is the combat view). This is
+   * what the in-game hero panel actually shows, so it is the uncapped input to
+   * `gameSheetView` for the Team Plan hero panel's "Hero sheet" grid (`sheet-view.ts`,
+   * `hero-stat-breakdown.tsx`) — never combat-multiplied, and never capped in the domain
+   * layer itself (display-time capping lives at the UI call site, same rule as
+   * `composeSheetFromBirth`/`peelSheetStages`).
+   */
+  adjusted: SheetStats;
 };
 
 export type RosterRegime = 'underSaturated' | 'saturated';
@@ -140,8 +150,12 @@ export type TeamPlanPerHeroRow = {
   before: number;
   after: number;
   delta: number;
-  statsBefore: TeamPlanHeroStats;
-  statsAfter: TeamPlanHeroStats;
+  /** Combat-effective stats (`HeroScore.effective`) — team auras applied, uncapped (BSPW4-09-adjacent: matches `teamPlanHeroDeltaNote`). */
+  combatStatsBefore: TeamPlanHeroStats;
+  combatStatsAfter: TeamPlanHeroStats;
+  /** Sheet stats (`HeroScore.adjusted`) — no combat multipliers/auras, uncapped here; the UI applies `gameSheetView` (`sheet-view.ts`) before display. */
+  sheetStatsBefore: TeamPlanHeroStats;
+  sheetStatsAfter: TeamPlanHeroStats;
 };
 
 export type WaterfallStep = {
