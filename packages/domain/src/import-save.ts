@@ -389,12 +389,15 @@ export function parseSaveFile(raw: unknown, existing: HeroRecord[]): ParseResult
     // recover the integer spent-points vector (BSPW5-05, DEC-04). A hero with no `stats`
     // block cannot be point-inferred (T5 turns this into a blocking candidate).
     const statsRaw = isObject(rawHero.stats) ? rawHero.stats : null;
+    // Read regardless of whether `stats` is present — a blocked (no-`stats`) hero still carries
+    // this through to `record` below, so a later re-import that recovers `stats` isn't the first
+    // time the app has ever seen the player's banked points.
+    const statPointsAvailable = asNumber(rawHero.stat_points_available, 0);
     let pts: Record<SheetKey, number>;
     let pointIssues: PointInferenceIssue[] = [];
     let power = 0;
     if (statsRaw) {
       const sheet = saveSheetUnits(statsRaw);
-      const statPointsAvailable = asNumber(rawHero.stat_points_available, 0);
       const inferred = inferSpentPoints({ birth, level, stars, sheetOther, loadout, tree, sheet, statPointsAvailable });
       pts = inferred.pts;
       pointIssues = inferred.issues;
@@ -425,6 +428,7 @@ export function parseSaveFile(raw: unknown, existing: HeroRecord[]): ParseResult
       gearedOverride,
       abilities,
       pts,
+      statPointsAvailable,
       sourceId,
       rank: rank ?? undefined,
       power: power || undefined,

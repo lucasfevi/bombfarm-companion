@@ -31,6 +31,7 @@ function baseInput(overrides: Partial<AdvisorPipelineInput> = {}): AdvisorPipeli
     loadout: emptyLoadout(),
     altLoadout: null,
     pts: ZERO_PTS(),
+    statPointsAvailable: 0,
     abilities: {},
     rarity: 'Comum',
     level: 1,

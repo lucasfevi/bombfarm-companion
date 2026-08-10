@@ -50,6 +50,8 @@ export type AdvisorPipelineInput = {
   loadout: Loadout;
   altLoadout: Loadout | null;
   pts: Record<SheetKey, number>;
+  /** `HeroRecord.statPointsAvailable` — banked, unspent stat points (`ReoptInput.statPointsAvailable`). */
+  statPointsAvailable: number;
   abilities: Record<string, number>;
   rarity: RarityKey;
   level: number;
@@ -60,6 +62,9 @@ export type AdvisorPipelineInput = {
   treeSpeed: number;
   treeEnergy: number;
   treeGlassCannon: boolean;
+  /** `skills.totals.crit_dmg_mult` — the persisted numeric, never re-derived from
+   *  `treeGlassCannon` (which `detectGlassCannon` sets for any value `>= 1.5`). */
+  treeCritDmgMult?: number;
   treeTempoDobrado: boolean;
   /** Abisso — suppresses Glass Cannon crit ×2 and Crit tree sheet adds. */
   treeAbisso?: boolean;
@@ -139,6 +144,7 @@ export function computeAdvisorPipeline(input: AdvisorPipelineInput): AdvisorPipe
     loadout,
     altLoadout,
     pts,
+    statPointsAvailable,
     abilities,
     rarity,
     level,
@@ -149,6 +155,7 @@ export function computeAdvisorPipeline(input: AdvisorPipelineInput): AdvisorPipe
     treeSpeed,
     treeEnergy,
     treeGlassCannon,
+    treeCritDmgMult,
     treeTempoDobrado,
     treeAbisso = false,
     treeAbissoBase = 0,
@@ -189,6 +196,7 @@ export function computeAdvisorPipeline(input: AdvisorPipelineInput): AdvisorPipe
     treeEnergy,
     treeLuckFlatPct,
     treeGlassCannon,
+    treeCritDmgMult,
     treeTempoDobrado,
     treeAbisso,
     birth,
@@ -320,7 +328,13 @@ export function computeAdvisorPipeline(input: AdvisorPipelineInput): AdvisorPipe
   // AC-64l/AC-69/AC-70: Tier 1 only, reusing this call's own effective/effectiveDelta (no
   // extra derive pass); always scored sustainedDps — findGateCandidate has no rankMode input
   // for a caller to set, so this is unaffected by the UI's rankMode regardless.
-  const gate = findGateCandidate({ pts, effective, effectiveDelta: equippedResult.effectiveDelta, context });
+  const gate = findGateCandidate({
+    pts,
+    effective,
+    effectiveDelta: equippedResult.effectiveDelta,
+    context,
+    statPointsAvailable,
+  });
   const resetAdvice = buildResetAdvice(gate);
 
   return {

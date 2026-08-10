@@ -80,6 +80,7 @@ describe('pipelineForHero forwards birth (roster-dps ↔ Points tab parity)', ()
       loadout,
       altLoadout: null,
       pts,
+      statPointsAvailable: 0,
       abilities: {},
       rarity: 'Raro',
       level,

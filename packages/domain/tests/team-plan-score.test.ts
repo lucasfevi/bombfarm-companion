@@ -156,6 +156,7 @@ describe('scoreHeroLoadout', () => {
       loadout: hero.loadout,
       altLoadout: null,
       pts: ZERO_PTS(),
+      statPointsAvailable: 0,
       abilities: hero.abilities,
       rarity: hero.rarity,
       level: hero.level,

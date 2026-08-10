@@ -26,6 +26,14 @@ export type ResolveDeriveSheetsInput = {
    * `false` for callers that predate this field (identity: no keystone effect).
    */
   treeGlassCannon?: boolean;
+  /**
+   * `skills.totals.crit_dmg_mult`, carried as the persisted numeric rather than re-derived
+   * from {@link treeGlassCannon}. `detectGlassCannon` flags the keystone at `>= 1.5`, so the
+   * boolean cannot reconstruct the value: a save carrying `1.7` would compute ×2 here while
+   * the store-selector path used `1.7`, and the same account would show two different
+   * crit-damage numbers depending on which code path rendered it.
+   */
+  treeCritDmgMult?: number;
   treeTempoDobrado?: boolean;
   /** Abisso — zeroes Crit tree sheet adds before applySkillTree / birth recompose. */
   treeAbisso?: boolean;
@@ -63,15 +71,18 @@ export function resolveDeriveSheets(input: ResolveDeriveSheetsInput): ResolvedDe
     treeEnergy,
     treeLuckFlatPct,
     treeGlassCannon = false,
+    treeCritDmgMult,
     treeTempoDobrado = false,
     treeAbisso = false,
     birth,
   } = input;
 
-  // luckFlatPct from account slice (skills.totals.luck_add × 100). Glass Cannon's crit_dmg_mult
-  // is always exactly 2 in every observed save when C15 is owned (never a different scaled
-  // value) — the same literal computeCombatMults used to apply as a (now-removed) combat
-  // multiplier before the keystone sheet-math correction moved it into applySkillTree.
+  // luckFlatPct from account slice (skills.totals.luck_add × 100). `critDmgMult` is the
+  // persisted `skills.totals.crit_dmg_mult`, NOT `treeGlassCannon ? 2 : 1` — `detectGlassCannon`
+  // flags the keystone at `>= 1.5`, so the boolean cannot reconstruct a non-2 value and this
+  // path would silently disagree with `selectTreeSheetTotals`, which reads the numeric. The
+  // boolean is still required on its own: Glass Cannon's energy ×0.5 has no numeric in the save.
+  // Falls back to the boolean only when the numeric is absent (pre-persistence callers/state).
   // effectiveTreeSheetForAbisso does NOT gate critDmgMult — Abisso doesn't suppress it.
   const treeSheet: TreeSheetTotals = effectiveTreeSheetForAbisso(
     {
@@ -81,7 +92,7 @@ export function resolveDeriveSheets(input: ResolveDeriveSheetsInput): ResolvedDe
       critChancePct: treeCritChance,
       critDmgPct: treeCritDmg,
       luckFlatPct: treeLuckFlatPct,
-      critDmgMult: treeGlassCannon ? 2 : 1,
+      critDmgMult: treeCritDmgMult ?? (treeGlassCannon ? 2 : 1),
       glassCannon: treeGlassCannon,
       tempoDobrado: treeTempoDobrado,
     },
