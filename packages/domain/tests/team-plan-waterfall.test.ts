@@ -214,15 +214,17 @@ describe('buildWaterfall', () => {
     expect(result.plan.perHero).toHaveLength(optimizeCount);
   });
 
-  it('perHero rows carry a before/after breakdown for every HeroSheet stat', () => {
+  it('perHero rows carry a before/after breakdown for every HeroSheet stat, both combat and sheet views', () => {
     const input = teamPlanInputFromFixture('save-20260731-11heroes.json');
     const result = runTeamPlan(input);
     if (result.blocked) throw new Error('blocked');
     expect(result.plan.perHero.length).toBeGreaterThan(0);
     for (const row of result.plan.perHero) {
       for (const key of ['attack', 'energy', 'speed', 'critChance', 'critDmg', 'penetration', 'cdr'] as const) {
-        expect(typeof row.statsBefore[key]).toBe('number');
-        expect(typeof row.statsAfter[key]).toBe('number');
+        expect(typeof row.combatStatsBefore[key]).toBe('number');
+        expect(typeof row.combatStatsAfter[key]).toBe('number');
+        expect(typeof row.sheetStatsBefore[key]).toBe('number');
+        expect(typeof row.sheetStatsAfter[key]).toBe('number');
       }
     }
   });

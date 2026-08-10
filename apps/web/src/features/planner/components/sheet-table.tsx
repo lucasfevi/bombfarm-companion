@@ -35,6 +35,18 @@ function formatStageCell(
   return value < 0 ? `−${abs}` : `+${abs}`;
 }
 
+/**
+ * The game's display clamp (`STAT_CAPS.critChance`/`.cdr`, `gameSheetView`), shown as its own
+ * column rather than folded into Total — Total must stay the uncapped telescoping sum (see
+ * `SheetStageRow`'s doc comment in `sheet-stages.ts`). `—` when the row sits at/under the cap
+ * (`deltaCap` is exactly 0 there); otherwise the in-game value plus how much is being wasted,
+ * e.g. `100.00 (−77.95)`.
+ */
+function formatOverCapCell(row: SheetStageRow, format: (n: number, d?: number) => string): string {
+  if (row.deltaCap === 0) return '—';
+  return `${format(row.cappedTotal, 2)} (${formatStageCell(row.deltaCap, format, true)})`;
+}
+
 export function SheetTable() {
   const { t } = useAppLang();
 
@@ -86,6 +98,7 @@ export function SheetTable() {
               <col key={key} className="w-21" />
             ))}
             <col className="w-22" />
+            <col className="w-28" />
           </colgroup>
           <DataTable.Head>
             <DataTable.Row>
@@ -97,6 +110,9 @@ export function SheetTable() {
                 </DataTable.Header>
               ))}
               <DataTable.Header align="right">{t.colSheetTotal}</DataTable.Header>
+              <DataTable.Header align="right" title={t.colSheetOverCap}>
+                <span className="min-w-0 truncate">{t.colSheetOverCap}</span>
+              </DataTable.Header>
             </DataTable.Row>
           </DataTable.Head>
           <DataTable.Body>
@@ -115,6 +131,9 @@ export function SheetTable() {
                   ))}
                   <DataTable.Cell align="right" numeric>
                     <b>{row ? formatStageCell(row.total, formatNumber, false) : '—'}</b>
+                  </DataTable.Cell>
+                  <DataTable.Cell align="right" numeric className={mutedClass}>
+                    {row ? formatOverCapCell(row, formatNumber) : '—'}
                   </DataTable.Cell>
                 </DataTable.Row>
               );
