@@ -113,6 +113,8 @@ export function HeroDeltaTable({ t, lang, plan }: { t: Strings; lang: Lang; plan
                       sheetAfter: row.sheetStatsAfter,
                       combatBefore: row.combatStatsBefore,
                       combatAfter: row.combatStatsAfter,
+                      hitBefore: row.hitBefore,
+                      hitAfter: row.hitAfter,
                     }}
                     flowRows={flowRowsByHero.get(row.heroId) ?? []}
                     heroByScopeKey={heroByScopeKey}

@@ -17,6 +17,9 @@ export type HeroDetailPanelStats = {
   sheetAfter: TeamPlanHeroStats;
   combatBefore: TeamPlanHeroStats;
   combatAfter: TeamPlanHeroStats;
+  /** `TeamPlanPerHeroRow.hitBefore`/`hitAfter` — normal (non-crit) hit; Critical is derived in `HeroStatBreakdown`. */
+  hitBefore: number;
+  hitAfter: number;
 };
 
 export function HeroDetailPanel({
@@ -66,6 +69,8 @@ export function HeroDetailPanel({
               sheetAfter={stats.sheetAfter}
               combatBefore={stats.combatBefore}
               combatAfter={stats.combatAfter}
+              hitBefore={stats.hitBefore}
+              hitAfter={stats.hitAfter}
             />
           </section>
         </div>

@@ -134,6 +134,7 @@ export function scoreHeroLoadout(
     effectiveDelta: deriveResult.effectiveDelta,
     context,
     adjusted: deriveResult.adjusted,
+    hit: deriveResult.hit,
   };
 
   if (memo) memo.set(key, score);

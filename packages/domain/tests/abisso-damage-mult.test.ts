@@ -109,6 +109,42 @@ describe('Abisso damage multiplier — Bram normal-hit verification (real pipeli
   );
 });
 
+/**
+ * Team Plan hero panel's Hit damage grid (`hero-stat-breakdown.tsx`) shows normal + critical hit
+ * from `HeroScore.hit` (`team-plan/score.ts`), which is `derive().hit` verbatim — the exact same
+ * field `advisor-pipeline.ts` exposes as `predHit` (`predHit = equippedResult.hit` where
+ * `equippedResult = derive(...)`). Pinning `predHit` here IS pinning `HeroScore.hit`; no separate
+ * team-plan-pipeline setup needed to cover the new field.
+ *
+ * Pins the MODEL's own predicted value (not the in-game reading) so any future change to
+ * `derive`/`predictHitDamage`/`computeCombatMults` that moves the number — even one that stays
+ * within the 0.01% tolerance above — gets caught here rather than silently drifting.
+ */
+describe('Team Plan hit-damage panel — Bram normal hit pinned to the model (regression)', () => {
+  const teamBuffs = { ...zeroTeamBuffs(), grito_guerra: 20 };
+
+  const readings: { phase: number; predictedMillions: number }[] = [
+    { phase: 451, predictedMillions: 522.435 },
+    { phase: 452, predictedMillions: 526.466 },
+    { phase: 151, predictedMillions: 51.906 },
+  ];
+
+  it.each(readings)(
+    'phase $phase: predicted normal hit stays pinned at $predictedMillions M',
+    ({ phase, predictedMillions }) => {
+      const line = phaseLine(phase);
+      expect(line, `phases.json is missing a line for phase ${phase}`).toBeDefined();
+      const mitigationPct = line!.mitig * 100;
+
+      const result = computeAdvisorPipeline(
+        pipelineInputFor('Bram', { phase, mitigationPct, teamBuffs }),
+      );
+
+      expect(result.predHit / 1_000_000).toBeCloseTo(predictedMillions, 3);
+    },
+  );
+});
+
 describe('Abisso damage multiplier — gating and reversibility', () => {
   it('is exactly 1 when Abisso is not owned, at any phase', () => {
     for (const phase of [1, 42, 151, 451, 600]) {

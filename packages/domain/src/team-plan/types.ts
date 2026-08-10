@@ -84,6 +84,15 @@ export type HeroScore = {
    * `composeSheetFromBirth`/`peelSheetStages`).
    */
   adjusted: SheetStats;
+  /**
+   * `derive()`'s single-target normal (non-crit) hit — `predictHitDamage(effective.attack,
+   * mitigationPct/100, effective.penetration, dmgMult)`. Carried alongside `adjusted` above at
+   * no extra evaluation cost (`derive()` already returns it). The Team Plan hero panel's Hit
+   * damage grid (`hero-stat-breakdown.tsx`) derives Critical from this at display time —
+   * `hit × (1 + effective.critDmg / 100)`, same formula as `advisor-pipeline.ts`'s `predCrit`
+   * — rather than storing a second field here.
+   */
+  hit: number;
 };
 
 export type RosterRegime = 'underSaturated' | 'saturated';
@@ -132,7 +141,13 @@ export type TeamPlanInput = {
   forgeFloor: number;
 };
 
-/** The subset of `HeroSheet` shown in the per-hero stat breakdown — excludes the per-point rates. */
+/**
+ * The subset of `HeroSheet` shown in the per-hero stat breakdown — excludes the per-point rates.
+ * `luck` rides along here too (`HeroSheet` itself has no `luck` field — it never reaches combat,
+ * BSP-42/AD-BSP-20/AD-BSP-21) so combat rows always report it as `0`; only the sheet rows
+ * (`HeroScore.adjusted`, which IS a `SheetStats`) carry a real value. Display-only — this type
+ * feeds the Team Plan hero panel, never the optimizer/scoring/point search.
+ */
 export type TeamPlanHeroStats = {
   attack: number;
   energy: number;
@@ -141,6 +156,7 @@ export type TeamPlanHeroStats = {
   critDmg: number;
   penetration: number;
   cdr: number;
+  luck: number;
 };
 
 export type TeamPlanPerHeroRow = {
@@ -156,6 +172,9 @@ export type TeamPlanPerHeroRow = {
   /** Sheet stats (`HeroScore.adjusted`) — no combat multipliers/auras, uncapped here; the UI applies `gameSheetView` (`sheet-view.ts`) before display. */
   sheetStatsBefore: TeamPlanHeroStats;
   sheetStatsAfter: TeamPlanHeroStats;
+  /** `HeroScore.hit` — single-target normal (non-crit) hit damage, combat-effective. */
+  hitBefore: number;
+  hitAfter: number;
 };
 
 export type WaterfallStep = {

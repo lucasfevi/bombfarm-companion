@@ -40,6 +40,15 @@ function pooledLines(
   ptsRate: number,
   ptsCount: number,
   treePct: number,
+  /**
+   * Keystone multiplier on the pool BASE (`crit_dmg_mult` for crit damage, Tempo Dobrado's
+   * `1.33333` for speed) — `applySkillTree` adds `base × (mult − 1)`, so the same term lands
+   * on the **skill-tree** line here. The game's own tooltip confirms that attribution: for a
+   * 3★ Bellatrix the in-game Crit Damage tooltip reads `Skill tree +168.36%`, exactly
+   * `base × (crit_dmg_mult − 1)`, and Speed reads `Skill tree 29.83` = `12.45` from
+   * `speed_add` plus `17.38` from Tempo Dobrado. Both leave the Hero line untouched.
+   */
+  baseMult = 1,
 ): SourceLines {
   const otherClamped = Math.max(0, otherPct);
   const base = birthVal * starFactor;
@@ -47,7 +56,7 @@ function pooledLines(
     hero: base * (1 + ptsRate * ptsCount),
     gear: base * gearPct,
     ability: base * otherClamped,
-    skillTree: base * (treePct / 100),
+    skillTree: base * (baseMult - 1) + base * (treePct / 100),
   };
 }
 
@@ -72,11 +81,16 @@ export function peelSheetSources(input: PeelSheetSourcesInput): SheetSourceLines
   const energyHero = birth.energy * star + pts.energy * POINT_GAIN.energyNative * star;
   const energyGear = energyHero * bonuses.energyPct;
   const energyPreTree = energyHero + energyGear;
+  // Glass Cannon halves the WHOLE energy subtotal (`applySkillTree`), not a base term, so it
+  // cannot be expressed as a factor on one line. Carrying it on the skill-tree line keeps the
+  // AC-10 sum identity exact and matches where the game attributes the other two keystones.
+  // Reduces to the previous `preTree × energyPct/100` whenever Glass Cannon is off.
+  const energyGlassCannonFactor = tree.glassCannon ? 0.5 : 1;
   const energy: SourceLines = {
     hero: energyHero,
     gear: energyGear,
     ability: 0,
-    skillTree: energyPreTree * (tree.energyPct / 100),
+    skillTree: energyPreTree * (1 + tree.energyPct / 100) * energyGlassCannonFactor - energyPreTree,
   };
 
   const speed = pooledLines(
@@ -87,6 +101,7 @@ export function peelSheetSources(input: PeelSheetSourcesInput): SheetSourceLines
     POINT_GAIN.speedPctOfBase,
     pts.speed,
     tree.speedPct,
+    tree.tempoDobrado ? 1.33333 : 1,
   );
   const critChance = pooledLines(
     birth.critChance,
@@ -106,6 +121,7 @@ export function peelSheetSources(input: PeelSheetSourcesInput): SheetSourceLines
     POINT_GAIN.critDmgPctOfBase,
     pts.critDmg,
     tree.critDmgPct,
+    tree.critDmgMult,
   );
   // AD-BSP-22: skills.totals has no node for penetration or cdr — tree line is exactly 0.
   const penetration = pooledLines(
