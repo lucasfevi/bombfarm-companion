@@ -228,6 +228,7 @@ function buildFixture(opts: FixtureOpts = {}) {
     dmgMult: mults.dmgMult,
     treeDanoTotal,
     extraDmgPct,
+    abissoMult: mults.abissoMult,
     active: deriveResult.active,
     dps: deriveResult.dps,
     uptime,

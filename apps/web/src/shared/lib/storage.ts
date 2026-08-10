@@ -37,6 +37,8 @@ export type TreeState = {
    * applies. Additive on `bf-hp-account-v1` (default false).
    */
   abisso?: boolean;
+  /** `skills.totals.abisso_base` — damage × abissoBase^currentPhase; 0 when unowned (combat-layer only, see `computeCombatMults`). */
+  abissoBase?: number;
   /**
    * Flat Luck percentage points from `skills.totals.luck_add × 100` (AD-BSP-22, ASM-01).
    * Additive on `bf-hp-account-v1` — optional (not `number`) so pre-Wave-5 literals (e.g.
@@ -134,6 +136,7 @@ export const DEFAULT_TREE = (): TreeState => ({
   glassCannon: false,
   tempoDobrado: false,
   abisso: false,
+  abissoBase: 0,
   luckFlatPct: 0,
 });
 

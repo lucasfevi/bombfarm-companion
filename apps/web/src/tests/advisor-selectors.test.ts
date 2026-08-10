@@ -66,9 +66,9 @@ describe('selectAdvisorPipeline', () => {
     expect(getAdvisorPipelineComputeCount()).toBe(before);
   });
 
-  it('dep tuple has exactly 26 members in spec order (BSPW5-03 adds treeLuckFlatPct, birth adds birth, abisso adds treeAbisso)', () => {
+  it('dep tuple has exactly 27 members in spec order (BSPW5-03 adds treeLuckFlatPct, birth adds birth, abisso adds treeAbisso/treeAbissoBase)', () => {
     const tuple = readAdvisorDepTuple(usePlannerStore.getState());
-    expect(tuple).toHaveLength(26);
+    expect(tuple).toHaveLength(27);
   });
 
   it('selectDps stays stable when heroName changes', () => {

@@ -27,6 +27,7 @@ export function buildTeamPlanInputFromStore(state: PlannerStore): TeamPlanInput 
       treeGlassCannon: state.treeGlassCannon,
       treeTempoDobrado: state.treeTempoDobrado,
       treeAbisso: state.treeAbisso,
+      treeAbissoBase: state.treeAbissoBase,
       houseIdx: state.houseIdx,
       houseLevel: state.houseLevel,
       phase: state.phase,

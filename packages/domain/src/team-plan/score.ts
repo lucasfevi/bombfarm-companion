@@ -83,6 +83,8 @@ export function scoreHeroLoadout(
     treeGlassCannon: farm.treeGlassCannon,
     treeTempoDobrado: farm.treeTempoDobrado,
     treeAbisso: farm.treeAbisso,
+    treeAbissoBase: farm.treeAbissoBase,
+    phase: farm.phase,
     extraDmgPct: 0,
   });
 
