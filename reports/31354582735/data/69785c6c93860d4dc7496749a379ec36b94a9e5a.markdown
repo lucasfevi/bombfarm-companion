@@ -1,0 +1,163 @@
+# Instructions
+
+- Following Playwright test failed.
+- Explain why, be concise, respect Playwright best practices.
+- Provide a snippet of code with the fix, if possible.
+
+# Test info
+
+- Name: effective-stats.spec.ts >> effective stats panel (EST / ESB) >> Luck lives on Stats (sheet Total), not Effective when equal to Total
+- Location: e2e/effective-stats.spec.ts:283:7
+
+# Error details
+
+```
+Error: expect(locator).toHaveText(expected) failed
+
+Locator:  locator('[data-slot="tabs-panel"][data-state="active"]').locator('section').filter({ has: getByRole('heading', { name: /^Stats$/i, level: 2 }) }).locator('tr').filter({ hasText: /^Luck/ }).locator('td').last()
+Expected: "43.00"
+Received: "—"
+Timeout:  5000ms
+
+Call log:
+  - Expect "toHaveText" with timeout 5000ms
+  - waiting for locator('[data-slot="tabs-panel"][data-state="active"]').locator('section').filter({ has: getByRole('heading', { name: /^Stats$/i, level: 2 }) }).locator('tr').filter({ hasText: /^Luck/ }).locator('td').last()
+    14 × locator resolved to <td class="border-line px-2 py-1.5 align-middle text-right font-mono tabular-nums whitespace-nowrap text-xs text-muted">—</td>
+       - unexpected value "—"
+
+```
+
+```yaml
+- cell "—"
+```
+
+# Test source
+
+```ts
+  240 |                   attack: 0,
+  241 |                   energy: 0,
+  242 |                   speed: 0,
+  243 |                   critChance: 0,
+  244 |                   critDmg: 0,
+  245 |                   penetration: 0,
+  246 |                   cdr: 0,
+  247 |                   luck: 0,
+  248 |                 },
+  249 |               }
+  250 |             : h,
+  251 |         ),
+  252 |         account: {
+  253 |           ...importedRoster.account!,
+  254 |           tree: { ...importedRoster.account!.tree!, critChance: 6 },
+  255 |           teamBuffs: { ...importedRoster.account!.teamBuffs, pressagio_mortal: 5 },
+  256 |         },
+  257 |       };
+  258 |     }
+  259 | 
+  260 |     await seedLocalStorage(page, seeded('pt'));
+  261 |     await page.goto('/');
+  262 |     await selectSavedHero(page, 'Cora');
+  263 |     await page.getByRole('tab', { name: /^pontos$/i }).click();
+  264 |     const ptPanel = effectivePanel(page, 'pt');
+  265 |     await ptPanel.getByRole('button', { name: /Ver detalhamento de Chance de Crítico/i }).click();
+  266 |     await expect(ptPanel.getByText(/^Herói$/i).first()).toBeVisible();
+  267 |     await expect(ptPanel.getByText(/^Itens$/i).first()).toBeVisible();
+  268 |     await expect(ptPanel.getByText(/^Habilidade$/i).first()).toBeVisible();
+  269 |     await expect(ptPanel.getByText(/^Árvore$/i).first()).toBeVisible();
+  270 | 
+  271 |     await seedLocalStorage(page, seeded('en'));
+  272 |     await page.goto('/');
+  273 |     await selectSavedHero(page, 'Cora');
+  274 |     await openPointsTab(page, 'en');
+  275 |     const enPanel = effectivePanel(page, 'en');
+  276 |     await enPanel.getByRole('button', { name: /Show breakdown of Crit Chance/i }).click();
+  277 |     await expect(enPanel.getByText(/^Hero$/i).first()).toBeVisible();
+  278 |     await expect(enPanel.getByText(/^Gear$/i).first()).toBeVisible();
+  279 |     await expect(enPanel.getByText(/^Ability$/i).first()).toBeVisible();
+  280 |     await expect(enPanel.getByText(/^Skill tree$/i).first()).toBeVisible();
+  281 |   });
+  282 | 
+  283 |   test('Luck lives on Stats (sheet Total), not Effective when equal to Total', async ({ page }) => {
+  284 |     const naked = {
+  285 |       attack: 200,
+  286 |       energy: 300,
+  287 |       speed: 50,
+  288 |       critChance: 10,
+  289 |       critDmg: 70,
+  290 |       penetration: 5,
+  291 |       cdr: 5,
+  292 |       luck: 20,
+  293 |     };
+  294 |     // gearedOverride is the OBSERVED (tree-inclusive) sheet and still feeds roster/power,
+  295 |     // but it no longer drives the Stats table — that composes from `birth` (asserted below).
+  296 |     // Kept deliberately divergent from the composed Total so a regression that re-pointed
+  297 |     // Stats at gearedOverride would show up as 25.00 instead of 43.00.
+  298 |     const gearedOverride = { ...naked, luck: 25 };
+  299 |     const seeded = {
+  300 |       ...importedRoster,
+  301 |       lang: 'en' as const,
+  302 |       heroes: importedRoster.heroes.map((h) =>
+  303 |         h.id === 'seed-cora'
+  304 |           ? {
+  305 |               ...h,
+  306 |               naked,
+  307 |               birth: naked,
+  308 |               gearedOverride,
+  309 |               abilities: {},
+  310 |               pts: {
+  311 |                 attack: 0,
+  312 |                 energy: 0,
+  313 |                 speed: 0,
+  314 |                 critChance: 0,
+  315 |                 critDmg: 0,
+  316 |                 penetration: 0,
+  317 |                 cdr: 0,
+  318 |                 luck: 0,
+  319 |               },
+  320 |             }
+  321 |           : h,
+  322 |       ),
+  323 |       account: {
+  324 |         ...importedRoster.account!,
+  325 |         tree: { ...importedRoster.account!.tree!, luckFlatPct: 3 },
+  326 |       },
+  327 |     };
+  328 |     await seedLocalStorage(page, seeded);
+  329 |     await page.goto('/');
+  330 |     await selectSavedHero(page, 'Cora');
+  331 |     await openPointsTab(page, 'en');
+  332 | 
+  333 |     const stats = activePanel(page).locator('section').filter({
+  334 |       has: page.getByRole('heading', { name: /^Stats$/i, level: 2 }),
+  335 |     });
+  336 |     const luckRow = stats.locator('tr').filter({ hasText: /^Luck/ });
+  337 |     // Stats composes from birth now, not from gearedOverride: birth.luck 20 × starsMult(2)
+  338 |     // = 40 (Δ stars +20.00), then the tree's flat luckFlatPct 3 (Δ tree +3.00) → Total 43.00.
+  339 |     await expect(luckRow.locator('td').nth(1)).toHaveText('20.00');
+> 340 |     await expect(luckRow.locator('td').last()).toHaveText('43.00');
+      |                                                ^ Error: expect(locator).toHaveText(expected) failed
+  341 | 
+  342 |     const panel = effectivePanel(page, 'en');
+  343 |     await expect(panel.getByRole('button', { name: /Show breakdown of Luck/i })).toHaveCount(0);
+  344 |   });
+  345 | 
+  346 |   test('expand/collapse does not shift sibling value column (box metrics)', async ({ page }) => {
+  347 |     await seedLocalStorage(page, { ...importedRoster, lang: 'en' });
+  348 |     await page.goto('/');
+  349 |     await selectSavedHero(page, 'Cora');
+  350 |     await openPointsTab(page, 'en');
+  351 | 
+  352 |     const panel = effectivePanel(page, 'en');
+  353 |     const hitBtn = panel.getByRole('button', { name: /Show breakdown of Hit/i });
+  354 |     const before = await hitBtn.boundingBox();
+  355 |     expect(before).toBeTruthy();
+  356 | 
+  357 |     await panel.getByRole('button', { name: /Show breakdown of Fuse/i }).click();
+  358 |     const after = await hitBtn.boundingBox();
+  359 |     expect(after).toBeTruthy();
+  360 |     expect(Math.abs(after!.x + after!.width - (before!.x + before!.width))).toBeLessThan(2);
+  361 |     expect(Math.abs(after!.x - before!.x)).toBeLessThan(2);
+  362 |   });
+  363 | });
+  364 | 
+```
