@@ -202,10 +202,12 @@ function heroStatsFromEffective(effective: HeroSheet | undefined): TeamPlanHeroS
     critDmg: effective?.critDmg ?? 0,
     penetration: effective?.penetration ?? 0,
     cdr: effective?.cdr ?? 0,
+    // Luck never reaches HeroSheet / combat (BSP-42, AD-BSP-20) — always 0 on the combat side.
+    luck: 0,
   };
 }
 
-/** Same picked-field shape as {@link heroStatsFromEffective}, sourced from the sheet (no `luck`). */
+/** Same picked-field shape as {@link heroStatsFromEffective}, sourced from the sheet (real `luck`). */
 function heroStatsFromSheet(adjusted: SheetStats | undefined): TeamPlanHeroStats {
   return {
     attack: adjusted?.attack ?? 0,
@@ -215,6 +217,7 @@ function heroStatsFromSheet(adjusted: SheetStats | undefined): TeamPlanHeroStats
     critDmg: adjusted?.critDmg ?? 0,
     penetration: adjusted?.penetration ?? 0,
     cdr: adjusted?.cdr ?? 0,
+    luck: adjusted?.luck ?? 0,
   };
 }
 
@@ -241,6 +244,8 @@ function buildPerHeroTable(
         combatStatsAfter: heroStatsFromEffective(afterScore?.effective),
         sheetStatsBefore: heroStatsFromSheet(beforeScore?.adjusted),
         sheetStatsAfter: heroStatsFromSheet(afterScore?.adjusted),
+        hitBefore: beforeScore?.hit ?? 0,
+        hitAfter: afterScore?.hit ?? 0,
       };
     })
     .sort((a, b) => a.heroName.localeCompare(b.heroName) || a.heroId.localeCompare(b.heroId));
@@ -366,6 +371,7 @@ const ZERO_HERO_STATS: TeamPlanHeroStats = {
   critDmg: 0,
   penetration: 0,
   cdr: 0,
+  luck: 0,
 };
 
 /** Synthetic regression case for per-hero negative delta assertions. */
@@ -381,6 +387,8 @@ export function syntheticRegressionPerHero(): WaterfallResult['perHero'][number]
     combatStatsAfter: ZERO_HERO_STATS,
     sheetStatsBefore: ZERO_HERO_STATS,
     sheetStatsAfter: ZERO_HERO_STATS,
+    hitBefore: 1000,
+    hitAfter: 900,
   };
 }
 
