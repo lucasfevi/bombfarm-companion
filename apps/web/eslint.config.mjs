@@ -381,10 +381,14 @@ export default tseslint.config(
   // (farm-phase-abyss branch): one new persisted field (`TreeState.abissoBase`,
   // Abisso's damage-mult base) plus its `DEFAULT_TREE` default value — same
   // additive-schema-field pattern as `luckFlatPct` before it, not a scope creep.
+  // Bumped to 354 (keystone sheet-vs-combat-views fix): one new persisted field
+  // (`TreeState.critDmgMult`, Glass Cannon's crit-damage multiplier, mirroring the
+  // `abissoBase` precedent above) plus its `DEFAULT_TREE` default value — same
+  // additive-schema-field pattern again, not a scope creep.
   {
     files: ['src/shared/lib/storage.ts'],
     rules: {
-      'max-lines': ['error', { max: 352, skipBlankLines: true, skipComments: true }],
+      'max-lines': ['error', { max: 354, skipBlankLines: true, skipComments: true }],
     },
   },
   {

@@ -39,6 +39,8 @@ export type TreeState = {
   abisso?: boolean;
   /** `skills.totals.abisso_base` — damage × abissoBase^currentPhase; 0 when unowned (combat-layer only, see `computeCombatMults`). */
   abissoBase?: number;
+  /** `skills.totals.crit_dmg_mult` — Glass Cannon's crit-dmg mult on the birth base; sheet-layer only, 1 when unowned. */
+  critDmgMult?: number;
   /**
    * Flat Luck percentage points from `skills.totals.luck_add × 100` (AD-BSP-22, ASM-01).
    * Additive on `bf-hp-account-v1` — optional (not `number`) so pre-Wave-5 literals (e.g.
@@ -137,6 +139,7 @@ export const DEFAULT_TREE = (): TreeState => ({
   tempoDobrado: false,
   abisso: false,
   abissoBase: 0,
+  critDmgMult: 1,
   luckFlatPct: 0,
 });
 

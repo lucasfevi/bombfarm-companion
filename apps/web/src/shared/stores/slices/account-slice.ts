@@ -34,6 +34,11 @@ export type AccountSlice = {
   treeAbisso: boolean;
   /** `skills.totals.abisso_base` — Abisso's damage-multiplier exponent base; import-only. */
   treeAbissoBase: number;
+  /**
+   * `skills.totals.crit_dmg_mult` — Glass Cannon's crit-damage multiplier on the birth base
+   * (2 when C15 is owned, 1 otherwise); import/hydrate-only, same shape as `treeAbissoBase`.
+   */
+  treeCritDmgMult: number;
   treeLuckFlatPct: number;
   teamBuffs: Record<TeamBuffId, number>;
   houseIdx: number;
@@ -79,6 +84,7 @@ export const createAccountSlice: StateCreator<
   treeTempoDobrado: defaultTree.tempoDobrado,
   treeAbisso: defaultTree.abisso ?? false,
   treeAbissoBase: defaultTree.abissoBase ?? 0,
+  treeCritDmgMult: defaultTree.critDmgMult ?? 1,
   treeLuckFlatPct: defaultTree.luckFlatPct ?? 0,
   teamBuffs: zeroTeamBuffs(),
   houseIdx: defaultCtx.houseIdx,
@@ -148,6 +154,7 @@ export const createAccountSlice: StateCreator<
       treeTempoDobrado: shared.tree.tempoDobrado,
       treeAbisso: shared.tree.abisso ?? false,
       treeAbissoBase: shared.tree.abissoBase ?? 0,
+      treeCritDmgMult: shared.tree.critDmgMult ?? 1,
       treeLuckFlatPct: shared.tree.luckFlatPct ?? 0,
       teamBuffs: {
         ...zeroTeamBuffs(),
@@ -176,6 +183,7 @@ export const createAccountSlice: StateCreator<
       patch.treeTempoDobrado = data.tree.tempoDobrado;
       patch.treeAbisso = data.tree.abisso;
       patch.treeAbissoBase = data.tree.abissoBase;
+      patch.treeCritDmgMult = data.tree.critDmgMult;
       patch.treeLuckFlatPct = data.tree.luckFlatPct;
     }
     if (data.houseIdx != null) {
