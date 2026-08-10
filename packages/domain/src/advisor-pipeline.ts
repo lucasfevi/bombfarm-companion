@@ -63,6 +63,8 @@ export type AdvisorPipelineInput = {
   treeTempoDobrado: boolean;
   /** Abisso — suppresses Glass Cannon crit ×2 and Crit tree sheet adds. */
   treeAbisso?: boolean;
+  /** `skills.totals.abisso_base` — Abisso's damage-multiplier exponent base (0 when unowned). */
+  treeAbissoBase?: number;
   /** `skills.totals.luck_add × 100` — flat Luck percentage points (BSPW5-03, ASM-01). */
   treeLuckFlatPct: number;
   teamBuffs: Record<TeamBuffId, number>;
@@ -91,6 +93,8 @@ export type AdvisorPipelineResult = {
   energyMult: number;
   speedMult: number;
   critDmgMult: number;
+  /** Abisso's `abissoBase^currentPhase` factor — 1 when not owned. Already folded into `dmgMult`. */
+  abissoMult: number;
   teamCritPctOfBase: number;
   /** The whole skill tree, once (BSP-23c) — surfaced for Wave 6's breakdown. */
   treeSheet: TreeSheetTotals;
@@ -147,6 +151,7 @@ export function computeAdvisorPipeline(input: AdvisorPipelineInput): AdvisorPipe
     treeGlassCannon,
     treeTempoDobrado,
     treeAbisso = false,
+    treeAbissoBase = 0,
     treeLuckFlatPct,
     teamBuffs,
     houseIdx,
@@ -195,6 +200,8 @@ export function computeAdvisorPipeline(input: AdvisorPipelineInput): AdvisorPipe
     treeGlassCannon,
     treeTempoDobrado,
     treeAbisso,
+    treeAbissoBase,
+    phase,
     extraDmgPct: 0,
   });
   const {
@@ -203,6 +210,7 @@ export function computeAdvisorPipeline(input: AdvisorPipelineInput): AdvisorPipe
     gateAttackMult,
     energyMult,
     critDmgMult,
+    abissoMult,
     teamCritPctOfBase,
     teamDrainMult,
     dmgMult,
@@ -326,6 +334,7 @@ export function computeAdvisorPipeline(input: AdvisorPipelineInput): AdvisorPipe
     energyMult,
     speedMult,
     critDmgMult,
+    abissoMult,
     teamCritPctOfBase,
     treeSheet,
     A: equippedResult,

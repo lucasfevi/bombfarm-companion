@@ -26,15 +26,21 @@ export function formulaMitF(facts: PipelineFacts): FormulaBreakdown {
  * BSP-23c/AC-42: `dmgMult` no longer carries `treeDanoTotal` — the tree's `dmg_static` factor
  * now lives on the sheet (`ledgerAttack`'s 'tree' step), applied exactly once. This formula's
  * substituted string must not imply a second application.
+ *
+ * Abisso's `abissoMult` (`abissoBase^currentPhase`, 1 when not owned) is a genuine third factor
+ * here — unlike the tree, it has no sheet home (see `computeCombatMults`'s doc comment) — so it
+ * belongs in this substituted string, distinct from `extraDmgPct` (the user's independent
+ * Math-check knob).
  */
 export function formulaDmg(facts: PipelineFacts): FormulaBreakdown {
   const abl = facts.mods.dmgMult;
   const extra = 1 + facts.extraDmgPct / 100;
+  const abisso = facts.abissoMult;
   const value = facts.dmgMult;
   return {
     kind: 'formula',
     expressionKey: 'bdFormulaDmg',
-    substituted: `${formatBreakdownNumber(abl, 3)} × ${formatBreakdownNumber(extra, 3)} = ${formatBreakdownNumber(value, 3)}`,
+    substituted: `${formatBreakdownNumber(abl, 3)} × ${formatBreakdownNumber(extra, 3)} × ${formatBreakdownNumber(abisso, 3)} = ${formatBreakdownNumber(value, 3)}`,
     value,
   };
 }

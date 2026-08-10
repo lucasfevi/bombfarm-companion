@@ -15,6 +15,8 @@ export type TreeState = {
   tempoDobrado: boolean;
   /** Abisso (D15) — cancels tree Crit/GEO sheet adds and Glass Cannon crit ×2; energy ×0.5 still applies. */
   abisso?: boolean;
+  /** `skills.totals.abisso_base` — Abisso's damage-multiplier exponent base (0 when unowned). */
+  abissoBase?: number;
   luckFlatPct?: number;
 };
 

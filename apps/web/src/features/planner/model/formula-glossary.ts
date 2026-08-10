@@ -9,9 +9,9 @@ export const FORMULA_GLOSSARY: Partial<Record<string, GlossEntry[]>> = {
     { tokens: ['pen'], tipKey: 'bdTermPen' },
   ],
   bdFormulaDmg: [
-    { tokens: ['tree'], tipKey: 'bdTermTree' },
     { tokens: ['abl'], tipKey: 'bdTermAbl' },
     { tokens: ['extra'], tipKey: 'bdTermExtra' },
+    { tokens: ['abisso'], tipKey: 'bdTermAbisso' },
   ],
   bdFormulaHit: [
     { tokens: ['atk'], tipKey: 'bdTermAtk' },

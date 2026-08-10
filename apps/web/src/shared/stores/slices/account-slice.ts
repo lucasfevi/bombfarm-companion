@@ -1,6 +1,7 @@
 import type { StateCreator } from 'zustand';
 import type { RankMode } from '@bombfarm/domain/model';
 import { DEFAULT_CASA_SLOTS } from '@bombfarm/domain/casa-slots';
+import { effectiveFarmPhase } from '@bombfarm/domain/farm-context';
 import type { AccountImportData } from '@bombfarm/domain/import-save';
 import { phaseLine } from '@bombfarm/domain/phases';
 import { zeroTeamBuffs, type TeamBuffId } from '@bombfarm/domain/team-buffs';
@@ -31,6 +32,8 @@ export type AccountSlice = {
   treeGlassCannon: boolean;
   treeTempoDobrado: boolean;
   treeAbisso: boolean;
+  /** `skills.totals.abisso_base` — Abisso's damage-multiplier exponent base; import-only. */
+  treeAbissoBase: number;
   treeLuckFlatPct: number;
   teamBuffs: Record<TeamBuffId, number>;
   houseIdx: number;
@@ -75,6 +78,7 @@ export const createAccountSlice: StateCreator<
   treeGlassCannon: defaultTree.glassCannon,
   treeTempoDobrado: defaultTree.tempoDobrado,
   treeAbisso: defaultTree.abisso ?? false,
+  treeAbissoBase: defaultTree.abissoBase ?? 0,
   treeLuckFlatPct: defaultTree.luckFlatPct ?? 0,
   teamBuffs: zeroTeamBuffs(),
   houseIdx: defaultCtx.houseIdx,
@@ -143,6 +147,7 @@ export const createAccountSlice: StateCreator<
       treeGlassCannon: shared.tree.glassCannon,
       treeTempoDobrado: shared.tree.tempoDobrado,
       treeAbisso: shared.tree.abisso ?? false,
+      treeAbissoBase: shared.tree.abissoBase ?? 0,
       treeLuckFlatPct: shared.tree.luckFlatPct ?? 0,
       teamBuffs: {
         ...zeroTeamBuffs(),
@@ -170,6 +175,7 @@ export const createAccountSlice: StateCreator<
       patch.treeGlassCannon = data.tree.glassCannon;
       patch.treeTempoDobrado = data.tree.tempoDobrado;
       patch.treeAbisso = data.tree.abisso;
+      patch.treeAbissoBase = data.tree.abissoBase;
       patch.treeLuckFlatPct = data.tree.luckFlatPct;
     }
     if (data.houseIdx != null) {
@@ -177,6 +183,18 @@ export const createAccountSlice: StateCreator<
       if (data.houseLevel != null) patch.houseLevel = data.houseLevel;
     }
     if (data.slots != null) patch.slots = data.slots;
+    if (data.phase != null) {
+      // Same clamp `setFarmPhase` relies on downstream reads for (AD-BSP style: reuse, don't
+      // reimplement) — and the same mitigation-sync/skipPhaseMitigationSync contract as
+      // `setFarmPhase` below, so an import landing mid hero-switch (ASM-10's suppression
+      // window) doesn't fight it.
+      const phase = effectiveFarmPhase(data.phase);
+      patch.phase = phase;
+      if (!get().skipPhaseMitigationSync) {
+        const line = phaseLine(phase);
+        if (line) patch.mitigationPct = +(line.mitig * 100).toFixed(2);
+      }
+    }
     if (Object.keys(patch).length > 0) set(patch);
   },
 });

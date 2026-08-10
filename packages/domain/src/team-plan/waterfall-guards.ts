@@ -31,6 +31,7 @@ export function farmFromAccount(input: TeamPlanInput): FarmContext {
     treeGlassCannon: input.account.treeGlassCannon,
     treeTempoDobrado: input.account.treeTempoDobrado,
     treeAbisso: input.account.treeAbisso,
+    treeAbissoBase: input.account.treeAbissoBase,
   };
 }
 

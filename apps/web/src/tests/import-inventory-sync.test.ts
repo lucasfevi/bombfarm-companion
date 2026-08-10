@@ -15,6 +15,15 @@ function loadFixture(): Record<string, unknown> {
   return JSON.parse(readFileSync(fixturePath, 'utf8')) as Record<string, unknown>;
 }
 
+const phase151FixturePath = join(
+  WEB_PACKAGE_ROOT,
+  '../../packages/domain/tests/fixtures/sheet-math/phase-151.json',
+);
+
+function loadPhase151Fixture(): Record<string, unknown> {
+  return JSON.parse(readFileSync(phase151FixturePath, 'utf8')) as Record<string, unknown>;
+}
+
 describe('import inventory sync', () => {
   beforeEach(() => {
     resetPlannerStoreForTests();
@@ -76,6 +85,16 @@ describe('import inventory sync', () => {
     const { account } = parseSaveFile(loadFixture(), []);
     usePlannerStore.getState().applyAccountImport(account);
     expect(usePlannerStore.getState().forgeFloor).toBe(15);
+  });
+
+  it('applyAccountImport carries a real save\'s account.phase (151) into store phase, plus Abisso base', () => {
+    const { account } = parseSaveFile(loadPhase151Fixture(), []);
+    expect(account.phase).toBe(151);
+    usePlannerStore.getState().applyAccountImport(account);
+    const s = usePlannerStore.getState();
+    expect(s.phase).toBe(151);
+    expect(s.treeAbisso).toBe(true);
+    expect(s.treeAbissoBase).toBeCloseTo(1.008, 10);
   });
 
   it('blocked heroes still sync roster without inventory when list is empty', () => {

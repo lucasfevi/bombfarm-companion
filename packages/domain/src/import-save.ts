@@ -64,6 +64,13 @@ export type AccountImportData = {
     tempoDobrado: boolean;
     /** Abisso (D15) — cancels Crit/GEO sheet adds and Glass Cannon crit ×2. */
     abisso: boolean;
+    /**
+     * `skills.totals.abisso_base` — Abisso's damage-multiplier exponent base (verified
+     * 1.008 on a real account: damage × abissoBase^currentPhase). 0 in saves without the
+     * keystone; combat math must gate on `abisso`, never multiply blindly by this alone
+     * (a bare `0 ** phase` would zero every hit).
+     */
+    abissoBase: number;
     teamCoinPct?: number;
     /** `luck_add × 100` — flat percentage points (AD-BSP-22, ASM-01, BSPW5-03). */
     luckFlatPct: number;
@@ -72,6 +79,8 @@ export type AccountImportData = {
   houseLevel: number | null;
   /** Casa field slots from the save (`casa.slots` ladder) when `casa` is present. */
   slots?: number | null;
+  /** `account.phase` — the phase the player is currently farming. Null when absent. */
+  phase: number | null;
 };
 
 /**
@@ -120,12 +129,25 @@ function bool(value: unknown, fallback = false): boolean {
  * `team_dmg_add`/`geo_mult` reflected here. Glass Cannon / Tempo Dobrado detection is shared
  * with the per-hero sheet mapper (`treeTotalsFromSave`) via `detectGlassCannon` /
  * `detectTempoDobrado` (save-units.ts) so the two never drift apart. Abisso is
- * `abisso_base > 0` or `keystones` contains `d15`.
+ * `abisso_base > 0` or `keystones` contains `d15`; `abissoBase` carries the raw numeric base
+ * (empirically 1.008) so the combat multiplier `abissoBase^currentPhase` uses the save's own
+ * figure instead of a hardcoded literal — that multiplier lives in `computeCombatMults`
+ * (`derive.ts`), NOT here or on the hero sheet (two exports of the same account at different
+ * phases have byte-identical hero `stats` blocks, so Abisso is a combat-time factor, not a
+ * sheet one).
  */
+function mapAccountPhase(raw: Record<string, unknown>): number | null {
+  const account = isObject(raw.account) ? raw.account : null;
+  if (!account) return null;
+  const phase = account.phase;
+  return typeof phase === 'number' && Number.isFinite(phase) ? phase : null;
+}
+
 function mapAccountData(raw: Record<string, unknown>): AccountImportData {
   const skills = isObject(raw.skills) ? raw.skills : null;
   const totals = skills && isObject(skills.totals) ? skills.totals : null;
   const casa = isObject(raw.casa) ? raw.casa : null;
+  const phase = mapAccountPhase(raw);
 
   // MOD-36: single-pass optional-field parse — stays null unless the save carries `totals`.
   let tree: AccountImportData['tree'] = null;
@@ -140,6 +162,7 @@ function mapAccountData(raw: Record<string, unknown>): AccountImportData {
       glassCannon: detectGlassCannon(totals),
       tempoDobrado: detectTempoDobrado(totals),
       abisso: asNumber(totals.abisso_base) > 0 || keystones.some((k) => k === 'd15'),
+      abissoBase: asNumber(totals.abisso_base, 0),
       teamCoinPct: asNumber(totals.coin_add ?? totals.team_coin_add) * 100,
       // BSPW5-03 (ASM-01): flat Luck percentage points — absent key defaults to 0.
       luckFlatPct: asNumber(totals.luck_add) * 100,
@@ -161,13 +184,14 @@ function mapAccountData(raw: Record<string, unknown>): AccountImportData {
       houseIdx,
       houseLevel,
       slots: resolveCasaSlots(casa, houseIdx),
+      phase,
     };
   }
 
-  return { tree, houseIdx, houseLevel };
+  return { tree, houseIdx, houseLevel, phase };
 }
 
-const EMPTY_ACCOUNT_DATA: AccountImportData = { tree: null, houseIdx: null, houseLevel: null };
+const EMPTY_ACCOUNT_DATA: AccountImportData = { tree: null, houseIdx: null, houseLevel: null, phase: null };
 
 export function parseSaveFile(raw: unknown, existing: HeroRecord[]): ParseResult {
   const warnings: string[] = [];

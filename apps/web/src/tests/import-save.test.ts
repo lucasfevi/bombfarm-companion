@@ -298,7 +298,7 @@ describe('parseSaveFile — birth_stats reject gate (BSPW5-01)', () => {
     const raw = loadFixtureJson('gale-01-points-reset.json');
     const { candidates, account, rejected, warnings } = parseSaveFile(raw, []);
     expect(candidates).toHaveLength(0);
-    expect(account).toEqual({ tree: null, houseIdx: null, houseLevel: null });
+    expect(account).toEqual({ tree: null, houseIdx: null, houseLevel: null, phase: null });
     expect(rejected).not.toBeNull();
     expect(rejected!.reason).toBe('missingBirthStats');
     expect(warnings.some((w) => /re-export/i.test(w))).toBe(true);
@@ -575,7 +575,7 @@ describe('parseSaveFile', () => {
 
   it('returns nulls for account data when casa/skills are absent', () => {
     const { account } = parseSaveFile({ heroes: [] }, []);
-    expect(account).toEqual({ tree: null, houseIdx: null, houseLevel: null });
+    expect(account).toEqual({ tree: null, houseIdx: null, houseLevel: null, phase: null });
   });
 
   it('missing stats block still composes naked/gearedOverride from birth, but cannot infer pts', () => {
