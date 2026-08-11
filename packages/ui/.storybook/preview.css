@@ -1,0 +1,4 @@
+/* Storybook preview entry — self-sufficient: ../src/styles.css already carries its
+   own tailwindcss import, source-scan glob for ts/tsx, and the full theme token block,
+   so no separate app-level globals.css is needed under Vite. */
+@import '../src/styles.css';
