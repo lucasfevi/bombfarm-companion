@@ -605,7 +605,12 @@
       "luck": "Luck"
     },
     "pointsLuckHint": "Loot-facing — not scored for DPS, so it never shows up in Next point or Optimize build.",
-    "dmgPctLabel": "Damage (% of Attack)"
+    "dmgPctLabel": "Damage (% of Attack)",
+    "referralIntro": "Playing BombFarm? Use my referral code",
+    "referralReward": "We both get a reward once you clear stage 151.",
+    "referralCopy": "Copy referral code",
+    "referralCopied": "Referral code copied",
+    "referralCopyManual": "Clipboard unavailable — the code is selected, press Ctrl+C"
   },
   "pt": {
     "tagline": "build → equipamento → pontos",
@@ -1213,6 +1218,11 @@
       "luck": "Sorte"
     },
     "pointsLuckHint": "Voltado a loot — não pontua para DPS, por isso nunca aparece no Próximo ponto nem no Otimizar build.",
-    "dmgPctLabel": "Dano (% da Ataque)"
+    "dmgPctLabel": "Dano (% da Ataque)",
+    "referralIntro": "Joga BombFarm? Use meu código de indicação",
+    "referralReward": "Nós dois ganhamos uma recompensa quando você passar da fase 151.",
+    "referralCopy": "Copiar código de indicação",
+    "referralCopied": "Código de indicação copiado",
+    "referralCopyManual": "Área de transferência indisponível — o código está selecionado, aperte Ctrl+C"
   }
 }

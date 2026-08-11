@@ -298,3 +298,42 @@ describe('wiki asset footer credit', () => {
     expect(footer).toContain('wikiArtCredit');
   });
 });
+
+describe('footer referral code', () => {
+  const footer = read('app/_shell/footer.tsx');
+
+  it('renders the code from the shared constant rather than inlining it', () => {
+    expect(footer).toContain('REFERRAL_CODE');
+    expect(footer).not.toMatch(/F-[A-Z0-9]{8}/);
+  });
+
+  it('gives the copy control an accessible name and confirms via toast', () => {
+    expect(footer).toContain('aria-label={t.referralCopy}');
+    expect(footer).toContain('flashToast(t.referralCopied)');
+  });
+
+  it('meets the 24px minimum target size', () => {
+    expect(footer).toContain("'size-6'");
+  });
+
+  it('falls back to selecting the code when the clipboard is unavailable', () => {
+    // An empty catch would leave the click with no visible effect on insecure
+    // origins or when the permission is denied.
+    expect(footer).toContain('selectNodeContents');
+    expect(footer).toContain('flashToast(t.referralCopyManual)');
+    for (const lang of ['en', 'pt'] as const) {
+      expect(STRINGS[lang].referralCopyManual).toBeTruthy();
+    }
+  });
+
+  it('states the reward is mutual, in both languages', () => {
+    for (const lang of ['en', 'pt'] as const) {
+      expect(STRINGS[lang].referralIntro).toBeTruthy();
+      expect(STRINGS[lang].referralCopy).toBeTruthy();
+      expect(STRINGS[lang].referralCopied).toBeTruthy();
+      // "we both" / "nós dois" — never framed as a one-way favour.
+      expect(STRINGS[lang].referralReward).toMatch(/both|nós dois/i);
+      expect(STRINGS[lang].referralReward).toContain('151');
+    }
+  });
+});
