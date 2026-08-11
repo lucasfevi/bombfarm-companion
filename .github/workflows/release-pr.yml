@@ -240,13 +240,38 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
 
+      - name: Reconcile main's squashed release history
+        env:
+          # Bot commits must not run local husky/commitlint (COMMIT_EDITMSG path + no TTY).
+          HUSKY: '0'
+          MAIN_ONLY_LOG: ${{ runner.temp }}/main-only-commits.tsv
+        run: |
+          set -euo pipefail
+          git fetch --no-tags origin main
+          git switch -C release/next
+
+          # The release PR is squash-merged (main requires linear history), so main's
+          # release commit shares no history with the branch it came from. Without this,
+          # main forks from develop and every later release PR conflicts on add/add.
+          if git merge-base --is-ancestor origin/main HEAD; then
+            echo "main is already an ancestor of release/next; nothing to reconcile."
+            exit 0
+          fi
+
+          # -s ours keeps develop's tree and discards main's, so refuse when main holds
+          # anything the rail did not put there (a hotfix landed straight on main).
+          git log --format='%H%x09%s' origin/main ^HEAD > "$MAIN_ONLY_LOG"
+          node tools/release/main-reconcile.mjs "$MAIN_ONLY_LOG"
+
+          git merge -s ours origin/main \
+            -m "chore(release): reconcile main's squashed release history"
+
       - name: Version packages on release/next
         env:
           # Bot commits must not run local husky/commitlint (COMMIT_EDITMSG path + no TTY).
           HUSKY: '0'
         run: |
           set -euo pipefail
-          git switch -C release/next
           pnpm changeset version
           # Stage only what `changeset version` is allowed to touch — consumed changesets,
           # version bumps and CHANGELOGs. A bare `git add -A` also sweeps up untracked CI

@@ -104,22 +104,41 @@ jobs:
           GH_TOKEN: ${{ secrets.RELEASE_PAT }}
           PR_NUMBER: ${{ steps.open-pr.outputs.number }}
         run: |
-          if ! gh pr merge "$PR_NUMBER" --auto --squash; then
-            {
-              echo '::error::Auto-merge is unavailable for the sync PR'
-              echo '## Release sync — manual action required'
-              echo ''
-              echo "Auto-merge could not be enabled for PR #${PR_NUMBER}. After required checks pass, run:"
-              echo ''
-              echo '```bash'
-              echo "gh pr merge ${PR_NUMBER} --squash"
-              echo '```'
-            } >> "$GITHUB_STEP_SUMMARY"
-            exit 1
-          fi
+          set -uo pipefail
+
+          # GitHub only accepts enablePullRequestAutoMerge while the PR is blocked by a
+          # pending required check. Called right after creation the checks have not
+          # registered yet, so it answers "Pull request is in unstable status". Retry
+          # while they spin up.
+          for attempt in 1 2 3 4 5; do
+            if gh pr merge "$PR_NUMBER" --auto --squash; then
+              echo "enabled=true" >> "$GITHUB_OUTPUT"
+              exit 0
+            fi
+            if [ "$attempt" -lt 5 ]; then
+              echo "Attempt ${attempt}: auto-merge not accepted yet; waiting for required checks to register."
+              sleep 20
+            fi
+          done
+
+          # The sync PR itself exists and is correct — the whole point of this job. Losing
+          # a convenience toggle must not report the sync as failed.
+          echo "enabled=false" >> "$GITHUB_OUTPUT"
+          echo "::warning::Auto-merge could not be enabled for PR #${PR_NUMBER}; merge it manually once checks pass."
+          {
+            echo '## Release sync — merge the sync PR manually'
+            echo ''
+            echo "Auto-merge could not be enabled for PR #${PR_NUMBER} (it may already be"
+            echo 'mergeable, or auto-merge is disabled for the repository). The sync PR was'
+            echo 'created correctly. After required checks pass, run:'
+            echo ''
+            echo '```bash'
+            echo "gh pr merge ${PR_NUMBER} --squash"
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Record successful sync kickoff
-        if: success()
+        if: success() && steps.merge.outputs.enabled == 'true'
         run: |
           {
             echo '## Release sync'
