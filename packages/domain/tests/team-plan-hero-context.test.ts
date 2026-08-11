@@ -45,6 +45,7 @@ function heroInputFromExtract(hero: ReturnType<typeof extractHero>): TeamPlanHer
     abilities: hero.abilities,
     pts: ZERO_PTS(),
     loadout: hero.loadout,
+    statPointsAvailable: hero.statPointsAvailable,
   };
 }
 
@@ -87,6 +88,23 @@ describe('buildHeroPlanContext', () => {
 
     expect(ctx!.mods).toEqual(pipeline.mods);
     expect(ctx!.sheetOther).toEqual(pipeline.sheetOther);
+  });
+
+  it('threads statPointsAvailable from TeamPlanHeroInput, defaulting to 0 when omitted', () => {
+    const raw = loadFixtureJson('save-20260801-crit-dmg-tree.json');
+    const hero = extractHero(raw, 'Bellatrix', 62);
+    const account = accountFromFixture(raw);
+    const { statPointsAvailable: _omitted, ...inputSansField } = heroInputFromExtract(hero);
+
+    const withoutField = buildHeroPlanContext(inputSansField, account, 'optimize');
+    expect(withoutField!.statPointsAvailable).toBe(0);
+
+    const withBanked = buildHeroPlanContext(
+      { ...heroInputFromExtract(hero), statPointsAvailable: 12 },
+      account,
+      'optimize',
+    );
+    expect(withBanked!.statPointsAvailable).toBe(12);
   });
 
   it('returns null when birth is missing', () => {
