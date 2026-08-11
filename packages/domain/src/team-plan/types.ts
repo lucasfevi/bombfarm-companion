@@ -95,6 +95,21 @@ export type HeroScore = {
   hit: number;
 };
 
+/**
+ * Cache of per-hero scores, keyed by everything `scoreHeroLoadout` reads that can vary within
+ * one run: `heroId | loadout | pts | auras`. The rest of its inputs — the `HeroPlanContext` a
+ * `heroId` resolves to, and the `FarmContext` — are fixed for a whole `runTeamPlan`, which is
+ * exactly the scope a memo may span. Never share one across two different inputs.
+ *
+ * FIFO-bounded, same reasoning as the solver's evaluation cache: a cache must never grow with
+ * the evaluation budget. Eviction can only cost time, never change a result — the key
+ * determines the value.
+ */
+export type ScoreMemo = {
+  entries: Map<string, HeroScore>;
+  maxEntries: number;
+};
+
 export type RosterRegime = 'underSaturated' | 'saturated';
 
 export type RosterEvaluation = {
@@ -267,4 +282,10 @@ export type EvaluateRosterInput = {
   slots: number;
   farm: FarmContext;
   forgeFloor: number;
+  /**
+   * Optional cross-call score memo. Omitted, `evaluateRoster` makes a private one that dies with
+   * the call — correct, but it can only ever hit within a single roster evaluation. Pass one from
+   * the search to reuse the ~14 heroes a neighbouring assignment leaves untouched.
+   */
+  scoreMemo?: ScoreMemo;
 };

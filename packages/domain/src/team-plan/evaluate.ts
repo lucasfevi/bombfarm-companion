@@ -64,8 +64,18 @@ function objectiveFromScores(
 
 export function evaluateRoster(input: EvaluateRosterInput): RosterEvaluation {
   const slots = Math.max(1, Math.round(input.slots));
-  const memo = createScoreMemo();
+  const memo = input.scoreMemo ?? createScoreMemo();
   const optimizeContexts = input.contexts.filter((ctx) => ctx.scope === 'optimize');
+  // Loop-invariant: the forge-floored loadout depends only on the input loadout and the forge
+  // floor, neither of which the fixed-point rounds touch. Building it inside the round loop
+  // rebuilt every hero's loadout four times per evaluation for nothing.
+  const scoringLoadouts: Record<string, Loadout> = {};
+  for (const ctx of optimizeContexts) {
+    scoringLoadouts[ctx.heroId] = loadoutForScoring(
+      input.loadoutsByHeroId[ctx.heroId] ?? {},
+      input.forgeFloor,
+    );
+  }
   const duties: Record<string, number> = {};
   let perHero: Record<string, HeroScore> = {};
   let sumDuty = 0;
@@ -78,7 +88,7 @@ export function evaluateRoster(input: EvaluateRosterInput): RosterEvaluation {
 
     for (const ctx of optimizeContexts) {
       const auras = computeRosterAuras(input.contexts, duties, ctx.heroId);
-      const loadout = loadoutForScoring(input.loadoutsByHeroId[ctx.heroId] ?? {}, input.forgeFloor);
+      const loadout = scoringLoadouts[ctx.heroId];
       const pts = input.ptsByHeroId[ctx.heroId] ?? ctx.pts;
       const raw = scoreHeroLoadout(ctx, loadout, pts, auras, input.farm, memo);
       const scored = applyPassagem(raw, ctx.abilities.passagem_bastao ?? 0);

@@ -2,37 +2,65 @@ import { fieldSeconds } from '../model';
 import { computeCombatMults, derive } from '../derive';
 import { farmContextForHero } from '../farm-context';
 import { composeSheetFromBirth, nakedFromBirth } from '../birth-sheet';
-import { ZERO_PTS } from '../planner-constants';
-import type { FarmContext, HeroPlanContext, HeroScore } from './types';
-import type { Loadout, PointAlloc } from '../gear/types';
+import { SHEET_KEYS, ZERO_PTS } from '../planner-constants';
+import { SLOTS } from '../gear/catalog';
+import { TEAM_BUFF_ABILITY_IDS } from '../team-buffs';
+import type { FarmContext, HeroPlanContext, HeroScore, ScoreMemo } from './types';
+import type { Loadout, PointAlloc, Slot } from '../gear/types';
 import type { TeamBuffId } from '../team-buffs';
 
-export type ScoreMemo = Map<string, HeroScore>;
+export type { ScoreMemo } from './types';
+
+/**
+ * Default ceiling on memoised hero scores.
+ *
+ * Small on purpose, and the cap was swept rather than guessed. On a real 348-item, 15-hero save
+ * at a 100,000-evaluation budget an entry measured 2.8-4.0 KB (a `HeroScore` carries a
+ * `HeroSheet`, `EffectiveDeltas`, `SheetStats` and a `Context`), and the whole benefit of the
+ * memo is already there at 1,000 entries: 0 -> 19.8s, 1,000 -> 17.3s, 25,000 -> 18.8s on a 50,000
+ * budget (three runs each). Raising it only costs — 150,000 entries retained 402 MB and ran
+ * SLOWER than 25,000 (36.6s vs 34.4s at 100,000) on GC pressure alone.
+ *
+ * The reason so little is needed: the hill-climb's working set is local. A gear move changes one
+ * hero, so the neighbours being scored share the other 14 heroes' loadouts, and the entries worth
+ * keeping are only the ones from the last few evaluations.
+ */
+export const TEAM_PLAN_MAX_SCORE_MEMO_ENTRIES = 5_000;
+
+/**
+ * The three signature builders below walk a fixed, module-level key list instead of
+ * `Object.entries(...).sort(...)`. The key sets are closed — `Slot` for a `Loadout`,
+ * `SheetKey` for a `PointAlloc`, `TeamBuffId` for the auras — so a fixed order is as
+ * discriminating as a sorted one, without the per-call array, tuple and comparator churn.
+ * The memo runs this per hero per fixed-point round per roster evaluation, and profiling put
+ * the three of them plus their comparators at ~29% of a team-plan run.
+ *
+ * Positional, not sorted-by-name: the key is an internal cache key, never persisted or
+ * compared across versions, so only injectivity matters.
+ */
+const SIGNATURE_SLOTS: readonly Slot[] = [...SLOTS].sort((a, b) => a.localeCompare(b));
 
 function loadoutSignature(loadout: Loadout): string {
-  const parts: string[] = [];
-  for (const [slot, item] of Object.entries(loadout).sort(([a], [b]) => a.localeCompare(b))) {
-    if (!item) {
-      parts.push(`${slot}:null`);
-      continue;
-    }
-    parts.push(`${slot}:${item.defId}|${item.rarityIdx}|${item.level}|${item.upgrade}`);
+  let out = '';
+  for (const slot of SIGNATURE_SLOTS) {
+    const item = loadout[slot];
+    out += item
+      ? `${slot}:${item.defId}|${item.rarityIdx}|${item.level}|${item.upgrade};`
+      : `${slot}:null;`;
   }
-  return parts.join(';');
+  return out;
 }
 
 function ptsSignature(pts: PointAlloc): string {
-  return Object.entries(pts)
-    .sort(([a], [b]) => a.localeCompare(b))
-    .map(([k, v]) => `${k}:${v}`)
-    .join(';');
+  let out = '';
+  for (const key of SHEET_KEYS) out += `${key}:${pts[key]};`;
+  return out;
 }
 
 function auraSignature(auras: Record<TeamBuffId, number>): string {
-  return Object.entries(auras)
-    .sort(([a], [b]) => a.localeCompare(b))
-    .map(([k, v]) => `${k}:${v}`)
-    .join(';');
+  let out = '';
+  for (const buffId of TEAM_BUFF_ABILITY_IDS) out += `${buffId}:${auras[buffId]};`;
+  return out;
 }
 
 function memoKey(
@@ -44,8 +72,8 @@ function memoKey(
   return `${heroId}|${loadoutSignature(loadout)}|${ptsSignature(pts)}|${auraSignature(auras)}`;
 }
 
-export function createScoreMemo(): ScoreMemo {
-  return new Map();
+export function createScoreMemo(maxEntries = TEAM_PLAN_MAX_SCORE_MEMO_ENTRIES): ScoreMemo {
+  return { entries: new Map(), maxEntries };
 }
 
 export function scoreHeroLoadout(
@@ -57,8 +85,9 @@ export function scoreHeroLoadout(
   memo?: ScoreMemo,
 ): HeroScore {
   const key = memoKey(ctx.heroId, loadout, pts, auras);
-  if (memo?.has(key)) {
-    return memo.get(key)!;
+  if (memo) {
+    const hit = memo.entries.get(key);
+    if (hit) return hit;
   }
 
   const naked = nakedFromBirth(ctx.birth, ctx.level, ctx.stars, ctx.sheetOther);
@@ -137,6 +166,16 @@ export function scoreHeroLoadout(
     hit: deriveResult.hit,
   };
 
-  if (memo) memo.set(key, score);
+  if (memo) {
+    // FIFO rather than "stop caching when full": the search's working set moves as it climbs,
+    // so the entries worth keeping are the recent ones. `Map` iterates in insertion order, so
+    // the first key is always the oldest.
+    while (memo.entries.size >= memo.maxEntries) {
+      const oldest = memo.entries.keys().next();
+      if (oldest.done) break;
+      memo.entries.delete(oldest.value);
+    }
+    memo.entries.set(key, score);
+  }
   return score;
 }

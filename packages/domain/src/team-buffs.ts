@@ -11,6 +11,21 @@ export const TEAM_BUFF_ABILITY_IDS = [
 
 export type TeamBuffId = (typeof TEAM_BUFF_ABILITY_IDS)[number];
 
+/**
+ * `ABILITIES` lookup for the five team buffs, resolved once at module load.
+ *
+ * The linear `ABILITIES.find` this replaces ran per buff id per aura computation — 14% of a
+ * team-plan run's CPU by profile, since `computeRosterAuras` is called once per hero per
+ * fixed-point round per roster evaluation. `ABILITIES` is a frozen catalog, so hoisting is a
+ * pure lookup change: same values, same order, same arithmetic.
+ */
+export const TEAM_BUFF_PER_LEVEL: Record<TeamBuffId, number> = Object.fromEntries(
+  TEAM_BUFF_ABILITY_IDS.map((buffId) => {
+    const definition = ABILITIES.find((ability) => ability.id === buffId);
+    return [buffId, definition && 'perLevel' in definition.effect ? definition.effect.perLevel : 0];
+  }),
+) as Record<TeamBuffId, number>;
+
 export function zeroTeamBuffs(): Record<TeamBuffId, number> {
   return {
     grito_guerra: 0,
@@ -43,8 +58,7 @@ export function computeTeamBuffsFromDeployed(
   const out = zeroTeamBuffs();
   const contributors = heroes.filter((hero) => hero.deployed && hero.id !== excludeHeroId);
   for (const buffId of TEAM_BUFF_ABILITY_IDS) {
-    const definition = ABILITIES.find((ability) => ability.id === buffId);
-    const perLevel = definition && 'perLevel' in definition.effect ? definition.effect.perLevel : 0;
+    const perLevel = TEAM_BUFF_PER_LEVEL[buffId];
     out[buffId] = contributors.reduce((sum, hero) => sum + perLevel * (hero.abilities[buffId] ?? 0), 0);
   }
   return out;
