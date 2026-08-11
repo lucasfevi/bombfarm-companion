@@ -17,6 +17,9 @@ export const chipRecipe = cva('', {
       small: `${chipSmallBase} border-line bg-surface`,
       'small-active': `${chipSmallBase} border-up bg-[color-mix(in_oklch,var(--up)_14%,var(--surface))] text-up`,
       'small-warn': `${chipSmallBase} border-warn bg-surface text-warn`,
+      // m2-shell-status (2026-08-11): additive tone for StatusChip's `not_running`
+      // state — no game-connection tone maps to any of the five variants above.
+      'small-muted': `${chipSmallBase} border-line bg-surface text-muted`,
     },
   },
   defaultVariants: { variant: 'default' },
