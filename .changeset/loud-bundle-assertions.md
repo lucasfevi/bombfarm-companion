@@ -1,5 +1,5 @@
 ---
-'@bombfarm/web': patch
+"@bombfarm/web": patch
 ---
 
 Make the build-output bundle assertions actually run in CI.

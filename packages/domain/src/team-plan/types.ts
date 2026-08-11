@@ -64,6 +64,14 @@ export type HeroPlanContext = {
   scope: ScopeState;
   abilities: Record<string, number>;
   pts: PointAlloc;
+  /**
+   * Banked, unspent stat points (`HeroRecord.statPointsAvailable`, via
+   * `TeamPlanHeroInput.statPointsAvailable`) — feeds `ReoptInput.statPointsAvailable` so the
+   * team-plan points passes (`solver-search.ts`'s `pointsPass`, `waterfall.ts`'s
+   * `finalPtsFromOptimizeBuild`) allocate a hero's banked points same as the single-hero
+   * advisor pipeline (`advisor-pipeline.ts`). Defaults to 0 in `buildHeroPlanContext`.
+   */
+  statPointsAvailable: number;
 };
 
 export type HeroScore = {
@@ -132,6 +140,8 @@ export type TeamPlanHeroInput = {
   pts: PointAlloc;
   loadout: Loadout;
   battleAllowed?: boolean;
+  /** `HeroRecord.statPointsAvailable` — banked, unspent stat points. Defaults to 0 when omitted. */
+  statPointsAvailable?: number;
 };
 
 export type TeamPlanAccountInput = {
