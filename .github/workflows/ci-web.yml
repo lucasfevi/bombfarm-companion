@@ -58,7 +58,7 @@ jobs:
               - '.github/workflows/ci-web.yml'
 
   quality:
-    name: Typecheck, lint, unit, build (web)
+    name: Typecheck, lint, build, unit (web)
     needs: changes
     if: github.event_name != 'pull_request' || needs.changes.outputs.web == 'true'
     runs-on: ubuntu-latest
@@ -82,11 +82,49 @@ jobs:
       - name: Lint web + domain + ui
         run: pnpm --filter @bombfarm/domain --filter @bombfarm/ui --filter @bombfarm/web lint
 
-      - name: Unit tests (domain + web)
-        run: pnpm --filter @bombfarm/domain test && pnpm --filter @bombfarm/web test
+      # Domain tests need no build output, so they stay ahead of the (slow) build to keep
+      # fast feedback on the most common failures.
+      - name: Unit tests (domain)
+        run: pnpm --filter @bombfarm/domain test
 
+      # MUST stay before the web unit tests. Several web tests assert on real build output
+      # in apps/web/out (team-plan-worker-bundle, devtools-not-in-production-bundle) — the
+      # only byte-level proof that a chunk actually shipped. This step used to run AFTER
+      # them, so out/ never existed and those assertions silently skipped on every CI run.
+      # See apps/web/src/tests/support/build-output.ts; they now fail loudly instead.
       - name: Build web static export
         run: pnpm --filter @bombfarm/web build
+
+      - name: Unit tests (web, asserts against the build above)
+        run: pnpm --filter @bombfarm/web test
+
+  design-system:
+    name: Storybook build + a11y test-runner (packages/ui)
+    needs: changes
+    if: github.event_name != 'pull_request' || needs.changes.outputs.web == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Install Playwright Chromium (for the a11y test-runner)
+        run: pnpm exec playwright install --with-deps chromium
+
+      - name: Build Storybook
+        run: pnpm --filter @bombfarm/ui build-storybook
+
+      - name: Run Storybook test-runner (smoke + a11y, every story)
+        run: pnpm --filter @bombfarm/ui test-storybook
 
   ci-web-required:
     name: ci-web-required
@@ -101,3 +139,24 @@ jobs:
       - name: Require web quality
         if: needs.quality.result == 'failure' || needs.quality.result == 'cancelled'
         run: exit 1
+
+  design-system-required:
+    name: design-system-required
+    needs: [changes, design-system]
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Require path detection
+        if: needs.changes.result != 'success'
+        run: exit 1
+
+      # Deliberately NOT the ci-web-required idiom above (which only checks
+      # failure/cancelled and treats skipped as pass unconditionally): this gate
+      # must fail when the path filter matched but the job did not run at all —
+      # skipped or cancelled — not just when it actively failed. A gate that
+      # reports success for "never ran" is worse than no gate (SBC-19/AD-018).
+      - name: Require design-system suite when the filter matched
+        if: needs.changes.outputs.web == 'true' && needs.design-system.result != 'success'
+        run: |
+          echo "design-system: ${{ needs.design-system.result }}"
+          exit 1

@@ -23,7 +23,10 @@ const chrome = {
   panelNeedClass: '',
   panelAlignedClass:
     'border-[color-mix(in_oklch,var(--up)_45%,var(--line))] shadow-[inset_3px_0_0_var(--up)]',
-  panelUnverifiedClass: 'opacity-[0.78]',
+  // m2-storybook-ci (T7, SBC-12): was 'opacity-[0.78]' pre-migration — raised to
+  // 0.85 because dimmed muted text measured 4.25:1 contrast, under WCAG AA's
+  // 4.5:1 floor. See packages/ui/src/panel-field.recipe.ts for the computation.
+  panelUnverifiedClass: 'opacity-[0.85]',
   panelHClass: 'mb-2.5 flex items-baseline justify-between gap-2.5',
   panelTitleClass: 'm-0 text-[13px] font-bold tracking-[0.04em] uppercase',
   mutedClass: 'text-xs text-muted',

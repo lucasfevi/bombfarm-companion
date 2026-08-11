@@ -27,7 +27,9 @@ export {
 } from './icon';
 export { cn } from './cn';
 export { AppShell } from './AppShell';
-export type { AppShellProps } from './AppShell';
+export type { AppShellProps, AppShellNavItem } from './AppShell';
+export { StatusChip, type StatusChipProps, type GameConnectionStatus } from './status-chip';
+export { EmptyState, type EmptyStateProps } from './empty-state';
 export { cssVariables, tokens, colorTokens, breakpoints, motionTokens, contrastPairs, DEFAULT_HUE } from './tokens';
 export type { ColorTokenKey, ContrastPair } from './tokens';
 
@@ -105,6 +107,43 @@ export {
   type MetricScoreboardProps,
 } from './metric-scoreboard';
 export { Toast } from './toast';
+export {
+  toastQueueReducer,
+  initialToastQueueState,
+  nextExpiryDeadline,
+  MAX_VISIBLE_TOASTS,
+  NOTIFICATION_BUFFER_LIMIT,
+  type ToastVariant,
+  type ToastActionButton,
+  type ToastInput,
+  type ToastEntry,
+  type NotificationEntry,
+  type ToastQueueState,
+  type ToastQueueAction,
+} from './toast-queue';
+export {
+  ToastProvider,
+  useToast,
+  ToastViewport,
+  ToastItem,
+  type ToastContextValue,
+  type ToastProviderProps,
+  type ToastItemProps,
+} from './toast-system';
+export {
+  NotificationCenter,
+  type NotificationCenterItem,
+  type NotificationCenterProps,
+} from './notification-center';
+export { Slider, type SliderProps } from './slider';
+export {
+  SettingsSection,
+  SettingsRow,
+  SaveBar,
+  type SettingsSectionProps,
+  type SettingsRowProps,
+  type SaveBarProps,
+} from './settings-form';
 export { GlossedText, type GlossedTextProps } from './glossed-text';
 export { FileDropZone, type FileDropZoneProps } from './file-drop-zone';
 export { fileDropZoneRecipe } from './file-drop-zone.recipe';

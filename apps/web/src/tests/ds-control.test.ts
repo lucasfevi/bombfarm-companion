@@ -6,6 +6,11 @@ import * as stepper from '@bombfarm/ui/stepper.recipe';
  * Class-string parity guard for the control chrome migrated from
  * `control-chrome.ts` (chips + stepper + rank control + check). Legacy strings
  * captured here as the parity source of truth.
+ *
+ * `small-warn` is the one deliberate exception to that parity: m2-storybook-ci
+ * (T7, SBC-12) lightened its text color because plain `text-warn` on `bg-surface`
+ * measured 3.31:1 contrast, below WCAG AA's 4.5:1 floor for this 10px text — see
+ * `packages/ui/src/chip.recipe.ts` for the computation.
  */
 const chipBase =
   'cursor-pointer rounded-full border px-2.5 py-1 text-xs motion-safe:transition-[border-color,background-color] motion-safe:duration-[120ms]';
@@ -15,7 +20,7 @@ const legacyChip = {
   default: `${chipBase} border-line bg-surface`,
   on: `${chipBase} border-accent bg-[color-mix(in_oklch,var(--accent)_16%,var(--surface))]`,
   small: `${chipSmallBase} border-line bg-surface`,
-  'small-warn': `${chipSmallBase} border-warn bg-surface text-warn`,
+  'small-warn': `${chipSmallBase} border-warn bg-surface text-[color-mix(in_oklch,var(--warn)_80%,white_20%)]`,
 } as const;
 
 describe('chipRecipe parity', () => {

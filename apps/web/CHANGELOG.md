@@ -1,5 +1,64 @@
 # @bombfarm/web
 
+## 0.3.0
+
+### Minor Changes
+
+- aa49f26: The Team Plan roster gear optimizer now honours a hero's banked, unspent stat points
+  (`HeroRecord.statPointsAvailable`), same as the single-hero Planner (PR #34). `HeroPlanContext`
+  and `TeamPlanHeroInput` gained a `statPointsAvailable` field, threaded into both of the solver's
+  points passes (`solver-search.ts`'s `pointsPass`, `waterfall.ts`'s `finalPtsFromOptimizeBuild`) as
+  `ReoptInput.statPointsAvailable`. Previously the Team Plan solver always called
+  `findGateCandidate`/`optimizeBuild` with the field defaulted to 0, so a hero with banked points
+  could get different point-allocation advice from the Planner than from the Team Plan page for the
+  same account state — the Team Plan run silently ignored the banked points.
+
+### Patch Changes
+
+- 26b8a68: Make the build-output bundle assertions actually run in CI.
+
+  `ci-web.yml` ran the web unit tests before `pnpm --filter @bombfarm/web build`, so `apps/web/out`
+  never existed while the suite ran. Both tests that assert on real build output —
+  `team-plan-worker-bundle` (the team-plan worker chunk actually ships) and
+  `devtools-not-in-production-bundle` (zustand devtools does not) — guarded themselves with a silent
+  `return`, took that branch on every CI run, and reported green without verifying anything.
+
+  The build step now runs before the web unit tests, and the skip branch is local-only: under `CI` a
+  missing build throws with a message pointing at the workflow ordering. Domain tests still run ahead
+  of the build to keep fast feedback. Also removed a tautological test in `team-plan-worker-bundle`
+  that asserted `existsSync(out)` in both of its branches and so could never fail.
+
+- dc82f15: Storybook ownership moves from `apps/web` (`@storybook/nextjs`) to `packages/ui`
+  (`@storybook/react-vite`) — the catalog now lives with the package it documents.
+  Fonts are self-hosted via `@fontsource` instead of `next/font/google`. Adds
+  `@storybook/addon-a11y` and a `@storybook/test-runner` gate (`pnpm --filter
+@bombfarm/ui test-storybook`) that smoke-renders every story and asserts zero
+  accessibility violations, wired into CI on the existing `web` path filter.
+
+  Fixing the a11y violations the new gate found touches a few components' visible
+  chrome: `Banner` now renders a `<div role="status">` instead of `<aside
+role="status">` (an `<aside>`'s implicit landmark role doesn't permit overriding to
+  `status`); the "warn" chip/`StatusChip` tone and `AbilityCard`'s locked-out dimming
+  and `Panel`'s unverified dimming are all slightly lighter, raised to clear WCAG AA
+  contrast; `FileDropZone`'s inner "Choose file" control is no longer a second
+  keyboard tab stop (it was decorative — the drop zone's own `role="button"` wrapper
+  already handled activation).
+
+  `apps/web` no longer hosts or depends on Storybook.
+
+- dc82f15: Housekeeping after the Storybook move, no runtime behaviour change. `apps/web`'s
+  TypeScript config no longer includes the deleted local `.storybook/` directory, and
+  root ESLint now lints `packages/ui` story files (with type checking off, since they
+  sit outside the package tsconfig) so the raw `react-icons` / `*.svg` import ban that
+  guards the `Icon` seam applies to stories too, not just to product code.
+- Updated dependencies [dc82f15]
+- Updated dependencies [dc82f15]
+- Updated dependencies [dc82f15]
+- Updated dependencies [dc82f15]
+- Updated dependencies [aa49f26]
+  - @bombfarm/ui@0.2.0
+  - @bombfarm/domain@0.2.0
+
 ## 0.2.1
 
 ### Patch Changes

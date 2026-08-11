@@ -1,4 +1,0 @@
-/* Storybook preview entry — must go through PostCSS (@tailwindcss/postcss).
-   globals.css already @source's apps/web + packages/ui recipes; keep this entry
-   thin so Storybook and Next share one scan list. */
-@import '../src/app/globals.css';

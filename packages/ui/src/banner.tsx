@@ -9,7 +9,7 @@ import {
 } from './panel-field.recipe';
 import { cn } from './cn';
 
-export type BannerProps = Omit<ComponentPropsWithoutRef<'aside'>, 'title'> & {
+export type BannerProps = Omit<ComponentPropsWithoutRef<'div'>, 'title'> & {
   tone?: NonNullable<SetupBannerVariant['tone']>;
   /** Page-centered (default) vs full-width in a stage / dialog. */
   layout?: 'page' | 'embedded';
@@ -29,7 +29,11 @@ export function Banner({
   ...props
 }: BannerProps) {
   return (
-    <aside
+    // A plain <div>, not <aside>: <aside>'s implicit "complementary" landmark role
+    // does not permit overriding to role="status" (axe aria-allowed-role) — and a
+    // status banner is a live-region announcement, not a page landmark, so <div>
+    // is the semantically correct host anyway.
+    <div
       role="status"
       className={cn(
         setupBannerRecipe({ tone }),
@@ -46,6 +50,6 @@ export function Banner({
       ) : (
         children
       )}
-    </aside>
+    </div>
   );
 }
