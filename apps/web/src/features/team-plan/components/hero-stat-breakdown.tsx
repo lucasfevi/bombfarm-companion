@@ -1,33 +1,25 @@
 'use client';
 
 import { gameSheetView } from '@bombfarm/domain/model';
+import { SHEET_PANEL_KEYS } from '@bombfarm/domain/planner-constants';
 import type { TeamPlanHeroStats } from '@bombfarm/domain/team-plan/types';
 import type { Strings } from '@/shared/i18n';
 import { StatDeltaGrid, type StatDeltaRow } from './stat-delta-grid';
 
-/** `HeroSheet` fields shown in both grids, in display order. */
-const BREAKDOWN_STAT_KEYS = [
-  'attack',
-  'energy',
-  'speed',
-  'critChance',
-  'critDmg',
-  'penetration',
-  'cdr',
-] as const satisfies readonly (keyof TeamPlanHeroStats)[];
+/** `HeroSheet` fields shown in the Combat grid, in display order (no Luck — see below). */
+const BREAKDOWN_STAT_KEYS = SHEET_PANEL_KEYS.filter(
+  (key) => key !== 'luck',
+) as readonly (keyof TeamPlanHeroStats)[];
 
 /**
  * Sheet grid only: Luck never reaches `HeroSheet`/combat (BSP-42, AD-BSP-20, AD-BSP-21 —
  * excluded from DPS scoring, `REOPT_KEYS`, and this display never feeds back into either), so
  * there is no meaningful Combat-stats row for it — a combat row would either duplicate the
- * sheet value or invent a combat transformation that doesn't exist. Display-only, appended
- * after the shared keys so it lands last, matching the Planner sheet table's own Luck row
- * placement (`BSP-44`, `AC-19`).
+ * sheet value or invent a combat transformation that doesn't exist. Display-only, ordered by
+ * `SHEET_PANEL_KEYS` so it lands right after Speed, matching the Planner sheet table's own
+ * Luck row placement (`DEC-06`, `AC-19`).
  */
-const SHEET_ONLY_STAT_KEYS = [
-  ...BREAKDOWN_STAT_KEYS,
-  'luck',
-] as const satisfies readonly (keyof TeamPlanHeroStats)[];
+const SHEET_ONLY_STAT_KEYS = SHEET_PANEL_KEYS as readonly (keyof TeamPlanHeroStats)[];
 
 const subheadingClass = 'm-0 mb-1 text-[9px] font-bold leading-none tracking-[0.06em] text-muted uppercase';
 
