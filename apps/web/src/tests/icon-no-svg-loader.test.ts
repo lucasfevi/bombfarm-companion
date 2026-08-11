@@ -8,7 +8,7 @@ const iconModuleRoot = resolve(repoRoot, 'packages/ui/src/icon');
 const bundlerConfigs = [
   resolve(repoRoot, 'apps/web/next.config.ts'),
   resolve(repoRoot, 'apps/desktop/renderer/next.config.ts'),
-  resolve(repoRoot, 'apps/web/.storybook/main.ts'),
+  resolve(repoRoot, 'packages/ui/.storybook/main.ts'),
 ] as const;
 
 const svgLoaderPattern = /svgr|@svgr\/webpack|\.svg['"`]/;
@@ -50,7 +50,7 @@ describe('icon pipeline has no bundler SVG loader', () => {
     expect(source).not.toMatch(svgLoaderPattern);
   });
 
-  it('does not configure svgr or an .svg loader in apps/web/.storybook/main.ts', () => {
+  it('does not configure svgr or an .svg loader in packages/ui/.storybook/main.ts', () => {
     const source = readConfigOrFail(bundlerConfigs[2]);
     expect(source).not.toMatch(svgLoaderPattern);
   });
