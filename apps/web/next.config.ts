@@ -62,7 +62,7 @@ const nextConfig: NextConfig = {
   },
   reactStrictMode: true,
   transpilePackages: ['@bombfarm/domain', '@bombfarm/ui'],
-  // Pin Turbopack's resolve root to the pnpm workspace (multi-root Cursor workspace).
+  // Pin Turbopack's resolve root to the pnpm workspace root.
   // apps/web alone breaks when `next` is hoisted to the repo root (`Next.js package not found`).
   turbopack: {
     root: monorepoRoot,

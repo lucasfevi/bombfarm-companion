@@ -20,6 +20,31 @@ function asNumber(value: unknown, fallback = 0): number {
   return typeof value === 'number' && Number.isFinite(value) ? value : fallback;
 }
 
+function normalizeKeystones(raw: unknown): string[] {
+  return Array.isArray(raw) ? raw.map((keystone) => String(keystone).toLowerCase()) : [];
+}
+
+/**
+ * Glass Cannon (C15) — `crit_dmg_mult >= 1.5` is the direct mechanical signal (the exporter
+ * leaves it at `2` even under Abisso); `keystones` containing `c15` is the fallback. Shared by
+ * {@link treeTotalsFromSave} (per-hero sheet composition) and `import-save.ts`'s
+ * `mapAccountData` (account-level display/combat flags) so the two never drift apart.
+ */
+export function detectGlassCannon(totalsRaw: Record<string, unknown>): boolean {
+  const keystones = normalizeKeystones(totalsRaw.keystones);
+  return asNumber(totalsRaw.crit_dmg_mult, 1) >= 1.5 || keystones.some((keystone) => keystone === 'c15');
+}
+
+/**
+ * Tempo Dobrado (V15) — no numeric signal in `skills.totals` (unlike Glass Cannon's
+ * `crit_dmg_mult`), so only the `keystones` id lights it up; a save without a recognized id
+ * defaults to off (the user can still tick it manually in the account editor).
+ */
+export function detectTempoDobrado(totalsRaw: Record<string, unknown>): boolean {
+  const keystones = normalizeKeystones(totalsRaw.keystones);
+  return keystones.some((keystone) => keystone.includes('tempo') || keystone === 'v15');
+}
+
 /** AD-BSP-19a — the single conversion table, shared by both `stats` and `birth_stats`. */
 export function saveSheetUnits(raw: Record<string, unknown>): SheetStats {
   return {
@@ -39,7 +64,14 @@ export function birthFromSave(raw: Record<string, unknown>): BirthStats {
   return saveSheetUnits(raw);
 }
 
-/** Map save `skills.totals` → {@link TreeSheetTotals} in planner units. */
+/**
+ * Map save `skills.totals` → {@link TreeSheetTotals} in planner units.
+ *
+ * `critDmgMult` is consumed directly by `applySkillTree` — it replaces the crit-damage shared
+ * pool's implicit `1` (correction 1). `glassCannon`/`tempoDobrado` gate the two keystone
+ * effects that have no per-account numeric field of their own (Glass Cannon's energy ×0.5,
+ * Tempo Dobrado's speed ×1.33333) — both now applied at the sheet layer, never in combat.
+ */
 export function treeTotalsFromSave(totalsRaw: Record<string, unknown>): TreeSheetTotals {
   return {
     danoStatic: asNumber(totalsRaw.dmg_static, 1),
@@ -49,6 +81,8 @@ export function treeTotalsFromSave(totalsRaw: Record<string, unknown>): TreeShee
     critDmgPct: asNumber(totalsRaw.crit_dmg_add) * 100,
     luckFlatPct: asNumber(totalsRaw.luck_add) * 100,
     critDmgMult: asNumber(totalsRaw.crit_dmg_mult, 1),
+    glassCannon: detectGlassCannon(totalsRaw),
+    tempoDobrado: detectTempoDobrado(totalsRaw),
   };
 }
 

@@ -28,6 +28,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
+          token: ${{ secrets.RELEASE_PAT }}
 
       - uses: pnpm/action-setup@v4
 
@@ -43,8 +44,14 @@ jobs:
         id: recreate
         env:
           HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
         run: |
-          git fetch origin
+          # After merge with delete_branch_on_merge, the head SHA may be
+          # unreachable via a plain `git fetch origin`. Prefer the retained
+          # pull/<n>/head ref, then fall back to fetching the SHA directly.
+          if ! git fetch --no-tags origin "pull/${PR_NUMBER}/head"; then
+            git fetch --no-tags origin "${HEAD_SHA}"
+          fi
           if ! git push --force origin "${HEAD_SHA}:refs/heads/release/next"; then
             {
               echo '::error::Failed to recreate release/next from merged PR head'
@@ -53,6 +60,7 @@ jobs:
               echo 'Recreate the versioned branch, then open the sync PR:'
               echo ''
               echo '```bash'
+              echo "git fetch origin pull/${PR_NUMBER}/head"
               echo "git push --force origin ${HEAD_SHA}:refs/heads/release/next"
               echo 'gh pr create --head release/next --base develop --title "chore(release): sync versions to develop"'
               echo '```'
@@ -63,7 +71,7 @@ jobs:
       - name: Open sync PR to develop
         id: open-pr
         env:
-          GH_TOKEN: ${{ github.token }}
+          GH_TOKEN: ${{ secrets.RELEASE_PAT }}
         run: |
           existing=$(gh pr list --head release/next --base develop --state open --json number --jq '.[0].number // empty')
           if [ -n "$existing" ]; then
@@ -90,19 +98,10 @@ jobs:
             echo "number=${number}" >> "$GITHUB_OUTPUT"
           fi
 
-      - name: Dispatch required CI on sync head
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          for workflow in ci-web.yml ci-desktop.yml e2e-web.yml; do
-            echo "Dispatching ${workflow} on release/next"
-            gh workflow run "$workflow" --ref release/next
-          done
-
       - name: Enable auto-merge on sync PR
         id: merge
         env:
-          GH_TOKEN: ${{ github.token }}
+          GH_TOKEN: ${{ secrets.RELEASE_PAT }}
           PR_NUMBER: ${{ steps.open-pr.outputs.number }}
         run: |
           if ! gh pr merge "$PR_NUMBER" --auto --squash; then
@@ -126,5 +125,5 @@ jobs:
             echo '## Release sync'
             echo ''
             echo "Sync PR #${{ steps.open-pr.outputs.number }} (\`release/next\` → \`develop\`) is queued."
-            echo 'Required CI workflows were dispatched and auto-merge (squash) was enabled.'
+            echo 'Normal pull_request CI should run on the sync head (RELEASE_PAT). Auto-merge (squash) was enabled.'
           } >> "$GITHUB_STEP_SUMMARY"

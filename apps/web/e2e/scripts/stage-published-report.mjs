@@ -2,9 +2,8 @@
 /**
  * Stage the copy of the merged Playwright report that goes to GitHub Pages.
  *
- * The Pages site is public even though the repo is private, so trace zips are
- * dropped here: they embed page snapshots, network payloads and source. Traces
- * stay in the private `e2e-report` Actions artifact for local debugging.
+ * Trace zips are dropped here: they embed page snapshots, network payloads and
+ * source. Full traces stay in the Actions `e2e-report` artifact for local debugging.
  *
  * Layout: publish-report/{index.html,data/…,diffs/…}
  */

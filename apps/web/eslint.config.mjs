@@ -374,18 +374,43 @@ export default tseslint.config(
       'max-lines': ['error', { max: 650, skipBlankLines: true, skipComments: true }],
     },
   },
-  // src/shared/lib/storage.ts — persistence/migration module, pre-existing overage
-  // (344 lines, ESLint count) inherited from before W7; not caused by this wave's
-  // changes (W7 does not touch shared/lib). Splitting persistence code is out of
-  // W7 scope (component/domain splits only — see spec Out of Scope).
-  {
-    files: ['src/shared/lib/storage.ts'],
-    rules: {
-      'max-lines': ['error', { max: 350, skipBlankLines: true, skipComments: true }],
-    },
-  },
   {
     files: ['*.{mjs,js}', 'vitest.config.ts', 'next.config.ts'],
     ...tseslint.configs.disableTypeChecked,
+  },
+  // Grandfathered raw react-icons call sites (ICO-25, ASM-11). Burn-down: delete
+  // entries as planner features migrate to <Icon />. Any NEW web file errors.
+  {
+    files: ['src/**/*.{ts,tsx}'],
+    ignores: [
+      'src/app/_shell/site-header.tsx',
+      'src/app/_shell/topbar.tsx',
+      'src/app/_shell/footer.tsx',
+      'src/features/gear/components/slot-editor.tsx',
+      'src/features/import/components/import-heroes-dialog.tsx',
+      'src/features/roster/components/hero-picker-dialog.tsx',
+      'src/features/planner/components/hero-strip.tsx',
+      'src/features/planner/components/hero-strip-identity.tsx',
+      'src/features/phases/components/phases-hero-switcher.tsx',
+    ],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          patterns: [
+            {
+              group: ['react-icons', 'react-icons/*'],
+              message:
+                'Import { Icon } from @bombfarm/ui instead (D12). react-icons is reachable only from packages/ui/src/icon/ui-registry.ts.',
+            },
+            {
+              group: ['*.svg', '**/*.svg'],
+              message:
+                'Do not import SVG files into app/UI code. Use <Icon name="…" /> from @bombfarm/ui for chrome icons.',
+            },
+          ],
+        },
+      ],
+    },
   },
 );

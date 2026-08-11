@@ -9,11 +9,12 @@ recipes; conflicting utilities are resolved by `cn()` (`clsx` + `tailwind-merge`
 
 ## Tokens
 
-Design tokens are the single source of truth for color/type/spacing and live in the `@theme`
-block of [`apps/web/src/app/globals.css`](../apps/web/src/app/globals.css). The planner is **dark-only at runtime**:
-`@theme` holds the dark `--color-*` palette directly (no `prefers-color-scheme` toggle). Primitives
-reference tokens **only** through Tailwind theme utilities (`bg-surface`, `text-muted`, `border-line`, …)
-or `color-mix(... var(--token) ...)`
+Design tokens are authored once in [`packages/ui/src/styles.css`](../packages/ui/src/styles.css)
+(`@theme` + `:root` aliases) with a typed mirror in
+[`packages/ui/src/tokens.ts`](../packages/ui/src/tokens.ts). Apps import
+`@bombfarm/ui/styles.css` and add their own `@source` scan paths. The planner is **dark-only at runtime**:
+no `prefers-color-scheme` toggle. Primitives reference tokens **only** through Tailwind theme utilities
+(`bg-surface`, `text-muted`, `border-line`, …) or `color-mix(... var(--token) ...)`
 arbitrary values — never hardcoded palette literals (the one documented exception is the Ko-fi
 brand button, `AD-003`).
 
@@ -63,7 +64,7 @@ All exported from the barrel [`packages/ui/src/index.ts`](../packages/ui/src/ind
 | `Tooltip` | `@base-ui/react/tooltip` + Motion | compound `Provider`/`Root`/`Trigger`/`Portal`/`Positioner`/`Popup`/`Arrow`/`StatusBody`; Animate UI spring scale enter/exit — see [`animation.md`](animation.md) | `tooltip.recipe.ts` |
 | `DataTable` | `<table>` compound | `Root` (`scrollable` + optional `maxRows`/`minRows`), `Table`/`Head`/`Body`/`Row`/`Header`/`Cell`/`RowHeader`/`Caption`; sticky heads `z-20` + `border-separate`; `Header sortable` shows stacked ▲▼ when idle, single chevron when active | `data-table.recipe.ts` |
 | `GlossaryTerm` | DS `Tooltip` | inline dotted-underline formula token + tip | `glossary-term.recipe.ts` + `tooltip.recipe.ts` |
-| `MetricScoreboard` | `<div>` grid | equal-column KPI cells: `cells[]` of `{ id, label, value, tone, delta, deltaTone }`; keeps the invisible `+0.0%` placeholder for delta-less cells (no CLS) — promoted from the planner's `CompareMetricsStrip` (W6) | `metric-scoreboard.recipe.ts` |
+| `MetricScoreboard` | `<div>` grid | equal-column KPI cells: `cells[]` of `{ id, label, value, tone, delta, deltaTone }`; keeps the invisible `+0.0%` placeholder for delta-less cells (no CLS) — promoted from the planner's `CompareMetricsStrip` (W6); grid is a fixed `grid-cols-1 sm:grid-cols-2 lg:grid-cols-4` — a caller with fewer than 4 cells passes `className="sm:grid-cols-N lg:grid-cols-N"` (`cn()`/tailwind-merge overrides both breakpoints) rather than leaving a blank trailing cell, e.g. `WaterfallPanel`'s 3-step scoreboard | `metric-scoreboard.recipe.ts` |
 | `GlossedText` | `<span>` | renders `template` with `terms: ReadonlyMap<token, tip>` tokens wrapped in `GlossaryTerm`; longest-token-first split; empty `terms` renders a plain wrapper — promoted from the planner's `GlossedFormula` (W6); the i18n glossary itself stays in `features/planner/model/formula-glossary.ts` | inline Tailwind |
 | `FileDropZone` | `<div role="button">` | click / keyboard / drag-drop file target; idle vs drag-over chrome via recipe; keeps Enter/Space and `input.value = ''` reset — promoted from import dialog (W6) | `file-drop-zone.recipe.ts` |
 
@@ -81,6 +82,8 @@ Wiki-sourced game assets (heroes, items, abilities, …). **Do not overlay cryst
 | `HeroGearIcons` | Roster row of all 8 slots (item or empty) + slot/item tooltip | composes `ItemIcon` + DS `Tooltip` |
 
 **Roster picker interaction:** each hero row is **one keyboard tab stop** (`<tr tabIndex={0}>` + `aria-label`, no `role="button"`). Gear/ability icon tooltips use DS `Tooltip.Trigger` as `type="button"` with `tabIndex={-1}` — hover/pointer supplementary detail without nested tab traps. Row `Enter`/`Space` still selects the hero; icon clicks `stopPropagation` so tooltips never fire row pick.
+
+**Tooltip trigger nested inside another interactive control:** `Tooltip.Trigger` renders a `<button>` by default, which is invalid HTML nested inside another `<button>` (e.g. an `Accordion.Trigger` row). Swap the rendered tag via `render={<span />}` instead of `type="button"` — see `AbbreviatedNumber` (`apps/web/src/features/team-plan/components/abbreviated-number.tsx`), which shows a `formatCompactNumber` value's exact figure on hover/focus from inside a Team plan Accordion row. Pair with `tabIndex={-1}` (via a `disableFocus` prop) when the trigger sits inside an already-focusable ancestor, matching the icon-tooltip convention above.
 
 **Roster columns:** avatar (unsorted) · rank · name+★ · rarity · lv · power · gear · abilities · status. Table avatars use `lg` (same width token as gear/ability). Switch-hero / import name uses `text-base leading-none font-bold` (same as the planner hero strip); rarity uses `text-sm leading-none font-bold`. Disabled (`battleAllowed === false`) rows use `rosterInactiveChromeClass` (`opacity-55 grayscale`) on scan chrome; the status toggle stays full chroma.
 
@@ -154,7 +157,7 @@ under `packages/ui/src/`, not a single module — e.g. `dialog/`, not `dialog.ts
   own file each, calling the real part they forward to, and the namespace `index.ts` re-exports them
   alongside the compound object so the barrel line is unaffected.
 
-This convention is **AD-021** (recorded in the private planning STATE log) and applies to every future compound primitive.
+This convention is **AD-021** and applies to every future compound primitive.
 
 ## cva conventions
 
@@ -222,8 +225,49 @@ to elements of type "feature" and captured values: feature="planner"  boundaries
 ```
 
 `design-system/` may depend only on React, `@base-ui/react`, `cva`/`clsx`/`tailwind-merge`,
-`react-icons`, `@theme` tokens (via utility class names), `shared/lib/**`, plus pure
+`react-icons` **via `src/icon/` only** (lint-enforced — see [Icons](#icons)), `@theme` tokens (via utility class names), `shared/lib/**`, plus pure
 presentational helpers it fully owns.
+
+## Icons
+
+All icon rendering goes through the `Icon` primitive exported from `@bombfarm/ui`. Call sites pass a
+closed `IconName` string — never a vendor component or a raw `.svg` import.
+
+### Source
+
+| Source | Module | Contents |
+| --- | --- | --- |
+| UI chrome | `packages/ui/src/icon/ui-registry.ts` | The **only** file in `packages/ui` allowed to import `react-icons` (chevrons, close mark, coffee story icon) |
+
+`registry.ts` exposes that map as the public `IconName` union. Companion v1 does **not** ship original game-glyph SVGs (slots, rarity ornaments, gem/key/gold) — inventory chrome can use text/badges or wiki art decisions later; do not reintroduce a second icon source without an explicit product decision.
+
+### Size scale
+
+| `size` prop | Tailwind utility | Pixels | Default |
+| --- | --- | --- | --- |
+| `xs` | `size-3` | 12px | |
+| `sm` | `size-4` | 16px | yes |
+| `md` | `size-5` | 20px | |
+| `lg` | `size-6` | 24px | |
+
+Off-scale boxes (8px idle sort chevrons, 14px select/num affixes) use the **`className` escape
+hatch** merged last via `cn()` — do not add ad-hoc steps to the public `IconSize` enum.
+
+### Accessibility
+
+Semantics live on a wrapping `<span>`; the inner `react-icons` SVG is always decorative
+(`aria-hidden`), because those components force `aria-hidden` on the SVG after prop spread.
+
+- **Decorative by default:** omit `label` (or pass `""`) → wrapper `aria-hidden="true"`.
+- **Meaningful icons:** pass `label="…"` (already-translated) → wrapper `role="img"` + `aria-label`.
+
+### Lint seam
+
+- `packages/ui/**` and `apps/desktop/**`: raw `react-icons` or `*.svg` imports fail lint outside `packages/ui/src/icon/**`.
+- `apps/web/**`: nine planner files are **grandfathered** in `apps/web/eslint.config.mjs` (`site-header`, `topbar`, `footer`, `slot-editor`, `import-heroes-dialog`, `hero-picker-dialog`, `hero-strip`, `hero-strip-identity`, `phases-hero-switcher`). Delete an entry when that file migrates to `<Icon />`; any **new** web call site errors immediately.
+- **Known gap:** root ESLint ignores `packages/ui/**/*.stories.tsx`, so a raw icon import in a story is caught by review/tests only — closing that gap is owned by `m2-storybook-ci`.
+
+Storybook gallery: [`packages/ui/src/icon.stories.tsx`](../packages/ui/src/icon.stories.tsx) (enum-driven UI chrome).
 
 ## Companion reuse strategy (decided)
 

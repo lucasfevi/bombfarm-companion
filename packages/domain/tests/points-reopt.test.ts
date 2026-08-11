@@ -509,3 +509,121 @@ describe('optimizeBuild — Tier 2 (BSPW4-10)', () => {
     expect(hostile.pts.luck).toBe(9999);
   });
 });
+
+/**
+ * Banked, unspent stat points (`HeroRecord.statPointsAvailable`, threaded through
+ * `ReoptInput.statPointsAvailable`) — no committed save fixture has a nonzero value here (every
+ * fixture hero has `stat_points_available: 0`), so the "0 spent, N unspent" case the
+ * `budget <= 0` fast path used to get wrong is constructed by hand below, for both tiers.
+ */
+describe('statPointsAvailable — banked, unspent points fold into the search budget', () => {
+  it('optional and defaults to 0 — omitting it is byte-identical to passing 0 explicitly (Tier 1 and Tier 2, back-compat for team-plan callers)', () => {
+    const { pts, effective, effectiveDelta } = syntheticHero();
+    expect(findGateCandidate({ pts, effective, effectiveDelta, context })).toEqual(
+      findGateCandidate({ pts, effective, effectiveDelta, context, statPointsAvailable: 0 }),
+    );
+    expect(optimizeBuild({ pts, effective, effectiveDelta, context })).toEqual(
+      optimizeBuild({ pts, effective, effectiveDelta, context, statPointsAvailable: 0 }),
+    );
+  });
+
+  it('Tier 1: 0 spent + N unspent no longer takes the budget<=0 fast path — the hero gets a real reallocation', () => {
+    const { effective, effectiveDelta } = syntheticHero();
+    const result = findGateCandidate({ pts: ZERO_PTS(), effective, effectiveDelta, context, statPointsAvailable: 8 });
+    // AC-57f's fast path returns evaluations <= 1 and keptCurrent true with an unchanged vector —
+    // none of that may hold here, because the fast path itself must not fire (budget = 8, not 0).
+    expect(result.evaluations).toBeGreaterThan(1);
+    expect(result.keptCurrent).toBe(false);
+    const placed = REOPT_KEYS.reduce((sum, key) => sum + result.pts[key], 0);
+    expect(placed).toBeGreaterThan(0);
+    expect(placed).toBeLessThanOrEqual(8);
+    expect(result.reoptDps).toBeGreaterThan(result.currentDps);
+  });
+
+  it('Tier 2: 0 spent + N unspent no longer takes the budget<=0 fast path — the hero gets a real reallocation', () => {
+    const { effective, effectiveDelta } = syntheticHero();
+    const result = optimizeBuild({ pts: ZERO_PTS(), effective, effectiveDelta, context, statPointsAvailable: 8 });
+    expect(result.evaluations).toBeGreaterThan(1);
+    expect(result.keptCurrent).toBe(false);
+    const placed = REOPT_KEYS.reduce((sum, key) => sum + result.pts[key], 0);
+    expect(placed).toBeGreaterThan(0);
+    expect(placed).toBeLessThanOrEqual(8);
+    expect(result.reoptDps).toBeGreaterThan(result.currentDps);
+  });
+
+  it('Tier 1: unallocated correctly counts banked points left idle when every candidate scores <= 0 (S1 kept, budget > 0)', () => {
+    // All-flat effectiveDelta: every candidate ties zero-gain, so the greedy walk never accepts
+    // a step and S1 (== the zero-start seed here, since pts is already all zero) is kept. Before
+    // this wave, `unallocated` was hardcoded to 0 whenever keptCurrent was true — exactly wrong
+    // here, since none of the 6 banked points ever got placed anywhere.
+    const { effective } = syntheticHero();
+    const flatDelta: EffectiveDeltas = {
+      attack: 0,
+      energy: 0,
+      speed: 0,
+      critChance: 0,
+      critDmg: 0,
+      penetration: 0,
+      cdr: 0,
+    };
+    const result = findGateCandidate({
+      pts: ZERO_PTS(),
+      effective,
+      effectiveDelta: flatDelta,
+      context,
+      statPointsAvailable: 6,
+    });
+    expect(result.keptCurrent).toBe(true);
+    expect(result.pts).toEqual(ZERO_PTS());
+    expect(result.unallocated).toBe(6);
+  });
+
+  it('Tier 2: unallocated correctly counts banked points left idle when the "current" seed wins (all moves flat)', () => {
+    const { effective } = syntheticHero();
+    const flatDelta: EffectiveDeltas = {
+      attack: 0,
+      energy: 0,
+      speed: 0,
+      critChance: 0,
+      critDmg: 0,
+      penetration: 0,
+      cdr: 0,
+    };
+    const result = optimizeBuild({
+      pts: ZERO_PTS(),
+      effective,
+      effectiveDelta: flatDelta,
+      context,
+      statPointsAvailable: 5,
+    });
+    expect(result.winningSeed).toBe('current');
+    expect(result.pts).toEqual(ZERO_PTS());
+    expect(result.unallocated).toBe(5);
+  });
+
+  it('budget conservation on a real fixture hero with both spent AND banked points: placed + unallocated == spent + statPointsAvailable (both tiers)', () => {
+    const real = realHeroDerive('save-20260801-crit-dmg-tree.json', 'Bellatrix', 62);
+    const spent = REOPT_KEYS.reduce((sum, key) => sum + real.pts[key], 0);
+    const banked = 20;
+
+    const tier1 = findGateCandidate({
+      pts: real.pts,
+      effective: real.effective,
+      effectiveDelta: real.effectiveDelta,
+      context,
+      statPointsAvailable: banked,
+    });
+    const tier1Placed = REOPT_KEYS.reduce((sum, key) => sum + tier1.pts[key], 0);
+    expect(tier1Placed + tier1.unallocated).toBe(spent + banked);
+
+    const tier2 = optimizeBuild({
+      pts: real.pts,
+      effective: real.effective,
+      effectiveDelta: real.effectiveDelta,
+      context,
+      statPointsAvailable: banked,
+    });
+    const tier2Placed = REOPT_KEYS.reduce((sum, key) => sum + tier2.pts[key], 0);
+    expect(tier2Placed + tier2.unallocated).toBe(spent + banked);
+  });
+});

@@ -8,6 +8,7 @@
 import { describe, expect, it } from 'vitest';
 import { composeSheetFromBirth, nakedFromBirth } from '@bombfarm/domain/birth-sheet';
 import { peelSheetSources, type SourceLines } from '@bombfarm/domain/sheet-peel';
+import { inferSpentPoints } from '@bombfarm/domain/point-inference';
 import type { TreeSheetTotals } from '@bombfarm/domain/birth-sheet';
 import { attackPointGain, POINT_GAIN } from '@bombfarm/domain/model';
 import { starsMult, sumGearBonuses } from '@bombfarm/domain/gear';
@@ -301,4 +302,58 @@ describe('peelSheetSources — gear-free hero: every gear line is exactly 0', ()
       expect(lines[key].gear, key).toBe(0);
     }
   });
+});
+
+/**
+ * AC-10 regression guard for keystone accounts. Every fixture in `FIXTURES` above predates
+ * the keystones (`crit_dmg_mult: 1`, no C15/V15), which is exactly why `sheet-peel.ts` kept
+ * summing correctly there while silently diverging from `composeSheetFromBirth` on a real
+ * keystone save — energy by a factor of 2, speed by ~0.80x, crit damage by 0.72-0.85x.
+ *
+ * `SaveFile_BombFarm.json` owns Glass Cannon, Tempo Dobrado and Abisso simultaneously, so it
+ * exercises all three sheet-layer keystone effects at once. Points come from the real
+ * `inferSpentPoints` rather than this file's local solver, which has no keystone handling.
+ */
+describe('peelSheetSources — AC-10 on a keystone account (all 18 heroes)', () => {
+  const raw = loadFixtureJson('SaveFile_BombFarm.json');
+  const tree = treeTotalsFromSave((raw.skills as { totals: Record<string, unknown> }).totals);
+  const heroes = (raw.heroes as { name: string; level: number }[]).map((h) => [h.name, h.level] as const);
+
+  it('the keystone flags actually reach this fixture', () => {
+    expect(tree.critDmgMult).toBe(2);
+    expect(tree.glassCannon).toBe(true);
+    expect(tree.tempoDobrado).toBe(true);
+  });
+
+  for (const [name, level] of heroes) {
+    it(`AC-10: ${name} L${level} — four lines sum to composeSheetFromBirth`, () => {
+      const hero = extractHero(raw, name, level);
+      const inferred = inferSpentPoints({
+        birth: hero.birth!,
+        level: hero.level,
+        stars: hero.stars,
+        sheetOther: hero.sheetOther,
+        loadout: hero.loadout,
+        tree,
+        sheet: hero.sheet,
+        statPointsAvailable: hero.statPointsAvailable ?? 0,
+      });
+      const input = {
+        birth: hero.birth!,
+        level: hero.level,
+        stars: hero.stars,
+        sheetOther: hero.sheetOther,
+        loadout: hero.loadout,
+        pts: inferred.pts,
+        tree,
+      };
+      const composed = composeSheetFromBirth(input);
+      const lines = peelSheetSources(input);
+      for (const key of SHEET_KEYS) {
+        const sum = sumLines(lines[key]);
+        const scale = Math.max(1, Math.abs(composed[key]));
+        expect(Math.abs(sum - composed[key]) / scale, `${name}.${key}`).toBeLessThanOrEqual(1e-9);
+      }
+    });
+  }
 });

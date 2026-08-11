@@ -1,11 +1,24 @@
-import type { RankMode, RarityKey } from '@bombfarm/domain/model';
+import type { RarityKey } from '@bombfarm/domain/model';
 import { abilityMods } from '@bombfarm/domain/model';
 import type { Loadout, SheetStats } from '@bombfarm/domain/gear';
 import { applyGear, emptyLoadout, emptySheet, emptySheetOther } from '@bombfarm/domain/gear';
 import { mergeImportedHero } from '@bombfarm/domain/import-merge';
 import { normalizePointAlloc, normalizeSheetStats } from '@bombfarm/domain/sheet-normalize';
 import { normalizeSkin } from '@bombfarm/domain/wiki-assets';
-import { DEFAULT_TARGET_PROP } from '@bombfarm/domain/farm-context';
+import {
+  normalizeAccount,
+  type AccountShared,
+  type HeroContext,
+  type TreeState,
+} from './account-shared';
+
+export {
+  DEFAULT_ACCOUNT,
+  DEFAULT_CONTEXT,
+  DEFAULT_TREE,
+  normalizeAccount,
+} from './account-shared';
+export type { AccountShared, HeroContext, TreeState } from './account-shared';
 
 const HEROES_KEY = 'bf-hp-heroes-v1';
 const ACTIVE_KEY = 'bf-hp-active-hero-v1';
@@ -15,54 +28,6 @@ const ACCOUNT_KEY = 'bf-hp-account-v1';
 const LEGACY_HEROES_KEYS = ['bf-pa-heroes-v2', 'bf-pa-heroes-v1'] as const;
 const LEGACY_ACTIVE_KEYS = ['bf-pa-active-hero-v2', 'bf-pa-active-hero-v1'] as const;
 const LEGACY_ACCOUNT_KEYS = ['bf-pa-account-v1'] as const;
-
-export type TreeState = {
-  /** Squad damage × from the tree UI — already includes GEO / compound / keystone damage mults. */
-  danoTotal: number;
-  critChance: number;
-  /** Crit damage bonus as % of base roll (g_crit_dmg). */
-  critDmg: number;
-  speed: number;
-  energy: number;
-  /** Account-wide team_coin total as % (Ouro por Alvo nodes) — scales gold per prop. */
-  teamCoinPct: number;
-  /** C15 Glass Cannon: crit dmg ×2, energy ×0.5. */
-  glassCannon: boolean;
-  /** V15 Tempo Dobrado: field pace ×1.333, drain ×2. */
-  tempoDobrado: boolean;
-  /**
-   * Flat Luck percentage points from `skills.totals.luck_add × 100` (AD-BSP-22, ASM-01).
-   * Additive on `bf-hp-account-v1` — optional (not `number`) so pre-Wave-5 literals (e.g.
-   * `e2e/fixtures/seed.ts`, out of this wave's touch scope) keep typechecking; every read
-   * site defaults absence to `0` and `normalizeTree`'s spread fills it on load. Import-sourced
-   * only; no Account UI field yet (CARRY-05).
-   */
-  luckFlatPct?: number;
-};
-
-export type HeroContext = {
-  houseIdx: number;
-  houseLevel: number;
-  /** Synced from Phases via “Use as farm phase”; null until set. DPS uses phase 1 when null. */
-  phase: number | null;
-  mitigationPct: number;
-  rankMode: RankMode;
-  /** Oneshot / HTK prop — null until set on Account. */
-  targetProp: string | null;
-  /** @deprecated always serial — ignored on load. */
-  cycleModel?: 'serial' | 'wiki';
-  /** @deprecated use {@link FARM_WALK_DELAY_SEC} — ignored on load. */
-  walkDelay?: number;
-  /** @deprecated dropped — ignored on load. */
-  extraDmgPct?: number;
-};
-
-/** Shared across every hero on this browser (tree, team buffs, farming context). */
-export type AccountShared = {
-  tree: TreeState;
-  teamBuffs: Record<string, number>;
-  context: HeroContext;
-};
 
 export type HeroRecord = {
   id: string;
@@ -83,6 +48,14 @@ export type HeroRecord = {
   gearedOverride: SheetStats;
   abilities: Record<string, number>;
   pts: Record<keyof SheetStats, number>;
+  /**
+   * Banked stat points from the save (`stat_points_available`) not reflected in `pts` —
+   * points the player earned but has not yet spent in-game. Additive on `HeroRecord`
+   * (defaults to 0 for pre-existing records, same back-compat pattern as `abissoBase` /
+   * `critDmgMult` before it). Feeds `ReoptInput.statPointsAvailable` so both reopt tiers
+   * can allocate a hero's banked points instead of silently ignoring them.
+   */
+  statPointsAvailable?: number;
   /** Game save export hero id — required for roster membership (see docs/import-only-heroes.md). */
   sourceId?: string;
   /** Display-only rank letter (S/A/B/C/D/E) from an imported save file. Not used in any DPS math. */
@@ -113,38 +86,11 @@ export type HeroRecord = {
   context?: HeroContext;
 };
 
-export const DEFAULT_TREE = (): TreeState => ({
-  danoTotal: 1,
-  critChance: 0,
-  critDmg: 0,
-  speed: 0,
-  energy: 0,
-  teamCoinPct: 0,
-  glassCannon: false,
-  tempoDobrado: false,
-  luckFlatPct: 0,
-});
-
-export const DEFAULT_CONTEXT = (): HeroContext => ({
-  houseIdx: 0,
-  houseLevel: 0,
-  phase: null,
-  mitigationPct: 1,
-  rankMode: 'dps',
-  targetProp: DEFAULT_TARGET_PROP,
-});
-
-export const DEFAULT_ACCOUNT = (): AccountShared => ({
-  tree: DEFAULT_TREE(),
-  teamBuffs: {},
-  context: DEFAULT_CONTEXT(),
-});
-
 function uid(): string {
   return `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
 }
 
-function readJson<T>(key: string, fallback: T): T {
+export function readJson<T>(key: string, fallback: T): T {
   try {
     const raw = localStorage.getItem(key);
     if (!raw) return fallback;
@@ -186,7 +132,7 @@ function notifyWriteError(key: string, error: unknown): void {
 }
 
 /** Returns true on success, false on any setItem throw — never rethrows (MOD-45). */
-function writeJson(key: string, value: unknown): boolean {
+export function writeJson(key: string, value: unknown): boolean {
   try {
     localStorage.setItem(key, JSON.stringify(value));
     return true;
@@ -194,42 +140,6 @@ function writeJson(key: string, value: unknown): boolean {
     notifyWriteError(key, error);
     return false;
   }
-}
-
-function normalizeTree(raw?: Partial<TreeState> & { geo?: number } | null): TreeState {
-  const base = DEFAULT_TREE();
-  if (!raw) return base;
-  const { geo: _geo, ...rest } = raw;
-  return { ...base, ...rest };
-}
-
-function normalizeContext(raw?: Partial<HeroContext> | null): HeroContext {
-  const base = DEFAULT_CONTEXT();
-  if (!raw) return base;
-  const phase =
-    raw.phase == null || raw.phase <= 0
-      ? null
-      : Math.max(1, Math.min(600, Math.round(raw.phase)));
-  const targetProp =
-    raw.targetProp == null || raw.targetProp === ''
-      ? base.targetProp
-      : raw.targetProp;
-  return {
-    houseIdx: raw.houseIdx ?? base.houseIdx,
-    houseLevel: raw.houseLevel ?? base.houseLevel,
-    phase,
-    mitigationPct: raw.mitigationPct ?? base.mitigationPct,
-    rankMode: raw.rankMode ?? base.rankMode,
-    targetProp,
-  };
-}
-
-export function normalizeAccount(raw?: Partial<AccountShared> | null): AccountShared {
-  return {
-    tree: normalizeTree(raw?.tree),
-    teamBuffs: raw?.teamBuffs ?? {},
-    context: normalizeContext(raw?.context),
-  };
 }
 
 /**
@@ -265,6 +175,7 @@ export function normalizeHero(raw: Partial<HeroRecord> & Pick<HeroRecord, 'id' |
     gearedOverride: normalizeSheetStats(migrateGearedOverride(raw)),
     abilities: raw.abilities ?? {},
     pts: normalizePointAlloc(raw.pts),
+    statPointsAvailable: raw.statPointsAvailable ?? 0,
     sourceId: raw.sourceId,
     rank: raw.rank,
     power: raw.power,

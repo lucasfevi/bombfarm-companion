@@ -1,5 +1,7 @@
+import type { AbilityMods, Context } from './model';
 import type { CycleModel } from './model';
 import type { HeroContext } from './shims/storage';
+import { houseRestSeconds } from './model/house';
 import { wikiPhaseLine } from './phase-wiki';
 
 /** Fixed serial bomb cycle — not user-editable. */
@@ -44,4 +46,31 @@ export function effectiveTargetProp(targetProp: string | null | undefined): stri
  */
 export function isTargetPropUnset(targetProp: string | null | undefined): boolean {
   return targetProp == null || targetProp === '';
+}
+
+export type FarmContextForHeroInput = {
+  mods: AbilityMods;
+  teamDrainMult: number;
+  treeTempoDobrado: boolean;
+  houseIdx: number;
+  houseLevel: number;
+  mitigationPct: number;
+  phase?: number | null;
+};
+
+/** Shared per-hero farm `Context` — AD-RGO-27 drain path for advisor + team-plan scorer. */
+export function farmContextForHero(input: FarmContextForHeroInput): Context {
+  const mitPct = effectiveMitigationPct({
+    phase: input.phase ?? null,
+    mitigationPct: input.mitigationPct,
+  });
+  const rest = houseRestSeconds(input.houseIdx, input.houseLevel);
+  return {
+    restSeconds: rest,
+    mitigation: mitPct / 100,
+    blastRange: 1 + input.mods.rangeCells,
+    cycleModel: FARM_CYCLE_MODEL,
+    walkDelay: FARM_WALK_DELAY_SEC,
+    drainMult: input.mods.drainMult * input.teamDrainMult * (input.treeTempoDobrado ? 2 : 1),
+  };
 }

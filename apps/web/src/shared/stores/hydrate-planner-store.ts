@@ -1,5 +1,7 @@
 import { loadLang } from '@/shared/i18n';
 import { loadPhasesView } from '@/shared/lib/phases-view-storage';
+import { loadInventory } from '@/shared/lib/inventory-storage';
+import { loadTeamPlanScope } from '@/shared/lib/team-plan-scope-storage';
 import {
   getActiveHeroId,
   loadAccountShared,
@@ -9,7 +11,7 @@ import { usePlannerStore } from '@/shared/stores/planner-store';
 
 /**
  * Ordered, idempotent boot read (ASM-06). No-op when already booted (StrictMode).
- * Order: heroes → active id → account → lang → phases → setBooted(true) last.
+ * Order: heroes → active id → account → lang → phases → inventory → scope → setBooted(true) last.
  */
 export function hydratePlannerStore(): void {
   const state = usePlannerStore.getState();
@@ -24,6 +26,10 @@ export function hydratePlannerStore(): void {
 
   state.hydrateLang(loadLang());
   state.hydratePhasesView(loadPhasesView().phase);
+
+  const inventory = loadInventory();
+  state.hydrateInventory(inventory, account.forgeFloor ?? 10);
+  state.hydrateScope(loadTeamPlanScope());
 
   state.setBooted(true);
 }

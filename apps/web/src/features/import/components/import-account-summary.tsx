@@ -66,6 +66,12 @@ export function ImportAccountSummary({
                 <dt>{t.treeTeamCoin}</dt>
                 <dd>+{formatNumber(accountData.tree.teamCoinPct ?? 0, 2)}%</dd>
               </div>
+              {accountData.tree.abisso && (
+                <div>
+                  <dt>{t.treeAbisso}</dt>
+                  <dd>{t.importKeystoneOn}</dd>
+                </div>
+              )}
               {accountData.tree.glassCannon && (
                 <div>
                   <dt>{t.treeGlassCannon}</dt>

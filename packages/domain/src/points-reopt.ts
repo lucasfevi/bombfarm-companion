@@ -52,6 +52,15 @@ export type ReoptInput = {
   /** The pipeline's already-computed marginal +1pt deltas (`AC-57g`). */
   effectiveDelta: EffectiveDeltas;
   context: Context;
+  /**
+   * Banked, unspent stat points (`HeroRecord.statPointsAvailable`) — not reflected anywhere in
+   * `pts`, but real budget the player can allocate. Folded into the search budget as
+   * `budgetOf(pts) + statPointsAvailable` so a hero who has spent nothing yet still gets a
+   * reallocation instead of the `budget <= 0` fast path silently doing nothing. Optional and
+   * defaults to 0 — existing callers (team-plan's points passes, which have no per-hero banked
+   * count wired through `HeroPlanContext`) keep today's exact behaviour untouched.
+   */
+  statPointsAvailable?: number;
 };
 
 export type ReoptResult = {
@@ -93,8 +102,8 @@ export type ReoptResult = {
  * resolve in its favour, so the returned candidate can never score below the player's own.
  */
 export function findGateCandidate(input: ReoptInput): ReoptResult {
-  const { pts, effective, effectiveDelta, context } = input;
-  const budget = budgetOf(pts);
+  const { pts, effective, effectiveDelta, context, statPointsAvailable = 0 } = input;
+  const budget = budgetOf(pts) + statPointsAvailable;
   const cappedOnEntry = cappedStatsOf(effective);
 
   if (budget <= 0) {
@@ -141,7 +150,11 @@ export function findGateCandidate(input: ReoptInput): ReoptResult {
   const keptCurrent = s1Score >= greedy.score;
   const winnerPts = keptCurrent ? { ...pts } : greedy.pts;
   const winnerScore = keptCurrent ? s1Score : greedy.score;
-  const unallocated = keptCurrent ? 0 : greedy.unallocated;
+  // budget - budgetOf(winnerPts), not a keptCurrent/greedy.unallocated branch: with
+  // statPointsAvailable folded into budget, keeping S1 no longer implies nothing was left on
+  // the table — a hero with 0 spent and N unspent who scores no positive candidate keeps S1
+  // (score tie) while N points still sit unplaced (AC-57f's fast path only fires at budget <= 0).
+  const unallocated = Math.max(0, budget - budgetOf(winnerPts));
   const winnerSheet = keptCurrent ? effective : buildCandidateSheet(effective, pts, effectiveDelta, winnerPts);
 
   return {
@@ -171,8 +184,8 @@ export function findGateCandidate(input: ReoptInput): ReoptResult {
  * `optimizeBuild.reoptDps >= findGateCandidate.reoptDps` holds structurally on the same input.
  */
 export function optimizeBuild(input: ReoptInput): ReoptResult {
-  const { pts, effective, effectiveDelta, context } = input;
-  const budget = budgetOf(pts);
+  const { pts, effective, effectiveDelta, context, statPointsAvailable = 0 } = input;
+  const budget = budgetOf(pts) + statPointsAvailable;
   const cappedOnEntry = cappedStatsOf(effective);
 
   if (budget <= 0) {

@@ -34,4 +34,10 @@ describe('formatCompactNumber', () => {
   it('preserves sign', () => {
     expect(formatCompactNumber(-1500)).toBe('-1.5k');
   });
+
+  it('abbreviates billions', () => {
+    expect(formatCompactNumber(24_000_000_000)).toBe('24bi');
+    expect(formatCompactNumber(1_720_000_000)).toBe('1.7bi');
+    expect(formatCompactNumber(-2_000_000_000)).toBe('-2bi');
+  });
 });

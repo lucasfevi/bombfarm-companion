@@ -39,6 +39,7 @@ jobs:
     name: Require a changeset
     if: >-
       github.event_name == 'pull_request' &&
+      github.head_ref != 'release/next' &&
       !contains(github.event.pull_request.labels.*.name, 'skip-changeset')
     runs-on: ubuntu-latest
     timeout-minutes: 10

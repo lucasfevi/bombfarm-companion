@@ -46,10 +46,14 @@ describe('account persistence subscription', () => {
         teamCoinPct: 0,
         glassCannon: false,
         tempoDobrado: false,
+        abisso: false,
+        abissoBase: 0,
+        critDmgMult: 1,
         luckFlatPct: 0,
       },
       houseIdx: null,
       houseLevel: null,
+      phase: null,
     });
     vi.advanceTimersByTime(AUTOSAVE_MS);
     expect(localStorage.getItem('bf-hp-account-v1')).toBeNull();
@@ -66,10 +70,14 @@ describe('account persistence subscription', () => {
         teamCoinPct: 0,
         glassCannon: false,
         tempoDobrado: false,
+        abisso: false,
+        abissoBase: 0,
+        critDmgMult: 1,
         luckFlatPct: 0,
       },
       houseIdx: null,
       houseLevel: null,
+      phase: null,
     });
     vi.advanceTimersByTime(AUTOSAVE_MS - 1);
     expect(localStorage.getItem('bf-hp-account-v1')).toBeNull();

@@ -41,6 +41,7 @@ export function AdviceColumn() {
     teamCritPctOfBase,
     rest,
     dmgMult,
+    abissoMult,
     treeSheet,
   } = pipeline;
 
@@ -71,6 +72,7 @@ export function AdviceColumn() {
     dmgMult,
     treeDanoTotal,
     extraDmgPct: 0,
+    abissoMult,
     active,
     dps,
     uptime,

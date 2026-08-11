@@ -298,7 +298,7 @@ describe('parseSaveFile — birth_stats reject gate (BSPW5-01)', () => {
     const raw = loadFixtureJson('gale-01-points-reset.json');
     const { candidates, account, rejected, warnings } = parseSaveFile(raw, []);
     expect(candidates).toHaveLength(0);
-    expect(account).toEqual({ tree: null, houseIdx: null, houseLevel: null });
+    expect(account).toEqual({ tree: null, houseIdx: null, houseLevel: null, phase: null });
     expect(rejected).not.toBeNull();
     expect(rejected!.reason).toBe('missingBirthStats');
     expect(warnings.some((w) => /re-export/i.test(w))).toBe(true);
@@ -541,28 +541,41 @@ describe('parseSaveFile', () => {
     expect(account.tree!.glassCannon).toBe(true);
   });
 
-  it('AC-13/BSP-61: a non-empty skills.totals.keystones surfaces the unmodelled-tree finding in warnings[]', () => {
+  it('detects Abisso from abisso_base and keystones D15', () => {
+    const save = baseSave();
+    save.skills.totals.abisso_base = 1.008;
+    (save.skills.totals.keystones as unknown[]) = ['D15', 'C15'];
+    save.skills.totals.crit_dmg_mult = 2;
+    save.skills.totals.crit_chance_add = 0;
+    const { account, warnings } = parseSaveFile(save, []);
+    expect(account.tree!.abisso).toBe(true);
+    expect(account.tree!.glassCannon).toBe(true);
+    expect(warnings.some((w) => w.includes('unknown'))).toBe(false);
+  });
+
+  it('unknown keystone ids surface an unmodelled-tree finding in warnings[]', () => {
     const save = baseSave();
     (save.skills.totals.keystones as unknown[]) = ['deadly_eye'];
     const { warnings } = parseSaveFile(save, []);
-    expect(warnings.some((w) => w.includes('BSP-61'))).toBe(true);
+    expect(warnings.some((w) => w.includes('unknown') && w.includes('deadly_eye'))).toBe(true);
   });
 
-  it('AC-13/DEC-08: a crit_dmg_mult other than 1 surfaces the unmodelled-tree finding in warnings[]', () => {
+  it('known keystones and crit_dmg_mult 2 do not surface BSP-61 / DEC-08 warnings', () => {
     const save = baseSave();
+    (save.skills.totals.keystones as unknown[]) = ['C15'];
     save.skills.totals.crit_dmg_mult = 2;
     const { warnings } = parseSaveFile(save, []);
-    expect(warnings.some((w) => w.includes('DEC-08'))).toBe(true);
+    expect(warnings.some((w) => w.includes('BSP-61') || w.includes('DEC-08'))).toBe(false);
   });
 
-  it('empty keystones and crit_dmg_mult 1 (the every-fixture-today case) surface no unmodelled-tree finding', () => {
+  it('empty keystones surface no unknown-keystone finding', () => {
     const { warnings } = parseSaveFile(baseSave(), []);
-    expect(warnings.some((w) => w.includes('BSP-61') || w.includes('DEC-08'))).toBe(false);
+    expect(warnings.some((w) => w.includes('unknown'))).toBe(false);
   });
 
   it('returns nulls for account data when casa/skills are absent', () => {
     const { account } = parseSaveFile({ heroes: [] }, []);
-    expect(account).toEqual({ tree: null, houseIdx: null, houseLevel: null });
+    expect(account).toEqual({ tree: null, houseIdx: null, houseLevel: null, phase: null });
   });
 
   it('missing stats block still composes naked/gearedOverride from birth, but cannot infer pts', () => {

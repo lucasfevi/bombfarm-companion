@@ -122,6 +122,16 @@ function buildFixture(opts: FixtureOpts = {}) {
   // would make `derive`'s single-application `effective` disagree with a ledger that (rightly)
   // shows a 'tree' step — bake the SAME single application into the default fixture so the two
   // stay consistent, matching what a real save's `stats` block already does.
+  //
+  // Glass Cannon / Tempo Dobrado are baked in the SAME way, post the keystone sheet-math
+  // correction: energy ×0.5 multiplies the WHOLE (base + energia_add) subtotal; crit-damage
+  // ×2 and Tempo Dobrado's ×1.33333 each replace the shared pool's implicit "1" with an
+  // ADDITIVE term on the birth base — none of the three are combat multipliers anymore
+  // (computeCombatMults.energyMult/critDmgMult are fixed at 1; speedMult no longer carries
+  // Tempo). Matches `applySkillTree` exactly (birth-sheet.ts).
+  const critDmgMultFactor = treeGlassCannon ? 2 : 1;
+  const glassCannonEnergyFactor = treeGlassCannon ? 0.5 : 1;
+  const tempoSpeedFactor = treeTempoDobrado ? 1.33333 : 1;
   function poolBump(value: number, otherPct: number, treePct: number): number {
     return value + (treePct / 100) * (value / (1 + otherPct));
   }
@@ -130,10 +140,14 @@ function buildFixture(opts: FixtureOpts = {}) {
     ({
       ...naked,
       attack: (naked.attack + 50) * treeDanoTotal,
-      energy: (naked.energy + 40) * (1 + treeEnergy / 100),
-      speed: poolBump(naked.speed, sheetOther.speed, treeSpeed),
+      energy: (naked.energy + 40) * (1 + treeEnergy / 100) * glassCannonEnergyFactor,
+      speed:
+        poolBump(naked.speed, sheetOther.speed, treeSpeed) +
+        (tempoSpeedFactor - 1) * (naked.speed / (1 + Math.max(0, sheetOther.speed))),
       critChance: poolBump(naked.critChance, sheetOther.critChance, treeCritChance),
-      critDmg: poolBump(naked.critDmg, sheetOther.critDmg, treeCritDmg),
+      critDmg:
+        poolBump(naked.critDmg, sheetOther.critDmg, treeCritDmg) +
+        (critDmgMultFactor - 1) * (naked.critDmg / (1 + Math.max(0, sheetOther.critDmg))),
     } satisfies SheetStats);
 
   const treeSheet: TreeSheetTotals = {
@@ -143,7 +157,9 @@ function buildFixture(opts: FixtureOpts = {}) {
     critChancePct: treeCritChance,
     critDmgPct: treeCritDmg,
     luckFlatPct: treeLuckFlatPct,
-    critDmgMult: 1,
+    critDmgMult: critDmgMultFactor,
+    glassCannon: treeGlassCannon,
+    tempoDobrado: treeTempoDobrado,
   };
 
   const mults = computeCombatMults({
@@ -212,6 +228,7 @@ function buildFixture(opts: FixtureOpts = {}) {
     dmgMult: mults.dmgMult,
     treeDanoTotal,
     extraDmgPct,
+    abissoMult: mults.abissoMult,
     active: deriveResult.active,
     dps: deriveResult.dps,
     uptime,

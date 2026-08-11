@@ -10,6 +10,9 @@ export const selectTreeEnergy = (state: PlannerStore) => state.treeEnergy;
 export const selectTreeTeamCoinPct = (state: PlannerStore) => state.treeTeamCoinPct;
 export const selectTreeGlassCannon = (state: PlannerStore) => state.treeGlassCannon;
 export const selectTreeTempoDobrado = (state: PlannerStore) => state.treeTempoDobrado;
+export const selectTreeAbisso = (state: PlannerStore) => state.treeAbisso;
+export const selectTreeAbissoBase = (state: PlannerStore) => state.treeAbissoBase;
+export const selectTreeCritDmgMult = (state: PlannerStore) => state.treeCritDmgMult;
 export const selectTreeLuckFlatPct = (state: PlannerStore) => state.treeLuckFlatPct;
 export const selectTeamBuffs = (state: PlannerStore) => state.teamBuffs;
 export const selectHouseIdx = (state: PlannerStore) => state.houseIdx;
@@ -17,6 +20,7 @@ export const selectHouseLevel = (state: PlannerStore) => state.houseLevel;
 export const selectFarmPhase = (state: PlannerStore) => state.phase;
 export const selectMitigationPct = (state: PlannerStore) => state.mitigationPct;
 export const selectRankMode = (state: PlannerStore) => state.rankMode;
+export const selectSlots = (state: PlannerStore) => state.slots;
 export const selectTargetProp = (state: PlannerStore) => state.targetProp;
 
 /** Nested AccountShared for persistence writes — inverse of hydrateAccount. */
@@ -56,6 +60,9 @@ export function selectAccountShared(state: PlannerStore): AccountShared {
       teamCoinPct: state.treeTeamCoinPct,
       glassCannon: state.treeGlassCannon,
       tempoDobrado: state.treeTempoDobrado,
+      abisso: state.treeAbisso,
+      abissoBase: state.treeAbissoBase,
+      critDmgMult: state.treeCritDmgMult,
       luckFlatPct: state.treeLuckFlatPct,
     },
     teamBuffs: state.teamBuffs,
@@ -67,11 +74,13 @@ export function selectAccountShared(state: PlannerStore): AccountShared {
       rankMode: state.rankMode,
       targetProp: state.targetProp,
     },
+    slots: state.slots,
+    forgeFloor: state.forgeFloor,
   };
   return accountSharedCache;
 }
 
-/** 16-member tuple for shallow account autosave subscription. */
+/** Account tree + farm tuple for shallow account autosave subscription. */
 export function selectAccountTuple(state: PlannerStore) {
   return [
     state.treeDanoTotal,
@@ -82,6 +91,9 @@ export function selectAccountTuple(state: PlannerStore) {
     state.treeTeamCoinPct,
     state.treeGlassCannon,
     state.treeTempoDobrado,
+    state.treeAbisso,
+    state.treeAbissoBase,
+    state.treeCritDmgMult,
     state.treeLuckFlatPct,
     state.teamBuffs,
     state.houseIdx,
@@ -90,6 +102,8 @@ export function selectAccountTuple(state: PlannerStore) {
     state.mitigationPct,
     state.rankMode,
     state.targetProp,
+    state.slots,
+    state.forgeFloor,
   ] as const;
 }
 

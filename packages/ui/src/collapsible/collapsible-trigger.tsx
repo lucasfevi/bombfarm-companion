@@ -1,6 +1,6 @@
 import { Collapsible as BaseCollapsible } from '@base-ui/react/collapsible';
-import { HiMiniChevronDown } from 'react-icons/hi2';
 import { cn } from '../cn';
+import { Icon } from '../icon';
 import { accordionIconClass, accordionRecipe } from '../accordion.recipe';
 import type { CollapsibleTriggerProps } from './types';
 
@@ -13,7 +13,9 @@ export function CollapsibleTrigger({
   children,
   'aria-label': ariaLabel,
 }: CollapsibleTriggerProps) {
-  const icon = <HiMiniChevronDown data-accordion-icon className={accordionIconClass} aria-hidden />;
+  const icon = (
+    <Icon name="chevron-down" data-accordion-icon className={accordionIconClass} />
+  );
   return (
     <BaseCollapsible.Trigger
       disabled={disabled}

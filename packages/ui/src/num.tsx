@@ -1,6 +1,6 @@
 import { Button as BaseButton } from '@base-ui/react/button';
-import { HiMiniChevronDown, HiMiniChevronUp } from 'react-icons/hi2';
 import { cn } from './cn';
+import { Icon } from './icon';
 import { numFieldClass, numInputClass, numSpinBtnClass, numSpinClass } from './stepper.recipe';
 
 export function Num({
@@ -34,7 +34,7 @@ export function Num({
           aria-label="Increment"
           onClick={() => commit(value + step)}
         >
-          <HiMiniChevronUp className="size-3.5" aria-hidden />
+          <Icon name="chevron-up" className="size-3.5" />
         </BaseButton>
         <BaseButton
           type="button"
@@ -43,7 +43,7 @@ export function Num({
           aria-label="Decrement"
           onClick={() => commit(value - step)}
         >
-          <HiMiniChevronDown className="size-3.5" aria-hidden />
+          <Icon name="chevron-down" className="size-3.5" />
         </BaseButton>
       </div>
       <input

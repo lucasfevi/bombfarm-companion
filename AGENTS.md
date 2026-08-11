@@ -1,6 +1,6 @@
 # Agent guide — Bomb Farm Companion (app repo)
 
-This repository contains **application code only**. Product specs and research live in a separate private planning workspace — do not reference or link to those paths from this repo.
+This repository contains **application code only**. Do not invent planning/spec directory trees here.
 
 ## Hard truths
 
@@ -17,8 +17,8 @@ This repository contains **application code only**. Product specs and research l
 - **TypeScript strict**, **Vitest**, **Playwright** (desktop `_electron` smoke; web e2e)
 - **Tailwind CSS 4** + **@base-ui/react** — design system in `@bombfarm/ui`
 - Shared math in `@bombfarm/domain` (phase/economy wiki rows ship as committed
-  `packages/domain/src/data/phase-wiki.json` — refresh via the private research
-  wiki-sync pipeline; this repo has no wiki HTTP client)
+  `packages/domain/src/data/phase-wiki.json` — maintainers refresh that file out of
+  band; this repo has no wiki HTTP client)
 - **electron-log** (main/preload/renderer)
 - **SQLite** via `Storage` wrapper (`node:sqlite` when Electron's Node supports it, else `better-sqlite3`)
 
@@ -45,7 +45,6 @@ pnpm test:smoke   # Windows — builds static renderer + launches Electron
   [`docs/typescript-planner-origin.md`](docs/typescript-planner-origin.md))
 - No secrets in the repo
 - Do not mention other fan tools in user-facing docs
-- Never add private TLC spec directories to this repository
 
 ## Flavors
 

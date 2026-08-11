@@ -59,14 +59,20 @@ export function inferSpentPoints(input: InferSpentPointsInput): PointInferenceRe
   const baseSpeed = naked.speed / poolFactor(sheetOther.speed);
   const baseCritChance = naked.critChance / poolFactor(sheetOther.critChance);
   const baseCritDmg = naked.critDmg / poolFactor(sheetOther.critDmg);
+  const speedBaseMult = tree.tempoDobrado ? 1.33333 : 1;
+  const energyGlassCannonFactor = tree.glassCannon ? 0.5 : 1;
 
-  // Invert applySkillTree to recover the pre-tree (gear + points) pool subtotal.
+  // Invert applySkillTree to recover the pre-tree (gear + points) pool subtotal. critDmgMult
+  // and Tempo Dobrado's speed factor are additive replacements of the pool's implicit `1`
+  // (correction 1/3) — subtract the same `base × (mult − 1)` term applySkillTree added.
+  // Glass Cannon's energy ×0.5 (correction 2) is a whole-subtotal multiplier — divide it out
+  // alongside `energia_add` before dividing by `gem` below.
   const pool = {
     attack: sheet.attack / tree.danoStatic,
-    energy: sheet.energy / (1 + tree.energyPct / 100),
-    speed: sheet.speed - baseSpeed * (tree.speedPct / 100),
+    energy: sheet.energy / ((1 + tree.energyPct / 100) * energyGlassCannonFactor),
+    speed: sheet.speed - baseSpeed * (speedBaseMult - 1) - baseSpeed * (tree.speedPct / 100),
     critChance: sheet.critChance - baseCritChance * (tree.critChancePct / 100),
-    critDmg: sheet.critDmg - baseCritDmg * (tree.critDmgPct / 100),
+    critDmg: sheet.critDmg - baseCritDmg * (tree.critDmgMult - 1) - baseCritDmg * (tree.critDmgPct / 100),
     penetration: sheet.penetration,
     cdr: sheet.cdr,
     luck: sheet.luck - tree.luckFlatPct,
@@ -107,6 +113,18 @@ export function inferSpentPoints(input: InferSpentPointsInput): PointInferenceRe
     cdr: solveShared(pool.cdr, naked.cdr, bonuses.cdrPct, sheetOther.cdr, POINT_GAIN.cdrPctOfBase),
     luck: solveShared(pool.luck, naked.luck, bonuses.luckPct, 0, POINT_GAIN.luckPctOfBase),
   };
+
+  // A capped sheet value (critChance/cdr — BSPW4-09: NOT penetration, which the game never
+  // clamps on the sheet) destroys the information needed to solve backward exactly once
+  // ability+gear alone already reach the cap: `sheet.critChance`/`sheet.cdr` (hence `pool.*`
+  // above) is the CLAMPED observed value, not the true (higher) uncapped pool subtotal, so
+  // `solveShared` asks a spurious question ("how many points below the naked+gear-implied
+  // total is the capped value") and goes sharply negative. Floor to 0 rather than raising a
+  // spurious `negativePoints` issue for what is really cap saturation, not a data problem —
+  // `saturatedStats` (below) is the existing channel for surfacing "this stat sits at its cap"
+  // whenever the recovered budget doesn't reconcile.
+  if (sheet.critChance >= STAT_CAPS.critChance - CAP_EPS && raw.critChance < 0) raw.critChance = 0;
+  if (sheet.cdr >= STAT_CAPS.cdr - CAP_EPS && raw.cdr < 0) raw.cdr = 0;
 
   const issues: PointInferenceIssue[] = [];
   const pts = {} as Record<SheetKey, number>;

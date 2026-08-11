@@ -207,7 +207,7 @@ describe('import preview table chrome', () => {
     expect(rowSrc).toContain('readOnly');
     expect(rowSrc).toContain('disabled');
     expect(rowSrc).not.toContain('onCheckedChange');
-    expect(rowSrc).toContain('L{candidate.level}');
+    expect(rowSrc).toContain('Lv{candidate.level}');
     expect(rowSrc).toContain('size="lg"');
     expect(rowSrc).toContain('rosterInactiveChromeClass');
     expect(rowSrc).not.toContain("from '@/features/roster'");

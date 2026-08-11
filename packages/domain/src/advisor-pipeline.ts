@@ -1,6 +1,5 @@
 import {
   abilityMods,
-  houseRestSeconds,
   rankNextPoint,
   energySwitchPoint,
   mitigationFactor,
@@ -22,8 +21,7 @@ import {
   effectiveFarmPhase,
   effectiveMitigationPct,
   effectiveTargetProp,
-  FARM_CYCLE_MODEL,
-  FARM_WALK_DELAY_SEC,
+  farmContextForHero,
 } from './farm-context';
 import { PROPS, BOSS_HP_MULT, phaseLine, propHp, hitsToKill, weightedAvgPropHp } from './phases';
 import {
@@ -52,6 +50,8 @@ export type AdvisorPipelineInput = {
   loadout: Loadout;
   altLoadout: Loadout | null;
   pts: Record<SheetKey, number>;
+  /** `HeroRecord.statPointsAvailable` — banked, unspent stat points (`ReoptInput.statPointsAvailable`). */
+  statPointsAvailable: number;
   abilities: Record<string, number>;
   rarity: RarityKey;
   level: number;
@@ -62,7 +62,14 @@ export type AdvisorPipelineInput = {
   treeSpeed: number;
   treeEnergy: number;
   treeGlassCannon: boolean;
+  /** `skills.totals.crit_dmg_mult` — the persisted numeric, never re-derived from
+   *  `treeGlassCannon` (which `detectGlassCannon` sets for any value `>= 1.5`). */
+  treeCritDmgMult?: number;
   treeTempoDobrado: boolean;
+  /** Abisso — suppresses Glass Cannon crit ×2 and Crit tree sheet adds. */
+  treeAbisso?: boolean;
+  /** `skills.totals.abisso_base` — Abisso's damage-multiplier exponent base (0 when unowned). */
+  treeAbissoBase?: number;
   /** `skills.totals.luck_add × 100` — flat Luck percentage points (BSPW5-03, ASM-01). */
   treeLuckFlatPct: number;
   teamBuffs: Record<TeamBuffId, number>;
@@ -91,6 +98,8 @@ export type AdvisorPipelineResult = {
   energyMult: number;
   speedMult: number;
   critDmgMult: number;
+  /** Abisso's `abissoBase^currentPhase` factor — 1 when not owned. Already folded into `dmgMult`. */
+  abissoMult: number;
   teamCritPctOfBase: number;
   /** The whole skill tree, once (BSP-23c) — surfaced for Wave 6's breakdown. */
   treeSheet: TreeSheetTotals;
@@ -135,6 +144,7 @@ export function computeAdvisorPipeline(input: AdvisorPipelineInput): AdvisorPipe
     loadout,
     altLoadout,
     pts,
+    statPointsAvailable,
     abilities,
     rarity,
     level,
@@ -145,7 +155,10 @@ export function computeAdvisorPipeline(input: AdvisorPipelineInput): AdvisorPipe
     treeSpeed,
     treeEnergy,
     treeGlassCannon,
+    treeCritDmgMult,
     treeTempoDobrado,
+    treeAbisso = false,
+    treeAbissoBase = 0,
     treeLuckFlatPct,
     teamBuffs,
     houseIdx,
@@ -182,6 +195,10 @@ export function computeAdvisorPipeline(input: AdvisorPipelineInput): AdvisorPipe
     treeSpeed,
     treeEnergy,
     treeLuckFlatPct,
+    treeGlassCannon,
+    treeCritDmgMult,
+    treeTempoDobrado,
+    treeAbisso,
     birth,
   });
 
@@ -190,6 +207,9 @@ export function computeAdvisorPipeline(input: AdvisorPipelineInput): AdvisorPipe
     teamBuffs,
     treeGlassCannon,
     treeTempoDobrado,
+    treeAbisso,
+    treeAbissoBase,
+    phase,
     extraDmgPct: 0,
   });
   const {
@@ -198,20 +218,22 @@ export function computeAdvisorPipeline(input: AdvisorPipelineInput): AdvisorPipe
     gateAttackMult,
     energyMult,
     critDmgMult,
+    abissoMult,
     teamCritPctOfBase,
     teamDrainMult,
     dmgMult,
   } = mults;
 
-  const rest = houseRestSeconds(houseIdx, houseLevel);
-  const context: Context = {
-    restSeconds: rest,
-    mitigation: mitPct / 100,
-    blastRange: 1 + mods.rangeCells,
-    cycleModel: FARM_CYCLE_MODEL,
-    walkDelay: FARM_WALK_DELAY_SEC,
-    drainMult: mods.drainMult * teamDrainMult * (treeTempoDobrado ? 2 : 1),
-  };
+  const context = farmContextForHero({
+    mods,
+    teamDrainMult,
+    treeTempoDobrado,
+    houseIdx,
+    houseLevel,
+    mitigationPct: mitPct,
+    phase,
+  });
+  const rest = context.restSeconds;
 
   const deriveArgs = {
     naked: nakedForDerive,
@@ -306,7 +328,13 @@ export function computeAdvisorPipeline(input: AdvisorPipelineInput): AdvisorPipe
   // AC-64l/AC-69/AC-70: Tier 1 only, reusing this call's own effective/effectiveDelta (no
   // extra derive pass); always scored sustainedDps — findGateCandidate has no rankMode input
   // for a caller to set, so this is unaffected by the UI's rankMode regardless.
-  const gate = findGateCandidate({ pts, effective, effectiveDelta: equippedResult.effectiveDelta, context });
+  const gate = findGateCandidate({
+    pts,
+    effective,
+    effectiveDelta: equippedResult.effectiveDelta,
+    context,
+    statPointsAvailable,
+  });
   const resetAdvice = buildResetAdvice(gate);
 
   return {
@@ -320,6 +348,7 @@ export function computeAdvisorPipeline(input: AdvisorPipelineInput): AdvisorPipe
     energyMult,
     speedMult,
     critDmgMult,
+    abissoMult,
     teamCritPctOfBase,
     treeSheet,
     A: equippedResult,

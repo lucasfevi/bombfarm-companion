@@ -39,6 +39,7 @@ export const createRosterSlice: StateCreator<
 
   setHeroes: (heroes) => {
     set({ heroes });
+    get().syncScopeForRoster();
   },
 
   patchHero: (saved) => {
@@ -52,6 +53,7 @@ export const createRosterSlice: StateCreator<
       heroes: next,
       activeHeroId: wasActive ? null : get().activeHeroId,
     });
+    get().syncScopeForRoster();
   },
 
   setActiveHeroId: (heroId) => {
@@ -67,9 +69,11 @@ export const createRosterSlice: StateCreator<
     if (state.activeHeroId === heroId) {
       state.skipNextHeroToast();
       set({ heroes: next, heroBattleAllowed: battleAllowed });
+      get().syncScopeForRoster();
       return;
     }
     set({ heroes: next });
+    get().syncScopeForRoster();
   },
 
   importHeroRecords: (records) => {
@@ -80,12 +84,14 @@ export const createRosterSlice: StateCreator<
       : undefined;
     if (!active) {
       set({ heroes: result.heroes });
+      get().syncScopeForRoster();
       return result;
     }
     set({
       heroes: result.heroes,
       heroBattleAllowed: active.battleAllowed ?? true,
     });
+    get().syncScopeForRoster();
     return result;
   },
 });

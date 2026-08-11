@@ -15,9 +15,20 @@ import {
 import { applyGear, applyPoints, starsMult } from './gear';
 import { levelPowerMult } from './model/combat';
 import { SHEET_KEYS, type SheetKey } from './planner-constants';
+import { capSheetValue } from './sheet-view';
 import type { SheetStats } from './gear/types';
 
-/** One sheet key's birth absolute + six marginal Δs + composed Total. */
+/**
+ * One sheet key's birth absolute + six marginal Δs + composed Total, plus the game's display
+ * cap surfaced as its own pair of columns rather than folded into `total`.
+ *
+ * `total` stays UNCAPPED on purpose (see `birth-sheet.ts`'s `composeSheetFromBirth` doc
+ * comment) — it must keep equalling `composeSheetFromBirth`'s output and the six Δs above must
+ * keep summing to it, both asserted in `keystone-sheet-corrections.test.ts`. `deltaCap` is the
+ * extra, always-non-positive Δ the game's display clamp applies on top (`0` under the cap);
+ * `cappedTotal = total + deltaCap` is what the game's own exported sheet shows
+ * (`gameSheetView(total-shaped-sheet) === cappedTotal`, `sheet-view.ts`).
+ */
 export type SheetStageRow = {
   birth: number;
   deltaLevel: number;
@@ -27,6 +38,10 @@ export type SheetStageRow = {
   deltaPoints: number;
   deltaTree: number;
   total: number;
+  /** ≤ 0; exactly 0 under the cap. The game's display clamp, shown as its own Δ. */
+  deltaCap: number;
+  /** `total + deltaCap` — what the game's exported sheet actually shows for this key. */
+  cappedTotal: number;
 };
 
 export type SheetStageTable = Record<SheetKey, SheetStageRow>;
@@ -65,6 +80,7 @@ function sheetAfterStars(birth: BirthStats, level: number, stars: number): Sheet
 }
 
 function stageRow(
+  key: SheetKey,
   birth: number,
   afterLevel: number,
   afterStars: number,
@@ -73,6 +89,7 @@ function stageRow(
   afterPoints: number,
   total: number,
 ): SheetStageRow {
+  const cappedTotal = capSheetValue(key, total);
   return {
     birth,
     deltaLevel: afterLevel - birth,
@@ -82,6 +99,8 @@ function stageRow(
     deltaPoints: afterPoints - afterGear,
     deltaTree: total - afterPoints,
     total,
+    deltaCap: cappedTotal - total,
+    cappedTotal,
   };
 }
 
@@ -101,6 +120,7 @@ export function peelSheetStages(input: PeelSheetStagesInput): SheetStageTable {
   const out = {} as SheetStageTable;
   for (const key of SHEET_KEYS) {
     out[key] = stageRow(
+      key,
       birth[key],
       afterLevel[key],
       afterStars[key],

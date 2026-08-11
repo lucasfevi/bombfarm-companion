@@ -29,6 +29,8 @@ export {
   selectTreeTeamCoinPct,
   selectTreeGlassCannon,
   selectTreeTempoDobrado,
+  selectTreeAbisso,
+  selectTreeCritDmgMult,
   selectTeamBuffs,
   selectHouseIdx,
   selectHouseLevel,
@@ -36,7 +38,15 @@ export {
   selectMitigationPct,
   selectRankMode,
   selectTargetProp,
+  selectSlots,
 } from '@/shared/stores/selectors/account-selectors';
+export {
+  selectTeamPlanIsStale,
+  selectInventoryItems,
+  selectScopeByHeroId,
+  selectForgeFloor,
+} from '@/shared/stores/selectors/team-plan-selectors';
+export type { TeamPlanSlice } from '@/shared/stores/slices/team-plan-slice';
 export {
   selectHeroes,
   selectActiveHeroId,
@@ -66,6 +76,7 @@ export {
   selectHeroRank,
   selectHeroBattleAllowed,
   selectHeroSkin,
+  selectHeroStatPointsAvailable,
   selectShouldShowEmptyState,
   selectFormatNumber,
 } from '@/shared/stores/selectors/hero-selectors';

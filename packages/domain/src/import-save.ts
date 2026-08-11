@@ -4,12 +4,21 @@
 // so a save file from any account — not just the one used to build this — works.
 
 import catalog from './data/catalog.json';
+import { resolveCasaSlots } from './casa-slots';
+import { mapInventoryItem, type InventoryItem } from './inventory';
 import { ABILITIES, RarityKey, abilityMods } from './model';
 import { EquippedItem, Loadout, emptyLoadout, emptySheetOther } from './gear';
 import { ZERO_PTS, type SheetKey } from './planner-constants';
 import { HeroRecord } from './shims/storage';
 import { isKnownSkin } from './wiki-assets';
-import { birthFromSave, hasUsableBirthStats, saveSheetUnits, treeTotalsFromSave } from './save-units';
+import {
+  birthFromSave,
+  detectGlassCannon,
+  detectTempoDobrado,
+  hasUsableBirthStats,
+  saveSheetUnits,
+  treeTotalsFromSave,
+} from './save-units';
 import { composeSheetFromBirth, nakedFromBirth, type BirthStats, type TreeSheetTotals } from './birth-sheet';
 import { inferSpentPoints, type PointInferenceIssue } from './point-inference';
 import { unmodelledTreeFindings } from './tree-guards';
@@ -53,12 +62,32 @@ export type AccountImportData = {
     energy: number;
     glassCannon: boolean;
     tempoDobrado: boolean;
+    /** Abisso (D15) — cancels Crit/GEO sheet adds and Glass Cannon crit ×2. */
+    abisso: boolean;
+    /**
+     * `skills.totals.abisso_base` — Abisso's damage-multiplier exponent base (verified
+     * 1.008 on a real account: damage × abissoBase^currentPhase). 0 in saves without the
+     * keystone; combat math must gate on `abisso`, never multiply blindly by this alone
+     * (a bare `0 ** phase` would zero every hit).
+     */
+    abissoBase: number;
+    /**
+     * `skills.totals.crit_dmg_mult` — Glass Cannon's crit-damage multiplier on the birth base
+     * (2 when C15 is owned, 1 otherwise). Persisted rather than derived from `glassCannon`
+     * alone so a future save with a different observed multiplier is not silently coerced to
+     * 2 (mirrors `abissoBase`'s persist-the-real-numeric precedent).
+     */
+    critDmgMult: number;
     teamCoinPct?: number;
     /** `luck_add × 100` — flat percentage points (AD-BSP-22, ASM-01, BSPW5-03). */
     luckFlatPct: number;
   } | null;
   houseIdx: number | null;
   houseLevel: number | null;
+  /** Casa field slots from the save (`casa.slots` ladder) when `casa` is present. */
+  slots?: number | null;
+  /** `account.phase` — the phase the player is currently farming. Null when absent. */
+  phase: number | null;
 };
 
 /**
@@ -75,6 +104,7 @@ export type ParseResult = {
   candidates: ImportCandidate[];
   warnings: string[];
   account: AccountImportData;
+  inventory: InventoryItem[];
   rejected: ParseRejection | null;
 };
 
@@ -98,18 +128,33 @@ function bool(value: unknown, fallback = false): boolean {
  * Maps `skills.totals` (skill-tree aggregate bonuses) and `casa` (current house)
  * into the app's account-wide TreeState/HeroContext shape.
  *
- * `danoTotal` and the two keystone flags are best-effort: `dmg_static` matches
- * `(1 + team_dmg_add) * geo_mult` almost exactly in every save sampled so far,
- * which is why it's used directly as the in-game "Total damage x" figure —
- * worth double-checking against the tree screen once. Glass Cannon is detected
- * from `crit_dmg_mult` (a direct mechanical signal); Tempo Dobrado has no such
- * signal and only lights up if `keystones` contains an id we recognize, so it
- * defaults to off (safe: the user can still tick it manually).
+ * `danoTotal` is `dmg_static` taken as an OPAQUE, already-computed total — do not try to
+ * reconstruct it from `(1 + team_dmg_add) * geo_mult`. That product does not match: measured
+ * `2.797` predicted vs `3624.70` actual on a real save. `dmg_static` is also NOT live with
+ * respect to Abisso/geo phase — it read identically across two exports of the same account
+ * taken at different phases, so whatever composes it server-side is not simply
+ * `team_dmg_add`/`geo_mult` reflected here. Glass Cannon / Tempo Dobrado detection is shared
+ * with the per-hero sheet mapper (`treeTotalsFromSave`) via `detectGlassCannon` /
+ * `detectTempoDobrado` (save-units.ts) so the two never drift apart. Abisso is
+ * `abisso_base > 0` or `keystones` contains `d15`; `abissoBase` carries the raw numeric base
+ * (empirically 1.008) so the combat multiplier `abissoBase^currentPhase` uses the save's own
+ * figure instead of a hardcoded literal — that multiplier lives in `computeCombatMults`
+ * (`derive.ts`), NOT here or on the hero sheet (two exports of the same account at different
+ * phases have byte-identical hero `stats` blocks, so Abisso is a combat-time factor, not a
+ * sheet one).
  */
+function mapAccountPhase(raw: Record<string, unknown>): number | null {
+  const account = isObject(raw.account) ? raw.account : null;
+  if (!account) return null;
+  const phase = account.phase;
+  return typeof phase === 'number' && Number.isFinite(phase) ? phase : null;
+}
+
 function mapAccountData(raw: Record<string, unknown>): AccountImportData {
   const skills = isObject(raw.skills) ? raw.skills : null;
   const totals = skills && isObject(skills.totals) ? skills.totals : null;
   const casa = isObject(raw.casa) ? raw.casa : null;
+  const phase = mapAccountPhase(raw);
 
   // MOD-36: single-pass optional-field parse — stays null unless the save carries `totals`.
   let tree: AccountImportData['tree'] = null;
@@ -121,8 +166,11 @@ function mapAccountData(raw: Record<string, unknown>): AccountImportData {
       critDmg: asNumber(totals.crit_dmg_add) * 100,
       speed: asNumber(totals.speed_add) * 100,
       energy: asNumber(totals.energia_add) * 100,
-      glassCannon: asNumber(totals.crit_dmg_mult, 1) >= 1.5,
-      tempoDobrado: keystones.some((keystone) => keystone.includes('tempo') || keystone === 'v15'),
+      glassCannon: detectGlassCannon(totals),
+      tempoDobrado: detectTempoDobrado(totals),
+      abisso: asNumber(totals.abisso_base) > 0 || keystones.some((k) => k === 'd15'),
+      abissoBase: asNumber(totals.abisso_base, 0),
+      critDmgMult: asNumber(totals.crit_dmg_mult, 1),
       teamCoinPct: asNumber(totals.coin_add ?? totals.team_coin_add) * 100,
       // BSPW5-03 (ASM-01): flat Luck percentage points — absent key defaults to 0.
       luckFlatPct: asNumber(totals.luck_add) * 100,
@@ -139,12 +187,19 @@ function mapAccountData(raw: Record<string, unknown>): AccountImportData {
       const levels = Array.isArray(casa.levels) ? casa.levels : [];
       houseLevel = Math.max(1, Math.round(asNumber(levels[houseIdx], 1)));
     }
+    return {
+      tree,
+      houseIdx,
+      houseLevel,
+      slots: resolveCasaSlots(casa, houseIdx),
+      phase,
+    };
   }
 
-  return { tree, houseIdx, houseLevel };
+  return { tree, houseIdx, houseLevel, phase };
 }
 
-const EMPTY_ACCOUNT_DATA: AccountImportData = { tree: null, houseIdx: null, houseLevel: null };
+const EMPTY_ACCOUNT_DATA: AccountImportData = { tree: null, houseIdx: null, houseLevel: null, phase: null };
 
 export function parseSaveFile(raw: unknown, existing: HeroRecord[]): ParseResult {
   const warnings: string[] = [];
@@ -153,6 +208,7 @@ export function parseSaveFile(raw: unknown, existing: HeroRecord[]): ParseResult
       candidates: [],
       warnings: ['This does not look like a BombFarm save file (missing a "heroes" list).'],
       account: EMPTY_ACCOUNT_DATA,
+      inventory: [],
       rejected: { reason: 'notASaveFile', heroNames: [] },
     };
   }
@@ -178,6 +234,7 @@ export function parseSaveFile(raw: unknown, existing: HeroRecord[]): ParseResult
       candidates: [],
       warnings,
       account: EMPTY_ACCOUNT_DATA,
+      inventory: [],
       rejected: { reason: 'missingBirthStats', heroNames: missingBirthHeroNames },
     };
   }
@@ -185,6 +242,27 @@ export function parseSaveFile(raw: unknown, existing: HeroRecord[]): ParseResult
   const items: Record<string, unknown>[] = Array.isArray(raw.items) ? raw.items.filter(isObject) : [];
   if (!Array.isArray(raw.items)) {
     warnings.push('Save file has no "items" list — imported heroes will have no gear equipped.');
+  }
+
+  const inventory: InventoryItem[] = [];
+  let unresolvedUnequipped = 0;
+  let marketBlockedCount = 0;
+  for (const item of items) {
+    const mapped = mapInventoryItem(item);
+    if (!mapped) continue;
+    if (!mapped.defResolved && !mapped.equipped) unresolvedUnequipped++;
+    if (mapped.marketBlocked) marketBlockedCount++;
+    inventory.push(mapped);
+  }
+  if (unresolvedUnequipped > 0) {
+    warnings.push(
+      `${unresolvedUnequipped} unequipped gear item(s) could not be resolved in the catalog — they are excluded from the pool.`,
+    );
+  }
+  if (marketBlockedCount > 0) {
+    warnings.push(
+      `${marketBlockedCount} gear item(s) are market-blocked and will be excluded from the optimizer pool.`,
+    );
   }
 
   const existingBySourceId = new Map(
@@ -311,12 +389,15 @@ export function parseSaveFile(raw: unknown, existing: HeroRecord[]): ParseResult
     // recover the integer spent-points vector (BSPW5-05, DEC-04). A hero with no `stats`
     // block cannot be point-inferred (T5 turns this into a blocking candidate).
     const statsRaw = isObject(rawHero.stats) ? rawHero.stats : null;
+    // Read regardless of whether `stats` is present — a blocked (no-`stats`) hero still carries
+    // this through to `record` below, so a later re-import that recovers `stats` isn't the first
+    // time the app has ever seen the player's banked points.
+    const statPointsAvailable = asNumber(rawHero.stat_points_available, 0);
     let pts: Record<SheetKey, number>;
     let pointIssues: PointInferenceIssue[] = [];
     let power = 0;
     if (statsRaw) {
       const sheet = saveSheetUnits(statsRaw);
-      const statPointsAvailable = asNumber(rawHero.stat_points_available, 0);
       const inferred = inferSpentPoints({ birth, level, stars, sheetOther, loadout, tree, sheet, statPointsAvailable });
       pts = inferred.pts;
       pointIssues = inferred.issues;
@@ -347,6 +428,7 @@ export function parseSaveFile(raw: unknown, existing: HeroRecord[]): ParseResult
       gearedOverride,
       abilities,
       pts,
+      statPointsAvailable,
       sourceId,
       rank: rank ?? undefined,
       power: power || undefined,
@@ -375,5 +457,5 @@ export function parseSaveFile(raw: unknown, existing: HeroRecord[]): ParseResult
     });
   }
 
-  return { candidates, warnings, account: mapAccountData(raw), rejected: null };
+  return { candidates, warnings, account: mapAccountData(raw), inventory, rejected: null };
 }

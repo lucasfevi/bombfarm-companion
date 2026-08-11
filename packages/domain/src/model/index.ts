@@ -71,6 +71,7 @@ export {
   applySkillTree,
   composeSheetFromBirth,
   sheetsFromBirth,
+  effectiveTreeSheetForAbisso,
 } from '../birth-sheet';
 
 export type { SourceLines, SheetSourceLines, PeelSheetSourcesInput } from '../sheet-peel';
@@ -78,6 +79,8 @@ export { peelSheetSources } from '../sheet-peel';
 
 export type { SheetStageRow, SheetStageTable, PeelSheetStagesInput } from '../sheet-stages';
 export { peelSheetStages } from '../sheet-stages';
+
+export { gameSheetView, capSheetValue } from '../sheet-view';
 
 export type {
   PointInferenceIssue,
