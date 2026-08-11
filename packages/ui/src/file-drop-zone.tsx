@@ -59,7 +59,18 @@ export function FileDropZone({
         }}
       />
       <span>{hint}</span>
-      <Button type="button">{chooseLabel}</Button>
+      {/* Decorative label, not a second control: the outer role="button" div already
+          handles click/keyboard activation (onFile fires from its own onClick /
+          onKeyDown above), so a real nested <button> here would be an axe
+          "nested-interactive" violation — two overlapping interactive elements with
+          ambiguous activation target for screen reader / keyboard users. Render as a
+          <span> (Base UI `render`) with tabIndex={-1}, matching the documented pattern
+          for a trigger nested inside an already-focusable ancestor (see
+          AbbreviatedNumber / docs/design-system.md "Tooltip trigger nested inside
+          another interactive control"). */}
+      <Button type="button" render={<span />} tabIndex={-1}>
+        {chooseLabel}
+      </Button>
       {error ? <p className="m-0 text-xs text-down">{error}</p> : null}
     </div>
   );

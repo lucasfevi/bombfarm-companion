@@ -15,6 +15,18 @@ const config: TestRunnerConfig = {
     await injectAxe(page);
   },
   async postVisit(page) {
+    // Toast / Toast System fade in via a 160ms CSS entrance animation
+    // (--animate-toast-in). Checking a11y mid-fade reads a transiently
+    // blended, lower-contrast color even though the settled state passes —
+    // wait for any running animations to finish (capped, in case a story
+    // ever adds a looping one) so the check reflects the real end state.
+    await page.evaluate(() =>
+      Promise.race([
+        Promise.all(document.getAnimations().map((animation) => animation.finished.catch(() => undefined))),
+        new Promise((resolve) => setTimeout(resolve, 500)),
+      ]),
+    );
+
     // Docs (autodocs) entries render inside #storybook-docs, not #storybook-root —
     // check whichever canvas root the current entry actually mounted.
     const hasStoryRoot = (await page.$('#storybook-root')) !== null;

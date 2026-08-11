@@ -21,9 +21,14 @@ export const Default: Story = {
   render: function Render(args) {
     const [value, setValue] = useState(1.25);
     return (
-      <div className="w-[120px]">
+      // Every real call site wraps Num in a <label> (see InFieldStack / InFieldInline
+      // below, and e.g. AccountFarmTargetFields) so the native <input> gets an
+      // accessible name for free. This story stood bare, which is a story-authoring
+      // gap, not a Num defect — axe's "label" rule caught it (SBC-12).
+      <label className="block w-[120px] text-xs text-muted">
+        <span>Multiplier</span>
         <Num {...args} value={value} onChange={setValue} />
-      </div>
+      </label>
     );
   },
 };
@@ -33,9 +38,10 @@ export const IntegerStep: Story = {
   render: function Render(args) {
     const [value, setValue] = useState(12);
     return (
-      <div className="w-[96px]">
+      <label className="block w-[96px] text-xs text-muted">
+        <span>Level</span>
         <Num {...args} value={value} onChange={setValue} />
-      </div>
+      </label>
     );
   },
 };
