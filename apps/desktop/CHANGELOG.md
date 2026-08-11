@@ -1,5 +1,13 @@
 # @bombfarm/desktop
 
+## 0.1.1
+
+### Patch Changes
+
+- Updated dependencies [d2116e5]
+- Updated dependencies [6ca8b4a]
+  - @bombfarm/ui@0.1.0
+
 ## 0.1.0
 
 ### Minor Changes
