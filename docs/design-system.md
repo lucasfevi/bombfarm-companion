@@ -265,7 +265,8 @@ Semantics live on a wrapping `<span>`; the inner `react-icons` SVG is always dec
 
 - `packages/ui/**` and `apps/desktop/**`: raw `react-icons` or `*.svg` imports fail lint outside `packages/ui/src/icon/**`.
 - `apps/web/**`: nine planner files are **grandfathered** in `apps/web/eslint.config.mjs` (`site-header`, `topbar`, `footer`, `slot-editor`, `import-heroes-dialog`, `hero-picker-dialog`, `hero-strip`, `hero-strip-identity`, `phases-hero-switcher`). Delete an entry when that file migrates to `<Icon />`; any **new** web call site errors immediately.
-- **Known gap:** root ESLint ignores `packages/ui/**/*.stories.tsx`, so a raw icon import in a story is caught by review/tests only — closing that gap is owned by `m2-storybook-ci`.
+- `packages/ui/**/*.stories.tsx`: **covered too.** Stories are excluded from `packages/ui/tsconfig.json`, so root ESLint lints them with type checking off (`disableTypeChecked`) — the raw-icon ban applies. `tailwindcss/no-unnecessary-arbitrary-value` is deliberately off there: stories size demo frames to taste.
+- **Known gap:** `packages/ui/**/*.{test,spec}.{ts,tsx}` are still ignored by root ESLint (same tsconfig reason), so a raw icon import in a unit test is caught by review only. Narrow blast radius, no owning feature yet.
 
 Storybook gallery: [`packages/ui/src/icon.stories.tsx`](../packages/ui/src/icon.stories.tsx) (enum-driven UI chrome).
 
