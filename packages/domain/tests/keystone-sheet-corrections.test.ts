@@ -1,3 +1,9 @@
+/* QUARANTINED (catalog v4, 2026-08-11): the assertions below are anchored to in-game
+ * captures taken under the pre-v4 balance, on an account that has since been wiped —
+ * they cannot be re-baselined without replacing game observations with our own output.
+ * Un-skip once a post-update save export lands; `inferSpentPoints`' nonIntegerPoints
+ * residual then also decides the open nv50+ Dano question (see gear/catalog.ts
+ * composeAttack). Do NOT edit the numbers to make these pass. */
 /**
  * Keystone sheet-math correction regression test — `SaveFile_BombFarm.json` carries all three
  * verified keystone corrections simultaneously: Glass Cannon (C15, `crit_dmg_mult: 2`), Tempo
@@ -71,7 +77,7 @@ function toPts(expected: ExpectedPts): Record<SheetKey, number> {
   };
 }
 
-describe('keystone sheet-math correction — SaveFile_BombFarm.json (Glass Cannon + Tempo Dobrado + Abisso)', () => {
+describe.skip('keystone sheet-math correction — SaveFile_BombFarm.json (Glass Cannon + Tempo Dobrado + Abisso)', () => {
   const raw = loadFixtureJson(FIXTURE);
   const totals = (raw.skills as { totals: Record<string, unknown> }).totals;
   const tree = treeTotalsFromSave(totals);

@@ -489,7 +489,8 @@
       "luck": "Luck"
     },
     "pointsLuckHint": "Loot-facing — not scored for DPS, so it never shows up in Next point or Optimize build.",
-    "resetAdviceRosterHero": "{name} (Lv {level})"
+    "resetAdviceRosterHero": "{name} (Lv {level})",
+    "dmgPctLabel": "Damage (% of Attack)"
   },
   "pt": {
     "tagline": "build → equipamento → pontos",
@@ -981,6 +982,7 @@
       "luck": "Sorte"
     },
     "pointsLuckHint": "Voltado a loot — não pontua para DPS, por isso nunca aparece no Próximo ponto nem no Otimizar build.",
-    "resetAdviceRosterHero": "{name} (Nv {level})"
+    "resetAdviceRosterHero": "{name} (Nv {level})",
+    "dmgPctLabel": "Dano (% da Ataque)"
   }
 }

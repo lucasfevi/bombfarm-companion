@@ -1,5 +1,5 @@
 import { attackPointGain, POINT_GAIN } from '../model';
-import { emptySheetOther, starsMult, sumGearBonuses } from './catalog';
+import { composeAttack, decomposeAttack, emptySheetOther, starsMult, sumGearBonuses } from './catalog';
 import type { Loadout, PointAlloc, SheetOtherPct, SheetStats } from './types';
 
 /**
@@ -33,7 +33,7 @@ export function applyGear(
 ): SheetStats {
   const bonuses = sumGearBonuses(loadout);
   return {
-    attack: naked.attack + bonuses.dmgFlat,
+    attack: composeAttack(naked.attack, bonuses),
     energy: naked.energy * (1 + bonuses.energyPct),
     speed: sharedForward(naked.speed, bonuses.speedPct, other.speed),
     critChance: sharedForward(naked.critChance, bonuses.critPct, other.critChance),
@@ -53,7 +53,7 @@ export function reverseGear(
   const bonuses = sumGearBonuses(loadout);
   const div = (value: number, percent: number) => (percent > -0.999 ? value / (1 + percent) : value);
   return {
-    attack: geared.attack - bonuses.dmgFlat,
+    attack: decomposeAttack(geared.attack, bonuses),
     energy: div(geared.energy, bonuses.energyPct),
     speed: sharedReverse(geared.speed, bonuses.speedPct, other.speed),
     critChance: sharedReverse(geared.critChance, bonuses.critPct, other.critChance),
@@ -97,7 +97,7 @@ export function applyPoints(
   const star = starsMult(stars);
   const atkPt = attackPointGain(level) * star;
   return {
-    attack: naked.attack + bonuses.dmgFlat + pts.attack * atkPt,
+    attack: composeAttack(naked.attack, bonuses, pts.attack * atkPt),
     energy: naked.energy * gem + pts.energy * POINT_GAIN.energyNative * gem * star,
     speed: sharedForward(
       naked.speed,
@@ -149,7 +149,7 @@ export function reverseSheet(
   const star = starsMult(stars);
   const atkPt = attackPointGain(level) * star;
   return {
-    attack: sheet.attack - bonuses.dmgFlat - pts.attack * atkPt,
+    attack: decomposeAttack(sheet.attack, bonuses, pts.attack * atkPt),
     energy: energyCore - pts.energy * POINT_GAIN.energyNative * star,
     speed: sharedReverse(
       sheet.speed,

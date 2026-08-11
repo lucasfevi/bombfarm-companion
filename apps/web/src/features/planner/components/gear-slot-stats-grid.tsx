@@ -24,10 +24,10 @@ export function GearSlotStatsGrid({
             {vals.length === 0 ? (
               <span className={mutedClass}>—</span>
             ) : (
-              vals.map(({ stat, valor }) => (
+              vals.map(({ stat, valor, unit }) => (
                 <div key={stat} className={slotStatRowClass}>
                   <span>{t.slotStatFullLabels[stat as keyof typeof t.slotStatFullLabels]}</span>
-                  <b>{stat === 'dmg' ? `+${formatNumber(valor, 1)}` : `+${formatNumber(valor * 100, 1)}%`}</b>
+                  <b>{unit === 'flat' ? `+${formatNumber(valor, 1)}` : `+${formatNumber(valor * 100, 1)}%`}</b>
                 </div>
               ))
             )}

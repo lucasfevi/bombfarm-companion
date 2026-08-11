@@ -61,6 +61,7 @@ function weapon(partial?: Partial<EquippedItem>): EquippedItem {
 
 const zeroBonuses = (): GearBonuses => ({
   dmgFlat: 0,
+  dmgPct: 0,
   energyPct: 0,
   speedPct: 0,
   luckPct: 0,

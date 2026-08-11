@@ -604,7 +604,8 @@
       "cdr": "Cooldown Red.",
       "luck": "Luck"
     },
-    "pointsLuckHint": "Loot-facing — not scored for DPS, so it never shows up in Next point or Optimize build."
+    "pointsLuckHint": "Loot-facing — not scored for DPS, so it never shows up in Next point or Optimize build.",
+    "dmgPctLabel": "Damage (% of Attack)"
   },
   "pt": {
     "tagline": "build → equipamento → pontos",
@@ -1211,6 +1212,7 @@
       "cdr": "Redução de recarga",
       "luck": "Sorte"
     },
-    "pointsLuckHint": "Voltado a loot — não pontua para DPS, por isso nunca aparece no Próximo ponto nem no Otimizar build."
+    "pointsLuckHint": "Voltado a loot — não pontua para DPS, por isso nunca aparece no Próximo ponto nem no Otimizar build.",
+    "dmgPctLabel": "Dano (% da Ataque)"
   }
 }

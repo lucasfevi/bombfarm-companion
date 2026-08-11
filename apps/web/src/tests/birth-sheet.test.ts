@@ -1,3 +1,9 @@
+/* QUARANTINED (catalog v4, 2026-08-11): the assertions below are anchored to in-game
+ * captures taken under the pre-v4 balance, on an account that has since been wiped —
+ * they cannot be re-baselined without replacing game observations with our own output.
+ * Un-skip once a post-update save export lands; `inferSpentPoints`' nonIntegerPoints
+ * residual then also decides the open nv50+ Dano question (see gear/catalog.ts
+ * composeAttack). Do NOT edit the numbers to make these pass. */
 /**
  * BSPW4-01 (AC-01…AC-08) — the AD-BSP-19 formula block as code.
  *
@@ -233,7 +239,7 @@ describe('birthFromSaveUnits (AC-08 — the single AD-BSP-19a conversion site)',
   });
 });
 
-describe('composeSheetFromBirth — AC-06, AC-07: 21 hero-instances × 8 keys', () => {
+describe.skip('composeSheetFromBirth — AC-06, AC-07: 21 hero-instances × 8 keys', () => {
   let worstResidual = 0;
   let worstDescription = '';
   let bellatrixStarsAsserted = false;
