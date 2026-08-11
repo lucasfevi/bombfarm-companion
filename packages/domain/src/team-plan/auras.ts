@@ -1,5 +1,9 @@
-import { ABILITIES } from '../model';
-import { TEAM_BUFF_ABILITY_IDS, zeroTeamBuffs, type TeamBuffId } from '../team-buffs';
+import {
+  TEAM_BUFF_ABILITY_IDS,
+  TEAM_BUFF_PER_LEVEL,
+  zeroTeamBuffs,
+  type TeamBuffId,
+} from '../team-buffs';
 import type { HeroPlanContext } from './types';
 
 export function computeRosterAuras(
@@ -9,9 +13,7 @@ export function computeRosterAuras(
 ): Record<TeamBuffId, number> {
   const out = zeroTeamBuffs();
   for (const buffId of TEAM_BUFF_ABILITY_IDS) {
-    const definition = ABILITIES.find((ability) => ability.id === buffId);
-    const perLevel =
-      definition && 'perLevel' in definition.effect ? definition.effect.perLevel : 0;
+    const perLevel = TEAM_BUFF_PER_LEVEL[buffId];
     let sum = 0;
     for (const ctx of contexts) {
       if (ctx.heroId === excludeHeroId) continue;

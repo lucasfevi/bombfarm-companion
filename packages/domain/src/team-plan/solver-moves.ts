@@ -58,13 +58,67 @@ export function generateMoves(input: GenerateMovesInput): GearMove[] {
 
   const moves: { move: GearMove; key: MoveSortKey }[] = [];
 
+  // Hoisted: this was rebuilt and re-sorted inside the slot loop, i.e. heroes x SLOTS times per
+  // call (120 on a 15-hero roster) over a ~300-item pool, for a list that never varies.
+  const poolIds = [...input.pool].sort();
+  // One representative per interchangeable group. `PoolEntry.key` is
+  // `defId|rarityIdx|level|effectiveUpgrade`, and `loadoutForScoring` clamps upgrade to exactly
+  // that effective value — so every copy in a group yields a byte-identical `EquippedItem` and
+  // therefore an identical roster objective. Evaluating the rest is pure duplicated work: on a
+  // real 441-item save the pool averages 2.24 copies per key (two groups hold 21 each), so this
+  // drops assign candidates to ~45% with results unchanged. Deterministic because `poolIds` is
+  // sorted, so the surviving representative is always the lowest id in its group.
+  const poolByKey = new Map<string, { itemId: string; entry: ReturnType<typeof poolEntryForItem> }>();
+  for (const itemId of poolIds) {
+    const item = input.itemById.get(itemId);
+    if (!item?.slot) continue;
+    const entry = poolEntryForItem(item, input.forgeFloor);
+    if (!poolByKey.has(entry.key)) poolByKey.set(entry.key, { itemId, entry });
+  }
+
+  /**
+   * Dominance pruning, on top of the dedup above (player-confirmed game rules):
+   *
+   *  - at the same set and level, a higher rarity is always superior. Sets differ in WHICH
+   *    stats they roll (a Dune helm has Luck, a Brass one never does), but a set never loses a
+   *    stat by going up in rarity — so this only holds within one `defId`, never across sets.
+   *  - on the same item, a higher forge is always superior. Comparisons already happen at
+   *    `effectiveUpgrade` = `min(FORJA_MAX, max(upgrade, forgeFloor))`, i.e. at the selected
+   *    forge floor or the item's own level, never below it.
+   *
+   * So within one `(defId, level)` an item is dominated when another has rarity >= AND
+   * effectiveUpgrade >= with at least one strictly greater, and it can never win on any hero.
+   *
+   * Level is part of the group key deliberately, and does double duty: the rule as stated holds
+   * only at equal level, AND it keeps `eligibleForHero`'s `entry.level <= hero.level` test
+   * identical across a group — so pruning can never discard an item that a lower-level hero
+   * could have equipped while its dominator is out of reach.
+   */
+  const byDefAndLevel = new Map<string, { itemId: string; entry: ReturnType<typeof poolEntryForItem> }[]>();
+  for (const candidate of poolByKey.values()) {
+    const groupKey = `${candidate.entry.defId}|${candidate.entry.level}`;
+    const bucket = byDefAndLevel.get(groupKey);
+    if (bucket) bucket.push(candidate);
+    else byDefAndLevel.set(groupKey, [candidate]);
+  }
+  const candidates: { itemId: string; entry: ReturnType<typeof poolEntryForItem> }[] = [];
+  for (const bucket of byDefAndLevel.values()) {
+    for (const candidate of bucket) {
+      const dominated = bucket.some(
+        (other) =>
+          other !== candidate &&
+          other.entry.rarityIdx >= candidate.entry.rarityIdx &&
+          other.entry.effectiveUpgrade >= candidate.entry.effectiveUpgrade &&
+          (other.entry.rarityIdx > candidate.entry.rarityIdx ||
+            other.entry.effectiveUpgrade > candidate.entry.effectiveUpgrade),
+      );
+      if (!dominated) candidates.push(candidate);
+    }
+  }
+
   for (const ctx of heroOrder) {
     for (const slot of SLOTS) {
-      const poolIds = [...input.pool].sort();
-      for (const itemId of poolIds) {
-        const item = input.itemById.get(itemId);
-        if (!item?.slot) continue;
-        const entry = poolEntryForItem(item, input.forgeFloor);
+      for (const { itemId, entry } of candidates) {
         if (!eligibleForHero(entry, ctx, slot)) continue;
         moves.push({
           move: { kind: 'assign', itemId, heroId: ctx.heroId, slot },

@@ -62,10 +62,58 @@ function objectiveFromScores(
   return { objective, regime: 'saturated' };
 }
 
+/**
+ * A cheap, approximate roster objective for ranking candidate moves — the screen behind the
+ * solver's beam (see `SolverBudget.beamWidth`).
+ *
+ * Two approximations against `evaluateRoster`: it runs ONE round instead of the aura fixed
+ * point, and it rescores only the heroes the move touches, reusing `base.perHero` for everyone
+ * else. That makes it ~19x cheaper than a full evaluation, and it is why the result is only a
+ * ranking hint — the aura feedback a gear change induces in the rest of the roster is ignored.
+ * Never let this value reach a plan: it decides which candidates are worth evaluating properly,
+ * and every candidate that survives is then scored by `evaluateRoster` as usual.
+ *
+ * `input.loadoutsByHeroId` only needs entries for `changedHeroIds`.
+ */
+export function screenRosterObjective(
+  input: EvaluateRosterInput,
+  base: RosterEvaluation,
+  changedHeroIds: readonly string[],
+): number {
+  const slots = Math.max(1, Math.round(input.slots));
+  const duties: Record<string, number> = {};
+  for (const [heroId, score] of Object.entries(base.perHero)) duties[heroId] = score.duty;
+  const scores: Record<string, HeroScore> = { ...base.perHero };
+  let sumDuty = base.sumDuty;
+
+  for (const heroId of changedHeroIds) {
+    const ctx = input.contexts.find((candidate) => candidate.heroId === heroId);
+    if (!ctx || ctx.scope !== 'optimize') continue;
+    const auras = computeRosterAuras(input.contexts, duties, heroId);
+    const loadout = loadoutForScoring(input.loadoutsByHeroId[heroId] ?? {}, input.forgeFloor);
+    const pts = input.ptsByHeroId[heroId] ?? ctx.pts;
+    const raw = scoreHeroLoadout(ctx, loadout, pts, auras, input.farm, input.scoreMemo);
+    sumDuty += raw.duty - (base.perHero[heroId]?.duty ?? 0);
+    scores[heroId] = applyPassagem(raw, ctx.abilities.passagem_bastao ?? 0);
+  }
+
+  return objectiveFromScores(scores, input.contexts, sumDuty, slots).objective;
+}
+
 export function evaluateRoster(input: EvaluateRosterInput): RosterEvaluation {
   const slots = Math.max(1, Math.round(input.slots));
-  const memo = createScoreMemo();
+  const memo = input.scoreMemo ?? createScoreMemo();
   const optimizeContexts = input.contexts.filter((ctx) => ctx.scope === 'optimize');
+  // Loop-invariant: the forge-floored loadout depends only on the input loadout and the forge
+  // floor, neither of which the fixed-point rounds touch. Building it inside the round loop
+  // rebuilt every hero's loadout four times per evaluation for nothing.
+  const scoringLoadouts: Record<string, Loadout> = {};
+  for (const ctx of optimizeContexts) {
+    scoringLoadouts[ctx.heroId] = loadoutForScoring(
+      input.loadoutsByHeroId[ctx.heroId] ?? {},
+      input.forgeFloor,
+    );
+  }
   const duties: Record<string, number> = {};
   let perHero: Record<string, HeroScore> = {};
   let sumDuty = 0;
@@ -78,7 +126,7 @@ export function evaluateRoster(input: EvaluateRosterInput): RosterEvaluation {
 
     for (const ctx of optimizeContexts) {
       const auras = computeRosterAuras(input.contexts, duties, ctx.heroId);
-      const loadout = loadoutForScoring(input.loadoutsByHeroId[ctx.heroId] ?? {}, input.forgeFloor);
+      const loadout = scoringLoadouts[ctx.heroId];
       const pts = input.ptsByHeroId[ctx.heroId] ?? ctx.pts;
       const raw = scoreHeroLoadout(ctx, loadout, pts, auras, input.farm, memo);
       const scored = applyPassagem(raw, ctx.abilities.passagem_bastao ?? 0);
