@@ -29,28 +29,68 @@ export const TEAM_PLAN_WORKER_MARKER = 'runTeamPlan';
 
 const EPS = 1e-9;
 
+/**
+ * Hard ceiling on memoised evaluations. WITHOUT this the cache is bounded only by
+ * `TEAM_PLAN_MAX_EVALUATIONS`, i.e. 500,000 entries — measured at ~7.1 KB of key per entry on
+ * a real 403-item save (plus a whole `RosterEvaluation` per value, which carries a `HeroScore`
+ * with `HeroSheet` / `adjusted` / `effectiveDelta` / `Context` for every hero). That reached
+ * multiple GB and killed the browser tab outright. Memory must never scale with the evaluation
+ * budget; past the cap the search simply stops memoising and keeps running correctly.
+ *
+ * Sized from measurement, not intuition: a cached entry costs ~19 KB on a 15-hero roster --
+ * the key is small after the split below, but each value is a whole `RosterEvaluation` holding
+ * a `HeroScore` per hero. At 25,000 that was still 477 MB, which is not a number a browser tab
+ * should ever reach while also holding the app.
+ */
+export const TEAM_PLAN_MAX_CACHE_ENTRIES = 5_000;
+
 export type SolverBudget = {
   maxEvaluations: number;
   evaluations: number;
   exhausted: boolean;
-  cache?: Map<string, RosterEvaluation>;
+  /**
+   * Two-level so the invariant part of the key is stored ONCE rather than re-serialised into
+   * every entry: outer key is `pts + forgeFloor` (constant for a whole search — `runSeedSearch`
+   * is handed one `ptsByHeroId` and never varies it), inner key is the slot assignment, which
+   * is the only part that actually discriminates. On the save above that is 142 chars per entry
+   * against 3,614 for the old flat key.
+   */
+  cache?: Map<string, Map<string, RosterEvaluation>>;
+  /** Total entries across every sub-map, so the cap is global rather than per-pts. */
+  cacheEntries?: number;
+  /**
+   * Overrides {@link TEAM_PLAN_MAX_CACHE_ENTRIES}. Symmetric with `maxEvaluations`: the host
+   * decides what it can afford. A browser tab holding the whole app wants the default; a Node
+   * or Electron host with a real heap could raise it and trade memory for speed.
+   */
+  maxCacheEntries?: number;
 };
 
-function assignmentCacheKey(
-  assignment: AssignmentState,
-  ptsByHeroId: Record<string, import('../gear/types').PointAlloc>,
-  forgeFloor: number,
-): string {
-  const slotPart = Object.entries(assignment.slots)
+/**
+ * The slot assignment — the only discriminating part of the state.
+ *
+ * `assignment.pool` is deliberately NOT included: the spare pool is exactly the run's fixed
+ * item universe minus whatever is equipped, so two assignments with identical slots always
+ * have identical pools. Serialising it added 47-68% to every cached key and discriminated
+ * nothing.
+ */
+function slotCacheKey(assignment: AssignmentState): string {
+  return Object.entries(assignment.slots)
     .sort(([a], [b]) => a.localeCompare(b))
     .map(([heroId, slots]) => `${heroId}:${SLOTS.map((s) => slots[s] ?? '').join(',')}`)
     .join('|');
-  const poolPart = [...assignment.pool].sort().join(',');
+}
+
+/** The part that is invariant across a search; stored once as the outer cache key. */
+function invariantCacheKey(
+  ptsByHeroId: Record<string, import('../gear/types').PointAlloc>,
+  forgeFloor: number,
+): string {
   const ptsPart = Object.entries(ptsByHeroId)
     .sort(([a], [b]) => a.localeCompare(b))
     .map(([id, pts]) => `${id}:${JSON.stringify(pts)}`)
     .join('|');
-  return `${slotPart}#${poolPart}#${ptsPart}#${forgeFloor}`;
+  return `${ptsPart}#${forgeFloor}`;
 }
 
 function farmFromAccount(input: TeamPlanInput): FarmContext {
@@ -74,8 +114,10 @@ export function evaluateAssignment(
   itemById: ReadonlyMap<string, InventoryItem>,
   budget: SolverBudget,
 ): RosterEvaluation {
-  const cacheKey = assignmentCacheKey(assignment, ptsByHeroId, input.forgeFloor);
-  const cached = budget.cache?.get(cacheKey);
+  const invariantKey = invariantCacheKey(ptsByHeroId, input.forgeFloor);
+  const slotKey = slotCacheKey(assignment);
+  const bucket = budget.cache?.get(invariantKey);
+  const cached = bucket?.get(slotKey);
   if (cached) return cached;
 
   budget.evaluations += 1;
@@ -90,7 +132,18 @@ export function evaluateAssignment(
     forgeFloor: input.forgeFloor,
   };
   const result = evaluateRoster(evalInput);
-  budget.cache?.set(cacheKey, result);
+  // Stop memoising once the cap is reached rather than evicting: the search keeps running and
+  // stays correct, it just recomputes. Correctness never depends on a cache hit.
+  const cacheCap = budget.maxCacheEntries ?? TEAM_PLAN_MAX_CACHE_ENTRIES;
+  if (budget.cache && (budget.cacheEntries ?? 0) < cacheCap) {
+    let target = bucket;
+    if (!target) {
+      target = new Map<string, RosterEvaluation>();
+      budget.cache.set(invariantKey, target);
+    }
+    target.set(slotKey, result);
+    budget.cacheEntries = (budget.cacheEntries ?? 0) + 1;
+  }
   return result;
 }
 
