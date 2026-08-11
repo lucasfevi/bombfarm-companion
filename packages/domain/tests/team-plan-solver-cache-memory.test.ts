@@ -20,7 +20,7 @@ import {
   type SolverBudget,
 } from '@bombfarm/domain/team-plan/solver-search';
 import { buildHeroPlanContexts } from '@bombfarm/domain/team-plan/hero-context';
-import { buildPool } from '@bombfarm/domain/team-plan/pool';
+import { buildPool, poolEntryForItem } from '@bombfarm/domain/team-plan/pool';
 import { baselineAssignmentFromInput } from '@bombfarm/domain/team-plan/waterfall';
 import { applyMove, type AssignmentState } from '@bombfarm/domain/team-plan/solver-assignment';
 import { generateMoves } from '@bombfarm/domain/team-plan/solver-moves';
@@ -28,8 +28,8 @@ import { teamPlanInputFromFixture } from './helpers/team-plan-fixtures';
 
 const FIXTURE = 'save-20260731-11heroes.json';
 
-function setup() {
-  const input = teamPlanInputFromFixture(FIXTURE, 10);
+function setup(fixture: string = FIXTURE) {
+  const input = teamPlanInputFromFixture(fixture, 10);
   const built = buildHeroPlanContexts(input.heroes, input.account, input.scopeByHeroId);
   if (built.blocked) throw new Error('fixture unexpectedly blocked');
   const contexts = built.contexts;
@@ -146,5 +146,78 @@ describe('solver cache memory', () => {
       else expect(poolKey, 'same slots must imply same pool').toBe(seen);
     }
     expect(bySlots.size).toBeGreaterThan(1);
+  }, 120_000);
+});
+
+/**
+ * Interchangeable items are deduplicated in the move generator — one representative per
+ * `defId|rarityIdx|level|effectiveUpgrade` group — because every copy produces a byte-identical
+ * `EquippedItem` and therefore an identical objective, so evaluating the rest is duplicated work.
+ *
+ * The risk that buys is multiplicity: with two identical weapons and two heroes, the search must
+ * still be able to give one to EACH. That works because `generateMoves` is called fresh from the
+ * current pool on every iteration — once a copy is equipped it leaves the pool, and the next
+ * call promotes the next copy to representative. The count is tracked by the pool itself rather
+ * than by the move list.
+ */
+describe('interchangeable items: one candidate at a time, multiplicity preserved', () => {
+  it('offers exactly one representative per group but still equips every copy', () => {
+    // This save carries real duplicate spares (2.24 copies per key); the 11-hero fixture has none.
+    const ctx = setup('SaveFile_BombFarm.json');
+    const poolKey = (id: string) => {
+      const item = ctx.itemById.get(id);
+      if (!item?.slot) return null;
+      return poolEntryForItem(item, ctx.input.forgeFloor).key;
+    };
+
+    const countsByKey = new Map<string, number>();
+    for (const id of ctx.baseline.pool) {
+      const k = poolKey(id);
+      if (k) countsByKey.set(k, (countsByKey.get(k) ?? 0) + 1);
+    }
+    const duplicated = [...countsByKey.entries()].filter(([, n]) => n > 1);
+    expect(duplicated.length, 'fixture must contain interchangeable spares').toBeGreaterThan(0);
+
+    const moves = generateMoves({
+      contexts: ctx.contexts,
+      slots: ctx.baseline.slots,
+      pool: ctx.baseline.pool,
+      itemById: ctx.itemById,
+      heroDpsById: {},
+      forgeFloor: ctx.input.forgeFloor,
+    });
+
+    // For any one hero+slot, no group may appear twice.
+    const seen = new Map<string, Set<string>>();
+    for (const m of moves) {
+      if (m.kind !== 'assign') continue;
+      const k = poolKey(m.itemId);
+      if (!k) continue;
+      const dest = `${m.heroId}|${m.slot}`;
+      const forDest = seen.get(dest) ?? new Set<string>();
+      expect(forDest.has(k), `${dest} offered two copies of ${k}`).toBe(false);
+      forDest.add(k);
+      seen.set(dest, forDest);
+    }
+
+    // Multiplicity: equipping one copy must promote the next, so N copies can reach N heroes.
+    const [dupKey, dupCount] = duplicated[0];
+    let assignment = ctx.baseline;
+    const equipped: string[] = [];
+    for (let i = 0; i < dupCount; i++) {
+      const next = generateMoves({
+        contexts: ctx.contexts,
+        slots: assignment.slots,
+        pool: assignment.pool,
+        itemById: ctx.itemById,
+        heroDpsById: {},
+        forgeFloor: ctx.input.forgeFloor,
+      }).find((m) => m.kind === 'assign' && poolKey(m.itemId) === dupKey && !equipped.includes(m.itemId));
+      if (!next || next.kind !== 'assign') break;
+      equipped.push(next.itemId);
+      assignment = applyMove(assignment, next);
+    }
+    expect(new Set(equipped).size, 'each copy must be reachable in turn').toBe(equipped.length);
+    expect(equipped.length).toBeGreaterThan(1);
   }, 120_000);
 });

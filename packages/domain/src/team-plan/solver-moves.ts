@@ -58,13 +58,27 @@ export function generateMoves(input: GenerateMovesInput): GearMove[] {
 
   const moves: { move: GearMove; key: MoveSortKey }[] = [];
 
+  // Hoisted: this was rebuilt and re-sorted inside the slot loop, i.e. heroes x SLOTS times per
+  // call (120 on a 15-hero roster) over a ~300-item pool, for a list that never varies.
+  const poolIds = [...input.pool].sort();
+  // One representative per interchangeable group. `PoolEntry.key` is
+  // `defId|rarityIdx|level|effectiveUpgrade`, and `loadoutForScoring` clamps upgrade to exactly
+  // that effective value — so every copy in a group yields a byte-identical `EquippedItem` and
+  // therefore an identical roster objective. Evaluating the rest is pure duplicated work: on a
+  // real 441-item save the pool averages 2.24 copies per key (two groups hold 21 each), so this
+  // drops assign candidates to ~45% with results unchanged. Deterministic because `poolIds` is
+  // sorted, so the surviving representative is always the lowest id in its group.
+  const poolByKey = new Map<string, { itemId: string; entry: ReturnType<typeof poolEntryForItem> }>();
+  for (const itemId of poolIds) {
+    const item = input.itemById.get(itemId);
+    if (!item?.slot) continue;
+    const entry = poolEntryForItem(item, input.forgeFloor);
+    if (!poolByKey.has(entry.key)) poolByKey.set(entry.key, { itemId, entry });
+  }
+
   for (const ctx of heroOrder) {
     for (const slot of SLOTS) {
-      const poolIds = [...input.pool].sort();
-      for (const itemId of poolIds) {
-        const item = input.itemById.get(itemId);
-        if (!item?.slot) continue;
-        const entry = poolEntryForItem(item, input.forgeFloor);
+      for (const { itemId, entry } of poolByKey.values()) {
         if (!eligibleForHero(entry, ctx, slot)) continue;
         moves.push({
           move: { kind: 'assign', itemId, heroId: ctx.heroId, slot },
