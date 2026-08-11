@@ -58,7 +58,7 @@ jobs:
               - '.github/workflows/ci-web.yml'
 
   quality:
-    name: Typecheck, lint, unit, build (web)
+    name: Typecheck, lint, build, unit (web)
     needs: changes
     if: github.event_name != 'pull_request' || needs.changes.outputs.web == 'true'
     runs-on: ubuntu-latest
@@ -82,11 +82,21 @@ jobs:
       - name: Lint web + domain + ui
         run: pnpm --filter @bombfarm/domain --filter @bombfarm/ui --filter @bombfarm/web lint
 
-      - name: Unit tests (domain + web)
-        run: pnpm --filter @bombfarm/domain test && pnpm --filter @bombfarm/web test
+      # Domain tests need no build output, so they stay ahead of the (slow) build to keep
+      # fast feedback on the most common failures.
+      - name: Unit tests (domain)
+        run: pnpm --filter @bombfarm/domain test
 
+      # MUST stay before the web unit tests. Several web tests assert on real build output
+      # in apps/web/out (team-plan-worker-bundle, devtools-not-in-production-bundle) — the
+      # only byte-level proof that a chunk actually shipped. This step used to run AFTER
+      # them, so out/ never existed and those assertions silently skipped on every CI run.
+      # See apps/web/src/tests/support/build-output.ts; they now fail loudly instead.
       - name: Build web static export
         run: pnpm --filter @bombfarm/web build
+
+      - name: Unit tests (web, asserts against the build above)
+        run: pnpm --filter @bombfarm/web test
 
   design-system:
     name: Storybook build + a11y test-runner (packages/ui)
