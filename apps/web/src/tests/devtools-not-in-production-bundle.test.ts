@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { existsSync, readFileSync, readdirSync } from 'node:fs';
 import { join, resolve } from 'node:path';
+import { isPerfProfileBuild, requireBuildOutput } from './support/build-output';
 
 /**
  * RES-02 — zustand's `devtools` middleware must not reach the production bundle.
@@ -16,6 +17,7 @@ import { join, resolve } from 'node:path';
  * signal.
  */
 const root = resolve(__dirname, '../..');
+const outRoot = resolve(root, 'out');
 const read = (relative: string) => readFileSync(resolve(root, relative), 'utf8');
 
 const REAL = 'src/shared/stores/devtools-middleware.ts';
@@ -51,22 +53,16 @@ describe('RES-02 devtools is excluded from the production bundle', () => {
   });
 
   it('no built production chunk contains the devtools connector', () => {
-    const chunks = resolve(root, 'out/_next/static/chunks');
-    if (!existsSync(chunks)) {
-      // `pnpm build` has not run in this working tree. The four assertions above still
-      // hold the invariant at source level; this one adds byte-level proof when a build
-      // is present (CI runs `pnpm build` before the suite).
-      return;
-    }
-    if (existsSync(resolve(root, 'out/.perf-profile-build'))) {
-      // out/ holds a RES-05 measurement build (`pnpm perf:build:profile`), which disables
-      // minification so component names survive for the profiler. Unminified webpack
-      // output keeps unused exports it would otherwise drop, so zustand's devtools is
-      // present there by construction — and that build is never deployed. Asserting on it
-      // would report a regression that does not exist in shipped output. Re-run
-      // `pnpm build` to restore a shippable export and get byte-level proof again.
-      return;
-    }
+    const assertion = 'devtools connector is absent from the production chunks';
+    // The four assertions above hold the invariant at source level; this one is the only
+    // byte-level proof. Outside CI it skips when no build is present; in CI a missing build
+    // fails, because that means the workflow stopped building before this suite.
+    if (!requireBuildOutput(outRoot, assertion)) return;
+    if (isPerfProfileBuild(outRoot, assertion)) return;
+
+    const chunks = resolve(outRoot, '_next/static/chunks');
+    expect(existsSync(chunks), `${chunks} is missing — is this a real export?`).toBe(true);
+
     const offenders = readdirSync(chunks)
       .filter((name) => name.endsWith('.js'))
       .filter((name) => readFileSync(join(chunks, name), 'utf8').includes('__REDUX_DEVTOOLS_EXTENSION__'));

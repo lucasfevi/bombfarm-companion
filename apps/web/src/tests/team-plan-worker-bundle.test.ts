@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { existsSync, readFileSync, readdirSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import { TEAM_PLAN_WORKER_MARKER } from '@bombfarm/domain/team-plan';
+import { requireBuildOutput } from './support/build-output';
 
 const root = resolve(__dirname, '../..');
 const outRoot = resolve(root, 'out');
@@ -27,28 +28,12 @@ describe('team-plan worker build artifact', () => {
     expect(TEAM_PLAN_WORKER_MARKER).toBe('runTeamPlan');
   });
 
-  it('skips with a visible message when out/ is absent', () => {
-    if (existsSync(outRoot)) {
-      expect(existsSync(outRoot)).toBe(true);
-      return;
-    }
-    // Mirrors apps/web/src/tests/devtools-not-in-production-bundle.test.ts: byte-level
-    // proof only runs after `pnpm --filter @bombfarm/web build` (CI runs build first).
-    console.info(
-      '[team-plan-worker-bundle] out/ absent — skipping byte-level worker assertion (run web build first)',
-    );
-    expect(existsSync(outRoot)).toBe(false);
-  });
+  it('ships a chunk that references the team-plan worker marker', () => {
+    if (!requireBuildOutput(outRoot, 'team-plan worker chunk is present in the export')) return;
 
-  it('fails when out/ exists but no worker chunk references the team-plan marker', () => {
-    if (!existsSync(outRoot)) {
-      console.info(
-        '[team-plan-worker-bundle] out/ absent — skipping worker-chunk presence assertion',
-      );
-      return;
-    }
     const chunks = walkJsFiles(staticRoot);
-    expect(chunks.length).toBeGreaterThan(0);
+    expect(chunks, `no .js chunks under ${staticRoot} — is this a real export?`).not.toEqual([]);
+
     const matches = chunks.filter((file) => {
       const base = file.replace(/\\/g, '/');
       const content = readFileSync(file, 'utf8');
@@ -60,6 +45,10 @@ describe('team-plan worker build artifact', () => {
           content.includes('pointResets'))
       );
     });
-    expect(matches, `no worker chunk contained ${TEAM_PLAN_WORKER_MARKER}`).not.toEqual([]);
+
+    expect(
+      matches,
+      `no chunk under ${staticRoot} contained ${TEAM_PLAN_WORKER_MARKER} (searched ${chunks.length} files)`,
+    ).not.toEqual([]);
   });
 });
