@@ -1,4 +1,25 @@
 /* Storybook preview entry — self-sufficient: ../src/styles.css already carries its
    own tailwindcss import, source-scan glob for ts/tsx, and the full theme token block,
-   so no separate app-level globals.css is needed under Vite. */
+   so no separate app-level globals.css is needed under Vite.
+
+   NOTE: do not spell out Tailwind's source-scan at-rule literally in this comment —
+   @tailwindcss/vite (unlike @tailwindcss/postcss) does a raw-text scan for at-rules
+   that does not skip CSS comments, so writing the literal directive followed by a
+   brace glob here breaks the build with "Invalid declaration". Prose only. */
 @import '../src/styles.css';
+
+/* Fonts (ASM-03): the old `apps/web/.storybook/decorators.tsx` sourced fonts via
+   `next/font/google`, a Next-compiler transform with no Vite equivalent. Self-host
+   instead via `@fontsource` — no CDN, offline-safe, no CSP issue — and keep setting
+   the same two CSS variables `styles.css` resolves `font-sans` / `font-mono` through.
+   DM Sans loads as a variable font (matching the original unweighted `DM_Sans()` call,
+   which requested Google's variable axis); IBM Plex Mono loads the same two static
+   weights the original decorator requested (500, 600). */
+@import '@fontsource-variable/dm-sans';
+@import '@fontsource/ibm-plex-mono/500.css';
+@import '@fontsource/ibm-plex-mono/600.css';
+
+:root {
+  --font-dm-sans: 'DM Sans Variable';
+  --font-ibm-plex-mono: 'IBM Plex Mono';
+}
