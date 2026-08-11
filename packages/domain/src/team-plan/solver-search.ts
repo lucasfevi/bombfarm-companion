@@ -18,7 +18,14 @@ import type {
   RosterEvaluation,
 } from './types';
 
-export const TEAM_PLAN_MAX_EVALUATIONS = 500_000;
+/**
+ * Lowered 500,000 -> 250,000 once dominance pruning and interchangeable-item dedup landed.
+ * Measured on a real 441-item, 15-hero save: 250,000 reaches 99.96% of the converged optimum
+ * in 168s where 500,000 takes 238s for the last 0.04%. The same save under the old candidate
+ * set scored 4.489e+11 at 500,000 evaluations; it now scores 4.952e+11 at 250,000 -- 10% better
+ * in a third less time. 100,000 already reaches 99.73% in 62s if responsiveness matters more.
+ */
+export const TEAM_PLAN_MAX_EVALUATIONS = 250_000;
 // Counts gear<->points alternations, not moves, now that gearPass climbs to local optimality
 // (Change 2a) — the convergence break below normally exits well before this cap.
 export const MAX_ROUNDS = 30;
