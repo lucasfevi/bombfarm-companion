@@ -1,0 +1,1091 @@
+# Instructions
+
+- Following Playwright test failed.
+- Explain why, be concise, respect Playwright best practices.
+- Provide a snippet of code with the fix, if possible.
+
+# Test info
+
+- Name: smoke.spec.ts >> core client flow >> long version label fits the footer slot without clipping
+- Location: e2e/smoke.spec.ts:35:7
+
+# Error details
+
+```
+Error: expect(received).toBeLessThan(expected)
+
+Expected: < 120
+Received:   139
+```
+
+# Page snapshot
+
+```yaml
+- generic [active] [ref=e1]:
+  - alert [ref=e2]
+  - generic [ref=e3]:
+    - banner [ref=e4]:
+      - generic [ref=e5]:
+        - generic [ref=e6]:
+          - link "Bomb Farm Companion" [ref=e7] [cursor=pointer]:
+            - /url: /
+            - generic [ref=e8]:
+              - generic [ref=e9]: Bomb Farm
+              - generic [ref=e10]: Companion
+          - navigation "Seções principais" [ref=e11]:
+            - link "Planner" [ref=e12] [cursor=pointer]:
+              - /url: /
+            - link "Fases" [ref=e13] [cursor=pointer]:
+              - /url: /phases
+            - link "Plano do time" [ref=e14] [cursor=pointer]:
+              - /url: /team-plan
+        - generic [ref=e15]:
+          - button "Importar" [ref=e16] [cursor=pointer]
+          - button "Mostrar / ocultar o guia rápido" [ref=e17] [cursor=pointer]: "?"
+          - button "Copiar meu código de indicação — nós dois ganhamos uma recompensa quando você passar da fase 151" [ref=e18] [cursor=pointer]:
+            - generic [ref=e19]: F-S7999UQC
+            - img [ref=e20]
+          - link "Me pague um café" [ref=e22] [cursor=pointer]:
+            - /url: https://buymeacoffee.com/lucasfevi
+            - img [ref=e23]
+          - group "Language" [ref=e25]:
+            - button "PT" [ref=e26] [cursor=pointer]
+            - button "EN" [ref=e27] [cursor=pointer]
+    - region "Guia rápido — do jogo à melhor build" [ref=e28]:
+      - generic [ref=e29]:
+        - heading "Guia rápido — do jogo à melhor build" [level=2] [ref=e30]
+        - button "ocultar" [ref=e31] [cursor=pointer]
+      - list [ref=e32]:
+        - listitem [ref=e33]:
+          - generic [ref=e34]: 1 · Exportar
+          - generic [ref=e35]:
+            - text: "No BombFarm, exporte seu arquivo de save — um .json com sua conta, heróis e itens. Não precisa zerar os pontos antes: o planner lê o roll de nascimento de cada herói direto do save, então seu gasto atual fica intacto. Se um reset realmente valer a pena, o app avisa — veja a borda de alerta na faixa do herói e a linha de ganho na aba"
+            - emphasis [ref=e36]: Pontos
+            - text: . Tudo é lido localmente no seu navegador; nada é enviado a lugar nenhum.
+        - listitem [ref=e37]:
+          - generic [ref=e38]: 2 · Importar
+          - generic [ref=e39]:
+            - text: Clique em
+            - emphasis [ref=e40]: Importar
+            - text: "na barra superior, solte o arquivo e revise o que vai mudar — criados, atualizados, removidos — depois confirme. Todo herói do seu save é sincronizado: heróis já importados são atualizados no mesmo cadastro, heróis que saíram do save são removidos, nunca duplicados. Cada herói importado chega com os stats equipados exatamente como no jogo, equipamento completo (slot, conjunto, nível, forja), habilidades, nível, raridade, rank e estrelas. Stats da árvore de habilidades e a casa atual vêm junto na importação."
+        - listitem [ref=e41]:
+          - generic [ref=e42]: 3 · Pontos
+          - generic [ref=e43]:
+            - text: O app já calcula sozinho o seu próximo melhor ponto — veja
+            - emphasis [ref=e44]: Próximo ponto
+            - text: na faixa do herói acima das abas. Aumente esse mesmo atributo no painel
+            - emphasis [ref=e45]: Pontos
+            - text: para ver o DPS subir e, no jogo, gaste o ponto de verdade para acompanhar.
+        - listitem [ref=e46]:
+          - generic [ref=e47]: 4 · Comparar & salvar
+          - generic [ref=e48]:
+            - text: Tudo salva sozinho neste navegador; use
+            - emphasis [ref=e49]: Comparar equipamento
+            - text: para clonar o equipamento e comparar o DPS lado a lado. Use
+            - emphasis [ref=e50]: Fases
+            - text: na barra superior para inspecionar qualquer mapa.
+    - generic [ref=e52]:
+      - region "Nenhum herói adicionado" [ref=e53]:
+        - generic [ref=e54]:
+          - heading "Nenhum herói adicionado" [level=2] [ref=e55]
+          - paragraph [ref=e56]: Importe seu save exportado do BombFarm (.json) e cada herói chega com equipamento, ficha e habilidades já preenchidos.
+          - button "Importar seu save" [ref=e58] [cursor=pointer]
+      - generic:
+        - generic:
+          - generic:
+            - tablist:
+              - tab [selected]:
+                - generic: Habilidades
+              - tab:
+                - generic: Equipamento
+              - tab:
+                - generic: Conta
+              - tab:
+                - generic: Pontos
+            - generic:
+              - generic:
+                - generic:
+                  - tabpanel:
+                    - main:
+                      - generic:
+                        - generic:
+                          - heading [level=2]: Habilidades
+                          - generic:
+                            - generic: 0 / 1 habilidades
+                            - generic: 0 / 0 pontos
+                            - generic: 0 concedidos · 0 utilizáveis
+                            - button: Zerar
+                        - paragraph: Habilidades deste herói — o limite é o menor entre o nível do herói e slots da raridade × 20 (pontos além disso são concedidos, mas ficam parados). Olho Clínico, Ponta de Diamante e Golpe Brutal alteram chance de crítico, penetração e dano crítico nos stats do herói no jogo. Marcha, Presságio e outras habilidades são contabilizadas apenas durante o combate. Buffs de outros heróis ficam em Buffs de time.
+                - generic:
+                  - tabpanel:
+                    - main:
+                      - generic:
+                        - generic:
+                          - heading [level=2]: Itens
+                          - generic: obrigatório
+                        - generic:
+                          - generic:
+                            - generic:
+                              - generic:
+                                - generic: Arma
+                            - combobox:
+                              - generic:
+                                - generic:
+                                  - img
+                              - generic: Nível 10
+                            - textbox: "10"
+                            - combobox:
+                              - generic:
+                                - generic:
+                                  - img
+                              - generic: Brasa
+                            - textbox: ember
+                            - combobox:
+                              - generic:
+                                - generic:
+                                  - img
+                              - generic: Comum
+                            - textbox: "0"
+                            - combobox:
+                              - generic:
+                                - generic:
+                                  - img
+                              - generic: +0 ×1.00
+                            - textbox: "0"
+                          - generic:
+                            - generic:
+                              - generic:
+                                - generic: Elmo
+                            - combobox:
+                              - generic:
+                                - generic:
+                                  - img
+                              - generic: Nível 10
+                            - textbox: "10"
+                            - combobox:
+                              - generic:
+                                - generic:
+                                  - img
+                              - generic: Brasa
+                            - textbox: ember
+                            - combobox:
+                              - generic:
+                                - generic:
+                                  - img
+                              - generic: Comum
+                            - textbox: "0"
+                            - combobox:
+                              - generic:
+                                - generic:
+                                  - img
+                              - generic: +0 ×1.00
+                            - textbox: "0"
+                          - generic:
+                            - generic:
+                              - generic:
+                                - generic: Anel
+                            - combobox:
+                              - generic:
+                                - generic:
+                                  - img
+                              - generic: Nível 10
+                            - textbox: "10"
+                            - combobox:
+                              - generic:
+                                - generic:
+                                  - img
+                              - generic: Brasa
+                            - textbox: ember
+                            - combobox:
+                              - generic:
+                                - generic:
+                                  - img
+                              - generic: Comum
+                            - textbox: "0"
+                            - combobox:
+                              - generic:
+                                - generic:
+                                  - img
+                              - generic: +0 ×1.00
+                            - textbox: "0"
+                          - generic:
+                            - generic:
+                              - generic:
+                                - generic: Amuleto
+                            - combobox:
+                              - generic:
+                                - generic:
+                                  - img
+                              - generic: Nível 10
+                            - textbox: "10"
+                            - combobox:
+                              - generic:
+                                - generic:
+                                  - img
+                              - generic: Brasa
+                            - textbox: ember
+                            - combobox:
+                              - generic:
+                                - generic:
+                                  - img
+                              - generic: Comum
+                            - textbox: "0"
+                            - combobox:
+                              - generic:
+                                - generic:
+                                  - img
+                              - generic: +0 ×1.00
+                            - textbox: "0"
+                          - generic:
+                            - generic:
+                              - generic:
+                                - generic: Peito
+                            - combobox:
+                              - generic:
+                                - generic:
+                                  - img
+                              - generic: Nível 10
+                            - textbox: "10"
+                            - combobox:
+                              - generic:
+                                - generic:
+                                  - img
+                              - generic: Brasa
+                            - textbox: ember
+                            - combobox:
+                              - generic:
+                                - generic:
+                                  - img
+                              - generic: Comum
+                            - textbox: "0"
+                            - combobox:
+                              - generic:
+                                - generic:
+                                  - img
+                              - generic: +0 ×1.00
+                            - textbox: "0"
+                          - generic:
+                            - generic:
+                              - generic:
+                                - generic: Calça
+                            - combobox:
+                              - generic:
+                                - generic:
+                                  - img
+                              - generic: Nível 10
+                            - textbox: "10"
+                            - combobox:
+                              - generic:
+                                - generic:
+                                  - img
+                              - generic: Brasa
+                            - textbox: ember
+                            - combobox:
+                              - generic:
+                                - generic:
+                                  - img
+                              - generic: Comum
+                            - textbox: "0"
+                            - combobox:
+                              - generic:
+                                - generic:
+                                  - img
+                              - generic: +0 ×1.00
+                            - textbox: "0"
+                          - generic:
+                            - generic:
+                              - generic:
+                                - generic: Luva
+                            - combobox:
+                              - generic:
+                                - generic:
+                                  - img
+                              - generic: Nível 10
+                            - textbox: "10"
+                            - combobox:
+                              - generic:
+                                - generic:
+                                  - img
+                              - generic: Brasa
+                            - textbox: ember
+                            - combobox:
+                              - generic:
+                                - generic:
+                                  - img
+                              - generic: Comum
+                            - textbox: "0"
+                            - combobox:
+                              - generic:
+                                - generic:
+                                  - img
+                              - generic: +0 ×1.00
+                            - textbox: "0"
+                          - generic:
+                            - generic:
+                              - generic:
+                                - generic: Bota
+                            - combobox:
+                              - generic:
+                                - generic:
+                                  - img
+                              - generic: Nível 10
+                            - textbox: "10"
+                            - combobox:
+                              - generic:
+                                - generic:
+                                  - img
+                              - generic: Brasa
+                            - textbox: ember
+                            - combobox:
+                              - generic:
+                                - generic:
+                                  - img
+                              - generic: Comum
+                            - textbox: "0"
+                            - combobox:
+                              - generic:
+                                - generic:
+                                  - img
+                              - generic: +0 ×1.00
+                            - textbox: "0"
+                        - generic:
+                          - heading [level=3]: Comparar equipamento
+                        - generic:
+                          - paragraph: Copia seu equipamento atual para um clone editável — troque itens no clone e veja o impacto no DPS na hora.
+                          - button: Copiar equipamento atual
+                - generic:
+                  - tabpanel:
+                    - generic:
+                      - generic:
+                        - heading [level=2]: Conta
+                      - paragraph: Multiplicadores de combate da conta, compartilhados entre heróis. Os totais da Árvore de habilidades vêm da importação do save e ficam só leitura (reimporte para atualizar) — o Dano total já inclui o dano do esquadrão e o dano multiplicado/composto (GEO, Abisso, Juro, Avalanche, …), então não some esses bônus de novo. Buffs de time vêm de outros heróis no campo com você (Grito, Marcha, Presságio, Fôlego, Contra o Relógio); deixe 0 se ninguém estiver aplicando, e não recoloque aqui as habilidades deste herói.
+                      - generic:
+                        - heading [level=3]: Casa
+                        - generic:
+                          - generic:
+                            - generic: Casa
+                            - combobox:
+                              - generic:
+                                - generic:
+                                  - img
+                              - generic: Casa I (Incomum)
+                            - textbox: "0"
+                          - generic:
+                            - generic:
+                              - text: Nível da casa
+                              - generic: Descanso 19 min 6 s
+                            - generic:
+                              - generic:
+                                - button:
+                                  - generic:
+                                    - img
+                                - button:
+                                  - generic:
+                                    - img
+                              - spinbutton: "0"
+                      - generic:
+                        - heading [level=3]: Farm
+                        - generic:
+                          - generic:
+                            - generic:
+                              - text: Fase de farm
+                              - generic: A fase que você está farmando agora — define a mitigação e o multiplicador de dano do Abisso. Vem da importação do save; edite para simular outra fase.
+                            - generic:
+                              - generic:
+                                - button:
+                                  - generic:
+                                    - img
+                                - button:
+                                  - generic:
+                                    - img
+                              - spinbutton: "1"
+                          - generic:
+                            - generic:
+                              - text: Prop alvo
+                              - generic: Usado ao ranquear pontos no modo oneshot
+                            - combobox:
+                              - generic:
+                                - generic:
+                                  - img
+                              - generic: Pedra
+                            - textbox: stone
+                      - generic:
+                        - generic:
+                          - generic:
+                            - heading [level=3]: Árvore de habilidades
+                          - generic:
+                            - heading [level=3]: Buffs de time
+                            - generic:
+                              - button: Preencher com heróis ativos
+                              - button: Zerar
+                        - generic:
+                          - generic:
+                            - generic:
+                              - generic:
+                                - generic: Dano total ×
+                                - status: "1.000"
+                              - generic:
+                                - generic: Chance de crítico +% base
+                                - status: "0.00"
+                              - generic:
+                                - generic: Dano crítico +% base
+                                - status: "0.00"
+                              - generic:
+                                - generic: Velocidade +% base
+                                - status: "0.00"
+                              - generic:
+                                - generic: Energia +%
+                                - status: "0.00"
+                              - generic:
+                                - generic:
+                                  - text: "% ouro do time"
+                                  - generic: Ouro por Alvo na árvore — escala ouro por prop
+                                - status: "0.00"
+                              - generic:
+                                - generic:
+                                  - text: Abisso
+                                  - generic: desliga bônus de Crítico/GEO da árvore (incluindo ×2 de dano crítico do Glass Cannon); energia ×0.5 continua
+                                - generic:
+                                  - generic: Não
+                                  - switch
+                                  - checkbox
+                              - generic:
+                                - generic:
+                                  - text: Glass Cannon
+                                  - generic: dano crítico ×2 (off com Abisso) · energia ×0.5
+                                - generic:
+                                  - generic: Não
+                                  - switch
+                                  - checkbox
+                              - generic:
+                                - generic:
+                                  - text: Tempo Dobrado
+                                  - generic: ritmo de ataque ×1.333 · dreno de energia ×2
+                                - generic:
+                                  - generic: Não
+                                  - switch
+                                  - checkbox
+                          - generic:
+                            - generic:
+                              - generic:
+                                - generic:
+                                  - text: Grito de Guerra
+                                  - generic: Atk %
+                                - generic:
+                                  - generic:
+                                    - button:
+                                      - generic:
+                                        - img
+                                    - button:
+                                      - generic:
+                                        - img
+                                  - spinbutton: "0"
+                              - generic:
+                                - generic:
+                                  - text: Presságio Mortal
+                                  - generic: Crit % base
+                                - generic:
+                                  - generic:
+                                    - button:
+                                      - generic:
+                                        - img
+                                    - button:
+                                      - generic:
+                                        - img
+                                  - spinbutton: "0"
+                              - generic:
+                                - generic:
+                                  - text: Marcha Acelerada
+                                  - generic: Speed %
+                                - generic:
+                                  - generic:
+                                    - button:
+                                      - generic:
+                                        - img
+                                    - button:
+                                      - generic:
+                                        - img
+                                  - spinbutton: "0"
+                              - generic:
+                                - generic:
+                                  - text: Fôlego de Mineiro
+                                  - generic: Drain −%
+                                - generic:
+                                  - generic:
+                                    - button:
+                                      - generic:
+                                        - img
+                                    - button:
+                                      - generic:
+                                        - img
+                                  - spinbutton: "0"
+                              - generic:
+                                - generic:
+                                  - text: Contra o Relógio
+                                  - generic: Gate Atk %
+                                - generic:
+                                  - generic:
+                                    - button:
+                                      - generic:
+                                        - img
+                                    - button:
+                                      - generic:
+                                        - img
+                                  - spinbutton: "0"
+                - generic:
+                  - tabpanel:
+                    - generic:
+                      - generic:
+                        - generic:
+                          - generic:
+                            - heading [level=2]: Pontos
+                            - generic:
+                              - generic: 0 / 0 pontos
+                              - button: Zerar
+                          - generic:
+                            - table:
+                              - rowgroup:
+                                - row:
+                                  - columnheader:
+                                    - generic: Stat
+                                  - columnheader:
+                                    - generic: Δ
+                                  - columnheader:
+                                    - generic: /pt
+                                  - columnheader:
+                                    - generic: Depois
+                                  - columnheader:
+                                    - generic: Prévia
+                              - rowgroup:
+                                - row:
+                                  - cell: Ataque
+                                  - cell:
+                                    - generic:
+                                      - button: −5
+                                      - generic:
+                                        - button: −
+                                        - generic: "0"
+                                        - button: +
+                                      - button: "+5"
+                                  - cell: "10.00"
+                                  - cell: "55.00"
+                                - row:
+                                  - cell: Energia
+                                  - cell:
+                                    - generic:
+                                      - button: −5
+                                      - generic:
+                                        - button: −
+                                        - generic: "0"
+                                        - button: +
+                                      - button: "+5"
+                                  - cell: "8.00"
+                                  - cell: "100.00"
+                                - row:
+                                  - cell: Velocidade
+                                  - cell:
+                                    - generic:
+                                      - button: −5
+                                      - generic:
+                                        - button: −
+                                        - generic: "0"
+                                        - button: +
+                                      - button: "+5"
+                                  - cell: "0.96"
+                                  - cell: "48.00"
+                                - row:
+                                  - cell: Sorte
+                                  - cell:
+                                    - generic:
+                                      - button: −5
+                                      - generic:
+                                        - button: −
+                                        - generic: "0"
+                                        - button: +
+                                      - button: "+5"
+                                  - cell: "0.08"
+                                  - cell: "2.50"
+                                - row:
+                                  - cell: Crít %
+                                  - cell:
+                                    - generic:
+                                      - button: −5
+                                      - generic:
+                                        - button: −
+                                        - generic: "0"
+                                        - button: +
+                                      - button: "+5"
+                                  - cell: "0.10"
+                                  - cell: "5.00"
+                                - row:
+                                  - cell: Dano crít. +%
+                                  - cell:
+                                    - generic:
+                                      - button: −5
+                                      - generic:
+                                        - button: −
+                                        - generic: "0"
+                                        - button: +
+                                      - button: "+5"
+                                  - cell: "4.00"
+                                  - cell: "50.00"
+                                - row:
+                                  - cell: Pen %
+                                  - cell:
+                                    - generic:
+                                      - button: −5
+                                      - generic:
+                                        - button: −
+                                        - generic: "0"
+                                        - button: +
+                                      - button: "+5"
+                                  - cell: "0.02"
+                                  - cell: "0.75"
+                                - row:
+                                  - cell: Redução de recarga (%)
+                                  - cell:
+                                    - generic:
+                                      - button: −5
+                                      - generic:
+                                        - button: −
+                                        - generic: "0"
+                                        - button: +
+                                      - button: "+5"
+                                  - cell: "0.10"
+                                  - cell: "1.00"
+                          - generic:
+                            - generic:
+                              - button [disabled]: Otimizar build
+                              - button [disabled]: Aplicar prévia
+                              - button [disabled]: Limpar prévia
+                        - generic:
+                          - generic:
+                            - heading [level=2]: Próximo ponto
+                            - combobox:
+                              - generic:
+                                - generic:
+                                  - img
+                              - generic: DPS
+                            - textbox: dps
+                          - generic:
+                            - generic: Ataque
+                            - generic: +18.2%
+                          - generic:
+                            - generic: Energia
+                            - generic: +7.3%
+                          - generic:
+                            - generic: Dano Crítico
+                            - generic: +0.2%
+                          - generic:
+                            - generic: Redução de recarga
+                            - generic: +0.1%
+                          - generic:
+                            - generic: Chance de Crítico
+                            - generic: +0.0%
+                          - generic:
+                            - generic: Penetração
+                            - generic: +0.0%
+                          - generic:
+                            - generic: Velocidade
+                            - generic: +0.0%
+                      - generic:
+                        - generic:
+                          - heading [level=2]: Atributos
+                          - generic: obrigatório
+                        - paragraph: Este herói ainda não tem roll ao nascer guardado — reimporte seu save para o planner remontar a ficha pela origem. Heróis locais antigos precisam de um import novo.
+                        - generic:
+                          - table:
+                            - rowgroup:
+                              - row:
+                                - columnheader:
+                                  - generic: Stat
+                                - columnheader:
+                                  - generic: Ao nascer
+                                - columnheader:
+                                  - generic:
+                                    - generic: Δ nível
+                                - columnheader:
+                                  - generic:
+                                    - generic: Δ estrela
+                                - columnheader:
+                                  - generic:
+                                    - generic: Δ habilidade
+                                - columnheader:
+                                  - generic:
+                                    - generic: Δ gear
+                                - columnheader:
+                                  - generic:
+                                    - generic: Δ pontos
+                                - columnheader:
+                                  - generic:
+                                    - generic: Δ árvore
+                                - columnheader:
+                                  - generic: Total
+                                - columnheader:
+                                  - generic:
+                                    - generic: Acima do teto
+                            - rowgroup:
+                              - row:
+                                - cell: Ataque
+                                - cell: —
+                                - cell: —
+                                - cell: —
+                                - cell: —
+                                - cell: —
+                                - cell: —
+                                - cell: —
+                                - cell: —
+                                - cell: —
+                              - row:
+                                - cell: Energia
+                                - cell: —
+                                - cell: —
+                                - cell: —
+                                - cell: —
+                                - cell: —
+                                - cell: —
+                                - cell: —
+                                - cell: —
+                                - cell: —
+                              - row:
+                                - cell: Velocidade
+                                - cell: —
+                                - cell: —
+                                - cell: —
+                                - cell: —
+                                - cell: —
+                                - cell: —
+                                - cell: —
+                                - cell: —
+                                - cell: —
+                              - row:
+                                - cell: Sorte
+                                - cell: —
+                                - cell: —
+                                - cell: —
+                                - cell: —
+                                - cell: —
+                                - cell: —
+                                - cell: —
+                                - cell: —
+                                - cell: —
+                              - row:
+                                - cell: Crít %
+                                - cell: —
+                                - cell: —
+                                - cell: —
+                                - cell: —
+                                - cell: —
+                                - cell: —
+                                - cell: —
+                                - cell: —
+                                - cell: —
+                              - row:
+                                - cell: Dano crít. +%
+                                - cell: —
+                                - cell: —
+                                - cell: —
+                                - cell: —
+                                - cell: —
+                                - cell: —
+                                - cell: —
+                                - cell: —
+                                - cell: —
+                              - row:
+                                - cell: Pen %
+                                - cell: —
+                                - cell: —
+                                - cell: —
+                                - cell: —
+                                - cell: —
+                                - cell: —
+                                - cell: —
+                                - cell: —
+                                - cell: —
+                              - row:
+                                - cell: Redução de recarga (%)
+                                - cell: —
+                                - cell: —
+                                - cell: —
+                                - cell: —
+                                - cell: —
+                                - cell: —
+                                - cell: —
+                                - cell: —
+                                - cell: —
+                      - generic:
+                        - generic:
+                          - heading [level=2]: Stats efetivos
+                        - paragraph: Inclui equipamento, pontos, árvore, habilidades e buffs de time.
+                        - generic:
+                          - heading [level=3]: Combate derivado
+                          - generic:
+                            - generic:
+                              - button:
+                                - generic: Fator de mitigação
+                                - generic: ×0.9901
+                                - generic:
+                                  - img
+                            - generic:
+                              - button:
+                                - generic: Multiplicador de dano
+                                - generic: ×1.000
+                                - generic:
+                                  - img
+                            - generic:
+                              - button:
+                                - generic: Hit
+                                - generic: "54"
+                                - generic:
+                                  - img
+                            - generic:
+                              - button:
+                                - generic: Critical Hit
+                                - generic: "82"
+                                - generic:
+                                  - img
+                            - generic:
+                              - button:
+                                - generic: Fator de crítico
+                                - generic: ×1.025
+                                - generic:
+                                  - img
+                            - generic:
+                              - button:
+                                - generic: Pavio
+                                - generic: 1.98s
+                                - generic:
+                                  - img
+                            - generic:
+                              - button:
+                                - generic: Bombas / s
+                                - generic: 0.47/s
+                                - generic:
+                                  - img
+                            - generic:
+                              - button:
+                                - generic: Tempo em campo
+                                - generic: 100s (1.7m)
+                                - generic:
+                                  - img
+                            - generic:
+                              - button:
+                                - generic: Descanso
+                                - generic: 19.1m
+                                - generic:
+                                  - img
+                            - generic:
+                              - button:
+                                - generic: Aproveitamento
+                                - generic: 8.0%
+                                - generic:
+                                  - img
+                            - generic:
+                              - button:
+                                - generic: DPS ativo
+                                - generic: "35"
+                                - generic:
+                                  - img
+                            - generic:
+                              - button:
+                                - generic: DPS sustentado
+                                - generic: "3"
+                                - generic:
+                                  - img
+      - button "Como calculamos tudo" [ref=e60] [cursor=pointer]:
+        - img [ref=e62]
+        - text: Como calculamos tudo
+    - contentinfo [ref=e64]:
+      - generic [ref=e65]:
+        - paragraph [ref=e66]: Este é um app não oficial, feito por fã. Não tem afiliação, endosso nem qualquer ligação com os desenvolvedores do BombFarm.
+        - paragraph [ref=e67]:
+          - text: Assets vêm da wiki oficial do BombFarm.
+          - link "wiki.bombfarm.net" [ref=e68] [cursor=pointer]:
+            - /url: https://wiki.bombfarm.net
+          - text: .
+        - paragraph [ref=e69]:
+          - generic [ref=e70]: Joga BombFarm? Use meu código de indicação
+          - code [ref=e71]: F-S7999UQC
+          - button "Copiar código de indicação" [ref=e72] [cursor=pointer]:
+            - img [ref=e73]
+          - generic [ref=e75]: Nós dois ganhamos uma recompensa quando você passar da fase 151.
+      - generic [ref=e76]:
+        - generic [ref=e77]: v0.10.0-dev.abcdef1
+        - link "Me pague um café" [ref=e78] [cursor=pointer]:
+          - /url: https://buymeacoffee.com/lucasfevi
+          - img [ref=e79]
+          - text: Me pague um café
+```
+
+# Test source
+
+```ts
+  1   | import path from 'node:path';
+  2   | import { test, expect } from '@playwright/test';
+  3   | 
+  4   | const sampleSave = path.join(process.cwd(), 'e2e/fixtures/sample-save.json');
+  5   | 
+  6   | async function importSampleSave(page: import('@playwright/test').Page) {
+  7   |   await page.getByRole('button', { name: /importar seu save/i }).click();
+  8   |   await expect(page.getByRole('dialog')).toBeVisible();
+  9   |   await page.locator('input[type="file"]').setInputFiles(sampleSave);
+  10  |   await expect(page.getByRole('dialog').getByText('Cora')).toBeVisible();
+  11  |   await page.getByRole('button', { name: /importar \d+ herói/i }).click();
+  12  | }
+  13  | 
+  14  | /** PW-05: core client flow — sole chromium project (color-independent). */
+  15  | test.describe('core client flow', () => {
+  16  |   test('footer shows a stable app version label on every route', async ({ page }) => {
+  17  |     await page.goto('/');
+  18  | 
+  19  |     const version = page.getByTestId('app-version');
+  20  |     await expect(version).toBeVisible();
+  21  |     await expect(version).toHaveText(/^v\d+\.\d+\.\d+/);
+  22  | 
+  23  |     const footer = page.locator('footer');
+  24  |     const coffee = footer.getByRole('link', { name: /coffee|café/i });
+  25  |     const versionBox = await version.boundingBox();
+  26  |     const coffeeBox = await coffee.boundingBox();
+  27  |     const footerBox = await footer.boundingBox();
+  28  |     expect(versionBox).toBeTruthy();
+  29  |     expect(coffeeBox).toBeTruthy();
+  30  |     expect(footerBox).toBeTruthy();
+  31  |     expect(versionBox!.x + versionBox!.width).toBeLessThanOrEqual(coffeeBox!.x + 4);
+  32  |     expect(footerBox!.height).toBeLessThan(120);
+  33  |   });
+  34  | 
+  35  |   test('long version label fits the footer slot without clipping', async ({ page }) => {
+  36  |     const longLabel = 'v0.10.0-dev.abcdef1';
+  37  |     await page.goto('/');
+  38  | 
+  39  |     const version = page.getByTestId('app-version');
+  40  |     await version.evaluate((element, label) => {
+  41  |       element.textContent = label;
+  42  |     }, longLabel);
+  43  |     await expect(version).toHaveText(longLabel);
+  44  | 
+  45  |     const layout = await version.evaluate((element) => {
+  46  |       const style = window.getComputedStyle(element);
+  47  |       return {
+  48  |         scrollWidth: element.scrollWidth,
+  49  |         clientWidth: element.clientWidth,
+  50  |         overflowX: style.overflowX,
+  51  |         textOverflow: style.textOverflow,
+  52  |       };
+  53  |     });
+  54  | 
+  55  |     expect(layout.clientWidth).toBeGreaterThanOrEqual(152);
+  56  |     expect(layout.scrollWidth).toBeLessThanOrEqual(layout.clientWidth + 1);
+  57  | 
+  58  |     const footer = page.locator('footer');
+  59  |     const coffee = footer.getByRole('link', { name: /coffee|café/i });
+  60  |     const versionBox = await version.boundingBox();
+  61  |     const coffeeBox = await coffee.boundingBox();
+  62  |     const footerBox = await footer.boundingBox();
+  63  |     expect(versionBox).toBeTruthy();
+  64  |     expect(coffeeBox).toBeTruthy();
+  65  |     expect(footerBox).toBeTruthy();
+  66  |     expect(versionBox!.x + versionBox!.width).toBeLessThanOrEqual(coffeeBox!.x + 4);
+> 67  |     expect(footerBox!.height).toBeLessThan(120);
+      |                               ^ Error: expect(received).toBeLessThan(expected)
+  68  |   });
+  69  | 
+  70  |   test('import → select → level/stars → DPS updates → explain toggle', async ({ page }) => {
+  71  |     await page.goto('/');
+  72  | 
+  73  |     // PW-05.1 — empty workspace visible; hero strip metrics hidden
+  74  |     const empty = page.getByRole('region', { name: /nenhum herói adicionado/i });
+  75  |     await expect(empty).toBeVisible();
+  76  |     const sustainedLabel = page.getByText('DPS efetivo', { exact: true });
+  77  |     await expect(sustainedLabel).toBeHidden();
+  78  | 
+  79  |     // PW-05.2 — real import path
+  80  |     await importSampleSave(page);
+  81  | 
+  82  |     await expect(empty).toBeHidden();
+  83  |     await expect(sustainedLabel).toBeVisible();
+  84  | 
+  85  |     const heroStrip = page.getByRole('region', { name: /herói atual/i });
+  86  |     await expect(heroStrip).toBeVisible();
+  87  |     await expect(heroStrip.getByText('Cora')).toBeVisible();
+  88  | 
+  89  |     // PW-05.3 — switch hero via picker, capture Sustained, level-up + stars, assert value changed
+  90  |     await heroStrip.getByRole('button', { name: /trocar herói/i }).click();
+  91  |     const picker = page.getByRole('dialog', { name: /trocar herói/i });
+  92  |     await expect(picker).toBeVisible();
+  93  |     // Avatar, not the row centre — the gear / ability icon buttons in the wide
+  94  |     // columns stopPropagation and would swallow the row click.
+  95  |     await picker.getByRole('row', { name: /Cora/i }).getByRole('img', { name: 'Cora' }).click();
+  96  |     await expect(picker).toBeHidden();
+  97  |     await expect(heroStrip.getByText('Cora')).toBeVisible();
+  98  | 
+  99  |     const sustainedValue = sustainedLabel.locator('xpath=../strong');
+  100 |     const before = (await sustainedValue.textContent())?.trim() ?? '';
+  101 |     expect(before.length).toBeGreaterThan(0);
+  102 | 
+  103 |     await page.getByRole('button', { name: /^subir nível$/i }).click();
+  104 |     await page.getByRole('button', { name: /^subir estrela$/i }).click();
+  105 | 
+  106 |     await expect(sustainedValue).not.toHaveText(before);
+  107 | 
+  108 |     // PW-05.4 — explain disclosure open/close (Collapsible trigger button, ui-accordion)
+  109 |     const explainTrigger = page.getByRole('button', { name: /como calculamos tudo/i });
+  110 |     // The footer carries a permanent wiki art-credit link with the same accessible
+  111 |     // name, so page-wide visibility is always true. Count instead: the disclosure
+  112 |     // mounts its own link only while open.
+  113 |     const wikiLinks = page.getByRole('link', { name: /wiki\.bombfarm\.net/i });
+  114 | 
+  115 |     await expect(wikiLinks).toHaveCount(1);
+  116 |     await explainTrigger.click();
+  117 |     await expect(wikiLinks).toHaveCount(2);
+  118 |     await explainTrigger.click();
+  119 |     await expect(wikiLinks).toHaveCount(1);
+  120 |   });
+  121 | 
+  122 |   /**
+  123 |    * PW-05.5 negative check (discrimination):
+  124 |    * Feeding invalid JSON shows the invalid-JSON error and does NOT create roster rows.
+  125 |    * Sabotage that would make the happy path fail: skip confirm / use bad file → no Cora row.
+  126 |    */
+  127 |   test('invalid import does not create roster rows', async ({ page }) => {
+  128 |     await page.goto('/');
+  129 |     const empty = page.getByRole('region', { name: /nenhum herói adicionado/i });
+  130 |     await expect(empty).toBeVisible();
+  131 | 
+  132 |     await page.getByRole('button', { name: /importar seu save/i }).click();
+  133 |     await expect(page.getByRole('dialog')).toBeVisible();
+  134 | 
+  135 |     await page.locator('input[type="file"]').setInputFiles({
+  136 |       name: 'broken.json',
+  137 |       mimeType: 'application/json',
+  138 |       buffer: Buffer.from('not-valid-json{{{'),
+  139 |     });
+  140 | 
+  141 |     await expect(
+  142 |       page.getByText(/não foi possível ler esse arquivo como json/i),
+  143 |     ).toBeVisible();
+  144 | 
+  145 |     // Dismiss dialog — no heroes imported
+  146 |     await page.getByRole('button', { name: /fechar/i }).click();
+  147 |     await expect(page.getByRole('dialog')).toBeHidden();
+  148 | 
+  149 |     await expect(empty).toBeVisible();
+  150 |     await expect(page.getByRole('region', { name: /herói atual/i })).toBeHidden();
+  151 |   });
+  152 | 
+  153 |   test('hero picker gear column shows eight slot icons', async ({ page }) => {
+  154 |     await page.goto('/');
+  155 |     await importSampleSave(page);
+  156 | 
+  157 |     const heroStrip = page.getByRole('region', { name: /herói atual/i });
+  158 |     await heroStrip.getByRole('button', { name: /trocar herói/i }).click();
+  159 |     const picker = page.getByRole('dialog', { name: /trocar herói/i });
+  160 |     await expect(picker).toBeVisible();
+  161 |     await expect(picker.getByRole('columnheader', { name: /^Equip\./i })).toBeVisible();
+  162 | 
+  163 |     const gearCell = picker.locator('tbody tr').first().locator('td[data-roster-wrap]').first();
+  164 |     await expect(gearCell.getByRole('button')).toHaveCount(8);
+  165 |   });
+  166 | });
+  167 | 
+```
