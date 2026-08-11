@@ -231,6 +231,9 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: release-metadata
+          # Outside the workspace: unpacking into the repo root would leave
+          # release-plan.json / release-metadata.json for the commit below to sweep up.
+          path: ${{ runner.temp }}/release-metadata
 
       - name: Configure git author
         run: |
@@ -242,9 +245,21 @@ jobs:
           # Bot commits must not run local husky/commitlint (COMMIT_EDITMSG path + no TTY).
           HUSKY: '0'
         run: |
+          set -euo pipefail
           git switch -C release/next
           pnpm changeset version
-          git add -A
+          # Stage only what `changeset version` is allowed to touch — consumed changesets,
+          # version bumps and CHANGELOGs. A bare `git add -A` also sweeps up untracked CI
+          # scratch sitting in the repo root and rides it to main on merge.
+          git add -A -- .changeset apps packages pnpm-lock.yaml
+
+          stray=$(git diff --staged --name-only \
+            | grep -E '^(release-plan\.json|release-metadata\.json|release-pr-body\.md)$' || true)
+          if [ -n "$stray" ]; then
+            echo "::error::Release commit would contain CI scratch: ${stray}"
+            exit 1
+          fi
+
           git diff --staged --quiet || git commit -m "chore(release): version packages"
 
       - name: Force-push release/next
@@ -257,12 +272,14 @@ jobs:
         env:
           HEAD_SHA: ${{ steps.push.outputs.head_sha }}
           RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          METADATA_PATH: ${{ runner.temp }}/release-metadata/release-metadata.json
+          BODY_PATH: ${{ runner.temp }}/release-pr-body.md
         run: |
           node --input-type=module <<'NODE'
           import { readFileSync, writeFileSync } from 'node:fs';
           import { renderReleaseReport } from './tools/release/release-report.mjs';
 
-          const metadata = JSON.parse(readFileSync('release-metadata.json', 'utf8'));
+          const metadata = JSON.parse(readFileSync(process.env.METADATA_PATH, 'utf8'));
           const body = renderReleaseReport({
             set: metadata.set,
             artifactPlan: metadata.artifactPlan,
@@ -270,24 +287,25 @@ jobs:
             runUrl: process.env.RUN_URL,
             prodReleaseEnabled: false,
           });
-          writeFileSync('release-pr-body.md', body);
+          writeFileSync(process.env.BODY_PATH, body);
           NODE
 
       - name: Upsert release PR
         id: pr
         env:
           GH_TOKEN: ${{ secrets.RELEASE_PAT }}
+          BODY_PATH: ${{ runner.temp }}/release-pr-body.md
         run: |
           existing=$(gh pr list --head release/next --base main --state open --json number --jq '.[0].number // empty')
           if [ -n "$existing" ]; then
-            gh pr edit "$existing" --title "chore(release): develop → main" --body-file release-pr-body.md
+            gh pr edit "$existing" --title "chore(release): develop → main" --body-file "$BODY_PATH"
             echo "number=${existing}" >> "$GITHUB_OUTPUT"
           else
             gh pr create \
               --head release/next \
               --base main \
               --title "chore(release): develop → main" \
-              --body-file release-pr-body.md
+              --body-file "$BODY_PATH"
             number=$(gh pr list --head release/next --base main --state open --json number --jq '.[0].number')
             echo "number=${number}" >> "$GITHUB_OUTPUT"
           fi
@@ -480,6 +498,7 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: release-metadata
+          path: ${{ runner.temp }}/release-metadata
 
       - name: Write job summary
         env:
@@ -488,6 +507,7 @@ jobs:
           IS_EMPTY: ${{ needs.plan.outputs.is_empty }}
           HEAD_SHA: ${{ needs.version-and-pr.outputs.head_sha }}
           RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          METADATA_PATH: ${{ runner.temp }}/release-metadata/release-metadata.json
         run: |
           if [ "$PARITY" = "develop-behind" ]; then
             exit 0
@@ -497,7 +517,7 @@ jobs:
             exit 0
           fi
 
-          if [ ! -f release-metadata.json ]; then
+          if [ ! -f "$METADATA_PATH" ]; then
             echo "::warning::Release metadata artifact is missing."
             exit 0
           fi
@@ -506,7 +526,7 @@ jobs:
           import { readFileSync, appendFileSync } from 'node:fs';
           import { renderReleaseReport } from './tools/release/release-report.mjs';
 
-          const metadata = JSON.parse(readFileSync('release-metadata.json', 'utf8'));
+          const metadata = JSON.parse(readFileSync(process.env.METADATA_PATH, 'utf8'));
           const headSha = process.env.HEAD_SHA || 'unknown';
           const report = renderReleaseReport({
             set: metadata.set,
