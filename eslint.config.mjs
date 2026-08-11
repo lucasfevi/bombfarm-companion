@@ -49,8 +49,8 @@ export default tseslint.config(
       '**/release/**',
       '**/node_modules/**',
       '**/next-env.d.ts',
-      // Stories/tests are excluded from package tsconfigs; lint via Storybook/web Vitest instead.
-      'packages/ui/**/*.stories.{ts,tsx}',
+      // Tests are excluded from package tsconfigs; lint via web Vitest instead.
+      // Stories are excluded too, but stay linted — see the stories block below.
       'packages/ui/**/*.{test,spec}.{ts,tsx}',
     ],
   },
@@ -146,5 +146,20 @@ export default tseslint.config(
   {
     files: ['apps/desktop/**/*.{ts,tsx}'],
     rules: { 'no-restricted-imports': rawIconImportRule },
+  },
+  // Stories sit outside packages/ui/tsconfig.json, so they cannot carry type-aware
+  // rules — but the icon seam (D12) is syntactic and must hold for them too, or a raw
+  // react-icons/SVG import lands in a story with only review to catch it. So stories
+  // are linted (not ignored) with type checking off; the packages/ui blocks above,
+  // including the raw-icon ban, apply to them.
+  {
+    files: ['packages/ui/**/*.stories.{ts,tsx}'],
+    ...tseslint.configs.disableTypeChecked,
+    rules: {
+      ...tseslint.configs.disableTypeChecked.rules,
+      // Stories size their demo frames to taste; arbitrary widths there are the point,
+      // not drift from the token scale. Product code keeps this rule on.
+      'tailwindcss/no-unnecessary-arbitrary-value': 'off',
+    },
   },
 );
