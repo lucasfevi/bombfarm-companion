@@ -106,7 +106,6 @@ export {
   type MetricScoreboardCell,
   type MetricScoreboardProps,
 } from './metric-scoreboard';
-/** @deprecated Legacy single-toast shim for `apps/web`'s planner — use `useToast()` / `ToastProvider` instead. */
 export { Toast } from './toast';
 export {
   toastQueueReducer,
