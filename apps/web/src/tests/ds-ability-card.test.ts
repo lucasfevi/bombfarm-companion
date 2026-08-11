@@ -9,6 +9,11 @@ import {
  * class string the deleted `abilCardClassName` resolver produced, for every
  * `onSheet × selected` combination and both `lockedOut` states. The legacy
  * resolver is reproduced here as the source of truth.
+ *
+ * `abilMutedClass` is the one deliberate exception to that parity: m2-storybook-ci
+ * (T7, SBC-12) raised it from `opacity-[0.42]` to `opacity-[0.55]` because the
+ * locked-out card text measured 3.54:1 contrast against WCAG AA's 4.5:1 floor —
+ * see `packages/ui/src/ability-card.recipe.ts` for the computation.
  */
 const abilClass = 'flex h-full min-w-0 flex-col gap-2 rounded-sm border border-line bg-bg p-2.5';
 const abilOnClass =
@@ -16,7 +21,7 @@ const abilOnClass =
 const abilSheetClass = 'border-[color-mix(in_oklch,var(--up)_35%,var(--line))]';
 const abilSheetOnClass =
   'border-[color-mix(in_oklch,var(--up)_50%,var(--line))] bg-[color-mix(in_oklch,var(--up)_8%,var(--bg))]';
-const abilMutedClass = 'opacity-[0.42]';
+const abilMutedClass = 'opacity-[0.55]';
 
 function legacyAbilCardClassName(opts: {
   selected: boolean;

@@ -265,7 +265,8 @@ Semantics live on a wrapping `<span>`; the inner `react-icons` SVG is always dec
 
 - `packages/ui/**` and `apps/desktop/**`: raw `react-icons` or `*.svg` imports fail lint outside `packages/ui/src/icon/**`.
 - `apps/web/**`: nine planner files are **grandfathered** in `apps/web/eslint.config.mjs` (`site-header`, `topbar`, `footer`, `slot-editor`, `import-heroes-dialog`, `hero-picker-dialog`, `hero-strip`, `hero-strip-identity`, `phases-hero-switcher`). Delete an entry when that file migrates to `<Icon />`; any **new** web call site errors immediately.
-- **Known gap:** root ESLint ignores `packages/ui/**/*.stories.tsx`, so a raw icon import in a story is caught by review/tests only — closing that gap is owned by `m2-storybook-ci`.
+- `packages/ui/**/*.stories.tsx`: **covered too.** Stories are excluded from `packages/ui/tsconfig.json`, so root ESLint lints them with type checking off (`disableTypeChecked`) — the raw-icon ban applies. `tailwindcss/no-unnecessary-arbitrary-value` is deliberately off there: stories size demo frames to taste.
+- **Known gap:** `packages/ui/**/*.{test,spec}.{ts,tsx}` are still ignored by root ESLint (same tsconfig reason), so a raw icon import in a unit test is caught by review only. Narrow blast radius, no owning feature yet.
 
 Storybook gallery: [`packages/ui/src/icon.stories.tsx`](../packages/ui/src/icon.stories.tsx) (enum-driven UI chrome).
 
@@ -285,13 +286,35 @@ once the primitive API surface stops churning.
 
 ## Storybook catalog
 
-Local catalog for `packages/ui/src` primitives (dark-only preview, desktop/tablet viewports).
+Local catalog for `packages/ui/src` primitives, **owned by `packages/ui` itself** on
+`@storybook/react-vite` (dark-only preview, desktop/tablet viewports). Moved off
+`apps/web`'s `@storybook/nextjs` host in `m2-storybook-ci` — the catalog belongs with
+the package it documents, not with an app that merely consumes it.
 
 | Command | Purpose |
 | --- | --- |
-| `pnpm storybook` | Dev server on `:6006` |
-| `pnpm build-storybook` | Static build → `storybook-static/` (gitignored) |
+| `pnpm --filter @bombfarm/ui storybook` | Dev server on `:6006` |
+| `pnpm --filter @bombfarm/ui build-storybook` | Static build → `packages/ui/storybook-static/` (gitignored) |
+| `pnpm --filter @bombfarm/ui test-storybook` | Serves the static build, then runs `@storybook/test-runner` — smoke-renders every story and asserts zero `@storybook/addon-a11y` violations |
 
-Authoring rules (colocate stories under `packages/ui/src`, barrel imports only, no light/phone matrix): [`apps/web/.storybook/README.md`](../apps/web/.storybook/README.md).
+Authoring rules (colocate stories under `packages/ui/src`, barrel imports only, no
+light/phone matrix, a11y expectations): [`packages/ui/.storybook/README.md`](../packages/ui/.storybook/README.md).
 
-Preview must load Tailwind via [`apps/web/.storybook/preview.css`](../apps/web/.storybook/preview.css) (imports web `globals.css`, which `@source`s `packages/ui/src`). Canvas uses app tokens (`bg-bg` / `text-ink` / `font-sans`) and `next/font` variables on `<html>` — if stories look like unstyled browser defaults, the CSS entry or PostCSS pipeline is broken. See also [`tailwind-first.md`](tailwind-first.md) rule 11.
+Preview loads Tailwind via [`packages/ui/.storybook/preview.css`](../packages/ui/.storybook/preview.css),
+which imports `packages/ui/src/styles.css` directly (self-sufficient — its own
+`@import 'tailwindcss'` + `@source` scan of `packages/ui/src`, processed by the
+`@tailwindcss/vite` plugin wired in `main.ts`). Canvas uses app tokens (`bg-bg` /
+`text-ink` / `font-sans`); fonts are self-hosted via `@fontsource` (DM Sans, IBM Plex
+Mono) rather than `next/font` — no Next.js under Vite, and no CDN. If stories look like
+unstyled browser defaults, rebuild and confirm the Vite Tailwind plugin is processing
+`preview.css`. See also [`tailwind-first.md`](tailwind-first.md) rule 11.
+
+### CI gate
+
+`.github/workflows/ci-web.yml`'s `design-system` job runs `build-storybook` then
+`test-storybook` on the existing `web` path filter (`packages/ui/**` is already in it).
+The `design-system-required` aggregator fails whenever that filter matched but the job
+didn't succeed — including `skipped` and `cancelled`, not only an active failure — so a
+suite that silently never ran cannot pass as green (see
+[`tools/design-system-gate.test.mjs`](../tools/design-system-gate.test.mjs), which
+asserts the aggregator has no step that treats `skipped` as success).

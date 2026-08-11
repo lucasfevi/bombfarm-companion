@@ -1,4 +1,13 @@
-import { HiMiniChevronDown, HiMiniChevronUp, HiMiniXMark } from 'react-icons/hi2';
+import {
+  HiMiniChevronDown,
+  HiMiniChevronUp,
+  HiMiniXMark,
+  HiMiniCheckCircle,
+  HiMiniXCircle,
+  HiMiniExclamationTriangle,
+  HiMiniInformationCircle,
+  HiMiniArrowPath,
+} from 'react-icons/hi2';
 import { BiCoffee } from 'react-icons/bi';
 import type { IconGlyph } from './types';
 
@@ -11,4 +20,14 @@ export const uiIconRegistry = {
   'x-mark': HiMiniXMark,
   // Button coffee / coffee-full stories
   coffee: BiCoffee,
+  // toast/notification `success` variant (m2-toast-settings, TST-13)
+  'check-circle': HiMiniCheckCircle,
+  // toast/notification `error` variant (m2-toast-settings, TST-13)
+  'x-circle': HiMiniXCircle,
+  // toast/notification `warning` variant (m2-toast-settings, TST-13)
+  'exclamation-triangle': HiMiniExclamationTriangle,
+  // toast/notification `info` variant (m2-toast-settings, TST-13)
+  'information-circle': HiMiniInformationCircle,
+  // toast/notification `progress` variant spinner (m2-toast-settings, TST-13)
+  'arrow-path': HiMiniArrowPath,
 } as const satisfies Record<string, IconGlyph>;

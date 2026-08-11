@@ -12,6 +12,7 @@ Thumbs.db
 /release/
 playwright-report/
 test-results/
+storybook-static/
 .env
 .env.*
 .specs/

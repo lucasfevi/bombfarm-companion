@@ -96,8 +96,15 @@ jobs:
           --filter @bombfarm/game-data --filter @bombfarm/pricing
           --filter @bombfarm/desktop lint
 
-      - name: Unit tests (root vitest — packages touched by desktop)
-        run: pnpm test
+      # Root vitest minus the web project. apps/web's bundle assertions require
+      # `pnpm --filter @bombfarm/web build` to have run first and now fail loudly rather
+      # than skipping when it hasn't (apps/web/src/tests/support/build-output.ts) — and this
+      # job deliberately never builds the web app. ci-web.yml owns those tests and runs them
+      # after its own build step. Excluding one project rather than filtering by package
+      # keeps everything else running here, including apps/desktop's own tests and tools/'s
+      # CI-gate tests, neither of which has a package `test` script to be filtered by.
+      - name: Unit tests (root vitest, excluding the web project)
+        run: pnpm vitest run --project '!@bombfarm/web'
 
   smoke-windows:
     name: App boot smoke (Windows)

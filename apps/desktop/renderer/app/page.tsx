@@ -2,9 +2,9 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import type { AppEnvironmentInfo, GameSnapshotPayload, GameStatusInfo } from '@bombfarm/contracts';
-import { AppShell } from '@bombfarm/ui';
+import { AppShell, EmptyState, StatusChip } from '@bombfarm/ui';
 
-function formatStatus(status: GameStatusInfo['status']): string {
+function statusLabel(status: GameStatusInfo['status']): string {
   switch (status) {
     case 'connected':
       return 'Connected';
@@ -17,15 +17,10 @@ function formatStatus(status: GameStatusInfo['status']): string {
   }
 }
 
-function statusClass(status: GameStatusInfo['status']): string {
-  switch (status) {
-    case 'connected':
-      return 'bg-emerald-500/20 text-emerald-200 border-emerald-400/30';
-    case 'stale':
-      return 'bg-amber-500/20 text-amber-100 border-amber-400/30';
-    default:
-      return 'bg-white/10 text-bf-muted border-white/10';
-  }
+/** Trivial seconds/minutes formatter for StatusChip's ageLabel — M5 replaces this with locale formatting. */
+function formatAgeLabel(staleAgeMs: number): string {
+  const seconds = Math.max(0, Math.round(staleAgeMs / 1000));
+  return seconds < 60 ? `${seconds.toFixed(0)}s` : `${Math.round(seconds / 60).toFixed(0)}m`;
 }
 
 export default function HomePage() {
@@ -71,7 +66,7 @@ export default function HomePage() {
   }, []);
 
   const rawJson = useMemo(() => {
-    if (!snapshot) return '{}';
+    if (!snapshot) return null;
     return JSON.stringify(
       {
         status: snapshot.status,
@@ -87,43 +82,50 @@ export default function HomePage() {
     <AppShell
       title={environment?.productName}
       badge={environment?.badgeLabel ?? null}
+      items={[]}
+      status={
+        <span data-testid="game-status-chip">
+          {status ? (
+            <StatusChip
+              status={status.status}
+              label={statusLabel(status.status)}
+              ageLabel={status.staleAgeMs != null ? formatAgeLabel(status.staleAgeMs) : undefined}
+            />
+          ) : (
+            'Loading…'
+          )}
+        </span>
+      }
+      version={
+        environment ? (
+          <>
+            <span data-testid="app-version" className="font-mono tabular-nums">
+              v{environment.version}
+            </span>
+            {environment.flavor !== 'prod' && environment.badgeLabel ? (
+              <span className="text-xs font-semibold uppercase tracking-wide">{environment.badgeLabel}</span>
+            ) : null}
+          </>
+        ) : null
+      }
     >
       <section data-testid="app-ready" className="space-y-4">
-        <div className="flex items-center gap-3">
-          <span
-            data-testid="game-status-chip"
-            className={`inline-flex items-center rounded-full border px-3 py-1 text-sm ${status ? statusClass(status.status) : 'bg-white/10 text-bf-muted border-white/10'}`}
-          >
-            {status ? formatStatus(status.status) : 'Loading…'}
-          </span>
-          {status?.status === 'stale' && status.staleAgeMs != null ? (
-            <span className="text-sm text-bf-muted">age {Math.round(status.staleAgeMs / 1000)}s</span>
-          ) : null}
-        </div>
-
-        {error ? <p className="text-red-400">Boot error: {error}</p> : null}
-
-        <div className="space-y-2">
-          <h2 className="text-sm font-medium text-bf-muted">Current snapshot (raw + mapped)</h2>
-          <pre
-            data-testid="game-snapshot-json"
-            className="max-h-[480px] overflow-auto rounded-lg border border-white/10 bg-black/30 p-4 text-xs leading-relaxed"
-          >
-            {rawJson}
-          </pre>
-        </div>
+        {error ? (
+          <EmptyState title="Preload bridge unavailable" description={error} />
+        ) : rawJson ? (
+          <div className="space-y-2">
+            <h2 className="text-sm font-medium text-muted">Current snapshot (raw + mapped)</h2>
+            <pre
+              data-testid="game-snapshot-json"
+              className="max-h-[480px] overflow-auto rounded-lg border border-line bg-bg-2 p-4 text-xs leading-relaxed"
+            >
+              {rawJson}
+            </pre>
+          </div>
+        ) : (
+          <EmptyState title="No snapshot yet" description="Waiting on the first read from the game." />
+        )}
       </section>
-
-      {environment ? (
-        <div className="mt-6 flex justify-end gap-2 border-t border-white/10 pt-3 text-xs text-bf-muted">
-          <span data-testid="app-version" className="font-mono tabular-nums">
-            v{environment.version}
-          </span>
-          {environment.flavor !== 'prod' && environment.badgeLabel ? (
-            <span className="font-semibold uppercase tracking-wide">{environment.badgeLabel}</span>
-          ) : null}
-        </div>
-      ) : null}
     </AppShell>
   );
 }
