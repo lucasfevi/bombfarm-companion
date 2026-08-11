@@ -106,7 +106,45 @@ export {
   type MetricScoreboardCell,
   type MetricScoreboardProps,
 } from './metric-scoreboard';
+/** @deprecated Legacy single-toast shim for `apps/web`'s planner — use `useToast()` / `ToastProvider` instead. */
 export { Toast } from './toast';
+export {
+  toastQueueReducer,
+  initialToastQueueState,
+  nextExpiryDeadline,
+  MAX_VISIBLE_TOASTS,
+  NOTIFICATION_BUFFER_LIMIT,
+  type ToastVariant,
+  type ToastActionButton,
+  type ToastInput,
+  type ToastEntry,
+  type NotificationEntry,
+  type ToastQueueState,
+  type ToastQueueAction,
+} from './toast-queue';
+export {
+  ToastProvider,
+  useToast,
+  ToastViewport,
+  ToastItem,
+  type ToastContextValue,
+  type ToastProviderProps,
+  type ToastItemProps,
+} from './toast-system';
+export {
+  NotificationCenter,
+  type NotificationCenterItem,
+  type NotificationCenterProps,
+} from './notification-center';
+export { Slider, type SliderProps } from './slider';
+export {
+  SettingsSection,
+  SettingsRow,
+  SaveBar,
+  type SettingsSectionProps,
+  type SettingsRowProps,
+  type SaveBarProps,
+} from './settings-form';
 export { GlossedText, type GlossedTextProps } from './glossed-text';
 export { FileDropZone, type FileDropZoneProps } from './file-drop-zone';
 export { fileDropZoneRecipe } from './file-drop-zone.recipe';

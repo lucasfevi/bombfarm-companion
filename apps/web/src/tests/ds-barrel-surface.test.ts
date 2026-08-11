@@ -11,6 +11,12 @@ import * as DesignSystem from '@bombfarm/ui';
 // the single implementation of INV-1 connection states; EmptyState covers
 // "no game / no items / no filter matches" placeholders. AppShell's export
 // itself is unchanged (still a value export); only its props grew.
+// M2-toast-settings (2026-08-11): toastQueueReducer, initialToastQueueState,
+// nextExpiryDeadline, MAX_VISIBLE_TOASTS, NOTIFICATION_BUFFER_LIMIT (the pure
+// toast queue), ToastProvider, useToast, ToastViewport, ToastItem (the new
+// toast system — deliberately NOT named `Toast`, which stays the legacy
+// export), NotificationCenter, Slider, SettingsSection, SettingsRow, SaveBar
+// added. Legacy `Toast` is unchanged and stays byte-compatible for `apps/web`.
 const FROZEN_BARREL_VALUE_EXPORTS = [
   'AbilityCard',
   'Accordion',
@@ -34,11 +40,18 @@ const FROZEN_BARREL_VALUE_EXPORTS = [
   'Icon',
   'iconSources',
   'isIconName',
+  'MAX_VISIBLE_TOASTS',
   'MetricScoreboard',
+  'NOTIFICATION_BUFFER_LIMIT',
+  'NotificationCenter',
   'Num',
   'Panel',
   'RankControl',
+  'SaveBar',
   'Select',
+  'SettingsRow',
+  'SettingsSection',
+  'Slider',
   'SortableTableHeader',
   'StatList',
   'StatusChip',
@@ -47,6 +60,9 @@ const FROZEN_BARREL_VALUE_EXPORTS = [
   'TableScroller',
   'Tabs',
   'Toast',
+  'ToastItem',
+  'ToastProvider',
+  'ToastViewport',
   'Tooltip',
   'TooltipStatusBody',
   'abilityCardRecipe',
@@ -65,17 +81,21 @@ const FROZEN_BARREL_VALUE_EXPORTS = [
   'dataTableHeadButtonClass',
   'dataTableHeadClass',
   'fileDropZoneRecipe',
+  'initialToastQueueState',
   'metricScoreboardDeltaRecipe',
   'metricScoreboardValueRecipe',
   'motionTokens',
+  'nextExpiryDeadline',
   'panelRecipe',
   'selectFieldRecipe',
   'setupBannerRecipe',
   'sortableTableHeaderButtonClass',
   'stickyHeadClass',
   'switchRootRecipe',
+  'toastQueueReducer',
   'tokens',
   'tooltipPopupRecipe',
+  'useToast',
 ].sort();
 
 describe('design-system barrel surface (frozen)', () => {
