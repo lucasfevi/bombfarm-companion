@@ -25,23 +25,33 @@ export function itemToEquipped(item: InventoryItem): EquippedItem {
   };
 }
 
+/** One hero's loadout. Split out so a screen can build only the heroes a move actually touches. */
+export function heroLoadoutFromAssignment(
+  state: AssignmentState,
+  heroId: string,
+  itemById: ReadonlyMap<string, InventoryItem>,
+): Loadout {
+  const heroSlots = state.slots[heroId] ?? {};
+  const loadout: Loadout = {};
+  for (const slot of SLOTS) {
+    const itemId = heroSlots[slot] ?? null;
+    if (!itemId) {
+      loadout[slot] = null;
+      continue;
+    }
+    const item = itemById.get(itemId);
+    loadout[slot] = item ? itemToEquipped(item) : null;
+  }
+  return loadout;
+}
+
 export function loadoutsFromAssignment(
   state: AssignmentState,
   itemById: ReadonlyMap<string, InventoryItem>,
 ): Record<string, Loadout> {
   const out: Record<string, Loadout> = {};
-  for (const [heroId, heroSlots] of Object.entries(state.slots)) {
-    const loadout: Loadout = {};
-    for (const slot of SLOTS) {
-      const itemId = heroSlots[slot] ?? null;
-      if (!itemId) {
-        loadout[slot] = null;
-        continue;
-      }
-      const item = itemById.get(itemId);
-      loadout[slot] = item ? itemToEquipped(item) : null;
-    }
-    out[heroId] = loadout;
+  for (const heroId of Object.keys(state.slots)) {
+    out[heroId] = heroLoadoutFromAssignment(state, heroId, itemById);
   }
   return out;
 }

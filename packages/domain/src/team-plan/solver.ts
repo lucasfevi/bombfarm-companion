@@ -3,10 +3,12 @@ import type { InventoryItem } from '../inventory';
 import { unmodelledAbilitiesInScope } from './ability-extras';
 import { buildHeroPlanContexts } from './hero-context';
 import { buildPool } from './pool';
+import { createScoreMemo } from './score';
 import {
   buildInitialAssignment,
   buildSeedAssignments,
   evaluateAssignment,
+  TEAM_PLAN_BEAM_WIDTH,
   TEAM_PLAN_MAX_EVALUATIONS,
   runSeedSearch,
   type SolverBudget,
@@ -16,6 +18,7 @@ import { buildWaterfall } from './waterfall';
 import type { TeamPlan, TeamPlanInput, TeamPlanResult, HeroPlanContext } from './types';
 
 export {
+  TEAM_PLAN_BEAM_WIDTH,
   TEAM_PLAN_MAX_EVALUATIONS,
   TEAM_PLAN_WORKER_MARKER,
   MAX_ROUNDS,
@@ -70,7 +73,7 @@ function evaluateCurrentAssignment(
 
 export function runTeamPlan(
   input: TeamPlanInput,
-  options?: { maxEvaluations?: number },
+  options?: { maxEvaluations?: number; beamWidth?: number },
 ): TeamPlanResult {
   const started = performance.now();
   const built = buildHeroPlanContexts(input.heroes, input.account, input.scopeByHeroId);
@@ -99,6 +102,8 @@ export function runTeamPlan(
     evaluations: 0,
     exhausted: false,
     cache: new Map(),
+    scoreMemo: createScoreMemo(),
+    beamWidth: options?.beamWidth ?? TEAM_PLAN_BEAM_WIDTH,
   };
 
   const currentEval = evaluateCurrentAssignment(
