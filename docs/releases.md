@@ -8,10 +8,10 @@ This repo ships through a **changesets** release rail: feature work merges to `d
 
 ```text
 feature PR (changeset) → merge to develop
-  → release-pr.yml upserts release/next → main PR
+  → release-pr.yml reconciles main into release/next, then upserts release/next → main PR
   → review bumps + CHANGELOG + CI + beta (if desktop in set)
   → human 24 h soak checklist (not a required check)
-  → merge release PR to main
+  → squash-merge release PR to main
   → release-sync.yml syncs versions back to develop
   → release-prod.yml (desktop artifact; GitHub Release only when flag on)
   → Vercel production deploy from main (unchanged Git integration)
@@ -25,7 +25,7 @@ feature PR (changeset) → merge to develop
 4. **Review** version bumps and generated `CHANGELOG.md` entries. Confirm required CI checks are green on the release head (`ci-web-required`, `ci-desktop-required`, `e2e-smoke`, `e2e-visual`, and `beta-installer` when desktop is in the set).
 5. **When desktop is in the release set:** download the beta installer from the PR workflow artifact or the upserted PR comment. Verify the build matches the head SHA shown in the report.
 6. **Complete the [pre-merge soak checklist](#pre-merge-soak-checklist)** before merging to `main`.
-7. **Merge the release PR to `main`.**
+7. **Squash-merge the release PR to `main`** (see [Merge strategy](#merge-strategy)).
    - **Web:** Vercel deploys production from `main` automatically (no GitHub Actions deploy step).
    - **Desktop:** [release-prod.yml](../.github/workflows/release-prod.yml) builds a prod installer artifact when `@bombfarm/desktop` was in the release set. A public GitHub Release is created **only** when `BFC_ENABLE_PROD_RELEASE` is `true` (see [Going public](#going-public-desktop-github-release)).
 8. **Version sync:** [release-sync.yml](../.github/workflows/release-sync.yml) opens and auto-merges `release/next` → `develop` so both branches carry the same versions and consumed changesets.
@@ -44,13 +44,52 @@ The release set comes from `pnpm changeset status` (all pending changesets aggre
 
 Logic lives in [`tools/release/release-plan.mjs`](../tools/release/release-plan.mjs) and is unit-tested.
 
+## Merge strategy
+
+**Squash-merge the release PR.** `main` is protected with `required_linear_history`, so
+merge commits are rejected there and squash is the only strategy the branch accepts.
+Feature PRs into `develop` are squashed too.
+
+Squashing has a consequence worth understanding, because it caused a silent outage of the
+release rail once already. A squash gives `main` a commit that shares **no history** with
+the `release/next` branch it came from, so `main` permanently forks from `develop`. Left
+alone, the next release PR compares across a merge base predating the whole release rail
+and reports `CONFLICTING` on dozens of add/add collisions — none of them real, since
+`main` is strictly behind `develop`.
+
+The rail absorbs this itself. Before versioning, [release-pr.yml](../.github/workflows/release-pr.yml)
+merges `main` into `release/next` with `-s ours`:
+
+- `main` becomes an ancestor, so the PR is mergeable again.
+- The tree is untouched — it stays exactly what `develop` produced. The merge records
+  ancestry and nothing else.
+- The merge commit lives on `release/next`, so squashing onto `main` still leaves `main`
+  linear. Linear history and a connected rail are not in conflict.
+
+`-s ours` discards `main`'s tree wholesale, which is only safe while every commit on
+`main` came from the rail. [`tools/release/main-reconcile.mjs`](../tools/release/main-reconcile.mjs)
+enforces that: it inspects every commit reachable from `main` but not from the release
+branch and **fails the run** unless each one is a release squash. A hotfix landed directly
+on `main` therefore stops the release loudly instead of being dropped from the next one.
+
+If it does refuse, do not bypass it. Port the change to `develop`, or merge `main` into
+`develop`, and re-run.
+
 ## Version sync and parity guard
 
 After a release PR merges, `release-sync.yml` recreates `release/next` from the merged PR head (fetching `pull/<n>/head` so the SHA remains reachable after `delete_branch_on_merge`), opens `chore(release): sync versions to develop` (`release/next` → `develop`) with **`RELEASE_PAT`** so normal PR checks run, and enables auto-merge when the repository setting allows it.
 
 While `develop` is **behind** `main` on package versions (sync PR pending or failed), [release-pr.yml](../.github/workflows/release-pr.yml) **skips** creating or updating the release PR and writes a job summary: *waiting on version-sync PR*. This prevents double-bumping.
 
-If sync PR creation or auto-merge fails, the job fails loudly and prints manual commands. Fix the sync PR before the next release run.
+If **sync PR creation** fails, the job fails loudly and prints manual commands. Fix the sync PR before the next release run.
+
+**Auto-merge is best-effort and never fails the job.** GitHub only accepts
+`enablePullRequestAutoMerge` while a PR is blocked by a pending required check, so calling
+it immediately after creating the sync PR is a race — the checks have not registered yet
+and GitHub answers `Pull request is in unstable status`. The step retries while they spin
+up, then falls back to a job-summary note asking for a manual `gh pr merge <n> --squash`.
+The sync PR itself is already created and correct at that point, so a lost toggle must not
+report the sync as failed. Auto-merge also requires `allow_auto_merge` on the repository.
 
 ## Required CI on the release PR
 
