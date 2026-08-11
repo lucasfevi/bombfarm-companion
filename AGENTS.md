@@ -45,6 +45,12 @@ pnpm test:smoke   # Windows — builds static renderer + launches Electron
   [`docs/typescript-planner-origin.md`](docs/typescript-planner-origin.md))
 - No secrets in the repo
 - Do not mention other fan tools in user-facing docs
+- **Changesets are mandatory** on any PR touching `@bombfarm/web` or `@bombfarm/domain` user-visible
+  behavior — the `Require a changeset` CI check fails the PR otherwise, it does not just warn. Add
+  one in the same commit as the code change: `pnpm changeset`, or hand-write
+  `.changeset/<slug>.md` (see [`.changeset/README.md`](.changeset/README.md) for the frontmatter
+  format). Internal-only changes (CI config, tests, docs) don't need one; if a changeset genuinely
+  doesn't apply, label the PR `skip-changeset` instead of skipping silently.
 
 ## Flavors
 
