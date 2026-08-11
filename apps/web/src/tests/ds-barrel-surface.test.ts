@@ -7,6 +7,10 @@ import * as DesignSystem from '@bombfarm/ui';
 // compile-time assertion. A dropped or renamed value export while replacing a
 // module with a directory (ASM-03) fails this test (MOD-28, W6-01).
 // M2-icons: Icon, iconSources, isIconName added (UI-chrome only; no game glyphs).
+// M2-shell-status (2026-08-11): StatusChip, EmptyState added — StatusChip is
+// the single implementation of INV-1 connection states; EmptyState covers
+// "no game / no items / no filter matches" placeholders. AppShell's export
+// itself is unchanged (still a value export); only its props grew.
 const FROZEN_BARREL_VALUE_EXPORTS = [
   'AbilityCard',
   'Accordion',
@@ -20,6 +24,7 @@ const FROZEN_BARREL_VALUE_EXPORTS = [
   'DEFAULT_HUE',
   'DataTable',
   'Dialog',
+  'EmptyState',
   'FieldRequired',
   'Fields',
   'FileDropZone',
@@ -36,6 +41,7 @@ const FROZEN_BARREL_VALUE_EXPORTS = [
   'Select',
   'SortableTableHeader',
   'StatList',
+  'StatusChip',
   'Stepper',
   'Switch',
   'TableScroller',
