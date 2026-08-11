@@ -610,7 +610,8 @@
     "referralReward": "We both get a reward once you clear stage 151.",
     "referralCopy": "Copy referral code",
     "referralCopied": "Referral code copied",
-    "referralCopyManual": "Clipboard unavailable — the code is selected, press Ctrl+C"
+    "referralCopyManual": "Clipboard unavailable — the code is selected, press Ctrl+C",
+    "referralTitle": "Copy my referral code — we both get a reward once you clear stage 151"
   },
   "pt": {
     "tagline": "build → equipamento → pontos",
@@ -1223,6 +1224,7 @@
     "referralReward": "Nós dois ganhamos uma recompensa quando você passar da fase 151.",
     "referralCopy": "Copiar código de indicação",
     "referralCopied": "Código de indicação copiado",
-    "referralCopyManual": "Área de transferência indisponível — o código está selecionado, aperte Ctrl+C"
+    "referralCopyManual": "Área de transferência indisponível — o código está selecionado, aperte Ctrl+C",
+    "referralTitle": "Copiar meu código de indicação — nós dois ganhamos uma recompensa quando você passar da fase 151"
   }
 }

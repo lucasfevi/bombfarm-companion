@@ -37,6 +37,7 @@ export const en = {
   referralReward: "We both get a reward once you clear stage 151.",
   referralCopy: "Copy referral code",
   referralCopied: "Referral code copied",
+  referralTitle: "Copy my referral code — we both get a reward once you clear stage 151",
   referralCopyManual: "Clipboard unavailable — the code is selected, press Ctrl+C",
 };
 
@@ -79,5 +80,6 @@ export const pt: typeof en = {
   referralReward: "Nós dois ganhamos uma recompensa quando você passar da fase 151.",
   referralCopy: "Copiar código de indicação",
   referralCopied: "Código de indicação copiado",
+  referralTitle: "Copiar meu código de indicação — nós dois ganhamos uma recompensa quando você passar da fase 151",
   referralCopyManual: "Área de transferência indisponível — o código está selecionado, aperte Ctrl+C",
 };
