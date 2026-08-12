@@ -1,3 +1,4 @@
+import { availableParallelism } from 'node:os';
 import { defineConfig, devices } from '@playwright/test';
 
 const PORT = 4321;
@@ -24,7 +25,12 @@ const chromiumUse = {
 export default defineConfig({
   testDir: 'e2e',
   fullyParallel: true,
-  workers: process.env.CI ? 2 : undefined,
+  // CI stays at 2. Locally Playwright defaults to ~half the cores, which on a
+  // many-core dev machine means a dozen headless Chromium instances at once —
+  // each a browser process tree, not a thread. Capped for the same reason as
+  // `vitest.workers.ts`: the ceiling here is browser startup and the static
+  // server, not core count, so extra workers buy little and only add heat.
+  workers: process.env.CI ? 2 : Math.max(1, Math.min(4, availableParallelism())),
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 1 : 0,
   reporter: blobReporter
