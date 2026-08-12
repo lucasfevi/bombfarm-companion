@@ -1,6 +1,7 @@
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { defineConfig } from 'vitest/config';
+import { MAX_TEST_WORKERS } from '../../vitest.workers';
 
 const root = path.dirname(fileURLToPath(import.meta.url));
 
@@ -9,6 +10,9 @@ export default defineConfig({
   test: {
     environment: 'node',
     include: ['tests/**/*.test.ts'],
+    // This package owns the CPU-bound solver tests — see vitest.workers.ts. Set here as
+    // well as at the root so `pnpm --filter @bombfarm/domain test` is capped too.
+    maxWorkers: MAX_TEST_WORKERS,
     // Letting the team-plan search converge to local optimality (roster gear optimizer
     // monotonicity fix) raised a single `runTeamPlan` call from sub-second to ~5-15s on the
     // committed fixtures; several tests call it more than once — the heaviest (4 calls in one
