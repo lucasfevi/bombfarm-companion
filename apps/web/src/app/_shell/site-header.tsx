@@ -3,9 +3,11 @@
 import Image from 'next/image';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { BiCoffee } from 'react-icons/bi';
+import { BiCoffee, BiCopy } from 'react-icons/bi';
 import type { Strings, Lang } from '@/shared/i18n';
-import { Button, buttonRecipe } from '@bombfarm/ui';
+import { Button, Tooltip, buttonRecipe } from '@bombfarm/ui';
+import { REFERRAL_CODE } from '@/shared/referral';
+import { useReferralCopy } from './use-referral-copy';
 import { NavLink } from './site-nav-link';
 
 export type SiteSection = 'planner' | 'phases' | 'teamPlan';
@@ -26,6 +28,7 @@ export function SiteHeader({
   onLangChange: (lang: Lang) => void;
 }) {
   const pathname = usePathname();
+  const { codeRef, copy: copyReferral } = useReferralCopy(t);
   const plannerActive = pathname === '/';
   const phasesActive = pathname.startsWith('/phases');
   const teamPlanActive = pathname.startsWith('/team-plan');
@@ -80,6 +83,28 @@ export function SiteHeader({
               ?
             </Button>
           ) : null}
+          {/* Code only — the tooltip carries the why, the footer the full copy. */}
+          <Tooltip.Provider delay={200} closeDelay={80}>
+            <Tooltip.Root>
+              <Tooltip.Trigger
+                type="button"
+                onClick={copyReferral}
+                aria-label={t.referralTitle}
+                data-testid="referral-topbar"
+                className="inline-flex h-8 shrink-0 cursor-pointer items-center gap-1.5 rounded-sm border border-line bg-bg-2 px-2 text-[11px] font-bold tracking-[0.06em] text-muted hover:border-accent hover:text-accent motion-safe:transition-[border-color,color] motion-safe:duration-[120ms]"
+              >
+                <span ref={codeRef} className="font-mono">
+                  {REFERRAL_CODE}
+                </span>
+                <BiCopy size={13} aria-hidden="true" />
+              </Tooltip.Trigger>
+              <Tooltip.Portal>
+                <Tooltip.Positioner sideOffset={6}>
+                  <Tooltip.Popup>{t.referralTitle}</Tooltip.Popup>
+                </Tooltip.Positioner>
+              </Tooltip.Portal>
+            </Tooltip.Root>
+          </Tooltip.Provider>
           <a
             className={buttonRecipe({ variant: 'coffee' })}
             href="https://buymeacoffee.com/lucasfevi"

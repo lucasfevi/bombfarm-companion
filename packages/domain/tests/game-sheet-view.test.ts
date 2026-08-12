@@ -1,3 +1,9 @@
+/* QUARANTINED (catalog v4, 2026-08-11): the assertions below are anchored to in-game
+ * captures taken under the pre-v4 balance, on an account that has since been wiped —
+ * they cannot be re-baselined without replacing game observations with our own output.
+ * Un-skip once a post-update save export lands; `inferSpentPoints`' nonIntegerPoints
+ * residual then also decides the open nv50+ Dano question (see gear/catalog.ts
+ * composeAttack). Do NOT edit the numbers to make these pass. */
 /**
  * `gameSheetView` (`sheet-view.ts`) — the game's display-time clamp (`STAT_CAPS.critChance`
  * /.cdr), applied AFTER `composeSheetFromBirth` rather than inside it. `SaveFile_BombFarm.json`
@@ -51,7 +57,7 @@ const ALL_HEROES: readonly (readonly [string, number, Record<SheetKey, number>])
   ...LEVEL_ONES.map((name) => [name, 1, { ...ZERO_PTS(), attack: 1 }] as const),
 ];
 
-describe('gameSheetView(composeSheetFromBirth(...)) === exported stats, exactly (SaveFile_BombFarm.json)', () => {
+describe.skip('gameSheetView(composeSheetFromBirth(...)) === exported stats, exactly (SaveFile_BombFarm.json)', () => {
   const raw = loadFixtureJson(FIXTURE);
   const totals = (raw.skills as { totals: Record<string, unknown> }).totals;
   const tree = treeTotalsFromSave(totals);
@@ -219,7 +225,7 @@ describe('deltaCap is exactly 0 under the caps, and negative only for heroes ove
   }
 });
 
-describe('penetration is never clamped by gameSheetView (BSPW4-09) — Jon/Tiny/Isolde exceed 100 in the export', () => {
+describe.skip('penetration is never clamped by gameSheetView (BSPW4-09) — Jon/Tiny/Isolde exceed 100 in the export', () => {
   const raw = loadFixtureJson(FIXTURE);
   const totals = (raw.skills as { totals: Record<string, unknown> }).totals;
   const tree = treeTotalsFromSave(totals);

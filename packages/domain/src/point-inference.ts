@@ -6,7 +6,7 @@
 import { nakedFromBirth, type BirthStats, type TreeSheetTotals } from './birth-sheet';
 import { attackPointGain } from './model/combat';
 import { POINT_GAIN, STAT_CAPS } from './model/rarity-constants';
-import { starsMult, sumGearBonuses } from './gear/catalog';
+import { composeAttack, starsMult, sumGearBonuses } from './gear/catalog';
 import type { Loadout, SheetOtherPct, SheetStats } from './gear/types';
 import { SHEET_KEYS, type SheetKey } from './planner-constants';
 
@@ -92,7 +92,7 @@ export function inferSpentPoints(input: InferSpentPointsInput): PointInferenceRe
   };
 
   const raw: Record<SheetKey, number> = {
-    attack: (pool.attack - naked.attack - bonuses.dmgFlat) / atkPt,
+    attack: (pool.attack - composeAttack(naked.attack, bonuses)) / atkPt,
     energy: (pool.energy / gem - naked.energy) / (POINT_GAIN.energyNative * star),
     speed: solveShared(pool.speed, naked.speed, bonuses.speedPct, sheetOther.speed, POINT_GAIN.speedPctOfBase),
     critChance: solveShared(
@@ -130,7 +130,10 @@ export function inferSpentPoints(input: InferSpentPointsInput): PointInferenceRe
   const pts = {} as Record<SheetKey, number>;
   for (const key of SHEET_KEYS) {
     const value = raw[key];
-    const rounded = Math.round(value);
+    // Math.round of a tiny negative gives -0, which clears the `< 0` guard below and
+    // then leaks into stored records (and fails deep-equality against a plain 0).
+    // A spent-point count has no signed zero.
+    const rounded = Math.round(value) + 0;
     const residual = Math.abs(value - rounded);
     if (residual > POINT_INFERENCE_EPS) {
       issues.push({ kind: 'nonIntegerPoints', key, raw: value, residual });

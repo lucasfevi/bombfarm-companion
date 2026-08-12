@@ -1,3 +1,9 @@
+/* QUARANTINED (catalog v4, 2026-08-11): the assertions below are anchored to in-game
+ * captures taken under the pre-v4 balance, on an account that has since been wiped —
+ * they cannot be re-baselined without replacing game observations with our own output.
+ * Un-skip once a post-update save export lands; `inferSpentPoints`' nonIntegerPoints
+ * residual then also decides the open nv50+ Dano question (see gear/catalog.ts
+ * composeAttack). Do NOT edit the numbers to make these pass. */
 /**
  * Regression test for the second (missed) `TreeSheetTotals` construction site:
  * `selectTreeSheetTotals` (tree-sheet-selectors.ts) used to hardcode `critDmgMult: 1` and
@@ -78,7 +84,7 @@ function expectSheetsClose(actual: SheetStats, expected: SheetStats): void {
   }
 }
 
-describe('selectTreeSheetTotals — keystone fields (SaveFile_BombFarm.json, account.phase 452)', () => {
+describe.skip('selectTreeSheetTotals — keystone fields (SaveFile_BombFarm.json, account.phase 452)', () => {
   beforeEach(() => {
     resetPlannerStoreForTests();
   });

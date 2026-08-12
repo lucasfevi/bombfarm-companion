@@ -118,16 +118,18 @@ function baseSave() {
           cooldown_reduction: 0.01,
           luck: 0.02,
         },
+        // Recomputed 2026-08-11 for the catalog v4 rebalance (item stats ×0.7): dmg,
+        // penetration and luck are the amuleto's 3 rolls, so only those three move.
         stats: {
-          dmg: 1089.5036219123594,
+          dmg: 1031.0318879571785,
           energia: 456.7372881,
           speed: 46.223410365,
           crit_chance: 0.15348165135,
           crit_dmg: 2.196153846,
-          penetration: 1.7200000000000002,
+          penetration: 1.504,
           cooldown_reduction: 0.02,
           power: 13133.6,
-          luck: 0.0858007275,
+          luck: 0.08389992750000001,
         },
       },
       {

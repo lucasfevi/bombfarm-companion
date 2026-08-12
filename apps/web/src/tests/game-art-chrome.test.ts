@@ -298,3 +298,86 @@ describe('wiki asset footer credit', () => {
     expect(footer).toContain('wikiArtCredit');
   });
 });
+
+describe('referral code', () => {
+  const footer = read('app/_shell/footer.tsx');
+  const header = read('app/_shell/site-header.tsx');
+  const hook = read('app/_shell/use-referral-copy.ts');
+
+  it('renders the code from the shared constant in both places, never inlined', () => {
+    for (const src of [footer, header]) {
+      expect(src).toContain('REFERRAL_CODE');
+      expect(src).not.toMatch(/F-[A-Z0-9]{8}/);
+    }
+  });
+
+  it('shares one copy implementation instead of duplicating the fallback', () => {
+    for (const src of [footer, header]) {
+      expect(src).toContain('useReferralCopy');
+      expect(src).not.toContain('navigator.clipboard');
+    }
+    expect(hook).toContain('navigator.clipboard.writeText');
+  });
+
+  it('gives both copy controls an accessible name and confirms via toast', () => {
+    expect(footer).toContain('aria-label={t.referralCopy}');
+    expect(header).toContain('aria-label={t.referralTitle}');
+    expect(hook).toContain('flashToast(strings.referralCopied)');
+  });
+
+  it('uses the Tooltip primitive, never a native title attribute', () => {
+    // Scoped to the referral controls — other topbar buttons still use `title`.
+    const headerChip = header.slice(
+      header.indexOf('referral-topbar'),
+      header.indexOf('buymeacoffee'),
+    );
+    const footerLine = footer.slice(
+      footer.indexOf('referralIntro'),
+      footer.indexOf('data-testid="app-version"'),
+    );
+    for (const src of [footerLine, headerChip]) {
+      expect(src).toContain('Tooltip.Popup');
+      expect(src).not.toMatch(/\btitle=\{/);
+    }
+    expect(header).toContain('Tooltip.Trigger');
+    expect(footer).toContain('Tooltip.Trigger');
+  });
+
+  it('meets the 24px minimum target size', () => {
+    expect(footer).toContain("'size-6'");
+    // The header chip is a text control on the topbar's h-8 control row.
+    expect(header).toMatch(/data-testid="referral-topbar"[\s\S]*?h-8/);
+  });
+
+  it('keeps the topbar to the code alone, with the why in its tooltip', () => {
+    const chip = header.slice(header.indexOf('referral-topbar'), header.indexOf('buymeacoffee'));
+    expect(chip).not.toContain('referralIntro');
+    expect(chip).not.toContain('referralReward');
+    expect(chip).toContain('<Tooltip.Popup>{t.referralTitle}</Tooltip.Popup>');
+    for (const lang of ['en', 'pt'] as const) {
+      expect(STRINGS[lang].referralTitle).toMatch(/both|nós dois/i);
+      expect(STRINGS[lang].referralTitle).toContain('151');
+    }
+  });
+
+  it('falls back to selecting the code when the clipboard is unavailable', () => {
+    // An empty catch would leave the click with no visible effect on insecure
+    // origins or when the permission is denied.
+    expect(hook).toContain('selectNodeContents');
+    expect(hook).toContain('flashToast(strings.referralCopyManual)');
+    for (const lang of ['en', 'pt'] as const) {
+      expect(STRINGS[lang].referralCopyManual).toBeTruthy();
+    }
+  });
+
+  it('states the reward is mutual, in both languages', () => {
+    for (const lang of ['en', 'pt'] as const) {
+      expect(STRINGS[lang].referralIntro).toBeTruthy();
+      expect(STRINGS[lang].referralCopy).toBeTruthy();
+      expect(STRINGS[lang].referralCopied).toBeTruthy();
+      // "we both" / "nós dois" — never framed as a one-way favour.
+      expect(STRINGS[lang].referralReward).toMatch(/both|nós dois/i);
+      expect(STRINGS[lang].referralReward).toContain('151');
+    }
+  });
+});
