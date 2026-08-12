@@ -30,6 +30,17 @@ async function launchApp(env) {
       // brief forbids running against the live game or a real token). Memory mode's
       // tickMemory() scans for this process name and will never find it.
       BFC_GAME_PROCESS: 'bfc-smoke-no-such-process.exe',
+      // Redirects session-token-file.ts's sessionCfgPath() away from the real
+      // %APPDATA%/Godot/app_userdata/BombFarm/session.cfg (T-fix-4). Without this, the first
+      // scenario below accepts consent, and the very next account-refresh cycle would open
+      // whichever real session.cfg exists on the machine running this suite and issue a live,
+      // authenticated request using the real player's token — entirely as a side effect of a
+      // test run. Only takes effect when `app.isPackaged` is false (this suite always launches
+      // unpackaged from source), the same gate BFC_USER_DATA_DIR already uses one line below.
+      // Pointed at a path that deliberately does not exist: readSessionToken degrades that to
+      // `token_unavailable` (no network call at all), which is strictly safer than requiring a
+      // fixture file this suite would otherwise have to maintain.
+      BFC_TOKEN_PATH_OVERRIDE: path.join(desktopRoot, 'tests', 'smoke', '.no-such-session.cfg'),
       ...env,
     },
   });

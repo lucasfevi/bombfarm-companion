@@ -17,6 +17,7 @@ import { GameReaderService } from './game-reader/game-reader-service.js';
 import { createAccountRefresh, type AccountRefreshHandle } from './game-api/account-refresh.js';
 import { createConsentStore, type ConsentStore } from './game-api/consent-store.js';
 import { nodeHttpsTransport } from './game-api/https-transport.js';
+import { readSessionToken, sessionCfgPath } from './game-api/session-token-file.js';
 import { configureLogging, log } from './logging.js';
 import { createAccountStore, type AccountStore } from './storage/account-store.js';
 import { createStorage, openAccountDatabase, type Storage } from './storage/index.js';
@@ -203,6 +204,11 @@ async function bootstrap(): Promise<void> {
     store: accountStore,
     log,
     now: () => new Date().toISOString(),
+    // Threads Electron's real `app.isPackaged` (via `resolveAppEnv()`) so `sessionCfgPath`'s
+    // `BFC_TOKEN_PATH_OVERRIDE` escape hatch (T-fix-4) can ever apply — and, symmetrically,
+    // cannot apply in a packaged build no matter what is set in its environment. See
+    // `session-token-file.ts`'s `SessionCfgPathDeps` doc comment.
+    readToken: (consent) => readSessionToken(consent, undefined, sessionCfgPath({ isPackaged: resolveAppEnv().isPackaged })),
     onView: (view) => {
       emitEvent('account:changed', view);
     },

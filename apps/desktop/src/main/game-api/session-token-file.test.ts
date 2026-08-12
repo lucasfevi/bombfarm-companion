@@ -46,6 +46,39 @@ describe('sessionCfgPath — resolves exactly %APPDATA%/Godot/app_userdata/BombF
     }
   });
 
+  it('zero-arg sessionCfgPath() ignores BFC_TOKEN_PATH_OVERRIDE even when it is set (fail-closed default)', () => {
+    // The production/zero-arg shape: readSessionToken(consent) -> filePath defaults to
+    // sessionCfgPath() with no deps, i.e. isPackaged defaults to true, so the override below is
+    // never honoured no matter what is in the real process.env (T-fix-4).
+    const originalAppData = process.env.APPDATA;
+    const originalOverride = process.env.BFC_TOKEN_PATH_OVERRIDE;
+    process.env.APPDATA = 'C:\\Users\\tester\\AppData\\Roaming';
+    process.env.BFC_TOKEN_PATH_OVERRIDE = 'C:\\temp\\should-be-ignored\\session.cfg';
+    try {
+      expect(sessionCfgPath()).toBe('C:\\Users\\tester\\AppData\\Roaming\\Godot\\app_userdata\\BombFarm\\session.cfg');
+    } finally {
+      if (originalAppData === undefined) delete process.env.APPDATA;
+      else process.env.APPDATA = originalAppData;
+      if (originalOverride === undefined) delete process.env.BFC_TOKEN_PATH_OVERRIDE;
+      else process.env.BFC_TOKEN_PATH_OVERRIDE = originalOverride;
+    }
+  });
+
+  it('honours BFC_TOKEN_PATH_OVERRIDE only when isPackaged is explicitly false', () => {
+    const env = { APPDATA: 'C:\\appdata', BFC_TOKEN_PATH_OVERRIDE: 'C:\\fixtures\\session.cfg' };
+    expect(sessionCfgPath({ isPackaged: false, env })).toBe('C:\\fixtures\\session.cfg');
+  });
+
+  it('ignores BFC_TOKEN_PATH_OVERRIDE when isPackaged is true — a packaged build cannot be redirected', () => {
+    const env = { APPDATA: 'C:\\appdata', BFC_TOKEN_PATH_OVERRIDE: 'C:\\fixtures\\session.cfg' };
+    expect(sessionCfgPath({ isPackaged: true, env })).toBe('C:\\appdata\\Godot\\app_userdata\\BombFarm\\session.cfg');
+  });
+
+  it('falls back to the real path when unpackaged but no override is set', () => {
+    const env = { APPDATA: 'C:\\appdata' };
+    expect(sessionCfgPath({ isPackaged: false, env })).toBe('C:\\appdata\\Godot\\app_userdata\\BombFarm\\session.cfg');
+  });
+
   it('readSessionToken passes exactly the resolved sessionCfgPath() to the FsPort', () => {
     const path = sessionCfgPath();
     const fs = fakeFsPort({ [path]: { text: REAL_SHAPE, mtimeMs: 1000 } });

@@ -20,8 +20,39 @@ const nodeFsPort: FsPort = {
   statSync: (path) => statSync(path),
 };
 
-export function sessionCfgPath(): string {
-  const appData = process.env.APPDATA ?? join(homedir(), 'AppData', 'Roaming');
+export interface SessionCfgPathDeps {
+  /** Electron's real `app.isPackaged` — the only thing that may unlock the override below, and
+   *  never derived from any environment variable (so it cannot be spoofed by setting one). Every
+   *  caller that does not explicitly thread the real value — every unit test, and
+   *  `readSessionToken`'s own zero-arg default parameter below — leaves this at its default of
+   *  `true`, i.e. production/fail-closed behaviour: the real %APPDATA% path, unconditionally.
+   *  `apps/desktop/src/main/index.ts` is the one production caller that threads the real flag,
+   *  taken from `resolveAppEnv().isPackaged` (`env.ts`), the same source `BFC_USER_DATA_DIR`
+   *  already trusts for the same reason. */
+  readonly isPackaged?: boolean;
+  readonly env?: NodeJS.ProcessEnv;
+}
+
+/**
+ * Test-only escape hatch (T-fix-4) for `apps/desktop/tests/smoke/consent-modal.spec.mjs`, which
+ * cannot inject a `filePath` the way every unit test does (it drives the real Electron `main`
+ * process end to end, which always calls `readSessionToken` with its zero-arg default). Without
+ * this, that suite's first scenario accepts consent and the very next account-refresh cycle would
+ * open whichever real `%APPDATA%/Godot/app_userdata/BombFarm/session.cfg` exists on the machine
+ * running the suite — a real credential, used for a real authenticated request, as a side effect
+ * of running tests.
+ *
+ * `BFC_TOKEN_PATH_OVERRIDE` is honoured only when `deps.isPackaged === false` — see the field's
+ * own doc comment for how a packaged production build is guaranteed to never honour it regardless
+ * of what is set in its environment.
+ */
+export function sessionCfgPath(deps: SessionCfgPathDeps = {}): string {
+  const env = deps.env ?? process.env;
+  const isPackaged = deps.isPackaged ?? true;
+  if (!isPackaged && env.BFC_TOKEN_PATH_OVERRIDE) {
+    return env.BFC_TOKEN_PATH_OVERRIDE;
+  }
+  const appData = env.APPDATA ?? join(homedir(), 'AppData', 'Roaming');
   return join(appData, 'Godot', 'app_userdata', 'BombFarm', 'session.cfg');
 }
 
