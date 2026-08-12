@@ -80,7 +80,7 @@ export function buildHttpRequest(
     method: METHOD,
     path,
     headers: {
-      Authorization: `Bearer ${session.token[RAW]}`,
+      Authorization: `Bearer ${session.token[RAW]()}`,
       'X-Account-Id': session.accountId,
       Accept: 'application/json',
       Host: HOST,

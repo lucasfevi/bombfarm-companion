@@ -54,12 +54,22 @@ describe('SessionToken — a token cannot be printed (LAR-12)', () => {
 
   it('trims surrounding whitespace before storing', () => {
     const token = SessionToken.create(`  ${SENTINEL}  `);
-    expect(token[RAW]).toBe(SENTINEL);
+    expect(token[RAW]()).toBe(SENTINEL);
   });
 
   it('the RAW symbol is the only way to read the value back out', () => {
     const token = SessionToken.create(SENTINEL);
-    expect(token[RAW]).toBe(SENTINEL);
+    expect(token[RAW]()).toBe(SENTINEL);
+  });
+
+  it('util.inspect never leaks the raw value, even with customInspect:false + showHidden:true + getters:true', () => {
+    // Regression for a previously-latent leak: [RAW] used to be a `get` accessor, which
+    // util.inspect's getters:true option evaluates and prints. It is now a plain method, which
+    // getters:true does not call — showHidden:true can surface it as a symbol-keyed function
+    // property at most, never its return value.
+    const token = SessionToken.create(SENTINEL);
+    const rendered = inspect(token, { customInspect: false, showHidden: true, getters: true });
+    expect(rendered).not.toContain(SENTINEL);
   });
 });
 

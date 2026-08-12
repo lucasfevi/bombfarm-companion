@@ -7,9 +7,11 @@ import type { GrantedConsent } from './consent.js';
  * `'[redacted]'`, and the raw value lives in a true private class field (`#value`) so it is not an
  * own enumerable property — `Object.keys`, `Object.entries` and object spread all expose nothing.
  *
- * The one legitimate reader is `request.ts`, which reaches the raw string through the
- * module-private `RAW` symbol below — reachable only by importing this exact symbol reference,
- * not by name or by reflection.
+ * The one legitimate reader is `request.ts`, which reaches the raw string by calling the
+ * module-private `RAW` symbol-keyed method below (`token[RAW]()`) — reachable only by importing
+ * this exact symbol reference, not by name, and not by any reflection API: it is a plain method,
+ * not a `get` accessor, specifically so `util.inspect`'s `getters: true` option (which evaluates
+ * accessor properties) cannot trigger it into printing the raw value.
  */
 
 /** @internal — imported only by `request.ts`. Do not export this symbol beyond this package. */
@@ -42,8 +44,16 @@ export class SessionToken {
     return '[redacted]';
   }
 
-  /** @internal — read only by `request.ts`, and only through the module-private `RAW` symbol. */
-  get [RAW](): string {
+  /** @internal — read only by `request.ts`, and only through the module-private `RAW` symbol.
+   *  Deliberately a plain method, not a `get` accessor: `util.inspect(token, { customInspect:
+   *  false, showHidden: true, getters: true })` evaluates *accessor* properties and prints their
+   *  return value — `#value` itself stays a true private field and is never reachable that way,
+   *  but the old `get [RAW]()` accessor was itself an evaluable property under those three
+   *  options together, which leaked the raw value through it even though no call site in this
+   *  codebase currently sets all three (grepped; zero hits — this was latent, not live). A plain
+   *  method is only ever *called*, never evaluated by `util.inspect`, so `showHidden: true`
+   *  prints it as `[Function: [RAW]]` at most, closing this reflection surface too. */
+  [RAW](): string {
     return this.#value;
   }
 }

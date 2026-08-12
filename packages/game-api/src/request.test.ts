@@ -54,7 +54,7 @@ function fakeTransport(response: HttpResponse): HttpTransport & ReturnType<typeo
 describe('buildHttpRequest — the token is read through RAW exactly once, nowhere else', () => {
   it('places the raw token in Authorization only, not in path or any other header', () => {
     const req = buildHttpRequest(session, '/state');
-    const rawToken = session.token[RAW];
+    const rawToken = session.token[RAW]();
 
     expect(req.headers.Authorization).toBe(`Bearer ${rawToken}`);
     expect(req.headers['X-Account-Id']).toBe('486');
