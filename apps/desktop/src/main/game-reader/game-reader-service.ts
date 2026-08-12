@@ -1,7 +1,8 @@
 import type { BrowserWindow } from 'electron';
-import type { GameSnapshotPayload, GameStatusInfo, IpcEventChannel } from '@bombfarm/contracts';
+import type { AccountPayload, AccountView, GameSnapshotPayload, GameStatusInfo, IpcEventChannel } from '@bombfarm/contracts';
 import { buildSnapshot } from '@bombfarm/game-data';
 import { log } from '../logging.js';
+import { buildFixtureAccountPayload } from './fixture-account.js';
 import {
   buildFixtureSnapshot,
   loadFixtureBundle,
@@ -10,6 +11,11 @@ import {
 import type { ScanTarget } from './memory-scanner.js';
 import { MemoryScanner } from './memory-scanner.js';
 import { findProcessId } from './process.js';
+
+/** The subset of `AccountStore` the game reader needs to persist a fixture tick's payload. */
+export interface AccountCommitter {
+  commit(live: AccountPayload, opts: { gameRunning: boolean }): AccountView;
+}
 
 export type GameReaderMode = 'memory' | 'fixture';
 
@@ -37,6 +43,8 @@ export class GameReaderService {
   private payload: GameSnapshotPayload;
   private timer: NodeJS.Timeout | null = null;
   private windowProvider: (() => BrowserWindow | null) | null = null;
+  private accountStore: AccountCommitter | null = null;
+  private lastAccountView: AccountView | null = null;
 
   private scanner: MemoryScanner | null = null;
   private target: ScanTarget | null = null;
@@ -66,6 +74,17 @@ export class GameReaderService {
 
   setWindowProvider(provider: () => BrowserWindow | null): void {
     this.windowProvider = provider;
+  }
+
+  /** Injected once at boot (design §8, TD-8). Only fixture-mode ticks call `commit()` on it —
+   * F3 has no memory-mode producer; F2 owns that call site. */
+  setAccountStore(store: AccountCommitter): void {
+    this.accountStore = store;
+  }
+
+  /** The most recently committed merged view, or `null` before any fixture tick has run. */
+  getAccountView(): AccountView | null {
+    return this.lastAccountView;
   }
 
   start(): void {
@@ -148,6 +167,10 @@ export class GameReaderService {
         inventory: this.fixtureBundle.inventory,
       },
     });
+
+    if (this.accountStore) {
+      this.lastAccountView = this.accountStore.commit(buildFixtureAccountPayload(takenAt), { gameRunning: true });
+    }
   }
 
   private tickMemory(): void {
