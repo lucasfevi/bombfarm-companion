@@ -15,8 +15,17 @@ export interface AccountStoreDeps {
   log?: LogPort;
 }
 
+export interface PersistOpts {
+  accountId?: string | null;
+}
+
+export interface PersistResult {
+  written: readonly AccountSection[];
+}
+
 export interface AccountStore {
   restore(expectedAccountId?: string | null): RestoredAccount;
+  persist(payload: AccountPayload, opts?: PersistOpts): PersistResult;
   close(): void;
 }
 
@@ -127,8 +136,76 @@ export function createAccountStore(open: OpenResult, deps: AccountStoreDeps = {}
     };
   }
 
+  function setBoundAccountId(key: string): void {
+    if (!db) return;
+    db.prepare(
+      'INSERT INTO account_meta (key, value) VALUES (?, ?) ON CONFLICT DO UPDATE SET value = excluded.value',
+    ).run('account_id', key);
+  }
+
+  /**
+   * Writes section `S` iff `payload.fidelity?.[S]?.status === 'resolved'` and `payload[S]`
+   * is present — an allow-list of exactly one status (design TD-7), so a future/unknown
+   * status (e.g. `degraded`, `AD-023`) is never written by default. `capturedAt` is stored
+   * verbatim. All writes for one poll run inside one transaction; a throw mid-poll rolls
+   * back the whole poll, leaving every previously stored section untouched.
+   */
+  function persist(payload: AccountPayload, opts: PersistOpts = {}): PersistResult {
+    if (!db) {
+      return { written: [] };
+    }
+
+    const fidelity = payload.fidelity;
+    if (!fidelity) {
+      log.warn({ scope: 'storage', event: 'account.no_fidelity' });
+      return { written: [] };
+    }
+
+    const untypedPayload = payload as unknown as Record<string, unknown>;
+    const toWrite: { section: AccountSection; body: unknown; capturedAt: string }[] = [];
+    for (const section of ACCOUNT_SECTIONS) {
+      const sectionFidelity = fidelity[section];
+      const body = untypedPayload[section];
+      if (sectionFidelity.status === 'resolved' && body !== undefined) {
+        toWrite.push({ section, body, capturedAt: sectionFidelity.capturedAt });
+      }
+    }
+
+    if (toWrite.length === 0) {
+      return { written: [] };
+    }
+
+    const bound = getBoundAccountId();
+    const resolved = resolveAccountKey(bound, opts.accountId ?? null);
+
+    try {
+      db.exec('BEGIN');
+      if (resolved.rebind) {
+        setBoundAccountId(resolved.key);
+      }
+      for (const item of toWrite) {
+        db.prepare(
+          'INSERT INTO account_section (account_key, section, body, captured_at) VALUES (?, ?, ?, ?) ' +
+            'ON CONFLICT(account_key, section) DO UPDATE SET body = excluded.body, captured_at = excluded.captured_at',
+        ).run(resolved.key, item.section, JSON.stringify(item.body), item.capturedAt);
+      }
+      db.exec('COMMIT');
+    } catch (err) {
+      try {
+        db.exec('ROLLBACK');
+      } catch {
+        // best-effort rollback of an already-broken transaction
+      }
+      log.error({ scope: 'storage', event: 'account.persist_failed', error: String(err) });
+      return { written: [] };
+    }
+
+    return { written: toWrite.map((item) => item.section) };
+  }
+
   return {
     restore,
+    persist,
     close() {
       db?.close();
     },
