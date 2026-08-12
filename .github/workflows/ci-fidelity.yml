@@ -1,0 +1,116 @@
+name: CI Fidelity
+
+# MP2 F4 (LHP-13) — the cross-source fidelity gate: packages/domain/tests/fidelity-*.test.ts
+# proves the live-sourced path is held to the export-sourced path's standard. Path-filtered,
+# with its own required check — ci-desktop.yml and ci-web.yml both run this suite incidentally
+# (defence in depth) but neither is FID-08's exact path union and both pass on `skipped`
+# (design.md TD-5, R-2).
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main, develop]
+    # Keep in sync with the dorny/paths-filter list in the changes job below.
+    paths:
+      - 'apps/desktop/**'
+      - 'packages/game-data/**'
+      - 'packages/domain/**'
+      - 'packages/contracts/**'
+      - 'pnpm-lock.yaml'
+      - 'vitest.config.ts'
+      - '.github/workflows/ci-fidelity.yml'
+  pull_request:
+
+concurrency:
+  group: ci-fidelity-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  pull-requests: read
+
+jobs:
+  changes:
+    runs-on: ubuntu-latest
+    outputs:
+      fidelity: ${{ steps.filter.outputs.fidelity }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          # Keep in sync with on.push.paths above.
+          filters: |
+            fidelity:
+              - 'apps/desktop/**'
+              - 'packages/game-data/**'
+              - 'packages/domain/**'
+              - 'packages/contracts/**'
+              - 'pnpm-lock.yaml'
+              - 'vitest.config.ts'
+              - '.github/workflows/ci-fidelity.yml'
+
+  fidelity-gate:
+    name: Fidelity gate (live-sourced vs export-sourced)
+    needs: changes
+    if: github.event_name != 'pull_request' || needs.changes.outputs.fidelity == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      # packages/domain resolves @bombfarm/contracts through node_modules -> dist/index.d.ts
+      # (AD-020), same as ci-desktop.yml's and ci-web.yml's existing contracts-build step.
+      - name: Build contracts (domain type dependency)
+        run: pnpm --filter @bombfarm/contracts build
+
+      # AD-021/AD-027: no domain test file is typechecked by the package's own `typecheck`
+      # script (its tsconfig.json only includes src/**/*.ts). This is the only static check
+      # that reaches the fidelity gate's own code (tasks.md's Gate Check Commands notes).
+      - name: Typecheck the fidelity-gate test files
+        run: pnpm --filter @bombfarm/domain exec tsc -p tsconfig.typecheck.json --noEmit
+
+      # Deliberately no --passWithNoTests and no continue-on-error: verified on develop that a
+      # filename filter matching zero files exits 1 (tasks.md), so a renamed-away suite fails
+      # this job rather than reporting green.
+      - name: Fidelity suite (packages/domain, "fidelity" filename filter)
+        run: pnpm vitest run --project @bombfarm/domain fidelity
+
+      # The guard on this workflow itself (tools/fidelity-gate.test.mjs) and the no-skip source
+      # guard over the six F4 files both live in the tools project.
+      - name: Fidelity gate guard (tools project)
+        run: pnpm vitest run --project tools
+
+  fidelity-gate-required:
+    name: fidelity-gate-required
+    needs: [changes, fidelity-gate]
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Require path detection
+        if: needs.changes.result != 'success'
+        run: exit 1
+
+      # Deliberately NOT the ci-desktop-required idiom (which only checks failure/cancelled and
+      # treats skipped as pass unconditionally): this gate must fail when the path filter
+      # matched but the job did not run at all — skipped or cancelled — not just when it
+      # actively failed. A gate that reports success for "never ran" is worse than no gate
+      # (SBC-19/AD-018, design.md R-2).
+      - name: Require the fidelity gate suite when the filter matched
+        if: needs.changes.outputs.fidelity == 'true' && needs.fidelity-gate.result != 'success'
+        run: |
+          echo "fidelity-gate: ${{ needs.fidelity-gate.result }}"
+          exit 1
