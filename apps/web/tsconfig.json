@@ -22,7 +22,8 @@
       "@bombfarm/domain": ["../../packages/domain/src/index.ts"],
       "@bombfarm/domain/*": ["../../packages/domain/src/*"],
       "@bombfarm/ui": ["../../packages/ui/src/index.ts"],
-      "@bombfarm/ui/*": ["../../packages/ui/src/*"]
+      "@bombfarm/ui/*": ["../../packages/ui/src/*"],
+      "@bombfarm/contracts": ["../../packages/contracts/src/index.ts"]
     }
   },
   "include": [

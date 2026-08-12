@@ -1,6 +1,15 @@
 import type { AppFlavor, UpdateChannel } from './flavors.js';
 
 export type {
+  AccountFidelity,
+  AccountFidelityGrade,
+  AccountFidelityReport,
+  AccountPayload,
+  AccountSection,
+  SectionFidelity,
+  SectionStatus,
+} from './account-payload.js';
+export type {
   AppFlavor,
   FlavorDescriptor,
   ResolveRuntimeFlavorInput,

@@ -31,6 +31,7 @@ export default defineConfig({
   resolve: {
     alias: {
       '@bombfarm/domain': path.resolve(root, './src'),
+      '@bombfarm/contracts': path.resolve(root, '../contracts/src'),
     },
   },
 });
