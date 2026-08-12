@@ -225,7 +225,12 @@ describe('createAccountStore().persist()', () => {
       });
       const beforeRow = readRow(open.db, 'heroes');
 
-      const degradedFidelity = { status: 'degraded' } as unknown as SectionFidelity;
+      // A valid capturedAt is included deliberately: this must fail the write-gate on
+      // `status`, not incidentally fail a NOT NULL bind because capturedAt is absent. A
+      // gate weakened to `status !== 'missing'` would otherwise still write this row
+      // successfully, and a fixture with no capturedAt would hide that (the write would
+      // throw for an unrelated reason and land on the same written:[] outcome by accident).
+      const degradedFidelity = { status: 'degraded', capturedAt: '2026-08-12T03:00:00.000Z' } as unknown as SectionFidelity;
       const result = store.persist({
         heroes: [{ id: 'h2-should-not-be-written' }],
         fidelity: {
