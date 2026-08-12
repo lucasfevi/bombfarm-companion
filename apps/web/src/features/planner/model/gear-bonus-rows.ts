@@ -21,6 +21,7 @@ export function gearBonusRows(
 
   const defs: { key: keyof GearBonuses; label: string; percent: boolean }[] = [
     { key: 'dmgFlat', label: strings.slotStatFullLabels.dmg, percent: false },
+    { key: 'dmgPct', label: strings.dmgPctLabel, percent: true },
     { key: 'energyPct', label: strings.slotStatFullLabels.energia, percent: true },
     { key: 'speedPct', label: strings.slotStatFullLabels.velocidade, percent: true },
     { key: 'luckPct', label: strings.slotStatFullLabels.sorte, percent: true },

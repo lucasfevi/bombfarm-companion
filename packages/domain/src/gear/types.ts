@@ -4,6 +4,17 @@ export type Slot = (typeof catalog.slots)[number];
 export type ItemStat = (typeof catalog.itemStats)[number];
 export type ItemRarityIdx = number;
 
+/**
+ * One scaled stat roll. `unit` is 'flat' only for Dano below the catalog's
+ * `dmgPctMinLevel`; every other roll (including Dano at or above it) is a
+ * fraction of the attribute it modifies.
+ */
+export type ScaledValor = {
+  stat: ItemStat;
+  valor: number;
+  unit: 'flat' | 'pct';
+};
+
 export type EquippedItem = {
   defId: string;
   rarityIdx: number; // 0..5
@@ -27,6 +38,12 @@ export type SheetStats = {
 
 export type GearBonuses = {
   dmgFlat: number;
+  /**
+   * Σ of the Dano rolls carried by items at or above `catalog.dmgPctMinLevel`,
+   * as a fraction of the hero's Attack (catalog v4 — see {@link composeAttack}).
+   * Items below that level contribute to `dmgFlat` instead; no item feeds both.
+   */
+  dmgPct: number;
   energyPct: number;
   speedPct: number;
   luckPct: number;

@@ -9,6 +9,7 @@ const fmt = (n: number, d = 0) => n.toFixed(d);
 
 const current: GearBonuses = {
   dmgFlat: 10,
+  dmgPct: 0,
   energyPct: 0.1,
   speedPct: 0.2,
   luckPct: 0.05,
@@ -19,6 +20,7 @@ const current: GearBonuses = {
 
 const clone: GearBonuses = {
   dmgFlat: 20,
+  dmgPct: 0,
   energyPct: 0.2,
   speedPct: 0.1,
   luckPct: 0.05,
@@ -32,6 +34,7 @@ describe('gearBonusRows', () => {
     const rows = gearBonusRows(current, t);
     expect(rows.map((r) => r.key)).toEqual([
       'dmgFlat',
+      'dmgPct',
       'energyPct',
       'speedPct',
       'luckPct',

@@ -489,7 +489,14 @@
       "luck": "Luck"
     },
     "pointsLuckHint": "Loot-facing — not scored for DPS, so it never shows up in Next point or Optimize build.",
-    "resetAdviceRosterHero": "{name} (Lv {level})"
+    "resetAdviceRosterHero": "{name} (Lv {level})",
+    "dmgPctLabel": "Damage (% of Attack)",
+    "referralIntro": "Referral code",
+    "referralReward": "— a reward for us both at stage 151.",
+    "referralCopy": "Copy referral code",
+    "referralCopied": "Referral code copied",
+    "referralCopyManual": "Clipboard unavailable — the code is selected, press Ctrl+C",
+    "referralTitle": "Copy my referral code — we both get a reward once you clear stage 151"
   },
   "pt": {
     "tagline": "build → equipamento → pontos",
@@ -981,6 +988,13 @@
       "luck": "Sorte"
     },
     "pointsLuckHint": "Voltado a loot — não pontua para DPS, por isso nunca aparece no Próximo ponto nem no Otimizar build.",
-    "resetAdviceRosterHero": "{name} (Nv {level})"
+    "resetAdviceRosterHero": "{name} (Nv {level})",
+    "dmgPctLabel": "Dano (% da Ataque)",
+    "referralIntro": "Código de indicação",
+    "referralReward": "— recompensa para nós dois na fase 151.",
+    "referralCopy": "Copiar código de indicação",
+    "referralCopied": "Código de indicação copiado",
+    "referralCopyManual": "Área de transferência indisponível — o código está selecionado, aperte Ctrl+C",
+    "referralTitle": "Copiar meu código de indicação — nós dois ganhamos uma recompensa quando você passar da fase 151"
   }
 }

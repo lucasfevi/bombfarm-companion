@@ -65,10 +65,14 @@ export function peelSheetSources(input: PeelSheetSourcesInput): SheetSourceLines
   const star = starsMult(stars);
   const bonuses = sumGearBonuses(loadout);
 
-  // Attack: additive gear + additive points bundled into Hero; tree multiplies the subtotal.
+  // Attack: additive points bundled into Hero; tree multiplies the subtotal.
+  // Gear carries both Dano regimes — the nv50+ % of naked attack plus any flat
+  // rolls — so the Gear line still reports the items' whole contribution and
+  // `hero + gear` stays exactly the pre-tree subtotal (AC-10 sum identity).
   const atkPt = attackPointGain(level) * star;
-  const attackHero = birth.attack * levelPowerMult(level) * star + pts.attack * atkPt;
-  const attackGear = bonuses.dmgFlat;
+  const attackNaked = birth.attack * levelPowerMult(level) * star;
+  const attackHero = attackNaked + pts.attack * atkPt;
+  const attackGear = attackNaked * bonuses.dmgPct + bonuses.dmgFlat;
   const attackPreTree = attackHero + attackGear;
   const attack: SourceLines = {
     hero: attackHero,

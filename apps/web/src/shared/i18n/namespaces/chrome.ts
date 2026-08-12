@@ -33,6 +33,12 @@ export const en = {
   wikiArtCreditLink: "wiki.bombfarm.net",
   heroAvatarCol: "Avatar",
   coffee: "Buy me a coffee",
+  referralIntro: "Referral code",
+  referralReward: "— a reward for us both at stage 151.",
+  referralCopy: "Copy referral code",
+  referralCopied: "Referral code copied",
+  referralTitle: "Copy my referral code — we both get a reward once you clear stage 151",
+  referralCopyManual: "Clipboard unavailable — the code is selected, press Ctrl+C",
 };
 
 export const pt: typeof en = {
@@ -70,4 +76,10 @@ export const pt: typeof en = {
   wikiArtCreditLink: "wiki.bombfarm.net",
   heroAvatarCol: "Avatar",
   coffee: "Me pague um café",
+  referralIntro: "Código de indicação",
+  referralReward: "— recompensa para nós dois na fase 151.",
+  referralCopy: "Copiar código de indicação",
+  referralCopied: "Código de indicação copiado",
+  referralTitle: "Copiar meu código de indicação — nós dois ganhamos uma recompensa quando você passar da fase 151",
+  referralCopyManual: "Área de transferência indisponível — o código está selecionado, aperte Ctrl+C",
 };

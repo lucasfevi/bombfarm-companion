@@ -1,3 +1,9 @@
+/* QUARANTINED (catalog v4, 2026-08-11): the assertions below are anchored to in-game
+ * captures taken under the pre-v4 balance, on an account that has since been wiped —
+ * they cannot be re-baselined without replacing game observations with our own output.
+ * Un-skip once a post-update save export lands; `inferSpentPoints`' nonIntegerPoints
+ * residual then also decides the open nv50+ Dano question (see gear/catalog.ts
+ * composeAttack). Do NOT edit the numbers to make these pass. */
 // Regression tests against real BombFarm save-file data: for each hero, the naked
 // (unequipped, in-game) sheet and equipped items are real, observed values; the
 // expected geared sheet is the real in-game value read from the same account.
@@ -39,7 +45,7 @@ function loadoutOf(gear: {
   return { ...emptyLoadout(), ...gear };
 }
 
-describe('real save-file heroes: naked + real gear -> real geared sheet', () => {
+describe.skip('real save-file heroes: naked + real gear -> real geared sheet', () => {
   it('Bram (Lendária L54, Olho 10) matches the real geared sheet', () => {
     const naked: SheetStats = {
       attack: 1077,
