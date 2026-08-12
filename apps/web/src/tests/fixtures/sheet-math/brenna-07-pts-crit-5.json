@@ -1,14 +1,12 @@
 {
 	"account": {
-		"account_id": 486.0,
 		"bag_capacity": 225.0,
 		"bag_tabs": 9.0,
 		"gold": "2251768",
 		"items_count": 173.0,
 		"locked": true,
 		"max_phase": 128.0,
-		"phase": 101.0,
-		"player_name": "Black"
+		"phase": 101.0
 	},
 	"casa": {
 		"active_casa": 3.0,

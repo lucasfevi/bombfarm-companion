@@ -55,8 +55,12 @@ export interface FidelityPair {
   readonly livePayload: AccountPayload;
 }
 
-/** Personal fields scrubbed from every committed capture (`docs/SAVE_EXPORT.md`, spec.md). */
-const PERSONAL_FIELDS = ['account_id', 'player_name'] as const;
+/**
+ * Personal fields scrubbed from every committed capture (`docs/SAVE_EXPORT.md`, spec.md).
+ * Exported so the repo-wide fixture guard (`fixtures-scrubbed.test.ts`) enforces the same
+ * list F4's own pair is held to — one source of truth, not two drifting copies.
+ */
+export const PERSONAL_FIELDS = ['account_id', 'player_name'] as const;
 
 function isObject(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null;
