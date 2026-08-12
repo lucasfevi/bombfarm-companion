@@ -1,4 +1,4 @@
-import { RAW, type ConsentedSession } from './session.js';
+import { ConsentedSessionRequiredError, RAW, isConsentedSession, type ConsentedSession } from './session.js';
 
 /**
  * The one request function (LAR-13, LAR-23…25). Adapted from
@@ -10,6 +10,12 @@ import { RAW, type ConsentedSession } from './session.js';
  * invariant — belt-and-suspenders per `AD-025`'s "type AND runtime" shape, exercised directly in
  * `request.test.ts` against a request corrupted through an unsafe cast (the only way a mismatched
  * host could ever reach this module, since `buildHttpRequest` always builds the trusted target).
+ *
+ * `buildHttpRequest` also runs `isConsentedSession` on its `session` argument before touching the
+ * token — the same three-mechanism pattern applied one hop downstream of `grantSession` itself
+ * (`AD-025`/`AD-028`): a `ConsentedSession` forged with `as unknown as ConsentedSession` is well
+ * typed at its call site but carries none of `grantSession`'s runtime brand, so it is rejected
+ * here rather than sailing through into a fully-formed authenticated request.
  */
 
 const HOST = 'api.bombfarm.net';
@@ -56,12 +62,19 @@ export interface RequestOptions {
 const DEFAULT_TIMEOUT_MS = 15_000;
 
 /** Builds the request. The token is read through the module-private `RAW` symbol here, and
- *  nowhere else in this package — it goes straight into the `Authorization` header. */
+ *  nowhere else in this package — it goes straight into the `Authorization` header.
+ *
+ *  Runtime-checks `session` first (see module doc comment) — a value that only *types* as
+ *  `ConsentedSession` without actually being minted by `grantSession` throws
+ *  `ConsentedSessionRequiredError` before any header is built. */
 export function buildHttpRequest(
   session: ConsentedSession,
   path: string,
   opts?: RequestOptions,
 ): HttpRequest {
+  if (!isConsentedSession(session)) {
+    throw new ConsentedSessionRequiredError();
+  }
   return {
     host: HOST,
     method: METHOD,

@@ -92,3 +92,36 @@ export function grantSession(
     [CONSENTED_BRAND]: true,
   };
 }
+
+/** Thrown at runtime when `request.ts` (`buildHttpRequest`/`requestGet`) is handed a value typed
+ *  as `ConsentedSession` that was not actually minted by `grantSession` — e.g. a value forged
+ *  with `{ ... } as unknown as ConsentedSession`. This applies the same "type AND runtime, not
+ *  type OR runtime" pattern `AD-025`/`AD-028` already apply to `grantSession` itself, one hop
+ *  downstream, at the layer that actually reads the token and builds the outbound request. */
+export class ConsentedSessionRequiredError extends Error {
+  constructor() {
+    super('ConsentedSessionRequiredError: requestGet/buildHttpRequest require a session minted by grantSession');
+    this.name = 'ConsentedSessionRequiredError';
+  }
+}
+
+/**
+ * The runtime half of the brand: `true` only for a value that actually carries the
+ * module-private `CONSENTED_BRAND` symbol key set to `true`, plus the shape `grantSession`
+ * always produces. A value forged with an unsafe cast cannot even name `CONSENTED_BRAND` (it is
+ * not exported), so it can imitate every *named* field of `ConsentedSession` and still fail this
+ * check — the same guarantee the type system gives a well-typed caller, now checked at runtime
+ * for a caller that bypassed the type system.
+ */
+export function isConsentedSession(value: unknown): value is ConsentedSession {
+  if (typeof value !== 'object' || value === null) {
+    return false;
+  }
+  const candidate = value as Record<PropertyKey, unknown>;
+  return (
+    candidate[CONSENTED_BRAND] === true &&
+    typeof candidate.accountId === 'string' &&
+    typeof candidate.grantedAt === 'string' &&
+    candidate.token instanceof SessionToken
+  );
+}

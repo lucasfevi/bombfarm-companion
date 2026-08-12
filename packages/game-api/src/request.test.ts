@@ -2,7 +2,7 @@ import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it, vi } from 'vitest';
 import type { GrantedConsent } from './consent.js';
-import { RAW, SessionToken, grantSession } from './session.js';
+import { ConsentedSessionRequiredError, RAW, SessionToken, grantSession, type ConsentedSession } from './session.js';
 import {
   buildHttpRequest,
   isTrustedHttpRequest,
@@ -17,6 +17,35 @@ import {
 const GRANTED: GrantedConsent = { decision: 'granted', grantedAt: '2026-08-12T13:15:38.000Z', textVersion: 1 };
 const SENTINEL_TOKEN = 'sentinel-3c8f0a71-do-not-leak';
 const session = grantSession(GRANTED, { accountId: '486', token: SessionToken.create(SENTINEL_TOKEN) });
+
+/** A value that satisfies `ConsentedSession`'s structural shape without ever going through
+ *  `grantSession` — exactly the forgery the Verifier used to defeat the request layer's (former)
+ *  lack of a runtime check: `{ accountId, token, grantedAt } as unknown as ConsentedSession`. */
+function forgeConsentedSession(): ConsentedSession {
+  return {
+    accountId: '486',
+    token: SessionToken.create('forged-token-should-never-be-sent'),
+    grantedAt: '2026-08-12T13:15:38.000Z',
+  } as unknown as ConsentedSession;
+}
+
+describe('buildHttpRequest/requestGet — reject a session forged through an unsafe cast (AD-025/AD-028, request-layer brand check)', () => {
+  it('buildHttpRequest throws ConsentedSessionRequiredError for a forged session, before building any header', () => {
+    const forged = forgeConsentedSession();
+    expect(() => buildHttpRequest(forged, '/state')).toThrow(ConsentedSessionRequiredError);
+  });
+
+  it('requestGet throws ConsentedSessionRequiredError for a forged session — zero transport calls', async () => {
+    const forged = forgeConsentedSession();
+    const transport = vi.fn();
+    await expect(requestGet(forged, transport, '/state')).rejects.toThrow(ConsentedSessionRequiredError);
+    expect(transport).not.toHaveBeenCalled();
+  });
+
+  it('a real session minted by grantSession is accepted (sanity — the check above is not vacuous)', () => {
+    expect(() => buildHttpRequest(session, '/state')).not.toThrow();
+  });
+});
 
 function fakeTransport(response: HttpResponse): HttpTransport & ReturnType<typeof vi.fn> {
   return vi.fn().mockResolvedValue(response) as HttpTransport & ReturnType<typeof vi.fn>;
