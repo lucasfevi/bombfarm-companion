@@ -18,11 +18,10 @@ Once `live.source` flips to `"api-assembled"`, the equality half becomes the rea
 proof — see [F2 handoff](#f2-handoff) below.
 
 > **`D24` changed which token that will be.** This document was written when F2 was scoped as a
-> *memory* reader, so the ladder's post-F2 branch is `"memory-assembled"`. F2 shipped as an
-> **API** source (`@bombfarm/game-api`) instead. The handoff below is therefore still pending,
-> and it needs a **third** token — `"api-assembled"` — rather than the flip originally planned.
-> `"memory-assembled"` is **not** renamed or removed: telemetry is still memory-sourced, and
-> renaming a merged tripwire rewrites its meaning retroactively.
+> *memory* reader, so the ladder's original post-F2 branch was `"memory-assembled"`. F2 shipped
+> as an **API** source (`@bombfarm/game-api`) instead, so the ladder now carries a **third**
+> token, `"api-assembled"`, rather than taking the flip originally planned. The rung is in place;
+> the handoff below is still pending because it needs a capture nobody has taken yet.
 
 ## What the gate proves, and what it does not (today)
 
@@ -122,24 +121,41 @@ committed pair must genuinely carry neither field.
 
 ## F2 handoff
 
-**Still outstanding.** It was written to happen in F2's own PR; `D24` changed F2's source from
-memory to the API mid-flight, and the retarget did not land with it. Do it as its own change:
+**The rung exists; the capture does not.** `'api-assembled'` is registered in `LiveSource` and
+`PROVENANCE_LADDER` with the same two assertions `'memory-assembled'` carries, both exercised
+against synthetic manifests. `'memory-assembled'` was **added alongside, never renamed** — it is
+a merged tripwire, and telemetry is still memory-sourced, so it keeps a real future subject.
 
-1. Replace `live-capture.json` with the API source's own serialised `AccountPayload` for the
-   reference account (still scrubbed of `account_id`/`player_name`).
-2. Add `'api-assembled'` to `LiveSource` and to `PROVENANCE_LADDER`
-   (`packages/domain/tests/helpers/fidelity-gate.ts`) with a non-empty assertion list, and bump
-   the ladder's key-set assertion in `fidelity-gate.test.ts` from two tokens to three. **Add —
-   never rename `'memory-assembled'`**: it is a merged tripwire, and telemetry is still
-   memory-sourced, so the token keeps a real future subject.
+What remains is blocked on a **maintainer capture**, not on code:
+
+1. Capture the reference account **twice, close together**: a save export *and* an API read. Both
+   halves matter — see the constraint below.
+2. Replace `live-capture.json` with the API source's serialised `AccountPayload` (scrubbed of
+   `account_id`/`player_name`) and `export-capture.json` with the matching export.
 3. Set `pair.json → live.source` to `"api-assembled"`.
-4. Add `live.readerVersion` — now `@bombfarm/game-api`'s version, not a memory reader's — and
-   `live.fingerprints`, the per-anchor schema fingerprints from the separate calibration capture
-   (`AD-019`'s API-oracle procedure, not this gate).
-5. Recompute `expected.heroes`/`items`/`statComparisons` from the real API output.
+4. Add `live.readerVersion` — `@bombfarm/game-api`'s version — and `live.fingerprints`, the
+   per-anchor schema fingerprints from the separate calibration capture (`AD-019`'s API-oracle
+   procedure, not this gate).
+5. Recompute `expected.heroes`/`items`/`statComparisons` from the real output.
 
-Four assertions tighten the moment the token changes (design §1.2) — the ladder is the only
-place that needs new code; no workflow and no other assertion needs editing:
+### The capture constraint
+
+> The comparator is hero-by-hero, field-by-field. The two captures must be of the **same account
+> at the same point in time** — the same roster, gold, phase and bag. This is a real constraint,
+> not a formality:
+>
+> - The existing API fixtures under `packages/domain/tests/fixtures/api/` are a **different
+>   account** (8 heroes / phase 21 / disjoint hero ids, versus the reference pair's 11 heroes /
+>   phase 60). They cannot be used here.
+> - Even the *same* account drifts. A 2026-07-31 export against a 2026-08-12 API read would
+>   differ on levels, gold and inventory — genuine differences the gate would correctly report as
+>   failures, drowning any real one.
+>
+> If a mismatched pair ever appears to make the gate "pass", the comparator has been loosened and
+> the gate is worthless. Fix the capture, never the tolerance.
+
+Four assertions tighten the moment the token changes (design §1.2) — no code, no workflow and no
+other assertion needs editing, because the rung is already registered:
 
 | Assertion | `export-derived` | `api-assembled` |
 | --- | --- | --- |

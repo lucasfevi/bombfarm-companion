@@ -19,10 +19,20 @@ const DEFAULT_FIXTURES_DIR = join(__dirname, '..', 'fixtures', 'fidelity-gate');
 const PAIR_MANIFEST_FILE = 'pair.json';
 const DOCS_LINK = 'docs/fidelity-gate.md';
 
-/** The provenance token this design ladders strictness off (`design.md` §1.2, `AD-026`). */
-export type LiveSource = 'export-derived' | 'memory-assembled';
+/**
+ * The provenance token this design ladders strictness off (`design.md` §1.2, `AD-026`).
+ *
+ * `api-assembled` was added when MP2 F2 shipped as an API source rather than the memory reader
+ * the ladder was first written for. `memory-assembled` is deliberately kept, not renamed: it is
+ * a merged tripwire whose meaning would be rewritten retroactively by a rename, and telemetry is
+ * still memory-sourced, so it keeps a real future subject.
+ */
+export type LiveSource = 'export-derived' | 'memory-assembled' | 'api-assembled';
 
-const KNOWN_LIVE_SOURCES: readonly LiveSource[] = ['export-derived', 'memory-assembled'];
+const KNOWN_LIVE_SOURCES: readonly LiveSource[] = ['export-derived', 'memory-assembled', 'api-assembled'];
+
+/** Tokens that assert an origin genuinely independent of the export. */
+const INDEPENDENT_LIVE_SOURCES: readonly LiveSource[] = ['memory-assembled', 'api-assembled'];
 
 export interface FidelityPairManifest {
   readonly schemaVersion: 1;
@@ -225,12 +235,12 @@ function parseManifest(raw: unknown): FidelityPairManifest {
     ...(liveRaw.readerVersion !== undefined ? { readerVersion: requireString(liveRaw.readerVersion, 'live.readerVersion') } : {}),
     ...(liveRaw.fingerprints !== undefined ? { fingerprints: liveRaw.fingerprints as Record<string, string> } : {}),
   };
-  if (liveSource === 'memory-assembled') {
+  if (INDEPENDENT_LIVE_SOURCES.includes(liveSource)) {
     requireString(liveRaw.readerVersion, 'live.readerVersion');
     if (!isObject(liveRaw.fingerprints) || Object.keys(liveRaw.fingerprints).length === 0) {
       throw new FidelityGateError(
         'manifestInvalid',
-        'pair.json manifest field "live.fingerprints" is required and must be non-empty when live.source is "memory-assembled".',
+        `pair.json manifest field "live.fingerprints" is required and must be non-empty when live.source is "${liveSource}".`,
         { field: 'live.fingerprints', value: liveRaw.fingerprints },
       );
     }

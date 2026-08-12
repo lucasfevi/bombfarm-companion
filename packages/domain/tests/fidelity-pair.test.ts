@@ -263,20 +263,23 @@ describe('T2 — the fail-loud loader', () => {
       expectCode(() => loadFidelityPair(dir), 'manifestInvalid');
     });
 
-    it('throws manifestInvalid when live.source is "memory-assembled" without readerVersion/fingerprints', () => {
-      writeManifest({
-        live: {
-          file: 'live-capture.json',
-          source: 'memory-assembled',
-          gameBuild: '2026.07.31',
-          capturedAt: '2026-07-31T00:00:00.000Z',
-          scrubbed: ['account_id', 'player_name'],
-        },
-      });
-      writeMinimalCapture('export-capture.json');
-      writeMinimalCapture('live-capture.json');
-      expectCode(() => loadFidelityPair(dir), 'manifestInvalid');
-    });
+    it.each(['memory-assembled', 'api-assembled'] as const)(
+      'throws manifestInvalid when live.source is "%s" without readerVersion/fingerprints',
+      (source) => {
+        writeManifest({
+          live: {
+            file: 'live-capture.json',
+            source,
+            gameBuild: '2026.07.31',
+            capturedAt: '2026-07-31T00:00:00.000Z',
+            scrubbed: ['account_id', 'player_name'],
+          },
+        });
+        writeMinimalCapture('export-capture.json');
+        writeMinimalCapture('live-capture.json');
+        expectCode(() => loadFidelityPair(dir), 'manifestInvalid');
+      },
+    );
 
     it('throws unscrubbedFixture when a capture still carries account_id', () => {
       writeManifest();

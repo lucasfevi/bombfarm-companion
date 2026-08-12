@@ -29,11 +29,50 @@ export interface GateAssertion {
 }
 
 /**
- * Strictness ladder (design §1.2, `AD-026`): both branches are non-empty and exercised now —
- * `export-derived` for real (the committed pair), `memory-assembled` against a synthetic
- * manifest in T5's own test — so flipping the token can neither silently drop the pre-F2
- * checks nor land on an untested post-F2 stub.
+ * Strictness ladder (design §1.2, `AD-026`): every branch is non-empty and exercised now —
+ * `export-derived` for real (the committed pair), `memory-assembled` and `api-assembled`
+ * against synthetic manifests — so changing the token can neither silently drop the
+ * export-derived checks nor land on an untested stub.
  */
+/**
+ * The two assertions every genuinely-independent-origin token owes, built per token so each
+ * ladder key still registers its own non-empty list (the anti-neutering property below depends
+ * on that, not on the assertions being distinct objects).
+ */
+function independentOriginAssertions(token: LiveSource): readonly GateAssertion[] {
+  return [
+    {
+      description: `the live capture must NOT be byte-equal to the framed export — proof it actually came from somewhere else (${token})`,
+      run: (pair) => {
+        const framedFromExport = frameLiveCapture(pair.exportPayload as unknown as Record<string, unknown>, {
+          capturedAt: pair.manifest.live.capturedAt,
+        });
+        const liveText = JSON.stringify(pair.livePayload);
+        const framedText = JSON.stringify(framedFromExport);
+        if (liveText === framedText) {
+          throw new FidelityGateError(
+            'manifestInvalid',
+            `live.source is "${token}" but live-capture.json is byte-identical to the framed export — this looks like the export-derived file was re-committed by mistake.`,
+            { source: token },
+          );
+        }
+      },
+    },
+    {
+      description: `live.readerVersion and a non-empty live.fingerprints are required at ${token}`,
+      run: (pair) => {
+        if (!pair.manifest.live.readerVersion || !pair.manifest.live.fingerprints || Object.keys(pair.manifest.live.fingerprints).length === 0) {
+          throw new FidelityGateError(
+            'manifestInvalid',
+            `live.source is "${token}" but live.readerVersion or a non-empty live.fingerprints is missing from pair.json.`,
+            { source: token },
+          );
+        }
+      },
+    },
+  ];
+}
+
 export const PROVENANCE_LADDER: Record<LiveSource, readonly GateAssertion[]> = {
   'export-derived': [
     {
@@ -54,37 +93,8 @@ export const PROVENANCE_LADDER: Record<LiveSource, readonly GateAssertion[]> = {
       },
     },
   ],
-  'memory-assembled': [
-    {
-      description: 'the live capture must NOT be byte-equal to the framed export — proof it actually came from somewhere else',
-      run: (pair) => {
-        const framedFromExport = frameLiveCapture(pair.exportPayload as unknown as Record<string, unknown>, {
-          capturedAt: pair.manifest.live.capturedAt,
-        });
-        const liveText = JSON.stringify(pair.livePayload);
-        const framedText = JSON.stringify(framedFromExport);
-        if (liveText === framedText) {
-          throw new FidelityGateError(
-            'manifestInvalid',
-            'live.source is "memory-assembled" but live-capture.json is byte-identical to the framed export — this looks like the export-derived file was re-committed by mistake.',
-            { source: 'memory-assembled' },
-          );
-        }
-      },
-    },
-    {
-      description: 'live.readerVersion and a non-empty live.fingerprints are required at memory-assembled',
-      run: (pair) => {
-        if (!pair.manifest.live.readerVersion || !pair.manifest.live.fingerprints || Object.keys(pair.manifest.live.fingerprints).length === 0) {
-          throw new FidelityGateError(
-            'manifestInvalid',
-            'live.source is "memory-assembled" but live.readerVersion or a non-empty live.fingerprints is missing from pair.json.',
-            { source: 'memory-assembled' },
-          );
-        }
-      },
-    },
-  ],
+  'memory-assembled': independentOriginAssertions('memory-assembled'),
+  'api-assembled': independentOriginAssertions('api-assembled'),
 };
 
 /** Runs every registered assertion for `pair.manifest.live.source`. An unknown token throws. */
