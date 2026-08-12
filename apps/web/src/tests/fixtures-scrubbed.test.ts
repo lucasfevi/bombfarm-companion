@@ -50,7 +50,7 @@ describe('committed web fixtures carry no player identity', () => {
       offenders.length > 0
         ? `Committed fixtures still carry personal fields: ${offenders.join(', ')}. Remove the ` +
           `account.${PERSONAL_FIELDS.join(' / account.')} keys entirely before committing a capture ` +
-          `— see docs/FIDELITY_GATE.md.`
+          `— see docs/fidelity-gate.md.`
         : 'no offenders';
     expect(offenders, message).toEqual([]);
   });

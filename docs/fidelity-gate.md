@@ -1,9 +1,11 @@
 # The fidelity gate (MP2 F4, LHP-13)
 
-**Status:** ships pre-F2. `pair.json → live.source` is `"export-derived"`; the cross-source
-*equality* half is a **regression fence, not a discovery instrument** — both committed captures
-share an origin, so it cannot find a reader bug that does not exist yet (design §1.1). The two
-halves that are fully real today, and are what `LHP-13`'s exit clause actually turns on, are:
+**Status (2026-08-12):** F2 has merged ([#63](https://github.com/lucasfevi/bombfarm-companion/pull/63)),
+but **the gate has not been retargeted onto it yet** — see [F2 handoff](#f2-handoff). `pair.json →
+live.source` is still `"export-derived"`, so the cross-source *equality* half remains a
+**regression fence, not a discovery instrument** — both committed captures share an origin, so it
+cannot find a reader bug (design §1.1). The two halves that are fully real today, and are what
+`LHP-13`'s exit clause actually turns on, are:
 
 1. **The degraded-input guard** (`FID-05`/`06`/`07`) — a live capture whose derived fidelity
    grade is not `full` fails the gate, naming every non-`resolved` section and its literal
@@ -12,20 +14,26 @@ halves that are fully real today, and are what `LHP-13`'s exit clause actually t
    the gate with a specific error code and message content
    (`packages/domain/tests/fidelity-gate-discrimination.test.ts`).
 
-Once F2 (`mp2-live-account-read`) lands and `live.source` flips to `"memory-assembled"`, the
-equality half becomes the real cross-source proof — see [F2 handoff](#f2-handoff) below.
+Once `live.source` flips to `"api-assembled"`, the equality half becomes the real cross-source
+proof — see [F2 handoff](#f2-handoff) below.
 
-## What the gate proves, and what it does not (pre-F2)
+> **`D24` changed which token that will be.** This document was written when F2 was scoped as a
+> *memory* reader, so the ladder's original post-F2 branch was `"memory-assembled"`. F2 shipped
+> as an **API** source (`@bombfarm/game-api`) instead, so the ladder now carries a **third**
+> token, `"api-assembled"`, rather than taking the flip originally planned. The rung is in place;
+> the handoff below is still pending because it needs a capture nobody has taken yet.
 
-| Claim | Status pre-F2 |
+## What the gate proves, and what it does not (today)
+
+| Claim | Status today |
 | --- | --- |
 | A capture graded less than `full` fails the gate, naming every degraded section | ✅ Real |
 | A mutated payload (coerced type, dropped bound, truncated object, roster drift) fails the gate | ✅ Real — proven against the real committed pair, not a synthetic one |
 | The live-sourced path produces the same sheet numbers as a genuinely independent memory read | ❌ Not yet — `live-capture.json` is *derived from* `export-capture.json`, so this half only proves the comparator and framing contract are internally consistent |
 
-Do not read a green run pre-F2 as proof the memory reader is correct. It proves the *detector*
-is correct and that a degraded read is caught. The subject — a real memory-assembled payload —
-arrives with F2.
+Do not read a green run as proof the account reader is correct. It proves the *detector* is
+correct and that a degraded read is caught. The subject — a payload from a genuinely independent
+origin — arrives when the handoff below is done.
 
 ## How the gate is structured
 
@@ -66,12 +74,12 @@ arrives with F2.
 
   "live": {
     "file": "live-capture.json",
-    "source": "export-derived",   // or "memory-assembled" once F2 lands
+    "source": "export-derived",   // ladder token — see F2 handoff for "api-assembled"
     "gameBuild": "string",
     "capturedAt": "ISO-8601",
     "scrubbed": ["account_id", "player_name"],
 
-    // Required only when source is "memory-assembled":
+    // Required only for a non-"export-derived" source:
     "readerVersion": "string",
     "fingerprints": { "account": "string", "heroes": "string", "skills": "string", "casa": "string", "items": "string" }
   },
@@ -113,25 +121,53 @@ committed pair must genuinely carry neither field.
 
 ## F2 handoff
 
-When F2 (`mp2-live-account-read`) lands its reader, in the **same PR**:
+**The rung exists; the capture does not.** `'api-assembled'` is registered in `LiveSource` and
+`PROVENANCE_LADDER` with the same two assertions `'memory-assembled'` carries, both exercised
+against synthetic manifests. `'memory-assembled'` was **added alongside, never renamed** — it is
+a merged tripwire, and telemetry is still memory-sourced, so it keeps a real future subject.
 
-1. Replace `live-capture.json` with the reader's own serialised `AccountPayload` for the
-   reference account (still scrubbed of `account_id`/`player_name`).
-2. Flip `pair.json → live.source` to `"memory-assembled"`.
-3. Add `live.readerVersion` (the reader's version string) and `live.fingerprints` — the
-   per-anchor schema fingerprints from F2's own separate calibration capture (`AD-019`'s
-   API-oracle calibration procedure, not this gate).
-4. Recompute `expected.heroes`/`items`/`statComparisons` from the real reader output.
+What remains is blocked on a **maintainer capture**, not on code:
 
-Four assertions tighten automatically the moment the token flips (design §1.2) — no test code,
-no workflow, no other assertion needs editing:
+1. Capture the reference account **twice, close together**: a save export *and* an API read. Both
+   halves matter — see the constraint below.
+2. Replace `live-capture.json` with the API source's serialised `AccountPayload` (scrubbed of
+   `account_id`/`player_name`) and `export-capture.json` with the matching export.
+3. Set `pair.json → live.source` to `"api-assembled"`.
+4. Add `live.readerVersion` — `@bombfarm/game-api`'s version — and `live.fingerprints`, the
+   per-anchor schema fingerprints from the separate calibration capture (`AD-019`'s API-oracle
+   procedure, not this gate).
+5. Recompute `expected.heroes`/`items`/`statComparisons` from the real output.
 
-| Assertion | `export-derived` | `memory-assembled` |
+### The capture constraint
+
+> The comparator is hero-by-hero, field-by-field. The two captures must be of the **same account
+> at the same point in time** — the same roster, gold, phase and bag. This is a real constraint,
+> not a formality:
+>
+> - The existing API fixtures under `packages/domain/tests/fixtures/api/` are a **different
+>   account** (8 heroes / phase 21 / disjoint hero ids, versus the reference pair's 11 heroes /
+>   phase 60). They cannot be used here.
+> - Even the *same* account drifts. A 2026-07-31 export against a 2026-08-12 API read would
+>   differ on levels, gold and inventory — genuine differences the gate would correctly report as
+>   failures, drowning any real one.
+>
+> If a mismatched pair ever appears to make the gate "pass", the comparator has been loosened and
+> the gate is worthless. Fix the capture, never the tolerance.
+
+Four assertions tighten the moment the token changes (design §1.2) — no code, no workflow and no
+other assertion needs editing, because the rung is already registered:
+
+| Assertion | `export-derived` | `api-assembled` |
 | --- | --- | --- |
 | Derivation | must be byte-reproducible from the export via `frameLiveCapture` | must **NOT** be byte-equal to the framed export |
 | Provenance | `gameBuild`/`capturedAt` required | + `readerVersion`, non-empty `fingerprints` required |
-| Fidelity block | synthesised, stamped `resolved` | must be the reader's own output |
+| Fidelity block | synthesised, stamped `resolved` | must be the source's own output |
 | Suite title | says "regression fence" | drops that caveat — now the real cross-source proof |
 
-`validation.md` for this feature must be re-run once F2 lands, since the equality half's meaning
-changes.
+**The gate's honest limitation improves under `api-assembled`, and by more than the original
+memory-sourced plan would have given it:** a save export and a live REST response are genuinely
+independent origins, so the equality half becomes a real discovery instrument rather than the
+regression fence `AD-026` settled for.
+
+`validation.md` for this feature must be re-run once the token changes, since the equality
+half's meaning changes.

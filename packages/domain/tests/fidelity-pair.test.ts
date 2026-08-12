@@ -211,12 +211,12 @@ describe('T2 — the fail-loud loader', () => {
       expectCode(() => loadFidelityPair(dir), 'fixtureMissing');
     });
 
-    it('the fixtureMissing message names the absolute path and docs/FIDELITY_GATE.md', () => {
+    it('the fixtureMissing message names the absolute path and docs/fidelity-gate.md', () => {
       writeManifest();
       writeMinimalCapture('export-capture.json');
       const err = expectCode(() => loadFidelityPair(dir), 'fixtureMissing');
       expect(err.message).toContain(dir);
-      expect(err.message).toContain('docs/FIDELITY_GATE.md');
+      expect(err.message).toContain('docs/fidelity-gate.md');
     });
 
     it('throws fixtureMalformed naming the file and the parser position on invalid JSON', () => {
@@ -263,20 +263,23 @@ describe('T2 — the fail-loud loader', () => {
       expectCode(() => loadFidelityPair(dir), 'manifestInvalid');
     });
 
-    it('throws manifestInvalid when live.source is "memory-assembled" without readerVersion/fingerprints', () => {
-      writeManifest({
-        live: {
-          file: 'live-capture.json',
-          source: 'memory-assembled',
-          gameBuild: '2026.07.31',
-          capturedAt: '2026-07-31T00:00:00.000Z',
-          scrubbed: ['account_id', 'player_name'],
-        },
-      });
-      writeMinimalCapture('export-capture.json');
-      writeMinimalCapture('live-capture.json');
-      expectCode(() => loadFidelityPair(dir), 'manifestInvalid');
-    });
+    it.each(['memory-assembled', 'api-assembled'] as const)(
+      'throws manifestInvalid when live.source is "%s" without readerVersion/fingerprints',
+      (source) => {
+        writeManifest({
+          live: {
+            file: 'live-capture.json',
+            source,
+            gameBuild: '2026.07.31',
+            capturedAt: '2026-07-31T00:00:00.000Z',
+            scrubbed: ['account_id', 'player_name'],
+          },
+        });
+        writeMinimalCapture('export-capture.json');
+        writeMinimalCapture('live-capture.json');
+        expectCode(() => loadFidelityPair(dir), 'manifestInvalid');
+      },
+    );
 
     it('throws unscrubbedFixture when a capture still carries account_id', () => {
       writeManifest();
