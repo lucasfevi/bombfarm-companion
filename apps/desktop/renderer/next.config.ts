@@ -7,7 +7,7 @@ const nextConfig: NextConfig = {
   trailingSlash: true,
   assetPrefix: './',
   images: { unoptimized: true },
-  transpilePackages: ['@bombfarm/ui', '@bombfarm/contracts'],
+  transpilePackages: ['@bombfarm/ui', '@bombfarm/contracts', '@bombfarm/game-api'],
 };
 
 export default nextConfig;

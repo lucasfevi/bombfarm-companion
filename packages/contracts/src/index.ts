@@ -18,6 +18,8 @@ export type {
   StoredSectionFidelity,
 } from './account-store.js';
 import type { AccountView } from './account-store.js';
+export type { ConsentDecision, ConsentRecord } from './consent.js';
+import type { ConsentRecord } from './consent.js';
 export type {
   AppFlavor,
   FlavorDescriptor,
@@ -252,6 +254,14 @@ export interface IpcChannels {
   'game:getStatus': { args: []; result: GameStatusInfo };
   'game:getSnapshot': { args: []; result: GameSnapshotPayload };
   'account:get': { args: []; result: AccountView };
+  /** MP2 F2 — consent for the game-API account reader (LAR-01, LAR-03…05). All four are
+   *  zero-arg by design (TD-10): the existing `bfc:invoke` bridge forwards no arguments, so the
+   *  player's answer is three verbs (`accept`/`decline`/`revoke`) rather than one call taking a
+   *  decision parameter. Every result is the new `ConsentRecord`, never the raw `SessionToken`. */
+  'consent:get': { args: []; result: ConsentRecord };
+  'consent:accept': { args: []; result: ConsentRecord };
+  'consent:decline': { args: []; result: ConsentRecord };
+  'consent:revoke': { args: []; result: ConsentRecord };
 }
 
 export type IpcInvokeChannel = keyof IpcChannels;
@@ -268,17 +278,27 @@ export const IPC_CHANNELS = [
   'game:getStatus',
   'game:getSnapshot',
   'account:get',
+  'consent:get',
+  'consent:accept',
+  'consent:decline',
+  'consent:revoke',
 ] as const satisfies readonly IpcInvokeChannel[];
 
-export type IpcEventChannel = 'game:status' | 'snapshot:updated';
+export type IpcEventChannel = 'game:status' | 'snapshot:updated' | 'consent:changed' | 'account:changed';
 
 export interface IpcEvents {
   'game:status': GameStatusInfo;
   'snapshot:updated': GameSnapshotPayload;
+  /** Fired whenever the consent record changes, from any cause (accept/decline/revoke). */
+  'consent:changed': ConsentRecord;
+  /** Fired whenever the MP2 F2 account-refresh cycle commits a new AccountView. */
+  'account:changed': AccountView;
 }
 
 export const IPC_EVENT_CHANNELS = [
   'game:status',
+  'consent:changed',
+  'account:changed',
   'snapshot:updated',
 ] as const satisfies readonly IpcEventChannel[];
 

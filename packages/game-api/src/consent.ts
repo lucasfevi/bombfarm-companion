@@ -1,18 +1,16 @@
+import type { ConsentDecision, ConsentRecord } from '@bombfarm/contracts';
 import { CONSENT_TEXT } from './consent-text.js';
 
 /**
  * Consent — the pure state machine (LAR-01, LAR-03…05). No I/O, no clock: `now` is injected by
  * the caller (`account-refresh.ts` in `apps/desktop`), never read here.
+ *
+ * `ConsentDecision`/`ConsentRecord` are defined in `@bombfarm/contracts`, not here — they cross
+ * the desktop main<->renderer IPC boundary (T9), and `AGENTS.md` makes contracts the one home
+ * for IPC types. See `packages/contracts/src/consent.ts`'s doc comment for why the dependency
+ * runs this direction (game-api -> contracts, type-only) and not the reverse.
  */
-export type ConsentDecision = 'unasked' | 'granted' | 'declined' | 'revoked';
-
-export interface ConsentRecord {
-  readonly decision: ConsentDecision;
-  /** Present iff decision === 'granted'. */
-  readonly grantedAt?: string;
-  /** The CONSENT_TEXT version the player actually saw when this decision was recorded. */
-  readonly textVersion: number;
-}
+export type { ConsentDecision, ConsentRecord };
 
 /** The narrowed record `grantSession` (T2) accepts — `grantedAt` is required, not optional. */
 export interface GrantedConsent extends ConsentRecord {

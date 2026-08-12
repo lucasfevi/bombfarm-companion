@@ -4,15 +4,18 @@ import {
   DEFAULT_SETTINGS,
   isIpcChannel,
   type AccountView,
+  type ConsentRecord,
+  type IpcEventChannel,
+  type IpcEvents,
   type IpcInvokeChannel,
 } from '@bombfarm/contracts';
-import { createPacingGate } from '@bombfarm/game-api';
+import { type ConsentEvent, createPacingGate, initialConsent, reduceConsent } from '@bombfarm/game-api';
 import { applyAppIdentity } from './app-identity.js';
 import { createBootRecord } from './boot-record.js';
 import { InvalidFlavorError, resolveAppEnv, RENDERER_DEV_URL, type AppEnv } from './env.js';
 import { GameReaderService } from './game-reader/game-reader-service.js';
 import { createAccountRefresh, type AccountRefreshHandle } from './game-api/account-refresh.js';
-import { createConsentStore } from './game-api/consent-store.js';
+import { createConsentStore, type ConsentStore } from './game-api/consent-store.js';
 import { nodeHttpsTransport } from './game-api/https-transport.js';
 import { configureLogging, log } from './logging.js';
 import { createAccountStore, type AccountStore } from './storage/account-store.js';
@@ -23,6 +26,22 @@ let storage: Storage | null = null;
 let gameReader: GameReaderService | null = null;
 let accountStore: AccountStore | null = null;
 let accountRefresh: AccountRefreshHandle | null = null;
+let consentStore: ConsentStore | null = null;
+
+function emitEvent<C extends IpcEventChannel>(channel: C, payload: IpcEvents[C]): void {
+  mainWindow?.webContents.send(`bfc:event:${channel}`, payload);
+}
+
+/** Reads, transitions, persists, and announces one consent event — the single path every
+ *  consent:* handler below goes through (LAR-01/03…05). */
+function applyConsentEvent(event: ConsentEvent): ConsentRecord {
+  const current = consentStore?.read() ?? initialConsent();
+  const next = reduceConsent(current, event);
+  consentStore?.write(next);
+  emitEvent('consent:changed', next);
+  accountRefresh?.onConsentChanged(next);
+  return next;
+}
 
 function registerIpcHandlers(): void {
   const handlers: Record<IpcInvokeChannel, () => unknown> = {
@@ -71,6 +90,10 @@ function registerIpcHandlers(): void {
         }
       );
     },
+    'consent:get': (): ConsentRecord => consentStore?.read() ?? initialConsent(),
+    'consent:accept': (): ConsentRecord => applyConsentEvent({ type: 'accept', now: new Date().toISOString() }),
+    'consent:decline': (): ConsentRecord => applyConsentEvent({ type: 'decline' }),
+    'consent:revoke': (): ConsentRecord => applyConsentEvent({ type: 'revoke' }),
   };
 
   ipcMain.handle('bfc:invoke', (_event, channel: string) => {
@@ -163,19 +186,12 @@ async function bootstrap(): Promise<void> {
 
   gameReader = new GameReaderService(userDataDir);
   gameReader.setAccountStore(accountStore);
-  registerIpcHandlers();
-  await createMainWindow();
-  gameReader.start();
-  log.info({
-    scope: 'main',
-    event: 'game-reader.started',
-    mode: process.env.BFC_GAME_READER === 'fixture' ? 'fixture' : 'memory',
-  });
 
   // MP2 F2 — the consented game-API account reader. Independent of the game reader's own
   // memory/fixture ticking: consent gates every request structurally (LAR-01/AD-025/AD-028),
   // so this cycle issues nothing at all until the player has accepted the first-run modal (T9).
-  const consentStore = createConsentStore(accountOpen.db);
+  // Constructed before registerIpcHandlers() so the consent:* handlers never see a null store.
+  consentStore = createConsentStore(accountOpen.db);
   const gate = createPacingGate({
     now: () => Date.now(),
     sleep: (ms) => new Promise((resolve) => setTimeout(resolve, ms)),
@@ -187,7 +203,20 @@ async function bootstrap(): Promise<void> {
     store: accountStore,
     log,
     now: () => new Date().toISOString(),
+    onView: (view) => {
+      emitEvent('account:changed', view);
+    },
   });
+
+  registerIpcHandlers();
+  await createMainWindow();
+  gameReader.start();
+  log.info({
+    scope: 'main',
+    event: 'game-reader.started',
+    mode: process.env.BFC_GAME_READER === 'fixture' ? 'fixture' : 'memory',
+  });
+
   accountRefresh.start();
   log.info({ scope: 'main', event: 'account-refresh.started' });
 }
@@ -254,6 +283,7 @@ if (!gotLock) {
     gameReader = null;
     accountRefresh?.stop();
     accountRefresh = null;
+    consentStore = null;
     storage?.close();
     storage = null;
     accountStore?.close();

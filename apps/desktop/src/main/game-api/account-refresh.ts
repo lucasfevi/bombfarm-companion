@@ -76,6 +76,9 @@ export interface AccountRefreshDeps {
    *  `resetAuth()` does that (a changed token file or an explicit retry); this only paces how
    *  often the refused attempt is retried. */
   haltedRecheckMs?: number;
+  /** Called after every commit (T9's `account:changed` IPC event source). Optional so every
+   *  existing test/caller that does not care about push notifications is unaffected. */
+  onView?: (view: AccountView) => void;
 }
 
 export interface AccountRefreshHandle {
@@ -127,6 +130,13 @@ export function createAccountRefresh(deps: AccountRefreshDeps): AccountRefreshHa
     }, delay);
   }
 
+  function commitAndNotify(payload: Parameters<AccountCommitter['commit']>[0]): AccountView {
+    const view = deps.store.commit(payload, { gameRunning: true });
+    lastView = view;
+    deps.onView?.(view);
+    return view;
+  }
+
   async function runCycle(): Promise<AccountView | null> {
     if (running) {
       return lastView;
@@ -137,7 +147,7 @@ export function createAccountRefresh(deps: AccountRefreshDeps): AccountRefreshHa
 
       if (!isGranted(consent)) {
         const payload = assembleAccountPayload(allSectionsFailed('not_consented'), deps.now());
-        lastView = deps.store.commit(payload, { gameRunning: true });
+        commitAndNotify(payload);
         deps.log.info({ scope: 'account-refresh', event: 'cycle.skipped', decision: consent.decision });
         return lastView;
       }
@@ -145,7 +155,7 @@ export function createAccountRefresh(deps: AccountRefreshDeps): AccountRefreshHa
       const fileResult = readToken(consent);
       if (!fileResult.ok) {
         const payload = assembleAccountPayload(allSectionsFailed('token_unavailable'), deps.now());
-        lastView = deps.store.commit(payload, { gameRunning: true });
+        commitAndNotify(payload);
         deps.log.warn({ scope: 'account-refresh', event: 'token.unavailable', reason: fileResult.reason });
         return lastView;
       }
@@ -175,7 +185,7 @@ export function createAccountRefresh(deps: AccountRefreshDeps): AccountRefreshHa
       currentAbort = null;
 
       const payload = assembleAccountPayload(outcomes, deps.now());
-      lastView = deps.store.commit(payload, { gameRunning: true });
+      commitAndNotify(payload);
       deps.log.info({ scope: 'account-refresh', event: 'cycle.committed' });
       return lastView;
     } finally {
