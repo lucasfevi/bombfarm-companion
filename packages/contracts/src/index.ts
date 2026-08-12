@@ -10,6 +10,15 @@ export type {
   SectionStatus,
 } from './account-payload.js';
 export type {
+  AccountStoreReason,
+  AccountStoreStatus,
+  AccountView,
+  RestoredAccount,
+  StoredAccountFidelity,
+  StoredSectionFidelity,
+} from './account-store.js';
+import type { AccountView } from './account-store.js';
+export type {
   AppFlavor,
   FlavorDescriptor,
   ResolveRuntimeFlavorInput,
@@ -242,6 +251,7 @@ export interface IpcChannels {
   'storage:health': { args: []; result: { binding: string; ok: boolean } };
   'game:getStatus': { args: []; result: GameStatusInfo };
   'game:getSnapshot': { args: []; result: GameSnapshotPayload };
+  'account:get': { args: []; result: AccountView };
 }
 
 export type IpcInvokeChannel = keyof IpcChannels;
@@ -257,6 +267,7 @@ export const IPC_CHANNELS = [
   'storage:health',
   'game:getStatus',
   'game:getSnapshot',
+  'account:get',
 ] as const satisfies readonly IpcInvokeChannel[];
 
 export type IpcEventChannel = 'game:status' | 'snapshot:updated';

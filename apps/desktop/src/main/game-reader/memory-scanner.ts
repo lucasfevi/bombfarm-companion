@@ -1,5 +1,5 @@
 /* koffi FFI returns loosely typed handles/structs — keep lint scoped to this boundary. */
-/* eslint-disable @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unnecessary-type-assertion */
+/* eslint-disable @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unnecessary-type-assertion */
 import crypto from 'node:crypto';
 import koffi from 'koffi';
 import {
@@ -11,31 +11,54 @@ import {
 } from '@bombfarm/game-data';
 import type { RawGameState, RawInventoryBag } from '@bombfarm/contracts';
 
-const kernel32 = koffi.load('kernel32.dll');
-const OpenProcess = kernel32.func('__stdcall', 'OpenProcess', 'void *', ['uint32', 'bool', 'uint32']);
-const CloseHandle = kernel32.func('__stdcall', 'CloseHandle', 'bool', ['void *']);
-const ReadProcessMemory = kernel32.func('__stdcall', 'ReadProcessMemory', 'bool', [
-  'void *',
-  'void *',
-  'uint8_t *',
-  'uint64',
-  koffi.out(koffi.pointer('uint64')),
-]);
-const MBI = koffi.struct('MEMORY_BASIC_INFORMATION', {
-  BaseAddress: 'void *',
-  AllocationBase: 'void *',
-  AllocationProtect: 'uint32',
-  RegionSize: 'uint64',
-  State: 'uint32',
-  Protect: 'uint32',
-  Type: 'uint32',
-});
-const VirtualQueryEx = kernel32.func('__stdcall', 'VirtualQueryEx', 'uint64', [
-  'void *',
-  'void *',
-  koffi.out(koffi.pointer(MBI)),
-  'uint64',
-]);
+/**
+ * `koffi.load('kernel32.dll')` only succeeds on Windows. This binding set is resolved lazily
+ * (first call to `getKernel32()`, i.e. first `MemoryScanner.open()`) rather than at module
+ * scope, so importing this module — which `game-reader-service.ts` and its tests do
+ * unconditionally — stays side-effect free on Linux CI (AD-024).
+ */
+type Kernel32Func = (...args: unknown[]) => unknown;
+interface Kernel32Bindings {
+  OpenProcess: Kernel32Func;
+  CloseHandle: Kernel32Func;
+  ReadProcessMemory: Kernel32Func;
+  VirtualQueryEx: Kernel32Func;
+  MBI: koffi.IKoffiCType;
+}
+
+let kernel32Bindings: Kernel32Bindings | null = null;
+
+function getKernel32(): Kernel32Bindings {
+  if (!kernel32Bindings) {
+    const kernel32 = koffi.load('kernel32.dll');
+    const OpenProcess = kernel32.func('__stdcall', 'OpenProcess', 'void *', ['uint32', 'bool', 'uint32']);
+    const CloseHandle = kernel32.func('__stdcall', 'CloseHandle', 'bool', ['void *']);
+    const ReadProcessMemory = kernel32.func('__stdcall', 'ReadProcessMemory', 'bool', [
+      'void *',
+      'void *',
+      'uint8_t *',
+      'uint64',
+      koffi.out(koffi.pointer('uint64')),
+    ]);
+    const MBI = koffi.struct('MEMORY_BASIC_INFORMATION', {
+      BaseAddress: 'void *',
+      AllocationBase: 'void *',
+      AllocationProtect: 'uint32',
+      RegionSize: 'uint64',
+      State: 'uint32',
+      Protect: 'uint32',
+      Type: 'uint32',
+    });
+    const VirtualQueryEx = kernel32.func('__stdcall', 'VirtualQueryEx', 'uint64', [
+      'void *',
+      'void *',
+      koffi.out(koffi.pointer(MBI)),
+      'uint64',
+    ]);
+    kernel32Bindings = { OpenProcess, CloseHandle, ReadProcessMemory, VirtualQueryEx, MBI };
+  }
+  return kernel32Bindings;
+}
 
 /** koffi 2.x returns Externals for `void *`; use `koffi.address` (BigInt/`number` also accepted). */
 const ptrToBig = (p: unknown): bigint => {
@@ -107,13 +130,14 @@ export class MemoryScanner {
 
   open(): boolean {
     this.close();
+    const { OpenProcess } = getKernel32();
     this.handle = OpenProcess(PROCESS_VM_READ | PROCESS_QUERY_INFORMATION, false, this.pid);
     return this.handle != null;
   }
 
   close(): void {
     if (this.handle) {
-      CloseHandle(this.handle);
+      getKernel32().CloseHandle(this.handle);
       this.handle = null;
     }
     this.readBuf = null;
@@ -129,6 +153,7 @@ export class MemoryScanner {
 
   findInventoryTarget(): ScanTarget | null {
     if (!this.handle) return null;
+    const { VirtualQueryEx, ReadProcessMemory, MBI } = getKernel32();
     const needle = Buffer.from('"bag_tabs"', 'utf8');
     let addr = 0n;
     const maxAddr = 0x7fffffffffffn;
@@ -205,7 +230,7 @@ export class MemoryScanner {
     }
 
     const bytesReadOut = [0n];
-    const okRead = ReadProcessMemory(
+    const okRead = getKernel32().ReadProcessMemory(
       this.handle,
       target.addr,
       this.readBuf,
@@ -250,7 +275,7 @@ export class MemoryScanner {
     if (!this.handle) return null;
     const buf = Buffer.alloc(Math.max(target.size, 16384));
     const bytesReadOut = [0n];
-    const okRead = ReadProcessMemory(
+    const okRead = getKernel32().ReadProcessMemory(
       this.handle,
       target.addr,
       buf,
@@ -270,6 +295,7 @@ export class MemoryScanner {
 
   private collectStateCandidates(needleStr: string): MemoryCandidate[] {
     if (!this.handle) return [];
+    const { VirtualQueryEx, ReadProcessMemory, MBI } = getKernel32();
     const needle = Buffer.from(needleStr, 'utf8');
     let addr = 0n;
     const maxAddr = 0x7fffffffffffn;

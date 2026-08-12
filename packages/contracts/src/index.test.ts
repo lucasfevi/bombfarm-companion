@@ -18,12 +18,14 @@ describe('contracts IPC surface', () => {
       'storage:health',
       'game:getStatus',
       'game:getSnapshot',
+      'account:get',
     ]);
   });
 
   it('guards unknown channel names', () => {
     expect(isIpcChannel('app:ping')).toBe(true);
     expect(isIpcChannel('app:getEnvironment')).toBe(true);
+    expect(isIpcChannel('account:get')).toBe(true);
     expect(isIpcChannel('not-a-channel')).toBe(false);
   });
 

@@ -1,7 +1,8 @@
 import type { BrowserWindow } from 'electron';
-import type { GameSnapshotPayload, GameStatusInfo, IpcEventChannel } from '@bombfarm/contracts';
+import type { AccountPayload, AccountView, GameSnapshotPayload, GameStatusInfo, IpcEventChannel } from '@bombfarm/contracts';
 import { buildSnapshot } from '@bombfarm/game-data';
 import { log } from '../logging.js';
+import { buildFixtureAccountPayload } from './fixture-account.js';
 import {
   buildFixtureSnapshot,
   loadFixtureBundle,
@@ -10,7 +11,11 @@ import {
 import type { ScanTarget } from './memory-scanner.js';
 import { MemoryScanner } from './memory-scanner.js';
 import { findProcessId } from './process.js';
-import { SnapshotStore } from './snapshot-store.js';
+
+/** The subset of `AccountStore` the game reader needs to persist a fixture tick's payload. */
+export interface AccountCommitter {
+  commit(live: AccountPayload, opts: { gameRunning: boolean }): AccountView;
+}
 
 export type GameReaderMode = 'memory' | 'fixture';
 
@@ -34,11 +39,12 @@ const DEFAULT_CONFIG: GameReaderConfig = {
 
 export class GameReaderService {
   private readonly config: GameReaderConfig;
-  private readonly store: SnapshotStore;
   private status: GameStatusInfo;
   private payload: GameSnapshotPayload;
   private timer: NodeJS.Timeout | null = null;
   private windowProvider: (() => BrowserWindow | null) | null = null;
+  private accountStore: AccountCommitter | null = null;
+  private lastAccountView: AccountView | null = null;
 
   private scanner: MemoryScanner | null = null;
   private target: ScanTarget | null = null;
@@ -48,29 +54,37 @@ export class GameReaderService {
   private fixtureTick = 0;
   private fixtureBundle = loadFixtureBundle();
 
-  constructor(userDataDir: string, config: Partial<GameReaderConfig> = {}) {
+  constructor(_userDataDir: string, config: Partial<GameReaderConfig> = {}) {
     this.config = { ...DEFAULT_CONFIG, ...config };
-    this.store = new SnapshotStore(userDataDir);
-    this.store.load();
 
-    const restored = this.store.get();
+    // Never restore `status` from disk (design R-2 / APS-03): a cold boot with the game
+    // closed always reports `not_running`, never a previous session's `connected`.
     const now = new Date().toISOString();
-    this.status = restored?.status ?? {
+    this.status = {
       status: this.config.mode === 'fixture' ? 'connected' : 'not_running',
       updatedAt: now,
       processName: this.config.processName,
     };
-    this.payload =
-      restored ??
-      ({
-        status: this.status,
-        mapped: null,
-        raw: { state: null, inventory: null },
-      } satisfies GameSnapshotPayload);
+    this.payload = {
+      status: this.status,
+      mapped: null,
+      raw: { state: null, inventory: null },
+    } satisfies GameSnapshotPayload;
   }
 
   setWindowProvider(provider: () => BrowserWindow | null): void {
     this.windowProvider = provider;
+  }
+
+  /** Injected once at boot (design §8, TD-8). Only fixture-mode ticks call `commit()` on it —
+   * F3 has no memory-mode producer; F2 owns that call site. */
+  setAccountStore(store: AccountCommitter): void {
+    this.accountStore = store;
+  }
+
+  /** The most recently committed merged view, or `null` before any fixture tick has run. */
+  getAccountView(): AccountView | null {
+    return this.lastAccountView;
   }
 
   start(): void {
@@ -153,6 +167,10 @@ export class GameReaderService {
         inventory: this.fixtureBundle.inventory,
       },
     });
+
+    if (this.accountStore) {
+      this.lastAccountView = this.accountStore.commit(buildFixtureAccountPayload(takenAt), { gameRunning: true });
+    }
   }
 
   private tickMemory(): void {
@@ -280,9 +298,6 @@ export class GameReaderService {
   private updateSnapshot(next: GameSnapshotPayload): void {
     const changed = JSON.stringify(next.raw) !== JSON.stringify(this.payload.raw);
     this.payload = next;
-    if (next.mapped) {
-      this.store.save(next);
-    }
     if (changed) {
       this.emit('snapshot:updated', next);
     }

@@ -3,6 +3,7 @@ import { app, BrowserWindow, ipcMain } from 'electron';
 import {
   DEFAULT_SETTINGS,
   isIpcChannel,
+  type AccountView,
   type IpcInvokeChannel,
 } from '@bombfarm/contracts';
 import { applyAppIdentity } from './app-identity.js';
@@ -10,11 +11,13 @@ import { createBootRecord } from './boot-record.js';
 import { InvalidFlavorError, resolveAppEnv, RENDERER_DEV_URL, type AppEnv } from './env.js';
 import { GameReaderService } from './game-reader/game-reader-service.js';
 import { configureLogging, log } from './logging.js';
-import { createStorage, type Storage } from './storage/index.js';
+import { createAccountStore, type AccountStore } from './storage/account-store.js';
+import { createStorage, openAccountDatabase, type Storage } from './storage/index.js';
 
 let mainWindow: BrowserWindow | null = null;
 let storage: Storage | null = null;
 let gameReader: GameReaderService | null = null;
+let accountStore: AccountStore | null = null;
 
 function registerIpcHandlers(): void {
   const handlers: Record<IpcInvokeChannel, () => unknown> = {
@@ -44,6 +47,22 @@ function registerIpcHandlers(): void {
       },
       mapped: null,
       raw: { state: null, inventory: null },
+    },
+    'account:get': (): AccountView => {
+      // gameRunning always comes fresh from the game reader's current status — never from a
+      // cached view, so a stale cached commit can never misreport whether the game is running.
+      const gameRunning = gameReader?.getStatus().status === 'connected';
+      const cached = gameReader?.getAccountView();
+      if (cached) {
+        return { ...cached, gameRunning };
+      }
+      return (
+        accountStore?.commit({}, { gameRunning }) ?? {
+          payload: {},
+          gameRunning,
+          store: { status: 'unavailable', reason: 'no_sqlite_binding', binding: null },
+        }
+      );
     },
   };
 
@@ -116,7 +135,27 @@ async function bootstrap(): Promise<void> {
   const health = storage.healthCheck();
   log.info({ scope: 'main', event: 'storage.ready', ...health });
 
-  gameReader = new GameReaderService(app.getPath('userData'));
+  // A store that failed to open (degraded/unavailable) never throws into boot — the app
+  // starts and account:get reports the reason (openAccountDatabase/createAccountStore are
+  // both designed to never throw).
+  const userDataDir = app.getPath('userData');
+  const accountOpen = openAccountDatabase(path.join(userDataDir, 'account.db'));
+  accountStore = createAccountStore(accountOpen, { userDataDir });
+  const initialRestore = accountStore.restore();
+  log.info({
+    scope: 'main',
+    event: 'account.restored',
+    status: initialRestore.status,
+    reason: initialRestore.reason,
+    account: initialRestore.payload.fidelity.account.status,
+    heroes: initialRestore.payload.fidelity.heroes.status,
+    skills: initialRestore.payload.fidelity.skills.status,
+    casa: initialRestore.payload.fidelity.casa.status,
+    items: initialRestore.payload.fidelity.items.status,
+  });
+
+  gameReader = new GameReaderService(userDataDir);
+  gameReader.setAccountStore(accountStore);
   registerIpcHandlers();
   await createMainWindow();
   gameReader.start();
@@ -189,5 +228,7 @@ if (!gotLock) {
     gameReader = null;
     storage?.close();
     storage = null;
+    accountStore?.close();
+    accountStore = null;
   });
 }
