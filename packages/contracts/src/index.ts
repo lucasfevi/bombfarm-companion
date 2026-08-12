@@ -10,6 +10,14 @@ export type {
   SectionStatus,
 } from './account-payload.js';
 export type {
+  AccountStoreReason,
+  AccountStoreStatus,
+  AccountView,
+  RestoredAccount,
+  StoredAccountFidelity,
+  StoredSectionFidelity,
+} from './account-store.js';
+export type {
   AppFlavor,
   FlavorDescriptor,
   ResolveRuntimeFlavorInput,
