@@ -1,4 +1,5 @@
 import { readFileSync } from 'node:fs';
+import { availableParallelism } from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import type { NextConfig } from 'next';
@@ -50,6 +51,25 @@ const DEV_WATCH_IGNORED = [
  */
 const PERF_PROFILE = process.env.PERF_PROFILE === '1';
 
+/**
+ * Cap on Next's build/export worker pool — the same discipline as the Vitest cap in
+ * `vitest.workers.ts` and the Playwright cap in `playwright.config.ts`.
+ *
+ * Next defaults `experimental.cpus` to `os.cpus().length - 1` (see
+ * `next/dist/server/config-shared.js`), so on a 24-core dev machine a plain
+ * `next build` fans out to **23** worker processes for static page generation.
+ * With `output: 'export'` plus the React Compiler babel pass, that pegs every core
+ * for the whole build and makes the machine unusable while it runs.
+ *
+ * This app exports a small number of routes, so the pool is nowhere near the
+ * bottleneck — page generation is not what makes the build long. Capping trades
+ * little or no wall time for leaving the machine usable.
+ *
+ * CI is unaffected in practice: GitHub-hosted runners report 2–4 cores, so the
+ * `min` already resolves below the cap there.
+ */
+const BUILD_WORKERS = Math.max(1, Math.min(4, availableParallelism() - 1));
+
 const nextConfig: NextConfig = {
   // Client-only planner (localStorage). Ready for Vercel; no Node runtime needed.
   output: 'export',
@@ -70,6 +90,9 @@ const nextConfig: NextConfig = {
   // React 19 — babel-plugin-react-compiler; no react-compiler-runtime / target 18.
   // Next 15.5 still nests this under experimental (top-level key is unrecognized).
   experimental: {
+    // See BUILD_WORKERS above — bounds the static-export worker pool, which
+    // otherwise scales to `cores - 1`.
+    cpus: BUILD_WORKERS,
     reactCompiler: true,
     // Segment explorer wraps every App Router segment with SegmentViewNode in
     // the RSC payload. After bursty HMR that wrapper often drops out of the
