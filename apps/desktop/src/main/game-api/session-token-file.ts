@@ -1,6 +1,6 @@
 import { readFileSync, statSync } from 'node:fs';
 import { homedir } from 'node:os';
-import { join } from 'node:path';
+import { win32 } from 'node:path';
 import type { GrantedConsent, SessionCfgParseReason, SessionToken } from '@bombfarm/game-api';
 import { parseSessionCfg } from '@bombfarm/game-api';
 
@@ -52,8 +52,13 @@ export function sessionCfgPath(deps: SessionCfgPathDeps = {}): string {
   if (!isPackaged && env.BFC_TOKEN_PATH_OVERRIDE) {
     return env.BFC_TOKEN_PATH_OVERRIDE;
   }
-  const appData = env.APPDATA ?? join(homedir(), 'AppData', 'Roaming');
-  return join(appData, 'Godot', 'app_userdata', 'BombFarm', 'session.cfg');
+  // %APPDATA%\Godot\app_userdata\BombFarm\session.cfg is a Windows-only path by definition — it is
+  // where the Godot game (Windows-only) writes its session file. `path.win32.join` is used
+  // (instead of the platform-dependent `path.join`) so the separator is always `\`, deterministic
+  // on every host this may run on (including ubuntu-latest CI), rather than silently producing a
+  // POSIX-flavoured path on non-Windows hosts.
+  const appData = env.APPDATA ?? win32.join(homedir(), 'AppData', 'Roaming');
+  return win32.join(appData, 'Godot', 'app_userdata', 'BombFarm', 'session.cfg');
 }
 
 export type SessionTokenFileReason = 'not_found' | 'unreadable' | SessionCfgParseReason;
