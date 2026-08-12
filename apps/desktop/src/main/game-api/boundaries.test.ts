@@ -323,6 +323,28 @@ function resolveRelativeImport(fromFile: string, specifier: string): string | nu
   return null;
 }
 
+const WORKSPACE_PACKAGES_DIR = join(REPO_ROOT, 'packages');
+
+/**
+ * Resolves a bare `@bombfarm/<name>` specifier to that workspace package's own source entry
+ * point (`packages/<name>/src/index.ts`) — deliberately `src`, never `dist`, same as every other
+ * file this guard reads (see the file header). Closes the gap a fresh Verifier reproduced live: a
+ * forbidden name re-exported under an alias *inside a different workspace package*
+ * (`packages/game-data/src/index.ts`) was invisible to the walker because it only ever recursed
+ * into `specifier.startsWith('.')` — a bare package specifier like `@bombfarm/game-data` was
+ * checked against `FORBIDDEN_NAMES`/`FORBIDDEN_MODULE_MARKERS` using only the *importing* file's
+ * own import clause text, and the target package's own re-export line was simply never read. Any
+ * specifier that isn't a `@bombfarm/*` workspace package (a real npm dependency, `node:*`, ...) is
+ * left unresolved, same as before — this guard has no reason to walk into `node_modules`.
+ */
+function resolveWorkspaceImport(specifier: string): string | null {
+  const match = /^@bombfarm\/([^/]+)$/.exec(specifier);
+  const packageName = match?.[1];
+  if (!packageName) return null;
+  const candidate = join(WORKSPACE_PACKAGES_DIR, packageName, 'src', 'index.ts');
+  return existsSync(candidate) && statSync(candidate).isFile() ? candidate : null;
+}
+
 interface GraphViolation {
   readonly file: string;
   readonly specifier: string;
@@ -352,6 +374,9 @@ function walkImportGraph(startFile: string): { violations: GraphViolation[]; vis
       }
       if (specifier.startsWith('.')) {
         const resolved = resolveRelativeImport(file, specifier);
+        if (resolved) queue.push(resolved);
+      } else {
+        const resolved = resolveWorkspaceImport(specifier);
         if (resolved) queue.push(resolved);
       }
     }
@@ -390,6 +415,16 @@ describe('Guard 4 parser — the new edge shapes it walks, and the type-only edg
   it('follows a require(...) call', () => {
     const text = "const mod = require('@bombfarm/game-data');";
     expect(parseImportSpecifiers(text)).toEqual(['@bombfarm/game-data']);
+  });
+
+  it('resolveWorkspaceImport resolves a bare @bombfarm/<name> specifier to that package\'s own src/index.ts', () => {
+    expect(resolveWorkspaceImport('@bombfarm/game-data')).toBe(join(WORKSPACE_PACKAGES_DIR, 'game-data', 'src', 'index.ts'));
+  });
+
+  it('resolveWorkspaceImport does not resolve a non-workspace or scoped-subpath specifier', () => {
+    expect(resolveWorkspaceImport('node:https')).toBeNull();
+    expect(resolveWorkspaceImport('electron')).toBeNull();
+    expect(resolveWorkspaceImport('@bombfarm/does-not-exist')).toBeNull();
   });
 });
 
