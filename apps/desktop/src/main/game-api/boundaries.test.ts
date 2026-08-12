@@ -118,19 +118,41 @@ describe('Guard 1 — no write surface anywhere the network can be reached (D24,
     expect(offenders, `LAR-24/TD-9: no IP fallback. Offenders: ${JSON.stringify(offenders.map((o) => o.file))}`).toEqual([]);
   });
 
-  it('https-transport.ts forwards HttpRequest.method verbatim — no literal, template, or computed method value of its own', () => {
+  it('https-transport.ts forwards HttpRequest.method verbatim in every https.request call — no literal, template, or computed method value of its own', () => {
     // Closes the "computed value" half of the obfuscation class (LAR-13): rather than trying to
     // evaluate an arbitrary expression (`String.fromCharCode(...)`, a reassigned variable, a
     // ternary, ...), this simply forbids the one file that owns the socket from doing anything
     // except forwarding the compile-time-literal-typed `req.method` it was handed.
+    //
+    // Scans EVERY `https.request({...},` occurrence, not just the first (fix-loop-2: a fresh
+    // Verifier's PoC placed a second, covert `https.request(...)` call *after* the legitimate
+    // one, using a computed method (`String.fromCharCode(80, 79, 83, 84)`) that a non-global
+    // `.exec()` — which only ever sees the first match — never inspected; the literal-verb scan
+    // above missed it too, since a computed value has no quoted substring to find). Also asserts
+    // every `https.request(` call in the file is inline-object-shaped, so a call passed a
+    // pre-built options variable (which would smuggle a method value in a form this regex
+    // can't read at all) can't slip through by count alone.
     const text = readFileSync(HTTPS_TRANSPORT_FILE, 'utf8');
-    const optionsBlockMatch = /https\.request\(\s*\{([\s\S]*?)\}\s*,/.exec(text);
-    expect(optionsBlockMatch, 'https-transport.ts must build its https.request options inline so this guard can read the method field').not.toBeNull();
-    const optionsBlock = optionsBlockMatch?.[1] ?? '';
-    const methodFieldMatch = /\bmethod\s*:\s*([^,\n}]+)/.exec(optionsBlock);
-    expect(methodFieldMatch, 'https-transport.ts must set an explicit method field on its https.request options').not.toBeNull();
-    const methodValue = methodFieldMatch?.[1]?.trim();
-    expect(methodValue, `LAR-13: https-transport.ts must forward req.method verbatim, got "${String(methodValue)}"`).toBe('req.method');
+    const totalCalls = (text.match(/https\.request\(/g) ?? []).length;
+    expect(totalCalls, 'sanity: https-transport.ts must call https.request at least once').toBeGreaterThan(0);
+
+    const optionsBlockPattern = /https\.request\(\s*\{([\s\S]*?)\}\s*,/g;
+    const optionsBlocks: string[] = [];
+    let blockMatch: RegExpExecArray | null;
+    while ((blockMatch = optionsBlockPattern.exec(text))) {
+      optionsBlocks.push(blockMatch[1] ?? '');
+    }
+    expect(
+      optionsBlocks.length,
+      `https-transport.ts must build every https.request call's options inline so this guard can read the method field — found ${String(totalCalls)} call(s) but only ${String(optionsBlocks.length)} inline options block(s)`,
+    ).toBe(totalCalls);
+
+    optionsBlocks.forEach((optionsBlock, index) => {
+      const methodFieldMatch = /\bmethod\s*:\s*([^,\n}]+)/.exec(optionsBlock);
+      expect(methodFieldMatch, `https-transport.ts call #${String(index + 1)} must set an explicit method field on its https.request options`).not.toBeNull();
+      const methodValue = methodFieldMatch?.[1]?.trim();
+      expect(methodValue, `LAR-13: https-transport.ts call #${String(index + 1)} must forward req.method verbatim, got "${String(methodValue)}"`).toBe('req.method');
+    });
   });
 });
 
