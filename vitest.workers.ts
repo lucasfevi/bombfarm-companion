@@ -15,5 +15,14 @@ import { availableParallelism } from 'node:os';
  *
  * Capped rather than left to scale with core count: the ceiling comes from the critical-path
  * file, not from the machine, so more cores buy nothing here and only add heat.
+ *
+ * Lowered 4 -> 3 to stop the 4th worker adding sustained load for no wall-time gain — the
+ * analysis above already put the floor at 3. Re-measured on `--project @bombfarm/domain`
+ * (827 tests): 41.4s wall / 105.2s test CPU at 4 workers, i.e. ~64% worker utilisation, so
+ * the run was already critical-path-bound rather than worker-bound. Same run at 3 workers:
+ * 41.5s wall — the predicted no-op on wall time, one fewer core held for the whole run.
+ *
+ * Going below 3 does cost real wall time (the 105s of CPU no longer fits under the ~41s
+ * critical path), so 3 is the floor worth holding, not a starting point for trimming further.
  */
-export const MAX_TEST_WORKERS = Math.max(1, Math.min(4, availableParallelism()));
+export const MAX_TEST_WORKERS = Math.max(1, Math.min(3, availableParallelism()));
