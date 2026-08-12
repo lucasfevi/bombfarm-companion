@@ -148,8 +148,12 @@ describe('Guard 2 — https-transport.ts is the sole transport-library importer 
   });
 
   it('no module outside https-transport.ts imports node:https, node:http, undici, axios or names fetch(', () => {
+    // Covers a static `from '...'`, a CommonJS `require(...)`, AND a dynamic `import(...)` —
+    // the last was missing until the fix-loop-2 Verifier reproduced the original report's "one
+    // socket" PoC verbatim (`const https = await import('node:https'); https.request(...)`),
+    // which this pattern's static-only shape let straight through with 21/21 tests still green.
     const importPattern =
-      /(?:from\s+['"](node:https|node:http|undici|axios)['"]|require\(\s*['"](node:https|node:http|undici|axios)['"]\s*\))/;
+      /(?:from\s+['"](node:https|node:http|undici|axios)['"]|require\(\s*['"](node:https|node:http|undici|axios)['"]\s*\)|import\(\s*['"](node:https|node:http|undici|axios)['"]\s*\))/;
     const fetchPattern = /\bfetch\s*\(/;
     const offenders: string[] = [];
     for (const file of scannedFiles) {
