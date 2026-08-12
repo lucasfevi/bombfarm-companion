@@ -15,4 +15,12 @@ export { requestGet } from './request.js';
 export type { HttpRequest, HttpResponse, HttpTransport, RequestOptions, RequestOutcome } from './request.js';
 export { PacingHaltedError, PacingRefusedError, READ_PACING, createPacingGate } from './pacing.js';
 export type { PacingClock, PacingGate, PacingState } from './pacing.js';
+export { ROUTE_FINGERPRINTS } from './fingerprints.js';
+export type { RouteFingerprint } from './fingerprints.js';
+export { checkShape } from './shape.js';
+export type { ShapeCheckResult } from './shape.js';
+export { ROUTES, readSection } from './routes.js';
+export type { RouteDescriptor, SectionFailureReason, SectionOutcome } from './routes.js';
+export { createGameApiClient } from './client.js';
+export type { GameApiClient } from './client.js';
 
