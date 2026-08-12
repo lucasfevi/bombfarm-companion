@@ -77,9 +77,24 @@ function registerIpcHandlers(): void {
       // gameRunning always comes fresh from the game reader's current status — never from a
       // cached view, so a stale cached commit can never misreport whether the game is running.
       const gameRunning = gameReader?.getStatus().status === 'connected';
-      // The game-API cycle (MP2 F2) is the freshest live producer when it has run at least
-      // once; the fixture/memory game reader's own cache is the fallback (unchanged from F3).
-      const cached = accountRefresh?.getLastView() ?? gameReader?.getAccountView();
+      // The game-API cycle (MP2 F2) is the freshest live producer, but only once it has
+      // actually read something — i.e. once consent is granted. Before that, every cycle it
+      // runs (including the very first one at boot, and every one thereafter while declined/
+      // unasked/revoked) commits nothing but an all-`missing` "not consented" placeholder
+      // through the *same* AccountStore the fixture/memory game reader writes to
+      // (`AccountStore.commit()` = persist+restore+merge). Preferring that placeholder
+      // unconditionally — as this used to do — meant one no-op cycle at boot permanently
+      // masked the game reader's own resolved fixture/memory data behind a `stale` merge for
+      // the 60s until the game-API cycle's next run (T-fix-6, caught by
+      // `account-restart.spec.mjs`). So: the game reader's own cache wins whenever it has one
+      // (real production's memory-mode reader never populates it — see
+      // `GameReaderService.tickMemory()` — so this changes nothing there); only once consent
+      // is granted does the game-API cycle's own (now genuinely fresher) view get first look.
+      const consentGranted = consentStore?.read().decision === 'granted';
+      const cached =
+        (consentGranted ? accountRefresh?.getLastView() : null) ??
+        gameReader?.getAccountView() ??
+        accountRefresh?.getLastView();
       if (cached) {
         return { ...cached, gameRunning };
       }
