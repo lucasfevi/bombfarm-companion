@@ -1,0 +1,12 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "noEmit": true,
+    "rootDir": ".",
+    "baseUrl": ".",
+    "paths": {
+      "@bombfarm/domain/*": ["src/*"]
+    }
+  },
+  "include": ["tests/helpers/fidelity-*.ts", "tests/fidelity-*.test.ts"]
+}
