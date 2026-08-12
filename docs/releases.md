@@ -53,6 +53,13 @@ is the one branch in the repo where `required_linear_history` is **off**
 ([`.github/branch-protection-main.json`](../.github/branch-protection-main.json)) so the
 merge commit is accepted.
 
+You should not be able to get this wrong by hand: a ruleset pins `main` to
+`allowed_merge_methods: ["merge"]`, so squash and rebase are greyed out on the PR and
+`gh pr merge --squash` fails. See
+[Merge-method enforcement](branching.md#merge-method-enforcement-lives-in-a-ruleset). If the
+squash button is live on a PR into `main`, the ruleset is missing — restore it before merging
+rather than merging carefully.
+
 This is not cosmetic. Squash and rebase both mint new SHAs, so neither puts `develop`'s
 commits into `main`'s ancestry — `main` gets a content-equal *snapshot* instead. Releases
 #17 through #45 were squashed, and the cost is that the last commit the two branches
