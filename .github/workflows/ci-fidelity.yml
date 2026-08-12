@@ -83,9 +83,9 @@ jobs:
       - name: Typecheck the fidelity-gate test files
         run: pnpm --filter @bombfarm/domain exec tsc -p tsconfig.typecheck.json --noEmit
 
-      # Deliberately no --passWithNoTests and no continue-on-error: verified on develop that a
-      # filename filter matching zero files exits 1 (tasks.md), so a renamed-away suite fails
-      # this job rather than reporting green.
+      # Deliberately no "pass with no tests found" flag and no error-swallowing retry: verified
+      # on develop that a filename filter matching zero files exits 1 (tasks.md), so a
+      # renamed-away suite fails this job rather than reporting green.
       - name: Fidelity suite (packages/domain, "fidelity" filename filter)
         run: pnpm vitest run --project @bombfarm/domain fidelity
 
