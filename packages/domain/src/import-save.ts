@@ -210,7 +210,7 @@ const EMPTY_ACCOUNT_DATA: AccountImportData = { tree: null, houseIdx: null, hous
  * simply never declares them (ACS-06).
  */
 function toAccountPayload(raw: unknown): AccountPayload {
-  return isObject(raw) ? (raw as unknown as AccountPayload) : {};
+  return isObject(raw) ? raw : {};
 }
 
 /** Unchanged name, signature and observable output (ACS-02) — a thin file adapter over {@link parseAccountPayload}. */
