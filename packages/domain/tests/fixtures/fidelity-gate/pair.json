@@ -1,0 +1,22 @@
+{
+  "schemaVersion": 1,
+  "accountLabel": "F4 reference account (11 heroes, 2026-07-31 capture)",
+  "export": {
+    "file": "export-capture.json",
+    "gameBuild": "2026.07.31",
+    "capturedAt": "2026-07-31T13:52:13.000Z",
+    "scrubbed": ["account_id", "player_name"]
+  },
+  "live": {
+    "file": "live-capture.json",
+    "source": "export-derived",
+    "gameBuild": "2026.07.31",
+    "capturedAt": "2026-07-31T13:52:13.000Z",
+    "scrubbed": ["account_id", "player_name"]
+  },
+  "expected": {
+    "heroes": 11,
+    "items": 58,
+    "statComparisons": 264
+  }
+}
