@@ -3,13 +3,25 @@ import {
   DEFAULT_SETTINGS,
   FLAVORS,
   IPC_CHANNELS,
+  IPC_EVENT_CHANNELS,
   createPingResponse,
   isIpcChannel,
+  isIpcEventChannel,
+  type AccountView,
   type AppEnvironmentInfo,
+  type ConsentRecord,
 } from './index.js';
 
+/** Compile-time-only: fails `tsc -p tsconfig.typecheck.json` if a member is ever added to
+ *  `IpcInvokeChannel` without also adding it to the runtime `IPC_CHANNELS` array — the
+ *  `satisfies` clause on `IPC_CHANNELS` only catches the opposite direction (an extra/wrong
+ *  runtime entry), so this closes the other half (T9 Done-when). */
+type AssertNever<T extends never> = T;
+type _AllInvokeChannelsListed = AssertNever<Exclude<import('./index.js').IpcInvokeChannel, (typeof IPC_CHANNELS)[number]>>;
+type _AllEventChannelsListed = AssertNever<Exclude<import('./index.js').IpcEventChannel, (typeof IPC_EVENT_CHANNELS)[number]>>;
+
 describe('contracts IPC surface', () => {
-  it('lists stable invoke channels', () => {
+  it('lists stable invoke channels, including the four MP2 F2 consent channels', () => {
     expect(IPC_CHANNELS).toEqual([
       'app:getFlavor',
       'app:getEnvironment',
@@ -18,13 +30,49 @@ describe('contracts IPC surface', () => {
       'storage:health',
       'game:getStatus',
       'game:getSnapshot',
+      'account:get',
+      'consent:get',
+      'consent:accept',
+      'consent:decline',
+      'consent:revoke',
     ]);
+  });
+
+  it('lists stable event channels, including consent:changed and account:changed', () => {
+    expect(IPC_EVENT_CHANNELS).toEqual(['game:status', 'consent:changed', 'account:changed', 'snapshot:updated']);
   });
 
   it('guards unknown channel names', () => {
     expect(isIpcChannel('app:ping')).toBe(true);
     expect(isIpcChannel('app:getEnvironment')).toBe(true);
+    expect(isIpcChannel('account:get')).toBe(true);
+    expect(isIpcChannel('consent:get')).toBe(true);
+    expect(isIpcChannel('consent:accept')).toBe(true);
+    expect(isIpcChannel('consent:decline')).toBe(true);
+    expect(isIpcChannel('consent:revoke')).toBe(true);
     expect(isIpcChannel('not-a-channel')).toBe(false);
+  });
+
+  it('guards unknown event channel names', () => {
+    expect(isIpcEventChannel('game:status')).toBe(true);
+    expect(isIpcEventChannel('consent:changed')).toBe(true);
+    expect(isIpcEventChannel('account:changed')).toBe(true);
+    expect(isIpcEventChannel('snapshot:updated')).toBe(true);
+    expect(isIpcEventChannel('not-an-event')).toBe(false);
+  });
+
+  it('every consent:* channel result is a ConsentRecord shape (decision + textVersion, optional grantedAt)', () => {
+    const record: ConsentRecord = { decision: 'unasked', textVersion: 1 };
+    expect(record.decision).toBe('unasked');
+    expect(record.grantedAt).toBeUndefined();
+  });
+
+  it('IPC_CHANNELS has no duplicate entries', () => {
+    expect(new Set(IPC_CHANNELS).size).toBe(IPC_CHANNELS.length);
+  });
+
+  it('IPC_EVENT_CHANNELS has no duplicate entries', () => {
+    expect(new Set(IPC_EVENT_CHANNELS).size).toBe(IPC_EVENT_CHANNELS.length);
   });
 
   it('maps flavor descriptor fields to AppEnvironmentInfo for dev', () => {
@@ -89,3 +137,24 @@ describe('contracts IPC surface', () => {
     expect(DEFAULT_SETTINGS.locale).toBe('en');
   });
 });
+
+// --- Compile-time-only assertions below: no runtime behaviour, enforced by `tsc` only. ---
+// No IPC channel carries a token (T9 Done-when). `@bombfarm/contracts` never imports
+// `SessionToken` from `@bombfarm/game-api` (that edge runs the other way — see consent.ts's
+// doc comment), so this proves the weaker, sufficient claim structurally instead: neither
+// `ConsentRecord` (every consent:* channel's result) nor `AccountView` (account:get's result,
+// and account:changed's event payload) declares a `token` field at all.
+
+// Never-called functions so the type-only parameters have nothing to evaluate at module load
+// (a top-level `declare const` reference would throw at runtime once esbuild strips it).
+function _assertConsentRecordHasNoToken(record: ConsentRecord): void {
+  // @ts-expect-error - ConsentRecord has no `token` field; a session token can never ride over consent:*
+  void record.token;
+}
+void _assertConsentRecordHasNoToken;
+
+function _assertAccountViewHasNoToken(view: AccountView): void {
+  // @ts-expect-error - AccountView has no `token` field; a session token can never ride over account:get/account:changed
+  void view.token;
+}
+void _assertAccountViewHasNoToken;

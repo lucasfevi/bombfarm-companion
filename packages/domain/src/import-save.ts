@@ -22,6 +22,8 @@ import {
 import { composeSheetFromBirth, nakedFromBirth, type BirthStats, type TreeSheetTotals } from './birth-sheet';
 import { inferSpentPoints, type PointInferenceIssue } from './point-inference';
 import { unmodelledTreeFindings } from './tree-guards';
+import { ACCOUNT_SECTIONS, sectionHasData } from './account-fidelity';
+import type { AccountPayload } from '@bombfarm/contracts';
 
 const RARITY_BY_IDX: RarityKey[] = ['Comum', 'Incomum', 'Raro', 'Épico', 'Lendária', 'Mítico'];
 
@@ -201,12 +203,52 @@ function mapAccountData(raw: Record<string, unknown>): AccountImportData {
 
 const EMPTY_ACCOUNT_DATA: AccountImportData = { tree: null, houseIdx: null, houseLevel: null, phase: null };
 
+/**
+ * Normalises a raw file object into an `AccountPayload` with no projection, validation, or
+ * key-stripping (design TD-2) — `parseAccountPayload` below re-validates every field itself.
+ * File-only keys (`export_version`, `generated_at`) ride along at runtime; the shared *type*
+ * simply never declares them (ACS-06).
+ */
+function toAccountPayload(raw: unknown): AccountPayload {
+  return isObject(raw) ? raw : {};
+}
+
+/** Unchanged name, signature and observable output (ACS-02) — a thin file adapter over {@link parseAccountPayload}. */
 export function parseSaveFile(raw: unknown, existing: HeroRecord[]): ParseResult {
+  return parseAccountPayload(toAccountPayload(raw), existing);
+}
+
+/**
+ * A section the payload's `fidelity` block calls `resolved` but that carries no data at all is
+ * treated as a programming error, not a silent downgrade (spec.md edge cases, design TD-6):
+ * surfaced as a warning, never thrown, never changing the derived grade (which stays a pure
+ * function of `fidelity` alone in `deriveAccountFidelity`). The file adapter above never sets
+ * `fidelity`, so this is provably empty on the file path.
+ */
+function resolvedButAbsentWarnings(payload: AccountPayload): string[] {
+  // Defensive by design (file header): a caller handing the typed entry point a malformed
+  // payload (null, a primitive) degrades to "no fidelity asserted" rather than throwing,
+  // matching spec.md's edge case for `parseAccountPayload` too, not just the file adapter.
+  if (payload === null || typeof payload !== 'object') return [];
+  const fidelity = payload.fidelity;
+  if (!fidelity) return [];
   const warnings: string[] = [];
+  for (const section of ACCOUNT_SECTIONS) {
+    if (fidelity[section]?.status === 'resolved' && !sectionHasData(payload, section)) {
+      warnings.push(`Fidelity reports "${section}" as resolved but the payload carries no "${section}" data.`);
+    }
+  }
+  return warnings;
+}
+
+export function parseAccountPayload(payload: AccountPayload, existing: HeroRecord[]): ParseResult {
+  const raw: unknown = payload;
+  const warnings: string[] = [];
+  warnings.push(...resolvedButAbsentWarnings(payload));
   if (!isObject(raw) || !Array.isArray(raw.heroes)) {
     return {
       candidates: [],
-      warnings: ['This does not look like a BombFarm save file (missing a "heroes" list).'],
+      warnings: [...warnings, 'This does not look like a BombFarm save file (missing a "heroes" list).'],
       account: EMPTY_ACCOUNT_DATA,
       inventory: [],
       rejected: { reason: 'notASaveFile', heroNames: [] },

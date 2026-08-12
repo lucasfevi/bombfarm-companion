@@ -1,6 +1,6 @@
 {
   "name": "@bombfarm/desktop",
-  "version": "0.1.2",
+  "version": "0.2.0",
   "private": true,
   "description": "Bomb Farm Companion desktop shell",
   "repository": {
@@ -11,8 +11,8 @@
   "scripts": {
     "build:electron": "node scripts/build-electron.mjs",
     "build:renderer": "pnpm exec next build renderer",
-    "predev": "node scripts/ensure-electron.mjs && pnpm --filter @bombfarm/contracts build && pnpm --filter @bombfarm/game-data build && pnpm --filter @bombfarm/ui build",
-    "prebuild": "node scripts/ensure-electron.mjs && pnpm -r --filter @bombfarm/contracts --filter @bombfarm/game-data --filter @bombfarm/ui build",
+    "predev": "node scripts/ensure-electron.mjs && pnpm --filter @bombfarm/contracts build && pnpm --filter @bombfarm/game-data build && pnpm --filter @bombfarm/game-api build && pnpm --filter @bombfarm/ui build",
+    "prebuild": "node scripts/ensure-electron.mjs && pnpm -r --filter @bombfarm/contracts --filter @bombfarm/game-data --filter @bombfarm/game-api --filter @bombfarm/ui build",
     "pretest:smoke": "cross-env NODE_ENV=production BFC_FLAVOR=dev BFC_GAME_READER=fixture pnpm build",
     "build": "pnpm build:electron && pnpm build:renderer",
     "dev": "pnpm build:electron && node scripts/dev.mjs",
@@ -27,6 +27,7 @@
   "dependencies": {
     "@base-ui/react": "^1.6.0",
     "@bombfarm/contracts": "workspace:*",
+    "@bombfarm/game-api": "workspace:*",
     "@bombfarm/game-data": "workspace:*",
     "@bombfarm/ui": "workspace:*",
     "electron-log": "^5.4.1",

@@ -110,6 +110,42 @@ describe('buildAppEnv', () => {
       expect(env.descriptor).toBe(descriptor);
     });
   }
+
+  describe('userDataOverride (BFC_USER_DATA_DIR)', () => {
+    it('is used verbatim as userDataPath when unpackaged', () => {
+      const env = buildAppEnv({
+        ...baseDeps,
+        rawFlavor: 'dev',
+        isPackaged: false,
+        userDataOverride: 'C:\\temp\\bfc-smoke-abc123',
+      });
+      expect(env.userDataPath).toBe('C:\\temp\\bfc-smoke-abc123');
+    });
+
+    it('is ignored when packaged — the flavor path wins even though an override was set', () => {
+      const env = buildAppEnv({
+        ...baseDeps,
+        rawFlavor: 'beta',
+        isPackaged: true,
+        bakedFlavor: 'beta',
+        userDataOverride: 'C:\\temp\\should-be-ignored',
+      });
+      expect(env.userDataPath).toBe(path.join(APP_DATA, FLAVORS.beta.dataDirName));
+      expect(env.userDataPath).not.toBe('C:\\temp\\should-be-ignored');
+    });
+
+    it('an absent override behaves byte-identically to not passing the field at all', () => {
+      const withoutField = buildAppEnv({ ...baseDeps, rawFlavor: 'dev' });
+      const withUndefined = buildAppEnv({ ...baseDeps, rawFlavor: 'dev', userDataOverride: undefined });
+      expect(withUndefined.userDataPath).toBe(withoutField.userDataPath);
+      expect(withUndefined.userDataPath).toBe(path.join(APP_DATA, FLAVORS.dev.dataDirName));
+    });
+
+    it('an empty-string override is treated as absent (falls back to the flavor path)', () => {
+      const env = buildAppEnv({ ...baseDeps, rawFlavor: 'dev', isPackaged: false, userDataOverride: '' });
+      expect(env.userDataPath).toBe(path.join(APP_DATA, FLAVORS.dev.dataDirName));
+    });
+  });
 });
 
 describe('resolveAppEnv', () => {
@@ -119,5 +155,21 @@ describe('resolveAppEnv', () => {
     const first = resolveFresh();
     const second = resolveFresh();
     expect(second).toBe(first);
+  });
+
+  it('threads process.env.BFC_USER_DATA_DIR through as the userDataOverride', async () => {
+    vi.resetModules();
+    const previous = process.env.BFC_USER_DATA_DIR;
+    process.env.BFC_USER_DATA_DIR = '/tmp/bfc-smoke-xyz';
+    try {
+      const { resolveAppEnv: resolveFresh } = await import('./env.js');
+      expect(resolveFresh().userDataPath).toBe('/tmp/bfc-smoke-xyz');
+    } finally {
+      if (previous === undefined) {
+        delete process.env.BFC_USER_DATA_DIR;
+      } else {
+        process.env.BFC_USER_DATA_DIR = previous;
+      }
+    }
   });
 });

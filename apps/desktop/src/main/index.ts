@@ -3,18 +3,46 @@ import { app, BrowserWindow, ipcMain } from 'electron';
 import {
   DEFAULT_SETTINGS,
   isIpcChannel,
+  type AccountView,
+  type ConsentRecord,
+  type IpcEventChannel,
+  type IpcEvents,
   type IpcInvokeChannel,
 } from '@bombfarm/contracts';
+import { type ConsentEvent, createPacingGate, initialConsent, reduceConsent } from '@bombfarm/game-api';
 import { applyAppIdentity } from './app-identity.js';
 import { createBootRecord } from './boot-record.js';
 import { InvalidFlavorError, resolveAppEnv, RENDERER_DEV_URL, type AppEnv } from './env.js';
 import { GameReaderService } from './game-reader/game-reader-service.js';
+import { createAccountRefresh, type AccountRefreshHandle } from './game-api/account-refresh.js';
+import { createConsentStore, type ConsentStore } from './game-api/consent-store.js';
+import { nodeHttpsTransport } from './game-api/https-transport.js';
+import { readSessionToken, sessionCfgPath } from './game-api/session-token-file.js';
 import { configureLogging, log } from './logging.js';
-import { createStorage, type Storage } from './storage/index.js';
+import { createAccountStore, type AccountStore } from './storage/account-store.js';
+import { createStorage, openAccountDatabase, type Storage } from './storage/index.js';
 
 let mainWindow: BrowserWindow | null = null;
 let storage: Storage | null = null;
 let gameReader: GameReaderService | null = null;
+let accountStore: AccountStore | null = null;
+let accountRefresh: AccountRefreshHandle | null = null;
+let consentStore: ConsentStore | null = null;
+
+function emitEvent<C extends IpcEventChannel>(channel: C, payload: IpcEvents[C]): void {
+  mainWindow?.webContents.send(`bfc:event:${channel}`, payload);
+}
+
+/** Reads, transitions, persists, and announces one consent event — the single path every
+ *  consent:* handler below goes through (LAR-01/03…05). */
+function applyConsentEvent(event: ConsentEvent): ConsentRecord {
+  const current = consentStore?.read() ?? initialConsent();
+  const next = reduceConsent(current, event);
+  consentStore?.write(next);
+  emitEvent('consent:changed', next);
+  accountRefresh?.onConsentChanged(next);
+  return next;
+}
 
 function registerIpcHandlers(): void {
   const handlers: Record<IpcInvokeChannel, () => unknown> = {
@@ -45,6 +73,43 @@ function registerIpcHandlers(): void {
       mapped: null,
       raw: { state: null, inventory: null },
     },
+    'account:get': (): AccountView => {
+      // gameRunning always comes fresh from the game reader's current status — never from a
+      // cached view, so a stale cached commit can never misreport whether the game is running.
+      const gameRunning = gameReader?.getStatus().status === 'connected';
+      // The game-API cycle (MP2 F2) is the freshest live producer, but only once it has
+      // actually read something — i.e. once consent is granted. Before that, every cycle it
+      // runs (including the very first one at boot, and every one thereafter while declined/
+      // unasked/revoked) commits nothing but an all-`missing` "not consented" placeholder
+      // through the *same* AccountStore the fixture/memory game reader writes to
+      // (`AccountStore.commit()` = persist+restore+merge). Preferring that placeholder
+      // unconditionally — as this used to do — meant one no-op cycle at boot permanently
+      // masked the game reader's own resolved fixture/memory data behind a `stale` merge for
+      // the 60s until the game-API cycle's next run (T-fix-6, caught by
+      // `account-restart.spec.mjs`). So: the game reader's own cache wins whenever it has one
+      // (real production's memory-mode reader never populates it — see
+      // `GameReaderService.tickMemory()` — so this changes nothing there); only once consent
+      // is granted does the game-API cycle's own (now genuinely fresher) view get first look.
+      const consentGranted = consentStore?.read().decision === 'granted';
+      const cached =
+        (consentGranted ? accountRefresh?.getLastView() : null) ??
+        gameReader?.getAccountView() ??
+        accountRefresh?.getLastView();
+      if (cached) {
+        return { ...cached, gameRunning };
+      }
+      return (
+        accountStore?.commit({}, { gameRunning }) ?? {
+          payload: {},
+          gameRunning,
+          store: { status: 'unavailable', reason: 'no_sqlite_binding', binding: null },
+        }
+      );
+    },
+    'consent:get': (): ConsentRecord => consentStore?.read() ?? initialConsent(),
+    'consent:accept': (): ConsentRecord => applyConsentEvent({ type: 'accept', now: new Date().toISOString() }),
+    'consent:decline': (): ConsentRecord => applyConsentEvent({ type: 'decline' }),
+    'consent:revoke': (): ConsentRecord => applyConsentEvent({ type: 'revoke' }),
   };
 
   ipcMain.handle('bfc:invoke', (_event, channel: string) => {
@@ -116,7 +181,54 @@ async function bootstrap(): Promise<void> {
   const health = storage.healthCheck();
   log.info({ scope: 'main', event: 'storage.ready', ...health });
 
-  gameReader = new GameReaderService(app.getPath('userData'));
+  // A store that failed to open (degraded/unavailable) never throws into boot — the app
+  // starts and account:get reports the reason (openAccountDatabase/createAccountStore are
+  // both designed to never throw).
+  const userDataDir = app.getPath('userData');
+  const accountOpen = openAccountDatabase(path.join(userDataDir, 'account.db'));
+  accountStore = createAccountStore(accountOpen, { userDataDir });
+  const initialRestore = accountStore.restore();
+  log.info({
+    scope: 'main',
+    event: 'account.restored',
+    status: initialRestore.status,
+    reason: initialRestore.reason,
+    account: initialRestore.payload.fidelity.account.status,
+    heroes: initialRestore.payload.fidelity.heroes.status,
+    skills: initialRestore.payload.fidelity.skills.status,
+    casa: initialRestore.payload.fidelity.casa.status,
+    items: initialRestore.payload.fidelity.items.status,
+  });
+
+  gameReader = new GameReaderService(userDataDir);
+  gameReader.setAccountStore(accountStore);
+
+  // MP2 F2 — the consented game-API account reader. Independent of the game reader's own
+  // memory/fixture ticking: consent gates every request structurally (LAR-01/AD-025/AD-028),
+  // so this cycle issues nothing at all until the player has accepted the first-run modal (T9).
+  // Constructed before registerIpcHandlers() so the consent:* handlers never see a null store.
+  consentStore = createConsentStore(accountOpen.db);
+  const gate = createPacingGate({
+    now: () => Date.now(),
+    sleep: (ms) => new Promise((resolve) => setTimeout(resolve, ms)),
+  });
+  accountRefresh = createAccountRefresh({
+    consentStore,
+    transport: nodeHttpsTransport,
+    gate,
+    store: accountStore,
+    log,
+    now: () => new Date().toISOString(),
+    // Threads Electron's real `app.isPackaged` (via `resolveAppEnv()`) so `sessionCfgPath`'s
+    // `BFC_TOKEN_PATH_OVERRIDE` escape hatch (T-fix-4) can ever apply — and, symmetrically,
+    // cannot apply in a packaged build no matter what is set in its environment. See
+    // `session-token-file.ts`'s `SessionCfgPathDeps` doc comment.
+    readToken: (consent) => readSessionToken(consent, undefined, sessionCfgPath({ isPackaged: resolveAppEnv().isPackaged })),
+    onView: (view) => {
+      emitEvent('account:changed', view);
+    },
+  });
+
   registerIpcHandlers();
   await createMainWindow();
   gameReader.start();
@@ -125,6 +237,9 @@ async function bootstrap(): Promise<void> {
     event: 'game-reader.started',
     mode: process.env.BFC_GAME_READER === 'fixture' ? 'fixture' : 'memory',
   });
+
+  accountRefresh.start();
+  log.info({ scope: 'main', event: 'account-refresh.started' });
 }
 
 function resolveBootEnv(): AppEnv {
@@ -187,7 +302,12 @@ if (!gotLock) {
   app.on('before-quit', () => {
     gameReader?.stop();
     gameReader = null;
+    accountRefresh?.stop();
+    accountRefresh = null;
+    consentStore = null;
     storage?.close();
     storage = null;
+    accountStore?.close();
+    accountStore = null;
   });
 }
