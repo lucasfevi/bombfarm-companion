@@ -211,12 +211,12 @@ describe('T2 — the fail-loud loader', () => {
       expectCode(() => loadFidelityPair(dir), 'fixtureMissing');
     });
 
-    it('the fixtureMissing message names the absolute path and docs/FIDELITY_GATE.md', () => {
+    it('the fixtureMissing message names the absolute path and docs/fidelity-gate.md', () => {
       writeManifest();
       writeMinimalCapture('export-capture.json');
       const err = expectCode(() => loadFidelityPair(dir), 'fixtureMissing');
       expect(err.message).toContain(dir);
-      expect(err.message).toContain('docs/FIDELITY_GATE.md');
+      expect(err.message).toContain('docs/fidelity-gate.md');
     });
 
     it('throws fixtureMalformed naming the file and the parser position on invalid JSON', () => {

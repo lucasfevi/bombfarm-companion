@@ -22,7 +22,7 @@ These are **current truth**. Do not invent planning/spec paths in this repo.
 | [releases.md](releases.md) | Changesets release rail, artifacts, recovery |
 | [hard-truths.md](hard-truths.md) | How to propose / accept new hard truths |
 | [typescript-planner-origin.md](typescript-planner-origin.md) | Documented TS/ESLint exception for `@bombfarm/domain` + `@bombfarm/ui` |
-| [FIDELITY_GATE.md](FIDELITY_GATE.md) | The MP2 fidelity gate: live-vs-export sheet-math parity, the capture pair, the F2 handoff |
+| [fidelity-gate.md](fidelity-gate.md) | The MP2 fidelity gate: live-vs-export sheet-math parity, the capture pair, the outstanding handoff |
 
 ## Web-only
 

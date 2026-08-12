@@ -17,7 +17,7 @@ import { FidelityGateError } from './fidelity-gate-error';
 
 const DEFAULT_FIXTURES_DIR = join(__dirname, '..', 'fixtures', 'fidelity-gate');
 const PAIR_MANIFEST_FILE = 'pair.json';
-const DOCS_LINK = 'docs/FIDELITY_GATE.md';
+const DOCS_LINK = 'docs/fidelity-gate.md';
 
 /** The provenance token this design ladders strictness off (`design.md` §1.2, `AD-026`). */
 export type LiveSource = 'export-derived' | 'memory-assembled';
