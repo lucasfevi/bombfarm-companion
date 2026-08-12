@@ -231,13 +231,24 @@ const FORBIDDEN_MODULE_MARKERS = ['memory-scanner', 'koffi', 'candidates'];
 const FORBIDDEN_NAMES = ['pickHighestGoldCandidate'];
 
 /**
- * A fully `import type { ... } from '...'` statement is erased at compile time — it cannot
- * smuggle in a runtime dependency, so it is deliberately excluded here (this is exactly the
- * shape `account-refresh.ts` uses to reuse `game-reader-service.ts`'s `AccountCommitter`
- * interface without ever importing its koffi-loading module at runtime).
+ * A fully `import type { ... } from '...'` or `export type { ... } from '...'` statement is
+ * erased at compile time — it cannot smuggle in a runtime dependency, so both are deliberately
+ * excluded here (this is exactly the shape `account-refresh.ts` uses to reuse
+ * `game-reader-service.ts`'s `AccountCommitter` interface without ever importing its
+ * koffi-loading module at runtime).
+ *
+ * Covers four value-level edge shapes (T-fix-3): a static `import ... from`, a re-export chain
+ * (`export { X [as Y] } from '...'` / `export * from '...'`) — the exact shape a Verifier used to
+ * defeat this walker (`export { pickHighestGoldCandidate as legacyGoldPicker } from
+ * '@bombfarm/game-data'` wired into `account-refresh.ts` was invisible to the old, import-only
+ * regex) — a dynamic `import('...')` with a static string argument, and a CommonJS `require(...)`.
+ * A computed/templated specifier in either of the last two cannot be resolved statically and is
+ * out of scope, the same way every other guard in this file only defeats syntactic, not
+ * arbitrary-runtime-value, obfuscation.
  */
 function parseImportSpecifiers(text: string): string[] {
   const specifiers: string[] = [];
+
   const importRegex = /import\s+([^;]*?)\s+from\s+['"]([^'"]+)['"]/g;
   let match: RegExpExecArray | null;
   while ((match = importRegex.exec(text))) {
@@ -246,18 +257,53 @@ function parseImportSpecifiers(text: string): string[] {
     if (!specifier || /^type\b/.test(clause)) continue;
     specifiers.push(specifier);
   }
+
+  const reExportRegex = /export\s+(type\s+)?(?:\*(?:\s+as\s+\w+)?|\{[^}]*\})\s+from\s+['"]([^'"]+)['"]/g;
+  while ((match = reExportRegex.exec(text))) {
+    const isTypeOnly = Boolean(match[1]);
+    const specifier = match[2];
+    if (!specifier || isTypeOnly) continue;
+    specifiers.push(specifier);
+  }
+
+  const dynamicImportRegex = /\bimport\(\s*['"]([^'"]+)['"]\s*\)/g;
+  while ((match = dynamicImportRegex.exec(text))) {
+    const specifier = match[1];
+    if (specifier) specifiers.push(specifier);
+  }
+
+  const requireRegex = /\brequire\(\s*['"]([^'"]+)['"]\s*\)/g;
+  while ((match = requireRegex.exec(text))) {
+    const specifier = match[1];
+    if (specifier) specifiers.push(specifier);
+  }
+
   return specifiers;
 }
 
+/** Extracts the imported/re-exported names bound to a given `specifier`, across every value-edge
+ *  shape `parseImportSpecifiers` recognizes above (static import, re-export chain, or a
+ *  destructured dynamic import). For an `X as Y` clause this returns `X` — the name the source
+ *  module actually defines — since that is what `FORBIDDEN_NAMES` matches against, not the local
+ *  alias a re-export or renamed import gives it. */
 function importedNamesFrom(text: string, specifier: string): string[] {
   const escaped = specifier.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-  const re = new RegExp(`import\\s+(?:type\\s+)?\\{([^}]*)\\}\\s+from\\s+['"]${escaped}['"]`);
-  const match = re.exec(text);
-  if (!match?.[1]) return [];
-  return match[1]
-    .split(',')
-    .map((s) => s.trim().split(/\s+as\s+/)[0]?.trim() ?? '')
-    .filter((s) => s.length > 0);
+  const patterns = [
+    new RegExp(`import\\s+(?:type\\s+)?\\{([^}]*)\\}\\s+from\\s+['"]${escaped}['"]`),
+    new RegExp(`export\\s+(?:type\\s+)?\\{([^}]*)\\}\\s+from\\s+['"]${escaped}['"]`),
+    new RegExp(`\\{([^}]*)\\}\\s*=\\s*(?:await\\s+)?import\\(\\s*['"]${escaped}['"]\\s*\\)`),
+  ];
+
+  const names: string[] = [];
+  for (const pattern of patterns) {
+    const match = pattern.exec(text);
+    if (!match?.[1]) continue;
+    for (const clause of match[1].split(',')) {
+      const name = clause.trim().split(/\s+as\s+/)[0]?.trim();
+      if (name) names.push(name);
+    }
+  }
+  return names;
 }
 
 function resolveRelativeImport(fromFile: string, specifier: string): string | null {
@@ -309,6 +355,39 @@ function walkImportGraph(startFile: string): { violations: GraphViolation[]; vis
 
   return { violations, visited };
 }
+
+describe('Guard 4 parser — the new edge shapes it walks, and the type-only edges it still excludes (T-fix-3)', () => {
+  it('follows a re-export chain (export { X as Y } from "...") as a value edge, matching on the original name', () => {
+    const text = "export { pickHighestGoldCandidate as legacyGoldPicker } from '@bombfarm/game-data';";
+    expect(parseImportSpecifiers(text)).toEqual(['@bombfarm/game-data']);
+    expect(importedNamesFrom(text, '@bombfarm/game-data')).toEqual(['pickHighestGoldCandidate']);
+  });
+
+  it('excludes an `export type { ... } from` re-export — erased at compile time, same as `import type`', () => {
+    const text = "export type { AccountCommitter } from '../game-reader/game-reader-service.js';";
+    expect(parseImportSpecifiers(text)).toEqual([]);
+  });
+
+  it('still excludes a plain `import type { ... } from` (regression guard for the existing correct behaviour)', () => {
+    const text = "import type { AccountCommitter } from '../game-reader/game-reader-service.js';";
+    expect(parseImportSpecifiers(text)).toEqual([]);
+  });
+
+  it('follows a dynamic import() with a static string argument', () => {
+    const text = "const mod = await import('@bombfarm/game-data');";
+    expect(parseImportSpecifiers(text)).toEqual(['@bombfarm/game-data']);
+  });
+
+  it('extracts a forbidden name destructured directly off a dynamic import()', () => {
+    const text = "const { pickHighestGoldCandidate } = await import('@bombfarm/game-data');";
+    expect(importedNamesFrom(text, '@bombfarm/game-data')).toEqual(['pickHighestGoldCandidate']);
+  });
+
+  it('follows a require(...) call', () => {
+    const text = "const mod = require('@bombfarm/game-data');";
+    expect(parseImportSpecifiers(text)).toEqual(['@bombfarm/game-data']);
+  });
+});
 
 describe('Guard 4 — the account path never reaches memory (LAR-26, D24)', () => {
   const { violations, visited } = walkImportGraph(ACCOUNT_REFRESH_FILE);
