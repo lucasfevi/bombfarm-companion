@@ -11,6 +11,7 @@ const webTailwindCss = path.join(import.meta.dirname, 'apps/web/src/app/globals.
 /** Companion-native packages keep the pre-merge strict typed lint bar. */
 const companionNativePackages = [
   'packages/contracts/**/*.{ts,tsx}',
+  'packages/game-api/**/*.{ts,tsx}',
   'packages/game-data/**/*.{ts,tsx}',
   'packages/pricing/**/*.{ts,tsx}',
 ];

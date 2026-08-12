@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import type { AppEnvironmentInfo, GameSnapshotPayload, GameStatusInfo } from '@bombfarm/contracts';
 import { AppShell, EmptyState, StatusChip } from '@bombfarm/ui';
+import { ConsentModal } from './consent-modal';
 
 function statusLabel(status: GameStatusInfo['status']): string {
   switch (status) {
@@ -79,53 +80,56 @@ export default function HomePage() {
   }, [snapshot]);
 
   return (
-    <AppShell
-      title={environment?.productName}
-      badge={environment?.badgeLabel ?? null}
-      items={[]}
-      status={
-        <span data-testid="game-status-chip">
-          {status ? (
-            <StatusChip
-              status={status.status}
-              label={statusLabel(status.status)}
-              ageLabel={status.staleAgeMs != null ? formatAgeLabel(status.staleAgeMs) : undefined}
-            />
+    <>
+      <ConsentModal />
+      <AppShell
+        title={environment?.productName}
+        badge={environment?.badgeLabel ?? null}
+        items={[]}
+        status={
+          <span data-testid="game-status-chip">
+            {status ? (
+              <StatusChip
+                status={status.status}
+                label={statusLabel(status.status)}
+                ageLabel={status.staleAgeMs != null ? formatAgeLabel(status.staleAgeMs) : undefined}
+              />
+            ) : (
+              'Loading…'
+            )}
+          </span>
+        }
+        version={
+          environment ? (
+            <>
+              <span data-testid="app-version" className="font-mono tabular-nums">
+                v{environment.version}
+              </span>
+              {environment.flavor !== 'prod' && environment.badgeLabel ? (
+                <span className="text-xs font-semibold uppercase tracking-wide">{environment.badgeLabel}</span>
+              ) : null}
+            </>
+          ) : null
+        }
+      >
+        <section data-testid="app-ready" className="space-y-4">
+          {error ? (
+            <EmptyState title="Preload bridge unavailable" description={error} />
+          ) : rawJson ? (
+            <div className="space-y-2">
+              <h2 className="text-sm font-medium text-muted">Current snapshot (raw + mapped)</h2>
+              <pre
+                data-testid="game-snapshot-json"
+                className="max-h-[480px] overflow-auto rounded-lg border border-line bg-bg-2 p-4 text-xs leading-relaxed"
+              >
+                {rawJson}
+              </pre>
+            </div>
           ) : (
-            'Loading…'
+            <EmptyState title="No snapshot yet" description="Waiting on the first read from the game." />
           )}
-        </span>
-      }
-      version={
-        environment ? (
-          <>
-            <span data-testid="app-version" className="font-mono tabular-nums">
-              v{environment.version}
-            </span>
-            {environment.flavor !== 'prod' && environment.badgeLabel ? (
-              <span className="text-xs font-semibold uppercase tracking-wide">{environment.badgeLabel}</span>
-            ) : null}
-          </>
-        ) : null
-      }
-    >
-      <section data-testid="app-ready" className="space-y-4">
-        {error ? (
-          <EmptyState title="Preload bridge unavailable" description={error} />
-        ) : rawJson ? (
-          <div className="space-y-2">
-            <h2 className="text-sm font-medium text-muted">Current snapshot (raw + mapped)</h2>
-            <pre
-              data-testid="game-snapshot-json"
-              className="max-h-[480px] overflow-auto rounded-lg border border-line bg-bg-2 p-4 text-xs leading-relaxed"
-            >
-              {rawJson}
-            </pre>
-          </div>
-        ) : (
-          <EmptyState title="No snapshot yet" description="Waiting on the first read from the game." />
-        )}
-      </section>
-    </AppShell>
+        </section>
+      </AppShell>
+    </>
   );
 }
