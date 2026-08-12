@@ -3,26 +3,44 @@ import { fileURLToPath } from 'node:url';
 import { resolve } from 'node:path';
 
 /**
- * Squash-merging the `release/next` → `main` PR gives `main` a commit that shares no
- * history with the branch it came from, so `main` permanently forks from `develop` and
- * every later release PR conflicts on add/add across a stale merge base.
- *
- * The rail fixes that by merging `main` into `release/next` with `-s ours` before
- * pushing: `main` becomes an ancestor, the tree stays exactly what `develop` produced,
- * and the squash onto `main` still leaves `main` linear.
+ * The rail merges `main` into `release/next` with `-s ours` before versioning, so that
+ * `main` is an ancestor of the release head. Without it the release PR's merge base falls
+ * back to `develop`'s tip at the previous release, and every run conflicts on the
+ * `version` fields and `CHANGELOG.md` sections both sides bumped from that shared base.
  *
  * `-s ours` discards `main`'s tree wholesale, so it is only safe while every commit on
  * `main` came from the release rail. A commit landed directly on `main` — a hotfix, a
  * revert, an edit through the web UI — would be silently dropped by the next release.
  * This module is the guard: it refuses to reconcile when it sees one.
+ *
+ * The release PR is merged with a **merge commit**, not squashed, so `main` inherits the
+ * release branch's real history rather than a content-equal snapshot of it. That is what
+ * keeps `git log main..develop` — and the next release PR's commit list — honest. It also
+ * means three rail-authored commits now reach `main` that a squash used to flatten away:
+ * the merge commit itself, the version bump, and the previous reconcile merge. All three
+ * are recognised below; anything else still stops the release.
  */
 
 /**
- * Subjects GitHub writes when squash-merging the release PR, e.g.
- * `chore(release): develop → main (#25)`. Both the unicode arrow used in the PR title
- * and a plain ASCII `->` are accepted.
+ * Commit subjects the release rail is allowed to put on `main`.
+ *
+ * - The release merge/squash commit. Historical releases were squashed by GitHub as
+ *   `chore(release): develop → main (#25)`; the same subject is reused for the merge
+ *   commit when the repository writes merge titles from the PR title. Both the unicode
+ *   arrow used in the PR title and a plain ASCII `->` are accepted.
+ * - GitHub's default merge-commit subject, used when merge titles are left on the
+ *   `Merge pull request #N from <owner>/<branch>` default.
+ * - `changeset version`'s bump commit and the reconcile merge, both authored on
+ *   `release/next` and pulled onto `main` by the merge. The reconcile subject also
+ *   accepts a trailing ` (#N)`: stitching a historical squash back onto `main` is done
+ *   through a PR, and GitHub appends the number when merge titles come from the PR title.
  */
-export const RELEASE_COMMIT_PATTERN = /^chore\(release\): develop (?:→|->) main\b/;
+export const RAIL_COMMIT_PATTERNS = [
+  /^chore\(release\): develop (?:→|->) main\b/,
+  /^Merge pull request #\d+ from \S+\/release\/next\b/,
+  /^chore\(release\): version packages$/,
+  /^chore\(release\): reconcile main's squashed release history(?: \(#\d+\))?$/,
+];
 
 /**
  * @typedef {{ sha: string, subject: string }} CommitSummary
@@ -65,7 +83,7 @@ export function parseCommitLog(logText) {
  * @returns {boolean}
  */
 export function isReleaseCommit(commit) {
-  return RELEASE_COMMIT_PATTERN.test(commit.subject);
+  return RAIL_COMMIT_PATTERNS.some((pattern) => pattern.test(commit.subject));
 }
 
 /**

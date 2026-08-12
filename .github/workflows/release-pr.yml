@@ -250,9 +250,9 @@ jobs:
           git fetch --no-tags origin main
           git switch -C release/next
 
-          # The release PR is squash-merged (main requires linear history), so main's
-          # release commit shares no history with the branch it came from. Without this,
-          # main forks from develop and every later release PR conflicts on add/add.
+          # main must be an ancestor of the release head, or the release PR's merge base
+          # falls back to develop's tip at the previous release and both sides show a
+          # conflicting bump of the same `version` lines and CHANGELOG sections.
           if git merge-base --is-ancestor origin/main HEAD; then
             echo "main is already an ancestor of release/next; nothing to reconcile."
             exit 0
