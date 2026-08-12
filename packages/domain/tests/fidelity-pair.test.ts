@@ -1,8 +1,10 @@
-import { readFileSync } from 'node:fs';
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { parseAccountPayload } from '@bombfarm/domain/import-save';
-import { describe, expect, it } from 'vitest';
-import { frameLiveCapture, scrubPersonalFields, type FrameStamp } from './helpers/fidelity-pair';
+import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { frameLiveCapture, loadFidelityPair, scrubPersonalFields, type FrameStamp } from './helpers/fidelity-pair';
+import { FidelityGateError } from './helpers/fidelity-gate-error';
 
 const FIXTURES_DIR = join(__dirname, 'fixtures', 'fidelity-gate');
 const SOURCE_SAVE = join(__dirname, 'fixtures', 'sheet-math', 'save-20260731-11heroes.json');
@@ -125,3 +127,189 @@ describe('T1 — the scrubbed capture pair and the framing helper', () => {
     expect(manifest.expected.statComparisons).toBe(manifest.expected.heroes * 3 * 8);
   });
 });
+
+describe('T2 — the fail-loud loader', () => {
+  it('throws fixtureMissing against an absent directory', () => {
+    const missingDir = join(tmpdir(), 'fidelity-gate-does-not-exist-' + Date.now());
+    expect(existsSync(missingDir)).toBe(false);
+    expectCode(() => loadFidelityPair(missingDir), 'fixtureMissing');
+  });
+
+  it('resolves the committed pair with no argument', () => {
+    const pair = loadFidelityPair();
+    expect(pair.manifest.live.source).toBe('export-derived');
+    expect(pair.exportPayload.heroes?.length).toBe(11);
+    expect(pair.livePayload.heroes?.length).toBe(11);
+  });
+
+  describe('against a scratch mkdtemp directory', () => {
+    let dir: string;
+
+    beforeEach(() => {
+      dir = mkdtempSync(join(tmpdir(), 'fidelity-gate-'));
+    });
+    afterEach(() => {
+      rmSync(dir, { recursive: true, force: true });
+    });
+
+    function writeManifest(overrides: Record<string, unknown> = {}, base?: Record<string, unknown>): void {
+      const manifest =
+        base ?? {
+          schemaVersion: 1,
+          accountLabel: 'temp account',
+          export: {
+            file: 'export-capture.json',
+            gameBuild: '2026.07.31',
+            capturedAt: '2026-07-31T13:52:13.000Z',
+            scrubbed: ['account_id', 'player_name'],
+          },
+          live: {
+            file: 'live-capture.json',
+            source: 'export-derived',
+            gameBuild: '2026.07.31',
+            capturedAt: '2026-07-31T13:52:13.000Z',
+            scrubbed: ['account_id', 'player_name'],
+          },
+          expected: { heroes: 1, items: 0, statComparisons: 24 },
+        };
+      writeFileSync(join(dir, 'pair.json'), JSON.stringify({ ...manifest, ...overrides }, null, 2));
+    }
+
+    function writeMinimalCapture(filename: string, extra: Record<string, unknown> = {}): void {
+      writeFileSync(
+        join(dir, filename),
+        JSON.stringify(
+          {
+            account: { gold: '1', phase: 1 },
+            heroes: [],
+            skills: {},
+            casa: {},
+            items: [],
+            ...extra,
+          },
+          null,
+          2,
+        ),
+      );
+    }
+
+    it('throws fixtureMissing when pair.json is absent', () => {
+      writeMinimalCapture('export-capture.json');
+      writeMinimalCapture('live-capture.json');
+      expectCode(() => loadFidelityPair(dir), 'fixtureMissing');
+    });
+
+    it('throws fixtureMissing when export-capture.json is absent', () => {
+      writeManifest();
+      writeMinimalCapture('live-capture.json');
+      expectCode(() => loadFidelityPair(dir), 'fixtureMissing');
+    });
+
+    it('throws fixtureMissing when live-capture.json is absent', () => {
+      writeManifest();
+      writeMinimalCapture('export-capture.json');
+      expectCode(() => loadFidelityPair(dir), 'fixtureMissing');
+    });
+
+    it('the fixtureMissing message names the absolute path and docs/FIDELITY_GATE.md', () => {
+      writeManifest();
+      writeMinimalCapture('export-capture.json');
+      const err = expectCode(() => loadFidelityPair(dir), 'fixtureMissing');
+      expect(err.message).toContain(dir);
+      expect(err.message).toContain('docs/FIDELITY_GATE.md');
+    });
+
+    it('throws fixtureMalformed naming the file and the parser position on invalid JSON', () => {
+      writeManifest();
+      writeFileSync(join(dir, 'export-capture.json'), '{ this is not json');
+      writeMinimalCapture('live-capture.json');
+      const err = expectCode(() => loadFidelityPair(dir), 'fixtureMalformed');
+      expect(err.message).toContain('export-capture.json');
+    });
+
+    it('throws manifestInvalid when the manifest is missing a required field', () => {
+      writeManifest(
+        {},
+        {
+          schemaVersion: 1,
+          accountLabel: 'temp account',
+          export: {
+            file: 'export-capture.json',
+            gameBuild: '2026.07.31',
+            capturedAt: '2026-07-31T00:00:00.000Z',
+            scrubbed: ['account_id', 'player_name'],
+          },
+          // live section deliberately omitted entirely.
+          expected: { heroes: 1, items: 0, statComparisons: 24 },
+        },
+      );
+      writeMinimalCapture('export-capture.json');
+      writeMinimalCapture('live-capture.json');
+      expectCode(() => loadFidelityPair(dir), 'manifestInvalid');
+    });
+
+    it('throws manifestInvalid when live.source is an unknown token', () => {
+      writeManifest({
+        live: {
+          file: 'live-capture.json',
+          source: 'made-up-token',
+          gameBuild: '2026.07.31',
+          capturedAt: '2026-07-31T00:00:00.000Z',
+          scrubbed: ['account_id', 'player_name'],
+        },
+      });
+      writeMinimalCapture('export-capture.json');
+      writeMinimalCapture('live-capture.json');
+      expectCode(() => loadFidelityPair(dir), 'manifestInvalid');
+    });
+
+    it('throws manifestInvalid when live.source is "memory-assembled" without readerVersion/fingerprints', () => {
+      writeManifest({
+        live: {
+          file: 'live-capture.json',
+          source: 'memory-assembled',
+          gameBuild: '2026.07.31',
+          capturedAt: '2026-07-31T00:00:00.000Z',
+          scrubbed: ['account_id', 'player_name'],
+        },
+      });
+      writeMinimalCapture('export-capture.json');
+      writeMinimalCapture('live-capture.json');
+      expectCode(() => loadFidelityPair(dir), 'manifestInvalid');
+    });
+
+    it('throws unscrubbedFixture when a capture still carries account_id', () => {
+      writeManifest();
+      writeMinimalCapture('export-capture.json');
+      writeMinimalCapture('live-capture.json', { account: { gold: '1', phase: 1, account_id: 486 } });
+      expectCode(() => loadFidelityPair(dir), 'unscrubbedFixture');
+    });
+
+    it('throws unscrubbedFixture when a capture still carries player_name', () => {
+      writeManifest();
+      writeMinimalCapture('export-capture.json');
+      writeMinimalCapture('live-capture.json', { account: { gold: '1', phase: 1, player_name: 'Black' } });
+      expectCode(() => loadFidelityPair(dir), 'unscrubbedFixture');
+    });
+
+    it('throws fixtureUnreadable when a required file is a directory instead of a readable file', () => {
+      writeManifest();
+      writeMinimalCapture('live-capture.json');
+      // A directory where a file is expected fails to read as text — same failure family as an
+      // EACCES-unreadable file, without depending on OS-specific permission manipulation.
+      mkdirSync(join(dir, 'export-capture.json'));
+      expectCode(() => loadFidelityPair(dir), 'fixtureUnreadable');
+    });
+  });
+});
+
+function expectCode(fn: () => unknown, code: string): FidelityGateError {
+  try {
+    fn();
+  } catch (err) {
+    expect(err).toBeInstanceOf(FidelityGateError);
+    expect((err as FidelityGateError).code).toBe(code);
+    return err as FidelityGateError;
+  }
+  throw new Error(`expected fn to throw FidelityGateError(${code}), but it did not throw`);
+}
