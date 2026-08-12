@@ -39,20 +39,52 @@ function isTestFile(file: string): boolean {
 }
 
 // -------------------------------------------------------------------------------------------
-// Guard 1 — no write surface (LAR-13, LAR-24). packages/game-api/src's non-test source only.
+// Guard 1 — no write surface (LAR-13, LAR-24). Every source file that can reach the network:
+// packages/game-api/src (the classification/typing half) AND apps/desktop/src/main (the one
+// real socket, https-transport.ts, plus everything around it) — the scan used to cover only the
+// former, which is exactly why a hard-coded non-GET method in https-transport.ts was invisible
+// to it (see the T-fix-1 commit notes: `'PO' + 'ST'` passed this guard untouched before this fix).
 // -------------------------------------------------------------------------------------------
 
-describe('Guard 1 — packages/game-api has no write surface (D24, LAR-13, LAR-24)', () => {
-  const sourceFiles = walkTsFiles(GAME_API_SRC).filter((f) => !isTestFile(f));
+/**
+ * Repeatedly folds adjacent quoted-string-literal concatenations (`'PO' + 'ST'` -> `'POST'`,
+ * including longer chains like `'P'+'O'+'S'+'T'`) so the method-literal scan below cannot be
+ * defeated by splitting a forbidden verb across a `+` expression — the exact obfuscation the
+ * Verifier used. This only folds literal + literal chains; it makes no attempt to evaluate a
+ * fully computed value (a function call, a variable, `String.fromCharCode(...)`, etc.) — that
+ * broader class is instead closed by the dedicated "forwards req.method verbatim" assertion
+ * below, which does not need to know what a computed value evaluates to because it forbids any
+ * non-passthrough expression in the one place (`https-transport.ts`) that can reach the socket.
+ */
+function foldStringConcatenation(text: string): string {
+  const concatPattern = /(['"])((?:\\.|(?!\1).)*)\1\s*\+\s*(['"])((?:\\.|(?!\3).)*)\3/g;
+  let folded = text;
+  let previous: string;
+  do {
+    previous = folded;
+    folded = folded.replace(concatPattern, (_match, _q1: string, s1: string, _q2: string, s2: string) => `'${s1}${s2}'`);
+  } while (folded !== previous);
+  return folded;
+}
 
-  it('scans a non-empty set of non-test source files', () => {
+/** Well-known non-routable loopback addresses used only by the dev renderer URL in `env.ts`
+ *  (`http://127.0.0.1:3000`) — never reachable outside the local machine, structurally incapable
+ *  of being an alternate write-surface or IP-fallback target, so excluded the same way the
+ *  semver build-metadata string already is above. */
+const LOOPBACK_IPS = new Set(['127.0.0.1', '0.0.0.0']);
+
+describe('Guard 1 — no write surface anywhere the network can be reached (D24, LAR-13, LAR-24)', () => {
+  const sourceFiles = [...walkTsFiles(GAME_API_SRC), ...walkTsFiles(DESKTOP_MAIN)].filter((f) => !isTestFile(f));
+
+  it('scans a non-empty set of non-test source files, including apps/desktop/src/main', () => {
     expect(sourceFiles.length).toBeGreaterThan(0);
+    expect(sourceFiles).toContain(HTTPS_TRANSPORT_FILE);
   });
 
-  it('contains no POST/PUT/PATCH/DELETE HTTP method literal', () => {
+  it('contains no POST/PUT/PATCH/DELETE HTTP method literal, including one assembled via string concatenation', () => {
     const methodPattern = /['"](POST|PUT|PATCH|DELETE)['"]/;
     const offenders = sourceFiles
-      .map((file) => ({ file, match: methodPattern.exec(readFileSync(file, 'utf8')) }))
+      .map((file) => ({ file, match: methodPattern.exec(foldStringConcatenation(readFileSync(file, 'utf8'))) }))
       .filter((r) => r.match !== null);
     expect(offenders, `D24: the write surface stays in bombfarm-bot. Offenders: ${JSON.stringify(offenders.map((o) => o.file))}`).toEqual([]);
   });
@@ -82,8 +114,23 @@ describe('Guard 1 — packages/game-api has no write surface (D24, LAR-13, LAR-2
     const ipPattern = /\b(?:\d{1,3}\.){3}\d{1,3}\b(?!\+)/;
     const offenders = sourceFiles
       .map((file) => ({ file, match: ipPattern.exec(readFileSync(file, 'utf8')) }))
-      .filter((r) => r.match !== null);
+      .filter((r) => r.match !== null && !LOOPBACK_IPS.has(r.match[0]));
     expect(offenders, `LAR-24/TD-9: no IP fallback. Offenders: ${JSON.stringify(offenders.map((o) => o.file))}`).toEqual([]);
+  });
+
+  it('https-transport.ts forwards HttpRequest.method verbatim — no literal, template, or computed method value of its own', () => {
+    // Closes the "computed value" half of the obfuscation class (LAR-13): rather than trying to
+    // evaluate an arbitrary expression (`String.fromCharCode(...)`, a reassigned variable, a
+    // ternary, ...), this simply forbids the one file that owns the socket from doing anything
+    // except forwarding the compile-time-literal-typed `req.method` it was handed.
+    const text = readFileSync(HTTPS_TRANSPORT_FILE, 'utf8');
+    const optionsBlockMatch = /https\.request\(\s*\{([\s\S]*?)\}\s*,/.exec(text);
+    expect(optionsBlockMatch, 'https-transport.ts must build its https.request options inline so this guard can read the method field').not.toBeNull();
+    const optionsBlock = optionsBlockMatch?.[1] ?? '';
+    const methodFieldMatch = /\bmethod\s*:\s*([^,\n}]+)/.exec(optionsBlock);
+    expect(methodFieldMatch, 'https-transport.ts must set an explicit method field on its https.request options').not.toBeNull();
+    const methodValue = methodFieldMatch?.[1]?.trim();
+    expect(methodValue, `LAR-13: https-transport.ts must forward req.method verbatim, got "${String(methodValue)}"`).toBe('req.method');
   });
 });
 
