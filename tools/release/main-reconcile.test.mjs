@@ -123,6 +123,15 @@ describe('isReleaseCommit', () => {
     ).toBe(true);
   });
 
+  it('accepts a reconcile subject merged through a PR, which carries a number', () => {
+    expect(
+      isReleaseCommit({
+        sha: 'abc',
+        subject: "chore(release): reconcile main's squashed release history (#55)",
+      }),
+    ).toBe(true);
+  });
+
   it('rejects a bump subject with trailing content', () => {
     expect(
       isReleaseCommit({

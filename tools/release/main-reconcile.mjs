@@ -31,13 +31,15 @@ import { resolve } from 'node:path';
  * - GitHub's default merge-commit subject, used when merge titles are left on the
  *   `Merge pull request #N from <owner>/<branch>` default.
  * - `changeset version`'s bump commit and the reconcile merge, both authored on
- *   `release/next` and pulled onto `main` by the merge.
+ *   `release/next` and pulled onto `main` by the merge. The reconcile subject also
+ *   accepts a trailing ` (#N)`: stitching a historical squash back onto `main` is done
+ *   through a PR, and GitHub appends the number when merge titles come from the PR title.
  */
 export const RAIL_COMMIT_PATTERNS = [
   /^chore\(release\): develop (?:→|->) main\b/,
   /^Merge pull request #\d+ from \S+\/release\/next\b/,
   /^chore\(release\): version packages$/,
-  /^chore\(release\): reconcile main's squashed release history$/,
+  /^chore\(release\): reconcile main's squashed release history(?: \(#\d+\))?$/,
 ];
 
 /**

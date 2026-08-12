@@ -70,8 +70,28 @@ the same reason. A merge commit fixes all of it at once: `main` inherits the rel
 branch's real history, so the next release PR shows only what is actually new.
 
 Merging does **not** retroactively clean a PR that is already open — it is the merge of
-that PR which makes the *next* one honest. The four squashes already on `main` stay as
-they are.
+that PR which makes the *next* one honest.
+
+### Stitching a release that was already squashed
+
+A squash is recoverable after the fact, because the release head survives as
+`refs/pull/<n>/head` even once `release/next` is deleted. Confirm the trees match, then
+merge that SHA into `main` through a PR — a content no-op that adds only ancestry:
+
+```bash
+git fetch origin pull/<n>/head
+git rev-parse origin/main^{tree} <release-head>^{tree}   # must print the same tree twice
+git push origin <release-head>:refs/heads/chore/stitch-release-history
+gh pr create --base main --head chore/stitch-release-history \
+  --title "chore(release): reconcile main's squashed release history"
+gh pr merge <new-n> --merge      # never squash — squashing is what caused this
+```
+
+Do not name the branch `release/next`: [release-sync.yml](../.github/workflows/release-sync.yml)
+fires on any PR into `main` with that head ref and would open a redundant version-sync PR.
+Required checks are attached to the SHA, so a PR at an already-released head inherits them
+green. The title matters — it is what `RAIL_COMMIT_PATTERNS` matches once GitHub appends
+the PR number.
 
 ### Why `main` is still reconciled into `release/next`
 
