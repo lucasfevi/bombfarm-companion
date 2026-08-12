@@ -1,10 +1,11 @@
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
+import type { AccountPayload } from '@bombfarm/contracts';
 import type { AccountImportData, ImportCandidate, ParseResult } from '@bombfarm/domain/import-save';
 import { emptyLoadout, type SheetStats } from '@bombfarm/domain/gear';
 import { SHEET_KEYS, ZERO_PTS, type SheetKey } from '@bombfarm/domain/planner-constants';
 import { describe, expect, it, vi } from 'vitest';
-import { compareAccountResults } from './helpers/fidelity-compare';
+import { compareAccountResults, compareRawAccountFields } from './helpers/fidelity-compare';
 import { SHEET_ABS_TOL } from './helpers/sheet-math-fixtures';
 import { FidelityGateError } from './helpers/fidelity-gate-error';
 
@@ -326,6 +327,24 @@ describe('compareAccountResults — account-level equality (FID-02, ASM-4)', () 
     const counts = compareAccountResults(live, exported);
     expect(counts.itemsCompared).toBe(1);
     expect(counts.accountFieldsCompared).toBeGreaterThan(0);
+  });
+});
+
+describe('compareRawAccountFields — raw account sanity beyond ParseResult', () => {
+  function payloadWithAccount(account: Record<string, unknown>): AccountPayload {
+    return { account, heroes: [], skills: {}, casa: {}, items: [] };
+  }
+
+  it('passes when both raw account blocks are structurally identical', () => {
+    const account = { gold: '8125089', phase: 60, bag_capacity: 100 };
+    expect(() => compareRawAccountFields(payloadWithAccount({ ...account }), payloadWithAccount({ ...account }))).not.toThrow();
+  });
+
+  it('throws accountMismatch naming "account.gold" when the raw gold field silently changes type (the spec\'s coerced-string hazard)', () => {
+    const live = payloadWithAccount({ gold: '8125089', phase: 60 });
+    const exported = payloadWithAccount({ gold: 8125089, phase: 60 });
+    const err = expectFidelityError(() => compareRawAccountFields(live, exported), 'accountMismatch');
+    expect(err.message).toContain('account.gold');
   });
 });
 

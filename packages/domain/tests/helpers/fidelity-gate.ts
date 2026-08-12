@@ -9,7 +9,7 @@ import type { AccountPayload } from '@bombfarm/contracts';
 import type { FidelityPair, LiveSource } from './fidelity-pair';
 import { frameLiveCapture } from './fidelity-pair';
 import { assertCaptureFullFidelity } from './fidelity-grade';
-import { compareAccountResults, type CompareOptions } from './fidelity-compare';
+import { compareAccountResults, compareRawAccountFields, compareRawHeroFields, type CompareOptions } from './fidelity-compare';
 import { FidelityGateError } from './fidelity-gate-error';
 
 export interface FidelityGateResult {
@@ -114,10 +114,14 @@ function assertExportCaptureIsUsable(payload: AccountPayload, label: string): vo
 
 /**
  * Runs the whole gate: live-capture fidelity guard → export-capture light guard → parse both
- * sides through F1's entry point → cross-source compare → assert the manifest's executed-work
- * floors. Every step throws `FidelityGateError` on failure — there is no partial success return
- * (design §4.4's body; the provenance ladder above is a separate, independently-tested table —
- * see `assertProvenanceLadder` and `fidelity-gate.test.ts`).
+ * sides through F1's entry point → cross-source compare → raw-payload sanity (fields
+ * `parseAccountPayload` does not project into `ParseResult` at all, e.g. the spec's own named
+ * "coerced string gold" / dropped "stat_ranges" hazards — see `compareRawAccountFields` /
+ * `compareRawHeroFields` doc comments in `fidelity-compare.ts`) → assert the manifest's
+ * executed-work floors. Every step throws `FidelityGateError` on failure — there is no partial
+ * success return (design §4.4's body, extended by the raw-payload layer; the provenance ladder
+ * above is a separate, independently-tested table — see `assertProvenanceLadder` and
+ * `fidelity-gate.test.ts`).
  */
 export function runFidelityGate(pair: FidelityPair, opts: RunFidelityGateOptions = {}): FidelityGateResult {
   assertCaptureFullFidelity(pair.livePayload, 'live');
@@ -127,6 +131,8 @@ export function runFidelityGate(pair: FidelityPair, opts: RunFidelityGateOptions
   const exportResult = parseAccountPayload(pair.exportPayload, []);
 
   const counts = compareAccountResults(liveResult, exportResult, opts);
+  compareRawAccountFields(pair.livePayload, pair.exportPayload);
+  compareRawHeroFields(pair.livePayload, pair.exportPayload);
 
   const { expected } = pair.manifest;
   if (counts.heroesCompared < expected.heroes) {

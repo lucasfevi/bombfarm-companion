@@ -5,6 +5,7 @@
  * per-hero sheet compare → account-level equality. A roster mismatch must never let a single
  * hero comparison start (`opts.onHeroCompared` proves it — FID-04's Independent Test).
  */
+import type { AccountPayload } from '@bombfarm/contracts';
 import type { AccountImportData, ImportCandidate, ParseResult } from '@bombfarm/domain/import-save';
 import type { SheetStats } from '@bombfarm/domain/gear';
 import { SHEET_ABS_TOL } from './sheet-math-fixtures';
@@ -191,6 +192,55 @@ function compareAccountLevel(live: ParseResult, exported: ParseResult): number {
   }
 
   return accountFieldsCompared;
+}
+
+/**
+ * A raw-payload sanity layer alongside `compareAccountResults`'s `ParseResult`-scoped equality.
+ *
+ * `parseAccountPayload` deliberately does not project every raw `account` field into
+ * `AccountImportData` (only `phase` and `skills.totals`/`casa` feed it today) — so a hazard
+ * that corrupts a raw field the planner does not yet read (the spec's own named example: "a
+ * coerced string gold") would parse to byte-identical `ParseResult`s on both sides and pass
+ * silently through `compareAccountResults` alone. This closes that gap without touching
+ * `compareAccountResults`'s fixed `(ParseResult, ParseResult)` signature or any package `src`
+ * file: it diffs the two RAW `AccountPayload.account` blocks directly. Called by
+ * `runFidelityGate` alongside `compareAccountResults` (`fidelity-gate.ts`).
+ */
+export function compareRawAccountFields(live: AccountPayload, exported: AccountPayload): void {
+  const mismatch = findMismatchPath(live.account, exported.account, 'account');
+  if (mismatch) throwAccountMismatch(mismatch);
+}
+
+/**
+ * The hero-level counterpart to {@link compareRawAccountFields}: `parseAccountPayload` also
+ * never projects some raw per-hero fields into `ImportCandidate.record` — `stat_ranges` is the
+ * spec's own named example (a dropped bound would parse to a byte-identical `ParseResult` and
+ * pass silently). Diffs each shared hero's whole raw JSON object structurally. Only ever called
+ * (by `runFidelityGate`) after `compareAccountResults` has already confirmed the roster
+ * matches, so a symmetric-difference roster never reaches here — this function does not
+ * re-derive `rosterMismatch` itself.
+ */
+export function compareRawHeroFields(live: AccountPayload, exported: AccountPayload): void {
+  const liveHeroes = Array.isArray(live.heroes) ? live.heroes : [];
+  const exportHeroes = Array.isArray(exported.heroes) ? exported.heroes : [];
+  const exportById = new Map<string, Record<string, unknown>>();
+  for (const hero of exportHeroes) {
+    if (isPlainObject(hero) && typeof hero.id === 'string') exportById.set(hero.id, hero);
+  }
+  for (const liveHero of liveHeroes) {
+    if (!isPlainObject(liveHero) || typeof liveHero.id !== 'string') continue;
+    const exportHero = exportById.get(liveHero.id);
+    if (exportHero === undefined) continue; // roster mismatch is compareAccountResults's job, already run
+    const mismatch = findMismatchPath(liveHero, exportHero, `heroes[id=${liveHero.id}]`);
+    if (mismatch) {
+      const name = typeof liveHero.name === 'string' ? liveHero.name : liveHero.id;
+      throw new FidelityGateError(
+        'heroStatMismatch',
+        `Hero "${name}" (sourceId ${liveHero.id}) raw field "${mismatch.path}" mismatch: live=${JSON.stringify(mismatch.a)} export=${JSON.stringify(mismatch.b)}`,
+        { hero: name, sourceId: liveHero.id, path: mismatch.path, liveValue: mismatch.a, exportValue: mismatch.b },
+      );
+    }
+  }
 }
 
 /**
