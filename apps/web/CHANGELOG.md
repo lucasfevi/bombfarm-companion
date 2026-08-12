@@ -1,5 +1,57 @@
 # @bombfarm/web
 
+## 0.4.0
+
+### Minor Changes
+
+- e2638f8: Refresh the item catalog to the game's v4 balance patch and teach the gear math the new
+  two-regime Dano.
+
+  `packages/domain/src/data/catalog.json` is regenerated from the wiki's live payload. Every stat
+  base is exactly ×0.7 of the previous values (Dano 27.5 → 19.25, Energia 0.05 → 0.035, Velocidade
+  0.0011 → 0.00077, Sorte 0.044 → 0.0308, Crítico 0.088 → 0.0616, Penetração 0.2 → 0.14, Cooldown
+  0.266667 → 0.1866669). The catalog's shape is unchanged — same 216 definitions, ids, slots, native
+  levels, per-def stat orderings, levels 10–90 and rarities 0–5. No new sets, slots, tiers or rarities.
+
+  Dano now has two regimes. Below item level 50 it stays a flat number on the `nivelMult` ladder; at
+  level 50 and above it becomes a fraction of the hero's Attack — 10/15/20/25/30% at nv 50/60/70/80/90.
+  The catalog carries this as `dmgPctMinLevel` plus a `dmgPct` ladder, `scaledValores` resolves the
+  regime from the _item's_ level (a definition can be scaled across the boundary) and tags each roll
+  `unit: 'flat' | 'pct'`, and `GearBonuses` gained a `dmgPct` field alongside `dmgFlat`. The planner's
+  per-slot stat grid and the Totals table render the new percent rolls as percentages, with a new
+  "Dano (% da Ataque)" / "Damage (% of Attack)" row.
+
+  The wiki documents the regime but not which Attack the percentage multiplies. We assume it applies
+  to the naked attack, with flat gear Dano and spent attack points added outside the product, matching
+  how every other percent stat is already pooled. That assumption is isolated in `composeAttack` /
+  `decomposeAttack` in `gear/catalog.ts`; every call site routes through them.
+
+  Also fixes `inferSpentPoints` returning `-0` for a point count when the solved value rounds to
+  negative zero, which leaked into stored hero records.
+
+- e2638f8: Surface the maintainer's in-game referral code in the footer, next to the existing wiki credit
+  and coffee link — visible on every page without sitting in the planner workflow.
+
+  The code renders from a single `REFERRAL_CODE` constant (`shared/referral.ts`) with a copy button.
+  The copy uses the clipboard API and confirms with the app's existing toast; when the clipboard is
+  unavailable — insecure origin, or a denied permission — it selects the code text and says so
+  instead, so the click always has a visible effect. The copy control carries an accessible name and
+  a 24px target, and the wording states the reward is mutual rather than framing it as a one-way
+  favour. Strings are localized in both en and pt.
+
+### Patch Changes
+
+- e2638f8: Add the referral code to the topbar as a compact chip — the code and a copy icon, nothing else.
+  The reason it exists ("we both get a reward once you clear stage 151") moves into its tooltip, so
+  the control stays terse in the header while the footer keeps the full sentence.
+
+  Both referral controls now use the `Tooltip` primitive from `@bombfarm/ui` instead of a native
+  `title` attribute, and share one `useReferralCopy` hook rather than duplicating the
+  clipboard-with-manual-selection fallback.
+
+- Updated dependencies [e2638f8]
+  - @bombfarm/domain@0.3.0
+
 ## 0.3.0
 
 ### Minor Changes
