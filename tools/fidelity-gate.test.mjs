@@ -213,21 +213,78 @@ function hasExistsSyncGuardedReturn(text) {
   return false;
 }
 
+/**
+ * Extracts each `it(...)`/`test(...)` call's full source text — including any chained
+ * modifiers such as `.only`/`.concurrent`/`.skip` — from the call's opening `(` to its
+ * balanced closing `)`, via paren-depth counting (dumb, no string/template-literal awareness,
+ * same convention as `extractJobBlock`/`extractSteps` above).
+ *
+ * Anchored to the start of a line (only leading whitespace before the token) so prose that
+ * merely contains the word "test" or "it" followed by a parenthesis in a comment — e.g. this
+ * very file's helper doc-comment "cannot be reassembled wrongly per-test (design TD-1)" over in
+ * `fidelity-gate.ts` — can never be mistaken for a call site. This is the same self-trip hazard
+ * `--passWithNoTests` caused against a bare `toContain` check on workflow comment text; real
+ * `it(`/`test(` declarations in this codebase always start their line.
+ */
+function extractTestCallBodies(text) {
+  const bodies = [];
+  const callRe = /^[ \t]*(?:it|test)(?:\.\w+)*\s*\(/gm;
+  let match;
+  while ((match = callRe.exec(text))) {
+    const openIndex = match.index + match[0].length - 1;
+    let depth = 0;
+    let i = openIndex;
+    for (; i < text.length; i += 1) {
+      if (text[i] === '(') depth += 1;
+      else if (text[i] === ')') {
+        depth -= 1;
+        if (depth === 0) break;
+      }
+    }
+    bodies.push(text.slice(openIndex, i + 1));
+  }
+  return bodies;
+}
+
+/**
+ * True when some test body contains a guard-clause-shaped bare `return;` — no value, no
+ * `throw` — e.g. `if (cond) return;`. This is the `requireBuildOutput`-callsite shape
+ * (`apps/web/src/tests/team-plan-worker-bundle.test.ts`'s `if (!requireBuildOutput(...)) return;`)
+ * generalized past its one committed instance of `existsSync`-guarded-return: any bare early
+ * return silently skips the rest of the test's assertions without failing loudly.
+ *
+ * Scoped to `it(...)`/`test(...)` call bodies rather than the whole file: a bare `return;`
+ * inside an ordinary helper function (e.g. `assertExportCaptureIsUsable` in `fidelity-gate.ts`,
+ * a documented, non-degraded early-out that a caller's *later* assertions are unaffected by) is
+ * not the "a test silently doesn't run" failure mode this guards against.
+ */
+function hasBareEarlyReturnInTestBody(text) {
+  const BARE_RETURN_RE = /\bif\s*\([^;{}]*?\)\s*\{?\s*return\s*;\s*\}?/;
+  return extractTestCallBodies(text).some((body) => BARE_RETURN_RE.test(body));
+}
+
 describe('no-skip source guard — none of the ten F4 files may skip (R-5, the catalog-v4 quarantine precedent)', () => {
   for (const file of F4_FILES) {
     const label = file.slice(root.length + 1).replace(/\\/g, '/');
 
-    it(`${label}: no describe.skip / it.skip / test.skip / .todo`, () => {
+    it(`${label}: no describe.skip / it.skip / test.skip / .todo / .concurrent.skip (either chain order)`, () => {
       const text = readFileSync(file, 'utf8');
       expect(text).not.toMatch(/\bdescribe\.skip\b/);
       expect(text).not.toMatch(/\bit\.skip\(/);
       expect(text).not.toMatch(/\btest\.skip\(/);
       expect(text).not.toMatch(/\.todo\(/);
+      expect(text).not.toMatch(/\b(?:describe|it|test)\.concurrent\.skip\(/);
+      expect(text).not.toMatch(/\b(?:describe|it|test)\.skip\.concurrent\(/);
     });
 
     it(`${label}: no existsSync-guarded return (the fail-loud loader must throw, never silently bail)`, () => {
       const text = readFileSync(file, 'utf8');
       expect(hasExistsSyncGuardedReturn(text)).toBe(false);
+    });
+
+    it(`${label}: no bare early return inside a test body (the requireBuildOutput anti-pattern, generalized past existsSync)`, () => {
+      const text = readFileSync(file, 'utf8');
+      expect(hasBareEarlyReturnInTestBody(text)).toBe(false);
     });
   }
 });
