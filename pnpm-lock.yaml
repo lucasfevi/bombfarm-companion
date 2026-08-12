@@ -62,6 +62,9 @@ importers:
       '@bombfarm/contracts':
         specifier: workspace:*
         version: link:../../packages/contracts
+      '@bombfarm/game-api':
+        specifier: workspace:*
+        version: link:../../packages/game-api
       '@bombfarm/game-data':
         specifier: workspace:*
         version: link:../../packages/game-data

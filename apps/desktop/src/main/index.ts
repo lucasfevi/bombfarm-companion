@@ -6,10 +6,14 @@ import {
   type AccountView,
   type IpcInvokeChannel,
 } from '@bombfarm/contracts';
+import { createPacingGate } from '@bombfarm/game-api';
 import { applyAppIdentity } from './app-identity.js';
 import { createBootRecord } from './boot-record.js';
 import { InvalidFlavorError, resolveAppEnv, RENDERER_DEV_URL, type AppEnv } from './env.js';
 import { GameReaderService } from './game-reader/game-reader-service.js';
+import { createAccountRefresh, type AccountRefreshHandle } from './game-api/account-refresh.js';
+import { createConsentStore } from './game-api/consent-store.js';
+import { nodeHttpsTransport } from './game-api/https-transport.js';
 import { configureLogging, log } from './logging.js';
 import { createAccountStore, type AccountStore } from './storage/account-store.js';
 import { createStorage, openAccountDatabase, type Storage } from './storage/index.js';
@@ -18,6 +22,7 @@ let mainWindow: BrowserWindow | null = null;
 let storage: Storage | null = null;
 let gameReader: GameReaderService | null = null;
 let accountStore: AccountStore | null = null;
+let accountRefresh: AccountRefreshHandle | null = null;
 
 function registerIpcHandlers(): void {
   const handlers: Record<IpcInvokeChannel, () => unknown> = {
@@ -52,7 +57,9 @@ function registerIpcHandlers(): void {
       // gameRunning always comes fresh from the game reader's current status — never from a
       // cached view, so a stale cached commit can never misreport whether the game is running.
       const gameRunning = gameReader?.getStatus().status === 'connected';
-      const cached = gameReader?.getAccountView();
+      // The game-API cycle (MP2 F2) is the freshest live producer when it has run at least
+      // once; the fixture/memory game reader's own cache is the fallback (unchanged from F3).
+      const cached = accountRefresh?.getLastView() ?? gameReader?.getAccountView();
       if (cached) {
         return { ...cached, gameRunning };
       }
@@ -164,6 +171,25 @@ async function bootstrap(): Promise<void> {
     event: 'game-reader.started',
     mode: process.env.BFC_GAME_READER === 'fixture' ? 'fixture' : 'memory',
   });
+
+  // MP2 F2 — the consented game-API account reader. Independent of the game reader's own
+  // memory/fixture ticking: consent gates every request structurally (LAR-01/AD-025/AD-028),
+  // so this cycle issues nothing at all until the player has accepted the first-run modal (T9).
+  const consentStore = createConsentStore(accountOpen.db);
+  const gate = createPacingGate({
+    now: () => Date.now(),
+    sleep: (ms) => new Promise((resolve) => setTimeout(resolve, ms)),
+  });
+  accountRefresh = createAccountRefresh({
+    consentStore,
+    transport: nodeHttpsTransport,
+    gate,
+    store: accountStore,
+    log,
+    now: () => new Date().toISOString(),
+  });
+  accountRefresh.start();
+  log.info({ scope: 'main', event: 'account-refresh.started' });
 }
 
 function resolveBootEnv(): AppEnv {
@@ -226,6 +252,8 @@ if (!gotLock) {
   app.on('before-quit', () => {
     gameReader?.stop();
     gameReader = null;
+    accountRefresh?.stop();
+    accountRefresh = null;
     storage?.close();
     storage = null;
     accountStore?.close();
