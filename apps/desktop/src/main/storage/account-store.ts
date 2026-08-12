@@ -3,6 +3,7 @@ import type {
   AccountSection,
   AccountStoreReason,
   AccountStoreStatus,
+  AccountView,
   RestoredAccount,
   StoredAccountFidelity,
   StoredSectionFidelity,
@@ -10,6 +11,7 @@ import type {
 import { decodeStoredSection, resolveAccountKey } from './account-rows.js';
 import { ACCOUNT_SECTIONS } from './account-schema.js';
 import type { LogPort, OpenResult } from './index.js';
+import { mergeStoredIntoLive } from './merge-account.js';
 
 export interface AccountStoreDeps {
   log?: LogPort;
@@ -23,9 +25,17 @@ export interface PersistResult {
   written: readonly AccountSection[];
 }
 
+export interface CommitOpts {
+  accountId?: string | null;
+  gameRunning: boolean;
+}
+
 export interface AccountStore {
   restore(expectedAccountId?: string | null): RestoredAccount;
   persist(payload: AccountPayload, opts?: PersistOpts): PersistResult;
+  /** `persist(live)` then `restore()` then `mergeStoredIntoLive` — the single entry point a
+   * producer calls each poll. */
+  commit(live: AccountPayload, opts: CommitOpts): AccountView;
   close(): void;
 }
 
@@ -203,9 +213,17 @@ export function createAccountStore(open: OpenResult, deps: AccountStoreDeps = {}
     return { written: toWrite.map((item) => item.section) };
   }
 
+  function commit(live: AccountPayload, opts: CommitOpts): AccountView {
+    const accountId = opts.accountId ?? null;
+    persist(live, { accountId });
+    const restored = restore(accountId);
+    return mergeStoredIntoLive(live, restored, { gameRunning: opts.gameRunning, binding: open.binding });
+  }
+
   return {
     restore,
     persist,
+    commit,
     close() {
       db?.close();
     },
