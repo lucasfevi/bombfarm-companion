@@ -1,0 +1,127 @@
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
+import { parseAccountPayload } from '@bombfarm/domain/import-save';
+import { describe, expect, it } from 'vitest';
+import { frameLiveCapture, scrubPersonalFields, type FrameStamp } from './helpers/fidelity-pair';
+
+const FIXTURES_DIR = join(__dirname, 'fixtures', 'fidelity-gate');
+const SOURCE_SAVE = join(__dirname, 'fixtures', 'sheet-math', 'save-20260731-11heroes.json');
+
+function loadJson(path: string): Record<string, unknown> {
+  return JSON.parse(readFileSync(path, 'utf8')) as Record<string, unknown>;
+}
+
+interface FidelityPairManifestForTest {
+  schemaVersion: 1;
+  accountLabel: string;
+  export: { file: string; gameBuild: string; capturedAt: string; scrubbed: string[] };
+  live: { file: string; source: string; gameBuild: string; capturedAt: string; scrubbed: string[] };
+  expected: { heroes: number; items: number; statComparisons: number };
+}
+
+const STAMP: FrameStamp = { capturedAt: '2026-07-31T13:52:13.000Z' };
+
+describe('T1 — the scrubbed capture pair and the framing helper', () => {
+  const sourceRaw = loadJson(SOURCE_SAVE);
+  const exportRaw = loadJson(join(FIXTURES_DIR, 'export-capture.json'));
+  const liveRaw = loadJson(join(FIXTURES_DIR, 'live-capture.json'));
+  const exportText = readFileSync(join(FIXTURES_DIR, 'export-capture.json'), 'utf8');
+  const liveText = readFileSync(join(FIXTURES_DIR, 'live-capture.json'), 'utf8');
+
+  it('export-capture.json is the source save with only account_id/player_name removed', () => {
+    const sourceAccount = sourceRaw.account as Record<string, unknown>;
+    const exportAccount = exportRaw.account as Record<string, unknown>;
+
+    // Every account field except the two scrubbed ones must survive unchanged.
+    for (const key of Object.keys(sourceAccount)) {
+      if (key === 'account_id' || key === 'player_name') continue;
+      expect(exportAccount[key]).toEqual(sourceAccount[key]);
+    }
+    expect(exportAccount.account_id).toBeUndefined();
+    expect(exportAccount.player_name).toBeUndefined();
+
+    // Every other top-level section is the same value, byte-for-byte after parsing.
+    for (const key of Object.keys(sourceRaw)) {
+      if (key === 'account') continue;
+      expect(exportRaw[key]).toEqual(sourceRaw[key]);
+    }
+    expect(Object.keys(exportRaw).sort()).toEqual(Object.keys(sourceRaw).sort());
+  });
+
+  it('live-capture.json is exactly frameLiveCapture(export-capture.json, stamp)', () => {
+    const regenerated = frameLiveCapture(exportRaw, STAMP);
+    expect(JSON.stringify(liveRaw)).toBe(JSON.stringify(regenerated));
+  });
+
+  it('frameLiveCapture drops export_version and generated_at, keeps all five section keys, attaches a resolved fidelity block', () => {
+    const framed = frameLiveCapture(exportRaw, STAMP) as unknown as Record<string, unknown>;
+    expect(framed.export_version).toBeUndefined();
+    expect(framed.generated_at).toBeUndefined();
+    for (const section of ['account', 'heroes', 'skills', 'casa', 'items']) {
+      expect(framed[section]).toBeDefined();
+    }
+    const fidelity = framed.fidelity as Record<string, { status: string; capturedAt: string }>;
+    expect(Object.keys(fidelity).sort()).toEqual(['account', 'casa', 'heroes', 'items', 'skills']);
+    for (const section of Object.keys(fidelity)) {
+      expect(fidelity[section]).toEqual({ status: 'resolved', capturedAt: STAMP.capturedAt });
+    }
+  });
+
+  it('neither committed file contains "account_id" or "player_name" anywhere in raw text', () => {
+    expect(exportText).not.toContain('account_id');
+    expect(exportText).not.toContain('player_name');
+    expect(liveText).not.toContain('account_id');
+    expect(liveText).not.toContain('player_name');
+  });
+
+  it('every float in live-capture.json survives a JSON.stringify -> JSON.parse round trip exactly', () => {
+    const roundTripped = JSON.parse(JSON.stringify(liveRaw));
+    expect(roundTripped).toEqual(liveRaw);
+    expect(JSON.stringify(roundTripped)).toBe(JSON.stringify(liveRaw));
+  });
+
+  it('scrubPersonalFields removes only account_id and player_name, nothing else', () => {
+    const scrubbed = scrubPersonalFields(sourceRaw);
+    const scrubbedAccount = scrubbed.account as Record<string, unknown>;
+    expect(scrubbedAccount.account_id).toBeUndefined();
+    expect(scrubbedAccount.player_name).toBeUndefined();
+    const sourceAccount = sourceRaw.account as Record<string, unknown>;
+    for (const key of Object.keys(sourceAccount)) {
+      if (key === 'account_id' || key === 'player_name') continue;
+      expect(scrubbedAccount[key]).toEqual(sourceAccount[key]);
+    }
+    for (const key of Object.keys(sourceRaw)) {
+      if (key === 'account') continue;
+      expect(scrubbed[key]).toEqual(sourceRaw[key]);
+    }
+  });
+
+  it('pair.json validates against the manifest schema with live.source "export-derived" and real gameBuild/capturedAt', () => {
+    const manifest = loadJson(join(FIXTURES_DIR, 'pair.json')) as unknown as FidelityPairManifestForTest;
+    expect(manifest.schemaVersion).toBe(1);
+    expect(manifest.live.source).toBe('export-derived');
+    expect(typeof manifest.export.gameBuild).toBe('string');
+    expect(manifest.export.gameBuild.length).toBeGreaterThan(0);
+    expect(typeof manifest.export.capturedAt).toBe('string');
+    expect(() => new Date(manifest.export.capturedAt).toISOString()).not.toThrow();
+    expect(typeof manifest.live.gameBuild).toBe('string');
+    expect(manifest.live.gameBuild.length).toBeGreaterThan(0);
+    expect(typeof manifest.live.capturedAt).toBe('string');
+    expect(() => new Date(manifest.live.capturedAt).toISOString()).not.toThrow();
+  });
+
+  it('pair.json expected counts are measured from the real committed pair, not guessed', () => {
+    const manifest = loadJson(join(FIXTURES_DIR, 'pair.json')) as unknown as FidelityPairManifestForTest;
+    const liveResult = parseAccountPayload(liveRaw, []);
+    const exportResult = parseAccountPayload(exportRaw, []);
+
+    expect(liveResult.rejected).toBeNull();
+    expect(exportResult.rejected).toBeNull();
+    expect(manifest.expected.heroes).toBe(liveResult.candidates.length);
+    expect(manifest.expected.heroes).toBe(exportResult.candidates.length);
+    expect(manifest.expected.items).toBe(liveResult.inventory.length);
+    expect(manifest.expected.items).toBe(exportResult.inventory.length);
+    // 3 SheetStats blocks (naked, gearedOverride, birth) x 8 SHEET_KEYS, per hero.
+    expect(manifest.expected.statComparisons).toBe(manifest.expected.heroes * 3 * 8);
+  });
+});
