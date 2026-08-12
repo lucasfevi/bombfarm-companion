@@ -58,6 +58,29 @@ Relaxing it on `main` is deliberate and load-bearing: with linear history requir
 release PR can only be squashed, and a squash leaves `main` sharing no ancestry with the
 branch it came from. That is what made every release PR list every commit since PR #10.
 
+## Merge-method enforcement lives in a ruleset
+
+Protection is **two** config surfaces, not one. Classic branch protection cannot restrict
+which merge button a PR may use, so that rule lives in a repository **ruleset**:
+[`.github/ruleset-main.json`](../.github/ruleset-main.json) targets `refs/heads/main` and
+sets `allowed_merge_methods: ["merge"]`. Squash and rebase are greyed out on any PR into
+`main`, and `gh pr merge --squash` fails outright.
+
+- Rulesets and classic protection **coexist** — both are evaluated and the most restrictive
+  wins. There is no migration to do; the `branch-protection-*.json` files stay authoritative
+  for everything else.
+- `bypass_actors` is deliberately **empty**, the ruleset equivalent of `enforce_admins: true`.
+- `develop` is untouched, so feature PRs are still squashed. Repo-wide
+  `allow_squash_merge: false` would have broken that and is the wrong lever.
+
+Apply or update it with:
+
+```bash
+gh api -X POST repos/lucasfevi/bombfarm-companion/rulesets --input .github/ruleset-main.json
+# already created? list ids, then PUT .../rulesets/<id> with the same file
+gh api repos/lucasfevi/bombfarm-companion/rulesets --jq '.[] | "\(.id) \(.name)"'
+```
+
 ## Audit commands
 
 Read-only verification (re-runnable):
@@ -73,6 +96,9 @@ gh api repos/$OWNER/$REPO/branches/develop/protection \
 gh api repos/$OWNER/$REPO/branches/main/protection \
   --jq '{checks: [.required_status_checks.checks[].context], linear: .required_linear_history.enabled, admins: .enforce_admins.enabled}'
 gh api repos/$OWNER/$REPO/branches/gh-pages/protection 2>&1 | head -1
+# main must allow "merge" and nothing else
+gh api repos/$OWNER/$REPO/rules/branches/main \
+  --jq '.[] | select(.type == "pull_request") | .parameters.allowed_merge_methods'
 gh run list --branch develop --limit 5 --json workflowName,conclusion,url
 gh run list --branch main    --limit 5 --json workflowName,conclusion,url
 vercel ls bombfarm-companion
