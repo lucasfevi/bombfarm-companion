@@ -104,4 +104,12 @@ describe('apps/desktop main process <-> @bombfarm/domain edge (MP3 F1, AD-032)',
     const bundle = readFileSync(mainBundlePath, 'utf8');
     expect(bundle).not.toContain(TEAM_PLAN_WORKER_MARKER);
   });
+
+  it('the renderer transpiles @bombfarm/domain', () => {
+    const nextConfigText = readFileSync(resolve(desktopRoot, 'renderer/next.config.ts'), 'utf8');
+    const transpileMatch = nextConfigText.match(/transpilePackages:\s*\[([^\]]*)\]/);
+
+    expect(transpileMatch, 'expected a transpilePackages array in renderer/next.config.ts').not.toBeNull();
+    expect(transpileMatch?.[1]).toMatch(/['"]@bombfarm\/domain['"]/);
+  });
 });

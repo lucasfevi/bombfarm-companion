@@ -59,6 +59,9 @@ test.describe('app boot smoke', () => {
       await expect(page.getByTestId('flavor-badge')).toHaveText('DEV');
       await expect(page.getByTestId('app-version')).toHaveText(/^v\d+\.\d+\.\d+/);
 
+      // MP3 F1 (AD-032) — the renderer's @bombfarm/domain value import reached the DOM.
+      await expect(page.getByTestId('domain-label-probe')).toHaveText('Common');
+
       const ping = await page.evaluate(async () => {
         const bridge = window.bfc;
         if (!bridge) throw new Error('preload bridge missing');
