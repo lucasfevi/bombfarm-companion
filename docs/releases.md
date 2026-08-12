@@ -11,7 +11,7 @@ feature PR (changeset) → merge to develop
   → release-pr.yml reconciles main into release/next, then upserts release/next → main PR
   → review bumps + CHANGELOG + CI + beta (if desktop in set)
   → human 24 h soak checklist (not a required check)
-  → squash-merge release PR to main
+  → merge release PR to main with a merge commit (never squash)
   → release-sync.yml syncs versions back to develop
   → release-prod.yml (desktop artifact; GitHub Release only when flag on)
   → Vercel production deploy from main (unchanged Git integration)
@@ -25,7 +25,8 @@ feature PR (changeset) → merge to develop
 4. **Review** version bumps and generated `CHANGELOG.md` entries. Confirm required CI checks are green on the release head (`ci-web-required`, `ci-desktop-required`, `e2e-smoke`, `e2e-visual`, and `beta-installer` when desktop is in the set).
 5. **When desktop is in the release set:** download the beta installer from the PR workflow artifact or the upserted PR comment. Verify the build matches the head SHA shown in the report.
 6. **Complete the [pre-merge soak checklist](#pre-merge-soak-checklist)** before merging to `main`.
-7. **Squash-merge the release PR to `main`** (see [Merge strategy](#merge-strategy)).
+7. **Merge the release PR to `main` with a merge commit** — `gh pr merge <n> --merge`, or
+   *Create a merge commit* in the UI. **Never squash it** (see [Merge strategy](#merge-strategy)).
    - **Web:** Vercel deploys production from `main` automatically (no GitHub Actions deploy step).
    - **Desktop:** [release-prod.yml](../.github/workflows/release-prod.yml) builds a prod installer artifact when `@bombfarm/desktop` was in the release set. A public GitHub Release is created **only** when `BFC_ENABLE_PROD_RELEASE` is `true` (see [Going public](#going-public-desktop-github-release)).
 8. **Version sync:** [release-sync.yml](../.github/workflows/release-sync.yml) opens and auto-merges `release/next` → `develop` so both branches carry the same versions and consumed changesets.
@@ -46,31 +47,60 @@ Logic lives in [`tools/release/release-plan.mjs`](../tools/release/release-plan.
 
 ## Merge strategy
 
-**Squash-merge the release PR.** `main` is protected with `required_linear_history`, so
-merge commits are rejected there and squash is the only strategy the branch accepts.
-Feature PRs into `develop` are squashed too.
+**Merge the release PR with a merge commit. Never squash it.** Feature PRs into `develop`
+are still squashed — that rule applies to the `release/next` → `main` PR only, and `main`
+is the one branch in the repo where `required_linear_history` is **off**
+([`.github/branch-protection-main.json`](../.github/branch-protection-main.json)) so the
+merge commit is accepted.
 
-Squashing has a consequence worth understanding, because it caused a silent outage of the
-release rail once already. A squash gives `main` a commit that shares **no history** with
-the `release/next` branch it came from, so `main` permanently forks from `develop`. Left
-alone, the next release PR compares across a merge base predating the whole release rail
-and reports `CONFLICTING` on dozens of add/add collisions — none of them real, since
-`main` is strictly behind `develop`.
+This is not cosmetic. Squash and rebase both mint new SHAs, so neither puts `develop`'s
+commits into `main`'s ancestry — `main` gets a content-equal *snapshot* instead. Releases
+#17 through #45 were squashed, and the cost is that the last commit the two branches
+genuinely share is `6fc4f3f` (PR #10):
 
-The rail absorbs this itself. Before versioning, [release-pr.yml](../.github/workflows/release-pr.yml)
-merges `main` into `release/next` with `-s ours`:
+```bash
+git merge-base origin/develop origin/main   # 6fc4f3f — PR #10
+```
 
-- `main` becomes an ancestor, so the PR is mergeable again.
+A PR's Commits tab lists `base..head`. Because no commit `develop` has produced since PR
+#10 is an ancestor of `main`, **every one of them lists on every release PR** — 34 of them
+on PR #51, growing by one per feature merge, forever. `git log main..develop`,
+"commits since last release", and `changeset status --since=origin/main` are all wrong for
+the same reason. A merge commit fixes all of it at once: `main` inherits the release
+branch's real history, so the next release PR shows only what is actually new.
+
+Merging does **not** retroactively clean a PR that is already open — it is the merge of
+that PR which makes the *next* one honest. The four squashes already on `main` stay as
+they are.
+
+### Why `main` is still reconciled into `release/next`
+
+Merging instead of squashing does not remove the need for the `-s ours` reconcile step in
+[release-pr.yml](../.github/workflows/release-pr.yml), and removing it would break the
+rail. `main`'s tip is never an ancestor of `develop` — the version bumps reach `develop`
+through a separate squashed sync PR — so without the reconcile the release PR's merge base
+falls back to `develop`'s tip at the *previous* release. From that base both sides have
+bumped the same `version` fields and prepended to the same `CHANGELOG.md` sections, and
+every run reports real content conflicts.
+
+So the rail still merges `main` into `release/next` with `-s ours` before versioning:
+
+- `main` becomes an ancestor, so the release PR merges cleanly with no conflicts at all.
 - The tree is untouched — it stays exactly what `develop` produced. The merge records
   ancestry and nothing else.
-- The merge commit lives on `release/next`, so squashing onto `main` still leaves `main`
-  linear. Linear history and a connected rail are not in conflict.
 
 `-s ours` discards `main`'s tree wholesale, which is only safe while every commit on
 `main` came from the rail. [`tools/release/main-reconcile.mjs`](../tools/release/main-reconcile.mjs)
 enforces that: it inspects every commit reachable from `main` but not from the release
-branch and **fails the run** unless each one is a release squash. A hotfix landed directly
-on `main` therefore stops the release loudly instead of being dropped from the next one.
+branch and **fails the run** unless each one is rail-authored. A hotfix landed directly on
+`main` therefore stops the release loudly instead of being dropped from the next one.
+
+Because the release PR is merged rather than squashed, three rail commits now reach `main`
+that a squash used to flatten away — the merge commit, `chore(release): version packages`,
+and the previous reconcile merge. `RAIL_COMMIT_PATTERNS` recognises all three, plus both
+GitHub merge-title styles (`chore(release): develop → main (#N)` when merge titles come
+from the PR title, and the `Merge pull request #N from <owner>/release/next` default).
+Anything else still refuses.
 
 If it does refuse, do not bypass it. Port the change to `develop`, or merge `main` into
 `develop`, and re-run.

@@ -90,9 +90,45 @@ describe('isReleaseCommit', () => {
     ).toBe(false);
   });
 
-  it('rejects an unrelated chore(release) subject', () => {
+  it("accepts GitHub's default merge-commit subject for the release PR", () => {
+    expect(
+      isReleaseCommit({
+        sha: 'abc',
+        subject: 'Merge pull request #51 from lucasfevi/release/next',
+      }),
+    ).toBe(true);
+  });
+
+  it('rejects a merge commit from a branch that is not release/next', () => {
+    expect(
+      isReleaseCommit({
+        sha: 'abc',
+        subject: 'Merge pull request #52 from lucasfevi/fix/prod-crash',
+      }),
+    ).toBe(false);
+  });
+
+  it('accepts the bump commit the merge now carries onto main', () => {
     expect(
       isReleaseCommit({ sha: 'abc', subject: 'chore(release): version packages' }),
+    ).toBe(true);
+  });
+
+  it('accepts the previous reconcile merge the merge now carries onto main', () => {
+    expect(
+      isReleaseCommit({
+        sha: 'abc',
+        subject: "chore(release): reconcile main's squashed release history",
+      }),
+    ).toBe(true);
+  });
+
+  it('rejects a bump subject with trailing content', () => {
+    expect(
+      isReleaseCommit({
+        sha: 'abc',
+        subject: 'chore(release): version packages and drop the auth check',
+      }),
     ).toBe(false);
   });
 });
