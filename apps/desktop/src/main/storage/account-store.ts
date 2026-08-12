@@ -11,10 +11,16 @@ import type {
 import { decodeStoredSection, resolveAccountKey } from './account-rows.js';
 import { ACCOUNT_SECTIONS } from './account-schema.js';
 import type { LogPort, OpenResult } from './index.js';
+import type { FsPort } from './legacy-snapshot.js';
+import { readLegacySnapshotPayload } from './legacy-snapshot.js';
 import { mergeStoredIntoLive } from './merge-account.js';
 
 export interface AccountStoreDeps {
   log?: LogPort;
+  /** When set, a one-time legacy `last-snapshot.json` import is attempted at construction
+   * (APS-10) — only when `account_section` is empty and it has never run before. */
+  userDataDir?: string;
+  legacyFs?: FsPort;
 }
 
 export interface PersistOpts {
@@ -82,11 +88,7 @@ export function createAccountStore(open: OpenResult, deps: AccountStoreDeps = {}
   const db = open.db;
 
   function getBoundAccountId(): string | null {
-    if (!db) return null;
-    const row = db.prepare('SELECT value FROM account_meta WHERE key = ?').get('account_id') as
-      | AccountMetaRow
-      | undefined;
-    return row ? row.value : null;
+    return getMeta('account_id');
   }
 
   function readSectionRow(key: string, section: AccountSection): SectionRow | undefined {
@@ -146,11 +148,21 @@ export function createAccountStore(open: OpenResult, deps: AccountStoreDeps = {}
     };
   }
 
-  function setBoundAccountId(key: string): void {
+  function setMeta(key: string, value: string): void {
     if (!db) return;
     db.prepare(
       'INSERT INTO account_meta (key, value) VALUES (?, ?) ON CONFLICT DO UPDATE SET value = excluded.value',
-    ).run('account_id', key);
+    ).run(key, value);
+  }
+
+  function getMeta(key: string): string | null {
+    if (!db) return null;
+    const row = db.prepare('SELECT value FROM account_meta WHERE key = ?').get(key) as AccountMetaRow | undefined;
+    return row ? row.value : null;
+  }
+
+  function setBoundAccountId(key: string): void {
+    setMeta('account_id', key);
   }
 
   /**
@@ -219,6 +231,37 @@ export function createAccountStore(open: OpenResult, deps: AccountStoreDeps = {}
     const restored = restore(accountId);
     return mergeStoredIntoLive(live, restored, { gameRunning: opts.gameRunning, binding: open.binding });
   }
+
+  /**
+   * APS-10, run once at construction. Only attempted when `account_section` is empty and the
+   * `legacy_snapshot_migrated` meta flag is unset; the flag is set afterwards regardless of
+   * whether the file yielded anything importable, so a later boot never re-attempts even if
+   * the file is still present. Reuses `persist()` verbatim — the legacy payload is just
+   * another resolved-only `AccountPayload`, so every imported section is served `stale`
+   * automatically, the same way any other persisted section is (design §7).
+   */
+  function maybeImportLegacySnapshot(): void {
+    if (!db || !deps.userDataDir) {
+      return;
+    }
+
+    const sectionCount = db.prepare('SELECT COUNT(*) AS n FROM account_section').get() as { n: number } | undefined;
+    if ((sectionCount?.n ?? 0) > 0) {
+      return;
+    }
+    if (getMeta('legacy_snapshot_migrated') !== null) {
+      return;
+    }
+
+    const legacy = readLegacySnapshotPayload(deps.userDataDir, deps.legacyFs);
+    if (legacy) {
+      persist(legacy.payload);
+      log.info({ scope: 'storage', event: 'account.legacy_imported' });
+    }
+    setMeta('legacy_snapshot_migrated', '1');
+  }
+
+  maybeImportLegacySnapshot();
 
   return {
     restore,

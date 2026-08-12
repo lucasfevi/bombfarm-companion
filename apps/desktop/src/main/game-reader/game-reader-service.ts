@@ -10,7 +10,6 @@ import {
 import type { ScanTarget } from './memory-scanner.js';
 import { MemoryScanner } from './memory-scanner.js';
 import { findProcessId } from './process.js';
-import { SnapshotStore } from './snapshot-store.js';
 
 export type GameReaderMode = 'memory' | 'fixture';
 
@@ -34,7 +33,6 @@ const DEFAULT_CONFIG: GameReaderConfig = {
 
 export class GameReaderService {
   private readonly config: GameReaderConfig;
-  private readonly store: SnapshotStore;
   private status: GameStatusInfo;
   private payload: GameSnapshotPayload;
   private timer: NodeJS.Timeout | null = null;
@@ -48,25 +46,22 @@ export class GameReaderService {
   private fixtureTick = 0;
   private fixtureBundle = loadFixtureBundle();
 
-  constructor(userDataDir: string, config: Partial<GameReaderConfig> = {}) {
+  constructor(_userDataDir: string, config: Partial<GameReaderConfig> = {}) {
     this.config = { ...DEFAULT_CONFIG, ...config };
-    this.store = new SnapshotStore(userDataDir);
-    this.store.load();
 
-    const restored = this.store.get();
+    // Never restore `status` from disk (design R-2 / APS-03): a cold boot with the game
+    // closed always reports `not_running`, never a previous session's `connected`.
     const now = new Date().toISOString();
-    this.status = restored?.status ?? {
+    this.status = {
       status: this.config.mode === 'fixture' ? 'connected' : 'not_running',
       updatedAt: now,
       processName: this.config.processName,
     };
-    this.payload =
-      restored ??
-      ({
-        status: this.status,
-        mapped: null,
-        raw: { state: null, inventory: null },
-      } satisfies GameSnapshotPayload);
+    this.payload = {
+      status: this.status,
+      mapped: null,
+      raw: { state: null, inventory: null },
+    } satisfies GameSnapshotPayload;
   }
 
   setWindowProvider(provider: () => BrowserWindow | null): void {
@@ -280,9 +275,6 @@ export class GameReaderService {
   private updateSnapshot(next: GameSnapshotPayload): void {
     const changed = JSON.stringify(next.raw) !== JSON.stringify(this.payload.raw);
     this.payload = next;
-    if (next.mapped) {
-      this.store.save(next);
-    }
     if (changed) {
       this.emit('snapshot:updated', next);
     }
