@@ -23,4 +23,5 @@ export { ROUTES, readSection } from './routes.js';
 export type { RouteDescriptor, SectionFailureReason, SectionOutcome } from './routes.js';
 export { createGameApiClient } from './client.js';
 export type { GameApiClient } from './client.js';
+export { assembleAccountPayload } from './assemble.js';
 

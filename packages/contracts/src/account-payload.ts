@@ -3,14 +3,23 @@ export type AccountSection = 'account' | 'heroes' | 'skills' | 'casa' | 'items';
 
 /**
  * `resolved` — read in this capture. `stale` — last-known-good, older than this capture.
- * `missing` — never seen, or not recoverable at all.
+ * `missing` — never seen, or not recoverable at all. `degraded` — the source answered, but the
+ * response's shape is no longer one this app parses safely (LAR-19, `AD-023`). It carries no
+ * body: a section nothing can compute from is safer than a plausible wrong number (`D24`).
  */
-export type SectionStatus = 'resolved' | 'stale' | 'missing';
+export type SectionStatus = 'resolved' | 'stale' | 'missing' | 'degraded';
 
 /** ISO-8601 `capturedAt` is required for anything that is not `missing` (ACS-04). */
 export type SectionFidelity =
   | { readonly status: 'resolved' | 'stale'; readonly capturedAt: string }
-  | { readonly status: 'missing'; readonly capturedAt?: undefined };
+  | { readonly status: 'missing'; readonly capturedAt?: undefined }
+  | {
+      readonly status: 'degraded';
+      readonly capturedAt: string;
+      /** Fingerprint keys the response did not carry — named so a game update is diagnosable
+       *  from a user's log without a debugger (LAR-19/LAR-20). */
+      readonly missingKeys: readonly string[];
+    };
 
 export type AccountFidelity = { readonly [S in AccountSection]: SectionFidelity };
 

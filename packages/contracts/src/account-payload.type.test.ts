@@ -31,6 +31,46 @@ describe('AccountPayload / fidelity — type-level assertions', () => {
     expect(missing.capturedAt).toBeUndefined();
   });
 
+  it('accepts a degraded section carrying capturedAt and missingKeys (mp2-live-account-read T6, LAR-19)', () => {
+    const degraded: SectionFidelity = {
+      status: 'degraded',
+      capturedAt: '2026-08-12T00:00:00.000Z',
+      missingKeys: ['gold', 'phase'],
+    };
+    expect(degraded.status).toBe('degraded');
+    expect(degraded.missingKeys).toEqual(['gold', 'phase']);
+  });
+
+  it('a degraded section is distinguishable from missing and from resolved by its status discriminant', () => {
+    const sections: SectionFidelity[] = [
+      { status: 'resolved', capturedAt: '2026-08-12T00:00:00.000Z' },
+      { status: 'missing' },
+      { status: 'degraded', capturedAt: '2026-08-12T00:00:00.000Z', missingKeys: ['heroes'] },
+    ];
+    const statuses = sections.map((s) => s.status);
+    expect(statuses).toEqual(['resolved', 'missing', 'degraded']);
+    expect(new Set(statuses).size).toBe(3);
+  });
+
+  it('accepts an AccountFidelity block mixing a degraded section among resolved ones', () => {
+    const fidelity: AccountFidelity = {
+      account: RESOLVED,
+      heroes: RESOLVED,
+      skills: { status: 'degraded', capturedAt: '2026-08-12T00:00:00.000Z', missingKeys: ['totals'] },
+      casa: RESOLVED,
+      items: RESOLVED,
+    };
+    expect(fidelity.skills.status).toBe('degraded');
+    if (fidelity.skills.status === 'degraded') {
+      expect(fidelity.skills.missingKeys).toEqual(['totals']);
+    }
+  });
+
+  it('accepts an empty missingKeys array on a degraded section (a shape check that found nothing missing but still refused to parse is still expressible)', () => {
+    const degraded: SectionFidelity = { status: 'degraded', capturedAt: '2026-08-12T00:00:00.000Z', missingKeys: [] };
+    expect(degraded.missingKeys).toEqual([]);
+  });
+
   it('accepts an AccountPayload asserting no sections at all', () => {
     const payload: AccountPayload = {};
     expect(payload).toEqual({});
@@ -63,8 +103,21 @@ const _missingCapturedAt: SectionFidelity = { status: 'resolved' };
 // @ts-expect-error - capturedAt must be absent when status is "missing" (ACS-04)
 const _capturedAtOnMissing: SectionFidelity = { status: 'missing', capturedAt: '2026-08-12T00:00:00.000Z' };
 
-// @ts-expect-error - "partial" is not one of the three SectionStatus literals (ACS-04)
+// @ts-expect-error - "partial" is not one of the four SectionStatus literals (ACS-04)
 const _invalidStatusLiteral: SectionFidelity = { status: 'partial', capturedAt: '2026-08-12T00:00:00.000Z' };
+
+// @ts-expect-error - a degraded section requires capturedAt (LAR-19, mp2-live-account-read T6)
+const _degradedWithoutCapturedAt: SectionFidelity = { status: 'degraded', missingKeys: ['gold'] };
+
+// @ts-expect-error - a degraded section requires missingKeys (LAR-19, mp2-live-account-read T6)
+const _degradedWithoutMissingKeys: SectionFidelity = { status: 'degraded', capturedAt: '2026-08-12T00:00:00.000Z' };
+
+const _missingKeysOnResolved: SectionFidelity = {
+  status: 'resolved',
+  capturedAt: '2026-08-12T00:00:00.000Z',
+  // @ts-expect-error - missingKeys is not a member of the resolved/stale branch (mp2-live-account-read T6)
+  missingKeys: ['gold'],
+};
 
 // @ts-expect-error - "extra" is not one of the five AccountSection keys
 const _sixthSectionKey: AccountFidelity = { account: RESOLVED, heroes: RESOLVED, skills: RESOLVED, casa: RESOLVED, items: RESOLVED, extra: RESOLVED };
