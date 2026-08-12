@@ -1,7 +1,11 @@
 import { defineConfig } from 'vitest/config';
+import { MAX_TEST_WORKERS } from './vitest.workers';
 
 export default defineConfig({
   test: {
+    // See vitest.workers.ts — the critical path is one long solver file, so extra
+    // workers past this cap burn cores without shortening the run.
+    maxWorkers: MAX_TEST_WORKERS,
     // packages/domain's team-plan tests run long, single-threaded synchronous solver calls
     // that starve the worker's event loop past Vitest's hardcoded 60s worker<->main
     // "onTaskUpdate" RPC timeout (independent of testTimeout). That surfaces as an Unhandled
