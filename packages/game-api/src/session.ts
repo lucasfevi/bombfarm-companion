@@ -57,21 +57,50 @@ export class ConsentRequiredError extends Error {
   }
 }
 
-/** Not exported. The only thing that can construct a value satisfying `ConsentedSession` is this
- *  module — a well-typed external caller cannot reference this symbol to forge one. */
-const CONSENTED_BRAND: unique symbol = Symbol('bfc.session.consented');
+/**
+ * Not exported as a value — only the `ConsentedSession` type alias below leaves this module, so
+ * no external caller can ever write `new ConsentedSessionRecord(...)`, `instanceof
+ * ConsentedSessionRecord`, or otherwise name this class. The capability itself is enforced by the
+ * `#brand` private field: a **true** ES private class field, not the `CONSENTED_BRAND`
+ * symbol-keyed property this replaces. The symbol version was defeated by brand-symbol
+ * harvesting — `Object.getOwnPropertySymbols(realSession)` reads a symbol key straight off any
+ * live session (no import of the symbol's name required), and that harvested symbol can then be
+ * stamped onto an attacker-controlled plain object literal (`{ ...] as unknown as
+ * ConsentedSession }`), which `isConsentedSession` then accepted. A private field cannot be
+ * harvested (`Object.getOwnPropertySymbols`/`getOwnPropertyNames` never lists it), copied (object
+ * spread and `Object.assign` skip it, same as `SessionToken#value`), or stamped onto a
+ * pre-existing object at all — there is no syntax that adds a private field to an object after
+ * the fact from outside the declaring class. This is exactly `SessionToken#value`'s pattern,
+ * copied rather than reinvented (`AD-025`, `AD-028`, `TD-2`).
+ */
+class ConsentedSessionRecord {
+  readonly accountId: string;
+  readonly token: SessionToken;
+  readonly grantedAt: string;
+  readonly #brand = true;
+
+  constructor(accountId: string, token: SessionToken, grantedAt: string) {
+    this.accountId = accountId;
+    this.token = token;
+    this.grantedAt = grantedAt;
+  }
+
+  /** True only for a value that itself carries this class's private `#brand` field — i.e. was
+   *  built by this constructor, which only `grantSession` below ever calls. Uses the ergonomic
+   *  `in` brand check (`#brand in value`) rather than `instanceof`: `instanceof` only inspects
+   *  the prototype chain, which `Object.setPrototypeOf` can spoof, while `#brand in value`
+   *  inspects the object's own private-field slot directly and cannot be spoofed by any means. */
+  static hasBrand(value: unknown): value is ConsentedSessionRecord {
+    return typeof value === 'object' && value !== null && #brand in value;
+  }
+}
 
 /**
  * The capability. There is no value of this type reachable except through `grantSession`, and
  * `grantSession` only accepts a `granted` consent record — "no call before consent" is therefore
  * a type, not a rule anyone has to remember (`AD-025`, `TD-2`).
  */
-export interface ConsentedSession {
-  readonly accountId: string;
-  readonly token: SessionToken;
-  readonly grantedAt: string;
-  readonly [CONSENTED_BRAND]: true;
-}
+export type ConsentedSession = ConsentedSessionRecord;
 
 /**
  * The ONLY constructor for `ConsentedSession`. A `ConsentRecord` that is not statically known to
@@ -85,12 +114,7 @@ export function grantSession(
   if (!isGranted(consent)) {
     throw new ConsentRequiredError();
   }
-  return {
-    accountId: creds.accountId,
-    token: creds.token,
-    grantedAt: consent.grantedAt,
-    [CONSENTED_BRAND]: true,
-  };
+  return new ConsentedSessionRecord(creds.accountId, creds.token, consent.grantedAt);
 }
 
 /** Thrown at runtime when `request.ts` (`buildHttpRequest`/`requestGet`) is handed a value typed
@@ -106,22 +130,21 @@ export class ConsentedSessionRequiredError extends Error {
 }
 
 /**
- * The runtime half of the brand: `true` only for a value that actually carries the
- * module-private `CONSENTED_BRAND` symbol key set to `true`, plus the shape `grantSession`
- * always produces. A value forged with an unsafe cast cannot even name `CONSENTED_BRAND` (it is
- * not exported), so it can imitate every *named* field of `ConsentedSession` and still fail this
- * check — the same guarantee the type system gives a well-typed caller, now checked at runtime
- * for a caller that bypassed the type system.
+ * The runtime half of the brand: `true` only for a value that actually carries
+ * `ConsentedSessionRecord`'s true private `#brand` field, plus the shape `grantSession` always
+ * produces. Unlike the `CONSENTED_BRAND` symbol-keyed property this replaces, a value forged with
+ * an unsafe cast cannot satisfy `ConsentedSessionRecord.hasBrand` by any means — not by naming a
+ * symbol, not by harvesting one off a live session with `Object.getOwnPropertySymbols`, and not
+ * by copying one via spread — because a private field can only ever be installed by that class's
+ * own constructor, which this module never exposes outside `grantSession`.
  */
 export function isConsentedSession(value: unknown): value is ConsentedSession {
-  if (typeof value !== 'object' || value === null) {
+  if (!ConsentedSessionRecord.hasBrand(value)) {
     return false;
   }
-  const candidate = value as Record<PropertyKey, unknown>;
   return (
-    candidate[CONSENTED_BRAND] === true &&
-    typeof candidate.accountId === 'string' &&
-    typeof candidate.grantedAt === 'string' &&
-    candidate.token instanceof SessionToken
+    typeof value.accountId === 'string' &&
+    typeof value.grantedAt === 'string' &&
+    value.token instanceof SessionToken
   );
 }

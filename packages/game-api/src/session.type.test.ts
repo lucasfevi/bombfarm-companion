@@ -49,8 +49,8 @@ describe('session.ts — type-level assertions (runtime half, so this file also 
 
 // --- Compile-time-only assertions below: no runtime behaviour, enforced by `tsc` only. ---
 
-// @ts-expect-error - ConsentedSession's brand key is not nameable outside session.ts, so no
-// object literal constructed anywhere else can satisfy this interface (LAR-06, TD-2)
+// @ts-expect-error - ConsentedSession is a class with a true private #brand field, which makes
+// it nominally typed; no object literal constructed anywhere else can satisfy it (LAR-06, TD-2)
 const _forgedSession: ConsentedSession = {
   accountId: '486',
   token: SessionToken.create('x'),
