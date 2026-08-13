@@ -1,11 +1,16 @@
 # The fidelity gate (MP2 F4, LHP-13)
 
-**Status (2026-08-12):** F2 has merged ([#63](https://github.com/lucasfevi/bombfarm-companion/pull/63)),
-but **the gate has not been retargeted onto it yet** — see [F2 handoff](#f2-handoff). `pair.json →
-live.source` is still `"export-derived"`, so the cross-source *equality* half remains a
-**regression fence, not a discovery instrument** — both committed captures share an origin, so it
-cannot find a reader bug (design §1.1). The two halves that are fully real today, and are what
-`LHP-13`'s exit clause actually turns on, are:
+**Status (2026-08-13, MP5 F1):** the committed pair was re-captured from the post-patch
+2026-08-13 export after `mp5-fixture-rebaseline` deleted the pre-wipe corpus the old pair was
+built from (the 2026-08-13 patch removed all five keystones and wiped every account). The
+reference account is now **5 heroes**, `account 486`, phase 24 / max_phase 42 — the same account
+`sheet-math/save-20260813-5heroes.json` documents; `export-capture.json` is byte-identical to
+that fixture. `pair.json → live.source` is still `"export-derived"`, so the cross-source
+*equality* half remains a **regression fence, not a discovery instrument** — both committed
+captures share an origin, so it cannot find a reader bug (design §1.1). This does not relax the
+capture constraint below: the fidelity pair is still built solely from one export, and the
+`sheet-math/` copy of it is a checked byte-identical invariant, not a second source. The two
+halves that are fully real today, and are what `LHP-13`'s exit clause actually turns on, are:
 
 1. **The degraded-input guard** (`FID-05`/`06`/`07`) — a live capture whose derived fidelity
    grade is not `full` fails the gate, naming every non-`resolved` section and its literal
@@ -145,11 +150,14 @@ What remains is blocked on a **maintainer capture**, not on code:
 > not a formality:
 >
 > - The existing API fixtures under `packages/domain/tests/fixtures/api/` are a **different
->   account** (8 heroes / phase 21 / disjoint hero ids, versus the reference pair's 11 heroes /
->   phase 60). They cannot be used here.
-> - Even the *same* account drifts. A 2026-07-31 export against a 2026-08-12 API read would
->   differ on levels, gold and inventory — genuine differences the gate would correctly report as
->   failures, drowning any real one.
+>   account** (8 heroes / phase 21 / disjoint hero ids, versus the reference pair's 5 heroes /
+>   phase 24). They cannot be used here. (MP5 F1 committed a byte copy of one of those API
+>   fixtures under `sheet-math/` as `payload-20260812-8heroes.json`, for the domain/web test
+>   suites that need a richer, disjoint-account roster — that is a second, independently-checked
+>   test subject, not a second half of this pair, and does not relax this constraint.)
+> - Even the *same* account drifts. A 2026-08-13 export against a later API read would differ on
+>   levels, gold and inventory — genuine differences the gate would correctly report as failures,
+>   drowning any real one.
 >
 > If a mismatched pair ever appears to make the gate "pass", the comparator has been loosened and
 > the gate is worthless. Fix the capture, never the tolerance.

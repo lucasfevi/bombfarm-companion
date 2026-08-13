@@ -7,7 +7,6 @@ import { frameLiveCapture, loadFidelityPair, scrubPersonalFields, type FrameStam
 import { FidelityGateError } from './helpers/fidelity-gate-error';
 
 const FIXTURES_DIR = join(__dirname, 'fixtures', 'fidelity-gate');
-const SOURCE_SAVE = join(__dirname, 'fixtures', 'sheet-math', 'save-20260731-11heroes.json');
 
 function loadJson(path: string): Record<string, unknown> {
   return JSON.parse(readFileSync(path, 'utf8')) as Record<string, unknown>;
@@ -21,33 +20,32 @@ interface FidelityPairManifestForTest {
   expected: { heroes: number; items: number; statComparisons: number };
 }
 
-const STAMP: FrameStamp = { capturedAt: '2026-07-31T13:52:13.000Z' };
+const STAMP: FrameStamp = { capturedAt: '2026-08-13T14:26:40.000Z' };
 
+// MP5 F1 (MFR-13): this file must carry no reference to the sibling fixture corpus directory.
+// The unscrubbed source export lives only in bombfarm-research and must not be committed to
+// this public repo, so the two assertions that used to diff export-capture.json against a
+// same-account copy of the pre-scrub source are replaced by the self-contained conjunction
+// proof design.md §4.3 describes: idempotence under scrubPersonalFields, the raw-text
+// field-name check (below), the exact top-level key set, and the retained raw account fields.
+// The source SHA-256 is recorded by hand in the provenance README beside the fixture corpus,
+// for anyone who wants to re-derive and diff outside the repo.
 describe('T1 — the scrubbed capture pair and the framing helper', () => {
-  const sourceRaw = loadJson(SOURCE_SAVE);
   const exportRaw = loadJson(join(FIXTURES_DIR, 'export-capture.json'));
   const liveRaw = loadJson(join(FIXTURES_DIR, 'live-capture.json'));
   const exportText = readFileSync(join(FIXTURES_DIR, 'export-capture.json'), 'utf8');
   const liveText = readFileSync(join(FIXTURES_DIR, 'live-capture.json'), 'utf8');
 
-  it('export-capture.json is the source save with only account_id/player_name removed', () => {
-    const sourceAccount = sourceRaw.account as Record<string, unknown>;
+  it('export-capture.json carries exactly the expected top-level keys and retains every raw account field except the two scrubbed', () => {
+    expect(Object.keys(exportRaw).sort()).toEqual(
+      ['account', 'casa', 'export_version', 'generated_at', 'heroes', 'items', 'skills'].sort(),
+    );
     const exportAccount = exportRaw.account as Record<string, unknown>;
-
-    // Every account field except the two scrubbed ones must survive unchanged.
-    for (const key of Object.keys(sourceAccount)) {
-      if (key === 'account_id' || key === 'player_name') continue;
-      expect(exportAccount[key]).toEqual(sourceAccount[key]);
+    for (const key of ['gold', 'phase', 'max_phase', 'bag_tabs', 'bag_capacity', 'items_count', 'locked']) {
+      expect(exportAccount[key], key).toBeDefined();
     }
     expect(exportAccount.account_id).toBeUndefined();
     expect(exportAccount.player_name).toBeUndefined();
-
-    // Every other top-level section is the same value, byte-for-byte after parsing.
-    for (const key of Object.keys(sourceRaw)) {
-      if (key === 'account') continue;
-      expect(exportRaw[key]).toEqual(sourceRaw[key]);
-    }
-    expect(Object.keys(exportRaw).sort()).toEqual(Object.keys(sourceRaw).sort());
   });
 
   it('live-capture.json is exactly frameLiveCapture(export-capture.json, stamp)', () => {
@@ -82,20 +80,13 @@ describe('T1 — the scrubbed capture pair and the framing helper', () => {
     expect(JSON.stringify(roundTripped)).toBe(JSON.stringify(liveRaw));
   });
 
-  it('scrubPersonalFields removes only account_id and player_name, nothing else', () => {
-    const scrubbed = scrubPersonalFields(sourceRaw);
-    const scrubbedAccount = scrubbed.account as Record<string, unknown>;
-    expect(scrubbedAccount.account_id).toBeUndefined();
-    expect(scrubbedAccount.player_name).toBeUndefined();
-    const sourceAccount = sourceRaw.account as Record<string, unknown>;
-    for (const key of Object.keys(sourceAccount)) {
-      if (key === 'account_id' || key === 'player_name') continue;
-      expect(scrubbedAccount[key]).toEqual(sourceAccount[key]);
-    }
-    for (const key of Object.keys(sourceRaw)) {
-      if (key === 'account') continue;
-      expect(scrubbed[key]).toEqual(sourceRaw[key]);
-    }
+  it('scrubPersonalFields(exportCapture) is idempotent — the committed file is already fully scrubbed', () => {
+    // Idempotence under the deterministic scrub is the in-repo half of the conjunction proof:
+    // if the committed file already carries neither field, running the scrub again changes
+    // nothing. Combined with the raw-text check below and the recorded source SHA-256, this is
+    // the strongest honest proof available without the unscrubbed source in this repo.
+    const scrubbed = scrubPersonalFields(exportRaw);
+    expect(scrubbed).toEqual(exportRaw);
   });
 
   it('pair.json validates against the manifest schema with live.source "export-derived" and real gameBuild/capturedAt', () => {
@@ -138,8 +129,8 @@ describe('T2 — the fail-loud loader', () => {
   it('resolves the committed pair with no argument', () => {
     const pair = loadFidelityPair();
     expect(pair.manifest.live.source).toBe('export-derived');
-    expect(pair.exportPayload.heroes?.length).toBe(11);
-    expect(pair.livePayload.heroes?.length).toBe(11);
+    expect(pair.exportPayload.heroes?.length).toBe(5);
+    expect(pair.livePayload.heroes?.length).toBe(5);
   });
 
   describe('against a scratch mkdtemp directory', () => {
