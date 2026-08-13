@@ -1,4 +1,7 @@
-import { describe, expect, it } from 'vitest';
+import { mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { buildFixtureAccountPayload } from './fixture-account.js';
 import { loadFixtureBundle } from './fixture-data.js';
 
@@ -52,5 +55,74 @@ describe('buildFixtureAccountPayload', () => {
     const first = buildFixtureAccountPayload(NOW);
     const second = buildFixtureAccountPayload(NOW);
     expect(first).toEqual(second);
+  });
+});
+
+describe('AD-039 — BFC_FIXTURE_ACCOUNT_FILE override', () => {
+  let dir: string;
+  let overridePath: string;
+  const overridePayload = {
+    account: { phase: 5 },
+    heroes: [{ id: 'override-hero' }],
+    fidelity: {
+      account: { status: 'resolved', capturedAt: NOW },
+      heroes: { status: 'resolved', capturedAt: NOW },
+      skills: { status: 'missing' },
+      casa: { status: 'missing' },
+      items: { status: 'missing' },
+    },
+  };
+
+  const savedEnv = { BFC_GAME_READER: process.env.BFC_GAME_READER, BFC_FIXTURE_ACCOUNT_FILE: process.env.BFC_FIXTURE_ACCOUNT_FILE };
+
+  beforeEach(() => {
+    dir = mkdtempSync(join(tmpdir(), 'bfc-fixture-override-'));
+    overridePath = join(dir, 'account-override.json');
+    writeFileSync(overridePath, JSON.stringify(overridePayload));
+  });
+
+  afterEach(() => {
+    rmSync(dir, { recursive: true, force: true });
+    if (savedEnv.BFC_GAME_READER === undefined) delete process.env.BFC_GAME_READER;
+    else process.env.BFC_GAME_READER = savedEnv.BFC_GAME_READER;
+    if (savedEnv.BFC_FIXTURE_ACCOUNT_FILE === undefined) delete process.env.BFC_FIXTURE_ACCOUNT_FILE;
+    else process.env.BFC_FIXTURE_ACCOUNT_FILE = savedEnv.BFC_FIXTURE_ACCOUNT_FILE;
+  });
+
+  it('is honoured when BFC_GAME_READER is "fixture" and BFC_FIXTURE_ACCOUNT_FILE is set', () => {
+    process.env.BFC_GAME_READER = 'fixture';
+    process.env.BFC_FIXTURE_ACCOUNT_FILE = overridePath;
+    const payload = buildFixtureAccountPayload(NOW);
+    expect(payload).toEqual(overridePayload);
+  });
+
+  it('is ignored when BFC_GAME_READER is "memory" — the committed fixture bundle is used instead', () => {
+    process.env.BFC_GAME_READER = 'memory';
+    process.env.BFC_FIXTURE_ACCOUNT_FILE = overridePath;
+    const payload = buildFixtureAccountPayload(NOW);
+    expect(payload).not.toEqual(overridePayload);
+    expect(payload.fidelity?.heroes).toEqual({ status: 'resolved', capturedAt: NOW });
+  });
+
+  it('is ignored when BFC_GAME_READER is unset — the committed fixture bundle is used instead', () => {
+    delete process.env.BFC_GAME_READER;
+    process.env.BFC_FIXTURE_ACCOUNT_FILE = overridePath;
+    const payload = buildFixtureAccountPayload(NOW);
+    expect(payload).not.toEqual(overridePayload);
+  });
+
+  it('is ignored when BFC_GAME_READER is any other value — the committed fixture bundle is used instead', () => {
+    process.env.BFC_GAME_READER = 'not-a-real-mode';
+    process.env.BFC_FIXTURE_ACCOUNT_FILE = overridePath;
+    const payload = buildFixtureAccountPayload(NOW);
+    expect(payload).not.toEqual(overridePayload);
+  });
+
+  it('falls back to the committed fixture bundle when BFC_GAME_READER is "fixture" but BFC_FIXTURE_ACCOUNT_FILE is unset', () => {
+    process.env.BFC_GAME_READER = 'fixture';
+    delete process.env.BFC_FIXTURE_ACCOUNT_FILE;
+    const payload = buildFixtureAccountPayload(NOW);
+    const fixtures = loadFixtureBundle();
+    expect(payload.heroes).toEqual(fixtures.heroRecords);
   });
 });
