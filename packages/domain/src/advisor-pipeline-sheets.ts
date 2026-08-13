@@ -1,6 +1,5 @@
 import {
   sheetsFromBirth,
-  effectiveTreeSheetForAbisso,
   type BirthStats,
   type TreeSheetTotals,
 } from './birth-sheet';
@@ -73,7 +72,6 @@ export function resolveDeriveSheets(input: ResolveDeriveSheetsInput): ResolvedDe
     treeGlassCannon = false,
     treeCritDmgMult,
     treeTempoDobrado = false,
-    treeAbisso = false,
     birth,
   } = input;
 
@@ -83,21 +81,17 @@ export function resolveDeriveSheets(input: ResolveDeriveSheetsInput): ResolvedDe
   // path would silently disagree with `selectTreeSheetTotals`, which reads the numeric. The
   // boolean is still required on its own: Glass Cannon's energy ×0.5 has no numeric in the save.
   // Falls back to the boolean only when the numeric is absent (pre-persistence callers/state).
-  // effectiveTreeSheetForAbisso does NOT gate critDmgMult — Abisso doesn't suppress it.
-  const treeSheet: TreeSheetTotals = effectiveTreeSheetForAbisso(
-    {
-      danoStatic: treeDanoTotal,
-      energyPct: treeEnergy,
-      speedPct: treeSpeed,
-      critChancePct: treeCritChance,
-      critDmgPct: treeCritDmg,
-      luckFlatPct: treeLuckFlatPct,
-      critDmgMult: treeCritDmgMult ?? (treeGlassCannon ? 2 : 1),
-      glassCannon: treeGlassCannon,
-      tempoDobrado: treeTempoDobrado,
-    },
-    treeAbisso,
-  );
+  const treeSheet: TreeSheetTotals = {
+    danoStatic: treeDanoTotal,
+    energyPct: treeEnergy,
+    speedPct: treeSpeed,
+    critChancePct: treeCritChance,
+    critDmgPct: treeCritDmg,
+    luckFlatPct: treeLuckFlatPct,
+    critDmgMult: treeCritDmgMult ?? (treeGlassCannon ? 2 : 1),
+    glassCannon: treeGlassCannon,
+    tempoDobrado: treeTempoDobrado,
+  };
 
   // Birth-backed heroes: ignore stored naked/gearedOverride for math — residual level/stars
   // rescale understates multiplicative tree (dmg_static) on the catalog Δ.

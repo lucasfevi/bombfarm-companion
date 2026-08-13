@@ -67,21 +67,6 @@ export type TreeSheetTotals = {
   tempoDobrado?: boolean;
 };
 
-/**
- * Abisso (D15) zeroes tree Crit-arm sheet adds (`crit_chance_add` / `crit_dmg_add`) in the
- * live exporter. Apply the same gate for Account what-if when Abisso is toggled on after an
- * import that still carries non-zero crit tree totals. Abisso does NOT gate `critDmgMult` —
- * Glass Cannon's crit-damage ×2 (correction 1) stays live even when Abisso is also owned; the
- * two keystones are independent effects that happen to both touch the crit arm.
- */
-export function effectiveTreeSheetForAbisso(
-  tree: TreeSheetTotals,
-  abisso: boolean,
-): TreeSheetTotals {
-  if (!abisso) return tree;
-  return { ...tree, critChancePct: 0, critDmgPct: 0 };
-}
-
 /** `1 + max(0, percent)` — the shared-pool clamp already used by `gear/apply.ts`. */
 function poolFactor(percent: number): number {
   return 1 + Math.max(0, percent);
