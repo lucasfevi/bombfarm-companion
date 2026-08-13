@@ -111,9 +111,14 @@ replacement**: §6 below, the round-trip invariant.
   `abisso-glass-cannon.test.ts` (F2's surface, untouched by F1) via synthetic payloads.
 - **`apps/web/e2e/team-plan-disclosures.spec.ts`'s `saturated account shows saturation callout`
   test** was found RED on the new corpus during T7 (its `slots: 2` override was tuned for the
-  deleted 11-hero fixture's ~2.5–3.2 `sumDuty` range) but was deliberately **not edited** — fixing
-  it means touching a fourth `apps/web/e2e/**` file beyond `AD-069`'s named three-file exception.
-  `e2e-smoke` merges with this one known-red test; `validation.md` must record it.
+  deleted 11-hero fixture's ~2.5–3.2 `sumDuty` range) and was fixed by an orchestrator ruling
+  that extended `AD-069`'s three-file exception to this fourth `apps/web/e2e/**` file. On the
+  5-hero export, `slots` alone can no longer force the saturated regime — this roster's own
+  `sumDuty` tops out at ~0.99 at the export's real house, strictly below the minimum `slots`
+  value `evaluateRoster` clamps to. `duty = fieldSeconds / (fieldSeconds + restSeconds)`
+  (`model/combat.ts`) is driven by house rest time, not slots, so the seed was retuned onto a
+  maxed house (Casa V, level 20 — the shortest rest in `HOUSES`), which measures `sumDuty` ~2.12
+  and clears `slots: 1` with better than 2x margin. `e2e-smoke` is 132/132.
 
 ## 4. The three named accepted losses (`AD-061`)
 
