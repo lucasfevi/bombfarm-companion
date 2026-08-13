@@ -44,9 +44,12 @@ function createRespondingWorker(
   };
 }
 
+// MP5 F1 (AD-068 class (b) — structural): re-pointed onto payload-20260812-8heroes.json. Every
+// assertion here is about the runner's worker-message plumbing (status transitions, JSON
+// round-trip, supersession) — none pins a captured value.
 describe('createTeamPlanRunner', () => {
   it('drops stale worker responses when a newer run supersedes', async () => {
-    const input = teamPlanInputFromFixture('save-20260731-11heroes.json');
+    const input = teamPlanInputFromFixture('payload-20260812-8heroes.json');
     const lateReplyBox: { fn: ((runId: string) => void) | null } = { fn: null };
     const factory = () => {
       const worker: TeamPlanWorkerLike = {
@@ -101,7 +104,7 @@ describe('createTeamPlanRunner', () => {
   });
 
   it('falls back to main thread when worker construction throws', () => {
-    const input = teamPlanInputFromFixture('save-20260731-11heroes.json');
+    const input = teamPlanInputFromFixture('payload-20260812-8heroes.json');
     const runner = createTeamPlanRunner({
       createWorker: () => {
         throw new Error('no worker');
@@ -114,7 +117,7 @@ describe('createTeamPlanRunner', () => {
   });
 
   it('falls back to main thread when worker emits error', async () => {
-    const input = teamPlanInputFromFixture('save-20260731-11heroes.json');
+    const input = teamPlanInputFromFixture('payload-20260812-8heroes.json');
     const runner = createTeamPlanRunner({
       createWorker: () => ({
         onmessage: null,
@@ -135,7 +138,7 @@ describe('createTeamPlanRunner', () => {
   });
 
   it('surfaces blocked results with hero names and no plan', async () => {
-    const input = teamPlanInputFromFixture('save-20260731-11heroes.json');
+    const input = teamPlanInputFromFixture('payload-20260812-8heroes.json');
     const firstHero = input.heroes[0];
     if (!firstHero) throw new Error('fixture must include at least one hero');
     input.heroes[0] = { ...firstHero, birth: undefined };
@@ -154,7 +157,7 @@ describe('createTeamPlanRunner', () => {
   });
 
   it('round-trips TeamPlanInput and TeamPlan through JSON clone', () => {
-    const input = teamPlanInputFromFixture('save-20260731-11heroes.json');
+    const input = teamPlanInputFromFixture('payload-20260812-8heroes.json');
     const clonedInput = cloneInput(input);
     expect(clonedInput.heroes).toHaveLength(input.heroes.length);
     expect(clonedInput.inventory).toHaveLength(input.inventory.length);
@@ -169,7 +172,7 @@ describe('createTeamPlanRunner', () => {
 
   it('terminates the previous worker when starting a new run', () => {
     let terminateCount = 0;
-    const input = teamPlanInputFromFixture('save-20260731-11heroes.json');
+    const input = teamPlanInputFromFixture('payload-20260812-8heroes.json');
     const runner = createTeamPlanRunner({
       createWorker: () => ({
         onmessage: null,
@@ -186,7 +189,7 @@ describe('createTeamPlanRunner', () => {
   });
 
   it('maps worker done responses to plan state', async () => {
-    const input = teamPlanInputFromFixture('save-20260731-11heroes.json');
+    const input = teamPlanInputFromFixture('payload-20260812-8heroes.json');
     const expected = runTeamPlan(input);
     const runner = createTeamPlanRunner({
       createWorker: createRespondingWorker(() =>
@@ -202,7 +205,7 @@ describe('createTeamPlanRunner', () => {
   });
 
   it('maps worker error responses to error status', async () => {
-    const input = teamPlanInputFromFixture('save-20260731-11heroes.json');
+    const input = teamPlanInputFromFixture('payload-20260812-8heroes.json');
     const runner = createTeamPlanRunner({
       createWorker: createRespondingWorker(() => ({
         kind: 'error',
@@ -226,7 +229,7 @@ describe('createTeamPlanRunner', () => {
         postMessage() {},
       }),
     });
-    runner.run(cloneInput(teamPlanInputFromFixture('save-20260731-11heroes.json')));
+    runner.run(cloneInput(teamPlanInputFromFixture('payload-20260812-8heroes.json')));
     runner.cancel();
     expect(runner.status).toBe('idle');
     expect(runner.plan).toBeNull();
@@ -241,12 +244,12 @@ describe('createTeamPlanRunner', () => {
         postMessage() {},
       }),
     });
-    runner.run(cloneInput(teamPlanInputFromFixture('save-20260731-11heroes.json')));
+    runner.run(cloneInput(teamPlanInputFromFixture('payload-20260812-8heroes.json')));
     expect(runner.status).toBe('running');
   });
 
   it('keeps ranOnMainThread false for successful worker runs', async () => {
-    const input = teamPlanInputFromFixture('save-20260731-11heroes.json');
+    const input = teamPlanInputFromFixture('payload-20260812-8heroes.json');
     const result = runTeamPlan(input);
     const runner = createTeamPlanRunner({
       createWorker: createRespondingWorker(() =>
@@ -261,7 +264,7 @@ describe('createTeamPlanRunner', () => {
   });
 
   it('serializes nested inventory items without losing fields', () => {
-    const input = teamPlanInputFromFixture('save-20260731-11heroes.json');
+    const input = teamPlanInputFromFixture('payload-20260812-8heroes.json');
     const json = JSON.stringify(input);
     const parsed = JSON.parse(json) as TeamPlanInput;
     expect(parsed.inventory[0]?.id).toBe(input.inventory[0]?.id);

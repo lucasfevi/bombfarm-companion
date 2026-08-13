@@ -61,11 +61,16 @@ function heroInputFromExtract(hero: ReturnType<typeof extractHero>): TeamPlanHer
   };
 }
 
+// MP5 F1 (AD-068 class (b) — structural): re-pointed onto save-20260813-5heroes.json's
+// Bellatrix (L42, not the deleted crit-dmg-tree fixture's L62). Every fixture-backed assertion
+// here compares scoreHeroLoadout against an independently-computed reference (a spy call count,
+// or computeAdvisorPipeline / composeSheetFromBirth run on the same inputs) — none pins a
+// captured numeric value.
 describe('scoreHeroLoadout', () => {
   it('does not call computeAdvisorPipeline during scoring', () => {
     const spy = vi.spyOn(advisorPipeline, 'computeAdvisorPipeline');
-    const raw = loadFixtureJson('save-20260801-crit-dmg-tree.json');
-    const hero = extractHero(raw, 'Bellatrix', 62);
+    const raw = loadFixtureJson('save-20260813-5heroes.json');
+    const hero = extractHero(raw, 'Bellatrix', 42);
     const account = accountFromFixture(raw);
     const ctx = buildHeroPlanContext(heroInputFromExtract(hero), account, 'optimize')!;
     scoreHeroLoadout(ctx, hero.loadout, ZERO_PTS(), zeroTeamBuffs(), farmFromAccount(account));
@@ -74,8 +79,8 @@ describe('scoreHeroLoadout', () => {
   });
 
   it('folego_mineiro in auras yields strictly higher duty than zero auras (AD-RGO-27)', () => {
-    const raw = loadFixtureJson('save-20260801-crit-dmg-tree.json');
-    const hero = extractHero(raw, 'Bellatrix', 62);
+    const raw = loadFixtureJson('save-20260813-5heroes.json');
+    const hero = extractHero(raw, 'Bellatrix', 42);
     const account = accountFromFixture(raw);
     const ctx = buildHeroPlanContext(heroInputFromExtract(hero), account, 'optimize')!;
     const farm = farmFromAccount(account);
@@ -145,8 +150,8 @@ describe('scoreHeroLoadout', () => {
   });
 
   it('sustained matches computeAdvisorPipeline dps for fixture hero with matching auras', () => {
-    const raw = loadFixtureJson('save-20260801-crit-dmg-tree.json');
-    const hero = extractHero(raw, 'Bellatrix', 62);
+    const raw = loadFixtureJson('save-20260813-5heroes.json');
+    const hero = extractHero(raw, 'Bellatrix', 42);
     const account = accountFromFixture(raw);
     const ctx = buildHeroPlanContext(heroInputFromExtract(hero), account, 'optimize')!;
     const teamBuffs = zeroTeamBuffs();
@@ -190,8 +195,8 @@ describe('scoreHeroLoadout', () => {
 
   it('memo avoids duplicate derive work on identical inputs', () => {
     const deriveSpy = vi.spyOn(deriveModule, 'derive');
-    const raw = loadFixtureJson('save-20260801-crit-dmg-tree.json');
-    const hero = extractHero(raw, 'Bellatrix', 62);
+    const raw = loadFixtureJson('save-20260813-5heroes.json');
+    const hero = extractHero(raw, 'Bellatrix', 42);
     const account = accountFromFixture(raw);
     const ctx = buildHeroPlanContext(heroInputFromExtract(hero), account, 'optimize')!;
     const farm = farmFromAccount(account);

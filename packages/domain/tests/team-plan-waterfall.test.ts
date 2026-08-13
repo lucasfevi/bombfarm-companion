@@ -36,20 +36,23 @@ function ptsWithResets(
   return pts;
 }
 
+// MP5 F1 (AD-068 class (b) — structural): re-pointed onto payload-20260812-8heroes.json
+// (default subject) and save-20260813-5heroes.json (forge-specific assertions, per
+// design.md §6.3 — the payload's uniform-0 upgrades cannot exercise a forge/no-forge choice).
 describe('buildWaterfall', () => {
   it('emits three steps in today → gear → respec order', () => {
-    const { plan } = waterfallFromFixture('save-20260731-11heroes.json');
+    const { plan } = waterfallFromFixture('payload-20260812-8heroes.json');
     expect(plan.steps.map((step) => step.id)).toEqual(['today', 'gear', 'respec']);
   });
 
   it('sums step deltas to planDps minus currentDps within 1e-9', () => {
-    const { plan } = waterfallFromFixture('save-20260731-11heroes.json');
+    const { plan } = waterfallFromFixture('payload-20260812-8heroes.json');
     const deltaSum = plan.steps.reduce((sum, step) => sum + step.delta, 0);
     expect(Math.abs(deltaSum - (plan.planDps - plan.currentDps))).toBeLessThan(1e-9);
   });
 
   it('places all unequip move entries before all equip entries', () => {
-    const { plan } = waterfallFromFixture('save-20260731-11heroes.json');
+    const { plan } = waterfallFromFixture('payload-20260812-8heroes.json');
     const firstEquip = plan.moveList.findIndex((entry) => entry.phase === 'equip');
     const lastUnequip = [...plan.moveList].reverse().findIndex((entry) => entry.phase === 'unequip');
     if (firstEquip >= 0 && lastUnequip >= 0) {
@@ -59,7 +62,7 @@ describe('buildWaterfall', () => {
   });
 
   it('sorts move list by hero name then slot catalog order', () => {
-    const { plan } = waterfallFromFixture('save-20260731-11heroes.json');
+    const { plan } = waterfallFromFixture('payload-20260812-8heroes.json');
     for (const entry of plan.moveList) {
       expect(entry.itemId).toBeTruthy();
       expect(SLOTS).toContain(entry.slot);
@@ -67,7 +70,10 @@ describe('buildWaterfall', () => {
   });
 
   it('includes forge entries for items below forgeFloor on the fixture', () => {
-    const { plan } = waterfallFromFixture('save-20260731-11heroes.json');
+    // MP5 F1 (AD-068 class (a)): forge-specific — takes save-20260813-5heroes.json (item
+    // upgrades {0, 8}), not the default payload subject, whose upgrades are uniformly 0 and
+    // so cannot exercise a genuine forge/no-forge choice (design.md §6.3).
+    const { plan } = waterfallFromFixture('save-20260813-5heroes.json');
     expect(plan.forgeList.length).toBeGreaterThan(0);
     expect(plan.forgeFloorApplied).toBeGreaterThan(0);
     for (const entry of plan.forgeList) {
@@ -77,7 +83,7 @@ describe('buildWaterfall', () => {
   });
 
   it('returns an empty forge list when forgeFloor is zero', () => {
-    const input = teamPlanInputFromFixture('save-20260731-11heroes.json', 0);
+    const input = teamPlanInputFromFixture('payload-20260812-8heroes.json', 0);
     const result = runTeamPlan(input);
     if (result.blocked) throw new Error('blocked');
     expect(result.plan.forgeList).toEqual([]);
@@ -86,10 +92,10 @@ describe('buildWaterfall', () => {
 
   it('forgeList is empty iff forgeFloorApplied is 0', () => {
     const cases: [string, number, number][] = [
-      ['save-20260731-11heroes.json', 10, 9],
-      ['save-20260801-crit-dmg-tree.json', 10, 3],
-      ['save-20260801-crit-dmg-tree.json', 0, 3],
-      ['save-20260801-crit-dmg-tree.json', 20, 5],
+      ['payload-20260812-8heroes.json', 10, 9],
+      ['save-20260813-5heroes.json', 10, 3],
+      ['save-20260813-5heroes.json', 0, 3],
+      ['save-20260813-5heroes.json', 20, 5],
     ];
     for (const [file, forgeFloor, slots] of cases) {
       const { plan } = waterfallFromFixture(file, forgeFloor, slots);
@@ -99,9 +105,9 @@ describe('buildWaterfall', () => {
 
   it('moveList is empty iff the plan keeps the baseline assignment', () => {
     const cases: [string, number, number][] = [
-      ['save-20260731-11heroes.json', 10, 9],
-      ['save-20260801-crit-dmg-tree.json', 10, 3],
-      ['save-20260801-crit-dmg-tree.json', 20, 3],
+      ['payload-20260812-8heroes.json', 10, 9],
+      ['save-20260813-5heroes.json', 10, 3],
+      ['save-20260813-5heroes.json', 20, 3],
     ];
     for (const [file, forgeFloor, slots] of cases) {
       const { input, plan } = waterfallFromFixture(file, forgeFloor, slots);
@@ -127,7 +133,7 @@ describe('buildWaterfall', () => {
   });
 
   it('reproduces plan.planDps from proposedLoadouts + pointResets (action/number consistency)', () => {
-    const { input, plan } = waterfallFromFixture('save-20260801-crit-dmg-tree.json', 10, 3);
+    const { input, plan } = waterfallFromFixture('save-20260813-5heroes.json', 10, 3);
     const built = buildHeroPlanContexts(input.heroes, input.account, input.scopeByHeroId);
     if (built.blocked) throw new Error('blocked');
     const pts = ptsWithResets(input, plan.pointResets);
@@ -151,7 +157,7 @@ describe('buildWaterfall', () => {
     // a better plan, not a regression, and this test would pass vacuously against it. floor 10 /
     // slots 9 (used by the sibling "negative gainPct" test below) reliably still exercises
     // resets under the current converged search, so this test uses that config instead.
-    const { input, plan } = waterfallFromFixture('save-20260801-crit-dmg-tree.json', 10, 9);
+    const { input, plan } = waterfallFromFixture('save-20260813-5heroes.json', 10, 9);
     // Assert it actually exercises resets so this test cannot pass vacuously.
     expect(plan.pointResets.length).toBeGreaterThan(0);
     const built = buildHeroPlanContexts(input.heroes, input.account, input.scopeByHeroId);
@@ -175,29 +181,19 @@ describe('buildWaterfall', () => {
     }
   });
 
-  // Was found empirically on this fixture (floor 10, slots 9, hero 37446, gainPct ~ -1.02%).
-  // generateMoves' swap family (solver-moves.ts) used to hand out items without rechecking
-  // level eligibility on the item's NEW hero — only assign-from-pool moves were checked. That
-  // let an over-level item reach an under-level hero via a swap, which is not a legal move in
-  // the game and apparently was a contributing path to reaching this negative-gainPct case on
-  // this fixture/config. With the swap eligibility check fixed, a scan of both fixtures across
-  // 43 floor/slots combos (including this exact one) no longer reproduces a negative gainPct
-  // row. The underlying invariant this test wants — acceptPointResets accepts against the
-  // ROSTER objective, not each hero's own `sustained`, so a personally-losing reset MAY still be
-  // kept — is unchanged in the code and still covered by 'every listed point reset is
-  // roster-justified' above. Skipped rather than deleted: re-enable if a fresh empirical example
-  // turns up, or replace with a synthetic scenario that engineers the duty/aura crosstalk
-  // directly (needs ability-driven aura modelling, not attempted here).
-  it.skip('permits a listed point reset with a negative gainPct (roster gains, hero personally loses)', () => {
-    const { plan } = waterfallFromFixture('save-20260801-crit-dmg-tree.json', 10, 9);
-    const negativeRow = plan.pointResets.find((reset) => reset.gainPct < 0);
-    expect(negativeRow).toBeDefined();
-  });
+  // MP5 F1 — DELETED, not re-pointed (AD-068; T5's explicit instruction). This was the one
+  // non-quarantined skip directive in the two test trees. Its subject (save-20260801-crit-dmg-
+  // tree.json, hero 37446) dies with the rest of the pre-wipe corpus, and nobody has looked for
+  // a fresh empirical example on the new substrate — re-pointing it onto a substrate nobody has
+  // verified reproduces the scenario would be exactly the "green without executing" failure
+  // mode this repo tracks. The underlying invariant it wanted is unchanged in the code and
+  // stays covered by 'every listed point reset is roster-justified' above. Recorded in
+  // docs/fixture-corpus.md.
 
   it('keeps negative per-hero deltas in the table', () => {
     const row = syntheticRegressionPerHero();
     expect(row.delta).toBeLessThan(0);
-    const { plan } = waterfallFromFixture('save-20260731-11heroes.json');
+    const { plan } = waterfallFromFixture('payload-20260812-8heroes.json');
     const hasNegative = plan.perHero.some((hero) => hero.delta < 0);
     const hasPositive = plan.perHero.some((hero) => hero.delta > 0);
     expect(hasPositive).toBe(true);
@@ -205,7 +201,7 @@ describe('buildWaterfall', () => {
   });
 
   it('includes every optimize hero in perHero even with empty slots', () => {
-    const input = teamPlanInputFromFixture('save-20260731-11heroes.json');
+    const input = teamPlanInputFromFixture('payload-20260812-8heroes.json');
     const built = buildHeroPlanContexts(input.heroes, input.account, input.scopeByHeroId);
     if (built.blocked) throw new Error('blocked');
     const result = runTeamPlan(input);
@@ -215,7 +211,7 @@ describe('buildWaterfall', () => {
   });
 
   it('perHero rows carry a before/after breakdown for every HeroSheet stat, both combat and sheet views', () => {
-    const input = teamPlanInputFromFixture('save-20260731-11heroes.json');
+    const input = teamPlanInputFromFixture('payload-20260812-8heroes.json');
     const result = runTeamPlan(input);
     if (result.blocked) throw new Error('blocked');
     expect(result.plan.perHero.length).toBeGreaterThan(0);
@@ -230,7 +226,7 @@ describe('buildWaterfall', () => {
   });
 
   it('baselineAssignmentFromInput matches buildInitialAssignment', () => {
-    const input = teamPlanInputFromFixture('save-20260731-11heroes.json');
+    const input = teamPlanInputFromFixture('payload-20260812-8heroes.json');
     const built = buildHeroPlanContexts(input.heroes, input.account, input.scopeByHeroId);
     if (built.blocked) throw new Error('blocked');
     const pool = buildPool({
@@ -250,26 +246,26 @@ describe('buildWaterfall', () => {
   });
 
   it('today step delta is always zero', () => {
-    const { plan } = waterfallFromFixture('save-20260731-11heroes.json');
+    const { plan } = waterfallFromFixture('payload-20260812-8heroes.json');
     expect(plan.steps[0]?.delta).toBe(0);
   });
 
   it('respec objective matches planDps within 1e-6', () => {
-    const { plan } = waterfallFromFixture('save-20260731-11heroes.json');
+    const { plan } = waterfallFromFixture('payload-20260812-8heroes.json');
     const respec = plan.steps.find((step) => step.id === 'respec');
     expect(respec).toBeDefined();
     expect(Math.abs((respec?.objective ?? 0) - plan.planDps)).toBeLessThan(1e-3);
   });
 
   it('move entries carry itemId on both phases', () => {
-    const { plan } = waterfallFromFixture('save-20260801-crit-dmg-tree.json');
+    const { plan } = waterfallFromFixture('save-20260813-5heroes.json');
     for (const move of plan.moveList) {
       expect(move.itemId.length).toBeGreaterThan(0);
     }
   });
 
   it('forge list entries reference inventory item ids', () => {
-    const { input, plan } = waterfallFromFixture('save-20260731-11heroes.json');
+    const { input, plan } = waterfallFromFixture('payload-20260812-8heroes.json');
     const ids = new Set(input.inventory.map((item) => item.id));
     for (const forge of plan.forgeList) {
       expect(ids.has(forge.itemId)).toBe(true);
@@ -277,7 +273,7 @@ describe('buildWaterfall', () => {
   });
 
   it('direct buildWaterfall call preserves delta sum invariant', () => {
-    const input = teamPlanInputFromFixture('save-20260731-11heroes.json');
+    const input = teamPlanInputFromFixture('payload-20260812-8heroes.json');
     const built = buildHeroPlanContexts(input.heroes, input.account, input.scopeByHeroId);
     if (built.blocked) throw new Error('blocked');
     const pool = buildPool({
@@ -306,7 +302,7 @@ describe('buildWaterfall', () => {
   });
 
   // The old "never attributes a negative roster delta to the respec step" test here only
-  // exercised save-20260731-11heroes.json, which never reaches the saturated regime at that
+  // exercised payload-20260812-8heroes.json, which never reaches the saturated regime at that
   // fixture's default slot count — that blind spot is why the original bug shipped. The full
   // roster-level step-monotonicity regression (all steps, both fixtures, the forge floor / slot
   // grid, and donate-scope mixes) now lives in team-plan-step-monotonicity.test.ts.

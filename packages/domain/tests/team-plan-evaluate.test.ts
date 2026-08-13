@@ -62,6 +62,11 @@ function heroInputFromExtract(hero: ReturnType<typeof extractHero>): TeamPlanHer
   };
 }
 
+// MP5 F1 (AD-068 class (b) — structural): every assertion in this file compares evaluateRoster
+// outputs against each other or checks structural properties (regime membership, determinism,
+// clamping, perHero key counts) — none pins a value read from a specific deleted hero. Re-points
+// cleanly onto payload-20260812-8heroes.json (default subject) and save-20260813-5heroes.json
+// (the one "two identical calls" determinism test, unchanged in kind).
 function fixtureEvaluation(file: string): EvaluateRosterInput {
   const raw = loadFixtureJson(file);
   const account = accountFromFixture(raw);
@@ -95,13 +100,13 @@ function fixtureEvaluation(file: string): EvaluateRosterInput {
 describe('evaluateRoster', () => {
   it('does not call computeAdvisorPipeline', () => {
     const spy = vi.spyOn(advisorPipeline, 'computeAdvisorPipeline');
-    evaluateRoster(fixtureEvaluation('save-20260731-11heroes.json'));
+    evaluateRoster(fixtureEvaluation('payload-20260812-8heroes.json'));
     expect(spy).not.toHaveBeenCalled();
     spy.mockRestore();
   });
 
   it('converges within 2 rounds on the real fixture', () => {
-    const full = fixtureEvaluation('save-20260731-11heroes.json');
+    const full = fixtureEvaluation('payload-20260812-8heroes.json');
     const hero = full.contexts.find((c) => c.name === 'Torin') ?? full.contexts[0]!;
     const input: EvaluateRosterInput = {
       ...full,
@@ -401,7 +406,7 @@ describe('evaluateRoster', () => {
   });
 
   it('donate and leaveAlone heroes contribute no objective term', () => {
-    const base = fixtureEvaluation('save-20260731-11heroes.json');
+    const base = fixtureEvaluation('payload-20260812-8heroes.json');
     const optimizeOnly = {
       ...base,
       contexts: base.contexts.map((c) => ({ ...c, scope: 'optimize' as const })),
@@ -418,37 +423,37 @@ describe('evaluateRoster', () => {
   });
 
   it('reports regime explicitly', () => {
-    const result = evaluateRoster(fixtureEvaluation('save-20260731-11heroes.json'));
+    const result = evaluateRoster(fixtureEvaluation('payload-20260812-8heroes.json'));
     expect(['underSaturated', 'saturated']).toContain(result.regime);
   });
 
   it('two identical calls return deep-equal results', () => {
-    const input = fixtureEvaluation('save-20260801-crit-dmg-tree.json');
+    const input = fixtureEvaluation('save-20260813-5heroes.json');
     const a = evaluateRoster(input);
     const b = evaluateRoster(input);
     expect(a).toEqual(b);
   });
 
   it('clamps slots to at least 1', () => {
-    const input = fixtureEvaluation('save-20260731-11heroes.json');
+    const input = fixtureEvaluation('payload-20260812-8heroes.json');
     const result = evaluateRoster({ ...input, slots: 0 });
     expect(result.slots).toBe(1);
   });
 
   it('returns perHero scores for optimize heroes', () => {
-    const input = fixtureEvaluation('save-20260731-11heroes.json');
+    const input = fixtureEvaluation('payload-20260812-8heroes.json');
     const result = evaluateRoster(input);
     const optimizeCount = input.contexts.filter((c) => c.scope === 'optimize').length;
     expect(Object.keys(result.perHero).length).toBe(optimizeCount);
   });
 
   it('includes auras in result', () => {
-    const result = evaluateRoster(fixtureEvaluation('save-20260731-11heroes.json'));
+    const result = evaluateRoster(fixtureEvaluation('payload-20260812-8heroes.json'));
     expect(typeof result.auras.grito_guerra).toBe('number');
   });
 
   it('leaveAlone hero excluded from perHero', () => {
-    const input = fixtureEvaluation('save-20260731-11heroes.json');
+    const input = fixtureEvaluation('payload-20260812-8heroes.json');
     const firstId = input.contexts[0]!.heroId;
     const scoped = {
       ...input,

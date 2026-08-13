@@ -41,7 +41,7 @@ function assertMoveConstraints(
 
 describe('generateMoves', () => {
   it('includes assign, swap, and unassign families on a real fixture', () => {
-    const input = teamPlanInputFromFixture('save-20260731-11heroes.json');
+    const input = teamPlanInputFromFixture('payload-20260812-8heroes.json');
     const built = buildHeroPlanContexts(input.heroes, input.account, input.scopeByHeroId);
     expect(built.blocked).toBe(false);
     if (built.blocked) return;
@@ -74,7 +74,7 @@ describe('generateMoves', () => {
   });
 
   it('produces identical move arrays on repeated calls', () => {
-    const input = teamPlanInputFromFixture('save-20260731-11heroes.json');
+    const input = teamPlanInputFromFixture('payload-20260812-8heroes.json');
     const built = buildHeroPlanContexts(input.heroes, input.account, input.scopeByHeroId);
     if (built.blocked) throw new Error('blocked');
     const rosterIds = new Set(input.heroes.map((h) => h.heroId));
@@ -106,7 +106,14 @@ describe('generateMoves', () => {
   });
 
   it('orders moves by heroDps desc then heroId asc then slot then itemId', () => {
-    const input = teamPlanInputFromFixture('save-20260731-11heroes.json');
+    // MP5 F1 (AD-068 class (b) — structural, RECORDED FIX): the deleted fixture's hero name
+    // 'Torin' was hardcoded to receive the elevated heroDps that makes this ordering
+    // discriminate. No corpus hero is named Torin, and the original `if (torinFirst >= 0 &&
+    // otherFirst >= 0)` guard would have silently made the inner assertion never run against
+    // the new corpus (findIndex returns -1 for both sides) — a genuine vacuous-assertion risk
+    // caught by T5's inversion check, not a pre-existing bug shipped as-is. Fixed by picking a
+    // real, always-present hero (the first built context) instead of a name.
+    const input = teamPlanInputFromFixture('payload-20260812-8heroes.json');
     const built = buildHeroPlanContexts(input.heroes, input.account, input.scopeByHeroId);
     if (built.blocked) throw new Error('blocked');
     const rosterIds = new Set(input.heroes.map((h) => h.heroId));
@@ -123,9 +130,10 @@ describe('generateMoves', () => {
       input.forgeFloor,
     );
     const itemById = new Map(input.inventory.map((item) => [item.id, item]));
+    const highDpsHeroId = built.contexts[0]!.heroId;
     const heroDpsById: Record<string, number> = {};
     for (const ctx of built.contexts) {
-      heroDpsById[ctx.heroId] = ctx.name === 'Torin' ? 100 : 50;
+      heroDpsById[ctx.heroId] = ctx.heroId === highDpsHeroId ? 100 : 50;
     }
     const moves = generateMoves({
       contexts: built.contexts,
@@ -137,17 +145,16 @@ describe('generateMoves', () => {
     });
     expect(moves.length).toBeGreaterThan(0);
     const assignMoves = moves.filter((m) => m.kind === 'assign');
-    if (assignMoves.length >= 2) {
-      const torinFirst = assignMoves.findIndex(
-        (m) => m.kind === 'assign' && heroDpsById[m.heroId] === 100,
-      );
-      const otherFirst = assignMoves.findIndex(
-        (m) => m.kind === 'assign' && heroDpsById[m.heroId] === 50,
-      );
-      if (torinFirst >= 0 && otherFirst >= 0) {
-        expect(torinFirst).toBeLessThan(otherFirst);
-      }
-    }
+    expect(assignMoves.length).toBeGreaterThanOrEqual(2);
+    const highFirst = assignMoves.findIndex(
+      (m) => m.kind === 'assign' && heroDpsById[m.heroId] === 100,
+    );
+    const otherFirst = assignMoves.findIndex(
+      (m) => m.kind === 'assign' && heroDpsById[m.heroId] === 50,
+    );
+    expect(highFirst).toBeGreaterThanOrEqual(0);
+    expect(otherFirst).toBeGreaterThanOrEqual(0);
+    expect(highFirst).toBeLessThan(otherFirst);
   });
 
   it('never references Math.random or Date.now in the module source', () => {
@@ -158,7 +165,7 @@ describe('generateMoves', () => {
   });
 
   it('assign moves satisfy level and slot constraints on the real fixture', () => {
-    const input = teamPlanInputFromFixture('save-20260731-11heroes.json');
+    const input = teamPlanInputFromFixture('payload-20260812-8heroes.json');
     const built = buildHeroPlanContexts(input.heroes, input.account, input.scopeByHeroId);
     if (built.blocked) throw new Error('blocked');
     const rosterIds = new Set(input.heroes.map((h) => h.heroId));
