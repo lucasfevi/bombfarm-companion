@@ -78,8 +78,6 @@ describe('farmContextForHero', () => {
       treeCritDmg: tree.critDmgPct,
       treeSpeed: tree.speedPct,
       treeEnergy: tree.energyPct,
-      treeGlassCannon: false,
-      treeTempoDobrado: false,
       treeLuckFlatPct: tree.luckFlatPct,
       teamBuffs: zeroTeamBuffs(),
       houseIdx: 0,

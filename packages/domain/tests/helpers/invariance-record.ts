@@ -3,9 +3,9 @@
  *
  * Walks F1's two corpus fixtures, every hero in each, and calls the functions `MKR-11` names,
  * projecting an EXPLICIT, hand-written key list per function — the SURVIVING numeric surface
- * only. Keystone-derived members are excluded BY CONSTRUCTION, each excluded member commented
- * with the requirement that deletes it. A recorder that serialised whole objects would fail
- * trivially the moment a member is deleted, proving nothing about the numbers (`AD-076`).
+ * only. Deleted-arm members are excluded BY CONSTRUCTION. A recorder that serialised whole
+ * objects would fail trivially the moment a member is deleted, proving nothing about the
+ * numbers (`AD-076`).
  *
  * Pure — no wall-clock read, no PRNG, no filesystem write, no network. Grep-asserted by
  * `invariance-baseline.test.ts`'s verification criterion.
@@ -110,7 +110,7 @@ type LedgerStepRecord = {
 type LedgerRecord = { total: string; steps: LedgerStepRecord[] };
 type FormulaRecord = { substituted: string; value: string };
 
-/** One hero's projected surviving surface — every field named by `MKR-11`, no keystone member. */
+/** One hero's projected surviving surface — every field named by `MKR-11`, no deleted-arm member. */
 type HeroRecordEntry = {
   naked: SheetRecord;
   applySkillTree: SheetRecord;
@@ -607,8 +607,6 @@ export function recordInvarianceSurface(): InvarianceRecord {
       houseLevel: input.account.houseLevel,
       phase: input.account.phase,
       mitigationPct: input.account.mitigationPct,
-      treeGlassCannon: input.account.treeGlassCannon,
-      treeTempoDobrado: input.account.treeTempoDobrado,
     };
     const evaluation = evaluateRoster({
       contexts: built.contexts,

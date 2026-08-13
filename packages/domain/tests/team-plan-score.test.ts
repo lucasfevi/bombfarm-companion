@@ -203,7 +203,7 @@ describe('scoreHeroLoadout', () => {
   // Regression for the double-counted-points bug: `scoreHeroLoadout` used to compose its
   // `geared` sheet with the REAL `pts` and then hand that same `pts` to `derive()`, which
   // adds `pts * delta` on top — every spent point counted twice. With all combat multipliers
-  // neutral (no team auras, no glass cannon, no ability mods), `scoreHeroLoadout`'s effective
+  // neutral (no team auras, no ability mods), `scoreHeroLoadout`'s effective
   // sheet must equal `composeSheetFromBirth`'s sheet for the SAME non-zero pts exactly once —
   // matching the `sheetsFromBirth` / import-save `gearedOverride` contract `derive()` documents.
   it('counts spent points exactly once (no double-count vs composeSheetFromBirth)', () => {

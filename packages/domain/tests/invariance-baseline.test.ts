@@ -4,8 +4,8 @@
  * drift silently") assertable rather than reviewable: a committed pre-deletion recording of the
  * entire SURVIVING numeric surface, compared bit-exactly against every post-deletion commit.
  *
- * Named `invariance-*`, never `keystone-*` (design TD-5) — a file named `keystone-invariance…`
- * would trip this feature's own absence guard (T10's `source-surface.test.ts`).
+ * Named `invariance-*`, deliberately never named after any deleted arm (design TD-5) — a file
+ * named after one would trip this feature's own absence guard (T10's `source-surface.test.ts`).
  *
  * A decimal-digit-tolerance assertion style is deliberately never used in this file: it would
  * silently absorb exactly the class of drift this suite exists to catch (a 5e-3 error still
@@ -34,10 +34,10 @@ const BASELINE_PATH = join(__dirname, 'fixtures', 'invariance', 'baseline.json')
 /**
  * `formulaDmg`'s `substituted` string is the SOLE enumerated non-numeric delta (MKR-14). It is
  * pinned as an exact string TRANSFORM of the pre-deletion value — dropping the deleted third
- * factor's ` × 1.000` term (formatted to 3 decimals; the corpus is keystone-free so that factor
- * was always exactly `1`) while the `= <value>` tail stays byte-identical — never a bare "this
- * key may differ" flag. Any OTHER differing entry, or a differing entry that does not match
- * this exact transform, fails the walk below.
+ * factor's ` × 1.000` term (formatted to 3 decimals; the corpus never carried that factor's
+ * source data, so it was always exactly `1`) while the `= <value>` tail stays byte-identical —
+ * never a bare "this key may differ" flag. Any OTHER differing entry, or a differing entry that
+ * does not match this exact transform, fails the walk below.
  */
 const PERMITTED_DELTAS: {
   reason: string;
@@ -45,7 +45,7 @@ const PERMITTED_DELTAS: {
   expectedPost: (pre: string) => string;
 }[] = [
   {
-    reason: 'MKR-14 — formulaDmg drops its × 1.000 Abisso factor once the multiplier is deleted',
+    reason: 'MKR-14 — formulaDmg drops its × 1.000 third factor once the multiplier is deleted',
     matchPath: (path) => path.endsWith('.buildStatBreakdown.derived.dmg.substituted'),
     expectedPost: (pre) => pre.replace(' × 1.000 =', ' ='),
   },
