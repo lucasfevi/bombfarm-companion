@@ -86,17 +86,40 @@ async function goToPlanning(page) {
   await page.waitForSelector('[data-testid="planning-view"]', { timeout: 15_000 });
 }
 
-/** Reads the fixture copy, raises the first hero's level, and writes it back ATOMICALLY —
- *  write-to-temp then rename, so a tick reading mid-write can never observe a torn file.
- *  `fixture-account.ts`'s `loadOverridePayload()` re-reads this path on every tick; a partial
- *  read would make `JSON.parse` throw inside `tickFixture`, which `tick()`'s own try/catch
- *  swallows into a `stale` status and a dropped commit — a self-inflicted flake this avoids. */
-function raiseFirstHeroLevelAtomically(fixtureCopyPath) {
+/**
+ * Reads the fixture copy, raises the first hero's Crit Damage stat by +100, and writes it back
+ * ATOMICALLY — write-to-temp then rename, so a tick reading mid-write can never observe a torn
+ * file. `fixture-account.ts`'s `loadOverridePayload()` re-reads this path on every tick; a
+ * partial read would make `JSON.parse` throw inside `tickFixture`, which `tick()`'s own
+ * try/catch swallows into a `stale` status and a dropped commit — a self-inflicted flake this
+ * avoids.
+ *
+ * NOT a level bump (that was this test's original, flawed mutation): raising level rescales the
+ * hero's whole sheet by the same factor that its own next-point marginal value scales by, so
+ * `next-point-gain`'s ratio barely moves — verified numerically against this exact fixture,
+ * raising this hero's level 55 -> 75 moves `dpsGainPct` by < 1e-9, invisible at
+ * `formatGainPct`'s `toFixed(1)` precision (both render `"+6.6%"`).
+ *
+ * Crit Damage's marginal-point value is a fixed rarity-based constant
+ * (`POINT_GAIN.critDmgPctOfBase * BASE_ROLLS[rarity].critDmg`,
+ * packages/domain/src/model/points-rank.ts) — independent of the hero's current stat — so
+ * spending a real stat point there does shrink the ratio. Verified numerically against this
+ * exact fixture (`h-aurora`, Épico rarity): `+100` lands inside the exact-one-point band
+ * (inferSpentPoints resolves it to `pts.critDmg === 1`, no `nonIntegerPoints` residual — the
+ * band runs ~94.5 to ~102.5, so `+100` sits comfortably clear of both edges), moving the
+ * top-ranked `next-point-gain` from `dpsGainPct = 6.62354463130661` ("+6.6%") to
+ * `dpsGainPct = 6.212084445522947` ("+6.2%") — a real, rendered, end-to-end difference, not a
+ * precision artifact.
+ */
+function raiseFirstHeroCritDmgAtomically(fixtureCopyPath) {
   const payload = JSON.parse(fs.readFileSync(fixtureCopyPath, 'utf8'));
   const heroes = Array.isArray(payload.heroes) ? payload.heroes : [];
   const firstHero = heroes[0];
   if (!firstHero) throw new Error('auto-recompute.spec.mjs: fixture copy has no heroes to mutate');
-  firstHero.level = (typeof firstHero.level === 'number' ? firstHero.level : 0) + 20;
+  if (!firstHero.stats || typeof firstHero.stats.crit_dmg !== 'number') {
+    throw new Error("auto-recompute.spec.mjs: fixture copy's first hero has no stats.crit_dmg to mutate");
+  }
+  firstHero.stats.crit_dmg += 100;
 
   const tmpPath = `${fixtureCopyPath}.tmp`;
   fs.writeFileSync(tmpPath, JSON.stringify(payload));
@@ -145,7 +168,7 @@ test.describe('auto-recompute smoke (MP3 F3) — 100 quiet commits, then one rea
 
         // Positive half: one real change, written atomically. fixture-account.ts re-reads
         // BFC_FIXTURE_ACCOUNT_FILE on every tick, so this is picked up within one 50 ms tick.
-        raiseFirstHeroLevelAtomically(fixtureCopyPath);
+        raiseFirstHeroCritDmgAtomically(fixtureCopyPath);
 
         await expect
           .poll(async () => page.evaluate(() => window.__bfcAccountChanged), { timeout: 15_000, intervals: [200] })
