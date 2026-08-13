@@ -128,3 +128,75 @@ describe('GameReaderService — account store wiring (T10, design §8/TD-8)', ()
     expect(service.getAccountView()).toBeNull();
   });
 });
+
+describe('GameReaderService — shutdown ordering (fix/fixture-tick-after-db-close)', () => {
+  const FAKE_VIEW: AccountView = {
+    payload: {},
+    gameRunning: true,
+    store: { status: 'ok', reason: null, binding: 'node:sqlite' },
+  };
+
+  function fakeCommitter(): { committer: AccountCommitter; calls: unknown[] } {
+    const calls: unknown[] = [];
+    return {
+      committer: {
+        commit: () => {
+          calls.push(undefined);
+          return FAKE_VIEW;
+        },
+      },
+      calls,
+    };
+  }
+
+  // Reproduces the reported crash directly: a producer whose `commit()` finds the store
+  // already closed throws the SQLite driver's raw "database is not open" — exactly what
+  // `AccountStore.persist()`/`getMeta()` do once the underlying handle is closed (see
+  // account-store-close.test.ts for that half of the fix). Before this fix, `tick()` for
+  // fixture mode called `tickFixture()` outside any try/catch, so this exception escaped the
+  // `setTimeout` callback uncaught — the exact shape that pops Electron's crash dialog and
+  // hangs Playwright's worker teardown for 120s.
+  it('a fixture tick recovers when accountStore.commit() throws, instead of the exception escaping uncaught', () => {
+    const throwingCommitter: AccountCommitter = {
+      commit: () => {
+        throw new Error('database is not open');
+      },
+    };
+    const service = new GameReaderService('/fake/user-data', { mode: 'fixture' });
+    service.setAccountStore(throwingCommitter);
+
+    expect(() => {
+      service.start();
+    }).not.toThrow();
+    service.stop();
+
+    // Recovers the same way tickMemory() already did before this fix: logged and marked
+    // stale, not left mid-crash.
+    expect(service.getStatus().status).toBe('stale');
+  });
+
+  // The other half of the ordering contract: `stop()` must make every *future* tick a no-op,
+  // not just rely on `clearTimeout` succeeding. This directly exercises the private `tick()`
+  // dispatcher the way a `setTimeout` callback that fired despite an already-cleared timer
+  // would call it — the scenario the diagnosis in the fix commit names as the second possible
+  // cause of the crash ("a tick is already in-flight/scheduled when [stop] does" run).
+  //
+  // Before this fix there was no latch: a stray post-stop `tick()` call would run
+  // `tickFixture()` (or, before the try/catch was added, throw uncaught) exactly as if
+  // shutdown had never happened.
+  it('stop() latches immediately — a tick invoked after stop() never reaches accountStore.commit() again', () => {
+    const { committer, calls } = fakeCommitter();
+    const service = new GameReaderService('/fake/user-data', { mode: 'fixture' });
+    service.setAccountStore(committer);
+
+    service.start();
+    expect(calls).toHaveLength(1); // start()'s own synchronous tick commits once
+    service.stop();
+
+    // Simulate a timer callback that still fires after stop() cleared it (the private
+    // dispatcher is exactly what scheduleNext()'s setTimeout callback invokes).
+    (service as unknown as { tick(): void }).tick();
+
+    expect(calls).toHaveLength(1); // unchanged — the post-stop tick was a no-op
+  });
+});

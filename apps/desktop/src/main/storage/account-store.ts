@@ -86,6 +86,12 @@ function unavailableRestore(status: AccountStoreStatus, reason: AccountStoreReas
 export function createAccountStore(open: OpenResult, deps: AccountStoreDeps = {}): AccountStore {
   const log = deps.log ?? NOOP_LOG;
   const db = open.db;
+  // Belt-and-braces guard (see fix/fixture-tick-after-db-close): `close()` below only ever
+  // runs once shutdown ordering has already stopped every producer, so this should never
+  // actually trip in practice — but a stray late caller (a scheduled tick that fired despite
+  // `stop()`, an in-flight async cycle that resumed after an abort) must get a quiet
+  // "nothing to do" instead of `db.prepare(...)` throwing "database is not open" uncaught.
+  let closed = false;
 
   function getBoundAccountId(): string | null {
     return getMeta('account_id');
@@ -99,6 +105,12 @@ export function createAccountStore(open: OpenResult, deps: AccountStoreDeps = {}
   }
 
   function restore(expectedAccountId: string | null = null): RestoredAccount {
+    if (closed) {
+      // The store is quitting — there is no `AccountStoreReason` for "closed after shutdown
+      // began" (and no caller left to show one to); report the same shape a missing binding
+      // would, minus a reason that would misleadingly suggest a binding problem.
+      return unavailableRestore('unavailable', null);
+    }
     if (open.status !== 'ok' || !db) {
       return unavailableRestore(open.status, open.reason);
     }
@@ -173,7 +185,7 @@ export function createAccountStore(open: OpenResult, deps: AccountStoreDeps = {}
    * back the whole poll, leaving every previously stored section untouched.
    */
   function persist(payload: AccountPayload, opts: PersistOpts = {}): PersistResult {
-    if (!db) {
+    if (closed || !db) {
       return { written: [] };
     }
 
@@ -268,6 +280,14 @@ export function createAccountStore(open: OpenResult, deps: AccountStoreDeps = {}
     persist,
     commit,
     close() {
+      // Idempotent — `node:sqlite`'s `DatabaseSync.close()` throws if the connection is
+      // already closed, and `before-quit` firing more than once (Electron does not guarantee
+      // exactly-once) must never turn a repeat `close()` into the same uncaught-exception
+      // shape this fix removes from the tick path. `closed` is set before `db.close()` runs
+      // (not after), since any call already past this point re-enters `persist`/`restore`
+      // synchronously.
+      if (closed) return;
+      closed = true;
       db?.close();
     },
   };

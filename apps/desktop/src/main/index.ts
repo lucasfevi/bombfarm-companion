@@ -305,6 +305,16 @@ if (!gotLock) {
     }
   });
 
+  // `before-quit` is the single shutdown path in this app (reached identically whether it fires
+  // directly or via `window-all-closed`'s `app.quit()` above; there is no separate `will-quit`
+  // handler and none is needed). The ordering below is load-bearing, not incidental: every
+  // producer that can call `accountStore.commit()` — the game reader's fixture-mode ticker and
+  // the game-API account-refresh cycle — must be told to stop *before* the SQLite handles are
+  // closed. `GameReaderService.stop()` clears its own timer and latches a `stopped` flag so a
+  // tick already in flight can never reach the store afterward; `AccountStore.close()` is
+  // additionally defensive (a closed-store guard) in case a producer's shutdown ever races it
+  // anyway. See fix/fixture-tick-after-db-close — closing storage before stopping the fixture
+  // ticker produced an uncaught "database is not open" exception on quit.
   app.on('before-quit', () => {
     gameReader?.stop();
     gameReader = null;
