@@ -19,7 +19,6 @@ import {
 } from './save-units';
 import { composeSheetFromBirth, nakedFromBirth, type BirthStats, type TreeSheetTotals } from './birth-sheet';
 import { inferSpentPoints, type PointInferenceIssue } from './point-inference';
-import { unmodelledTreeFindings } from './tree-guards';
 import { ACCOUNT_SECTIONS, sectionHasData } from './account-fidelity';
 import type { AccountPayload } from '@bombfarm/contracts';
 
@@ -281,11 +280,6 @@ export function parseAccountPayload(payload: AccountPayload, existing: HeroRecor
   const skillsRaw = isObject(raw.skills) ? raw.skills : null;
   const totalsRaw = skillsRaw && isObject(skillsRaw.totals) ? skillsRaw.totals : null;
   const tree: TreeSheetTotals = treeTotalsFromSave(totalsRaw ?? {});
-
-  // BSPW5-06 (BSP-61, DEC-07/DEC-08): surface every deliberately-unmodelled skill-tree
-  // clause live in this save, so a maintainer decides with real data instead of the
-  // deferral silently drifting into a bug.
-  warnings.push(...unmodelledTreeFindings(totalsRaw ?? {}));
 
   const candidates: ImportCandidate[] = [];
   for (const rawHero of raw.heroes) {

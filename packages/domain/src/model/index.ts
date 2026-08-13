@@ -88,9 +88,6 @@ export type {
 } from '../point-inference';
 export { POINT_INFERENCE_EPS, inferSpentPoints } from '../point-inference';
 
-export type { UnmodelledTreeInput } from '../tree-guards';
-export { unmodelledTreeFindings } from '../tree-guards';
-
 export type { ReoptInput, ReoptResult } from '../points-reopt';
 export {
   REOPT_KEYS,
