@@ -1,4 +1,6 @@
 import { test, expect, _electron as electron } from '@playwright/test';
+import fs from 'node:fs';
+import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -49,6 +51,15 @@ async function launchApp(env) {
       // Same reasoning as account-restart.spec.mjs: never let a real BombFarm process on the
       // runner machine make "game running" true for reasons unrelated to this feature.
       BFC_GAME_PROCESS: 'bfc-smoke-no-such-process.exe',
+      // Same reasoning as consent-modal.spec.mjs (SAFETY, T-fix-4): redirects
+      // session-token-file.ts's sessionCfgPath() away from the real
+      // %APPDATA%/Godot/app_userdata/BombFarm/session.cfg. Without this, accepting the consent
+      // modal below would let the next account-refresh cycle open whichever real session.cfg
+      // exists on the machine running this suite and issue a live, authenticated request using
+      // the real player's token — purely as a side effect of a test run. Pointed at a path that
+      // deliberately does not exist: readSessionToken degrades that to `token_unavailable` (no
+      // network call at all).
+      BFC_TOKEN_PATH_OVERRIDE: path.join(desktopRoot, 'tests', 'smoke', '.no-such-session.cfg'),
       ...env,
     },
   });
@@ -57,80 +68,109 @@ async function launchApp(env) {
   return { app, page };
 }
 
+async function dismissConsent(page) {
+  // Every test here launches against a fresh, isolated BFC_USER_DATA_DIR (see below), which has
+  // never recorded a consent decision — so the first-run ConsentModal deterministically blocks
+  // the "Planning" nav button behind a modal dialog (design.md, LAR-01/03) on every run. Accept
+  // it explicitly, exactly as consent-modal.spec.mjs's first scenario does, rather than
+  // pre-seeding the SQLite-backed consent_v1 row directly (consent-store.ts) — that would mean
+  // inventing a new seeding scheme this suite doesn't already have.
+  const modal = page.getByTestId('consent-modal');
+  await expect(modal).toBeVisible({ timeout: 30_000 });
+  await page.getByTestId('consent-accept').click();
+  await expect(modal).toBeHidden({ timeout: 15_000 });
+}
+
 async function goToPlanning(page) {
+  await dismissConsent(page);
   await page.getByRole('button', { name: 'Planning' }).click();
   await page.waitForSelector('[data-testid="planning-view"]', { timeout: 15_000 });
 }
 
 test.describe('planning advice smoke (MP3 F2)', () => {
   test('Scenario A — a seeded birth-carrying account renders real advice, and selecting a hero updates the detail area', async () => {
-    const { app, page } = await launchApp({
-      BFC_GAME_READER: 'fixture',
-      BFC_FIXTURE_ACCOUNT_FILE: ACCOUNT_FULL_FIXTURE,
-    });
+    // Isolated per-test user-data dir (account-restart.spec.mjs's pattern) — never the
+    // developer's real %APPDATA% flavor directory, so the ConsentModal starts unanswered and
+    // deterministically, and no real session.cfg or account DB is anywhere nearby.
+    const userDataDir = fs.mkdtempSync(path.join(os.tmpdir(), 'bfc-planning-advice-'));
     try {
-      await goToPlanning(page);
+      const { app, page } = await launchApp({
+        BFC_GAME_READER: 'fixture',
+        BFC_FIXTURE_ACCOUNT_FILE: ACCOUNT_FULL_FIXTURE,
+        BFC_USER_DATA_DIR: userDataDir,
+      });
+      try {
+        await goToPlanning(page);
 
-      await page.waitForSelector('[data-testid="roster-list"]', { timeout: 20_000 });
-      await expect(page.getByTestId('roster-row-h-aurora')).toBeVisible();
-      await expect(page.getByTestId('roster-row-h-borealis')).toBeVisible();
+        await page.waitForSelector('[data-testid="roster-list"]', { timeout: 20_000 });
+        await expect(page.getByTestId('roster-row-h-aurora')).toBeVisible();
+        await expect(page.getByTestId('roster-row-h-borealis')).toBeVisible();
 
-      await expect(page.getByTestId('next-point-top-stat')).toBeVisible({ timeout: 20_000 });
-      await expect(page.getByTestId('next-point-gain')).toBeVisible();
+        await expect(page.getByTestId('next-point-top-stat')).toBeVisible({ timeout: 20_000 });
+        await expect(page.getByTestId('next-point-gain')).toBeVisible();
 
-      const firstDetailName = await page.getByTestId('hero-detail-name').innerText();
-      expect(firstDetailName.length).toBeGreaterThan(0);
+        const firstDetailName = await page.getByTestId('hero-detail-name').innerText();
+        expect(firstDetailName.length).toBeGreaterThan(0);
 
-      // Select the second hero — the detail area must update without a full page transition and
-      // without re-reading the account (MPV-13, use-account-view.test.ts's own invoke-count
-      // guarantee at the unit layer; this is the end-to-end half).
-      await page.getByTestId('roster-row-h-borealis').getByRole('button').click();
-      await expect(page.getByTestId('hero-detail-name')).not.toHaveText(firstDetailName, { timeout: 10_000 });
-      const secondDetailName = await page.getByTestId('hero-detail-name').innerText();
-      expect(secondDetailName).toContain('Borealis');
+        // Select the second hero — the detail area must update without a full page transition and
+        // without re-reading the account (MPV-13, use-account-view.test.ts's own invoke-count
+        // guarantee at the unit layer; this is the end-to-end half).
+        await page.getByTestId('roster-row-h-borealis').getByRole('button').click();
+        await expect(page.getByTestId('hero-detail-name')).not.toHaveText(firstDetailName, { timeout: 10_000 });
+        const secondDetailName = await page.getByTestId('hero-detail-name').innerText();
+        expect(secondDetailName).toContain('Borealis');
 
-      await app.close();
+        await app.close();
+      } finally {
+        await app.close().catch(() => undefined);
+      }
     } finally {
-      await app.close().catch(() => undefined);
+      fs.rmSync(userDataDir, { recursive: true, force: true });
     }
   });
 
   test('Scenario B — the committed fixture (no birth_stats) rejects the whole file, so no numbers ever render, only the reason and hero name', async () => {
-    const { app, page } = await launchApp({
-      BFC_GAME_READER: 'fixture',
-      // Deliberately no BFC_FIXTURE_ACCOUNT_FILE — exercises the committed
-      // packages/game-data/fixtures/hero-record.json path.
-    });
+    const userDataDir = fs.mkdtempSync(path.join(os.tmpdir(), 'bfc-planning-advice-'));
     try {
-      await goToPlanning(page);
+      const { app, page } = await launchApp({
+        BFC_GAME_READER: 'fixture',
+        BFC_USER_DATA_DIR: userDataDir,
+        // Deliberately no BFC_FIXTURE_ACCOUNT_FILE — exercises the committed
+        // packages/game-data/fixtures/hero-record.json path.
+      });
+      try {
+        await goToPlanning(page);
 
-      // Give the fixture producer at least one tick to commit before asserting the rejected
-      // state is what's actually rendered (not a pre-tick loading placeholder).
-      await expect
-        .poll(
-          async () => {
-            const view = await page.evaluate(async () => {
-              const bridge = window.bfc;
-              if (!bridge) throw new Error('preload bridge missing');
-              return bridge.invoke('account:get');
-            });
-            return view.payload.fidelity?.heroes?.status;
-          },
-          { timeout: 30_000 },
-        )
-        .toBe('resolved');
+        // Give the fixture producer at least one tick to commit before asserting the rejected
+        // state is what's actually rendered (not a pre-tick loading placeholder).
+        await expect
+          .poll(
+            async () => {
+              const view = await page.evaluate(async () => {
+                const bridge = window.bfc;
+                if (!bridge) throw new Error('preload bridge missing');
+                return bridge.invoke('account:get');
+              });
+              return view.payload.fidelity?.heroes?.status;
+            },
+            { timeout: 30_000 },
+          )
+          .toBe('resolved');
 
-      await expect(page.getByText('Lorne')).toBeVisible({ timeout: 15_000 });
+        await expect(page.getByText('Lorne')).toBeVisible({ timeout: 15_000 });
 
-      // No roster, no ranking table — the whole-file reject withholds everything, never a
-      // partial sheet.
-      await expect(page.getByTestId('roster-list')).toHaveCount(0);
-      await expect(page.getByTestId('next-point-ranking')).toHaveCount(0);
-      await expect(page.getByTestId('hero-detail')).toHaveCount(0);
+        // No roster, no ranking table — the whole-file reject withholds everything, never a
+        // partial sheet.
+        await expect(page.getByTestId('roster-list')).toHaveCount(0);
+        await expect(page.getByTestId('next-point-ranking')).toHaveCount(0);
+        await expect(page.getByTestId('hero-detail')).toHaveCount(0);
 
-      await app.close();
+        await app.close();
+      } finally {
+        await app.close().catch(() => undefined);
+      }
     } finally {
-      await app.close().catch(() => undefined);
+      fs.rmSync(userDataDir, { recursive: true, force: true });
     }
   });
 });
