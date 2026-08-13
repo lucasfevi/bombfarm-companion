@@ -13,8 +13,6 @@ import { HeroRecord } from './shims/storage';
 import { isKnownSkin } from './wiki-assets';
 import {
   birthFromSave,
-  detectGlassCannon,
-  detectTempoDobrado,
   hasUsableBirthStats,
   saveSheetUnits,
   treeTotalsFromSave,
@@ -62,14 +60,6 @@ export type AccountImportData = {
     critDmg: number;
     speed: number;
     energy: number;
-    glassCannon: boolean;
-    tempoDobrado: boolean;
-    /**
-     * `skills.totals.crit_dmg_mult` — Glass Cannon's crit-damage multiplier on the birth base
-     * (2 when C15 is owned, 1 otherwise). Persisted rather than derived from `glassCannon`
-     * alone so a future save with a different observed multiplier is not silently coerced to 2.
-     */
-    critDmgMult: number;
     teamCoinPct?: number;
     /** `luck_add × 100` — flat percentage points (AD-BSP-22, ASM-01, BSPW5-03). */
     luckFlatPct: number;
@@ -122,9 +112,7 @@ function bool(value: unknown, fallback = false): boolean {
  *
  * `danoTotal` is `dmg_static` taken as an OPAQUE, already-computed total — do not try to
  * reconstruct it from `(1 + team_dmg_add) * geo_mult`. That product does not match: measured
- * `2.797` predicted vs `3624.70` actual on a real save. Glass Cannon / Tempo Dobrado detection
- * is shared with the per-hero sheet mapper (`treeTotalsFromSave`) via `detectGlassCannon` /
- * `detectTempoDobrado` (save-units.ts) so the two never drift apart.
+ * `2.797` predicted vs `3624.70` actual on a real save.
  */
 function mapAccountPhase(raw: Record<string, unknown>): number | null {
   const account = isObject(raw.account) ? raw.account : null;
@@ -148,9 +136,6 @@ function mapAccountData(raw: Record<string, unknown>): AccountImportData {
       critDmg: asNumber(totals.crit_dmg_add) * 100,
       speed: asNumber(totals.speed_add) * 100,
       energy: asNumber(totals.energia_add) * 100,
-      glassCannon: detectGlassCannon(totals),
-      tempoDobrado: detectTempoDobrado(totals),
-      critDmgMult: asNumber(totals.crit_dmg_mult, 1),
       teamCoinPct: asNumber(totals.coin_add ?? totals.team_coin_add) * 100,
       // BSPW5-03 (ASM-01): flat Luck percentage points — absent key defaults to 0.
       luckFlatPct: asNumber(totals.luck_add) * 100,
@@ -292,7 +277,7 @@ export function parseAccountPayload(payload: AccountPayload, existing: HeroRecor
   // BSPW5-04: map the skill tree once, up front — inferSpentPoints (per hero, below) needs
   // TreeSheetTotals, so it can no longer be mapped lazily at the end via mapAccountData.
   // treeTotalsFromSave(totals ?? {}) already yields the correct identity defaults
-  // (danoStatic 1, critDmgMult 1, everything else 0) when `skills.totals` is absent.
+  // (danoStatic 1, everything else 0) when `skills.totals` is absent.
   const skillsRaw = isObject(raw.skills) ? raw.skills : null;
   const totalsRaw = skillsRaw && isObject(skillsRaw.totals) ? skillsRaw.totals : null;
   const tree: TreeSheetTotals = treeTotalsFromSave(totalsRaw ?? {});

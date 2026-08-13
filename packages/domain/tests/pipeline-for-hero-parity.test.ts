@@ -7,13 +7,8 @@
  * which already proves `computeHeroSoloDps` matches a direct pipeline call for one hero, extended
  * here to the ranking and to the exported entry point.
  *
- * MP5 F1 (`AD-069`, re-pointed onto the post-patch export): the 2026-08-13 patch removed
- * `crit_dmg_mult` from `skills.totals` entirely — the key is now absent, not `1`. That still
- * lands inside `{1, 2}` because `treeTotalsFromSave`'s `asNumber(totalsRaw.crit_dmg_mult, 1)`
- * defaults an absent key to `1`, which is exactly where `pipelineForHero`'s omission of
- * `treeCritDmgMult` (`AD-038`) and the web's forwarding of it legitimately agree. This is F2's
- * concern going forward — once `crit_dmg_mult` is deleted from `packages/domain/src`, this
- * precondition test (and `AD-038` itself) becomes F2's to re-evaluate, not F1's.
+ * The two call paths now receive byte-identical field lists, so the identity below is
+ * unconditional rather than a closeness bound — see this file's "ranking order…" case.
  */
 import { describe, expect, it } from 'vitest';
 import { parseAccountPayload } from '@bombfarm/domain/import-save';
@@ -63,9 +58,6 @@ describe('pipelineForHero ≡ computeAdvisorPipeline assembled from advisor-sele
       speed: tree.speed,
       energy: tree.energy,
       teamCoinPct: tree.teamCoinPct ?? 0,
-      glassCannon: tree.glassCannon,
-      tempoDobrado: tree.tempoDobrado,
-      critDmgMult: tree.critDmgMult,
       luckFlatPct: tree.luckFlatPct,
     },
     teamBuffs: zeroTeamBuffs(),
@@ -84,8 +76,8 @@ describe('pipelineForHero ≡ computeAdvisorPipeline assembled from advisor-sele
     const viaExportedPipeline = pipelineForHero(hero, account, phase, mitigationPct);
 
     // Assembled field-for-field with advisor-selectors.ts's `selectAdvisorPipeline` — the web's
-    // own field list — minus `treeCritDmgMult`, which no longer exists on either side (AD-038,
-    // MKR-24/26). `statPointsAvailable`/`birth` are read the same way the web store reads them.
+    // own field list, now identical on both sides (MKR-24/26). `statPointsAvailable`/`birth`
+    // are read the same way the web store reads them.
     const viaWebFieldList = computeAdvisorPipeline({
       naked: hero.naked,
       geared: hero.gearedOverride,
@@ -102,8 +94,6 @@ describe('pipelineForHero ≡ computeAdvisorPipeline assembled from advisor-sele
       treeCritDmg: account.tree.critDmg,
       treeSpeed: account.tree.speed,
       treeEnergy: account.tree.energy,
-      treeGlassCannon: account.tree.glassCannon,
-      treeTempoDobrado: account.tree.tempoDobrado,
       treeLuckFlatPct: account.tree.luckFlatPct ?? 0,
       teamBuffs: account.teamBuffs as Record<TeamBuffId, number>,
       houseIdx: account.context.houseIdx,
@@ -117,9 +107,8 @@ describe('pipelineForHero ≡ computeAdvisorPipeline assembled from advisor-sele
 
     // Not a snapshot, not a deep-equal on the whole result: ranking order, each dpsGainPct,
     // best.stat and dps — the fields MPV-03 actually promises are identical. Both paths now
-    // receive byte-identical arguments (treeCritDmgMult no longer exists to diverge them), so
-    // MKR-26's "unconditional identity" is tightened from a 9-decimal closeness bound to exact
-    // identity (AD-038, design TD-9).
+    // receive byte-identical arguments, so MKR-26's "unconditional identity" is tightened from
+    // a 9-decimal closeness bound to exact identity (design TD-9).
     expect(viaExportedPipeline.ranking.map((entry) => entry.stat)).toEqual(
       viaWebFieldList.ranking.map((entry) => entry.stat),
     );
@@ -130,10 +119,9 @@ describe('pipelineForHero ≡ computeAdvisorPipeline assembled from advisor-sele
     expect(viaExportedPipeline.dps).toBe(viaWebFieldList.dps);
   });
 
-  // AD-038 closure (MP5 F2 T4, MKR-27): the old red state passed a treeCritDmgMult the exported
-  // pipeline could never produce — that field is gone now, so the red state is re-pointed onto
-  // a SURVIVING field (treeDanoTotal) instead. The old red state must not reappear under a new
-  // name (MKR-27).
+  // MKR-27: the old red state passed a field the exported pipeline could never produce; that
+  // field is gone now, so the red state is re-pointed onto a SURVIVING field (treeDanoTotal)
+  // instead. The old red state must not reappear under a new name.
   it('red state (demonstrated, then restored): a widened treeDanoTotal gap makes dps disagree', () => {
     const viaExportedPipeline = pipelineForHero(hero, account, phase, mitigationPct);
     const withWidenedGap = computeAdvisorPipeline({
@@ -152,8 +140,6 @@ describe('pipelineForHero ≡ computeAdvisorPipeline assembled from advisor-sele
       treeCritDmg: account.tree.critDmg,
       treeSpeed: account.tree.speed,
       treeEnergy: account.tree.energy,
-      treeGlassCannon: account.tree.glassCannon,
-      treeTempoDobrado: account.tree.tempoDobrado,
       treeLuckFlatPct: account.tree.luckFlatPct ?? 0,
       teamBuffs: account.teamBuffs as Record<TeamBuffId, number>,
       houseIdx: account.context.houseIdx,

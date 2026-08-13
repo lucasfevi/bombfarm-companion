@@ -109,8 +109,6 @@ export function scoreHeroLoadout(
   const mults = computeCombatMults({
     mods: ctx.mods,
     teamBuffs: auras,
-    treeGlassCannon: farm.treeGlassCannon,
-    treeTempoDobrado: farm.treeTempoDobrado,
     extraDmgPct: 0,
   });
 

@@ -61,11 +61,6 @@ export type AdvisorPipelineInput = {
   treeCritDmg: number;
   treeSpeed: number;
   treeEnergy: number;
-  treeGlassCannon: boolean;
-  /** `skills.totals.crit_dmg_mult` — the persisted numeric, never re-derived from
-   *  `treeGlassCannon` (which `detectGlassCannon` sets for any value `>= 1.5`). */
-  treeCritDmgMult?: number;
-  treeTempoDobrado: boolean;
   /** `skills.totals.luck_add × 100` — flat Luck percentage points (BSPW5-03, ASM-01). */
   treeLuckFlatPct: number;
   teamBuffs: Record<TeamBuffId, number>;
@@ -148,9 +143,6 @@ export function computeAdvisorPipeline(input: AdvisorPipelineInput): AdvisorPipe
     treeCritDmg,
     treeSpeed,
     treeEnergy,
-    treeGlassCannon,
-    treeCritDmgMult,
-    treeTempoDobrado,
     treeLuckFlatPct,
     teamBuffs,
     houseIdx,
@@ -187,17 +179,12 @@ export function computeAdvisorPipeline(input: AdvisorPipelineInput): AdvisorPipe
     treeSpeed,
     treeEnergy,
     treeLuckFlatPct,
-    treeGlassCannon,
-    treeCritDmgMult,
-    treeTempoDobrado,
     birth,
   });
 
   const mults = computeCombatMults({
     mods,
     teamBuffs,
-    treeGlassCannon,
-    treeTempoDobrado,
     extraDmgPct: 0,
   });
   const {

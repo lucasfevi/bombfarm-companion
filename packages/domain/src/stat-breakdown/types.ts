@@ -31,8 +31,6 @@ export type LedgerSource =
   | 'abilitiesTeam';
 export type LedgerNote =
   | 'capped'
-  | 'glassCannon'
-  | 'tempoDobrado'
   | 'ownTeamSplit'
   | 'keenEye'
   | 'diamondTip';
@@ -112,8 +110,6 @@ export interface PipelineFacts {
   treeEnergy: number;
   /** `skills.totals.luck_add × 100` — flat Luck percentage points (AD-BSP-22, `ledgerLuck`). */
   treeLuckFlatPct: number;
-  treeGlassCannon: boolean;
-  treeTempoDobrado: boolean;
   context: Context;
   dmgMult: number;
   /** Tree damage mult (Dano Total) — factor in `dmgMult`. */

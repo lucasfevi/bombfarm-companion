@@ -30,19 +30,11 @@ export type CombatMults = {
 
 /**
  * `treeEnergy` and `treeDanoTotal` are GONE (BSP-23c, DEC-01) — both now live on the sheet
- * only (`applySkillTree`), never in a combat multiplier. `treeGlassCannon` / `treeTempoDobrado`
- * are boolean account keystones sniffed off the save (not `skills.totals` percentage fields);
- * they are accepted here for call-site compatibility (`team-plan`, `advisor-pipeline.ts`,
- * `farm-context.ts`'s drain-rate use) but are no longer read by this function — Glass Cannon's
- * energy ×0.5 / crit-damage ×2 and Tempo Dobrado's speed ×1.33333 are all sheet-layer effects
- * now (`TreeSheetTotals.glassCannon` / `.tempoDobrado` / `.critDmgMult`, applied once in
- * `applySkillTree`). Applying them here too would double them.
+ * only (`applySkillTree`), never in a combat multiplier.
  */
 export type ComputeCombatMultsInput = {
   mods: AbilityMods;
   teamBuffs: Record<TeamBuffId, number>;
-  treeGlassCannon: boolean;
-  treeTempoDobrado: boolean;
   extraDmgPct: number;
 };
 
@@ -65,14 +57,6 @@ export function stackTeamBonusMult(ownMult: number, otherHeroesBuffPct: number):
  * Team / combat multipliers used by the advisor pipeline. The skill tree no longer
  * contributes anything here (BSP-23c) — `dmg_static` and `energia_add` are sheet-level
  * factors applied once by `applySkillTree`, not a second time on top of the combat sheet.
- *
- * Glass Cannon (C15) and Tempo Dobrado (V15) contribute nothing here as of the keystone
- * sheet-math correction: energy ×0.5, crit-damage ×2, and speed ×1.33333 are all sheet-layer
- * factors now (`applySkillTree` via `TreeSheetTotals.glassCannon` / `.tempoDobrado`), applied
- * once when the sheet is composed. Applying them again here — the previous design —
- * double-counted them and, worse, scaled the WHOLE running total (ability/tree/point
- * contributions included) instead of only the birth base, which is not what the game does
- * (verified against real save exports).
  */
 export function computeCombatMults(input: ComputeCombatMultsInput): CombatMults {
   const { mods, teamBuffs, extraDmgPct } = input;
@@ -141,13 +125,7 @@ export type DeriveResult = {
  * already post-`dmg_static` (AD-BSP-12) and attack has no ratio-based analogue to cancel it.
  * `delta.energy` needs no explicit tree factor (BSPW5-11/DISC-01) — `gem = geared.energy /
  * naked.energy` already carries `energia_add` once `naked` is `nakedFromBirth`'s tree-free
- * output; an explicit `(1 + energyPct/100)` on top would double it. Glass Cannon's energy
- * ×0.5 rides along in the same ratio for free (`naked` is keystone-free too, `geared` carries
- * it via `applySkillTree`) — this is also why `energyMult` here must stay `1` for Glass
- * Cannon (`computeCombatMults` no longer sets it otherwise). Similarly, `naked.critDmg` /
- * `naked.speed` stay `critDmgMult`/Tempo-Dobrado-free by construction, so `delta.critDmg` /
- * `delta.speed` below are already the correct un-multiplied per-point gain — no change needed
- * for either correction.
+ * output; an explicit `(1 + energyPct/100)` on top would double it.
  */
 export function derive(input: DeriveInput): DeriveResult {
   const {

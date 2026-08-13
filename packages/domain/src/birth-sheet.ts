@@ -24,12 +24,6 @@ export type BirthStats = SheetStats;
 /**
  * `skills.totals` in the units the planner store already uses. `luckFlatPct` is wired from
  * the account slice as of Wave 5 (`skills.totals.luck_add × 100`, BSPW5-03).
- *
- * `critDmgMult`, `glassCannon`, and `tempoDobrado` are the three keystone corrections (verified
- * against real save exports): all three replace or scale a SHEET-layer subtotal, never a
- * combat multiplier (`computeCombatMults` no longer touches any of them). `glassCannon` /
- * `tempoDobrado` are optional — every existing fixture predates the keystones and simply omits
- * them, which `applySkillTree` treats as `false` (identity).
  */
 export type TreeSheetTotals = {
   /** `dmg_static` — raw multiplier on the attack subtotal. Store: `treeDanoTotal`. */
@@ -44,27 +38,6 @@ export type TreeSheetTotals = {
   critDmgPct: number;
   /** `luck_add × 100` — FLAT percentage points, added after gear and points (AD-BSP-22). */
   luckFlatPct: number;
-  /**
-   * `crit_dmg_mult` from the export (2 when Glass Cannon/C15 is owned, 1 otherwise). Replaces
-   * the crit-damage shared pool's implicit `1` in {@link applySkillTree} — it multiplies ONLY
-   * the birth base, not the on-sheet ability contribution, the tree `crit_dmg_add`, or the
-   * per-point gain (verified: a zero-point hero's `game.critDmg` equals `naked.critDmg × 2` to
-   * 1e-13). Abisso does NOT suppress this — the exporter leaves `crit_dmg_mult: 2` under
-   * Abisso and the ×2 is plainly present in the sheet.
-   */
-  critDmgMult: number;
-  /**
-   * Glass Cannon (C15) — halves the WHOLE energy subtotal at the sheet layer (base and the
-   * `energia_add` term together). No per-account numeric field carries this (unlike
-   * `critDmgMult`'s literal `2`), so it is a plain flag.
-   */
-  glassCannon?: boolean;
-  /**
-   * Tempo Dobrado (V15) — replaces the speed shared pool's implicit `1` with the measured
-   * `1.33333` literal (residual `0.333330` across every hero in the verifying save — NOT the
-   * exact `4/3`). No per-account numeric field carries this either.
-   */
-  tempoDobrado?: boolean;
 };
 
 /** `1 + max(0, percent)` — the shared-pool clamp already used by `gear/apply.ts`. */
@@ -107,14 +80,6 @@ export function nakedFromBirth(
  * the energy subtotal; `dmg_static` multiplies the attack subtotal; `luck_add` is a flat
  * percentage-point addend. Penetration and cdr receive exactly `0` — `skills.totals` has
  * no node for either today (AD-BSP-22's forward-safety clause).
- *
- * Two keystone corrections layer on top of the same bases, each replacing a pool's implicit
- * `1` rather than scaling the whole running total (they do NOT touch the ability contribution,
- * the tree `_add` term, or the per-point gain — those stay additive, unscaled):
- * - `critDmgMult` (Glass Cannon's `crit_dmg_mult`, 2 when C15 owned) on crit-damage.
- * - `tempoDobrado`'s literal `1.33333` on speed (measured residual `0.333330`).
- * Glass Cannon's energy ×0.5 is the one true whole-subtotal multiplier — it halves the
- * `energia_add`-inclusive energy subtotal, same layer as `danoStatic` on attack.
  */
 export function applySkillTree(
   sheet: SheetStats,
@@ -125,14 +90,12 @@ export function applySkillTree(
   const baseSpeed = naked.speed / poolFactor(sheetOther.speed);
   const baseCritChance = naked.critChance / poolFactor(sheetOther.critChance);
   const baseCritDmg = naked.critDmg / poolFactor(sheetOther.critDmg);
-  const speedBaseMult = tree.tempoDobrado ? 1.33333 : 1;
-  const energyGlassCannonFactor = tree.glassCannon ? 0.5 : 1;
   return {
     attack: sheet.attack * tree.danoStatic,
-    energy: sheet.energy * (1 + tree.energyPct / 100) * energyGlassCannonFactor,
-    speed: sheet.speed + baseSpeed * (speedBaseMult - 1) + baseSpeed * (tree.speedPct / 100),
+    energy: sheet.energy * (1 + tree.energyPct / 100),
+    speed: sheet.speed + baseSpeed * (tree.speedPct / 100),
     critChance: sheet.critChance + baseCritChance * (tree.critChancePct / 100),
-    critDmg: sheet.critDmg + baseCritDmg * (tree.critDmgMult - 1) + baseCritDmg * (tree.critDmgPct / 100),
+    critDmg: sheet.critDmg + baseCritDmg * (tree.critDmgPct / 100),
     penetration: sheet.penetration,
     cdr: sheet.cdr,
     luck: sheet.luck + tree.luckFlatPct,

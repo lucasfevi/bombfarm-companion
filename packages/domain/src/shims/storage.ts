@@ -11,10 +11,6 @@ export type TreeState = {
   speed: number;
   energy: number;
   teamCoinPct: number;
-  glassCannon: boolean;
-  tempoDobrado: boolean;
-  /** `skills.totals.crit_dmg_mult` — Glass Cannon's crit-damage multiplier on the birth base (1 when unowned). */
-  critDmgMult?: number;
   luckFlatPct?: number;
 };
 

@@ -44,8 +44,6 @@ export type FarmContext = {
   houseLevel: number;
   phase: number | null;
   mitigationPct: number;
-  treeGlassCannon: boolean;
-  treeTempoDobrado: boolean;
 };
 
 export type HeroPlanContext = {
@@ -143,8 +141,6 @@ export type TeamPlanHeroInput = {
 
 export type TeamPlanAccountInput = {
   treeSheet: TreeSheetTotals;
-  treeGlassCannon: boolean;
-  treeTempoDobrado: boolean;
   houseIdx: number;
   houseLevel: number;
   phase: number | null;

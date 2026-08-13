@@ -80,7 +80,6 @@ describe('treeTotalsFromSave', () => {
       crit_chance_add: 0.3372935775,
       crit_dmg_add: 0.196153846,
       luck_add: 0.0530647275,
-      crit_dmg_mult: 1,
     });
     expect(converted.danoStatic).toBeCloseTo(1.78324567735483, 9);
     expect(converted.energyPct).toBeCloseTo(81.2711865, 9);
@@ -88,7 +87,6 @@ describe('treeTotalsFromSave', () => {
     expect(converted.critChancePct).toBeCloseTo(33.72935775, 9);
     expect(converted.critDmgPct).toBeCloseTo(19.6153846, 9);
     expect(converted.luckFlatPct).toBeCloseTo(5.30647275, 9);
-    expect(converted.critDmgMult).toBe(1);
   });
 
   it('dmg_static defaults to 1 when absent, everything else to 0', () => {

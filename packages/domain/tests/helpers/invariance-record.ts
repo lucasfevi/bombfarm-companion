@@ -326,8 +326,6 @@ function recordHero(
   const mults = computeCombatMults({
     mods,
     teamBuffs: zeroTeamBuffs(),
-    treeGlassCannon: tree.glassCannon ?? false,
-    treeTempoDobrado: tree.tempoDobrado ?? false,
     extraDmgPct: 0,
   });
 
@@ -388,9 +386,6 @@ function recordHero(
       speed: tree.speedPct,
       energy: tree.energyPct,
       teamCoinPct: 0,
-      glassCannon: tree.glassCannon ?? false,
-      tempoDobrado: tree.tempoDobrado ?? false,
-      critDmgMult: tree.critDmgMult,
       luckFlatPct: tree.luckFlatPct,
     },
     teamBuffs: zeroTeamBuffs(),
@@ -427,8 +422,6 @@ function recordHero(
     treeCritDmg: pipelineResult.treeSheet.critDmgPct,
     treeEnergy: pipelineResult.treeSheet.energyPct,
     treeLuckFlatPct: pipelineResult.treeSheet.luckFlatPct,
-    treeGlassCannon: Boolean(pipelineResult.treeSheet.glassCannon),
-    treeTempoDobrado: Boolean(pipelineResult.treeSheet.tempoDobrado),
     context: pipelineResult.context,
     dmgMult: pipelineResult.dmgMult,
     treeDanoTotal: pipelineResult.treeSheet.danoStatic,
