@@ -119,14 +119,23 @@ export function buildPlanningModel(view: AccountView): PlanningModel {
   // Candidate completion is the only synthesis the desktop performs (design §4.2): `id` is the
   // game's own stable hero id, `updatedAt` is the section's own capture time. No stat is
   // synthesised.
-  const heroes: RosterEntry[] = parsed.candidates.map((candidate) => ({
-    hero: {
-      ...candidate.record,
-      id: candidate.sourceId,
-      updatedAt: heroUpdatedAt,
-    },
-    blocked: candidate.blocked,
-  }));
+  //
+  // T4 finding: parsing must still run unconditionally (rejection reasons and warnings are
+  // still meaningful when `heroes` is not usable), but the roster this model EXPOSES must not
+  // — `rosterRow` requires `[heroes]` (`ADVICE_REQUIRES`), so a `heroes` section that is not
+  // usable withholds every row, not just the numbers on it. Trusting `payload.heroes`'s mere
+  // presence over the fidelity status it was asserted under is exactly the labelled-wrong-number
+  // hazard `D24` exists to forbid — the fidelity status is authoritative, not the raw payload.
+  const heroes: RosterEntry[] = heroesSection.usable
+    ? parsed.candidates.map((candidate) => ({
+        hero: {
+          ...candidate.record,
+          id: candidate.sourceId,
+          updatedAt: heroUpdatedAt,
+        },
+        blocked: candidate.blocked,
+      }))
+    : [];
 
   const accountUsable = findSection(sections, 'account').usable;
   const skillsUsable = findSection(sections, 'skills').usable;
