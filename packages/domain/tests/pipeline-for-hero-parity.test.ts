@@ -37,12 +37,6 @@ describe('pipelineForHero ≡ computeAdvisorPipeline assembled from advisor-sele
     expect(parsed.account.tree).not.toBeNull();
   });
 
-  it("the fixture's raw crit_dmg_mult is absent, and its resolved account.tree.critDmgMult is in {1, 2} — the set where AD-038's divergence legitimately agrees", () => {
-    const totals = (raw as { skills?: { totals?: { crit_dmg_mult?: unknown } } }).skills?.totals;
-    expect(totals?.crit_dmg_mult).toBeUndefined();
-    expect([1, 2]).toContain(parsed.account.tree?.critDmgMult);
-  });
-
   const candidate = parsed.candidates[0];
   const hero: HeroRecord = {
     ...candidate.record,
@@ -92,8 +86,8 @@ describe('pipelineForHero ≡ computeAdvisorPipeline assembled from advisor-sele
     const viaExportedPipeline = pipelineForHero(hero, account, phase, mitigationPct);
 
     // Assembled field-for-field with advisor-selectors.ts's `selectAdvisorPipeline` — the web's
-    // own field list, including `treeCritDmgMult` (which `pipelineForHero` omits, AD-038) and
-    // `statPointsAvailable`/`birth` read the same way the web store reads them.
+    // own field list — minus `treeCritDmgMult`, which no longer exists on either side (AD-038,
+    // MKR-24/26). `statPointsAvailable`/`birth` are read the same way the web store reads them.
     const viaWebFieldList = computeAdvisorPipeline({
       naked: hero.naked,
       geared: hero.gearedOverride,
@@ -111,7 +105,6 @@ describe('pipelineForHero ≡ computeAdvisorPipeline assembled from advisor-sele
       treeSpeed: account.tree.speed,
       treeEnergy: account.tree.energy,
       treeGlassCannon: account.tree.glassCannon,
-      treeCritDmgMult: account.tree.critDmgMult,
       treeTempoDobrado: account.tree.tempoDobrado,
       treeAbisso: account.tree.abisso,
       treeAbissoBase: account.tree.abissoBase,
@@ -127,23 +120,25 @@ describe('pipelineForHero ≡ computeAdvisorPipeline assembled from advisor-sele
     });
 
     // Not a snapshot, not a deep-equal on the whole result: ranking order, each dpsGainPct,
-    // best.stat and dps — the fields MPV-03 actually promises are identical.
+    // best.stat and dps — the fields MPV-03 actually promises are identical. Both paths now
+    // receive byte-identical arguments (treeCritDmgMult no longer exists to diverge them), so
+    // MKR-26's "unconditional identity" is tightened from a 9-decimal closeness bound to exact
+    // identity (AD-038, design TD-9).
     expect(viaExportedPipeline.ranking.map((entry) => entry.stat)).toEqual(
       viaWebFieldList.ranking.map((entry) => entry.stat),
     );
     viaExportedPipeline.ranking.forEach((entry, index) => {
-      expect(entry.dpsGainPct).toBeCloseTo(viaWebFieldList.ranking[index]!.dpsGainPct, 9);
+      expect(entry.dpsGainPct).toBe(viaWebFieldList.ranking[index]!.dpsGainPct);
     });
     expect(viaExportedPipeline.best.stat).toBe(viaWebFieldList.best.stat);
-    expect(viaExportedPipeline.dps).toBeCloseTo(viaWebFieldList.dps, 9);
+    expect(viaExportedPipeline.dps).toBe(viaWebFieldList.dps);
   });
 
-  it('red state (demonstrated, then restored): a widened treeCritDmgMult gap makes dps disagree', () => {
-    // Temporarily pass a treeCritDmgMult on the computeAdvisorPipeline side that the exported
-    // pipelineForHero could never produce (it never forwards the field at all), to prove the
-    // assertion above is discriminating and not a tautology. crit_dmg_mult 3 is chosen because
-    // it disagrees with both the fixture's real value (1) and the treeGlassCannon fallback (1
-    // here, since glassCannon is false on this fixture).
+  // AD-038 closure (MP5 F2 T4, MKR-27): the old red state passed a treeCritDmgMult the exported
+  // pipeline could never produce — that field is gone now, so the red state is re-pointed onto
+  // a SURVIVING field (treeDanoTotal) instead. The old red state must not reappear under a new
+  // name (MKR-27).
+  it('red state (demonstrated, then restored): a widened treeDanoTotal gap makes dps disagree', () => {
     const viaExportedPipeline = pipelineForHero(hero, account, phase, mitigationPct);
     const withWidenedGap = computeAdvisorPipeline({
       naked: hero.naked,
@@ -156,13 +151,12 @@ describe('pipelineForHero ≡ computeAdvisorPipeline assembled from advisor-sele
       rarity: hero.rarity,
       level: hero.level,
       stars: hero.stars,
-      treeDanoTotal: account.tree.danoTotal,
+      treeDanoTotal: account.tree.danoTotal * 3, // <- deliberately-wrong: proves the field drives `dps`
       treeCritChance: account.tree.critChance,
       treeCritDmg: account.tree.critDmg,
       treeSpeed: account.tree.speed,
       treeEnergy: account.tree.energy,
       treeGlassCannon: account.tree.glassCannon,
-      treeCritDmgMult: 3, // <- deliberately-wrong: proves the field actually drives `dps`
       treeTempoDobrado: account.tree.tempoDobrado,
       treeAbisso: account.tree.abisso,
       treeAbissoBase: account.tree.abissoBase,
@@ -177,6 +171,6 @@ describe('pipelineForHero ≡ computeAdvisorPipeline assembled from advisor-sele
       birth: hero.birth,
     });
 
-    expect(viaExportedPipeline.dps).not.toBeCloseTo(withWidenedGap.dps, 6);
+    expect(viaExportedPipeline.dps).not.toBe(withWidenedGap.dps);
   });
 });

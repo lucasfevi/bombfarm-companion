@@ -26,9 +26,7 @@ function accountFromFixture(raw: Record<string, unknown>): TeamPlanAccountInput 
   const treeSheet = treeTotalsFromSave(totals);
   return {
     treeSheet,
-    treeGlassCannon: false,
-    treeTempoDobrado: false,
-    houseIdx: 0,
+        houseIdx: 0,
     houseLevel: 1,
     phase: 1,
     mitigationPct: 6.7,
@@ -42,9 +40,7 @@ function farmFromAccount(account: TeamPlanAccountInput): FarmContext {
     houseLevel: account.houseLevel,
     phase: account.phase,
     mitigationPct: account.mitigationPct,
-    treeGlassCannon: account.treeGlassCannon,
-    treeTempoDobrado: account.treeTempoDobrado,
-  };
+      };
 }
 
 function heroInputFromExtract(hero: ReturnType<typeof extractHero>): TeamPlanHeroInput {
@@ -139,9 +135,7 @@ describe('scoreHeroLoadout', () => {
       houseLevel: 1,
       phase: 1,
       mitigationPct: 6.7,
-      treeGlassCannon: false,
-      treeTempoDobrado: false,
-    };
+          };
     const score = scoreHeroLoadout(ctx, {}, ZERO_PTS(), zeroTeamBuffs(), farm);
     expect(score.duty).toBe(0);
     expect(Number.isNaN(score.duty)).toBe(false);
@@ -171,9 +165,7 @@ describe('scoreHeroLoadout', () => {
       treeCritDmg: account.treeSheet.critDmgPct,
       treeSpeed: account.treeSheet.speedPct,
       treeEnergy: account.treeSheet.energyPct,
-      treeGlassCannon: account.treeGlassCannon,
-      treeTempoDobrado: account.treeTempoDobrado,
-      treeLuckFlatPct: account.treeSheet.luckFlatPct,
+            treeLuckFlatPct: account.treeSheet.luckFlatPct,
       teamBuffs,
       houseIdx: account.houseIdx,
       houseLevel: account.houseLevel,
@@ -273,9 +265,7 @@ describe('scoreHeroLoadout', () => {
       houseLevel: 1,
       phase: 1,
       mitigationPct: 6.7,
-      treeGlassCannon: false,
-      treeTempoDobrado: false,
-    };
+          };
 
     const expectedSheet = composeSheetFromBirth({
       birth: ctx.birth,

@@ -323,50 +323,6 @@ describe('stat-breakdown builder', () => {
     }
   });
 
-  it('F3 — glass cannon notes on energy + critDmg', () => {
-    const { facts } = buildFixture({
-      pts: { ...ZERO_PTS(), attack: 1 },
-      treeGlassCannon: true,
-      treeEnergy: 10,
-    });
-    assertLedgersRecompose(facts);
-    assertFormulasMatch(facts);
-    const energy = buildStatBreakdown('energy', facts);
-    const critDmg = buildStatBreakdown('critDmg', facts);
-    expect(energy.kind).toBe('ledger');
-    expect(critDmg.kind).toBe('ledger');
-    if (energy.kind === 'ledger') {
-      expect(energy.steps.some((s) => s.note === 'glassCannon')).toBe(true);
-    }
-    if (critDmg.kind === 'ledger') {
-      expect(critDmg.steps.some((s) => s.note === 'glassCannon')).toBe(true);
-    }
-  });
-
-  it('F4 — tempo dobrado note on speed', () => {
-    const { facts } = buildFixture({
-      pts: { ...ZERO_PTS(), speed: 1 },
-      treeTempoDobrado: true,
-      treeSpeed: 8,
-      abilities: { marcha_acelerada: 5 },
-    });
-    assertLedgersRecompose(facts);
-    assertFormulasMatch(facts);
-    const speed = buildStatBreakdown('speed', facts);
-    expect(speed.kind).toBe('ledger');
-    if (speed.kind === 'ledger') {
-      expect(speed.steps.some((s) => s.note === 'tempoDobrado' || s.note === 'capped')).toBe(true);
-      const tree = speed.steps.find((s) => s.source === 'tree' && s.op === '+');
-      expect(tree?.pctOfBase?.percent).toBeCloseTo(8, 6);
-      expect(tree?.pctOfBase?.base).toBeCloseTo(facts.naked.speed, 6);
-      const pts = speed.steps.find((s) => s.source === 'points');
-      expect(pts?.pctOfBase?.percent).toBeCloseTo(2, 6);
-      const gear = speed.steps.find((s) => s.source === 'gear');
-      // Fixture geared speed === naked → no gear step.
-      expect(gear).toBeUndefined();
-    }
-  });
-
   it('F4b — shared-pool gear shows percent × base', () => {
     const naked = sampleNaked();
     const geared = { ...naked, speed: naked.speed + naked.speed * 0.02 };

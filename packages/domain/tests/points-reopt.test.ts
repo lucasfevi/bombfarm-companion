@@ -70,9 +70,7 @@ function realHeroDerive(file: string, name: string, level: number) {
   const mults = computeCombatMults({
     mods,
     teamBuffs: zeroTeamBuffs(),
-    treeGlassCannon: false,
-    treeTempoDobrado: false,
-    extraDmgPct: 0,
+        extraDmgPct: 0,
   });
   const result = derive({
     geared: hero.sheet,
@@ -457,9 +455,7 @@ describe('optimizeBuild — Tier 2 (BSPW4-10)', () => {
     const mults = computeCombatMults({
       mods: abilityMods({}),
       teamBuffs: zeroTeamBuffs(),
-      treeGlassCannon: false,
-      treeTempoDobrado: false,
-      extraDmgPct: 0,
+            extraDmgPct: 0,
     });
     const args = {
       geared: naked,

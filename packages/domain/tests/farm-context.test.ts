@@ -146,32 +146,20 @@ describe('farmContextForHero', () => {
     expect(ctx.drainMult).toBe(0.8);
   });
 
-  it('drainMult with tempoDobrado on', () => {
-    const mods = abilityMods({});
-    const ctx = farmContextForHero({
-      mods,
-      teamDrainMult: 1,
-      treeTempoDobrado: true,
-      houseIdx: 0,
-      houseLevel: 1,
-      mitigationPct: 6.7,
-      phase: 1,
-    });
-    expect(ctx.drainMult).toBe(2);
-  });
-
-  it('drainMult with bateria_extra, folego_mineiro, and tempoDobrado combined', () => {
+  // AD-068 class (b): re-pointed, not deleted — bateria_extra and folego_mineiro are the two
+  // surviving drain arms this case's real content is about; the drain ×2 arm the case's old
+  // name referenced no longer participates (its whole subject is the deleted arm).
+  it('drainMult with bateria_extra and folego_mineiro combined', () => {
     const mods = abilityMods({ bateria_extra: 10 });
     const ctx = farmContextForHero({
       mods,
       teamDrainMult: 0.75,
-      treeTempoDobrado: true,
       houseIdx: 0,
       houseLevel: 1,
       mitigationPct: 6.7,
       phase: 1,
     });
-    expect(ctx.drainMult).toBe(mods.drainMult * 0.75 * 2);
+    expect(ctx.drainMult).toBe(mods.drainMult * 0.75);
   });
 });
 

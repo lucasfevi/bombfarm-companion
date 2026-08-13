@@ -245,18 +245,27 @@ describe('compareAccountResults — roster membership (FID-04)', () => {
 });
 
 describe('compareAccountResults — account-level equality (FID-02, ASM-4)', () => {
-  it('accountMismatch names tree.abissoBase on a mismatch', () => {
-    const live = makeResult({ account: makeAccount({ tree: { ...makeAccount().tree!, abissoBase: 1.008 } }) });
-    const exported = makeResult({ account: makeAccount({ tree: { ...makeAccount().tree!, abissoBase: 1.009 } }) });
+  // AD-075 (MP5 F2 T4): re-pointed from tree.abissoBase onto tree.danoTotal — a surviving
+  // TreeSheetTotals member. The claim under test ("the comparator names the mismatching path")
+  // is unchanged; only the field whose mismatch demonstrates it changed. makeAccount()'s
+  // keystone members (abissoBase/critDmgMult/glassCannon/tempoDobrado/abisso) stay until T8,
+  // when AccountImportData['tree'] itself stops requiring them — dropping them here first
+  // would be a typecheck:tests failure against the still-current (pre-T8) type.
+  it('accountMismatch names tree.danoTotal on a mismatch', () => {
+    const live = makeResult({ account: makeAccount({ tree: { ...makeAccount().tree!, danoTotal: 1.2 } }) });
+    const exported = makeResult({ account: makeAccount({ tree: { ...makeAccount().tree!, danoTotal: 1.3 } }) });
     const err = expectFidelityError(() => compareAccountResults(live, exported), 'accountMismatch');
-    expect(err.message).toContain('tree.abissoBase');
+    expect(err.message).toContain('tree.danoTotal');
   });
 
-  it('accountMismatch names tree.critDmgMult on a mismatch', () => {
-    const live = makeResult({ account: makeAccount({ tree: { ...makeAccount().tree!, critDmgMult: 2 } }) });
-    const exported = makeResult({ account: makeAccount({ tree: { ...makeAccount().tree!, critDmgMult: 1 } }) });
+  // AD-075 (MP5 F2 T4): re-pointed from tree.critDmgMult onto tree.critChance — a surviving
+  // TreeSheetTotals member. See the previous case's comment for why makeAccount() itself is
+  // untouched here.
+  it('accountMismatch names tree.critChance on a mismatch', () => {
+    const live = makeResult({ account: makeAccount({ tree: { ...makeAccount().tree!, critChance: 2 } }) });
+    const exported = makeResult({ account: makeAccount({ tree: { ...makeAccount().tree!, critChance: 1 } }) });
     const err = expectFidelityError(() => compareAccountResults(live, exported), 'accountMismatch');
-    expect(err.message).toContain('tree.critDmgMult');
+    expect(err.message).toContain('tree.critChance');
   });
 
   it('accountMismatch names tree.luckFlatPct on a mismatch', () => {

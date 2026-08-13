@@ -91,10 +91,9 @@ describe('treeTotalsFromSave', () => {
     expect(converted.critDmgMult).toBe(1);
   });
 
-  it('dmg_static and crit_dmg_mult default to 1 when absent, everything else to 0', () => {
+  it('dmg_static defaults to 1 when absent, everything else to 0', () => {
     const converted = treeTotalsFromSave({});
     expect(converted.danoStatic).toBe(1);
-    expect(converted.critDmgMult).toBe(1);
     expect(converted.energyPct).toBe(0);
     expect(converted.speedPct).toBe(0);
     expect(converted.critChancePct).toBe(0);
