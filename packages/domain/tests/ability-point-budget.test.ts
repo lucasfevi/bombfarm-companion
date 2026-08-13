@@ -14,11 +14,17 @@ describe('abilityPointBudget (BSPW3-11, AD-BSP-23)', () => {
     expect(abilityPointBudget('Lendária', 200)).toBe(100);
   });
 
-  // AC-23a — boundary cases from bellatrix-02-pts-each-1.json, asserted by name.
+  // AC-23a — boundary cases, re-pointed onto the post-patch corpus (MP5 F1, AD-068 class
+  // (a) — read from the capture). RECORDED LOSS: the deleted `Bram L49 -> 40 spendable / 9
+  // dead` and `Torin L45 -> 40 / 5` rows named heroes of the deleted account whose level
+  // exceeded `quota × 20` (the "dead point" boundary). No hero on either post-patch corpus
+  // file exceeds that boundary — every row below has `dead: 0`. The dead-point boundary case
+  // itself is lost (see docs/fixture-corpus.md); the synthetic Mítico L100 case below still
+  // demonstrates the boundary math directly.
   it.each([
-    { hero: 'Bram', level: 49, rarity: 'Incomum', quota: 2, spendable: 40, dead: 9 },
-    { hero: 'Torin', level: 45, rarity: 'Incomum', quota: 2, spendable: 40, dead: 5 },
-    { hero: 'Bellatrix', level: 59, rarity: 'Raro', quota: 3, spendable: 59, dead: 0 },
+    { hero: 'Jon (export)', level: 38, rarity: 'Incomum', quota: 2, spendable: 38, dead: 0 },
+    { hero: 'Bellatrix (export)', level: 42, rarity: 'Raro', quota: 3, spendable: 42, dead: 0 },
+    { hero: 'Nyx (payload)', level: 25, rarity: 'Incomum', quota: 2, spendable: 25, dead: 0 },
   ] as const)(
     'AC-23a: $hero L$level $rarity -> spendable $spendable, $dead dead',
     ({ level, rarity, quota, spendable, dead }) => {
@@ -38,10 +44,18 @@ describe('abilityPointBudget (BSPW3-11, AD-BSP-23)', () => {
     expect(needed - budget).toBe(20); // unreachable even with every slot maxed
   });
 
-  it('AC-23b: spent === min(level, quota x 20) holds 11/11 on the fixture (equality, not <=)', () => {
-    const raw = loadFixtureJson('bellatrix-02-pts-each-1.json');
-    const heroes = raw.heroes as Array<Record<string, unknown>>;
-    expect(heroes.length).toBe(11);
+  it('AC-23b: spent === min(level, quota x 20) holds 13/13 across both post-patch corpus files (equality, not <=)', () => {
+    // MP5 F1 (AD-068 class (a) — read from the capture): re-pointed onto both corpus files
+    // combined (5 export heroes + 8 payload heroes). The hero count is read from the two
+    // fixtures, not hand-copied — 13, verified against packages/domain/tests/point-roundtrip.test.ts's
+    // own independently-measured 13-hero floor.
+    const exportRaw = loadFixtureJson('save-20260813-5heroes.json');
+    const payloadRaw = loadFixtureJson('payload-20260812-8heroes.json');
+    const heroes = [
+      ...(exportRaw.heroes as Array<Record<string, unknown>>),
+      ...(payloadRaw.heroes as Array<Record<string, unknown>>),
+    ];
+    expect(heroes.length, 'expected 13 heroes across save-20260813-5heroes.json + payload-20260812-8heroes.json').toBe(13);
 
     for (const hero of heroes) {
       const name = hero.name as string;

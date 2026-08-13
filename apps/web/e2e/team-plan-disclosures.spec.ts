@@ -10,9 +10,24 @@ import {
 
 function saturatedSeed() {
   const base = teamPlanFixtureSeed('en');
-  // 2 slots against this fixture's ~2.5-3.2 sumDuty range comfortably forces the
-  // saturated regime; 3 sat right at the boundary and could tip under-saturated.
-  return { ...base, account: { ...base.account!, slots: 2 } };
+  // MP5 F1 (AD-069, extended by orchestrator ruling): re-tuned for the post-patch 5-hero
+  // export. `slots` alone can no longer force saturation — this roster's own sumDuty tops out
+  // at ~0.99 at the export's real house (Casa I L7), strictly below the minimum slots value
+  // (evaluateRoster clamps slots to >= 1), so no slots override could reach the saturated
+  // regime. `duty = fieldSeconds / (fieldSeconds + restSeconds)` (model/combat.ts) is driven by
+  // house rest time, not slots or phase/mitigation — measured, phase and mitigationPct have
+  // zero effect on sumDuty. Maxing the house (Casa V, level 20 — the shortest rest in
+  // `HOUSES`) measures sumDuty ~2.12, comfortably above `slots: 1` (a >2x margin, not a
+  // boundary case). Both overrides are local to this scenario, the same category as the
+  // pre-existing `slots` override — team-plan-seed.ts's own defaults are untouched.
+  return {
+    ...base,
+    account: {
+      ...base.account!,
+      slots: 1,
+      context: { ...base.account!.context, houseIdx: 4, houseLevel: 20 },
+    },
+  };
 }
 
 test.describe('Team plan disclosures', () => {

@@ -306,15 +306,19 @@ describe('derive', () => {
 
   it('AC-30/AC-31: effective ≡ the real save sheet at pts=0 — the tree is applied exactly once (BSP-22)', () => {
     // The load-bearing double-count regression guard (M1/M2 in spec.md's discrimination note).
-    // `save-20260801-crit-dmg-tree.json`'s Bellatrix is the ONLY fixture that can discriminate
-    // the crit-damage double (crit_dmg_add is 0 everywhere else) — driving this from
-    // `bellatrix-02-pts-each-1.json` instead would make M2 survive on both fixtures.
-    const raw = loadFixtureJson('save-20260801-crit-dmg-tree.json');
-    const bellatrix = extractHero(raw, 'Bellatrix');
+    // MP5 F1 (AD-068 class (a) + (b)): re-pointed onto save-20260813-5heroes.json's Bellatrix
+    // (8/8 geared) — the only post-patch corpus hero pattern available. RECORDED LOSS: every
+    // post-patch capture has `crit_dmg_add: 0` (skills.totals), so this can no longer
+    // discriminate a crit-damage-specific double-count the way the deleted crit-dmg-tree
+    // fixture could (its `critDmgPct` was nonzero); the `critChance`/`energy`/`speed`/`attack`
+    // axes below still discriminate (their tree percentages are nonzero on this hero). See
+    // docs/fixture-corpus.md for the loss record.
+    const raw = loadFixtureJson('save-20260813-5heroes.json');
+    const bellatrix = extractHero(raw, 'Bellatrix', 42);
     const totals = (raw.skills as { totals: Record<string, unknown> }).totals;
     const treeSheet = treeTotalsFromSave(totals);
-    expect(treeSheet.danoStatic).toBeCloseTo(1.78324567735483, 9);
-    expect(treeSheet.critDmgPct).toBeCloseTo(19.6153846, 6);
+    expect(treeSheet.danoStatic).toBeCloseTo(1.2094754277978, 9);
+    expect(treeSheet.critDmgPct).toBe(0);
 
     // geared = the real, tree-inclusive save sheet; pts = 0 — so `adjusted === geared`
     // regardless of `naked`, and with every combat mult at identity, `effective` can only
@@ -370,12 +374,13 @@ describe('derive', () => {
     expect(result.hit).toBeCloseTo(expectedHit, 6);
   });
 
-  it('AC-32: dps for save-20260801’s Bellatrix drops by exactly dmg_static vs the old double-counting form', () => {
-    const raw = loadFixtureJson('save-20260801-crit-dmg-tree.json');
-    const bellatrix = extractHero(raw, 'Bellatrix');
+  it('AC-32: dps for save-20260813’s Bellatrix drops by exactly dmg_static vs the old double-counting form', () => {
+    // MP5 F1 (AD-068 class (a)): re-pointed onto save-20260813-5heroes.json's Bellatrix.
+    const raw = loadFixtureJson('save-20260813-5heroes.json');
+    const bellatrix = extractHero(raw, 'Bellatrix', 42);
     const totals = (raw.skills as { totals: Record<string, unknown> }).totals;
     const treeSheet = treeTotalsFromSave(totals);
-    const danoStatic = 1.78324567735483;
+    const danoStatic = 1.2094754277978;
     expect(treeSheet.danoStatic).toBeCloseTo(danoStatic, 9);
 
     const mults = computeCombatMults({
@@ -420,7 +425,7 @@ describe('derive', () => {
     // value from the SAME independent `sustainedDps` call, not from a second `derive()` pass.
     const doubleCountedDps = sustainedDps(fixed.effective, deriveArgs.context) * mults.dmgMult * danoStatic;
     expect(doubleCountedDps / fixed.dps).toBeCloseTo(danoStatic, 9);
-    expect(fixed.dps).toBeCloseTo(doubleCountedDps / 1.78324567735483, 6);
+    expect(fixed.dps).toBeCloseTo(doubleCountedDps / danoStatic, 6);
   });
 
   it('AC-33: delta.attack scales by treeSheet.danoStatic (the sheet the delta is added to is post-dmg_static)', () => {

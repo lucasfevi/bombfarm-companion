@@ -292,9 +292,13 @@ describe('eligibleForHero', () => {
   });
 });
 
+// MP5 F1 (AD-068 class (a) for the pooled-count claim, class (b) for the rest): re-pointed
+// onto the post-patch corpus. The pooled-count is read from the new capture, not carried over —
+// 27 for the payload (its own catalogued-item count; the search space collapsed from the
+// deleted fixture's 58), 17 for the export.
 describe('fixture pools', () => {
-  it('save-20260731 all optimize yields 58 pooled items', () => {
-    const raw = loadFixtureJson('save-20260731-11heroes.json');
+  it('payload-20260812 all optimize yields 27 pooled items', () => {
+    const raw = loadFixtureJson('payload-20260812-8heroes.json');
     const { inventory, candidates } = parseSaveFile(raw, []);
     const heroIds = new Set(candidates.map((c) => c.sourceId));
     const scope = Object.fromEntries(candidates.map((c) => [c.sourceId, 'optimize' as const]));
@@ -305,11 +309,11 @@ describe('fixture pools', () => {
       rosterHeroIds: heroIds,
     });
     const totalCount = pool.entries.reduce((sum, e) => sum + e.count, 0);
-    expect(totalCount).toBe(58);
+    expect(totalCount).toBe(27);
   });
 
   it('forgeFloor 10 raises every entry effectiveUpgrade to at least 10', () => {
-    const raw = loadFixtureJson('save-20260731-11heroes.json');
+    const raw = loadFixtureJson('payload-20260812-8heroes.json');
     const { inventory, candidates } = parseSaveFile(raw, []);
     const heroIds = new Set(candidates.map((c) => c.sourceId));
     const scope = Object.fromEntries(candidates.map((c) => [c.sourceId, 'optimize' as const]));
@@ -325,7 +329,7 @@ describe('fixture pools', () => {
   });
 
   it('forgeFloor 0 uses each item own upgrade', () => {
-    const raw = loadFixtureJson('save-20260731-11heroes.json');
+    const raw = loadFixtureJson('payload-20260812-8heroes.json');
     const { inventory, candidates } = parseSaveFile(raw, []);
     const heroIds = new Set(candidates.map((c) => c.sourceId));
     const scope = Object.fromEntries(candidates.map((c) => [c.sourceId, 'optimize' as const]));
@@ -341,7 +345,7 @@ describe('fixture pools', () => {
   });
 
   it('zero level-rule violations across equipped items in both fixtures', () => {
-    for (const file of ['save-20260731-11heroes.json', 'save-20260801-crit-dmg-tree.json']) {
+    for (const file of ['save-20260813-5heroes.json', 'payload-20260812-8heroes.json']) {
       const raw = loadFixtureJson(file);
       const { inventory, candidates } = parseSaveFile(raw, []);
       const levelByHero = new Map(candidates.map((c) => [c.sourceId, c.record.level]));

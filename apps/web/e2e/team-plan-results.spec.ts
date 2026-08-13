@@ -54,8 +54,8 @@ test.describe('Team plan results panels', () => {
     const panel = page
       .getByRole('heading', { name: /Per-hero changes/i, level: 2 })
       .locator('xpath=ancestor::section[1]');
-    const korinRow = panel.getByRole('button', { name: /^Detailed breakdown for Korin · Lv ?\d+ · #\d+/i });
-    await expect(korinRow.first()).toBeVisible();
+    const perrinRow = panel.getByRole('button', { name: /^Detailed breakdown for Perrin · Lv ?\d+ · #\d+/i });
+    await expect(perrinRow.first()).toBeVisible();
   });
 
   test('first hero row starts expanded so the breakdown is discoverable', async ({ page }) => {

@@ -23,14 +23,18 @@ import { SHEET_KEYS, ZERO_PTS, type SheetKey } from '@bombfarm/domain/planner-co
 import { zeroTeamBuffs } from '@bombfarm/domain/team-buffs';
 import { extractHero, loadFixtureJson, treeTotalsFromSave } from '@/tests/helpers/sheet-math-fixtures';
 
+// MP5 F1 (AD-068 class (b) — structural, using real heroes as generic input rather than
+// pinning any of their captured values as an expected output): re-pointed onto
+// payload-20260812-8heroes.json's 8 real heroes (design.md §6.2 — "the largest single
+// re-point in the feature"). The deleted 21 hero-name literals spanned two now-deleted
+// fixtures; every assertion below (reoptDps >= currentDps, tier monotonicity, budget
+// conservation, …) is a comparative invariant that holds for any real hero, so it re-points
+// onto the smaller 8-hero set without loss — no hero identity or numeric value from the
+// deleted fixtures is asserted anywhere in this file.
 const FIXTURES = [
-  { file: 'bellatrix-02-pts-each-1.json', names: [
-    ['Bram', 49], ['Bellatrix', 59], ['Torin', 45], ['Rowan', 24], ['Zane', 30], ['Vera', 17],
-    ['Korin', 21], ['Korin', 2], ['Nyx', 4], ['Mira', 1], ['Finn', 1],
-  ] as const },
-  { file: 'save-20260801-crit-dmg-tree.json', names: [
-    ['Bram', 54], ['Bellatrix', 62], ['Torin', 51], ['Rowan', 32], ['Zane', 43], ['Vera', 27],
-    ['Korin', 50], ['Orin', 23], ['Kira', 5], ['Maeve', 6],
+  { file: 'payload-20260812-8heroes.json', names: [
+    ['Nyx', 25], ['Bellatrix', 27], ['Cora', 22], ['Wren', 24],
+    ['Lyra', 3], ['Mira', 3], ['Bryn', 3], ['Devin', 5],
   ] as const },
 ];
 
@@ -149,7 +153,7 @@ describe('findGateCandidate — Tier 1 (BSPW4-10)', () => {
   });
 
   it('AC-57d: evaluations <= 1 + 10*B and <= 1024, on a real fixture hero and at a synthetic B=100', () => {
-    const real = realHeroDerive('save-20260801-crit-dmg-tree.json', 'Bellatrix', 62);
+    const real = realHeroDerive('payload-20260812-8heroes.json', 'Bellatrix', 27);
     const budget = REOPT_KEYS.reduce((sum, key) => sum + real.pts[key], 0);
     const realResult = findGateCandidate({ pts: real.pts, effective: real.effective, effectiveDelta: real.effectiveDelta, context });
     expect(realResult.evaluations).toBeLessThanOrEqual(1 + 10 * budget);
@@ -269,7 +273,7 @@ describe('findGateCandidate — Tier 1 (BSPW4-10)', () => {
     expect(effective.penetration).toBeGreaterThan(100); // sanity: genuinely uncapped input
   });
 
-  it('AC-57a: reoptDps >= currentDps and gainPct >= 0 across every one of the 21 real hero-instances', () => {
+  it('AC-57a: reoptDps >= currentDps and gainPct >= 0 across every one of the 8 real hero-instances', () => {
     for (const { file, names } of FIXTURES) {
       for (const [name, level] of names) {
         const real = realHeroDerive(file, name, level);
@@ -389,7 +393,7 @@ describe('optimizeBuild — Tier 2 (BSPW4-10)', () => {
     }
   });
 
-  it('AC-57/AC-57a for Tier 2: reoptDps >= currentDps and gainPct >= 0 across all 21 real hero-instances', () => {
+  it('AC-57/AC-57a for Tier 2: reoptDps >= currentDps and gainPct >= 0 across all 8 real hero-instances', () => {
     for (const { file, names } of FIXTURES) {
       for (const [name, level] of names) {
         const real = realHeroDerive(file, name, level);
@@ -401,7 +405,7 @@ describe('optimizeBuild — Tier 2 (BSPW4-10)', () => {
   });
 
   it('AC-64b: evaluations <= REOPT_FULL_MAX_EVALUATIONS, on a real fixture hero and at a synthetic B=100', () => {
-    const real = realHeroDerive('save-20260801-crit-dmg-tree.json', 'Bellatrix', 62);
+    const real = realHeroDerive('payload-20260812-8heroes.json', 'Bellatrix', 27);
     const realResult = optimizeBuild({ pts: real.pts, effective: real.effective, effectiveDelta: real.effectiveDelta, context });
     expect(realResult.evaluations).toBeLessThanOrEqual(REOPT_FULL_MAX_EVALUATIONS);
 
@@ -488,7 +492,7 @@ describe('optimizeBuild — Tier 2 (BSPW4-10)', () => {
   });
 
   it('AC-64d: median of 20 runs on a real fixture hero is under 250ms (loose canary, not the budget)', () => {
-    const real = realHeroDerive('save-20260801-crit-dmg-tree.json', 'Bellatrix', 62);
+    const real = realHeroDerive('payload-20260812-8heroes.json', 'Bellatrix', 27);
     const times: number[] = [];
     for (let index = 0; index < 20; index++) {
       const start = performance.now();
@@ -602,7 +606,7 @@ describe('statPointsAvailable — banked, unspent points fold into the search bu
   });
 
   it('budget conservation on a real fixture hero with both spent AND banked points: placed + unallocated == spent + statPointsAvailable (both tiers)', () => {
-    const real = realHeroDerive('save-20260801-crit-dmg-tree.json', 'Bellatrix', 62);
+    const real = realHeroDerive('payload-20260812-8heroes.json', 'Bellatrix', 27);
     const spent = REOPT_KEYS.reduce((sum, key) => sum + real.pts[key], 0);
     const banked = 20;
 

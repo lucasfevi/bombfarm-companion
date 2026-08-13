@@ -19,24 +19,27 @@ function categoryHistogram(raw: unknown): Record<number, number> {
 }
 
 describe('parseSaveFile inventory pass', () => {
-  it('save-20260731-11heroes: gear, equipped, spare, histogram, and slots', () => {
-    const raw = loadFixtureJson('save-20260731-11heroes.json');
+  // MP5 F1 (AD-068 class (a) — read from the capture): re-pointed onto payload-20260812-8heroes
+  // for its larger, richer inventory (27 catalogued vs the export's 17).
+  it('payload-20260812-8heroes: gear, equipped, spare, histogram, and slots', () => {
+    const raw = loadFixtureJson('payload-20260812-8heroes.json');
     const { inventory, account, rejected } = parseSaveFile(raw, []);
     expect(rejected).toBeNull();
-    expect(inventory).toHaveLength(58);
-    expect(inventory.filter((item) => item.equipped)).toHaveLength(44);
-    expect(inventory.filter((item) => !item.equipped)).toHaveLength(14);
-    expect(categoryHistogram(raw)).toEqual({ 0: 58, 1: 12, 2: 19, 3: 5, 4: 80 });
-    expect(account.slots).toBe(6);
+    expect(inventory).toHaveLength(27);
+    expect(inventory.filter((item) => item.equipped)).toHaveLength(23);
+    expect(inventory.filter((item) => !item.equipped)).toHaveLength(4);
+    expect(categoryHistogram(raw)).toEqual({ 0: 27, 4: 3 });
+    expect(account.slots).toBe(3);
   });
 
-  it('save-20260801-crit-dmg-tree: gear, equipped, and spare counts', () => {
-    const raw = loadFixtureJson('save-20260801-crit-dmg-tree.json');
+  // MP5 F1 (AD-068 class (a)): re-pointed onto save-20260813-5heroes (the export).
+  it('save-20260813-5heroes: gear, equipped, and spare counts', () => {
+    const raw = loadFixtureJson('save-20260813-5heroes.json');
     const { inventory, rejected } = parseSaveFile(raw, []);
     expect(rejected).toBeNull();
-    expect(inventory).toHaveLength(83);
-    expect(inventory.filter((item) => item.equipped)).toHaveLength(64);
-    expect(inventory.filter((item) => !item.equipped)).toHaveLength(19);
+    expect(inventory).toHaveLength(17);
+    expect(inventory.filter((item) => item.equipped)).toHaveLength(12);
+    expect(inventory.filter((item) => !item.equipped)).toHaveLength(5);
   });
 
   it('missing items array yields empty inventory and keeps the existing warning', () => {
@@ -92,7 +95,7 @@ describe('parseSaveFile inventory pass', () => {
   });
 
   it('does not change hero candidate count on the real fixture', () => {
-    const raw = loadFixtureJson('save-20260731-11heroes.json');
+    const raw = loadFixtureJson('save-20260813-5heroes.json');
     const withoutInventory = parseSaveFile(raw, []);
     expect(withoutInventory.candidates.length).toBeGreaterThan(0);
     expect(withoutInventory.candidates.every((candidate) => !candidate.blocked)).toBe(true);
@@ -126,7 +129,7 @@ describe('parseSaveFile inventory pass', () => {
   });
 
   it('inventory entries carry catalog-resolved slots', () => {
-    const raw = loadFixtureJson('save-20260731-11heroes.json');
+    const raw = loadFixtureJson('save-20260813-5heroes.json');
     const { inventory } = parseSaveFile(raw, []);
     const emberCalca = inventory.find((item) => item.defId === 'ember_calca' && item.upgrade === 8);
     expect(emberCalca?.slot).toBe('calca');

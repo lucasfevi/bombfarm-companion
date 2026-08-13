@@ -6,22 +6,27 @@ import { importHeroes } from '@/shared/lib/storage';
 import { resetPlannerStoreForTests, usePlannerStore } from '@/shared/stores';
 import { WEB_PACKAGE_ROOT } from './helpers/web-package-root';
 
+// MP5 F1 (AD-068 class (a) — read from the capture): re-pointed onto
+// payload-20260812-8heroes.json (27 catalogued items vs the export's 17 — the larger
+// inventory keeps these sync assertions discriminating, per design.md §6.1).
 const fixturePath = join(
   WEB_PACKAGE_ROOT,
-  '../../packages/domain/tests/fixtures/sheet-math/save-20260731-11heroes.json',
+  '../../packages/domain/tests/fixtures/sheet-math/payload-20260812-8heroes.json',
 );
 
 function loadFixture(): Record<string, unknown> {
   return JSON.parse(readFileSync(fixturePath, 'utf8')) as Record<string, unknown>;
 }
 
-const phase151FixturePath = join(
+// The export-shaped subject — needed only for the real account.phase test below (the export
+// carries `phase`; the default `fixturePath` payload above is the richer-inventory subject).
+const exportFixturePath = join(
   WEB_PACKAGE_ROOT,
-  '../../packages/domain/tests/fixtures/sheet-math/phase-151.json',
+  '../../packages/domain/tests/fixtures/sheet-math/save-20260813-5heroes.json',
 );
 
-function loadPhase151Fixture(): Record<string, unknown> {
-  return JSON.parse(readFileSync(phase151FixturePath, 'utf8')) as Record<string, unknown>;
+function loadFixtureJsonForExport(): Record<string, unknown> {
+  return JSON.parse(readFileSync(exportFixturePath, 'utf8')) as Record<string, unknown>;
 }
 
 describe('import inventory sync', () => {
@@ -36,7 +41,7 @@ describe('import inventory sync', () => {
   it('replaceInventoryFromImport replaces the snapshot wholesale', () => {
     const { inventory } = parseSaveFile(loadFixture(), []);
     usePlannerStore.getState().replaceInventoryFromImport(inventory);
-    expect(usePlannerStore.getState().inventory.items).toHaveLength(58);
+    expect(usePlannerStore.getState().inventory.items).toHaveLength(27);
     usePlannerStore.getState().replaceInventoryFromImport(inventory.slice(0, 1));
     expect(usePlannerStore.getState().inventory.items).toHaveLength(1);
   });
@@ -70,7 +75,7 @@ describe('import inventory sync', () => {
   it('applyAccountImport sets slots from save data', () => {
     const { account } = parseSaveFile(loadFixture(), []);
     usePlannerStore.getState().applyAccountImport(account);
-    expect(usePlannerStore.getState().slots).toBe(6);
+    expect(usePlannerStore.getState().slots).toBe(3);
   });
 
   it('applyAccountImport never overwrites forgeFloor', () => {
@@ -87,14 +92,20 @@ describe('import inventory sync', () => {
     expect(usePlannerStore.getState().forgeFloor).toBe(15);
   });
 
-  it('applyAccountImport carries a real save\'s account.phase (151) into store phase, plus Abisso base', () => {
-    const { account } = parseSaveFile(loadPhase151Fixture(), []);
-    expect(account.phase).toBe(151);
+  // MP5 F1 (AD-068 class (a) — read from the capture): re-pointed onto the post-patch export's
+  // real phase (24) — `phase-151.json` is deleted with the rest of the pre-wipe corpus
+  // (AD-061; `max_phase 42` post-wipe cannot reproduce a phase-151 subject at all).
+  // RECORDED LOSS: the Abisso half of the deleted assertion (`treeAbisso`/`treeAbissoBase`
+  // flowing from a real save's `abisso_base`) is unreproducible — no post-patch capture
+  // carries `abisso_base` at all (the 2026-08-13 patch removed the keystone). Abisso detection
+  // itself stays covered by `abisso-glass-cannon.test.ts` (F2's surface, untouched by F1) via
+  // synthetic payloads. See docs/fixture-corpus.md.
+  it('applyAccountImport carries a real save\'s account.phase into store phase', () => {
+    const raw = loadFixtureJsonForExport();
+    const { account } = parseSaveFile(raw, []);
+    expect(account.phase).toBe(24);
     usePlannerStore.getState().applyAccountImport(account);
-    const s = usePlannerStore.getState();
-    expect(s.phase).toBe(151);
-    expect(s.treeAbisso).toBe(true);
-    expect(s.treeAbissoBase).toBeCloseTo(1.008, 10);
+    expect(usePlannerStore.getState().phase).toBe(24);
   });
 
   it('blocked heroes still sync roster without inventory when list is empty', () => {

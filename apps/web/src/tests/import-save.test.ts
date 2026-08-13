@@ -289,28 +289,23 @@ describe('parseSaveFile — birth_stats reject gate (BSPW5-01)', () => {
     expect(candidates.length).toBeGreaterThan(0);
   });
 
+  // MP5 F1 (AD-068 class (a) — read from the capture): re-pointed onto the post-patch export.
   it('AC-04 (real fixture): a birth-capable save is not rejected', () => {
-    const raw = loadFixtureJson('vera-01-points-reset.json');
+    const raw = loadFixtureJson('save-20260813-5heroes.json');
     const { rejected, candidates } = parseSaveFile(raw, []);
     expect(rejected).toBeNull();
-    expect(candidates).toHaveLength(11);
+    expect(candidates).toHaveLength(5);
   });
 
-  it('AC-01/AC-03: a real pre-birth_stats export (gale-01, 16 heroes, 0 with birth) rejects', () => {
-    const raw = loadFixtureJson('gale-01-points-reset.json');
-    const { candidates, account, rejected, warnings } = parseSaveFile(raw, []);
-    expect(candidates).toHaveLength(0);
-    expect(account).toEqual({ tree: null, houseIdx: null, houseLevel: null, phase: null });
-    expect(rejected).not.toBeNull();
-    expect(rejected!.reason).toBe('missingBirthStats');
-    expect(warnings.some((w) => /re-export/i.test(w))).toBe(true);
-  });
-
-  it('AC-02: rejected.heroNames lists every hero lacking birth_stats, not just the first', () => {
-    const raw = loadFixtureJson('gale-01-points-reset.json');
-    const { rejected } = parseSaveFile(raw, []);
-    expect(rejected!.heroNames.length).toBe(16);
-  });
+  // MP5 F1 — RECORDED LOSS (AD-068 "deleted, not weakened"): `gale-01-points-reset.json`
+  // (16 heroes, 0 with birth_stats) is the only fixture that could demonstrate the whole-file
+  // reject gate against a REAL pre-birth_stats export. Every post-patch capture carries
+  // `birth_stats` on every hero by construction (the field predates the keystone patch), so
+  // no committed post-patch fixture can reproduce this shape. The reject-gate LOGIC itself
+  // stays covered by `account-source-parity.test.ts`'s synthetic multi-hero missing-birth_stats
+  // cases (`missingBirthStats naming that hero`, `mixed save … rejects with every missing name`)
+  // — only the demonstration against a real 16-hero legacy export is lost. See
+  // docs/fixture-corpus.md.
 
   it('mixed save (one of several heroes missing birth_stats) rejects the whole file (kills a some/every slip)', () => {
     const save = baseSave();
@@ -735,28 +730,31 @@ describe('parseSaveFile', () => {
     expect(weird.record.pts).toEqual(expectedPts(rawWeird, weird.record.abilities, weird.record.loadout, tree));
   });
 
-  it('AC-28: a known code at level 0 pushes no issue (caca_hero @ 0, real fixture, Vera 39625)', () => {
-    const raw = loadFixtureJson('bellatrix-02-pts-each-1.json');
-    const { candidates } = parseSaveFile(raw, []);
-    const vera = candidates.find((c) => c.sourceId === '39625')!;
-    expect(vera.record.abilities.caca_hero).toBe(0);
-    expect(vera.issues.some((i) => i.includes('caca_hero'))).toBe(false);
-  });
+  // MP5 F1 — RECORDED LOSS (AD-068 "deleted, not weakened"): AC-28's claim needs a real save
+  // hero with an ability array entry AT level 0. Neither post-patch corpus file has one (every
+  // ability entry on every hero in both `save-20260813-5heroes.json` and
+  // `payload-20260812-8heroes.json` is level >= 17) — unreproducible from the new corpus. See
+  // docs/fixture-corpus.md. The level-0-ability-slot code path itself stays covered by the
+  // synthetic `keeps zero-level ability slots in the hero pool` test above (baseSave()'s Lorne,
+  // `marcha_acelerada: 0`), which is not fixture-dependent.
 
   it('AC-06 / BSP-38: rank 20 and a mid-curve rank both survive parseSaveFile unclamped', () => {
-    const raw = loadFixtureJson('bellatrix-02-pts-each-1.json');
+    // MP5 F1 (AD-068 class (a) — read from the capture): re-pointed onto
+    // payload-20260812-8heroes.json — the payload's 8 heroes carry the highest ability-level
+    // variety in the new corpus.
+    const raw = loadFixtureJson('payload-20260812-8heroes.json');
     const { candidates } = parseSaveFile(raw, []);
 
-    // Bram (18606): explosao_ampla @ 20 — no clamp to the old max: 10.
-    const bram = candidates.find((c) => c.sourceId === '18606')!;
-    expect(bram.record.abilities.explosao_ampla).toBe(20);
+    // Bellatrix (584): bateria_extra @ 20 — no clamp to the old max: 10.
+    const bellatrix = candidates.find((c) => c.sourceId === '584')!;
+    expect(bellatrix.record.abilities.bateria_extra).toBe(20);
 
-    // Vera (39625): marcha_acelerada @ 17 — mid-curve, above the old max: 10.
-    const vera = candidates.find((c) => c.sourceId === '39625')!;
-    expect(vera.record.abilities.marcha_acelerada).toBe(17);
+    // Nyx (555): contra_relogio @ 18 — mid-curve, above the old max: 10.
+    const nyx = candidates.find((c) => c.sourceId === '555')!;
+    expect(nyx.record.abilities.contra_relogio).toBe(18);
 
-    // Zane (37455): pressagio_mortal @ 19 — mid-curve, above the old max: 10.
-    const zane = candidates.find((c) => c.sourceId === '37455')!;
-    expect(zane.record.abilities.pressagio_mortal).toBe(19);
+    // Cora (5217): fantasma @ 17 — mid-curve, above the old max: 10.
+    const cora = candidates.find((c) => c.sourceId === '5217')!;
+    expect(cora.record.abilities.fantasma).toBe(17);
   });
 });
