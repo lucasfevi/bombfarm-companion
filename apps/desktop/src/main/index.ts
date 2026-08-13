@@ -10,6 +10,7 @@ import {
   type IpcInvokeChannel,
 } from '@bombfarm/contracts';
 import { type ConsentEvent, createPacingGate, initialConsent, reduceConsent } from '@bombfarm/game-api';
+import { createAccountNotifier, resolveAccountView } from './account-view.js';
 import { applyAppIdentity } from './app-identity.js';
 import { createBootRecord } from './boot-record.js';
 import { fuseSecondsForCdr } from './domain-edge.js';
@@ -74,39 +75,10 @@ function registerIpcHandlers(): void {
       mapped: null,
       raw: { state: null, inventory: null },
     },
-    'account:get': (): AccountView => {
-      // gameRunning always comes fresh from the game reader's current status — never from a
-      // cached view, so a stale cached commit can never misreport whether the game is running.
-      const gameRunning = gameReader?.getStatus().status === 'connected';
-      // The game-API cycle (MP2 F2) is the freshest live producer, but only once it has
-      // actually read something — i.e. once consent is granted. Before that, every cycle it
-      // runs (including the very first one at boot, and every one thereafter while declined/
-      // unasked/revoked) commits nothing but an all-`missing` "not consented" placeholder
-      // through the *same* AccountStore the fixture/memory game reader writes to
-      // (`AccountStore.commit()` = persist+restore+merge). Preferring that placeholder
-      // unconditionally — as this used to do — meant one no-op cycle at boot permanently
-      // masked the game reader's own resolved fixture/memory data behind a `stale` merge for
-      // the 60s until the game-API cycle's next run (T-fix-6, caught by
-      // `account-restart.spec.mjs`). So: the game reader's own cache wins whenever it has one
-      // (real production's memory-mode reader never populates it — see
-      // `GameReaderService.tickMemory()` — so this changes nothing there); only once consent
-      // is granted does the game-API cycle's own (now genuinely fresher) view get first look.
-      const consentGranted = consentStore?.read().decision === 'granted';
-      const cached =
-        (consentGranted ? accountRefresh?.getLastView() : null) ??
-        gameReader?.getAccountView() ??
-        accountRefresh?.getLastView();
-      if (cached) {
-        return { ...cached, gameRunning };
-      }
-      return (
-        accountStore?.commit({}, { gameRunning }) ?? {
-          payload: {},
-          gameRunning,
-          store: { status: 'unavailable', reason: 'no_sqlite_binding', binding: null },
-        }
-      );
-    },
+    // MP3 F3 (AD-043) — the handler's pre-F3 body now lives, verbatim, in account-view.ts's
+    // resolveAccountView(); this is a one-line call to it. See that file for the T-fix-6
+    // precedence comment this used to carry inline.
+    'account:get': (): AccountView => resolveAccountView({ gameReader, consentStore, accountRefresh, accountStore }),
     'consent:get': (): ConsentRecord => consentStore?.read() ?? initialConsent(),
     'consent:accept': (): ConsentRecord => applyConsentEvent({ type: 'accept', now: new Date().toISOString() }),
     'consent:decline': (): ConsentRecord => applyConsentEvent({ type: 'decline' }),
@@ -213,6 +185,14 @@ async function bootstrap(): Promise<void> {
     now: () => Date.now(),
     sleep: (ms) => new Promise((resolve) => setTimeout(resolve, ms)),
   });
+
+  // MP3 F3 (AD-043) — declared before accountRefresh so its onView callback can close over it;
+  // assigned once every producer it reads (gameReader, consentStore, accountRefresh) exists.
+  // Both producers below "ping" it and ignore their own payload argument — the notifier always
+  // re-resolves the CURRENT cached view itself (resolveCachedAccountView), so the push and the
+  // pull are provably the same function (design.md §2.3).
+  let notifier: ReturnType<typeof createAccountNotifier> | null = null;
+
   accountRefresh = createAccountRefresh({
     consentStore,
     transport: nodeHttpsTransport,
@@ -225,10 +205,30 @@ async function bootstrap(): Promise<void> {
     // cannot apply in a packaged build no matter what is set in its environment. See
     // `session-token-file.ts`'s `SessionCfgPathDeps` doc comment.
     readToken: (consent) => readSessionToken(consent, undefined, sessionCfgPath({ isPackaged: resolveAppEnv().isPackaged })),
-    onView: (view) => {
+    // account-refresh.ts itself is unmodified (TD-10, MP2 owns that file's commit semantics) —
+    // only what the listener does changed: it used to emit unconditionally on every commit
+    // (AD-031 fact 2); it now asks the notifier, which emits only on a real change.
+    onView: () => {
+      notifier?.notifyIfChanged();
+    },
+  });
+
+  notifier = createAccountNotifier({
+    gameReader,
+    consentStore,
+    accountRefresh,
+    emit: (view) => {
       emitEvent('account:changed', view);
     },
   });
+
+  // MP3 F3 (AD-043 point 3) — fixture mode's ~20×/s ticker is the second producer that can
+  // commit an account; wired the same way, ignoring its own payload argument for the same
+  // reason. Production's memory-mode reader never commits (GameReaderService.tickMemory() has
+  // no commit site), so this callback never fires outside fixture-mode test builds.
+  gameReader.onAccountCommitted = () => {
+    notifier.notifyIfChanged();
+  };
 
   registerIpcHandlers();
   await createMainWindow();
