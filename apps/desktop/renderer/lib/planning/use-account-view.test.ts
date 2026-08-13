@@ -95,3 +95,38 @@ describe('useAccountView — structural guarantee that the fetch effect runs onc
     expect(stateCalls).toHaveLength(1);
   });
 });
+
+describe("useAccountView — MP3 F3's subscription lives in the SAME effect (source-level, the same genre as the checks above)", () => {
+  it('subscribes to account:changed exactly once, inside the one useEffect — no second subscription path', async () => {
+    const fs = await import('node:fs');
+    const path = await import('node:path');
+    const source = fs.readFileSync(path.join(__dirname, 'use-account-view.ts'), 'utf8');
+
+    const onCalls = source.match(/bridge\.on\(/g) ?? [];
+    expect(onCalls).toHaveLength(1);
+    expect(source).toContain("bridge.on('account:changed'");
+  });
+
+  it('one cleanup latches `cancelled` AND calls the bfc.on unsubscribe (MAR-12) — not two separate cleanup paths', async () => {
+    const fs = await import('node:fs');
+    const path = await import('node:path');
+    const source = fs.readFileSync(path.join(__dirname, 'use-account-view.ts'), 'utf8');
+
+    // Exactly one `return () => { ... }` cleanup in the whole file (inside the one useEffect),
+    // and its body sets `cancelled = true` and calls `unsubscribe()`.
+    const cleanupMatch = source.match(/return \(\) => \{([\s\S]*?)\};/);
+    expect(cleanupMatch).not.toBeNull();
+    const cleanupBody = cleanupMatch?.[1] ?? '';
+    expect(cleanupBody).toMatch(/cancelled = true/);
+    expect(cleanupBody).toMatch(/unsubscribe\(\)/);
+  });
+
+  it('the mount account:get is kept, not removed — createAccountViewLoader is still invoked from the effect', async () => {
+    const fs = await import('node:fs');
+    const path = await import('node:path');
+    const source = fs.readFileSync(path.join(__dirname, 'use-account-view.ts'), 'utf8');
+
+    expect(source).toContain('createAccountViewLoader(bridge)');
+    expect(source).toContain('loader\n      .load()');
+  });
+});
