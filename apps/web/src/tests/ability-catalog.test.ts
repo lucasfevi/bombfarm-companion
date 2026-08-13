@@ -5,7 +5,6 @@
 import { describe, expect, it } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
-import { starsMult } from '@bombfarm/domain/gear';
 import {
   ABILITIES,
   COMBAT_ABILITIES,
@@ -56,7 +55,12 @@ describe('catalog completeness (T2, BSP-32 / BSP-32a)', () => {
   });
 
   it('AC-02: save slot === ABILITIES.findIndex(id) + 1 for every owned code in the fixture', () => {
-    const raw = loadFixtureJson('bellatrix-02-pts-each-1.json');
+    // MP5 F1 (AD-068 class (b) — structural): re-pointed onto payload-20260812-8heroes.json.
+    // RECORDED LOSS: the payload's 8 heroes own 11 distinct ability codes, not the deleted
+    // fixture's 13 — two codes (of the 20-entry catalog) lose their in-fixture slot check.
+    // The claim itself (slot === catalog index + 1) still re-points cleanly for every code
+    // that IS owned. See docs/fixture-corpus.md.
+    const raw = loadFixtureJson('payload-20260812-8heroes.json');
     const heroes = raw.heroes as Array<Record<string, unknown>>;
     const seen = new Map<string, number>();
     for (const hero of heroes) {
@@ -67,8 +71,8 @@ describe('catalog completeness (T2, BSP-32 / BSP-32a)', () => {
         if (!seen.has(code)) seen.set(code, slot);
       }
     }
-    // Driven from the fixture, not a hand-copied list — 13/13 owned codes (W0-14:159).
-    expect(seen.size).toBe(13);
+    // Driven from the fixture, not a hand-copied list — 11/11 owned codes.
+    expect(seen.size).toBe(11);
     for (const [code, slot] of seen) {
       const index = ABILITIES.findIndex((a) => a.id === code);
       expect(index, `${code} missing from ABILITIES`).toBeGreaterThanOrEqual(0);
@@ -210,40 +214,14 @@ describe('golpe_brutal — critDmgPctOfBase (T1, AD-BSP-32 / BSP-37d)', () => {
     expect(mods.dmgMult).toBe(IDENTITY_MODS.dmgMult);
   });
 
-  it('AC-20: Korin (43040) rank-1 crit_dmg recomposes to <=1e-12, rejecting golpe=0 and flat +4pp', () => {
-    const raw = loadFixtureJson('bellatrix-02-pts-each-1.json');
-    const heroes = raw.heroes as Array<Record<string, unknown>>;
-    const korin = heroes.find((h) => String(h.id) === '43040');
-    expect(korin).toBeDefined();
-    if (!korin) return;
-
-    const birth = korin.birth_stats as Record<string, unknown>;
-    const stats = korin.stats as Record<string, unknown>;
-    const birthCritDmg = birth.crit_dmg as number;
-    const stars = korin.stars as number;
-    const saveCritDmg = stats.crit_dmg as number;
-    const abilities = korin.abilities as Array<Record<string, unknown>>;
-    const golpe = abilities.find((a) => a.code === 'golpe_brutal');
-    expect(golpe?.level).toBe(1);
-
-    const S = starsMult(stars);
-    const hero = (birthCritDmg - 1) * S;
-
-    // Reads the live catalog through abilityMods — sensitive to a mis-catalogued perLevel
-    // (M2) or a broken accumulator (M3), not a hand-copied constant.
-    const golpeLevel = Number(golpe?.level ?? 0);
-    const sheetCritDmgPctOfBase = abilityMods({ golpe_brutal: golpeLevel }).sheetCritDmgPctOfBase;
-    const predicted = 1 + hero * (1 + sheetCritDmgPctOfBase);
-    expect(Math.abs(predicted - saveCritDmg)).toBeLessThanOrEqual(1e-12);
-
-    // Rejected model 1: golpe = 0 (no ability contribution at all).
-    const golpeZero = 1 + hero;
-    expect(Math.abs(golpeZero - saveCritDmg)).toBeGreaterThan(1e-12);
-
-    // Rejected model 2: flat +4 percentage points instead of ×1.04 on the Hero line.
-    const flatFourPp = 1 + (hero * 100 + 4) / 100;
-    expect(Math.abs(flatFourPp - saveCritDmg)).toBeGreaterThan(1e-12);
-  });
+  // MP5 F1 — RECORDED LOSS (AD-068 "deleted, not weakened"): AC-20's real-fixture proof
+  // (Korin, id 43040, golpe_brutal rank 1) needs a hero who OWNS golpe_brutal. Neither
+  // post-patch corpus file has one — scanned exhaustively, no hero in
+  // `save-20260813-5heroes.json` or `payload-20260812-8heroes.json` carries the code.
+  // Unreproducible from the new corpus. The golpe_brutal MATH itself stays covered by the
+  // synthetic AC-12/AC-13/AC-16 tests above (catalog definition, abilityMods output, identity
+  // of every other combat field) — only the real-save recomposition proof is lost. See
+  // docs/fixture-corpus.md.
 });
 
 describe('sheetOther.critDmg wiring — all four production builders (AC-17)', () => {
