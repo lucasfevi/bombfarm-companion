@@ -100,6 +100,13 @@ jobs:
           --filter @bombfarm/game-data --filter @bombfarm/game-api --filter @bombfarm/pricing
           --filter @bombfarm/domain --filter @bombfarm/desktop lint
 
+      # apps/desktop/src/main/domain-edge.test.ts asserts against the esbuild main-process
+      # bundle (MDW-03: domain code is actually inlined) and fails loudly in CI when it's
+      # missing rather than skipping. build:electron is esbuild, not electron-builder, so
+      # it's fast and needs no platform-specific packaging step here.
+      - name: Build desktop electron bundle
+        run: pnpm --filter @bombfarm/desktop build:electron
+
       # Root vitest minus the web project. apps/web's bundle assertions require
       # `pnpm --filter @bombfarm/web build` to have run first and now fail loudly rather
       # than skipping when it hasn't (apps/web/src/tests/support/build-output.ts) — and this
