@@ -25,8 +25,8 @@ const ROSTER_DPS_PATH = join(root, 'packages/domain/src/roster-dps.ts');
 
 /**
  * Extracts the right-hand-side root path of every property `roster-dps.ts` passes to
- * `computeAdvisorPipeline({ ... })` — `key: hero.naked` → `hero.naked`; `key: account.tree.abisso
- * ?? false` → `account.tree.abisso` (the `?? default` fallback stripped); a shorthand line like
+ * `computeAdvisorPipeline({ ... })` — `key: hero.naked` → `hero.naked`; `key: account.tree.energy
+ * ?? 0` → `account.tree.energy` (the `?? default` fallback stripped); a shorthand line like
  * `phase,` → `phase`. Balanced-brace slicing from the call site, one property per line — the same
  * technique `tools/advisor-input-parity.test.mjs`'s `extractPipelineInputKeys` uses, both source
  * files formatting this call one property per line.

@@ -21,7 +21,7 @@ describe('save-failure toast (MOD-45)', () => {
   });
 });
 
-describe('account house keystones (AHK-11)', () => {
+describe('account house chrome (AHK-11)', () => {
   it('defines House subsection chrome in EN and PT', () => {
     expect(STRINGS.en.panelHouse).toBe('House');
     expect(STRINGS.pt.panelHouse).toBe('Casa');
