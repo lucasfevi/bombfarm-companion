@@ -8,6 +8,8 @@ import { AppShell, EmptyState, StatusChip } from '@bombfarm/ui';
 // fails the static export build rather than surfacing later at runtime (spec edge case). This
 // is a probe, not planning UI — F2 (mp3-planning-views) is what actually renders advice.
 import { rarityLabel } from '@bombfarm/domain/game-labels';
+import { CopyProvider, useCopy } from '../lib/copy';
+import { formatAge } from '../lib/format';
 import { ConsentModal } from './consent-modal';
 
 function statusLabel(status: GameStatusInfo['status']): string {
@@ -23,13 +25,16 @@ function statusLabel(status: GameStatusInfo['status']): string {
   }
 }
 
-/** Trivial seconds/minutes formatter for StatusChip's ageLabel — M5 replaces this with locale formatting. */
-function formatAgeLabel(staleAgeMs: number): string {
-  const seconds = Math.max(0, Math.round(staleAgeMs / 1000));
-  return seconds < 60 ? `${seconds.toFixed(0)}s` : `${Math.round(seconds / 60).toFixed(0)}m`;
+export default function HomePage() {
+  return (
+    <CopyProvider>
+      <HomePageContent />
+    </CopyProvider>
+  );
 }
 
-export default function HomePage() {
+function HomePageContent() {
+  const t = useCopy();
   const [environment, setEnvironment] = useState<AppEnvironmentInfo | null>(null);
   const [status, setStatus] = useState<GameStatusInfo | null>(null);
   const [snapshot, setSnapshot] = useState<GameSnapshotPayload | null>(null);
@@ -38,7 +43,7 @@ export default function HomePage() {
   useEffect(() => {
     const bridge = (window as unknown as { bfc?: NonNullable<Window['bfc']> }).bfc;
     if (!bridge) {
-      setError('Preload bridge unavailable');
+      setError(t.emptyBridgeUnavailableTitle);
       return;
     }
 
@@ -69,7 +74,9 @@ export default function HomePage() {
       offStatus();
       offSnapshot();
     };
-  }, []);
+    // `t.emptyBridgeUnavailableTitle` is a stable reference from the copy context (F2 mounts one
+    // locale) — listed to satisfy exhaustive-deps without changing the once-on-mount behaviour.
+  }, [t.emptyBridgeUnavailableTitle]);
 
   const rawJson = useMemo(() => {
     if (!snapshot) return null;
@@ -97,7 +104,7 @@ export default function HomePage() {
               <StatusChip
                 status={status.status}
                 label={statusLabel(status.status)}
-                ageLabel={status.staleAgeMs != null ? formatAgeLabel(status.staleAgeMs) : undefined}
+                ageLabel={status.staleAgeMs != null ? formatAge(status.staleAgeMs) : undefined}
               />
             ) : (
               'Loading…'
@@ -123,7 +130,7 @@ export default function HomePage() {
             {rarityLabel('Comum', 'en')}
           </span>
           {error ? (
-            <EmptyState title="Preload bridge unavailable" description={error} />
+            <EmptyState title={t.emptyBridgeUnavailableTitle} description={error} />
           ) : rawJson ? (
             <div className="space-y-2">
               <h2 className="text-sm font-medium text-muted">Current snapshot (raw + mapped)</h2>
@@ -135,7 +142,7 @@ export default function HomePage() {
               </pre>
             </div>
           ) : (
-            <EmptyState title="No snapshot yet" description="Waiting on the first read from the game." />
+            <EmptyState title={t.emptyNoSnapshotTitle} description={t.emptyNoSnapshotDescription} />
           )}
         </section>
       </AppShell>
