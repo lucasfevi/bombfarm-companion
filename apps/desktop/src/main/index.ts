@@ -12,6 +12,7 @@ import {
 import { type ConsentEvent, createPacingGate, initialConsent, reduceConsent } from '@bombfarm/game-api';
 import { applyAppIdentity } from './app-identity.js';
 import { createBootRecord } from './boot-record.js';
+import { fuseSecondsForCdr } from './domain-edge.js';
 import { InvalidFlavorError, resolveAppEnv, RENDERER_DEV_URL, type AppEnv } from './env.js';
 import { GameReaderService } from './game-reader/game-reader-service.js';
 import { createAccountRefresh, type AccountRefreshHandle } from './game-api/account-refresh.js';
@@ -275,6 +276,11 @@ if (env.envConflict) {
 }
 
 log.info(createBootRecord(env, 'main'));
+
+// MP3 F1 (AD-032) — proves the main process can compute with @bombfarm/domain: a value
+// import from the built package, called once at boot. No behaviour depends on this; F2/F3
+// are what actually use the edge. See src/main/domain-edge.ts.
+log.info({ scope: 'main', event: 'domain.edge_ready', fuseSecondsAtZeroCdr: fuseSecondsForCdr(0) });
 
 if (!gotLock) {
   app.quit();

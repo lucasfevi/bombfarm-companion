@@ -3,6 +3,11 @@
 import { useEffect, useMemo, useState } from 'react';
 import type { AppEnvironmentInfo, GameSnapshotPayload, GameStatusInfo } from '@bombfarm/contracts';
 import { AppShell, EmptyState, StatusChip } from '@bombfarm/ui';
+// MP3 F1 (AD-032) — proves the renderer can import @bombfarm/domain: a value import from a
+// FILE subpath that itself value-imports ./data/catalog.json, so a dist missing the JSON data
+// fails the static export build rather than surfacing later at runtime (spec edge case). This
+// is a probe, not planning UI — F2 (mp3-planning-views) is what actually renders advice.
+import { rarityLabel } from '@bombfarm/domain/game-labels';
 import { ConsentModal } from './consent-modal';
 
 function statusLabel(status: GameStatusInfo['status']): string {
@@ -113,6 +118,10 @@ export default function HomePage() {
         }
       >
         <section data-testid="app-ready" className="space-y-4">
+          {/* MP3 F1 probe — proves a @bombfarm/domain value reaches the DOM. Not planner UI. */}
+          <span data-testid="domain-label-probe" className="sr-only">
+            {rarityLabel('Comum', 'en')}
+          </span>
           {error ? (
             <EmptyState title="Preload bridge unavailable" description={error} />
           ) : rawJson ? (

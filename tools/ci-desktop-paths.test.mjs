@@ -54,7 +54,67 @@ describe('ci-desktop.yml — the two path-filter lists stay in sync', () => {
     expect(filterPaths).toContain('packages/game-api/**');
   });
 
+  it('both lists carry packages/domain/** — a domain-only change must run desktop CI', () => {
+    expect(pushPaths).toContain('packages/domain/**');
+    expect(filterPaths).toContain('packages/domain/**');
+  });
+
   it('the two lists are exactly equal, in the same order', () => {
     expect(filterPaths).toEqual(pushPaths);
+  });
+});
+
+/**
+ * `AD-032` makes `@bombfarm/domain` a built package, joining the five workspace packages
+ * `ci-desktop.yml` already builds/typechecks/lints ahead of the desktop job (MDW-29). These
+ * assertions read the exact `run:` lines of the three steps, so a future edit that drops
+ * domain from one of them (while leaving the path filters above intact) fails loudly instead
+ * of silently building the desktop shell against a stale/missing dist.
+ */
+describe('ci-desktop.yml — @bombfarm/domain joins the desktop build/typecheck/lint steps (MDW-29)', () => {
+  const workflowText = readFileSync(CI_DESKTOP_PATH, 'utf8');
+
+  function extractStepRun(anchorName) {
+    const lines = workflowText.split('\n');
+    const nameIndex = lines.findIndex((line) => line.trim() === `- name: ${anchorName}`);
+    if (nameIndex === -1) return null;
+    // The step's `run:` is the next non-blank line(s) after `- name:` (a bare `run:` line, or
+    // a `run: >` folded block whose continuation lines follow with deeper indentation).
+    const runLines = [];
+    for (let i = nameIndex + 1; i < lines.length; i += 1) {
+      const line = lines[i];
+      if (/^\s*run:/.test(line)) {
+        runLines.push(line);
+        for (let j = i + 1; j < lines.length; j += 1) {
+          const next = lines[j];
+          if (/^\s{10,}\S/.test(next)) {
+            runLines.push(next);
+          } else {
+            break;
+          }
+        }
+        break;
+      }
+      if (/^\s*- name:/.test(line)) break; // hit the next step with no run: found
+    }
+    return runLines.join('\n');
+  }
+
+  it('"Build workspace packages (desktop deps)" includes @bombfarm/domain', () => {
+    const run = extractStepRun('Build workspace packages (desktop deps)');
+    expect(run).not.toBeNull();
+    expect(run).toContain('--filter @bombfarm/domain');
+  });
+
+  it('"Typecheck desktop + deps" includes @bombfarm/domain', () => {
+    const run = extractStepRun('Typecheck desktop + deps');
+    expect(run).not.toBeNull();
+    expect(run).toContain('--filter @bombfarm/domain');
+  });
+
+  it('"Lint desktop + deps" includes @bombfarm/domain', () => {
+    const run = extractStepRun('Lint desktop + deps');
+    expect(run).not.toBeNull();
+    expect(run).toContain('--filter @bombfarm/domain');
   });
 });

@@ -15,3 +15,14 @@ the stricter bar.
 cleanup PR — the surface area is large and unrelated to packaging. Restoring
 strictness is allowed later as its own chore; until then this exception is
 intentional and documented.
+
+## Scope unchanged by `AD-032`/`AD-033` (MP3 F1)
+
+MP3 F1 makes `@bombfarm/domain` a **built** package — consumers (`apps/desktop`'s main
+process and renderer) resolve its `dist/**/*.d.ts` under `skipLibCheck`, rather than its
+`src/**/*.ts` under this package's own relaxed `tsconfig.json`. That is precisely what lets
+this exception stay **unchanged in scope**: the two packages (`@bombfarm/domain`,
+`@bombfarm/ui`) and the ESLint globs above are identical before and after — no new package or
+config is covered, and none is removed. A consumer built against `dist` never compiles
+domain's source under its own strictness bar at all, so the packaging change is orthogonal to
+this exception rather than an extension of it.

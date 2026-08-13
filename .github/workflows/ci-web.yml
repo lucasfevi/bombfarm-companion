@@ -92,6 +92,14 @@ jobs:
       - name: Lint web + domain + ui
         run: pnpm --filter @bombfarm/domain --filter @bombfarm/ui --filter @bombfarm/web lint
 
+      # apps/web itself still resolves @bombfarm/domain SOURCE via tsconfig `paths` and the
+      # Vitest `resolve.alias` (AD-034) — this step is NOT that. It exists only so
+      # packages/domain's own packaging test (dist-package-exports.test.ts, AD-032) has a
+      # dist/ to assert against when "Unit tests (domain)" below runs. Do not "simplify" this
+      # into a web dependency; web never reads packages/domain/dist.
+      - name: Build domain (its own packaging test needs dist)
+        run: pnpm --filter @bombfarm/domain build
+
       # Domain tests need no build output, so they stay ahead of the (slow) build to keep
       # fast feedback on the most common failures.
       - name: Unit tests (domain)
