@@ -1,8 +1,10 @@
-import { describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it } from 'vitest';
 import { createElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { buildPlanningModel } from '../../lib/planning/account-model';
 import { syntheticAccountView } from '../../lib/planning/fixtures/synthetic-views';
+import { CopyProvider } from '../../lib/copy';
+import { getAdviceComputeCount, resetAdviceComputeCount } from '../../lib/planning/hero-advice';
 import { NextPointPanel } from './next-point-panel';
 
 function firstHeroId(model: ReturnType<typeof buildPlanningModel>): string {
@@ -39,5 +41,42 @@ describe('NextPointPanel (MPV-02, MPV-03, MPV-09)', () => {
     const html = renderToStaticMarkup(createElement(NextPointPanel, { model, heroId }));
     expect(html).toContain('data-testid="withheld-nextPointRanking"');
     expect(html).not.toContain('data-testid="next-point-ranking"');
+  });
+});
+
+/**
+ * MP3 F4 — MIN-10 unit half (design §4.3): a language switch is a display change, not an account
+ * change, and must trigger zero advice recomputation. `resetAdviceComputeCount()` in
+ * `beforeEach` — F3's module-level-state warning applies verbatim (recompute-sequences.test.ts's
+ * own convention, reused here).
+ */
+describe('a locale switch over a mounted planning tree recomputes nothing (MIN-10)', () => {
+  beforeEach(() => {
+    resetAdviceComputeCount();
+  });
+
+  it('rendering the SAME model/hero under two different CopyProvider locales computes advice exactly once, not once per locale', () => {
+    const model = buildPlanningModel(syntheticAccountView());
+    const heroId = firstHeroId(model);
+
+    // First render: a genuine cache miss (heroChangeKey/sharedChangeKey/usabilityKey are all new).
+    renderToStaticMarkup(
+      createElement(CopyProvider, { locale: 'en', children: createElement(NextPointPanel, { model, heroId }) }),
+    );
+    expect(getAdviceComputeCount()).toBe(1);
+
+    // Switching locale touches neither heroChangeKey nor sharedChangeKey (§4.3 — AppLocale is not
+    // a field of AccountPayload/HeroRecord/AccountShared, so it is structurally incapable of
+    // entering either key) — the cache hits, and the count stays at 1.
+    renderToStaticMarkup(
+      createElement(CopyProvider, { locale: 'pt-BR', children: createElement(NextPointPanel, { model, heroId }) }),
+    );
+    expect(getAdviceComputeCount()).toBe(1);
+
+    // And switching back, again over the same model/hero, still adds nothing.
+    renderToStaticMarkup(
+      createElement(CopyProvider, { locale: 'en', children: createElement(NextPointPanel, { model, heroId }) }),
+    );
+    expect(getAdviceComputeCount()).toBe(1);
   });
 });

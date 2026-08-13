@@ -3,11 +3,15 @@ import { app, BrowserWindow, ipcMain } from 'electron';
 import {
   DEFAULT_SETTINGS,
   isIpcChannel,
+  resolveStartupLocale,
   type AccountView,
+  type AppLocale,
+  type AppSettings,
   type ConsentRecord,
   type IpcEventChannel,
   type IpcEvents,
   type IpcInvokeChannel,
+  type SettingsWriteResult,
 } from '@bombfarm/contracts';
 import { type ConsentEvent, createPacingGate, initialConsent, reduceConsent } from '@bombfarm/game-api';
 import { createAccountNotifier, resolveAccountView } from './account-view.js';
@@ -18,6 +22,7 @@ import { InvalidFlavorError, resolveAppEnv, RENDERER_DEV_URL, type AppEnv } from
 import { GameReaderService } from './game-reader/game-reader-service.js';
 import { createAccountRefresh, type AccountRefreshHandle } from './game-api/account-refresh.js';
 import { createConsentStore, type ConsentStore } from './game-api/consent-store.js';
+import { createSettingsStore, type SettingsStore } from './game-api/settings-store.js';
 import { nodeHttpsTransport } from './game-api/https-transport.js';
 import { readSessionToken, sessionCfgPath } from './game-api/session-token-file.js';
 import { configureLogging, log } from './logging.js';
@@ -30,6 +35,12 @@ let gameReader: GameReaderService | null = null;
 let accountStore: AccountStore | null = null;
 let accountRefresh: AccountRefreshHandle | null = null;
 let consentStore: ConsentStore | null = null;
+let settingsStore: SettingsStore | null = null;
+// MP3 F4 (AD-053) — the resolved language, held in a module-level `let` exactly as
+// `consentStore`'s own value is. Defaults to `DEFAULT_SETTINGS` until `bootstrap()` resolves it
+// (inside `whenReady()`, where `app.getLocale()` is documented valid) so `settings:get` never
+// races a caller that arrives before boot finishes.
+let currentSettings: AppSettings = DEFAULT_SETTINGS;
 
 function emitEvent<C extends IpcEventChannel>(channel: C, payload: IpcEvents[C]): void {
   mainWindow?.webContents.send(`bfc:event:${channel}`, payload);
@@ -44,6 +55,19 @@ function applyConsentEvent(event: ConsentEvent): ConsentRecord {
   emitEvent('consent:changed', next);
   accountRefresh?.onConsentChanged(next);
   return next;
+}
+
+/**
+ * MP3 F4 (`AD-051`/`AD-052`, design.md §4.1) — the one path both `settings:useEnglish` and
+ * `settings:usePortuguese` go through (the `applyConsentEvent` shape, `index.ts:40-47`, applied
+ * to a payload with two possible values instead of an enum event). APPLIES first, always, THEN
+ * persists — `currentSettings` is reassigned before the store is ever touched, so the returned
+ * `settings` is the applied value on every branch (MIN-11's "the language still applies for the
+ * session" is then structural, not a branch someone has to remember to write).
+ */
+function applyLocale(next: AppLocale): SettingsWriteResult {
+  currentSettings = { schemaVersion: 1, locale: next };
+  return settingsStore?.write(currentSettings) ?? { settings: currentSettings, persisted: false, reason: 'no_store' };
 }
 
 function registerIpcHandlers(): void {
@@ -61,7 +85,11 @@ function registerIpcHandlers(): void {
       };
     },
     'app:ping': () => ({ ok: true as const, from: 'main' as const }),
-    'settings:get': () => DEFAULT_SETTINGS,
+    // MP3 F4 (AD-053) — the resolved settings (stored override, else OS detection, else
+    // DEFAULT_SETTINGS.locale), not the constant this has returned since MP1.
+    'settings:get': (): AppSettings => currentSettings,
+    'settings:useEnglish': (): SettingsWriteResult => applyLocale('en'),
+    'settings:usePortuguese': (): SettingsWriteResult => applyLocale('pt-BR'),
     'storage:health': () => storage?.healthCheck() ?? { binding: 'unknown', ok: false },
     'game:getStatus': () => gameReader?.getStatus() ?? {
       status: 'not_running' as const,
@@ -181,6 +209,18 @@ async function bootstrap(): Promise<void> {
   // so this cycle issues nothing at all until the player has accepted the first-run modal (T9).
   // Constructed before registerIpcHandlers() so the consent:* handlers never see a null store.
   consentStore = createConsentStore(accountOpen.db);
+
+  // MP3 F4 (AD-052/AD-053) — same db handle consentStore takes. Resolved ONCE, here, inside
+  // whenReady() (bootstrap()'s own calling context), where app.getLocale() is documented to be
+  // valid. A stored override always wins over the OS (MIN-09); source is logged so "why did it
+  // open in English?" is answerable from a log line rather than a guess (MIN-06/MIN-07).
+  settingsStore = createSettingsStore(accountOpen.db);
+  const storedSettings = settingsStore.read();
+  const systemLocale = app.getLocale();
+  const { locale, source } = resolveStartupLocale({ stored: storedSettings?.locale ?? null, systemLocale });
+  currentSettings = { schemaVersion: 1, locale };
+  log.info({ scope: 'main', event: 'locale.resolved', locale, source, systemLocale });
+
   const gate = createPacingGate({
     now: () => Date.now(),
     sleep: (ms) => new Promise((resolve) => setTimeout(resolve, ms)),
@@ -321,6 +361,9 @@ if (!gotLock) {
     accountRefresh?.stop();
     accountRefresh = null;
     consentStore = null;
+    // MP3 F4 — settingsStore borrows accountOpen.db, which accountStore.close() already owns
+    // below; it holds no timer and opens no handle of its own, so it must not gain a close().
+    settingsStore = null;
     storage?.close();
     storage = null;
     accountStore?.close();

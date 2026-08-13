@@ -28,7 +28,7 @@ export function FidelityNotice({ model }: { model: PlanningModel }) {
           <li key={section.section} data-testid={`fidelity-section-${section.section}`} className="flex items-center gap-2">
             <span>{t[ACCOUNT_SECTION_COPY_KEY[section.section]]}</span>
             <Chip variant="small-warn">{t[SECTION_STATUS_COPY_KEY[section.status]]}</Chip>
-            {section.capturedAt ? <span className="text-xs text-muted">{formatCapturedAt(section.capturedAt)}</span> : null}
+            {section.capturedAt ? <span className="text-xs text-muted">{formatCapturedAt(section.capturedAt, t)}</span> : null}
             {section.status === 'degraded' && section.missingKeys.length > 0 ? (
               <span data-testid="fidelity-missing-keys" className="flex items-center gap-1 text-xs text-muted">
                 <code>{section.missingKeys.join(', ')}</code>

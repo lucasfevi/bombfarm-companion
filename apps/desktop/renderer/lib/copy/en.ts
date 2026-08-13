@@ -94,4 +94,32 @@ export const en = {
   storeReasonNotWritable: 'the save location is not writable',
   storeReasonNoSqliteBinding: 'this build cannot save on this system',
   storeReasonAccountMismatch: 'a different account is currently running',
+
+  // age* — relative-age words for format.ts (MP3 F4, AD-054). format.ts owns no words of its
+  // own; every one of its five relative-age buckets renders through one of these, via sub().
+  // Singular/plural-agnostic by construction (design §7 rule 3) — no plural engine is built.
+  ageJustNow: 'just now',
+  ageMinutes: '{n}m ago',
+  ageHours: '{n}h ago',
+  ageDays: '{n}d ago',
+  ageShortSeconds: '{n}s',
+  ageShortMinutes: '{n}m',
+
+  // settings* — the language control (MP3 F4, MIN-16)
+  settingsNavLabel: 'Settings',
+  settingsLanguageSectionTitle: 'Language',
+  settingsLanguageLabel: 'App language',
+  settingsLanguageHelp: 'Changes take effect immediately.',
+  settingsLanguageOptionEnglish: 'English',
+  settingsLanguageOptionPortuguese: 'Portuguese (Brazil)',
+  settingsLanguageNotSavedTitle: 'Language changed, but not saved',
+  // One key per SettingsWriteReason (@bombfarm/contracts), mapped exhaustively by
+  // SETTINGS_WRITE_REASON_COPY_KEY below (MIN-11).
+  settingsLanguageReasonNoStore: 'Your save location is unavailable, so this will not survive a restart.',
+  settingsLanguageReasonNotWritable: 'Your save location is not writable, so this will not survive a restart.',
+  settingsLanguageReasonUnknown: 'This choice could not be saved, so it will not survive a restart.',
+
+  // error* — MP3 F4 §2.8: a main-process error crosses the boundary as a key, never as
+  // pre-rendered English. The raw message is kept as diagnostic data only.
+  errorAccountReadFailedDescription: 'Try again after the game finishes loading, or restart the app.',
 } as const;
