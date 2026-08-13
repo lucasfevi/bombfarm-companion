@@ -32,7 +32,6 @@ export const en = {
   importHouseName: "Name",
   importHouseLevel: "Level",
   importHouseRest: "Rest time",
-  importKeystoneOn: "On",
   // AC-32/BSP-49 — the review-before-confirm sync breakdown.
   importSyncSummary: "Created {created} · Updated {updated} · Removed {removed}",
   // BSP-51/AC-34 — states plainly what "Removed" means; shown only when removed > 0.
@@ -79,7 +78,6 @@ export const pt: typeof en = {
   importHouseName: "Nome",
   importHouseLevel: "Nível",
   importHouseRest: "Tempo de descanso",
-  importKeystoneOn: "Ativo",
   importSyncSummary: "Criados {created} · Atualizados {updated} · Removidos {removed}",
   importRemovedNote: "Heróis que não estão nesse save não existem mais no jogo — serão removidos do seu elenco.",
   importPointShortfall: "Os pontos gastos não batem exatamente na ficha — uma pequena sobra, não uma diferença real de stat.",
