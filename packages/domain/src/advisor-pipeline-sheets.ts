@@ -34,8 +34,6 @@ export type ResolveDeriveSheetsInput = {
    */
   treeCritDmgMult?: number;
   treeTempoDobrado?: boolean;
-  /** Abisso — zeroes Crit tree sheet adds before applySkillTree / birth recompose. */
-  treeAbisso?: boolean;
   /**
    * When set, naked/geared for derive are recomposed from birth (tree-inclusive zero-pts
    * geared) so Points After / DPS stay aligned with Stats Total after level/stars/tree edits.

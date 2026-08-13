@@ -120,8 +120,6 @@ export interface PipelineFacts {
   treeDanoTotal: number;
   /** Extra damage % from Math check — factor in `dmgMult`. */
   extraDmgPct: number;
-  /** Abisso's `abissoBase^currentPhase` factor — 1 when not owned. Factor in `dmgMult`. */
-  abissoMult: number;
   active: number;
   dps: number;
   uptime: number;

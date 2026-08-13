@@ -272,7 +272,6 @@ function recordHero(
   file: string,
   saveHero: SaveHeroSheet,
   tree: TreeSheetTotals,
-  accountTree: { abisso: boolean; abissoBase: number },
   houseIdx: number,
   houseLevel: number,
   phase: number,
@@ -329,9 +328,6 @@ function recordHero(
     teamBuffs: zeroTeamBuffs(),
     treeGlassCannon: tree.glassCannon ?? false,
     treeTempoDobrado: tree.tempoDobrado ?? false,
-    treeAbisso: accountTree.abisso,
-    treeAbissoBase: accountTree.abissoBase,
-    phase,
     extraDmgPct: 0,
   });
 
@@ -395,8 +391,6 @@ function recordHero(
       teamCoinPct: 0,
       glassCannon: tree.glassCannon ?? false,
       tempoDobrado: tree.tempoDobrado ?? false,
-      abisso: accountTree.abisso,
-      abissoBase: accountTree.abissoBase,
       critDmgMult: tree.critDmgMult,
       luckFlatPct: tree.luckFlatPct,
     },
@@ -440,7 +434,6 @@ function recordHero(
     dmgMult: pipelineResult.dmgMult,
     treeDanoTotal: pipelineResult.treeSheet.danoStatic,
     extraDmgPct: 0,
-    abissoMult: pipelineResult.abissoMult,
     active: pipelineResult.active,
     dps: pipelineResult.dps,
     uptime: pipelineResult.uptime,
@@ -576,8 +569,7 @@ export function recordInvarianceSurface(): InvarianceRecord {
   for (const file of CORPUS_FILES) {
     const raw = loadFixtureJson(file);
     const parsed = parseSaveFile(raw, []);
-    const accountTree = parsed.account.tree;
-    if (!accountTree) throw new Error(`fixture ${file} has no skill tree — cannot record`);
+    if (!parsed.account.tree) throw new Error(`fixture ${file} has no skill tree — cannot record`);
     const houseIdx = parsed.account.houseIdx ?? 0;
     const houseLevel = parsed.account.houseLevel ?? 1;
     const phase = parsed.account.phase;
@@ -595,7 +587,6 @@ export function recordInvarianceSurface(): InvarianceRecord {
         file,
         saveHero,
         tree,
-        { abisso: accountTree.abisso, abissoBase: accountTree.abissoBase },
         houseIdx,
         houseLevel,
         phase,
@@ -626,8 +617,6 @@ export function recordInvarianceSurface(): InvarianceRecord {
       mitigationPct: input.account.mitigationPct,
       treeGlassCannon: input.account.treeGlassCannon,
       treeTempoDobrado: input.account.treeTempoDobrado,
-      treeAbisso: input.account.treeAbisso,
-      treeAbissoBase: input.account.treeAbissoBase,
     };
     const evaluation = evaluateRoster({
       contexts: built.contexts,

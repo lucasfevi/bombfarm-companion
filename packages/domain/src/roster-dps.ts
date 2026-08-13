@@ -55,8 +55,6 @@ export function pipelineForHero(
     treeEnergy: account.tree.energy,
     treeGlassCannon: account.tree.glassCannon,
     treeTempoDobrado: account.tree.tempoDobrado,
-    treeAbisso: account.tree.abisso ?? false,
-    treeAbissoBase: account.tree.abissoBase ?? 0,
     treeLuckFlatPct: account.tree.luckFlatPct ?? 0,
     teamBuffs: account.teamBuffs,
     houseIdx: context.houseIdx,

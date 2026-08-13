@@ -33,11 +33,11 @@ const BASELINE_PATH = join(__dirname, 'fixtures', 'invariance', 'baseline.json')
 
 /**
  * `formulaDmg`'s `substituted` string is the SOLE enumerated non-numeric delta (MKR-14). It is
- * pinned as an exact string TRANSFORM of the pre-deletion value — dropping the ` × 1.000`
- * Abisso factor (formatted to 3 decimals; the corpus is keystone-free so `abissoMult` is always
- * exactly `1`) while the `= <value>` tail stays byte-identical — never a bare "this key may
- * differ" flag. Any OTHER differing entry, or a differing entry that does not match this exact
- * transform, fails the walk below.
+ * pinned as an exact string TRANSFORM of the pre-deletion value — dropping the deleted third
+ * factor's ` × 1.000` term (formatted to 3 decimals; the corpus is keystone-free so that factor
+ * was always exactly `1`) while the `= <value>` tail stays byte-identical — never a bare "this
+ * key may differ" flag. Any OTHER differing entry, or a differing entry that does not match
+ * this exact transform, fails the walk below.
  */
 const PERMITTED_DELTAS: {
   reason: string;
