@@ -45,6 +45,12 @@ export class GameReaderService {
   private windowProvider: (() => BrowserWindow | null) | null = null;
   private accountStore: AccountCommitter | null = null;
   private lastAccountView: AccountView | null = null;
+  /** MP3 F3 (`AD-043` point 3) — fired after `tickFixture` commits, so a caller sees the FRESH
+   * `lastAccountView` through `getAccountView()`, never the previous tick's (a callback invoked
+   * from inside `commit()` itself would read the stale value one tick early — see
+   * `account-view.ts`'s notifier doc comment for why). Optional and unset in production; only
+   * fixture mode ever calls `accountStore.commit()` from this class at all. */
+  onAccountCommitted?: () => void;
 
   private scanner: MemoryScanner | null = null;
   private target: ScanTarget | null = null;
@@ -188,6 +194,7 @@ export class GameReaderService {
 
     if (this.accountStore) {
       this.lastAccountView = this.accountStore.commit(buildFixtureAccountPayload(takenAt), { gameRunning: true });
+      this.onAccountCommitted?.();
     }
   }
 

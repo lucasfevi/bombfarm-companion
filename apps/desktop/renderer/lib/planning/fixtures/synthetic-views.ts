@@ -123,3 +123,100 @@ export function syntheticAccountView(options: SyntheticViewOptions = {}): Accoun
     },
   };
 }
+
+// --- MP3 F3 additions (design.md §5, T3) — the transition-sequence and per-hero mutation
+// building blocks for `recompute-sequences.test.ts`. F2's builders above are unmodified. ---
+
+/** An N-hero roster, each hero a distinct id, for MAR-16's "only the changed hero recomputes"
+ *  and "a shared-tree change recomputes every hero" tests. Bodies are otherwise identical to
+ *  `rawHero`'s single-hero shape, just repeated under distinct ids/names. */
+export function syntheticRosterAccountView(heroIds: readonly string[]): AccountView {
+  const heroes = heroIds.map((id, index) => rawHero(id, `Hero-${String(index)}`));
+  return {
+    payload: {
+      account: { phase: 71 },
+      heroes,
+      skills: { totals: { dmg_static: REAL_DMG_STATIC, crit_dmg_mult: 1, crit_chance_add: 0.1 } },
+      casa: { active_casa: 2, levels: [10, 16] },
+      items: [],
+      fidelity: buildFidelity(),
+    },
+    gameRunning: false,
+    store: { status: 'ok', reason: null, binding: 'better-sqlite3' },
+  };
+}
+
+/**
+ * A new `AccountView` with one hero's raw record patched (e.g. `{ level: 41 }`) — every other
+ * hero's raw record is untouched. Used by MAR-16's "changing one hero recomputes exactly one
+ * hero" test and by the per-field mutation half of T5's key-coverage guard.
+ */
+export function mutateHeroField(view: AccountView, heroId: string, patch: Record<string, unknown>): AccountView {
+  const rawHeroes = (view.payload.heroes as unknown[] | undefined) ?? [];
+  const heroes = rawHeroes.map((entry) => {
+    const record = entry as Record<string, unknown>;
+    return record.id === heroId ? { ...record, ...patch } : record;
+  });
+  return { ...view, payload: { ...view.payload, heroes } };
+}
+
+/**
+ * A new `AccountView` with an extra field folded into the raw `account` body (e.g.
+ * `{ gold: 999 }`). `import-save.ts`'s `mapAccountData` reads only `phase`/`houseIdx`/
+ * `houseLevel`/`tree` (from `skills`)/`slots` from this section, so any other key is confined to
+ * a field the advisor pipeline never reads — the MAR-03 "irrelevant field" building block.
+ */
+export function mutateAccountIrrelevantField(view: AccountView, patch: Record<string, unknown>): AccountView {
+  const account = view.payload.account ?? {};
+  return { ...view, payload: { ...view.payload, account: { ...account, ...patch } } };
+}
+
+/**
+ * A new `AccountView` with `skills.totals` patched (e.g. `{ dmg_static: 9999 }`) — the
+ * shared-tree mutation building block for MAR-16's "a shared-tree change recomputes every hero"
+ * test and for the per-field mutation half of T5's key-coverage guard over `account.tree.*`.
+ */
+export function mutateSkillsTotals(view: AccountView, patch: Record<string, unknown>): AccountView {
+  const skills = view.payload.skills ?? {};
+  const totals = (skills.totals as Record<string, unknown> | undefined) ?? {};
+  return {
+    ...view,
+    payload: {
+      ...view.payload,
+      skills: { ...skills, totals: { ...totals, ...patch } },
+    },
+  };
+}
+
+/**
+ * A new `AccountView` with exactly one section's fidelity `status` flipped — the body and every
+ * other section's fidelity are left untouched unless `bodyPatch` is supplied. The scripted
+ * fidelity-transition building block (MAR-06/07/08/09/10, design.md §5): callers apply this
+ * repeatedly to walk a sequence like `resolved → degraded → resolved`.
+ */
+export function withSectionStatus(
+  view: AccountView,
+  section: AccountSection,
+  status: SectionStatus,
+  missingKeys?: readonly string[],
+): AccountView {
+  const fidelity = view.payload.fidelity ?? buildFidelity();
+  return {
+    ...view,
+    payload: {
+      ...view.payload,
+      fidelity: { ...fidelity, [section]: sectionFidelity(status, missingKeys) },
+    },
+  };
+}
+
+/** A new `AccountView` with a section omitted from the payload entirely (distinct from a
+ *  `missing`-status-but-present section) — used by the consent-revoked/all-missing sequences. */
+export function withoutSection(view: AccountView, section: AccountSection): AccountView {
+  const { [section]: _omitted, ...rest } = view.payload as unknown as Record<string, unknown>;
+  const fidelity = view.payload.fidelity ?? buildFidelity();
+  return {
+    ...view,
+    payload: { ...(rest as AccountPayload), fidelity: { ...fidelity, [section]: { status: 'missing' } } },
+  };
+}
