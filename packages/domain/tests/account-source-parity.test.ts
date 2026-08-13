@@ -1,9 +1,13 @@
-// ACS-01/ACS-02: proves the source-neutral entry point split preserves `parseSaveFile`'s
-// observable behaviour byte-for-byte. Ordering matters here (tasks.md T4 step 1-2): these
-// digest/snapshot assertions are captured against the PRE-refactor `parseSaveFile` — they are
-// the behaviour-preservation baseline. This file is extended with parity/rejection/edge-case
-// assertions AFTER the refactor (step 3-4); those additions never touch the values below.
-import { createHash } from 'node:crypto';
+// ACS-01: proves the source-neutral entry point split preserves `parseSaveFile`'s observable
+// behaviour byte-for-byte — `parseSaveFile` and `parseAccountPayload` still agree on every
+// canonical fixture. MP5 F1 (`AD-068`): the pre-refactor inline `ParseResult` digests (ACS-02)
+// and the `vera-01-points-reset.json` warnings snapshot are DELETED here, not regenerated —
+// they were SHA-256 hashes / a golden snapshot of *our own output* captured against a
+// pre-refactor HEAD and a since-deleted pre-wipe account. Re-hashing or re-snapshotting them
+// against a new fixture would assert nothing at all (a value produced by running
+// `@bombfarm/domain` and pasted back in as an expected value is a violation, not a baseline).
+// The `__snapshots__/account-source-parity.test.ts.snap` file (whose only entry was the deleted
+// warnings snapshot) is deleted in the same commit.
 import { describe, expect, it } from 'vitest';
 import { parseAccountPayload, parseSaveFile } from '@bombfarm/domain/import-save';
 import { deriveAccountFidelity } from '@bombfarm/domain/account-fidelity';
@@ -11,40 +15,9 @@ import type { HeroRecord } from '@bombfarm/domain/shims/storage';
 import { loadFixtureJson } from './helpers/sheet-math-fixtures';
 import { minimalHero } from './helpers/minimal-save-hero';
 
-const CANONICAL_FIXTURES = [
-  'save-20260731-11heroes.json',
-  'save-20260801-crit-dmg-tree.json',
-  'phase-151.json',
-] as const;
-
-function digest(value: unknown): string {
-  return createHash('sha256').update(JSON.stringify(value)).digest('hex');
-}
-
-describe('ParseResult digest is unchanged from pre-refactor HEAD (ACS-02)', () => {
-  it('save-20260731-11heroes.json', () => {
-    const raw = loadFixtureJson('save-20260731-11heroes.json');
-    expect(digest(parseSaveFile(raw, []))).toMatchInlineSnapshot(`"61cb57c9a0acd5d3359bf73d4add3b2f7b06c0b79884f07304758aaa4d289b55"`);
-  });
-
-  it('save-20260801-crit-dmg-tree.json', () => {
-    const raw = loadFixtureJson('save-20260801-crit-dmg-tree.json');
-    expect(digest(parseSaveFile(raw, []))).toMatchInlineSnapshot(`"a803a37450e5f4ecec841ad6097b43549eb844d8399652d9d48ab58359562792"`);
-  });
-
-  it('phase-151.json', () => {
-    const raw = loadFixtureJson('phase-151.json');
-    expect(digest(parseSaveFile(raw, []))).toMatchInlineSnapshot(`"8f0e61b3d3738f395567358f77f8eb04bede3c13f04d11b71e77e6c8bdf694f1"`);
-  });
-});
-
-describe('warning strings and order are unchanged (ACS-02)', () => {
-  it('vera-01-points-reset.json', () => {
-    const raw = loadFixtureJson('vera-01-points-reset.json');
-    const { warnings } = parseSaveFile(raw, []);
-    expect(warnings).toMatchSnapshot();
-  });
-});
+// MP5 F1 (AD-068 class (b) — structural): re-pointed onto the post-patch corpus. The claim
+// itself (`parseSaveFile` ≡ `parseAccountPayload`) is unchanged; only the fixture names moved.
+const CANONICAL_FIXTURES = ['save-20260813-5heroes.json', 'payload-20260812-8heroes.json'] as const;
 
 describe('parseAccountPayload and parseSaveFile agree on every canonical fixture (ACS-01)', () => {
   for (const fixture of CANONICAL_FIXTURES) {
@@ -54,8 +27,8 @@ describe('parseAccountPayload and parseSaveFile agree on every canonical fixture
     });
   }
 
-  it('save-20260731-11heroes.json: identical ParseResult with a non-empty existing[] (isGearRefresh / matchedExistingId)', () => {
-    const raw = loadFixtureJson('save-20260731-11heroes.json');
+  it('save-20260813-5heroes.json: identical ParseResult with a non-empty existing[] (isGearRefresh / matchedExistingId)', () => {
+    const raw = loadFixtureJson('save-20260813-5heroes.json');
     const heroes = Array.isArray(raw.heroes) ? raw.heroes : [];
     const firstSourceId = heroes
       .map((hero) => (typeof hero === 'object' && hero !== null ? (hero as Record<string, unknown>).id : undefined))
@@ -177,7 +150,7 @@ describe('edge cases (spec.md Edge Cases)', () => {
   });
 
   it('a resolved-but-absent section warns without changing warnings on the file path (payload.fidelity undefined)', () => {
-    const raw = loadFixtureJson('save-20260731-11heroes.json');
+    const raw = loadFixtureJson('save-20260813-5heroes.json');
     const { warnings } = parseSaveFile(raw, []);
     // The file adapter never sets `fidelity`, so the resolved-but-absent warning can never
     // fire on this path — provably empty of that warning text.

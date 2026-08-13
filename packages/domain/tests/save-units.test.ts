@@ -37,10 +37,11 @@ describe('saveSheetUnits / birthFromSave (AC-08 — hand-computed literals)', ()
   });
 
   it('AC-08: Bellatrix\'s birth_stats.luck converts to percent, not a fraction', () => {
-    // Real fixture value (save-20260801-crit-dmg-tree.json, Bellatrix birth_stats.luck).
-    const converted = birthFromSave({ luck: 0.082486912718623 });
-    expect(converted.luck).toBeCloseTo(8.2486912718623, 9);
-    expect(converted.luck).not.toBeCloseTo(0.082486912718623, 3);
+    // Real fixture value (save-20260813-5heroes.json, Bellatrix birth_stats.luck) —
+    // MP5 F1 (AD-068 class (a) — re-read from the post-patch capture).
+    const converted = birthFromSave({ luck: 0.0922693386123672 });
+    expect(converted.luck).toBeCloseTo(9.22693386123672, 9);
+    expect(converted.luck).not.toBeCloseTo(0.0922693386123672, 3);
   });
 
   it('saveSheetUnits and birthFromSave are the same table (DEC-09)', () => {
