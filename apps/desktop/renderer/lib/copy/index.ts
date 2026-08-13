@@ -114,28 +114,21 @@ interface CopyContextValue {
   readonly locale: AppLocale;
 }
 
-const DEFAULT_CONTEXT_VALUE: CopyContextValue = { copy: en, locale: 'en' };
+const DEFAULT_CONTEXT_VALUE: CopyContextValue = { copy: en, locale: DEFAULT_SETTINGS.locale };
 
 const CopyContext = createContext<CopyContextValue>(DEFAULT_CONTEXT_VALUE);
 
 /**
- * F2 mounted exactly one locale unconditionally; F4 makes `locale` the prop that decides which
- * language mounts, and provides `STRINGS[locale]`. `useMemo` keyed on `locale` so switching
- * languages produces one new context value, not a new object on every render.
+ * F2 mounted exactly one locale unconditionally; F4 makes `locale` a required prop and provides
+ * `STRINGS[locale]` — the only change at the one call site (`page.tsx`, wired in `T4`). `useMemo`
+ * keyed on `locale` so switching languages produces one new context value, not a new object on
+ * every render.
  *
- * `locale` is DESIGNED to be required (design.md §4.2, T2 Done-when) — the default below is
- * `tasks.md`'s named escape hatch ("add a defaulted prop only if the typecheck cannot otherwise
- * pass at the commit boundary"), needed only because `page.tsx` does not pass it until T4. T4
- * removes this default and its call site always passes `locale` explicitly; nothing else in this
- * feature reads the default.
+ * `locale` was briefly defaulted in T2's own commit (`tasks.md`'s named escape hatch: "add a
+ * defaulted prop only if the typecheck cannot otherwise pass at the commit boundary"), because
+ * `page.tsx` did not pass it until this task. T4 removes that default, per the note it left here.
  */
-export function CopyProvider({
-  locale = DEFAULT_SETTINGS.locale,
-  children,
-}: {
-  locale?: AppLocale;
-  children: ReactNode;
-}) {
+export function CopyProvider({ locale, children }: { locale: AppLocale; children: ReactNode }) {
   const value = useMemo<CopyContextValue>(() => ({ copy: STRINGS[locale], locale }), [locale]);
   return createElement(CopyContext.Provider, { value }, children);
 }

@@ -6,13 +6,14 @@
 import { Num, Panel, StatList } from '@bombfarm/ui';
 import { isQuantityUsable, withheldSections } from '../../lib/planning/account-model';
 import { adviceForHero } from '../../lib/planning/hero-advice';
-import { useCopy } from '../../lib/copy';
+import { useCopy, useLocale } from '../../lib/copy';
 import { formatCount } from '../../lib/format';
 import type { PlanningModel } from '../../lib/planning/types';
 import { WithheldNotice } from './withheld-notice';
 
 export function HeroDetail({ model, heroId }: { model: PlanningModel; heroId: string | null }) {
   const t = useCopy();
+  const { locale } = useLocale();
   const entry = heroId ? model.heroes.find((candidate) => candidate.hero.id === heroId) : undefined;
 
   if (!entry) {
@@ -37,7 +38,7 @@ export function HeroDetail({ model, heroId }: { model: PlanningModel; heroId: st
   );
 
   const gearValue = gearUsable ? (
-    formatCount(equippedCount)
+    formatCount(equippedCount, locale)
   ) : (
     <WithheldNotice quantity="gearSummary" sections={withheldSections(model.sections, 'gearSummary')} />
   );

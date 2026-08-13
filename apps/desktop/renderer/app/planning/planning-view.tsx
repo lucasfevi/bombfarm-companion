@@ -45,10 +45,15 @@ export function PlanningView() {
   }
 
   if (accountViewState.status === 'error') {
+    // MP3 F4 (design §2.8): the raw Error message crossing from main is untranslatable English —
+    // it is kept as DIAGNOSTIC data only (a data- attribute the copy guard allowlists, since it
+    // is a variable, never a string literal) and never rendered as player-facing body copy. The
+    // spec's own edge case: a main-process error crosses the boundary as a key or code, not as
+    // pre-rendered English.
     return (
       <div data-testid="planning-view">
-        <Banner tone="warn" title={t.errorAccountReadFailed}>
-          {accountViewState.message}
+        <Banner tone="warn" title={t.errorAccountReadFailed} data-account-error-detail={accountViewState.message}>
+          {t.errorAccountReadFailedDescription}
         </Banner>
       </div>
     );

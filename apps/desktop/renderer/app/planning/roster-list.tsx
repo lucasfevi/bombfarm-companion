@@ -6,7 +6,7 @@
  */
 import { Button, Chip, DataTable } from '@bombfarm/ui';
 import { rarityLabel } from '@bombfarm/domain/game-labels';
-import { useCopy } from '../../lib/copy';
+import { useCopy, useLocale } from '../../lib/copy';
 import { formatCount } from '../../lib/format';
 import type { RosterEntry } from '../../lib/planning/types';
 
@@ -20,6 +20,7 @@ export function RosterList({
   onSelect: (heroId: string) => void;
 }) {
   const t = useCopy();
+  const { locale, lang } = useLocale();
 
   return (
     <DataTable.Root scrollable maxRows={12} rowHeight="2.5rem">
@@ -51,13 +52,13 @@ export function RosterList({
                   </Button>
                 </DataTable.RowHeader>
                 <DataTable.Cell align="right" numeric>
-                  {formatCount(entry.hero.level)}
+                  {formatCount(entry.hero.level, locale)}
                 </DataTable.Cell>
                 <DataTable.Cell align="right" numeric>
-                  {formatCount(entry.hero.stars)}
+                  {formatCount(entry.hero.stars, locale)}
                 </DataTable.Cell>
                 <DataTable.Cell>
-                  <Chip variant="small">{rarityLabel(entry.hero.rarity, 'en')}</Chip>
+                  <Chip variant="small">{rarityLabel(entry.hero.rarity, lang)}</Chip>
                 </DataTable.Cell>
               </DataTable.Row>
             );
