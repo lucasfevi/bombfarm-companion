@@ -94,7 +94,6 @@ describe('farmContextForHero', () => {
       farmContextForHero({
         mods,
         teamDrainMult: 1,
-        treeTempoDobrado: false,
         houseIdx: 0,
         houseLevel: 1,
         mitigationPct: 6.7,
@@ -108,7 +107,6 @@ describe('farmContextForHero', () => {
     const ctx = farmContextForHero({
       mods,
       teamDrainMult: 1,
-      treeTempoDobrado: false,
       houseIdx: 0,
       houseLevel: 1,
       mitigationPct: 6.7,
@@ -122,7 +120,6 @@ describe('farmContextForHero', () => {
     const ctx = farmContextForHero({
       mods,
       teamDrainMult: 1,
-      treeTempoDobrado: false,
       houseIdx: 0,
       houseLevel: 1,
       mitigationPct: 6.7,
@@ -137,7 +134,6 @@ describe('farmContextForHero', () => {
     const ctx = farmContextForHero({
       mods,
       teamDrainMult: 0.8,
-      treeTempoDobrado: false,
       houseIdx: 0,
       houseLevel: 1,
       mitigationPct: 6.7,

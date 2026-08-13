@@ -51,7 +51,6 @@ export function isTargetPropUnset(targetProp: string | null | undefined): boolea
 export type FarmContextForHeroInput = {
   mods: AbilityMods;
   teamDrainMult: number;
-  treeTempoDobrado: boolean;
   houseIdx: number;
   houseLevel: number;
   mitigationPct: number;
@@ -71,6 +70,6 @@ export function farmContextForHero(input: FarmContextForHeroInput): Context {
     blastRange: 1 + input.mods.rangeCells,
     cycleModel: FARM_CYCLE_MODEL,
     walkDelay: FARM_WALK_DELAY_SEC,
-    drainMult: input.mods.drainMult * input.teamDrainMult * (input.treeTempoDobrado ? 2 : 1),
+    drainMult: input.mods.drainMult * input.teamDrainMult,
   };
 }

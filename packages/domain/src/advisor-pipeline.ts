@@ -214,7 +214,6 @@ export function computeAdvisorPipeline(input: AdvisorPipelineInput): AdvisorPipe
   const context = farmContextForHero({
     mods,
     teamDrainMult,
-    treeTempoDobrado,
     houseIdx,
     houseLevel,
     mitigationPct: mitPct,

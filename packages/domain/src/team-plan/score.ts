@@ -117,7 +117,6 @@ export function scoreHeroLoadout(
   const context = farmContextForHero({
     mods: ctx.mods,
     teamDrainMult: mults.teamDrainMult,
-    treeTempoDobrado: farm.treeTempoDobrado,
     houseIdx: farm.houseIdx,
     houseLevel: farm.houseLevel,
     mitigationPct: farm.mitigationPct,

@@ -334,7 +334,6 @@ function recordHero(
   const context = farmContextForHero({
     mods,
     teamDrainMult: mults.teamDrainMult,
-    treeTempoDobrado: tree.tempoDobrado ?? false,
     houseIdx,
     houseLevel,
     mitigationPct,
