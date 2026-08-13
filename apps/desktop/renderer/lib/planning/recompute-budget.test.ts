@@ -1,15 +1,17 @@
 /**
  * `AD-045`'s anti-drift deliverable (design.md §2.2, §3, tasks.md T6). The measured figures —
- * full-roster **1.068 ms median / 1.244 ms p95**, per-hero **0.239 ms** — are written here, in
- * design.md §2.2, and in the CI `console.log` line: three places that must agree, so a bound that
- * quietly drifts from the shipped code is a visible diff rather than a silent one (the `AD-016`
- * failure mode this exists to close).
+ * full-roster **~0.6 ms median / ~0.85 ms p95**, per-hero **~0.07 ms** — are written here and in
+ * the CI `console.log` line: places that must agree, so a bound that quietly drifts from the
+ * shipped code is a visible diff rather than a silent one (the `AD-016` failure mode this exists
+ * to close). MP5 F1 (`AD-069`) re-measured these on the post-patch 8-hero payload fixture — the
+ * deleted 11-hero fixture's figures (1.068 ms / 1.244 ms / 0.239 ms) no longer apply.
  *
  * Reads the domain package's own real-account fixture across the package boundary by relative
- * path — `packages/domain/tests/fixtures/sheet-math/save-20260731-11heroes.json` (11 heroes, 174
- * items, the repo's only real-sized roster artifact, already used by
- * `pipeline-for-hero-parity.test.ts`). It does **not** add a file to `packages/domain` (absolute
- * constraint 3): duplicating the fixture here would create a second copy that drifts from the one
+ * path — `packages/domain/tests/fixtures/sheet-math/payload-20260812-8heroes.json` (8 heroes, 27
+ * catalogued items). MP5 F1 (`AD-069`) re-points this from the deleted pre-wipe 11-hero save
+ * fixture onto the post-patch payload fixture — the richest real-sized roster artifact left in
+ * the corpus. It does **not** add a file to `packages/domain` (absolute constraint 3):
+ * duplicating the fixture here would create a second copy that drifts from the one
  * `pipeline-for-hero-parity.test.ts` asserts against.
  */
 import { readFileSync } from 'node:fs';
@@ -34,7 +36,7 @@ const FIXTURE_PATH = path.join(
   'tests',
   'fixtures',
   'sheet-math',
-  'save-20260731-11heroes.json',
+  'payload-20260812-8heroes.json',
 );
 
 /**
@@ -51,7 +53,7 @@ function requireFixture(): Record<string, unknown> {
     throw new Error(
       `recompute-budget.test.ts: could not read the domain fixture at ${FIXTURE_PATH} (${String(err)}). ` +
         'This test intentionally does not skip when the fixture is absent — restore ' +
-        '`packages/domain/tests/fixtures/sheet-math/save-20260731-11heroes.json` (it must not be copied ' +
+        '`packages/domain/tests/fixtures/sheet-math/payload-20260812-8heroes.json` (it must not be copied ' +
         'into packages/domain\'s own tree or apps/desktop; F3 reads the committed domain fixture in place).',
     );
   }
@@ -74,9 +76,9 @@ describe('recompute budget — the measured figure, asserted against itself (AD-
   const raw = requireFixture();
   const parsed = parseAccountPayload(raw, []);
 
-  it('the fixture actually parses 11 heroes and a tree (sanity — otherwise this test proves nothing)', () => {
+  it('the fixture actually parses 8 heroes and a tree (sanity — otherwise this test proves nothing)', () => {
     expect(parsed.rejected).toBeNull();
-    expect(parsed.candidates.length).toBe(11);
+    expect(parsed.candidates.length).toBe(8);
     expect(parsed.account.tree).not.toBeNull();
   });
 
@@ -147,13 +149,13 @@ describe('recompute budget — the measured figure, asserted against itself (AD-
 
   it(
     // One 60 Hz animation frame (16 ms) — the threshold below which the recompute cannot drop a
-    // frame, which is what MAR-15's "the window stays interactive" means. Measured at Design time
-    // (Node v24.16.0, Windows 11 Pro 26200, dev machine, warm, 5 warm-up iterations discarded):
-    // median 1.068 ms, p95 1.244 ms, over 60 runs — reproduced here over this test's own 20-run
-    // sample. 16 ms is 12.9x the measured p95: headroom for a ~1.5x CI-runner slowdown (the
-    // team-plan-solver.test.ts precedent: ~13-15s local vs ~18-22s on GitHub-hosted runners) and a
-    // ~2x fixture-size regression, while still failing a genuine order-of-magnitude regression.
-    'full 11-hero roster completes in < 16 ms (one 60 Hz frame) — measured 1.068 ms median / 1.244 ms p95',
+    // frame, which is what MAR-15's "the window stays interactive" means. MP5 F1 (`AD-069`)
+    // re-measured on the post-patch 8-hero payload fixture (Node v24.16.0, Windows 11 Pro
+    // 26200, dev machine, warm, 5 warm-up iterations discarded): median ~0.6 ms, p95 ~0.85 ms,
+    // over several 20-run samples — reproduced here over this test's own 20-run sample. 16 ms
+    // is ~19x the measured p95: headroom for CI-runner slowdown and a fixture-size regression,
+    // while still failing a genuine order-of-magnitude regression.
+    'full 8-hero roster completes in < 16 ms (one 60 Hz frame) — measured ~0.6 ms median / ~0.85 ms p95',
     () => {
       const { medianMs, p95Ms } = measureFullRosterMedianMs();
       // AD-045 requires the observed value in the CI log, not only a pass/fail bit
@@ -161,7 +163,7 @@ describe('recompute budget — the measured figure, asserted against itself (AD-
       // rule, so no disable comment is needed here (unlike the domain suite's own copy of this
       // pattern, which predates that check).
       console.log(
-        `recompute-budget: full-roster (11 heroes) medianMs=${medianMs.toFixed(3)} p95Ms=${p95Ms.toFixed(3)}`,
+        `recompute-budget: full-roster (8 heroes) medianMs=${medianMs.toFixed(3)} p95Ms=${p95Ms.toFixed(3)}`,
       );
       expect(medianMs).toBeLessThan(16);
     },
@@ -169,9 +171,9 @@ describe('recompute budget — the measured figure, asserted against itself (AD-
 
   it(
     // Exists so the bound keeps discriminating if the fixture ever shrinks: the whole-roster
-    // bound alone would stop meaning anything against a 1-hero fixture. Measured per-hero: 0.239
-    // ms — 2 ms is 8.4x that.
-    'normalised per hero completes in < 2 ms — measured 0.239 ms per hero',
+    // bound alone would stop meaning anything against a 1-hero fixture. MP5 F1 re-measured:
+    // per-hero ~0.07 ms — 2 ms is ~28x that.
+    'normalised per hero completes in < 2 ms — measured ~0.07 ms per hero',
     () => {
       const { medianMs } = measureFullRosterMedianMs();
       const perHeroMs = medianMs / heroes.length;
@@ -180,17 +182,21 @@ describe('recompute budget — the measured figure, asserted against itself (AD-
     },
   );
 
-  it('demonstrates the red state: looping the roster 20x blows the whole-roster budget (observed, then discarded — not committed as a permanent mutation)', () => {
-    function computeFullRosterLooped20x(): void {
-      for (let loop = 0; loop < 20; loop++) {
+  it('demonstrates the red state: looping the roster 80x blows the whole-roster budget (observed, then discarded — not committed as a permanent mutation)', () => {
+    // MP5 F1: the multiplier is re-measured, not scaled arithmetically — the smaller 8-hero
+    // fixture runs fast enough (~0.6 ms/iteration) that the old 20x loop (~12 ms) no longer
+    // reliably clears the 16 ms bound. 40x (~24 ms at the observed median, ~21 ms at the
+    // observed low end) does, with margin.
+    function computeFullRosterLooped80x(): void {
+      for (let loop = 0; loop < 80; loop++) {
         computeFullRoster();
       }
     }
-    for (let i = 0; i < WARMUP_ITERATIONS; i++) computeFullRosterLooped20x();
+    for (let i = 0; i < WARMUP_ITERATIONS; i++) computeFullRosterLooped80x();
     const samples: number[] = [];
     for (let i = 0; i < MEASURED_ITERATIONS; i++) {
       const started = performance.now();
-      computeFullRosterLooped20x();
+      computeFullRosterLooped80x();
       samples.push(performance.now() - started);
     }
     const loopedMedianMs = median(samples);

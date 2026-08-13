@@ -21,13 +21,13 @@ async function pickScope(combobox: Locator, page: Page, optionName: RegExp) {
 }
 
 test.describe('Team plan hero scope', () => {
-  test('two Korin rows are distinguishable by accessible name', async ({ page }) => {
+  test('two Perrin rows are distinguishable by accessible name', async ({ page }) => {
     await seedLocalStorage(page, teamPlanFixtureSeed('en'));
     await gotoTeamPlan(page);
 
-    const korinCards = scopePanel(page).locator('article[aria-label*="Korin · Lv"]');
-    await expect(korinCards).toHaveCount(2);
-    const names = await korinCards.evaluateAll((nodes) =>
+    const perrinCards = scopePanel(page).locator('article[aria-label*="Perrin · Lv"]');
+    await expect(perrinCards).toHaveCount(2);
+    const names = await perrinCards.evaluateAll((nodes) =>
       nodes.map((node) => node.getAttribute('aria-label')),
     );
     expect(new Set(names).size).toBe(2);

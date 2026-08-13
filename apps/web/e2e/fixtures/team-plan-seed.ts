@@ -6,10 +6,10 @@ import type { SeededState } from './seed';
 
 const fixturePath = path.join(
   process.cwd(),
-  '../../packages/domain/tests/fixtures/sheet-math/save-20260731-11heroes.json',
+  '../../packages/domain/tests/fixtures/sheet-math/save-20260813-5heroes.json',
 );
 
-/** Full roster + inventory from the 11-hero save fixture (includes two Korins). */
+/** Full roster + inventory from the 5-hero post-wipe export fixture (includes two Perrins). */
 export function teamPlanFixtureSeed(lang: 'en' | 'pt' = 'en'): SeededState {
   const raw = JSON.parse(readFileSync(fixturePath, 'utf8')) as Record<string, unknown>;
   const { inventory, candidates, account } = parseSaveFile(raw, []);
