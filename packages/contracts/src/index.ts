@@ -1,5 +1,6 @@
 import type { AppFlavor, UpdateChannel } from './flavors.js';
 
+export { accountChangeKey } from './account-change-key.js';
 export type {
   AccountFidelity,
   AccountFidelityGrade,
@@ -291,7 +292,14 @@ export interface IpcEvents {
   'snapshot:updated': GameSnapshotPayload;
   /** Fired whenever the consent record changes, from any cause (accept/decline/revoke). */
   'consent:changed': ConsentRecord;
-  /** Fired whenever the MP2 F2 account-refresh cycle commits a new AccountView. */
+  /**
+   * MP3 F3 (`AD-043`) — fired when the account genuinely **changed**, not on every commit.
+   * Two producers can trigger it: the MP2 F2 account-refresh cycle (the 60 s game-API poll) and,
+   * in fixture-mode test builds only, `GameReaderService`'s fixture ticker. Both are gated by the
+   * same `accountChangeKey(payload)` comparison (`packages/contracts/src/account-change-key.ts`)
+   * against the last-emitted key — a commit whose key is unchanged from the last emit is
+   * suppressed, not forwarded.
+   */
   'account:changed': AccountView;
 }
 
