@@ -37,7 +37,7 @@ const chrome = {
   tdNeedInputClass: '',
   inlineFieldsClass: `grid grid-cols-[repeat(auto-fit,minmax(110px,1fr))] gap-2 ${inlineLabelDesc} ${fieldControlDesc}`,
   inlineFieldsDenseClass: `grid grid-cols-[repeat(auto-fit,minmax(90px,1fr))] gap-2 ${inlineLabelDesc} ${fieldControlDesc}`,
-  stackFieldsClass: `grid grid-cols-1 gap-0 ${fieldControlDesc} [&_label]:grid [&_label]:grid-cols-[1fr_auto] [&_label]:items-center [&_label]:gap-x-2 [&_label]:border-b [&_label]:border-[color-mix(in_oklch,var(--line)_70%,transparent)] [&_label]:py-1.5 [&_label]:text-[13px] [&_label]:text-ink [&_label:last-child]:border-b-0 [&_label>span]:col-start-1 [&_label>span]:row-start-1 [&_label>span]:flex [&_label>span]:min-w-0 [&_label>span]:flex-col [&_label>span]:gap-0.5 [&_label>span_[data-field-hint]]:text-[11px] [&_label>span_[data-field-hint]]:font-normal [&_label>span_[data-field-hint]]:normal-case [&_label>span_[data-field-hint]]:text-muted [&_label_[data-num]]:col-start-2 [&_label_[data-num]]:row-start-1 [&_label_[data-num]]:w-[96px] [&_label_[data-account-tree-value]]:col-start-2 [&_label_[data-account-tree-value]]:row-start-1 [&_label_[data-account-tree-value]]:justify-self-end [&_label_[data-select]]:col-start-2 [&_label_[data-select]]:row-start-1 [&_label_[data-select]]:w-[96px] [&_label_[data-keystone-control]]:col-start-2 [&_label_[data-keystone-control]]:row-start-1`,
+  stackFieldsClass: `grid grid-cols-1 gap-0 ${fieldControlDesc} [&_label]:grid [&_label]:grid-cols-[1fr_auto] [&_label]:items-center [&_label]:gap-x-2 [&_label]:border-b [&_label]:border-[color-mix(in_oklch,var(--line)_70%,transparent)] [&_label]:py-1.5 [&_label]:text-[13px] [&_label]:text-ink [&_label:last-child]:border-b-0 [&_label>span]:col-start-1 [&_label>span]:row-start-1 [&_label>span]:flex [&_label>span]:min-w-0 [&_label>span]:flex-col [&_label>span]:gap-0.5 [&_label>span_[data-field-hint]]:text-[11px] [&_label>span_[data-field-hint]]:font-normal [&_label>span_[data-field-hint]]:normal-case [&_label>span_[data-field-hint]]:text-muted [&_label_[data-num]]:col-start-2 [&_label_[data-num]]:row-start-1 [&_label_[data-num]]:w-[96px] [&_label_[data-account-tree-value]]:col-start-2 [&_label_[data-account-tree-value]]:row-start-1 [&_label_[data-account-tree-value]]:justify-self-end [&_label_[data-select]]:col-start-2 [&_label_[data-select]]:row-start-1 [&_label_[data-select]]:w-[96px]`,
   fieldLabelClass: 'flex flex-col gap-[3px] text-[11px] tracking-[0.03em] text-muted uppercase',
   fieldControlClass: 'w-full rounded-sm border border-line bg-bg px-2 py-1.5 text-[13px] tabular-nums',
   stackLabelClass: 'grid grid-cols-[1fr_auto] items-center gap-2 text-[13px] text-ink',
@@ -155,17 +155,23 @@ const passthrough: Array<keyof typeof pf & keyof typeof chrome> = [
   'importActionsEndClass',
 ];
 
-describe('account house keystones recipe (AHK-12)', () => {
-  it('exports house stack + keystone control classes', () => {
+describe('account house stack recipe (AHK-12)', () => {
+  it('exports house stack classes', () => {
     expect(pf.accountHouseStackClass).toContain('[&_label_[data-select]]:w-[14rem]');
     expect(pf.accountHouseStackClass).toContain('[&_label_[data-num]]:w-[14rem]');
     expect(pf.accountHouseStackClass).toContain(pf.accountStackAlignClass);
-    expect(pf.accountKeystoneControlClass).toBe('flex items-center justify-end gap-2');
-    expect(pf.accountKeystoneStatusClass).toContain('min-w-[2.25rem]');
     expect(pf.stackFieldsClass).toContain('[&_label_[data-select]]:w-[96px]');
     expect(pf.stackFieldsClass).toContain('[&_label_[data-account-tree-value]]:justify-self-end');
-    expect(pf.stackFieldsClass).toContain('[&_label_[data-keystone-control]]:col-start-2');
     expect(pf.accountTreeValueClass).toContain('tabular-nums');
+  });
+
+  // MP5 F3 (MSC-17/MSC-18) — the keystone control/status recipe classes and stack variant
+  // are gone, not weakened: absence asserted by name, and the trailing template-literal
+  // segment that used to enable them no longer appears anywhere in stackFieldsClass.
+  it('no longer exports the keystone control/status recipe classes', () => {
+    expect('accountKeystoneControlClass' in pf).toBe(false);
+    expect('accountKeystoneStatusClass' in pf).toBe(false);
+    expect(pf.stackFieldsClass).not.toContain('data-keystone-control');
   });
 
   it('reserves equal label slot height for single- and two-line Account rows', () => {
