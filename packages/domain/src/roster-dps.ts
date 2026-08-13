@@ -16,7 +16,21 @@ export type RosterDpsInput = {
   mitigationPct: number;
 };
 
-function pipelineForHero(
+/**
+ * The only `HeroRecord`-shaped entry to `computeAdvisorPipeline` (`AD-032`). Exported so a
+ * second surface (the desktop renderer, MP3 F2) maps a `HeroRecord` to advice through this one
+ * function instead of assembling its own `AdvisorPipelineInput` — one mapping, not two.
+ *
+ * `AD-038`: this function does not forward `account.tree.critDmgMult` the way
+ * `advisor-selectors.ts`'s `selectAdvisorPipeline` forwards `state.treeCritDmgMult`.
+ * `advisor-pipeline-sheets.ts` resolves the omission as
+ * `critDmgMult: treeCritDmgMult ?? (treeGlassCannon ? 2 : 1)`, so this path and the web's agree
+ * only when the account's real `crit_dmg_mult` is `1` or `2` (every account observed so far).
+ * The gap is pinned, not fixed, by `tools/advisor-input-parity.test.mjs` — forwarding the field
+ * here would change `apps/web`'s rendered roster DPS, team-plan scorer and reset-advice banner,
+ * and a math change cannot be proven web-neutral by an empty diff.
+ */
+export function pipelineForHero(
   hero: HeroRecord,
   account: AccountShared,
   phase: number,
