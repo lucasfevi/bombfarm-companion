@@ -53,12 +53,13 @@ async function launchApp(env) {
       BFC_GAME_PROCESS: 'bfc-smoke-no-such-process.exe',
       // Same reasoning as consent-modal.spec.mjs (SAFETY, T-fix-4): redirects
       // session-token-file.ts's sessionCfgPath() away from the real
-      // %APPDATA%/Godot/app_userdata/BombFarm/session.cfg. Without this, accepting the consent
-      // modal below would let the next account-refresh cycle open whichever real session.cfg
-      // exists on the machine running this suite and issue a live, authenticated request using
-      // the real player's token — purely as a side effect of a test run. Pointed at a path that
-      // deliberately does not exist: readSessionToken degrades that to `token_unavailable` (no
-      // network call at all).
+      // %APPDATA%/Godot/app_userdata/BombFarm/session.cfg. `dismissConsent()` below declines, so
+      // this is defense-in-depth rather than load-bearing today — but if consent were ever
+      // accepted (here or by a future edit), the next account-refresh cycle would otherwise open
+      // whichever real session.cfg exists on the machine running this suite and issue a live,
+      // authenticated request using the real player's token, purely as a side effect of a test
+      // run. Pointed at a path that deliberately does not exist: readSessionToken degrades that
+      // to `token_unavailable` (no network call at all).
       BFC_TOKEN_PATH_OVERRIDE: path.join(desktopRoot, 'tests', 'smoke', '.no-such-session.cfg'),
       ...env,
     },
@@ -71,13 +72,33 @@ async function launchApp(env) {
 async function dismissConsent(page) {
   // Every test here launches against a fresh, isolated BFC_USER_DATA_DIR (see below), which has
   // never recorded a consent decision — so the first-run ConsentModal deterministically blocks
-  // the "Planning" nav button behind a modal dialog (design.md, LAR-01/03) on every run. Accept
-  // it explicitly, exactly as consent-modal.spec.mjs's first scenario does, rather than
-  // pre-seeding the SQLite-backed consent_v1 row directly (consent-store.ts) — that would mean
-  // inventing a new seeding scheme this suite doesn't already have.
+  // the "Planning" nav button behind a modal dialog (design.md, LAR-01/03) on every run. Decline
+  // it explicitly, exactly as consent-modal.spec.mjs's second scenario does — declining both
+  // dismisses the modal (shouldShowConsentModal returns false for 'declined' same as 'granted',
+  // consent.ts) and leaves the rest of the UI usable on stored/fixture data (ConsentModal's own
+  // comment, LAR-04), without switching on `accountRefresh`.
+  //
+  // Accepting was tried first and reintroduced the exact bug T-fix-6 already fixed once, one
+  // layer up: `index.ts`'s `account:get` handler prefers `accountRefresh.getLastView()` over
+  // `gameReader.getAccountView()` unconditionally once consent is `granted` (its own comment
+  // explains why — the game-API cycle is the freshest *real* producer once it has actually read
+  // something). But `BFC_TOKEN_PATH_OVERRIDE` below deliberately points at a file that does not
+  // exist, so every post-accept `account-refresh` cycle degrades to `token_unavailable` and
+  // commits an all-`failed` payload through the *same* `AccountStore.commit()` the fixture
+  // reader writes to (`merge-account.ts`'s `mergeStoredIntoLive`). That commit permanently
+  // shadows the fixture reader's own `resolved` sections behind, at best, a `stale` merge (never
+  // `missing`, since `mergeStoredIntoLive` still serves a `stale` section's last-persisted body —
+  // but never `resolved` either, because only the *caller's own* live payload can mark a section
+  // `resolved`, and `account-refresh`'s live payload can never do that here). Declining instead
+  // keeps `consentGranted` false, so `account:get` never even looks at `accountRefresh`'s view —
+  // it serves the fixture reader's own (genuinely `resolved`) cache, exactly like
+  // `account-restart.spec.mjs`'s untouched-consent state. `BFC_TOKEN_PATH_OVERRIDE` stays below
+  // as a defense-in-depth belt against a future change that starts granting consent again — it
+  // costs nothing to keep and this suite must never issue a live authenticated request as a side
+  // effect of a test run.
   const modal = page.getByTestId('consent-modal');
   await expect(modal).toBeVisible({ timeout: 30_000 });
-  await page.getByTestId('consent-accept').click();
+  await page.getByTestId('consent-decline').click();
   await expect(modal).toBeHidden({ timeout: 15_000 });
 }
 
