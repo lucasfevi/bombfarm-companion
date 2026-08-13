@@ -5,7 +5,7 @@ Cannon/C15, Tempo Dobrado/V15, Juro Composto/O15, Sorte Composta/S15) and wiped 
 The 41 pre-patch capture files this repo's test suites were built on — 39 `sheet-math` fixtures
 plus the two old fidelity-gate captures — described an account the game can no longer produce.
 This feature deletes them, deletes the 20 test files that carried the
-`QUARANTINED (catalog v4, 2026-08-11)` header, re-points the ~30 surviving suites that depended
+`QUARANTINED` (catalog v4, 2026-08-11) header, re-points the ~30 surviving suites that depended
 on the deleted corpus onto a new post-patch corpus, and records here what that cost.
 
 ## 1. What the corpus is now
@@ -36,7 +36,7 @@ thing the next feature exists to catch.
 
 ## 3. Per-deleted-file loss table
 
-All 20 quarantined files carried the `QUARANTINED (catalog v4, 2026-08-11)` header; 11 of them
+All 20 quarantined files carried the `QUARANTINED` (catalog v4, 2026-08-11) header; 11 of them
 also carried live `describe` blocks that ran and passed today. Deleting the file deletes those
 blocks too. Tagged **model-only** (read no fixture — the block's assertions are pure function
 calls) or **corpus-anchored** (needed the deleted account to exist at all).

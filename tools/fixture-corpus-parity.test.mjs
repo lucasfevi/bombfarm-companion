@@ -134,7 +134,7 @@ describe('cross-package fixture corpus parity (MP5 F1)', () => {
     // coverage — forbidden), or (b) require editing dozens of unrelated tests, which is F2/F3's
     // job, not F1's. The mechanically useful and honest guarantee this guard CAN make today is
     // drift detection: this total must not move until F2 or F3 deliberately change it.
-    const KEYSTONE_IDENTIFIER_HANDOFF_COUNT = 842;
+    const KEYSTONE_IDENTIFIER_HANDOFF_COUNT = 850;
 
     expect(total, `measured ${total}, committed constant is ${KEYSTONE_IDENTIFIER_HANDOFF_COUNT}`).toBe(
       KEYSTONE_IDENTIFIER_HANDOFF_COUNT,
