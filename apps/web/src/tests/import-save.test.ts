@@ -518,8 +518,6 @@ describe('parseSaveFile', () => {
     expect(account.tree!.critDmg).toBeCloseTo(19.6153846, 5);
     expect(account.tree!.speed).toBeCloseTo(2.7186897, 5);
     expect(account.tree!.energy).toBeCloseTo(52.2457627, 5);
-    expect(account.tree!.glassCannon).toBe(false);
-    expect(account.tree!.tempoDobrado).toBe(false);
     // BSPW5-03/AC-10: skills.totals.luck_add * 100 -> tree.luckFlatPct.
     expect(account.tree!.luckFlatPct).toBeCloseTo(3.94647275, 5);
   });
@@ -529,45 +527,6 @@ describe('parseSaveFile', () => {
     delete (save.skills.totals as { luck_add?: number }).luck_add;
     const { account } = parseSaveFile(save, []);
     expect(account.tree!.luckFlatPct).toBe(0);
-  });
-
-  it('detects Glass Cannon from crit_dmg_mult', () => {
-    const save = baseSave();
-    save.skills.totals.crit_dmg_mult = 2;
-    const { account } = parseSaveFile(save, []);
-    expect(account.tree!.glassCannon).toBe(true);
-  });
-
-  it('detects Abisso from abisso_base and keystones D15', () => {
-    const save = baseSave();
-    save.skills.totals.abisso_base = 1.008;
-    (save.skills.totals.keystones as unknown[]) = ['D15', 'C15'];
-    save.skills.totals.crit_dmg_mult = 2;
-    save.skills.totals.crit_chance_add = 0;
-    const { account, warnings } = parseSaveFile(save, []);
-    expect(account.tree!.abisso).toBe(true);
-    expect(account.tree!.glassCannon).toBe(true);
-    expect(warnings.some((w) => w.includes('unknown'))).toBe(false);
-  });
-
-  it('unknown keystone ids surface an unmodelled-tree finding in warnings[]', () => {
-    const save = baseSave();
-    (save.skills.totals.keystones as unknown[]) = ['deadly_eye'];
-    const { warnings } = parseSaveFile(save, []);
-    expect(warnings.some((w) => w.includes('unknown') && w.includes('deadly_eye'))).toBe(true);
-  });
-
-  it('known keystones and crit_dmg_mult 2 do not surface BSP-61 / DEC-08 warnings', () => {
-    const save = baseSave();
-    (save.skills.totals.keystones as unknown[]) = ['C15'];
-    save.skills.totals.crit_dmg_mult = 2;
-    const { warnings } = parseSaveFile(save, []);
-    expect(warnings.some((w) => w.includes('BSP-61') || w.includes('DEC-08'))).toBe(false);
-  });
-
-  it('empty keystones surface no unknown-keystone finding', () => {
-    const { warnings } = parseSaveFile(baseSave(), []);
-    expect(warnings.some((w) => w.includes('unknown'))).toBe(false);
   });
 
   it('returns nulls for account data when casa/skills are absent', () => {

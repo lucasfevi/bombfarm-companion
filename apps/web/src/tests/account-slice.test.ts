@@ -11,11 +11,6 @@ const sampleTree = {
   speed: 3,
   energy: 4,
   teamCoinPct: 7,
-  glassCannon: true,
-  tempoDobrado: false,
-  abisso: false,
-  abissoBase: 0,
-  critDmgMult: 2,
   luckFlatPct: 6,
 } as const;
 
@@ -70,8 +65,6 @@ describe('account slice', () => {
       speed: 3,
       energy: 4,
       teamCoinPct: 7,
-      glassCannon: false,
-      tempoDobrado: false,
       // luckFlatPct intentionally absent — the shape every record saved before this wave has.
     };
     const normalized = normalizeAccount({
@@ -105,13 +98,7 @@ describe('account slice', () => {
     expect(c.tree.danoTotal).toBe(1.5);
   });
 
-  // MP5 F3 (MSC-11): the store no longer carries the 5 keystone-derived tree fields at all
-  // (their selectors, state fields and hydrate/patch paths are gone), so a round-trip through
-  // hydrateAccount -> selectAccountShared -> normalizeAccount no longer preserves a non-default
-  // glassCannon/critDmgMult -- it substitutes DEFAULT_TREE()'s defaults, same as any other field
-  // the store never reads. sampleTree's own abisso/abissoBase/tempoDobrado already equal their
-  // defaults, so only glassCannon and critDmgMult are asserted here explicitly.
-  it('hydrateAccount → selectAccountShared round-trips through normalizeAccount, except the keystone-derived fields which fall back to defaults', () => {
+  it('hydrateAccount → selectAccountShared round-trips through normalizeAccount', () => {
     const shared: AccountShared = normalizeAccount({
       tree: { ...sampleTree },
       teamBuffs: { ...zeroTeamBuffs(), grito_guerra: 2 },
@@ -126,10 +113,7 @@ describe('account slice', () => {
     });
     usePlannerStore.getState().hydrateAccount(shared);
     const out = selectAccountShared(usePlannerStore.getState());
-    expect(normalizeAccount(out)).toEqual({
-      ...shared,
-      tree: { ...shared.tree, glassCannon: false, critDmgMult: 1 },
-    });
+    expect(normalizeAccount(out)).toEqual(shared);
   });
 
   it('applyAccountImport writes only the handleImported subset', () => {
@@ -140,11 +124,6 @@ describe('account slice', () => {
         critDmg: 2,
         speed: 3,
         energy: 4,
-        glassCannon: true,
-        tempoDobrado: true,
-        abisso: false,
-        abissoBase: 0,
-        critDmgMult: 1,
         teamCoinPct: 9,
         luckFlatPct: 5.3,
       },

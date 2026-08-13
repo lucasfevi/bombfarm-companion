@@ -643,7 +643,6 @@ describe('normalizeAccount', () => {
       teamBuffs: { grito_guerra: 20 },
     });
     expect(a.tree.danoTotal).toBe(1.25);
-    expect(a.tree.glassCannon).toBe(false);
     expect(a.teamBuffs.grito_guerra).toBe(20);
     expect(a.context.phase).toBe(DEFAULT_CONTEXT().phase);
   });

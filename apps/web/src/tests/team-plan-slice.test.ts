@@ -299,8 +299,6 @@ describe('team-plan slice', () => {
           speed: 0,
           energy: 0,
           teamCoinPct: 0,
-          glassCannon: false,
-          tempoDobrado: false,
         },
         teamBuffs: {},
         context: {

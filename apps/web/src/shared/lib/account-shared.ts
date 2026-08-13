@@ -30,24 +30,11 @@ export type TreeState = {
   energy: number;
   /** Account-wide team_coin total as % (Ouro por Alvo nodes) — scales gold per prop. */
   teamCoinPct: number;
-  /** C15 Glass Cannon: crit dmg ×2 (unless Abisso), energy ×0.5. */
-  glassCannon: boolean;
-  /** V15 Tempo Dobrado: field pace ×1.333, drain ×2. */
-  tempoDobrado: boolean;
-  /**
-   * D15 Abisso — cancels tree Crit/GEO sheet adds and Glass Cannon crit ×2; energy ×0.5 still
-   * applies. Additive on `bf-hp-account-v1` (default false).
-   */
-  abisso?: boolean;
-  /** `skills.totals.abisso_base` — damage × abissoBase^currentPhase; 0 when unowned (combat-layer only, see `computeCombatMults`). */
-  abissoBase?: number;
-  /** `skills.totals.crit_dmg_mult` — Glass Cannon's crit-dmg mult on the birth base; sheet-layer only, 1 when unowned. */
-  critDmgMult?: number;
   /**
    * Flat Luck percentage points from `skills.totals.luck_add × 100` (AD-BSP-22, ASM-01).
    * Additive on `bf-hp-account-v1` — optional (not `number`) so pre-Wave-5 literals (e.g.
    * `e2e/fixtures/seed.ts`, out of this wave's touch scope) keep typechecking; every read
-   * site defaults absence to `0` and `normalizeTree`'s spread fills it on load. Import-sourced
+   * site defaults absence to `0` and `normalizeTree`'s rebuild fills it on load. Import-sourced
    * only; no Account UI field yet (CARRY-05).
    */
   luckFlatPct?: number;
@@ -88,11 +75,6 @@ export const DEFAULT_TREE = (): TreeState => ({
   speed: 0,
   energy: 0,
   teamCoinPct: 0,
-  glassCannon: false,
-  tempoDobrado: false,
-  abisso: false,
-  abissoBase: 0,
-  critDmgMult: 1,
   luckFlatPct: 0,
 });
 
@@ -111,11 +93,25 @@ export const DEFAULT_ACCOUNT = (): AccountShared => ({
   context: DEFAULT_CONTEXT(),
 });
 
-function normalizeTree(raw?: (Partial<TreeState> & { geo?: number }) | null): TreeState {
+/**
+ * Fixed-field-list rebuild (the `normalizeHero`/`obsHit`/`obsCrit` pattern) — every field is
+ * named explicitly, so any stale/unknown key on `raw` (a pre-change record's `glassCannon`,
+ * `tempoDobrado`, `abisso`, `abissoBase`, `critDmgMult`, or the older `geo`) is silently
+ * discarded rather than spread through. MSC-10 depends on this: a spread merge (`{ ...base,
+ * ...rest }`) would let those keys leak into the result even after they left `TreeState`.
+ */
+function normalizeTree(raw?: Partial<TreeState> | null): TreeState {
   const base = DEFAULT_TREE();
   if (!raw) return base;
-  const { geo: _geo, ...rest } = raw;
-  return { ...base, ...rest };
+  return {
+    danoTotal: raw.danoTotal ?? base.danoTotal,
+    critChance: raw.critChance ?? base.critChance,
+    critDmg: raw.critDmg ?? base.critDmg,
+    speed: raw.speed ?? base.speed,
+    energy: raw.energy ?? base.energy,
+    teamCoinPct: raw.teamCoinPct ?? base.teamCoinPct,
+    luckFlatPct: raw.luckFlatPct ?? base.luckFlatPct,
+  };
 }
 
 function normalizeContext(raw?: Partial<HeroContext> | null): HeroContext {

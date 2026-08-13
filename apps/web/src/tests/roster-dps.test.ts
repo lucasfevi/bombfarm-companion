@@ -90,8 +90,6 @@ describe('pipelineForHero forwards birth (roster-dps ↔ Points tab parity)', ()
       treeCritDmg: account.tree.critDmg,
       treeSpeed: account.tree.speed,
       treeEnergy: account.tree.energy,
-      treeGlassCannon: account.tree.glassCannon,
-      treeTempoDobrado: account.tree.tempoDobrado,
       treeLuckFlatPct: account.tree.luckFlatPct ?? 0,
       teamBuffs: account.teamBuffs,
       houseIdx: account.context.houseIdx,

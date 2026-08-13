@@ -67,8 +67,6 @@ function precisionHero(): SeededState {
         critDmg: 0,
         speed: 0,
         energy: 0,
-        glassCannon: false,
-        tempoDobrado: false,
         teamCoinPct: 0,
       },
       teamBuffs: {},

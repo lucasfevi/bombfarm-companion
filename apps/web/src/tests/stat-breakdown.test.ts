@@ -76,8 +76,6 @@ type FixtureOpts = {
   treeCritChance?: number;
   treeCritDmg?: number;
   treeLuckFlatPct?: number;
-  treeGlassCannon?: boolean;
-  treeTempoDobrado?: boolean;
   treeDanoTotal?: number;
   extraDmgPct?: number;
   rest?: number;
@@ -112,8 +110,6 @@ function buildFixture(opts: FixtureOpts = {}) {
   const treeCritChance = opts.treeCritChance ?? 0;
   const treeCritDmg = opts.treeCritDmg ?? 0;
   const treeLuckFlatPct = opts.treeLuckFlatPct ?? 0;
-  const treeGlassCannon = opts.treeGlassCannon ?? false;
-  const treeTempoDobrado = opts.treeTempoDobrado ?? false;
   const treeDanoTotal = opts.treeDanoTotal ?? 1;
   const extraDmgPct = opts.extraDmgPct ?? 0;
 
@@ -123,15 +119,10 @@ function buildFixture(opts: FixtureOpts = {}) {
   // shows a 'tree' step — bake the SAME single application into the default fixture so the two
   // stay consistent, matching what a real save's `stats` block already does.
   //
-  // Glass Cannon / Tempo Dobrado are baked in the SAME way, post the keystone sheet-math
-  // correction: energy ×0.5 multiplies the WHOLE (base + energia_add) subtotal; crit-damage
-  // ×2 and Tempo Dobrado's ×1.33333 each replace the shared pool's implicit "1" with an
-  // ADDITIVE term on the birth base — none of the three are combat multipliers anymore
-  // (computeCombatMults.energyMult/critDmgMult are fixed at 1; speedMult no longer carries
-  // Tempo). Matches `applySkillTree` exactly (birth-sheet.ts).
-  const critDmgMultFactor = treeGlassCannon ? 2 : 1;
-  const glassCannonEnergyFactor = treeGlassCannon ? 0.5 : 1;
-  const tempoSpeedFactor = treeTempoDobrado ? 1.33333 : 1;
+  // MP5 removed all five keystones (Glass Cannon / Tempo Dobrado included); their sheet-math
+  // corrections no longer exist anywhere in the pipeline, so this fixture builder no longer
+  // takes or applies them — `computeCombatMults.energyMult/critDmgMult` are permanent identity,
+  // and `speedMult` never carried Tempo. Matches `applySkillTree` exactly (birth-sheet.ts).
   function poolBump(value: number, otherPct: number, treePct: number): number {
     return value + (treePct / 100) * (value / (1 + otherPct));
   }
@@ -140,14 +131,10 @@ function buildFixture(opts: FixtureOpts = {}) {
     ({
       ...naked,
       attack: (naked.attack + 50) * treeDanoTotal,
-      energy: (naked.energy + 40) * (1 + treeEnergy / 100) * glassCannonEnergyFactor,
-      speed:
-        poolBump(naked.speed, sheetOther.speed, treeSpeed) +
-        (tempoSpeedFactor - 1) * (naked.speed / (1 + Math.max(0, sheetOther.speed))),
+      energy: (naked.energy + 40) * (1 + treeEnergy / 100),
+      speed: poolBump(naked.speed, sheetOther.speed, treeSpeed),
       critChance: poolBump(naked.critChance, sheetOther.critChance, treeCritChance),
-      critDmg:
-        poolBump(naked.critDmg, sheetOther.critDmg, treeCritDmg) +
-        (critDmgMultFactor - 1) * (naked.critDmg / (1 + Math.max(0, sheetOther.critDmg))),
+      critDmg: poolBump(naked.critDmg, sheetOther.critDmg, treeCritDmg),
     } satisfies SheetStats);
 
   const treeSheet: TreeSheetTotals = {
@@ -157,16 +144,11 @@ function buildFixture(opts: FixtureOpts = {}) {
     critChancePct: treeCritChance,
     critDmgPct: treeCritDmg,
     luckFlatPct: treeLuckFlatPct,
-    critDmgMult: critDmgMultFactor,
-    glassCannon: treeGlassCannon,
-    tempoDobrado: treeTempoDobrado,
   };
 
   const mults = computeCombatMults({
     mods,
     teamBuffs,
-    treeGlassCannon,
-    treeTempoDobrado,
     extraDmgPct,
   });
 
@@ -174,7 +156,7 @@ function buildFixture(opts: FixtureOpts = {}) {
   const context: Context = {
     ...baseCtx(),
     restSeconds: rest,
-    drainMult: mods.drainMult * mults.teamDrainMult * (treeTempoDobrado ? 2 : 1),
+    drainMult: mods.drainMult * mults.teamDrainMult,
   };
 
   const deriveResult = derive({
@@ -222,13 +204,10 @@ function buildFixture(opts: FixtureOpts = {}) {
     treeCritDmg,
     treeEnergy,
     treeLuckFlatPct,
-    treeGlassCannon,
-    treeTempoDobrado,
     context,
     dmgMult: mults.dmgMult,
     treeDanoTotal,
     extraDmgPct,
-    abissoMult: mults.abissoMult,
     active: deriveResult.active,
     dps: deriveResult.dps,
     uptime,
@@ -320,50 +299,6 @@ describe('stat-breakdown builder', () => {
     if (atk.kind === 'ledger') {
       expect(atk.steps.some((s) => s.source === 'points')).toBe(true);
       expect(atk.steps.some((s) => s.source === 'abilitiesTeam')).toBe(true);
-    }
-  });
-
-  it('F3 — glass cannon notes on energy + critDmg', () => {
-    const { facts } = buildFixture({
-      pts: { ...ZERO_PTS(), attack: 1 },
-      treeGlassCannon: true,
-      treeEnergy: 10,
-    });
-    assertLedgersRecompose(facts);
-    assertFormulasMatch(facts);
-    const energy = buildStatBreakdown('energy', facts);
-    const critDmg = buildStatBreakdown('critDmg', facts);
-    expect(energy.kind).toBe('ledger');
-    expect(critDmg.kind).toBe('ledger');
-    if (energy.kind === 'ledger') {
-      expect(energy.steps.some((s) => s.note === 'glassCannon')).toBe(true);
-    }
-    if (critDmg.kind === 'ledger') {
-      expect(critDmg.steps.some((s) => s.note === 'glassCannon')).toBe(true);
-    }
-  });
-
-  it('F4 — tempo dobrado note on speed', () => {
-    const { facts } = buildFixture({
-      pts: { ...ZERO_PTS(), speed: 1 },
-      treeTempoDobrado: true,
-      treeSpeed: 8,
-      abilities: { marcha_acelerada: 5 },
-    });
-    assertLedgersRecompose(facts);
-    assertFormulasMatch(facts);
-    const speed = buildStatBreakdown('speed', facts);
-    expect(speed.kind).toBe('ledger');
-    if (speed.kind === 'ledger') {
-      expect(speed.steps.some((s) => s.note === 'tempoDobrado' || s.note === 'capped')).toBe(true);
-      const tree = speed.steps.find((s) => s.source === 'tree' && s.op === '+');
-      expect(tree?.pctOfBase?.percent).toBeCloseTo(8, 6);
-      expect(tree?.pctOfBase?.base).toBeCloseTo(facts.naked.speed, 6);
-      const pts = speed.steps.find((s) => s.source === 'points');
-      expect(pts?.pctOfBase?.percent).toBeCloseTo(2, 6);
-      const gear = speed.steps.find((s) => s.source === 'gear');
-      // Fixture geared speed === naked → no gear step.
-      expect(gear).toBeUndefined();
     }
   });
 

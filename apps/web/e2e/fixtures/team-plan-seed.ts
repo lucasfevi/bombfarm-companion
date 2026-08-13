@@ -30,8 +30,6 @@ export function teamPlanFixtureSeed(lang: 'en' | 'pt' = 'en'): SeededState {
         speed: account.tree?.speed ?? 0,
         energy: account.tree?.energy ?? 0,
         teamCoinPct: account.tree?.teamCoinPct ?? 0,
-        glassCannon: account.tree?.glassCannon ?? false,
-        tempoDobrado: account.tree?.tempoDobrado ?? false,
       },
       teamBuffs: {},
       context: {
