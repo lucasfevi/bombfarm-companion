@@ -1,6 +1,6 @@
 // `AD-032` — `@bombfarm/domain`'s `exports` map now targets `dist/` instead of `src/`.
 //
-// Before this feature the map was DEAD CONFIGURATION: every one of the 56 in-use
+// Before this feature the map was DEAD CONFIGURATION: every one of the in-use
 // `@bombfarm/domain[/subpath]` specifiers resolved through a tsconfig `paths` entry
 // (`apps/web/tsconfig.json`) or a Vite alias (`apps/web/vitest.config.ts`,
 // `packages/domain/vitest.config.ts`), never through this package's own `exports` map. A
@@ -8,6 +8,12 @@
 // an *executed* resolution, run through Node's own resolver (not Vitest's module runner),
 // is real evidence (MDW-18). See design.md "The blocker AD-029 does not name — B7" and
 // "Notes for the Verifier".
+//
+// MP5 F1 re-measured the floor below (56 -> 54): deleting the 20 quarantined test files
+// (mp5-fixture-rebaseline, unrelated to AD-032) removed the repo's only usages of two
+// `@bombfarm/domain[/subpath]` specifiers, so the true count of distinct specifiers in the
+// repo genuinely shrank. This is a floor derived from the live repo tree, not a fixture value
+// — re-measuring it is not a fixture re-point.
 import { execFileSync } from 'node:child_process';
 import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
 import { dirname, join } from 'node:path';
@@ -110,8 +116,8 @@ process.stdout.write(JSON.stringify(results));
 describe('@bombfarm/domain exports map — resolves to dist (AD-032)', () => {
   requireDomainDist();
 
-  it('finds at least 56 distinct @bombfarm/domain[/subpath] specifiers across apps/**, packages/**, tools/**', () => {
-    expect(specifiers.length).toBeGreaterThanOrEqual(56);
+  it('finds at least 54 distinct @bombfarm/domain[/subpath] specifiers across apps/**, packages/**, tools/**', () => {
+    expect(specifiers.length).toBeGreaterThanOrEqual(54);
   });
 
   it('the derived specifier list covers all four subpath shapes', () => {

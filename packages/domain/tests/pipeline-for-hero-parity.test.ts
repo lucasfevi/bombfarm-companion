@@ -7,10 +7,13 @@
  * which already proves `computeHeroSoloDps` matches a direct pipeline call for one hero, extended
  * here to the ranking and to the exported entry point.
  *
- * `crit_dmg_mult` on this fixture is `1` (see console.log in fixture inspection during design) —
- * inside `{1, 2}`, where `pipelineForHero`'s omission of `treeCritDmgMult` (`AD-038`) and the
- * web's forwarding of it legitimately agree. A fixture outside that set would make this test
- * assert the divergence away instead of pinning it (`tools/advisor-input-parity.test.mjs`'s job).
+ * MP5 F1 (`AD-069`, re-pointed onto the post-patch export): the 2026-08-13 patch removed
+ * `crit_dmg_mult` from `skills.totals` entirely — the key is now absent, not `1`. That still
+ * lands inside `{1, 2}` because `treeTotalsFromSave`'s `asNumber(totalsRaw.crit_dmg_mult, 1)`
+ * defaults an absent key to `1`, which is exactly where `pipelineForHero`'s omission of
+ * `treeCritDmgMult` (`AD-038`) and the web's forwarding of it legitimately agree. This is F2's
+ * concern going forward — once `crit_dmg_mult` is deleted from `packages/domain/src`, this
+ * precondition test (and `AD-038` itself) becomes F2's to re-evaluate, not F1's.
  */
 import { describe, expect, it } from 'vitest';
 import { parseAccountPayload } from '@bombfarm/domain/import-save';
@@ -22,7 +25,7 @@ import { DEFAULT_TARGET_PROP } from '@bombfarm/domain/farm-context';
 import type { HeroRecord, AccountShared } from '@bombfarm/domain/shims/storage';
 import { loadFixtureJson } from './helpers/sheet-math-fixtures';
 
-const FIXTURE = 'save-20260731-11heroes.json';
+const FIXTURE = 'save-20260813-5heroes.json';
 
 describe('pipelineForHero ≡ computeAdvisorPipeline assembled from advisor-selectors.ts field list (MPV-03 layer 1)', () => {
   const raw = loadFixtureJson(FIXTURE);
@@ -34,9 +37,10 @@ describe('pipelineForHero ≡ computeAdvisorPipeline assembled from advisor-sele
     expect(parsed.account.tree).not.toBeNull();
   });
 
-  it("the fixture's crit_dmg_mult is in {1, 2} — the set where AD-038's divergence legitimately agrees", () => {
+  it("the fixture's raw crit_dmg_mult is absent, and its resolved account.tree.critDmgMult is in {1, 2} — the set where AD-038's divergence legitimately agrees", () => {
     const totals = (raw as { skills?: { totals?: { crit_dmg_mult?: unknown } } }).skills?.totals;
-    expect([1, 2]).toContain(totals?.crit_dmg_mult);
+    expect(totals?.crit_dmg_mult).toBeUndefined();
+    expect([1, 2]).toContain(parsed.account.tree?.critDmgMult);
   });
 
   const candidate = parsed.candidates[0];
