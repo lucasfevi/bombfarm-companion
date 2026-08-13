@@ -82,7 +82,7 @@ const ALLOWLIST = [
   { file: 'apps/web/CHANGELOG.md', count: 4, owner: 'CHANGELOG history' },
   // tools/ guard sources that must name the forbidden/closed tokens to forbid/discharge them.
   { file: 'tools/advisor-input-parity.test.mjs', count: 1, owner: 'AD-038 closed-pin history (T9)' },
-  { file: 'tools/fixture-corpus-parity.test.mjs', count: 8, owner: 'MFR-15 pattern + history + five-surface residual map (this guard\'s sibling)' },
+  { file: 'tools/fixture-corpus-parity.test.mjs', count: 9, owner: 'MFR-15 pattern + history + five-surface residual map (this guard\'s sibling)' },
   // F1's own negative-discriminator guard — must name the forbidden keys to forbid them.
   { file: 'apps/web/src/tests/fixture-corpus.test.ts', count: 3, owner: 'F1 negative-discriminator guard' },
   // F3's own doc amendments describing the removal (MSC-12 requires the local-data-compat.md
@@ -105,7 +105,7 @@ const ALLOWLIST = [
   { file: 'apps/web/src/tests/storage-legacy-keystone-fields.test.ts', count: 18, owner: 'F3 MSC-10 legacy-discard suite' },
   // This guard's own source — its filename, doc comment and error messages necessarily name
   // the tokens it forbids (the same self-reference AD-080 allowlist #10 anticipates).
-  { file: 'tools/keystone-surface-absence.test.mjs', count: 10, owner: 'this guard, self-reference' },
+  { file: 'tools/keystone-surface-absence.test.mjs', count: 11, owner: 'this guard, self-reference' },
 ];
 
 // --- Clause B — pinned per-line map for critDmgMult / crit_dmg_mult -----------------------
@@ -142,7 +142,7 @@ const CRIT_DMG_MULT_MAP = {
   'apps/web/src/tests/storage-legacy-keystone-fields.test.ts': [2, 33, 66, 90, 104],
   'apps/web/src/tests/storage-stat-points-available-compat.test.ts': [101],
   'tools/fixture-corpus-parity.test.mjs': [117, 157],
-  'tools/keystone-surface-absence.test.mjs': [13, 109, 112, 184, 186, 196, 205],
+  'tools/keystone-surface-absence.test.mjs': [13, 111, 114, 187, 189, 199, 208],
 };
 
 describe('keystone surface absence — the repo-wide identifier guard (MP5 F3, MSC-04, AD-080)', () => {
