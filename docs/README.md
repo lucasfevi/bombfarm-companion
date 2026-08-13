@@ -23,6 +23,7 @@ These are **current truth**. Do not invent planning/spec paths in this repo.
 | [hard-truths.md](hard-truths.md) | How to propose / accept new hard truths |
 | [typescript-planner-origin.md](typescript-planner-origin.md) | Documented TS/ESLint exception for `@bombfarm/domain` + `@bombfarm/ui` |
 | [fidelity-gate.md](fidelity-gate.md) | The MP2 fidelity gate: live-vs-export sheet-math parity, the capture pair, the outstanding handoff |
+| [fixture-corpus.md](fixture-corpus.md) | MP5 F1: the post-2026-08-13-patch fixture corpus — provenance, what the deletion cost, the round-trip invariant, and the keystone handoff count |
 
 ## Web-only
 

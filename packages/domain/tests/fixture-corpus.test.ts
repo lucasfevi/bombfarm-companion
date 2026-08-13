@@ -160,4 +160,3 @@ describe('sheet-math fixture corpus guard (MP5 F1)', () => {
     expect(Object.keys(SHEET_ABS_TOL).sort()).toEqual([...SHEET_KEYS].sort());
   });
 });
-// QUARANTINED (catalog v4, 2026-08-11)
