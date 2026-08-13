@@ -95,14 +95,14 @@ describe('account persistence subscription', () => {
   it('toasts account saved unless skip one-shot', () => {
     usePlannerStore.getState().setBooted(true);
     usePlannerStore.getState().consumeSkipAccountToast();
-    usePlannerStore.getState().setTreeGlassCannon(true);
+    usePlannerStore.getState().setHouseIdx(1);
     vi.advanceTimersByTime(AUTOSAVE_MS);
     expect(usePlannerStore.getState().toast).toBe(STRINGS.pt.toastAccountSaved);
   });
 
   it('detach cancels pending timer', () => {
     usePlannerStore.getState().setBooted(true);
-    usePlannerStore.getState().setTreeTempoDobrado(true);
+    usePlannerStore.getState().setHouseIdx(1);
     detach();
     vi.advanceTimersByTime(AUTOSAVE_MS);
     expect(localStorage.getItem('bf-hp-account-v1')).toBeNull();

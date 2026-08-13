@@ -28,19 +28,28 @@ describe('account slice', () => {
     resetPlannerStoreForTests();
   });
 
-  it('owns account tree defaults including Abisso off', () => {
+  it('owns account tree defaults', () => {
     const s = usePlannerStore.getState();
     expect(s.treeDanoTotal).toBe(1);
     expect(s.treeCritChance).toBe(0);
     expect(s.treeTeamCoinPct).toBe(0);
     expect(s.treeLuckFlatPct).toBe(0);
-    expect(s.treeAbisso).toBe(false);
-    expect(s.treeCritDmgMult).toBe(1);
     expect(s.teamBuffs).toEqual(zeroTeamBuffs());
     expect(s.houseIdx).toBe(0);
     expect(s.phase).toBeNull();
     expect(s.rankMode).toBe('dps');
     expect(s.targetProp).toBe('stone');
+  });
+
+  // MSC-03 — the three keystone setters are unrepresentable, not merely avoided: absent from
+  // AccountSlice's TYPE (a TS2339 compile error to reference one — proven by
+  // `pnpm --filter @bombfarm/web typecheck`) AND `undefined` on the runtime store object. The
+  // type check alone does not prove the runtime object; this asserts it directly.
+  it('setTreeGlassCannon / setTreeTempoDobrado / setTreeAbisso are undefined at runtime', () => {
+    const state = usePlannerStore.getState() as unknown as Record<string, unknown>;
+    expect(state.setTreeGlassCannon).toBeUndefined();
+    expect(state.setTreeTempoDobrado).toBeUndefined();
+    expect(state.setTreeAbisso).toBeUndefined();
   });
 
   it('AC-10: applyAccountImport writes luckFlatPct (no per-field tree setter)', () => {
@@ -96,7 +105,13 @@ describe('account slice', () => {
     expect(c.tree.danoTotal).toBe(1.5);
   });
 
-  it('hydrateAccount → selectAccountShared round-trips through normalizeAccount', () => {
+  // MP5 F3 (MSC-11): the store no longer carries the 5 keystone-derived tree fields at all
+  // (their selectors, state fields and hydrate/patch paths are gone), so a round-trip through
+  // hydrateAccount -> selectAccountShared -> normalizeAccount no longer preserves a non-default
+  // glassCannon/critDmgMult -- it substitutes DEFAULT_TREE()'s defaults, same as any other field
+  // the store never reads. sampleTree's own abisso/abissoBase/tempoDobrado already equal their
+  // defaults, so only glassCannon and critDmgMult are asserted here explicitly.
+  it('hydrateAccount → selectAccountShared round-trips through normalizeAccount, except the keystone-derived fields which fall back to defaults', () => {
     const shared: AccountShared = normalizeAccount({
       tree: { ...sampleTree },
       teamBuffs: { ...zeroTeamBuffs(), grito_guerra: 2 },
@@ -111,7 +126,10 @@ describe('account slice', () => {
     });
     usePlannerStore.getState().hydrateAccount(shared);
     const out = selectAccountShared(usePlannerStore.getState());
-    expect(normalizeAccount(out)).toEqual(shared);
+    expect(normalizeAccount(out)).toEqual({
+      ...shared,
+      tree: { ...shared.tree, glassCannon: false, critDmgMult: 1 },
+    });
   });
 
   it('applyAccountImport writes only the handleImported subset', () => {
@@ -160,32 +178,6 @@ describe('account slice', () => {
     expect(usePlannerStore.getState().teamBuffs).toBe(ref);
   });
 
-  it('keystone setters are no-ops when value is unchanged', () => {
-    const before = usePlannerStore.getState();
-    before.setTreeGlassCannon(false);
-    expect(usePlannerStore.getState()).toBe(before);
-    before.setTreeAbisso(false);
-    expect(usePlannerStore.getState()).toBe(before);
-  });
-
-  it('setTreeAbisso toggles the Abisso flag', () => {
-    usePlannerStore.getState().setTreeAbisso(true);
-    expect(usePlannerStore.getState().treeAbisso).toBe(true);
-    usePlannerStore.getState().setTreeAbisso(false);
-    expect(usePlannerStore.getState().treeAbisso).toBe(false);
-  });
-
-  it('applyAccountImport hydrates Abisso from the save sniff', () => {
-    usePlannerStore.getState().applyAccountImport({
-      tree: { ...sampleTree, abisso: true, glassCannon: true },
-      houseIdx: null,
-      houseLevel: null,
-      phase: null,
-    });
-    expect(usePlannerStore.getState().treeAbisso).toBe(true);
-    expect(usePlannerStore.getState().treeGlassCannon).toBe(true);
-  });
-
   it('preserves full-precision tree floats through applyAccountImport (no UI round-trip)', () => {
     const precise = 2.60988968151606;
     usePlannerStore.getState().applyAccountImport({
@@ -203,26 +195,6 @@ describe('account slice', () => {
     expect(s.treeDanoTotal).toBe(precise);
     expect(s.treeCritChance).toBe(12.3456789);
     expect(s.treeSpeed).toBe(0.987654321);
-  });
-
-  it('applyAccountImport writes abissoBase from the save sniff', () => {
-    usePlannerStore.getState().applyAccountImport({
-      tree: { ...sampleTree, abisso: true, abissoBase: 1.008 },
-      houseIdx: null,
-      houseLevel: null,
-      phase: null,
-    });
-    expect(usePlannerStore.getState().treeAbissoBase).toBe(1.008);
-  });
-
-  it('applyAccountImport writes critDmgMult from the save sniff (Glass Cannon numeric)', () => {
-    usePlannerStore.getState().applyAccountImport({
-      tree: { ...sampleTree, glassCannon: true, critDmgMult: 2 },
-      houseIdx: null,
-      houseLevel: null,
-      phase: null,
-    });
-    expect(usePlannerStore.getState().treeCritDmgMult).toBe(2);
   });
 
   describe('applyAccountImport phase wiring (account.phase → store phase)', () => {
