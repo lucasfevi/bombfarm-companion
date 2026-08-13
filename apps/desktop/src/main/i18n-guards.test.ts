@@ -34,7 +34,20 @@ function walk(dir: string, extensions: readonly string[]): string[] {
   for (const entry of readdirSync(dir, { withFileTypes: true })) {
     const full = join(dir, entry.name);
     if (entry.isDirectory()) {
-      if (entry.name === 'node_modules' || entry.name === 'out' || entry.name === 'dist' || entry.name === '.next') continue;
+      // `.claude` is skipped wholesale, not just `.claude/worktrees`: it holds only local,
+      // git-excluded agent/session state (`.claude/launch.json` is gitignored dev-server config;
+      // `.claude/worktrees/*` are full sibling copies of this repo's source tree used by other
+      // agent sessions) — nothing under it is committed application source a guard should ever
+      // scan. Without this, a REPO_ROOT walk descends into every one of those sibling copies and
+      // can trip a guard against a file that isn't part of this working tree at all.
+      if (
+        entry.name === 'node_modules' ||
+        entry.name === 'out' ||
+        entry.name === 'dist' ||
+        entry.name === '.next' ||
+        entry.name === '.claude'
+      )
+        continue;
       files.push(...walk(full, extensions));
     } else if (entry.isFile() && extensions.includes(extname(entry.name))) {
       files.push(full);

@@ -35,7 +35,21 @@ function walk(dir: string, extensions: readonly string[]): string[] {
   for (const entry of readdirSync(dir, { withFileTypes: true })) {
     const full = join(dir, entry.name);
     if (entry.isDirectory()) {
-      if (entry.name === 'node_modules' || entry.name === 'out' || entry.name === 'dist' || entry.name === '.next') continue;
+      // `.claude` is skipped wholesale (not just `.claude/worktrees`): it holds only local,
+      // git-excluded agent/session state — nothing under it is committed application source a
+      // guard should ever scan. This `walk()` currently only ever runs against DESKTOP_ROOT
+      // (a sibling of repo-root `.claude`, so this branch is inert today), but it is reproduced
+      // verbatim from the same copy `i18n-guards.test.ts` took (see that file's own header) and
+      // whose REPO_ROOT-walking guard did hit this hole in practice — kept consistent here so a
+      // future REPO_ROOT-scoped guard added to this file doesn't reintroduce it silently.
+      if (
+        entry.name === 'node_modules' ||
+        entry.name === 'out' ||
+        entry.name === 'dist' ||
+        entry.name === '.next' ||
+        entry.name === '.claude'
+      )
+        continue;
       files.push(...walk(full, extensions));
     } else if (entry.isFile() && extensions.includes(extname(entry.name))) {
       files.push(full);
