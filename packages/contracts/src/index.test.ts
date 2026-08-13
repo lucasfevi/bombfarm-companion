@@ -27,6 +27,8 @@ describe('contracts IPC surface', () => {
       'app:getEnvironment',
       'app:ping',
       'settings:get',
+      'settings:useEnglish',
+      'settings:usePortuguese',
       'storage:health',
       'game:getStatus',
       'game:getSnapshot',
