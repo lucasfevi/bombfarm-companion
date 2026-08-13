@@ -202,7 +202,15 @@ test.describe('language smoke (MP3 F4) — detected, switched in place, and reme
         ['--lang=pt-BR'],
       );
       try {
-        await dismissConsent(page2);
+        // Launch 1 declined consent, and that decision persisted to the SAME account.db row
+        // (`consent-store.ts`'s `account_meta` key `consent_v1`) this launch reads on boot.
+        // `shouldShowConsentModal` (packages/game-api/src/consent.ts) returns false for a
+        // `declined` decision exactly as it does for `granted` — so no modal is expected here,
+        // and `dismissConsent()` (which waits for it to become visible) would hang. Asserting
+        // absence, mirroring `consent-modal.spec.mjs`'s own granted-survives-restart check, turns
+        // that into positive proof the decision persisted across the restart — the same fact
+        // MIN-09 below relies on for the language choice.
+        await expect(page2.getByTestId('consent-modal')).toHaveCount(0);
 
         // --- MIN-09: English persists, read from settings, not from the (still pt-BR) OS ---
         await expect(page2.locator('html')).toHaveAttribute('lang', 'en');
