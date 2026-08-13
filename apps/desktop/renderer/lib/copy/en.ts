@@ -27,4 +27,66 @@ export const en = {
   sectionNameSkills: 'your skill tree',
   sectionNameCasa: 'your house',
   sectionNameItems: 'your gear',
+
+  // planning* — the Planning screen
+  planningRosterColumnName: 'Hero',
+  planningRosterColumnLevel: 'Level',
+  planningRosterColumnStars: 'Stars',
+  planningRosterColumnRarity: 'Rarity',
+  planningSelectHeroPrompt: 'Select a hero from the list to see their next-point advice.',
+  planningNoRosterTitle: 'No heroes to plan for yet',
+  planningNoRosterDescription: 'We could not read a usable hero list from your account.',
+  planningNothingPersistedTitle: 'Nothing saved yet',
+  planningNothingPersistedDescription: 'Open the game with the companion running once, so it can remember your account.',
+  planningRejectedTitleMissingBirthStats: 'Your save is missing hero data the app needs',
+  planningRejectedDescriptionMissingBirthStats: 'These heroes could not be read from a recent enough version of the game:',
+  planningRejectedTitleNotASaveFile: 'That does not look like account data',
+  planningStoreUnavailableNotice: 'Nothing will be remembered after the app closes.',
+  planningGearSummaryLabel: 'Gear equipped',
+
+  // fidelity* — provenance / degradation display
+  fidelityNoticeTitle: 'Some of your account is not fully up to date',
+  fidelityMissingKeysLabel: 'Fields the game did not send',
+  fidelityStatusResolved: 'read just now',
+  fidelityStatusStale: 'remembered from your last session',
+  fidelityStatusMissing: 'not available',
+  fidelityStatusDegraded: 'sent in a shape this version does not understand yet',
+
+  // advice* — next-point ranking, DPS, reset advice
+  adviceNextPointTitle: 'Next-point ranking',
+  adviceNextPointStatColumn: 'Stat',
+  adviceNextPointGainColumn: 'Gain',
+  adviceDpsLabel: 'Solo DPS',
+  adviceResetAdviceRecommended: 'A stat reset looks worth it for this hero.',
+  adviceResetAdviceNotRecommended: 'No stat reset needed right now.',
+
+  // Stat names, in player language — pipelineForHero's own PointValue.label is Portuguese-only
+  // (a pre-i18n artifact), so the renderer names each stat itself, keyed by StatKey.
+  statNameEnergy: 'Energy',
+  statNameAttack: 'Attack',
+  statNameCritDmg: 'Crit damage',
+  statNameSpeed: 'Speed',
+  statNameCritChance: 'Crit chance',
+  statNamePenetration: 'Penetration',
+  statNameCdr: 'Cooldown reduction',
+  planningLoadingTitle: 'Loading your account…',
+
+  // withheld* — the always-mounted notice slot for a withheld quantity (MPV-09/10, no-layout-shift)
+  withheldRosterRowTitle: 'Roster withheld',
+  withheldGearSummaryTitle: 'Gear summary withheld',
+  withheldDpsTitle: 'DPS withheld',
+  withheldNextPointRankingTitle: 'Next-point ranking withheld',
+  withheldResetAdviceTitle: 'Reset advice withheld',
+  withheldBecause: 'Waiting on {sections}.',
+
+  // error* — failure paths
+  errorAccountReadFailed: 'The account could not be read',
+
+  // store.reason, in player language (AccountStoreReason, exhaustively mapped)
+  storeReasonEmpty: 'nothing has been saved yet',
+  storeReasonSchemaTooNew: 'a newer version of the companion saved this, so this version cannot read it',
+  storeReasonCorruptRebuilt: 'the saved copy was unreadable and had to be rebuilt',
+  storeReasonNotWritable: 'the save location is not writable',
+  storeReasonNoSqliteBinding: 'this build cannot save on this system',
+  storeReasonAccountMismatch: 'a different account is currently running',
 } as const;

@@ -8,7 +8,8 @@
  * and adds `pt-BR.ts` typed `Copy` — no call site changes.
  */
 import { createContext, createElement, useContext, type ReactNode } from 'react';
-import type { AccountSection } from '@bombfarm/contracts';
+import type { AccountSection, AccountStoreReason, SectionStatus } from '@bombfarm/contracts';
+import type { StatKey } from '@bombfarm/domain/model';
 import { en } from './en';
 
 export type Copy = typeof en;
@@ -26,6 +27,39 @@ export const ACCOUNT_SECTION_COPY_KEY = {
   casa: 'sectionNameCasa',
   items: 'sectionNameItems',
 } as const satisfies Record<AccountSection, CopyKey>;
+
+/** Every `SectionStatus` (`missing` included), mapped exhaustively — a new status is a compile error. */
+export const SECTION_STATUS_COPY_KEY = {
+  resolved: 'fidelityStatusResolved',
+  stale: 'fidelityStatusStale',
+  missing: 'fidelityStatusMissing',
+  degraded: 'fidelityStatusDegraded',
+} as const satisfies Record<SectionStatus, CopyKey>;
+
+/** Every `AccountStoreReason`, mapped exhaustively, in player language. */
+export const STORE_REASON_COPY_KEY = {
+  empty: 'storeReasonEmpty',
+  schema_too_new: 'storeReasonSchemaTooNew',
+  corrupt_rebuilt: 'storeReasonCorruptRebuilt',
+  not_writable: 'storeReasonNotWritable',
+  no_sqlite_binding: 'storeReasonNoSqliteBinding',
+  account_mismatch: 'storeReasonAccountMismatch',
+} as const satisfies Record<AccountStoreReason, CopyKey>;
+
+/**
+ * Every `StatKey`, mapped exhaustively. `pipelineForHero`'s own `PointValue.label` is
+ * Portuguese-only (a pre-i18n artifact of `@bombfarm/domain/model`'s `STAT_LABELS`), so the
+ * renderer names each stat itself from `PointValue.stat` rather than rendering `.label`.
+ */
+export const STAT_NAME_COPY_KEY = {
+  energy: 'statNameEnergy',
+  attack: 'statNameAttack',
+  critDmg: 'statNameCritDmg',
+  speed: 'statNameSpeed',
+  critChance: 'statNameCritChance',
+  penetration: 'statNamePenetration',
+  cdr: 'statNameCdr',
+} as const satisfies Record<StatKey, CopyKey>;
 
 /**
  * Interpolation in the web's own `{count}`-placeholder shape (`apps/web/src/shared/i18n`), so

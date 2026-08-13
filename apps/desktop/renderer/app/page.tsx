@@ -11,6 +11,23 @@ import { rarityLabel } from '@bombfarm/domain/game-labels';
 import { CopyProvider, useCopy } from '../lib/copy';
 import { formatAge } from '../lib/format';
 import { ConsentModal } from './consent-modal';
+import { PlanningView } from './planning/planning-view';
+
+/**
+ * `app-boot.spec.mjs` (unmodified, per design.md TD-8) asserts `app-ready`/`game-snapshot-json`/
+ * `domain-label-probe` are visible immediately after boot, with no navigation. Those testids
+ * live under the Diagnostics tab's content. Design's own TD-8 names "Planning (default)", but
+ * that is only compatible with the existing, un-editable smoke if Diagnostics' content stays
+ * visible without an explicit nav click — it does not (conditional mounting, not a CSS-hidden
+ * trick, is what keeps `overflow-y:auto` scoped to `AppShell`'s `<main>` per MPV-15).
+ *
+ * SPEC_DEVIATION: the initial `activeNavId` here is `'diagnostics'`, not `'planning'`.
+ * Reason: `app-boot.spec.mjs` cannot be edited and never navigates before its assertions, so
+ * whichever tab is default must carry its testids. T7's new smoke explicitly navigates to
+ * Planning before asserting `roster-list`/`next-point-top-stat` — MPV-01/02's own Independent
+ * Test is satisfied by a smoke that interacts first, not by Planning being pre-selected.
+ */
+const DEFAULT_NAV_ID = 'diagnostics';
 
 function statusLabel(status: GameStatusInfo['status']): string {
   switch (status) {
@@ -35,6 +52,7 @@ export default function HomePage() {
 
 function HomePageContent() {
   const t = useCopy();
+  const [activeNavId, setActiveNavId] = useState(DEFAULT_NAV_ID);
   const [environment, setEnvironment] = useState<AppEnvironmentInfo | null>(null);
   const [status, setStatus] = useState<GameStatusInfo | null>(null);
   const [snapshot, setSnapshot] = useState<GameSnapshotPayload | null>(null);
@@ -97,7 +115,12 @@ function HomePageContent() {
       <AppShell
         title={environment?.productName}
         badge={environment?.badgeLabel ?? null}
-        items={[]}
+        items={[
+          { id: 'planning', label: t.shellPlanningNavLabel, icon: 'check-circle' },
+          { id: 'diagnostics', label: t.shellDiagnosticsNavLabel, icon: 'information-circle' },
+        ]}
+        activeId={activeNavId}
+        onNavigate={setActiveNavId}
         status={
           <span data-testid="game-status-chip">
             {status ? (
@@ -124,27 +147,31 @@ function HomePageContent() {
           ) : null
         }
       >
-        <section data-testid="app-ready" className="space-y-4">
-          {/* MP3 F1 probe — proves a @bombfarm/domain value reaches the DOM. Not planner UI. */}
-          <span data-testid="domain-label-probe" className="sr-only">
-            {rarityLabel('Comum', 'en')}
-          </span>
-          {error ? (
-            <EmptyState title={t.emptyBridgeUnavailableTitle} description={error} />
-          ) : rawJson ? (
-            <div className="space-y-2">
-              <h2 className="text-sm font-medium text-muted">Current snapshot (raw + mapped)</h2>
-              <pre
-                data-testid="game-snapshot-json"
-                className="max-h-[480px] overflow-auto rounded-lg border border-line bg-bg-2 p-4 text-xs leading-relaxed"
-              >
-                {rawJson}
-              </pre>
-            </div>
-          ) : (
-            <EmptyState title={t.emptyNoSnapshotTitle} description={t.emptyNoSnapshotDescription} />
-          )}
-        </section>
+        {activeNavId === 'planning' ? (
+          <PlanningView />
+        ) : (
+          <section data-testid="app-ready" className="space-y-4">
+            {/* MP3 F1 probe — proves a @bombfarm/domain value reaches the DOM. Not planner UI. */}
+            <span data-testid="domain-label-probe" className="sr-only">
+              {rarityLabel('Comum', 'en')}
+            </span>
+            {error ? (
+              <EmptyState title={t.emptyBridgeUnavailableTitle} description={error} />
+            ) : rawJson ? (
+              <div className="space-y-2">
+                <h2 className="text-sm font-medium text-muted">Current snapshot (raw + mapped)</h2>
+                <pre
+                  data-testid="game-snapshot-json"
+                  className="max-h-[480px] overflow-auto rounded-lg border border-line bg-bg-2 p-4 text-xs leading-relaxed"
+                >
+                  {rawJson}
+                </pre>
+              </div>
+            ) : (
+              <EmptyState title={t.emptyNoSnapshotTitle} description={t.emptyNoSnapshotDescription} />
+            )}
+          </section>
+        )}
       </AppShell>
     </>
   );
