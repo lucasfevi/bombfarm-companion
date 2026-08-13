@@ -12,9 +12,14 @@
  * this object and fails, naming the key, on any of the four).
  */
 export const en = {
-  // shell* — AppShell navigation
+  // shell* — AppShell navigation and status chrome
   shellPlanningNavLabel: 'Planning',
   shellDiagnosticsNavLabel: 'Diagnostics',
+  shellStatusConnected: 'Connected',
+  shellStatusNotRunning: 'Game not running',
+  shellStatusStale: 'Stale',
+  shellLoadingLabel: 'Loading…',
+  shellDiagnosticsSnapshotTitle: 'Current snapshot (raw and mapped)',
 
   // empty* — placeholder states shown before real data has arrived (page.tsx's Diagnostics tab)
   emptyBridgeUnavailableTitle: 'Preload bridge unavailable',

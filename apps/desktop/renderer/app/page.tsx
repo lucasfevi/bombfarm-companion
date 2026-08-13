@@ -8,7 +8,7 @@ import { AppShell, EmptyState, StatusChip } from '@bombfarm/ui';
 // fails the static export build rather than surfacing later at runtime (spec edge case). This
 // is a probe, not planning UI — F2 (mp3-planning-views) is what actually renders advice.
 import { rarityLabel } from '@bombfarm/domain/game-labels';
-import { CopyProvider, useCopy } from '../lib/copy';
+import { CopyProvider, useCopy, type Copy } from '../lib/copy';
 import { formatAge } from '../lib/format';
 import { ConsentModal } from './consent-modal';
 import { PlanningView } from './planning/planning-view';
@@ -29,14 +29,14 @@ import { PlanningView } from './planning/planning-view';
  */
 const DEFAULT_NAV_ID = 'diagnostics';
 
-function statusLabel(status: GameStatusInfo['status']): string {
+function statusLabel(status: GameStatusInfo['status'], t: Copy): string {
   switch (status) {
     case 'connected':
-      return 'Connected';
+      return t.shellStatusConnected;
     case 'not_running':
-      return 'Game not running';
+      return t.shellStatusNotRunning;
     case 'stale':
-      return 'Stale';
+      return t.shellStatusStale;
     default:
       return status;
   }
@@ -126,11 +126,11 @@ function HomePageContent() {
             {status ? (
               <StatusChip
                 status={status.status}
-                label={statusLabel(status.status)}
+                label={statusLabel(status.status, t)}
                 ageLabel={status.staleAgeMs != null ? formatAge(status.staleAgeMs) : undefined}
               />
             ) : (
-              'Loading…'
+              t.shellLoadingLabel
             )}
           </span>
         }
@@ -159,7 +159,7 @@ function HomePageContent() {
               <EmptyState title={t.emptyBridgeUnavailableTitle} description={error} />
             ) : rawJson ? (
               <div className="space-y-2">
-                <h2 className="text-sm font-medium text-muted">Current snapshot (raw + mapped)</h2>
+                <h2 className="text-sm font-medium text-muted">{t.shellDiagnosticsSnapshotTitle}</h2>
                 <pre
                   data-testid="game-snapshot-json"
                   className="max-h-[480px] overflow-auto rounded-lg border border-line bg-bg-2 p-4 text-xs leading-relaxed"
