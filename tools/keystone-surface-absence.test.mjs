@@ -103,6 +103,9 @@ const ALLOWLIST = [
   { file: 'apps/web/src/tests/import-save.test.ts', count: 3, owner: 'F4 raw save-schema literal + historical comment' },
   { file: 'apps/web/src/tests/stat-breakdown.test.ts', count: 1, owner: 'F3 explanatory comment' },
   { file: 'apps/web/src/tests/storage-legacy-keystone-fields.test.ts', count: 18, owner: 'F3 MSC-10 legacy-discard suite' },
+  // This guard's own source — its filename, doc comment and error messages necessarily name
+  // the tokens it forbids (the same self-reference AD-080 allowlist #10 anticipates).
+  { file: 'tools/keystone-surface-absence.test.mjs', count: 10, owner: 'this guard, self-reference' },
 ];
 
 // --- Clause B — pinned per-line map for critDmgMult / crit_dmg_mult -----------------------
@@ -139,6 +142,7 @@ const CRIT_DMG_MULT_MAP = {
   'apps/web/src/tests/storage-legacy-keystone-fields.test.ts': [2, 33, 66, 90, 104],
   'apps/web/src/tests/storage-stat-points-available-compat.test.ts': [101],
   'tools/fixture-corpus-parity.test.mjs': [117, 157],
+  'tools/keystone-surface-absence.test.mjs': [13, 109, 112, 184, 186, 196, 205],
 };
 
 describe('keystone surface absence — the repo-wide identifier guard (MP5 F3, MSC-04, AD-080)', () => {
@@ -153,7 +157,7 @@ describe('keystone surface absence — the repo-wide identifier guard (MP5 F3, M
   });
 
   it('the clause-A allowlist is exactly the enumerated set (non-wideable)', () => {
-    expect(ALLOWLIST.length).toBe(22);
+    expect(ALLOWLIST.length).toBe(23);
     expect(ALLOWLIST.every((entry) => entry.file && entry.count > 0 && entry.owner)).toBe(true);
   });
 

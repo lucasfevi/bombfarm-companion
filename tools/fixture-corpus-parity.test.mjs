@@ -169,6 +169,7 @@ describe('cross-package fixture corpus parity (MP5 F1)', () => {
     'docs/fixture-corpus.md': 8,
     'packages/contracts/src/account-change-key.test.ts': 1,
     'tools/fixture-corpus-parity.test.mjs': 2,
+    'tools/keystone-surface-absence.test.mjs': 10,
   };
 
   it('keystone-identifier handoff: the whole tree decomposes into exactly five surfaces, packages/ui a hard zero (MFR-15, AD-082)', () => {
