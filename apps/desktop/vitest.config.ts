@@ -2,7 +2,15 @@ import { defineConfig } from 'vitest/config';
 
 export default defineConfig({
   test: {
-    include: ['src/**/*.test.ts', 'scripts/**/*.test.mjs'],
+    include: [
+      'src/**/*.test.ts',
+      'scripts/**/*.test.mjs',
+      // MP3 F2 (design hazard 9, T2) — renderer pure modules and presentational components,
+      // run node-env with `renderToStaticMarkup` (the `packages/ui/vitest.config.ts` precedent).
+      'renderer/lib/**/*.test.ts',
+      'renderer/lib/**/*.test.tsx',
+      'renderer/app/**/*.test.tsx',
+    ],
     server: {
       deps: {
         // AD-033: packages/domain/dist is a BUNDLER-target artifact, not Node-native ESM.
@@ -18,5 +26,8 @@ export default defineConfig({
         inline: [/@bombfarm\/domain/],
       },
     },
+  },
+  esbuild: {
+    jsx: 'automatic',
   },
 });

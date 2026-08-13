@@ -1,5 +1,5 @@
-import { readFileSync } from 'node:fs';
-import { join, resolve } from 'node:path';
+import { readFileSync, readdirSync, statSync } from 'node:fs';
+import { extname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 
@@ -103,4 +103,58 @@ describe('design-system-required aggregator (SBC-19/SBC-20)', () => {
       expect(selfGreeningSteps).toEqual([]);
     },
   );
+});
+
+/**
+ * MP3 F2 (MPV-22, design.md §11 hazard 4) — DS-09's reuse boundary, checked from the source side
+ * as a companion to `pnpm lint`'s `boundaries/element-types` rule (which is lint-enforced, not
+ * grep-checked, per `docs/design-system.md`). This extends the file rather than replacing it —
+ * every assertion above is unchanged.
+ */
+function listFiles(dir, extensions) {
+  const files = [];
+  for (const entry of readdirSync(dir, { withFileTypes: true })) {
+    const full = join(dir, entry.name);
+    if (entry.isDirectory()) {
+      if (entry.name === 'node_modules' || entry.name === 'dist' || entry.name === 'storybook-static') continue;
+      files.push(...listFiles(full, extensions));
+    } else if (entry.isFile() && extensions.includes(extname(entry.name))) {
+      files.push(full);
+    }
+  }
+  return files;
+}
+
+describe('DS-09 reuse boundary — packages/ui takes no @bombfarm/domain or i18n edge (MPV-22)', () => {
+  const PACKAGES_UI_SRC = join(root, 'packages/ui/src');
+  const sourceFiles = listFiles(PACKAGES_UI_SRC, ['.ts', '.tsx']).filter((file) => !/\.(test|stories)\.tsx?$/.test(file));
+
+  it('zero @bombfarm/domain imports under packages/ui/src', () => {
+    const offenders = sourceFiles.filter((file) => /from\s+['"]@bombfarm\/domain/.test(readFileSync(file, 'utf8')));
+    expect(
+      offenders,
+      `packages/ui must not import @bombfarm/domain (DS-09). Found in: ${offenders.join(', ')}.`,
+    ).toEqual([]);
+  });
+
+  it('zero i18n imports under packages/ui/src (no shared/i18n, no @/shared/i18n)', () => {
+    const offenders = sourceFiles.filter((file) =>
+      /from\s+['"](@\/)?shared\/i18n/.test(readFileSync(file, 'utf8')),
+    );
+    expect(
+      offenders,
+      `packages/ui must not import an i18n module (DS-09). Found in: ${offenders.join(', ')}.`,
+    ).toEqual([]);
+  });
+
+  it('apps/web/src/features/planner still exists and is non-empty — no planner feature code was relocated into packages/ui', () => {
+    const plannerDir = join(root, 'apps/web/src/features/planner');
+    expect(statSync(plannerDir).isDirectory()).toBe(true);
+    expect(listFiles(plannerDir, ['.ts', '.tsx']).length).toBeGreaterThan(0);
+  });
+
+  it('red state demonstrated: a fixture file importing @bombfarm/domain is caught', () => {
+    const fixtureSource = "import { phaseLine } from '@bombfarm/domain/phases';";
+    expect(/from\s+['"]@bombfarm\/domain/.test(fixtureSource)).toBe(true);
+  });
 });

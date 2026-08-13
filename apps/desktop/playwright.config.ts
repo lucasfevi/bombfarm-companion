@@ -14,7 +14,7 @@ export default defineConfig({
   projects: [
     {
       name: 'electron-smoke',
-      testMatch: ['app-boot.spec.mjs', 'account-restart.spec.mjs', 'consent-modal.spec.mjs'],
+      testMatch: ['app-boot.spec.mjs', 'account-restart.spec.mjs', 'consent-modal.spec.mjs', 'planning-advice.spec.mjs'],
     },
   ],
 });
