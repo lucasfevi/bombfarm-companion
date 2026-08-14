@@ -8,8 +8,10 @@
  * A literal zero-matches assertion over `packages/domain/tests` is unreachable (MKR-16 forbids
  * editing any fixture, and two carriers under `fixtures/` belong to F3's still-shipping web
  * surface; two more are F1's own guard and its manifest, which must name the forbidden keys to
- * forbid them). This suite pins an exact PER-FILE map instead of a bare count — a count-only
- * check would miss a match moving from an allowlisted file to a new one while the sum holds.
+ * forbid them; MP5 F4 adds one more — its own purpose-built rejection fixture, which must contain
+ * the retired fields verbatim). This suite pins an exact PER-FILE map instead of a bare count — a
+ * count-only check would miss a match moving from an allowlisted file to a new one while the sum
+ * holds.
  */
 import { readdirSync, readFileSync } from 'node:fs';
 import { dirname, join, relative } from 'node:path';
@@ -75,19 +77,24 @@ const SRC_ALLOWLIST: Record<string, number[]> = {
 };
 
 /**
- * `packages/domain/tests` — four files outside F2's reach, each commented with its owner:
+ * `packages/domain/tests` — five files outside F2's reach, each commented with its owner:
  * - `fixtures/i18n-strings-main.json`, `fixtures/storage-roundtrip-20260729.json`: F3's web
  *   i18n / storage-roundtrip snapshots, living inside `fixtures/`, which MKR-16 forbids editing.
  * - `fixtures/sheet-math/README.md`: F1's provenance manifest, which must name the forbidden
  *   keys to forbid them.
  * - `fixture-corpus.test.ts`: F1's own corpus guard, whose `FORBIDDEN_KEYS` array must contain
  *   the literal key names to function.
+ * - `fixtures/rejection/pre-update-save.json`: F4's own purpose-built rejection fixture
+ *   (`MSG-12`/`MSG-13`, `packages/domain/tests/save-acceptance.test.ts`) — it must contain the
+ *   retired fields verbatim to prove `parseSaveFile` rejects a save shaped like this. Its sibling
+ *   `truncated-save.json` carries none of them (an empty `skills.totals`) and needs no entry.
  */
 const TESTS_ALLOWLIST: Record<string, number> = {
   'fixtures/i18n-strings-main.json': 24,
   'fixtures/storage-roundtrip-20260729.json': 1,
   'fixtures/sheet-math/README.md': 2,
   'fixture-corpus.test.ts': 3,
+  'fixtures/rejection/pre-update-save.json': 3,
 };
 
 function matchingLines(absPath: string, pattern: RegExp): number[] {
