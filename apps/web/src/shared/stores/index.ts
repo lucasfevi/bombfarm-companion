@@ -35,6 +35,7 @@ export {
   selectRankMode,
   selectTargetProp,
   selectSlots,
+  selectMaxPhase,
 } from '@/shared/stores/selectors/account-selectors';
 export {
   selectTeamPlanIsStale,

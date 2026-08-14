@@ -38,6 +38,12 @@ export type AccountSlice = {
   rankMode: RankMode;
   targetProp: string | null;
   slots: number;
+  /**
+   * `account.max_phase` (`OD-9`). `null` when the browser account predates this feature, was
+   * assembled by hand, or the last import's payload carried neither source — `FarmRateOptions`
+   * treats `null` as "show every phase, no lock badges" (`AD-PFR-02`).
+   */
+  maxPhase: number | null;
 
   setTeamBuffs: (value: Record<TeamBuffId, number>) => void;
   setHouseIdx: (value: number) => void;
@@ -75,6 +81,7 @@ export const createAccountSlice: StateCreator<
   rankMode: defaultCtx.rankMode,
   targetProp: defaultCtx.targetProp,
   slots: DEFAULT_CASA_SLOTS,
+  maxPhase: null,
 
   setTeamBuffs: (value) => {
     if (teamBuffsEqual(get().teamBuffs, value)) return;
@@ -131,6 +138,7 @@ export const createAccountSlice: StateCreator<
       rankMode: shared.context.rankMode,
       targetProp: shared.context.targetProp,
       slots: shared.slots ?? DEFAULT_CASA_SLOTS,
+      maxPhase: shared.maxPhase ?? null,
     });
   },
 
@@ -162,6 +170,18 @@ export const createAccountSlice: StateCreator<
         if (line) patch.mitigationPct = +(line.mitig * 100).toFixed(2);
       }
     }
+    // OD-9 / AD-PFRC-04: UNCONDITIONAL, unlike every sibling field above. Item B's
+    // AccountImportData.maxPhase is required-and-total (number | null on every path), so a
+    // payload carrying no max_phase source is an ASSERTION that this account has no known max
+    // phase, not an absence to be ignored. Preserving a stale value here would leave lock
+    // badges asserting progress the payload just contradicted (D24's "confidently wrong"
+    // shape). Both the file-import and API-refresh paths reach this branch — both funnel
+    // through parseAccountPayload -> mapAccountData.
+    // `data.maxPhase` is optional on AccountImportData's TYPE only so hand-built test fixtures
+    // elsewhere keep compiling (item B's doc comment) — real production data always carries a
+    // concrete `number | null`. Coerce a merely-absent field to `null` so the slice's own
+    // `number | null` invariant never sees `undefined`.
+    patch.maxPhase = data.maxPhase ?? null;
     if (Object.keys(patch).length > 0) set(patch);
   },
 });

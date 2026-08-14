@@ -534,7 +534,15 @@ describe('parseSaveFile', () => {
 
   it('returns nulls for account data when casa/skills are absent (payload entry point — a FILE lacking skills entirely is now rejected upstream by MSG-11\'s gate, so this is parseAccountPayload\'s territory, not parseSaveFile\'s)', () => {
     const { account } = parseAccountPayload({ heroes: [] }, []);
-    expect(account).toEqual({ tree: null, houseIdx: null, houseLevel: null, phase: null });
+    // OD-12/pfr-web-ui: item B's mapAccountMaxPhase added the additive, required
+    // `maxPhase: number | null` field to AccountImportData — every rejection path is `null`.
+    expect(account).toEqual({
+      tree: null,
+      houseIdx: null,
+      houseLevel: null,
+      phase: null,
+      maxPhase: null,
+    });
   });
 
   it('missing stats block still composes naked/gearedOverride from birth, but cannot infer pts', () => {
