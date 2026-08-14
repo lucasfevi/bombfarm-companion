@@ -7,11 +7,11 @@ import type { SectionOutcome } from './routes.js';
  * is no carry-over here, no grade, and no history parameter — `assembleAccountPayload.length` is
  * 2, closing `R-1` by signature. F3's `commit()` is the single place last-known-good exists.
  *
- * | Outcome  | Body            | Fidelity                                          |
- * |----------|-----------------|----------------------------------------------------|
- * | `ok`     | present         | `{status:'resolved', capturedAt: now}`             |
- * | `drift`  | **absent**      | `{status:'degraded', capturedAt: now, missingKeys}`|
- * | `failed` | **absent**      | `{status:'missing'}` (no `capturedAt`)             |
+ * | Outcome  | Body            | Fidelity                                                    |
+ * |----------|-----------------|--------------------------------------------------------------|
+ * | `ok`     | present         | `{status:'resolved', capturedAt: now}`                       |
+ * | `drift`  | **absent**      | `{status:'degraded', capturedAt: now, missingKeys, addedKeys}`|
+ * | `failed` | **absent**      | `{status:'missing'}` (no `capturedAt`)                        |
  *
  * A `failed` or `drift` outcome for `skills` produces a payload with no `skills` key at all —
  * `'skills' in payload === false`, not `payload.skills === undefined` — which is the specific
@@ -45,7 +45,7 @@ function sectionFidelity(outcome: SectionOutcome, now: string): SectionFidelity 
     return { status: 'resolved', capturedAt: now };
   }
   if (outcome.kind === 'drift') {
-    return { status: 'degraded', capturedAt: now, missingKeys: outcome.missingKeys };
+    return { status: 'degraded', capturedAt: now, missingKeys: outcome.missingKeys, addedKeys: outcome.addedKeys };
   }
   return { status: 'missing' };
 }

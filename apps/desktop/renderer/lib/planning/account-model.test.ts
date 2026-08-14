@@ -227,7 +227,7 @@ describe('sections are in ACCOUNT_SECTIONS order and carry capturedAt/missingKey
   it('a degraded section surfaces missingKeys, distinct from a missing one', () => {
     const payload = basePayload(
       resolvedFidelity({
-        skills: { status: 'degraded', capturedAt: NOW, missingKeys: ['totals.dmg_static'] },
+        skills: { status: 'degraded', capturedAt: NOW, missingKeys: ['totals.dmg_static'], addedKeys: [] },
       }),
     );
     const model = buildPlanningModel(view(payload));

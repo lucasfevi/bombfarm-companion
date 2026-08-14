@@ -5,11 +5,11 @@ import type { SectionOutcome } from './routes.js';
 
 const NOW = '2026-08-12T13:15:38.000Z';
 
-const OK_ACCOUNT: SectionOutcome = { kind: 'ok', body: { gold: 100 }, unknownKeys: [] };
-const OK_HEROES: SectionOutcome = { kind: 'ok', body: [{ id: '1' }], unknownKeys: [] };
-const OK_SKILLS: SectionOutcome = { kind: 'ok', body: { totals: {} }, unknownKeys: [] };
-const OK_CASA: SectionOutcome = { kind: 'ok', body: { active_casa: 1 }, unknownKeys: [] };
-const OK_ITEMS: SectionOutcome = { kind: 'ok', body: [{ id: '99' }], unknownKeys: [] };
+const OK_ACCOUNT: SectionOutcome = { kind: 'ok', body: { gold: 100 } };
+const OK_HEROES: SectionOutcome = { kind: 'ok', body: [{ id: '1' }] };
+const OK_SKILLS: SectionOutcome = { kind: 'ok', body: { totals: {} } };
+const OK_CASA: SectionOutcome = { kind: 'ok', body: { active_casa: 1 } };
+const OK_ITEMS: SectionOutcome = { kind: 'ok', body: [{ id: '99' }] };
 
 const ALL_OK: Record<AccountSection, SectionOutcome> = {
   account: OK_ACCOUNT,
@@ -20,7 +20,10 @@ const ALL_OK: Record<AccountSection, SectionOutcome> = {
 };
 
 const FAILED: SectionOutcome = { kind: 'failed', reason: 'transport_error' };
-const DRIFT_MISSING_TOTALS: SectionOutcome = { kind: 'drift', missingKeys: ['totals'] };
+const DRIFT_MISSING_TOTALS: SectionOutcome = { kind: 'drift', missingKeys: ['totals'], addedKeys: [] };
+// MP5 F4 (T6): a drift outcome whose ONLY finding is an added key — proves addedKeys threads
+// through assembleAccountPayload independently of missingKeys, not merely alongside it.
+const DRIFT_ADDED_REFUNDS: SectionOutcome = { kind: 'drift', missingKeys: [], addedKeys: ['refunds'] };
 
 describe('assembleAccountPayload — arity and no history/grade (R-1 closed by signature)', () => {
   it('has arity 2 — no history parameter', () => {
@@ -59,12 +62,30 @@ describe('assembleAccountPayload — per-outcome mapping (LAR-14, LAR-15)', () =
     expect(payload.fidelity?.account).toEqual({ status: 'resolved', capturedAt: NOW });
   });
 
-  it('drift -> no body, fidelity degraded with capturedAt and missingKeys', () => {
+  it('drift -> no body, fidelity degraded with capturedAt, missingKeys and addedKeys', () => {
     const outcomes: Record<AccountSection, SectionOutcome> = { ...ALL_OK, account: DRIFT_MISSING_TOTALS };
     const payload = assembleAccountPayload(outcomes, NOW);
 
     expect('account' in payload).toBe(false);
-    expect(payload.fidelity?.account).toEqual({ status: 'degraded', capturedAt: NOW, missingKeys: ['totals'] });
+    expect(payload.fidelity?.account).toEqual({
+      status: 'degraded',
+      capturedAt: NOW,
+      missingKeys: ['totals'],
+      addedKeys: [],
+    });
+  });
+
+  it('MP5 F4: drift -> addedKeys passes through UNCHANGED, independently of missingKeys', () => {
+    const outcomes: Record<AccountSection, SectionOutcome> = { ...ALL_OK, skills: DRIFT_ADDED_REFUNDS };
+    const payload = assembleAccountPayload(outcomes, NOW);
+
+    expect('skills' in payload).toBe(false);
+    expect(payload.fidelity?.skills).toEqual({
+      status: 'degraded',
+      capturedAt: NOW,
+      missingKeys: [],
+      addedKeys: ['refunds'],
+    });
   });
 
   it('failed -> no body, fidelity missing with no capturedAt', () => {

@@ -79,8 +79,13 @@ export function accountChangeKey(payload: AccountPayload): string {
     const status = sectionFidelity?.status ?? 'missing';
     const missingKeys =
       sectionFidelity && sectionFidelity.status === 'degraded' ? sectionFidelity.missingKeys : [];
+    // MP5 F4: folded in alongside missingKeys — a drift whose ADDED set changes (a game update
+    // adds yet another undeclared key) must also re-emit a change (AD-044: may false-positive,
+    // must never false-negative).
+    const addedKeys =
+      sectionFidelity && sectionFidelity.status === 'degraded' ? sectionFidelity.addedKeys : [];
     const body = present ? untyped[section] : undefined;
-    return canonicalStringify({ section, present, status, missingKeys, body });
+    return canonicalStringify({ section, present, status, missingKeys, addedKeys, body });
   });
 
   return parts.join('|');
