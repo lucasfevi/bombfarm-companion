@@ -1,13 +1,20 @@
 /**
- * MP5 F3 (MSC-10, AD-083) — glassCannon/tempoDobrado/abisso/abissoBase/critDmgMult were
- * removed from `TreeState` (the 2026-08-13 game patch removed all five keystones). Proves a
- * `bf-hp-account-v1` value captured BEFORE that removal still loads: no throw, the five fields
- * are discarded on normalize, and every surviving field keeps its stored value. Same shape as
- * `storage-legacy-obs-fields.test.ts` (`obsHit`/`obsCrit`, `BSPW1-04`), the stated-exception-to
- * -rule-5 precedent this removal follows (`local-data-compat.md`'s `Removed fields` table).
+ * MP5 F4 (T9, `AD-089`) — SUPERSEDES `MSC-10` for keystone-carrying records. F3's version of
+ * this file (`storage-legacy-keystone-fields.test.ts`) asserted a keystone-carrying
+ * `bf-hp-account-v1` value "loads and keeps every survivor" — the exact opposite of `MSG-21`.
+ * Under this feature, a stored planner account carrying any of the five retired `TreeState`
+ * fields is dropped WHOLE, never discarded-and-kept: `dropStaleLocalAccount()` runs as the first
+ * statement of `hydratePlannerStore()`, before `loadAccountShared`/`loadHeroes` ever see the raw
+ * bytes. Same fixture string as before this rewrite; the expectation is inverted.
+ *
+ * The `obsHit`/`obsCrit` row (`storage-legacy-obs-fields.test.ts`) is UNTOUCHED — discard-and-keep
+ * is still correct for those fields; this supersession is scoped to the five keystone fields only.
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { loadAccountShared, saveAccountShared, normalizeAccount, type AccountShared } from '@/shared/lib/storage';
+import { hydratePlannerStore } from '@/shared/stores/hydrate-planner-store';
+import { resetPlannerStoreForTests } from '@/shared/stores';
+import { selectAccountShared } from '@/shared/stores/selectors/account-selectors';
+import { usePlannerStore } from '@/shared/stores/planner-store';
 
 function memoryLocalStorage() {
   const store = new Map<string, string>();
@@ -24,9 +31,9 @@ function memoryLocalStorage() {
 }
 
 // A pre-change bf-hp-account-v1 value carrying all five keystone-derived tree fields — the
-// exact shape TreeState required before MP5 F3. A JSON string, not a TS literal, so it does not
-// hit the excess-property check a typed literal would now trip (same reasoning as
-// storage-legacy-obs-fields.test.ts's context.obsHit/obsCrit case).
+// exact shape TreeState required before MP5 F3. Same string this file used pre-rewrite. A JSON
+// string, not a TS literal, so it does not hit the excess-property check a typed literal would
+// now trip (same reasoning as storage-legacy-obs-fields.test.ts's context.obsHit/obsCrit case).
 const LEGACY_ACCOUNT_JSON =
   '{"tree":{"danoTotal":1.35,"critChance":6.2,"critDmg":18.5,"speed":4.1,"energy":7.3,' +
   '"teamCoinPct":9.4,"glassCannon":true,"tempoDobrado":true,"abisso":true,"abissoBase":1.008,' +
@@ -37,80 +44,83 @@ const LEGACY_ACCOUNT_JSON =
   '"slots":11,' +
   '"forgeFloor":12}';
 
-const LEGACY_ACCOUNT = JSON.parse(LEGACY_ACCOUNT_JSON) as Record<string, unknown>;
-const LEGACY_TREE = LEGACY_ACCOUNT.tree as Record<string, unknown>;
+const LEGACY_HEROES_JSON = '[{"id":"h1","name":"Legacy","sourceId":"save-1","naked":{},"loadout":{}}]';
 
-describe('legacy keystone field discard (MP5 F3, MSC-10)', () => {
+describe('legacy keystone-carrying account is dropped whole (MP5 F4, AD-089 — supersedes MSC-10 for these five fields)', () => {
   beforeEach(() => {
     vi.stubGlobal('localStorage', memoryLocalStorage());
+    resetPlannerStoreForTests();
   });
 
   afterEach(() => {
+    resetPlannerStoreForTests();
     vi.unstubAllGlobals();
     vi.restoreAllMocks();
   });
 
-  it('loads a pre-removal bf-hp-account-v1 value without throwing, discards the five keystone fields, and keeps every survivor', () => {
+  it('drops the whole account instead of loading it with the five keystone fields merely discarded — the app starts from defaults', () => {
+    // The store's actual "existing empty state" (MSG-22) — captured on the pristine, never-
+    // hydrated store `beforeEach` just reset to. Not literal `DEFAULT_ACCOUNT()`: `hydrateAccount`
+    // always merges `teamBuffs` onto `zeroTeamBuffs()` (`account-slice.ts`), so the store's real
+    // baseline carries every buff id at `0`, not `DEFAULT_ACCOUNT()`'s bare `{}`.
+    const emptyStateAccount = selectAccountShared(usePlannerStore.getState());
+
     localStorage.setItem('bf-hp-account-v1', LEGACY_ACCOUNT_JSON);
+    localStorage.setItem('bf-hp-heroes-v1', LEGACY_HEROES_JSON);
+    localStorage.setItem('bf-hp-active-hero-v1', '"h1"');
 
-    let shared!: AccountShared;
-    expect(() => {
-      shared = loadAccountShared();
-    }).not.toThrow();
+    expect(() => hydratePlannerStore()).not.toThrow();
 
-    // The five keystone-derived fields are gone.
-    expect('glassCannon' in shared.tree).toBe(false);
-    expect('tempoDobrado' in shared.tree).toBe(false);
-    expect('abisso' in shared.tree).toBe(false);
-    expect('abissoBase' in shared.tree).toBe(false);
-    expect('critDmgMult' in shared.tree).toBe(false);
-
-    // Every surviving tree field keeps its stored value.
-    expect(shared.tree.danoTotal).toBe(LEGACY_TREE.danoTotal);
-    expect(shared.tree.critChance).toBe(LEGACY_TREE.critChance);
-    expect(shared.tree.critDmg).toBe(LEGACY_TREE.critDmg);
-    expect(shared.tree.speed).toBe(LEGACY_TREE.speed);
-    expect(shared.tree.energy).toBe(LEGACY_TREE.energy);
-    expect(shared.tree.teamCoinPct).toBe(LEGACY_TREE.teamCoinPct);
-    expect(shared.tree.luckFlatPct).toBe(LEGACY_TREE.luckFlatPct);
-
-    // Every surviving top-level AccountShared field keeps its stored value too.
-    expect(shared.teamBuffs).toEqual(LEGACY_ACCOUNT.teamBuffs);
-    expect(shared.context).toEqual(LEGACY_ACCOUNT.context);
-    expect(shared.slots).toBe(LEGACY_ACCOUNT.slots);
-    expect(shared.forgeFloor).toBe(LEGACY_ACCOUNT.forgeFloor);
+    // Not the legacy record's own surviving values (danoTotal 1.35, slots 11, forgeFloor 12,
+    // context.houseIdx 2, …) — the existing empty state, because the whole record was dropped
+    // before ever being normalized and served.
+    const account = selectAccountShared(usePlannerStore.getState());
+    expect(account).toEqual(emptyStateAccount);
+    // No placeholder/zeroed roster either — the existing empty state (MSG-22).
+    expect(usePlannerStore.getState().heroes).toEqual([]);
   });
 
-  it('discards the five fields via normalizeAccount directly, not just through the load path', () => {
-    const normalized = normalizeAccount(LEGACY_ACCOUNT);
-    expect('glassCannon' in normalized.tree).toBe(false);
-    expect('tempoDobrado' in normalized.tree).toBe(false);
-    expect('abisso' in normalized.tree).toBe(false);
-    expect('abissoBase' in normalized.tree).toBe(false);
-    expect('critDmgMult' in normalized.tree).toBe(false);
+  it('clears every bf-hp-* key from localStorage — the record is not left readable, half or whole', () => {
+    localStorage.setItem('bf-hp-account-v1', LEGACY_ACCOUNT_JSON);
+    localStorage.setItem('bf-hp-heroes-v1', LEGACY_HEROES_JSON);
+    localStorage.setItem('bf-hp-inventory-v1', '{"version":1,"importedAt":0,"items":[]}');
+    localStorage.setItem('bf-hp-active-hero-v1', '"h1"');
+
+    hydratePlannerStore();
+
+    expect(localStorage.getItem('bf-hp-account-v1')).toBeNull();
+    expect(localStorage.getItem('bf-hp-heroes-v1')).toBeNull();
+    expect(localStorage.getItem('bf-hp-inventory-v1')).toBeNull();
+    expect(localStorage.getItem('bf-hp-active-hero-v1')).toBeNull();
   });
 
-  it('drops the keys on re-save and never creates a -v2 key', () => {
+  it('never migrates the record into a -v2 key — no new copy is created anywhere', () => {
     localStorage.setItem('bf-hp-account-v1', LEGACY_ACCOUNT_JSON);
-    const shared = loadAccountShared();
 
-    saveAccountShared(shared);
+    hydratePlannerStore();
 
-    const raw = localStorage.getItem('bf-hp-account-v1');
-    expect(raw).not.toBeNull();
-    expect(raw).not.toContain('glassCannon');
-    expect(raw).not.toContain('tempoDobrado');
-    expect(raw).not.toContain('abisso');
-    expect(raw).not.toContain('critDmgMult');
     expect(localStorage.getItem('bf-hp-account-v2')).toBeNull();
+    expect(localStorage.getItem('bf-hp-heroes-v2')).toBeNull();
   });
 
-  it('discards the fields silently — no console warning or error', () => {
+  it('a keystone field with an all-false/zero value still triggers the drop — presence, not truthiness (MSG-21)', () => {
+    const allFalseJson =
+      '{"tree":{"danoTotal":1,"critChance":0,"critDmg":0,"speed":0,"energy":0,"teamCoinPct":0,' +
+      '"glassCannon":false,"tempoDobrado":false,"abisso":false,"abissoBase":0,"critDmgMult":1,' +
+      '"luckFlatPct":0}}';
+    localStorage.setItem('bf-hp-account-v1', allFalseJson);
+
+    hydratePlannerStore();
+
+    expect(localStorage.getItem('bf-hp-account-v1')).toBeNull();
+  });
+
+  it('discards the record silently — no console warning or error', () => {
     const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
     const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
 
     localStorage.setItem('bf-hp-account-v1', LEGACY_ACCOUNT_JSON);
-    loadAccountShared();
+    hydratePlannerStore();
 
     expect(warnSpy).not.toHaveBeenCalled();
     expect(errorSpy).not.toHaveBeenCalled();
