@@ -1,5 +1,245 @@
 # @bombfarm/desktop
 
+## 0.3.0
+
+### Minor Changes
+
+- 1fa3def: **The desktop's advice now updates by itself.** When a poll shows a hero's gear, level, stars,
+  abilities or the skill tree changed, the on-screen advice recomputes and updates within one
+  refresh cycle — no restart, no re-navigation, no manual refresh button. When nothing
+  planning-relevant changed, the advice does **not** recompute: a scripted sequence (identical,
+  relevant change, irrelevant change, identical) asserts the recompute counter moves exactly `1, 2,
+2, 2`, the spec's own Independent Test verbatim.
+
+  `account:changed` now fires only when the account genuinely changed, not on every poll cycle. A
+  new pure export, `accountChangeKey(payload: AccountPayload): string` (`@bombfarm/contracts`,
+  zero new dependencies), is the one canonical, `capturedAt`-blind change key both the main process
+  (gating the `account:changed` emit) and the renderer (gating which pushed/fetched view is
+  accepted) compare against. A second, exact key — `heroChangeKey`/`sharedChangeKey`
+  (`apps/desktop/renderer/lib/planning/hero-advice.ts`) — decides which heroes actually recompute:
+  a one-hero gear change recomputes that hero only; a shared-tree change recomputes every hero,
+  correctly.
+
+  A section leaving `resolved` (`stale`/`missing`/`degraded`) withdraws its dependent numbers in the
+  same render as the status change, never one cycle behind; a section returning to `resolved`
+  recomputes from the new data, never from a pre-degradation cache.
+
+  The full 11-hero recompute completes in ~1 ms (measured), asserted against a 16 ms budget — one
+  60 Hz frame, the threshold below which the recompute cannot delay the Electron main event loop or
+  drop a renderer frame.
+
+  **No behaviour change for the web planner.** `apps/web` is untouched — zero files changed, source
+  and tests alike. `packages/ui` and `packages/domain` are untouched too: the recompute stays in the
+  renderer, memoised: only the change _decision_ moved to main, and no worker was introduced in
+  either process.
+
+- f0bf7f4: `@bombfarm/domain` is now consumed as a **built package** (`dist/` + `.d.ts`), the same way
+  `@bombfarm/contracts`, `@bombfarm/game-api`, `@bombfarm/game-data` and `@bombfarm/pricing`
+  already are, instead of advertising its TypeScript source through `exports`. This is a
+  packaging contract change, not a math change: not one byte of `packages/domain/src` — the
+  sheet math MP2's fidelity gate protects to a worst error of `1.1e-11` — was touched. The
+  package's `exports` map now targets `dist/**` (four directory subpaths — `./gear`, `./model`,
+  `./stat-breakdown`, `./team-plan` — plus a `./data/*` JSON target and a file/nested-file
+  wildcard), and a new packaging test proves every in-use `@bombfarm/domain[/subpath]` specifier
+  in the repo resolves through Node's own module resolver, not just by reading the map.
+
+  **The desktop can now compute with the planner engine.** `@bombfarm/desktop` declares
+  `@bombfarm/domain` as a real `workspace:*` dependency (it previously resolved only by
+  accident, via pnpm's root-level hoisting) and imports it from both processes: the main process
+  computes a value through the built package under its own strict TypeScript bar
+  (`exactOptionalPropertyTypes`, `noUncheckedIndexedAccess`), and the renderer renders one
+  domain-derived label. Neither import adds any planning UI, recompute, or i18n wiring — that is
+  later MP3 work (F2/F3/F4). This feature only proves the edge compiles, bundles (esbuild inlines
+  the domain code; the desktop's own long-running team-plan solver is confirmed absent from the
+  bundle), and reaches the DOM.
+
+  **No behaviour change for the web planner.** `apps/web` keeps resolving `@bombfarm/domain`
+  through its existing tsconfig `paths` and bundler aliases — it never reads the new `exports`
+  map — and zero files under `apps/web` changed in this release. A guard test now pins those
+  resolution entries so a future cleanup cannot silently move the public planner onto `dist`,
+  which Vercel's production build never produces.
+
+  `docs/typescript-planner-origin.md`'s documented strictness exception for `@bombfarm/domain`
+  and `@bombfarm/ui` is unchanged in scope — the same two packages, the same ESLint globs. A
+  consumer built against `dist` never compiles domain's source under its own relaxed bar at all,
+  so this packaging change is orthogonal to that exception rather than an extension of it.
+
+- e78122a: **The desktop now speaks English and Brazilian Portuguese throughout.** It defaults from the
+  system language (every Portuguese OS locale variant — `pt-PT`, `pt-AO`, bare `pt` — resolves to
+  the one Portuguese translation that exists), is switchable at any time from a new Settings tab,
+  and the choice is remembered across restarts. Every screen — navigation, status chrome, planning
+  views, fidelity messages, empty states, errors — renders from one typed, compile-time-checked
+  string source per language; a key present in only one language fails the build rather than
+  shipping a half-translated screen.
+
+  Game terms (hero rarity today; ability/house/slot/set names as the shell grows to render them)
+  follow the chosen language through `@bombfarm/domain`'s existing `game-labels.ts` helpers — the
+  underlying stored key is unchanged, localisation is display-layer only. Numbers and relative-age
+  text follow the locale too: DPS and counts group thousands the PT-BR way (`1.234` vs `1,234`), and
+  next-point gains sign and format per locale (`+1,5%` vs `+1.5%`).
+
+  A language switch is a display change, never an account change — it triggers no refresh and no
+  advice recompute, proved both structurally (the locale cannot enter any change key) and by a
+  compute-count assertion. If the chosen language cannot be saved (a read-only save location), the
+  language still applies for the session and the failure is surfaced, rather than silently
+  reverting on the next launch.
+
+  `packages/contracts` gains `AppLocale`, `DOMAIN_LANG_BY_LOCALE`, `BCP47_BY_LOCALE`,
+  `resolveStartupLocale` and two verb-shaped settings channels — the one place the desktop's locale
+  token maps to the domain's language and to `Intl`'s BCP-47 tags; the existing `contextBridge` is
+  unchanged (zero-argument channels, following the shipped consent quartet's shape).
+
+  **No behaviour change for the web planner.** `apps/web` is untouched — zero files changed, source
+  and tests alike — and its own `Lang`/`bf_lang`/`pt` default and namespace files are unaffected.
+  `packages/ui` and `packages/domain` are untouched too: four English `aria-label`s inside
+  `packages/ui` (`AppShell`'s nav landmark, `Num`'s increment/decrement) and the `ConsentModal`'s
+  legal disclosure stay English by design — `packages/ui` may not change, and the consent text's
+  `textVersion` means a translated rendering could constitute wording the player never agreed to.
+  Both are pinned, named exceptions, not oversights.
+
+- 96d496a: **The desktop renders real hero planning advice with the game closed.** A new Planning tab
+  (`AppShell` nav) reads the already-persisted `AccountView` once on mount and shows the roster,
+  each hero's next-point ranking, and reset advice, computed through `@bombfarm/domain`'s advisor
+  pipeline — the same engine the web planner runs.
+
+  `packages/domain/src/roster-dps.ts`'s `pipelineForHero` is now a public export (`AD-032`): the
+  only `HeroRecord`-shaped entry to the pipeline, and the one mapping both surfaces use. Its body is
+  byte-unchanged; a layer-1 parity test (`packages/domain/tests/pipeline-for-hero-parity.test.ts`)
+  and a layer-2 source-derived key-set guard (`tools/advisor-input-parity.test.mjs`) together prove
+  the desktop and the web compute identical ranked stats and gains for the same account payload,
+  for every observed `crit_dmg_mult`. The one known, pinned divergence (`treeCritDmgMult`, `AD-038`)
+  is documented at the export site and asserted not to widen or silently close — it is not fixed
+  here, because doing so would change the web planner's own rendered numbers.
+
+  **Honesty over completeness, by construction (`D24`).** Every number the desktop shows is gated
+  by the usability of the account sections it depends on (`resolved`/`stale` render; `missing`/
+  `degraded` withhold, never a fallback). An exhaustive, table-driven matrix
+  (`apps/desktop/renderer/lib/planning/withhold-matrix.test.ts`) asserts the fallback numbers
+  `import-save.ts`'s zero-tree default would otherwise produce are never reachable when their
+  backing data is not trustworthy.
+
+  **No behaviour change for the web planner.** `apps/web` is untouched — zero files changed, source
+  and tests alike. `packages/ui` is untouched too (`DS-09` intact): every control on the new screen
+  composes existing `@bombfarm/ui` primitives.
+
+  Two known, recorded limitations ship with this feature rather than being silently claimed:
+  `degraded` sections are implemented and unit-tested but currently unreachable end to end (the
+  account-restore merge prefers a stale body over a degraded live read, `AD-037`); and the manual
+  refresh affordance (`account:refresh`, `READ_PACING.manualRefreshFloorMs`) was not taken in this
+  pass and remains unimplemented, not merely deferred.
+
+### Patch Changes
+
+- 2dcfb73: Fixed an uncaught main-process exception on shutdown in fixture-mode game reading
+  (`BFC_GAME_READER=fixture`, test infrastructure only — the real memory-mode reader never writes
+  to SQLite and was never affected). A tick that reached `AccountStore.commit()` after the account
+  database had already closed threw `Error: database is not open`; because no code path caught it,
+  Electron surfaced its default "A JavaScript error occurred in the main process" modal, which
+  blocks process exit. On an unattended CI runner this held the process open until Playwright's
+  worker teardown gave up at 120s — the intermittent `smoke-windows` flake seen on roughly a
+  quarter of `develop` pushes.
+
+  Two changes close this off. `GameReaderService.tick()` now wraps the fixture path in the same
+  try/catch that already recovered a memory-mode tick failure (previously only `tickMemory()` was
+  guarded, so a fixture-path throw had no recovery path at all), and `stop()` now latches a
+  `stopped` flag that makes any further tick a no-op immediately — not just reliant on
+  `clearTimeout` having already run — so a tick can never reach the account store once shutdown has
+  started. `AccountStore` also gets a defensive closed-guard: `persist()`/`restore()`/`commit()`
+  after `close()` now report "unavailable" instead of throwing the SQLite driver's raw error, and
+  `close()` itself is idempotent. `apps/desktop/src/main/index.ts`'s `before-quit` handler already
+  stopped the game reader before closing storage; that ordering is now documented as load-bearing
+  rather than incidental.
+
+- a0a126b: **The pre-v4 capture corpus is removed and replaced.** The 2026-08-13 patch removed all five
+  keystones and wiped every account; the 41 committed capture files this repo's test suites were
+  built on described an account the game can no longer produce. The 20 quarantined suites (the
+  files carrying the catalog-v4 quarantine header) and all 39 stale `sheet-math` fixtures (plus the
+  old fidelity-gate capture pair) are deleted, and the ~30 surviving suites that depended on them
+  are re-pointed onto a new, post-patch corpus: a scrubbed 2026-08-13 save export
+  (`save-20260813-5heroes.json`, 5 heroes) and an already-committed API-assembled payload
+  (`payload-20260812-8heroes.json`, 8 heroes). The fidelity-gate capture pair is re-captured from
+  the new export and its eight-mutant discrimination suite is re-proven red against it.
+
+  **No runtime behaviour changes for the web planner or the desktop.** This is a test-fixture and
+  test-suite rebaseline only — `packages/domain/src`, `apps/web/src` (non-test) and `packages/ui`
+  are untouched. `@bombfarm/desktop` is included because its recompute-budget test reads a fixture
+  this feature deletes (`apps/desktop/renderer/lib/planning/recompute-budget.test.ts`), not because
+  any desktop-rendered number changes.
+
+- 453ed05: **The drift guard can now see the change it was built to catch.** The 2026-08-13 game patch
+  reshaped `skills.totals` and the mechanism meant to notice — `fingerprints.ts` — ran on every CI
+  job and passed, because it only checked top-level key presence and never treated an added key as
+  a failure. This change deepens the guard and uses it to reject stale data on both surfaces.
+
+  **Deepened fingerprint (`@bombfarm/domain`, `@bombfarm/game-api`):** the schema check now descends
+  into declared nested paths (`skills.totals`, `heroes[]`, `items[]`, `casa`, `account`) instead of
+  only the top level, and an **added** key is now fatal at every declared level, not only a missing
+  one. The five API route bodies and the save-export file's own shape are fingerprinted from one
+  shared key catalogue. `RouteFingerprint.requiredKeys` (a flat, subset-checked list) is gone;
+  `checkShape` no longer has an `{ ok: true, unknownKeys }` branch.
+
+  **New rejection reason (`@bombfarm/domain`, `@bombfarm/web`):** importing a save file now checks
+  for the presence of the patch's new keys (`skills.refunds`, `skills.totals.vagas_campo`,
+  `skills.totals.bag_tabs_bonus`) before parsing. A save missing them — pre-patch or truncated — is
+  rejected with a new generic message, in EN and PT-BR, that names no keystone, version, date or
+  field path so it stays accurate after the next patch. The specific missing keys are still recorded
+  in `ParseResult.warnings` for diagnosis.
+
+  **Two drop rules, never a migration (`@bombfarm/web`, `@bombfarm/desktop`):** a locally stored
+  planner account on the web, or a stored SQLite account section on desktop, that still carries a
+  retired keystone field (or fails its own fingerprint) is dropped and deleted rather than served or
+  patched up. Clean stored data is left byte-unchanged. Neither surface gains a new upload affordance.
+
+- fc7fcf1: **Every player-facing and internal surface that could still express the five removed keystones is
+  gone.** `@bombfarm/domain` stopped modelling Abisso, Glass Cannon and Tempo Dobrado (MP5 F2); this
+  change removes the last ways a player or a maintainer could still see, toggle, persist or key on
+  them.
+
+  **Removed controls (`@bombfarm/web`, rendered Account panel, both `pt` and `en`):**
+
+  - The three `Switch` toggles — **Abisso**, **Glass Cannon**, **Tempo Dobrado** — and their On/Off
+    status readouts. The Skill Tree subsection is now six read-only `<output>` rows with no input,
+    button or switch/checkbox role anywhere inside it.
+  - The three conditional import-preview rows in the account-import summary.
+  - The advice column's forwarding of the two keystone-only fields into the breakdown model.
+
+  **Removed i18n keys, EN and PT-BR (12 keys × 2 languages):** `treeGlassCannon`,
+  `treeGlassCannonHint`, `treeAbisso`, `treeAbissoHint`, `treeTempoDobrado`,
+  `treeTempoDobradoHint`, `keystoneOn`/`keystoneOff` (PT `Sim`/`Não`), `importKeystoneOn` (PT
+  `Ativo`), `bdNoteGlassCannon`, `bdNoteTempoDobrado`, `bdTermAbisso`. Surviving prose in both
+  languages (account hints, the damage formula's `× abisso` factor, and the planner's explain-section
+  text) no longer names any of the three mechanics.
+
+  **Removed `TreeState` fields (`@bombfarm/web`):** `glassCannon`, `tempoDobrado`, `abisso`,
+  `abissoBase`, `critDmgMult` — gone from the type, `DEFAULT_TREE`, every selector, the store's
+  setters (`setTreeGlassCannon`, `setTreeTempoDobrado`, `setTreeAbisso`) and the team-plan input
+  builder. A stored account written before this change still loads; the dead fields are discarded on
+  normalize, not fatal.
+
+  **Removed `@bombfarm/ui` exports:** `accountKeystoneControlClass` and
+  `accountKeystoneStatusClass` (`panel-field.recipe.ts`), plus the two `[&_label_[data-keystone-control]]`
+  arbitrary variants inside `stackFieldsClass`. The Storybook `switch.stories.tsx` stories keep their
+  ids and count (3 → 3), re-labelled and re-skinned onto a surviving row.
+
+  **`@bombfarm/desktop` (internal, no user-facing change):** `CHANGE_KEY_INPUTS` and
+  `sharedChangeKey` no longer key on the four dead tree paths, and `account-model.ts` no longer maps
+  the five fields into the shared account shape.
+
+- Updated dependencies [1fa3def]
+- Updated dependencies [f0bf7f4]
+- Updated dependencies [e78122a]
+- Updated dependencies [96d496a]
+- Updated dependencies [a0a126b]
+- Updated dependencies [fc7fcf1]
+- Updated dependencies [453ed05]
+- Updated dependencies [fc7fcf1]
+- Updated dependencies [829228c]
+  - @bombfarm/contracts@0.3.0
+  - @bombfarm/domain@0.5.0
+  - @bombfarm/game-api@0.2.0
+  - @bombfarm/ui@0.3.0
+  - @bombfarm/game-data@0.0.3
+
 ## 0.2.0
 
 ### Minor Changes
