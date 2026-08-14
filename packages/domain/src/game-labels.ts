@@ -189,8 +189,8 @@ const ABILITY_EFFECTS: Record<string, Bilingual> = {
     en: '+2.5% chance chest upgrades rarity/level (loot)',
   },
   veia_ouro: {
-    pt: '+4% ouro/nível (loot)',
-    en: '+4% gold/level (loot)',
+    pt: '+2% ouro (próprio)/nível, +40% no teto (loot)',
+    en: '+2% gold (self)/level, +40% at cap (loot)',
   },
   grito_guerra: {
     pt: '+1% Ataque do TIME/nível',
@@ -205,8 +205,8 @@ const ABILITY_EFFECTS: Record<string, Bilingual> = {
     en: '+2% dmg per ally in rotation/level, +40% at cap (not modeled)',
   },
   fortuna: {
-    pt: '+2% ouro ganho/nível, +40% no teto (loot, aura capada)',
-    en: '+2% gold gained/level, +40% at cap (loot, capped aura)',
+    pt: '+0.5% ouro do TIME/nível, +10% no teto (loot, aura capada)',
+    en: '+0.5% TEAM gold/level, +10% at cap (loot, capped aura)',
   },
   brecha: {
     pt: '+1 Penetração/nível, +20 no teto (herói na ficha: não comprovado)',
