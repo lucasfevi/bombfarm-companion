@@ -79,8 +79,6 @@ describe('disabled heroes and automatic respec advice', () => {
           critDmg: 0.19,
           speed: 0.027,
           energy: 0.52,
-          glassCannon: false,
-          tempoDobrado: false,
           teamCoinPct: 0,
         },
         teamBuffs: {},

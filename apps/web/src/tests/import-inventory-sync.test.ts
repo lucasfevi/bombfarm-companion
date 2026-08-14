@@ -97,9 +97,10 @@ describe('import inventory sync', () => {
   // (AD-061; `max_phase 42` post-wipe cannot reproduce a phase-151 subject at all).
   // RECORDED LOSS: the Abisso half of the deleted assertion (`treeAbisso`/`treeAbissoBase`
   // flowing from a real save's `abisso_base`) is unreproducible — no post-patch capture
-  // carries `abisso_base` at all (the 2026-08-13 patch removed the keystone). Abisso detection
-  // itself stays covered by `abisso-glass-cannon.test.ts` (F2's surface, untouched by F1) via
-  // synthetic payloads. See docs/fixture-corpus.md.
+  // carries `abisso_base` at all (the 2026-08-13 patch removed the keystone). MP5 F3 later
+  // removed Abisso detection itself (it had been covered by `abisso-glass-cannon.test.ts`,
+  // deleted at F3's T2) — the mechanic no longer exists anywhere in the pipeline. See
+  // docs/fixture-corpus.md.
   it('applyAccountImport carries a real save\'s account.phase into store phase', () => {
     const raw = loadFixtureJsonForExport();
     const { account } = parseSaveFile(raw, []);

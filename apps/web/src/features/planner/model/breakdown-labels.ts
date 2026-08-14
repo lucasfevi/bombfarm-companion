@@ -148,8 +148,6 @@ export function ledgerStepNote(
   step: Extract<StatBreakdown, { kind: 'ledger' }>['steps'][number],
 ): string | null {
   if (step.note === 'capped') return strings.bdNoteCapped;
-  if (step.note === 'glassCannon') return strings.bdNoteGlassCannon;
-  if (step.note === 'tempoDobrado') return strings.bdNoteTempoDobrado;
   if (step.note === 'ownTeamSplit') {
     return sub(strings.bdNoteSplit, {
       own: formatNumber(step.splitOwn ?? 0, 0),

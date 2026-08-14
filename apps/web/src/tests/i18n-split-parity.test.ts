@@ -30,6 +30,67 @@ const fixture = JSON.parse(readFileSync(fixturePath, 'utf8')) as {
   pt: Strings;
 };
 
+/** MP5 F3 — the 12 keys this feature deletes. The fixture is MOD-03-frozen
+ *  (docs/naming.md:74), so parity subtracts this list rather than regenerating. */
+export const KEYSTONE_KEYS_REMOVED = [
+  'treeGlassCannon',
+  'treeGlassCannonHint',
+  'treeAbisso',
+  'treeAbissoHint',
+  'treeTempoDobrado',
+  'treeTempoDobradoHint',
+  'keystoneOn',
+  'keystoneOff',
+  'importKeystoneOn',
+  'bdNoteGlassCannon',
+  'bdNoteTempoDobrado',
+  'bdTermAbisso',
+] as const;
+
+function omitKeys<T extends Record<string, unknown>>(obj: T, keys: readonly string[]): Partial<T> {
+  const out: Record<string, unknown> = { ...obj };
+  for (const key of keys) delete out[key];
+  return out as Partial<T>;
+}
+
+/**
+ * MP5 F3 also rewrites 5 surviving strings (both languages) to drop keystone terms from prose
+ * that stays — e.g. `accountFarmPhaseHint` loses "and Abisso's damage multiplier"; the two
+ * `explainSections` paragraphs (advice.ts §1 and §8) lose their keystone clauses whole (both
+ * languages, `docs/i18n.md`'s Portuguese-chrome-quality rule). KEYSTONE_KEYS_REMOVED alone
+ * cannot express that — a deleted key and an edited value are different shapes of drift. Rather
+ * than loosen the frozen-fixture comparison to `objectContaining` (which would stop failing on
+ * *any* other addition — the exact alternative AD-081 rejects), this pins the *exact set of
+ * leaf paths* allowed to differ from the frozen fixture. Every other leaf, at every depth
+ * (including inside `explainSections[].p[]`), must still match byte-for-byte.
+ */
+const KEYSTONE_PROSE_EDITED_PATHS = [
+  'accountFarmPhaseHint',
+  'accountTip',
+  'bdFormulaDmg',
+  'explainSections.0.p.1',
+  'explainSections.7.p.0',
+].sort();
+
+function diffLeafPaths(a: unknown, b: unknown, path: string[] = [], out: string[] = []): string[] {
+  if (a === b) return out;
+  const aIsObj = a !== null && typeof a === 'object';
+  const bIsObj = b !== null && typeof b === 'object';
+  if (aIsObj && bIsObj) {
+    const aKeys = Array.isArray(a) ? a.map((_, i) => String(i)) : Object.keys(a);
+    const bKeys = Array.isArray(b) ? b.map((_, i) => String(i)) : Object.keys(b);
+    for (const key of new Set([...aKeys, ...bKeys])) {
+      diffLeafPaths((a as Record<string, unknown>)[key], (b as Record<string, unknown>)[key], [
+        ...path,
+        key,
+      ], out);
+    }
+    return out;
+  }
+  out.push(path.join('.'));
+  return out;
+}
+
 const namespaces = [
   chrome,
   planner,
@@ -45,12 +106,20 @@ const namespaces = [
 ] as const;
 
 describe('i18n split parity', () => {
-  it('STRINGS.en deeply equals the main-captured fixture', () => {
-    expect(STRINGS.en).toEqual(fixture.en);
+  // The fixture (apps/web/src/tests/fixtures/i18n-strings-main.json) is MOD-03-frozen
+  // (docs/naming.md:74) and stays byte-unchanged. MP5 F3 deletes the 12
+  // KEYSTONE_KEYS_REMOVED keys from STRINGS, so parity is measured against the fixture
+  // *minus* that enumerated list (AD-081) — every unlisted drift stays fatal in both
+  // directions, and the list itself cannot silently grow or shrink (see the three
+  // assertions below).
+  it('STRINGS.en differs from the frozen fixture (minus removed keys) at exactly the enumerated prose edits', () => {
+    const diffs = diffLeafPaths(STRINGS.en, omitKeys(fixture.en, KEYSTONE_KEYS_REMOVED)).sort();
+    expect(diffs).toEqual(KEYSTONE_PROSE_EDITED_PATHS);
   });
 
-  it('STRINGS.pt deeply equals the main-captured fixture', () => {
-    expect(STRINGS.pt).toEqual(fixture.pt);
+  it('STRINGS.pt differs from the frozen fixture (minus removed keys) at exactly the enumerated prose edits', () => {
+    const diffs = diffLeafPaths(STRINGS.pt, omitKeys(fixture.pt, KEYSTONE_KEYS_REMOVED)).sort();
+    expect(diffs).toEqual(KEYSTONE_PROSE_EDITED_PATHS);
   });
 
   it('namespace key sets are pairwise disjoint', () => {
@@ -64,10 +133,28 @@ describe('i18n split parity', () => {
     }
   });
 
-  it('sorted key-name list is unchanged vs fixture', () => {
+  it('sorted key-name list is unchanged vs fixture minus the removed keystone keys', () => {
     const fromSplit = Object.keys(STRINGS.en).sort();
-    const fromFixture = Object.keys(fixture.en).sort();
+    const fromFixture = Object.keys(omitKeys(fixture.en, KEYSTONE_KEYS_REMOVED)).sort();
     expect(fromSplit).toEqual(fromFixture);
+  });
+
+  it('KEYSTONE_KEYS_REMOVED has exactly 12 entries', () => {
+    expect(KEYSTONE_KEYS_REMOVED.length).toBe(12);
+  });
+
+  it('every removed key was present in the frozen fixture, both languages', () => {
+    for (const key of KEYSTONE_KEYS_REMOVED) {
+      expect(key in fixture.en, `${key} missing from fixture.en`).toBe(true);
+      expect(key in fixture.pt, `${key} missing from fixture.pt`).toBe(true);
+    }
+  });
+
+  it('every removed key is absent from STRINGS, both languages', () => {
+    for (const key of KEYSTONE_KEYS_REMOVED) {
+      expect(key in STRINGS.en, `${key} still present in STRINGS.en`).toBe(false);
+      expect(key in STRINGS.pt, `${key} still present in STRINGS.pt`).toBe(false);
+    }
   });
 
   it('sub() behaves identically on existing fixtures', () => {

@@ -42,7 +42,7 @@ const HOUSE_LABELS_EN = [
   'House V (Mythic)',
 ] as const;
 
-test.describe('account house fields and keystone toggles (AHK)', () => {
+test.describe('account house fields (AHK)', () => {
   test('shows House subsection above Skill Tree with live rest hint', async ({ page }) => {
     await seedLocalStorage(page, importedRoster);
     await page.goto('/');
@@ -102,35 +102,6 @@ test.describe('account house fields and keystone toggles (AHK)', () => {
     expect(Math.abs(selectBox!.width - numBox!.width)).toBeLessThan(2);
   });
 
-  test('keystones use Switch with On/Off status; no visible checkboxes', async ({ page }) => {
-    await seedLocalStorage(page, importedRoster);
-    await page.goto('/');
-    await selectSavedHero(page, 'Cora');
-    await page.getByRole('tab', { name: /^account$|^conta$/i }).click();
-
-    const account = accountPanel(page);
-    await expect(account.getByRole('checkbox')).toHaveCount(0);
-    await expect(account.locator('[data-switch]')).toHaveCount(3);
-
-    const glass = account.getByRole('switch', { name: /^Glass Cannon/i });
-    await glass.scrollIntoViewIfNeeded();
-    await expect(glass).toHaveAttribute('aria-checked', 'false');
-    await expect(glass.locator('xpath=ancestor::label[1]//div[@data-keystone-control]')).toContainText(
-      'Não',
-    );
-    await glass.click();
-    await expect(glass).toHaveAttribute('aria-checked', 'true');
-    await expect(glass.locator('xpath=ancestor::label[1]//div[@data-keystone-control]')).toContainText(
-      'Sim',
-    );
-
-    const tempo = account.getByRole('switch', { name: /Tempo Dobrado/i });
-    await tempo.scrollIntoViewIfNeeded();
-    await expect(tempo).toHaveAttribute('aria-checked', 'false');
-    await tempo.click();
-    await expect(tempo).toHaveAttribute('aria-checked', 'true');
-  });
-
   test('advice column has no Context panel heading', async ({ page }) => {
     await seedLocalStorage(page, importedRoster);
     await page.goto('/');
@@ -143,7 +114,7 @@ test.describe('account house fields and keystone toggles (AHK)', () => {
     await expect(advice.getByRole('heading', { name: /^Context$/i })).toHaveCount(0);
   });
 
-  test('EN chrome: House subsection and keystone Off labels', async ({ page }) => {
+  test('EN chrome: House subsection', async ({ page }) => {
     await seedLocalStorage(page, { ...importedRoster, lang: 'en' });
     await page.goto('/');
     await selectSavedHero(page, 'Cora');
@@ -152,13 +123,6 @@ test.describe('account house fields and keystone toggles (AHK)', () => {
     const account = accountPanel(page, 'en');
     await expect(account.getByRole('heading', { name: /^House$/i, level: 3 })).toBeVisible();
     await expect(account.getByText(restHint('en', 2, 6))).toBeVisible();
-
-    const glass = account.getByRole('switch', { name: /^Glass Cannon/i });
-    await glass.scrollIntoViewIfNeeded();
-    await expect(glass).toHaveAttribute('aria-checked', 'false');
-    await expect(glass.locator('xpath=ancestor::label[1]//div[@data-keystone-control]')).toContainText(
-      'Off',
-    );
 
     const houseBlock = account.locator('div').filter({
       has: page.getByRole('heading', { name: /^House$/i, level: 3 }),

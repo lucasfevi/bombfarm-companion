@@ -104,8 +104,6 @@ describe('inventory storage adapter', () => {
         speed: 0,
         energy: 0,
         teamCoinPct: 5,
-        glassCannon: true,
-        tempoDobrado: false,
       },
       teamBuffs: { grito_guerra: 3 },
       context: {
@@ -120,7 +118,7 @@ describe('inventory storage adapter', () => {
     expect(normalizeAccount(legacy)).toMatchObject({
       slots: DEFAULT_CASA_SLOTS,
       forgeFloor: 10,
-      tree: { danoTotal: 2, teamCoinPct: 5, glassCannon: true },
+      tree: { danoTotal: 2, teamCoinPct: 5 },
       teamBuffs: { grito_guerra: 3 },
       context: legacy.context,
     });
@@ -140,7 +138,7 @@ describe('inventory storage adapter', () => {
     localStorage.setItem(
       'bf-hp-account-v1',
       JSON.stringify({
-        tree: { danoTotal: 1.5, critChance: 0, critDmg: 0, speed: 0, energy: 0, teamCoinPct: 0, glassCannon: false, tempoDobrado: false },
+        tree: { danoTotal: 1.5, critChance: 0, critDmg: 0, speed: 0, energy: 0, teamCoinPct: 0 },
         teamBuffs: {},
         context: { houseIdx: 0, houseLevel: 1, phase: null, mitigationPct: 1, rankMode: 'dps', targetProp: 'stone' },
       }),
@@ -160,8 +158,6 @@ describe('inventory storage adapter', () => {
         speed: 0,
         energy: 0,
         teamCoinPct: 0,
-        glassCannon: false,
-        tempoDobrado: false,
       },
       teamBuffs: {},
       context: {

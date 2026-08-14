@@ -35,11 +35,10 @@ const ZERO_TREE: TreeSheetTotals = {
   critChancePct: 0,
   critDmgPct: 0,
   luckFlatPct: 0,
-  critDmgMult: 1,
 };
 
 describe('computeCombatMults', () => {
-  it('applies team buffs, tree toggles, and ability mods', () => {
+  it('applies team buffs and ability mods', () => {
     const mods = abilityMods({ grito_guerra: 0 });
     mods.attackMult = 1.1;
     mods.speedMult = 1.05;
@@ -58,8 +57,6 @@ describe('computeCombatMults', () => {
     const m = computeCombatMults({
       mods,
       teamBuffs,
-      treeGlassCannon: true,
-      treeTempoDobrado: true,
       extraDmgPct: 10,
     });
 
@@ -74,9 +71,8 @@ describe('computeCombatMults', () => {
     // ×1.33333 to applySkillTree) — just +5% own + +5% team, same shape as attackMult.
     expect(m.speedMult).toBeCloseTo(1.1, 6);
     expect(m.gateAttackMult).toBeCloseTo(1.35, 6); // +20% own + +15% team
-    // Glass Cannon's energy ×0.5 / crit-damage ×2 are ALSO gone from here (same correction) —
-    // both are sheet-layer factors now (TreeSheetTotals.glassCannon / .critDmgMult, applied
-    // once in applySkillTree), so this function returns identity regardless of the tree flags.
+    // Glass Cannon no longer exists (MP5 removed all five keystones; TreeSheetTotals.glassCannon
+    // was deleted with it, MP5 F2) — energyMult/critDmgMult are permanent identity here now.
     expect(m.energyMult).toBe(1);
     expect(m.critDmgMult).toBe(1);
     // REWRITTEN (was `1.25 * 1.15 * 1.1` — the 1.25 was `treeDanoTotal`, which no longer
@@ -85,20 +81,21 @@ describe('computeCombatMults', () => {
     expect(m.dmgMult).toBeCloseTo(1.15 * 1.1, 6);
   });
 
-  it('the ComputeCombatMultsInput type no longer accepts a tree damage/energy term (AC-29)', () => {
-    // Compile-time guard: `treeDanoTotal` / `treeEnergy` must be gone from the type, not
-    // merely unused. This assigns a value of the exact input shape `computeCombatMults`
-    // accepts; adding either field back would fail `pnpm typecheck`, not this assertion.
+  it('the ComputeCombatMultsInput type no longer accepts a tree damage/energy/keystone term (AC-29, MP5 F3)', () => {
+    // Compile-time guard: `treeDanoTotal` / `treeEnergy` / `treeGlassCannon` / `treeTempoDobrado`
+    // must be gone from the type, not merely unused. This assigns a value of the exact input
+    // shape `computeCombatMults` accepts; adding any of them back would fail `pnpm typecheck`,
+    // not this assertion.
     const mods = abilityMods({});
     const input: Parameters<typeof computeCombatMults>[0] = {
       mods,
       teamBuffs: zeroTeamBuffs(),
-      treeGlassCannon: false,
-      treeTempoDobrado: false,
       extraDmgPct: 0,
     };
     expect('treeDanoTotal' in input).toBe(false);
     expect('treeEnergy' in input).toBe(false);
+    expect('treeGlassCannon' in input).toBe(false);
+    expect('treeTempoDobrado' in input).toBe(false);
   });
 
   it('stacks own Grito + other heroes’ Grito additively (Brenna/Dara math-check)', () => {
@@ -121,8 +118,6 @@ describe('computeCombatMults', () => {
     const m = computeCombatMults({
       mods,
       teamBuffs: { ...zeroTeamBuffs(), grito_guerra: 20 },
-      treeGlassCannon: false,
-      treeTempoDobrado: false,
       extraDmgPct: 0,
     });
     expect(mods.attackMult).toBeCloseTo(1.2, 6);
@@ -145,8 +140,6 @@ describe('computeCombatMults', () => {
     const m = computeCombatMults({
       mods,
       teamBuffs: { ...zeroTeamBuffs(), grito_guerra: 100 },
-      treeGlassCannon: false,
-      treeTempoDobrado: false,
       extraDmgPct: 0,
     });
     expect(m.attackMult).toBe(2);
@@ -157,8 +150,6 @@ describe('computeCombatMults', () => {
     const m = computeCombatMults({
       mods,
       teamBuffs: zeroTeamBuffs(),
-      treeGlassCannon: false,
-      treeTempoDobrado: false,
       extraDmgPct: 0,
     });
     expect(m.attackMult).toBe(1);
@@ -178,8 +169,6 @@ describe('derive', () => {
     const mults = computeCombatMults({
       mods: abilityMods({}),
       teamBuffs: zeroTeamBuffs(),
-      treeGlassCannon: false,
-      treeTempoDobrado: false,
       extraDmgPct: 0,
     });
 
@@ -219,8 +208,6 @@ describe('derive', () => {
     const mults = computeCombatMults({
       mods: abilityMods({}),
       teamBuffs: zeroTeamBuffs(),
-      treeGlassCannon: false,
-      treeTempoDobrado: false,
       extraDmgPct: 0,
     });
 
@@ -326,8 +313,6 @@ describe('derive', () => {
     const mults = computeCombatMults({
       mods: abilityMods({}),
       teamBuffs: zeroTeamBuffs(),
-      treeGlassCannon: false,
-      treeTempoDobrado: false,
       extraDmgPct: 0,
     });
     expect(mults.attackMult).toBe(1);
@@ -386,8 +371,6 @@ describe('derive', () => {
     const mults = computeCombatMults({
       mods: abilityMods({}),
       teamBuffs: zeroTeamBuffs(),
-      treeGlassCannon: false,
-      treeTempoDobrado: false,
       extraDmgPct: 0,
     });
 
@@ -514,7 +497,6 @@ describe('derive', () => {
       critChancePct: 40,
       critDmgPct: 20,
       luckFlatPct: 5,
-      critDmgMult: 1,
     };
     const result = derive({
       geared: naked,

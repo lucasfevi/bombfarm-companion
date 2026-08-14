@@ -1,15 +1,13 @@
 /**
- * `statPointsAvailable` backward-compat proof — follows `storage-abisso-base-compat.test.ts`'s
- * pattern (same precedent set for the Abisso damage-mult wave, reused again for `critDmgMult`):
- * a genuine pre-`statPointsAvailable` `bf-hp-heroes-v1` blob (no `statPointsAvailable` key on the
- * hero) must still load cleanly through `loadHeroes` / `normalizeHero` (the "user's existing
- * localStorage from a previous version" path), default `statPointsAvailable` to `0` (identity —
- * no banked points the reopt budget doesn't already know about), and never silently change an
- * existing user's respec recommendations on upgrade.
+ * `statPointsAvailable` backward-compat proof — follows the same additive-optional-field
+ * pattern as `luckFlatPct` (`AccountShared.tree`, MP5 F3) and `luck` before it
+ * (`storage-luck-compat.test.ts`): a genuine pre-`statPointsAvailable` `bf-hp-heroes-v1` blob
+ * (no `statPointsAvailable` key on the hero) must still load cleanly through `loadHeroes` /
+ * `normalizeHero` (the "user's existing localStorage from a previous version" path), default
+ * `statPointsAvailable` to `0` (identity — no banked points the reopt budget doesn't already
+ * know about), and never silently change an existing user's respec recommendations on upgrade.
  *
- * Unlike `abissoBase`/`critDmgMult` (both on `AccountShared.tree`), this field lives on
- * `HeroRecord` itself — same additive-optional-field shape as `luck` before it
- * (`storage-luck-compat.test.ts`), just a single top-level default rather than three nested ones.
+ * This field lives on `HeroRecord` itself — a single top-level default rather than a nested one.
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { findGateCandidate } from '@bombfarm/domain/points-reopt';
@@ -86,8 +84,6 @@ describe('legacy statPointsAvailable compat (unspent-points wave)', () => {
     const mults = computeCombatMults({
       mods,
       teamBuffs: zeroTeamBuffs(),
-      treeGlassCannon: false,
-      treeTempoDobrado: false,
       extraDmgPct: 0,
     });
     const context = { restSeconds: 19 * 60, mitigation: 0.067, blastRange: 1, cycleModel: 'serial' as const, walkDelay: 0.15, drainMult: 1 };
@@ -104,7 +100,7 @@ describe('legacy statPointsAvailable compat (unspent-points wave)', () => {
       speedMult: mults.speedMult,
       critDmgMult: mults.critDmgMult,
       teamCritPctOfBase: 0,
-      treeSheet: { danoStatic: 1, energyPct: 0, speedPct: 0, critChancePct: 0, critDmgPct: 0, luckFlatPct: 0, critDmgMult: 1 },
+      treeSheet: { danoStatic: 1, energyPct: 0, speedPct: 0, critChancePct: 0, critDmgPct: 0, luckFlatPct: 0 },
       combatCritChancePctOfBase: mods.combatCritChancePctOfBase,
       penetrationPp: mods.penetrationPp,
       context,

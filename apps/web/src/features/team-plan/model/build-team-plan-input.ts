@@ -25,10 +25,6 @@ export function buildTeamPlanInputFromStore(state: PlannerStore): TeamPlanInput 
     inventory: state.inventory.items,
     account: {
       treeSheet,
-      treeGlassCannon: state.treeGlassCannon,
-      treeTempoDobrado: state.treeTempoDobrado,
-      treeAbisso: state.treeAbisso,
-      treeAbissoBase: state.treeAbissoBase,
       houseIdx: state.houseIdx,
       houseLevel: state.houseLevel,
       phase: state.phase,

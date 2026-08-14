@@ -20,8 +20,6 @@ export function AdviceColumn() {
   const treeCritChance = usePlannerStore((state) => state.treeCritChance);
   const treeCritDmg = usePlannerStore((state) => state.treeCritDmg);
   const treeEnergy = usePlannerStore((state) => state.treeEnergy);
-  const treeGlassCannon = usePlannerStore((state) => state.treeGlassCannon);
-  const treeTempoDobrado = usePlannerStore((state) => state.treeTempoDobrado);
   const treeDanoTotal = usePlannerStore((state) => state.treeDanoTotal);
 
   const {
@@ -41,7 +39,6 @@ export function AdviceColumn() {
     teamCritPctOfBase,
     rest,
     dmgMult,
-    abissoMult,
     treeSheet,
   } = pipeline;
 
@@ -66,13 +63,10 @@ export function AdviceColumn() {
     treeCritDmg,
     treeEnergy,
     treeLuckFlatPct: treeSheet.luckFlatPct,
-    treeGlassCannon,
-    treeTempoDobrado,
     context,
     dmgMult,
     treeDanoTotal,
     extraDmgPct: 0,
-    abissoMult,
     active,
     dps,
     uptime,

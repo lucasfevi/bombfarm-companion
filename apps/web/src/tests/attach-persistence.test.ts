@@ -100,7 +100,7 @@ describe('attachPlannerPersistence', () => {
     const second = attachPlannerPersistence(usePlannerStore);
     second(); // no-op detach
     usePlannerStore.getState().setBooted(true);
-    usePlannerStore.getState().setTreeGlassCannon(true);
+    usePlannerStore.getState().setHouseIdx(1);
     vi.advanceTimersByTime(AUTOSAVE_MS);
     // exactly one write path — account key present once
     expect(localStorage.getItem('bf-hp-account-v1')).toBeTruthy();
