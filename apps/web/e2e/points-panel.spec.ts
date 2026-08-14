@@ -456,8 +456,12 @@ test.describe('points panel reset advice gain line + Optimize build result (BSPW
     await expect(panel.getByText(/checagem rápida encontrou um possível ganho/i)).toBeVisible();
   });
 
-  test('Optimize build is disabled with a reason when nothing is spent (AC-15)', async ({ page }) => {
-    await seedLocalStorage(page, pointsHero({ level: 38, pts: zeroPts() }));
+  test('Optimize build is disabled with a reason only when there is no pool at all (AC-15)', async ({
+    page,
+  }) => {
+    // `reoptBudget` is 0 only when the level pool AND the placed points are both 0. A level-0
+    // hero is the reachable shape: nothing to place, nothing placed.
+    await seedLocalStorage(page, pointsHero({ level: 0, pts: zeroPts() }));
     await page.goto('/');
     await selectSavedHero(page, 'Cora');
     await openPointsTab(page);
@@ -465,7 +469,30 @@ test.describe('points panel reset advice gain line + Optimize build result (BSPW
     const panel = pointsPanel(page);
     const optimizeBtn = panel.getByRole('button', { name: /^Otimizar build$/i });
     await expect(optimizeBtn).toBeDisabled();
-    await expect(optimizeBtn).toHaveAttribute('title', /nada gasto para realocar/i);
+    await expect(optimizeBtn).toHaveAttribute('title', /nenhum ponto para alocar/i);
+  });
+
+  test('Optimize build is ENABLED for a hero with a level but nothing spent yet', async ({
+    page,
+  }) => {
+    // The reported defect's starting shape: every point still unplaced. This used to read as
+    // "nothing spent to move" and disable the button, stranding the hero's whole level — the
+    // budget is the level pool now, not the sum of what is already placed.
+    await seedLocalStorage(page, pointsHero({ level: 38, pts: zeroPts() }));
+    await page.goto('/');
+    await selectSavedHero(page, 'Cora');
+    await openPointsTab(page);
+
+    const panel = pointsPanel(page);
+    const optimizeBtn = panel.getByRole('button', { name: /^Otimizar build$/i });
+    await expect(optimizeBtn).toBeEnabled();
+    await expect(panel.getByText(/\+38 não gastos/i)).toBeVisible();
+
+    // And the search it runs places the level, never more than it.
+    await optimizeBtn.click();
+    await panel.getByRole('button', { name: /^Aplicar prévia$/i }).click();
+    await expect(panel.getByText(/38 \/ 38 pontos/i)).toBeVisible();
+    await expect(panel.getByText(/não gastos/i)).toHaveCount(0);
   });
 
   test('result line reads "best allocation found" with a percentage for a real gain', async ({ page }) => {

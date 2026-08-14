@@ -27,8 +27,9 @@ export const en = {
   colPerPt: "/pt",
   colAfter: "After",
   colPreview: "Preview",
-  // Banked stat points from the save, not reflected in the spent/level counter next to it —
-  // {count} is HeroRecord.statPointsAvailable, shown only when > 0.
+  // Names the slack the spent/level counter next to it only implies — {count} is the live
+  // `level - spentDelta`, shown only when > 0. Not HeroRecord.statPointsAvailable: that is an
+  // import-time snapshot which would keep claiming "+46 unspent" after those 46 were spent.
   pointsUnspentBanked: "+{count} unspent",
   // BSPW4-15/AC-04 — Tier 1 (the automatic gate) is a lower bound: "at least ~{pct}%", never a
   // bare percentage or a future-tense promise, and it names Optimize build as the definitive
@@ -42,7 +43,10 @@ export const en = {
   optimizeBuildResultLine: "Best allocation this search found: about {pct}% more sustained DPS.",
   optimizeBuildKeptCurrent: "This search did not beat your current allocation.",
   optimizeBuildBudgetExhausted: "The search was bounded and stopped early — this is the best it found within that budget.",
-  optimizeBuildNoBudgetReason: "Nothing spent to move yet.",
+  // Shown only when `reoptBudget` is 0 — the hero has no level pool AND nothing placed in the
+  // seven DPS keys. NOT "nothing spent": a hero with 0 spent and a level to place is exactly
+  // the case the button is enabled for.
+  optimizeBuildNoBudgetReason: "No points to place at this level yet.",
   optimizeBuildHeroDisabledNote:
     "This hero is disabled, so it is not included in automatic respec recommendations.",
   previewApplyButton: "Apply preview",
@@ -173,7 +177,7 @@ export const pt: typeof en = {
   optimizeBuildResultLine: "Melhor alocação encontrada por essa busca: cerca de {pct}% a mais de DPS efetivo.",
   optimizeBuildKeptCurrent: "Essa busca não superou sua alocação atual.",
   optimizeBuildBudgetExhausted: "A busca tinha um limite e parou antes do fim — este é o melhor resultado dentro desse limite.",
-  optimizeBuildNoBudgetReason: "Nada gasto para realocar ainda.",
+  optimizeBuildNoBudgetReason: "Nenhum ponto para alocar neste nível ainda.",
   optimizeBuildHeroDisabledNote:
     "Este herói está desativado, então não entra nas recomendações automáticas de reset.",
   previewApplyButton: "Aplicar prévia",

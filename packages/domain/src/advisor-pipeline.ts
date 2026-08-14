@@ -50,8 +50,6 @@ export type AdvisorPipelineInput = {
   loadout: Loadout;
   altLoadout: Loadout | null;
   pts: Record<SheetKey, number>;
-  /** `HeroRecord.statPointsAvailable` — banked, unspent stat points (`ReoptInput.statPointsAvailable`). */
-  statPointsAvailable: number;
   abilities: Record<string, number>;
   rarity: RarityKey;
   level: number;
@@ -133,7 +131,6 @@ export function computeAdvisorPipeline(input: AdvisorPipelineInput): AdvisorPipe
     loadout,
     altLoadout,
     pts,
-    statPointsAvailable,
     abilities,
     rarity,
     level,
@@ -306,7 +303,7 @@ export function computeAdvisorPipeline(input: AdvisorPipelineInput): AdvisorPipe
     effective,
     effectiveDelta: equippedResult.effectiveDelta,
     context,
-    statPointsAvailable,
+    level,
   });
   const resetAdvice = buildResetAdvice(gate);
 

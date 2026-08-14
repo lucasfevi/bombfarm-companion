@@ -31,7 +31,6 @@ function baseInput(overrides: Partial<AdvisorPipelineInput> = {}): AdvisorPipeli
     loadout: emptyLoadout(),
     altLoadout: null,
     pts: ZERO_PTS(),
-    statPointsAvailable: 0,
     abilities: {},
     rarity: 'Comum',
     level: 1,
@@ -436,12 +435,16 @@ describe('computeAdvisorPipeline', () => {
       const naked = sampleNaked();
       const geared = { ...naked, critChance: 100 };
       const pts = { ...ZERO_PTS(), critChance: 30 };
-      const out = computeAdvisorPipeline(baseInput({ naked, geared, pts }));
+      const input = baseInput({ naked, geared, pts });
+      const out = computeAdvisorPipeline(input);
       const direct = findGateCandidate({
         pts,
         effective: out.effective,
         effectiveDelta: out.A.effectiveDelta,
         context: out.context,
+        // The same pool the pipeline hands the gate — read off the input, so the two sides
+        // cannot drift apart if this fixture's level ever changes.
+        level: input.level,
       });
       expect(out.resetAdvice.gainPct).toBeCloseTo(direct.gainPct, 9);
       expect(out.resetAdvice.reoptDps).toBeCloseTo(direct.reoptDps, 6);

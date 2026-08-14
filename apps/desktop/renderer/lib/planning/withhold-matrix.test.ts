@@ -41,7 +41,6 @@ function identityTreeResult(hero: HeroRecord, phase: number, mitigationPct: numb
     loadout: hero.loadout,
     altLoadout: hero.altLoadout,
     pts: hero.pts,
-    statPointsAvailable: hero.statPointsAvailable ?? 0,
     abilities: hero.abilities,
     rarity: hero.rarity,
     level: hero.level,
