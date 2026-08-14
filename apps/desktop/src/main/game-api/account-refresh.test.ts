@@ -86,12 +86,133 @@ function fixedReadToken(accountId: string, token: SessionToken, mtimeMs: number)
   return { fn, callCount: () => calls };
 }
 
+/** A schema-conforming `/roster` hero — `ROUTE_FINGERPRINTS.heroes`'s `hero` level (MP5 F4, T5).
+ *  These bodies predate T5's deepened, exact-key fingerprints; a missing key now makes
+ *  `checkShape` mark the whole route `drift` instead of `resolved`, which this test suite reads
+ *  through `fidelityOf(...).status`. */
+function fullHero(overrides: Record<string, unknown> = {}): Record<string, unknown> {
+  return {
+    id: '1',
+    name: 'Nyx',
+    level: 1,
+    xp: 0,
+    rarity: 1,
+    rank: 1,
+    stars: 0,
+    skin: 0,
+    skin_birth: 0,
+    in_field: true,
+    battle_allowed: true,
+    marketable: false,
+    in_market: false,
+    slots: {},
+    stats: {},
+    birth_stats: {},
+    stat_ranges: {},
+    abilities: {},
+    ability_points_total: 0,
+    ability_points_spent: 0,
+    ability_reroll_cost: 0,
+    ability_reroll_stone: 0,
+    stat_points_available: 0,
+    ...overrides,
+  };
+}
+
 const BODIES: Record<string, Record<string, unknown>> = {
-  '/state': { gold: 100, phase: 5, max_phase: 10, locked: false, chests: [], bag_tabs: 4, bag_capacity: 100, items_count: 2 },
-  '/roster': { heroes: [{ id: '1', name: 'Nyx' }] },
-  '/skill/state': { levels: {}, totals: {}, gold: 100, max_phase: 10, refunds: 0, field_slots: 3 },
-  '/rotation': { field_size: 9, heroes: [], casa: { active_casa: 1, levels: [1] } },
-  '/inventory': { items: [{ id: '1' }], bag_tabs: 4, bag_capacity: 100, items_count: 1 },
+  '/state': {
+    gold: 100,
+    crystals: 0,
+    phase: 5,
+    max_phase: 10,
+    locked: false,
+    checkpoint_at: '2026-08-01T00:00:00.000Z',
+    chests: [],
+    chest_stash: [],
+    item_stash: [],
+    vip_until: 0,
+    bag_tabs: 4,
+    bag_capacity: 100,
+    items_count: 2,
+  },
+  '/roster': { heroes: [fullHero()] },
+  '/skill/state': {
+    levels: {},
+    refunds: {},
+    field_slots: 3,
+    bag_tabs: 4,
+    gold: 100,
+    max_phase: 10,
+    totals: {
+      team_dmg_add: 1,
+      crit_chance_add: 1,
+      crit_dmg_add: 1,
+      speed_add: 1,
+      coin_add: 1,
+      luck_add: 1,
+      energia_add: 1,
+      xp_mult: 1,
+      geo_mult: 1,
+      dmg_static: 1,
+      vagas_campo: 1,
+      bag_tabs_bonus: 1,
+    },
+  },
+  '/rotation': {
+    field_size: 9,
+    rescues_left: 0,
+    rescues_max: 0,
+    heroes: [
+      {
+        id: '1',
+        level: 1,
+        energia_atual: 0,
+        energia_max: 0,
+        energia_pct: 0,
+        state: 'idle',
+        in_field: false,
+        in_casa: true,
+        recovering: false,
+        battle_allowed: true,
+      },
+    ],
+    casa: {
+      active_casa: 1,
+      levels: [1],
+      cycle_secs: [1],
+      slots: 1,
+      slots_per_house: [1],
+      cycle_secs_per_house: [1],
+      upgrade_cost: [1],
+    },
+  },
+  '/inventory': {
+    items: [
+      {
+        id: '1',
+        def_id: 'd1',
+        set: 'set1',
+        rarity: 1,
+        category: 1,
+        level: 1,
+        stats: [],
+        power: 0,
+        sell_value: 0,
+        sellable: true,
+        upgrade: 0,
+        tradable: true,
+        market_state: 0,
+        locked: false,
+        equipped_on: null,
+        equip_slot: null,
+        in_stash: true,
+      },
+    ],
+    chests: [],
+    bag_tabs: 4,
+    bag_capacity: 100,
+    items_count: 1,
+  },
 };
 
 function okTransport(calls: string[] = []): HttpTransport {
