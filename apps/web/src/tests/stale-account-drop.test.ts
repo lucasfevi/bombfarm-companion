@@ -67,6 +67,32 @@ describe('dropStaleLocalAccount', () => {
     expect(report.triggers.length).toBeGreaterThan(0);
   });
 
+  it('MSG-21 discriminating case: every retired field at its all-falsy value still triggers the drop — presence, not truthiness', () => {
+    // LEGACY_ACCOUNT_JSON above (and every other fixture in this file) carries at least one
+    // truthy retired value (critDmgMult: 2, glassCannon: true, …) — a truthiness-checking
+    // implementation (`tree.critDmgMult` instead of `'critDmgMult' in tree`) would pass every
+    // test above for the wrong reason. This fixture is the discriminating case: every retired
+    // field is set to its own all-falsy value (0 / false), so ONLY a presence check can find it.
+    const allFalsyRetiredJson =
+      '{"tree":{"danoTotal":1,"critChance":0,"critDmg":0,"speed":0,"energy":0,"teamCoinPct":0,' +
+      '"abisso":false,"abissoBase":0,"critDmgMult":0,"glassCannon":false,"tempoDobrado":false,' +
+      '"luckFlatPct":0}}';
+
+    localStorage.setItem('bf-hp-account-v1', allFalsyRetiredJson);
+    const report = dropStaleLocalAccount();
+
+    expect(report.dropped).toBe(true);
+    expect(report.triggers).toEqual(
+      expect.arrayContaining([
+        'account.tree.abisso',
+        'account.tree.abissoBase',
+        'account.tree.critDmgMult',
+        'account.tree.glassCannon',
+        'account.tree.tempoDobrado',
+      ]),
+    );
+  });
+
   it('runs as the FIRST statement of hydratePlannerStore — before loadHeroes ever sees the raw bytes', () => {
     // If the drop ran after loadHeroes/loadAccountShared (or not at all), a legacy-shaped hero
     // list would still populate the store even though the account itself gets dropped. This
