@@ -11,7 +11,13 @@ import { join } from 'node:path';
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { parseAccountPayload, parseSaveFile } from '@bombfarm/domain/import-save';
+import {
+  computeHeroFarmFacts,
+  computeSquadFarmFacts,
+  computeFarmRateTable,
+} from '@bombfarm/domain/farm-rate';
 import { requireFixture } from './helpers/require-fixture';
+import { loadFarmRateFixture } from './helpers/farm-rate-fixtures';
 
 const DOMAIN_ROOT = join(__dirname, '..');
 const FIXTURE_PATH = join(DOMAIN_ROOT, 'tests/fixtures/sheet-math/save-20260813-5heroes.json');
@@ -128,5 +134,27 @@ describe('account.max_phase — rejection paths yield null (spec.md P1-6 AC-4)',
     const result = parseSaveFile(payload, []);
     expect(result.rejected?.reason).toBe('unsupportedSaveShape');
     expect(result.account.maxPhase).toBeNull();
+  });
+});
+
+describe('FarmRateRow.locked — the maxPhase → row mapping (R-B15 AC-5, added at T6)', () => {
+  const { heroes, account } = loadFarmRateFixture();
+  const heroFacts = computeHeroFarmFacts({ heroes, account });
+  const squad = computeSquadFarmFacts(heroFacts, account);
+
+  it('maxPhase: 42 ⇒ row 42 is unlocked (false) and row 43 is locked (true)', () => {
+    const rows = computeFarmRateTable(squad, { maxPhase: 42 });
+    expect(rows.find((r) => r.phase === 42)!.locked).toBe(false);
+    expect(rows.find((r) => r.phase === 43)!.locked).toBe(true);
+  });
+
+  it('maxPhase omitted ⇒ every row locked: false', () => {
+    const rows = computeFarmRateTable(squad);
+    expect(rows.every((r) => r.locked === false)).toBe(true);
+  });
+
+  it('maxPhase: null ⇒ every row locked: false (explicit null, same as omitted)', () => {
+    const rows = computeFarmRateTable(squad, { maxPhase: null });
+    expect(rows.every((r) => r.locked === false)).toBe(true);
   });
 });

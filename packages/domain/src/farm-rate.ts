@@ -25,10 +25,29 @@
  * shapes. `OQ-PFR-3` tracks the live confirmation of the Fortuna-sum's cap order (cap-after-sum,
  * the conservative choice shipped here).
  */
-import { fuseSeconds, GRID_SPEED_COEF, ABILITY_LEVEL_MAX } from './model';
+import { fuseSeconds, GRID_SPEED_COEF, EFF_IA, ABILITY_LEVEL_MAX, mitigationFactor } from './model';
 import { pipelineForHero } from './roster-dps';
 import { DEFAULT_CASA_SLOTS } from './casa-slots';
-import { RETURN_BONUS_ADD, RETURN_BONUS_ADD_VIP, LOOT_ABILITY_VALUES } from './phase-wiki';
+import {
+  DROP_RATES,
+  KEY_GATE_COST,
+  RETURN_BONUS_ADD,
+  RETURN_BONUS_ADD_VIP,
+  LOOT_ABILITY_VALUES,
+  WIKI_PROPS,
+  WIKI_PHASE_LINES,
+  GATE_SECS_POR_ATO,
+  BOSS_HP_MULT_WIKI,
+  JAULA,
+  propCountForAto,
+  xpPerProp,
+  goldRarityMult,
+  itemLevelsForPhase,
+  itemLevelDropLabel,
+  jaulaEarlyCap,
+  type WikiPhaseLine,
+} from './phase-wiki';
+import { hitsToKill, propHp } from './phases';
 import type { HeroRecord, AccountShared } from './shims/storage';
 
 /**
@@ -226,4 +245,203 @@ export function computeSquadFarmFacts(
     teamCoinMult,
     treeLuckFlatPct,
   };
+}
+
+/** Blocks struck per second while on field: `plantsPerSec × blocksPerBomb × EFF_IA`. */
+function hitsPerSec(hero: HeroFarmFacts): number {
+  return hero.plantsPerSec * hero.blocksPerBomb * EFF_IA;
+}
+
+// ---------------------------------------------------------------------------------------------
+// Module-load prop table (design.md §2.2) — phase-independent, computed once, frozen.
+// ---------------------------------------------------------------------------------------------
+
+type PropShare = { hpMult: number; share: number; goldMult: number };
+
+const PROP_WEIGHT_TOTAL = WIKI_PROPS.reduce((sum, prop) => sum + prop.weight, 0);
+
+/** `{ hpMult, share, goldMult }` per wiki prop — `share` and `goldMult` are phase-independent. */
+const PROP_SHARES: readonly PropShare[] = WIKI_PROPS.map((prop) => ({
+  hpMult: prop.hpMult,
+  share: prop.weight / PROP_WEIGHT_TOTAL,
+  goldMult: goldRarityMult(prop.rarity),
+}));
+
+/** Highest `hpMult` across `WIKI_PROPS` — the one-shot threshold multiplier. */
+const MAX_PROP_HP_MULT = WIKI_PROPS.reduce((max, prop) => Math.max(max, prop.hpMult), 0);
+
+/** `Σ share × goldRarityMult` — the phase-independent gold factor (`design.md` §2.2: `1.545`). */
+const GOLD_SHARE_FACTOR = PROP_SHARES.reduce((sum, prop) => sum + prop.share * prop.goldMult, 0);
+
+// ---------------------------------------------------------------------------------------------
+// Rows (design.md §3.4, §4.3–§4.5)
+// ---------------------------------------------------------------------------------------------
+
+export type FarmRateOptions = {
+  /** Default `'off'` (`AD-PFR-09`). */
+  returnBonus?: ReturnBonusMode;
+  /** `account.max_phase`. `null`/omitted ⇒ every row `locked: false` (`AD-PFR-02`). */
+  maxPhase?: number | null;
+};
+
+export type FarmRateRow = {
+  phase: number; // 1..600
+  ato: number; // 1..5
+  gate: boolean;
+  locked: boolean; // phase > maxPhase
+  mitigationPct: number; // line.mitig × 100 — PERCENT
+  goldPerHour: number;
+  chestsPerHour: number;
+  /** SIGNED: `>= 0` gain on non-gate, `<= 0` cost on gate (`AD-PFR-08`). */
+  keysPerHour: number;
+  gemsPerHour: number; // 0 on non-gate
+  timePiecesPerHour: number; // 0 on non-gate
+  xpPerHour: number;
+  propsPerHour: number;
+  cyclesPerHour: number; // 0 when clearSecs is not finite
+  /** Seconds to clear the map (+ gate boss). `Infinity` when the squad cannot clear it. */
+  clearSecs: number;
+  gateTimerSecs: number | null; // null on non-gate
+  /** Every enabled hero one-shots every prop type. `false` for an empty pool. */
+  oneShot: boolean;
+  /** gate timeout OR unbounded clear OR zero prop rate. */
+  infeasible: boolean;
+  itemLevels: number[];
+  itemLevelLabel: string;
+  jaulaEarlyCapPct: number; // PERCENT (AD-PFR-12 — a fact, not a rate); jaulaEarlyCap(phase)
+  /** `JAULA.janelaSecs` — non-VIP, constant across phases since item A's reshape (§2.4.1). */
+  jaulaWindowSecs: number;
+  /** Throughput-weighted squad E[HTK] — diagnostics for item C's tooltip. `Infinity` when zero-rate. */
+  expectedHtk: number;
+};
+
+/** `-0` collapses to `0` — never leaks a signed zero into a public field (R-B6 edge case). */
+function normalizeZero(value: number): number {
+  return value === 0 ? 0 : value;
+}
+
+function buildRow(line: WikiPhaseLine, squad: SquadFarmFacts, options: FarmRateOptions): FarmRateRow {
+  const bonus = returnBonusMultiplier(options.returnBonus ?? 'off');
+  const sorteMult = 1 + squad.sorteFraction;
+
+  // Per-hero, per-phase: mitigation is the ONLY phase-dependent damage term (AD-PFR-15).
+  let shareDenom = 0;
+  let bossRateSum = 0;
+  const perHero = squad.heroes.map((hero) => {
+    const mitF = mitigationFactor(line.mitig, hero.penetrationPct);
+    const avgHit = hero.avgHitBase * mitF;
+    const eHtk = PROP_SHARES.reduce(
+      (sum, prop) => sum + prop.share * hitsToKill(avgHit, propHp(line.hp, prop.hpMult)),
+      0,
+    );
+    const bossHtk = hitsToKill(avgHit, propHp(line.hp, BOSS_HP_MULT_WIKI));
+    const hps = hitsPerSec(hero);
+    const term = (hps * hero.uptime) / eHtk;
+    const bossTerm = (hps * hero.uptime) / bossHtk;
+    shareDenom += term;
+    bossRateSum += bossTerm;
+    return { avgHit, eHtk, term };
+  });
+
+  const propsPerSec = squad.concurrencyScale * shareDenom;
+  const bossPerSec = squad.concurrencyScale * bossRateSum;
+  const propsPerHour = 3600 * propsPerSec;
+
+  const veiaOuroPerLevel = LOOT_ABILITY_VALUES.veia_ouro.perLevel;
+  let goldSelfMixSum = 0;
+  let expectedHtkSum = 0;
+  for (let i = 0; i < perHero.length; i++) {
+    const hero = squad.heroes[i];
+    const { eHtk, term } = perHero[i];
+    const share = shareDenom > 0 ? term / shareDenom : 0;
+    const goldSelf = 1 + veiaOuroPerLevel * hero.veiaOuroLevel;
+    goldSelfMixSum += share * goldSelf;
+    expectedHtkSum += share * eHtk;
+  }
+  const goldSelfMix = shareDenom > 0 ? goldSelfMixSum : 1;
+  const expectedHtk = shareDenom > 0 ? expectedHtkSum : Infinity;
+
+  const propCount = propCountForAto(line.ato);
+  const clearSecs = propCount / propsPerSec + (line.gate ? 1 / bossPerSec : 0);
+  const cyclesPerHour = Number.isFinite(clearSecs) && clearSecs > 0 ? 3600 / clearSecs : 0;
+
+  const eGold = line.goldComum * GOLD_SHARE_FACTOR;
+  const goldMult = squad.teamCoinMult * (1 + squad.fortunaAura) * bonus;
+  const goldPerHour = propsPerHour * eGold * goldMult * goldSelfMix;
+
+  const chestsPerHour = propsPerHour * DROP_RATES.chest * sorteMult * bonus;
+  const keysPerHour = line.gate
+    ? -(cyclesPerHour * KEY_GATE_COST)
+    : propsPerHour * DROP_RATES.key * sorteMult * bonus;
+  const gemsPerHour = line.gate ? propsPerHour * DROP_RATES.gem * sorteMult * bonus : 0;
+  const timePiecesPerHour = line.gate ? propsPerHour * DROP_RATES.time * sorteMult * bonus : 0;
+  const xpPerHour = propsPerHour * xpPerProp(line.phase) * bonus;
+
+  const maxPropHp = line.hp * MAX_PROP_HP_MULT;
+  const oneShot = perHero.length > 0 && perHero.every((hero) => hero.avgHit >= maxPropHp);
+  const gateTimerSecs = line.gate ? (GATE_SECS_POR_ATO[line.ato - 1] ?? null) : null;
+  const infeasible =
+    (line.gate && gateTimerSecs != null && clearSecs > gateTimerSecs) ||
+    !Number.isFinite(clearSecs) ||
+    propsPerSec <= 0;
+  const locked = options.maxPhase != null && line.phase > options.maxPhase;
+
+  const itemLevels = itemLevelsForPhase(line.phase);
+
+  return {
+    phase: line.phase,
+    ato: line.ato,
+    gate: line.gate,
+    locked,
+    mitigationPct: line.mitig * 100,
+    goldPerHour: normalizeZero(goldPerHour),
+    chestsPerHour: normalizeZero(chestsPerHour),
+    keysPerHour: normalizeZero(keysPerHour),
+    gemsPerHour: normalizeZero(gemsPerHour),
+    timePiecesPerHour: normalizeZero(timePiecesPerHour),
+    xpPerHour: normalizeZero(xpPerHour),
+    propsPerHour: normalizeZero(propsPerHour),
+    cyclesPerHour: normalizeZero(cyclesPerHour),
+    clearSecs,
+    gateTimerSecs,
+    oneShot,
+    infeasible,
+    itemLevels,
+    itemLevelLabel: itemLevelDropLabel(itemLevels),
+    jaulaEarlyCapPct: jaulaEarlyCap(line.phase) * 100,
+    jaulaWindowSecs: JAULA.janelaSecs,
+    expectedHtk,
+  };
+}
+
+/** `null` for any phase outside `[1, WIKI_PHASE_LINES.length]`, non-integer, or `NaN`. Never clamps. */
+function isValidPhase(phase: number): boolean {
+  return Number.isInteger(phase) && phase >= 1 && phase <= WIKI_PHASE_LINES.length;
+}
+
+/** `null` for any phase outside `[1, WIKI_PHASE_LINES.length]` or without a wiki line. */
+export function computeFarmRateRow(
+  phase: number,
+  squad: SquadFarmFacts,
+  options: FarmRateOptions = {},
+): FarmRateRow | null {
+  if (!isValidPhase(phase)) return null;
+  const line = WIKI_PHASE_LINES[phase - 1];
+  if (!line) return null;
+  return buildRow(line, squad, options);
+}
+
+/** All 600 wiki phases, ascending. Zero pipeline calls. */
+export function computeFarmRateTable(squad: SquadFarmFacts, options: FarmRateOptions = {}): FarmRateRow[] {
+  return WIKI_PHASE_LINES.map((line) => buildRow(line, squad, options));
+}
+
+/** Convenience for item C: facts + squad + table in one call. `N` pipeline calls, `N = |enabled|`. */
+export function computeFarmRates(
+  input: FarmFactsInput & FarmRateOptions,
+): { heroFacts: HeroFarmFacts[]; squad: SquadFarmFacts; rows: FarmRateRow[] } {
+  const heroFacts = computeHeroFarmFacts(input);
+  const squad = computeSquadFarmFacts(heroFacts, input.account);
+  const rows = computeFarmRateTable(squad, { returnBonus: input.returnBonus, maxPhase: input.maxPhase });
+  return { heroFacts, squad, rows };
 }
