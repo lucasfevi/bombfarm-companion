@@ -12,7 +12,12 @@ import { SessionToken as SessionTokenClass, createPacingGate } from '@bombfarm/g
 import type { AccountStore } from '../storage/account-store.js';
 import { createAccountStore } from '../storage/account-store.js';
 import type { SqliteBinding, SqliteDb, SqliteStatement } from '../storage/index.js';
-import { detectAvailableBindings, openTestAccountDb, warnForUnavailableBindings } from '../storage/test-support.js';
+import {
+  createLogSpy,
+  detectAvailableBindings,
+  openTestAccountDb,
+  warnForUnavailableBindings,
+} from '../storage/test-support.js';
 import { createAccountRefresh, type AccountRefreshDeps } from './account-refresh.js';
 import type { ConsentStore } from './consent-store.js';
 import type { SessionTokenFileResult } from './session-token-file.js';
@@ -522,5 +527,50 @@ describe('account-refresh — a failed roster is served as stale with the STORED
 
     expect(fidelityOf(secondView).heroes).toEqual({ status: 'stale', capturedAt: '2026-08-12T00:01:00.000Z' });
     expect(secondView?.payload.heroes).toEqual(BODIES['/roster']?.heroes);
+  });
+});
+
+describe('account-refresh — a drifted section is logged with path-qualified keys and no player data (MSG-27)', () => {
+  it('a /state response missing one key and carrying one unrecognized key logs section.drift naming both, never a response value', async () => {
+    const open = openTestAccountDb(firstBinding());
+    const store = createAccountStore(open);
+    const { fn: readToken } = fixedReadToken('486', SessionTokenClass.create(SENTINEL_TOKEN), 1000);
+    const sentinelGold = 918273645;
+
+    // A drifted /state body: missing the declared `crystals` key, carrying an unrecognized
+    // `some_future_key` — both a missing-key and an added-key trigger in the same response, so
+    // this proves the log names both lists, not just whichever `checkShape` finds first.
+    const driftedState: Record<string, unknown> = { ...BODIES['/state'] };
+    delete driftedState.crystals;
+    driftedState.some_future_key = sentinelGold;
+
+    const transport: HttpTransport = (req) => {
+      if (req.path === '/state') {
+        return Promise.resolve({ status: 200, body: JSON.stringify(driftedState) });
+      }
+      return Promise.resolve({ status: 200, body: JSON.stringify(BODIES[req.path] ?? {}) });
+    };
+
+    const { log, records } = createLogSpy();
+    const deps = baseDeps({ store, consentStore: fixedConsentStore(GRANTED), transport, readToken, log });
+    const refresh = createAccountRefresh(deps);
+
+    const view = await refresh.refreshNow();
+
+    // A drifted section is a shape failure, not merely logged-and-served (MP5 F4: added keys are
+    // fatal) — the section resolves nothing this cycle.
+    expect(fidelityOf(view).account).toEqual({ status: 'missing' });
+
+    const drift = records.find((r) => r.record.event === 'section.drift');
+    expect(drift).toBeDefined();
+    expect(drift?.record.scope).toBe('account-refresh');
+    expect(drift?.record.section).toBe('account');
+    expect(drift?.record.missingKeys).toContain('account.crystals');
+    expect(drift?.record.addedKeys).toContain('account.some_future_key');
+
+    // No player data anywhere in the log payload — never the sentinel value itself, only the key
+    // paths that named it.
+    const payload = JSON.stringify(drift?.record);
+    expect(payload).not.toContain(String(sentinelGold));
   });
 });
