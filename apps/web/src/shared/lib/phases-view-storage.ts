@@ -2,7 +2,11 @@
 // 'off' | 'on' | 'vip'; persisting B's own literals means this normalizer validates against the
 // domain type instead of a local copy that could drift. Type-only import — the one allowlisted
 // exception to "computeFarmRates' module is imported in exactly one file" (R-C20 AC-7 guard (f)).
+// Re-exported below so the slice / components reference the type through this file, not a
+// second direct import site.
 import type { ReturnBonusMode } from '@bombfarm/domain/farm-rate';
+
+export type { ReturnBonusMode };
 
 const PHASES_VIEW_KEY = 'bf-hp-phases-view-v1';
 

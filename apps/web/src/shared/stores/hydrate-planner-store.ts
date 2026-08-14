@@ -37,7 +37,7 @@ export function hydratePlannerStore(): void {
   state.hydrateAccount(account);
 
   state.hydrateLang(loadLang());
-  state.hydratePhasesView(loadPhasesView().phase);
+  state.hydratePhasesView(loadPhasesView());
 
   const inventory = loadInventory();
   state.hydrateInventory(inventory, account.forgeFloor ?? 10);

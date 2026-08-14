@@ -42,8 +42,57 @@ describe('phases slice', () => {
   });
 
   it('hydratePhasesView does not write', () => {
-    usePlannerStore.getState().hydratePhasesView(88);
+    usePlannerStore.getState().hydratePhasesView({ phase: 88 });
     expect(usePlannerStore.getState().phasesViewPhase).toBe(88);
     expect(localStorage.getItem('bf-hp-phases-view-v1')).toBeNull();
+  });
+
+  it('hydratePhasesView restores farmPool and farmReturnBonus, defaulting absent fields', () => {
+    usePlannerStore
+      .getState()
+      .hydratePhasesView({ phase: 5, farmPool: { 'hero-1': false }, farmReturnBonus: 'vip' });
+    expect(usePlannerStore.getState().farmPoolOverrides).toEqual({ 'hero-1': false });
+    expect(usePlannerStore.getState().farmReturnBonus).toBe('vip');
+
+    usePlannerStore.getState().hydratePhasesView({ phase: 6 });
+    expect(usePlannerStore.getState().farmPoolOverrides).toEqual({});
+    expect(usePlannerStore.getState().farmReturnBonus).toBe('off');
+  });
+
+  // AD-PFRC-03 — red against the shipped implementation before this feature: the old
+  // savePhasesView({ phase: clamped }) call site silently erased any second persisted field.
+  it('AD-PFRC-03: a pool override survives a later setPhasesViewPhase call', () => {
+    usePlannerStore.getState().setFarmHeroEnabled('hero-1', false);
+    usePlannerStore.getState().setPhasesViewPhase(151);
+
+    expect(loadPhasesView().farmPool).toEqual({ 'hero-1': false });
+    expect(loadPhasesView().phase).toBe(151);
+  });
+
+  it('AD-PFRC-03: the return bonus survives a later setPhasesViewPhase call', () => {
+    usePlannerStore.getState().setFarmReturnBonus('vip');
+    usePlannerStore.getState().setPhasesViewPhase(42);
+
+    expect(loadPhasesView().farmReturnBonus).toBe('vip');
+    expect(loadPhasesView().phase).toBe(42);
+  });
+
+  it('setFarmHeroEnabled persists additively and is a no-op write when unchanged', () => {
+    usePlannerStore.getState().setFarmHeroEnabled('hero-1', true);
+    expect(usePlannerStore.getState().farmPoolOverrides).toEqual({ 'hero-1': true });
+    expect(loadPhasesView().farmPool).toEqual({ 'hero-1': true });
+
+    const before = usePlannerStore.getState().farmPoolOverrides;
+    usePlannerStore.getState().setFarmHeroEnabled('hero-1', true);
+    expect(usePlannerStore.getState().farmPoolOverrides).toBe(before);
+  });
+
+  it('setFarmReturnBonus persists and is a no-op write when unchanged', () => {
+    usePlannerStore.getState().setFarmReturnBonus('on');
+    expect(usePlannerStore.getState().farmReturnBonus).toBe('on');
+    expect(loadPhasesView().farmReturnBonus).toBe('on');
+
+    usePlannerStore.getState().setFarmReturnBonus('on');
+    expect(usePlannerStore.getState().farmReturnBonus).toBe('on');
   });
 });
