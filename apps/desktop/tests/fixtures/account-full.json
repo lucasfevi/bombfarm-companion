@@ -70,20 +70,20 @@
     }
   ],
   "skills": {
+    "refunds": {},
     "totals": {
       "dmg_static": 3624.7,
       "crit_chance_add": 0.12,
       "crit_dmg_add": 0.2,
       "speed_add": 0.03,
       "energia_add": 0.4,
-      "crit_dmg_mult": 1,
-      "abisso_base": 0,
       "coin_add": 0.5,
       "geo_mult": 1.05,
       "team_dmg_add": 0.4,
       "luck_add": 0.02,
-      "keystones": [],
-      "xp_mult": 1.4
+      "xp_mult": 1.4,
+      "vagas_campo": 0,
+      "bag_tabs_bonus": 0
     }
   },
   "casa": {
