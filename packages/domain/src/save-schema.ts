@@ -266,3 +266,72 @@ export const SCHEMA_LEVELS = {
   item: ITEM_LEVEL,
   casa: CASA_LEVEL,
 } as const satisfies Record<string, SchemaLevel>;
+
+// --- The export fingerprint (MSG-11…MSG-18) --------------------------------------------------
+
+/**
+ * `save.account` — the export's own account block. A strict subset of the five API route's
+ * `/state` body (design §2.3): `account_id`/`player_name` are declared `allowance`, never
+ * `keys`, because the committed export fixture is scrubbed of both (`scrubPersonalFields`,
+ * `packages/domain/tests/helpers/fidelity-pair.ts`) — same scrub, same reason as `/state`.
+ */
+const EXPORT_ACCOUNT_LEVEL: SchemaLevel = {
+  keys: ['bag_capacity', 'bag_tabs', 'gold', 'items_count', 'locked', 'max_phase', 'phase'],
+  allowance: ['account_id', 'player_name'],
+};
+
+const EXPORT_LEVEL: SchemaLevel = {
+  keys: ['account', 'casa', 'export_version', 'generated_at', 'heroes', 'items', 'skills'],
+  children: {
+    account: { kind: 'object', level: EXPORT_ACCOUNT_LEVEL },
+    casa: { kind: 'object', level: SCHEMA_LEVELS.casa },
+    heroes: { kind: 'array', element: SCHEMA_LEVELS.hero },
+    items: { kind: 'array', element: SCHEMA_LEVELS.item },
+    skills: { kind: 'object', level: SCHEMA_LEVELS.skills },
+  },
+};
+
+/**
+ * MSG-18: the save-export file's own shape, fingerprinted alongside the five API routes from the
+ * SAME shared level catalogue above. MSG-30: names the committed artifact and capture this key
+ * set was authored from — no numeric build id is documented for this capture (unlike the API
+ * captures' `GAME_BUILD` semver+timestamp); the capture date and its `CAPTURE_LOG.md` row are the
+ * only provenance recorded for it, per `packages/domain/tests/fixtures/sheet-math/README.md`.
+ */
+export const EXPORT_FINGERPRINT: SchemaFingerprint = {
+  root: 'save',
+  level: EXPORT_LEVEL,
+  gameBuild: 'unrecorded (post-2026-08-13-patch; no numeric build id captured for this export)',
+  capturedAt: '2026-08-13T00:00:00.000Z',
+  sourceArtifact:
+    'packages/domain/tests/fixtures/sheet-math/save-20260813-5heroes.json — 2026-08-13 capture, ' +
+    'the post-patch account-wipe row of CAPTURE_LOG.md (see sheet-math/README.md)',
+};
+
+/**
+ * MSG-17: the ONE catalogue the export fingerprint and the import discriminator both read — a
+ * second, hand-copied list must not exist. Path-qualified, relative to `EXPORT_FINGERPRINT.root`
+ * ('save'), so a caller checking presence against a raw save body strips the 'save.' prefix
+ * these paths do not carry (the raw body itself has no 'save' wrapper key).
+ */
+export const POST_UPDATE_SAVE_KEYS = ['skills.refunds', 'skills.totals.vagas_campo', 'skills.totals.bag_tabs_bonus'] as const;
+
+function hasDeclaredPath(value: unknown, path: string): boolean {
+  const segments = path.split('.');
+  let current: unknown = value;
+  for (const segment of segments) {
+    if (!isPlainObject(current) || !(segment in current)) return false;
+    current = current[segment];
+  }
+  return true;
+}
+
+/**
+ * MSG-11: the positive discriminator. Asks `has(path)` for each of `POST_UPDATE_SAVE_KEYS`,
+ * never `!has(oldPath)` — a key's VALUE never matters (`0`/`false`/`null`/`[]` all count as
+ * present), only its presence in the raw, unnormalised body. Returns the path-qualified subset
+ * that is absent; empty means every new key was found, i.e. accept.
+ */
+export function missingPostUpdateKeys(raw: unknown): readonly string[] {
+  return POST_UPDATE_SAVE_KEYS.filter((path) => !hasDeclaredPath(raw, path));
+}
