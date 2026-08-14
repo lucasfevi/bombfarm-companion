@@ -22,7 +22,6 @@ import {
   type SheetStats,
 } from '@bombfarm/domain/gear';
 import { BASE_ROLLS, POINT_GAIN, STAT_LABELS, rankNextPoint, type Context, type HeroSheet } from '@bombfarm/domain/model';
-import { loadFixtureJson } from './helpers/sheet-math-fixtures';
 
 // Wave 6 (DEC-12, BSPW6-AC-24) rewrites this block's W2 AC-02 assertion: SHEET_DISPLAY_KEYS
 // (7, combat/mismatch) no longer stands alone — SHEET_PANEL_KEYS (8, display surfaces) now
@@ -161,43 +160,17 @@ describe('POINT_GAIN.luckPctOfBase (BSPW2-AC-07, BSP-46)', () => {
   });
 });
 
-/** Read a hero's birth roll and current sheet luck straight from a Wave 0 save fixture. */
-function heroLuckFacts(filename: string, name: string): { luck: number; birthLuck: number; stars: number } {
-  const raw = loadFixtureJson(filename);
-  const heroes = raw.heroes as Record<string, unknown>[];
-  const rawHero = heroes.find((h) => h.name === name);
-  if (!rawHero) throw new Error(`hero "${name}" not found in ${filename}`);
-  const stats = rawHero.stats as Record<string, unknown>;
-  const birth = rawHero.birth_stats as Record<string, unknown>;
-  return {
-    luck: stats.luck as number,
-    birthLuck: birth.luck as number,
-    stars: rawHero.stars as number,
-  };
-}
-
-describe('luck per-point value against Wave 0 fixtures (BSPW2-AC-08, BSPW2-AC-09, BSP-46)', () => {
-  it('Vera ★0 gear-free: one Luck point equals birth × starsMult(0) × POINT_GAIN.luckPctOfBase', () => {
-    const before = heroLuckFacts('vera-01-points-reset.json', 'Vera');
-    const after = heroLuckFacts('vera-02-pts-luck-1.json', 'Vera');
-    expect(before.stars).toBe(0);
-    const deltaPlannerUnits = (after.luck - before.luck) * 100;
-    const predicted = before.birthLuck * 100 * starsMult(before.stars) * POINT_GAIN.luckPctOfBase;
-    expect(Math.abs(deltaPlannerUnits - predicted)).toBeLessThanOrEqual(1e-12);
-  });
-
-  it('Bellatrix ★1 geared: one Luck point equals birth × starsMult(1) × POINT_GAIN.luckPctOfBase — the star factor is discriminated, not assumed', () => {
-    const before = heroLuckFacts('bellatrix-01-points-reset.json', 'Bellatrix');
-    const after = heroLuckFacts('bellatrix-02-pts-each-1.json', 'Bellatrix');
-    expect(before.stars).toBe(1);
-    const deltaPlannerUnits = (after.luck - before.luck) * 100;
-    const predicted = before.birthLuck * 100 * starsMult(before.stars) * POINT_GAIN.luckPctOfBase;
-    const unstarredPrediction = before.birthLuck * 100 * POINT_GAIN.luckPctOfBase;
-    expect(Math.abs(deltaPlannerUnits - predicted)).toBeLessThanOrEqual(1e-12);
-    // Kills the "no star factor" mutant (M3): the un-star-scaled prediction is measurably off.
-    expect(deltaPlannerUnits).not.toBeCloseTo(unstarredPrediction, 6);
-  });
-});
+// MP5 F1 — RECORDED LOSS (AD-068 "deleted, not weakened"): the deleted
+// `luck per-point value against Wave 0 fixtures` describe block (2 tests, Vera ★0 and
+// Bellatrix ★1) compared two REAL observations of the SAME hero before/after spending exactly
+// one Luck point (`vera-01` -> `vera-02`, `bellatrix-01` -> `bellatrix-02`). This is the
+// point-delta before/after family design.md §10 / the spec's Assumptions table names as
+// unreproducible: every post-wipe corpus hero has `stat_points_available: 0` (every point is
+// already spent), so no zero-point "before" state exists to pair with a "+1 point" state.
+// `point-roundtrip.test.ts` (T4, `AD-071`) is the replacement — a stronger, corpus-anchored
+// claim that the forward per-point math reproduces the game's own observed sheet — but it
+// cannot isolate a single point's marginal value the way this deleted pair could. See
+// docs/fixture-corpus.md.
 
 describe('applyPoints consumes POINT_GAIN.luckPctOfBase from the production path (BSPW2-AC-10)', () => {
   it('sheet luck increases by naked.luck × pts.luck × luckPctOfBase with other=0, gear=0', () => {

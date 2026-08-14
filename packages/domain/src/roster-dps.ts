@@ -16,7 +16,12 @@ export type RosterDpsInput = {
   mitigationPct: number;
 };
 
-function pipelineForHero(
+/**
+ * The only `HeroRecord`-shaped entry to `computeAdvisorPipeline` (`AD-032`). Exported so a
+ * second surface (the desktop renderer, MP3 F2) maps a `HeroRecord` to advice through this one
+ * function instead of assembling its own `AdvisorPipelineInput` — one mapping, not two.
+ */
+export function pipelineForHero(
   hero: HeroRecord,
   account: AccountShared,
   phase: number,
@@ -29,7 +34,6 @@ function pipelineForHero(
     loadout: hero.loadout,
     altLoadout: hero.altLoadout,
     pts: hero.pts,
-    statPointsAvailable: hero.statPointsAvailable ?? 0,
     abilities: hero.abilities,
     rarity: hero.rarity,
     level: hero.level,
@@ -39,10 +43,6 @@ function pipelineForHero(
     treeCritDmg: account.tree.critDmg,
     treeSpeed: account.tree.speed,
     treeEnergy: account.tree.energy,
-    treeGlassCannon: account.tree.glassCannon,
-    treeTempoDobrado: account.tree.tempoDobrado,
-    treeAbisso: account.tree.abisso ?? false,
-    treeAbissoBase: account.tree.abissoBase ?? 0,
     treeLuckFlatPct: account.tree.luckFlatPct ?? 0,
     teamBuffs: account.teamBuffs,
     houseIdx: context.houseIdx,

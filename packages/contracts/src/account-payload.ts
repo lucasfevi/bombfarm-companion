@@ -19,6 +19,10 @@ export type SectionFidelity =
       /** Fingerprint keys the response did not carry — named so a game update is diagnosable
        *  from a user's log without a debugger (LAR-19/LAR-20). */
       readonly missingKeys: readonly string[];
+      /** MP5 F4: fingerprint keys the response carried that were NOT declared — named for the
+       *  same reason `missingKeys` is. Required, not optional: an incomplete drift report (one
+       *  collection present, the other silently dropped) becomes unrepresentable. */
+      readonly addedKeys: readonly string[];
     };
 
 export type AccountFidelity = { readonly [S in AccountSection]: SectionFidelity };

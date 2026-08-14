@@ -10,9 +10,14 @@ import { loadFidelityPair, type FidelityPair } from './helpers/fidelity-pair';
 import { runFidelityGate } from './helpers/fidelity-gate';
 import { FidelityGateError } from './helpers/fidelity-gate-error';
 
-/** The real committed pair (`account: "Bram", sourceId "18606"` is the mutation target hero). */
-const BRAM_ID = '18606';
-const BRAM_ITEM_DEF_ID = 'earth_elmo';
+/**
+ * The real committed pair. MP5 F1 (design.md §8): re-pointed onto the post-patch pair — the
+ * mutation target must be a GEARED hero (mutant 1 raises a gear level, and there is no gear to
+ * raise on a naked hero). `Bellatrix` (sourceId `20402`, 8/8 geared) replaces the deleted
+ * fixture's `Bram`.
+ */
+const BRAM_ID = '20402';
+const BRAM_ITEM_DEF_ID = 'wooden_arma';
 
 function mutatedPair(mutate: (pair: FidelityPair) => void): FidelityPair {
   // structuredClone, never mutate the loaded fixture in place (T6's Done-when).
@@ -46,7 +51,7 @@ describe('fidelity gate discrimination — eight committed-pair mutants', () => 
       (item as Record<string, unknown>).level = ((item as Record<string, unknown>).level as number) + 40;
     });
     const err = expectFidelityError(() => runFidelityGate(pair), 'heroStatMismatch');
-    expect(err.message).toContain('Bram');
+    expect(err.message).toContain('Bellatrix');
     expect(err.message).toContain('gearedOverride');
   });
 
@@ -70,7 +75,7 @@ describe('fidelity gate discrimination — eight committed-pair mutants', () => 
       delete statRanges.luck;
     });
     const err = expectFidelityError(() => runFidelityGate(pair), 'heroStatMismatch');
-    expect(err.message).toContain('Bram');
+    expect(err.message).toContain('Bellatrix');
     expect(err.message).toContain('stat_ranges');
   });
 
@@ -85,7 +90,7 @@ describe('fidelity gate discrimination — eight committed-pair mutants', () => 
       hero.stat_ranges = statRanges.crit_chance;
     });
     const err = expectFidelityError(() => runFidelityGate(pair), 'heroStatMismatch');
-    expect(err.message).toContain('Bram');
+    expect(err.message).toContain('Bellatrix');
   });
 
   it('mutant 5/8: one hero appended to the live capture -> rosterMismatch, live-only, zero heroes compared', () => {

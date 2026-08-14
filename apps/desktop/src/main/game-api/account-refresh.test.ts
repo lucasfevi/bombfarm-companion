@@ -12,7 +12,12 @@ import { SessionToken as SessionTokenClass, createPacingGate } from '@bombfarm/g
 import type { AccountStore } from '../storage/account-store.js';
 import { createAccountStore } from '../storage/account-store.js';
 import type { SqliteBinding, SqliteDb, SqliteStatement } from '../storage/index.js';
-import { detectAvailableBindings, openTestAccountDb, warnForUnavailableBindings } from '../storage/test-support.js';
+import {
+  createLogSpy,
+  detectAvailableBindings,
+  openTestAccountDb,
+  warnForUnavailableBindings,
+} from '../storage/test-support.js';
 import { createAccountRefresh, type AccountRefreshDeps } from './account-refresh.js';
 import type { ConsentStore } from './consent-store.js';
 import type { SessionTokenFileResult } from './session-token-file.js';
@@ -86,12 +91,133 @@ function fixedReadToken(accountId: string, token: SessionToken, mtimeMs: number)
   return { fn, callCount: () => calls };
 }
 
+/** A schema-conforming `/roster` hero — `ROUTE_FINGERPRINTS.heroes`'s `hero` level (MP5 F4, T5).
+ *  These bodies predate T5's deepened, exact-key fingerprints; a missing key now makes
+ *  `checkShape` mark the whole route `drift` instead of `resolved`, which this test suite reads
+ *  through `fidelityOf(...).status`. */
+function fullHero(overrides: Record<string, unknown> = {}): Record<string, unknown> {
+  return {
+    id: '1',
+    name: 'Nyx',
+    level: 1,
+    xp: 0,
+    rarity: 1,
+    rank: 1,
+    stars: 0,
+    skin: 0,
+    skin_birth: 0,
+    in_field: true,
+    battle_allowed: true,
+    marketable: false,
+    in_market: false,
+    slots: {},
+    stats: {},
+    birth_stats: {},
+    stat_ranges: {},
+    abilities: {},
+    ability_points_total: 0,
+    ability_points_spent: 0,
+    ability_reroll_cost: 0,
+    ability_reroll_stone: 0,
+    stat_points_available: 0,
+    ...overrides,
+  };
+}
+
 const BODIES: Record<string, Record<string, unknown>> = {
-  '/state': { gold: 100, phase: 5, max_phase: 10, locked: false, chests: [], bag_tabs: 4, bag_capacity: 100, items_count: 2 },
-  '/roster': { heroes: [{ id: '1', name: 'Nyx' }] },
-  '/skill/state': { levels: {}, totals: {}, gold: 100, max_phase: 10, refunds: 0, field_slots: 3 },
-  '/rotation': { field_size: 9, heroes: [], casa: { active_casa: 1, levels: [1] } },
-  '/inventory': { items: [{ id: '1' }], bag_tabs: 4, bag_capacity: 100, items_count: 1 },
+  '/state': {
+    gold: 100,
+    crystals: 0,
+    phase: 5,
+    max_phase: 10,
+    locked: false,
+    checkpoint_at: '2026-08-01T00:00:00.000Z',
+    chests: [],
+    chest_stash: [],
+    item_stash: [],
+    vip_until: 0,
+    bag_tabs: 4,
+    bag_capacity: 100,
+    items_count: 2,
+  },
+  '/roster': { heroes: [fullHero()] },
+  '/skill/state': {
+    levels: {},
+    refunds: {},
+    field_slots: 3,
+    bag_tabs: 4,
+    gold: 100,
+    max_phase: 10,
+    totals: {
+      team_dmg_add: 1,
+      crit_chance_add: 1,
+      crit_dmg_add: 1,
+      speed_add: 1,
+      coin_add: 1,
+      luck_add: 1,
+      energia_add: 1,
+      xp_mult: 1,
+      geo_mult: 1,
+      dmg_static: 1,
+      vagas_campo: 1,
+      bag_tabs_bonus: 1,
+    },
+  },
+  '/rotation': {
+    field_size: 9,
+    rescues_left: 0,
+    rescues_max: 0,
+    heroes: [
+      {
+        id: '1',
+        level: 1,
+        energia_atual: 0,
+        energia_max: 0,
+        energia_pct: 0,
+        state: 'idle',
+        in_field: false,
+        in_casa: true,
+        recovering: false,
+        battle_allowed: true,
+      },
+    ],
+    casa: {
+      active_casa: 1,
+      levels: [1],
+      cycle_secs: [1],
+      slots: 1,
+      slots_per_house: [1],
+      cycle_secs_per_house: [1],
+      upgrade_cost: [1],
+    },
+  },
+  '/inventory': {
+    items: [
+      {
+        id: '1',
+        def_id: 'd1',
+        set: 'set1',
+        rarity: 1,
+        category: 1,
+        level: 1,
+        stats: [],
+        power: 0,
+        sell_value: 0,
+        sellable: true,
+        upgrade: 0,
+        tradable: true,
+        market_state: 0,
+        locked: false,
+        equipped_on: null,
+        equip_slot: null,
+        in_stash: true,
+      },
+    ],
+    chests: [],
+    bag_tabs: 4,
+    bag_capacity: 100,
+    items_count: 1,
+  },
 };
 
 function okTransport(calls: string[] = []): HttpTransport {
@@ -401,5 +527,50 @@ describe('account-refresh — a failed roster is served as stale with the STORED
 
     expect(fidelityOf(secondView).heroes).toEqual({ status: 'stale', capturedAt: '2026-08-12T00:01:00.000Z' });
     expect(secondView?.payload.heroes).toEqual(BODIES['/roster']?.heroes);
+  });
+});
+
+describe('account-refresh — a drifted section is logged with path-qualified keys and no player data (MSG-27)', () => {
+  it('a /state response missing one key and carrying one unrecognized key logs section.drift naming both, never a response value', async () => {
+    const open = openTestAccountDb(firstBinding());
+    const store = createAccountStore(open);
+    const { fn: readToken } = fixedReadToken('486', SessionTokenClass.create(SENTINEL_TOKEN), 1000);
+    const sentinelGold = 918273645;
+
+    // A drifted /state body: missing the declared `crystals` key, carrying an unrecognized
+    // `some_future_key` — both a missing-key and an added-key trigger in the same response, so
+    // this proves the log names both lists, not just whichever `checkShape` finds first.
+    const driftedState: Record<string, unknown> = { ...BODIES['/state'] };
+    delete driftedState.crystals;
+    driftedState.some_future_key = sentinelGold;
+
+    const transport: HttpTransport = (req) => {
+      if (req.path === '/state') {
+        return Promise.resolve({ status: 200, body: JSON.stringify(driftedState) });
+      }
+      return Promise.resolve({ status: 200, body: JSON.stringify(BODIES[req.path] ?? {}) });
+    };
+
+    const { log, records } = createLogSpy();
+    const deps = baseDeps({ store, consentStore: fixedConsentStore(GRANTED), transport, readToken, log });
+    const refresh = createAccountRefresh(deps);
+
+    const view = await refresh.refreshNow();
+
+    // A drifted section is a shape failure, not merely logged-and-served (MP5 F4: added keys are
+    // fatal) — the section resolves nothing this cycle.
+    expect(fidelityOf(view).account).toEqual({ status: 'missing' });
+
+    const drift = records.find((r) => r.record.event === 'section.drift');
+    expect(drift).toBeDefined();
+    expect(drift?.record.scope).toBe('account-refresh');
+    expect(drift?.record.section).toBe('account');
+    expect(drift?.record.missingKeys).toContain('account.crystals');
+    expect(drift?.record.addedKeys).toContain('account.some_future_key');
+
+    // No player data anywhere in the log payload — never the sentinel value itself, only the key
+    // paths that named it.
+    const payload = JSON.stringify(drift?.record);
+    expect(payload).not.toContain(String(sentinelGold));
   });
 });

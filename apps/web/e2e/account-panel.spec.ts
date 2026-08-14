@@ -86,7 +86,9 @@ test.describe('account panel chrome', () => {
     expect(max - min).toBeLessThan(2);
   });
 
-  test('Skill Tree numeric totals are plain text (no inputs)', async ({ page }) => {
+  test('Skill Tree numeric totals are plain text and zero keystone controls exist (EN)', async ({
+    page,
+  }) => {
     await seedLocalStorage(page, { ...importedRoster, lang: 'en' });
     await page.goto('/');
     await selectSavedHero(page, 'Cora');
@@ -97,11 +99,56 @@ test.describe('account panel chrome', () => {
       has: page.locator('[data-account-tree-value]'),
     });
 
+    // MSC-02 — the Skill Tree subsection is readouts only.
     await expect(account.locator('[data-account-tree-value]')).toHaveCount(6);
     await expect(treeRows).toHaveCount(6);
     await expect(treeRows.locator('[data-num]')).toHaveCount(0);
     await expect(treeRows.locator('input')).toHaveCount(0);
-    await expect(account.locator('[data-keystone-control]')).toHaveCount(3);
+    await expect(
+      treeRows.locator('input, button, [role=switch], [role=checkbox], [data-switch]'),
+    ).toHaveCount(0);
+
+    // MSC-01 — zero keystone controls anywhere in the rendered Account panel.
+    await expect(account.locator('[data-keystone-control]')).toHaveCount(0);
+    await expect(account.getByRole('switch')).toHaveCount(0);
+    await expect(account.getByRole('checkbox')).toHaveCount(0);
+    await expect(account.locator('[data-switch]')).toHaveCount(0);
+    for (const name of [/Abisso/i, /Glass Cannon/i, /Tempo Dobrado/i]) {
+      await expect(account.getByLabel(name)).toHaveCount(0);
+    }
+  });
+
+  test('PT: Skill Tree numeric totals are plain text and zero keystone controls exist', async ({
+    page,
+  }) => {
+    await seedLocalStorage(page, importedRoster);
+    await page.goto('/');
+    await selectSavedHero(page, 'Cora');
+    await page.getByRole('tab', { name: /^account$|^conta$/i }).click();
+
+    const account = accountPanel(page, 'pt');
+    const treeRows = account.locator('label').filter({
+      has: page.locator('[data-account-tree-value]'),
+    });
+
+    // MSC-02 — the Skill Tree subsection is readouts only.
+    await expect(account.locator('[data-account-tree-value]')).toHaveCount(6);
+    await expect(treeRows).toHaveCount(6);
+    await expect(treeRows.locator('[data-num]')).toHaveCount(0);
+    await expect(treeRows.locator('input')).toHaveCount(0);
+    await expect(
+      treeRows.locator('input, button, [role=switch], [role=checkbox], [data-switch]'),
+    ).toHaveCount(0);
+
+    // MSC-01 — zero keystone controls anywhere in the rendered Account panel, PT seed (the
+    // web planner's default language — the more visible failure if a control survives).
+    await expect(account.locator('[data-keystone-control]')).toHaveCount(0);
+    await expect(account.getByRole('switch')).toHaveCount(0);
+    await expect(account.getByRole('checkbox')).toHaveCount(0);
+    await expect(account.locator('[data-switch]')).toHaveCount(0);
+    for (const name of [/Abisso/i, /Glass Cannon/i, /Tempo Dobrado/i]) {
+      await expect(account.getByLabel(name)).toHaveCount(0);
+    }
   });
 
   test('PT: Conta panel has no Da conta chip; no obrigatório at tree ×1', async ({ page }) => {

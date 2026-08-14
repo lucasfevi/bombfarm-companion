@@ -15,17 +15,16 @@ import {
   treeTotalsFromSave,
 } from './helpers/sheet-math-fixtures';
 
+// MP5 F1 (AD-068 class (b) — structural): re-pointed onto save-20260813-5heroes.json (default
+// subject for Bellatrix-specific tests — the export's Bellatrix is L42, not the deleted
+// crit-dmg-tree fixture's L62) and payload-20260812-8heroes.json (the whole-roster test). Every
+// assertion compares two independently-computed structures or checks a structural property —
+// none pins a captured value.
 function accountFromFixture(raw: Record<string, unknown>): TeamPlanAccountInput {
   const totals = (raw.skills as { totals: Record<string, unknown> }).totals;
   const treeSheet = treeTotalsFromSave(totals);
-  const keystones = Array.isArray((raw.skills as { keystones?: unknown }).keystones)
-    ? ((raw.skills as { keystones: string[] }).keystones ?? [])
-    : [];
   return {
     treeSheet,
-    treeGlassCannon: keystones.some((k) => k.includes('glass') || k === 'c15' || k === 'v14'),
-    treeTempoDobrado: keystones.some((k) => k.includes('tempo') || k === 'v15'),
-    treeAbisso: keystones.some((k) => k === 'd15' || k.includes('abisso')),
     houseIdx: 0,
     houseLevel: 1,
     phase: 1,
@@ -45,14 +44,13 @@ function heroInputFromExtract(hero: ReturnType<typeof extractHero>): TeamPlanHer
     abilities: hero.abilities,
     pts: ZERO_PTS(),
     loadout: hero.loadout,
-    statPointsAvailable: hero.statPointsAvailable,
   };
 }
 
 describe('buildHeroPlanContext', () => {
   it('reproduces computeAdvisorPipeline mods and sheetOther for a fixture hero', () => {
-    const raw = loadFixtureJson('save-20260801-crit-dmg-tree.json');
-    const hero = extractHero(raw, 'Bellatrix', 62);
+    const raw = loadFixtureJson('save-20260813-5heroes.json');
+    const hero = extractHero(raw, 'Bellatrix', 42);
     const account = accountFromFixture(raw);
     const ctx = buildHeroPlanContext(heroInputFromExtract(hero), account, 'optimize');
     expect(ctx).not.toBeNull();
@@ -63,7 +61,6 @@ describe('buildHeroPlanContext', () => {
       loadout: hero.loadout,
       altLoadout: null,
       pts: ZERO_PTS(),
-      statPointsAvailable: 0,
       abilities: hero.abilities,
       rarity: hero.rarity,
       level: hero.level,
@@ -73,8 +70,6 @@ describe('buildHeroPlanContext', () => {
       treeCritDmg: account.treeSheet.critDmgPct,
       treeSpeed: account.treeSheet.speedPct,
       treeEnergy: account.treeSheet.energyPct,
-      treeGlassCannon: account.treeGlassCannon,
-      treeTempoDobrado: account.treeTempoDobrado,
       treeLuckFlatPct: account.treeSheet.luckFlatPct,
       teamBuffs: zeroTeamBuffs(),
       houseIdx: account.houseIdx,
@@ -90,25 +85,28 @@ describe('buildHeroPlanContext', () => {
     expect(ctx!.sheetOther).toEqual(pipeline.sheetOther);
   });
 
-  it('threads statPointsAvailable from TeamPlanHeroInput, defaulting to 0 when omitted', () => {
-    const raw = loadFixtureJson('save-20260801-crit-dmg-tree.json');
-    const hero = extractHero(raw, 'Bellatrix', 62);
+  it('threads level from TeamPlanHeroInput — the point pool both team-plan points passes budget against', () => {
+    // `solver-search.ts`'s pointsPass and `waterfall.ts`'s finalPtsFromOptimizeBuild read
+    // `ctx.level` and nothing else for their reopt budget (`reoptBudget`), so a level that
+    // failed to thread here would silently hand the team plan a different budget from the
+    // Planner's for the same hero — which is how the two pages drifted apart before.
+    const raw = loadFixtureJson('save-20260813-5heroes.json');
+    const hero = extractHero(raw, 'Bellatrix', 42);
     const account = accountFromFixture(raw);
-    const { statPointsAvailable: _omitted, ...inputSansField } = heroInputFromExtract(hero);
 
-    const withoutField = buildHeroPlanContext(inputSansField, account, 'optimize');
-    expect(withoutField!.statPointsAvailable).toBe(0);
+    const ctx = buildHeroPlanContext(heroInputFromExtract(hero), account, 'optimize');
+    expect(ctx!.level).toBe(hero.level);
 
-    const withBanked = buildHeroPlanContext(
-      { ...heroInputFromExtract(hero), statPointsAvailable: 12 },
+    const relevelled = buildHeroPlanContext(
+      { ...heroInputFromExtract(hero), level: 12 },
       account,
       'optimize',
     );
-    expect(withBanked!.statPointsAvailable).toBe(12);
+    expect(relevelled!.level).toBe(12);
   });
 
   it('returns null when birth is missing', () => {
-    const account = accountFromFixture(loadFixtureJson('save-20260801-crit-dmg-tree.json'));
+    const account = accountFromFixture(loadFixtureJson('save-20260813-5heroes.json'));
     const result = buildHeroPlanContext(
       {
         heroId: 'x',
@@ -129,7 +127,7 @@ describe('buildHeroPlanContext', () => {
 
 describe('buildHeroPlanContexts birth gate', () => {
   it('returns blocked with hero names when in-scope hero lacks birth', () => {
-    const raw = loadFixtureJson('save-20260801-crit-dmg-tree.json');
+    const raw = loadFixtureJson('save-20260813-5heroes.json');
     const account = accountFromFixture(raw);
     const heroes: TeamPlanHeroInput[] = [
       {
@@ -148,7 +146,7 @@ describe('buildHeroPlanContexts birth gate', () => {
   });
 
   it('leaveAlone hero without birth does not block', () => {
-    const raw = loadFixtureJson('save-20260801-crit-dmg-tree.json');
+    const raw = loadFixtureJson('save-20260813-5heroes.json');
     const account = accountFromFixture(raw);
     const heroes: TeamPlanHeroInput[] = [
       {
@@ -170,8 +168,8 @@ describe('buildHeroPlanContexts birth gate', () => {
   });
 
   it('defaults battleAllowed false to donate scope', () => {
-    const raw = loadFixtureJson('save-20260801-crit-dmg-tree.json');
-    const hero = extractHero(raw, 'Bellatrix', 62);
+    const raw = loadFixtureJson('save-20260813-5heroes.json');
+    const hero = extractHero(raw, 'Bellatrix', 42);
     const account = accountFromFixture(raw);
     const result = buildHeroPlanContexts(
       [{ ...heroInputFromExtract(hero), battleAllowed: false }],
@@ -185,7 +183,7 @@ describe('buildHeroPlanContexts birth gate', () => {
   });
 
   it('builds contexts for all heroes with birth', () => {
-    const raw = loadFixtureJson('save-20260731-11heroes.json');
+    const raw = loadFixtureJson('payload-20260812-8heroes.json');
     const account = accountFromFixture(raw);
     const heroes = (raw.heroes as unknown[])
       .map((h) => {

@@ -263,26 +263,34 @@ describe('mergeImportedHero', () => {
     expect(merged).not.toHaveProperty('obsCrit');
   });
 
-  it('AC-20/BSP-27: re-import vera-01 -> vera-03 (points changed) — merged naked+pts reconstruct the new save (no stale decimals)', () => {
-    const raw1 = loadFixtureJson('vera-01-points-reset.json');
-    const raw3 = loadFixtureJson('vera-03-pts-each-1.json');
-    const { candidates: c1 } = parseSaveFile(raw1, []);
-    const v1 = c1.find((c) => c.name === 'Vera')!;
-    const existing = normalizeHero({ ...v1.record, id: 'local-vera', updatedAt: 1 });
+  // MP5 F1 (AD-068 class (a) + (b)): re-pointed onto the two post-patch corpus files. The
+  // deleted vera-01 -> vera-03 pair was a before/after snapshot of the SAME hero — that family
+  // is unreproducible post-wipe (`stat_points_available` is 0 on every corpus hero, so no
+  // point-delta pair exists). Design (AD-068, §6.1): two real heroes from two genuinely
+  // different accounts is a STRONGER merge subject than two snapshots of one — it still proves
+  // the overwrite is not stale (different pts vectors) and still proves the merged
+  // naked/pts/loadout faithfully reconstruct a real save's `stats`, without needing the same
+  // hero twice.
+  it('AC-20/BSP-27: re-import export-Perrin -> payload-Wren — merged naked+pts reconstruct the new save (no stale decimals)', () => {
+    const rawExport = loadFixtureJson('save-20260813-5heroes.json');
+    const { candidates: exportCandidates } = parseSaveFile(rawExport, []);
+    const perrin = exportCandidates.find((c) => c.sourceId === '18796')!; // Perrin L4, pts.attack=4
+    const existing = normalizeHero({ ...perrin.record, id: 'local-perrin', updatedAt: 1 });
 
-    const { candidates: c3 } = parseSaveFile(raw3, []);
-    const v3 = c3.find((c) => c.sourceId === v1.sourceId)!;
-    const merged = mergeImportedHero(existing, v3.record);
+    const rawPayload = loadFixtureJson('payload-20260812-8heroes.json');
+    const { candidates: payloadCandidates } = parseSaveFile(rawPayload, []);
+    const wren = payloadCandidates.find((c) => c.sourceId === '8818')!; // Wren L24, pts.attack=18, energy=6
+    const merged = mergeImportedHero(existing, wren.record);
 
-    // Proves the merge is not stale from vera-01 (0 points) — vera-03 spent 1 pt/stat.
+    // Proves the merge is not stale from Perrin's pts — Wren's differ on both attack and energy.
     expect(merged.pts).not.toEqual(existing.pts);
-    expect(merged.pts).toEqual({ ...ZERO_PTS_TEMPLATE, attack: 1, energy: 1, speed: 1, critChance: 1, critDmg: 1, penetration: 1, cdr: 1, luck: 1 });
+    expect(merged.pts).toEqual({ ...ZERO_PTS_TEMPLATE, attack: 18, energy: 6 });
 
     // ASM-02: gearedOverride is deliberately the ZERO-points sheet, so comparing it
     // directly to the save's own points-inclusive `stats` would be wrong by construction.
     // Reconstruct the full sheet the same way computeAdvisorPipeline's expectedSheet does
     // (naked -> applyPoints -> applySkillTree) to prove merge's stored naked/pts/loadout
-    // faithfully reproduce the NEW save, not a stale vera-01 residue.
+    // faithfully reproduce Wren's save, not a stale Perrin residue.
     const mods = abilityMods(merged.abilities);
     const sheetOther = {
       ...emptySheetOther(),
@@ -290,7 +298,7 @@ describe('mergeImportedHero', () => {
       penetration: mods.sheetPenetrationRaw,
       critDmg: mods.sheetCritDmgPctOfBase,
     };
-    const totals = (raw3 as { skills: { totals: Record<string, unknown> } }).skills.totals;
+    const totals = (rawPayload as { skills: { totals: Record<string, unknown> } }).skills.totals;
     const tree = treeTotalsFromSave(totals);
     const reconstructed = applySkillTree(
       applyPoints(merged.naked, merged.loadout, merged.pts, sheetOther, merged.level, merged.stars),
@@ -298,9 +306,9 @@ describe('mergeImportedHero', () => {
       sheetOther,
       tree,
     );
-    const rawHeroes = (raw3 as { heroes: Record<string, unknown>[] }).heroes;
-    const rawV3 = rawHeroes.find((h) => h.id === v3.sourceId)!;
-    const expected = saveSheetUnits(rawV3.stats as Record<string, unknown>);
+    const rawHeroes = (rawPayload as { heroes: Record<string, unknown>[] }).heroes;
+    const rawWren = rawHeroes.find((h) => h.id === wren.sourceId)!;
+    const expected = saveSheetUnits(rawWren.stats as Record<string, unknown>);
     for (const key of SHEET_KEYS) {
       expect(Math.abs(reconstructed[key] - expected[key]), key).toBeLessThanOrEqual(0.01);
     }

@@ -1,6 +1,16 @@
 import type { AccountSection } from '@bombfarm/contracts';
 
-export type DecodedSection = { ok: true; body: unknown } | { ok: false; reason: 'invalid_json' | 'wrong_container' };
+/**
+ * `invalid_json`/`wrong_container` are `decodeStoredSection`'s own two failure modes, unchanged
+ * by MP5 F4. `stale_retired_vocabulary` is a THIRD member added alongside them (`AD-089`) — never
+ * produced by `decodeStoredSection` itself, which stays a pure format decoder. `account-store.ts`'s
+ * `restore()` uses it to tag its `account.row_dropped` log line with the same "why this section
+ * isn't served" vocabulary as `account.row_discarded`, after `judgeStoredSection`
+ * (`stale-sections.ts`) rules the successfully-decoded body stale.
+ */
+export type DecodedSectionReason = 'invalid_json' | 'wrong_container' | 'stale_retired_vocabulary';
+
+export type DecodedSection = { ok: true; body: unknown } | { ok: false; reason: DecodedSectionReason };
 
 const ARRAY_SECTIONS: ReadonlySet<AccountSection> = new Set(['heroes', 'items']);
 

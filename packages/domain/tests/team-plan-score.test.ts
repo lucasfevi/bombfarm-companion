@@ -26,9 +26,7 @@ function accountFromFixture(raw: Record<string, unknown>): TeamPlanAccountInput 
   const treeSheet = treeTotalsFromSave(totals);
   return {
     treeSheet,
-    treeGlassCannon: false,
-    treeTempoDobrado: false,
-    houseIdx: 0,
+        houseIdx: 0,
     houseLevel: 1,
     phase: 1,
     mitigationPct: 6.7,
@@ -42,9 +40,7 @@ function farmFromAccount(account: TeamPlanAccountInput): FarmContext {
     houseLevel: account.houseLevel,
     phase: account.phase,
     mitigationPct: account.mitigationPct,
-    treeGlassCannon: account.treeGlassCannon,
-    treeTempoDobrado: account.treeTempoDobrado,
-  };
+      };
 }
 
 function heroInputFromExtract(hero: ReturnType<typeof extractHero>): TeamPlanHeroInput {
@@ -61,11 +57,16 @@ function heroInputFromExtract(hero: ReturnType<typeof extractHero>): TeamPlanHer
   };
 }
 
+// MP5 F1 (AD-068 class (b) — structural): re-pointed onto save-20260813-5heroes.json's
+// Bellatrix (L42, not the deleted crit-dmg-tree fixture's L62). Every fixture-backed assertion
+// here compares scoreHeroLoadout against an independently-computed reference (a spy call count,
+// or computeAdvisorPipeline / composeSheetFromBirth run on the same inputs) — none pins a
+// captured numeric value.
 describe('scoreHeroLoadout', () => {
   it('does not call computeAdvisorPipeline during scoring', () => {
     const spy = vi.spyOn(advisorPipeline, 'computeAdvisorPipeline');
-    const raw = loadFixtureJson('save-20260801-crit-dmg-tree.json');
-    const hero = extractHero(raw, 'Bellatrix', 62);
+    const raw = loadFixtureJson('save-20260813-5heroes.json');
+    const hero = extractHero(raw, 'Bellatrix', 42);
     const account = accountFromFixture(raw);
     const ctx = buildHeroPlanContext(heroInputFromExtract(hero), account, 'optimize')!;
     scoreHeroLoadout(ctx, hero.loadout, ZERO_PTS(), zeroTeamBuffs(), farmFromAccount(account));
@@ -74,8 +75,8 @@ describe('scoreHeroLoadout', () => {
   });
 
   it('folego_mineiro in auras yields strictly higher duty than zero auras (AD-RGO-27)', () => {
-    const raw = loadFixtureJson('save-20260801-crit-dmg-tree.json');
-    const hero = extractHero(raw, 'Bellatrix', 62);
+    const raw = loadFixtureJson('save-20260813-5heroes.json');
+    const hero = extractHero(raw, 'Bellatrix', 42);
     const account = accountFromFixture(raw);
     const ctx = buildHeroPlanContext(heroInputFromExtract(hero), account, 'optimize')!;
     const farm = farmFromAccount(account);
@@ -123,7 +124,6 @@ describe('scoreHeroLoadout', () => {
         critChancePct: 0,
         critDmgPct: 0,
         luckFlatPct: 0,
-        critDmgMult: 1,
       },
       scope: 'optimize',
       abilities: {},
@@ -134,9 +134,7 @@ describe('scoreHeroLoadout', () => {
       houseLevel: 1,
       phase: 1,
       mitigationPct: 6.7,
-      treeGlassCannon: false,
-      treeTempoDobrado: false,
-    };
+          };
     const score = scoreHeroLoadout(ctx, {}, ZERO_PTS(), zeroTeamBuffs(), farm);
     expect(score.duty).toBe(0);
     expect(Number.isNaN(score.duty)).toBe(false);
@@ -145,8 +143,8 @@ describe('scoreHeroLoadout', () => {
   });
 
   it('sustained matches computeAdvisorPipeline dps for fixture hero with matching auras', () => {
-    const raw = loadFixtureJson('save-20260801-crit-dmg-tree.json');
-    const hero = extractHero(raw, 'Bellatrix', 62);
+    const raw = loadFixtureJson('save-20260813-5heroes.json');
+    const hero = extractHero(raw, 'Bellatrix', 42);
     const account = accountFromFixture(raw);
     const ctx = buildHeroPlanContext(heroInputFromExtract(hero), account, 'optimize')!;
     const teamBuffs = zeroTeamBuffs();
@@ -166,9 +164,7 @@ describe('scoreHeroLoadout', () => {
       treeCritDmg: account.treeSheet.critDmgPct,
       treeSpeed: account.treeSheet.speedPct,
       treeEnergy: account.treeSheet.energyPct,
-      treeGlassCannon: account.treeGlassCannon,
-      treeTempoDobrado: account.treeTempoDobrado,
-      treeLuckFlatPct: account.treeSheet.luckFlatPct,
+            treeLuckFlatPct: account.treeSheet.luckFlatPct,
       teamBuffs,
       houseIdx: account.houseIdx,
       houseLevel: account.houseLevel,
@@ -190,8 +186,8 @@ describe('scoreHeroLoadout', () => {
 
   it('memo avoids duplicate derive work on identical inputs', () => {
     const deriveSpy = vi.spyOn(deriveModule, 'derive');
-    const raw = loadFixtureJson('save-20260801-crit-dmg-tree.json');
-    const hero = extractHero(raw, 'Bellatrix', 62);
+    const raw = loadFixtureJson('save-20260813-5heroes.json');
+    const hero = extractHero(raw, 'Bellatrix', 42);
     const account = accountFromFixture(raw);
     const ctx = buildHeroPlanContext(heroInputFromExtract(hero), account, 'optimize')!;
     const farm = farmFromAccount(account);
@@ -206,7 +202,7 @@ describe('scoreHeroLoadout', () => {
   // Regression for the double-counted-points bug: `scoreHeroLoadout` used to compose its
   // `geared` sheet with the REAL `pts` and then hand that same `pts` to `derive()`, which
   // adds `pts * delta` on top — every spent point counted twice. With all combat multipliers
-  // neutral (no team auras, no glass cannon, no ability mods), `scoreHeroLoadout`'s effective
+  // neutral (no team auras, no ability mods), `scoreHeroLoadout`'s effective
   // sheet must equal `composeSheetFromBirth`'s sheet for the SAME non-zero pts exactly once —
   // matching the `sheetsFromBirth` / import-save `gearedOverride` contract `derive()` documents.
   it('counts spent points exactly once (no double-count vs composeSheetFromBirth)', () => {
@@ -257,7 +253,6 @@ describe('scoreHeroLoadout', () => {
         critChancePct: 0,
         critDmgPct: 0,
         luckFlatPct: 0,
-        critDmgMult: 1,
       },
       scope: 'optimize',
       abilities: {},
@@ -268,9 +263,7 @@ describe('scoreHeroLoadout', () => {
       houseLevel: 1,
       phase: 1,
       mitigationPct: 6.7,
-      treeGlassCannon: false,
-      treeTempoDobrado: false,
-    };
+          };
 
     const expectedSheet = composeSheetFromBirth({
       birth: ctx.birth,

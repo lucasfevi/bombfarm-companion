@@ -14,7 +14,7 @@ import { teamPlanInputFromFixture } from './helpers/team-plan-fixtures';
  *
  * The bug only reproduces in the `saturated` regime (Σ duty >= slots), which is why the grid
  * sweeps small slot counts across two fixtures and several forge floors, plus donate-scope
- * mixes. `save-20260801-crit-dmg-tree.json` at floor 10 / slots 3, floor 10 / slots 5, and
+ * mixes. `save-20260813-5heroes.json` at floor 10 / slots 3, floor 10 / slots 5, and
  * floor 20 / slots 3 are the cases measured to reproduce the bug on unpatched code (respec step
  * as low as -726 on floor 10 / slots 3 alone).
  *
@@ -35,7 +35,12 @@ import { teamPlanInputFromFixture } from './helpers/team-plan-fixtures';
  * any committed save happens to trigger it.
  */
 
-const FILES = ['save-20260731-11heroes.json', 'save-20260801-crit-dmg-tree.json'] as const;
+// MP5 F1 (AD-068 class (b) — structural): re-pointed onto the post-patch corpus. This grid's
+// invariant (assertStepInvariants) is checked at every cell regardless of which file backs it,
+// so the re-point itself carries no loss; only the three named FULL_BUDGET_CASES keys (specific
+// configs the plan's authors measured as reproducing the option-B bug on the OLD fixture) are
+// renamed onto the new corpus as a coverage-completeness choice, not a correctness requirement.
+const FILES = ['payload-20260812-8heroes.json', 'save-20260813-5heroes.json'] as const;
 const FORGE_FLOORS = [0, 10, 15, 20];
 const SLOT_COUNTS = [1, 2, 3, 5, 9];
 const GRID_TIMEOUT_MS = 30_000;
@@ -47,9 +52,9 @@ const REDUCED_MAX_EVALUATIONS = 3_000;
 
 /** The plan's own measured reproduction cases — run these at the real production budget. */
 const FULL_BUDGET_CASES = new Set([
-  'save-20260801-crit-dmg-tree.json|10|3',
-  'save-20260801-crit-dmg-tree.json|10|5',
-  'save-20260801-crit-dmg-tree.json|20|3',
+  'save-20260813-5heroes.json|10|3',
+  'save-20260813-5heroes.json|10|5',
+  'save-20260813-5heroes.json|20|3',
 ]);
 
 function donateMix(heroIds: string[]): Record<string, ScopeState> {
@@ -125,9 +130,9 @@ describe('team plan step monotonicity (roster level)', () => {
   }
 
   it(
-    'crit-dmg-tree floor 10 slots 3 with a donate-scope mix: option B step invariants hold',
+    'export floor 10 slots 3 with a donate-scope mix: option B step invariants hold',
     () => {
-      const input = teamPlanInputFromFixture('save-20260801-crit-dmg-tree.json', 10);
+      const input = teamPlanInputFromFixture('save-20260813-5heroes.json', 10);
       input.account.slots = 3;
       input.scopeByHeroId = donateMix(input.heroes.map((h) => h.heroId));
       assertStepInvariants(runTeamPlan(input, { maxEvaluations: REDUCED_MAX_EVALUATIONS }), input);
@@ -136,9 +141,9 @@ describe('team plan step monotonicity (roster level)', () => {
   );
 
   it(
-    'crit-dmg-tree floor 20 slots 5 with a donate-scope mix: option B step invariants hold',
+    'export floor 20 slots 5 with a donate-scope mix: option B step invariants hold',
     () => {
-      const input = teamPlanInputFromFixture('save-20260801-crit-dmg-tree.json', 20);
+      const input = teamPlanInputFromFixture('save-20260813-5heroes.json', 20);
       input.account.slots = 5;
       input.scopeByHeroId = donateMix(input.heroes.map((h) => h.heroId));
       assertStepInvariants(runTeamPlan(input, { maxEvaluations: REDUCED_MAX_EVALUATIONS }), input);
@@ -147,12 +152,12 @@ describe('team plan step monotonicity (roster level)', () => {
   );
 
   it(
-    'crit-dmg-tree floor 10 slots 9: pointResets is in acceptance order, not heroId order',
+    'export floor 10 slots 9: pointResets is in acceptance order, not heroId order',
     () => {
       // This config (also used at full budget in team-plan-waterfall.test.ts) reliably produces
       // several resets even at the grid's reduced budget, verified non-alphabetical either way —
       // reduced budget keeps this file fast per the ordering note above.
-      const input = teamPlanInputFromFixture('save-20260801-crit-dmg-tree.json', 10);
+      const input = teamPlanInputFromFixture('save-20260813-5heroes.json', 10);
       input.account.slots = 9;
       const result = runTeamPlan(input, { maxEvaluations: REDUCED_MAX_EVALUATIONS });
       if (result.blocked) throw new Error('plan blocked');

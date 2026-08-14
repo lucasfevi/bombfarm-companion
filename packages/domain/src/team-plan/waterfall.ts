@@ -407,7 +407,7 @@ export function finalPtsFromOptimizeBuild(
       effective: score.effective,
       effectiveDelta: score.effectiveDelta,
       context: score.context,
-      statPointsAvailable: ctx.statPointsAvailable,
+      level: ctx.level,
     }).pts;
   }
   return out;

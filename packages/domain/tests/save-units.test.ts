@@ -37,10 +37,11 @@ describe('saveSheetUnits / birthFromSave (AC-08 — hand-computed literals)', ()
   });
 
   it('AC-08: Bellatrix\'s birth_stats.luck converts to percent, not a fraction', () => {
-    // Real fixture value (save-20260801-crit-dmg-tree.json, Bellatrix birth_stats.luck).
-    const converted = birthFromSave({ luck: 0.082486912718623 });
-    expect(converted.luck).toBeCloseTo(8.2486912718623, 9);
-    expect(converted.luck).not.toBeCloseTo(0.082486912718623, 3);
+    // Real fixture value (save-20260813-5heroes.json, Bellatrix birth_stats.luck) —
+    // MP5 F1 (AD-068 class (a) — re-read from the post-patch capture).
+    const converted = birthFromSave({ luck: 0.0922693386123672 });
+    expect(converted.luck).toBeCloseTo(9.22693386123672, 9);
+    expect(converted.luck).not.toBeCloseTo(0.0922693386123672, 3);
   });
 
   it('saveSheetUnits and birthFromSave are the same table (DEC-09)', () => {
@@ -79,7 +80,6 @@ describe('treeTotalsFromSave', () => {
       crit_chance_add: 0.3372935775,
       crit_dmg_add: 0.196153846,
       luck_add: 0.0530647275,
-      crit_dmg_mult: 1,
     });
     expect(converted.danoStatic).toBeCloseTo(1.78324567735483, 9);
     expect(converted.energyPct).toBeCloseTo(81.2711865, 9);
@@ -87,13 +87,11 @@ describe('treeTotalsFromSave', () => {
     expect(converted.critChancePct).toBeCloseTo(33.72935775, 9);
     expect(converted.critDmgPct).toBeCloseTo(19.6153846, 9);
     expect(converted.luckFlatPct).toBeCloseTo(5.30647275, 9);
-    expect(converted.critDmgMult).toBe(1);
   });
 
-  it('dmg_static and crit_dmg_mult default to 1 when absent, everything else to 0', () => {
+  it('dmg_static defaults to 1 when absent, everything else to 0', () => {
     const converted = treeTotalsFromSave({});
     expect(converted.danoStatic).toBe(1);
-    expect(converted.critDmgMult).toBe(1);
     expect(converted.energyPct).toBe(0);
     expect(converted.speedPct).toBe(0);
     expect(converted.critChancePct).toBe(0);

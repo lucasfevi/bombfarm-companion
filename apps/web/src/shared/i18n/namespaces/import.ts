@@ -32,7 +32,6 @@ export const en = {
   importHouseName: "Name",
   importHouseLevel: "Level",
   importHouseRest: "Rest time",
-  importKeystoneOn: "On",
   // AC-32/BSP-49 — the review-before-confirm sync breakdown.
   importSyncSummary: "Created {created} · Updated {updated} · Removed {removed}",
   // BSP-51/AC-34 — states plainly what "Removed" means; shown only when removed > 0.
@@ -45,6 +44,9 @@ export const en = {
   // reset-warning block below.
   importRejectedNotASaveFile: "This file doesn't look like a BombFarm save-file export.",
   importRejectedMissingBirthStats: "This save is missing birth stats needed for accurate points for: {names}. Re-export from an updated game version.",
+  // MP5 F4 (MSG-14): the positive-discriminator rejection — deliberately generic. Names no
+  // keystone, node id, version, date or field path, so it stays accurate after the next patch.
+  importRejectedUnsupportedShape: "The planner can't use this save file. Export a fresh save from the game and import that one.",
 };
 
 export const pt: typeof en = {
@@ -79,7 +81,6 @@ export const pt: typeof en = {
   importHouseName: "Nome",
   importHouseLevel: "Nível",
   importHouseRest: "Tempo de descanso",
-  importKeystoneOn: "Ativo",
   importSyncSummary: "Criados {created} · Atualizados {updated} · Removidos {removed}",
   importRemovedNote: "Heróis que não estão nesse save não existem mais no jogo — serão removidos do seu elenco.",
   importPointShortfall: "Os pontos gastos não batem exatamente na ficha — uma pequena sobra, não uma diferença real de stat.",
@@ -87,4 +88,5 @@ export const pt: typeof en = {
   importPointBothSaturated: "Os pontos gastos não batem exatamente, e Chance de Crítico e Redução de recarga já estão no teto — não dá para recuperar a divisão exata entre eles.",
   importRejectedNotASaveFile: "Esse arquivo não parece ser um save exportado do BombFarm.",
   importRejectedMissingBirthStats: "Esse save está sem os stats de nascimento necessários para pontos precisos de: {names}. Reexporte de uma versão atualizada do jogo.",
+  importRejectedUnsupportedShape: "O planner não consegue usar esse save. Exporte um save novo do jogo e importe esse.",
 };

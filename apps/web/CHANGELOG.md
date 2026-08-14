@@ -1,5 +1,130 @@
 # @bombfarm/web
 
+## 0.5.0
+
+### Minor Changes
+
+- 453ed05: **The drift guard can now see the change it was built to catch.** The 2026-08-13 game patch
+  reshaped `skills.totals` and the mechanism meant to notice — `fingerprints.ts` — ran on every CI
+  job and passed, because it only checked top-level key presence and never treated an added key as
+  a failure. This change deepens the guard and uses it to reject stale data on both surfaces.
+
+  **Deepened fingerprint (`@bombfarm/domain`, `@bombfarm/game-api`):** the schema check now descends
+  into declared nested paths (`skills.totals`, `heroes[]`, `items[]`, `casa`, `account`) instead of
+  only the top level, and an **added** key is now fatal at every declared level, not only a missing
+  one. The five API route bodies and the save-export file's own shape are fingerprinted from one
+  shared key catalogue. `RouteFingerprint.requiredKeys` (a flat, subset-checked list) is gone;
+  `checkShape` no longer has an `{ ok: true, unknownKeys }` branch.
+
+  **New rejection reason (`@bombfarm/domain`, `@bombfarm/web`):** importing a save file now checks
+  for the presence of the patch's new keys (`skills.refunds`, `skills.totals.vagas_campo`,
+  `skills.totals.bag_tabs_bonus`) before parsing. A save missing them — pre-patch or truncated — is
+  rejected with a new generic message, in EN and PT-BR, that names no keystone, version, date or
+  field path so it stays accurate after the next patch. The specific missing keys are still recorded
+  in `ParseResult.warnings` for diagnosis.
+
+  **Two drop rules, never a migration (`@bombfarm/web`, `@bombfarm/desktop`):** a locally stored
+  planner account on the web, or a stored SQLite account section on desktop, that still carries a
+  retired keystone field (or fails its own fingerprint) is dropped and deleted rather than served or
+  patched up. Clean stored data is left byte-unchanged. Neither surface gains a new upload affordance.
+
+- fc7fcf1: **Every player-facing and internal surface that could still express the five removed keystones is
+  gone.** `@bombfarm/domain` stopped modelling Abisso, Glass Cannon and Tempo Dobrado (MP5 F2); this
+  change removes the last ways a player or a maintainer could still see, toggle, persist or key on
+  them.
+
+  **Removed controls (`@bombfarm/web`, rendered Account panel, both `pt` and `en`):**
+
+  - The three `Switch` toggles — **Abisso**, **Glass Cannon**, **Tempo Dobrado** — and their On/Off
+    status readouts. The Skill Tree subsection is now six read-only `<output>` rows with no input,
+    button or switch/checkbox role anywhere inside it.
+  - The three conditional import-preview rows in the account-import summary.
+  - The advice column's forwarding of the two keystone-only fields into the breakdown model.
+
+  **Removed i18n keys, EN and PT-BR (12 keys × 2 languages):** `treeGlassCannon`,
+  `treeGlassCannonHint`, `treeAbisso`, `treeAbissoHint`, `treeTempoDobrado`,
+  `treeTempoDobradoHint`, `keystoneOn`/`keystoneOff` (PT `Sim`/`Não`), `importKeystoneOn` (PT
+  `Ativo`), `bdNoteGlassCannon`, `bdNoteTempoDobrado`, `bdTermAbisso`. Surviving prose in both
+  languages (account hints, the damage formula's `× abisso` factor, and the planner's explain-section
+  text) no longer names any of the three mechanics.
+
+  **Removed `TreeState` fields (`@bombfarm/web`):** `glassCannon`, `tempoDobrado`, `abisso`,
+  `abissoBase`, `critDmgMult` — gone from the type, `DEFAULT_TREE`, every selector, the store's
+  setters (`setTreeGlassCannon`, `setTreeTempoDobrado`, `setTreeAbisso`) and the team-plan input
+  builder. A stored account written before this change still loads; the dead fields are discarded on
+  normalize, not fatal.
+
+  **Removed `@bombfarm/ui` exports:** `accountKeystoneControlClass` and
+  `accountKeystoneStatusClass` (`panel-field.recipe.ts`), plus the two `[&_label_[data-keystone-control]]`
+  arbitrary variants inside `stackFieldsClass`. The Storybook `switch.stories.tsx` stories keep their
+  ids and count (3 → 3), re-labelled and re-skinned onto a surviving row.
+
+  **`@bombfarm/desktop` (internal, no user-facing change):** `CHANGE_KEY_INPUTS` and
+  `sharedChangeKey` no longer key on the four dead tree paths, and `account-model.ts` no longer maps
+  the five fields into the shared account shape.
+
+### Patch Changes
+
+- a0a126b: **The pre-v4 capture corpus is removed and replaced.** The 2026-08-13 patch removed all five
+  keystones and wiped every account; the 41 committed capture files this repo's test suites were
+  built on described an account the game can no longer produce. The 20 quarantined suites (the
+  files carrying the catalog-v4 quarantine header) and all 39 stale `sheet-math` fixtures (plus the
+  old fidelity-gate capture pair) are deleted, and the ~30 surviving suites that depended on them
+  are re-pointed onto a new, post-patch corpus: a scrubbed 2026-08-13 save export
+  (`save-20260813-5heroes.json`, 5 heroes) and an already-committed API-assembled payload
+  (`payload-20260812-8heroes.json`, 8 heroes). The fidelity-gate capture pair is re-captured from
+  the new export and its eight-mutant discrimination suite is re-proven red against it.
+
+  **No runtime behaviour changes for the web planner or the desktop.** This is a test-fixture and
+  test-suite rebaseline only — `packages/domain/src`, `apps/web/src` (non-test) and `packages/ui`
+  are untouched. `@bombfarm/desktop` is included because its recompute-budget test reads a fixture
+  this feature deletes (`apps/desktop/renderer/lib/planning/recompute-budget.test.ts`), not because
+  any desktop-rendered number changes.
+
+- 829228c: **Optimize build and the Team Plan now respect the hero's level.** A hero with banked, unspent
+  stat points could be walked far past its own level: a level-46 hero with 46 unspent points got a
+  46-point build on the first Optimize, then 92 on the second, 138 on the third — and the Team Plan
+  page's Point Reset table inflated the same way, on top of whatever the Planner had already
+  proposed. The Points panel's `spent / level` counter went red and stayed red, while the `+/-`
+  steppers refused the very spend the optimizer had just made.
+
+  The budget was `budgetOf(pts) + statPointsAvailable`. That second term is what the save reported
+  as banked at import time — a snapshot of `level - spent` — and it never shrank as those points
+  got spent in the planner, so every Optimize -> Apply round counted them again.
+
+  It is replaced by two budgets, because the two searches answer different questions:
+
+  - **Optimize build** ("what is the best build?") gets `reoptBudget(pts, level)` —
+    `max(level - pts.luck, budgetOf(pts))`. The hero's whole pool, matching the ceiling
+    `clampPointStep` has always enforced for the manual steppers, floored at what is already
+    placed so a hero whose level was lowered after spending can still reallocate what it holds.
+  - **The reset gate** ("is a real in-game reset worth buying?") gets `budgetOf(pts)`. A reset only
+    moves points that are already spent, so a hero with points still unplaced no longer gets a
+    respec recommendation it has no use for — the Points panel's unspent counter and the Optimize
+    button are what surface that hero's actual next action. This also quiets the roster banner and
+    the Points warn dot for freshly imported, unallocated heroes.
+
+  Neither budget can compound: each search places at most what it was given, so feeding a result
+  back in is non-increasing and settles immediately.
+
+  `ReoptInput` takes `level` in place of `statPointsAvailable`; `HeroPlanContext` and
+  `AdvisorPipelineInput` drop the field entirely, so the stale value cannot be threaded back in.
+  `HeroRecord.statPointsAvailable` is unchanged and still persisted — it remains what the save
+  reported, which is what `point-inference.ts`'s budget-mismatch check reads. The Points panel's
+  "+N unspent" note is now derived live from `level - spentDelta`, so it stops advertising points
+  that have since been spent, and the disabled-Optimize reason no longer says "nothing spent to
+  move" for the one case that is now enabled.
+
+- Updated dependencies [f0bf7f4]
+- Updated dependencies [96d496a]
+- Updated dependencies [a0a126b]
+- Updated dependencies [fc7fcf1]
+- Updated dependencies [453ed05]
+- Updated dependencies [fc7fcf1]
+- Updated dependencies [829228c]
+  - @bombfarm/domain@0.5.0
+  - @bombfarm/ui@0.3.0
+
 ## 0.4.1
 
 ### Patch Changes

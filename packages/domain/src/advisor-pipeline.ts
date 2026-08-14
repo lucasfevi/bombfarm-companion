@@ -50,8 +50,6 @@ export type AdvisorPipelineInput = {
   loadout: Loadout;
   altLoadout: Loadout | null;
   pts: Record<SheetKey, number>;
-  /** `HeroRecord.statPointsAvailable` — banked, unspent stat points (`ReoptInput.statPointsAvailable`). */
-  statPointsAvailable: number;
   abilities: Record<string, number>;
   rarity: RarityKey;
   level: number;
@@ -61,15 +59,6 @@ export type AdvisorPipelineInput = {
   treeCritDmg: number;
   treeSpeed: number;
   treeEnergy: number;
-  treeGlassCannon: boolean;
-  /** `skills.totals.crit_dmg_mult` — the persisted numeric, never re-derived from
-   *  `treeGlassCannon` (which `detectGlassCannon` sets for any value `>= 1.5`). */
-  treeCritDmgMult?: number;
-  treeTempoDobrado: boolean;
-  /** Abisso — suppresses Glass Cannon crit ×2 and Crit tree sheet adds. */
-  treeAbisso?: boolean;
-  /** `skills.totals.abisso_base` — Abisso's damage-multiplier exponent base (0 when unowned). */
-  treeAbissoBase?: number;
   /** `skills.totals.luck_add × 100` — flat Luck percentage points (BSPW5-03, ASM-01). */
   treeLuckFlatPct: number;
   teamBuffs: Record<TeamBuffId, number>;
@@ -98,8 +87,6 @@ export type AdvisorPipelineResult = {
   energyMult: number;
   speedMult: number;
   critDmgMult: number;
-  /** Abisso's `abissoBase^currentPhase` factor — 1 when not owned. Already folded into `dmgMult`. */
-  abissoMult: number;
   teamCritPctOfBase: number;
   /** The whole skill tree, once (BSP-23c) — surfaced for Wave 6's breakdown. */
   treeSheet: TreeSheetTotals;
@@ -144,7 +131,6 @@ export function computeAdvisorPipeline(input: AdvisorPipelineInput): AdvisorPipe
     loadout,
     altLoadout,
     pts,
-    statPointsAvailable,
     abilities,
     rarity,
     level,
@@ -154,11 +140,6 @@ export function computeAdvisorPipeline(input: AdvisorPipelineInput): AdvisorPipe
     treeCritDmg,
     treeSpeed,
     treeEnergy,
-    treeGlassCannon,
-    treeCritDmgMult,
-    treeTempoDobrado,
-    treeAbisso = false,
-    treeAbissoBase = 0,
     treeLuckFlatPct,
     teamBuffs,
     houseIdx,
@@ -195,21 +176,12 @@ export function computeAdvisorPipeline(input: AdvisorPipelineInput): AdvisorPipe
     treeSpeed,
     treeEnergy,
     treeLuckFlatPct,
-    treeGlassCannon,
-    treeCritDmgMult,
-    treeTempoDobrado,
-    treeAbisso,
     birth,
   });
 
   const mults = computeCombatMults({
     mods,
     teamBuffs,
-    treeGlassCannon,
-    treeTempoDobrado,
-    treeAbisso,
-    treeAbissoBase,
-    phase,
     extraDmgPct: 0,
   });
   const {
@@ -218,7 +190,6 @@ export function computeAdvisorPipeline(input: AdvisorPipelineInput): AdvisorPipe
     gateAttackMult,
     energyMult,
     critDmgMult,
-    abissoMult,
     teamCritPctOfBase,
     teamDrainMult,
     dmgMult,
@@ -227,7 +198,6 @@ export function computeAdvisorPipeline(input: AdvisorPipelineInput): AdvisorPipe
   const context = farmContextForHero({
     mods,
     teamDrainMult,
-    treeTempoDobrado,
     houseIdx,
     houseLevel,
     mitigationPct: mitPct,
@@ -333,7 +303,7 @@ export function computeAdvisorPipeline(input: AdvisorPipelineInput): AdvisorPipe
     effective,
     effectiveDelta: equippedResult.effectiveDelta,
     context,
-    statPointsAvailable,
+    level,
   });
   const resetAdvice = buildResetAdvice(gate);
 
@@ -348,7 +318,6 @@ export function computeAdvisorPipeline(input: AdvisorPipelineInput): AdvisorPipe
     energyMult,
     speedMult,
     critDmgMult,
-    abissoMult,
     teamCritPctOfBase,
     treeSheet,
     A: equippedResult,

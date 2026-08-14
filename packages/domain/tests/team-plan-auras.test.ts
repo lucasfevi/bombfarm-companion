@@ -45,7 +45,6 @@ function ctx(
       critChancePct: 0,
       critDmgPct: 0,
       luckFlatPct: 0,
-      critDmgMult: 1,
     },
     scope,
     abilities,

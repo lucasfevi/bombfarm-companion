@@ -89,6 +89,15 @@ jobs:
       - name: Fidelity suite (packages/domain, "fidelity" filename filter)
         run: pnpm vitest run --project @bombfarm/domain fidelity
 
+      # apps/desktop/renderer/lib/planning/hero-advice.ts (imported by the tools project's
+      # advice-change-key-coverage.test.mjs, MP3 F3 AD-044) resolves @bombfarm/domain through
+      # node_modules -> dist, not a tsconfig/vitest alias to source (unlike packages/domain's
+      # own fidelity suite above, and ci-web.yml's "Domain tests need no build output" unit
+      # tests) — so it needs a real build. Same rationale as ci-desktop.yml's and ci-web.yml's
+      # existing domain-build steps.
+      - name: Build domain (tools project needs dist)
+        run: pnpm --filter @bombfarm/domain build
+
       # The guard on this workflow itself (tools/fidelity-gate.test.mjs) and the no-skip source
       # guard over the six F4 files both live in the tools project.
       - name: Fidelity gate guard (tools project)

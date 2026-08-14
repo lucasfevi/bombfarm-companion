@@ -1,5 +1,189 @@
 # @bombfarm/domain
 
+## 0.5.0
+
+### Minor Changes
+
+- f0bf7f4: `@bombfarm/domain` is now consumed as a **built package** (`dist/` + `.d.ts`), the same way
+  `@bombfarm/contracts`, `@bombfarm/game-api`, `@bombfarm/game-data` and `@bombfarm/pricing`
+  already are, instead of advertising its TypeScript source through `exports`. This is a
+  packaging contract change, not a math change: not one byte of `packages/domain/src` — the
+  sheet math MP2's fidelity gate protects to a worst error of `1.1e-11` — was touched. The
+  package's `exports` map now targets `dist/**` (four directory subpaths — `./gear`, `./model`,
+  `./stat-breakdown`, `./team-plan` — plus a `./data/*` JSON target and a file/nested-file
+  wildcard), and a new packaging test proves every in-use `@bombfarm/domain[/subpath]` specifier
+  in the repo resolves through Node's own module resolver, not just by reading the map.
+
+  **The desktop can now compute with the planner engine.** `@bombfarm/desktop` declares
+  `@bombfarm/domain` as a real `workspace:*` dependency (it previously resolved only by
+  accident, via pnpm's root-level hoisting) and imports it from both processes: the main process
+  computes a value through the built package under its own strict TypeScript bar
+  (`exactOptionalPropertyTypes`, `noUncheckedIndexedAccess`), and the renderer renders one
+  domain-derived label. Neither import adds any planning UI, recompute, or i18n wiring — that is
+  later MP3 work (F2/F3/F4). This feature only proves the edge compiles, bundles (esbuild inlines
+  the domain code; the desktop's own long-running team-plan solver is confirmed absent from the
+  bundle), and reaches the DOM.
+
+  **No behaviour change for the web planner.** `apps/web` keeps resolving `@bombfarm/domain`
+  through its existing tsconfig `paths` and bundler aliases — it never reads the new `exports`
+  map — and zero files under `apps/web` changed in this release. A guard test now pins those
+  resolution entries so a future cleanup cannot silently move the public planner onto `dist`,
+  which Vercel's production build never produces.
+
+  `docs/typescript-planner-origin.md`'s documented strictness exception for `@bombfarm/domain`
+  and `@bombfarm/ui` is unchanged in scope — the same two packages, the same ESLint globs. A
+  consumer built against `dist` never compiles domain's source under its own relaxed bar at all,
+  so this packaging change is orthogonal to that exception rather than an extension of it.
+
+- 96d496a: **The desktop renders real hero planning advice with the game closed.** A new Planning tab
+  (`AppShell` nav) reads the already-persisted `AccountView` once on mount and shows the roster,
+  each hero's next-point ranking, and reset advice, computed through `@bombfarm/domain`'s advisor
+  pipeline — the same engine the web planner runs.
+
+  `packages/domain/src/roster-dps.ts`'s `pipelineForHero` is now a public export (`AD-032`): the
+  only `HeroRecord`-shaped entry to the pipeline, and the one mapping both surfaces use. Its body is
+  byte-unchanged; a layer-1 parity test (`packages/domain/tests/pipeline-for-hero-parity.test.ts`)
+  and a layer-2 source-derived key-set guard (`tools/advisor-input-parity.test.mjs`) together prove
+  the desktop and the web compute identical ranked stats and gains for the same account payload,
+  for every observed `crit_dmg_mult`. The one known, pinned divergence (`treeCritDmgMult`, `AD-038`)
+  is documented at the export site and asserted not to widen or silently close — it is not fixed
+  here, because doing so would change the web planner's own rendered numbers.
+
+  **Honesty over completeness, by construction (`D24`).** Every number the desktop shows is gated
+  by the usability of the account sections it depends on (`resolved`/`stale` render; `missing`/
+  `degraded` withhold, never a fallback). An exhaustive, table-driven matrix
+  (`apps/desktop/renderer/lib/planning/withhold-matrix.test.ts`) asserts the fallback numbers
+  `import-save.ts`'s zero-tree default would otherwise produce are never reachable when their
+  backing data is not trustworthy.
+
+  **No behaviour change for the web planner.** `apps/web` is untouched — zero files changed, source
+  and tests alike. `packages/ui` is untouched too (`DS-09` intact): every control on the new screen
+  composes existing `@bombfarm/ui` primitives.
+
+  Two known, recorded limitations ship with this feature rather than being silently claimed:
+  `degraded` sections are implemented and unit-tested but currently unreachable end to end (the
+  account-restore merge prefers a stale body over a degraded live read, `AD-037`); and the manual
+  refresh affordance (`account:refresh`, `READ_PACING.manualRefreshFloorMs`) was not taken in this
+  pass and remains unimplemented, not merely deferred.
+
+- fc7fcf1: **All modelled keystone mechanics are deleted from `@bombfarm/domain`.** The 2026-08-13 patch
+  removed all five keystones and wiped every account; `skills.totals` no longer emits `keystones`,
+  `abisso_base` or `crit_dmg_mult`. The domain package stopped modelling Abisso's damage multiplier,
+  Glass Cannon's crit ×2 / energy ×0.5, and Tempo Dobrado's speed ×1.33333 / drain ×2 — this is pure
+  deletion of dead mechanics, not a behaviour change: every removed term was already an identity
+  element (`× 1`, `+ 0`) on every keystone-free input the post-patch game can produce, proven by a
+  committed pre-deletion characterization baseline compared bit-exactly (`Object.is`) against the
+  post-deletion output.
+
+  **No number changes for any keystone-free input.** The one non-numeric exception is
+  `formulaDmg.substituted`, whose rendered string drops the `× 1.000` Abisso factor while the
+  underlying `value` is unchanged.
+
+  **Removed public API:**
+
+  - `effectiveTreeSheetForAbisso` (`birth-sheet.ts`, re-exported from `model/index.ts`)
+  - `detectGlassCannon`, `detectTempoDobrado`, `normalizeKeystones` (`save-units.ts`)
+  - `unmodelledTreeFindings`, `UnmodelledTreeInput` (`tree-guards.ts`, deleted outright, re-exported
+    from `model/index.ts`)
+  - `TreeSheetTotals.critDmgMult`, `.glassCannon`, `.tempoDobrado` (six surviving members remain:
+    `danoStatic`, `energyPct`, `speedPct`, `critChancePct`, `critDmgPct`, `luckFlatPct`)
+  - `AdvisorPipelineInput.treeGlassCannon`, `.treeCritDmgMult`, `.treeTempoDobrado`, `.treeAbisso`,
+    `.treeAbissoBase`
+  - `AdvisorPipelineResult.abissoMult`
+  - `CombatMults.abissoMult`
+  - `ComputeCombatMultsInput.treeAbisso`, `.treeAbissoBase`
+  - `FarmContextForHeroInput.treeTempoDobrado`
+  - `TreeState.glassCannon`, `.tempoDobrado`, `.abisso`, `.abissoBase`, `.critDmgMult`
+    (`shims/storage.ts` — the type the MP5 milestone calls `AccountTree`)
+  - `PipelineFacts.abissoMult`, `.critDmgMult` keystone-derived members
+  - `TeamPlanAccount`'s `treeAbisso` / `treeAbissoBase` / `treeTempoDobrado` members
+  - `LedgerNote`'s `'glassCannon'` and `'tempoDobrado'` union members
+
+  **Kept, deliberately:** `CombatMults.critDmgMult` / `DeriveInput.critDmgMult` — a dead
+  combat-layer pass-through hardcoded to `1` since the keystone correction, with no keystone content
+  of its own. Removing it would be an unrelated public-signature change to `derive()`.
+
+- 453ed05: **The drift guard can now see the change it was built to catch.** The 2026-08-13 game patch
+  reshaped `skills.totals` and the mechanism meant to notice — `fingerprints.ts` — ran on every CI
+  job and passed, because it only checked top-level key presence and never treated an added key as
+  a failure. This change deepens the guard and uses it to reject stale data on both surfaces.
+
+  **Deepened fingerprint (`@bombfarm/domain`, `@bombfarm/game-api`):** the schema check now descends
+  into declared nested paths (`skills.totals`, `heroes[]`, `items[]`, `casa`, `account`) instead of
+  only the top level, and an **added** key is now fatal at every declared level, not only a missing
+  one. The five API route bodies and the save-export file's own shape are fingerprinted from one
+  shared key catalogue. `RouteFingerprint.requiredKeys` (a flat, subset-checked list) is gone;
+  `checkShape` no longer has an `{ ok: true, unknownKeys }` branch.
+
+  **New rejection reason (`@bombfarm/domain`, `@bombfarm/web`):** importing a save file now checks
+  for the presence of the patch's new keys (`skills.refunds`, `skills.totals.vagas_campo`,
+  `skills.totals.bag_tabs_bonus`) before parsing. A save missing them — pre-patch or truncated — is
+  rejected with a new generic message, in EN and PT-BR, that names no keystone, version, date or
+  field path so it stays accurate after the next patch. The specific missing keys are still recorded
+  in `ParseResult.warnings` for diagnosis.
+
+  **Two drop rules, never a migration (`@bombfarm/web`, `@bombfarm/desktop`):** a locally stored
+  planner account on the web, or a stored SQLite account section on desktop, that still carries a
+  retired keystone field (or fails its own fingerprint) is dropped and deleted rather than served or
+  patched up. Clean stored data is left byte-unchanged. Neither surface gains a new upload affordance.
+
+### Patch Changes
+
+- a0a126b: **The pre-v4 capture corpus is removed and replaced.** The 2026-08-13 patch removed all five
+  keystones and wiped every account; the 41 committed capture files this repo's test suites were
+  built on described an account the game can no longer produce. The 20 quarantined suites (the
+  files carrying the catalog-v4 quarantine header) and all 39 stale `sheet-math` fixtures (plus the
+  old fidelity-gate capture pair) are deleted, and the ~30 surviving suites that depended on them
+  are re-pointed onto a new, post-patch corpus: a scrubbed 2026-08-13 save export
+  (`save-20260813-5heroes.json`, 5 heroes) and an already-committed API-assembled payload
+  (`payload-20260812-8heroes.json`, 8 heroes). The fidelity-gate capture pair is re-captured from
+  the new export and its eight-mutant discrimination suite is re-proven red against it.
+
+  **No runtime behaviour changes for the web planner or the desktop.** This is a test-fixture and
+  test-suite rebaseline only — `packages/domain/src`, `apps/web/src` (non-test) and `packages/ui`
+  are untouched. `@bombfarm/desktop` is included because its recompute-budget test reads a fixture
+  this feature deletes (`apps/desktop/renderer/lib/planning/recompute-budget.test.ts`), not because
+  any desktop-rendered number changes.
+
+- 829228c: **Optimize build and the Team Plan now respect the hero's level.** A hero with banked, unspent
+  stat points could be walked far past its own level: a level-46 hero with 46 unspent points got a
+  46-point build on the first Optimize, then 92 on the second, 138 on the third — and the Team Plan
+  page's Point Reset table inflated the same way, on top of whatever the Planner had already
+  proposed. The Points panel's `spent / level` counter went red and stayed red, while the `+/-`
+  steppers refused the very spend the optimizer had just made.
+
+  The budget was `budgetOf(pts) + statPointsAvailable`. That second term is what the save reported
+  as banked at import time — a snapshot of `level - spent` — and it never shrank as those points
+  got spent in the planner, so every Optimize -> Apply round counted them again.
+
+  It is replaced by two budgets, because the two searches answer different questions:
+
+  - **Optimize build** ("what is the best build?") gets `reoptBudget(pts, level)` —
+    `max(level - pts.luck, budgetOf(pts))`. The hero's whole pool, matching the ceiling
+    `clampPointStep` has always enforced for the manual steppers, floored at what is already
+    placed so a hero whose level was lowered after spending can still reallocate what it holds.
+  - **The reset gate** ("is a real in-game reset worth buying?") gets `budgetOf(pts)`. A reset only
+    moves points that are already spent, so a hero with points still unplaced no longer gets a
+    respec recommendation it has no use for — the Points panel's unspent counter and the Optimize
+    button are what surface that hero's actual next action. This also quiets the roster banner and
+    the Points warn dot for freshly imported, unallocated heroes.
+
+  Neither budget can compound: each search places at most what it was given, so feeding a result
+  back in is non-increasing and settles immediately.
+
+  `ReoptInput` takes `level` in place of `statPointsAvailable`; `HeroPlanContext` and
+  `AdvisorPipelineInput` drop the field entirely, so the stale value cannot be threaded back in.
+  `HeroRecord.statPointsAvailable` is unchanged and still persisted — it remains what the save
+  reported, which is what `point-inference.ts`'s budget-mismatch check reads. The Points panel's
+  "+N unspent" note is now derived live from `level - spentDelta`, so it stops advertising points
+  that have since been spent, and the disabled-Optimize reason no longer says "nothing spent to
+  move" for the one case that is now enabled.
+
+- Updated dependencies [1fa3def]
+- Updated dependencies [e78122a]
+- Updated dependencies [453ed05]
+  - @bombfarm/contracts@0.3.0
+
 ## 0.4.0
 
 ### Minor Changes

@@ -1,0 +1,105 @@
+{
+  "account": {
+    "phase": 45,
+    "gold": "500000",
+    "bag_tabs": 3,
+    "bag_capacity": 100
+  },
+  "heroes": [
+    {
+      "id": "h-aurora",
+      "name": "Aurora",
+      "level": 55,
+      "rarity": 3,
+      "stars": 2,
+      "in_field": true,
+      "battle_allowed": true,
+      "stat_points_available": 4,
+      "birth_stats": {
+        "dmg": 220,
+        "energia": 350,
+        "speed": 52,
+        "crit_chance": 10,
+        "crit_dmg": 65,
+        "penetration": 2,
+        "cooldown_reduction": 1,
+        "luck": 3
+      },
+      "stats": {
+        "dmg": 220,
+        "energia": 350,
+        "speed": 52,
+        "crit_chance": 10,
+        "crit_dmg": 65,
+        "penetration": 2,
+        "cooldown_reduction": 1,
+        "luck": 3
+      },
+      "abilities": []
+    },
+    {
+      "id": "h-borealis",
+      "name": "Borealis",
+      "level": 61,
+      "rarity": 4,
+      "stars": 1,
+      "in_field": true,
+      "battle_allowed": true,
+      "stat_points_available": 2,
+      "birth_stats": {
+        "dmg": 260,
+        "energia": 300,
+        "speed": 48,
+        "crit_chance": 8,
+        "crit_dmg": 70,
+        "penetration": 3,
+        "cooldown_reduction": 2,
+        "luck": 1
+      },
+      "stats": {
+        "dmg": 260,
+        "energia": 300,
+        "speed": 48,
+        "crit_chance": 8,
+        "crit_dmg": 70,
+        "penetration": 3,
+        "cooldown_reduction": 2,
+        "luck": 1
+      },
+      "abilities": []
+    }
+  ],
+  "skills": {
+    "refunds": {},
+    "totals": {
+      "dmg_static": 3624.7,
+      "crit_chance_add": 0.12,
+      "crit_dmg_add": 0.2,
+      "speed_add": 0.03,
+      "energia_add": 0.4,
+      "coin_add": 0.5,
+      "geo_mult": 1.05,
+      "team_dmg_add": 0.4,
+      "luck_add": 0.02,
+      "xp_mult": 1.4,
+      "vagas_campo": 0,
+      "bag_tabs_bonus": 0
+    }
+  },
+  "casa": {
+    "active_casa": 2,
+    "levels": [20, 12, 0, 0, 0],
+    "slots": 6,
+    "slots_per_house": [3, 6, 9, 9, 9],
+    "cycle_secs": 900,
+    "cycle_secs_per_house": [1020, 900, 780, 600, 420]
+  },
+  "items": [],
+  "fidelity": {
+    "account": { "status": "resolved", "capturedAt": "2026-08-12T00:00:00.000Z" },
+    "heroes": { "status": "resolved", "capturedAt": "2026-08-12T00:00:00.000Z" },
+    "skills": { "status": "resolved", "capturedAt": "2026-08-12T00:00:00.000Z" },
+    "casa": { "status": "resolved", "capturedAt": "2026-08-12T00:00:00.000Z" },
+    "items": { "status": "resolved", "capturedAt": "2026-08-12T00:00:00.000Z" }
+  }
+}

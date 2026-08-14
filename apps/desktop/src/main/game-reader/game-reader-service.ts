@@ -45,6 +45,12 @@ export class GameReaderService {
   private windowProvider: (() => BrowserWindow | null) | null = null;
   private accountStore: AccountCommitter | null = null;
   private lastAccountView: AccountView | null = null;
+  /** MP3 F3 (`AD-043` point 3) — fired after `tickFixture` commits, so a caller sees the FRESH
+   * `lastAccountView` through `getAccountView()`, never the previous tick's (a callback invoked
+   * from inside `commit()` itself would read the stale value one tick early — see
+   * `account-view.ts`'s notifier doc comment for why). Optional and unset in production; only
+   * fixture mode ever calls `accountStore.commit()` from this class at all. */
+  onAccountCommitted?: () => void;
 
   private scanner: MemoryScanner | null = null;
   private target: ScanTarget | null = null;
@@ -53,6 +59,13 @@ export class GameReaderService {
   private lastRelocate = 0;
   private fixtureTick = 0;
   private fixtureBundle = loadFixtureBundle();
+  /** Flipped once by `stop()`, never reset (until a hypothetical future `start()` re-arms it).
+   * The explicit half of the shutdown-ordering contract: `clearTimeout` alone only stops a
+   * tick that has not yet started firing — this flag additionally makes `tick()` a no-op for
+   * any timer callback that was already in flight, so a tick can never reach
+   * `accountStore.commit()` after `stop()` has run (see index.ts's `before-quit` handler,
+   * which must call `stop()` before closing the account store). */
+  private stopped = false;
 
   constructor(_userDataDir: string, config: Partial<GameReaderConfig> = {}) {
     this.config = { ...DEFAULT_CONFIG, ...config };
@@ -89,13 +102,18 @@ export class GameReaderService {
 
   start(): void {
     if (this.timer) return;
+    // Re-arm the shutdown latch in case this instance is ever stopped and started again —
+    // there is no such call site today, but `start()` should not stay permanently inert after
+    // a `stop()` if one is ever added.
+    this.stopped = false;
     if (this.config.mode === 'fixture') {
-      this.tickFixture();
+      this.tick();
     }
     this.scheduleNext(0);
   }
 
   stop(): void {
+    this.stopped = true;
     if (this.timer) {
       clearTimeout(this.timer);
       this.timer = null;
@@ -122,12 +140,18 @@ export class GameReaderService {
   }
 
   private tick(): void {
-    if (this.config.mode === 'fixture') {
-      this.tickFixture();
-      return;
-    }
+    // Belt-and-braces half of the shutdown-ordering fix: `stop()` already clears the pending
+    // timer, so this only matters for a callback that had already begun running (or, on some
+    // platforms, one that still fires despite `clearTimeout`) — it must never reach
+    // `accountStore.commit()` once shutdown has started (root cause of the fixture-mode
+    // "database is not open" uncaught exception on quit).
+    if (this.stopped) return;
     try {
-      this.tickMemory();
+      if (this.config.mode === 'fixture') {
+        this.tickFixture();
+      } else {
+        this.tickMemory();
+      }
     } catch (err) {
       log.error({ scope: 'game-reader', event: 'tick.failed', err });
       this.scanner?.close();
@@ -170,6 +194,7 @@ export class GameReaderService {
 
     if (this.accountStore) {
       this.lastAccountView = this.accountStore.commit(buildFixtureAccountPayload(takenAt), { gameRunning: true });
+      this.onAccountCommitted?.();
     }
   }
 

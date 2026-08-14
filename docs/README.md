@@ -22,7 +22,9 @@ These are **current truth**. Do not invent planning/spec paths in this repo.
 | [releases.md](releases.md) | Changesets release rail, artifacts, recovery |
 | [hard-truths.md](hard-truths.md) | How to propose / accept new hard truths |
 | [typescript-planner-origin.md](typescript-planner-origin.md) | Documented TS/ESLint exception for `@bombfarm/domain` + `@bombfarm/ui` |
-| [FIDELITY_GATE.md](FIDELITY_GATE.md) | The MP2 fidelity gate: live-vs-export sheet-math parity, the capture pair, the F2 handoff |
+| [fidelity-gate.md](fidelity-gate.md) | The MP2 fidelity gate: live-vs-export sheet-math parity, the capture pair, the outstanding handoff |
+| [fixture-corpus.md](fixture-corpus.md) | MP5 F1: the post-2026-08-13-patch fixture corpus — provenance, what the deletion cost, the round-trip invariant, and the keystone handoff count |
+| [wiki-drift-check.md](wiki-drift-check.md) | MP5 F5: the scheduled wiki drift detector — the narrowed no-wiki-client rule, the four outcomes, accepting a drift, and the recurring cost |
 
 ## Web-only
 

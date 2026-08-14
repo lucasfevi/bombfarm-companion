@@ -164,10 +164,6 @@ function farmFromAccount(input: TeamPlanInput): FarmContext {
     houseLevel: input.account.houseLevel,
     phase: input.account.phase,
     mitigationPct: input.account.mitigationPct,
-    treeGlassCannon: input.account.treeGlassCannon,
-    treeTempoDobrado: input.account.treeTempoDobrado,
-    treeAbisso: input.account.treeAbisso,
-    treeAbissoBase: input.account.treeAbissoBase,
   };
 }
 
@@ -357,14 +353,14 @@ function pointsPass(
           effective: score.effective,
           effectiveDelta: score.effectiveDelta,
           context: score.context,
-          statPointsAvailable: ctx.statPointsAvailable,
+          level: ctx.level,
         })
       : findGateCandidate({
           pts: nextPts[ctx.heroId] ?? basePts,
           effective: score.effective,
           effectiveDelta: score.effectiveDelta,
           context: score.context,
-          statPointsAvailable: ctx.statPointsAvailable,
+          level: ctx.level,
         });
     nextPts[ctx.heroId] = result.pts;
   }

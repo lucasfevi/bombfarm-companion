@@ -2,11 +2,11 @@
 
 import { useState } from 'react';
 import { SHEET_PANEL_KEYS, ZERO_PTS, type SheetKey } from '@bombfarm/domain/planner-constants';
-import { budgetOf, optimizeBuild } from '@bombfarm/domain/points-reopt';
+import { optimizeBuild, reoptBudget } from '@bombfarm/domain/points-reopt';
 import { sub } from '@/shared/i18n';
 import { useAppLang } from '@/shared/context/app-lang';
 import { formatNumber } from '@/shared/lib/format-number';
-import { usePlannerStore, selectAdvisorPipeline, selectHeroStatPointsAvailable } from '@/shared/stores';
+import { usePlannerStore, selectAdvisorPipeline } from '@/shared/stores';
 import { Button, DataTable, Panel } from '@bombfarm/ui';
 import {
   mutedClass,
@@ -38,7 +38,6 @@ export function PointsTable() {
   const setPts = usePlannerStore((state) => state.setPts);
   const pipeline = usePlannerStore(selectAdvisorPipeline);
   const heroBattleAllowed = usePlannerStore((state) => state.heroBattleAllowed);
-  const statPointsAvailable = usePlannerStore(selectHeroStatPointsAvailable);
   const { spentDelta, pointDelta, adjusted, resetAdvice } = pipeline;
 
   const [preview, setPreview] = useState<PointsPreview | null>(null);
@@ -57,7 +56,7 @@ export function PointsTable() {
       effective: pipeline.effective,
       effectiveDelta: pipeline.A.effectiveDelta,
       context: pipeline.context,
-      statPointsAvailable,
+      level,
     });
     setJustApplied(false);
     setPreview({ pts: result.pts, result });
@@ -79,10 +78,12 @@ export function PointsTable() {
     setPreview(null);
   }
 
-  // Banked stat points count toward the search budget too — a hero with 0 spent and N unspent
-  // still has something to optimize, so the button must not read as disabled (mirrors the same
-  // budgetOf(pts) + statPointsAvailable sum points-reopt.ts's two tiers now use internally).
-  const budget = budgetOf(pts) + statPointsAvailable;
+  // The same pool `optimizeBuild` searches over (`reoptBudget`) — a hero with 0 spent still has
+  // its whole level to place, so the button must not read as disabled.
+  const budget = reoptBudget(pts, level);
+  // Derived from the live vector, never from the save's banked count: `statPointsAvailable` is
+  // frozen at import, so it would keep advertising "+46 unspent" after those 46 were spent here.
+  const unspent = Math.max(0, level - spentDelta);
   const previewValueFor = (key: SheetKey): number | null => {
     if (!preview) return null;
     // Same shared-pool shape as `adjusted[key] = gearedX[key] + pts[key] × delta[key]`
@@ -99,12 +100,11 @@ export function PointsTable() {
           <span className={spentDelta > level ? warnClass : mutedClass}>
             {sub(t.abilitiesSpent, { spent: spentDelta, max: level })}
           </span>
-          {statPointsAvailable > 0 && (
-            // Banked points from the save are invisible in the spent/level counter above (they
-            // are not in `pts` at all) — without this note, a hero the optimizer reallocates
-            // despite `spentDelta` looking untouched reads as a bug rather than banked points
-            // finally being spent.
-            <span className={mutedClass}>{sub(t.pointsUnspentBanked, { count: statPointsAvailable })}</span>
+          {unspent > 0 && (
+            // Names what the counter above only implies — that this hero has points sitting
+            // unplaced — so a reallocation the optimizer proposes reads as those points finally
+            // being spent rather than as points appearing from nowhere.
+            <span className={mutedClass}>{sub(t.pointsUnspentBanked, { count: unspent })}</span>
           )}
           <Button type="button" onClick={() => handlePtsMutate(ZERO_PTS())}>
             {t.reset}

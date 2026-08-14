@@ -1,23 +1,24 @@
 /**
- * `statPointsAvailable` backward-compat proof — follows `storage-abisso-base-compat.test.ts`'s
- * pattern (same precedent set for the Abisso damage-mult wave, reused again for `critDmgMult`):
- * a genuine pre-`statPointsAvailable` `bf-hp-heroes-v1` blob (no `statPointsAvailable` key on the
- * hero) must still load cleanly through `loadHeroes` / `normalizeHero` (the "user's existing
- * localStorage from a previous version" path), default `statPointsAvailable` to `0` (identity —
- * no banked points the reopt budget doesn't already know about), and never silently change an
- * existing user's respec recommendations on upgrade.
+ * `statPointsAvailable` backward-compat proof — follows the same additive-optional-field
+ * pattern as `luckFlatPct` (`AccountShared.tree`, MP5 F3) and `luck` before it
+ * (`storage-luck-compat.test.ts`): a genuine pre-`statPointsAvailable` `bf-hp-heroes-v1` blob
+ * (no `statPointsAvailable` key on the hero) must still load cleanly through `loadHeroes` /
+ * `normalizeHero` (the "user's existing localStorage from a previous version" path), default
+ * `statPointsAvailable` to `0`, and never silently change an existing user's respec
+ * recommendations on upgrade.
  *
- * Unlike `abissoBase`/`critDmgMult` (both on `AccountShared.tree`), this field lives on
- * `HeroRecord` itself — same additive-optional-field shape as `luck` before it
- * (`storage-luck-compat.test.ts`), just a single top-level default rather than three nested ones.
+ * This field lives on `HeroRecord` itself — a single top-level default rather than a nested one.
+ * It records what the SAVE reported at import (`point-inference.ts`'s budget-mismatch check
+ * reads it) and nothing more: the reopt budget is `reoptBudget(pts, level)`, which never
+ * consults it, so a legacy record missing the key cannot get a different search out of it.
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { findGateCandidate } from '@bombfarm/domain/points-reopt';
+import { findGateCandidate, optimizeBuild, reoptBudget } from '@bombfarm/domain/points-reopt';
 import { derive } from '@bombfarm/domain/derive';
 import { computeCombatMults } from '@bombfarm/domain/derive';
 import { abilityMods } from '@bombfarm/domain/model';
 import { zeroTeamBuffs } from '@bombfarm/domain/team-buffs';
-import { ZERO_PTS } from '@bombfarm/domain/planner-constants';
+import { SHEET_KEYS, ZERO_PTS } from '@bombfarm/domain/planner-constants';
 import { loadHeroes, saveHeroes } from '@/shared/lib/storage';
 
 function memoryLocalStorage() {
@@ -78,7 +79,7 @@ describe('legacy statPointsAvailable compat (unspent-points wave)', () => {
     expect(hero.sourceId).toBe(LEGACY_HERO_2.sourceId);
   });
 
-  it("the resulting reopt budget is exactly the same as an explicit statPointsAvailable: 0 — an existing user's recommendations cannot silently change on upgrade", () => {
+  it("the reopt budget does not read statPointsAvailable at all — an existing user's recommendations cannot silently change on upgrade, whatever the field says or omits", () => {
     localStorage.setItem('bf-hp-heroes-v1', JSON.stringify([LEGACY_HERO_2]));
     const hero = loadHeroes()[0];
 
@@ -86,8 +87,6 @@ describe('legacy statPointsAvailable compat (unspent-points wave)', () => {
     const mults = computeCombatMults({
       mods,
       teamBuffs: zeroTeamBuffs(),
-      treeGlassCannon: false,
-      treeTempoDobrado: false,
       extraDmgPct: 0,
     });
     const context = { restSeconds: 19 * 60, mitigation: 0.067, blastRange: 1, cycleModel: 'serial' as const, walkDelay: 0.15, drainMult: 1 };
@@ -104,7 +103,7 @@ describe('legacy statPointsAvailable compat (unspent-points wave)', () => {
       speedMult: mults.speedMult,
       critDmgMult: mults.critDmgMult,
       teamCritPctOfBase: 0,
-      treeSheet: { danoStatic: 1, energyPct: 0, speedPct: 0, critChancePct: 0, critDmgPct: 0, luckFlatPct: 0, critDmgMult: 1 },
+      treeSheet: { danoStatic: 1, energyPct: 0, speedPct: 0, critChancePct: 0, critDmgPct: 0, luckFlatPct: 0 },
       combatCritChancePctOfBase: mods.combatCritChancePctOfBase,
       penetrationPp: mods.penetrationPp,
       context,
@@ -112,29 +111,32 @@ describe('legacy statPointsAvailable compat (unspent-points wave)', () => {
       mitigationPct: 6.7,
     });
 
-    const withDefault = findGateCandidate({
-      pts: hero.pts,
-      effective: derived.effective,
-      effectiveDelta: derived.effectiveDelta,
-      context,
-      statPointsAvailable: hero.statPointsAvailable,
-    });
-    const withoutField = findGateCandidate({
-      pts: hero.pts,
-      effective: derived.effective,
-      effectiveDelta: derived.effectiveDelta,
-      context,
-    });
-    const withExplicitZero = findGateCandidate({
-      pts: hero.pts,
-      effective: derived.effective,
-      effectiveDelta: derived.effectiveDelta,
-      context,
-      statPointsAvailable: 0,
-    });
+    // `reoptBudget` reads `level` and `pts.luck` — never `statPointsAvailable`. So the field's
+    // absence from a legacy record costs that record nothing: this level-30 hero with 0 spent
+    // gets its full 30-point pool searched, exactly as a freshly imported one would.
+    expect(hero.statPointsAvailable).toBe(0);
+    expect(reoptBudget(hero.pts, hero.level)).toBe(30);
 
-    expect(withDefault).toEqual(withoutField);
-    expect(withDefault).toEqual(withExplicitZero);
+    const built = optimizeBuild({
+      pts: hero.pts,
+      effective: derived.effective,
+      effectiveDelta: derived.effectiveDelta,
+      context,
+      level: hero.level,
+    });
+    const placed = SHEET_KEYS.reduce((sum, key) => sum + built.pts[key], 0);
+    expect(placed + built.unallocated).toBe(30);
+
+    // And the reset gate stays quiet for it: nothing is placed, so there is nothing a reset
+    // could undo — this legacy record is not nagged to buy a respec it has no use for.
+    const gate = findGateCandidate({
+      pts: hero.pts,
+      effective: derived.effective,
+      effectiveDelta: derived.effectiveDelta,
+      context,
+      level: hero.level,
+    });
+    expect(gate.gainPct).toBe(0);
   });
 
   it('re-save emits "statPointsAvailable":0 and never creates a -v2 key', () => {

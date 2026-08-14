@@ -77,7 +77,10 @@ function solveSpentPoints(hero: SaveHeroSheet, tree: TreeSheetTotals): Record<Sh
 }
 
 describe('peelSheetStages — Birth + Δs sum to Total', () => {
-  const file = 'bellatrix-01-points-reset.json';
+  // MP5 F1 (AD-068 class (b) — structural): re-pointed onto the post-patch export. The claim
+  // — Birth + Δ columns sum to Total — is the purest invariant in the corpus and holds for
+  // any birth-capable hero, so it re-points cleanly with no loss.
+  const file = 'save-20260813-5heroes.json';
   const data = loadFixtureJson(file);
 
   it(`${file} :: every birth-capable hero — stages sum to composeSheetFromBirth`, () => {

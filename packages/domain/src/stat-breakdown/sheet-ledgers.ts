@@ -1,6 +1,5 @@
 import { POINT_GAIN } from '../model';
 import {
-  EPS,
   pushAdd,
   pushAddPctOfBase,
   pushBase,
@@ -13,8 +12,6 @@ import type {
   PipelineFacts,
   StatBreakdown,
 } from './types';
-
-const TEMPO_FACTOR = 1.33333;
 
 export function ledgerAttack(facts: PipelineFacts): StatBreakdown {
   const steps: LedgerStep[] = [];
@@ -29,18 +26,8 @@ export function ledgerAttack(facts: PipelineFacts): StatBreakdown {
 
 export function ledgerEnergy(facts: PipelineFacts): StatBreakdown {
   const steps: LedgerStep[] = [];
-  // AD-BSP-22 + correction 2: energia_add multiplies the Hero+Gear subtotal; Glass Cannon's
-  // energy ×0.5 (C15) now folds into the SAME sheet-level multiplier (applySkillTree) — it is
-  // no longer a later combat mult (computeCombatMults.energyMult is fixed at 1). Peel it back
-  // out of the observed `geared` value before the shared gear/tree split below (a pure
-  // multiplicative chain, so dividing it out is exact), then re-apply it as its own labelled
-  // step so pushBirthThenGear's 'gear' step still isolates pure gear, not Glass Cannon.
-  const glassCannonFactor = facts.treeGlassCannon ? 0.5 : 1;
-  const factsForSplit: PipelineFacts = facts.geared
-    ? { ...facts, geared: { ...facts.geared, energy: facts.geared.energy / glassCannonFactor } }
-    : facts;
-  pushBirthThenGear(steps, 'energy', factsForSplit, facts.treeEnergy);
-  pushMul(steps, 'tree', glassCannonFactor, facts.treeGlassCannon ? 'glassCannon' : undefined);
+  // AD-BSP-22: energia_add multiplies the Hero+Gear subtotal.
+  pushBirthThenGear(steps, 'energy', facts, facts.treeEnergy);
   pushAdd(steps, 'points', facts.pts.energy * facts.delta.energy);
   return { kind: 'ledger', total: facts.effective.energy, steps };
 }
@@ -48,23 +35,9 @@ export function ledgerEnergy(facts: PipelineFacts): StatBreakdown {
 export function ledgerSpeed(facts: PipelineFacts): StatBreakdown {
   const steps: LedgerStep[] = [];
   const baseSpeed = facts.naked.speed / (1 + facts.sheetOther.speed);
-  // Correction 3: Tempo Dobrado (V15) replaces the shared pool's implicit "1" with the
-  // measured 1.33333 literal — an ADDITIVE term on the SAME birth base as speed_add, applied
-  // once in applySkillTree. It is no longer a combat multiplier on the whole running total
-  // (computeCombatMults.speedMult no longer carries it). Peel it back out of the observed
-  // `geared` value before the shared gear/tree split below, so the 'gear' step still isolates
-  // pure gear and the speed_add percent stays exactly what the tree reported, uncontaminated —
-  // then re-apply the tempo amount as its own labelled step.
-  const tempoAmount = baseSpeed * ((facts.treeTempoDobrado ? TEMPO_FACTOR : 1) - 1);
-  const factsForSplit: PipelineFacts = facts.geared
-    ? { ...facts, geared: { ...facts.geared, speed: facts.geared.speed - tempoAmount } }
-    : facts;
-  // AD-BSP-19/22: speed_add joins the shared pool — pushBirthThenGear now carries the 'tree'
+  // AD-BSP-19/22: speed_add joins the shared pool — pushBirthThenGear carries the 'tree'
   // step, split from the observed gear delta rather than added on top of it (AC-41).
-  pushBirthThenGear(steps, 'speed', factsForSplit, facts.treeSpeed);
-  if (Math.abs(tempoAmount) >= EPS) {
-    pushAdd(steps, 'tree', tempoAmount, 'tempoDobrado');
-  }
+  pushBirthThenGear(steps, 'speed', facts, facts.treeSpeed);
   pushAddPctOfBase(
     steps,
     'points',
@@ -97,26 +70,9 @@ export function ledgerCritChance(facts: PipelineFacts): StatBreakdown {
 export function ledgerCritDmg(facts: PipelineFacts): StatBreakdown {
   const steps: LedgerStep[] = [];
   const baseCritDmg = facts.naked.critDmg / (1 + facts.sheetOther.critDmg);
-  // Correction 1: Glass Cannon's crit_dmg_mult (2 when C15 owned) replaces the shared pool's
-  // implicit "1" — an ADDITIVE term on the SAME base as crit_dmg_add, applied once in
-  // applySkillTree. It no longer lives in a later combat pushMul
-  // (computeCombatMults.critDmgMult is fixed at 1 now — the old form here scaled the WHOLE
-  // running total, including the ability/tree/point contributions, which is not what the game
-  // does). Peel it back out of the observed `geared` value before the shared gear/tree split
-  // below, so the 'gear' step still isolates pure gear (items never roll crit damage) and the
-  // crit_dmg_add percent stays exactly what the tree reported — then re-apply it as its own
-  // labelled step.
-  const critDmgMultFactor = facts.treeGlassCannon ? 2 : 1;
-  const glassCannonAmount = baseCritDmg * (critDmgMultFactor - 1);
-  const factsForSplit: PipelineFacts = facts.geared
-    ? { ...facts, geared: { ...facts.geared, critDmg: facts.geared.critDmg - glassCannonAmount } }
-    : facts;
   // AD-BSP-19/22: crit_dmg_add joins the shared pool the same way — 'tree' now lives inside
   // pushBirthThenGear (AC-41).
-  pushBirthThenGear(steps, 'critDmg', factsForSplit, facts.treeCritDmg);
-  if (Math.abs(glassCannonAmount) >= EPS) {
-    pushAdd(steps, 'tree', glassCannonAmount, 'glassCannon');
-  }
+  pushBirthThenGear(steps, 'critDmg', facts, facts.treeCritDmg);
   pushAddPctOfBase(
     steps,
     'points',

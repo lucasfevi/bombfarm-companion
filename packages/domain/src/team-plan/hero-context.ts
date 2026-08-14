@@ -1,6 +1,6 @@
 import { abilityMods, type AbilityMods } from '../model';
 import { emptySheetOther } from '../gear';
-import { composeSheetFromBirth, effectiveTreeSheetForAbisso, nakedFromBirth } from '../birth-sheet';
+import { composeSheetFromBirth, nakedFromBirth } from '../birth-sheet';
 import type { TeamPlanAccountInput, TeamPlanHeroInput, HeroPlanContext, ScopeState } from './types';
 
 export type TeamPlanBlocked = {
@@ -38,11 +38,10 @@ export function buildHeroPlanContext(
     birth: hero.birth,
     sheetOther: sheetOtherFromAbilities(hero.abilities),
     mods,
-    treeSheet: effectiveTreeSheetForAbisso(account.treeSheet, account.treeAbisso ?? false),
+    treeSheet: account.treeSheet,
     scope,
     abilities: hero.abilities,
     pts: hero.pts,
-    statPointsAvailable: hero.statPointsAvailable ?? 0,
   };
 }
 

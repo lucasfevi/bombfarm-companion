@@ -1,9 +1,19 @@
-// ACS-01/ACS-02: proves the source-neutral entry point split preserves `parseSaveFile`'s
-// observable behaviour byte-for-byte. Ordering matters here (tasks.md T4 step 1-2): these
-// digest/snapshot assertions are captured against the PRE-refactor `parseSaveFile` — they are
-// the behaviour-preservation baseline. This file is extended with parity/rejection/edge-case
-// assertions AFTER the refactor (step 3-4); those additions never touch the values below.
-import { createHash } from 'node:crypto';
+// ACS-01: proves the source-neutral entry point split preserves `parseSaveFile`'s observable
+// behaviour byte-for-byte — `parseSaveFile` and `parseAccountPayload` still agree on every
+// canonical fixture. MP5 F1 (`AD-068`): the pre-refactor inline `ParseResult` digests (ACS-02)
+// and the `vera-01-points-reset.json` warnings snapshot are DELETED here, not regenerated —
+// they were SHA-256 hashes / a golden snapshot of *our own output* captured against a
+// pre-refactor HEAD and a since-deleted pre-wipe account. Re-hashing or re-snapshotting them
+// against a new fixture would assert nothing at all (a value produced by running
+// `@bombfarm/domain` and pasted back in as an expected value is a violation, not a baseline).
+// The `__snapshots__/account-source-parity.test.ts.snap` file (whose only entry was the deleted
+// warnings snapshot) is deleted in the same commit.
+//
+// MP5 F4 (`AD-088`) narrows the equality claim: it now holds for every ACCEPTED input, not every
+// input full stop. `parseSaveFile` gates on `MSG-11`'s positive discriminator BEFORE delegating;
+// `parseAccountPayload` never gates. A `heroes`-carrying input lacking the new keys is exactly
+// where the two now deliberately diverge — asserted directly below, in both directions, rather
+// than left as an unstated exception to the headline equality claim.
 import { describe, expect, it } from 'vitest';
 import { parseAccountPayload, parseSaveFile } from '@bombfarm/domain/import-save';
 import { deriveAccountFidelity } from '@bombfarm/domain/account-fidelity';
@@ -11,40 +21,14 @@ import type { HeroRecord } from '@bombfarm/domain/shims/storage';
 import { loadFixtureJson } from './helpers/sheet-math-fixtures';
 import { minimalHero } from './helpers/minimal-save-hero';
 
-const CANONICAL_FIXTURES = [
-  'save-20260731-11heroes.json',
-  'save-20260801-crit-dmg-tree.json',
-  'phase-151.json',
-] as const;
+// MP5 F1 (AD-068 class (b) — structural): re-pointed onto the post-patch corpus. The claim
+// itself (`parseSaveFile` ≡ `parseAccountPayload`) is unchanged; only the fixture names moved.
+const CANONICAL_FIXTURES = ['save-20260813-5heroes.json', 'payload-20260812-8heroes.json'] as const;
 
-function digest(value: unknown): string {
-  return createHash('sha256').update(JSON.stringify(value)).digest('hex');
-}
-
-describe('ParseResult digest is unchanged from pre-refactor HEAD (ACS-02)', () => {
-  it('save-20260731-11heroes.json', () => {
-    const raw = loadFixtureJson('save-20260731-11heroes.json');
-    expect(digest(parseSaveFile(raw, []))).toMatchInlineSnapshot(`"61cb57c9a0acd5d3359bf73d4add3b2f7b06c0b79884f07304758aaa4d289b55"`);
-  });
-
-  it('save-20260801-crit-dmg-tree.json', () => {
-    const raw = loadFixtureJson('save-20260801-crit-dmg-tree.json');
-    expect(digest(parseSaveFile(raw, []))).toMatchInlineSnapshot(`"a803a37450e5f4ecec841ad6097b43549eb844d8399652d9d48ab58359562792"`);
-  });
-
-  it('phase-151.json', () => {
-    const raw = loadFixtureJson('phase-151.json');
-    expect(digest(parseSaveFile(raw, []))).toMatchInlineSnapshot(`"8f0e61b3d3738f395567358f77f8eb04bede3c13f04d11b71e77e6c8bdf694f1"`);
-  });
-});
-
-describe('warning strings and order are unchanged (ACS-02)', () => {
-  it('vera-01-points-reset.json', () => {
-    const raw = loadFixtureJson('vera-01-points-reset.json');
-    const { warnings } = parseSaveFile(raw, []);
-    expect(warnings).toMatchSnapshot();
-  });
-});
+/** MP5 F4: the minimal `skills` shape that satisfies `parseSaveFile`'s positive discriminator
+ *  (MSG-11), so a synthetic payload built for an UNRELATED assertion (e.g. missingBirthStats)
+ *  reaches that assertion through both entry points instead of being intercepted by the gate. */
+const POST_PATCH_SKILLS = { refunds: {}, totals: { vagas_campo: 0, bag_tabs_bonus: 0 } };
 
 describe('parseAccountPayload and parseSaveFile agree on every canonical fixture (ACS-01)', () => {
   for (const fixture of CANONICAL_FIXTURES) {
@@ -54,8 +38,8 @@ describe('parseAccountPayload and parseSaveFile agree on every canonical fixture
     });
   }
 
-  it('save-20260731-11heroes.json: identical ParseResult with a non-empty existing[] (isGearRefresh / matchedExistingId)', () => {
-    const raw = loadFixtureJson('save-20260731-11heroes.json');
+  it('save-20260813-5heroes.json: identical ParseResult with a non-empty existing[] (isGearRefresh / matchedExistingId)', () => {
+    const raw = loadFixtureJson('save-20260813-5heroes.json');
     const heroes = Array.isArray(raw.heroes) ? raw.heroes : [];
     const firstSourceId = heroes
       .map((hero) => (typeof hero === 'object' && hero !== null ? (hero as Record<string, unknown>).id : undefined))
@@ -119,6 +103,7 @@ describe('rejections are preserved through the seam (ACS-03)', () => {
   it('one hero missing birth_stats: missingBirthStats naming that hero, through both entry points', () => {
     const payload = {
       heroes: [{ id: '1', name: 'NoBirth' }, minimalHero('2', 'HasBirth')],
+      skills: POST_PATCH_SKILLS,
     };
     const viaFile = parseSaveFile(payload, []);
     const viaEntryPoint = parseAccountPayload(payload, []);
@@ -134,6 +119,7 @@ describe('rejections are preserved through the seam (ACS-03)', () => {
         minimalHero('2', 'HasBirth'),
         { id: '3', name: 'NoBirthB' },
       ],
+      skills: POST_PATCH_SKILLS,
     };
     const viaFile = parseSaveFile(payload, []);
     const viaEntryPoint = parseAccountPayload(payload, []);
@@ -143,18 +129,49 @@ describe('rejections are preserved through the seam (ACS-03)', () => {
   });
 });
 
+describe('MP5 F4 (AD-088): the deliberate parseSaveFile / parseAccountPayload divergence', () => {
+  it('a heroes-carrying input lacking the new keys: parseSaveFile rejects unsupportedSaveShape, parseAccountPayload still runs its own checks — asserted in BOTH directions', () => {
+    // No `skills` at all — carries `heroes` (so it is not notASaveFile) but is missing every
+    // one of MSG-11's positive-discriminator keys.
+    const payload = { heroes: [minimalHero('1', 'HasBirth')] };
+
+    const viaFile = parseSaveFile(payload, []);
+    const viaEntryPoint = parseAccountPayload(payload, []);
+
+    // Direction 1: parseSaveFile gates BEFORE reaching any per-hero work — zero candidates,
+    // zero inventory, the new reason, no diagnosis lost (it lands in warnings, MSG-15).
+    expect(viaFile.rejected).toEqual({ reason: 'unsupportedSaveShape', heroNames: [] });
+    expect(viaFile.candidates).toEqual([]);
+    expect(viaFile.inventory).toEqual([]);
+    expect(viaFile.warnings.some((warning) => warning.includes('skills.refunds'))).toBe(true);
+
+    // Direction 2: parseAccountPayload never gates — this exact payload parses normally through
+    // the payload entry point (a fully usable hero, no birth-stats problem, no `unsupportedSaveShape`
+    // in its vocabulary at all).
+    expect(viaEntryPoint.rejected).toBeNull();
+    expect(viaEntryPoint.candidates.length).toBe(1);
+
+    // The two entry points therefore disagree on THIS input — the headline equality claim above
+    // is narrowed to accepted inputs precisely because of cases like this one.
+    expect(viaFile).not.toEqual(viaEntryPoint);
+  });
+});
+
 describe('edge cases (spec.md Edge Cases)', () => {
   it('items absent: existing warning, parsing continues', () => {
-    const payload = { heroes: [minimalHero('1')] };
+    const payload = { heroes: [minimalHero('1')], skills: POST_PATCH_SKILLS };
     const { warnings, rejected, candidates } = parseSaveFile(payload, []);
     expect(rejected).toBeNull();
     expect(candidates).toHaveLength(1);
     expect(warnings.some((warning) => warning.includes('no "items" list'))).toBe(true);
   });
 
-  it('skills/casa absent: tree/houseIdx/houseLevel stay null (MOD-36)', () => {
+  // MP5 F4: `skills` entirely absent is now definitionally `unsupportedSaveShape` through
+  // `parseSaveFile` (MSG-11) — this null-defaulting behaviour is `parseAccountPayload`'s
+  // territory now, exactly like a degraded/omitted poll section (AD-036), not a file's.
+  it('skills/casa absent: tree/houseIdx/houseLevel stay null (MOD-36) — via parseAccountPayload, the entry point that legitimately omits sections', () => {
     const payload = { heroes: [minimalHero('1')] };
-    const { account } = parseSaveFile(payload, []);
+    const { account } = parseAccountPayload(payload, []);
     expect(account.tree).toBeNull();
     expect(account.houseIdx).toBeNull();
     expect(account.houseLevel).toBeNull();
@@ -177,7 +194,7 @@ describe('edge cases (spec.md Edge Cases)', () => {
   });
 
   it('a resolved-but-absent section warns without changing warnings on the file path (payload.fidelity undefined)', () => {
-    const raw = loadFixtureJson('save-20260731-11heroes.json');
+    const raw = loadFixtureJson('save-20260813-5heroes.json');
     const { warnings } = parseSaveFile(raw, []);
     // The file adapter never sets `fidelity`, so the resolved-but-absent warning can never
     // fire on this path — provably empty of that warning text.

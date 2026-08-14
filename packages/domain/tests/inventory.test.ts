@@ -20,17 +20,21 @@ function firstGearItem(raw: unknown): Record<string, unknown> {
 }
 
 describe('mapInventoryItem', () => {
-  it('maps the fixture first gear item to ember_calca with equipped metadata', () => {
-    const raw = loadFixtureJson('save-20260731-11heroes.json');
+  // MP5 F1 (AD-068 class (a) — read from the capture): re-pointed onto
+  // payload-20260812-8heroes.json, whose first category:0 item is a different real gear
+  // item (ember_luva, not ember_calca) — every expected value below is read from it, not
+  // carried over from the deleted fixture.
+  it('maps the fixture first gear item to ember_luva with equipped metadata', () => {
+    const raw = loadFixtureJson('payload-20260812-8heroes.json');
     const item = mapInventoryItem(firstGearItem(raw));
     expect(item).not.toBeNull();
-    expect(item!.defId).toBe('ember_calca');
-    expect(item!.rarityIdx).toBe(2);
+    expect(item!.defId).toBe('ember_luva');
+    expect(item!.rarityIdx).toBe(0);
     expect(item!.level).toBe(10);
-    expect(item!.upgrade).toBe(8);
+    expect(item!.upgrade).toBe(0);
     expect(item!.equipped).toBe(true);
-    expect(item!.equippedBy).toBe('43040');
-    expect(item!.slot).toBe('calca');
+    expect(item!.equippedBy).toBe('555');
+    expect(item!.slot).toBe('luva');
     expect(item!.defResolved).toBe(true);
     expect(item!.marketBlocked).toBe(false);
   });

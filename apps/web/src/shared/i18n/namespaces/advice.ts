@@ -27,8 +27,9 @@ export const en = {
   colPerPt: "/pt",
   colAfter: "After",
   colPreview: "Preview",
-  // Banked stat points from the save, not reflected in the spent/level counter next to it —
-  // {count} is HeroRecord.statPointsAvailable, shown only when > 0.
+  // Names the slack the spent/level counter next to it only implies — {count} is the live
+  // `level - spentDelta`, shown only when > 0. Not HeroRecord.statPointsAvailable: that is an
+  // import-time snapshot which would keep claiming "+46 unspent" after those 46 were spent.
   pointsUnspentBanked: "+{count} unspent",
   // BSPW4-15/AC-04 — Tier 1 (the automatic gate) is a lower bound: "at least ~{pct}%", never a
   // bare percentage or a future-tense promise, and it names Optimize build as the definitive
@@ -42,7 +43,10 @@ export const en = {
   optimizeBuildResultLine: "Best allocation this search found: about {pct}% more sustained DPS.",
   optimizeBuildKeptCurrent: "This search did not beat your current allocation.",
   optimizeBuildBudgetExhausted: "The search was bounded and stopped early — this is the best it found within that budget.",
-  optimizeBuildNoBudgetReason: "Nothing spent to move yet.",
+  // Shown only when `reoptBudget` is 0 — the hero has no level pool AND nothing placed in the
+  // seven DPS keys. NOT "nothing spent": a hero with 0 spent and a level to place is exactly
+  // the case the button is enabled for.
+  optimizeBuildNoBudgetReason: "No points to place at this level yet.",
   optimizeBuildHeroDisabledNote:
     "This hero is disabled, so it is not included in automatic respec recommendations.",
   previewApplyButton: "Apply preview",
@@ -70,7 +74,7 @@ export const en = {
       h: "1 · From your birth roll to effective stats",
       p: [
         "Your birth roll — the hero's hidden per-rarity stats — is the starting point, read straight from your save. Stars multiply intrinsic Attack, Energy, Crit %, Crit Dmg, Penetration and CDR by (1 + 0.5 × ★); Speed is unchanged. From there the sheet is built from four source lines, matching the game's own math: Hero (birth roll, level, stars, spent points), Gear (equipped items), Ability (sheet abilities like Keen Eye, Diamond Tip, Brutal Strike) and Skill tree (applied once). Luck is an eighth sheet stat — it feeds loot odds, not this DPS math, so it never appears in the rankings below.",
-        "Skill points add a fixed share per point: Attack gains +10 × level power (+4% per level from the wiki) or +8 energy per point, while the % stats add a fixed share of the base roll per point (Speed 2%, Crit chance 2%, Crit damage 8%, Penetration 2%, CDR 10%, Luck 3%). Crit chance caps at 100%; CDR caps at 80% (20% of cycle remains). The skill tree (total damage already includes squad + compound/multiplied damage; also crit chance, crit damage, speed, energy, Luck as a flat add, plus Glass Cannon / Tempo Dobrado keystones) applies once, then abilities and team buffs multiply in. Account shares House, Skill tree and Team buffs across heroes; your farm phase (and its mitigation) sync from the Phases page via Use as farm phase. Panel Effective stats shows the resulting combat sheet plus Fuse and Rest.",
+        "Skill points add a fixed share per point: Attack gains +10 × level power (+4% per level from the wiki) or +8 energy per point, while the % stats add a fixed share of the base roll per point (Speed 2%, Crit chance 2%, Crit damage 8%, Penetration 2%, CDR 10%, Luck 3%). Crit chance caps at 100%; CDR caps at 80% (20% of cycle remains). The skill tree (total damage already includes squad + compound/multiplied damage; also crit chance, crit damage, speed, energy, Luck as a flat add) applies once, then abilities and team buffs multiply in. Account shares House, Skill tree and Team buffs across heroes; your farm phase (and its mitigation) sync from the Phases page via Use as farm phase. Panel Effective stats shows the resulting combat sheet plus Fuse and Rest.",
         "The read-only Stats panel on the Points tab breaks that same birth-to-Total chain into columns instead of four bundled lines: Birth, then the marginal contribution of each step — Δ level, Δ stars, Δ ability, Δ gear, Δ points, Δ tree — summing to Total, the same number the rest of this math uses everywhere else. It moved here from the Gear tab and is no longer something you type in; Gear only holds your equipped items now.",
       ],
       code: "birth roll × stars → Hero + Gear + Ability\nafter points = + points × per-point gain\neffective = × skill tree (once) × abilities × team buffs",
@@ -122,7 +126,7 @@ export const en = {
     {
       h: "8 · What the app does not model",
       p: [
-        "Loot abilities (Lapidary Eye, Gold Vein), Hero Hunter, Ghost and Baton Pass are outside the DPS math. Ability crit bonuses apply as % of the base roll, per the Heroes page rule. Glass Cannon’s +25% crit chance is not added again in combat — when Abisso is off it is already inside imported crit_chance_add; when Abisso is on the export zeroes Crit tree adds and combat ignores Glass Cannon’s ×2 crit while keeping energy ×0.5.",
+        "Loot abilities (Lapidary Eye, Gold Vein), Hero Hunter, Ghost and Baton Pass are outside the DPS math. Ability crit bonuses apply as % of the base roll, per the Heroes page rule.",
         "If in-game damage still diverges from the model, check Team buffs in Account (another hero’s War Cry is a common ~20% / 40% gap).",
       ],
     },
@@ -173,7 +177,7 @@ export const pt: typeof en = {
   optimizeBuildResultLine: "Melhor alocação encontrada por essa busca: cerca de {pct}% a mais de DPS efetivo.",
   optimizeBuildKeptCurrent: "Essa busca não superou sua alocação atual.",
   optimizeBuildBudgetExhausted: "A busca tinha um limite e parou antes do fim — este é o melhor resultado dentro desse limite.",
-  optimizeBuildNoBudgetReason: "Nada gasto para realocar ainda.",
+  optimizeBuildNoBudgetReason: "Nenhum ponto para alocar neste nível ainda.",
   optimizeBuildHeroDisabledNote:
     "Este herói está desativado, então não entra nas recomendações automáticas de reset.",
   previewApplyButton: "Aplicar prévia",
@@ -201,7 +205,7 @@ export const pt: typeof en = {
       h: "1 · Do roll de nascimento aos stats efetivos",
       p: [
         "O roll de nascimento do herói — os stats ocultos por raridade — é o ponto de partida, lido direto do seu save. Estrelas multiplicam Ataque, Energia, Chance de crítico, Dano crítico, Penetração e Red. de cooldown intrínsecos por (1 + 0,5 × ★); Velocidade não muda. A partir daí a ficha é construída em quatro linhas de origem, iguais às do próprio jogo: Herói (roll de nascimento, nível, estrelas, pontos gastos), Equipamento (itens equipados), Habilidade (habilidades de ficha como Olho Clínico, Ponta de Diamante, Golpe Brutal) e Árvore de habilidades (aplicada uma única vez). Sorte é um oitavo stat de ficha — alimenta a sorte de loot, não essa conta de DPS, então nunca aparece nos rankings abaixo.",
-        "Os pontos somam uma fração fixa por ponto: Ataque ganha +10 × poder de nível (+4% por nível na wiki) ou +8 de energia por ponto; os stats de % ganham uma fração fixa do roll base por ponto (Velocidade 2%, Chance de crítico 2%, Dano crítico 8%, Penetração 2%, Redução de recarga 10%, Sorte 3%). Chance de crítico tem teto de 100%; redução de recarga tem teto de 80% (20% do ciclo permanece). A árvore de habilidades (o dano total já inclui dano de esquadrão + dano composto/multiplicado; também chance de crítico, dano crítico, velocidade, energia, Sorte como soma fixa, mais Glass Cannon / Tempo Dobrado) aplica uma única vez, depois habilidades e buffs de time multiplicam o resultado. A Conta compartilha Casa, Árvore de habilidades e Buffs de time entre heróis; a fase de farm (e a mitigação) sincronizam pela página Fases com Usar como fase de farm. O painel Stats efetivos mostra a ficha de combate resultante, além de Pavio e Descanso.",
+        "Os pontos somam uma fração fixa por ponto: Ataque ganha +10 × poder de nível (+4% por nível na wiki) ou +8 de energia por ponto; os stats de % ganham uma fração fixa do roll base por ponto (Velocidade 2%, Chance de crítico 2%, Dano crítico 8%, Penetração 2%, Redução de recarga 10%, Sorte 3%). Chance de crítico tem teto de 100%; redução de recarga tem teto de 80% (20% do ciclo permanece). A árvore de habilidades (o dano total já inclui dano de esquadrão + dano composto/multiplicado; também chance de crítico, dano crítico, velocidade, energia, Sorte como soma fixa) aplica uma única vez, depois habilidades e buffs de time multiplicam o resultado. A Conta compartilha Casa, Árvore de habilidades e Buffs de time entre heróis; a fase de farm (e a mitigação) sincronizam pela página Fases com Usar como fase de farm. O painel Stats efetivos mostra a ficha de combate resultante, além de Pavio e Descanso.",
         "O painel Atributos, agora na aba Pontos, quebra essa mesma cadeia do nascimento ao Total em colunas em vez de quatro linhas agrupadas: Ao nascer, depois a contribuição marginal de cada etapa — Δ nível, Δ estrela, Δ habilidade, Δ gear, Δ pontos, Δ árvore — somando até o Total, o mesmo número que o resto dessa conta usa em todo o resto. Ele veio da aba Equipamento e não é mais algo que você digita; Equipamento agora só guarda seus itens equipados.",
       ],
       code: "roll de nascimento × estrelas → Herói + Equipamento + Habilidade\ndepois dos pontos = + pontos × ganho por ponto\nefetivo = × árvore de habilidades (uma vez) × habilidades × buffs",
@@ -253,7 +257,7 @@ export const pt: typeof en = {
     {
       h: "8 · O que o app não modela",
       p: [
-        "Habilidades de loot (Olho de Lapidador, Veia de Ouro), Caça-Hero, Fantasma e Passagem de Bastão ficam fora da conta de DPS. Bônus de crítico de habilidades entram como % do roll base, pela regra da página Heróis. Os +25% de chance de crítico do Glass Cannon não são somados de novo no combate — com Abisso desligado já vêm no crit_chance_add importado; com Abisso ligado o export zera os adds de Crítico da árvore e o combate ignora o ×2 de crítico do Glass Cannon, mantendo a energia ×0.5.",
+        "Habilidades de loot (Olho de Lapidador, Veia de Ouro), Caça-Hero, Fantasma e Passagem de Bastão ficam fora da conta de DPS. Bônus de crítico de habilidades entram como % do roll base, pela regra da página Heróis.",
         "Se o dano no jogo ainda divergir do modelo, confira Buffs de time em Conta (Grito de Guerra de outro herói é um gap comum de ~20% / 40%).",
       ],
     },

@@ -1,0 +1,28 @@
+{
+  "_meta": {
+    "purpose": "MP5 F4 rejection fixture — synthetic, hand-written, never a game observation. Demonstrates parseSaveFile's positive discriminator (MSG-11) rejecting a pre-2026-08-13-patch save shape: carries the three retired fields below on skills.totals, carries none of the three post-update keys (skills.refunds, skills.totals.vagas_campo, skills.totals.bag_tabs_bonus)."
+  },
+  "heroes": [
+    {
+      "id": "1",
+      "name": "Fixture",
+      "birth_stats": {
+        "dmg": 1,
+        "energia": 1,
+        "speed": 1,
+        "penetration": 0,
+        "crit_chance": 0,
+        "cooldown_reduction": 0,
+        "crit_dmg": 1,
+        "luck": 0
+      }
+    }
+  ],
+  "skills": {
+    "totals": {
+      "keystones": [],
+      "abisso_base": 0,
+      "crit_dmg_mult": 1
+    }
+  }
+}

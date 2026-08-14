@@ -14,6 +14,7 @@ import type { LogPort, OpenResult } from './index.js';
 import type { FsPort } from './legacy-snapshot.js';
 import { readLegacySnapshotPayload } from './legacy-snapshot.js';
 import { mergeStoredIntoLive } from './merge-account.js';
+import { judgeStoredSection } from './stale-sections.js';
 
 export interface AccountStoreDeps {
   log?: LogPort;
@@ -86,6 +87,12 @@ function unavailableRestore(status: AccountStoreStatus, reason: AccountStoreReas
 export function createAccountStore(open: OpenResult, deps: AccountStoreDeps = {}): AccountStore {
   const log = deps.log ?? NOOP_LOG;
   const db = open.db;
+  // Belt-and-braces guard (see fix/fixture-tick-after-db-close): `close()` below only ever
+  // runs once shutdown ordering has already stopped every producer, so this should never
+  // actually trip in practice — but a stray late caller (a scheduled tick that fired despite
+  // `stop()`, an in-flight async cycle that resumed after an abort) must get a quiet
+  // "nothing to do" instead of `db.prepare(...)` throwing "database is not open" uncaught.
+  let closed = false;
 
   function getBoundAccountId(): string | null {
     return getMeta('account_id');
@@ -99,6 +106,12 @@ export function createAccountStore(open: OpenResult, deps: AccountStoreDeps = {}
   }
 
   function restore(expectedAccountId: string | null = null): RestoredAccount {
+    if (closed) {
+      // The store is quitting — there is no `AccountStoreReason` for "closed after shutdown
+      // began" (and no caller left to show one to); report the same shape a missing binding
+      // would, minus a reason that would misleadingly suggest a binding problem.
+      return unavailableRestore('unavailable', null);
+    }
     if (open.status !== 'ok' || !db) {
       return unavailableRestore(open.status, open.reason);
     }
@@ -114,6 +127,7 @@ export function createAccountStore(open: OpenResult, deps: AccountStoreDeps = {}
     const fidelity = {} as Record<AccountSection, StoredSectionFidelity>;
     const sectionBodies: Partial<Record<AccountSection, unknown>> = {};
     let anyRowPresent = false;
+    const staleSections: AccountSection[] = [];
 
     for (const section of ACCOUNT_SECTIONS) {
       const row = readSectionRow(key, section);
@@ -130,8 +144,26 @@ export function createAccountStore(open: OpenResult, deps: AccountStoreDeps = {}
         continue;
       }
 
+      const verdict = judgeStoredSection(section, decoded.body);
+      if (verdict.drop) {
+        log.warn({
+          scope: 'storage',
+          event: 'account.row_dropped',
+          section,
+          reason: 'stale_retired_vocabulary',
+          triggers: verdict.triggers,
+        });
+        fidelity[section] = { status: 'missing' };
+        staleSections.push(section);
+        continue;
+      }
+
       fidelity[section] = { status: 'stale', capturedAt: row.captured_at };
       sectionBodies[section] = decoded.body;
+    }
+
+    if (staleSections.length > 0) {
+      deleteStaleSections(key, staleSections);
     }
 
     if (!anyRowPresent) {
@@ -146,6 +178,32 @@ export function createAccountStore(open: OpenResult, deps: AccountStoreDeps = {}
         fidelity: StoredAccountFidelity;
       },
     };
+  }
+
+  /**
+   * MP5 F4 (`MSG-24`): runs after the per-section loop, one `BEGIN`/`COMMIT`, wrapped in
+   * `try/catch`. A failed delete logs and changes NO verdict — every section in `sections` has
+   * already been reported `missing` above and its body was never placed in `sectionBodies`, so a
+   * row surviving on disk here is inert until the next `restore()` re-judges and retries the
+   * delete. `restore()` never serves a body it decided not to trust, and never throws into the
+   * caller.
+   */
+  function deleteStaleSections(key: string, sections: readonly AccountSection[]): void {
+    if (!db) return;
+    try {
+      db.exec('BEGIN');
+      for (const section of sections) {
+        db.prepare('DELETE FROM account_section WHERE account_key = ? AND section = ?').run(key, section);
+      }
+      db.exec('COMMIT');
+    } catch (err) {
+      try {
+        db.exec('ROLLBACK');
+      } catch {
+        // best-effort rollback of an already-broken transaction
+      }
+      log.error({ scope: 'storage', event: 'account.row_drop_delete_failed', error: String(err) });
+    }
   }
 
   function setMeta(key: string, value: string): void {
@@ -173,7 +231,7 @@ export function createAccountStore(open: OpenResult, deps: AccountStoreDeps = {}
    * back the whole poll, leaving every previously stored section untouched.
    */
   function persist(payload: AccountPayload, opts: PersistOpts = {}): PersistResult {
-    if (!db) {
+    if (closed || !db) {
       return { written: [] };
     }
 
@@ -268,6 +326,14 @@ export function createAccountStore(open: OpenResult, deps: AccountStoreDeps = {}
     persist,
     commit,
     close() {
+      // Idempotent — `node:sqlite`'s `DatabaseSync.close()` throws if the connection is
+      // already closed, and `before-quit` firing more than once (Electron does not guarantee
+      // exactly-once) must never turn a repeat `close()` into the same uncaught-exception
+      // shape this fix removes from the tick path. `closed` is set before `db.close()` runs
+      // (not after), since any call already past this point re-enters `persist`/`restore`
+      // synchronously.
+      if (closed) return;
+      closed = true;
       db?.close();
     },
   };

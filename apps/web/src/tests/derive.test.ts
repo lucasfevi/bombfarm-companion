@@ -35,11 +35,10 @@ const ZERO_TREE: TreeSheetTotals = {
   critChancePct: 0,
   critDmgPct: 0,
   luckFlatPct: 0,
-  critDmgMult: 1,
 };
 
 describe('computeCombatMults', () => {
-  it('applies team buffs, tree toggles, and ability mods', () => {
+  it('applies team buffs and ability mods', () => {
     const mods = abilityMods({ grito_guerra: 0 });
     mods.attackMult = 1.1;
     mods.speedMult = 1.05;
@@ -58,8 +57,6 @@ describe('computeCombatMults', () => {
     const m = computeCombatMults({
       mods,
       teamBuffs,
-      treeGlassCannon: true,
-      treeTempoDobrado: true,
       extraDmgPct: 10,
     });
 
@@ -74,9 +71,8 @@ describe('computeCombatMults', () => {
     // ×1.33333 to applySkillTree) — just +5% own + +5% team, same shape as attackMult.
     expect(m.speedMult).toBeCloseTo(1.1, 6);
     expect(m.gateAttackMult).toBeCloseTo(1.35, 6); // +20% own + +15% team
-    // Glass Cannon's energy ×0.5 / crit-damage ×2 are ALSO gone from here (same correction) —
-    // both are sheet-layer factors now (TreeSheetTotals.glassCannon / .critDmgMult, applied
-    // once in applySkillTree), so this function returns identity regardless of the tree flags.
+    // Glass Cannon no longer exists (MP5 removed all five keystones; TreeSheetTotals.glassCannon
+    // was deleted with it, MP5 F2) — energyMult/critDmgMult are permanent identity here now.
     expect(m.energyMult).toBe(1);
     expect(m.critDmgMult).toBe(1);
     // REWRITTEN (was `1.25 * 1.15 * 1.1` — the 1.25 was `treeDanoTotal`, which no longer
@@ -85,20 +81,21 @@ describe('computeCombatMults', () => {
     expect(m.dmgMult).toBeCloseTo(1.15 * 1.1, 6);
   });
 
-  it('the ComputeCombatMultsInput type no longer accepts a tree damage/energy term (AC-29)', () => {
-    // Compile-time guard: `treeDanoTotal` / `treeEnergy` must be gone from the type, not
-    // merely unused. This assigns a value of the exact input shape `computeCombatMults`
-    // accepts; adding either field back would fail `pnpm typecheck`, not this assertion.
+  it('the ComputeCombatMultsInput type no longer accepts a tree damage/energy/keystone term (AC-29, MP5 F3)', () => {
+    // Compile-time guard: `treeDanoTotal` / `treeEnergy` / `treeGlassCannon` / `treeTempoDobrado`
+    // must be gone from the type, not merely unused. This assigns a value of the exact input
+    // shape `computeCombatMults` accepts; adding any of them back would fail `pnpm typecheck`,
+    // not this assertion.
     const mods = abilityMods({});
     const input: Parameters<typeof computeCombatMults>[0] = {
       mods,
       teamBuffs: zeroTeamBuffs(),
-      treeGlassCannon: false,
-      treeTempoDobrado: false,
       extraDmgPct: 0,
     };
     expect('treeDanoTotal' in input).toBe(false);
     expect('treeEnergy' in input).toBe(false);
+    expect('treeGlassCannon' in input).toBe(false);
+    expect('treeTempoDobrado' in input).toBe(false);
   });
 
   it('stacks own Grito + other heroes’ Grito additively (Brenna/Dara math-check)', () => {
@@ -121,8 +118,6 @@ describe('computeCombatMults', () => {
     const m = computeCombatMults({
       mods,
       teamBuffs: { ...zeroTeamBuffs(), grito_guerra: 20 },
-      treeGlassCannon: false,
-      treeTempoDobrado: false,
       extraDmgPct: 0,
     });
     expect(mods.attackMult).toBeCloseTo(1.2, 6);
@@ -145,8 +140,6 @@ describe('computeCombatMults', () => {
     const m = computeCombatMults({
       mods,
       teamBuffs: { ...zeroTeamBuffs(), grito_guerra: 100 },
-      treeGlassCannon: false,
-      treeTempoDobrado: false,
       extraDmgPct: 0,
     });
     expect(m.attackMult).toBe(2);
@@ -157,8 +150,6 @@ describe('computeCombatMults', () => {
     const m = computeCombatMults({
       mods,
       teamBuffs: zeroTeamBuffs(),
-      treeGlassCannon: false,
-      treeTempoDobrado: false,
       extraDmgPct: 0,
     });
     expect(m.attackMult).toBe(1);
@@ -178,8 +169,6 @@ describe('derive', () => {
     const mults = computeCombatMults({
       mods: abilityMods({}),
       teamBuffs: zeroTeamBuffs(),
-      treeGlassCannon: false,
-      treeTempoDobrado: false,
       extraDmgPct: 0,
     });
 
@@ -219,8 +208,6 @@ describe('derive', () => {
     const mults = computeCombatMults({
       mods: abilityMods({}),
       teamBuffs: zeroTeamBuffs(),
-      treeGlassCannon: false,
-      treeTempoDobrado: false,
       extraDmgPct: 0,
     });
 
@@ -306,15 +293,19 @@ describe('derive', () => {
 
   it('AC-30/AC-31: effective ≡ the real save sheet at pts=0 — the tree is applied exactly once (BSP-22)', () => {
     // The load-bearing double-count regression guard (M1/M2 in spec.md's discrimination note).
-    // `save-20260801-crit-dmg-tree.json`'s Bellatrix is the ONLY fixture that can discriminate
-    // the crit-damage double (crit_dmg_add is 0 everywhere else) — driving this from
-    // `bellatrix-02-pts-each-1.json` instead would make M2 survive on both fixtures.
-    const raw = loadFixtureJson('save-20260801-crit-dmg-tree.json');
-    const bellatrix = extractHero(raw, 'Bellatrix');
+    // MP5 F1 (AD-068 class (a) + (b)): re-pointed onto save-20260813-5heroes.json's Bellatrix
+    // (8/8 geared) — the only post-patch corpus hero pattern available. RECORDED LOSS: every
+    // post-patch capture has `crit_dmg_add: 0` (skills.totals), so this can no longer
+    // discriminate a crit-damage-specific double-count the way the deleted crit-dmg-tree
+    // fixture could (its `critDmgPct` was nonzero); the `critChance`/`energy`/`speed`/`attack`
+    // axes below still discriminate (their tree percentages are nonzero on this hero). See
+    // docs/fixture-corpus.md for the loss record.
+    const raw = loadFixtureJson('save-20260813-5heroes.json');
+    const bellatrix = extractHero(raw, 'Bellatrix', 42);
     const totals = (raw.skills as { totals: Record<string, unknown> }).totals;
     const treeSheet = treeTotalsFromSave(totals);
-    expect(treeSheet.danoStatic).toBeCloseTo(1.78324567735483, 9);
-    expect(treeSheet.critDmgPct).toBeCloseTo(19.6153846, 6);
+    expect(treeSheet.danoStatic).toBeCloseTo(1.2094754277978, 9);
+    expect(treeSheet.critDmgPct).toBe(0);
 
     // geared = the real, tree-inclusive save sheet; pts = 0 — so `adjusted === geared`
     // regardless of `naked`, and with every combat mult at identity, `effective` can only
@@ -322,8 +313,6 @@ describe('derive', () => {
     const mults = computeCombatMults({
       mods: abilityMods({}),
       teamBuffs: zeroTeamBuffs(),
-      treeGlassCannon: false,
-      treeTempoDobrado: false,
       extraDmgPct: 0,
     });
     expect(mults.attackMult).toBe(1);
@@ -370,19 +359,18 @@ describe('derive', () => {
     expect(result.hit).toBeCloseTo(expectedHit, 6);
   });
 
-  it('AC-32: dps for save-20260801’s Bellatrix drops by exactly dmg_static vs the old double-counting form', () => {
-    const raw = loadFixtureJson('save-20260801-crit-dmg-tree.json');
-    const bellatrix = extractHero(raw, 'Bellatrix');
+  it('AC-32: dps for save-20260813’s Bellatrix drops by exactly dmg_static vs the old double-counting form', () => {
+    // MP5 F1 (AD-068 class (a)): re-pointed onto save-20260813-5heroes.json's Bellatrix.
+    const raw = loadFixtureJson('save-20260813-5heroes.json');
+    const bellatrix = extractHero(raw, 'Bellatrix', 42);
     const totals = (raw.skills as { totals: Record<string, unknown> }).totals;
     const treeSheet = treeTotalsFromSave(totals);
-    const danoStatic = 1.78324567735483;
+    const danoStatic = 1.2094754277978;
     expect(treeSheet.danoStatic).toBeCloseTo(danoStatic, 9);
 
     const mults = computeCombatMults({
       mods: abilityMods({}),
       teamBuffs: zeroTeamBuffs(),
-      treeGlassCannon: false,
-      treeTempoDobrado: false,
       extraDmgPct: 0,
     });
 
@@ -420,7 +408,7 @@ describe('derive', () => {
     // value from the SAME independent `sustainedDps` call, not from a second `derive()` pass.
     const doubleCountedDps = sustainedDps(fixed.effective, deriveArgs.context) * mults.dmgMult * danoStatic;
     expect(doubleCountedDps / fixed.dps).toBeCloseTo(danoStatic, 9);
-    expect(fixed.dps).toBeCloseTo(doubleCountedDps / 1.78324567735483, 6);
+    expect(fixed.dps).toBeCloseTo(doubleCountedDps / danoStatic, 6);
   });
 
   it('AC-33: delta.attack scales by treeSheet.danoStatic (the sheet the delta is added to is post-dmg_static)', () => {
@@ -509,7 +497,6 @@ describe('derive', () => {
       critChancePct: 40,
       critDmgPct: 20,
       luckFlatPct: 5,
-      critDmgMult: 1,
     };
     const result = derive({
       geared: naked,

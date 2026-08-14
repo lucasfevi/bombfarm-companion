@@ -13,11 +13,11 @@ export default meta;
 type Story = StoryObj<typeof meta>;
 
 export const Off: Story = {
-  args: { 'aria-label': 'Glass Cannon', defaultChecked: false },
+  args: { 'aria-label': 'Enable hero', defaultChecked: false },
 };
 
 export const On: Story = {
-  args: { 'aria-label': 'Glass Cannon', defaultChecked: true },
+  args: { 'aria-label': 'Enable hero', defaultChecked: true },
 };
 
 export const InStackRow: Story = {
@@ -28,14 +28,14 @@ export const InStackRow: Story = {
         <Fields layout="stack">
           <label>
             <span>
-              Glass Cannon
-              <span>critical damage ×2 · energy ×0.5</span>
+              Enable hero
+              <span>counts toward Team buffs auto-fill</span>
             </span>
-            <div data-keystone-control className="flex items-center justify-end gap-2">
+            <div className="flex items-center justify-end gap-2">
               <span className="min-w-[2.25rem] text-right text-[11px] font-semibold text-muted">
                 {on ? 'On' : 'Off'}
               </span>
-              <Switch checked={on} onCheckedChange={setOn} aria-label="Glass Cannon" />
+              <Switch checked={on} onCheckedChange={setOn} aria-label="Enable hero" />
             </div>
           </label>
         </Fields>

@@ -126,10 +126,18 @@ describe('runFidelityGate — degraded input short-circuits before any parsing (
 });
 
 describe('provenance ladder (design §1.2, AD-026) — cannot be neutered', () => {
-  it('has exactly two keys, both registering a non-empty assertion list', () => {
-    expect(Object.keys(PROVENANCE_LADDER).sort()).toEqual(['export-derived', 'memory-assembled']);
+  it('has exactly three keys, each registering a non-empty assertion list', () => {
+    expect(Object.keys(PROVENANCE_LADDER).sort()).toEqual(['api-assembled', 'export-derived', 'memory-assembled']);
     expect(PROVENANCE_LADDER['export-derived'].length).toBeGreaterThan(0);
     expect(PROVENANCE_LADDER['memory-assembled'].length).toBeGreaterThan(0);
+    expect(PROVENANCE_LADDER['api-assembled'].length).toBeGreaterThan(0);
+  });
+
+  it('keeps memory-assembled distinct from api-assembled — a rename would rewrite a merged tripwire', () => {
+    // MP2 F2 shipped as an API source, but telemetry is still memory-sourced. Collapsing the two
+    // tokens (or renaming one into the other) would silently retarget assertions that already
+    // shipped against a different claim.
+    expect(PROVENANCE_LADDER['memory-assembled']).not.toBe(PROVENANCE_LADDER['api-assembled']);
   });
 
   it('an unknown live.source token throws manifestInvalid', () => {
@@ -155,12 +163,16 @@ describe('provenance ladder (design §1.2, AD-026) — cannot be neutered', () =
     });
   });
 
-  describe('[live.source=memory-assembled] — exercised now against a synthetic manifest, before F2 ever flips the real one', () => {
+  // Both independent-origin tokens get the identical battery, so neither can rot into an
+  // untested stub while the other carries the suite.
+  describe.each(['memory-assembled', 'api-assembled'] as const)(
+    '[live.source=%s] — exercised now against a synthetic manifest, before the real pair ever carries the token',
+    (token) => {
     function memoryAssembledManifest(): FidelityPairManifest {
       return baseManifest({
         live: {
           file: 'live-capture.json',
-          source: 'memory-assembled',
+          source: token,
           gameBuild: '2026.01.01',
           capturedAt: STAMP.capturedAt,
           scrubbed: ['account_id', 'player_name'],
@@ -173,8 +185,8 @@ describe('provenance ladder (design §1.2, AD-026) — cannot be neutered', () =
     it('passes when the live capture differs from the framed export and carries readerVersion + non-empty fingerprints', () => {
       const exportPayload: AccountPayload = { account: { phase: 1 }, heroes: [], skills: {}, casa: {}, items: [] };
       const framed = frameLiveCapture(exportPayload as unknown as Record<string, unknown>, STAMP);
-      // A "memory-assembled" capture that is NOT byte-identical to the export-derived framing —
-      // simulating a real reader payload without needing F2's reader to exist yet.
+      // A capture that is NOT byte-identical to the export-derived framing — simulating a real
+      // independent-origin payload without needing a real second capture to exist yet.
       const livePayload: AccountPayload = { ...framed, account: { phase: 1, extraReaderField: true } };
       const pair: FidelityPair = { manifest: memoryAssembledManifest(), exportPayload, livePayload };
       expect(() => assertProvenanceLadder(pair)).not.toThrow();
@@ -185,7 +197,7 @@ describe('provenance ladder (design §1.2, AD-026) — cannot be neutered', () =
       const framed = frameLiveCapture(exportPayload as unknown as Record<string, unknown>, STAMP);
       const pair: FidelityPair = { manifest: memoryAssembledManifest(), exportPayload, livePayload: framed };
       const err = expectFidelityError(() => assertProvenanceLadder(pair), 'manifestInvalid');
-      expect(err.message).toContain('memory-assembled');
+      expect(err.message).toContain(token);
     });
 
     it('fails when readerVersion or fingerprints is missing from the manifest', () => {
@@ -200,5 +212,6 @@ describe('provenance ladder (design §1.2, AD-026) — cannot be neutered', () =
       const pair: FidelityPair = { manifest, exportPayload, livePayload };
       expectFidelityError(() => assertProvenanceLadder(pair), 'manifestInvalid');
     });
-  });
+  },
+  );
 });

@@ -3,6 +3,14 @@ import { parseSaveFile } from '@bombfarm/domain/import-save';
 import { loadFixtureJson } from './helpers/sheet-math-fixtures';
 import { minimalHero } from './helpers/minimal-save-hero';
 
+/**
+ * MP5 F4: the minimal `skills` shape that satisfies `parseSaveFile`'s positive discriminator
+ * (MSG-11) — presence of `refunds`/`vagas_campo`/`bag_tabs_bonus` only, no other content. Every
+ * inline literal below that used to omit `skills` entirely now carries this, or the whole file
+ * (not just the item/hero under test) would reject before this suite's own assertions run.
+ */
+const POST_PATCH_SKILLS = { refunds: {}, totals: { vagas_campo: 0, bag_tabs_bonus: 0 } };
+
 function isObject(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null;
 }
@@ -19,28 +27,31 @@ function categoryHistogram(raw: unknown): Record<number, number> {
 }
 
 describe('parseSaveFile inventory pass', () => {
-  it('save-20260731-11heroes: gear, equipped, spare, histogram, and slots', () => {
-    const raw = loadFixtureJson('save-20260731-11heroes.json');
+  // MP5 F1 (AD-068 class (a) — read from the capture): re-pointed onto payload-20260812-8heroes
+  // for its larger, richer inventory (27 catalogued vs the export's 17).
+  it('payload-20260812-8heroes: gear, equipped, spare, histogram, and slots', () => {
+    const raw = loadFixtureJson('payload-20260812-8heroes.json');
     const { inventory, account, rejected } = parseSaveFile(raw, []);
     expect(rejected).toBeNull();
-    expect(inventory).toHaveLength(58);
-    expect(inventory.filter((item) => item.equipped)).toHaveLength(44);
-    expect(inventory.filter((item) => !item.equipped)).toHaveLength(14);
-    expect(categoryHistogram(raw)).toEqual({ 0: 58, 1: 12, 2: 19, 3: 5, 4: 80 });
-    expect(account.slots).toBe(6);
+    expect(inventory).toHaveLength(27);
+    expect(inventory.filter((item) => item.equipped)).toHaveLength(23);
+    expect(inventory.filter((item) => !item.equipped)).toHaveLength(4);
+    expect(categoryHistogram(raw)).toEqual({ 0: 27, 4: 3 });
+    expect(account.slots).toBe(3);
   });
 
-  it('save-20260801-crit-dmg-tree: gear, equipped, and spare counts', () => {
-    const raw = loadFixtureJson('save-20260801-crit-dmg-tree.json');
+  // MP5 F1 (AD-068 class (a)): re-pointed onto save-20260813-5heroes (the export).
+  it('save-20260813-5heroes: gear, equipped, and spare counts', () => {
+    const raw = loadFixtureJson('save-20260813-5heroes.json');
     const { inventory, rejected } = parseSaveFile(raw, []);
     expect(rejected).toBeNull();
-    expect(inventory).toHaveLength(83);
-    expect(inventory.filter((item) => item.equipped)).toHaveLength(64);
-    expect(inventory.filter((item) => !item.equipped)).toHaveLength(19);
+    expect(inventory).toHaveLength(17);
+    expect(inventory.filter((item) => item.equipped)).toHaveLength(12);
+    expect(inventory.filter((item) => !item.equipped)).toHaveLength(5);
   });
 
   it('missing items array yields empty inventory and keeps the existing warning', () => {
-    const { inventory, warnings } = parseSaveFile({ heroes: [] }, []);
+    const { inventory, warnings } = parseSaveFile({ heroes: [], skills: POST_PATCH_SKILLS }, []);
     expect(inventory).toEqual([]);
     expect(warnings.some((warning) => warning.includes('no "items" list'))).toBe(true);
   });
@@ -49,6 +60,7 @@ describe('parseSaveFile inventory pass', () => {
     const { inventory, warnings } = parseSaveFile(
       {
         heroes: [minimalHero('1')],
+        skills: POST_PATCH_SKILLS,
         items: [
           {
             category: 0,
@@ -73,6 +85,7 @@ describe('parseSaveFile inventory pass', () => {
     const { warnings } = parseSaveFile(
       {
         heroes: [minimalHero('1')],
+        skills: POST_PATCH_SKILLS,
         items: [
           {
             category: 0,
@@ -92,7 +105,7 @@ describe('parseSaveFile inventory pass', () => {
   });
 
   it('does not change hero candidate count on the real fixture', () => {
-    const raw = loadFixtureJson('save-20260731-11heroes.json');
+    const raw = loadFixtureJson('save-20260813-5heroes.json');
     const withoutInventory = parseSaveFile(raw, []);
     expect(withoutInventory.candidates.length).toBeGreaterThan(0);
     expect(withoutInventory.candidates.every((candidate) => !candidate.blocked)).toBe(true);
@@ -102,6 +115,7 @@ describe('parseSaveFile inventory pass', () => {
     const { candidates } = parseSaveFile(
       {
         heroes: [minimalHero('hero-1', 'Blocked')],
+        skills: POST_PATCH_SKILLS,
         items: [
           {
             category: 0,
@@ -121,12 +135,12 @@ describe('parseSaveFile inventory pass', () => {
   });
 
   it('account.slots is undefined when casa is absent', () => {
-    const { account } = parseSaveFile({ heroes: [] }, []);
+    const { account } = parseSaveFile({ heroes: [], skills: POST_PATCH_SKILLS }, []);
     expect(account.slots).toBeUndefined();
   });
 
   it('inventory entries carry catalog-resolved slots', () => {
-    const raw = loadFixtureJson('save-20260731-11heroes.json');
+    const raw = loadFixtureJson('save-20260813-5heroes.json');
     const { inventory } = parseSaveFile(raw, []);
     const emberCalca = inventory.find((item) => item.defId === 'ember_calca' && item.upgrade === 8);
     expect(emberCalca?.slot).toBe('calca');

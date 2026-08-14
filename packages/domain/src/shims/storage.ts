@@ -11,14 +11,6 @@ export type TreeState = {
   speed: number;
   energy: number;
   teamCoinPct: number;
-  glassCannon: boolean;
-  tempoDobrado: boolean;
-  /** Abisso (D15) — cancels tree Crit/GEO sheet adds and Glass Cannon crit ×2; energy ×0.5 still applies. */
-  abisso?: boolean;
-  /** `skills.totals.abisso_base` — Abisso's damage-multiplier exponent base (0 when unowned). */
-  abissoBase?: number;
-  /** `skills.totals.crit_dmg_mult` — Glass Cannon's crit-damage multiplier on the birth base (1 when unowned). */
-  critDmgMult?: number;
   luckFlatPct?: number;
 };
 
@@ -56,10 +48,13 @@ export type HeroRecord = {
   abilities: Record<string, number>;
   pts: Record<keyof SheetStats, number>;
   /**
-   * `stat_points_available` from the save — banked stat points the player has earned but not
-   * yet spent, NOT reflected anywhere in `pts`. Read on import for the budget-mismatch check
-   * (`point-inference.ts`) and persisted here so the reopt budget (`ReoptInput.statPointsAvailable`)
-   * can account for them too. Defaults to 0 for pre-existing records (back-compat).
+   * `stat_points_available` from the save — banked stat points the player had not yet spent AT
+   * IMPORT TIME, NOT reflected anywhere in `pts`. Read on import for the budget-mismatch check
+   * (`point-inference.ts`) and persisted here as the record of what the save reported.
+   * Defaults to 0 for pre-existing records (back-compat).
+   *
+   * A snapshot, not a live count: it does not shrink as the planner spends `pts`, so it must
+   * never be added to a point budget (`reoptBudget` derives the live figure from `level`).
    */
   statPointsAvailable?: number;
   sourceId?: string;
