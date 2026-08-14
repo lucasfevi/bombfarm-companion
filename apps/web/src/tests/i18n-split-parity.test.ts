@@ -70,6 +70,9 @@ const KEYSTONE_PROSE_EDITED_PATHS = [
   'bdFormulaDmg',
   'explainSections.0.p.1',
   'explainSections.7.p.0',
+  // pfr-web-ui (T1, AD-PFR-17): the Phases page is renamed Farm — navPhases's VALUE
+  // changes to "Farm" in both languages (key name kept, ASM-C4/i18n.md rule 3).
+  'navPhases',
 ].sort();
 
 /**
