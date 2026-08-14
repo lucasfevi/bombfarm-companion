@@ -8,8 +8,22 @@ import { KEYSTONE_KEYS_REMOVED } from './i18n-split-parity.test';
 // untranslated in both languages (docs/i18n.md rule 2), so an EN-only sweep would look
 // complete while the PT hints and the Sim/Não status readouts survived — this suite scans
 // both languages independently and neither can satisfy it alone.
-
-const KEYSTONE_TERM_RE = /keystone|abisso|glass ?cannon|tempo ?dobrado/i;
+//
+// Widened post-MP5-F3 (MP5 F3 follow-up): the original regex covered the three
+// field-identifier-adjacent display names removed alongside KEYSTONE_KEYS_REMOVED, but missed
+// the other two retired damage-multiplier sources' display names entirely — `Juro` (O15, Juro
+// Composto) and `Avalanche` (G07) shipped only inside `accountTip`'s prose, as parenthetical
+// examples with no field identifier anywhere nearby, so no identifier-keyed guard elsewhere in
+// this repo ever matched them. `Sorte Composta` (S15) is added for the same reason even though
+// no surviving string ever named it — closing the class, not just the instance. Neither of the
+// two needed any math modelling of its own — like GEO, its contribution arrived pre-folded into
+// the save file's totals — so this widening is purely about stale player-facing prose, not
+// unmodelled combat math. `\bjuro\b` and `\bavalanche\b` are deliberately case-insensitive
+// whole-word matches: a repo-wide case-insensitive grep for both tokens against
+// apps/web/src/shared/i18n turned up nothing outside this fix, so neither is a substring of any
+// other live English or Portuguese word this app's copy uses — this stays a hard zero with no
+// allowlist, matching this suite's existing shape.
+const KEYSTONE_TERM_RE = /keystone|abisso|glass ?cannon|tempo ?dobrado|\bjuro\b|\bavalanche\b|sorte ?composta/i;
 
 /**
  * Flatten every string value reachable from `value`, descending into plain objects and
