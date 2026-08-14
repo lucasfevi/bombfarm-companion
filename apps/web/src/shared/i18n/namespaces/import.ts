@@ -44,6 +44,9 @@ export const en = {
   // reset-warning block below.
   importRejectedNotASaveFile: "This file doesn't look like a BombFarm save-file export.",
   importRejectedMissingBirthStats: "This save is missing birth stats needed for accurate points for: {names}. Re-export from an updated game version.",
+  // MP5 F4 (MSG-14): the positive-discriminator rejection — deliberately generic. Names no
+  // keystone, node id, version, date or field path, so it stays accurate after the next patch.
+  importRejectedUnsupportedShape: "The planner can't use this save file. Export a fresh save from the game and import that one.",
 };
 
 export const pt: typeof en = {
@@ -85,4 +88,5 @@ export const pt: typeof en = {
   importPointBothSaturated: "Os pontos gastos não batem exatamente, e Chance de Crítico e Redução de recarga já estão no teto — não dá para recuperar a divisão exata entre eles.",
   importRejectedNotASaveFile: "Esse arquivo não parece ser um save exportado do BombFarm.",
   importRejectedMissingBirthStats: "Esse save está sem os stats de nascimento necessários para pontos precisos de: {names}. Reexporte de uma versão atualizada do jogo.",
+  importRejectedUnsupportedShape: "O planner não consegue usar esse save. Exporte um save novo do jogo e importe esse.",
 };

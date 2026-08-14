@@ -176,5 +176,12 @@ describe('rejectionText (BSP-06, DEC-09, AC-36)', () => {
       expect(text).toContain('Gale');
       expect(text).not.toBe(t.importRejectedNotASaveFile);
     });
+
+    // MP5 F4 (MSG-14)
+    it(`${lang}: unsupportedSaveShape renders the generic message, distinct from notASaveFile`, () => {
+      const rejected: ParseRejection = { reason: 'unsupportedSaveShape', heroNames: [] };
+      expect(rejectionText(t, rejected)).toBe(t.importRejectedUnsupportedShape);
+      expect(rejectionText(t, rejected)).not.toBe(t.importRejectedNotASaveFile);
+    });
   }
 });

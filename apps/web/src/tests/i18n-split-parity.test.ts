@@ -72,6 +72,15 @@ const KEYSTONE_PROSE_EDITED_PATHS = [
   'explainSections.7.p.0',
 ].sort();
 
+/**
+ * MP5 F4 (T8, MSG-14) — genuinely NEW keys with no counterpart in the frozen fixture at all
+ * (not a prose edit of an existing key). `diffLeafPaths` reports "present in STRINGS, absent
+ * from the fixture" the same way it reports a changed value, so this list is folded into the
+ * "differs at exactly" comparisons alongside `KEYSTONE_PROSE_EDITED_PATHS`, and separately
+ * excluded from the sorted-key-set comparison (which compares SETS, not diffs).
+ */
+const F4_KEYS_ADDED = ['importRejectedUnsupportedShape'] as const;
+
 function diffLeafPaths(a: unknown, b: unknown, path: string[] = [], out: string[] = []): string[] {
   if (a === b) return out;
   const aIsObj = a !== null && typeof a === 'object';
@@ -112,14 +121,14 @@ describe('i18n split parity', () => {
   // *minus* that enumerated list (AD-081) — every unlisted drift stays fatal in both
   // directions, and the list itself cannot silently grow or shrink (see the three
   // assertions below).
-  it('STRINGS.en differs from the frozen fixture (minus removed keys) at exactly the enumerated prose edits', () => {
+  it('STRINGS.en differs from the frozen fixture (minus removed keys) at exactly the enumerated prose edits plus F4\'s new keys', () => {
     const diffs = diffLeafPaths(STRINGS.en, omitKeys(fixture.en, KEYSTONE_KEYS_REMOVED)).sort();
-    expect(diffs).toEqual(KEYSTONE_PROSE_EDITED_PATHS);
+    expect(diffs).toEqual([...KEYSTONE_PROSE_EDITED_PATHS, ...F4_KEYS_ADDED].sort());
   });
 
-  it('STRINGS.pt differs from the frozen fixture (minus removed keys) at exactly the enumerated prose edits', () => {
+  it('STRINGS.pt differs from the frozen fixture (minus removed keys) at exactly the enumerated prose edits plus F4\'s new keys', () => {
     const diffs = diffLeafPaths(STRINGS.pt, omitKeys(fixture.pt, KEYSTONE_KEYS_REMOVED)).sort();
-    expect(diffs).toEqual(KEYSTONE_PROSE_EDITED_PATHS);
+    expect(diffs).toEqual([...KEYSTONE_PROSE_EDITED_PATHS, ...F4_KEYS_ADDED].sort());
   });
 
   it('namespace key sets are pairwise disjoint', () => {
@@ -133,9 +142,9 @@ describe('i18n split parity', () => {
     }
   });
 
-  it('sorted key-name list is unchanged vs fixture minus the removed keystone keys', () => {
+  it('sorted key-name list is unchanged vs fixture minus the removed keystone keys, plus F4\'s new keys', () => {
     const fromSplit = Object.keys(STRINGS.en).sort();
-    const fromFixture = Object.keys(omitKeys(fixture.en, KEYSTONE_KEYS_REMOVED)).sort();
+    const fromFixture = [...Object.keys(omitKeys(fixture.en, KEYSTONE_KEYS_REMOVED)), ...F4_KEYS_ADDED].sort();
     expect(fromSplit).toEqual(fromFixture);
   });
 
@@ -154,6 +163,16 @@ describe('i18n split parity', () => {
     for (const key of KEYSTONE_KEYS_REMOVED) {
       expect(key in STRINGS.en, `${key} still present in STRINGS.en`).toBe(false);
       expect(key in STRINGS.pt, `${key} still present in STRINGS.pt`).toBe(false);
+    }
+  });
+
+  it('F4_KEYS_ADDED has exactly 1 entry, present in STRINGS but absent from the frozen fixture, both languages', () => {
+    expect(F4_KEYS_ADDED.length).toBe(1);
+    for (const key of F4_KEYS_ADDED) {
+      expect(key in fixture.en, `${key} unexpectedly present in fixture.en`).toBe(false);
+      expect(key in fixture.pt, `${key} unexpectedly present in fixture.pt`).toBe(false);
+      expect(key in STRINGS.en, `${key} missing from STRINGS.en`).toBe(true);
+      expect(key in STRINGS.pt, `${key} missing from STRINGS.pt`).toBe(true);
     }
   });
 
