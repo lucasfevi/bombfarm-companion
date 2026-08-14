@@ -84,6 +84,28 @@ const KEYSTONE_PROSE_EDITED_PATHS = [
  */
 const F4_KEYS_ADDED = ['importRejectedUnsupportedShape'] as const;
 
+/**
+ * pfr-web-ui T5 — the Farm Ranking board's column headers, genuinely new keys with no
+ * counterpart in the frozen fixture (`R-C7`, `farmRanking*` prefix, `phases` namespace per
+ * `ASM-C4`). Same shape as `F4_KEYS_ADDED` above; kept as its own named list so a reviewer can
+ * see which feature added which keys.
+ */
+const PFR_WEB_UI_KEYS_ADDED = [
+  'farmRankingColPhase',
+  'farmRankingColMitigation',
+  'farmRankingColGold',
+  'farmRankingColChests',
+  'farmRankingColKeys',
+  'farmRankingColGems',
+  'farmRankingColTimePieces',
+  'farmRankingColXp',
+  'farmRankingColItemLevel',
+  'farmRankingColClearTime',
+  'farmRankingColOneShot',
+  'farmRankingColJaula',
+  'farmRankingColInfeasible',
+] as const;
+
 function diffLeafPaths(a: unknown, b: unknown, path: string[] = [], out: string[] = []): string[] {
   if (a === b) return out;
   const aIsObj = a !== null && typeof a === 'object';
@@ -124,14 +146,18 @@ describe('i18n split parity', () => {
   // *minus* that enumerated list (AD-081) — every unlisted drift stays fatal in both
   // directions, and the list itself cannot silently grow or shrink (see the three
   // assertions below).
-  it('STRINGS.en differs from the frozen fixture (minus removed keys) at exactly the enumerated prose edits plus F4\'s new keys', () => {
+  it('STRINGS.en differs from the frozen fixture (minus removed keys) at exactly the enumerated prose edits plus F4\'s and pfr-web-ui\'s new keys', () => {
     const diffs = diffLeafPaths(STRINGS.en, omitKeys(fixture.en, KEYSTONE_KEYS_REMOVED)).sort();
-    expect(diffs).toEqual([...KEYSTONE_PROSE_EDITED_PATHS, ...F4_KEYS_ADDED].sort());
+    expect(diffs).toEqual(
+      [...KEYSTONE_PROSE_EDITED_PATHS, ...F4_KEYS_ADDED, ...PFR_WEB_UI_KEYS_ADDED].sort(),
+    );
   });
 
-  it('STRINGS.pt differs from the frozen fixture (minus removed keys) at exactly the enumerated prose edits plus F4\'s new keys', () => {
+  it('STRINGS.pt differs from the frozen fixture (minus removed keys) at exactly the enumerated prose edits plus F4\'s and pfr-web-ui\'s new keys', () => {
     const diffs = diffLeafPaths(STRINGS.pt, omitKeys(fixture.pt, KEYSTONE_KEYS_REMOVED)).sort();
-    expect(diffs).toEqual([...KEYSTONE_PROSE_EDITED_PATHS, ...F4_KEYS_ADDED].sort());
+    expect(diffs).toEqual(
+      [...KEYSTONE_PROSE_EDITED_PATHS, ...F4_KEYS_ADDED, ...PFR_WEB_UI_KEYS_ADDED].sort(),
+    );
   });
 
   it('namespace key sets are pairwise disjoint', () => {
@@ -145,9 +171,13 @@ describe('i18n split parity', () => {
     }
   });
 
-  it('sorted key-name list is unchanged vs fixture minus the removed keystone keys, plus F4\'s new keys', () => {
+  it('sorted key-name list is unchanged vs fixture minus the removed keystone keys, plus F4\'s and pfr-web-ui\'s new keys', () => {
     const fromSplit = Object.keys(STRINGS.en).sort();
-    const fromFixture = [...Object.keys(omitKeys(fixture.en, KEYSTONE_KEYS_REMOVED)), ...F4_KEYS_ADDED].sort();
+    const fromFixture = [
+      ...Object.keys(omitKeys(fixture.en, KEYSTONE_KEYS_REMOVED)),
+      ...F4_KEYS_ADDED,
+      ...PFR_WEB_UI_KEYS_ADDED,
+    ].sort();
     expect(fromSplit).toEqual(fromFixture);
   });
 
@@ -172,6 +202,16 @@ describe('i18n split parity', () => {
   it('F4_KEYS_ADDED has exactly 1 entry, present in STRINGS but absent from the frozen fixture, both languages', () => {
     expect(F4_KEYS_ADDED.length).toBe(1);
     for (const key of F4_KEYS_ADDED) {
+      expect(key in fixture.en, `${key} unexpectedly present in fixture.en`).toBe(false);
+      expect(key in fixture.pt, `${key} unexpectedly present in fixture.pt`).toBe(false);
+      expect(key in STRINGS.en, `${key} missing from STRINGS.en`).toBe(true);
+      expect(key in STRINGS.pt, `${key} missing from STRINGS.pt`).toBe(true);
+    }
+  });
+
+  it('PFR_WEB_UI_KEYS_ADDED has exactly 13 entries, present in STRINGS but absent from the frozen fixture, both languages', () => {
+    expect(PFR_WEB_UI_KEYS_ADDED.length).toBe(13);
+    for (const key of PFR_WEB_UI_KEYS_ADDED) {
       expect(key in fixture.en, `${key} unexpectedly present in fixture.en`).toBe(false);
       expect(key in fixture.pt, `${key} unexpectedly present in fixture.pt`).toBe(false);
       expect(key in STRINGS.en, `${key} missing from STRINGS.en`).toBe(true);

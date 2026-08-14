@@ -72,6 +72,23 @@ export const en = {
   colNeed: "Need%",
   bossRow: "boss/cage",
   avgRow: "avg",
+
+  // Farm Ranking board (pfr-web-ui) — kept in the `phases` namespace deliberately (ASM-C4):
+  // the board lives on the Farm page's `src/features/phases` feature slice, whose internal
+  // identifiers keep their pre-rename names. `farmRanking*` prefix keeps these greppable.
+  farmRankingColPhase: "Phase",
+  farmRankingColMitigation: "Mitigation",
+  farmRankingColGold: "Gold / hr",
+  farmRankingColChests: "Chests / hr",
+  farmRankingColKeys: "Keys / hr",
+  farmRankingColGems: "Gems / hr",
+  farmRankingColTimePieces: "Time pieces / hr",
+  farmRankingColXp: "XP / hr",
+  farmRankingColItemLevel: "Item level",
+  farmRankingColClearTime: "Clear time",
+  farmRankingColOneShot: "One-shot",
+  farmRankingColJaula: "Cage window",
+  farmRankingColInfeasible: "Feasible",
 };
 
 export const pt: typeof en = {
@@ -148,4 +165,18 @@ export const pt: typeof en = {
   colNeed: "Falta%",
   bossRow: "boss/jaula",
   avgRow: "média",
+
+  farmRankingColPhase: "Fase",
+  farmRankingColMitigation: "Mitigação",
+  farmRankingColGold: "Ouro / h",
+  farmRankingColChests: "Baús / h",
+  farmRankingColKeys: "Chaves / h",
+  farmRankingColGems: "Gemas / h",
+  farmRankingColTimePieces: "Peças de tempo / h",
+  farmRankingColXp: "XP / h",
+  farmRankingColItemLevel: "Nível de item",
+  farmRankingColClearTime: "Tempo de clear",
+  farmRankingColOneShot: "Um golpe",
+  farmRankingColJaula: "Janela da jaula",
+  farmRankingColInfeasible: "Viável",
 };
