@@ -15,9 +15,12 @@ import { computeCombatMults, derive } from '@bombfarm/domain/derive';
 import {
   findGateCandidate,
   optimizeBuild,
+  reoptBudget,
   REOPT_FULL_MAX_EVALUATIONS,
   REOPT_GATE_MAX_EVALUATIONS,
   REOPT_KEYS,
+  type ReoptInput,
+  type ReoptResult,
 } from '@bombfarm/domain/points-reopt';
 import { SHEET_KEYS, ZERO_PTS, type SheetKey } from '@bombfarm/domain/planner-constants';
 import { zeroTeamBuffs } from '@bombfarm/domain/team-buffs';
@@ -47,6 +50,24 @@ const context: Context = {
   drainMult: 1,
 };
 
+/**
+ * The level of a hero who has spent every point it owns on exactly this vector — `reoptBudget`
+ * then hands the search `Σ pts over REOPT_KEYS`, which is the budget every case below the
+ * dedicated `reoptBudget` describe was written against. Cases about a hero with points still
+ * unplaced pass their own `level` and call the tiers directly.
+ */
+function levelFor(pts: Record<SheetKey, number>): number {
+  return SHEET_KEYS.reduce((sum, key) => sum + pts[key], 0);
+}
+
+function gate(input: Omit<ReoptInput, 'level'> & { level?: number }): ReoptResult {
+  return findGateCandidate({ ...input, level: input.level ?? levelFor(input.pts) });
+}
+
+function full(input: Omit<ReoptInput, 'level'> & { level?: number }): ReoptResult {
+  return optimizeBuild({ ...input, level: input.level ?? levelFor(input.pts) });
+}
+
 /** Real-hero {effective, effectiveDelta, pts} triple, driven off derive() like the pipeline. */
 function realHeroDerive(file: string, name: string, level: number) {
   const raw = loadFixtureJson(file);
@@ -70,7 +91,7 @@ function realHeroDerive(file: string, name: string, level: number) {
   const mults = computeCombatMults({
     mods,
     teamBuffs: zeroTeamBuffs(),
-    extraDmgPct: 0,
+        extraDmgPct: 0,
   });
   const result = derive({
     geared: hero.sheet,
@@ -133,7 +154,7 @@ describe('REOPT_KEYS (AC-72)', () => {
 describe('findGateCandidate — Tier 1 (BSPW4-10)', () => {
   it('AC-57f/AC-64h: budget 0 returns the input vector, gainPct 0, evaluations <= 1, no seed generated', () => {
     const { effective, effectiveDelta } = syntheticHero();
-    const result = findGateCandidate({ pts: ZERO_PTS(), effective, effectiveDelta, context });
+    const result = gate({ pts: ZERO_PTS(), effective, effectiveDelta, context });
     expect(result.pts).toEqual(ZERO_PTS());
     expect(result.gainPct).toBe(0);
     expect(result.evaluations).toBeLessThanOrEqual(1);
@@ -142,7 +163,7 @@ describe('findGateCandidate — Tier 1 (BSPW4-10)', () => {
 
   it('AC-57c: is AD-BSP-08 verbatim — no localSearchMoves, tier "gate", gainIsLowerBound true', () => {
     const { pts, effective, effectiveDelta } = syntheticHero();
-    const result = findGateCandidate({ pts, effective, effectiveDelta, context });
+    const result = gate({ pts, effective, effectiveDelta, context });
     expect(result.localSearchMoves).toBe(0);
     expect(result.tier).toBe('gate');
     expect(result.gainIsLowerBound).toBe(true);
@@ -153,13 +174,13 @@ describe('findGateCandidate — Tier 1 (BSPW4-10)', () => {
   it('AC-57d: evaluations <= 1 + 10*B and <= 1024, on a real fixture hero and at a synthetic B=100', () => {
     const real = realHeroDerive('payload-20260812-8heroes.json', 'Bellatrix', 27);
     const budget = REOPT_KEYS.reduce((sum, key) => sum + real.pts[key], 0);
-    const realResult = findGateCandidate({ pts: real.pts, effective: real.effective, effectiveDelta: real.effectiveDelta, context });
+    const realResult = gate({ pts: real.pts, effective: real.effective, effectiveDelta: real.effectiveDelta, context });
     expect(realResult.evaluations).toBeLessThanOrEqual(1 + 10 * budget);
     expect(realResult.evaluations).toBeLessThanOrEqual(REOPT_GATE_MAX_EVALUATIONS);
 
     const { effective, effectiveDelta } = syntheticHero();
     const bigPts: Record<SheetKey, number> = { ...ZERO_PTS(), attack: 100 };
-    const bigResult = findGateCandidate({ pts: bigPts, effective, effectiveDelta, context });
+    const bigResult = gate({ pts: bigPts, effective, effectiveDelta, context });
     expect(bigResult.evaluations).toBeLessThanOrEqual(1 + 10 * 100);
     expect(bigResult.evaluations).toBeLessThanOrEqual(REOPT_GATE_MAX_EVALUATIONS);
   });
@@ -168,7 +189,7 @@ describe('findGateCandidate — Tier 1 (BSPW4-10)', () => {
     // energySwitchPoint's 60-iteration binary search x 4 sustainedDps calls/iteration = 240.
     const PIPELINE_EXISTING_EVALUATIONS = 240;
     const { pts, effective, effectiveDelta } = syntheticHero();
-    const result = findGateCandidate({ pts, effective, effectiveDelta, context });
+    const result = gate({ pts, effective, effectiveDelta, context });
     expect(result.evaluations).toBeLessThanOrEqual(REOPT_GATE_MAX_EVALUATIONS);
     // Both figures stated together — reviewer sees ~2.6x, not a new order of magnitude.
     expect(REOPT_GATE_MAX_EVALUATIONS / PIPELINE_EXISTING_EVALUATIONS).toBeCloseTo(4.2666, 3);
@@ -177,7 +198,7 @@ describe('findGateCandidate — Tier 1 (BSPW4-10)', () => {
   it('AC-57g: reuses the given effective/effectiveDelta — never calls derive again (no geared/naked input exists on ReoptInput)', () => {
     const { pts, effective, effectiveDelta } = syntheticHero();
     // Structural: ReoptInput has no `naked`/`geared`/`sheetOther` fields for derive() to need.
-    const result = findGateCandidate({ pts, effective, effectiveDelta, context });
+    const result = gate({ pts, effective, effectiveDelta, context });
     expect(result).toBeDefined();
   });
 
@@ -207,7 +228,7 @@ describe('findGateCandidate — Tier 1 (BSPW4-10)', () => {
       cdr: 0,
     };
     const pts: Record<SheetKey, number> = { ...ZERO_PTS(), penetration: 5 };
-    const result = findGateCandidate({ pts, effective, effectiveDelta, context });
+    const result = gate({ pts, effective, effectiveDelta, context });
     expect(result.keptCurrent).toBe(false);
     expect(result.unallocated).toBeGreaterThan(0);
     expect(result.unallocated).toBe(3);
@@ -218,7 +239,7 @@ describe('findGateCandidate — Tier 1 (BSPW4-10)', () => {
   it('AC-58/AC-58a: budget is Σ pts over REOPT_KEYS; pts.luck copied through; Σ result.pts equals budget - unallocated', () => {
     const { pts, effective, effectiveDelta } = syntheticHero();
     const hostilePts = { ...pts, luck: 42 };
-    const result = findGateCandidate({ pts: hostilePts, effective, effectiveDelta, context });
+    const result = gate({ pts: hostilePts, effective, effectiveDelta, context });
     expect(result.pts.luck).toBe(42);
     const budget = REOPT_KEYS.reduce((sum, key) => sum + hostilePts[key], 0);
     const resultSum = REOPT_KEYS.reduce((sum, key) => sum + result.pts[key], 0);
@@ -227,8 +248,8 @@ describe('findGateCandidate — Tier 1 (BSPW4-10)', () => {
 
   it('AC-59 (GAP-W2-01): pts.luck=0 vs a hostile pts.luck=9999 produce byte-identical DPS entries', () => {
     const { pts, effective, effectiveDelta } = syntheticHero();
-    const honest = findGateCandidate({ pts: { ...pts, luck: 0 }, effective, effectiveDelta, context });
-    const hostile = findGateCandidate({ pts: { ...pts, luck: 9999 }, effective, effectiveDelta, context });
+    const honest = gate({ pts: { ...pts, luck: 0 }, effective, effectiveDelta, context });
+    const hostile = gate({ pts: { ...pts, luck: 9999 }, effective, effectiveDelta, context });
     for (const key of REOPT_KEYS) {
       expect(hostile.pts[key], key).toBe(honest.pts[key]);
     }
@@ -262,7 +283,7 @@ describe('findGateCandidate — Tier 1 (BSPW4-10)', () => {
       cdr: 1.2,
     };
     const pts: Record<SheetKey, number> = { ...ZERO_PTS(), penetration: 3, attack: 2 };
-    const result = findGateCandidate({ pts, effective, effectiveDelta, context });
+    const result = gate({ pts, effective, effectiveDelta, context });
     // Pen is already scoring 0 gain (100% mitigation bypass already reached) — the greedy
     // walk (if it wins) must not have grown pen further.
     if (!result.keptCurrent) {
@@ -275,7 +296,7 @@ describe('findGateCandidate — Tier 1 (BSPW4-10)', () => {
     for (const { file, names } of FIXTURES) {
       for (const [name, level] of names) {
         const real = realHeroDerive(file, name, level);
-        const result = findGateCandidate({
+        const result = gate({
           pts: real.pts,
           effective: real.effective,
           effectiveDelta: real.effectiveDelta,
@@ -289,7 +310,7 @@ describe('findGateCandidate — Tier 1 (BSPW4-10)', () => {
 
   it('AC-57b: re-scoring result.pts reproduces result.reoptDps exactly', () => {
     const { pts, effective, effectiveDelta } = syntheticHero();
-    const result = findGateCandidate({ pts, effective, effectiveDelta, context });
+    const result = gate({ pts, effective, effectiveDelta, context });
     // Rebuild the candidate sheet the same way the scorer does and re-score it directly.
     const rebuilt: HeroSheet = { ...effective };
     for (const key of REOPT_KEYS) {
@@ -301,8 +322,8 @@ describe('findGateCandidate — Tier 1 (BSPW4-10)', () => {
 
   it('is deterministic: two identical calls return deeply equal results', () => {
     const { pts, effective, effectiveDelta } = syntheticHero();
-    const first = findGateCandidate({ pts, effective, effectiveDelta, context });
-    const second = findGateCandidate({ pts, effective, effectiveDelta, context });
+    const first = gate({ pts, effective, effectiveDelta, context });
+    const second = gate({ pts, effective, effectiveDelta, context });
     expect(second).toEqual(first);
   });
 });
@@ -346,8 +367,8 @@ function ridgeHero(): { pts: Record<SheetKey, number>; effective: HeroSheet; eff
 describe('optimizeBuild — Tier 2 (BSPW4-10)', () => {
   it('AC-62b: S5 (critPairHalf) wins the bilinear-ridge build, and S2 alone (Tier 1) scores lower', () => {
     const { pts, effective, effectiveDelta } = ridgeHero();
-    const tier1 = findGateCandidate({ pts, effective, effectiveDelta, context }); // S1 vs S2 only
-    const tier2 = optimizeBuild({ pts, effective, effectiveDelta, context });
+    const tier1 = gate({ pts, effective, effectiveDelta, context }); // S1 vs S2 only
+    const tier2 = full({ pts, effective, effectiveDelta, context });
 
     expect(tier2.winningSeed).toBe('critPairHalf');
     // Both DPS figures stated, per AC-62b's requirement that the test show greedy losing.
@@ -356,7 +377,7 @@ describe('optimizeBuild — Tier 2 (BSPW4-10)', () => {
 
   it('AC-63c: the returned vector admits no further strictly improving move (re-verified independently)', () => {
     const { pts, effective, effectiveDelta } = ridgeHero();
-    const result = optimizeBuild({ pts, effective, effectiveDelta, context });
+    const result = full({ pts, effective, effectiveDelta, context });
     expect(result.budgetExhausted).toBe(false);
 
     // Independent re-verification: try every single-point transfer i -> j on the returned
@@ -382,8 +403,8 @@ describe('optimizeBuild — Tier 2 (BSPW4-10)', () => {
     for (const { file, names } of FIXTURES) {
       for (const [name, level] of names) {
         const real = realHeroDerive(file, name, level);
-        const tier1 = findGateCandidate({ pts: real.pts, effective: real.effective, effectiveDelta: real.effectiveDelta, context });
-        const tier2 = optimizeBuild({ pts: real.pts, effective: real.effective, effectiveDelta: real.effectiveDelta, context });
+        const tier1 = gate({ pts: real.pts, effective: real.effective, effectiveDelta: real.effectiveDelta, context });
+        const tier2 = full({ pts: real.pts, effective: real.effective, effectiveDelta: real.effectiveDelta, context });
         // Tolerance: both tiers compute S1's raw score via an independent sustainedDps call,
         // so ULP-level floating point noise (not a real invariant violation) can separate them.
         expect(tier2.reoptDps, `${file}:${name}L${level}`).toBeGreaterThanOrEqual(tier1.reoptDps - 1e-6);
@@ -395,7 +416,7 @@ describe('optimizeBuild — Tier 2 (BSPW4-10)', () => {
     for (const { file, names } of FIXTURES) {
       for (const [name, level] of names) {
         const real = realHeroDerive(file, name, level);
-        const result = optimizeBuild({ pts: real.pts, effective: real.effective, effectiveDelta: real.effectiveDelta, context });
+        const result = full({ pts: real.pts, effective: real.effective, effectiveDelta: real.effectiveDelta, context });
         expect(result.reoptDps, `${file}:${name}L${level}`).toBeGreaterThanOrEqual(result.currentDps);
         expect(result.gainPct, `${file}:${name}L${level}`).toBeGreaterThanOrEqual(0);
       }
@@ -404,19 +425,19 @@ describe('optimizeBuild — Tier 2 (BSPW4-10)', () => {
 
   it('AC-64b: evaluations <= REOPT_FULL_MAX_EVALUATIONS, on a real fixture hero and at a synthetic B=100', () => {
     const real = realHeroDerive('payload-20260812-8heroes.json', 'Bellatrix', 27);
-    const realResult = optimizeBuild({ pts: real.pts, effective: real.effective, effectiveDelta: real.effectiveDelta, context });
+    const realResult = full({ pts: real.pts, effective: real.effective, effectiveDelta: real.effectiveDelta, context });
     expect(realResult.evaluations).toBeLessThanOrEqual(REOPT_FULL_MAX_EVALUATIONS);
 
     const { effective, effectiveDelta } = syntheticHero();
     const bigPts: Record<SheetKey, number> = { ...ZERO_PTS(), attack: 100 };
-    const bigResult = optimizeBuild({ pts: bigPts, effective, effectiveDelta, context });
+    const bigResult = full({ pts: bigPts, effective, effectiveDelta, context });
     expect(bigResult.evaluations).toBeLessThanOrEqual(REOPT_FULL_MAX_EVALUATIONS);
   });
 
   it('AC-64f: determinism — two identical calls return deeply equal results, including winningSeed/evaluations/sweeps', () => {
     const { pts, effective, effectiveDelta } = ridgeHero();
-    const first = optimizeBuild({ pts, effective, effectiveDelta, context });
-    const second = optimizeBuild({ pts, effective, effectiveDelta, context });
+    const first = full({ pts, effective, effectiveDelta, context });
+    const second = full({ pts, effective, effectiveDelta, context });
     expect(second).toEqual(first);
   });
 
@@ -427,7 +448,7 @@ describe('optimizeBuild — Tier 2 (BSPW4-10)', () => {
     // every candidate is provably zero-gain (all effectiveDelta zero).
     const flatDelta: EffectiveDeltas = { attack: 0, energy: 0, speed: 0, critChance: 0, critDmg: 0, penetration: 0, cdr: 0 };
     const pts: Record<SheetKey, number> = { ...ZERO_PTS(), attack: 5 };
-    const result = optimizeBuild({ pts, effective, effectiveDelta: flatDelta, context });
+    const result = full({ pts, effective, effectiveDelta: flatDelta, context });
     expect(result.winningSeed).toBe('current');
     expect(result.keptCurrent).toBe(true);
     expect(result.pts).toEqual(pts);
@@ -445,8 +466,8 @@ describe('optimizeBuild — Tier 2 (BSPW4-10)', () => {
     };
     const delta: EffectiveDeltas = { attack: 50, energy: 8, speed: 0, critChance: 3, critDmg: 12, penetration: 0.5, cdr: 1 };
 
-    const flatResult = optimizeBuild({ pts, effective: flatAttackLoadout, effectiveDelta: delta, context });
-    const critResult = optimizeBuild({ pts, effective: critHeavyLoadout, effectiveDelta: delta, context });
+    const flatResult = full({ pts, effective: flatAttackLoadout, effectiveDelta: delta, context });
+    const critResult = full({ pts, effective: critHeavyLoadout, effectiveDelta: delta, context });
     expect(flatResult.pts).not.toEqual(critResult.pts);
   });
 
@@ -455,7 +476,7 @@ describe('optimizeBuild — Tier 2 (BSPW4-10)', () => {
     const mults = computeCombatMults({
       mods: abilityMods({}),
       teamBuffs: zeroTeamBuffs(),
-      extraDmgPct: 0,
+            extraDmgPct: 0,
     });
     const args = {
       geared: naked,
@@ -492,7 +513,7 @@ describe('optimizeBuild — Tier 2 (BSPW4-10)', () => {
     const times: number[] = [];
     for (let index = 0; index < 20; index++) {
       const start = performance.now();
-      optimizeBuild({ pts: real.pts, effective: real.effective, effectiveDelta: real.effectiveDelta, context });
+      full({ pts: real.pts, effective: real.effective, effectiveDelta: real.effectiveDelta, context });
       times.push(performance.now() - start);
     }
     times.sort((a, b) => a - b);
@@ -502,8 +523,8 @@ describe('optimizeBuild — Tier 2 (BSPW4-10)', () => {
 
   it('AC-58/AC-59 for Tier 2: budget/Luck handling matches Tier 1', () => {
     const { pts, effective, effectiveDelta } = ridgeHero();
-    const hostile = optimizeBuild({ pts: { ...pts, luck: 9999 }, effective, effectiveDelta, context });
-    const honest = optimizeBuild({ pts: { ...pts, luck: 0 }, effective, effectiveDelta, context });
+    const hostile = full({ pts: { ...pts, luck: 9999 }, effective, effectiveDelta, context });
+    const honest = full({ pts: { ...pts, luck: 0 }, effective, effectiveDelta, context });
     for (const key of REOPT_KEYS) expect(hostile.pts[key]).toBe(honest.pts[key]);
     expect(hostile.gainPct).toBe(honest.gainPct);
     expect(hostile.pts.luck).toBe(9999);
@@ -511,27 +532,86 @@ describe('optimizeBuild — Tier 2 (BSPW4-10)', () => {
 });
 
 /**
- * Banked, unspent stat points (`HeroRecord.statPointsAvailable`, threaded through
- * `ReoptInput.statPointsAvailable`) — no committed save fixture has a nonzero value here (every
- * fixture hero has `stat_points_available: 0`), so the "0 spent, N unspent" case the
- * `budget <= 0` fast path used to get wrong is constructed by hand below, for both tiers.
+ * The two budgets, one per tier — replacing the old `statPointsAvailable` input.
+ *
+ * That field was a save's banked count (`level - spent` AT IMPORT), added on top of
+ * `budgetOf(pts)` for both tiers; because it never shrank as the planner spent those very
+ * points, each Optimize -> Apply round re-granted the whole allowance and the hero climbed past
+ * its own level (a real level-46 save: 46 -> 92 -> ... -> 276 spent, on both the Points tab and
+ * the Team Plan page).
+ *
+ * The replacement is not one budget but two, because the tiers ask different questions:
+ *
+ * - **Tier 2 / `optimizeBuild`** — "what is the best build?" — takes `reoptBudget(pts, level)`,
+ *   `max(level - luck, budgetOf(pts))`: the level pool (what `clampPointStep` has always let
+ *   the steppers reach), floored at what the hero already holds so an over-spent hero can still
+ *   reallocate it.
+ * - **Tier 1 / `findGateCandidate`** — "is a reset worth buying?" — takes `budgetOf(pts)`. A
+ *   reset only moves points already spent, so unplaced pool is not its budget; counting it
+ *   would tell every freshly imported, unallocated hero to buy a respec it has no use for.
+ *
+ * Neither can compound: each places at most the budget it was handed, so feeding a result back
+ * is non-increasing.
  */
-describe('statPointsAvailable — banked, unspent points fold into the search budget', () => {
-  it('optional and defaults to 0 — omitting it is byte-identical to passing 0 explicitly (Tier 1 and Tier 2, back-compat for team-plan callers)', () => {
-    const { pts, effective, effectiveDelta } = syntheticHero();
-    expect(findGateCandidate({ pts, effective, effectiveDelta, context })).toEqual(
-      findGateCandidate({ pts, effective, effectiveDelta, context, statPointsAvailable: 0 }),
-    );
-    expect(optimizeBuild({ pts, effective, effectiveDelta, context })).toEqual(
-      optimizeBuild({ pts, effective, effectiveDelta, context, statPointsAvailable: 0 }),
-    );
+describe('reoptBudget / the per-tier point budgets', () => {
+  it('is level minus Luck, and does not move when the same pool is re-split across the seven DPS keys', () => {
+    const spread: Record<SheetKey, number> = { ...ZERO_PTS(), attack: 10, energy: 6, critDmg: 4, luck: 3 };
+    const lumped: Record<SheetKey, number> = { ...ZERO_PTS(), attack: 20, luck: 3 };
+    const unspent: Record<SheetKey, number> = { ...ZERO_PTS(), luck: 3 };
+    expect(reoptBudget(spread, 23)).toBe(20);
+    expect(reoptBudget(lumped, 23)).toBe(20);
+    expect(reoptBudget(unspent, 23)).toBe(20);
+    expect(reoptBudget(ZERO_PTS(), 0)).toBe(0);
   });
 
-  it('Tier 1: 0 spent + N unspent no longer takes the budget<=0 fast path — the hero gets a real reallocation', () => {
+  it('floors at what is already placed, so an over-spent hero can still reallocate what it holds', () => {
+    // The one reachable overspend (`clampPointStep`): a level lowered while points are spent.
+    const overSpent: Record<SheetKey, number> = { ...ZERO_PTS(), attack: 32, luck: 8 };
+    // Level 8 with 8 Luck leaves no pool at all — but 32 Attack points are really placed, really
+    // reallocatable in game, and must not be stranded behind the budget<=0 fast path.
+    expect(reoptBudget(overSpent, 8)).toBe(32);
+    expect(reoptBudget(overSpent, 20)).toBe(32);
+    // Once the level pool overtakes what is placed, the pool wins again.
+    expect(reoptBudget(overSpent, 45)).toBe(37);
+    // Never negative, and 0 only when there is genuinely nothing on either side.
+    expect(reoptBudget(ZERO_PTS(), -5)).toBe(0);
+  });
+
+  it('both tiers still search an over-spent hero rather than taking the budget<=0 fast path', () => {
     const { effective, effectiveDelta } = syntheticHero();
-    const result = findGateCandidate({ pts: ZERO_PTS(), effective, effectiveDelta, context, statPointsAvailable: 8 });
-    // AC-57f's fast path returns evaluations <= 1 and keptCurrent true with an unchanged vector —
-    // none of that may hold here, because the fast path itself must not fire (budget = 8, not 0).
+    const overSpent: Record<SheetKey, number> = { ...ZERO_PTS(), cdr: 32, luck: 8 };
+    for (const tier of [findGateCandidate, optimizeBuild]) {
+      const result = tier({ pts: overSpent, effective, effectiveDelta, context, level: 8 });
+      expect(result.evaluations).toBeGreaterThan(1);
+      const placed = REOPT_KEYS.reduce((sum, key) => sum + result.pts[key], 0);
+      // Conserved, not invented: the 32 points move around, and no 33rd appears.
+      expect(placed + result.unallocated).toBe(32);
+      expect(result.pts.luck).toBe(8);
+      expect(result.reoptDps).toBeGreaterThanOrEqual(result.currentDps);
+    }
+  });
+
+  it('the placed-points floor cannot reintroduce compounding — feeding a result back is non-increasing', () => {
+    // The floor is the one term that reads `pts`, so it is the one that could in principle grow
+    // round over round the way `statPointsAvailable` did. It cannot: the search never places
+    // more than the budget it was handed, so the floor is bounded by the previous budget.
+    const { effective, effectiveDelta } = syntheticHero();
+    let pts: Record<SheetKey, number> = { ...ZERO_PTS(), cdr: 30, luck: 4 };
+    let previous = reoptBudget(pts, 12);
+    for (let round = 0; round < 5; round++) {
+      pts = optimizeBuild({ pts, effective, effectiveDelta, context, level: 12 }).pts;
+      const budget = reoptBudget(pts, 12);
+      expect(budget, `round ${round}`).toBeLessThanOrEqual(previous);
+      previous = budget;
+    }
+    expect(previous).toBe(30);
+  });
+
+  it('Tier 2: a hero with 0 spent gets its whole level placed, not the budget<=0 fast path', () => {
+    // The reported defect's starting shape (Wren: level 46, nothing placed). "What is the best
+    // build" must answer with the pool, not with the empty vector.
+    const { effective, effectiveDelta } = syntheticHero();
+    const result = optimizeBuild({ pts: ZERO_PTS(), effective, effectiveDelta, context, level: 8 });
     expect(result.evaluations).toBeGreaterThan(1);
     expect(result.keptCurrent).toBe(false);
     const placed = REOPT_KEYS.reduce((sum, key) => sum + result.pts[key], 0);
@@ -540,45 +620,55 @@ describe('statPointsAvailable — banked, unspent points fold into the search bu
     expect(result.reoptDps).toBeGreaterThan(result.currentDps);
   });
 
-  it('Tier 2: 0 spent + N unspent no longer takes the budget<=0 fast path — the hero gets a real reallocation', () => {
+  it('Tier 1: a hero with 0 spent is NOT told to buy a reset — unplaced pool is not the reset question', () => {
+    // Tier 1 drives `buildResetAdvice` ("spend a real in-game reset to match this build"). A
+    // hero with everything still banked has nothing to undo, so the fast path is the right
+    // answer and the roster banner / Points warn dot must stay quiet for it. The unspent
+    // counter and the Optimize button are what surface this hero's actual next action.
     const { effective, effectiveDelta } = syntheticHero();
-    const result = optimizeBuild({ pts: ZERO_PTS(), effective, effectiveDelta, context, statPointsAvailable: 8 });
-    expect(result.evaluations).toBeGreaterThan(1);
-    expect(result.keptCurrent).toBe(false);
-    const placed = REOPT_KEYS.reduce((sum, key) => sum + result.pts[key], 0);
-    expect(placed).toBeGreaterThan(0);
-    expect(placed).toBeLessThanOrEqual(8);
-    expect(result.reoptDps).toBeGreaterThan(result.currentDps);
-  });
-
-  it('Tier 1: unallocated correctly counts banked points left idle when every candidate scores <= 0 (S1 kept, budget > 0)', () => {
-    // All-flat effectiveDelta: every candidate ties zero-gain, so the greedy walk never accepts
-    // a step and S1 (== the zero-start seed here, since pts is already all zero) is kept. Before
-    // this wave, `unallocated` was hardcoded to 0 whenever keptCurrent was true — exactly wrong
-    // here, since none of the 6 banked points ever got placed anywhere.
-    const { effective } = syntheticHero();
-    const flatDelta: EffectiveDeltas = {
-      attack: 0,
-      energy: 0,
-      speed: 0,
-      critChance: 0,
-      critDmg: 0,
-      penetration: 0,
-      cdr: 0,
-    };
-    const result = findGateCandidate({
-      pts: ZERO_PTS(),
-      effective,
-      effectiveDelta: flatDelta,
-      context,
-      statPointsAvailable: 6,
-    });
+    const result = findGateCandidate({ pts: ZERO_PTS(), effective, effectiveDelta, context, level: 8 });
+    expect(result.evaluations).toBeLessThanOrEqual(1);
     expect(result.keptCurrent).toBe(true);
     expect(result.pts).toEqual(ZERO_PTS());
-    expect(result.unallocated).toBe(6);
+    expect(result.gainPct).toBe(0);
   });
 
-  it('Tier 2: unallocated correctly counts banked points left idle when the "current" seed wins (all moves flat)', () => {
+  it('Tier 1: a hero with points spent badly IS told a reset pays, and budgets only what is spent', () => {
+    const { effective, effectiveDelta } = syntheticHero();
+    // 20 points dumped in the weakest stat, with 30 more of the level still unplaced.
+    const dumped: Record<SheetKey, number> = { ...ZERO_PTS(), cdr: 20 };
+    const result = findGateCandidate({ pts: dumped, effective, effectiveDelta, context, level: 50 });
+    expect(result.keptCurrent).toBe(false);
+    expect(result.reoptDps).toBeGreaterThan(result.currentDps);
+    const placed = REOPT_KEYS.reduce((sum, key) => sum + result.pts[key], 0);
+    // The 30 unplaced points are not this tier's to spend — a reset moves the 20, no more.
+    expect(placed + result.unallocated).toBe(20);
+  });
+
+  it('both tiers: re-running on an already-optimized vector is a fixed point — never a compounding budget', () => {
+    // The reported defect, driven the way a player hits it: Optimize, Apply, Optimize again.
+    // Under the old `budgetOf(pts) + statPointsAvailable` budget the spend grew by the banked
+    // count every round (46, 92, 138, ...) with nothing capping it.
+    const LEVEL = 46;
+    const { effective, effectiveDelta } = syntheticHero();
+    for (const tier of [findGateCandidate, optimizeBuild]) {
+      // Start from a placed vector so both tiers have something to work with.
+      let pts: Record<SheetKey, number> = { ...ZERO_PTS(), cdr: LEVEL };
+      const sums: number[] = [];
+      for (let round = 0; round < 6; round++) {
+        pts = tier({ pts, effective, effectiveDelta, context, level: LEVEL }).pts;
+        const placed = REOPT_KEYS.reduce((sum, key) => sum + pts[key], 0);
+        expect(placed, `round ${round}`).toBeLessThanOrEqual(LEVEL);
+        sums.push(placed);
+      }
+      // Not merely bounded — settled: every round after the first places the same total.
+      expect(new Set(sums.slice(1)).size, `tier settled`).toBe(1);
+    }
+  });
+
+  it('Tier 1: unallocated counts spent points left idle when every candidate scores <= 0 (S1 kept, budget > 0)', () => {
+    // All-flat effectiveDelta: every candidate ties zero-gain, so the greedy walk never accepts
+    // a step and S1 is kept. `unallocated` must still report the 6 points sitting worthless.
     const { effective } = syntheticHero();
     const flatDelta: EffectiveDeltas = {
       attack: 0,
@@ -589,41 +679,57 @@ describe('statPointsAvailable — banked, unspent points fold into the search bu
       penetration: 0,
       cdr: 0,
     };
-    const result = optimizeBuild({
-      pts: ZERO_PTS(),
-      effective,
-      effectiveDelta: flatDelta,
-      context,
-      statPointsAvailable: 5,
-    });
+    const spent: Record<SheetKey, number> = { ...ZERO_PTS(), cdr: 6 };
+    const result = findGateCandidate({ pts: spent, effective, effectiveDelta: flatDelta, context, level: 6 });
+    expect(result.keptCurrent).toBe(true);
+    expect(result.pts).toEqual(spent);
+    expect(result.unallocated).toBe(0);
+  });
+
+  it('Tier 2: unallocated counts the pool left idle when the "current" seed wins (all moves flat)', () => {
+    const { effective } = syntheticHero();
+    const flatDelta: EffectiveDeltas = {
+      attack: 0,
+      energy: 0,
+      speed: 0,
+      critChance: 0,
+      critDmg: 0,
+      penetration: 0,
+      cdr: 0,
+    };
+    const result = optimizeBuild({ pts: ZERO_PTS(), effective, effectiveDelta: flatDelta, context, level: 5 });
     expect(result.winningSeed).toBe('current');
     expect(result.pts).toEqual(ZERO_PTS());
     expect(result.unallocated).toBe(5);
   });
 
-  it('budget conservation on a real fixture hero with both spent AND banked points: placed + unallocated == spent + statPointsAvailable (both tiers)', () => {
+  it('budget conservation on a real fixture hero — the pool for Tier 2, what is spent for Tier 1', () => {
     const real = realHeroDerive('payload-20260812-8heroes.json', 'Bellatrix', 27);
     const spent = REOPT_KEYS.reduce((sum, key) => sum + real.pts[key], 0);
-    const banked = 20;
+    // A hero partway through its level: `spent` placed, 20 more of the pool still unplaced.
+    const level = spent + real.pts.luck + 20;
 
     const tier1 = findGateCandidate({
       pts: real.pts,
       effective: real.effective,
       effectiveDelta: real.effectiveDelta,
       context,
-      statPointsAvailable: banked,
+      level,
     });
     const tier1Placed = REOPT_KEYS.reduce((sum, key) => sum + tier1.pts[key], 0);
-    expect(tier1Placed + tier1.unallocated).toBe(spent + banked);
+    expect(tier1Placed + tier1.unallocated).toBe(spent);
 
     const tier2 = optimizeBuild({
       pts: real.pts,
       effective: real.effective,
       effectiveDelta: real.effectiveDelta,
       context,
-      statPointsAvailable: banked,
+      level,
     });
     const tier2Placed = REOPT_KEYS.reduce((sum, key) => sum + tier2.pts[key], 0);
-    expect(tier2Placed + tier2.unallocated).toBe(spent + banked);
+    expect(tier2Placed + tier2.unallocated).toBe(level - real.pts.luck);
+    // Tier 2 reaches strictly further, which is the whole reason the two budgets differ.
+    expect(tier2Placed).toBeGreaterThan(tier1Placed);
   });
 });
+

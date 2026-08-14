@@ -31,7 +31,6 @@ export const CHANGE_KEY_INPUTS: readonly string[] = [
   'hero.loadout',
   'hero.altLoadout',
   'hero.pts',
-  'hero.statPointsAvailable',
   'hero.abilities',
   'hero.rarity',
   'hero.level',

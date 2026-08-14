@@ -20,6 +20,7 @@ import {
   greedyWalk,
   REOPT_GATE_MAX_EVALUATIONS,
   REOPT_KEYS,
+  reoptBudget,
 } from './points-reopt-core';
 import {
   buildSeeds,
@@ -35,6 +36,7 @@ export {
   cappedStatsOf,
   budgetOf,
   greedyWalk,
+  reoptBudget,
 } from './points-reopt-core';
 export type { GreedyWalkResult } from './points-reopt-core';
 export {
@@ -53,14 +55,15 @@ export type ReoptInput = {
   effectiveDelta: EffectiveDeltas;
   context: Context;
   /**
-   * Banked, unspent stat points (`HeroRecord.statPointsAvailable`) — not reflected anywhere in
-   * `pts`, but real budget the player can allocate. Folded into the search budget as
-   * `budgetOf(pts) + statPointsAvailable` so a hero who has spent nothing yet still gets a
-   * reallocation instead of the `budget <= 0` fast path silently doing nothing. Optional and
-   * defaults to 0 — existing callers (team-plan's points passes, which have no per-hero banked
-   * count wired through `HeroPlanContext`) keep today's exact behaviour untouched.
+   * The hero's level — its whole stat-point pool.
+   *
+   * Read by Tier 2 only (`reoptBudget`), because the two tiers answer different questions and
+   * so take different budgets. Tier 2 is "what is the best build for this hero", which spends
+   * the pool. Tier 1 is "is a **reset** worth buying", and a reset only moves points that are
+   * already spent — see `findGateCandidate`. Both tiers still take one input shape so callers
+   * need not know which reads what.
    */
-  statPointsAvailable?: number;
+  level: number;
 };
 
 export type ReoptResult = {
@@ -102,8 +105,16 @@ export type ReoptResult = {
  * resolve in its favour, so the returned candidate can never score below the player's own.
  */
 export function findGateCandidate(input: ReoptInput): ReoptResult {
-  const { pts, effective, effectiveDelta, context, statPointsAvailable = 0 } = input;
-  const budget = budgetOf(pts) + statPointsAvailable;
+  const { pts, effective, effectiveDelta, context } = input;
+  // `budgetOf(pts)`, NOT `reoptBudget(pts, level)`: this tier drives `buildResetAdvice`, whose
+  // whole claim is "spend a real in-game reset to reach this build". A reset only redistributes
+  // points that are already spent, so unplaced pool is not this question's budget — a hero with
+  // points still banked does not need a reset, it needs to spend them, which is what the Points
+  // panel's own unspent counter and the (Tier 2) Optimize build control are for. Counting the
+  // pool here would tell every freshly imported, unallocated hero to buy a respec it has no use
+  // for. Non-compounding for the same reason Tier 2 is: the walk places at most `budget`, so
+  // feeding a result back can only shrink it.
+  const budget = budgetOf(pts);
   const cappedOnEntry = cappedStatsOf(effective);
 
   if (budget <= 0) {
@@ -150,10 +161,10 @@ export function findGateCandidate(input: ReoptInput): ReoptResult {
   const keptCurrent = s1Score >= greedy.score;
   const winnerPts = keptCurrent ? { ...pts } : greedy.pts;
   const winnerScore = keptCurrent ? s1Score : greedy.score;
-  // budget - budgetOf(winnerPts), not a keptCurrent/greedy.unallocated branch: with
-  // statPointsAvailable folded into budget, keeping S1 no longer implies nothing was left on
-  // the table — a hero with 0 spent and N unspent who scores no positive candidate keeps S1
-  // (score tie) while N points still sit unplaced (AC-57f's fast path only fires at budget <= 0).
+  // budget - budgetOf(winnerPts), not a keptCurrent/greedy.unallocated branch: keeping S1 does
+  // not imply nothing was left on the table — a hero whose spent points score no positive
+  // candidate keeps S1 (score tie) while those points still sit somewhere worthless
+  // (AC-57f's fast path only fires at budget <= 0).
   const unallocated = Math.max(0, budget - budgetOf(winnerPts));
   const winnerSheet = keptCurrent ? effective : buildCandidateSheet(effective, pts, effectiveDelta, winnerPts);
 
@@ -184,8 +195,8 @@ export function findGateCandidate(input: ReoptInput): ReoptResult {
  * `optimizeBuild.reoptDps >= findGateCandidate.reoptDps` holds structurally on the same input.
  */
 export function optimizeBuild(input: ReoptInput): ReoptResult {
-  const { pts, effective, effectiveDelta, context, statPointsAvailable = 0 } = input;
-  const budget = budgetOf(pts) + statPointsAvailable;
+  const { pts, effective, effectiveDelta, context, level } = input;
+  const budget = reoptBudget(pts, level);
   const cappedOnEntry = cappedStatsOf(effective);
 
   if (budget <= 0) {

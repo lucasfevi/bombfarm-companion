@@ -70,6 +70,40 @@ export function budgetOf(pts: Record<SheetKey, number>): number {
   return REOPT_KEYS.reduce((sum, key) => sum + pts[key], 0);
 }
 
+/**
+ * Tier 2's budget over `REOPT_KEYS`: `max(level - pts.luck, budgetOf(pts))`.
+ *
+ * Tier 2 only. Tier 1 budgets on `budgetOf(pts)` alone, because it answers "is a reset worth
+ * buying" rather than "what is the best build" — see `findGateCandidate`.
+ *
+ * Two lower bounds, and the search gets the larger:
+ *
+ * - **The level pool.** A hero's total is its level — `clampPointStep`'s ceiling for the manual
+ *   steppers and the denominator of the Points panel's `spent / level` counter — and Luck is
+ *   outside the search's reach (`AD-BSP-21`), so the seven DPS keys may hold at most
+ *   `level - pts.luck` between them. This term does not depend on how `pts` currently splits,
+ *   which is what makes re-optimizing the same hero a fixed point.
+ * - **What is already placed.** An over-spent hero (the one reachable overspend, per
+ *   `clampPointStep`: lowering a level while points are spent) really does hold those points and
+ *   really can reallocate them in game. Without this floor, `level - pts.luck` could fall below
+ *   `budgetOf(pts)` — or to 0 outright once Luck alone covers the level — and the search would
+ *   refuse to touch points the player demonstrably has.
+ *
+ * NOT `budgetOf(pts) + statPointsAvailable`, which is what this used to be. A save's banked
+ * count is a snapshot of `level - spent` taken at import; it goes stale the instant the planner
+ * reallocates, so adding it to a `pts` that already absorbed those points counts them twice.
+ * Every Optimize -> Apply round then handed the search another full banked allowance
+ * (46 -> 92 -> 138 -> ...), walking the hero straight past its level cap while the manual +/-
+ * steppers, which have always clamped to `level`, refused the very same spend.
+ *
+ * The `budgetOf(pts)` floor cannot bring that compounding back: the search never places more
+ * than the budget it was given, so feeding a result back yields `budgetOf(pts) <= previous
+ * budget` and the sequence is non-increasing, settling immediately rather than growing.
+ */
+export function reoptBudget(pts: Record<SheetKey, number>, level: number): number {
+  return Math.max(0, level - pts.luck, budgetOf(pts));
+}
+
 export type GreedyWalkResult = {
   pts: Record<SheetKey, number>;
   score: number;

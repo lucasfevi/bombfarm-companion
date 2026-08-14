@@ -71,7 +71,7 @@ function listFiles(dir: string, acc: string[] = []): string[] {
  */
 const SRC_ALLOWLIST: Record<string, number[]> = {
   'derive.ts': [27, 78, 96, 142, 197, 208],
-  'advisor-pipeline.ts': [91, 195, 221, 323],
+  'advisor-pipeline.ts': [89, 192, 218, 320],
   'stat-breakdown/types.ts': [105],
   'team-plan/score.ts': [135],
 };

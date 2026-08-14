@@ -42,7 +42,6 @@ export function buildHeroPlanContext(
     scope,
     abilities: hero.abilities,
     pts: hero.pts,
-    statPointsAvailable: hero.statPointsAvailable ?? 0,
   };
 }
 

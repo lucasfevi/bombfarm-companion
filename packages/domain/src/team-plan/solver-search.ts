@@ -353,14 +353,14 @@ function pointsPass(
           effective: score.effective,
           effectiveDelta: score.effectiveDelta,
           context: score.context,
-          statPointsAvailable: ctx.statPointsAvailable,
+          level: ctx.level,
         })
       : findGateCandidate({
           pts: nextPts[ctx.heroId] ?? basePts,
           effective: score.effective,
           effectiveDelta: score.effectiveDelta,
           context: score.context,
-          statPointsAvailable: ctx.statPointsAvailable,
+          level: ctx.level,
         });
     nextPts[ctx.heroId] = result.pts;
   }

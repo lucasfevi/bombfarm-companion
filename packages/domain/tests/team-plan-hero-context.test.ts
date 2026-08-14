@@ -44,7 +44,6 @@ function heroInputFromExtract(hero: ReturnType<typeof extractHero>): TeamPlanHer
     abilities: hero.abilities,
     pts: ZERO_PTS(),
     loadout: hero.loadout,
-    statPointsAvailable: hero.statPointsAvailable,
   };
 }
 
@@ -62,7 +61,6 @@ describe('buildHeroPlanContext', () => {
       loadout: hero.loadout,
       altLoadout: null,
       pts: ZERO_PTS(),
-      statPointsAvailable: 0,
       abilities: hero.abilities,
       rarity: hero.rarity,
       level: hero.level,
@@ -87,21 +85,24 @@ describe('buildHeroPlanContext', () => {
     expect(ctx!.sheetOther).toEqual(pipeline.sheetOther);
   });
 
-  it('threads statPointsAvailable from TeamPlanHeroInput, defaulting to 0 when omitted', () => {
+  it('threads level from TeamPlanHeroInput — the point pool both team-plan points passes budget against', () => {
+    // `solver-search.ts`'s pointsPass and `waterfall.ts`'s finalPtsFromOptimizeBuild read
+    // `ctx.level` and nothing else for their reopt budget (`reoptBudget`), so a level that
+    // failed to thread here would silently hand the team plan a different budget from the
+    // Planner's for the same hero — which is how the two pages drifted apart before.
     const raw = loadFixtureJson('save-20260813-5heroes.json');
     const hero = extractHero(raw, 'Bellatrix', 42);
     const account = accountFromFixture(raw);
-    const { statPointsAvailable: _omitted, ...inputSansField } = heroInputFromExtract(hero);
 
-    const withoutField = buildHeroPlanContext(inputSansField, account, 'optimize');
-    expect(withoutField!.statPointsAvailable).toBe(0);
+    const ctx = buildHeroPlanContext(heroInputFromExtract(hero), account, 'optimize');
+    expect(ctx!.level).toBe(hero.level);
 
-    const withBanked = buildHeroPlanContext(
-      { ...heroInputFromExtract(hero), statPointsAvailable: 12 },
+    const relevelled = buildHeroPlanContext(
+      { ...heroInputFromExtract(hero), level: 12 },
       account,
       'optimize',
     );
-    expect(withBanked!.statPointsAvailable).toBe(12);
+    expect(relevelled!.level).toBe(12);
   });
 
   it('returns null when birth is missing', () => {
