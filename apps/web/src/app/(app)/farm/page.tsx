@@ -1,7 +1,7 @@
 'use client';
 
 import { useAppLang } from '@/shared/context/app-lang';
-import { PhasesExplorer } from '@/features/phases';
+import { FarmRankingBoard, PhasesExplorer } from '@/features/phases';
 import { workspaceClass } from '@bombfarm/ui/panel-field.recipe';
 
 export default function PhasesPage() {
@@ -9,6 +9,7 @@ export default function PhasesPage() {
 
   return (
     <div className={workspaceClass}>
+      <FarmRankingBoard t={t} lang={lang} />
       <PhasesExplorer t={t} lang={lang} />
     </div>
   );

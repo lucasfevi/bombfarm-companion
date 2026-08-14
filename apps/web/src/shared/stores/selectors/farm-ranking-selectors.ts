@@ -165,14 +165,27 @@ export type FarmPoolEntry = {
   enabled: boolean;
 };
 
-/** One entry per roster hero, in roster order — the rotation-pool chip row's data source. */
-export function selectFarmPoolEntries(state: PlannerStore): FarmPoolEntry[] {
-  const overrides = state.farmPoolOverrides;
-  return state.heroes.map((hero) => ({
+/**
+ * Pure derivation, one entry per roster hero in roster order — the rotation-pool chip row's
+ * data source. NOT a store selector: it allocates a new array every call, so a component must
+ * wrap it in its own `useMemo` keyed on `heroes`/`farmPoolOverrides` (both already-stable store
+ * references) rather than subscribing to it directly via `usePlannerStore` — a selector that
+ * returns a fresh array on every invocation makes `useSyncExternalStore` re-render forever.
+ */
+export function deriveFarmPoolEntries(
+  heroes: PlannerStore['heroes'],
+  farmPoolOverrides: PlannerStore['farmPoolOverrides'],
+): FarmPoolEntry[] {
+  return heroes.map((hero) => ({
     heroId: hero.id,
     heroName: hero.name,
-    enabled: overrides[hero.id] ?? (hero.battleAllowed ?? true),
+    enabled: farmPoolOverrides[hero.id] ?? (hero.battleAllowed ?? true),
   }));
+}
+
+/** Convenience wrapper over {@link deriveFarmPoolEntries} for direct-state callers (tests). */
+export function selectFarmPoolEntries(state: PlannerStore): FarmPoolEntry[] {
+  return deriveFarmPoolEntries(state.heroes, state.farmPoolOverrides);
 }
 
 export const selectFarmReturnBonus = (state: PlannerStore) => state.farmReturnBonus;

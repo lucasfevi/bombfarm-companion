@@ -91,6 +91,7 @@ export { selectTreeSheetTotals } from '@/shared/stores/selectors/tree-sheet-sele
 export {
   selectFarmRankingRows,
   selectFarmPoolEntries,
+  deriveFarmPoolEntries,
   selectFarmReturnBonus,
   resetFarmRankingCache,
   getFarmRankingComputeCount,

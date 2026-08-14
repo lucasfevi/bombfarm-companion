@@ -19,11 +19,14 @@ export type FarmSortKey =
 
 export type FarmSortDir = 'asc' | 'desc';
 
+/** Keys of `Strings` whose value is a plain string — narrows `t[headerKey]` to `string`. */
+type StringKeyOf<T> = { [K in keyof T]: T[K] extends string ? K : never }[keyof T];
+
 export type FarmColumnDef = {
   /** Stable, greppable id — also the `data-testid` suffix. */
   id: string;
   /** `Strings` key for the column header text (`t.*`, `farmRanking*` prefix). */
-  headerKey: keyof Strings;
+  headerKey: StringKeyOf<Strings>;
   align: 'left' | 'right';
   numeric: boolean;
   sortKey: FarmSortKey | null;

@@ -104,6 +104,43 @@ const PFR_WEB_UI_KEYS_ADDED = [
   'farmRankingColOneShot',
   'farmRankingColJaula',
   'farmRankingColInfeasible',
+  'farmRankingTitle',
+  'farmRankingCaption',
+  'farmRankingEmptyNoRosterTitle',
+  'farmRankingEmptyNoRosterDesc',
+  'farmRankingEmptyNoHeroesTitle',
+  'farmRankingEmptyNoHeroesDesc',
+  'farmRankingEmptyComputeFailedTitle',
+  'farmRankingEmptyComputeFailedDesc',
+  'farmRankingEmptyNoMatchesTitle',
+  'farmRankingEmptyNoMatchesDesc',
+  'farmRankingFilterUnlockedLabel',
+  'farmRankingFilterUnlockedDisabledReason',
+  'farmRankingFilterFeasibleLabel',
+  'farmRankingFilterAtoLabel',
+  'farmRankingFilterAtoAll',
+  'farmRankingFilterGateLabel',
+  'farmRankingFilterGateAll',
+  'farmRankingFilterGateOnly',
+  'farmRankingFilterGateNonGate',
+  'farmRankingPoolLabel',
+  'farmRankingPoolHeroAria',
+  'farmRankingReturnBonusLabel',
+  'farmRankingReturnBonusOff',
+  'farmRankingReturnBonusOn',
+  'farmRankingReturnBonusVip',
+  'farmRankingGateBadge',
+  'farmRankingPushTargetBadge',
+  'farmRankingInfeasibleBadge',
+  'farmRankingKeysConsumed',
+  'farmRankingOneShotYes',
+  'farmRankingOneShotNo',
+  'farmRankingOneShotTooltipYes',
+  'farmRankingOneShotTooltipNo',
+  'farmRankingSortedBy',
+  'farmRankingSortAsc',
+  'farmRankingSortDesc',
+  'farmRankingCurrentPhase',
 ] as const;
 
 function diffLeafPaths(a: unknown, b: unknown, path: string[] = [], out: string[] = []): string[] {
@@ -209,8 +246,8 @@ describe('i18n split parity', () => {
     }
   });
 
-  it('PFR_WEB_UI_KEYS_ADDED has exactly 13 entries, present in STRINGS but absent from the frozen fixture, both languages', () => {
-    expect(PFR_WEB_UI_KEYS_ADDED.length).toBe(13);
+  it('PFR_WEB_UI_KEYS_ADDED has exactly 50 entries, present in STRINGS but absent from the frozen fixture, both languages', () => {
+    expect(PFR_WEB_UI_KEYS_ADDED.length).toBe(50);
     for (const key of PFR_WEB_UI_KEYS_ADDED) {
       expect(key in fixture.en, `${key} unexpectedly present in fixture.en`).toBe(false);
       expect(key in fixture.pt, `${key} unexpectedly present in fixture.pt`).toBe(false);
@@ -241,5 +278,33 @@ describe('i18n split parity', () => {
     expect(typeof saveLang).toBe('function');
     const section: ExplainSection = { h: 'x', p: ['y'] };
     expect(section.h).toBe('x');
+  });
+});
+
+/**
+ * R-C22 AC-1: EN and PT key sets are structurally equal (compile-time via `pt: typeof en`,
+ * asserted again here at runtime) and no PT value for a Farm Ranking key is byte-identical to
+ * its EN counterpart, except an explicit allowlist. `navPhases` ("Farm", AD-PFR-17) is the
+ * spec's own allowlisted collision. `farmRankingReturnBonusVip` ("VIP") is added on the same
+ * rationale — a universal loanword used unchanged in Brazilian Portuguese gaming UI, not a
+ * missed translation.
+ */
+describe('Farm Ranking i18n parity (R-C22)', () => {
+  const EN_PT_COLLISION_ALLOWLIST = new Set(['navPhases', 'farmRankingReturnBonusVip']);
+
+  it('EN and PT key sets are equal at runtime', () => {
+    expect(Object.keys(STRINGS.pt).sort()).toEqual(Object.keys(STRINGS.en).sort());
+  });
+
+  it('no farmRanking* PT value is byte-identical to its EN counterpart, except the allowlist', () => {
+    const leaks: string[] = [];
+    for (const key of Object.keys(STRINGS.en)) {
+      if (!key.startsWith('farmRanking') && key !== 'navPhases') continue;
+      if (EN_PT_COLLISION_ALLOWLIST.has(key)) continue;
+      const enValue = STRINGS.en[key as keyof Strings];
+      const ptValue = STRINGS.pt[key as keyof Strings];
+      if (typeof enValue === 'string' && enValue === ptValue) leaks.push(key);
+    }
+    expect(leaks, `EN string left untranslated in PT: ${leaks.join(', ')}`).toEqual([]);
   });
 });
