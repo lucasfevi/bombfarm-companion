@@ -128,7 +128,10 @@ export function computePhaseIntelGlobal(
     jaulaHp: propHp(stoneHp, BOSS_HP_MULT_WIKI),
     gateTimerSecs: line.gate ? GATE_SECS_POR_ATO[atoIdx] ?? null : null,
     jaulaEarlyCapPct: jaulaEarlyCap(phase) * 100,
-    jaulaWindowSecs: JAULA.janelaSecsPorAto[atoIdx] ?? JAULA.janelaSecsPorAto[0],
+    // `JAULA.janelaSecs` is the non-VIP guaranteed window — no longer per-difficulty (the wiki
+    // dropped `janelaSecsPorAto`). `JAULA.janelaSecsVip` exists but is intentionally not wired
+    // in here; the VIP toggle is a UI concern (item C).
+    jaulaWindowSecs: JAULA.janelaSecs,
     heroChestRarity: HERO_CHEST_RARITY_BY_ATO[atoIdx] ?? HERO_CHEST_RARITY_BY_ATO[0],
     propRows,
   };

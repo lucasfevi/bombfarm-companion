@@ -10,7 +10,26 @@ export const WIKI_PROPS: WikiProp[] = wiki.props;
 export const PROPS_POR_ATO: number[] = wiki.propsPorAto;
 export const BOSS_HP_MULT_WIKI = wiki.bossHpMult;
 export const REP_HP_MULT = wiki.repHpMult;
-export const JAULA = wiki.jaula;
+
+/**
+ * `JAULA`'s shape is **breaking** as of `pfr-wiki-bundle` (PWB-14): the wiki no longer reports a
+ * per-phase early-arrival ramp (`adiantaProbIni`/`adiantaProbMax`) or a per-difficulty window
+ * array (`janelaSecsPorAto`). It now reports a flat per-difficulty early-arrival probability and
+ * a single (non-VIP / VIP) guaranteed window. `jaulaEarlyCap()` below keeps its name and
+ * signature; its body is now a difficulty lookup instead of a per-phase interpolation.
+ */
+export type WikiJaula = {
+  /** [ato-1] early-arrival probability. Live [0.05,0.1,0.15,0.2,0.25]. Replaces the removed
+   *  adiantaProbIni/adiantaProbMax per-phase ramp. */
+  adiantaProbPorAto: readonly number[];
+  /** Guaranteed window, seconds. Live 12600. Replaces janelaSecsPorAto. */
+  janelaSecs: number;
+  /** VIP guaranteed window, seconds. Live 9900. */
+  janelaSecsVip: number;
+  hpMult: number;
+};
+export const JAULA: WikiJaula = wiki.jaula;
+
 export const HERO_CHEST_RARITY_BY_ATO = wiki.heroChestRarityByAto;
 export const CHEST_RARITY_DIST = wiki.chestRarityDist;
 export const ITEM_POR_FASE: ItemLevelBand[] = wiki.itemPorFase;
@@ -23,6 +42,105 @@ export const PHASE_MAP_NAMES_EN: string[] = phaseMapNamesEn;
 /** fases-nomes suffix per ato (ato 1 has none). Full in-game names append these in PT. */
 export const PHASE_NAME_SUFFIXES = ['', ' (Nightmare)', ' (Hell)', ' (Torment)', ' (Inferno)'] as const;
 export const WIKI_SYNCED_AT = wiki.syncedAt;
+/** ISO timestamp of the wiki pull the bundle was emitted from (`manifest.json.synced_at`). */
+export const WIKI_SOURCE_PULLED_AT: string = wiki.sourcePulledAt;
+/** `YYYY-MM-DD` — the date the emitter ran. May be later than the pull date (stale-input emit). */
+export const WIKI_EMITTED_AT: string = wiki.emittedAt;
+
+/** Per-prop drop fractions, all four in one object because FR-3 reads them together.
+ *  Sourced from the bundle's `drops` block:
+ *    chest ← `drops.chestDropRate`     0.001    — item/hero chest, ANY phase
+ *    key   ← `drops.keyDropRate`       0.001    — ready key, NON-gate phases only
+ *    gem   ← `drops.gemChestDropRate`  0.00005  — gem chest, GATE phases only
+ *    time  ← `drops.timechestDropRate` 0.0015   — time chest, GATE phases only
+ *                                                 (api source is `rotacao`, not `drops`) */
+export type DropRates = { chest: number; key: number; gem: number; time: number };
+export const DROP_RATES: DropRates = {
+  chest: wiki.drops.chestDropRate,
+  key: wiki.drops.keyDropRate,
+  gem: wiki.drops.gemChestDropRate,
+  time: wiki.drops.timechestDropRate,
+};
+
+/** Keys spent to enter one gate. Live 1. ← `drops.keyGateCost` */
+export const KEY_GATE_COST: number = wiki.drops.keyGateCost;
+/** Return Bonus, non-VIP. Live 0.4. ← `drops.bonusAdd` */
+export const RETURN_BONUS_ADD: number = wiki.drops.bonusAdd;
+/** Return Bonus, VIP. Live 0.8. ← `drops.bonusAddVip` */
+export const RETURN_BONUS_ADD_VIP: number = wiki.drops.bonusAddVip;
+/** Banked offline seconds cap. Live 28800. ← `drops.bonusCapSecs` */
+export const RETURN_BONUS_CAP_SECS: number = wiki.drops.bonusCapSecs;
+
+/** [ato-1][rarityIndex 0..5] — time-chest rarity. 5 rows × 6 columns, each row sums to 1. */
+export const TIMECHEST_RARITY_BY_ATO: readonly (readonly number[])[] = wiki.timechestRarityByAto;
+
+export type WikiGem = {
+  /** e.g. `gem_emerald` — joins wiki art and the save's gem ids. */
+  defId: string;
+  /** English display name as the API ships it, e.g. `Emerald`. */
+  name: string;
+  /** 1..3 */
+  rank: number;
+  /** rarity index 0..5 (rank 1 → 2 Raro, rank 2 → 3 Épico, rank 3 → 4 Lendária). */
+  rarity: number;
+};
+
+export type WikiGems = {
+  /** Second witness of `DROP_RATES.gem`; guard asserts equality. */
+  chestDropRate: number;
+  /** Stones per rank. Live 3. P(one stone | rank) = 1 / perRank — UNIFORM. */
+  perRank: number;
+  rankDistByAto: readonly (readonly number[])[];
+  list: readonly WikiGem[];
+};
+export const WIKI_GEMS: WikiGems = wiki.gems;
+
+/** [ato-1][rank-1] — P(rank | gem chest), per difficulty. 5 rows × 3 columns, each row sums to 1.
+ *  Alias of `WIKI_GEMS.rankDistByAto`, exported flat because it is the term FR-3 reads. */
+export const GEM_RANK_DIST_BY_ATO: readonly (readonly number[])[] = WIKI_GEMS.rankDistByAto;
+
+/** Alias of `WIKI_GEMS.list`. */
+export const GEM_LIST: readonly WikiGem[] = WIKI_GEMS.list;
+
+export type LootAbilityCode = 'veia_ouro' | 'fortuna' | 'olho_lapidador';
+
+export type LootAbilityValue = {
+  /** Wiki effect kind verbatim: `gold_self` | `team_gold` | `chest_upgrade`. */
+  kind: string;
+  /** Fraction per level. 0.02 = +2%/level. */
+  perLevel: number;
+  /**
+   * `max` is the **LEVEL cap**, not the effect cap — it is the API's own key name
+   * (`habilidades[].max`), kept verbatim so the export and the payload agree.
+   * At-max effect = `perLevel * max`:
+   *   veia_ouro 0.02 × 20 = +40%   ·   fortuna 0.005 × 20 = +10%
+   * Both reproduce the PRD's independently-stated at-max values, and a domain test asserts
+   * the products so a future `max` semantics change cannot pass silently.
+   */
+  max: number;
+};
+
+/** Keyed by the wiki `code`, which is the same id `model/abilities.ts` uses, so a hero's
+ *  ability level joins without a mapping table. `code` is the key, not a field. The bundle JSON
+ *  keeps calling the cap `maxLevel` — this is the one translation point between the two
+ *  vocabularies (`OD-7`); do not add a second one. */
+export const LOOT_ABILITY_VALUES: Readonly<Record<LootAbilityCode, LootAbilityValue>> = {
+  veia_ouro: {
+    kind: wiki.lootAbilities.veia_ouro.kind,
+    perLevel: wiki.lootAbilities.veia_ouro.perLevel,
+    max: wiki.lootAbilities.veia_ouro.maxLevel,
+  },
+  fortuna: {
+    kind: wiki.lootAbilities.fortuna.kind,
+    perLevel: wiki.lootAbilities.fortuna.perLevel,
+    max: wiki.lootAbilities.fortuna.maxLevel,
+  },
+  olho_lapidador: {
+    kind: wiki.lootAbilities.olho_lapidador.kind,
+    perLevel: wiki.lootAbilities.olho_lapidador.perLevel,
+    max: wiki.lootAbilities.olho_lapidador.maxLevel,
+  },
+};
 
 const MAX_PHASE = 600;
 
@@ -168,11 +286,21 @@ export function itemLevelDropLabel(levels: number[]): string {
   return `${levels[0]}–${levels[levels.length - 1]}`;
 }
 
-/** Jaula early-arrival cap at this phase (0..1). */
+/**
+ * Jaula early-arrival cap at this phase (0..1).
+ *
+ * The wiki removed the per-phase ramp (`adiantaProbIni`/`adiantaProbMax`) this used to
+ * interpolate across — `entidades.jaula` now reports one flat value per difficulty (`ato`)
+ * instead. The name and signature are unchanged; the body is now a difficulty lookup, clamped
+ * exactly as `propCountForAto` clamps its `ato` index so an out-of-range phase still returns a
+ * finite number rather than `NaN`/`undefined`.
+ */
 export function jaulaEarlyCap(phase: number): number {
   const clampedPhase = Math.max(1, Math.min(MAX_PHASE, Math.round(phase)));
-  const { adiantaProbIni, adiantaProbMax } = JAULA;
-  return adiantaProbIni + (adiantaProbMax - adiantaProbIni) * ((clampedPhase - 1) / (MAX_PHASE - 1));
+  const line = wikiPhaseLine(clampedPhase);
+  const ato = line?.ato ?? 1;
+  const atoIndex = Math.max(0, Math.min(JAULA.adiantaProbPorAto.length - 1, ato - 1));
+  return JAULA.adiantaProbPorAto[atoIndex] ?? JAULA.adiantaProbPorAto[0];
 }
 
 /** Gold multiplier vs Comum for prop rarity index (live-validated formula). */
