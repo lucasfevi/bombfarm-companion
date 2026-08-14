@@ -155,7 +155,9 @@ describe('readSection — every SectionFailureReason producible from routes.ts i
 
     expect(outcome.kind).toBe('drift');
     if (outcome.kind === 'drift') {
-      expect(outcome.missingKeys).toContain('gold');
+      // MP5 F4 (T5): missingKeys is now path-qualified from the fingerprint's root
+      // ('account.gold', not bare 'gold') — MSG-01/MSG-05's own requirement.
+      expect(outcome.missingKeys).toContain('account.gold');
     }
   });
 

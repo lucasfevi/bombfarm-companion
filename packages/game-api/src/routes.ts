@@ -117,7 +117,11 @@ export async function readSection(
       if (!route.acceptProjected(projected)) {
         return { kind: 'failed', reason: 'empty_roster' };
       }
-      return { kind: 'ok', body: projected, unknownKeys: shape.unknownKeys };
+      // MP5 F4 (T5): `shape.ok` now PROVES zero added keys — the deepened `checkSchema` makes an
+      // added key fatal at every declared level, so `shape.ok === true` can never coexist with a
+      // non-empty added-key list (MSG-02). `unknownKeys` is therefore always `[]` here; T6 threads
+      // `addedKeys` through `SectionOutcome`/`SectionFidelity` properly and this literal goes away.
+      return { kind: 'ok', body: projected, unknownKeys: [] };
     }
     case 'unauthorized':
       return { kind: 'failed', reason: 'unauthorized' };
