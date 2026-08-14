@@ -8,9 +8,9 @@ import type { PlannerStore } from '@/shared/stores/planner-store';
 
 export type PhasesSlice = {
   phasesViewPhase: number;
-  /** Farm Ranking rotation pool override map (`AD-PFR-05`, `AD-PFRC-05`). */
+  /** Farm Ranking rotation pool override map. */
   farmPoolOverrides: Record<string, boolean>;
-  /** Farm Ranking return-bonus estimate — B's `ReturnBonusMode` verbatim (`ASM-C15`). */
+  /** Farm Ranking return-bonus estimate — `@bombfarm/domain`'s `ReturnBonusMode` verbatim. */
   farmReturnBonus: ReturnBonusMode;
 
   hydratePhasesView: (view: PhasesViewState) => void;
@@ -26,7 +26,7 @@ export const createPhasesSlice: StateCreator<
   PhasesSlice
 > = (set, get) => {
   /**
-   * The ONLY composer of a complete `PhasesViewState` (`AD-PFRC-03`). Every write path —
+   * The ONLY composer of a complete `PhasesViewState`. Every write path —
    * including `setPhasesViewPhase` — goes through this, so a second persisted field can never
    * be silently erased by a partial-literal write again. Reads current slice values via `get()`
    * rather than trusting a caller-supplied patch.

@@ -34,7 +34,7 @@ function boardFiles(): { path: string; text: string }[] {
 }
 
 // ---------------------------------------------------------------------------------------------
-// (a) One compute — R-C20: zero advisor-pipeline calls anywhere under the board's tree.
+// (a) One compute: zero advisor-pipeline calls anywhere under the board's tree.
 // ---------------------------------------------------------------------------------------------
 const FORBIDDEN_PIPELINE_IMPORTS = [
   'computeAdvisorPipeline',
@@ -47,7 +47,7 @@ function findPipelineImport(text: string): string | null {
   return FORBIDDEN_PIPELINE_IMPORTS.find((name) => text.includes(name)) ?? null;
 }
 
-describe('guard (a) — zero advisor-pipeline calls under the board tree (R-C20)', () => {
+describe('guard (a) — zero advisor-pipeline calls under the board tree', () => {
   it('red state: a fabricated snippet importing pipelineForHero is caught', () => {
     const bad = `import { pipelineForHero } from '@bombfarm/domain/roster-dps';`;
     expect(findPipelineImport(bad)).toBe('pipelineForHero');
@@ -59,25 +59,25 @@ describe('guard (a) — zero advisor-pipeline calls under the board tree (R-C20)
       .filter((entry) => entry.hit);
     expect(
       offenders,
-      offenders.map((o) => `${o.file} references ${o.hit} (R-C20: item B owns every pipeline call)`).join('\n'),
+      offenders.map((o) => `${o.file} references ${o.hit} (@bombfarm/domain owns every pipeline call)`).join('\n'),
     ).toEqual([]);
   });
 });
 
 // ---------------------------------------------------------------------------------------------
-// (f) One farm-rate importer — R-C20 AC-7.
+// (f) One farm-rate importer.
 // ---------------------------------------------------------------------------------------------
-describe('guard (f) — @bombfarm/domain/farm-rate: one RUNTIME importer (R-C20 AC-7)', () => {
+describe('guard (f) — @bombfarm/domain/farm-rate: one RUNTIME importer', () => {
   const srcRoot = path.join(WEB_PACKAGE_ROOT, 'src');
   const allowedRuntimeFile = 'src/shared/stores/selectors/farm-ranking-selectors.ts';
 
-  // NOTE on scope, recorded for the validator: AD-PFRC-08 requires FarmRateRow/FarmRateOptions/
-  // ReturnBonusMode to be consumed "as B declares it — no local re-declaration". That forces a
+  // NOTE on scope, recorded for the validator: FarmRateRow/FarmRateOptions/
+  // ReturnBonusMode must be consumed "as @bombfarm/domain declares it — no local re-declaration". That forces a
   // pure `import type { FarmRateRow } from '@bombfarm/domain/farm-rate'` in every component/model
   // file that types a row prop (farm-ranking-row.tsx, farm-ranking-table.tsx,
   // farm-ranking-view.ts) and in farm-return-bonus.tsx (ReturnBonusMode) — not just the single
-  // `phases-view-storage.ts` example tasks.md names. A pure `import type` erases at compile time
-  // (zero bundle bytes, zero possibility of carrying a re-implemented computation) — R-C20's
+  // `phases-view-storage.ts` example this guard was originally written against. A pure `import type` erases at compile time
+  // (zero bundle bytes, zero possibility of carrying a re-implemented computation) — this guard's
   // real teeth is that no SECOND file can import a runtime binding (computeFarmRates and its
   // siblings). This guard therefore allows `import type { ... }` in any src file and restricts
   // only import statements that carry at least one non-type binding to the selector file.
@@ -128,7 +128,7 @@ describe('guard (f) — @bombfarm/domain/farm-rate: one RUNTIME importer (R-C20 
 });
 
 // ---------------------------------------------------------------------------------------------
-// (b) No save writes — R-C15.
+// (b) No save writes.
 // ---------------------------------------------------------------------------------------------
 const ROSTER_MUTATORS = ['patchHero(', 'setHeroes(', 'upsertHero(', 'saveHeroes('];
 
@@ -139,7 +139,7 @@ function findRosterMutator(text: string): string | null {
   return null;
 }
 
-describe('guard (b) — no board file writes the roster or the save (R-C15)', () => {
+describe('guard (b) — no board file writes the roster or the save', () => {
   it('red state: a fabricated snippet calling setHeroes( is caught', () => {
     expect(findRosterMutator('state.setHeroes(nextRoster)')).toBe('setHeroes(');
   });
@@ -157,7 +157,7 @@ describe('guard (b) — no board file writes the roster or the save (R-C15)', ()
 });
 
 // ---------------------------------------------------------------------------------------------
-// (e) No re-implemented math — R-C20 / R-C29 / ASM-C17.
+// (e) No re-implemented math.
 // ---------------------------------------------------------------------------------------------
 const RATE_FIELD_NAMES = [
   'goldPerHour',
@@ -185,7 +185,7 @@ function findPerPropOneShotDerivation(text: string): boolean {
   return /avgHitBase/.test(text) && /mitigationPct/.test(text) && /(>=|<=|>|<)/.test(text);
 }
 
-describe('guard (e) — no re-implemented rate arithmetic in apps/web (R-C20, R-C29)', () => {
+describe('guard (e) — no re-implemented rate arithmetic in apps/web', () => {
   it('red state 1: a fabricated snippet multiplying row.goldPerHour is caught', () => {
     expect(findRateArithmetic('const doubled = row.goldPerHour * 2;')).toBe('goldPerHour');
   });
@@ -207,7 +207,7 @@ describe('guard (e) — no re-implemented rate arithmetic in apps/web (R-C20, R-
 });
 
 // ---------------------------------------------------------------------------------------------
-// (c) No inline copy — R-C22. Scoped to the new components only.
+// (c) No inline copy. Scoped to the new components only.
 // ---------------------------------------------------------------------------------------------
 const ATTR_ALLOWLIST = new Set(['data-testid', 'className', 'href', 'id', 'role', 'type', 'key', 'value']);
 
@@ -224,7 +224,7 @@ function findInlineAttrCopy(text: string): string[] {
   return hits;
 }
 
-describe('guard (c) — no player-facing string literal at a JSX call site (R-C22)', () => {
+describe('guard (c) — no player-facing string literal at a JSX call site', () => {
   it('red state: a fabricated aria-label="Enable hero" literal is caught', () => {
     expect(findInlineAttrCopy('<Switch aria-label="Enable hero" />')).toEqual(['aria-label="Enable hero"']);
   });
@@ -238,9 +238,9 @@ describe('guard (c) — no player-facing string literal at a JSX call site (R-C2
 });
 
 // ---------------------------------------------------------------------------------------------
-// (d) No renamed keys — R-C4. Cross-checked against the T1 baseline guard file.
+// (d) No renamed keys. Cross-checked against the baseline guard file.
 // ---------------------------------------------------------------------------------------------
-describe('guard (d) — persisted key strings unchanged (R-C4)', () => {
+describe('guard (d) — persisted key strings unchanged', () => {
   it('a dedicated test file already pins this (farm-persisted-keys-guard.test.ts)', () => {
     expect(
       fs.existsSync(path.join(WEB_PACKAGE_ROOT, 'src/tests/farm-persisted-keys-guard.test.ts')),

@@ -6,11 +6,11 @@ import { WEB_PACKAGE_ROOT } from './helpers/web-package-root';
 /**
  * Structural (source-scanning) coverage for the board's presentational components.
  *
- * SPEC_DEVIATION: the Test Coverage Matrix names "unit (existing apps/web component-test
+ * Deviation from a component-test idiom: the planned coverage named "unit (existing apps/web component-test
  * idiom)" for this layer. There is no such idiom in this repo — zero `*.test.tsx` files exist
  * anywhere under `apps/web/src`, and neither `apps/web/package.json` nor `packages/ui/package.json`
  * carries `jsdom` or `@testing-library/react`. Adding either would be a new dependency, which
- * `AD-PFRC-02` and T9's "package.json dependency list is unchanged" gate both forbid introducing
+ * the "package.json dependency list is unchanged" gate forbids introducing
  * for this feature. These tests instead follow the repo's REAL established genre for this kind
  * of assertion — source-scanning (`mod-17-max-props.test.ts`, `devtools-not-in-production-
  * bundle.test.ts`) — and the genuine DOM-rendered proof (testids resolve, empty states render no
@@ -80,7 +80,7 @@ describe('Farm Ranking table — one header per FARM_COLUMNS entry, colgroup pre
   });
 });
 
-describe('Farm Ranking board — the four AD-PFRC-07 empty states render no numeric cell', () => {
+describe('Farm Ranking board — the four empty states render no numeric cell', () => {
   it('the roster-empty and zero-enabled branches hide the pool/filters row and never render FarmRankingTable', () => {
     const source = read('src/features/phases/components/farm-ranking-board.tsx');
     // The empty-state branch and the table branch are mutually exclusive (one ternary).

@@ -1,5 +1,5 @@
 /**
- * PFR item B, T9 (`R-B4`, spec.md P1-5/Edge Cases) — concurrency scaling.
+ * Concurrency scaling.
  *
  * `concurrencyScale = min(1, fieldSlots / uptimeSum)` caps *simultaneous* throughput at the
  * field-slot count; it must not change per-hero *shares* (a hero's gold-ability effect is

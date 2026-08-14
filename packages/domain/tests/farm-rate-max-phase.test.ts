@@ -1,11 +1,11 @@
 /**
- * PFR item B, T3 — `account.max_phase` through the import path (`R-B15`, `spec.md` P1-6).
+ * `account.max_phase` through the import path.
  *
  * `mapAccountMaxPhase` (import-save.ts) reads `account.max_phase` primary, `skills.max_phase`
  * fallback, normalizes to an integer in `[1, WIKI_PHASE_LINES.length]`, and reports `null` when
  * neither source is a finite number > 0 or when the whole file is rejected. This suite proves
- * every branch named in `design.md` §5.1 and `spec.md`'s P1-6 acceptance criteria; the `locked`
- * row-mapping half of R-B15 (AC-5) is added at T6 once `computeFarmRateTable` exists.
+ * every branch named in the design's acceptance criteria; the `locked`
+ * row-mapping half is added at T6 once `computeFarmRateTable` exists.
  */
 import { join } from 'node:path';
 import { readFileSync } from 'node:fs';
@@ -137,7 +137,7 @@ describe('account.max_phase — rejection paths yield null (spec.md P1-6 AC-4)',
   });
 });
 
-describe('FarmRateRow.locked — the maxPhase → row mapping (R-B15 AC-5, added at T6)', () => {
+describe('FarmRateRow.locked — the maxPhase → row mapping (added at T6)', () => {
   const { heroes, account } = loadFarmRateFixture();
   const heroFacts = computeHeroFarmFacts({ heroes, account });
   const squad = computeSquadFarmFacts(heroFacts, account);

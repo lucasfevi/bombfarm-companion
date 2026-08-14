@@ -1,29 +1,29 @@
 /**
- * Farm-rate estimation for Phase Farm Ranking (PFR item B — `spec.md` `R-B1`…`R-B19`,
- * `design.md`). Turns a roster + account into gold/hr, chest/hr, key/hr (signed), gem/hr,
- * time-piece/hr, XP/hr, clear time, one-shot and jaula facts for all 600 wiki phases.
+ * Farm-rate estimation for Phase Farm Ranking. Turns a roster + account into gold/hr, chest/hr,
+ * key/hr (signed), gem/hr, time-piece/hr, XP/hr, clear time, one-shot and jaula facts for all
+ * 600 wiki phases.
  *
- * ESTIMATOR-ONLY BOUNDARY (`AD-PFR-03`): this module ships its own cadence model
+ * ESTIMATOR-ONLY BOUNDARY: this module ships its own cadence model
  * (`cycle = max(fuse, E_D_CELLS / w)`) and never touches the advisor's serial model —
  * `farm-context.ts`'s `FARM_CYCLE_MODEL` / `FARM_WALK_DELAY_SEC`, or `model/combat.ts`'s
  * `bombsPerSecond` / `sustainedDps` / `activeDps`. Those keep their exact current behaviour;
  * nothing here reads or writes them, and this module is the only one that computes cadence this
  * way.
  *
- * GATE ATTACK MULT OMITTED (`design.md` Out of Scope): gate rows use the same `avgHitBase` as
+ * GATE ATTACK MULT OMITTED (deliberately out of scope): gate rows use the same `avgHitBase` as
  * every other row — `Contra o Relógio`'s gate-only attack bonus is deliberately NOT applied,
- * because `AD-PFR-15`'s "zero pipeline calls per phase" guarantee depends on mitigation being the
+ * because the "zero pipeline calls per phase" guarantee depends on mitigation being the
  * ONLY phase-dependent damage term. Applying `gateAttackMult` here would make gate-ness a second
  * one. Cost: gate `clearSecs` runs conservative (slightly slow) for a roster carrying that
  * ability — a follow-up if ever wanted, not a bug.
  *
  * SORTE-AVERAGE VS FORTUNA-SUM ASYMMETRY — DO NOT "FIX": Sorte (`SquadFarmFacts.sorteFraction`)
  * is a normalized, uptime-weighted AVERAGE of hero-only luck plus the tree's flat share
- * (`AD-PFR-06` — "the average of on-field heroes' luck"). The Fortuna aura
- * (`SquadFarmFacts.fortunaAura`) is an UNNORMALIZED uptime-weighted SUM (`AD-PFR-07` — an aura is
+ * ("the average of on-field heroes' luck"). The Fortuna aura
+ * (`SquadFarmFacts.fortunaAura`) is an UNNORMALIZED uptime-weighted SUM (an aura is
  * a presence effect that stacks across heroes, not an average). These are deliberately different
- * shapes. `OQ-PFR-3` tracks the live confirmation of the Fortuna-sum's cap order (cap-after-sum,
- * the conservative choice shipped here).
+ * shapes. Live confirmation of the Fortuna-sum's cap order (cap-after-sum,
+ * the conservative choice shipped here) is still an open question.
  */
 import { fuseSeconds, GRID_SPEED_COEF, EFF_IA, ABILITY_LEVEL_MAX, mitigationFactor } from './model';
 import { pipelineForHero } from './roster-dps';
@@ -52,28 +52,25 @@ import type { HeroRecord, AccountShared } from './shims/storage';
 
 /**
  * Expected plant-to-plant displacement, in grid cells, for the walk-bound cadence term
- * `cycle = max(fuse, E_D_CELLS / w)` (`AD-PFR-03`).
+ * `cycle = max(fuse, E_D_CELLS / w)`.
  *
- * PROVISIONAL. bombfarm-research `docs/COMBAT_THROUGHPUT.md` measures direct plant-to-plant
- * Manhattan displacement at 4.34 cells (median hop 3.0) over 2,144 attributed plants, with a
- * per-hero spread of 4.04–5.05, and explicitly directs consumers to the direct measurement rather
- * than the regression slopes (3.79 / 4.00, which the D–w correlation inflates). The PRD pins 4.5
- * as the shipped value; it sits above every direct route, so this model runs slightly pessimistic
- * on walk-bound rosters.
+ * PROVISIONAL; live captures measured mean displacement 4.34 cells (per-hero 4.04–5.05);
+ * revisit when the fuse-bound capture lands. The shipped value of 4.5 sits above every direct
+ * route measured so far, so this model runs slightly pessimistic on walk-bound rosters.
  *
- * Resolved by `OQ-PFR-1` (fuse-bound capture with only low-CDR heroes fielded). This constant is
- * the single line to change when it lands — nothing else in the model encodes a cell distance.
+ * This constant is the single line to change when a fuse-bound capture (low-CDR heroes only)
+ * lands — nothing else in the model encodes a cell distance.
  */
 export const E_D_CELLS = 4.5;
 
 /**
- * Fortuna's aura ceiling — the ability's own at-max value (`AD-PFR-07`), derived from item A's
+ * Fortuna's aura ceiling — the ability's own at-max value, derived from the ability catalog's
  * bundle rather than typed a second time: `LOOT_ABILITY_VALUES.fortuna.perLevel × .max`.
  */
 export const FORTUNA_AURA_CAP: number =
   LOOT_ABILITY_VALUES.fortuna.perLevel * LOOT_ABILITY_VALUES.fortuna.max;
 
-/** Off / standard / VIP Return Bonus (`AD-PFR-09`). Default `'off'`. */
+/** Off / standard / VIP Return Bonus. Default `'off'`. */
 export type ReturnBonusMode = 'off' | 'on' | 'vip';
 
 /**
@@ -109,7 +106,7 @@ export type HeroFarmFacts = {
   blocksPerBomb: number;
   /** House duty cycle as a FRACTION 0..1 (the pipeline reports this as a percent). */
   uptime: number;
-  /** Hero-only Sorte in PERCENTAGE POINTS — the tree's flat share peeled out (`AD-PFR-06`). */
+  /** Hero-only Sorte in PERCENTAGE POINTS — the tree's flat share peeled out. */
   heroLuckPct: number;
   /** `abilities.veia_ouro`, clamped to `[0, ABILITY_LEVEL_MAX]`. */
   veiaOuroLevel: number;
@@ -123,7 +120,7 @@ export type FarmFactsInput = {
   heroes: readonly HeroRecord[];
   account: AccountShared;
   /**
-   * The rotation pool (`AD-PFR-05`). `null`/omitted ⇒ every hero with `battleAllowed !== false`.
+   * The rotation pool. `null`/omitted ⇒ every hero with `battleAllowed !== false`.
    * An explicit `[]` means an EMPTY pool, not "use the default". Ids not present in `heroes` are
    * ignored (intersection semantics).
    */
@@ -144,7 +141,7 @@ function resolveEnabledHeroes(
   return heroes.filter((hero) => idSet.has(hero.id));
 }
 
-/** One `pipelineForHero` call per enabled hero. Order follows `heroes` (`AD-PFR-15`). */
+/** One `pipelineForHero` call per enabled hero. Order follows `heroes`. */
 export function computeHeroFarmFacts(input: FarmFactsInput): HeroFarmFacts[] {
   const { heroes, account, enabledHeroIds } = input;
   const enabledHeroes = resolveEnabledHeroes(heroes, enabledHeroIds);
@@ -203,15 +200,15 @@ export type SquadFarmFacts = {
   fieldSlots: number;
   /** `Σ uptime` over enabled heroes (fractions). */
   uptimeSum: number;
-  /** `min(1, fieldSlots / uptimeSum)`; `1` when `uptimeSum === 0` (`AD-PFR-05`). */
+  /** `min(1, fieldSlots / uptimeSum)`; `1` when `uptimeSum === 0`. */
   concurrencyScale: number;
   /** Sorte as a FRACTION: `(uptime-weighted mean heroLuckPct + treeLuckFlatPct) / 100`. */
   sorteFraction: number;
-  /** `min(FORTUNA_AURA_CAP, Σ uptime_h × perLevel × level_h)`, a FRACTION (`AD-PFR-07`). */
+  /** `min(FORTUNA_AURA_CAP, Σ uptime_h × perLevel × level_h)`, a FRACTION. */
   fortunaAura: number;
   /** `1 + max(0, tree.teamCoinPct) / 100`. */
   teamCoinMult: number;
-  /** `tree.luckFlatPct ?? 0`, percentage points — echoed for item C's breakdown tooltip. */
+  /** `tree.luckFlatPct ?? 0`, percentage points — echoed for the board's breakdown tooltip. */
   treeLuckFlatPct: number;
 };
 
@@ -278,9 +275,9 @@ const GOLD_SHARE_FACTOR = PROP_SHARES.reduce((sum, prop) => sum + prop.share * p
 // ---------------------------------------------------------------------------------------------
 
 export type FarmRateOptions = {
-  /** Default `'off'` (`AD-PFR-09`). */
+  /** Default `'off'`. */
   returnBonus?: ReturnBonusMode;
-  /** `account.max_phase`. `null`/omitted ⇒ every row `locked: false` (`AD-PFR-02`). */
+  /** `account.max_phase`. `null`/omitted ⇒ every row `locked: false`. */
   maxPhase?: number | null;
 };
 
@@ -292,7 +289,7 @@ export type FarmRateRow = {
   mitigationPct: number; // line.mitig × 100 — PERCENT
   goldPerHour: number;
   chestsPerHour: number;
-  /** SIGNED: `>= 0` gain on non-gate, `<= 0` cost on gate (`AD-PFR-08`). */
+  /** SIGNED: `>= 0` gain on non-gate, `<= 0` cost on gate. */
   keysPerHour: number;
   gemsPerHour: number; // 0 on non-gate
   timePiecesPerHour: number; // 0 on non-gate
@@ -308,14 +305,14 @@ export type FarmRateRow = {
   infeasible: boolean;
   itemLevels: number[];
   itemLevelLabel: string;
-  jaulaEarlyCapPct: number; // PERCENT (AD-PFR-12 — a fact, not a rate); jaulaEarlyCap(phase)
-  /** `JAULA.janelaSecs` — non-VIP, constant across phases since item A's reshape (§2.4.1). */
+  jaulaEarlyCapPct: number; // PERCENT (a fact, not a rate); jaulaEarlyCap(phase)
+  /** `JAULA.janelaSecs` — non-VIP, constant across phases since the wiki bundle's JAULA reshape. */
   jaulaWindowSecs: number;
-  /** Throughput-weighted squad E[HTK] — diagnostics for item C's tooltip. `Infinity` when zero-rate. */
+  /** Throughput-weighted squad E[HTK] — diagnostics for the board's tooltip. `Infinity` when zero-rate. */
   expectedHtk: number;
 };
 
-/** `-0` collapses to `0` — never leaks a signed zero into a public field (R-B6 edge case). */
+/** `-0` collapses to `0` — never leaks a signed zero into a public field (edge case). */
 function normalizeZero(value: number): number {
   return value === 0 ? 0 : value;
 }
@@ -324,7 +321,7 @@ function buildRow(line: WikiPhaseLine, squad: SquadFarmFacts, options: FarmRateO
   const bonus = returnBonusMultiplier(options.returnBonus ?? 'off');
   const sorteMult = 1 + squad.sorteFraction;
 
-  // Per-hero, per-phase: mitigation is the ONLY phase-dependent damage term (AD-PFR-15).
+  // Per-hero, per-phase: mitigation is the ONLY phase-dependent damage term.
   let shareDenom = 0;
   let bossRateSum = 0;
   const perHero = squad.heroes.map((hero) => {

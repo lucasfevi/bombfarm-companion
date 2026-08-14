@@ -11,11 +11,11 @@ type Props = {
 };
 
 /**
- * Inline, horizontally-scrolling Switch chip row — one per roster hero (`ASM-C10`).
- * Composes `Switch` + `Tooltip` locally rather than importing `roster`'s `HeroActiveToggle`
- * (`TD-8`): that component is bound to `battleAllowed` semantics and a cross-feature reach for
+ * Inline, horizontally-scrolling Switch chip row — one per roster hero.
+ * Composes `Switch` + `Tooltip` locally rather than importing `roster`'s `HeroActiveToggle`:
+ * that component is bound to `battleAllowed` semantics and a cross-feature reach for
  * it would need a new lint allowlist entry for a control whose meaning here is different
- * (estimation-local, never a save write — `AD-PFR-05`, `AD-PFRC-05`).
+ * (estimation-local, never a save write).
  */
 export function FarmRotationPool({ entries, onToggle, t }: Props) {
   if (entries.length === 0) return null;

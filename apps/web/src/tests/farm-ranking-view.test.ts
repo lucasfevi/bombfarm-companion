@@ -39,7 +39,7 @@ function row(overrides: Partial<FarmRateRow> & { phase: number }): FarmRateRow {
   };
 }
 
-describe('FARM_COLUMNS (R-C7 — matches AD-PFR-10, transcribed, not derived from the code)', () => {
+describe('FARM_COLUMNS (matches the design column list, transcribed, not derived from the code)', () => {
   // Transcribed from the PRD: "phase coordinate + flavour name, gate and lock badges,
   // mitigation %, gold/hr, item-chests/hr, keys/hr (signed), gems/hr, time-pieces/hr, XP/hr,
   // item-level band, estimated map clear time, the team one-shots-all-props indicator, the
@@ -89,7 +89,7 @@ describe('FARM_COLUMNS (R-C7 — matches AD-PFR-10, transcribed, not derived fro
   });
 });
 
-describe('DEFAULT_SORT (R-C8)', () => {
+describe('DEFAULT_SORT', () => {
   it('is gold/hr descending', () => {
     expect(DEFAULT_SORT).toEqual({ key: 'goldPerHour', direction: 'desc' });
   });
@@ -149,7 +149,7 @@ describe('sortFarmRows', () => {
     expect(sortFarmRows(rowsWithInfinite, 'clearSecs', 'desc').map((entry) => entry.phase)).toEqual([1, 3, 2]);
   });
 
-  it('infeasible rows keep their natural sort position — never pinned or reordered (R-C11)', () => {
+  it('infeasible rows keep their natural sort position — never pinned or reordered', () => {
     const mixed = [
       row({ phase: 1, goldPerHour: 300, infeasible: false }),
       row({ phase: 2, goldPerHour: 200, infeasible: true }),

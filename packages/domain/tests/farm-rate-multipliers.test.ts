@@ -1,5 +1,5 @@
 /**
- * PFR item B, T8 (`R-B5`, `R-B6`, `R-B11`, spec.md P1-4) — multiplier isolation.
+ * Multiplier isolation.
  *
  * Seven cases, each a single-variable delta against a shared baseline, each asserting both the
  * column that must move AND `toBe`-level equality on the columns that must not. Proves the two
@@ -24,7 +24,7 @@ import { loadFarmRateFixture, withAbilityLevels } from './helpers/farm-rate-fixt
 const { heroes, account } = loadFarmRateFixture();
 
 // --- Local, independent re-derivation of one hero's prop-destruction share at a phase ----------
-// Used only to hand-verify the veia_ouro delta (R-B6 AC-6). Never imported from farm-rate.ts.
+// Used only to hand-verify the veia_ouro delta. Never imported from farm-rate.ts.
 const PROP_WEIGHT_TOTAL = WIKI_PROPS.reduce((sum, prop) => sum + prop.weight, 0);
 function handEHtk(stoneHp: number, avgHit: number): number {
   return WIKI_PROPS.reduce(
@@ -63,7 +63,7 @@ function syntheticHero(overrides: Partial<HeroFarmFacts> & { heroId: string }): 
   };
 }
 
-describe('Sorte multiplies chest/key/gem/time, never gold/xp (R-B5 AC-1, spec.md P1-4 AC-1)', () => {
+describe('Sorte multiplies chest/key/gem/time, never gold/xp', () => {
   it('raising tree.luckFlatPct scales the four drop rates by (1+Sorte\')/(1+Sorte); gold/xp byte-identical', () => {
     const heroFacts = computeHeroFarmFacts({ heroes, account });
     const baseSquad = computeSquadFarmFacts(heroFacts, account);
@@ -113,7 +113,7 @@ describe('Sorte multiplies chest/key/gem/time, never gold/xp (R-B5 AC-1, spec.md
   });
 });
 
-describe('Gold tracks team_coin / fortuna / veia_ouro, never Sorte (R-B6, spec.md P1-4 AC-2)', () => {
+describe('Gold tracks team_coin / fortuna / veia_ouro, never Sorte', () => {
   it('raising tree.teamCoinPct scales goldPerHour by the teamCoinMult ratio; drops and xp byte-identical', () => {
     const heroFacts = computeHeroFarmFacts({ heroes, account });
     const baseSquad = computeSquadFarmFacts(heroFacts, account);
@@ -198,7 +198,7 @@ describe('Gold tracks team_coin / fortuna / veia_ouro, never Sorte (R-B6, spec.m
     expect(rowSix.propsPerHour).toBe(rowFive.propsPerHour);
   });
 
-  it('fortuna below the cap: fortunaAura === Σ uptime_h × 0.005 × level_h exactly (unnormalized sum, AD-PFR-07/OQ-PFR-3)', () => {
+  it('fortuna below the cap: fortunaAura === Σ uptime_h × 0.005 × level_h exactly (unnormalized sum)', () => {
     const belowCap: HeroFarmFacts[] = [
       syntheticHero({ heroId: 'a', fortunaLevel: 5, uptime: 0.5 }),
       syntheticHero({ heroId: 'b', fortunaLevel: 3, uptime: 0.2 }),
@@ -210,7 +210,7 @@ describe('Gold tracks team_coin / fortuna / veia_ouro, never Sorte (R-B6, spec.m
   });
 });
 
-describe('Return bonus multiplies gold/XP/drops only — structure is untouched (R-B11, spec.md P1-4 AC-7)', () => {
+describe('Return bonus multiplies gold/XP/drops only — structure is untouched', () => {
   it("'off' → 'on' → 'vip' scales gold, xp and the four drop rates by exactly 1 / 1.4 / 1.8; structural fields are byte-identical", () => {
     const heroFacts = computeHeroFarmFacts({ heroes, account });
     const squad = computeSquadFarmFacts(heroFacts, account);

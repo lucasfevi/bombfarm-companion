@@ -5,7 +5,7 @@ import { WEB_PACKAGE_ROOT } from './helpers/web-package-root';
 import { PERSISTED_KEY_BASELINE } from './support/persisted-keys-baseline';
 
 /**
- * `R-C4` / `ASM-C4`: no persisted `localStorage` key string changes with this feature —
+ * No persisted `localStorage` key string changes with this feature —
  * additive fields only, on the existing `-v1` keys. Red state: rename any `bf-hp-*` literal
  * under `src/shared/lib` and this test fails with the exact string that drifted.
  */
@@ -25,14 +25,14 @@ function collectPersistedKeyLiterals(dir: string, acc: Set<string> = new Set()):
   return acc;
 }
 
-describe('persisted localStorage key strings (R-C4)', () => {
+describe('persisted localStorage key strings', () => {
   it('the bf-hp-* key set under shared/lib matches the recorded develop baseline, byte-identical', () => {
     const found = [...collectPersistedKeyLiterals(path.join(WEB_PACKAGE_ROOT, 'src/shared/lib'))].sort();
     const baseline = [...PERSISTED_KEY_BASELINE].sort();
     expect(found).toEqual(baseline);
   });
 
-  it('the phases feature directory, phases-slice and the phases i18n namespace still exist under those names (ASM-C4)', () => {
+  it('the phases feature directory, phases-slice and the phases i18n namespace still exist under those names', () => {
     expect(fs.existsSync(path.join(WEB_PACKAGE_ROOT, 'src/features/phases'))).toBe(true);
     expect(
       fs.existsSync(path.join(WEB_PACKAGE_ROOT, 'src/shared/stores/slices/phases-slice.ts')),

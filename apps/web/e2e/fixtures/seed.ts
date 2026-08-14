@@ -20,7 +20,7 @@ export type SeededState = {
   lang?: 'pt' | 'en';
   /** When true (default), suppress the first-run guide overlay. */
   guideHidden?: boolean;
-  /** Seeds bf-hp-phases-view-v1 — phase, farmPool and farmReturnBonus (pfr-web-ui). */
+  /** Seeds bf-hp-phases-view-v1 — phase, farmPool and farmReturnBonus. */
   phasesView?: PhasesViewState;
 };
 

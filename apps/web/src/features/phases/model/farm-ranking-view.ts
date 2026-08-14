@@ -1,8 +1,8 @@
 /**
  * The board's sort/filter/column semantics — PURE, no React, no math. Every value here is
- * compared, sliced or labelled from `FarmRateRow` fields item B already produced. ZERO rate
+ * compared, sliced or labelled from `FarmRateRow` fields `@bombfarm/domain` already produced. ZERO rate
  * arithmetic: no mitigation factor, no HTK, no Sorte, no gold multiplier, no props/s, no
- * per-prop one-shot derivation (`R-C20`, `ASM-C17`) — guarded by `farm-ranking-guards.test.ts`.
+ * per-prop one-shot derivation — guarded by `farm-ranking-guards.test.ts`.
  */
 import type { FarmRateRow } from '@bombfarm/domain/farm-rate';
 import type { Strings } from '@/shared/i18n';
@@ -33,8 +33,8 @@ export type FarmColumnDef = {
 };
 
 /**
- * Every `AD-PFR-10` column. Transcribed from the PRD list, not derived from `FarmRateRow` —
- * the test asserting this set compares it against the PRD's own enumeration, not against
+ * Every board column. Transcribed from the design's column list, not derived from `FarmRateRow` —
+ * the test asserting this set compares it against that enumeration, not against
  * itself.
  */
 export const FARM_COLUMNS: readonly FarmColumnDef[] = [
@@ -107,8 +107,8 @@ function sortableValue(row: FarmRateRow, key: FarmSortKey, direction: FarmSortDi
 
 /**
  * Stable sort by `key`/`direction`; ties break by ascending `phase` so ordering is deterministic
- * across renders (`R-C8`). Infeasible rows are sorted by their own (degenerate) rate, never
- * pinned or reordered specially (`R-C11`).
+ * across renders. Infeasible rows are sorted by their own (degenerate) rate, never
+ * pinned or reordered specially.
  */
 export function sortFarmRows(
   rows: readonly FarmRateRow[],
@@ -140,8 +140,8 @@ export function defaultFarmFilters(): FarmFilters {
 
 /**
  * Reads `row.locked` for the unlocked-only filter — does NOT take `maxPhase` and does NOT
- * compute lockedness (that is B's, via `FarmRateOptions`). When `maxPhase` is `null`, every row
- * is `locked: false`, so `unlockedOnly` is a no-op and no row is excluded (`R-C13`).
+ * compute lockedness (that is `@bombfarm/domain`'s, via `FarmRateOptions`). When `maxPhase` is `null`, every row
+ * is `locked: false`, so `unlockedOnly` is a no-op and no row is excluded.
  */
 export function applyFarmFilters(
   rows: readonly FarmRateRow[],

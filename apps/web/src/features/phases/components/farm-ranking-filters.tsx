@@ -7,7 +7,7 @@ import type { FarmFilters, GateFilter } from '@/features/phases/model/farm-ranki
 type Props = {
   filters: FarmFilters;
   onChange: (next: FarmFilters) => void;
-  /** `false` when `maxPhase` is `null` — the unlocked-only control is non-applicable (`R-C13`). */
+  /** `false` when `maxPhase` is `null` — the unlocked-only control is non-applicable. */
   maxPhaseKnown: boolean;
   t: Strings;
 };

@@ -1,7 +1,6 @@
 /**
- * PFR item B, T9 (`R-B4`, `R-B9`, `R-B10`, `R-B14`, spec.md P1-5) — every degenerate/boundary case
- * named in `design.md` §4.6 and `spec.md`'s Edge Cases table, each asserting the full pinned
- * tuple rather than a single field. No public field may be `NaN`.
+ * Every degenerate/boundary case named in the design's Edge Cases table, each asserting the
+ * full pinned tuple rather than a single field. No public field may be `NaN`.
  */
 import { describe, expect, it } from 'vitest';
 import {

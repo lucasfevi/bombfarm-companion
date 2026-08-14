@@ -72,7 +72,7 @@ export type AccountImportData = {
   /** `account.phase` — the phase the player is currently farming. Null when absent. */
   phase: number | null;
   /**
-   * `account.max_phase` — the furthest phase this account has reached (AD-PFR-02). Falls back to
+   * `account.max_phase` — the furthest phase this account has reached. Falls back to
    * `skills.max_phase` when `account.max_phase` is not a finite number; `null` when neither is.
    * Normalized to an integer in `[1, WIKI_PHASE_LINES.length]`.
    *
@@ -146,9 +146,9 @@ function mapAccountPhase(raw: Record<string, unknown>): number | null {
 }
 
 /**
- * `account.max_phase` — the furthest phase this account has reached (AD-PFR-02). Falls back to
+ * `account.max_phase` — the furthest phase this account has reached. Falls back to
  * `skills.max_phase`; the 2026-08-13 export carries both and they agree (42 / 42). Preferring
- * `account` follows the PRD; the fallback covers a payload that carries `skills` without
+ * `account` follows the design; the fallback covers a payload that carries `skills` without
  * `account`, which `AD-036`'s per-section fidelity model makes a real shape.
  *
  * Same latent-divergence family as `field_slots` vs `skills.totals.vagas_campo` (`AD-063`) —

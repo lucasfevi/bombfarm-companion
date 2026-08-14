@@ -41,8 +41,8 @@ type Props = {
 /**
  * `DataTable.Root scrollable` around a `table-fixed` `<table>` sized for real content
  * (`no-layout-shift.md` rule 7, `content-fit-ui.md` rule 6). Body rows carry
- * `content-visibility: auto` (`AD-PFRC-02`) — every one of the (up to) 600 rows stays mounted,
- * so `R-C6`'s "all 600 present" assertion stays honest; the CSS property is the offscreen-cost
+ * `content-visibility: auto` — every one of the (up to) 600 rows stays mounted,
+ * so the "all 600 present" assertion stays honest; the CSS property is the offscreen-cost
  * mitigation, not a virtualizer.
  */
 export function FarmRankingTable({

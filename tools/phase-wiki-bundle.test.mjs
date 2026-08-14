@@ -7,14 +7,14 @@ const root = resolve(fileURLToPath(new URL('..', import.meta.url)));
 const BUNDLE_PATH = resolve(root, 'packages/domain/src/data/phase-wiki.json');
 
 // ---------------------------------------------------------------------------
-// PWB-25..33: a companion-side guard over the COMMITTED artifact
+// A companion-side guard over the COMMITTED artifact
 // (packages/domain/src/data/phase-wiki.json) -- the emit-side guard
-// (tools/wiki-emit-phase-bundle.mjs, research repo) protects the *emit*; this protects the
-// *artifact actually shipped in this repo*, which is what a stray hand-edit or a bad merge
+// (tools/wiki-emit-phase-bundle.mjs, maintained out of band) protects the *emit*; this protects
+// the *artifact actually shipped in this repo*, which is what a stray hand-edit or a bad merge
 // would corrupt without ever running the emitter again. Reads the SOURCE json, never dist/**,
 // so it runs without a build (mirrors apps/web/src/tests/support/build-output.ts's convention,
 // but the source json is a checked-in file that should never legitimately be absent -- the
-// requireFixture-style gate below exists for the CI=1 hard-failure guarantee (PWB-32), not
+// requireFixture-style gate below exists for the CI=1 hard-failure guarantee, not
 // because a missing file is expected).
 // ---------------------------------------------------------------------------
 
@@ -26,7 +26,7 @@ function isTruthyCi(raw) {
 }
 
 /**
- * PWB-32: absent/unparseable artifact must fail HARD under CI, never a silent skip. `ciFlag` is
+ * Absent/unparseable artifact must fail HARD under CI, never a silent skip. `ciFlag` is
  * injected (rather than read from `process.env.CI` inside this function) so both branches are
  * unit-testable below without mutating the real environment mid-run.
  */
@@ -46,8 +46,8 @@ export function requireFixture(path, assertion, ciFlag) {
 }
 
 // ---------------------------------------------------------------------------
-// Written-down, complete key sets. Literals -- never derived from the artifact under test
-// (PWB-31): a comparison sourced from the thing it checks cannot fail.
+// Written-down, complete key sets. Literals -- never derived from the artifact under test:
+// a comparison sourced from the thing it checks cannot fail.
 // ---------------------------------------------------------------------------
 const TOP_LEVEL_KEYS = [
   'syncedAt',
@@ -92,7 +92,7 @@ const LINE_KEYS = ['phase', 'hp', 'mitig', 'goldComum', 'gate', 'ato', 'mundo', 
 const PROP_KEYS = ['name', 'hpMult', 'weight', 'rarity'];
 const ITEM_POR_FASE_KEYS = ['min', 'max', 'itemLevel'];
 
-/** The committed bundle's syncedAt immediately before this item (pfr-wiki-bundle) landed. A
+/** The committed bundle's syncedAt immediately before this feature's re-emit landed. A
  *  literal, not read from git — a re-emit may not move the artifact backwards in time. */
 const PREVIOUS_SYNCED_AT = '2026-08-03';
 
@@ -137,7 +137,7 @@ function walkForBadLeaves(value, path, out) {
   }
 }
 
-/** PWB-28: every element in [0,1], row sums to 1 within 1e-9, row is of the declared length. */
+/** Every element in [0,1], row sums to 1 within 1e-9, row is of the declared length. */
 function distributionRowErrors(row, expectedLength, label) {
   const errors = [];
   if (!Array.isArray(row) || row.length !== expectedLength) {
@@ -164,8 +164,8 @@ function distributionRowErrors(row, expectedLength, label) {
 
 /**
  * The full guard, run against a parsed bundle object. Pure function so it is testable against
- * both the real committed artifact and an in-memory mutated copy (the four PWB-33 red states)
- * without ever touching the file on disk twice.
+ * both the real committed artifact and an in-memory mutated copy (the four demonstrated red
+ * states below) without ever touching the file on disk twice.
  */
 function validateBundle(bundle) {
   const addedKeys = [];
@@ -315,7 +315,7 @@ function validateBundle(bundle) {
   return { addedKeys, removedKeys, nullLeaves, distributionErrors, dimensionErrors, syncedAtErrors };
 }
 
-describe('committed phase-wiki.json guard (PFR item A — pfr-wiki-bundle)', () => {
+describe('committed phase-wiki.json guard', () => {
   it('the committed artifact passes every check: exact key sets, no null leaves, valid distributions, pinned dimensions, monotonic syncedAt', () => {
     const bundle = requireFixture(BUNDLE_PATH, 'phase-wiki.json structural guard', isTruthyCi(process.env.CI));
     if (!bundle) return; // local-only skip path; CI=1 always throws above instead.
@@ -334,7 +334,7 @@ describe('committed phase-wiki.json guard (PFR item A — pfr-wiki-bundle)', () 
     expect(result.syncedAtErrors, `syncedAt errors: ${result.syncedAtErrors.join(', ')}`).toEqual([]);
   });
 
-  describe('PWB-32: requireFixture is CI-hard, never a silent early return', () => {
+  describe('requireFixture is CI-hard, never a silent early return', () => {
     it('throws when CI is truthy and the path does not resolve', () => {
       expect(() => requireFixture(resolve(root, 'does/not/exist.json'), 'test', true)).toThrow();
     });
@@ -354,10 +354,10 @@ describe('committed phase-wiki.json guard (PFR item A — pfr-wiki-bundle)', () 
     });
   });
 
-  // PWB-33: four demonstrated red states, each against an in-memory mutated deep clone of the
+  // Four demonstrated red states, each against an in-memory mutated deep clone of the
   // REAL committed bundle (never the committed file itself) — the artifact on disk is never
   // touched by these.
-  describe('PWB-33: four demonstrated red states', () => {
+  describe('four demonstrated red states', () => {
     function loadRealBundle() {
       return JSON.parse(readFileSync(BUNDLE_PATH, 'utf8'));
     }

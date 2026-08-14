@@ -19,8 +19,8 @@ test.describe('Phases page', () => {
     await expect(page.getByRole('heading', { name: /^Economy$/i, level: 2 })).toBeVisible();
     await expect(page.getByLabel(/^Difficulty$/i)).toBeVisible();
     await expect(page.getByLabel(/^Map$/i)).toBeVisible();
-    // Scoped to the explorer's definition list — the Farm Ranking board above it (pfr-web-ui)
-    // composes the same phase label for its own row (ASM-C16, deliberately, so the board and
+    // Scoped to the explorer's definition list — the Farm Ranking board above it
+    // composes the same phase label for its own row (deliberately, so the board and
     // this panel agree), which would otherwise make the plain text ambiguous.
     await expect(page.getByRole('definition').getByText(/First Strike · #1/i)).toBeVisible();
   });

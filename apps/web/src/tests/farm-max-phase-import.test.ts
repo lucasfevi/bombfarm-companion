@@ -24,11 +24,11 @@ function importData(maxPhase: number | null): AccountImportData {
 }
 
 /**
- * `R-C28` / `OD-9`: `applyAccountImport` maps `AccountImportData.maxPhase` into the account
+ * `applyAccountImport` maps `AccountImportData.maxPhase` into the account
  * slice and persists it additively to `bf-hp-account-v1`, unconditionally — both the write of a
  * concrete value AND the clearing of a stale one when a later payload carries no source.
  */
-describe('maxPhase import wiring (R-C28, OD-9)', () => {
+describe('maxPhase import wiring', () => {
   beforeEach(() => {
     vi.stubGlobal('localStorage', memoryLocalStorage());
     resetPlannerStoreForTests();

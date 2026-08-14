@@ -171,7 +171,7 @@ describe('rank-20 migration (T3, AD-BSP-18, BSPW3-02/-03)', () => {
     expect(fantasma.effect).toEqual({ kind: 'none' });
   });
 
-  it('PFR item B (R-B16, spec.md P2-1): veia_ouro and fortuna carry the wiki-corrected figures, stay { kind: none }, and abilityMods is the identity', () => {
+  it('veia_ouro and fortuna carry the wiki-corrected figures, stay { kind: none }, and abilityMods is the identity', () => {
     const veiaOuro = ABILITIES.find((a) => a.id === 'veia_ouro')!;
     const fortuna = ABILITIES.find((a) => a.id === 'fortuna')!;
 
@@ -191,7 +191,7 @@ describe('rank-20 migration (T3, AD-BSP-18, BSPW3-02/-03)', () => {
     expect(abilityMods({ veia_ouro: 20, fortuna: 20 })).toMatchObject(IDENTITY_MODS);
   });
 
-  it('olho_lapidador text is unchanged by the PFR item B gold-ability copy fix', () => {
+  it('olho_lapidador text is unchanged by the gold-ability copy fix', () => {
     const olhoLapidador = ABILITIES.find((a) => a.id === 'olho_lapidador')!;
     expect(olhoLapidador.effectText).toBe('+2.5% chance de baú subir raridade/nível (loot)');
   });

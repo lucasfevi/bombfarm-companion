@@ -67,10 +67,10 @@ export type AccountShared = {
   /** Optimizer forge floor — defaults to `10` when absent; import never overwrites. */
   forgeFloor?: number;
   /**
-   * `account.max_phase` — furthest phase reached (`OD-9`, `AD-PFRC-04`). Mirrors item B's
+   * `account.max_phase` — furthest phase reached. Mirrors `@bombfarm/domain`'s
    * `AccountImportData.maxPhase: number | null` (dual-source, total). `null`/absent means no
-   * lock badges anywhere and the Farm Ranking unlocked-only filter renders non-applicable
-   * (`AD-PFR-02`). Written UNCONDITIONALLY by `applyAccountImport` — unlike every sibling field
+   * lock badges anywhere and the Farm Ranking unlocked-only filter renders non-applicable.
+   * Written UNCONDITIONALLY by `applyAccountImport` — unlike every sibling field
    * on this type, a re-import carrying no `max_phase` clears a stale value rather than keeping
    * it, because a stale lock badge would assert progress the payload just contradicted.
    */
@@ -155,7 +155,7 @@ function normalizeSlots(raw?: number): number {
 }
 
 /**
- * `null` when absent or non-finite (`AD-PFRC-04` — B's reader is total, `number | null`; one
+ * `null` when absent or non-finite (`@bombfarm/domain`'s reader is total, `number | null`; one
  * inhabitant for "known-absent" the whole way through), else integer-clamped `1..600` — the
  * same template as `normalizeContext`'s `phase` clamp.
  */

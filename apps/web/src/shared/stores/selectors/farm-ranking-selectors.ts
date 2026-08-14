@@ -1,11 +1,12 @@
-// The ONLY file in apps/web that imports @bombfarm/domain/farm-rate (R-C20 AC-7 guard (f); the
+// The ONLY file in apps/web that imports @bombfarm/domain/farm-rate (enforced by a structural
+// guard — see farm-ranking-guards.test.ts guard (f); the
 // type-only ReturnBonusMode import in shared/lib/phases-view-storage.ts is the sole allowlisted
-// exception, ASM-C15). computeFarmRates is B's own stated convenience entry for item C — it
+// exception). computeFarmRates is @bombfarm/domain's own stated convenience entry point — it
 // fixes the facts -> squad -> rows ordering in one place. Do NOT hand-compose
-// computeHeroFarmFacts + computeSquadFarmFacts + computeFarmRateTable here (TD-13):
-// that re-creates B's ordering contract in a second place for no benefit. returnBonusMultiplier
+// computeHeroFarmFacts + computeSquadFarmFacts + computeFarmRateTable here:
+// that re-creates the domain package's ordering contract in a second place for no benefit. returnBonusMultiplier
 // and E_D_CELLS are intentionally never imported — this surface never applies a multiplier or a
-// cadence constant itself (R-C20).
+// cadence constant itself.
 import { computeFarmRates, type FarmRateRow } from '@bombfarm/domain/farm-rate';
 import type { AccountShared } from '@/shared/lib/storage';
 import type { PlannerStore } from '@/shared/stores/planner-store';
@@ -14,16 +15,16 @@ export type FarmRankingReason = 'no-roster' | 'no-heroes-enabled' | 'compute-fai
 
 export type FarmRankingResult = {
   rows: readonly FarmRateRow[];
-  /** `null` on a real compute; a named reason when rows is deliberately empty (`AD-PFRC-07`). */
+  /** `null` on a real compute; a named reason when rows is deliberately empty. */
   reason: FarmRankingReason | null;
 };
 
 const EMPTY_ROWS: readonly FarmRateRow[] = [];
 
 /**
- * The `R-C21` / `AD-PFR-14` traceability artifact: every planner edit the board must react to.
+ * The dependency-tuple traceability artifact: every planner edit the board must react to.
  * 15 members — `maxPhase` is here because `FarmRateOptions.maxPhase` is what sets
- * `FarmRateRow.locked` (a COMPUTE INPUT, not a post-compute filter — TD-15; an earlier design
+ * `FarmRateRow.locked` (a COMPUTE INPUT, not a post-compute filter; an earlier design
  * draft treating it as a filter would have made `row.locked` permanently `false`). A field
  * missing from this tuple is a planner edit that silently does not recompute the board.
  */
@@ -72,7 +73,7 @@ export function resetFarmRankingComputeCount(): void {
   resetFarmRankingCache();
 }
 
-/** `overrides[id] ?? (hero.battleAllowed ?? true)` — absence follows the save (`AD-PFR-05`). */
+/** `overrides[id] ?? (hero.battleAllowed ?? true)` — absence follows the save. */
 function resolveEnabledHeroIds(state: PlannerStore): string[] {
   const overrides = state.farmPoolOverrides;
   return state.heroes
@@ -114,7 +115,7 @@ function buildAccount(state: PlannerStore): AccountShared {
 }
 
 function computeFarmRanking(state: PlannerStore): FarmRankingResult {
-  // AD-PFRC-07: the empty pool is short-circuited BEFORE the call, never delegated. B's
+  // The empty pool is short-circuited BEFORE the call, never delegated. @bombfarm/domain's
   // documented behaviour for enabledHeroIds: [] is 600 rows of 0 / Infinity / infeasible:true —
   // correct as a total function, and exactly the table of zeros the surface must never render.
   if (state.heroes.length === 0) {
@@ -142,7 +143,7 @@ function computeFarmRanking(state: PlannerStore): FarmRankingResult {
 }
 
 /**
- * Module-level single-entry memoized selector (`R-C19`, MOD-18 shape). Returns the SAME object
+ * Module-level single-entry memoized selector (MOD-18 shape). Returns the SAME object
  * identity on a cache hit, so `usePlannerStore(selectFarmRankingRows)` needs no `useShallow` —
  * and must not have one: shallow-comparing 600 rows on every store write is the exact cost this
  * memoization exists to avoid (the `selectAdvisorPipeline` carve-out in `state-management.md`).

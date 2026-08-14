@@ -1,5 +1,5 @@
 /**
- * PFR item B, T5 (`R-B2`, `R-B3`, `R-B5`, `R-B6`) — per-hero and squad farm facts.
+ * Per-hero and squad farm facts.
  *
  * Every field, every unit, every degenerate branch named in `design.md` §3.2/§3.3/§4.1/§4.2.
  * Exhaustive degenerate/boundary sweeps live in `farm-rate-degenerate.test.ts` (T9); this file
@@ -88,7 +88,7 @@ describe('computeHeroFarmFacts — cycleSecs = max(fuseSecs, E_D_CELLS / w)', ()
   });
 });
 
-describe('computeHeroFarmFacts — heroLuckPct peel identity (R-B5 AC-4)', () => {
+describe('computeHeroFarmFacts — heroLuckPct peel identity', () => {
   it('equals peelSheetSources(...).luck hero+gear+ability, to within 1e-9, for every birth-backed fixture hero', () => {
     const treeLuckFlatPct = account.tree.luckFlatPct ?? 0;
     const tree: TreeSheetTotals = {
@@ -142,7 +142,7 @@ describe('computeHeroFarmFacts — heroLuckPct peel identity (R-B5 AC-4)', () =>
   });
 });
 
-describe('computeSquadFarmFacts — sorteFraction tracks Δtree.luckFlatPct exactly (R-B5 AC-3)', () => {
+describe('computeSquadFarmFacts — sorteFraction tracks Δtree.luckFlatPct exactly', () => {
   it('Δtree.luckFlatPct = x ⇒ ΔsorteFraction = x / 100 exactly, for a fixed heroFacts array', () => {
     const heroFacts = computeHeroFarmFacts({ heroes, account });
     const baseAccount: AccountShared = { ...account, tree: { ...account.tree, luckFlatPct: 5 } };
@@ -165,7 +165,7 @@ describe('computeHeroFarmFacts — ability level clamp', () => {
   });
 });
 
-describe('computeHeroFarmFacts — enabled pool semantics (AD-PFR-05)', () => {
+describe('computeHeroFarmFacts — enabled pool semantics', () => {
   it('default pool (omitted enabledHeroIds) is every fixture hero — battleAllowed !== false', () => {
     expect(computeHeroFarmFacts({ heroes, account })).toHaveLength(5);
   });

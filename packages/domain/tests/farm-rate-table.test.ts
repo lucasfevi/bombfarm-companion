@@ -1,5 +1,5 @@
 /**
- * PFR item B, T6 (`R-B1`, `R-B4`, `R-B7`, `R-B12`) — the row and table functions.
+ * The row and table functions.
  *
  * Table shape (600 rows, ascending, purity, finite sweep, gate/non-gate column rules, the
  * leaf-helper cross-check against `computePhaseIntelGlobal`, the jaula-window constancy, and
@@ -93,7 +93,7 @@ describe('computeFarmRateTable — finite sweep across all three return-bonus mo
   });
 });
 
-describe('computeFarmRateTable — purity (R-B19, spec.md P1-1 AC-5)', () => {
+describe('computeFarmRateTable — purity', () => {
   it('two calls with the same squad/options are deep-equal', () => {
     const rowsA = computeFarmRateTable(squad, { returnBonus: 'on' });
     const rowsB = computeFarmRateTable(squad, { returnBonus: 'on' });

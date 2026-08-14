@@ -11,10 +11,10 @@ type Props = {
 };
 
 /**
- * Three-option Select over B's `ReturnBonusMode` VERBATIM (`ASM-C15`) — option values are the
+ * Three-option Select over `@bombfarm/domain`'s `ReturnBonusMode` VERBATIM — option values are the
  * literal `'off' | 'on' | 'vip'`, option labels come from `t.*`. `Select`, not `Switch` +
  * a second VIP `Switch`: three states, and two booleans would make an invalid combination
- * (VIP on, bonus off) representable (`base-ui-first.md` rule 3, `TD-7`).
+ * (VIP on, bonus off) representable (`base-ui-first.md` rule 3).
  */
 export function FarmReturnBonus({ value, onChange, t }: Props) {
   return (

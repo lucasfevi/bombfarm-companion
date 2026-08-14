@@ -1,7 +1,7 @@
-// Re-exported from @bombfarm/domain/farm-rate — NOT re-declared here (ASM-C15). B's union is
-// 'off' | 'on' | 'vip'; persisting B's own literals means this normalizer validates against the
+// Re-exported from @bombfarm/domain/farm-rate — NOT re-declared here. The domain package's union is
+// 'off' | 'on' | 'vip'; persisting its own literals means this normalizer validates against the
 // domain type instead of a local copy that could drift. Type-only import — the one allowlisted
-// exception to "computeFarmRates' module is imported in exactly one file" (R-C20 AC-7 guard (f)).
+// exception to "computeFarmRates' module is imported in exactly one file" (see farm-ranking-guards.test.ts guard (f)).
 // Re-exported below so the slice / components reference the type through this file, not a
 // second direct import site.
 import type { ReturnBonusMode } from '@bombfarm/domain/farm-rate';
@@ -18,11 +18,11 @@ const RETURN_BONUS_MODES: readonly ReturnBonusMode[] = ['off', 'on', 'vip'];
 export type PhasesViewState = {
   phase: number;
   /**
-   * Farm Ranking rotation pool (`AD-PFR-05`, `AD-PFRC-05`) — hero id -> enabled override.
+   * Farm Ranking rotation pool — hero id -> enabled override.
    * Absent id => follow `HeroRecord.battleAllowed`. Never a save write; estimation-local only.
    */
   farmPool?: Record<string, boolean>;
-  /** Return-bonus estimate (`AD-PFR-09`). Absent/unrecognized => `'off'`. */
+  /** Return-bonus estimate. Absent/unrecognized => `'off'`. */
   farmReturnBonus?: ReturnBonusMode;
 };
 
@@ -79,7 +79,7 @@ export function loadPhasesView(): PhasesViewState {
 }
 
 /**
- * Whole-object write (`AD-PFRC-03`). The **only** composer of a complete `PhasesViewState` is
+ * Whole-object write. The **only** composer of a complete `PhasesViewState` is
  * the slice's private `persistPhasesView` — every call site here passes a full state. A partial
  * literal (`{ phase }`) once a second field exists is the exact latent data-loss bug this
  * decision exists to prevent: do NOT turn this into a read-modify-write — merge policy belongs

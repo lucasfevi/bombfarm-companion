@@ -2,12 +2,12 @@ import { describe, expect, it } from 'vitest';
 import { normalizeAccount } from '@/shared/lib/account-shared';
 
 /**
- * `maxPhase` normalize coverage (`AD-PFRC-04`, design §6.2) — absent / out of range /
+ * `maxPhase` normalize coverage — absent / out of range /
  * non-integer / valid; `null` round-trips as `null`; a record without the field at all
  * round-trips unchanged (the pre-feature legacy-load proof `normalizeAccount`'s fixed-field
  * rebuild depends on).
  */
-describe('normalizeAccount maxPhase (R-C13 persist half)', () => {
+describe('normalizeAccount maxPhase (persist half)', () => {
   it('a record with no maxPhase field at all normalizes to null', () => {
     const account = normalizeAccount({});
     expect(account.maxPhase).toBeNull();

@@ -52,7 +52,7 @@ const sampleHero = (): HeroSheet => ({
   energyPerPoint: POINT_GAIN.energyNative,
 });
 
-describe('GRID_SPEED_COEF / EFF_IA (PFR item B, T2)', () => {
+describe('GRID_SPEED_COEF / EFF_IA', () => {
   it('are importable from @bombfarm/domain/model and equal their wiki-sourced values', () => {
     expect(GRID_SPEED_COEF).toBe(0.0386);
     expect(EFF_IA).toBe(0.9);

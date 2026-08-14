@@ -57,7 +57,7 @@ describe('abilityName / abilityEffectText', () => {
     expect(abilityEffectText('passagem_bastao', 'pt')).not.toMatch(/velocidade/i);
   });
 
-  it('PFR item B (R-B16, spec.md P2-1/P2-2): veia_ouro and fortuna numerals are derived from LOOT_ABILITY_VALUES, not retyped', () => {
+  it('veia_ouro and fortuna numerals are derived from LOOT_ABILITY_VALUES, not retyped', () => {
     // pct(x): fraction -> percentage-point string with no trailing zero, e.g. 0.02 -> '2%', 0.005 -> '0.5%'.
     const pct = (fraction: number): string => `${(fraction * 100).toString()}%`;
 

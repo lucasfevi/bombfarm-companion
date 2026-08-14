@@ -38,7 +38,7 @@ function farmHero(id: string, overrides: Partial<{ battleAllowed: boolean }> = {
   });
 }
 
-describe('selectFarmRankingRows (R-C19, R-C21, AD-PFRC-07)', () => {
+describe('selectFarmRankingRows', () => {
   beforeEach(() => {
     resetPlannerStoreForTests();
     resetFarmRankingComputeCount();
@@ -105,7 +105,7 @@ describe('selectFarmRankingRows (R-C19, R-C21, AD-PFRC-07)', () => {
     expect(getFarmRankingComputeCount()).toBe(countBefore + 1);
   });
 
-  // R-C21 / AD-PFR-14 — each of the 15 dep-tuple members drives a recompute.
+  // Each of the 15 dep-tuple members drives a recompute.
   describe('every dep-tuple member drives a recompute', () => {
     beforeEach(() => {
       usePlannerStore.getState().hydrateRoster([farmHero('a')], null);

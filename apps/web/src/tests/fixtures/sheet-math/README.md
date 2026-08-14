@@ -14,10 +14,10 @@ that file lands later in this feature — expected, not a defect of this manifes
 
 | Field | Value |
 | --- | --- |
-| Source capture | `bombfarm-research/data/save-export-20260813/SaveFile_BombFarm.json` |
+| Source capture | live save export, captured externally from the game client |
 | Capture date | 2026-08-13 |
 | Account | 486 (post-wipe), `phase: 24`, `max_phase: 42` — 5 heroes: Jon L38 (4/8 geared), Bellatrix L42 (8/8 geared), Perrin L4 (naked), Perrin L3 (naked), Lyra L2 (naked) |
-| `CAPTURE_LOG.md` row | *Keystone removal + account wipe* (`bombfarm-research/docs/CAPTURE_LOG.md`, 2026-08-13 row) |
+| Capture log entry | *Keystone removal + account wipe*, 2026-08-13 row (tracked externally to this repo) |
 | Scrub | `account.account_id`, `account.player_name` removed via `scrubPersonalFields` (`packages/domain/tests/helpers/fidelity-pair.ts`) — nothing else changed |
 | SHA-256 (unscrubbed source) | `fb87b0051bf6842af1a691493d9a52e7baa6ca6f582d1916778c147b4b017b04` |
 | SHA-256 (committed file) | `f6fe17e5d246f9b873b95fc0a51ead10a596cf061272b3b53ab5c3f344393694` |
@@ -31,7 +31,7 @@ that file lands later in this feature — expected, not a defect of this manifes
 | Source capture | `packages/domain/tests/fixtures/api/assembled-payload-before.json` (already committed to this repo; byte copy, unmodified) |
 | Capture date | 2026-08-12 |
 | Account | API-assembled `AccountPayload`, `phase: 21`, `max_phase: 33` — 8 heroes (5 battle-allowed: Nyx L25 8/8, Bellatrix L27 8/8, Cora L22 4/8, Wren L24 3/8, Devin L5 naked; 3 not battle-allowed: Lyra L3, Mira L3, Bryn L3, all naked) |
-| `CAPTURE_LOG.md` row | none — this fixture predates MP5 and has no dedicated `bombfarm-research/docs/CAPTURE_LOG.md` entry; it was already committed and already scrubbed of `account_id`/`player_name` (`D19`) before this feature. Recorded as a limitation, not papered over |
+| Capture log entry | none — this fixture predates MP5 and has no dedicated capture-log entry; it was already committed and already scrubbed of `account_id`/`player_name` (`D19`) before this feature. Recorded as a limitation, not papered over |
 | Scrub | none applied by this feature — the source file was already scrubbed when it was committed |
 | SHA-256 (unscrubbed source) | not applicable — no unscrubbed predecessor exists in either repo; the earliest committed form is already scrubbed |
 | SHA-256 (committed file) | `72e806c17877812b626ddb0dfb09c7b8c3b99d32a5a2553874cabf07ca867589` (identical to `packages/domain/tests/fixtures/api/assembled-payload-before.json`, checked by `tools/fixture-corpus-parity.test.mjs`) |

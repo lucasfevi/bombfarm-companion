@@ -7,7 +7,7 @@ const root = resolve(__dirname, '../..');
 const outRoot = resolve(root, 'out');
 
 /**
- * `R-C1`/`R-C2` (`AD-PFR-17`): the static export must carry an artifact for BOTH `/farm`
+ * The static export must carry an artifact for BOTH `/farm`
  * (the renamed page) and `/phases` (the redirect stub). Next's static exporter emits either
  * `<route>.html` or `<route>/index.html` depending on trailing-slash config — this checks both
  * shapes so the assertion is not coupled to that config's current value.

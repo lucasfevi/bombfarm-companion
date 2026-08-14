@@ -1,8 +1,8 @@
 /**
  * Rate / duration / sign / label formatting for the Farm Ranking board — PURE, no React, no
  * math. Wraps the shipped `format-number.ts` and `phases-page.ts`'s `formatClearTime`; composes
- * the phase label from the shipped `formatPhaseCoord` / `phaseMapDisplayName` (`ASM-C16`,
- * `R-C29`). Does not re-implement anything item B already computed — comparison, slicing and
+ * the phase label from the shipped `formatPhaseCoord` / `phaseMapDisplayName`.
+ * Does not re-implement anything `@bombfarm/domain` already computed — comparison, slicing and
  * string composition only.
  */
 import { phaseMapDisplayName } from '@bombfarm/domain/phase-wiki';
@@ -16,7 +16,7 @@ export function formatRate(value: number): string {
 }
 
 /**
- * Keys/hr is SIGNED: `>= 0` a gain on non-gate rows, `<= 0` a cost on gate rows (`AD-PFR-08`).
+ * Keys/hr is SIGNED: `>= 0` a gain on non-gate rows, `<= 0` a cost on gate rows.
  * The sign is rendered as text — never colour alone. `+`/`-` prefix plus the magnitude.
  */
 export function formatSignedRate(value: number): string {
@@ -31,7 +31,7 @@ export function formatMitigationPct(value: number): string {
   return formatNumber(value, 1);
 }
 
-/** The item-level drop band — B's own `itemLevelLabel` is already display-ready; passthrough. */
+/** The item-level drop band — `@bombfarm/domain`'s own `itemLevelLabel` is already display-ready; passthrough. */
 export function formatBand(itemLevelLabel: string): string {
   return itemLevelLabel === '' ? '—' : itemLevelLabel;
 }
@@ -43,7 +43,7 @@ export function formatOneShot(oneShot: boolean, labels: { yes: string; no: strin
 /**
  * Composes the phase label from the shipped `phaseMapDisplayName` — the same helper
  * `phase-fact-items.tsx`'s `mapName` already uses to produce `First Strike · #1`, so the board
- * and the existing explorer/picker cannot drift (`ASM-C16`).
+ * and the existing explorer/picker cannot drift.
  */
 export function formatPhaseLabel(phase: number, lang: Lang): string {
   return `${phaseMapDisplayName(phase, lang)} · #${phase}`;

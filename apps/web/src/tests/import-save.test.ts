@@ -534,7 +534,7 @@ describe('parseSaveFile', () => {
 
   it('returns nulls for account data when casa/skills are absent (payload entry point — a FILE lacking skills entirely is now rejected upstream by MSG-11\'s gate, so this is parseAccountPayload\'s territory, not parseSaveFile\'s)', () => {
     const { account } = parseAccountPayload({ heroes: [] }, []);
-    // OD-12/pfr-web-ui: item B's mapAccountMaxPhase added the additive, required
+    // Farm Ranking: @bombfarm/domain's mapAccountMaxPhase added the additive, required
     // `maxPhase: number | null` field to AccountImportData — every rejection path is `null`.
     expect(account).toEqual({
       tree: null,

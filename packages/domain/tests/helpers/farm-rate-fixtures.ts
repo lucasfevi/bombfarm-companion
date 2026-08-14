@@ -1,10 +1,10 @@
 /**
- * PFR item B (T5, `design.md` §7) — lifts the fixture → `{ heroes, account }` recipe from
+ * Lifts the fixture → `{ heroes, account }` recipe from
  * `pipeline-for-hero-parity.test.ts:34-72` into a shared helper so the farm-rate suites don't
  * re-derive it seven times. Extended from that file's single-hero pick to every parsed candidate.
  *
- * Also provides `withAbilityLevels` — the fixture carries no `veia_ouro` / `fortuna` on any hero
- * (`design.md` §2.5), so `R-B6`'s gold-ability multiplier cases need mutated copies of a parsed
+ * Also provides `withAbilityLevels` — the fixture carries no `veia_ouro` / `fortuna` on any hero,
+ * so the gold-ability multiplier cases need mutated copies of a parsed
  * hero, not the raw fixture.
  */
 import { parseAccountPayload } from '@bombfarm/domain/import-save';
@@ -83,8 +83,8 @@ export function loadFarmRateFixture(filename: string = FARM_RATE_FIXTURE): FarmR
 
 /**
  * A copy of `hero` with `levels` merged into `abilities` — new keys added, existing ones
- * overwritten, everything else untouched. `design.md` §2.5: the fixture has no `veia_ouro` or
- * `fortuna` on any hero, so the gold-ability multiplier cases (`R-B6`) need this.
+ * overwritten, everything else untouched. The fixture has no `veia_ouro` or
+ * `fortuna` on any hero, so the gold-ability multiplier cases need this.
  */
 export function withAbilityLevels(hero: HeroRecord, levels: Record<string, number>): HeroRecord {
   return {

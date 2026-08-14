@@ -67,7 +67,7 @@ describe('planner tabs IA (PTI-*)', () => {
     tabGear: { en: 'Gear', pt: 'Equipamento' },
     tabAccount: { en: 'Account', pt: 'Conta' },
     tabPoints: { en: 'Points', pt: 'Pontos' },
-    // pfr-web-ui (T1, AD-PFR-17): renamed Phases -> Farm, identical in both languages.
+    // Farm Ranking (T1): renamed Phases -> Farm, identical in both languages.
     navPhases: { en: 'Farm', pt: 'Farm' },
     navPlanner: { en: 'Planner', pt: 'Planner' },
     tabHeroWarnTitle: { en: 'Abilities need attention', pt: 'Habilidades precisam de atenção' },

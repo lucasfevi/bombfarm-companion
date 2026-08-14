@@ -1,10 +1,10 @@
 /**
- * PFR item B, T9 (`R-B10`, spec.md P1-5/AD-PFR-10, AD-PFR-04) — the one-shot boundary.
+ * The one-shot boundary.
  *
  * `oneShot` is `true` iff every enabled hero clears `maxPropHp = line.hp × 3.2` (the highest
  * `hpMult` in `WIKI_PROPS`, `purple_crystal`). This is also the case the `hitsToKill` `ceil` in
  * `E[HTK]` exists to preserve — at `oneShot === true`, `expectedHtk === 1` exactly and
- * `propsPerHour` equals the pure plant rate (`AD-PFR-04`'s "plant-rate-bound" claim).
+ * `propsPerHour` equals the pure plant rate (the "plant-rate-bound" claim).
  */
 import { describe, expect, it } from 'vitest';
 import { computeSquadFarmFacts, computeFarmRateRow, type HeroFarmFacts } from '@bombfarm/domain/farm-rate';
@@ -58,7 +58,7 @@ describe('oneShot boundary', () => {
     expect(row.oneShot).toBe(false);
   });
 
-  it('at oneShot === true, expectedHtk === 1 exactly and propsPerHour equals the pure plant rate (AD-PFR-04)', () => {
+  it('at oneShot === true, expectedHtk === 1 exactly and propsPerHour equals the pure plant rate', () => {
     const mitF = mitigationFactor(line.mitig, 0);
     const avgHitBase = maxPropHp / mitF;
     const hero = syntheticHero({ heroId: 'exact', avgHitBase, plantsPerSec: 0.4, blocksPerBomb: 1.5, uptime: 1 });

@@ -3,8 +3,8 @@ export const en = {
   appSuiteTag: "Companion",
   siteNavAria: "Main sections",
   navPlanner: "Planner",
-  // Value is "Farm" in both languages — the rename's whole point (AD-PFR-17: the word
-  // works untranslated). Key name stays navPhases (ASM-C4, i18n.md rule 3 — id stability).
+  // Value is "Farm" in both languages — the rename's whole point (the word
+  // works untranslated). Key name stays navPhases (i18n.md rule 3 — id stability).
   navPhases: "Farm",
   guideToggleTitle: "Show / hide the quick guide",
   hide: "hide",
@@ -48,7 +48,7 @@ export const pt: typeof en = {
   appSuiteTag: "Companion",
   siteNavAria: "Seções principais",
   navPlanner: "Planner",
-  // Deliberately identical to EN — "Farm" reads fine untranslated (AD-PFR-17). Not a
+  // Deliberately identical to EN — "Farm" reads fine untranslated. Not a
   // missed-translation bug; do not "fix" this to "Fazenda".
   navPhases: "Farm",
   guideToggleTitle: "Mostrar / ocultar o guia rápido",

@@ -12,7 +12,7 @@ export const BOSS_HP_MULT_WIKI = wiki.bossHpMult;
 export const REP_HP_MULT = wiki.repHpMult;
 
 /**
- * `JAULA`'s shape is **breaking** as of `pfr-wiki-bundle` (PWB-14): the wiki no longer reports a
+ * `JAULA`'s shape is **breaking** as of the re-emitted wiki bundle: the wiki no longer reports a
  * per-phase early-arrival ramp (`adiantaProbIni`/`adiantaProbMax`) or a per-difficulty window
  * array (`janelaSecsPorAto`). It now reports a flat per-difficulty early-arrival probability and
  * a single (non-VIP / VIP) guaranteed window. `jaulaEarlyCap()` below keeps its name and
@@ -123,7 +123,7 @@ export type LootAbilityValue = {
 /** Keyed by the wiki `code`, which is the same id `model/abilities.ts` uses, so a hero's
  *  ability level joins without a mapping table. `code` is the key, not a field. The bundle JSON
  *  keeps calling the cap `maxLevel` — this is the one translation point between the two
- *  vocabularies (`OD-7`); do not add a second one. */
+ *  vocabularies; do not add a second one. */
 export const LOOT_ABILITY_VALUES: Readonly<Record<LootAbilityCode, LootAbilityValue>> = {
   veia_ouro: {
     kind: wiki.lootAbilities.veia_ouro.kind,

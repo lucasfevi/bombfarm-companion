@@ -53,9 +53,9 @@ import {
   XP_FASE_INI,
 } from '@bombfarm/domain/phase-wiki';
 
-// PWB-11: the full pre-existing (pre-`pfr-wiki-bundle`) export list, a literal — never derived
-// from the module at test time. JAULA and jaulaEarlyCap existed before this item too, but are
-// pinned separately below (PWB-14) because their shape/body changed; every name here keeps both
+// The full pre-existing (pre-re-emit) export list, a literal — never derived
+// from the module at test time. JAULA and jaulaEarlyCap existed before this feature too, but are
+// pinned separately below (JAULA reshape) because their shape/body changed; every name here keeps both
 // its name AND its pre-existing shape untouched.
 const PRE_EXISTING_EXPORTS = [
   'WIKI_PHASE_LINES',
@@ -137,15 +137,15 @@ const EXPORT_VALUES: Record<(typeof PRE_EXISTING_EXPORTS)[number], unknown> = {
   rarityLabel,
 };
 
-describe('phase-wiki-bundle (PFR item A — pfr-wiki-bundle)', () => {
-  it('PWB-11: every pre-existing export name is still present and non-undefined', () => {
+describe('phase-wiki-bundle', () => {
+  it('every pre-existing export name is still present and non-undefined', () => {
     expect(PRE_EXISTING_EXPORTS.length).toBe(37);
     for (const name of PRE_EXISTING_EXPORTS) {
       expect(EXPORT_VALUES[name], `${name} should still be exported`).toBeDefined();
     }
   });
 
-  describe('PWB-16: clean blocks pinned unchanged (written-down literals, not read back)', () => {
+  describe('clean blocks pinned unchanged (written-down literals, not read back)', () => {
     it('WIKI_PROPS deep-equals its literal (10 props)', () => {
       expect(WIKI_PROPS).toEqual([
         { name: 'bush', hpMult: 0.55, weight: 16, rarity: 0 },
@@ -184,7 +184,7 @@ describe('phase-wiki-bundle (PFR item A — pfr-wiki-bundle)', () => {
     });
   });
 
-  describe('PWB-04..10: new export shapes and values (literals, not read back from the bundle)', () => {
+  describe('new export shapes and values (literals, not read back from the bundle)', () => {
     it('DROP_RATES: four finite fractions matching their literal values', () => {
       expect(DROP_RATES).toEqual({ chest: 0.001, key: 0.001, gem: 0.00005, time: 0.0015 });
       for (const value of Object.values(DROP_RATES)) {
@@ -245,10 +245,10 @@ describe('phase-wiki-bundle (PFR item A — pfr-wiki-bundle)', () => {
       ]);
     });
 
-    // PWB-08: the assertion that catches a future `max` semantics flip. `max` is documented as a
+    // The assertion that catches a future `max` semantics flip. `max` is documented as a
     // LEVEL cap (not an effect cap) precisely because the field name invites the wrong reading —
-    // this matters more than usual because OD-7 kept the API's ambiguous name verbatim.
-    it('PWB-08: at-max products reproduce the PRD-stated values — veia_ouro 0.4, fortuna 0.1', () => {
+    // this matters more than usual because the API kept its ambiguous name verbatim on translation.
+    it('at-max products reproduce the design-stated values — veia_ouro 0.4, fortuna 0.1', () => {
       expect(
         LOOT_ABILITY_VALUES.veia_ouro.perLevel * LOOT_ABILITY_VALUES.veia_ouro.max,
       ).toBeCloseTo(0.4, 12);
@@ -264,14 +264,14 @@ describe('phase-wiki-bundle (PFR item A — pfr-wiki-bundle)', () => {
     });
   });
 
-  // PWB-09 (TS half — the JSON half is asserted at emit time in tools/wiki-emit-phase-bundle.mjs).
-  it('PWB-09: WIKI_GEMS.chestDropRate === DROP_RATES.gem', () => {
+  // TS half — the JSON half is asserted at emit time in tools/wiki-emit-phase-bundle.mjs.
+  it('WIKI_GEMS.chestDropRate === DROP_RATES.gem', () => {
     expect(WIKI_GEMS.chestDropRate).toBe(DROP_RATES.gem);
   });
 
-  // OD-7: the JSON<->TS translation is asserted, not assumed. A future edit that re-points one
+  // The JSON<->TS translation is asserted, not assumed. A future edit that re-points one
   // side without the other must go red here.
-  describe('OD-7: the flat TS exports track the bundle JSON keys they translate', () => {
+  describe('the flat TS exports track the bundle JSON keys they translate', () => {
     it('each DROP_RATES field matches its bundle-JSON drops.* source key', async () => {
       const wiki = (await import('../src/data/phase-wiki.json')).default;
       expect(DROP_RATES.chest).toBe(wiki.drops.chestDropRate);
@@ -294,8 +294,8 @@ describe('phase-wiki-bundle (PFR item A — pfr-wiki-bundle)', () => {
     });
   });
 
-  // PWB-14 regression pin: JAULA's new shape, and jaulaEarlyCap never returns NaN/undefined.
-  describe('PWB-14: JAULA reshape and jaulaEarlyCap repair', () => {
+  // Regression pin: JAULA's new shape, and jaulaEarlyCap never returns NaN/undefined.
+  describe('JAULA reshape and jaulaEarlyCap repair', () => {
     it('JAULA carries adiantaProbPorAto (5) / janelaSecs / janelaSecsVip / hpMult', () => {
       expect(JAULA.adiantaProbPorAto.length).toBe(5);
       expect(JAULA.adiantaProbPorAto).toEqual([0.05, 0.1, 0.15, 0.2, 0.25]);
@@ -314,7 +314,7 @@ describe('phase-wiki-bundle (PFR item A — pfr-wiki-bundle)', () => {
     });
   });
 
-  // PWB-15: for all 600 phases, the existing xpPerProp() interpolation reproduces the wiki's own
+  // For all 600 phases, the existing xpPerProp() interpolation reproduces the wiki's own
   // per-phase xpProp value — an explicit counter so an empty loop cannot pass vacuously.
   //
   // Deviation from the spec's literal "within 1e-6" wording, recorded for the validator: measured
@@ -327,7 +327,7 @@ describe('phase-wiki-bundle (PFR item A — pfr-wiki-bundle)', () => {
   // is exact for all 600 phases (verified below), which is a stronger and actually-true pin than
   // the spec's raw-difference tolerance — xpPerProp()'s body is unchanged either way, per the
   // spec's own mandate.
-  it('PWB-15: Math.round(xpPerProp(phase)) === wikiPhaseLine(phase).xpProp for all 600 phases', () => {
+  it('Math.round(xpPerProp(phase)) === wikiPhaseLine(phase).xpProp for all 600 phases', () => {
     let checked = 0;
     for (let phase = 1; phase <= 600; phase++) {
       const line = wikiPhaseLine(phase);

@@ -59,9 +59,9 @@ describe('phases slice', () => {
     expect(usePlannerStore.getState().farmReturnBonus).toBe('off');
   });
 
-  // AD-PFRC-03 — red against the shipped implementation before this feature: the old
+  // Whole-state writer — red against the shipped implementation before this feature: the old
   // savePhasesView({ phase: clamped }) call site silently erased any second persisted field.
-  it('AD-PFRC-03: a pool override survives a later setPhasesViewPhase call', () => {
+  it('a pool override survives a later setPhasesViewPhase call (whole-state writer)', () => {
     usePlannerStore.getState().setFarmHeroEnabled('hero-1', false);
     usePlannerStore.getState().setPhasesViewPhase(151);
 
@@ -69,7 +69,7 @@ describe('phases slice', () => {
     expect(loadPhasesView().phase).toBe(151);
   });
 
-  it('AD-PFRC-03: the return bonus survives a later setPhasesViewPhase call', () => {
+  it('the return bonus survives a later setPhasesViewPhase call (whole-state writer)', () => {
     usePlannerStore.getState().setFarmReturnBonus('vip');
     usePlannerStore.getState().setPhasesViewPhase(42);
 

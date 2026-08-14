@@ -1,5 +1,5 @@
 /**
- * PFR item B, T7 (`R-B4`, `R-B7`, `R-B8`, `R-B9`, spec.md P1-2) — hand-computed fixture values.
+ * Hand-computed fixture values.
  *
  * Two blocks: phase 42 (non-gate) and phase 10 (gate), each ato 1 on the 5-hero fixture. Every
  * expectation below is built from PUBLISHED INPUTS ONLY — the wiki line's own fields, the raw
@@ -8,16 +8,16 @@
  * expectation here is built by calling `computeFarmRateRow` or `computeFarmRateTable` — only the
  * row under test is.
  *
- * DATA-STALENESS NOTE (spec-precision gap, flagged for the validator): `spec.md` P1-2 AC-1/AC-2
- * cite `goldComum 209.3469387755102` (phase 42) and `goldComum 46.734693877551024` (phase 10),
- * and `design.md` §2.2 cites `Σ share × goldRarityMult = 1.545`. The committed wiki bundle
- * (item A's 2026-08-14 pull, landed on this same branch) carries `goldComum 157` / `35` for
- * those two phases and a live `Σ share × goldRarityMult` of `1.57` — hp and mitig match spec.md
- * exactly, only goldComum/the gold-share factor differ, consistent with the `pfr-wiki-bundle`
- * changeset's own note that "Phase gold is about 25% lower... the committed bundle was simply
- * stale." T7's own instruction is to derive expectations from PUBLISHED (i.e. live) inputs, never
- * from spec.md's now-stale illustrative figures — so every number below is read live off
- * `wikiPhaseLine` / `WIKI_PROPS`, never typed from spec.md's table.
+ * DATA-STALENESS NOTE (precision gap, flagged for the validator): the design's illustrative
+ * figures cited `goldComum 209.3469387755102` (phase 42) and `goldComum 46.734693877551024`
+ * (phase 10), and `Σ share × goldRarityMult = 1.545`. The committed wiki bundle
+ * (the 2026-08-14 pull, landed on this same branch) carries `goldComum 157` / `35` for
+ * those two phases and a live `Σ share × goldRarityMult` of `1.57` — hp and mitig match the
+ * design's figures exactly, only goldComum/the gold-share factor differ, consistent with the
+ * wiki-bundle changeset's own note that "Phase gold is about 25% lower... the committed bundle
+ * was simply stale." T7's own instruction is to derive expectations from PUBLISHED (i.e. live)
+ * inputs, never from the design's now-stale illustrative figures — so every number below is read
+ * live off `wikiPhaseLine` / `WIKI_PROPS`, never typed from the design's table.
  */
 import { describe, expect, it } from 'vitest';
 import {
@@ -228,7 +228,7 @@ describe('phase 10 — gate hand-computed values (spec.md P1-2 AC-2)', () => {
 
 describe('gold-share factor — independent cross-check against the raw prop table (design.md §2.2)', () => {
   it('Σ share × goldRarityMult, derived from the live WIKI_PROPS table, is what both hand rows use', () => {
-    // NOTE: design.md states this factor as 1.545 — that figure predates item A's 2026-08-14
+    // NOTE: the design's illustrative figure for this factor was 1.545 — that predates the 2026-08-14
     // wiki re-pull (same staleness as the goldComum values noted at the top of this file). The
     // live committed WIKI_PROPS table yields 1.57; this assertion pins that live value so a
     // future prop-table change is caught here rather than silently absorbed into a gold figure.

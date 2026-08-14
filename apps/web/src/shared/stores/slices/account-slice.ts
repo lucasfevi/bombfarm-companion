@@ -39,9 +39,9 @@ export type AccountSlice = {
   targetProp: string | null;
   slots: number;
   /**
-   * `account.max_phase` (`OD-9`). `null` when the browser account predates this feature, was
+   * `account.max_phase`. `null` when the browser account predates this feature, was
    * assembled by hand, or the last import's payload carried neither source — `FarmRateOptions`
-   * treats `null` as "show every phase, no lock badges" (`AD-PFR-02`).
+   * treats `null` as "show every phase, no lock badges".
    */
   maxPhase: number | null;
 
@@ -170,7 +170,7 @@ export const createAccountSlice: StateCreator<
         if (line) patch.mitigationPct = +(line.mitig * 100).toFixed(2);
       }
     }
-    // OD-9 / AD-PFRC-04: UNCONDITIONAL, unlike every sibling field above. Item B's
+    // UNCONDITIONAL, unlike every sibling field above.
     // AccountImportData.maxPhase is required-and-total (number | null on every path), so a
     // payload carrying no max_phase source is an ASSERTION that this account has no known max
     // phase, not an absence to be ignored. Preserving a stale value here would leave lock
@@ -178,7 +178,7 @@ export const createAccountSlice: StateCreator<
     // shape). Both the file-import and API-refresh paths reach this branch — both funnel
     // through parseAccountPayload -> mapAccountData.
     // `data.maxPhase` is optional on AccountImportData's TYPE only so hand-built test fixtures
-    // elsewhere keep compiling (item B's doc comment) — real production data always carries a
+    // elsewhere keep compiling (see that type's own doc comment) — real production data always carries a
     // concrete `number | null`. Coerce a merely-absent field to `null` so the slice's own
     // `number | null` invariant never sees `undefined`.
     patch.maxPhase = data.maxPhase ?? null;

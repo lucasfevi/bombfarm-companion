@@ -1,6 +1,6 @@
 /**
- * The exact `bf-hp-*` persisted key-string set on `origin/develop` at the pfr-web-ui branch
- * cut (`R-C4`, `ASM-C4`) — captured via
+ * The exact `bf-hp-*` persisted key-string set on `origin/develop` at the Farm Ranking branch
+ * cut — captured via
  * `git grep -n "'bf-hp-\|\"bf-hp-" origin/develop -- apps/web/src/shared/lib`.
  * This feature is additive-only on existing keys; it must never add, remove or rename one.
  */

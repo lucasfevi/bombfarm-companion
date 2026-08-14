@@ -33,7 +33,7 @@ Six feature slices, each with a required `index.ts` public-API barrel — nothin
 | `account/` | Account column — house/level, plain-text skill-tree totals (import-sourced, read-only), team buffs |
 | `gear/` | `SlotEditor`, gear slots grid, gear domain UI |
 | `roster/` | Roster table / sort / open-state hooks (see the dead-code note below), hero picker |
-| `phases/` | Farm Ranking board (`pfr-web-ui`) + phase explorer + phase page-state model — slice name kept from the pre-rename `/phases` route (`ASM-C4`) |
+| `phases/` | Farm Ranking board + phase explorer + phase page-state model — slice name kept from the pre-rename `/phases` route (deliberate, see the routes section below) |
 | `import/` | Import-heroes dialog |
 
 **Dead-code note (recorded, not removed — out of this doc's scope to fix):** `RosterTable`/`RosterRow`/`useRosterSort`/`useRosterOpen`/`roster-table-head.tsx` under `features/roster/` are exported from `roster/index.ts` but have zero importers anywhere in `src/app/**` or `src/features/**`. The live "switch hero" UI is `HeroPickerDialog` → `HeroPickerTable` → `HeroPickerRow`, a separate, unmemoized sibling. Dead-code removal is a separate concern from memo retirement.
@@ -66,8 +66,8 @@ File-size lint budgets (also `error`, not a "rough target"): general `src/` file
 ## Routes
 
 - `/` — Web planner (import-only roster, tab stage: Abilities / Gear / Account / Points). Workspace lives in the `@planner` slot.
-- `/farm` — Farm page (`pfr-web-ui`, `AD-PFR-17`): the Farm Ranking board (`FarmRankingBoard`, `src/features/phases/components/farm-ranking-board.tsx`) above the pre-existing phase explorer. Route moved here from `/phases`; the feature slice, its internal identifiers (`phases-slice.ts`, the `phases` i18n namespace, `src/features/phases/`) and the `bf-hp-phases-view-v1` key all deliberately keep their pre-rename names (`ASM-C4`) — only the URL and the nav label changed. Phase picker is **independent** of the account's farm phase until the user clicks **Use as farm phase** (`src/features/phases/model/phases-page.ts` → `bf-hp-account-v1`). The planner slot stays mounted but hidden.
-- `/phases` — Redirect stub (`src/app/phases/page.tsx`, `AD-PFRC-01`). Lives **outside** the `(app)` route group deliberately, since `output: 'export'` means there is no server-side `redirects()`: a `'use client'` page that calls `router.replace('/farm')` in a `useEffect`, with a visible `<a href="/farm">` fallback and a `<noscript>` meta-refresh for the no-JS case. `replace`, not `push`, so the browser's Back button does not bounce back to `/phases`.
+- `/farm` — Farm page: the Farm Ranking board (`FarmRankingBoard`, `src/features/phases/components/farm-ranking-board.tsx`) above the pre-existing phase explorer. Route moved here from `/phases`; the feature slice, its internal identifiers (`phases-slice.ts`, the `phases` i18n namespace, `src/features/phases/`) and the `bf-hp-phases-view-v1` key all deliberately keep their pre-rename names — the word "Farm" reads fine untranslated in both languages, so only the URL and the nav label changed. Phase picker is **independent** of the account's farm phase until the user clicks **Use as farm phase** (`src/features/phases/model/phases-page.ts` → `bf-hp-account-v1`). The planner slot stays mounted but hidden.
+- `/phases` — Redirect stub (`src/app/phases/page.tsx`). Lives **outside** the `(app)` route group deliberately, since `output: 'export'` means there is no server-side `redirects()`: a `'use client'` page that calls `router.replace('/farm')` in a `useEffect`, with a visible `<a href="/farm">` fallback and a `<noscript>` meta-refresh for the no-JS case. `replace`, not `push`, so the browser's Back button does not bounce back to `/phases`.
 
 Top nav (`SiteHeader` in the shell): **Planner · Farm · Team plan**.
 
@@ -78,12 +78,12 @@ One root store (`src/shared/stores/planner-store.ts`), composed of five named sl
 | Slice | Owns |
 | --- | --- |
 | `session` | lang, toast, persist gate / skip-toast one-shots |
-| `account` | house/level, skill tree, team buffs, farm context, `maxPhase` (`OD-9`, `bf-hp-account-v1`) |
+| `account` | house/level, skill tree, team buffs, farm context, `maxPhase` (`bf-hp-account-v1`) |
 | `roster` | heroes + `activeHeroId` — the sole in-memory roster |
 | `phases` | explorer view phase, Farm Ranking rotation-pool overrides and return-bonus mode (`bf-hp-phases-view-v1`) |
 | `hero-draft` | active hero edit fields |
 
-**Selectors are the public read API** (`src/shared/stores/selectors/`, one file per slice-family plus `advisor-selectors.ts`, `tab-status-selectors.ts` and `farm-ranking-selectors.ts`). A bare `usePlannerStore()` call with no selector is forbidden (subscribes to everything); every read goes through a named selector or an inline field selector. Selectors returning objects or arrays use `useShallow` — except **`selectAdvisorPipeline`** and **`selectFarmRankingRows`**, both module-level single-entry **memoized selectors** (`state-management.md` MOD-18) that already return a stable object identity on cache hits; wrapping either in `useShallow` would shallow-compare dozens/hundreds of fields on every store write and defeat the memoization. `selectFarmRankingRows` is also the only file in `apps/web` that imports `@bombfarm/domain/farm-rate` (`R-C20` AC-7) — it calls `computeFarmRates` once per relevant store change over a 15-member dependency tuple. Full rules: [`state-management.md`](state-management.md).
+**Selectors are the public read API** (`src/shared/stores/selectors/`, one file per slice-family plus `advisor-selectors.ts`, `tab-status-selectors.ts` and `farm-ranking-selectors.ts`). A bare `usePlannerStore()` call with no selector is forbidden (subscribes to everything); every read goes through a named selector or an inline field selector. Selectors returning objects or arrays use `useShallow` — except **`selectAdvisorPipeline`** and **`selectFarmRankingRows`**, both module-level single-entry **memoized selectors** (`state-management.md` MOD-18) that already return a stable object identity on cache hits; wrapping either in `useShallow` would shallow-compare dozens/hundreds of fields on every store write and defeat the memoization. `selectFarmRankingRows` is also the only file in `apps/web` that imports `@bombfarm/domain/farm-rate` (enforced by a structural guard — see `farm-ranking-guards.test.ts`) — it calls `computeFarmRates` once per relevant store change over a 15-member dependency tuple. Full rules: [`state-management.md`](state-management.md).
 
 Persistence is `localStorage` only, via `src/shared/lib/storage.ts`, driven by explicit `subscribeWithSelector` subscriptions in `src/shared/stores/persistence/` — **not** `zustand/persist` (confirmed zero matches for `zustand/persist` in `src/`). No game-server / Electron / memory readers exist in this app package. Public-save compatibility: [`local-data-compat.md`](local-data-compat.md).
 

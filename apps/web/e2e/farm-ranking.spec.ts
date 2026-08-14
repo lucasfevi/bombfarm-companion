@@ -44,9 +44,9 @@ async function firstVisibleGateRowTestId(page: Page): Promise<string | null> {
     });
 }
 
-test.describe('Farm Ranking board (pfr-web-ui)', () => {
+test.describe('Farm Ranking board', () => {
   // 1. Redirect — /phases -> /farm, history replaced.
-  test('goto(/phases) lands on /farm, and Back does not bounce back to /phases (R-C2)', async ({
+  test('goto(/phases) lands on /farm, and Back does not bounce back to /phases', async ({
     page,
   }) => {
     await seedLocalStorage(page, { ...importedRoster, account: accountWithMaxPhase, lang: 'en' });
@@ -60,7 +60,7 @@ test.describe('Farm Ranking board (pfr-web-ui)', () => {
   });
 
   // 2. Renders + default state.
-  test('renders above the explorer, sorted gold/hr desc, unlocked-only default, row count == maxPhase (R-C5, R-C6, R-C8, R-C9)', async ({
+  test('renders above the explorer, sorted gold/hr desc, unlocked-only default, row count == maxPhase', async ({
     page,
   }) => {
     await seedLocalStorage(page, { ...importedRoster, account: accountWithMaxPhase, lang: 'en' });
@@ -83,7 +83,7 @@ test.describe('Farm Ranking board (pfr-web-ui)', () => {
   });
 
   // 3. Sort.
-  test('sorting a rate column reorders, sets aria-sort, and announces via the live region (R-C8, R-C23)', async ({
+  test('sorting a rate column reorders, sets aria-sort, and announces via the live region', async ({
     page,
   }) => {
     await seedLocalStorage(page, { ...importedRoster, account: accountWithMaxPhase, lang: 'en' });
@@ -102,7 +102,7 @@ test.describe('Farm Ranking board (pfr-web-ui)', () => {
   });
 
   // 4. Filters.
-  test('filters narrow and widen the row set; an impossible combination shows the empty state (R-C9, R-C10, R-C11)', async ({
+  test('filters narrow and widen the row set; an impossible combination shows the empty state', async ({
     page,
   }) => {
     await seedLocalStorage(page, { ...importedRoster, account: accountWithMaxPhase, lang: 'en' });
@@ -140,7 +140,7 @@ test.describe('Farm Ranking board (pfr-web-ui)', () => {
   });
 
   // 5. Row -> picker sync.
-  test('activating a row drives the explorer and persists the phase (R-C12)', async ({ page }) => {
+  test('activating a row drives the explorer and persists the phase', async ({ page }) => {
     await seedLocalStorage(page, { ...importedRoster, account: accountWithMaxPhase, lang: 'en' });
     await page.goto('/farm');
 
@@ -158,7 +158,7 @@ test.describe('Farm Ranking board (pfr-web-ui)', () => {
   });
 
   // 6. Hero toggle changes rates.
-  test('toggling a hero recomputes rates, persists additively, survives reload, and leaves bf-hp-heroes-v1 byte-identical (R-C14, R-C15, R-C16)', async ({
+  test('toggling a hero recomputes rates, persists additively, survives reload, and leaves bf-hp-heroes-v1 byte-identical', async ({
     page,
   }) => {
     await seedLocalStorage(page, { ...importedRoster, account: accountWithMaxPhase, lang: 'en' });
@@ -199,7 +199,7 @@ test.describe('Farm Ranking board (pfr-web-ui)', () => {
   });
 
   // 7. Return bonus.
-  test("return bonus 'off' -> 'on' -> 'vip' strictly increases gold/hr; the gate row's keys value does not change (R-C18)", async ({
+  test("return bonus 'off' -> 'on' -> 'vip' strictly increases gold/hr; the gate row's keys value does not change", async ({
     page,
   }) => {
     await seedLocalStorage(page, { ...importedRoster, account: accountWithMaxPhase, lang: 'en' });
@@ -237,7 +237,7 @@ test.describe('Farm Ranking board (pfr-web-ui)', () => {
   });
 
   // 8. Zero enabled.
-  test('disabling every hero shows the empty state and renders no numeric cell (R-C17, AD-PFRC-07)', async ({
+  test('disabling every hero shows the empty state and renders no numeric cell', async ({
     page,
   }) => {
     await seedLocalStorage(page, { ...importedRoster, account: accountWithMaxPhase, lang: 'en' });
@@ -252,7 +252,7 @@ test.describe('Farm Ranking board (pfr-web-ui)', () => {
   });
 
   // 9. No maxPhase.
-  test('a null maxPhase shows every phase, no lock badge, and a non-applicable unlocked-only control (R-C13)', async ({
+  test('a null maxPhase shows every phase, no lock badge, and a non-applicable unlocked-only control', async ({
     page,
   }) => {
     await seedLocalStorage(page, { ...importedRoster, account: accountNoMaxPhase, lang: 'en' });
@@ -264,7 +264,7 @@ test.describe('Farm Ranking board (pfr-web-ui)', () => {
   });
 
   // 10. PT.
-  test('renders in Portuguese with the Farm nav label (R-C3, R-C22)', async ({ page }) => {
+  test('renders in Portuguese with the Farm nav label', async ({ page }) => {
     await seedLocalStorage(page, { ...importedRoster, account: accountWithMaxPhase, lang: 'pt' });
     await page.goto('/farm');
 
@@ -273,7 +273,7 @@ test.describe('Farm Ranking board (pfr-web-ui)', () => {
     await expect(table(page).getByRole('columnheader', { name: /Ouro \/ h/i })).toBeVisible();
   });
 
-  // Keyboard coverage (R-C23, R-C24).
+  // Keyboard coverage.
   test('sort headers and rows are keyboard-operable', async ({ page }) => {
     await seedLocalStorage(page, { ...importedRoster, account: accountWithMaxPhase, lang: 'en' });
     await page.goto('/farm');
@@ -294,8 +294,8 @@ test.describe('Farm Ranking board (pfr-web-ui)', () => {
     await expect(firstRow).toHaveAttribute('aria-current', 'true');
   });
 
-  // 11. max_phase import wiring (R-C28, OD-9) — the only scenario exercising the real import flow.
-  test('importing a save with a known max_phase writes it through and lock badges appear (R-C28, OD-9)', async ({
+  // 11. max_phase import wiring — the only scenario exercising the real import flow.
+  test('importing a save with a known max_phase writes it through and lock badges appear', async ({
     page,
   }) => {
     await seedLocalStorage(page, { ...importedRoster, account: accountNoMaxPhase, lang: 'en' });

@@ -73,7 +73,7 @@ export const en = {
   bossRow: "boss/cage",
   avgRow: "avg",
 
-  // Farm Ranking board (pfr-web-ui) — kept in the `phases` namespace deliberately (ASM-C4):
+  // Farm Ranking board — kept in the `phases` namespace deliberately:
   // the board lives on the Farm page's `src/features/phases` feature slice, whose internal
   // identifiers keep their pre-rename names. `farmRanking*` prefix keeps these greppable.
   farmRankingColPhase: "Phase",

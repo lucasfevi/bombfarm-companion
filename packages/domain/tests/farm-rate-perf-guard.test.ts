@@ -1,5 +1,5 @@
 /**
- * PFR item B, T10 (`R-B13`, `R-B17`, `R-B19`, `R-B3`, `AD-PFR-15`) — the performance guard.
+ * The performance guard.
  *
  * `energySwitchPointCallCount` is bumped exactly once per `computeAdvisorPipeline` call
  * (`advisor-pipeline.ts:271`), unconditionally — so "count after − count before" is exactly the
@@ -33,7 +33,7 @@ beforeEach(() => {
   resetEnergySwitchPointCallCount();
 });
 
-describe('energySwitchPointCallCount — a function of roster size, not row count (AD-PFR-15)', () => {
+describe('energySwitchPointCallCount — a function of roster size, not row count', () => {
   it('computeFarmRates over all 600 phases with the 5-hero fixture bumps the counter exactly 5 times', () => {
     const { heroes, account } = loadFarmRateFixture();
     computeFarmRates({ heroes, account });
@@ -81,7 +81,7 @@ describe('energySwitchPointCallCount — a function of roster size, not row coun
   });
 });
 
-describe('structural guard — farm-rate.ts import allowlist (R-B13 AC-4, R-B17, R-B19)', () => {
+describe('structural guard — farm-rate.ts import allowlist', () => {
   it('does NOT import ./advisor-pipeline, ./advisor-tables, ./points-reopt, or ./derive', () => {
     if (!requireFixture(FARM_RATE_SRC, 'farm-rate.ts import-allowlist scan')) return;
     const source = readFileSync(FARM_RATE_SRC, 'utf8');

@@ -40,27 +40,27 @@ Browser-level smoke and visual baselines for the static export. Unit math stays 
 > disclosures callouts. The Team plan page does not write heroes (no alt-loadout push). Smoke
 > coverage lives under `e2e/team-plan-*.spec.ts`.
 >
-> **`/farm` (Farm Ranking board, `pfr-web-ui`):** no committed visual baseline, same `/team-plan`
+> **`/farm` (Farm Ranking board):** no committed visual baseline, same `/team-plan`
 > precedent — the visual project stays globally `describe.skip` and agents may not run
 > `test:e2e:update` or accept baselines. Before enabling `e2e/visual.spec.ts` for this route, a
 > human should review: the rotation-pool chip row, the four filter controls (unlocked-only,
 > feasible-only, difficulty, gate) and the return-bonus `Select`, the 13-column table (`table-
 > fixed` + `<colgroup>`, gate/push-target/infeasible badge chips, the sortable-header chevrons
-> and `aria-sort`), and the four `AD-PFRC-07` empty/error states (no roster, zero heroes enabled,
+> and `aria-sort`), and the four empty/error states (no roster, zero heroes enabled,
 > compute failed, zero filter matches — each renders zero numeric cells, never a table of
 > zeros). Also worth a human pass: the `/phases` redirect stub's brief flash before
 > `router.replace('/farm')` fires. Smoke coverage lives in `e2e/farm-ranking.spec.ts` (11
 > scenarios plus a keyboard-operability pass) and the two edited pre-existing specs
 > (`e2e/phases-page.spec.ts`, `e2e/app-shell-nav.spec.ts`).
 >
-> **Promote-to-600 evidence (`R-C6` AC-8, `AD-PFRC-02`):** a lightweight same-session
+> **Promote-to-600 evidence:** a lightweight same-session
 > Playwright timing (not the formal MOD-33 `e2e/perf/` commit-instrumentation harness — recorded
 > here as an evidence artifact, not a threshold gate) clicked the unlocked-only filter off
 > (42 -> 600 rows) and back on (600 -> 42 rows) on the same page, three repetitions, host
 > `dev-strict`: promote averaged **~273ms** (250/276/294ms), the same-session control (the
 > reverse direction) averaged **~63ms** (62/69/59ms). No visible stall; `content-visibility:
 > auto` on body rows is doing its job. If this regresses beyond a few hundred ms in a future
-> measurement, `AD-PFRC-02`'s pre-decided fallback is a "show all" pager over the same pure row
+> measurement, the pre-decided fallback is a "show all" pager over the same pure row
 > array — not a virtualization dependency.
 
 **Local e2e runs in Docker** — same Ubuntu + Chromium stack as CI. Any machine (Windows, macOS, Linux) produces identical pixels when you run the scripts below. CI is a verification gate: if you ran the local workflow, the PR checks should pass.

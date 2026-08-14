@@ -29,7 +29,7 @@ describe('formatRate', () => {
   });
 });
 
-describe('formatSignedRate (AD-PFR-08 — sign as text, never colour alone)', () => {
+describe('formatSignedRate (sign as text, never colour alone)', () => {
   it('prefixes a positive gain with +', () => {
     expect(formatSignedRate(12.3)).toBe('+12.3');
   });
@@ -84,7 +84,7 @@ describe('formatOneShot', () => {
   });
 });
 
-describe('formatPhaseLabel (ASM-C16, R-C29)', () => {
+describe('formatPhaseLabel', () => {
   it('matches the shipped phases-explorer mapName composition for a known phase', () => {
     // phase-fact-items.tsx: `${phaseMapDisplayName(intel.phase, lang)} · #${intel.phase}`
     expect(formatPhaseLabel(151, 'en')).toBe('First Strike · #151');

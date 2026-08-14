@@ -70,8 +70,8 @@ const KEYSTONE_PROSE_EDITED_PATHS = [
   'bdFormulaDmg',
   'explainSections.0.p.1',
   'explainSections.7.p.0',
-  // pfr-web-ui (T1, AD-PFR-17): the Phases page is renamed Farm — navPhases's VALUE
-  // changes to "Farm" in both languages (key name kept, ASM-C4/i18n.md rule 3).
+  // Farm Ranking (T1): the Phases page is renamed Farm — navPhases's VALUE
+  // changes to "Farm" in both languages (key name kept, i18n.md rule 3).
   'navPhases',
 ].sort();
 
@@ -85,12 +85,12 @@ const KEYSTONE_PROSE_EDITED_PATHS = [
 const F4_KEYS_ADDED = ['importRejectedUnsupportedShape'] as const;
 
 /**
- * pfr-web-ui T5 — the Farm Ranking board's column headers, genuinely new keys with no
- * counterpart in the frozen fixture (`R-C7`, `farmRanking*` prefix, `phases` namespace per
- * `ASM-C4`). Same shape as `F4_KEYS_ADDED` above; kept as its own named list so a reviewer can
+ * Farm Ranking T5 — the Farm Ranking board's column headers, genuinely new keys with no
+ * counterpart in the frozen fixture (`farmRanking*` prefix, `phases` namespace, deliberately).
+ * Same shape as `F4_KEYS_ADDED` above; kept as its own named list so a reviewer can
  * see which feature added which keys.
  */
-const PFR_WEB_UI_KEYS_ADDED = [
+const FARM_RANKING_KEYS_ADDED = [
   'farmRankingColPhase',
   'farmRankingColMitigation',
   'farmRankingColGold',
@@ -183,17 +183,17 @@ describe('i18n split parity', () => {
   // *minus* that enumerated list (AD-081) — every unlisted drift stays fatal in both
   // directions, and the list itself cannot silently grow or shrink (see the three
   // assertions below).
-  it('STRINGS.en differs from the frozen fixture (minus removed keys) at exactly the enumerated prose edits plus F4\'s and pfr-web-ui\'s new keys', () => {
+  it('STRINGS.en differs from the frozen fixture (minus removed keys) at exactly the enumerated prose edits plus F4\'s and Farm Ranking\'s new keys', () => {
     const diffs = diffLeafPaths(STRINGS.en, omitKeys(fixture.en, KEYSTONE_KEYS_REMOVED)).sort();
     expect(diffs).toEqual(
-      [...KEYSTONE_PROSE_EDITED_PATHS, ...F4_KEYS_ADDED, ...PFR_WEB_UI_KEYS_ADDED].sort(),
+      [...KEYSTONE_PROSE_EDITED_PATHS, ...F4_KEYS_ADDED, ...FARM_RANKING_KEYS_ADDED].sort(),
     );
   });
 
-  it('STRINGS.pt differs from the frozen fixture (minus removed keys) at exactly the enumerated prose edits plus F4\'s and pfr-web-ui\'s new keys', () => {
+  it('STRINGS.pt differs from the frozen fixture (minus removed keys) at exactly the enumerated prose edits plus F4\'s and Farm Ranking\'s new keys', () => {
     const diffs = diffLeafPaths(STRINGS.pt, omitKeys(fixture.pt, KEYSTONE_KEYS_REMOVED)).sort();
     expect(diffs).toEqual(
-      [...KEYSTONE_PROSE_EDITED_PATHS, ...F4_KEYS_ADDED, ...PFR_WEB_UI_KEYS_ADDED].sort(),
+      [...KEYSTONE_PROSE_EDITED_PATHS, ...F4_KEYS_ADDED, ...FARM_RANKING_KEYS_ADDED].sort(),
     );
   });
 
@@ -208,12 +208,12 @@ describe('i18n split parity', () => {
     }
   });
 
-  it('sorted key-name list is unchanged vs fixture minus the removed keystone keys, plus F4\'s and pfr-web-ui\'s new keys', () => {
+  it('sorted key-name list is unchanged vs fixture minus the removed keystone keys, plus F4\'s and Farm Ranking\'s new keys', () => {
     const fromSplit = Object.keys(STRINGS.en).sort();
     const fromFixture = [
       ...Object.keys(omitKeys(fixture.en, KEYSTONE_KEYS_REMOVED)),
       ...F4_KEYS_ADDED,
-      ...PFR_WEB_UI_KEYS_ADDED,
+      ...FARM_RANKING_KEYS_ADDED,
     ].sort();
     expect(fromSplit).toEqual(fromFixture);
   });
@@ -246,9 +246,9 @@ describe('i18n split parity', () => {
     }
   });
 
-  it('PFR_WEB_UI_KEYS_ADDED has exactly 50 entries, present in STRINGS but absent from the frozen fixture, both languages', () => {
-    expect(PFR_WEB_UI_KEYS_ADDED.length).toBe(50);
-    for (const key of PFR_WEB_UI_KEYS_ADDED) {
+  it('FARM_RANKING_KEYS_ADDED has exactly 50 entries, present in STRINGS but absent from the frozen fixture, both languages', () => {
+    expect(FARM_RANKING_KEYS_ADDED.length).toBe(50);
+    for (const key of FARM_RANKING_KEYS_ADDED) {
       expect(key in fixture.en, `${key} unexpectedly present in fixture.en`).toBe(false);
       expect(key in fixture.pt, `${key} unexpectedly present in fixture.pt`).toBe(false);
       expect(key in STRINGS.en, `${key} missing from STRINGS.en`).toBe(true);
@@ -282,14 +282,14 @@ describe('i18n split parity', () => {
 });
 
 /**
- * R-C22 AC-1: EN and PT key sets are structurally equal (compile-time via `pt: typeof en`,
+ * EN and PT key sets are structurally equal (compile-time via `pt: typeof en`,
  * asserted again here at runtime) and no PT value for a Farm Ranking key is byte-identical to
- * its EN counterpart, except an explicit allowlist. `navPhases` ("Farm", AD-PFR-17) is the
- * spec's own allowlisted collision. `farmRankingReturnBonusVip` ("VIP") is added on the same
+ * its EN counterpart, except an explicit allowlist. `navPhases` ("Farm") is the
+ * design's own allowlisted collision. `farmRankingReturnBonusVip` ("VIP") is added on the same
  * rationale — a universal loanword used unchanged in Brazilian Portuguese gaming UI, not a
  * missed translation.
  */
-describe('Farm Ranking i18n parity (R-C22)', () => {
+describe('Farm Ranking i18n parity', () => {
   const EN_PT_COLLISION_ALLOWLIST = new Set(['navPhases', 'farmRankingReturnBonusVip']);
 
   it('EN and PT key sets are equal at runtime', () => {
