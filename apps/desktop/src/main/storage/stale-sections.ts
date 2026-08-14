@@ -49,12 +49,30 @@ function retiredKeyTriggers(section: AccountSection, body: unknown): string[] {
  * `AccountStore` performs no normalization of its own and never required those bodies to be
  * schema-complete). `triggers` is a list of path-qualified key names only — never a stored value
  * (`MSG-28`).
+ *
+ * A retired `skills.totals` key is, by construction, ALSO an unrecognized key under the exact-
+ * match schema check (`checkSchema` descends into `totals` and flags any key `SKILLS_TOTALS_LEVEL`
+ * doesn't declare) — so an unfiltered fingerprint check would always re-find the same evidence
+ * the retired-key branch already reported, making the retired-key branch dead in practice: it
+ * could be deleted and no verdict would ever change. `sanitizeForFingerprint` strips the retired
+ * keys out of `totals` before the fingerprint check runs, so a body whose ONLY drift is a retired
+ * key genuinely passes `checkSectionShape` (`shape.ok === true`) — the retired-key branch is then
+ * the sole, independent cause of that body's drop.
  */
+function sanitizeForFingerprint(body: unknown): unknown {
+  if (!isObject(body) || !isObject(body.totals)) return body;
+  const retired: readonly string[] = RETIRED_TOTALS_KEYS;
+  const cleanTotals = Object.fromEntries(
+    Object.entries(body.totals).filter(([key]) => !retired.includes(key)),
+  );
+  return { ...body, totals: cleanTotals };
+}
+
 export function judgeStoredSection(section: AccountSection, body: unknown): SectionDropVerdict {
   const triggers: string[] = [...retiredKeyTriggers(section, body)];
 
   if (section === 'skills') {
-    const shape = checkSectionShape(body, SECTION_FINGERPRINTS.skills);
+    const shape = checkSectionShape(sanitizeForFingerprint(body), SECTION_FINGERPRINTS.skills);
     if (!shape.ok) {
       triggers.push(...shape.addedKeys);
     }

@@ -113,6 +113,21 @@ describe('judgeStoredSection', () => {
     expect(verdict.drop).toBe(true);
   });
 
+  it('TRIGGER 1 is the SOLE cause when nothing else drifts: an otherwise-fully-conforming body carrying one retired key drops on retired-key presence alone', () => {
+    // Every OTHER test above pairs a retired key with a body that also fails the fingerprint
+    // check for the same reason (the retired key is, by construction, also an unrecognized key
+    // under the exact-match schema) — so none of them prove the retired-key branch does
+    // anything the fingerprint branch would not already have caught on its own. This body is
+    // fully schema-conforming everywhere else (all 7 top-level keys, all 12 totals keys) with
+    // exactly one retired key added — isolating the retired-key trigger as the ONLY evidence.
+    const verdict = judgeStoredSection('skills', cleanSkillsBody({ ...cleanTotals(), crit_dmg_mult: 1 }));
+    expect(verdict.drop).toBe(true);
+    if (!verdict.drop) throw new Error('unreachable');
+    // Exactly one trigger, and it is the retired key — not "contains", to prove the fingerprint
+    // branch contributed nothing extra (it would re-see the same key as an added key otherwise).
+    expect(verdict.triggers).toEqual(['skills.totals.crit_dmg_mult']);
+  });
+
   it('TRIGGER 2 is an ADDED-key check only: a skills body merely missing refunds is NOT dropped on shape alone', () => {
     // Design §5.5: "neither [trigger] is 'the new keys are missing' — that's the export path's
     // question, not this one." A body missing a key the store never required is not, by itself,

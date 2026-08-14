@@ -113,7 +113,7 @@ const ALLOWLIST = [
   // F4-owned drop-rule modules (AD-090: "a module that must name the vocabulary it forbids") and
   // their absence-proving / forbidden-token test suites.
   { file: 'apps/desktop/src/main/storage/stale-sections.ts', count: 2, owner: 'F4/T10 desktop drop-rule module (AD-089)' },
-  { file: 'apps/desktop/src/main/storage/stale-sections.test.ts', count: 6, owner: 'F4/T10 desktop drop-rule absence proof' },
+  { file: 'apps/desktop/src/main/storage/stale-sections.test.ts', count: 6, owner: 'F4/T10 desktop drop-rule absence proof (incl. the sole-cause discriminating case)' },
   { file: 'apps/desktop/src/main/storage/account-store-restore.test.ts', count: 2, owner: 'F4/T10 stale-section drop integration test' },
   { file: 'apps/web/src/shared/lib/stale-account.ts', count: 5, owner: 'F4/T9 web drop-rule module (AD-089)' },
   { file: 'apps/web/src/tests/stale-account-drop.test.ts', count: 8, owner: 'F4/T9 web drop-rule absence proof (incl. the presence-vs-truthiness discriminating case)' },
@@ -141,7 +141,7 @@ const CRIT_DMG_MULT_MAP = {
   'apps/desktop/renderer/lib/planning/hero-advice.test.ts': [47],
   'apps/desktop/renderer/lib/planning/withhold-matrix.test.ts': [193, 210],
   'apps/desktop/src/main/storage/account-store-restore.test.ts': [497, 530, 548, 581],
-  'apps/desktop/src/main/storage/stale-sections.test.ts': [66, 81, 84, 88, 98, 105, 111, 149, 167],
+  'apps/desktop/src/main/storage/stale-sections.test.ts': [66, 81, 84, 88, 98, 105, 111, 123, 128, 164, 182],
   'apps/desktop/src/main/storage/stale-sections.ts': [11],
   'apps/web/CHANGELOG.md': [148, 155],
   'apps/web/docs/local-data-compat.md': [89, 97],
