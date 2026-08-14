@@ -75,6 +75,7 @@ function makeAccount(overrides: Partial<AccountImportData> = {}): AccountImportD
     houseLevel: 4,
     slots: 9,
     phase: 60,
+    maxPhase: null,
     ...overrides,
   };
 }

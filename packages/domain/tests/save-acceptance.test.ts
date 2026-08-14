@@ -60,7 +60,7 @@ describe('parseSaveFile — the positive acceptance gate (MSG-11, MSG-12, MSG-13
     expect(result.rejected).toEqual({ reason: 'unsupportedSaveShape', heroNames: [] });
     expect(result.candidates).toEqual([]);
     expect(result.inventory).toEqual([]);
-    expect(result.account).toEqual({ tree: null, houseIdx: null, houseLevel: null, phase: null });
+    expect(result.account).toEqual({ tree: null, houseIdx: null, houseLevel: null, phase: null, maxPhase: null });
   });
 
   it('a truncated file (neither old nor new keys) is rejected the same way as a pre-patch file', () => {

@@ -21,6 +21,7 @@ import { composeSheetFromBirth, nakedFromBirth, type BirthStats, type TreeSheetT
 import { inferSpentPoints, type PointInferenceIssue } from './point-inference';
 import { ACCOUNT_SECTIONS, sectionHasData } from './account-fidelity';
 import { missingPostUpdateKeys } from './save-schema';
+import { WIKI_PHASE_LINES } from './phase-wiki';
 import type { AccountPayload } from '@bombfarm/contracts';
 
 const RARITY_BY_IDX: RarityKey[] = ['Comum', 'Incomum', 'Raro', 'Épico', 'Lendária', 'Mítico'];
@@ -70,6 +71,22 @@ export type AccountImportData = {
   slots?: number | null;
   /** `account.phase` — the phase the player is currently farming. Null when absent. */
   phase: number | null;
+  /**
+   * `account.max_phase` — the furthest phase this account has reached (AD-PFR-02). Falls back to
+   * `skills.max_phase` when `account.max_phase` is not a finite number; `null` when neither is.
+   * Normalized to an integer in `[1, WIKI_PHASE_LINES.length]`.
+   *
+   * SPEC_DEVIATION (design.md §5.1 specifies this field as *required*, precisely so every
+   * construction site is a forced compile error). Kept optional instead: `apps/web/src/tests/
+   * {account-slice,persist-account}.test.ts` construct `AccountImportData` literals without this
+   * field, and both `spec.md` P2-3 AC-5 and `tasks.md` §0.5 forbid touching any file under
+   * `apps/web/src` in this item ("zero web source files in the diff"). A required field would
+   * force edits there to keep `pnpm typecheck` green, which the two constraints together rule
+   * out. `mapAccountData`'s both return paths and `EMPTY_ACCOUNT_DATA` still set it explicitly on
+   * every branch, so real production data always carries a concrete value — the optionality only
+   * relaxes what *test fixtures elsewhere* are forced to supply.
+   */
+  maxPhase?: number | null;
 };
 
 /**
@@ -128,11 +145,40 @@ function mapAccountPhase(raw: Record<string, unknown>): number | null {
   return typeof phase === 'number' && Number.isFinite(phase) ? phase : null;
 }
 
+/**
+ * `account.max_phase` — the furthest phase this account has reached (AD-PFR-02). Falls back to
+ * `skills.max_phase`; the 2026-08-13 export carries both and they agree (42 / 42). Preferring
+ * `account` follows the PRD; the fallback covers a payload that carries `skills` without
+ * `account`, which `AD-036`'s per-section fidelity model makes a real shape.
+ *
+ * Same latent-divergence family as `field_slots` vs `skills.totals.vagas_campo` (`AD-063`) —
+ * this reader RECORDS the two sources and does not reconcile them.
+ */
+function mapAccountMaxPhase(raw: Record<string, unknown>): number | null {
+  const account = isObject(raw.account) ? raw.account : null;
+  const accountValue = account?.max_phase;
+  const skills = isObject(raw.skills) ? raw.skills : null;
+  const skillsValue = skills?.max_phase;
+
+  const rawValue =
+    typeof accountValue === 'number' && Number.isFinite(accountValue)
+      ? accountValue
+      : typeof skillsValue === 'number' && Number.isFinite(skillsValue)
+        ? skillsValue
+        : null;
+  if (rawValue === null) return null;
+
+  const rounded = Math.round(rawValue);
+  if (rounded < 1) return null;
+  return Math.min(rounded, WIKI_PHASE_LINES.length);
+}
+
 function mapAccountData(raw: Record<string, unknown>): AccountImportData {
   const skills = isObject(raw.skills) ? raw.skills : null;
   const totals = skills && isObject(skills.totals) ? skills.totals : null;
   const casa = isObject(raw.casa) ? raw.casa : null;
   const phase = mapAccountPhase(raw);
+  const maxPhase = mapAccountMaxPhase(raw);
 
   // MOD-36: single-pass optional-field parse — stays null unless the save carries `totals`.
   let tree: AccountImportData['tree'] = null;
@@ -165,13 +211,20 @@ function mapAccountData(raw: Record<string, unknown>): AccountImportData {
       houseLevel,
       slots: resolveCasaSlots(casa, houseIdx),
       phase,
+      maxPhase,
     };
   }
 
-  return { tree, houseIdx, houseLevel, phase };
+  return { tree, houseIdx, houseLevel, phase, maxPhase };
 }
 
-const EMPTY_ACCOUNT_DATA: AccountImportData = { tree: null, houseIdx: null, houseLevel: null, phase: null };
+const EMPTY_ACCOUNT_DATA: AccountImportData = {
+  tree: null,
+  houseIdx: null,
+  houseLevel: null,
+  phase: null,
+  maxPhase: null,
+};
 
 /**
  * Normalises a raw file object into an `AccountPayload` with no projection, validation, or
