@@ -1,0 +1,68 @@
+{
+  "capturedAt": "2026-08-14T05:16:10.999Z",
+  "endpoints": {
+    "data": {
+      "payloadSha256": "a96761a2ac3da630ada92e69ec99f613bd9ee00416e01209791f0d3ac86769ac",
+      "sectionNames": [
+        "bolsa",
+        "combate",
+        "drops",
+        "entidades",
+        "fases",
+        "gemas",
+        "habilidades",
+        "herois",
+        "item_stats",
+        "itens",
+        "raridades",
+        "ritual",
+        "rotacao",
+        "skill_tree",
+        "slots",
+        "stat_kinds"
+      ],
+      "sectionSha256": {
+        "bolsa": "32e0d7a1eeb1e027b19c8efe0c9731792167b68346fc626adf5e1cb4bda7c6fb",
+        "combate": "ef1741392e2818b3ba0f8f1a33c5d71b82738af553f8286f6400e0ce650d992a",
+        "drops": "b9c58b472b37326d38294b4dc6a90cb95ec0b3b7be705a7689ac9376e0406190",
+        "entidades": "0e2b05855ffd654a816f8924ca4ac48bf2a4c6e01ddca243e2639fe1a62a5404",
+        "fases": "5490ccd7957eb3f9befaea292bd6954deaadb3ea61dc2d172d3a152e63e1175e",
+        "gemas": "611140ce2878ce4290580a2efaea428a765313efcf58e08b5a1459985df0bc83",
+        "habilidades": "e50fcbe9f6de147c7e5c90a1870acbb50cdde306716a708e7d119f68e6edf219",
+        "herois": "f8eb8d5ddac0fa8ade944cc506521c5132f67ecb999e8955547e966bdc4e0ea8",
+        "item_stats": "94041e8cad48122447a273106df9ecccec1c44d569659737dfd73fa44bb7cd79",
+        "itens": "a70a534300f7000dbcfd293d13bcb1bf1f2de53b4ce00c72718a097b303e5e5a",
+        "raridades": "e014307c9fa181014e6669a97b435adf1813069b2cba314bb8623ee89b0bd070",
+        "ritual": "a486a2038923a790260fed88a7da126d44a922f223f2bcb12f7052e275619234",
+        "rotacao": "07f7c614feb424c0c32b64c09e97f0f431f056d3df9e5b3cc858f7b9a283fa90",
+        "skill_tree": "67cb17f9ba7aa0b4f0988982ab8618b67e3e09197639c5f10865b2d4b9d8a79a",
+        "slots": "a6337d8d90139df16155157e7880ac185bd2428460320714cdbac97fdcc7071a",
+        "stat_kinds": "8cd8ba2c0b3f951aae2d864a2113c9cd8d7a0c017653653adf47cb0bc6da94f6"
+      },
+      "url": "https://wiki.bombfarm.net/wiki/api/data",
+      "versaoCatalogo": 4
+    },
+    "fasesNomes": {
+      "payloadSha256": "1e86671a6c65ab2fd58ff17a1d301eabac7683a275c179d3572588c9d844b116",
+      "sectionNames": [
+        "atos",
+        "disponivel",
+        "fases",
+        "mundos",
+        "sufixos",
+        "zonas"
+      ],
+      "sectionSha256": {
+        "atos": "327db39dbafc7d09004aa9473b9b224951ca7876dbda804e68ccc0adbff9731c",
+        "disponivel": "b5bea41b6c623f7c09f1bf24dcae58ebab3c0cdd90ad966bc43a45b44867e12b",
+        "fases": "c4071c42cc1125c4427abe56a1b2e9fbdc9031bab3f42b470eed7db1503fc684",
+        "mundos": "9b9020478fe5a38119b22ca9ff4b176d7833c0cfcb4bd6fc5911463d2cc2c568",
+        "sufixos": "542027bfad2da67c4431695ac445bc1b369b8e247299ba149772769cd92aeb0f",
+        "zonas": "f09ebb77590a1122a2658739cde5c0b65cb230f2a3348892e205015a5c9ceb14"
+      },
+      "url": "https://wiki.bombfarm.net/wiki/api/fases-nomes",
+      "versaoCatalogo": null
+    }
+  },
+  "schemaVersion": 1
+}

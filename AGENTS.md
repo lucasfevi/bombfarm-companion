@@ -18,7 +18,10 @@ This repository contains **application code only**. Do not invent planning/spec 
 - **Tailwind CSS 4** + **@base-ui/react** — design system in `@bombfarm/ui`
 - Shared math in `@bombfarm/domain` (phase/economy wiki rows ship as committed
   `packages/domain/src/data/phase-wiki.json` — maintainers refresh that file out of
-  band; this repo has no wiki HTTP client)
+  band). **No wiki HTTP client in shipped app code.** One scheduled CI job,
+  `.github/workflows/wiki-drift.yml`, fetches the wiki to detect drift; it is
+  alert-only and may not write `packages/domain/**` — see
+  [`docs/wiki-drift-check.md`](docs/wiki-drift-check.md)
 - **electron-log** (main/preload/renderer)
 - **SQLite** via `Storage` wrapper (`node:sqlite` when Electron's Node supports it, else `better-sqlite3`)
 

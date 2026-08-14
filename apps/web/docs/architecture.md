@@ -95,7 +95,7 @@ Persistence is `localStorage` only, via `src/shared/lib/storage.ts`, driven by e
 ## Ownership rules
 
 1. Colocate UI state in the leaf/shell that owns it — not the root composer (see [`react-performance.md`](../../../docs/react-performance.md)).
-2. Pure math stays in `@bombfarm/domain` (`packages/domain/src` — `model/`, `gear/`, `stat-breakdown/`, `derive.ts`, `advisor-pipeline.ts`, `phases.ts`, `phase-wiki.ts`, `phase-intel.ts`, `game-labels.ts`, …). Wiki phase rows ship as committed `packages/domain/src/data/phase-wiki.json` (maintainers refresh out of band; this repo has no wiki HTTP client). React stays thin. When that math (or the panels it names) changes, keep the explain tab in sync — see [`explain-math.md`](explain-math.md).
+2. Pure math stays in `@bombfarm/domain` (`packages/domain/src` — `model/`, `gear/`, `stat-breakdown/`, `derive.ts`, `advisor-pipeline.ts`, `phases.ts`, `phase-wiki.ts`, `phase-intel.ts`, `game-labels.ts`, …). Wiki phase rows ship as committed `packages/domain/src/data/phase-wiki.json` (maintainers refresh out of band). **No wiki HTTP client in shipped app code** — the one sanctioned exception is the scheduled CI job `.github/workflows/wiki-drift.yml`, which is alert-only and may not write `packages/domain/**`; see [`wiki-drift-check.md`](../../../docs/wiki-drift-check.md). React stays thin. When that math (or the panels it names) changes, keep the explain tab in sync — see [`explain-math.md`](explain-math.md).
 3. Prefer `@base-ui/react` for interactive primitives over inventing new button/dialog APIs.
 4. Prefer `@/` path aliases for imports.
 5. Main workspace is a **full-width tab stage** (`PlannerTabs`: Abilities / Gear / Account / Points) — not a two-column build|advice panel stack.

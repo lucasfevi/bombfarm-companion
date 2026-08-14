@@ -1,0 +1,44 @@
+name: Wiki Drift
+
+# Scheduled game-data drift detector — see docs/wiki-drift-check.md.
+# Alert-only: it fetches the two published wiki data endpoints, compares them against
+# tools/wiki-drift/fingerprint.baseline.json, fails on any difference, and opens-or-updates
+# exactly one tracking issue. It writes nothing under packages/**, pushes no commit and
+# opens no pull request — enforced by `permissions: contents: read` and by
+# tools/wiki-drift-workflow.test.mjs.
+
+on:
+  schedule:
+    - cron: '17 5 * * *'          # daily, deliberately off the hour (queue delay)
+  workflow_dispatch:
+
+concurrency:
+  group: wiki-drift
+  cancel-in-progress: false        # overlapping runs serialise; two runs must not open two issues
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  drift:
+    name: Wiki fingerprint drift check
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      # No `cache: pnpm` on purpose: there is no dependency install to cache.
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      # No dependency install by design (MWD-02): tools/wiki-drift/check.mjs imports only Node
+      # built-ins. Adding an install step here would multiply this job's one billed minute.
+      # No `if:`, no `continue-on-error`, no `|| true`, no `--write`.
+      - name: Compare the published wiki against the committed fingerprint
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: node tools/wiki-drift/check.mjs
