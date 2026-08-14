@@ -13,15 +13,12 @@ import { HeroRecord } from './shims/storage';
 import { isKnownSkin } from './wiki-assets';
 import {
   birthFromSave,
-  detectGlassCannon,
-  detectTempoDobrado,
   hasUsableBirthStats,
   saveSheetUnits,
   treeTotalsFromSave,
 } from './save-units';
 import { composeSheetFromBirth, nakedFromBirth, type BirthStats, type TreeSheetTotals } from './birth-sheet';
 import { inferSpentPoints, type PointInferenceIssue } from './point-inference';
-import { unmodelledTreeFindings } from './tree-guards';
 import { ACCOUNT_SECTIONS, sectionHasData } from './account-fidelity';
 import type { AccountPayload } from '@bombfarm/contracts';
 
@@ -62,24 +59,6 @@ export type AccountImportData = {
     critDmg: number;
     speed: number;
     energy: number;
-    glassCannon: boolean;
-    tempoDobrado: boolean;
-    /** Abisso (D15) — cancels Crit/GEO sheet adds and Glass Cannon crit ×2. */
-    abisso: boolean;
-    /**
-     * `skills.totals.abisso_base` — Abisso's damage-multiplier exponent base (verified
-     * 1.008 on a real account: damage × abissoBase^currentPhase). 0 in saves without the
-     * keystone; combat math must gate on `abisso`, never multiply blindly by this alone
-     * (a bare `0 ** phase` would zero every hit).
-     */
-    abissoBase: number;
-    /**
-     * `skills.totals.crit_dmg_mult` — Glass Cannon's crit-damage multiplier on the birth base
-     * (2 when C15 is owned, 1 otherwise). Persisted rather than derived from `glassCannon`
-     * alone so a future save with a different observed multiplier is not silently coerced to
-     * 2 (mirrors `abissoBase`'s persist-the-real-numeric precedent).
-     */
-    critDmgMult: number;
     teamCoinPct?: number;
     /** `luck_add × 100` — flat percentage points (AD-BSP-22, ASM-01, BSPW5-03). */
     luckFlatPct: number;
@@ -132,18 +111,7 @@ function bool(value: unknown, fallback = false): boolean {
  *
  * `danoTotal` is `dmg_static` taken as an OPAQUE, already-computed total — do not try to
  * reconstruct it from `(1 + team_dmg_add) * geo_mult`. That product does not match: measured
- * `2.797` predicted vs `3624.70` actual on a real save. `dmg_static` is also NOT live with
- * respect to Abisso/geo phase — it read identically across two exports of the same account
- * taken at different phases, so whatever composes it server-side is not simply
- * `team_dmg_add`/`geo_mult` reflected here. Glass Cannon / Tempo Dobrado detection is shared
- * with the per-hero sheet mapper (`treeTotalsFromSave`) via `detectGlassCannon` /
- * `detectTempoDobrado` (save-units.ts) so the two never drift apart. Abisso is
- * `abisso_base > 0` or `keystones` contains `d15`; `abissoBase` carries the raw numeric base
- * (empirically 1.008) so the combat multiplier `abissoBase^currentPhase` uses the save's own
- * figure instead of a hardcoded literal — that multiplier lives in `computeCombatMults`
- * (`derive.ts`), NOT here or on the hero sheet (two exports of the same account at different
- * phases have byte-identical hero `stats` blocks, so Abisso is a combat-time factor, not a
- * sheet one).
+ * `2.797` predicted vs `3624.70` actual on a real save.
  */
 function mapAccountPhase(raw: Record<string, unknown>): number | null {
   const account = isObject(raw.account) ? raw.account : null;
@@ -161,18 +129,12 @@ function mapAccountData(raw: Record<string, unknown>): AccountImportData {
   // MOD-36: single-pass optional-field parse — stays null unless the save carries `totals`.
   let tree: AccountImportData['tree'] = null;
   if (totals) {
-    const keystones = Array.isArray(totals.keystones) ? totals.keystones.map((keystone) => String(keystone).toLowerCase()) : [];
     tree = {
       danoTotal: asNumber(totals.dmg_static, 1) || 1,
       critChance: asNumber(totals.crit_chance_add) * 100,
       critDmg: asNumber(totals.crit_dmg_add) * 100,
       speed: asNumber(totals.speed_add) * 100,
       energy: asNumber(totals.energia_add) * 100,
-      glassCannon: detectGlassCannon(totals),
-      tempoDobrado: detectTempoDobrado(totals),
-      abisso: asNumber(totals.abisso_base) > 0 || keystones.some((k) => k === 'd15'),
-      abissoBase: asNumber(totals.abisso_base, 0),
-      critDmgMult: asNumber(totals.crit_dmg_mult, 1),
       teamCoinPct: asNumber(totals.coin_add ?? totals.team_coin_add) * 100,
       // BSPW5-03 (ASM-01): flat Luck percentage points — absent key defaults to 0.
       luckFlatPct: asNumber(totals.luck_add) * 100,
@@ -314,15 +276,10 @@ export function parseAccountPayload(payload: AccountPayload, existing: HeroRecor
   // BSPW5-04: map the skill tree once, up front — inferSpentPoints (per hero, below) needs
   // TreeSheetTotals, so it can no longer be mapped lazily at the end via mapAccountData.
   // treeTotalsFromSave(totals ?? {}) already yields the correct identity defaults
-  // (danoStatic 1, critDmgMult 1, everything else 0) when `skills.totals` is absent.
+  // (danoStatic 1, everything else 0) when `skills.totals` is absent.
   const skillsRaw = isObject(raw.skills) ? raw.skills : null;
   const totalsRaw = skillsRaw && isObject(skillsRaw.totals) ? skillsRaw.totals : null;
   const tree: TreeSheetTotals = treeTotalsFromSave(totalsRaw ?? {});
-
-  // BSPW5-06 (BSP-61, DEC-07/DEC-08): surface every deliberately-unmodelled skill-tree
-  // clause live in this save, so a maintainer decides with real data instead of the
-  // deferral silently drifting into a bug.
-  warnings.push(...unmodelledTreeFindings(totalsRaw ?? {}));
 
   const candidates: ImportCandidate[] = [];
   for (const rawHero of raw.heroes) {

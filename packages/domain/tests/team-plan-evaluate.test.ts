@@ -27,9 +27,7 @@ function accountFromFixture(raw: Record<string, unknown>): TeamPlanAccountInput 
   const treeSheet = treeTotalsFromSave(totals);
   return {
     treeSheet,
-    treeGlassCannon: false,
-    treeTempoDobrado: false,
-    houseIdx: 0,
+        houseIdx: 0,
     houseLevel: 1,
     phase: 1,
     mitigationPct: 6.7,
@@ -43,9 +41,7 @@ function farmFromAccount(account: TeamPlanAccountInput): FarmContext {
     houseLevel: account.houseLevel,
     phase: account.phase,
     mitigationPct: account.mitigationPct,
-    treeGlassCannon: account.treeGlassCannon,
-    treeTempoDobrado: account.treeTempoDobrado,
-  };
+      };
 }
 
 function heroInputFromExtract(hero: ReturnType<typeof extractHero>): TeamPlanHeroInput {
@@ -179,7 +175,6 @@ describe('evaluateRoster', () => {
         critChancePct: 0,
         critDmgPct: 0,
         luckFlatPct: 0,
-        critDmgMult: 1,
       },
       scope: 'optimize',
       abilities: { folego_mineiro: folego },
@@ -195,9 +190,7 @@ describe('evaluateRoster', () => {
         houseLevel: 1,
         phase: 1,
         mitigationPct: 6.7,
-        treeGlassCannon: false,
-        treeTempoDobrado: false,
-      },
+              },
       forgeFloor: 0,
     };
     const result = evaluateRoster(input);
@@ -243,7 +236,6 @@ describe('evaluateRoster', () => {
         critChancePct: 0,
         critDmgPct: 0,
         luckFlatPct: 0,
-        critDmgMult: 1,
       },
       scope: 'optimize',
       abilities: {},
@@ -259,9 +251,7 @@ describe('evaluateRoster', () => {
         houseLevel: 1,
         phase: 1,
         mitigationPct: 6.7,
-        treeGlassCannon: false,
-        treeTempoDobrado: false,
-      },
+              },
       forgeFloor: 0,
     };
     const result = evaluateRoster(input);
@@ -308,7 +298,6 @@ describe('evaluateRoster', () => {
         critChancePct: 0,
         critDmgPct: 0,
         luckFlatPct: 0,
-        critDmgMult: 1,
       },
       scope: 'optimize',
       abilities: {},
@@ -324,9 +313,7 @@ describe('evaluateRoster', () => {
         houseLevel: 1,
         phase: 1,
         mitigationPct: 6.7,
-        treeGlassCannon: false,
-        treeTempoDobrado: false,
-      },
+              },
       forgeFloor: 0,
     };
     const result = evaluateRoster(input);
@@ -376,7 +363,6 @@ describe('evaluateRoster', () => {
         critChancePct: 0,
         critDmgPct: 0,
         luckFlatPct: 0,
-        critDmgMult: 1,
       },
       scope: 'optimize',
       abilities: {},
@@ -392,9 +378,7 @@ describe('evaluateRoster', () => {
         houseLevel: 1,
         phase: 1,
         mitigationPct: 6.7,
-        treeGlassCannon: false,
-        treeTempoDobrado: false,
-      },
+              },
       forgeFloor: 0,
     };
     const result = evaluateRoster(input);

@@ -164,10 +164,6 @@ function farmFromAccount(input: TeamPlanInput): FarmContext {
     houseLevel: input.account.houseLevel,
     phase: input.account.phase,
     mitigationPct: input.account.mitigationPct,
-    treeGlassCannon: input.account.treeGlassCannon,
-    treeTempoDobrado: input.account.treeTempoDobrado,
-    treeAbisso: input.account.treeAbisso,
-    treeAbissoBase: input.account.treeAbissoBase,
   };
 }
 

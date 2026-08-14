@@ -116,8 +116,8 @@ process.stdout.write(JSON.stringify(results));
 describe('@bombfarm/domain exports map — resolves to dist (AD-032)', () => {
   requireDomainDist();
 
-  it('finds at least 54 distinct @bombfarm/domain[/subpath] specifiers across apps/**, packages/**, tools/**', () => {
-    expect(specifiers.length).toBeGreaterThanOrEqual(54);
+  it('finds at least 53 distinct @bombfarm/domain[/subpath] specifiers across apps/**, packages/**, tools/**', () => {
+    expect(specifiers.length).toBeGreaterThanOrEqual(53);
   });
 
   it('the derived specifier list covers all four subpath shapes', () => {

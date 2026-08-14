@@ -181,7 +181,7 @@ describe('the drift payload grades degraded, names skills, and carries no skills
     expect('skills' in drift).toBe(false);
   });
 
-  it("the skills-missing payload is refused rather than parsed as a zeroed tree — account.tree stays null, not {danoTotal:1, critDmgMult:1, ...}", () => {
+  it("the skills-missing payload is refused rather than parsed as a zeroed tree — account.tree stays null, not {danoTotal:1, ...}", () => {
     const result = parseAccountPayload(drift, []);
     expect(result.account.tree).toBeNull();
   });

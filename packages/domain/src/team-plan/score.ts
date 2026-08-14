@@ -109,18 +109,12 @@ export function scoreHeroLoadout(
   const mults = computeCombatMults({
     mods: ctx.mods,
     teamBuffs: auras,
-    treeGlassCannon: farm.treeGlassCannon,
-    treeTempoDobrado: farm.treeTempoDobrado,
-    treeAbisso: farm.treeAbisso,
-    treeAbissoBase: farm.treeAbissoBase,
-    phase: farm.phase,
     extraDmgPct: 0,
   });
 
   const context = farmContextForHero({
     mods: ctx.mods,
     teamDrainMult: mults.teamDrainMult,
-    treeTempoDobrado: farm.treeTempoDobrado,
     houseIdx: farm.houseIdx,
     houseLevel: farm.houseLevel,
     mitigationPct: farm.mitigationPct,

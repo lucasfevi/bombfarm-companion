@@ -30,9 +30,8 @@ export function capSheetValue(key: SheetKey, value: number): number {
 
 /**
  * Apply the game's display clamp to a composed sheet. Matches what the game's own export
- * shows — verified exactly (same tolerance as `keystone-sheet-corrections.test.ts`) against
- * every hero in `SaveFile_BombFarm.json`, including the nine whose ability+gear alone already
- * exceed a cap.
+ * shows — verified exactly against every hero in `SaveFile_BombFarm.json`, including the
+ * heroes whose ability+gear alone already exceed a cap.
  */
 export function gameSheetView(sheet: SheetStats): SheetStats {
   return {

@@ -26,9 +26,7 @@ function accountFromFixture(raw: Record<string, unknown>): TeamPlanAccountInput 
   const treeSheet = treeTotalsFromSave(totals);
   return {
     treeSheet,
-    treeGlassCannon: false,
-    treeTempoDobrado: false,
-    houseIdx: 0,
+        houseIdx: 0,
     houseLevel: 1,
     phase: 1,
     mitigationPct: 6.7,
@@ -42,9 +40,7 @@ function farmFromAccount(account: TeamPlanAccountInput): FarmContext {
     houseLevel: account.houseLevel,
     phase: account.phase,
     mitigationPct: account.mitigationPct,
-    treeGlassCannon: account.treeGlassCannon,
-    treeTempoDobrado: account.treeTempoDobrado,
-  };
+      };
 }
 
 function heroInputFromExtract(hero: ReturnType<typeof extractHero>): TeamPlanHeroInput {
@@ -128,7 +124,6 @@ describe('scoreHeroLoadout', () => {
         critChancePct: 0,
         critDmgPct: 0,
         luckFlatPct: 0,
-        critDmgMult: 1,
       },
       scope: 'optimize',
       abilities: {},
@@ -139,9 +134,7 @@ describe('scoreHeroLoadout', () => {
       houseLevel: 1,
       phase: 1,
       mitigationPct: 6.7,
-      treeGlassCannon: false,
-      treeTempoDobrado: false,
-    };
+          };
     const score = scoreHeroLoadout(ctx, {}, ZERO_PTS(), zeroTeamBuffs(), farm);
     expect(score.duty).toBe(0);
     expect(Number.isNaN(score.duty)).toBe(false);
@@ -171,9 +164,7 @@ describe('scoreHeroLoadout', () => {
       treeCritDmg: account.treeSheet.critDmgPct,
       treeSpeed: account.treeSheet.speedPct,
       treeEnergy: account.treeSheet.energyPct,
-      treeGlassCannon: account.treeGlassCannon,
-      treeTempoDobrado: account.treeTempoDobrado,
-      treeLuckFlatPct: account.treeSheet.luckFlatPct,
+            treeLuckFlatPct: account.treeSheet.luckFlatPct,
       teamBuffs,
       houseIdx: account.houseIdx,
       houseLevel: account.houseLevel,
@@ -211,7 +202,7 @@ describe('scoreHeroLoadout', () => {
   // Regression for the double-counted-points bug: `scoreHeroLoadout` used to compose its
   // `geared` sheet with the REAL `pts` and then hand that same `pts` to `derive()`, which
   // adds `pts * delta` on top — every spent point counted twice. With all combat multipliers
-  // neutral (no team auras, no glass cannon, no ability mods), `scoreHeroLoadout`'s effective
+  // neutral (no team auras, no ability mods), `scoreHeroLoadout`'s effective
   // sheet must equal `composeSheetFromBirth`'s sheet for the SAME non-zero pts exactly once —
   // matching the `sheetsFromBirth` / import-save `gearedOverride` contract `derive()` documents.
   it('counts spent points exactly once (no double-count vs composeSheetFromBirth)', () => {
@@ -262,7 +253,6 @@ describe('scoreHeroLoadout', () => {
         critChancePct: 0,
         critDmgPct: 0,
         luckFlatPct: 0,
-        critDmgMult: 1,
       },
       scope: 'optimize',
       abilities: {},
@@ -273,9 +263,7 @@ describe('scoreHeroLoadout', () => {
       houseLevel: 1,
       phase: 1,
       mitigationPct: 6.7,
-      treeGlassCannon: false,
-      treeTempoDobrado: false,
-    };
+          };
 
     const expectedSheet = composeSheetFromBirth({
       birth: ctx.birth,

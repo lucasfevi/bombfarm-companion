@@ -68,11 +68,6 @@ function makeAccount(overrides: Partial<AccountImportData> = {}): AccountImportD
       critDmg: 0,
       speed: 0,
       energy: 0,
-      glassCannon: false,
-      tempoDobrado: false,
-      abisso: false,
-      abissoBase: 1.008,
-      critDmgMult: 2,
       teamCoinPct: 0,
       luckFlatPct: 3,
     },
@@ -245,18 +240,24 @@ describe('compareAccountResults — roster membership (FID-04)', () => {
 });
 
 describe('compareAccountResults — account-level equality (FID-02, ASM-4)', () => {
-  it('accountMismatch names tree.abissoBase on a mismatch', () => {
-    const live = makeResult({ account: makeAccount({ tree: { ...makeAccount().tree!, abissoBase: 1.008 } }) });
-    const exported = makeResult({ account: makeAccount({ tree: { ...makeAccount().tree!, abissoBase: 1.009 } }) });
+  // AD-075 (MP5 F2 T4/T8): re-pointed from a deleted exponent-base field onto tree.danoTotal,
+  // a surviving TreeSheetTotals member. The claim under test ("the comparator names the
+  // mismatching path") is unchanged; only the field whose mismatch demonstrates it changed.
+  it('accountMismatch names tree.danoTotal on a mismatch', () => {
+    const live = makeResult({ account: makeAccount({ tree: { ...makeAccount().tree!, danoTotal: 1.2 } }) });
+    const exported = makeResult({ account: makeAccount({ tree: { ...makeAccount().tree!, danoTotal: 1.3 } }) });
     const err = expectFidelityError(() => compareAccountResults(live, exported), 'accountMismatch');
-    expect(err.message).toContain('tree.abissoBase');
+    expect(err.message).toContain('tree.danoTotal');
   });
 
-  it('accountMismatch names tree.critDmgMult on a mismatch', () => {
-    const live = makeResult({ account: makeAccount({ tree: { ...makeAccount().tree!, critDmgMult: 2 } }) });
-    const exported = makeResult({ account: makeAccount({ tree: { ...makeAccount().tree!, critDmgMult: 1 } }) });
+  // AD-075 (MP5 F2 T4): re-pointed from tree.critDmgMult onto tree.critChance — a surviving
+  // TreeSheetTotals member. See the previous case's comment for why makeAccount() itself is
+  // untouched here.
+  it('accountMismatch names tree.critChance on a mismatch', () => {
+    const live = makeResult({ account: makeAccount({ tree: { ...makeAccount().tree!, critChance: 2 } }) });
+    const exported = makeResult({ account: makeAccount({ tree: { ...makeAccount().tree!, critChance: 1 } }) });
     const err = expectFidelityError(() => compareAccountResults(live, exported), 'accountMismatch');
-    expect(err.message).toContain('tree.critDmgMult');
+    expect(err.message).toContain('tree.critChance');
   });
 
   it('accountMismatch names tree.luckFlatPct on a mismatch', () => {

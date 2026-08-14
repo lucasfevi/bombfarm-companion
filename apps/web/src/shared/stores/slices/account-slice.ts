@@ -29,16 +29,6 @@ export type AccountSlice = {
   treeSpeed: number;
   treeEnergy: number;
   treeTeamCoinPct: number;
-  treeGlassCannon: boolean;
-  treeTempoDobrado: boolean;
-  treeAbisso: boolean;
-  /** `skills.totals.abisso_base` — Abisso's damage-multiplier exponent base; import-only. */
-  treeAbissoBase: number;
-  /**
-   * `skills.totals.crit_dmg_mult` — Glass Cannon's crit-damage multiplier on the birth base
-   * (2 when C15 is owned, 1 otherwise); import/hydrate-only, same shape as `treeAbissoBase`.
-   */
-  treeCritDmgMult: number;
   treeLuckFlatPct: number;
   teamBuffs: Record<TeamBuffId, number>;
   houseIdx: number;
@@ -49,10 +39,6 @@ export type AccountSlice = {
   targetProp: string | null;
   slots: number;
 
-  /** Keystones stay editable for what-if; numeric tree totals are import/hydrate only. */
-  setTreeGlassCannon: (value: boolean) => void;
-  setTreeTempoDobrado: (value: boolean) => void;
-  setTreeAbisso: (value: boolean) => void;
   setTeamBuffs: (value: Record<TeamBuffId, number>) => void;
   setHouseIdx: (value: number) => void;
   setHouseLevel: (value: number) => void;
@@ -80,11 +66,6 @@ export const createAccountSlice: StateCreator<
   treeSpeed: defaultTree.speed,
   treeEnergy: defaultTree.energy,
   treeTeamCoinPct: defaultTree.teamCoinPct,
-  treeGlassCannon: defaultTree.glassCannon,
-  treeTempoDobrado: defaultTree.tempoDobrado,
-  treeAbisso: defaultTree.abisso ?? false,
-  treeAbissoBase: defaultTree.abissoBase ?? 0,
-  treeCritDmgMult: defaultTree.critDmgMult ?? 1,
   treeLuckFlatPct: defaultTree.luckFlatPct ?? 0,
   teamBuffs: zeroTeamBuffs(),
   houseIdx: defaultCtx.houseIdx,
@@ -95,18 +76,6 @@ export const createAccountSlice: StateCreator<
   targetProp: defaultCtx.targetProp,
   slots: DEFAULT_CASA_SLOTS,
 
-  setTreeGlassCannon: (value) => {
-    if (get().treeGlassCannon === value) return;
-    set({ treeGlassCannon: value });
-  },
-  setTreeTempoDobrado: (value) => {
-    if (get().treeTempoDobrado === value) return;
-    set({ treeTempoDobrado: value });
-  },
-  setTreeAbisso: (value) => {
-    if (get().treeAbisso === value) return;
-    set({ treeAbisso: value });
-  },
   setTeamBuffs: (value) => {
     if (teamBuffsEqual(get().teamBuffs, value)) return;
     set({ teamBuffs: value });
@@ -150,11 +119,6 @@ export const createAccountSlice: StateCreator<
       treeSpeed: shared.tree.speed,
       treeEnergy: shared.tree.energy,
       treeTeamCoinPct: shared.tree.teamCoinPct ?? 0,
-      treeGlassCannon: shared.tree.glassCannon,
-      treeTempoDobrado: shared.tree.tempoDobrado,
-      treeAbisso: shared.tree.abisso ?? false,
-      treeAbissoBase: shared.tree.abissoBase ?? 0,
-      treeCritDmgMult: shared.tree.critDmgMult ?? 1,
       treeLuckFlatPct: shared.tree.luckFlatPct ?? 0,
       teamBuffs: {
         ...zeroTeamBuffs(),
@@ -179,11 +143,6 @@ export const createAccountSlice: StateCreator<
       patch.treeSpeed = data.tree.speed;
       patch.treeEnergy = data.tree.energy;
       patch.treeTeamCoinPct = data.tree.teamCoinPct ?? 0;
-      patch.treeGlassCannon = data.tree.glassCannon;
-      patch.treeTempoDobrado = data.tree.tempoDobrado;
-      patch.treeAbisso = data.tree.abisso;
-      patch.treeAbissoBase = data.tree.abissoBase;
-      patch.treeCritDmgMult = data.tree.critDmgMult;
       patch.treeLuckFlatPct = data.tree.luckFlatPct;
     }
     if (data.houseIdx != null) {

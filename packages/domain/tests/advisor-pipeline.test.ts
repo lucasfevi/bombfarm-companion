@@ -47,8 +47,6 @@ function baseInput(overrides: Partial<AdvisorPipelineInput> = {}): AdvisorPipeli
     treeCritDmg: 0,
     treeSpeed: 0,
     treeEnergy: 0,
-    treeGlassCannon: false,
-    treeTempoDobrado: false,
     treeLuckFlatPct: 0,
     teamBuffs: zeroTeamBuffs(),
     houseIdx: 0,

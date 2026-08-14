@@ -70,7 +70,7 @@ const inlineLabelDesc =
 export const inlineFieldsClass = `grid grid-cols-[repeat(auto-fit,minmax(110px,1fr))] gap-2 ${inlineLabelDesc} ${fieldControlDesc}`;
 export const inlineFieldsDenseClass = `grid grid-cols-[repeat(auto-fit,minmax(90px,1fr))] gap-2 ${inlineLabelDesc} ${fieldControlDesc}`;
 
-export const stackFieldsClass = `grid grid-cols-1 gap-0 ${fieldControlDesc} [&_label]:grid [&_label]:grid-cols-[1fr_auto] [&_label]:items-center [&_label]:gap-x-2 [&_label]:border-b [&_label]:border-[color-mix(in_oklch,var(--line)_70%,transparent)] [&_label]:py-1.5 [&_label]:text-[13px] [&_label]:text-ink [&_label:last-child]:border-b-0 [&_label>span]:col-start-1 [&_label>span]:row-start-1 [&_label>span]:flex [&_label>span]:min-w-0 [&_label>span]:flex-col [&_label>span]:gap-0.5 [&_label>span_[data-field-hint]]:text-[11px] [&_label>span_[data-field-hint]]:font-normal [&_label>span_[data-field-hint]]:normal-case [&_label>span_[data-field-hint]]:text-muted [&_label_[data-num]]:col-start-2 [&_label_[data-num]]:row-start-1 [&_label_[data-num]]:w-[96px] [&_label_[data-account-tree-value]]:col-start-2 [&_label_[data-account-tree-value]]:row-start-1 [&_label_[data-account-tree-value]]:justify-self-end [&_label_[data-select]]:col-start-2 [&_label_[data-select]]:row-start-1 [&_label_[data-select]]:w-[96px] [&_label_[data-keystone-control]]:col-start-2 [&_label_[data-keystone-control]]:row-start-1`;
+export const stackFieldsClass = `grid grid-cols-1 gap-0 ${fieldControlDesc} [&_label]:grid [&_label]:grid-cols-[1fr_auto] [&_label]:items-center [&_label]:gap-x-2 [&_label]:border-b [&_label]:border-[color-mix(in_oklch,var(--line)_70%,transparent)] [&_label]:py-1.5 [&_label]:text-[13px] [&_label]:text-ink [&_label:last-child]:border-b-0 [&_label>span]:col-start-1 [&_label>span]:row-start-1 [&_label>span]:flex [&_label>span]:min-w-0 [&_label>span]:flex-col [&_label>span]:gap-0.5 [&_label>span_[data-field-hint]]:text-[11px] [&_label>span_[data-field-hint]]:font-normal [&_label>span_[data-field-hint]]:normal-case [&_label>span_[data-field-hint]]:text-muted [&_label_[data-num]]:col-start-2 [&_label_[data-num]]:row-start-1 [&_label_[data-num]]:w-[96px] [&_label_[data-account-tree-value]]:col-start-2 [&_label_[data-account-tree-value]]:row-start-1 [&_label_[data-account-tree-value]]:justify-self-end [&_label_[data-select]]:col-start-2 [&_label_[data-select]]:row-start-1 [&_label_[data-select]]:w-[96px]`;
 
 /**
  * Equal Account stack row height for single- and two-line labels (title +
@@ -94,15 +94,8 @@ export const accountHouseStackClass =
 export const mathCheckPropStackClass =
   `${accountStackAlignClass} [&_label_[data-num]]:w-[14rem] [&_label_[data-select]]:w-[14rem] [&_label_[data-math-check-value]]:col-start-2 [&_label_[data-math-check-value]]:row-start-1 [&_label_[data-math-check-value]]:flex [&_label_[data-math-check-value]]:w-[14rem] [&_label_[data-math-check-value]]:items-center [&_label_[data-math-check-value]]:justify-end [&_label_[data-math-check-value]]:tabular-nums`;
 
-/** Keystone row control cluster (On/Off status + Switch) in stack column 2. */
-export const accountKeystoneControlClass = 'flex items-center justify-end gap-2';
-
 /** Plain Skill Tree numeric readout (import-sourced — not an editable control). */
 export const accountTreeValueClass = 'text-[13px] tabular-nums text-ink';
-
-/** Compact On/Off status beside a Switch in keystone rows. */
-export const accountKeystoneStatusClass =
-  'min-w-[2.25rem] text-right text-[11px] font-semibold tracking-[0.02em] text-muted';
 
 export const fieldLabelClass =
   'flex flex-col gap-[3px] text-[11px] tracking-[0.03em] text-muted uppercase';

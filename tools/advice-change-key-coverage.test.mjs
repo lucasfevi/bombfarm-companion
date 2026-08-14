@@ -23,13 +23,10 @@ import { CHANGE_KEY_INPUTS, heroChangeKey, sharedChangeKey } from '../apps/deskt
 const root = resolve(fileURLToPath(new URL('..', import.meta.url)));
 const ROSTER_DPS_PATH = join(root, 'packages/domain/src/roster-dps.ts');
 
-/** `AD-038`'s pinned exception — `pipelineForHero` never passes it at all. */
-const PINNED_EXCEPTION = 'account.tree.critDmgMult';
-
 /**
  * Extracts the right-hand-side root path of every property `roster-dps.ts` passes to
- * `computeAdvisorPipeline({ ... })` — `key: hero.naked` → `hero.naked`; `key: account.tree.abisso
- * ?? false` → `account.tree.abisso` (the `?? default` fallback stripped); a shorthand line like
+ * `computeAdvisorPipeline({ ... })` — `key: hero.naked` → `hero.naked`; `key: account.tree.energy
+ * ?? 0` → `account.tree.energy` (the `?? default` fallback stripped); a shorthand line like
  * `phase,` → `phase`. Balanced-brace slicing from the call site, one property per line — the same
  * technique `tools/advisor-input-parity.test.mjs`'s `extractPipelineInputKeys` uses, both source
  * files formatting this call one property per line.
@@ -103,23 +100,12 @@ describe('CHANGE_KEY_INPUTS covers every root path pipelineForHero actually read
   });
 
   it('CHANGE_KEY_INPUTS declares nothing pipelineForHero does not actually read', () => {
-    const extra = CHANGE_KEY_INPUTS.filter((path) => !extractedPaths.includes(path) && path !== PINNED_EXCEPTION);
+    const extra = CHANGE_KEY_INPUTS.filter((path) => !extractedPaths.includes(path));
     expect(
       extra,
       `CHANGE_KEY_INPUTS lists ${extra.join(', ')}, which pipelineForHero's own source does not pass — ` +
         'a stale entry from a since-removed input, or a typo that never matched anything.',
     ).toEqual([]);
-  });
-
-  it("AD-038's exception is pinned, not ignored: account.tree.critDmgMult is absent from BOTH pipelineForHero's field list and CHANGE_KEY_INPUTS", () => {
-    const inRosterDps = extractedPaths.includes(PINNED_EXCEPTION);
-    const inChangeKeyInputs = CHANGE_KEY_INPUTS.includes(PINNED_EXCEPTION);
-    // Pinned in both directions: fails if the omission WIDENS (appears in one, not the other —
-    // covered by the two assertions above already) and fails if this pin itself goes stale
-    // because the omission was ever silently closed on the roster-dps.ts side (this assertion
-    // then requires the pin to be deliberately edited, not silently outgrown).
-    expect(inRosterDps, 'account.tree.critDmgMult now appears in pipelineForHero\'s field list — AD-038 has been resolved; update this pin').toBe(false);
-    expect(inChangeKeyInputs, 'account.tree.critDmgMult now appears in CHANGE_KEY_INPUTS, which would over-invalidate the cache for a field pipelineForHero still never reads').toBe(false);
   });
 
   it('demonstrates the red state: removing one path from CHANGE_KEY_INPUTS fails BOTH the coverage check and its own mutation test (observed here, not committed as a permanent mutation)', () => {
@@ -160,11 +146,6 @@ describe('per-field mutation — a path listed but not actually read by the key 
         speed: 0,
         energy: 0,
         teamCoinPct: 0,
-        glassCannon: false,
-        tempoDobrado: false,
-        abisso: false,
-        abissoBase: 0,
-        critDmgMult: 1,
         luckFlatPct: 0,
       },
       teamBuffs: { buffA: 0 },

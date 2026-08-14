@@ -24,12 +24,6 @@ import type { HeroAdvice, PlanningModel, Withheld } from './types';
  * hand. Each entry is the literal right-hand-side expression `roster-dps.ts` passes (with any
  * `?? default` fallback stripped), so the guard's extraction and this table use one shared
  * vocabulary.
- *
- * `account.tree.critDmgMult` is **deliberately absent** — `pipelineForHero` does not forward it
- * (`AD-038`; see `tools/advisor-input-parity.test.mjs`). Including it here would make this key
- * *stricter* than the function it gates: a harmless false positive, but one that would quietly
- * disguise the divergence `AD-038` exists to keep visible. T5's guard fails if this field ever
- * appears in one list and not the other, in either direction.
  */
 export const CHANGE_KEY_INPUTS: readonly string[] = [
   'hero.naked',
@@ -48,10 +42,6 @@ export const CHANGE_KEY_INPUTS: readonly string[] = [
   'account.tree.critDmg',
   'account.tree.speed',
   'account.tree.energy',
-  'account.tree.glassCannon',
-  'account.tree.tempoDobrado',
-  'account.tree.abisso',
-  'account.tree.abissoBase',
   'account.tree.luckFlatPct',
   'account.teamBuffs',
   'context.houseIdx',
@@ -114,8 +104,7 @@ export function heroChangeKey(hero: HeroRecord): string {
 /**
  * Tier 1, shared across every hero. Covers exactly the `account.tree.*`/`teamBuffs`/`context.*`
  * right-hand sides in `CHANGE_KEY_INPUTS`, plus `phase` and `mitigationPct` — the two scalars
- * `pipelineForHero` also takes directly. `account.tree.critDmgMult` is deliberately absent; see
- * `CHANGE_KEY_INPUTS`'s doc comment.
+ * `pipelineForHero` also takes directly.
  */
 export function sharedChangeKey(shared: AccountShared, phase: number, mitigationPct: number): string {
   return canonicalKey({
@@ -125,10 +114,6 @@ export function sharedChangeKey(shared: AccountShared, phase: number, mitigation
       critDmg: shared.tree.critDmg,
       speed: shared.tree.speed,
       energy: shared.tree.energy,
-      glassCannon: shared.tree.glassCannon,
-      tempoDobrado: shared.tree.tempoDobrado,
-      abisso: shared.tree.abisso,
-      abissoBase: shared.tree.abissoBase,
       luckFlatPct: shared.tree.luckFlatPct,
     },
     teamBuffs: shared.teamBuffs,

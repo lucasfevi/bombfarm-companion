@@ -59,20 +59,14 @@ export function inferSpentPoints(input: InferSpentPointsInput): PointInferenceRe
   const baseSpeed = naked.speed / poolFactor(sheetOther.speed);
   const baseCritChance = naked.critChance / poolFactor(sheetOther.critChance);
   const baseCritDmg = naked.critDmg / poolFactor(sheetOther.critDmg);
-  const speedBaseMult = tree.tempoDobrado ? 1.33333 : 1;
-  const energyGlassCannonFactor = tree.glassCannon ? 0.5 : 1;
 
-  // Invert applySkillTree to recover the pre-tree (gear + points) pool subtotal. critDmgMult
-  // and Tempo Dobrado's speed factor are additive replacements of the pool's implicit `1`
-  // (correction 1/3) — subtract the same `base × (mult − 1)` term applySkillTree added.
-  // Glass Cannon's energy ×0.5 (correction 2) is a whole-subtotal multiplier — divide it out
-  // alongside `energia_add` before dividing by `gem` below.
+  // Invert applySkillTree to recover the pre-tree (gear + points) pool subtotal.
   const pool = {
     attack: sheet.attack / tree.danoStatic,
-    energy: sheet.energy / ((1 + tree.energyPct / 100) * energyGlassCannonFactor),
-    speed: sheet.speed - baseSpeed * (speedBaseMult - 1) - baseSpeed * (tree.speedPct / 100),
+    energy: sheet.energy / (1 + tree.energyPct / 100),
+    speed: sheet.speed - baseSpeed * (tree.speedPct / 100),
     critChance: sheet.critChance - baseCritChance * (tree.critChancePct / 100),
-    critDmg: sheet.critDmg - baseCritDmg * (tree.critDmgMult - 1) - baseCritDmg * (tree.critDmgPct / 100),
+    critDmg: sheet.critDmg - baseCritDmg * (tree.critDmgPct / 100),
     penetration: sheet.penetration,
     cdr: sheet.cdr,
     luck: sheet.luck - tree.luckFlatPct,

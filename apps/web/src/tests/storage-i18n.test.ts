@@ -21,18 +21,14 @@ describe('save-failure toast (MOD-45)', () => {
   });
 });
 
-describe('account house keystones (AHK-11)', () => {
-  it('defines House subsection and keystone toggle chrome in EN and PT', () => {
+describe('account house chrome (AHK-11)', () => {
+  it('defines House subsection chrome in EN and PT', () => {
     expect(STRINGS.en.panelHouse).toBe('House');
     expect(STRINGS.pt.panelHouse).toBe('Casa');
     expect(STRINGS.en.houseLevelLabel).toBe('House level');
     expect(STRINGS.pt.houseLevelLabel).toBe('Nível da casa');
     expect(STRINGS.en.houseLevelLabel).not.toMatch(/\bH\.lvl\b|\bNv casa\b/i);
     expect(STRINGS.pt.houseLevelLabel).not.toMatch(/\bNv casa\b/);
-    expect(STRINGS.en.keystoneOn).toBe('On');
-    expect(STRINGS.en.keystoneOff).toBe('Off');
-    expect(STRINGS.pt.keystoneOn).toBe('Sim');
-    expect(STRINGS.pt.keystoneOff).toBe('Não');
   });
 
   it('houseRestHint uses {minutes} + {seconds} placeholders in both langs', () => {
@@ -50,13 +46,6 @@ describe('account house keystones (AHK-11)', () => {
     expect(STRINGS.en.importPreviewDesc).not.toBe(STRINGS.en.importDialogDesc);
     expect(STRINGS.pt.importPreviewDesc).not.toBe(STRINGS.pt.importDialogDesc);
   });
-
-  it('keeps official keystone game names in both langs (AHK-10)', () => {
-    expect(STRINGS.en.treeGlassCannon).toBe('Glass Cannon');
-    expect(STRINGS.pt.treeGlassCannon).toBe('Glass Cannon');
-    expect(STRINGS.en.treeTempoDobrado).toBe('Tempo Dobrado');
-    expect(STRINGS.pt.treeTempoDobrado).toBe('Tempo Dobrado');
-  });
 });
 
 describe('account form UX chrome (AFU-10/11)', () => {
@@ -69,17 +58,6 @@ describe('account form UX chrome (AFU-10/11)', () => {
   it('panelAccount title key present in EN and PT', () => {
     expect(STRINGS.en.panelAccount).toBe('Account');
     expect(STRINGS.pt.panelAccount).toBe('Conta');
-  });
-
-  it('keystone hints avoid abbreviated EN tokens (AFU-11)', () => {
-    const en = STRINGS.en;
-    expect(en.treeGlassCannonHint).toBe('critical damage ×2 (off under Abisso) · energy ×0.5');
-    expect(en.treeTempoDobradoHint).toBe('attack pace ×1.333 · energy drain ×2');
-    expect(en.treeAbisso).toBe('Abisso');
-    expect(en.treeAbissoHint).toMatch(/Glass Cannon/i);
-    expect(en.treeGlassCannonHint).not.toMatch(/\bcrit dmg\b/i);
-    expect(en.treeTempoDobradoHint).not.toMatch(/(^| · )pace\b/);
-    expect(en.treeTempoDobradoHint).not.toMatch(/(^| · )drain\b/);
   });
 });
 
@@ -190,8 +168,6 @@ describe('effective stats panel chrome (EST-*)', () => {
       'bdSrcAbilitiesTeam',
       'bdLedgerTotal',
       'bdNoteCapped',
-      'bdNoteGlassCannon',
-      'bdNoteTempoDobrado',
       'bdNoteSplit',
       'bdNoteKeenEye',
       'bdNoteDiamondTip',
@@ -570,20 +546,14 @@ describe('portuguese UX glossary (PTUX)', () => {
     expect(STRINGS.pt.statFull.cdr).not.toMatch(/CDR|Cooldown/i);
   });
 
-  it('keeps official ability and keystone names in PT chrome', () => {
+  it('keeps official ability names in PT chrome', () => {
     expect(joined).toMatch(/Olho Clínico/);
     expect(joined).toMatch(/Ponta de Diamante/);
     expect(joined).toMatch(/Grito de Guerra/);
-    expect(joined).toMatch(/Glass Cannon/);
-    expect(joined).toMatch(/Tempo Dobrado/);
     // Guide + explain surfaces (PTUX-08)
     expect(STRINGS.pt.sheetTip).toMatch(/Olho Clínico/);
     expect(STRINGS.pt.sheetTip).toMatch(/Ponta de Diamante/);
-    expect(STRINGS.pt.explainSections[0].p.join(' ')).toMatch(/Glass Cannon/);
-    expect(STRINGS.pt.explainSections[0].p.join(' ')).toMatch(/Tempo Dobrado/);
     expect(STRINGS.pt.explainSections[7].p.join(' ')).toMatch(/Grito de Guerra/);
-    expect(STRINGS.pt.treeGlassCannon).toBe('Glass Cannon');
-    expect(STRINGS.pt.treeTempoDobrado).toBe('Tempo Dobrado');
   });
 
   it('does not bleed PT glossary wording into EN chrome keys touched only for PT', () => {
@@ -673,7 +643,6 @@ describe('normalizeAccount', () => {
       teamBuffs: { grito_guerra: 20 },
     });
     expect(a.tree.danoTotal).toBe(1.25);
-    expect(a.tree.glassCannon).toBe(false);
     expect(a.teamBuffs.grito_guerra).toBe(20);
     expect(a.context.phase).toBe(DEFAULT_CONTEXT().phase);
   });

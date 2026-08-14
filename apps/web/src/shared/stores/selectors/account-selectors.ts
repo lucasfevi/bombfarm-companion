@@ -8,11 +8,6 @@ export const selectTreeCritDmg = (state: PlannerStore) => state.treeCritDmg;
 export const selectTreeSpeed = (state: PlannerStore) => state.treeSpeed;
 export const selectTreeEnergy = (state: PlannerStore) => state.treeEnergy;
 export const selectTreeTeamCoinPct = (state: PlannerStore) => state.treeTeamCoinPct;
-export const selectTreeGlassCannon = (state: PlannerStore) => state.treeGlassCannon;
-export const selectTreeTempoDobrado = (state: PlannerStore) => state.treeTempoDobrado;
-export const selectTreeAbisso = (state: PlannerStore) => state.treeAbisso;
-export const selectTreeAbissoBase = (state: PlannerStore) => state.treeAbissoBase;
-export const selectTreeCritDmgMult = (state: PlannerStore) => state.treeCritDmgMult;
 export const selectTreeLuckFlatPct = (state: PlannerStore) => state.treeLuckFlatPct;
 export const selectTeamBuffs = (state: PlannerStore) => state.teamBuffs;
 export const selectHouseIdx = (state: PlannerStore) => state.houseIdx;
@@ -58,11 +53,6 @@ export function selectAccountShared(state: PlannerStore): AccountShared {
       speed: state.treeSpeed,
       energy: state.treeEnergy,
       teamCoinPct: state.treeTeamCoinPct,
-      glassCannon: state.treeGlassCannon,
-      tempoDobrado: state.treeTempoDobrado,
-      abisso: state.treeAbisso,
-      abissoBase: state.treeAbissoBase,
-      critDmgMult: state.treeCritDmgMult,
       luckFlatPct: state.treeLuckFlatPct,
     },
     teamBuffs: state.teamBuffs,
@@ -89,11 +79,6 @@ export function selectAccountTuple(state: PlannerStore) {
     state.treeSpeed,
     state.treeEnergy,
     state.treeTeamCoinPct,
-    state.treeGlassCannon,
-    state.treeTempoDobrado,
-    state.treeAbisso,
-    state.treeAbissoBase,
-    state.treeCritDmgMult,
     state.treeLuckFlatPct,
     state.teamBuffs,
     state.houseIdx,

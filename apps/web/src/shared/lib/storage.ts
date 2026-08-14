@@ -51,8 +51,8 @@ export type HeroRecord = {
   /**
    * Banked stat points from the save (`stat_points_available`) not reflected in `pts` —
    * points the player earned but has not yet spent in-game. Additive on `HeroRecord`
-   * (defaults to 0 for pre-existing records, same back-compat pattern as `abissoBase` /
-   * `critDmgMult` before it). Feeds `ReoptInput.statPointsAvailable` so both reopt tiers
+   * (defaults to 0 for pre-existing records, same back-compat pattern as `luckFlatPct`
+   * before it). Feeds `ReoptInput.statPointsAvailable` so both reopt tiers
    * can allocate a hero's banked points instead of silently ignoring them.
    */
   statPointsAvailable?: number;

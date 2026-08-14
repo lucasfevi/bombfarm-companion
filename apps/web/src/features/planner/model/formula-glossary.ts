@@ -11,7 +11,6 @@ export const FORMULA_GLOSSARY: Partial<Record<string, GlossEntry[]>> = {
   bdFormulaDmg: [
     { tokens: ['abl'], tipKey: 'bdTermAbl' },
     { tokens: ['extra'], tipKey: 'bdTermExtra' },
-    { tokens: ['abisso'], tipKey: 'bdTermAbisso' },
   ],
   bdFormulaHit: [
     { tokens: ['atk'], tipKey: 'bdTermAtk' },

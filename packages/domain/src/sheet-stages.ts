@@ -24,7 +24,7 @@ import type { SheetStats } from './gear/types';
  *
  * `total` stays UNCAPPED on purpose (see `birth-sheet.ts`'s `composeSheetFromBirth` doc
  * comment) — it must keep equalling `composeSheetFromBirth`'s output and the six Δs above must
- * keep summing to it, both asserted in `keystone-sheet-corrections.test.ts`. `deltaCap` is the
+ * keep summing to it, both asserted in `sheet-stages.test.ts`. `deltaCap` is the
  * extra, always-non-positive Δ the game's display clamp applies on top (`0` under the cap);
  * `cappedTotal = total + deltaCap` is what the game's own exported sheet shows
  * (`gameSheetView(total-shaped-sheet) === cappedTotal`, `sheet-view.ts`).

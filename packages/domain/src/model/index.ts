@@ -71,7 +71,6 @@ export {
   applySkillTree,
   composeSheetFromBirth,
   sheetsFromBirth,
-  effectiveTreeSheetForAbisso,
 } from '../birth-sheet';
 
 export type { SourceLines, SheetSourceLines, PeelSheetSourcesInput } from '../sheet-peel';
@@ -88,9 +87,6 @@ export type {
   InferSpentPointsInput,
 } from '../point-inference';
 export { POINT_INFERENCE_EPS, inferSpentPoints } from '../point-inference';
-
-export type { UnmodelledTreeInput } from '../tree-guards';
-export { unmodelledTreeFindings } from '../tree-guards';
 
 export type { ReoptInput, ReoptResult } from '../points-reopt';
 export {

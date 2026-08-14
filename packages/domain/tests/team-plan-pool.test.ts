@@ -48,7 +48,6 @@ function heroCtx(level: number, slot?: string): HeroPlanContext {
       critChancePct: 0,
       critDmgPct: 0,
       luckFlatPct: 0,
-      critDmgMult: 1,
     },
     scope: 'optimize',
     abilities: {},

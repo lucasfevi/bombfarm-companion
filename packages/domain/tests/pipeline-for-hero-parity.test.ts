@@ -7,13 +7,8 @@
  * which already proves `computeHeroSoloDps` matches a direct pipeline call for one hero, extended
  * here to the ranking and to the exported entry point.
  *
- * MP5 F1 (`AD-069`, re-pointed onto the post-patch export): the 2026-08-13 patch removed
- * `crit_dmg_mult` from `skills.totals` entirely — the key is now absent, not `1`. That still
- * lands inside `{1, 2}` because `treeTotalsFromSave`'s `asNumber(totalsRaw.crit_dmg_mult, 1)`
- * defaults an absent key to `1`, which is exactly where `pipelineForHero`'s omission of
- * `treeCritDmgMult` (`AD-038`) and the web's forwarding of it legitimately agree. This is F2's
- * concern going forward — once `crit_dmg_mult` is deleted from `packages/domain/src`, this
- * precondition test (and `AD-038` itself) becomes F2's to re-evaluate, not F1's.
+ * The two call paths now receive byte-identical field lists, so the identity below is
+ * unconditional rather than a closeness bound — see this file's "ranking order…" case.
  */
 import { describe, expect, it } from 'vitest';
 import { parseAccountPayload } from '@bombfarm/domain/import-save';
@@ -35,12 +30,6 @@ describe('pipelineForHero ≡ computeAdvisorPipeline assembled from advisor-sele
     expect(parsed.rejected).toBeNull();
     expect(parsed.candidates.length).toBeGreaterThan(0);
     expect(parsed.account.tree).not.toBeNull();
-  });
-
-  it("the fixture's raw crit_dmg_mult is absent, and its resolved account.tree.critDmgMult is in {1, 2} — the set where AD-038's divergence legitimately agrees", () => {
-    const totals = (raw as { skills?: { totals?: { crit_dmg_mult?: unknown } } }).skills?.totals;
-    expect(totals?.crit_dmg_mult).toBeUndefined();
-    expect([1, 2]).toContain(parsed.account.tree?.critDmgMult);
   });
 
   const candidate = parsed.candidates[0];
@@ -69,11 +58,6 @@ describe('pipelineForHero ≡ computeAdvisorPipeline assembled from advisor-sele
       speed: tree.speed,
       energy: tree.energy,
       teamCoinPct: tree.teamCoinPct ?? 0,
-      glassCannon: tree.glassCannon,
-      tempoDobrado: tree.tempoDobrado,
-      abisso: tree.abisso,
-      abissoBase: tree.abissoBase,
-      critDmgMult: tree.critDmgMult,
       luckFlatPct: tree.luckFlatPct,
     },
     teamBuffs: zeroTeamBuffs(),
@@ -92,8 +76,8 @@ describe('pipelineForHero ≡ computeAdvisorPipeline assembled from advisor-sele
     const viaExportedPipeline = pipelineForHero(hero, account, phase, mitigationPct);
 
     // Assembled field-for-field with advisor-selectors.ts's `selectAdvisorPipeline` — the web's
-    // own field list, including `treeCritDmgMult` (which `pipelineForHero` omits, AD-038) and
-    // `statPointsAvailable`/`birth` read the same way the web store reads them.
+    // own field list, now identical on both sides (MKR-24/26). `statPointsAvailable`/`birth`
+    // are read the same way the web store reads them.
     const viaWebFieldList = computeAdvisorPipeline({
       naked: hero.naked,
       geared: hero.gearedOverride,
@@ -110,11 +94,6 @@ describe('pipelineForHero ≡ computeAdvisorPipeline assembled from advisor-sele
       treeCritDmg: account.tree.critDmg,
       treeSpeed: account.tree.speed,
       treeEnergy: account.tree.energy,
-      treeGlassCannon: account.tree.glassCannon,
-      treeCritDmgMult: account.tree.critDmgMult,
-      treeTempoDobrado: account.tree.tempoDobrado,
-      treeAbisso: account.tree.abisso,
-      treeAbissoBase: account.tree.abissoBase,
       treeLuckFlatPct: account.tree.luckFlatPct ?? 0,
       teamBuffs: account.teamBuffs as Record<TeamBuffId, number>,
       houseIdx: account.context.houseIdx,
@@ -127,23 +106,23 @@ describe('pipelineForHero ≡ computeAdvisorPipeline assembled from advisor-sele
     });
 
     // Not a snapshot, not a deep-equal on the whole result: ranking order, each dpsGainPct,
-    // best.stat and dps — the fields MPV-03 actually promises are identical.
+    // best.stat and dps — the fields MPV-03 actually promises are identical. Both paths now
+    // receive byte-identical arguments, so MKR-26's "unconditional identity" is tightened from
+    // a 9-decimal closeness bound to exact identity (design TD-9).
     expect(viaExportedPipeline.ranking.map((entry) => entry.stat)).toEqual(
       viaWebFieldList.ranking.map((entry) => entry.stat),
     );
     viaExportedPipeline.ranking.forEach((entry, index) => {
-      expect(entry.dpsGainPct).toBeCloseTo(viaWebFieldList.ranking[index]!.dpsGainPct, 9);
+      expect(entry.dpsGainPct).toBe(viaWebFieldList.ranking[index]!.dpsGainPct);
     });
     expect(viaExportedPipeline.best.stat).toBe(viaWebFieldList.best.stat);
-    expect(viaExportedPipeline.dps).toBeCloseTo(viaWebFieldList.dps, 9);
+    expect(viaExportedPipeline.dps).toBe(viaWebFieldList.dps);
   });
 
-  it('red state (demonstrated, then restored): a widened treeCritDmgMult gap makes dps disagree', () => {
-    // Temporarily pass a treeCritDmgMult on the computeAdvisorPipeline side that the exported
-    // pipelineForHero could never produce (it never forwards the field at all), to prove the
-    // assertion above is discriminating and not a tautology. crit_dmg_mult 3 is chosen because
-    // it disagrees with both the fixture's real value (1) and the treeGlassCannon fallback (1
-    // here, since glassCannon is false on this fixture).
+  // MKR-27: the old red state passed a field the exported pipeline could never produce; that
+  // field is gone now, so the red state is re-pointed onto a SURVIVING field (treeDanoTotal)
+  // instead. The old red state must not reappear under a new name.
+  it('red state (demonstrated, then restored): a widened treeDanoTotal gap makes dps disagree', () => {
     const viaExportedPipeline = pipelineForHero(hero, account, phase, mitigationPct);
     const withWidenedGap = computeAdvisorPipeline({
       naked: hero.naked,
@@ -156,16 +135,11 @@ describe('pipelineForHero ≡ computeAdvisorPipeline assembled from advisor-sele
       rarity: hero.rarity,
       level: hero.level,
       stars: hero.stars,
-      treeDanoTotal: account.tree.danoTotal,
+      treeDanoTotal: account.tree.danoTotal * 3, // <- deliberately-wrong: proves the field drives `dps`
       treeCritChance: account.tree.critChance,
       treeCritDmg: account.tree.critDmg,
       treeSpeed: account.tree.speed,
       treeEnergy: account.tree.energy,
-      treeGlassCannon: account.tree.glassCannon,
-      treeCritDmgMult: 3, // <- deliberately-wrong: proves the field actually drives `dps`
-      treeTempoDobrado: account.tree.tempoDobrado,
-      treeAbisso: account.tree.abisso,
-      treeAbissoBase: account.tree.abissoBase,
       treeLuckFlatPct: account.tree.luckFlatPct ?? 0,
       teamBuffs: account.teamBuffs as Record<TeamBuffId, number>,
       houseIdx: account.context.houseIdx,
@@ -177,6 +151,6 @@ describe('pipelineForHero ≡ computeAdvisorPipeline assembled from advisor-sele
       birth: hero.birth,
     });
 
-    expect(viaExportedPipeline.dps).not.toBeCloseTo(withWidenedGap.dps, 6);
+    expect(viaExportedPipeline.dps).not.toBe(withWidenedGap.dps);
   });
 });

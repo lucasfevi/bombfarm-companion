@@ -44,11 +44,6 @@ export type FarmContext = {
   houseLevel: number;
   phase: number | null;
   mitigationPct: number;
-  treeGlassCannon: boolean;
-  treeTempoDobrado: boolean;
-  treeAbisso?: boolean;
-  /** `skills.totals.abisso_base` — Abisso's damage-multiplier exponent base (0 when unowned). */
-  treeAbissoBase?: number;
 };
 
 export type HeroPlanContext = {
@@ -146,11 +141,6 @@ export type TeamPlanHeroInput = {
 
 export type TeamPlanAccountInput = {
   treeSheet: TreeSheetTotals;
-  treeGlassCannon: boolean;
-  treeTempoDobrado: boolean;
-  treeAbisso?: boolean;
-  /** `skills.totals.abisso_base` — Abisso's damage-multiplier exponent base (0 when unowned). */
-  treeAbissoBase?: number;
   houseIdx: number;
   houseLevel: number;
   phase: number | null;

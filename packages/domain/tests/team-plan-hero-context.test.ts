@@ -23,14 +23,8 @@ import {
 function accountFromFixture(raw: Record<string, unknown>): TeamPlanAccountInput {
   const totals = (raw.skills as { totals: Record<string, unknown> }).totals;
   const treeSheet = treeTotalsFromSave(totals);
-  const keystones = Array.isArray((raw.skills as { keystones?: unknown }).keystones)
-    ? ((raw.skills as { keystones: string[] }).keystones ?? [])
-    : [];
   return {
     treeSheet,
-    treeGlassCannon: keystones.some((k) => k.includes('glass') || k === 'c15' || k === 'v14'),
-    treeTempoDobrado: keystones.some((k) => k.includes('tempo') || k === 'v15'),
-    treeAbisso: keystones.some((k) => k === 'd15' || k.includes('abisso')),
     houseIdx: 0,
     houseLevel: 1,
     phase: 1,
@@ -78,8 +72,6 @@ describe('buildHeroPlanContext', () => {
       treeCritDmg: account.treeSheet.critDmgPct,
       treeSpeed: account.treeSheet.speedPct,
       treeEnergy: account.treeSheet.energyPct,
-      treeGlassCannon: account.treeGlassCannon,
-      treeTempoDobrado: account.treeTempoDobrado,
       treeLuckFlatPct: account.treeSheet.luckFlatPct,
       teamBuffs: zeroTeamBuffs(),
       houseIdx: account.houseIdx,
