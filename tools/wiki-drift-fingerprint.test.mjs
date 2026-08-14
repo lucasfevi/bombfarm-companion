@@ -11,7 +11,7 @@ const apiData = JSON.parse(readFileSync(join(FIXTURES, 'api-data.captured.json')
 const fasesNomes = JSON.parse(readFileSync(join(FIXTURES, 'fases-nomes.captured.json'), 'utf8'));
 
 // Published by the maintainer's out-of-band wiki sync manifest — reproduced here as literals so a
-// reviewer can compare by eye without running anything (MWD-04, AD-092).
+// reviewer can compare by eye without running anything (MWD-04).
 const API_DATA_PAYLOAD_SHA256 = 'a96761a2ac3da630ada92e69ec99f613bd9ee00416e01209791f0d3ac86769ac';
 const API_DATA_SECTION_SHA256 = {
   bolsa: '32e0d7a1eeb1e027b19c8efe0c9731792167b68346fc626adf5e1cb4bda7c6fb',
@@ -36,9 +36,9 @@ const API_DATA_SECTION_NAMES = [
   'item_stats', 'itens', 'raridades', 'ritual', 'rotacao', 'skill_tree', 'slots', 'stat_kinds',
 ];
 
-// /wiki/api/fases-nomes has no counterpart published in the sync manifest (AD-092 §2.3's stated
-// asymmetry) — these are recomputed from the same frozen capture with the same function, not
-// copied from an external source.
+// /wiki/api/fases-nomes has no counterpart published anywhere in the sync manifest — this is a
+// known asymmetry between the two endpoints. These values are recomputed from the same frozen
+// capture with the same function, not copied from an external source.
 const FASES_NOMES_PAYLOAD_SHA256 = '1e86671a6c65ab2fd58ff17a1d301eabac7683a275c179d3572588c9d844b116';
 const FASES_NOMES_SECTION_SHA256 = {
   atos: '327db39dbafc7d09004aa9473b9b224951ca7876dbda804e68ccc0adbff9731c',
@@ -57,7 +57,7 @@ describe('sha256Json — the raw hash primitive', () => {
   });
 });
 
-describe('fingerprintPayload — /wiki/api/data frozen capture (MWD-04, AD-092)', () => {
+describe('fingerprintPayload — /wiki/api/data frozen capture (MWD-04)', () => {
   const fp = fingerprintPayload('https://wiki.bombfarm.net/wiki/api/data', apiData);
 
   it('reproduces the published whole-payload sha256 exactly', () => {

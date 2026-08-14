@@ -6,7 +6,7 @@
 // baseline — before any request is made; (2) fetch both endpoints, bounded retry, per-request
 // timeout; (3) parse + top-level type check (inside fetchEndpoints already); (4) fingerprint +
 // compare. A fetch failure is therefore structurally incapable of becoming a drift claim — stage
-// 4 is unreachable unless stage 2 already succeeded (AD-093).
+// 4 is unreachable unless stage 2 already succeeded.
 
 import { readFileSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';

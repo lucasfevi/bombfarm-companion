@@ -7,12 +7,13 @@ const root = resolve(fileURLToPath(new URL('..', import.meta.url)));
 const WIKI_DRIFT_YML_PATH = join(root, '.github/workflows/wiki-drift.yml');
 
 /**
- * MP5 F5 (T8, `AD-096` layer 2) — the workflow-shape guard. Every predicate below is a pure
- * function over workflow *text*, asserted twice: `true` against `readFileSync` of the real file
- * on disk, and `false` against a *string mutation of that same text* — never a synthetic
- * hand-written fixture that could drift away from the file it claims to describe (design §5.6,
- * §2.8). This is the file this milestone has hit "reports green without ever discriminating"
- * nine times over — every property here is proved capable of failing.
+ * MP5 F5 — the workflow-shape guard, the pre-merge proof that the scheduled job cannot be
+ * quietly neutered. Every predicate below is a pure function over workflow *text*, asserted
+ * twice: `true` against `readFileSync` of the real file on disk, and `false` against a *string
+ * mutation of that same text* — never a synthetic hand-written fixture that could drift away
+ * from the file it claims to describe. This repo has hit "a check reports green without ever
+ * discriminating" repeatedly across this milestone — every property here is proved capable of
+ * failing.
  */
 
 /** Lines whose trimmed content starts with `#` — self-descriptive comments (e.g. this very file's

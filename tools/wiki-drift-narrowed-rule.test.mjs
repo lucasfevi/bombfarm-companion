@@ -9,10 +9,9 @@ const SCAN_ROOTS = ['apps', 'packages'];
 const HOSTNAME_PATTERN = 'wiki\\.bombfarm\\.net';
 
 /**
- * MP5 F5 (T9, `AD-095`) — the narrowed-rule guard, clauses A and B. Reuses
- * `tools/keystone-surface-absence.test.mjs`'s `execFileSync('git', ['grep', …])` shape and its
- * `AD-038` census pattern (fails on widening **and** on silent narrowing), applied here to the
- * wiki-client surface instead of the keystone-identifier surface.
+ * MP5 F5 — the narrowed-rule guard, clauses A and B. Reuses this repo's established pattern for
+ * a repo-wide identifier-absence guard: `execFileSync('git', ['grep', …])` plus a pinned census
+ * that fails on widening **and** on silent narrowing, applied here to the wiki-client surface.
  *
  * Clause A bans a **client call** to the wiki host — not the hostname, which appears
  * legitimately 8 times (credit links, i18n strings, provenance comments, a runtime URL builder
@@ -197,5 +196,137 @@ describe('Clause B — the comparison logic itself fails in both directions (syn
 
   it('the real (unmodified) census matches', () => {
     expect(censusMatches(HOSTNAME_CENSUS, actualHostnameCensus())).toBe(true);
+  });
+});
+
+// =============================================================================================
+// Clause C — the three amended files agree: both halves of the rule, plus the workflow filename
+// (MWD-34, `AD-095` clause C)
+// =============================================================================================
+
+const WORKFLOW_FILENAME = '.github/workflows/wiki-drift.yml';
+
+/** The "no wiki HTTP client in shipped app code" half. */
+function hasNoClientInAppCodeHalf(text) {
+  return /no wiki http client in shipped app code/i.test(text);
+}
+
+/** The "may not write packages/domain/**" half. */
+function hasMayNotWriteDomainHalf(text) {
+  return /may not write `?packages\/domain\/\*\*`?/i.test(text);
+}
+
+function hasWorkflowFilename(text) {
+  return text.includes(WORKFLOW_FILENAME);
+}
+
+const CLAUSE_C_FILES = [
+  'AGENTS.md',
+  'apps/web/docs/architecture.md',
+  'docs/wiki-drift-check.md',
+];
+
+describe('Clause C — AGENTS.md, apps/web/docs/architecture.md and docs/wiki-drift-check.md all carry the full rule', () => {
+  for (const file of CLAUSE_C_FILES) {
+    const text = readFileSync(join(root, file), 'utf8');
+
+    it(`${file} carries the "no client in app code" half`, () => {
+      expect(hasNoClientInAppCodeHalf(text)).toBe(true);
+    });
+
+    it(`${file} carries the "may not write packages/domain/**" half`, () => {
+      expect(hasMayNotWriteDomainHalf(text)).toBe(true);
+    });
+
+    it(`${file} names the workflow file ${WORKFLOW_FILENAME}`, () => {
+      expect(hasWorkflowFilename(text)).toBe(true);
+    });
+  }
+});
+
+describe('Clause C — red states: losing any one of the three elements turns the file non-compliant (MWD-34)', () => {
+  const realAgentsText = readFileSync(join(root, 'AGENTS.md'), 'utf8');
+
+  it('dropping the "no client in app code" half turns hasNoClientInAppCodeHalf false', () => {
+    const mutated = realAgentsText.replace(/no wiki http client in shipped app code\.?/i, '');
+    expect(hasNoClientInAppCodeHalf(mutated)).toBe(false);
+    // The other two elements are untouched by this specific mutation.
+    expect(hasWorkflowFilename(mutated)).toBe(true);
+  });
+
+  it('dropping the "may not write packages/domain/**" half turns hasMayNotWriteDomainHalf false', () => {
+    const mutated = realAgentsText.replace(/may not write `packages\/domain\/\*\*`/i, '');
+    expect(hasMayNotWriteDomainHalf(mutated)).toBe(false);
+    expect(hasNoClientInAppCodeHalf(mutated)).toBe(true);
+  });
+
+  it('dropping the workflow filename turns hasWorkflowFilename false', () => {
+    const mutated = realAgentsText.replaceAll(WORKFLOW_FILENAME, '');
+    expect(hasWorkflowFilename(mutated)).toBe(false);
+    expect(hasNoClientInAppCodeHalf(mutated)).toBe(true);
+    expect(hasMayNotWriteDomainHalf(mutated)).toBe(true);
+  });
+});
+
+// =============================================================================================
+// MWD-32 — reference hygiene: no research-repo name, no bot-repo name, no .specs/ path, no
+// private decision identifier, in any file this feature authored end-to-end
+// =============================================================================================
+
+/** Files F5 wrote from scratch — 100% of their content is this feature's own responsibility, so
+ * a whole-file scan is fair. (Files F5 only partially edited — AGENTS.md, `architecture.md`,
+ * `ci-desktop-paths.test.mjs` — carry unrelated pre-existing content this feature does not own
+ * and does not scan here; Clause C above already checks the specific clauses F5 authored in the
+ * first two.) */
+const FULLY_AUTHORED_FILES = [
+  'docs/wiki-drift-check.md',
+  '.github/workflows/wiki-drift.yml',
+  'tools/wiki-drift/fingerprint.mjs',
+  'tools/wiki-drift/fetch-endpoints.mjs',
+  'tools/wiki-drift/report.mjs',
+  'tools/wiki-drift/issue.mjs',
+  'tools/wiki-drift/check.mjs',
+  'tools/wiki-drift-fingerprint.test.mjs',
+  'tools/wiki-drift-compare.test.mjs',
+  'tools/wiki-drift-fetch.test.mjs',
+  'tools/wiki-drift-report.test.mjs',
+  'tools/wiki-drift-issue.test.mjs',
+  'tools/wiki-drift-cli.test.mjs',
+  'tools/wiki-drift-workflow.test.mjs',
+  // NOT this guard's own file: its red-state fixtures below necessarily name the forbidden
+  // patterns to prove the scan catches them — the same self-reference exemption this repo's
+  // other repo-wide identifier-absence guard takes for itself.
+];
+
+const FORBIDDEN_REFERENCE_PATTERNS = [
+  { name: 'research-repo name', pattern: /bombfarm-research/i },
+  { name: 'bot-repo name', pattern: /bombfarm-bot/i },
+  { name: '.specs/ path', pattern: /\.specs\// },
+  { name: 'AD-prefixed decision id', pattern: /\bAD-\d+\b/ },
+  { name: 'bare D-number decision id', pattern: /\bD\d{1,3}\b/ },
+];
+
+function referenceHygieneOffenses(text) {
+  return FORBIDDEN_REFERENCE_PATTERNS.filter(({ pattern }) => pattern.test(text)).map((p) => p.name);
+}
+
+describe('MWD-32 — reference hygiene: no research-repo name, bot-repo name, .specs/ path, or private decision id', () => {
+  for (const file of FULLY_AUTHORED_FILES) {
+    it(`${file} carries none of the forbidden references`, () => {
+      const text = readFileSync(join(root, file), 'utf8');
+      expect(referenceHygieneOffenses(text), file).toEqual([]);
+    });
+  }
+
+  it('red state: a fixture string naming the research repo is caught', () => {
+    const fixture = 'See bombfarm-research/.specs/features/mp5-wiki-drift-check/design.md (AD-092).';
+    expect(referenceHygieneOffenses(fixture)).toEqual(
+      expect.arrayContaining(['research-repo name', '.specs/ path', 'AD-prefixed decision id']),
+    );
+  });
+
+  it('red state: a fixture string naming a bare decision id is caught', () => {
+    const fixture = 'This follows D25 exactly.';
+    expect(referenceHygieneOffenses(fixture)).toEqual(['bare D-number decision id']);
   });
 });

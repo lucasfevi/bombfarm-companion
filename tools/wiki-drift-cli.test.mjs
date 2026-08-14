@@ -135,7 +135,7 @@ function runCli({ dir, baselinePath, portsModulePath, args = [], env = {} }) {
   return result;
 }
 
-describe('check.mjs — exit codes at the process boundary (MWD-27, MWD-37, AD-093)', () => {
+describe('check.mjs — exit codes at the process boundary (MWD-27, MWD-37)', () => {
   it('ok → exit 0', () => {
     const dir = makeTempDir();
     const baselinePath = validScratchBaselinePath(dir);
@@ -167,7 +167,7 @@ describe('check.mjs — exit codes at the process boundary (MWD-27, MWD-37, AD-0
     expect(result.status).toBe(2);
   });
 
-  it('baseline-missing → exit 3, and no request is ever made (stage order, AD-093)', () => {
+  it('baseline-missing → exit 3, and no request is ever made (stage order)', () => {
     const dir = makeTempDir();
     const missingBaselinePath = join(dir, 'does-not-exist.json');
     const { modulePath, callLogPath } = writeStubPortsModule(dir);

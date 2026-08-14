@@ -1,5 +1,5 @@
-// MP5 F5 (D25's second detector) — the wiki fingerprint: a hash definition, a baseline schema,
-// its validation, and the comparison. Node built-ins only.
+// MP5 F5 — the wiki fingerprint: a hash definition, a baseline schema, its validation, and the
+// comparison. Node built-ins only.
 //
 // The hash definition below is copied verbatim, not improved. The maintainer's out-of-band wiki
 // sync already publishes numbers computed as sha256(JSON.stringify(payload)) and
