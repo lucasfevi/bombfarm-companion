@@ -116,9 +116,21 @@ describe('cross-package fixture corpus parity (MP5 F1)', () => {
   const PATTERN =
     'abisso|abissoBase|abisso_base|glassCannon|treeGlassCannon|tempoDobrado|treeTempoDobrado|critDmgMult|crit_dmg_mult|keystones';
 
+  /**
+   * Release-note prose is outside this scan, for the same reason as in the sibling guard (see
+   * its `EXCLUDE_RELEASE_PROSE`): `changeset version` relocates the identical text from
+   * `.changeset/<name>.md` into each bumped package's `CHANGELOG.md`, so any per-file pin over
+   * it holds on `develop` and breaks on the release branch. Here that hit twice over — the four
+   * mapped `.changeset/*.md` entries below vanish when the batch is consumed, and the text
+   * reappears inside three typed surfaces, one of which (`packages/ui`) is asserted a hard zero.
+   * Excluding both keeps the five-surface decomposition measuring live source, which is what
+   * `AD-082` set out to prove; its own surface 5 already reads "release-note history".
+   */
+  const EXCLUDE_RELEASE_PROSE = [':(exclude)**/CHANGELOG.md', ':(exclude).changeset/*.md'];
+
   function grepCounts(pathspec) {
     const args = ['grep', '-ncE', PATTERN];
-    if (pathspec) args.push('--', pathspec);
+    args.push('--', ...(pathspec ? [pathspec] : []), ...EXCLUDE_RELEASE_PROSE);
     let out;
     try {
       out = execFileSync('git', args, { cwd: root, encoding: 'utf8' });
@@ -159,10 +171,9 @@ describe('cross-package fixture corpus parity (MP5 F1)', () => {
   // provenance, release-note history, or a guard naming what it forbids. Pinned as a committed
   // per-file map (not a bare count) so a move within this residual still fails by name.
   const RESIDUAL_MATCH_MAP = {
-    '.changeset/mp3-planning-views.md': 1,
-    '.changeset/mp5-fixture-rebaseline.md': 1,
-    '.changeset/mp5-keystone-removal.md': 12,
-    '.changeset/mp5-surface-cleanup.md': 7,
+    // The four `.changeset/*.md` entries that used to head this map are gone: pending changesets
+    // are release-note prose, excluded above, and each one is deleted by `changeset version`
+    // anyway — so a map naming them fails on the release branch by definition.
     'docs/base-ui-first.md': 1,
     'docs/content-fit-ui.md': 1,
     'docs/fidelity-gate.md': 1,
@@ -221,7 +232,6 @@ describe('cross-package fixture corpus parity (MP5 F1)', () => {
   // the file. Re-measured at 3d7a290 (F2's follow-up commit dropped the five team-plan-* test
   // files' matches, moving this map from 22 files to 17 — AD-079 #5).
   const DOMAIN_MATCH_MAP = {
-    'packages/domain/CHANGELOG.md': 3,
     'packages/domain/src/advisor-pipeline.ts': 4,
     'packages/domain/src/derive.ts': 6,
     'packages/domain/src/stat-breakdown/types.ts': 1,

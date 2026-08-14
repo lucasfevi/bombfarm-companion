@@ -31,6 +31,25 @@ import { describe, expect, it } from 'vitest';
 const root = resolve(fileURLToPath(new URL('..', import.meta.url)));
 const SCAN_ROOTS = ['apps/web', 'apps/desktop', 'packages/ui', 'tools'];
 
+/**
+ * Release-note prose is outside both clauses' scan surface.
+ *
+ * `changeset version` moves the SAME text from `.changeset/<name>.md` into the `CHANGELOG.md` of
+ * every package the batch bumps. A changeset describing this removal has to name what was
+ * removed, so that text lives in a different file on the release branch than on `develop` — at
+ * different line numbers, and in packages that carry no entry below. Pinning it therefore fails
+ * every release instead of catching drift: release PR #67 went red on two CHANGELOGs that had
+ * never held a token before and on a third whose count moved 3 -> 17, none of them a live
+ * surface, while `develop` was green on identical source.
+ *
+ * This guard polices editable source. `AD-080`'s allowlist already classes CHANGELOGs as
+ * "historical release prose" and `AD-082`'s surface 5 as "release-note history", so dropping
+ * them keeps the stated intent and removes only the part that cannot hold still across a
+ * release. Note this preserves `packages/ui`'s hard zero in substance — its generated release
+ * notes were never the surface `AD-082` is about.
+ */
+const EXCLUDE_RELEASE_PROSE = [':(exclude)**/CHANGELOG.md', ':(exclude).changeset/*.md'];
+
 function grepCounts(pattern, pathspecs) {
   let out;
   try {
@@ -84,11 +103,11 @@ const ALLOWLIST = [
   { file: 'apps/web/src/tests/fixtures/i18n-strings-main.json', count: 32, owner: 'frozen fixture (AD-081)' },
   // F1's provenance manifest — must name the forbidden keys to forbid them.
   { file: 'apps/web/src/tests/fixtures/sheet-math/README.md', count: 2, owner: "F1 provenance manifest" },
-  // CHANGELOGs — historical release prose, never edited after the fact.
-  { file: 'apps/web/CHANGELOG.md', count: 4, owner: 'CHANGELOG history' },
+  // (CHANGELOGs used to be pinned here; they are excluded from the scan now — see
+  // EXCLUDE_RELEASE_PROSE for why an entry could not survive a release.)
   // tools/ guard sources that must name the forbidden/closed tokens to forbid/discharge them.
   { file: 'tools/advisor-input-parity.test.mjs', count: 1, owner: 'AD-038 closed-pin history (T9)' },
-  { file: 'tools/fixture-corpus-parity.test.mjs', count: 9, owner: 'MFR-15 pattern + history + five-surface residual map (this guard\'s sibling)' },
+  { file: 'tools/fixture-corpus-parity.test.mjs', count: 8, owner: 'MFR-15 pattern + history + five-surface residual map (this guard\'s sibling)' },
   // F1's own negative-discriminator guard — must name the forbidden keys to forbid them.
   { file: 'apps/web/src/tests/fixture-corpus.test.ts', count: 3, owner: 'F1 negative-discriminator guard' },
   // F3's own doc amendments describing the removal (MSC-12 requires the local-data-compat.md
@@ -143,7 +162,6 @@ const CRIT_DMG_MULT_MAP = {
   'apps/desktop/src/main/storage/account-store-restore.test.ts': [497, 530, 548, 581],
   'apps/desktop/src/main/storage/stale-sections.test.ts': [66, 81, 84, 88, 98, 105, 111, 123, 128, 164, 182],
   'apps/desktop/src/main/storage/stale-sections.ts': [11],
-  'apps/web/CHANGELOG.md': [148, 155],
   'apps/web/docs/local-data-compat.md': [89, 97],
   'apps/web/src/features/planner/components/advice-column.tsx': [38, 59],
   'apps/web/src/shared/lib/account-shared.ts': [99],
@@ -160,8 +178,8 @@ const CRIT_DMG_MULT_MAP = {
   'apps/web/src/tests/stat-breakdown.test.ts': [124, 173, 200],
   'apps/web/src/tests/storage-legacy-keystone-fields.test.ts': [40, 109],
   'apps/web/src/tests/storage-stat-points-available-compat.test.ts': [104],
-  'tools/fixture-corpus-parity.test.mjs': [117, 157],
-  'tools/keystone-surface-absence.test.mjs': [13, 128, 131, 207, 209, 219, 228],
+  'tools/fixture-corpus-parity.test.mjs': [117, 169],
+  'tools/keystone-surface-absence.test.mjs': [13, 147, 150, 225, 230, 240, 249],
   'tools/save-acceptance-guards.test.mjs': [53],
 };
 
@@ -177,12 +195,12 @@ describe('keystone surface absence — the repo-wide identifier guard (MP5 F3, M
   });
 
   it('the clause-A allowlist is exactly the enumerated set (non-wideable)', () => {
-    expect(ALLOWLIST.length).toBe(29);
+    expect(ALLOWLIST.length).toBe(28);
     expect(ALLOWLIST.every((entry) => entry.file && entry.count > 0 && entry.owner)).toBe(true);
   });
 
   it('clause A — hard zero outside the allowlist, packages/ui included with NO exception', () => {
-    const rows = grepCounts(CLAUSE_A_PATTERN, SCAN_ROOTS);
+    const rows = grepCounts(CLAUSE_A_PATTERN, [...SCAN_ROOTS, ...EXCLUDE_RELEASE_PROSE]);
     const actual = {};
     for (const { file } of rows) actual[file] = (actual[file] ?? 0) + 1;
 
@@ -205,7 +223,10 @@ describe('keystone surface absence — the repo-wide identifier guard (MP5 F3, M
   });
 
   it('clause B — critDmgMult/crit_dmg_mult fall on an exact, pinned per-file/per-line map', () => {
-    const rows = grepCounts('\\bcritDmgMult\\b|\\bcrit_dmg_mult\\b', SCAN_ROOTS);
+    const rows = grepCounts('\\bcritDmgMult\\b|\\bcrit_dmg_mult\\b', [
+      ...SCAN_ROOTS,
+      ...EXCLUDE_RELEASE_PROSE,
+    ]);
     expect(rows.length, 'non-vacuity: at least one critDmgMult line must survive today').toBeGreaterThan(0);
 
     const actual = {};
