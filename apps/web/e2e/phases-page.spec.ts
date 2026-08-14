@@ -19,7 +19,10 @@ test.describe('Phases page', () => {
     await expect(page.getByRole('heading', { name: /^Economy$/i, level: 2 })).toBeVisible();
     await expect(page.getByLabel(/^Difficulty$/i)).toBeVisible();
     await expect(page.getByLabel(/^Map$/i)).toBeVisible();
-    await expect(page.getByText(/First Strike · #1/i)).toBeVisible();
+    // Scoped to the explorer's definition list — the Farm Ranking board above it (pfr-web-ui)
+    // composes the same phase label for its own row (ASM-C16, deliberately, so the board and
+    // this panel agree), which would otherwise make the plain text ambiguous.
+    await expect(page.getByRole('definition').getByText(/First Strike · #1/i)).toBeVisible();
   });
 
   test('difficulty and map dropdowns update phase intel', async ({ page }) => {
@@ -31,7 +34,8 @@ test.describe('Phases page', () => {
     await page.getByRole('option', { name: /^Hard$/i }).click();
     await page.getByLabel(/^Map$/i).click();
     await page.getByRole('option', { name: '1-1 · First Strike' }).click();
-    await expect(page.getByText(/First Strike · #151/i)).toBeVisible();
+    // Scoped to the explorer's definition list — see the same note above.
+    await expect(page.getByRole('definition').getByText(/First Strike · #151/i)).toBeVisible();
 
     const view = await page.evaluate(() => {
       const raw = localStorage.getItem('bf-hp-phases-view-v1');

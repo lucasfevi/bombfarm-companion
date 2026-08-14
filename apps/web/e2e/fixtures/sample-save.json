@@ -125,6 +125,7 @@
     "slots": 9
   },
   "skills": {
+    "max_phase": 87,
     "refunds": {},
     "totals": {
       "crit_chance_add": 0.5148165135,

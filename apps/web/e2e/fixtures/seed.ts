@@ -1,5 +1,6 @@
 import { expect, type Page } from '@playwright/test';
 import type { AccountShared, HeroRecord } from '../../src/shared/lib/storage';
+import type { PhasesViewState } from '../../src/shared/lib/phases-view-storage';
 import type { InventorySnapshot } from '@bombfarm/domain/inventory';
 
 /** Keys mirror `src/shared/lib/storage.ts` + i18n/guide chrome — keep in sync. */
@@ -7,6 +8,7 @@ const HEROES_KEY = 'bf-hp-heroes-v1';
 const ACTIVE_KEY = 'bf-hp-active-hero-v1';
 const ACCOUNT_KEY = 'bf-hp-account-v1';
 const INVENTORY_KEY = 'bf-hp-inventory-v1';
+const PHASES_VIEW_KEY = 'bf-hp-phases-view-v1';
 const LANG_KEY = 'bf_lang';
 const GUIDE_HIDDEN_KEY = 'bf_guide_hidden';
 
@@ -18,6 +20,8 @@ export type SeededState = {
   lang?: 'pt' | 'en';
   /** When true (default), suppress the first-run guide overlay. */
   guideHidden?: boolean;
+  /** Seeds bf-hp-phases-view-v1 — phase, farmPool and farmReturnBonus (pfr-web-ui). */
+  phasesView?: PhasesViewState;
 };
 
 const emptySheet = () => ({
@@ -193,10 +197,11 @@ export async function seedLocalStorage(page: Page, state: SeededState): Promise<
     lang: state.lang ?? 'pt',
     // Default hide guide; only show when guideHidden is explicitly false.
     guideHidden: state.guideHidden !== false,
+    phasesView: state.phasesView ?? null,
   };
 
   await page.addInitScript(
-    ({ heroes, activeHeroId, account, inventory, lang, guideHidden, keys }) => {
+    ({ heroes, activeHeroId, account, inventory, lang, guideHidden, phasesView, keys }) => {
       localStorage.setItem(keys.heroes, JSON.stringify(heroes));
       if (activeHeroId) localStorage.setItem(keys.active, activeHeroId);
       else localStorage.removeItem(keys.active);
@@ -206,6 +211,8 @@ export async function seedLocalStorage(page: Page, state: SeededState): Promise<
       else localStorage.removeItem(keys.inventory);
       localStorage.setItem(keys.lang, lang);
       localStorage.setItem(keys.guideHidden, guideHidden ? '1' : '0');
+      if (phasesView) localStorage.setItem(keys.phasesView, JSON.stringify(phasesView));
+      else localStorage.removeItem(keys.phasesView);
     },
     {
       ...payload,
@@ -216,6 +223,7 @@ export async function seedLocalStorage(page: Page, state: SeededState): Promise<
         inventory: INVENTORY_KEY,
         lang: LANG_KEY,
         guideHidden: GUIDE_HIDDEN_KEY,
+        phasesView: PHASES_VIEW_KEY,
       },
     },
   );

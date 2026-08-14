@@ -18,7 +18,12 @@ const fieldLabelClass = 'flex flex-col gap-[3px] text-[11px] tracking-[0.03em] t
 export function FarmRankingFilters({ filters, onChange, maxPhaseKnown, t }: Props) {
   return (
     <div className="flex flex-wrap items-end gap-3">
-      <label className={fieldLabelClass} data-testid="farm-filter-unlocked">
+      {/* `<div>`, not `<label>` — wrapping a Switch in a native <label> makes the browser (and
+          Playwright's click actionability) forward clicks/focus to Base UI's visually-hidden
+          native <input type="checkbox">, which sits off-screen via clip-path and reads as
+          "not enabled". The Switch's own `aria-label` already carries the accessible name
+          (the same pattern `HeroActiveToggle` uses). */}
+      <div className={fieldLabelClass} data-testid="farm-filter-unlocked">
         <span className="flex items-center gap-1">
           {t.farmRankingFilterUnlockedLabel}
           <HelpTip
@@ -34,16 +39,16 @@ export function FarmRankingFilters({ filters, onChange, maxPhaseKnown, t }: Prop
           onCheckedChange={(checked) => onChange({ ...filters, unlockedOnly: checked })}
           aria-label={t.farmRankingFilterUnlockedLabel}
         />
-      </label>
+      </div>
 
-      <label className={fieldLabelClass} data-testid="farm-filter-feasible">
+      <div className={fieldLabelClass} data-testid="farm-filter-feasible">
         <span>{t.farmRankingFilterFeasibleLabel}</span>
         <Switch
           checked={filters.feasibleOnly}
           onCheckedChange={(checked) => onChange({ ...filters, feasibleOnly: checked })}
           aria-label={t.farmRankingFilterFeasibleLabel}
         />
-      </label>
+      </div>
 
       <label className={`${fieldLabelClass} w-36 shrink-0`} data-testid="farm-filter-ato">
         <span>{t.farmRankingFilterAtoLabel}</span>
