@@ -356,7 +356,10 @@ function buildRow(line: WikiPhaseLine, squad: SquadFarmFacts, options: FarmRateO
     const share = shareDenom > 0 ? term / shareDenom : 0;
     const goldSelf = 1 + veiaOuroPerLevel * hero.veiaOuroLevel;
     goldSelfMixSum += share * goldSelf;
-    expectedHtkSum += share * eHtk;
+    // Guard `0 × Infinity = NaN`: a degenerate hero (eHtk === Infinity) with a genuinely zero
+    // share must contribute exactly 0 here, not NaN. `share === 0` already means "this hero adds
+    // nothing to the squad's throughput" regardless of what its own (unreachable) eHtk is.
+    if (share > 0) expectedHtkSum += share * eHtk;
   }
   const goldSelfMix = shareDenom > 0 ? goldSelfMixSum : 1;
   const expectedHtk = shareDenom > 0 ? expectedHtkSum : Infinity;
