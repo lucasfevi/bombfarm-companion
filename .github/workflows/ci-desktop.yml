@@ -24,6 +24,7 @@ on:
       - 'vitest.config.ts'
       - 'tools/**'
       - '.github/workflows/ci-desktop.yml'
+      - '.github/workflows/wiki-drift.yml'
   pull_request:
     types: [opened, synchronize, reopened, labeled]
 
@@ -66,6 +67,7 @@ jobs:
               - 'vitest.config.ts'
               - 'tools/**'
               - '.github/workflows/ci-desktop.yml'
+              - '.github/workflows/wiki-drift.yml'
 
   quality:
     name: Typecheck, lint, unit (desktop path)

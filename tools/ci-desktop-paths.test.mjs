@@ -59,6 +59,14 @@ describe('ci-desktop.yml — the two path-filter lists stay in sync', () => {
     expect(filterPaths).toContain('packages/domain/**');
   });
 
+  // MP5 F5 (MWD-15) — without this entry, a PR editing only wiki-drift.yml would run no guard
+  // at all: the shape guard (tools/wiki-drift-workflow.test.mjs) is a `tools` unit test, reached
+  // only through this workflow's own `quality` job.
+  it('both lists carry .github/workflows/wiki-drift.yml — its own shape guard must run', () => {
+    expect(pushPaths).toContain('.github/workflows/wiki-drift.yml');
+    expect(filterPaths).toContain('.github/workflows/wiki-drift.yml');
+  });
+
   it('the two lists are exactly equal, in the same order', () => {
     expect(filterPaths).toEqual(pushPaths);
   });
