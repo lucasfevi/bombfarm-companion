@@ -66,6 +66,15 @@ export type AccountShared = {
   slots?: number;
   /** Optimizer forge floor — defaults to `10` when absent; import never overwrites. */
   forgeFloor?: number;
+  /**
+   * `account.max_phase` — furthest phase reached (`OD-9`, `AD-PFRC-04`). Mirrors item B's
+   * `AccountImportData.maxPhase: number | null` (dual-source, total). `null`/absent means no
+   * lock badges anywhere and the Farm Ranking unlocked-only filter renders non-applicable
+   * (`AD-PFR-02`). Written UNCONDITIONALLY by `applyAccountImport` — unlike every sibling field
+   * on this type, a re-import carrying no `max_phase` clears a stale value rather than keeping
+   * it, because a stale lock badge would assert progress the payload just contradicted.
+   */
+  maxPhase?: number | null;
 };
 
 export const DEFAULT_TREE = (): TreeState => ({
@@ -145,6 +154,16 @@ function normalizeSlots(raw?: number): number {
   return Math.max(1, Math.round(value));
 }
 
+/**
+ * `null` when absent or non-finite (`AD-PFRC-04` — B's reader is total, `number | null`; one
+ * inhabitant for "known-absent" the whole way through), else integer-clamped `1..600` — the
+ * same template as `normalizeContext`'s `phase` clamp.
+ */
+function normalizeMaxPhase(raw?: number | null): number | null {
+  if (raw == null || !Number.isFinite(raw)) return null;
+  return Math.max(1, Math.min(600, Math.round(raw)));
+}
+
 export function normalizeAccount(raw?: Partial<AccountShared> | null): AccountShared {
   return {
     tree: normalizeTree(raw?.tree),
@@ -152,5 +171,6 @@ export function normalizeAccount(raw?: Partial<AccountShared> | null): AccountSh
     context: normalizeContext(raw?.context),
     slots: normalizeSlots(raw?.slots),
     forgeFloor: normalizeForgeFloor(raw?.forgeFloor),
+    maxPhase: normalizeMaxPhase(raw?.maxPhase),
   };
 }
