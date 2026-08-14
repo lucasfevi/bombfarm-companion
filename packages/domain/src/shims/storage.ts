@@ -32,6 +32,10 @@ export type AccountShared = {
   context: HeroContext;
   slots?: number;
   forgeFloor?: number;
+  /** `account.max_phase` — furthest phase reached. `null`/absent means no lock badges.
+   *  Optional and populated by nobody in `@bombfarm/domain` — a consumer mirrors it from
+   *  `AccountImportData.maxPhase` after import. */
+  maxPhase?: number | null;
 };
 
 export type HeroRecord = {

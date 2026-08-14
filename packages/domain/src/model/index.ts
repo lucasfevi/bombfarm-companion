@@ -61,6 +61,8 @@ export {
   sustainedDps,
   activeDps,
   gateDamage,
+  GRID_SPEED_COEF,
+  EFF_IA,
 } from './combat';
 
 export { rankNextPoint, energySwitchPoint } from './points-rank';

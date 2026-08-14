@@ -35,6 +35,7 @@ export {
   selectRankMode,
   selectTargetProp,
   selectSlots,
+  selectMaxPhase,
 } from '@/shared/stores/selectors/account-selectors';
 export {
   selectTeamPlanIsStale,
@@ -87,3 +88,17 @@ export {
 } from '@/shared/stores/selectors/tab-status-selectors';
 export { selectPhasesViewPhase } from '@/shared/stores/selectors/phases-selectors';
 export { selectTreeSheetTotals } from '@/shared/stores/selectors/tree-sheet-selectors';
+export {
+  selectFarmRankingRows,
+  selectFarmPoolEntries,
+  deriveFarmPoolEntries,
+  selectFarmReturnBonus,
+  resetFarmRankingCache,
+  getFarmRankingComputeCount,
+  resetFarmRankingComputeCount,
+} from '@/shared/stores/selectors/farm-ranking-selectors';
+export type {
+  FarmRankingResult,
+  FarmRankingReason,
+  FarmPoolEntry,
+} from '@/shared/stores/selectors/farm-ranking-selectors';

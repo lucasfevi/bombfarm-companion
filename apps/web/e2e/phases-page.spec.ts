@@ -7,31 +7,35 @@ const sampleSave = path.join(process.cwd(), 'e2e/fixtures/sample-save.json');
 test.describe('Phases page', () => {
   test('loads phase intel and top nav', async ({ page }) => {
     await seedLocalStorage(page, { ...importedRoster, lang: 'en' });
-    await page.goto('/phases');
+    await page.goto('/farm');
 
-    await expect(page.getByRole('link', { name: /^Phases$/i })).toBeVisible();
+    await expect(page.getByRole('link', { name: /^Farm$/i })).toBeVisible();
     await expect(page.getByRole('link', { name: /^Planner$/i })).toBeVisible();
 
     const navLinks = page.getByRole('navigation', { name: 'Main sections' }).getByRole('link');
     await expect(navLinks.first()).toHaveText(/^Planner$/i);
-    await expect(navLinks.nth(1)).toHaveText(/^Phases$/i);
+    await expect(navLinks.nth(1)).toHaveText(/^Farm$/i);
     await expect(page.getByRole('heading', { name: /^Map$/i, level: 2 })).toBeVisible();
     await expect(page.getByRole('heading', { name: /^Economy$/i, level: 2 })).toBeVisible();
     await expect(page.getByLabel(/^Difficulty$/i)).toBeVisible();
     await expect(page.getByLabel(/^Map$/i)).toBeVisible();
-    await expect(page.getByText(/First Strike · #1/i)).toBeVisible();
+    // Scoped to the explorer's definition list — the Farm Ranking board above it
+    // composes the same phase label for its own row (deliberately, so the board and
+    // this panel agree), which would otherwise make the plain text ambiguous.
+    await expect(page.getByRole('definition').getByText(/First Strike · #1/i)).toBeVisible();
   });
 
   test('difficulty and map dropdowns update phase intel', async ({ page }) => {
     await seedLocalStorage(page, { ...importedRoster, lang: 'en' });
-    await page.goto('/phases');
+    await page.goto('/farm');
 
     // DS Select is a Base UI combobox (button), not a native <select>.
     await page.getByLabel(/^Difficulty$/i).click();
     await page.getByRole('option', { name: /^Hard$/i }).click();
     await page.getByLabel(/^Map$/i).click();
     await page.getByRole('option', { name: '1-1 · First Strike' }).click();
-    await expect(page.getByText(/First Strike · #151/i)).toBeVisible();
+    // Scoped to the explorer's definition list — see the same note above.
+    await expect(page.getByRole('definition').getByText(/First Strike · #151/i)).toBeVisible();
 
     const view = await page.evaluate(() => {
       const raw = localStorage.getItem('bf-hp-phases-view-v1');
@@ -42,7 +46,7 @@ test.describe('Phases page', () => {
 
   test('import from the shell refreshes phases roster intel', async ({ page }) => {
     await seedLocalStorage(page, { heroes: [], lang: 'en' });
-    await page.goto('/phases');
+    await page.goto('/farm');
 
     await expect(page.getByText(/Import heroes in the Planner/i)).toBeVisible();
 
@@ -59,7 +63,7 @@ test.describe('Phases page', () => {
 
   test('your hero uses the planner switcher and squad table reflects casa slots', async ({ page }) => {
     await seedLocalStorage(page, { ...importedRoster, lang: 'en' });
-    await page.goto('/phases');
+    await page.goto('/farm');
 
     await expect(page.getByRole('heading', { name: /^Your hero$/i, level: 2 })).toBeVisible();
     await expect(page.getByRole('button', { name: /switch hero/i })).toBeVisible();
@@ -78,7 +82,7 @@ test.describe('Phases page', () => {
       account: { ...baseAccount, slots: 6 },
       lang: 'en',
     });
-    await page.goto('/phases');
+    await page.goto('/farm');
 
     const sixSlotHeading = page.getByRole('heading', { name: /Top 6 by solo DPS/i, level: 2 });
     await expect(sixSlotHeading).toBeVisible();
@@ -92,7 +96,7 @@ test.describe('Phases page', () => {
       account: accountWithoutSlots,
       lang: 'en',
     });
-    await page.goto('/phases');
+    await page.goto('/farm');
 
     const nineSlotHeading = page.getByRole('heading', { name: /Top 9 by solo DPS/i, level: 2 });
     await expect(nineSlotHeading).toBeVisible();

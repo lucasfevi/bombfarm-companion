@@ -8,21 +8,30 @@ export const TRACKER_MARKER = '<!-- bfc-wiki-drift-tracker -->';
 
 /**
  * Which differing sections back a committed companion artifact today (design §2.6). Keyed by
- * `${endpoint}.${section}`. `data.bolsa`/`combate`/`gemas`/`habilidades`/`ritual`/`rotacao`/
- * `skill_tree`/`stat_kinds` and `fasesNomes.disponivel`/`mundos`/`sufixos`/`zonas` back nothing
- * today and are deliberately absent from this map — `skill_tree` in particular backs no
- * committed JSON but is the section the wiki drift check reasoned from, so it still sits inside
- * the baseline; its absence here only affects how the "backs no artifact" note reads.
+ * `${endpoint}.${section}`. `data.bolsa`/`combate`/`ritual`/`skill_tree`/`stat_kinds` and
+ * `fasesNomes.disponivel`/`mundos`/`sufixos`/`zonas` back nothing today and are deliberately
+ * absent from this map — `skill_tree` in particular backs no committed JSON but is the section
+ * the wiki drift check reasoned from, so it still sits inside the baseline; its absence here
+ * only affects how the "backs no artifact" note reads.
  */
 export const ARTIFACT_BACKED_SECTIONS = {
   // packages/domain/src/data/phase-wiki.json (lines, gateSecsPorAto); packages/domain/src/data/phases.json (lines)
   'data.fases': ['phase-wiki.json', 'phases.json'],
   // packages/domain/src/data/phase-wiki.json (props, propsPorAto, bossHpMult, repHpMult, jaula)
   'data.entidades': ['phase-wiki.json'],
-  // packages/domain/src/data/phase-wiki.json (heroChestRarityByAto, chestRarityDist)
+  // packages/domain/src/data/phase-wiki.json (heroChestRarityByAto, chestRarityDist, DROP_RATES,
+  // KEY_GATE_COST, RETURN_BONUS_ADD, RETURN_BONUS_ADD_VIP)
   'data.drops': ['phase-wiki.json'],
   // packages/domain/src/data/phase-wiki.json (itemPorFase, xpFaseIni, xpFaseFim)
   'data.herois': ['phase-wiki.json'],
+  // packages/domain/src/data/phase-wiki.json (WIKI_GEMS: chestDropRate, rankDistByAto, list —
+  // also aliased as GEM_RANK_DIST_BY_ATO / GEM_LIST)
+  'data.gemas': ['phase-wiki.json'],
+  // packages/domain/src/data/phase-wiki.json (LOOT_ABILITY_VALUES / lootAbilities)
+  'data.habilidades': ['phase-wiki.json'],
+  // packages/domain/src/data/phase-wiki.json (DROP_RATES.time / drops.timechestDropRate,
+  // TIMECHEST_RARITY_BY_ATO / timechestRarityByAto)
+  'data.rotacao': ['phase-wiki.json'],
   // packages/domain/src/data/catalog.json (defs, sets, levels, version — version === itens.versao_catalogo)
   'data.itens': ['catalog.json'],
   // packages/domain/src/data/catalog.json (slots)

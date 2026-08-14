@@ -1,0 +1,241 @@
+/**
+ * Per-hero and squad farm facts.
+ *
+ * Every field, every unit, every degenerate branch named in `design.md` §3.2/§3.3/§4.1/§4.2.
+ * Exhaustive degenerate/boundary sweeps live in `farm-rate-degenerate.test.ts` (T9); this file
+ * proves the formulas themselves, including the luck-peel identity against `peelSheetSources`.
+ */
+import { describe, expect, it } from 'vitest';
+import {
+  computeHeroFarmFacts,
+  computeSquadFarmFacts,
+  E_D_CELLS,
+  type HeroFarmFacts,
+} from '@bombfarm/domain/farm-rate';
+import { pipelineForHero } from '@bombfarm/domain/roster-dps';
+import { peelSheetSources, ABILITY_LEVEL_MAX, type TreeSheetTotals } from '@bombfarm/domain/model';
+import { abilityMods } from '@bombfarm/domain/model';
+import { emptySheetOther, type SheetOtherPct } from '@bombfarm/domain/gear';
+import { DEFAULT_CASA_SLOTS } from '@bombfarm/domain/casa-slots';
+import type { AccountShared, HeroRecord } from '@bombfarm/domain/shims/storage';
+import { loadFarmRateFixture, withAbilityLevels } from './helpers/farm-rate-fixtures';
+
+const { heroes, account } = loadFarmRateFixture();
+
+describe('computeHeroFarmFacts — the base pipeline call (design.md §0 trap #1)', () => {
+  it('mitF === 1 on the base call — proves phase=1 + mitigationPct=0 never bakes in phase-1 mitigation', () => {
+    for (const hero of heroes) {
+      const pipeline = pipelineForHero(hero, account, 1, 0);
+      expect(pipeline.mitF).toBe(1);
+    }
+  });
+});
+
+describe('computeHeroFarmFacts — uptime is a fraction (design.md §0 trap #2)', () => {
+  it('uptime ∈ (0, 1] and equals pipeline.uptime / 100 for every enabled hero', () => {
+    const facts = computeHeroFarmFacts({ heroes, account });
+    expect(facts).toHaveLength(5);
+    for (const fact of facts) {
+      const pipeline = pipelineForHero(heroes.find((h) => h.id === fact.heroId)!, account, 1, 0);
+      expect(fact.uptime).toBeGreaterThan(0);
+      expect(fact.uptime).toBeLessThanOrEqual(1);
+      expect(fact.uptime).toBeCloseTo(pipeline.uptime / 100, 12);
+    }
+  });
+});
+
+describe('computeHeroFarmFacts — blocksPerBomb (design.md §0 trap #3)', () => {
+  it('blocksPerBomb === 1 + 0.5 × context.blastRange, and === 1.5 for every fixture hero (none carry Explosão Ampla)', () => {
+    const facts = computeHeroFarmFacts({ heroes, account });
+    for (const fact of facts) {
+      const pipeline = pipelineForHero(heroes.find((h) => h.id === fact.heroId)!, account, 1, 0);
+      expect(fact.blocksPerBomb).toBeCloseTo(1 + 0.5 * pipeline.context.blastRange, 12);
+      expect(fact.blocksPerBomb).toBe(1.5);
+    }
+  });
+});
+
+describe('computeHeroFarmFacts — cycleSecs = max(fuseSecs, E_D_CELLS / w)', () => {
+  it('a normal fixture hero is walk-bound (cycleSecs === E_D_CELLS / w > fuseSecs)', () => {
+    const jon = heroes.find((h) => h.name === 'Jon')!;
+    const [fact] = computeHeroFarmFacts({ heroes: [jon], account });
+    const expectedWalkTerm = E_D_CELLS / fact.walkSpeedCells;
+    expect(fact.cycleSecs).toBeCloseTo(Math.max(fact.fuseSecs, expectedWalkTerm), 12);
+    expect(expectedWalkTerm).toBeGreaterThan(fact.fuseSecs);
+    expect(fact.cycleSecs).toBeCloseTo(expectedWalkTerm, 12);
+  });
+
+  it('a speed-boosted copy of the same hero is fuse-bound (cycleSecs === fuseSecs > E_D_CELLS / w)', () => {
+    const jon = heroes.find((h) => h.name === 'Jon')!;
+    // design.md §2.5 / tasks.md T5: no fixture hero is naturally fuse-bound at this fixture's
+    // speeds — constructed by boosting the birth speed roll well past every walk-bound crossover.
+    const fastJon: HeroRecord = { ...jon, birth: { ...jon.birth!, speed: jon.birth!.speed * 50 } };
+    const [fact] = computeHeroFarmFacts({ heroes: [fastJon], account });
+    const expectedWalkTerm = E_D_CELLS / fact.walkSpeedCells;
+    expect(fact.cycleSecs).toBeCloseTo(Math.max(fact.fuseSecs, expectedWalkTerm), 12);
+    expect(fact.fuseSecs).toBeGreaterThan(expectedWalkTerm);
+    expect(fact.cycleSecs).toBeCloseTo(fact.fuseSecs, 12);
+  });
+
+  it('w <= 0 (constructed via zero speed) ⇒ cycleSecs Infinity, plantsPerSec 0, degenerate true', () => {
+    const jon = heroes.find((h) => h.name === 'Jon')!;
+    const stillJon: HeroRecord = { ...jon, birth: { ...jon.birth!, speed: 0 } };
+    const [fact] = computeHeroFarmFacts({ heroes: [stillJon], account });
+    expect(fact.walkSpeedCells).toBe(0);
+    expect(fact.cycleSecs).toBe(Infinity);
+    expect(fact.plantsPerSec).toBe(0);
+    expect(fact.degenerate).toBe(true);
+  });
+});
+
+describe('computeHeroFarmFacts — heroLuckPct peel identity', () => {
+  it('equals peelSheetSources(...).luck hero+gear+ability, to within 1e-9, for every birth-backed fixture hero', () => {
+    const treeLuckFlatPct = account.tree.luckFlatPct ?? 0;
+    const tree: TreeSheetTotals = {
+      danoStatic: account.tree.danoTotal,
+      energyPct: account.tree.energy,
+      speedPct: account.tree.speed,
+      critChancePct: account.tree.critChance,
+      critDmgPct: account.tree.critDmg,
+      luckFlatPct: treeLuckFlatPct,
+    };
+
+    const facts = computeHeroFarmFacts({ heroes, account });
+    for (const fact of facts) {
+      const hero = heroes.find((h) => h.id === fact.heroId)!;
+      expect(hero.birth, `hero "${hero.name}" must be birth-backed for this identity`).toBeDefined();
+
+      const mods = abilityMods(hero.abilities);
+      const sheetOther: SheetOtherPct = {
+        ...emptySheetOther(),
+        critChance: mods.sheetCritChancePctOfBase / 100,
+        penetration: mods.sheetPenetrationRaw,
+        critDmg: mods.sheetCritDmgPctOfBase,
+      };
+
+      const lines = peelSheetSources({
+        birth: hero.birth!,
+        level: hero.level,
+        stars: hero.stars,
+        sheetOther,
+        loadout: hero.loadout,
+        pts: hero.pts,
+        tree,
+      });
+      const peeledLuck = lines.luck.hero + lines.luck.gear + lines.luck.ability;
+
+      expect(Math.abs(fact.heroLuckPct - peeledLuck)).toBeLessThanOrEqual(1e-9);
+      // The peel's own skillTree line is the tree's flat share, verbatim (design.md §2.1 fact 5).
+      expect(lines.luck.skillTree).toBe(treeLuckFlatPct);
+    }
+  });
+
+  it('heroLuckPct is invariant to account.tree.luckFlatPct (the subtraction cancels exactly — no double count)', () => {
+    const jon = heroes.find((h) => h.name === 'Jon')!;
+    const lowLuckAccount: AccountShared = { ...account, tree: { ...account.tree, luckFlatPct: 1 } };
+    const highLuckAccount: AccountShared = { ...account, tree: { ...account.tree, luckFlatPct: 40 } };
+
+    const [lowFact] = computeHeroFarmFacts({ heroes: [jon], account: lowLuckAccount });
+    const [highFact] = computeHeroFarmFacts({ heroes: [jon], account: highLuckAccount });
+
+    expect(highFact.heroLuckPct).toBeCloseTo(lowFact.heroLuckPct, 9);
+  });
+});
+
+describe('computeSquadFarmFacts — sorteFraction tracks Δtree.luckFlatPct exactly', () => {
+  it('Δtree.luckFlatPct = x ⇒ ΔsorteFraction = x / 100 exactly, for a fixed heroFacts array', () => {
+    const heroFacts = computeHeroFarmFacts({ heroes, account });
+    const baseAccount: AccountShared = { ...account, tree: { ...account.tree, luckFlatPct: 5 } };
+    const raisedAccount: AccountShared = { ...account, tree: { ...account.tree, luckFlatPct: 5 + 12.5 } };
+
+    const baseSquad = computeSquadFarmFacts(heroFacts, baseAccount);
+    const raisedSquad = computeSquadFarmFacts(heroFacts, raisedAccount);
+
+    expect(raisedSquad.sorteFraction - baseSquad.sorteFraction).toBeCloseTo(12.5 / 100, 12);
+  });
+});
+
+describe('computeHeroFarmFacts — ability level clamp', () => {
+  it('veia_ouro and fortuna levels above ABILITY_LEVEL_MAX clamp to ABILITY_LEVEL_MAX', () => {
+    const jon = heroes.find((h) => h.name === 'Jon')!;
+    const overLeveled = withAbilityLevels(jon, { veia_ouro: 999, fortuna: -5 });
+    const [fact] = computeHeroFarmFacts({ heroes: [overLeveled], account });
+    expect(fact.veiaOuroLevel).toBe(ABILITY_LEVEL_MAX);
+    expect(fact.fortunaLevel).toBe(0);
+  });
+});
+
+describe('computeHeroFarmFacts — enabled pool semantics', () => {
+  it('default pool (omitted enabledHeroIds) is every fixture hero — battleAllowed !== false', () => {
+    expect(computeHeroFarmFacts({ heroes, account })).toHaveLength(5);
+  });
+
+  it('explicit [] is the empty pool, not "use the default"', () => {
+    expect(computeHeroFarmFacts({ heroes, account, enabledHeroIds: [] })).toHaveLength(0);
+  });
+
+  it('an id not present in heroes[] is ignored silently — pool is the intersection', () => {
+    const jonId = heroes.find((h) => h.name === 'Jon')!.id;
+    const facts = computeHeroFarmFacts({ heroes, account, enabledHeroIds: [jonId, 'no-such-hero'] });
+    expect(facts).toHaveLength(1);
+    expect(facts[0].heroId).toBe(jonId);
+  });
+
+  it('an enabledHeroIds list of only unknown ids yields the empty pool', () => {
+    expect(computeHeroFarmFacts({ heroes, account, enabledHeroIds: ['no-such-hero'] })).toHaveLength(0);
+  });
+});
+
+describe('computeSquadFarmFacts — fieldSlots', () => {
+  it('reads account.slots (3 on the fixture, from casa.slots)', () => {
+    const heroFacts = computeHeroFarmFacts({ heroes, account });
+    expect(computeSquadFarmFacts(heroFacts, account).fieldSlots).toBe(3);
+  });
+
+  it('falls back to DEFAULT_CASA_SLOTS when account.slots is absent — not 0, not Infinity', () => {
+    const heroFacts = computeHeroFarmFacts({ heroes, account });
+    const noSlotsAccount: AccountShared = { ...account, slots: undefined };
+    const squad = computeSquadFarmFacts(heroFacts, noSlotsAccount);
+    expect(squad.fieldSlots).toBe(DEFAULT_CASA_SLOTS);
+    expect(squad.fieldSlots).not.toBe(0);
+    expect(Number.isFinite(squad.fieldSlots)).toBe(true);
+  });
+});
+
+describe('computeSquadFarmFacts — concurrencyScale', () => {
+  const syntheticHero = (uptime: number): HeroFarmFacts => ({
+    heroId: 'synthetic',
+    heroName: 'Synthetic',
+    avgHitBase: 100,
+    penetrationPct: 0,
+    fuseSecs: 2,
+    walkSpeedCells: 2,
+    cycleSecs: 2,
+    plantsPerSec: 0.5,
+    blocksPerBomb: 1.5,
+    uptime,
+    heroLuckPct: 0,
+    veiaOuroLevel: 0,
+    fortunaLevel: 0,
+    degenerate: false,
+  });
+
+  it('uptimeSum === 0 ⇒ concurrencyScale === 1 (the 0/0 guard)', () => {
+    const squad = computeSquadFarmFacts([syntheticHero(0), syntheticHero(0)], account);
+    expect(squad.uptimeSum).toBe(0);
+    expect(squad.concurrencyScale).toBe(1);
+  });
+
+  it('Σ uptime === fieldSlots (3 on the fixture) ⇒ concurrencyScale === 1 exactly (boundary)', () => {
+    const squad = computeSquadFarmFacts([syntheticHero(1), syntheticHero(1), syntheticHero(1)], account);
+    expect(squad.uptimeSum).toBe(3);
+    expect(squad.fieldSlots).toBe(3);
+    expect(squad.concurrencyScale).toBe(1);
+  });
+
+  it('Σ uptime > fieldSlots ⇒ concurrencyScale === fieldSlots / uptimeSum (< 1)', () => {
+    const squad = computeSquadFarmFacts([syntheticHero(1), syntheticHero(1), syntheticHero(1), syntheticHero(1)], account);
+    expect(squad.uptimeSum).toBe(4);
+    expect(squad.concurrencyScale).toBeCloseTo(3 / 4, 12);
+  });
+});

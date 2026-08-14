@@ -22,9 +22,9 @@ export function AppShellInner({
   planner: ReactNode;
 }) {
   const pathname = usePathname();
-  const onPhases = pathname.startsWith('/phases');
+  const onFarm = pathname.startsWith('/farm');
   const onTeamPlan = pathname.startsWith('/team-plan');
-  const onSectionPage = onPhases || onTeamPlan;
+  const onSectionPage = onFarm || onTeamPlan;
   const { lang, setLang, t } = useAppLang();
   const importDialogOpen = usePlannerStore((state) => state.importDialogOpen);
   const setImportDialogOpen = usePlannerStore((state) => state.setImportDialogOpen);

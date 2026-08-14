@@ -170,6 +170,31 @@ describe('rank-20 migration (T3, AD-BSP-18, BSPW3-02/-03)', () => {
     expect(cacaHero.effect).toEqual({ kind: 'none' });
     expect(fantasma.effect).toEqual({ kind: 'none' });
   });
+
+  it('veia_ouro and fortuna carry the wiki-corrected figures, stay { kind: none }, and abilityMods is the identity', () => {
+    const veiaOuro = ABILITIES.find((a) => a.id === 'veia_ouro')!;
+    const fortuna = ABILITIES.find((a) => a.id === 'fortuna')!;
+
+    expect(veiaOuro.max).toBe(20);
+    expect(veiaOuro.effect).toEqual({ kind: 'none' });
+    expect(veiaOuro.effectText).toMatch(/\+2% ouro \(próprio\)/);
+    expect(veiaOuro.effectText).toMatch(/\+40% no teto/);
+    expect(veiaOuro.effectText).not.toMatch(/\+4% ouro\/nível/);
+
+    expect(fortuna.max).toBe(20);
+    expect(fortuna.effect).toEqual({ kind: 'none' });
+    expect(fortuna.effectText).toMatch(/\+0\.5% ouro do TIME/);
+    expect(fortuna.effectText).toMatch(/\+10% no teto/);
+    expect(fortuna.effectText).not.toMatch(/\+2% ouro ganho/);
+    expect(fortuna.effectText).not.toMatch(/\+40% no teto/);
+
+    expect(abilityMods({ veia_ouro: 20, fortuna: 20 })).toMatchObject(IDENTITY_MODS);
+  });
+
+  it('olho_lapidador text is unchanged by the gold-ability copy fix', () => {
+    const olhoLapidador = ABILITIES.find((a) => a.id === 'olho_lapidador')!;
+    expect(olhoLapidador.effectText).toBe('+2.5% chance de baú subir raridade/nível (loot)');
+  });
 });
 
 describe('golpe_brutal — critDmgPctOfBase (T1, AD-BSP-32 / BSP-37d)', () => {

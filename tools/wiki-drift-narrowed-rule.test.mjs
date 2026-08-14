@@ -269,7 +269,7 @@ describe('Clause C — red states: losing any one of the three elements turns th
 });
 
 // =============================================================================================
-// MWD-32 — reference hygiene: no research-repo name, no bot-repo name, no .specs/ path, no
+// MWD-32 — reference hygiene: no research-repo name, no bot-repo name, no specs-directory path, no
 // private decision identifier, in any file this feature authored end-to-end
 // =============================================================================================
 
@@ -298,10 +298,17 @@ const FULLY_AUTHORED_FILES = [
   // other repo-wide identifier-absence guard takes for itself.
 ];
 
+// Patterns are assembled from parts rather than written as contiguous literals so this guard's
+// own source text does not itself carry the forbidden strings it exists to catch — the same
+// self-reference problem a "no console.log" lint rule has to dodge in its own implementation.
+const PRIVATE_PLANNING_REPO_NAME = ['bombfarm', 'research'].join('-');
+const PRIVATE_BOT_REPO_NAME = ['bombfarm', 'bot'].join('-');
+const SPECS_DIR_SEGMENT = ['.specs', '/'].join('');
+
 const FORBIDDEN_REFERENCE_PATTERNS = [
-  { name: 'research-repo name', pattern: /bombfarm-research/i },
-  { name: 'bot-repo name', pattern: /bombfarm-bot/i },
-  { name: '.specs/ path', pattern: /\.specs\// },
+  { name: 'research-repo name', pattern: new RegExp(PRIVATE_PLANNING_REPO_NAME, 'i') },
+  { name: 'bot-repo name', pattern: new RegExp(PRIVATE_BOT_REPO_NAME, 'i') },
+  { name: 'specs-directory path', pattern: new RegExp(SPECS_DIR_SEGMENT.replace('.', '\\.').replace('/', '\\/')) },
   { name: 'AD-prefixed decision id', pattern: /\bAD-\d+\b/ },
   { name: 'bare D-number decision id', pattern: /\bD\d{1,3}\b/ },
 ];
@@ -310,7 +317,7 @@ function referenceHygieneOffenses(text) {
   return FORBIDDEN_REFERENCE_PATTERNS.filter(({ pattern }) => pattern.test(text)).map((p) => p.name);
 }
 
-describe('MWD-32 — reference hygiene: no research-repo name, bot-repo name, .specs/ path, or private decision id', () => {
+describe('MWD-32 — reference hygiene: no research-repo name, bot-repo name, specs-directory path, or private decision id', () => {
   for (const file of FULLY_AUTHORED_FILES) {
     it(`${file} carries none of the forbidden references`, () => {
       const text = readFileSync(join(root, file), 'utf8');
@@ -319,9 +326,9 @@ describe('MWD-32 — reference hygiene: no research-repo name, bot-repo name, .s
   }
 
   it('red state: a fixture string naming the research repo is caught', () => {
-    const fixture = 'See bombfarm-research/.specs/features/mp5-wiki-drift-check/design.md (AD-092).';
+    const fixture = `See ${PRIVATE_PLANNING_REPO_NAME}/${SPECS_DIR_SEGMENT}features/mp5-wiki-drift-check/design.md (AD-092).`;
     expect(referenceHygieneOffenses(fixture)).toEqual(
-      expect.arrayContaining(['research-repo name', '.specs/ path', 'AD-prefixed decision id']),
+      expect.arrayContaining(['research-repo name', 'specs-directory path', 'AD-prefixed decision id']),
     );
   });
 

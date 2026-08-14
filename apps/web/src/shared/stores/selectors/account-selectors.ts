@@ -17,6 +17,7 @@ export const selectMitigationPct = (state: PlannerStore) => state.mitigationPct;
 export const selectRankMode = (state: PlannerStore) => state.rankMode;
 export const selectSlots = (state: PlannerStore) => state.slots;
 export const selectTargetProp = (state: PlannerStore) => state.targetProp;
+export const selectMaxPhase = (state: PlannerStore) => state.maxPhase;
 
 /** Nested AccountShared for persistence writes — inverse of hydrateAccount. */
 let accountSharedCache: AccountShared | null = null;
@@ -66,6 +67,7 @@ export function selectAccountShared(state: PlannerStore): AccountShared {
     },
     slots: state.slots,
     forgeFloor: state.forgeFloor,
+    maxPhase: state.maxPhase,
   };
   return accountSharedCache;
 }
@@ -89,6 +91,7 @@ export function selectAccountTuple(state: PlannerStore) {
     state.targetProp,
     state.slots,
     state.forgeFloor,
+    state.maxPhase,
   ] as const;
 }
 

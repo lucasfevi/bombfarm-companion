@@ -47,11 +47,11 @@ export const ABILITIES: AbilityDef[] = [
   { id: 'folego_mineiro', name: 'Fôlego de Mineiro', max: 20, effectText: '−1% energia gasta do TIME/nível', effect: { kind: 'drainPct', perLevel: 1 } },
   { id: 'passagem_bastao', name: 'Passagem de Bastão', max: 20, effectText: '+4% de Dano ao ENTRAR no rodízio (dura 120s)/nível (não modelado)', effect: { kind: 'none' } },
   { id: 'olho_lapidador', name: 'Olho de Lapidador', max: 20, effectText: '+2.5% chance de baú subir raridade/nível (loot)', effect: { kind: 'none' } },
-  { id: 'veia_ouro', name: 'Veia de Ouro', max: 20, effectText: '+4% ouro/nível (loot)', effect: { kind: 'none' } },
+  { id: 'veia_ouro', name: 'Veia de Ouro', max: 20, effectText: '+2% ouro (próprio)/nível, +40% no teto (loot)', effect: { kind: 'none' } },
   { id: 'grito_guerra', name: 'Grito de Guerra', max: 20, effectText: '+1% Ataque do TIME/nível', effect: { kind: 'attackPct', perLevel: 1 } },
   { id: 'golpe_brutal', name: 'Golpe Brutal', max: 20, effectText: '+4% dano crítico/nível (% da base, altera atributos)', effect: { kind: 'critDmgPctOfBase', perLevel: 0.04, onSheet: true } },
   { id: 'matilha', name: 'Matilha', max: 20, effectText: '+2% dano por aliado na rotação/nível, +40% no teto (não modelado)', effect: { kind: 'none' } },
-  { id: 'fortuna', name: 'Fortuna', max: 20, effectText: '+2% ouro ganho/nível, +40% no teto (loot, aura capada)', effect: { kind: 'none' } },
+  { id: 'fortuna', name: 'Fortuna', max: 20, effectText: '+0.5% ouro do TIME/nível, +10% no teto (loot, aura capada)', effect: { kind: 'none' } },
   { id: 'brecha', name: 'Brecha', max: 20, effectText: '+1 Penetração/nível, +20 no teto (herói na ficha: não comprovado)', effect: { kind: 'none' } },
 ];
 

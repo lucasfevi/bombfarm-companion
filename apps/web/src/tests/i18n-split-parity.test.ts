@@ -70,6 +70,9 @@ const KEYSTONE_PROSE_EDITED_PATHS = [
   'bdFormulaDmg',
   'explainSections.0.p.1',
   'explainSections.7.p.0',
+  // Farm Ranking (T1): the Phases page is renamed Farm — navPhases's VALUE
+  // changes to "Farm" in both languages (key name kept, i18n.md rule 3).
+  'navPhases',
 ].sort();
 
 /**
@@ -80,6 +83,65 @@ const KEYSTONE_PROSE_EDITED_PATHS = [
  * excluded from the sorted-key-set comparison (which compares SETS, not diffs).
  */
 const F4_KEYS_ADDED = ['importRejectedUnsupportedShape'] as const;
+
+/**
+ * Farm Ranking T5 — the Farm Ranking board's column headers, genuinely new keys with no
+ * counterpart in the frozen fixture (`farmRanking*` prefix, `phases` namespace, deliberately).
+ * Same shape as `F4_KEYS_ADDED` above; kept as its own named list so a reviewer can
+ * see which feature added which keys.
+ */
+const FARM_RANKING_KEYS_ADDED = [
+  'farmRankingColPhase',
+  'farmRankingColMitigation',
+  'farmRankingColGold',
+  'farmRankingColChests',
+  'farmRankingColKeys',
+  'farmRankingColGems',
+  'farmRankingColTimePieces',
+  'farmRankingColXp',
+  'farmRankingColItemLevel',
+  'farmRankingColClearTime',
+  'farmRankingColOneShot',
+  'farmRankingColJaula',
+  'farmRankingColInfeasible',
+  'farmRankingTitle',
+  'farmRankingCaption',
+  'farmRankingEmptyNoRosterTitle',
+  'farmRankingEmptyNoRosterDesc',
+  'farmRankingEmptyNoHeroesTitle',
+  'farmRankingEmptyNoHeroesDesc',
+  'farmRankingEmptyComputeFailedTitle',
+  'farmRankingEmptyComputeFailedDesc',
+  'farmRankingEmptyNoMatchesTitle',
+  'farmRankingEmptyNoMatchesDesc',
+  'farmRankingFilterUnlockedLabel',
+  'farmRankingFilterUnlockedDisabledReason',
+  'farmRankingFilterFeasibleLabel',
+  'farmRankingFilterAtoLabel',
+  'farmRankingFilterAtoAll',
+  'farmRankingFilterGateLabel',
+  'farmRankingFilterGateAll',
+  'farmRankingFilterGateOnly',
+  'farmRankingFilterGateNonGate',
+  'farmRankingPoolLabel',
+  'farmRankingPoolHeroAria',
+  'farmRankingReturnBonusLabel',
+  'farmRankingReturnBonusOff',
+  'farmRankingReturnBonusOn',
+  'farmRankingReturnBonusVip',
+  'farmRankingGateBadge',
+  'farmRankingPushTargetBadge',
+  'farmRankingInfeasibleBadge',
+  'farmRankingKeysConsumed',
+  'farmRankingOneShotYes',
+  'farmRankingOneShotNo',
+  'farmRankingOneShotTooltipYes',
+  'farmRankingOneShotTooltipNo',
+  'farmRankingSortedBy',
+  'farmRankingSortAsc',
+  'farmRankingSortDesc',
+  'farmRankingCurrentPhase',
+] as const;
 
 function diffLeafPaths(a: unknown, b: unknown, path: string[] = [], out: string[] = []): string[] {
   if (a === b) return out;
@@ -121,14 +183,18 @@ describe('i18n split parity', () => {
   // *minus* that enumerated list (AD-081) — every unlisted drift stays fatal in both
   // directions, and the list itself cannot silently grow or shrink (see the three
   // assertions below).
-  it('STRINGS.en differs from the frozen fixture (minus removed keys) at exactly the enumerated prose edits plus F4\'s new keys', () => {
+  it('STRINGS.en differs from the frozen fixture (minus removed keys) at exactly the enumerated prose edits plus F4\'s and Farm Ranking\'s new keys', () => {
     const diffs = diffLeafPaths(STRINGS.en, omitKeys(fixture.en, KEYSTONE_KEYS_REMOVED)).sort();
-    expect(diffs).toEqual([...KEYSTONE_PROSE_EDITED_PATHS, ...F4_KEYS_ADDED].sort());
+    expect(diffs).toEqual(
+      [...KEYSTONE_PROSE_EDITED_PATHS, ...F4_KEYS_ADDED, ...FARM_RANKING_KEYS_ADDED].sort(),
+    );
   });
 
-  it('STRINGS.pt differs from the frozen fixture (minus removed keys) at exactly the enumerated prose edits plus F4\'s new keys', () => {
+  it('STRINGS.pt differs from the frozen fixture (minus removed keys) at exactly the enumerated prose edits plus F4\'s and Farm Ranking\'s new keys', () => {
     const diffs = diffLeafPaths(STRINGS.pt, omitKeys(fixture.pt, KEYSTONE_KEYS_REMOVED)).sort();
-    expect(diffs).toEqual([...KEYSTONE_PROSE_EDITED_PATHS, ...F4_KEYS_ADDED].sort());
+    expect(diffs).toEqual(
+      [...KEYSTONE_PROSE_EDITED_PATHS, ...F4_KEYS_ADDED, ...FARM_RANKING_KEYS_ADDED].sort(),
+    );
   });
 
   it('namespace key sets are pairwise disjoint', () => {
@@ -142,9 +208,13 @@ describe('i18n split parity', () => {
     }
   });
 
-  it('sorted key-name list is unchanged vs fixture minus the removed keystone keys, plus F4\'s new keys', () => {
+  it('sorted key-name list is unchanged vs fixture minus the removed keystone keys, plus F4\'s and Farm Ranking\'s new keys', () => {
     const fromSplit = Object.keys(STRINGS.en).sort();
-    const fromFixture = [...Object.keys(omitKeys(fixture.en, KEYSTONE_KEYS_REMOVED)), ...F4_KEYS_ADDED].sort();
+    const fromFixture = [
+      ...Object.keys(omitKeys(fixture.en, KEYSTONE_KEYS_REMOVED)),
+      ...F4_KEYS_ADDED,
+      ...FARM_RANKING_KEYS_ADDED,
+    ].sort();
     expect(fromSplit).toEqual(fromFixture);
   });
 
@@ -176,6 +246,16 @@ describe('i18n split parity', () => {
     }
   });
 
+  it('FARM_RANKING_KEYS_ADDED has exactly 50 entries, present in STRINGS but absent from the frozen fixture, both languages', () => {
+    expect(FARM_RANKING_KEYS_ADDED.length).toBe(50);
+    for (const key of FARM_RANKING_KEYS_ADDED) {
+      expect(key in fixture.en, `${key} unexpectedly present in fixture.en`).toBe(false);
+      expect(key in fixture.pt, `${key} unexpectedly present in fixture.pt`).toBe(false);
+      expect(key in STRINGS.en, `${key} missing from STRINGS.en`).toBe(true);
+      expect(key in STRINGS.pt, `${key} missing from STRINGS.pt`).toBe(true);
+    }
+  });
+
   it('sub() behaves identically on existing fixtures', () => {
     expect(sub('a {x}', { x: 1 })).toBe('a 1');
     expect(sub('Need {pct}% pen', { pct: 12 })).toBe('Need 12% pen');
@@ -198,5 +278,33 @@ describe('i18n split parity', () => {
     expect(typeof saveLang).toBe('function');
     const section: ExplainSection = { h: 'x', p: ['y'] };
     expect(section.h).toBe('x');
+  });
+});
+
+/**
+ * EN and PT key sets are structurally equal (compile-time via `pt: typeof en`,
+ * asserted again here at runtime) and no PT value for a Farm Ranking key is byte-identical to
+ * its EN counterpart, except an explicit allowlist. `navPhases` ("Farm") is the
+ * design's own allowlisted collision. `farmRankingReturnBonusVip` ("VIP") is added on the same
+ * rationale — a universal loanword used unchanged in Brazilian Portuguese gaming UI, not a
+ * missed translation.
+ */
+describe('Farm Ranking i18n parity', () => {
+  const EN_PT_COLLISION_ALLOWLIST = new Set(['navPhases', 'farmRankingReturnBonusVip']);
+
+  it('EN and PT key sets are equal at runtime', () => {
+    expect(Object.keys(STRINGS.pt).sort()).toEqual(Object.keys(STRINGS.en).sort());
+  });
+
+  it('no farmRanking* PT value is byte-identical to its EN counterpart, except the allowlist', () => {
+    const leaks: string[] = [];
+    for (const key of Object.keys(STRINGS.en)) {
+      if (!key.startsWith('farmRanking') && key !== 'navPhases') continue;
+      if (EN_PT_COLLISION_ALLOWLIST.has(key)) continue;
+      const enValue = STRINGS.en[key as keyof Strings];
+      const ptValue = STRINGS.pt[key as keyof Strings];
+      if (typeof enValue === 'string' && enValue === ptValue) leaks.push(key);
+    }
+    expect(leaks, `EN string left untranslated in PT: ${leaks.join(', ')}`).toEqual([]);
   });
 });

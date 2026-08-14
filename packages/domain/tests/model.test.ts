@@ -22,6 +22,8 @@ import {
   attackPointGain,
   STAT_CAPS,
   critMilestones,
+  GRID_SPEED_COEF,
+  EFF_IA,
   type HeroSheet,
   type Context,
   type AbilityMods,
@@ -48,6 +50,13 @@ const sampleHero = (): HeroSheet => ({
   cdr: 10,
   attackPerPoint: POINT_GAIN.attackNative,
   energyPerPoint: POINT_GAIN.energyNative,
+});
+
+describe('GRID_SPEED_COEF / EFF_IA', () => {
+  it('are importable from @bombfarm/domain/model and equal their wiki-sourced values', () => {
+    expect(GRID_SPEED_COEF).toBe(0.0386);
+    expect(EFF_IA).toBe(0.9);
+  });
 });
 
 describe('fuseSeconds', () => {

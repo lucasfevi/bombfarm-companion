@@ -10,7 +10,7 @@ import { REFERRAL_CODE } from '@/shared/referral';
 import { useReferralCopy } from './use-referral-copy';
 import { NavLink } from './site-nav-link';
 
-export type SiteSection = 'planner' | 'phases' | 'teamPlan';
+export type SiteSection = 'planner' | 'farm' | 'teamPlan';
 
 export function SiteHeader({
   t,
@@ -30,7 +30,7 @@ export function SiteHeader({
   const pathname = usePathname();
   const { codeRef, copy: copyReferral } = useReferralCopy(t);
   const plannerActive = pathname === '/';
-  const phasesActive = pathname.startsWith('/phases');
+  const farmActive = pathname.startsWith('/farm');
   const teamPlanActive = pathname.startsWith('/team-plan');
 
   return (
@@ -58,7 +58,7 @@ export function SiteHeader({
             <NavLink href="/" active={plannerActive}>
               {t.navPlanner}
             </NavLink>
-            <NavLink href="/phases" active={phasesActive}>
+            <NavLink href="/farm" active={farmActive}>
               {t.navPhases}
             </NavLink>
             <NavLink href="/team-plan" active={teamPlanActive}>

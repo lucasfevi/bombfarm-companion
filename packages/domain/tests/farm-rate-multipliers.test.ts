@@ -1,0 +1,246 @@
+/**
+ * Multiplier isolation.
+ *
+ * Seven cases, each a single-variable delta against a shared baseline, each asserting both the
+ * column that must move AND `toBe`-level equality on the columns that must not. Proves the two
+ * do-not-"fix" asymmetries from `design.md` §4.2/§4.4: Sorte moves chest/key/gem/time and never
+ * gold/xp; the gold chain (team_coin/fortuna/veia_ouro) moves gold and never chest/key/gem/xp.
+ */
+import { describe, expect, it } from 'vitest';
+import {
+  computeHeroFarmFacts,
+  computeSquadFarmFacts,
+  computeFarmRateRow,
+  FORTUNA_AURA_CAP,
+  type HeroFarmFacts,
+  type SquadFarmFacts,
+} from '@bombfarm/domain/farm-rate';
+import { wikiPhaseLine, WIKI_PROPS, LOOT_ABILITY_VALUES } from '@bombfarm/domain/phase-wiki';
+import { hitsToKill, propHp } from '@bombfarm/domain/phases';
+import { mitigationFactor, EFF_IA } from '@bombfarm/domain/model';
+import type { AccountShared, HeroRecord } from '@bombfarm/domain/shims/storage';
+import { loadFarmRateFixture, withAbilityLevels } from './helpers/farm-rate-fixtures';
+
+const { heroes, account } = loadFarmRateFixture();
+
+// --- Local, independent re-derivation of one hero's prop-destruction share at a phase ----------
+// Used only to hand-verify the veia_ouro delta. Never imported from farm-rate.ts.
+const PROP_WEIGHT_TOTAL = WIKI_PROPS.reduce((sum, prop) => sum + prop.weight, 0);
+function handEHtk(stoneHp: number, avgHit: number): number {
+  return WIKI_PROPS.reduce(
+    (sum, prop) => sum + (prop.weight / PROP_WEIGHT_TOTAL) * hitsToKill(avgHit, propHp(stoneHp, prop.hpMult)),
+    0,
+  );
+}
+function heroShare(heroFacts: readonly HeroFarmFacts[], targetId: string, line: { hp: number; mitig: number }): number {
+  const terms = heroFacts.map((hero) => {
+    const avgHit = hero.avgHitBase * mitigationFactor(line.mitig, hero.penetrationPct);
+    const eHtk = handEHtk(line.hp, avgHit);
+    const hps = hero.plantsPerSec * hero.blocksPerBomb * EFF_IA;
+    return { id: hero.heroId, term: (hps * hero.uptime) / eHtk };
+  });
+  const denom = terms.reduce((sum, t) => sum + t.term, 0);
+  const targetTerm = terms.find((t) => t.id === targetId)!.term;
+  return denom > 0 ? targetTerm / denom : 0;
+}
+
+function syntheticHero(overrides: Partial<HeroFarmFacts> & { heroId: string }): HeroFarmFacts {
+  return {
+    heroName: overrides.heroId,
+    avgHitBase: 100,
+    penetrationPct: 0,
+    fuseSecs: 2,
+    walkSpeedCells: 2,
+    cycleSecs: 2,
+    plantsPerSec: 0.5,
+    blocksPerBomb: 1.5,
+    uptime: 1,
+    heroLuckPct: 0,
+    veiaOuroLevel: 0,
+    fortunaLevel: 0,
+    degenerate: false,
+    ...overrides,
+  };
+}
+
+describe('Sorte multiplies chest/key/gem/time, never gold/xp', () => {
+  it('raising tree.luckFlatPct scales the four drop rates by (1+Sorte\')/(1+Sorte); gold/xp byte-identical', () => {
+    const heroFacts = computeHeroFarmFacts({ heroes, account });
+    const baseSquad = computeSquadFarmFacts(heroFacts, account);
+    const raisedAccount: AccountShared = {
+      ...account,
+      tree: { ...account.tree, luckFlatPct: (account.tree.luckFlatPct ?? 0) + 10 },
+    };
+    const raisedSquad = computeSquadFarmFacts(heroFacts, raisedAccount);
+    expect(raisedSquad.sorteFraction).toBeGreaterThan(baseSquad.sorteFraction);
+
+    const ratio = (1 + raisedSquad.sorteFraction) / (1 + baseSquad.sorteFraction);
+
+    const baseNonGate = computeFarmRateRow(42, baseSquad)!;
+    const raisedNonGate = computeFarmRateRow(42, raisedSquad)!;
+    expect(raisedNonGate.chestsPerHour / baseNonGate.chestsPerHour).toBeCloseTo(ratio, 9);
+    expect(raisedNonGate.keysPerHour / baseNonGate.keysPerHour).toBeCloseTo(ratio, 9);
+    expect(raisedNonGate.goldPerHour).toBe(baseNonGate.goldPerHour);
+    expect(raisedNonGate.xpPerHour).toBe(baseNonGate.xpPerHour);
+
+    const baseGate = computeFarmRateRow(10, baseSquad)!;
+    const raisedGate = computeFarmRateRow(10, raisedSquad)!;
+    expect(raisedGate.gemsPerHour / baseGate.gemsPerHour).toBeCloseTo(ratio, 9);
+    expect(raisedGate.timePiecesPerHour / baseGate.timePiecesPerHour).toBeCloseTo(ratio, 9);
+    expect(raisedGate.goldPerHour).toBe(baseGate.goldPerHour);
+    expect(raisedGate.xpPerHour).toBe(baseGate.xpPerHour);
+  });
+
+  it('raising one hero\'s luck (via birth.luck) has the same shape', () => {
+    const jon = heroes.find((h) => h.name === 'Jon')!;
+    const luckyJon: HeroRecord = { ...jon, birth: { ...jon.birth!, luck: jon.birth!.luck + 50 } };
+    const heroesRaised = heroes.map((h) => (h.id === jon.id ? luckyJon : h));
+
+    const baseFacts = computeHeroFarmFacts({ heroes, account });
+    const raisedFacts = computeHeroFarmFacts({ heroes: heroesRaised, account });
+    const baseSquad = computeSquadFarmFacts(baseFacts, account);
+    const raisedSquad = computeSquadFarmFacts(raisedFacts, account);
+    expect(raisedSquad.sorteFraction).toBeGreaterThan(baseSquad.sorteFraction);
+
+    const ratio = (1 + raisedSquad.sorteFraction) / (1 + baseSquad.sorteFraction);
+    const baseRow = computeFarmRateRow(42, baseSquad)!;
+    const raisedRow = computeFarmRateRow(42, raisedSquad)!;
+    expect(raisedRow.chestsPerHour / baseRow.chestsPerHour).toBeCloseTo(ratio, 9);
+    // birth.luck touches no other stat — avgHitBase/propsPerHour are unaffected, so gold/xp
+    // are exactly, not just approximately, unchanged.
+    expect(raisedRow.goldPerHour).toBe(baseRow.goldPerHour);
+    expect(raisedRow.xpPerHour).toBe(baseRow.xpPerHour);
+  });
+});
+
+describe('Gold tracks team_coin / fortuna / veia_ouro, never Sorte', () => {
+  it('raising tree.teamCoinPct scales goldPerHour by the teamCoinMult ratio; drops and xp byte-identical', () => {
+    const heroFacts = computeHeroFarmFacts({ heroes, account });
+    const baseSquad = computeSquadFarmFacts(heroFacts, account);
+    const raisedAccount: AccountShared = {
+      ...account,
+      tree: { ...account.tree, teamCoinPct: (account.tree.teamCoinPct ?? 0) + 20 },
+    };
+    const raisedSquad = computeSquadFarmFacts(heroFacts, raisedAccount);
+
+    const baseRow = computeFarmRateRow(42, baseSquad)!;
+    const raisedRow = computeFarmRateRow(42, raisedSquad)!;
+    const ratio = raisedSquad.teamCoinMult / baseSquad.teamCoinMult;
+    expect(raisedRow.goldPerHour / baseRow.goldPerHour).toBeCloseTo(ratio, 9);
+
+    expect(raisedRow.chestsPerHour).toBe(baseRow.chestsPerHour);
+    expect(raisedRow.keysPerHour).toBe(baseRow.keysPerHour);
+    expect(raisedRow.xpPerHour).toBe(baseRow.xpPerHour);
+  });
+
+  it("raising one hero's veia_ouro level raises goldPerHour by that hero's share × 0.02 × Δlevel — not the full roster's worth; drops/xp byte-identical", () => {
+    const jon = heroes.find((h) => h.name === 'Jon')!;
+    const delta = 10;
+    const boostedJon = withAbilityLevels(jon, { veia_ouro: delta });
+    const heroesBoosted = heroes.map((h) => (h.id === jon.id ? boostedJon : h));
+
+    const baseFacts = computeHeroFarmFacts({ heroes, account });
+    const boostedFacts = computeHeroFarmFacts({ heroes: heroesBoosted, account });
+    const baseSquad = computeSquadFarmFacts(baseFacts, account);
+    const boostedSquad = computeSquadFarmFacts(boostedFacts, account);
+
+    const baseRow = computeFarmRateRow(42, baseSquad)!;
+    const boostedRow = computeFarmRateRow(42, boostedSquad)!;
+
+    const line = wikiPhaseLine(42)!;
+    const share = heroShare(baseFacts, jon.id, line);
+    // The fixture carries no veia_ouro anywhere (design.md §2.5), so goldSelfMix_base === 1
+    // exactly (Σ share_h × 1 = Σ share_h = 1) — baseRow.goldPerHour already IS
+    // propsPerHour × E_gold × goldMult, so the delta reduces to this one clean expression.
+    const expectedGold = baseRow.goldPerHour * (1 + share * LOOT_ABILITY_VALUES.veia_ouro.perLevel * delta);
+    expect(boostedRow.goldPerHour).toBeCloseTo(expectedGold, 6);
+
+    // Distinguishes "this hero's share" from "the full roster's worth" (share < 1 on a 5-hero squad).
+    const fullRosterGold = baseRow.goldPerHour * (1 + LOOT_ABILITY_VALUES.veia_ouro.perLevel * delta);
+    expect(boostedRow.goldPerHour).toBeLessThan(fullRosterGold);
+    expect(share).toBeGreaterThan(0);
+    expect(share).toBeLessThan(1);
+
+    expect(boostedRow.propsPerHour).toBe(baseRow.propsPerHour);
+    expect(boostedRow.chestsPerHour).toBe(baseRow.chestsPerHour);
+    expect(boostedRow.keysPerHour).toBe(baseRow.keysPerHour);
+    expect(boostedRow.xpPerHour).toBe(baseRow.xpPerHour);
+  });
+
+  it('five heroes maxed on fortuna (full uptime) hit FORTUNA_AURA_CAP exactly (0.10); a sixth maxed hero leaves goldPerHour byte-identical', () => {
+    // A large `slots` isolates this case to the aura cap alone: with the fixture's own 3 slots,
+    // ADDING a 6th hero's uptime would also move `concurrencyScale` (a real, separate effect —
+    // more bodies competing for the same field slots), which would confound the "cap binds"
+    // claim with a "field is more crowded" effect. Un-crowding the field removes that confound.
+    const uncrowdedAccount: AccountShared = { ...account, slots: 100 };
+
+    const fiveMaxed: HeroFarmFacts[] = Array.from({ length: 5 }, (_, i) =>
+      syntheticHero({ heroId: `maxed-${i}`, fortunaLevel: 20, uptime: 1 }),
+    );
+    const squadFive: SquadFarmFacts = computeSquadFarmFacts(fiveMaxed, uncrowdedAccount);
+    expect(squadFive.concurrencyScale).toBe(1);
+    expect(squadFive.fortunaAura).toBe(FORTUNA_AURA_CAP);
+    expect(squadFive.fortunaAura).toBe(0.1);
+
+    // The sixth hero is fully degenerate for throughput (avgHitBase 0) so it contributes ZERO
+    // to propsPerHour/goldSelfMix — isolating the assertion to "the cap does not move further".
+    const sixMaxed: HeroFarmFacts[] = [
+      ...fiveMaxed,
+      syntheticHero({ heroId: 'maxed-5', fortunaLevel: 20, uptime: 1, avgHitBase: 0, degenerate: true }),
+    ];
+    const squadSix: SquadFarmFacts = computeSquadFarmFacts(sixMaxed, uncrowdedAccount);
+    expect(squadSix.concurrencyScale).toBe(1);
+    expect(squadSix.fortunaAura).toBe(FORTUNA_AURA_CAP);
+
+    const rowFive = computeFarmRateRow(42, squadFive)!;
+    const rowSix = computeFarmRateRow(42, squadSix)!;
+    expect(rowSix.goldPerHour).toBe(rowFive.goldPerHour);
+    expect(rowSix.propsPerHour).toBe(rowFive.propsPerHour);
+  });
+
+  it('fortuna below the cap: fortunaAura === Σ uptime_h × 0.005 × level_h exactly (unnormalized sum)', () => {
+    const belowCap: HeroFarmFacts[] = [
+      syntheticHero({ heroId: 'a', fortunaLevel: 5, uptime: 0.5 }),
+      syntheticHero({ heroId: 'b', fortunaLevel: 3, uptime: 0.2 }),
+    ];
+    const squad = computeSquadFarmFacts(belowCap, account);
+    const expected = 0.5 * LOOT_ABILITY_VALUES.fortuna.perLevel * 5 + 0.2 * LOOT_ABILITY_VALUES.fortuna.perLevel * 3;
+    expect(expected).toBeLessThan(FORTUNA_AURA_CAP); // sanity: genuinely below the cap
+    expect(squad.fortunaAura).toBe(expected);
+  });
+});
+
+describe('Return bonus multiplies gold/XP/drops only — structure is untouched', () => {
+  it("'off' → 'on' → 'vip' scales gold, xp and the four drop rates by exactly 1 / 1.4 / 1.8; structural fields are byte-identical", () => {
+    const heroFacts = computeHeroFarmFacts({ heroes, account });
+    const squad = computeSquadFarmFacts(heroFacts, account);
+
+    const off = computeFarmRateRow(10, squad, { returnBonus: 'off' })!; // gate phase: exercises all 4 drops
+    const on = computeFarmRateRow(10, squad, { returnBonus: 'on' })!;
+    const vip = computeFarmRateRow(10, squad, { returnBonus: 'vip' })!;
+
+    for (const field of ['goldPerHour', 'chestsPerHour', 'gemsPerHour', 'timePiecesPerHour', 'xpPerHour'] as const) {
+      expect(on[field] / off[field]).toBeCloseTo(1.4, 9);
+      expect(vip[field] / off[field]).toBeCloseTo(1.8, 9);
+    }
+
+    for (const field of ['propsPerHour', 'clearSecs', 'cyclesPerHour', 'expectedHtk', 'oneShot', 'infeasible'] as const) {
+      expect(on[field]).toBe(off[field]);
+      expect(vip[field]).toBe(off[field]);
+    }
+
+    // The bonus multiplies gains, not entry costs — a gate row's negative keysPerHour is
+    // unchanged across all three modes.
+    expect(off.keysPerHour).toBeLessThan(0);
+    expect(on.keysPerHour).toBe(off.keysPerHour);
+    expect(vip.keysPerHour).toBe(off.keysPerHour);
+  });
+
+  it("non-gate keysPerHour (a gain) DOES scale with the bonus, unlike the gate's cost", () => {
+    const heroFacts = computeHeroFarmFacts({ heroes, account });
+    const squad = computeSquadFarmFacts(heroFacts, account);
+    const off = computeFarmRateRow(42, squad, { returnBonus: 'off' })!;
+    const on = computeFarmRateRow(42, squad, { returnBonus: 'on' })!;
+    expect(on.keysPerHour / off.keysPerHour).toBeCloseTo(1.4, 9);
+  });
+});

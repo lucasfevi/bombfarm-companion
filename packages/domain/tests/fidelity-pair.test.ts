@@ -23,10 +23,10 @@ interface FidelityPairManifestForTest {
 const STAMP: FrameStamp = { capturedAt: '2026-08-13T14:26:40.000Z' };
 
 // MP5 F1 (MFR-13): this file must carry no reference to the sibling fixture corpus directory.
-// The unscrubbed source export lives only in bombfarm-research and must not be committed to
+// The unscrubbed source export lives only outside this repo and must not be committed to
 // this public repo, so the two assertions that used to diff export-capture.json against a
 // same-account copy of the pre-scrub source are replaced by the self-contained conjunction
-// proof design.md §4.3 describes: idempotence under scrubPersonalFields, the raw-text
+// proof this file's design describes: idempotence under scrubPersonalFields, the raw-text
 // field-name check (below), the exact top-level key set, and the retained raw account fields.
 // The source SHA-256 is recorded by hand in the provenance README beside the fixture corpus,
 // for anyone who wants to re-derive and diff outside the repo.
