@@ -1,8 +1,10 @@
 import { POINT_GAIN, STAT_CAPS } from './rarity-constants';
 import type { Context, HeroSheet } from './types';
 
-const GRID_SPEED_COEF = 0.0386;
-const EFF_IA = 0.9;
+/** `velocidade_grid = velocidade × 0.0386` — wiki Combate grid-speed coefficient. */
+export const GRID_SPEED_COEF = 0.0386;
+/** `eficiência_IA = 0.9` — wiki Combate AI-efficiency factor. */
+export const EFF_IA = 0.9;
 
 export function staminaFactor(energy: number): number {
   return 1 - 0.5 / (1.3 + 0.003 * energy);
