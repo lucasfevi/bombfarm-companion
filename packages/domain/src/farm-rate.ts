@@ -1,0 +1,229 @@
+/**
+ * Farm-rate estimation for Phase Farm Ranking (PFR item B — `spec.md` `R-B1`…`R-B19`,
+ * `design.md`). Turns a roster + account into gold/hr, chest/hr, key/hr (signed), gem/hr,
+ * time-piece/hr, XP/hr, clear time, one-shot and jaula facts for all 600 wiki phases.
+ *
+ * ESTIMATOR-ONLY BOUNDARY (`AD-PFR-03`): this module ships its own cadence model
+ * (`cycle = max(fuse, E_D_CELLS / w)`) and never touches the advisor's serial model —
+ * `farm-context.ts`'s `FARM_CYCLE_MODEL` / `FARM_WALK_DELAY_SEC`, or `model/combat.ts`'s
+ * `bombsPerSecond` / `sustainedDps` / `activeDps`. Those keep their exact current behaviour;
+ * nothing here reads or writes them, and this module is the only one that computes cadence this
+ * way.
+ *
+ * GATE ATTACK MULT OMITTED (`design.md` Out of Scope): gate rows use the same `avgHitBase` as
+ * every other row — `Contra o Relógio`'s gate-only attack bonus is deliberately NOT applied,
+ * because `AD-PFR-15`'s "zero pipeline calls per phase" guarantee depends on mitigation being the
+ * ONLY phase-dependent damage term. Applying `gateAttackMult` here would make gate-ness a second
+ * one. Cost: gate `clearSecs` runs conservative (slightly slow) for a roster carrying that
+ * ability — a follow-up if ever wanted, not a bug.
+ *
+ * SORTE-AVERAGE VS FORTUNA-SUM ASYMMETRY — DO NOT "FIX": Sorte (`SquadFarmFacts.sorteFraction`)
+ * is a normalized, uptime-weighted AVERAGE of hero-only luck plus the tree's flat share
+ * (`AD-PFR-06` — "the average of on-field heroes' luck"). The Fortuna aura
+ * (`SquadFarmFacts.fortunaAura`) is an UNNORMALIZED uptime-weighted SUM (`AD-PFR-07` — an aura is
+ * a presence effect that stacks across heroes, not an average). These are deliberately different
+ * shapes. `OQ-PFR-3` tracks the live confirmation of the Fortuna-sum's cap order (cap-after-sum,
+ * the conservative choice shipped here).
+ */
+import { fuseSeconds, GRID_SPEED_COEF, ABILITY_LEVEL_MAX } from './model';
+import { pipelineForHero } from './roster-dps';
+import { DEFAULT_CASA_SLOTS } from './casa-slots';
+import { RETURN_BONUS_ADD, RETURN_BONUS_ADD_VIP, LOOT_ABILITY_VALUES } from './phase-wiki';
+import type { HeroRecord, AccountShared } from './shims/storage';
+
+/**
+ * Expected plant-to-plant displacement, in grid cells, for the walk-bound cadence term
+ * `cycle = max(fuse, E_D_CELLS / w)` (`AD-PFR-03`).
+ *
+ * PROVISIONAL. bombfarm-research `docs/COMBAT_THROUGHPUT.md` measures direct plant-to-plant
+ * Manhattan displacement at 4.34 cells (median hop 3.0) over 2,144 attributed plants, with a
+ * per-hero spread of 4.04–5.05, and explicitly directs consumers to the direct measurement rather
+ * than the regression slopes (3.79 / 4.00, which the D–w correlation inflates). The PRD pins 4.5
+ * as the shipped value; it sits above every direct route, so this model runs slightly pessimistic
+ * on walk-bound rosters.
+ *
+ * Resolved by `OQ-PFR-1` (fuse-bound capture with only low-CDR heroes fielded). This constant is
+ * the single line to change when it lands — nothing else in the model encodes a cell distance.
+ */
+export const E_D_CELLS = 4.5;
+
+/**
+ * Fortuna's aura ceiling — the ability's own at-max value (`AD-PFR-07`), derived from item A's
+ * bundle rather than typed a second time: `LOOT_ABILITY_VALUES.fortuna.perLevel × .max`.
+ */
+export const FORTUNA_AURA_CAP: number =
+  LOOT_ABILITY_VALUES.fortuna.perLevel * LOOT_ABILITY_VALUES.fortuna.max;
+
+/** Off / standard / VIP Return Bonus (`AD-PFR-09`). Default `'off'`. */
+export type ReturnBonusMode = 'off' | 'on' | 'vip';
+
+/**
+ * `1 | 1 + RETURN_BONUS_ADD | 1 + RETURN_BONUS_ADD_VIP`. Total function — an unrecognized mode
+ * (should TypeScript be bypassed at a call site) falls back to `1` rather than throwing.
+ */
+export function returnBonusMultiplier(mode: ReturnBonusMode): number {
+  if (mode === 'on') return 1 + RETURN_BONUS_ADD;
+  if (mode === 'vip') return 1 + RETURN_BONUS_ADD_VIP;
+  return 1;
+}
+
+// ---------------------------------------------------------------------------------------------
+// Per-hero facts (design.md §3.2, §4.1)
+// ---------------------------------------------------------------------------------------------
+
+export type HeroFarmFacts = {
+  heroId: string;
+  heroName: string;
+  /** Crit-averaged hit BEFORE phase mitigation; already includes dmgMult (2nd blast, execute). */
+  avgHitBase: number;
+  /** Effective sheet penetration, PERCENT, unclamped — `mitigationFactor` applies the clamp. */
+  penetrationPct: number;
+  /** `fuseSeconds(effective.cdr)`, seconds. */
+  fuseSecs: number;
+  /** Grid walk speed `w = effective.speed × GRID_SPEED_COEF`, CELLS PER SECOND. */
+  walkSpeedCells: number;
+  /** `max(fuseSecs, E_D_CELLS / w)`, seconds. `Infinity` when `w <= 0`. */
+  cycleSecs: number;
+  /** `1 / cycleSecs`, plants per second. `0` when `cycleSecs` is not finite and positive. */
+  plantsPerSec: number;
+  /** `1 + 0.5 × context.blastRange`, blocks hit per bomb. Note: `blastRange` is already `1 + rangeCells`. */
+  blocksPerBomb: number;
+  /** House duty cycle as a FRACTION 0..1 (the pipeline reports this as a percent). */
+  uptime: number;
+  /** Hero-only Sorte in PERCENTAGE POINTS — the tree's flat share peeled out (`AD-PFR-06`). */
+  heroLuckPct: number;
+  /** `abilities.veia_ouro`, clamped to `[0, ABILITY_LEVEL_MAX]`. */
+  veiaOuroLevel: number;
+  /** `abilities.fortuna`, clamped to `[0, ABILITY_LEVEL_MAX]`. */
+  fortunaLevel: number;
+  /** True when this hero contributes no throughput: `avgHitBase <= 0` or `plantsPerSec <= 0`. */
+  degenerate: boolean;
+};
+
+export type FarmFactsInput = {
+  heroes: readonly HeroRecord[];
+  account: AccountShared;
+  /**
+   * The rotation pool (`AD-PFR-05`). `null`/omitted ⇒ every hero with `battleAllowed !== false`.
+   * An explicit `[]` means an EMPTY pool, not "use the default". Ids not present in `heroes` are
+   * ignored (intersection semantics).
+   */
+  enabledHeroIds?: readonly string[] | null;
+};
+
+function clampAbilityLevel(level: number): number {
+  if (!Number.isFinite(level)) return 0;
+  return Math.max(0, Math.min(ABILITY_LEVEL_MAX, level));
+}
+
+function resolveEnabledHeroes(
+  heroes: readonly HeroRecord[],
+  enabledHeroIds: readonly string[] | null | undefined,
+): readonly HeroRecord[] {
+  if (enabledHeroIds == null) return heroes.filter((hero) => hero.battleAllowed !== false);
+  const idSet = new Set(enabledHeroIds);
+  return heroes.filter((hero) => idSet.has(hero.id));
+}
+
+/** One `pipelineForHero` call per enabled hero. Order follows `heroes` (`AD-PFR-15`). */
+export function computeHeroFarmFacts(input: FarmFactsInput): HeroFarmFacts[] {
+  const { heroes, account, enabledHeroIds } = input;
+  const enabledHeroes = resolveEnabledHeroes(heroes, enabledHeroIds);
+  const treeLuckFlatPct = account.tree.luckFlatPct ?? 0;
+
+  return enabledHeroes.map((hero) => {
+    // AD-032: the sole HeroRecord entry to the pipeline. phase=1 (not null) + mitigationPct=0
+    // is deliberate — `effectiveMitigationPct` only honors mitigationPct=0 when phase is a
+    // positive number; with `null` it substitutes phase 1's wiki mitigation instead (design.md §0).
+    const pipeline = pipelineForHero(hero, account, 1, 0);
+
+    const avgHitBase = pipeline.avgHit;
+    const penetrationPct = pipeline.effective.penetration;
+    const fuseSecs = fuseSeconds(pipeline.effective.cdr);
+    const walkSpeedCells = pipeline.effective.speed * GRID_SPEED_COEF;
+    const cycleSecs =
+      walkSpeedCells > 0 && Number.isFinite(walkSpeedCells)
+        ? Math.max(fuseSecs, E_D_CELLS / walkSpeedCells)
+        : Infinity;
+    const plantsPerSec = Number.isFinite(cycleSecs) && cycleSecs > 0 ? 1 / cycleSecs : 0;
+    const blocksPerBomb = 1 + 0.5 * pipeline.context.blastRange;
+    const uptime = pipeline.uptime / 100;
+    const heroLuckPct = Math.max(0, pipeline.adjusted.luck - treeLuckFlatPct);
+    const veiaOuroLevel = clampAbilityLevel(hero.abilities.veia_ouro ?? 0);
+    const fortunaLevel = clampAbilityLevel(hero.abilities.fortuna ?? 0);
+    const degenerate = !(avgHitBase > 0) || !(plantsPerSec > 0);
+
+    const facts: HeroFarmFacts = {
+      heroId: hero.id,
+      heroName: hero.name,
+      avgHitBase,
+      penetrationPct,
+      fuseSecs,
+      walkSpeedCells,
+      cycleSecs,
+      plantsPerSec,
+      blocksPerBomb,
+      uptime,
+      heroLuckPct,
+      veiaOuroLevel,
+      fortunaLevel,
+      degenerate,
+    };
+    return facts;
+  });
+}
+
+// ---------------------------------------------------------------------------------------------
+// Squad facts (design.md §3.3, §4.2)
+// ---------------------------------------------------------------------------------------------
+
+export type SquadFarmFacts = {
+  /** Enabled heroes only, in `heroes` order. */
+  heroes: readonly HeroFarmFacts[];
+  /** `account.slots ?? DEFAULT_CASA_SLOTS`. */
+  fieldSlots: number;
+  /** `Σ uptime` over enabled heroes (fractions). */
+  uptimeSum: number;
+  /** `min(1, fieldSlots / uptimeSum)`; `1` when `uptimeSum === 0` (`AD-PFR-05`). */
+  concurrencyScale: number;
+  /** Sorte as a FRACTION: `(uptime-weighted mean heroLuckPct + treeLuckFlatPct) / 100`. */
+  sorteFraction: number;
+  /** `min(FORTUNA_AURA_CAP, Σ uptime_h × perLevel × level_h)`, a FRACTION (`AD-PFR-07`). */
+  fortunaAura: number;
+  /** `1 + max(0, tree.teamCoinPct) / 100`. */
+  teamCoinMult: number;
+  /** `tree.luckFlatPct ?? 0`, percentage points — echoed for item C's breakdown tooltip. */
+  treeLuckFlatPct: number;
+};
+
+export function computeSquadFarmFacts(
+  heroFacts: readonly HeroFarmFacts[],
+  account: AccountShared,
+): SquadFarmFacts {
+  const fieldSlots = account.slots ?? DEFAULT_CASA_SLOTS;
+  const uptimeSum = heroFacts.reduce((sum, hero) => sum + hero.uptime, 0);
+  const concurrencyScale = uptimeSum > 0 ? Math.min(1, fieldSlots / uptimeSum) : 1;
+  const treeLuckFlatPct = account.tree.luckFlatPct ?? 0;
+
+  const heroLuckWeightedSum = heroFacts.reduce((sum, hero) => sum + hero.uptime * hero.heroLuckPct, 0);
+  const sorteFraction = ((uptimeSum > 0 ? heroLuckWeightedSum / uptimeSum : 0) + treeLuckFlatPct) / 100;
+
+  const fortunaWeightedSum = heroFacts.reduce(
+    (sum, hero) => sum + hero.uptime * LOOT_ABILITY_VALUES.fortuna.perLevel * hero.fortunaLevel,
+    0,
+  );
+  const fortunaAura = Math.min(FORTUNA_AURA_CAP, fortunaWeightedSum);
+
+  const teamCoinMult = 1 + Math.max(0, account.tree.teamCoinPct ?? 0) / 100;
+
+  return {
+    heroes: heroFacts,
+    fieldSlots,
+    uptimeSum,
+    concurrencyScale,
+    sorteFraction,
+    fortunaAura,
+    teamCoinMult,
+    treeLuckFlatPct,
+  };
+}
