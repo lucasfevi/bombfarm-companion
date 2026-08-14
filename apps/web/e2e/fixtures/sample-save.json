@@ -125,17 +125,17 @@
     "slots": 9
   },
   "skills": {
+    "refunds": {},
     "totals": {
-      "abisso_base": 0,
       "crit_chance_add": 0.5148165135,
       "crit_dmg_add": 0.196153846,
-      "crit_dmg_mult": 1,
       "dmg_static": 1.96874525101619,
       "energia_add": 0.522457627,
       "geo_mult": 1.1912403335401,
-      "keystones": [],
       "speed_add": 0.027186897,
-      "team_dmg_add": 0.652685185
+      "team_dmg_add": 0.652685185,
+      "vagas_campo": 0,
+      "bag_tabs_bonus": 0
     }
   }
 }

@@ -18,8 +18,10 @@
  * `packages/ui` carries NO allowlist entry in either clause — that is the one surface where F3
  * can prove the deletion is total, and the surface the DS-09 story is about (`AD-082`).
  *
- * Measured against the tree at T10, not copied from a document (both maps below were re-derived
- * with the exact `git grep` commands this file runs — see the commit body for the raw output).
+ * Re-pinned for MP5 F4 (`AD-090`, T12): both maps below were re-derived from the tree at F4's
+ * T11 tip with the exact `git grep` commands this file runs — see the commit body for the raw
+ * output. Re-pinned once, from the settled tree — never widened beyond what T9/T10/T11 actually
+ * added, and never re-pinned mid-feature (T9–T11 deliberately left this file red).
  */
 import { execFileSync } from 'node:child_process';
 import { resolve } from 'node:path';
@@ -69,11 +71,15 @@ const CLAUSE_A_PATTERN =
  *     not estimated. `packages/ui` gets none of this category — its bar is a hard zero with no
  *     exception, matched by construction (T5 re-skinned every story, no absence test needed to
  *     name the literal).
+ *   - F4-owned drop-rule modules and their absence-proving tests (`AD-090`) — `stale-sections.ts`
+ *     (desktop) and `stale-account.ts` (web) must each name the retired vocabulary they detect
+ *     and delete; their test files, T7's `save-acceptance-guards.test.mjs`, and T8's
+ *     `import-rejection-copy.test.ts` / `import.ts` forbidden-token comment all prove the same
+ *     tokens are gone from a live surface. `apps/desktop/tests/fixtures/account-full.json` and
+ *     `apps/web/e2e/fixtures/sample-save.json` are REMOVED from this list — T11 re-baselined both
+ *     onto the post-patch schema, so neither carries a clause-A token anymore.
  */
 const ALLOWLIST = [
-  // F4-owned raw save/API schema literals — see spec.md Out of Scope.
-  { file: 'apps/desktop/tests/fixtures/account-full.json', count: 2, owner: 'F4 raw fixture' },
-  { file: 'apps/web/e2e/fixtures/sample-save.json', count: 2, owner: 'F4 raw fixture' },
   // Frozen fixture (MOD-03, docs/naming.md:74) — AD-081, byte-unchanged by design.
   { file: 'apps/web/src/tests/fixtures/i18n-strings-main.json', count: 32, owner: 'frozen fixture (AD-081)' },
   // F1's provenance manifest — must name the forbidden keys to forbid them.
@@ -87,7 +93,8 @@ const ALLOWLIST = [
   { file: 'apps/web/src/tests/fixture-corpus.test.ts', count: 3, owner: 'F1 negative-discriminator guard' },
   // F3's own doc amendments describing the removal (MSC-12 requires the local-data-compat.md
   // row; account-shared.ts's normalizeTree doc names the discarded stale keys it now discards).
-  { file: 'apps/web/docs/local-data-compat.md', count: 1, owner: 'F3 Removed-fields doc row (MSC-12)' },
+  // F4/T9 (AD-089) adds a second local-data-compat.md mention (the superseding drop rule).
+  { file: 'apps/web/docs/local-data-compat.md', count: 2, owner: 'F3 Removed-fields row (MSC-12) + F4/T9 AD-089 supersession' },
   { file: 'apps/web/src/shared/lib/account-shared.ts', count: 3, owner: 'F3 normalizeTree doc comment (MSC-10)' },
   { file: 'apps/web/src/tests/fixtures/storage-roundtrip-20260729.json', count: 1, owner: 'F3 fixture history log (AD-083)' },
   // F3's own absence-proving tests (MSC-01/03/05/06/07/10/18) — each must name the token once to
@@ -100,9 +107,19 @@ const ALLOWLIST = [
   { file: 'apps/web/src/tests/i18n-keystone-absence.test.ts', count: 9, owner: 'F3 MSC-05/06 value-scan suite' },
   { file: 'apps/web/src/tests/i18n-split-parity.test.ts', count: 10, owner: 'F3 MSC-07 KEYSTONE_KEYS_REMOVED list' },
   { file: 'apps/web/src/tests/import-inventory-sync.test.ts', count: 4, owner: 'F3 explanatory comment (recorded loss)' },
-  { file: 'apps/web/src/tests/import-save.test.ts', count: 3, owner: 'F4 raw save-schema literal + historical comment' },
+  { file: 'apps/web/src/tests/import-save.test.ts', count: 2, owner: 'F4/T7 flipped baseSave() literal + historical comment' },
   { file: 'apps/web/src/tests/stat-breakdown.test.ts', count: 1, owner: 'F3 explanatory comment' },
-  { file: 'apps/web/src/tests/storage-legacy-keystone-fields.test.ts', count: 18, owner: 'F3 MSC-10 legacy-discard suite' },
+  { file: 'apps/web/src/tests/storage-legacy-keystone-fields.test.ts', count: 9, owner: 'F4/T9 AD-089 rewritten legacy-drop suite (supersedes MSC-10)' },
+  // F4-owned drop-rule modules (AD-090: "a module that must name the vocabulary it forbids") and
+  // their absence-proving / forbidden-token test suites.
+  { file: 'apps/desktop/src/main/storage/stale-sections.ts', count: 2, owner: 'F4/T10 desktop drop-rule module (AD-089)' },
+  { file: 'apps/desktop/src/main/storage/stale-sections.test.ts', count: 6, owner: 'F4/T10 desktop drop-rule absence proof (incl. the sole-cause discriminating case)' },
+  { file: 'apps/desktop/src/main/storage/account-store-restore.test.ts', count: 2, owner: 'F4/T10 stale-section drop integration test' },
+  { file: 'apps/web/src/shared/lib/stale-account.ts', count: 5, owner: 'F4/T9 web drop-rule module (AD-089)' },
+  { file: 'apps/web/src/tests/stale-account-drop.test.ts', count: 8, owner: 'F4/T9 web drop-rule absence proof (incl. the presence-vs-truthiness discriminating case)' },
+  { file: 'apps/web/src/shared/i18n/namespaces/import.ts', count: 1, owner: 'F4/T8 forbidden-token comment (MSG-14)' },
+  { file: 'apps/web/src/tests/import-rejection-copy.test.ts', count: 3, owner: 'F4/T8 forbidden-token guard test' },
+  { file: 'tools/save-acceptance-guards.test.mjs', count: 7, owner: 'F4/T7 acceptance-gate absence proof (MSG-11)' },
   // This guard's own source — its filename, doc comment and error messages necessarily name
   // the tokens it forbids (the same self-reference AD-080 allowlist #10 anticipates).
   { file: 'tools/keystone-surface-absence.test.mjs', count: 11, owner: 'this guard, self-reference' },
@@ -120,15 +137,17 @@ const ALLOWLIST = [
 const CRIT_DMG_MULT_MAP = {
   'apps/desktop/renderer/lib/planning/account-model.test.ts': [46],
   'apps/desktop/renderer/lib/planning/account-view-store.test.ts': [36],
-  'apps/desktop/renderer/lib/planning/fixtures/synthetic-views.ts': [108, 139],
+  'apps/desktop/renderer/lib/planning/fixtures/synthetic-views.ts': [123],
   'apps/desktop/renderer/lib/planning/hero-advice.test.ts': [47],
   'apps/desktop/renderer/lib/planning/withhold-matrix.test.ts': [193, 210],
-  'apps/desktop/tests/fixtures/account-full.json': [79],
+  'apps/desktop/src/main/storage/account-store-restore.test.ts': [497, 530, 548, 581],
+  'apps/desktop/src/main/storage/stale-sections.test.ts': [66, 81, 84, 88, 98, 105, 111, 123, 128, 164, 182],
+  'apps/desktop/src/main/storage/stale-sections.ts': [11],
   'apps/web/CHANGELOG.md': [148, 155],
-  'apps/web/docs/local-data-compat.md': [89],
-  'apps/web/e2e/fixtures/sample-save.json': [132],
+  'apps/web/docs/local-data-compat.md': [89, 97],
   'apps/web/src/features/planner/components/advice-column.tsx': [38, 59],
   'apps/web/src/shared/lib/account-shared.ts': [99],
+  'apps/web/src/shared/lib/stale-account.ts': [20],
   'apps/web/src/tests/advisor-pipeline.test.ts': [86],
   'apps/web/src/tests/derive.test.ts': [
     75, 77, 158, 186, 225, 256, 281, 321, 335, 388, 428, 465, 512, 544,
@@ -136,13 +155,14 @@ const CRIT_DMG_MULT_MAP = {
   'apps/web/src/tests/fixture-corpus.test.ts': [23, 65],
   'apps/web/src/tests/fixtures/sheet-math/README.md': [6],
   'apps/web/src/tests/fixtures/storage-roundtrip-20260729.json': [3],
-  'apps/web/src/tests/import-save.test.ts': [272],
   'apps/web/src/tests/points-reopt.test.ts': [86, 470],
+  'apps/web/src/tests/stale-account-drop.test.ts': [31, 72, 73, 78, 89],
   'apps/web/src/tests/stat-breakdown.test.ts': [124, 173, 200],
-  'apps/web/src/tests/storage-legacy-keystone-fields.test.ts': [2, 33, 66, 90, 104],
+  'apps/web/src/tests/storage-legacy-keystone-fields.test.ts': [40, 109],
   'apps/web/src/tests/storage-stat-points-available-compat.test.ts': [101],
   'tools/fixture-corpus-parity.test.mjs': [117, 157],
-  'tools/keystone-surface-absence.test.mjs': [13, 111, 114, 187, 189, 199, 208],
+  'tools/keystone-surface-absence.test.mjs': [13, 128, 131, 207, 209, 219, 228],
+  'tools/save-acceptance-guards.test.mjs': [53],
 };
 
 describe('keystone surface absence — the repo-wide identifier guard (MP5 F3, MSC-04, AD-080)', () => {
@@ -157,7 +177,7 @@ describe('keystone surface absence — the repo-wide identifier guard (MP5 F3, M
   });
 
   it('the clause-A allowlist is exactly the enumerated set (non-wideable)', () => {
-    expect(ALLOWLIST.length).toBe(23);
+    expect(ALLOWLIST.length).toBe(29);
     expect(ALLOWLIST.every((entry) => entry.file && entry.count > 0 && entry.owner)).toBe(true);
   });
 

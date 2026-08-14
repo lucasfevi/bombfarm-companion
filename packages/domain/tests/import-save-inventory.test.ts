@@ -3,6 +3,14 @@ import { parseSaveFile } from '@bombfarm/domain/import-save';
 import { loadFixtureJson } from './helpers/sheet-math-fixtures';
 import { minimalHero } from './helpers/minimal-save-hero';
 
+/**
+ * MP5 F4: the minimal `skills` shape that satisfies `parseSaveFile`'s positive discriminator
+ * (MSG-11) — presence of `refunds`/`vagas_campo`/`bag_tabs_bonus` only, no other content. Every
+ * inline literal below that used to omit `skills` entirely now carries this, or the whole file
+ * (not just the item/hero under test) would reject before this suite's own assertions run.
+ */
+const POST_PATCH_SKILLS = { refunds: {}, totals: { vagas_campo: 0, bag_tabs_bonus: 0 } };
+
 function isObject(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null;
 }
@@ -43,7 +51,7 @@ describe('parseSaveFile inventory pass', () => {
   });
 
   it('missing items array yields empty inventory and keeps the existing warning', () => {
-    const { inventory, warnings } = parseSaveFile({ heroes: [] }, []);
+    const { inventory, warnings } = parseSaveFile({ heroes: [], skills: POST_PATCH_SKILLS }, []);
     expect(inventory).toEqual([]);
     expect(warnings.some((warning) => warning.includes('no "items" list'))).toBe(true);
   });
@@ -52,6 +60,7 @@ describe('parseSaveFile inventory pass', () => {
     const { inventory, warnings } = parseSaveFile(
       {
         heroes: [minimalHero('1')],
+        skills: POST_PATCH_SKILLS,
         items: [
           {
             category: 0,
@@ -76,6 +85,7 @@ describe('parseSaveFile inventory pass', () => {
     const { warnings } = parseSaveFile(
       {
         heroes: [minimalHero('1')],
+        skills: POST_PATCH_SKILLS,
         items: [
           {
             category: 0,
@@ -105,6 +115,7 @@ describe('parseSaveFile inventory pass', () => {
     const { candidates } = parseSaveFile(
       {
         heroes: [minimalHero('hero-1', 'Blocked')],
+        skills: POST_PATCH_SKILLS,
         items: [
           {
             category: 0,
@@ -124,7 +135,7 @@ describe('parseSaveFile inventory pass', () => {
   });
 
   it('account.slots is undefined when casa is absent', () => {
-    const { account } = parseSaveFile({ heroes: [] }, []);
+    const { account } = parseSaveFile({ heroes: [], skills: POST_PATCH_SKILLS }, []);
     expect(account.slots).toBeUndefined();
   });
 

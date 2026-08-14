@@ -23,6 +23,12 @@ import { phaseLine } from '@bombfarm/domain/phases';
 import { zeroTeamBuffs } from '@bombfarm/domain/team-buffs';
 import { DEFAULT_TARGET_PROP } from '@bombfarm/domain/farm-context';
 import type { HeroRecord, AccountShared } from '@bombfarm/domain/shims/storage';
+// MP5 F4 (T4) — re-pointed at the shared helper (design §5.7). Cross-package relative import of
+// a TEST-ONLY source file: packages/domain's package.json `exports` map only publishes `dist/**`,
+// so this cannot be a package-name import (`@bombfarm/domain/...`) — the helper is not part of
+// the built package. The relative path mirrors FIXTURE_PATH below, which already crosses this
+// same package boundary the same way.
+import { requireFixture } from '../../../../../packages/domain/tests/helpers/require-fixture';
 
 const FIXTURE_PATH = path.join(
   __dirname,
@@ -44,8 +50,17 @@ const FIXTURE_PATH = path.join(
  * family has been hit six times (`AGENTS.md`/`tasks.md`'s own accounting); a cross-package fixture
  * read is a new surface for a seventh, so a missing file throws loudly with a fix-it message
  * instead of silently passing an empty suite.
+ *
+ * This suite's own guarantee is STRICTER than the shared `requireFixture`'s shape (which permits
+ * a soft local-dev skip outside CI): a missing fixture always throws here, in and out of CI. The
+ * shared helper is still called first — for the same named-assertion/CI-throw path every other
+ * F4 artifact-dependent suite goes through — but its `false` return (the local-dev skip branch)
+ * is deliberately NOT honoured with a `return`: the `readFileSync` below still throws on its own
+ * when the file is genuinely absent, preserving this suite's pre-existing always-throw contract.
  */
-function requireFixture(): Record<string, unknown> {
+function loadRecomputeBudgetFixture(): Record<string, unknown> {
+  requireFixture(FIXTURE_PATH, 'recompute-budget full-roster / per-hero fixture read');
+
   let raw: string;
   try {
     raw = readFileSync(FIXTURE_PATH, 'utf8');
@@ -73,7 +88,7 @@ function percentile95(values: readonly number[]): number {
 }
 
 describe('recompute budget — the measured figure, asserted against itself (AD-045)', () => {
-  const raw = requireFixture();
+  const raw = loadRecomputeBudgetFixture();
   const parsed = parseAccountPayload(raw, []);
 
   it('the fixture actually parses 8 heroes and a tree (sanity — otherwise this test proves nothing)', () => {

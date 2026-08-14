@@ -61,12 +61,24 @@ export function syntheticHeroesPayload(overrides: {
   return [hero];
 }
 
-function sectionFidelity(status: SectionStatus, missingKeys?: readonly string[]): AccountFidelity[AccountSection] {
+function sectionFidelity(
+  status: SectionStatus,
+  missingKeys?: readonly string[],
+  addedKeys?: readonly string[],
+): AccountFidelity[AccountSection] {
   switch (status) {
     case 'missing':
       return { status: 'missing' };
     case 'degraded':
-      return { status: 'degraded', capturedAt: NOW, missingKeys: missingKeys ?? ['totals.dmg_static'] };
+      return {
+        status: 'degraded',
+        capturedAt: NOW,
+        missingKeys: missingKeys ?? ['totals.dmg_static'],
+        // MP5 F4: required, not optional (SectionFidelity's degraded member). Defaults to empty —
+        // every existing caller of this fixture builder keeps describing a missing-key-only drift
+        // unless it opts into an added-key one via `addedKeysBySection`/the third parameter here.
+        addedKeys: addedKeys ?? [],
+      };
     case 'resolved':
     case 'stale':
       return { status, capturedAt: NOW };
@@ -76,10 +88,11 @@ function sectionFidelity(status: SectionStatus, missingKeys?: readonly string[])
 export function buildFidelity(
   statuses: Partial<Record<AccountSection, SectionStatus>> = {},
   missingKeysBySection: Partial<Record<AccountSection, readonly string[]>> = {},
+  addedKeysBySection: Partial<Record<AccountSection, readonly string[]>> = {},
 ): AccountFidelity {
   const entries = ACCOUNT_SECTIONS.map((section) => {
     const status = statuses[section] ?? 'resolved';
-    return [section, sectionFidelity(status, missingKeysBySection[section])] as const;
+    return [section, sectionFidelity(status, missingKeysBySection[section], addedKeysBySection[section])] as const;
   });
   return Object.fromEntries(entries) as AccountFidelity;
 }
@@ -87,6 +100,8 @@ export function buildFidelity(
 export type SyntheticViewOptions = {
   sectionStatuses?: Partial<Record<AccountSection, SectionStatus>>;
   missingKeysBySection?: Partial<Record<AccountSection, readonly string[]>>;
+  /** MP5 F4: mirrors `missingKeysBySection` for the `addedKeys` half of a degraded section. */
+  addedKeysBySection?: Partial<Record<AccountSection, readonly string[]>>;
   storeStatus?: AccountStoreStatus;
   storeReason?: AccountStoreReason | null;
   heroBlocked?: boolean;
@@ -105,10 +120,12 @@ export function syntheticAccountPayload(options: SyntheticViewOptions = {}): Acc
     heroes: omit.has('heroes') ? undefined : syntheticHeroesPayload({ heroId, blocked: options.heroBlocked }),
     skills: omit.has('skills')
       ? undefined
-      : { totals: { dmg_static: REAL_DMG_STATIC, crit_dmg_mult: 1, crit_chance_add: 0.1 } },
+      // MP5 F4: post-patch skills.totals shape — no crit_dmg_mult (F2's stale-field trap; this
+      // literal is never modelled downstream, so this was a dead key, not a load-bearing one).
+      : { totals: { dmg_static: REAL_DMG_STATIC, vagas_campo: 0, bag_tabs_bonus: 0, crit_chance_add: 0.1 } },
     casa: omit.has('casa') ? undefined : { active_casa: 2, levels: [10, 16] },
     items: omit.has('items') ? undefined : [],
-    fidelity: buildFidelity(options.sectionStatuses, options.missingKeysBySection),
+    fidelity: buildFidelity(options.sectionStatuses, options.missingKeysBySection, options.addedKeysBySection),
   };
 }
 
@@ -136,7 +153,8 @@ export function syntheticRosterAccountView(heroIds: readonly string[]): AccountV
     payload: {
       account: { phase: 71 },
       heroes,
-      skills: { totals: { dmg_static: REAL_DMG_STATIC, crit_dmg_mult: 1, crit_chance_add: 0.1 } },
+      // MP5 F4: post-patch skills.totals shape, matching syntheticAccountPayload above.
+      skills: { totals: { dmg_static: REAL_DMG_STATIC, vagas_campo: 0, bag_tabs_bonus: 0, crit_chance_add: 0.1 } },
       casa: { active_casa: 2, levels: [10, 16] },
       items: [],
       fidelity: buildFidelity(),
@@ -199,13 +217,14 @@ export function withSectionStatus(
   section: AccountSection,
   status: SectionStatus,
   missingKeys?: readonly string[],
+  addedKeys?: readonly string[],
 ): AccountView {
   const fidelity = view.payload.fidelity ?? buildFidelity();
   return {
     ...view,
     payload: {
       ...view.payload,
-      fidelity: { ...fidelity, [section]: sectionFidelity(status, missingKeys) },
+      fidelity: { ...fidelity, [section]: sectionFidelity(status, missingKeys, addedKeys) },
     },
   };
 }

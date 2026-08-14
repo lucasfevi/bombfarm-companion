@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { parseSaveFile } from '@bombfarm/domain/import-save';
+import { parseAccountPayload, parseSaveFile } from '@bombfarm/domain/import-save';
 import { abilityMods } from '@bombfarm/domain/model';
 import { defaultNaked, emptySheetOther, type Loadout, type SheetOtherPct, type SheetStats } from '@bombfarm/domain/gear';
 import { composeSheetFromBirth, nakedFromBirth, type BirthStats, type TreeSheetTotals } from '@bombfarm/domain/birth-sheet';
@@ -264,16 +264,19 @@ function baseSave() {
       levels: [20, 20, 6, 0, 0],
       slots: 9,
     },
+    // MP5 F4: post-patch skills shape — parseSaveFile's positive discriminator (MSG-11) requires
+    // skills.refunds / skills.totals.vagas_campo / skills.totals.bag_tabs_bonus to be present, or
+    // the whole file is rejected. No retired keystone field survives here (F2/F3's own removal).
     skills: {
+      refunds: {},
       totals: {
-        abisso_base: 0,
         crit_chance_add: 0.5148165135,
         crit_dmg_add: 0.196153846,
-        crit_dmg_mult: 1,
         dmg_static: 1.96874525101619,
         energia_add: 0.522457627,
         geo_mult: 1.1912403335401,
-        keystones: [],
+        vagas_campo: 0,
+        bag_tabs_bonus: 0,
         luck_add: 0.0394647275,
         speed_add: 0.027186897,
         team_dmg_add: 0.652685185,
@@ -529,8 +532,8 @@ describe('parseSaveFile', () => {
     expect(account.tree!.luckFlatPct).toBe(0);
   });
 
-  it('returns nulls for account data when casa/skills are absent', () => {
-    const { account } = parseSaveFile({ heroes: [] }, []);
+  it('returns nulls for account data when casa/skills are absent (payload entry point — a FILE lacking skills entirely is now rejected upstream by MSG-11\'s gate, so this is parseAccountPayload\'s territory, not parseSaveFile\'s)', () => {
+    const { account } = parseAccountPayload({ heroes: [] }, []);
     expect(account).toEqual({ tree: null, houseIdx: null, houseLevel: null, phase: null });
   });
 

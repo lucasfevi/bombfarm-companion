@@ -170,6 +170,9 @@ describe('cross-package fixture corpus parity (MP5 F1)', () => {
     'packages/contracts/src/account-change-key.test.ts': 1,
     'tools/fixture-corpus-parity.test.mjs': 2,
     'tools/keystone-surface-absence.test.mjs': 10,
+    // MP5 F4/T7 — the acceptance-gate absence-proving guard (MSG-11) must name the tokens it
+    // scans source for. New here at T12's re-pin.
+    'tools/save-acceptance-guards.test.mjs': 3,
   };
 
   it('keystone-identifier handoff: the whole tree decomposes into exactly five surfaces, packages/ui a hard zero (MFR-15, AD-082)', () => {
@@ -229,6 +232,11 @@ describe('cross-package fixture corpus parity (MP5 F1)', () => {
     'packages/domain/tests/fixture-corpus.test.ts': 2,
     'packages/domain/tests/fixtures/i18n-strings-main.json': 9,
     'packages/domain/tests/fixtures/invariance/baseline.json': 13,
+    // MP5 F4/T7 (MSG-12): the committed pre-patch rejection fixture — deliberately carries the
+    // retired mechanic's tokens, that is its whole purpose. Added here at T12 alongside the
+    // identifier guard's own re-pin; every other entry in this map is unmoved (raw git grep
+    // output in the commit body).
+    'packages/domain/tests/fixtures/rejection/pre-update-save.json': 3,
     'packages/domain/tests/fixtures/sheet-math/README.md': 1,
     'packages/domain/tests/fixtures/storage-roundtrip-20260729.json': 1,
     'packages/domain/tests/helpers/invariance-record.ts': 4,

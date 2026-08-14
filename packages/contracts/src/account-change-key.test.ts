@@ -58,7 +58,7 @@ describe('accountChangeKey — the probe table (design.md §2.4)', () => {
       ...restPayload,
       fidelity: {
         ...required(resolved.fidelity, 'expected fidelity'),
-        skills: { status: 'degraded', capturedAt: CAPTURED_AT_A, missingKeys: ['totals.dmg_static'] },
+        skills: { status: 'degraded', capturedAt: CAPTURED_AT_A, missingKeys: ['totals.dmg_static'], addedKeys: [] },
       },
     };
     const degradedB: AccountPayload = {
@@ -69,6 +69,7 @@ describe('accountChangeKey — the probe table (design.md §2.4)', () => {
           status: 'degraded',
           capturedAt: CAPTURED_AT_A,
           missingKeys: ['totals.dmg_static', 'totals.crit_dmg_mult'],
+          addedKeys: [],
         },
       },
     };
@@ -77,6 +78,31 @@ describe('accountChangeKey — the probe table (design.md §2.4)', () => {
     const keyDegradedB = accountChangeKey(degradedB);
     expect(keyDegradedA).not.toBe(keyResolved);
     expect(keyDegradedB).not.toBe(keyDegradedA);
+  });
+
+  it('MP5 F4: two payloads differing ONLY in addedKeys produce different keys (AD-044 — must never false-negative)', () => {
+    const resolved = basePayload(CAPTURED_AT_A);
+    const { skills: _resolvedSkills, ...restPayload } = resolved;
+    const degradedNoAdded: AccountPayload = {
+      ...restPayload,
+      fidelity: {
+        ...required(resolved.fidelity, 'expected fidelity'),
+        skills: { status: 'degraded', capturedAt: CAPTURED_AT_A, missingKeys: [], addedKeys: [] },
+      },
+    };
+    const degradedWithAdded: AccountPayload = {
+      ...restPayload,
+      fidelity: {
+        ...required(resolved.fidelity, 'expected fidelity'),
+        skills: {
+          status: 'degraded',
+          capturedAt: CAPTURED_AT_A,
+          missingKeys: [],
+          addedKeys: ['skills.totals.something_new'],
+        },
+      },
+    };
+    expect(accountChangeKey(degradedNoAdded)).not.toBe(accountChangeKey(degradedWithAdded));
   });
 
   it("one hero's level incremented ⇒ different key", () => {

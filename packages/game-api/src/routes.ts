@@ -79,8 +79,8 @@ export type SectionFailureReason =
   | 'aborted';
 
 export type SectionOutcome =
-  | { readonly kind: 'ok'; readonly body: unknown; readonly unknownKeys: readonly string[] }
-  | { readonly kind: 'drift'; readonly missingKeys: readonly string[] }
+  | { readonly kind: 'ok'; readonly body: unknown }
+  | { readonly kind: 'drift'; readonly missingKeys: readonly string[]; readonly addedKeys: readonly string[] }
   | { readonly kind: 'failed'; readonly reason: SectionFailureReason };
 
 /** Reads one route through the pacing gate, checks its shape, and projects it. Never throws for
@@ -111,13 +111,13 @@ export async function readSection(
       const fingerprint = ROUTE_FINGERPRINTS[route.section];
       const shape = checkShape(outcome.json, fingerprint);
       if (!shape.ok) {
-        return { kind: 'drift', missingKeys: shape.missingKeys };
+        return { kind: 'drift', missingKeys: shape.missingKeys, addedKeys: shape.addedKeys };
       }
       const projected = route.project(outcome.json);
       if (!route.acceptProjected(projected)) {
         return { kind: 'failed', reason: 'empty_roster' };
       }
-      return { kind: 'ok', body: projected, unknownKeys: shape.unknownKeys };
+      return { kind: 'ok', body: projected };
     }
     case 'unauthorized':
       return { kind: 'failed', reason: 'unauthorized' };

@@ -31,21 +31,23 @@ describe('AccountPayload / fidelity — type-level assertions', () => {
     expect(missing.capturedAt).toBeUndefined();
   });
 
-  it('accepts a degraded section carrying capturedAt and missingKeys (mp2-live-account-read T6, LAR-19)', () => {
+  it('accepts a degraded section carrying capturedAt, missingKeys and addedKeys (mp2-live-account-read T6, LAR-19, MP5 F4)', () => {
     const degraded: SectionFidelity = {
       status: 'degraded',
       capturedAt: '2026-08-12T00:00:00.000Z',
       missingKeys: ['gold', 'phase'],
+      addedKeys: ['refunds'],
     };
     expect(degraded.status).toBe('degraded');
     expect(degraded.missingKeys).toEqual(['gold', 'phase']);
+    expect(degraded.addedKeys).toEqual(['refunds']);
   });
 
   it('a degraded section is distinguishable from missing and from resolved by its status discriminant', () => {
     const sections: SectionFidelity[] = [
       { status: 'resolved', capturedAt: '2026-08-12T00:00:00.000Z' },
       { status: 'missing' },
-      { status: 'degraded', capturedAt: '2026-08-12T00:00:00.000Z', missingKeys: ['heroes'] },
+      { status: 'degraded', capturedAt: '2026-08-12T00:00:00.000Z', missingKeys: ['heroes'], addedKeys: [] },
     ];
     const statuses = sections.map((s) => s.status);
     expect(statuses).toEqual(['resolved', 'missing', 'degraded']);
@@ -56,19 +58,37 @@ describe('AccountPayload / fidelity — type-level assertions', () => {
     const fidelity: AccountFidelity = {
       account: RESOLVED,
       heroes: RESOLVED,
-      skills: { status: 'degraded', capturedAt: '2026-08-12T00:00:00.000Z', missingKeys: ['totals'] },
+      skills: { status: 'degraded', capturedAt: '2026-08-12T00:00:00.000Z', missingKeys: ['totals'], addedKeys: [] },
       casa: RESOLVED,
       items: RESOLVED,
     };
     expect(fidelity.skills.status).toBe('degraded');
     if (fidelity.skills.status === 'degraded') {
       expect(fidelity.skills.missingKeys).toEqual(['totals']);
+      expect(fidelity.skills.addedKeys).toEqual([]);
     }
   });
 
-  it('accepts an empty missingKeys array on a degraded section (a shape check that found nothing missing but still refused to parse is still expressible)', () => {
-    const degraded: SectionFidelity = { status: 'degraded', capturedAt: '2026-08-12T00:00:00.000Z', missingKeys: [] };
+  it('accepts an empty missingKeys/addedKeys pair on a degraded section (a shape check that found nothing missing or added but still refused to parse is still expressible)', () => {
+    const degraded: SectionFidelity = {
+      status: 'degraded',
+      capturedAt: '2026-08-12T00:00:00.000Z',
+      missingKeys: [],
+      addedKeys: [],
+    };
     expect(degraded.missingKeys).toEqual([]);
+    expect(degraded.addedKeys).toEqual([]);
+  });
+
+  it('accepts a degraded section whose drift is ENTIRELY an added key — empty missingKeys, non-empty addedKeys (MP5 F4)', () => {
+    const degraded: SectionFidelity = {
+      status: 'degraded',
+      capturedAt: '2026-08-12T00:00:00.000Z',
+      missingKeys: [],
+      addedKeys: ['skills.totals.something_new'],
+    };
+    expect(degraded.missingKeys).toEqual([]);
+    expect(degraded.addedKeys).toEqual(['skills.totals.something_new']);
   });
 
   it('accepts an AccountPayload asserting no sections at all', () => {
@@ -107,16 +127,35 @@ const _capturedAtOnMissing: SectionFidelity = { status: 'missing', capturedAt: '
 const _invalidStatusLiteral: SectionFidelity = { status: 'partial', capturedAt: '2026-08-12T00:00:00.000Z' };
 
 // @ts-expect-error - a degraded section requires capturedAt (LAR-19, mp2-live-account-read T6)
-const _degradedWithoutCapturedAt: SectionFidelity = { status: 'degraded', missingKeys: ['gold'] };
+const _degradedWithoutCapturedAt: SectionFidelity = { status: 'degraded', missingKeys: ['gold'], addedKeys: [] };
 
 // @ts-expect-error - a degraded section requires missingKeys (LAR-19, mp2-live-account-read T6)
-const _degradedWithoutMissingKeys: SectionFidelity = { status: 'degraded', capturedAt: '2026-08-12T00:00:00.000Z' };
+const _degradedWithoutMissingKeys: SectionFidelity = {
+  status: 'degraded',
+  capturedAt: '2026-08-12T00:00:00.000Z',
+  addedKeys: [],
+};
+
+// @ts-expect-error - a degraded section requires addedKeys (MP5 F4) — an incomplete drift report
+// (missingKeys present, addedKeys silently dropped) must be unrepresentable
+const _degradedWithoutAddedKeys: SectionFidelity = {
+  status: 'degraded',
+  capturedAt: '2026-08-12T00:00:00.000Z',
+  missingKeys: ['gold'],
+};
 
 const _missingKeysOnResolved: SectionFidelity = {
   status: 'resolved',
   capturedAt: '2026-08-12T00:00:00.000Z',
   // @ts-expect-error - missingKeys is not a member of the resolved/stale branch (mp2-live-account-read T6)
   missingKeys: ['gold'],
+};
+
+const _addedKeysOnResolved: SectionFidelity = {
+  status: 'resolved',
+  capturedAt: '2026-08-12T00:00:00.000Z',
+  // @ts-expect-error - addedKeys is not a member of the resolved/stale branch (MP5 F4)
+  addedKeys: ['refunds'],
 };
 
 // @ts-expect-error - "extra" is not one of the five AccountSection keys

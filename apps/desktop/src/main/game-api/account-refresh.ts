@@ -180,7 +180,22 @@ export function createAccountRefresh(deps: AccountRefreshDeps): AccountRefreshHa
         // The pacing gate is already the single-flight serializer for these five reads; a plain
         // for-loop keeps read order deterministic and matches the gate's own strict-serial
         // contract rather than racing five parallel calls against it.
-        outcomes[route.section] = await readSection(session, abortableTransport, deps.gate, route);
+        const outcome = await readSection(session, abortableTransport, deps.gate, route);
+        if (outcome.kind === 'drift') {
+          // MP5 F4 (MSG-27): the only runtime consumer of `readSection`'s drift outcome — routes.ts
+          // itself stays a pure library with no LogPort. Path-qualified key names only, never a
+          // response value: `missingKeys`/`addedKeys` are produced by `checkShape`/`checkSchema`
+          // as key paths by construction, so there is no player data (a gold amount, a hero name)
+          // to leak here even by accident.
+          deps.log.warn({
+            scope: 'account-refresh',
+            event: 'section.drift',
+            section: route.section,
+            missingKeys: outcome.missingKeys,
+            addedKeys: outcome.addedKeys,
+          });
+        }
+        outcomes[route.section] = outcome;
       }
       currentAbort = null;
 

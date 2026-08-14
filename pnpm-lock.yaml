@@ -282,6 +282,9 @@ importers:
       '@bombfarm/contracts':
         specifier: workspace:*
         version: link:../contracts
+      '@bombfarm/domain':
+        specifier: workspace:*
+        version: link:../domain
     devDependencies:
       typescript:
         specifier: ^5.8.3

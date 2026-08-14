@@ -17,7 +17,8 @@
     "test": "vitest run"
   },
   "dependencies": {
-    "@bombfarm/contracts": "workspace:*"
+    "@bombfarm/contracts": "workspace:*",
+    "@bombfarm/domain": "workspace:*"
   },
   "devDependencies": {
     "typescript": "^5.8.3",

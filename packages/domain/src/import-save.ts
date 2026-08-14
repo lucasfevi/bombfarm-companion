@@ -20,6 +20,7 @@ import {
 import { composeSheetFromBirth, nakedFromBirth, type BirthStats, type TreeSheetTotals } from './birth-sheet';
 import { inferSpentPoints, type PointInferenceIssue } from './point-inference';
 import { ACCOUNT_SECTIONS, sectionHasData } from './account-fidelity';
+import { missingPostUpdateKeys } from './save-schema';
 import type { AccountPayload } from '@bombfarm/contracts';
 
 const RARITY_BY_IDX: RarityKey[] = ['Comum', 'Incomum', 'Raro', 'Épico', 'Lendária', 'Mítico'];
@@ -75,9 +76,16 @@ export type AccountImportData = {
  * `AD-BSP-05` — a whole-file reject. `notASaveFile` is today's shape-check behaviour,
  * now typed; `missingBirthStats` is BSPW5-01: any hero object in `heroes[]` lacking a
  * usable `birth_stats` block rejects the whole file, not just that hero.
+ *
+ * MP5 F4 (`AD-088`): `unsupportedSaveShape` — a save file lacking the current game version's
+ * post-update keys (`skills.refunds`, `skills.totals.vagas_campo`, `skills.totals.bag_tabs_bonus`)
+ * is rejected before any hero/item/account value is read. Web-only: the gate lives in
+ * {@link parseSaveFile} alone, never in {@link parseAccountPayload} — `apps/desktop` imports only
+ * the latter (measured; enforced by `tools/save-acceptance-guards.test.mjs`), so this member is
+ * structurally unreachable from the desktop and needs no desktop copy.
  */
 export type ParseRejection = {
-  reason: 'notASaveFile' | 'missingBirthStats';
+  reason: 'notASaveFile' | 'missingBirthStats' | 'unsupportedSaveShape';
   heroNames: string[];
 };
 
@@ -175,9 +183,55 @@ function toAccountPayload(raw: unknown): AccountPayload {
   return isObject(raw) ? raw : {};
 }
 
-/** Unchanged name, signature and observable output (ACS-02) — a thin file adapter over {@link parseAccountPayload}. */
+/**
+ * MSG-11 positive discriminator, order-preserved: this mirrors — never imports — the exact
+ * `notASaveFile` predicate `parseAccountPayload` runs internally, so the gate below can run
+ * strictly BEFORE that function without touching its body at all (`parseAccountPayload` is
+ * byte-unchanged by this feature — `AD-088`, proven by a source guard, not by argument).
+ */
+function looksLikeASaveFile(payload: AccountPayload): boolean {
+  const raw: unknown = payload;
+  return isObject(raw) && Array.isArray(raw.heroes);
+}
+
+/**
+ * The file adapter over {@link parseAccountPayload} (ACS-02: unchanged name, signature,
+ * observable output for every input this gate accepts).
+ *
+ * MP5 F4 (`MSG-11`…`MSG-13`, `AD-088`) adds ONE gate here, and only here: a value that claims to
+ * be a complete save export but lacks the keys the current game version writes
+ * (`POST_UPDATE_SAVE_KEYS`) is rejected before any hero, item or account value is read — never
+ * migrated, never partially parsed. The gate is positive-only (asks `has(newKey)`, never
+ * `!has(oldKey)`) and runs strictly between the two existing whole-file rejects: AFTER
+ * `notASaveFile` (a value that does not even look like a save keeps today's exact rejection,
+ * unchanged) and BEFORE `missingBirthStats` (a pre-patch or truncated file is never misdiagnosed
+ * as a birth-stats problem). `parseAccountPayload` — the payload entry point `apps/desktop`
+ * actually imports — is untouched: a payload legitimately omits sections per-poll (`AD-036`),
+ * and gating it there would reject every degraded desktop cycle.
+ */
 export function parseSaveFile(raw: unknown, existing: HeroRecord[]): ParseResult {
-  return parseAccountPayload(toAccountPayload(raw), existing);
+  const payload = toAccountPayload(raw);
+
+  if (looksLikeASaveFile(payload)) {
+    const missingKeys = missingPostUpdateKeys(payload);
+    if (missingKeys.length > 0) {
+      return {
+        candidates: [],
+        // MSG-15: the diagnosis is not lost to the generic player-facing copy (T8) — it lives
+        // here, in `warnings` (data, never rendered by the desktop, `AD-040`), naming exactly
+        // which path-qualified keys were absent.
+        warnings: [
+          `This save is missing key(s) the current game version writes (${missingKeys.join(', ')}) ` +
+            '— export a fresh save from the game to use the planner.',
+        ],
+        account: EMPTY_ACCOUNT_DATA,
+        inventory: [],
+        rejected: { reason: 'unsupportedSaveShape', heroNames: [] },
+      };
+    }
+  }
+
+  return parseAccountPayload(payload, existing);
 }
 
 /**

@@ -121,8 +121,12 @@ export function pointIssueCopyText(strings: Strings, issues: PointInferenceIssue
 /**
  * `BSP-06`/`DEC-09`/`AC-36` — `parseSaveFile`'s structured whole-file `rejected` field,
  * rendered EN+PT in place of the removed `importResetWarning*` block.
+ *
+ * MP5 F4 (`MSG-14`): `unsupportedSaveShape` renders the generic, patch-durable string — the
+ * other two branches are unchanged.
  */
 export function rejectionText(strings: Strings, rejected: ParseRejection): string {
   if (rejected.reason === 'notASaveFile') return strings.importRejectedNotASaveFile;
+  if (rejected.reason === 'unsupportedSaveShape') return strings.importRejectedUnsupportedShape;
   return sub(strings.importRejectedMissingBirthStats, { names: rejected.heroNames.join(', ') });
 }

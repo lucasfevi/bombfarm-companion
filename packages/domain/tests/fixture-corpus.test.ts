@@ -62,10 +62,16 @@ describe('sheet-math fixture corpus guard (MP5 F1)', () => {
     ).toBeGreaterThanOrEqual(2);
   });
 
-  it('negative discriminator: no fixture JSON under fixtures/** carries keystones, abisso_base or crit_dmg_mult', () => {
+  it('negative discriminator: no fixture JSON under fixtures/** carries keystones, abisso_base or crit_dmg_mult (MP5 F4: except its own deliberate rejection fixture)', () => {
     expect(allFixtureJsonFiles.length, `walked ${FIXTURES_DIR}`).toBeGreaterThan(0);
     const offenders: string[] = [];
     for (const file of allFixtureJsonFiles) {
+      // MP5 F4 (`MSG-12`/`MSG-13`): `fixtures/rejection/pre-update-save.json` is a DELIBERATE
+      // carrier of the retired vocabulary — it exists specifically to prove `parseSaveFile`
+      // rejects a save shaped like this. It is not a captured corpus member this guard's
+      // "the corpus has moved on" claim is about; excluded the same way `source-surface.test.ts`'s
+      // own TESTS_ALLOWLIST names a justified carrier rather than widening its pattern.
+      if (relative(FIXTURES_DIR, file).replace(/\\/g, '/') === 'rejection/pre-update-save.json') continue;
       const text = readFileSync(file, 'utf8');
       for (const key of FORBIDDEN_KEYS) {
         if (text.includes(`"${key}"`)) {

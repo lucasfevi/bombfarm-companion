@@ -112,7 +112,15 @@ test.describe('import dialog reviews, does not curate (BSPW6-07)', () => {
     await page.locator('input[type="file"]').setInputFiles({
       name: 'no-birth-stats.json',
       mimeType: 'application/json',
-      buffer: Buffer.from(JSON.stringify({ heroes: [{ name: 'SemNascimento', id: '1' }] })),
+      buffer: Buffer.from(
+        JSON.stringify({
+          heroes: [{ name: 'SemNascimento', id: '1' }],
+          // MP5 F4 (MSG-11..13): the post-update key gate runs before missingBirthStats, so this
+          // fixture carries the three post-patch keys it needs to clear that gate — the point of
+          // this test is the birth-stats rejection specifically, not the shape rejection.
+          skills: { refunds: {}, totals: { vagas_campo: 0, bag_tabs_bonus: 0 } },
+        }),
+      ),
     });
 
     const dialog = page.getByRole('dialog');

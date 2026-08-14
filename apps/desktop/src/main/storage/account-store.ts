@@ -14,6 +14,7 @@ import type { LogPort, OpenResult } from './index.js';
 import type { FsPort } from './legacy-snapshot.js';
 import { readLegacySnapshotPayload } from './legacy-snapshot.js';
 import { mergeStoredIntoLive } from './merge-account.js';
+import { judgeStoredSection } from './stale-sections.js';
 
 export interface AccountStoreDeps {
   log?: LogPort;
@@ -126,6 +127,7 @@ export function createAccountStore(open: OpenResult, deps: AccountStoreDeps = {}
     const fidelity = {} as Record<AccountSection, StoredSectionFidelity>;
     const sectionBodies: Partial<Record<AccountSection, unknown>> = {};
     let anyRowPresent = false;
+    const staleSections: AccountSection[] = [];
 
     for (const section of ACCOUNT_SECTIONS) {
       const row = readSectionRow(key, section);
@@ -142,8 +144,26 @@ export function createAccountStore(open: OpenResult, deps: AccountStoreDeps = {}
         continue;
       }
 
+      const verdict = judgeStoredSection(section, decoded.body);
+      if (verdict.drop) {
+        log.warn({
+          scope: 'storage',
+          event: 'account.row_dropped',
+          section,
+          reason: 'stale_retired_vocabulary',
+          triggers: verdict.triggers,
+        });
+        fidelity[section] = { status: 'missing' };
+        staleSections.push(section);
+        continue;
+      }
+
       fidelity[section] = { status: 'stale', capturedAt: row.captured_at };
       sectionBodies[section] = decoded.body;
+    }
+
+    if (staleSections.length > 0) {
+      deleteStaleSections(key, staleSections);
     }
 
     if (!anyRowPresent) {
@@ -158,6 +178,32 @@ export function createAccountStore(open: OpenResult, deps: AccountStoreDeps = {}
         fidelity: StoredAccountFidelity;
       },
     };
+  }
+
+  /**
+   * MP5 F4 (`MSG-24`): runs after the per-section loop, one `BEGIN`/`COMMIT`, wrapped in
+   * `try/catch`. A failed delete logs and changes NO verdict — every section in `sections` has
+   * already been reported `missing` above and its body was never placed in `sectionBodies`, so a
+   * row surviving on disk here is inert until the next `restore()` re-judges and retries the
+   * delete. `restore()` never serves a body it decided not to trust, and never throws into the
+   * caller.
+   */
+  function deleteStaleSections(key: string, sections: readonly AccountSection[]): void {
+    if (!db) return;
+    try {
+      db.exec('BEGIN');
+      for (const section of sections) {
+        db.prepare('DELETE FROM account_section WHERE account_key = ? AND section = ?').run(key, section);
+      }
+      db.exec('COMMIT');
+    } catch (err) {
+      try {
+        db.exec('ROLLBACK');
+      } catch {
+        // best-effort rollback of an already-broken transaction
+      }
+      log.error({ scope: 'storage', event: 'account.row_drop_delete_failed', error: String(err) });
+    }
   }
 
   function setMeta(key: string, value: string): void {

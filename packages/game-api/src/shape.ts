@@ -1,23 +1,16 @@
+import { checkSchema, type SchemaCheckResult } from '@bombfarm/domain/save-schema';
 import type { RouteFingerprint } from './fingerprints.js';
 
 /**
- * The runtime drift guard (LAR-19, LAR-20). Cross-validation is gone under `D24` — this is the
- * only thing standing between a game update that reshapes a response and a confidently wrong
- * number. A missing required key is a shape break (`ok:false`); an extra key is additive and
- * logged, never a failure.
+ * The runtime drift guard (LAR-19, LAR-20; MP5 F4). Cross-validation is gone under `D24` — this
+ * is the only thing standing between a game update that reshapes a response and a confidently
+ * wrong number. A missing required key is a shape break (`ok:false`), and — since MP5 F4 — an
+ * ADDED key at any declared level is ALSO a shape break, never additive, never merely logged. The
+ * 2026-08-13 patch added `skills.refunds` and `skills.totals.vagas_campo`/`bag_tabs_bonus` and the
+ * previous guard let all three through silently; this is the fix.
  */
-export type ShapeCheckResult =
-  | { readonly ok: true; readonly unknownKeys: readonly string[] }
-  | { readonly ok: false; readonly missingKeys: readonly string[]; readonly unknownKeys: readonly string[] };
+export type ShapeCheckResult = SchemaCheckResult;
 
 export function checkShape(body: Record<string, unknown>, fingerprint: RouteFingerprint): ShapeCheckResult {
-  const bodyKeys = new Set(Object.keys(body));
-  const missingKeys = fingerprint.requiredKeys.filter((key) => !bodyKeys.has(key));
-  const requiredKeySet = new Set(fingerprint.requiredKeys);
-  const unknownKeys = Object.keys(body).filter((key) => !requiredKeySet.has(key));
-
-  if (missingKeys.length > 0) {
-    return { ok: false, missingKeys, unknownKeys };
-  }
-  return { ok: true, unknownKeys };
+  return checkSchema(body, fingerprint);
 }

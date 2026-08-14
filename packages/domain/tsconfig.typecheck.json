@@ -8,5 +8,12 @@
       "@bombfarm/domain/*": ["src/*"]
     }
   },
-  "include": ["tests/helpers/fidelity-*.ts", "tests/fidelity-*.test.ts"]
+  "include": [
+    "tests/helpers/fidelity-*.ts",
+    "tests/fidelity-*.test.ts",
+    "tests/save-schema.test.ts",
+    "tests/export-fingerprint.test.ts",
+    "tests/save-acceptance.test.ts",
+    "tests/helpers/require-fixture.ts"
+  ]
 }
