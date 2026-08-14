@@ -162,9 +162,9 @@ const CRIT_DMG_MULT_MAP = {
   'apps/desktop/src/main/storage/account-store-restore.test.ts': [497, 530, 548, 581],
   'apps/desktop/src/main/storage/stale-sections.test.ts': [66, 81, 84, 88, 98, 105, 111, 123, 128, 164, 182],
   'apps/desktop/src/main/storage/stale-sections.ts': [11],
-  'apps/web/docs/local-data-compat.md': [89, 97],
+  'apps/web/docs/local-data-compat.md': [104, 112],
   'apps/web/src/features/planner/components/advice-column.tsx': [38, 59],
-  'apps/web/src/shared/lib/account-shared.ts': [99],
+  'apps/web/src/shared/lib/account-shared.ts': [108],
   'apps/web/src/shared/lib/stale-account.ts': [20],
   'apps/web/src/tests/advisor-pipeline.test.ts': [85],
   'apps/web/src/tests/derive.test.ts': [
