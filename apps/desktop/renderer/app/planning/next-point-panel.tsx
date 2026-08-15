@@ -44,7 +44,7 @@ export function NextPointPanel({ model, heroId }: { model: PlanningModel; heroId
                     </DataTable.RowHeader>
                     <DataTable.Cell align="right" numeric data-testid={isTop ? 'next-point-gain' : undefined}>
                       <Tooltip.Root>
-                        <Tooltip.Trigger type="button">{formatGainPct(entry.dpsGainPct, locale)}</Tooltip.Trigger>
+                        <Tooltip.Trigger type="button">{formatGainPct(entry.gainPct, locale)}</Tooltip.Trigger>
                         <Tooltip.Portal>
                           <Tooltip.Positioner sideOffset={6}>
                             <Tooltip.Popup>

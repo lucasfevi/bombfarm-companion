@@ -98,4 +98,4 @@ export function selectAdvisorPipeline(state: PlannerStore): AdvisorPipelineResul
 
 export const selectDps = (state: PlannerStore) => selectAdvisorPipeline(state).dps;
 export const selectBestStat = (state: PlannerStore) => selectAdvisorPipeline(state).best.stat;
-export const selectBestGainPct = (state: PlannerStore) => selectAdvisorPipeline(state).best.dpsGainPct;
+export const selectBestGainPct = (state: PlannerStore) => selectAdvisorPipeline(state).best.gainPct;

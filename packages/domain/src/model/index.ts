@@ -65,7 +65,7 @@ export {
   EFF_IA,
 } from './combat';
 
-export { rankNextPoint, energySwitchPoint } from './points-rank';
+export { rankNextPoint, energySwitchPoint, RANK_STATS } from './points-rank';
 
 export type { BirthStats, TreeSheetTotals, ComposeSheetFromBirthInput } from '../birth-sheet';
 export {

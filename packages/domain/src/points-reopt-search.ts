@@ -51,7 +51,7 @@ function restrictedGreedyWalk(
     const best = rankNextPoint(sheet, context, { effectiveDeltas: effectiveDelta, mode: 'dps' }).find((row) =>
       allowed.includes(row.stat),
     );
-    if (!best || best.dpsGainPct <= 0) break;
+    if (!best || best.gainPct <= 0) break;
     current = { ...current, [best.stat]: current[best.stat] + 1 };
   }
   return current;

@@ -308,7 +308,7 @@ describe('computeAdvisorPipeline', () => {
     );
     expect(out.effective.critChance).toBeCloseTo(100, 6);
     const critRank = out.ranking.find((r) => r.stat === 'critChance');
-    expect(critRank?.dpsGainPct).toBe(0);
+    expect(critRank?.gainPct).toBe(0);
   });
 
   it('ranks CDR with positive gain at 70% effective CDR (below 80% cap)', () => {
@@ -325,7 +325,7 @@ describe('computeAdvisorPipeline', () => {
     );
     expect(out.effective.cdr).toBeCloseTo(70, 1);
     const cdrRank = out.ranking.find((r) => r.stat === 'cdr');
-    expect(cdrRank?.dpsGainPct).toBeGreaterThan(0);
+    expect(cdrRank?.gainPct).toBeGreaterThan(0);
   });
 
   it('ranks CDR at zero when effective CDR is at 80% cap', () => {
@@ -341,7 +341,7 @@ describe('computeAdvisorPipeline', () => {
     );
     expect(out.effective.cdr).toBeCloseTo(80, 1);
     const cdrRank = out.ranking.find((r) => r.stat === 'cdr');
-    expect(cdrRank?.dpsGainPct).toBe(0);
+    expect(cdrRank?.gainPct).toBe(0);
   });
 
   it('ranks penetration with positive gain at 70% effective pen', () => {
@@ -358,7 +358,7 @@ describe('computeAdvisorPipeline', () => {
     );
     expect(out.effective.penetration).toBeCloseTo(70, 1);
     const penRank = out.ranking.find((r) => r.stat === 'penetration');
-    expect(penRank?.dpsGainPct).toBeGreaterThan(0);
+    expect(penRank?.gainPct).toBeGreaterThan(0);
   });
 
   it('ranks penetration at zero when effective pen is at 100% bypass cap', () => {
@@ -375,7 +375,7 @@ describe('computeAdvisorPipeline', () => {
     );
     expect(out.effective.penetration).toBeCloseTo(100, 1);
     const penRank = out.ranking.find((r) => r.stat === 'penetration');
-    expect(penRank?.dpsGainPct).toBe(0);
+    expect(penRank?.gainPct).toBe(0);
   });
 
   it('ranks penetration at zero when sheet pen exceeds 100% (combat saturated)', () => {
@@ -392,7 +392,7 @@ describe('computeAdvisorPipeline', () => {
     );
     expect(out.effective.penetration).toBeGreaterThan(100);
     const penRank = out.ranking.find((r) => r.stat === 'penetration');
-    expect(penRank?.dpsGainPct).toBe(0);
+    expect(penRank?.gainPct).toBe(0);
   });
 
   it('spentDelta counts luck points against the level budget (BSPW2-AC-29, AD-BSP-19)', () => {

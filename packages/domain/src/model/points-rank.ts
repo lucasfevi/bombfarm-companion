@@ -16,6 +16,10 @@ import {
   type StatKey,
 } from './types';
 
+/** The seven ranked stats, in emission order. Both ranking modes iterate this array and sort
+ *  with a STABLE sort, so a tie on gain preserves this order in either mode. */
+export const RANK_STATS: readonly StatKey[] = ['energy', 'attack', 'critDmg', 'speed', 'critChance', 'penetration', 'cdr'];
+
 function hitSize(hero: HeroSheet, mitigation: number, hitDmgMult: number): number {
   return hero.attack * mitigationFactor(mitigation, hero.penetration) * hitDmgMult * critFactor(hero.critChance, hero.critDmg);
 }
@@ -137,18 +141,17 @@ export function rankNextPoint(hero: HeroSheet, context: Context, optionsOrBases?
     return dpsGain + breakpointBonus + gapShrink * 0.25;
   };
 
-  const stats: StatKey[] = ['energy', 'attack', 'critDmg', 'speed', 'critChance', 'penetration', 'cdr'];
   const hitRelevant = new Set<StatKey>(['attack', 'critDmg', 'critChance', 'penetration']);
-  const out: PointValue[] = stats.map((stat) => {
+  const out: PointValue[] = RANK_STATS.map((stat) => {
     const delta = deltaForStat(stat, hero, options, base);
     const patch = applyEffectivePoint(hero, stat, delta);
     return {
       stat,
       label: STAT_LABELS[stat],
-      dpsGainPct: score(patch, stat, hitRelevant.has(stat)),
+      gainPct: score(patch, stat, hitRelevant.has(stat)),
     };
   });
-  return out.sort((left, right) => right.dpsGainPct - left.dpsGainPct);
+  return out.sort((left, right) => right.gainPct - left.gainPct);
 }
 
 /** Energy at which one energy point equals one attack point (given current attack). */

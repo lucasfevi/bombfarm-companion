@@ -285,36 +285,36 @@
         "ranking": [
           {
             "stat": "attack",
-            "dpsGainPct": "2.721097457578736"
+            "gainPct": "2.721097457578736"
           },
           {
             "stat": "energy",
-            "dpsGainPct": "2.400539150524539"
+            "gainPct": "2.400539150524539"
           },
           {
             "stat": "critDmg",
-            "dpsGainPct": "0.27489791609069947"
+            "gainPct": "0.27489791609069947"
           },
           {
             "stat": "cdr",
-            "dpsGainPct": "0.09250544693830687"
+            "gainPct": "0.09250544693830687"
           },
           {
             "stat": "critChance",
-            "dpsGainPct": "0.060468764102172834"
+            "gainPct": "0.060468764102172834"
           },
           {
             "stat": "penetration",
-            "dpsGainPct": "0.0008369005070285596"
+            "gainPct": "0.0008369005070285596"
           },
           {
             "stat": "speed",
-            "dpsGainPct": "0"
+            "gainPct": "0"
           }
         ],
         "best": {
           "stat": "attack",
-          "dpsGainPct": "2.721097457578736"
+          "gainPct": "2.721097457578736"
         },
         "dps": "213.55386040288053",
         "active": "702.8536250672176",
@@ -872,36 +872,36 @@
         "ranking": [
           {
             "stat": "attack",
-            "dpsGainPct": "10.960641331732912"
+            "gainPct": "10.960641331732912"
           },
           {
             "stat": "energy",
-            "dpsGainPct": "8.850657529619932"
+            "gainPct": "8.850657529619932"
           },
           {
             "stat": "critDmg",
-            "dpsGainPct": "0.23987026375236198"
+            "gainPct": "0.23987026375236198"
           },
           {
             "stat": "cdr",
-            "dpsGainPct": "0.14805050786752538"
+            "gainPct": "0.14805050786752538"
           },
           {
             "stat": "critChance",
-            "dpsGainPct": "0.05791144403504145"
+            "gainPct": "0.05791144403504145"
           },
           {
             "stat": "penetration",
-            "dpsGainPct": "0.0007596345629634627"
+            "gainPct": "0.0007596345629634627"
           },
           {
             "stat": "speed",
-            "dpsGainPct": "0"
+            "gainPct": "0"
           }
         ],
         "best": {
           "stat": "attack",
-          "dpsGainPct": "10.960641331732912"
+          "gainPct": "10.960641331732912"
         },
         "dps": "6.867254968642828",
         "active": "78.87434420110044",
@@ -1424,36 +1424,36 @@
         "ranking": [
           {
             "stat": "attack",
-            "dpsGainPct": "12.733737384730093"
+            "gainPct": "12.733737384730093"
           },
           {
             "stat": "energy",
-            "dpsGainPct": "6.154005418363528"
+            "gainPct": "6.154005418363528"
           },
           {
             "stat": "critDmg",
-            "dpsGainPct": "0.17788572971617622"
+            "gainPct": "0.17788572971617622"
           },
           {
             "stat": "cdr",
-            "dpsGainPct": "0.1672331269707561"
+            "gainPct": "0.1672331269707561"
           },
           {
             "stat": "critChance",
-            "dpsGainPct": "0.042946630065543445"
+            "gainPct": "0.042946630065543445"
           },
           {
             "stat": "penetration",
-            "dpsGainPct": "0.0005211384206393888"
+            "gainPct": "0.0005211384206393888"
           },
           {
             "stat": "speed",
-            "dpsGainPct": "0"
+            "gainPct": "0"
           }
         ],
         "best": {
           "stat": "attack",
-          "dpsGainPct": "12.733737384730093"
+          "gainPct": "12.733737384730093"
         },
         "dps": "7.621242917634485",
         "active": "65.06271682156307",
@@ -1983,36 +1983,36 @@
         "ranking": [
           {
             "stat": "attack",
-            "dpsGainPct": "14.754149056578392"
+            "gainPct": "14.754149056578392"
           },
           {
             "stat": "energy",
-            "dpsGainPct": "6.080634761133874"
+            "gainPct": "6.080634761133874"
           },
           {
             "stat": "critDmg",
-            "dpsGainPct": "0.21733619405484017"
+            "gainPct": "0.21733619405484017"
           },
           {
             "stat": "cdr",
-            "dpsGainPct": "0.17317148368838353"
+            "gainPct": "0.17317148368838353"
           },
           {
             "stat": "critChance",
-            "dpsGainPct": "0.0517218574636269"
+            "gainPct": "0.0517218574636269"
           },
           {
             "stat": "penetration",
-            "dpsGainPct": "0.0008296399027551971"
+            "gainPct": "0.0008296399027551971"
           },
           {
             "stat": "speed",
-            "dpsGainPct": "0"
+            "gainPct": "0"
           }
         ],
         "best": {
           "stat": "attack",
-          "dpsGainPct": "14.754149056578392"
+          "gainPct": "14.754149056578392"
         },
         "dps": "6.431439959505024",
         "active": "54.38750404120807",
@@ -2542,36 +2542,36 @@
         "ranking": [
           {
             "stat": "attack",
-            "dpsGainPct": "2.11245829411546"
+            "gainPct": "2.11245829411546"
           },
           {
             "stat": "energy",
-            "dpsGainPct": "1.5502551329830583"
+            "gainPct": "1.5502551329830583"
           },
           {
             "stat": "critDmg",
-            "dpsGainPct": "0.38951772890567504"
+            "gainPct": "0.38951772890567504"
           },
           {
             "stat": "cdr",
-            "dpsGainPct": "0.16369137865093197"
+            "gainPct": "0.16369137865093197"
           },
           {
             "stat": "critChance",
-            "dpsGainPct": "0.07368910876905943"
+            "gainPct": "0.07368910876905943"
           },
           {
             "stat": "penetration",
-            "dpsGainPct": "0.0018932967115414812"
+            "gainPct": "0.0018932967115414812"
           },
           {
             "stat": "speed",
-            "dpsGainPct": "0"
+            "gainPct": "0"
           }
         ],
         "best": {
           "stat": "attack",
-          "dpsGainPct": "2.11245829411546"
+          "gainPct": "2.11245829411546"
         },
         "dps": "441.4710718154885",
         "active": "1325.3902023832375",
@@ -3157,36 +3157,36 @@
         "ranking": [
           {
             "stat": "energy",
-            "dpsGainPct": "3.4301438839649867"
+            "gainPct": "3.4301438839649867"
           },
           {
             "stat": "attack",
-            "dpsGainPct": "3.403435500409291"
+            "gainPct": "3.403435500409291"
           },
           {
             "stat": "critDmg",
-            "dpsGainPct": "0.38367167792983103"
+            "gainPct": "0.38367167792983103"
           },
           {
             "stat": "cdr",
-            "dpsGainPct": "0.13713055830630871"
+            "gainPct": "0.13713055830630871"
           },
           {
             "stat": "critChance",
-            "dpsGainPct": "0.09035222257205433"
+            "gainPct": "0.09035222257205433"
           },
           {
             "stat": "penetration",
-            "dpsGainPct": "0.0007786665543241256"
+            "gainPct": "0.0007786665543241256"
           },
           {
             "stat": "speed",
-            "dpsGainPct": "0"
+            "gainPct": "0"
           }
         ],
         "best": {
           "stat": "energy",
-          "dpsGainPct": "3.4301438839649867"
+          "gainPct": "3.4301438839649867"
         },
         "dps": "75.16750964634451",
         "active": "428.2708760937014",
@@ -3737,36 +3737,36 @@
         "ranking": [
           {
             "stat": "attack",
-            "dpsGainPct": "3.437469724387743"
+            "gainPct": "3.437469724387743"
           },
           {
             "stat": "energy",
-            "dpsGainPct": "3.0484078566583417"
+            "gainPct": "3.0484078566583417"
           },
           {
             "stat": "critDmg",
-            "dpsGainPct": "0.27178358714075035"
+            "gainPct": "0.27178358714075035"
           },
           {
             "stat": "cdr",
-            "dpsGainPct": "0.09250544693830687"
+            "gainPct": "0.09250544693830687"
           },
           {
             "stat": "critChance",
-            "dpsGainPct": "0.06049314172471565"
+            "gainPct": "0.06049314172471565"
           },
           {
             "stat": "penetration",
-            "dpsGainPct": "0.0007636807000110934"
+            "gainPct": "0.0007636807000110934"
           },
           {
             "stat": "speed",
-            "dpsGainPct": "0"
+            "gainPct": "0"
           }
         ],
         "best": {
           "stat": "attack",
-          "dpsGainPct": "3.437469724387743"
+          "gainPct": "3.437469724387743"
         },
         "dps": "103.86552556309415",
         "active": "433.0578867630691",
@@ -4324,36 +4324,36 @@
         "ranking": [
           {
             "stat": "attack",
-            "dpsGainPct": "3.7458781737867097"
+            "gainPct": "3.7458781737867097"
           },
           {
             "stat": "energy",
-            "dpsGainPct": "3.731208451756718"
+            "gainPct": "3.731208451756718"
           },
           {
             "stat": "critDmg",
-            "dpsGainPct": "0.15545091322437532"
+            "gainPct": "0.15545091322437532"
           },
           {
             "stat": "cdr",
-            "dpsGainPct": "0.15531954081577926"
+            "gainPct": "0.15531954081577926"
           },
           {
             "stat": "critChance",
-            "dpsGainPct": "0.03886272830611048"
+            "gainPct": "0.03886272830611048"
           },
           {
             "stat": "penetration",
-            "dpsGainPct": "0.00028971380185982554"
+            "gainPct": "0.00028971380185982554"
           },
           {
             "stat": "speed",
-            "dpsGainPct": "0"
+            "gainPct": "0"
           }
         ],
         "best": {
           "stat": "attack",
-          "dpsGainPct": "3.7458781737867097"
+          "gainPct": "3.7458781737867097"
         },
         "dps": "58.774875377868725",
         "active": "355.47302385181644",
@@ -4897,36 +4897,36 @@
         "ranking": [
           {
             "stat": "attack",
-            "dpsGainPct": "3.666339165686461"
+            "gainPct": "3.666339165686461"
           },
           {
             "stat": "energy",
-            "dpsGainPct": "3.5410874778911694"
+            "gainPct": "3.5410874778911694"
           },
           {
             "stat": "critDmg",
-            "dpsGainPct": "0.3247932442122847"
+            "gainPct": "0.3247932442122847"
           },
           {
             "stat": "cdr",
-            "dpsGainPct": "0.2060884576855493"
+            "gainPct": "0.2060884576855493"
           },
           {
             "stat": "critChance",
-            "dpsGainPct": "0.08119831105306563"
+            "gainPct": "0.08119831105306563"
           },
           {
             "stat": "penetration",
-            "dpsGainPct": "0.0009212559177518287"
+            "gainPct": "0.0009212559177518287"
           },
           {
             "stat": "speed",
-            "dpsGainPct": "0"
+            "gainPct": "0"
           }
         ],
         "best": {
           "stat": "attack",
-          "dpsGainPct": "3.666339165686461"
+          "gainPct": "3.666339165686461"
         },
         "dps": "65.22957386954101",
         "active": "389.10734847413767",
@@ -5456,36 +5456,36 @@
         "ranking": [
           {
             "stat": "attack",
-            "dpsGainPct": "10.183703492475992"
+            "gainPct": "10.183703492475992"
           },
           {
             "stat": "energy",
-            "dpsGainPct": "7.379760143490888"
+            "gainPct": "7.379760143490888"
           },
           {
             "stat": "critDmg",
-            "dpsGainPct": "0.242260091001123"
+            "gainPct": "0.242260091001123"
           },
           {
             "stat": "cdr",
-            "dpsGainPct": "0.11915675538982651"
+            "gainPct": "0.11915675538982651"
           },
           {
             "stat": "critChance",
-            "dpsGainPct": "0.06056502275029185"
+            "gainPct": "0.06056502275029185"
           },
           {
             "stat": "penetration",
-            "dpsGainPct": "0.00043594008907188453"
+            "gainPct": "0.00043594008907188453"
           },
           {
             "stat": "speed",
-            "dpsGainPct": "0"
+            "gainPct": "0"
           }
         ],
         "best": {
           "stat": "attack",
-          "dpsGainPct": "10.183703492475992"
+          "gainPct": "10.183703492475992"
         },
         "dps": "7.416817596498973",
         "active": "80.2905636027993",
@@ -5994,36 +5994,36 @@
         "ranking": [
           {
             "stat": "attack",
-            "dpsGainPct": "12.872094608449114"
+            "gainPct": "12.872094608449114"
           },
           {
             "stat": "energy",
-            "dpsGainPct": "5.933615301724848"
+            "gainPct": "5.933615301724848"
           },
           {
             "stat": "critDmg",
-            "dpsGainPct": "0.29405935569308816"
+            "gainPct": "0.29405935569308816"
           },
           {
             "stat": "cdr",
-            "dpsGainPct": "0.0895159425446046"
+            "gainPct": "0.0895159425446046"
           },
           {
             "stat": "critChance",
-            "dpsGainPct": "0.07137363002258645"
+            "gainPct": "0.07137363002258645"
           },
           {
             "stat": "penetration",
-            "dpsGainPct": "0.00043782617591414663"
+            "gainPct": "0.00043782617591414663"
           },
           {
             "stat": "speed",
-            "dpsGainPct": "0"
+            "gainPct": "0"
           }
         ],
         "best": {
           "stat": "attack",
-          "dpsGainPct": "12.872094608449114"
+          "gainPct": "12.872094608449114"
         },
         "dps": "6.774664504021603",
         "active": "61.37060156914945",
@@ -6539,36 +6539,36 @@
         "ranking": [
           {
             "stat": "attack",
-            "dpsGainPct": "10.077567827947043"
+            "gainPct": "10.077567827947043"
           },
           {
             "stat": "energy",
-            "dpsGainPct": "8.435769302354634"
+            "gainPct": "8.435769302354634"
           },
           {
             "stat": "critDmg",
-            "dpsGainPct": "0.1765515114174665"
+            "gainPct": "0.1765515114174665"
           },
           {
             "stat": "critChance",
-            "dpsGainPct": "0.04316662870842425"
+            "gainPct": "0.04316662870842425"
           },
           {
             "stat": "cdr",
-            "dpsGainPct": "0.02631640392327661"
+            "gainPct": "0.02631640392327661"
           },
           {
             "stat": "penetration",
-            "dpsGainPct": "0.0008015942202677095"
+            "gainPct": "0.0008015942202677095"
           },
           {
             "stat": "speed",
-            "dpsGainPct": "0"
+            "gainPct": "0"
           }
         ],
         "best": {
           "stat": "attack",
-          "dpsGainPct": "10.077567827947043"
+          "gainPct": "10.077567827947043"
         },
         "dps": "6.335937535822317",
         "active": "76.74225251948022",
@@ -7084,36 +7084,36 @@
         "ranking": [
           {
             "stat": "attack",
-            "dpsGainPct": "8.991350252523333"
+            "gainPct": "8.991350252523333"
           },
           {
             "stat": "energy",
-            "dpsGainPct": "7.289779968742227"
+            "gainPct": "7.289779968742227"
           },
           {
             "stat": "critDmg",
-            "dpsGainPct": "0.22388229338188292"
+            "gainPct": "0.22388229338188292"
           },
           {
             "stat": "critChance",
-            "dpsGainPct": "0.05597057334547628"
+            "gainPct": "0.05597057334547628"
           },
           {
             "stat": "cdr",
-            "dpsGainPct": "0.04485440635333404"
+            "gainPct": "0.04485440635333404"
           },
           {
             "stat": "penetration",
-            "dpsGainPct": "0.0001779998667128524"
+            "gainPct": "0.0001779998667128524"
           },
           {
             "stat": "speed",
-            "dpsGainPct": "0"
+            "gainPct": "0"
           }
         ],
         "best": {
           "stat": "attack",
-          "dpsGainPct": "8.991350252523333"
+          "gainPct": "8.991350252523333"
         },
         "dps": "10.135063091040458",
         "active": "108.60454678776424",

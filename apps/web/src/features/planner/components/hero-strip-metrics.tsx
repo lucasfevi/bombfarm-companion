@@ -15,7 +15,7 @@ export function HeroStripMetrics() {
   const pipeline = usePlannerStore(selectAdvisorPipeline);
   const { dps, active, uptime, predHit, best } = pipeline;
   const bestStat = best.stat;
-  const bestGainPct = best.dpsGainPct;
+  const bestGainPct = best.gainPct;
   const fmtCompact = (value: number) => formatCompactNumber(value, 1);
 
   return (

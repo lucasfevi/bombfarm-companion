@@ -41,7 +41,7 @@ export const STAT_LABELS: Record<StatKey, string> = {
 export interface PointValue {
   stat: StatKey;
   label: string;
-  dpsGainPct: number;
+  gainPct: number;
 }
 
 /** Base values the % point gains scale off (naked sheet ≈ base roll proxy). */
