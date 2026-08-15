@@ -1,5 +1,5 @@
 ---
-'@bombfarm/domain': patch
+"@bombfarm/domain": patch
 ---
 
 Farm cadence: average the bomb cycle over a measured hop distribution instead of collapsing to a single expected hop.
