@@ -5,6 +5,7 @@ import type { HeroSheet } from '../model';
 import { canonicalizeAssignment } from './canonicalize-assignment';
 import { evaluateRoster } from './evaluate';
 import { optimizeBuild } from '../points-reopt';
+import { respecCostGold } from '../respec-cost';
 import {
   buildInitialAssignment,
   type AssignmentState,
@@ -188,7 +189,7 @@ function buildPointResets(
       rosterGainDps: gainByHeroId[heroId] ?? 0,
       // Confirmed real in-game cost. Ability resets cost the same again, separately, but we never
       // recommend ability resets here. Display-only — never enters the objective or any filter.
-      resetCostGold: level * 1000,
+      resetCostGold: respecCostGold(level),
     };
   });
 }
