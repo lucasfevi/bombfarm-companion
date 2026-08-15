@@ -66,9 +66,9 @@ describe('selectAdvisorPipeline', () => {
     expect(getAdvisorPipelineComputeCount()).toBe(before);
   });
 
-  it('dep tuple has exactly 23 members in spec order (MP5 F3 drops the 5 keystone-derived entries: treeGlassCannon, treeCritDmgMult, treeTempoDobrado, treeAbisso, treeAbissoBase; statPointsAvailable dropped with the level-pool budget)', () => {
+  it('dep tuple has exactly 22 members in spec order (MP5 F3 drops the 5 keystone-derived entries: treeGlassCannon, treeCritDmgMult, treeTempoDobrado, treeAbisso, treeAbissoBase; statPointsAvailable dropped with the level-pool budget; rankMode dropped because computeAdvisorPipeline no longer reads it)', () => {
     const tuple = readAdvisorDepTuple(usePlannerStore.getState());
-    expect(tuple).toHaveLength(23);
+    expect(tuple).toHaveLength(22);
   });
 
   it('selectDps stays stable when heroName changes', () => {

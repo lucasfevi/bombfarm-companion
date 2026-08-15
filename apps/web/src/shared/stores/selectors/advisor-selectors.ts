@@ -47,7 +47,9 @@ export function readAdvisorDepTuple(state: PlannerStore): readonly unknown[] {
     state.houseLevel,
     state.phase,
     state.mitigationPct,
-    state.rankMode,
+    // state.rankMode is deliberately NOT a dep here: computeAdvisorPipeline no longer reads
+    // rankMode for anything, so including it would invalidate this cache on every dps/farm
+    // toggle for no reason — the pipeline's ranking output cannot change from it.
     state.targetProp,
     state.birth,
   ] as const;
