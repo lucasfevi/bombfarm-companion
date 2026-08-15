@@ -45,6 +45,9 @@ export const CHANGE_KEY_INPUTS: readonly string[] = [
   'account.teamBuffs',
   'context.houseIdx',
   'context.houseLevel',
+  // Not under `context.*`: `casa.cycle_secs` rides on the account root, not on `HeroContext` —
+  // it is a captured measurement, not a user-set field the house pickers write.
+  'account.houseCycleSecs',
   'context.rankMode',
   'context.targetProp',
   'phase',
@@ -122,6 +125,9 @@ export function sharedChangeKey(shared: AccountShared, phase: number, mitigation
       rankMode: shared.context.rankMode,
       targetProp: shared.context.targetProp,
     },
+    // Changes every hero's rest seconds, so a refreshed House cycle must invalidate the cache
+    // exactly as a house upgrade does — the D24 "cached number rendered as current" shape.
+    houseCycleSecs: shared.houseCycleSecs,
     phase,
     mitigationPct,
   });

@@ -536,10 +536,15 @@ describe('parseSaveFile', () => {
     const { account } = parseAccountPayload({ heroes: [] }, []);
     // Farm Ranking: @bombfarm/domain's mapAccountMaxPhase added the additive, required
     // `maxPhase: number | null` field to AccountImportData — every rejection path is `null`.
+    // House-ceiling fix: `fieldSlots` (`skills.field_slots`) and `houseCycleSecs`
+    // (`casa.cycle_secs`) joined the same total-reader family — absent section ⇒ `null`, never a
+    // substituted default, so a consumer can tell "the save said nothing" from "the save said 3".
     expect(account).toEqual({
       tree: null,
       houseIdx: null,
       houseLevel: null,
+      fieldSlots: null,
+      houseCycleSecs: null,
       phase: null,
       maxPhase: null,
     });

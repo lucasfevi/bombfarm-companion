@@ -4,7 +4,7 @@
 // so a save file from any account — not just the one used to build this — works.
 
 import catalog from './data/catalog.json';
-import { resolveCasaSlots } from './casa-slots';
+import { resolveCasaSlots, resolveFieldSlots } from './casa-slots';
 import { mapInventoryItem, type InventoryItem } from './inventory';
 import { ABILITIES, RarityKey, abilityMods } from './model';
 import { EquippedItem, Loadout, emptyLoadout, emptySheetOther } from './gear';
@@ -67,8 +67,26 @@ export type AccountImportData = {
   } | null;
   houseIdx: number | null;
   houseLevel: number | null;
-  /** Casa field slots from the save (`casa.slots` ladder) when `casa` is present. */
+  /**
+   * HOUSE RECOVERY slots from the save (`casa.slots` ladder) when `casa` is present — how many
+   * heroes the House refills at a time, NOT the field concurrency cap. See {@link fieldSlots}
+   * for that. The name is kept (`slots`) because it is the persisted key on every stored
+   * account and on `AccountShared`; the meaning was always `casa.slots`, only its downstream
+   * READING as a field cap was wrong.
+   */
   slots?: number | null;
+  /**
+   * `skills.field_slots` — how many heroes may stand on the field at once. `null` when the save
+   * does not carry the key. Deliberately separate from {@link slots}: 6 vs 3 on account 486.
+   */
+  fieldSlots?: number | null;
+  /**
+   * `casa.cycle_secs` — a full 0 → 100% House fill in seconds, straight off the save. `null` when
+   * absent, which sends every consumer back to the `HOUSES` table interpolation
+   * (`resolveHouseRestSeconds`). Preferred over the table because the table is a whole-minute
+   * reconstruction that runs ~7.8% fast (1077s vs a measured 1168.42s at Casa I level 11).
+   */
+  houseCycleSecs?: number | null;
   /** `account.phase` — the phase the player is currently farming. Null when absent. */
   phase: number | null;
   /**
@@ -173,12 +191,27 @@ function mapAccountMaxPhase(raw: Record<string, unknown>): number | null {
   return Math.min(rounded, WIKI_PHASE_LINES.length);
 }
 
+/**
+ * `casa.cycle_secs` — the House's own full-fill countdown. Positive-finite or `null`; never a
+ * substituted table value, so the caller can tell "the save said 1168.42" from "the save said
+ * nothing and the HOUSES interpolation was used".
+ */
+function mapHouseCycleSecs(casa: Record<string, unknown> | null): number | null {
+  if (!casa) return null;
+  const raw = casa.cycle_secs;
+  if (typeof raw !== 'number' || !Number.isFinite(raw) || raw <= 0) return null;
+  return raw;
+}
+
 function mapAccountData(raw: Record<string, unknown>): AccountImportData {
   const skills = isObject(raw.skills) ? raw.skills : null;
   const totals = skills && isObject(skills.totals) ? skills.totals : null;
   const casa = isObject(raw.casa) ? raw.casa : null;
   const phase = mapAccountPhase(raw);
   const maxPhase = mapAccountMaxPhase(raw);
+  // Read off `skills`, not `casa` — the field cap is a skill-tree quantity and is present even on
+  // a payload that omits `casa` entirely (`AD-036` per-section fidelity).
+  const fieldSlots = resolveFieldSlots(skills);
 
   // MOD-36: single-pass optional-field parse — stays null unless the save carries `totals`.
   let tree: AccountImportData['tree'] = null;
@@ -210,18 +243,24 @@ function mapAccountData(raw: Record<string, unknown>): AccountImportData {
       houseIdx,
       houseLevel,
       slots: resolveCasaSlots(casa, houseIdx),
+      fieldSlots,
+      houseCycleSecs: mapHouseCycleSecs(casa),
       phase,
       maxPhase,
     };
   }
 
-  return { tree, houseIdx, houseLevel, phase, maxPhase };
+  // No `casa` block: `slots` and `houseCycleSecs` stay absent (both are casa-sourced), but
+  // `fieldSlots` still comes through — it lives on `skills`, a section a payload can carry alone.
+  return { tree, houseIdx, houseLevel, fieldSlots, houseCycleSecs: null, phase, maxPhase };
 }
 
 const EMPTY_ACCOUNT_DATA: AccountImportData = {
   tree: null,
   houseIdx: null,
   houseLevel: null,
+  fieldSlots: null,
+  houseCycleSecs: null,
   phase: null,
   maxPhase: null,
 };

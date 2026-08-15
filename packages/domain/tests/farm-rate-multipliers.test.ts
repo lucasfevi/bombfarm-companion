@@ -44,6 +44,18 @@ function heroShare(heroFacts: readonly HeroFarmFacts[], targetId: string, line: 
   return denom > 0 ? targetTerm / denom : 0;
 }
 
+/**
+ * An account whose House recovers every hero in parallel and whose field fits everyone.
+ *
+ * The multiplier cases below are single-variable deltas on the LOOT chain; with the fixture's
+ * real 3-slot House the greedy recovery-slot allocation is active (the 5-hero roster demands
+ * ~4.1 slots), which reshuffles per-hero SHARES and would confound "veia_ouro pays by share"
+ * with "the House rationed this hero". Both ceilings are lifted so the only thing moving in each
+ * case is the multiplier under test. The ceilings themselves are proved in
+ * `farm-rate-concurrency.test.ts`, not here.
+ */
+const UNCONSTRAINED: AccountShared = { ...account, slots: 1000, fieldSlots: 1000 };
+
 function syntheticHero(overrides: Partial<HeroFarmFacts> & { heroId: string }): HeroFarmFacts {
   return {
     heroName: overrides.heroId,
@@ -141,8 +153,10 @@ describe('Gold tracks team_coin / fortuna / veia_ouro, never Sorte', () => {
 
     const baseFacts = computeHeroFarmFacts({ heroes, account });
     const boostedFacts = computeHeroFarmFacts({ heroes: heroesBoosted, account });
-    const baseSquad = computeSquadFarmFacts(baseFacts, account);
-    const boostedSquad = computeSquadFarmFacts(boostedFacts, account);
+    // UNCONSTRAINED: `heroShare` below re-derives shares from the UNTHROTTLED per-hero terms, so
+    // the House allocation has to be inert for it to be the right hand-derivation.
+    const baseSquad = computeSquadFarmFacts(baseFacts, UNCONSTRAINED);
+    const boostedSquad = computeSquadFarmFacts(boostedFacts, UNCONSTRAINED);
 
     const baseRow = computeFarmRateRow(42, baseSquad)!;
     const boostedRow = computeFarmRateRow(42, boostedSquad)!;
@@ -168,17 +182,17 @@ describe('Gold tracks team_coin / fortuna / veia_ouro, never Sorte', () => {
   });
 
   it('five heroes maxed on fortuna (full uptime) hit FORTUNA_AURA_CAP exactly (0.10); a sixth maxed hero leaves goldPerHour byte-identical', () => {
-    // A large `slots` isolates this case to the aura cap alone: with the fixture's own 3 slots,
-    // ADDING a 6th hero's uptime would also move `concurrencyScale` (a real, separate effect —
-    // more bodies competing for the same field slots), which would confound the "cap binds"
-    // claim with a "field is more crowded" effect. Un-crowding the field removes that confound.
-    const uncrowdedAccount: AccountShared = { ...account, slots: 100 };
+    // Both ceilings lifted, for the same reason: with the fixture's own 3 field slots, ADDING a
+    // 6th hero's uptime would also move `row.concurrencyScale` (a real, separate effect — more
+    // bodies competing for the same field slots), which would confound the "cap binds" claim
+    // with a "field is more crowded" effect. Un-crowding removes that confound.
+    const uncrowdedAccount: AccountShared = UNCONSTRAINED;
 
     const fiveMaxed: HeroFarmFacts[] = Array.from({ length: 5 }, (_, i) =>
       syntheticHero({ heroId: `maxed-${i}`, fortunaLevel: 20, uptime: 1 }),
     );
     const squadFive: SquadFarmFacts = computeSquadFarmFacts(fiveMaxed, uncrowdedAccount);
-    expect(squadFive.concurrencyScale).toBe(1);
+    expect(computeFarmRateRow(42, squadFive)!.concurrencyScale).toBe(1);
     expect(squadFive.fortunaAura).toBe(FORTUNA_AURA_CAP);
     expect(squadFive.fortunaAura).toBe(0.1);
 
@@ -189,7 +203,7 @@ describe('Gold tracks team_coin / fortuna / veia_ouro, never Sorte', () => {
       syntheticHero({ heroId: 'maxed-5', fortunaLevel: 20, uptime: 1, avgHitBase: 0, degenerate: true }),
     ];
     const squadSix: SquadFarmFacts = computeSquadFarmFacts(sixMaxed, uncrowdedAccount);
-    expect(squadSix.concurrencyScale).toBe(1);
+    expect(computeFarmRateRow(42, squadSix)!.concurrencyScale).toBe(1);
     expect(squadSix.fortunaAura).toBe(FORTUNA_AURA_CAP);
 
     const rowFive = computeFarmRateRow(42, squadFive)!;

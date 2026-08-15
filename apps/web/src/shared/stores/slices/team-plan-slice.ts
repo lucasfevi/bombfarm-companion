@@ -178,5 +178,6 @@ export function selectLiveTeamPlanInputSignature(state: PlannerStore): string {
     slots: state.slots,
     treeDanoTotal: state.treeDanoTotal,
     houseIdx: state.houseIdx,
+    houseCycleSecs: state.houseCycleSecs,
   });
 }

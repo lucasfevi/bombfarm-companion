@@ -187,6 +187,8 @@ export function buildPlanningModel(view: AccountView): PlanningModel {
             targetProp: DEFAULT_TARGET_PROP,
           },
           slots: parsed.account.slots ?? undefined,
+          fieldSlots: parsed.account.fieldSlots ?? null,
+          houseCycleSecs: parsed.account.houseCycleSecs ?? null,
         }
       : null;
 

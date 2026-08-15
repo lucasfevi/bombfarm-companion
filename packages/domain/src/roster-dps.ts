@@ -47,6 +47,7 @@ export function pipelineForHero(
     teamBuffs: account.teamBuffs,
     houseIdx: context.houseIdx,
     houseLevel: context.houseLevel,
+    houseCycleSecs: account.houseCycleSecs ?? null,
     phase,
     mitigationPct,
     rankMode: context.rankMode,

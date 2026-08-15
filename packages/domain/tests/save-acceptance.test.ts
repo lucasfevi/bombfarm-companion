@@ -60,7 +60,19 @@ describe('parseSaveFile — the positive acceptance gate (MSG-11, MSG-12, MSG-13
     expect(result.rejected).toEqual({ reason: 'unsupportedSaveShape', heroNames: [] });
     expect(result.candidates).toEqual([]);
     expect(result.inventory).toEqual([]);
-    expect(result.account).toEqual({ tree: null, houseIdx: null, houseLevel: null, phase: null, maxPhase: null });
+    // `fieldSlots` / `houseCycleSecs` joined `EMPTY_ACCOUNT_DATA` with the House-ceiling fix and
+    // are `null` on this path for the same reason every sibling is: the reject happens before a
+    // single account value is read. The point of the assertion — "no account value reaches the
+    // caller" — is unchanged; only the set of keys that must be null grew.
+    expect(result.account).toEqual({
+      tree: null,
+      houseIdx: null,
+      houseLevel: null,
+      fieldSlots: null,
+      houseCycleSecs: null,
+      phase: null,
+      maxPhase: null,
+    });
   });
 
   it('a truncated file (neither old nor new keys) is rejected the same way as a pre-patch file', () => {

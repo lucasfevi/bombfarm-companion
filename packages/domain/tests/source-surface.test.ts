@@ -71,9 +71,13 @@ function listFiles(dir: string, acc: string[] = []): string[] {
  */
 const SRC_ALLOWLIST: Record<string, number[]> = {
   'derive.ts': [27, 78, 96, 142, 197, 208],
-  'advisor-pipeline.ts': [89, 192, 218, 320],
+  // Line numbers only — the matches are unchanged in count and in kind; the House-cycle
+  // plumbing (`houseCycleSecs` on the input type + its two use sites) inserted lines above them
+  // and shifted all four down.
+  'advisor-pipeline.ts': [95, 199, 226, 328],
   'stat-breakdown/types.ts': [105],
-  'team-plan/score.ts': [135],
+  // +1 (line number only): the `cycleSecs` pass-through added one line above this hit.
+  'team-plan/score.ts': [136],
 };
 
 /**

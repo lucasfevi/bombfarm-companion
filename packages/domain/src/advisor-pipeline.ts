@@ -64,6 +64,12 @@ export type AdvisorPipelineInput = {
   teamBuffs: Record<TeamBuffId, number>;
   houseIdx: number;
   houseLevel: number;
+  /**
+   * `casa.cycle_secs` when the save carried it — the House's measured full-fill countdown.
+   * Omitted/`null` falls back to the `HOUSES` interpolation, which is this pipeline's historical
+   * behaviour and still the right answer for a hand-built account with no capture behind it.
+   */
+  houseCycleSecs?: number | null;
   phase: number | null;
   mitigationPct: number;
   rankMode: RankMode;
@@ -144,6 +150,7 @@ export function computeAdvisorPipeline(input: AdvisorPipelineInput): AdvisorPipe
     teamBuffs,
     houseIdx,
     houseLevel,
+    houseCycleSecs,
     phase,
     mitigationPct,
     rankMode,
@@ -202,6 +209,7 @@ export function computeAdvisorPipeline(input: AdvisorPipelineInput): AdvisorPipe
     houseLevel,
     mitigationPct: mitPct,
     phase,
+    cycleSecs: houseCycleSecs,
   });
   const rest = context.restSeconds;
 

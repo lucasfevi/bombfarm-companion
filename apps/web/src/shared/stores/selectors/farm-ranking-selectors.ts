@@ -23,7 +23,11 @@ const EMPTY_ROWS: readonly FarmRateRow[] = [];
 
 /**
  * The dependency-tuple traceability artifact: every planner edit the board must react to.
- * 15 members — `maxPhase` is here because `FarmRateOptions.maxPhase` is what sets
+ * 17 members — `fieldSlots` and `houseCycleSecs` joined at the House-ceiling fix: the first is
+ * the FIELD concurrency cap (`skills.field_slots`, a different quantity from `slots`, which is
+ * the House's RECOVERY cap), the second is the House cycle that every hero's uptime divides by.
+ * Both are compute inputs, and omitting either would leave the board stale after an import that
+ * changed only the house. `maxPhase` is here because `FarmRateOptions.maxPhase` is what sets
  * `FarmRateRow.locked` (a COMPUTE INPUT, not a post-compute filter; an earlier design
  * draft treating it as a filter would have made `row.locked` permanently `false`). A field
  * missing from this tuple is a planner edit that silently does not recompute the board.
@@ -42,6 +46,8 @@ function readFarmDepTuple(state: PlannerStore) {
     state.houseIdx,
     state.houseLevel,
     state.slots,
+    state.fieldSlots,
+    state.houseCycleSecs,
     state.maxPhase,
     state.farmPoolOverrides,
     state.farmReturnBonus,
@@ -110,6 +116,8 @@ function buildAccount(state: PlannerStore): AccountShared {
       targetProp: 'stone',
     },
     slots: state.slots,
+    fieldSlots: state.fieldSlots,
+    houseCycleSecs: state.houseCycleSecs,
     maxPhase: state.maxPhase,
   };
 }

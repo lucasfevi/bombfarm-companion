@@ -62,8 +62,24 @@ export type AccountShared = {
   tree: TreeState;
   teamBuffs: Record<string, number>;
   context: HeroContext;
-  /** Casa field slots — defaults to {@link DEFAULT_CASA_SLOTS} when absent on load. */
+  /**
+   * HOUSE RECOVERY slots (`casa.slots`) — how many heroes the House refills at a time. Defaults
+   * to {@link DEFAULT_CASA_SLOTS} when absent on load. NOT the field concurrency cap: that is
+   * {@link fieldSlots}, and the two are different numbers on a real save.
+   */
   slots?: number;
+  /**
+   * FIELD slots (`skills.field_slots`) — how many heroes may be deployed at once. `null` on a
+   * record persisted before the split (and on any account whose save carried no
+   * `skills.field_slots`), which sends readers back to {@link slots} — the value they used to
+   * read for this, wrongly, and still the only number such a record carries.
+   */
+  fieldSlots?: number | null;
+  /**
+   * `casa.cycle_secs` — full 0 → 100% House fill, seconds. `null` falls back to the `HOUSES`
+   * table interpolation. Written by import alongside `slots`.
+   */
+  houseCycleSecs?: number | null;
   /** Optimizer forge floor — defaults to `10` when absent; import never overwrites. */
   forgeFloor?: number;
   /**
@@ -155,6 +171,23 @@ function normalizeSlots(raw?: number): number {
 }
 
 /**
+ * `null` when absent or unusable — the same "one inhabitant for known-absent" shape as
+ * `normalizeMaxPhase` below, and deliberately NOT `normalizeSlots`'s substitute-a-default shape:
+ * a reader must be able to tell "this save carries no field-slot count" from "this save says 9",
+ * because the fallback for the former is `slots`, not the Casa default.
+ */
+function normalizeFieldSlots(raw?: number | null): number | null {
+  if (raw == null || !Number.isFinite(raw) || raw < 1) return null;
+  return Math.max(1, Math.round(raw));
+}
+
+/** `null` when absent or non-positive — absence means "use the `HOUSES` table". */
+function normalizeHouseCycleSecs(raw?: number | null): number | null {
+  if (raw == null || !Number.isFinite(raw) || raw <= 0) return null;
+  return raw;
+}
+
+/**
  * `null` when absent or non-finite (`@bombfarm/domain`'s reader is total, `number | null`; one
  * inhabitant for "known-absent" the whole way through), else integer-clamped `1..600` — the
  * same template as `normalizeContext`'s `phase` clamp.
@@ -170,6 +203,8 @@ export function normalizeAccount(raw?: Partial<AccountShared> | null): AccountSh
     teamBuffs: raw?.teamBuffs ?? {},
     context: normalizeContext(raw?.context),
     slots: normalizeSlots(raw?.slots),
+    fieldSlots: normalizeFieldSlots(raw?.fieldSlots),
+    houseCycleSecs: normalizeHouseCycleSecs(raw?.houseCycleSecs),
     forgeFloor: normalizeForgeFloor(raw?.forgeFloor),
     maxPhase: normalizeMaxPhase(raw?.maxPhase),
   };

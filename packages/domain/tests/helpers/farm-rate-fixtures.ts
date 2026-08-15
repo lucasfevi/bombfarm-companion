@@ -28,8 +28,11 @@ export type FarmRateFixture = {
  * recipe `pipeline-for-hero-parity.test.ts` uses for its single hero, extended to every parsed
  * candidate so the farm-rate suites get the full roster.
  */
-export function loadFarmRateFixture(filename: string = FARM_RATE_FIXTURE): FarmRateFixture {
-  const raw = loadFixtureJson(filename);
+export function loadFarmRateFixture(
+  filename: string = FARM_RATE_FIXTURE,
+  dir: string = 'sheet-math',
+): FarmRateFixture {
+  const raw = loadFixtureJson(filename, dir);
   const parsed = parseAccountPayload(raw, []);
   if (parsed.rejected) {
     throw new Error(`fixture "${filename}" was rejected: ${parsed.rejected.reason}`);
@@ -66,7 +69,13 @@ export function loadFarmRateFixture(filename: string = FARM_RATE_FIXTURE): FarmR
       rankMode: 'dps',
       targetProp: DEFAULT_TARGET_PROP,
     },
+    // Both slot counts and the House cycle come straight off the parse — the helper's job is to
+    // reproduce production's `AccountImportData -> AccountShared` mapping, not a convenient
+    // subset of it. `slots` is `casa.slots` (House recovery), `fieldSlots` is
+    // `skills.field_slots` (field concurrency); they are different numbers on a real save.
     slots: accountData.slots ?? undefined,
+    fieldSlots: accountData.fieldSlots ?? null,
+    houseCycleSecs: accountData.houseCycleSecs ?? null,
     maxPhase,
   };
 

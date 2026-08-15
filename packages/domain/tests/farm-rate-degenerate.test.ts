@@ -55,7 +55,7 @@ function expectNoNaN(row: ReturnType<typeof computeFarmRateRow>): void {
 describe('empty pool (spec.md P1-5 AC-1)', () => {
   it('every rate 0, clearSecs Infinity, expectedHtk Infinity, oneShot false, infeasible true, concurrencyScale 1, sorteFraction is the tree contribution alone, fortunaAura 0', () => {
     const squad = computeSquadFarmFacts([], account);
-    expect(squad.concurrencyScale).toBe(1);
+    expect(squad.houseSlotDemand).toBe(0);
     expect(squad.fortunaAura).toBe(0);
     expect(squad.sorteFraction).toBeCloseTo((account.tree.luckFlatPct ?? 0) / 100, 15);
 
@@ -71,6 +71,9 @@ describe('empty pool (spec.md P1-5 AC-1)', () => {
     expect(row.expectedHtk).toBe(Infinity);
     expect(row.oneShot).toBe(false);
     expect(row.infeasible).toBe(true);
+    // The two ceilings on an empty pool: nothing on field, and the field cap's 0/0 guard holds.
+    expect(row.heroesOnField).toBe(0);
+    expect(row.concurrencyScale).toBe(1);
   });
 });
 
@@ -223,11 +226,14 @@ describe('unbounded clear on a non-gate row is also infeasible (spec.md Edge Cas
 });
 
 describe('account.slots absent (spec.md P1-5 AC-7)', () => {
-  it('fieldSlots is DEFAULT_CASA_SLOTS — not 0, not Infinity', () => {
+  it('both slot counts fall back to DEFAULT_CASA_SLOTS — not 0, not Infinity', () => {
     const heroFacts = computeHeroFarmFacts({ heroes, account });
-    const noSlots: AccountShared = { ...account, slots: undefined };
+    // `fieldSlots: null` too: with `slots` absent AND no `skills.field_slots`, the field cap has
+    // no source left and must reach the same documented default rather than 0 or Infinity.
+    const noSlots: AccountShared = { ...account, slots: undefined, fieldSlots: null };
     const squad = computeSquadFarmFacts(heroFacts, noSlots);
     expect(squad.fieldSlots).toBe(DEFAULT_CASA_SLOTS);
+    expect(squad.houseSlots).toBe(DEFAULT_CASA_SLOTS);
     expect(squad.fieldSlots).not.toBe(0);
     expect(Number.isFinite(squad.fieldSlots)).toBe(true);
   });

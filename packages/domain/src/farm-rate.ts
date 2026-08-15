@@ -17,6 +17,20 @@
  * one. Cost: gate `clearSecs` runs conservative (slightly slow) for a roster carrying that
  * ability — a follow-up if ever wanted, not a bug.
  *
+ * HOUSE RECOVERY IS A SCARCE RESOURCE, AND IT IS THE BINDING ONE. Every hero's `uptime` is its
+ * OWN duty cycle `F/(F+T)` — what it would sustain if the House recovered it the instant it left
+ * the field. It does not: the House refills only `casa.slots` heroes at a time and the rest queue
+ * at frozen energy, gaining nothing. Summing per-hero uptimes (which this module did until the
+ * House-ceiling fix) therefore models a House with unlimited parallel recovery. On account 486
+ * that roster asks for 5.21 recovery slots against the 3 it owns — a 1.74x overcommit, and the
+ * single largest term in the estimator's ~1.54x over-prediction of gold/hr against live bot
+ * telemetry. See {@link allocateHouseSlots} for the constraint and why the allocation is greedy.
+ *
+ * TWO SLOT COUNTS, NOT ONE (`casa-slots.ts`): `SquadFarmFacts.houseSlots` is `casa.slots`, the
+ * RECOVERY concurrency; `SquadFarmFacts.fieldSlots` is `skills.field_slots`, the FIELD
+ * concurrency. This module read the former as the latter until the fix — harmless on account 486
+ * only because the field cap was not binding, but it capped a 6-wide field at 3.
+ *
  * SORTE-AVERAGE VS FORTUNA-SUM ASYMMETRY — DO NOT "FIX": Sorte (`SquadFarmFacts.sorteFraction`)
  * is a normalized, uptime-weighted AVERAGE of hero-only luck plus the tree's flat share
  * ("the average of on-field heroes' luck"). The Fortuna aura
@@ -297,12 +311,40 @@ export function computeHeroFarmFacts(input: FarmFactsInput): HeroFarmFacts[] {
 export type SquadFarmFacts = {
   /** Enabled heroes only, in `heroes` order. */
   heroes: readonly HeroFarmFacts[];
-  /** `account.slots ?? DEFAULT_CASA_SLOTS`. */
+  /**
+   * FIELD concurrency cap — how many heroes may be deployed at once.
+   * `account.fieldSlots ?? account.slots ?? DEFAULT_CASA_SLOTS`.
+   *
+   * The `account.slots` rung is a BACK-COMPAT fallback, not a synonym: an account stored before
+   * `skills.field_slots` was plumbed carries only `slots`, and that (wrong, House-sourced) number
+   * is still strictly better than inventing `DEFAULT_CASA_SLOTS` for it. A save-backed account
+   * never reaches that rung.
+   */
   fieldSlots: number;
-  /** `Σ uptime` over enabled heroes (fractions). */
+  /**
+   * HOUSE RECOVERY concurrency — how many heroes the House refills at a time.
+   * `account.slots ?? DEFAULT_CASA_SLOTS`. Never the field cap; see {@link fieldSlots}.
+   */
+  houseSlots: number;
+  /**
+   * `Σ uptime` over enabled heroes (fractions) — the UNCONSTRAINED on-field expectation, i.e.
+   * what the roster would sustain given unlimited parallel House recovery. Kept as the Sorte /
+   * Fortuna weighting basis and as the numerator the House ceiling is measured against; it is
+   * NOT the number of heroes actually on the field (that is `FarmRateRow.heroesOnField`, which is
+   * phase-dependent because the allocation is).
+   */
   uptimeSum: number;
-  /** `min(1, fieldSlots / uptimeSum)`; `1` when `uptimeSum === 0`. */
-  concurrencyScale: number;
+  /**
+   * `Σ (1 − uptime_h)` — House recovery slots the roster demands, in slot-seconds per second.
+   *
+   * Each hero cycles `F_h` seconds on field then `T` seconds recovering, so it occupies a
+   * recovery slot for a fraction `T/(F_h+T)` of wall clock. Since `uptime_h = F_h/(F_h+T)`, that
+   * fraction is exactly `1 − uptime_h` — no field-seconds or cycle-seconds term is needed here,
+   * which is why {@link HeroFarmFacts} does not have to carry either. Phase-independent (uptime
+   * is), so it lives on the squad rather than the row. `> houseSlots` means the House is the
+   * binding constraint: 5.21 vs 3 on account 486.
+   */
+  houseSlotDemand: number;
   /** Sorte as a FRACTION: `(uptime-weighted mean heroLuckPct + treeLuckFlatPct) / 100`. */
   sorteFraction: number;
   /** `min(FORTUNA_AURA_CAP, Σ uptime_h × perLevel × level_h)`, a FRACTION. */
@@ -313,13 +355,29 @@ export type SquadFarmFacts = {
   treeLuckFlatPct: number;
 };
 
+/**
+ * One hero's claim on the House, in recovery slot-seconds per second of wall clock:
+ * `T/(F+T) = 1 − uptime`. Clamped to `[0, 1]` so a hand-built `HeroFarmFacts` carrying an
+ * out-of-range `uptime` cannot hand the allocator a negative budget or a demand above one slot.
+ *
+ * `uptime === 1` (a hero that never rests — zero rest seconds) costs nothing and is never
+ * throttled; `uptime === 0` (a hero that never deploys, including the zero-field-seconds case)
+ * costs a full slot but delivers nothing, so the greedy ordering below places it last.
+ */
+function houseSlotDemand(hero: HeroFarmFacts): number {
+  const demand = 1 - hero.uptime;
+  if (!Number.isFinite(demand)) return 0;
+  return Math.min(1, Math.max(0, demand));
+}
+
 export function computeSquadFarmFacts(
   heroFacts: readonly HeroFarmFacts[],
   account: AccountShared,
 ): SquadFarmFacts {
-  const fieldSlots = account.slots ?? DEFAULT_CASA_SLOTS;
+  const houseSlots = account.slots ?? DEFAULT_CASA_SLOTS;
+  const fieldSlots = account.fieldSlots ?? account.slots ?? DEFAULT_CASA_SLOTS;
   const uptimeSum = heroFacts.reduce((sum, hero) => sum + hero.uptime, 0);
-  const concurrencyScale = uptimeSum > 0 ? Math.min(1, fieldSlots / uptimeSum) : 1;
+  const houseSlotDemandSum = heroFacts.reduce((sum, hero) => sum + houseSlotDemand(hero), 0);
   const treeLuckFlatPct = account.tree.luckFlatPct ?? 0;
 
   const heroLuckWeightedSum = heroFacts.reduce((sum, hero) => sum + hero.uptime * hero.heroLuckPct, 0);
@@ -336,13 +394,84 @@ export function computeSquadFarmFacts(
   return {
     heroes: heroFacts,
     fieldSlots,
+    houseSlots,
     uptimeSum,
-    concurrencyScale,
+    houseSlotDemand: houseSlotDemandSum,
     sorteFraction,
     fortunaAura,
     teamCoinMult,
     treeLuckFlatPct,
   };
+}
+
+/**
+ * The House recovery-slot ceiling: `Σ_h (1 − uptime_h) × a_h <= houseSlots`.
+ *
+ * Returns one ACTIVITY FACTOR `a_h ∈ [0, 1]` per hero, index-aligned with `heroes` — the fraction
+ * of the rotation that hero actually participates in once the House's recovery slots are
+ * rationed. A hero's realised on-field expectation is `uptime_h × a_h`, and its realised prop rate
+ * is its unconstrained rate × `a_h`.
+ *
+ * GREEDY, NOT UNIFORM — the model choice, not an optimisation. The real client lets the strongest
+ * hero take a House slot ahead of a weaker one, so the scarce slot-seconds go to the highest
+ * value density first, each hero taken up to its OWN duty-cycle ceiling `uptime_h`, with the
+ * marginal hero partially served by whatever budget is left. Uniform throttling (scaling every
+ * hero by the same `houseSlots / demand`) undershoots badly: on account 486 it predicts 1.03
+ * heroes on field against a live-measured 1.317, where greedy predicts 1.315.
+ *
+ * VALUE DENSITY is `value / cost` = the hero's unconstrained prop rate (`fullTerms[i]`, props per
+ * second of wall clock at its own full duty) divided by its slot demand. That ratio equals
+ * `propRate_h × F_h / T` — i.e. props delivered per deployment, over the shared House cycle — so
+ * ordering by it is exactly ordering by props-per-deployment. `F_h` never appears: the `T` factor
+ * is common to every hero (one House per account) and cancels out of the comparison, which is
+ * what lets this run off `uptime` alone.
+ *
+ * PHASE-DEPENDENT BY NECESSITY, hence a `buildRow` call and not a `computeSquadFarmFacts` one:
+ * `fullTerms` carries the phase's mitigation, so the ORDER heroes claim slots in genuinely
+ * changes with phase. This costs one O(n log n) sort over the enabled roster per row (7 heroes ×
+ * 600 rows) and — critically — zero pipeline calls: it reads only `HeroFarmFacts` scalars the
+ * row layer already has.
+ */
+function allocateHouseSlots(
+  heroes: readonly HeroFarmFacts[],
+  fullTerms: readonly number[],
+  houseSlots: number,
+): number[] {
+  const activity = new Array<number>(heroes.length).fill(0);
+  const demands = new Array<number>(heroes.length).fill(0);
+  const contenders: number[] = [];
+
+  for (let i = 0; i < heroes.length; i++) {
+    const demand = houseSlotDemand(heroes[i]);
+    demands[i] = demand;
+    // Costs the House nothing (never rests) — always fully active, never queued behind anyone.
+    if (demand <= 0) activity[i] = 1;
+    else contenders.push(i);
+  }
+
+  // A non-finite slot count means "no House constraint" rather than a NaN budget.
+  let budget = Number.isFinite(houseSlots) ? Math.max(0, houseSlots) : Infinity;
+
+  // Ties (and any non-finite ratio, e.g. a zero-rate hero) fall back to roster order, so the
+  // allocation is a deterministic function of the inputs — the optimizer's determinism suite
+  // compares whole tables across runs.
+  const ratios = fullTerms.map((term, i) => {
+    const ratio = term / demands[i];
+    return Number.isFinite(ratio) ? ratio : 0;
+  });
+  contenders.sort((left, right) => (ratios[right] - ratios[left]) || (left - right));
+
+  for (const index of contenders) {
+    if (!(budget > 0)) break;
+    const demand = demands[index];
+    // `min(1, ...)` is the hero's own duty-cycle ceiling: extra slot budget cannot push a hero
+    // past the uptime its energy pool and the House cycle already fix.
+    const take = Math.min(1, budget / demand);
+    activity[index] = take;
+    budget -= demand * take;
+  }
+
+  return activity;
 }
 
 /** Blocks struck per second while on field: `plantsPerSec × blocksPerBomb × EFF_IA`. */
@@ -411,6 +540,22 @@ export type FarmRateRow = {
   jaulaWindowSecs: number;
   /** Throughput-weighted squad E[HTK] — diagnostics for the board's tooltip. `Infinity` when zero-rate. */
   expectedHtk: number;
+  /**
+   * Expected heroes simultaneously on the field at this phase, AFTER the House recovery-slot
+   * ceiling and BEFORE the field-slot cap: `Σ uptime_h × a_h` (see {@link allocateHouseSlots}).
+   *
+   * Phase-dependent because the greedy allocation is — mitigation reorders which heroes win the
+   * scarce recovery slots. `<= squad.uptimeSum` always, with equality exactly when the House is
+   * not binding. Live-measured 1.317 on account 486 at phase 26 against `uptimeSum` 1.7905.
+   */
+  heroesOnField: number;
+  /**
+   * The FIELD-slot cap actually applied: `min(1, fieldSlots / heroesOnField)`; `1` when
+   * `heroesOnField === 0`. Applied AFTER the House ceiling — the House decides how many heroes
+   * the rotation can keep fed, and only then does the field cap ask whether they all fit.
+   * Capping raw `uptimeSum` instead would charge the roster twice for the same shortage.
+   */
+  concurrencyScale: number;
 };
 
 /** `-0` collapses to `0` — never leaks a signed zero into a public field (edge case). */
@@ -423,8 +568,8 @@ function buildRow(line: WikiPhaseLine, squad: SquadFarmFacts, options: FarmRateO
   const sorteMult = 1 + squad.sorteFraction;
 
   // Per-hero, per-phase: mitigation is the ONLY phase-dependent damage term.
-  let shareDenom = 0;
-  let bossRateSum = 0;
+  // `fullTerm` / `fullBossTerm` are UNCONSTRAINED rates — each hero at its own duty cycle, as if
+  // the House recovered every hero in parallel. The ceiling is applied to them below.
   const perHero = squad.heroes.map((hero) => {
     const mitF = mitigationFactor(line.mitig, hero.penetrationPct);
     const avgHit = hero.avgHitBase * mitF;
@@ -434,15 +579,39 @@ function buildRow(line: WikiPhaseLine, squad: SquadFarmFacts, options: FarmRateO
     );
     const bossHtk = hitsToKill(avgHit, propHp(line.hp, BOSS_HP_MULT_WIKI));
     const hps = hitsPerSec(hero);
-    const term = (hps * hero.uptime) / eHtk;
-    const bossTerm = (hps * hero.uptime) / bossHtk;
-    shareDenom += term;
-    bossRateSum += bossTerm;
-    return { avgHit, eHtk, term };
+    return {
+      avgHit,
+      eHtk,
+      fullTerm: (hps * hero.uptime) / eHtk,
+      fullBossTerm: (hps * hero.uptime) / bossHtk,
+    };
   });
 
-  const propsPerSec = squad.concurrencyScale * shareDenom;
-  const bossPerSec = squad.concurrencyScale * bossRateSum;
+  // Constraint 1 — House recovery slots. Ranked by this phase's own value density, so the
+  // strongest hero at THIS mitigation takes a slot ahead of a weaker one.
+  const activity = allocateHouseSlots(
+    squad.heroes,
+    perHero.map((hero) => hero.fullTerm),
+    squad.houseSlots,
+  );
+
+  let shareDenom = 0;
+  let bossRateSum = 0;
+  let heroesOnField = 0;
+  const terms = new Array<number>(perHero.length).fill(0);
+  for (let i = 0; i < perHero.length; i++) {
+    terms[i] = perHero[i].fullTerm * activity[i];
+    shareDenom += terms[i];
+    bossRateSum += perHero[i].fullBossTerm * activity[i];
+    heroesOnField += squad.heroes[i].uptime * activity[i];
+  }
+
+  // Constraint 2 — field slots, applied to what the House can actually keep fed (never to the
+  // unconstrained `uptimeSum`, which would double-charge the same shortage).
+  const concurrencyScale = heroesOnField > 0 ? Math.min(1, squad.fieldSlots / heroesOnField) : 1;
+
+  const propsPerSec = concurrencyScale * shareDenom;
+  const bossPerSec = concurrencyScale * bossRateSum;
   const propsPerHour = 3600 * propsPerSec;
 
   const veiaOuroPerLevel = LOOT_ABILITY_VALUES.veia_ouro.perLevel;
@@ -450,8 +619,10 @@ function buildRow(line: WikiPhaseLine, squad: SquadFarmFacts, options: FarmRateO
   let expectedHtkSum = 0;
   for (let i = 0; i < perHero.length; i++) {
     const hero = squad.heroes[i];
-    const { eHtk, term } = perHero[i];
-    const share = shareDenom > 0 ? term / shareDenom : 0;
+    const { eHtk } = perHero[i];
+    // The House-allocated term, not the unconstrained one: a hero the House cannot keep fed
+    // contributes proportionally less to the squad's gold mix, exactly as it does to its rate.
+    const share = shareDenom > 0 ? terms[i] / shareDenom : 0;
     const goldSelf = 1 + veiaOuroPerLevel * hero.veiaOuroLevel;
     goldSelfMixSum += share * goldSelf;
     // Guard `0 × Infinity = NaN`: a degenerate hero (eHtk === Infinity) with a genuinely zero
@@ -512,6 +683,8 @@ function buildRow(line: WikiPhaseLine, squad: SquadFarmFacts, options: FarmRateO
     jaulaEarlyCapPct: jaulaEarlyCap(line.phase) * 100,
     jaulaWindowSecs: JAULA.janelaSecs,
     expectedHtk,
+    heroesOnField: normalizeZero(heroesOnField),
+    concurrencyScale,
   };
 }
 

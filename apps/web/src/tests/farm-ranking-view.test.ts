@@ -35,6 +35,8 @@ function row(overrides: Partial<FarmRateRow> & { phase: number }): FarmRateRow {
     jaulaEarlyCapPct: 0,
     jaulaWindowSecs: 0,
     expectedHtk: 1,
+    heroesOnField: 1,
+    concurrencyScale: 1,
     ...overrides,
   };
 }
