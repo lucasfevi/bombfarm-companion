@@ -103,11 +103,16 @@ describe('the fixture reports a bounded, correctly-shaped plateau', () => {
     expect(plateau.minEnergyShare).toBeLessThanOrEqual(plateau.proposedEnergyShare);
     expect(plateau.proposedEnergyShare).toBeLessThanOrEqual(plateau.maxEnergyShare);
     expect(plateau.maxEnergyShare).toBeLessThanOrEqual(1);
-    // Measured on the committed fixture (recorded, not asserted as a hardcoded band — design.md
-    // §0.1): the WINNER holds Speed points, so its own energy-share family is narrower than the
-    // pure attack/energy sweep design.md §4.7 measures separately — here it collapses to a
-    // single point (design's own documented "narrower because it spends points on Speed").
-    expect(plateau.maxEnergyShare - plateau.minEnergyShare).toBeGreaterThanOrEqual(0);
+    // Measured on the committed fixture, pinned to the actual value rather than a tautology
+    // that would pass for any output: the winning build holds Speed points, which fixes those
+    // points and re-splits only the remaining attack+energy pool on every rung of the share
+    // ladder. That leaves this particular squad's own energy-share family narrow enough that no
+    // neighbouring grid share scores within tolerance of the peak, so the plateau genuinely
+    // collapses to a single point. That is spec-sanctioned behaviour, not an accident: min and
+    // max both equal the winner's own share, never null, never an invented width.
+    expect(plateau.minEnergyShare).toBeCloseTo(0.4744, 4);
+    expect(plateau.maxEnergyShare).toBeCloseTo(0.4744, 4);
+    expect(plateau.minEnergyShare).toBe(plateau.maxEnergyShare);
   });
 
   it('peak === proposedObjective: no probed ladder share out-scores the winner', () => {
@@ -118,6 +123,34 @@ describe('the fixture reports a bounded, correctly-shaped plateau', () => {
     const search = runFarmSearch(bases, searchableIds, budgetById, account, objective, { goldScale: 1, chestScale: 1 }, { maxPhase }, 4000);
     const bestLadderValue = search.ladder.reduce((max, entry) => Math.max(max, entry.value), -Infinity);
     expect(bestLadderValue).toBeLessThanOrEqual(search.winner.value * (1 + 1e-9));
+  });
+});
+
+describe('a squad whose small point budget produces a genuinely wide plateau, through the real solve pipeline', () => {
+  it('several adjacent grid shares round to the identical attack/energy split, so their objective values are bit-identical, not just close', () => {
+    // The single-point collapse above is real, but it is not the only shape this feature has to
+    // report correctly, and a case that only ever sees a single point cannot tell the difference
+    // between a correct width computation and a broken one that always collapses. This case
+    // forces a genuinely wide plateau through the SAME live `solveFarmRespec` pipeline, not a
+    // hand-built ladder: a hero with a tiny reallocatable point budget (4, from level 4 with
+    // every stat and luck at 0) means the ladder's 0.05-wide grid steps are finer than the
+    // budget can resolve. `Math.round(pool * share)` maps five consecutive shares — 0.40, 0.45,
+    // 0.50, 0.55, 0.60 — to the exact same 2-energy/2-attack integer split, so those five squads
+    // are bit-identical and score exactly the same, not merely within tolerance. That produces a
+    // measured, deterministic band, not a single point.
+    const jon = heroes.find((h) => h.name === 'Jon')!;
+    const tinyBudgetJon: HeroRecord = {
+      ...jon,
+      level: 4,
+      pts: { attack: 0, energy: 0, speed: 0, critChance: 0, critDmg: 0, penetration: 0, cdr: 0, luck: 0 },
+    };
+    const result = solveFarmRespec({ heroes: [tinyBudgetJon], account, maxPhase });
+    expect(result.plateau).not.toBeNull();
+    const plateau = result.plateau!;
+    expect(plateau.minEnergyShare).toBe(0.4);
+    expect(plateau.maxEnergyShare).toBe(0.6);
+    expect(plateau.proposedEnergyShare).toBe(0.5);
+    expect(plateau.maxEnergyShare - plateau.minEnergyShare).toBeCloseTo(0.2, 9);
   });
 });
 
