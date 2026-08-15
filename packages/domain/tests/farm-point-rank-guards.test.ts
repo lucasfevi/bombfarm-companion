@@ -133,6 +133,14 @@ describe('guard (c) — no retired one-shot identifier survives, with a consider
       file: join(WEB_SRC_ROOT, 'tests/storage-rank-mode-compat.test.ts'),
       reason: "tests the 'oneshot' -> 'farm' migration fixture by name",
     },
+    {
+      file: join(WEB_SRC_ROOT, 'tests/i18n-split-parity.test.ts'),
+      reason: 'RANK_MODE_KEYS_REMOVED names the retired modeOneshot/setupNeedTargetProp keys by string',
+    },
+    {
+      file: join(WEB_SRC_ROOT, 'tests/next-point-ranking.test.ts'),
+      reason: "asserts the retired <option value=\"oneshot\"> is absent from the mode select's source",
+    },
   ];
 
   it('packages/domain/src has zero matches for the seven retired identifiers', () => {
@@ -167,32 +175,9 @@ describe('guard (c) — no retired one-shot identifier survives, with a consider
     expect(offenders).toEqual([]);
   });
 
-  // apps/web/src still carries the retired mode's i18n strings and select option at this point
-  // in the item — they are removed by the item's later tasks (the mode select option, the
-  // account-tab hint reword, and the i18n catalog cleanup), each of which tightens this same
-  // allowlist as its own strings leave the tree. This is NOT a permanent carve-out: every entry
-  // below names the task that removes it, so the survivors are proved considered, not missed.
-  const SCHEDULED_FOR_LATER_RETIREMENT: Allowed[] = [
-    {
-      file: join(WEB_SRC_ROOT, 'features/planner/components/next-point-ranking.tsx'),
-      reason: 'the retired <option value="oneshot"> — removed when the mode select is updated',
-    },
-    {
-      file: join(WEB_SRC_ROOT, 'shared/i18n/namespaces/account.ts'),
-      reason: 'setupNeedTargetProp / accountTargetPropHint oneshot phrasing — retired/reworded with the account copy',
-    },
-    {
-      file: join(WEB_SRC_ROOT, 'shared/i18n/namespaces/advice.ts'),
-      reason: 'modeOneshot keys + the explain-math paragraph — retired/reworded with the advice copy',
-    },
-  ];
-
-  it('every standalone "oneshot" match in apps/web/src is either permanently allowed, or on the scheduled-retirement list', () => {
+  it('every standalone "oneshot" match in apps/web/src is on the permanent allowlist', () => {
     if (!requireFixture(WEB_SRC_ROOT, 'oneshot-word scan')) return;
-    const allowedPaths = new Set([
-      ...PERMANENT_ALLOWLIST.map((a) => a.file),
-      ...SCHEDULED_FOR_LATER_RETIREMENT.map((a) => a.file),
-    ]);
+    const allowedPaths = new Set(PERMANENT_ALLOWLIST.map((a) => a.file));
     const offenders: string[] = [];
     for (const file of listFiles(WEB_SRC_ROOT)) {
       if (allowedPaths.has(file)) continue;
