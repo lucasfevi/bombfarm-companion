@@ -76,6 +76,24 @@ const KEYSTONE_PROSE_EDITED_PATHS = [
 ].sort();
 
 /**
+ * The rank-mode retirement — two keys retired, four added, two existing values reworded. The
+ * retired/added keys are their own named lists (`RANK_MODE_KEYS_REMOVED` /
+ * `RANK_MODE_KEYS_ADDED`, below); these two leaf paths are the reworded VALUES on keys that
+ * survive: `accountTargetPropHint` drops the one-shot ranking claim, and the "next point
+ * ranking" explain paragraph (`explainSections[5].p[0]`) drops the "Oneshot mode..." sentence
+ * for one about what farm mode ranks.
+ */
+const RANK_MODE_PROSE_EDITED_PATHS = ['accountTargetPropHint', 'explainSections.5.p.0'].sort();
+
+/** Retired with the one-shot ranking heuristic: the mode option's own label, and the
+ *  Account-tab setup string that only existed to require a target prop for that mode. */
+export const RANK_MODE_KEYS_REMOVED = ['modeOneshot', 'setupNeedTargetProp'] as const;
+
+/** New for farm-mode ranking: the mode option's label, the two fallback notes (no pool / no
+ *  feasible rate), and the "ranked as if added" note for a hero outside the rotation. */
+const RANK_MODE_KEYS_ADDED = ['modeFarm', 'rankFarmNoPool', 'rankFarmNoRate', 'rankFarmAddedToPool'] as const;
+
+/**
  * MP5 F4 (T8, MSG-14) — genuinely NEW keys with no counterpart in the frozen fixture at all
  * (not a prose edit of an existing key). `diffLeafPaths` reports "present in STRINGS, absent
  * from the fixture" the same way it reports a changed value, so this list is folded into the
@@ -237,26 +255,36 @@ describe('i18n split parity', () => {
   // *minus* that enumerated list (AD-081) — every unlisted drift stays fatal in both
   // directions, and the list itself cannot silently grow or shrink (see the three
   // assertions below).
-  it('STRINGS.en differs from the frozen fixture (minus removed keys) at exactly the enumerated prose edits plus F4\'s, Farm Ranking\'s and Farm Respec Advisor\'s new keys', () => {
-    const diffs = diffLeafPaths(STRINGS.en, omitKeys(fixture.en, KEYSTONE_KEYS_REMOVED)).sort();
+  it('STRINGS.en differs from the frozen fixture (minus removed keys) at exactly the enumerated prose edits plus F4\'s, Farm Ranking\'s, Farm Respec Advisor\'s and the rank-mode retirement\'s new keys', () => {
+    const diffs = diffLeafPaths(
+      STRINGS.en,
+      omitKeys(fixture.en, [...KEYSTONE_KEYS_REMOVED, ...RANK_MODE_KEYS_REMOVED]),
+    ).sort();
     expect(diffs).toEqual(
       [
         ...KEYSTONE_PROSE_EDITED_PATHS,
+        ...RANK_MODE_PROSE_EDITED_PATHS,
         ...F4_KEYS_ADDED,
         ...FARM_RANKING_KEYS_ADDED,
         ...FARM_RESPEC_KEYS_ADDED,
+        ...RANK_MODE_KEYS_ADDED,
       ].sort(),
     );
   });
 
-  it('STRINGS.pt differs from the frozen fixture (minus removed keys) at exactly the enumerated prose edits plus F4\'s, Farm Ranking\'s and Farm Respec Advisor\'s new keys', () => {
-    const diffs = diffLeafPaths(STRINGS.pt, omitKeys(fixture.pt, KEYSTONE_KEYS_REMOVED)).sort();
+  it('STRINGS.pt differs from the frozen fixture (minus removed keys) at exactly the enumerated prose edits plus F4\'s, Farm Ranking\'s, Farm Respec Advisor\'s and the rank-mode retirement\'s new keys', () => {
+    const diffs = diffLeafPaths(
+      STRINGS.pt,
+      omitKeys(fixture.pt, [...KEYSTONE_KEYS_REMOVED, ...RANK_MODE_KEYS_REMOVED]),
+    ).sort();
     expect(diffs).toEqual(
       [
         ...KEYSTONE_PROSE_EDITED_PATHS,
+        ...RANK_MODE_PROSE_EDITED_PATHS,
         ...F4_KEYS_ADDED,
         ...FARM_RANKING_KEYS_ADDED,
         ...FARM_RESPEC_KEYS_ADDED,
+        ...RANK_MODE_KEYS_ADDED,
       ].sort(),
     );
   });
@@ -272,13 +300,14 @@ describe('i18n split parity', () => {
     }
   });
 
-  it('sorted key-name list is unchanged vs fixture minus the removed keystone keys, plus F4\'s, Farm Ranking\'s and Farm Respec Advisor\'s new keys', () => {
+  it('sorted key-name list is unchanged vs fixture minus the removed keystone/rank-mode keys, plus F4\'s, Farm Ranking\'s, Farm Respec Advisor\'s and the rank-mode retirement\'s new keys', () => {
     const fromSplit = Object.keys(STRINGS.en).sort();
     const fromFixture = [
-      ...Object.keys(omitKeys(fixture.en, KEYSTONE_KEYS_REMOVED)),
+      ...Object.keys(omitKeys(fixture.en, [...KEYSTONE_KEYS_REMOVED, ...RANK_MODE_KEYS_REMOVED])),
       ...F4_KEYS_ADDED,
       ...FARM_RANKING_KEYS_ADDED,
       ...FARM_RESPEC_KEYS_ADDED,
+      ...RANK_MODE_KEYS_ADDED,
     ].sort();
     expect(fromSplit).toEqual(fromFixture);
   });
@@ -324,6 +353,34 @@ describe('i18n split parity', () => {
   it('FARM_RESPEC_KEYS_ADDED has exactly 46 entries, present in STRINGS but absent from the frozen fixture, both languages', () => {
     expect(FARM_RESPEC_KEYS_ADDED.length).toBe(46);
     for (const key of FARM_RESPEC_KEYS_ADDED) {
+      expect(key in fixture.en, `${key} unexpectedly present in fixture.en`).toBe(false);
+      expect(key in fixture.pt, `${key} unexpectedly present in fixture.pt`).toBe(false);
+      expect(key in STRINGS.en, `${key} missing from STRINGS.en`).toBe(true);
+      expect(key in STRINGS.pt, `${key} missing from STRINGS.pt`).toBe(true);
+    }
+  });
+
+  it('RANK_MODE_KEYS_REMOVED has exactly 2 entries', () => {
+    expect(RANK_MODE_KEYS_REMOVED.length).toBe(2);
+  });
+
+  it('every RANK_MODE_KEYS_REMOVED key was present in the frozen fixture, both languages', () => {
+    for (const key of RANK_MODE_KEYS_REMOVED) {
+      expect(key in fixture.en, `${key} missing from fixture.en`).toBe(true);
+      expect(key in fixture.pt, `${key} missing from fixture.pt`).toBe(true);
+    }
+  });
+
+  it('every RANK_MODE_KEYS_REMOVED key is absent from STRINGS, both languages', () => {
+    for (const key of RANK_MODE_KEYS_REMOVED) {
+      expect(key in STRINGS.en, `${key} still present in STRINGS.en`).toBe(false);
+      expect(key in STRINGS.pt, `${key} still present in STRINGS.pt`).toBe(false);
+    }
+  });
+
+  it('RANK_MODE_KEYS_ADDED has exactly 4 entries, present in STRINGS but absent from the frozen fixture, both languages', () => {
+    expect(RANK_MODE_KEYS_ADDED.length).toBe(4);
+    for (const key of RANK_MODE_KEYS_ADDED) {
       expect(key in fixture.en, `${key} unexpectedly present in fixture.en`).toBe(false);
       expect(key in fixture.pt, `${key} unexpectedly present in fixture.pt`).toBe(false);
       expect(key in STRINGS.en, `${key} missing from STRINGS.en`).toBe(true);

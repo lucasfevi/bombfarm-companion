@@ -67,9 +67,13 @@ describe('selectAdvisorPipeline', () => {
     expect(getAdvisorPipelineComputeCount()).toBe(before);
   });
 
-  it('dep tuple has exactly 26 members in spec order (MP5 F3 dropped the 5 keystone-derived entries and statPointsAvailable; the House-ceiling fix added houseCycleSecs, and its regression repair added houseCycleSecsHouseIdx/houseCycleSecsLevel — pipeline inputs, so an edit to any MUST recompute)', () => {
+  // 25 = develop's 22 + this branch's 3. Both sides of the merge were individually correct and
+  // both were wrong afterwards: #87 removed `rankMode` (computeAdvisorPipeline no longer reads
+  // it) leaving 22, while this branch added three. Counted off the merged selector, not summed
+  // from either commit message.
+  it('dep tuple has exactly 25 members in spec order (MP5 F3 dropped the 5 keystone-derived entries: treeGlassCannon, treeCritDmgMult, treeTempoDobrado, treeAbisso, treeAbissoBase; statPointsAvailable dropped with the level-pool budget; rankMode dropped because computeAdvisorPipeline no longer reads it; the House-ceiling fix added houseCycleSecs and its regression repair added houseCycleSecsHouseIdx/houseCycleSecsLevel — all three are pipeline inputs, so an edit to any MUST recompute)', () => {
     const tuple = readAdvisorDepTuple(usePlannerStore.getState());
-    expect(tuple).toHaveLength(26);
+    expect(tuple).toHaveLength(25);
   });
 
   it('selectDps stays stable when heroName changes', () => {

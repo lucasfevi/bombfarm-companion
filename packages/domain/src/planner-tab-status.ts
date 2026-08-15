@@ -1,5 +1,4 @@
 import { sub, type Strings } from './shims/i18n';
-import { isTargetPropUnset } from './farm-context';
 
 /** Per-tab trust chrome — soft/warn dot + tooltip body (no in-flow banner). */
 export type TabStatus = {
@@ -22,7 +21,6 @@ export type PlannerTabStatusStrings = Pick<
   | 'setupNeedSheet'
   | 'setupNeedUnspentPts'
   | 'setupNeedUnspentAbilities'
-  | 'setupNeedTargetProp'
   | 'setupBannerTitle'
   | 'tabHeroWarnTitle'
   | 'tabGearWarnTitle'
@@ -40,7 +38,6 @@ export type PlannerTabStatusInput = {
   /** `max(0, abilityPointsMax - abilityPointsSpent)` */
   abilityPtsLeft: number;
   abilityPointsMax: number;
-  targetProp: string | null;
   /** Active hero Tier-1 reset gate (`shouldRecommendReset`). */
   resetAdviceRecommend: boolean;
   t: PlannerTabStatusStrings;
@@ -59,7 +56,6 @@ export type PlannerTabStatuses = {
 
 /**
  * Pure tab-status + setup readiness matrix for the planner stage.
- * Account soft-dots when target prop is unset (oneshot ranking).
  */
 export function computePlannerTabStatuses(input: PlannerTabStatusInput): PlannerTabStatuses {
   const {
@@ -69,7 +65,6 @@ export function computePlannerTabStatuses(input: PlannerTabStatusInput): Planner
     level,
     abilityPtsLeft,
     abilityPointsMax,
-    targetProp,
     resetAdviceRecommend,
     t,
   } = input;
@@ -96,8 +91,10 @@ export function computePlannerTabStatuses(input: PlannerTabStatusInput): Planner
     );
   }
 
+  // Empty extension point: nothing requires setup on the Account tab any more (target-prop
+  // ranking is gone), but `tabStatus` already returns the null badge for an empty issue list,
+  // so the next Account-tab issue slots in here without touching the shape.
   const accountIssues: string[] = [];
-  if (isTargetPropUnset(targetProp)) accountIssues.push(t.setupNeedTargetProp);
 
   return {
     heroTabStatus: tabStatus('soft', t.tabHeroWarnTitle, heroIssues),

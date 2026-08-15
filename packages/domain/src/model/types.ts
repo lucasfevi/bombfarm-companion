@@ -41,7 +41,7 @@ export const STAT_LABELS: Record<StatKey, string> = {
 export interface PointValue {
   stat: StatKey;
   label: string;
-  dpsGainPct: number;
+  gainPct: number;
 }
 
 /** Base values the % point gains scale off (naked sheet ≈ base roll proxy). */
@@ -56,16 +56,10 @@ export interface PointBases {
 /** Per-point deltas on the effective combat sheet (from `derive`). */
 export type EffectiveDeltas = Record<StatKey, number>;
 
-export type RankMode = 'dps' | 'oneshot';
+export type RankMode = 'dps' | 'farm';
 
 export interface RankOptions {
   bases?: PointBases;
   /** Marginal +1 pt on the effective sheet (shared-pool + mults + caps). */
   effectiveDeltas?: EffectiveDeltas;
-  /** When set with mode=oneshot, boost hit-size stats near a prop breakpoint. */
-  mode?: RankMode;
-  targetPropHp?: number;
-  /** Flat damage multiplier on hit size (tree × ability dmg mults). */
-  hitDmgMult?: number;
-  mitigation?: number;
 }

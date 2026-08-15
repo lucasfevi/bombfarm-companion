@@ -164,7 +164,7 @@ describe('rankNextPoint', () => {
   it('returns all stats ranked by gain', () => {
     const ranking = rankNextPoint(sampleHero(), baseCtx());
     expect(ranking).toHaveLength(7);
-    expect(ranking[0].dpsGainPct).toBeGreaterThanOrEqual(ranking[6].dpsGainPct);
+    expect(ranking[0].gainPct).toBeGreaterThanOrEqual(ranking[6].gainPct);
   });
 
   it('AC-46: BASE_ROLLS does not influence the ranking when effectiveDeltas is supplied (L-02, GAP-W2-01)', () => {
@@ -199,7 +199,7 @@ describe('rankNextPoint', () => {
     };
     const ranking = rankNextPoint(h, baseCtx(), { effectiveDeltas: deltas });
     const crit = ranking.find((r) => r.stat === 'critChance');
-    expect(crit?.dpsGainPct).toBe(0);
+    expect(crit?.gainPct).toBe(0);
   });
 
   it('scores zero for CDR at 80% cap', () => {
@@ -215,7 +215,7 @@ describe('rankNextPoint', () => {
     };
     const ranking = rankNextPoint(h, baseCtx(), { effectiveDeltas: deltas });
     const cdr = ranking.find((r) => r.stat === 'cdr');
-    expect(cdr?.dpsGainPct).toBe(0);
+    expect(cdr?.gainPct).toBe(0);
   });
 
   it('still ranks CDR above zero at 70% and real DPS still improves toward the 80% cap', () => {
@@ -232,7 +232,7 @@ describe('rankNextPoint', () => {
     const ctx = baseCtx();
     const ranking = rankNextPoint(h, ctx, { effectiveDeltas: deltas });
     const cdr = ranking.find((r) => r.stat === 'cdr')!;
-    expect(cdr.dpsGainPct).toBeGreaterThan(0);
+    expect(cdr.gainPct).toBeGreaterThan(0);
     // Floor is 0.4s at 80% CDR — 70→75 still shortens real fuse.
     const cur = sustainedDps(h, ctx);
     const next = sustainedDps({ ...h, cdr: 75 }, ctx);
@@ -253,7 +253,7 @@ describe('rankNextPoint', () => {
     for (const cdr of [70, 75, 79]) {
       const gain = rankNextPoint({ ...sampleHero(), cdr }, ctx, { effectiveDeltas: deltas }).find(
         (r) => r.stat === 'cdr',
-      )!.dpsGainPct;
+      )!.gainPct;
       expect(gain).toBeGreaterThan(0);
     }
   });
@@ -271,7 +271,7 @@ describe('rankNextPoint', () => {
     };
     const ctx = { ...baseCtx(), mitigation: 0.5 };
     const pen = rankNextPoint(h, ctx, { effectiveDeltas: deltas }).find((r) => r.stat === 'penetration')!;
-    expect(pen.dpsGainPct).toBeGreaterThan(0);
+    expect(pen.gainPct).toBeGreaterThan(0);
   });
 
   it('scores zero for penetration at 100% combat bypass cap', () => {
@@ -287,7 +287,7 @@ describe('rankNextPoint', () => {
     };
     const ctx = { ...baseCtx(), mitigation: 0.5 };
     const pen = rankNextPoint(h, ctx, { effectiveDeltas: deltas }).find((r) => r.stat === 'penetration');
-    expect(pen?.dpsGainPct).toBe(0);
+    expect(pen?.gainPct).toBe(0);
   });
 
   it('scores zero for penetration above 100% on sheet (combat already saturated)', () => {
@@ -303,7 +303,7 @@ describe('rankNextPoint', () => {
     };
     const ctx = { ...baseCtx(), mitigation: 0.5 };
     const pen = rankNextPoint(h, ctx, { effectiveDeltas: deltas }).find((r) => r.stat === 'penetration');
-    expect(pen?.dpsGainPct).toBe(0);
+    expect(pen?.gainPct).toBe(0);
     const cur = sustainedDps(h, ctx);
     const next = sustainedDps({ ...h, penetration: 136 }, ctx);
     expect(next).toBeCloseTo(cur, 6);
@@ -322,7 +322,7 @@ describe('rankNextPoint', () => {
     };
     const ranking = rankNextPoint(h, baseCtx(), { effectiveDeltas: tiny });
     expect(ranking[0].stat).toBe('critDmg');
-    expect(ranking[0].dpsGainPct).toBeGreaterThan(ranking.find((r) => r.stat === 'attack')!.dpsGainPct);
+    expect(ranking[0].gainPct).toBeGreaterThan(ranking.find((r) => r.stat === 'attack')!.gainPct);
   });
 });
 

@@ -32,7 +32,7 @@ describe('account slice', () => {
     expect(s.teamBuffs).toEqual(zeroTeamBuffs());
     expect(s.houseIdx).toBe(0);
     expect(s.phase).toBeNull();
-    expect(s.rankMode).toBe('dps');
+    expect(s.rankMode).toBe('farm');
     expect(s.targetProp).toBe('stone');
   });
 

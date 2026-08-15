@@ -7,6 +7,7 @@ import {
   resolveFarmObjective,
   farmObjectiveValue,
   bestFarmPhase,
+  farmObjectiveScales,
   type FarmObjectiveScales,
 } from '@bombfarm/domain/farm-optimize-objective';
 import { computeHeroFarmFacts, computeSquadFarmFacts, computeFarmRateRow } from '@bombfarm/domain/farm-rate';
@@ -128,5 +129,33 @@ describe('farmObjectiveValue — each kind selects the right column', () => {
     const value = farmObjectiveValue(row, resolveFarmObjective({ kind: 'blend', weight: 0.5 }), zeroScales);
     expect(value).toBe(0);
     expect(Number.isNaN(value)).toBe(false);
+  });
+});
+
+describe('farmObjectiveScales — the frozen blend normalizers, exported (lifted from goldChestReadout)', () => {
+  it('matches the manual per-currency best-over-phase scan (currentBuildScales) on the fixture', () => {
+    const scan = currentBuildScales();
+    const lifted = farmObjectiveScales(squad, { maxPhase });
+    expect(lifted.goldScale).toBeCloseTo(scan.goldScale, 6);
+    expect(lifted.chestScale).toBeCloseTo(scan.chestScale, 6);
+  });
+
+  // Re-recorded when #86 (House recovery-slot ceiling) merged with #87, which pinned these
+  // against the pre-#86 model. Both maxima fell because the House now rations recovery slots:
+  // gold 264 997.32 → 247 444.39 (−6.6%), chests 2.0490 → 1.7474 (−14.7%).
+  //
+  // The two do NOT fall by the same factor, and that asymmetry is the point rather than a smell.
+  // Both currencies are proportional to `propsPerHour` at a FIXED phase, but each scale is a
+  // maximum over the whole 1..42 sweep, and the greedy slot allocation is phase-dependent (it
+  // ranks heroes by props-delivered-per-deployment, which moves with mitigation). So per-phase
+  // throughput does not drop uniformly and the two currencies' argmax phases differ.
+  //
+  // Safe to re-record because the sibling test above — an independent brute-force
+  // `currentBuildScales()` scan — still agrees with `farmObjectiveScales` to 6 decimals on the
+  // same model. What changed is the model, not the agreement between the two routes to it.
+  it('on the committed fixture (maxPhase 42): goldScale ≈ 247 444.39, chestScale ≈ 1.7474', () => {
+    const scales = farmObjectiveScales(squad, { maxPhase });
+    expect(scales.goldScale).toBeCloseTo(247444.39, 1);
+    expect(scales.chestScale).toBeCloseTo(1.7474, 3);
   });
 });

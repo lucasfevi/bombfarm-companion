@@ -24,6 +24,7 @@ import {
 import {
   resolveFarmObjective,
   bestFarmPhase,
+  farmObjectiveScales,
   type FarmObjective,
   type ResolvedFarmObjective,
   type FarmObjectiveScales,
@@ -244,13 +245,8 @@ function goldChestReadout(
   squad: SquadFarmFacts,
   phaseOptions: FarmRateOptions,
 ): { goldPerHour: number; chestsPerHour: number } {
-  const dummyScales: FarmObjectiveScales = { goldScale: 1, chestScale: 1 };
-  const goldPick = bestFarmPhase(squad, resolveFarmObjective({ kind: 'gold' }), dummyScales, phaseOptions);
-  const chestPick = bestFarmPhase(squad, resolveFarmObjective({ kind: 'chests' }), dummyScales, phaseOptions);
-  return {
-    goldPerHour: goldPick ? goldPick.row.goldPerHour : 0,
-    chestsPerHour: chestPick ? chestPick.row.chestsPerHour : 0,
-  };
+  const scales = farmObjectiveScales(squad, phaseOptions);
+  return { goldPerHour: scales.goldScale, chestsPerHour: scales.chestScale };
 }
 
 function assembleResult(params: {

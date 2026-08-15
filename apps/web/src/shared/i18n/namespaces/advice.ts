@@ -53,7 +53,10 @@ export const en = {
   previewClearButton: "Clear preview",
   previewRespecNote: "Applied on the planner — spend a real in-game reset to match this build.",
   modeDps: "DPS",
-  modeOneshot: "Oneshot",
+  modeFarm: "Farm",
+  rankFarmNoPool: "Ranked on damage — no farming rotation to rank against.",
+  rankFarmNoRate: "Ranked on damage — no farmable phase for this rotation yet.",
+  rankFarmAddedToPool: "This hero isn't in your farming rotation — ranked as if you added them.",
   factPen: "Penetration (sheet + combat)",
   factMit: "Mitigation factor",
   factPred: "Predicted / critical hit",
@@ -113,7 +116,7 @@ export const en = {
     {
       h: "6 · Next point ranking and reset advice",
       p: [
-        "For each stat we simulate spending exactly one point on the effective combat sheet (after gear, tree, and team bonuses), recompute sustained DPS from scratch and rank stats by % gain. Stats already at a hard cap (crit chance 100%, CDR 80%) score zero. Oneshot mode additionally rewards points that reduce hits-to-kill on the selected prop for your farm phase, with a large bonus when a breakpoint is crossed. Luck sits outside this ranking — it's loot-facing, not scored for DPS.",
+        "For each stat we simulate spending exactly one point on the effective combat sheet (after gear, tree, and team bonuses), recompute sustained DPS from scratch and rank stats by % gain. Stats already at a hard cap (crit chance 100%, CDR 80%) score zero. Farm mode ranks the same point differently: it scores how much your whole farming rotation's gold or chests per hour improves at that rotation's best unlocked phase, not just this hero's own damage. Luck sits outside this ranking — it's loot-facing, not scored for DPS.",
         "Two checks look further ahead. A fast, automatic gate compares your current spend against a quick reallocation search; if it finds at least a 1% sustained-DPS gain, the hero strip shows a warn border and the Points tab shows a possible gain — always phrased as a lower bound (\"at least ~X%\"), never a guaranteed number. Optimize build on the Points tab runs a slower, on-demand search from several starting points and reports the best allocation it actually found for that hero; that number can land above the automatic gate's estimate, and it is never claimed to be the true optimum — only the best this particular search reached. Apply preview writes the found points to your build without touching your save; a real in-game reset is still what makes it count.",
       ],
     },
@@ -184,7 +187,10 @@ export const pt: typeof en = {
   previewClearButton: "Limpar prévia",
   previewRespecNote: "Aplicado no planner — use um reset de verdade no jogo para bater com essa build.",
   modeDps: "DPS",
-  modeOneshot: "Oneshot",
+  modeFarm: "Farm",
+  rankFarmNoPool: "Ordenado por dano — não há rotação de farm para comparar.",
+  rankFarmNoRate: "Ordenado por dano — nenhuma fase farmável para essa rotação ainda.",
+  rankFarmAddedToPool: "Este herói não está na sua rotação de farm — ordenado como se você o adicionasse.",
   factPen: "Penetração (ficha + combate)",
   factMit: "Fator de mitigação",
   factPred: "Previsto / critical hit",
@@ -244,7 +250,7 @@ export const pt: typeof en = {
     {
       h: "6 · Ranking do próximo ponto e conselho de reset",
       p: [
-        "Para cada atributo simulamos gastar exatamente um ponto na ficha efetiva de combate (depois de equipamento, árvore e buffs de time), recalculamos o DPS efetivo do zero e ordenamos pelo ganho %. Stats já no teto (chance de crítico 100%, redução de recarga 80%) pontuam zero. O modo Oneshot também premia pontos que reduzem Hits para matar o alvo da fase de farm, com bônus grande ao cruzar um limiar. Sorte fica fora desse ranking — é voltada a loot, não entra na conta de DPS.",
+        "Para cada atributo simulamos gastar exatamente um ponto na ficha efetiva de combate (depois de equipamento, árvore e buffs de time), recalculamos o DPS efetivo do zero e ordenamos pelo ganho %. Stats já no teto (chance de crítico 100%, redução de recarga 80%) pontuam zero. O modo Farm ordena o mesmo ponto de outro jeito: ele mede quanto ouro ou baús por hora a sua rotação de farm inteira ganha, na melhor fase desbloqueada dessa rotação — não só o dano desse herói. Sorte fica fora desse ranking — é voltada a loot, não entra na conta de DPS.",
         "Duas checagens olham mais à frente. Uma checagem rápida e automática compara seu gasto atual com uma realocação rápida; se encontra um ganho de pelo menos 1% no DPS efetivo, a faixa do herói mostra uma borda de alerta e a aba Pontos mostra um possível ganho — sempre como um piso (\"pelo menos ~X%\"), nunca um número garantido. Otimizar build, na aba Pontos, roda uma busca mais lenta e sob demanda a partir de vários pontos de partida e mostra a melhor alocação que essa busca realmente encontrou para aquele herói; esse número pode ficar acima da estimativa da checagem automática, e nunca é apresentado como o ótimo verdadeiro — só o melhor que essa busca específica alcançou. Aplicar prévia grava os pontos encontrados na sua build sem tocar no seu save; um reset de verdade no jogo ainda é o que faz valer.",
       ],
     },

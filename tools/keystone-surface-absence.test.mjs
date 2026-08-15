@@ -162,7 +162,7 @@ const CRIT_DMG_MULT_MAP = {
   'apps/desktop/src/main/storage/account-store-restore.test.ts': [497, 530, 548, 581],
   'apps/desktop/src/main/storage/stale-sections.test.ts': [66, 81, 84, 88, 98, 105, 111, 123, 128, 164, 182],
   'apps/desktop/src/main/storage/stale-sections.ts': [11],
-  'apps/web/docs/local-data-compat.md': [105, 113],
+  'apps/web/docs/local-data-compat.md': [106, 114],
   'apps/web/src/features/planner/components/advice-column.tsx': [38, 59],
   // +16 (line number only): the House-ceiling fix added `fieldSlots`/`houseCycleSecs`, with
   // their doc comments, to `AccountShared` above this line. The match itself is unchanged in

@@ -71,12 +71,12 @@ function listFiles(dir: string, acc: string[] = []): string[] {
  */
 const SRC_ALLOWLIST: Record<string, number[]> = {
   'derive.ts': [27, 78, 96, 142, 197, 208],
-  // Line numbers only — the matches are unchanged in count and in kind; the House-cycle
-  // plumbing (`houseCycleSecs` on the input type + its two use sites) inserted lines above them
-  // and shifted all four down. The House-ceiling regression repair (PR #86 finding, house.ts:38)
-  // added `houseCycleSecsHouseIdx`/`houseCycleSecsLevel` alongside it (destructured local +
-  // input type + `farmContextForHero` call site) and shifted all four down again.
-  'advisor-pipeline.ts': [104, 210, 239, 341],
+  // Line numbers only — still FOUR matches, unchanged in kind. Re-measured against the merged
+  // tree rather than resolved to either side: this branch's House-cycle plumbing
+  // (`houseCycleSecs`, then `houseCycleSecsHouseIdx`/`houseCycleSecsLevel`) and #87's farm-objective
+  // rank mode each inserted lines above these hits, so BOTH pins were stale after the merge —
+  // 341 from here and 325 from develop are each correct only in isolation.
+  'advisor-pipeline.ts': [111, 217, 246, 346],
   'stat-breakdown/types.ts': [105],
   // +1 (line number only): the `cycleSecs` pass-through added one line above this hit.
   // +2 more: the House-ceiling regression repair's `cycleSecsHouseIdx`/`cycleSecsLevel`
