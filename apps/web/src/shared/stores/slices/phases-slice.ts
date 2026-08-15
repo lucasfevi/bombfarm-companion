@@ -8,6 +8,15 @@ import {
 // @bombfarm/domain/farm-optimize (farm-ranking-guards.test.ts guard (g) scopes runtime imports
 // to farm-ranking-selectors.ts only).
 import type { FarmObjectiveKind, FarmRespecResult } from '@bombfarm/domain/farm-optimize';
+import { scheduleAfterPaint } from '@/shared/lib/schedule-after-paint';
+// Legal intra-element import (boundaries/elements declares one `shared-stores` element covering
+// both slices/ and selectors/) — the reverse edge of the same shape already ships in
+// team-plan-selectors.ts, which imports from team-plan-slice.ts.
+import {
+  readFarmRespecDepTuple,
+  runFarmRespecSolve,
+  selectFarmRespecIsStale,
+} from '@/shared/stores/selectors/farm-ranking-selectors';
 import type { PlannerStore } from '@/shared/stores/planner-store';
 
 /** The on-demand Tier 2 result, keyed by the EXACT dependency tuple that produced it
@@ -44,6 +53,8 @@ export type PhasesSlice = {
   setFarmObjective: (kind: FarmObjectiveKind) => void;
   setFarmRespecReRank: (active: boolean) => void;
   setFarmRespecPanelOpen: (open: boolean) => void;
+  /** Runs Tier 2 on demand, off the render path — see the action body for the full contract. */
+  runFarmRespec: () => void;
 };
 
 export const createPhasesSlice: StateCreator<
@@ -127,6 +138,39 @@ export const createPhasesSlice: StateCreator<
     setFarmRespecPanelOpen: (open) => {
       if (get().farmRespecPanelOpen === open) return;
       set({ farmRespecPanelOpen: open });
+    },
+
+    /**
+     * The ONLY caller of `runFarmRespecSolve` — an explicit user event (the Optimize button),
+     * never the render path. Synchronous and returns `void`, not `async`: nothing here is I/O,
+     * and an `async` handler would return a floating promise into an `onClick`.
+     */
+    runFarmRespec: () => {
+      const state = get();
+      // An unchanged, still-fresh proposal is reused: no second solve, just re-open the panel.
+      if (state.farmRespecProposal && !selectFarmRespecIsStale(state) && state.farmRespecStatus === 'done') {
+        set({ farmRespecPanelOpen: true });
+        return;
+      }
+      if (state.farmRespecStatus === 'solving') return; // no concurrent second run
+      set({ farmRespecStatus: 'solving', farmRespecPanelOpen: true });
+      scheduleAfterPaint(() => {
+        // Read LIVE state inside the scheduled callback, not the `state` captured above — a
+        // change during the two-frame yield must key the result to the tuple it actually
+        // solved against, never to a tuple read before the yield.
+        const live = get();
+        try {
+          const result = runFarmRespecSolve(live);
+          set({
+            farmRespecProposal: { deps: readFarmRespecDepTuple(live), result },
+            farmRespecStatus: 'done',
+          });
+        } catch {
+          // Caught at THIS boundary only. Item A never throws by contract; this is
+          // belt-and-braces, and it renders a NAMED failure state, never an empty panel.
+          set({ farmRespecProposal: null, farmRespecStatus: 'failed' });
+        }
+      });
     },
   };
 };
