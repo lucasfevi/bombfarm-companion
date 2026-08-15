@@ -1,11 +1,12 @@
 'use client';
 
 import { Banner, Button } from '@bombfarm/ui';
-import { sub, type Strings } from '@/shared/i18n';
-import { selectFarmRespecView, usePlannerStore } from '@/shared/stores';
+import { sub, type Lang, type Strings } from '@/shared/i18n';
+import { selectFarmRespecView, selectHeroes, usePlannerStore } from '@/shared/stores';
 import { resolvePanelState } from '@/features/phases/model/farm-respec-view';
 import { FarmRespecMetrics } from './farm-respec-metrics';
 import { FarmRespecPlateau } from './farm-respec-plateau';
+import { FarmRespecHeroGrid } from './farm-respec-hero-grid';
 
 const PANEL_HEADING_ID = 'farm-respec-panel-heading';
 
@@ -16,11 +17,12 @@ const PANEL_HEADING_ID = 'farm-respec-panel-heading';
  * stale proposal is unrenderable by construction (the selector already hid it), so this
  * component has no staleness logic of its own.
  */
-export function FarmRespecPanel({ t }: { t: Strings }) {
+export function FarmRespecPanel({ t, lang }: { t: Strings; lang: Lang }) {
   const view = usePlannerStore(selectFarmRespecView);
   const status = usePlannerStore((state) => state.farmRespecStatus);
   const panelOpen = usePlannerStore((state) => state.farmRespecPanelOpen);
   const objective = usePlannerStore((state) => state.farmObjective);
+  const heroes = usePlannerStore(selectHeroes);
   const setFarmRespecPanelOpen = usePlannerStore((state) => state.setFarmRespecPanelOpen);
 
   const mountable = panelOpen && (view != null || status === 'solving' || status === 'failed');
@@ -88,6 +90,12 @@ export function FarmRespecPanel({ t }: { t: Strings }) {
           {panelState.result.plateau ? (
             <FarmRespecPlateau t={t} plateau={panelState.result.plateau} />
           ) : null}
+          <div>
+            <h4 className="m-0 mb-2 text-[11px] tracking-[0.03em] text-muted uppercase">
+              {t.farmRespecHeroesHeading}
+            </h4>
+            <FarmRespecHeroGrid result={panelState.result} heroes={heroes} lang={lang} t={t} />
+          </div>
           <p className="m-0 text-[10px] text-muted" data-testid="farm-respec-diagnostics">
             {sub(t.farmRespecDiagnostics, {
               evaluations: String(panelState.result.evaluations),

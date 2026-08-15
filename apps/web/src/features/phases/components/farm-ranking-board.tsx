@@ -98,7 +98,7 @@ export function FarmRankingBoard({ t, lang }: { t: Strings; lang: Lang }) {
         </div>
       ) : null}
       <FarmRespecToolbar t={t} lang={lang} />
-      <FarmRespecPanel t={t} />
+      <FarmRespecPanel t={t} lang={lang} />
       {result.reason === 'compute-failed' ? (
         <div data-testid="farm-ranking-empty">
           <Banner tone="warn" title={t.farmRankingEmptyComputeFailedTitle}>

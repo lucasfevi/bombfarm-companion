@@ -45,6 +45,7 @@ describe('Farm Ranking board — testids present (design §4.3)', () => {
     ['src/features/phases/components/farm-respec-metrics.tsx', 'farm-respec-metric-cost'],
     ['src/features/phases/components/farm-respec-metrics.tsx', 'farm-respec-metric-payback'],
     ['src/features/phases/components/farm-respec-plateau.tsx', 'farm-respec-plateau'],
+    ['src/features/phases/components/farm-respec-hero-grid.tsx', 'farm-respec-heroes'],
   ];
 
   for (const [file, testid] of expectations) {
@@ -228,6 +229,63 @@ describe('Farm Respec Advisor panel — in-place expansion, banners, plateau', (
     const source = read('src/features/phases/components/farm-respec-panel.tsx');
     expect(source).toMatch(/aria-labelledby=\{PANEL_HEADING_ID\}/);
     expect(source).toContain('setFarmRespecPanelOpen(false)');
+  });
+});
+
+describe('Farm Respec Advisor hero cards — full target allocations, luck kept, unchanged still shown', () => {
+  it('the card testid and per-key testid templates are declared', () => {
+    const source = read('src/features/phases/components/farm-respec-hero-card.tsx');
+    expect(source).toContain('farm-respec-hero-${entry.heroId}');
+    expect(source).toContain('farm-respec-key-${entry.heroId}-${row.key}');
+  });
+
+  it('the grid maps result.heroes with NO filter — the enabled-hero count equals the card count', () => {
+    const source = read('src/features/phases/components/farm-respec-hero-grid.tsx');
+    expect(source).toMatch(/result\.heroes\.map\(/);
+    expect(source).not.toMatch(/result\.heroes\.filter\(/);
+  });
+
+  it('the grid uses an auto-fit/minmax responsive layout — never an accordion, tab list or horizontal scroller', () => {
+    const source = read('src/features/phases/components/farm-respec-hero-grid.tsx');
+    expect(source).toContain('auto-fit');
+    expect(source).toContain('minmax');
+    expect(source).not.toMatch(/Accordion|role="tablist"|overflow-x/);
+  });
+
+  it('identity is rendered by HeroIdentityChip imported from @/shared/game-art — no second identity component under features/phases', () => {
+    const cardSource = read('src/features/phases/components/farm-respec-hero-card.tsx');
+    expect(cardSource).toMatch(/import\s*\{[^}]*HeroIdentityChip[^}]*\}\s*from\s*'@\/shared\/game-art'/);
+  });
+
+  it('the changed-hero table shows the absolute target as the primary column, with current and signed delta as secondary columns', () => {
+    const source = read('src/features/phases/components/farm-respec-hero-card.tsx');
+    expect(source).toContain('t.farmRespecKeyTarget');
+    expect(source).toContain('t.farmRespecKeyCurrent');
+    expect(source).toContain('t.farmRespecKeyDelta');
+    expect(source).toContain('row.target');
+    expect(source).toContain('row.current');
+    expect(source).toContain('formatSignedPoints(row.delta)');
+  });
+
+  it('the luck row carries the keep chip and its HelpTip note', () => {
+    const source = read('src/features/phases/components/farm-respec-hero-card.tsx');
+    expect(source).toContain('row.keep');
+    expect(source).toContain('t.farmRespecLuckKeep');
+    expect(source).toContain('t.farmRespecLuckHint');
+  });
+
+  it('an unchanged hero renders de-emphasized, never hidden outright, stating no respec is needed and naming the gold not spent', () => {
+    const source = read('src/features/phases/components/farm-respec-hero-card.tsx');
+    expect(source).toContain('!entry.changed');
+    expect(source).not.toMatch(/display:\s*none/);
+    expect(source).toContain('t.farmRespecUnchangedNote');
+    expect(source).toContain('t.farmRespecUnchangedGoldSaved');
+  });
+
+  it('no move is annotated as optional/negligible/minor/skippable at any magnitude — no conditional class keyed on delta size', () => {
+    const source = read('src/features/phases/components/farm-respec-hero-card.tsx');
+    expect(source).not.toMatch(/negligible|\boptional\b|\bskip(pable)?\b/i);
+    expect(source).not.toMatch(/row\.delta\s*[<>=]/);
   });
 });
 
