@@ -37,6 +37,7 @@ function row(overrides: Partial<FarmRateRow> & { phase: number }): FarmRateRow {
     expectedHtk: 1,
     heroesOnField: 1,
     concurrencyScale: 1,
+    fortunaAura: 0,
     ...overrides,
   };
 }
