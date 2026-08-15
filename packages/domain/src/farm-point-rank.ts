@@ -15,11 +15,7 @@
  * enforces both the import boundary and the pipeline-call budget as a regression guard, not just
  * a design note.
  */
-import {
-  computeHeroFarmBases,
-  squadFactsFromBases,
-  type HeroFarmBasis,
-} from './farm-rate';
+import { squadFactsFromBases, type HeroFarmBasis } from './farm-rate';
 import type { ReturnBonusMode } from './farm-rate';
 import {
   resolveFarmObjective,
