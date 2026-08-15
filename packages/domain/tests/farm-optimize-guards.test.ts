@@ -199,7 +199,7 @@ describe('public-repo hygiene — no research-private identifier or path anywher
   // code, in its own explanatory prose) — a scanner does not scan its own rule definition.
   // Self-excluded from the scan below, not allowlisted: the exclusion is structural.
   const SELF_FILENAME = 'farm-optimize-guards.test.ts';
-  const HYGIENE_PATTERN = /FRAD-|FRAW-|FRAC-|OQ-FRA-|bombfarm-research|\.specs\/|AD-1\d\d|OD-A\d/;
+  const HYGIENE_PATTERN = /FRAD-|FRAW-|FRAC-|R-B\d|OD-A\d|OQ-FRA-|AD-1\d\d|bombfarm-research|\.specs\//;
 
   it('src and tests are both clean', () => {
     const testsRoot = join(DOMAIN_ROOT, 'tests');
