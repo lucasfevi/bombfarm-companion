@@ -6,7 +6,8 @@
  * carried over from the PRD's uncommitted capture (design.md §0.1 — those numbers do not
  * reproduce on this corpus and are deliberately absent from this file).
  *
- * 1:1 to `FRAD-03`, `FRAD-04`, `FRAD-07`, `FRAD-08`, `FRAD-09`, `FRAD-10`, `FRAD-12`.
+ * Covers: the solver beating both naive builds, the recommended-phase band, and the chest
+ * objective reporting a higher chest rate at a different phase than the gold objective.
  */
 import { describe, expect, it } from 'vitest';
 import { solveFarmRespec } from '@bombfarm/domain/farm-optimize';
@@ -60,19 +61,19 @@ const allEnergyBest = bestOverPhases(bases, buildNaiveAssignment(bases, budgetBy
 const currentBest = bestOverPhases(bases, null);
 const solved = solveFarmRespec({ heroes, account, maxPhase });
 
-describe('FRAD-07 — the solver strictly beats the all-attack build', () => {
+describe('the solver strictly beats the all-attack build', () => {
   it(`proposedObjective (${solved.proposedObjective.toFixed(0)}) > all-attack's best-over-phases (${allAttackBest.toFixed(0)})`, () => {
     expect(solved.proposedObjective).toBeGreaterThan(allAttackBest);
   });
 });
 
-describe('FRAD-08 — the solver strictly beats the all-energy build', () => {
+describe('the solver strictly beats the all-energy build', () => {
   it(`proposedObjective (${solved.proposedObjective.toFixed(0)}) > all-energy's best-over-phases (${allEnergyBest.toFixed(0)})`, () => {
     expect(solved.proposedObjective).toBeGreaterThan(allEnergyBest);
   });
 });
 
-describe('FRAD-09 — the inverted-intuition finding: all-attack scores BELOW the current build', () => {
+describe('the inverted-intuition finding: all-attack scores BELOW the current build', () => {
   it(`all-attack (${allAttackBest.toFixed(0)}) < current (${currentBest.toFixed(0)}) — measured 212,284 < 264,997 on the committed corpus`, () => {
     expect(allAttackBest).toBeLessThan(currentBest);
   });
@@ -83,7 +84,7 @@ describe('FRAD-09 — the inverted-intuition finding: all-attack scores BELOW th
   });
 });
 
-describe('FRAD-04 — the recommended phase reproduces the measured band', () => {
+describe('the recommended phase reproduces the measured band', () => {
   it('the recommended phase is in 26–28', () => {
     expect(solved.recommendedPhase).toBeGreaterThanOrEqual(26);
     expect(solved.recommendedPhase).toBeLessThanOrEqual(28);
@@ -101,7 +102,7 @@ describe('FRAD-04 — the recommended phase reproduces the measured band', () =>
   });
 });
 
-describe('FRAD-10 / FRAD-12 — the chest objective reports a strictly higher chest rate and a different phase', () => {
+describe('the chest objective reports a strictly higher chest rate and a different phase', () => {
   const chestSolve = solveFarmRespec({ heroes, account, objective: { kind: 'chests' }, maxPhase });
 
   it('the chest solve reports a strictly higher chestsPerHour than the gold solve', () => {

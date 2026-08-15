@@ -1,15 +1,20 @@
 /**
- * The cost frontier — best 1-hero and best 2-hero respec, each re-solved (never truncated).
- * 1:1 to `FRAD-21`, `FRAD-22`, `FRAD-23`, `FRAD-24`, `FRAD-20c`, `FRAD-20g`, `FRAD-01`.
+ * The cost frontier — best 1-hero and best 2-hero respec, each re-solved (never truncated),
+ * ordered ascending by cost, sized to the searchable set, and never advising a spend under a
+ * gold-lowering objective without an honest null payback.
  */
 import { describe, expect, it } from 'vitest';
 import { solveFarmRespec, FARM_OPT_FULL_MAX_EVALUATIONS } from '@bombfarm/domain/farm-optimize';
+import { runFarmSearch } from '@bombfarm/domain/farm-optimize-search';
+import { computeHeroFarmBases } from '@bombfarm/domain/farm-rate';
+import { resolveFarmObjective } from '@bombfarm/domain/farm-optimize-objective';
+import { reoptBudget } from '@bombfarm/domain/points-reopt-core';
 import type { HeroRecord } from '@bombfarm/domain/shims/storage';
 import { loadFarmRateFixture } from './helpers/farm-rate-fixtures';
 
 const { heroes, account, maxPhase } = loadFarmRateFixture();
 
-describe('FRAD-21 / FRAD-24 — the fixture reproduces the measured frontier ordering', () => {
+describe('the fixture reproduces the measured frontier ordering', () => {
   const result = solveFarmRespec({ heroes, account, maxPhase });
   const [oneHero, twoHero] = result.frontier;
 
@@ -42,7 +47,7 @@ describe('FRAD-21 / FRAD-24 — the fixture reproduces the measured frontier ord
   });
 });
 
-describe('FRAD-22 — re-solved, not truncated', () => {
+describe('re-solved, not truncated', () => {
   it("the 1-hero entry's vector for its hero differs from the joint optimum, or (if equal) its own solve ran and every other hero is pinned exactly to current", () => {
     const result = solveFarmRespec({ heroes, account, maxPhase });
     const [oneHero] = result.frontier;
@@ -75,9 +80,34 @@ describe('FRAD-22 — re-solved, not truncated', () => {
       }
     }
   });
+
+  it('the total evaluations spent strictly exceed the joint solve\'s own — proof the frontier tiers actually ran a bounded search rather than reusing the joint optimum\'s vectors for free', () => {
+    // A truncating implementation reads the joint winner's per-hero vectors straight off the
+    // already-computed result and spends ZERO further evaluations on it — this is the
+    // publicly-observable signature "re-solved" and "truncated" disagree on, even on inputs
+    // (like this fixture) where the two approaches land on numerically identical vectors.
+    const bases = computeHeroFarmBases({ heroes, account });
+    const budgetById = new Map(bases.map((b) => [b.heroId, reoptBudget(b.pts, b.level)] as const));
+    const searchableIds = bases.map((b) => b.heroId);
+    const objective = resolveFarmObjective({ kind: 'gold' });
+    const jointOnly = runFarmSearch(
+      bases,
+      searchableIds,
+      budgetById,
+      account,
+      objective,
+      { goldScale: 1, chestScale: 1 },
+      { maxPhase },
+      Math.floor(FARM_OPT_FULL_MAX_EVALUATIONS * 0.5),
+    );
+
+    const result = solveFarmRespec({ heroes, account, maxPhase });
+    expect(result.frontier.length).toBeGreaterThan(0);
+    expect(result.evaluations).toBeGreaterThan(jointOnly.evaluations);
+  });
 });
 
-describe('FRAD-23 — frontier size tracks |S|, never duplicated, never padded', () => {
+describe('frontier size tracks |S|, never duplicated, never padded', () => {
   it('|S| = 1 ⇒ frontier: []', () => {
     const oneId = [heroes.find((h) => h.name === 'Jon')!.id];
     const result = solveFarmRespec({ heroes, account, maxPhase, enabledHeroIds: oneId });
@@ -100,7 +130,7 @@ describe('FRAD-23 — frontier size tracks |S|, never duplicated, never padded',
   });
 });
 
-describe('FRAD-20c — exactly one searchable hero ⇒ empty frontier (re-asserted from T7)', () => {
+describe('exactly one searchable hero ⇒ empty frontier (re-asserted from T7)', () => {
   it('a single-hero pool never produces a frontier entry', () => {
     const oneId = [heroes.find((h) => h.name === 'Jon')!.id];
     const result = solveFarmRespec({ heroes, account, maxPhase, enabledHeroIds: oneId });
@@ -108,7 +138,7 @@ describe('FRAD-20c — exactly one searchable hero ⇒ empty frontier (re-assert
   });
 });
 
-describe('FRAD-20g at the tier level — an objective-rising, gold-lowering tier reports paybackHours: null', () => {
+describe('an objective-rising, gold-lowering tier reports paybackHours: null', () => {
   it("the chest objective's 1-hero frontier entry never reports a negative or infinite payback", () => {
     const result = solveFarmRespec({ heroes, account, objective: { kind: 'chests' }, maxPhase });
     expect(result.outcome).toBe('improved');
@@ -134,7 +164,7 @@ describe('keptCurrent ⇒ frontier: []', () => {
   });
 });
 
-describe('FRAD-01 — each frontier entry is a complete result on its own', () => {
+describe('each frontier entry is a complete result on its own', () => {
   it('every entry carries its own full heroes list, recommendedPhase, gainPct, respecCostGold and paybackHours, all present and finite (or legitimately null)', () => {
     const result = solveFarmRespec({ heroes, account, maxPhase });
     for (const entry of result.frontier) {

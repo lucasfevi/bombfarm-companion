@@ -1,13 +1,12 @@
 /**
  * The energy-share plateau — a pure, zero-extra-cost read-out of the search's final ladder.
- * 1:1 to `FRAD-25`, `FRAD-26`, `FRAD-27`, `FRAD-17`.
  *
  * `derivePlateauBounds` and `squadEnergyShare` are tested directly against synthetic ladder data
- * where useful — the CONTIGUITY rule and the single-point (`FRAD-26`) rule are exact, mechanical
- * properties of that pure function, and a hand-built ladder proves them far more precisely and
- * deterministically than trying to coax a specific dip shape out of the real estimator. The
- * fixture-level cases prove the wiring: the real solve's plateau, its bounds, and its zero-cost
- * property.
+ * where useful — the CONTIGUITY rule and the single-point (never-null, never-invented-width)
+ * rule are exact, mechanical properties of that pure function, and a hand-built ladder proves
+ * them far more precisely and deterministically than trying to coax a specific dip shape out of
+ * the real estimator. The fixture-level cases prove the wiring: the real solve's plateau, its
+ * bounds, and its zero-cost property.
  */
 import { describe, expect, it } from 'vitest';
 import { solveFarmRespec, FARM_OPT_PLATEAU_TOLERANCE_PCT } from '@bombfarm/domain/farm-optimize';
@@ -54,7 +53,7 @@ describe('derivePlateauBounds — the contiguity and single-point rules, on synt
     expect(bounds.max).toBe(0.65);
   });
 
-  it('no neighbour qualifies ⇒ min === max === winShare, never null, never an invented width (FRAD-26)', () => {
+  it('no neighbour qualifies ⇒ min === max === winShare, never null, never an invented width', () => {
     const ladder = [
       { share: 0.4, value: 10 },
       { share: 0.45, value: 10 },
@@ -94,7 +93,7 @@ describe('squadEnergyShare — the aggregate denominator', () => {
   });
 });
 
-describe('FRAD-25 — the fixture reports a bounded, correctly-shaped plateau', () => {
+describe('the fixture reports a bounded, correctly-shaped plateau', () => {
   it('0 <= min <= proposedEnergyShare <= max <= 1, and tolerancePct is the exported constant', () => {
     const result = solveFarmRespec({ heroes, account, maxPhase });
     expect(result.plateau).not.toBeNull();
@@ -122,7 +121,7 @@ describe('FRAD-25 — the fixture reports a bounded, correctly-shaped plateau', 
   });
 });
 
-describe('FRAD-26 — a squad whose neighbours all fall outside tolerance', () => {
+describe('a squad whose neighbours all fall outside tolerance', () => {
   it('the fixture\'s own plateau is exactly this case: min === max, never null', () => {
     const result = solveFarmRespec({ heroes, account, maxPhase });
     expect(result.plateau).not.toBeNull();
@@ -130,7 +129,7 @@ describe('FRAD-26 — a squad whose neighbours all fall outside tolerance', () =
   });
 });
 
-describe('FRAD-27 — a keptCurrent solve still reports a plateau', () => {
+describe('a keptCurrent solve still reports a plateau', () => {
   it('currentEnergyShare lies inside [min, max]', () => {
     const first = solveFarmRespec({ heroes, account, maxPhase });
     const respecced: HeroRecord[] = heroes.map((hero) => {
@@ -164,9 +163,9 @@ describe('a zero-searchable-pool squad', () => {
 
 describe('the plateau adds ZERO evaluations', () => {
   it("solveFarmRespec's evaluations count equals runFarmSearch's own count for the identical search, on a pool where the frontier is provably empty (|S|=1)", () => {
-    // A 1-hero pool: FRAD-23 forces frontier: [] unconditionally (heroCount can never be < |S|=1),
-    // so this isolates the plateau's own cost from the frontier's (T9), which otherwise also
-    // adds evaluations to the same total.
+    // A 1-hero pool forces frontier: [] unconditionally (heroCount can never be < |S|=1), so
+    // this isolates the plateau's own cost from the frontier's, which otherwise also adds
+    // evaluations to the same total.
     const oneId = [heroes.find((h) => h.name === 'Jon')!.id];
     const bases = computeHeroFarmBases({ heroes, account, enabledHeroIds: oneId });
     const budgetById = new Map(bases.map((b) => [b.heroId, reoptBudget(b.pts, b.level)] as const));

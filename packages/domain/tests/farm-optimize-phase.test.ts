@@ -1,5 +1,6 @@
 /**
- * `bestFarmPhase` — the joint phase argmax. 1:1 to `FRAD-04`, `FRAD-05`, `FRAD-06`, `FRAD-12`.
+ * `bestFarmPhase` — the joint phase argmax: the candidate phase set, infeasible-row exclusion,
+ * the non-unimodality pin, and objective-driven pick changes.
  */
 import { describe, expect, it } from 'vitest';
 import {
@@ -35,7 +36,7 @@ function fullSweepScales(): FarmObjectiveScales {
 }
 const scales = fullSweepScales();
 
-describe('bestFarmPhase — maxPhase bounds the candidate set (FRAD-05)', () => {
+describe('bestFarmPhase — maxPhase bounds the candidate set', () => {
   it('maxPhase: 42 ⇒ the pick is <= 42', () => {
     const pick = bestFarmPhase(squad, goldObjective, scales, { maxPhase: 42 });
     expect(pick).not.toBeNull();
@@ -49,7 +50,7 @@ describe('bestFarmPhase — maxPhase bounds the candidate set (FRAD-05)', () => 
   });
 });
 
-describe('bestFarmPhase — infeasible rows never win (FRAD-06)', () => {
+describe('bestFarmPhase — infeasible rows never win', () => {
   it('an infeasible phase with the highest nominal rate is not picked — the fixture\'s own phase 50 gate', () => {
     const gateRow = computeFarmRateRow(50, squad)!;
     expect(gateRow.infeasible).toBe(true);
@@ -61,7 +62,7 @@ describe('bestFarmPhase — infeasible rows never win (FRAD-06)', () => {
   });
 });
 
-describe('bestFarmPhase — the non-unimodality pin (FRAD-04, design.md §2.4)', () => {
+describe('bestFarmPhase — the non-unimodality pin', () => {
   it('phase 51 is a strict local maximum under the current build (> phases 50 and 52)', () => {
     const row50 = computeFarmRateRow(50, squad)!;
     const row51 = computeFarmRateRow(51, squad)!;
@@ -81,7 +82,7 @@ describe('bestFarmPhase — the non-unimodality pin (FRAD-04, design.md §2.4)',
   });
 });
 
-describe('bestFarmPhase — changing the objective changes the pick (FRAD-12)', () => {
+describe('bestFarmPhase — changing the objective changes the pick', () => {
   it('the gold pick sits in 26–32 and the chest pick is phase 1', () => {
     const goldPick = bestFarmPhase(squad, goldObjective, scales, { maxPhase });
     const chestPick = bestFarmPhase(squad, chestObjective, scales, { maxPhase });

@@ -1,6 +1,6 @@
 /**
- * Determinism, the fixed point, and frozen luck. 1:1 to `FRAD-15`, `FRAD-16`, `FRAD-18`, and a
- * re-assertion of `FRAD-03` after the round trip.
+ * Determinism (deep-equal solves, input-order independence, locale independence), the fixed
+ * point, frozen luck, and a re-assertion of the non-negative-gain invariant after the round trip.
  */
 import { describe, expect, it } from 'vitest';
 import { solveFarmRespec, type FarmRespecInput } from '@bombfarm/domain/farm-optimize';
@@ -12,7 +12,7 @@ import { loadFarmRateFixture } from './helpers/farm-rate-fixtures';
 
 const OBJECTIVES: FarmRespecInput['objective'][] = [{ kind: 'gold' }, { kind: 'chests' }, { kind: 'blend', weight: 0.5 }];
 
-describe('FRAD-15 — two solves on deep-equal, non-identical inputs are deep-equal, under all three objectives', () => {
+describe('two solves on deep-equal, non-identical inputs are deep-equal, under all three objectives', () => {
   for (const objective of OBJECTIVES) {
     it(`objective=${JSON.stringify(objective)}`, () => {
       const first = loadFarmRateFixture();
@@ -30,7 +30,7 @@ describe('FRAD-15 — two solves on deep-equal, non-identical inputs are deep-eq
   }
 });
 
-describe('FRAD-15 — input-order independence', () => {
+describe('input-order independence', () => {
   const { heroes, account, maxPhase } = loadFarmRateFixture();
   const forward = solveFarmRespec({ heroes, account, maxPhase });
   const reversedHeroes = [...heroes].reverse();
@@ -53,7 +53,7 @@ describe('FRAD-15 — input-order independence', () => {
   });
 });
 
-describe('FRAD-15 — determinism holds on a narrower pool too', () => {
+describe('determinism holds on a narrower pool too', () => {
   it('two solves on the same 2-hero pool, rebuilt independently, are deep-equal', () => {
     const first = loadFarmRateFixture();
     const second = loadFarmRateFixture();
@@ -65,7 +65,7 @@ describe('FRAD-15 — determinism holds on a narrower pool too', () => {
   });
 });
 
-describe('FRAD-15 — locale independence: the lexicographic tie-break uses plain <, not localeCompare', () => {
+describe('locale independence: the lexicographic tie-break uses plain <, not localeCompare', () => {
   function fakeBasis(heroId: string, pts: Partial<Record<SheetKey, number>>): HeroFarmBasis {
     const fullPts: Record<SheetKey, number> = {
       attack: 0,
@@ -113,7 +113,7 @@ describe('FRAD-15 — locale independence: the lexicographic tie-break uses plai
   });
 });
 
-describe('FRAD-16 — the fixed point: re-solving on the solver\'s own proposal changes nothing, three times over', () => {
+describe('the fixed point: re-solving on the solver\'s own proposal changes nothing, three times over', () => {
   const { heroes, account, maxPhase } = loadFarmRateFixture();
 
   it('keptCurrent, gainPct 0, outcome nothingToGain — repeated three times so a regression shows as oscillation', () => {
@@ -134,7 +134,7 @@ describe('FRAD-16 — the fixed point: re-solving on the solver\'s own proposal 
       expect(result.keptCurrent, `round ${round}`).toBe(true);
       expect(result.gainPct, `round ${round}`).toBe(0);
       expect(result.outcome, `round ${round}`).toBe('nothingToGain');
-      // FRAD-03 re-asserted after the round trip.
+      // Non-negative-gain re-asserted after the round trip.
       expect(result.proposedObjective, `round ${round}`).toBeGreaterThanOrEqual(result.currentObjective);
 
       currentHeroes = respecced;
@@ -167,7 +167,7 @@ describe('FRAD-16 — the fixed point: re-solving on the solver\'s own proposal 
   });
 });
 
-describe('FRAD-18 — proposed luck always equals current luck, under every objective', () => {
+describe('proposed luck always equals current luck, under every objective', () => {
   for (const objective of OBJECTIVES) {
     it(`objective=${JSON.stringify(objective)}`, () => {
       const { heroes, account, maxPhase } = loadFarmRateFixture();

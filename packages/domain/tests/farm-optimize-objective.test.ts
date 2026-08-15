@@ -1,8 +1,6 @@
 /**
  * The objective layer: `resolveFarmObjective`, `farmObjectiveValue`. Phase argmax
  * (`bestFarmPhase`) is covered separately in `farm-optimize-phase.test.ts`.
- *
- * 1:1 to `FRAD-04`…`FRAD-06`, `FRAD-10`…`FRAD-12`, `FRAD-19`.
  */
 import { describe, expect, it } from 'vitest';
 import {
@@ -53,15 +51,15 @@ describe('resolveFarmObjective — total, never throws', () => {
     });
   });
 
-  it('blend at weight 1 resolves to the SAME object shape as gold (FRAD-11, literal not approximate)', () => {
+  it('blend at weight 1 resolves to the SAME object shape as gold', () => {
     expect(resolveFarmObjective({ kind: 'blend', weight: 1 })).toEqual(resolveFarmObjective({ kind: 'gold' }));
   });
 
-  it('blend at weight 0 resolves to the SAME object shape as chests (FRAD-11, literal not approximate)', () => {
+  it('blend at weight 0 resolves to the SAME object shape as chests', () => {
     expect(resolveFarmObjective({ kind: 'blend', weight: 0 })).toEqual(resolveFarmObjective({ kind: 'chests' }));
   });
 
-  it('weight NaN clamps to 1, -3 clamps to 0, 7 clamps to 1, undefined defaults to 1 (FRAD-19)', () => {
+  it('weight NaN clamps to 1, -3 clamps to 0, 7 clamps to 1, undefined defaults to 1', () => {
     expect(resolveFarmObjective({ kind: 'blend', weight: NaN }).weight).toBe(1);
     expect(resolveFarmObjective({ kind: 'blend', weight: -3 }).weight).toBe(0);
     expect(resolveFarmObjective({ kind: 'blend', weight: 7 }).weight).toBe(1);

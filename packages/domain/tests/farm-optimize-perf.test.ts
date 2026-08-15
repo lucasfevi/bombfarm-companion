@@ -3,8 +3,7 @@
  *
  * `energySwitchPointCallCount` is module-global mutable state (`advisor-pipeline.ts:41`), so
  * this file owns every case that reads it, exactly like `farm-rate-perf-guard.test.ts` does for
- * the estimator. A parallel file calling the solver would corrupt the count. 1:1 to `FRAD-13`,
- * `FRAD-14`.
+ * the estimator. A parallel file calling the solver would corrupt the count.
  */
 import { describe, expect, it, beforeEach } from 'vitest';
 import { solveFarmRespec, FARM_OPT_FULL_MAX_EVALUATIONS } from '@bombfarm/domain/farm-optimize';
@@ -24,7 +23,7 @@ beforeEach(() => {
   resetEnergySwitchPointCallCount();
 });
 
-describe('FRAD-13 — pipeline calls equal the enabled-hero count, regardless of candidates evaluated', () => {
+describe('pipeline calls equal the enabled-hero count, regardless of candidates evaluated', () => {
   it('a full Tier 2 solve on the 5-hero fixture bumps the counter exactly 5 times', () => {
     solveFarmRespec({ heroes, account, maxPhase });
     expect(energySwitchPointCallCount).toBe(5);
@@ -43,7 +42,7 @@ describe('FRAD-13 — pipeline calls equal the enabled-hero count, regardless of
   });
 });
 
-describe('FRAD-14 — the evaluation budget binds, and a truncated search still returns a valid incumbent', () => {
+describe('the evaluation budget binds, and a truncated search still returns a valid incumbent', () => {
   it('evaluations <= FARM_OPT_FULL_MAX_EVALUATIONS on the fixture, and budgetExhausted is false', () => {
     const result = solveFarmRespec({ heroes, account, maxPhase });
     expect(result.evaluations).toBeLessThanOrEqual(FARM_OPT_FULL_MAX_EVALUATIONS);

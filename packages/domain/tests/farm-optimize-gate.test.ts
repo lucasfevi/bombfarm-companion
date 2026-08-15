@@ -1,6 +1,5 @@
 /**
  * `gateFarmRespec` — Tier 1, the always-on gate and the lower-bound contract it makes.
- * 1:1 to `FRAD-14` (the gate half), `FRAD-01`, `FRAD-03`.
  */
 import { describe, expect, it } from 'vitest';
 import { gateFarmRespec, solveFarmRespec, FARM_OPT_GATE_MAX_EVALUATIONS } from '@bombfarm/domain/farm-optimize';
@@ -69,7 +68,7 @@ describe('the gate\'s own shape', () => {
   });
 });
 
-describe('FRAD-03 holds for the gate too', () => {
+describe('the non-negative-gain invariant holds for the gate too', () => {
   it('proposedObjective >= currentObjective, gainPct >= 0', () => {
     const gate = gateFarmRespec({ heroes, account, maxPhase });
     expect(gate.proposedObjective).toBeGreaterThanOrEqual(gate.currentObjective);

@@ -80,8 +80,8 @@ function heroesChangedCount(assignment: PtsAssignment, bases: readonly HeroFarmB
 }
 
 function lexicographicCompare(a: PtsAssignment, b: PtsAssignment, bases: readonly HeroFarmBasis[]): number {
-  // Plain `<` on the id, NOT localeCompare — locale-dependent ordering would make FRAD-15's
-  // determinism claim hold only on the developer's own machine.
+  // Plain `<` on the id, NOT localeCompare — locale-dependent ordering would make the
+  // determinism claim below hold only on the developer's own machine.
   const ids = bases.map((basis) => basis.heroId).sort((x, y) => (x < y ? -1 : x > y ? 1 : 0));
   for (const heroId of ids) {
     const basis = bases.find((b) => b.heroId === heroId)!;
@@ -95,7 +95,7 @@ function lexicographicCompare(a: PtsAssignment, b: PtsAssignment, bases: readonl
 }
 
 /**
- * The total tie-break order (`FRAD-15`, design.md §4.6): higher objective value; then fewer
+ * The total tie-break order (design.md §4.6): higher objective value; then fewer
  * points moved from the current vectors; then fewer heroes changed; then lexicographic by
  * `(heroId ascending, REOPT_KEYS declaration order)`. `compare(a, b) < 0` means `a` wins.
  */
@@ -227,7 +227,8 @@ export function squadEnergyShare(
  * `ladder` entries containing `winShare`'s own grid neighbourhood whose values are `>= peak x
  * (1 - tolerancePct/100)`, unioned with `winShare` itself. `winShare` always qualifies by
  * construction (its true value IS `peak`), so this never returns an empty or invented range —
- * when no grid neighbour qualifies, `min === max === winShare` (FRAD-26).
+ * when no grid neighbour qualifies, `min === max === winShare` — never null, never an invented
+ * width.
  */
 export function derivePlateauBounds(
   ladder: readonly { share: number; value: number }[],

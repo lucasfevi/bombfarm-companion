@@ -1,8 +1,8 @@
 /**
  * Every degenerate and boundary case from `design.md` §7, each pinned to the FULL tuple
  * (`outcome`, `keptCurrent`, `recommendedPhase`, `gainPct`, `heroes.length`, `frontier.length`,
- * `plateau`, `evaluations`), plus `FRAD-19` at the solver boundary and a finite-value sweep over
- * every result this file produces. 1:1 to `FRAD-19`, `FRAD-20a`…`FRAD-20g`, `FRAD-02`, `FRAD-23`.
+ * `plateau`, `evaluations`), plus the objective weight/kind sweep at the solver boundary and a
+ * finite-value sweep over every result this file produces.
  */
 import { describe, expect, it } from 'vitest';
 import { solveFarmRespec, type FarmRespecResult, type FarmRespecInput } from '@bombfarm/domain/farm-optimize';
@@ -52,7 +52,7 @@ function assertResultIsFinite(result: FarmRespecResult): void {
   expect(result.paybackHours === null || Number.isFinite(result.paybackHours)).toBe(true);
 }
 
-describe('FRAD-20a — empty pool', () => {
+describe('empty pool', () => {
   it('enabledHeroIds: [] ⇒ emptyPool, recommendedPhase null, never a fabricated phase 1', () => {
     const result = solveFarmRespec({ heroes, account, maxPhase, enabledHeroIds: [] });
     expect(result.outcome).toBe('emptyPool');
@@ -77,7 +77,7 @@ describe('FRAD-20a — empty pool', () => {
   });
 });
 
-describe('FRAD-20b — every enabled hero degenerate', () => {
+describe('every enabled hero degenerate', () => {
   it('allDegenerate is a DIFFERENT named outcome from nothingToGain', () => {
     const jon = heroes.find((h) => h.name === 'Jon')!;
     const stillJon: HeroRecord = { ...jon, birth: { ...jon.birth!, speed: 0 } };
@@ -96,7 +96,7 @@ describe('FRAD-20b — every enabled hero degenerate', () => {
   });
 });
 
-describe('FRAD-20c — exactly one searchable hero', () => {
+describe('exactly one searchable hero', () => {
   it('the solve succeeds with a single-element change set and an empty frontier', () => {
     const oneId = [heroes.find((h) => h.name === 'Jon')!.id];
     const result = solveFarmRespec({ heroes, account, maxPhase, enabledHeroIds: oneId });
@@ -106,7 +106,7 @@ describe('FRAD-20c — exactly one searchable hero', () => {
   });
 });
 
-describe('two searchable heroes — the frontier is capped by |S| (FRAD-23, extended in T9)', () => {
+describe('two searchable heroes — the frontier is capped by |S|', () => {
   it('frontier stays within bounds for a 2-hero pool (T5/T7: always []; T9 adds the 1-hero tier)', () => {
     const twoIds = heroes.slice(0, 2).map((h) => h.id);
     const result = solveFarmRespec({ heroes, account, maxPhase, enabledHeroIds: twoIds });
@@ -120,7 +120,7 @@ describe('two searchable heroes — the frontier is capped by |S| (FRAD-23, exte
   });
 });
 
-describe('FRAD-20d — every reoptBudget is 0', () => {
+describe('every reoptBudget is 0', () => {
   it("noBudget, keptCurrent, evaluations <= 1, recommendedPhase is the current build's argmax", () => {
     const jon = heroes.find((h) => h.name === 'Jon')!;
     // level 5, all 5 points already sunk into luck ⇒ level - luck = 0 AND budgetOf(pts) = 0.
@@ -142,7 +142,7 @@ describe('FRAD-20d — every reoptBudget is 0', () => {
   });
 });
 
-describe('FRAD-20e — no feasible phase under any candidate build', () => {
+describe('no feasible phase under any candidate build', () => {
   it('a maxPhase that floors to an empty candidate range ⇒ recommendedPhase null, gainPct 0, never Infinity/NaN', () => {
     // maxPhase: 0.9 floors to 0 ⇒ the candidate phase range [1, 0] is empty for every build,
     // not just the current one — no phase can ever be feasible regardless of allocation.
@@ -156,7 +156,7 @@ describe('FRAD-20e — no feasible phase under any candidate build', () => {
   });
 });
 
-describe('FRAD-20f — currentObjective <= 0 ⇒ gainPct 0, no division by zero', () => {
+describe('currentObjective <= 0 ⇒ gainPct 0, no division by zero', () => {
   it('an extreme negative tree luck drives chests/hr non-positive while the build stays feasible', () => {
     const badAccount: AccountShared = { ...account, tree: { ...account.tree, luckFlatPct: -500 } };
     const result = solveFarmRespec({ heroes, account: badAccount, objective: { kind: 'chests' }, maxPhase });
@@ -166,7 +166,7 @@ describe('FRAD-20f — currentObjective <= 0 ⇒ gainPct 0, no division by zero'
   });
 });
 
-describe('FRAD-20g — the objective rises but goldPerHour falls ⇒ paybackHours null, never negative, never Infinity', () => {
+describe('the objective rises but goldPerHour falls ⇒ paybackHours null, never negative, never Infinity', () => {
   it('the chest-optimal build on the fixture reproduces the measured 259,413 < 264,997 gold/hr crossover', () => {
     const result = solveFarmRespec({ heroes, account, objective: { kind: 'chests' }, maxPhase });
     expect(result.outcome).toBe('improved');
@@ -219,7 +219,7 @@ describe('absent account.slots, negative teamCoinPct, undefined luckFlatPct', ()
   });
 });
 
-describe('FRAD-19 at the solver boundary — never throws, always a valid result', () => {
+describe('the objective weight/kind sweep at the solver boundary — never throws, always a valid result', () => {
   const cases: { label: string; objective: FarmRespecInput['objective'] }[] = [
     { label: 'weight NaN', objective: { kind: 'blend', weight: NaN } },
     { label: 'weight -3', objective: { kind: 'blend', weight: -3 } },

@@ -1,7 +1,6 @@
 /**
  * `solveFarmRespec`'s core: the shape of the result, the non-negative-gain invariant, hero-entry
- * completeness, absolute-target vectors, and the total tie-break comparator. 1:1 to `FRAD-01`,
- * `FRAD-02`, `FRAD-03`, `FRAD-15`, `FRAD-17`, `FRAD-29`, `FRAD-30`.
+ * completeness, absolute-target vectors, and the total tie-break comparator.
  */
 import { describe, expect, it } from 'vitest';
 import { solveFarmRespec, type FarmRespecInput } from '@bombfarm/domain/farm-optimize';
@@ -14,7 +13,7 @@ import { loadFarmRateFixture } from './helpers/farm-rate-fixtures';
 
 const { heroes, account, maxPhase } = loadFarmRateFixture();
 
-describe('FRAD-01 — the result carries every promised field, present and finite (or legitimately null)', () => {
+describe('the result carries every promised field, present and finite (or legitimately null)', () => {
   it('proposed vectors, recommended phase, objective values, gainPct, respecCostGold, paybackHours', () => {
     const result = solveFarmRespec({ heroes, account, maxPhase });
 
@@ -39,7 +38,7 @@ describe('FRAD-01 — the result carries every promised field, present and finit
   });
 });
 
-describe('FRAD-03 — proposedObjective >= currentObjective, gainPct >= 0, no exception', () => {
+describe('proposedObjective >= currentObjective, gainPct >= 0, no exception', () => {
   const objectives: FarmRespecInput['objective'][] = [{ kind: 'gold' }, { kind: 'chests' }, { kind: 'blend', weight: 0.5 }];
   const pools: (readonly string[] | undefined)[] = [undefined, heroes.slice(0, 2).map((h) => h.id), heroes.slice(0, 1).map((h) => h.id)];
   const maxPhases: (number | null)[] = [42, null];
@@ -59,7 +58,7 @@ describe('FRAD-03 — proposedObjective >= currentObjective, gainPct >= 0, no ex
   }
 });
 
-describe('FRAD-02 — nothing beats the current build (the fixed point re-solve)', () => {
+describe('nothing beats the current build (the fixed point re-solve)', () => {
   it('keptCurrent: true, gainPct: 0, every changed: false, respecCostGold: 0, heroes still lists every enabled hero', () => {
     const first = solveFarmRespec({ heroes, account, maxPhase });
     expect(first.outcome).toBe('improved'); // sanity: the fixture DOES improve on the first solve.
@@ -81,7 +80,7 @@ describe('FRAD-02 — nothing beats the current build (the fixed point re-solve)
   });
 });
 
-describe('FRAD-29 — one entry per enabled hero, including unchanged ones with their own cost', () => {
+describe('one entry per enabled hero, including unchanged ones with their own cost', () => {
   it('heroes.length === enabledCount; an unchanged hero still carries a positive respecCostGold; the top-level total sums changed heroes only', () => {
     const result = solveFarmRespec({ heroes, account, maxPhase });
     expect(result.heroes).toHaveLength(heroes.length);
@@ -95,7 +94,7 @@ describe('FRAD-29 — one entry per enabled hero, including unchanged ones with 
   });
 });
 
-describe('FRAD-30 — every proposedPts is a full 8-key absolute target, within the hero\'s own budget', () => {
+describe('every proposedPts is a full 8-key absolute target, within the hero\'s own budget', () => {
   it('all 8 keys present, integer-valued, non-negative, and budgetOf <= reoptBudget(currentPts, level)', () => {
     const result = solveFarmRespec({ heroes, account, maxPhase });
     for (const hero of result.heroes) {
@@ -113,7 +112,7 @@ describe('FRAD-30 — every proposedPts is a full 8-key absolute target, within 
   });
 });
 
-describe('FRAD-15 — the total tie-break comparator, one case per rule', () => {
+describe('the total tie-break comparator, one case per rule', () => {
   function fakeBasis(heroId: string, pts: Partial<Record<SheetKey, number>>): HeroFarmBasis {
     const fullPts: Record<SheetKey, number> = {
       attack: 0,
@@ -133,10 +132,15 @@ describe('FRAD-15 — the total tie-break comparator, one case per rule', () => 
     return { name, assignment, value, pick: null, squad: {} as FarmCandidate['squad'] };
   }
 
-  it('rule 2 — equal value, fewer points moved wins', () => {
-    const bases = [fakeBasis('h1', { attack: 10 })];
+  it('rule 2 — equal value, fewer points moved wins, EVEN AGAINST what rule 4 (lexicographic) alone would pick', () => {
+    // Deliberately adversarial to rule 4: a moves 1 point (attack 10->11) and would LOSE the
+    // lexicographic tie-break on its own (11 > b's 9 at the first-compared key, 'attack'). b
+    // moves 3 points (attack 10->9, energy 10->12) and would WIN lexicographic alone. If rule 2
+    // were dropped, both tie on heroesChanged (1 each) and the comparator would fall straight to
+    // rule 4 and pick b — the exact regression this case exists to catch.
+    const bases = [fakeBasis('h1', { attack: 10, energy: 10 })];
     const a = fakeCandidate('a', 100, new Map([['h1', { ...bases[0].pts, attack: 11 }]])); // 1 point moved
-    const b = fakeCandidate('b', 100, new Map([['h1', { ...bases[0].pts, attack: 12 }]])); // 2 points moved
+    const b = fakeCandidate('b', 100, new Map([['h1', { ...bases[0].pts, attack: 9, energy: 12 }]])); // 3 points moved
     expect(compareFarmCandidates(a, b, bases)).toBeLessThan(0);
     expect(compareFarmCandidates(b, a, bases)).toBeGreaterThan(0);
   });

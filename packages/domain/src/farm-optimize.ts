@@ -5,9 +5,9 @@
  *
  * Every exported function here is pure: same arguments, same result, no memo cache, no
  * module-level mutable state, no clock, no `Math.random`. Re-running the solver on its own
- * proposed build is a fixed point (`FRAD-16`) — the same non-compounding property `reoptBudget`
- * was fixed for. `pts.luck` is never touched (`OD-A1`'s luck-freeze, restated without the id):
- * Luck sits outside the seven reallocatable stat keys structurally, not by a runtime check.
+ * proposed build is a fixed point — the same non-compounding property `reoptBudget` was fixed
+ * for. `pts.luck` is never touched: Luck sits outside the seven reallocatable stat keys
+ * structurally, not by a runtime check.
  */
 import type { HeroRecord, AccountShared } from './shims/storage';
 import type { SheetKey } from './planner-constants';
@@ -299,13 +299,13 @@ function assembleResult(params: {
   const currentChestsPerHour = currentReadout.chestsPerHour;
 
   const recommendedPhase = proposedPick ? proposedPick.phase : null;
-  // FRAD-20e: no fabricated value — 0, never NaN/Infinity, when nothing is feasible.
+  // No fabricated value — 0, never NaN/Infinity, when nothing is feasible.
   const proposedObjective = proposedPick ? proposedPick.value : 0;
   const proposedReadout = goldChestReadout(proposedSquad, phaseOptions);
   const proposedGoldPerHour = proposedReadout.goldPerHour;
   const proposedChestsPerHour = proposedReadout.chestsPerHour;
 
-  // FRAD-20f: currentObjective <= 0 ⇒ gainPct 0, never a division by zero.
+  // currentObjective <= 0 ⇒ gainPct 0, never a division by zero.
   const gainPct = currentObjective > 0 ? Math.max(0, (proposedObjective / currentObjective - 1) * 100) : 0;
 
   const respecCostGoldTotal = heroEntries.filter((h) => h.changed).reduce((sum, h) => sum + h.respecCostGold, 0);
@@ -614,8 +614,8 @@ function prepareFarmRespecSolve(
   if (searchableIds.length === 0) {
     const currentPick = bestFarmPhase(currentSquad, objective, scales, phaseOptions);
     // No search ran (nothing was searchable), so there is no ladder to read a plateau from — a
-    // trivial point-plateau at the current build's own energy share, per design.md §7's
-    // "reported around current" for FRAD-20d.
+    // trivial point-plateau at the current build's own energy share (design.md §7: "reported
+    // around current" for the every-hero-out-of-budget case).
     const noBudgetShare = squadEnergyShare(bases, searchableIds, budgetById, null);
     return {
       kind: 'terminal',
@@ -717,8 +717,8 @@ export function solveFarmRespec(input: FarmRespecInput): FarmRespecResult {
   return assembleResult({
     objective,
     outcome,
-    // FRAD-20e: no feasible phase anywhere ⇒ the honest "kept current" framing, never a
-    // fabricated non-zero change set.
+    // No feasible phase anywhere ⇒ the honest "kept current" framing, never a fabricated
+    // non-zero change set.
     keptCurrent: outcome === 'noFeasiblePhase' ? true : keptCurrent,
     heroEntries,
     currentPick,

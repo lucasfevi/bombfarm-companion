@@ -28,7 +28,7 @@ export type ResolvedFarmObjective = {
 /**
  * Total function. Unknown `kind` ⇒ `'gold'`. Never throws. Blend at `weight === 1` resolves to
  * the `'gold'` object and at `weight === 0` to the `'chests'` object, so those cases are
- * literally the same objective, not merely equivalent (`FRAD-11`).
+ * literally the same objective, not merely equivalent.
  */
 export function resolveFarmObjective(objective?: FarmObjective | null): ResolvedFarmObjective {
   const rawKind = objective?.kind;
@@ -91,8 +91,8 @@ function candidatePhases(upper: number, stride: number): number[] {
 
 /**
  * `null`/non-positive/non-finite `maxPhase` is normalized to `null` before it reaches
- * `computeFarmRateRow`, so a row's own `locked` flag agrees with `FRAD-05`'s "no row excluded
- * for being locked": a `maxPhase` of `0`/`-1`/`NaN` means "absent", not "lock everything".
+ * `computeFarmRateRow`, so a row's own `locked` flag agrees with the "no row excluded for being
+ * locked" contract: a `maxPhase` of `0`/`-1`/`NaN` means "absent", not "lock everything".
  */
 function sanitizeRowOptions(options: (FarmRateOptions & { phaseStride?: number }) | undefined): FarmRateOptions {
   const maxPhase = options?.maxPhase;
@@ -102,8 +102,9 @@ function sanitizeRowOptions(options: (FarmRateOptions & { phaseStride?: number }
 
 /**
  * `argmax` over the candidate phase set of `farmObjectiveValue`, skipping `infeasible` rows
- * (`FRAD-06`) and non-finite values. Ties keep the LOWER phase — a lower phase is already
- * unlocked and cheaper to hold. `null` when nothing is feasible.
+ * and non-finite values — an infeasible phase is never recommended regardless of its nominal
+ * rate. Ties keep the LOWER phase — a lower phase is already unlocked and cheaper to hold.
+ * `null` when nothing is feasible.
  */
 export function bestFarmPhase(
   squad: SquadFarmFacts,
