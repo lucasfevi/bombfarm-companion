@@ -8,9 +8,9 @@ import { accordionStackClass } from '@bombfarm/ui/accordion.recipe';
 import type { Lang, Strings } from '@/shared/i18n';
 import { sub } from '@/shared/i18n';
 import { usePlannerStore, selectHeroes, selectInventoryItems } from '@/shared/stores';
-import { shortHeroRecordId } from '@/features/team-plan/model/build-team-plan-input';
+import { shortHeroRecordId } from '@/shared/lib/hero-identity';
 import { buildGearFlowRows, groupGearFlowRows } from '@/features/team-plan/model/gear-flow-rows';
-import { HeroIdentityChip } from './hero-identity-chip';
+import { HeroIdentityChip } from '@/shared/game-art';
 import { HeroDetailPanel } from './hero-detail-panel';
 import { AbbreviatedNumber } from './abbreviated-number';
 

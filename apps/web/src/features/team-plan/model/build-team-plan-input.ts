@@ -50,8 +50,3 @@ export function countOptimizeScopeHeroes(state: PlannerStore): number {
 export function heroScopeKey(hero: { id: string; sourceId?: string }): string {
   return hero.sourceId ?? hero.id;
 }
-
-export function shortHeroRecordId(hero: { id: string; sourceId?: string }): string {
-  const raw = hero.sourceId ?? hero.id;
-  return raw.length > 5 ? raw.slice(-5) : raw;
-}
