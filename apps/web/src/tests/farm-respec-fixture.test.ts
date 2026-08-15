@@ -117,7 +117,7 @@ describe('Farm Respec Advisor — fixture integration (account-486, save-2026081
     expect(proposedTop).toBeLessThanOrEqual(28);
   });
 
-  it('a pure chests objective recommends phase 1 with a null payback (the reachable case)', () => {
+  it('a pure chests objective recommends phase 1 with a null payback (the reachable never-a-glyph case)', () => {
     usePlannerStore.getState().setFarmObjective('chests');
     const solve = runFarmRespecSolve(usePlannerStore.getState());
     expect(solve.recommendedPhase).toBe(1);
