@@ -45,10 +45,29 @@ describe('phases-view-storage', () => {
 
   // Farm Ranking T2: the additive farmPool / farmReturnBonus normalize table.
   describe('farmPool / farmReturnBonus normalize (design §6.1)', () => {
-    it('the literal shipped payload {"phase":151} loads with the phase preserved, pool empty, bonus off', () => {
+    it('the literal shipped payload {"phase":151} loads with the phase preserved, pool empty, bonus off, objective gold', () => {
       vi.stubGlobal('localStorage', memoryLocalStorage());
       localStorage.setItem('bf-hp-phases-view-v1', '{"phase":151}');
-      expect(loadPhasesView()).toEqual({ phase: 151, farmPool: {}, farmReturnBonus: 'off' });
+      expect(loadPhasesView()).toEqual({
+        phase: 151,
+        farmPool: {},
+        farmReturnBonus: 'off',
+        farmObjective: 'gold',
+      });
+    });
+
+    it('the shipped three-field payload {phase, farmPool, farmReturnBonus} loads with objective defaulted to gold', () => {
+      vi.stubGlobal('localStorage', memoryLocalStorage());
+      localStorage.setItem(
+        'bf-hp-phases-view-v1',
+        '{"phase":12,"farmPool":{"h1":true},"farmReturnBonus":"vip"}',
+      );
+      expect(loadPhasesView()).toEqual({
+        phase: 12,
+        farmPool: { h1: true },
+        farmReturnBonus: 'vip',
+        farmObjective: 'gold',
+      });
     });
 
     it('non-JSON, an array, and null all fall back to the default with no throw', () => {
@@ -113,9 +132,56 @@ describe('phases-view-storage', () => {
       expect(loadPhasesView().farmReturnBonus).toBe('vip');
     });
 
-    it('defaultPhasesView() omits farmPool/farmReturnBonus so an untouched payload stays byte-identical', () => {
+    it('defaultPhasesView() omits farmPool/farmReturnBonus/farmObjective so an untouched payload stays byte-identical', () => {
       expect(defaultPhasesView()).toEqual({ phase: 1 });
       expect(Object.keys(defaultPhasesView())).toEqual(['phase']);
+    });
+  });
+
+  // Farm Respec Advisor T2: the additive farmObjective normalize table (design §6).
+  describe('farmObjective normalize (design §6)', () => {
+    it('absent farmObjective normalizes to gold', () => {
+      vi.stubGlobal('localStorage', memoryLocalStorage());
+      localStorage.setItem('bf-hp-phases-view-v1', '{"phase":1}');
+      expect(loadPhasesView().farmObjective).toBe('gold');
+    });
+
+    it('each of the three preset literals round-trips as itself', () => {
+      vi.stubGlobal('localStorage', memoryLocalStorage());
+      for (const kind of ['gold', 'chests', 'blend']) {
+        localStorage.setItem('bf-hp-phases-view-v1', JSON.stringify({ phase: 1, farmObjective: kind }));
+        expect(loadPhasesView().farmObjective).toBe(kind);
+      }
+    });
+
+    it('an unrecognized string normalizes to gold', () => {
+      vi.stubGlobal('localStorage', memoryLocalStorage());
+      localStorage.setItem('bf-hp-phases-view-v1', '{"phase":1,"farmObjective":"bogus"}');
+      expect(loadPhasesView().farmObjective).toBe('gold');
+    });
+
+    it('a number normalizes to gold', () => {
+      vi.stubGlobal('localStorage', memoryLocalStorage());
+      localStorage.setItem('bf-hp-phases-view-v1', '{"phase":1,"farmObjective":7}');
+      expect(loadPhasesView().farmObjective).toBe('gold');
+    });
+
+    it('null normalizes to gold', () => {
+      vi.stubGlobal('localStorage', memoryLocalStorage());
+      localStorage.setItem('bf-hp-phases-view-v1', '{"phase":1,"farmObjective":null}');
+      expect(loadPhasesView().farmObjective).toBe('gold');
+    });
+
+    it('an array normalizes to gold', () => {
+      vi.stubGlobal('localStorage', memoryLocalStorage());
+      localStorage.setItem('bf-hp-phases-view-v1', '{"phase":1,"farmObjective":["gold"]}');
+      expect(loadPhasesView().farmObjective).toBe('gold');
+    });
+
+    it('an object normalizes to gold', () => {
+      vi.stubGlobal('localStorage', memoryLocalStorage());
+      localStorage.setItem('bf-hp-phases-view-v1', '{"phase":1,"farmObjective":{"kind":"blend"}}');
+      expect(loadPhasesView().farmObjective).toBe('gold');
     });
   });
 });

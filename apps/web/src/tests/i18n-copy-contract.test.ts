@@ -170,3 +170,60 @@ describe('i18n copy contract — Luck row states it is loot-facing, not scored f
     });
   }
 });
+
+/**
+ * Farm Respec Advisor T7 — the same lower-bound-vs-precise shape as the reset-advice contract
+ * above, applied to the toolbar headline (Tier 1, a conservative gate estimate) vs. the panel
+ * (Tier 2, the fuller on-demand solve). Tier 2 legitimately reports a HIGHER number than Tier 1
+ * — that is the two-tier design working, not an inconsistency — so the two keys must carry
+ * distinct wording: the headline hedges, the panel does not.
+ */
+const FARM_RESPEC_LOWER_BOUND_MARKER: Record<Lang, RegExp> = {
+  en: /at least ~?\{pct\}%/i,
+  pt: /pelo menos ~?\{pct\}%/i,
+};
+
+describe('i18n copy contract — Farm Respec Advisor headline is a lower bound, the panel is not', () => {
+  for (const lang of LANGS) {
+    const t = STRINGS[lang];
+
+    it(`${lang}: farmRespecHeadlineGain (Tier 1) carries the lower-bound hedge`, () => {
+      expect(t.farmRespecHeadlineGain).toMatch(FARM_RESPEC_LOWER_BOUND_MARKER[lang]);
+    });
+
+    it(`${lang}: farmRespecPanelGain (Tier 2) does NOT carry the lower-bound hedge — a larger number here is the copy working, not a correction`, () => {
+      expect(t.farmRespecPanelGain).not.toMatch(FARM_RESPEC_LOWER_BOUND_MARKER[lang]);
+      for (const pattern of CORRECTION_PATTERNS[lang]) {
+        expect(t.farmRespecPanelGain).not.toMatch(pattern);
+      }
+    });
+  }
+});
+
+/**
+ * No move-level annotation anywhere in the Farm Respec Advisor's own strings reads as "this one
+ * doesn't matter" — every changed key is shown with its raw delta, never tagged skippable. A
+ * later guard extends this same scan to the component files; this half covers the copy data.
+ */
+const NEGLIGIBLE_ANNOTATION_PATTERNS: Record<Lang, RegExp[]> = {
+  en: [/\boptional\b/i, /\bnegligible\b/i, /\bminor\b/i, /\bskip(pable)?\b/i],
+  pt: [/\bopcional\b/i, /\bnegligenci[aá]vel\b/i, /\bmenor\b/i, /\bpul(ar|ável)\b/i],
+};
+
+describe('i18n copy contract — no Farm Respec Advisor string tags a move optional/negligible/minor/skippable', () => {
+  for (const lang of LANGS) {
+    const t = STRINGS[lang] as unknown as Record<string, string>;
+
+    it(`${lang}: no farmRespec* value matches the negligible-annotation vocabulary`, () => {
+      const offenders: string[] = [];
+      for (const key of Object.keys(t)) {
+        if (!key.startsWith('farmRespec')) continue;
+        const text = t[key];
+        for (const pattern of NEGLIGIBLE_ANNOTATION_PATTERNS[lang]) {
+          if (pattern.test(text)) offenders.push(`${key} matched ${pattern}`);
+        }
+      }
+      expect(offenders).toEqual([]);
+    });
+  }
+});

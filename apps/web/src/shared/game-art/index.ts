@@ -1,5 +1,6 @@
 export { ArtFrame, type ArtFrameSize } from '@/shared/game-art/art-frame';
 export { HeroAvatar } from '@/shared/game-art/hero-avatar';
+export { HeroIdentityChip } from '@/shared/game-art/hero-identity-chip';
 export { ItemIcon } from '@/shared/game-art/item-icon';
 export { AbilityIcon } from '@/shared/game-art/ability-icon';
 export { HeroAbilityIcons } from '@/shared/game-art/hero-ability-icons';

@@ -7,9 +7,24 @@
 // that re-creates the domain package's ordering contract in a second place for no benefit. returnBonusMultiplier
 // and E_D_CELLS are intentionally never imported — this surface never applies a multiplier or a
 // cadence constant itself.
-import { computeFarmRates, type FarmRateRow } from '@bombfarm/domain/farm-rate';
+import { computeFarmRates, computeFarmRateTable, type FarmRateRow } from '@bombfarm/domain/farm-rate';
+// This file is ALSO the only apps/web file that imports a runtime binding from
+// @bombfarm/domain/farm-optimize (guard (g), farm-ranking-guards.test.ts). resolveFarmObjective,
+// farmObjectiveValue and bestFarmPhase are deliberately NOT imported — that surface belongs to
+// the next-point ranking mode, not to this recommendation seam. respecCostGold is not imported
+// either: every cost this surface renders is already a field on a FarmRespecResult/
+// FarmRespecHeroEntry.
+import {
+  gateFarmRespec,
+  solveFarmRespec,
+  FARM_RESPEC_MIN_GAIN_PCT,
+  type FarmRespecResult,
+  type FarmObjective,
+  type FarmObjectiveKind,
+} from '@bombfarm/domain/farm-optimize';
 import type { AccountShared } from '@/shared/lib/storage';
 import type { PlannerStore } from '@/shared/stores/planner-store';
+import type { FarmRespecProposal, FarmRespecStatus } from '@/shared/stores/slices/phases-slice';
 
 export type FarmRankingReason = 'no-roster' | 'no-heroes-enabled' | 'compute-failed';
 
@@ -68,6 +83,8 @@ let computeCount = 0;
 
 export function resetFarmRankingCache(): void {
   cache = null;
+  gateCache = null;
+  boardRowsCache = null;
 }
 
 export function getFarmRankingComputeCount(): number {
@@ -164,6 +181,215 @@ export function selectFarmRankingRows(state: PlannerStore): FarmRankingResult {
   computeCount += 1;
   const result = computeFarmRanking(state);
   cache = { deps, result };
+  return result;
+}
+
+// -------------------------------------------------------------------------------------------
+// Farm Respec Advisor — Tier 1 gate, Tier 2 on-demand solve, staleness, and the board's
+// re-rank row source. Everything below is additive; selectFarmRankingRows and
+// readFarmDepTuple above are not edited.
+// -------------------------------------------------------------------------------------------
+
+/** The three presets the objective picker offers. Blend's weight is the frozen GOLD share —
+ *  item A collapses w===1 to 'gold' and w===0 to 'chests', so 0.5 is the only blend value this
+ *  surface can ever emit and there is no free weight control to clamp. */
+const FARM_BLEND_GOLD_WEIGHT = 0.5;
+
+function toObjective(kind: FarmObjectiveKind): FarmObjective {
+  return kind === 'blend' ? { kind, weight: FARM_BLEND_GOLD_WEIGHT } : { kind };
+}
+
+/**
+ * The 15 ranking members PLUS the objective — the one input that changes the RECOMMENDATION
+ * without changing the current build's ranking. Spreads readFarmDepTuple rather than restating
+ * its members, so a future addition to the ranking tuple is inherited automatically.
+ */
+export function readFarmRespecDepTuple(state: PlannerStore) {
+  return [...readFarmDepTuple(state), state.farmObjective] as const;
+}
+
+function buildFarmRespecInput(state: PlannerStore, enabledHeroIds: readonly string[]) {
+  return {
+    heroes: state.heroes,
+    account: buildAccount(state),
+    enabledHeroIds,
+    objective: toObjective(state.farmObjective),
+    maxPhase: state.maxPhase,
+    returnBonus: state.farmReturnBonus,
+  };
+}
+
+export type FarmRespecGateReason = 'no-roster' | 'no-heroes-enabled' | 'gate-failed';
+
+export type FarmRespecGate = {
+  /** null when `reason` is set. */
+  result: FarmRespecResult | null;
+  reason: FarmRespecGateReason | null;
+  /** `result != null && result.gainPct >= FARM_RESPEC_MIN_GAIN_PCT`. `paybackHours` is NOT read
+   *  here, at any value including null — gain is the only gate. */
+  shouldSurface: boolean;
+};
+
+/** The one expression `shouldSurface` is built from. `paybackHours` is deliberately never read
+ *  here, at any value including `null` — gain alone gates the recommendation; payback is
+ *  reported, never used to suppress it. Exported so this exact formula, not a re-derivation of
+ *  it, is what the visibility test drives. */
+export function computeFarmRespecShouldSurface(result: FarmRespecResult): boolean {
+  return result.gainPct >= FARM_RESPEC_MIN_GAIN_PCT;
+}
+
+let gateCache: { deps: readonly unknown[]; gate: FarmRespecGate } | null = null;
+let gateComputeCount = 0;
+
+export function getFarmRespecGateComputeCount(): number {
+  return gateComputeCount;
+}
+
+export function resetFarmRespecGateComputeCount(): void {
+  gateComputeCount = 0;
+  gateCache = null;
+}
+
+function computeFarmRespecGate(state: PlannerStore): FarmRespecGate {
+  // The empty-pool short-circuits are repeated BEFORE the domain call, never delegated —
+  // mirrors computeFarmRanking above, and saves a pipeline call item A would otherwise spend
+  // reporting the same named-nothing answer.
+  if (state.heroes.length === 0) {
+    return { result: null, reason: 'no-roster', shouldSurface: false };
+  }
+  const enabledHeroIds = resolveEnabledHeroIds(state);
+  if (enabledHeroIds.length === 0) {
+    return { result: null, reason: 'no-heroes-enabled', shouldSurface: false };
+  }
+  try {
+    const result = gateFarmRespec(buildFarmRespecInput(state, enabledHeroIds));
+    return { result, reason: null, shouldSurface: computeFarmRespecShouldSurface(result) };
+  } catch {
+    // Caught at THIS boundary only. Item A never throws by contract; this renders a named
+    // degraded state instead of a silent absence.
+    return { result: null, reason: 'gate-failed', shouldSurface: false };
+  }
+}
+
+/**
+ * Module-level single-entry memo — Tier 1. Same shape as {@link selectFarmRankingRows}, over
+ * its own 16-member tuple (the 15 ranking members plus the objective). Returns the SAME object
+ * identity on a cache hit and must be subscribed to WITHOUT `useShallow`, for the identical
+ * reason `selectFarmRankingRows` is.
+ */
+export function selectFarmRespecGate(state: PlannerStore): FarmRespecGate {
+  const deps = readFarmRespecDepTuple(state);
+  if (gateCache && depsEqual(gateCache.deps, deps)) {
+    return gateCache.gate;
+  }
+  gateComputeCount += 1;
+  const gate = computeFarmRespecGate(state);
+  gateCache = { deps, gate };
+  return gate;
+}
+
+let solveCount = 0;
+
+export function getFarmRespecSolveCount(): number {
+  return solveCount;
+}
+
+export function resetFarmRespecSolveCount(): void {
+  solveCount = 0;
+}
+
+/**
+ * Tier 2 — the on-demand full solve. A PLAIN FUNCTION: not a selector, not memoized, and never
+ * called during render. The ONLY caller is phases-slice.ts's `runFarmRespec` action, on an
+ * explicit user event (the Optimize button). Calling this anywhere on the dependency-driven
+ * render path is the exact hazard the split between this file's two tiers exists to prevent.
+ */
+export function runFarmRespecSolve(state: PlannerStore): FarmRespecResult {
+  solveCount += 1;
+  const enabledHeroIds = resolveEnabledHeroIds(state);
+  return solveFarmRespec(buildFarmRespecInput(state, enabledHeroIds));
+}
+
+/** true iff a proposal exists AND its deps differ from the live tuple. */
+export function selectFarmRespecIsStale(state: PlannerStore): boolean {
+  const proposal = state.farmRespecProposal;
+  if (!proposal) return false;
+  return !depsEqual(proposal.deps, readFarmRespecDepTuple(state));
+}
+
+/**
+ * The proposal ONLY when it is fresh. A stale proposal is unrenderable BY CONSTRUCTION — no
+ * effect, no subscription, no write-on-render clears it; this pure derivation simply never
+ * hands it to a caller. Stable identity: returns the stored FarmRespecProposal object or null,
+ * never a fresh wrapper.
+ */
+export function selectFarmRespecView(state: PlannerStore): FarmRespecProposal | null {
+  const proposal = state.farmRespecProposal;
+  if (!proposal) return null;
+  return depsEqual(proposal.deps, readFarmRespecDepTuple(state)) ? proposal : null;
+}
+
+/**
+ * `'idle'` whenever the view is null (no fresh proposal to show — including a proposal made
+ * stale by a later input change), whatever `state.farmRespecStatus` holds. This is how the
+ * Optimize control re-arms after an input change without a second write path clearing
+ * `farmRespecStatus` itself. Components that need the LIVE in-flight/failed state (busy
+ * spinner, failure banner) read `state.farmRespecStatus` directly — this derivation answers a
+ * different question ("is there a fresh result to show"), not "is a solve currently running".
+ */
+export function selectFarmRespecStatus(state: PlannerStore): FarmRespecStatus {
+  return selectFarmRespecView(state) == null ? 'idle' : state.farmRespecStatus;
+}
+
+/** `state.farmRespecReRank && selectFarmRespecView(state) != null`. A boolean — safe to
+ *  subscribe directly. Already `false` whenever no fresh proposal exists, so the re-rank toggle
+ *  component needs no staleness logic of its own. */
+export function selectFarmReRankActive(state: PlannerStore): boolean {
+  return state.farmRespecReRank && selectFarmRespecView(state) != null;
+}
+
+let boardRowsCache: { deps: readonly unknown[]; result: FarmRankingResult } | null = null;
+let boardRowsComputeCount = 0;
+
+export function getFarmRespecRowsComputeCount(): number {
+  return boardRowsComputeCount;
+}
+
+export function resetFarmRespecRowsComputeCount(): void {
+  boardRowsComputeCount = 0;
+  boardRowsCache = null;
+}
+
+/**
+ * The board's row source. Returns {@link selectFarmRankingRows}' OWN cached object identity
+ * when re-rank is off — not a copy, not a wrapper — so the no-`useShallow` contract holds
+ * unchanged. `computeFarmRateTable` is called ONLY on the proposed branch, memoized on
+ * `[proposedSquad, state.maxPhase, state.farmReturnBonus]`.
+ *
+ * The MODE is deliberately NOT carried on this return value. Spreading the ranking result into
+ * `{ ...result, mode }` allocates a fresh object on every call, which turns
+ * `useSyncExternalStore` into an infinite render loop — the exact hazard
+ * `deriveFarmPoolEntries`' header above already warns about for a different selector. Read the
+ * mode separately via {@link selectFarmReRankActive}.
+ */
+export function selectFarmBoardRows(state: PlannerStore): FarmRankingResult {
+  if (!selectFarmReRankActive(state)) {
+    return selectFarmRankingRows(state);
+  }
+  // Non-null: selectFarmReRankActive already proved selectFarmRespecView(state) != null.
+  const proposal = selectFarmRespecView(state)!;
+  const squad = proposal.result.proposedSquad;
+  const deps = [squad, state.maxPhase, state.farmReturnBonus] as const;
+  if (boardRowsCache && depsEqual(boardRowsCache.deps, deps)) {
+    return boardRowsCache.result;
+  }
+  boardRowsComputeCount += 1;
+  const rows = computeFarmRateTable(squad, {
+    maxPhase: state.maxPhase,
+    returnBonus: state.farmReturnBonus,
+  });
+  const result: FarmRankingResult = { rows, reason: null };
+  boardRowsCache = { deps, result };
   return result;
 }
 

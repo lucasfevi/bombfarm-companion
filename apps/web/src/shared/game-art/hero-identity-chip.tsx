@@ -6,7 +6,7 @@ import { cn } from '@bombfarm/ui';
 import { HeroAvatar, rarityTextClass } from '@/shared/game-art';
 import type { HeroRecord } from '@/shared/lib/storage';
 import type { Lang } from '@/shared/i18n';
-import { shortHeroRecordId } from '@/features/team-plan/model/build-team-plan-input';
+import { shortHeroRecordId } from '@/shared/lib/hero-identity';
 
 /** Compact avatar + rank/name/rarity/level·id block — the `ScopeHeroCard` identity, sized down for a row. */
 export function HeroIdentityChip({
