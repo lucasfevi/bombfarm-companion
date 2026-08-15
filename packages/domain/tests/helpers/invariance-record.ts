@@ -612,7 +612,7 @@ export function recordInvarianceSurface(): InvarianceRecord {
       contexts: built.contexts,
       loadoutsByHeroId,
       ptsByHeroId,
-      slots: input.account.slots,
+      slots: input.account.fieldSlots,
       farm,
       forgeFloor: input.forgeFloor,
     });

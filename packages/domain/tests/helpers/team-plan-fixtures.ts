@@ -34,6 +34,7 @@ export function teamPlanInputFromFixture(file: string, forgeFloor = 10): TeamPla
       phase: 1,
       mitigationPct: 6.7,
       slots: account.slots ?? 9,
+      fieldSlots: account.fieldSlots ?? account.slots ?? 9,
     },
     scopeByHeroId,
     forgeFloor,

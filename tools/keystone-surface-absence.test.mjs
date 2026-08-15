@@ -162,7 +162,10 @@ const CRIT_DMG_MULT_MAP = {
   'apps/desktop/src/main/storage/account-store-restore.test.ts': [497, 530, 548, 581],
   'apps/desktop/src/main/storage/stale-sections.test.ts': [66, 81, 84, 88, 98, 105, 111, 123, 128, 164, 182],
   'apps/desktop/src/main/storage/stale-sections.ts': [11],
-  'apps/web/docs/local-data-compat.md': [106, 114],
+  // +2 (line numbers only) from the House/field-slots untangling follow-up: two new
+  // AccountShared rows (`fieldSlots`, `houseCycleSecs`) landed above this section. Match itself
+  // is unchanged in count and in kind.
+  'apps/web/docs/local-data-compat.md': [108, 116],
   'apps/web/src/features/planner/components/advice-column.tsx': [38, 59],
   // +16 (line number only): the House-ceiling fix added `fieldSlots`/`houseCycleSecs`, with
   // their doc comments, to `AccountShared` above this line. The match itself is unchanged in
@@ -189,7 +192,9 @@ const CRIT_DMG_MULT_MAP = {
   // Line numbers only — the House-ceiling regression repair (PR #86 finding, house.ts:38) added
   // explanatory comment lines above this point (the account-shared.ts entry above, and this
   // entry's own comment), shifting every self-reference below it down.
-  'tools/keystone-surface-absence.test.mjs': [13, 147, 150, 235, 240, 250, 259],
+  // +3 (line numbers only) from the House/field-slots untangling follow-up's own explanatory
+  // comment above the local-data-compat.md self-map entry. Count and kind unchanged.
+  'tools/keystone-surface-absence.test.mjs': [13, 147, 150, 240, 245, 255, 264],
   'tools/save-acceptance-guards.test.mjs': [53],
 };
 

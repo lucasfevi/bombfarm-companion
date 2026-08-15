@@ -11,7 +11,7 @@ Canonical keys (current):
 | --- | --- |
 | `bf-hp-heroes-v1` | `HeroRecord[]` |
 | `bf-hp-active-hero-v1` | active hero id |
-| `bf-hp-account-v1` | `AccountShared` (tree, team buffs, context, slots, forgeFloor) |
+| `bf-hp-account-v1` | `AccountShared` (tree, team buffs, context, slots, fieldSlots, houseCycleSecs, forgeFloor) |
 | `bf-hp-inventory-v1` | `InventorySnapshot` (`version`, `importedAt`, `items[]`) |
 | `bf-hp-gear-scope-v1` | Team plan per-hero scope map (`Record<heroId, ScopeState>`) — see below |
 
@@ -63,7 +63,9 @@ Imported heroes store their **fixed ability pool** in `abilities`, including **l
 
 | Field | Default | Notes |
 | --- | --- | --- |
-| `slots` | `9` (`DEFAULT_CASA_SLOTS`) | Casa field-slot count from save `casa` (`resolveCasaSlots`). Written on import when the save carries a `casa` block; absent records normalize to `9`. Clamped to `>= 1`. Drives Phases squad ranking (`rankRosterByDps`) and optimizer slot limits. |
+| `slots` | `9` (`DEFAULT_CASA_SLOTS`) | HOUSE RECOVERY slot count from save `casa` (`resolveCasaSlots`, `casa.slots`) — how many heroes the House refills at once, NOT the field concurrency cap (see `fieldSlots` below; the name predates that distinction). Written on import when the save carries a `casa` block; absent records normalize to `9`. Clamped to `>= 1`. Now only a legacy fallback for `fieldSlots` on records stored before the split (`AD-063`). |
+| `fieldSlots` | `null` | FIELD concurrency cap from save `skills.field_slots` (`resolveFieldSlots`) — how many heroes may be deployed at once. Drives Phases squad ranking (`rankRosterByDps`) and the team-plan optimizer's saturation cap. `null` when the last import carried no `skills.field_slots` (pre-split record, or a payload missing the `skills` section) — falls back to `slots` above, then `DEFAULT_CASA_SLOTS`. A real save can carry both with different values (account 486: `slots` 3 vs `fieldSlots` 6); `AD-063` records `field_slots` verbatim and does not reconcile it against `skills.totals.vagas_campo`. |
+| `houseCycleSecs` | `null` | `casa.cycle_secs` — the House's own full 0→100% recovery countdown, in seconds. `null`/absent falls back to the `HOUSES` table interpolation (`resolveHouseRestSeconds`). Feeds the farm board, the advisor, and the team-plan scorer's duty cycle alike. |
 | `forgeFloor` | `10` | Optimizer forge floor (`clampForgeFloor`, bounded by `FORJA_MAX`). Persisted on `bf-hp-account-v1` and hydrated into the team-plan slice. **Import never overwrites** an existing browser value — only `normalizeAccount` / explicit UI edits change it. |
 
 ### `bf-hp-phases-view-v1` — additive fields
