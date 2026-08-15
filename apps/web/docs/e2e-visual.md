@@ -53,6 +53,16 @@ Browser-level smoke and visual baselines for the static export. Unit math stays 
 > scenarios plus a keyboard-operability pass) and the two edited pre-existing specs
 > (`e2e/phases-page.spec.ts`, `e2e/app-shell-nav.spec.ts`).
 >
+> **`/farm` (Farm Respec Advisor):** no committed visual baseline, same `/team-plan` and `/farm`
+> Ranking board precedent above — the visual project stays globally `describe.skip` and agents may
+> not run `test:e2e:update` or accept baselines. Before enabling `e2e/visual.spec.ts` for this
+> surface, a human should review: the toolbar (objective `Select`, Optimize button idle/busy
+> states, the lower-bound headline), the panel expanding in place above the table (metric tiles,
+> the plateau band with its markers and range sentence, the chest-objective explainer), the
+> hero-card grid (a changed hero's eight-key table, the Luck "keep" chip, an unchanged hero's
+> de-emphasized two-line card), the cost frontier list, and the re-rank banner + `Switch` sitting
+> above the table. Smoke coverage lives in `e2e/farm-respec.spec.ts` (nine scenarios).
+>
 > **Promote-to-600 evidence:** a lightweight same-session
 > Playwright timing (not the formal MOD-33 `e2e/perf/` commit-instrumentation harness — recorded
 > here as an evidence artifact, not a threshold gate) clicked the unlocked-only filter off
