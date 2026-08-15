@@ -54,7 +54,7 @@ export function evaluateAssignment(
   account: AccountShared,
   objective: ResolvedFarmObjective,
   scales: FarmObjectiveScales,
-  phaseOptions: FarmRateOptions,
+  phaseOptions: FarmRateOptions & { phaseStride?: number },
 ): { squad: SquadFarmFacts; pick: FarmPhasePick | null; value: number } {
   const squad = squadFactsFromBases(bases, assignment, account);
   const pick = bestFarmPhase(squad, objective, scales, phaseOptions);
@@ -370,4 +370,53 @@ export function runFarmSearch(
   }
 
   return { winner, winningSeedName, evaluations, sweeps, budgetExhausted, ladder };
+}
+
+export type FarmGateOutcome = {
+  winner: FarmCandidate;
+  /** The current build's own evaluation, on the FULL phase set — the gate's reference point AND
+   *  one of the candidates the comparator picks among. */
+  currentEval: { squad: SquadFarmFacts; pick: FarmPhasePick | null; value: number };
+  evaluations: number;
+};
+
+/**
+ * Tier 1's seed stage (design.md §4.8): the CURRENT build is scored on the FULL phase set; every
+ * other canonical seed is scored on a phase grid subsampled by `gatePhaseStride`. Subsampling
+ * only the candidates means `gainPct` can only be UNDER-stated relative to the true optimum,
+ * never over-stated — the lower-bound contract Tier 1 promises. No local search, no ladder —
+ * seeds only, `<= 1 + 5` evaluations.
+ */
+export function runFarmGateSeeds(
+  bases: readonly HeroFarmBasis[],
+  searchableIds: readonly string[],
+  budgetById: ReadonlyMap<string, number>,
+  account: AccountShared,
+  objective: ResolvedFarmObjective,
+  scales: FarmObjectiveScales,
+  phaseOptions: FarmRateOptions,
+  gatePhaseStride: number,
+  evaluationBudget: number,
+): FarmGateOutcome {
+  const searchableSet = new Set(searchableIds);
+  let evaluations = 0;
+
+  const currentEval = evaluateAssignment(bases, null, account, objective, scales, phaseOptions);
+  evaluations += 1;
+
+  const candidates: FarmCandidate[] = [
+    { name: 'current', assignment: new Map(), value: currentEval.value, pick: currentEval.pick, squad: currentEval.squad },
+  ];
+
+  for (const seedDef of SEED_DEFS) {
+    if (seedDef.energyShare === null) continue; // 'current' is already evaluated above, at full resolution.
+    if (evaluations >= evaluationBudget) break;
+    const assignment = buildSeedAssignment(bases, searchableSet, budgetById, seedDef.energyShare);
+    const ev = evaluateAssignment(bases, assignment, account, objective, scales, { ...phaseOptions, phaseStride: gatePhaseStride });
+    evaluations += 1;
+    candidates.push({ name: seedDef.name, assignment, value: ev.value, pick: ev.pick, squad: ev.squad });
+  }
+
+  const winner = pickBestCandidate(candidates, bases);
+  return { winner, currentEval, evaluations };
 }
