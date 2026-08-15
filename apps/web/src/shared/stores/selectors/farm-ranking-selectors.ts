@@ -200,9 +200,10 @@ function toObjective(kind: FarmObjectiveKind): FarmObjective {
 }
 
 /**
- * The 15 ranking members PLUS the objective — the one input that changes the RECOMMENDATION
+ * The 17 ranking members PLUS the objective — the one input that changes the RECOMMENDATION
  * without changing the current build's ranking. Spreads readFarmDepTuple rather than restating
- * its members, so a future addition to the ranking tuple is inherited automatically.
+ * its members, so a future addition to the ranking tuple is inherited automatically (the
+ * House-ceiling fix's `fieldSlots`/`houseCycleSecs` arrived exactly that way).
  */
 export function readFarmRespecDepTuple(state: PlannerStore) {
   return [...readFarmDepTuple(state), state.farmObjective] as const;
@@ -273,7 +274,7 @@ function computeFarmRespecGate(state: PlannerStore): FarmRespecGate {
 
 /**
  * Module-level single-entry memo — Tier 1. Same shape as {@link selectFarmRankingRows}, over
- * its own 16-member tuple (the 15 ranking members plus the objective). Returns the SAME object
+ * its own 18-member tuple (the 17 ranking members plus the objective). Returns the SAME object
  * identity on a cache hit and must be subscribed to WITHOUT `useShallow`, for the identical
  * reason `selectFarmRankingRows` is.
  */
