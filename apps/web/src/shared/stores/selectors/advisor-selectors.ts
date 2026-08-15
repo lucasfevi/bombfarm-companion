@@ -99,5 +99,6 @@ export function selectAdvisorPipeline(state: PlannerStore): AdvisorPipelineResul
 }
 
 export const selectDps = (state: PlannerStore) => selectAdvisorPipeline(state).dps;
-export const selectBestStat = (state: PlannerStore) => selectAdvisorPipeline(state).best.stat;
-export const selectBestGainPct = (state: PlannerStore) => selectAdvisorPipeline(state).best.gainPct;
+// selectBestStat / selectBestGainPct moved to next-point-selectors.ts — they are mode-aware
+// now (DPS vs. farm ranking), and defining them here would make that file depend back on this
+// one, an import cycle. stores/index.ts re-exports them under the same names.

@@ -128,7 +128,8 @@ describe('rankMode storage migration', () => {
     saveAccountShared(shared);
     const persisted = localStorage.getItem(ACCOUNT_KEY);
     expect(persisted).not.toBeNull();
-    expect(JSON.parse(persisted!).context.rankMode).toBe('farm');
+    const persistedAccount = JSON.parse(persisted!) as AccountShared;
+    expect(persistedAccount.context.rankMode).toBe('farm');
 
     resetPlannerStoreForTests();
   });

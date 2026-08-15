@@ -51,8 +51,6 @@ export {
 } from '@/shared/stores/selectors/roster-selectors';
 export {
   selectDps,
-  selectBestStat,
-  selectBestGainPct,
   selectAdvisorPipeline,
   getAdvisorPipelineComputeCount,
   resetAdvisorPipelineCache,
@@ -119,3 +117,23 @@ export type {
   FarmRespecGate,
   FarmRespecGateReason,
 } from '@/shared/stores/selectors/farm-ranking-selectors';
+export {
+  selectFarmPoolBases,
+  resetFarmPoolBasesCache,
+  getFarmPoolBasesComputeCount,
+  resetFarmPoolBasesComputeCount,
+  selectDraftFarmBasis,
+  resetDraftFarmBasisCache,
+  getDraftFarmBasisComputeCount,
+  resetDraftFarmBasisComputeCount,
+  selectNextPointRanking,
+  resetNextPointRankingCache,
+  getNextPointRankingComputeCount,
+  resetNextPointRankingComputeCount,
+  getFarmRankComputeCount,
+  resetFarmRankComputeCount,
+  selectNextPointBest,
+  selectBestStat,
+  selectBestGainPct,
+} from '@/shared/stores/selectors/next-point-selectors';
+export type { NextPointRanking } from '@/shared/stores/selectors/next-point-selectors';

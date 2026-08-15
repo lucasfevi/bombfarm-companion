@@ -43,7 +43,7 @@ const EMPTY_ROWS: readonly FarmRateRow[] = [];
  * draft treating it as a filter would have made `row.locked` permanently `false`). A field
  * missing from this tuple is a planner edit that silently does not recompute the board.
  */
-function readFarmDepTuple(state: PlannerStore) {
+export function readFarmDepTuple(state: PlannerStore) {
   return [
     state.heroes,
     state.treeDanoTotal,
@@ -91,7 +91,7 @@ export function resetFarmRankingComputeCount(): void {
 }
 
 /** `overrides[id] ?? (hero.battleAllowed ?? true)` — absence follows the save. */
-function resolveEnabledHeroIds(state: PlannerStore): string[] {
+export function resolveEnabledHeroIds(state: PlannerStore): string[] {
   const overrides = state.farmPoolOverrides;
   return state.heroes
     .filter((hero) => overrides[hero.id] ?? (hero.battleAllowed ?? true))
@@ -106,7 +106,7 @@ function resolveEnabledHeroIds(state: PlannerStore): string[] {
  * own tuple as the single source of "what triggers a recompute" avoids a second referential-
  * stability mechanism.
  */
-function buildAccount(state: PlannerStore): AccountShared {
+export function buildAccount(state: PlannerStore): AccountShared {
   return {
     tree: {
       danoTotal: state.treeDanoTotal,
