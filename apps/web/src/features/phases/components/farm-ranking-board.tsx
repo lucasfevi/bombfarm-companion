@@ -25,6 +25,7 @@ import { FarmRankingFilters } from './farm-ranking-filters';
 import { FarmRotationPool } from './farm-rotation-pool';
 import { FarmReturnBonus } from './farm-return-bonus';
 import { FarmRankingTable } from './farm-ranking-table';
+import { FarmRespecToolbar } from './farm-respec-toolbar';
 
 /**
  * The board — filters + rotation pool + return bonus + table, or one of the four
@@ -95,6 +96,7 @@ export function FarmRankingBoard({ t, lang }: { t: Strings; lang: Lang }) {
           </div>
         </div>
       ) : null}
+      <FarmRespecToolbar t={t} lang={lang} />
       {result.reason === 'compute-failed' ? (
         <div data-testid="farm-ranking-empty">
           <Banner tone="warn" title={t.farmRankingEmptyComputeFailedTitle}>

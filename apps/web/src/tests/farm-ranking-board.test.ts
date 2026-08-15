@@ -33,6 +33,10 @@ describe('Farm Ranking board — testids present (design §4.3)', () => {
     ['src/features/phases/components/farm-return-bonus.tsx', 'farm-return-bonus'],
     ['src/features/phases/components/farm-ranking-table.tsx', 'farm-ranking-table'],
     ['src/features/phases/components/farm-ranking-table.tsx', 'farm-sort-live'],
+    ['src/features/phases/components/farm-respec-toolbar.tsx', 'farm-respec-toolbar'],
+    ['src/features/phases/components/farm-respec-toolbar.tsx', 'farm-respec-objective'],
+    ['src/features/phases/components/farm-respec-toolbar.tsx', 'farm-respec-optimize'],
+    ['src/features/phases/components/farm-respec-headline.tsx', 'farm-respec-headline'],
   ];
 
   for (const [file, testid] of expectations) {
@@ -95,6 +99,68 @@ describe('Farm Ranking board — the four empty states render no numeric cell', 
     const source = read('src/features/phases/components/farm-ranking-board.tsx');
     expect(source).toMatch(/result\.reason === 'compute-failed'/);
     expect(source).toContain('<Banner');
+  });
+});
+
+describe('Farm Respec Advisor toolbar — visibility, controls and layout stability', () => {
+  it('renders nothing below the gain threshold and when the gate has no roster/heroes-enabled reason — the early return exists', () => {
+    const source = read('src/features/phases/components/farm-respec-toolbar.tsx');
+    expect(source).toMatch(/if \(!degraded && !gate\.shouldSurface\) return null;/);
+  });
+
+  it('the objective picker is a three-option Select over the FarmObjectiveKind literals verbatim, dispatching setFarmObjective and nothing else', () => {
+    const source = read('src/features/phases/components/farm-respec-toolbar.tsx');
+    expect(source).toContain('<option value="gold">');
+    expect(source).toContain('<option value="blend">');
+    expect(source).toContain('<option value="chests">');
+    expect(source).toContain('setFarmObjective(event.target.value');
+  });
+
+  it('Optimize is a real button with aria-busy, aria-expanded and aria-controls pointing at the panel', () => {
+    const source = read('src/features/phases/components/farm-respec-toolbar.tsx');
+    expect(source).toMatch(/aria-busy=\{busy\}/);
+    expect(source).toMatch(/aria-expanded=\{panelOpen\}/);
+    expect(source).toContain('aria-controls="farm-respec-panel"');
+  });
+
+  it('the Optimize button reserves a min-width so the busy transition does not reflow the toolbar', () => {
+    const source = read('src/features/phases/components/farm-respec-toolbar.tsx');
+    expect(source).toMatch(/className="min-w-\d+"/);
+  });
+
+  it('the only visibility input is the gate\'s own shouldSurface flag — nothing here reads the payback duration', () => {
+    const source = read('src/features/phases/components/farm-respec-toolbar.tsx');
+    expect(source).not.toMatch(/paybackHours/);
+  });
+
+  it('the gate-failed reason renders a named degraded note, with Optimize still enabled', () => {
+    const source = read('src/features/phases/components/farm-respec-toolbar.tsx');
+    expect(source).toContain("gate.reason === 'gate-failed'");
+    expect(source).toContain('{t.farmRespecGateFailed}');
+  });
+
+  it('subscribes via usePlannerStore(selectFarmRespecGate) without useShallow', () => {
+    const source = read('src/features/phases/components/farm-respec-toolbar.tsx');
+    expect(source).toContain('usePlannerStore(selectFarmRespecGate)');
+    expect(source).not.toMatch(/useShallow\([^)]*selectFarmRespecGate/);
+  });
+
+  it('the headline shows the lower-bound gain, the phase, the cost and one of the three payback strings', () => {
+    const source = read('src/features/phases/components/farm-respec-headline.tsx');
+    expect(source).toContain('t.farmRespecHeadlineGain');
+    expect(source).toContain('t.farmRespecHeadlinePhase');
+    expect(source).toContain('t.farmRespecHeadlineCost');
+    expect(source).toContain('resolvePaybackKind(result)');
+  });
+
+  it('the board renders the toolbar between the pool/filters block and the table', () => {
+    const source = read('src/features/phases/components/farm-ranking-board.tsx');
+    const poolIndex = source.indexOf('<FarmRotationPool');
+    const toolbarIndex = source.indexOf('<FarmRespecToolbar');
+    const tableIndex = source.indexOf('<FarmRankingTable');
+    expect(poolIndex).toBeGreaterThan(-1);
+    expect(toolbarIndex).toBeGreaterThan(poolIndex);
+    expect(tableIndex).toBeGreaterThan(toolbarIndex);
   });
 });
 
