@@ -25,9 +25,23 @@
  * shapes. Live confirmation of the Fortuna-sum's cap order (cap-after-sum,
  * the conservative choice shipped here) is still an open question.
  */
-import { fuseSeconds, GRID_SPEED_COEF, EFF_IA, ABILITY_LEVEL_MAX, mitigationFactor } from './model';
+import {
+  fuseSeconds,
+  GRID_SPEED_COEF,
+  EFF_IA,
+  ABILITY_LEVEL_MAX,
+  mitigationFactor,
+  predictHitDamage,
+  critFactor,
+  fieldSeconds,
+  type Context,
+  type HeroSheet,
+  type EffectiveDeltas,
+} from './model';
+import { buildCandidateSheet } from './points-reopt-core';
 import { pipelineForHero } from './roster-dps';
 import { DEFAULT_CASA_SLOTS } from './casa-slots';
+import type { SheetKey } from './planner-constants';
 import {
   DROP_RATES,
   KEY_GATE_COST,
@@ -141,8 +155,46 @@ function resolveEnabledHeroes(
   return heroes.filter((hero) => idSet.has(hero.id));
 }
 
-/** One `pipelineForHero` call per enabled hero. Order follows `heroes`. */
-export function computeHeroFarmFacts(input: FarmFactsInput): HeroFarmFacts[] {
+// ---------------------------------------------------------------------------------------------
+// The per-hero farm basis — one pipeline call, then pure scalar math for any candidate vector.
+// ---------------------------------------------------------------------------------------------
+
+/**
+ * Everything about one hero that a farm evaluation needs, extracted from the ONE
+ * `pipelineForHero(hero, account, 1, 0)` call the estimator already makes. Facts for any
+ * candidate point vector are pure scalar math from here — no second pipeline entry, ever.
+ */
+export type HeroFarmBasis = {
+  heroId: string;
+  heroName: string;
+  /** The hero's level — its whole stat-point pool, and the respec-cost input. */
+  level: number;
+  /** Full 8-key current allocation, exactly as read off the `HeroRecord`. */
+  pts: Record<SheetKey, number>;
+  /** The pipeline's effective combat sheet AT `pts` — the affine reconstruction's base point. */
+  effective: HeroSheet;
+  /** The pipeline's per-point effective deltas. Independent of `pts`, which is what makes the
+   *  reconstruction exact rather than approximate. */
+  effectiveDelta: EffectiveDeltas;
+  /** The hero's farm `Context`. `drainMult`, `restSeconds` and `blastRange` are read;
+   *  `mitigation` is 0 here and is never read — the row layer applies phase mitigation. */
+  context: Context;
+  /** Ability/team damage multiplier — build-independent. */
+  dmgMult: number;
+  /** Hero-only Sorte, PERCENTAGE POINTS. Frozen: luck is outside the reallocatable budget. */
+  heroLuckPct: number;
+  /** Clamped ability levels — build-independent. */
+  veiaOuroLevel: number;
+  fortunaLevel: number;
+  /** `1 + 0.5 × context.blastRange` — ability-driven, build-independent, precomputed. */
+  blocksPerBomb: number;
+};
+
+/**
+ * One `pipelineForHero` call per enabled hero. Order follows `heroes`, same pool semantics as
+ * `computeHeroFarmFacts`.
+ */
+export function computeHeroFarmBases(input: FarmFactsInput): HeroFarmBasis[] {
   const { heroes, account, enabledHeroIds } = input;
   const enabledHeroes = resolveEnabledHeroes(heroes, enabledHeroIds);
   const treeLuckFlatPct = account.tree.luckFlatPct ?? 0;
@@ -153,40 +205,89 @@ export function computeHeroFarmFacts(input: FarmFactsInput): HeroFarmFacts[] {
     // positive number; with `null` it substitutes phase 1's wiki mitigation instead (design.md §0).
     const pipeline = pipelineForHero(hero, account, 1, 0);
 
-    const avgHitBase = pipeline.avgHit;
-    const penetrationPct = pipeline.effective.penetration;
-    const fuseSecs = fuseSeconds(pipeline.effective.cdr);
-    const walkSpeedCells = pipeline.effective.speed * GRID_SPEED_COEF;
-    const cycleSecs =
-      walkSpeedCells > 0 && Number.isFinite(walkSpeedCells)
-        ? Math.max(fuseSecs, E_D_CELLS / walkSpeedCells)
-        : Infinity;
-    const plantsPerSec = Number.isFinite(cycleSecs) && cycleSecs > 0 ? 1 / cycleSecs : 0;
-    const blocksPerBomb = 1 + 0.5 * pipeline.context.blastRange;
-    const uptime = pipeline.uptime / 100;
     const heroLuckPct = Math.max(0, pipeline.adjusted.luck - treeLuckFlatPct);
     const veiaOuroLevel = clampAbilityLevel(hero.abilities.veia_ouro ?? 0);
     const fortunaLevel = clampAbilityLevel(hero.abilities.fortuna ?? 0);
-    const degenerate = !(avgHitBase > 0) || !(plantsPerSec > 0);
+    const blocksPerBomb = 1 + 0.5 * pipeline.context.blastRange;
 
-    const facts: HeroFarmFacts = {
+    const basis: HeroFarmBasis = {
       heroId: hero.id,
       heroName: hero.name,
-      avgHitBase,
-      penetrationPct,
-      fuseSecs,
-      walkSpeedCells,
-      cycleSecs,
-      plantsPerSec,
-      blocksPerBomb,
-      uptime,
+      level: hero.level,
+      pts: { ...hero.pts },
+      effective: pipeline.effective,
+      effectiveDelta: pipeline.A.effectiveDelta,
+      context: pipeline.context,
+      dmgMult: pipeline.dmgMult,
       heroLuckPct,
       veiaOuroLevel,
       fortunaLevel,
-      degenerate,
+      blocksPerBomb,
     };
-    return facts;
+    return basis;
   });
+}
+
+/**
+ * Facts for ANY candidate 8-key vector. Pure scalar math; zero pipeline calls.
+ * `heroFactsFromBasis(b, b.pts)` is byte-identical to `computeHeroFarmFacts`'s entry for `b`.
+ *
+ * THE TRAP: `uptime` must repeat the pipeline's own two-step expression
+ * `((100 × field) / (field + rest)) / 100`, not the algebraically-equal `field / (field + rest)`
+ * — they are not bit-equal in IEEE754 (design.md §2.1). Do not "simplify" this.
+ */
+export function heroFactsFromBasis(basis: HeroFarmBasis, pts: Record<SheetKey, number>): HeroFarmFacts {
+  const sheet = buildCandidateSheet(basis.effective, basis.pts, basis.effectiveDelta, pts);
+
+  const avgHitBase =
+    predictHitDamage(sheet.attack, 0, sheet.penetration, basis.dmgMult) * critFactor(sheet.critChance, sheet.critDmg);
+  const penetrationPct = sheet.penetration;
+  const fuseSecs = fuseSeconds(sheet.cdr);
+  const walkSpeedCells = sheet.speed * GRID_SPEED_COEF;
+  const cycleSecs =
+    walkSpeedCells > 0 && Number.isFinite(walkSpeedCells)
+      ? Math.max(fuseSecs, E_D_CELLS / walkSpeedCells)
+      : Infinity;
+  const plantsPerSec = Number.isFinite(cycleSecs) && cycleSecs > 0 ? 1 / cycleSecs : 0;
+  const field = fieldSeconds(sheet, basis.context);
+  const uptime = (100 * field) / (field + basis.context.restSeconds) / 100;
+  const degenerate = !(avgHitBase > 0) || !(plantsPerSec > 0);
+
+  const facts: HeroFarmFacts = {
+    heroId: basis.heroId,
+    heroName: basis.heroName,
+    avgHitBase,
+    penetrationPct,
+    fuseSecs,
+    walkSpeedCells,
+    cycleSecs,
+    plantsPerSec,
+    blocksPerBomb: basis.blocksPerBomb,
+    uptime,
+    heroLuckPct: basis.heroLuckPct,
+    veiaOuroLevel: basis.veiaOuroLevel,
+    fortunaLevel: basis.fortunaLevel,
+    degenerate,
+  };
+  return facts;
+}
+
+/**
+ * Squad facts for a whole candidate assignment, keyed by hero id. Heroes absent from the map
+ * use their own `basis.pts`. Zero pipeline calls.
+ */
+export function squadFactsFromBases(
+  bases: readonly HeroFarmBasis[],
+  ptsByHeroId: ReadonlyMap<string, Record<SheetKey, number>> | null,
+  account: AccountShared,
+): SquadFarmFacts {
+  const heroFacts = bases.map((basis) => heroFactsFromBasis(basis, ptsByHeroId?.get(basis.heroId) ?? basis.pts));
+  return computeSquadFarmFacts(heroFacts, account);
+}
+
+/** One `pipelineForHero` call per enabled hero. Order follows `heroes`. */
+export function computeHeroFarmFacts(input: FarmFactsInput): HeroFarmFacts[] {
+  return computeHeroFarmBases(input).map((basis) => heroFactsFromBasis(basis, basis.pts));
 }
 
 // ---------------------------------------------------------------------------------------------
