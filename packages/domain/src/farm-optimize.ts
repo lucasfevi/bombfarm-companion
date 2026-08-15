@@ -33,9 +33,12 @@ import { reoptBudget, REOPT_KEYS } from './points-reopt-core';
 import { respecCostGold } from './respec-cost';
 import {
   runFarmSearch,
+  squadEnergyShare,
+  derivePlateauBounds,
   type PtsAssignment,
   FARM_OPT_FULL_MAX_EVALUATIONS,
   FARM_OPT_JOINT_BUDGET_SHARE,
+  FARM_OPT_PLATEAU_TOLERANCE_PCT,
 } from './farm-optimize-search';
 
 export {
@@ -341,10 +344,13 @@ function buildTerminalResult(params: {
   evaluations: number;
   account: AccountShared;
   phaseOptions: FarmRateOptions;
+  /** null for emptyPool/allDegenerate (no squad to describe); a trivial point-plateau for
+   *  noBudget, where the search never ran (design.md §7: "reported around current"). */
+  plateau: FarmRespecPlateau | null;
   currentFactsById?: ReadonlyMap<string, HeroFarmFacts>;
   budgetById?: ReadonlyMap<string, number>;
 }): FarmRespecResult {
-  const { bases, objective, outcome, evaluation, evaluations, account, phaseOptions } = params;
+  const { bases, objective, outcome, evaluation, evaluations, account, phaseOptions, plateau } = params;
   const currentFactsById =
     params.currentFactsById ?? new Map(bases.map((b) => [b.heroId, heroFactsFromBasis(b, b.pts)] as const));
   const budgetById = params.budgetById ?? new Map(bases.map((b) => [b.heroId, reoptBudget(b.pts, b.level)] as const));
@@ -369,7 +375,7 @@ function buildTerminalResult(params: {
     tier: 'full',
     gainIsLowerBound: false,
     frontier: [],
-    plateau: null,
+    plateau,
   });
 }
 
@@ -392,6 +398,7 @@ export function solveFarmRespec(input: FarmRespecInput): FarmRespecResult {
       evaluations: 0,
       account: input.account,
       phaseOptions,
+      plateau: null,
     });
   }
 
@@ -408,6 +415,7 @@ export function solveFarmRespec(input: FarmRespecInput): FarmRespecResult {
       evaluations: 0,
       account: input.account,
       phaseOptions,
+      plateau: null,
       currentFactsById,
       budgetById,
     });
@@ -431,6 +439,10 @@ export function solveFarmRespec(input: FarmRespecInput): FarmRespecResult {
 
   if (searchableIds.length === 0) {
     const currentPick = bestFarmPhase(currentSquad, objective, scales, phaseOptions);
+    // No search ran (nothing was searchable), so there is no ladder to read a plateau from — a
+    // trivial point-plateau at the current build's own energy share, per design.md §7's
+    // "reported around current" for FRAD-20d.
+    const noBudgetShare = squadEnergyShare(bases, searchableIds, budgetById, null);
     return buildTerminalResult({
       bases,
       objective,
@@ -439,6 +451,13 @@ export function solveFarmRespec(input: FarmRespecInput): FarmRespecResult {
       evaluations: 1,
       account: input.account,
       phaseOptions,
+      plateau: {
+        minEnergyShare: noBudgetShare,
+        maxEnergyShare: noBudgetShare,
+        tolerancePct: FARM_OPT_PLATEAU_TOLERANCE_PCT,
+        currentEnergyShare: noBudgetShare,
+        proposedEnergyShare: noBudgetShare,
+      },
       currentFactsById,
       budgetById,
     });
@@ -465,6 +484,19 @@ export function solveFarmRespec(input: FarmRespecInput): FarmRespecResult {
   const proposedPick = search.winner.pick;
   const outcome: FarmRespecOutcome = proposedPick === null ? 'noFeasiblePhase' : keptCurrent ? 'nothingToGain' : 'improved';
 
+  // The plateau (design.md §4.7) — a pure read-out of the final sweep's ladder, ZERO extra
+  // evaluations. `peak` is the winner's own value: by construction no ladder entry out-scores it.
+  const winShare = squadEnergyShare(bases, searchableIds, budgetById, search.winner.assignment);
+  const currentShare = squadEnergyShare(bases, searchableIds, budgetById, null);
+  const plateauBounds = derivePlateauBounds(search.ladder, winShare, search.winner.value, FARM_OPT_PLATEAU_TOLERANCE_PCT);
+  const plateau: FarmRespecPlateau = {
+    minEnergyShare: plateauBounds.min,
+    maxEnergyShare: plateauBounds.max,
+    tolerancePct: FARM_OPT_PLATEAU_TOLERANCE_PCT,
+    currentEnergyShare: currentShare,
+    proposedEnergyShare: winShare,
+  };
+
   return assembleResult({
     objective,
     outcome,
@@ -484,6 +516,6 @@ export function solveFarmRespec(input: FarmRespecInput): FarmRespecResult {
     tier: 'full',
     gainIsLowerBound: false,
     frontier: [],
-    plateau: null,
+    plateau,
   });
 }

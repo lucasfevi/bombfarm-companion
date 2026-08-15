@@ -191,6 +191,76 @@ function orderSearchableHeroes(searchableIds: readonly string[], budgetById: Rea
   });
 }
 
+/**
+ * The squad's aggregate energy share over the searchable set: `Σ energy / Σ pool`, where `pool`
+ * is each hero's attack+energy budget after holding every other reallocatable key fixed — the
+ * same denominator `shareBuild` uses. `0` when the denominator is `0` (design.md §4.7).
+ */
+export function squadEnergyShare(
+  bases: readonly HeroFarmBasis[],
+  searchableIds: readonly string[],
+  budgetById: ReadonlyMap<string, number>,
+  assignment: PtsAssignment | null,
+): number {
+  const basesById = new Map(bases.map((b) => [b.heroId, b] as const));
+  let energySum = 0;
+  let poolSum = 0;
+  for (const heroId of searchableIds) {
+    const basis = basesById.get(heroId);
+    if (!basis) continue;
+    const pts = assignment?.get(heroId) ?? basis.pts;
+    let fixed = 0;
+    for (const key of REOPT_KEYS) {
+      if (key === 'attack' || key === 'energy') continue;
+      fixed += pts[key];
+    }
+    const budget = budgetById.get(heroId) ?? 0;
+    const pool = Math.max(0, budget - fixed);
+    energySum += pts.energy;
+    poolSum += pool;
+  }
+  return poolSum > 0 ? energySum / poolSum : 0;
+}
+
+/**
+ * The plateau's `[min, max]` energy-share bounds (design.md §4.7): the maximal CONTIGUOUS run of
+ * `ladder` entries containing `winShare`'s own grid neighbourhood whose values are `>= peak x
+ * (1 - tolerancePct/100)`, unioned with `winShare` itself. `winShare` always qualifies by
+ * construction (its true value IS `peak`), so this never returns an empty or invented range —
+ * when no grid neighbour qualifies, `min === max === winShare` (FRAD-26).
+ */
+export function derivePlateauBounds(
+  ladder: readonly { share: number; value: number }[],
+  winShare: number,
+  peak: number,
+  tolerancePct: number,
+): { min: number; max: number } {
+  if (ladder.length === 0) return { min: winShare, max: winShare };
+
+  const floor = peak * (1 - tolerancePct / 100);
+  let nearestIdx = 0;
+  let nearestDist = Infinity;
+  for (let i = 0; i < ladder.length; i++) {
+    const dist = Math.abs(ladder[i].share - winShare);
+    if (dist < nearestDist) {
+      nearestDist = dist;
+      nearestIdx = i;
+    }
+  }
+
+  let min = winShare;
+  let max = winShare;
+  if (ladder[nearestIdx].value >= floor) {
+    let lo = nearestIdx;
+    let hi = nearestIdx;
+    while (lo > 0 && ladder[lo - 1].value >= floor) lo--;
+    while (hi < ladder.length - 1 && ladder[hi + 1].value >= floor) hi++;
+    min = Math.min(min, ladder[lo].share);
+    max = Math.max(max, ladder[hi].share);
+  }
+  return { min, max };
+}
+
 export type FarmSearchOutcome = {
   winner: FarmCandidate;
   winningSeedName: string;
