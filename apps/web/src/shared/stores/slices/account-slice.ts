@@ -54,6 +54,17 @@ export type AccountSlice = {
    */
   houseCycleSecs: number | null;
   /**
+   * The (house, level) `houseCycleSecs` was captured at — the import's OWN `houseIdx`/
+   * `houseLevel` at the moment it set `houseCycleSecs`, snapshotted separately from
+   * {@link houseIdx}/{@link houseLevel} because THOSE are the live picker: `setHouseIdx`/
+   * `setHouseLevel` move them without touching this. `resolveHouseRestSeconds` trusts
+   * `houseCycleSecs` only while the picker sits on this exact pair — this is the fix for the
+   * House-ceiling regression where a picker move stopped changing any computed number because a
+   * mismatched save figure kept winning regardless of the requested house/level.
+   */
+  houseCycleSecsHouseIdx: number | null;
+  houseCycleSecsLevel: number | null;
+  /**
    * `account.max_phase`. `null` when the browser account predates this feature, was
    * assembled by hand, or the last import's payload carried neither source — `FarmRateOptions`
    * treats `null` as "show every phase, no lock badges".
@@ -98,6 +109,8 @@ export const createAccountSlice: StateCreator<
   slots: DEFAULT_CASA_SLOTS,
   fieldSlots: null,
   houseCycleSecs: null,
+  houseCycleSecsHouseIdx: null,
+  houseCycleSecsLevel: null,
   maxPhase: null,
 
   setTeamBuffs: (value) => {
@@ -157,6 +170,8 @@ export const createAccountSlice: StateCreator<
       slots: shared.slots ?? DEFAULT_CASA_SLOTS,
       fieldSlots: shared.fieldSlots ?? null,
       houseCycleSecs: shared.houseCycleSecs ?? null,
+      houseCycleSecsHouseIdx: shared.houseCycleSecsHouseIdx ?? null,
+      houseCycleSecsLevel: shared.houseCycleSecsLevel ?? null,
       maxPhase: shared.maxPhase ?? null,
     });
   },
@@ -184,6 +199,14 @@ export const createAccountSlice: StateCreator<
     // no longer has.
     patch.fieldSlots = data.fieldSlots ?? null;
     patch.houseCycleSecs = data.houseCycleSecs ?? null;
+    // The anchor rides along with `houseCycleSecs`, UNCONDITIONALLY for the same reason: it is
+    // `data.houseIdx`/`data.houseLevel` at THIS import (not `patch.houseIdx`/`houseLevel` above,
+    // which stay untouched by a re-import that carries no `casa` block) — the house/level pair
+    // `data.houseCycleSecs` was measured at. A payload with no `casa` block sets both to `null`,
+    // matching `houseCycleSecs` going `null` on the same line, so the anchor can never outlive
+    // the figure it anchors.
+    patch.houseCycleSecsHouseIdx = data.houseIdx ?? null;
+    patch.houseCycleSecsLevel = data.houseLevel ?? null;
     if (data.phase != null) {
       // Same clamp `setFarmPhase` relies on downstream reads for (AD-BSP style: reuse, don't
       // reimplement) — and the same mitigation-sync/skipPhaseMitigationSync contract as

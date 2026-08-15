@@ -3,13 +3,16 @@
 import { sub } from '@/shared/i18n';
 import { useAppLang } from '@/shared/context/app-lang';
 import { houseLabel } from '@bombfarm/domain/game-labels';
-import { HOUSES, houseRestSeconds, splitHouseRest } from '@bombfarm/domain/model';
+import { HOUSES, resolveHouseRestSeconds, splitHouseRest } from '@bombfarm/domain/model';
 import { Num, Select } from '@bombfarm/ui';
 import { Fields } from '@bombfarm/ui';
 import {
   usePlannerStore,
   selectHouseIdx,
   selectHouseLevel,
+  selectHouseCycleSecs,
+  selectHouseCycleSecsHouseIdx,
+  selectHouseCycleSecsLevel,
 } from '@/shared/stores';
 import {
   accountHouseStackClass,
@@ -20,10 +23,23 @@ export function AccountHouseFields() {
   const { t, lang } = useAppLang();
   const houseIdx = usePlannerStore(selectHouseIdx);
   const houseLevel = usePlannerStore(selectHouseLevel);
+  const houseCycleSecs = usePlannerStore(selectHouseCycleSecs);
+  const houseCycleSecsHouseIdx = usePlannerStore(selectHouseCycleSecsHouseIdx);
+  const houseCycleSecsLevel = usePlannerStore(selectHouseCycleSecsLevel);
   const setHouseIdx = usePlannerStore((state) => state.setHouseIdx);
   const setHouseLevel = usePlannerStore((state) => state.setHouseLevel);
 
-  const rest = splitHouseRest(houseRestSeconds(houseIdx, houseLevel));
+  // Same resolver the model uses (`farmContextForHero`) — not the raw `HOUSES` table alone, so
+  // this panel never contradicts the DPS/farm-board/team-plan numbers it labels.
+  const rest = splitHouseRest(
+    resolveHouseRestSeconds(
+      houseCycleSecs,
+      houseIdx,
+      houseLevel,
+      houseCycleSecsHouseIdx,
+      houseCycleSecsLevel,
+    ),
+  );
   const houseName = houseLabel(houseIdx, lang);
 
   return (

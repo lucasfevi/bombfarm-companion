@@ -66,6 +66,17 @@ export type FarmContextForHeroInput = {
    * measured cycle to one surface would leave the other two knowingly wrong.
    */
   cycleSecs?: number | null;
+  /**
+   * The (house, level) `cycleSecs` above was captured at — `casa.active_casa - 1` /
+   * `casa.levels[active_casa - 1]` at import time. Omitted, {@link resolveHouseRestSeconds} trusts
+   * `cycleSecs` unconditionally (the pre-existing behaviour, still correct for every caller with
+   * no picker able to request a house/level other than the account's own). The web planner DOES
+   * have such a picker, so it supplies these so a picker move away from the account's real
+   * configuration actually falls back to the {@link HOUSES} table instead of returning the frozen
+   * save figure for the wrong house/level.
+   */
+  cycleSecsHouseIdx?: number | null;
+  cycleSecsLevel?: number | null;
 };
 
 /** Shared per-hero farm `Context` — AD-RGO-27 drain path for advisor + team-plan scorer. */
@@ -74,7 +85,13 @@ export function farmContextForHero(input: FarmContextForHeroInput): Context {
     phase: input.phase ?? null,
     mitigationPct: input.mitigationPct,
   });
-  const rest = resolveHouseRestSeconds(input.cycleSecs, input.houseIdx, input.houseLevel);
+  const rest = resolveHouseRestSeconds(
+    input.cycleSecs,
+    input.houseIdx,
+    input.houseLevel,
+    input.cycleSecsHouseIdx,
+    input.cycleSecsLevel,
+  );
   return {
     restSeconds: rest,
     mitigation: mitPct / 100,

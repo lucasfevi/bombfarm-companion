@@ -73,11 +73,15 @@ const SRC_ALLOWLIST: Record<string, number[]> = {
   'derive.ts': [27, 78, 96, 142, 197, 208],
   // Line numbers only — the matches are unchanged in count and in kind; the House-cycle
   // plumbing (`houseCycleSecs` on the input type + its two use sites) inserted lines above them
-  // and shifted all four down.
-  'advisor-pipeline.ts': [95, 199, 226, 328],
+  // and shifted all four down. The House-ceiling regression repair (PR #86 finding, house.ts:38)
+  // added `houseCycleSecsHouseIdx`/`houseCycleSecsLevel` alongside it (destructured local +
+  // input type + `farmContextForHero` call site) and shifted all four down again.
+  'advisor-pipeline.ts': [104, 210, 239, 341],
   'stat-breakdown/types.ts': [105],
   // +1 (line number only): the `cycleSecs` pass-through added one line above this hit.
-  'team-plan/score.ts': [136],
+  // +2 more: the House-ceiling regression repair's `cycleSecsHouseIdx`/`cycleSecsLevel`
+  // pass-through (PR #86 finding, house.ts:38) added two more lines above it.
+  'team-plan/score.ts': [138],
 };
 
 /**

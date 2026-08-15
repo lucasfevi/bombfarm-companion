@@ -120,6 +120,8 @@ export function scoreHeroLoadout(
     mitigationPct: farm.mitigationPct,
     phase: farm.phase,
     cycleSecs: farm.cycleSecs,
+    cycleSecsHouseIdx: farm.cycleSecsHouseIdx,
+    cycleSecsLevel: farm.cycleSecsLevel,
   });
 
   const deriveResult = derive({

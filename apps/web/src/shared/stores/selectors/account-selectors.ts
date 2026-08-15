@@ -18,6 +18,8 @@ export const selectRankMode = (state: PlannerStore) => state.rankMode;
 export const selectSlots = (state: PlannerStore) => state.slots;
 export const selectFieldSlots = (state: PlannerStore) => state.fieldSlots;
 export const selectHouseCycleSecs = (state: PlannerStore) => state.houseCycleSecs;
+export const selectHouseCycleSecsHouseIdx = (state: PlannerStore) => state.houseCycleSecsHouseIdx;
+export const selectHouseCycleSecsLevel = (state: PlannerStore) => state.houseCycleSecsLevel;
 export const selectTargetProp = (state: PlannerStore) => state.targetProp;
 export const selectMaxPhase = (state: PlannerStore) => state.maxPhase;
 
@@ -70,6 +72,8 @@ export function selectAccountShared(state: PlannerStore): AccountShared {
     slots: state.slots,
     fieldSlots: state.fieldSlots,
     houseCycleSecs: state.houseCycleSecs,
+    houseCycleSecsHouseIdx: state.houseCycleSecsHouseIdx,
+    houseCycleSecsLevel: state.houseCycleSecsLevel,
     forgeFloor: state.forgeFloor,
     maxPhase: state.maxPhase,
   };
@@ -96,6 +100,8 @@ export function selectAccountTuple(state: PlannerStore) {
     state.slots,
     state.fieldSlots,
     state.houseCycleSecs,
+    state.houseCycleSecsHouseIdx,
+    state.houseCycleSecsLevel,
     state.forgeFloor,
     state.maxPhase,
   ] as const;

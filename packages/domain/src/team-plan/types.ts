@@ -50,6 +50,13 @@ export type FarmContext = {
    * because `farmContextForHero` produces the `restSeconds` this scorer's duty cycle divides by.
    */
   cycleSecs?: number | null;
+  /**
+   * The (house, level) `cycleSecs` above was captured at — see
+   * `FarmContextForHeroInput.cycleSecsHouseIdx`/`cycleSecsLevel` (`farm-context.ts`). Omitted,
+   * `cycleSecs` is trusted unconditionally regardless of `houseIdx`/`houseLevel` above.
+   */
+  cycleSecsHouseIdx?: number | null;
+  cycleSecsLevel?: number | null;
 };
 
 export type HeroPlanContext = {
@@ -144,6 +151,9 @@ export type TeamPlanAccountInput = {
   slots: number;
   /** `casa.cycle_secs` — see {@link FarmContext.cycleSecs}. Optional: absent keeps the table. */
   cycleSecs?: number | null;
+  /** See {@link FarmContext.cycleSecsHouseIdx}/`cycleSecsLevel`. */
+  cycleSecsHouseIdx?: number | null;
+  cycleSecsLevel?: number | null;
 };
 
 export type TeamPlanInput = {

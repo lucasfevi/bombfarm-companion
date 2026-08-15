@@ -6,6 +6,7 @@ import {
   marginalFuseSeconds,
   FUSE_FLOOR,
   houseRestSeconds,
+  resolveHouseRestSeconds,
   splitHouseRest,
   isSheetAbility,
   levelPowerMult,
@@ -347,6 +348,50 @@ describe('houseRestSeconds', () => {
   it('interpolates casa rest time', () => {
     expect(houseRestSeconds(0, 1)).toBe(19 * 60);
     expect(houseRestSeconds(0, 20)).toBe(17 * 60);
+  });
+});
+
+describe('resolveHouseRestSeconds', () => {
+  it('no cycleSecs at all (absent casa) — pure table path, unchanged behaviour', () => {
+    expect(resolveHouseRestSeconds(null, 0, 11)).toBe(houseRestSeconds(0, 11));
+    expect(resolveHouseRestSeconds(undefined, 2, 6)).toBe(houseRestSeconds(2, 6));
+    expect(resolveHouseRestSeconds(0, 0, 11)).toBe(houseRestSeconds(0, 11));
+    expect(resolveHouseRestSeconds(-5, 0, 11)).toBe(houseRestSeconds(0, 11));
+  });
+
+  it('no anchor supplied (3-arg call) trusts cycleSecs unconditionally — every non-web caller', () => {
+    // account 486: Casa I level 11, casa.cycle_secs 1168.42105263158.
+    expect(resolveHouseRestSeconds(1168.42105263158, 0, 11)).toBeCloseTo(1168.42105263158, 9);
+    // Old (buggy) behaviour for a caller with no picker: the figure wins even for a DIFFERENT
+    // house/level, because such a caller has no independent request to diverge from the import.
+    expect(resolveHouseRestSeconds(1168.42105263158, 4, 1)).toBeCloseTo(1168.42105263158, 9);
+  });
+
+  it('requested house/level EQUAL the anchor — the exact save figure', () => {
+    expect(resolveHouseRestSeconds(1168.42105263158, 0, 11, 0, 11)).toBeCloseTo(
+      1168.42105263158,
+      9,
+    );
+  });
+
+  it('requested house DIFFERS from the anchor — table fallback, and the value actually changes', () => {
+    const atAnchor = resolveHouseRestSeconds(1168.42105263158, 0, 11, 0, 11);
+    const differentHouse = resolveHouseRestSeconds(1168.42105263158, 4, 11, 0, 11);
+    expect(differentHouse).toBe(houseRestSeconds(4, 11));
+    expect(differentHouse).not.toBeCloseTo(atAnchor, 0);
+  });
+
+  it('requested level DIFFERS from the anchor (same house) — table fallback, and the value actually changes', () => {
+    const atAnchor = resolveHouseRestSeconds(1168.42105263158, 0, 11, 0, 11);
+    const differentLevel = resolveHouseRestSeconds(1168.42105263158, 0, 1, 0, 11);
+    expect(differentLevel).toBe(houseRestSeconds(0, 1));
+    expect(differentLevel).not.toBeCloseTo(atAnchor, 0);
+  });
+
+  it('anchor explicitly known-absent (null) never matches — safe degrade, not a silent trust', () => {
+    expect(resolveHouseRestSeconds(1168.42105263158, 0, 11, null, null)).toBe(
+      houseRestSeconds(0, 11),
+    );
   });
 });
 

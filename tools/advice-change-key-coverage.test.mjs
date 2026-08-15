@@ -151,6 +151,8 @@ describe('per-field mutation — a path listed but not actually read by the key 
       teamBuffs: { buffA: 0 },
       context: { houseIdx: 0, houseLevel: 1, phase: 30, mitigationPct: 5, rankMode: 'dps', targetProp: null },
       houseCycleSecs: 1168.42105263158,
+      houseCycleSecsHouseIdx: 0,
+      houseCycleSecsLevel: 1,
     };
   }
 
@@ -168,10 +170,15 @@ describe('per-field mutation — a path listed but not actually read by the key 
   const contextPaths = CHANGE_KEY_INPUTS.filter((path) => path.startsWith('context.'));
   const teamBuffsPath = CHANGE_KEY_INPUTS.filter((path) => path === 'account.teamBuffs');
   const scalarPaths = CHANGE_KEY_INPUTS.filter((path) => path === 'phase' || path === 'mitigationPct');
-  // Account-root scalars — `account.houseCycleSecs` (`casa.cycle_secs`) rides here rather than
-  // under `context.*` because it is a captured measurement on the account, not a HeroContext
-  // field the house pickers write.
-  const accountRootPaths = CHANGE_KEY_INPUTS.filter((path) => path === 'account.houseCycleSecs');
+  // Account-root scalars — `account.houseCycleSecs` (`casa.cycle_secs`) and the (house, level)
+  // pair it is anchored to ride here rather than under `context.*` because they are captured
+  // measurements on the account, not HeroContext fields the house pickers write.
+  const accountRootPaths = CHANGE_KEY_INPUTS.filter(
+    (path) =>
+      path === 'account.houseCycleSecs' ||
+      path === 'account.houseCycleSecsHouseIdx' ||
+      path === 'account.houseCycleSecsLevel',
+  );
 
   it('the path groups above cover CHANGE_KEY_INPUTS completely (sanity — otherwise some path is silently untested)', () => {
     const covered =

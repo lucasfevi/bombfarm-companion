@@ -47,6 +47,14 @@ export type AccountShared = {
    * the advisor and the team-plan scorer alike.
    */
   houseCycleSecs?: number | null;
+  /**
+   * The (house, level) `houseCycleSecs` above was captured at — `casa.active_casa - 1` /
+   * `casa.levels[active_casa - 1]` at import time. Absent, `houseCycleSecs` is trusted
+   * unconditionally regardless of `context.houseIdx`/`houseLevel` (`resolveHouseRestSeconds`'s
+   * pre-existing behaviour for every caller with no picker able to diverge from the import).
+   */
+  houseCycleSecsHouseIdx?: number | null;
+  houseCycleSecsLevel?: number | null;
   forgeFloor?: number;
   /** `account.max_phase` — furthest phase reached. `null`/absent means no lock badges.
    *  Optional and populated by nobody in `@bombfarm/domain` — a consumer mirrors it from

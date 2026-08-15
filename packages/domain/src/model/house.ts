@@ -29,14 +29,38 @@ export function houseRestSeconds(houseIndex: number, level: number): number {
  * Total by construction: a non-finite or non-positive `cycleSecs` (absent key, `null`, `0`, a
  * string that slipped through a boundary) degrades to the table rather than poisoning every
  * downstream uptime with `NaN`.
+ *
+ * `cycleSecs` IS SCOPED TO ONE (house, level) PAIR — the save carries a single countdown, for
+ * whichever House the account had active at whichever level it was at when captured. It says
+ * nothing about any other house or level. `cycleSecsHouseIndex`/`cycleSecsLevel` name that pair
+ * (typically `casa.active_casa - 1` / `casa.levels[active_casa - 1]`); `cycleSecs` is trusted only
+ * when the requested `houseIndex`/`level` equal it exactly, otherwise this falls back to the
+ * {@link HOUSES} table so a House or House-level picker that has moved away from the account's own
+ * configuration actually changes the number (a picker that kept returning the frozen save figure
+ * regardless of the requested house/level was the regression this comparison closes).
+ *
+ * Both anchor params are OPTIONAL and, left unsupplied (`undefined`, the old 3-arg call shape),
+ * this keeps its pre-existing behaviour: trust `cycleSecs` unconditionally whenever positive. That
+ * is still correct for every caller that has no independent picker to diverge from the import —
+ * i.e. every caller outside the web planner's account store — so this default does not need those
+ * call sites to thread an anchor they cannot get out of sync with. Passing an anchor (even
+ * explicitly `null`, meaning "no recorded anchor") activates the comparison.
  */
 export function resolveHouseRestSeconds(
   cycleSecs: number | null | undefined,
   houseIndex: number,
   level: number,
+  cycleSecsHouseIndex?: number | null,
+  cycleSecsLevel?: number | null,
 ): number {
-  if (typeof cycleSecs === 'number' && Number.isFinite(cycleSecs) && cycleSecs > 0) return cycleSecs;
-  return houseRestSeconds(houseIndex, level);
+  if (typeof cycleSecs !== 'number' || !Number.isFinite(cycleSecs) || cycleSecs <= 0) {
+    return houseRestSeconds(houseIndex, level);
+  }
+  const anchorSupplied = cycleSecsHouseIndex !== undefined || cycleSecsLevel !== undefined;
+  if (anchorSupplied && (cycleSecsHouseIndex !== houseIndex || cycleSecsLevel !== level)) {
+    return houseRestSeconds(houseIndex, level);
+  }
+  return cycleSecs;
 }
 
 /** Whole minutes + remainder seconds from `houseRestSeconds` (for chrome hints). */

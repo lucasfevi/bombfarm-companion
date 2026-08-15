@@ -454,26 +454,27 @@ describe('readFarmRespecDepTuple', () => {
     resetAllFarmCaches();
   });
 
-  // 17 ranking members since the House-ceiling fix added `fieldSlots` and `houseCycleSecs` to
-  // `readFarmDepTuple`. This tuple SPREADS that one rather than restating it, so the growth is
+  // 19 ranking members since the House-ceiling fix added `fieldSlots` and `houseCycleSecs` to
+  // `readFarmDepTuple`, and its regression repair added `houseCycleSecsHouseIdx`/
+  // `houseCycleSecsLevel`. This tuple SPREADS that one rather than restating it, so the growth is
   // inherited by design — the objective stays appended last, which is the invariant under test.
-  it('has 18 members — the 17 ranking members plus the objective, appended last', () => {
+  it('has 20 members — the 19 ranking members plus the objective, appended last', () => {
     usePlannerStore.getState().hydrateRoster([farmHero('a')], null);
     const tuple = readFarmRespecDepTuple(usePlannerStore.getState());
-    expect(tuple).toHaveLength(18);
-    expect(tuple[17]).toBe(usePlannerStore.getState().farmObjective);
+    expect(tuple).toHaveLength(20);
+    expect(tuple[19]).toBe(usePlannerStore.getState().farmObjective);
   });
 
-  it('changing the objective changes ONLY the last entry — the first 17 stay identity-equal', () => {
+  it('changing the objective changes ONLY the last entry — the first 19 stay identity-equal', () => {
     usePlannerStore.getState().hydrateRoster([farmHero('a')], null);
     const before = readFarmRespecDepTuple(usePlannerStore.getState());
     usePlannerStore.getState().setFarmObjective('blend');
     const after = readFarmRespecDepTuple(usePlannerStore.getState());
-    for (let index = 0; index < 17; index++) {
+    for (let index = 0; index < 19; index++) {
       expect(Object.is(before[index], after[index]), `entry ${index} changed unexpectedly`).toBe(true);
     }
-    expect(before[17]).toBe('gold');
-    expect(after[17]).toBe('blend');
+    expect(before[19]).toBe('gold');
+    expect(after[19]).toBe('blend');
   });
 });
 

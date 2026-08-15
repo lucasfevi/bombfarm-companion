@@ -70,6 +70,15 @@ export type AdvisorPipelineInput = {
    * behaviour and still the right answer for a hand-built account with no capture behind it.
    */
   houseCycleSecs?: number | null;
+  /**
+   * The (house, level) `houseCycleSecs` above was captured at — see
+   * `FarmContextForHeroInput.cycleSecsHouseIdx`/`cycleSecsLevel` (`farm-context.ts`). Omitted,
+   * `houseCycleSecs` is trusted unconditionally regardless of `houseIdx`/`houseLevel` (this
+   * pipeline's historical behaviour). The web planner's account store supplies these so its House
+   * picker actually changes DPS once it has moved off the account's own imported house/level.
+   */
+  houseCycleSecsHouseIdx?: number | null;
+  houseCycleSecsLevel?: number | null;
   phase: number | null;
   mitigationPct: number;
   rankMode: RankMode;
@@ -151,6 +160,8 @@ export function computeAdvisorPipeline(input: AdvisorPipelineInput): AdvisorPipe
     houseIdx,
     houseLevel,
     houseCycleSecs,
+    houseCycleSecsHouseIdx,
+    houseCycleSecsLevel,
     phase,
     mitigationPct,
     rankMode,
@@ -210,6 +221,8 @@ export function computeAdvisorPipeline(input: AdvisorPipelineInput): AdvisorPipe
     mitigationPct: mitPct,
     phase,
     cycleSecs: houseCycleSecs,
+    cycleSecsHouseIdx: houseCycleSecsHouseIdx,
+    cycleSecsLevel: houseCycleSecsLevel,
   });
   const rest = context.restSeconds;
 
