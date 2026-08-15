@@ -46,7 +46,7 @@ export function evaluateAt(
     contexts,
     loadoutsByHeroId: loadoutsFromAssignment(assignment, itemById),
     ptsByHeroId,
-    slots: gearInput.account.slots,
+    slots: gearInput.account.fieldSlots,
     farm: farmFromAccount(gearInput),
     forgeFloor,
   };

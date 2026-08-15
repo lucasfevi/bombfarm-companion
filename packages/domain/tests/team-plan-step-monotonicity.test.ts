@@ -120,7 +120,7 @@ describe('team plan step monotonicity (roster level)', () => {
           `${file} floor ${forgeFloor} slots ${slots}: option B step invariants hold${budgetNote}`,
           () => {
             const input = teamPlanInputFromFixture(file, forgeFloor);
-            input.account.slots = slots;
+            input.account.fieldSlots = slots;
             assertStepInvariants(runAtBudget(input, key), input);
           },
           FULL_BUDGET_CASES.has(key) ? FULL_BUDGET_TIMEOUT_MS : GRID_TIMEOUT_MS,
@@ -133,7 +133,7 @@ describe('team plan step monotonicity (roster level)', () => {
     'export floor 10 slots 3 with a donate-scope mix: option B step invariants hold',
     () => {
       const input = teamPlanInputFromFixture('save-20260813-5heroes.json', 10);
-      input.account.slots = 3;
+      input.account.fieldSlots = 3;
       input.scopeByHeroId = donateMix(input.heroes.map((h) => h.heroId));
       assertStepInvariants(runTeamPlan(input, { maxEvaluations: REDUCED_MAX_EVALUATIONS }), input);
     },
@@ -144,7 +144,7 @@ describe('team plan step monotonicity (roster level)', () => {
     'export floor 20 slots 5 with a donate-scope mix: option B step invariants hold',
     () => {
       const input = teamPlanInputFromFixture('save-20260813-5heroes.json', 20);
-      input.account.slots = 5;
+      input.account.fieldSlots = 5;
       input.scopeByHeroId = donateMix(input.heroes.map((h) => h.heroId));
       assertStepInvariants(runTeamPlan(input, { maxEvaluations: REDUCED_MAX_EVALUATIONS }), input);
     },
@@ -158,7 +158,7 @@ describe('team plan step monotonicity (roster level)', () => {
       // several resets even at the grid's reduced budget, verified non-alphabetical either way —
       // reduced budget keeps this file fast per the ordering note above.
       const input = teamPlanInputFromFixture('save-20260813-5heroes.json', 10);
-      input.account.slots = 9;
+      input.account.fieldSlots = 9;
       const result = runTeamPlan(input, { maxEvaluations: REDUCED_MAX_EVALUATIONS });
       if (result.blocked) throw new Error('plan blocked');
       const heroIds = result.plan.pointResets.map((reset) => reset.heroId);

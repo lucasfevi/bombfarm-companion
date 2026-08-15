@@ -72,9 +72,15 @@ export function computeHeroSoloDps(
   return pipelineForHero(hero, account, phase, mitigationPct).dps;
 }
 
-/** Top heroes by solo DPS — an omitted `limit` falls back to `account.slots`, then {@link DEFAULT_CASA_SLOTS}. */
+/**
+ * Top heroes by solo DPS — an omitted `limit` falls back to `account.fieldSlots` (FIELD
+ * concurrency, `skills.field_slots`), then `account.slots` (HOUSE recovery, `casa.slots` —
+ * a pre-`skills.field_slots` fallback only, same `AD-063` convention as `SquadFarmFacts` in
+ * `farm-rate.ts`), then {@link DEFAULT_CASA_SLOTS}. The squad this ranks is who can be ON THE
+ * FIELD at once, not who the House can refill at once.
+ */
 export function rankRosterByDps(input: RosterDpsInput, limit?: number): RosterDpsRow[] {
-  const effectiveLimit = limit ?? input.account.slots ?? DEFAULT_CASA_SLOTS;
+  const effectiveLimit = limit ?? input.account.fieldSlots ?? input.account.slots ?? DEFAULT_CASA_SLOTS;
   const clampedLimit = Number.isFinite(effectiveLimit) && effectiveLimit >= 1 ? Math.round(effectiveLimit) : 1;
   const rows = input.heroes.map((hero) => ({
     heroId: hero.id,
