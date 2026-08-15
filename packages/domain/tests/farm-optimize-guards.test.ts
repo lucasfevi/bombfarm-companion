@@ -195,10 +195,12 @@ describe('the respec-cost rule has exactly one definition', () => {
 });
 
 describe('public-repo hygiene — no research-private identifier or path anywhere in packages/domain', () => {
-  // This guard's own implementation necessarily names the pattern it matches against (as source
-  // code, in its own explanatory prose) — a scanner does not scan its own rule definition.
-  // Self-excluded from the scan below, not allowlisted: the exclusion is structural.
-  const SELF_FILENAME = 'farm-optimize-guards.test.ts';
+  // Neither this guard's own implementation nor its sibling `farm-point-rank-guards.test.ts`
+  // (item C's own hygiene scan, same shape) can avoid naming the pattern they match against, as
+  // source code, in their own regex definitions — a scanner does not scan its own rule
+  // definition. Both are self-excluded from the scan below, not allowlisted: the exclusion is
+  // structural.
+  const SELF_FILENAMES = ['farm-optimize-guards.test.ts', 'farm-point-rank-guards.test.ts'];
   const HYGIENE_PATTERN = /FRAD-|FRAW-|FRAC-|R-B\d|OD-A\d|OQ-FRA-|AD-1\d\d|bombfarm-research|\.specs\//;
 
   it('src and tests are both clean', () => {
@@ -206,7 +208,7 @@ describe('public-repo hygiene — no research-private identifier or path anywher
     if (!requireFixture(SRC_ROOT, 'hygiene scan') || !requireFixture(testsRoot, 'hygiene scan')) return;
     const offenders: string[] = [];
     for (const file of [...listFiles(SRC_ROOT), ...listFiles(testsRoot)]) {
-      if (file.endsWith(SELF_FILENAME)) continue;
+      if (SELF_FILENAMES.some((name) => file.endsWith(name))) continue;
       const source = readFileSync(file, 'utf8');
       if (HYGIENE_PATTERN.test(source)) offenders.push(relative(DOMAIN_ROOT, file));
     }

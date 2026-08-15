@@ -166,8 +166,8 @@ type HeroRecordEntry = {
    * both subjects rather than duplicating the (expensive) pipeline call.
    */
   pipelineForHero: {
-    ranking: { stat: string; dpsGainPct: string }[];
-    best: { stat: string; dpsGainPct: string };
+    ranking: { stat: string; gainPct: string }[];
+    best: { stat: string; gainPct: string };
     dps: string;
     active: string;
     predHit: string;
@@ -519,8 +519,8 @@ function recordHero(
       hit: num(deriveResult.hit),
     },
     pipelineForHero: {
-      ranking: pipelineResult.ranking.map((p) => ({ stat: p.stat, dpsGainPct: num(p.dpsGainPct) })),
-      best: { stat: pipelineResult.best.stat, dpsGainPct: num(pipelineResult.best.dpsGainPct) },
+      ranking: pipelineResult.ranking.map((p) => ({ stat: p.stat, gainPct: num(p.gainPct) })),
+      best: { stat: pipelineResult.best.stat, gainPct: num(pipelineResult.best.gainPct) },
       dps: num(pipelineResult.dps),
       active: num(pipelineResult.active),
       predHit: num(pipelineResult.predHit),

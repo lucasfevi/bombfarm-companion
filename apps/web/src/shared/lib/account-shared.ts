@@ -47,7 +47,7 @@ export type HeroContext = {
   phase: number | null;
   mitigationPct: number;
   rankMode: RankMode;
-  /** Oneshot / HTK prop — null until set on Account. */
+  /** Highlighted row in the prop hits-to-kill table — null until set on Account. */
   targetProp: string | null;
   /** @deprecated always serial — ignored on load. */
   cycleModel?: 'serial' | 'wiki';
@@ -92,7 +92,7 @@ export const DEFAULT_CONTEXT = (): HeroContext => ({
   houseLevel: 0,
   phase: null,
   mitigationPct: 1,
-  rankMode: 'dps',
+  rankMode: 'farm',
   targetProp: DEFAULT_TARGET_PROP,
 });
 
@@ -123,6 +123,17 @@ function normalizeTree(raw?: Partial<TreeState> | null): TreeState {
   };
 }
 
+/**
+ * `'dps'` is a deliberate past choice and is respected. EVERYTHING else — absent, the retired
+ * `'oneshot'` value, a hand-edited junk string, a number, null — resolves to the `'farm'`
+ * default. Total by construction: there is no input for which this throws or returns a
+ * non-RankMode. An allow-list rather than `raw.rankMode ?? 'farm'`, deliberately: a `??` default
+ * only catches `null`/`undefined` and would let an unpredicted junk value straight through.
+ */
+function normalizeRankMode(raw: unknown): RankMode {
+  return raw === 'dps' ? 'dps' : 'farm';
+}
+
 function normalizeContext(raw?: Partial<HeroContext> | null): HeroContext {
   const base = DEFAULT_CONTEXT();
   if (!raw) return base;
@@ -139,7 +150,7 @@ function normalizeContext(raw?: Partial<HeroContext> | null): HeroContext {
     houseLevel: raw.houseLevel ?? base.houseLevel,
     phase,
     mitigationPct: raw.mitigationPct ?? base.mitigationPct,
-    rankMode: raw.rankMode ?? base.rankMode,
+    rankMode: normalizeRankMode(raw.rankMode),
     targetProp,
   };
 }

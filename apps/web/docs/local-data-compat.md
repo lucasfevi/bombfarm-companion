@@ -57,6 +57,7 @@ Imported heroes store their **fixed ability pool** in `abilities`, including **l
 | Field | Default | Notes |
 | --- | --- | --- |
 | `targetProp` | `'stone'` (was `null`) | Ranking/HTK prop on `HeroContext` (`AccountShared.context`, key `bf-hp-account-v1`). Previously normalized absent/empty-string to `null`, which `isTargetPropUnset` read as true and the Account tab soft-dotted. `DEFAULT_CONTEXT` and `normalizeContext` (`storage.ts`) now coerce absence/`''` to `DEFAULT_TARGET_PROP` (`'stone'`, `farm-context.ts`) — matching the Account target-prop `Select`'s own default, which can no longer emit `''`. `isTargetPropUnset` still exists as a guard, but is now reachable only via hand-edited localStorage that bypasses normalization, not through any normal load/import/UI path. Records with an explicit non-empty `targetProp` are unaffected either way. |
+| `rankMode` | `'farm'` (was `'dps'`) | Next-point ranking mode on `HeroContext` (`AccountShared.context`, key `bf-hp-account-v1`). New accounts and any record with the field absent now default to `'farm'`. The retired `'oneshot'` value migrates to `'farm'` on load, same as any other unrecognized string, number, `null` or object — `normalizeContext` (`account-shared.ts`) resolves through an allow-list of exactly `'dps'` (respected as a deliberate past choice) and everything else (`'farm'`), so no unpredicted stored value can survive. No storage-key bump — the normalized value simply reaches disk on the next ordinary save, same as every other field on this key. |
 
 ### AccountShared fields (additive on `-v1`)
 

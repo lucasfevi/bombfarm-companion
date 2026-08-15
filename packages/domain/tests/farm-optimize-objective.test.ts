@@ -7,6 +7,7 @@ import {
   resolveFarmObjective,
   farmObjectiveValue,
   bestFarmPhase,
+  farmObjectiveScales,
   type FarmObjectiveScales,
 } from '@bombfarm/domain/farm-optimize-objective';
 import { computeHeroFarmFacts, computeSquadFarmFacts, computeFarmRateRow } from '@bombfarm/domain/farm-rate';
@@ -128,5 +129,20 @@ describe('farmObjectiveValue — each kind selects the right column', () => {
     const value = farmObjectiveValue(row, resolveFarmObjective({ kind: 'blend', weight: 0.5 }), zeroScales);
     expect(value).toBe(0);
     expect(Number.isNaN(value)).toBe(false);
+  });
+});
+
+describe('farmObjectiveScales — the frozen blend normalizers, exported (lifted from goldChestReadout)', () => {
+  it('matches the manual per-currency best-over-phase scan (currentBuildScales) on the fixture', () => {
+    const scan = currentBuildScales();
+    const lifted = farmObjectiveScales(squad, { maxPhase });
+    expect(lifted.goldScale).toBeCloseTo(scan.goldScale, 6);
+    expect(lifted.chestScale).toBeCloseTo(scan.chestScale, 6);
+  });
+
+  it('on the committed fixture (maxPhase 42): goldScale ≈ 264 997.32, chestScale ≈ 2.0490', () => {
+    const scales = farmObjectiveScales(squad, { maxPhase });
+    expect(scales.goldScale).toBeCloseTo(264997.32, 1);
+    expect(scales.chestScale).toBeCloseTo(2.049, 3);
   });
 });

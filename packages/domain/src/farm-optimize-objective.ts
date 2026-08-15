@@ -52,6 +52,25 @@ export function resolveFarmObjective(objective?: FarmObjective | null): Resolved
  */
 export type FarmObjectiveScales = { goldScale: number; chestScale: number };
 
+/**
+ * The frozen blend normalizers for a squad: each currency's own best over the candidate phase
+ * set, independent of the other. Two sweeps. Reused verbatim by `bestFarmPhase`'s callers who
+ * need a `'blend'` objective's scales, and by `farm-optimize.ts`'s own gold/chests read-out —
+ * the SAME per-currency scan, not a second copy of it.
+ */
+export function farmObjectiveScales(
+  squad: SquadFarmFacts,
+  options?: FarmRateOptions & { phaseStride?: number },
+): FarmObjectiveScales {
+  const dummyScales: FarmObjectiveScales = { goldScale: 1, chestScale: 1 };
+  const goldPick = bestFarmPhase(squad, resolveFarmObjective({ kind: 'gold' }), dummyScales, options);
+  const chestPick = bestFarmPhase(squad, resolveFarmObjective({ kind: 'chests' }), dummyScales, options);
+  return {
+    goldScale: goldPick ? goldPick.row.goldPerHour : 0,
+    chestScale: chestPick ? chestPick.row.chestsPerHour : 0,
+  };
+}
+
 /** Objective value for one row. UNIT: gold/hr, chests/hr, or dimensionless for `'blend'`. */
 export function farmObjectiveValue(
   row: FarmRateRow,
