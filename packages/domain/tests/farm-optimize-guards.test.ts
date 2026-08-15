@@ -174,7 +174,7 @@ describe('forbidden-literal scan — the estimator\'s magic numbers never appear
   });
 });
 
-describe('the respec-cost rule has exactly one definition (FRAD-28\'s independent test)', () => {
+describe('the respec-cost rule has exactly one definition', () => {
   it('no "level * 1000" cost literal anywhere in packages/domain/src outside respec-cost.ts', () => {
     if (!requireFixture(SRC_ROOT, 'level * 1000 scan')) return;
     const pattern = /level\s*\*\s*1000|1000\s*\*\s*level/;
