@@ -113,11 +113,12 @@ export type GreedyWalkResult = {
 };
 
 /**
- * `AD-BSP-08` verbatim: repeated best `rankNextPoint`, always scored `mode: 'dps'` regardless
- * of any caller rankMode (`AC-70`) — this module never exposes a rankMode parameter, so there
- * is nothing for a caller to set incorrectly. `startScore` seeds the exact incremental product
- * chain (`gainPct` is defined as `(sustainedDps(next)/sustainedDps(current) - 1) x 100`, so
- * chaining it through accepted steps reproduces the true final DPS with no extra scoring call).
+ * `AD-BSP-08` verbatim: repeated best `rankNextPoint`. `rankNextPoint` itself has no mode
+ * parameter any more — it always scores sustained DPS (`AC-70`) — so this module never exposes
+ * a rankMode parameter either, and there is nothing for a caller to set incorrectly.
+ * `startScore` seeds the exact incremental product chain (`gainPct` is defined as
+ * `(sustainedDps(next)/sustainedDps(current) - 1) x 100`, so chaining it through accepted steps
+ * reproduces the true final DPS with no extra scoring call).
  */
 export function greedyWalk(
   startPts: Record<SheetKey, number>,
@@ -142,7 +143,7 @@ export function greedyWalk(
       break;
     }
     const sheet = buildCandidateSheet(effective, basePts, effectiveDelta, current);
-    const ranking = rankNextPoint(sheet, context, { effectiveDeltas: effectiveDelta, mode: 'dps' });
+    const ranking = rankNextPoint(sheet, context, { effectiveDeltas: effectiveDelta });
     evaluations += STEP_COST;
     const best = ranking[0];
     if (!best || best.gainPct <= 0) break; // AC-51/AC-52: never spend into a zero-gain stat.

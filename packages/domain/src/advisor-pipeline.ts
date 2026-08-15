@@ -66,6 +66,13 @@ export type AdvisorPipelineInput = {
   houseLevel: number;
   phase: number | null;
   mitigationPct: number;
+  /**
+   * The persisted UI setting (dps/farm). NOT read by this pipeline: farm-mode ranking needs
+   * the whole rotation and this call computes one hero's advice, so the two cannot be the same
+   * call — a farm ranker composes above this pipeline instead, in the web layer, from
+   * already-extracted per-hero bases. Kept on this input so the type still names the setting
+   * that gates which ranker the web layer calls.
+   */
   rankMode: RankMode;
   targetProp: string | null;
   /**
@@ -146,7 +153,7 @@ export function computeAdvisorPipeline(input: AdvisorPipelineInput): AdvisorPipe
     houseLevel,
     phase,
     mitigationPct,
-    rankMode,
+    // input.rankMode is intentionally not destructured — see its doc comment above.
     targetProp,
     birth,
   } = input;
@@ -256,12 +263,10 @@ export function computeAdvisorPipeline(input: AdvisorPipelineInput): AdvisorPipe
   const targetPropDef = PROPS.find((prop) => prop.name === propName) ?? PROPS[1];
   const targetHp = propHp(stoneHp, targetPropDef.hpMult);
 
+  // The one-shot heuristic that used to read targetHp/dmgMult/mitPct here is gone —
+  // rankNextPoint only scores sustained DPS now, unconditionally.
   const ranking = rankNextPoint(effective, context, {
     effectiveDeltas: equippedResult.effectiveDelta,
-    mode: rankMode,
-    targetPropHp: targetHp,
-    hitDmgMult: dmgMult,
-    mitigation: mitPct / 100,
   });
 
   // DEBUG: name/toast/guide/roster edits must not bump this when deps are stable.

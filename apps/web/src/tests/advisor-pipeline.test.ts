@@ -450,12 +450,16 @@ describe('computeAdvisorPipeline', () => {
       expect(out.resetAdvice.reoptDps).toBeCloseTo(direct.reoptDps, 6);
     });
 
-    it('AC-70: the gate is unaffected by rankMode — oneshot mode with a target prop produces byte-identical resetAdvice to dps mode', () => {
+    it('AC-70: the gate is unaffected by rankMode — farm mode with a target prop produces byte-identical resetAdvice to dps mode', () => {
+      // rankMode still exists on AdvisorPipelineInput (the persisted UI setting), but this
+      // pipeline no longer reads it for anything — the pipeline computes one hero's advice and
+      // the farm objective needs the whole rotation, so they cannot be the same call. This case
+      // stays as the regression guard for that: the field is present and inert.
       const dpsMode = computeAdvisorPipeline(baseInput({ rankMode: 'dps' }));
-      const oneshotMode = computeAdvisorPipeline(
-        baseInput({ rankMode: 'oneshot', targetProp: PROPS[1]?.name ?? PROPS[0].name }),
+      const farmMode = computeAdvisorPipeline(
+        baseInput({ rankMode: 'farm', targetProp: PROPS[1]?.name ?? PROPS[0].name }),
       );
-      expect(oneshotMode.resetAdvice).toEqual(dpsMode.resetAdvice);
+      expect(farmMode.resetAdvice).toEqual(dpsMode.resetAdvice);
     });
   });
 

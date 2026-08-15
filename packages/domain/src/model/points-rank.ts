@@ -1,10 +1,4 @@
-import {
-  critFactor,
-  marginalFuseSeconds,
-  mitigationFactor,
-  sustainedDps,
-  sustainedDpsWithFuse,
-} from './combat';
+import { marginalFuseSeconds, sustainedDps, sustainedDpsWithFuse } from './combat';
 import { BASE_ROLLS, POINT_GAIN, STAT_CAPS } from './rarity-constants';
 import {
   STAT_LABELS,
@@ -20,19 +14,8 @@ import {
  *  with a STABLE sort, so a tie on gain preserves this order in either mode. */
 export const RANK_STATS: readonly StatKey[] = ['energy', 'attack', 'critDmg', 'speed', 'critChance', 'penetration', 'cdr'];
 
-function hitSize(hero: HeroSheet, mitigation: number, hitDmgMult: number): number {
-  return hero.attack * mitigationFactor(mitigation, hero.penetration) * hitDmgMult * critFactor(hero.critChance, hero.critDmg);
-}
-
 function isRankOptions(options: PointBases | RankOptions): options is RankOptions {
-  return (
-    'bases' in options ||
-    'effectiveDeltas' in options ||
-    'mode' in options ||
-    'targetPropHp' in options ||
-    'hitDmgMult' in options ||
-    'mitigation' in options
-  );
+  return 'bases' in options || 'effectiveDeltas' in options;
 }
 
 function normalizeRankOpts(options?: PointBases | RankOptions): RankOptions {
@@ -94,8 +77,6 @@ function deltaForStat(
  * Marginal % gain for one point in each stat, ranked best-first.
  * Uses effective-sheet deltas (tree/gear/mults already baked in) and hard caps
  * on crit chance (100%), penetration (100% combat bypass), and CDR (80%).
- * `oneshot` mode mixes sustained DPS gain
- * with progress toward oneshotting `targetPropHp`.
  */
 export function rankNextPoint(hero: HeroSheet, context: Context, optionsOrBases?: PointBases | RankOptions): PointValue[] {
   const options = normalizeRankOpts(optionsOrBases);
@@ -108,47 +89,28 @@ export function rankNextPoint(hero: HeroSheet, context: Context, optionsOrBases?
     cdr: options.bases?.cdr ?? roll.cdr,
   };
   const current = sustainedDps(hero, context);
-  const mit = options.mitigation ?? context.mitigation;
-  const dmgMult = options.hitDmgMult ?? 1;
-  const propHp = options.targetPropHp ?? 0;
-  const useOneshot = options.mode === 'oneshot' && propHp > 0;
-  const curHit = hitSize(hero, mit, dmgMult);
 
-  const score = (patch: Partial<HeroSheet>, stat: StatKey, hitRelevant: boolean) => {
+  const score = (patch: Partial<HeroSheet>, stat: StatKey) => {
     if (Object.keys(patch).length === 0) return 0;
     const next = { ...hero, ...patch };
-    // MOD-36: single-pass branch assign — the CDR-fuse special case vs. the plain-DPS
-    // ratio below each set this exactly once before it's read.
-    let dpsGain: number;
     // Fuse floor (0.4s) lands at the 80% CDR cap — rank with linear fuse until cap.
     if (stat === 'cdr' && hero.cdr < STAT_CAPS.cdr - 1e-9 && context.cycleModel === 'serial') {
       const curFuse = marginalFuseSeconds(hero.cdr);
       const nextFuse = marginalFuseSeconds(next.cdr);
       const curMarginal = sustainedDpsWithFuse(hero, context, curFuse);
       const nextMarginal = sustainedDpsWithFuse(next, context, nextFuse);
-      dpsGain = (nextMarginal / curMarginal - 1) * 100;
-    } else {
-      dpsGain = (sustainedDps(next, context) / current - 1) * 100;
+      return (nextMarginal / curMarginal - 1) * 100;
     }
-    if (!useOneshot || !hitRelevant) return dpsGain;
-    const nextHit = hitSize(next, mit, dmgMult);
-    const before = Math.ceil(propHp / Math.max(curHit, 1e-9));
-    const after = Math.ceil(propHp / Math.max(nextHit, 1e-9));
-    // Large bonus when a point drops hits-to-kill; otherwise weight leftover gap.
-    const breakpointBonus = before > after ? 5 + (before - after) * 3 : 0;
-    const gapShrink =
-      curHit >= propHp ? 0 : Math.max(0, ((nextHit - curHit) / propHp) * 100);
-    return dpsGain + breakpointBonus + gapShrink * 0.25;
+    return (sustainedDps(next, context) / current - 1) * 100;
   };
 
-  const hitRelevant = new Set<StatKey>(['attack', 'critDmg', 'critChance', 'penetration']);
   const out: PointValue[] = RANK_STATS.map((stat) => {
     const delta = deltaForStat(stat, hero, options, base);
     const patch = applyEffectivePoint(hero, stat, delta);
     return {
       stat,
       label: STAT_LABELS[stat],
-      gainPct: score(patch, stat, hitRelevant.has(stat)),
+      gainPct: score(patch, stat),
     };
   });
   return out.sort((left, right) => right.gainPct - left.gainPct);
