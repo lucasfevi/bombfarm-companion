@@ -7,7 +7,7 @@ import { resolvePaybackKind } from '@/features/phases/model/farm-respec-view';
 import { formatGainPct, formatGold, formatHours } from '@/features/phases/model/farm-respec-format';
 
 /**
- * The toolbar's headline — gain % (a LOWER BOUND), recommended phase, respec cost and
+ * The toolbar's headline — gain % (labelled a LOWER BOUND), recommended phase, respec cost and
  * payback in words. Only ever mounted by the toolbar when Tier 1 says there is something to say;
  * this component has no visibility logic of its own.
  */

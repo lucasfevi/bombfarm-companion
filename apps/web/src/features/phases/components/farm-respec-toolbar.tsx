@@ -59,7 +59,7 @@ export function FarmRespecToolbar({ t, lang }: { t: Strings; lang: Lang }) {
         aria-expanded={panelOpen}
         aria-controls="farm-respec-panel"
         disabled={busy}
-        // reserved to the longer of the idle/busy labels in both languages
+        // Reserved to the longer of the idle/busy labels in both languages
         // ("Calculating…" / "Calculando…") so the busy transition never reflows the row.
         className="min-w-32"
         onClick={runFarmRespec}
