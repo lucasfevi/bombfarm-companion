@@ -34,10 +34,27 @@
  * SORTE-AVERAGE VS FORTUNA-SUM ASYMMETRY — DO NOT "FIX": Sorte (`SquadFarmFacts.sorteFraction`)
  * is a normalized, uptime-weighted AVERAGE of hero-only luck plus the tree's flat share
  * ("the average of on-field heroes' luck"). The Fortuna aura
- * (`SquadFarmFacts.fortunaAura`) is an UNNORMALIZED uptime-weighted SUM (an aura is
+ * (`FarmRateRow.fortunaAura`) is an UNNORMALIZED uptime-weighted SUM (an aura is
  * a presence effect that stacks across heroes, not an average). These are deliberately different
  * shapes. Live confirmation of the Fortuna-sum's cap order (cap-after-sum,
  * the conservative choice shipped here) is still an open question.
+ *
+ * FORTUNA MOVED TO THE HOUSE-ALLOCATED BASIS; SORTE DELIBERATELY DID NOT. `fortunaAura` is now
+ * `min(FORTUNA_AURA_CAP, Σ (uptime_h × activity_h) × perLevel × level_h)` — the SAME realised
+ * on-field basis `heroesOnField` uses, computed in `buildRow` alongside it (see
+ * {@link allocateHouseSlots}) rather than in `computeSquadFarmFacts`, for the same phase-dependent
+ * reason `concurrencyScale` moved there. Being an UNNORMALIZED SUM, its old unconstrained-uptime
+ * basis scaled with `Σ uptime_h` directly, so it overcounted by exactly the House's overcommit
+ * ratio whenever the House bound (1.69x on account 486's Fortuna-free roster, had it carried any).
+ * `sorteFraction` stays on the unconstrained, phase-independent `uptime_h` basis: being a
+ * normalized AVERAGE, the same overcommit does not inflate it the same way — reweighting by the
+ * realised (allocated) composition instead would shift the average toward whichever heroes the
+ * greedy allocator favours, which has no fixed sign (it depends on whether this roster's
+ * high-value-density heroes happen to also be its high-luck ones, and combat throughput and Sorte
+ * investment are independent point-budget knobs with no structural reason to correlate). Moving it
+ * would also mean relocating a currently phase-independent, once-per-squad reduction into
+ * `buildRow`'s per-phase loop for a correction with no known direction — not worth it absent a
+ * roster where the correlation is demonstrated. Revisit if one is found.
  */
 import {
   fuseSeconds,
@@ -347,8 +364,6 @@ export type SquadFarmFacts = {
   houseSlotDemand: number;
   /** Sorte as a FRACTION: `(uptime-weighted mean heroLuckPct + treeLuckFlatPct) / 100`. */
   sorteFraction: number;
-  /** `min(FORTUNA_AURA_CAP, Σ uptime_h × perLevel × level_h)`, a FRACTION. */
-  fortunaAura: number;
   /** `1 + max(0, tree.teamCoinPct) / 100`. */
   teamCoinMult: number;
   /** `tree.luckFlatPct ?? 0`, percentage points — echoed for the board's breakdown tooltip. */
@@ -383,12 +398,6 @@ export function computeSquadFarmFacts(
   const heroLuckWeightedSum = heroFacts.reduce((sum, hero) => sum + hero.uptime * hero.heroLuckPct, 0);
   const sorteFraction = ((uptimeSum > 0 ? heroLuckWeightedSum / uptimeSum : 0) + treeLuckFlatPct) / 100;
 
-  const fortunaWeightedSum = heroFacts.reduce(
-    (sum, hero) => sum + hero.uptime * LOOT_ABILITY_VALUES.fortuna.perLevel * hero.fortunaLevel,
-    0,
-  );
-  const fortunaAura = Math.min(FORTUNA_AURA_CAP, fortunaWeightedSum);
-
   const teamCoinMult = 1 + Math.max(0, account.tree.teamCoinPct ?? 0) / 100;
 
   return {
@@ -398,7 +407,6 @@ export function computeSquadFarmFacts(
     uptimeSum,
     houseSlotDemand: houseSlotDemandSum,
     sorteFraction,
-    fortunaAura,
     teamCoinMult,
     treeLuckFlatPct,
   };
@@ -556,6 +564,17 @@ export type FarmRateRow = {
    * Capping raw `uptimeSum` instead would charge the roster twice for the same shortage.
    */
   concurrencyScale: number;
+  /**
+   * `min(FORTUNA_AURA_CAP, Σ (uptime_h × activity_h) × perLevel × level_h)`, a FRACTION.
+   *
+   * Weighted by the House-ALLOCATED on-field fraction (`uptime_h × activity_h`, the same term
+   * `heroesOnField` sums), not the unconstrained `uptime_h` — an aura a hero cannot actually keep
+   * on the field cannot be stacking with the others. Phase-dependent because the allocation is
+   * (see {@link allocateHouseSlots}); this is why it lives here and not on `SquadFarmFacts`, same
+   * as `heroesOnField`/`concurrencyScale`. `sorteFraction` deliberately stays on the unconstrained
+   * squad-level basis — see the module header's SORTE-AVERAGE VS FORTUNA-SUM ASYMMETRY note.
+   */
+  fortunaAura: number;
 };
 
 /** `-0` collapses to `0` — never leaks a signed zero into a public field (edge case). */
@@ -598,13 +617,19 @@ function buildRow(line: WikiPhaseLine, squad: SquadFarmFacts, options: FarmRateO
   let shareDenom = 0;
   let bossRateSum = 0;
   let heroesOnField = 0;
+  let fortunaWeightedSum = 0;
   const terms = new Array<number>(perHero.length).fill(0);
   for (let i = 0; i < perHero.length; i++) {
+    const hero = squad.heroes[i];
+    const onField = hero.uptime * activity[i];
     terms[i] = perHero[i].fullTerm * activity[i];
     shareDenom += terms[i];
     bossRateSum += perHero[i].fullBossTerm * activity[i];
-    heroesOnField += squad.heroes[i].uptime * activity[i];
+    heroesOnField += onField;
+    // House-allocated, not unconstrained: an aura a hero cannot keep on the field cannot stack.
+    fortunaWeightedSum += onField * LOOT_ABILITY_VALUES.fortuna.perLevel * hero.fortunaLevel;
   }
+  const fortunaAura = Math.min(FORTUNA_AURA_CAP, fortunaWeightedSum);
 
   // Constraint 2 — field slots, applied to what the House can actually keep fed (never to the
   // unconstrained `uptimeSum`, which would double-charge the same shortage).
@@ -638,7 +663,7 @@ function buildRow(line: WikiPhaseLine, squad: SquadFarmFacts, options: FarmRateO
   const cyclesPerHour = Number.isFinite(clearSecs) && clearSecs > 0 ? 3600 / clearSecs : 0;
 
   const eGold = line.goldComum * GOLD_SHARE_FACTOR;
-  const goldMult = squad.teamCoinMult * (1 + squad.fortunaAura) * bonus;
+  const goldMult = squad.teamCoinMult * (1 + fortunaAura) * bonus;
   const goldPerHour = propsPerHour * eGold * goldMult * goldSelfMix;
 
   const chestsPerHour = propsPerHour * DROP_RATES.chest * sorteMult * bonus;
@@ -685,6 +710,7 @@ function buildRow(line: WikiPhaseLine, squad: SquadFarmFacts, options: FarmRateO
     expectedHtk,
     heroesOnField: normalizeZero(heroesOnField),
     concurrencyScale,
+    fortunaAura: normalizeZero(fortunaAura),
   };
 }
 

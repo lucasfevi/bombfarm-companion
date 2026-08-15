@@ -217,6 +217,37 @@ describe('House recovery-slot ceiling', () => {
     expect(Number.isNaN(row.goldPerHour)).toBe(false);
   });
 
+  it('BOTH caps bind at once: heroesOnField/fieldSlots is the applied scale, not uptimeSum/fieldSlots (the double-charging error §554-556 warns against)', () => {
+    // Four identical uptime-0.5 heroes: House demand 0.5 each, 2.0 total against a 1-slot House —
+    // the allocator (tie-broken to roster order, since value density is identical) can only ever
+    // pay for two of them. `fieldSlots: 0.5` then oversubscribes even THAT already-throttled
+    // heroesOnField (1.0), so the field cap also bites — both ceilings bind on the same row.
+    const facts = [0, 1, 2, 3].map((i) => syntheticHero({ heroId: `h${i}`, uptime: 0.5 }));
+    const bothBinding = house(1);
+    const squad = computeSquadFarmFacts(facts, { ...bothBinding, fieldSlots: 0.5 });
+    expect(squad.uptimeSum).toBeCloseTo(2, 12);
+    expect(squad.houseSlotDemand).toBeCloseTo(2, 12);
+
+    const row = computeFarmRateRow(42, squad)!;
+    // The House ceiling alone already throttles the roster from 2.0 to 1.0 heroes on field.
+    expect(row.heroesOnField).toBeCloseTo(1, 12);
+    expect(row.heroesOnField).toBeLessThan(squad.uptimeSum);
+
+    // CORRECT ordering: the field cap divides fieldSlots by the House-allocated heroesOnField
+    // (1.0), not by the raw uptimeSum (2.0) — 0.5/1.0 = 0.5, not 0.5/2.0 = 0.25.
+    expect(row.concurrencyScale).toBeCloseTo(0.5, 12);
+    const doubleChargedScale = squad.fieldSlots / squad.uptimeSum;
+    expect(doubleChargedScale).toBeCloseTo(0.25, 12);
+    expect(row.concurrencyScale).not.toBeCloseTo(doubleChargedScale, 6);
+
+    // The field-cap-only reference squad (same House constraint, field wide open) isolates the
+    // scale factor: propsPerHour must drop by exactly `concurrencyScale` (0.5), not by the
+    // double-charging variant's 0.25.
+    const referenceRow = computeFarmRateRow(42, computeSquadFarmFacts(facts, { ...bothBinding, fieldSlots: 1000 }))!;
+    expect(referenceRow.concurrencyScale).toBe(1);
+    expect(row.propsPerHour / referenceRow.propsPerHour).toBeCloseTo(0.5, 9);
+  });
+
   it('a hero with ZERO field seconds (uptime 0) costs a full slot, delivers nothing, and is ranked last', () => {
     // `fieldSeconds` 0 ⇒ uptime 0. It still occupies a recovery slot (demand 1 − 0 = 1), so a
     // naive allocator could hand it the whole budget and starve the hero that actually farms.

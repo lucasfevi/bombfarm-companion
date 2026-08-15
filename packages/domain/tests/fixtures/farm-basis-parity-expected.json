@@ -108,7 +108,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 1.0472000355703797,
       "heroesOnField": 0.8072012146868895,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 2,
@@ -136,7 +137,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 1.0562774473764418,
       "heroesOnField": 0.8072012146868895,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 3,
@@ -164,7 +166,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 1.0649216138978954,
       "heroesOnField": 0.8072012146868895,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 4,
@@ -192,7 +195,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 1.0672405269546654,
       "heroesOnField": 0.8072012146868895,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 5,
@@ -220,7 +224,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 1.0835717836910763,
       "heroesOnField": 0.8072012146868895,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 6,
@@ -248,7 +253,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 1.087354259574831,
       "heroesOnField": 0.8072012146868895,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 7,
@@ -276,7 +282,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 1.1053507914997152,
       "heroesOnField": 0.8072012146868895,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 8,
@@ -304,7 +311,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 1.0833284627051487,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 9,
@@ -332,7 +340,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 1.104178481421573,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 10,
@@ -360,7 +369,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 1.110619578293883,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 11,
@@ -388,7 +398,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 1.1584089196195337,
       "heroesOnField": 0.8072012146868895,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 12,
@@ -416,7 +427,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 1.139546688768019,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 13,
@@ -444,7 +456,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 1.1754037180375219,
       "heroesOnField": 0.8072012146868895,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 14,
@@ -472,7 +485,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 1.1542018988682154,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 15,
@@ -500,7 +514,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 1.1629078305509284,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 16,
@@ -528,7 +543,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 1.1744899783562799,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 17,
@@ -556,7 +572,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 1.1820549650961931,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 18,
@@ -584,7 +601,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 1.190693590849334,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 19,
@@ -612,7 +630,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 1.196171284605509,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 20,
@@ -640,7 +659,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 1.203251682977557,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 21,
@@ -668,7 +688,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 1.2069240629887485,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 22,
@@ -696,7 +717,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 1.2270510112955206,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 23,
@@ -724,7 +746,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 1.253017206419388,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 24,
@@ -752,7 +775,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 1.2573458179363164,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 25,
@@ -780,7 +804,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 1.3056181069645387,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 26,
@@ -808,7 +833,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 1.334489744123959,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 27,
@@ -836,7 +862,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 1.3386367428315282,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 28,
@@ -864,7 +891,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 1.3967664448062727,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 29,
@@ -892,7 +920,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 1.4123211703337184,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 30,
@@ -920,7 +949,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 1.5051208742038242,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 31,
@@ -948,7 +978,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 1.5784695545286238,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 32,
@@ -976,7 +1007,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 1.6612790348121496,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 33,
@@ -1004,7 +1036,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 1.697882477959618,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 34,
@@ -1032,7 +1065,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 1.8750293604888253,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 35,
@@ -1060,7 +1094,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 1.9201805503464913,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 36,
@@ -1088,7 +1123,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 2.0346251806433986,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 37,
@@ -1116,7 +1152,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 2.2219162918523097,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 38,
@@ -1144,7 +1181,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 2.2389154523729626,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 39,
@@ -1172,7 +1210,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 2.4387068894301995,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 40,
@@ -1200,7 +1239,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 2.826252479559442,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 41,
@@ -1229,7 +1269,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 2.9686237408221343,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 42,
@@ -1258,7 +1299,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 3.150096312943269,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 43,
@@ -1287,7 +1329,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 3.4314064202886723,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 44,
@@ -1316,7 +1359,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 3.7354075691027178,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 45,
@@ -1345,7 +1389,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 3.9532050861181003,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 46,
@@ -1374,7 +1419,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 4.1627469324999495,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 47,
@@ -1403,7 +1449,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 4.662635586987251,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 48,
@@ -1432,7 +1479,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 5.338173901352034,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 49,
@@ -1461,7 +1509,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 5.638223467348514,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 50,
@@ -1490,7 +1539,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 6.066642800512788,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 51,
@@ -1518,7 +1568,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 6.066642800512788,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 52,
@@ -1546,7 +1597,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 6.28079128544705,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 53,
@@ -1574,7 +1626,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 6.554505683553622,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 54,
@@ -1602,7 +1655,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 6.851386631548438,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 55,
@@ -1630,7 +1684,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 7.186604476334496,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 56,
@@ -1658,7 +1713,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 7.445725817816685,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 57,
@@ -1686,7 +1742,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 7.752566351009404,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 58,
@@ -1714,7 +1771,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 7.984172181800197,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 59,
@@ -1742,7 +1800,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 8.664471441628532,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 60,
@@ -1770,7 +1829,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 8.930429076048405,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 61,
@@ -1798,7 +1858,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 9.534522984100327,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 62,
@@ -1826,7 +1887,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 9.829321330984211,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 63,
@@ -1854,7 +1916,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 10.104546732645396,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 64,
@@ -1882,7 +1945,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 10.404390443434483,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 65,
@@ -1910,7 +1974,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 11.476805571236955,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 66,
@@ -1938,7 +2003,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 11.599860977468559,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 67,
@@ -1966,7 +2032,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 12.238209929767507,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 68,
@@ -1994,7 +2061,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 12.642740909726653,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 69,
@@ -2022,7 +2090,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 13.408148565551414,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 70,
@@ -2050,7 +2119,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 14.057424416000103,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 71,
@@ -2078,7 +2148,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 14.37639736278367,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 72,
@@ -2106,7 +2177,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 15.08294238840218,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 73,
@@ -2134,7 +2206,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 16.024465216326096,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 74,
@@ -2162,7 +2235,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 16.740378020840428,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 75,
@@ -2190,7 +2264,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 17.699516852427113,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 76,
@@ -2218,7 +2293,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 18.26061927554218,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 77,
@@ -2246,7 +2322,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 19.023699544214423,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 78,
@@ -2274,7 +2351,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 20.2010871764519,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 79,
@@ -2302,7 +2380,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 21.04081142921598,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 80,
@@ -2330,7 +2409,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 22.11175046309272,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 81,
@@ -2359,7 +2439,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 22.983842006150674,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 82,
@@ -2388,7 +2469,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 24.193858113859903,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 83,
@@ -2417,7 +2499,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 25.269489065509404,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 84,
@@ -2446,7 +2529,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 26.367889389356243,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 85,
@@ -2475,7 +2559,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 27.770654249005773,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 86,
@@ -2504,7 +2589,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 28.87448829708623,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 87,
@@ -2533,7 +2619,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 30.386961347494662,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 88,
@@ -2562,7 +2649,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 31.5979493402846,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 89,
@@ -2591,7 +2679,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 33.33259487166523,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 90,
@@ -2620,7 +2709,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 35.06743816858561,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 91,
@@ -2648,7 +2738,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 36.55898895747271,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 92,
@@ -2676,7 +2767,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 38.43547694356656,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 93,
@@ -2704,7 +2796,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 40.10861343958179,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 94,
@@ -2732,7 +2825,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 41.79745934459666,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 95,
@@ -2760,7 +2854,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 44.009297227010535,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 96,
@@ -2788,7 +2883,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 45.98483304891983,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 97,
@@ -2816,7 +2912,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 48.36775557534894,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 98,
@@ -2844,7 +2941,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 50.65002458405276,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 99,
@@ -2872,7 +2970,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 53.321369064949664,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 100,
@@ -2900,7 +2999,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 55.877115777565386,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 101,
@@ -2928,7 +3028,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 58.51713909030251,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 102,
@@ -2956,7 +3057,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 60.972859957985094,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 103,
@@ -2984,7 +3086,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 63.995264180599634,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 104,
@@ -3012,7 +3115,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 67.09912633246866,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 105,
@@ -3040,7 +3144,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 70.54344208092643,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 106,
@@ -3068,7 +3173,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 73.48510197804674,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 107,
@@ -3096,7 +3202,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 77.26931422132745,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 108,
@@ -3124,7 +3231,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 81.0957367164601,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 109,
@@ -3152,7 +3260,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 85.01615592538309,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 110,
@@ -3180,7 +3289,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 89.13092208845671,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 111,
@@ -3208,7 +3318,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 93.40846407424766,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 112,
@@ -3236,7 +3347,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 97.84882669292396,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 113,
@@ -3264,7 +3376,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 102.26868963933615,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 114,
@@ -3292,7 +3405,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 107.55993242307898,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 115,
@@ -3320,7 +3434,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 112.52014939900761,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 116,
@@ -3348,7 +3463,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 117.98661348934095,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 117,
@@ -3376,7 +3492,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 123.69834823179139,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 118,
@@ -3404,7 +3521,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 129.5596645253317,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 119,
@@ -3432,7 +3550,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 135.84331080868884,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 120,
@@ -3460,7 +3579,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 142.54593822936988,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 121,
@@ -3489,7 +3609,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 149.54720415860183,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 122,
@@ -3518,7 +3639,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 156.87720624673216,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 123,
@@ -3547,7 +3669,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 164.3355709696864,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 124,
@@ -3576,7 +3699,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 172.2968954833454,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 125,
@@ -3605,7 +3729,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 180.58522386260447,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 126,
@@ -3634,7 +3759,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 189.35621602686118,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 127,
@@ -3663,7 +3789,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 198.56647838715492,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 128,
@@ -3692,7 +3819,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 208.12048893737756,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 129,
@@ -3721,7 +3849,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 218.05640230949788,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 130,
@@ -3750,7 +3879,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 228.67963737365207,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 131,
@@ -3778,7 +3908,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 239.63856454658847,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 132,
@@ -3806,7 +3937,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 250.97316391918923,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 133,
@@ -3834,7 +3966,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 263.48496109554986,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 134,
@@ -3862,7 +3995,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 276.17272845593334,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 135,
@@ -3890,7 +4024,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 289.74264900056403,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 136,
@@ -3918,7 +4053,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 303.3501822659192,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 137,
@@ -3946,7 +4082,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 318.17893606098414,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 138,
@@ -3974,7 +4111,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 333.8644352400237,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 139,
@@ -4002,7 +4140,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 349.848426630153,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 140,
@@ -4030,7 +4169,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 367.1126761938292,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 141,
@@ -4058,7 +4198,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 384.5750860103823,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 142,
@@ -4086,7 +4227,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 403.2967101434841,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 143,
@@ -4114,7 +4256,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 422.80266377800035,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 144,
@@ -4142,7 +4285,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 443.3684215068666,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 145,
@@ -4170,7 +4314,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 465.0031960989611,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 146,
@@ -4198,7 +4343,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 487.5101748806144,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 147,
@@ -4226,7 +4372,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 511.2053835951604,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 148,
@@ -4254,7 +4401,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 535.6381902049866,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 149,
@@ -4282,7 +4430,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 561.9517459696079,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 150,
@@ -4310,7 +4459,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 589.1502516131368,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 151,
@@ -4338,7 +4488,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 589.6452661509189,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 152,
@@ -4366,7 +4517,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 608.4973095963057,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 153,
@@ -4394,7 +4546,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 628.6045264586545,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 154,
@@ -4422,7 +4575,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 648.4383457895813,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 155,
@@ -4450,7 +4604,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 669.1123968957256,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 156,
@@ -4478,7 +4633,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 691.2540992515859,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 157,
@@ -4506,7 +4662,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 713.4397139314766,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 158,
@@ -4534,7 +4691,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 736.4187659306987,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 159,
@@ -4562,7 +4720,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 760.4020404951759,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 160,
@@ -4590,7 +4749,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 785.2185963395015,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 161,
@@ -4619,7 +4779,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 810.3039391026134,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 162,
@@ -4648,7 +4809,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 836.3939284216019,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 163,
@@ -4677,7 +4839,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 863.4713357805708,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 164,
@@ -4706,7 +4869,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 891.298002557347,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 165,
@@ -4735,7 +4899,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 920.0782060352167,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 166,
@@ -4764,7 +4929,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 949.9255906002464,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 167,
@@ -4793,7 +4959,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 980.5096933864018,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 168,
@@ -4822,7 +4989,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 1012.5309678071151,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 169,
@@ -4851,7 +5019,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 1045.1067529191669,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 170,
@@ -4880,7 +5049,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 1078.8223484966054,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 171,
@@ -4908,7 +5078,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 1113.793798781542,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 172,
@@ -4936,7 +5107,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 1149.797204420944,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 173,
@@ -4964,7 +5136,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 1186.8910408752126,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 174,
@@ -4992,7 +5165,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 1225.42861654287,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 175,
@@ -5020,7 +5194,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 1264.8576238560227,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 176,
@@ -5048,7 +5223,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 1306.0466276185962,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 177,
@@ -5076,7 +5252,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 1348.231153098876,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 178,
@@ -5104,7 +5281,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 1391.8425778104954,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 179,
@@ -5132,7 +5310,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 1436.4888420188868,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 180,
@@ -5160,7 +5339,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 1482.9917378540663,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 181,
@@ -5188,7 +5368,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 1531.057061114484,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 182,
@@ -5216,7 +5397,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 1580.7347831931786,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 183,
@@ -5244,7 +5426,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 1631.3611664312332,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 184,
@@ -5272,7 +5455,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 1684.6732804942644,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 185,
@@ -5300,7 +5484,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 1739.1483674637836,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 186,
@@ -5328,7 +5513,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 1795.3749992208764,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 187,
@@ -5356,7 +5542,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 1853.2765621576227,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 188,
@@ -5384,7 +5571,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 1913.059104289539,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 189,
@@ -5412,7 +5600,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 1975.4176023299724,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 190,
@@ -5440,7 +5629,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 2039.1454305238026,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 191,
@@ -5468,7 +5658,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 2105.019812353151,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 192,
@@ -5496,7 +5687,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 2173.160861060224,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 193,
@@ -5524,7 +5716,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 2243.459226853792,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 194,
@@ -5552,7 +5745,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 2315.832294781294,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 195,
@@ -5580,7 +5774,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 2391.0170747168227,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 196,
@@ -5608,7 +5803,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 2468.185173611121,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 197,
@@ -5636,7 +5832,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 2547.966400324596,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 198,
@@ -5664,7 +5861,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 2630.697694292463,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 199,
@@ -5692,7 +5890,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 2715.9698301577364,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 200,
@@ -5720,7 +5919,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 2804.223750584507,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 201,
@@ -5749,7 +5949,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 2894.4298342939373,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 202,
@@ -5778,7 +5979,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 2988.1702830138915,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 203,
@@ -5807,7 +6009,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 3084.7423487448077,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 204,
@@ -5836,7 +6039,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 3184.913412913058,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 205,
@@ -5865,7 +6069,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 3288.010711260296,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 206,
@@ -5894,7 +6099,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 3394.396614437993,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 207,
@@ -5923,7 +6129,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 3504.0742194324057,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 208,
@@ -5952,7 +6159,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 3617.38994002868,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 209,
@@ -5981,7 +6189,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 3734.4288129941715,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 210,
@@ -6010,7 +6219,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 3855.4874321072903,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 211,
@@ -6038,7 +6248,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 3980.483821685656,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 212,
@@ -6066,7 +6277,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 4109.2993346051535,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 213,
@@ -6094,7 +6306,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 4242.594141954953,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 214,
@@ -6122,7 +6335,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 4379.90781937944,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 215,
@@ -6150,7 +6364,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 4521.411540028583,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 216,
@@ -6178,7 +6393,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 4667.737684516997,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 217,
@@ -6206,7 +6422,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 4819.1521090940205,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 218,
@@ -6234,7 +6451,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 4975.095421963982,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 219,
@@ -6262,7 +6480,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 5136.34714909934,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 220,
@@ -6290,7 +6509,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 5302.714210928623,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 221,
@@ -6318,7 +6538,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 5474.350969262019,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 222,
@@ -6346,7 +6567,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 5651.5752601500935,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 223,
@@ -6374,7 +6596,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 5834.83427192419,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 224,
@@ -6402,7 +6625,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 6023.715400633313,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 225,
@@ -6430,7 +6654,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 6218.807359254895,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 226,
@@ -6458,7 +6683,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 6420.341677846638,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 227,
@@ -6486,7 +6712,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 6628.501982285968,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 228,
@@ -6514,7 +6741,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 6843.245660348403,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 229,
@@ -6542,7 +6770,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 7064.735072595154,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 230,
@@ -6570,7 +6799,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 7293.529631774771,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 231,
@@ -6598,7 +6828,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 7530.083110555787,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 232,
@@ -6626,7 +6857,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 7773.794713783211,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 233,
@@ -6654,7 +6886,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 8025.994430263435,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 234,
@@ -6682,7 +6915,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 8285.894766192501,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 235,
@@ -6710,7 +6944,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 8554.452243095162,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 236,
@@ -6738,7 +6973,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 8831.93354871725,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 237,
@@ -6766,7 +7002,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 9117.77410432316,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 238,
@@ -6794,7 +7031,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 9413.156894743042,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 239,
@@ -6822,7 +7060,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 9718.29692460739,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 240,
@@ -6850,7 +7089,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 10033.29691006451,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 241,
@@ -6879,7 +7119,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 10358.423924880106,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 242,
@@ -6908,7 +7149,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 10693.989422224224,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 243,
@@ -6937,7 +7179,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 11040.867781132132,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 244,
@@ -6966,7 +7209,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 11398.786374809348,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 245,
@@ -6995,7 +7239,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 11768.106048712461,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 246,
@@ -7024,7 +7269,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 12149.844613127008,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 247,
@@ -7053,7 +7299,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 12543.600520394553,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 248,
@@ -7082,7 +7329,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 12950.025454302639,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 249,
@@ -7111,7 +7359,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 13369.86417037098,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 250,
@@ -7140,7 +7389,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 13803.061991694249,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 251,
@@ -7168,7 +7418,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 14250.58791324222,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 252,
@@ -7196,7 +7447,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 14712.893594191892,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 253,
@@ -7224,7 +7476,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 15189.951262483028,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 254,
@@ -7252,7 +7505,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 15682.231405889434,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 255,
@@ -7280,7 +7534,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 16191.086009947678,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 256,
@@ -7308,7 +7563,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 16716.031075314575,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 257,
@@ -7336,7 +7592,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 17257.6352015112,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 258,
@@ -7364,7 +7621,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 17817.62875885095,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 259,
@@ -7392,7 +7650,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 18395.4545671707,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 260,
@@ -7420,7 +7679,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 18992.212307653426,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 261,
@@ -7448,7 +7708,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 19608.141164877714,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 262,
@@ -7476,7 +7737,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 20243.791508544837,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 263,
@@ -7504,7 +7766,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 20900.463154694567,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 264,
@@ -7532,7 +7795,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 21578.402536105074,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 265,
@@ -7560,7 +7824,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 22278.425990505046,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 266,
@@ -7588,7 +7853,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 23001.056726083865,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 267,
@@ -7616,7 +7882,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 23747.146658069425,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 268,
@@ -7644,7 +7911,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 24517.41799445238,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 269,
@@ -7672,7 +7940,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 25312.71849676642,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 270,
@@ -7700,7 +7969,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 26133.852767802637,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 271,
@@ -7728,7 +7998,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 26981.697918962134,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 272,
@@ -7756,7 +8027,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 27857.084074039725,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 273,
@@ -7784,7 +8056,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 28761.23193085295,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 274,
@@ -7812,7 +8085,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 29694.295994869346,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 275,
@@ -7840,7 +8114,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 30657.676068675904,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 276,
@@ -7868,7 +8143,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 31652.49021317898,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 277,
@@ -7896,7 +8172,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 32679.8005471126,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 278,
@@ -7924,7 +8201,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 33740.05744237234,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 279,
@@ -7952,7 +8230,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 34835.05175563511,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 280,
@@ -7980,7 +8259,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 35965.35908106473,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 281,
@@ -8009,7 +8289,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 37132.717844881045,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 282,
@@ -8038,7 +8319,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 38337.60675368319,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 283,
@@ -8067,7 +8349,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 39581.89179071624,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 284,
@@ -8096,7 +8379,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 40866.927881744356,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 285,
@@ -8125,7 +8409,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 42193.18354994667,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 286,
@@ -8154,7 +8439,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 43562.9278758401,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 287,
@@ -8183,7 +8469,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 44976.97610554293,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 288,
@@ -8212,7 +8499,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 46436.94390997804,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 289,
@@ -8241,7 +8529,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 47944.53054629464,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 290,
@@ -8270,7 +8559,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 49500.96513812049,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 291,
@@ -8298,7 +8588,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 51108.074938686754,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 292,
@@ -8326,7 +8617,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 52767.142462415504,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 293,
@@ -8354,7 +8646,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 54480.47324824669,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 294,
@@ -8382,7 +8675,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 56249.215771296855,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 295,
@@ -8410,7 +8704,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 58075.69379792418,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 296,
@@ -8438,7 +8733,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 59961.37744009348,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 297,
@@ -8466,7 +8762,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 61908.27926734976,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 298,
@@ -8494,7 +8791,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 63918.85220301592,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 299,
@@ -8522,7 +8820,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 65994.49222486565,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 300,
@@ -8550,7 +8849,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 68137.66096048683,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 301,
@@ -8578,7 +8878,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 68209.16922149881,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 302,
@@ -8606,7 +8907,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 70424.7855287317,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 303,
@@ -8634,7 +8936,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 72712.63858058023,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 304,
@@ -8662,7 +8965,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 75073.98508952442,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 305,
@@ -8690,7 +8994,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 77512.39951317699,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 306,
@@ -8718,7 +9023,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 80030.05067583857,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 307,
@@ -8746,7 +9052,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 82629.47129200498,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 308,
@@ -8774,7 +9081,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 85313.719734137,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 309,
@@ -8802,7 +9110,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 88085.30840310952,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 310,
@@ -8830,7 +9139,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 90946.94169981268,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 311,
@@ -8859,7 +9169,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 93901.57904966202,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 312,
@@ -8888,7 +9199,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 96952.45755842919,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 313,
@@ -8917,7 +9229,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 100102.78529280031,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 314,
@@ -8946,7 +9259,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 103354.97701954922,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 315,
@@ -8975,7 +9289,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 106713.2738614778,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 316,
@@ -9004,7 +9319,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 110180.85672155254,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 317,
@@ -9033,7 +9349,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 113761.33923464526,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 318,
@@ -9062,7 +9379,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 117457.96279262415,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 319,
@@ -9091,7 +9409,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 121275.33673461116,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 320,
@@ -9120,7 +9439,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 125216.39557459849,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 321,
@@ -9148,7 +9468,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 129286.41530630775,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 322,
@@ -9176,7 +9497,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 133487.94228153175,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 323,
@@ -9204,7 +9526,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 137826.5318301634,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 324,
@@ -9232,7 +9555,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 142306.65896408856,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 325,
@@ -9260,7 +9584,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 146932.13795465868,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 326,
@@ -9288,7 +9613,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 151708.21449000106,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 327,
@@ -9316,7 +9642,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 156639.99779396623,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 328,
@@ -9344,7 +9671,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 161732.1344348922,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 329,
@@ -9372,7 +9700,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 166990.1044803757,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 330,
@@ -9400,7 +9729,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 172418.76051667743,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 331,
@@ -9428,7 +9758,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 178024.74210977886,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 332,
@@ -9456,7 +9787,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 183812.99480753098,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 333,
@@ -9484,7 +9816,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 189789.343199239,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 334,
@@ -9512,7 +9845,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 195960.61587148733,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 335,
@@ -9540,7 +9874,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 202332.61582381255,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 336,
@@ -9568,7 +9903,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 208912.1656793077,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 337,
@@ -9596,7 +9932,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 215705.90357703168,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 338,
@@ -9624,7 +9961,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 222720.86367633654,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 339,
@@ -9652,7 +9990,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 229964.17018864964,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 340,
@@ -9680,7 +10019,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 237443.33292213915,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 341,
@@ -9708,7 +10048,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 245166.04383862877,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 342,
@@ -9736,7 +10077,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 253140.15467993144,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 343,
@@ -9764,7 +10106,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 261374.08565938362,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 344,
@@ -9792,7 +10135,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 269876.2106431242,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 345,
@@ -9820,7 +10164,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 278655.2522919626,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 346,
@@ -9848,7 +10193,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 287720.01509624603,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 347,
@@ -9876,7 +10222,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 297080.119547887,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 348,
@@ -9904,7 +10251,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 306745.21699584526,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 349,
@@ -9932,7 +10280,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 316724.98917520617,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 350,
@@ -9960,7 +10309,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 327029.8536142691,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 351,
@@ -9988,7 +10338,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 337670.5209249719,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 352,
@@ -10016,7 +10367,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 348657.8681961131,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 353,
@@ -10044,7 +10396,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 360003.0656096634,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 354,
@@ -10072,7 +10425,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 371717.8490646791,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 355,
@@ -10100,7 +10454,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 383814.42529368,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 356,
@@ -10128,7 +10483,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 396305.3169750903,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 357,
@@ -10156,7 +10512,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 409202.6638090507,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 358,
@@ -10184,7 +10541,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 422520.8015845178,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 359,
@@ -10212,7 +10570,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 436272.68994435784,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 360,
@@ -10240,7 +10599,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 450473.08384524507,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 361,
@@ -10268,7 +10628,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 465135.7756437664,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 362,
@@ -10296,7 +10657,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 480276.80070132704,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 363,
@@ -10324,7 +10686,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 495911.05915534426,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 364,
@@ -10352,7 +10715,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 512054.7065333979,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 365,
@@ -10380,7 +10744,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 528724.9415473889,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 366,
@@ -10408,7 +10773,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 545938.6689624261,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 367,
@@ -10436,7 +10802,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 563713.10324826,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 368,
@@ -10464,7 +10831,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 582067.4191175418,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 369,
@@ -10492,7 +10860,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 601019.666148294,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 370,
@@ -10520,7 +10889,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 620590.0521783946,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 371,
@@ -10548,7 +10918,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 640798.6936109767,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 372,
@@ -10576,7 +10947,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 661665.972082709,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 373,
@@ -10604,7 +10976,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 683213.6081537243,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 374,
@@ -10632,7 +11005,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 705464.4063713234,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 375,
@@ -10660,7 +11034,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 728440.3431489933,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 376,
@@ -10688,7 +11063,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 752165.602655937,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 377,
@@ -10716,7 +11092,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 776664.9482201624,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 378,
@@ -10744,7 +11121,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 801962.950731696,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 379,
@@ -10772,7 +11150,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 828086.1867056792,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 380,
@@ -10800,7 +11179,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 855061.3183964833,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 381,
@@ -10828,7 +11208,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 882916.5323750521,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 382,
@@ -10856,7 +11237,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 911680.1685244106,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 383,
@@ -10884,7 +11266,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 941382.6063164293,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 384,
@@ -10912,7 +11295,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 972053.6434248812,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 385,
@@ -10940,7 +11324,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 1003725.3141149834,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 386,
@@ -10968,7 +11353,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 1036430.6384777247,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 387,
@@ -10996,7 +11382,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 1070202.5961868474,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 388,
@@ -11024,7 +11411,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 1105076.9773529905,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 389,
@@ -11052,7 +11440,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 1141088.6202543965,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 390,
@@ -11080,7 +11469,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 1178275.9757422893,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 391,
@@ -11108,7 +11498,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 1216676.865664192,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 392,
@@ -11136,7 +11527,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 1256330.9224326755,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 393,
@@ -11164,7 +11556,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 1297279.1637430682,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 394,
@@ -11192,7 +11585,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 1339563.4897826752,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 395,
@@ -11220,7 +11614,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 1383228.4330803542,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 396,
@@ -11248,7 +11643,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 1428318.4743081536,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 397,
@@ -11276,7 +11672,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 1474880.4466541777,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 398,
@@ -11304,7 +11701,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 1522962.3935737952,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 399,
@@ -11332,7 +11730,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 1572613.9632807479,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 400,
@@ -11360,7 +11759,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 1623886.198005949,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 401,
@@ -11388,7 +11788,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 1676833.184429283,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 402,
@@ -11416,7 +11817,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 1731508.128226183,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 403,
@@ -11444,7 +11846,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 1787968.437066971,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 404,
@@ -11472,7 +11875,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 1846272.6227095104,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 405,
@@ -11500,7 +11904,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 1906480.6467510632,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 406,
@@ -11528,7 +11933,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 1968654.65266951,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 407,
@@ -11556,7 +11962,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 2032859.2577678016,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 408,
@@ -11584,7 +11991,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 2099160.937967878,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 409,
@@ -11612,7 +12020,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 2167627.8094563005,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 410,
@@ -11640,7 +12049,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 2238331.169941142,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 411,
@@ -11668,7 +12078,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 2311343.8669670615,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 412,
@@ -11696,7 +12107,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 2386741.9449379505,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 413,
@@ -11724,7 +12136,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 2464602.4234891,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 414,
@@ -11752,7 +12165,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 2545007.203862433,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 415,
@@ -11780,7 +12194,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 2628038.245540305,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 416,
@@ -11808,7 +12223,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 2713782.770109532,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 417,
@@ -11836,7 +12252,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 2802328.2162465975,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 418,
@@ -11864,7 +12281,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 2893767.540336312,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 419,
@@ -11892,7 +12310,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 2988194.037935901,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 420,
@@ -11920,7 +12339,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 3085706.7915907563,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 421,
@@ -11948,7 +12368,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 3186405.971611188,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 422,
@@ -11976,7 +12397,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 3290396.455028149,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 423,
@@ -12004,7 +12426,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 3397785.5826043542,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 424,
@@ -12032,7 +12455,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 3508684.6652463563,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 425,
@@ -12060,7 +12484,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 3623209.074539858,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 426,
@@ -12088,7 +12513,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 3741476.3740801513,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 427,
@@ -12116,7 +12542,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 3863610.4861906487,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 428,
@@ -12144,7 +12571,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 3989736.643007979,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 429,
@@ -12172,7 +12600,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 4119986.6888419315,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 430,
@@ -12200,7 +12629,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 4254495.196227927,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 431,
@@ -12228,7 +12658,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 4393401.464676871,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 432,
@@ -12256,7 +12687,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 4536849.978787933,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 433,
@@ -12284,7 +12716,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 4684989.101607304,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 434,
@@ -12312,7 +12745,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 4837972.43940328,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 435,
@@ -12340,7 +12774,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 4995959.02137955,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 436,
@@ -12368,7 +12803,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 5159112.341738185,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 437,
@@ -12396,7 +12832,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 5327601.758401837,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 438,
@@ -12424,7 +12861,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 5501602.563658077,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 439,
@@ -12452,7 +12890,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 5681294.320706384,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 440,
@@ -12480,7 +12919,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 5866864.267565653,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 441,
@@ -12508,7 +12948,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 6058504.960747697,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 442,
@@ -12536,7 +12977,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 6256414.72046404,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 443,
@@ -12564,7 +13006,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 6460799.779952912,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 444,
@@ -12592,7 +13035,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 6671871.943957481,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 445,
@@ -12620,7 +13064,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 6889850.403908752,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 446,
@@ -12648,7 +13093,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 7114961.105987056,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 447,
@@ -12676,7 +13122,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 7347438.56996645,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 448,
@@ -12704,7 +13151,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 7587523.367353213,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 449,
@@ -12732,7 +13180,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 7835466.390961785,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 450,
@@ -12760,7 +13209,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 8091523.076524219,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 451,
@@ -12788,7 +13238,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 8101652.000385119,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 452,
@@ -12816,7 +13267,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 8366434.171256937,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 453,
@@ -12844,7 +13296,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 8639883.56539357,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 454,
@@ -12872,7 +13325,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 8922284.690159714,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 455,
@@ -12900,7 +13354,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 9213930.999603085,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 456,
@@ -12928,7 +13383,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 9515124.638060838,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 457,
@@ -12956,7 +13412,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 9826180.33960657,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 458,
@@ -12984,7 +13441,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 10147420.49991265,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 459,
@@ -13012,7 +13470,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 10479179.328727761,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 460,
@@ -13040,7 +13499,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 10821802.31964066,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 461,
@@ -13068,7 +13528,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 11175645.479355007,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 462,
@@ -13096,7 +13557,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 11541076.476629913,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 463,
@@ -13124,7 +13586,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 11918476.31974798,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 464,
@@ -13152,7 +13615,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 12308236.780778859,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 465,
@@ -13180,7 +13644,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 12710763.975187134,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 466,
@@ -13208,7 +13673,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 13126477.09546728,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 467,
@@ -13236,7 +13702,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 13555807.80081499,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 468,
@@ -13264,7 +13731,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 13999204.140993647,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 469,
@@ -13292,7 +13760,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 14457126.841479901,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 470,
@@ -13320,7 +13789,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 14930053.36462693,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 471,
@@ -13348,7 +13818,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 15418474.964168739,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 472,
@@ -13376,7 +13847,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 15922901.910450496,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 473,
@@ -13404,7 +13876,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 16443858.248725418,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 474,
@@ -13432,7 +13905,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 16981887.19623328,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 475,
@@ -13460,7 +13934,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 17537549.098091956,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 476,
@@ -13488,7 +13963,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 18111422.824251592,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 477,
@@ -13516,7 +13992,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 18704106.50766685,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 478,
@@ -13544,7 +14021,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 19316217.599302173,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 479,
@@ -13572,7 +14050,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 19948394.49111923,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 480,
@@ -13600,7 +14079,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 20601295.227415744,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 481,
@@ -13628,7 +14108,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 21275601.17457307,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 482,
@@ -13656,7 +14137,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 21972015.589020886,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 483,
@@ -13684,7 +14166,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 22691263.76719125,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 484,
@@ -13712,7 +14195,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 23434096.44434282,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 485,
@@ -13740,7 +14224,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 24201287.977521487,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 486,
@@ -13768,7 +14253,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 24993638.704163946,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 487,
@@ -13796,7 +14282,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 25811975.260026254,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 488,
@@ -13824,7 +14311,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 26657151.38368807,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 489,
@@ -13852,7 +14340,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 27530049.414520815,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 490,
@@ -13880,7 +14369,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 28431579.479165558,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 491,
@@ -13908,7 +14398,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 29362683.363630705,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 492,
@@ -13936,7 +14427,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 30324332.189323097,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 493,
@@ -13964,7 +14456,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 31317530.162116095,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 494,
@@ -13992,7 +14485,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 32343314.489418983,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 495,
@@ -14020,7 +14514,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 33402756.319218013,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 496,
@@ -14048,7 +14543,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 34496961.74262326,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 497,
@@ -14076,7 +14572,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 35627073.80633421,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 498,
@@ -14104,7 +14601,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 36794272.877810195,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 499,
@@ -14132,7 +14630,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 37999778.53408997,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 500,
@@ -14160,7 +14659,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 39244850.29587486,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 501,
@@ -14188,7 +14688,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 40530788.8784823,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 502,
@@ -14216,7 +14717,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 41858938.991309345,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 503,
@@ -14244,7 +14746,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 43230688.681043416,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 504,
@@ -14272,7 +14775,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 44647471.219085604,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 505,
@@ -14300,7 +14804,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 46110768.59224686,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 506,
@@ -14328,7 +14833,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 47622110.18867809,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 507,
@@ -14356,7 +14862,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 49183077.22025197,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 508,
@@ -14384,7 +14891,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 50795301.84943916,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 509,
@@ -14412,7 +14920,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 52460470.83384329,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 510,
@@ -14440,7 +14949,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 54180325.90346344,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 511,
@@ -14468,7 +14978,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 55956666.70197366,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 512,
@@ -14496,7 +15007,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 57791351.71086248,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 513,
@@ -14524,7 +15036,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 59686301.21688488,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 514,
@@ -14552,7 +15065,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 61643499.316550225,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 515,
@@ -14580,7 +15094,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 63664993.90592773,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 516,
@@ -14608,7 +15123,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 65752901.66549641,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 517,
@@ -14636,7 +15152,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 67909409.18735814,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 518,
@@ -14664,7 +15181,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 70136774.57091062,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 519,
@@ -14692,7 +15210,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 72437330.64049405,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 520,
@@ -14720,7 +15239,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 74813487.10019614,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 521,
@@ -14748,7 +15268,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 77267733.81801644,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 522,
@@ -14776,7 +15297,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 79802641.75467259,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 523,
@@ -14804,7 +15326,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 82420867.76480983,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 524,
@@ -14832,7 +15355,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 85125155.32959473,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 525,
@@ -14860,7 +15384,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 87918339.71232876,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 526,
@@ -14888,7 +15413,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 90803348.52736917,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 527,
@@ -14916,7 +15442,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 93783207.06524089,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 528,
@@ -14944,7 +15471,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 96861039.90928079,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 529,
@@ -14972,7 +15500,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 100040074.40836357,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 530,
@@ -15000,7 +15529,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 103323645.72706753,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 531,
@@ -15028,7 +15558,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 106715198.25539985,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 532,
@@ -15056,7 +15587,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 110218290.50711162,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 533,
@@ -15084,7 +15616,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 113836597.9018898,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 534,
@@ -15112,7 +15645,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 117573918.01925896,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 535,
@@ -15140,7 +15674,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 121434173.10653137,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 536,
@@ -15168,7 +15703,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 125421416.35443813,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 537,
@@ -15196,7 +15732,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 129539833.07679337,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 538,
@@ -15224,7 +15761,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 133793747.87111616,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 539,
@@ -15252,7 +15790,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 138187628.807165,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 540,
@@ -15280,7 +15819,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 142726089.59922814,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 541,
@@ -15308,7 +15848,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 147413898.6938131,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 542,
@@ -15336,7 +15877,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 152255980.93551308,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 543,
@@ -15364,7 +15906,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 157257424.36367565,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 544,
@@ -15392,7 +15935,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 162423484.69389376,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 545,
@@ -15420,7 +15964,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 167759592.16697752,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 546,
@@ -15448,7 +15993,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 173271355.39900437,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 547,
@@ -15476,7 +16022,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 178964569.72831643,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 548,
@@ -15504,7 +16051,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 184845221.4788667,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 549,
@@ -15532,7 +16080,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 190919494.70807362,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 550,
@@ -15560,7 +16109,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 197193778.95584345,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 551,
@@ -15588,7 +16138,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 203674673.96650055,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 552,
@@ -15616,7 +16167,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 210368998.24054322,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 553,
@@ -15644,7 +16196,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 217283795.8494416,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 554,
@@ -15672,7 +16225,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 224426344.08025402,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 555,
@@ -15700,7 +16254,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 231804160.6740157,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 556,
@@ -15728,7 +16283,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 239425012.61234954,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 557,
@@ -15756,7 +16312,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 247296922.72186837,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 558,
@@ -15784,7 +16341,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 255428181.2670294,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 559,
@@ -15812,7 +16370,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 263827351.123577,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 560,
@@ -15840,7 +16399,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 272503279.2502838,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 561,
@@ -15868,7 +16428,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 281465105.46131164,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 562,
@@ -15896,7 +16457,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 290722272.43724155,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 563,
@@ -15924,7 +16486,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 300284535.07144165,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 564,
@@ -15952,7 +16515,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 310161971.68118703,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 565,
@@ -15980,7 +16544,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 320364993.1726608,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 566,
@@ -16008,7 +16573,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 330904356.89832246,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 567,
@@ -16036,7 +16602,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 341791175.1342906,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 568,
@@ -16064,7 +16631,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 353036929.16306055,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 569,
@@ -16092,7 +16660,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 364653480.25318956,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 570,
@@ -16120,7 +16689,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 376653081.90031266,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 571,
@@ -16148,7 +16718,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 389048394.42812777,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 572,
@@ -16176,7 +16747,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 401852497.83020973,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 573,
@@ -16204,7 +16776,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 415078904.8055681,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 574,
@@ -16232,7 +16805,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 428741575.7206421,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 575,
@@ -16260,7 +16834,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 442854934.67484033,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 576,
@@ -16288,7 +16863,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 457433882.8215068,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 577,
@@ -16316,7 +16892,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 472493816.09701955,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 578,
@@ -16344,7 +16921,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 488050640.56521297,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 579,
@@ -16372,7 +16950,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 504120788.74590546,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 580,
@@ -16400,7 +16979,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 520721239.65121627,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 581,
@@ -16428,7 +17008,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 537869533.7976255,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 582,
@@ -16456,7 +17037,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 555583794.1268681,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 583,
@@ -16484,7 +17066,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 573882745.0872247,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 584,
@@ -16512,7 +17095,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 592785730.9711151,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 585,
@@ -16540,7 +17124,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 612312739.1440319,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 586,
@@ -16568,7 +17153,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 632484418.9965897,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 587,
@@ -16596,7 +17182,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 653322105.5531911,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 588,
@@ -16624,7 +17211,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 674847841.905448,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 589,
@@ -16652,7 +17240,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 697084402.047495,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 590,
@@ -16680,7 +17269,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 720055316.5578539,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 591,
@@ -16708,7 +17298,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 743784895.6890883,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 592,
@@ -16736,7 +17327,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 768298258.7702761,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 593,
@@ -16764,7 +17356,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 793621357.3885666,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 594,
@@ -16792,7 +17385,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 819781004.9057974,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 595,
@@ -16820,7 +17414,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 846804905.0650065,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 596,
@@ -16848,7 +17443,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 874721682.1707907,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 597,
@@ -16876,7 +17472,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 903560910.4239845,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 598,
@@ -16904,7 +17501,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 933353146.6304221,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 599,
@@ -16932,7 +17530,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 964129962.2252282,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     },
     {
       "phase": 600,
@@ -16960,7 +17559,8 @@
       "jaulaWindowSecs": 12600,
       "expectedHtk": 995923977.9869149,
       "heroesOnField": 0.781267122603051,
-      "concurrencyScale": 1
+      "concurrencyScale": 1,
+      "fortunaAura": 0
     }
   ]
 }

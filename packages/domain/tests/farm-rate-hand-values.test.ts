@@ -24,6 +24,7 @@ import {
   computeHeroFarmFacts,
   computeSquadFarmFacts,
   computeFarmRateRow,
+  FORTUNA_AURA_CAP,
   type HeroFarmFacts,
 } from '@bombfarm/domain/farm-rate';
 import {
@@ -64,6 +65,7 @@ function handExpectedHtk(stoneHp: number, avgHit: number): number {
 type HandRow = {
   heroesOnField: number;
   concurrencyScale: number;
+  fortunaAura: number;
   propsPerSec: number;
   propsPerHour: number;
   expectedHtk: number;
@@ -128,6 +130,11 @@ function handComputeRow(stoneHp: number, mitig: number, goldComum: number, phase
   const shareDenom = perHero.reduce((sum, x) => sum + x.term, 0);
   const bossRateSum = perHero.reduce((sum, x) => sum + x.bossTerm, 0);
   const heroesOnField = perHero.reduce((sum, x) => sum + x.onField, 0);
+  // House-ALLOCATED basis, not the unconstrained one — same `onField` term `heroesOnField` sums.
+  const fortunaAura = Math.min(
+    FORTUNA_AURA_CAP,
+    perHero.reduce((sum, x) => sum + x.onField * LOOT_ABILITY_VALUES.fortuna.perLevel * x.hero.fortunaLevel, 0),
+  );
   // The FIELD cap, applied after the House ceiling — to the heroes the House can keep fed.
   const concurrencyScale = heroesOnField > 0 ? Math.min(1, squad.fieldSlots / heroesOnField) : 1;
   const propsPerSec = concurrencyScale * shareDenom;
@@ -151,7 +158,7 @@ function handComputeRow(stoneHp: number, mitig: number, goldComum: number, phase
   const cyclesPerHour = Number.isFinite(clearSecs) && clearSecs > 0 ? 3600 / clearSecs : 0;
 
   const eGold = goldComum * goldShareFactor;
-  const goldMult = squad.teamCoinMult * (1 + squad.fortunaAura) * 1; // bonus = 1 ('off')
+  const goldMult = squad.teamCoinMult * (1 + fortunaAura) * 1; // bonus = 1 ('off')
   const goldPerHour = propsPerHour * eGold * goldMult * goldSelfMix;
 
   const sorteMult = 1 + squad.sorteFraction;
@@ -161,6 +168,7 @@ function handComputeRow(stoneHp: number, mitig: number, goldComum: number, phase
   return {
     heroesOnField,
     concurrencyScale,
+    fortunaAura,
     propsPerSec,
     propsPerHour,
     expectedHtk,
@@ -192,6 +200,11 @@ describe('phase 42 — non-gate hand-computed values (spec.md P1-2 AC-1)', () =>
     expect(row.concurrencyScale).toBeCloseTo(hand.concurrencyScale, 12);
     expect(squad.houseSlotDemand).toBeGreaterThan(squad.houseSlots);
     expect(row.heroesOnField).toBeLessThan(squad.uptimeSum);
+  });
+
+  it('fortunaAura matches the hand-derived House-allocated basis (0 here — the fixture carries no Fortuna)', () => {
+    expect(row.fortunaAura).toBe(hand.fortunaAura);
+    expect(row.fortunaAura).toBe(0);
   });
 
   it('expectedHtk matches the hand-derived spawn-weighted E[HTK]', () => {

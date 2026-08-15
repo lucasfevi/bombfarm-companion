@@ -56,7 +56,6 @@ describe('empty pool (spec.md P1-5 AC-1)', () => {
   it('every rate 0, clearSecs Infinity, expectedHtk Infinity, oneShot false, infeasible true, concurrencyScale 1, sorteFraction is the tree contribution alone, fortunaAura 0', () => {
     const squad = computeSquadFarmFacts([], account);
     expect(squad.houseSlotDemand).toBe(0);
-    expect(squad.fortunaAura).toBe(0);
     expect(squad.sorteFraction).toBeCloseTo((account.tree.luckFlatPct ?? 0) / 100, 15);
 
     const row = computeFarmRateRow(42, squad)!;
@@ -74,6 +73,7 @@ describe('empty pool (spec.md P1-5 AC-1)', () => {
     // The two ceilings on an empty pool: nothing on field, and the field cap's 0/0 guard holds.
     expect(row.heroesOnField).toBe(0);
     expect(row.concurrencyScale).toBe(1);
+    expect(row.fortunaAura).toBe(0);
   });
 });
 
@@ -103,7 +103,7 @@ describe('all heroes degenerate (spec.md P1-5 AC-4)', () => {
 
     // ...but sorteFraction/fortunaAura genuinely differ — they still reflect these heroes.
     expect(degenerateSquad.sorteFraction).not.toBeCloseTo(emptySquad.sorteFraction, 6);
-    expect(degenerateSquad.fortunaAura).toBeGreaterThan(0);
+    expect(row.fortunaAura).toBeGreaterThan(0);
   });
 });
 
