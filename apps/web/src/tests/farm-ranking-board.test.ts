@@ -46,7 +46,15 @@ describe('Farm Ranking board — testids present (design §4.3)', () => {
     ['src/features/phases/components/farm-respec-metrics.tsx', 'farm-respec-metric-payback'],
     ['src/features/phases/components/farm-respec-plateau.tsx', 'farm-respec-plateau'],
     ['src/features/phases/components/farm-respec-hero-grid.tsx', 'farm-respec-heroes'],
+    ['src/features/phases/components/farm-respec-frontier.tsx', 'farm-respec-frontier'],
+    ['src/features/phases/components/farm-respec-rerank-toggle.tsx', 'farm-respec-rerank'],
   ];
+
+  it('farm-respec-frontier.tsx declares a per-hero-count testid template', () => {
+    expect(read('src/features/phases/components/farm-respec-frontier.tsx')).toContain(
+      'farm-respec-frontier-${entry.heroCount}',
+    );
+  });
 
   for (const [file, testid] of expectations) {
     it(`${file} declares data-testid="${testid}"`, () => {
@@ -286,6 +294,60 @@ describe('Farm Respec Advisor hero cards — full target allocations, luck kept,
     const source = read('src/features/phases/components/farm-respec-hero-card.tsx');
     expect(source).not.toMatch(/negligible|\boptional\b|\bskip(pable)?\b/i);
     expect(source).not.toMatch(/row\.delta\s*[<>=]/);
+  });
+});
+
+describe('Farm Respec Advisor frontier — cost-ascending, never re-sorted locally', () => {
+  it('renders one row per result.frontier entry, in the array\'s own order — no local sort/filter/reverse', () => {
+    const source = read('src/features/phases/components/farm-respec-frontier.tsx');
+    expect(source).toContain('resolveFrontierEntries(result)');
+    expect(source).toMatch(/entries\.map\(/);
+    expect(source).not.toMatch(/entries\.(sort|filter|reverse)\(/);
+  });
+
+  it('an empty frontier is omitted — the model\'s null signal is respected, not mapped over as an empty list', () => {
+    const source = read('src/features/phases/components/farm-respec-frontier.tsx');
+    expect(source).toMatch(/if \(entries == null\) return null;/);
+  });
+});
+
+describe('Farm Respec Advisor re-rank toggle and mode marking', () => {
+  it('the toggle is always mounted above the table, not gated inside the collapsible panel', () => {
+    const boardSource = read('src/features/phases/components/farm-ranking-board.tsx');
+    const panelSource = read('src/features/phases/components/farm-respec-panel.tsx');
+    expect(boardSource).toContain('<FarmRespecRerankToggle');
+    expect(panelSource).not.toContain('FarmRespecRerankToggle');
+  });
+
+  it('reading selectFarmReRankActive means the toggle has no staleness logic of its own', () => {
+    const source = read('src/features/phases/components/farm-respec-rerank-toggle.tsx');
+    expect(source).toContain('usePlannerStore(selectFarmReRankActive)');
+  });
+
+  it('re-rank mode is marked three independent, non-colour ways: an always-mounted Banner, the sr-only caption, and a data-farm-mode attribute', () => {
+    const toggleSource = read('src/features/phases/components/farm-respec-rerank-toggle.tsx');
+    const tableSource = read('src/features/phases/components/farm-ranking-table.tsx');
+    expect(toggleSource).toContain('<Banner');
+    expect(tableSource).toContain('reRankActive ? t.farmRespecRerankCaption : t.farmRankingCaption');
+    expect(tableSource).toMatch(/data-farm-mode=\{reRankActive \? 'proposed' : 'current'\}/);
+  });
+
+  it('farm-ranking-table.tsx gains reRankActive with no column, sort or filter semantic change (sortKey/sortDir are regrouped into one sort prop only to stay under the 8-prop cap)', () => {
+    const source = read('src/features/phases/components/farm-ranking-table.tsx');
+    expect(source).toContain('reRankActive: boolean');
+    expect(source).not.toMatch(/FARM_COLUMNS\s*=/); // the shipped column list itself is not reassigned/edited
+  });
+
+  it('the board subscribes via selectFarmBoardRows, without useShallow', () => {
+    const source = read('src/features/phases/components/farm-ranking-board.tsx');
+    expect(source).toContain('usePlannerStore(selectFarmBoardRows)');
+    expect(source).not.toMatch(/useShallow\([^)]*selectFarmBoardRows/);
+  });
+
+  it('the board\'s visibleRows pipeline (applyFarmFilters -> sortFarmRows) is untouched — only the row source changed', () => {
+    const source = read('src/features/phases/components/farm-ranking-board.tsx');
+    expect(source).toContain('applyFarmFilters(result.rows, effectiveFilters)');
+    expect(source).toContain('sortFarmRows(filtered, sort.key, sort.direction)');
   });
 });
 

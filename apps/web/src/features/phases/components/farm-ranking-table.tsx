@@ -29,13 +29,18 @@ const COLUMN_WIDTH_REM: Record<string, number> = {
 
 type Props = {
   rows: readonly FarmRateRow[];
-  sortKey: FarmSortKey;
-  sortDir: FarmSortDir;
+  /** Grouped rather than two flat props (MOD-17's 8-prop cap left no room once reRankActive
+   *  joined) — the board's own sort state is already this exact shape. */
+  sort: { key: FarmSortKey; direction: FarmSortDir };
   onSort: (key: FarmSortKey) => void;
   currentPhase: number;
   onActivate: (phase: number) => void;
   lang: Lang;
   t: Strings;
+  /** True when the rows above come from the proposed respec build, not the player's current
+   *  one. Drives the caption text and a data-farm-mode attribute — no column, sort or filter
+   *  change; the table itself is byte-identical either way. */
+  reRankActive: boolean;
 };
 
 /**
@@ -47,19 +52,19 @@ type Props = {
  */
 export function FarmRankingTable({
   rows,
-  sortKey,
-  sortDir,
+  sort,
   onSort,
   currentPhase,
   onActivate,
   lang,
   t,
+  reRankActive,
 }: Props) {
-  const sortColumn = FARM_COLUMNS.find((column) => column.sortKey === sortKey);
+  const sortColumn = FARM_COLUMNS.find((column) => column.sortKey === sort.key);
   const sortLive = sortColumn
     ? sub(t.farmRankingSortedBy, {
         column: t[sortColumn.headerKey],
-        direction: sortDir === 'asc' ? t.farmRankingSortAsc : t.farmRankingSortDesc,
+        direction: sort.direction === 'asc' ? t.farmRankingSortAsc : t.farmRankingSortDesc,
       })
     : '';
 
@@ -75,13 +80,18 @@ export function FarmRankingTable({
         className="rounded-sm border border-line"
       >
         <div className="overflow-x-auto">
-          <DataTable.Table className="min-w-368 table-fixed">
+          <DataTable.Table
+            className="min-w-368 table-fixed"
+            data-farm-mode={reRankActive ? 'proposed' : 'current'}
+          >
             <colgroup>
               {FARM_COLUMNS.map((column) => (
                 <col key={column.id} style={{ width: `${COLUMN_WIDTH_REM[column.id]}rem` }} />
               ))}
             </colgroup>
-            <DataTable.Caption>{t.farmRankingCaption}</DataTable.Caption>
+            <DataTable.Caption>
+              {reRankActive ? t.farmRespecRerankCaption : t.farmRankingCaption}
+            </DataTable.Caption>
             <DataTable.Head>
               <DataTable.Row>
                 {FARM_COLUMNS.map((column) =>
@@ -90,8 +100,8 @@ export function FarmRankingTable({
                       key={column.id}
                       sortable
                       col={column.sortKey}
-                      sortKey={sortKey}
-                      sortDir={sortDir}
+                      sortKey={sort.key}
+                      sortDir={sort.direction}
                       onSort={onSort}
                       align={column.align}
                     >

@@ -7,6 +7,7 @@ import { resolvePanelState } from '@/features/phases/model/farm-respec-view';
 import { FarmRespecMetrics } from './farm-respec-metrics';
 import { FarmRespecPlateau } from './farm-respec-plateau';
 import { FarmRespecHeroGrid } from './farm-respec-hero-grid';
+import { FarmRespecFrontier } from './farm-respec-frontier';
 
 const PANEL_HEADING_ID = 'farm-respec-panel-heading';
 
@@ -96,6 +97,7 @@ export function FarmRespecPanel({ t, lang }: { t: Strings; lang: Lang }) {
             </h4>
             <FarmRespecHeroGrid result={panelState.result} heroes={heroes} lang={lang} t={t} />
           </div>
+          <FarmRespecFrontier t={t} result={panelState.result} />
           <p className="m-0 text-[10px] text-muted" data-testid="farm-respec-diagnostics">
             {sub(t.farmRespecDiagnostics, {
               evaluations: String(panelState.result.evaluations),

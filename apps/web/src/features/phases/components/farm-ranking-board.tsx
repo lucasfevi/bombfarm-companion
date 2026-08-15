@@ -5,7 +5,8 @@ import { Banner, EmptyState, Panel } from '@bombfarm/ui';
 import type { Lang, Strings } from '@/shared/i18n';
 import {
   deriveFarmPoolEntries,
-  selectFarmRankingRows,
+  selectFarmBoardRows,
+  selectFarmReRankActive,
   selectFarmReturnBonus,
   selectHeroes,
   selectMaxPhase,
@@ -27,16 +28,18 @@ import { FarmReturnBonus } from './farm-return-bonus';
 import { FarmRankingTable } from './farm-ranking-table';
 import { FarmRespecToolbar } from './farm-respec-toolbar';
 import { FarmRespecPanel } from './farm-respec-panel';
+import { FarmRespecRerankToggle } from './farm-respec-rerank-toggle';
 
 /**
  * The board — filters + rotation pool + return bonus + table, or one of the four
  * empty states. Sort/filter state is `useState` here (MOD-13 — ephemeral, not
  * persisted); the pool and return bonus are store fields read via
- * `usePlannerStore(selectFarmRankingRows)` WITHOUT `useShallow` (the `selectAdvisorPipeline`
+ * `usePlannerStore(selectFarmBoardRows)` WITHOUT `useShallow` (the `selectAdvisorPipeline`
  * carve-out — shallow-comparing 600 rows on every write would defeat the memo).
  */
 export function FarmRankingBoard({ t, lang }: { t: Strings; lang: Lang }) {
-  const result = usePlannerStore(selectFarmRankingRows);
+  const result = usePlannerStore(selectFarmBoardRows);
+  const reRankActive = usePlannerStore(selectFarmReRankActive);
   const heroes = usePlannerStore(selectHeroes);
   const farmPoolOverrides = usePlannerStore((state) => state.farmPoolOverrides);
   const poolEntries = useMemo(
@@ -110,16 +113,19 @@ export function FarmRankingBoard({ t, lang }: { t: Strings; lang: Lang }) {
           <EmptyState title={empty.title} description={empty.description} />
         </div>
       ) : (
-        <FarmRankingTable
-          rows={visibleRows}
-          sortKey={sort.key}
-          sortDir={sort.direction}
-          onSort={onSort}
-          currentPhase={currentPhase}
-          onActivate={setPhasesViewPhase}
-          lang={lang}
-          t={t}
-        />
+        <>
+          <FarmRespecRerankToggle t={t} />
+          <FarmRankingTable
+            rows={visibleRows}
+            sort={sort}
+            onSort={onSort}
+            currentPhase={currentPhase}
+            onActivate={setPhasesViewPhase}
+            lang={lang}
+            t={t}
+            reRankActive={reRankActive}
+          />
+        </>
       )}
     </Panel>
   );
