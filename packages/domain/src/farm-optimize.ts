@@ -35,10 +35,13 @@ import {
   runFarmSearch,
   squadEnergyShare,
   derivePlateauBounds,
+  compareFarmCandidates,
   type PtsAssignment,
+  type FarmSearchOutcome,
   FARM_OPT_FULL_MAX_EVALUATIONS,
   FARM_OPT_JOINT_BUDGET_SHARE,
   FARM_OPT_PLATEAU_TOLERANCE_PCT,
+  FARM_OPT_FRONTIER_CANDIDATES,
 } from './farm-optimize-search';
 
 export {
@@ -379,6 +382,138 @@ function buildTerminalResult(params: {
   });
 }
 
+/** `(changed in the joint optimum) desc, then budget desc, then heroId asc` (design.md §4.10). */
+function rankFrontierCandidates(
+  heroEntries: readonly FarmRespecHeroEntry[],
+  searchableIds: readonly string[],
+  budgetById: ReadonlyMap<string, number>,
+): string[] {
+  const entriesById = new Map(heroEntries.map((h) => [h.heroId, h] as const));
+  return [...searchableIds].sort((a, b) => {
+    const aChanged = entriesById.get(a)?.changed ?? false;
+    const bChanged = entriesById.get(b)?.changed ?? false;
+    if (aChanged !== bChanged) return aChanged ? -1 : 1;
+    const budgetDiff = (budgetById.get(b) ?? 0) - (budgetById.get(a) ?? 0);
+    if (budgetDiff !== 0) return budgetDiff;
+    return a < b ? -1 : a > b ? 1 : 0;
+  });
+}
+
+function buildFrontierEntry(
+  heroIds: readonly string[],
+  search: FarmSearchOutcome,
+  bases: readonly HeroFarmBasis[],
+  currentFactsById: ReadonlyMap<string, HeroFarmFacts>,
+  budgetById: ReadonlyMap<string, number>,
+  phaseOptions: FarmRateOptions,
+  currentObjective: number,
+  currentGoldPerHour: number,
+): FarmRespecFrontierEntry {
+  const heroEntries = buildHeroEntries(bases, currentFactsById, budgetById, search.winner.assignment);
+  const recommendedPhase = search.winner.pick ? search.winner.pick.phase : null;
+  const proposedObjective = search.winner.pick ? search.winner.pick.value : 0;
+  const readout = goldChestReadout(search.winner.squad, phaseOptions);
+  const gainPct = currentObjective > 0 ? Math.max(0, (proposedObjective / currentObjective - 1) * 100) : 0;
+  const respecCostGoldTotal = heroEntries.filter((h) => h.changed).reduce((sum, h) => sum + h.respecCostGold, 0);
+  const deltaGold = readout.goldPerHour - currentGoldPerHour;
+  const paybackHours = deltaGold > 0 && Number.isFinite(deltaGold) ? respecCostGoldTotal / deltaGold : null;
+
+  return {
+    heroCount: heroIds.length,
+    heroIds: [...heroIds].sort((a, b) => (a < b ? -1 : a > b ? 1 : 0)),
+    heroes: heroEntries,
+    recommendedPhase,
+    proposedObjective,
+    gainPct,
+    respecCostGold: respecCostGoldTotal,
+    paybackHours,
+    proposedGoldPerHour: readout.goldPerHour,
+    proposedChestsPerHour: readout.chestsPerHour,
+  };
+}
+
+/**
+ * The cost frontier (design.md §4.10): best 1-hero and best 2-hero respec, each RE-SOLVED with
+ * every other hero pinned to current — never truncated from the joint optimum. Candidates are
+ * ranked once, deterministically, and only the top `FARM_OPT_FRONTIER_CANDIDATES` are considered,
+ * which bounds the cost to at most `FARM_OPT_FRONTIER_CANDIDATES + C(FARM_OPT_FRONTIER_CANDIDATES, 2)`
+ * re-solves rather than the `n + n(n-1)/2` exhaustive scan.
+ */
+function computeFrontier(params: {
+  bases: readonly HeroFarmBasis[];
+  heroEntries: readonly FarmRespecHeroEntry[];
+  currentFactsById: ReadonlyMap<string, HeroFarmFacts>;
+  budgetById: ReadonlyMap<string, number>;
+  searchableIds: readonly string[];
+  account: AccountShared;
+  objective: ResolvedFarmObjective;
+  scales: FarmObjectiveScales;
+  phaseOptions: FarmRateOptions;
+  currentObjective: number;
+  currentGoldPerHour: number;
+  remainingBudget: number;
+}): { frontier: FarmRespecFrontierEntry[]; evaluationsSpent: number; budgetExhausted: boolean } {
+  const { bases, heroEntries, currentFactsById, budgetById, searchableIds, account, objective, scales, phaseOptions, currentObjective, currentGoldPerHour } = params;
+
+  if (searchableIds.length < 2) return { frontier: [], evaluationsSpent: 0, budgetExhausted: false };
+
+  const ranked = rankFrontierCandidates(heroEntries, searchableIds, budgetById).slice(0, FARM_OPT_FRONTIER_CANDIDATES);
+
+  const soloTiers: string[][] = ranked.map((id) => [id]);
+  const pairTiers: string[][] = [];
+  for (let i = 0; i < ranked.length; i++) {
+    for (let j = i + 1; j < ranked.length; j++) pairTiers.push([ranked[i], ranked[j]]);
+  }
+
+  const plannedSolves: string[][] = [];
+  if (searchableIds.length >= 2) plannedSolves.push(...soloTiers);
+  if (searchableIds.length >= 3) plannedSolves.push(...pairTiers);
+
+  let remaining = params.remainingBudget;
+  let evaluationsSpent = 0;
+  let budgetExhausted = false;
+  const soloSearches: { heroIds: string[]; search: FarmSearchOutcome }[] = [];
+  const pairSearches: { heroIds: string[]; search: FarmSearchOutcome }[] = [];
+
+  for (let i = 0; i < plannedSolves.length; i++) {
+    const solvesLeft = plannedSolves.length - i;
+    const share = Math.max(0, Math.floor(remaining / solvesLeft));
+    const heroIds = plannedSolves[i];
+    const search = runFarmSearch(bases, heroIds, budgetById, account, objective, scales, phaseOptions, share);
+    remaining -= search.evaluations;
+    evaluationsSpent += search.evaluations;
+    if (search.budgetExhausted) budgetExhausted = true;
+    (heroIds.length === 1 ? soloSearches : pairSearches).push({ heroIds, search });
+  }
+
+  const frontier: FarmRespecFrontierEntry[] = [];
+
+  if (soloSearches.length > 0 && 1 < searchableIds.length) {
+    const winner = soloSearches.reduce((best, candidate) =>
+      compareFarmCandidates(candidate.search.winner, best.search.winner, bases) < 0 ? candidate : best,
+    );
+    frontier.push(
+      buildFrontierEntry(winner.heroIds, winner.search, bases, currentFactsById, budgetById, phaseOptions, currentObjective, currentGoldPerHour),
+    );
+  }
+
+  if (pairSearches.length > 0 && 2 < searchableIds.length) {
+    const winner = pairSearches.reduce((best, candidate) =>
+      compareFarmCandidates(candidate.search.winner, best.search.winner, bases) < 0 ? candidate : best,
+    );
+    frontier.push(
+      buildFrontierEntry(winner.heroIds, winner.search, bases, currentFactsById, budgetById, phaseOptions, currentObjective, currentGoldPerHour),
+    );
+  }
+
+  frontier.sort((a, b) => {
+    if (a.respecCostGold !== b.respecCostGold) return a.respecCostGold - b.respecCostGold;
+    return a.heroCount - b.heroCount;
+  });
+
+  return { frontier, evaluationsSpent, budgetExhausted };
+}
+
 /** Tier 2 — the on-demand joint solve. Bounded by `FARM_OPT_FULL_MAX_EVALUATIONS`. Pure. */
 export function solveFarmRespec(input: FarmRespecInput): FarmRespecResult {
   const objective = resolveFarmObjective(input.objective);
@@ -497,6 +632,35 @@ export function solveFarmRespec(input: FarmRespecInput): FarmRespecResult {
     proposedEnergyShare: winShare,
   };
 
+  // The cost frontier (design.md §4.10): only when the joint solve actually found something
+  // better — a frontier under keptCurrent would advise spending gold for zero gain. Shares the
+  // budget the joint solve left over (design.md §4.9).
+  let frontier: FarmRespecFrontierEntry[] = [];
+  let frontierEvaluations = 0;
+  let frontierBudgetExhausted = false;
+  if (outcome === 'improved') {
+    const currentObjectiveForFrontier = currentPick ? currentPick.value : 0;
+    const currentGoldPerHourForFrontier = goldChestReadout(currentSquad, phaseOptions).goldPerHour;
+    const remainingBudget = Math.max(0, FARM_OPT_FULL_MAX_EVALUATIONS - search.evaluations);
+    const frontierResult = computeFrontier({
+      bases,
+      heroEntries,
+      currentFactsById,
+      budgetById,
+      searchableIds,
+      account: input.account,
+      objective,
+      scales,
+      phaseOptions,
+      currentObjective: currentObjectiveForFrontier,
+      currentGoldPerHour: currentGoldPerHourForFrontier,
+      remainingBudget,
+    });
+    frontier = frontierResult.frontier;
+    frontierEvaluations = frontierResult.evaluationsSpent;
+    frontierBudgetExhausted = frontierResult.budgetExhausted;
+  }
+
   return assembleResult({
     objective,
     outcome,
@@ -509,13 +673,13 @@ export function solveFarmRespec(input: FarmRespecInput): FarmRespecResult {
     currentSquad,
     proposedSquad: search.winner.squad,
     phaseOptions,
-    evaluations: search.evaluations,
-    budgetExhausted: search.budgetExhausted,
+    evaluations: search.evaluations + frontierEvaluations,
+    budgetExhausted: search.budgetExhausted || frontierBudgetExhausted,
     winningSeed: search.winningSeedName,
     sweeps: search.sweeps,
     tier: 'full',
     gainIsLowerBound: false,
-    frontier: [],
+    frontier,
     plateau,
   });
 }

@@ -163,14 +163,19 @@ describe('a zero-searchable-pool squad', () => {
 });
 
 describe('the plateau adds ZERO evaluations', () => {
-  it('solveFarmRespec\'s evaluations count equals runFarmSearch\'s own count for the identical search', () => {
-    const bases = computeHeroFarmBases({ heroes, account });
+  it("solveFarmRespec's evaluations count equals runFarmSearch's own count for the identical search, on a pool where the frontier is provably empty (|S|=1)", () => {
+    // A 1-hero pool: FRAD-23 forces frontier: [] unconditionally (heroCount can never be < |S|=1),
+    // so this isolates the plateau's own cost from the frontier's (T9), which otherwise also
+    // adds evaluations to the same total.
+    const oneId = [heroes.find((h) => h.name === 'Jon')!.id];
+    const bases = computeHeroFarmBases({ heroes, account, enabledHeroIds: oneId });
     const budgetById = new Map(bases.map((b) => [b.heroId, reoptBudget(b.pts, b.level)] as const));
     const searchableIds = bases.map((b) => b.heroId);
     const objective = resolveFarmObjective({ kind: 'gold' });
     const search = runFarmSearch(bases, searchableIds, budgetById, account, objective, { goldScale: 1, chestScale: 1 }, { maxPhase }, 4000);
 
-    const result = solveFarmRespec({ heroes, account, maxPhase });
+    const result = solveFarmRespec({ heroes, account, maxPhase, enabledHeroIds: oneId });
+    expect(result.frontier).toHaveLength(0);
     expect(result.evaluations).toBe(search.evaluations);
   });
 });
