@@ -224,6 +224,26 @@ function buildHeroEntries(
   });
 }
 
+/**
+ * Gold/hr and chests/hr at a squad's OWN best-over-phase rate for each currency independently —
+ * decoupled from whatever phase the ACTIVE objective recommends. This is what makes
+ * `paybackHours` "always denominated in GOLD whatever the objective" (design.md §4.11): a
+ * chest-focused solve still reports each side's real gold ceiling, not gold-at-the-chest-phase.
+ * Not counted toward `evaluations` — informational read-out, zero pipeline calls.
+ */
+function goldChestReadout(
+  squad: SquadFarmFacts,
+  phaseOptions: FarmRateOptions,
+): { goldPerHour: number; chestsPerHour: number } {
+  const dummyScales: FarmObjectiveScales = { goldScale: 1, chestScale: 1 };
+  const goldPick = bestFarmPhase(squad, resolveFarmObjective({ kind: 'gold' }), dummyScales, phaseOptions);
+  const chestPick = bestFarmPhase(squad, resolveFarmObjective({ kind: 'chests' }), dummyScales, phaseOptions);
+  return {
+    goldPerHour: goldPick ? goldPick.row.goldPerHour : 0,
+    chestsPerHour: chestPick ? chestPick.row.chestsPerHour : 0,
+  };
+}
+
 function assembleResult(params: {
   objective: ResolvedFarmObjective;
   outcome: FarmRespecOutcome;
@@ -233,6 +253,7 @@ function assembleResult(params: {
   proposedPick: FarmPhasePick | null;
   currentSquad: SquadFarmFacts;
   proposedSquad: SquadFarmFacts;
+  phaseOptions: FarmRateOptions;
   evaluations: number;
   budgetExhausted: boolean;
   winningSeed: string;
@@ -251,6 +272,7 @@ function assembleResult(params: {
     proposedPick,
     currentSquad,
     proposedSquad,
+    phaseOptions,
     evaluations,
     budgetExhausted,
     winningSeed,
@@ -263,14 +285,16 @@ function assembleResult(params: {
 
   const currentPhase = currentPick ? currentPick.phase : null;
   const currentObjective = currentPick ? currentPick.value : 0;
-  const currentGoldPerHour = currentPick ? currentPick.row.goldPerHour : 0;
-  const currentChestsPerHour = currentPick ? currentPick.row.chestsPerHour : 0;
+  const currentReadout = goldChestReadout(currentSquad, phaseOptions);
+  const currentGoldPerHour = currentReadout.goldPerHour;
+  const currentChestsPerHour = currentReadout.chestsPerHour;
 
   const recommendedPhase = proposedPick ? proposedPick.phase : null;
   // FRAD-20e: no fabricated value — 0, never NaN/Infinity, when nothing is feasible.
   const proposedObjective = proposedPick ? proposedPick.value : 0;
-  const proposedGoldPerHour = proposedPick ? proposedPick.row.goldPerHour : 0;
-  const proposedChestsPerHour = proposedPick ? proposedPick.row.chestsPerHour : 0;
+  const proposedReadout = goldChestReadout(proposedSquad, phaseOptions);
+  const proposedGoldPerHour = proposedReadout.goldPerHour;
+  const proposedChestsPerHour = proposedReadout.chestsPerHour;
 
   // FRAD-20f: currentObjective <= 0 ⇒ gainPct 0, never a division by zero.
   const gainPct = currentObjective > 0 ? Math.max(0, (proposedObjective / currentObjective - 1) * 100) : 0;
@@ -316,10 +340,11 @@ function buildTerminalResult(params: {
   evaluation: { pick: FarmPhasePick | null; squad: SquadFarmFacts } | null;
   evaluations: number;
   account: AccountShared;
+  phaseOptions: FarmRateOptions;
   currentFactsById?: ReadonlyMap<string, HeroFarmFacts>;
   budgetById?: ReadonlyMap<string, number>;
 }): FarmRespecResult {
-  const { bases, objective, outcome, evaluation, evaluations, account } = params;
+  const { bases, objective, outcome, evaluation, evaluations, account, phaseOptions } = params;
   const currentFactsById =
     params.currentFactsById ?? new Map(bases.map((b) => [b.heroId, heroFactsFromBasis(b, b.pts)] as const));
   const budgetById = params.budgetById ?? new Map(bases.map((b) => [b.heroId, reoptBudget(b.pts, b.level)] as const));
@@ -336,6 +361,7 @@ function buildTerminalResult(params: {
     proposedPick: pick,
     currentSquad: squad,
     proposedSquad: squad,
+    phaseOptions,
     evaluations,
     budgetExhausted: false,
     winningSeed: 'current',
@@ -365,6 +391,7 @@ export function solveFarmRespec(input: FarmRespecInput): FarmRespecResult {
       evaluation: null,
       evaluations: 0,
       account: input.account,
+      phaseOptions,
     });
   }
 
@@ -380,21 +407,22 @@ export function solveFarmRespec(input: FarmRespecInput): FarmRespecResult {
       evaluation: null,
       evaluations: 0,
       account: input.account,
+      phaseOptions,
       currentFactsById,
       budgetById,
     });
   }
 
   // Scales: the current build's own best over the candidate phase set, per currency, computed
-  // once then frozen. Not counted toward `evaluations` — it is objective-normalization setup,
-  // not a candidate the search is choosing between.
+  // once then frozen (design.md §4.1). Not counted toward `evaluations` — it is
+  // objective-normalization setup, not a candidate the search is choosing between. This is the
+  // SAME independent per-currency read-out `goldChestReadout` computes for display, so the two
+  // are derived together rather than duplicating the phase scan.
   const currentSquad = squadFactsFromBases(bases, null, input.account);
-  const dummyScales: FarmObjectiveScales = { goldScale: 1, chestScale: 1 };
-  const goldPickForScale = bestFarmPhase(currentSquad, resolveFarmObjective({ kind: 'gold' }), dummyScales, phaseOptions);
-  const chestPickForScale = bestFarmPhase(currentSquad, resolveFarmObjective({ kind: 'chests' }), dummyScales, phaseOptions);
+  const currentReadout = goldChestReadout(currentSquad, phaseOptions);
   const scales: FarmObjectiveScales = {
-    goldScale: goldPickForScale ? goldPickForScale.value : 0,
-    chestScale: chestPickForScale ? chestPickForScale.value : 0,
+    goldScale: currentReadout.goldPerHour,
+    chestScale: currentReadout.chestsPerHour,
   };
 
   const searchableIds = bases
@@ -410,6 +438,7 @@ export function solveFarmRespec(input: FarmRespecInput): FarmRespecResult {
       evaluation: { pick: currentPick, squad: currentSquad },
       evaluations: 1,
       account: input.account,
+      phaseOptions,
       currentFactsById,
       budgetById,
     });
@@ -447,6 +476,7 @@ export function solveFarmRespec(input: FarmRespecInput): FarmRespecResult {
     proposedPick,
     currentSquad,
     proposedSquad: search.winner.squad,
+    phaseOptions,
     evaluations: search.evaluations,
     budgetExhausted: search.budgetExhausted,
     winningSeed: search.winningSeedName,
