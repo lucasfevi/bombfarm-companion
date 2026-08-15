@@ -33,7 +33,28 @@ describe('Farm Ranking board — testids present (design §4.3)', () => {
     ['src/features/phases/components/farm-return-bonus.tsx', 'farm-return-bonus'],
     ['src/features/phases/components/farm-ranking-table.tsx', 'farm-ranking-table'],
     ['src/features/phases/components/farm-ranking-table.tsx', 'farm-sort-live'],
+    ['src/features/phases/components/farm-respec-toolbar.tsx', 'farm-respec-toolbar'],
+    ['src/features/phases/components/farm-respec-toolbar.tsx', 'farm-respec-objective'],
+    ['src/features/phases/components/farm-respec-toolbar.tsx', 'farm-respec-optimize'],
+    ['src/features/phases/components/farm-respec-headline.tsx', 'farm-respec-headline'],
+    ['src/features/phases/components/farm-respec-panel.tsx', 'farm-respec-panel'],
+    ['src/features/phases/components/farm-respec-panel.tsx', 'farm-respec-close'],
+    ['src/features/phases/components/farm-respec-metrics.tsx', 'farm-respec-metrics'],
+    ['src/features/phases/components/farm-respec-metrics.tsx', 'farm-respec-metric-gold'],
+    ['src/features/phases/components/farm-respec-metrics.tsx', 'farm-respec-metric-chests'],
+    ['src/features/phases/components/farm-respec-metrics.tsx', 'farm-respec-metric-cost'],
+    ['src/features/phases/components/farm-respec-metrics.tsx', 'farm-respec-metric-payback'],
+    ['src/features/phases/components/farm-respec-plateau.tsx', 'farm-respec-plateau'],
+    ['src/features/phases/components/farm-respec-hero-grid.tsx', 'farm-respec-heroes'],
+    ['src/features/phases/components/farm-respec-frontier.tsx', 'farm-respec-frontier'],
+    ['src/features/phases/components/farm-respec-rerank-toggle.tsx', 'farm-respec-rerank'],
   ];
+
+  it('farm-respec-frontier.tsx declares a per-hero-count testid template', () => {
+    expect(read('src/features/phases/components/farm-respec-frontier.tsx')).toContain(
+      'farm-respec-frontier-${entry.heroCount}',
+    );
+  });
 
   for (const [file, testid] of expectations) {
     it(`${file} declares data-testid="${testid}"`, () => {
@@ -95,6 +116,250 @@ describe('Farm Ranking board — the four empty states render no numeric cell', 
     const source = read('src/features/phases/components/farm-ranking-board.tsx');
     expect(source).toMatch(/result\.reason === 'compute-failed'/);
     expect(source).toContain('<Banner');
+  });
+});
+
+describe('Farm Respec Advisor toolbar — visibility, controls and layout stability', () => {
+  it('renders nothing below the gain threshold and when the gate has no roster/heroes-enabled reason — the early return exists', () => {
+    const source = read('src/features/phases/components/farm-respec-toolbar.tsx');
+    expect(source).toMatch(/if \(!degraded && !gate\.shouldSurface\) return null;/);
+  });
+
+  it('the objective picker is a three-option Select over the FarmObjectiveKind literals verbatim, dispatching setFarmObjective and nothing else', () => {
+    const source = read('src/features/phases/components/farm-respec-toolbar.tsx');
+    expect(source).toContain('<option value="gold">');
+    expect(source).toContain('<option value="blend">');
+    expect(source).toContain('<option value="chests">');
+    expect(source).toContain('setFarmObjective(event.target.value');
+  });
+
+  it('Optimize is a real button with aria-busy, aria-expanded and aria-controls pointing at the panel', () => {
+    const source = read('src/features/phases/components/farm-respec-toolbar.tsx');
+    expect(source).toMatch(/aria-busy=\{busy\}/);
+    expect(source).toMatch(/aria-expanded=\{panelOpen\}/);
+    expect(source).toContain('aria-controls="farm-respec-panel"');
+  });
+
+  it('the Optimize button reserves a min-width so the busy transition does not reflow the toolbar', () => {
+    const source = read('src/features/phases/components/farm-respec-toolbar.tsx');
+    expect(source).toMatch(/className="min-w-\d+"/);
+  });
+
+  it('the only visibility input is the gate\'s own shouldSurface flag — nothing here reads the payback duration', () => {
+    const source = read('src/features/phases/components/farm-respec-toolbar.tsx');
+    expect(source).not.toMatch(/paybackHours/);
+  });
+
+  it('the gate-failed reason renders a named degraded note, with Optimize still enabled', () => {
+    const source = read('src/features/phases/components/farm-respec-toolbar.tsx');
+    expect(source).toContain("gate.reason === 'gate-failed'");
+    expect(source).toContain('{t.farmRespecGateFailed}');
+  });
+
+  it('subscribes via usePlannerStore(selectFarmRespecGate) without useShallow', () => {
+    const source = read('src/features/phases/components/farm-respec-toolbar.tsx');
+    expect(source).toContain('usePlannerStore(selectFarmRespecGate)');
+    expect(source).not.toMatch(/useShallow\([^)]*selectFarmRespecGate/);
+  });
+
+  it('the headline shows the lower-bound gain, the phase, the cost and one of the three payback strings', () => {
+    const source = read('src/features/phases/components/farm-respec-headline.tsx');
+    expect(source).toContain('t.farmRespecHeadlineGain');
+    expect(source).toContain('t.farmRespecHeadlinePhase');
+    expect(source).toContain('t.farmRespecHeadlineCost');
+    expect(source).toContain('resolvePaybackKind(result)');
+  });
+
+});
+
+describe('Farm Respec Advisor panel — in-place expansion, banners, plateau', () => {
+  it('is a plain <section> in normal flow — no role="dialog", no portal', () => {
+    const source = read('src/features/phases/components/farm-respec-panel.tsx');
+    expect(source).toMatch(/<section[\s\S]*?id="farm-respec-panel"/);
+    expect(source).not.toMatch(/role=["']dialog["']/);
+    expect(source).not.toContain('Portal');
+  });
+
+  it('mounts only when a fresh view exists or status is solving/failed, AND the panel is open', () => {
+    const source = read('src/features/phases/components/farm-respec-panel.tsx');
+    expect(source).toMatch(
+      /const mountable = panelOpen && \(view != null \|\| status === 'solving' \|\| status === 'failed'\);/,
+    );
+  });
+
+  it('the failed state renders a named banner with zero numeric cells and no re-rank toggle', () => {
+    const source = read('src/features/phases/components/farm-respec-panel.tsx');
+    expect(source).toContain("panelState.kind === 'failed'");
+    expect(source).toContain('farm-respec-failed-banner');
+    expect(source).not.toContain('Switch');
+  });
+
+  it('the budget-exhausted banner renders ABOVE the metric tiles', () => {
+    const source = read('src/features/phases/components/farm-respec-panel.tsx');
+    const bannerIndex = source.indexOf('farm-respec-budget-exhausted');
+    const tilesIndex = source.indexOf('<FarmRespecMetrics');
+    expect(bannerIndex).toBeGreaterThan(-1);
+    expect(tilesIndex).toBeGreaterThan(bannerIndex);
+  });
+
+  it('winningSeed is never rendered anywhere in the panel or its children', () => {
+    for (const file of [
+      'src/features/phases/components/farm-respec-panel.tsx',
+      'src/features/phases/components/farm-respec-metrics.tsx',
+      'src/features/phases/components/farm-respec-plateau.tsx',
+    ]) {
+      expect(read(file)).not.toMatch(/winningSeed/);
+    }
+  });
+
+  it('no component under this task has a try/catch of its own', () => {
+    for (const file of [
+      'src/features/phases/components/farm-respec-panel.tsx',
+      'src/features/phases/components/farm-respec-metrics.tsx',
+      'src/features/phases/components/farm-respec-plateau.tsx',
+    ]) {
+      expect(read(file)).not.toMatch(/\btry\s*\{/);
+    }
+  });
+
+  it('the plateau band is aria-hidden; the sentence beside it is the accessible content', () => {
+    const source = read('src/features/phases/components/farm-respec-plateau.tsx');
+    expect(source).toMatch(/aria-hidden[\s\S]*?<div/);
+    expect(source).toContain('sentence');
+  });
+
+  it('the chest explainer renders whenever the objective is not gold', () => {
+    const source = read('src/features/phases/components/farm-respec-panel.tsx');
+    expect(source).toContain("objective !== 'gold'");
+  });
+
+  it('the panel has a real heading wired via aria-labelledby, and a close button that closes it', () => {
+    const source = read('src/features/phases/components/farm-respec-panel.tsx');
+    expect(source).toMatch(/aria-labelledby=\{PANEL_HEADING_ID\}/);
+    expect(source).toContain('setFarmRespecPanelOpen(false)');
+  });
+});
+
+describe('Farm Respec Advisor hero cards — full target allocations, luck kept, unchanged still shown', () => {
+  it('the card testid and per-key testid templates are declared', () => {
+    const source = read('src/features/phases/components/farm-respec-hero-card.tsx');
+    expect(source).toContain('farm-respec-hero-${entry.heroId}');
+    expect(source).toContain('farm-respec-key-${entry.heroId}-${row.key}');
+  });
+
+  it('the grid maps result.heroes with NO filter — the enabled-hero count equals the card count', () => {
+    const source = read('src/features/phases/components/farm-respec-hero-grid.tsx');
+    expect(source).toMatch(/result\.heroes\.map\(/);
+    expect(source).not.toMatch(/result\.heroes\.filter\(/);
+  });
+
+  it('the grid uses an auto-fit/minmax responsive layout — never an accordion, tab list or horizontal scroller', () => {
+    const source = read('src/features/phases/components/farm-respec-hero-grid.tsx');
+    expect(source).toContain('auto-fit');
+    expect(source).toContain('minmax');
+    expect(source).not.toMatch(/Accordion|role="tablist"|overflow-x/);
+  });
+
+  it('identity is rendered by HeroIdentityChip imported from @/shared/game-art — no second identity component under features/phases', () => {
+    const cardSource = read('src/features/phases/components/farm-respec-hero-card.tsx');
+    expect(cardSource).toMatch(/import\s*\{[^}]*HeroIdentityChip[^}]*\}\s*from\s*'@\/shared\/game-art'/);
+  });
+
+  it('the changed-hero table shows the absolute target as the primary column, with current and signed delta as secondary columns', () => {
+    const source = read('src/features/phases/components/farm-respec-hero-card.tsx');
+    expect(source).toContain('t.farmRespecKeyTarget');
+    expect(source).toContain('t.farmRespecKeyCurrent');
+    expect(source).toContain('t.farmRespecKeyDelta');
+    expect(source).toContain('row.target');
+    expect(source).toContain('row.current');
+    expect(source).toContain('formatSignedPoints(row.delta)');
+  });
+
+  it('the luck row carries the keep chip and its HelpTip note', () => {
+    const source = read('src/features/phases/components/farm-respec-hero-card.tsx');
+    expect(source).toContain('row.keep');
+    expect(source).toContain('t.farmRespecLuckKeep');
+    expect(source).toContain('t.farmRespecLuckHint');
+  });
+
+  it('an unchanged hero renders de-emphasized, never hidden outright, stating no respec is needed and naming the gold not spent', () => {
+    const source = read('src/features/phases/components/farm-respec-hero-card.tsx');
+    expect(source).toContain('!entry.changed');
+    expect(source).not.toMatch(/display:\s*none/);
+    expect(source).toContain('t.farmRespecUnchangedNote');
+    expect(source).toContain('t.farmRespecUnchangedGoldSaved');
+  });
+
+  it('no move is annotated as optional/negligible/minor/skippable at any magnitude — no conditional class keyed on delta size', () => {
+    const source = read('src/features/phases/components/farm-respec-hero-card.tsx');
+    expect(source).not.toMatch(/negligible|\boptional\b|\bskip(pable)?\b/i);
+    expect(source).not.toMatch(/row\.delta\s*[<>=]/);
+  });
+});
+
+describe('Farm Respec Advisor frontier — cost-ascending, never re-sorted locally', () => {
+  it('renders one row per result.frontier entry, in the array\'s own order — no local sort/filter/reverse', () => {
+    const source = read('src/features/phases/components/farm-respec-frontier.tsx');
+    expect(source).toContain('resolveFrontierEntries(result)');
+    expect(source).toMatch(/entries\.map\(/);
+    expect(source).not.toMatch(/entries\.(sort|filter|reverse)\(/);
+  });
+
+  it('an empty frontier is omitted — the model\'s null signal is respected, not mapped over as an empty list', () => {
+    const source = read('src/features/phases/components/farm-respec-frontier.tsx');
+    expect(source).toMatch(/if \(entries == null\) return null;/);
+  });
+});
+
+describe('Farm Respec Advisor re-rank toggle and mode marking', () => {
+  it('the toggle is always mounted above the table, not gated inside the collapsible panel', () => {
+    const boardSource = read('src/features/phases/components/farm-ranking-board.tsx');
+    const panelSource = read('src/features/phases/components/farm-respec-panel.tsx');
+    expect(boardSource).toContain('<FarmRespecRerankToggle');
+    expect(panelSource).not.toContain('FarmRespecRerankToggle');
+  });
+
+  it('reading selectFarmReRankActive means the toggle has no staleness logic of its own', () => {
+    const source = read('src/features/phases/components/farm-respec-rerank-toggle.tsx');
+    expect(source).toContain('usePlannerStore(selectFarmReRankActive)');
+  });
+
+  it('re-rank mode is marked three independent, non-colour ways: an always-mounted Banner, the sr-only caption, and a data-farm-mode attribute', () => {
+    const toggleSource = read('src/features/phases/components/farm-respec-rerank-toggle.tsx');
+    const tableSource = read('src/features/phases/components/farm-ranking-table.tsx');
+    expect(toggleSource).toContain('<Banner');
+    expect(tableSource).toContain('reRankActive ? t.farmRespecRerankCaption : t.farmRankingCaption');
+    expect(tableSource).toMatch(/data-farm-mode=\{reRankActive \? 'proposed' : 'current'\}/);
+  });
+
+  it('farm-ranking-table.tsx gains reRankActive with no column, sort or filter semantic change (sortKey/sortDir are regrouped into one sort prop only to stay under the 8-prop cap)', () => {
+    const source = read('src/features/phases/components/farm-ranking-table.tsx');
+    expect(source).toContain('reRankActive: boolean');
+    expect(source).not.toMatch(/FARM_COLUMNS\s*=/); // the shipped column list itself is not reassigned/edited
+  });
+
+  it('the board subscribes via selectFarmBoardRows, without useShallow', () => {
+    const source = read('src/features/phases/components/farm-ranking-board.tsx');
+    expect(source).toContain('usePlannerStore(selectFarmBoardRows)');
+    expect(source).not.toMatch(/useShallow\([^)]*selectFarmBoardRows/);
+  });
+
+  it('the board\'s visibleRows pipeline (applyFarmFilters -> sortFarmRows) is untouched — only the row source changed', () => {
+    const source = read('src/features/phases/components/farm-ranking-board.tsx');
+    expect(source).toContain('applyFarmFilters(result.rows, effectiveFilters)');
+    expect(source).toContain('sortFarmRows(filtered, sort.key, sort.direction)');
+  });
+});
+
+describe('Farm Respec Advisor toolbar/panel wiring', () => {
+  it('the board renders the toolbar between the pool/filters block and the table', () => {
+    const source = read('src/features/phases/components/farm-ranking-board.tsx');
+    const poolIndex = source.indexOf('<FarmRotationPool');
+    const toolbarIndex = source.indexOf('<FarmRespecToolbar');
+    const tableIndex = source.indexOf('<FarmRankingTable');
+    expect(poolIndex).toBeGreaterThan(-1);
+    expect(toolbarIndex).toBeGreaterThan(poolIndex);
+    expect(tableIndex).toBeGreaterThan(toolbarIndex);
   });
 });
 

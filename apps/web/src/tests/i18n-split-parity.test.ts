@@ -143,6 +143,60 @@ const FARM_RANKING_KEYS_ADDED = [
   'farmRankingCurrentPhase',
 ] as const;
 
+/**
+ * Farm Respec Advisor T7 — the toolbar, panel, hero-card and frontier copy, genuinely new keys
+ * with no counterpart in the frozen fixture. Same shape as `FARM_RANKING_KEYS_ADDED` above; kept
+ * as its own named list so a reviewer can see which feature added which keys.
+ */
+const FARM_RESPEC_KEYS_ADDED = [
+  'farmRespecObjectiveLabel',
+  'farmRespecObjectiveGold',
+  'farmRespecObjectiveChests',
+  'farmRespecObjectiveBlend',
+  'farmRespecOptimize',
+  'farmRespecOptimizeBusy',
+  'farmRespecHeadlineGain',
+  'farmRespecHeadlinePhase',
+  'farmRespecHeadlineCost',
+  'farmRespecGateFailed',
+  'farmRespecPaybackHours',
+  'farmRespecPaybackNoGoldGain',
+  'farmRespecPaybackNoChange',
+  'farmRespecPanelHeading',
+  'farmRespecClose',
+  'farmRespecPanelGain',
+  'farmRespecMetricGold',
+  'farmRespecMetricChests',
+  'farmRespecMetricCost',
+  'farmRespecMetricPayback',
+  'farmRespecGoldGivenUp',
+  'farmRespecChestExplainer',
+  'farmRespecBudgetExhausted',
+  'farmRespecDiagnostics',
+  'farmRespecFailed',
+  'farmRespecTerminalTitle',
+  'farmRespecTerminalDesc',
+  'farmRespecPlateauLabel',
+  'farmRespecPlateauRange',
+  'farmRespecPlateauSharp',
+  'farmRespecHeroesHeading',
+  'farmRespecLuckKeep',
+  'farmRespecLuckHint',
+  'farmRespecUnchangedNote',
+  'farmRespecUnchangedGoldSaved',
+  'farmRespecKeyCurrent',
+  'farmRespecKeyTarget',
+  'farmRespecKeyDelta',
+  'farmRespecFrontierHeading',
+  'farmRespecFrontierHeroCountOne',
+  'farmRespecFrontierHeroCountTwo',
+  'farmRespecFrontierGainCost',
+  'farmRespecFrontierPaybackNone',
+  'farmRespecRerankToggle',
+  'farmRespecRerankBanner',
+  'farmRespecRerankCaption',
+] as const;
+
 function diffLeafPaths(a: unknown, b: unknown, path: string[] = [], out: string[] = []): string[] {
   if (a === b) return out;
   const aIsObj = a !== null && typeof a === 'object';
@@ -183,17 +237,27 @@ describe('i18n split parity', () => {
   // *minus* that enumerated list (AD-081) — every unlisted drift stays fatal in both
   // directions, and the list itself cannot silently grow or shrink (see the three
   // assertions below).
-  it('STRINGS.en differs from the frozen fixture (minus removed keys) at exactly the enumerated prose edits plus F4\'s and Farm Ranking\'s new keys', () => {
+  it('STRINGS.en differs from the frozen fixture (minus removed keys) at exactly the enumerated prose edits plus F4\'s, Farm Ranking\'s and Farm Respec Advisor\'s new keys', () => {
     const diffs = diffLeafPaths(STRINGS.en, omitKeys(fixture.en, KEYSTONE_KEYS_REMOVED)).sort();
     expect(diffs).toEqual(
-      [...KEYSTONE_PROSE_EDITED_PATHS, ...F4_KEYS_ADDED, ...FARM_RANKING_KEYS_ADDED].sort(),
+      [
+        ...KEYSTONE_PROSE_EDITED_PATHS,
+        ...F4_KEYS_ADDED,
+        ...FARM_RANKING_KEYS_ADDED,
+        ...FARM_RESPEC_KEYS_ADDED,
+      ].sort(),
     );
   });
 
-  it('STRINGS.pt differs from the frozen fixture (minus removed keys) at exactly the enumerated prose edits plus F4\'s and Farm Ranking\'s new keys', () => {
+  it('STRINGS.pt differs from the frozen fixture (minus removed keys) at exactly the enumerated prose edits plus F4\'s, Farm Ranking\'s and Farm Respec Advisor\'s new keys', () => {
     const diffs = diffLeafPaths(STRINGS.pt, omitKeys(fixture.pt, KEYSTONE_KEYS_REMOVED)).sort();
     expect(diffs).toEqual(
-      [...KEYSTONE_PROSE_EDITED_PATHS, ...F4_KEYS_ADDED, ...FARM_RANKING_KEYS_ADDED].sort(),
+      [
+        ...KEYSTONE_PROSE_EDITED_PATHS,
+        ...F4_KEYS_ADDED,
+        ...FARM_RANKING_KEYS_ADDED,
+        ...FARM_RESPEC_KEYS_ADDED,
+      ].sort(),
     );
   });
 
@@ -208,12 +272,13 @@ describe('i18n split parity', () => {
     }
   });
 
-  it('sorted key-name list is unchanged vs fixture minus the removed keystone keys, plus F4\'s and Farm Ranking\'s new keys', () => {
+  it('sorted key-name list is unchanged vs fixture minus the removed keystone keys, plus F4\'s, Farm Ranking\'s and Farm Respec Advisor\'s new keys', () => {
     const fromSplit = Object.keys(STRINGS.en).sort();
     const fromFixture = [
       ...Object.keys(omitKeys(fixture.en, KEYSTONE_KEYS_REMOVED)),
       ...F4_KEYS_ADDED,
       ...FARM_RANKING_KEYS_ADDED,
+      ...FARM_RESPEC_KEYS_ADDED,
     ].sort();
     expect(fromSplit).toEqual(fromFixture);
   });
@@ -249,6 +314,16 @@ describe('i18n split parity', () => {
   it('FARM_RANKING_KEYS_ADDED has exactly 50 entries, present in STRINGS but absent from the frozen fixture, both languages', () => {
     expect(FARM_RANKING_KEYS_ADDED.length).toBe(50);
     for (const key of FARM_RANKING_KEYS_ADDED) {
+      expect(key in fixture.en, `${key} unexpectedly present in fixture.en`).toBe(false);
+      expect(key in fixture.pt, `${key} unexpectedly present in fixture.pt`).toBe(false);
+      expect(key in STRINGS.en, `${key} missing from STRINGS.en`).toBe(true);
+      expect(key in STRINGS.pt, `${key} missing from STRINGS.pt`).toBe(true);
+    }
+  });
+
+  it('FARM_RESPEC_KEYS_ADDED has exactly 46 entries, present in STRINGS but absent from the frozen fixture, both languages', () => {
+    expect(FARM_RESPEC_KEYS_ADDED.length).toBe(46);
+    for (const key of FARM_RESPEC_KEYS_ADDED) {
       expect(key in fixture.en, `${key} unexpectedly present in fixture.en`).toBe(false);
       expect(key in fixture.pt, `${key} unexpectedly present in fixture.pt`).toBe(false);
       expect(key in STRINGS.en, `${key} missing from STRINGS.en`).toBe(true);
@@ -301,6 +376,23 @@ describe('Farm Ranking i18n parity', () => {
     for (const key of Object.keys(STRINGS.en)) {
       if (!key.startsWith('farmRanking') && key !== 'navPhases') continue;
       if (EN_PT_COLLISION_ALLOWLIST.has(key)) continue;
+      const enValue = STRINGS.en[key as keyof Strings];
+      const ptValue = STRINGS.pt[key as keyof Strings];
+      if (typeof enValue === 'string' && enValue === ptValue) leaks.push(key);
+    }
+    expect(leaks, `EN string left untranslated in PT: ${leaks.join(', ')}`).toEqual([]);
+  });
+});
+
+/**
+ * Farm Respec Advisor T7 — same shape as `Farm Ranking i18n parity` above. None of these
+ * strings legitimately collides between EN and PT, so no allowlist entry is needed.
+ */
+describe('Farm Respec Advisor i18n parity', () => {
+  it('no farmRespec* PT value is byte-identical to its EN counterpart', () => {
+    const leaks: string[] = [];
+    for (const key of Object.keys(STRINGS.en)) {
+      if (!key.startsWith('farmRespec')) continue;
       const enValue = STRINGS.en[key as keyof Strings];
       const ptValue = STRINGS.pt[key as keyof Strings];
       if (typeof enValue === 'string' && enValue === ptValue) leaks.push(key);

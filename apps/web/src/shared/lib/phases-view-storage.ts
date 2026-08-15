@@ -5,6 +5,9 @@
 // Re-exported below so the slice / components reference the type through this file, not a
 // second direct import site.
 import type { ReturnBonusMode } from '@bombfarm/domain/farm-rate';
+// Type-only import — the ReturnBonusMode precedent directly above. A pure `import type` erases
+// at compile time and is allowed by the farm-ranking-guards.test.ts runtime-import boundary.
+import type { FarmObjectiveKind } from '@bombfarm/domain/farm-optimize';
 
 export type { ReturnBonusMode };
 
@@ -15,6 +18,8 @@ const MAX_POOL_ENTRIES = 200;
 
 const RETURN_BONUS_MODES: readonly ReturnBonusMode[] = ['off', 'on', 'vip'];
 
+const FARM_OBJECTIVE_KINDS: readonly FarmObjectiveKind[] = ['gold', 'chests', 'blend'];
+
 export type PhasesViewState = {
   phase: number;
   /**
@@ -24,6 +29,8 @@ export type PhasesViewState = {
   farmPool?: Record<string, boolean>;
   /** Return-bonus estimate. Absent/unrecognized => `'off'`. */
   farmReturnBonus?: ReturnBonusMode;
+  /** Respec-advisor objective preset. Absent/unrecognized => `'gold'`. */
+  farmObjective?: FarmObjectiveKind;
 };
 
 export function defaultPhasesView(): PhasesViewState {
@@ -59,6 +66,10 @@ function normalizeReturnBonus(raw: unknown): ReturnBonusMode {
   return RETURN_BONUS_MODES.includes(raw as ReturnBonusMode) ? (raw as ReturnBonusMode) : 'off';
 }
 
+function normalizeFarmObjective(raw: unknown): FarmObjectiveKind {
+  return FARM_OBJECTIVE_KINDS.includes(raw as FarmObjectiveKind) ? (raw as FarmObjectiveKind) : 'gold';
+}
+
 export function loadPhasesView(): PhasesViewState {
   try {
     const raw = localStorage.getItem(PHASES_VIEW_KEY);
@@ -72,6 +83,7 @@ export function loadPhasesView(): PhasesViewState {
       phase: normalizePhase(record.phase),
       farmPool: normalizeFarmPool(record.farmPool),
       farmReturnBonus: normalizeReturnBonus(record.farmReturnBonus),
+      farmObjective: normalizeFarmObjective(record.farmObjective),
     };
   } catch {
     return defaultPhasesView();

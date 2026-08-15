@@ -9,7 +9,7 @@ import type { HeroRecord } from '@/shared/lib/storage';
 import type { ScopeState } from '@/shared/stores/team-plan/types';
 import type { Lang, Strings } from '@/shared/i18n';
 import { sub } from '@/shared/i18n';
-import { shortHeroRecordId } from '@/features/team-plan/model/build-team-plan-input';
+import { shortHeroRecordId } from '@/shared/lib/hero-identity';
 
 const SCOPE_OPTIONS: ScopeState[] = ['optimize', 'donate', 'leaveAlone'];
 
