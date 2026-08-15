@@ -9,8 +9,11 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import {
-  E_D_CELLS,
+  CYCLE_LATENCY_SEC,
+  cycleSecondsForHero,
   FORTUNA_AURA_CAP,
+  HOP1_CYCLE_SEC,
+  HOP_DISTRIBUTION,
   returnBonusMultiplier,
 } from '@bombfarm/domain/farm-rate';
 import { RETURN_BONUS_ADD, RETURN_BONUS_ADD_VIP, LOOT_ABILITY_VALUES } from '@bombfarm/domain/phase-wiki';
@@ -46,7 +49,17 @@ describe('forbidden-literal scan — wiki-tunable numbers must come from an impo
     // Strip import statements and comments before scanning — the point is to catch a VALUE
     // used in an EXPRESSION, not the identifier names or documentation that legitimately name
     // these figures (e.g. this file's own JSDoc, which quotes them for provenance).
-    const codeOnly = source
+    //
+    // HOP_DISTRIBUTION's array literal is stripped for the same reason `farm-optimize-guards`
+    // strips its plateau share-grid: it is a measured calibration table, so its 26 probabilities
+    // ARE the data rather than a retyped wiki constant. Several of them ("0.00151", "0.0015")
+    // contain forbidden strings as substrings, which is a collision, not a violation. Only the
+    // literal is exempt — everything else in this file is still scanned.
+    const withoutHopTable = source.replace(
+      /export const HOP_DISTRIBUTION[\s\S]*?\]\);/,
+      'export const HOP_DISTRIBUTION = [];',
+    );
+    const codeOnly = withoutHopTable
       .split('\n')
       .filter((line) => {
         const trimmed = line.trim();
@@ -64,14 +77,73 @@ describe('forbidden-literal scan — wiki-tunable numbers must come from an impo
   });
 });
 
-describe('E_D_CELLS — provenance-carrying, provisional', () => {
-  it('equals 4.5 and its JSDoc names "provisional" and the fuse-bound capture follow-up', () => {
-    expect(E_D_CELLS).toBe(4.5);
+describe('HOP_DISTRIBUTION — provenance-carrying, and a distribution rather than a mean', () => {
+  it('is a normalised probability mass function over hops 0..25', () => {
+    expect(HOP_DISTRIBUTION.length).toBe(26);
+    for (const p of HOP_DISTRIBUTION) expect(p).toBeGreaterThanOrEqual(0);
+    expect(HOP_DISTRIBUTION.reduce((s, p) => s + p, 0)).toBeCloseTo(1, 3);
+  });
+
+  it('is frozen — a shipped calibration, not a scratch array', () => {
+    expect(Object.isFrozen(HOP_DISTRIBUTION)).toBe(true);
+  });
+
+  it('has a mean hop of ~4.77 and a tail that a mean would discard', () => {
+    const meanHop = HOP_DISTRIBUTION.reduce((s, p, hop) => s + p * hop, 0);
+    expect(meanHop).toBeCloseTo(4.77, 1);
+    // The retired E_D_CELLS was 4.5, i.e. the old constant was barely wrong about the MEAN.
+    // What it could not represent is this tail, which is where the missing cycle time lives.
+    const tail = HOP_DISTRIBUTION.slice(15).reduce((s, p) => s + p, 0);
+    expect(tail).toBeGreaterThan(0.02);
+  });
+
+  it('its JSDoc carries the capture provenance and the Jensen reason for being a distribution', () => {
     const source = loadSource();
     if (!source) return;
-    const docBlock = source.slice(0, source.indexOf('export const E_D_CELLS'));
-    expect(docBlock).toMatch(/PROVISIONAL/i);
-    expect(docBlock).toMatch(/fuse-bound capture/i);
+    const docBlock = source.slice(0, source.indexOf('export const HOP_DISTRIBUTION'));
+    expect(docBlock).toMatch(/capture-486-r3/i);
+    expect(docBlock).toMatch(/jensen/i);
+    expect(docBlock).toMatch(/KNOWN LIMITATION/i);
+  });
+});
+
+describe('cycleSecondsForHero — averages max() over the distribution, never max() of the mean', () => {
+  it('exceeds max(fuse, meanHop/w) for a walk-bound hero — the Jensen gap this fix exists to close', () => {
+    const fuse = 1.972;
+    const w = 2.0721; // Jon, the fastest hero on the 486 anchor
+    const meanHop = HOP_DISTRIBUTION.reduce((s, p, hop) => s + p * hop, 0);
+    const collapsedFirst = Math.max(fuse, meanHop / w);
+    expect(cycleSecondsForHero(fuse, w)).toBeGreaterThan(collapsedFirst);
+  });
+
+  it('is monotonically non-increasing in walk speed', () => {
+    const fuse = 1.972;
+    let previous = Infinity;
+    for (const w of [0.5, 1, 1.5, 2, 3, 6, 12]) {
+      const cycle = cycleSecondsForHero(fuse, w);
+      expect(cycle).toBeLessThanOrEqual(previous);
+      previous = cycle;
+    }
+  });
+
+  it('floors at the fuse-bound branch: an arbitrarily fast hero still pays fuse + latency, weighted', () => {
+    const fuse = 1.972;
+    const infinitelyFast = cycleSecondsForHero(fuse, 1e9);
+    // Weighted with the table's OWN masses rather than `1 - hop1Share`: the shipped
+    // probabilities are rounded to 5dp and sum to 0.99999, not exactly 1, and assuming otherwise
+    // makes this assertion fail on a rounding artifact instead of on a behaviour change.
+    const expected = HOP_DISTRIBUTION.reduce(
+      (sum, p, hop) => sum + p * (hop <= 1 ? HOP1_CYCLE_SEC : fuse + CYCLE_LATENCY_SEC),
+      0,
+    );
+    expect(infinitelyFast).toBeCloseTo(expected, 9);
+  });
+
+  it('w <= 0 or non-finite ⇒ Infinity, so a degenerate hero contributes zero rather than dividing by zero', () => {
+    expect(cycleSecondsForHero(2, 0)).toBe(Infinity);
+    expect(cycleSecondsForHero(2, -1)).toBe(Infinity);
+    expect(cycleSecondsForHero(2, Number.NaN)).toBe(Infinity);
+    expect(cycleSecondsForHero(2, Number.POSITIVE_INFINITY)).toBe(Infinity);
   });
 });
 

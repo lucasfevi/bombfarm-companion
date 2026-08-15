@@ -140,22 +140,25 @@ describe('farmObjectiveScales — the frozen blend normalizers, exported (lifted
     expect(lifted.chestScale).toBeCloseTo(scan.chestScale, 6);
   });
 
-  // Re-recorded when #86 (House recovery-slot ceiling) merged with #87, which pinned these
-  // against the pre-#86 model. Both maxima fell because the House now rations recovery slots:
-  // gold 264 997.32 → 247 444.39 (−6.6%), chests 2.0490 → 1.7474 (−14.7%).
+  // Re-recorded twice, both times because the MODEL moved rather than these numbers being wrong:
+  //   pre-#86            gold 264 997.32   chests 2.0490
+  //   + House ceiling    gold 247 444.39   chests 1.7474   (-6.6% / -14.7%)
+  //   + cadence fix      gold 180 744.87   chests 1.2806   (-27% / -27%)
   //
-  // The two do NOT fall by the same factor, and that asymmetry is the point rather than a smell.
-  // Both currencies are proportional to `propsPerHour` at a FIXED phase, but each scale is a
-  // maximum over the whole 1..42 sweep, and the greedy slot allocation is phase-dependent (it
-  // ranks heroes by props-delivered-per-deployment, which moves with mitigation). So per-phase
-  // throughput does not drop uniformly and the two currencies' argmax phases differ.
+  // The House step moved the two by DIFFERENT factors; the cadence step moved them by the same
+  // one. Both are expected. Each scale is a maximum over the whole 1..42 sweep, so an asymmetric
+  // shift means the two currencies' argmax phases moved apart — which the House fix does, since
+  // its greedy slot allocation is phase-dependent (it ranks heroes by props-delivered-per-
+  // deployment, which moves with mitigation). The cadence fix instead rescales every hero's
+  // plant rate by a phase-INDEPENDENT factor (`fuse` and `w` carry no phase term), so it
+  // multiplies both currencies uniformly and leaves the argmaxes where they were.
   //
   // Safe to re-record because the sibling test above — an independent brute-force
   // `currentBuildScales()` scan — still agrees with `farmObjectiveScales` to 6 decimals on the
   // same model. What changed is the model, not the agreement between the two routes to it.
-  it('on the committed fixture (maxPhase 42): goldScale ≈ 247 444.39, chestScale ≈ 1.7474', () => {
+  it("on the committed fixture (maxPhase 42): goldScale ≈ 180 744.87, chestScale ≈ 1.2806", () => {
     const scales = farmObjectiveScales(squad, { maxPhase });
-    expect(scales.goldScale).toBeCloseTo(247444.39, 1);
-    expect(scales.chestScale).toBeCloseTo(1.7474, 3);
+    expect(scales.goldScale).toBeCloseTo(180744.87, 1);
+    expect(scales.chestScale).toBeCloseTo(1.2806, 3);
   });
 });
