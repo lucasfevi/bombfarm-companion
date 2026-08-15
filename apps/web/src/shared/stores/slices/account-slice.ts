@@ -37,7 +37,33 @@ export type AccountSlice = {
   mitigationPct: number;
   rankMode: RankMode;
   targetProp: string | null;
+  /** HOUSE RECOVERY slots (`casa.slots`) — how many heroes the House refills at a time. */
   slots: number;
+  /**
+   * FIELD slots (`skills.field_slots`) — how many heroes may be deployed at once. A different
+   * game concept from {@link slots}, and a different number on a real save (6 vs 3 on account
+   * 486). `null` when the last import carried no `skills.field_slots`, which sends the farm
+   * board back to `slots` as a legacy fallback.
+   */
+  fieldSlots: number | null;
+  /**
+   * `casa.cycle_secs` — a full 0 → 100% House fill in seconds, straight off the save. `null`
+   * falls the whole app back to the `HOUSES` table interpolation, which runs ~7.8% fast. Feeds
+   * `Context.restSeconds` for the advisor, the team plan and the farm board alike, so it belongs
+   * to shared account state rather than to any one surface.
+   */
+  houseCycleSecs: number | null;
+  /**
+   * The (house, level) `houseCycleSecs` was captured at — the import's OWN `houseIdx`/
+   * `houseLevel` at the moment it set `houseCycleSecs`, snapshotted separately from
+   * {@link houseIdx}/{@link houseLevel} because THOSE are the live picker: `setHouseIdx`/
+   * `setHouseLevel` move them without touching this. `resolveHouseRestSeconds` trusts
+   * `houseCycleSecs` only while the picker sits on this exact pair — this is the fix for the
+   * House-ceiling regression where a picker move stopped changing any computed number because a
+   * mismatched save figure kept winning regardless of the requested house/level.
+   */
+  houseCycleSecsHouseIdx: number | null;
+  houseCycleSecsLevel: number | null;
   /**
    * `account.max_phase`. `null` when the browser account predates this feature, was
    * assembled by hand, or the last import's payload carried neither source — `FarmRateOptions`
@@ -81,6 +107,10 @@ export const createAccountSlice: StateCreator<
   rankMode: defaultCtx.rankMode,
   targetProp: defaultCtx.targetProp,
   slots: DEFAULT_CASA_SLOTS,
+  fieldSlots: null,
+  houseCycleSecs: null,
+  houseCycleSecsHouseIdx: null,
+  houseCycleSecsLevel: null,
   maxPhase: null,
 
   setTeamBuffs: (value) => {
@@ -138,6 +168,10 @@ export const createAccountSlice: StateCreator<
       rankMode: shared.context.rankMode,
       targetProp: shared.context.targetProp,
       slots: shared.slots ?? DEFAULT_CASA_SLOTS,
+      fieldSlots: shared.fieldSlots ?? null,
+      houseCycleSecs: shared.houseCycleSecs ?? null,
+      houseCycleSecsHouseIdx: shared.houseCycleSecsHouseIdx ?? null,
+      houseCycleSecsLevel: shared.houseCycleSecsLevel ?? null,
       maxPhase: shared.maxPhase ?? null,
     });
   },
@@ -158,6 +192,21 @@ export const createAccountSlice: StateCreator<
       if (data.houseLevel != null) patch.houseLevel = data.houseLevel;
     }
     if (data.slots != null) patch.slots = data.slots;
+    // UNCONDITIONAL, for the same reason `maxPhase` below is: both readers are total
+    // (`number | null` on every path), so absence is the payload ASSERTING this account has no
+    // `skills.field_slots` / `casa.cycle_secs`, not a section it declined to send. Keeping a
+    // stale field cap or a stale House cycle would score the board against a house the player
+    // no longer has.
+    patch.fieldSlots = data.fieldSlots ?? null;
+    patch.houseCycleSecs = data.houseCycleSecs ?? null;
+    // The anchor rides along with `houseCycleSecs`, UNCONDITIONALLY for the same reason: it is
+    // `data.houseIdx`/`data.houseLevel` at THIS import (not `patch.houseIdx`/`houseLevel` above,
+    // which stay untouched by a re-import that carries no `casa` block) — the house/level pair
+    // `data.houseCycleSecs` was measured at. A payload with no `casa` block sets both to `null`,
+    // matching `houseCycleSecs` going `null` on the same line, so the anchor can never outlive
+    // the figure it anchors.
+    patch.houseCycleSecsHouseIdx = data.houseIdx ?? null;
+    patch.houseCycleSecsLevel = data.houseLevel ?? null;
     if (data.phase != null) {
       // Same clamp `setFarmPhase` relies on downstream reads for (AD-BSP style: reuse, don't
       // reimplement) — and the same mitigation-sync/skipPhaseMitigationSync contract as

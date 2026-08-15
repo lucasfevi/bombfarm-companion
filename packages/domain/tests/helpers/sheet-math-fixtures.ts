@@ -76,8 +76,15 @@ export function treeTotalsFromSave(totalsRaw: Record<string, unknown>) {
   return treeTotalsFromSaveUnits(totalsRaw);
 }
 
-export function loadFixtureJson(filename: string): Record<string, unknown> {
-  return JSON.parse(readFileSync(join(FIXTURES_DIR, filename), 'utf8')) as Record<string, unknown>;
+/**
+ * Reads a capture from `tests/fixtures/<dir>/`. `dir` defaults to `sheet-math` — every existing
+ * call site is unchanged — and exists so a capture whose only reader lives in this package can be
+ * parked outside the cross-package `sheet-math/` corpus (see `fixtures/farm-rate/README.md` for
+ * why that corpus is not a free place to drop one).
+ */
+export function loadFixtureJson(filename: string, dir = 'sheet-math'): Record<string, unknown> {
+  const path = dir === 'sheet-math' ? join(FIXTURES_DIR, filename) : join(FIXTURES_DIR, '..', dir, filename);
+  return JSON.parse(readFileSync(path, 'utf8')) as Record<string, unknown>;
 }
 
 /**

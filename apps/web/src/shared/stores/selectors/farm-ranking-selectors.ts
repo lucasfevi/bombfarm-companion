@@ -38,10 +38,18 @@ const EMPTY_ROWS: readonly FarmRateRow[] = [];
 
 /**
  * The dependency-tuple traceability artifact: every planner edit the board must react to.
- * 15 members — `maxPhase` is here because `FarmRateOptions.maxPhase` is what sets
- * `FarmRateRow.locked` (a COMPUTE INPUT, not a post-compute filter; an earlier design
- * draft treating it as a filter would have made `row.locked` permanently `false`). A field
- * missing from this tuple is a planner edit that silently does not recompute the board.
+ * 19 members — `fieldSlots` and `houseCycleSecs` joined at the House-ceiling fix: the first is
+ * the FIELD concurrency cap (`skills.field_slots`, a different quantity from `slots`, which is
+ * the House's RECOVERY cap), the second is the House cycle that every hero's uptime divides by.
+ * `houseCycleSecsHouseIdx`/`houseCycleSecsLevel` joined at the same fix's regression repair: the
+ * (house, level) `houseCycleSecs` is anchored to, snapshotted separately from the live
+ * `houseIdx`/`houseLevel` picker above so `resolveHouseRestSeconds` can tell a picker move from
+ * the account's own imported configuration — omitting either from this tuple would leave the
+ * board computing against a stale anchor after a re-import. `maxPhase` is here because
+ * `FarmRateOptions.maxPhase` is what sets `FarmRateRow.locked` (a COMPUTE INPUT, not a
+ * post-compute filter; an earlier design draft treating it as a filter would have made
+ * `row.locked` permanently `false`). A field missing from this tuple is a planner edit that
+ * silently does not recompute the board.
  */
 export function readFarmDepTuple(state: PlannerStore) {
   return [
@@ -57,6 +65,10 @@ export function readFarmDepTuple(state: PlannerStore) {
     state.houseIdx,
     state.houseLevel,
     state.slots,
+    state.fieldSlots,
+    state.houseCycleSecs,
+    state.houseCycleSecsHouseIdx,
+    state.houseCycleSecsLevel,
     state.maxPhase,
     state.farmPoolOverrides,
     state.farmReturnBonus,
@@ -127,6 +139,10 @@ export function buildAccount(state: PlannerStore): AccountShared {
       targetProp: 'stone',
     },
     slots: state.slots,
+    fieldSlots: state.fieldSlots,
+    houseCycleSecs: state.houseCycleSecs,
+    houseCycleSecsHouseIdx: state.houseCycleSecsHouseIdx,
+    houseCycleSecsLevel: state.houseCycleSecsLevel,
     maxPhase: state.maxPhase,
   };
 }
@@ -192,9 +208,10 @@ function toObjective(kind: FarmObjectiveKind): FarmObjective {
 }
 
 /**
- * The 15 ranking members PLUS the objective — the one input that changes the RECOMMENDATION
+ * The 19 ranking members PLUS the objective — the one input that changes the RECOMMENDATION
  * without changing the current build's ranking. Spreads readFarmDepTuple rather than restating
- * its members, so a future addition to the ranking tuple is inherited automatically.
+ * its members, so a future addition to the ranking tuple is inherited automatically (the
+ * House-ceiling fix's `fieldSlots`/`houseCycleSecs` arrived exactly that way).
  */
 export function readFarmRespecDepTuple(state: PlannerStore) {
   return [...readFarmDepTuple(state), state.farmObjective] as const;
@@ -265,7 +282,7 @@ function computeFarmRespecGate(state: PlannerStore): FarmRespecGate {
 
 /**
  * Module-level single-entry memo — Tier 1. Same shape as {@link selectFarmRankingRows}, over
- * its own 16-member tuple (the 15 ranking members plus the objective). Returns the SAME object
+ * its own 18-member tuple (the 17 ranking members plus the objective). Returns the SAME object
  * identity on a cache hit and must be subscribed to WITHOUT `useShallow`, for the identical
  * reason `selectFarmRankingRows` is.
  */

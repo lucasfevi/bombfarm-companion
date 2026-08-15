@@ -60,8 +60,16 @@ describe('rankNextPointForFarm — discrimination: a one-shotting squad inverts 
   it('farm ranks speed first and energy second at maxPhase 42, pinned to full precision (recorded from a real run)', () => {
     const result = rankNextPointForFarm({ bases, account, heroId: bellatrix.id, maxPhase: 42 });
     const rows = result.rows!;
-    expect(rows[0]).toEqual({ stat: 'speed', label: 'Velocidade', gainPct: 1.0929227121592167 });
-    expect(rows[1]).toEqual({ stat: 'energy', label: 'Energia', gainPct: 0.8508793573207329 });
+    // Magnitudes re-recorded when #86 merged (House recovery-slot ceiling + the cycle_secs
+    // anchor); #87 pinned these against the pre-#86 model. **The ORDER is unchanged** — speed
+    // first, energy second — which is what this test is actually for; only the gains moved.
+    // Both gains rose (speed 1.0929 → 1.1170, energy 0.8509 → 0.8999) because a rationed House
+    // keeps each hero on the field for a smaller share of the time, so anything buying throughput
+    // per on-field second is worth more. Energy rose slightly faster, narrowing the gap without
+    // closing it — consistent with the plateau shift seen in `farm-optimize-plateau.test.ts`
+    // (energy share 0.4744 → 0.4937) from the same cause.
+    expect(rows[0]).toEqual({ stat: 'speed', label: 'Velocidade', gainPct: 1.1170118575225318 });
+    expect(rows[1]).toEqual({ stat: 'energy', label: 'Energia', gainPct: 0.8998710690976797 });
   });
 
   it('DPS mode scores attack first and speed exactly 0 on the same hero (the inversion)', () => {

@@ -47,6 +47,13 @@ export function pipelineForHero(
     teamBuffs: account.teamBuffs,
     houseIdx: context.houseIdx,
     houseLevel: context.houseLevel,
+    houseCycleSecs: account.houseCycleSecs ?? null,
+    // NOT coerced with `?? null`: `undefined` (the field absent — every non-web-store account,
+    // including every fixture predating this field) must reach `resolveHouseRestSeconds` as
+    // `undefined` so it keeps trusting `houseCycleSecs` unconditionally, its pre-existing
+    // behaviour. Only the web planner's account store populates a real anchor value here.
+    houseCycleSecsHouseIdx: account.houseCycleSecsHouseIdx,
+    houseCycleSecsLevel: account.houseCycleSecsLevel,
     phase,
     mitigationPct,
     rankMode: context.rankMode,

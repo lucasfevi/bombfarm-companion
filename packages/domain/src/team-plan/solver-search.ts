@@ -164,6 +164,9 @@ function farmFromAccount(input: TeamPlanInput): FarmContext {
     houseLevel: input.account.houseLevel,
     phase: input.account.phase,
     mitigationPct: input.account.mitigationPct,
+    cycleSecs: input.account.cycleSecs,
+    cycleSecsHouseIdx: input.account.cycleSecsHouseIdx,
+    cycleSecsLevel: input.account.cycleSecsLevel,
   };
 }
 

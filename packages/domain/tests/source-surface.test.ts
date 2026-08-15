@@ -71,9 +71,17 @@ function listFiles(dir: string, acc: string[] = []): string[] {
  */
 const SRC_ALLOWLIST: Record<string, number[]> = {
   'derive.ts': [27, 78, 96, 142, 197, 208],
-  'advisor-pipeline.ts': [96, 199, 225, 325],
+  // Line numbers only — still FOUR matches, unchanged in kind. Re-measured against the merged
+  // tree rather than resolved to either side: this branch's House-cycle plumbing
+  // (`houseCycleSecs`, then `houseCycleSecsHouseIdx`/`houseCycleSecsLevel`) and #87's farm-objective
+  // rank mode each inserted lines above these hits, so BOTH pins were stale after the merge —
+  // 341 from here and 325 from develop are each correct only in isolation.
+  'advisor-pipeline.ts': [111, 217, 246, 346],
   'stat-breakdown/types.ts': [105],
-  'team-plan/score.ts': [135],
+  // +1 (line number only): the `cycleSecs` pass-through added one line above this hit.
+  // +2 more: the House-ceiling regression repair's `cycleSecsHouseIdx`/`cycleSecsLevel`
+  // pass-through (PR #86 finding, house.ts:38) added two more lines above it.
+  'team-plan/score.ts': [138],
 };
 
 /**

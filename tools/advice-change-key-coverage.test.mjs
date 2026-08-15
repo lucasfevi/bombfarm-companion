@@ -150,6 +150,9 @@ describe('per-field mutation — a path listed but not actually read by the key 
       },
       teamBuffs: { buffA: 0 },
       context: { houseIdx: 0, houseLevel: 1, phase: 30, mitigationPct: 5, rankMode: 'dps', targetProp: null },
+      houseCycleSecs: 1168.42105263158,
+      houseCycleSecsHouseIdx: 0,
+      houseCycleSecsLevel: 1,
     };
   }
 
@@ -167,11 +170,37 @@ describe('per-field mutation — a path listed but not actually read by the key 
   const contextPaths = CHANGE_KEY_INPUTS.filter((path) => path.startsWith('context.'));
   const teamBuffsPath = CHANGE_KEY_INPUTS.filter((path) => path === 'account.teamBuffs');
   const scalarPaths = CHANGE_KEY_INPUTS.filter((path) => path === 'phase' || path === 'mitigationPct');
+  // Account-root scalars — `account.houseCycleSecs` (`casa.cycle_secs`) and the (house, level)
+  // pair it is anchored to ride here rather than under `context.*` because they are captured
+  // measurements on the account, not HeroContext fields the house pickers write.
+  const accountRootPaths = CHANGE_KEY_INPUTS.filter(
+    (path) =>
+      path === 'account.houseCycleSecs' ||
+      path === 'account.houseCycleSecsHouseIdx' ||
+      path === 'account.houseCycleSecsLevel',
+  );
 
-  it('the four path groups above cover CHANGE_KEY_INPUTS completely (sanity — otherwise some path is silently untested)', () => {
-    const covered = heroPaths.length + sharedTreePaths.length + contextPaths.length + teamBuffsPath.length + scalarPaths.length;
+  it('the path groups above cover CHANGE_KEY_INPUTS completely (sanity — otherwise some path is silently untested)', () => {
+    const covered =
+      heroPaths.length +
+      sharedTreePaths.length +
+      contextPaths.length +
+      teamBuffsPath.length +
+      scalarPaths.length +
+      accountRootPaths.length;
     expect(covered).toBe(CHANGE_KEY_INPUTS.length);
   });
+
+  for (const path of accountRootPaths) {
+    it(`mutating ${path} changes sharedChangeKey`, () => {
+      const shared = baselineShared();
+      const before = sharedChangeKey(shared, 30, 5);
+      const field = path.slice('account.'.length);
+      shared[field] = mutateValue(shared[field]);
+      const after = sharedChangeKey(shared, 30, 5);
+      expect(after, `sharedChangeKey did not change when ${path} was mutated`).not.toBe(before);
+    });
+  }
 
   for (const path of heroPaths) {
     it(`mutating ${path} changes heroChangeKey`, () => {

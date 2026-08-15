@@ -164,7 +164,12 @@ const CRIT_DMG_MULT_MAP = {
   'apps/desktop/src/main/storage/stale-sections.ts': [11],
   'apps/web/docs/local-data-compat.md': [106, 114],
   'apps/web/src/features/planner/components/advice-column.tsx': [38, 59],
-  'apps/web/src/shared/lib/account-shared.ts': [108],
+  // +16 (line number only): the House-ceiling fix added `fieldSlots`/`houseCycleSecs`, with
+  // their doc comments, to `AccountShared` above this line. The match itself is unchanged in
+  // count and in kind — still `normalizeTree`'s doc comment naming a stale key it discards.
+  // +11 more: the House-ceiling regression repair (PR #86 finding, house.ts:38) added
+  // `houseCycleSecsHouseIdx`/`houseCycleSecsLevel`, with their doc comment, above this line too.
+  'apps/web/src/shared/lib/account-shared.ts': [135],
   'apps/web/src/shared/lib/stale-account.ts': [20],
   'apps/web/src/tests/advisor-pipeline.test.ts': [85],
   'apps/web/src/tests/derive.test.ts': [
@@ -179,7 +184,12 @@ const CRIT_DMG_MULT_MAP = {
   'apps/web/src/tests/storage-legacy-keystone-fields.test.ts': [40, 109],
   'apps/web/src/tests/storage-stat-points-available-compat.test.ts': [104],
   'tools/fixture-corpus-parity.test.mjs': [117, 169],
-  'tools/keystone-surface-absence.test.mjs': [13, 147, 150, 225, 230, 240, 249],
+  // Self-map. The last four shifted +3 (line numbers only) when the account-shared entry above
+  // gained its three-line explanation; count and kind are unchanged.
+  // Line numbers only — the House-ceiling regression repair (PR #86 finding, house.ts:38) added
+  // explanatory comment lines above this point (the account-shared.ts entry above, and this
+  // entry's own comment), shifting every self-reference below it down.
+  'tools/keystone-surface-absence.test.mjs': [13, 147, 150, 235, 240, 250, 259],
   'tools/save-acceptance-guards.test.mjs': [53],
 };
 

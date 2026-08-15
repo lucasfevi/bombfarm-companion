@@ -29,6 +29,12 @@ export function buildTeamPlanInputFromStore(state: PlannerStore): TeamPlanInput 
       phase: state.phase,
       mitigationPct: state.mitigationPct,
       slots: state.slots,
+      // The scorer's duty cycle divides by this — the save's own House cycle when it carried
+      // one, else the `HOUSES` table. Same value the advisor and the farm board use.
+      cycleSecs: state.houseCycleSecs,
+      // The (house, level) `cycleSecs` above is anchored to — see `AccountSlice.houseCycleSecsHouseIdx`.
+      cycleSecsHouseIdx: state.houseCycleSecsHouseIdx,
+      cycleSecsLevel: state.houseCycleSecsLevel,
     },
     // Must match the scope board: missing keys use battleAllowed defaults (Donate when
     // disabled), never a hard-coded Optimize — that silently scored Donate-looking heroes.

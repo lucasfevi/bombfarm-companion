@@ -1,11 +1,30 @@
 /**
  * Proof that the `farm-rate.ts` basis seam is a byte-identical refactor, not a rewrite.
  *
- * `farm-basis-parity-expected.json` (tests/fixtures/) is a literal capture of the PRE-refactor
- * `computeHeroFarmFacts(fixture)` output and the PRE-refactor 600-row `computeFarmRates` table,
- * so the assertions below compare the post-refactor code against those frozen literals rather
- * than against itself. Every assertion uses exact `toEqual`, never `toBeCloseTo`, except the one
- * case explicitly documented as approximate (the moved-vector affine claim).
+ * `farm-basis-parity-expected.json` (tests/fixtures/) is a literal capture of the
+ * `computeHeroFarmFacts(fixture)` output and the 600-row `computeFarmRates` table, so the
+ * assertions below compare the code against frozen literals rather than against itself. Every
+ * assertion uses exact `toEqual`, never `toBeCloseTo`, except the one case explicitly documented
+ * as approximate (the moved-vector affine claim).
+ *
+ * RE-CAPTURED at the House-recovery-slot / `casa.cycle_secs` / `field_slots` fix. The previous
+ * capture was taken before the model change and could not survive it — but the re-capture was
+ * DIFFED against it field by field first, and the diff is exactly the change's own footprint,
+ * nothing more:
+ *
+ * - `heroFacts`: **only `uptime` moved.** `avgHitBase`, `penetrationPct`, `fuseSecs`,
+ *   `walkSpeedCells`, `cycleSecs`, `plantsPerSec`, `blocksPerBomb`, `heroLuckPct`,
+ *   `veiaOuroLevel`, `fortunaLevel` and `degenerate` are byte-identical to the pre-fix capture.
+ *   `uptime` moved because the fixture's rest seconds now come from its own `casa.cycle_secs`
+ *   (1181.05s) rather than the `HOUSES` table's interpolation (1102s) — a longer House cycle,
+ *   so every duty cycle is lower. Nothing about the damage or cadence math changed, and this
+ *   file's untouched columns are the proof.
+ * - `rows`: only the throughput-derived columns moved (`propsPerHour`, `goldPerHour`,
+ *   `chestsPerHour`, `keysPerHour`, `gemsPerHour`, `timePiecesPerHour`, `xpPerHour`,
+ *   `cyclesPerHour`, `clearSecs`, `expectedHtk`), plus the two new ones (`heroesOnField`,
+ *   `concurrencyScale`). `mitigationPct`, `ato`, `gate`, `locked`, `oneShot`, `infeasible`,
+ *   `itemLevels`, `itemLevelLabel`, `jaulaEarlyCapPct`, `jaulaWindowSecs` and `gateTimerSecs`
+ *   are byte-identical — i.e. the fix touched throughput and nothing else.
  */
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';

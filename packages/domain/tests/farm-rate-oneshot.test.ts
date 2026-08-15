@@ -67,7 +67,10 @@ describe('oneShot boundary', () => {
     expect(row.oneShot).toBe(true);
     expect(row.expectedHtk).toBe(1);
 
-    const pureRate = 3600 * squad.concurrencyScale * (hero.plantsPerSec * hero.blocksPerBomb * EFF_IA * hero.uptime);
+    // `concurrencyScale` moved from the squad to the row when the House recovery-slot ceiling
+    // landed (it is now `min(1, fieldSlots / heroesOnField)`, and `heroesOnField` is per-phase).
+    // This hero is at uptime 1 ⇒ it asks the House for nothing ⇒ both ceilings are inert here.
+    const pureRate = 3600 * row.concurrencyScale * (hero.plantsPerSec * hero.blocksPerBomb * EFF_IA * hero.uptime);
     expect(row.propsPerHour).toBeCloseTo(pureRate, 6);
   });
 

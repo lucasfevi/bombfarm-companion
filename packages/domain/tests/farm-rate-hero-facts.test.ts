@@ -186,23 +186,36 @@ describe('computeHeroFarmFacts — enabled pool semantics', () => {
   });
 });
 
-describe('computeSquadFarmFacts — fieldSlots', () => {
-  it('reads account.slots (3 on the fixture, from casa.slots)', () => {
+describe('computeSquadFarmFacts — the two slot counts are read from two different keys', () => {
+  it('houseSlots reads account.slots (casa.slots) and fieldSlots reads account.fieldSlots (skills.field_slots) — both 3 on this fixture, which is why the confusion was invisible here', () => {
     const heroFacts = computeHeroFarmFacts({ heroes, account });
-    expect(computeSquadFarmFacts(heroFacts, account).fieldSlots).toBe(3);
+    const squad = computeSquadFarmFacts(heroFacts, account);
+    expect(squad.houseSlots).toBe(3);
+    expect(squad.fieldSlots).toBe(3);
   });
 
-  it('falls back to DEFAULT_CASA_SLOTS when account.slots is absent — not 0, not Infinity', () => {
+  it('the two are genuinely independent — moving one does not move the other', () => {
     const heroFacts = computeHeroFarmFacts({ heroes, account });
-    const noSlotsAccount: AccountShared = { ...account, slots: undefined };
+    const split = computeSquadFarmFacts(heroFacts, { ...account, slots: 3, fieldSlots: 6 });
+    expect(split.houseSlots).toBe(3);
+    expect(split.fieldSlots).toBe(6);
+  });
+
+  it('fieldSlots falls back to account.slots for a record stored before the split, then to DEFAULT_CASA_SLOTS — not 0, not Infinity', () => {
+    const heroFacts = computeHeroFarmFacts({ heroes, account });
+    const legacy: AccountShared = { ...account, fieldSlots: null, slots: 4 };
+    expect(computeSquadFarmFacts(heroFacts, legacy).fieldSlots).toBe(4);
+
+    const noSlotsAccount: AccountShared = { ...account, slots: undefined, fieldSlots: null };
     const squad = computeSquadFarmFacts(heroFacts, noSlotsAccount);
     expect(squad.fieldSlots).toBe(DEFAULT_CASA_SLOTS);
+    expect(squad.houseSlots).toBe(DEFAULT_CASA_SLOTS);
     expect(squad.fieldSlots).not.toBe(0);
     expect(Number.isFinite(squad.fieldSlots)).toBe(true);
   });
 });
 
-describe('computeSquadFarmFacts — concurrencyScale', () => {
+describe('computeSquadFarmFacts — houseSlotDemand', () => {
   const syntheticHero = (uptime: number): HeroFarmFacts => ({
     heroId: 'synthetic',
     heroName: 'Synthetic',
@@ -220,22 +233,28 @@ describe('computeSquadFarmFacts — concurrencyScale', () => {
     degenerate: false,
   });
 
-  it('uptimeSum === 0 ⇒ concurrencyScale === 1 (the 0/0 guard)', () => {
-    const squad = computeSquadFarmFacts([syntheticHero(0), syntheticHero(0)], account);
-    expect(squad.uptimeSum).toBe(0);
-    expect(squad.concurrencyScale).toBe(1);
-  });
-
-  it('Σ uptime === fieldSlots (3 on the fixture) ⇒ concurrencyScale === 1 exactly (boundary)', () => {
+  it('is Σ (1 − uptime) — a hero that never rests (uptime 1) asks the House for nothing', () => {
     const squad = computeSquadFarmFacts([syntheticHero(1), syntheticHero(1), syntheticHero(1)], account);
     expect(squad.uptimeSum).toBe(3);
-    expect(squad.fieldSlots).toBe(3);
-    expect(squad.concurrencyScale).toBe(1);
+    expect(squad.houseSlotDemand).toBe(0);
   });
 
-  it('Σ uptime > fieldSlots ⇒ concurrencyScale === fieldSlots / uptimeSum (< 1)', () => {
-    const squad = computeSquadFarmFacts([syntheticHero(1), syntheticHero(1), syntheticHero(1), syntheticHero(1)], account);
-    expect(squad.uptimeSum).toBe(4);
-    expect(squad.concurrencyScale).toBeCloseTo(3 / 4, 12);
+  it('a roster that never deploys (uptime 0) asks for a full slot each — the worst case, not a free one', () => {
+    const squad = computeSquadFarmFacts([syntheticHero(0), syntheticHero(0)], account);
+    expect(squad.uptimeSum).toBe(0);
+    expect(squad.houseSlotDemand).toBe(2);
+  });
+
+  it('uptimeSum + houseSlotDemand === the roster size, for any mix', () => {
+    const facts = [syntheticHero(0.1), syntheticHero(0.42), syntheticHero(0.9), syntheticHero(1)];
+    const squad = computeSquadFarmFacts(facts, account);
+    expect(squad.uptimeSum + squad.houseSlotDemand).toBeCloseTo(facts.length, 12);
+  });
+
+  it('the 5-hero fixture overcommits its 3-slot House (Σ uptime is well under 3, yet demand is over it)', () => {
+    const heroFacts = computeHeroFarmFacts({ heroes, account });
+    const squad = computeSquadFarmFacts(heroFacts, account);
+    expect(squad.uptimeSum).toBeLessThan(squad.houseSlots);
+    expect(squad.houseSlotDemand).toBeGreaterThan(squad.houseSlots);
   });
 });

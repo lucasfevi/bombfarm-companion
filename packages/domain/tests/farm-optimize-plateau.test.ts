@@ -110,8 +110,15 @@ describe('the fixture reports a bounded, correctly-shaped plateau', () => {
     // neighbouring grid share scores within tolerance of the peak, so the plateau genuinely
     // collapses to a single point. That is spec-sanctioned behaviour, not an accident: min and
     // max both equal the winner's own share, never null, never an invented width.
-    expect(plateau.minEnergyShare).toBeCloseTo(0.4744, 4);
-    expect(plateau.maxEnergyShare).toBeCloseTo(0.4744, 4);
+    //
+    // RE-MEASURED (House-ceiling fix): was 0.4744, now 0.4937. Not a change to the plateau logic
+    // — the winning BUILD moved. The fixture's rest seconds now come from its own
+    // `casa.cycle_secs` (1181.05s) instead of the `HOUSES` table's interpolation (1102s), and a
+    // longer House cycle makes each Energy point (which buys field seconds) worth more against
+    // each Attack point, so the optimum shifts toward energy. The single-point collapse the
+    // comment above describes is unchanged.
+    expect(plateau.minEnergyShare).toBeCloseTo(0.4937, 4);
+    expect(plateau.maxEnergyShare).toBeCloseTo(0.4937, 4);
     expect(plateau.minEnergyShare).toBe(plateau.maxEnergyShare);
   });
 

@@ -1,6 +1,6 @@
 'use client';
 
-import { houseRestSeconds, splitHouseRest } from '@bombfarm/domain/model';
+import { resolveHouseRestSeconds, splitHouseRest } from '@bombfarm/domain/model';
 import type { AccountImportData } from '@bombfarm/domain/import-save';
 import { houseLabel } from '@bombfarm/domain/game-labels';
 import { formatNumber } from '@/shared/lib/format-number';
@@ -24,12 +24,23 @@ export function ImportAccountSummary({
   const house =
     accountData.houseIdx != null
       ? (() => {
+          const level = accountData.houseLevel ?? 1;
+          // Same resolver the model uses — preferring the save's own `casa.cycle_secs` for the
+          // house/level THIS import itself recorded (the anchor and the request are the same
+          // pair here, since this panel only ever shows the account's own imported House, never
+          // a picker that could have moved elsewhere).
           const rest = splitHouseRest(
-            houseRestSeconds(accountData.houseIdx, accountData.houseLevel ?? 1),
+            resolveHouseRestSeconds(
+              accountData.houseCycleSecs,
+              accountData.houseIdx,
+              level,
+              accountData.houseIdx,
+              level,
+            ),
           );
           return {
             name: houseLabel(accountData.houseIdx, lang) || `#${accountData.houseIdx + 1}`,
-            level: accountData.houseLevel ?? 1,
+            level,
             rest,
           };
         })()

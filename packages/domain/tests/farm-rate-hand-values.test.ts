@@ -24,6 +24,7 @@ import {
   computeHeroFarmFacts,
   computeSquadFarmFacts,
   computeFarmRateRow,
+  FORTUNA_AURA_CAP,
   type HeroFarmFacts,
 } from '@bombfarm/domain/farm-rate';
 import {
@@ -62,6 +63,9 @@ function handExpectedHtk(stoneHp: number, avgHit: number): number {
 }
 
 type HandRow = {
+  heroesOnField: number;
+  concurrencyScale: number;
+  fortunaAura: number;
   propsPerSec: number;
   propsPerHour: number;
   expectedHtk: number;
@@ -73,23 +77,68 @@ type HandRow = {
   bossPerSec: number;
 };
 
+/**
+ * The House recovery-slot ceiling, hand-written independently of `allocateHouseSlots`: rank by
+ * value density (unconstrained prop rate per slot-second demanded), serve each hero up to its own
+ * duty cycle, stop when the slot budget runs out. Returns one activity factor per hero, in
+ * `heroFacts` order.
+ *
+ * The 5-hero fixture is genuinely overcommitted (≈4.1 slots demanded against 3), so this is NOT
+ * a no-op on either row below — dropping it produces visibly higher rates, which is the whole
+ * point of the fix under test.
+ */
+function handAllocateHouse(terms: readonly number[], houseSlots: number): number[] {
+  const demand = heroFacts.map((hero: HeroFarmFacts) => Math.min(1, Math.max(0, 1 - hero.uptime)));
+  const order = heroFacts
+    .map((_hero, index) => index)
+    .filter((index) => demand[index] > 0)
+    .sort((left, right) => terms[right] / demand[right] - terms[left] / demand[left] || left - right);
+
+  const activity = heroFacts.map((_hero, index) => (demand[index] > 0 ? 0 : 1));
+  let budget = houseSlots;
+  for (const index of order) {
+    if (budget <= 0) break;
+    const take = Math.min(1, budget / demand[index]);
+    activity[index] = take;
+    budget -= demand[index] * take;
+  }
+  return activity;
+}
+
 /** The whole squad reduction, hand-written independently of buildRow in farm-rate.ts. */
 function handComputeRow(stoneHp: number, mitig: number, goldComum: number, phase: number, gate: boolean, ato: number): HandRow {
-  const perHero = heroFacts.map((hero: HeroFarmFacts) => {
+  const unconstrained = heroFacts.map((hero: HeroFarmFacts) => {
     const mitF = mitigationFactor(mitig, hero.penetrationPct);
     const avgHit = hero.avgHitBase * mitF;
     const eHtk = handExpectedHtk(stoneHp, avgHit);
     const bossHtk = hitsToKill(avgHit, propHp(stoneHp, BOSS_HP_MULT_WIKI));
     const hps = hero.plantsPerSec * hero.blocksPerBomb * EFF_IA;
-    const term = (hps * hero.uptime) / eHtk;
-    const bossTerm = (hps * hero.uptime) / bossHtk;
-    return { hero, avgHit, eHtk, term, bossTerm };
+    return { hero, avgHit, eHtk, term: (hps * hero.uptime) / eHtk, bossTerm: (hps * hero.uptime) / bossHtk };
   });
+
+  const activity = handAllocateHouse(
+    unconstrained.map((x) => x.term),
+    squad.houseSlots,
+  );
+  const perHero = unconstrained.map((x, i) => ({
+    ...x,
+    term: x.term * activity[i],
+    bossTerm: x.bossTerm * activity[i],
+    onField: x.hero.uptime * activity[i],
+  }));
 
   const shareDenom = perHero.reduce((sum, x) => sum + x.term, 0);
   const bossRateSum = perHero.reduce((sum, x) => sum + x.bossTerm, 0);
-  const propsPerSec = squad.concurrencyScale * shareDenom;
-  const bossPerSec = squad.concurrencyScale * bossRateSum;
+  const heroesOnField = perHero.reduce((sum, x) => sum + x.onField, 0);
+  // House-ALLOCATED basis, not the unconstrained one — same `onField` term `heroesOnField` sums.
+  const fortunaAura = Math.min(
+    FORTUNA_AURA_CAP,
+    perHero.reduce((sum, x) => sum + x.onField * LOOT_ABILITY_VALUES.fortuna.perLevel * x.hero.fortunaLevel, 0),
+  );
+  // The FIELD cap, applied after the House ceiling — to the heroes the House can keep fed.
+  const concurrencyScale = heroesOnField > 0 ? Math.min(1, squad.fieldSlots / heroesOnField) : 1;
+  const propsPerSec = concurrencyScale * shareDenom;
+  const bossPerSec = concurrencyScale * bossRateSum;
   const propsPerHour = 3600 * propsPerSec;
 
   const expectedHtk = perHero.reduce((sum, x) => {
@@ -109,14 +158,27 @@ function handComputeRow(stoneHp: number, mitig: number, goldComum: number, phase
   const cyclesPerHour = Number.isFinite(clearSecs) && clearSecs > 0 ? 3600 / clearSecs : 0;
 
   const eGold = goldComum * goldShareFactor;
-  const goldMult = squad.teamCoinMult * (1 + squad.fortunaAura) * 1; // bonus = 1 ('off')
+  const goldMult = squad.teamCoinMult * (1 + fortunaAura) * 1; // bonus = 1 ('off')
   const goldPerHour = propsPerHour * eGold * goldMult * goldSelfMix;
 
   const sorteMult = 1 + squad.sorteFraction;
   const chestsPerHour = propsPerHour * DROP_RATES.chest * sorteMult * 1;
   const xpPerHour = propsPerHour * xpPerProp(phase) * 1;
 
-  return { propsPerSec, propsPerHour, expectedHtk, goldPerHour, chestsPerHour, xpPerHour, clearSecs, cyclesPerHour, bossPerSec };
+  return {
+    heroesOnField,
+    concurrencyScale,
+    fortunaAura,
+    propsPerSec,
+    propsPerHour,
+    expectedHtk,
+    goldPerHour,
+    chestsPerHour,
+    xpPerHour,
+    clearSecs,
+    cyclesPerHour,
+    bossPerSec,
+  };
 }
 
 describe('phase 42 — non-gate hand-computed values (spec.md P1-2 AC-1)', () => {
@@ -132,6 +194,18 @@ describe('phase 42 — non-gate hand-computed values (spec.md P1-2 AC-1)', () =>
 
   const hand = handComputeRow(line.hp, line.mitig, line.goldComum, 42, false, line.ato);
   const row = computeFarmRateRow(42, squad)!;
+
+  it('heroesOnField matches the hand-derived greedy House allocation, and is strictly below Σ uptime (the House is overcommitted here)', () => {
+    expect(row.heroesOnField).toBeCloseTo(hand.heroesOnField, 12);
+    expect(row.concurrencyScale).toBeCloseTo(hand.concurrencyScale, 12);
+    expect(squad.houseSlotDemand).toBeGreaterThan(squad.houseSlots);
+    expect(row.heroesOnField).toBeLessThan(squad.uptimeSum);
+  });
+
+  it('fortunaAura matches the hand-derived House-allocated basis (0 here — the fixture carries no Fortuna)', () => {
+    expect(row.fortunaAura).toBe(hand.fortunaAura);
+    expect(row.fortunaAura).toBe(0);
+  });
 
   it('expectedHtk matches the hand-derived spawn-weighted E[HTK]', () => {
     expect(row.expectedHtk).toBeCloseTo(hand.expectedHtk, 6);
