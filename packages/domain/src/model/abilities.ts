@@ -17,11 +17,21 @@ export type AbilityEffect =
   | { kind: 'attackPct'; perLevel: number }
   | { kind: 'speedPct'; perLevel: number }
   | { kind: 'gateAttackPct'; perLevel: number } // attack bonus in timed phases only
-  /** % of the hero's crit-damage BASE (the excess over 1.0), pooled with spent points.
-   *  UNIT: fraction, not percent — 0.04 means +4%. Deliberately unlike
-   *  `critChancePctOfBase` (percent, /100 at the consumer); matches `penetrationPp`'s
-   *  raw-Σ convention on the sheet side. Locked verbatim by AD-BSP-32 / BSP-37d (DEC-05). */
-  | { kind: 'critDmgPctOfBase'; perLevel: number; onSheet?: boolean }
+  /**
+   * FLAT crit-damage percentage points per ability level — planner units, the same units as
+   * `SheetStats.critDmg` (`(save crit_dmg − 1) × 100`), so `perLevel: 4` moves the save's
+   * `crit_dmg` multiplier by `+0.04` per level. Added to the sheet, NOT pooled multiplicatively
+   * against the hero's roll.
+   *
+   * Supersedes the former `critDmgPctOfBase` kind (AD-BSP-32 / BSP-37d, DEC-05), which read the
+   * wiki's "+4% dano crítico" as 4% *of the hero's crit-damage base*. The live save says
+   * otherwise: Ivo (id `21076`, L38, `golpe_brutal` 20/20, account 11882 capture 2026-08-15) has
+   * `birth_stats.crit_dmg` 1.45238210566148 and `stats.crit_dmg` 2.25238210566148 — a delta of
+   * exactly `0.8 = 20 × 0.04`, flat. Percent-of-base would have given `20 × 0.04 × 1.45238`, i.e.
+   * `2.6143`, and mis-attributing that residual to spent points inferred 50 points on a level-38
+   * hero. Same flat shape as the crit-damage stat point (`POINT_GAIN.critDmgFlat`).
+   */
+  | { kind: 'critDmgFlat'; perLevel: number; onSheet?: boolean }
   | { kind: 'none' };
 
 export interface AbilityDef {
@@ -49,7 +59,7 @@ export const ABILITIES: AbilityDef[] = [
   { id: 'olho_lapidador', name: 'Olho de Lapidador', max: 20, effectText: '+2.5% chance de baú subir raridade/nível (loot)', effect: { kind: 'none' } },
   { id: 'veia_ouro', name: 'Veia de Ouro', max: 20, effectText: '+2% ouro (próprio)/nível, +40% no teto (loot)', effect: { kind: 'none' } },
   { id: 'grito_guerra', name: 'Grito de Guerra', max: 20, effectText: '+1% Ataque do TIME/nível', effect: { kind: 'attackPct', perLevel: 1 } },
-  { id: 'golpe_brutal', name: 'Golpe Brutal', max: 20, effectText: '+4% dano crítico/nível (% da base, altera atributos)', effect: { kind: 'critDmgPctOfBase', perLevel: 0.04, onSheet: true } },
+  { id: 'golpe_brutal', name: 'Golpe Brutal', max: 20, effectText: '+4% dano crítico/nível (valor fixo, altera atributos)', effect: { kind: 'critDmgFlat', perLevel: 4, onSheet: true } },
   { id: 'matilha', name: 'Matilha', max: 20, effectText: '+2% dano por aliado na rotação/nível, +40% no teto (não modelado)', effect: { kind: 'none' } },
   { id: 'fortuna', name: 'Fortuna', max: 20, effectText: '+0.5% ouro do TIME/nível, +10% no teto (loot, aura capada)', effect: { kind: 'none' } },
   { id: 'brecha', name: 'Brecha', max: 20, effectText: '+1 Penetração/nível, +20 no teto (herói na ficha: não comprovado)', effect: { kind: 'none' } },
@@ -60,7 +70,7 @@ export function isSheetAbility(ability: AbilityDef): boolean {
   return (
     (ability.effect.kind === 'critChancePctOfBase' ||
       ability.effect.kind === 'penetrationPp' ||
-      ability.effect.kind === 'critDmgPctOfBase') &&
+      ability.effect.kind === 'critDmgFlat') &&
     ability.effect.onSheet === true
   );
 }
@@ -99,9 +109,9 @@ export interface AbilityMods {
   /** Ponta de Diamante etc. — raw Σ units on the unequipped sheet (+2 per level). */
   sheetPenetrationRaw: number;
   penetrationPp: number;
-  /** Golpe Brutal — fraction of the crit-damage base, already on the hero sheet.
-   *  Feeds SheetOtherPct.critDmg with NO /100 (DEC-05). */
-  sheetCritDmgPctOfBase: number;
+  /** Golpe Brutal — FLAT crit-damage percentage points (planner units), already on the hero
+   *  sheet. Feeds `SheetOtherPct.critDmgFlat` as an addend, NOT a pool fraction. */
+  sheetCritDmgFlat: number;
   rangeCells: number;
   dmgMult: number; // second blast + execute
   attackMult: number;
@@ -116,7 +126,7 @@ export function abilityMods(levels: Record<string, number>): AbilityMods {
     combatCritChancePctOfBase: 0,
     sheetPenetrationRaw: 0,
     penetrationPp: 0,
-    sheetCritDmgPctOfBase: 0,
+    sheetCritDmgFlat: 0,
     rangeCells: 0,
     dmgMult: 1,
     attackMult: 1,
@@ -139,8 +149,8 @@ export function abilityMods(levels: Record<string, number>): AbilityMods {
         if (effect.onSheet) mods.sheetPenetrationRaw += effect.perLevel * count;
         else mods.penetrationPp += effect.perLevel * count;
         break;
-      case 'critDmgPctOfBase':
-        mods.sheetCritDmgPctOfBase += effect.perLevel * count;
+      case 'critDmgFlat':
+        mods.sheetCritDmgFlat += effect.perLevel * count;
         break;
       case 'rangeCells':
         mods.rangeCells += effect.perLevel * count;
@@ -199,7 +209,7 @@ export function critMilestones(
   ];
   return targets.map(([critChanceTarget, critDmgTarget]) => {
     const nCc = Math.max(0, Math.ceil((critChanceTarget / base.critChance - 1) / POINT_GAIN.critChancePctOfBase));
-    const nCd = Math.max(0, Math.ceil((critDmgTarget / base.critDmg - 1) / POINT_GAIN.critDmgPctOfBase));
+    const nCd = Math.max(0, Math.ceil((critDmgTarget - base.critDmg) / POINT_GAIN.critDmgFlat));
     const pts = nCc + nCd;
     return {
       label: `${critChanceTarget}% crit chance / +${critDmgTarget}% crit dmg`,

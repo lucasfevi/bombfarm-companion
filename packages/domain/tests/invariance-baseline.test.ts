@@ -15,6 +15,24 @@
  * so the top-level comparison is exact string equality on the canonical JSON serialisation, and
  * the walk below decodes leaves back to numbers for a same-value comparison (`Object.is`) only
  * to name the first differing hero/function/stat on failure.
+ *
+ * RE-RECORDED at the flat-crit-damage fix (`POINT_GAIN.critDmgFlat`). Exactly 85 of the ~2500+
+ * recorded scalars moved, and every one of them is downstream of crit damage:
+ *
+ * - `derive.delta.critDmg` / `derive.effectiveDelta.critDmg` / `pipelineForHero.pointDelta.critDmg`
+ *   — 13 heroes x 3, the per-point rate itself (was `0.08 x roll`, now a flat `5`).
+ * - `pipelineForHero.ranking.2.gainPct` — 13 heroes, the crit-damage row of the ranking.
+ * - Bellatrix (id 20402) alone on everything else: she is the only corpus hero holding
+ *   crit-damage points, so only her SHEET moved, and with it `applySkillTree.critDmg`,
+ *   `composeSheetFromBirth.critDmg`, `adjusted`/`effective.critDmg`, her `critDmg` ledger
+ *   totals, `critFactor`, `criticalHit`, `activeDps`/`sustainedDps`, `derive`/`pipelineForHero`
+ *   dps, `resetAdvice` and her scorer entry.
+ *
+ * NOT moved, and the proof this was a crit-damage change and nothing else: every
+ * `inferSpentPoints.*` value on all 13 heroes (the recovered point vectors are unchanged), and
+ * every non-`critDmg` sheet key on every hero and every subject. The MKR-14 `formulaDmg`
+ * entries below were deliberately held at their PRE-deletion values through the re-record, so
+ * `PERMITTED_DELTAS` stays a live exception rather than becoming a silently-satisfied no-op.
  */
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';

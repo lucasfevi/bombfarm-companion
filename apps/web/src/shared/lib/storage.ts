@@ -155,7 +155,7 @@ function migrateGearedOverride(raw: Partial<HeroRecord>): SheetStats {
     ...emptySheetOther(),
     critChance: mods.sheetCritChancePctOfBase / 100,
     penetration: mods.sheetPenetrationRaw,
-    critDmg: mods.sheetCritDmgPctOfBase,
+    critDmgFlat: mods.sheetCritDmgFlat,
   };
   return applyGear(naked, loadout, sheetOther);
 }

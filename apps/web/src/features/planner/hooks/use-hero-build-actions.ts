@@ -134,8 +134,8 @@ export function useHeroBuildActions() {
     if (prevMods.sheetPenetrationRaw !== nextMods.sheetPenetrationRaw) {
       setNaked(rescaleNakedPen(nakedRef.current, prevMods.sheetPenetrationRaw, nextMods.sheetPenetrationRaw));
     }
-    if (prevMods.sheetCritDmgPctOfBase !== nextMods.sheetCritDmgPctOfBase) {
-      setNaked(rescaleNakedCritDmg(nakedRef.current, prevMods.sheetCritDmgPctOfBase, nextMods.sheetCritDmgPctOfBase));
+    if (prevMods.sheetCritDmgFlat !== nextMods.sheetCritDmgFlat) {
+      setNaked(rescaleNakedCritDmg(nakedRef.current, prevMods.sheetCritDmgFlat, nextMods.sheetCritDmgFlat));
     }
     setAbilities(next);
   }, [setAbilities, setNaked]);

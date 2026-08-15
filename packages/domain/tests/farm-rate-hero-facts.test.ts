@@ -123,7 +123,7 @@ describe('computeHeroFarmFacts — heroLuckPct peel identity', () => {
         ...emptySheetOther(),
         critChance: mods.sheetCritChancePctOfBase / 100,
         penetration: mods.sheetPenetrationRaw,
-        critDmg: mods.sheetCritDmgPctOfBase,
+        critDmgFlat: mods.sheetCritDmgFlat,
       };
 
       const lines = peelSheetSources({

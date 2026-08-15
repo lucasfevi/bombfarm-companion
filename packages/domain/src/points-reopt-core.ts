@@ -99,6 +99,17 @@ export function budgetOf(pts: Record<SheetKey, number>): number {
  * The `budgetOf(pts)` floor cannot bring that compounding back: the search never places more
  * than the budget it was given, so feeding a result back yields `budgetOf(pts) <= previous
  * budget` and the sequence is non-increasing, settling immediately rather than growing.
+ *
+ * **Not clamped to `level`, deliberately** (reviewed at the flat-crit-damage fix). The floor makes
+ * this function AMPLIFY a bad `pts`: while Golpe Brutal was modelled as percent-of-base,
+ * inference recovered 50 points for Ivo at L38 and this returned 50, so the advisor would have
+ * proposed a build the hero cannot hold. Clamping here looks like the fix and is not — it would
+ * silence the symptom while leaving the advisor quietly unable to reallocate the points an
+ * over-spent hero genuinely holds (the second bullet above), which is a real, reachable state.
+ * The defect was upstream, in `inferSpentPoints`; `tests/points-within-level-budget.test.ts` now
+ * asserts `Σ pts ≤ level` over every committed capture, which catches the bad vector where it is
+ * produced rather than where it is consumed. If a `pts` that exceeds `level` ever reaches here
+ * again, that test is the one that should go red first.
  */
 export function reoptBudget(pts: Record<SheetKey, number>, level: number): number {
   return Math.max(0, level - pts.luck, budgetOf(pts));

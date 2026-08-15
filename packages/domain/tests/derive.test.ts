@@ -479,7 +479,8 @@ describe('derive', () => {
     // `tree` above is set, proving no tree divisor leaked into the pooled deltas.
     expect(result.delta.speed).toBeCloseTo(0.02 * naked.speed, 9);
     expect(result.delta.critChance).toBeCloseTo(0.02 * naked.critChance, 9);
-    expect(result.delta.critDmg).toBeCloseTo(0.08 * naked.critDmg, 9);
+    // Crit damage is flat (POINT_GAIN.critDmgFlat) — `naked.critDmg` deliberately absent.
+    expect(result.delta.critDmg).toBeCloseTo(5, 9);
     expect(result.delta.penetration).toBeCloseTo(0.02 * naked.penetration, 9);
     expect(result.delta.cdr).toBeCloseTo(0.1 * naked.cdr, 9);
     expect(result.delta.luck).toBeCloseTo(0.03 * naked.luck, 9);

@@ -53,14 +53,20 @@ export type GearBonuses = {
 };
 
 /**
- * Non-item % bonuses already baked into the unequipped sheet, as fractions of the
- * rolled base (wiki `final = base × (1 + Σ)`). Today that is sheet abilities only
+ * Non-item bonuses already baked into the unequipped sheet. Today that is sheet abilities only
  * (e.g. Olho Clínico, Ponta de Diamante). Tree / Marcha / team buffs are combat-only — not in here.
+ *
+ * `speed` / `critChance` / `penetration` / `cdr` are **fractions of the rolled base**
+ * (wiki `final = base × (1 + Σ)`). `critDmgFlat` is the one exception and is named for it:
+ * crit damage is flat-additive in this game, so it carries raw planner percentage points
+ * (`SheetStats.critDmg` units) that are ADDED to the sheet, never multiplied against the roll.
+ * See `POINT_GAIN.critDmgFlat` for the measurement that settled it.
  */
 export type SheetOtherPct = {
   speed: number;
   critChance: number;
-  critDmg: number;
+  /** FLAT crit-damage percentage points (planner units) — an addend, not a pool fraction. */
+  critDmgFlat: number;
   penetration: number;
   cdr: number;
 };

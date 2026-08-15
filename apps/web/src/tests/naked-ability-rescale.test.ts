@@ -52,13 +52,14 @@ describe('nakedAfterSheetAbilityChange (DEC-04, BSP-31a)', () => {
     expect(nextMods.sheetPenetrationRaw).toBeCloseTo(10, 6);
   });
 
-  it('critDmgPctOfBase dispatches to rescaleNakedCritDmg', () => {
+  it('critDmgFlat dispatches to rescaleNakedCritDmg', () => {
     const custom: SheetStats = { ...naked(), critDmg: 90 };
     const prevMods = abilityMods({});
-    const nextMods = abilityMods({ golpe_brutal: 13 }); // 0.04/level.
-    const result = nakedAfterSheetAbilityChange(custom, 'critDmgPctOfBase', prevMods, nextMods);
-    const expected = rescaleNakedCritDmg(custom, prevMods.sheetCritDmgPctOfBase, nextMods.sheetCritDmgPctOfBase);
+    const nextMods = abilityMods({ golpe_brutal: 13 }); // 4 planner pp/level.
+    const result = nakedAfterSheetAbilityChange(custom, 'critDmgFlat', prevMods, nextMods);
+    const expected = rescaleNakedCritDmg(custom, prevMods.sheetCritDmgFlat, nextMods.sheetCritDmgFlat);
     expect(result.critDmg).toBeCloseTo(expected.critDmg, 10);
+    expect(nextMods.sheetCritDmgFlat).toBe(52);
   });
 
   it('returns naked unchanged (same reference) for a non-sheet-ability kind', () => {

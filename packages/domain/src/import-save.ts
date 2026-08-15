@@ -509,7 +509,7 @@ export function parseAccountPayload(payload: AccountPayload, existing: HeroRecor
       ...emptySheetOther(),
       critChance: mods.sheetCritChancePctOfBase / 100,
       penetration: mods.sheetPenetrationRaw,
-      critDmg: mods.sheetCritDmgPctOfBase,
+      critDmgFlat: mods.sheetCritDmgFlat,
     };
 
     // BSPW5-04 (ASM-02): birth-backed composition — birth_stats is guaranteed usable here,

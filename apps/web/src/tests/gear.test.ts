@@ -396,24 +396,25 @@ describe('rescaleNakedPen', () => {
 });
 
 describe('rescaleNakedCritDmg', () => {
-  it('rescales only crit dmg by (1+newOther)/(1+oldOther), preserving other stats (DEC-06 ratio form)', () => {
+  it('shifts only crit dmg by the flat ability difference, preserving other stats', () => {
     const custom: SheetStats = { ...naked(), attack: 999, critDmg: 90 };
-    const next = rescaleNakedCritDmg(custom, 0, 0.52); // Golpe Brutal rank 13: 0.04 * 13
-    expect(next.critDmg).toBeCloseTo(90 * 1.52, 6);
+    const next = rescaleNakedCritDmg(custom, 0, 52); // Golpe Brutal rank 13: 4 pp * 13
+    // Flat, so the hero's own roll never enters: +52, not x1.52.
+    expect(next.critDmg).toBeCloseTo(90 + 52, 6);
     expect(next.attack).toBe(custom.attack);
     expect(next.critChance).toBe(custom.critChance);
     expect(next.penetration).toBe(custom.penetration);
   });
 
-  it('is a no-op (same reference) when other pct does not change', () => {
+  it('is a no-op (same reference) when the ability total does not change', () => {
     const n = naked();
-    expect(rescaleNakedCritDmg(n, 0.04, 0.04)).toBe(n);
+    expect(rescaleNakedCritDmg(n, 4, 4)).toBe(n);
   });
 
-  it('clamps a negative old/new other pct to zero', () => {
+  it('clamps a negative old/new ability total to zero', () => {
     const custom: SheetStats = { ...naked(), critDmg: 100 };
-    const next = rescaleNakedCritDmg(custom, -0.5, 0.08);
-    expect(next.critDmg).toBeCloseTo(100 * 1.08, 6);
+    const next = rescaleNakedCritDmg(custom, -50, 8);
+    expect(next.critDmg).toBeCloseTo(100 + 8, 6);
   });
 });
 

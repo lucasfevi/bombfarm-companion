@@ -481,7 +481,7 @@ describe('optimizeBuild — Tier 2 (BSPW4-10)', () => {
     const args = {
       geared: naked,
       naked,
-      sheetOther: { speed: 0, critChance: 0, critDmg: 0, penetration: 0, cdr: 0 },
+      sheetOther: { speed: 0, critChance: 0, critDmgFlat: 0, penetration: 0, cdr: 0 },
       rarity: 'Raro' as const,
       level: 30,
       stars: 0,
