@@ -32,6 +32,7 @@ function accountFromFixture(raw: Record<string, unknown>): TeamPlanAccountInput 
     phase: 1,
     mitigationPct: 6.7,
     slots: 6,
+    fieldSlots: 6,
   };
 }
 

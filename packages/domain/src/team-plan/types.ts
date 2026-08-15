@@ -148,7 +148,15 @@ export type TeamPlanAccountInput = {
   houseLevel: number;
   phase: number | null;
   mitigationPct: number;
+  /** HOUSE RECOVERY slots (`casa.slots`) — NOT the field concurrency cap; see {@link fieldSlots}. */
   slots: number;
+  /**
+   * FIELD concurrency cap — how many heroes may be deployed at once. Already resolved with its
+   * fallback (`account.fieldSlots ?? account.slots`, `farm-rate.ts`'s `SquadFarmFacts` convention)
+   * by the caller. This, not {@link slots}, is what `evaluateRoster`'s saturation math means by
+   * "slots" — the roster objective divides duty against how many heroes can fight at once.
+   */
+  fieldSlots: number;
   /** `casa.cycle_secs` — see {@link FarmContext.cycleSecs}. Optional: absent keeps the table. */
   cycleSecs?: number | null;
   /** See {@link FarmContext.cycleSecsHouseIdx}/`cycleSecsLevel`. */

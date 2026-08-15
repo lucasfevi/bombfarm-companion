@@ -20,6 +20,7 @@ import {
   rankRosterByDps,
   sumTopDps,
 } from '@bombfarm/domain/roster-dps';
+import { DEFAULT_CASA_SLOTS } from '@bombfarm/domain/casa-slots';
 import type { HeroRecord } from '@/shared/lib/storage';
 import type { Lang, Strings } from '@/shared/i18n';
 import {
@@ -28,7 +29,6 @@ import {
   selectActiveHeroId,
   selectAccountShared,
   selectPhasesViewPhase,
-  selectSlots,
   commitActiveHero,
 } from '@/shared/stores';
 
@@ -38,7 +38,10 @@ export function PhasesExplorer({ t, lang }: { t: Strings; lang: Lang }) {
   const heroes = usePlannerStore(selectHeroes);
   const activeHeroId = usePlannerStore(selectActiveHeroId);
   const account = usePlannerStore(useShallow(selectAccountShared));
-  const casaSlots = usePlannerStore(selectSlots);
+  // FIELD concurrency — who can be on the field at once, not the House recovery number
+  // (`account.slots`). `account.slots` here is only the pre-`skills.field_slots` fallback
+  // (`AD-063`, same convention as `SquadFarmFacts` in `farm-rate.ts`).
+  const squadSlots = account.fieldSlots ?? account.slots ?? DEFAULT_CASA_SLOTS;
 
   const teamCoinPct = account.tree.teamCoinPct ?? 0;
 
@@ -57,10 +60,10 @@ export function PhasesExplorer({ t, lang }: { t: Strings; lang: Lang }) {
               phase: intel.phase,
               mitigationPct: intel.mitigationPct,
             },
-            casaSlots,
+            squadSlots,
           )
         : [],
-    [heroes, account, intel, casaSlots],
+    [heroes, account, intel, squadSlots],
   );
 
   const heroesById = useMemo(() => new Map(heroes.map((hero) => [hero.id, hero])), [heroes]);
@@ -115,7 +118,7 @@ export function PhasesExplorer({ t, lang }: { t: Strings; lang: Lang }) {
               />
               <PhasesSquadPanel
                 topSquadRows={topSquadRows}
-                casaSlots={casaSlots}
+                slots={squadSlots}
                 heroesById={heroesById}
                 activeHeroId={activeHero.id}
                 squadDps={squadDps}
