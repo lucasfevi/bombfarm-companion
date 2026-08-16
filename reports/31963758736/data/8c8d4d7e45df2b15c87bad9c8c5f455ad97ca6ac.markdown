@@ -1,0 +1,161 @@
+# Instructions
+
+- Following Playwright test failed.
+- Explain why, be concise, respect Playwright best practices.
+- Provide a snippet of code with the fix, if possible.
+
+# Test info
+
+- Name: abilities-panel.spec.ts >> abilities panel (ABX residual) >> stepping a sheet crit-chance ability preserves the hero's own roll, not the rarity midpoint (DEC-04, BSP-31a)
+- Location: e2e/abilities-panel.spec.ts:115:7
+
+# Error details
+
+```
+Error: expect(locator).toHaveText(expected) failed
+
+Locator:  locator('[data-slot="tabs-panel"][data-state="active"]').locator('section').filter({ has: getByRole('heading', { name: /^Stats$/i, level: 2 }) }).locator('tr').filter({ hasText: /^Crit %/ }).locator('td').nth(4)
+Expected: "+0.07"
+Received: "+0.05"
+Timeout:  5000ms
+
+Call log:
+  - Expect "toHaveText" with timeout 5000ms
+  - waiting for locator('[data-slot="tabs-panel"][data-state="active"]').locator('section').filter({ has: getByRole('heading', { name: /^Stats$/i, level: 2 }) }).locator('tr').filter({ hasText: /^Crit %/ }).locator('td').nth(4)
+    14 × locator resolved to <td class="border-line px-2 py-1.5 align-middle text-right font-mono tabular-nums whitespace-nowrap text-xs text-muted">+0.05</td>
+       - unexpected value "+0.05"
+
+```
+
+```yaml
+- cell "+0.05"
+```
+
+# Test source
+
+```ts
+  64  |     await openAbilitiesTab(page, 'en');
+  65  | 
+  66  |     await expect(page.getByText(/Keen Eye, Diamond Tip and Brutal Strike/i)).toBeVisible();
+  67  |     await expect(page.getByRole('heading', { name: /^Ability picker$/i })).toHaveCount(0);
+  68  |   });
+  69  | 
+  70  |   test('granted vs spendable ability points (AC-38) — the Bram worked case: L49 -> 40 spendable, 9 dead', async ({
+  71  |     page,
+  72  |   }) => {
+  73  |     const heroed = {
+  74  |       ...importedRoster,
+  75  |       lang: 'en' as const,
+  76  |       heroes: importedRoster.heroes.map((h) =>
+  77  |         h.id === 'seed-cora' ? { ...h, rarity: 'Incomum' as const, level: 49 } : h,
+  78  |       ),
+  79  |     };
+  80  |     await seedLocalStorage(page, heroed);
+  81  |     await page.goto('/');
+  82  |     await selectSavedHero(page, 'Cora');
+  83  |     await openAbilitiesTab(page, 'en');
+  84  | 
+  85  |     const panel = page.locator('[data-slot="tabs-panel"][data-state="active"]');
+  86  |     await expect(panel.getByText(/49 granted/i)).toBeVisible();
+  87  |     await expect(panel.getByText(/40 spendable/i)).toBeVisible();
+  88  |     await expect(panel.getByText(/9 granted but unusable/i)).toBeVisible();
+  89  |   });
+  90  | 
+  91  |   test('granted-but-unusable note stays mounted but invisible when nothing is dead', async ({ page }) => {
+  92  |     // Raro quota is 3 slots x 20 = 60 spendable; level 20 grants far less than that -> dead=0.
+  93  |     const heroed = {
+  94  |       ...importedRoster,
+  95  |       lang: 'en' as const,
+  96  |       heroes: importedRoster.heroes.map((h) =>
+  97  |         h.id === 'seed-cora' ? { ...h, rarity: 'Raro' as const, level: 20 } : h,
+  98  |       ),
+  99  |     };
+  100 |     await seedLocalStorage(page, heroed);
+  101 |     await page.goto('/');
+  102 |     await selectSavedHero(page, 'Cora');
+  103 |     await openAbilitiesTab(page, 'en');
+  104 | 
+  105 |     const panel = page.locator('[data-slot="tabs-panel"][data-state="active"]');
+  106 |     // /\d+ granted but unusable/ (not the bare phrase) distinguishes this note from the
+  107 |     // abilitiesTip paragraph, which also contains the same words in prose.
+  108 |     const deadNote = panel.getByText(/\d+ granted but unusable/i);
+  109 |     await expect(deadNote).toHaveCount(1);
+  110 |     await expect(deadNote).not.toBeVisible();
+  111 |     await expect(panel.getByText(/20 granted/i)).toBeVisible();
+  112 |     await expect(panel.getByText(/20 spendable/i)).toBeVisible();
+  113 |   });
+  114 | 
+  115 |   test('stepping a sheet crit-chance ability preserves the hero\'s own roll, not the rarity midpoint (DEC-04, BSP-31a)', async ({
+  116 |     page,
+  117 |   }) => {
+  118 |     // Bellatrix's actual birth crit-chance roll (9.51) vs Raro's rarity midpoint (7) — the
+  119 |     // same non-midpoint case gear.test.ts / naked-ability-rescale.test.ts discriminate.
+  120 |     const naked = {
+  121 |       attack: 200,
+  122 |       energy: 300,
+  123 |       speed: 50,
+  124 |       critChance: 9.51,
+  125 |       critDmg: 70,
+  126 |       penetration: 5,
+  127 |       cdr: 5,
+  128 |       luck: 0,
+  129 |     };
+  130 |     const heroed = {
+  131 |       ...importedRoster,
+  132 |       lang: 'en' as const,
+  133 |       heroes: importedRoster.heroes.map((h) =>
+  134 |         h.id === 'seed-cora'
+  135 |           ? {
+  136 |               ...h,
+  137 |               rarity: 'Raro' as const,
+  138 |               stars: 0,
+  139 |               naked,
+  140 |               birth: naked,
+  141 |               gearedOverride: naked,
+  142 |               abilities: { olho_clinico: 0 },
+  143 |             }
+  144 |           : h,
+  145 |       ),
+  146 |     };
+  147 |     await seedLocalStorage(page, heroed);
+  148 |     await page.goto('/');
+  149 |     await selectSavedHero(page, 'Cora');
+  150 |     await openAbilitiesTab(page, 'en');
+  151 | 
+  152 |     await page.getByRole('button', { name: /^Keen Eye \+1$/i }).click();
+  153 | 
+  154 |     await page.getByRole('tab', { name: /^Points$/i }).click();
+  155 |     const stats = page.locator('[data-slot="tabs-panel"][data-state="active"]').locator('section').filter({
+  156 |       has: page.getByRole('heading', { name: /^Stats$/i, level: 2 }),
+  157 |     });
+  158 |     const critRow = stats.locator('tr').filter({ hasText: /^Crit %/ });
+  159 |     // The Stats table is birth→Total now, so the old "Naked" column is gone and the same
+  160 |     // discriminator lives in two cells: Birth is the hero's own roll (9.51, NOT the Raro
+  161 |     // midpoint 7), and Δ ability is that roll scaled by Keen Eye 1's +0.75%:
+  162 |     //   9.51 x 0.0075 = 0.0713 -> "+0.07"   vs the midpoint bug's 7 x 0.0075 = "+0.05".
+  163 |     await expect(critRow.locator('td').nth(1)).toHaveText('9.51');
+> 164 |     await expect(critRow.locator('td').nth(4)).toHaveText('+0.07');
+      |                                                ^ Error: expect(locator).toHaveText(expected) failed
+  165 |     await expect(critRow).not.toContainText('7.05');
+  166 |     await expect(critRow.locator('td').nth(4)).not.toHaveText('+0.05');
+  167 |   });
+  168 | 
+  169 |   test('imported hero identity lives in hero strip; tab is abilities-only', async ({ page }) => {
+  170 |     await seedLocalStorage(page, importedRoster);
+  171 |     await page.goto('/');
+  172 |     await selectSavedHero(page, 'Cora');
+  173 |     await openAbilitiesTab(page);
+  174 | 
+  175 |     const heroStrip = page.getByRole('region', { name: /herói atual/i });
+  176 |     // Stars render as an aria-hidden span inside the same <p>, so the node's
+  177 |     // text is "Cora★★" — anchor the start only.
+  178 |     await expect(heroStrip.getByText(/^Cora/)).toBeVisible();
+  179 |     await expect(heroStrip.getByText(/Raro/i)).toBeVisible();
+  180 | 
+  181 |     const abilitiesPanel = page.locator('[data-slot="tabs-panel"][data-state="active"]');
+  182 |     await expect(abilitiesPanel.locator('label').filter({ hasText: /^Raridade$/i })).toHaveCount(0);
+  183 |     await expect(abilitiesPanel.getByRole('heading', { name: /^Seletor de habilidades$/i })).toHaveCount(0);
+  184 |   });
+  185 | });
+  186 | 
+```
