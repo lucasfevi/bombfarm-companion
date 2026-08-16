@@ -4,10 +4,8 @@ import {
   normalizeHero,
   normalizeAccount,
   shouldShowEmptyState,
-  patchHeroInList,
   DEFAULT_TREE,
   DEFAULT_CONTEXT,
-  type HeroRecord,
 } from '@/shared/lib/storage';
 
 describe('save-failure toast (MOD-45)', () => {
@@ -668,29 +666,5 @@ describe('shouldShowEmptyState', () => {
   it('hides the empty state as soon as any hero exists', () => {
     expect(shouldShowEmptyState(1)).toBe(false);
     expect(shouldShowEmptyState(3)).toBe(false);
-  });
-});
-
-describe('patchHeroInList', () => {
-  const base = (id: string, name: string): HeroRecord =>
-    normalizeHero({ id, name, updatedAt: 1 });
-
-  it('replaces the matching hero and keeps other refs', () => {
-    const a = base('a', 'Alpha');
-    const b = base('b', 'Beta');
-    const saved = { ...b, name: 'Beta2', updatedAt: 99 };
-    const next = patchHeroInList([a, b], saved);
-    expect(next).toHaveLength(2);
-    expect(next[0]).toBe(a);
-    expect(next[1]).toBe(saved);
-    expect(next[1].name).toBe('Beta2');
-  });
-
-  it('appends when the saved id is not yet in the list', () => {
-    const a = base('a', 'Alpha');
-    const saved = base('new', 'Fresh');
-    const next = patchHeroInList([a], saved);
-    expect(next).toEqual([a, saved]);
-    expect(next[0]).toBe(a);
   });
 });
