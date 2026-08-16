@@ -7,7 +7,27 @@
  * assertion uses exact `toEqual`, never `toBeCloseTo`, except the one case explicitly documented
  * as approximate (the moved-vector affine claim).
  *
- * RE-CAPTURED AGAIN at the cadence fix (cycle averaged over `HOP_DISTRIBUTION` instead of
+ * RE-CAPTURED at the flat-crit-damage fix (`POINT_GAIN.critDmgFlat`). Diffed field by field
+ * against the previous capture first; the footprint is exactly the change and nothing else:
+ *
+ * - `heroFacts`: **only `avgHitBase`, and only on Bellatrix** (index 4 — the one fixture hero
+ *   holding crit-damage points). Her 2 crit-damage points used to read as
+ *   `66.252971472748 × (1 + 2 × 0.08)` = 76.853…; flat they read as
+ *   `66.252971472748 + 2 × 5` = 76.252971472748, which is what the game's own `stats` block
+ *   says. Jon / Perrin / Perrin / Lyra are byte-identical on every field, and so are
+ *   `penetrationPct`, `fuseSecs`, `walkSpeedCells`, `cycleSecs`, `plantsPerSec`,
+ *   `blocksPerBomb`, `heroLuckPct`, `veiaOuroLevel`, `fortunaLevel`, `uptime` and `degenerate`
+ *   on Bellatrix herself — in particular `cycleSecs` did NOT move, which is the proof this
+ *   change left the cadence model (below) alone.
+ * - `rows`: only the throughput-derived columns moved (`propsPerHour`, `goldPerHour`,
+ *   `chestsPerHour`, `keysPerHour`, `gemsPerHour`, `timePiecesPerHour`, `xpPerHour`,
+ *   `cyclesPerHour`, `clearSecs`, `expectedHtk`). `mitigationPct`, `ato`, `gate`, `locked`,
+ *   `oneShot`, `infeasible`, `itemLevels`, `itemLevelLabel`, `jaulaEarlyCapPct`,
+ *   `jaulaWindowSecs`, `gateTimerSecs`, `phase`, `fortunaAura`, `heroesOnField` and
+ *   `concurrencyScale` are byte-identical — the fix touched one hero's average hit and nothing
+ *   else.
+ *
+ * PREVIOUSLY RE-CAPTURED at the cadence fix (cycle averaged over `HOP_DISTRIBUTION` instead of
  * `max(fuse, E_D_CELLS / w)`). Diffed field by field before rewriting, same as last time:
  *
  * - `heroFacts`: **only `cycleSecs` and `plantsPerSec` moved** — and `plantsPerSec` is `1 /

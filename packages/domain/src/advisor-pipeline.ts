@@ -185,7 +185,7 @@ export function computeAdvisorPipeline(input: AdvisorPipelineInput): AdvisorPipe
     ...emptySheetOther(),
     critChance: mods.sheetCritChancePctOfBase / 100,
     penetration: mods.sheetPenetrationRaw,
-    critDmg: mods.sheetCritDmgPctOfBase,
+    critDmgFlat: mods.sheetCritDmgFlat,
   };
 
   const { treeSheet, nakedForDerive, gearedForDerive } = resolveDeriveSheets({

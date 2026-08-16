@@ -401,21 +401,18 @@ describe('computeAdvisorPipeline', () => {
     expect(out.spentDelta).toBe(6);
   });
 
-  it('AC-17: sheetOther.critDmg is wired from golpe_brutal into the marginal point delta', () => {
-    // sheetOther.critDmg un-bakes naked.critDmg to the pre-ability base for the marginal
-    // point-gain and tree-bonus terms (derive.ts:148,158,169) — it does not re-add the
-    // ability's effect a second time (that is already baked into naked/geared by
-    // rescaleNakedCritDmg, matching how items never separately roll crit dmg). So the
-    // discriminating signal for this builder is `delta.critDmg`, not `effective.critDmg`.
+  it('AC-17: sheetOther.critDmgFlat is wired from golpe_brutal, and does NOT scale the point delta', () => {
+    // Golpe Brutal is a FLAT sheet addend (POINT_GAIN.critDmgFlat), already baked into
+    // naked/geared by rescaleNakedCritDmg — items never separately roll crit dmg. The
+    // discriminating signal for this builder is therefore `sheetOther.critDmgFlat` itself.
     const withoutGolpe = computeAdvisorPipeline(baseInput({ abilities: {} }));
     const withGolpe = computeAdvisorPipeline(baseInput({ abilities: { golpe_brutal: 13 } }));
-    expect(withGolpe.sheetOther.critDmg).toBeCloseTo(0.52, 10);
-    expect(withoutGolpe.sheetOther.critDmg).toBe(0);
-    // naked.critDmg is held fixed at 80 by baseInput() in both cases (isolating this term):
-    // delta.critDmg = POINT_GAIN.critDmgPctOfBase * naked.critDmg / (1 + sheetOther.critDmg).
-    expect(withoutGolpe.pointDelta.critDmg).toBeCloseTo(0.08 * 80, 10);
-    expect(withGolpe.pointDelta.critDmg).toBeCloseTo((0.08 * 80) / 1.52, 10);
-    expect(withGolpe.pointDelta.critDmg).toBeLessThan(withoutGolpe.pointDelta.critDmg);
+    expect(withGolpe.sheetOther.critDmgFlat).toBe(52);
+    expect(withoutGolpe.sheetOther.critDmgFlat).toBe(0);
+    // A crit-damage point buys the same +5 either way: the marginal gain is flat, so unlike
+    // every pooled stat it is NOT diluted by the ability's contribution.
+    expect(withoutGolpe.pointDelta.critDmg).toBeCloseTo(5, 10);
+    expect(withGolpe.pointDelta.critDmg).toBeCloseTo(5, 10);
   });
 
   describe('resetAdvice (BSPW4-11, BSPW4-15, AC-64l)', () => {

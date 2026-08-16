@@ -93,7 +93,7 @@ describe('legacy statPointsAvailable compat (unspent-points wave)', () => {
     const derived = derive({
       geared: hero.gearedOverride,
       naked: hero.naked,
-      sheetOther: { speed: 0, critChance: 0, critDmg: 0, penetration: 0, cdr: 0 },
+      sheetOther: { speed: 0, critChance: 0, critDmgFlat: 0, penetration: 0, cdr: 0 },
       pts: ZERO_PTS(),
       rarity: hero.rarity,
       level: hero.level,

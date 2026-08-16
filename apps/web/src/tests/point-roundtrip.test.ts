@@ -49,13 +49,18 @@ const SUBJECTS: readonly { file: string; name: string; level: number }[] = [
 ];
 
 /**
- * The one genuinely point-ambiguous hero (design.md §0 finding 5, §2.7). Pinned, recorded in
- * `docs/fixture-corpus.md`, and NOT fixed here — the fixture is a game observation and
- * `packages/domain/src` is out of `mp5-fixture-rebaseline`'s scope. A round trip cannot
- * discriminate between two different point splits that both reproduce the observed `stats`;
- * that is an ambiguity in inference, not an error in application.
+ * RESOLVED — formerly the one "genuinely point-ambiguous" hero (design.md §0 finding 5, §2.7),
+ * pinned here and in `docs/fixture-corpus.md` as an inference ambiguity the round trip could not
+ * discriminate. It was not an ambiguity: crit-damage points are FLAT (+5 planner percentage
+ * points each, `POINT_GAIN.critDmgFlat`), and modelling them as 8% of the hero's roll left
+ * Bellatrix's 2 crit-damage points solving to 1.8867 — a `nonIntegerPoints` issue on `critDmg`
+ * with a residual of 0.113. Her sheet moves by exactly +10.0 off a roll of 66.252971472748, as
+ * does Fenn's (account 11882, 2026-08-15) off a roll of 67.127583786901: same delta, different
+ * rolls, so the gain cannot be a share of the roll. With the flat rate she solves to exactly 2.
+ *
+ * All 13 heroes are now issue-free; the claims below assert that with no exception carved out,
+ * so a regression cannot reintroduce one quietly.
  */
-const PINNED_AMBIGUOUS_HERO = { file: EXPORT_FILE, name: 'Bellatrix', level: 42 };
 
 type Subject = (typeof SUBJECTS)[number];
 
@@ -104,37 +109,28 @@ describe('point round trip (AD-071) — birth + inferred points + gear + tree re
     expect(totalComparisons, '13 heroes × 8 SHEET_KEYS').toBe(104);
   });
 
-  it('claim A — inferSpentPoints reports zero issues for every hero except the one pinned ambiguity', () => {
-    const withIssues = PREPARED.filter(
-      (p) => !(p.subject.file === PINNED_AMBIGUOUS_HERO.file && p.subject.name === PINNED_AMBIGUOUS_HERO.name && p.subject.level === PINNED_AMBIGUOUS_HERO.level),
-    );
-    expect(withIssues.length, 'expected 12 non-pinned heroes').toBe(12);
-    for (const p of withIssues) {
+  it('claim A — inferSpentPoints reports zero issues for every hero, with no exception carved out', () => {
+    expect(PREPARED.length, 'expected all 13 heroes to be checked').toBe(13);
+    for (const p of PREPARED) {
       expect(p.inference.issues, `${subjectLabel(p.subject)} should be issue-free`).toEqual([]);
     }
   });
 
-  it('claim D — Bellatrix L42 (export) is a real, game-observed inference ambiguity, pinned by kind and key', () => {
-    const pinned = PREPARED.find(
-      (p) => p.subject.file === PINNED_AMBIGUOUS_HERO.file && p.subject.name === PINNED_AMBIGUOUS_HERO.name && p.subject.level === PINNED_AMBIGUOUS_HERO.level,
+  it('claim D — Bellatrix L42 (export) solves to exactly 2 crit-damage points, as the flat rate predicts', () => {
+    const bellatrix = PREPARED.find(
+      (p) => p.subject.file === EXPORT_FILE && p.subject.name === 'Bellatrix' && p.subject.level === 42,
     );
-    if (!pinned) throw new Error('pinned ambiguous hero not found among prepared subjects');
+    if (!bellatrix) throw new Error('Bellatrix L42 not found among prepared subjects');
 
-    expect(pinned.inference.issues.length, 'exactly one issue').toBe(1);
-    const issue = pinned.inference.issues[0];
-    expect(issue.kind).toBe('nonIntegerPoints');
-    if (issue.kind !== 'nonIntegerPoints') throw new Error('unreachable');
-    expect(issue.key).toBe('critDmg');
-    expect(issue.residual).toBeLessThan(0.5);
-    expect(Math.round(issue.raw)).toBe(pinned.inference.pts.critDmg);
-
-    // See docs/fixture-corpus.md §7 ("The known inference ambiguity") for the full write-up:
-    // a round trip cannot discriminate between two different point splits that both reproduce
-    // the observed stats. This is that ambiguity, pinned so it cannot silently drift or widen.
+    expect(bellatrix.inference.issues).toEqual([]);
+    expect(bellatrix.inference.pts.critDmg).toBe(2);
+    // Her observed sheet sits exactly `2 x POINT_GAIN.critDmgFlat` above her roll — the
+    // measurement that showed the gain is flat rather than a share of the roll.
+    expect(bellatrix.hero.sheet.critDmg - bellatrix.hero.birth!.critDmg).toBeCloseTo(10, 9);
   });
 
-  it('claim B is exhaustive: exactly 12 heroes are issue-free', () => {
-    expect(PREPARED.filter((p) => p.inference.issues.length === 0).length).toBe(12);
+  it('claim B is exhaustive: all 13 heroes are issue-free', () => {
+    expect(PREPARED.filter((p) => p.inference.issues.length === 0).length).toBe(13);
   });
 
   // Vitest's decimal-place fuzzy-equality matcher is banned in this file (grep-enforced): its

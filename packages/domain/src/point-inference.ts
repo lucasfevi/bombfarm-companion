@@ -58,7 +58,9 @@ export function inferSpentPoints(input: InferSpentPointsInput): PointInferenceRe
   const naked = nakedFromBirth(birth, level, stars, sheetOther);
   const baseSpeed = naked.speed / poolFactor(sheetOther.speed);
   const baseCritChance = naked.critChance / poolFactor(sheetOther.critChance);
-  const baseCritDmg = naked.critDmg / poolFactor(sheetOther.critDmg);
+  // Flat sheet-ability addend, so the pre-ability roll is recovered by subtraction, not
+  // division (POINT_GAIN.critDmgFlat).
+  const baseCritDmg = naked.critDmg - Math.max(0, sheetOther.critDmgFlat);
 
   // Invert applySkillTree to recover the pre-tree (gear + points) pool subtotal.
   const pool = {
@@ -96,7 +98,10 @@ export function inferSpentPoints(input: InferSpentPointsInput): PointInferenceRe
       sheetOther.critChance,
       POINT_GAIN.critChancePctOfBase,
     ),
-    critDmg: solveShared(pool.critDmg, naked.critDmg, 0, sheetOther.critDmg, POINT_GAIN.critDmgPctOfBase),
+    // Not `solveShared`: crit damage never joined the shared pool once measured — the sheet
+    // ability and the point are both flat addends, so the point count is a plain division of
+    // the residual. Items never roll crit damage, so there is no gear term to peel either.
+    critDmg: (pool.critDmg - naked.critDmg) / POINT_GAIN.critDmgFlat,
     penetration: solveShared(
       pool.penetration,
       naked.penetration,

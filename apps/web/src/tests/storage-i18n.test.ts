@@ -172,6 +172,7 @@ describe('effective stats panel chrome (EST-*)', () => {
       'bdNoteSplit',
       'bdNoteKeenEye',
       'bdNoteDiamondTip',
+      'bdNoteBrutalStrike',
       'bdGroupSheet',
       'bdGroupDerived',
       'bdTriggerAria',

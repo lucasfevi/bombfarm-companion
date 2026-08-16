@@ -24,7 +24,7 @@ function ctx(
       cdr: 0,
       luck: 0,
     },
-    sheetOther: { speed: 0, critChance: 0, critDmg: 0, penetration: 0, cdr: 0 },
+    sheetOther: { speed: 0, critChance: 0, critDmgFlat: 0, penetration: 0, cdr: 0 },
     mods: {
       drainMult: 1,
       combatCritChancePctOfBase: 0,
@@ -36,7 +36,7 @@ function ctx(
       gateAttackMult: 1,
       sheetCritChancePctOfBase: 0,
       sheetPenetrationRaw: 0,
-      sheetCritDmgPctOfBase: 0,
+      sheetCritDmgFlat: 0,
     },
     treeSheet: {
       danoStatic: 1,

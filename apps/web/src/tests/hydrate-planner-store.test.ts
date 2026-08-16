@@ -148,7 +148,7 @@ describe('hydratePlannerStore', () => {
     expect(getItem).not.toHaveBeenCalled();
   });
 
-  it('clean load (sourceId + account present) performs zero setItem', () => {
+  it('clean load (sourceId + account present) performs zero setItem, aside from the one-shot critDmg-flat migration marker', () => {
     localStorage.setItem('bf-hp-heroes-v1', JSON.stringify([heroJson('a', 's-a')]));
     localStorage.setItem('bf-hp-active-hero-v1', JSON.stringify('a'));
     localStorage.setItem(
@@ -164,6 +164,11 @@ describe('hydratePlannerStore', () => {
 
     const setItem = vi.spyOn(localStorage, 'setItem');
     hydratePlannerStore();
-    expect(setItem).not.toHaveBeenCalled();
+    // The flat-crit-damage fix's one-shot migration marker (`bf-hp-critdmg-flat-migrated-v1`)
+    // is written unconditionally the first time it is absent — see `migrateCritDmgFlatBakeOnce`
+    // in `storage.ts` for why that cannot be deferred until content actually needs converting.
+    // No hero here has Golpe Brutal, so it is the ONLY setItem this otherwise-clean load makes.
+    expect(setItem).toHaveBeenCalledTimes(1);
+    expect(setItem).toHaveBeenCalledWith('bf-hp-critdmg-flat-migrated-v1', 'true');
   });
 });

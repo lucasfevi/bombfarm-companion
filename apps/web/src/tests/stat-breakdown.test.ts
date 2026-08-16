@@ -47,7 +47,8 @@ function bakeSheetOtherIntoNaked(n: SheetStats, o: SheetOtherPct): SheetStats {
     ...n,
     speed: n.speed * otherFactor(o.speed),
     critChance: n.critChance * otherFactor(o.critChance),
-    critDmg: n.critDmg * otherFactor(o.critDmg),
+    // Flat addend, not a pool factor (POINT_GAIN.critDmgFlat).
+    critDmg: n.critDmg + Math.max(0, o.critDmgFlat),
     penetration: n.penetration * otherFactor(o.penetration),
     cdr: n.cdr * otherFactor(o.cdr),
   };
@@ -97,7 +98,7 @@ function buildFixture(opts: FixtureOpts = {}) {
       ...emptySheetOther(),
       critChance: mods.sheetCritChancePctOfBase / 100,
       penetration: mods.sheetPenetrationRaw,
-      critDmg: mods.sheetCritDmgPctOfBase,
+      critDmgFlat: mods.sheetCritDmgFlat,
     } satisfies SheetOtherPct);
 
   const naked =
@@ -134,7 +135,8 @@ function buildFixture(opts: FixtureOpts = {}) {
       energy: (naked.energy + 40) * (1 + treeEnergy / 100),
       speed: poolBump(naked.speed, sheetOther.speed, treeSpeed),
       critChance: poolBump(naked.critChance, sheetOther.critChance, treeCritChance),
-      critDmg: poolBump(naked.critDmg, sheetOther.critDmg, treeCritDmg),
+      critDmg: poolBump(naked.critDmg - Math.max(0, sheetOther.critDmgFlat), 0, treeCritDmg)
+        + Math.max(0, sheetOther.critDmgFlat),
     } satisfies SheetStats);
 
   const treeSheet: TreeSheetTotals = {
@@ -409,6 +411,29 @@ describe('stat-breakdown builder', () => {
     }
   });
 
+  it('peels birth → stars → Brutal Strike (Golpe Brutal) as a flat crit-dmg addend, noted brutalStrike', () => {
+    const level = 26;
+    const stars = 2;
+    const { facts } = buildFixture({
+      level,
+      stars,
+      abilities: { golpe_brutal: 10 },
+    });
+    assertLedgersRecompose(facts);
+    assertFormulasMatch(facts);
+
+    const cd = buildStatBreakdown('critDmg', facts);
+    expect(cd.kind).toBe('ledger');
+    if (cd.kind === 'ledger') {
+      expect(cd.steps.map((s) => s.source)).toEqual(['base', 'stars', 'sheetAbilities']);
+      const sheet = cd.steps.find((s) => s.source === 'sheetAbilities');
+      expect(sheet?.note).toBe('brutalStrike');
+      // golpe_brutal @10, perLevel 4 -> flat +40 planner pp, unscaled by ★ (POINT_GAIN.critDmgFlat).
+      expect(sheet?.op).toBe('+');
+      expect(sheet?.amount).toBeCloseTo(40, 6);
+    }
+  });
+
   it('F9 — attack tree step is × dmg_static on the Hero+Gear+Ability subtotal (AC-42)', () => {
     const { facts } = buildFixture({
       pts: { ...ZERO_PTS(), attack: 2 },
@@ -458,7 +483,7 @@ describe('stat-breakdown builder', () => {
     if (critDmg.kind === 'ledger') {
       const tree = critDmg.steps.find((s) => s.source === 'tree' && s.op === '+');
       expect(tree?.pctOfBase?.percent).toBeCloseTo(12, 6);
-      expect(tree?.pctOfBase?.base).toBeCloseTo(facts.naked.critDmg / (1 + facts.sheetOther.critDmg), 6);
+      expect(tree?.pctOfBase?.base).toBeCloseTo(facts.naked.critDmg - Math.max(0, facts.sheetOther.critDmgFlat), 6);
     }
   });
 

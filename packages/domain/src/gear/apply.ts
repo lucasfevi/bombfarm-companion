@@ -83,6 +83,7 @@ export function projectGearedOntoLoadout(
  * Project naked → sheet with gear + simulated points in one shared Σ:
  * sheet = naked × (1 + other + gear + pts×perPt) / (1 + other).
  * Attack points use +10 × levelPowerMult(level) × starsMult(stars) (see attackPointGain).
+ * Crit damage is outside the shared Σ — flat, see POINT_GAIN.critDmgFlat.
  */
 export function applyPoints(
   naked: SheetStats,
@@ -109,11 +110,10 @@ export function applyPoints(
       bonuses.critPct + pts.critChance * POINT_GAIN.critChancePctOfBase,
       other.critChance,
     ),
-    critDmg: sharedForward(
-      naked.critDmg,
-      pts.critDmg * POINT_GAIN.critDmgPctOfBase,
-      other.critDmg,
-    ),
+    // Crit damage is flat-additive, not pooled: items never roll it, and both the sheet
+    // ability (already inside `naked` via `other.critDmgFlat`) and the stat point add raw
+    // planner percentage points. See POINT_GAIN.critDmgFlat.
+    critDmg: naked.critDmg + pts.critDmg * POINT_GAIN.critDmgFlat,
     penetration: sharedForward(
       naked.penetration,
       bonuses.penPct + pts.penetration * POINT_GAIN.penetrationPctOfBase,
@@ -161,11 +161,7 @@ export function reverseSheet(
       bonuses.critPct + pts.critChance * POINT_GAIN.critChancePctOfBase,
       other.critChance,
     ),
-    critDmg: sharedReverse(
-      sheet.critDmg,
-      pts.critDmg * POINT_GAIN.critDmgPctOfBase,
-      other.critDmg,
-    ),
+    critDmg: sheet.critDmg - pts.critDmg * POINT_GAIN.critDmgFlat,
     penetration: sharedReverse(
       sheet.penetration,
       bonuses.penPct + pts.penetration * POINT_GAIN.penetrationPctOfBase,

@@ -34,7 +34,7 @@ function sheetOtherFor(abilities: Record<string, number>) {
     ...emptySheetOther(),
     critChance: mods.sheetCritChancePctOfBase / 100,
     penetration: mods.sheetPenetrationRaw,
-    critDmg: mods.sheetCritDmgPctOfBase,
+    critDmgFlat: mods.sheetCritDmgFlat,
   };
 }
 
@@ -296,7 +296,7 @@ describe('mergeImportedHero', () => {
       ...emptySheetOther(),
       critChance: mods.sheetCritChancePctOfBase / 100,
       penetration: mods.sheetPenetrationRaw,
-      critDmg: mods.sheetCritDmgPctOfBase,
+      critDmgFlat: mods.sheetCritDmgFlat,
     };
     const totals = (rawPayload as { skills: { totals: Record<string, unknown> } }).skills.totals;
     const tree = treeTotalsFromSave(totals);

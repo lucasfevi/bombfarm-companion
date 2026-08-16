@@ -93,7 +93,7 @@ export function useHeroBuildActions() {
         const nextMods = abilityMods(nextAbilities);
         // DEC-04/BSP-31a: the crit-chance path now rescales by the sheet-ability ratio
         // (rescaleNakedCritChance, via the dispatcher) — never the rarity-midpoint reset
-        // rescaleNakedCrit used to apply. penetrationPp / critDmgPctOfBase are unaffected;
+        // rescaleNakedCrit used to apply. penetrationPp / critDmgFlat are unaffected;
         // the dispatcher returns naked unchanged for every other kind, matching the old
         // no-op fallthrough.
         setNaked(nakedAfterSheetAbilityChange(nakedRef.current, ability.effect.kind, prevMods, nextMods));
@@ -134,8 +134,8 @@ export function useHeroBuildActions() {
     if (prevMods.sheetPenetrationRaw !== nextMods.sheetPenetrationRaw) {
       setNaked(rescaleNakedPen(nakedRef.current, prevMods.sheetPenetrationRaw, nextMods.sheetPenetrationRaw));
     }
-    if (prevMods.sheetCritDmgPctOfBase !== nextMods.sheetCritDmgPctOfBase) {
-      setNaked(rescaleNakedCritDmg(nakedRef.current, prevMods.sheetCritDmgPctOfBase, nextMods.sheetCritDmgPctOfBase));
+    if (prevMods.sheetCritDmgFlat !== nextMods.sheetCritDmgFlat) {
+      setNaked(rescaleNakedCritDmg(nakedRef.current, prevMods.sheetCritDmgFlat, nextMods.sheetCritDmgFlat));
     }
     setAbilities(next);
   }, [setAbilities, setNaked]);

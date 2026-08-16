@@ -153,7 +153,6 @@ export function derive(input: DeriveInput): DeriveResult {
   // Shared pool: +1 pt adds naked×perPt/(1+O), not naked×perPt.
   const oSpeed = 1 + sheetOther.speed;
   const oCrit = 1 + sheetOther.critChance;
-  const oCritDmg = 1 + sheetOther.critDmg;
   const oPen = 1 + sheetOther.penetration;
   const oCdr = 1 + sheetOther.cdr;
   const star = starsMult(stars);
@@ -177,7 +176,8 @@ export function derive(input: DeriveInput): DeriveResult {
     energy: POINT_GAIN.energyNative * gem * star,
     speed: (POINT_GAIN.speedPctOfBase * naked.speed) / oSpeed,
     critChance: (POINT_GAIN.critChancePctOfBase * naked.critChance) / oCrit,
-    critDmg: (POINT_GAIN.critDmgPctOfBase * naked.critDmg) / oCritDmg,
+    // Flat — no `naked.critDmg` factor and no shared-pool divisor (POINT_GAIN.critDmgFlat).
+    critDmg: POINT_GAIN.critDmgFlat,
     penetration: (POINT_GAIN.penetrationPctOfBase * naked.penetration) / oPen,
     cdr: (POINT_GAIN.cdrPctOfBase * naked.cdr) / oCdr,
     // Luck has no `other` term (ASM-02) — no divisor, unlike the shared-pool stats above.

@@ -34,7 +34,7 @@ function rawSheetOther(abilities: Record<string, number>): SheetOtherPct {
     ...emptySheetOther(),
     critChance: mods.sheetCritChancePctOfBase / 100,
     penetration: mods.sheetPenetrationRaw,
-    critDmg: mods.sheetCritDmgPctOfBase,
+    critDmgFlat: mods.sheetCritDmgFlat,
   };
 }
 

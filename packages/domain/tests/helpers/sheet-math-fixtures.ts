@@ -145,7 +145,7 @@ export function extractHero(
     ...emptySheetOther(),
     critChance: mods.sheetCritChancePctOfBase / 100,
     penetration: mods.sheetPenetrationRaw,
-    critDmg: mods.sheetCritDmgPctOfBase,
+    critDmgFlat: mods.sheetCritDmgFlat,
   };
 
   const rarityIdx = Math.round(num(rawHero.rarity, -1));

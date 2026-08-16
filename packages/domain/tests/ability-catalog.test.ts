@@ -197,20 +197,22 @@ describe('rank-20 migration (T3, AD-BSP-18, BSPW3-02/-03)', () => {
   });
 });
 
-describe('golpe_brutal — critDmgPctOfBase (T1, AD-BSP-32 / BSP-37d)', () => {
-  it('AC-12: is a rank-20 onSheet critDmgPctOfBase ability with perLevel 0.04 (W0-14:216)', () => {
+describe('golpe_brutal — critDmgFlat (flat crit damage, POINT_GAIN.critDmgFlat)', () => {
+  it('AC-12: is a rank-20 onSheet critDmgFlat ability with perLevel 4 (planner percentage points)', () => {
     const def = ABILITIES.find((a) => a.id === 'golpe_brutal');
     expect(def).toBeDefined();
     expect(def).toMatchObject({
       max: 20,
-      effect: { kind: 'critDmgPctOfBase', perLevel: 0.04, onSheet: true },
+      effect: { kind: 'critDmgFlat', perLevel: 4, onSheet: true },
     });
   });
 
-  it('AC-13: abilityMods sheetCritDmgPctOfBase is exact at rank 1 / 13 / 20 (DEC-05 fraction unit)', () => {
-    expect(abilityMods({ golpe_brutal: 1 }).sheetCritDmgPctOfBase).toBe(0.04);
-    expect(abilityMods({ golpe_brutal: 13 }).sheetCritDmgPctOfBase).toBeCloseTo(0.52, 10);
-    expect(abilityMods({ golpe_brutal: 20 }).sheetCritDmgPctOfBase).toBeCloseTo(0.8, 10);
+  it('AC-13: abilityMods sheetCritDmgFlat is exact at rank 1 / 13 / 20 (flat planner pp)', () => {
+    // Rank 20 must land on exactly 80 — the +0.8 `crit_dmg` delta observed on Ivo
+    // (id 21076, L38, account 11882 capture 2026-08-15), in planner units.
+    expect(abilityMods({ golpe_brutal: 1 }).sheetCritDmgFlat).toBe(4);
+    expect(abilityMods({ golpe_brutal: 13 }).sheetCritDmgFlat).toBe(52);
+    expect(abilityMods({ golpe_brutal: 20 }).sheetCritDmgFlat).toBe(80);
   });
 
   it('AC-14: SHEET_ABILITIES is exactly ponta_diamante, olho_clinico, golpe_brutal', () => {
@@ -227,7 +229,7 @@ describe('golpe_brutal — critDmgPctOfBase (T1, AD-BSP-32 / BSP-37d)', () => {
     expect(isSheetAbility(def)).toBe(true);
 
     const mods = abilityMods({ golpe_brutal: 13 });
-    expect(mods.sheetCritDmgPctOfBase).toBe(0.52);
+    expect(mods.sheetCritDmgFlat).toBe(52);
     expect(mods.drainMult).toBe(IDENTITY_MODS.drainMult);
     expect(mods.attackMult).toBe(IDENTITY_MODS.attackMult);
     expect(mods.speedMult).toBe(IDENTITY_MODS.speedMult);
@@ -249,31 +251,25 @@ describe('golpe_brutal — critDmgPctOfBase (T1, AD-BSP-32 / BSP-37d)', () => {
   // docs/fixture-corpus.md.
 });
 
-describe('sheetOther.critDmg wiring — all four production builders (AC-17)', () => {
-  // advisor-pipeline.ts is proven behaviorally in advisor-pipeline.test.ts (AC-17): its
-  // sheetOther.critDmg is the only builder that is numerically load-bearing today, because
-  // it is the sole caller that ever divides by `1 + sheetOther.critDmg` with a non-zero
-  // crit-dmg point spend or tree bonus in play (derive.ts:148,158,169).
+describe('sheetOther.critDmgFlat wiring — all four production builders (AC-17)', () => {
+  // advisor-pipeline.ts is proven behaviorally in advisor-pipeline.test.ts (AC-17).
   //
   // The other three builders feed `applyGear` (import-merge.ts, storage.ts) or `reverseSheet`
   // with ZERO_PTS_TEMPLATE (import-save.ts). `applyGear`'s critDmg field is a direct
   // `naked.critDmg` pass-through (items never roll crit damage — gear/apply.ts), and
-  // `reverseSheet`'s shared-pool division cancels exactly when the crit-dmg "gearPct" term
-  // is zero: sharedReverse(geared, 0, otherPct) === geared for any otherPct (verified
-  // numerically during authoring). So at today's call sites this is not a behavioral gap —
-  // both the whole-value pass-through (applyGear) and the reverse-shared-pool math
-  // (reverseSheet at zero spent points) are mathematically insensitive to sheetOther.critDmg.
+  // `reverseSheet`'s crit-damage term subtracts `pts.critDmg × POINT_GAIN.critDmgFlat`,
+  // which is 0 at zero spent points. So at today's call sites this is not a behavioral gap.
   // Wiring it anyway is still correct (AC-17's literal requirement, and defensive against a
   // future caller that does pass real points), so these three are guarded with a source
   // presence check rather than a false behavioral claim — disclosed, not silently assumed.
-  it('import-save.ts reads mods.sheetCritDmgPctOfBase into its sheetOther builder', () => {
+  it('import-save.ts reads mods.sheetCritDmgFlat into its sheetOther builder', () => {
     const src = readSrc('src/import-save.ts');
-    expect(src).toMatch(/critDmg:\s*mods\.sheetCritDmgPctOfBase/);
+    expect(src).toMatch(/critDmgFlat:\s*mods\.sheetCritDmgFlat/);
   });
 
-  it('import-merge.ts reads mods.sheetCritDmgPctOfBase into its sheetOther builder', () => {
+  it('import-merge.ts reads mods.sheetCritDmgFlat into its sheetOther builder', () => {
     const src = readSrc('src/import-merge.ts');
-    expect(src).toMatch(/critDmg:\s*mods\.sheetCritDmgPctOfBase/);
+    expect(src).toMatch(/critDmgFlat:\s*mods\.sheetCritDmgFlat/);
   });
 
   // migrateGearedOverride lives in apps/web `storage.ts` — asserted there after T6 copy.

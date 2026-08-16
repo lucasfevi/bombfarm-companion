@@ -3,6 +3,21 @@
  * one-shot heuristic is deleted. The deletion that follows must reproduce these figures
  * byte-for-byte — this file is the proof, not a claim. Values were read off a real run of the
  * current (pre-deletion) code, not hand-derived.
+ *
+ * RE-RECORDED at the flat-crit-damage fix (`POINT_GAIN.critDmgFlat`, +5 flat instead of 8% of
+ * the hero's roll). Diffed value by value against the previous golden first; the footprint is:
+ *
+ * - **`critDmg` on every subject**, in the direction the rate change predicts. Jon's roll is
+ *   45.05 (old gain 3.60/pt, new 5) so his crit-damage line RISES 0.2749 → 0.3813; Lyra's roll
+ *   is 47.09 (3.77/pt) so hers rises 0.2173 → 0.2885; the synthetic hero's is 80 (6.40/pt) so
+ *   his FALLS 0.5693 → 0.5474. A single flat rate reproduces all three directions; no other
+ *   rate does.
+ * - **`critChance` on Bellatrix only** (0.07369 → 0.07315). She is the one subject holding
+ *   crit-damage points, so only her SHEET moved (76.853… → 76.252971472748 — the game's own
+ *   reading), and the value of a crit-chance point depends on crit damage.
+ * - Bellatrix's `attack` / `energy` / `penetration` moved in the 13th significant digit only
+ *   (IEEE-754 re-association off her changed baseline). `cdr` and `speed` are byte-identical on
+ *   every subject, as is the RANK ORDER — nothing overtook anything.
  */
 import { describe, expect, it } from 'vitest';
 import { parseAccountPayload } from '@bombfarm/domain/import-save';
@@ -63,12 +78,12 @@ describe('DPS next-point ranking — golden fixture (pre-deletion, pinned byte-f
   it('Bellatrix L42 — full ranking pinned to full precision', () => {
     const result = pipelineForHero(heroByName('Bellatrix'), account, phase, mitigationPct);
     expect(pick(result.ranking)).toEqual([
-      { stat: 'attack', gainPct: 2.11245829411546 },
-      { stat: 'energy', gainPct: 1.5502551329830583 },
-      { stat: 'critDmg', gainPct: 0.38951772890567504 },
+      { stat: 'attack', gainPct: 2.1124582941154824 },
+      { stat: 'energy', gainPct: 1.5502551329830805 },
+      { stat: 'critDmg', gainPct: 0.3676153005040428 },
       { stat: 'cdr', gainPct: 0.16369137865093197 },
-      { stat: 'critChance', gainPct: 0.07368910876905943 },
-      { stat: 'penetration', gainPct: 0.0018932967115414812 },
+      { stat: 'critChance', gainPct: 0.07314563577196509 },
+      { stat: 'penetration', gainPct: 0.00189329671158589 },
       { stat: 'speed', gainPct: 0 },
     ]);
   });
@@ -78,7 +93,7 @@ describe('DPS next-point ranking — golden fixture (pre-deletion, pinned byte-f
     expect(pick(result.ranking)).toEqual([
       { stat: 'attack', gainPct: 2.721097457578736 },
       { stat: 'energy', gainPct: 2.400539150524539 },
-      { stat: 'critDmg', gainPct: 0.27489791609069947 },
+      { stat: 'critDmg', gainPct: 0.3813479185213353 },
       { stat: 'cdr', gainPct: 0.09250544693830687 },
       { stat: 'critChance', gainPct: 0.060468764102172834 },
       { stat: 'penetration', gainPct: 0.0008369005070285596 },
@@ -91,7 +106,7 @@ describe('DPS next-point ranking — golden fixture (pre-deletion, pinned byte-f
     expect(pick(result.ranking)).toEqual([
       { stat: 'attack', gainPct: 14.754149056578392 },
       { stat: 'energy', gainPct: 6.080634761133874 },
-      { stat: 'critDmg', gainPct: 0.21733619405484017 },
+      { stat: 'critDmg', gainPct: 0.2884809751944717 },
       { stat: 'cdr', gainPct: 0.17317148368838353 },
       { stat: 'critChance', gainPct: 0.0517218574636269 },
       { stat: 'penetration', gainPct: 0.0008296399027551971 },
@@ -143,7 +158,7 @@ describe('DPS next-point ranking — CDR marginal-fuse special case (golden, pre
     expect(pick(withNoOptions)).toEqual([
       { stat: 'attack', gainPct: 2.499999999999991 },
       { stat: 'energy', gainPct: 0.9381107491856833 },
-      { stat: 'critDmg', gainPct: 0.5693430656934284 },
+      { stat: 'critDmg', gainPct: 0.5474452554744547 },
       { stat: 'cdr', gainPct: 0.25706940874035134 },
       { stat: 'critChance', gainPct: 0.10218978102187748 },
       { stat: 'penetration', gainPct: 0.003570058399771092 },

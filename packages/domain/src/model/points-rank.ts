@@ -61,7 +61,8 @@ function deltaForStat(
     case 'energy':
       return hero.energyPerPoint;
     case 'critDmg':
-      return POINT_GAIN.critDmgPctOfBase * base.critDmg;
+      // Flat, so `base.critDmg` deliberately does not appear here (POINT_GAIN.critDmgFlat).
+      return POINT_GAIN.critDmgFlat;
     case 'speed':
       return POINT_GAIN.speedPctOfBase * base.speed;
     case 'critChance':

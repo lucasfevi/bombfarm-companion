@@ -197,8 +197,8 @@ const ABILITY_EFFECTS: Record<string, Bilingual> = {
     en: '+1% TEAM Attack/level',
   },
   golpe_brutal: {
-    pt: '+4% dano crítico/nível (% da base, altera atributos)',
-    en: '+4% crit damage/level (% of base, affects stats)',
+    pt: '+4% dano crítico/nível (valor fixo, altera atributos)',
+    en: '+4% crit damage/level (flat, affects stats)',
   },
   matilha: {
     pt: '+2% dano por aliado na rotação/nível, +40% no teto (não modelado)',
