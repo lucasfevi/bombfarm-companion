@@ -112,7 +112,7 @@ import type { HeroRecord, AccountShared } from './shims/storage';
  * `capture-486-r3`), 662 attributed plant-to-plant hops on account 486 at phase 26 (ato 1,
  * 50 props), across four heroes spanning `w` 1.84–2.07 and blast reach `r` 1 and 3. Re-fit from
  * a fresh capture by pooling `manhattan(previous plant cell, next plant cell)` per hero and
- * normalising. The capture and its analysis live in the research repo, not here.
+ * normalising. The capture and its analysis are held out of band, not in this repo.
  *
  * KNOWN LIMITATION: one shared distribution cannot express that heroes have individually
  * different hop distributions (the same captures measure `corr(w, meanDist) ~ -0.55` — faster
