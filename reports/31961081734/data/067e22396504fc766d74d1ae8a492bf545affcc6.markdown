@@ -1,0 +1,105 @@
+# Instructions
+
+- Following Playwright test failed.
+- Explain why, be concise, respect Playwright best practices.
+- Provide a snippet of code with the fix, if possible.
+
+# Test info
+
+- Name: team-plan-states.spec.ts >> Team plan page states >> optimize without confirm leaves heroes storage unchanged
+- Location: e2e/team-plan-states.spec.ts:35:7
+
+# Error details
+
+```
+Error: expect(received).toBe(expected) // Object.is equality
+
+Expected: "[{\"id\":\"msw2kvn4-69z3dn\",\"name\":\"Jon\",\"updatedAt\":1786900766512,\"rarity\":\"Incomum\",\"level\":38,\"stars\":0,\"naked\":{\"attack\":203.45697811732293,\"energy\":133.571070550871,\"speed\":49.9941848216665,\"critChance\":6.94955140662884,\"critDmg\":45.053660768067004,\"penetration\":1.41095693032649,\"cdr\":0.9844165266024101,\"luck\":4.94614437681958},\"loadout\":{\"arma\":{\"defId\":\"forest_arma\",\"rarityIdx\":1,\"level\":10,\"upgrade\":8},\"elmo\":{\"defId\":\"wooden_elmo\",\"rarityIdx\":1,\"level\":10,\"upgrade\":0},\"anel\":null,\"amuleto\":null,\"peito\":{\"defId\":\"wooden_peito\",\"rarityIdx\":1,\"level\":10,\"upgrade\":0},\"calca\":null,\"luva\":{\"defId\":\"ember_luva\",\"rarityIdx\":1,\"level\":10,\"upgrade\":8},\"bota\":null},\"altLoadout\":null,\"gearedOverride\":{\"attack\":322.44249415804984,\"energy\":177.57003201897558,\"speed\":50.112374974131335,\"critChance\":10.68484466662884,\"critDmg\":45.053660768067004,\"penetration\":1.9324466117751609,\"cdr\":1.08277752660241,\"luck\":8.706689323625623},\"abilities\":{\"bateria_extra\":20,\"folego_mineiro\":18},\"pts\":{\"attack\":26,\"energy\":13,\"speed\":0,\"critChance\":0,\"critDmg\":0,\"penetration\":0,\"cdr\":0,\"luck\":3},\"statPointsAvailable\":0,\"sourceId\":\"584\",\"rank\":\"D\",\"power\":7878.90595031192,\"deployed\":false,\"battleAllowed\":true,\"skin\":5,\"birth\":{\"attack\":82.0391040795657,\"energy\":133.571070550871,\"speed\":49.9941848216665,\"critChance\":6.94955140662884,\"critDmg\":45.053660768067004,\"penetration\":1.41095693032649,\"cdr\":0.9844165266024101,\"luck\":4.94614437681958}},{\"id\":\"msw2kvn4-g0f6ca\",\"name\":\"Perrin\",\"updatedAt\":1786900766512,\"rarity\":\"Comum\",\"level\":4,\"stars\":0,\"naked\":{\"attack\":57.38380166837551,\"energy\":81.8224717274336,\"speed\":49.8174641533093,\"critChance\":5.62727747982639,\"critDmg\":53.046541344918,\"penetration\":1.28064234534451,\"cdr\":1.56603914164744,\"luck\":2.22893497995702},\"loadout\":{\"arma\":null,\"elmo\":null,\"anel\":null,\"amuleto\":null,\"peito\":null,\"calca\":null,\"luva\":null,\"bota\":null},\"altLoadout\":null,\"gearedOverride\":{\"attack\":69.40429807152258,\"energy\":105.09680444121057,\"speed\":49.93523652432993,\"critChance\":9.17773617982639,\"critDmg\":53.046541344918,\"penetration\":1.28064234534451,\"cdr\":1.56603914164744,\"luck\":5.83713867995702},\"abilities\":{\"brecha\":4},\"pts\":{\"attack\":4,\"energy\":0,\"speed\":0,\"critChance\":0,\"critDmg\":0,\"penetration\":0,\"cdr\":0,\"luck\":0},\"statPointsAvailable\":0,\"sourceId\":\"18796\",\"rank\":\"A\",\"power\":748.264765635737,\"deployed\":false,\"battleAllowed\":true,\"skin\":3,\"birth\":{\"attack\":51.2355372039067,\"energy\":81.8224717274336,\"speed\":49.8174641533093,\"critChance\":5.62727747982639,\"critDmg\":53.046541344918,\"penetration\":1.28064234534451,\"cdr\":1.56603914164744,\"luck\":2.22893497995702}},{\"id\":\"msw2kvn4-mlo6yr\",\"name\":\"Perrin\",\"updatedAt\":1786900766512,\"rarity\":\"Comum\",\"level\":3,\"stars\":0,\"naked\":{\"attack\":63.21406262509387,\"energy\":105.832141835907,\"speed\":48.918208211412,\"critChance\":4.13905604427228,\"critDmg\":53.059556987167,\"penetration\":0.878464930182428,\"cdr\":1.76528260464009,\"luck\":3.81803572322628},\"loadout\":{\"arma\":null,\"elmo\":null,\"anel\":null,\"amuleto\":null,\"peito\":null,\"calca\":null,\"luva\":null,\"bota\":null},\"altLoadout\":null,\"gearedOverride\":{\"attack\":76.45585543632232,\"energy\":135.9360048566409,\"speed\":49.03385467124402,\"critChance\":7.68951474427228,\"critDmg\":53.059556987167,\"penetration\":0.878464930182428,\"cdr\":1.76528260464009,\"luck\":7.42623942322628},\"abilities\":{\"caca_hero\":3},\"pts\":{\"attack\":2,\"energy\":1,\"speed\":0,\"critChance\":0,\"critDmg\":0,\"penetration\":0,\"cdr\":0,\"luck\":0},\"statPointsAvailable\":0,\"sourceId\":\"19274\",\"rank\":\"S\",\"power\":639.926650607497,\"deployed\":false,\"battleAllowed\":true,\"skin\":1,\"birth\":{\"attack\":58.5315394676795,\"energy\":105.832141835907,\"speed\":48.918208211412,\"critChance\":4.13905604427228,\"critDmg\":53.059556987167,\"penetration\":0.878464930182428,\"cdr\":1.76528260464009,\"luck\":3.81803572322628}},{\"id\":\"msw2kvn4-nh59v9\",\"name\":\"Lyra\",\"updatedAt\":1786900766512,\"rarity\":\"Comum\",\"level\":2,\"stars\":0,\"naked\":{\"attack\":49.68864668588247,\"energy\":115.061323678242,\"speed\":46.3445334815561,\"critChance\":5.743786226803724,\"critDmg\":47.086336002817994,\"penetration\":1.39871096901101,\"cdr\":1.8267950800651098,\"luck\":4.827249819913311},\"loadout\":{\"arma\":null,\"elmo\":null,\"anel\":null,\"amuleto\":null,\"peito\":null,\"calca\":null,\"luva\":null,\"bota\":null},\"altLoadout\":null,\"gearedOverride\":{\"attack\":49.68864668588247,\"energy\":115.061323678242,\"speed\":46.3445334815561,\"critChance\":5.743786226803724,\"critDmg\":47.086336002817994,\"penetration\":1.39871096901101,\"cdr\":1.8267950800651098,\"luck\":4.827249819913311},\"abilities\":{\"olho_clinico\":2},\"pts\":{\"attack\":2,\"energy\":0,\"speed\":0,\"critChance\":0,\"critDmg\":0,\"penetration\":0,\"cdr\":0,\"luck\":0},\"statPointsAvailable\":0,\"sourceId\":\"20140\",\"rank\":\"A\",\"power\":526.868081418854,\"deployed\":false,\"battleAllowed\":true,\"skin\":1,\"birth\":{\"attack\":47.7775448902716,\"energy\":115.061323678242,\"speed\":46.3445334815561,\"critChance\":5.64561082020578,\"critDmg\":47.086336002817994,\"penetration\":1.39871096901101,\"cdr\":1.8267950800651098,\"luck\":4.827249819913311}},{\"id\":\"msw2kvn4-l5j5v6\",\"name\":\"Bellatrix\",\"updatedAt\":1786900766512,\"rarity\":\"Raro\",\"level\":42,\"stars\":0,\"naked\":{\"attack\":500.1888146961605,\"energy\":229.491490082966,\"speed\":49.6635699637221,\"critChance\":6.128637660769392,\"critDmg\":66.252971472748,\"penetration\":3.19435111293399,\"cdr\":1.72855781912348,\"luck\":9.22693386123672},\"loadout\":{\"arma\":{\"defId\":\"wooden_arma\",\"rarityIdx\":1,\"level\":10,\"upgrade\":8},\"elmo\":{\"defId\":\"ember_elmo\",\"rarityIdx\":1,\"level\":10,\"upgrade\":0},\"anel\":{\"defId\":\"wooden_anel\",\"rarityIdx\":1,\"level\":10,\"upgrade\":0},\"amuleto\":{\"defId\":\"wooden_amuleto\",\"rarityIdx\":1,\"level\":10,\"upgrade\":0},\"peito\":{\"defId\":\"ember_peito\",\"rarityIdx\":1,\"level\":10,\"upgrade\":0},\"calca\":{\"defId\":\"ember_calca\",\"rarityIdx\":2,\"level\":10,\"upgrade\":8},\"luva\":{\"defId\":\"wooden_luva\",\"rarityIdx\":1,\"level\":10,\"upgrade\":8},\"bota\":{\"defId\":\"ember_bota\",\"rarityIdx\":1,\"level\":10,\"upgrade\":0}},\"altLoadout\":null,\"gearedOverride\":{\"attack\":582.5788146961605,\"energy\":258.72870591953586,\"speed\":49.76452606874435,\"critChance\":6.426176220769392,\"critDmg\":66.252971472748,\"penetration\":4.822192440085152,\"cdr\":1.98823085912348,\"luck\":9.795312987088902},\"abilities\":{\"misericordia\":20,\"contra_relogio\":2,\"olho_clinico\":20},\"pts\":{\"attack\":25,\"energy\":19,\"speed\":0,\"critChance\":0,\"critDmg\":2,\"penetration\":0,\"cdr\":0,\"luck\":0},\"statPointsAvailable\":0,\"sourceId\":\"20402\",\"rank\":\"B\",\"power\":12604.5853374619,\"deployed\":true,\"battleAllowed\":true,\"skin\":5,\"birth\":{\"attack\":189.465460112182,\"energy\":229.491490082966,\"speed\":49.6635699637221,\"critChance\":5.0811133098848,\"critDmg\":66.252971472748,\"penetration\":3.19435111293399,\"cdr\":1.72855781912348,\"luck\":9.22693386123672}}]"
+Received: "[{\"id\":\"msw2kvn4-69z3dn\",\"name\":\"Jon\",\"updatedAt\":1786900766512,\"rarity\":\"Incomum\",\"level\":38,\"stars\":0,\"naked\":{\"attack\":203.45697811732293,\"energy\":133.571070550871,\"speed\":49.9941848216665,\"critChance\":6.94955140662884,\"critDmg\":45.053660768067004,\"penetration\":1.41095693032649,\"cdr\":0.9844165266024101,\"luck\":4.94614437681958},\"loadout\":{\"arma\":{\"defId\":\"forest_arma\",\"rarityIdx\":1,\"level\":10,\"upgrade\":8},\"elmo\":{\"defId\":\"wooden_elmo\",\"rarityIdx\":1,\"level\":10,\"upgrade\":0},\"anel\":null,\"amuleto\":null,\"peito\":{\"defId\":\"wooden_peito\",\"rarityIdx\":1,\"level\":10,\"upgrade\":0},\"calca\":null,\"luva\":{\"defId\":\"ember_luva\",\"rarityIdx\":1,\"level\":10,\"upgrade\":8},\"bota\":null},\"altLoadout\":null,\"gearedOverride\":{\"attack\":322.44249415804984,\"energy\":177.57003201897558,\"speed\":50.112374974131335,\"critChance\":10.68484466662884,\"critDmg\":45.053660768067004,\"penetration\":1.9324466117751609,\"cdr\":1.08277752660241,\"luck\":8.706689323625623},\"abilities\":{\"bateria_extra\":20,\"folego_mineiro\":18},\"pts\":{\"attack\":26,\"energy\":13,\"speed\":0,\"critChance\":0,\"critDmg\":0,\"penetration\":0,\"cdr\":0,\"luck\":3},\"statPointsAvailable\":0,\"sourceId\":\"584\",\"rank\":\"D\",\"power\":7878.90595031192,\"deployed\":false,\"battleAllowed\":true,\"skin\":5,\"birth\":{\"attack\":82.0391040795657,\"energy\":133.571070550871,\"speed\":49.9941848216665,\"critChance\":6.94955140662884,\"critDmg\":45.053660768067004,\"penetration\":1.41095693032649,\"cdr\":0.9844165266024101,\"luck\":4.94614437681958}},{\"id\":\"msw2kvn4-g0f6ca\",\"name\":\"Perrin\",\"updatedAt\":1786900766512,\"rarity\":\"Comum\",\"level\":4,\"stars\":0,\"naked\":{\"attack\":57.38380166837551,\"energy\":81.8224717274336,\"speed\":49.8174641533093,\"critChance\":5.62727747982639,\"critDmg\":53.046541344918,\"penetration\":1.28064234534451,\"cdr\":1.56603914164744,\"luck\":2.22893497995702},\"loadout\":{\"arma\":null,\"elmo\":null,\"anel\":null,\"amuleto\":null,\"peito\":null,\"calca\":null,\"luva\":null,\"bota\":null},\"altLoadout\":null,\"gearedOverride\":{\"attack\":69.40429807152258,\"energy\":105.09680444121057,\"speed\":49.93523652432993,\"critChance\":9.17773617982639,\"critDmg\":53.046541344918,\"penetration\":1.28064234534451,\"cdr\":1.56603914164744,\"luck\":5.83713867995702},\"abilities\":{\"brecha\":4},\"pts\":{\"attack\":4,\"energy\":0,\"speed\":0,\"critChance\":0,\"critDmg\":0,\"penetration\":0,\"cdr\":0,\"luck\":0},\"statPointsAvailable\":0,\"sourceId\":\"18796\",\"rank\":\"A\",\"power\":748.264765635737,\"deployed\":false,\"battleAllowed\":true,\"skin\":3,\"birth\":{\"attack\":51.2355372039067,\"energy\":81.8224717274336,\"speed\":49.8174641533093,\"critChance\":5.62727747982639,\"critDmg\":53.046541344918,\"penetration\":1.28064234534451,\"cdr\":1.56603914164744,\"luck\":2.22893497995702}},{\"id\":\"msw2kvn4-mlo6yr\",\"name\":\"Perrin\",\"updatedAt\":1786900766512,\"rarity\":\"Comum\",\"level\":3,\"stars\":0,\"naked\":{\"attack\":63.21406262509387,\"energy\":105.832141835907,\"speed\":48.918208211412,\"critChance\":4.13905604427228,\"critDmg\":53.059556987167,\"penetration\":0.878464930182428,\"cdr\":1.76528260464009,\"luck\":3.81803572322628},\"loadout\":{\"arma\":null,\"elmo\":null,\"anel\":null,\"amuleto\":null,\"peito\":null,\"calca\":null,\"luva\":null,\"bota\":null},\"altLoadout\":null,\"gearedOverride\":{\"attack\":76.45585543632232,\"energy\":135.9360048566409,\"speed\":49.03385467124402,\"critChance\":7.68951474427228,\"critDmg\":53.059556987167,\"penetration\":0.878464930182428,\"cdr\":1.76528260464009,\"luck\":7.42623942322628},\"abilities\":{\"caca_hero\":3},\"pts\":{\"attack\":2,\"energy\":1,\"speed\":0,\"critChance\":0,\"critDmg\":0,\"penetration\":0,\"cdr\":0,\"luck\":0},\"statPointsAvailable\":0,\"sourceId\":\"19274\",\"rank\":\"S\",\"power\":639.926650607497,\"deployed\":false,\"battleAllowed\":true,\"skin\":1,\"birth\":{\"attack\":58.5315394676795,\"energy\":105.832141835907,\"speed\":48.918208211412,\"critChance\":4.13905604427228,\"critDmg\":53.059556987167,\"penetration\":0.878464930182428,\"cdr\":1.76528260464009,\"luck\":3.81803572322628}},{\"id\":\"msw2kvn4-nh59v9\",\"name\":\"Lyra\",\"updatedAt\":1786900766512,\"rarity\":\"Comum\",\"level\":2,\"stars\":0,\"naked\":{\"attack\":49.68864668588247,\"energy\":115.061323678242,\"speed\":46.3445334815561,\"critChance\":5.73709082020578,\"critDmg\":47.086336002817994,\"penetration\":1.39871096901101,\"cdr\":1.8267950800651098,\"luck\":4.827249819913311},\"loadout\":{\"arma\":null,\"elmo\":null,\"anel\":null,\"amuleto\":null,\"peito\":null,\"calca\":null,\"luva\":null,\"bota\":null},\"altLoadout\":null,\"gearedOverride\":{\"attack\":60.09719720710143,\"energy\":147.79041964952773,\"speed\":46.45409557358011,\"critChance\":9.28754952020578,\"critDmg\":47.086336002817994,\"penetration\":1.39871096901101,\"cdr\":1.8267950800651098,\"luck\":8.43545351991331},\"abilities\":{\"olho_clinico\":2},\"pts\":{\"attack\":2,\"energy\":0,\"speed\":0,\"critChance\":0,\"critDmg\":0,\"penetration\":0,\"cdr\":0,\"luck\":0},\"statPointsAvailable\":0,\"sourceId\":\"20140\",\"rank\":\"A\",\"power\":526.868081418854,\"deployed\":false,\"battleAllowed\":true,\"skin\":1,\"birth\":{\"attack\":47.7775448902716,\"energy\":115.061323678242,\"speed\":46.3445334815561,\"critChance\":5.64561082020578,\"critDmg\":47.086336002817994,\"penetration\":1.39871096901101,\"cdr\":1.8267950800651098,\"luck\":4.827249819913311}},{\"id\":\"msw2kvn4-l5j5v6\",\"name\":\"Bellatrix\",\"updatedAt\":1786900766512,\"rarity\":\"Raro\",\"level\":42,\"stars\":0,\"naked\":{\"attack\":500.1888146961605,\"energy\":229.491490082966,\"speed\":49.6635699637221,\"critChance\":5.9959133098848,\"critDmg\":66.252971472748,\"penetration\":3.19435111293399,\"cdr\":1.72855781912348,\"luck\":9.22693386123672},\"loadout\":{\"arma\":{\"defId\":\"wooden_arma\",\"rarityIdx\":1,\"level\":10,\"upgrade\":8},\"elmo\":{\"defId\":\"ember_elmo\",\"rarityIdx\":1,\"level\":10,\"upgrade\":0},\"anel\":{\"defId\":\"wooden_anel\",\"rarityIdx\":1,\"level\":10,\"upgrade\":0},\"amuleto\":{\"defId\":\"wooden_amuleto\",\"rarityIdx\":1,\"level\":10,\"upgrade\":0},\"peito\":{\"defId\":\"ember_peito\",\"rarityIdx\":1,\"level\":10,\"upgrade\":0},\"calca\":{\"defId\":\"ember_calca\",\"rarityIdx\":2,\"level\":10,\"upgrade\":8},\"luva\":{\"defId\":\"wooden_luva\",\"rarityIdx\":1,\"level\":10,\"upgrade\":8},\"bota\":{\"defId\":\"ember_bota\",\"rarityIdx\":1,\"level\":10,\"upgrade\":0}},\"altLoadout\":null,\"gearedOverride\":{\"attack\":704.6147611305739,\"energy\":332.323866968151,\"speed\":49.881934621897045,\"critChance\":9.8439105698848,\"critDmg\":66.252971472748,\"penetration\":4.822192440085152,\"cdr\":1.98823085912348,\"luck\":13.403516687088903},\"abilities\":{\"misericordia\":20,\"contra_relogio\":2,\"olho_clinico\":20},\"pts\":{\"attack\":25,\"energy\":19,\"speed\":0,\"critChance\":0,\"critDmg\":2,\"penetration\":0,\"cdr\":0,\"luck\":0},\"statPointsAvailable\":0,\"sourceId\":\"20402\",\"rank\":\"B\",\"power\":12604.5853374619,\"deployed\":true,\"battleAllowed\":true,\"skin\":5,\"birth\":{\"attack\":189.465460112182,\"energy\":229.491490082966,\"speed\":49.6635699637221,\"critChance\":5.0811133098848,\"critDmg\":66.252971472748,\"penetration\":3.19435111293399,\"cdr\":1.72855781912348,\"luck\":9.22693386123672}}]"
+```
+
+# Page snapshot
+
+```yaml
+- alert [ref=e3]
+```
+
+# Test source
+
+```ts
+  1  | import { test, expect } from '@playwright/test';
+  2  | import { teamPlanFixtureSeed } from './fixtures/team-plan-seed';
+  3  | import { importedRoster, seedLocalStorage } from './fixtures/seed';
+  4  | import {
+  5  |   clickOptimize,
+  6  |   gotoTeamPlan,
+  7  |   setE2eForceError,
+  8  |   setE2eMaxEvaluations,
+  9  |   snapshotHeroesJson,
+  10 |   waitForOptimizeDone,
+  11 | } from './fixtures/team-plan-e2e';
+  12 | 
+  13 | test.describe('Team plan page states', () => {
+  14 |   test('no inventory shows empty state', async ({ page }) => {
+  15 |     await seedLocalStorage(page, { ...importedRoster, lang: 'en' });
+  16 |     await gotoTeamPlan(page);
+  17 |     await expect(page.getByRole('heading', { name: /No item inventory yet/i })).toBeVisible();
+  18 |   });
+  19 | 
+  20 |   test('blocked heroes without birth are named', async ({ page }) => {
+  21 |     const seed = teamPlanFixtureSeed('en');
+  22 |     const hero = seed.heroes[0];
+  23 |     if (!hero) throw new Error('fixture hero missing');
+  24 |     delete (hero as { birth?: unknown }).birth;
+  25 |     await seedLocalStorage(page, seed);
+  26 |     await gotoTeamPlan(page);
+  27 |     await clickOptimize(page);
+  28 |     const blocked = page.getByRole('heading', { name: /Cannot run — missing birth stats/i }).locator(
+  29 |       'xpath=ancestor::div[1]',
+  30 |     );
+  31 |     await expect(blocked).toBeVisible();
+  32 |     await expect(blocked).toContainText(hero.name);
+  33 |   });
+  34 | 
+  35 |   test('optimize without confirm leaves heroes storage unchanged', async ({ page }) => {
+  36 |     // Runs the real solver at its default (uncapped) evaluation budget on the 11-hero
+  37 |     // fixture — the only test in this file that does. waitForOptimizeDone's 120s expect
+  38 |     // timeout needs a matching test-level timeout, or Playwright's 30s default kills the
+  39 |     // test first (same pattern as perf.spec.ts's long-running capture).
+  40 |     test.setTimeout(150_000);
+  41 |     await seedLocalStorage(page, teamPlanFixtureSeed('en'));
+  42 |     await gotoTeamPlan(page);
+  43 |     const before = await snapshotHeroesJson(page);
+  44 |     await clickOptimize(page);
+  45 |     await waitForOptimizeDone(page);
+  46 |     await page.reload();
+  47 |     const after = await snapshotHeroesJson(page);
+> 48 |     expect(after).toBe(before);
+     |                   ^ Error: expect(received).toBe(expected) // Object.is equality
+  49 |   });
+  50 | 
+  51 |   test('runner error shows retry control', async ({ page }) => {
+  52 |     await setE2eForceError(page, true);
+  53 |     await seedLocalStorage(page, teamPlanFixtureSeed('en'));
+  54 |     await gotoTeamPlan(page);
+  55 |     await clickOptimize(page);
+  56 |     await expect(page.getByRole('heading', { name: /Search failed/i })).toBeVisible({ timeout: 120_000 });
+  57 |     await expect(page.getByRole('button', { name: /Try again/i })).toBeVisible();
+  58 |   });
+  59 | 
+  60 |   test('optimizing modal can cancel the run', async ({ page }) => {
+  61 |     await setE2eMaxEvaluations(page, 50_000);
+  62 |     await seedLocalStorage(page, teamPlanFixtureSeed('en'));
+  63 |     await gotoTeamPlan(page);
+  64 |     await clickOptimize(page);
+  65 |     await expect(page.getByRole('dialog', { name: /Building plan/i })).toBeVisible();
+  66 |     await expect(page.getByText(/^Elapsed /i)).toBeVisible();
+  67 |     await page.getByRole('button', { name: /^Cancel$/i }).click();
+  68 |     await expect(page.getByRole('dialog', { name: /Building plan/i })).toBeHidden();
+  69 |     await expect(
+  70 |       page.getByRole('button', { name: /Build a team plan of gear moves and point resets/i }),
+  71 |     ).toBeEnabled();
+  72 |   });
+  73 | });
+  74 | 
+```

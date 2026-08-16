@@ -1,0 +1,1101 @@
+# Instructions
+
+- Following Playwright test failed.
+- Explain why, be concise, respect Playwright best practices.
+- Provide a snippet of code with the fix, if possible.
+
+# Test info
+
+- Name: effective-stats.spec.ts >> effective stats panel (EST / ESB) >> hides sheet-group rows that match hero-sheet Total; shows combat deltas + derived
+- Location: e2e/effective-stats.spec.ts:91:7
+
+# Error details
+
+```
+Error: expect(locator).toHaveCount(expected) failed
+
+Locator:  locator('[data-slot="tabs-panel"][data-state="active"]').locator('section').filter({ has: getByRole('heading', { name: /^Effective stats$/i, level: 2 }) }).getByRole('button', { name: /Show breakdown of Crit Chance/i })
+Expected: 0
+Received: 1
+Timeout:  5000ms
+
+Call log:
+  - Expect "toHaveCount" with timeout 5000ms
+  - waiting for locator('[data-slot="tabs-panel"][data-state="active"]').locator('section').filter({ has: getByRole('heading', { name: /^Effective stats$/i, level: 2 }) }).getByRole('button', { name: /Show breakdown of Crit Chance/i })
+    14 × locator resolved to 1 element
+       - unexpected value "1"
+
+```
+
+# Page snapshot
+
+```yaml
+- generic [ref=e1]:
+  - alert [ref=e2]
+  - generic [ref=e3]:
+    - banner [ref=e4]:
+      - generic [ref=e5]:
+        - generic [ref=e6]:
+          - link "Bomb Farm Companion" [ref=e7] [cursor=pointer]:
+            - /url: /
+            - generic [ref=e8]:
+              - generic [ref=e9]: Bomb Farm
+              - generic [ref=e10]: Companion
+          - navigation "Main sections" [ref=e11]:
+            - link "Planner" [ref=e12] [cursor=pointer]:
+              - /url: /
+            - link "Farm" [ref=e13] [cursor=pointer]:
+              - /url: /farm
+            - link "Team plan" [ref=e14] [cursor=pointer]:
+              - /url: /team-plan
+        - generic [ref=e15]:
+          - button "Import" [ref=e16] [cursor=pointer]
+          - button "Show / hide the quick guide" [ref=e17] [cursor=pointer]: "?"
+          - button "Copy my referral code — we both get a reward once you clear stage 151" [ref=e18] [cursor=pointer]:
+            - generic [ref=e19]: F-S7999UQC
+            - img [ref=e20]
+          - link "Buy me a coffee" [ref=e22] [cursor=pointer]:
+            - /url: https://buymeacoffee.com/lucasfevi
+            - img [ref=e23]
+          - group "Language" [ref=e25]:
+            - button "PT" [ref=e26] [cursor=pointer]
+            - button "EN" [ref=e27] [cursor=pointer]
+    - generic [ref=e29]:
+      - generic [ref=e31]:
+        - region "Current hero" [ref=e32]:
+          - generic [ref=e33]:
+            - generic [ref=e34]:
+              - button "Switch hero" [ref=e35] [cursor=pointer]:
+                - img "Cora" [ref=e37]
+                - generic [ref=e38]:
+                  - generic [ref=e39]:
+                    - generic "Rank" [ref=e40]: S
+                    - paragraph [ref=e41]: Cora★★
+                  - generic [ref=e43]: Rare
+                - generic [ref=e44]:
+                  - img [ref=e45]
+                  - generic [ref=e47]:
+                    - generic [ref=e48]: Roster
+                    - generic [ref=e49]: "3"
+              - generic [ref=e52]:
+                - switch "Enable or disable this hero in the planner" [checked] [ref=e53] [cursor=pointer]
+                - checkbox [checked] [ref=e54] [cursor=pointer]
+                - generic [ref=e56]: Enabled
+            - generic [ref=e57]:
+              - generic [ref=e58]:
+                - generic [ref=e59]: Sustained DPS
+                - strong [ref=e60]: "571.3"
+              - generic [ref=e61]:
+                - generic [ref=e62]: Active DPS
+                - strong [ref=e63]: 1.1k
+              - generic [ref=e64]:
+                - generic [ref=e65]: Uptime
+                - strong [ref=e66]: 52.8%
+              - generic [ref=e67]:
+                - generic [ref=e68]: Next point
+                - strong [ref=e69]: Attack
+                - emphasis [ref=e70]: +7.6%
+              - generic [ref=e71]:
+                - generic [ref=e72]: Hit
+                - strong [ref=e73]: 1.7k
+            - generic [ref=e74]:
+              - generic [ref=e75]:
+                - generic [ref=e76]: Level
+                - generic [ref=e77]:
+                  - generic [ref=e78]:
+                    - generic [ref=e79]:
+                      - button "Increment" [ref=e80] [cursor=pointer]:
+                        - img [ref=e82]
+                      - button "Decrement" [ref=e84] [cursor=pointer]:
+                        - img [ref=e86]
+                    - spinbutton [ref=e88]: "47"
+                  - button "Level up" [ref=e89] [cursor=pointer]
+              - generic [ref=e90]:
+                - generic [ref=e91]: Stars
+                - generic [ref=e92]:
+                  - combobox [ref=e93]:
+                    - generic:
+                      - generic:
+                        - img
+                    - generic [ref=e94]: ★★
+                  - textbox [ref=e95]: "2"
+                  - button "Star upgrade" [ref=e96] [cursor=pointer]
+            - button "Delete hero" [ref=e98] [cursor=pointer]:
+              - img [ref=e99]
+        - generic [ref=e101]:
+          - tablist [ref=e102]:
+            - tab "Abilities" [ref=e103]:
+              - generic [ref=e104]: Abilities
+            - tab "Gear" [ref=e107]:
+              - generic [ref=e108]: Gear
+            - tab "Account" [ref=e111]:
+              - generic [ref=e112]: Account
+            - tab "Points" [active] [selected] [ref=e113]:
+              - generic [ref=e115]: Points
+          - generic [ref=e120]:
+            - tabpanel [ref=e122]:
+              - main [ref=e123]:
+                - generic [ref=e124]:
+                  - generic [ref=e125]:
+                    - heading "Abilities" [level=2] [ref=e126]
+                    - generic [ref=e127]:
+                      - generic [ref=e128]: 2 / 3 abilities
+                      - generic [ref=e129]: 20 / 47 points
+                      - generic [ref=e130]: 47 granted · 47 spendable
+                      - button "Reset" [ref=e131] [cursor=pointer]
+                  - paragraph [ref=e132]: This hero’s own skills — budget is the lower of hero level and rarity slots × 20 (points past that are granted but unusable). Keen Eye, Diamond Tip and Brutal Strike change crit chance, penetration and crit damage on the hero’s in-game stats. Forced March, Deadly Omen and other abilities only count during combat. Team buffs from other heroes go under Team buffs.
+                  - generic [ref=e133]:
+                    - generic [ref=e134]:
+                      - generic [ref=e135]:
+                        - generic [ref=e136]:
+                          - generic: 10/20
+                        - generic [ref=e137]:
+                          - generic "+1.5% chance of 2nd blast (50% damage)/level" [ref=e138]: Double Detonation
+                          - generic "+1.5% chance of 2nd blast (50% damage)/level" [ref=e139]
+                      - group "Double Detonation" [ref=e140]:
+                        - button "Double Detonation −1" [ref=e141] [cursor=pointer]: −
+                        - generic [ref=e142]:
+                          - generic [ref=e143]: Lv
+                          - generic [ref=e144]: "10"
+                          - generic [ref=e145]: /20
+                        - button "Double Detonation +1" [ref=e146] [cursor=pointer]: +
+                    - generic [ref=e147]:
+                      - generic [ref=e148]:
+                        - generic [ref=e149]:
+                          - generic: 10/20
+                        - generic [ref=e150]:
+                          - generic "+4% Damage on ENTERING rotation (lasts 120s)/level (not modeled)" [ref=e151]: Baton Pass
+                          - generic "+4% Damage on ENTERING rotation (lasts 120s)/level (not modeled)" [ref=e152]
+                      - group "Baton Pass" [ref=e153]:
+                        - button "Baton Pass −1" [ref=e154] [cursor=pointer]: −
+                        - generic [ref=e155]:
+                          - generic [ref=e156]: Lv
+                          - generic [ref=e157]: "10"
+                          - generic [ref=e158]: /20
+                        - button "Baton Pass +1" [ref=e159] [cursor=pointer]: +
+            - tabpanel [ref=e161]:
+              - main [ref=e162]:
+                - generic [ref=e163]:
+                  - generic [ref=e164]:
+                    - heading "Items" [level=2] [ref=e165]
+                    - generic [ref=e166]: required
+                  - generic [ref=e167]:
+                    - generic [ref=e168]:
+                      - generic [ref=e171]: Weapon
+                      - combobox "Item level" [ref=e172]:
+                        - generic:
+                          - generic:
+                            - img
+                        - generic [ref=e173]: Level 10
+                      - textbox [ref=e174]: "10"
+                      - combobox "Item set" [ref=e175]:
+                        - generic:
+                          - generic:
+                            - img
+                        - generic [ref=e176]: Ember
+                      - textbox [ref=e177]: ember
+                      - combobox "Item rarity" [ref=e178]:
+                        - generic:
+                          - generic:
+                            - img
+                        - generic [ref=e179]: Common
+                      - textbox [ref=e180]: "0"
+                      - combobox "Forge level" [ref=e181]:
+                        - generic:
+                          - generic:
+                            - img
+                        - generic [ref=e182]: +0 ×1.00
+                      - textbox [ref=e183]: "0"
+                    - generic [ref=e184]:
+                      - generic [ref=e187]: Helm
+                      - combobox "Item level" [ref=e188]:
+                        - generic:
+                          - generic:
+                            - img
+                        - generic [ref=e189]: Level 10
+                      - textbox [ref=e190]: "10"
+                      - combobox "Item set" [ref=e191]:
+                        - generic:
+                          - generic:
+                            - img
+                        - generic [ref=e192]: Ember
+                      - textbox [ref=e193]: ember
+                      - combobox "Item rarity" [ref=e194]:
+                        - generic:
+                          - generic:
+                            - img
+                        - generic [ref=e195]: Common
+                      - textbox [ref=e196]: "0"
+                      - combobox "Forge level" [ref=e197]:
+                        - generic:
+                          - generic:
+                            - img
+                        - generic [ref=e198]: +0 ×1.00
+                      - textbox [ref=e199]: "0"
+                    - generic [ref=e200]:
+                      - generic [ref=e203]: Ring
+                      - combobox "Item level" [ref=e204]:
+                        - generic:
+                          - generic:
+                            - img
+                        - generic [ref=e205]: Level 10
+                      - textbox [ref=e206]: "10"
+                      - combobox "Item set" [ref=e207]:
+                        - generic:
+                          - generic:
+                            - img
+                        - generic [ref=e208]: Ember
+                      - textbox [ref=e209]: ember
+                      - combobox "Item rarity" [ref=e210]:
+                        - generic:
+                          - generic:
+                            - img
+                        - generic [ref=e211]: Common
+                      - textbox [ref=e212]: "0"
+                      - combobox "Forge level" [ref=e213]:
+                        - generic:
+                          - generic:
+                            - img
+                        - generic [ref=e214]: +0 ×1.00
+                      - textbox [ref=e215]: "0"
+                    - generic [ref=e216]:
+                      - generic [ref=e219]: Amulet
+                      - combobox "Item level" [ref=e220]:
+                        - generic:
+                          - generic:
+                            - img
+                        - generic [ref=e221]: Level 10
+                      - textbox [ref=e222]: "10"
+                      - combobox "Item set" [ref=e223]:
+                        - generic:
+                          - generic:
+                            - img
+                        - generic [ref=e224]: Ember
+                      - textbox [ref=e225]: ember
+                      - combobox "Item rarity" [ref=e226]:
+                        - generic:
+                          - generic:
+                            - img
+                        - generic [ref=e227]: Common
+                      - textbox [ref=e228]: "0"
+                      - combobox "Forge level" [ref=e229]:
+                        - generic:
+                          - generic:
+                            - img
+                        - generic [ref=e230]: +0 ×1.00
+                      - textbox [ref=e231]: "0"
+                    - generic [ref=e232]:
+                      - generic [ref=e235]: Chest
+                      - combobox "Item level" [ref=e236]:
+                        - generic:
+                          - generic:
+                            - img
+                        - generic [ref=e237]: Level 10
+                      - textbox [ref=e238]: "10"
+                      - combobox "Item set" [ref=e239]:
+                        - generic:
+                          - generic:
+                            - img
+                        - generic [ref=e240]: Ember
+                      - textbox [ref=e241]: ember
+                      - combobox "Item rarity" [ref=e242]:
+                        - generic:
+                          - generic:
+                            - img
+                        - generic [ref=e243]: Common
+                      - textbox [ref=e244]: "0"
+                      - combobox "Forge level" [ref=e245]:
+                        - generic:
+                          - generic:
+                            - img
+                        - generic [ref=e246]: +0 ×1.00
+                      - textbox [ref=e247]: "0"
+                    - generic [ref=e248]:
+                      - generic [ref=e251]: Legs
+                      - combobox "Item level" [ref=e252]:
+                        - generic:
+                          - generic:
+                            - img
+                        - generic [ref=e253]: Level 10
+                      - textbox [ref=e254]: "10"
+                      - combobox "Item set" [ref=e255]:
+                        - generic:
+                          - generic:
+                            - img
+                        - generic [ref=e256]: Ember
+                      - textbox [ref=e257]: ember
+                      - combobox "Item rarity" [ref=e258]:
+                        - generic:
+                          - generic:
+                            - img
+                        - generic [ref=e259]: Common
+                      - textbox [ref=e260]: "0"
+                      - combobox "Forge level" [ref=e261]:
+                        - generic:
+                          - generic:
+                            - img
+                        - generic [ref=e262]: +0 ×1.00
+                      - textbox [ref=e263]: "0"
+                    - generic [ref=e264]:
+                      - generic [ref=e267]: Gloves
+                      - combobox "Item level" [ref=e268]:
+                        - generic:
+                          - generic:
+                            - img
+                        - generic [ref=e269]: Level 10
+                      - textbox [ref=e270]: "10"
+                      - combobox "Item set" [ref=e271]:
+                        - generic:
+                          - generic:
+                            - img
+                        - generic [ref=e272]: Ember
+                      - textbox [ref=e273]: ember
+                      - combobox "Item rarity" [ref=e274]:
+                        - generic:
+                          - generic:
+                            - img
+                        - generic [ref=e275]: Common
+                      - textbox [ref=e276]: "0"
+                      - combobox "Forge level" [ref=e277]:
+                        - generic:
+                          - generic:
+                            - img
+                        - generic [ref=e278]: +0 ×1.00
+                      - textbox [ref=e279]: "0"
+                    - generic [ref=e280]:
+                      - generic [ref=e283]: Boots
+                      - combobox "Item level" [ref=e284]:
+                        - generic:
+                          - generic:
+                            - img
+                        - generic [ref=e285]: Level 10
+                      - textbox [ref=e286]: "10"
+                      - combobox "Item set" [ref=e287]:
+                        - generic:
+                          - generic:
+                            - img
+                        - generic [ref=e288]: Ember
+                      - textbox [ref=e289]: ember
+                      - combobox "Item rarity" [ref=e290]:
+                        - generic:
+                          - generic:
+                            - img
+                        - generic [ref=e291]: Common
+                      - textbox [ref=e292]: "0"
+                      - combobox "Forge level" [ref=e293]:
+                        - generic:
+                          - generic:
+                            - img
+                        - generic [ref=e294]: +0 ×1.00
+                      - textbox [ref=e295]: "0"
+                  - heading "Gear compare" [level=3] [ref=e297]
+                  - generic [ref=e298]:
+                    - paragraph [ref=e299]: Copies your current gear into an editable clone — change items on the clone and see the DPS impact instantly.
+                    - button "Copy current gear" [ref=e300] [cursor=pointer]
+            - tabpanel [ref=e302]:
+              - generic [ref=e303]:
+                - heading "Account" [level=2] [ref=e305]
+                - paragraph [ref=e306]: Account-wide combat multipliers shared across heroes. Skill Tree totals come from your save import and stay read-only (re-import to refresh) — Total damage already folds in squad and GEO-compounded damage, so don’t layer those again. Team buffs come from other heroes deployed with you (War Cry, Forced March, Deadly Omen, Miner's Breath, Against the Clock); leave them at 0 if nobody is providing them, and don’t re-enter this hero’s own abilities here.
+                - generic [ref=e307]:
+                  - heading "House" [level=3] [ref=e308]
+                  - generic [ref=e309]:
+                    - generic [ref=e310]:
+                      - generic [ref=e311]: House
+                      - combobox "House" [ref=e312]:
+                        - generic:
+                          - generic:
+                            - img
+                        - generic [ref=e313]: House III (Epic)
+                      - textbox [ref=e314]: "2"
+                    - generic [ref=e315]:
+                      - generic [ref=e316]:
+                        - text: House level
+                        - generic [ref=e317]: Rest 12 min 28 s
+                      - generic [ref=e318]:
+                        - generic [ref=e319]:
+                          - button "Increment" [ref=e320] [cursor=pointer]:
+                            - img [ref=e322]
+                          - button "Decrement" [ref=e324] [cursor=pointer]:
+                            - img [ref=e326]
+                        - spinbutton [ref=e328]: "6"
+                - generic [ref=e329]:
+                  - heading "Farm" [level=3] [ref=e330]
+                  - generic [ref=e331]:
+                    - generic [ref=e332]:
+                      - generic [ref=e333]:
+                        - text: Farm phase
+                        - generic [ref=e334]: The phase you're currently farming — drives mitigation. Seeded from your save import; edit to preview a different phase.
+                      - generic [ref=e335]:
+                        - generic [ref=e336]:
+                          - button "Increment" [ref=e337] [cursor=pointer]:
+                            - img [ref=e339]
+                          - button "Decrement" [ref=e341] [cursor=pointer]:
+                            - img [ref=e343]
+                        - spinbutton [ref=e345]: "1"
+                    - generic [ref=e346]:
+                      - generic [ref=e347]:
+                        - text: Target prop
+                        - generic [ref=e348]: Highlighted in the hits-to-kill table below
+                      - combobox "Target prop Highlighted in the hits-to-kill table below" [ref=e349]:
+                        - generic:
+                          - generic:
+                            - img
+                        - generic [ref=e350]: Bush
+                      - textbox [ref=e351]: bush
+                - generic [ref=e352]:
+                  - generic [ref=e353]:
+                    - heading "Skill Tree" [level=3] [ref=e355]
+                    - generic [ref=e356]:
+                      - heading "Team buffs" [level=3] [ref=e357]
+                      - generic [ref=e358]:
+                        - button "Auto-fill from active heroes" [ref=e359] [cursor=pointer]
+                        - button "Reset" [ref=e360] [cursor=pointer]
+                  - generic [ref=e361]:
+                    - generic [ref=e363]:
+                      - generic [ref=e364]:
+                        - generic [ref=e365]: Total damage ×
+                        - status "Total damage ×" [ref=e366]: "1.960"
+                      - generic [ref=e367]:
+                        - generic [ref=e368]: Crit chance +% base
+                        - status "Crit chance +% base" [ref=e369]: "0.51"
+                      - generic [ref=e370]:
+                        - generic [ref=e371]: Crit damage +% base
+                        - status "Crit damage +% base" [ref=e372]: "0.19"
+                      - generic [ref=e373]:
+                        - generic [ref=e374]: Speed +% base
+                        - status "Speed +% base" [ref=e375]: "0.03"
+                      - generic [ref=e376]:
+                        - generic [ref=e377]: Energy +%
+                        - status "Energy +%" [ref=e378]: "0.52"
+                      - generic [ref=e379]:
+                        - generic [ref=e380]:
+                          - text: Team coin %
+                          - generic [ref=e381]: Ouro por Alvo from skill tree — scales gold per prop
+                        - status "Team coin % Ouro por Alvo from skill tree — scales gold per prop" [ref=e382]: "0.00"
+                    - generic [ref=e384]:
+                      - generic [ref=e385]:
+                        - generic [ref=e386]:
+                          - text: War Cry
+                          - generic [ref=e387]: Atk %
+                        - generic [ref=e388]:
+                          - generic [ref=e389]:
+                            - button "Increment" [ref=e390] [cursor=pointer]:
+                              - img [ref=e392]
+                            - button "Decrement" [ref=e394] [cursor=pointer]:
+                              - img [ref=e396]
+                          - spinbutton [ref=e398]: "10"
+                      - generic [ref=e399]:
+                        - generic [ref=e400]:
+                          - text: Deadly Omen
+                          - generic [ref=e401]: Crit % base
+                        - generic [ref=e402]:
+                          - generic [ref=e403]:
+                            - button "Increment" [ref=e404] [cursor=pointer]:
+                              - img [ref=e406]
+                            - button "Decrement" [ref=e408] [cursor=pointer]:
+                              - img [ref=e410]
+                          - spinbutton [ref=e412]: "5"
+                      - generic [ref=e413]:
+                        - generic [ref=e414]:
+                          - text: Forced March
+                          - generic [ref=e415]: Speed %
+                        - generic [ref=e416]:
+                          - generic [ref=e417]:
+                            - button "Increment" [ref=e418] [cursor=pointer]:
+                              - img [ref=e420]
+                            - button "Decrement" [ref=e422] [cursor=pointer]:
+                              - img [ref=e424]
+                          - spinbutton [ref=e426]: "10"
+                      - generic [ref=e427]:
+                        - generic [ref=e428]:
+                          - text: Miner's Breath
+                          - generic [ref=e429]: Drain −%
+                        - generic [ref=e430]:
+                          - generic [ref=e431]:
+                            - button "Increment" [ref=e432] [cursor=pointer]:
+                              - img [ref=e434]
+                            - button "Decrement" [ref=e436] [cursor=pointer]:
+                              - img [ref=e438]
+                          - spinbutton [ref=e440]: "0"
+                      - generic [ref=e441]:
+                        - generic [ref=e442]:
+                          - text: Against the Clock
+                          - generic [ref=e443]: Gate Atk %
+                        - generic [ref=e444]:
+                          - generic [ref=e445]:
+                            - button "Increment" [ref=e446] [cursor=pointer]:
+                              - img [ref=e448]
+                            - button "Decrement" [ref=e450] [cursor=pointer]:
+                              - img [ref=e452]
+                          - spinbutton [ref=e454]: "0"
+            - tabpanel [ref=e456]:
+              - generic [ref=e457]:
+                - generic [ref=e458]:
+                  - generic [ref=e459]:
+                    - generic [ref=e460]:
+                      - heading "Points" [level=2] [ref=e461]
+                      - generic [ref=e462]:
+                        - generic [ref=e463]: 0 / 47 points
+                        - generic [ref=e464]: +47 unspent
+                        - button "Reset" [ref=e465] [cursor=pointer]
+                    - table [ref=e467]:
+                      - rowgroup [ref=e474]:
+                        - row "Stat Δ /pt After Preview" [ref=e475]:
+                          - columnheader "Stat" [ref=e476]:
+                            - generic [ref=e477]: Stat
+                          - columnheader "Δ" [ref=e478]:
+                            - generic [ref=e479]: Δ
+                          - columnheader "/pt" [ref=e480]:
+                            - generic [ref=e481]: /pt
+                          - columnheader "After" [ref=e482]:
+                            - generic [ref=e483]: After
+                          - columnheader "Preview" [ref=e484]:
+                            - generic [ref=e485]: Preview
+                      - rowgroup [ref=e486]:
+                        - row "Attack Remove 5 points from Attack − 0 + Add 5 points to Attack 111.33 1,470.40" [ref=e487]:
+                          - cell "Attack" [ref=e488]
+                          - cell "Remove 5 points from Attack − 0 + Add 5 points to Attack" [ref=e489]:
+                            - generic [ref=e490]:
+                              - button "Remove 5 points from Attack" [ref=e491] [cursor=pointer]: −5
+                              - generic [ref=e492]:
+                                - button "−" [ref=e493] [cursor=pointer]
+                                - generic [ref=e494]: "0"
+                                - button "+" [ref=e495] [cursor=pointer]
+                              - button "Add 5 points to Attack" [ref=e496] [cursor=pointer]: "+5"
+                          - cell "111.33" [ref=e497]
+                          - cell "1,470.40" [ref=e498]
+                        - row "Energy Remove 5 points from Energy − 0 + Add 5 points to Energy 16.00 836.40" [ref=e499]:
+                          - cell "Energy" [ref=e500]
+                          - cell "Remove 5 points from Energy − 0 + Add 5 points to Energy" [ref=e501]:
+                            - generic [ref=e502]:
+                              - button "Remove 5 points from Energy" [ref=e503] [cursor=pointer]: −5
+                              - generic [ref=e504]:
+                                - button "−" [ref=e505] [cursor=pointer]
+                                - generic [ref=e506]: "0"
+                                - button "+" [ref=e507] [cursor=pointer]
+                              - button "Add 5 points to Energy" [ref=e508] [cursor=pointer]: "+5"
+                          - cell "16.00" [ref=e509]
+                          - cell "836.40" [ref=e510]
+                        - row "Speed Remove 5 points from Speed − 0 + Add 5 points to Speed 0.00 50.30" [ref=e511]:
+                          - cell "Speed" [ref=e512]
+                          - cell "Remove 5 points from Speed − 0 + Add 5 points to Speed" [ref=e513]:
+                            - generic [ref=e514]:
+                              - button "Remove 5 points from Speed" [ref=e515] [cursor=pointer]: −5
+                              - generic [ref=e516]:
+                                - button "−" [ref=e517] [cursor=pointer]
+                                - generic [ref=e518]: "0"
+                                - button "+" [ref=e519] [cursor=pointer]
+                              - button "Add 5 points to Speed" [ref=e520] [cursor=pointer]: "+5"
+                          - cell "0.00" [ref=e521]
+                          - cell "50.30" [ref=e522]
+                        - row "Luck Remove 5 points from Luck − 0 + Add 5 points to Luck 0.00 0.00" [ref=e523]:
+                          - cell "Luck" [ref=e524]
+                          - cell "Remove 5 points from Luck − 0 + Add 5 points to Luck" [ref=e525]:
+                            - generic [ref=e526]:
+                              - button "Remove 5 points from Luck" [ref=e527] [cursor=pointer]: −5
+                              - generic [ref=e528]:
+                                - button "−" [ref=e529] [cursor=pointer]
+                                - generic [ref=e530]: "0"
+                                - button "+" [ref=e531] [cursor=pointer]
+                              - button "Add 5 points to Luck" [ref=e532] [cursor=pointer]: "+5"
+                          - cell "0.00" [ref=e533]
+                          - cell "0.00" [ref=e534]
+                        - row "Crit % Remove 5 points from Crit Chance − 0 + Add 5 points to Crit Chance 0.02 0.13" [ref=e535]:
+                          - cell "Crit %" [ref=e536]
+                          - cell "Remove 5 points from Crit Chance − 0 + Add 5 points to Crit Chance" [ref=e537]:
+                            - generic [ref=e538]:
+                              - button "Remove 5 points from Crit Chance" [ref=e539] [cursor=pointer]: −5
+                              - generic [ref=e540]:
+                                - button "−" [ref=e541] [cursor=pointer]
+                                - generic [ref=e542]: "0"
+                                - button "+" [ref=e543] [cursor=pointer]
+                              - button "Add 5 points to Crit Chance" [ref=e544] [cursor=pointer]: "+5"
+                          - cell "0.02" [ref=e545]
+                          - cell "0.13" [ref=e546]
+                        - row "Crit dmg +% Remove 5 points from Crit Damage − 0 + Add 5 points to Crit Damage 5.00 1.62" [ref=e547]:
+                          - cell "Crit dmg +%" [ref=e548]
+                          - cell "Remove 5 points from Crit Damage − 0 + Add 5 points to Crit Damage" [ref=e549]:
+                            - generic [ref=e550]:
+                              - button "Remove 5 points from Crit Damage" [ref=e551] [cursor=pointer]: −5
+                              - generic [ref=e552]:
+                                - button "−" [ref=e553] [cursor=pointer]
+                                - generic [ref=e554]: "0"
+                                - button "+" [ref=e555] [cursor=pointer]
+                              - button "Add 5 points to Crit Damage" [ref=e556] [cursor=pointer]: "+5"
+                          - cell "5.00" [ref=e557]
+                          - cell "1.62" [ref=e558]
+                        - row "Pen % Remove 5 points from Penetration − 0 + Add 5 points to Penetration 0.00 1.10" [ref=e559]:
+                          - cell "Pen %" [ref=e560]
+                          - cell "Remove 5 points from Penetration − 0 + Add 5 points to Penetration" [ref=e561]:
+                            - generic [ref=e562]:
+                              - button "Remove 5 points from Penetration" [ref=e563] [cursor=pointer]: −5
+                              - generic [ref=e564]:
+                                - button "−" [ref=e565] [cursor=pointer]
+                                - generic [ref=e566]: "0"
+                                - button "+" [ref=e567] [cursor=pointer]
+                              - button "Add 5 points to Penetration" [ref=e568] [cursor=pointer]: "+5"
+                          - cell "0.00" [ref=e569]
+                          - cell "1.10" [ref=e570]
+                        - row "CDR % Remove 5 points from Cooldown Red. − 0 + Add 5 points to Cooldown Red. 0.04 0.03" [ref=e571]:
+                          - cell "CDR %" [ref=e572]
+                          - cell "Remove 5 points from Cooldown Red. − 0 + Add 5 points to Cooldown Red." [ref=e573]:
+                            - generic [ref=e574]:
+                              - button "Remove 5 points from Cooldown Red." [ref=e575] [cursor=pointer]: −5
+                              - generic [ref=e576]:
+                                - button "−" [ref=e577] [cursor=pointer]
+                                - generic [ref=e578]: "0"
+                                - button "+" [ref=e579] [cursor=pointer]
+                              - button "Add 5 points to Cooldown Red." [ref=e580] [cursor=pointer]: "+5"
+                          - cell "0.04" [ref=e581]
+                          - cell "0.03" [ref=e582]
+                    - generic [ref=e584]:
+                      - button "Optimize build" [ref=e585] [cursor=pointer]
+                      - button "Apply preview" [disabled] [ref=e586]
+                      - button "Clear preview" [disabled] [ref=e587]
+                  - generic [ref=e588]:
+                    - generic [ref=e589]:
+                      - heading "Next point" [level=2] [ref=e590]
+                      - combobox "Next point" [ref=e591]:
+                        - generic:
+                          - generic:
+                            - img
+                        - generic [ref=e592]: DPS
+                      - textbox [ref=e593]: dps
+                    - generic [ref=e594]:
+                      - generic [ref=e595]: Attack
+                      - generic [ref=e598]: +7.6%
+                    - generic [ref=e599]:
+                      - generic [ref=e600]: Energy
+                      - generic [ref=e603]: +0.9%
+                    - generic [ref=e604]:
+                      - generic [ref=e605]: Crit Damage
+                      - generic [ref=e608]: +0.3%
+                    - generic [ref=e609]:
+                      - generic [ref=e610]: Cooldown Red.
+                      - generic [ref=e613]: +0.0%
+                    - generic [ref=e614]:
+                      - generic [ref=e615]: Crit Chance
+                      - generic [ref=e618]: +0.0%
+                    - generic [ref=e619]:
+                      - generic [ref=e620]: Speed
+                      - generic [ref=e623]: +0.0%
+                    - generic [ref=e624]:
+                      - generic [ref=e625]: Penetration
+                      - generic [ref=e628]: +0.0%
+                - generic [ref=e629]:
+                  - generic [ref=e630]:
+                    - heading "Stats" [level=2] [ref=e631]
+                    - generic [ref=e632]: required
+                  - paragraph [ref=e633]: This hero has no birth roll stored yet — re-import your save so the planner can rebuild the sheet from source. Older local heroes need a fresh import.
+                  - table [ref=e635]:
+                    - rowgroup [ref=e647]:
+                      - row "Stat Birth Δ level Δ stars Δ ability Δ gear Δ points Δ tree Total Over cap" [ref=e648]:
+                        - columnheader "Stat" [ref=e649]:
+                          - generic [ref=e650]: Stat
+                        - columnheader "Birth" [ref=e651]:
+                          - generic [ref=e652]: Birth
+                        - columnheader "Δ level" [ref=e653]:
+                          - generic [ref=e655]: Δ level
+                        - columnheader "Δ stars" [ref=e656]:
+                          - generic [ref=e658]: Δ stars
+                        - columnheader "Δ ability" [ref=e659]:
+                          - generic [ref=e661]: Δ ability
+                        - columnheader "Δ gear" [ref=e662]:
+                          - generic [ref=e664]: Δ gear
+                        - columnheader "Δ points" [ref=e665]:
+                          - generic [ref=e667]: Δ points
+                        - columnheader "Δ tree" [ref=e668]:
+                          - generic [ref=e670]: Δ tree
+                        - columnheader "Total" [ref=e671]:
+                          - generic [ref=e672]: Total
+                        - columnheader "Over cap" [ref=e673]:
+                          - generic [ref=e675]: Over cap
+                    - rowgroup [ref=e676]:
+                      - row "Attack — — — — — — — — —" [ref=e677]:
+                        - cell "Attack" [ref=e678]
+                        - cell "—" [ref=e679]
+                        - cell "—" [ref=e680]
+                        - cell "—" [ref=e681]
+                        - cell "—" [ref=e682]
+                        - cell "—" [ref=e683]
+                        - cell "—" [ref=e684]
+                        - cell "—" [ref=e685]
+                        - cell "—" [ref=e686]
+                        - cell "—" [ref=e687]
+                      - row "Energy — — — — — — — — —" [ref=e688]:
+                        - cell "Energy" [ref=e689]
+                        - cell "—" [ref=e690]
+                        - cell "—" [ref=e691]
+                        - cell "—" [ref=e692]
+                        - cell "—" [ref=e693]
+                        - cell "—" [ref=e694]
+                        - cell "—" [ref=e695]
+                        - cell "—" [ref=e696]
+                        - cell "—" [ref=e697]
+                        - cell "—" [ref=e698]
+                      - row "Speed — — — — — — — — —" [ref=e699]:
+                        - cell "Speed" [ref=e700]
+                        - cell "—" [ref=e701]
+                        - cell "—" [ref=e702]
+                        - cell "—" [ref=e703]
+                        - cell "—" [ref=e704]
+                        - cell "—" [ref=e705]
+                        - cell "—" [ref=e706]
+                        - cell "—" [ref=e707]
+                        - cell "—" [ref=e708]
+                        - cell "—" [ref=e709]
+                      - row "Luck — — — — — — — — —" [ref=e710]:
+                        - cell "Luck" [ref=e711]
+                        - cell "—" [ref=e712]
+                        - cell "—" [ref=e713]
+                        - cell "—" [ref=e714]
+                        - cell "—" [ref=e715]
+                        - cell "—" [ref=e716]
+                        - cell "—" [ref=e717]
+                        - cell "—" [ref=e718]
+                        - cell "—" [ref=e719]
+                        - cell "—" [ref=e720]
+                      - row "Crit % — — — — — — — — —" [ref=e721]:
+                        - cell "Crit %" [ref=e722]
+                        - cell "—" [ref=e723]
+                        - cell "—" [ref=e724]
+                        - cell "—" [ref=e725]
+                        - cell "—" [ref=e726]
+                        - cell "—" [ref=e727]
+                        - cell "—" [ref=e728]
+                        - cell "—" [ref=e729]
+                        - cell "—" [ref=e730]
+                        - cell "—" [ref=e731]
+                      - row "Crit dmg +% — — — — — — — — —" [ref=e732]:
+                        - cell "Crit dmg +%" [ref=e733]
+                        - cell "—" [ref=e734]
+                        - cell "—" [ref=e735]
+                        - cell "—" [ref=e736]
+                        - cell "—" [ref=e737]
+                        - cell "—" [ref=e738]
+                        - cell "—" [ref=e739]
+                        - cell "—" [ref=e740]
+                        - cell "—" [ref=e741]
+                        - cell "—" [ref=e742]
+                      - row "Pen % — — — — — — — — —" [ref=e743]:
+                        - cell "Pen %" [ref=e744]
+                        - cell "—" [ref=e745]
+                        - cell "—" [ref=e746]
+                        - cell "—" [ref=e747]
+                        - cell "—" [ref=e748]
+                        - cell "—" [ref=e749]
+                        - cell "—" [ref=e750]
+                        - cell "—" [ref=e751]
+                        - cell "—" [ref=e752]
+                        - cell "—" [ref=e753]
+                      - row "CDR % — — — — — — — — —" [ref=e754]:
+                        - cell "CDR %" [ref=e755]
+                        - cell "—" [ref=e756]
+                        - cell "—" [ref=e757]
+                        - cell "—" [ref=e758]
+                        - cell "—" [ref=e759]
+                        - cell "—" [ref=e760]
+                        - cell "—" [ref=e761]
+                        - cell "—" [ref=e762]
+                        - cell "—" [ref=e763]
+                        - cell "—" [ref=e764]
+                - generic [ref=e765]:
+                  - heading "Effective stats" [level=2] [ref=e767]
+                  - paragraph [ref=e768]: Includes gear, points, skill tree, abilities, and team buffs.
+                  - generic [ref=e769]:
+                    - heading "Sheet stats" [level=3] [ref=e770]
+                    - generic [ref=e771]:
+                      - button "Show breakdown of Attack" [ref=e773] [cursor=pointer]:
+                        - generic [ref=e774]: Attack
+                        - generic [ref=e775]: 1,617.44
+                        - img [ref=e777]
+                      - button "Show breakdown of Speed" [ref=e780] [cursor=pointer]:
+                        - generic [ref=e781]: Speed
+                        - generic [ref=e782]: "55.33"
+                        - img [ref=e784]
+                      - button "Show breakdown of Crit Chance" [ref=e787] [cursor=pointer]:
+                        - generic [ref=e788]: Crit Chance
+                        - generic [ref=e789]: 5.13%
+                        - img [ref=e791]
+                  - generic [ref=e793]:
+                    - heading "Derived combat" [level=3] [ref=e794]
+                    - generic [ref=e795]:
+                      - button "Show breakdown of Mitigation factor" [ref=e797] [cursor=pointer]:
+                        - generic [ref=e798]: Mitigation factor
+                        - generic [ref=e799]: ×0.9901
+                        - img [ref=e801]
+                      - button "Show breakdown of Damage multiplier" [ref=e804] [cursor=pointer]:
+                        - generic [ref=e805]: Damage multiplier
+                        - generic [ref=e806]: ×1.075
+                        - img [ref=e808]
+                      - button "Show breakdown of Hit" [ref=e811] [cursor=pointer]:
+                        - generic [ref=e812]: Hit
+                        - generic [ref=e813]: 1,722
+                        - img [ref=e815]
+                      - button "Show breakdown of Critical Hit" [ref=e818] [cursor=pointer]:
+                        - generic [ref=e819]: Critical Hit
+                        - generic [ref=e820]: 1,750
+                        - img [ref=e822]
+                      - button "Show breakdown of Critical factor" [ref=e825] [cursor=pointer]:
+                        - generic [ref=e826]: Critical factor
+                        - generic [ref=e827]: ×1.001
+                        - img [ref=e829]
+                      - button "Show breakdown of Fuse" [ref=e832] [cursor=pointer]:
+                        - generic [ref=e833]: Fuse
+                        - generic [ref=e834]: 2.00s
+                        - img [ref=e836]
+                      - button "Show breakdown of Bombs / s" [ref=e839] [cursor=pointer]:
+                        - generic [ref=e840]: Bombs / s
+                        - generic [ref=e841]: 0.47/s
+                        - img [ref=e843]
+                      - button "Show breakdown of Field time" [ref=e846] [cursor=pointer]:
+                        - generic [ref=e847]: Field time
+                        - generic [ref=e848]: 836s (13.9m)
+                        - img [ref=e850]
+                      - button "Show breakdown of Rest" [ref=e853] [cursor=pointer]:
+                        - generic [ref=e854]: Rest
+                        - generic [ref=e855]: 12.5m
+                        - img [ref=e857]
+                      - button "Show breakdown of Uptime" [ref=e860] [cursor=pointer]:
+                        - generic [ref=e861]: Uptime
+                        - generic [ref=e862]: 52.8%
+                        - img [ref=e864]
+                      - button "Show breakdown of Active DPS" [ref=e867] [cursor=pointer]:
+                        - generic [ref=e868]: Active DPS
+                        - generic [ref=e869]: 1,082
+                        - img [ref=e871]
+                      - button "Show breakdown of Sustained DPS" [ref=e874] [cursor=pointer]:
+                        - generic [ref=e875]: Sustained DPS
+                        - generic [ref=e876]: "571"
+                        - img [ref=e878]
+      - button "How the math works" [ref=e881] [cursor=pointer]:
+        - img [ref=e883]
+        - text: How the math works
+    - contentinfo [ref=e885]:
+      - generic [ref=e886]:
+        - paragraph [ref=e887]: This is an unofficial, fan-made tool. It is not affiliated with, endorsed by or connected to the BombFarm developers in any way.
+        - paragraph [ref=e888]:
+          - text: Assets are from the official BombFarm wiki.
+          - link "wiki.bombfarm.net" [ref=e889] [cursor=pointer]:
+            - /url: https://wiki.bombfarm.net
+          - text: .
+        - paragraph [ref=e890]:
+          - generic [ref=e891]: Referral code
+          - code [ref=e892]: F-S7999UQC
+          - button "Copy referral code" [ref=e893] [cursor=pointer]:
+            - img [ref=e894]
+          - generic [ref=e896]: — a reward for us both at stage 151.
+      - generic [ref=e897]:
+        - generic [ref=e898]: v0.0.0-e2e
+        - link "Buy me a coffee" [ref=e899] [cursor=pointer]:
+          - /url: https://buymeacoffee.com/lucasfevi
+          - img [ref=e900]
+          - text: Buy me a coffee
+```
+
+# Test source
+
+```ts
+  26  | 
+  27  | /**
+  28  |  * Sheet stats that `combatSheetDeltaAccount` actually pushes off sheet Total: Attack via
+  29  |  * `grito_guerra`, Speed via `marcha_acelerada`. Crit chance is deliberately NOT here —
+  30  |  * `pressagio_mortal` is a `critChancePctOfBase` TEAM buff that `derive.ts` folds into the
+  31  |  * crit factor, not into `effective.critChance`, so crit chance stays equal to Total and the
+  32  |  * panel correctly hides it. The crit buff's visible home is the derived Critical factor /
+  33  |  * Critical Hit rows, asserted separately below.
+  34  |  */
+  35  | const EN_COMBAT_SHEET_LABELS = ['Attack', 'Speed'] as const;
+  36  | 
+  37  | const PT_COMBAT_SHEET_LABELS = ['Ataque', 'Velocidade'] as const;
+  38  | 
+  39  | /** Account team buffs that push sheet stats off Total so they still appear under Effective. */
+  40  | function combatSheetDeltaAccount(base: NonNullable<typeof importedRoster.account>) {
+  41  |   return {
+  42  |     ...base,
+  43  |     teamBuffs: {
+  44  |       ...base.teamBuffs,
+  45  |       grito_guerra: 10,
+  46  |       marcha_acelerada: 10,
+  47  |       pressagio_mortal: 5,
+  48  |     },
+  49  |   };
+  50  | }
+  51  | 
+  52  | const EN_DERIVED = [
+  53  |   'Mitigation factor',
+  54  |   'Damage multiplier',
+  55  |   'Hit',
+  56  |   'Critical Hit',
+  57  |   'Critical factor',
+  58  |   'Fuse',
+  59  |   'Bombs / s',
+  60  |   'Field time',
+  61  |   'Rest',
+  62  |   'Uptime',
+  63  |   'Active DPS',
+  64  |   'Sustained DPS',
+  65  | ] as const;
+  66  | 
+  67  | test.describe('effective stats panel (EST / ESB)', () => {
+  68  |   test('Points tab stacks Points / Next point / Stats / Effective (EN + PT)', async ({ page }) => {
+  69  |     await seedLocalStorage(page, { ...importedRoster, lang: 'en' });
+  70  |     await page.goto('/');
+  71  |     await selectSavedHero(page, 'Cora');
+  72  |     await openPointsTab(page, 'en');
+  73  | 
+  74  |     const stage = pointsStage(page, 'en');
+  75  |     const headings = stage.getByRole('heading', { level: 2 });
+  76  |     await expect(headings.nth(0)).toHaveText(/^Points$/);
+  77  |     await expect(headings.nth(1)).toHaveText(/^Next point$/);
+  78  |     await expect(headings.nth(2)).toHaveText(/^Stats$/);
+  79  |     await expect(headings.nth(3)).toHaveText(/^Effective stats$/);
+  80  | 
+  81  |     await page.getByRole('group', { name: 'Language' }).getByRole('button', { name: 'PT' }).click();
+  82  |     await openPointsTab(page, 'pt');
+  83  |     const stagePt = pointsStage(page, 'pt');
+  84  |     const headingsPt = stagePt.getByRole('heading', { level: 2 });
+  85  |     await expect(headingsPt.nth(0)).toHaveText(/^Pontos$/);
+  86  |     await expect(headingsPt.nth(1)).toHaveText(/^Próximo ponto$/);
+  87  |     await expect(headingsPt.nth(2)).toHaveText(/^Atributos$/);
+  88  |     await expect(headingsPt.nth(3)).toHaveText(/^Stats efetivos$/);
+  89  |   });
+  90  | 
+  91  |   test('hides sheet-group rows that match hero-sheet Total; shows combat deltas + derived', async ({
+  92  |     page,
+  93  |   }) => {
+  94  |     await seedLocalStorage(page, { ...importedRoster, lang: 'en' });
+  95  |     await page.goto('/');
+  96  |     await selectSavedHero(page, 'Cora');
+  97  |     await openPointsTab(page, 'en');
+  98  | 
+  99  |     const panel = effectivePanel(page, 'en');
+  100 |     // Default Cora has no combat sheet mults — sheet group is omitted entirely.
+  101 |     await expect(panel.getByRole('heading', { name: /Sheet stats/i, level: 3 })).toHaveCount(0);
+  102 |     await expect(panel.getByRole('heading', { name: /Derived combat/i, level: 3 })).toBeVisible();
+  103 |     for (const label of EN_DERIVED) {
+  104 |       await expect(panel.getByRole('button', { name: new RegExp(label, 'i') }).first()).toBeVisible();
+  105 |     }
+  106 | 
+  107 |     await seedLocalStorage(page, {
+  108 |       ...importedRoster,
+  109 |       lang: 'en',
+  110 |       account: combatSheetDeltaAccount(importedRoster.account!),
+  111 |     });
+  112 |     await page.goto('/');
+  113 |     await selectSavedHero(page, 'Cora');
+  114 |     await openPointsTab(page, 'en');
+  115 |     const panelDelta = effectivePanel(page, 'en');
+  116 |     await expect(panelDelta.getByRole('heading', { name: /Sheet stats/i, level: 3 })).toBeVisible();
+  117 |     for (const label of EN_COMBAT_SHEET_LABELS) {
+  118 |       await expect(panelDelta.getByRole('button', { name: new RegExp(label, 'i') }).first()).toBeVisible();
+  119 |     }
+  120 |     // Unchanged vs sheet Total (no combat mult) — stay hidden.
+  121 |     await expect(panelDelta.getByRole('button', { name: /Show breakdown of Penetration/i })).toHaveCount(0);
+  122 |     await expect(panelDelta.getByRole('button', { name: /Show breakdown of Luck/i })).toHaveCount(0);
+  123 |     // Crit chance too: the pressagio_mortal team buff lands on the crit factor, not on the
+  124 |     // sheet stat, so the sheet row stays equal to Total and is hidden — while the derived
+  125 |     // Critical factor row it DOES feed remains listed.
+> 126 |     await expect(panelDelta.getByRole('button', { name: /Show breakdown of Crit Chance/i })).toHaveCount(0);
+      |                                                                                              ^ Error: expect(locator).toHaveCount(expected) failed
+  127 |     await expect(panelDelta.getByRole('button', { name: /Show breakdown of Critical factor/i })).toBeVisible();
+  128 | 
+  129 |     await page.getByRole('group', { name: 'Language' }).getByRole('button', { name: 'PT' }).click();
+  130 |     await openPointsTab(page, 'pt');
+  131 |     const panelPt = effectivePanel(page, 'pt');
+  132 |     await expect(panelPt.getByRole('heading', { name: /Stats da ficha/i, level: 3 })).toBeVisible();
+  133 |     for (const label of PT_COMBAT_SHEET_LABELS) {
+  134 |       await expect(panelPt.getByRole('button', { name: new RegExp(label, 'i') }).first()).toBeVisible();
+  135 |     }
+  136 |   });
+  137 | 
+  138 |   test('Points tab soft-badges when setup incomplete; Effective stays neutral', async ({ page }) => {
+  139 |     await seedLocalStorage(page, {
+  140 |       ...importedRoster,
+  141 |       lang: 'en',
+  142 |       heroes: importedRoster.heroes,
+  143 |     });
+  144 |     await page.goto('/');
+  145 |     await selectSavedHero(page, 'Cora');
+  146 | 
+  147 |     const pointsTab = page.getByRole('tab', { name: /^points$/i });
+  148 |     await expect(pointsTab.locator('[data-tab-badge="soft"]')).toBeVisible();
+  149 |     await expect(pointsTab.getByText(/^setup$/i)).toHaveCount(0);
+  150 | 
+  151 |     await openPointsTab(page, 'en');
+  152 |     const effective = effectivePanel(page, 'en');
+  153 |     await expect(effective).not.toHaveClass(/shadow-\[inset_3px_0_0_var\(--accent\)\]/);
+  154 |     await expect(effective).not.toHaveClass(/opacity-\[0\.78\]/);
+  155 |   });
+  156 | 
+  157 |   test('no Gates or Context headings in Points tab', async ({ page }) => {
+  158 |     await seedLocalStorage(page, { ...importedRoster, lang: 'en' });
+  159 |     await page.goto('/');
+  160 |     await selectSavedHero(page, 'Cora');
+  161 |     await openPointsTab(page, 'en');
+  162 | 
+  163 |     const stage = pointsStage(page, 'en');
+  164 |     await expect(stage.getByRole('heading', { name: /^Gates$/i })).toHaveCount(0);
+  165 |     await expect(stage.getByRole('heading', { name: /^Context$/i })).toHaveCount(0);
+  166 |   });
+  167 | 
+  168 |   test('Hit updates when points change (sheet Attack stays on Stats when equal to Total)', async ({
+  169 |     page,
+  170 |   }) => {
+  171 |     await seedLocalStorage(page, { ...importedRoster, lang: 'en' });
+  172 |     await page.goto('/');
+  173 |     await selectSavedHero(page, 'Cora');
+  174 |     await openPointsTab(page, 'en');
+  175 | 
+  176 |     const panel = effectivePanel(page, 'en');
+  177 |     const hitBtn = panel.getByRole('button', { name: /Show breakdown of Hit/i });
+  178 |     const hitBefore = await hitBtn.textContent();
+  179 | 
+  180 |     const stage = pointsStage(page, 'en');
+  181 |     const attackStepper = stage.locator('tr').filter({ hasText: /^Attack/ });
+  182 |     await attackStepper.getByRole('button', { name: /\+/ }).click();
+  183 | 
+  184 |     const hitAfter = await hitBtn.textContent();
+  185 |     expect(hitAfter).not.toBe(hitBefore);
+  186 |   });
+  187 | 
+  188 |   test('expand sheet row shows ledger; expand derived shows formula', async ({ page }) => {
+  189 |     await seedLocalStorage(page, {
+  190 |       ...importedRoster,
+  191 |       lang: 'en',
+  192 |       account: combatSheetDeltaAccount(importedRoster.account!),
+  193 |     });
+  194 |     await page.goto('/');
+  195 |     await selectSavedHero(page, 'Cora');
+  196 |     await openPointsTab(page, 'en');
+  197 | 
+  198 |     const panel = effectivePanel(page, 'en');
+  199 |     const attackBtn = panel.getByRole('button', { name: /Show breakdown of Attack/i });
+  200 |     await attackBtn.click();
+  201 |     // BSPW6-06/BSP-20: steps now name their GAME line (Hero/Gear/Ability/Skill tree,
+  202 |     // LEDGER_SOURCE_GROUP), not the raw source — Attack's base+level+stars+points steps all
+  203 |     // read "Hero" (the old "Level" line-item name is gone by design).
+  204 |     await expect(panel.getByText(/^Hero$/i).first()).toBeVisible();
+  205 |     await expect(panel.getByText(/^Gear$/i).first()).toBeVisible();
+  206 | 
+  207 |     const fuseBtn = panel.getByRole('button', { name: /Show breakdown of Fuse/i });
+  208 |     await fuseBtn.click();
+  209 |     await expect(panel.locator('code').filter({ hasText: /max\(2/ })).toBeVisible();
+  210 |   });
+  211 | 
+  212 |   test('EN+PT: a stat with a real sheet ability + tree bonus shows all four game lines: Hero / Gear / Ability / Skill tree (AC-29, AC-30)', async ({
+  213 |     page,
+  214 |   }) => {
+  215 |     // Attack structurally never gets an Ability line (its sheetOther is hardcoded 0 in
+  216 |     // sheet-ledgers.ts) — Crit Chance does, via a sheet ability (Olho Clínico) and a tree
+  217 |     // bonus, so it is the stat that actually exercises all four lines at once.
+  218 |     const naked = {
+  219 |       attack: 200,
+  220 |       energy: 300,
+  221 |       speed: 50,
+  222 |       critChance: 10,
+  223 |       critDmg: 70,
+  224 |       penetration: 5,
+  225 |       cdr: 5,
+  226 |       luck: 0,
+```
