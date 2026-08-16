@@ -9,7 +9,7 @@ import { describe, expect, it } from 'vitest';
 import {
   computeHeroFarmFacts,
   computeSquadFarmFacts,
-  E_D_CELLS,
+  cycleSecondsForHero,
   type HeroFarmFacts,
 } from '@bombfarm/domain/farm-rate';
 import { pipelineForHero } from '@bombfarm/domain/roster-dps';
@@ -55,26 +55,39 @@ describe('computeHeroFarmFacts — blocksPerBomb (design.md §0 trap #3)', () =>
   });
 });
 
-describe('computeHeroFarmFacts — cycleSecs = max(fuseSecs, E_D_CELLS / w)', () => {
-  it('a normal fixture hero is walk-bound (cycleSecs === E_D_CELLS / w > fuseSecs)', () => {
+describe('computeHeroFarmFacts — cycleSecs = E[max(fuseSecs, hop/w)] + latency over HOP_DISTRIBUTION', () => {
+  it('a normal fixture hero matches cycleSecondsForHero exactly (the fact is the function, not a copy of it)', () => {
     const jon = heroes.find((h) => h.name === 'Jon')!;
     const [fact] = computeHeroFarmFacts({ heroes: [jon], account });
-    const expectedWalkTerm = E_D_CELLS / fact.walkSpeedCells;
-    expect(fact.cycleSecs).toBeCloseTo(Math.max(fact.fuseSecs, expectedWalkTerm), 12);
-    expect(expectedWalkTerm).toBeGreaterThan(fact.fuseSecs);
-    expect(fact.cycleSecs).toBeCloseTo(expectedWalkTerm, 12);
+    expect(fact.cycleSecs).toBeCloseTo(cycleSecondsForHero(fact.fuseSecs, fact.walkSpeedCells), 12);
   });
 
-  it('a speed-boosted copy of the same hero is fuse-bound (cycleSecs === fuseSecs > E_D_CELLS / w)', () => {
+  it('a normal fixture hero is mostly walk-bound — its cycle exceeds the pure fuse-bound floor', () => {
+    const jon = heroes.find((h) => h.name === 'Jon')!;
+    const [fact] = computeHeroFarmFacts({ heroes: [jon], account });
+    const fuseBoundFloor = cycleSecondsForHero(fact.fuseSecs, 1e9);
+    expect(fact.cycleSecs).toBeGreaterThan(fuseBoundFloor);
+  });
+
+  it('a speed-boosted copy converges on the fuse-bound floor — every hop but the shortest clears the fuse', () => {
     const jon = heroes.find((h) => h.name === 'Jon')!;
     // design.md §2.5 / tasks.md T5: no fixture hero is naturally fuse-bound at this fixture's
     // speeds — constructed by boosting the birth speed roll well past every walk-bound crossover.
     const fastJon: HeroRecord = { ...jon, birth: { ...jon.birth!, speed: jon.birth!.speed * 50 } };
     const [fact] = computeHeroFarmFacts({ heroes: [fastJon], account });
-    const expectedWalkTerm = E_D_CELLS / fact.walkSpeedCells;
-    expect(fact.cycleSecs).toBeCloseTo(Math.max(fact.fuseSecs, expectedWalkTerm), 12);
-    expect(fact.fuseSecs).toBeGreaterThan(expectedWalkTerm);
-    expect(fact.cycleSecs).toBeCloseTo(fact.fuseSecs, 12);
+    expect(fact.cycleSecs).toBeCloseTo(cycleSecondsForHero(fact.fuseSecs, 1e9), 6);
+  });
+
+  it('the distribution-averaged cycle is STRICTLY SLOWER than the retired max(fuse, 4.5/w) — the regression this fix repairs', () => {
+    const jon = heroes.find((h) => h.name === 'Jon')!;
+    const [fact] = computeHeroFarmFacts({ heroes: [jon], account });
+    const retired = Math.max(fact.fuseSecs, 4.5 / fact.walkSpeedCells);
+    expect(fact.cycleSecs).toBeGreaterThan(retired);
+    // Measured on the live capture at ~1.3-1.4x for this roster's speeds; pinned loosely so a
+    // re-fit of the distribution does not trip it, but tightly enough to catch a collapse back
+    // to a mean-first model, which would land at exactly 1.0.
+    expect(fact.cycleSecs / retired).toBeGreaterThan(1.2);
+    expect(fact.cycleSecs / retired).toBeLessThan(1.6);
   });
 
   it('w <= 0 (constructed via zero speed) ⇒ cycleSecs Infinity, plantsPerSec 0, degenerate true', () => {

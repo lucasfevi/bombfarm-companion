@@ -121,7 +121,11 @@ describe('forbidden-literal scan — the estimator\'s magic numbers never appear
   const MAGIC_NUMBERS: readonly [string, RegExp][] = [
     ['1000 (respec cost — must come from RESPEC_COST_GOLD_PER_LEVEL)', /\b1000\b/],
     ['0.0386 (GRID_SPEED_COEF)', /0\.0386/],
-    ['4.5 (E_D_CELLS)', /\b4\.5\b/],
+    // Was "4.5 (E_D_CELLS)". That constant is retired — cadence is now averaged over
+    // HOP_DISTRIBUTION rather than derived from a single expected hop — but the literal stays
+    // banned: 4.5 reappearing in these sources would mean someone reconstructed the collapsed
+    // mean-hop model the fix removed.
+    ['4.5 (the retired E_D_CELLS mean-hop collapse)', /\b4\.5\b/],
     ['0.9 (EFF_IA)', /(?<!\d)0\.9(?!\d)/],
   ];
 

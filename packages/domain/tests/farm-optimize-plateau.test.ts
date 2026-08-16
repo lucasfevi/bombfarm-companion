@@ -111,14 +111,19 @@ describe('the fixture reports a bounded, correctly-shaped plateau', () => {
     // collapses to a single point. That is spec-sanctioned behaviour, not an accident: min and
     // max both equal the winner's own share, never null, never an invented width.
     //
-    // RE-MEASURED (House-ceiling fix): was 0.4744, now 0.4937. Not a change to the plateau logic
-    // — the winning BUILD moved. The fixture's rest seconds now come from its own
-    // `casa.cycle_secs` (1181.05s) instead of the `HOUSES` table's interpolation (1102s), and a
-    // longer House cycle makes each Energy point (which buys field seconds) worth more against
-    // each Attack point, so the optimum shifts toward energy. The single-point collapse the
-    // comment above describes is unchanged.
-    expect(plateau.minEnergyShare).toBeCloseTo(0.4937, 4);
-    expect(plateau.maxEnergyShare).toBeCloseTo(0.4937, 4);
+    // RE-MEASURED TWICE, both times because the winning BUILD moved — never the plateau logic.
+    // The single-point collapse the comment above describes is unchanged throughout.
+    //   0.4744  original
+    //   0.4937  House-ceiling fix: rest seconds now come from the fixture's own
+    //           `casa.cycle_secs` (1181.05s) rather than the `HOUSES` table (1102s), and a longer
+    //           House cycle makes each Energy point (which buys field seconds) worth more.
+    //   0.5402  cadence fix: averaging the cycle over the measured hop distribution puts ~45% of
+    //           plants on the fuse-bound branch, where a Speed point buys nothing. Speed's
+    //           marginal value drops sharply, the winning build stops spending on it, and the
+    //           freed pool goes to Energy. Same direction as the rank inversion pinned in
+    //           `farm-point-rank.test.ts`, where energy overtakes speed outright.
+    expect(plateau.minEnergyShare).toBeCloseTo(0.5402, 4);
+    expect(plateau.maxEnergyShare).toBeCloseTo(0.5402, 4);
     expect(plateau.minEnergyShare).toBe(plateau.maxEnergyShare);
   });
 

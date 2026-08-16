@@ -7,10 +7,24 @@
  * assertion uses exact `toEqual`, never `toBeCloseTo`, except the one case explicitly documented
  * as approximate (the moved-vector affine claim).
  *
- * RE-CAPTURED at the House-recovery-slot / `casa.cycle_secs` / `field_slots` fix. The previous
- * capture was taken before the model change and could not survive it — but the re-capture was
- * DIFFED against it field by field first, and the diff is exactly the change's own footprint,
- * nothing more:
+ * RE-CAPTURED AGAIN at the cadence fix (cycle averaged over `HOP_DISTRIBUTION` instead of
+ * `max(fuse, E_D_CELLS / w)`). Diffed field by field before rewriting, same as last time:
+ *
+ * - `heroFacts`: **only `cycleSecs` and `plantsPerSec` moved** — and `plantsPerSec` is `1 /
+ *   cycleSecs`, so that is one change, not two. `avgHitBase`, `blocksPerBomb`, `fuseSecs`,
+ *   `walkSpeedCells`, `penetrationPct`, `uptime`, `heroLuckPct`, `veiaOuroLevel`,
+ *   `fortunaLevel` and `degenerate` are byte-identical. Notably `uptime` did NOT move, which is
+ *   the proof that this change touched cadence and left the House model alone.
+ * - `rows`: only throughput-derived columns moved. `locked`, `mitigationPct`, `oneShot`,
+ *   `infeasible`, `concurrencyScale`, `fortunaAura`, `ato`, `gate`, `gateTimerSecs`,
+ *   `itemLevels`, `itemLevelLabel`, `jaulaEarlyCapPct` and `jaulaWindowSecs` are byte-identical.
+ *
+ * A warning for the next person to re-record this: the table below is captured with
+ * `computeFarmRates({ heroes, account })` and NO `maxPhase`. Passing one flips `locked` on every
+ * row, which looks like a real regression in the diff and is purely a harness mistake.
+ *
+ * PREVIOUSLY RE-CAPTURED at the House-recovery-slot / `casa.cycle_secs` / `field_slots` fix,
+ * with the same discipline. That diff was:
  *
  * - `heroFacts`: **only `uptime` moved.** `avgHitBase`, `penetrationPct`, `fuseSecs`,
  *   `walkSpeedCells`, `cycleSecs`, `plantsPerSec`, `blocksPerBomb`, `heroLuckPct`,

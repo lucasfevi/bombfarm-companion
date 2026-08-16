@@ -4,7 +4,8 @@
  * 600 wiki phases.
  *
  * ESTIMATOR-ONLY BOUNDARY: this module ships its own cadence model
- * (`cycle = max(fuse, E_D_CELLS / w)`) and never touches the advisor's serial model —
+ * (`cycle = E[max(fuse, hop/w)] + latency` over {@link HOP_DISTRIBUTION}) and never touches the
+ * advisor's serial model —
  * `farm-context.ts`'s `FARM_CYCLE_MODEL` / `FARM_WALK_DELAY_SEC`, or `model/combat.ts`'s
  * `bombsPerSecond` / `sustainedDps` / `activeDps`. Those keep their exact current behaviour;
  * nothing here reads or writes them, and this module is the only one that computes cadence this
@@ -96,17 +97,83 @@ import { hitsToKill, propHp } from './phases';
 import type { HeroRecord, AccountShared } from './shims/storage';
 
 /**
- * Expected plant-to-plant displacement, in grid cells, for the walk-bound cadence term
- * `cycle = max(fuse, E_D_CELLS / w)`.
+ * Plant-to-plant hop distribution: `HOP_DISTRIBUTION[hop]` is the probability that a hero's next
+ * bomb lands `hop` grid cells (Manhattan) from its last one. Index is the hop in cells.
  *
- * PROVISIONAL; live captures measured mean displacement 4.34 cells (per-hero 4.04–5.05);
- * revisit when the fuse-bound capture lands. The shipped value of 4.5 sits above every direct
- * route measured so far, so this model runs slightly pessimistic on walk-bound rosters.
+ * WHY A DISTRIBUTION AND NOT A MEAN — this is the whole point, do not "simplify" it back:
+ * the cycle is `max(fuse, hop/w)`, which is CONVEX in `hop`, so by Jensen
+ * `E[max(fuse, hop/w)] > max(fuse, E[hop]/w)`. The retired `E_D_CELLS = 4.5` collapsed the
+ * distribution to its mean BEFORE the max and then inverted to a rate — biasing throughput up
+ * twice in the same direction. Measured mean hop is 4.77, so the old constant was barely wrong;
+ * averaging first is what cost ~25%. The thin tail (hops >= 15, ~3% of plants) carries most of
+ * the difference and is exactly what a mean discards.
  *
- * This constant is the single line to change when a fuse-bound capture (low-CDR heroes only)
- * lands — nothing else in the model encodes a cell distance.
+ * PROVENANCE — the 2026-08-15 combat-throughput capture (`combat-throughput-20260815`,
+ * `capture-486-r3`), 662 attributed plant-to-plant hops on account 486 at phase 26 (ato 1,
+ * 50 props), across four heroes spanning `w` 1.84–2.07 and blast reach `r` 1 and 3. Re-fit from
+ * a fresh capture by pooling `manhattan(previous plant cell, next plant cell)` per hero and
+ * normalising. The capture and its analysis live in the research repo, not here.
+ *
+ * KNOWN LIMITATION: one shared distribution cannot express that heroes have individually
+ * different hop distributions (the same captures measure `corr(w, meanDist) ~ -0.55` — faster
+ * heroes get shorter hops). Against each hero's OWN measured distribution the model lands within
+ * 1%; against this pooled one it spreads to +-9%, weighted MAE 4.8% — still 5x better than the
+ * 25.6% the retired constant produced. Making the distribution a function of `w` is the next
+ * refinement and needs more captures than one account can supply.
  */
-export const E_D_CELLS = 4.5;
+export const HOP_DISTRIBUTION: readonly number[] = Object.freeze([
+  0.00302, 0.05136, 0.15257, 0.24924, 0.19033, 0.09819, 0.07553, 0.05438, 0.01813, 0.01662,
+  0.01511, 0.01208, 0.00755, 0.0136, 0.00755, 0.01057, 0.00755, 0.00302, 0.00151, 0.00151,
+  0.00302, 0, 0, 0.00302, 0.00151, 0.00302,
+]);
+
+/**
+ * Flat per-cycle cost beyond `max(fuse, hop/w)`, seconds — the hero clearing its own blast cross
+ * and re-targeting.
+ *
+ * FITTED, not measured directly. Reading the per-hop floor off the capture gives ~0.25 s, and
+ * that is the physically honest number; 0.39 is what minimises error once the SHARED
+ * {@link HOP_DISTRIBUTION} replaces each hero's own, so it absorbs some per-hero hop variation
+ * the pooled histogram cannot represent. Both are recorded so a future re-fit knows which part
+ * is physics and which is compensation — if the distribution ever becomes `w`-dependent, this
+ * should fall back toward 0.25.
+ *
+ * Confirmed independent of blast reach: Minato at `r = 3` sits on the same floor as the `r = 1`
+ * heroes, killing the `cycle >= 2 x R/w` conjecture (research `COMBAT_THROUGHPUT.md`, 2026-08-15).
+ */
+export const CYCLE_LATENCY_SEC = 0.39;
+
+/**
+ * Cycle for a hop of 0 or 1 cell, seconds — its own case, not part of the walk branch.
+ *
+ * One bomb per cell plus a blast cross of at least +-1 puts the adjacent cell INSIDE the live
+ * bomb's own footprint, so the hero cannot plant there until the previous bomb detonates.
+ * Measured 2.74-2.82 s across heroes — SLOWER than a 4-cell hop, which is why folding it into
+ * `max(fuse, hop/w)` (which would predict the floor, ~2.2 s) understates it. Shipped at the
+ * fitted 2.44 s for the same reason {@link CYCLE_LATENCY_SEC} is fitted.
+ */
+export const HOP1_CYCLE_SEC = 2.44;
+
+/**
+ * `E[max(fuse, hop/w)] + latency` over {@link HOP_DISTRIBUTION}. `Infinity` when the hero cannot
+ * move (`w <= 0`), which keeps a degenerate hero at zero throughput rather than dividing by zero.
+ *
+ * Phase-independent — `fuse` and `w` are both phase-independent — so this stays a per-hero fact
+ * computed once in {@link computeHeroFarmFacts}. It costs ~26 multiply-adds per hero for the
+ * whole 600-row table, and adds NO per-row work and no pipeline calls.
+ */
+export function cycleSecondsForHero(fuseSecs: number, walkSpeedCells: number): number {
+  if (!(walkSpeedCells > 0) || !Number.isFinite(walkSpeedCells)) return Infinity;
+  let expected = 0;
+  for (let hop = 0; hop < HOP_DISTRIBUTION.length; hop++) {
+    const probability = HOP_DISTRIBUTION[hop];
+    if (probability <= 0) continue;
+    expected +=
+      probability *
+      (hop <= 1 ? HOP1_CYCLE_SEC : Math.max(fuseSecs, hop / walkSpeedCells) + CYCLE_LATENCY_SEC);
+  }
+  return expected;
+}
 
 /**
  * Fortuna's aura ceiling — the ability's own at-max value, derived from the ability catalog's
@@ -143,7 +210,8 @@ export type HeroFarmFacts = {
   fuseSecs: number;
   /** Grid walk speed `w = effective.speed × GRID_SPEED_COEF`, CELLS PER SECOND. */
   walkSpeedCells: number;
-  /** `max(fuseSecs, E_D_CELLS / w)`, seconds. `Infinity` when `w <= 0`. */
+  /** {@link cycleSecondsForHero}, seconds — averaged over the hop distribution, NOT `max()` of a
+   *  mean hop. `Infinity` when `w <= 0`. */
   cycleSecs: number;
   /** `1 / cycleSecs`, plants per second. `0` when `cycleSecs` is not finite and positive. */
   plantsPerSec: number;
@@ -275,10 +343,7 @@ export function heroFactsFromBasis(basis: HeroFarmBasis, pts: Record<SheetKey, n
   const penetrationPct = sheet.penetration;
   const fuseSecs = fuseSeconds(sheet.cdr);
   const walkSpeedCells = sheet.speed * GRID_SPEED_COEF;
-  const cycleSecs =
-    walkSpeedCells > 0 && Number.isFinite(walkSpeedCells)
-      ? Math.max(fuseSecs, E_D_CELLS / walkSpeedCells)
-      : Infinity;
+  const cycleSecs = cycleSecondsForHero(fuseSecs, walkSpeedCells);
   const plantsPerSec = Number.isFinite(cycleSecs) && cycleSecs > 0 ? 1 / cycleSecs : 0;
   const field = fieldSeconds(sheet, basis.context);
   const uptime = (100 * field) / (field + basis.context.restSeconds) / 100;

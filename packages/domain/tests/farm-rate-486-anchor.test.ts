@@ -20,13 +20,22 @@
  * link by link — rest seconds, per-hero uptime, `uptimeSum`, House slot demand, heroes on field,
  * the field scale, clear time — and `goldPerHour` is asserted LAST, as a consequence.
  *
- * THE REMAINING GAP IS DELIBERATE. The estimator still predicts ~499k gold/hr against 371,263
- * observed — a residual ~1.34x. That is the bomb-cadence term (`E_D_CELLS` / the `blocksPerBomb`
- * cycle model), which is held for a pending live fuse-bound capture and is explicitly OUT of this
- * fix's scope. `blocksPerBomb = 1.5` is independently confirmed correct at this phase's prop
- * density (1.53 hits/explosion measured live at 15-51 props), so bending either constant to close
- * the gap would be a compensating error, not a fix. The band assertion below pins the gap OPEN so
- * that a future change closing it has to do so on purpose.
+ * THE GAP IS NOW CLOSED, and this header's previous "held open" clause is retired ON PURPOSE —
+ * the earlier version of this file required exactly that of whoever closed it.
+ *
+ * It was NOT closed by tuning a constant. The cadence term was structurally wrong: `cycle =
+ * max(fuse, hop/w)` is convex in `hop`, so collapsing hops to a single `E_D_CELLS` BEFORE the
+ * `max()` and then inverting to a rate biased throughput up twice over (Jensen). Averaging the
+ * cycle over a measured hop distribution instead moves this row from ~499k to ~361k against
+ * 371,263 observed. Corroboration that this is the right term rather than a lucky fudge:
+ * `clearSecs` independently lands at ~107s against the bot's measured ~107s wall clock, and
+ * `heroesOnField` was already at 1.3153 against a measured 1.317.
+ *
+ * `blocksPerBomb = 1.5` remains untouched and independently confirmed (1.400-1.479 hits/explosion
+ * measured live at this density, and 2.217 at `r = 3` against the Grimorio's 2.5). The measured
+ * mean hop is 4.77 against the retired constant's 4.5 — the old number was barely wrong; averaging
+ * first is what cost 25%. The measurements behind this live in the research repo's
+ * combat-throughput notes, not here.
  */
 import { describe, expect, it } from 'vitest';
 import { computeFarmRates } from '@bombfarm/domain/farm-rate';
@@ -109,8 +118,8 @@ describe('the House is the binding constraint (defect A)', () => {
 });
 
 describe('the resulting rates', () => {
-  it('clearSecs is ~77s, up from the pre-fix 67.5s', () => {
-    expect(row.clearSecs).toBeCloseTo(77.29, 1);
+  it('clearSecs is ~107s — 67.5s before the House fix, 77.3s after it, and ~107s once cadence is averaged over the hop distribution', () => {
+    expect(row.clearSecs).toBeCloseTo(106.76, 1);
     expect(row.clearSecs).toBeGreaterThan(70);
   });
 
@@ -120,20 +129,28 @@ describe('the resulting rates', () => {
     expect(Math.abs(goldPerProp / OBSERVED_GOLD_PER_PROP - 1)).toBeLessThan(0.015);
   });
 
-  it('goldPerHour is ~499k — down 12.7% from the pre-fix 571,546', () => {
-    expect(row.goldPerHour).toBeCloseTo(498_898, -2);
+  it('goldPerHour is ~361k — down 37% from the pre-fix 571,546 across the House and cadence fixes', () => {
+    expect(row.goldPerHour).toBeCloseTo(361_176, -2);
     // A band, not a point, so a legitimate wiki-bundle refresh does not fail this file; tight
-    // enough that re-opening any of the three defects moves the number out of it.
-    expect(row.goldPerHour).toBeGreaterThan(490_000);
-    expect(row.goldPerHour).toBeLessThan(510_000);
-    expect(row.goldPerHour).toBeLessThan(571_546 * 0.95);
+    // enough that re-opening any of the defects moves the number out of it.
+    expect(row.goldPerHour).toBeGreaterThan(350_000);
+    expect(row.goldPerHour).toBeLessThan(375_000);
   });
 
-  it('the residual over-prediction against telemetry is ~1.34x, and is HELD OPEN for the cadence capture', () => {
+  it('now lands WITHIN 5% of live telemetry — the residual is closed, not held open', () => {
     const ratio = row.goldPerHour / OBSERVED_GOLD_PER_HOUR;
-    expect(ratio).toBeGreaterThan(1.25);
-    expect(ratio).toBeLessThan(1.45);
-    // Guard against "fixing" this by tuning the cadence constants: if a future change closes the
-    // gap, it must delete this assertion deliberately and say why — see the file header.
+    expect(Math.abs(ratio - 1)).toBeLessThan(0.05);
+    // Two-sided ON PURPOSE. The lower bound is the real guard: this estimator's whole history is
+    // of over-predicting (571,546 against 371,263 at its worst), so a change that quietly walks
+    // the number back up has to trip this. The upper bound catches an over-correction — closing
+    // the gap by making the model pessimistic instead of right.
+  });
+
+  it('clearSecs independently matches the bot\'s measured wall clock — the corroboration that the CADENCE term was the wrong one', () => {
+    // ~107s measured across 159 clears. This is a different quantity from goldPerHour and was
+    // never fitted, so it is the check that distinguishes "fixed the cadence" from "found a
+    // multiplier that happens to land gold/hr in the right place".
+    expect(row.clearSecs).toBeGreaterThan(100);
+    expect(row.clearSecs).toBeLessThan(115);
   });
 });

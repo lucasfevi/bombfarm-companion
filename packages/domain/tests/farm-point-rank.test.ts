@@ -57,19 +57,23 @@ describe('rankNextPointForFarm — discrimination: a one-shotting squad inverts 
     assertResultIsFinite(result);
   });
 
-  it('farm ranks speed first and energy second at maxPhase 42, pinned to full precision (recorded from a real run)', () => {
+  it('farm ranks ENERGY first and speed second at maxPhase 42 — the order INVERTED when cadence stopped assuming every plant is walk-bound', () => {
     const result = rankNextPointForFarm({ bases, account, heroId: bellatrix.id, maxPhase: 42 });
     const rows = result.rows!;
-    // Magnitudes re-recorded when #86 merged (House recovery-slot ceiling + the cycle_secs
-    // anchor); #87 pinned these against the pre-#86 model. **The ORDER is unchanged** — speed
-    // first, energy second — which is what this test is actually for; only the gains moved.
-    // Both gains rose (speed 1.0929 → 1.1170, energy 0.8509 → 0.8999) because a rationed House
-    // keeps each hero on the field for a smaller share of the time, so anything buying throughput
-    // per on-field second is worth more. Energy rose slightly faster, narrowing the gap without
-    // closing it — consistent with the plateau shift seen in `farm-optimize-plateau.test.ts`
-    // (energy share 0.4744 → 0.4937) from the same cause.
-    expect(rows[0]).toEqual({ stat: 'speed', label: 'Velocidade', gainPct: 1.1170118575225318 });
-    expect(rows[1]).toEqual({ stat: 'energy', label: 'Energia', gainPct: 0.8998710690976797 });
+    // This test used to assert speed first, energy second. The inversion is the point, and it is
+    // a consequence of fixing the cadence model rather than of tuning anything.
+    //
+    // The retired `cycle = max(fuse, E_D_CELLS / walkSpeed)` put EVERY plant on the walk branch
+    // at fixture speeds, so a speed point shortened every single cycle and speed looked
+    // dominant (1.1170). Averaging over the measured hop distribution, roughly 45% of plants are
+    // short enough to be fuse-bound, where speed buys nothing at all — so speed's marginal value
+    // falls by ~41% (1.1170 → 0.6612) while energy barely moves (0.8999 → 0.9011, since a point
+    // of energy still buys the same extra field seconds). Energy overtakes it.
+    //
+    // The same correction is why `cdr` stopped scoring exactly 0 further down this file: the
+    // fuse-bound mass that speed cannot help is precisely the mass CDR can.
+    expect(rows[0]).toEqual({ stat: 'energy', label: 'Energia', gainPct: 0.9011068264938915 });
+    expect(rows[1]).toEqual({ stat: 'speed', label: 'Velocidade', gainPct: 0.6612139458378907 });
   });
 
   it('DPS mode scores attack first and speed exactly 0 on the same hero (the inversion)', () => {
@@ -95,16 +99,35 @@ describe('rankNextPointForFarm — anti-"energy always wins" sensor', () => {
   });
 });
 
-describe('rankNextPointForFarm — cdr scores exactly 0 under farm for every fixture hero', () => {
-  // Not a bug: the farm cadence is cycle = max(fuseSecs, E_D_CELLS / walkSpeed), and the walk
-  // term dominates for every fixture hero, so shortening the fuse (what a CDR point buys)
-  // changes nothing about plant rate. This is the reason `speed` — worth 0 for DPS — is worth
-  // the most for farming. Pinned so a future reader does not "fix" it.
-  it.each(['Bellatrix', 'Jon', 'Lyra', 'Perrin'])('%s: cdr gainPct === 0', (name) => {
+describe('rankNextPointForFarm — cdr scores SMALL BUT POSITIVE under farm (it used to be exactly 0)', () => {
+  // This block previously pinned `cdr.gainPct === 0` with a note telling future readers not to
+  // "fix" it. That note was correct about the OLD model and wrong about the game.
+  //
+  // Under `cycle = max(fuseSecs, E_D_CELLS / walkSpeed)`, the walk term dominated at every
+  // fixture speed, so a shorter fuse could never change the plant rate and CDR was worth
+  // literally nothing. Averaging over the measured hop distribution instead, roughly 45% of a
+  // slow hero's plants land on hops short enough that `hop/w < fuse` — the fuse-bound branch,
+  // observed live as a flat floor across hops 2-4. On those plants a CDR point DOES buy cadence.
+  //
+  // So CDR is no longer free to ignore, but it stays far below speed and energy because it only
+  // pays on the short-hop mass. Asserted as a shape (positive, small, never top) rather than
+  // per-hero constants: the exact values move with any re-fit of the distribution.
+  it.each(['Bellatrix', 'Jon', 'Lyra', 'Perrin'])('%s: cdr gainPct >= 0 and never ranks first', (name) => {
     const hero = heroByName(name);
     const result = rankNextPointForFarm({ bases, account, heroId: hero.id, maxPhase: 42 });
-    const cdr = result.rows!.find((r) => r.stat === 'cdr')!;
-    expect(cdr.gainPct).toBe(0);
+    const rows = result.rows!;
+    const cdr = rows.find((r) => r.stat === 'cdr')!;
+    expect(cdr.gainPct).toBeGreaterThanOrEqual(0);
+    expect(rows[0].stat).not.toBe('cdr');
+    expect(cdr.gainPct).toBeLessThan(rows[0].gainPct);
+  });
+
+  it('at least one fixture hero now scores cdr strictly above 0 — the fuse-bound branch is reachable', () => {
+    const anyPositive = ['Bellatrix', 'Jon', 'Lyra', 'Perrin'].some((name) => {
+      const result = rankNextPointForFarm({ bases, account, heroId: heroByName(name).id, maxPhase: 42 });
+      return result.rows!.find((r) => r.stat === 'cdr')!.gainPct > 0;
+    });
+    expect(anyPositive).toBe(true);
   });
 });
 
