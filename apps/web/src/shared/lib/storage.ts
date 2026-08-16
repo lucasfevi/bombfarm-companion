@@ -11,6 +11,8 @@ import {
   type HeroContext,
   type TreeState,
 } from './account-shared';
+import { readJson, writeJson } from './storage-json';
+import { migrateCritDmgFlatBakeOnce } from './storage-critdmg-migration';
 
 export {
   DEFAULT_ACCOUNT,
@@ -20,18 +22,20 @@ export {
 } from './account-shared';
 export type { AccountShared, HeroContext, TreeState } from './account-shared';
 
+// The localStorage primitives live in `./storage-json` so this module and the one-shot
+// migrations can share them without importing each other. Re-exported here so
+// `@/shared/lib/storage` stays the single import site for the rest of the app.
+export {
+  clearStorageWriteErrorListenersForTests,
+  onStorageWriteError,
+  readJson,
+  writeJson,
+} from './storage-json';
+export type { StorageWriteErrorListener } from './storage-json';
+
 const HEROES_KEY = 'bf-hp-heroes-v1';
 const ACTIVE_KEY = 'bf-hp-active-hero-v1';
 const ACCOUNT_KEY = 'bf-hp-account-v1';
-
-/**
- * One-shot marker (schema-version-bump idiom, same precedent as the `bf-pa-heroes-v2`/`v1` →
- * `bf-hp-heroes-v1` migration below) gating {@link migrateCritDmgFlatBakeOnce}. Never
- * repurposed, never removed — its only job is "has this browser's roster already been walked
- * for the flat-crit-damage conversion", and a content heuristic cannot answer that (a rank-0
- * Golpe Brutal record and an already-migrated one are byte-identical).
- */
-const CRIT_DMG_FLAT_MIGRATED_KEY = 'bf-hp-critdmg-flat-migrated-v1';
 
 /** Older point-advisor keys — read once to migrate. */
 const LEGACY_HEROES_KEYS = ['bf-pa-heroes-v2', 'bf-pa-heroes-v1'] as const;
@@ -99,57 +103,7 @@ function uid(): string {
   return `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
 }
 
-export function readJson<T>(key: string, fallback: T): T {
-  try {
-    const raw = localStorage.getItem(key);
-    if (!raw) return fallback;
-    return JSON.parse(raw) as T;
-  } catch {
-    return fallback;
-  }
-}
 
-export type StorageWriteErrorListener = (info: { key: string; error: unknown }) => void;
-
-const writeErrorListeners = new Set<StorageWriteErrorListener>();
-
-/**
- * Register a listener for localStorage write failures (quota / private mode).
- * Returns an unsubscribe function. Each listener invocation is individually
- * try/caught so one bad listener cannot break the save path (MOD-45, ASM-11).
- */
-export function onStorageWriteError(listener: StorageWriteErrorListener): () => void {
-  writeErrorListeners.add(listener);
-  return () => {
-    writeErrorListeners.delete(listener);
-  };
-}
-
-/** Vitest helper — clears the write-error listener set. */
-export function clearStorageWriteErrorListenersForTests(): void {
-  writeErrorListeners.clear();
-}
-
-function notifyWriteError(key: string, error: unknown): void {
-  for (const listener of writeErrorListeners) {
-    try {
-      listener({ key, error });
-    } catch {
-      // Contain listener failures — do not break the save path.
-    }
-  }
-}
-
-/** Returns true on success, false on any setItem throw — never rethrows (MOD-45). */
-export function writeJson(key: string, value: unknown): boolean {
-  try {
-    localStorage.setItem(key, JSON.stringify(value));
-    return true;
-  } catch (error) {
-    notifyWriteError(key, error);
-    return false;
-  }
-}
 
 /**
  * Older saves computed Geared live from naked + equipped items (`manualGeared: false`)
@@ -207,84 +161,6 @@ function reconcileActiveHero(heroes: HeroRecord[]) {
   else localStorage.removeItem(ACTIVE_KEY);
 }
 
-/**
- * Converts ONE legacy record's `naked.critDmg` (and `gearedOverride.critDmg`, which always
- * equals it pre-migration — gear never rolls crit damage, see `gear/apply.ts`) from the
- * pre-fix multiplicative Golpe Brutal bake to the flat-additive bake this fix ships
- * (`.changeset/crit-damage-is-flat.md`).
- *
- * Before: `naked.critDmg` was written as `rollTimesStar × (1 + 0.04 × rank)`.
- * After:  `naked.critDmg` must read as `rollTimesStar + 4 × rank`.
- *
- * Recovers `rollTimesStar = legacy / (1 + 0.04 × rank)`, using the record's OWN
- * `abilities.golpe_brutal` level as `rank` (the ability level that produced the stored value —
- * never the ability's live/current level from elsewhere, since this is a per-record replay).
- * At `rank = 0` both formulas agree (`legacy / 1 + 0 = legacy`), so this is the identity for
- * every hero without the ability — the overwhelming majority of records.
- *
- * A record carrying `birth` is converted the same way for consistency, but its converted
- * `naked`/`gearedOverride` never actually reaches the pipeline: `resolveDeriveSheets`
- * (`advisor-pipeline-sheets.ts`) recomputes both from `birth` whenever `birth` is present, so a
- * birth-backed hero's on-screen behavior is unaffected either way.
- */
-function migrateCritDmgFlatBake(hero: Partial<HeroRecord>): Partial<HeroRecord> {
-  const rank = Math.max(0, hero.abilities?.golpe_brutal ?? 0);
-  if (rank <= 0) return hero;
-
-  const oldFactor = 1 + 0.04 * rank;
-  const newFlat = 4 * rank;
-  const convert = (legacy: number): number => legacy / oldFactor + newFlat;
-
-  const naked =
-    hero.naked && typeof hero.naked.critDmg === 'number' && Number.isFinite(hero.naked.critDmg)
-      ? { ...hero.naked, critDmg: convert(hero.naked.critDmg) }
-      : hero.naked;
-  const gearedOverride =
-    hero.gearedOverride &&
-    typeof hero.gearedOverride.critDmg === 'number' &&
-    Number.isFinite(hero.gearedOverride.critDmg)
-      ? { ...hero.gearedOverride, critDmg: convert(hero.gearedOverride.critDmg) }
-      : hero.gearedOverride;
-
-  return { ...hero, naked, gearedOverride };
-}
-
-/**
- * Walks the WHOLE roster through {@link migrateCritDmgFlatBake} exactly once per browser
- * profile, gated by `CRIT_DMG_FLAT_MIGRATED_KEY` so a second `loadHeroes()` call (this session
- * or a future one) can never re-apply the conversion to an already-migrated value — doing so
- * would silently corrupt it a second time.
- *
- * The marker itself is written UNCONDITIONALLY the first time it is absent, even when nothing
- * in the CURRENT roster needed converting (empty roster, or every record at Golpe Brutal rank
- * 0) — this is deliberate, not a missed optimization: the marker's soundness depends on
- * covering the roster as it stood the FIRST time this code ever ran, not on whatever happens to
- * need conversion today. Every record present in local storage at that first run is guaranteed
- * to predate this fix (the flat model did not exist before it), so blanket-covering that
- * snapshot is safe; deferring the marker write until "something actually changed" would leave
- * it unset for a store with zero Golpe Brutal heroes today, and a LATER hero freshly computed
- * under the (already-correct) flat model would then be wrongly re-interpreted as legacy on the
- * next boot — exactly the content-heuristic failure mode this marker exists to avoid.
- *
- * `changed` is reported separately (reference-identity per record) purely so the caller can
- * skip an otherwise-pointless `saveHeroes` rewrite when every conversion was a no-op — the
- * marker write is the only storage effect a genuinely clean roster incurs.
- */
-function migrateCritDmgFlatBakeOnce(
-  list: Partial<HeroRecord>[],
-): { list: Partial<HeroRecord>[]; changed: boolean } {
-  if (readJson<boolean>(CRIT_DMG_FLAT_MIGRATED_KEY, false)) {
-    return { list, changed: false };
-  }
-  let changed = false;
-  const migrated = list.map((hero) => {
-    const next = migrateCritDmgFlatBake(hero);
-    if (next !== hero) changed = true;
-    return next;
-  });
-  writeJson(CRIT_DMG_FLAT_MIGRATED_KEY, true);
-  return { list: migrated, changed };
-}
 
 export function loadHeroes(): HeroRecord[] {
   let list = readJson<Partial<HeroRecord>[]>(HEROES_KEY, []);
