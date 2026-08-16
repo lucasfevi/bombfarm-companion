@@ -641,12 +641,9 @@ describe('staleness derivations (an input change invalidates the proposal and re
     });
   }
 
-  // The NON-mutation counterpart to the loop above, and the reason `patchHeroInList` is
-  // identity-stable. The 700ms debounced hero autosave round-trips the roster and calls
-  // `patchHero` after any interaction — including interactions that changed nothing about the
-  // hero. `state.heroes` is member 0 of this tuple, compared with `Object.is`, so a rewritten
-  // roster array used to read here exactly like a real edit: proposal dropped, re-rank switch
-  // left ON while reading inactive, status collapsed to 'idle' — no error anywhere.
+  // The NON-mutation counterpart to the loop above: a no-op autosave patch must leave
+  // `state.heroes` alone. See `patchHeroInList` in `@/shared/lib/storage` for what a fresh
+  // roster array does to this tuple and why it failed silently.
   it('a NO-OP autosave patch does not invalidate the proposal: the roster array keeps its identity', () => {
     usePlannerStore.getState().setFarmRespecReRank(true);
     const before = usePlannerStore.getState().heroes;

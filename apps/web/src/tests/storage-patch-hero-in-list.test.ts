@@ -1,8 +1,8 @@
 /**
  * `patchHeroInList` — the roster-patch helper the 700ms hero autosave runs on every fire.
  *
- * Split out of `storage-i18n.test.ts` when the identity cases landed (that file is at its
- * 650-line cap and was never the right home for this anyway).
+ * Split out of `storage-i18n.test.ts` when the identity cases landed; that file is an i18n suite
+ * and was never the right home for this.
  */
 import { describe, expect, it } from 'vitest';
 import { normalizeHero, patchHeroInList, type HeroRecord } from '@/shared/lib/storage';
@@ -31,10 +31,8 @@ describe('patchHeroInList', () => {
   });
 
   /**
-   * The array IDENTITY contract. `state.heroes` is member 0 of `readFarmDepTuple`, compared with
-   * `Object.is` — a fresh array from a no-op autosave silently invalidates every memo keyed on
-   * that tuple and makes a live farm-respec proposal read as stale. These are the cases that
-   * would have caught it.
+   * The array IDENTITY contract — see `patchHeroInList` in `@/shared/lib/storage` for the
+   * mechanism and why it is load-bearing. These are the cases that would have caught the defect.
    */
   describe('identity stability', () => {
     /** A hero with every nested branch populated — an all-zero record would let a broken

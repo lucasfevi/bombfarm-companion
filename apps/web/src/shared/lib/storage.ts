@@ -301,9 +301,8 @@ export function upsertHero(
  */
 function jsonValueEqual(left: unknown, right: unknown): boolean {
   if (left === right) return true;
-  if (typeof left === 'number' && typeof right === 'number') {
-    return Number.isNaN(left) && Number.isNaN(right);
-  }
+  // `Number.isNaN` narrows to the number NaN on its own — no `typeof` guard needed.
+  if (Number.isNaN(left) && Number.isNaN(right)) return true;
   if (typeof left !== 'object' || typeof right !== 'object' || left === null || right === null) {
     return false;
   }
@@ -332,14 +331,10 @@ function jsonValueEqual(left: unknown, right: unknown): boolean {
  * still receives the fresh stamp from `upsertHero`; only the in-memory copy declines to churn for
  * it, and the next real edit advances it in both places.
  */
-export function heroRecordsValueEqual(left: HeroRecord, right: HeroRecord): boolean {
-  for (const key of new Set([...Object.keys(left), ...Object.keys(right)])) {
-    if (key === 'updatedAt') continue;
-    if (!jsonValueEqual((left as Record<string, unknown>)[key], (right as Record<string, unknown>)[key])) {
-      return false;
-    }
-  }
-  return true;
+function heroRecordsValueEqual(left: HeroRecord, right: HeroRecord): boolean {
+  const { updatedAt: _leftStamp, ...leftData } = left;
+  const { updatedAt: _rightStamp, ...rightData } = right;
+  return jsonValueEqual(leftData, rightData);
 }
 
 /**
@@ -356,8 +351,14 @@ export function heroRecordsValueEqual(left: HeroRecord, right: HeroRecord): bool
  * any interaction, so `.map()`'s unconditional new array dropped live proposals on a timer.
  * Reference equality cannot serve here: `saved` is rebuilt by `normalizeHero`, so `===` never
  * hits — see {@link heroRecordsValueEqual} for the comparison and why `updatedAt` is excluded.
- * (`writeHeroBattleAllowed` in `persistence/persist-roster.ts` already holds this contract for its
- * own no-op; `roster-slice.ts` relies on it there with an explicit `next === state.heroes` check.)
+ *
+ * Scope: this guards STATE identity only. `upsertHero` above still runs its `saveHeroes` /
+ * `writeJson` on a no-op fire, and `patchHero` (`roster-slice.ts`) still calls `set` with the
+ * (now identical) array. `writeHeroBattleAllowed` in `persistence/persist-roster.ts` holds the
+ * same return-the-same-array contract but guards one level earlier — its compare sits BEFORE
+ * `saveHeroes`, and `roster-slice.ts` early-returns on `next === state.heroes` so `set` is never
+ * called at all. Skipping the redundant write here would change `upsertHero`'s save semantics and
+ * is deliberately left alone.
  */
 export function patchHeroInList(heroes: HeroRecord[], saved: HeroRecord): HeroRecord[] {
   const existingIndex = heroes.findIndex((hero) => hero.id === saved.id);
