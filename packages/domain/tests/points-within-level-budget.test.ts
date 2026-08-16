@@ -54,6 +54,11 @@ const SKIPPED_DIRS = ['rejection'];
  * anywhere — that is the accepted cost of the patch, recorded in `docs/fixture-corpus.md`.
  */
 const PRE_2026_08_15_PATCH_CAPTURES = [
+  // Pre-REDISTRIBUTION as well: a second 2026-08-16 patch reshuffled which stats each slot rolls
+  // (239/240 defs), so these two captures' committed gear no longer matches the shipped catalog.
+  // Same reasoning as the pre-patch entries below — not subjects of a claim about today's math.
+  'sheet-math/save-20260816-8heroes.json',
+  'sheet-math/save-20260816-respec-cdr-crit.json',
   'sheet-math/save-20260813-5heroes.json',
   'sheet-math/payload-20260812-8heroes.json',
   'api/assembled-payload-after.json',
@@ -127,8 +132,8 @@ describe('spent stat points never exceed the hero level (corpus sweep)', () => {
    * not merely relaxed — and it comes back on its own the moment a post-patch capture lands in
    * another directory, which is why the exclusion list is explicit and the walk is not.
    */
-  it('non-vacuity: the walk finds every post-patch capture, with heroes in them', () => {
-    expect(SUBJECTS.length, `walked ${FIXTURES_DIR}`).toBe(16);
+  it('non-vacuity: the walk finds every post-redistribution capture, with heroes in them', () => {
+    expect(SUBJECTS.length, `walked ${FIXTURES_DIR}`).toBe(9);
     const dirs = new Set(SUBJECTS.map((s) => s.file.split('/')[0]));
     expect(dirs, `capture directories reached: ${[...dirs].join(', ')}`).toEqual(new Set(['sheet-math']));
   });

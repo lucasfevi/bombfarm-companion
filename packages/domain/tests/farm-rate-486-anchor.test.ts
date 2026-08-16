@@ -29,7 +29,7 @@
  * cycle over a measured hop distribution instead moves this row from ~499k to ~361k against
  * 371,263 observed. Corroboration that this is the right term rather than a lucky fudge:
  * `clearSecs` independently lands at ~107s against the bot's measured ~107s wall clock, and
- * `heroesOnField` was already at 1.3153 against a measured 1.317.
+ * `heroesOnField` was already at 1.3165 against a measured 1.317.
  *
  * `blocksPerBomb = 1.5` remains untouched and independently confirmed (1.400-1.479 hits/explosion
  * measured live at this density, and 2.217 at `r = 3` against the Grimorio's 2.5). The measured
@@ -80,22 +80,22 @@ describe('the save is read as three distinct quantities (defects C and D)', () =
 });
 
 describe('the House is the binding constraint (defect A)', () => {
-  it('Σ uptime is 1.6927 — every hero well under its own duty ceiling, so uptimeSum alone looks harmless', () => {
-    expect(squad.uptimeSum).toBeCloseTo(1.6927, 4);
+  it('Σ uptime is 1.6950 — every hero well under its own duty ceiling, so uptimeSum alone looks harmless', () => {
+    expect(squad.uptimeSum).toBeCloseTo(1.69495, 4);
     // The pre-fix figure, at the pre-fix rest seconds, for the record: 1.7905.
     expect(squad.uptimeSum).toBeLessThan(squad.houseSlots);
   });
 
   it('yet the roster demands 5.31 recovery slots against the 3 it owns — a 1.77x overcommit', () => {
-    expect(squad.houseSlotDemand).toBeCloseTo(5.3073, 4);
-    expect(squad.houseSlotDemand / squad.houseSlots).toBeCloseTo(1.769, 3);
+    expect(squad.houseSlotDemand).toBeCloseTo(5.30505, 4);
+    expect(squad.houseSlotDemand / squad.houseSlots).toBeCloseTo(1.76835, 3);
     expect(squad.houseSlotDemand).toBeGreaterThan(squad.houseSlots);
     // The identity the demand is derived from: Σ uptime + Σ (1 − uptime) === roster size.
     expect(squad.uptimeSum + squad.houseSlotDemand).toBeCloseTo(7, 9);
   });
 
-  it('the greedy allocation lands heroesOnField at 1.3153 — within 0.2% of the live-measured 1.317', () => {
-    expect(row.heroesOnField).toBeCloseTo(1.3153, 4);
+  it('the greedy allocation lands heroesOnField at 1.3165 — within 0.05% of the live-measured 1.317', () => {
+    expect(row.heroesOnField).toBeCloseTo(1.31645, 4);
     expect(Math.abs(row.heroesOnField / OBSERVED_HEROES_ON_FIELD - 1)).toBeLessThan(0.01);
     // Strictly below the unconstrained sum: the constraint really bit.
     expect(row.heroesOnField).toBeLessThan(squad.uptimeSum);
@@ -119,7 +119,7 @@ describe('the House is the binding constraint (defect A)', () => {
 
 describe('the resulting rates', () => {
   it('clearSecs is ~106s — 67.5s before the House fix, 77.3s after it, ~107s once cadence is averaged over the hop distribution, 105.6s after crit went flat', () => {
-    expect(row.clearSecs).toBeCloseTo(105.65, 1);
+    expect(row.clearSecs).toBeCloseTo(105.62, 1);
     expect(row.clearSecs).toBeGreaterThan(70);
   });
 
@@ -130,7 +130,7 @@ describe('the resulting rates', () => {
   });
 
   it('goldPerHour is ~365k — down 36% from the pre-fix 571,546 across the House, cadence and flat-crit changes', () => {
-    expect(row.goldPerHour).toBeCloseTo(364_962, -2);
+    expect(row.goldPerHour).toBeCloseTo(365_087, -2);
     // A band, not a point, so a legitimate wiki-bundle refresh does not fail this file; tight
     // enough that re-opening any of the defects moves the number out of it.
     expect(row.goldPerHour).toBeGreaterThan(350_000);

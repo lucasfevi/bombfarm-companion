@@ -81,7 +81,7 @@ describe('rankNextPointForFarm — discrimination: a one-shotting squad inverts 
     const result = rankNextPointForFarm({ bases, account, heroId: bellatrix.id, maxPhase: 42 });
     const attack = result.rows!.find((r) => r.stat === 'attack')!;
     expect(attack.gainPct).toBeGreaterThan(0);
-    expect(attack.gainPct).toBeCloseTo(0.572076, 5);
+    expect(attack.gainPct).toBeCloseTo(0.576082, 5);
   });
 
   it('farm ranks ENERGY first and speed second at maxPhase 42 — the order INVERTED when cadence stopped assuming every plant is walk-bound', () => {
@@ -99,8 +99,8 @@ describe('rankNextPointForFarm — discrimination: a one-shotting squad inverts 
     //
     // The same correction is why `cdr` stopped scoring exactly 0 further down this file: the
     // fuse-bound mass that speed cannot help is precisely the mass CDR can.
-    expect(rows[0]).toEqual({ stat: 'energy', label: 'Energia', gainPct: 0.9008185413583281 });
-    expect(rows[1]).toEqual({ stat: 'speed', label: 'Velocidade', gainPct: 0.6608737134708997 });
+    expect(rows[0]).toEqual({ stat: 'energy', label: 'Energia', gainPct: 0.8068174597261724 });
+    expect(rows[1]).toEqual({ stat: 'speed', label: 'Velocidade', gainPct: 0.6619637701077874 });
   });
 
   it('DPS mode scores attack first and speed exactly 0 on the same hero (the inversion)', () => {
@@ -136,8 +136,8 @@ describe('rankNextPointForFarm — anti-"energy always wins" sensor', () => {
     // a future change that flips him BACK is visible rather than silent.
     const result = rankNextPointForFarm({ bases, account, heroId: heroByName('Perrin').id, maxPhase: 42 });
     const rows = result.rows!;
-    expect(rows.find((r) => r.stat === 'attack')!.gainPct).toBeCloseTo(0.128027, 5);
-    expect(rows.find((r) => r.stat === 'energy')!.gainPct).toBeCloseTo(0.142847, 5);
+    expect(rows.find((r) => r.stat === 'attack')!.gainPct).toBeCloseTo(0.127926, 5);
+    expect(rows.find((r) => r.stat === 'energy')!.gainPct).toBeCloseTo(0.142735, 5);
   });
 });
 

@@ -123,12 +123,14 @@ describe('the fixture reports a bounded, correctly-shaped plateau', () => {
     //           marginal value drops sharply, the winning build stops spending on it, and the
     //           freed pool goes to Energy. Same direction as the rank inversion pinned in
     //           `farm-point-rank.test.ts`, where energy overtakes speed outright.
+    //   0.5217  2026-08-16 item redistribution: chest/pants now lead Penetração/Recarga, so
+    //           the winning build's gear mix shifts and the split moves again.
     //   0.5000  2026-08-15 patch: crit chance and CDR became flat addends
     //           (`POINT_GAIN.critChanceFlat` / `.cdrFlat`). Both per-point gains collapsed by
     //           more than an order of magnitude, so neither stat competes for the pool any more
     //           and the split reverts toward the attack/energy pair.
-    expect(plateau.minEnergyShare).toBeCloseTo(0.5, 4);
-    expect(plateau.maxEnergyShare).toBeCloseTo(0.5, 4);
+    expect(plateau.minEnergyShare).toBeCloseTo(0.5217391304347826, 4);
+    expect(plateau.maxEnergyShare).toBeCloseTo(0.5217391304347826, 4);
     expect(plateau.minEnergyShare).toBe(plateau.maxEnergyShare);
   });
 

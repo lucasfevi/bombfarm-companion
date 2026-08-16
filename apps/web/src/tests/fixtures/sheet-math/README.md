@@ -65,3 +65,17 @@ that file lands later in this feature — expected, not a defect of this manifes
 | SHA-256 (committed file) | `2c7fec50c939dd8569e4e6bdb3ce002c59edb8d441accb445b766417a19359ce` |
 | May prove | **the before/after point-delta pair** this corpus recorded as structurally unreproducible after the 2026-08-13 wipe (see `docs/fixture-corpus.md` §5) — deliberately produced by respeccing one hero. Torin owns no items and no crit ability, so his entire sheet move between the two files is the stat-point term alone: `crit_chance` +0.00048788 = 2 × `ponto_inc` (residual 3.0e-18) and `cooldown_reduction` +0.0007026 = 2 × `ponto_inc` (residual −1.1e-19), with NO base-roll and NO level scaling. Also pins that attack and energy points did **not** change shape (they invert to exactly 3 and 1 before, 0 and 0 after) |
 | May **not** prove | anything the sibling export cannot — it is the same account minutes later. In particular the respec touched one ★0 hero, so star scaling of the flat point term stays unobserved |
+
+## `save-20260816-9heroes-redistrib.json`
+
+| Field | Value |
+| --- | --- |
+| Source capture | live save export, captured externally from the game client |
+| Capture date | 2026-08-16 (after the same-day item-redistribution patch) |
+| Account | 486, `phase: 28`, `max_phase: 52` — 9 heroes: Bellatrix L56 (8/8), Jon L57 (8/8), Minato L46 (8/8), Doran L42 (8/8), Zane L7, Aldric L5, Torin L4, Rowan L4, Cora L3 (the last five naked) |
+| Capture log entry | *Item-redistribution patch re-baseline*, 2026-08-16 row (tracked externally to this repo) |
+| Scrub | `account.account_id`, `account.player_name` removed via `scrubPersonalFields` — nothing else changed |
+| SHA-256 (unscrubbed source) | `651d8f8ee7fb881f55a8b5432b780f083031aead3eab0ba45dbdd53f599c3f45` |
+| SHA-256 (committed file) | `48485b0fa5948f10fb7bb5d68dbfc1c56a01ac5322e57a5dd2aec342d62b9506` |
+| May prove | **the only capture whose gear matches the shipped catalog** — the same-day redistribution changed which stats 239 of 240 defs roll, so every earlier capture's items are stale. Whole-roster round trip with zero inference issues on all 9 heroes, every point budget landing exactly on `level`. **The first post-patch witness for crit DAMAGE**: Zane holds `golpe_brutal` 7 and Doran 20, and both sheets sit exactly `rank × 0.04` above their roll with residual **exactly 0** — so the flat crit-damage model survives both August patches, measured rather than assumed. **The first witness for `pressagio_mortal`** (Rowan r4, Cora r3): their entire sheet delta is the tree term alone, confirming the team-crit ability contributes nothing to the inventory sheet. Also the new per-slot roll priorities in live data (chest → penetração first, pants → recarga first) |
+| May **not** prove | star scaling of any flat term (every hero is ★0); nv30+ item scaling (only nv10/nv20 gear exists); heroes above L100; high-phase mitigation (`max_phase` 52); the combat-side magnitude of `pressagio_mortal` (it is off-sheet by construction, so a sheet capture can never measure it) |
