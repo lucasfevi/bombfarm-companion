@@ -3,6 +3,7 @@
 import { useCallback, useRef } from 'react';
 import { sheetsFromBirth } from '@bombfarm/domain/birth-sheet';
 import { rescaleHeroForLevel, rescaleHeroForStars } from '@bombfarm/domain/gear';
+import { HERO_MAX_LEVEL } from '@bombfarm/domain/model';
 import type { HeroRecord } from '@/shared/lib/storage';
 import { usePlannerStore, selectAdvisorPipeline, selectTreeSheetTotals } from '@/shared/stores';
 import { useHeroPersistSession } from './use-hero-persistence';
@@ -93,7 +94,7 @@ export function useHeroDraftActions(options?: HeroDraftActionsOptions) {
 
   const changeLevel = useCallback(
     (toLevel: number) => {
-      const clampedLevel = Math.max(0, Math.min(100, Math.round(toLevel)));
+      const clampedLevel = Math.max(0, Math.min(HERO_MAX_LEVEL, Math.round(toLevel)));
       const from = levelRef.current;
       if (clampedLevel === from) return;
       const state = usePlannerStore.getState();

@@ -46,11 +46,11 @@ function bakeSheetOtherIntoNaked(n: SheetStats, o: SheetOtherPct): SheetStats {
   return {
     ...n,
     speed: n.speed * otherFactor(o.speed),
-    critChance: n.critChance * otherFactor(o.critChance),
+    critChanceFlat: n.critChance * otherFactor(o.critChance),
     // Flat addend, not a pool factor (POINT_GAIN.critDmgFlat).
     critDmg: n.critDmg + Math.max(0, o.critDmgFlat),
     penetration: n.penetration * otherFactor(o.penetration),
-    cdr: n.cdr * otherFactor(o.cdr),
+    cdrFlat: n.cdr * otherFactor(o.cdr),
   };
 }
 
@@ -96,7 +96,7 @@ function buildFixture(opts: FixtureOpts = {}) {
     opts.sheetOther ??
     ({
       ...emptySheetOther(),
-      critChance: mods.sheetCritChancePctOfBase / 100,
+      critChanceFlat: mods.sheetCritChanceFlat,
       penetration: mods.sheetPenetrationRaw,
       critDmgFlat: mods.sheetCritDmgFlat,
     } satisfies SheetOtherPct);
@@ -130,7 +130,7 @@ function buildFixture(opts: FixtureOpts = {}) {
       attack: (naked.attack + 50) * treeDanoTotal,
       energy: (naked.energy + 40) * (1 + treeEnergy / 100),
       speed: poolBump(naked.speed, sheetOther.speed, treeSpeed),
-      critChance: poolBump(naked.critChance, sheetOther.critChance, treeCritChance),
+      critChance: naked.critChance + Math.max(0, sheetOther.critChanceFlat) + treeCritChance,
       critDmg: poolBump(naked.critDmg - Math.max(0, sheetOther.critDmgFlat), 0, treeCritDmg)
         + Math.max(0, sheetOther.critDmgFlat),
     } satisfies SheetStats);
@@ -169,9 +169,9 @@ function buildFixture(opts: FixtureOpts = {}) {
     energyMult: mults.energyMult,
     speedMult: mults.speedMult,
     critDmgMult: mults.critDmgMult,
-    teamCritPctOfBase: mults.teamCritPctOfBase,
+    teamCritChanceFlat: mults.teamCritChanceFlat,
     treeSheet,
-    combatCritChancePctOfBase: mods.combatCritChancePctOfBase,
+    combatCritChanceFlat: mods.combatCritChanceFlat,
     penetrationPp: mods.penetrationPp,
     context,
     dmgMult: mults.dmgMult,
@@ -196,7 +196,7 @@ function buildFixture(opts: FixtureOpts = {}) {
     energyMult: mults.energyMult,
     speedMult: mults.speedMult,
     critDmgMult: mults.critDmgMult,
-    teamCritPctOfBase: mults.teamCritPctOfBase,
+    teamCritChanceFlat: mults.teamCritChanceFlat,
     treeSpeed,
     treeCritChance,
     treeCritDmg,
@@ -390,11 +390,14 @@ describe('stat-breakdown builder', () => {
     const crit = buildStatBreakdown('critChance', facts);
     expect(crit.kind).toBe('ledger');
     if (crit.kind === 'ledger') {
-      expect(crit.steps.map((s) => s.source)).toEqual(['base', 'stars', 'sheetAbilities']);
+      // 'gear' now appears because the crit-chance gear term is a flat ADD rather than a
+      // percent-of-base step, and the fixture's geared sheet carries one.
+      expect(crit.steps.map((s) => s.source)).toEqual(['base', 'stars', 'sheetAbilities', 'gear']);
       const sheet = crit.steps.find((s) => s.source === 'sheetAbilities');
       expect(sheet?.note).toBe('keenEye');
-      // olho_clinico @10, W3 perLevel 0.75 -> +7.5% (was +15% pre-W3).
-      expect(sheet?.amount).toBeCloseTo(1.075, 6);
+      expect(sheet?.op).toBe('+');
+      // olho_clinico @10 is a FLAT addend since the 2026-08-15 patch: 10 x 0.04574 pp.
+      expect(sheet?.amount).toBeCloseTo(0.4574, 6);
     }
 
     const pen = buildStatBreakdown('penetration', facts);
@@ -467,8 +470,8 @@ describe('stat-breakdown builder', () => {
     expect(crit.kind).toBe('ledger');
     if (crit.kind === 'ledger') {
       const tree = crit.steps.find((s) => s.source === 'tree' && s.op === '+');
-      expect(tree?.pctOfBase?.percent).toBeCloseTo(6, 6);
-      expect(tree?.pctOfBase?.base).toBeCloseTo(facts.naked.critChance / (1 + facts.sheetOther.critChance), 6);
+      // Flat since the 2026-08-15 patch — the tree crit-chance step carries no pctOfBase.
+      expect(tree?.pctOfBase).toBeUndefined();
       const treeIndex = crit.steps.findIndex((s) => s.source === 'tree');
       const combatIndex = crit.steps.findIndex((s) => s.source === 'abilities' || s.source === 'team');
       expect(treeIndex).toBeGreaterThanOrEqual(0);

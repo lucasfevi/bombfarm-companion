@@ -1,6 +1,22 @@
 /**
  * Proof that the `farm-rate.ts` basis seam is a byte-identical refactor, not a rewrite.
  *
+ * RE-RECORDED 2026-08-16 for the flat crit-chance/CDR change (`POINT_GAIN.critChanceFlat` /
+ * `.cdrFlat`). The capture is of OUR OWN pre-change output, so re-recording it is the point of
+ * the file, not a weakening — what matters is that the movement is explicable. Measured, field
+ * by field:
+ *
+ * - `heroFacts.avgHitBase` — 5 of 5 heroes, ≤1.77%. Crit chance is a smaller share of the
+ *   average hit now, so every hero's base hit falls slightly. This is the ONLY heroFacts field
+ *   that moved apart from `heroesOnField` (3 rows, ≤3.32%).
+ * - `rows.*` — 591 of 600 phases on each throughput column (`goldPerHour`, `chestsPerHour`,
+ *   `xpPerHour`, `propsPerHour` ≤10.58%; `keysPerHour`, `cyclesPerHour` ≤10.11%; `clearSecs`
+ *   ≤9.18%; `expectedHtk` ≤9.57%), all downstream of the same lower hit. `gemsPerHour` and
+ *   `timePiecesPerHour` moved on 59 rows (they are 0 on the rest).
+ * - **Unmoved:** every structural column — `mitigationPct`, `ato`, `gate`, `locked`, `oneShot`,
+ *   `infeasible`, `itemLevels`, `phase`. The shape of the table is untouched; only magnitudes
+ *   downstream of crit moved, which is the signature of a damage change and not a table change.
+ *
  * `farm-basis-parity-expected.json` (tests/fixtures/) is a literal capture of the
  * `computeHeroFarmFacts(fixture)` output and the 600-row `computeFarmRates` table, so the
  * assertions below compare the code against frozen literals rather than against itself. Every

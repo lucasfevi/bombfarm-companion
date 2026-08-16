@@ -184,8 +184,11 @@ describe('ARTIFACT_BACKED_SECTIONS — the itens mapping is measured, not assume
     expect(catalog.version).toBe(4);
   });
 
-  it('catalog.json.defs.length === 216 (matches the sync manifest defs_count)', () => {
-    expect(catalog.defs.length).toBe(216);
+  // 30 sets × 8 slots, post-2026-08-15-patch (was 27 × 8 = 216). `versao_catalogo` did NOT bump
+  // with the content change, which is why this count — not the version field — is the assertion
+  // that would have caught a stale catalog.
+  it('catalog.json.defs.length === 240 (matches the sync manifest defs_count)', () => {
+    expect(catalog.defs.length).toBe(240);
   });
 
   it('data.itens is a backed section pointing at catalog.json', () => {

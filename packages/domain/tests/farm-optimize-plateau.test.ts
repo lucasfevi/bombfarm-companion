@@ -111,7 +111,8 @@ describe('the fixture reports a bounded, correctly-shaped plateau', () => {
     // collapses to a single point. That is spec-sanctioned behaviour, not an accident: min and
     // max both equal the winner's own share, never null, never an invented width.
     //
-    // RE-MEASURED TWICE, both times because the winning BUILD moved — never the plateau logic.
+    // RE-MEASURED THREE TIMES, every time because the winning BUILD moved — never the plateau
+    // logic. The single-point collapse is unchanged throughout.
     // The single-point collapse the comment above describes is unchanged throughout.
     //   0.4744  original
     //   0.4937  House-ceiling fix: rest seconds now come from the fixture's own
@@ -122,8 +123,12 @@ describe('the fixture reports a bounded, correctly-shaped plateau', () => {
     //           marginal value drops sharply, the winning build stops spending on it, and the
     //           freed pool goes to Energy. Same direction as the rank inversion pinned in
     //           `farm-point-rank.test.ts`, where energy overtakes speed outright.
-    expect(plateau.minEnergyShare).toBeCloseTo(0.5402, 4);
-    expect(plateau.maxEnergyShare).toBeCloseTo(0.5402, 4);
+    //   0.5000  2026-08-15 patch: crit chance and CDR became flat addends
+    //           (`POINT_GAIN.critChanceFlat` / `.cdrFlat`). Both per-point gains collapsed by
+    //           more than an order of magnitude, so neither stat competes for the pool any more
+    //           and the split reverts toward the attack/energy pair.
+    expect(plateau.minEnergyShare).toBeCloseTo(0.5, 4);
+    expect(plateau.maxEnergyShare).toBeCloseTo(0.5, 4);
     expect(plateau.minEnergyShare).toBe(plateau.maxEnergyShare);
   });
 

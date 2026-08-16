@@ -51,6 +51,7 @@ export {
   bombsPerSecond,
   critFactor,
   mitigationFactor,
+  HERO_MAX_LEVEL,
   levelPowerMult,
   attackPointGain,
   clampCritChancePct,

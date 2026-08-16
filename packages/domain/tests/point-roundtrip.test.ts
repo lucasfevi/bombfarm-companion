@@ -28,24 +28,39 @@ import { inferSpentPoints } from '@bombfarm/domain/point-inference';
 import { SHEET_KEYS } from '@bombfarm/domain/planner-constants';
 import { expectSheetsClose, extractHero, loadFixtureJson, treeTotalsFromSave } from './helpers/sheet-math-fixtures';
 
-const EXPORT_FILE = 'save-20260813-5heroes.json';
-const PAYLOAD_FILE = 'payload-20260812-8heroes.json';
+const EXPORT_FILE = 'save-20260816-8heroes.json';
+const RESPEC_FILE = 'save-20260816-respec-cdr-crit.json';
 
-/** All 13 heroes across both corpus files — the suite's entire subject set, no more, no fewer. */
+/**
+ * All 16 hero-instances across the two post-2026-08-15-patch corpus files — the suite's entire
+ * subject set, no more, no fewer. The pre-patch captures (`save-20260813-5heroes.json`,
+ * `payload-20260812-8heroes.json`) are NOT subjects here any more: they record a game whose crit
+ * chance and cooldown were multiplicative shares of the roll, and no model can reproduce both
+ * them and the current game. They stay committed for the structural suites that read them for
+ * hero shapes rather than for sheet arithmetic.
+ *
+ * `RESPEC_FILE` is the same account minutes later with Torin L4 respecced from 3 attack + 1
+ * energy into 2 cooldown + 2 crit chance — the before/after point-delta pair
+ * `docs/fixture-corpus.md` §5 recorded as structurally unreproducible after the 2026-08-13 wipe.
+ * Both sides round-trip, so the pair pins the flat per-point rates directly.
+ */
 const SUBJECTS: readonly { file: string; name: string; level: number }[] = [
-  { file: EXPORT_FILE, name: 'Jon', level: 38 },
-  { file: EXPORT_FILE, name: 'Bellatrix', level: 42 },
-  { file: EXPORT_FILE, name: 'Perrin', level: 4 },
-  { file: EXPORT_FILE, name: 'Perrin', level: 3 },
-  { file: EXPORT_FILE, name: 'Lyra', level: 2 },
-  { file: PAYLOAD_FILE, name: 'Nyx', level: 25 },
-  { file: PAYLOAD_FILE, name: 'Bellatrix', level: 27 },
-  { file: PAYLOAD_FILE, name: 'Cora', level: 22 },
-  { file: PAYLOAD_FILE, name: 'Wren', level: 24 },
-  { file: PAYLOAD_FILE, name: 'Lyra', level: 3 },
-  { file: PAYLOAD_FILE, name: 'Mira', level: 3 },
-  { file: PAYLOAD_FILE, name: 'Bryn', level: 3 },
-  { file: PAYLOAD_FILE, name: 'Devin', level: 5 },
+  { file: EXPORT_FILE, name: 'Bellatrix', level: 53 },
+  { file: EXPORT_FILE, name: 'Jon', level: 54 },
+  { file: EXPORT_FILE, name: 'Gwen', level: 32 },
+  { file: EXPORT_FILE, name: 'Minato', level: 42 },
+  { file: EXPORT_FILE, name: 'Lorne', level: 27 },
+  { file: EXPORT_FILE, name: 'Orin', level: 17 },
+  { file: EXPORT_FILE, name: 'Korin', level: 13 },
+  { file: EXPORT_FILE, name: 'Torin', level: 4 },
+  { file: RESPEC_FILE, name: 'Bellatrix', level: 53 },
+  { file: RESPEC_FILE, name: 'Jon', level: 54 },
+  { file: RESPEC_FILE, name: 'Gwen', level: 32 },
+  { file: RESPEC_FILE, name: 'Minato', level: 42 },
+  { file: RESPEC_FILE, name: 'Lorne', level: 27 },
+  { file: RESPEC_FILE, name: 'Orin', level: 18 },
+  { file: RESPEC_FILE, name: 'Korin', level: 13 },
+  { file: RESPEC_FILE, name: 'Torin', level: 4 },
 ];
 
 /**
@@ -102,35 +117,36 @@ function prepare(s: Subject) {
 const PREPARED = SUBJECTS.map(prepare);
 
 describe('point round trip (AD-071) — birth + inferred points + gear + tree reproduces the observed stats', () => {
-  it('non-vacuity: iterates exactly 13 heroes across the two corpus files and 104 key comparisons', () => {
-    expect(SUBJECTS.length, 'expected exactly 13 heroes across save-20260813-5heroes.json + payload-20260812-8heroes.json').toBe(13);
-    expect(PREPARED.length).toBe(13);
+  it('non-vacuity: iterates exactly 16 hero-instances across the two corpus files and 128 key comparisons', () => {
+    expect(SUBJECTS.length, 'expected exactly 16 hero-instances across the two post-patch captures').toBe(16);
+    expect(PREPARED.length).toBe(16);
     const totalComparisons = PREPARED.length * SHEET_KEYS.length;
-    expect(totalComparisons, '13 heroes × 8 SHEET_KEYS').toBe(104);
+    expect(totalComparisons, '16 hero-instances × 8 SHEET_KEYS').toBe(128);
   });
 
   it('claim A — inferSpentPoints reports zero issues for every hero, with no exception carved out', () => {
-    expect(PREPARED.length, 'expected all 13 heroes to be checked').toBe(13);
+    expect(PREPARED.length, 'expected all 16 hero-instances to be checked').toBe(16);
     for (const p of PREPARED) {
       expect(p.inference.issues, `${subjectLabel(p.subject)} should be issue-free`).toEqual([]);
     }
   });
 
-  it('claim D — Bellatrix L42 (export) solves to exactly 2 crit-damage points, as the flat rate predicts', () => {
-    const bellatrix = PREPARED.find(
-      (p) => p.subject.file === EXPORT_FILE && p.subject.name === 'Bellatrix' && p.subject.level === 42,
-    );
-    if (!bellatrix) throw new Error('Bellatrix L42 not found among prepared subjects');
+  it('claim D — Torin L4 pins the flat per-point rates across the respec pair', () => {
+    const before = PREPARED.find((p) => p.subject.file === EXPORT_FILE && p.subject.name === 'Torin');
+    const after = PREPARED.find((p) => p.subject.file === RESPEC_FILE && p.subject.name === 'Torin');
+    if (!before || !after) throw new Error('Torin L4 not found on both sides of the respec pair');
 
-    expect(bellatrix.inference.issues).toEqual([]);
-    expect(bellatrix.inference.pts.critDmg).toBe(2);
-    // Her observed sheet sits exactly `2 x POINT_GAIN.critDmgFlat` above her roll — the
-    // measurement that showed the gain is flat rather than a share of the roll.
-    expect(bellatrix.hero.sheet.critDmg - bellatrix.hero.birth!.critDmg).toBeCloseTo(10, 9);
+    // He owns no items and no crit ability, so every sheet move between the two exports is the
+    // stat-point term alone. 4 granted points, spent one way then the other.
+    expect(before.inference.pts).toMatchObject({ attack: 3, energy: 1, critChance: 0, cdr: 0 });
+    expect(after.inference.pts).toMatchObject({ attack: 0, energy: 0, critChance: 2, cdr: 2 });
+
+    expect(after.hero.sheet.critChance - before.hero.sheet.critChance).toBeCloseTo(2 * 0.024394, 9);
+    expect(after.hero.sheet.cdr - before.hero.sheet.cdr).toBeCloseTo(2 * 0.03513, 9);
   });
 
-  it('claim B is exhaustive: all 13 heroes are issue-free', () => {
-    expect(PREPARED.filter((p) => p.inference.issues.length === 0).length).toBe(13);
+  it('claim B is exhaustive: all 16 hero-instances are issue-free', () => {
+    expect(PREPARED.filter((p) => p.inference.issues.length === 0).length).toBe(16);
   });
 
   // Vitest's decimal-place fuzzy-equality matcher is banned in this file (grep-enforced): its
@@ -145,9 +161,30 @@ describe('point round trip (AD-071) — birth + inferred points + gear + tree re
     },
   );
 
-  it('claim C — at least 2 heroes match bit-exactly (Object.is) across all 8 SHEET_KEYS', () => {
-    const bitExact = PREPARED.filter((p) => SHEET_KEYS.every((key) => Object.is(p.forward[key], p.hero.sheet[key])));
-    const names = bitExact.map((p) => subjectLabel(p.subject));
-    expect(bitExact.length, `bit-exact heroes: ${names.join(', ') || 'none'}`).toBeGreaterThanOrEqual(2);
+  /**
+   * Claim C keeps an EXACT floor so the suite cannot drift into tolerance-only. Its shape
+   * changed with the corpus, and the change is a finding rather than a weakening.
+   *
+   * The pre-patch corpus had 2 whole heroes matching bit-exactly, both naked low-level ones
+   * (Bellatrix L27, Lyra L3). Every hero on this account is geared and ability-bearing, so no
+   * whole hero is bit-exact any more — the accumulation chains are simply longer, and the
+   * measured residuals stay at 2e-13…7e-12.
+   *
+   * What replaces it is sharper: `critDmg` and `cdr` — the two stats that are now purely flat
+   * addends with no multiplicative term anywhere in their chain — reproduce bit-exactly on
+   * EVERY hero. That is the flat shape's own signature, and it would break immediately if
+   * either stat regained a `× (1 + Σ)` factor.
+   */
+  it('claim C — the flat stats (critDmg, cdr) match bit-exactly on every hero, and ≥48/128 comparisons overall', () => {
+    for (const key of ['critDmg', 'cdr'] as const) {
+      const exact = PREPARED.filter((p) => Object.is(p.forward[key], p.hero.sheet[key]));
+      const misses = PREPARED.filter((p) => !Object.is(p.forward[key], p.hero.sheet[key])).map((p) => subjectLabel(p.subject));
+      expect(exact.length, `${key} bit-exact on ${exact.length}/16; misses: ${misses.join(', ') || 'none'}`).toBe(16);
+    }
+    const exactComparisons = PREPARED.reduce(
+      (sum, p) => sum + SHEET_KEYS.filter((key) => Object.is(p.forward[key], p.hero.sheet[key])).length,
+      0,
+    );
+    expect(exactComparisons, `${exactComparisons}/128 key comparisons bit-exact`).toBeGreaterThanOrEqual(48);
   });
 });

@@ -9,7 +9,7 @@ import { BASE_ROLLS, POINT_GAIN, type RarityKey } from './rarity-constants';
 
 export type AbilityEffect =
   | { kind: 'drainPct'; perLevel: number } // − energy drain %
-  | { kind: 'critChancePctOfBase'; perLevel: number; onSheet?: boolean } // % of base roll; onSheet = hero sheet Σ
+  | { kind: 'critChanceFlat'; perLevel: number; onSheet?: boolean } // FLAT planner pp; onSheet = hero sheet Σ
   | { kind: 'penetrationPp'; perLevel: number; onSheet?: boolean } // onSheet = raw Σ on hero sheet
   | { kind: 'rangeCells'; perLevel: number }
   | { kind: 'secondBlastPct'; perLevel: number } // chance of 2nd blast at 50% dmg
@@ -46,13 +46,19 @@ export const ABILITIES: AbilityDef[] = [
   { id: 'bateria_extra', name: 'Bateria Extra', max: 20, effectText: '−1% energia gasta (próprio)/nível', effect: { kind: 'drainPct', perLevel: 1 } },
   { id: 'caca_hero', name: 'Caça-Hero', max: 20, effectText: '+5% dano na Jaula/nível (não modelado)', effect: { kind: 'none' } },
   { id: 'marcha_acelerada', name: 'Marcha Acelerada', max: 20, effectText: '+0.185% velocidade do TIME/nível', effect: { kind: 'speedPct', perLevel: 0.185 } },
-  { id: 'pressagio_mortal', name: 'Presságio Mortal', max: 20, effectText: '+1% chance de crítico do TIME/nível (% da base)', effect: { kind: 'critChancePctOfBase', perLevel: 1 } },
+  // 2026-08-15 patch: wiki `per_level` 0.01 → 0.0006099 (save units) = 0.06099 planner pp.
+  // UNWITNESSED shape — no hero on any post-patch capture owns this ability, so its move to a
+  // flat addend is inferred from the three sources that WERE measured, not observed directly.
+  { id: 'pressagio_mortal', name: 'Presságio Mortal', max: 20, effectText: '+0.06099 pp de chance de crítico do TIME/nível', effect: { kind: 'critChanceFlat', perLevel: 0.06099 } },
   { id: 'fantasma', name: 'Fantasma', max: 20, effectText: 'atravessa rocha; +0.05% Ataque de passagem/nível (não modelado)', effect: { kind: 'none' } },
   { id: 'ponta_diamante', name: 'Ponta de Diamante', max: 20, effectText: '+1 Penetração (pontos)/nível', effect: { kind: 'penetrationPp', perLevel: 1, onSheet: true } },
   { id: 'misericordia', name: 'Misericórdia', max: 20, effectText: 'executa rocha < 1.25%/nível', effect: { kind: 'executePct', perLevel: 1.25 } },
   { id: 'explosao_ampla', name: 'Explosão Ampla', max: 20, effectText: '+0.1 raio da explosão/nível', effect: { kind: 'rangeCells', perLevel: 0.1 } },
   { id: 'contra_relogio', name: 'Contra o Relógio', max: 20, effectText: '+2% Ataque em fase de tempo/nível', effect: { kind: 'gateAttackPct', perLevel: 2 } },
-  { id: 'olho_clinico', name: 'Olho Clínico', max: 20, effectText: '+0.75% chance de crítico/nível (% da base, altera atributos)', effect: { kind: 'critChancePctOfBase', perLevel: 0.75, onSheet: true } },
+  // 2026-08-15 patch: wiki `per_level` 0.0075 → 0.0004574 (save units) = 0.04574 planner pp.
+  // MEASURED flat: Bellatrix and Jon (`black-save-08.16.2026-12.29am.json`) both carry this at
+  // rank 20, and their sheets land on birth + gear + 20 × 0.04574 + tree exactly.
+  { id: 'olho_clinico', name: 'Olho Clínico', max: 20, effectText: '+0.04574 pp de chance de crítico/nível (altera atributos)', effect: { kind: 'critChanceFlat', perLevel: 0.04574, onSheet: true } },
   { id: 'detonacao_dupla', name: 'Detonação Dupla', max: 20, effectText: '+1.5% chance de 2ª explosão (50% dano)/nível', effect: { kind: 'secondBlastPct', perLevel: 1.5 } },
   { id: 'folego_mineiro', name: 'Fôlego de Mineiro', max: 20, effectText: '−1% energia gasta do TIME/nível', effect: { kind: 'drainPct', perLevel: 1 } },
   { id: 'passagem_bastao', name: 'Passagem de Bastão', max: 20, effectText: '+4% de Dano ao ENTRAR no rodízio (dura 120s)/nível (não modelado)', effect: { kind: 'none' } },
@@ -68,7 +74,7 @@ export const ABILITIES: AbilityDef[] = [
 /** Inventory-sheet abilities (shared Σ with gear) — kept out of the combat ability grid. */
 export function isSheetAbility(ability: AbilityDef): boolean {
   return (
-    (ability.effect.kind === 'critChancePctOfBase' ||
+    (ability.effect.kind === 'critChanceFlat' ||
       ability.effect.kind === 'penetrationPp' ||
       ability.effect.kind === 'critDmgFlat') &&
     ability.effect.onSheet === true
@@ -103,9 +109,9 @@ export function abilityPointBudget(rarity: RarityKey, level: number): number {
 export interface AbilityMods {
   drainMult: number; // <1 reduces drain
   /** Olho Clínico etc. — already in the unequipped sheet Σ. */
-  sheetCritChancePctOfBase: number;
+  sheetCritChanceFlat: number;
   /** Presságio (own) etc. — combat-only, not on the inventory sheet. */
-  combatCritChancePctOfBase: number;
+  combatCritChanceFlat: number;
   /** Ponta de Diamante etc. — raw Σ units on the unequipped sheet (+2 per level). */
   sheetPenetrationRaw: number;
   penetrationPp: number;
@@ -122,8 +128,8 @@ export interface AbilityMods {
 export function abilityMods(levels: Record<string, number>): AbilityMods {
   const mods: AbilityMods = {
     drainMult: 1,
-    sheetCritChancePctOfBase: 0,
-    combatCritChancePctOfBase: 0,
+    sheetCritChanceFlat: 0,
+    combatCritChanceFlat: 0,
     sheetPenetrationRaw: 0,
     penetrationPp: 0,
     sheetCritDmgFlat: 0,
@@ -141,9 +147,9 @@ export function abilityMods(levels: Record<string, number>): AbilityMods {
       case 'drainPct':
         mods.drainMult *= 1 - (effect.perLevel * count) / 100;
         break;
-      case 'critChancePctOfBase':
-        if (effect.onSheet) mods.sheetCritChancePctOfBase += effect.perLevel * count;
-        else mods.combatCritChancePctOfBase += effect.perLevel * count;
+      case 'critChanceFlat':
+        if (effect.onSheet) mods.sheetCritChanceFlat += effect.perLevel * count;
+        else mods.combatCritChanceFlat += effect.perLevel * count;
         break;
       case 'penetrationPp':
         if (effect.onSheet) mods.sheetPenetrationRaw += effect.perLevel * count;
@@ -208,7 +214,8 @@ export function critMilestones(
     [30, 300],
   ];
   return targets.map(([critChanceTarget, critDmgTarget]) => {
-    const nCc = Math.max(0, Math.ceil((critChanceTarget / base.critChance - 1) / POINT_GAIN.critChancePctOfBase));
+    // Both stats are flat addends now, so both point counts are a plain "gap ÷ per-point".
+    const nCc = Math.max(0, Math.ceil((critChanceTarget - base.critChance) / POINT_GAIN.critChanceFlat));
     const nCd = Math.max(0, Math.ceil((critDmgTarget - base.critDmg) / POINT_GAIN.critDmgFlat));
     const pts = nCc + nCd;
     return {

@@ -145,8 +145,8 @@ const ABILITY_EFFECTS: Record<string, Bilingual> = {
     en: '+0.185% TEAM speed/level',
   },
   pressagio_mortal: {
-    pt: '+1% chance de crítico do TIME/nível (% da base)',
-    en: '+1% TEAM crit chance/level (% of base)',
+    pt: '+0.06099 pp de chance de crítico do TIME/nível',
+    en: '+0.06099 pp TEAM crit chance/level',
   },
   fantasma: {
     pt: 'atravessa rocha; +0.05% Ataque de passagem/nível (não modelado)',
@@ -169,8 +169,8 @@ const ABILITY_EFFECTS: Record<string, Bilingual> = {
     en: '+2% Attack in timed phase/level',
   },
   olho_clinico: {
-    pt: '+0.75% chance de crítico/nível (% da base, altera atributos)',
-    en: '+0.75% crit chance/level (% of base, affects stats)',
+    pt: '+0.04574 pp de chance de crítico/nível (altera atributos)',
+    en: '+0.04574 pp crit chance/level (affects stats)',
   },
   detonacao_dupla: {
     pt: '+1.5% chance de 2ª explosão (50% dano)/nível',
@@ -301,7 +301,12 @@ const SET_LABELS: Record<string, Bilingual> = {
   gold: { pt: 'Ouro', en: 'Gold' },
   iron: { pt: 'Ferro', en: 'Iron' },
   jade: { pt: 'Jade', en: 'Jade' },
+  // The three nv280/290/300 sets added by the 2026-08-15 patch. The wiki publishes set SLUGS
+  // only (`itens.defs[].set`), never display names, so these PT strings are translations, not
+  // captures — confirm them against the in-game item names before they ship to players.
+  magma: { pt: 'Magma', en: 'Magma' },
   midnight: { pt: 'Meia-noite', en: 'Midnight' },
+  obsidian: { pt: 'Obsidiana', en: 'Obsidian' },
   platinum: { pt: 'Platina', en: 'Platinum' },
   sandstorm: { pt: 'Tempestade de Areia', en: 'Sandstorm' },
   shadow: { pt: 'Sombra', en: 'Shadow' },
@@ -312,5 +317,6 @@ const SET_LABELS: Record<string, Bilingual> = {
   topaz: { pt: 'Topázio', en: 'Topaz' },
   toxic: { pt: 'Tóxico', en: 'Toxic' },
   venom: { pt: 'Veneno', en: 'Venom' },
+  void: { pt: 'Vazio', en: 'Void' },
   wooden: { pt: 'Madeira', en: 'Wooden' },
 };

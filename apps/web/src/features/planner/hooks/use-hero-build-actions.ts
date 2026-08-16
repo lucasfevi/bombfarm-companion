@@ -128,8 +128,8 @@ export function useHeroBuildActions() {
     const nextMods = abilityMods(next);
     // DEC-04/BSP-31a: same dispatcher as setAbilityLevel — preserves the hero's own crit roll
     // instead of resetting it to the rarity midpoint.
-    if (prevMods.sheetCritChancePctOfBase !== nextMods.sheetCritChancePctOfBase) {
-      setNaked(nakedAfterSheetAbilityChange(nakedRef.current, 'critChancePctOfBase', prevMods, nextMods));
+    if (prevMods.sheetCritChanceFlat !== nextMods.sheetCritChanceFlat) {
+      setNaked(nakedAfterSheetAbilityChange(nakedRef.current, 'critChanceFlat', prevMods, nextMods));
     }
     if (prevMods.sheetPenetrationRaw !== nextMods.sheetPenetrationRaw) {
       setNaked(rescaleNakedPen(nakedRef.current, prevMods.sheetPenetrationRaw, nextMods.sheetPenetrationRaw));

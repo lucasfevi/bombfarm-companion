@@ -13,9 +13,9 @@ const current: GearBonuses = {
   energyPct: 0.1,
   speedPct: 0.2,
   luckPct: 0.05,
-  critPct: 0.15,
+  critFlatPct: 0.15,
   penPct: 0.03,
-  cdrPct: 0.08,
+  cdrFlatPct: 0.08,
 };
 
 const clone: GearBonuses = {
@@ -24,9 +24,9 @@ const clone: GearBonuses = {
   energyPct: 0.2,
   speedPct: 0.1,
   luckPct: 0.05,
-  critPct: 0.25,
+  critFlatPct: 0.25,
   penPct: 0.01,
-  cdrPct: 0.08,
+  cdrFlatPct: 0.08,
 };
 
 describe('gearBonusRows', () => {
@@ -38,9 +38,9 @@ describe('gearBonusRows', () => {
       'energyPct',
       'speedPct',
       'luckPct',
-      'critPct',
+      'critFlatPct',
       'penPct',
-      'cdrPct',
+      'cdrFlatPct',
     ]);
     expect(rows.every((r) => r.clone === undefined && r.delta === undefined)).toBe(true);
   });
@@ -68,7 +68,7 @@ describe('gearBonusRows', () => {
   it('uses the localized slotStatFullLabels for each row label', () => {
     const rows = gearBonusRows(current, t);
     expect(rows.find((r) => r.key === 'dmgFlat')!.label).toBe(t.slotStatFullLabels.dmg);
-    expect(rows.find((r) => r.key === 'critPct')!.label).toBe(t.slotStatFullLabels.crit);
+    expect(rows.find((r) => r.key === 'critFlatPct')!.label).toBe(t.slotStatFullLabels.crit);
   });
 });
 

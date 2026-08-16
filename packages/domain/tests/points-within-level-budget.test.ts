@@ -41,6 +41,30 @@ const FIXTURES_DIR = join(here, 'fixtures');
  */
 const SKIPPED_DIRS = ['rejection'];
 
+/**
+ * Captures taken BEFORE the 2026-08-15 patch, when crit chance and cooldown were multiplicative
+ * shares of the hero's roll rather than flat addends. They stay committed — ~50 structural
+ * suites read them for hero shapes, inventory and team-plan inputs, none of which the patch
+ * touched — but they are not subjects of THIS invariant, because no single model can reproduce
+ * both them and the current game. Sweeping them here would assert that today's sheet math
+ * explains yesterday's game.
+ *
+ * Named explicitly, never pattern-matched: a capture added later is swept by default, which is
+ * the property that makes layer 1 worth having. Their own sheet arithmetic is no longer covered
+ * anywhere — that is the accepted cost of the patch, recorded in `docs/fixture-corpus.md`.
+ */
+const PRE_2026_08_15_PATCH_CAPTURES = [
+  'sheet-math/save-20260813-5heroes.json',
+  'sheet-math/payload-20260812-8heroes.json',
+  'api/assembled-payload-after.json',
+  'api/assembled-payload-before.json',
+  'api/assembled-payload-partial.json',
+  'api/assembled-payload-drift.json',
+  'farm-rate/save-20260815-486-7heroes.json',
+  'fidelity-gate/export-capture.json',
+  'fidelity-gate/live-capture.json',
+];
+
 function isObject(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null;
 }
@@ -64,6 +88,7 @@ function collectSubjects(): Subject[] {
   const subjects: Subject[] = [];
   for (const path of listJson(FIXTURES_DIR)) {
     const label = relative(FIXTURES_DIR, path).replace(/\\/g, '/');
+    if (PRE_2026_08_15_PATCH_CAPTURES.includes(label)) continue;
     const raw: unknown = JSON.parse(readFileSync(path, 'utf8'));
     if (!isObject(raw) || !Array.isArray(raw.heroes) || !isObject(raw.skills)) continue;
     const totalsRaw = isObject(raw.skills.totals) ? raw.skills.totals : {};
@@ -94,10 +119,18 @@ function collectSubjects(): Subject[] {
 const SUBJECTS = collectSubjects();
 
 describe('spent stat points never exceed the hero level (corpus sweep)', () => {
-  it('non-vacuity: the walk finds captures in more than one fixture directory, with heroes in them', () => {
-    expect(SUBJECTS.length, `walked ${FIXTURES_DIR}`).toBeGreaterThan(20);
+  /**
+   * Non-vacuity, re-measured after the 2026-08-15 patch narrowed the swept set. It used to reach
+   * 20+ heroes across several fixture directories; excluding the pre-patch captures
+   * ({@link PRE_2026_08_15_PATCH_CAPTURES}) leaves the 16 hero-instances of the two post-patch
+   * exports, all under `sheet-math/`. The directory-spread half of this guard is therefore GONE,
+   * not merely relaxed — and it comes back on its own the moment a post-patch capture lands in
+   * another directory, which is why the exclusion list is explicit and the walk is not.
+   */
+  it('non-vacuity: the walk finds every post-patch capture, with heroes in them', () => {
+    expect(SUBJECTS.length, `walked ${FIXTURES_DIR}`).toBe(16);
     const dirs = new Set(SUBJECTS.map((s) => s.file.split('/')[0]));
-    expect(dirs.size, `capture directories reached: ${[...dirs].join(', ')}`).toBeGreaterThan(1);
+    expect(dirs, `capture directories reached: ${[...dirs].join(', ')}`).toEqual(new Set(['sheet-math']));
   });
 
   it('every hero in every committed capture recovers at most `level` points', () => {

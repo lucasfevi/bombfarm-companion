@@ -124,7 +124,7 @@ type HeroRecordEntry = {
     teamSpeedMult: string;
     teamDrainMult: string;
     teamGateMult: string;
-    teamCritPctOfBase: string;
+    teamCritChanceFlat: string;
     attackMult: string;
     speedMult: string;
     gateAttackMult: string;
@@ -350,9 +350,9 @@ function recordHero(
     energyMult: mults.energyMult,
     speedMult: mults.speedMult,
     critDmgMult: mults.critDmgMult,
-    teamCritPctOfBase: mults.teamCritPctOfBase,
+    teamCritChanceFlat: mults.teamCritChanceFlat,
     treeSheet: tree,
-    combatCritChancePctOfBase: mods.combatCritChancePctOfBase,
+    combatCritChanceFlat: mods.combatCritChanceFlat,
     penetrationPp: mods.penetrationPp,
     context,
     dmgMult: mults.dmgMult,
@@ -416,7 +416,7 @@ function recordHero(
     energyMult: pipelineResult.energyMult,
     speedMult: pipelineResult.speedMult,
     critDmgMult: pipelineResult.critDmgMult,
-    teamCritPctOfBase: pipelineResult.teamCritPctOfBase,
+    teamCritChanceFlat: pipelineResult.teamCritChanceFlat,
     treeSpeed: pipelineResult.treeSheet.speedPct,
     treeCritChance: pipelineResult.treeSheet.critChancePct,
     treeCritDmg: pipelineResult.treeSheet.critDmgPct,
@@ -484,7 +484,7 @@ function recordHero(
       teamSpeedMult: num(mults.teamSpeedMult),
       teamDrainMult: num(mults.teamDrainMult),
       teamGateMult: num(mults.teamGateMult),
-      teamCritPctOfBase: num(mults.teamCritPctOfBase),
+      teamCritChanceFlat: num(mults.teamCritChanceFlat),
       attackMult: num(mults.attackMult),
       speedMult: num(mults.speedMult),
       gateAttackMult: num(mults.gateAttackMult),

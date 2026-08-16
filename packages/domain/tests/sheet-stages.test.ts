@@ -60,14 +60,14 @@ function solveSpentPoints(hero: SaveHeroSheet, tree: TreeSheetTotals): Record<Sh
     speed: Math.max(0, Math.round((pool.speed - bonuses.speedPct - tree.speedPct / 100) / POINT_GAIN.speedPctOfBase)),
     critChance: Math.max(
       0,
-      Math.round((pool.critChance - bonuses.critPct - tree.critChancePct / 100) / POINT_GAIN.critChancePctOfBase),
+      Math.round((pool.critChance - bonuses.critFlatPct - tree.critChancePct / 100) / POINT_GAIN.critChanceFlat),
     ),
     critDmg: Math.max(0, Math.round(pool.critDmg / POINT_GAIN.critDmgFlat)),
     penetration: Math.max(
       0,
       Math.round((pool.penetration - bonuses.penPct) / POINT_GAIN.penetrationPctOfBase),
     ),
-    cdr: Math.max(0, Math.round((pool.cdr - bonuses.cdrPct) / POINT_GAIN.cdrPctOfBase)),
+    cdr: Math.max(0, Math.round((pool.cdr - bonuses.cdrFlatPct) / POINT_GAIN.cdrFlat)),
     luck: Math.max(
       0,
       Math.round(

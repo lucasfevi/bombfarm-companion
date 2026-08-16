@@ -25,9 +25,9 @@ export function gearBonusRows(
     { key: 'energyPct', label: strings.slotStatFullLabels.energia, percent: true },
     { key: 'speedPct', label: strings.slotStatFullLabels.velocidade, percent: true },
     { key: 'luckPct', label: strings.slotStatFullLabels.sorte, percent: true },
-    { key: 'critPct', label: strings.slotStatFullLabels.crit, percent: true },
+    { key: 'critFlatPct', label: strings.slotStatFullLabels.crit, percent: true },
     { key: 'penPct', label: strings.slotStatFullLabels.penetracao, percent: true },
-    { key: 'cdrPct', label: strings.slotStatFullLabels.cooldown, percent: true },
+    { key: 'cdrFlatPct', label: strings.slotStatFullLabels.cooldown, percent: true },
   ];
 
   return defs.map(({ key, label, percent }) => ({

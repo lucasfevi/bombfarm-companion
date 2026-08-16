@@ -27,21 +27,37 @@ export const BASE_ROLLS: Record<RarityKey, BaseRoll> = {
   Mítico: { attack: 240, energy: 1025, speed: 55.75, luck: 12.5, critChance: 10, critDmg: 90, penetration: 6, cdr: 6 },
 };
 
-// Per-point increments (2026-07-25 rebalance — wiki `herois.ponto_inc`):
-// Ataque +10 native × levelPowerMult(level) · Energia +8 native · Velocidade / Sorte /
-// Crit chance / Pen / CDR add a bonus that is a percentage OF THE BASE ROLL
-// (+2% / +3% / +2% / +2% / +10%).
+// Per-point increments (wiki `herois.ponto_inc`):
+// Ataque +10 native × levelPowerMult(level) · Energia +8 native · Velocidade / Sorte / Pen add
+// a bonus that is a percentage OF THE BASE ROLL (+2% / +3% / +2%).
 // Sorte (Luck): BSP-46 — measured against the Wave 0 fixtures at ≤8e-16 residual,
 // ★0 gear-free (vera-02-pts-luck-1.json) and confirmed exactly at ★1 with gear
 // (bellatrix-02-pts-each-1.json). +3% of the hero's birth roll, × starsMult.
 //
-// Crit dmg is the ONE exception: it is **flat**, not a percentage of the roll
-// (`critDmgFlat`, below).
+// Crit chance, crit dmg and CDR are the exceptions: all three are **flat**, not percentages of
+// the roll (`critChanceFlat` / `critDmgFlat` / `cdrFlat`, below). Crit damage went flat at the
+// 2026-08-13 patch; crit chance and CDR followed at the 2026-08-15 one.
 export const POINT_GAIN = {
   attackNative: 10,
   energyNative: 8,
   speedPctOfBase: 0.02,
-  critChancePctOfBase: 0.02,
+  /**
+   * FLAT +0.024394 crit-chance percentage points per point — planner units, i.e. the same units
+   * as `SheetStats.critChance` (`save crit_chance × 100`), so one point moves the save's
+   * `crit_chance` fraction by exactly the wiki's `herois.ponto_inc` entry, `0.00024394`.
+   *
+   * Measured on a deliberate respec (`respec-cdr-cc.json`, account 486, 2026-08-16): Torin L4,
+   * ★0, Comum, **no items at all**, moved from `crit_chance` 0.0565165826278963 to
+   * 0.0570044626278963 on exactly 2 points — Δ 0.00048788, i.e. `2 × 0.00024394`, residual
+   * **3.0e-18**. The same delta read as a percentage of his 0.0527272881 roll would have been
+   * 0.0000257; it is not. The account's tree total is byte-identical across the pair and he
+   * carries no crit ability, so nothing else could account for the move.
+   *
+   * NO base-roll scaling and NO level scaling — the raw `ponto_inc` value, converted to planner
+   * units. Star behaviour is UNOBSERVED (every hero on the capture account is ★0); the flat term
+   * is not star-scaled here, the same conservative reading `critDmgFlat` documents.
+   */
+  critChanceFlat: 0.024394,
   /**
    * FLAT +5 crit-damage percentage points per point — planner units, i.e. the same units as
    * `SheetStats.critDmg` (`(save crit_dmg − 1) × 100`), so one point moves the save's
@@ -77,7 +93,20 @@ export const POINT_GAIN = {
    */
   critDmgFlat: 5,
   penetrationPctOfBase: 0.02,
-  cdrPctOfBase: 0.1,
+  /**
+   * FLAT +0.03513 cooldown-reduction percentage points per point — planner units
+   * (`save cooldown_reduction × 100`), i.e. the wiki's `herois.ponto_inc` entry `0.0003513`.
+   *
+   * Measured on the same respec pair as {@link POINT_GAIN.critChanceFlat}: Torin L4, no items,
+   * `cooldown_reduction` 0.00209084545389146 → 0.00279344545389146 on exactly 2 points —
+   * Δ 0.0007026, i.e. `2 × 0.0003513`, residual **−1.1e-19**. Read as 10% of his roll it would
+   * have been 0.000418; it is not.
+   *
+   * CDR is the thinnest-evidenced of the three flat stats: the game has **no cooldown ability
+   * and no cooldown tree node**, so gear and points are its only non-birth sources, and the item
+   * term rests on a single observation (Minato's `gold_elmo`, one roll, exact).
+   */
+  cdrFlat: 0.03513,
   luckPctOfBase: 0.03,
 } as const;
 

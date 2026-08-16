@@ -25,20 +25,19 @@ function otherFactor(percent: number): number {
 }
 
 /**
- * The MULTIPLICATIVE sheet-ability share for this key, as a fraction of the roll. `critDmg`
- * is deliberately 0 here — its sheet ability is a flat addend, reported by
- * {@link sheetAbilityFlatFor} instead (see `POINT_GAIN.critDmgFlat`).
+ * The MULTIPLICATIVE sheet-ability share for this key, as a fraction of the roll. Only `speed`
+ * and `penetration` still have one — `critChance`, `critDmg` and `cdr` are deliberately 0 here,
+ * their sheet abilities being flat addends reported by {@link sheetAbilityFlatFor} instead
+ * (see `POINT_GAIN.critChanceFlat` / `.critDmgFlat` / `.cdrFlat`).
  */
 function sheetOtherFor(statKey: SheetDisplayKey, otherPct: SheetOtherPct): number {
   switch (statKey) {
     case 'speed':
       return otherPct.speed;
-    case 'critChance':
-      return otherPct.critChance;
     case 'penetration':
       return otherPct.penetration;
+    case 'critChance':
     case 'cdr':
-      return otherPct.cdr;
     case 'critDmg':
     case 'attack':
     case 'energy':
@@ -46,9 +45,21 @@ function sheetOtherFor(statKey: SheetDisplayKey, otherPct: SheetOtherPct): numbe
   }
 }
 
-/** The FLAT sheet-ability addend for this key (planner units). Only crit damage has one. */
+/**
+ * The FLAT sheet-ability addend for this key (planner units). Crit chance (Olho Clínico) and
+ * crit damage (Golpe Brutal) have one; CDR's slot exists but the game emits no cooldown ability.
+ */
 function sheetAbilityFlatFor(statKey: SheetDisplayKey, otherPct: SheetOtherPct): number {
-  return statKey === 'critDmg' ? Math.max(0, otherPct.critDmgFlat) : 0;
+  switch (statKey) {
+    case 'critChance':
+      return Math.max(0, otherPct.critChanceFlat);
+    case 'critDmg':
+      return Math.max(0, otherPct.critDmgFlat);
+    case 'cdr':
+      return Math.max(0, otherPct.cdrFlat);
+    default:
+      return 0;
+  }
 }
 
 /**
@@ -155,14 +166,23 @@ export function pushBirthThenGear(
     return;
   }
 
-  const treeAmount = (treePct / 100) * base;
+  // Crit chance's tree term is a FLAT planner-pp addend since the 2026-08-15 patch, so it takes
+  // no `× base` and reports no `pctOfBase` provenance. Crit damage's tree term keeps the
+  // percent-of-base shape (`AD-BSP-22`) — it is the last one left, and unmeasured (see
+  // `applySkillTree`). CDR has no tree node at all, so `treePct` is 0 for it either way.
+  const treeIsFlat = statKey === 'critChance' || statKey === 'cdr';
+  const treeAmount = treeIsFlat ? treePct : (treePct / 100) * base;
   const gearDelta = gearedValue - naked - treeAmount;
-  if (statKey === 'critDmg' || Math.abs(base) < EPS) {
+  if (statKey === 'critDmg' || statKey === 'critChance' || statKey === 'cdr' || Math.abs(base) < EPS) {
     pushAdd(steps, 'gear', gearDelta);
   } else {
     pushAddPctOfBase(steps, 'gear', (gearDelta / base) * 100, base);
   }
-  pushAddPctOfBase(steps, 'tree', treePct, base);
+  if (treeIsFlat) {
+    pushAdd(steps, 'tree', treeAmount);
+  } else {
+    pushAddPctOfBase(steps, 'tree', treePct, base);
+  }
 }
 
 export function pushBase(steps: LedgerStep[], base: number): void {

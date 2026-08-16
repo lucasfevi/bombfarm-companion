@@ -118,8 +118,8 @@ describe('the House is the binding constraint (defect A)', () => {
 });
 
 describe('the resulting rates', () => {
-  it('clearSecs is ~107s — 67.5s before the House fix, 77.3s after it, and ~107s once cadence is averaged over the hop distribution', () => {
-    expect(row.clearSecs).toBeCloseTo(106.76, 1);
+  it('clearSecs is ~106s — 67.5s before the House fix, 77.3s after it, ~107s once cadence is averaged over the hop distribution, 105.6s after crit went flat', () => {
+    expect(row.clearSecs).toBeCloseTo(105.65, 1);
     expect(row.clearSecs).toBeGreaterThan(70);
   });
 
@@ -129,8 +129,8 @@ describe('the resulting rates', () => {
     expect(Math.abs(goldPerProp / OBSERVED_GOLD_PER_PROP - 1)).toBeLessThan(0.015);
   });
 
-  it('goldPerHour is ~361k — down 37% from the pre-fix 571,546 across the House and cadence fixes', () => {
-    expect(row.goldPerHour).toBeCloseTo(361_176, -2);
+  it('goldPerHour is ~365k — down 36% from the pre-fix 571,546 across the House, cadence and flat-crit changes', () => {
+    expect(row.goldPerHour).toBeCloseTo(364_962, -2);
     // A band, not a point, so a legitimate wiki-bundle refresh does not fail this file; tight
     // enough that re-opening any of the defects moves the number out of it.
     expect(row.goldPerHour).toBeGreaterThan(350_000);

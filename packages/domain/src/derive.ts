@@ -19,7 +19,7 @@ export type CombatMults = {
   teamSpeedMult: number;
   teamDrainMult: number;
   teamGateMult: number;
-  teamCritPctOfBase: number;
+  teamCritChanceFlat: number;
   attackMult: number;
   speedMult: number;
   gateAttackMult: number;
@@ -64,13 +64,13 @@ export function computeCombatMults(input: ComputeCombatMultsInput): CombatMults 
   const teamSpeedMult = stackTeamBonusMult(1, teamBuffs.marcha_acelerada || 0);
   const teamDrainMult = Math.max(0.01, 1 - (teamBuffs.folego_mineiro || 0) / 100);
   const teamGateMult = stackTeamBonusMult(1, teamBuffs.contra_relogio || 0);
-  const teamCritPctOfBase = teamBuffs.pressagio_mortal || 0;
+  const teamCritChanceFlat = teamBuffs.pressagio_mortal || 0;
   return {
     teamAtkMult,
     teamSpeedMult,
     teamDrainMult,
     teamGateMult,
-    teamCritPctOfBase,
+    teamCritChanceFlat,
     attackMult: stackTeamBonusMult(mods.attackMult, teamBuffs.grito_guerra || 0),
     speedMult: stackTeamBonusMult(mods.speedMult, teamBuffs.marcha_acelerada || 0),
     gateAttackMult: stackTeamBonusMult(mods.gateAttackMult, teamBuffs.contra_relogio || 0),
@@ -94,10 +94,10 @@ export type DeriveInput = {
   energyMult: number;
   speedMult: number;
   critDmgMult: number;
-  teamCritPctOfBase: number;
+  teamCritChanceFlat: number;
   /** The whole skill tree, once (BSP-23c) — replaces the four scattered tree inputs. */
   treeSheet: TreeSheetTotals;
-  combatCritChancePctOfBase: number;
+  combatCritChanceFlat: number;
   penetrationPp: number;
   context: Context;
   dmgMult: number;
@@ -140,9 +140,9 @@ export function derive(input: DeriveInput): DeriveResult {
     energyMult,
     speedMult,
     critDmgMult,
-    teamCritPctOfBase,
+    teamCritChanceFlat,
     treeSheet,
-    combatCritChancePctOfBase,
+    combatCritChanceFlat,
     penetrationPp,
     context,
     dmgMult,
@@ -152,9 +152,7 @@ export function derive(input: DeriveInput): DeriveResult {
   const gem = naked.energy > 0 ? gearedX.energy / naked.energy : 1;
   // Shared pool: +1 pt adds naked×perPt/(1+O), not naked×perPt.
   const oSpeed = 1 + sheetOther.speed;
-  const oCrit = 1 + sheetOther.critChance;
   const oPen = 1 + sheetOther.penetration;
-  const oCdr = 1 + sheetOther.cdr;
   const star = starsMult(stars);
   const atkPt = attackPointGain(level) * star;
   // GAP-W4-01 (resolved, BSPW5-11/DISC-01): the six pooled shared-divisor deltas below
@@ -175,25 +173,27 @@ export function derive(input: DeriveInput): DeriveResult {
     attack: atkPt * treeSheet.danoStatic,
     energy: POINT_GAIN.energyNative * gem * star,
     speed: (POINT_GAIN.speedPctOfBase * naked.speed) / oSpeed,
-    critChance: (POINT_GAIN.critChancePctOfBase * naked.critChance) / oCrit,
-    // Flat — no `naked.critDmg` factor and no shared-pool divisor (POINT_GAIN.critDmgFlat).
+    // The three flat stats — no `naked[key]` factor and no shared-pool divisor. Crit damage
+    // went flat at the 2026-08-13 patch, crit chance and CDR at the 2026-08-15 one.
+    critChance: POINT_GAIN.critChanceFlat,
     critDmg: POINT_GAIN.critDmgFlat,
     penetration: (POINT_GAIN.penetrationPctOfBase * naked.penetration) / oPen,
-    cdr: (POINT_GAIN.cdrPctOfBase * naked.cdr) / oCdr,
+    cdr: POINT_GAIN.cdrFlat,
     // Luck has no `other` term (ASM-02) — no divisor, unlike the shared-pool stats above.
     luck: POINT_GAIN.luckPctOfBase * naked.luck,
   };
   const adjusted: SheetStats = { ...gearedX };
   for (const key of SHEET_KEYS) adjusted[key] = gearedX[key] + pts[key] * delta[key];
-  // Combat-only ability/team crit-chance additions (e.g. Presságio Mortal) use the rolled
-  // base ≈ naked / (1+sheetO) — unrelated to the skill tree, which the sheet already carries.
-  const baseCrit = naked.critChance / oCrit;
+  // Combat-only ability/team crit-chance additions (e.g. Presságio Mortal) are FLAT planner
+  // percentage points as of the 2026-08-15 patch — added straight on, with no rolled-base
+  // factor. UNWITNESSED for the team path specifically (no post-patch capture carries
+  // Presságio Mortal); it follows the three sheet-side sources that were measured.
   const effective: HeroSheet = {
     rarity,
     attack: adjusted.attack * attackMult,
     energy: adjusted.energy * energyMult,
     speed: adjusted.speed * speedMult,
-    critChance: adjusted.critChance + ((combatCritChancePctOfBase + teamCritPctOfBase) / 100) * baseCrit,
+    critChance: adjusted.critChance + combatCritChanceFlat + teamCritChanceFlat,
     critDmg: adjusted.critDmg * critDmgMult,
     penetration: adjusted.penetration + penetrationPp,
     cdr: adjusted.cdr,

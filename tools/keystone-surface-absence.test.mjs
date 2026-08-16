@@ -176,7 +176,7 @@ const CRIT_DMG_MULT_MAP = {
   'apps/web/src/shared/lib/stale-account.ts': [20],
   'apps/web/src/tests/advisor-pipeline.test.ts': [85],
   'apps/web/src/tests/derive.test.ts': [
-    75, 77, 158, 186, 225, 256, 281, 321, 335, 388, 428, 465, 512, 545,
+    75, 77, 158, 186, 225, 256, 281, 321, 335, 388, 428, 465, 512, 549,
   ],
   'apps/web/src/tests/fixture-corpus.test.ts': [23, 65],
   'apps/web/src/tests/fixtures/sheet-math/README.md': [6],

@@ -156,9 +156,9 @@ describe('farmObjectiveScales — the frozen blend normalizers, exported (lifted
   // Safe to re-record because the sibling test above — an independent brute-force
   // `currentBuildScales()` scan — still agrees with `farmObjectiveScales` to 6 decimals on the
   // same model. What changed is the model, not the agreement between the two routes to it.
-  it("on the committed fixture (maxPhase 42): goldScale ≈ 180 744.87, chestScale ≈ 1.2806", () => {
+  it("on the committed fixture (maxPhase 42): goldScale ≈ 180 837.93, chestScale ≈ 1.2806", () => {
     const scales = farmObjectiveScales(squad, { maxPhase });
-    expect(scales.goldScale).toBeCloseTo(180744.87, 1);
+    expect(scales.goldScale).toBeCloseTo(180837.93, 1);
     expect(scales.chestScale).toBeCloseTo(1.2806, 3);
   });
 });
