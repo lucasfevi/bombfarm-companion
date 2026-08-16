@@ -77,7 +77,9 @@ const SRC_ALLOWLIST: Record<string, number[]> = {
   // rank mode each inserted lines above these hits, so BOTH pins were stale after the merge —
   // 341 from here and 325 from develop are each correct only in isolation.
   'advisor-pipeline.ts': [111, 217, 246, 346],
-  'stat-breakdown/types.ts': [105],
+  // +1 (line number only): the flat-crit-damage fix's `brutalStrike` LedgerNote arm
+  // (review item 5, PR #90) added one line above this hit.
+  'stat-breakdown/types.ts': [106],
   // +1 (line number only): the `cycleSecs` pass-through added one line above this hit.
   // +2 more: the House-ceiling regression repair's `cycleSecsHouseIdx`/`cycleSecsLevel`
   // pass-through (PR #86 finding, house.ts:38) added two more lines above it.

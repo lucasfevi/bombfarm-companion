@@ -36,3 +36,12 @@ breakdown and DPS figures shift accordingly.
 **Historical note, for anyone comparing against older captures**: crit damage genuinely WAS a
 percentage of the roll before the 2026-08-13 patch, and the old model fit those saves exactly. The
 patch changed the shape; every capture since is flat.
+
+**Local data migration.** If you already have a hero saved with Golpe Brutal spent, its stored
+crit-damage sheet value was baked under the old (multiplicative) model and would otherwise be
+misread under the new (flat) one — the Stats panel's Birth column would show the wrong roll, and
+setting Golpe Brutal back to 0 would silently rewrite the misread value into storage. The web
+planner now runs a one-time, one-shot conversion on your existing local roster the first time you
+open it after this update: it recovers each hero's original roll from the old bake and re-bakes it
+under the new flat model, so the sheet keeps showing the same hero you already had. Heroes without
+Golpe Brutal are untouched. This runs automatically; there is nothing to do.

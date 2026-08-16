@@ -85,6 +85,7 @@ export function birthFromNaked(statKey: SheetDisplayKey, facts: PipelineFacts): 
 function sheetAbilityNote(statKey: SheetDisplayKey): LedgerNote | undefined {
   if (statKey === 'critChance') return 'keenEye';
   if (statKey === 'penetration') return 'diamondTip';
+  if (statKey === 'critDmg') return 'brutalStrike';
   return undefined;
 }
 

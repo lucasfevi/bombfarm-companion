@@ -407,6 +407,29 @@ describe('stat-breakdown builder', () => {
     }
   });
 
+  it('peels birth → stars → Brutal Strike (Golpe Brutal) as a flat crit-dmg addend, noted brutalStrike', () => {
+    const level = 26;
+    const stars = 2;
+    const { facts } = buildFixture({
+      level,
+      stars,
+      abilities: { golpe_brutal: 10 },
+    });
+    assertLedgersRecompose(facts);
+    assertFormulasMatch(facts);
+
+    const cd = buildStatBreakdown('critDmg', facts);
+    expect(cd.kind).toBe('ledger');
+    if (cd.kind === 'ledger') {
+      expect(cd.steps.map((s) => s.source)).toEqual(['base', 'stars', 'sheetAbilities']);
+      const sheet = cd.steps.find((s) => s.source === 'sheetAbilities');
+      expect(sheet?.note).toBe('brutalStrike');
+      // golpe_brutal @10, perLevel 4 -> flat +40 planner pp, unscaled by ★ (POINT_GAIN.critDmgFlat).
+      expect(sheet?.op).toBe('+');
+      expect(sheet?.amount).toBeCloseTo(40, 6);
+    }
+  });
+
   it('F9 — attack tree step is × dmg_static on the Hero+Gear+Ability subtotal (AC-42)', () => {
     const { facts } = buildFixture({
       pts: { ...ZERO_PTS(), attack: 2 },

@@ -319,7 +319,12 @@ describe('team-plan slice', () => {
     const setItem = vi.spyOn(localStorage, 'setItem');
     hydratePlannerStore();
     expect(usePlannerStore.getState().inventory.items).toEqual([sampleItem]);
-    expect(setItem).not.toHaveBeenCalled();
+    // The flat-crit-damage fix's one-shot migration marker (`bf-hp-critdmg-flat-migrated-v1`)
+    // is written unconditionally the first time it is absent (see `migrateCritDmgFlatBakeOnce`
+    // in `storage.ts`); no hero here has Golpe Brutal, so it is the ONLY setItem this otherwise
+    // -clean load makes.
+    expect(setItem).toHaveBeenCalledTimes(1);
+    expect(setItem).toHaveBeenCalledWith('bf-hp-critdmg-flat-migrated-v1', 'true');
   });
 
   it('inventory persistence writes after boot and debounce', () => {

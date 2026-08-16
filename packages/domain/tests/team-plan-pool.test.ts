@@ -39,7 +39,7 @@ function heroCtx(level: number, slot?: string): HeroPlanContext {
       gateAttackMult: 1,
       sheetCritChancePctOfBase: 0,
       sheetPenetrationRaw: 0,
-      sheetCritDmgPctOfBase: 0,
+      sheetCritDmgFlat: 0,
     },
     treeSheet: {
       danoStatic: 1,

@@ -60,6 +60,20 @@ export const POINT_GAIN = {
    *
    * Same Δ off different rolls ⇒ flat, and `10 / 2 = 5`. A percentage of the roll would have
    * had to produce two different deltas; it does not.
+   *
+   * Applied with NO star factor anywhere in this pipeline — unlike the flat *ability* addend
+   * (`sheetOther.critDmgFlat`, see `nakedFromBirth` / `rescaleNakedForStars` in
+   * `birth-sheet.ts` / `gear/naked-rescale.ts`), whose "unobserved, not star-scaled is the
+   * conservative reading" note does NOT cover this constant. The only committed corpus hero
+   * holding crit-damage points (Bellatrix L42, `tests/fixtures/sheet-math/save-20260813-5heroes.json`)
+   * is ★0, so this point's own star behaviour is equally UNOBSERVED. Under the old
+   * `critDmgPctOfBase: 0.08` model the per-point gain was `0.08 × naked.critDmg`, which
+   * star-scaled implicitly because it read the (already star-scaled) roll; the flat constant
+   * here does not. If the game does star-scale this point and this model does not,
+   * `inferSpentPoints` would over-recover points on a ★>0 hero holding crit-damage points, and
+   * `reoptBudget` — deliberately un-clamped to `level`, see `points-reopt-core.ts` — would
+   * amplify that bad vector rather than contain it. `tests/points-within-level-budget.test.ts`
+   * is the guard that would go red first if a future ★>0 capture proves this wrong.
    */
   critDmgFlat: 5,
   penetrationPctOfBase: 0.02,

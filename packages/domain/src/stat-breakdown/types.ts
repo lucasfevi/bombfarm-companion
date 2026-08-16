@@ -33,7 +33,8 @@ export type LedgerNote =
   | 'capped'
   | 'ownTeamSplit'
   | 'keenEye'
-  | 'diamondTip';
+  | 'diamondTip'
+  | 'brutalStrike';
 
 /**
  * `BSP-20`'s four in-game lines, plus a `combat` bucket for the multiplicative sources that

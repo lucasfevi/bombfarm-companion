@@ -167,7 +167,7 @@ describe('evaluateRoster', () => {
         gateAttackMult: 1,
         sheetCritChancePctOfBase: 0,
         sheetPenetrationRaw: 0,
-        sheetCritDmgPctOfBase: 0,
+        sheetCritDmgFlat: 0,
       },
       treeSheet: {
         danoStatic: 1,
@@ -228,7 +228,7 @@ describe('evaluateRoster', () => {
         gateAttackMult: 1,
         sheetCritChancePctOfBase: 0,
         sheetPenetrationRaw: 0,
-        sheetCritDmgPctOfBase: 0,
+        sheetCritDmgFlat: 0,
       },
       treeSheet: {
         danoStatic: 1,
@@ -290,7 +290,7 @@ describe('evaluateRoster', () => {
         gateAttackMult: 1,
         sheetCritChancePctOfBase: 0,
         sheetPenetrationRaw: 0,
-        sheetCritDmgPctOfBase: 0,
+        sheetCritDmgFlat: 0,
       },
       treeSheet: {
         danoStatic: 1,
@@ -355,7 +355,7 @@ describe('evaluateRoster', () => {
         gateAttackMult: 1,
         sheetCritChancePctOfBase: 0,
         sheetPenetrationRaw: 0,
-        sheetCritDmgPctOfBase: 0,
+        sheetCritDmgFlat: 0,
       },
       treeSheet: {
         danoStatic: 1,

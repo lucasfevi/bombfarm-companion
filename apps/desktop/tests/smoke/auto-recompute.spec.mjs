@@ -100,16 +100,21 @@ async function goToPlanning(page) {
  * raising this hero's level 55 -> 75 moves `dpsGainPct` by < 1e-9, invisible at
  * `formatGainPct`'s `toFixed(1)` precision (both render `"+6.6%"`).
  *
- * Crit Damage's marginal-point value is a fixed rarity-based constant
- * (`POINT_GAIN.critDmgPctOfBase * BASE_ROLLS[rarity].critDmg`,
- * packages/domain/src/model/points-rank.ts) — independent of the hero's current stat — so
- * spending a real stat point there does shrink the ratio. Verified numerically against this
- * exact fixture (`h-aurora`, Épico rarity): `+100` lands inside the exact-one-point band
- * (inferSpentPoints resolves it to `pts.critDmg === 1`, no `nonIntegerPoints` residual — the
- * band runs ~94.5 to ~102.5, so `+100` sits comfortably clear of both edges), moving the
- * top-ranked `next-point-gain` from `dpsGainPct = 6.62354463130661` ("+6.6%") to
- * `dpsGainPct = 6.212084445522947` ("+6.2%") — a real, rendered, end-to-end difference, not a
- * precision artifact.
+ * HISTORICAL (superseded at the flat-crit-damage fix): Crit Damage's marginal-point value used
+ * to be modelled as a rarity-based constant, `POINT_GAIN.critDmgPctOfBase * BASE_ROLLS[rarity].critDmg`
+ * — and this comment used to cite an "exact-one-point band" (~94.5 to ~102.5) that `+100` landed
+ * inside, resolving to `pts.critDmg === 1` with no `nonIntegerPoints` residual. `POINT_GAIN.critDmgPctOfBase`
+ * no longer exists: crit damage is FLAT-additive, not a percentage of the hero's roll. The
+ * marginal value is now the constant `POINT_GAIN.critDmgFlat` (5 planner pp), independent of the
+ * hero entirely — so `+100` on `stats.crit_dmg` no longer resolves to "1 point"; it resolves to
+ * `100 / 5 = 20` points. The exact-one-point band this comment used to require is gone along
+ * with the model that produced it.
+ *
+ * That does not matter for what this mutation needs: `+100` on `stats.crit_dmg` still moves the
+ * sheet enough to change which stat ranks first in `next-point-gain` (20 flat points is a large,
+ * unambiguous shift, not a rounding-edge case), and the assertion below is relative
+ * (`.not.toBe(gainBefore)`), never an exact point count or an exact `dpsGainPct` value — so no
+ * exact-one-point band is required under the flat model either.
  */
 function raiseFirstHeroCritDmgAtomically(fixtureCopyPath) {
   const payload = JSON.parse(fs.readFileSync(fixtureCopyPath, 'utf8'));

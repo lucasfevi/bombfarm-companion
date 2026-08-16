@@ -215,6 +215,12 @@ const FARM_RESPEC_KEYS_ADDED = [
   'farmRespecRerankCaption',
 ] as const;
 
+/**
+ * Flat-crit-damage fix (PR #90 review item 5) — the `brutalStrike` ledger note's label, genuinely
+ * new with no counterpart in the frozen fixture. Same shape as `F4_KEYS_ADDED` above.
+ */
+const CRIT_DMG_FLAT_KEYS_ADDED = ['bdNoteBrutalStrike'] as const;
+
 function diffLeafPaths(a: unknown, b: unknown, path: string[] = [], out: string[] = []): string[] {
   if (a === b) return out;
   const aIsObj = a !== null && typeof a === 'object';
@@ -268,6 +274,7 @@ describe('i18n split parity', () => {
         ...FARM_RANKING_KEYS_ADDED,
         ...FARM_RESPEC_KEYS_ADDED,
         ...RANK_MODE_KEYS_ADDED,
+        ...CRIT_DMG_FLAT_KEYS_ADDED,
       ].sort(),
     );
   });
@@ -285,6 +292,7 @@ describe('i18n split parity', () => {
         ...FARM_RANKING_KEYS_ADDED,
         ...FARM_RESPEC_KEYS_ADDED,
         ...RANK_MODE_KEYS_ADDED,
+        ...CRIT_DMG_FLAT_KEYS_ADDED,
       ].sort(),
     );
   });
@@ -308,6 +316,7 @@ describe('i18n split parity', () => {
       ...FARM_RANKING_KEYS_ADDED,
       ...FARM_RESPEC_KEYS_ADDED,
       ...RANK_MODE_KEYS_ADDED,
+      ...CRIT_DMG_FLAT_KEYS_ADDED,
     ].sort();
     expect(fromSplit).toEqual(fromFixture);
   });
@@ -381,6 +390,16 @@ describe('i18n split parity', () => {
   it('RANK_MODE_KEYS_ADDED has exactly 4 entries, present in STRINGS but absent from the frozen fixture, both languages', () => {
     expect(RANK_MODE_KEYS_ADDED.length).toBe(4);
     for (const key of RANK_MODE_KEYS_ADDED) {
+      expect(key in fixture.en, `${key} unexpectedly present in fixture.en`).toBe(false);
+      expect(key in fixture.pt, `${key} unexpectedly present in fixture.pt`).toBe(false);
+      expect(key in STRINGS.en, `${key} missing from STRINGS.en`).toBe(true);
+      expect(key in STRINGS.pt, `${key} missing from STRINGS.pt`).toBe(true);
+    }
+  });
+
+  it('CRIT_DMG_FLAT_KEYS_ADDED has exactly 1 entry, present in STRINGS but absent from the frozen fixture, both languages', () => {
+    expect(CRIT_DMG_FLAT_KEYS_ADDED.length).toBe(1);
+    for (const key of CRIT_DMG_FLAT_KEYS_ADDED) {
       expect(key in fixture.en, `${key} unexpectedly present in fixture.en`).toBe(false);
       expect(key in fixture.pt, `${key} unexpectedly present in fixture.pt`).toBe(false);
       expect(key in STRINGS.en, `${key} missing from STRINGS.en`).toBe(true);
