@@ -298,16 +298,16 @@ const FULLY_AUTHORED_FILES = [
   // other repo-wide identifier-absence guard takes for itself.
 ];
 
-// Patterns are assembled from parts rather than written as contiguous literals so this guard's
-// own source text does not itself carry the forbidden strings it exists to catch — the same
-// self-reference problem a "no console.log" lint rule has to dodge in its own implementation.
-const PRIVATE_PLANNING_REPO_NAME = ['bombfarm', 'research'].join('-');
-const PRIVATE_BOT_REPO_NAME = ['bombfarm', 'bot'].join('-');
+// This guard must not spell the names it exists to catch — the same self-reference problem a
+// "no console.log" lint rule has to dodge in its own implementation. Earlier revisions assembled
+// each name from parts (`['bombfarm', 'x'].join('-')`), which defeats `git grep` but still shows
+// the name to anyone reading the file. A negative lookahead on this repo's OWN name avoids
+// naming a sibling at all, and catches a sibling added later for free.
+const SIBLING_REPO_PATTERN = /bombfarm-(?!companion)[a-z][a-z-]*/i;
 const SPECS_DIR_SEGMENT = ['.specs', '/'].join('');
 
 const FORBIDDEN_REFERENCE_PATTERNS = [
-  { name: 'research-repo name', pattern: new RegExp(PRIVATE_PLANNING_REPO_NAME, 'i') },
-  { name: 'bot-repo name', pattern: new RegExp(PRIVATE_BOT_REPO_NAME, 'i') },
+  { name: 'sibling-repo name', pattern: SIBLING_REPO_PATTERN },
   { name: 'specs-directory path', pattern: new RegExp(SPECS_DIR_SEGMENT.replace('.', '\\.').replace('/', '\\/')) },
   { name: 'AD-prefixed decision id', pattern: /\bAD-\d+\b/ },
   { name: 'bare D-number decision id', pattern: /\bD\d{1,3}\b/ },
@@ -317,7 +317,7 @@ function referenceHygieneOffenses(text) {
   return FORBIDDEN_REFERENCE_PATTERNS.filter(({ pattern }) => pattern.test(text)).map((p) => p.name);
 }
 
-describe('MWD-32 — reference hygiene: no research-repo name, bot-repo name, specs-directory path, or private decision id', () => {
+describe('MWD-32 — reference hygiene: no sibling-repo name, specs-directory path, or private decision id', () => {
   for (const file of FULLY_AUTHORED_FILES) {
     it(`${file} carries none of the forbidden references`, () => {
       const text = readFileSync(join(root, file), 'utf8');
@@ -325,11 +325,17 @@ describe('MWD-32 — reference hygiene: no research-repo name, bot-repo name, sp
     });
   }
 
-  it('red state: a fixture string naming the research repo is caught', () => {
-    const fixture = `See ${PRIVATE_PLANNING_REPO_NAME}/${SPECS_DIR_SEGMENT}features/mp5-wiki-drift-check/design.md (AD-092).`;
+  // The fixture names a sibling that does not exist, so this public file exercises the guard
+  // without naming a real private repo.
+  it('red state: a fixture string naming a sibling repo is caught', () => {
+    const fixture = `See bombfarm-elsewhere/${SPECS_DIR_SEGMENT}features/mp5-wiki-drift-check/design.md (AD-092).`;
     expect(referenceHygieneOffenses(fixture)).toEqual(
-      expect.arrayContaining(['research-repo name', 'specs-directory path', 'AD-prefixed decision id']),
+      expect.arrayContaining(['sibling-repo name', 'specs-directory path', 'AD-prefixed decision id']),
     );
+  });
+
+  it('green state: this repo\'s own name is not an offense', () => {
+    expect(referenceHygieneOffenses('See the bombfarm-companion README.')).toEqual([]);
   });
 
   it('red state: a fixture string naming a bare decision id is caught', () => {

@@ -20,9 +20,9 @@ import {
  * descent reaches the nested paths that actually drifted (`skills.totals`, `MSG-01`).
  *
  * MSG-30: the required key sets below are the real top-level (and now nested) keys of the
- * 2026-08-12 capture (`bombfarm-bot/data/anchor-calibration-2026-08-12T13-15-38-t1c/api-bodies.json`,
- * scrubbed and copied into `src/__fixtures__/api-bodies.json`) — each fingerprint below names that
- * artifact and capture directly via `sourceArtifact`, rather than only in this file-level comment.
+ * 2026-08-12 anchor-calibration capture, taken out of band, then scrubbed and copied into
+ * `src/__fixtures__/api-bodies.json` — each fingerprint below names that artifact and capture
+ * directly via `sourceArtifact`, rather than only in this file-level comment.
  *
  * `account_id` and `player_name` are declared `allowance` (never `keys`) on `/state`: they are the
  * two fields the scrub removes (matching this file's own committed fixture), and requiring them

@@ -205,7 +205,10 @@ describe('public-repo hygiene — no research-private identifier or path anywher
   // definition. Both are self-excluded from the scan below, not allowlisted: the exclusion is
   // structural.
   const SELF_FILENAMES = ['farm-optimize-guards.test.ts', 'farm-point-rank-guards.test.ts'];
-  const HYGIENE_PATTERN = /FRAD-|FRAW-|FRAC-|R-B\d|OD-A\d|OQ-FRA-|AD-1\d\d|bombfarm-research|\.specs\//;
+  // `bombfarm-(?!companion)…` matches any sibling repo without this public file naming a private
+  // one, and catches a sibling added later for free.
+  const HYGIENE_PATTERN =
+    /FRAD-|FRAW-|FRAC-|R-B\d|OD-A\d|OQ-FRA-|AD-1\d\d|bombfarm-(?!companion)[a-z][a-z-]*|\.specs\//;
 
   it('src and tests are both clean', () => {
     const testsRoot = join(DOMAIN_ROOT, 'tests');

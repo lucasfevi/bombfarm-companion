@@ -86,7 +86,7 @@ describe('Guard 1 — no write surface anywhere the network can be reached (D24,
     const offenders = sourceFiles
       .map((file) => ({ file, match: methodPattern.exec(foldStringConcatenation(readFileSync(file, 'utf8'))) }))
       .filter((r) => r.match !== null);
-    expect(offenders, `D24: the write surface stays in bombfarm-bot. Offenders: ${JSON.stringify(offenders.map((o) => o.file))}`).toEqual([]);
+    expect(offenders, `D24: this app has no write surface — reads only. Offenders: ${JSON.stringify(offenders.map((o) => o.file))}`).toEqual([]);
   });
 
   it('names no host other than the single api.bombfarm.net constant', () => {

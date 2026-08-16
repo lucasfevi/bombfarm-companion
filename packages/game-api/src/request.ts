@@ -1,9 +1,9 @@
 import { ConsentedSessionRequiredError, RAW, isConsentedSession, type ConsentedSession } from './session.js';
 
 /**
- * The one request function (LAR-13, LAR-23…25). Adapted from
- * `bombfarm-bot/src/lib/api.ts:107-181` — the header set and the 15 s timeout are reused;
- * `FALLBACK_IPS` and the IP-retry loop are deliberately not ported (TD-9, LAR-24).
+ * The one request function (LAR-13, LAR-23…25). Adapted from the internal automation prototype's
+ * API client — the header set and the 15 s timeout are reused; `FALLBACK_IPS` and the IP-retry
+ * loop are deliberately not ported (TD-9, LAR-24).
  *
  * `host`/`method` are literal types so a different value is not expressible at the call site
  * (LAR-13's compile-time half). `isTrustedHttpRequest` is the runtime half of that same
@@ -24,7 +24,7 @@ const METHOD = 'GET';
 /** Conservative, unmeasured — rejecting a response this large is safer than buffering it whole. */
 const MAX_RESPONSE_BYTES = 2_000_000;
 
-/** Reused from `bombfarm-bot/src/lib/rate-limit.ts:9-10` — the cooldown-shaped-body detector. */
+/** Reused from the internal automation prototype's rate-limit module — the cooldown-shaped-body detector. */
 const COOLDOWN_BODY_PATTERN = /"(?:err|error|code)"\s*:\s*"[^"]*(?:RATE|COOLDOWN|TOO_MANY)[^"]*"/i;
 
 const PREVIEW_LENGTH = 200;

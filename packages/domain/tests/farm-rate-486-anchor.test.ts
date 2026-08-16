@@ -34,8 +34,8 @@
  * `blocksPerBomb = 1.5` remains untouched and independently confirmed (1.400-1.479 hits/explosion
  * measured live at this density, and 2.217 at `r = 3` against the Grimorio's 2.5). The measured
  * mean hop is 4.77 against the retired constant's 4.5 — the old number was barely wrong; averaging
- * first is what cost 25%. The measurements behind this live in the research repo's
- * combat-throughput notes, not here.
+ * first is what cost 25%. The measurements behind this are held out of band in the
+ * combat-throughput notes, not in this repo.
  */
 import { describe, expect, it } from 'vitest';
 import { computeFarmRates } from '@bombfarm/domain/farm-rate';

@@ -334,7 +334,10 @@ describe('guard (h) — no research-private identifier or path in apps/web', () 
     /OQ-FRA-/,
     /OD-A/,
     /AD-1\d\d/,
-    /bombfarm-research/,
+    // Any sibling `bombfarm-*` repo other than this one. Written as a negative lookahead rather
+    // than spelling a sibling's name: this repo is public and the siblings are not, so the guard
+    // must not disclose what it guards against. Also catches a sibling added later, for free.
+    /bombfarm-(?!companion)[a-z][a-z-]*/,
     /\.specs\//,
   ];
 
@@ -354,8 +357,14 @@ describe('guard (h) — no research-private identifier or path in apps/web', () 
     expect(findResearchId('see FRAW-09 for the requirement')).toBe('FRAW-');
   });
 
-  it('red state: a fabricated bombfarm-research path reference is caught', () => {
-    expect(findResearchId('read it from the bombfarm-research repo')).toBe('bombfarm-research');
+  // The fixture names a sibling that does not exist, so the guard is exercised without this
+  // public file naming a real private repo.
+  it('red state: a fabricated sibling-repo path reference is caught', () => {
+    expect(findResearchId('read it from the bombfarm-elsewhere repo')).toBe('bombfarm-elsewhere');
+  });
+
+  it('green state: this repo\'s own name is not treated as a sibling', () => {
+    expect(findResearchId('see the bombfarm-companion README')).toBeNull();
   });
 
   it('red state: a fabricated .specs/ path reference is caught', () => {
