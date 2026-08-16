@@ -24,14 +24,14 @@ function solveSpentPoints(hero: SaveHeroSheet, tree: TreeSheetTotals): Record<Sh
   if (!birth) throw new Error(`${hero.name} has no birth_stats`);
   const naked = nakedFromBirth(birth, hero.level, hero.stars, hero.sheetOther);
   const baseSpeed = naked.speed / poolFactor(hero.sheetOther.speed);
-  const baseCritChance = naked.critChance / poolFactor(hero.sheetOther.critChance);
-  // Crit damage is flat-additive: the ability addend peels by subtraction, and the point
-  // count is a plain division by POINT_GAIN.critDmgFlat (no pool base involved).
+  // Crit chance, crit damage and CDR are flat-additive: their ability addends peel by
+  // subtraction and their point counts are plain divisions by the flat per-point constants
+  // (no pool base involved). Only speed and penetration are still pooled.
   const baseCritDmg = naked.critDmg - Math.max(0, hero.sheetOther.critDmgFlat);
   const observed = hero.sheet;
   const pool = {
     speed: baseSpeed > 1e-12 ? (observed.speed - naked.speed) / baseSpeed : 0,
-    critChance: baseCritChance > 1e-12 ? (observed.critChance - naked.critChance) / baseCritChance : 0,
+    critChance: observed.critChance - naked.critChance - tree.critChancePct,
     critDmg: observed.critDmg - naked.critDmg - baseCritDmg * (tree.critDmgPct / 100),
     penetration:
       naked.penetration /
@@ -40,10 +40,7 @@ function solveSpentPoints(hero: SaveHeroSheet, tree: TreeSheetTotals): Record<Sh
         ? (observed.penetration - naked.penetration) /
           (naked.penetration / poolFactor(hero.sheetOther.penetration))
         : 0,
-    cdr:
-      naked.cdr / poolFactor(hero.sheetOther.cdr) > 1e-12
-        ? (observed.cdr - naked.cdr) / (naked.cdr / poolFactor(hero.sheetOther.cdr))
-        : 0,
+    cdr: observed.cdr - naked.cdr,
   };
   const bonuses = sumGearBonuses(hero.loadout);
   const star = starsMult(hero.stars);
@@ -60,7 +57,7 @@ function solveSpentPoints(hero: SaveHeroSheet, tree: TreeSheetTotals): Record<Sh
     speed: Math.max(0, Math.round((pool.speed - bonuses.speedPct - tree.speedPct / 100) / POINT_GAIN.speedPctOfBase)),
     critChance: Math.max(
       0,
-      Math.round((pool.critChance - bonuses.critFlatPct - tree.critChancePct / 100) / POINT_GAIN.critChanceFlat),
+      Math.round((pool.critChance - bonuses.critFlatPct) / POINT_GAIN.critChanceFlat),
     ),
     critDmg: Math.max(0, Math.round(pool.critDmg / POINT_GAIN.critDmgFlat)),
     penetration: Math.max(

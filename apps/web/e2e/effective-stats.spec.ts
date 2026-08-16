@@ -27,7 +27,7 @@ function effectivePanel(page: Page, lang: 'en' | 'pt') {
 /**
  * Sheet stats that `combatSheetDeltaAccount` actually pushes off sheet Total: Attack via
  * `grito_guerra`, Speed via `marcha_acelerada`. Crit chance is deliberately NOT here —
- * `pressagio_mortal` is a `critChancePctOfBase` TEAM buff that `derive.ts` folds into the
+ * `pressagio_mortal` is a `critChanceFlat` TEAM buff that `derive.ts` folds into the
  * crit factor, not into `effective.critChance`, so crit chance stays equal to Total and the
  * panel correctly hides it. The crit buff's visible home is the derived Critical factor /
  * Critical Hit rows, asserted separately below.

@@ -195,7 +195,7 @@ describe('shared-pool gear math', () => {
       luck: 0,
     };
     const other = emptySheetOther();
-    other.critChance = 0.15; // Olho-like sheet ability
+    other.critChanceFlat = 0.9148; // Olho Clínico 20 — a FLAT planner-pp addend
     const sheet = applyPoints(naked(), loadout, pts, other);
     const recovered = reverseSheet(sheet, loadout, pts, other);
     for (const k of Object.keys(naked()) as (keyof SheetStats)[]) {
@@ -262,10 +262,10 @@ describe('defaultNaked (static naked sheet)', () => {
     expect(lv30.cdr).toBe(lv1.cdr);
   });
 
-  it('bakes a sheet-ability bonus (e.g. Olho Clínico) into naked crit %', () => {
-    const withOlho10 = defaultNaked('Incomum', 1, { ...emptySheetOther(), critChanceFlat: 0.4574 });
+  it('bakes a sheet-ability bonus (e.g. Olho Clínico) into naked crit % as a FLAT addend', () => {
+    const withOlho = defaultNaked('Incomum', 1, { ...emptySheetOther(), critChanceFlat: 0.9148 });
     const withOlho0 = defaultNaked('Incomum', 1);
-    expect(withOlho10.critChance).toBeCloseTo(BASE_ROLLS.Incomum.critChance + 0.4574, 6);
+    expect(withOlho.critChance).toBeCloseTo(BASE_ROLLS.Incomum.critChance + 0.9148, 6);
     expect(withOlho0.critChance).toBe(BASE_ROLLS.Incomum.critChance);
   });
 

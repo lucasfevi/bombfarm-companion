@@ -183,7 +183,7 @@ const CRIT_DMG_MULT_MAP = {
   'apps/web/src/tests/fixtures/storage-roundtrip-20260729.json': [3],
   'apps/web/src/tests/points-reopt.test.ts': [107, 491],
   'apps/web/src/tests/stale-account-drop.test.ts': [31, 72, 73, 78, 89],
-  'apps/web/src/tests/stat-breakdown.test.ts': [125, 175, 202],
+  'apps/web/src/tests/stat-breakdown.test.ts': [133, 183, 210],
   'apps/web/src/tests/storage-legacy-keystone-fields.test.ts': [40, 109],
   'apps/web/src/tests/storage-stat-points-available-compat.test.ts': [104],
   'tools/fixture-corpus-parity.test.mjs': [117, 169],

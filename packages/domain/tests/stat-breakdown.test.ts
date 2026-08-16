@@ -41,16 +41,24 @@ function otherFactor(percent: number): number {
   return 1 + Math.max(0, percent);
 }
 
-/** Bake sheet-ability factors into a ★0 sample (matches defaultNaked order). */
+/**
+ * Bake sheet-ability terms onto a sheet that ALREADY carries stars, matching `nakedFromBirth` /
+ * `defaultNaked`: `speed` and `penetration` take a multiplicative pool factor, while crit chance,
+ * crit damage and CDR take FLAT planner-pp addends applied AFTER the star factor.
+ *
+ * The star ordering is why this runs second (see `buildFixture`). Applying stars afterwards would
+ * produce `(roll + flat) x star` where the model says `roll x star + flat` — a discrepancy that is
+ * invisible at the fixtures' default ★0 and only bites a starred case.
+ */
 function bakeSheetOtherIntoNaked(n: SheetStats, o: SheetOtherPct): SheetStats {
   return {
     ...n,
     speed: n.speed * otherFactor(o.speed),
-    critChanceFlat: n.critChance * otherFactor(o.critChance),
-    // Flat addend, not a pool factor (POINT_GAIN.critDmgFlat).
-    critDmg: n.critDmg + Math.max(0, o.critDmgFlat),
     penetration: n.penetration * otherFactor(o.penetration),
-    cdrFlat: n.cdr * otherFactor(o.cdr),
+    // The three flat addends (POINT_GAIN.critChanceFlat / .critDmgFlat / .cdrFlat).
+    critChance: n.critChance + Math.max(0, o.critChanceFlat),
+    critDmg: n.critDmg + Math.max(0, o.critDmgFlat),
+    cdr: n.cdr + Math.max(0, o.cdrFlat),
   };
 }
 
@@ -103,7 +111,7 @@ function buildFixture(opts: FixtureOpts = {}) {
 
   const naked =
     opts.naked ??
-    bakeStarsIntoNaked(bakeSheetOtherIntoNaked(sampleNaked(), sheetOther), stars);
+    bakeSheetOtherIntoNaked(bakeStarsIntoNaked(sampleNaked(), stars), sheetOther);
   const pts = opts.pts ?? ZERO_PTS();
   const teamBuffs = { ...zeroTeamBuffs(), ...(opts.teamBuffs ?? {}) };
   const treeEnergy = opts.treeEnergy ?? 0;

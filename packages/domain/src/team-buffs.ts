@@ -36,10 +36,19 @@ export function zeroTeamBuffs(): Record<TeamBuffId, number> {
   };
 }
 
-/** UI metadata for team-buff number fields (labels / hints / steps). */
+/**
+ * UI metadata for team-buff number fields (labels / hints / steps).
+ *
+ * `hint` names the field's UNITS and `step` must be commensurate with its range — both are what
+ * the player types against. `pressagio_mortal` is the one that is not a percent multiplier: the
+ * 2026-08-15 patch made crit chance a flat addend, so this field now carries planner percentage
+ * points (`0.06099 × rank`, `SheetStats.critChance` units) with a full-rank-20 value of ~1.22,
+ * and `derive` adds it straight onto the sheet. Its old `'Crit % base'` / `step: 1` pairing was
+ * left over from the multiplicative model, where the same entry meant a share of the roll.
+ */
 export const TEAM_BUFF_FIELDS = [
   { id: 'grito_guerra', label: 'Grito de Guerra', hint: 'Atk %', step: 1 },
-  { id: 'pressagio_mortal', label: 'Presságio Mortal', hint: 'Crit % base', step: 1 },
+  { id: 'pressagio_mortal', label: 'Presságio Mortal', hint: 'Crit pp', step: 0.05 },
   { id: 'marcha_acelerada', label: 'Marcha Acelerada', hint: 'Speed %', step: 0.1 },
   { id: 'folego_mineiro', label: 'Fôlego de Mineiro', hint: 'Drain −%', step: 1 },
   { id: 'contra_relogio', label: 'Contra o Relógio', hint: 'Gate Atk %', step: 1 },
