@@ -55,6 +55,30 @@ pnpm test:smoke   # Windows — builds static renderer + launches Electron
   format). Internal-only changes (CI config, tests, docs) don't need one; if a changeset genuinely
   doesn't apply, label the PR `skip-changeset` instead of skipping silently.
 
+## Out-of-scope findings — file a GitHub issue
+
+Work here routinely turns up a real defect that should **not** be fixed in the current change:
+a neighbouring code path with the same bug, a shared invariant with no owner, a stale doc.
+Those findings are worth more than the session they were found in.
+
+**File a GitHub issue for them. Do not leave them in a chat message, a task chip, or a `TODO`
+comment** — all three die with the session, and the finding then gets rediscovered from scratch
+weeks later as if it were new.
+
+```bash
+gh issue create --title "<imperative summary>" --label tech-debt --body "<what, where, evidence>"
+```
+
+- **File when** the fix would widen the current PR's scope, needs its own changeset, touches a
+  package the current change does not, or would mix a refactor into a bugfix.
+- **Fix inline instead when** it is a one-line change inside code you are already editing.
+- **The issue must stand alone.** Include the file paths and line numbers, the evidence that it
+  is real (the grep, the failing case, the call path), and why it was not fixed now. Someone
+  picking it up months later has none of the conversation it came from.
+- **Link both ways**: reference the issue from the PR that found it, so the trail survives.
+- Verify before filing. A claim that a neighbouring path "was checked and is fine" needs the
+  same evidence as a claim that it is broken — one pasted grep is usually enough.
+
 ## Flavors
 
 `BFC_FLAVOR` selects one of `dev`, `nightly`, `beta`, or `prod`. Unpackaged local runs default to `dev` when unset. Invalid tokens fail fast (never fall back to `prod`).
