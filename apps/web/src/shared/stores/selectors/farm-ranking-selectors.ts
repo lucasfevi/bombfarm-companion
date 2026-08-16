@@ -50,6 +50,12 @@ const EMPTY_ROWS: readonly FarmRateRow[] = [];
  * post-compute filter; an earlier design draft treating it as a filter would have made
  * `row.locked` permanently `false`). A field missing from this tuple is a planner edit that
  * silently does not recompute the board.
+ *
+ * The converse obligation falls on PRODUCERS: members compared by reference here (`heroes`,
+ * `teamBuffs`, `farmPoolOverrides`) must be identity-stable across a write that changed nothing.
+ * `depsEqual` compares with `Object.is`, so a fresh-but-equal array or object reads exactly like a
+ * real edit — it drops a live respec proposal with no error surfaced. See `patchHeroInList`
+ * (`shared/lib/storage.ts`) for the guard that keeps `heroes` stable and what it cost to find.
  */
 export function readFarmDepTuple(state: PlannerStore) {
   return [

@@ -640,6 +640,36 @@ describe('staleness derivations (an input change invalidates the proposal and re
       expect(selectFarmReRankActive(state)).toBe(false);
     });
   }
+
+  // The NON-mutation counterpart to the loop above: a no-op autosave patch must leave
+  // `state.heroes` alone. See `patchHeroInList` in `@/shared/lib/storage` for what a fresh
+  // roster array does to this tuple and why it failed silently.
+  it('a NO-OP autosave patch does not invalidate the proposal: the roster array keeps its identity', () => {
+    usePlannerStore.getState().setFarmRespecReRank(true);
+    const before = usePlannerStore.getState().heroes;
+    const rebuilt = normalizeHero({ ...structuredClone(before[0]), updatedAt: before[0].updatedAt + 700 });
+    usePlannerStore.getState().patchHero(rebuilt);
+
+    const state = usePlannerStore.getState();
+    expect(state.heroes).toBe(before);
+    expect(selectFarmRespecIsStale(state)).toBe(false);
+    expect(selectFarmRespecView(state)).toBe(state.farmRespecProposal);
+    expect(selectFarmRespecStatus(state)).toBe('done');
+    expect(selectFarmReRankActive(state)).toBe(true);
+  });
+
+  it('an autosave patch that DID change the hero still invalidates the proposal', () => {
+    usePlannerStore.getState().setFarmRespecReRank(true);
+    const before = usePlannerStore.getState().heroes;
+    usePlannerStore.getState().patchHero({ ...before[0], level: before[0].level + 1 });
+
+    const state = usePlannerStore.getState();
+    expect(state.heroes).not.toBe(before);
+    expect(selectFarmRespecIsStale(state)).toBe(true);
+    expect(selectFarmRespecView(state)).toBeNull();
+    expect(selectFarmRespecStatus(state)).toBe('idle');
+    expect(selectFarmReRankActive(state)).toBe(false);
+  });
 });
 
 describe('selectFarmBoardRows (proposed rows compute ONLY in re-rank mode)', () => {

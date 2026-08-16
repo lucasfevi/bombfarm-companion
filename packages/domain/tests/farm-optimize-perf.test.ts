@@ -69,3 +69,50 @@ describe('the evaluation budget binds, and a truncated search still returns a va
     expect(Number.isNaN(search.winner.value)).toBe(false);
   });
 });
+
+// ---------------------------------------------------------------------------------------------
+// Wall time.
+// ---------------------------------------------------------------------------------------------
+/**
+ * The evaluation-count budget above is structurally incapable of catching a regression that
+ * leaves the COUNT unchanged and makes each evaluation more expensive — which is exactly the
+ * shape the hop-distribution change had: same candidate count, costlier per-candidate cadence
+ * math. Cost per evaluation needs its own assertion, and only wall time measures it.
+ *
+ * MEASURED BASELINE (developer machine, Windows, Node 24, 8 consecutive solves on the committed
+ * 5-hero fixture): 220-241 ms, median ~224 ms. Best-of-3 is asserted rather than a single sample,
+ * so one GC pause or scheduler hiccup cannot fail the suite.
+ *
+ * What this guard IS: a blowup detector. The ceiling is FARM_SOLVE_MAX_MS below — roughly 10x the
+ * local baseline, and still ~4x the headroom left on a CI runner three times slower than this
+ * machine. A 5x regression trips it even on such a runner (5 x 670 ms > the ceiling); anything
+ * tighter would flake.
+ *
+ * What it is NOT: a defence of the web planner's 700ms autosave race. A 2-3x drift is enough to
+ * lose that race and this ceiling is deliberately blind to it. Drift that small has to be caught
+ * by reading the logged measurement below, which is why it is logged on a PASS and not only in
+ * the failure message.
+ */
+const FARM_SOLVE_MAX_MS = 2_500;
+const FARM_SOLVE_SAMPLES = 3;
+
+describe('a full Tier 2 solve stays inside its wall-time ceiling', () => {
+  it(`the fastest of ${FARM_SOLVE_SAMPLES} full solves on the fixture is under ${FARM_SOLVE_MAX_MS}ms`, () => {
+    let fastestMs = Number.POSITIVE_INFINITY;
+    let result!: ReturnType<typeof solveFarmRespec>;
+    for (let sample = 0; sample < FARM_SOLVE_SAMPLES; sample++) {
+      const startedAt = performance.now();
+      result = solveFarmRespec({ heroes, account, maxPhase });
+      fastestMs = Math.min(fastestMs, performance.now() - startedAt);
+    }
+    // The solve must have actually run — a degenerate no-op would pass any time bound.
+    // (`budgetExhausted` is asserted on this same call in the describe above.)
+    expect(result.evaluations).toBeGreaterThan(0);
+    // Logged on a pass so a sub-ceiling drift is visible in CI output — see the note above.
+    console.log(`[perf] full Tier 2 solve: ${fastestMs.toFixed(0)}ms (baseline ~224ms)`);
+    expect(
+      fastestMs,
+      `full solve took ${fastestMs.toFixed(0)}ms (baseline ~224ms, ceiling ${FARM_SOLVE_MAX_MS}ms)`,
+    ).toBeLessThan(FARM_SOLVE_MAX_MS);
+  });
+});
