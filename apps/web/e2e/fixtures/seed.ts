@@ -12,6 +12,25 @@ const PHASES_VIEW_KEY = 'bf-hp-phases-view-v1';
 const LANG_KEY = 'bf_lang';
 const GUIDE_HIDDEN_KEY = 'bf_guide_hidden';
 
+/**
+ * One-shot storage-migration markers, seeded as already-done.
+ *
+ * Seeded heroes are authored in CURRENT units, so replaying a legacy conversion over them would
+ * corrupt them. More importantly it breaks reload-stability: `seedLocalStorage` uses
+ * `addInitScript`, which re-writes the heroes key on EVERY navigation, but the markers a
+ * migration writes are not re-written by it. Without these, the first load migrates the seed and
+ * saves the result, then a `page.reload()` restores the raw seed while the marker persists — so
+ * the migration no longer runs and storage differs before/after. Any test asserting
+ * "storage is byte-identical across a reload" then fails for a reason that has nothing to do with
+ * what it is testing (`farm-ranking.spec.ts`, `team-plan-states.spec.ts`).
+ *
+ * Add the marker here whenever a new one-shot migration lands in `storage.ts`.
+ */
+const MIGRATION_MARKER_KEYS = [
+  'bf-hp-critdmg-flat-migrated-v1',
+  'bf-hp-critchance-flat-migrated-v1',
+] as const;
+
 export type SeededState = {
   heroes: HeroRecord[];
   activeHeroId?: string;
@@ -213,6 +232,9 @@ export async function seedLocalStorage(page: Page, state: SeededState): Promise<
       localStorage.setItem(keys.guideHidden, guideHidden ? '1' : '0');
       if (phasesView) localStorage.setItem(keys.phasesView, JSON.stringify(phasesView));
       else localStorage.removeItem(keys.phasesView);
+      // Re-asserted on every navigation, exactly like the heroes key above — see
+      // MIGRATION_MARKER_KEYS for why these have to move together with it.
+      for (const marker of keys.migrationMarkers) localStorage.setItem(marker, 'true');
     },
     {
       ...payload,
@@ -224,6 +246,7 @@ export async function seedLocalStorage(page: Page, state: SeededState): Promise<
         lang: LANG_KEY,
         guideHidden: GUIDE_HIDDEN_KEY,
         phasesView: PHASES_VIEW_KEY,
+        migrationMarkers: [...MIGRATION_MARKER_KEYS],
       },
     },
   );
