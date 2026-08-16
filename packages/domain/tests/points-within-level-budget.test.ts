@@ -127,13 +127,25 @@ describe('spent stat points never exceed the hero level (corpus sweep)', () => {
   /**
    * Non-vacuity, re-measured after the 2026-08-15 patch narrowed the swept set. It used to reach
    * 20+ heroes across several fixture directories; excluding the pre-patch captures
-   * ({@link PRE_2026_08_15_PATCH_CAPTURES}) leaves the 16 hero-instances of the two post-patch
-   * exports, all under `sheet-math/`. The directory-spread half of this guard is therefore GONE,
-   * not merely relaxed — and it comes back on its own the moment a post-patch capture lands in
+   * ({@link PRE_2026_08_15_PATCH_CAPTURES}) leaves the TWO post-redistribution exports —
+   * `save-20260816-9heroes-redistrib.json` (9 heroes) and `save-20260816-5heroes-gear-cdr-crit.json`
+   * (5) — both under `sheet-math/`.
+   *
+   * The directory-spread half of this guard is therefore GONE, not merely relaxed, and the count
+   * is what carries it instead. It comes back on its own the moment a post-patch capture lands in
    * another directory, which is why the exclusion list is explicit and the walk is not.
+   *
+   * The per-file breakdown is asserted, not just the total: a total alone would stay green if one
+   * capture stopped being swept while another grew, which is the failure this guard exists for.
    */
   it('non-vacuity: the walk finds every post-redistribution capture, with heroes in them', () => {
-    expect(SUBJECTS.length, `walked ${FIXTURES_DIR}`).toBe(9);
+    const byFile = new Map<string, number>();
+    for (const s of SUBJECTS) byFile.set(s.file, (byFile.get(s.file) ?? 0) + 1);
+    expect(Object.fromEntries([...byFile].sort()), `walked ${FIXTURES_DIR}`).toEqual({
+      'sheet-math/save-20260816-5heroes-gear-cdr-crit.json': 5,
+      'sheet-math/save-20260816-9heroes-redistrib.json': 9,
+    });
+    expect(SUBJECTS.length).toBe(14);
     const dirs = new Set(SUBJECTS.map((s) => s.file.split('/')[0]));
     expect(dirs, `capture directories reached: ${[...dirs].join(', ')}`).toEqual(new Set(['sheet-math']));
   });

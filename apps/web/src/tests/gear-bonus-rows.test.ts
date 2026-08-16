@@ -45,7 +45,7 @@ describe('gearBonusRows', () => {
     expect(rows.every((r) => r.clone === undefined && r.delta === undefined)).toBe(true);
   });
 
-  it('scales percentage keys to their display value (×100) but leaves dmgFlat raw', () => {
+  it('scales pool-fraction keys to their display value (×100) but leaves dmgFlat raw', () => {
     const rows = gearBonusRows(current, t);
     const dmg = rows.find((r) => r.key === 'dmgFlat')!;
     const energy = rows.find((r) => r.key === 'energyPct')!;
@@ -53,6 +53,22 @@ describe('gearBonusRows', () => {
     expect(dmg.percent).toBe(false);
     expect(energy.current).toBe(10); // 0.1 * 100
     expect(energy.percent).toBe(true);
+  });
+
+  // The regression the flat-crit change introduced and this pins: `critFlatPct` / `cdrFlatPct`
+  // are ALREADY planner percentage points (`sumGearBonuses` converts once, on the way in), so
+  // they carry the `%` suffix but must not be scaled a second time. A real nv300 crit roll of
+  // ~7.4pp rendered as "+744.0%" before this was separated from the suffix flag.
+  it('does NOT rescale the flat crit/CDR keys — they are already in display units', () => {
+    const rows = gearBonusRows(current, t, clone);
+    const crit = rows.find((r) => r.key === 'critFlatPct')!;
+    const cdr = rows.find((r) => r.key === 'cdrFlatPct')!;
+    expect(crit.current).toBe(0.15);
+    expect(crit.clone).toBe(0.25);
+    expect(crit.delta).toBeCloseTo(0.1, 12);
+    expect(crit.percent).toBe(true);
+    expect(cdr.current).toBe(0.08);
+    expect(cdr.delta).toBe(0);
   });
 
   it('computes clone value and delta (in display units) when a clone is supplied', () => {

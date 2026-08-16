@@ -111,9 +111,9 @@ describe('the fixture reports a bounded, correctly-shaped plateau', () => {
     // collapses to a single point. That is spec-sanctioned behaviour, not an accident: min and
     // max both equal the winner's own share, never null, never an invented width.
     //
-    // RE-MEASURED THREE TIMES, every time because the winning BUILD moved — never the plateau
-    // logic. The single-point collapse is unchanged throughout.
-    // The single-point collapse the comment above describes is unchanged throughout.
+    // RE-MEASURED FOUR TIMES, every time because the winning BUILD moved — never the plateau
+    // logic. The single-point collapse is unchanged throughout. Chronological; the LAST entry is
+    // always the value asserted below.
     //   0.4744  original
     //   0.4937  House-ceiling fix: rest seconds now come from the fixture's own
     //           `casa.cycle_secs` (1181.05s) rather than the `HOUSES` table (1102s), and a longer
@@ -123,12 +123,12 @@ describe('the fixture reports a bounded, correctly-shaped plateau', () => {
     //           marginal value drops sharply, the winning build stops spending on it, and the
     //           freed pool goes to Energy. Same direction as the rank inversion pinned in
     //           `farm-point-rank.test.ts`, where energy overtakes speed outright.
-    //   0.5217  2026-08-16 item redistribution: chest/pants now lead Penetração/Recarga, so
-    //           the winning build's gear mix shifts and the split moves again.
     //   0.5000  2026-08-15 patch: crit chance and CDR became flat addends
     //           (`POINT_GAIN.critChanceFlat` / `.cdrFlat`). Both per-point gains collapsed by
     //           more than an order of magnitude, so neither stat competes for the pool any more
     //           and the split reverts toward the attack/energy pair.
+    //   0.5217  2026-08-16 item redistribution: chest/pants now lead Penetração/Recarga, so the
+    //           winning build's gear mix shifts and the split moves once more. ← asserted below
     expect(plateau.minEnergyShare).toBeCloseTo(0.5217391304347826, 4);
     expect(plateau.maxEnergyShare).toBeCloseTo(0.5217391304347826, 4);
     expect(plateau.minEnergyShare).toBe(plateau.maxEnergyShare);
