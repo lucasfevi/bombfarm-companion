@@ -330,12 +330,12 @@ function heroRecordsValueEqual(left: HeroRecord, right: HeroRecord): boolean {
  * hits — see {@link heroRecordsValueEqual} for the comparison and why `updatedAt` is excluded.
  *
  * Scope: this guards STATE identity only. `upsertHero` above still runs its `saveHeroes` /
- * `writeJson` on a no-op fire, and `patchHero` (`roster-slice.ts`) still calls `set` with the
- * (now identical) array. `writeHeroBattleAllowed` in `persistence/persist-roster.ts` holds the
- * same return-the-same-array contract but guards one level earlier — its compare sits BEFORE
- * `saveHeroes`, and `roster-slice.ts` early-returns on `next === state.heroes` so `set` is never
- * called at all. Skipping the redundant write here would change `upsertHero`'s save semantics and
- * is deliberately left alone.
+ * `writeJson` on a no-op fire. `writeHeroBattleAllowed` (`persistence/persist-roster.ts`) and
+ * {@link importHeroes} below hold the same return-the-same-array contract; the first guards one
+ * level earlier, its compare sitting BEFORE `saveHeroes`. The consumer half lives in
+ * `roster-slice.ts`'s `commitRoster`, which declines to `set` when the returned reference is
+ * unchanged. Skipping the redundant write here would change `upsertHero`'s save semantics and is
+ * deliberately left alone.
  */
 export function patchHeroInList(heroes: HeroRecord[], saved: HeroRecord): HeroRecord[] {
   const existingIndex = heroes.findIndex((hero) => hero.id === saved.id);
@@ -366,6 +366,22 @@ export function patchHeroInList(heroes: HeroRecord[], saved: HeroRecord): HeroRe
  * create/update-only behavior; `removed` is always `0` in that case. AC-27: this sync takes
  * only heroes/records/sourceIds — no account identifier or save-generation timestamp field
  * is part of its input shape at all, so none can gate a removal.
+ *
+ * Returns the SAME `heroes` array reference when the sync changed nothing — no record created,
+ * none removed, and every merged record value-equal (per {@link heroRecordsValueEqual}, which
+ * ignores the `updatedAt` stamp `mergeImportedHero` refreshes) to the one it replaced. Same
+ * contract, same reason as {@link patchHeroInList}: `state.heroes` is member 0 of
+ * `readFarmDepTuple` (`stores/selectors/farm-ranking-selectors.ts`), compared with `Object.is`,
+ * so a fresh-but-equal array reads as a real planner edit and silently drops a live farm-respec
+ * proposal. Re-importing an unchanged save file used to do exactly that.
+ *
+ * Two things this deliberately does NOT change:
+ * - `created`/`updated`/`removed` keep their meaning. `updated` still counts every record
+ *   matched and overwritten from the save, value-equal merges included — the counts report what
+ *   the save touched, not whether the data moved, and the import summary UI reads them that way.
+ * - Save semantics. `saveHeroes(next)` below still writes the freshly-merged, freshly-stamped
+ *   records on a no-op import, exactly as before; only the RETURNED array's identity changes.
+ *   Same scope as `patchHeroInList`: the guard protects in-memory state, not the write.
  */
 export function importHeroes(
   heroes: HeroRecord[],
@@ -375,14 +391,20 @@ export function importHeroes(
   let next = [...heroes];
   let created = 0;
   let updated = 0;
+  // Tracks whether any record's DATA moved — independent of `created`/`updated`, which count
+  // what the save touched. Only this decides which array reference comes back.
+  let dataChanged = false;
   for (const record of records) {
     const existingIndex = next.findIndex((hero) => hero.sourceId === record.sourceId);
     if (existingIndex >= 0) {
-      next[existingIndex] = normalizeHero(mergeImportedHero(next[existingIndex], record));
+      const merged = normalizeHero(mergeImportedHero(next[existingIndex], record));
+      if (!heroRecordsValueEqual(next[existingIndex], merged)) dataChanged = true;
+      next[existingIndex] = merged;
       updated++;
     } else {
       next.push(normalizeHero({ ...record, id: uid(), updatedAt: Date.now() }));
       created++;
+      dataChanged = true;
     }
   }
 
@@ -397,7 +419,11 @@ export function importHeroes(
 
   saveHeroes(next);
   if (removed > 0) reconcileActiveHero(next);
-  return { heroes: next, created, updated, removed };
+  // `next` starts as a copy of `heroes` and the filter above only ever drops entries, so
+  // "nothing created, nothing removed, every merge value-equal" means `next` is element-wise
+  // equal to `heroes` — the original reference is the safe one to hand back.
+  const settled = dataChanged || removed > 0 ? next : heroes;
+  return { heroes: settled, created, updated, removed };
 }
 
 export function deleteHero(heroes: HeroRecord[], heroId: string): HeroRecord[] {
