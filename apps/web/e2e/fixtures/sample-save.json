@@ -100,7 +100,7 @@
   ],
   "items": [
     {
-      "def_id": "steel_amuleto",
+      "def_id": "gold_amuleto",
       "equip_slot": 7,
       "equipped_on": "1001",
       "id": "27133",
@@ -109,7 +109,7 @@
       "upgrade": 10
     },
     {
-      "def_id": "steel_anel",
+      "def_id": "gold_anel",
       "equip_slot": 2,
       "equipped_on": "1004",
       "id": "27134",

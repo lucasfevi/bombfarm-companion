@@ -90,6 +90,9 @@ export const SlotEditor = memo(function SlotEditor({
           </span>
         )}
       </div>
+      {/* One level is one set (`setsByLevel` is a bijection — guarded in `@bombfarm/domain`),
+          so the set name rides in the level option label instead of a second, single-option
+          select. The user still picks a LEVEL here; the set follows from it. */}
       <Select
         size="compact"
         aria-label={t.itemLevel}
@@ -103,27 +106,10 @@ export const SlotEditor = memo(function SlotEditor({
       >
         {ITEM_LEVELS.map((levelOption) => (
           <option key={levelOption} value={levelOption}>
-            {sub(t.itemLevelOpt, { n: levelOption })}
-          </option>
-        ))}
-      </Select>
-      <Select
-        size="compact"
-        aria-label={t.itemSet}
-        title={t.itemSet}
-        value={setId}
-        onChange={(event) =>
-          onPatch(slot, {
-            defId: defsForSlot(slot, event.target.value)[0]?.id,
-            level: level,
-            rarityIdx: equipped?.rarityIdx ?? 0,
-            upgrade,
-          })
-        }
-      >
-        {sets.map((setOption) => (
-          <option key={setOption} value={setOption}>
-            {setName(setOption, lang)}
+            {sub(t.itemLevelOpt, {
+              n: levelOption,
+              set: setName(setsForLevel(levelOption)[0] ?? '', lang),
+            })}
           </option>
         ))}
       </Select>

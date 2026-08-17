@@ -95,7 +95,9 @@ export const scenarios: Scenario[] = [
     },
     run: async (page, target) => {
       const label = await target.innerText()
-      // Flip between level 10 and 20 (labels look like "Nível 10" / "Level 10").
+      // Flip between level 10 and 20. Since #106 the level label also carries the set the level
+      // implies — "Nível 10 - Brasa" / "Level 20 - Gold" — so both the digit probe below and the
+      // option name below it are deliberately loose about what follows the number.
       const goTo20 = /(?:^|\D)10(?:\D|$)/.test(label)
       await target.click()
       const opt = page.getByRole('option', {

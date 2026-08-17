@@ -221,6 +221,23 @@ const FARM_RESPEC_KEYS_ADDED = [
  */
 const CRIT_DMG_FLAT_KEYS_ADDED = ['bdNoteBrutalStrike'] as const;
 
+/**
+ * The gear slot editor's set select is gone (#106): `catalog.setsByLevel` is a bijection, so that
+ * control could only ever offer one option. `itemSet` was its `aria-label`/`title` and has no
+ * other reader, so it is retired with the control rather than left as an orphan string. Same
+ * shape as `RANK_MODE_KEYS_REMOVED` above — the fixture is frozen, so parity subtracts this list.
+ */
+export const ITEM_SET_KEYS_REMOVED = ['itemSet'] as const;
+
+/**
+ * The set name moved INTO the surviving level option's label, so `itemLevelOpt`'s VALUE gains a
+ * `{set}` placeholder in both languages ("Level {n} - {set}" / "Nível {n} - {set}"). The key
+ * survives, so this is an edited leaf path, not an added or removed key. `itemLevel` is NOT here:
+ * the level select's accessible name is unchanged — the user still picks a level, and the set the
+ * level implies is spelled out in the option text the control reads out with it.
+ */
+const ITEM_SET_PROSE_EDITED_PATHS = ['itemLevelOpt'].sort();
+
 function diffLeafPaths(a: unknown, b: unknown, path: string[] = [], out: string[] = []): string[] {
   if (a === b) return out;
   const aIsObj = a !== null && typeof a === 'object';
@@ -261,15 +278,20 @@ describe('i18n split parity', () => {
   // *minus* that enumerated list (AD-081) — every unlisted drift stays fatal in both
   // directions, and the list itself cannot silently grow or shrink (see the three
   // assertions below).
-  it('STRINGS.en differs from the frozen fixture (minus removed keys) at exactly the enumerated prose edits plus F4\'s, Farm Ranking\'s, Farm Respec Advisor\'s and the rank-mode retirement\'s new keys', () => {
+  it('STRINGS.en differs from the frozen fixture (minus removed keys) at exactly the enumerated prose edits — including the set-select removal\'s — plus F4\'s, Farm Ranking\'s, Farm Respec Advisor\'s and the rank-mode retirement\'s new keys', () => {
     const diffs = diffLeafPaths(
       STRINGS.en,
-      omitKeys(fixture.en, [...KEYSTONE_KEYS_REMOVED, ...RANK_MODE_KEYS_REMOVED]),
+      omitKeys(fixture.en, [
+        ...KEYSTONE_KEYS_REMOVED,
+        ...RANK_MODE_KEYS_REMOVED,
+        ...ITEM_SET_KEYS_REMOVED,
+      ]),
     ).sort();
     expect(diffs).toEqual(
       [
         ...KEYSTONE_PROSE_EDITED_PATHS,
         ...RANK_MODE_PROSE_EDITED_PATHS,
+        ...ITEM_SET_PROSE_EDITED_PATHS,
         ...F4_KEYS_ADDED,
         ...FARM_RANKING_KEYS_ADDED,
         ...FARM_RESPEC_KEYS_ADDED,
@@ -279,15 +301,20 @@ describe('i18n split parity', () => {
     );
   });
 
-  it('STRINGS.pt differs from the frozen fixture (minus removed keys) at exactly the enumerated prose edits plus F4\'s, Farm Ranking\'s, Farm Respec Advisor\'s and the rank-mode retirement\'s new keys', () => {
+  it('STRINGS.pt differs from the frozen fixture (minus removed keys) at exactly the enumerated prose edits — including the set-select removal\'s — plus F4\'s, Farm Ranking\'s, Farm Respec Advisor\'s and the rank-mode retirement\'s new keys', () => {
     const diffs = diffLeafPaths(
       STRINGS.pt,
-      omitKeys(fixture.pt, [...KEYSTONE_KEYS_REMOVED, ...RANK_MODE_KEYS_REMOVED]),
+      omitKeys(fixture.pt, [
+        ...KEYSTONE_KEYS_REMOVED,
+        ...RANK_MODE_KEYS_REMOVED,
+        ...ITEM_SET_KEYS_REMOVED,
+      ]),
     ).sort();
     expect(diffs).toEqual(
       [
         ...KEYSTONE_PROSE_EDITED_PATHS,
         ...RANK_MODE_PROSE_EDITED_PATHS,
+        ...ITEM_SET_PROSE_EDITED_PATHS,
         ...F4_KEYS_ADDED,
         ...FARM_RANKING_KEYS_ADDED,
         ...FARM_RESPEC_KEYS_ADDED,
@@ -308,10 +335,16 @@ describe('i18n split parity', () => {
     }
   });
 
-  it('sorted key-name list is unchanged vs fixture minus the removed keystone/rank-mode keys, plus F4\'s, Farm Ranking\'s, Farm Respec Advisor\'s and the rank-mode retirement\'s new keys', () => {
+  it('sorted key-name list is unchanged vs fixture minus the removed keystone/rank-mode/item-set keys, plus F4\'s, Farm Ranking\'s, Farm Respec Advisor\'s and the rank-mode retirement\'s new keys', () => {
     const fromSplit = Object.keys(STRINGS.en).sort();
     const fromFixture = [
-      ...Object.keys(omitKeys(fixture.en, [...KEYSTONE_KEYS_REMOVED, ...RANK_MODE_KEYS_REMOVED])),
+      ...Object.keys(
+        omitKeys(fixture.en, [
+          ...KEYSTONE_KEYS_REMOVED,
+          ...RANK_MODE_KEYS_REMOVED,
+          ...ITEM_SET_KEYS_REMOVED,
+        ]),
+      ),
       ...F4_KEYS_ADDED,
       ...FARM_RANKING_KEYS_ADDED,
       ...FARM_RESPEC_KEYS_ADDED,
@@ -405,6 +438,52 @@ describe('i18n split parity', () => {
       expect(key in STRINGS.en, `${key} missing from STRINGS.en`).toBe(true);
       expect(key in STRINGS.pt, `${key} missing from STRINGS.pt`).toBe(true);
     }
+  });
+
+  it('ITEM_SET_KEYS_REMOVED has exactly 1 entry', () => {
+    expect(ITEM_SET_KEYS_REMOVED.length).toBe(1);
+  });
+
+  it('every ITEM_SET_KEYS_REMOVED key was present in the frozen fixture, both languages', () => {
+    for (const key of ITEM_SET_KEYS_REMOVED) {
+      expect(key in fixture.en, `${key} missing from fixture.en`).toBe(true);
+      expect(key in fixture.pt, `${key} missing from fixture.pt`).toBe(true);
+    }
+  });
+
+  it('every ITEM_SET_KEYS_REMOVED key is absent from STRINGS, both languages', () => {
+    for (const key of ITEM_SET_KEYS_REMOVED) {
+      expect(key in STRINGS.en, `${key} still present in STRINGS.en`).toBe(false);
+      expect(key in STRINGS.pt, `${key} still present in STRINGS.pt`).toBe(false);
+    }
+  });
+
+  it('ITEM_SET_PROSE_EDITED_PATHS has exactly 1 entry, whose key survives in both the fixture and STRINGS with a changed value, both languages', () => {
+    expect(ITEM_SET_PROSE_EDITED_PATHS.length).toBe(1);
+    for (const key of ITEM_SET_PROSE_EDITED_PATHS) {
+      expect(key in fixture.en, `${key} missing from fixture.en`).toBe(true);
+      expect(key in fixture.pt, `${key} missing from fixture.pt`).toBe(true);
+      expect(key in STRINGS.en, `${key} missing from STRINGS.en`).toBe(true);
+      expect(key in STRINGS.pt, `${key} missing from STRINGS.pt`).toBe(true);
+      const typedKey = key as keyof Strings;
+      expect(STRINGS.en[typedKey], `${key} unchanged in EN — nothing to enumerate`).not.toBe(
+        fixture.en[typedKey],
+      );
+      expect(STRINGS.pt[typedKey], `${key} unchanged in PT — nothing to enumerate`).not.toBe(
+        fixture.pt[typedKey],
+      );
+    }
+  });
+
+  it('the combined level option label carries both placeholders, in both languages', () => {
+    for (const lang of ['en', 'pt'] as const) {
+      expect(STRINGS[lang].itemLevelOpt).toContain('{n}');
+      expect(STRINGS[lang].itemLevelOpt).toContain('{set}');
+      // The separator the design asks for: space-hyphen-space between level and set.
+      expect(STRINGS[lang].itemLevelOpt).toMatch(/\{n\} - \{set\}$/);
+    }
+    expect(sub(STRINGS.en.itemLevelOpt, { n: 300, set: 'Void' })).toBe('Level 300 - Void');
+    expect(sub(STRINGS.pt.itemLevelOpt, { n: 300, set: 'Vazio' })).toBe('Nível 300 - Vazio');
   });
 
   it('sub() behaves identically on existing fixtures', () => {
