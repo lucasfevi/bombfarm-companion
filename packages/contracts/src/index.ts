@@ -67,7 +67,6 @@ export interface InventoryItem {
   locked: boolean;
   equippedOn: string | null;
   equipSlot: Slot | null;
-  iconUrl: string;
 }
 
 export interface HeroEnergy {
