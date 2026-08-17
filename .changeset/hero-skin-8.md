@@ -4,8 +4,8 @@
 ---
 
 Adds the 8th cosmetic hero appearance so a hero saved with `skin: 7` stops rendering someone
-else's face, refreshes all 8 avatars from the wiki, and adds a guard test so the next new
-appearance cannot go missing unnoticed.
+else's face, refreshes all 8 avatars from the wiki, and adds a guard test against half-applied
+edits to the skin table.
 
 The game ships 8 cosmetic appearances, but `HERO_SKIN_COUNT` was 7 and `SKIN_AVATAR_FILE` had
 only seven entries. `heroAvatarSrc` indexes that array and falls back to `?? 1`, so skin 7 fell
@@ -27,8 +27,12 @@ and reset to the neutral placeholder `0`, discarding the real value on disk.
 - **A new guard** in the `bundled wiki assets` suite resolves every skin index `0..N-1` through
   `heroAvatarSrc` and asserts the file exists, then asserts the reverse — that no bundled
   `hero{N}_avatar.png` is unreachable from a skin index — and that no two indices resolve to the
-  same file, which is the `?? 1` fallback's signature. This is the check that would have caught
-  the missing 8th appearance.
+  same file, which is the `?? 1` fallback's signature. Its scope is deliberately narrow: it
+  catches a **half-applied** skin edit (count raised without art, art added without the count,
+  two indices sharing a file). It would **not** have caught this bug — with `HERO_SKIN_COUNT = 7`
+  and seven bundled files the guard is green, because the table and the bundle agreed with each
+  other and only disagreed with the game. Noticing *that* needs a signal from outside the app,
+  which nothing currently watches.
 
 The free/premium split of the 8 appearances is not surfaced anywhere in the UI; this change is
 art and indexing only.

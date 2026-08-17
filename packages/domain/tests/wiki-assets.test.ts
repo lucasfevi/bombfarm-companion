@@ -10,6 +10,10 @@ describe('heroAvatarSrc display map', () => {
     expect(heroAvatarSrc(6)).toBe('/wiki-assets/hero/hero7_avatar.png');
   });
 
+  // PROVISIONAL: skin 7 → file 8 is inferred from `file = index + 1` holding for indices 3..6,
+  // not confirmed against an in-game save carrying `skin: 7`. The hero2/hero3 swap at the front
+  // of the table is standing proof that wiki numbering CAN diverge from the in-game index, so if
+  // a real skin-7 save ever contradicts this, fix `SKIN_AVATAR_FILE` — do not "fix" the test.
   it('maps the 8th skin to its own file instead of falling back to skin 1', () => {
     expect(HERO_SKIN_COUNT).toBe(8);
     expect(heroAvatarSrc(7)).toBe('/wiki-assets/hero/hero8_avatar.png');

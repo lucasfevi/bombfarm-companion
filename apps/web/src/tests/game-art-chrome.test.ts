@@ -63,10 +63,17 @@ describe('bundled wiki assets', () => {
 
   /**
    * Same failure shape as the item guard, one table further along: `heroAvatarSrc` indexes a
-   * fixed array and falls back to `?? 1`, so a skin the game added but the bundle has not
-   * renders ANOTHER hero's face — wrong art, not a missing image, so nothing errors. The
-   * reverse direction catches a file added without raising `HERO_SKIN_COUNT`, which is exactly
-   * how the 8th appearance sat unreachable in the bundle.
+   * fixed array and falls back to `?? 1`, so an index with no bundled file renders ANOTHER
+   * hero's face — wrong art, not a missing image, so nothing errors.
+   *
+   * SCOPE — read before trusting this to catch the next appearance. This enforces a bijection
+   * between `SKIN_AVATAR_FILE` and the bundled files: a half-applied edit (bumping the count
+   * without adding art, adding art without raising the count, or pointing two indices at one
+   * file) fails here. It CANNOT tell that the *game* has more appearances than the code knows
+   * about — with `HERO_SKIN_COUNT = 7` and seven bundled files, the pre-#98 state, this test is
+   * green. That gap is real and unguarded: detecting it needs an external signal about the
+   * game's skin count, which nothing in the app observes. The wiki drift job is the only thing
+   * positioned to notice, and it does not track this field today.
    */
   it('ships hero art for every skin index, and bundles no unreachable hero art', () => {
     const dir = resolve(root, 'public/wiki-assets/hero');
