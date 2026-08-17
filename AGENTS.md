@@ -29,6 +29,7 @@ This repository contains **application code only**. Do not invent planning/spec 
 
 ```bash
 pnpm install
+pnpm build
 pnpm typecheck
 pnpm lint
 pnpm test
@@ -36,6 +37,11 @@ pnpm --filter @bombfarm/domain test
 pnpm --filter @bombfarm/web test
 pnpm test:smoke   # Windows — builds static renderer + launches Electron
 ```
+
+`pnpm build` is not optional and has to come first: the workspace packages publish their types
+and entry points from `dist/` (`packages/domain`'s `exports` map, for one, points every subpath
+at `./dist/**`), so on a freshly cloned tree `pnpm typecheck`, `pnpm lint` and the desktop vitest
+project all fail to resolve them until the packages are built.
 
 ## Conventions
 
