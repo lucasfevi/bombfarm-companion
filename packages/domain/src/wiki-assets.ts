@@ -31,16 +31,18 @@ const defById = new Map(catalog.defs.map((definition) => [definition.id, definit
 
 /**
  * Bundled cosmetic skin count (`hero1`…`heroN` under `public/wiki-assets/hero/`).
- * Wiki CDN currently serves 1–3 only; 4–7 were extracted from the game client.
+ * All 8 are mirrored from the wiki CDN, which serves the full set at 192x192.
  * Raise this when adding a new `hero{N}_avatar.png`.
  */
-export const HERO_SKIN_COUNT = 7;
+export const HERO_SKIN_COUNT = 8;
 
 /**
  * Save `skin` → bundled `hero{N}_avatar.png` N.
  * Wiki filenames `hero2` / `hero3` are swapped vs in-game skin 1 / 2.
+ * Skin 7 → file 8 is INFERRED from the identity mapping that holds for indices 3..6;
+ * it has not been confirmed against an in-game save carrying `skin: 7`.
  */
-const SKIN_AVATAR_FILE = [1, 3, 2, 4, 5, 6, 7] as const;
+const SKIN_AVATAR_FILE = [1, 3, 2, 4, 5, 6, 7, 8] as const;
 
 /** Save `skin` 0..(HERO_SKIN_COUNT-1) → bundled avatar path. */
 export function heroAvatarSrc(skin: number): string {

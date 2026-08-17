@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { existsSync, readFileSync, readdirSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { ABILITIES } from '@bombfarm/domain/model';
-import { itemIconSrc } from '@bombfarm/domain/wiki-assets';
+import { HERO_SKIN_COUNT, heroAvatarSrc, itemIconSrc } from '@bombfarm/domain/wiki-assets';
 import catalog from '@bombfarm/domain/data/catalog.json';
 import { STRINGS } from '@/shared/i18n';
 
@@ -59,6 +59,44 @@ describe('bundled wiki assets', () => {
     const dir = resolve(root, 'public/wiki-assets/items');
     const orphaned = readdirSync(dir).filter((f) => !wanted.has(f));
     expect(orphaned, 'bundled item art no catalog def points at').toEqual([]);
+  });
+
+  /**
+   * Same failure shape as the item guard, one table further along: `heroAvatarSrc` indexes a
+   * fixed array and falls back to `?? 1`, so an index with no bundled file renders ANOTHER
+   * hero's face — wrong art, not a missing image, so nothing errors.
+   *
+   * SCOPE — read before trusting this to catch the next appearance. This enforces a bijection
+   * between `SKIN_AVATAR_FILE` and the bundled files: a half-applied edit (bumping the count
+   * without adding art, adding art without raising the count, or pointing two indices at one
+   * file) fails here. It CANNOT tell that the *game* has more appearances than the code knows
+   * about — with `HERO_SKIN_COUNT = 7` and seven bundled files, the pre-#98 state, this test is
+   * green. That gap is real and unguarded: detecting it needs an external signal about the
+   * game's skin count, which nothing in the app observes. The wiki drift job is the only thing
+   * positioned to notice, and it does not track this field today.
+   */
+  it('ships hero art for every skin index, and bundles no unreachable hero art', () => {
+    const dir = resolve(root, 'public/wiki-assets/hero');
+    const wanted = new Set<string>();
+    const missing: string[] = [];
+
+    for (let skin = 0; skin < HERO_SKIN_COUNT; skin += 1) {
+      const src = heroAvatarSrc(skin);
+      const file = src.slice(src.lastIndexOf('/') + 1);
+      // A duplicate here means two skin indices share one face — the `?? 1` bug's signature.
+      expect(wanted.has(file), `skin ${skin} reuses ${file}`).toBe(false);
+      wanted.add(file);
+      if (!existsSync(resolve(root, 'public', src.slice(1)))) missing.push(`skin ${skin} -> ${src}`);
+    }
+
+    expect(missing, 'skin indices whose avatar is not bundled').toEqual([]);
+
+    // Only `hero{N}_avatar.png` participates; the directory also holds a
+    // `hero6-bomb-activation/` subdirectory of unrelated sprites.
+    const bundled = readdirSync(dir).filter((f) => /^hero\d+_avatar\.png$/.test(f));
+    expect(bundled.length, 'bundled hero avatars').toBe(HERO_SKIN_COUNT);
+    const orphaned = bundled.filter((f) => !wanted.has(f));
+    expect(orphaned, 'bundled hero art no skin index points at').toEqual([]);
   });
 });
 
