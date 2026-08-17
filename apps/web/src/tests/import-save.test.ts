@@ -32,7 +32,7 @@ function rawSheetOther(abilities: Record<string, number>): SheetOtherPct {
   const mods = abilityMods(abilities);
   return {
     ...emptySheetOther(),
-    critChance: mods.sheetCritChancePctOfBase / 100,
+    critChanceFlat: mods.sheetCritChanceFlat,
     penetration: mods.sheetPenetrationRaw,
     critDmgFlat: mods.sheetCritDmgFlat,
   };
@@ -120,13 +120,24 @@ function baseSave() {
         },
         // Recomputed 2026-08-11 for the catalog v4 rebalance (item stats ×0.7): dmg,
         // penetration and luck are the amuleto's 3 rolls, so only those three move.
+        //
+        // Recomputed a THIRD time 2026-08-16 for the same-day item redistribution: the
+        // `steel_amuleto` this hero wears now rolls sorte > dmg > crit rather than
+        // dmg/penetration/luck, so energia, speed, penetration and luck all move with it.
+        //
+        // Recomputed 2026-08-16 for the flat crit-chance/CDR change. `crit_chance` moves
+        // 0.15348 → 0.61506 because this synthetic `skills.totals.crit_chance_add` (0.5148) was
+        // authored when the tree term was a FRACTION OF THE ROLL and is now read as flat
+        // percentage points — so it contributes +51.48pp rather than +51.48% of a 10pp base.
+        // The value is large for a real account but the fixture's claim is self-consistency, not
+        // plausibility: it exists to prove a well-formed hero imports with zero issues.
         stats: {
           dmg: 1031.0318879571785,
           energia: 456.7372881,
           speed: 46.223410365,
-          crit_chance: 0.15348165135,
+          crit_chance: 0.6191177975,
           crit_dmg: 2.196153846,
-          penetration: 1.504,
+          penetration: 1,
           cooldown_reduction: 0.02,
           power: 13133.6,
           luck: 0.08389992750000001,

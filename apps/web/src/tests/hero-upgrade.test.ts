@@ -13,6 +13,7 @@ import {
   type Loadout,
   type SheetStats,
 } from '@bombfarm/domain/gear';
+import { HERO_MAX_LEVEL } from '@bombfarm/domain/model';
 import { STRINGS } from '@/shared/i18n';
 
 const naked = (): SheetStats => ({
@@ -38,10 +39,13 @@ function weaponLoadout(): Loadout {
 }
 
 describe('canLevelUp / canStarUp (CTA-03)', () => {
-  it('disables Level-up at max level 100', () => {
-    expect(canLevelUp(99)).toBe(true);
-    expect(canLevelUp(100)).toBe(false);
-    expect(nextLevelStep(100)).toBe(100);
+  it('disables Level-up at max level HERO_MAX_LEVEL', () => {
+    expect(canLevelUp(HERO_MAX_LEVEL - 1)).toBe(true);
+    expect(canLevelUp(HERO_MAX_LEVEL)).toBe(false);
+    expect(nextLevelStep(HERO_MAX_LEVEL)).toBe(HERO_MAX_LEVEL);
+    // 100 was the ceiling until the 2026-08-15 patch — it must now be an ordinary level.
+    expect(canLevelUp(100)).toBe(true);
+    expect(nextLevelStep(100)).toBe(101);
   });
 
   it('disables Star-upgrade at max stars 3', () => {
@@ -81,7 +85,7 @@ describe('CTA +1 shares rescale path with stepper (CTA-01/02/04)', () => {
     const other = emptySheetOther();
     const n0 = naked();
     const geared = applyGear(n0, loadout, other);
-    const atMaxLv = rescaleHeroForLevel(n0, geared, loadout, other, 100, nextLevelStep(100));
+    const atMaxLv = rescaleHeroForLevel(n0, geared, loadout, other, HERO_MAX_LEVEL, nextLevelStep(HERO_MAX_LEVEL));
     expect(atMaxLv.naked).toBe(n0);
     expect(atMaxLv.geared).toBe(geared);
     const atMaxStars = rescaleHeroForStars(n0, geared, loadout, other, 3, nextStarsStep(3));

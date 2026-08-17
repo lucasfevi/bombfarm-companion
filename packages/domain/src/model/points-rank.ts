@@ -60,17 +60,17 @@ function deltaForStat(
       return hero.attackPerPoint;
     case 'energy':
       return hero.energyPerPoint;
+    // The three flat stats — `base[key]` deliberately does not appear for any of them.
     case 'critDmg':
-      // Flat, so `base.critDmg` deliberately does not appear here (POINT_GAIN.critDmgFlat).
       return POINT_GAIN.critDmgFlat;
+    case 'critChance':
+      return POINT_GAIN.critChanceFlat;
+    case 'cdr':
+      return POINT_GAIN.cdrFlat;
     case 'speed':
       return POINT_GAIN.speedPctOfBase * base.speed;
-    case 'critChance':
-      return POINT_GAIN.critChancePctOfBase * base.critChance;
     case 'penetration':
       return POINT_GAIN.penetrationPctOfBase * base.penetration;
-    case 'cdr':
-      return POINT_GAIN.cdrPctOfBase * base.cdr;
   }
 }
 

@@ -78,12 +78,12 @@ describe('DPS next-point ranking — golden fixture (pre-deletion, pinned byte-f
   it('Bellatrix L42 — full ranking pinned to full precision', () => {
     const result = pipelineForHero(heroByName('Bellatrix'), account, phase, mitigationPct);
     expect(pick(result.ranking)).toEqual([
-      { stat: 'attack', gainPct: 2.1124582941154824 },
-      { stat: 'energy', gainPct: 1.5502551329830805 },
-      { stat: 'critDmg', gainPct: 0.3676153005040428 },
-      { stat: 'cdr', gainPct: 0.16369137865093197 },
-      { stat: 'critChance', gainPct: 0.07314563577196509 },
-      { stat: 'penetration', gainPct: 0.00189329671158589 },
+      { stat: 'attack', gainPct: 2.1246137217022953 },
+      { stat: 'energy', gainPct: 1.3870977028320741 },
+      { stat: 'critDmg', gainPct: 0.45782958400670815 },
+      { stat: 'cdr', gainPct: 0.03330595313442153 },
+      { stat: 'critChance', gainPct: 0.017302385352824246 },
+      { stat: 'penetration', gainPct: 0.0018927950044211883 },
       { stat: 'speed', gainPct: 0 },
     ]);
   });
@@ -91,12 +91,12 @@ describe('DPS next-point ranking — golden fixture (pre-deletion, pinned byte-f
   it('Jon L38 — full ranking pinned to full precision', () => {
     const result = pipelineForHero(heroByName('Jon'), account, phase, mitigationPct);
     expect(pick(result.ranking)).toEqual([
-      { stat: 'attack', gainPct: 2.721097457578736 },
-      { stat: 'energy', gainPct: 2.400539150524539 },
-      { stat: 'critDmg', gainPct: 0.3813479185213353 },
-      { stat: 'cdr', gainPct: 0.09250544693830687 },
-      { stat: 'critChance', gainPct: 0.060468764102172834 },
-      { stat: 'penetration', gainPct: 0.0008369005070285596 },
+      { stat: 'attack', gainPct: 2.7210974575787583 },
+      { stat: 'energy', gainPct: 2.3198024157065955 },
+      { stat: 'critDmg', gainPct: 0.5097054528609979 },
+      { stat: 'cdr', gainPct: 0.03302247510199585 },
+      { stat: 'critChance', gainPct: 0.010485621252898092 },
+      { stat: 'penetration', gainPct: 0.0008367710926604488 },
       { stat: 'speed', gainPct: 0 },
     ]);
   });
@@ -104,11 +104,11 @@ describe('DPS next-point ranking — golden fixture (pre-deletion, pinned byte-f
   it('Lyra L2 — full ranking pinned to full precision', () => {
     const result = pipelineForHero(heroByName('Lyra'), account, phase, mitigationPct);
     expect(pick(result.ranking)).toEqual([
-      { stat: 'attack', gainPct: 14.754149056578392 },
+      { stat: 'attack', gainPct: 14.754149056578413 },
       { stat: 'energy', gainPct: 6.080634761133874 },
-      { stat: 'critDmg', gainPct: 0.2884809751944717 },
-      { stat: 'cdr', gainPct: 0.17317148368838353 },
-      { stat: 'critChance', gainPct: 0.0517218574636269 },
+      { stat: 'critDmg', gainPct: 0.44492036637922006 },
+      { stat: 'cdr', gainPct: 0.03325505507993931 },
+      { stat: 'critChance', gainPct: 0.011004974898831676 },
       { stat: 'penetration', gainPct: 0.0008296399027551971 },
       { stat: 'speed', gainPct: 0 },
     ]);
@@ -142,7 +142,7 @@ describe('DPS next-point ranking — CDR marginal-fuse special case (golden, pre
     const ranking = rankNextPoint(sampleHero(), baseCtx());
     const cdr = ranking.find((r) => r.stat === 'cdr')!;
     expect(cdr.gainPct).toBeGreaterThan(0);
-    expect(cdr.gainPct).toBe(0.25706940874035134);
+    expect(cdr.gainPct).toBe(0.03604375607333399);
   });
 
   it('cdr at the 80% cap: exactly zero gain, pinned to full precision', () => {
@@ -159,8 +159,8 @@ describe('DPS next-point ranking — CDR marginal-fuse special case (golden, pre
       { stat: 'attack', gainPct: 2.499999999999991 },
       { stat: 'energy', gainPct: 0.9381107491856833 },
       { stat: 'critDmg', gainPct: 0.5474452554744547 },
-      { stat: 'cdr', gainPct: 0.25706940874035134 },
-      { stat: 'critChance', gainPct: 0.10218978102187748 },
+      { stat: 'cdr', gainPct: 0.03604375607333399 },
+      { stat: 'critChance', gainPct: 0.017805839416062952 },
       { stat: 'penetration', gainPct: 0.003570058399771092 },
       { stat: 'speed', gainPct: 0 },
     ]);

@@ -16,8 +16,34 @@
  * the walk below decodes leaves back to numbers for a same-value comparison (`Object.is`) only
  * to name the first differing hero/function/stat on failure.
  *
- * RE-RECORDED at the flat-crit-damage fix (`POINT_GAIN.critDmgFlat`). Exactly 85 of the ~2500+
- * recorded scalars moved, and every one of them is downstream of crit damage:
+ * RE-RECORDED (2) at the 2026-08-15 patch, when crit chance and cooldown became flat addends
+ * (`POINT_GAIN.critChanceFlat` / `.cdrFlat`) exactly as crit damage had at the 2026-08-13 one.
+ * **461** of the ~2500+ recorded scalars moved, and every one is downstream of those two stats
+ * or is the rename that carried them:
+ *
+ * - `delta.critChance` / `delta.cdr`, `effectiveDelta.*`, `pipelineForHero.pointDelta.*` —
+ *   13 heroes × 6, the per-point rates themselves (were `0.02 × roll` and `0.1 × roll`, now the
+ *   flat `0.024394` and `0.03513`).
+ * - `ranking.gainPct` (48) — the crit-chance and CDR rows of every hero's ranking.
+ * - `effective.critChance` (18) and the `critChance` ledger totals/steps (17 + 27) — the sheet
+ *   value itself, now `birth + Σ` rather than `birth × (1 + Σ)`.
+ * - `critFactor` → `activeDps` → `sustainedDps` → `derive.dps` / `pipelineForHero.dps` /
+ *   `resetAdvice.*` (9 each) — the whole damage chain hanging off crit chance.
+ * - `computeCombatMults.teamCritPctOfBase` → `teamCritChanceFlat` (13 + 13) — a key RENAME, not
+ *   a value change; the old key disappears and the new one appears on the same 13 heroes.
+ *
+ * A second, smaller pass followed once the crit-chance LEDGER became flat too: 20 further
+ * entries, all inside `critChance.steps` — 7 `amount`, 6 `running`, 3 `source` (the gear step is
+ * a plain add now, so the tree step that used to carry `pctOfBase` provenance no longer does),
+ * and the `meta.scalarCount` that counts them.
+ *
+ * NOT moved, and the proof this was a crit-chance/CDR change and nothing else: every
+ * `inferSpentPoints.*` value on all 13 heroes (the recovered point vectors are unchanged on the
+ * pre-patch corpus this file records over), and every sheet key other than `critChance`/`cdr`.
+ *
+ * ---
+ * RE-RECORDED (1) at the flat-crit-damage fix (`POINT_GAIN.critDmgFlat`). Exactly 85 of the
+ * ~2500+ recorded scalars moved, and every one of them was downstream of crit damage:
  *
  * - `derive.delta.critDmg` / `derive.effectiveDelta.critDmg` / `pipelineForHero.pointDelta.critDmg`
  *   — 13 heroes x 3, the per-point rate itself (was `0.08 x roll`, now a flat `5`).

@@ -44,7 +44,12 @@ function assertResultIsFinite(result: FarmPointRankResult): void {
 describe('rankNextPointForFarm — discrimination: a one-shotting squad inverts the two ranking modes', () => {
   const bellatrix = heroByName('Bellatrix');
 
-  it.each([42, 5, 1])('at maxPhase %i: farm scores attack exactly 0 while energy and speed are positive', (mp) => {
+  // RE-TUNED at the 2026-08-15 patch. This used to sweep [42, 5, 1]; Bellatrix no longer
+  // one-shots at maxPhase 42 (her attack now scores 0.5721, not 0) because crit chance became a
+  // flat addend and her DPS fell with it. The regime move is REAL, so it is pinned below as its
+  // own case rather than deleted — and the one-shot claim keeps a top-of-ladder subject via Jon,
+  // who still one-shots at every phase on this fixture.
+  it.each([20, 5, 1])('at maxPhase %i: farm scores attack exactly 0 while energy and speed are positive', (mp) => {
     const result = rankNextPointForFarm({ bases, account, heroId: bellatrix.id, maxPhase: mp });
     expect(result.outcome).toBe('ranked');
     const rows = result.rows!;
@@ -55,6 +60,28 @@ describe('rankNextPointForFarm — discrimination: a one-shotting squad inverts 
     expect(energy.gainPct).toBeGreaterThan(0);
     expect(speed.gainPct).toBeGreaterThan(0);
     assertResultIsFinite(result);
+  });
+
+  it.each([42, 5, 1])('at maxPhase %i: Jon still one-shots — attack exactly 0, energy and speed positive', (mp) => {
+    const jon = heroByName('Jon');
+    const result = rankNextPointForFarm({ bases, account, heroId: jon.id, maxPhase: mp });
+    expect(result.outcome).toBe('ranked');
+    const rows = result.rows!;
+    expect(rows.find((r) => r.stat === 'attack')!.gainPct).toBe(0);
+    expect(rows.find((r) => r.stat === 'energy')!.gainPct).toBeGreaterThan(0);
+    expect(rows.find((r) => r.stat === 'speed')!.gainPct).toBeGreaterThan(0);
+    assertResultIsFinite(result);
+  });
+
+  it('Bellatrix STOPPED one-shotting at maxPhase 42 when crit chance went flat', () => {
+    // The discrimination this file rests on is that a one-shotting hero scores attack at exactly
+    // 0. Bellatrix crossed out of that regime at the 2026-08-15 patch: with crit chance a flat
+    // addend her damage per bomb no longer clears a phase-42 prop in one hit, so an attack point
+    // buys throughput again. Pinned so the crossing cannot happen a second time unnoticed.
+    const result = rankNextPointForFarm({ bases, account, heroId: bellatrix.id, maxPhase: 42 });
+    const attack = result.rows!.find((r) => r.stat === 'attack')!;
+    expect(attack.gainPct).toBeGreaterThan(0);
+    expect(attack.gainPct).toBeCloseTo(0.576082, 5);
   });
 
   it('farm ranks ENERGY first and speed second at maxPhase 42 — the order INVERTED when cadence stopped assuming every plant is walk-bound', () => {
@@ -72,8 +99,8 @@ describe('rankNextPointForFarm — discrimination: a one-shotting squad inverts 
     //
     // The same correction is why `cdr` stopped scoring exactly 0 further down this file: the
     // fuse-bound mass that speed cannot help is precisely the mass CDR can.
-    expect(rows[0]).toEqual({ stat: 'energy', label: 'Energia', gainPct: 0.9011068264938915 });
-    expect(rows[1]).toEqual({ stat: 'speed', label: 'Velocidade', gainPct: 0.6612139458378907 });
+    expect(rows[0]).toEqual({ stat: 'energy', label: 'Energia', gainPct: 0.8068174597261724 });
+    expect(rows[1]).toEqual({ stat: 'speed', label: 'Velocidade', gainPct: 0.6619637701077874 });
   });
 
   it('DPS mode scores attack first and speed exactly 0 on the same hero (the inversion)', () => {
@@ -87,15 +114,30 @@ describe('rankNextPointForFarm — discrimination: a one-shotting squad inverts 
 });
 
 describe('rankNextPointForFarm — anti-"energy always wins" sensor', () => {
-  it.each(['Lyra', 'Perrin'])('%s (not one-shotting): farm ranks attack strictly above energy at maxPhase 42', (name) => {
-    const hero = heroByName(name);
-    const result = rankNextPointForFarm({ bases, account, heroId: hero.id, maxPhase: 42 });
+  // RE-TUNED at the 2026-08-15 patch. This used to sweep ['Lyra', 'Perrin'] at maxPhase 42.
+  // Perrin L4 no longer demonstrates the claim there — measured attack 0.128027 against energy
+  // 0.142847, a genuine flip driven by the flat crit change, not by this sensor's logic. Rather
+  // than pin a hero that no longer shows the effect, the sensor keeps the subject that does and
+  // gains two more phases, so it discriminates on THREE points instead of two.
+  it.each([42, 20, 10])('Lyra (not one-shotting): farm ranks attack strictly above energy at maxPhase %i', (mp) => {
+    const hero = heroByName('Lyra');
+    const result = rankNextPointForFarm({ bases, account, heroId: hero.id, maxPhase: mp });
     expect(result.outcome).toBe('ranked');
     const rows = result.rows!;
     const attack = rows.find((r) => r.stat === 'attack')!;
     const energy = rows.find((r) => r.stat === 'energy')!;
     expect(attack.gainPct).toBeGreaterThan(energy.gainPct);
     expect(rows[0].stat).toBe('attack');
+  });
+
+  it('Perrin L4 FLIPPED at maxPhase 42 — recorded, not hidden', () => {
+    // The sensor exists to prove "energy always wins" is false. Perrin stopped being an example
+    // of that at maxPhase 42; the measured pair is pinned here so the flip is a tracked fact and
+    // a future change that flips him BACK is visible rather than silent.
+    const result = rankNextPointForFarm({ bases, account, heroId: heroByName('Perrin').id, maxPhase: 42 });
+    const rows = result.rows!;
+    expect(rows.find((r) => r.stat === 'attack')!.gainPct).toBeCloseTo(0.127926, 5);
+    expect(rows.find((r) => r.stat === 'energy')!.gainPct).toBeCloseTo(0.142735, 5);
   });
 });
 

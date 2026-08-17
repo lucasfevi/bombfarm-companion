@@ -28,24 +28,35 @@ import { inferSpentPoints } from '@bombfarm/domain/point-inference';
 import { SHEET_KEYS } from '@bombfarm/domain/planner-constants';
 import { expectSheetsClose, extractHero, loadFixtureJson, treeTotalsFromSave } from './helpers/sheet-math-fixtures';
 
-const EXPORT_FILE = 'save-20260813-5heroes.json';
-const PAYLOAD_FILE = 'payload-20260812-8heroes.json';
+const EXPORT_FILE = 'save-20260816-9heroes-redistrib.json';
 
-/** All 13 heroes across both corpus files — the suite's entire subject set, no more, no fewer. */
+/**
+ * All 9 heroes of the post-redistribution corpus file — the suite's entire subject set.
+ *
+ * The two earlier 2026-08-16 exports (`save-20260816-8heroes.json`,
+ * `save-20260816-respec-cdr-crit.json`) are NO LONGER subjects. A second patch the same day
+ * redistributed every item's stat rolls across the slots — 239 of 240 defs, 194 of them changing
+ * which stats they roll at all — so their committed gear no longer matches any catalog this repo
+ * can ship. They stay for the structural suites and for the provenance they already carry: the
+ * respec pair is what pinned the flat per-point rates in `POINT_GAIN.critChanceFlat` / `.cdrFlat`,
+ * and that measurement is recorded there and in the fixture README rather than lost.
+ *
+ * This file is strictly stronger as a sheet-math anchor. It is the first capture to witness crit
+ * DAMAGE post-patch (Zane holds `golpe_brutal` 7, Doran 20 — both land on a flat `rank x 0.04`
+ * with residual exactly 0), and the first to witness `pressagio_mortal` (Rowan, Cora — whose
+ * entire sheet delta is the tree term alone, confirming the team-crit ability stays OFF the
+ * inventory sheet).
+ */
 const SUBJECTS: readonly { file: string; name: string; level: number }[] = [
-  { file: EXPORT_FILE, name: 'Jon', level: 38 },
-  { file: EXPORT_FILE, name: 'Bellatrix', level: 42 },
-  { file: EXPORT_FILE, name: 'Perrin', level: 4 },
-  { file: EXPORT_FILE, name: 'Perrin', level: 3 },
-  { file: EXPORT_FILE, name: 'Lyra', level: 2 },
-  { file: PAYLOAD_FILE, name: 'Nyx', level: 25 },
-  { file: PAYLOAD_FILE, name: 'Bellatrix', level: 27 },
-  { file: PAYLOAD_FILE, name: 'Cora', level: 22 },
-  { file: PAYLOAD_FILE, name: 'Wren', level: 24 },
-  { file: PAYLOAD_FILE, name: 'Lyra', level: 3 },
-  { file: PAYLOAD_FILE, name: 'Mira', level: 3 },
-  { file: PAYLOAD_FILE, name: 'Bryn', level: 3 },
-  { file: PAYLOAD_FILE, name: 'Devin', level: 5 },
+  { file: EXPORT_FILE, name: 'Bellatrix', level: 56 },
+  { file: EXPORT_FILE, name: 'Jon', level: 57 },
+  { file: EXPORT_FILE, name: 'Minato', level: 46 },
+  { file: EXPORT_FILE, name: 'Torin', level: 4 },
+  { file: EXPORT_FILE, name: 'Rowan', level: 4 },
+  { file: EXPORT_FILE, name: 'Zane', level: 7 },
+  { file: EXPORT_FILE, name: 'Cora', level: 3 },
+  { file: EXPORT_FILE, name: 'Doran', level: 42 },
+  { file: EXPORT_FILE, name: 'Aldric', level: 5 },
 ];
 
 /**
@@ -102,35 +113,35 @@ function prepare(s: Subject) {
 const PREPARED = SUBJECTS.map(prepare);
 
 describe('point round trip (AD-071) — birth + inferred points + gear + tree reproduces the observed stats', () => {
-  it('non-vacuity: iterates exactly 13 heroes across the two corpus files and 104 key comparisons', () => {
-    expect(SUBJECTS.length, 'expected exactly 13 heroes across save-20260813-5heroes.json + payload-20260812-8heroes.json').toBe(13);
-    expect(PREPARED.length).toBe(13);
+  it('non-vacuity: iterates exactly 9 heroes and 72 key comparisons', () => {
+    expect(SUBJECTS.length, 'expected exactly 9 heroes on the post-redistribution capture').toBe(9);
+    expect(PREPARED.length).toBe(9);
     const totalComparisons = PREPARED.length * SHEET_KEYS.length;
-    expect(totalComparisons, '13 heroes × 8 SHEET_KEYS').toBe(104);
+    expect(totalComparisons, '9 heroes × 8 SHEET_KEYS').toBe(72);
   });
 
   it('claim A — inferSpentPoints reports zero issues for every hero, with no exception carved out', () => {
-    expect(PREPARED.length, 'expected all 13 heroes to be checked').toBe(13);
+    expect(PREPARED.length, 'expected all 9 heroes to be checked').toBe(9);
     for (const p of PREPARED) {
       expect(p.inference.issues, `${subjectLabel(p.subject)} should be issue-free`).toEqual([]);
     }
   });
 
-  it('claim D — Bellatrix L42 (export) solves to exactly 2 crit-damage points, as the flat rate predicts', () => {
-    const bellatrix = PREPARED.find(
-      (p) => p.subject.file === EXPORT_FILE && p.subject.name === 'Bellatrix' && p.subject.level === 42,
-    );
-    if (!bellatrix) throw new Error('Bellatrix L42 not found among prepared subjects');
-
-    expect(bellatrix.inference.issues).toEqual([]);
-    expect(bellatrix.inference.pts.critDmg).toBe(2);
-    // Her observed sheet sits exactly `2 x POINT_GAIN.critDmgFlat` above her roll — the
-    // measurement that showed the gain is flat rather than a share of the roll.
-    expect(bellatrix.hero.sheet.critDmg - bellatrix.hero.birth!.critDmg).toBeCloseTo(10, 9);
+  it('claim D — Zane and Doran pin crit DAMAGE as flat, post-patch', () => {
+    // The first capture to witness `golpe_brutal` since the 2026-08-13 patch made crit damage
+    // flat. Both heroes' sheets sit exactly `rank x 4` planner points above their roll, with a
+    // residual of exactly 0 — so PR #90's flat model survives both patches, measured rather than
+    // assumed. Two different ranks off two different rolls, so the gain cannot be a share of one.
+    for (const [name, rank] of [['Zane', 7], ['Doran', 20]] as const) {
+      const p = PREPARED.find((x) => x.subject.name === name);
+      if (!p) throw new Error(`${name} not found among prepared subjects`);
+      expect(p.inference.issues).toEqual([]);
+      expect(p.hero.sheet.critDmg - p.hero.birth!.critDmg).toBeCloseTo(rank * 4, 9);
+    }
   });
 
-  it('claim B is exhaustive: all 13 heroes are issue-free', () => {
-    expect(PREPARED.filter((p) => p.inference.issues.length === 0).length).toBe(13);
+  it('claim B is exhaustive: all 9 heroes are issue-free', () => {
+    expect(PREPARED.filter((p) => p.inference.issues.length === 0).length).toBe(9);
   });
 
   // Vitest's decimal-place fuzzy-equality matcher is banned in this file (grep-enforced): its
@@ -145,9 +156,39 @@ describe('point round trip (AD-071) — birth + inferred points + gear + tree re
     },
   );
 
-  it('claim C — at least 2 heroes match bit-exactly (Object.is) across all 8 SHEET_KEYS', () => {
-    const bitExact = PREPARED.filter((p) => SHEET_KEYS.every((key) => Object.is(p.forward[key], p.hero.sheet[key])));
-    const names = bitExact.map((p) => subjectLabel(p.subject));
-    expect(bitExact.length, `bit-exact heroes: ${names.join(', ') || 'none'}`).toBeGreaterThanOrEqual(2);
+  /**
+   * Claim C keeps an EXACT floor so the suite cannot drift into tolerance-only. Its shape
+   * changed with the corpus, and the change is a finding rather than a weakening.
+   *
+   * The pre-patch corpus had 2 whole heroes matching bit-exactly, both naked low-level ones
+   * (Bellatrix L27, Lyra L3). Every hero on this account is geared and ability-bearing, so no
+   * whole hero is bit-exact any more — the accumulation chains are simply longer, and the
+   * measured residuals stay at 2e-13…7e-12.
+   *
+   * What replaces it is sharper: `critDmg` and `cdr` — the two stats that are now purely flat
+   * addends with no multiplicative term anywhere in their chain — reproduce bit-exactly on
+   * EVERY hero. That is the flat shape's own signature, and it would break immediately if
+   * either stat regained a `× (1 + Σ)` factor.
+   */
+  it('claim C — critDmg matches bit-exactly on every hero, cdr on all but one, ≥27/72 overall', () => {
+    // Crit damage is the purest flat stat in the model — no gear term at all (items never roll
+    // it), so its chain is `roll x star + ability + point` and reproduces bit-exactly on all 9.
+    const critDmgExact = PREPARED.filter((p) => Object.is(p.forward.critDmg, p.hero.sheet.critDmg));
+    expect(critDmgExact.length, 'critDmg must be bit-exact on every hero — it has no gear term').toBe(9);
+
+    // CDR is flat too but DOES take a gear term, so one hero (Jon L57, whose loadout sums several
+    // cooldown rolls) accumulates in a different order than the game and lands 1 ulp away. The
+    // count is pinned rather than loosened: a regression that put CDR back in the shared pool
+    // would drop this well below 8, and one that fixed the ordering would raise it to 9 — both
+    // are changes worth seeing.
+    const cdrExact = PREPARED.filter((p) => Object.is(p.forward.cdr, p.hero.sheet.cdr));
+    const cdrMisses = PREPARED.filter((p) => !Object.is(p.forward.cdr, p.hero.sheet.cdr)).map((p) => subjectLabel(p.subject));
+    expect(cdrExact.length, `cdr bit-exact on ${cdrExact.length}/9; misses: ${cdrMisses.join(', ')}`).toBe(8);
+
+    const exactComparisons = PREPARED.reduce(
+      (sum, p) => sum + SHEET_KEYS.filter((key) => Object.is(p.forward[key], p.hero.sheet[key])).length,
+      0,
+    );
+    expect(exactComparisons, `${exactComparisons}/72 key comparisons bit-exact`).toBeGreaterThanOrEqual(27);
   });
 });

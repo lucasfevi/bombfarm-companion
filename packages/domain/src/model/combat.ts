@@ -63,6 +63,14 @@ export function mitigationFactor(mitigation: number, penetrationPct: number): nu
   return 1 - mitigation * (1 - pen / 100);
 }
 
+/**
+ * Hero level ceiling — wiki `herois.nivel_max`. Raised 100 → 500 by the 2026-08-15 patch, which
+ * also flattened the XP curve above 49 (`curva_nivel[50].xp_para_proximo` 1,426,483 → 356,621)
+ * so the new headroom is reachable. `levelPowerMult` stays linear across the whole range:
+ * `curva_nivel[500].power_mult` is 20.96 = 1 + 0.04 × 499, exactly what the formula returns.
+ */
+export const HERO_MAX_LEVEL = 500;
+
 /** Linear level power from wiki `herois.curva_nivel` / `combate.level_power` (+0.04 per level).
  * Scales intrinsic Attack (poder). Sheet Attack at level L is birth×stars×points × this mult
  * (before items). Changing hero level in the UI rescales naked Attack by new/old. */

@@ -83,7 +83,7 @@ describe('computeAdvisorPipeline', () => {
     expect(out.energyMult).toBeGreaterThan(0);
     expect(out.speedMult).toBeGreaterThan(0);
     expect(out.critDmgMult).toBeGreaterThan(0);
-    expect(out.teamCritPctOfBase).toBeGreaterThanOrEqual(0);
+    expect(out.teamCritChanceFlat).toBeGreaterThanOrEqual(0);
   });
 
   it('propRows and gateRows carry correct per-row values, not just correct lengths (T4 extraction guard)', () => {

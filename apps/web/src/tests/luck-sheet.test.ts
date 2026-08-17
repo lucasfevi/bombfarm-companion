@@ -90,9 +90,11 @@ const naked = (): SheetStats => ({
 
 function loadoutWithSorte(): Loadout {
   const loadout = emptyLoadout();
-  // forest_arma valores[1] = { stat: 'sorte', valor: 0.044 }; rarityIdx 1 (Incomum,
-  // statCount 2) includes it — rarityIdx 0 (statCount 1) would not.
-  loadout.arma = { defId: 'forest_arma', rarityIdx: 1, level: 10, upgrade: 0 };
+  // The 2026-08-16 redistribution gave every slot a fixed roll priority, and `arma` no longer
+  // rolls sorte at any rarity (dmg > crit > penetracao > cooldown > velocidade > energia).
+  // `amuleto` leads with sorte, so rarityIdx 0 (statCount 1) is enough to carry it — a stronger
+  // subject than the old one, which needed Incomum to reach its second roll.
+  loadout.amuleto = { defId: 'forest_amuleto', rarityIdx: 0, level: 10, upgrade: 0 };
   return loadout;
 }
 

@@ -16,7 +16,7 @@ function sheetOtherFromAbilities(abilities: Record<string, number>) {
   const mods = abilityMods(abilities);
   return {
     ...emptySheetOther(),
-    critChance: mods.sheetCritChancePctOfBase / 100,
+    critChanceFlat: mods.sheetCritChanceFlat,
     penetration: mods.sheetPenetrationRaw,
     critDmgFlat: mods.sheetCritDmgFlat,
   };

@@ -104,7 +104,7 @@ export interface PipelineFacts {
   energyMult: number;
   speedMult: number;
   critDmgMult: number;
-  teamCritPctOfBase: number;
+  teamCritChanceFlat: number;
   treeSpeed: number;
   treeCritChance: number;
   treeCritDmg: number;
