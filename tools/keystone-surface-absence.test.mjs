@@ -80,7 +80,7 @@ const CLAUSE_A_PATTERN =
  * Every file below is a measured, justified survivor — none is a live, editable, or rendered
  * keystone surface. Categories:
  *   - F4-owned raw save/API schema literals (fingerprint key space, not typed tree fields)
- *   - The frozen i18n fixture (`docs/naming.md:74`, MOD-03) and F1's provenance manifest
+ *   - F1's provenance manifest
  *   - CHANGELOGs (historical release prose)
  *   - This guard's own source, and the sibling `tools/` guards that must name the tokens they
  *     forbid or discharge (`AD-038`'s closed pin, F1's own negative-discriminator guard)
@@ -99,8 +99,11 @@ const CLAUSE_A_PATTERN =
  *     onto the post-patch schema, so neither carries a clause-A token anymore.
  */
 const ALLOWLIST = [
-  // Frozen fixture (MOD-03, docs/naming.md:74) — AD-081, byte-unchanged by design.
-  { file: 'apps/web/src/tests/fixtures/i18n-strings-main.json', count: 32, owner: 'frozen fixture (AD-081)' },
+  // The frozen i18n fixture (MOD-03, docs/naming.md:74) used to carry a clause-A entry here
+  // (AD-081, count 32) while it still held retired keystone strings as historical baseline. The
+  // 2026-08-17 re-baseline (docs/naming.md:74, apps/web/src/tests/i18n-split-parity.test.ts)
+  // regenerated it from live STRINGS, so it now carries zero clause-A matches — REMOVED rather
+  // than pinned at 0, per this guard's own "stale entry" check below.
   // F1's provenance manifest — must name the forbidden keys to forbid them.
   { file: 'apps/web/src/tests/fixtures/sheet-math/README.md', count: 2, owner: "F1 provenance manifest" },
   // (CHANGELOGs used to be pinned here; they are excluded from the scan now — see
@@ -123,8 +126,12 @@ const ALLOWLIST = [
   { file: 'apps/web/src/tests/advisor-selectors.test.ts', count: 1, owner: 'F3 dep-tuple-length test title' },
   { file: 'apps/web/src/tests/derive.test.ts', count: 3, owner: 'F3 AC-29 compile-guard + explanatory comments' },
   { file: 'apps/web/src/tests/ds-panel-field.test.ts', count: 5, owner: 'F3 MSC-18 recipe absence proof' },
-  { file: 'apps/web/src/tests/i18n-keystone-absence.test.ts', count: 9, owner: 'F3 MSC-05/06 value-scan suite' },
-  { file: 'apps/web/src/tests/i18n-split-parity.test.ts', count: 10, owner: 'F3 MSC-07 KEYSTONE_KEYS_REMOVED list' },
+  // Re-measured for the 2026-08-17 fixture re-baseline: i18n-keystone-absence.test.ts now
+  // holds KEYSTONE_KEYS_REMOVED's 12 literal keys directly (9 -> 15) instead of importing them
+  // from i18n-split-parity.test.ts, which dropped to zero clause-A matches and lost its entry
+  // below — its bookkeeping no longer names any keystone identifier (see that file's own
+  // top-of-file comment).
+  { file: 'apps/web/src/tests/i18n-keystone-absence.test.ts', count: 15, owner: 'F3 MSC-05/06 value-scan suite + its own copy of the retired-key list' },
   { file: 'apps/web/src/tests/import-inventory-sync.test.ts', count: 4, owner: 'F3 explanatory comment (recorded loss)' },
   { file: 'apps/web/src/tests/import-save.test.ts', count: 2, owner: 'F4/T7 flipped baseSave() literal + historical comment' },
   { file: 'apps/web/src/tests/stat-breakdown.test.ts', count: 1, owner: 'F3 explanatory comment' },
@@ -140,8 +147,10 @@ const ALLOWLIST = [
   { file: 'apps/web/src/tests/import-rejection-copy.test.ts', count: 3, owner: 'F4/T8 forbidden-token guard test' },
   { file: 'tools/save-acceptance-guards.test.mjs', count: 7, owner: 'F4/T7 acceptance-gate absence proof (MSG-11)' },
   // This guard's own source — its filename, doc comment and error messages necessarily name
-  // the tokens it forbids (the same self-reference AD-080 allowlist #10 anticipates).
-  { file: 'tools/keystone-surface-absence.test.mjs', count: 11, owner: 'this guard, self-reference' },
+  // the tokens it forbids (the same self-reference AD-080 allowlist #10 anticipates). Count
+  // moved 11 -> 14 with the 2026-08-17 fixture re-baseline's explanatory comments above (this
+  // file's own entries, not a scanned-file content change).
+  { file: 'tools/keystone-surface-absence.test.mjs', count: 14, owner: 'this guard, self-reference' },
 ];
 
 // --- Clause B — pinned per-line map for critDmgMult / crit_dmg_mult -----------------------
@@ -194,7 +203,9 @@ const CRIT_DMG_MULT_MAP = {
   // entry's own comment), shifting every self-reference below it down.
   // +3 (line numbers only) from the House/field-slots untangling follow-up's own explanatory
   // comment above the local-data-compat.md self-map entry. Count and kind unchanged.
-  'tools/keystone-surface-absence.test.mjs': [13, 147, 150, 240, 245, 255, 264],
+  // +9 (line numbers only) from the 2026-08-17 fixture re-baseline's explanatory comments above
+  // (clause-A allowlist entries and this self-map entry itself). Count and kind unchanged.
+  'tools/keystone-surface-absence.test.mjs': [13, 156, 159, 251, 256, 266, 275],
   'tools/save-acceptance-guards.test.mjs': [53],
 };
 
@@ -210,7 +221,7 @@ describe('keystone surface absence — the repo-wide identifier guard (MP5 F3, M
   });
 
   it('the clause-A allowlist is exactly the enumerated set (non-wideable)', () => {
-    expect(ALLOWLIST.length).toBe(28);
+    expect(ALLOWLIST.length).toBe(26);
     expect(ALLOWLIST.every((entry) => entry.file && entry.count > 0 && entry.owner)).toBe(true);
   });
 

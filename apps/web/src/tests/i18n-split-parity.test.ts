@@ -24,219 +24,71 @@ import * as importNs from '@/shared/i18n/namespaces/import';
 import * as stats from '@/shared/i18n/namespaces/stats';
 import { WEB_PACKAGE_ROOT } from './helpers/web-package-root';
 
+/**
+ * Fixture re-baseline — 2026-08-17.
+ *
+ * `apps/web/src/tests/fixtures/i18n-strings-main.json` was regenerated from live `STRINGS`
+ * (both `en` and `pt`), as its own deliberate, standalone, tracked change — not as part of a
+ * feature PR. Every declared-delta list below (`KEYS_REMOVED`, `KEYS_ADDED`,
+ * `PROSE_EDITED_PATHS`) is empty as of this re-baseline: the fixture and live `STRINGS` are the
+ * same shape, key for key, value for value.
+ *
+ * Why this is a *deliberate, rare* move and not a routine fix: the whole point of comparing
+ * `STRINGS` against a frozen snapshot is to catch UNINTENDED copy drift. If the fixture is
+ * regenerated inside the same PR that changes the copy, the comparison degrades to
+ * `STRINGS == STRINGS` — permanently green, permanently blind to the very drift it exists to
+ * catch. So between re-baselines the fixture stays byte-unchanged (MOD-03, `docs/naming.md`),
+ * and every feature that adds, removes, or rewords a string declares the change explicitly in
+ * exactly one of the three lists below, with a comment naming the feature and explaining the
+ * change. That declare-every-delta discipline is what makes an undeclared drift fail loudly.
+ *
+ * A re-baseline resets those lists to empty once they have accumulated across enough features
+ * that they stop reading as a meaningful diff and start reading as bookkeeping for its own
+ * sake — this one followed ten named lists and 114 declared entries in this file. It does not
+ * loosen the comparison itself (still an exact match, not `objectContaining` — see AD-081, and
+ * the note below on why that alternative is rejected); it only clears the backlog of old
+ * entries and gives the mechanism a fresh floor to accumulate from.
+ */
 const fixturePath = join(WEB_PACKAGE_ROOT, 'src/tests/fixtures/i18n-strings-main.json');
 const fixture = JSON.parse(readFileSync(fixturePath, 'utf8')) as {
   en: Strings;
   pt: Strings;
 };
 
-/** MP5 F3 — the 12 keys this feature deletes. The fixture is MOD-03-frozen
- *  (docs/naming.md:74), so parity subtracts this list rather than regenerating. */
-export const KEYSTONE_KEYS_REMOVED = [
-  'treeGlassCannon',
-  'treeGlassCannonHint',
-  'treeAbisso',
-  'treeAbissoHint',
-  'treeTempoDobrado',
-  'treeTempoDobradoHint',
-  'keystoneOn',
-  'keystoneOff',
-  'importKeystoneOn',
-  'bdNoteGlassCannon',
-  'bdNoteTempoDobrado',
-  'bdTermAbisso',
-] as const;
+/**
+ * Declare deltas here. A feature that changes `STRINGS` in a way that would otherwise fail one
+ * of the parity checks below adds an entry to exactly one of these three lists — never by
+ * loosening a comparison. Rather than an `objectContaining`-style comparison (which would stop
+ * failing on *any* addition), this keeps the exact-match semantics and pins the exact set of
+ * keys/paths allowed to differ from the frozen fixture; every other leaf, at every depth
+ * (including inside `explainSections[].p[]`), must still match byte-for-byte.
+ */
+
+/** Keys present in the frozen fixture that no longer exist in live STRINGS. */
+const KEYS_REMOVED: readonly string[] = [];
+
+/**
+ * Keys present in live STRINGS with no counterpart in the frozen fixture at all — a genuinely
+ * new key, not a reworded existing one. `diffLeafPaths` reports "present in STRINGS, absent
+ * from the fixture" the same way it reports a changed value, so entries here are folded into
+ * the "differs at exactly" comparisons alongside `PROSE_EDITED_PATHS`, and separately excluded
+ * from the sorted-key-set comparison (which compares SETS, not diffs).
+ */
+const KEYS_ADDED: readonly string[] = [];
+
+/**
+ * Leaf paths whose key survives in both the fixture and STRINGS but whose VALUE changed — e.g.
+ * a reworded sentence, in either or both languages. Dot-separated; array indices are numeric
+ * segments (`explainSections.0.p.1`). A deleted key and an edited value are different shapes of
+ * drift, which is why they are two separate lists rather than one.
+ */
+const PROSE_EDITED_PATHS: readonly string[] = [];
 
 function omitKeys<T extends Record<string, unknown>>(obj: T, keys: readonly string[]): Partial<T> {
   const out: Record<string, unknown> = { ...obj };
   for (const key of keys) delete out[key];
   return out as Partial<T>;
 }
-
-/**
- * MP5 F3 also rewrites 5 surviving strings (both languages) to drop keystone terms from prose
- * that stays — e.g. `accountFarmPhaseHint` loses "and Abisso's damage multiplier"; the two
- * `explainSections` paragraphs (advice.ts §1 and §8) lose their keystone clauses whole (both
- * languages, `docs/i18n.md`'s Portuguese-chrome-quality rule). KEYSTONE_KEYS_REMOVED alone
- * cannot express that — a deleted key and an edited value are different shapes of drift. Rather
- * than loosen the frozen-fixture comparison to `objectContaining` (which would stop failing on
- * *any* other addition — the exact alternative AD-081 rejects), this pins the *exact set of
- * leaf paths* allowed to differ from the frozen fixture. Every other leaf, at every depth
- * (including inside `explainSections[].p[]`), must still match byte-for-byte.
- */
-const KEYSTONE_PROSE_EDITED_PATHS = [
-  'accountFarmPhaseHint',
-  'accountTip',
-  'bdFormulaDmg',
-  'explainSections.0.p.1',
-  'explainSections.7.p.0',
-  // Farm Ranking (T1): the Phases page is renamed Farm — navPhases's VALUE
-  // changes to "Farm" in both languages (key name kept, i18n.md rule 3).
-  'navPhases',
-].sort();
-
-/**
- * The rank-mode retirement — two keys retired, four added, two existing values reworded. The
- * retired/added keys are their own named lists (`RANK_MODE_KEYS_REMOVED` /
- * `RANK_MODE_KEYS_ADDED`, below); these two leaf paths are the reworded VALUES on keys that
- * survive: `accountTargetPropHint` drops the one-shot ranking claim, and the "next point
- * ranking" explain paragraph (`explainSections[5].p[0]`) drops the "Oneshot mode..." sentence
- * for one about what farm mode ranks.
- */
-const RANK_MODE_PROSE_EDITED_PATHS = ['accountTargetPropHint', 'explainSections.5.p.0'].sort();
-
-/** Retired with the one-shot ranking heuristic: the mode option's own label, and the
- *  Account-tab setup string that only existed to require a target prop for that mode. */
-export const RANK_MODE_KEYS_REMOVED = ['modeOneshot', 'setupNeedTargetProp'] as const;
-
-/** New for farm-mode ranking: the mode option's label, the two fallback notes (no pool / no
- *  feasible rate), and the "ranked as if added" note for a hero outside the rotation. */
-const RANK_MODE_KEYS_ADDED = ['modeFarm', 'rankFarmNoPool', 'rankFarmNoRate', 'rankFarmAddedToPool'] as const;
-
-/**
- * MP5 F4 (T8, MSG-14) — genuinely NEW keys with no counterpart in the frozen fixture at all
- * (not a prose edit of an existing key). `diffLeafPaths` reports "present in STRINGS, absent
- * from the fixture" the same way it reports a changed value, so this list is folded into the
- * "differs at exactly" comparisons alongside `KEYSTONE_PROSE_EDITED_PATHS`, and separately
- * excluded from the sorted-key-set comparison (which compares SETS, not diffs).
- */
-const F4_KEYS_ADDED = ['importRejectedUnsupportedShape'] as const;
-
-/**
- * Farm Ranking T5 — the Farm Ranking board's column headers, genuinely new keys with no
- * counterpart in the frozen fixture (`farmRanking*` prefix, `phases` namespace, deliberately).
- * Same shape as `F4_KEYS_ADDED` above; kept as its own named list so a reviewer can
- * see which feature added which keys.
- */
-const FARM_RANKING_KEYS_ADDED = [
-  'farmRankingColPhase',
-  'farmRankingColMitigation',
-  'farmRankingColGold',
-  'farmRankingColChests',
-  'farmRankingColKeys',
-  'farmRankingColGems',
-  'farmRankingColTimePieces',
-  'farmRankingColXp',
-  'farmRankingColItemLevel',
-  'farmRankingColClearTime',
-  'farmRankingColOneShot',
-  'farmRankingColJaula',
-  'farmRankingColInfeasible',
-  'farmRankingTitle',
-  'farmRankingCaption',
-  'farmRankingEmptyNoRosterTitle',
-  'farmRankingEmptyNoRosterDesc',
-  'farmRankingEmptyNoHeroesTitle',
-  'farmRankingEmptyNoHeroesDesc',
-  'farmRankingEmptyComputeFailedTitle',
-  'farmRankingEmptyComputeFailedDesc',
-  'farmRankingEmptyNoMatchesTitle',
-  'farmRankingEmptyNoMatchesDesc',
-  'farmRankingFilterUnlockedLabel',
-  'farmRankingFilterUnlockedDisabledReason',
-  'farmRankingFilterFeasibleLabel',
-  'farmRankingFilterAtoLabel',
-  'farmRankingFilterAtoAll',
-  'farmRankingFilterGateLabel',
-  'farmRankingFilterGateAll',
-  'farmRankingFilterGateOnly',
-  'farmRankingFilterGateNonGate',
-  'farmRankingPoolLabel',
-  'farmRankingPoolHeroAria',
-  'farmRankingReturnBonusLabel',
-  'farmRankingReturnBonusOff',
-  'farmRankingReturnBonusOn',
-  'farmRankingReturnBonusVip',
-  'farmRankingGateBadge',
-  'farmRankingPushTargetBadge',
-  'farmRankingInfeasibleBadge',
-  'farmRankingKeysConsumed',
-  'farmRankingOneShotYes',
-  'farmRankingOneShotNo',
-  'farmRankingOneShotTooltipYes',
-  'farmRankingOneShotTooltipNo',
-  'farmRankingSortedBy',
-  'farmRankingSortAsc',
-  'farmRankingSortDesc',
-  'farmRankingCurrentPhase',
-] as const;
-
-/**
- * Farm Respec Advisor T7 — the toolbar, panel, hero-card and frontier copy, genuinely new keys
- * with no counterpart in the frozen fixture. Same shape as `FARM_RANKING_KEYS_ADDED` above; kept
- * as its own named list so a reviewer can see which feature added which keys.
- */
-const FARM_RESPEC_KEYS_ADDED = [
-  'farmRespecObjectiveLabel',
-  'farmRespecObjectiveGold',
-  'farmRespecObjectiveChests',
-  'farmRespecObjectiveBlend',
-  'farmRespecOptimize',
-  'farmRespecOptimizeBusy',
-  'farmRespecHeadlineGain',
-  'farmRespecHeadlinePhase',
-  'farmRespecHeadlineCost',
-  'farmRespecGateFailed',
-  'farmRespecPaybackHours',
-  'farmRespecPaybackNoGoldGain',
-  'farmRespecPaybackNoChange',
-  'farmRespecPanelHeading',
-  'farmRespecClose',
-  'farmRespecPanelGain',
-  'farmRespecMetricGold',
-  'farmRespecMetricChests',
-  'farmRespecMetricCost',
-  'farmRespecMetricPayback',
-  'farmRespecGoldGivenUp',
-  'farmRespecChestExplainer',
-  'farmRespecBudgetExhausted',
-  'farmRespecDiagnostics',
-  'farmRespecFailed',
-  'farmRespecTerminalTitle',
-  'farmRespecTerminalDesc',
-  'farmRespecPlateauLabel',
-  'farmRespecPlateauRange',
-  'farmRespecPlateauSharp',
-  'farmRespecHeroesHeading',
-  'farmRespecLuckKeep',
-  'farmRespecLuckHint',
-  'farmRespecUnchangedNote',
-  'farmRespecUnchangedGoldSaved',
-  'farmRespecKeyCurrent',
-  'farmRespecKeyTarget',
-  'farmRespecKeyDelta',
-  'farmRespecFrontierHeading',
-  'farmRespecFrontierHeroCountOne',
-  'farmRespecFrontierHeroCountTwo',
-  'farmRespecFrontierGainCost',
-  'farmRespecFrontierPaybackNone',
-  'farmRespecRerankToggle',
-  'farmRespecRerankBanner',
-  'farmRespecRerankCaption',
-] as const;
-
-/**
- * Flat-crit-damage fix (PR #90 review item 5) — the `brutalStrike` ledger note's label, genuinely
- * new with no counterpart in the frozen fixture. Same shape as `F4_KEYS_ADDED` above.
- */
-const CRIT_DMG_FLAT_KEYS_ADDED = ['bdNoteBrutalStrike'] as const;
-
-/**
- * The gear slot editor's set select is gone (#106): `catalog.setsByLevel` is a bijection, so that
- * control could only ever offer one option. `itemSet` was its `aria-label`/`title` and has no
- * other reader, so it is retired with the control rather than left as an orphan string. Same
- * shape as `RANK_MODE_KEYS_REMOVED` above — the fixture is frozen, so parity subtracts this list.
- */
-export const ITEM_SET_KEYS_REMOVED = ['itemSet'] as const;
-
-/**
- * The set name moved INTO the surviving level option's label, so `itemLevelOpt`'s VALUE gains a
- * `{set}` placeholder in both languages ("Level {n} - {set}" / "Nível {n} - {set}"). The key
- * survives, so this is an edited leaf path, not an added or removed key. `itemLevel` is NOT here:
- * the level select's accessible name is unchanged — the user still picks a level, and the set the
- * level implies is spelled out in the option text the control reads out with it.
- */
-const ITEM_SET_PROSE_EDITED_PATHS = ['itemLevelOpt'].sort();
 
 function diffLeafPaths(a: unknown, b: unknown, path: string[] = [], out: string[] = []): string[] {
   if (a === b) return out;
@@ -273,55 +125,17 @@ const namespaces = [
 
 describe('i18n split parity', () => {
   // The fixture (apps/web/src/tests/fixtures/i18n-strings-main.json) is MOD-03-frozen
-  // (docs/naming.md:74) and stays byte-unchanged. MP5 F3 deletes the 12
-  // KEYSTONE_KEYS_REMOVED keys from STRINGS, so parity is measured against the fixture
-  // *minus* that enumerated list (AD-081) — every unlisted drift stays fatal in both
-  // directions, and the list itself cannot silently grow or shrink (see the three
-  // assertions below).
-  it('STRINGS.en differs from the frozen fixture (minus removed keys) at exactly the enumerated prose edits — including the set-select removal\'s — plus F4\'s, Farm Ranking\'s, Farm Respec Advisor\'s and the rank-mode retirement\'s new keys', () => {
-    const diffs = diffLeafPaths(
-      STRINGS.en,
-      omitKeys(fixture.en, [
-        ...KEYSTONE_KEYS_REMOVED,
-        ...RANK_MODE_KEYS_REMOVED,
-        ...ITEM_SET_KEYS_REMOVED,
-      ]),
-    ).sort();
-    expect(diffs).toEqual(
-      [
-        ...KEYSTONE_PROSE_EDITED_PATHS,
-        ...RANK_MODE_PROSE_EDITED_PATHS,
-        ...ITEM_SET_PROSE_EDITED_PATHS,
-        ...F4_KEYS_ADDED,
-        ...FARM_RANKING_KEYS_ADDED,
-        ...FARM_RESPEC_KEYS_ADDED,
-        ...RANK_MODE_KEYS_ADDED,
-        ...CRIT_DMG_FLAT_KEYS_ADDED,
-      ].sort(),
-    );
+  // (docs/naming.md:74) between re-baselines (see the file-top comment for the 2026-08-17
+  // one). Parity is measured against the fixture minus KEYS_REMOVED — every undeclared drift
+  // stays fatal in both directions.
+  it('STRINGS.en differs from the frozen fixture (minus declared-removed keys) at exactly the declared deltas', () => {
+    const diffs = diffLeafPaths(STRINGS.en, omitKeys(fixture.en, KEYS_REMOVED)).sort();
+    expect(diffs).toEqual([...PROSE_EDITED_PATHS, ...KEYS_ADDED].sort());
   });
 
-  it('STRINGS.pt differs from the frozen fixture (minus removed keys) at exactly the enumerated prose edits — including the set-select removal\'s — plus F4\'s, Farm Ranking\'s, Farm Respec Advisor\'s and the rank-mode retirement\'s new keys', () => {
-    const diffs = diffLeafPaths(
-      STRINGS.pt,
-      omitKeys(fixture.pt, [
-        ...KEYSTONE_KEYS_REMOVED,
-        ...RANK_MODE_KEYS_REMOVED,
-        ...ITEM_SET_KEYS_REMOVED,
-      ]),
-    ).sort();
-    expect(diffs).toEqual(
-      [
-        ...KEYSTONE_PROSE_EDITED_PATHS,
-        ...RANK_MODE_PROSE_EDITED_PATHS,
-        ...ITEM_SET_PROSE_EDITED_PATHS,
-        ...F4_KEYS_ADDED,
-        ...FARM_RANKING_KEYS_ADDED,
-        ...FARM_RESPEC_KEYS_ADDED,
-        ...RANK_MODE_KEYS_ADDED,
-        ...CRIT_DMG_FLAT_KEYS_ADDED,
-      ].sort(),
-    );
+  it('STRINGS.pt differs from the frozen fixture (minus declared-removed keys) at exactly the declared deltas', () => {
+    const diffs = diffLeafPaths(STRINGS.pt, omitKeys(fixture.pt, KEYS_REMOVED)).sort();
+    expect(diffs).toEqual([...PROSE_EDITED_PATHS, ...KEYS_ADDED].sort());
   });
 
   it('namespace key sets are pairwise disjoint', () => {
@@ -335,143 +149,32 @@ describe('i18n split parity', () => {
     }
   });
 
-  it('sorted key-name list is unchanged vs fixture minus the removed keystone/rank-mode/item-set keys, plus F4\'s, Farm Ranking\'s, Farm Respec Advisor\'s and the rank-mode retirement\'s new keys', () => {
+  it('sorted key-name list is unchanged vs fixture minus declared-removed keys, plus declared-added keys', () => {
     const fromSplit = Object.keys(STRINGS.en).sort();
-    const fromFixture = [
-      ...Object.keys(
-        omitKeys(fixture.en, [
-          ...KEYSTONE_KEYS_REMOVED,
-          ...RANK_MODE_KEYS_REMOVED,
-          ...ITEM_SET_KEYS_REMOVED,
-        ]),
-      ),
-      ...F4_KEYS_ADDED,
-      ...FARM_RANKING_KEYS_ADDED,
-      ...FARM_RESPEC_KEYS_ADDED,
-      ...RANK_MODE_KEYS_ADDED,
-      ...CRIT_DMG_FLAT_KEYS_ADDED,
-    ].sort();
+    const fromFixture = [...Object.keys(omitKeys(fixture.en, KEYS_REMOVED)), ...KEYS_ADDED].sort();
     expect(fromSplit).toEqual(fromFixture);
   });
 
-  it('KEYSTONE_KEYS_REMOVED has exactly 12 entries', () => {
-    expect(KEYSTONE_KEYS_REMOVED.length).toBe(12);
-  });
-
-  it('every removed key was present in the frozen fixture, both languages', () => {
-    for (const key of KEYSTONE_KEYS_REMOVED) {
+  it('every declared-removed key was present in the frozen fixture, both languages', () => {
+    for (const key of KEYS_REMOVED) {
       expect(key in fixture.en, `${key} missing from fixture.en`).toBe(true);
       expect(key in fixture.pt, `${key} missing from fixture.pt`).toBe(true);
     }
   });
 
-  it('every removed key is absent from STRINGS, both languages', () => {
-    for (const key of KEYSTONE_KEYS_REMOVED) {
+  it('every declared-removed key is absent from STRINGS, both languages', () => {
+    for (const key of KEYS_REMOVED) {
       expect(key in STRINGS.en, `${key} still present in STRINGS.en`).toBe(false);
       expect(key in STRINGS.pt, `${key} still present in STRINGS.pt`).toBe(false);
     }
   });
 
-  it('F4_KEYS_ADDED has exactly 1 entry, present in STRINGS but absent from the frozen fixture, both languages', () => {
-    expect(F4_KEYS_ADDED.length).toBe(1);
-    for (const key of F4_KEYS_ADDED) {
+  it('every declared-added key is absent from the frozen fixture and present in STRINGS, both languages', () => {
+    for (const key of KEYS_ADDED) {
       expect(key in fixture.en, `${key} unexpectedly present in fixture.en`).toBe(false);
       expect(key in fixture.pt, `${key} unexpectedly present in fixture.pt`).toBe(false);
       expect(key in STRINGS.en, `${key} missing from STRINGS.en`).toBe(true);
       expect(key in STRINGS.pt, `${key} missing from STRINGS.pt`).toBe(true);
-    }
-  });
-
-  it('FARM_RANKING_KEYS_ADDED has exactly 50 entries, present in STRINGS but absent from the frozen fixture, both languages', () => {
-    expect(FARM_RANKING_KEYS_ADDED.length).toBe(50);
-    for (const key of FARM_RANKING_KEYS_ADDED) {
-      expect(key in fixture.en, `${key} unexpectedly present in fixture.en`).toBe(false);
-      expect(key in fixture.pt, `${key} unexpectedly present in fixture.pt`).toBe(false);
-      expect(key in STRINGS.en, `${key} missing from STRINGS.en`).toBe(true);
-      expect(key in STRINGS.pt, `${key} missing from STRINGS.pt`).toBe(true);
-    }
-  });
-
-  it('FARM_RESPEC_KEYS_ADDED has exactly 46 entries, present in STRINGS but absent from the frozen fixture, both languages', () => {
-    expect(FARM_RESPEC_KEYS_ADDED.length).toBe(46);
-    for (const key of FARM_RESPEC_KEYS_ADDED) {
-      expect(key in fixture.en, `${key} unexpectedly present in fixture.en`).toBe(false);
-      expect(key in fixture.pt, `${key} unexpectedly present in fixture.pt`).toBe(false);
-      expect(key in STRINGS.en, `${key} missing from STRINGS.en`).toBe(true);
-      expect(key in STRINGS.pt, `${key} missing from STRINGS.pt`).toBe(true);
-    }
-  });
-
-  it('RANK_MODE_KEYS_REMOVED has exactly 2 entries', () => {
-    expect(RANK_MODE_KEYS_REMOVED.length).toBe(2);
-  });
-
-  it('every RANK_MODE_KEYS_REMOVED key was present in the frozen fixture, both languages', () => {
-    for (const key of RANK_MODE_KEYS_REMOVED) {
-      expect(key in fixture.en, `${key} missing from fixture.en`).toBe(true);
-      expect(key in fixture.pt, `${key} missing from fixture.pt`).toBe(true);
-    }
-  });
-
-  it('every RANK_MODE_KEYS_REMOVED key is absent from STRINGS, both languages', () => {
-    for (const key of RANK_MODE_KEYS_REMOVED) {
-      expect(key in STRINGS.en, `${key} still present in STRINGS.en`).toBe(false);
-      expect(key in STRINGS.pt, `${key} still present in STRINGS.pt`).toBe(false);
-    }
-  });
-
-  it('RANK_MODE_KEYS_ADDED has exactly 4 entries, present in STRINGS but absent from the frozen fixture, both languages', () => {
-    expect(RANK_MODE_KEYS_ADDED.length).toBe(4);
-    for (const key of RANK_MODE_KEYS_ADDED) {
-      expect(key in fixture.en, `${key} unexpectedly present in fixture.en`).toBe(false);
-      expect(key in fixture.pt, `${key} unexpectedly present in fixture.pt`).toBe(false);
-      expect(key in STRINGS.en, `${key} missing from STRINGS.en`).toBe(true);
-      expect(key in STRINGS.pt, `${key} missing from STRINGS.pt`).toBe(true);
-    }
-  });
-
-  it('CRIT_DMG_FLAT_KEYS_ADDED has exactly 1 entry, present in STRINGS but absent from the frozen fixture, both languages', () => {
-    expect(CRIT_DMG_FLAT_KEYS_ADDED.length).toBe(1);
-    for (const key of CRIT_DMG_FLAT_KEYS_ADDED) {
-      expect(key in fixture.en, `${key} unexpectedly present in fixture.en`).toBe(false);
-      expect(key in fixture.pt, `${key} unexpectedly present in fixture.pt`).toBe(false);
-      expect(key in STRINGS.en, `${key} missing from STRINGS.en`).toBe(true);
-      expect(key in STRINGS.pt, `${key} missing from STRINGS.pt`).toBe(true);
-    }
-  });
-
-  it('ITEM_SET_KEYS_REMOVED has exactly 1 entry', () => {
-    expect(ITEM_SET_KEYS_REMOVED.length).toBe(1);
-  });
-
-  it('every ITEM_SET_KEYS_REMOVED key was present in the frozen fixture, both languages', () => {
-    for (const key of ITEM_SET_KEYS_REMOVED) {
-      expect(key in fixture.en, `${key} missing from fixture.en`).toBe(true);
-      expect(key in fixture.pt, `${key} missing from fixture.pt`).toBe(true);
-    }
-  });
-
-  it('every ITEM_SET_KEYS_REMOVED key is absent from STRINGS, both languages', () => {
-    for (const key of ITEM_SET_KEYS_REMOVED) {
-      expect(key in STRINGS.en, `${key} still present in STRINGS.en`).toBe(false);
-      expect(key in STRINGS.pt, `${key} still present in STRINGS.pt`).toBe(false);
-    }
-  });
-
-  it('ITEM_SET_PROSE_EDITED_PATHS has exactly 1 entry, whose key survives in both the fixture and STRINGS with a changed value, both languages', () => {
-    expect(ITEM_SET_PROSE_EDITED_PATHS.length).toBe(1);
-    for (const key of ITEM_SET_PROSE_EDITED_PATHS) {
-      expect(key in fixture.en, `${key} missing from fixture.en`).toBe(true);
-      expect(key in fixture.pt, `${key} missing from fixture.pt`).toBe(true);
-      expect(key in STRINGS.en, `${key} missing from STRINGS.en`).toBe(true);
-      expect(key in STRINGS.pt, `${key} missing from STRINGS.pt`).toBe(true);
-      const typedKey = key as keyof Strings;
-      expect(STRINGS.en[typedKey], `${key} unchanged in EN — nothing to enumerate`).not.toBe(
-        fixture.en[typedKey],
-      );
-      expect(STRINGS.pt[typedKey], `${key} unchanged in PT — nothing to enumerate`).not.toBe(
-        fixture.pt[typedKey],
-      );
     }
   });
 
