@@ -1,6 +1,29 @@
 import { describe, expect, it } from 'vitest';
 import { STRINGS } from '@/shared/i18n';
-import { KEYSTONE_KEYS_REMOVED } from './i18n-split-parity.test';
+
+/**
+ * MP5 F3 — the 12 keys that feature deleted. Kept here as a standalone, permanent record: this
+ * suite's job is "these identifiers must never come back to STRINGS", independent of whatever
+ * the i18n-split-parity fixture currently looks like. It used to be imported from
+ * `i18n-split-parity.test.ts`, which also used it to compute a delta against the frozen
+ * fixture — but the 2026-08-17 fixture re-baseline (see that file's top comment) cleared that
+ * bookkeeping, since the fresh fixture no longer contains these keys either. This list has no
+ * such dependency: it is a fixed historical fact, not a diff against a moving baseline.
+ */
+const KEYSTONE_KEYS_REMOVED = [
+  'treeGlassCannon',
+  'treeGlassCannonHint',
+  'treeAbisso',
+  'treeAbissoHint',
+  'treeTempoDobrado',
+  'treeTempoDobradoHint',
+  'keystoneOn',
+  'keystoneOff',
+  'importKeystoneOn',
+  'bdNoteGlassCannon',
+  'bdNoteTempoDobrado',
+  'bdTermAbisso',
+] as const;
 
 // MSC-05, MSC-06 — the 12 deleted keys are gone from BOTH languages, and no *surviving*
 // string in either language still names a keystone. Two of the three keystone display
