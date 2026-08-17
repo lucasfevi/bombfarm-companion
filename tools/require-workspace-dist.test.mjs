@@ -1,6 +1,7 @@
 /**
  * The shared build-prerequisite guard (`tools/require-workspace-dist.mjs`), which three vitest
- * projects — `@bombfarm/desktop`, `@bombfarm/game-api` and `tools` — wire up as `globalSetup`.
+ * projects use: `@bombfarm/desktop` and `@bombfarm/game-api` as a project-wide `globalSetup`,
+ * and `tools` as a per-file call from its one build-dependent test (see WIRED_PROJECTS below).
  *
  * It lives here rather than beside a single consumer because it belongs to none of them: `tools/`
  * is where the repo keeps build/CI tooling shared across packages, and `tools/vitest.config.ts`'s
@@ -29,15 +30,30 @@ const repoRoot = path.join(__dirname, '..');
 const guardModule = path.join(__dirname, 'require-workspace-dist.mjs');
 
 /**
- * Every vitest project that wires the guard up, with the config that does it. Kept as data so the
- * wiring assertions below and the required-list table can be checked against each other: a
- * project listed here but missing from REQUIRED_DIST_PACKAGES (or the reverse) is a drift bug.
+ * Every vitest project that wires the guard up, and HOW. Kept as data so the wiring assertions
+ * below and the required-list table can be checked against each other: a project listed here but
+ * missing from REQUIRED_DIST_PACKAGES (or the reverse) is a drift bug.
+ *
+ * Two projects run it project-wide as `globalSetup`; every CI invocation of those two builds the
+ * workspace packages first (`ci-desktop.yml` builds before `pnpm vitest run --project
+ * '!@bombfarm/web'`, `ci-fidelity.yml` builds before `pnpm vitest run --project tools`), so a
+ * project-wide throw never fires in a job that did not need a build.
+ *
+ * `tools` carries it per-file instead (`globalSetupConfig: null`). `globalSetup` runs once per
+ * PROJECT before collection regardless of any filename filter, and
+ * `.github/workflows/line-endings.yml` runs `pnpm vitest run --project tools line-endings`
+ * build-free by design — a project-wide guard there failed a job that needed no build. Exactly one
+ * of the project's 33 files needs `packages/domain/dist`, so the assert lives in that file.
  */
 const WIRED_PROJECTS = [
-  { project: '@bombfarm/desktop', config: 'apps/desktop/vitest.config.ts' },
-  { project: '@bombfarm/game-api', config: 'packages/game-api/vitest.config.ts' },
-  { project: 'tools', config: 'tools/vitest.config.ts' },
+  { project: '@bombfarm/desktop', globalSetupConfig: 'apps/desktop/vitest.config.ts' },
+  { project: '@bombfarm/game-api', globalSetupConfig: 'packages/game-api/vitest.config.ts' },
+  { project: 'tools', globalSetupConfig: null },
 ];
+
+/** The `tools` project's per-file wiring — the config that must NOT carry it, and the file that must. */
+const TOOLS_CONFIG = 'tools/vitest.config.ts';
+const TOOLS_GUARDED_FILE = 'tools/advice-change-key-coverage.test.mjs';
 
 /**
  * The guard is exercised against injected fixture roots, never against real build output:
@@ -104,16 +120,58 @@ describe('REQUIRED_DIST_PACKAGES', () => {
   });
 });
 
-describe('guard wiring (the three configs point at this one module)', () => {
-  for (const { project, config } of WIRED_PROJECTS) {
-    it(`${config} runs the shared guard as globalSetup`, () => {
-      expect(globalSetupTargets(config)).toEqual([guardModule]);
-    });
+describe('guard wiring (every consumer reaches this one module)', () => {
+  for (const { project, globalSetupConfig } of WIRED_PROJECTS) {
+    if (globalSetupConfig) {
+      it(`${globalSetupConfig} runs the shared guard as globalSetup`, () => {
+        expect(globalSetupTargets(globalSetupConfig)).toEqual([guardModule]);
+      });
+    }
 
     it(`${project} declares a required-dist list`, () => {
       expect(() => requiredDistPackages(project)).not.toThrow();
     });
   }
+
+  /**
+   * The `tools` half of the wiring, asserted in two pieces so neither can rot unnoticed: the
+   * project must NOT have a globalSetup (re-adding one re-breaks the build-free line-endings
+   * job), and its one build-dependent file must carry the assert itself (deleting that call
+   * turns this red, rather than silently downgrading the guard to a collection-time crash).
+   */
+  describe(`the tools project carries the guard per-file, not project-wide`, () => {
+    const guardedSource = readFileSync(path.join(repoRoot, TOOLS_GUARDED_FILE), 'utf8');
+
+    it(`${TOOLS_CONFIG} declares no globalSetup — line-endings.yml runs this project build-free`, () => {
+      expect(globalSetupTargets(TOOLS_CONFIG)).toEqual([]);
+    });
+
+    it(`${TOOLS_GUARDED_FILE} imports the shared guard`, () => {
+      expect(guardedSource).toMatch(/from '\.\/require-workspace-dist\.mjs'/);
+    });
+
+    it(`${TOOLS_GUARDED_FILE} calls assertWorkspaceDistBuilt('tools') at top level`, () => {
+      expect(guardedSource).toMatch(/^assertWorkspaceDistBuilt\('tools'\);$/m);
+    });
+
+    /**
+     * The hoisting hazard this arrangement exists to dodge: ESM `import` statements are hoisted,
+     * so a static import of hero-advice.ts would resolve — and fail — BEFORE any top-level call
+     * could run, handing back `Cannot find package '@bombfarm/domain/account-fidelity'` instead
+     * of the guard's actionable message. It must arrive via a dynamic import placed after the
+     * assert.
+     */
+    it('pulls hero-advice.ts in by dynamic import, after the assert — never by a hoisted static import', () => {
+      expect(guardedSource).not.toMatch(/^import\b[^\n]*hero-advice\.ts/m);
+
+      const assertIndex = guardedSource.indexOf("assertWorkspaceDistBuilt('tools');");
+      const dynamicImportIndex = guardedSource.search(
+        /await import\(\s*'\.\.\/apps\/desktop\/renderer\/lib\/planning\/hero-advice\.ts'\s*\)/,
+      );
+      expect(assertIndex).toBeGreaterThan(-1);
+      expect(dynamicImportIndex).toBeGreaterThan(assertIndex);
+    });
+  });
 
   it('the desktop and game-api project names match their package manifests', () => {
     for (const [project, manifestPath] of [

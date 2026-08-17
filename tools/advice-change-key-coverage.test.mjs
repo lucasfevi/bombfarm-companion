@@ -18,7 +18,23 @@ import { readFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
-import { CHANGE_KEY_INPUTS, heroChangeKey, sharedChangeKey } from '../apps/desktop/renderer/lib/planning/hero-advice.ts';
+import { assertWorkspaceDistBuilt } from './require-workspace-dist.mjs';
+
+// The build-prerequisite guard, per-file rather than as the `tools` project's `globalSetup`
+// (see tools/vitest.config.ts for why: .github/workflows/line-endings.yml runs this project
+// build-free by design, and this is the ONLY one of its 33 files that needs a build).
+//
+// The two lines below must stay in this order and this shape. `hero-advice.ts` imports
+// `@bombfarm/domain/account-fidelity` and `/roster-dps`, which resolve through the real
+// `exports` map at ./dist/**; a static `import` of it would be HOISTED above this call and die
+// first with `Cannot find package '@bombfarm/domain/account-fidelity'`, which points nowhere
+// near the fix. Top-level `await import(...)` runs in statement order, so the assert fires
+// first and the failure names the unbuilt package and `pnpm build`.
+assertWorkspaceDistBuilt('tools');
+
+const { CHANGE_KEY_INPUTS, heroChangeKey, sharedChangeKey } = await import(
+  '../apps/desktop/renderer/lib/planning/hero-advice.ts'
+);
 
 const root = resolve(fileURLToPath(new URL('..', import.meta.url)));
 const ROSTER_DPS_PATH = join(root, 'packages/domain/src/roster-dps.ts');

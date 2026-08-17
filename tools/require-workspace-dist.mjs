@@ -26,10 +26,13 @@ export const PACKAGES_ROOT = join(here, '..', 'packages');
  *   `game-data`, `pricing`, `ui` leaves it green at 14 files / 203 tests. `contracts` looks like a
  *   dependency and is not: every `@bombfarm/contracts` specifier under `packages/game-api/src` is
  *   an `import type`, erased before it can be resolved.
- * - `tools` — `domain` only. Removing `domain/dist` fails `advice-change-key-coverage.test.mjs`
- *   at collection (it imports `apps/desktop/renderer/lib/planning/hero-advice.ts`, which imports
+ * - `tools` — `domain` only, and needed by exactly ONE of the project's 33 files. Removing
+ *   `domain/dist` fails `advice-change-key-coverage.test.mjs` at collection (it pulls in
+ *   `apps/desktop/renderer/lib/planning/hero-advice.ts`, which imports
  *   `@bombfarm/domain/account-fidelity` and `/roster-dps`) — 484 tests drop to 450. Removing any
- *   other package's `dist` leaves the project green at 33 files / 484 tests.
+ *   other package's `dist` leaves the project green at 33 files / 484 tests. Because the need is
+ *   one file wide, this project calls the assert per-file instead of as `globalSetup`; the entry
+ *   stays here because that call still reads it. See `tools/vitest.config.ts`.
  *
  * A short list here is worse than no guard: an earlier revision checked `domain` alone for the
  * desktop project and handed back a false all-clear while 20+ files still died at collection.
@@ -81,6 +84,9 @@ export function missingDistPackages(project, packagesRoot = PACKAGES_ROOT) {
 }
 
 /**
+ * The entry point for both wirings: `globalSetup` for the two project-wide consumers, and a
+ * direct top-level call for the one per-file consumer (`tools/advice-change-key-coverage.test.mjs`).
+ *
  * These packages publish their entry points from `dist/` (`packages/domain`'s `exports` map, for
  * one, points every subpath at `./dist/**`), and the three projects listed in
  * {@link REQUIRED_DIST_PACKAGES} resolve them through those real `exports` maps — `apps/web` and
@@ -150,8 +156,12 @@ export function projectNameOf(context) {
  * Vitest `globalSetup` hook — runs once per project before collection, so the message above
  * replaces the collection errors instead of arriving after them.
  *
- * Wired into `apps/desktop/vitest.config.ts`, `packages/game-api/vitest.config.ts` and
- * `tools/vitest.config.ts`, all pointing at this one module.
+ * Wired into `apps/desktop/vitest.config.ts` and `packages/game-api/vitest.config.ts`, both
+ * pointing at this one module. Deliberately NOT wired into `tools/vitest.config.ts`: a
+ * project-wide hook there fires in `.github/workflows/line-endings.yml`, which runs
+ * `pnpm vitest run --project tools line-endings` build-free by design — `globalSetup` runs per
+ * project regardless of the filename filter. That project calls {@link assertWorkspaceDistBuilt}
+ * directly from its one build-dependent file instead.
  *
  * @param {{ name?: string }} context The vitest `TestProject`.
  * @returns {void}

@@ -42,9 +42,12 @@ pnpm test:smoke   # Windows — builds static renderer + launches Electron
 and entry points from `dist/` (`packages/domain`'s `exports` map, for one, points every subpath
 at `./dist/**`), so on a freshly cloned tree `pnpm typecheck`, `pnpm lint` and three of the vitest
 projects — `@bombfarm/desktop`, `@bombfarm/game-api` and `tools` — all fail to resolve them until
-the packages are built. Those three run `tools/require-workspace-dist.mjs` as a `globalSetup`
-guard, which throws and names the unbuilt packages instead of letting the affected files die at
-collection; `apps/web` and `packages/domain` alias `@bombfarm/domain` to `src/` and need no build.
+the packages are built. All three run `tools/require-workspace-dist.mjs`, which throws and names
+the unbuilt packages instead of letting the affected files die at collection: the first two as a
+project-wide `globalSetup`, and `tools` as a per-file call from the single file that needs a build
+(`globalSetup` would also fire in the deliberately build-free `line-endings` CI job, which runs
+that project with a filename filter). `apps/web` and `packages/domain` alias `@bombfarm/domain` to
+`src/` and need no build.
 
 ## Conventions
 
