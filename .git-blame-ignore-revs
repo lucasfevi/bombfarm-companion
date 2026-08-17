@@ -1,0 +1,26 @@
+# Revisions to skip in `git blame` — mechanical reformatting only, no behaviour
+# change. Without this, one whole-tree rewrite makes itself the author of every
+# line it touched.
+#
+# Opt in locally (once per clone):
+#
+#   git config blame.ignoreRevsFile .git-blame-ignore-revs
+#
+# GitHub's blame view reads this file automatically; no setup needed there.
+#
+# One full 40-character SHA per line, newest last, with the commit subject in a
+# comment above it. Add a commit here only when the blame it rescues clearly
+# outweighs the blame it costs.
+#
+# Note on this repo's workflow: PRs are squash-merged into `develop`, so a
+# feature branch's individual commits never reach `develop` and their SHAs are
+# not valid here. The SHA to list is always the squashed commit as it landed.
+# That means an entry can only be added *after* its PR merges, in a follow-up.
+#
+# A squashed normalization commit is necessarily not purely mechanical — it
+# carries the policy and guard alongside the reformatting. That is an accepted
+# trade: it rescues blame on the hundreds of reformatted files at the cost of a
+# handful of lines in the few pre-existing files the same PR edited.
+
+# (empty — the LF normalization SHA is added once #115 lands on develop; see
+# docs/line-endings.md)
