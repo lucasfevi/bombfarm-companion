@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { normalizeHero } from '@/shared/lib/storage';
-import { heroAvatarSrc, itemIconSrc, normalizeSkin, rarityCrystalSrc, abilityIconSrc, goldIconSrc } from '@bombfarm/domain/wiki-assets';
+import { HERO_SKIN_COUNT, heroAvatarSrc, isKnownSkin, itemIconSrc, normalizeSkin, rarityCrystalSrc, abilityIconSrc, goldIconSrc } from '@bombfarm/domain/wiki-assets';
 
 describe('wiki-assets', () => {
   it('maps save skin to bundled avatar paths', () => {
@@ -11,14 +11,22 @@ describe('wiki-assets', () => {
     expect(heroAvatarSrc(4)).toBe('/wiki-assets/hero/hero5_avatar.png');
     expect(heroAvatarSrc(5)).toBe('/wiki-assets/hero/hero6_avatar.png');
     expect(heroAvatarSrc(6)).toBe('/wiki-assets/hero/hero7_avatar.png');
+    expect(heroAvatarSrc(7)).toBe('/wiki-assets/hero/hero8_avatar.png');
   });
 
   it('clamps skin to 0..(HERO_SKIN_COUNT-1)', () => {
     expect(normalizeSkin(-1)).toBe(0);
     expect(normalizeSkin(5)).toBe(5);
     expect(normalizeSkin(6.4)).toBe(6);
-    expect(normalizeSkin(99)).toBe(6);
+    expect(normalizeSkin(7)).toBe(7);
+    expect(normalizeSkin(99)).toBe(7);
     expect(normalizeSkin('x')).toBe(0);
+  });
+
+  it('treats skin 7 as known and 8 as unknown', () => {
+    expect(HERO_SKIN_COUNT).toBe(8);
+    expect(isKnownSkin(7)).toBe(true);
+    expect(isKnownSkin(8)).toBe(false);
   });
 
   it('builds item icon paths from catalog defs', () => {
