@@ -90,44 +90,6 @@ describe('roster slice', () => {
     expect(localStorage.getItem('bf-hp-active-hero-v1')).toBeNull();
   });
 
-  it('importHeroRecords merges by sourceId and does not touch the active pointer', () => {
-    const a = hero('local-1', 'game-1');
-    usePlannerStore.getState().hydrateRoster([a], 'local-1');
-    usePlannerStore.getState().setActiveHeroId('local-1');
-    const beforeActive = localStorage.getItem('bf-hp-active-hero-v1');
-
-    const incoming = {
-      ...hero('new', 'game-1'),
-      id: undefined as unknown as string,
-      name: 'Updated',
-      level: 9,
-    };
-    const { updated, created } = usePlannerStore.getState().importHeroRecords([
-      { ...incoming, sourceId: 'game-1' },
-    ]);
-    expect(updated).toBe(1);
-    expect(created).toBe(0);
-    expect(usePlannerStore.getState().heroes[0]?.name).toBe('Updated');
-    expect(localStorage.getItem('bf-hp-active-hero-v1')).toBe(beforeActive);
-  });
-
-  it('importHeroRecords overwrites a local battleAllowed toggle from the save and syncs the open draft', () => {
-    const a = hero('local-1', 'game-1');
-    usePlannerStore.getState().hydrateRoster([{ ...a, battleAllowed: false }], 'local-1');
-    usePlannerStore.getState().applyHero({ ...a, battleAllowed: false });
-    expect(usePlannerStore.getState().heroBattleAllowed).toBe(false);
-
-    const incoming = {
-      ...hero('new', 'game-1'),
-      id: undefined as unknown as string,
-      battleAllowed: true,
-    };
-    usePlannerStore.getState().importHeroRecords([{ ...incoming, sourceId: 'game-1' }]);
-
-    expect(usePlannerStore.getState().heroes[0]?.battleAllowed).toBe(true);
-    expect(usePlannerStore.getState().heroBattleAllowed).toBe(true);
-  });
-
   it('setHeroBattleAllowedOnHero persists and syncs the active draft', () => {
     const a = hero('a', 's-a');
     const b = hero('b', 's-b');
@@ -169,4 +131,76 @@ describe('roster slice', () => {
     expect(usePlannerStore.getState().heroes).toBe(before);
   });
 
+  /**
+   * The consumer half of the roster-identity invariant — `commitRoster` in
+   * `stores/slices/roster-slice.ts`. See `farm-ranking-selectors.test.ts` for what a fresh roster
+   * array costs the Farm board.
+   *
+   * These cases observe the `set` ITSELF, via a plain (selector-less) store subscription that
+   * fires on every write. Asserting on `state.heroes` identity instead would prove nothing: a
+   * `set({ heroes: sameRef })` leaves the reference untouched, so a well-behaved producer alone
+   * satisfies such an assertion whether or not the guard exists. Deleting the guard has to make
+   * something here fail.
+   */
+  describe('roster write guard (commitRoster)', () => {
+    /** Counts every store write while `run` executes. */
+    function countSets(run: () => void): number {
+      let writes = 0;
+      const unsubscribe = usePlannerStore.subscribe(() => {
+        writes++;
+      });
+      try {
+        run();
+      } finally {
+        unsubscribe();
+      }
+      return writes;
+    }
+
+    /**
+     * `patchHero` is the isolation case: it routes through `commitRoster` with no companion
+     * fields and performs no other write of its own, so every counted `set` is the guard's.
+     */
+    it('does not `set` at all when the producer hands back the same array', () => {
+      const a = hero('a', 's-a');
+      usePlannerStore.getState().hydrateRoster([a], 'a');
+      // What the 700ms autosave produces: a rebuilt record, identical data, a later save stamp.
+      const rebuilt = normalizeHero({ ...structuredClone(a), updatedAt: a.updatedAt + 700 });
+
+      expect(countSets(() => usePlannerStore.getState().patchHero(rebuilt))).toBe(0);
+    });
+
+    it('does `set` when the producer hands back a new array', () => {
+      const a = hero('a', 's-a');
+      usePlannerStore.getState().hydrateRoster([a], 'a');
+      const edited = { ...a, level: a.level + 1 };
+
+      expect(countSets(() => usePlannerStore.getState().patchHero(edited))).toBe(1);
+      expect(usePlannerStore.getState().heroes[0]?.level).toBe(a.level + 1);
+    });
+
+    it('applies a companion field on the no-op branch — the guard covers `heroes`, not siblings', () => {
+      const a = hero('a', 's-a');
+      usePlannerStore.getState().hydrateRoster([a], null);
+      const before = usePlannerStore.getState().heroes;
+
+      // Same array reference, new active pointer: the write must still happen, for the pointer.
+      const writes = countSets(() => usePlannerStore.getState().hydrateRoster(before, 'a'));
+
+      expect(writes).toBe(1);
+      expect(usePlannerStore.getState().heroes).toBe(before);
+      expect(usePlannerStore.getState().activeHeroId).toBe('a');
+    });
+
+    it('still replaces the roster when the array reference actually changed', () => {
+      const a = hero('a', 's-a');
+      usePlannerStore.getState().hydrateRoster([a], 'a');
+      const before = usePlannerStore.getState().heroes;
+
+      usePlannerStore.getState().setHeroes([...before, hero('b', 's-b')]);
+
+      expect(usePlannerStore.getState().heroes).not.toBe(before);
+      expect(usePlannerStore.getState().heroes.map((h) => h.id)).toEqual(['a', 'b']);
+    });
+  });
 });

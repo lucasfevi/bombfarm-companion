@@ -54,8 +54,13 @@ const EMPTY_ROWS: readonly FarmRateRow[] = [];
  * The converse obligation falls on PRODUCERS: members compared by reference here (`heroes`,
  * `teamBuffs`, `farmPoolOverrides`) must be identity-stable across a write that changed nothing.
  * `depsEqual` compares with `Object.is`, so a fresh-but-equal array or object reads exactly like a
- * real edit — it drops a live respec proposal with no error surfaced. See `patchHeroInList`
- * (`shared/lib/storage.ts`) for the guard that keeps `heroes` stable and what it cost to find.
+ * real edit — it drops a live respec proposal with no error surfaced. For `heroes` that obligation
+ * is met by every roster producer in `shared/lib/storage.ts` — `patchHeroInList` (the 700ms
+ * autosave path, the guard that cost the most to find), `importHeroes` (the save-import path), and
+ * `writeHeroBattleAllowed` (`stores/persistence/persist-roster.ts`) — each returning the SAME
+ * array when nothing changed. The matching consumer half is `commitRoster` in
+ * `stores/slices/roster-slice.ts`, the single writer of `state.heroes`, which declines to `set`
+ * on an unchanged reference. A new roster producer owes both halves.
  */
 export function readFarmDepTuple(state: PlannerStore) {
   return [

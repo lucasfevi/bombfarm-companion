@@ -644,6 +644,8 @@ describe('staleness derivations (an input change invalidates the proposal and re
   // The NON-mutation counterpart to the loop above: a no-op autosave patch must leave
   // `state.heroes` alone. See `patchHeroInList` in `@/shared/lib/storage` for what a fresh
   // roster array does to this tuple and why it failed silently.
+  // The IMPORT path holds the same contract via `importHeroes`; its cases live in
+  // `farm-respec-import-identity.test.ts` (this suite sits at its own max-lines cap).
   it('a NO-OP autosave patch does not invalidate the proposal: the roster array keeps its identity', () => {
     usePlannerStore.getState().setFarmRespecReRank(true);
     const before = usePlannerStore.getState().heroes;
