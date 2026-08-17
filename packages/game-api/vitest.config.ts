@@ -3,6 +3,12 @@ import { defineConfig } from 'vitest/config';
 export default defineConfig({
   test: {
     include: ['src/**/*.test.ts'],
+    // Fail once, before collection, when packages/domain/dist is missing — measured: without it
+    // five of this project's files (client, domain-edge, fingerprints, routes, shape) die at
+    // collection with opaque "Cannot find package '@bombfarm/domain/<subpath>'" errors while the
+    // summary still reads "131 passed" with zero failures. Shared with apps/desktop and tools/;
+    // the module keys the required list off this project's vitest name.
+    globalSetup: ['../../tools/require-workspace-dist.mjs'],
     // Type-level assertion files (*.type.test.ts) are executed here too — the `it` blocks with
     // runtime assertions run only under Vitest, while the `@ts-expect-error` directives are
     // enforced only by `pnpm --filter @bombfarm/game-api typecheck:tests` (tsconfig.typecheck.json).
