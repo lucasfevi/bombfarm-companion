@@ -14,11 +14,11 @@ export default defineConfig({
     // Fail once, before collection, when any of the workspace dist builds this project resolves
     // through (contracts, domain, game-api, game-data) is missing — see the module's comment.
     // Without it the same missing build surfaces as dozens of opaque "Cannot find package
-    // '@bombfarm/<pkg>/<subpath>'" collection errors that point nowhere near the fix. Scoped to
-    // this project because apps/web and packages/domain alias @bombfarm/domain to src/ and need
-    // no build — NOT because this is the only exposed project. packages/game-api resolves domain
-    // through the same exports map and is still unguarded; see the module's comment.
-    globalSetup: ['./scripts/require-workspace-dist.mjs'],
+    // '@bombfarm/<pkg>/<subpath>'" collection errors that point nowhere near the fix. The module
+    // is shared with packages/game-api and tools/, which resolve domain through the same exports
+    // map and carry their own measured lists; it keys off this project's vitest name. apps/web
+    // and packages/domain alias @bombfarm/domain to src/, need no build, and stay unwired.
+    globalSetup: ['../../tools/require-workspace-dist.mjs'],
     server: {
       deps: {
         // AD-033: packages/domain/dist is a BUNDLER-target artifact, not Node-native ESM.

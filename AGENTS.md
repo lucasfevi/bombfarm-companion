@@ -40,8 +40,11 @@ pnpm test:smoke   # Windows — builds static renderer + launches Electron
 
 `pnpm build` is not optional and has to come first: the workspace packages publish their types
 and entry points from `dist/` (`packages/domain`'s `exports` map, for one, points every subpath
-at `./dist/**`), so on a freshly cloned tree `pnpm typecheck`, `pnpm lint` and the desktop vitest
-project all fail to resolve them until the packages are built.
+at `./dist/**`), so on a freshly cloned tree `pnpm typecheck`, `pnpm lint` and three of the vitest
+projects — `@bombfarm/desktop`, `@bombfarm/game-api` and `tools` — all fail to resolve them until
+the packages are built. Those three run `tools/require-workspace-dist.mjs` as a `globalSetup`
+guard, which throws and names the unbuilt packages instead of letting the affected files die at
+collection; `apps/web` and `packages/domain` alias `@bombfarm/domain` to `src/` and need no build.
 
 ## Conventions
 
