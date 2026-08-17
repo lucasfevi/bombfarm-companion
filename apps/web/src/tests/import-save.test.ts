@@ -122,8 +122,15 @@ function baseSave() {
         // penetration and luck are the amuleto's 3 rolls, so only those three move.
         //
         // Recomputed a THIRD time 2026-08-16 for the same-day item redistribution: the
-        // `steel_amuleto` this hero wears now rolls sorte > dmg > crit rather than
+        // amuleto this hero wears now rolls sorte > dmg > crit rather than
         // dmg/penetration/luck, so energia, speed, penetration and luck all move with it.
+        //
+        // NOT recomputed when the item was re-identified `steel_amuleto` -> `gold_amuleto`
+        // (level 20 is Gold's native level post-2026-08-15; Steel moved to 120). The swap is
+        // stat-neutral by construction: Steel's valores are exactly 6x Gold's and
+        // `nivelMult[120] / nivelMult[20]` is also exactly 6, so `scaledValores` cancels the
+        // two and both items contribute the same rolls at level 20. Every value below is
+        // unchanged; only the def id moved.
         //
         // Recomputed 2026-08-16 for the flat crit-chance/CDR change. `crit_chance` moves
         // 0.15348 → 0.61506 because this synthetic `skills.totals.crit_chance_add` (0.5148) was
@@ -242,7 +249,7 @@ function baseSave() {
     ],
     items: [
       {
-        def_id: 'steel_amuleto',
+        def_id: 'gold_amuleto',
         equip_slot: 7,
         equipped_on: '1001',
         id: '27133',
@@ -251,7 +258,7 @@ function baseSave() {
         upgrade: 10,
       },
       {
-        def_id: 'steel_anel',
+        def_id: 'gold_anel',
         equip_slot: 2,
         equipped_on: '1004',
         id: '27134',
@@ -375,7 +382,7 @@ describe('parseSaveFile', () => {
     expect(cora.gearCount).toBe(1);
     expect(cora.abilityCount).toBe(2);
     expect(cora.record.abilities).toEqual({ detonacao_dupla: 10, passagem_bastao: 10 });
-    expect(cora.record.loadout.amuleto).toEqual({ defId: 'steel_amuleto', rarityIdx: 2, level: 20, upgrade: 10 });
+    expect(cora.record.loadout.amuleto).toEqual({ defId: 'gold_amuleto', rarityIdx: 2, level: 20, upgrade: 10 });
     expect(cora.record.stars).toBe(2);
 
     // AC-06 (ASM-02): gearedOverride is the tree-inclusive, ZERO-points sheet — composed

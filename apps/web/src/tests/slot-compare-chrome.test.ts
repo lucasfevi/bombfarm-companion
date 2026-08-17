@@ -2,8 +2,9 @@ import { describe, expect, it } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { slotChromeClassName, slotStatClassName } from '@/features/gear/components/slot-editor';
-import { STRINGS } from '@/shared/i18n';
-import type { EquippedItem } from '@bombfarm/domain/gear';
+import { STRINGS, sub } from '@/shared/i18n';
+import { setsForLevel, type EquippedItem } from '@bombfarm/domain/gear';
+import { setName } from '@bombfarm/domain/game-labels';
 
 const eq = (rarityIdx: number): EquippedItem => ({
   defId: 'crimson_arma',
@@ -69,6 +70,45 @@ describe('gear compare chrome copy', () => {
     expect(src).not.toMatch(/changedFrom/);
     expect(src).not.toMatch(/Was:/);
     expect(src).not.toMatch(/current\?:/);
+  });
+});
+
+/**
+ * #106 — one level means one set (`setsByLevel` is a bijection, guarded in `@bombfarm/domain`),
+ * so the set select could only ever offer a single option. It is gone, and the set name rides in
+ * the level option's label instead. The composed label is asserted through the REAL catalog and
+ * `setName`, not a hand-written string, so a re-key that renames a set is visible here too.
+ */
+describe('gear slot set select removal', () => {
+  const src = readFileSync(resolve(__dirname, '../features/gear/components/slot-editor.tsx'), 'utf8');
+
+  it('renders three selects per slot — level, rarity, forge', () => {
+    expect(src.match(/<Select\b/g) ?? []).toHaveLength(3);
+    expect(src).toContain('aria-label={t.itemLevel}');
+    expect(src).toContain('aria-label={t.itemRarity}');
+    expect(src).toContain('aria-label={t.forgeLevel}');
+  });
+
+  it('has no set control, and no string left over for one', () => {
+    expect(src).not.toContain('itemSet');
+    for (const lang of ['en', 'pt'] as const) {
+      expect(STRINGS[lang]).not.toHaveProperty('itemSet');
+    }
+  });
+
+  it('still derives the set from the level, in the label and on change', () => {
+    expect(src).toContain('setName(setsForLevel(levelOption)[0]');
+    expect(src).toContain('setsForLevel(next)[0]');
+  });
+
+  it('composes "Level 300 - Void" / "Nível 300 - Vazio" from the catalog', () => {
+    const composed = (lang: 'en' | 'pt', level: number) =>
+      sub(STRINGS[lang].itemLevelOpt, { n: level, set: setName(setsForLevel(level)[0] ?? '', lang) });
+    expect(composed('en', 300)).toBe('Level 300 - Void');
+    expect(composed('pt', 300)).toBe('Nível 300 - Vazio');
+    // The lowest level too, so the assertion is not resting on one lucky row.
+    expect(composed('en', 10)).toBe(`Level 10 - ${setName('ember', 'en')}`);
+    expect(composed('pt', 10)).toBe(`Nível 10 - ${setName('ember', 'pt')}`);
   });
 });
 
