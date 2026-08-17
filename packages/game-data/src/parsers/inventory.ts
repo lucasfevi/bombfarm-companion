@@ -1,17 +1,6 @@
 import type { InventoryItem, ItemKind, Rarity, RawInventoryBag, RawInventoryItem, Slot } from '@bombfarm/contracts';
 import { isPlausibleDefId, isPlausibleId, isRecord, parseNumericField } from '../validation.js';
 
-const SLOT_EN: Record<Slot, string> = {
-  0: 'weapon',
-  1: 'helmet',
-  2: 'armor',
-  3: 'legs',
-  4: 'boots',
-  5: 'gloves',
-  6: 'ring',
-  7: 'amulet',
-};
-
 export interface InventoryParseResult {
   ok: true;
   bag: RawInventoryBag;
@@ -39,12 +28,6 @@ function parseSlot(value: unknown): Slot | null {
   const n = Number(value);
   if (!Number.isInteger(n) || n < 0 || n > 7) return null;
   return n as Slot;
-}
-
-function computeIconUrl(set: string, level: number, slot: Slot | null): string {
-  if (!set || slot == null) return '';
-  const slotName = SLOT_EN[slot];
-  return `https://wiki.bombfarm.net/wiki/static/assets/items/lvl${String(level)}_${slotName}_${set}.png`;
 }
 
 function isGarbageItem(raw: unknown): boolean {
@@ -96,7 +79,6 @@ function mapItem(raw: RawInventoryItem): InventoryItem | null {
     locked,
     equippedOn,
     equipSlot,
-    iconUrl: computeIconUrl(set, level, slot),
   };
 }
 

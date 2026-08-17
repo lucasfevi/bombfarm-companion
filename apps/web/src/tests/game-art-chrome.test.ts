@@ -1,7 +1,9 @@
 import { describe, expect, it } from 'vitest';
-import { readFileSync, readdirSync } from 'node:fs';
+import { existsSync, readFileSync, readdirSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { ABILITIES } from '@bombfarm/domain/model';
+import { itemIconSrc } from '@bombfarm/domain/wiki-assets';
+import catalog from '@bombfarm/domain/data/catalog.json';
 import { STRINGS } from '@/shared/i18n';
 
 const root = resolve(__dirname, '../..');
@@ -23,6 +25,40 @@ describe('bundled wiki assets', () => {
     for (const a of ABILITIES) {
       expect(files.has(`${a.id}.png`), `missing abilities/${a.id}.png`).toBe(true);
     }
+  });
+
+  /**
+   * Item art is keyed by the SET's native level, which a game patch can re-key wholesale
+   * (2026-08-15 moved 168 of 240 filenames). The catalog is regenerated then; the bundle is a
+   * separate manual step, and when it is skipped every re-keyed item renders a blank frame with
+   * no build or runtime error. Both directions are asserted so a stale leftover is caught too.
+   */
+  it('ships item art for every catalog def, and bundles no orphaned item art', () => {
+    // Non-vacuity: an empty or truncated catalog would make the loop below prove nothing.
+    expect(catalog.defs.length, 'catalog def count').toBeGreaterThan(200);
+
+    const wanted = new Set<string>();
+    const unresolved: string[] = [];
+    const missing: string[] = [];
+
+    for (const def of catalog.defs) {
+      const src = itemIconSrc(def.id);
+      if (!src) {
+        unresolved.push(def.id);
+        continue;
+      }
+      // `src` is a public-root URL (`/wiki-assets/items/…`); resolve it against `public/`
+      // so the assertion follows the real helper output, not a re-derived filename.
+      wanted.add(src.slice(src.lastIndexOf('/') + 1));
+      if (!existsSync(resolve(root, 'public', src.slice(1)))) missing.push(`${def.id} -> ${src}`);
+    }
+
+    expect(unresolved, 'catalog defs itemIconSrc returned null for').toEqual([]);
+    expect(missing, 'catalog defs whose art is not bundled').toEqual([]);
+
+    const dir = resolve(root, 'public/wiki-assets/items');
+    const orphaned = readdirSync(dir).filter((f) => !wanted.has(f));
+    expect(orphaned, 'bundled item art no catalog def points at').toEqual([]);
   });
 });
 
