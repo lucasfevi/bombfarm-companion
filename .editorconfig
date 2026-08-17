@@ -1,0 +1,27 @@
+# The editor-level half of the LF policy; `.gitattributes` is the git-level
+# half and `tools/line-endings.test.mjs` is the enforcement. See
+# docs/line-endings.md.
+root = true
+
+[*]
+charset = utf-8
+end_of_line = lf
+insert_final_newline = true
+
+# catalog.json and phases.json are minified single-line game data, refreshed out of band
+# by an emitter rather than edited by hand. The emitter writes no trailing newline, so the
+# blanket final-newline rule above would have an editor append one on any incidental open
+# and the next refresh would take it straight back out — a 40-80 KB one-line file flipping
+# back and forth in the diff for no content reason. These are the two `i/none` entries
+# `tools/line-endings.test.mjs` deliberately allows. The LF rule still applies; there is
+# simply no terminator to apply it to.
+#
+# Named individually, NOT `data/*.json`: phase-map-names-en.json and phase-wiki.json sit in
+# the same directory, are pretty-printed, and do end with a newline. A wildcard here would
+# tell an editor to strip theirs.
+#
+# Keep equals signs out of every comment line in this file: the reference editorconfig
+# parser splits any commented-out property back into a key and a value and reports it as
+# genuinely set (verified — it echoes the whole comment back as a property).
+[packages/domain/src/data/{catalog,phases}.json]
+insert_final_newline = false

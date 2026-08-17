@@ -46,6 +46,11 @@ pnpm test:smoke   # Windows — builds static renderer + launches Electron
 - TypeScript strict at the monorepo base; planner-origin packages `@bombfarm/domain`
   and `@bombfarm/ui` intentionally keep a documented exception (see
   [`docs/typescript-planner-origin.md`](docs/typescript-planner-origin.md))
+- **Never use `sed -i` (or any in-place stream edit) on a tracked file.** Use the editing
+  tools instead, which preserve existing endings. Do not convert a file's endings as a side
+  effect of a change — the repo is LF everywhere (`.gitattributes`), and a stream edit that
+  rewrites endings turns a one-line change into a whole-file diff that buries the real change
+  and destroys `git blame`. See [`docs/line-endings.md`](docs/line-endings.md)
 - No secrets in the repo
 - Do not mention other fan tools in user-facing docs
 - **Changesets are mandatory** on any PR touching `@bombfarm/web` or `@bombfarm/domain` user-visible

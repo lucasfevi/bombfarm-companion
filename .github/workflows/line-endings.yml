@@ -1,0 +1,90 @@
+name: Line endings
+
+# The repo-wide LF policy gate (docs/line-endings.md, .gitattributes,
+# tools/line-endings.test.mjs).
+#
+# DELIBERATELY NOT PATH-FILTERED. Every other workflow in this repo narrows itself with
+# dorny/paths-filter; this one must not, and a future maintainer "fixing" that would
+# silently reopen the hole it was added to close. A line ending can regress from ANY
+# tracked file — a CRLF file arrives with whatever change happens to touch it — so the
+# only correct filter is "all of them".
+#
+# The concrete failure this replaces: the guard used to reach CI only through
+# ci-desktop.yml's `pnpm vitest run --project '!@bombfarm/web'` and ci-fidelity.yml's
+# `pnpm vitest run --project tools`, both gated behind path filters whose union missed
+# 865 of 1527 tracked files (57%) — every file under apps/web/, plus docs/, .changeset/,
+# .husky/ and the root dotfiles. ci-web.yml never runs the tools project, and
+# .husky/pre-push runs no tests. A PR touching only apps/web/** could recommit a CRLF
+# file with nothing to catch it.
+#
+# The job is intentionally cheap: install and one filename-filtered suite. The guard
+# shells out to `git ls-files --eol` and reads .gitattributes — it imports no workspace
+# package, so it needs NO build step (verified by running it with every packages/*/dist,
+# apps/web/out and apps/desktop/dist removed). Do not add one.
+#
+# tools/line-endings.test.mjs also runs under local `pnpm test` (root vitest, tools
+# project) and incidentally under ci-desktop.yml/ci-fidelity.yml when their filters
+# match. This workflow is the unconditional surface, not the only one.
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main, develop]
+    # No `paths:` — see the header. This gate is unconditional by design.
+  pull_request:
+
+concurrency:
+  group: line-endings-${{ github.ref }}
+  cancel-in-progress: true
+
+# No `pull-requests: read` (unlike the sibling workflows): that scope exists for
+# dorny/paths-filter, and this workflow deliberately has no path filter to feed.
+permissions:
+  contents: read
+
+jobs:
+  line-endings:
+    name: LF policy (git index census)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      # fetch-depth stays at the default 1: the guard reads the *index*
+      # (`git ls-files --eol`), which a shallow checkout populates in full. It never
+      # walks history.
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      # Deliberately no --passWithNoTests and no error-swallowing retry: verified that a
+      # filename filter matching zero files exits 1 (same check ci-fidelity.yml asserts
+      # for its own "fidelity" filter), so renaming the suite away fails this job rather
+      # than reporting green.
+      - name: Line-ending guard (tools project, "line-endings" filename filter)
+        run: pnpm vitest run --project tools line-endings
+
+  line-endings-required:
+    name: line-endings-required
+    needs: [line-endings]
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      # The ci-fidelity.yml / design-system-required idiom, deliberately NOT the
+      # ci-desktop-required one (which checks only failure/cancelled and treats skipped
+      # as pass): this must fail when the job did not run at all — skipped or cancelled —
+      # not just when it actively failed. A gate that reports success for "never ran" is
+      # worse than no gate (SBC-19/AD-018), and this repo has a documented history of
+      # exactly that. There is no path filter here so `line-endings` should always run;
+      # this is the belt-and-braces that proves it did.
+      - name: Require the line-ending guard to have actually run and passed
+        if: needs.line-endings.result != 'success'
+        run: |
+          echo "line-endings: ${{ needs.line-endings.result }}"
+          exit 1
