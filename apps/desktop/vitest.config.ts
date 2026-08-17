@@ -11,6 +11,12 @@ export default defineConfig({
       'renderer/lib/**/*.test.tsx',
       'renderer/app/**/*.test.tsx',
     ],
+    // Fail once, before collection, when packages/domain/dist is missing — see the module's
+    // comment. Without it the same missing build surfaces as dozens of opaque "Cannot find
+    // package '@bombfarm/domain/<subpath>'" collection errors that point nowhere near the fix.
+    // Scoped to this project on purpose: every other vitest project aliases @bombfarm/domain
+    // to src/ and needs no build.
+    globalSetup: ['./scripts/require-domain-dist.mjs'],
     server: {
       deps: {
         // AD-033: packages/domain/dist is a BUNDLER-target artifact, not Node-native ESM.
