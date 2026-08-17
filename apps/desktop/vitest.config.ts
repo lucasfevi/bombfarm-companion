@@ -15,8 +15,9 @@ export default defineConfig({
     // through (contracts, domain, game-api, game-data) is missing — see the module's comment.
     // Without it the same missing build surfaces as dozens of opaque "Cannot find package
     // '@bombfarm/<pkg>/<subpath>'" collection errors that point nowhere near the fix. Scoped to
-    // this project on purpose: apps/web and packages/domain alias @bombfarm/domain to src/ and
-    // need no build.
+    // this project because apps/web and packages/domain alias @bombfarm/domain to src/ and need
+    // no build — NOT because this is the only exposed project. packages/game-api resolves domain
+    // through the same exports map and is still unguarded; see the module's comment.
     globalSetup: ['./scripts/require-workspace-dist.mjs'],
     server: {
       deps: {

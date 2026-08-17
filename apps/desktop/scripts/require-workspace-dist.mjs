@@ -31,13 +31,20 @@ export function missingDistPackages(packagesRoot = PACKAGES_ROOT) {
 
 /**
  * These packages publish their entry points from `dist/` (`packages/domain`'s `exports` map,
- * for one, points every subpath at `./dist/**`), and this vitest project is the only one that
- * resolves them through those real `exports` maps — `apps/web` and `packages/domain` alias
- * `@bombfarm/domain` to `src/`, so they never need a build. Here the builds are a hard
+ * for one, points every subpath at `./dist/**`), and this vitest project resolves them through
+ * those real `exports` maps — `apps/web` and `packages/domain` alias `@bombfarm/domain` to
+ * `src/`, so they never need a build. Here the builds are a hard
  * prerequisite: without them every desktop file that imports one of these subpaths dies at
  * collection with `Cannot find package '@bombfarm/<pkg>/<subpath>'`, which points nowhere near
  * the actual fix. CI hides this because `.github/workflows/ci-desktop.yml` builds the workspace
  * packages before the unit step; it is a local-developer trap only.
+ *
+ * This guard covers `apps/desktop` only, which is not the same as saying `apps/desktop` is the
+ * only exposure. `packages/game-api/vitest.config.ts` resolves `@bombfarm/domain` through the
+ * same `exports` map with no `src/` alias, and five of its test files die at collection in the
+ * same way with no guard to explain why; `tools/advice-change-key-coverage.test.mjs` reaches
+ * into `apps/desktop/renderer` and inherits the same prerequisite. Both are the same trap, and
+ * neither is covered here — do not read this module as proof that they are safe.
  *
  * All four are checked, and all missing ones are named at once, deliberately. Checking only
  * `domain` is not enough: with `domain/dist` present but `contracts`/`game-api`/`game-data`
@@ -64,9 +71,9 @@ export function assertWorkspaceDistBuilt(packagesRoot = PACKAGES_ROOT) {
     '[require-workspace-dist] the @bombfarm/desktop vitest project cannot resolve its workspace ' +
       `packages — ${missing.length} required build output(s) are missing:\n${paths}\n` +
       'Run `pnpm build` first.\n' +
-      'Why: these packages publish their entry points from ./dist/**, and this is the one ' +
-      'vitest project that resolves them through their `exports` maps rather than aliasing to ' +
-      'src/. Failing here on purpose: without the build these tests do not fail, they never run.',
+      'Why: these packages publish their entry points from ./dist/**, and this vitest project ' +
+      'resolves them through their `exports` maps rather than aliasing to src/. Failing here ' +
+      'on purpose: without the build these tests do not fail, they never run.',
   );
 }
 
