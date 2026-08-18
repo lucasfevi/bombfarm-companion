@@ -129,16 +129,20 @@ describe('bundled wiki assets', () => {
 
   /**
    * Same failure mode as the prop sweep above, with a much wider blast radius: `dropIconSrc`
-   * builds 21 paths across four directories, and `key/`, `steam/` and `chests/gems/` are reached
-   * by nothing else in the app. A mis-mirrored drop sprite draws a broken image in the Drops
-   * panel and no math or type check notices.
+   * builds 21 paths across three directories (`chests/`, `houses/`, `key/`), none of which any
+   * other helper reaches. A missing drop sprite draws a broken image in the Drops panel and no
+   * math or type check notices.
+   *
+   * Sharper here than for props, because these filenames are this repo's own rather than
+   * upstream's: the per-band sprites are renamed on the way in, so nothing upstream would ever
+   * agree with them and a rename typo has no second reader. See
+   * `docs/bundled-art-provenance.md`.
    *
    * Every band is swept, not just one, because the per-band families are built by interpolating
-   * the band into the filename — so a family can be correct at ato 1 and dead at ato 4.
+   * the difficulty slug into the filename — so a family can be correct at ato 1 and dead at ato 4.
    *
-   * Forward direction only, for the same reason as props — `icons/` and `steam/` are mixed
-   * directories holding the rarity crystals and other `chest_*` sprites, so a reverse
-   * "no orphaned art" sweep would fail on assets reachable from elsewhere.
+   * Forward direction only, for the same reason as props — `key/` also holds the two rarities
+   * no gate band selects, so a reverse "no orphaned art" sweep would fail on them.
    */
   it('ships drop art for every modeled drop-chance row, in every difficulty band', () => {
     const ids = Object.keys(DROP_RATES) as DropRateId[];

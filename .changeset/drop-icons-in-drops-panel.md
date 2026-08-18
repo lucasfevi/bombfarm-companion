@@ -82,3 +82,23 @@ replaced by nine single-label keys plus three naming the boost SOURCE (`luck`, `
 The account-486 live-tooltip witness is preserved through the change rather than relaxed: the
 tests read the two lines back out of the value node and still assert `167 -> 261` and `194 -> 303`
 for XP, and the four gate drop totals, as numbers.
+
+**The bundled drop sprites are renamed on the way in, to English difficulty words.** Upstream
+files the five bands inconsistently — bare indices on some families (`chest_skill_1`…`_5`,
+`house_house_1`…`_5`) and Portuguese words on others, two of them misspelled (`dificio`,
+`muitodificio`, for *difícil* / *muito difícil*). Neither form belongs in this tree: an index
+leaves a reader decoding `_4`, and the misspellings would carry another project's typos into a
+public repository. They are now `chests/gem_chest_very_hard.png`,
+`chests/skill_stone_chest_easy.png`, `houses/house_inferno.png` and so on, off one
+`DIFFICULTY_SLUG` table taken from `GAME_DIFFICULTY_EN`. The meaningless `steam/` directory and
+the doubled `house_house` are gone with it, and `icons/chest_0.png` is now `chests/item_chest.png`.
+
+Renaming costs the property that a local path tells you where the file came from, so
+`docs/bundled-art-provenance.md` records the upstream path for each one — that table, not the
+directory listing, is what a refresh has to be driven from. The guard sweeps all 21 paths across
+every band, and is sharper than the equivalent prop sweep for the same reason: these names are
+this repo's own, so nothing upstream would ever disagree with a typo in one.
+
+Gate keys are deliberately left filed by rarity (`key/key_mythic.png`, not `key_inferno`): the art
+IS the rarity's key, and the band→rarity step belongs in `GATE_KEY_RARITY_INDEX` where it is
+visible, not buried in a filename.

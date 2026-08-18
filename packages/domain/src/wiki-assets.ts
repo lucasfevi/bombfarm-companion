@@ -3,11 +3,21 @@ import type { Slot } from './gear';
 import type { DropRateId } from './phase-wiki';
 
 /**
- * Bundled game art under `public/wiki-assets/`, mirrored from the Grimório's static assets.
+ * Bundled game art under `public/wiki-assets/`, sourced from the Grimório's static assets.
  *
- * Very nearly a pure mirror, with one documented exception: the gem-chest sprites under
- * `chests/gems/` are not published by the wiki in any form, so they are carried from the game
- * client instead. Everything else here resolves to a file the wiki serves at the same subpath.
+ * Most of this tree is a byte-for-byte mirror at the same subpath, and the parts that are not are
+ * worth knowing about before refreshing it:
+ *
+ *  - **Gem-chest sprites are not published by the wiki in any form** and are carried from the game
+ *    client instead. A wiki refresh cannot restore them.
+ *  - **The per-difficulty drop sprites are renamed on the way in**, so their local names do not
+ *    match the upstream paths they came from. Upstream files them as bare indices or as
+ *    Portuguese words carrying two misspellings; see {@link DIFFICULTY_SLUG}. The upstream path
+ *    for each is recorded in `docs/bundled-art-provenance.md` — that table, not this directory,
+ *    is what a refresh has to be driven from.
+ *
+ * Everything else (`abilities/`, `env/`, `items/`, `hero/`, `icons/`, `key/`, `nav/`) resolves to
+ * a file the wiki serves at the same subpath, and those names are upstream's own.
  */
 export const WIKI_ASSETS_BASE = '/wiki-assets';
 
@@ -85,8 +95,17 @@ export function propIconSrc(propName: string): string | null {
   return `${WIKI_ASSETS_BASE}/env/${propName}.png`;
 }
 
-/** Difficulty band (ato) 1..5 → the slug the gem-chest art is filed under. */
-const GEM_CHEST_SLUG = ['facil', 'normal', 'dificio', 'muitodificio', 'inferno'] as const;
+/**
+ * Difficulty band (ato) 1..5 → the slug every per-band sprite is filed under.
+ *
+ * These are the English difficulty names (`GAME_DIFFICULTY_EN`, lowercased and underscored), not
+ * the names upstream files carry. Upstream, the same five bands appear as bare indices on some
+ * families and as Portuguese words on others — including two misspellings (`dificio`,
+ * `muitodificio`, for *difícil* / *muito difícil*). Bundling those names would put another
+ * project's typos in this repo's tree and leave `_1`…`_5` for a reader to decode, so the sprites
+ * are renamed on the way in and this one table is the only place a band becomes a filename.
+ */
+const DIFFICULTY_SLUG = ['easy', 'normal', 'hard', 'very_hard', 'inferno'] as const;
 
 /** Number of difficulty bands the per-ato drop art is drawn for. */
 const DROP_ART_BANDS = 5;
@@ -119,19 +138,24 @@ function clampAto(ato: number): number {
  */
 export function dropIconSrc(dropId: DropRateId, ato: number): string | null {
   const band = clampAto(ato);
+  const difficulty = DIFFICULTY_SLUG[band - 1];
   switch (dropId) {
     case 'chest':
-      return `${WIKI_ASSETS_BASE}/icons/chest_0.png`;
+      return `${WIKI_ASSETS_BASE}/chests/item_chest.png`;
     case 'key': {
+      // Keys stay filed by RARITY, not difficulty: the art is the rarity's key, and the band is
+      // only how this planner picks one. Renaming them `key_easy`…`key_inferno` would assert the
+      // sprites are difficulty art and hide the band→rarity step that `GATE_KEY_RARITY_INDEX`
+      // makes explicit.
       const slug = CRYSTAL_SLUG[band];
       return slug ? `${WIKI_ASSETS_BASE}/key/key_${slug}.png` : null;
     }
     case 'time':
-      return `${WIKI_ASSETS_BASE}/steam/house_house_${band}.png`;
+      return `${WIKI_ASSETS_BASE}/houses/house_${difficulty}.png`;
     case 'stone':
-      return `${WIKI_ASSETS_BASE}/steam/chest_skill_${band}.png`;
+      return `${WIKI_ASSETS_BASE}/chests/skill_stone_chest_${difficulty}.png`;
     case 'gem':
-      return `${WIKI_ASSETS_BASE}/chests/gems/gem_chest_${GEM_CHEST_SLUG[band - 1]}.png`;
+      return `${WIKI_ASSETS_BASE}/chests/gem_chest_${difficulty}.png`;
     default:
       return null;
   }

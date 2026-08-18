@@ -93,19 +93,23 @@ describe('wiki-assets', () => {
 
   /**
    * Pinned per id at both ends of the difficulty range, because the whole mapping is four
-   * separate per-band families plus one fixed sprite, filed under four directories (`key/`,
-   * `steam/`, `chests/gems/`, `icons/`) that no other helper reaches. A typo in any one of them
-   * is invisible to every other assertion in this file.
+   * separate per-band families plus one fixed sprite, filed under three directories (`key/`,
+   * `houses/`, `chests/`) that no other helper reaches. A typo in any one of them is invisible
+   * to every other assertion in this file.
+   *
+   * The difficulty WORD is part of what is pinned. These sprites are renamed on the way in — see
+   * `docs/bundled-art-provenance.md` — so a path here is this repo's own name, not upstream's,
+   * and nothing outside this helper would catch it drifting back.
    */
   it('maps each drop-chance row to the art of that phase’s difficulty band', () => {
     expect(dropIconSrc('key', 1)).toBe('/wiki-assets/key/key_uncommon.png');
     expect(dropIconSrc('key', 5)).toBe('/wiki-assets/key/key_mythic.png');
-    expect(dropIconSrc('time', 1)).toBe('/wiki-assets/steam/house_house_1.png');
-    expect(dropIconSrc('time', 5)).toBe('/wiki-assets/steam/house_house_5.png');
-    expect(dropIconSrc('stone', 1)).toBe('/wiki-assets/steam/chest_skill_1.png');
-    expect(dropIconSrc('stone', 5)).toBe('/wiki-assets/steam/chest_skill_5.png');
-    expect(dropIconSrc('gem', 1)).toBe('/wiki-assets/chests/gems/gem_chest_facil.png');
-    expect(dropIconSrc('gem', 5)).toBe('/wiki-assets/chests/gems/gem_chest_inferno.png');
+    expect(dropIconSrc('time', 1)).toBe('/wiki-assets/houses/house_easy.png');
+    expect(dropIconSrc('time', 5)).toBe('/wiki-assets/houses/house_inferno.png');
+    expect(dropIconSrc('stone', 1)).toBe('/wiki-assets/chests/skill_stone_chest_easy.png');
+    expect(dropIconSrc('stone', 5)).toBe('/wiki-assets/chests/skill_stone_chest_inferno.png');
+    expect(dropIconSrc('gem', 1)).toBe('/wiki-assets/chests/gem_chest_easy.png');
+    expect(dropIconSrc('gem', 5)).toBe('/wiki-assets/chests/gem_chest_inferno.png');
   });
 
   /**
@@ -115,13 +119,13 @@ describe('wiki-assets', () => {
   it('keeps the item chest fixed across every difficulty band', () => {
     const paths = [1, 2, 3, 4, 5].map((ato) => dropIconSrc('chest', ato));
     expect(new Set(paths).size, 'distinct item-chest sprites').toBe(1);
-    expect(paths[0]).toBe('/wiki-assets/icons/chest_0.png');
+    expect(paths[0]).toBe('/wiki-assets/chests/item_chest.png');
   });
 
   it('clamps an out-of-range or non-finite band instead of building a path to nothing', () => {
-    expect(dropIconSrc('time', 0)).toBe('/wiki-assets/steam/house_house_1.png');
-    expect(dropIconSrc('time', 9)).toBe('/wiki-assets/steam/house_house_5.png');
-    expect(dropIconSrc('gem', Number.NaN)).toBe('/wiki-assets/chests/gems/gem_chest_facil.png');
+    expect(dropIconSrc('time', 0)).toBe('/wiki-assets/houses/house_easy.png');
+    expect(dropIconSrc('time', 9)).toBe('/wiki-assets/houses/house_inferno.png');
+    expect(dropIconSrc('gem', Number.NaN)).toBe('/wiki-assets/chests/gem_chest_easy.png');
     expect(dropIconSrc('key', 2.4)).toBe('/wiki-assets/key/key_rare.png');
   });
 
