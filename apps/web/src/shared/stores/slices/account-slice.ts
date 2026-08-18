@@ -30,6 +30,9 @@ export type AccountSlice = {
   treeEnergy: number;
   treeTeamCoinPct: number;
   treeLuckFlatPct: number;
+  /** `skills.totals.xp_mult` — scales `xpPerPropWiki` the same way `treeTeamCoinPct` scales
+   *  gold per prop. `1` (not `0`) is the no-boost default, matching {@link TreeState.xpMult}. */
+  treeXpMult: number;
   teamBuffs: Record<TeamBuffId, number>;
   houseIdx: number;
   houseLevel: number;
@@ -99,6 +102,7 @@ export const createAccountSlice: StateCreator<
   treeEnergy: defaultTree.energy,
   treeTeamCoinPct: defaultTree.teamCoinPct,
   treeLuckFlatPct: defaultTree.luckFlatPct ?? 0,
+  treeXpMult: defaultTree.xpMult ?? 1,
   teamBuffs: zeroTeamBuffs(),
   houseIdx: defaultCtx.houseIdx,
   houseLevel: defaultCtx.houseLevel,
@@ -157,6 +161,7 @@ export const createAccountSlice: StateCreator<
       treeEnergy: shared.tree.energy,
       treeTeamCoinPct: shared.tree.teamCoinPct ?? 0,
       treeLuckFlatPct: shared.tree.luckFlatPct ?? 0,
+      treeXpMult: shared.tree.xpMult ?? 1,
       teamBuffs: {
         ...zeroTeamBuffs(),
         ...(shared.teamBuffs as Record<TeamBuffId, number>),
@@ -186,6 +191,7 @@ export const createAccountSlice: StateCreator<
       patch.treeEnergy = data.tree.energy;
       patch.treeTeamCoinPct = data.tree.teamCoinPct ?? 0;
       patch.treeLuckFlatPct = data.tree.luckFlatPct;
+      patch.treeXpMult = data.tree.xpMult ?? 1;
     }
     if (data.houseIdx != null) {
       patch.houseIdx = data.houseIdx;

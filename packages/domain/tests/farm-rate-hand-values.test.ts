@@ -163,7 +163,7 @@ function handComputeRow(stoneHp: number, mitig: number, goldComum: number, phase
 
   const sorteMult = 1 + squad.sorteFraction;
   const chestsPerHour = propsPerHour * DROP_RATES.chest * sorteMult * 1;
-  const xpPerHour = propsPerHour * xpPerProp(phase) * 1;
+  const xpPerHour = propsPerHour * xpPerProp(phase) * squad.xpMult * 1;
 
   return {
     heroesOnField,
@@ -230,8 +230,11 @@ describe('phase 42 — non-gate hand-computed values (spec.md P1-2 AC-1)', () =>
     expect(row.keysPerHour).toBeGreaterThanOrEqual(0);
   });
 
-  it('xpPerHour matches propsPerHour × xpPerProp(42), no xp_mult term', () => {
+  it('xpPerHour matches propsPerHour × xpPerProp(42) × squad.xpMult (issue #127)', () => {
     expect(Math.abs(row.xpPerHour - hand.xpPerHour) / hand.xpPerHour).toBeLessThan(TOL);
+    // Sanity: the fixture's own xp_mult really is non-identity, so this assertion could not pass
+    // by accident if buildRow silently dropped the term (as it did before issue #127's fix).
+    expect(squad.xpMult).not.toBe(1);
   });
 
   it('clearSecs and cyclesPerHour match propCount / propsPerSec (no gate boss term)', () => {
@@ -273,6 +276,14 @@ describe('phase 10 — gate hand-computed values (spec.md P1-2 AC-2)', () => {
     const handTime = hand.propsPerHour * DROP_RATES.time * sorteMult;
     expect(Math.abs(row.gemsPerHour - handGems) / handGems).toBeLessThan(TOL);
     expect(Math.abs(row.timePiecesPerHour - handTime) / handTime).toBeLessThan(TOL);
+  });
+
+  it('stoneChestsPerHour (gate-only) matches propsPerHour × DROP_RATES.stone × (1 + Sorte), the same base rate as gemsPerHour (issue #127)', () => {
+    const sorteMult = 1 + squad.sorteFraction;
+    const handStone = hand.propsPerHour * DROP_RATES.stone * sorteMult;
+    expect(Math.abs(row.stoneChestsPerHour - handStone) / handStone).toBeLessThan(TOL);
+    expect(DROP_RATES.stone).toBe(DROP_RATES.gem);
+    expect(row.stoneChestsPerHour).toBe(row.gemsPerHour);
   });
 
   it('keysPerHour is negative and equals -(cyclesPerHour × KEY_GATE_COST)', () => {

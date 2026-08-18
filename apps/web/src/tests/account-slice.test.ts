@@ -29,6 +29,7 @@ describe('account slice', () => {
     expect(s.treeCritChance).toBe(0);
     expect(s.treeTeamCoinPct).toBe(0);
     expect(s.treeLuckFlatPct).toBe(0);
+    expect(s.treeXpMult).toBe(1);
     expect(s.teamBuffs).toEqual(zeroTeamBuffs());
     expect(s.houseIdx).toBe(0);
     expect(s.phase).toBeNull();
@@ -81,6 +82,50 @@ describe('account slice', () => {
     });
     expect(normalized.tree.luckFlatPct).toBe(0);
     expect(normalized.context.targetProp).toBe('stone');
+  });
+
+  it('normalizeAccount defaults tree.xpMult to 1 (not 0) when the field is absent (pre-existing record)', () => {
+    const preXpMultTree = {
+      danoTotal: 1.2,
+      critChance: 5,
+      critDmg: 10,
+      speed: 3,
+      energy: 4,
+      teamCoinPct: 7,
+      luckFlatPct: 6,
+      // xpMult intentionally absent — the shape every record saved before this feature has.
+    };
+    const normalized = normalizeAccount({
+      tree: preXpMultTree,
+      teamBuffs: zeroTeamBuffs(),
+      context: {
+        houseIdx: 0,
+        houseLevel: 0,
+        phase: null,
+        mitigationPct: 1,
+        rankMode: 'dps',
+        targetProp: null,
+      },
+    });
+    expect(normalized.tree.xpMult).toBe(1);
+  });
+
+  it('applyAccountImport writes tree.xpMult, defaulting absence to 1', () => {
+    usePlannerStore.getState().applyAccountImport({
+      tree: { ...sampleTree, xpMult: 1.56 },
+      houseIdx: null,
+      houseLevel: null,
+      phase: null,
+    });
+    expect(usePlannerStore.getState().treeXpMult).toBe(1.56);
+
+    usePlannerStore.getState().applyAccountImport({
+      tree: { ...sampleTree },
+      houseIdx: null,
+      houseLevel: null,
+      phase: null,
+    });
+    expect(usePlannerStore.getState().treeXpMult).toBe(1);
   });
 
   it('selectAccountShared returns a stable reference while the account tuple is unchanged', () => {

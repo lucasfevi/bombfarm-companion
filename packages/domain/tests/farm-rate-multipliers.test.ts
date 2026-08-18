@@ -263,7 +263,14 @@ describe('Return bonus multiplies gold/XP/drops only — structure is untouched'
     const on = computeFarmRateRow(10, squad, { returnBonus: 'on' })!;
     const vip = computeFarmRateRow(10, squad, { returnBonus: 'vip' })!;
 
-    for (const field of ['goldPerHour', 'chestsPerHour', 'gemsPerHour', 'timePiecesPerHour', 'xpPerHour'] as const) {
+    for (const field of [
+      'goldPerHour',
+      'chestsPerHour',
+      'gemsPerHour',
+      'timePiecesPerHour',
+      'stoneChestsPerHour',
+      'xpPerHour',
+    ] as const) {
       expect(on[field] / off[field]).toBeCloseTo(1.4, 9);
       expect(vip[field] / off[field]).toBeCloseTo(1.8, 9);
     }
@@ -286,5 +293,77 @@ describe('Return bonus multiplies gold/XP/drops only — structure is untouched'
     const off = computeFarmRateRow(42, squad, { returnBonus: 'off' })!;
     const on = computeFarmRateRow(42, squad, { returnBonus: 'on' })!;
     expect(on.keysPerHour / off.keysPerHour).toBeCloseTo(1.4, 9);
+  });
+});
+
+describe('XP tracks tree.xpMult, never gold/drops (issue #127)', () => {
+  it('xpPerHour scales by exactly the xpMult ratio; gold and every drop rate byte-identical', () => {
+    const heroFacts = computeHeroFarmFacts({ heroes, account });
+
+    const oneAccount: AccountShared = { ...account, tree: { ...account.tree, xpMult: 1 } };
+    const boostedAccount: AccountShared = { ...account, tree: { ...account.tree, xpMult: 1.56 } };
+    const oneSquad = computeSquadFarmFacts(heroFacts, oneAccount);
+    const boostedSquad = computeSquadFarmFacts(heroFacts, boostedAccount);
+    expect(oneSquad.xpMult).toBe(1);
+    expect(boostedSquad.xpMult).toBe(1.56);
+
+    // Non-gate (42) and gate (10) both exercise the same xpPerHour formula — checked on both so
+    // the claim is not an artifact of one row's zeroed gate-only fields.
+    for (const phase of [42, 10]) {
+      const oneRow = computeFarmRateRow(phase, oneSquad)!;
+      const boostedRow = computeFarmRateRow(phase, boostedSquad)!;
+      expect(boostedRow.xpPerHour / oneRow.xpPerHour).toBeCloseTo(1.56, 12);
+
+      expect(boostedRow.goldPerHour).toBe(oneRow.goldPerHour);
+      expect(boostedRow.chestsPerHour).toBe(oneRow.chestsPerHour);
+      expect(boostedRow.keysPerHour).toBe(oneRow.keysPerHour);
+      expect(boostedRow.gemsPerHour).toBe(oneRow.gemsPerHour);
+      expect(boostedRow.timePiecesPerHour).toBe(oneRow.timePiecesPerHour);
+      expect(boostedRow.stoneChestsPerHour).toBe(oneRow.stoneChestsPerHour);
+    }
+  });
+
+  it('an absent tree.xpMult behaves exactly as xpMult: 1 (identity, not zero)', () => {
+    const heroFacts = computeHeroFarmFacts({ heroes, account });
+    const { xpMult: _drop, ...treeWithoutXpMult } = account.tree;
+    const absentAccount: AccountShared = { ...account, tree: treeWithoutXpMult };
+    const explicitOneAccount: AccountShared = { ...account, tree: { ...account.tree, xpMult: 1 } };
+
+    const absentSquad = computeSquadFarmFacts(heroFacts, absentAccount);
+    const explicitOneSquad = computeSquadFarmFacts(heroFacts, explicitOneAccount);
+    expect(absentSquad.xpMult).toBe(1);
+
+    const absentRow = computeFarmRateRow(42, absentSquad)!;
+    const explicitOneRow = computeFarmRateRow(42, explicitOneSquad)!;
+    expect(absentRow.xpPerHour).toBe(explicitOneRow.xpPerHour);
+    expect(absentRow.xpPerHour).toBeGreaterThan(0);
+  });
+
+  it('a non-finite tree.xpMult (NaN) also falls back to 1, not NaN', () => {
+    const heroFacts = computeHeroFarmFacts({ heroes, account });
+    const nanAccount: AccountShared = { ...account, tree: { ...account.tree, xpMult: NaN } };
+    const squad = computeSquadFarmFacts(heroFacts, nanAccount);
+    expect(squad.xpMult).toBe(1);
+    expect(Number.isNaN(computeFarmRateRow(42, squad)!.xpPerHour)).toBe(false);
+  });
+});
+
+describe('stoneChestsPerHour mirrors gemsPerHour (issue #127) — same DROP_RATES base rate (0.00005)', () => {
+  it('on a gate phase, stoneChestsPerHour === gemsPerHour exactly', () => {
+    const heroFacts = computeHeroFarmFacts({ heroes, account });
+    const squad = computeSquadFarmFacts(heroFacts, account);
+    const gateRow = computeFarmRateRow(10, squad)!;
+    expect(gateRow.gate).toBe(true);
+    expect(gateRow.stoneChestsPerHour).toBe(gateRow.gemsPerHour);
+    expect(gateRow.stoneChestsPerHour).toBeGreaterThan(0);
+  });
+
+  it('on a non-gate phase, stoneChestsPerHour is 0, same as gemsPerHour', () => {
+    const heroFacts = computeHeroFarmFacts({ heroes, account });
+    const squad = computeSquadFarmFacts(heroFacts, account);
+    const nonGateRow = computeFarmRateRow(42, squad)!;
+    expect(nonGateRow.gate).toBe(false);
+    expect(nonGateRow.stoneChestsPerHour).toBe(0);
+    expect(nonGateRow.gemsPerHour).toBe(0);
   });
 });

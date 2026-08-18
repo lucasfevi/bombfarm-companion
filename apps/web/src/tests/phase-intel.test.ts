@@ -7,7 +7,7 @@ import {
 
 describe('phase-intel', () => {
   it('computes phase 1 globals from wiki snapshot', () => {
-    const intel = computePhaseIntelGlobal(1, 0);
+    const intel = computePhaseIntelGlobal(1, { teamCoinPct: 0 });
     expect(intel).not.toBeNull();
     expect(intel!.phase).toBe(1);
     expect(intel!.stoneHp).toBeGreaterThan(0);
@@ -17,8 +17,8 @@ describe('phase-intel', () => {
   });
 
   it('scales comum gold with team coin %', () => {
-    const base = computePhaseIntelGlobal(10, 0)!;
-    const boosted = computePhaseIntelGlobal(10, 40)!;
+    const base = computePhaseIntelGlobal(10, { teamCoinPct: 0 })!;
+    const boosted = computePhaseIntelGlobal(10, { teamCoinPct: 40 })!;
     expect(boosted.goldComumActual).toBeCloseTo(base.goldComumWiki * 1.4, 5);
     expect(boosted.weightedAvgGoldActual).toBeGreaterThan(base.weightedAvgGoldWiki);
   });

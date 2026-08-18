@@ -7,6 +7,13 @@ export type RosterDpsRow = {
   heroId: string;
   heroName: string;
   dps: number;
+  /**
+   * Pipeline-adjusted Luck, PERCENTAGE POINTS (`pipelineForHero(...).adjusted.luck` — same units
+   * `farm-rate.ts`'s `heroLuckPct`/`sorteFraction` use). Carried here so a caller wanting "this
+   * squad's average luck" (the web Phases board's drop-chance panel) can average the rows this
+   * function already computed instead of re-running the advisor pipeline a second time per hero.
+   */
+  luck: number;
 };
 
 export type RosterDpsInput = {
@@ -82,11 +89,17 @@ export function computeHeroSoloDps(
 export function rankRosterByDps(input: RosterDpsInput, limit?: number): RosterDpsRow[] {
   const effectiveLimit = limit ?? input.account.fieldSlots ?? input.account.slots ?? DEFAULT_CASA_SLOTS;
   const clampedLimit = Number.isFinite(effectiveLimit) && effectiveLimit >= 1 ? Math.round(effectiveLimit) : 1;
-  const rows = input.heroes.map((hero) => ({
-    heroId: hero.id,
-    heroName: hero.name,
-    dps: computeHeroSoloDps(hero, input.account, input.phase, input.mitigationPct),
-  }));
+  const rows = input.heroes.map((hero) => {
+    // One pipeline run per hero, not two: `computeHeroSoloDps` would call `pipelineForHero`
+    // again internally for the same inputs just to read `.dps`.
+    const pipeline = pipelineForHero(hero, input.account, input.phase, input.mitigationPct);
+    return {
+      heroId: hero.id,
+      heroName: hero.name,
+      dps: pipeline.dps,
+      luck: pipeline.adjusted.luck,
+    };
+  });
   rows.sort((left, right) => right.dps - left.dps);
   return rows.slice(0, clampedLimit);
 }

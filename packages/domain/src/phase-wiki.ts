@@ -47,20 +47,49 @@ export const WIKI_SOURCE_PULLED_AT: string = wiki.sourcePulledAt;
 /** `YYYY-MM-DD` — the date the emitter ran. May be later than the pull date (stale-input emit). */
 export const WIKI_EMITTED_AT: string = wiki.emittedAt;
 
-/** Per-prop drop fractions, all four in one object because FR-3 reads them together.
+/** Per-prop drop fractions, all five in one object because FR-3 reads them together.
  *  Sourced from the bundle's `drops` block:
- *    chest ← `drops.chestDropRate`     0.001    — item/hero chest, ANY phase
- *    key   ← `drops.keyDropRate`       0.001    — ready key, NON-gate phases only
- *    gem   ← `drops.gemChestDropRate`  0.00005  — gem chest, GATE phases only
- *    time  ← `drops.timechestDropRate` 0.0015   — time chest, GATE phases only
- *                                                 (api source is `rotacao`, not `drops`) */
-export type DropRates = { chest: number; key: number; gem: number; time: number };
+ *    chest ← `drops.chestDropRate`       0.001    — item/hero chest, ANY phase
+ *    key   ← `drops.keyDropRate`         0.001    — ready key, NON-gate phases only
+ *    gem   ← `drops.gemChestDropRate`    0.00005  — gem chest, GATE phases only
+ *    time  ← `drops.timechestDropRate`   0.0015   — time chest, GATE phases only
+ *                                                   (api source is `rotacao`, not `drops`)
+ *    stone ← `drops.stoneChestDropRate`  0.00005  — stone chest, GATE phases only
+ *                                                   (live wiki key `pedra.drop_rate`) */
+export type DropRates = { chest: number; key: number; gem: number; time: number; stone: number };
 export const DROP_RATES: DropRates = {
   chest: wiki.drops.chestDropRate,
   key: wiki.drops.keyDropRate,
   gem: wiki.drops.gemChestDropRate,
   time: wiki.drops.timechestDropRate,
+  stone: wiki.drops.stoneChestDropRate,
 };
+
+/** Stable id for one drop-rate row — shared by {@link DROP_RATES}, {@link dropAppliesOnPhase},
+ *  and `phase-intel.ts`'s `DropChanceRow`. Order here is the display order (chest, key, time,
+ *  gem, stone), not `DropRates`' declaration order. */
+export type DropRateId = 'chest' | 'key' | 'time' | 'gem' | 'stone';
+
+/**
+ * Whether this drop applies on a gate vs. non-gate phase. Item chest rolls on every phase; the
+ * ready key only rolls on non-gate phases; time chest, gem chest, and stone chest only roll on
+ * gate phases. One definition so the domain and its tests (and, downstream, the UI) agree on the
+ * gate/non-gate split instead of each re-deriving it.
+ */
+export function dropAppliesOnPhase(id: DropRateId, gate: boolean): boolean {
+  switch (id) {
+    case 'chest':
+      return true;
+    case 'key':
+      return !gate;
+    case 'time':
+    case 'gem':
+    case 'stone':
+      return gate;
+    default:
+      return true;
+  }
+}
 
 /** Keys spent to enter one gate. Live 1. ← `drops.keyGateCost` */
 export const KEY_GATE_COST: number = wiki.drops.keyGateCost;
@@ -265,8 +294,16 @@ export function propCountForAto(ato: number): number {
   return PROPS_POR_ATO[index] ?? PROPS_POR_ATO[0];
 }
 
-/** Linear XP per prop kill (phase 1 → 3, phase 600 → 300). */
+/**
+ * XP per prop kill. Every one of the 600 wiki phase lines carries its own exact integer
+ * `xpProp` — that is what the game actually awards, so it is returned verbatim here. The linear
+ * `XP_FASE_INI`(phase 1) → `XP_FASE_FIM`(phase 600) interpolation below is now only a fallback
+ * for a phase with no line (out of the wiki's 1..600 range); it is a documented approximation
+ * (worst deviation ~0.5 XP at phase 21) and must not shadow the exact per-line value.
+ */
 export function xpPerProp(phase: number): number {
+  const line = wikiPhaseLine(phase);
+  if (line) return line.xpProp;
   const clampedPhase = Math.max(1, Math.min(MAX_PHASE, Math.round(phase)));
   const progress = (clampedPhase - 1) / (MAX_PHASE - 1);
   return XP_FASE_INI + progress * (XP_FASE_FIM - XP_FASE_INI);

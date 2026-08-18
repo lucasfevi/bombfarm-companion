@@ -72,29 +72,57 @@ that project with a filename filter). `apps/web` and `packages/domain` alias `@b
   format). Internal-only changes (CI config, tests, docs) don't need one; if a changeset genuinely
   doesn't apply, label the PR `skip-changeset` instead of skipping silently.
 
-## Out-of-scope findings — file a GitHub issue
+## Out-of-scope findings — ask before you file
 
-Work here routinely turns up a real defect that should **not** be fixed in the current change:
-a neighbouring code path with the same bug, a shared invariant with no owner, a stale doc.
-Those findings are worth more than the session they were found in.
+Work here routinely turns up a real defect outside the current change: a neighbouring code path
+with the same bug, a shared invariant with no owner, a stale doc. Those findings are worth more
+than the session they were found in, and **whether they belong in the current PR is the
+maintainer's call, not the agent's** — an agent filing an issue unilaterally often defers
+something that was three lines from code already being touched.
 
-**File a GitHub issue for them. Do not leave them in a chat message, a task chip, or a `TODO`
-comment** — all three die with the session, and the finding then gets rediscovered from scratch
-weeks later as if it were new.
+**So: verify it, then ask. Do not decide alone, and do not leave it in a chat aside, a task chip,
+or a `TODO` comment** — all three die with the session, and the finding gets rediscovered from
+scratch weeks later as if it were new.
+
+### The decision brief
+
+Present each finding as a short brief and stop for an answer. **Concise and concrete — three or
+four sentences per heading, with a real example rather than a description of one.** A brief that
+takes longer to read than the fix takes to make has failed.
+
+- **What and where** — the symptom, the file and line, and the evidence it is real (the grep,
+  the failing case, the call path). One pasted witness, not a paragraph of reasoning.
+- **Why it matters** — the concrete consequence, ideally a number or a user-visible symptom.
+  "`xpPerHour` reads ~36% low on a 1.56× account, so the Farm board and the Phases panel print
+  different XP for the same phase" beats "XP handling is inconsistent".
+- **What fixing it takes** — the actual blast radius: files, packages, whether a fixture must be
+  re-captured, whether it needs its own changeset. Say if it is genuinely small; say if you are
+  unsure how far it reaches.
+- **Cost of waiting** — what gets worse. Two surfaces drifting apart, a guard that silently stops
+  guarding, a capture that expires. If nothing gets worse, say that plainly — "no decay, purely
+  cosmetic" is a useful answer and makes deferring easy.
+
+Then ask directly: fold it into this change, or file it? Batch several findings into one question
+rather than interrupting per finding.
+
+### After the call
+
+- **Fold in** → do it in the same PR, and say in the PR body why the scope widened.
+- **File** → open the issue and reference it from the PR that found it, so the trail survives.
 
 ```bash
 gh issue create --title "<imperative summary>" --label tech-debt --body "<what, where, evidence>"
 ```
 
-- **File when** the fix would widen the current PR's scope, needs its own changeset, touches a
-  package the current change does not, or would mix a refactor into a bugfix.
-- **Fix inline instead when** it is a one-line change inside code you are already editing.
-- **The issue must stand alone.** Include the file paths and line numbers, the evidence that it
-  is real (the grep, the failing case, the call path), and why it was not fixed now. Someone
-  picking it up months later has none of the conversation it came from.
-- **Link both ways**: reference the issue from the PR that found it, so the trail survives.
-- Verify before filing. A claim that a neighbouring path "was checked and is fine" needs the
-  same evidence as a claim that it is broken — one pasted grep is usually enough.
+A filed issue **must stand alone**: file paths, line numbers, the evidence, and why it was not
+fixed now. Whoever picks it up months later has none of the conversation it came from.
+
+**Two exceptions to asking.** Fix inline without asking when it is a one-line change inside code
+you are already editing. File without asking when the finding is unrelated to the current work
+and needs no judgement about scope — a broken guard in a package this change never touches.
+
+Verify before either. A claim that a neighbouring path "was checked and is fine" needs the same
+evidence as a claim that it is broken.
 
 ## Flavors
 

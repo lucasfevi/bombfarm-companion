@@ -107,7 +107,7 @@ describe('computeFarmRateTable — leaf helpers agree with computePhaseIntelGlob
     const rows = computeFarmRateTable(squad);
     for (const phase of samplePhases) {
       const row = rows.find((r) => r.phase === phase)!;
-      const globalIntel = computePhaseIntelGlobal(phase, account.tree.teamCoinPct ?? 0)!;
+      const globalIntel = computePhaseIntelGlobal(phase, { teamCoinPct: account.tree.teamCoinPct ?? 0 })!;
       expect(row.mitigationPct).toBeCloseTo(globalIntel.mitigationPct, 9);
       expect(row.itemLevelLabel).toBe(globalIntel.itemLevelLabel);
       expect(row.jaulaEarlyCapPct).toBeCloseTo(globalIntel.jaulaEarlyCapPct, 9);

@@ -14,7 +14,10 @@ import {
   BOSS_HP_MULT_WIKI,
   HERO_CHEST_RARITY_BY_ATO,
   JAULA,
+  DROP_RATES,
+  dropAppliesOnPhase,
   type WikiProp,
+  type DropRateId,
 } from './phase-wiki';
 
 export type PropSpawnRow = WikiProp & {
@@ -22,6 +25,26 @@ export type PropSpawnRow = WikiProp & {
   weightShare: number;
   goldWiki: number;
   goldActual: number;
+};
+
+/** One drop-rate row: wiki base fraction, the luck-scaled actual fraction, and whether it rolls
+ *  on this phase (gate vs. non-gate — see {@link dropAppliesOnPhase}). Emitted in a fixed order
+ *  (chest, key, time, gem, stone) regardless of `applies`, so the UI owns presentation/filtering. */
+export type DropChanceRow = {
+  id: DropRateId;
+  wiki: number;
+  actual: number;
+  applies: boolean;
+};
+
+/** Options for {@link computePhaseIntelGlobal}, all defaulting to the identity (no boost). */
+export type PhaseIntelGlobalOptions = {
+  /** Team Coin %, e.g. `82.52` for `coin_add: 0.8252083332`. Default 0. */
+  teamCoinPct?: number;
+  /** `skills.totals.xp_mult`, e.g. `1.56`. Default 1 (no XP boost). */
+  xpMult?: number;
+  /** Average of on-field heroes' final `luck` stat, e.g. `0.1723005`. Default 0 (no luck boost). */
+  luckFraction?: number;
 };
 
 export type PhaseIntelGlobal = {
@@ -35,7 +58,11 @@ export type PhaseIntelGlobal = {
   propCount: number;
   goldComumWiki: number;
   goldComumActual: number;
+  /** @deprecated alias of {@link xpPerPropWiki} — kept so existing readers keep their current
+   *  (unboosted) meaning. New code should pick `xpPerPropWiki` or `xpPerPropActual` explicitly. */
   xpPerProp: number;
+  xpPerPropWiki: number;
+  xpPerPropActual: number;
   itemLevels: number[];
   itemLevelLabel: string;
   weightedAvgHp: number;
@@ -51,6 +78,7 @@ export type PhaseIntelGlobal = {
   jaulaWindowSecs: number;
   heroChestRarity: number[];
   propRows: PropSpawnRow[];
+  dropChances: DropChanceRow[];
 };
 
 export function penGap(mitigationPct: number, penetrationPct: number): number {
@@ -84,10 +112,26 @@ export function weightedAvgGold(
   return rows.reduce((sum, row) => sum + row[field] * row.weightShare, 0);
 }
 
+const DROP_CHANCE_ORDER: DropRateId[] = ['chest', 'key', 'time', 'gem', 'stone'];
+
+function computeDropChances(gate: boolean, luckFraction: number): DropChanceRow[] {
+  const luckMult = 1 + Math.max(0, luckFraction);
+  return DROP_CHANCE_ORDER.map((id) => {
+    const wiki = DROP_RATES[id];
+    return {
+      id,
+      wiki,
+      actual: wiki * luckMult,
+      applies: dropAppliesOnPhase(id, gate),
+    };
+  });
+}
+
 export function computePhaseIntelGlobal(
   phase: number,
-  teamCoinPct: number,
+  options: PhaseIntelGlobalOptions = {},
 ): PhaseIntelGlobal | null {
+  const { teamCoinPct = 0, xpMult = 1, luckFraction = 0 } = options;
   const line = wikiPhaseLine(phase);
   if (!line) return null;
 
@@ -103,6 +147,8 @@ export function computePhaseIntelGlobal(
   const weightedAvgGoldActual = weightedAvgGold(propRows, 'goldActual');
   const itemLevels = itemLevelsForPhase(phase);
   const atoIdx = Math.max(0, Math.min(4, line.ato - 1));
+  const xpPerPropWiki = xpPerProp(phase);
+  const xpPerPropActual = xpPerPropWiki * xpMult;
 
   return {
     phase: line.phase,
@@ -115,7 +161,9 @@ export function computePhaseIntelGlobal(
     propCount,
     goldComumWiki,
     goldComumActual,
-    xpPerProp: xpPerProp(phase),
+    xpPerProp: xpPerPropWiki,
+    xpPerPropWiki,
+    xpPerPropActual,
     itemLevels,
     itemLevelLabel: itemLevelDropLabel(itemLevels),
     weightedAvgHp,
@@ -134,6 +182,7 @@ export function computePhaseIntelGlobal(
     jaulaWindowSecs: JAULA.janelaSecs,
     heroChestRarity: HERO_CHEST_RARITY_BY_ATO[atoIdx] ?? HERO_CHEST_RARITY_BY_ATO[0],
     propRows,
+    dropChances: computeDropChances(line.gate, luckFraction),
   };
 }
 

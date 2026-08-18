@@ -38,6 +38,14 @@ export type TreeState = {
    * only; no Account UI field yet (CARRY-05).
    */
   luckFlatPct?: number;
+  /**
+   * `skills.totals.xp_mult` verbatim (not a percentage) — scales XP per prop the same way
+   * `teamCoinPct` scales gold per prop. Optional, same precedent as {@link luckFlatPct}: so
+   * pre-existing literals (e.g. `e2e/fixtures/seed.ts`) keep typechecking; every read site
+   * defaults absence to `1` (NOT `0` — a `?? 0` here would silently zero every XP figure) and
+   * `normalizeTree`'s rebuild fills it on load.
+   */
+  xpMult?: number;
 };
 
 export type HeroContext = {
@@ -112,6 +120,7 @@ export const DEFAULT_TREE = (): TreeState => ({
   energy: 0,
   teamCoinPct: 0,
   luckFlatPct: 0,
+  xpMult: 1,
 });
 
 export const DEFAULT_CONTEXT = (): HeroContext => ({
@@ -147,6 +156,7 @@ function normalizeTree(raw?: Partial<TreeState> | null): TreeState {
     energy: raw.energy ?? base.energy,
     teamCoinPct: raw.teamCoinPct ?? base.teamCoinPct,
     luckFlatPct: raw.luckFlatPct ?? base.luckFlatPct,
+    xpMult: raw.xpMult ?? base.xpMult,
   };
 }
 

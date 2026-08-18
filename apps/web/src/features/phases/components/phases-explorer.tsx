@@ -7,6 +7,7 @@ import { PhasePicker } from './phase-picker';
 import { PhaseMapFactsPanel } from './phase-map-facts-panel';
 import { PhaseEconomyPanel } from './phase-economy-panel';
 import { PhaseJaulaPanel } from './phase-jaula-panel';
+import { PhaseDropsPanel } from './phase-drops-panel';
 import { PhasePropMixTable } from './phase-prop-mix-table';
 import { PhasesHeroPanel } from './phases-hero-panel';
 import { PhasesSquadPanel } from './phases-squad-panel';
@@ -44,26 +45,46 @@ export function PhasesExplorer({ t, lang }: { t: Strings; lang: Lang }) {
   const squadSlots = account.fieldSlots ?? account.slots ?? DEFAULT_CASA_SLOTS;
 
   const teamCoinPct = account.tree.teamCoinPct ?? 0;
+  const xpMult = account.tree.xpMult ?? 1;
 
-  const intel = useMemo(
-    () => computePhaseIntelGlobal(phase, teamCoinPct),
-    [phase, teamCoinPct],
+  // Map/mitigation facts don't depend on teamCoinPct/xpMult/luckFraction, so this pass gives
+  // `topSquadRows` a `phase`/`mitigationPct` to rank against before the squad's own average luck
+  // (derived FROM those rows, below) is known — without running the advisor pipeline twice per
+  // hero. `computePhaseIntelGlobal` itself is cheap wiki-table math, not a pipeline call, so
+  // running it twice here is fine; `rankRosterByDps` (the actual per-hero pipeline cost) still
+  // runs exactly once.
+  const intelBase = useMemo(
+    () => computePhaseIntelGlobal(phase, { teamCoinPct, xpMult }),
+    [phase, teamCoinPct, xpMult],
   );
 
   const topSquadRows = useMemo(
     () =>
-      intel
+      intelBase
         ? rankRosterByDps(
             {
               heroes,
               account,
-              phase: intel.phase,
-              mitigationPct: intel.mitigationPct,
+              phase: intelBase.phase,
+              mitigationPct: intelBase.mitigationPct,
             },
             squadSlots,
           )
         : [],
-    [heroes, account, intel, squadSlots],
+    [heroes, account, intelBase, squadSlots],
+  );
+
+  // Mean of the top-squad rows' pipeline-adjusted Luck (percentage points) -> fraction. Empty
+  // roster -> 0 (no drop-chance boost), matching `dropAppliesOnPhase`'s "no boost" default.
+  const luckFraction = useMemo(() => {
+    if (topSquadRows.length === 0) return 0;
+    const sum = topSquadRows.reduce((total, row) => total + row.luck, 0);
+    return sum / topSquadRows.length / 100;
+  }, [topSquadRows]);
+
+  const intel = useMemo(
+    () => computePhaseIntelGlobal(phase, { teamCoinPct, xpMult, luckFraction }),
+    [phase, teamCoinPct, xpMult, luckFraction],
   );
 
   const heroesById = useMemo(() => new Map(heroes.map((hero) => [hero.id, hero])), [heroes]);
@@ -105,6 +126,7 @@ export function PhasesExplorer({ t, lang }: { t: Strings; lang: Lang }) {
         <PhaseMapFactsPanel intel={intel} />
         <PhaseEconomyPanel intel={intel} />
         <PhaseJaulaPanel intel={intel} />
+        <PhaseDropsPanel intel={intel} />
         <PhasePropMixTable intel={intel} />
 
         <div className={phasesBoardRosterClass}>

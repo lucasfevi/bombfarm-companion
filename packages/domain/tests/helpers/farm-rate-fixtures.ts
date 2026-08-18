@@ -59,6 +59,7 @@ export function loadFarmRateFixture(
       energy: tree.energy,
       teamCoinPct: tree.teamCoinPct ?? 0,
       luckFlatPct: tree.luckFlatPct,
+      xpMult: tree.xpMult,
     },
     teamBuffs: zeroTeamBuffs(),
     context: {

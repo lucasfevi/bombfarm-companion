@@ -64,8 +64,15 @@ const fixture = JSON.parse(readFileSync(fixturePath, 'utf8')) as {
  * (including inside `explainSections[].p[]`), must still match byte-for-byte.
  */
 
-/** Keys present in the frozen fixture that no longer exist in live STRINGS. */
-const KEYS_REMOVED: readonly string[] = [];
+/**
+ * Keys present in the frozen fixture that no longer exist in live STRINGS.
+ *
+ * `phasesXpPerProp` — the XP-multiplier feature (2026-08-18) split the Economy panel's single
+ * unboosted `xp` row into a wiki/yours pair (`phasesXpPerPropWiki`/`phasesXpPerPropActual`,
+ * below in `KEYS_ADDED`), the same shape the gold rows already use. The old single-value key has
+ * no reader left.
+ */
+const KEYS_REMOVED: readonly string[] = ['phasesXpPerProp'];
 
 /**
  * Keys present in live STRINGS with no counterpart in the frozen fixture at all — a genuinely
@@ -73,8 +80,29 @@ const KEYS_REMOVED: readonly string[] = [];
  * from the fixture" the same way it reports a changed value, so entries here are folded into
  * the "differs at exactly" comparisons alongside `PROSE_EDITED_PATHS`, and separately excluded
  * from the sorted-key-set comparison (which compares SETS, not diffs).
+ *
+ * The XP-multiplier / drop-chances feature (2026-08-18): the Economy panel's boosted XP pair,
+ * the new Drops panel (gate-filtered wiki/yours rows per drop type), and the Account import
+ * summary's new XP-multiplier row.
  */
-const KEYS_ADDED: readonly string[] = [];
+const KEYS_ADDED: readonly string[] = [
+  'phasesXpPerPropWiki',
+  'phasesXpPerPropActual',
+  'phasesXpActualHint',
+  'phasesDropsSection',
+  'phasesDropChestWiki',
+  'phasesDropChestActual',
+  'phasesDropKeyWiki',
+  'phasesDropKeyActual',
+  'phasesDropTimeWiki',
+  'phasesDropTimeActual',
+  'phasesDropGemWiki',
+  'phasesDropGemActual',
+  'phasesDropStoneWiki',
+  'phasesDropStoneActual',
+  'phasesDropActualHint',
+  'treeXpMult',
+];
 
 /**
  * Leaf paths whose key survives in both the fixture and STRINGS but whose VALUE changed — e.g.
