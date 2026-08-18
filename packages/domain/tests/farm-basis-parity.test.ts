@@ -1,7 +1,28 @@
 /**
  * Proof that the `farm-rate.ts` basis seam is a byte-identical refactor, not a rewrite.
  *
- * RE-CAPTURED 2026-08-18, same day as the entry directly below, for the two gaps that entry's
+ * RE-RECORDED 2026-08-18 for the item-drop-band refresh (`ITEM_POR_FASE` re-cut by the 2026-08-15
+ * patch from 9 bands topping out at item level 90 to 30 running 10…300). Diffed field by field
+ * against the previous capture before rewriting, same discipline as every re-record below, and
+ * the footprint is exactly the change:
+ *
+ * - `heroFacts` — **byte-identical, all 5 heroes, every field.** The item level is not an input
+ *   to any hero quantity.
+ * - `rows` — **only `itemLevels` and `itemLevelLabel` moved**, on 580 of 600 phases. The 20 that
+ *   did not are phases 1–20, where both the old and the new first band answer `[10]`. Every
+ *   other column, including every throughput column, is byte-identical: `goldPerHour`,
+ *   `chestsPerHour`, `keysPerHour`, `gemsPerHour`, `timePiecesPerHour`, `stoneChestsPerHour`,
+ *   `xpPerHour`, `propsPerHour`, `cyclesPerHour`, `clearSecs`, `expectedHtk`, `mitigationPct`,
+ *   `ato`, `gate`, `locked`, `oneShot`, `infeasible`, `gateTimerSecs`, `jaulaEarlyCapPct`,
+ *   `jaulaWindowSecs`, `phase`, `heroesOnField`, `concurrencyScale` and `fortunaAura`. That an
+ *   unrelated column would have moved is the whole point of the check — the item level is a
+ *   display field, and a throughput diff here would have meant something numeric was reading it.
+ *
+ * In particular this capture sits directly on top of the two XP/stone-chest recaptures below, so
+ * it is also the check that the band refresh does not interact with them: `xpPerHour` and
+ * `stoneChestsPerHour` carry their post-#128 values here, unmoved by the bands.
+ *
+ * PREVIOUSLY RE-CAPTURED 2026-08-18, same day as the entry directly below, for the two gaps that entry's
  * own note flagged and deliberately left open: `xpPerHour` here still did not apply the
  * account's `skills.totals.xp_mult`, and the row carried no stone-chest term even though
  * `DROP_RATES` had grown a fifth member for it. Both are `SquadFarmFacts`/`FarmRateRow` additions,

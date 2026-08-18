@@ -299,48 +299,153 @@
   "itemPorFase": [
     {
       "min": 1,
-      "max": 50,
+      "max": 30,
       "itemLevel": 10
     },
     {
-      "min": 41,
-      "max": 90,
+      "min": 21,
+      "max": 50,
       "itemLevel": 20
     },
     {
-      "min": 81,
-      "max": 130,
+      "min": 41,
+      "max": 70,
       "itemLevel": 30
     },
     {
-      "min": 121,
-      "max": 170,
+      "min": 61,
+      "max": 90,
       "itemLevel": 40
     },
     {
-      "min": 161,
-      "max": 210,
+      "min": 81,
+      "max": 110,
       "itemLevel": 50
     },
     {
-      "min": 201,
-      "max": 250,
+      "min": 101,
+      "max": 130,
       "itemLevel": 60
     },
     {
-      "min": 241,
-      "max": 290,
+      "min": 121,
+      "max": 150,
       "itemLevel": 70
     },
     {
-      "min": 281,
-      "max": 320,
+      "min": 141,
+      "max": 170,
       "itemLevel": 80
     },
     {
-      "min": 311,
-      "max": 600,
+      "min": 161,
+      "max": 190,
       "itemLevel": 90
+    },
+    {
+      "min": 181,
+      "max": 210,
+      "itemLevel": 100
+    },
+    {
+      "min": 201,
+      "max": 230,
+      "itemLevel": 110
+    },
+    {
+      "min": 221,
+      "max": 250,
+      "itemLevel": 120
+    },
+    {
+      "min": 241,
+      "max": 270,
+      "itemLevel": 130
+    },
+    {
+      "min": 261,
+      "max": 290,
+      "itemLevel": 140
+    },
+    {
+      "min": 281,
+      "max": 310,
+      "itemLevel": 150
+    },
+    {
+      "min": 301,
+      "max": 330,
+      "itemLevel": 160
+    },
+    {
+      "min": 321,
+      "max": 350,
+      "itemLevel": 170
+    },
+    {
+      "min": 341,
+      "max": 370,
+      "itemLevel": 180
+    },
+    {
+      "min": 361,
+      "max": 390,
+      "itemLevel": 190
+    },
+    {
+      "min": 381,
+      "max": 410,
+      "itemLevel": 200
+    },
+    {
+      "min": 401,
+      "max": 430,
+      "itemLevel": 210
+    },
+    {
+      "min": 421,
+      "max": 450,
+      "itemLevel": 220
+    },
+    {
+      "min": 441,
+      "max": 470,
+      "itemLevel": 230
+    },
+    {
+      "min": 461,
+      "max": 490,
+      "itemLevel": 240
+    },
+    {
+      "min": 481,
+      "max": 510,
+      "itemLevel": 250
+    },
+    {
+      "min": 501,
+      "max": 530,
+      "itemLevel": 260
+    },
+    {
+      "min": 521,
+      "max": 550,
+      "itemLevel": 270
+    },
+    {
+      "min": 541,
+      "max": 570,
+      "itemLevel": 280
+    },
+    {
+      "min": 561,
+      "max": 590,
+      "itemLevel": 290
+    },
+    {
+      "min": 581,
+      "max": 600,
+      "itemLevel": 300
     }
   ],
   "xpFaseIni": 18,

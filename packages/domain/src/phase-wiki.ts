@@ -32,6 +32,30 @@ export const JAULA: WikiJaula = wiki.jaula;
 
 export const HERO_CHEST_RARITY_BY_ATO = wiki.heroChestRarityByAto;
 export const CHEST_RARITY_DIST = wiki.chestRarityDist;
+/**
+ * Item-level drop bands — which item levels can roll on a given phase.
+ *
+ * ← `herois.item_por_fase` (`fase_min`/`fase_max`/`item` → `min`/`max`/`itemLevel`). The section
+ * is the surprise here and worth stating once: this table lives under **`herois`, not `itens`** —
+ * `itens` carries the item catalog. Looking for it under `itens` finds nothing and invites the
+ * wrong conclusion that the key is unsourced. Drift coverage is intact; it rides `data.herois`.
+ *
+ * **Re-cut by the 2026-08-15 game update**, from 9 bands topping out at item level 90 to 30 bands
+ * running 10…300 in steps of 10 — the same ladder that patch gave `itens.niveis`. The committed
+ * bundle predated the patch and kept answering the old table, which is the defect this data fixes:
+ * it under-reported the drop level from the mid-20s of the phase range onward.
+ *
+ * Closed form, worth pinning because it makes a partial hand-edit obvious: `min = 20k − 19`,
+ * `max = min(600, 20k + 10)`, `itemLevel = 10k` for k = 1…30. Only the last row is clamped — k=30
+ * would otherwise run to 610, past the game's phase-600 ceiling.
+ *
+ * Bands OVERLAP by ten phases, which is the mechanic and not an emit error: on a phase inside an
+ * overlap either of two tiers can roll. {@link itemLevelsForPhase} returns both.
+ *
+ * `tests/item-por-fase.test.ts` pins all thirty rows against that closed form, plus two in-game
+ * stage tooltips captured 2026-08-18 (a capture held out of band, not in this repo) reading
+ * "Stage item: Level 30" on phases 51 and 60.
+ */
 export const ITEM_POR_FASE: ItemLevelBand[] = wiki.itemPorFase;
 export const XP_FASE_INI = wiki.xpFaseIni;
 export const XP_FASE_FIM = wiki.xpFaseFim;
