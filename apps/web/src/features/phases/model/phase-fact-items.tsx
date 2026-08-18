@@ -239,14 +239,14 @@ export function dropItems(
       id: `${row.id}Wiki`,
       label: labels.wiki,
       value: `${formatNumber(row.wiki * 100, 3)}%`,
-      icon: <DropIcon id={row.id} />,
+      icon: <DropIcon id={row.id} ato={intel.ato} />,
     });
     items.push({
       id: `${row.id}Actual`,
       label: labels.actual,
       value: `${formatNumber(row.actual * 100, 3)}%`,
       tip: strings.phasesDropActualHint,
-      icon: <DropIcon id={row.id} />,
+      icon: <DropIcon id={row.id} ato={intel.ato} />,
     });
   }
   return items;

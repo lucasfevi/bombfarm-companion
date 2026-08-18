@@ -128,28 +128,41 @@ describe('bundled wiki assets', () => {
   });
 
   /**
-   * Same failure mode as the prop sweep above, with a wider blast radius: `dropIconSrc` spans
-   * four bundled directories, and `key/`, `houseparts/` and `steam/` each hold exactly one file
-   * that only this helper reaches. A mis-mirrored drop sprite draws a broken image in the Drops
+   * Same failure mode as the prop sweep above, with a much wider blast radius: `dropIconSrc`
+   * builds 21 paths across four directories, and `key/`, `steam/` and `chests/gems/` are reached
+   * by nothing else in the app. A mis-mirrored drop sprite draws a broken image in the Drops
    * panel and no math or type check notices.
    *
-   * Forward direction only, for the same reason as props — `icons/` is a mixed directory that
-   * also holds the rarity crystals and the other `chest_*`/`gem_*` sprites, so a reverse
+   * Every band is swept, not just one, because the per-band families are built by interpolating
+   * the band into the filename — so a family can be correct at ato 1 and dead at ato 4.
+   *
+   * Forward direction only, for the same reason as props — `icons/` and `steam/` are mixed
+   * directories holding the rarity crystals and other `chest_*` sprites, so a reverse
    * "no orphaned art" sweep would fail on assets reachable from elsewhere.
    */
-  it('ships drop art for every modeled drop-chance row', () => {
+  it('ships drop art for every modeled drop-chance row, in every difficulty band', () => {
     const ids = Object.keys(DROP_RATES) as DropRateId[];
+    const bands = [1, 2, 3, 4, 5];
     // Non-vacuity: a shrunken DROP_RATES would make the loop below prove nothing.
     expect(ids.length, 'modeled drop rows').toBe(5);
 
     const missing: string[] = [];
+    const seen = new Set<string>();
     for (const id of ids) {
-      const src = dropIconSrc(id);
-      expect(src, `dropIconSrc returned null for ${id}`).not.toBeNull();
-      if (!existsSync(resolve(root, 'public', src!.slice(1)))) missing.push(`${id} -> ${src}`);
+      for (const ato of bands) {
+        const src = dropIconSrc(id, ato);
+        expect(src, `dropIconSrc returned null for ${id} at ato ${ato}`).not.toBeNull();
+        seen.add(src!);
+        // `src` is a public-root URL; resolve it against `public/` so the assertion follows the
+        // real helper output rather than a re-derived filename.
+        if (!existsSync(resolve(root, 'public', src!.slice(1)))) missing.push(`${id}@${ato} -> ${src}`);
+      }
     }
 
     expect(missing, 'drop rows whose art is not bundled').toEqual([]);
+    // Four per-band families of 5, plus the one fixed item chest. Pins the count so a family
+    // silently collapsing to a single sprite fails here rather than looking fine.
+    expect(seen.size, 'distinct sprites the panel can reach').toBe(21);
   });
 });
 
@@ -160,7 +173,9 @@ describe('phase drops panel', () => {
   it('carries the drop art on both rows of each wiki/yours pair', () => {
     // Icon-on-one-row would leave the pair's labels starting at different x positions in the
     // panel's `dl` grid, so both pushes supply it.
-    expect(itemsSrc.match(/icon: <DropIcon id=\{row\.id\} \/>/g) ?? []).toHaveLength(2);
+    expect(
+      itemsSrc.match(/icon: <DropIcon id=\{row\.id\} ato=\{intel\.ato\} \/>/g) ?? [],
+    ).toHaveLength(2);
   });
 
   /**

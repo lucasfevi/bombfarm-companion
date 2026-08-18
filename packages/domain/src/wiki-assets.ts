@@ -2,7 +2,13 @@ import catalog from './data/catalog.json';
 import type { Slot } from './gear';
 import type { DropRateId } from './phase-wiki';
 
-/** Bundled mirror of Grimório static assets under `public/wiki-assets/`. */
+/**
+ * Bundled game art under `public/wiki-assets/`, mirrored from the Grimório's static assets.
+ *
+ * Very nearly a pure mirror, with one documented exception: the gem-chest sprites under
+ * `chests/gems/` are not published by the wiki in any form, so they are carried from the game
+ * client instead. Everything else here resolves to a file the wiki serves at the same subpath.
+ */
 export const WIKI_ASSETS_BASE = '/wiki-assets';
 
 export const WIKI_URL = 'https://wiki.bombfarm.net';
@@ -79,37 +85,56 @@ export function propIconSrc(propName: string): string | null {
   return `${WIKI_ASSETS_BASE}/env/${propName}.png`;
 }
 
-/**
- * Drop-row art, keyed by `DropRateId` — one fixed sprite per drop type.
- *
- * Four of the five show what the drop YIELDS rather than its container, which is how the
- * Grimório's own drop table pairs them: the ready key, the time piece (the game indexes the
- * same `houseparts` art as its time-part icon), a gem, and the skill stone. Only `chest` shows
- * a chest, because it yields equipment of a rolled rarity and so has no single item sprite.
- *
- * `stone` is the one deliberate divergence from the Grimório table, which reuses a chest there.
- * At the 16px this renders at, two chests differing only in tint are indistinguishable, which
- * defeats the point of an icon; the skill stone reads instantly and matches the other four
- * rows' contents-not-container scheme.
- *
- * Deliberately NOT rarity- or ato-indexed. Every one of these has a per-rarity family
- * (`key_uncommon`…`key_mythic`, `houseparts_*`, `chest_0`…`chest_5`), and the game does pick
- * within it — but a drop CHANCE row is about whether the drop lands at all, not which grade
- * lands, so a single representative keeps the panel honest about what it is measuring.
- */
-const DROP_ART: Record<DropRateId, string> = {
-  chest: 'icons/chest_2.png',
-  key: 'key/key_uncommon.png',
-  time: 'houseparts/houseparts_rare.png',
-  gem: 'icons/gem_emerald_icon.png',
-  stone: 'steam/stone_rare.png',
-};
+/** Difficulty band (ato) 1..5 → the slug the gem-chest art is filed under. */
+const GEM_CHEST_SLUG = ['facil', 'normal', 'dificio', 'muitodificio', 'inferno'] as const;
 
-/** Wiki drop art for one drop-chance row — `null` for an id with no mapping. */
-export function dropIconSrc(dropId: DropRateId): string | null {
-  const file = DROP_ART[dropId];
-  if (!file) return null;
-  return `${WIKI_ASSETS_BASE}/${file}`;
+/** Number of difficulty bands the per-ato drop art is drawn for. */
+const DROP_ART_BANDS = 5;
+
+function clampAto(ato: number): number {
+  if (!Number.isFinite(ato)) return 1;
+  return Math.max(1, Math.min(DROP_ART_BANDS, Math.round(ato)));
+}
+
+/**
+ * Drop-row art: the chest the drop actually arrives in, at the difficulty of the phase asked
+ * about. The key is the one exception — a ready key is not delivered in a chest, so the row
+ * shows the key itself.
+ *
+ * Four of the five are difficulty-scaled, matching the art the game files per band and the
+ * colour language a player already reads (green at Fácil through red at Inferno). The mapping
+ * is the game's own, not an invention:
+ *
+ *  - `key`   → the gate key of that band's rarity. The band→rarity step is the same `1..5` the
+ *              planner already applies in `GATE_KEY_RARITY_INDEX`.
+ *  - `time`  → the House of that band. A time chest pays out house parts, so the game files its
+ *              stash icon as the house itself rather than as a chest.
+ *  - `stone` → the skill-stone chest of that band.
+ *  - `gem`   → the gem chest of that band.
+ *
+ * `chest` alone is fixed, and deliberately so: an item chest's grade follows the MAP LEVEL it
+ * drops at, not the difficulty, so tinting it by band would assert a relationship the game does
+ * not have. It uses the same neutral wooden sprite the game's own item-chest icon constant
+ * points at, which reads as "this one is not difficulty-scaled".
+ */
+export function dropIconSrc(dropId: DropRateId, ato: number): string | null {
+  const band = clampAto(ato);
+  switch (dropId) {
+    case 'chest':
+      return `${WIKI_ASSETS_BASE}/icons/chest_0.png`;
+    case 'key': {
+      const slug = CRYSTAL_SLUG[band];
+      return slug ? `${WIKI_ASSETS_BASE}/key/key_${slug}.png` : null;
+    }
+    case 'time':
+      return `${WIKI_ASSETS_BASE}/steam/house_house_${band}.png`;
+    case 'stone':
+      return `${WIKI_ASSETS_BASE}/steam/chest_skill_${band}.png`;
+    case 'gem':
+      return `${WIKI_ASSETS_BASE}/chests/gems/gem_chest_${GEM_CHEST_SLUG[band - 1]}.png`;
+    default:
+      return null;
+  }
 }
 
 /** Wiki gold coin chrome (nav footer icon). */

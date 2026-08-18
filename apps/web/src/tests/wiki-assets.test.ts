@@ -92,24 +92,47 @@ describe('wiki-assets', () => {
   });
 
   /**
-   * Pinned per id, not spot-checked: these five paths are the whole mapping, and three of them
-   * live in directories (`key/`, `houseparts/`, `steam/`) that no other helper reaches, so a
-   * typo in one is invisible to every other assertion in this file.
+   * Pinned per id at both ends of the difficulty range, because the whole mapping is four
+   * separate per-band families plus one fixed sprite, filed under four directories (`key/`,
+   * `steam/`, `chests/gems/`, `icons/`) that no other helper reaches. A typo in any one of them
+   * is invisible to every other assertion in this file.
    */
-  it('maps each drop-chance row to its bundled art', () => {
-    expect(dropIconSrc('chest')).toBe('/wiki-assets/icons/chest_2.png');
-    expect(dropIconSrc('key')).toBe('/wiki-assets/key/key_uncommon.png');
-    expect(dropIconSrc('time')).toBe('/wiki-assets/houseparts/houseparts_rare.png');
-    expect(dropIconSrc('gem')).toBe('/wiki-assets/icons/gem_emerald_icon.png');
-    expect(dropIconSrc('stone')).toBe('/wiki-assets/steam/stone_rare.png');
+  it('maps each drop-chance row to the art of that phase’s difficulty band', () => {
+    expect(dropIconSrc('key', 1)).toBe('/wiki-assets/key/key_uncommon.png');
+    expect(dropIconSrc('key', 5)).toBe('/wiki-assets/key/key_mythic.png');
+    expect(dropIconSrc('time', 1)).toBe('/wiki-assets/steam/house_house_1.png');
+    expect(dropIconSrc('time', 5)).toBe('/wiki-assets/steam/house_house_5.png');
+    expect(dropIconSrc('stone', 1)).toBe('/wiki-assets/steam/chest_skill_1.png');
+    expect(dropIconSrc('stone', 5)).toBe('/wiki-assets/steam/chest_skill_5.png');
+    expect(dropIconSrc('gem', 1)).toBe('/wiki-assets/chests/gems/gem_chest_facil.png');
+    expect(dropIconSrc('gem', 5)).toBe('/wiki-assets/chests/gems/gem_chest_inferno.png');
   });
 
-  it('gives every drop row a distinct sprite', () => {
+  /**
+   * An item chest's grade follows the map level it drops at, not the difficulty, so tinting it
+   * by band would assert a relationship the game does not have.
+   */
+  it('keeps the item chest fixed across every difficulty band', () => {
+    const paths = [1, 2, 3, 4, 5].map((ato) => dropIconSrc('chest', ato));
+    expect(new Set(paths).size, 'distinct item-chest sprites').toBe(1);
+    expect(paths[0]).toBe('/wiki-assets/icons/chest_0.png');
+  });
+
+  it('clamps an out-of-range or non-finite band instead of building a path to nothing', () => {
+    expect(dropIconSrc('time', 0)).toBe('/wiki-assets/steam/house_house_1.png');
+    expect(dropIconSrc('time', 9)).toBe('/wiki-assets/steam/house_house_5.png');
+    expect(dropIconSrc('gem', Number.NaN)).toBe('/wiki-assets/chests/gems/gem_chest_facil.png');
+    expect(dropIconSrc('key', 2.4)).toBe('/wiki-assets/key/key_rare.png');
+  });
+
+  it('gives every drop row a distinct sprite, in every difficulty band', () => {
     const ids = Object.keys(DROP_RATES) as DropRateId[];
-    const paths = ids.map((id) => dropIconSrc(id));
-    // Two rows sharing one sprite is the failure mode the stone row exists to avoid: at 16px a
-    // repeated chest makes the icons decorative noise instead of something to match against.
-    expect(new Set(paths).size, `distinct sprites across ${ids.length} drop rows`).toBe(ids.length);
+    for (const ato of [1, 2, 3, 4, 5]) {
+      const paths = ids.map((id) => dropIconSrc(id, ato));
+      // Two rows sharing one sprite would make the icons decorative noise instead of something
+      // to match a row against — the whole reason they are here.
+      expect(new Set(paths).size, `distinct sprites at ato ${ato}`).toBe(ids.length);
+    }
   });
 
   it('points at the bundled gold coin chrome', () => {

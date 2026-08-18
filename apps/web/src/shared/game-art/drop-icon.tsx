@@ -6,6 +6,8 @@ import { cn } from '@bombfarm/ui';
 type Props = {
   /** Drop-chance row id (e.g. `time`) — `dropIconSrc` maps it to the bundled sprite. */
   id: DropRateId;
+  /** Difficulty band of the phase being shown; four of the five sprites are drawn per band. */
+  ato: number;
   className?: string;
 };
 
@@ -21,8 +23,8 @@ type Props = {
  * Passed as `StatListItem.icon` rather than folded into `label`, which is what keeps the "yours"
  * rows from growing 4px and keeps the tooltip trigger's dotted underline under the words alone.
  */
-export function DropIcon({ id, className }: Props) {
-  const iconUrl = dropIconSrc(id);
+export function DropIcon({ id, ato, className }: Props) {
+  const iconUrl = dropIconSrc(id, ato);
   if (!iconUrl) return null;
 
   return (
