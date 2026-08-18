@@ -67,12 +67,23 @@ const fixture = JSON.parse(readFileSync(fixturePath, 'utf8')) as {
 /**
  * Keys present in the frozen fixture that no longer exist in live STRINGS.
  *
- * `phasesXpPerProp` — the XP-multiplier feature (2026-08-18) split the Economy panel's single
- * unboosted `xp` row into a wiki/yours pair (`phasesXpPerPropWiki`/`phasesXpPerPropActual`,
- * below in `KEYS_ADDED`), the same shape the gold rows already use. The old single-value key has
- * no reader left.
+ * The merged-row feature (2026-08-18) collapsed the Economy and Drops panels' wiki/yours ROW
+ * PAIRS into one row per figure, showing the boosted total with the wiki base and the boost as
+ * subtext. Each pair's two labels carried a parenthesised "(wiki)"/"(yours)" that the merged row
+ * has no place for, so the six gold labels below have no reader left.
+ *
+ * `phasesXpPerProp` is deliberately NOT listed: the same feature revived it as the merged XP
+ * row's label, and it is back in live STRINGS at the fixture's own value ("XP per prop" /
+ * "XP por prop"). A key that leaves and returns unchanged is not a delta.
  */
-const KEYS_REMOVED: readonly string[] = ['phasesXpPerProp'];
+const KEYS_REMOVED: readonly string[] = [
+  'phasesGoldComumWiki',
+  'phasesGoldComumActual',
+  'phasesAvgGoldWiki',
+  'phasesAvgGoldActual',
+  'phasesMapGoldWiki',
+  'phasesMapGoldActual',
+];
 
 /**
  * Keys present in live STRINGS with no counterpart in the frozen fixture at all — a genuinely
@@ -81,26 +92,33 @@ const KEYS_REMOVED: readonly string[] = ['phasesXpPerProp'];
  * the "differs at exactly" comparisons alongside `PROSE_EDITED_PATHS`, and separately excluded
  * from the sorted-key-set comparison (which compares SETS, not diffs).
  *
- * The XP-multiplier / drop-chances feature (2026-08-18): the Economy panel's boosted XP pair,
- * the new Drops panel (gate-filtered wiki/yours rows per drop type), and the Account import
- * summary's new XP-multiplier row.
+ * The XP-multiplier / drop-chances feature (2026-08-18): the new Drops panel (gate-filtered rows
+ * per drop type) and the Account import summary's new XP-multiplier row.
+ *
+ * The merged-row feature (same day) then collapsed each panel's wiki/yours pair into one row, so
+ * the ten drop labels and the XP pair this list used to carry were replaced by the single-label
+ * keys below before ever reaching a fixture re-baseline. They are dropped from this list rather
+ * than moved to `KEYS_REMOVED`: they never existed in the frozen fixture, so their departure is
+ * invisible to the comparison.
+ *
+ * `phasesBoost*` name the boost SOURCE in the merged row's subtext ("0.100% +17% luck"), which
+ * the old paired rows expressed by labelling one row "(yours)".
  */
 const KEYS_ADDED: readonly string[] = [
-  'phasesXpPerPropWiki',
-  'phasesXpPerPropActual',
   'phasesXpActualHint',
   'phasesDropsSection',
-  'phasesDropChestWiki',
-  'phasesDropChestActual',
-  'phasesDropKeyWiki',
-  'phasesDropKeyActual',
-  'phasesDropTimeWiki',
-  'phasesDropTimeActual',
-  'phasesDropGemWiki',
-  'phasesDropGemActual',
-  'phasesDropStoneWiki',
-  'phasesDropStoneActual',
+  'phasesDropChest',
+  'phasesDropKey',
+  'phasesDropTime',
+  'phasesDropGem',
+  'phasesDropStone',
   'phasesDropActualHint',
+  'phasesGoldComum',
+  'phasesAvgGold',
+  'phasesMapGold',
+  'phasesBoostXp',
+  'phasesBoostGold',
+  'phasesBoostLuck',
   'treeXpMult',
 ];
 

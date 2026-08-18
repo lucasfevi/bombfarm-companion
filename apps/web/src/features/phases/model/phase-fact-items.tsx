@@ -1,5 +1,5 @@
 import React from 'react';
-import { DropIcon, GoldValue, rarityTextClass as rarityTextClassFor } from '@/shared/game-art';
+import { DropIcon, GoldIcon, rarityTextClass as rarityTextClassFor } from '@/shared/game-art';
 import type { Lang, Strings } from '@/shared/i18n';
 import { sub } from '@/shared/i18n';
 import type { DropChanceRow, PhaseIntelGlobal } from '@bombfarm/domain/phase-intel';
@@ -116,46 +116,53 @@ export function economyItems(
       ),
     },
     {
-      id: 'xpWiki',
-      label: strings.phasesXpPerPropWiki,
-      value: formatNumber(intel.xpPerPropWiki, 0),
-    },
-    {
-      id: 'xpActual',
-      label: strings.phasesXpPerPropActual,
-      value: formatNumber(intel.xpPerPropActual, 0),
+      id: 'xp',
+      label: strings.phasesXpPerProp,
+      value: boostedValue(
+        formatNumber(intel.xpPerPropActual, 0),
+        formatNumber(intel.xpPerPropWiki, 0),
+        boostFraction(intel.xpPerPropWiki, intel.xpPerPropActual),
+        strings.phasesBoostXp,
+        formatNumber,
+      ),
       tip: strings.phasesXpActualHint,
     },
     {
-      id: 'goldWiki',
-      label: strings.phasesGoldComumWiki,
-      value: <GoldValue>{formatNumber(intel.goldComumWiki, 0)}</GoldValue>,
-    },
-    {
-      id: 'goldActual',
-      label: strings.phasesGoldComumActual,
-      value: <GoldValue>{formatNumber(intel.goldComumActual, 0)}</GoldValue>,
+      id: 'gold',
+      label: strings.phasesGoldComum,
+      icon: <GoldIcon />,
+      value: boostedValue(
+        formatNumber(intel.goldComumActual, 0),
+        formatNumber(intel.goldComumWiki, 0),
+        boostFraction(intel.goldComumWiki, intel.goldComumActual),
+        strings.phasesBoostGold,
+        formatNumber,
+      ),
       tip: strings.phasesGoldActualHint,
     },
     {
-      id: 'avgGoldWiki',
-      label: strings.phasesAvgGoldWiki,
-      value: <GoldValue>{formatNumber(intel.weightedAvgGoldWiki, 0)}</GoldValue>,
+      id: 'avgGold',
+      label: strings.phasesAvgGold,
+      icon: <GoldIcon />,
+      value: boostedValue(
+        formatNumber(intel.weightedAvgGoldActual, 0),
+        formatNumber(intel.weightedAvgGoldWiki, 0),
+        boostFraction(intel.weightedAvgGoldWiki, intel.weightedAvgGoldActual),
+        strings.phasesBoostGold,
+        formatNumber,
+      ),
     },
     {
-      id: 'avgGoldActual',
-      label: strings.phasesAvgGoldActual,
-      value: <GoldValue>{formatNumber(intel.weightedAvgGoldActual, 0)}</GoldValue>,
-    },
-    {
-      id: 'mapGoldWiki',
-      label: strings.phasesMapGoldWiki,
-      value: <GoldValue>{formatNumber(intel.totalMapGoldWiki, 0)}</GoldValue>,
-    },
-    {
-      id: 'mapGoldActual',
-      label: strings.phasesMapGoldActual,
-      value: <GoldValue>{formatNumber(intel.totalMapGoldActual, 0)}</GoldValue>,
+      id: 'mapGold',
+      label: strings.phasesMapGold,
+      icon: <GoldIcon />,
+      value: boostedValue(
+        formatNumber(intel.totalMapGoldActual, 0),
+        formatNumber(intel.totalMapGoldWiki, 0),
+        boostFraction(intel.totalMapGoldWiki, intel.totalMapGoldActual),
+        strings.phasesBoostGold,
+        formatNumber,
+      ),
     },
   ];
 }
@@ -192,24 +199,59 @@ export function jaulaItems(
 }
 
 /**
- * `DropChanceRow.id` -> its wiki/yours label strings. A `switch` (not an indexed lookup table)
- * so each arm reads `strings.phasesDropXxxYyy` directly — a plain property access TypeScript can
- * narrow to `string`, unlike `strings[someKeyofStrings]`, which widens to the union of every
- * value type across `Strings` (some of which, e.g. `explainSections`, are not `ReactNode`).
+ * `DropChanceRow.id` -> its label string. A `switch` (not an indexed lookup table) so each arm
+ * reads `strings.phasesDropXxx` directly — a plain property access TypeScript can narrow to
+ * `string`, unlike `strings[someKeyofStrings]`, which widens to the union of every value type
+ * across `Strings` (some of which, e.g. `explainSections`, are not `ReactNode`).
  */
-function dropLabels(dropId: DropChanceRow['id'], strings: Strings): { wiki: string; actual: string } {
+function dropLabel(dropId: DropChanceRow['id'], strings: Strings): string {
   switch (dropId) {
     case 'chest':
-      return { wiki: strings.phasesDropChestWiki, actual: strings.phasesDropChestActual };
+      return strings.phasesDropChest;
     case 'key':
-      return { wiki: strings.phasesDropKeyWiki, actual: strings.phasesDropKeyActual };
+      return strings.phasesDropKey;
     case 'time':
-      return { wiki: strings.phasesDropTimeWiki, actual: strings.phasesDropTimeActual };
+      return strings.phasesDropTime;
     case 'gem':
-      return { wiki: strings.phasesDropGemWiki, actual: strings.phasesDropGemActual };
+      return strings.phasesDropGem;
     case 'stone':
-      return { wiki: strings.phasesDropStoneWiki, actual: strings.phasesDropStoneActual };
+      return strings.phasesDropStone;
   }
+}
+
+/**
+ * One row's value for a figure the account boosts: the boosted total on the value line, with the
+ * wiki base and the boost that produced it as muted subtext under it.
+ *
+ * Replaces the wiki/yours ROW PAIR these panels used to print. The pair stated both numbers but
+ * left the reader to divide one by the other to see the boost at all, and it cost two rows per
+ * figure — eight of them on a gate phase's Drops panel, differing only by a parenthesised word.
+ *
+ * Collapses to the bare total when there is no boost. With no save imported every multiplier is
+ * 1, and a subtext reading "0.100% +0% luck" is noise that says nothing the total does not.
+ */
+function boostedValue(
+  total: string,
+  base: string,
+  boost: number,
+  sourceLabel: string,
+  formatNumber: (n: number, d?: number) => string,
+): React.ReactNode {
+  if (!Number.isFinite(boost) || boost <= 0) return total;
+  return (
+    <span className="flex flex-col items-end gap-0.5 leading-tight">
+      <span>{total}</span>
+      <span className="text-[10px] font-normal text-muted">
+        {base} +{formatNumber(boost * 100, 0)}% {sourceLabel}
+      </span>
+    </span>
+  );
+}
+
+/** Boost fraction that took `base` to `total` — `0` when the base is absent or unboosted. */
+function boostFraction(base: number, total: number): number {
+  if (!Number.isFinite(base) || !Number.isFinite(total) || base <= 0) return 0;
+  return total / base - 1;
 }
 
 /**
@@ -231,20 +273,16 @@ export function dropItems(
   }[] = [];
   for (const row of intel.dropChances) {
     if (!row.applies) continue;
-    const labels = dropLabels(row.id, strings);
-    // Art on BOTH rows of the wiki/yours pair, not just the first: each `dt` is an independent
-    // cell in the panel's `dl` grid, so icon-on-one would leave the pair's two labels starting
-    // at different x positions.
     items.push({
-      id: `${row.id}Wiki`,
-      label: labels.wiki,
-      value: `${formatNumber(row.wiki * 100, 3)}%`,
-      icon: <DropIcon id={row.id} ato={intel.ato} />,
-    });
-    items.push({
-      id: `${row.id}Actual`,
-      label: labels.actual,
-      value: `${formatNumber(row.actual * 100, 3)}%`,
+      id: row.id,
+      label: dropLabel(row.id, strings),
+      value: boostedValue(
+        `${formatNumber(row.actual * 100, 3)}%`,
+        `${formatNumber(row.wiki * 100, 3)}%`,
+        boostFraction(row.wiki, row.actual),
+        strings.phasesBoostLuck,
+        formatNumber,
+      ),
       tip: strings.phasesDropActualHint,
       icon: <DropIcon id={row.id} ato={intel.ato} />,
     });

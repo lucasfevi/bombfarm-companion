@@ -8,6 +8,7 @@ export { DropIcon } from '@/shared/game-art/drop-icon';
 export { HeroAbilityIcons } from '@/shared/game-art/hero-ability-icons';
 export { HeroGearIcons } from '@/shared/game-art/hero-gear-icons';
 export { GoldValue } from '@/shared/game-art/gold-value';
+export { GoldIcon } from '@/shared/game-art/gold-icon';
 export {
   artFrameRecipe,
   artFrameRadiusClass,

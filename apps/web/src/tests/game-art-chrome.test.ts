@@ -170,36 +170,36 @@ describe('phase drops panel', () => {
   const itemsSrc = read('features/phases/model/phase-fact-items.tsx');
   const iconSrc = read('shared/game-art/drop-icon.tsx');
 
-  it('carries the drop art on both rows of each wiki/yours pair', () => {
-    // Icon-on-one-row would leave the pair's labels starting at different x positions in the
-    // panel's `dl` grid, so both pushes supply it.
+  it('carries the drop art on the merged row', () => {
+    // One push, not the two the wiki/yours pair needed — every drop is a single row now.
     expect(
       itemsSrc.match(/icon: <DropIcon id=\{row\.id\} ato=\{intel\.ato\} \/>/g) ?? [],
-    ).toHaveLength(2);
+    ).toHaveLength(1);
   });
 
   /**
    * The `icon` field, not the `label`, is the whole point. `StatList` turns a label with a `tip`
    * into the tooltip TRIGGER, so art folded into the label lands inside that trigger: measured
-   * in the browser, the four "yours" rows grew 31px -> 35px and the trigger's dotted underline
-   * ran under the chest sprite as well as the words. As a sibling of the label both go away.
+   * in the browser, the rows grew 31px -> 35px and the trigger's dotted underline ran under the
+   * chest sprite as well as the words. As a sibling of the label both go away — and every merged
+   * row carries a tip now, so the trigger is on all of them rather than half.
    */
   it('passes the art as the row icon rather than folding it into the label', () => {
-    expect(itemsSrc).toContain('label: labels.wiki');
-    expect(itemsSrc).toContain('label: labels.actual');
+    expect(itemsSrc).toContain('label: dropLabel(row.id, strings)');
     expect(itemsSrc).not.toContain('dropLabelWithArt');
   });
 
   /**
-   * `size-3.5`, not the `size-4` the phase tables use: this panel's rows are an 11px/14.85px
-   * line box against the tables' 12px/16px, so a 16px sprite overflows and grows every row it
-   * lands on by a pixel. Measured at 14px the rows match their pre-icon height exactly.
+   * `size-8` (32px) deliberately overflows this panel's 11px/14.85px line box, where the phase
+   * tables' prop art is `size-4` inside a 16px one. Paid for by the row merge: a gate phase
+   * prints four rows where it printed eight, and the panel's height comes from the board grid
+   * rather than its content, so the sprite can grow into space the merge freed.
    */
-  it('sizes the drop art to this panel’s line box, not the phase tables’', () => {
+  it('draws the drop art far larger than the phase tables’ prop art', () => {
     // Asserted on the emitted class list, not the file: the doc comment above it names `size-4`
     // to explain why this is not that, so a whole-file `not.toContain` would match the prose.
     const classList = iconSrc.match(/cn\((['"])([^'"]+)\1/)?.[2] ?? '';
-    expect(classList, 'DropIcon class list').toContain('size-3.5');
+    expect(classList, 'DropIcon class list').toContain('size-8');
     expect(classList.split(/\s+/), 'DropIcon class list').not.toContain('size-4');
   });
 
