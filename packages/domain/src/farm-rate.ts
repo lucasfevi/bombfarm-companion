@@ -433,6 +433,13 @@ export type SquadFarmFacts = {
   teamCoinMult: number;
   /** `tree.luckFlatPct ?? 0`, percentage points — echoed for the board's breakdown tooltip. */
   treeLuckFlatPct: number;
+  /**
+   * `tree.xpMult`, verbatim — a direct multiplier (not a percentage add, unlike
+   * {@link teamCoinMult}), so absent/non-finite defaults to `1` (identity) rather than `0`,
+   * which would silently zero every XP figure. Derived here, once per squad, rather than read
+   * from `account.tree` inside `buildRow` — same reasoning as `teamCoinMult`.
+   */
+  xpMult: number;
 };
 
 /**
@@ -465,6 +472,9 @@ export function computeSquadFarmFacts(
 
   const teamCoinMult = 1 + Math.max(0, account.tree.teamCoinPct ?? 0) / 100;
 
+  const rawXpMult = account.tree.xpMult;
+  const xpMult = typeof rawXpMult === 'number' && Number.isFinite(rawXpMult) ? rawXpMult : 1;
+
   return {
     heroes: heroFacts,
     fieldSlots,
@@ -474,6 +484,7 @@ export function computeSquadFarmFacts(
     sorteFraction,
     teamCoinMult,
     treeLuckFlatPct,
+    xpMult,
   };
 }
 
@@ -596,6 +607,8 @@ export type FarmRateRow = {
   keysPerHour: number;
   gemsPerHour: number; // 0 on non-gate
   timePiecesPerHour: number; // 0 on non-gate
+  /** Same base rate as {@link gemsPerHour} (`0.00005`) — gate-only, `0` on non-gate. */
+  stoneChestsPerHour: number;
   xpPerHour: number;
   propsPerHour: number;
   cyclesPerHour: number; // 0 when clearSecs is not finite
@@ -737,7 +750,8 @@ function buildRow(line: WikiPhaseLine, squad: SquadFarmFacts, options: FarmRateO
     : propsPerHour * DROP_RATES.key * sorteMult * bonus;
   const gemsPerHour = line.gate ? propsPerHour * DROP_RATES.gem * sorteMult * bonus : 0;
   const timePiecesPerHour = line.gate ? propsPerHour * DROP_RATES.time * sorteMult * bonus : 0;
-  const xpPerHour = propsPerHour * xpPerProp(line.phase) * bonus;
+  const stoneChestsPerHour = line.gate ? propsPerHour * DROP_RATES.stone * sorteMult * bonus : 0;
+  const xpPerHour = propsPerHour * xpPerProp(line.phase) * squad.xpMult * bonus;
 
   const maxPropHp = line.hp * MAX_PROP_HP_MULT;
   const oneShot = perHero.length > 0 && perHero.every((hero) => hero.avgHit >= maxPropHp);
@@ -761,6 +775,7 @@ function buildRow(line: WikiPhaseLine, squad: SquadFarmFacts, options: FarmRateO
     keysPerHour: normalizeZero(keysPerHour),
     gemsPerHour: normalizeZero(gemsPerHour),
     timePiecesPerHour: normalizeZero(timePiecesPerHour),
+    stoneChestsPerHour: normalizeZero(stoneChestsPerHour),
     xpPerHour: normalizeZero(xpPerHour),
     propsPerHour: normalizeZero(propsPerHour),
     cyclesPerHour: normalizeZero(cyclesPerHour),

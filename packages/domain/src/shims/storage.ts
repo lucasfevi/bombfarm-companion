@@ -12,6 +12,13 @@ export type TreeState = {
   energy: number;
   teamCoinPct: number;
   luckFlatPct?: number;
+  /**
+   * `skills.totals.xp_mult` verbatim (not a percentage) — scales XP per prop the same way
+   * `teamCoinPct` scales gold per prop. Optional, same precedent as `luckFlatPct`: every read
+   * site defaults absence/non-finite to `1` (NOT `0` — a `?? 0` here would silently zero every
+   * XP figure).
+   */
+  xpMult?: number;
 };
 
 export type HeroContext = {

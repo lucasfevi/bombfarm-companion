@@ -1,6 +1,31 @@
 /**
  * Proof that the `farm-rate.ts` basis seam is a byte-identical refactor, not a rewrite.
  *
+ * RE-CAPTURED 2026-08-18, same day as the entry directly below, for the two gaps that entry's
+ * own note flagged and deliberately left open: `xpPerHour` here still did not apply the
+ * account's `skills.totals.xp_mult`, and the row carried no stone-chest term even though
+ * `DROP_RATES` had grown a fifth member for it. Both are `SquadFarmFacts`/`FarmRateRow` additions,
+ * not touches to any existing formula input, so the blast radius is narrow by construction:
+ *
+ * - `rows[].xpPerHour` moved on **all 600 rows**, by exactly the fixture's own `xp_mult` (1.11 on
+ *   the committed 5-hero capture) — every row's relative change lands in `[0.10999999999999997,
+ *   0.11000000000000022]`, i.e. one constant factor, not a per-row drift. `heroFacts` has zero
+ *   diffs: the multiplier is applied once in `buildRow`, downstream of every hero-level term.
+ * - `rows[].stoneChestsPerHour` is a **new field**, not a moved one. On the 60 gate rows it is
+ *   byte-identical to that row's own `gemsPerHour` (both drop at `DROP_RATES.stone ===
+ *   DROP_RATES.gem === 0.00005`); on the 540 non-gate rows it is `0`. Zero mismatches either way.
+ * - Every other field — `goldPerHour` included — is byte-identical to the previous capture.
+ *   `goldPerHour` in particular does not move: neither change touches the gold multiplier chain
+ *   (`teamCoinMult`, `fortunaAura`, `goldSelfMix`), which is exactly what the recorded account-486
+ *   gold/hr calibration anchor (a separate fixture from this file's own) requires of any change
+ *   that is not itself about gold.
+ *
+ * Reconciled against a live capture held out of band, not in this repo: the same two witnesses
+ * the entry below already cites (phase 51 wiki 167 → game 261, phase 60 wiki 194 → game 303) are
+ * `wiki × 1.56`, and a live gate tooltip lists `Stone chest chance` at the same percentage as
+ * `Gem chest chance` on the same phase — both confirm the shape fixed here, not just this
+ * fixture's own arithmetic.
+ *
  * RE-CAPTURED 2026-08-18 for `xpPerProp()` switching from a linear `XP_FASE_INI`→`XP_FASE_FIM`
  * interpolation to the exact per-line `xpProp` integer every wiki phase line already carries (the
  * interpolation is now only a fallback for a phase with no line). This is a pure precision fix —

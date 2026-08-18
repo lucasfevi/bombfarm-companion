@@ -18,3 +18,9 @@ tooltips.
 
 The Account import summary now also shows your account's XP multiplier alongside the existing
 team-coin percentage.
+
+The Farm Ranking board's per-phase estimate had the same two gaps, in its own separate
+computation: its XP/hr column didn't carry your account's XP multiplier either, and it modelled
+four of the five drop kinds, with no stone-chest term. XP/hr now scales the same way gold/hr
+already does, and the estimate now also accounts for stone chests on gate phases, at the same
+rate as gem chests — not yet surfaced as its own board column.

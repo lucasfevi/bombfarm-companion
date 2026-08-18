@@ -234,6 +234,7 @@ const RATE_FIELD_NAMES = [
   'keysPerHour',
   'gemsPerHour',
   'timePiecesPerHour',
+  'stoneChestsPerHour',
   'xpPerHour',
   'mitigationPct',
   'propsPerHour',
