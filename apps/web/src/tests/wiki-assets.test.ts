@@ -4,7 +4,7 @@ import { readFileSync } from 'node:fs';
 import { parseSaveFile } from '@bombfarm/domain/import-save';
 import { normalizeHero } from '@/shared/lib/storage';
 import { WEB_PACKAGE_ROOT } from './helpers/web-package-root';
-import { HERO_SKIN_COUNT, heroAvatarSrc, isKnownSkin, itemIconSrc, normalizeSkin, rarityCrystalSrc, abilityIconSrc, goldIconSrc } from '@bombfarm/domain/wiki-assets';
+import { HERO_SKIN_COUNT, heroAvatarSrc, isKnownSkin, itemIconSrc, normalizeSkin, rarityCrystalSrc, abilityIconSrc, goldIconSrc, propIconSrc } from '@bombfarm/domain/wiki-assets';
 
 describe('wiki-assets', () => {
   it('maps save skin to bundled avatar paths', () => {
@@ -82,6 +82,12 @@ describe('wiki-assets', () => {
   it('builds ability icon paths from ability id', () => {
     expect(abilityIconSrc('ponta_diamante')).toBe('/wiki-assets/abilities/ponta_diamante.png');
     expect(abilityIconSrc('')).toBeNull();
+  });
+
+  it('builds prop icon paths from the prop name', () => {
+    expect(propIconSrc('bush')).toBe('/wiki-assets/env/bush.png');
+    expect(propIconSrc('purple_crystal')).toBe('/wiki-assets/env/purple_crystal.png');
+    expect(propIconSrc('')).toBeNull();
   });
 
   it('points at the bundled gold coin chrome', () => {

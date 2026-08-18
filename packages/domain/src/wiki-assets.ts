@@ -72,6 +72,12 @@ export function abilityIconSrc(abilityId: string): string | null {
   return `${WIKI_ASSETS_BASE}/abilities/${abilityId}.png`;
 }
 
+/** Wiki prop art — filename matches the prop name (e.g. `gold_ore`). */
+export function propIconSrc(propName: string): string | null {
+  if (!propName || typeof propName !== 'string') return null;
+  return `${WIKI_ASSETS_BASE}/env/${propName}.png`;
+}
+
 /** Wiki gold coin chrome (nav footer icon). */
 export function goldIconSrc(): string {
   return `${WIKI_ASSETS_BASE}/nav/icon_gold.png`;
