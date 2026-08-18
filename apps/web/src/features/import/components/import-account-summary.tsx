@@ -77,6 +77,10 @@ export function ImportAccountSummary({
                 <dt>{t.treeTeamCoin}</dt>
                 <dd>+{formatNumber(accountData.tree.teamCoinPct ?? 0, 2)}%</dd>
               </div>
+              <div>
+                <dt>{t.treeXpMult}</dt>
+                <dd>×{formatNumber(accountData.tree.xpMult ?? 1, 2)}</dd>
+              </div>
             </dl>
           </section>
         )}

@@ -62,6 +62,8 @@ export type AccountImportData = {
     speed: number;
     energy: number;
     teamCoinPct?: number;
+    /** `skills.totals.xp_mult` verbatim (not a percentage). Absent/non-finite/zero → 1 (no XP boost). */
+    xpMult?: number;
     /** `luck_add × 100` — flat percentage points (AD-BSP-22, ASM-01, BSPW5-03). */
     luckFlatPct: number;
   } | null;
@@ -223,6 +225,7 @@ function mapAccountData(raw: Record<string, unknown>): AccountImportData {
       speed: asNumber(totals.speed_add) * 100,
       energy: asNumber(totals.energia_add) * 100,
       teamCoinPct: asNumber(totals.coin_add ?? totals.team_coin_add) * 100,
+      xpMult: asNumber(totals.xp_mult, 1) || 1,
       // BSPW5-03 (ASM-01): flat Luck percentage points — absent key defaults to 0.
       luckFlatPct: asNumber(totals.luck_add) * 100,
     };

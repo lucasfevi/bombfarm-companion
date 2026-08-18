@@ -141,6 +141,7 @@
     "keyDropRate": 0.001,
     "gemChestDropRate": 0.00005,
     "timechestDropRate": 0.0015,
+    "stoneChestDropRate": 0.00005,
     "keyGateCost": 1,
     "bonusAdd": 0.4,
     "bonusAddVip": 0.8,

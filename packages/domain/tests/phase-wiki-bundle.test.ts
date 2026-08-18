@@ -4,6 +4,7 @@ import {
   BOSS_HP_MULT_WIKI,
   CHEST_RARITY_DIST,
   DROP_RATES,
+  dropAppliesOnPhase,
   formatMapOptionLabel,
   formatPhaseCoord,
   formatPhaseLabel,
@@ -185,8 +186,14 @@ describe('phase-wiki-bundle', () => {
   });
 
   describe('new export shapes and values (literals, not read back from the bundle)', () => {
-    it('DROP_RATES: four finite fractions matching their literal values', () => {
-      expect(DROP_RATES).toEqual({ chest: 0.001, key: 0.001, gem: 0.00005, time: 0.0015 });
+    it('DROP_RATES: five finite fractions matching their literal values', () => {
+      expect(DROP_RATES).toEqual({
+        chest: 0.001,
+        key: 0.001,
+        gem: 0.00005,
+        time: 0.0015,
+        stone: 0.00005,
+      });
       for (const value of Object.values(DROP_RATES)) {
         expect(Number.isFinite(value)).toBe(true);
       }
@@ -262,6 +269,17 @@ describe('phase-wiki-bundle', () => {
       expect(WIKI_SOURCE_PULLED_AT.length).toBeGreaterThan(0);
       expect(WIKI_EMITTED_AT).toMatch(/^\d{4}-\d{2}-\d{2}$/);
     });
+
+    it('dropAppliesOnPhase: chest on every phase, key non-gate only, time/gem/stone gate only', () => {
+      expect(dropAppliesOnPhase('chest', false)).toBe(true);
+      expect(dropAppliesOnPhase('chest', true)).toBe(true);
+      expect(dropAppliesOnPhase('key', false)).toBe(true);
+      expect(dropAppliesOnPhase('key', true)).toBe(false);
+      for (const id of ['time', 'gem', 'stone'] as const) {
+        expect(dropAppliesOnPhase(id, false)).toBe(false);
+        expect(dropAppliesOnPhase(id, true)).toBe(true);
+      }
+    });
   });
 
   // TS half — the JSON half is asserted at emit time in tools/wiki-emit-phase-bundle.mjs.
@@ -278,6 +296,7 @@ describe('phase-wiki-bundle', () => {
       expect(DROP_RATES.key).toBe(wiki.drops.keyDropRate);
       expect(DROP_RATES.gem).toBe(wiki.drops.gemChestDropRate);
       expect(DROP_RATES.time).toBe(wiki.drops.timechestDropRate);
+      expect(DROP_RATES.stone).toBe(wiki.drops.stoneChestDropRate);
       expect(KEY_GATE_COST).toBe(wiki.drops.keyGateCost);
       expect(RETURN_BONUS_ADD).toBe(wiki.drops.bonusAdd);
       expect(RETURN_BONUS_ADD_VIP).toBe(wiki.drops.bonusAddVip);
@@ -314,25 +333,23 @@ describe('phase-wiki-bundle', () => {
     });
   });
 
-  // For all 600 phases, the existing xpPerProp() interpolation reproduces the wiki's own
-  // per-phase xpProp value — an explicit counter so an empty loop cannot pass vacuously.
+  // HISTORY: xpPerProp() used to be a continuous linear interpolation from XP_FASE_INI to
+  // XP_FASE_FIM, and this test pinned that its ROUNDED output reproduced the wiki's own per-phase
+  // xpProp integer. That was already a documented approximation — measured against the bundle,
+  // the raw (unrounded) interpolation deviated from line.xpProp by up to ~0.4992 (phase 21), and
+  // two live tooltip witnesses (wiki 167 vs. app-shown 166.7 at phase 51; wiki 194 vs. ~193.98 at
+  // phase 60) confirmed the game awards the wiki's exact integer, not the interpolated value.
   //
-  // Deviation from the spec's literal "within 1e-6" wording, recorded for the validator: measured
-  // against the refreshed bundle, xpPerProp(phase) (continuous linear from XP_FASE_INI to
-  // XP_FASE_FIM) does NOT land within 1e-6 of line.xpProp for every phase — the max raw deviation
-  // is ~0.4992 (phase 21). The wiki's own xp_por_fase anchors already show this: linear from
-  // {1,18}->{600,1800} predicts 312.5 at phase 100 and 907.5 at phase 300, but the wiki reports
-  // 313 and 908 — each off by exactly 0.5, i.e. the wiki's per-phase value is the CONTINUOUS
-  // linear curve rounded to the nearest integer, not the continuous curve itself. That rounding
-  // is exact for all 600 phases (verified below), which is a stronger and actually-true pin than
-  // the spec's raw-difference tolerance — xpPerProp()'s body is unchanged either way, per the
-  // spec's own mandate.
-  it('Math.round(xpPerProp(phase)) === wikiPhaseLine(phase).xpProp for all 600 phases', () => {
+  // xpPerProp() now returns wikiPhaseLine(phase).xpProp verbatim for every in-range phase (the
+  // interpolation survives only as a fallback for a phase with no line). The assertion below is
+  // therefore exact equality, not a rounding reproduction — an explicit counter still guards
+  // against an empty loop passing vacuously.
+  it('xpPerProp(phase) === wikiPhaseLine(phase).xpProp exactly, for all 600 phases', () => {
     let checked = 0;
     for (let phase = 1; phase <= 600; phase++) {
       const line = wikiPhaseLine(phase);
       expect(line).toBeDefined();
-      expect(Math.round(xpPerProp(phase))).toBe(line!.xpProp);
+      expect(xpPerProp(phase)).toBe(line!.xpProp);
       checked++;
     }
     expect(checked).toBe(600);

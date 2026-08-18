@@ -2,7 +2,7 @@ import React from 'react';
 import { GoldValue, rarityTextClass as rarityTextClassFor } from '@/shared/game-art';
 import type { Lang, Strings } from '@/shared/i18n';
 import { sub } from '@/shared/i18n';
-import type { PhaseIntelGlobal } from '@bombfarm/domain/phase-intel';
+import type { DropChanceRow, PhaseIntelGlobal } from '@bombfarm/domain/phase-intel';
 import { phaseMapDisplayName, rarityLabel } from '@bombfarm/domain/phase-wiki';
 import { formatDurationShort, GATE_KEY_RARITY_INDEX } from './phases-page';
 
@@ -116,9 +116,15 @@ export function economyItems(
       ),
     },
     {
-      id: 'xp',
-      label: strings.phasesXpPerProp,
-      value: formatNumber(intel.xpPerProp, 1),
+      id: 'xpWiki',
+      label: strings.phasesXpPerPropWiki,
+      value: formatNumber(intel.xpPerPropWiki, 0),
+    },
+    {
+      id: 'xpActual',
+      label: strings.phasesXpPerPropActual,
+      value: formatNumber(intel.xpPerPropActual, 0),
+      tip: strings.phasesXpActualHint,
     },
     {
       id: 'goldWiki',
@@ -183,4 +189,54 @@ export function jaulaItems(
       value: jaulaChestOdds(intel.heroChestRarity, formatNumber, lang),
     },
   ];
+}
+
+/**
+ * `DropChanceRow.id` -> its wiki/yours label strings. A `switch` (not an indexed lookup table)
+ * so each arm reads `strings.phasesDropXxxYyy` directly — a plain property access TypeScript can
+ * narrow to `string`, unlike `strings[someKeyofStrings]`, which widens to the union of every
+ * value type across `Strings` (some of which, e.g. `explainSections`, are not `ReactNode`).
+ */
+function dropLabels(dropId: DropChanceRow['id'], strings: Strings): { wiki: string; actual: string } {
+  switch (dropId) {
+    case 'chest':
+      return { wiki: strings.phasesDropChestWiki, actual: strings.phasesDropChestActual };
+    case 'key':
+      return { wiki: strings.phasesDropKeyWiki, actual: strings.phasesDropKeyActual };
+    case 'time':
+      return { wiki: strings.phasesDropTimeWiki, actual: strings.phasesDropTimeActual };
+    case 'gem':
+      return { wiki: strings.phasesDropGemWiki, actual: strings.phasesDropGemActual };
+    case 'stone':
+      return { wiki: strings.phasesDropStoneWiki, actual: strings.phasesDropStoneActual };
+  }
+}
+
+/**
+ * Wiki/yours row pair per drop type that `applies` on this phase (gate vs. non-gate — see
+ * `dropAppliesOnPhase`), skipping the rest. Three-decimal percentages: at wiki-base rates as low
+ * as 0.005% (gem/stone), two decimals would collapse every rare-chest row to the same "0.01%".
+ */
+export function dropItems(
+  intel: PhaseIntelGlobal,
+  strings: Strings,
+  formatNumber: (n: number, d?: number) => string,
+) {
+  const items: { id: string; label: React.ReactNode; value: React.ReactNode; tip?: string }[] = [];
+  for (const row of intel.dropChances) {
+    if (!row.applies) continue;
+    const labels = dropLabels(row.id, strings);
+    items.push({
+      id: `${row.id}Wiki`,
+      label: labels.wiki,
+      value: `${formatNumber(row.wiki * 100, 3)}%`,
+    });
+    items.push({
+      id: `${row.id}Actual`,
+      label: labels.actual,
+      value: `${formatNumber(row.actual * 100, 3)}%`,
+      tip: strings.phasesDropActualHint,
+    });
+  }
+  return items;
 }

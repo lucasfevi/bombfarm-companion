@@ -171,23 +171,24 @@ export const plannerStageClass = 'w-full min-w-0';
 
 /**
  * Phases page board — equal-width cells per row via named areas:
- * · ≥1100: map | economy | jaula · props · hero | squad
- * · ≥720:  map | economy · jaula | props · hero | squad
+ * · ≥1100: map | economy | jaula · drops | props · hero | squad
+ * · ≥720:  map | economy · jaula | drops · props · hero | squad
  * · else:  stacked
  */
 export const phasesBoardClass = [
   'grid gap-2.5',
   'grid-cols-1',
-  '[grid-template-areas:"map"_"economy"_"jaula"_"props"_"roster"]',
+  '[grid-template-areas:"map"_"economy"_"jaula"_"drops"_"props"_"roster"]',
   'min-[720px]:grid-cols-[repeat(2,minmax(14rem,1fr))]',
-  'min-[720px]:[grid-template-areas:"map_economy"_"jaula_props"_"roster_roster"]',
+  'min-[720px]:[grid-template-areas:"map_economy"_"jaula_drops"_"props_props"_"roster_roster"]',
   'min-[1100px]:grid-cols-[repeat(3,minmax(14rem,1fr))]',
-  'min-[1100px]:[grid-template-areas:"map_economy_jaula"_"props_props_props"_"roster_roster_roster"]',
+  'min-[1100px]:[grid-template-areas:"map_economy_jaula"_"drops_props_props"_"roster_roster_roster"]',
 ].join(' ');
 
 export const phasesBoardMapClass = '[grid-area:map] min-w-0';
 export const phasesBoardEconomyClass = '[grid-area:economy] min-w-0';
 export const phasesBoardJaulaClass = '[grid-area:jaula] min-w-0';
+export const phasesBoardDropsClass = '[grid-area:drops] min-w-0';
 export const phasesBoardPropsClass = '[grid-area:props] min-w-0';
 /** Side-by-side Your hero | Top 9 on ≥720px; stack on narrow. */
 export const phasesBoardRosterClass =

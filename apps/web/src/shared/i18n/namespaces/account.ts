@@ -1,6 +1,7 @@
 export const en = {
   treeTeamCoin: "Team coin %",
   treeTeamCoinHint: "Ouro por Alvo from skill tree — scales gold per prop",
+  treeXpMult: "XP multiplier",
   tabAccount: "Account",
   tabAccountWarnTitle: "Account needs attention",
   accountTargetPropHint: "Highlighted in the hits-to-kill table below",
@@ -33,6 +34,7 @@ export const en = {
 export const pt: typeof en = {
   treeTeamCoin: "% ouro do time",
   treeTeamCoinHint: "Ouro por Alvo na árvore — escala ouro por prop",
+  treeXpMult: "Multiplicador de XP",
   tabAccount: "Conta",
   tabAccountWarnTitle: "Conta precisa de atenção",
   accountTargetPropHint: "Destacado na tabela de golpes para matar abaixo",

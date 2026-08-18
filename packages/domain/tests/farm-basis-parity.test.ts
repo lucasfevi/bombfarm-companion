@@ -1,6 +1,23 @@
 /**
  * Proof that the `farm-rate.ts` basis seam is a byte-identical refactor, not a rewrite.
  *
+ * RE-CAPTURED 2026-08-18 for `xpPerProp()` switching from a linear `XP_FASE_INI`→`XP_FASE_FIM`
+ * interpolation to the exact per-line `xpProp` integer every wiki phase line already carries (the
+ * interpolation is now only a fallback for a phase with no line). This is a pure precision fix —
+ * live tooltip witnesses at phase 51 (wiki 167, interpolated 166.7) and phase 60 (wiki 194,
+ * interpolated ~193.98) confirmed the exact per-line value is what the game awards.
+ *
+ * Diffed field by field against the previous capture: **only `rows[].xpPerHour` moved** — 598 of
+ * 600 rows (phase 1 and phase 600 are the interpolation's endpoints, so they already matched
+ * exactly), max relative change ≈0.644%. `heroFacts` has zero diffs, and every other `rows[]`
+ * field (`goldPerHour`, `chestsPerHour`, `keysPerHour`, `gemsPerHour`, `timePiecesPerHour`,
+ * `propsPerHour`, `cyclesPerHour`, `clearSecs`, `expectedHtk`, `mitigationPct`, `ato`, `gate`,
+ * `locked`, `oneShot`, `infeasible`, `itemLevels`, `itemLevelLabel`, `jaulaEarlyCapPct`,
+ * `jaulaWindowSecs`, `gateTimerSecs`, `fortunaAura`, `heroesOnField`, `concurrencyScale`, `phase`)
+ * is byte-identical — the signature of a change confined to XP and nothing else. Note
+ * `xpPerHour` still does not apply the account's `skills.totals.xp_mult` here — that gap is
+ * unchanged by this recapture and is tracked separately.
+ *
  * RE-RECORDED 2026-08-16 for the flat crit-chance/CDR change (`POINT_GAIN.critChanceFlat` /
  * `.cdrFlat`). The capture is of OUR OWN pre-change output, so re-recording it is the point of
  * the file, not a weakening — what matters is that the movement is explicable. Measured, field

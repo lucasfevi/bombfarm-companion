@@ -7,7 +7,11 @@
  * exactly the drift `6fcc9cc` fixed for the planner store.
  */
 import { describe, expect, it } from 'vitest';
-import { computeHeroSoloDps, listHeroesWithResetAdvice } from '@bombfarm/domain/roster-dps';
+import {
+  computeHeroSoloDps,
+  listHeroesWithResetAdvice,
+  rankRosterByDps,
+} from '@bombfarm/domain/roster-dps';
 import { computeAdvisorPipeline } from '@bombfarm/domain/advisor-pipeline';
 import { emptyLoadout, type SheetStats } from '@bombfarm/domain/gear';
 import { ZERO_PTS } from '@bombfarm/domain/planner-constants';
@@ -137,5 +141,11 @@ describe('pipelineForHero forwards birth (roster-dps ↔ Points tab parity)', ()
     expect(rows.some((row) => row.heroId === hero.id)).toBe(
       directPipeline(true).resetAdvice.recommend,
     );
+  });
+
+  it('rankRosterByDps rows carry the pipeline-adjusted luck (percentage points), matching a direct pipeline call', () => {
+    const rows = rankRosterByDps({ heroes: [hero], account, phase, mitigationPct }, 1);
+    const withBirth = directPipeline(true);
+    expect(rows[0]?.luck).toBe(withBirth.adjusted.luck);
   });
 });

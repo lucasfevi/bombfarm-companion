@@ -181,7 +181,9 @@ const CRIT_DMG_MULT_MAP = {
   // count and in kind — still `normalizeTree`'s doc comment naming a stale key it discards.
   // +11 more: the House-ceiling regression repair (PR #86 finding, house.ts:38) added
   // `houseCycleSecsHouseIdx`/`houseCycleSecsLevel`, with their doc comment, above this line too.
-  'apps/web/src/shared/lib/account-shared.ts': [135],
+  // +9 more (line number only): the XP-multiplier feature added `TreeState.xpMult`, with its
+  // doc comment, above this line too. Match itself is unchanged in count and in kind.
+  'apps/web/src/shared/lib/account-shared.ts': [144],
   'apps/web/src/shared/lib/stale-account.ts': [20],
   'apps/web/src/tests/advisor-pipeline.test.ts': [85],
   'apps/web/src/tests/derive.test.ts': [
@@ -205,7 +207,9 @@ const CRIT_DMG_MULT_MAP = {
   // comment above the local-data-compat.md self-map entry. Count and kind unchanged.
   // +9 (line numbers only) from the 2026-08-17 fixture re-baseline's explanatory comments above
   // (clause-A allowlist entries and this self-map entry itself). Count and kind unchanged.
-  'tools/keystone-surface-absence.test.mjs': [13, 156, 159, 251, 256, 266, 275],
+  // +2 more (line numbers only) from the XP-multiplier feature's account-shared.ts entry above
+  // gaining its two-line explanation. Count and kind unchanged.
+  'tools/keystone-surface-absence.test.mjs': [13, 156, 159, 255, 260, 270, 279],
   'tools/save-acceptance-guards.test.mjs': [53],
 };
 

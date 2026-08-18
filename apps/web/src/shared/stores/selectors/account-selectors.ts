@@ -9,6 +9,7 @@ export const selectTreeSpeed = (state: PlannerStore) => state.treeSpeed;
 export const selectTreeEnergy = (state: PlannerStore) => state.treeEnergy;
 export const selectTreeTeamCoinPct = (state: PlannerStore) => state.treeTeamCoinPct;
 export const selectTreeLuckFlatPct = (state: PlannerStore) => state.treeLuckFlatPct;
+export const selectTreeXpMult = (state: PlannerStore) => state.treeXpMult;
 export const selectTeamBuffs = (state: PlannerStore) => state.teamBuffs;
 export const selectHouseIdx = (state: PlannerStore) => state.houseIdx;
 export const selectHouseLevel = (state: PlannerStore) => state.houseLevel;
@@ -59,6 +60,7 @@ export function selectAccountShared(state: PlannerStore): AccountShared {
       energy: state.treeEnergy,
       teamCoinPct: state.treeTeamCoinPct,
       luckFlatPct: state.treeLuckFlatPct,
+      xpMult: state.treeXpMult,
     },
     teamBuffs: state.teamBuffs,
     context: {
@@ -90,6 +92,7 @@ export function selectAccountTuple(state: PlannerStore) {
     state.treeEnergy,
     state.treeTeamCoinPct,
     state.treeLuckFlatPct,
+    state.treeXpMult,
     state.teamBuffs,
     state.houseIdx,
     state.houseLevel,

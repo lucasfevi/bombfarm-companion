@@ -78,6 +78,10 @@ const DROPS_KEYS = [
   'keyDropRate',
   'gemChestDropRate',
   'timechestDropRate',
+  // XP-multiplier / drop-chances feature: the stone-chest drop rate (`DROP_RATES.stone` in
+  // `packages/domain/src/phase-wiki.ts`, live wiki key `pedra.drop_rate`) — the fifth and last
+  // per-prop drop-chance rate `phase-intel.ts`'s `DropChanceRow` reads.
+  'stoneChestDropRate',
   'keyGateCost',
   'bonusAdd',
   'bonusAddVip',
