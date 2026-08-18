@@ -4,7 +4,8 @@ import { readFileSync } from 'node:fs';
 import { parseSaveFile } from '@bombfarm/domain/import-save';
 import { normalizeHero } from '@/shared/lib/storage';
 import { WEB_PACKAGE_ROOT } from './helpers/web-package-root';
-import { HERO_SKIN_COUNT, heroAvatarSrc, isKnownSkin, itemIconSrc, normalizeSkin, rarityCrystalSrc, abilityIconSrc, goldIconSrc, propIconSrc } from '@bombfarm/domain/wiki-assets';
+import { HERO_SKIN_COUNT, heroAvatarSrc, isKnownSkin, itemIconSrc, normalizeSkin, rarityCrystalSrc, abilityIconSrc, goldIconSrc, propIconSrc, dropIconSrc } from '@bombfarm/domain/wiki-assets';
+import { DROP_RATES, type DropRateId } from '@bombfarm/domain/phase-wiki';
 
 describe('wiki-assets', () => {
   it('maps save skin to bundled avatar paths', () => {
@@ -88,6 +89,27 @@ describe('wiki-assets', () => {
     expect(propIconSrc('bush')).toBe('/wiki-assets/env/bush.png');
     expect(propIconSrc('purple_crystal')).toBe('/wiki-assets/env/purple_crystal.png');
     expect(propIconSrc('')).toBeNull();
+  });
+
+  /**
+   * Pinned per id, not spot-checked: these five paths are the whole mapping, and three of them
+   * live in directories (`key/`, `houseparts/`, `steam/`) that no other helper reaches, so a
+   * typo in one is invisible to every other assertion in this file.
+   */
+  it('maps each drop-chance row to its bundled art', () => {
+    expect(dropIconSrc('chest')).toBe('/wiki-assets/icons/chest_2.png');
+    expect(dropIconSrc('key')).toBe('/wiki-assets/key/key_uncommon.png');
+    expect(dropIconSrc('time')).toBe('/wiki-assets/houseparts/houseparts_rare.png');
+    expect(dropIconSrc('gem')).toBe('/wiki-assets/icons/gem_emerald_icon.png');
+    expect(dropIconSrc('stone')).toBe('/wiki-assets/steam/stone_rare.png');
+  });
+
+  it('gives every drop row a distinct sprite', () => {
+    const ids = Object.keys(DROP_RATES) as DropRateId[];
+    const paths = ids.map((id) => dropIconSrc(id));
+    // Two rows sharing one sprite is the failure mode the stone row exists to avoid: at 16px a
+    // repeated chest makes the icons decorative noise instead of something to match against.
+    expect(new Set(paths).size, `distinct sprites across ${ids.length} drop rows`).toBe(ids.length);
   });
 
   it('points at the bundled gold coin chrome', () => {

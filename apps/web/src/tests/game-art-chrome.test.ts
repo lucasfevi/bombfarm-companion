@@ -3,7 +3,8 @@ import { existsSync, readFileSync, readdirSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { ABILITIES } from '@bombfarm/domain/model';
 import { PROPS } from '@bombfarm/domain/phases';
-import { HERO_SKIN_COUNT, heroAvatarSrc, itemIconSrc, propIconSrc } from '@bombfarm/domain/wiki-assets';
+import { HERO_SKIN_COUNT, heroAvatarSrc, itemIconSrc, propIconSrc, dropIconSrc } from '@bombfarm/domain/wiki-assets';
+import { DROP_RATES, type DropRateId } from '@bombfarm/domain/phase-wiki';
 import catalog from '@bombfarm/domain/data/catalog.json';
 import { STRINGS } from '@/shared/i18n';
 
@@ -124,6 +125,85 @@ describe('bundled wiki assets', () => {
     }
 
     expect(missing, 'props whose env art is not bundled').toEqual([]);
+  });
+
+  /**
+   * Same failure mode as the prop sweep above, with a wider blast radius: `dropIconSrc` spans
+   * four bundled directories, and `key/`, `houseparts/` and `steam/` each hold exactly one file
+   * that only this helper reaches. A mis-mirrored drop sprite draws a broken image in the Drops
+   * panel and no math or type check notices.
+   *
+   * Forward direction only, for the same reason as props — `icons/` is a mixed directory that
+   * also holds the rarity crystals and the other `chest_*`/`gem_*` sprites, so a reverse
+   * "no orphaned art" sweep would fail on assets reachable from elsewhere.
+   */
+  it('ships drop art for every modeled drop-chance row', () => {
+    const ids = Object.keys(DROP_RATES) as DropRateId[];
+    // Non-vacuity: a shrunken DROP_RATES would make the loop below prove nothing.
+    expect(ids.length, 'modeled drop rows').toBe(5);
+
+    const missing: string[] = [];
+    for (const id of ids) {
+      const src = dropIconSrc(id);
+      expect(src, `dropIconSrc returned null for ${id}`).not.toBeNull();
+      if (!existsSync(resolve(root, 'public', src!.slice(1)))) missing.push(`${id} -> ${src}`);
+    }
+
+    expect(missing, 'drop rows whose art is not bundled').toEqual([]);
+  });
+});
+
+describe('phase drops panel', () => {
+  const itemsSrc = read('features/phases/model/phase-fact-items.tsx');
+  const iconSrc = read('shared/game-art/drop-icon.tsx');
+
+  it('carries the drop art on both rows of each wiki/yours pair', () => {
+    // Icon-on-one-row would leave the pair's labels starting at different x positions in the
+    // panel's `dl` grid, so both pushes supply it.
+    expect(itemsSrc.match(/icon: <DropIcon id=\{row\.id\} \/>/g) ?? []).toHaveLength(2);
+  });
+
+  /**
+   * The `icon` field, not the `label`, is the whole point. `StatList` turns a label with a `tip`
+   * into the tooltip TRIGGER, so art folded into the label lands inside that trigger: measured
+   * in the browser, the four "yours" rows grew 31px -> 35px and the trigger's dotted underline
+   * ran under the chest sprite as well as the words. As a sibling of the label both go away.
+   */
+  it('passes the art as the row icon rather than folding it into the label', () => {
+    expect(itemsSrc).toContain('label: labels.wiki');
+    expect(itemsSrc).toContain('label: labels.actual');
+    expect(itemsSrc).not.toContain('dropLabelWithArt');
+  });
+
+  /**
+   * `size-3.5`, not the `size-4` the phase tables use: this panel's rows are an 11px/14.85px
+   * line box against the tables' 12px/16px, so a 16px sprite overflows and grows every row it
+   * lands on by a pixel. Measured at 14px the rows match their pre-icon height exactly.
+   */
+  it('sizes the drop art to this panel’s line box, not the phase tables’', () => {
+    // Asserted on the emitted class list, not the file: the doc comment above it names `size-4`
+    // to explain why this is not that, so a whole-file `not.toContain` would match the prose.
+    const classList = iconSrc.match(/cn\((['"])([^'"]+)\1/)?.[2] ?? '';
+    expect(classList, 'DropIcon class list').toContain('size-3.5');
+    expect(classList.split(/\s+/), 'DropIcon class list').not.toContain('size-4');
+  });
+
+  it('keeps the drop art decorative — the label is the accessible text', () => {
+    expect(iconSrc).toContain('alt=""');
+    expect(iconSrc).toContain('aria-hidden');
+    expect(iconSrc).not.toContain('role="img"');
+  });
+
+  it('renders a row icon as a sibling of the label, in a block-level flex wrapper', () => {
+    const listSrc = readFileSync(
+      resolve(root, '../../packages/ui/src/stat-list.tsx'),
+      'utf8',
+    );
+    expect(listSrc).toContain('{item.icon}');
+    // BLOCK-level flex: an `inline-flex` wrapper sits on the text baseline and lets the art
+    // hang below it, which grows every row it appears on.
+    expect(listSrc).toContain('<span className="flex items-center gap-1.5">');
+    expect(listSrc).not.toContain('inline-flex items-center gap-1.5');
   });
 });
 

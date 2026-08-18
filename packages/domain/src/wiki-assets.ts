@@ -1,5 +1,6 @@
 import catalog from './data/catalog.json';
 import type { Slot } from './gear';
+import type { DropRateId } from './phase-wiki';
 
 /** Bundled mirror of Grimório static assets under `public/wiki-assets/`. */
 export const WIKI_ASSETS_BASE = '/wiki-assets';
@@ -76,6 +77,39 @@ export function abilityIconSrc(abilityId: string): string | null {
 export function propIconSrc(propName: string): string | null {
   if (!propName || typeof propName !== 'string') return null;
   return `${WIKI_ASSETS_BASE}/env/${propName}.png`;
+}
+
+/**
+ * Drop-row art, keyed by `DropRateId` — one fixed sprite per drop type.
+ *
+ * Four of the five show what the drop YIELDS rather than its container, which is how the
+ * Grimório's own drop table pairs them: the ready key, the time piece (the game indexes the
+ * same `houseparts` art as its time-part icon), a gem, and the skill stone. Only `chest` shows
+ * a chest, because it yields equipment of a rolled rarity and so has no single item sprite.
+ *
+ * `stone` is the one deliberate divergence from the Grimório table, which reuses a chest there.
+ * At the 16px this renders at, two chests differing only in tint are indistinguishable, which
+ * defeats the point of an icon; the skill stone reads instantly and matches the other four
+ * rows' contents-not-container scheme.
+ *
+ * Deliberately NOT rarity- or ato-indexed. Every one of these has a per-rarity family
+ * (`key_uncommon`…`key_mythic`, `houseparts_*`, `chest_0`…`chest_5`), and the game does pick
+ * within it — but a drop CHANCE row is about whether the drop lands at all, not which grade
+ * lands, so a single representative keeps the panel honest about what it is measuring.
+ */
+const DROP_ART: Record<DropRateId, string> = {
+  chest: 'icons/chest_2.png',
+  key: 'key/key_uncommon.png',
+  time: 'houseparts/houseparts_rare.png',
+  gem: 'icons/gem_emerald_icon.png',
+  stone: 'steam/stone_rare.png',
+};
+
+/** Wiki drop art for one drop-chance row — `null` for an id with no mapping. */
+export function dropIconSrc(dropId: DropRateId): string | null {
+  const file = DROP_ART[dropId];
+  if (!file) return null;
+  return `${WIKI_ASSETS_BASE}/${file}`;
 }
 
 /** Wiki gold coin chrome (nav footer icon). */

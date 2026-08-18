@@ -1,5 +1,5 @@
 import React from 'react';
-import { GoldValue, rarityTextClass as rarityTextClassFor } from '@/shared/game-art';
+import { DropIcon, GoldValue, rarityTextClass as rarityTextClassFor } from '@/shared/game-art';
 import type { Lang, Strings } from '@/shared/i18n';
 import { sub } from '@/shared/i18n';
 import type { DropChanceRow, PhaseIntelGlobal } from '@bombfarm/domain/phase-intel';
@@ -222,20 +222,31 @@ export function dropItems(
   strings: Strings,
   formatNumber: (n: number, d?: number) => string,
 ) {
-  const items: { id: string; label: React.ReactNode; value: React.ReactNode; tip?: string }[] = [];
+  const items: {
+    id: string;
+    label: React.ReactNode;
+    value: React.ReactNode;
+    tip?: string;
+    icon?: React.ReactNode;
+  }[] = [];
   for (const row of intel.dropChances) {
     if (!row.applies) continue;
     const labels = dropLabels(row.id, strings);
+    // Art on BOTH rows of the wiki/yours pair, not just the first: each `dt` is an independent
+    // cell in the panel's `dl` grid, so icon-on-one would leave the pair's two labels starting
+    // at different x positions.
     items.push({
       id: `${row.id}Wiki`,
       label: labels.wiki,
       value: `${formatNumber(row.wiki * 100, 3)}%`,
+      icon: <DropIcon id={row.id} />,
     });
     items.push({
       id: `${row.id}Actual`,
       label: labels.actual,
       value: `${formatNumber(row.actual * 100, 3)}%`,
       tip: strings.phasesDropActualHint,
+      icon: <DropIcon id={row.id} />,
     });
   }
   return items;
