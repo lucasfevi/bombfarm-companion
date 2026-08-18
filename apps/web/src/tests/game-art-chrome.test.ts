@@ -2,7 +2,8 @@ import { describe, expect, it } from 'vitest';
 import { existsSync, readFileSync, readdirSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { ABILITIES } from '@bombfarm/domain/model';
-import { HERO_SKIN_COUNT, heroAvatarSrc, itemIconSrc } from '@bombfarm/domain/wiki-assets';
+import { PROPS } from '@bombfarm/domain/phases';
+import { HERO_SKIN_COUNT, heroAvatarSrc, itemIconSrc, propIconSrc } from '@bombfarm/domain/wiki-assets';
 import catalog from '@bombfarm/domain/data/catalog.json';
 import { STRINGS } from '@/shared/i18n';
 
@@ -97,6 +98,63 @@ describe('bundled wiki assets', () => {
     expect(bundled.length, 'bundled hero avatars').toBe(HERO_SKIN_COUNT);
     const orphaned = bundled.filter((f) => !wanted.has(f));
     expect(orphaned, 'bundled hero art no skin index points at').toEqual([]);
+  });
+
+  /**
+   * `propIconSrc` is a bare string join over the prop's own name, so a renamed prop or a
+   * missing mirror yields a well-formed path to nothing: the phase tables draw a broken
+   * image and neither the type checker nor any math test notices.
+   *
+   * Forward direction ONLY, unlike the item and hero guards above. `env/` is a mixed
+   * directory — it also holds `bomb`, `boss`, `jaula` and the five `cage_ato*` sprites,
+   * which no prop points at — so a reverse "no orphaned art" sweep would fail on assets
+   * that are legitimately reachable from elsewhere.
+   */
+  it('ships env art for every modeled prop', () => {
+    // Non-vacuity: a truncated PROPS table would make the loop below prove nothing.
+    expect(PROPS.length, 'modeled props').toBe(10);
+
+    const missing: string[] = [];
+    for (const prop of PROPS) {
+      const src = propIconSrc(prop.name);
+      expect(src, `propIconSrc returned null for ${prop.name}`).not.toBeNull();
+      // `src` is a public-root URL; resolve it against `public/` so the assertion follows
+      // the real helper output rather than a re-derived filename.
+      if (!existsSync(resolve(root, 'public', src!.slice(1)))) missing.push(`${prop.name} -> ${src}`);
+    }
+
+    expect(missing, 'props whose env art is not bundled').toEqual([]);
+  });
+});
+
+describe('phase prop tables', () => {
+  const mixSrc = read('features/phases/components/phase-prop-mix-table.tsx');
+  const fitSrc = read('features/phases/components/phases-hero-fit-table.tsx');
+
+  it('prefixes the prop label with its art in both tables, without adding a column', () => {
+    for (const src of [mixSrc, fitSrc]) {
+      expect(src).toContain('<PropIcon name={row.name} />');
+      // Icon and label share the existing name cell — the header row is untouched.
+      expect(src).toContain('<span className="flex items-center gap-1.5">');
+      expect(src).toContain('{propLabel(row.name, lang)}');
+      // BLOCK-level flex, not `inline-flex`. Measured in the browser: an inline-flex wrapper
+      // sits on the text baseline, so its 16px image hangs below it and grows the row from
+      // 29px to 33px. `flex` takes the wrapper out of the line box entirely and the row
+      // measures 29px — byte-identical to the pre-icon height.
+      expect(src).not.toContain('inline-flex items-center gap-1.5');
+    }
+    // One header per existing column: mix has 5, hero fit has 3.
+    expect(mixSrc.match(/<DataTable\.Header/g) ?? []).toHaveLength(5);
+    expect(fitSrc.match(/<DataTable\.Header/g) ?? []).toHaveLength(3);
+  });
+
+  it('keeps the prop art decorative — the label is the accessible text', () => {
+    const iconSrc = read('shared/game-art/prop-icon.tsx');
+    expect(iconSrc).toContain('alt=""');
+    expect(iconSrc).toContain('aria-hidden');
+    // `size-4` matches the dense row's `text-xs` line box, so the rows do not grow.
+    expect(iconSrc).toContain('size-4');
+    expect(iconSrc).not.toContain('role="img"');
   });
 });
 
