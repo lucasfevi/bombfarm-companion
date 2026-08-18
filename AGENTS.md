@@ -72,6 +72,26 @@ that project with a filename filter). `apps/web` and `packages/domain` alias `@b
   format). Internal-only changes (CI config, tests, docs) don't need one; if a changeset genuinely
   doesn't apply, label the PR `skip-changeset` instead of skipping silently.
 
+## Comments
+
+Write almost no comments. A well-named function and well-named variables should make code
+self-explanatory; a comment restating what the next line does is noise, not documentation.
+
+Add a comment only when:
+
+- **The logic is genuinely too complex to follow by reading it.** Even then, treat this as a
+  signal before reaching for a comment: a function that needs prose to be understood usually
+  needs to be broken into smaller, well-named pieces instead. Reach for a comment only after
+  refactoring is not the fix — the code is inherently intricate (a bitwise trick, a tight
+  numerical routine) and no decomposition removes that.
+- **There is specific business logic that isn't explicit from the code itself** — a game-balance
+  constant, a workaround for an external quirk, a non-obvious invariant the surrounding code
+  depends on. Here a short comment explaining *why* earns its place.
+
+If you touch a file that carries many comments, treat that as a prompt to revisit them against
+this rule while you're in there: remove ones that just narrate what the code already says, and
+keep only the few that explain real complexity or non-obvious business logic.
+
 ## Out-of-scope findings — ask before you file
 
 Work here routinely turns up a real defect outside the current change: a neighbouring code path
