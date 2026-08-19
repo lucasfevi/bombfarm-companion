@@ -123,13 +123,10 @@ import type { HeroRecord, AccountShared } from './shims/storage';
  * because the cycle is `max(fuse, hop/w)` and most of this histogram already sits under the fuse
  * floor, which also caps what any further hop refinement can buy at ~1.33x.
  *
- * THE ~5% STILL OPEN AT ATO 2 IS NOT CADENCE — DO NOT TUNE THIS HISTOGRAM FOR IT. Against a
- * 61-clear window the row lands 5.8% long on `clearSecs`, and that decomposes as 4.5%
- * `heroesOnField` (3.310 predicted against 3.46 measured — the House recovery ceiling in
- * {@link allocateHouseSlots}) and ~1.2% everything else. Per-hero cadence is inside ~1% once the
- * density rescale is applied, so there is no room left here worth chasing; the concurrency term is
- * where the remaining error lives. The ato-2 anchor that would pin all of this is blocked on a
- * separate ability-catalog defect — see issue #132, which also carries the measured constants.
+ * THE ~5% STILL OPEN AT ATO 2 IS NOT CADENCE — DO NOT TUNE THIS HISTOGRAM FOR IT. Of the 5.8% the
+ * row runs long, 4.5% is `heroesOnField` (3.310 against 3.46 measured — the House recovery ceiling
+ * in {@link allocateHouseSlots}); per-hero cadence is inside ~1%. Issue #132 carries the measured
+ * constants and the ato-2 anchor that would pin them.
  *
  * KNOWN LIMITATION: one shared distribution cannot express that heroes have individually
  * different hop distributions (the same captures measure `corr(w, meanDist) ~ -0.55` — faster
@@ -191,12 +188,9 @@ export function hopScaleForAto(ato: number): number {
 }
 
 /**
- * {@link HOP_DISTRIBUTION} with every hop multiplied by `scale`, mass split linearly between the
- * two adjacent integer cells. Returns the fitted histogram unchanged for `scale >= 1`.
- *
- * Mass that lands on hop 0 or 1 picks up {@link HOP1_CYCLE_SEC} rather than the walk branch,
- * which is what keeps the density gain bounded: past a point, packing props closer stops helping
- * because the hero is waiting on its own blast to clear, not on the walk.
+ * Mass landing on hop 0 or 1 picks up {@link HOP1_CYCLE_SEC} rather than the walk branch, which is
+ * what keeps the density gain bounded: past a point, packing props closer stops helping because
+ * the hero is waiting on its own blast to clear, not on the walk.
  */
 function scaleHopDistribution(scale: number): readonly number[] {
   if (!(scale > 0) || scale >= 1) return HOP_DISTRIBUTION;
@@ -213,12 +207,11 @@ function scaleHopDistribution(scale: number): readonly number[] {
   return Object.freeze(scaled);
 }
 
-/** One density-scaled hop histogram per ato, index `ato - 1`. Built once at module load. */
 const HOP_DISTRIBUTION_BY_ATO: readonly (readonly number[])[] = Object.freeze(
   PROPS_POR_ATO.map((_, index) => scaleHopDistribution(hopScaleForAto(index + 1))),
 );
 
-/** `ato` to a valid {@link HOP_DISTRIBUTION_BY_ATO} index, clamped exactly as `propCountForAto`. */
+/** Clamped exactly as `propCountForAto` clamps, so the two never disagree on an out-of-range ato. */
 function atoIndex(ato: number): number {
   return Math.max(1, Math.min(PROPS_POR_ATO.length, Math.round(ato))) - 1;
 }
@@ -228,13 +221,9 @@ function atoIndex(ato: number): number {
  * cannot move (`w <= 0`), which keeps a degenerate hero at zero throughput rather than dividing
  * by zero.
  *
- * Depends on the phase only through its ATO, not its 600 phase lines — so this stays a per-hero
- * fact, computed once per ato in {@link computeHeroFarmFacts} into
- * {@link HeroFarmFacts.plantsPerSecByAto}. It costs ~26 multiply-adds per hero per ato (5 atos,
- * so ~130) for the whole 600-row table, and adds NO per-row work and no pipeline calls: the row
- * layer reads its ato's entry by index.
- *
- * `ato` defaults to {@link HOP_FIT_ATO}, so a two-argument call returns the fitted-density cycle.
+ * Depends on the phase only through its ATO, so this stays a per-hero fact precomputed per ato in
+ * {@link HeroFarmFacts.plantsPerSecByAto} — the row layer indexes it and adds NO per-row work and
+ * no pipeline calls.
  */
 export function cycleSecondsForHero(
   fuseSecs: number,
@@ -293,20 +282,15 @@ export type HeroFarmFacts = {
    *  distribution, NOT `max()` of a mean hop. `Infinity` when `w <= 0`. */
   cycleSecs: number;
   /** `1 / cycleSecs`, plants per second, at {@link HOP_FIT_ATO}. `0` when `cycleSecs` is not
-   *  finite and positive. Equals `plantsPerSecByAto[HOP_FIT_ATO - 1]`. */
+   *  finite and positive. */
   plantsPerSec: number;
   /**
-   * `1 / cycleSecs` per ato, index `ato - 1` — the same quantity as {@link plantsPerSec} at each
-   * ato's own prop density (see {@link hopScaleForAto}). Denser atos hop shorter, so this rises
-   * with ato until the fuse floor binds.
-   *
-   * A per-ato array rather than a scalar because the row layer needs a different entry per row
-   * but must not recompute anything per row — see {@link cycleSecondsForHero} on the cost.
+   * `1 / cycleSecs` per ato, index `ato - 1`, each at that ato's own prop density
+   * (see {@link hopScaleForAto}).
    *
    * OPTIONAL, and absent means density-INDEPENDENT: the row layer falls back to
-   * {@link plantsPerSec} at every ato. `computeHeroFarmFacts` always populates it; a hand-built
-   * `HeroFarmFacts` (the synthetic heroes throughout the test suites, which exercise allocation
-   * and multipliers rather than cadence) can leave it off and keep its single plant rate.
+   * {@link plantsPerSec} at every ato, which is what lets a hand-built `HeroFarmFacts` keep a
+   * single plant rate. `computeHeroFarmFacts` always populates it.
    */
   plantsPerSecByAto?: readonly number[];
   /** `1 + 0.5 × context.blastRange`, blocks hit per bomb. Note: `blastRange` is already `1 + rangeCells`. */
@@ -659,10 +643,7 @@ function allocateHouseSlots(
   return activity;
 }
 
-/**
- * This ato's plant rate, or the density-independent {@link HeroFarmFacts.plantsPerSec} when the
- * per-ato array is absent — see {@link HeroFarmFacts.plantsPerSecByAto}.
- */
+/** See {@link HeroFarmFacts.plantsPerSecByAto} for why the array may be absent. */
 function plantsPerSecForAto(hero: HeroFarmFacts, ato: number): number {
   return hero.plantsPerSecByAto?.[atoIndex(ato)] ?? hero.plantsPerSec;
 }
