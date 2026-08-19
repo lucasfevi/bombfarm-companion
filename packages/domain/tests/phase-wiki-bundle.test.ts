@@ -319,7 +319,7 @@ describe('phase-wiki-bundle', () => {
       expect(JAULA.adiantaProbPorAto.length).toBe(5);
       expect(JAULA.adiantaProbPorAto).toEqual([0.05, 0.1, 0.15, 0.2, 0.25]);
       expect(JAULA.janelaSecs).toBe(12600);
-      expect(JAULA.janelaSecsVip).toBe(9900);
+      expect(JAULA.janelaSecsVip).toBe(10800);
       expect(JAULA.hpMult).toBe(10);
     });
 

@@ -75,6 +75,10 @@ const fixture = JSON.parse(readFileSync(fixturePath, 'utf8')) as {
  * `phasesXpPerProp` is deliberately NOT listed: the same feature revived it as the merged XP
  * row's label, and it is back in live STRINGS at the fixture's own value ("XP per prop" /
  * "XP por prop"). A key that leaves and returns unchanged is not a delta.
+ *
+ * The Cage panel rework (2026-08-19) moved the early-arrival row's explanation out of a
+ * tooltip and into a new section description under the panel's art (`phasesJaulaSectionDesc`,
+ * in `KEYS_ADDED`), so `phasesJaulaEarlyHint` has no reader left.
  */
 const KEYS_REMOVED: readonly string[] = [
   'phasesGoldComumWiki',
@@ -83,6 +87,7 @@ const KEYS_REMOVED: readonly string[] = [
   'phasesAvgGoldActual',
   'phasesMapGoldWiki',
   'phasesMapGoldActual',
+  'phasesJaulaEarlyHint',
 ];
 
 /**
@@ -121,6 +126,12 @@ const KEYS_REMOVED: readonly string[] = [
  * tooltip and became the panel's section description. It describes the whole panel, not one row's
  * arithmetic, so repeating it inside every row's tooltip made the tooltip say two unrelated things
  * and hid a panel-level fact behind a hover.
+ *
+ * The Cage panel rework (2026-08-19), matching the Drops panel's own section-description move
+ * above: `phasesJaulaSectionDesc` replaces the removed `phasesJaulaEarlyHint` tooltip as a
+ * panel-level description under the new cage art. `phasesJaulaWindowVip` labels the VIP
+ * guarantee window now shown as subtext under the normal window, once the committed wiki bundle's
+ * stale VIP figure was corrected to match the live wiki.
  */
 const KEYS_ADDED: readonly string[] = [
   'phasesXpActualHint',
@@ -138,6 +149,8 @@ const KEYS_ADDED: readonly string[] = [
   'treeXpMult',
   'phasesDropGateOnly',
   'phasesDropNonGateOnly',
+  'phasesJaulaSectionDesc',
+  'phasesJaulaWindowVip',
 ];
 
 /**
@@ -155,8 +168,17 @@ const KEYS_ADDED: readonly string[] = [
  * same edit but are not listed here: both are already in `KEYS_ADDED` above (added since the last
  * re-baseline, never yet in the frozen fixture), and an added key's value is unconstrained by the
  * comparison regardless of what it is.
+ *
+ * The Cage panel rework (2026-08-19) dropped the "(hero clock)" / "(relógio de herói)" suffix
+ * from `phasesJaulaSection` now that the panel's own art and description carry that context, and
+ * reworded `phasesJaulaEarly` ("Early cap at this phase" -> "Early-arrival chance at this phase")
+ * to name what the number actually is now that its explanation no longer sits one hover away.
  */
-const PROSE_EDITED_PATHS: readonly string[] = ['phasesGoldActualHint'];
+const PROSE_EDITED_PATHS: readonly string[] = [
+  'phasesGoldActualHint',
+  'phasesJaulaSection',
+  'phasesJaulaEarly',
+];
 
 function omitKeys<T extends Record<string, unknown>>(obj: T, keys: readonly string[]): Partial<T> {
   const out: Record<string, unknown> = { ...obj };
