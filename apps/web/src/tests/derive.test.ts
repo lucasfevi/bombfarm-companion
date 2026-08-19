@@ -65,7 +65,7 @@ describe('computeCombatMults', () => {
     expect(m.teamSpeedMult).toBeCloseTo(1.05, 6);
     expect(m.teamDrainMult).toBeCloseTo(0.8, 6);
     expect(m.teamGateMult).toBeCloseTo(1.15, 6);
-    expect(m.teamCritChanceFlat).toBe(8);
+    expect(m.teamCritPctOfBase).toBe(8);
     expect(m.attackMult).toBeCloseTo(1.2, 6); // +10% own + +10% team
     // No more Tempo factor here (the keystone sheet-math correction moved Tempo Dobrado's
     // ×1.33333 to applySkillTree) — just +5% own + +5% team, same shape as attackMult.
@@ -184,9 +184,9 @@ describe('derive', () => {
       energyMult: mults.energyMult,
       speedMult: mults.speedMult,
       critDmgMult: mults.critDmgMult,
-      teamCritChanceFlat: mults.teamCritChanceFlat,
+      teamCritPctOfBase: mults.teamCritPctOfBase,
       treeSheet: ZERO_TREE,
-      combatCritChanceFlat: 0,
+      combatCritChancePctOfBase: 0,
       penetrationPp: 0,
       context: baseCtx(),
       dmgMult: mults.dmgMult,
@@ -223,9 +223,9 @@ describe('derive', () => {
       energyMult: mults.energyMult,
       speedMult: mults.speedMult,
       critDmgMult: mults.critDmgMult,
-      teamCritChanceFlat: mults.teamCritChanceFlat,
+      teamCritPctOfBase: mults.teamCritPctOfBase,
       treeSheet: ZERO_TREE,
-      combatCritChanceFlat: 0,
+      combatCritChancePctOfBase: 0,
       penetrationPp: 0,
       context: baseCtx(),
       dmgMult: mults.dmgMult,
@@ -254,9 +254,9 @@ describe('derive', () => {
       energyMult: 1,
       speedMult: 1,
       critDmgMult: 1,
-      teamCritChanceFlat: 0,
+      teamCritPctOfBase: 0,
       treeSheet: ZERO_TREE,
-      combatCritChanceFlat: 0,
+      combatCritChancePctOfBase: 0,
       penetrationPp: 0,
       context: baseCtx(),
       dmgMult: 1,
@@ -279,9 +279,9 @@ describe('derive', () => {
       energyMult: 1,
       speedMult: 1,
       critDmgMult: 1,
-      teamCritChanceFlat: 0,
+      teamCritPctOfBase: 0,
       treeSheet: ZERO_TREE,
-      combatCritChanceFlat: 0,
+      combatCritChancePctOfBase: 0,
       penetrationPp: 0,
       context: baseCtx(),
       dmgMult: 1,
@@ -333,9 +333,9 @@ describe('derive', () => {
       energyMult: mults.energyMult,
       speedMult: mults.speedMult,
       critDmgMult: mults.critDmgMult,
-      teamCritChanceFlat: 0,
+      teamCritPctOfBase: 0,
       treeSheet,
-      combatCritChanceFlat: 0,
+      combatCritChancePctOfBase: 0,
       penetrationPp: 0,
       context: baseCtx(),
       dmgMult: mults.dmgMult,
@@ -386,9 +386,9 @@ describe('derive', () => {
       energyMult: mults.energyMult,
       speedMult: mults.speedMult,
       critDmgMult: mults.critDmgMult,
-      teamCritChanceFlat: 0,
+      teamCritPctOfBase: 0,
       treeSheet,
-      combatCritChanceFlat: 0,
+      combatCritChancePctOfBase: 0,
       penetrationPp: 0,
       context: baseCtx(),
       mitigationPct: 6.7,
@@ -426,9 +426,9 @@ describe('derive', () => {
       energyMult: 1,
       speedMult: 1,
       critDmgMult: 1,
-      teamCritChanceFlat: 0,
+      teamCritPctOfBase: 0,
       treeSheet: tree,
-      combatCritChanceFlat: 0,
+      combatCritChancePctOfBase: 0,
       penetrationPp: 0,
       context: baseCtx(),
       dmgMult: 1,
@@ -463,9 +463,9 @@ describe('derive', () => {
       energyMult: 1,
       speedMult: 1,
       critDmgMult: 1,
-      teamCritChanceFlat: 0,
+      teamCritPctOfBase: 0,
       treeSheet: tree,
-      combatCritChanceFlat: 0,
+      combatCritChancePctOfBase: 0,
       penetrationPp: 0,
       context: baseCtx(),
       dmgMult: 1,
@@ -510,28 +510,24 @@ describe('derive', () => {
       energyMult: 1,
       speedMult: 1,
       critDmgMult: 1,
-      teamCritChanceFlat: 0,
+      teamCritPctOfBase: 0,
       treeSheet: tree,
-      combatCritChanceFlat: 0,
+      combatCritChancePctOfBase: 0,
       penetrationPp: 0,
       context: baseCtx(),
       dmgMult: 1,
       mitigationPct: 0,
     });
-    // The two remaining POOLED literals match `POINT_GAIN.xPctOfBase * naked.x / (1 + O)` with
-    // O = 0 (emptySheetOther) — no tree factor participates, regardless of how large `tree`
-    // above is set, proving no tree divisor leaked into them.
+    // These literals match the pre-wave formula `POINT_GAIN.xPctOfBase * naked.x / (1 + O)`
+    // with O = 0 (emptySheetOther) — no tree factor participates, regardless of how large
+    // `tree` above is set, proving no tree divisor leaked into the pooled deltas.
     expect(result.delta.speed).toBeCloseTo(0.02 * naked.speed, 9);
-    expect(result.delta.penetration).toBeCloseTo(0.02 * naked.penetration, 9);
-    expect(result.delta.luck).toBeCloseTo(0.03 * naked.luck, 9);
-    // The three FLAT stats carry no `naked.x` factor at all — that absence IS the assertion.
-    // Crit damage went flat at the 2026-08-13 patch; crit chance and CDR at the 2026-08-15 one.
-    expect(result.delta.critChance).toBeCloseTo(0.024394, 9);
+    expect(result.delta.critChance).toBeCloseTo(0.02 * naked.critChance, 9);
+    // Crit damage is flat (POINT_GAIN.critDmgFlat) — `naked.critDmg` deliberately absent.
     expect(result.delta.critDmg).toBeCloseTo(5, 9);
-    expect(result.delta.cdr).toBeCloseTo(0.03513, 9);
-    // Guard the shape, not just the value: doubling the roll must not move a flat delta.
-    const doubled = { ...naked, critChance: naked.critChance * 2, cdr: naked.cdr * 2 };
-    expect(doubled.critChance).not.toBe(naked.critChance);
+    expect(result.delta.penetration).toBeCloseTo(0.02 * naked.penetration, 9);
+    expect(result.delta.cdr).toBeCloseTo(0.02 * naked.cdr, 9);
+    expect(result.delta.luck).toBeCloseTo(0.03 * naked.luck, 9);
   });
 
   it('the DeriveInput type no longer accepts the four scattered tree fields (AC-29)', () => {
@@ -547,9 +543,9 @@ describe('derive', () => {
       energyMult: 1,
       speedMult: 1,
       critDmgMult: 1,
-      teamCritChanceFlat: 0,
+      teamCritPctOfBase: 0,
       treeSheet: ZERO_TREE,
-      combatCritChanceFlat: 0,
+      combatCritChancePctOfBase: 0,
       penetrationPp: 0,
       context: baseCtx(),
       dmgMult: 1,

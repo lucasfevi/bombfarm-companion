@@ -67,7 +67,7 @@ const FLAT_OLHO_PP_PER_RANK = 0.04574;
 function migrateCritChanceFlatBake(hero: Partial<HeroRecord>): Partial<HeroRecord> {
   const rank = Math.max(0, hero.abilities?.olho_clinico ?? 0);
   const gear = sumGearBonuses(hero.loadout ?? emptyLoadout());
-  const gearedIsStale = hero.gearedOverride != null && (gear.critFlatPct > 0 || gear.cdrFlatPct > 0);
+  const gearedIsStale = hero.gearedOverride != null && (gear.critPct > 0 || gear.cdrPct > 0);
   if (rank <= 0 && !gearedIsStale) return hero;
 
   const oldFactor = 1 + (LEGACY_OLHO_PCT_OF_BASE_PER_RANK / 100) * rank;

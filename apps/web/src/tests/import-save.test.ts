@@ -32,7 +32,7 @@ function rawSheetOther(abilities: Record<string, number>): SheetOtherPct {
   const mods = abilityMods(abilities);
   return {
     ...emptySheetOther(),
-    critChanceFlat: mods.sheetCritChanceFlat,
+    critChance: mods.sheetCritChancePctOfBase / 100,
     penetration: mods.sheetPenetrationRaw,
     critDmgFlat: mods.sheetCritDmgFlat,
   };
@@ -132,17 +132,16 @@ function baseSave() {
         // two and both items contribute the same rolls at level 20. Every value below is
         // unchanged; only the def id moved.
         //
-        // Recomputed 2026-08-16 for the flat crit-chance/CDR change. `crit_chance` moves
-        // 0.15348 → 0.61506 because this synthetic `skills.totals.crit_chance_add` (0.5148) was
-        // authored when the tree term was a FRACTION OF THE ROLL and is now read as flat
-        // percentage points — so it contributes +51.48pp rather than +51.48% of a 10pp base.
-        // The value is large for a real account but the fixture's claim is self-consistency, not
-        // plausibility: it exists to prove a well-formed hero imports with zero issues.
+        // Recomputed 2026-08-16 for the flat crit-chance/CDR change, then recomputed AGAIN for
+        // the 2026-08-18 revert back to percent-of-base (issue #132): `crit_chance` moves
+        // 0.15348 → 0.61506 → 0.15580. The reverted value lands close to the original because
+        // the shape round-tripped — the small residual difference from 0.15348165135 is the
+        // item catalog's crit-base rescale (`gold_amuleto`'s crit roll moved with it).
         stats: {
           dmg: 1031.0318879571785,
           energia: 456.7372881,
           speed: 46.223410365,
-          crit_chance: 0.6191177975,
+          crit_chance: 0.15580013415,
           crit_dmg: 2.196153846,
           penetration: 1,
           cooldown_reduction: 0.02,

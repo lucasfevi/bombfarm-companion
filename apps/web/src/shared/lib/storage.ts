@@ -14,6 +14,7 @@ import {
 import { readJson, writeJson } from './storage-json';
 import { migrateCritDmgFlatBakeOnce } from './storage-critdmg-migration';
 import { migrateCritChanceFlatBakeOnce } from './storage-critchance-migration';
+import { migrateCritCdrRepoolBakeOnce } from './storage-critcdr-repool-migration';
 
 export {
   DEFAULT_ACCOUNT,
@@ -117,7 +118,7 @@ function migrateGearedOverride(raw: Partial<HeroRecord>): SheetStats {
   const mods = abilityMods(raw.abilities ?? {});
   const sheetOther = {
     ...emptySheetOther(),
-    critChanceFlat: mods.sheetCritChanceFlat,
+    critChance: mods.sheetCritChancePctOfBase / 100,
     penetration: mods.sheetPenetrationRaw,
     critDmgFlat: mods.sheetCritDmgFlat,
   };
@@ -183,6 +184,10 @@ export function loadHeroes(): HeroRecord[] {
     migrateCritChanceFlatBakeOnce(list);
   list = critChanceMigratedList;
 
+  const { list: critCdrRepoolMigratedList, changed: critCdrRepoolMigrationChanged } =
+    migrateCritCdrRepoolBakeOnce(list);
+  list = critCdrRepoolMigratedList;
+
   const imported = list.filter(hasSourceId);
   const normalized = imported.map((hero) =>
     normalizeHero({ ...hero, id: hero.id ?? uid(), name: hero.name ?? 'Hero' }),
@@ -192,7 +197,8 @@ export function loadHeroes(): HeroRecord[] {
     imported.length !== list.length ||
     fromLegacy ||
     critDmgMigrationChanged ||
-    critChanceMigrationChanged
+    critChanceMigrationChanged ||
+    critCdrRepoolMigrationChanged
   ) {
     saveHeroes(normalized);
     reconcileActiveHero(normalized);

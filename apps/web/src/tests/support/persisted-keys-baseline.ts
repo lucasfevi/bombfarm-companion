@@ -13,6 +13,10 @@
  * `bf-hp-critdmg-flat-migrated-v1` (PR #90 review item 1) is a deliberate, later addition: the
  * one-shot marker gating `migrateCritDmgFlatBakeOnce` in `storage.ts` — see that function's own
  * docs for why an explicit persisted key, not a content heuristic, is required.
+ *
+ * `bf-hp-critcdr-repool-migrated-v1` is the 2026-08-18 patch's reversal of the crit-chance
+ * marker above — crit chance and CDR moved back to percent-of-base three days later, so an
+ * existing roster needs a second one-shot replay in the opposite direction.
  */
 export const PERSISTED_KEY_BASELINE = [
   'bf-hp-inventory-v1',
@@ -23,4 +27,5 @@ export const PERSISTED_KEY_BASELINE = [
   'bf-hp-gear-scope-v1',
   'bf-hp-critdmg-flat-migrated-v1',
   'bf-hp-critchance-flat-migrated-v1',
+  'bf-hp-critcdr-repool-migrated-v1',
 ] as const;

@@ -110,7 +110,12 @@ const KEYS_ADDED: readonly string[] = [
  * segments (`explainSections.0.p.1`). A deleted key and an edited value are different shapes of
  * drift, which is why they are two separate lists rather than one.
  */
-const PROSE_EDITED_PATHS: readonly string[] = [];
+const PROSE_EDITED_PATHS: readonly string[] = [
+  // issue #132: the Points-tab help text's "Skill points add a fixed share..." paragraph, in
+  // both locales, was reworded back to describe crit chance and CDR as percent-of-base (the
+  // 2026-08-18 patch reverted the shape the 2026-08-15 patch had changed to a flat addend).
+  'explainSections.0.p.1',
+];
 
 function omitKeys<T extends Record<string, unknown>>(obj: T, keys: readonly string[]): Partial<T> {
   const out: Record<string, unknown> = { ...obj };

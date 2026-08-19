@@ -54,10 +54,18 @@ describe('Farm Respec Advisor — fixture integration (account-486, save-2026081
     importFixtureIntoStore();
   });
 
-  it('Tier 1 surfaces on this account', () => {
+  it('Tier 1 does not surface on this account — RE-MEASURED for issue #132', () => {
+    // Tier 1 (findGateCandidate) is a cheap LOWER-BOUND estimate, and `reoptBudget`
+    // (`points-reopt-core.ts`) now clamps to `level` no matter what — the deliberate reversal
+    // from "not clamped" that also moved `farm-optimize-486.test.ts`'s measured gain down. On
+    // this fixture the honest, clamped Tier 1 estimate is ~0.76%, below
+    // `FARM_RESPEC_MIN_GAIN_PCT` (1%), so the gate correctly stays quiet even though the full
+    // Tier 2 search (below) still finds a real, larger gain through a different reallocation.
     const gate = selectFarmRespecGate(usePlannerStore.getState());
     expect(gate.reason).toBeNull();
-    expect(gate.shouldSurface).toBe(true);
+    expect(gate.result?.gainPct).toBeGreaterThan(0);
+    expect(gate.result?.gainPct).toBeLessThan(1);
+    expect(gate.shouldSurface).toBe(false);
   });
 
   it('Tier 1 is a lower bound: gainIsLowerBound is true and its gain never exceeds Tier 2\'s', () => {
@@ -86,11 +94,26 @@ describe('Farm Respec Advisor — fixture integration (account-486, save-2026081
   });
 
   it('every enabled hero is present in the result, and at least one is unchanged', () => {
-    const state = usePlannerStore.getState();
-    const enabledCount = state.heroes.filter((hero) => hero.battleAllowed ?? true).length;
-    const solve = runFarmRespecSolve(state);
+    // The fixture's own default roster has NO unchanged hero under the reverted
+    // percent-of-base crit-chance/CDR model (issue #132) — every one of the 5 heroes here now
+    // has at least one profitable reallocation. Construct the unchanged hero deliberately
+    // instead: pre-respec the FIRST hero onto its own already-optimal proposal, leaving the
+    // rest of the roster free to improve normally (same pattern as
+    // `farm-optimize-core.test.ts`'s domain-side twin).
+    const first = runFarmRespecSolve(usePlannerStore.getState());
+    const enabledCount = first.heroes.length;
+    const fixedHeroId = first.heroes[0].heroId;
+    const fixedProposal = first.heroes[0].proposedPts;
+    const patchedHeroes = usePlannerStore
+      .getState()
+      .heroes.map((hero) => (hero.id === fixedHeroId ? { ...hero, pts: fixedProposal } : hero));
+    usePlannerStore.getState().setHeroes(patchedHeroes);
+
+    const solve = runFarmRespecSolve(usePlannerStore.getState());
     expect(solve.heroes).toHaveLength(enabledCount);
-    expect(solve.heroes.some((hero) => !hero.changed)).toBe(true);
+    const unchanged = solve.heroes.find((hero) => !hero.changed);
+    expect(unchanged, 'expected the pre-respecced hero to be unchanged').toBeDefined();
+    expect(unchanged!.heroId).toBe(fixedHeroId);
   });
 
   it('luck is frozen: proposedPts.luck equals currentPts.luck for every hero', () => {

@@ -4,20 +4,22 @@
  * byte-for-byte — this file is the proof, not a claim. Values were read off a real run of the
  * current (pre-deletion) code, not hand-derived.
  *
- * RE-RECORDED at the flat-crit-damage fix (`POINT_GAIN.critDmgFlat`, +5 flat instead of 8% of
- * the hero's roll). Diffed value by value against the previous golden first; the footprint is:
+ * RE-RECORDED for the 2026-08-18 crit-chance/CDR revert (issue #132). Diffed value by value
+ * against the previous golden first; the footprint is:
  *
- * - **`critDmg` on every subject**, in the direction the rate change predicts. Jon's roll is
- *   45.05 (old gain 3.60/pt, new 5) so his crit-damage line RISES 0.2749 → 0.3813; Lyra's roll
- *   is 47.09 (3.77/pt) so hers rises 0.2173 → 0.2885; the synthetic hero's is 80 (6.40/pt) so
- *   his FALLS 0.5693 → 0.5474. A single flat rate reproduces all three directions; no other
- *   rate does.
- * - **`critChance` on Bellatrix only** (0.07369 → 0.07315). She is the one subject holding
- *   crit-damage points, so only her SHEET moved (76.853… → 76.252971472748 — the game's own
- *   reading), and the value of a crit-chance point depends on crit damage.
- * - Bellatrix's `attack` / `energy` / `penetration` moved in the 13th significant digit only
- *   (IEEE-754 re-association off her changed baseline). `cdr` and `speed` are byte-identical on
- *   every subject, as is the RANK ORDER — nothing overtook anything.
+ * - **`critChance` and `cdr` on every subject**, moving in both directions and RE-ORDERING —
+ *   under the flat model `cdr` outranked `critChance` on all four subjects; under the reverted
+ *   percent-of-base model `critChance` now outranks `cdr` on all four. A pooled stat's marginal
+ *   value scales with the hero's own roll again, so a hero with a well-rolled crit chance and a
+ *   thin cooldown roll gets more from a crit-chance point than a flat rate ever gave it.
+ * - **`critDmg` moved too, on every subject**, purely as a SECOND-ORDER effect: `critFactor`
+ *   couples crit chance and crit damage (`avgHit = base × (1 + critChance/100 × (critDmg/100 −
+ *   1))`), so a hero's crit-damage marginal value shifts whenever her crit-chance baseline does,
+ *   even though crit damage's own per-point rate (flat, `POINT_GAIN.critDmgFlat`) never changed.
+ * - `attack` / `energy` / `penetration` moved in the 12th–13th significant digit only on some
+ *   subjects (IEEE-754 re-association off the changed crit-chance/cdr baseline feeding the same
+ *   shared computation) — not on every subject, and never enough to change rank order. `speed`
+ *   is byte-identical (0) on every subject, as it always is once it hits its own ranking floor.
  */
 import { describe, expect, it } from 'vitest';
 import { parseAccountPayload } from '@bombfarm/domain/import-save';
@@ -78,11 +80,11 @@ describe('DPS next-point ranking — golden fixture (pre-deletion, pinned byte-f
   it('Bellatrix L42 — full ranking pinned to full precision', () => {
     const result = pipelineForHero(heroByName('Bellatrix'), account, phase, mitigationPct);
     expect(pick(result.ranking)).toEqual([
-      { stat: 'attack', gainPct: 2.1246137217022953 },
+      { stat: 'attack', gainPct: 2.124613721702273 },
       { stat: 'energy', gainPct: 1.3870977028320741 },
-      { stat: 'critDmg', gainPct: 0.45782958400670815 },
-      { stat: 'cdr', gainPct: 0.03330595313442153 },
-      { stat: 'critChance', gainPct: 0.017302385352824246 },
+      { stat: 'critDmg', gainPct: 0.45173381134235857 },
+      { stat: 'critChance', gainPct: 0.07215154969466564 },
+      { stat: 'cdr', gainPct: 0.03270868386004988 },
       { stat: 'penetration', gainPct: 0.0018927950044211883 },
       { stat: 'speed', gainPct: 0 },
     ]);
@@ -91,12 +93,12 @@ describe('DPS next-point ranking — golden fixture (pre-deletion, pinned byte-f
   it('Jon L38 — full ranking pinned to full precision', () => {
     const result = pipelineForHero(heroByName('Jon'), account, phase, mitigationPct);
     expect(pick(result.ranking)).toEqual([
-      { stat: 'attack', gainPct: 2.7210974575787583 },
+      { stat: 'attack', gainPct: 2.7210974575787805 },
       { stat: 'energy', gainPct: 2.3198024157065955 },
-      { stat: 'critDmg', gainPct: 0.5097054528609979 },
-      { stat: 'cdr', gainPct: 0.03302247510199585 },
-      { stat: 'critChance', gainPct: 0.010485621252898092 },
-      { stat: 'penetration', gainPct: 0.0008367710926604488 },
+      { stat: 'critDmg', gainPct: 0.3844374051138466 },
+      { stat: 'critChance', gainPct: 0.06045133145871073 },
+      { stat: 'cdr', gainPct: 0.01848900890673022 },
+      { stat: 'penetration', gainPct: 0.0008367710926826533 },
       { stat: 'speed', gainPct: 0 },
     ]);
   });
@@ -104,12 +106,12 @@ describe('DPS next-point ranking — golden fixture (pre-deletion, pinned byte-f
   it('Lyra L2 — full ranking pinned to full precision', () => {
     const result = pipelineForHero(heroByName('Lyra'), account, phase, mitigationPct);
     expect(pick(result.ranking)).toEqual([
-      { stat: 'attack', gainPct: 14.754149056578413 },
+      { stat: 'attack', gainPct: 14.754149056578392 },
       { stat: 'energy', gainPct: 6.080634761133874 },
-      { stat: 'critDmg', gainPct: 0.44492036637922006 },
-      { stat: 'cdr', gainPct: 0.03325505507993931 },
-      { stat: 'critChance', gainPct: 0.011004974898831676 },
-      { stat: 'penetration', gainPct: 0.0008296399027551971 },
+      { stat: 'critDmg', gainPct: 0.30733791355714857 },
+      { stat: 'critChance', gainPct: 0.05162744444042744 },
+      { stat: 'cdr', gainPct: 0.03458638173732265 },
+      { stat: 'penetration', gainPct: 0.0008296399027774015 },
       { stat: 'speed', gainPct: 0 },
     ]);
   });
@@ -142,7 +144,7 @@ describe('DPS next-point ranking — CDR marginal-fuse special case (golden, pre
     const ranking = rankNextPoint(sampleHero(), baseCtx());
     const cdr = ranking.find((r) => r.stat === 'cdr')!;
     expect(cdr.gainPct).toBeGreaterThan(0);
-    expect(cdr.gainPct).toBe(0.03604375607333399);
+    expect(cdr.gainPct).toBe(0.05130836326321386);
   });
 
   it('cdr at the 80% cap: exactly zero gain, pinned to full precision', () => {
@@ -159,8 +161,8 @@ describe('DPS next-point ranking — CDR marginal-fuse special case (golden, pre
       { stat: 'attack', gainPct: 2.499999999999991 },
       { stat: 'energy', gainPct: 0.9381107491856833 },
       { stat: 'critDmg', gainPct: 0.5474452554744547 },
-      { stat: 'cdr', gainPct: 0.03604375607333399 },
-      { stat: 'critChance', gainPct: 0.017805839416062952 },
+      { stat: 'critChance', gainPct: 0.10218978102187748 },
+      { stat: 'cdr', gainPct: 0.05130836326321386 },
       { stat: 'penetration', gainPct: 0.003570058399771092 },
       { stat: 'speed', gainPct: 0 },
     ]);

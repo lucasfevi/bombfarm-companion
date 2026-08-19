@@ -19,7 +19,7 @@ const readSrc = (rel: string) => readFileSync(resolve(root, rel), 'utf8');
 
 const IDENTITY_MODS = {
   drainMult: 1,
-  combatCritChanceFlat: 0,
+  combatCritChancePctOfBase: 0,
   penetrationPp: 0,
   rangeCells: 0,
   dmgMult: 1,
@@ -107,14 +107,24 @@ describe('rank-20 migration (T3, AD-BSP-18, BSPW3-02/-03)', () => {
   }> = [
     { id: 'bateria_extra', perLevel: 1, wikiTotalAtCap: 20, citation: 'W0-14:200' },
     { id: 'marcha_acelerada', perLevel: 0.185, wikiTotalAtCap: 3.7, citation: 'W0-14:202' },
-    // 2026-08-15 patch: both crit-chance abilities became FLAT planner-pp addends, and the
-    // wiki rescaled them with the change (`habilidades[].per_level`, save units x 100).
-    { id: 'pressagio_mortal', perLevel: 0.06099, wikiTotalAtCap: 1.2198, citation: 'wiki habilidades 2026-08-15' },
+    // 2026-08-18 patch reverted both crit-chance abilities to percent-of-base and rescaled their
+    // values by ×40/7 from the pre-2026-08-15 figures (see `abilities.ts`).
+    {
+      id: 'pressagio_mortal',
+      perLevel: 5.714285714285714,
+      wikiTotalAtCap: 114.28571428571428,
+      citation: 'wiki habilidades 2026-08-18 (published; no capture owns this ability)',
+    },
     { id: 'ponta_diamante', perLevel: 1, wikiTotalAtCap: 20, citation: 'W0-14:205' },
     { id: 'misericordia', perLevel: 1.25, wikiTotalAtCap: 25, citation: 'W0-14:206' },
     { id: 'explosao_ampla', perLevel: 0.1, wikiTotalAtCap: 2, citation: 'W0-14:207' },
     { id: 'contra_relogio', perLevel: 2, wikiTotalAtCap: 40, citation: 'W0-14:208' },
-    { id: 'olho_clinico', perLevel: 0.04574, wikiTotalAtCap: 0.9148, citation: 'wiki habilidades 2026-08-15' },
+    {
+      id: 'olho_clinico',
+      perLevel: 4.285714285714286,
+      wikiTotalAtCap: 85.71428571428571,
+      citation: 'measured, account 486 2026-08-18 export',
+    },
     { id: 'detonacao_dupla', perLevel: 1.5, wikiTotalAtCap: 30, citation: 'W0-14:210' },
     { id: 'folego_mineiro', perLevel: 1, wikiTotalAtCap: 20, citation: 'W0-14:211' },
     { id: 'grito_guerra', perLevel: 1, wikiTotalAtCap: 20, citation: 'W0-14:215' },
@@ -138,12 +148,12 @@ describe('rank-20 migration (T3, AD-BSP-18, BSPW3-02/-03)', () => {
 
   it('AC-08b: every changed ability at rank 13 matches perLevel x 13, not old-value x 13', () => {
     expect(abilityMods({ bateria_extra: 13 }).drainMult).toBeCloseTo(1 - 13 / 100, 10);
-    expect(abilityMods({ pressagio_mortal: 13 }).combatCritChanceFlat).toBeCloseTo(0.06099 * 13, 10);
+    expect(abilityMods({ pressagio_mortal: 13 }).combatCritChancePctOfBase).toBeCloseTo(5.714285714285714 * 13, 10);
     expect(abilityMods({ ponta_diamante: 13 }).sheetPenetrationRaw).toBeCloseTo(13, 10);
     expect(abilityMods({ misericordia: 13 }).dmgMult).toBeCloseTo(1 / (1 - 16.25 / 100), 10);
     expect(abilityMods({ explosao_ampla: 13 }).rangeCells).toBeCloseTo(1.3, 10);
     expect(abilityMods({ contra_relogio: 13 }).gateAttackMult).toBeCloseTo(1.26, 10);
-    expect(abilityMods({ olho_clinico: 13 }).sheetCritChanceFlat).toBeCloseTo(0.04574 * 13, 10);
+    expect(abilityMods({ olho_clinico: 13 }).sheetCritChancePctOfBase).toBeCloseTo(4.285714285714286 * 13, 10);
     expect(abilityMods({ detonacao_dupla: 13 }).dmgMult).toBeCloseTo(1 + (19.5 / 100) * 0.5, 10);
     expect(abilityMods({ folego_mineiro: 13 }).drainMult).toBeCloseTo(1 - 13 / 100, 10);
     expect(abilityMods({ grito_guerra: 13 }).attackMult).toBeCloseTo(1.13, 10);
@@ -212,7 +222,7 @@ describe('golpe_brutal — critDmgFlat (flat crit damage, POINT_GAIN.critDmgFlat
     expect(mods.speedMult).toBe(IDENTITY_MODS.speedMult);
     expect(mods.gateAttackMult).toBe(IDENTITY_MODS.gateAttackMult);
     expect(mods.drainMult).toBe(IDENTITY_MODS.drainMult);
-    expect(mods.combatCritChanceFlat).toBe(IDENTITY_MODS.combatCritChanceFlat);
+    expect(mods.combatCritChancePctOfBase).toBe(IDENTITY_MODS.combatCritChancePctOfBase);
     expect(mods.penetrationPp).toBe(IDENTITY_MODS.penetrationPp);
     expect(mods.rangeCells).toBe(IDENTITY_MODS.rangeCells);
     expect(mods.dmgMult).toBe(IDENTITY_MODS.dmgMult);

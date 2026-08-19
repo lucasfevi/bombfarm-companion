@@ -156,28 +156,18 @@ test.describe('abilities panel (ABX residual)', () => {
       has: page.getByRole('heading', { name: /^Stats$/i, level: 2 }),
     });
     const critRow = stats.locator('tr').filter({ hasText: /^Crit %/ });
-    // RE-POINTED at the 2026-08-15 patch, because the patch destroyed this sensor's premise
-    // rather than moving its numbers.
+    // RE-POINTED for the 2026-08-18 revert (issue #132), which restored the premise this
+    // sensor rests on but rescaled Keen Eye's own value in the process (×40/7 from the
+    // pre-2026-08-15 figure — see `abilities.ts`).
     //
-    // The discriminator used to live in the Δ ability cell: Keen Eye scaled the base roll by
-    // +0.75%/rank, so the hero's own 9.51 gave "+0.07" and the midpoint bug's 7 gave "+0.05".
-    // Keen Eye is a FLAT +0.04574 pp/rank now (`POINT_GAIN.critChanceFlat`), so BOTH paths
-    // produce "+0.05" and that cell can no longer tell them apart. Re-pointing it to "+0.05"
-    // would have kept the test green while silently retiring what it was for.
-    //
-    // The claim itself still holds and is still observable — just one column over. Birth is the
-    // hero's own roll, and Total carries it. Both addends on top are flat now, so the two
-    // outcomes differ by exactly the roll gap and nothing else:
-    //   own roll   9.51 + 0.04574 (Keen Eye 1) + 0.51 (tree crit_chance_add) = 10.0657 -> "10.07"
-    //   midpoint      7 + 0.04574              + 0.51                        =  7.5557 ->  "7.56"
-    // The old negative pinned "7.05", which was the midpoint outcome under the MULTIPLICATIVE
-    // model; carrying it over unchanged would have left a guard that no wrong value can trip.
+    // The Stats table is birth→Total, so the discriminator lives in two cells: Birth is the
+    // hero's own roll (9.51, NOT the Raro midpoint 7), and Δ ability is that roll scaled by
+    // Keen Eye 1's new +4.285714285714286%/rank:
+    //   9.51 x 0.04285714285714286 = 0.4076 -> "+0.41"   vs the midpoint bug's 7 x (same) = "+0.30".
     await expect(critRow.locator('td').nth(1)).toHaveText('9.51');
-    await expect(critRow.locator('td').nth(8)).toHaveText('10.07');
-    await expect(critRow).not.toContainText('7.56');
-    // The flat addend is base-independent, which is the whole shape claim — assert it directly
-    // so this row's Δ is still pinned, just not as the discriminator.
-    await expect(critRow.locator('td').nth(4)).toHaveText('+0.05');
+    await expect(critRow.locator('td').nth(4)).toHaveText('+0.41');
+    await expect(critRow).not.toContainText('7.05');
+    await expect(critRow.locator('td').nth(4)).not.toHaveText('+0.30');
   });
 
   test('imported hero identity lives in hero strip; tab is abilities-only', async ({ page }) => {
