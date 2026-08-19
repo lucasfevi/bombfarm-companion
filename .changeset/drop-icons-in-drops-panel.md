@@ -102,3 +102,38 @@ this repo's own, so nothing upstream would ever disagree with a typo in one.
 Gate keys are deliberately left filed by rarity (`key/key_mythic.png`, not `key_inferno`): the art
 IS the rarity's key, and the band→rarity step belongs in `GATE_KEY_RARITY_INDEX` where it is
 visible, not buried in a filename.
+
+**The boost tooltip moves off the label and onto the subtext, and the drop-chance breakdown gains
+its missing skill-tree term.** Two follow-on fixes to the merged row above:
+
+- The label stopped being the tooltip trigger. With the boosted total and its breakdown already
+  printed on the row, hovering the plain word "Item chest" to learn what boosted it was one
+  interaction too many — the arithmetic is the thing worth explaining, so the dotted underline
+  moves onto the subtext line itself (`TipLabel` now wraps the subtext, not the label). The three
+  now-unused `phasesBoost*` strings (`luck`/`team coin`/`XP mult`) are removed with it — the
+  trailing source word they supplied is gone from the subtext, which now reads `167 + 56%` and
+  `0.100% + 17%` rather than `167 +56% mult. XP`. The three surviving hint strings say "base
+  value" in place of "Wiki": the merged row already prints the wiki number inline, so naming it a
+  second time in the tooltip was the confusing name, not the helpful one.
+- **Drop chances decompose into base + skill-tree Sorte + squad Sorte**, in that order, matching
+  the order the tooltip explains them in — `0.100% + 20% + 5%`. `farm-rate.ts` already tracks
+  these as two separate quantities (`treeLuckFlatPct` and the uptime-weighted `heroLuckPct`,
+  peeled apart specifically so the tree's flat add is never double-counted); `phase-intel.ts`
+  previously only accepted the pre-collapsed sum. `PhaseIntelGlobalOptions` gains
+  `treeLuckFlatPct`/`squadLuckPct` as pure DISPLAY echoes — they do not feed `dropChances[].actual`,
+  which stays driven by `luckFraction` alone, so every existing caller and the account-486 witness
+  keep working unchanged. `phases-explorer.tsx` derives `squadLuckPct` as
+  `luckFraction * 100 - treeLuckFlatPct` rather than re-averaging independently, so the two terms
+  sum to the combined figure by construction. `dropItems` falls back to a single combined term
+  when a caller does not supply the split (both default to `0`), rather than inventing a two-way
+  divide it was never given — this is the path the account-486 witness test still exercises,
+  since that witness only ever measured the two heroes' combined average, not a tree/squad
+  breakdown.
+
+Gold and XP get the same subtext-tooltip treatment but **stay single-term** — `167 + 56%`, not a
+fabricated split. Both were checked against `farm-rate.ts` before assuming a squad share existed:
+`teamCoinMult` and `xpMult` are read straight off `account.tree` with no per-hero averaging
+anywhere in the pipeline, so the model genuinely has only one contributing source for either
+figure. `avgGold`/`mapGold` gain a tooltip they never had (`phasesGoldActualHint`, same as the
+`gold` row they share their math with) as a small, deliberate side effect of unifying every
+boosted row on the same subtext-tooltip shape rather than keeping one row an exception.

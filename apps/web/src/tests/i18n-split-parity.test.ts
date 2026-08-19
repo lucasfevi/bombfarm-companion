@@ -101,8 +101,15 @@ const KEYS_REMOVED: readonly string[] = [
  * than moved to `KEYS_REMOVED`: they never existed in the frozen fixture, so their departure is
  * invisible to the comparison.
  *
- * `phasesBoost*` name the boost SOURCE in the merged row's subtext ("0.100% +17% luck"), which
- * the old paired rows expressed by labelling one row "(yours)".
+ * `phasesBoost*` named the boost SOURCE in the merged row's subtext ("0.100% +17% luck"), which
+ * the old paired rows expressed by labelling one row "(yours)". They are NOT listed below: the
+ * tooltip-on-subtext feature (2026-08-19) dropped the trailing source word from every boosted
+ * subtext ("0.100% + 17%" — the tooltip now carried on the subtext itself explains the source
+ * instead), so `phasesBoostXp`/`phasesBoostGold`/`phasesBoostLuck` lost their only reader in the
+ * same feature that added them. Same precedent as the drop labels above: a key that was added and
+ * removed before ever reaching a fixture re-baseline is dropped from this list rather than moved
+ * to `KEYS_REMOVED` — it never existed in the frozen fixture, so its departure is invisible to
+ * the comparison.
  */
 const KEYS_ADDED: readonly string[] = [
   'phasesXpActualHint',
@@ -116,9 +123,6 @@ const KEYS_ADDED: readonly string[] = [
   'phasesGoldComum',
   'phasesAvgGold',
   'phasesMapGold',
-  'phasesBoostXp',
-  'phasesBoostGold',
-  'phasesBoostLuck',
   'treeXpMult',
 ];
 
@@ -127,8 +131,18 @@ const KEYS_ADDED: readonly string[] = [
  * a reworded sentence, in either or both languages. Dot-separated; array indices are numeric
  * segments (`explainSections.0.p.1`). A deleted key and an edited value are different shapes of
  * drift, which is why they are two separate lists rather than one.
+ *
+ * The tooltip-on-subtext feature (2026-08-19): `phasesGoldActualHint` was reworded from
+ * "Wiki × (1 + team coin % on Account)" to "base value × (1 + your skill tree's team coin %)" —
+ * "Wiki" -> "base value" for the same reason the drop-chance hint moved (the merged row already
+ * shows the wiki number inline, so calling it "Wiki" a second time in the tooltip was the
+ * confusing name), plus naming the account.tree source explicitly to match the drop-chance hint's
+ * "your skill tree's Sorte" phrasing. `phasesXpActualHint` and `phasesDropActualHint` got the
+ * same edit but are not listed here: both are already in `KEYS_ADDED` above (added since the last
+ * re-baseline, never yet in the frozen fixture), and an added key's value is unconstrained by the
+ * comparison regardless of what it is.
  */
-const PROSE_EDITED_PATHS: readonly string[] = [];
+const PROSE_EDITED_PATHS: readonly string[] = ['phasesGoldActualHint'];
 
 function omitKeys<T extends Record<string, unknown>>(obj: T, keys: readonly string[]): Partial<T> {
   const out: Record<string, unknown> = { ...obj };

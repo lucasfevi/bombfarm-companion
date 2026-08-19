@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { computePhaseIntelGlobal } from '@bombfarm/domain/phase-intel';
 import { STRINGS } from '@/shared/i18n';
+import { TipLabel } from '@bombfarm/ui/stat-list-tip-label';
 import {
   dropItems,
   economyItems,
@@ -21,13 +22,21 @@ const LUCK_FRACTION = 0.1723005;
  * A merged row's value is a two-line node — boosted total, then the wiki base and the boost that
  * produced it — or a bare string when nothing boosts it. These read the two lines back out so the
  * witness numbers below stay asserted as NUMBERS, rather than degrading to "the node exists".
+ *
+ * The subtext line's text now lives on `TipLabel`'s `label` prop rather than plain `children` —
+ * the tooltip trigger moved from the row's label onto this line (see `boostedValue` in
+ * `phase-fact-items.tsx`), and `TipLabel` takes its visible text as `label`, not `children`. A
+ * `TipLabel` element is special-cased here for that reason; everything else still descends via
+ * `props.children` as before.
  */
 function flatText(node: unknown): string {
   if (node == null || typeof node === 'boolean') return '';
   if (typeof node === 'string' || typeof node === 'number') return String(node);
   if (Array.isArray(node)) return node.map(flatText).join('');
-  if (typeof node === 'object' && 'props' in (node as Record<string, unknown>)) {
-    return flatText((node as { props: { children?: unknown } }).props.children);
+  if (typeof node === 'object' && 'type' in (node as Record<string, unknown>)) {
+    const el = node as { type: unknown; props: { children?: unknown; label?: unknown } };
+    if (el.type === TipLabel) return flatText(el.props.label);
+    return flatText(el.props.children);
   }
   return '';
 }
@@ -40,8 +49,29 @@ function lines(value: unknown): string[] {
 
 /** The boosted total — the figure the row leads with. */
 const total = (value: unknown) => lines(value)[0] ?? '';
-/** The "base +N% source" subtext, or `null` on an unboosted row that prints no second line. */
+/** The "base + N% + M%" subtext, or `null` on an unboosted row that prints no second line. */
 const subtext = (value: unknown) => lines(value)[1] ?? null;
+
+/**
+ * Walks a row's `value` node to find the `TipLabel` wrapping the subtext (see `boostedValue` in
+ * `phase-fact-items.tsx`) and returns its `tip` prop, or `null` when the row has no subtext (an
+ * unboosted row prints a bare string total with nothing to hover). These are still unrendered
+ * React elements — `.type`/`.props` reads the element tree directly, no testing-library render.
+ */
+function subtextTip(value: unknown): string | null {
+  if (value == null || typeof value !== 'object') return null;
+  const el = value as { type?: unknown; props?: { tip?: unknown; children?: unknown } };
+  if (el.type === TipLabel) return typeof el.props?.tip === 'string' ? el.props.tip : null;
+  const kids = el.props?.children;
+  if (Array.isArray(kids)) {
+    for (const kid of kids) {
+      const found = subtextTip(kid);
+      if (found != null) return found;
+    }
+    return null;
+  }
+  return subtextTip(kids);
+}
 
 describe('phase-fact-items', () => {
   const t = STRINGS.pt;
@@ -91,14 +121,34 @@ describe('phase-fact-items', () => {
     const nonGate = computePhaseIntelGlobal(PHASE_NON_GATE, { xpMult: XP_MULT })!;
     const xp = economyItems(nonGate, t, fmt).find((row) => row.id === 'xp')!.value;
     // Same two numbers the wiki/yours pair used to print, now one leading the row and one in
-    // its subtext — 167 x 1.56 -> 261, matching the in-game tooltip.
+    // its subtext — 167 x 1.56 -> 261, matching the in-game tooltip. XP has only one contributing
+    // source in this model (the skill tree's xp_mult — no squad share), so the subtext is a
+    // single term, and the trailing source word ("mult. XP") is gone: the explanation moved to
+    // the tooltip on this same subtext (see the "tooltip lives on the subtext" test below).
     expect(total(xp)).toBe('261');
-    expect(subtext(xp)).toBe('167 +56% mult. XP');
+    expect(subtext(xp)).toBe('167 + 56%');
+    expect(subtextTip(xp)).toBe(t.phasesXpActualHint);
 
     const gate = computePhaseIntelGlobal(PHASE_GATE, { xpMult: XP_MULT })!;
     const gateXp = economyItems(gate, t, fmt).find((row) => row.id === 'xp')!.value;
     expect(total(gateXp)).toBe('303');
-    expect(subtext(gateXp)).toBe('194 +56% mult. XP');
+    expect(subtext(gateXp)).toBe('194 + 56%');
+  });
+
+  it('economyItems XP row label carries no tooltip — it moved to the subtext', () => {
+    const intel = computePhaseIntelGlobal(PHASE_NON_GATE, { xpMult: XP_MULT })!;
+    const xp = economyItems(intel, t, fmt).find((row) => row.id === 'xp')!;
+    expect(xp.tip).toBeUndefined();
+  });
+
+  it('economyItems gold rows explain the same skill-tree math via the subtext tooltip', () => {
+    const intel = computePhaseIntelGlobal(PHASE_NON_GATE, { teamCoinPct: 40 })!;
+    const items = economyItems(intel, t, fmt);
+    for (const id of ['gold', 'avgGold', 'mapGold'] as const) {
+      const row = items.find((r) => r.id === id)!;
+      expect(row.tip, `label tip on ${id}`).toBeUndefined();
+      expect(subtextTip(row.value), `subtext tip on ${id}`).toBe(t.phasesGoldActualHint);
+    }
   });
 
   it('economyItems XP row drops the subtext entirely when xpMult is absent (defaults to 1)', () => {
@@ -121,7 +171,11 @@ describe('dropItems', () => {
     // Was four rows: every drop printed a wiki row and a yours row.
     expect(items.map((row) => row.id)).toEqual(['chest', 'key']);
     expect(total(items[0].value)).toBe('0.117%');
-    expect(subtext(items[0].value)).toBe('0.100% +17% sorte');
+    // `intel` here only carries the COMBINED `luckFraction` (no `treeLuckFlatPct`/`squadLuckPct`
+    // split — the live-tooltip witness measured the two on-field heroes' average, not a
+    // tree/squad breakdown), so `dropBoostTerms` falls back to one combined term. See the
+    // "decomposes into base + skill tree + squad" test below for the split case.
+    expect(subtext(items[0].value)).toBe('0.100% + 17%');
   });
 
   it('phase 60 (gate): chest, time, gem, stone rows (no key), totals matching the witness', () => {
@@ -135,7 +189,7 @@ describe('dropItems', () => {
     expect(total(byId('stone'))).toBe('0.006%');
     // The base each total was boosted from stays on the row, so the pair's second number is
     // still readable without re-deriving it from the luck multiplier.
-    expect(subtext(byId('time'))).toBe('0.150% +17% sorte');
+    expect(subtext(byId('time'))).toBe('0.150% + 17%');
   });
 
   it('three-decimal precision keeps gem and stone distinguishable from a coarser rounding', () => {
@@ -152,14 +206,48 @@ describe('dropItems', () => {
     expect(subtext(chest)).toBeNull();
   });
 
-  it('every row carries the luck/gate explainer tip', () => {
+  it('every row explains its boost via a tooltip on the subtext, not the label', () => {
     const intel = computePhaseIntelGlobal(PHASE_GATE, { luckFraction: LUCK_FRACTION })!;
     const items = dropItems(intel, t, fmt);
     // Non-vacuity: this assertion used to select rows by an `id.endsWith('Actual')` filter, which
     // the merge left matching nothing — the loop kept passing while checking zero rows.
     expect(items.length, 'gate-phase drop rows').toBe(4);
     for (const row of items) {
-      expect(row.tip, `tip on ${row.id}`).toBe(t.phasesDropActualHint);
+      expect(row.tip, `label tip on ${row.id}`).toBeUndefined();
+      expect(subtextTip(row.value), `subtext tip on ${row.id}`).toBe(t.phasesDropActualHint);
     }
+  });
+
+  it('decomposes into base + skill tree Sorte + squad Sorte, in that order, when intel carries the split', () => {
+    // `luckFraction` is the SUM of the two components — that is what `phases-explorer.tsx`
+    // guarantees by construction (see its own comment), so this mirrors a real caller rather
+    // than inventing an inconsistent split.
+    const intel = computePhaseIntelGlobal(PHASE_GATE, {
+      luckFraction: 0.25,
+      treeLuckFlatPct: 20,
+      squadLuckPct: 5,
+    })!;
+    const chest = dropItems(intel, t, fmt).find((row) => row.id === 'chest')!.value;
+    expect(subtext(chest)).toBe('0.100% + 20% + 5%');
+  });
+
+  it('shows only the squad term when the skill tree contributes nothing, and vice versa', () => {
+    const squadOnly = computePhaseIntelGlobal(PHASE_GATE, {
+      luckFraction: 0.05,
+      treeLuckFlatPct: 0,
+      squadLuckPct: 5,
+    })!;
+    expect(
+      subtext(dropItems(squadOnly, t, fmt).find((row) => row.id === 'chest')!.value),
+    ).toBe('0.100% + 5%');
+
+    const treeOnly = computePhaseIntelGlobal(PHASE_GATE, {
+      luckFraction: 0.2,
+      treeLuckFlatPct: 20,
+      squadLuckPct: 0,
+    })!;
+    expect(
+      subtext(dropItems(treeOnly, t, fmt).find((row) => row.id === 'chest')!.value),
+    ).toBe('0.100% + 20%');
   });
 });
