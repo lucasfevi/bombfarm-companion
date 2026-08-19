@@ -369,7 +369,7 @@ export function goldRarityMult(rarityIndex: number): number {
   return 1 + 0.4 * rarityIndex;
 }
 
-const RARITY_LABELS_EN = ['Comum', 'Incomum', 'Raro', 'Épico', 'Lendária', 'Mítico'] as const;
+const RARITY_LABELS_EN = ['Common', 'Uncommon', 'Rare', 'Epic', 'Legendary', 'Mythic'] as const;
 const RARITY_LABELS_PT = ['Comum', 'Incomum', 'Raro', 'Épico', 'Lendária', 'Mítico'] as const;
 
 export function rarityLabel(index: number, lang: 'en' | 'pt'): string {

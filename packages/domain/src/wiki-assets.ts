@@ -166,6 +166,11 @@ export function goldIconSrc(): string {
   return `${WIKI_ASSETS_BASE}/nav/icon_gold.png`;
 }
 
+/** The game's own gate-timer clock — used to mark a gate phase instead of a generic chip. */
+export function clockIconSrc(): string {
+  return `${WIKI_ASSETS_BASE}/icons/icon_clock.png`;
+}
+
 export function normalizeSkin(skin: unknown): number {
   if (typeof skin !== 'number' || !Number.isFinite(skin)) return 0;
   return Math.max(0, Math.min(HERO_SKIN_COUNT - 1, Math.round(skin)));

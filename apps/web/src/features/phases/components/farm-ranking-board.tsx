@@ -87,21 +87,30 @@ export function FarmRankingBoard({ t, lang }: { t: Strings; lang: Lang }) {
         {t.farmRankingTitle}
       </h2>
       {result.reason !== 'no-roster' ? (
-        <div className="mb-3 flex flex-col gap-2.5">
-          <FarmRotationPool entries={poolEntries} onToggle={setFarmHeroEnabled} t={t} />
-          <div className="flex flex-wrap items-end justify-between gap-3">
-            <FarmRankingFilters
-              filters={filters}
-              onChange={setFilters}
-              maxPhaseKnown={maxPhaseKnown}
-              t={t}
-            />
-            <FarmReturnBonus value={returnBonus} onChange={setFarmReturnBonus} t={t} />
-          </div>
+        <div className="mb-3">
+          <FarmRotationPool
+            entries={poolEntries}
+            heroes={heroes}
+            onToggle={setFarmHeroEnabled}
+            lang={lang}
+            t={t}
+          />
         </div>
       ) : null}
       <FarmRespecToolbar t={t} lang={lang} />
       <FarmRespecPanel t={t} lang={lang} />
+      {result.reason !== 'no-roster' ? (
+        <div className="mb-2 flex flex-wrap items-start justify-between gap-3 border-b border-line pb-3">
+          <FarmRankingFilters
+            filters={filters}
+            onChange={setFilters}
+            maxPhaseKnown={maxPhaseKnown}
+            lang={lang}
+            t={t}
+          />
+          <FarmReturnBonus value={returnBonus} onChange={setFarmReturnBonus} t={t} />
+        </div>
+      ) : null}
       {result.reason === 'compute-failed' ? (
         <div data-testid="farm-ranking-empty">
           <Banner tone="warn" title={t.farmRankingEmptyComputeFailedTitle}>

@@ -10,30 +10,69 @@ const accountWithMaxPhase = { ...importedRoster.account!, maxPhase: 42 };
 const accountNoMaxPhase = importedRoster.account!;
 
 const table = (page: Page) => page.locator('[data-testid="farm-ranking-table"]');
-const rows = (page: Page) => table(page).locator('tbody tr');
+/** Real data rows only — excludes the top/bottom spacer `<tr>`s the virtualized body
+ *  renders to reserve scroll height for the rows outside the current window. */
+const rows = (page: Page) => table(page).locator('tbody tr[data-testid^="farm-row-"]');
+const scrollContainer = (page: Page) => page.getByTestId('farm-ranking-scroll');
 
 /**
- * "Push target" / gate badges are always mounted (no-layout-shift rule 1) and only visually
- * hidden via `invisible` (`visibility:hidden`) + `aria-hidden` — Playwright's `getByText`
- * matches DOM text regardless of CSS visibility, so a plain `.toHaveCount()` on it would count
- * every row's hidden slot too. This counts only the ones actually visible.
+ * The body only mounts a scroll-position-derived window of the filtered row set (plus overscan),
+ * so a DOM row count can no longer stand for "how many rows matched the filters" — `aria-rowcount`
+ * on the `<table>` carries that guarantee instead (`aria-rowindex` on each rendered row is the
+ * per-row half of the same pair). `toHaveAttribute` auto-retries, same as the `toHaveCount` this
+ * replaces.
  */
-async function visiblePushTargetCount(page: Page): Promise<number> {
-  return table(page)
-    .getByText(/Push target/i)
-    .evaluateAll((elements) => elements.filter((element) => getComputedStyle(element).visibility !== 'hidden').length);
+function rowCountLocator(page: Page) {
+  return table(page).locator('table');
+}
+
+async function rowCount(page: Page): Promise<number> {
+  const attr = await rowCountLocator(page).getAttribute('aria-rowcount');
+  return Number(attr);
+}
+
+/** Polls `aria-rowcount` until `predicate` holds, then returns the settled value — the
+ *  read/assert-inequality equivalent of `toHaveAttribute`'s built-in retry for equality checks. */
+async function waitForRowCount(page: Page, predicate: (count: number) => boolean): Promise<number> {
+  let value = NaN;
+  await expect
+    .poll(async () => {
+      value = await rowCount(page);
+      return predicate(value);
+    })
+    .toBe(true);
+  return value;
+}
+
+async function setScrollTop(page: Page, top: number): Promise<void> {
+  await scrollContainer(page).evaluate((el, value) => {
+    el.scrollTop = value;
+  }, top);
 }
 
 /**
  * The row-level "Gate" badge is the same always-mounted-but-invisible pattern — every row's
- * phase cell carries the text "Gate" in the DOM. Returns the `data-testid` of the first row
- * whose Gate chip is actually visible (a real gate row), or null if none are in the current
- * (filtered) row set.
+ * phase cell carries the text "Gate" in the DOM. Scrolls the virtualized body one viewport at a
+ * time (a real user would too) looking for the first row whose Gate chip is actually visible (a
+ * real gate row); returns its `data-testid` and the `scrollTop` that revealed it, so a caller can
+ * bring the same row back into the render window later without re-scanning. Returns null if no
+ * gate row exists in the current (filtered) row set.
  */
-async function firstVisibleGateRowTestId(page: Page): Promise<string | null> {
-  return table(page)
-    .locator('tbody tr')
-    .evaluateAll((trs) => {
+async function findGateRow(page: Page): Promise<{ testId: string; scrollTop: number } | null> {
+  const container = scrollContainer(page);
+  const { scrollHeight, clientHeight } = await container.evaluate((el) => ({
+    scrollHeight: el.scrollHeight,
+    clientHeight: el.clientHeight,
+  }));
+  const maxScroll = Math.max(0, scrollHeight - clientHeight);
+  const step = clientHeight || 1;
+
+  for (let top = 0; ; top = Math.min(top + step, maxScroll)) {
+    await setScrollTop(page, top);
+    // Scrolling triggers a React re-render of the window asynchronously (the native scroll
+    // event, then a commit) — give it a beat before reading the DOM back.
+    await page.waitForTimeout(75);
+    const testId = await rows(page).evaluateAll((trs) => {
       for (const tr of trs) {
         const gateChip = Array.from(tr.querySelectorAll('span')).find((span) => span.textContent === 'Gate');
         if (gateChip && getComputedStyle(gateChip).visibility !== 'hidden') {
@@ -42,6 +81,9 @@ async function firstVisibleGateRowTestId(page: Page): Promise<string | null> {
       }
       return null;
     });
+    if (testId) return { testId, scrollTop: top };
+    if (top >= maxScroll) return null;
+  }
 }
 
 test.describe('Farm Ranking board', () => {
@@ -68,12 +110,12 @@ test.describe('Farm Ranking board', () => {
 
     await expect(page.getByTestId('farm-ranking')).toBeVisible();
     await expect(page.getByRole('heading', { name: /^Map$/i, level: 2 })).toBeVisible();
-    await expect(rows(page)).toHaveCount(42);
+    await expect(rowCountLocator(page)).toHaveAttribute('aria-rowcount', '42');
 
     const firstRowGold = table(page).locator('[data-testid^="farm-row-gold-"]').first();
     const secondRowGold = table(page).locator('[data-testid^="farm-row-gold-"]').nth(1);
     const parseCompact = (text: string) => {
-      const clean = text.trim();
+      const clean = text.trim().replace(/\/h$/, '');
       const mult = clean.endsWith('k') ? 1e3 : clean.endsWith('m') ? 1e6 : clean.endsWith('bi') ? 1e9 : 1;
       return parseFloat(clean) * mult;
     };
@@ -89,11 +131,11 @@ test.describe('Farm Ranking board', () => {
     await seedLocalStorage(page, { ...importedRoster, account: accountWithMaxPhase, lang: 'en' });
     await page.goto('/farm');
 
-    const chestsHeader = table(page).getByRole('columnheader', { name: /Chests \/ hr/i });
+    const chestsHeader = table(page).getByRole('columnheader', { name: /Item chest/i });
     await expect(chestsHeader).toHaveAttribute('aria-sort', 'none');
     await chestsHeader.getByRole('button').click();
     await expect(chestsHeader).toHaveAttribute('aria-sort', 'descending');
-    await expect(page.getByTestId('farm-sort-live')).toContainText(/Chests \/ hr/i);
+    await expect(page.getByTestId('farm-sort-live')).toContainText(/Item chest/i);
     await expect(page.getByTestId('farm-sort-live')).toContainText(/descending/i);
 
     await chestsHeader.getByRole('button').click();
@@ -108,35 +150,30 @@ test.describe('Farm Ranking board', () => {
     await seedLocalStorage(page, { ...importedRoster, account: accountWithMaxPhase, lang: 'en' });
     await page.goto('/farm');
 
-    await expect(rows(page)).toHaveCount(42);
+    await expect(rowCountLocator(page)).toHaveAttribute('aria-rowcount', '42');
     await page.getByTestId('farm-filter-unlocked').getByRole('switch').click();
-    await expect(rows(page)).toHaveCount(600);
-    expect(await visiblePushTargetCount(page)).toBeGreaterThan(0);
-
+    await expect(rowCountLocator(page)).toHaveAttribute('aria-rowcount', '600');
     await page.getByTestId('farm-filter-ato').getByLabel(/Difficulty/i).click();
-    await page.getByRole('option', { name: '1' }).click();
-    const atoCount = await rows(page).count();
+    await page.getByRole('option', { name: 'Easy' }).click();
+    const atoCount = await waitForRowCount(page, (count) => count < 600);
     expect(atoCount).toBeLessThan(600);
     expect(atoCount).toBeGreaterThan(0);
 
     await page.getByTestId('farm-filter-gate').getByLabel(/^Gate$/i).click();
     await page.getByRole('option', { name: 'Gates only', exact: true }).click();
-    const gateCount = await rows(page).count();
+    const gateCount = await waitForRowCount(page, (count) => count < atoCount);
     expect(gateCount).toBeLessThan(atoCount);
 
-    // An ato band with zero gates (e.g. clearing gate filter back and picking a mismatched
-    // combination) — force a zero-match state via the feasible-only + gate combo if needed,
-    // or directly assert the empty state renders when a combination yields nothing.
+    // The account's max phase (42) is well within the Easy band, so re-enabling "unlocked
+    // only" and switching to a difficulty far past it (Very Hard) is a guaranteed zero-match
+    // combination — proving the impossible-combination path renders the named empty state.
     await page.getByTestId('farm-filter-gate').getByLabel(/^Gate$/i).click();
     await page.getByRole('option', { name: /All phases/i }).click();
+    await page.getByTestId('farm-filter-unlocked').getByRole('switch').click();
     await page.getByTestId('farm-filter-ato').getByLabel(/Difficulty/i).click();
-    await page.getByRole('option', { name: /All difficulties/i }).click();
-    await page.getByTestId('farm-filter-feasible').getByRole('switch').click();
-    // Feasible-only should still show rows (most rows are feasible) — assert no crash and a
-    // valid state (table or empty), proving the filter combinator doesn't error.
-    const feasibleEmpty = page.getByTestId('farm-ranking-empty');
-    const feasibleTable = table(page);
-    await expect(feasibleEmpty.or(feasibleTable)).toBeVisible();
+    await page.getByRole('option', { name: 'Very Hard' }).click();
+    await expect(page.getByTestId('farm-ranking-empty')).toBeVisible();
+    await expect(table(page)).toHaveCount(0);
   });
 
   // 5. Row -> picker sync.
@@ -205,35 +242,49 @@ test.describe('Farm Ranking board', () => {
     await seedLocalStorage(page, { ...importedRoster, account: accountWithMaxPhase, lang: 'en' });
     await page.goto('/farm');
 
-    const goldCell = table(page).locator('[data-testid^="farm-row-gold-"]').first();
     const parseCompact = (text: string) => {
-      const clean = text.trim();
+      const clean = text.trim().replace(/\/h$/, '');
       const mult = clean.endsWith('k') ? 1e3 : clean.endsWith('m') ? 1e6 : clean.endsWith('bi') ? 1e9 : 1;
       return parseFloat(clean) * mult;
     };
 
-    const goldOff = parseCompact((await goldCell.textContent()) ?? '0');
-    // Pin the SAME phase's row by its stable data-testid, not "first row matching Gate" — the
-    // Gate badge is always mounted (invisible on non-gate rows, no-layout-shift rule 1), so a
-    // text-content filter would match every row. A gate row's "Keys / hr" cell is the 5th data
-    // cell (Phase, Mitigation, Gold, Chests, Keys).
-    const gateRowTestId = await firstVisibleGateRowTestId(page);
-    expect(gateRowTestId, 'no gate row in the default unlocked-only row set').not.toBeNull();
-    const gateKeysCell = table(page).locator(`[data-testid="${gateRowTestId}"]`).locator('td').nth(4);
-    const gateKeysOff = (await gateKeysCell.textContent()) ?? '';
+    // Pin the SAME row by its stable data-testid for every later read, rather than re-resolving
+    // "first row in the DOM" each time — the return-bonus multiplier is uniform across every row
+    // (`returnBonusMultiplier` in `@bombfarm/domain/farm-rate`), so it never reorders the
+    // gold/hr ranking, and pinning survives the row scrolling out of the virtualized window's
+    // top position between reads (see the scroll dance below, needed to reach the gate row too).
+    const topRowTestId = await rows(page).first().getAttribute('data-testid');
+    const goldCellFor = (testId: string | null) =>
+      table(page).locator(`[data-testid="${testId}"]`).locator('[data-testid^="farm-row-gold-"]');
+
+    const goldOff = parseCompact((await goldCellFor(topRowTestId).textContent()) ?? '0');
+    // A gate row's "Keys / hr" cell is the 5th data cell (Phase, Mitigation, Gold, Chests, Keys).
+    const gateRow = await findGateRow(page);
+    expect(gateRow, 'no gate row in the default unlocked-only row set').not.toBeNull();
+    const gateKeysCellFor = (testId: string) => table(page).locator(`[data-testid="${testId}"]`).locator('td').nth(4);
+    const gateKeysOff = (await gateKeysCellFor(gateRow!.testId).textContent()) ?? '';
+
+    // findGateRow left the window scrolled to wherever it found the gate row — bring the top row
+    // (rank 1 by gold/hr) back into the render window before reading its cell again.
+    await setScrollTop(page, 0);
 
     const select = page.getByTestId('farm-return-bonus').getByLabel(/Return Bonus/i);
     await select.click();
     await page.getByRole('option', { name: /^On$/i }).click();
-    const goldOn = parseCompact((await goldCell.textContent()) ?? '0');
+    const goldOn = parseCompact((await goldCellFor(topRowTestId).textContent()) ?? '0');
     expect(goldOn).toBeGreaterThan(goldOff);
-    await expect(gateKeysCell).toHaveText(gateKeysOff);
+
+    await setScrollTop(page, gateRow!.scrollTop);
+    await expect(gateKeysCellFor(gateRow!.testId)).toHaveText(gateKeysOff);
+    await setScrollTop(page, 0);
 
     await select.click();
     await page.getByRole('option', { name: /^VIP$/i }).click();
-    const goldVip = parseCompact((await goldCell.textContent()) ?? '0');
+    const goldVip = parseCompact((await goldCellFor(topRowTestId).textContent()) ?? '0');
     expect(goldVip).toBeGreaterThan(goldOn);
-    await expect(gateKeysCell).toHaveText(gateKeysOff);
+
+    await setScrollTop(page, gateRow!.scrollTop);
+    await expect(gateKeysCellFor(gateRow!.testId)).toHaveText(gateKeysOff);
   });
 
   // 8. Zero enabled.
@@ -252,14 +303,13 @@ test.describe('Farm Ranking board', () => {
   });
 
   // 9. No maxPhase.
-  test('a null maxPhase shows every phase, no lock badge, and a non-applicable unlocked-only control', async ({
+  test('a null maxPhase shows every phase and a non-applicable unlocked-only control', async ({
     page,
   }) => {
     await seedLocalStorage(page, { ...importedRoster, account: accountNoMaxPhase, lang: 'en' });
     await page.goto('/farm');
 
-    await expect(rows(page)).toHaveCount(600);
-    expect(await visiblePushTargetCount(page)).toBe(0);
+    await expect(rowCountLocator(page)).toHaveAttribute('aria-rowcount', '600');
     await expect(page.getByTestId('farm-filter-unlocked').getByRole('switch')).toBeDisabled();
   });
 
@@ -270,7 +320,7 @@ test.describe('Farm Ranking board', () => {
 
     await expect(page.getByRole('link', { name: /^Farm$/i })).toBeVisible();
     await expect(page.getByText(/RANKING DE FARM/i)).toBeVisible();
-    await expect(table(page).getByRole('columnheader', { name: /Ouro \/ h/i })).toBeVisible();
+    await expect(table(page).getByRole('columnheader', { name: /^Ouro$/i })).toBeVisible();
   });
 
   // Keyboard coverage.
@@ -279,12 +329,12 @@ test.describe('Farm Ranking board', () => {
     await page.goto('/farm');
 
     const goldHeaderButton = table(page)
-      .getByRole('columnheader', { name: /Gold \/ hr/i })
+      .getByRole('columnheader', { name: /^Gold$/i })
       .getByRole('button');
     await goldHeaderButton.focus();
     await page.keyboard.press('Enter');
     await expect(
-      table(page).getByRole('columnheader', { name: /Gold \/ hr/i }),
+      table(page).getByRole('columnheader', { name: /^Gold$/i }),
     ).toHaveAttribute('aria-sort', 'ascending');
     await expect(page.getByTestId('farm-sort-live')).toContainText(/ascending/i);
 
@@ -295,13 +345,11 @@ test.describe('Farm Ranking board', () => {
   });
 
   // 11. max_phase import wiring — the only scenario exercising the real import flow.
-  test('importing a save with a known max_phase writes it through and lock badges appear', async ({
+  test('importing a save with a known max_phase writes it through', async ({
     page,
   }) => {
     await seedLocalStorage(page, { ...importedRoster, account: accountNoMaxPhase, lang: 'en' });
     await page.goto('/farm');
-
-    expect(await visiblePushTargetCount(page)).toBe(0);
 
     await page.getByRole('button', { name: 'Import', exact: true }).click();
     await expect(page.getByRole('dialog')).toBeVisible();
@@ -311,8 +359,7 @@ test.describe('Farm Ranking board', () => {
     await expect(page.getByRole('dialog')).toBeHidden();
 
     await page.getByTestId('farm-filter-unlocked').getByRole('switch').click(); // widen to see locked rows
-    await expect(rows(page)).toHaveCount(600);
-    expect(await visiblePushTargetCount(page)).toBeGreaterThan(0);
+    await expect(rowCountLocator(page)).toHaveAttribute('aria-rowcount', '600');
 
     // The account autosave is debounced (AUTOSAVE_MS = 700ms) — poll rather than read once.
     await expect

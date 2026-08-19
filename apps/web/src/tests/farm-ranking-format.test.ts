@@ -6,7 +6,9 @@ import {
   formatOneShot,
   formatPhaseLabel,
   formatRate,
+  formatRatePerHour,
   formatSignedRate,
+  formatSignedRatePerHour,
 } from '@/features/phases/model/farm-ranking-format';
 import { WEB_PACKAGE_ROOT } from './helpers/web-package-root';
 
@@ -29,6 +31,18 @@ describe('formatRate', () => {
   });
 });
 
+describe('formatRatePerHour (the table cell variant — formatRate plus a trailing /h)', () => {
+  it('appends /h after the magnitude', () => {
+    expect(formatRatePerHour(0)).toBe('0/h');
+    expect(formatRatePerHour(1_250_000)).toBe('1.3m/h');
+  });
+
+  it('a non-finite value stays the bare em dash — no unit on "no data"', () => {
+    expect(formatRatePerHour(Infinity)).toBe('—');
+    expect(formatRatePerHour(Number.NaN)).toBe('—');
+  });
+});
+
 describe('formatSignedRate (sign as text, never colour alone)', () => {
   it('prefixes a positive gain with +', () => {
     expect(formatSignedRate(12.3)).toBe('+12.3');
@@ -44,6 +58,18 @@ describe('formatSignedRate (sign as text, never colour alone)', () => {
 
   it('a non-finite value is an em dash', () => {
     expect(formatSignedRate(Infinity)).toBe('—');
+  });
+});
+
+describe('formatSignedRatePerHour (the keys/hr cell variant — sign, magnitude, then /h)', () => {
+  it('the suffix follows the magnitude, after the sign', () => {
+    expect(formatSignedRatePerHour(12.3)).toBe('+12.3/h');
+    expect(formatSignedRatePerHour(-4.5)).toBe('-4.5/h');
+    expect(formatSignedRatePerHour(0)).toBe('0/h');
+  });
+
+  it('a non-finite value stays the bare em dash', () => {
+    expect(formatSignedRatePerHour(Infinity)).toBe('—');
   });
 });
 
@@ -85,14 +111,18 @@ describe('formatOneShot', () => {
 });
 
 describe('formatPhaseLabel', () => {
-  it('matches the shipped phases-explorer mapName composition for a known phase', () => {
-    // phase-fact-items.tsx: `${phaseMapDisplayName(intel.phase, lang)} · #${intel.phase}`
-    expect(formatPhaseLabel(151, 'en')).toBe('First Strike · #151');
+  it('prints the in-game difficulty + map coordinate, not the wiki flavour name', () => {
+    expect(formatPhaseLabel(65, 'en')).toBe('Normal 1-15 (#65)');
+    expect(formatPhaseLabel(151, 'en')).toBe('Hard 1-1 (#151)');
   });
 
-  it('is language-aware', () => {
-    expect(formatPhaseLabel(71, 'pt')).toBe('Salão Congelado · #71');
-    expect(formatPhaseLabel(71, 'en')).toBe('Frozen Hall · #71');
+  it('is language-aware (the difficulty name translates, the coordinate does not)', () => {
+    expect(formatPhaseLabel(151, 'pt')).toBe('Difícil 1-1 (#151)');
+    expect(formatPhaseLabel(151, 'en')).toBe('Hard 1-1 (#151)');
+  });
+
+  it('carries the # the shipped @bombfarm/domain formatPhaseLabel does not', () => {
+    expect(formatPhaseLabel(151, 'en')).not.toBe('Hard 1-1 (151)');
   });
 });
 

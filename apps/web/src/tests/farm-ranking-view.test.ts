@@ -46,8 +46,10 @@ function row(overrides: Partial<FarmRateRow> & { phase: number }): FarmRateRow {
 describe('FARM_COLUMNS (matches the design column list, transcribed, not derived from the code)', () => {
   // Transcribed from the PRD: "phase coordinate + flavour name, gate and lock badges,
   // mitigation %, gold/hr, item-chests/hr, keys/hr (signed), gems/hr, time-pieces/hr, XP/hr,
-  // item-level band, estimated map clear time, the team one-shots-all-props indicator, the
-  // jaula early-arrival cap % and guaranteed window, and the infeasibility flag."
+  // item-level band, estimated map clear time, the team one-shots-all-props indicator, and the
+  // infeasibility flag." The board's fourth pass (2026-08-19) removed the cage-window column —
+  // the jaula early-arrival cap %/window are still `@bombfarm/domain` fields, just no longer
+  // rendered here (they remain on the Phase explorer's own Cage panel).
   const expectedIds = [
     'phase',
     'mitigation',
@@ -60,8 +62,6 @@ describe('FARM_COLUMNS (matches the design column list, transcribed, not derived
     'itemLevel',
     'clearTime',
     'oneShot',
-    'jaula',
-    'infeasible',
   ];
 
   it('declares exactly the PRD column set, in order', () => {
@@ -76,8 +76,8 @@ describe('FARM_COLUMNS (matches the design column list, transcribed, not derived
     }
   });
 
-  it('badge/flag/label columns (phase, itemLevel, oneShot, jaula, infeasible) are not sortable', () => {
-    for (const id of ['phase', 'itemLevel', 'oneShot', 'jaula', 'infeasible']) {
+  it('badge/flag/label columns (phase, itemLevel, oneShot) are not sortable', () => {
+    for (const id of ['phase', 'itemLevel', 'oneShot']) {
       const column = FARM_COLUMNS.find((candidate) => candidate.id === id)!;
       expect(column.sortKey).toBeNull();
     }
@@ -171,12 +171,11 @@ describe('applyFarmFilters', () => {
     row({ phase: 4, ato: 2, gate: false, locked: false, infeasible: true }),
   ];
 
-  it('defaultFarmFilters() is unlocked-only on, no ato, gate all, feasible-only off', () => {
+  it('defaultFarmFilters() is unlocked-only on, no ato, gate all', () => {
     expect(defaultFarmFilters()).toEqual({
       unlockedOnly: true,
       ato: null,
       gate: 'all',
-      feasibleOnly: false,
     });
   });
 
@@ -210,27 +209,19 @@ describe('applyFarmFilters', () => {
     expect(result.map((entry) => entry.phase)).toEqual([1, 3, 4]);
   });
 
-  it('feasibleOnly excludes infeasible rows', () => {
-    const result = applyFarmFilters(rows, {
-      ...defaultFarmFilters(),
-      unlockedOnly: false,
-      feasibleOnly: true,
-    });
-    expect(result.map((entry) => entry.phase)).toEqual([1, 2, 3]);
-  });
-
   it('combined filters narrow further', () => {
+    // row 4 (ato 2, non-gate) is the only row that is both unlockedOnly-eligible (locked:
+    // false — row 3 shares its ato/gate but is excluded by unlockedOnly instead, being locked).
     const result = applyFarmFilters(rows, {
-      unlockedOnly: false,
+      unlockedOnly: true,
       ato: 2,
       gate: 'non-gate',
-      feasibleOnly: true,
     });
-    expect(result.map((entry) => entry.phase)).toEqual([3]);
+    expect(result.map((entry) => entry.phase)).toEqual([4]);
   });
 
   it('a combination matching zero rows returns an empty array', () => {
-    const result = applyFarmFilters(rows, { unlockedOnly: false, ato: 5, gate: 'all', feasibleOnly: false });
+    const result = applyFarmFilters(rows, { unlockedOnly: false, ato: 5, gate: 'all' });
     expect(result).toEqual([]);
   });
 });
