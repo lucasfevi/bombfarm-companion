@@ -5,19 +5,75 @@ import {
   dataTableClass,
   dataTableHeadButtonClass,
   dataTableHeadClass,
+  dataTableHeadInnerClass,
   dataTableHeadSectionClass,
   dataTableSortIdleIconClass,
   sortableTableHeaderButtonClass,
 } from '@bombfarm/ui/data-table.recipe';
 
-/** Frozen source-of-truth from roster/import sort header button base. */
-const legacyButtonClass =
-  'inline-flex w-full cursor-pointer items-center gap-0.5 rounded-none border-0 bg-transparent px-2 py-[7px] text-[10px] font-semibold tracking-[0.02em] uppercase hover:bg-[color-mix(in_oklch,var(--accent)_8%,transparent)]';
+/**
+ * `dataTableHeadButtonClass` used to be pinned byte-for-byte against a frozen legacy string —
+ * that guarded a since-completed migration onto this primitive. Now that the primitive is the
+ * only source and is free to evolve, these assert the invariants that actually matter: the
+ * sortable button and the static inner share pad/type so columns stay aligned, a `before:` layer
+ * — not the button's own (label-driven) box — carries the hover/focus affordance so it covers a
+ * tall header's whole cell the same as a short one, and any transition is motion-safe-gated.
+ */
+describe('dataTableHeadButtonClass', () => {
+  it('is a block-level flex box, not inline-flex (no table-cell baseline gap)', () => {
+    expect(dataTableHeadButtonClass).toContain('w-full');
+    expect(dataTableHeadButtonClass).not.toContain('inline-flex');
+    expect(dataTableHeadButtonClass).toContain('flex');
+  });
 
-describe('dataTableHeadButtonClass parity', () => {
-  it('matches legacy roster/import sort header button base', () => {
-    expect(dataTableHeadButtonClass).toBe(legacyButtonClass);
-    expect(sortableTableHeaderButtonClass).toBe(legacyButtonClass);
+  it('shares pad/type with the static header inner so sortable and static columns align', () => {
+    const sharedTypeTokens = [
+      'px-2',
+      'py-[7px]',
+      'text-[10px]',
+      'font-semibold',
+      'tracking-[0.02em]',
+      'uppercase',
+      'items-center',
+      'gap-0.5',
+    ];
+    for (const token of sharedTypeTokens) {
+      expect(dataTableHeadButtonClass).toContain(token);
+      expect(dataTableHeadInnerClass).toContain(token);
+    }
+  });
+
+  it('carries the hover/focus affordance on a full-cell before: layer, not the button box', () => {
+    expect(dataTableHeadButtonClass).toContain('before:absolute');
+    expect(dataTableHeadButtonClass).toContain('before:inset-0');
+    expect(dataTableHeadButtonClass).toContain("before:content-['']");
+    expect(dataTableHeadButtonClass).not.toContain('hover:bg-[');
+  });
+
+  it('washes the whole cell with the theme accent on hover, gated by motion-safe', () => {
+    expect(dataTableHeadButtonClass).toMatch(
+      /hover:before:bg-\[color-mix\(in_oklch,var\(--accent\)_\d+%,transparent\)\]/,
+    );
+    expect(dataTableHeadButtonClass).toContain('motion-safe:before:transition-');
+    expect(dataTableHeadButtonClass).toContain('motion-safe:before:duration-[120ms]');
+    expect(dataTableHeadButtonClass).toContain('motion-safe:before:ease-out');
+  });
+
+  it('draws a crisp accent rule along the cell bottom on hover, as a sort affordance', () => {
+    expect(dataTableHeadButtonClass).toMatch(/hover:before:shadow-\[inset_0_-2px_0_/);
+  });
+
+  it('keeps a visible, uncovered focus-visible ring spanning the full cell', () => {
+    expect(dataTableHeadButtonClass).toContain('focus-visible:before:outline-2');
+    expect(dataTableHeadButtonClass).toContain('focus-visible:before:outline-accent');
+    expect(dataTableHeadButtonClass).not.toContain('focus-visible:before:outline-none');
+    // Bare `outline` would collide with `outline-2` under cn()'s tailwind-merge and get
+    // dropped, leaving outline-style unset — the style must come from the arbitrary property.
+    expect(dataTableHeadButtonClass).toContain('[outline-style:solid]');
+  });
+
+  it('stays aliased for back-compat call sites', () => {
+    expect(sortableTableHeaderButtonClass).toBe(dataTableHeadButtonClass);
   });
 
   it('exposes idle stacked-chevron chrome class', () => {
