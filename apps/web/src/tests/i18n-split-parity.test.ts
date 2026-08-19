@@ -67,12 +67,28 @@ const fixture = JSON.parse(readFileSync(fixturePath, 'utf8')) as {
 /**
  * Keys present in the frozen fixture that no longer exist in live STRINGS.
  *
- * `phasesXpPerProp` — the XP-multiplier feature (2026-08-18) split the Economy panel's single
- * unboosted `xp` row into a wiki/yours pair (`phasesXpPerPropWiki`/`phasesXpPerPropActual`,
- * below in `KEYS_ADDED`), the same shape the gold rows already use. The old single-value key has
- * no reader left.
+ * The merged-row feature (2026-08-18) collapsed the Economy and Drops panels' wiki/yours ROW
+ * PAIRS into one row per figure, showing the boosted total with the wiki base and the boost as
+ * subtext. Each pair's two labels carried a parenthesised "(wiki)"/"(yours)" that the merged row
+ * has no place for, so the six gold labels below have no reader left.
+ *
+ * `phasesXpPerProp` is deliberately NOT listed: the same feature revived it as the merged XP
+ * row's label, and it is back in live STRINGS at the fixture's own value ("XP per prop" /
+ * "XP por prop"). A key that leaves and returns unchanged is not a delta.
+ *
+ * The Cage panel rework (2026-08-19) moved the early-arrival row's explanation out of a
+ * tooltip and into a new section description under the panel's art (`phasesJaulaSectionDesc`,
+ * in `KEYS_ADDED`), so `phasesJaulaEarlyHint` has no reader left.
  */
-const KEYS_REMOVED: readonly string[] = ['phasesXpPerProp'];
+const KEYS_REMOVED: readonly string[] = [
+  'phasesGoldComumWiki',
+  'phasesGoldComumActual',
+  'phasesAvgGoldWiki',
+  'phasesAvgGoldActual',
+  'phasesMapGoldWiki',
+  'phasesMapGoldActual',
+  'phasesJaulaEarlyHint',
+];
 
 /**
  * Keys present in live STRINGS with no counterpart in the frozen fixture at all — a genuinely
@@ -81,27 +97,60 @@ const KEYS_REMOVED: readonly string[] = ['phasesXpPerProp'];
  * the "differs at exactly" comparisons alongside `PROSE_EDITED_PATHS`, and separately excluded
  * from the sorted-key-set comparison (which compares SETS, not diffs).
  *
- * The XP-multiplier / drop-chances feature (2026-08-18): the Economy panel's boosted XP pair,
- * the new Drops panel (gate-filtered wiki/yours rows per drop type), and the Account import
- * summary's new XP-multiplier row.
+ * The XP-multiplier / drop-chances feature (2026-08-18): the new Drops panel (gate-filtered rows
+ * per drop type) and the Account import summary's new XP-multiplier row.
+ *
+ * The merged-row feature (same day) then collapsed each panel's wiki/yours pair into one row, so
+ * the ten drop labels and the XP pair this list used to carry were replaced by the single-label
+ * keys below before ever reaching a fixture re-baseline. They are dropped from this list rather
+ * than moved to `KEYS_REMOVED`: they never existed in the frozen fixture, so their departure is
+ * invisible to the comparison.
+ *
+ * `phasesBoost*` named the boost SOURCE in the merged row's subtext ("0.100% +17% luck"), which
+ * the old paired rows expressed by labelling one row "(yours)". They are NOT listed below: the
+ * tooltip-on-subtext feature (2026-08-19) dropped the trailing source word from every boosted
+ * subtext ("0.100% + 17%" — the tooltip now carried on the subtext itself explains the source
+ * instead), so `phasesBoostXp`/`phasesBoostGold`/`phasesBoostLuck` lost their only reader in the
+ * same feature that added them. Same precedent as the drop labels above: a key that was added and
+ * removed before ever reaching a fixture re-baseline is dropped from this list rather than moved
+ * to `KEYS_REMOVED` — it never existed in the frozen fixture, so its departure is invisible to
+ * the comparison.
+ *
+ * The all-five-rows feature (2026-08-19): the Drops panel used to skip rows that cannot roll on
+ * the phase being viewed, so a gate phase showed 4 rows and a normal phase showed 2. It now
+ * always shows all 5, dimming the ones that do not apply and replacing their live percentage
+ * with a dash plus a small note naming which phase type the drop IS specific to —
+ * `phasesDropGateOnly` for the time/gem/stone chests, `phasesDropNonGateOnly` for the key.
+ *
+ * `phasesDropsSectionDesc` (2026-08-19): the gate/non-gate sentence moved out of the per-row boost
+ * tooltip and became the panel's section description. It describes the whole panel, not one row's
+ * arithmetic, so repeating it inside every row's tooltip made the tooltip say two unrelated things
+ * and hid a panel-level fact behind a hover.
+ *
+ * The Cage panel rework (2026-08-19), matching the Drops panel's own section-description move
+ * above: `phasesJaulaSectionDesc` replaces the removed `phasesJaulaEarlyHint` tooltip as a
+ * panel-level description under the new cage art. `phasesJaulaWindowVip` labels the VIP
+ * guarantee window now shown as subtext under the normal window, once the committed wiki bundle's
+ * stale VIP figure was corrected to match the live wiki.
  */
 const KEYS_ADDED: readonly string[] = [
-  'phasesXpPerPropWiki',
-  'phasesXpPerPropActual',
   'phasesXpActualHint',
   'phasesDropsSection',
-  'phasesDropChestWiki',
-  'phasesDropChestActual',
-  'phasesDropKeyWiki',
-  'phasesDropKeyActual',
-  'phasesDropTimeWiki',
-  'phasesDropTimeActual',
-  'phasesDropGemWiki',
-  'phasesDropGemActual',
-  'phasesDropStoneWiki',
-  'phasesDropStoneActual',
+  'phasesDropChest',
+  'phasesDropKey',
+  'phasesDropTime',
+  'phasesDropGem',
+  'phasesDropStone',
   'phasesDropActualHint',
+  'phasesDropsSectionDesc',
+  'phasesGoldComum',
+  'phasesAvgGold',
+  'phasesMapGold',
   'treeXpMult',
+  'phasesDropGateOnly',
+  'phasesDropNonGateOnly',
+  'phasesJaulaSectionDesc',
+  'phasesJaulaWindowVip',
 ];
 
 /**
@@ -109,11 +158,31 @@ const KEYS_ADDED: readonly string[] = [
  * a reworded sentence, in either or both languages. Dot-separated; array indices are numeric
  * segments (`explainSections.0.p.1`). A deleted key and an edited value are different shapes of
  * drift, which is why they are two separate lists rather than one.
+ *
+ * The tooltip-on-subtext feature (2026-08-19): `phasesGoldActualHint` was reworded from
+ * "Wiki × (1 + team coin % on Account)" to "base value × (1 + your skill tree's team coin %)" —
+ * "Wiki" -> "base value" for the same reason the drop-chance hint moved (the merged row already
+ * shows the wiki number inline, so calling it "Wiki" a second time in the tooltip was the
+ * confusing name), plus naming the account.tree source explicitly to match the drop-chance hint's
+ * "your skill tree's luck" phrasing. `phasesXpActualHint` and `phasesDropActualHint` got the
+ * same edit but are not listed here: both are already in `KEYS_ADDED` above (added since the last
+ * re-baseline, never yet in the frozen fixture), and an added key's value is unconstrained by the
+ * comparison regardless of what it is.
+ *
+ * The Cage panel rework (2026-08-19) dropped the "(hero clock)" / "(relógio de herói)" suffix
+ * from `phasesJaulaSection` now that the panel's own art and description carry that context, and
+ * reworded `phasesJaulaEarly` ("Early cap at this phase" -> "Early-arrival chance at this phase")
+ * to name what the number actually is now that its explanation no longer sits one hover away.
+ *
+ * The crit/cooldown regime revert (2026-08-19) reworded the Points tab's "Skill points add a fixed
+ * share..." paragraph (`explainSections.0.p.1`) in both locales, back to describing crit chance and
+ * cooldown as a percent of the birth roll — the 2026-08-18 game patch reverted the flat-addend
+ * shape the 2026-08-15 one had introduced.
  */
 const PROSE_EDITED_PATHS: readonly string[] = [
-  // issue #132: the Points-tab help text's "Skill points add a fixed share..." paragraph, in
-  // both locales, was reworded back to describe crit chance and CDR as percent-of-base (the
-  // 2026-08-18 patch reverted the shape the 2026-08-15 patch had changed to a flat addend).
+  'phasesGoldActualHint',
+  'phasesJaulaSection',
+  'phasesJaulaEarly',
   'explainSections.0.p.1',
 ];
 

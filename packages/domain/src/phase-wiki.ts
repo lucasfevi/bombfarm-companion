@@ -24,7 +24,7 @@ export type WikiJaula = {
   adiantaProbPorAto: readonly number[];
   /** Guaranteed window, seconds. Live 12600. Replaces janelaSecsPorAto. */
   janelaSecs: number;
-  /** VIP guaranteed window, seconds. Live 9900. */
+  /** VIP guaranteed window, seconds. Live 10800. */
   janelaSecsVip: number;
   hpMult: number;
 };

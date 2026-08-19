@@ -76,15 +76,38 @@ export function PhasesExplorer({ t, lang }: { t: Strings; lang: Lang }) {
 
   // Mean of the top-squad rows' pipeline-adjusted Luck (percentage points) -> fraction. Empty
   // roster -> 0 (no drop-chance boost), matching `dropAppliesOnPhase`'s "no boost" default.
+  // `row.luck` is `pipeline.adjusted.luck`, which already carries the tree's flat luck add on
+  // EVERY hero (same convention `farm-rate.ts` documents for `heroLuckPct`) — so this mean equals
+  // `mean(heroLuckPct) + treeLuckFlatPct` exactly, `treeLuckFlatPct` being a per-hero constant.
+  // That is what makes `squadLuckPct` below a clean peel rather than an approximation.
   const luckFraction = useMemo(() => {
     if (topSquadRows.length === 0) return 0;
     const sum = topSquadRows.reduce((total, row) => total + row.luck, 0);
     return sum / topSquadRows.length / 100;
   }, [topSquadRows]);
 
+  // The Drops panel's boost breakdown (`phase-fact-items.tsx`'s `dropItems`) wants the two
+  // components separately: the skill tree's flat luck add, and the squad's own average with that
+  // share peeled back out. `treeLuckFlatPct` is the account fact directly; `squadLuckPct` is
+  // derived rather than re-averaged so it is guaranteed to sum to `luckFraction * 100` by
+  // construction, not by two independent computations happening to agree. Zeroed with an empty
+  // roster so it never prints a negative squad share when there is no squad to have one.
+  const treeLuckFlatPct = account.tree.luckFlatPct ?? 0;
+  const squadLuckPct = useMemo(() => {
+    if (topSquadRows.length === 0) return 0;
+    return Math.max(0, luckFraction * 100 - treeLuckFlatPct);
+  }, [topSquadRows.length, luckFraction, treeLuckFlatPct]);
+
   const intel = useMemo(
-    () => computePhaseIntelGlobal(phase, { teamCoinPct, xpMult, luckFraction }),
-    [phase, teamCoinPct, xpMult, luckFraction],
+    () =>
+      computePhaseIntelGlobal(phase, {
+        teamCoinPct,
+        xpMult,
+        luckFraction,
+        treeLuckFlatPct,
+        squadLuckPct,
+      }),
+    [phase, teamCoinPct, xpMult, luckFraction, treeLuckFlatPct, squadLuckPct],
   );
 
   const heroesById = useMemo(() => new Map(heroes.map((hero) => [hero.id, hero])), [heroes]);

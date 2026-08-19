@@ -1,7 +1,24 @@
 import catalog from './data/catalog.json';
 import type { Slot } from './gear';
+import type { DropRateId } from './phase-wiki';
 
-/** Bundled mirror of Grimório static assets under `public/wiki-assets/`. */
+/**
+ * Bundled game art under `public/wiki-assets/`, sourced from the Grimório's static assets.
+ *
+ * Most of this tree is a byte-for-byte mirror at the same subpath, and the parts that are not are
+ * worth knowing about before refreshing it:
+ *
+ *  - **Gem-chest sprites are not published by the wiki in any form** and are carried from the game
+ *    client instead. A wiki refresh cannot restore them.
+ *  - **The per-difficulty drop sprites are renamed on the way in**, so their local names do not
+ *    match the upstream paths they came from. Upstream files them as bare indices or as
+ *    Portuguese words carrying two misspellings; see {@link DIFFICULTY_SLUG}. The upstream path
+ *    for each is recorded in `docs/bundled-art-provenance.md` — that table, not this directory,
+ *    is what a refresh has to be driven from.
+ *
+ * Everything else (`abilities/`, `env/`, `items/`, `hero/`, `icons/`, `key/`, `nav/`) resolves to
+ * a file the wiki serves at the same subpath, and those names are upstream's own.
+ */
 export const WIKI_ASSETS_BASE = '/wiki-assets';
 
 export const WIKI_URL = 'https://wiki.bombfarm.net';
@@ -76,6 +93,72 @@ export function abilityIconSrc(abilityId: string): string | null {
 export function propIconSrc(propName: string): string | null {
   if (!propName || typeof propName !== 'string') return null;
   return `${WIKI_ASSETS_BASE}/env/${propName}.png`;
+}
+
+/**
+ * Difficulty band (ato) 1..5 → the slug every per-band sprite is filed under.
+ *
+ * These are the English difficulty names (`GAME_DIFFICULTY_EN`, lowercased and underscored), not
+ * the names upstream files carry. Upstream, the same five bands appear as bare indices on some
+ * families and as Portuguese words on others — including two misspellings (`dificio`,
+ * `muitodificio`, for *difícil* / *muito difícil*). Bundling those names would put another
+ * project's typos in this repo's tree and leave `_1`…`_5` for a reader to decode, so the sprites
+ * are renamed on the way in and this one table is the only place a band becomes a filename.
+ */
+const DIFFICULTY_SLUG = ['easy', 'normal', 'hard', 'very_hard', 'inferno'] as const;
+
+/** Number of difficulty bands the per-ato drop art is drawn for. */
+const DROP_ART_BANDS = 5;
+
+function clampAto(ato: number): number {
+  if (!Number.isFinite(ato)) return 1;
+  return Math.max(1, Math.min(DROP_ART_BANDS, Math.round(ato)));
+}
+
+/**
+ * Drop-row art: the chest the drop actually arrives in, at the difficulty of the phase asked
+ * about. The key is the one exception — a ready key is not delivered in a chest, so the row
+ * shows the key itself.
+ *
+ * Four of the five are difficulty-scaled, matching the art the game files per band and the
+ * colour language a player already reads (green at Fácil through red at Inferno). The mapping
+ * is the game's own, not an invention:
+ *
+ *  - `key`   → the gate key of that band's rarity. The band→rarity step is the same `1..5` the
+ *              planner already applies in `GATE_KEY_RARITY_INDEX`.
+ *  - `time`  → the House of that band. A time chest pays out house parts, so the game files its
+ *              stash icon as the house itself rather than as a chest.
+ *  - `stone` → the skill-stone chest of that band.
+ *  - `gem`   → the gem chest of that band.
+ *
+ * `chest` alone is fixed, and deliberately so: an item chest's grade follows the MAP LEVEL it
+ * drops at, not the difficulty, so tinting it by band would assert a relationship the game does
+ * not have. It uses the same neutral wooden sprite the game's own item-chest icon constant
+ * points at, which reads as "this one is not difficulty-scaled".
+ */
+export function dropIconSrc(dropId: DropRateId, ato: number): string | null {
+  const band = clampAto(ato);
+  const difficulty = DIFFICULTY_SLUG[band - 1];
+  switch (dropId) {
+    case 'chest':
+      return `${WIKI_ASSETS_BASE}/chests/item_chest.png`;
+    case 'key': {
+      // Keys stay filed by RARITY, not difficulty: the art is the rarity's key, and the band is
+      // only how this planner picks one. Renaming them `key_easy`…`key_inferno` would assert the
+      // sprites are difficulty art and hide the band→rarity step that `GATE_KEY_RARITY_INDEX`
+      // makes explicit.
+      const slug = CRYSTAL_SLUG[band];
+      return slug ? `${WIKI_ASSETS_BASE}/key/key_${slug}.png` : null;
+    }
+    case 'time':
+      return `${WIKI_ASSETS_BASE}/houses/house_${difficulty}.png`;
+    case 'stone':
+      return `${WIKI_ASSETS_BASE}/chests/skill_stone_chest_${difficulty}.png`;
+    case 'gem':
+      return `${WIKI_ASSETS_BASE}/chests/gem_chest_${difficulty}.png`;
+    default:
+      return null;
+  }
 }
 
 /** Wiki gold coin chrome (nav footer icon). */

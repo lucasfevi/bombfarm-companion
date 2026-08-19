@@ -4,7 +4,8 @@ import { readFileSync } from 'node:fs';
 import { parseSaveFile } from '@bombfarm/domain/import-save';
 import { normalizeHero } from '@/shared/lib/storage';
 import { WEB_PACKAGE_ROOT } from './helpers/web-package-root';
-import { HERO_SKIN_COUNT, heroAvatarSrc, isKnownSkin, itemIconSrc, normalizeSkin, rarityCrystalSrc, abilityIconSrc, goldIconSrc, propIconSrc } from '@bombfarm/domain/wiki-assets';
+import { HERO_SKIN_COUNT, heroAvatarSrc, isKnownSkin, itemIconSrc, normalizeSkin, rarityCrystalSrc, abilityIconSrc, goldIconSrc, propIconSrc, dropIconSrc } from '@bombfarm/domain/wiki-assets';
+import { DROP_RATES, type DropRateId } from '@bombfarm/domain/phase-wiki';
 
 describe('wiki-assets', () => {
   it('maps save skin to bundled avatar paths', () => {
@@ -88,6 +89,54 @@ describe('wiki-assets', () => {
     expect(propIconSrc('bush')).toBe('/wiki-assets/env/bush.png');
     expect(propIconSrc('purple_crystal')).toBe('/wiki-assets/env/purple_crystal.png');
     expect(propIconSrc('')).toBeNull();
+  });
+
+  /**
+   * Pinned per id at both ends of the difficulty range, because the whole mapping is four
+   * separate per-band families plus one fixed sprite, filed under three directories (`key/`,
+   * `houses/`, `chests/`) that no other helper reaches. A typo in any one of them is invisible
+   * to every other assertion in this file.
+   *
+   * The difficulty WORD is part of what is pinned. These sprites are renamed on the way in — see
+   * `docs/bundled-art-provenance.md` — so a path here is this repo's own name, not upstream's,
+   * and nothing outside this helper would catch it drifting back.
+   */
+  it('maps each drop-chance row to the art of that phase’s difficulty band', () => {
+    expect(dropIconSrc('key', 1)).toBe('/wiki-assets/key/key_uncommon.png');
+    expect(dropIconSrc('key', 5)).toBe('/wiki-assets/key/key_mythic.png');
+    expect(dropIconSrc('time', 1)).toBe('/wiki-assets/houses/house_easy.png');
+    expect(dropIconSrc('time', 5)).toBe('/wiki-assets/houses/house_inferno.png');
+    expect(dropIconSrc('stone', 1)).toBe('/wiki-assets/chests/skill_stone_chest_easy.png');
+    expect(dropIconSrc('stone', 5)).toBe('/wiki-assets/chests/skill_stone_chest_inferno.png');
+    expect(dropIconSrc('gem', 1)).toBe('/wiki-assets/chests/gem_chest_easy.png');
+    expect(dropIconSrc('gem', 5)).toBe('/wiki-assets/chests/gem_chest_inferno.png');
+  });
+
+  /**
+   * An item chest's grade follows the map level it drops at, not the difficulty, so tinting it
+   * by band would assert a relationship the game does not have.
+   */
+  it('keeps the item chest fixed across every difficulty band', () => {
+    const paths = [1, 2, 3, 4, 5].map((ato) => dropIconSrc('chest', ato));
+    expect(new Set(paths).size, 'distinct item-chest sprites').toBe(1);
+    expect(paths[0]).toBe('/wiki-assets/chests/item_chest.png');
+  });
+
+  it('clamps an out-of-range or non-finite band instead of building a path to nothing', () => {
+    expect(dropIconSrc('time', 0)).toBe('/wiki-assets/houses/house_easy.png');
+    expect(dropIconSrc('time', 9)).toBe('/wiki-assets/houses/house_inferno.png');
+    expect(dropIconSrc('gem', Number.NaN)).toBe('/wiki-assets/chests/gem_chest_easy.png');
+    expect(dropIconSrc('key', 2.4)).toBe('/wiki-assets/key/key_rare.png');
+  });
+
+  it('gives every drop row a distinct sprite, in every difficulty band', () => {
+    const ids = Object.keys(DROP_RATES) as DropRateId[];
+    for (const ato of [1, 2, 3, 4, 5]) {
+      const paths = ids.map((id) => dropIconSrc(id, ato));
+      // Two rows sharing one sprite would make the icons decorative noise instead of something
+      // to match a row against — the whole reason they are here.
+      expect(new Set(paths).size, `distinct sprites at ato ${ato}`).toBe(ids.length);
+    }
   });
 
   it('points at the bundled gold coin chrome', () => {
