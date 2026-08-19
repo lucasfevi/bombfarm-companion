@@ -1,5 +1,5 @@
 ---
-'@bombfarm/domain': minor
+"@bombfarm/domain": minor
 ---
 
 Farm rate: scale the plant-to-plant hop distribution to each ato's prop density.
