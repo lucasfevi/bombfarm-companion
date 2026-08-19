@@ -2,7 +2,6 @@ import { describe, expect, it, vi } from 'vitest';
 import * as advisorPipeline from '@bombfarm/domain/advisor-pipeline';
 import * as deriveModule from '@bombfarm/domain/derive';
 import { computeAdvisorPipeline } from '@bombfarm/domain/advisor-pipeline';
-import { stackTeamBonusMult, TEAM_MULT_BONUS_CAP } from '@bombfarm/domain/derive';
 import { zeroTeamBuffs, type TeamBuffId } from '@bombfarm/domain/team-buffs';
 import { PROPS } from '@bombfarm/domain/phases';
 import { ZERO_PTS } from '@bombfarm/domain/planner-constants';
@@ -107,6 +106,7 @@ describe('scoreHeroLoadout', () => {
       sheetOther: { speed: 0, critChance: 0, critDmgFlat: 0, penetration: 0, cdr: 0 },
       mods: {
         drainMult: 1,
+        ownTeamDrainPct: 0,
         combatCritChancePctOfBase: 0,
         penetrationPp: 0,
         rangeCells: 0,
@@ -236,6 +236,7 @@ describe('scoreHeroLoadout', () => {
       sheetOther: { speed: 0, critChance: 0, critDmgFlat: 0, penetration: 0, cdr: 0 },
       mods: {
         drainMult: 1,
+        ownTeamDrainPct: 0,
         combatCritChancePctOfBase: 0,
         penetrationPp: 0,
         rangeCells: 0,

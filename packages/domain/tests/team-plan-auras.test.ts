@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { stackTeamBonusMult, TEAM_MULT_BONUS_CAP } from '@bombfarm/domain/derive';
+import { combineTeamAuraPct } from '@bombfarm/domain/derive';
+import { TEAM_BUFF_CAP } from '@bombfarm/domain/team-buffs';
 import { computeRosterAuras } from '@bombfarm/domain/team-plan/auras';
 import type { HeroPlanContext } from '@bombfarm/domain/team-plan/types';
 
@@ -27,6 +28,7 @@ function ctx(
     sheetOther: { speed: 0, critChance: 0, critDmgFlat: 0, penetration: 0, cdr: 0 },
     mods: {
       drainMult: 1,
+      ownTeamDrainPct: 0,
       combatCritChancePctOfBase: 0,
       penetrationPp: 0,
       rangeCells: 0,
@@ -97,25 +99,24 @@ describe('computeRosterAuras', () => {
     expect(half.folego_mineiro).toBe(full.folego_mineiro / 2);
   });
 
-  it('raw sum can exceed 100; stackTeamBonusMult applies cap once (ASM-RGO-02)', () => {
+  it('raw sum can exceed the aura cap; combineTeamAuraPct applies the cap once (ASM-RGO-02, Fault 4)', () => {
     const contexts = [
       ctx('a', 'optimize', { grito_guerra: 60 }),
       ctx('b', 'optimize', { grito_guerra: 60 }),
     ];
     const auras = computeRosterAuras(contexts, { a: 1, b: 1 }, 'c');
-    expect(auras.grito_guerra).toBeGreaterThan(100);
-    const mult = stackTeamBonusMult(1, auras.grito_guerra);
-    expect(mult).toBeLessThanOrEqual(1 + TEAM_MULT_BONUS_CAP);
+    expect(auras.grito_guerra).toBeGreaterThan(TEAM_BUFF_CAP.grito_guerra);
+    const combined = combineTeamAuraPct(0, auras.grito_guerra, TEAM_BUFF_CAP.grito_guerra);
+    expect(combined).toBe(TEAM_BUFF_CAP.grito_guerra);
   });
 
-  it('covers all five TEAM_BUFF_ABILITY_IDS', () => {
+  it('covers all four TEAM_BUFF_ABILITY_IDS', () => {
     const contexts = [
       ctx('a', 'optimize', {
         grito_guerra: 1,
         pressagio_mortal: 1,
         marcha_acelerada: 1,
         folego_mineiro: 1,
-        contra_relogio: 1,
       }),
     ];
     const auras = computeRosterAuras(contexts, { a: 1 }, 'b');
@@ -123,7 +124,7 @@ describe('computeRosterAuras', () => {
     expect(auras.pressagio_mortal).toBeGreaterThan(0);
     expect(auras.marcha_acelerada).toBeGreaterThan(0);
     expect(auras.folego_mineiro).toBeGreaterThan(0);
-    expect(auras.contra_relogio).toBeGreaterThan(0);
+    expect('contra_relogio' in auras).toBe(false);
   });
 
   it('zero duty yields zero contribution', () => {

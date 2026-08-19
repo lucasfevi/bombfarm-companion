@@ -123,7 +123,6 @@ type HeroRecordEntry = {
     teamAtkMult: string;
     teamSpeedMult: string;
     teamDrainMult: string;
-    teamGateMult: string;
     teamCritPctOfBase: string;
     attackMult: string;
     speedMult: string;
@@ -483,7 +482,6 @@ function recordHero(
       teamAtkMult: num(mults.teamAtkMult),
       teamSpeedMult: num(mults.teamSpeedMult),
       teamDrainMult: num(mults.teamDrainMult),
-      teamGateMult: num(mults.teamGateMult),
       teamCritPctOfBase: num(mults.teamCritPctOfBase),
       attackMult: num(mults.attackMult),
       speedMult: num(mults.speedMult),

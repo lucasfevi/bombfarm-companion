@@ -19,6 +19,7 @@ const readSrc = (rel: string) => readFileSync(resolve(root, rel), 'utf8');
 
 const IDENTITY_MODS = {
   drainMult: 1,
+  ownTeamDrainPct: 0,
   combatCritChancePctOfBase: 0,
   penetrationPp: 0,
   rangeCells: 0,
@@ -155,7 +156,10 @@ describe('rank-20 migration (T3, AD-BSP-18, BSPW3-02/-03)', () => {
     expect(abilityMods({ contra_relogio: 13 }).gateAttackMult).toBeCloseTo(1.26, 10);
     expect(abilityMods({ olho_clinico: 13 }).sheetCritChancePctOfBase).toBeCloseTo(4.285714285714286 * 13, 10);
     expect(abilityMods({ detonacao_dupla: 13 }).dmgMult).toBeCloseTo(1 + (19.5 / 100) * 0.5, 10);
-    expect(abilityMods({ folego_mineiro: 13 }).drainMult).toBeCloseTo(1 - 13 / 100, 10);
+    // Fôlego de Mineiro is a team aura, not a self drain multiplier (Fault 3) — its own rank
+    // surfaces as ownTeamDrainPct (percentage points), decoupled from Bateria Extra's drainMult.
+    expect(abilityMods({ folego_mineiro: 13 }).drainMult).toBe(1);
+    expect(abilityMods({ folego_mineiro: 13 }).ownTeamDrainPct).toBeCloseTo(13, 10);
     expect(abilityMods({ grito_guerra: 13 }).attackMult).toBeCloseTo(1.13, 10);
   });
 

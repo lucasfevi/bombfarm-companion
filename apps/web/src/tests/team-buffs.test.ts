@@ -17,7 +17,17 @@ describe('computeTeamBuffsFromDeployed', () => {
     expect(result.marcha_acelerada).toBeCloseTo(1.85, 6);
     expect(result.pressagio_mortal).toBe(0);
     expect(result.folego_mineiro).toBe(0);
-    expect(result.contra_relogio).toBe(0);
+    // contra_relogio is a self ability, not a team aura (Fault 1) — no longer a key on the
+    // returned Record at all.
+    expect('contra_relogio' in result).toBe(false);
+  });
+
+  it('clamps each aura at its own cap (Fault 4) — five rank-20 carriers still cap at one', () => {
+    const heroes = Array.from({ length: 5 }, (_, i) =>
+      normalizeHero({ id: `h${i}`, name: `H${i}`, abilities: { folego_mineiro: 20 }, deployed: true }),
+    );
+    const result = computeTeamBuffsFromDeployed(heroes, null);
+    expect(result.folego_mineiro).toBe(20);
   });
 
   it('returns all zeros when nobody else is deployed', () => {

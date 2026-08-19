@@ -70,7 +70,11 @@ function listFiles(dir: string, acc: string[] = []): string[] {
  * `derive()`). Re-measured against the tree at every T5-T9 commit, not copied from a document.
  */
 const SRC_ALLOWLIST: Record<string, number[]> = {
-  'derive.ts': [27, 78, 96, 142, 197, 208],
+  // Line numbers only — still SIX matches, unchanged in kind. Re-measured after issue #132's
+  // team-aura rewrite (`stackTeamBonusMult`/`TEAM_MULT_BONUS_CAP` replaced by
+  // `combineTeamAuraPct`, `teamGateMult` removed) shifted every line below the new comment
+  // block by -1.
+  'derive.ts': [26, 96, 114, 160, 215, 226],
   // Line numbers only — still FOUR matches, unchanged in kind. Re-measured against the merged
   // tree rather than resolved to either side: this branch's House-cycle plumbing
   // (`houseCycleSecs`, then `houseCycleSecsHouseIdx`/`houseCycleSecsLevel`) and #87's farm-objective

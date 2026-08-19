@@ -116,7 +116,19 @@ export function abilityPointBudget(rarity: RarityKey, level: number): number {
 }
 
 export interface AbilityMods {
-  drainMult: number; // <1 reduces drain
+  /** <1 reduces drain — SELF sources only (Bateria Extra). Fôlego de Mineiro (team) is kept
+   *  out of this multiplier on purpose; see {@link ownTeamDrainPct}. */
+  drainMult: number;
+  /**
+   * Fôlego de Mineiro's OWN rank, percentage points (perLevel × count) — kept separate from
+   * {@link drainMult} rather than pre-folded into it. Fôlego shares its `drainPct` effect kind
+   * with Bateria Extra (a self-only ability), but the two do not share a cap: Fôlego is a team
+   * aura whose combined field total (this hero's own rank plus every other carrier's) clamps at
+   * `TEAM_BUFF_CAP.folego_mineiro`. The combination site needs this hero's own rank on its own
+   * to add to the other carriers' total before capping — a pre-folded multiplier cannot be
+   * un-folded there.
+   */
+  ownTeamDrainPct: number;
   /** Olho Clínico etc. — already in the unequipped sheet Σ. */
   sheetCritChancePctOfBase: number;
   /** Presságio (own) etc. — combat-only, not on the inventory sheet. */
@@ -137,6 +149,7 @@ export interface AbilityMods {
 export function abilityMods(levels: Record<string, number>): AbilityMods {
   const mods: AbilityMods = {
     drainMult: 1,
+    ownTeamDrainPct: 0,
     sheetCritChancePctOfBase: 0,
     combatCritChancePctOfBase: 0,
     sheetPenetrationRaw: 0,
@@ -154,7 +167,10 @@ export function abilityMods(levels: Record<string, number>): AbilityMods {
     const effect = ability.effect;
     switch (effect.kind) {
       case 'drainPct':
-        mods.drainMult *= 1 - (effect.perLevel * count) / 100;
+        // Bateria Extra (self) and Fôlego de Mineiro (team) share this effect kind but not a
+        // cap — see AbilityMods.ownTeamDrainPct.
+        if (ability.id === 'folego_mineiro') mods.ownTeamDrainPct += effect.perLevel * count;
+        else mods.drainMult *= 1 - (effect.perLevel * count) / 100;
         break;
       case 'critChancePctOfBase':
         if (effect.onSheet) mods.sheetCritChancePctOfBase += effect.perLevel * count;

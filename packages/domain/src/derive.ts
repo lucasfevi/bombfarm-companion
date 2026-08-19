@@ -12,13 +12,12 @@ import {
 import type { TreeSheetTotals } from './birth-sheet';
 import { starsMult, type SheetOtherPct, type SheetStats } from './gear';
 import { SHEET_KEYS, type SheetKey } from './planner-constants';
-import type { TeamBuffId } from './team-buffs';
+import { TEAM_BUFF_CAP, type TeamBuffId } from './team-buffs';
 
 export type CombatMults = {
   teamAtkMult: number;
   teamSpeedMult: number;
   teamDrainMult: number;
-  teamGateMult: number;
   teamCritPctOfBase: number;
   attackMult: number;
   speedMult: number;
@@ -39,41 +38,60 @@ export type ComputeCombatMultsInput = {
 };
 
 /**
- * Team ability % bonuses (Grito / Marcha / Contra o Relógio) stack **additively**
- * across the hero’s own copy and other fielded heroes, capped at +100%
- * (`combate.team_mult_bonus_cap`). Do not multiply own `abilityMods` × teamBuffs —
- * that overstates by the cross term (e.g. 1.2×1.2=1.44 vs correct 1.4).
+ * Team auras stack ADDITIVELY across every carrier's own rank — this hero's own copy plus every
+ * other fielded carrier's — then clamp at that aura's own maximum (confirmed 2026-08-19: two
+ * rank-20 Fôlego carriers give −20%, same as one rank-20 carrier alone; two rank-10 carriers
+ * give the same −20% too). The cap is per ability ({@link TEAM_BUFF_CAP}), not a single global
+ * figure — an earlier version of this comment cited `combate.team_mult_bonus_cap` as the source
+ * of a single +100% cap, but that key does not exist in the live wiki payload or in this repo's
+ * own drift capture; it was never a published constant. Do not multiply own `abilityMods` ×
+ * `teamBuffs` either way — that overstates by the cross term (e.g. 1.2×1.2=1.44 vs correct 1.4).
  */
-export const TEAM_MULT_BONUS_CAP = 1;
-
-/** Combine own ability mult (e.g. 1.2) with other heroes’ team-buff % additively. */
-export function stackTeamBonusMult(ownMult: number, otherHeroesBuffPct: number): number {
-  const ownBonus = Math.max(0, ownMult - 1);
-  const othersBonus = Math.max(0, otherHeroesBuffPct) / 100;
-  return 1 + Math.min(TEAM_MULT_BONUS_CAP, ownBonus + othersBonus);
+export function combineTeamAuraPct(ownPct: number, othersPct: number, cap: number): number {
+  return Math.min(cap, Math.max(0, ownPct) + Math.max(0, othersPct));
 }
 
 /**
  * Team / combat multipliers used by the advisor pipeline. The skill tree no longer
  * contributes anything here (BSP-23c) — `dmg_static` and `energia_add` are sheet-level
  * factors applied once by `applySkillTree`, not a second time on top of the combat sheet.
+ *
+ * `mods` is always THIS hero's own ability ranks — `teamBuffs` must therefore be the OTHER
+ * fielded carriers' total, never a total that already includes this hero (see
+ * `computeTeamBuffsFromDeployed`'s `excludeHeroId`). Contra o Relógio ("gate power") is a self
+ * ability, not a team aura (its wiki `kind` is `gate_power`, not `team_*`) — `gateAttackMult`
+ * reads `mods` alone.
  */
 export function computeCombatMults(input: ComputeCombatMultsInput): CombatMults {
   const { mods, teamBuffs, extraDmgPct } = input;
-  const teamAtkMult = stackTeamBonusMult(1, teamBuffs.grito_guerra || 0);
-  const teamSpeedMult = stackTeamBonusMult(1, teamBuffs.marcha_acelerada || 0);
-  const teamDrainMult = Math.max(0.01, 1 - (teamBuffs.folego_mineiro || 0) / 100);
-  const teamGateMult = stackTeamBonusMult(1, teamBuffs.contra_relogio || 0);
-  const teamCritPctOfBase = teamBuffs.pressagio_mortal || 0;
+  const gritoPct = combineTeamAuraPct(
+    (mods.attackMult - 1) * 100,
+    teamBuffs.grito_guerra || 0,
+    TEAM_BUFF_CAP.grito_guerra,
+  );
+  const marchaPct = combineTeamAuraPct(
+    (mods.speedMult - 1) * 100,
+    teamBuffs.marcha_acelerada || 0,
+    TEAM_BUFF_CAP.marcha_acelerada,
+  );
+  const folegoPct = combineTeamAuraPct(
+    mods.ownTeamDrainPct,
+    teamBuffs.folego_mineiro || 0,
+    TEAM_BUFF_CAP.folego_mineiro,
+  );
+  const teamAtkMult = 1 + combineTeamAuraPct(0, teamBuffs.grito_guerra || 0, TEAM_BUFF_CAP.grito_guerra) / 100;
+  const teamSpeedMult =
+    1 + combineTeamAuraPct(0, teamBuffs.marcha_acelerada || 0, TEAM_BUFF_CAP.marcha_acelerada) / 100;
+  const teamDrainMult = Math.max(0.01, 1 - folegoPct / 100);
+  const teamCritPctOfBase = combineTeamAuraPct(0, teamBuffs.pressagio_mortal || 0, TEAM_BUFF_CAP.pressagio_mortal);
   return {
     teamAtkMult,
     teamSpeedMult,
     teamDrainMult,
-    teamGateMult,
     teamCritPctOfBase,
-    attackMult: stackTeamBonusMult(mods.attackMult, teamBuffs.grito_guerra || 0),
-    speedMult: stackTeamBonusMult(mods.speedMult, teamBuffs.marcha_acelerada || 0),
-    gateAttackMult: stackTeamBonusMult(mods.gateAttackMult, teamBuffs.contra_relogio || 0),
+    attackMult: 1 + gritoPct / 100,
+    speedMult: 1 + marchaPct / 100,
+    gateAttackMult: mods.gateAttackMult,
     energyMult: 1,
     critDmgMult: 1,
     dmgMult: mods.dmgMult * (1 + extraDmgPct / 100),

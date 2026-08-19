@@ -1,6 +1,5 @@
 import { levelPowerMult } from '../model';
 import { starsMult, type SheetOtherPct } from '../gear';
-import { TEAM_MULT_BONUS_CAP } from '../derive';
 import type { SheetDisplayKey } from '../planner-constants';
 import type {
   LedgerNote,
@@ -224,17 +223,19 @@ export function pushMul(
   });
 }
 
-/** Own/team split note for a combined additive team mult (before tempo). */
+/** Own/team split note for a combined additive team mult (before tempo). `capPct` is the
+ *  aura's own maximum, in percentage points ({@link TEAM_BUFF_CAP}) — per ability, not global. */
 export function teamMultNote(
   combinedFactor: number,
   ownMult: number,
+  capPct: number,
 ): { note?: LedgerNote; split?: { own: number; team: number } } {
-  const combinedBonus = combinedFactor - 1;
-  if (combinedBonus >= TEAM_MULT_BONUS_CAP - EPS) {
+  const combinedBonusPct = (combinedFactor - 1) * 100;
+  if (combinedBonusPct >= capPct - EPS) {
     return { note: 'capped' };
   }
   const own = Math.max(0, ownMult - 1) * 100;
-  const team = Math.max(0, combinedBonus - (ownMult - 1)) * 100;
+  const team = Math.max(0, combinedBonusPct - own);
   if (own < EPS && team < EPS) return {};
   return { note: 'ownTeamSplit', split: { own, team } };
 }

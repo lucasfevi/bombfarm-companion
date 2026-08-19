@@ -1,4 +1,5 @@
 import { POINT_GAIN } from '../model';
+import { TEAM_BUFF_CAP } from '../team-buffs';
 import {
   pushAdd,
   pushAddPctOfBase,
@@ -19,7 +20,7 @@ export function ledgerAttack(facts: PipelineFacts): StatBreakdown {
   // contract, so the 'tree' step is sourced from the sheet, not added on top of it (AC-42).
   pushBirthThenGear(steps, 'attack', facts, (facts.treeDanoTotal - 1) * 100);
   pushAdd(steps, 'points', facts.pts.attack * facts.delta.attack);
-  const { note, split } = teamMultNote(facts.attackMult, facts.mods.attackMult);
+  const { note, split } = teamMultNote(facts.attackMult, facts.mods.attackMult, TEAM_BUFF_CAP.grito_guerra);
   pushMul(steps, 'abilitiesTeam', facts.attackMult, note, split);
   return { kind: 'ledger', total: facts.effective.attack, steps };
 }
@@ -45,7 +46,7 @@ export function ledgerSpeed(facts: PipelineFacts): StatBreakdown {
     baseSpeed,
   );
 
-  const { note, split } = teamMultNote(facts.speedMult, facts.mods.speedMult);
+  const { note, split } = teamMultNote(facts.speedMult, facts.mods.speedMult, TEAM_BUFF_CAP.marcha_acelerada);
   pushMul(steps, 'abilitiesTeam', facts.speedMult, note, split);
   return { kind: 'ledger', total: facts.effective.speed, steps };
 }

@@ -320,36 +320,38 @@ describe('stat-breakdown builder', () => {
   });
 
   it('F5 — uncapped team: ownTeamSplit note', () => {
-    // Own Grito 10 (+10%, W3 perLevel 1) + team Grito 20 → attackMult 1.3
+    // Own Grito 5 (+5%, W3 perLevel 1) + team Grito 10 → attackMult 1.15, under Grito's 20 cap.
     const { facts } = buildFixture({
-      abilities: { grito_guerra: 10 },
-      teamBuffs: { ...zeroTeamBuffs(), grito_guerra: 20 },
+      abilities: { grito_guerra: 5 },
+      teamBuffs: { ...zeroTeamBuffs(), grito_guerra: 10 },
     });
-    expect(facts.attackMult).toBeCloseTo(1.3, 6);
+    expect(facts.attackMult).toBeCloseTo(1.15, 6);
     assertLedgersRecompose(facts);
     const atk = buildStatBreakdown('attack', facts);
     expect(atk.kind).toBe('ledger');
     if (atk.kind === 'ledger') {
       const step = atk.steps.find((s) => s.source === 'abilitiesTeam');
       expect(step?.note).toBe('ownTeamSplit');
-      expect(step?.splitOwn).toBeCloseTo(10, 5);
-      expect(step?.splitTeam).toBeCloseTo(20, 5);
+      expect(step?.splitOwn).toBeCloseTo(5, 5);
+      expect(step?.splitTeam).toBeCloseTo(10, 5);
     }
   });
 
   it('F6 — capped team: capped note; still recomposes', () => {
+    // Own Grito 10 (+10%) + team Grito 100 (+100%) would total 110% under the old global cap;
+    // the real cap is Grito's own maximum (20%, Fault 4).
     const { facts } = buildFixture({
       abilities: { grito_guerra: 10 },
       teamBuffs: { ...zeroTeamBuffs(), grito_guerra: 100 },
     });
-    expect(facts.attackMult).toBe(2);
+    expect(facts.attackMult).toBeCloseTo(1.2, 6);
     assertLedgersRecompose(facts);
     const atk = buildStatBreakdown('attack', facts);
     expect(atk.kind).toBe('ledger');
     if (atk.kind === 'ledger') {
       const step = atk.steps.find((s) => s.source === 'abilitiesTeam');
       expect(step?.note).toBe('capped');
-      expect(step?.amount).toBe(2);
+      expect(step?.amount).toBeCloseTo(1.2, 6);
     }
   });
 

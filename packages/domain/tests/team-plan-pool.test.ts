@@ -30,6 +30,7 @@ function heroCtx(level: number, slot?: string): HeroPlanContext {
     sheetOther: { speed: 0, critChance: 0, critDmgFlat: 0, penetration: 0, cdr: 0 },
     mods: {
       drainMult: 1,
+      ownTeamDrainPct: 0,
       combatCritChancePctOfBase: 0,
       penetrationPp: 0,
       rangeCells: 0,
