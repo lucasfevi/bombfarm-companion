@@ -96,6 +96,13 @@ function legacyHeroJson(overrides: {
 describe('critChance / CDR flat-bake migration', () => {
   beforeEach(() => {
     vi.stubGlobal('localStorage', memoryLocalStorage());
+    // This file tests `migrateCritChanceFlatBakeOnce` in isolation (the 2026-08-15 patch's
+    // migration). `loadHeroes()` also chains `migrateCritCdrRepoolBakeOnce` (the 2026-08-18
+    // revert's migration, issue #132), which would otherwise immediately re-bake the flat
+    // value this test just produced back to percent-of-base, on the same load — a real and
+    // CORRECT behavior for a genuinely legacy (pre-2026-08-15) record, but not what this file
+    // is about. Marking it pre-migrated keeps this file's numbers exactly what they document.
+    localStorage.setItem('bf-hp-critcdr-repool-migrated-v1', 'true');
   });
 
   afterEach(() => {
@@ -139,7 +146,7 @@ describe('critChance / CDR flat-bake migration', () => {
   it('a rank-0 record wearing a COOLDOWN roll still has its gearedOverride rebuilt', () => {
     const loadout = { ...emptySlots(), calca: PANTS_WITH_CDR };
     const gear = sumGearBonuses(loadout);
-    expect(gear.cdrFlatPct, 'fixture premise: these pants really do roll cooldown').toBeGreaterThan(0);
+    expect(gear.cdrPct, 'fixture premise: these pants really do roll cooldown').toBeGreaterThan(0);
 
     localStorage.setItem(
       'bf-hp-heroes-v1',
@@ -147,8 +154,9 @@ describe('critChance / CDR flat-bake migration', () => {
     );
 
     const heroes = loadHeroes();
-    // Rebuilt as `applyGear(naked, loadout, sheetOther)`: naked.cdr + the flat gear term.
-    expect(heroes[0].gearedOverride.cdr).toBeCloseTo(2.5 + gear.cdrFlatPct, 9);
+    // Rebuilt as `applyGear(naked, loadout, sheetOther)`: naked.cdr pooled with the gear term
+    // (issue #132 — percent-of-base again, not the flat add this test pinned pre-revert).
+    expect(heroes[0].gearedOverride.cdr).toBeCloseTo(2.5 * (1 + gear.cdrPct), 9);
     expect(heroes[0].gearedOverride.cdr).not.toBe(2.5);
     // naked is untouched — there is no cooldown ability to un-bake.
     expect(heroes[0].naked.cdr).toBe(2.5);
@@ -158,7 +166,7 @@ describe('critChance / CDR flat-bake migration', () => {
   it('a rank-0 record wearing a CRIT roll also has its gearedOverride rebuilt', () => {
     const loadout = { ...emptySlots(), anel: RING_WITH_CRIT };
     const gear = sumGearBonuses(loadout);
-    expect(gear.critFlatPct, 'fixture premise: this ring really does roll crit').toBeGreaterThan(0);
+    expect(gear.critPct, 'fixture premise: this ring really does roll crit').toBeGreaterThan(0);
 
     localStorage.setItem(
       'bf-hp-heroes-v1',
@@ -166,7 +174,7 @@ describe('critChance / CDR flat-bake migration', () => {
     );
 
     const heroes = loadHeroes();
-    expect(heroes[0].gearedOverride.critChance).toBeCloseTo(8 + gear.critFlatPct, 9);
+    expect(heroes[0].gearedOverride.critChance).toBeCloseTo(8 * (1 + gear.critPct), 9);
     expect(heroes[0].gearedOverride.critChance).not.toBe(8);
   });
 

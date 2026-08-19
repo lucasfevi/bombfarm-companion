@@ -29,6 +29,7 @@ const GUIDE_HIDDEN_KEY = 'bf_guide_hidden';
 const MIGRATION_MARKER_KEYS = [
   'bf-hp-critdmg-flat-migrated-v1',
   'bf-hp-critchance-flat-migrated-v1',
+  'bf-hp-critcdr-repool-migrated-v1',
 ] as const;
 
 export type SeededState = {

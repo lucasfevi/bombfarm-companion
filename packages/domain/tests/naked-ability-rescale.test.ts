@@ -25,20 +25,20 @@ describe('nakedAfterSheetAbilityChange (DEC-04, BSP-31a)', () => {
     const bellatrixCritChance = 9.51; // vs Raro's rarity midpoint (7) — a 36% error if reset.
     const custom: SheetStats = { ...naked(), critChance: bellatrixCritChance };
     const prevMods = abilityMods({});
-    const nextMods = abilityMods({ olho_clinico: 10 }); // 0.04574 pp/rank, flat, onSheet=true.
+    const nextMods = abilityMods({ olho_clinico: 10 }); // 4.285714285714286%/rank onSheet=true.
 
-    const result = nakedAfterSheetAbilityChange(custom, 'critChanceFlat', prevMods, nextMods);
+    const result = nakedAfterSheetAbilityChange(custom, 'critChancePctOfBase', prevMods, nextMods);
     const expected = rescaleNakedCritChance(
       custom,
-      prevMods.sheetCritChanceFlat,
-      nextMods.sheetCritChanceFlat,
+      prevMods.sheetCritChancePctOfBase / 100,
+      nextMods.sheetCritChancePctOfBase / 100,
     );
     expect(result.critChance).toBeCloseTo(expected.critChance, 10);
-    expect(result.critChance).toBeCloseTo(bellatrixCritChance + nextMods.sheetCritChanceFlat, 6);
+    expect(result.critChance).toBeCloseTo(bellatrixCritChance * (1 + nextMods.sheetCritChancePctOfBase / 100), 6);
 
     // The rescaleNakedCrit (rarity-midpoint) form disagrees — proving the dispatcher does NOT
     // call it.
-    const midpointForm = rescaleNakedCrit(custom, 'Raro', nextMods.sheetCritChanceFlat);
+    const midpointForm = rescaleNakedCrit(custom, 'Raro', nextMods.sheetCritChancePctOfBase / 100);
     expect(result.critChance).not.toBeCloseTo(midpointForm.critChance, 1);
   });
 

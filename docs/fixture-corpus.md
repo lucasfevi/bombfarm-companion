@@ -219,3 +219,41 @@ therefore asserts **total-match stability across the whole tracked tree**, faili
 direction — the operative part of MFR-15 AC-4 — rather than a narrower, permanently-red
 per-surface check. `validation.md`'s author must re-derive this number independently before
 reading the committed constant.
+
+## 9. The crit-chance/CDR shape reverted twice in five days (issue #132)
+
+The 2026-08-15 patch moved crit chance and cooldown reduction from percent-of-base to flat
+addends (commit `0418a82` / PR #102), and the 2026-08-18 patch — three days later — moved both
+back to percent-of-base, rescaling the item catalog's `crit`/`cooldown` bases by the same factor
+in the process. Today's model (percent-of-base, matching the shape this corpus originally
+documented before 2026-08-15) is a genuine round-trip in SHAPE but not in every MAGNITUDE: crit
+chance's per-point rate returned to its pre-2026-08-15 value (`0.02`), while cooldown's did not —
+it is `0.02` now, HALF the pre-2026-08-15 `0.1`. See `POINT_GAIN` in
+`packages/domain/src/model/rarity-constants.ts` for the full measurement and the wiki-mirror
+corroboration.
+
+**Retired as non-subjects of the level-budget invariant** (still committed, still read by the
+structural suites — see each file's own README row for what it may/may not prove):
+`save-20260816-5heroes-gear-cdr-crit.json`, `save-20260816-9heroes-redistrib.json`,
+`save-20260816-respec-cdr-crit.json` (already excluded, pre-redistribution) and
+`save-20260817-11heroes.json`. All four were captured inside the three-day flat-regime window (or
+before it), so none of them solve under today's percent-of-base model — the same "no single model
+reproduces both this file and the current game" reasoning §5 and §6 already apply to the
+pre-2026-08-15 captures.
+
+**Added, the new sheet-math anchor pair:**
+
+- **`save-20260818-12heroes.json`** — account 486, phase 51, 12 heroes, the first whole-roster
+  witness for the reverted percent-of-base shape (zero inference issues, every budget exactly on
+  `level`). Isolates the tree term (four item-free, ability-free heroes) and the `olho_clinico`
+  ability term (three rank-20 heroes, each landing on exactly 6/7 after tree + gear) separately.
+- **`save-20260819-respec-crit-cdr.json`** — the same account ~2 hours later, with Sora
+  respecced from 10 attack points into 5 crit chance + 5 cooldown. The per-point-rate witness:
+  no items, no crit/cooldown ability, so her whole move is the two stat-point terms, both
+  `+0.1` for 5 points — `0.02` per point for both stats.
+
+The flat-crit-cdr shape test (`packages/domain/tests/flat-crit-cdr-shape.test.ts` and its web
+twin) is inverted, not deleted: it now discriminates percent-of-base FROM flat, using the same
+matched-pair argument in reverse — identical gear/ability/tree inputs must produce EQUAL deltas
+under a flat model and PROPORTIONAL (to the birth roll) deltas under percent-of-base, and the
+2026-08-18 capture shows the latter.

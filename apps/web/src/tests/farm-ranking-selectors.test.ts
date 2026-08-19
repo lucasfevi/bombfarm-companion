@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { emptyLoadout } from '@bombfarm/domain/gear';
+import { zeroTeamBuffs } from '@bombfarm/domain/team-buffs';
 import { ZERO_PTS } from '@bombfarm/domain/planner-constants';
 import { gateFarmRespec, type FarmRespecResult } from '@bombfarm/domain/farm-optimize';
 import { normalizeHero, type AccountShared } from '@/shared/lib/storage';
@@ -234,9 +235,9 @@ describe('selectFarmRankingRows', () => {
       );
     });
 
-    it('teamBuffs', () => {
+    it('teamBuffsOverride', () => {
       expectRecompute(() =>
-        usePlannerStore.getState().setTeamBuffs({ ...usePlannerStore.getState().teamBuffs, grito_guerra: 3 }),
+        usePlannerStore.getState().setTeamBuffsOverride({ ...zeroTeamBuffs(), grito_guerra: 3 }),
       );
     });
 
@@ -404,11 +405,8 @@ function respecTupleMutators(): { name: string; mutate: () => void }[] {
         }),
     },
     {
-      name: 'teamBuffs',
-      mutate: () =>
-        usePlannerStore
-          .getState()
-          .setTeamBuffs({ ...usePlannerStore.getState().teamBuffs, grito_guerra: 3 }),
+      name: 'teamBuffsOverride',
+      mutate: () => usePlannerStore.getState().setTeamBuffsOverride({ ...zeroTeamBuffs(), grito_guerra: 3 }),
     },
     { name: 'houseIdx', mutate: () => usePlannerStore.getState().setHouseIdx(2) },
     { name: 'houseLevel', mutate: () => usePlannerStore.getState().setHouseLevel(4) },

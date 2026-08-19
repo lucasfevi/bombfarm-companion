@@ -48,7 +48,14 @@ describe('input-order independence', () => {
 
   it('reversing heroes[] and enabledHeroIds[] leaves recommendedPhase, gainPct and respecCostGold identical', () => {
     expect(backward.recommendedPhase).toBe(forward.recommendedPhase);
-    expect(backward.gainPct).toBe(forward.gainPct);
+    // gainPct is a ULP-level exception, not a semantic one: it is derived from a SUM over heroes
+    // (proposedObjective/currentObjective), and IEEE 754 addition is not associative, so summing
+    // the same hero contributions in a different order can move the last couple of bits. Every
+    // input to that sum is already proven order-independent above (each hero's own proposedPts
+    // is bit-identical forward vs backward) — this is float summation order, not the solver
+    // picking a different answer. Surfaced by issue #132's crit/cdr revert changing which digits
+    // the fixture's numbers carry; pre-existing in the summation, not introduced by the revert.
+    expect(backward.gainPct).toBeCloseTo(forward.gainPct, 9);
     expect(backward.respecCostGold).toBe(forward.respecCostGold);
   });
 });

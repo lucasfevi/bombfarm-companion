@@ -41,24 +41,16 @@ function otherFactor(percent: number): number {
   return 1 + Math.max(0, percent);
 }
 
-/**
- * Bake sheet-ability terms onto a sheet that ALREADY carries stars, matching `nakedFromBirth` /
- * `defaultNaked`: `speed` and `penetration` take a multiplicative pool factor, while crit chance,
- * crit damage and CDR take FLAT planner-pp addends applied AFTER the star factor.
- *
- * The star ordering is why this runs second (see `buildFixture`). Applying stars afterwards would
- * produce `(roll + flat) x star` where the model says `roll x star + flat` — a discrepancy that is
- * invisible at the fixtures' default ★0 and only bites a starred case.
- */
+/** Bake sheet-ability factors into a ★0 sample (matches defaultNaked order). */
 function bakeSheetOtherIntoNaked(n: SheetStats, o: SheetOtherPct): SheetStats {
   return {
     ...n,
     speed: n.speed * otherFactor(o.speed),
-    penetration: n.penetration * otherFactor(o.penetration),
-    // The three flat addends (POINT_GAIN.critChanceFlat / .critDmgFlat / .cdrFlat).
-    critChance: n.critChance + Math.max(0, o.critChanceFlat),
+    critChance: n.critChance * otherFactor(o.critChance),
+    // Flat addend, not a pool factor (POINT_GAIN.critDmgFlat).
     critDmg: n.critDmg + Math.max(0, o.critDmgFlat),
-    cdr: n.cdr + Math.max(0, o.cdrFlat),
+    penetration: n.penetration * otherFactor(o.penetration),
+    cdr: n.cdr * otherFactor(o.cdr),
   };
 }
 
@@ -104,14 +96,14 @@ function buildFixture(opts: FixtureOpts = {}) {
     opts.sheetOther ??
     ({
       ...emptySheetOther(),
-      critChanceFlat: mods.sheetCritChanceFlat,
+      critChance: mods.sheetCritChancePctOfBase / 100,
       penetration: mods.sheetPenetrationRaw,
       critDmgFlat: mods.sheetCritDmgFlat,
     } satisfies SheetOtherPct);
 
   const naked =
     opts.naked ??
-    bakeSheetOtherIntoNaked(bakeStarsIntoNaked(sampleNaked(), stars), sheetOther);
+    bakeStarsIntoNaked(bakeSheetOtherIntoNaked(sampleNaked(), sheetOther), stars);
   const pts = opts.pts ?? ZERO_PTS();
   const teamBuffs = { ...zeroTeamBuffs(), ...(opts.teamBuffs ?? {}) };
   const treeEnergy = opts.treeEnergy ?? 0;
@@ -138,7 +130,7 @@ function buildFixture(opts: FixtureOpts = {}) {
       attack: (naked.attack + 50) * treeDanoTotal,
       energy: (naked.energy + 40) * (1 + treeEnergy / 100),
       speed: poolBump(naked.speed, sheetOther.speed, treeSpeed),
-      critChance: naked.critChance + Math.max(0, sheetOther.critChanceFlat) + treeCritChance,
+      critChance: poolBump(naked.critChance, sheetOther.critChance, treeCritChance),
       critDmg: poolBump(naked.critDmg - Math.max(0, sheetOther.critDmgFlat), 0, treeCritDmg)
         + Math.max(0, sheetOther.critDmgFlat),
     } satisfies SheetStats);
@@ -177,9 +169,8 @@ function buildFixture(opts: FixtureOpts = {}) {
     energyMult: mults.energyMult,
     speedMult: mults.speedMult,
     critDmgMult: mults.critDmgMult,
-    teamCritChanceFlat: mults.teamCritChanceFlat,
+    teamCritPctOfBase: mults.teamCritPctOfBase,
     treeSheet,
-    combatCritChanceFlat: mods.combatCritChanceFlat,
     penetrationPp: mods.penetrationPp,
     context,
     dmgMult: mults.dmgMult,
@@ -204,7 +195,7 @@ function buildFixture(opts: FixtureOpts = {}) {
     energyMult: mults.energyMult,
     speedMult: mults.speedMult,
     critDmgMult: mults.critDmgMult,
-    teamCritChanceFlat: mults.teamCritChanceFlat,
+    teamCritPctOfBase: mults.teamCritPctOfBase,
     treeSpeed,
     treeCritChance,
     treeCritDmg,
@@ -323,37 +314,41 @@ describe('stat-breakdown builder', () => {
     }
   });
 
-  it('F5 — uncapped team: ownTeamSplit note', () => {
-    // Own Grito 10 (+10%, W3 perLevel 1) + team Grito 20 → attackMult 1.3
+  it('F5 — uncapped team: ownTeamSplit note (issue #132: own is always 0, the hero’s own rank never reaches abilityMods)', () => {
+    // Grito de Guerra is a team aura — a hero's own rank (5, here, to prove it is harmlessly
+    // ignored) never reaches abilityMods, so the roster-wide team total (10) alone drives
+    // attackMult 1.10, under Grito's 20 cap.
     const { facts } = buildFixture({
-      abilities: { grito_guerra: 10 },
-      teamBuffs: { ...zeroTeamBuffs(), grito_guerra: 20 },
+      abilities: { grito_guerra: 5 },
+      teamBuffs: { ...zeroTeamBuffs(), grito_guerra: 10 },
     });
-    expect(facts.attackMult).toBeCloseTo(1.3, 6);
+    expect(facts.attackMult).toBeCloseTo(1.1, 6);
     assertLedgersRecompose(facts);
     const atk = buildStatBreakdown('attack', facts);
     expect(atk.kind).toBe('ledger');
     if (atk.kind === 'ledger') {
       const step = atk.steps.find((s) => s.source === 'abilitiesTeam');
       expect(step?.note).toBe('ownTeamSplit');
-      expect(step?.splitOwn).toBeCloseTo(10, 5);
-      expect(step?.splitTeam).toBeCloseTo(20, 5);
+      expect(step?.splitOwn).toBeCloseTo(0, 5);
+      expect(step?.splitTeam).toBeCloseTo(10, 5);
     }
   });
 
   it('F6 — capped team: capped note; still recomposes', () => {
+    // Own Grito 10 (+10%) + team Grito 100 (+100%) would total 110% under the old global cap;
+    // the real cap is Grito's own maximum (20%, Fault 4).
     const { facts } = buildFixture({
       abilities: { grito_guerra: 10 },
       teamBuffs: { ...zeroTeamBuffs(), grito_guerra: 100 },
     });
-    expect(facts.attackMult).toBe(2);
+    expect(facts.attackMult).toBeCloseTo(1.2, 6);
     assertLedgersRecompose(facts);
     const atk = buildStatBreakdown('attack', facts);
     expect(atk.kind).toBe('ledger');
     if (atk.kind === 'ledger') {
       const step = atk.steps.find((s) => s.source === 'abilitiesTeam');
       expect(step?.note).toBe('capped');
-      expect(step?.amount).toBe(2);
+      expect(step?.amount).toBeCloseTo(1.2, 6);
     }
   });
 
@@ -398,14 +393,12 @@ describe('stat-breakdown builder', () => {
     const crit = buildStatBreakdown('critChance', facts);
     expect(crit.kind).toBe('ledger');
     if (crit.kind === 'ledger') {
-      // 'gear' now appears because the crit-chance gear term is a flat ADD rather than a
-      // percent-of-base step, and the fixture's geared sheet carries one.
-      expect(crit.steps.map((s) => s.source)).toEqual(['base', 'stars', 'sheetAbilities', 'gear']);
+      expect(crit.steps.map((s) => s.source)).toEqual(['base', 'stars', 'sheetAbilities']);
       const sheet = crit.steps.find((s) => s.source === 'sheetAbilities');
       expect(sheet?.note).toBe('keenEye');
-      expect(sheet?.op).toBe('+');
-      // olho_clinico @10 is a FLAT addend since the 2026-08-15 patch: 10 x 0.04574 pp.
-      expect(sheet?.amount).toBeCloseTo(0.4574, 6);
+      // olho_clinico @10, post-2026-08-18-revert perLevel 4.285714285714286 -> +42.857% (was
+      // +7.5% pre-2026-08-15, and a FLAT +0.4574 pp during the 2026-08-15..08-18 flat regime).
+      expect(sheet?.amount).toBeCloseTo(1.4285714285714286, 6);
     }
 
     const pen = buildStatBreakdown('penetration', facts);
@@ -478,8 +471,8 @@ describe('stat-breakdown builder', () => {
     expect(crit.kind).toBe('ledger');
     if (crit.kind === 'ledger') {
       const tree = crit.steps.find((s) => s.source === 'tree' && s.op === '+');
-      // Flat since the 2026-08-15 patch — the tree crit-chance step carries no pctOfBase.
-      expect(tree?.pctOfBase).toBeUndefined();
+      expect(tree?.pctOfBase?.percent).toBeCloseTo(6, 6);
+      expect(tree?.pctOfBase?.base).toBeCloseTo(facts.naked.critChance / (1 + facts.sheetOther.critChance), 6);
       const treeIndex = crit.steps.findIndex((s) => s.source === 'tree');
       const combatIndex = crit.steps.findIndex((s) => s.source === 'abilities' || s.source === 'team');
       expect(treeIndex).toBeGreaterThanOrEqual(0);

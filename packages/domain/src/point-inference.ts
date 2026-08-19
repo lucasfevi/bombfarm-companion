@@ -57,6 +57,7 @@ export function inferSpentPoints(input: InferSpentPointsInput): PointInferenceRe
 
   const naked = nakedFromBirth(birth, level, stars, sheetOther);
   const baseSpeed = naked.speed / poolFactor(sheetOther.speed);
+  const baseCritChance = naked.critChance / poolFactor(sheetOther.critChance);
   // Flat sheet-ability addend, so the pre-ability roll is recovered by subtraction, not
   // division (POINT_GAIN.critDmgFlat).
   const baseCritDmg = naked.critDmg - Math.max(0, sheetOther.critDmgFlat);
@@ -66,7 +67,7 @@ export function inferSpentPoints(input: InferSpentPointsInput): PointInferenceRe
     attack: sheet.attack / tree.danoStatic,
     energy: sheet.energy / (1 + tree.energyPct / 100),
     speed: sheet.speed - baseSpeed * (tree.speedPct / 100),
-    critChance: sheet.critChance - tree.critChancePct,
+    critChance: sheet.critChance - baseCritChance * (tree.critChancePct / 100),
     critDmg: sheet.critDmg - baseCritDmg * (tree.critDmgPct / 100),
     penetration: sheet.penetration,
     cdr: sheet.cdr,
@@ -90,11 +91,16 @@ export function inferSpentPoints(input: InferSpentPointsInput): PointInferenceRe
     attack: (pool.attack - composeAttack(naked.attack, bonuses)) / atkPt,
     energy: (pool.energy / gem - naked.energy) / (POINT_GAIN.energyNative * star),
     speed: solveShared(pool.speed, naked.speed, bonuses.speedPct, sheetOther.speed, POINT_GAIN.speedPctOfBase),
-    // Not `solveShared`: crit chance, crit damage and CDR all left the shared pool once
-    // measured — sheet ability, gear and point are flat addends, so the point count is a plain
-    // division of the residual after peeling gear (which crit damage has none of: items never
-    // roll it).
-    critChance: (pool.critChance - naked.critChance - bonuses.critFlatPct) / POINT_GAIN.critChanceFlat,
+    critChance: solveShared(
+      pool.critChance,
+      naked.critChance,
+      bonuses.critPct,
+      sheetOther.critChance,
+      POINT_GAIN.critChancePctOfBase,
+    ),
+    // Not `solveShared`: crit damage never joined the shared pool once measured — the sheet
+    // ability and the point are both flat addends, so the point count is a plain division of
+    // the residual. Items never roll crit damage, so there is no gear term to peel either.
     critDmg: (pool.critDmg - naked.critDmg) / POINT_GAIN.critDmgFlat,
     penetration: solveShared(
       pool.penetration,
@@ -103,7 +109,7 @@ export function inferSpentPoints(input: InferSpentPointsInput): PointInferenceRe
       sheetOther.penetration,
       POINT_GAIN.penetrationPctOfBase,
     ),
-    cdr: (pool.cdr - naked.cdr - bonuses.cdrFlatPct) / POINT_GAIN.cdrFlat,
+    cdr: solveShared(pool.cdr, naked.cdr, bonuses.cdrPct, sheetOther.cdr, POINT_GAIN.cdrPctOfBase),
     luck: solveShared(pool.luck, naked.luck, bonuses.luckPct, 0, POINT_GAIN.luckPctOfBase),
   };
 

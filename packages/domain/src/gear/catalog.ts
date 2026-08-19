@@ -70,14 +70,24 @@ export function scaledValores(defId: string, rarityIdx: number, level: number, u
 }
 
 /**
- * Catalog `crit` / `cooldown` rolls are stored as save-side fractions (the wiki's own units,
- * e.g. `0.00112704`), but both stats are flat ADDENDS on a planner sheet that counts percentage
- * points. This is the one conversion between the two, applied on the way into
- * {@link GearBonuses.critFlatPct} / {@link GearBonuses.cdrFlatPct}. The pooled stats
- * (speed / pen / luck / energia) stay dimensionless fractions and take no conversion.
+ * `catalog.json`'s `statBase.crit` / `statBase.cooldown` (and every def's stored `crit` /
+ * `cooldown` `valor`) carry the 2026-08-18 rescale: `0.00112704` → `0.00644023` and
+ * `0.00098361` → `0.00936771` — the ROUNDED values, not the raw `×40/7` / `×200/21` fractions
+ * (`0.006440228571428571` / `0.009367714285714285`), because the game's own save exports store
+ * the rounded figures verbatim: every crit/cooldown item stat's pre-forja `value` field across
+ * both committed post-2026-08-18 captures (`save-20260818-12heroes.json`,
+ * `save-20260819-respec-crit-cdr.json`) matches `statBase × nivelMult[nativeLevel]` at this
+ * rounded base to zero residual — a level-20 item reads 0.01288046 crit, a level-30 item reads
+ * 0.02810313 cooldown, and so on for every native level present, with no exception. No other
+ * `statBase` value differs anywhere in those items: dmg 19.25, energia 0.035, velocidade
+ * 0.00077, sorte 0.0308, penetracao 0.14 all still match.
+ *
+ * This landed in the SAME patch as the crit-chance/CDR shape change, not a separate one: a
+ * capture taken before the 2026-08-18 patch (see `docs/fixture-corpus.md`'s non-subject list)
+ * still carries the old `0.00112704` / `0.00098361` values and their multiples. The catalog
+ * rescale and the shape revert are one same-day boundary and cannot be usefully split into two
+ * commits that each make sense on their own.
  */
-const FRACTION_TO_PLANNER_PCT = 100;
-
 export function sumGearBonuses(loadout: Loadout): GearBonuses {
   const totals: GearBonuses = {
     dmgFlat: 0,
@@ -85,9 +95,9 @@ export function sumGearBonuses(loadout: Loadout): GearBonuses {
     energyPct: 0,
     speedPct: 0,
     luckPct: 0,
-    critFlatPct: 0,
+    critPct: 0,
     penPct: 0,
-    cdrFlatPct: 0,
+    cdrPct: 0,
   };
   for (const slot of SLOTS) {
     const equipped = loadout[slot];
@@ -108,13 +118,13 @@ export function sumGearBonuses(loadout: Loadout): GearBonuses {
           totals.luckPct += valor;
           break;
         case 'crit':
-          totals.critFlatPct += valor * FRACTION_TO_PLANNER_PCT;
+          totals.critPct += valor;
           break;
         case 'penetracao':
           totals.penPct += valor;
           break;
         case 'cooldown':
-          totals.cdrFlatPct += valor * FRACTION_TO_PLANNER_PCT;
+          totals.cdrPct += valor;
           break;
       }
     }
@@ -157,9 +167,9 @@ export function gearBonusDeltas(current: GearBonuses, alt: GearBonuses): GearBon
     energyPct: alt.energyPct - current.energyPct,
     speedPct: alt.speedPct - current.speedPct,
     luckPct: alt.luckPct - current.luckPct,
-    critFlatPct: alt.critFlatPct - current.critFlatPct,
+    critPct: alt.critPct - current.critPct,
     penPct: alt.penPct - current.penPct,
-    cdrFlatPct: alt.cdrFlatPct - current.cdrFlatPct,
+    cdrPct: alt.cdrPct - current.cdrPct,
   };
 }
 
@@ -169,7 +179,7 @@ export function itemValores(item: EquippedItem): ScaledValor[] {
 }
 
 export function emptySheetOther(): SheetOtherPct {
-  return { speed: 0, critChanceFlat: 0, critDmgFlat: 0, penetration: 0, cdrFlat: 0 };
+  return { speed: 0, critChance: 0, critDmgFlat: 0, penetration: 0, cdr: 0 };
 }
 
 /**

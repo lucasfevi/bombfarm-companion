@@ -94,6 +94,11 @@ that file lands later in this feature — expected, not a defect of this manifes
 | May prove | **the ITEM half of the flat crit-chance/CDR shape, which no earlier capture isolates.** Every hero here wears gear rolling `crit` and/or `cooldown`, and every hero's `cooldown_reduction` delta equals the plain SUM of its items' `effective` cooldown values to ≤3e-18 — with no base-roll factor anywhere. The knockout is the two matched pairs: Bellatrix and Jon carry identical gear + `olho_clinico` 20 across birth rolls 74% apart (0.0508 vs 0.0883) and move by the **identical** 0.014785640125; Minato and Doran carry two crit rings each across rolls 55% apart and move by the identical 0.007485985725. Percent-of-base predicts deltas in the ratio of the bases and is off by ~100% of the delta on all five. Bram adds the corpus's cleanest tree witness — zero items, no crit ability, so his whole crit delta *is* `crit_chance_add`. Also a whole-roster round trip with zero inference issues, every point budget landing exactly on `level` |
 | May **not** prove | the per-POINT rates — all five heroes spend zero crit-chance and zero CDR points, so `POINT_GAIN.critChanceFlat` / `.cdrFlat` still rest on `save-20260816-respec-cdr-crit.json` alone. Also: star scaling of any flat term (every hero is ★0); nv30+ item scaling (only nv10/nv20 gear); heroes above L100; crit DAMAGE (`crit_dmg_add` is 0 and only Doran owns `golpe_brutal`) |
 
+**NON-SUBJECT as of the 2026-08-18 patch** (issue #132) — same reasoning as
+`save-20260816-9heroes-redistrib.json` above: flat-regime crit chance/CDR, excluded from
+`points-within-level-budget.test.ts`'s level-budget invariant, still committed for structural
+coverage.
+
 ## `save-20260817-11heroes.json`
 
 | Field | Value |
@@ -107,3 +112,39 @@ that file lands later in this feature — expected, not a defect of this manifes
 | SHA-256 (committed file) | `882168841a16fefc66dceb2fdd68bfb9f03e0739f9cd150d329fb7ac93ada6bb` |
 | May prove | whole-roster round trip with zero inference issues on all 11 heroes, every point budget landing exactly on `level` (verified directly against `inferSpentPoints`/`composeSheetFromBirth`, not assumed); the largest simultaneous naked cluster in the corpus (six heroes, L2–L10, zero items each) for roster-list and bulk-zero-equipped assertions; a second, more targeted partial-gear witness alongside `save-20260813-5heroes.json`'s Jon 4/8 — Bram 7/8 is missing exactly one slot (pants); the item catalog matches the current post-redistribution shapes already established in `save-20260816-9heroes-redistrib.json` (same `def_id` → `stats` mapping, checked directly), so this file is a valid subject for any corpus-wide sweep over that catalog; item-upgrade variety (`{0, 8}`) and gear-rarity variety (`{0, 1, 2}`) for forge assertions; Doran's `golpe_brutal` 20 reproduces the flat crit-damage pin (`+0.8` exactly) already measured elsewhere, corroborating rather than newly establishing it |
 | May **not** prove | star scaling of any flat term (every hero is ★0); before/after point deltas (`stat_points_available` is `0` on every hero — the same limitation `save-20260813-5heroes.json`'s entry records); an ability-toggle pair or a gear-swap pair (single snapshot); the per-POINT crit-chance/CDR rates (no hero here spends a point on either — that still rests on `save-20260816-respec-cdr-crit.json` alone); a NEW item-catalog witness (the gear shapes are identical to the already-committed post-redistribution catalog, not a fresh measurement); the duplicate-hero-name a11y case (all 11 names are distinct); heroes above L100; high-phase mitigation beyond this capture's own ceiling (`max_phase` caps at 62) |
+
+**NON-SUBJECT as of the 2026-08-18 patch** (issue #132): this file's crit chance and cooldown
+are flat addends (`save-20260816-9heroes-redistrib.json`'s captured regime), and the 2026-08-18
+patch reverted both to percent-of-base with a rescaled item catalog. No single model reproduces
+this file and the current game, so it is excluded from `points-within-level-budget.test.ts`'s
+level-budget invariant — same treatment as the pre-2026-08-15 captures above. Still committed and
+still read by the structural suites for hero/gear/inventory shapes, which the crit/CDR regime
+does not touch.
+
+## `save-20260818-12heroes.json`
+
+| Field | Value |
+| --- | --- |
+| Source capture | live save export, captured externally from the game client |
+| Capture date | 2026-08-18 |
+| Account | 486, `phase: 51`, `max_phase: 62` — 12 heroes: Minato L67 (8/8 geared), Jon L69 (8/8), Bellatrix L64 (8/8), Doran L55 (8/8), WB #2 L40, WB #1 L43, Manco #1 L41 (8/8), Isolde L26, Sora L10, Joric L10, Aric L2, Eryn L2 (the last six naked) |
+| Capture log entry | *Crit-chance/CDR revert re-baseline*, 2026-08-18 row (tracked externally to this repo) |
+| Scrub | `account.account_id`, `account.player_name` removed — nothing else changed |
+| SHA-256 (unscrubbed source) | `9abdd8166565d1440ade253b9ce055501124fdcd7016116e4f71a8e75de510aa` |
+| SHA-256 (committed file) | `ebbcbea10adadf406c631ba1202f5e90c07899ddae56469079d5ee8d171cfe6a` |
+| May prove | **the post-2026-08-18-patch sheet math end to end** — whole-roster round trip with zero inference issues on all 12 heroes, every point budget landing exactly on `level`. The percent-of-base crit-chance shape isolated two ways: four item-free, ability-free heroes (Sora, Joric, Aric, Eryn) whose whole sheet-minus-birth move is the tree term alone (`crit_chance_add = 0.03093301657` as a fraction, not a flat pp addend), and three `olho_clinico` rank-20 witnesses (Minato, Jon, Manco #1) who each leave a residual of exactly `0.857142857142857` (= 6/7) after tree + gear. The rescaled item catalog's `crit`/`cooldown` bases (`0.00644023` / `0.00936771`), confirmed against every equipped item's raw pre-forja `value` field with zero mismatches. Also the anchor for `farm-rate-486-anchor.test.ts`'s phase-26 row and the `farm-basis-parity` re-capture |
+| May **not** prove | the per-POINT crit-chance/CDR rates or their split (see `save-20260819-respec-crit-cdr.json`); star scaling of any percent-of-base term (every hero is ★0); crit DAMAGE post-revert (`crit_dmg_add` is 0 and no hero owns `golpe_brutal`); `pressagio_mortal` (no hero owns it — see the abilities.ts comment) |
+
+## `save-20260819-respec-crit-cdr.json`
+
+| Field | Value |
+| --- | --- |
+| Source capture | live save export, captured externally from the game client — the same account ~2 hours after `save-20260818-12heroes.json` |
+| Capture date | 2026-08-19 |
+| Account | 486, `phase: 51`, `max_phase: 62` — the same 12 heroes, with **Sora L10 respecced from 10 attack points into 5 crit chance + 5 cooldown** |
+| Capture log entry | *Crit-chance/CDR revert re-baseline*, 2026-08-19 row (tracked externally to this repo) |
+| Scrub | `account.account_id`, `account.player_name` removed — nothing else changed |
+| SHA-256 (unscrubbed source) | `11835d1e14610a622000f6c742cac315f819a149d410bd4e8fdebe6471444319` |
+| SHA-256 (committed file) | `e8b8bc03d4615329fd66c2c40f2c3f95ba05b864623006e745f4fb9ae58c1716` |
+| May prove | **the per-POINT crit-chance and CDR rates, and their split** — Sora owns no items and no crit/cooldown ability, so her entire sheet move between the two files is the stat-point term alone: her crit multiplier moves `1.0309330166 → 1.1309330166` and her cooldown multiplier `1.0000000000 → 1.1000000000` on exactly 10 moved points, both by exactly `+0.1`. Every other stat (attack, energy, speed, luck, penetration, crit damage) solves to zero points for her, so the 10 are provably all crit chance + cooldown. Combined with the external crit-chance anchor (0.02, corroborated by the wiki mirror's `ponto_inc` table), this pins the split at 5 + 5 and both rates at `0.02` each |
+| May **not** prove | anything the sibling export cannot — it is the same account ~2 hours later. In particular the respec touched one ★0 hero, so star scaling of the point term stays unobserved |

@@ -13,9 +13,9 @@ const current: GearBonuses = {
   energyPct: 0.1,
   speedPct: 0.2,
   luckPct: 0.05,
-  critFlatPct: 0.15,
+  critPct: 0.15,
   penPct: 0.03,
-  cdrFlatPct: 0.08,
+  cdrPct: 0.08,
 };
 
 const clone: GearBonuses = {
@@ -24,9 +24,9 @@ const clone: GearBonuses = {
   energyPct: 0.2,
   speedPct: 0.1,
   luckPct: 0.05,
-  critFlatPct: 0.25,
+  critPct: 0.25,
   penPct: 0.01,
-  cdrFlatPct: 0.08,
+  cdrPct: 0.08,
 };
 
 describe('gearBonusRows', () => {
@@ -38,14 +38,14 @@ describe('gearBonusRows', () => {
       'energyPct',
       'speedPct',
       'luckPct',
-      'critFlatPct',
+      'critPct',
       'penPct',
-      'cdrFlatPct',
+      'cdrPct',
     ]);
     expect(rows.every((r) => r.clone === undefined && r.delta === undefined)).toBe(true);
   });
 
-  it('scales pool-fraction keys to their display value (×100) but leaves dmgFlat raw', () => {
+  it('scales percentage keys to their display value (×100) but leaves dmgFlat raw', () => {
     const rows = gearBonusRows(current, t);
     const dmg = rows.find((r) => r.key === 'dmgFlat')!;
     const energy = rows.find((r) => r.key === 'energyPct')!;
@@ -53,22 +53,6 @@ describe('gearBonusRows', () => {
     expect(dmg.percent).toBe(false);
     expect(energy.current).toBe(10); // 0.1 * 100
     expect(energy.percent).toBe(true);
-  });
-
-  // The regression the flat-crit change introduced and this pins: `critFlatPct` / `cdrFlatPct`
-  // are ALREADY planner percentage points (`sumGearBonuses` converts once, on the way in), so
-  // they carry the `%` suffix but must not be scaled a second time. A real nv300 crit roll of
-  // ~7.4pp rendered as "+744.0%" before this was separated from the suffix flag.
-  it('does NOT rescale the flat crit/CDR keys — they are already in display units', () => {
-    const rows = gearBonusRows(current, t, clone);
-    const crit = rows.find((r) => r.key === 'critFlatPct')!;
-    const cdr = rows.find((r) => r.key === 'cdrFlatPct')!;
-    expect(crit.current).toBe(0.15);
-    expect(crit.clone).toBe(0.25);
-    expect(crit.delta).toBeCloseTo(0.1, 12);
-    expect(crit.percent).toBe(true);
-    expect(cdr.current).toBe(0.08);
-    expect(cdr.delta).toBe(0);
   });
 
   it('computes clone value and delta (in display units) when a clone is supplied', () => {
@@ -84,7 +68,7 @@ describe('gearBonusRows', () => {
   it('uses the localized slotStatFullLabels for each row label', () => {
     const rows = gearBonusRows(current, t);
     expect(rows.find((r) => r.key === 'dmgFlat')!.label).toBe(t.slotStatFullLabels.dmg);
-    expect(rows.find((r) => r.key === 'critFlatPct')!.label).toBe(t.slotStatFullLabels.crit);
+    expect(rows.find((r) => r.key === 'critPct')!.label).toBe(t.slotStatFullLabels.crit);
   });
 });
 

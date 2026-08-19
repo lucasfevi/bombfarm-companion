@@ -100,19 +100,23 @@ export function budgetOf(pts: Record<SheetKey, number>): number {
  * than the budget it was given, so feeding a result back yields `budgetOf(pts) <= previous
  * budget` and the sequence is non-increasing, settling immediately rather than growing.
  *
- * **Not clamped to `level`, deliberately** (reviewed at the flat-crit-damage fix). The floor makes
- * this function AMPLIFY a bad `pts`: while Golpe Brutal was modelled as percent-of-base,
- * inference recovered 50 points for Ivo at L38 and this returned 50, so the advisor would have
- * proposed a build the hero cannot hold. Clamping here looks like the fix and is not — it would
- * silence the symptom while leaving the advisor quietly unable to reallocate the points an
- * over-spent hero genuinely holds (the second bullet above), which is a real, reachable state.
- * The defect was upstream, in `inferSpentPoints`; `tests/points-within-level-budget.test.ts` now
- * asserts `Σ pts ≤ level` over every committed capture, which catches the bad vector where it is
- * produced rather than where it is consumed. If a `pts` that exceeds `level` ever reaches here
- * again, that test is the one that should go red first.
+ * **CLAMPED to `level`, no matter what** (reversed from the earlier "not clamped, deliberately"
+ * stance reviewed at the flat-crit-damage fix). The floor above is still real — an over-spent
+ * hero really does hold those points — but leaving the result un-clamped let a single bad
+ * `pts` (from `inferSpentPoints` or anywhere else upstream) turn into a proposal the hero cannot
+ * actually hold, and the advisor cannot tell the difference between "this budget is real" and
+ * "this budget is a bug" once it has a number in hand. Concretely, on a level-69 hero the
+ * un-clamped floor produced a 210-point respec budget; the advisor sold a +18.9% gold/hr
+ * proposal for 429,000 gold, of which the achievable gain was 0% — 101% of the advertised gain
+ * was phantom, because the search had ~3× the points the hero can ever hold. Clamping here does
+ * not remove the need to fix an upstream bug that overshoots `level` —
+ * `tests/points-within-level-budget.test.ts` still asserts `Σ pts ≤ level` over every committed
+ * capture and is still the guard that should go red first if `inferSpentPoints` regresses — but
+ * it does mean this function can no longer amplify that bug into a proposal, which is worth more
+ * than the theoretical case for staying unclamped.
  */
 export function reoptBudget(pts: Record<SheetKey, number>, level: number): number {
-  return Math.max(0, level - pts.luck, budgetOf(pts));
+  return Math.max(0, Math.min(level, Math.max(level - pts.luck, budgetOf(pts))));
 }
 
 export type GreedyWalkResult = {

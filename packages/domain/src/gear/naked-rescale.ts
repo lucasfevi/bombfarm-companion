@@ -29,11 +29,11 @@ export function defaultNaked(
     attack: base.attack * levelPowerMult(level) * mult,
     energy: base.energy * mult,
     speed: base.speed * (1 + otherClamped(other.speed)),
-    // Flat sheet-ability addends, applied after the star factor — matches `nakedFromBirth`.
-    critChance: base.critChance * mult + otherClamped(other.critChanceFlat),
+    critChance: base.critChance * (1 + otherClamped(other.critChance)) * mult,
+    // Flat sheet-ability addend, applied after the star factor — matches `nakedFromBirth`.
     critDmg: base.critDmg * mult + otherClamped(other.critDmgFlat),
     penetration: base.penetration * (1 + otherClamped(other.penetration)) * mult,
-    cdr: base.cdr * mult + otherClamped(other.cdrFlat),
+    cdr: base.cdr * (1 + otherClamped(other.cdr)) * mult,
     // AD-BSP-19: star-scaled, no `other` term (ASM-02) and level-independent (ASM-04).
     luck: base.luck * mult,
   };
@@ -84,20 +84,20 @@ export function rescaleNakedCritDmg(
 }
 
 /**
- * Spending/removing a sheet crit-chance ability (Olho Clínico) swaps its FLAT addend on the
- * naked sheet, exactly like `rescaleNakedCritDmg` — the hero's own roll is preserved by
- * subtracting the old contribution and adding the new one. Was a multiplicative other-ratio
- * until the 2026-08-15 patch made crit chance additive (`POINT_GAIN.critChanceFlat`).
+ * Spending/removing a sheet crit-chance ability (Olho Clínico) rescales naked crit % by the
+ * other-ratio — the hero's own roll is preserved, matching `rescaleNakedPen` /
+ * `rescaleNakedCritDmg` (BSPW4-07, AC-44).
  */
 export function rescaleNakedCritChance(
   naked: SheetStats,
-  oldFlat: number,
-  newFlat: number,
+  oldOtherPct: number,
+  newOtherPct: number,
 ): SheetStats {
-  const oldF = Math.max(0, oldFlat);
-  const newF = Math.max(0, newFlat);
-  if (oldF === newF) return naked;
-  return { ...naked, critChance: naked.critChance - oldF + newF };
+  const oldO = Math.max(0, oldOtherPct);
+  const newO = Math.max(0, newOtherPct);
+  if (oldO === newO) return naked;
+  const ratio = (1 + newO) / (1 + oldO);
+  return { ...naked, critChance: naked.critChance * ratio };
 }
 
 /**
@@ -114,8 +114,12 @@ export function nakedAfterSheetAbilityChange(
   nextMods: AbilityMods,
 ): SheetStats {
   switch (kind) {
-    case 'critChanceFlat':
-      return rescaleNakedCritChance(naked, prevMods.sheetCritChanceFlat, nextMods.sheetCritChanceFlat);
+    case 'critChancePctOfBase':
+      return rescaleNakedCritChance(
+        naked,
+        prevMods.sheetCritChancePctOfBase / 100,
+        nextMods.sheetCritChancePctOfBase / 100,
+      );
     case 'penetrationPp':
       return rescaleNakedPen(naked, prevMods.sheetPenetrationRaw, nextMods.sheetPenetrationRaw);
     case 'critDmgFlat':
@@ -148,10 +152,7 @@ export function rescaleNakedCrit(
 ): SheetStats {
   return {
     ...naked,
-    // `otherCrit` is a FLAT planner-pp addend since the 2026-08-15 patch, added after the star
-    // factor — same shape as `nakedFromBirth`. The rarity-midpoint reset (which is what makes
-    // this function lossy) is unchanged.
-    critChance: BASE_ROLLS[rarity].critChance * starsMult(stars) + Math.max(0, otherCrit),
+    critChance: BASE_ROLLS[rarity].critChance * (1 + Math.max(0, otherCrit)) * starsMult(stars),
   };
 }
 

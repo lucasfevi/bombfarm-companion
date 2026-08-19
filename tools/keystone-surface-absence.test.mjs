@@ -124,7 +124,7 @@ const ALLOWLIST = [
   { file: 'apps/web/e2e/account-panel.spec.ts', count: 8, owner: 'F3 MSC-01 DOM absence proof' },
   { file: 'apps/web/src/tests/account-slice.test.ts', count: 3, owner: 'F3 MSC-03 runtime absence proof' },
   { file: 'apps/web/src/tests/advisor-selectors.test.ts', count: 1, owner: 'F3 dep-tuple-length test title' },
-  { file: 'apps/web/src/tests/derive.test.ts', count: 3, owner: 'F3 AC-29 compile-guard + explanatory comments' },
+  { file: 'apps/web/src/tests/derive.test.ts', count: 2, owner: 'F3 AC-29 compile-guard + explanatory comments' },
   { file: 'apps/web/src/tests/ds-panel-field.test.ts', count: 5, owner: 'F3 MSC-18 recipe absence proof' },
   // Re-measured for the 2026-08-17 fixture re-baseline: i18n-keystone-absence.test.ts now
   // holds KEYSTONE_KEYS_REMOVED's 12 literal keys directly (9 -> 15) instead of importing them
@@ -183,19 +183,25 @@ const CRIT_DMG_MULT_MAP = {
   // `houseCycleSecsHouseIdx`/`houseCycleSecsLevel`, with their doc comment, above this line too.
   // +9 more (line number only): the XP-multiplier feature added `TreeState.xpMult`, with its
   // doc comment, above this line too. Match itself is unchanged in count and in kind.
-  'apps/web/src/shared/lib/account-shared.ts': [144],
+  // +19 more (line number only): issue #132's derived-vs-override team-buffs split added the
+  // deprecation doc comment on `teamBuffs`, the new `teamBuffsOverride` field with its own doc
+  // comment, and the `normalizeTeamBuffsOverride` migration helper with its doc comment, all
+  // above this line. Match itself is unchanged in count and in kind.
+  'apps/web/src/shared/lib/account-shared.ts': [163],
   'apps/web/src/shared/lib/stale-account.ts': [20],
   'apps/web/src/tests/advisor-pipeline.test.ts': [85],
   'apps/web/src/tests/derive.test.ts': [
-    75, 77, 158, 186, 225, 256, 281, 321, 335, 388, 428, 465, 512, 549,
+    71, 73, 134, 162, 200, 230, 254, 293, 307, 359, 398, 434, 480, 512,
   ],
   'apps/web/src/tests/fixture-corpus.test.ts': [23, 65],
   'apps/web/src/tests/fixtures/sheet-math/README.md': [6],
   'apps/web/src/tests/fixtures/storage-roundtrip-20260729.json': [3],
-  'apps/web/src/tests/points-reopt.test.ts': [107, 491],
+  'apps/web/src/tests/points-reopt.test.ts': [107, 490],
   'apps/web/src/tests/stale-account-drop.test.ts': [31, 72, 73, 78, 89],
-  'apps/web/src/tests/stat-breakdown.test.ts': [133, 183, 210],
-  'apps/web/src/tests/storage-legacy-keystone-fields.test.ts': [40, 109],
+  'apps/web/src/tests/stat-breakdown.test.ts': [125, 175, 201],
+  // +1 (line number only): issue #132's rewrite of the "existing empty state" comment above line
+  // 109 added a net one line. Match itself is unchanged in count and in kind.
+  'apps/web/src/tests/storage-legacy-keystone-fields.test.ts': [40, 110],
   'apps/web/src/tests/storage-stat-points-available-compat.test.ts': [104],
   'tools/fixture-corpus-parity.test.mjs': [117, 169],
   // Self-map. The last four shifted +3 (line numbers only) when the account-shared entry above
@@ -209,7 +215,9 @@ const CRIT_DMG_MULT_MAP = {
   // (clause-A allowlist entries and this self-map entry itself). Count and kind unchanged.
   // +2 more (line numbers only) from the XP-multiplier feature's account-shared.ts entry above
   // gaining its two-line explanation. Count and kind unchanged.
-  'tools/keystone-surface-absence.test.mjs': [13, 156, 159, 255, 260, 270, 279],
+  // +4 more (line numbers only) from issue #132's account-shared.ts entry and the legacy-drop
+  // suite entry just above, +2 lines each. Count and kind unchanged.
+  'tools/keystone-surface-absence.test.mjs': [13, 156, 159, 263, 268, 278, 287],
   'tools/save-acceptance-guards.test.mjs': [53],
 };
 

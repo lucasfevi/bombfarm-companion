@@ -68,7 +68,25 @@ export type HeroContext = {
 /** Shared across every hero on this browser (tree, team buffs, farming context). */
 export type AccountShared = {
   tree: TreeState;
+  /**
+   * @deprecated superseded by {@link teamBuffsOverride} (issue #132) — the roster-wide total is
+   * now DERIVED from the deployed roster by default, not stored here. Kept, and still written
+   * on save, only so an old app build reading a fresh file sees SOMETHING plausible (the current
+   * override, or `{}` when there is none) instead of a missing field; no current code reads it
+   * for the override decision.
+   */
   teamBuffs: Record<string, number>;
+  /**
+   * The user's explicit team-buffs OVERRIDE — `null`/absent means "derive from the deployed
+   * roster" (`computeTeamBuffsFromDeployed`, `@bombfarm/domain/team-buffs`), the default for a
+   * fresh import and for every account that has never touched the Account panel's team-buff
+   * fields. A hero carrying a team aura otherwise got ZERO benefit from it until a user found
+   * the auto-fill button — that was the actual regression this field exists to close, not
+   * "0 means unset": the Reset button still writes an EXPLICIT all-zero override
+   * (`zeroTeamBuffs()`), which stays a genuine "model this roster with no team auras at all"
+   * choice, distinguishable from never having touched the panel.
+   */
+  teamBuffsOverride?: Record<string, number> | null;
   context: HeroContext;
   /**
    * HOUSE RECOVERY slots (`casa.slots`) — how many heroes the House refills at a time. Defaults
@@ -135,6 +153,7 @@ export const DEFAULT_CONTEXT = (): HeroContext => ({
 export const DEFAULT_ACCOUNT = (): AccountShared => ({
   tree: DEFAULT_TREE(),
   teamBuffs: {},
+  teamBuffsOverride: null,
   context: DEFAULT_CONTEXT(),
 });
 
@@ -239,10 +258,30 @@ function normalizeMaxPhase(raw?: number | null): number | null {
   return Math.max(1, Math.min(600, Math.round(raw)));
 }
 
+/**
+ * Migrates a persisted record to the override-or-derived shape (issue #132). A record already
+ * written by this code carries `teamBuffsOverride` (possibly `null`) — trusted as-is. An older
+ * record carries only the legacy `teamBuffs`, which was the ubiquitous, never-updated `{}` /
+ * all-zero default for every account that had not pressed the auto-fill button — indistinguishable
+ * from "never touched", so it migrates to `null` (derive from the roster) rather than freezing
+ * that default as a permanent all-zero override. A legacy value with any genuinely nonzero entry
+ * WAS a real auto-fill snapshot or hand edit, so it carries forward as an explicit override.
+ */
+function normalizeTeamBuffsOverride(raw?: Partial<AccountShared> | null): Record<string, number> | null {
+  if (raw && 'teamBuffsOverride' in raw) {
+    return raw.teamBuffsOverride ?? null;
+  }
+  const legacy = raw?.teamBuffs;
+  if (!legacy) return null;
+  const hasNonZero = Object.values(legacy).some((value) => typeof value === 'number' && value !== 0);
+  return hasNonZero ? { ...legacy } : null;
+}
+
 export function normalizeAccount(raw?: Partial<AccountShared> | null): AccountShared {
   return {
     tree: normalizeTree(raw?.tree),
     teamBuffs: raw?.teamBuffs ?? {},
+    teamBuffsOverride: normalizeTeamBuffsOverride(raw),
     context: normalizeContext(raw?.context),
     slots: normalizeSlots(raw?.slots),
     fieldSlots: normalizeFieldSlots(raw?.fieldSlots),

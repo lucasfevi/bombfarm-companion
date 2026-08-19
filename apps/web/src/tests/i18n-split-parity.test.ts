@@ -173,11 +173,17 @@ const KEYS_ADDED: readonly string[] = [
  * from `phasesJaulaSection` now that the panel's own art and description carry that context, and
  * reworded `phasesJaulaEarly` ("Early cap at this phase" -> "Early-arrival chance at this phase")
  * to name what the number actually is now that its explanation no longer sits one hover away.
+ *
+ * The crit/cooldown regime revert (2026-08-19) reworded the Points tab's "Skill points add a fixed
+ * share..." paragraph (`explainSections.0.p.1`) in both locales, back to describing crit chance and
+ * cooldown as a percent of the birth roll — the 2026-08-18 game patch reverted the flat-addend
+ * shape the 2026-08-15 one had introduced.
  */
 const PROSE_EDITED_PATHS: readonly string[] = [
   'phasesGoldActualHint',
   'phasesJaulaSection',
   'phasesJaulaEarly',
+  'explainSections.0.p.1',
 ];
 
 function omitKeys<T extends Record<string, unknown>>(obj: T, keys: readonly string[]): Partial<T> {

@@ -42,18 +42,29 @@ const FIXTURES_DIR = join(here, 'fixtures');
 const SKIPPED_DIRS = ['rejection'];
 
 /**
- * Captures taken BEFORE the 2026-08-15 patch, when crit chance and cooldown were multiplicative
- * shares of the hero's roll rather than flat addends. They stay committed — ~50 structural
- * suites read them for hero shapes, inventory and team-plan inputs, none of which the patch
- * touched — but they are not subjects of THIS invariant, because no single model can reproduce
- * both them and the current game. Sweeping them here would assert that today's sheet math
- * explains yesterday's game.
+ * Captures whose crit-chance/CDR shape does not match the CURRENT game, spanning two regime
+ * boundaries — renamed and extended from the original `PRE_2026_08_15_PATCH_CAPTURES` list, which
+ * covered only the first one:
+ *
+ * - **Pre-2026-08-15**: crit chance and cooldown were multiplicative shares of the hero's roll,
+ *   same shape as today, but the item catalog and stat redistribution that followed make their
+ *   committed gear match no catalog this repo can ship.
+ * - **2026-08-15 .. 2026-08-18 (flat regime)**: crit chance and cooldown were flat addends for
+ *   exactly three days (commit 0418a82 / PR #102), reverted by the 2026-08-18 patch which also
+ *   rescaled the item catalog's `crit`/`cooldown` bases. A capture from this window solves this
+ *   invariant only under the flat model, not the current percent-of-base one.
+ *
+ * They all stay committed — ~50 structural suites read them for hero shapes, inventory and
+ * team-plan inputs, none of which either patch touched — but none of them are subjects of THIS
+ * invariant, because no single model can reproduce a mix of pre-flat, flat and post-flat captures
+ * at once. Sweeping them here would assert that today's sheet math explains a different regime's
+ * game.
  *
  * Named explicitly, never pattern-matched: a capture added later is swept by default, which is
  * the property that makes layer 1 worth having. Their own sheet arithmetic is no longer covered
- * anywhere — that is the accepted cost of the patch, recorded in `docs/fixture-corpus.md`.
+ * anywhere — that is the accepted cost of each patch, recorded in `docs/fixture-corpus.md`.
  */
-const PRE_2026_08_15_PATCH_CAPTURES = [
+const NON_CURRENT_REGIME_CAPTURES = [
   // Pre-REDISTRIBUTION as well: a second 2026-08-16 patch reshuffled which stats each slot rolls
   // (239/240 defs), so these two captures' committed gear no longer matches the shipped catalog.
   // Same reasoning as the pre-patch entries below — not subjects of a claim about today's math.
@@ -68,6 +79,13 @@ const PRE_2026_08_15_PATCH_CAPTURES = [
   'farm-rate/save-20260815-486-7heroes.json',
   'fidelity-gate/export-capture.json',
   'fidelity-gate/live-capture.json',
+  // Flat-regime (2026-08-15 .. 2026-08-18): crit chance and cooldown solve only under the flat
+  // model these three captures were taken under, not the percent-of-base model the game reverted
+  // to. `save-20260816-respec-cdr-crit.json` above is flat-regime too, already excluded for the
+  // redistribution reason.
+  'sheet-math/save-20260816-5heroes-gear-cdr-crit.json',
+  'sheet-math/save-20260816-9heroes-redistrib.json',
+  'sheet-math/save-20260817-11heroes.json',
 ];
 
 function isObject(value: unknown): value is Record<string, unknown> {
@@ -93,7 +111,7 @@ function collectSubjects(): Subject[] {
   const subjects: Subject[] = [];
   for (const path of listJson(FIXTURES_DIR)) {
     const label = relative(FIXTURES_DIR, path).replace(/\\/g, '/');
-    if (PRE_2026_08_15_PATCH_CAPTURES.includes(label)) continue;
+    if (NON_CURRENT_REGIME_CAPTURES.includes(label)) continue;
     const raw: unknown = JSON.parse(readFileSync(path, 'utf8'));
     if (!isObject(raw) || !Array.isArray(raw.heroes) || !isObject(raw.skills)) continue;
     const totalsRaw = isObject(raw.skills.totals) ? raw.skills.totals : {};
@@ -125,11 +143,10 @@ const SUBJECTS = collectSubjects();
 
 describe('spent stat points never exceed the hero level (corpus sweep)', () => {
   /**
-   * Non-vacuity, re-measured after the 2026-08-15 patch narrowed the swept set. It used to reach
-   * 20+ heroes across several fixture directories; excluding the pre-patch captures
-   * ({@link PRE_2026_08_15_PATCH_CAPTURES}) leaves the THREE post-redistribution exports —
-   * `save-20260816-9heroes-redistrib.json` (9 heroes), `save-20260816-5heroes-gear-cdr-crit.json`
-   * (5), and `save-20260817-11heroes.json` (11) — all under `sheet-math/`.
+   * Non-vacuity, re-measured after the 2026-08-18 patch narrowed the swept set a second time.
+   * Excluding every non-current-regime capture ({@link NON_CURRENT_REGIME_CAPTURES}) leaves the
+   * TWO post-revert exports — `save-20260818-12heroes.json` (12 heroes) and
+   * `save-20260819-respec-crit-cdr.json` (12) — both under `sheet-math/`.
    *
    * The directory-spread half of this guard is therefore GONE, not merely relaxed, and the count
    * is what carries it instead. It comes back on its own the moment a post-patch capture lands in
@@ -138,15 +155,14 @@ describe('spent stat points never exceed the hero level (corpus sweep)', () => {
    * The per-file breakdown is asserted, not just the total: a total alone would stay green if one
    * capture stopped being swept while another grew, which is the failure this guard exists for.
    */
-  it('non-vacuity: the walk finds every post-redistribution capture, with heroes in them', () => {
+  it('non-vacuity: the walk finds every post-revert capture, with heroes in them', () => {
     const byFile = new Map<string, number>();
     for (const s of SUBJECTS) byFile.set(s.file, (byFile.get(s.file) ?? 0) + 1);
     expect(Object.fromEntries([...byFile].sort()), `walked ${FIXTURES_DIR}`).toEqual({
-      'sheet-math/save-20260816-5heroes-gear-cdr-crit.json': 5,
-      'sheet-math/save-20260816-9heroes-redistrib.json': 9,
-      'sheet-math/save-20260817-11heroes.json': 11,
+      'sheet-math/save-20260818-12heroes.json': 12,
+      'sheet-math/save-20260819-respec-crit-cdr.json': 12,
     });
-    expect(SUBJECTS.length).toBe(25);
+    expect(SUBJECTS.length).toBe(24);
     const dirs = new Set(SUBJECTS.map((s) => s.file.split('/')[0]));
     expect(dirs, `capture directories reached: ${[...dirs].join(', ')}`).toEqual(new Set(['sheet-math']));
   });

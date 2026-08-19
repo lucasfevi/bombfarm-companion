@@ -130,6 +130,9 @@ describe('bombs / DPS', () => {
 
 describe('abilityMods', () => {
   it('stacks modeled combat effects (W3 rank-20 perLevel values)', () => {
+    // grito_guerra and pressagio_mortal are team auras (issue #132) — abilityMods never folds
+    // them into a hero's own mods, so they are included here only to prove they are harmlessly
+    // ignored (no field they used to populate moves).
     const m = abilityMods({
       bateria_extra: 5,
       ponta_diamante: 3,
@@ -140,10 +143,8 @@ describe('abilityMods', () => {
     expect(m.drainMult).toBeCloseTo(0.95, 6);
     expect(m.penetrationPp).toBe(0);
     expect(m.sheetPenetrationRaw).toBe(3);
-    expect(m.attackMult).toBeCloseTo(1.02, 6);
-    // Flat planner pp since the 2026-08-15 patch: 10 x 0.04574 and 4 x 0.06099.
-    expect(m.sheetCritChanceFlat).toBeCloseTo(0.4574, 6);
-    expect(m.combatCritChanceFlat).toBeCloseTo(0.24396, 6);
+    // Percent-of-base since the 2026-08-18 revert: 10 x 4.285714285714286.
+    expect(m.sheetCritChancePctOfBase).toBeCloseTo(42.85714285714286, 6);
   });
 
   it('treats Ponta de Diamante as on-sheet raw Σ (not combat penetrationPp)', () => {

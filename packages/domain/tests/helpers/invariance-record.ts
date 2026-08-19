@@ -120,11 +120,8 @@ type HeroRecordEntry = {
   peelSheetSources: Record<SheetKey, SourceLinesRecord>;
   inferSpentPoints: SheetRecord;
   computeCombatMults: {
-    teamAtkMult: string;
-    teamSpeedMult: string;
     teamDrainMult: string;
-    teamGateMult: string;
-    teamCritChanceFlat: string;
+    teamCritPctOfBase: string;
     attackMult: string;
     speedMult: string;
     gateAttackMult: string;
@@ -350,9 +347,8 @@ function recordHero(
     energyMult: mults.energyMult,
     speedMult: mults.speedMult,
     critDmgMult: mults.critDmgMult,
-    teamCritChanceFlat: mults.teamCritChanceFlat,
+    teamCritPctOfBase: mults.teamCritPctOfBase,
     treeSheet: tree,
-    combatCritChanceFlat: mods.combatCritChanceFlat,
     penetrationPp: mods.penetrationPp,
     context,
     dmgMult: mults.dmgMult,
@@ -416,7 +412,7 @@ function recordHero(
     energyMult: pipelineResult.energyMult,
     speedMult: pipelineResult.speedMult,
     critDmgMult: pipelineResult.critDmgMult,
-    teamCritChanceFlat: pipelineResult.teamCritChanceFlat,
+    teamCritPctOfBase: pipelineResult.teamCritPctOfBase,
     treeSpeed: pipelineResult.treeSheet.speedPct,
     treeCritChance: pipelineResult.treeSheet.critChancePct,
     treeCritDmg: pipelineResult.treeSheet.critDmgPct,
@@ -480,11 +476,8 @@ function recordHero(
     peelSheetSources: sourceRecord,
     inferSpentPoints: sheetRecord(pts),
     computeCombatMults: {
-      teamAtkMult: num(mults.teamAtkMult),
-      teamSpeedMult: num(mults.teamSpeedMult),
       teamDrainMult: num(mults.teamDrainMult),
-      teamGateMult: num(mults.teamGateMult),
-      teamCritChanceFlat: num(mults.teamCritChanceFlat),
+      teamCritPctOfBase: num(mults.teamCritPctOfBase),
       attackMult: num(mults.attackMult),
       speedMult: num(mults.speedMult),
       gateAttackMult: num(mults.gateAttackMult),

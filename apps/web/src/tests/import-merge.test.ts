@@ -32,7 +32,7 @@ function sheetOtherFor(abilities: Record<string, number>) {
   const mods = abilityMods(abilities);
   return {
     ...emptySheetOther(),
-    critChanceFlat: mods.sheetCritChanceFlat,
+    critChance: mods.sheetCritChancePctOfBase / 100,
     penetration: mods.sheetPenetrationRaw,
     critDmgFlat: mods.sheetCritDmgFlat,
   };
@@ -279,13 +279,16 @@ describe('mergeImportedHero', () => {
   // the overwrite is not stale (different pts vectors) and still proves the merged
   // naked/pts/loadout faithfully reconstruct a real save's `stats`, without needing the same
   // hero twice.
-  it('AC-20/BSP-27: re-import Zane -> Doran — merged naked+pts reconstruct the new save (no stale decimals)', () => {
-    const raw = loadFixtureJson('save-20260816-9heroes-redistrib.json');
+  it('AC-20/BSP-27: re-import Sora -> Doran — merged naked+pts reconstruct the new save (no stale decimals)', () => {
+    // Re-pointed onto the post-2026-08-18-revert capture (issue #132); the 2026-08-16
+    // redistribution export this used to read is now flat-regime and no longer a subject —
+    // see `docs/fixture-corpus.md` §9.
+    const raw = loadFixtureJson('save-20260818-12heroes.json');
     const { candidates } = parseSaveFile(raw, []);
-    const zane = candidates.find((c) => c.record.name === 'Zane')!; // L7, a small pts vector
-    const existing = normalizeHero({ ...zane.record, id: 'local-zane', updatedAt: 1 });
+    const sora = candidates.find((c) => c.record.name === 'Sora')!; // L10, a small pts vector
+    const existing = normalizeHero({ ...sora.record, id: 'local-sora', updatedAt: 1 });
 
-    const doran = candidates.find((c) => c.record.name === 'Doran')!; // L42, 8/8 geared
+    const doran = candidates.find((c) => c.record.name === 'Doran')!; // L55, 8/8 geared
     const merged = mergeImportedHero(existing, doran.record);
 
     // Proves the merge is not stale from Zane's pts — Doran's differ.
@@ -299,7 +302,7 @@ describe('mergeImportedHero', () => {
     const mods = abilityMods(merged.abilities);
     const sheetOther = {
       ...emptySheetOther(),
-      critChanceFlat: mods.sheetCritChanceFlat,
+      critChance: mods.sheetCritChancePctOfBase / 100,
       penetration: mods.sheetPenetrationRaw,
       critDmgFlat: mods.sheetCritDmgFlat,
     };

@@ -121,7 +121,7 @@ describe('computeHeroFarmFacts — heroLuckPct peel identity', () => {
       const mods = abilityMods(hero.abilities);
       const sheetOther: SheetOtherPct = {
         ...emptySheetOther(),
-        critChanceFlat: mods.sheetCritChanceFlat,
+        critChance: mods.sheetCritChancePctOfBase / 100,
         penetration: mods.sheetPenetrationRaw,
         critDmgFlat: mods.sheetCritDmgFlat,
       };

@@ -16,6 +16,18 @@
  * the walk below decodes leaves back to numbers for a same-value comparison (`Object.is`) only
  * to name the first differing hero/function/stat on failure.
  *
+ * RE-RECORDED (3) at the 2026-08-18 patch (issue #132), which reverted crit chance and cooldown
+ * from the flat addends the 2026-08-15 patch introduced back to percent-of-base, three days
+ * later. **473** of the ~2800+ recorded scalars moved — every `critChance`/`cdr` field on every
+ * subject (`applySkillTree`, `composeSheetFromBirth`, `sheetsFromBirth`, `peelSheetStages`,
+ * `peelSheetSources`, `inferSpentPoints`, `derive.*`) and the `computeCombatMults` key rename
+ * (`teamCritChanceFlat` → `teamCritPctOfBase`, mirroring RE-RECORDED (2)'s own rename in
+ * reverse). `meta.scalarCount` moved too (2830 → 2832) — the walk itself is unchanged, the
+ * corpus fixtures are unchanged, only the crit/CDR shape is. NOT moved: every non-`critChance`/
+ * `cdr` sheet key, every `inferSpentPoints` value on the other seven keys, and everything crit-
+ * DAMAGE (unaffected by either patch).
+ *
+ * ---
  * RE-RECORDED (2) at the 2026-08-15 patch, when crit chance and cooldown became flat addends
  * (`POINT_GAIN.critChanceFlat` / `.cdrFlat`) exactly as crit damage had at the 2026-08-13 one.
  * **461** of the ~2500+ recorded scalars moved, and every one is downstream of those two stats

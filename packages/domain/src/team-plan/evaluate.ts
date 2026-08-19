@@ -7,7 +7,6 @@ import type { EvaluateRosterInput, HeroScore, RosterEvaluation, RosterRegime } f
 
 export const AURA_FIXED_POINT_ROUNDS = 4;
 const DUTY_EPSILON = 1e-9;
-const NO_EXCLUDE = '__team_plan_no_exclude__';
 
 function loadoutForScoring(loadout: Loadout, forgeFloor: number): Loadout {
   const out: Loadout = {};
@@ -85,11 +84,14 @@ export function screenRosterObjective(
   for (const [heroId, score] of Object.entries(base.perHero)) duties[heroId] = score.duty;
   const scores: Record<string, HeroScore> = { ...base.perHero };
   let sumDuty = base.sumDuty;
+  // `duties` above is fixed for this whole call (only `sumDuty` and `scores` accumulate as
+  // `changedHeroIds` is walked) — every hero reads the SAME roster total (issue #132), so this
+  // is computed once, not once per changed hero.
+  const auras = computeRosterAuras(input.contexts, duties);
 
   for (const heroId of changedHeroIds) {
     const ctx = input.contexts.find((candidate) => candidate.heroId === heroId);
     if (!ctx || ctx.scope !== 'optimize') continue;
-    const auras = computeRosterAuras(input.contexts, duties, heroId);
     const loadout = loadoutForScoring(input.loadoutsByHeroId[heroId] ?? {}, input.forgeFloor);
     const pts = input.ptsByHeroId[heroId] ?? ctx.pts;
     const raw = scoreHeroLoadout(ctx, loadout, pts, auras, input.farm, input.scoreMemo);
@@ -124,11 +126,14 @@ export function evaluateRoster(input: EvaluateRosterInput): RosterEvaluation {
     const roundScores: Record<string, HeroScore> = {};
     const nextDuties: Record<string, number> = {};
 
+    // Every hero reads the SAME roster total this round (issue #132) — `duties` is fixed for
+    // the whole round (only `nextDuties` accumulates as heroes are scored), so this is hoisted
+    // out of the per-hero loop below rather than recomputed once per hero.
+    const roundAuras = computeRosterAuras(input.contexts, duties);
     for (const ctx of optimizeContexts) {
-      const auras = computeRosterAuras(input.contexts, duties, ctx.heroId);
       const loadout = scoringLoadouts[ctx.heroId];
       const pts = input.ptsByHeroId[ctx.heroId] ?? ctx.pts;
-      const raw = scoreHeroLoadout(ctx, loadout, pts, auras, input.farm, memo);
+      const raw = scoreHeroLoadout(ctx, loadout, pts, roundAuras, input.farm, memo);
       const scored = applyPassagem(raw, ctx.abilities.passagem_bastao ?? 0);
       roundScores[ctx.heroId] = scored;
       nextDuties[ctx.heroId] = raw.duty;
@@ -144,7 +149,7 @@ export function evaluateRoster(input: EvaluateRosterInput): RosterEvaluation {
   }
 
   const { objective, regime } = objectiveFromScores(perHero, input.contexts, sumDuty, slots);
-  const auras = computeRosterAuras(input.contexts, duties, NO_EXCLUDE);
+  const auras = computeRosterAuras(input.contexts, duties);
 
   return {
     objective,

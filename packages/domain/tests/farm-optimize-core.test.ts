@@ -82,14 +82,30 @@ describe('nothing beats the current build (the fixed point re-solve)', () => {
 
 describe('one entry per enabled hero, including unchanged ones with their own cost', () => {
   it('heroes.length === enabledCount; an unchanged hero still carries a positive respecCostGold; the top-level total sums changed heroes only', () => {
-    const result = solveFarmRespec({ heroes, account, maxPhase });
+    // The fixture's own default roster has NO unchanged hero under the reverted percent-of-base
+    // crit-chance/CDR model (issue #132) — every hero here now has at least one profitable
+    // reallocation, since crit chance/CDR scale with the (well-rolled) naked roll again instead
+    // of being flat and nearly irrelevant. Construct the unchanged hero deliberately instead:
+    // pre-respec the FIRST hero onto its own already-optimal proposal (the fixed-point pattern
+    // above), leaving the rest of the roster free to improve normally.
+    const first = solveFarmRespec({ heroes, account, maxPhase });
+    const firstHeroId = heroes[0].id;
+    const firstProposal = first.heroes.find((h) => h.heroId === firstHeroId)!.proposedPts;
+    const mixedRoster: HeroRecord[] = heroes.map((hero) =>
+      hero.id === firstHeroId ? { ...hero, pts: firstProposal } : hero,
+    );
+
+    const result = solveFarmRespec({ heroes: mixedRoster, account, maxPhase });
     expect(result.heroes).toHaveLength(heroes.length);
 
     const unchanged = result.heroes.find((h) => !h.changed);
-    expect(unchanged, 'expected at least one unchanged hero on the fixture').toBeDefined();
+    expect(unchanged, 'expected at least one unchanged hero on the constructed roster').toBeDefined();
+    expect(unchanged!.heroId).toBe(firstHeroId);
     expect(unchanged!.respecCostGold).toBeGreaterThan(0);
 
-    const expectedTotal = result.heroes.filter((h) => h.changed).reduce((sum, h) => sum + h.respecCostGold, 0);
+    const changed = result.heroes.filter((h) => h.changed);
+    expect(changed.length, 'expected at least one changed hero too').toBeGreaterThan(0);
+    const expectedTotal = changed.reduce((sum, h) => sum + h.respecCostGold, 0);
     expect(result.respecCostGold).toBe(expectedTotal);
   });
 });

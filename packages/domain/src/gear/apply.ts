@@ -23,10 +23,8 @@ function sharedReverse(geared: number, gearPct: number, otherPct: number): numbe
 /**
  * Apply gear onto a naked (unequipped) sheet.
  * Ataque is flat; Energia multiplies (no sheet-ability energy % today).
- * Speed / pen use the shared pool with `other` (sheet abilities).
- * Crit chance and CDR are flat ADDENDS — they left the pool at the 2026-08-15 patch, the same
- * way crit damage did at the 2026-08-13 one, so `other` takes no part in their arithmetic here
- * (its own flat contribution is already inside `naked`). Items never roll crit damage.
+ * Speed / crit / pen / CDR use the shared pool with `other` (sheet abilities). Items never roll
+ * crit damage.
  */
 export function applyGear(
   naked: SheetStats,
@@ -38,10 +36,10 @@ export function applyGear(
     attack: composeAttack(naked.attack, bonuses),
     energy: naked.energy * (1 + bonuses.energyPct),
     speed: sharedForward(naked.speed, bonuses.speedPct, other.speed),
-    critChance: naked.critChance + bonuses.critFlatPct,
+    critChance: sharedForward(naked.critChance, bonuses.critPct, other.critChance),
     critDmg: naked.critDmg,
     penetration: sharedForward(naked.penetration, bonuses.penPct, other.penetration),
-    cdr: naked.cdr + bonuses.cdrFlatPct,
+    cdr: sharedForward(naked.cdr, bonuses.cdrPct, other.cdr),
     luck: sharedForward(naked.luck, bonuses.luckPct, 0),
   };
 }
@@ -58,10 +56,10 @@ export function reverseGear(
     attack: decomposeAttack(geared.attack, bonuses),
     energy: div(geared.energy, bonuses.energyPct),
     speed: sharedReverse(geared.speed, bonuses.speedPct, other.speed),
-    critChance: geared.critChance - bonuses.critFlatPct,
+    critChance: sharedReverse(geared.critChance, bonuses.critPct, other.critChance),
     critDmg: geared.critDmg,
     penetration: sharedReverse(geared.penetration, bonuses.penPct, other.penetration),
-    cdr: geared.cdr - bonuses.cdrFlatPct,
+    cdr: sharedReverse(geared.cdr, bonuses.cdrPct, other.cdr),
     luck: sharedReverse(geared.luck, bonuses.luckPct, 0),
   };
 }
@@ -85,8 +83,7 @@ export function projectGearedOntoLoadout(
  * Project naked → sheet with gear + simulated points in one shared Σ:
  * sheet = naked × (1 + other + gear + pts×perPt) / (1 + other).
  * Attack points use +10 × levelPowerMult(level) × starsMult(stars) (see attackPointGain).
- * Crit chance, crit damage and CDR are outside the shared Σ — all three flat, see
- * POINT_GAIN.critChanceFlat / .critDmgFlat / .cdrFlat.
+ * Crit damage is outside the shared Σ — flat, see POINT_GAIN.critDmgFlat.
  */
 export function applyPoints(
   naked: SheetStats,
@@ -108,17 +105,25 @@ export function applyPoints(
       bonuses.speedPct + pts.speed * POINT_GAIN.speedPctOfBase,
       other.speed,
     ),
-    // The three flat stats. Their sheet-ability terms are already inside `naked` (via
-    // `other.critChanceFlat` / `other.critDmgFlat`; CDR has no ability), so only gear and the
-    // stat point are added here, both in raw planner percentage points.
-    critChance: naked.critChance + bonuses.critFlatPct + pts.critChance * POINT_GAIN.critChanceFlat,
+    critChance: sharedForward(
+      naked.critChance,
+      bonuses.critPct + pts.critChance * POINT_GAIN.critChancePctOfBase,
+      other.critChance,
+    ),
+    // Crit damage is flat-additive, not pooled: items never roll it, and both the sheet
+    // ability (already inside `naked` via `other.critDmgFlat`) and the stat point add raw
+    // planner percentage points. See POINT_GAIN.critDmgFlat.
     critDmg: naked.critDmg + pts.critDmg * POINT_GAIN.critDmgFlat,
     penetration: sharedForward(
       naked.penetration,
       bonuses.penPct + pts.penetration * POINT_GAIN.penetrationPctOfBase,
       other.penetration,
     ),
-    cdr: naked.cdr + bonuses.cdrFlatPct + pts.cdr * POINT_GAIN.cdrFlat,
+    cdr: sharedForward(
+      naked.cdr,
+      bonuses.cdrPct + pts.cdr * POINT_GAIN.cdrPctOfBase,
+      other.cdr,
+    ),
     luck: sharedForward(
       naked.luck,
       bonuses.luckPct + pts.luck * POINT_GAIN.luckPctOfBase,
@@ -151,14 +156,22 @@ export function reverseSheet(
       bonuses.speedPct + pts.speed * POINT_GAIN.speedPctOfBase,
       other.speed,
     ),
-    critChance: sheet.critChance - bonuses.critFlatPct - pts.critChance * POINT_GAIN.critChanceFlat,
+    critChance: sharedReverse(
+      sheet.critChance,
+      bonuses.critPct + pts.critChance * POINT_GAIN.critChancePctOfBase,
+      other.critChance,
+    ),
     critDmg: sheet.critDmg - pts.critDmg * POINT_GAIN.critDmgFlat,
     penetration: sharedReverse(
       sheet.penetration,
       bonuses.penPct + pts.penetration * POINT_GAIN.penetrationPctOfBase,
       other.penetration,
     ),
-    cdr: sheet.cdr - bonuses.cdrFlatPct - pts.cdr * POINT_GAIN.cdrFlat,
+    cdr: sharedReverse(
+      sheet.cdr,
+      bonuses.cdrPct + pts.cdr * POINT_GAIN.cdrPctOfBase,
+      other.cdr,
+    ),
     luck: sharedReverse(
       sheet.luck,
       bonuses.luckPct + pts.luck * POINT_GAIN.luckPctOfBase,

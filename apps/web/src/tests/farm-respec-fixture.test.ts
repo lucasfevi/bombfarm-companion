@@ -54,9 +54,20 @@ describe('Farm Respec Advisor — fixture integration (account-486, save-2026081
     importFixtureIntoStore();
   });
 
-  it('Tier 1 surfaces on this account', () => {
+  it('Tier 1 DOES surface on this account — RE-MEASURED for issue #132\'s team-aura roster shape', () => {
+    // Tier 1 (findGateCandidate) is a cheap LOWER-BOUND estimate. Previously (issue #132's
+    // crit/CDR + reoptBudget-clamp pass) it sat at ~0.76%, below FARM_RESPEC_MIN_GAIN_PCT (1%),
+    // so the gate stayed quiet. This fixture's account.teamBuffs is zeroTeamBuffs()
+    // (production's post-import default before the auto-fill button is pressed) — under this
+    // round's roster-shape fix, Jon (folego_mineiro 18 own rank) no longer gets the own-rank
+    // drain leak the old model let through, so his uptime falls and the resulting reoptimization
+    // headroom pushes the honest Tier 1 estimate up past 1%, to ~1.55%. The gate now correctly
+    // surfaces a real, if modest, gain — this is a genuine behavior change (the recommendation
+    // banner now appears for this account), not a numeric wobble.
     const gate = selectFarmRespecGate(usePlannerStore.getState());
     expect(gate.reason).toBeNull();
+    expect(gate.result?.gainPct).toBeGreaterThan(1);
+    expect(gate.result?.gainPct).toBeLessThan(2);
     expect(gate.shouldSurface).toBe(true);
   });
 
@@ -86,11 +97,26 @@ describe('Farm Respec Advisor — fixture integration (account-486, save-2026081
   });
 
   it('every enabled hero is present in the result, and at least one is unchanged', () => {
-    const state = usePlannerStore.getState();
-    const enabledCount = state.heroes.filter((hero) => hero.battleAllowed ?? true).length;
-    const solve = runFarmRespecSolve(state);
+    // The fixture's own default roster has NO unchanged hero under the reverted
+    // percent-of-base crit-chance/CDR model (issue #132) — every one of the 5 heroes here now
+    // has at least one profitable reallocation. Construct the unchanged hero deliberately
+    // instead: pre-respec the FIRST hero onto its own already-optimal proposal, leaving the
+    // rest of the roster free to improve normally (same pattern as
+    // `farm-optimize-core.test.ts`'s domain-side twin).
+    const first = runFarmRespecSolve(usePlannerStore.getState());
+    const enabledCount = first.heroes.length;
+    const fixedHeroId = first.heroes[0].heroId;
+    const fixedProposal = first.heroes[0].proposedPts;
+    const patchedHeroes = usePlannerStore
+      .getState()
+      .heroes.map((hero) => (hero.id === fixedHeroId ? { ...hero, pts: fixedProposal } : hero));
+    usePlannerStore.getState().setHeroes(patchedHeroes);
+
+    const solve = runFarmRespecSolve(usePlannerStore.getState());
     expect(solve.heroes).toHaveLength(enabledCount);
-    expect(solve.heroes.some((hero) => !hero.changed)).toBe(true);
+    const unchanged = solve.heroes.find((hero) => !hero.changed);
+    expect(unchanged, 'expected the pre-respecced hero to be unchanged').toBeDefined();
+    expect(unchanged!.heroId).toBe(fixedHeroId);
   });
 
   it('luck is frozen: proposedPts.luck equals currentPts.luck for every hero', () => {

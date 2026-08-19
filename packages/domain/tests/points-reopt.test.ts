@@ -105,9 +105,8 @@ function realHeroDerive(file: string, name: string, level: number) {
     energyMult: mults.energyMult,
     speedMult: mults.speedMult,
     critDmgMult: mults.critDmgMult,
-    teamCritChanceFlat: 0,
+    teamCritPctOfBase: mults.teamCritPctOfBase,
     treeSheet: tree,
-    combatCritChanceFlat: mods.combatCritChanceFlat,
     penetrationPp: mods.penetrationPp,
     context,
     dmgMult: mults.dmgMult,
@@ -481,7 +480,7 @@ describe('optimizeBuild — Tier 2 (BSPW4-10)', () => {
     const args = {
       geared: naked,
       naked,
-      sheetOther: { speed: 0, critChanceFlat: 0, critDmgFlat: 0, penetration: 0, cdrFlat: 0 },
+      sheetOther: { speed: 0, critChance: 0, critDmgFlat: 0, penetration: 0, cdr: 0 },
       rarity: 'Raro' as const,
       level: 30,
       stars: 0,
@@ -489,9 +488,8 @@ describe('optimizeBuild — Tier 2 (BSPW4-10)', () => {
       energyMult: mults.energyMult,
       speedMult: mults.speedMult,
       critDmgMult: mults.critDmgMult,
-      teamCritChanceFlat: 0,
+      teamCritPctOfBase: 0,
       treeSheet: { danoStatic: 1, energyPct: 0, speedPct: 0, critChancePct: 0, critDmgPct: 0, luckFlatPct: 0 },
-      combatCritChanceFlat: 0,
       penetrationPp: 0,
       context,
       dmgMult: mults.dmgMult,
@@ -564,14 +562,18 @@ describe('reoptBudget / the per-tier point budgets', () => {
     expect(reoptBudget(ZERO_PTS(), 0)).toBe(0);
   });
 
-  it('floors at what is already placed, so an over-spent hero can still reallocate what it holds', () => {
+  it('floors at what is already placed, but is ALWAYS clamped to level — the placed-points floor cannot exceed it', () => {
     // The one reachable overspend (`clampPointStep`): a level lowered while points are spent.
     const overSpent: Record<SheetKey, number> = { ...ZERO_PTS(), attack: 32, luck: 8 };
-    // Level 8 with 8 Luck leaves no pool at all — but 32 Attack points are really placed, really
-    // reallocatable in game, and must not be stranded behind the budget<=0 fast path.
-    expect(reoptBudget(overSpent, 8)).toBe(32);
-    expect(reoptBudget(overSpent, 20)).toBe(32);
-    // Once the level pool overtakes what is placed, the pool wins again.
+    // CLAMPED (reversed from the earlier "not clamped, deliberately" stance — see the
+    // `reoptBudget` doc comment in `points-reopt-core.ts`). 32 Attack points are really placed
+    // and really reallocatable in game, but the search may never be handed more than the hero's
+    // OWN level to work with, even when more is technically "already spent": on a level-69 hero
+    // the un-clamped floor produced a 210-point respec budget and the advisor sold a +18.9%
+    // gold/hr proposal whose achievable gain was 0% — 101% phantom.
+    expect(reoptBudget(overSpent, 8)).toBe(8);
+    expect(reoptBudget(overSpent, 20)).toBe(20);
+    // Once the level pool overtakes what is placed, the pool wins and the clamp is a no-op.
     expect(reoptBudget(overSpent, 45)).toBe(37);
     // Never negative, and 0 only when there is genuinely nothing on either side.
     expect(reoptBudget(ZERO_PTS(), -5)).toBe(0);
@@ -594,17 +596,21 @@ describe('reoptBudget / the per-tier point budgets', () => {
   it('the placed-points floor cannot reintroduce compounding — feeding a result back is non-increasing', () => {
     // The floor is the one term that reads `pts`, so it is the one that could in principle grow
     // round over round the way `statPointsAvailable` did. It cannot: the search never places
-    // more than the budget it was handed, so the floor is bounded by the previous budget.
+    // more than the budget it was handed, so the floor is bounded by the previous budget — and
+    // now, additionally, by `level` itself (the clamp). `pts` here is deliberately over-spent
+    // (34 placed against level 12); the FIRST `reoptBudget` call already clamps to 12, so this
+    // guards the clamp's own fixed point, not just the floor's.
     const { effective, effectiveDelta } = syntheticHero();
     let pts: Record<SheetKey, number> = { ...ZERO_PTS(), cdr: 30, luck: 4 };
     let previous = reoptBudget(pts, 12);
+    expect(previous).toBe(12);
     for (let round = 0; round < 5; round++) {
       pts = optimizeBuild({ pts, effective, effectiveDelta, context, level: 12 }).pts;
       const budget = reoptBudget(pts, 12);
       expect(budget, `round ${round}`).toBeLessThanOrEqual(previous);
       previous = budget;
     }
-    expect(previous).toBe(30);
+    expect(previous).toBe(12);
   });
 
   it('Tier 2: a hero with 0 spent gets its whole level placed, not the budget<=0 fast path', () => {

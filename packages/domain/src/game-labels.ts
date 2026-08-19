@@ -145,8 +145,8 @@ const ABILITY_EFFECTS: Record<string, Bilingual> = {
     en: '+0.185% TEAM speed/level',
   },
   pressagio_mortal: {
-    pt: '+0.06099 pp de chance de crítico do TIME/nível',
-    en: '+0.06099 pp TEAM crit chance/level',
+    pt: '+5.714% chance de crítico do TIME/nível (% da base)',
+    en: '+5.714% TEAM crit chance/level (% of base)',
   },
   fantasma: {
     pt: 'atravessa rocha; +0.05% Ataque de passagem/nível (não modelado)',
@@ -169,8 +169,8 @@ const ABILITY_EFFECTS: Record<string, Bilingual> = {
     en: '+2% Attack in timed phase/level',
   },
   olho_clinico: {
-    pt: '+0.04574 pp de chance de crítico/nível (altera atributos)',
-    en: '+0.04574 pp crit chance/level (affects stats)',
+    pt: '+4.286% chance de crítico/nível (% da base, altera atributos)',
+    en: '+4.286% crit chance/level (% of base, affects stats)',
   },
   detonacao_dupla: {
     pt: '+1.5% chance de 2ª explosão (50% dano)/nível',

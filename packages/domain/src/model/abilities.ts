@@ -9,7 +9,7 @@ import { BASE_ROLLS, POINT_GAIN, type RarityKey } from './rarity-constants';
 
 export type AbilityEffect =
   | { kind: 'drainPct'; perLevel: number } // − energy drain %
-  | { kind: 'critChanceFlat'; perLevel: number; onSheet?: boolean } // FLAT planner pp; onSheet = hero sheet Σ
+  | { kind: 'critChancePctOfBase'; perLevel: number; onSheet?: boolean } // % of base roll; onSheet = hero sheet Σ
   | { kind: 'penetrationPp'; perLevel: number; onSheet?: boolean } // onSheet = raw Σ on hero sheet
   | { kind: 'rangeCells'; perLevel: number }
   | { kind: 'secondBlastPct'; perLevel: number } // chance of 2nd blast at 50% dmg
@@ -46,19 +46,28 @@ export const ABILITIES: AbilityDef[] = [
   { id: 'bateria_extra', name: 'Bateria Extra', max: 20, effectText: '−1% energia gasta (próprio)/nível', effect: { kind: 'drainPct', perLevel: 1 } },
   { id: 'caca_hero', name: 'Caça-Hero', max: 20, effectText: '+5% dano na Jaula/nível (não modelado)', effect: { kind: 'none' } },
   { id: 'marcha_acelerada', name: 'Marcha Acelerada', max: 20, effectText: '+0.185% velocidade do TIME/nível', effect: { kind: 'speedPct', perLevel: 0.185 } },
-  // 2026-08-15 patch: wiki `per_level` 0.01 → 0.0006099 (save units) = 0.06099 planner pp.
-  // UNWITNESSED shape — no hero on any post-patch capture owns this ability, so its move to a
-  // flat addend is inferred from the three sources that WERE measured, not observed directly.
-  { id: 'pressagio_mortal', name: 'Presságio Mortal', max: 20, effectText: '+0.06099 pp de chance de crítico do TIME/nível', effect: { kind: 'critChanceFlat', perLevel: 0.06099 } },
+  // 2026-08-18 patch reverted crit chance to percent-of-base (see rarity-constants.ts POINT_GAIN
+  // comment). This value is READ FROM the wiki mirror (held out of band, not in this repo), which
+  // publishes a team-scope per-level entry for this ability at exactly ×40/7 of its pre-flat-regime
+  // `perLevel: 1` — the same rescale factor independently MEASURED on `olho_clinico` (a self/
+  // on-sheet crit-chance source) and on the item `crit` base. Two unrelated crit-chance sources
+  // landing on the identical rescale is what makes the published value credible here, not a
+  // cross-kind guess. Still PUBLISHED-BUT-UNOBSERVED, not measured: no hero on any capture,
+  // pre- or post-revert, owns this ability, so no save export confirms it directly — Presságio
+  // never touches the bearer's own sheet either way (it is a TEAM aura, correctly modelled with
+  // no `onSheet`). The ×40/7 rescale is a wiki-VALUE change, not a universal law — the stat-point
+  // rate (0.02) did NOT take it.
+  { id: 'pressagio_mortal', name: 'Presságio Mortal', max: 20, effectText: '+5.714% chance de crítico do TIME/nível (% da base)', effect: { kind: 'critChancePctOfBase', perLevel: 5.714285714285714 } },
   { id: 'fantasma', name: 'Fantasma', max: 20, effectText: 'atravessa rocha; +0.05% Ataque de passagem/nível (não modelado)', effect: { kind: 'none' } },
   { id: 'ponta_diamante', name: 'Ponta de Diamante', max: 20, effectText: '+1 Penetração (pontos)/nível', effect: { kind: 'penetrationPp', perLevel: 1, onSheet: true } },
   { id: 'misericordia', name: 'Misericórdia', max: 20, effectText: 'executa rocha < 1.25%/nível', effect: { kind: 'executePct', perLevel: 1.25 } },
   { id: 'explosao_ampla', name: 'Explosão Ampla', max: 20, effectText: '+0.1 raio da explosão/nível', effect: { kind: 'rangeCells', perLevel: 0.1 } },
   { id: 'contra_relogio', name: 'Contra o Relógio', max: 20, effectText: '+2% Ataque em fase de tempo/nível', effect: { kind: 'gateAttackPct', perLevel: 2 } },
-  // 2026-08-15 patch: wiki `per_level` 0.0075 → 0.0004574 (save units) = 0.04574 planner pp.
-  // MEASURED flat: Bellatrix and Jon (`black-save-08.16.2026-12.29am.json`) both carry this at
-  // rank 20, and their sheets land on birth + gear + 20 × 0.04574 + tree exactly.
-  { id: 'olho_clinico', name: 'Olho Clínico', max: 20, effectText: '+0.04574 pp de chance de crítico/nível (altera atributos)', effect: { kind: 'critChanceFlat', perLevel: 0.04574, onSheet: true } },
+  // 2026-08-18 patch reverted crit chance to percent-of-base and rescaled this ability's value
+  // by exactly ×40/7 from the pre-flat-regime 0.75. MEASURED on account 486's 2026-08-18 23:20
+  // export: Minato, Jon and Manco (rank 20) each leave a residual of exactly
+  // 0.857142857142857 (= 6/7 = 20 × 4.285714285714286) after tree + gear.
+  { id: 'olho_clinico', name: 'Olho Clínico', max: 20, effectText: '+4.286% chance de crítico/nível (% da base, altera atributos)', effect: { kind: 'critChancePctOfBase', perLevel: 4.285714285714286, onSheet: true } },
   { id: 'detonacao_dupla', name: 'Detonação Dupla', max: 20, effectText: '+1.5% chance de 2ª explosão (50% dano)/nível', effect: { kind: 'secondBlastPct', perLevel: 1.5 } },
   { id: 'folego_mineiro', name: 'Fôlego de Mineiro', max: 20, effectText: '−1% energia gasta do TIME/nível', effect: { kind: 'drainPct', perLevel: 1 } },
   { id: 'passagem_bastao', name: 'Passagem de Bastão', max: 20, effectText: '+4% de Dano ao ENTRAR no rodízio (dura 120s)/nível (não modelado)', effect: { kind: 'none' } },
@@ -74,7 +83,7 @@ export const ABILITIES: AbilityDef[] = [
 /** Inventory-sheet abilities (shared Σ with gear) — kept out of the combat ability grid. */
 export function isSheetAbility(ability: AbilityDef): boolean {
   return (
-    (ability.effect.kind === 'critChanceFlat' ||
+    (ability.effect.kind === 'critChancePctOfBase' ||
       ability.effect.kind === 'penetrationPp' ||
       ability.effect.kind === 'critDmgFlat') &&
     ability.effect.onSheet === true
@@ -107,11 +116,11 @@ export function abilityPointBudget(rarity: RarityKey, level: number): number {
 }
 
 export interface AbilityMods {
-  drainMult: number; // <1 reduces drain
+  /** <1 reduces drain — SELF only (Bateria Extra). Fôlego de Mineiro is a team aura: it never
+   *  touches a hero's own mods at all — see the module doc on team auras below. */
+  drainMult: number;
   /** Olho Clínico etc. — already in the unequipped sheet Σ. */
-  sheetCritChanceFlat: number;
-  /** Presságio (own) etc. — combat-only, not on the inventory sheet. */
-  combatCritChanceFlat: number;
+  sheetCritChancePctOfBase: number;
   /** Ponta de Diamante etc. — raw Σ units on the unequipped sheet (+2 per level). */
   sheetPenetrationRaw: number;
   penetrationPp: number;
@@ -120,23 +129,28 @@ export interface AbilityMods {
   sheetCritDmgFlat: number;
   rangeCells: number;
   dmgMult: number; // second blast + execute
-  attackMult: number;
-  speedMult: number;
-  gateAttackMult: number; // applies only inside timed phases
+  gateAttackMult: number; // applies only inside timed phases (self ability, Contra o Relógio)
 }
 
+/**
+ * Team auras — Grito de Guerra (`attackPct`), Marcha Acelerada (`speedPct`), Fôlego de Mineiro
+ * (`drainPct`) and Presságio Mortal (`critChancePctOfBase`, not `onSheet`) — never reach a
+ * hero's own `AbilityMods` (issue #132). Under the confirmed rule a team aura is a property of
+ * the FIELD: every deployed hero experiences the SAME capped roster total (`team-buffs.ts`,
+ * `computeCombatMults`), carrier or not, so there is no "this hero's own share" for `abilityMods`
+ * to fold in — doing so was exactly the double-count this rewrite removed. Their four
+ * `AbilityEffect` cases below are explicit no-ops rather than omitted, so a future kind added to
+ * the union still forces every switch in this file to handle it.
+ */
 export function abilityMods(levels: Record<string, number>): AbilityMods {
   const mods: AbilityMods = {
     drainMult: 1,
-    sheetCritChanceFlat: 0,
-    combatCritChanceFlat: 0,
+    sheetCritChancePctOfBase: 0,
     sheetPenetrationRaw: 0,
     penetrationPp: 0,
     sheetCritDmgFlat: 0,
     rangeCells: 0,
     dmgMult: 1,
-    attackMult: 1,
-    speedMult: 1,
     gateAttackMult: 1,
   };
   for (const ability of ABILITIES) {
@@ -145,11 +159,12 @@ export function abilityMods(levels: Record<string, number>): AbilityMods {
     const effect = ability.effect;
     switch (effect.kind) {
       case 'drainPct':
-        mods.drainMult *= 1 - (effect.perLevel * count) / 100;
+        // Fôlego de Mineiro (team) — see the module doc above.
+        if (ability.id !== 'folego_mineiro') mods.drainMult *= 1 - (effect.perLevel * count) / 100;
         break;
-      case 'critChanceFlat':
-        if (effect.onSheet) mods.sheetCritChanceFlat += effect.perLevel * count;
-        else mods.combatCritChanceFlat += effect.perLevel * count;
+      case 'critChancePctOfBase':
+        if (effect.onSheet) mods.sheetCritChancePctOfBase += effect.perLevel * count;
+        // else: Presságio Mortal (team) — see the module doc above.
         break;
       case 'penetrationPp':
         if (effect.onSheet) mods.sheetPenetrationRaw += effect.perLevel * count;
@@ -168,10 +183,10 @@ export function abilityMods(levels: Record<string, number>): AbilityMods {
         mods.dmgMult *= 1 / (1 - (effect.perLevel * count) / 100);
         break;
       case 'attackPct':
-        mods.attackMult *= 1 + (effect.perLevel * count) / 100;
+        // Grito de Guerra (team) — see the module doc above.
         break;
       case 'speedPct':
-        mods.speedMult *= 1 + (effect.perLevel * count) / 100;
+        // Marcha Acelerada (team) — see the module doc above.
         break;
       case 'gateAttackPct':
         mods.gateAttackMult *= 1 + (effect.perLevel * count) / 100;
@@ -214,8 +229,7 @@ export function critMilestones(
     [30, 300],
   ];
   return targets.map(([critChanceTarget, critDmgTarget]) => {
-    // Both stats are flat addends now, so both point counts are a plain "gap ÷ per-point".
-    const nCc = Math.max(0, Math.ceil((critChanceTarget - base.critChance) / POINT_GAIN.critChanceFlat));
+    const nCc = Math.max(0, Math.ceil((critChanceTarget / base.critChance - 1) / POINT_GAIN.critChancePctOfBase));
     const nCd = Math.max(0, Math.ceil((critDmgTarget - base.critDmg) / POINT_GAIN.critDmgFlat));
     const pts = nCc + nCd;
     return {

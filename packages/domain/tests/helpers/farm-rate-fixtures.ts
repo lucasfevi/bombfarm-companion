@@ -9,7 +9,7 @@
  */
 import { parseAccountPayload } from '@bombfarm/domain/import-save';
 import { phaseLine } from '@bombfarm/domain/phases';
-import { zeroTeamBuffs } from '@bombfarm/domain/team-buffs';
+import { computeTeamBuffsFromDeployed } from '@bombfarm/domain/team-buffs';
 import { DEFAULT_TARGET_PROP } from '@bombfarm/domain/farm-context';
 import type { HeroRecord, AccountShared } from '@bombfarm/domain/shims/storage';
 import { loadFixtureJson } from './sheet-math-fixtures';
@@ -50,6 +50,14 @@ export function loadFarmRateFixture(
 
   const maxPhase = accountData.maxPhase ?? null;
 
+  const heroes: HeroRecord[] = parsed.candidates.map((candidate, index) => ({
+    ...candidate.record,
+    id: candidate.sourceId,
+    // Not read by pipelineForHero — a fixed, deterministic value keeps the fixture stable
+    // across two loads within the same test (purity assertions reuse these objects).
+    updatedAt: index,
+  }));
+
   const account: AccountShared = {
     tree: {
       danoTotal: tree.danoTotal,
@@ -61,7 +69,11 @@ export function loadFarmRateFixture(
       luckFlatPct: tree.luckFlatPct,
       xpMult: tree.xpMult,
     },
-    teamBuffs: zeroTeamBuffs(),
+    // issue #132: production derives the roster-wide aura total from the deployed roster by
+    // default (`computeTeamBuffsFromDeployed`) rather than starting it at zero — this fixture
+    // reproduces that default instead of the pre-fix zero, so every derived expectation reflects
+    // the auras this fixture's own heroes actually carry.
+    teamBuffs: computeTeamBuffsFromDeployed(heroes),
     context: {
       houseIdx: accountData.houseIdx ?? 0,
       houseLevel: accountData.houseLevel ?? 1,
@@ -79,14 +91,6 @@ export function loadFarmRateFixture(
     houseCycleSecs: accountData.houseCycleSecs ?? null,
     maxPhase,
   };
-
-  const heroes: HeroRecord[] = parsed.candidates.map((candidate, index) => ({
-    ...candidate.record,
-    id: candidate.sourceId,
-    // Not read by pipelineForHero — a fixed, deterministic value keeps the fixture stable
-    // across two loads within the same test (purity assertions reuse these objects).
-    updatedAt: index,
-  }));
 
   return { heroes, account, maxPhase };
 }

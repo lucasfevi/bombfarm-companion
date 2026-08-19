@@ -1,4 +1,5 @@
 import { POINT_GAIN } from '../model';
+import { TEAM_BUFF_CAP } from '../team-buffs';
 import {
   pushAdd,
   pushAddPctOfBase,
@@ -19,7 +20,10 @@ export function ledgerAttack(facts: PipelineFacts): StatBreakdown {
   // contract, so the 'tree' step is sourced from the sheet, not added on top of it (AC-42).
   pushBirthThenGear(steps, 'attack', facts, (facts.treeDanoTotal - 1) * 100);
   pushAdd(steps, 'points', facts.pts.attack * facts.delta.attack);
-  const { note, split } = teamMultNote(facts.attackMult, facts.mods.attackMult);
+  // Grito de Guerra is a team aura (issue #132) — `facts.attackMult` is already the full roster
+  // total, capped; there is no "own" share for a hero's own mods to contribute, so the note's
+  // own/team split degenerates to own=0 (ownMult=1, identity) by construction.
+  const { note, split } = teamMultNote(facts.attackMult, 1, TEAM_BUFF_CAP.grito_guerra);
   pushMul(steps, 'abilitiesTeam', facts.attackMult, note, split);
   return { kind: 'ledger', total: facts.effective.attack, steps };
 }
@@ -45,20 +49,27 @@ export function ledgerSpeed(facts: PipelineFacts): StatBreakdown {
     baseSpeed,
   );
 
-  const { note, split } = teamMultNote(facts.speedMult, facts.mods.speedMult);
+  // Marcha Acelerada is a team aura (issue #132) — same reasoning as ledgerAttack above.
+  const { note, split } = teamMultNote(facts.speedMult, 1, TEAM_BUFF_CAP.marcha_acelerada);
   pushMul(steps, 'abilitiesTeam', facts.speedMult, note, split);
   return { kind: 'ledger', total: facts.effective.speed, steps };
 }
 
 export function ledgerCritChance(facts: PipelineFacts): StatBreakdown {
   const steps: LedgerStep[] = [];
-  // Every crit-chance source is a FLAT planner-percentage-point addend as of the 2026-08-15
-  // patch — points, the combat/team abilities, and the tree line inside pushBirthThenGear.
-  // No `pctOfBase` provenance is left to report on any of them.
+  const baseCrit = facts.naked.critChance / (1 + facts.sheetOther.critChance);
+  // AD-BSP-19/22: crit_chance_add joins the shared pool — 'tree' now lives inside
+  // pushBirthThenGear, split from the observed gear delta (AC-41).
   pushBirthThenGear(steps, 'critChance', facts, facts.treeCritChance);
-  pushAdd(steps, 'points', facts.pts.critChance * POINT_GAIN.critChanceFlat);
-  pushAdd(steps, 'abilities', facts.mods.combatCritChanceFlat);
-  pushAdd(steps, 'team', facts.teamCritChanceFlat);
+  pushAddPctOfBase(
+    steps,
+    'points',
+    facts.pts.critChance * POINT_GAIN.critChancePctOfBase * 100,
+    baseCrit,
+  );
+  // Presságio Mortal is a team aura (issue #132) — `facts.teamCritPctOfBase` is already the
+  // full roster total, capped; there is no separate "own" line to add alongside it.
+  pushAddPctOfBase(steps, 'team', facts.teamCritPctOfBase, baseCrit);
   return { kind: 'ledger', total: facts.effective.critChance, steps };
 }
 
@@ -124,9 +135,13 @@ export function ledgerLuck(facts: PipelineFacts): StatBreakdown {
 
 export function ledgerCdr(facts: PipelineFacts): StatBreakdown {
   const steps: LedgerStep[] = [];
-  // Flat since the 2026-08-15 patch, same as crit chance — and CDR has no ability or tree line
-  // at all, so gear and points are the only additions.
+  const baseCdr = facts.naked.cdr / (1 + facts.sheetOther.cdr);
   pushBirthThenGear(steps, 'cdr', facts);
-  pushAdd(steps, 'points', facts.pts.cdr * POINT_GAIN.cdrFlat);
+  pushAddPctOfBase(
+    steps,
+    'points',
+    facts.pts.cdr * POINT_GAIN.cdrPctOfBase * 100,
+    baseCdr,
+  );
   return { kind: 'ledger', total: facts.effective.cdr, steps };
 }

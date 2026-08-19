@@ -4,7 +4,7 @@ import { DEFAULT_CASA_SLOTS } from '@bombfarm/domain/casa-slots';
 import { effectiveFarmPhase } from '@bombfarm/domain/farm-context';
 import type { AccountImportData } from '@bombfarm/domain/import-save';
 import { phaseLine } from '@bombfarm/domain/phases';
-import { zeroTeamBuffs, type TeamBuffId } from '@bombfarm/domain/team-buffs';
+import type { TeamBuffId } from '@bombfarm/domain/team-buffs';
 import {
   DEFAULT_CONTEXT,
   DEFAULT_TREE,
@@ -12,10 +12,12 @@ import {
 } from '@/shared/lib/storage';
 import type { PlannerStore } from '@/shared/stores/planner-store';
 
-function teamBuffsEqual(
-  left: Record<TeamBuffId, number>,
-  right: Record<TeamBuffId, number>,
+function teamBuffsOverrideEqual(
+  left: Record<TeamBuffId, number> | null,
+  right: Record<TeamBuffId, number> | null,
 ): boolean {
+  if (left === right) return true;
+  if (!left || !right) return false;
   for (const buffId of Object.keys(left) as TeamBuffId[]) {
     if (left[buffId] !== right[buffId]) return false;
   }
@@ -33,7 +35,13 @@ export type AccountSlice = {
   /** `skills.totals.xp_mult` — scales `xpPerPropWiki` the same way `treeTeamCoinPct` scales
    *  gold per prop. `1` (not `0`) is the no-boost default, matching {@link TreeState.xpMult}. */
   treeXpMult: number;
-  teamBuffs: Record<TeamBuffId, number>;
+  /**
+   * The user's explicit team-buffs OVERRIDE — `null` means "derive from the deployed roster"
+   * (issue #132; see `selectEffectiveTeamBuffs`, `account-selectors.ts`). This is the ONLY
+   * field the store itself tracks; the effective (override-or-derived) value is always computed,
+   * never stored, so it can never go stale against the roster.
+   */
+  teamBuffsOverride: Record<TeamBuffId, number> | null;
   houseIdx: number;
   houseLevel: number;
   phase: number | null;
@@ -74,7 +82,7 @@ export type AccountSlice = {
    */
   maxPhase: number | null;
 
-  setTeamBuffs: (value: Record<TeamBuffId, number>) => void;
+  setTeamBuffsOverride: (value: Record<TeamBuffId, number> | null) => void;
   setHouseIdx: (value: number) => void;
   setHouseLevel: (value: number) => void;
   setFarmPhase: (value: number | null) => void;
@@ -103,7 +111,7 @@ export const createAccountSlice: StateCreator<
   treeTeamCoinPct: defaultTree.teamCoinPct,
   treeLuckFlatPct: defaultTree.luckFlatPct ?? 0,
   treeXpMult: defaultTree.xpMult ?? 1,
-  teamBuffs: zeroTeamBuffs(),
+  teamBuffsOverride: null,
   houseIdx: defaultCtx.houseIdx,
   houseLevel: defaultCtx.houseLevel,
   phase: defaultCtx.phase,
@@ -117,9 +125,9 @@ export const createAccountSlice: StateCreator<
   houseCycleSecsLevel: null,
   maxPhase: null,
 
-  setTeamBuffs: (value) => {
-    if (teamBuffsEqual(get().teamBuffs, value)) return;
-    set({ teamBuffs: value });
+  setTeamBuffsOverride: (value) => {
+    if (teamBuffsOverrideEqual(get().teamBuffsOverride, value)) return;
+    set({ teamBuffsOverride: value });
   },
   setHouseIdx: (value) => {
     if (get().houseIdx === value) return;
@@ -162,10 +170,9 @@ export const createAccountSlice: StateCreator<
       treeTeamCoinPct: shared.tree.teamCoinPct ?? 0,
       treeLuckFlatPct: shared.tree.luckFlatPct ?? 0,
       treeXpMult: shared.tree.xpMult ?? 1,
-      teamBuffs: {
-        ...zeroTeamBuffs(),
-        ...(shared.teamBuffs as Record<TeamBuffId, number>),
-      },
+      // `shared` already went through `normalizeAccount` (issue #132) — `teamBuffsOverride` is
+      // `null` (derive from the roster) or an already-clean `Record<TeamBuffId, number>`.
+      teamBuffsOverride: shared.teamBuffsOverride ?? null,
       houseIdx: shared.context.houseIdx,
       houseLevel: shared.context.houseLevel,
       phase: shared.context.phase,
