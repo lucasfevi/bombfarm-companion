@@ -85,6 +85,7 @@ import {
   GATE_SECS_POR_ATO,
   BOSS_HP_MULT_WIKI,
   JAULA,
+  PROPS_POR_ATO,
   propCountForAto,
   xpPerProp,
   goldRarityMult,
@@ -114,12 +115,27 @@ import type { HeroRecord, AccountShared } from './shims/storage';
  * a fresh capture by pooling `manhattan(previous plant cell, next plant cell)` per hero and
  * normalising. The capture and its analysis are held out of band, not in this repo.
  *
+ * DENSITY-SCALED PER ATO, NOT SHARED ACROSS ALL 600 PHASES. This histogram is ato 1's. Applying
+ * it verbatim to a denser ato over-predicts hop length and so under-predicts throughput: ato 2
+ * packs 75 props onto the same map, so its plants sit `sqrt(50/75) = 0.816x` apart.
+ * {@link hopScaleForAto} carries that rescale and {@link cycleSecondsForHero} consumes it.
+ * Measured against live telemetry the correction is worth ~9% of clear time at ato 2 — small
+ * because the cycle is `max(fuse, hop/w)` and most of this histogram already sits under the fuse
+ * floor, which also caps what any further hop refinement can buy at ~1.33x.
+ *
+ * THE ~5% STILL OPEN AT ATO 2 IS NOT CADENCE — DO NOT TUNE THIS HISTOGRAM FOR IT. Of the 5.8% the
+ * row runs long, 4.5% is `heroesOnField` (3.310 against 3.46 measured — the House recovery ceiling
+ * in {@link allocateHouseSlots}); per-hero cadence is inside ~1%. Issue #132 carries the measured
+ * constants and the ato-2 anchor that would pin them.
+ *
  * KNOWN LIMITATION: one shared distribution cannot express that heroes have individually
  * different hop distributions (the same captures measure `corr(w, meanDist) ~ -0.55` — faster
  * heroes get shorter hops). Against each hero's OWN measured distribution the model lands within
  * 1%; against this pooled one it spreads to +-9%, weighted MAE 4.8% — still 5x better than the
  * 25.6% the retired constant produced. Making the distribution a function of `w` is the next
- * refinement and needs more captures than one account can supply.
+ * refinement and needs more captures than one account can supply. The density rescale above is
+ * geometry, NOT a second fit — no ato beyond 1 has been measured directly, so a capture at
+ * ato 3+ is the thing that would confirm or retire it.
  */
 export const HOP_DISTRIBUTION: readonly number[] = Object.freeze([
   0.00302, 0.05136, 0.15257, 0.24924, 0.19033, 0.09819, 0.07553, 0.05438, 0.01813, 0.01662,
@@ -154,19 +170,71 @@ export const CYCLE_LATENCY_SEC = 0.39;
  */
 export const HOP1_CYCLE_SEC = 2.44;
 
+/** The ato {@link HOP_DISTRIBUTION} was measured on — ato 1, 50 props. */
+export const HOP_FIT_ATO = 1;
+
 /**
- * `E[max(fuse, hop/w)] + latency` over {@link HOP_DISTRIBUTION}. `Infinity` when the hero cannot
- * move (`w <= 0`), which keeps a degenerate hero at zero throughput rather than dividing by zero.
+ * Hop-length scale for `ato` relative to {@link HOP_FIT_ATO}: `sqrt(props_fit / props_ato)`.
  *
- * Phase-independent — `fuse` and `w` are both phase-independent — so this stays a per-hero fact
- * computed once in {@link computeHeroFarmFacts}. It costs ~26 multiply-adds per hero for the
- * whole 600-row table, and adds NO per-row work and no pipeline calls.
+ * Every ato packs its props onto one map, so mean plant-to-plant spacing goes as the inverse
+ * square root of areal density. Ato 2 carries 75 props against ato 1's 50, so its plants sit
+ * `sqrt(50/75) = 0.816x` as far apart, and a hero walks proportionally less between them. `1` at
+ * the fit ato by construction — that row is the measurement, not a prediction from it.
  */
-export function cycleSecondsForHero(fuseSecs: number, walkSpeedCells: number): number {
-  if (!(walkSpeedCells > 0) || !Number.isFinite(walkSpeedCells)) return Infinity;
-  let expected = 0;
+export function hopScaleForAto(ato: number): number {
+  const props = propCountForAto(ato);
+  if (!(props > 0)) return 1;
+  return Math.sqrt(propCountForAto(HOP_FIT_ATO) / props);
+}
+
+/**
+ * Mass landing on hop 0 or 1 picks up {@link HOP1_CYCLE_SEC} rather than the walk branch, which is
+ * what keeps the density gain bounded: past a point, packing props closer stops helping because
+ * the hero is waiting on its own blast to clear, not on the walk.
+ */
+function scaleHopDistribution(scale: number): readonly number[] {
+  if (!(scale > 0) || scale >= 1) return HOP_DISTRIBUTION;
+  const scaled = new Array<number>(HOP_DISTRIBUTION.length).fill(0);
   for (let hop = 0; hop < HOP_DISTRIBUTION.length; hop++) {
     const probability = HOP_DISTRIBUTION[hop];
+    if (probability <= 0) continue;
+    const target = hop * scale;
+    const lower = Math.floor(target);
+    const frac = target - lower;
+    scaled[lower] += probability * (1 - frac);
+    if (frac > 0) scaled[lower + 1] += probability * frac;
+  }
+  return Object.freeze(scaled);
+}
+
+const HOP_DISTRIBUTION_BY_ATO: readonly (readonly number[])[] = Object.freeze(
+  PROPS_POR_ATO.map((_, index) => scaleHopDistribution(hopScaleForAto(index + 1))),
+);
+
+/** Clamped exactly as `propCountForAto` clamps, so the two never disagree on an out-of-range ato. */
+function atoIndex(ato: number): number {
+  return Math.max(1, Math.min(PROPS_POR_ATO.length, Math.round(ato))) - 1;
+}
+
+/**
+ * `E[max(fuse, hop/w)] + latency` over the hop histogram for `ato`. `Infinity` when the hero
+ * cannot move (`w <= 0`), which keeps a degenerate hero at zero throughput rather than dividing
+ * by zero.
+ *
+ * Depends on the phase only through its ATO, so this stays a per-hero fact precomputed per ato in
+ * {@link HeroFarmFacts.plantsPerSecByAto} — the row layer indexes it and adds NO per-row work and
+ * no pipeline calls.
+ */
+export function cycleSecondsForHero(
+  fuseSecs: number,
+  walkSpeedCells: number,
+  ato: number = HOP_FIT_ATO,
+): number {
+  if (!(walkSpeedCells > 0) || !Number.isFinite(walkSpeedCells)) return Infinity;
+  const distribution = HOP_DISTRIBUTION_BY_ATO[atoIndex(ato)] ?? HOP_DISTRIBUTION;
+  let expected = 0;
+  for (let hop = 0; hop < distribution.length; hop++) {
+    const probability = distribution[hop];
     if (probability <= 0) continue;
     expected +=
       probability *
@@ -210,11 +278,21 @@ export type HeroFarmFacts = {
   fuseSecs: number;
   /** Grid walk speed `w = effective.speed × GRID_SPEED_COEF`, CELLS PER SECOND. */
   walkSpeedCells: number;
-  /** {@link cycleSecondsForHero}, seconds — averaged over the hop distribution, NOT `max()` of a
-   *  mean hop. `Infinity` when `w <= 0`. */
+  /** {@link cycleSecondsForHero} at {@link HOP_FIT_ATO}, seconds — averaged over the hop
+   *  distribution, NOT `max()` of a mean hop. `Infinity` when `w <= 0`. */
   cycleSecs: number;
-  /** `1 / cycleSecs`, plants per second. `0` when `cycleSecs` is not finite and positive. */
+  /** `1 / cycleSecs`, plants per second, at {@link HOP_FIT_ATO}. `0` when `cycleSecs` is not
+   *  finite and positive. */
   plantsPerSec: number;
+  /**
+   * `1 / cycleSecs` per ato, index `ato - 1`, each at that ato's own prop density
+   * (see {@link hopScaleForAto}).
+   *
+   * OPTIONAL, and absent means density-INDEPENDENT: the row layer falls back to
+   * {@link plantsPerSec} at every ato, which is what lets a hand-built `HeroFarmFacts` keep a
+   * single plant rate. `computeHeroFarmFacts` always populates it.
+   */
+  plantsPerSecByAto?: readonly number[];
   /** `1 + 0.5 × context.blastRange`, blocks hit per bomb. Note: `blastRange` is already `1 + rangeCells`. */
   blocksPerBomb: number;
   /** House duty cycle as a FRACTION 0..1 (the pipeline reports this as a percent). */
@@ -343,8 +421,14 @@ export function heroFactsFromBasis(basis: HeroFarmBasis, pts: Record<SheetKey, n
   const penetrationPct = sheet.penetration;
   const fuseSecs = fuseSeconds(sheet.cdr);
   const walkSpeedCells = sheet.speed * GRID_SPEED_COEF;
+  const plantsPerSecByAto = Object.freeze(
+    PROPS_POR_ATO.map((_, index) => {
+      const cycle = cycleSecondsForHero(fuseSecs, walkSpeedCells, index + 1);
+      return Number.isFinite(cycle) && cycle > 0 ? 1 / cycle : 0;
+    }),
+  );
   const cycleSecs = cycleSecondsForHero(fuseSecs, walkSpeedCells);
-  const plantsPerSec = Number.isFinite(cycleSecs) && cycleSecs > 0 ? 1 / cycleSecs : 0;
+  const plantsPerSec = plantsPerSecByAto[HOP_FIT_ATO - 1];
   const field = fieldSeconds(sheet, basis.context);
   const uptime = (100 * field) / (field + basis.context.restSeconds) / 100;
   const degenerate = !(avgHitBase > 0) || !(plantsPerSec > 0);
@@ -358,6 +442,7 @@ export function heroFactsFromBasis(basis: HeroFarmBasis, pts: Record<SheetKey, n
     walkSpeedCells,
     cycleSecs,
     plantsPerSec,
+    plantsPerSecByAto,
     blocksPerBomb: basis.blocksPerBomb,
     uptime,
     heroLuckPct: basis.heroLuckPct,
@@ -558,9 +643,14 @@ function allocateHouseSlots(
   return activity;
 }
 
-/** Blocks struck per second while on field: `plantsPerSec × blocksPerBomb × EFF_IA`. */
-function hitsPerSec(hero: HeroFarmFacts): number {
-  return hero.plantsPerSec * hero.blocksPerBomb * EFF_IA;
+/** See {@link HeroFarmFacts.plantsPerSecByAto} for why the array may be absent. */
+function plantsPerSecForAto(hero: HeroFarmFacts, ato: number): number {
+  return hero.plantsPerSecByAto?.[atoIndex(ato)] ?? hero.plantsPerSec;
+}
+
+/** Blocks struck per second while on field: `plantsPerSec(ato) × blocksPerBomb × EFF_IA`. */
+function hitsPerSec(hero: HeroFarmFacts, ato: number): number {
+  return plantsPerSecForAto(hero, ato) * hero.blocksPerBomb * EFF_IA;
 }
 
 // ---------------------------------------------------------------------------------------------
@@ -675,7 +765,7 @@ function buildRow(line: WikiPhaseLine, squad: SquadFarmFacts, options: FarmRateO
       0,
     );
     const bossHtk = hitsToKill(avgHit, propHp(line.hp, BOSS_HP_MULT_WIKI));
-    const hps = hitsPerSec(hero);
+    const hps = hitsPerSec(hero, line.ato);
     return {
       avgHit,
       eHtk,
