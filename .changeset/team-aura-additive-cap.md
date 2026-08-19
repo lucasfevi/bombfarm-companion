@@ -73,6 +73,19 @@ desktop's advice pipeline now derives the same `computeTeamBuffsFromDeployed(her
 its own roster on every rebuild — always derived, no override, since there is nothing on the
 desktop for an override to record.
 
+**Internal (no shipped behavior change): the account-486 throughput anchor is retired.**
+`farm-rate-486-anchor.test.ts` pinned `goldPerHour` against telemetry captured beside a save that
+predates both the 2026-08-15 crit-chance/CDR shape change and the 2026-08-16 item-slot
+redistribution — sheet math this repo already declares unreproducible
+(`points-within-level-budget.test.ts`'s `NON_CURRENT_REGIME_CAPTURES`). Re-pinning it to whatever
+this fix's model now produces would have anchored a fresh-looking number to a stale target, so the
+file is deleted rather than recalibrated (issue #137); its fixture stays committed for the
+structural suites that still read it for roster shape. A new in-regime anchor,
+`farm-rate-phase51-ato2-anchor.test.ts`, pins the same link-by-link chain against a post-revert
+capture (`sheet-math/save-20260818-12heroes.json`, phase 51) and 61 freshly-logged clears; its
+`heroesOnField`/`clearSecs`/`goldPerHour` carry a documented, left-open ~6-8% residual attributed
+to partial team-aura coverage across a farming rotation (issue #138) rather than tuned away.
+
 **What moves in the planner**: any roster with two or more carriers of the same team aura sees a
 lower (correctly capped) bonus than before; a non-carrier standing with a carrier now correctly
 receives the SAME bonus the carrier does, where it previously received none. A fresh import, or
