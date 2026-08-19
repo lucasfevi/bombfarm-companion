@@ -1,7 +1,27 @@
 /**
  * Proof that the `farm-rate.ts` basis seam is a byte-identical refactor, not a rewrite.
  *
- * RE-RECORDED 2026-08-18 for the item-drop-band refresh (`ITEM_POR_FASE` re-cut by the 2026-08-15
+ * RE-RECORDED 2026-08-18 for the per-ato hop-density rescale (`hopScaleForAto` — `HOP_DISTRIBUTION`
+ * is measured at ato 1's 50 props and was previously applied unscaled to every ato). Diffed field
+ * by field against the previous capture before rewriting, and the footprint is exactly the change:
+ *
+ * - `heroFacts` — **only the new `plantsPerSecByAto` appeared**; every pre-existing field on all
+ *   5 heroes is byte-identical, `cycleSecs` and `plantsPerSec` included. Those two are defined at
+ *   the fit ato, so the rescale cannot move them — that is what makes them the control here.
+ * - `rows` — **ato 1's 50 rows are byte-identical, every column.** Ato 1 IS the measurement, so a
+ *   diff there would have meant the rescale was not identity at its own fit point. The other 550
+ *   rows move on the throughput columns only (`clearSecs`, `propsPerHour`, `cyclesPerHour`,
+ *   `goldPerHour`, `chestsPerHour`, `keysPerHour`, `gemsPerHour`, `timePiecesPerHour`,
+ *   `stoneChestsPerHour`, `xpPerHour`, and `expectedHtk` — the last because the House allocation
+ *   re-ranks slightly when plant rates do). `clearSecs` falls by a single factor within each ato:
+ *   x0.9101 at ato 2, x0.8635 at ato 3, x0.8188 at ato 4, x0.7986 at ato 5 — monotone in prop
+ *   density and flat within an ato, which is the shape a geometric rescale must have. Anything
+ *   varying inside one ato would have meant a phase-dependent term had leaked in.
+ * - `mitigationPct`, `ato`, `gate`, `locked`, `oneShot`, `gateTimerSecs`, `jaulaEarlyCapPct`,
+ *   `jaulaWindowSecs`, `phase`, `itemLevels`, `itemLevelLabel`, `heroesOnField`,
+ *   `concurrencyScale` and `fortunaAura` are byte-identical on all 600 rows.
+ *
+ * PREVIOUSLY RE-RECORDED 2026-08-18 for the item-drop-band refresh (`ITEM_POR_FASE` re-cut by the 2026-08-15
  * patch from 9 bands topping out at item level 90 to 30 running 10…300). Diffed field by field
  * against the previous capture before rewriting, same discipline as every re-record below, and
  * the footprint is exactly the change:
