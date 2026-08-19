@@ -1,0 +1,163 @@
+# Instructions
+
+- Following Playwright test failed.
+- Explain why, be concise, respect Playwright best practices.
+- Provide a snippet of code with the fix, if possible.
+
+# Test info
+
+- Name: display-precision.spec.ts >> display precision sweep (BSPW6-05, AC-25, AC-26) >> Effective panel sheet group renders combat-delta Speed at 2 dp
+- Location: e2e/display-precision.spec.ts:168:7
+
+# Error details
+
+```
+Error: expect(locator).toContainText(expected) failed
+
+Locator: locator('[data-slot="tabs-panel"][data-state="active"]').locator('section').filter({ has: getByRole('heading', { name: /^Effective stats$/i, level: 2 }) }).getByRole('button', { name: /Show breakdown of Speed/i })
+Expected substring: "82.50"
+Received string:    "Speed77.77"
+Timeout: 5000ms
+
+Call log:
+  - Expect "toContainText" with timeout 5000ms
+  - waiting for locator('[data-slot="tabs-panel"][data-state="active"]').locator('section').filter({ has: getByRole('heading', { name: /^Effective stats$/i, level: 2 }) }).getByRole('button', { name: /Show breakdown of Speed/i })
+    14 × locator resolved to <button tabindex="0" type="button" data-value="" data-hidden="" id="base-ui-_r_3a_" aria-disabled="false" aria-expanded="false" data-orientation="vertical" aria-label="Show breakdown of Speed" class="flex w-full cursor-pointer select-none outline-none [&[data-panel-open]_[data-accordion-icon]]:rotate-180 focus-visible:border-accent items-center justify-between gap-3 rounded-sm border border-[color-mix(in_oklch,var(--accent)_28%,var(--line))] border-l-[3px] border-l-accent bg-[color-mix(in_oklch,var(--…>…</button>
+       - unexpected value "Speed77.77"
+
+```
+
+```yaml
+- button "Show breakdown of Speed": Speed 77.77
+```
+
+# Test source
+
+```ts
+  85  |   };
+  86  | }
+  87  | 
+  88  | function activePanel(page: Page) {
+  89  |   return page.locator('[data-slot="tabs-panel"][data-state="active"]');
+  90  | }
+  91  | 
+  92  | test.describe('display precision sweep (BSPW6-05, AC-25, AC-26)', () => {
+  93  |   test('sheet table Birth column renders at 2 dp for a known fixture value', async ({ page }) => {
+  94  |     await seedLocalStorage(page, precisionHero());
+  95  |     await page.goto('/');
+  96  |     await selectSavedHero(page, 'Precision');
+  97  |     await page.getByRole('tab', { name: /^Points$/i }).click();
+  98  | 
+  99  |     const stats = activePanel(page).locator('section').filter({
+  100 |       has: page.getByRole('heading', { name: /^Stats$/i, level: 2 }),
+  101 |     });
+  102 |     await expect(stats.getByRole('columnheader', { name: /^Birth$/i })).toBeVisible();
+  103 |     await expect(stats.getByRole('columnheader', { name: /^Total$/i })).toBeVisible();
+  104 |     const attackRow = stats.locator('tr').filter({ hasText: /^Attack/ });
+  105 |     // birth.attack = 123.456 -> "123.46" at 2 dp (never "123.5" or "123.456").
+  106 |     await expect(attackRow).toContainText('123.46');
+  107 |     await expect(attackRow).not.toContainText('123.5');
+  108 |     await expect(attackRow).not.toContainText('123.456');
+  109 |   });
+  110 | 
+  111 |   test('sheet table shows a Luck row (BSP-44, AC-19)', async ({ page }) => {
+  112 |     await seedLocalStorage(page, precisionHero());
+  113 |     await page.goto('/');
+  114 |     await selectSavedHero(page, 'Precision');
+  115 |     await page.getByRole('tab', { name: /^Points$/i }).click();
+  116 | 
+  117 |     const stats = activePanel(page).locator('section').filter({
+  118 |       has: page.getByRole('heading', { name: /^Stats$/i, level: 2 }),
+  119 |     });
+  120 |     const luckRow = stats.locator('tr').filter({ hasText: /^Luck/ });
+  121 |     // birth.luck = 12.345 -> "12.35" at 2 dp (BSP-29).
+  122 |     await expect(luckRow).toContainText('12.35');
+  123 |   });
+  124 | 
+  125 |   test('sheet table is read-only — no geared Num spinbuttons', async ({ page }) => {
+  126 |     await seedLocalStorage(page, precisionHero());
+  127 |     await page.goto('/');
+  128 |     await selectSavedHero(page, 'Precision');
+  129 |     await page.getByRole('tab', { name: /^Points$/i }).click();
+  130 | 
+  131 |     const stats = activePanel(page).locator('section').filter({
+  132 |       has: page.getByRole('heading', { name: /^Stats$/i, level: 2 }),
+  133 |     });
+  134 |     await expect(stats.getByRole('spinbutton')).toHaveCount(0);
+  135 |   });
+  136 | 
+  137 |   test('sheet table Total for Speed includes Δ points at 2 dp', async ({ page }) => {
+  138 |     await seedLocalStorage(page, precisionHero());
+  139 |     await page.goto('/');
+  140 |     await selectSavedHero(page, 'Precision');
+  141 |     await page.getByRole('tab', { name: /^Points$/i }).click();
+  142 | 
+  143 |     const stats = activePanel(page).locator('section').filter({
+  144 |       has: page.getByRole('heading', { name: /^Stats$/i, level: 2 }),
+  145 |     });
+  146 |     const speedRow = stats.locator('tr').filter({ hasText: /^Speed/ });
+  147 |     // birth 50 + 25 pts × 2% -> Total 75.00
+  148 |     await expect(speedRow).toContainText('75.00');
+  149 |     await expect(speedRow).toContainText('+25.00');
+  150 |   });
+  151 | 
+  152 |   test('Points table After column renders at 2 dp', async ({ page }) => {
+  153 |     await seedLocalStorage(page, precisionHero());
+  154 |     await page.goto('/');
+  155 |     await selectSavedHero(page, 'Precision');
+  156 |     await page.getByRole('tab', { name: /^Points$/i }).click();
+  157 | 
+  158 |     // Scope to the Points *section*, not the tab panel: the read-only Stats table shares
+  159 |     // this tab and has its own "Speed" row, so a panel-wide `tr` filter matches both.
+  160 |     const pointsStage = activePanel(page)
+  161 |       .locator('section')
+  162 |       .filter({ has: page.getByRole('heading', { name: /^Points$/i, level: 2 }) });
+  163 |     const speedRow = pointsStage.locator('tr').filter({ hasText: /^Speed/ });
+  164 |     // pts.speed = 25 -> After = 75.00 exactly (2 dp, no truncation to 75 or 75.0).
+  165 |     await expect(speedRow).toContainText('75.00');
+  166 |   });
+  167 | 
+  168 |   test('Effective panel sheet group renders combat-delta Speed at 2 dp', async ({ page }) => {
+  169 |     // Marcha adds a combat speed mult so Speed differs from sheet Total and stays listed.
+  170 |     const seeded = precisionHero();
+  171 |     seeded.account = {
+  172 |       ...seeded.account!,
+  173 |       teamBuffs: { marcha_acelerada: 10 },
+  174 |     };
+  175 |     await seedLocalStorage(page, seeded);
+  176 |     await page.goto('/');
+  177 |     await selectSavedHero(page, 'Precision');
+  178 |     await page.getByRole('tab', { name: /^Points$/i }).click();
+  179 | 
+  180 |     const effective = activePanel(page).locator('section').filter({
+  181 |       has: page.getByRole('heading', { name: /^Effective stats$/i, level: 2 }),
+  182 |     });
+  183 |     const speedBtn = effective.getByRole('button', { name: /Show breakdown of Speed/i });
+  184 |     // adjusted 75 × 1.10 Marcha → 82.50
+> 185 |     await expect(speedBtn).toContainText('82.50');
+      |                            ^ Error: expect(locator).toContainText(expected) failed
+  186 |   });
+  187 | 
+  188 |   test('ledger step amounts (pctOfBase term) render at 2 dp', async ({ page }) => {
+  189 |     const seeded = precisionHero();
+  190 |     seeded.account = {
+  191 |       ...seeded.account!,
+  192 |       teamBuffs: { marcha_acelerada: 10 },
+  193 |     };
+  194 |     await seedLocalStorage(page, seeded);
+  195 |     await page.goto('/');
+  196 |     await selectSavedHero(page, 'Precision');
+  197 |     await page.getByRole('tab', { name: /^Points$/i }).click();
+  198 | 
+  199 |     const effective = activePanel(page).locator('section').filter({
+  200 |       has: page.getByRole('heading', { name: /^Effective stats$/i, level: 2 }),
+  201 |     });
+  202 |     await effective.getByRole('button', { name: /Show breakdown of Speed/i }).click();
+  203 | 
+  204 |     // The "points" step: 25 pts x 2%/pt of a 50.00 base -> "+ 50.00% × 50.00" (2 dp).
+  205 |     // Matches both the claim line and its "→ ... =" proof line — either is proof of 2 dp.
+  206 |     await expect(effective.getByText(/50\.00% × 50\.00/).first()).toBeVisible();
+  207 |   });
+  208 | });
+  209 | 
+```
