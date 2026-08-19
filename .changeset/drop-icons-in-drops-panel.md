@@ -167,3 +167,10 @@ Measured in the browser on both phase types (map 1-1, non-gate, and map 1-10, a 
 count is 5 either way, the row list is 228px tall (was 181px at 4 rows), and the panel itself
 stays at 404.8px — byte-identical between the two phases and unchanged from before this PR, since
 its height still comes from the board grid rather than its content.
+
+**Final copy pass.** The key row is labelled just "Key" / "Chave" — "Ready key" carried the game's
+internal `keyDropRate` phrasing into the UI, where the qualifier says nothing a player needs. And
+the gate/non-gate sentence moves out of the per-row boost tooltip into the panel's section
+description: it describes the whole panel rather than any one row's arithmetic, so repeating it in
+every row's tooltip made the tooltip say two unrelated things and hid a panel-level fact behind a
+hover. It uses the same `tipClass` the Hero panel's section description already uses.

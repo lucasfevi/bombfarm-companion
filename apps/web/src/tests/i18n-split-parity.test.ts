@@ -115,7 +115,12 @@ const KEYS_REMOVED: readonly string[] = [
  * the phase being viewed, so a gate phase showed 4 rows and a normal phase showed 2. It now
  * always shows all 5, dimming the ones that do not apply and replacing their live percentage
  * with a dash plus a small note naming which phase type the drop IS specific to —
- * `phasesDropGateOnly` for the time/gem/stone chests, `phasesDropNonGateOnly` for the ready key.
+ * `phasesDropGateOnly` for the time/gem/stone chests, `phasesDropNonGateOnly` for the key.
+ *
+ * `phasesDropsSectionDesc` (2026-08-19): the gate/non-gate sentence moved out of the per-row boost
+ * tooltip and became the panel's section description. It describes the whole panel, not one row's
+ * arithmetic, so repeating it inside every row's tooltip made the tooltip say two unrelated things
+ * and hid a panel-level fact behind a hover.
  */
 const KEYS_ADDED: readonly string[] = [
   'phasesXpActualHint',
@@ -126,6 +131,7 @@ const KEYS_ADDED: readonly string[] = [
   'phasesDropGem',
   'phasesDropStone',
   'phasesDropActualHint',
+  'phasesDropsSectionDesc',
   'phasesGoldComum',
   'phasesAvgGold',
   'phasesMapGold',
