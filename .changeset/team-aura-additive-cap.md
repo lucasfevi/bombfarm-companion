@@ -1,6 +1,7 @@
 ---
 "@bombfarm/domain": minor
 "@bombfarm/web": minor
+"@bombfarm/desktop": minor
 ---
 
 Fixes five compounding errors in the team-aura model, confirmed against the maintainer's own
@@ -62,6 +63,15 @@ exactly as before. A pre-existing local save's stored `teamBuffs` migrates on ne
 all-zero value (the old ubiquitous, never-touched default) is indistinguishable from "never
 touched" and becomes derive-by-default; any value with a genuinely nonzero entry was a real
 auto-fill snapshot or hand edit and carries forward as an explicit override, unchanged.
+
+**The desktop app had the same regression, with no button to work around it.** It has no
+team-buffs UI at all, so `AccountShared.teamBuffs` there was hardcoded to `zeroTeamBuffs()` as a
+placeholder for a dimension it did not model — harmless while a hero's own rank still self-applied
+regardless of that placeholder, but not once the self-fold above was removed: every desktop hero,
+including a carrier itself, started reading zero team-aura benefit with no way to correct it. The
+desktop's advice pipeline now derives the same `computeTeamBuffsFromDeployed(heroes)` total from
+its own roster on every rebuild — always derived, no override, since there is nothing on the
+desktop for an override to record.
 
 **What moves in the planner**: any roster with two or more carriers of the same team aura sees a
 lower (correctly capped) bonus than before; a non-carrier standing with a carrier now correctly
