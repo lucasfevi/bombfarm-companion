@@ -25,6 +25,7 @@ import {
 import type { AccountShared } from '@/shared/lib/storage';
 import type { PlannerStore } from '@/shared/stores/planner-store';
 import type { FarmRespecProposal, FarmRespecStatus } from '@/shared/stores/slices/phases-slice';
+import { selectEffectiveTeamBuffs } from '@/shared/stores/selectors/account-selectors';
 
 export type FarmRankingReason = 'no-roster' | 'no-heroes-enabled' | 'compute-failed';
 
@@ -72,7 +73,9 @@ export function readFarmDepTuple(state: PlannerStore) {
     state.treeEnergy,
     state.treeTeamCoinPct,
     state.treeLuckFlatPct,
-    state.teamBuffs,
+    // The effective (override-or-derived) roster total, issue #132 — `state.heroes` above
+    // already covers the "derive" half; this also invalidates on an override edit.
+    selectEffectiveTeamBuffs(state),
     state.houseIdx,
     state.houseLevel,
     state.slots,
@@ -140,7 +143,10 @@ export function buildAccount(state: PlannerStore): AccountShared {
       teamCoinPct: state.treeTeamCoinPct,
       luckFlatPct: state.treeLuckFlatPct,
     },
-    teamBuffs: state.teamBuffs,
+    // Issue #132: the roster-wide total is DERIVED from state.heroes by default (an override,
+    // when set, wins) — never the stale, silently-zero stored field a fresh import used to
+    // leave every carrier's own aura at 0% until someone found the auto-fill button.
+    teamBuffs: selectEffectiveTeamBuffs(state),
     context: {
       houseIdx: state.houseIdx,
       houseLevel: state.houseLevel,

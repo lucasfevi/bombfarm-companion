@@ -3,6 +3,7 @@ import {
   type AdvisorPipelineResult,
 } from '@bombfarm/domain/advisor-pipeline';
 import { substituteHeroAbilities } from '@bombfarm/domain/team-buffs';
+import { selectEffectiveTeamBuffs } from '@/shared/stores/selectors/account-selectors';
 import type { PlannerStore } from '@/shared/stores/planner-store';
 
 /**
@@ -43,11 +44,15 @@ export function readAdvisorDepTuple(state: PlannerStore): readonly unknown[] {
     state.treeSpeed,
     state.treeEnergy,
     state.treeLuckFlatPct,
-    state.teamBuffs,
-    // The active hero's own team-aura ranks are folded into `state.teamBuffs` at combine time
+    // The effective (override-or-derived) roster total, issue #132 — a stable reference that
+    // only changes when the override or the roster actually does (`selectEffectiveTeamBuffs`).
+    selectEffectiveTeamBuffs(state),
+    // The active hero's own team-aura ranks are folded into that total at combine time
     // (issue #132's substitution, `substituteHeroAbilities`), not by `abilityMods` any more — so
     // a change to EITHER the roster (the active hero's last-persisted ranks) or `activeHeroId`
-    // itself (switching heroes) must invalidate this cache exactly like `state.abilities` above.
+    // itself (switching heroes) must invalidate this cache exactly like `state.abilities` above,
+    // REGARDLESS of whether an override is active (the substitution still applies on top of an
+    // override — only the base being substituted into differs).
     state.heroes,
     state.activeHeroId,
     state.houseIdx,
@@ -66,17 +71,20 @@ export function readAdvisorDepTuple(state: PlannerStore): readonly unknown[] {
 }
 
 /**
- * The active hero's own team-aura ranks substituted into the stored roster total (issue #132):
- * `abilityMods` no longer folds a team aura into a hero's own mods at all, so the ONLY way an
- * edit to the active hero's own Grito/Marcha/Fôlego/Presságio rank reaches the live preview is
- * through this substitution — `state.teamBuffs` was last computed (by the autofill button, or
- * hand-typed) against the roster's PERSISTED ranks, and `state.heroes` still holds that
- * persisted rank for the active hero until the autosave debounce catches up with `state.abilities`.
+ * The active hero's own team-aura ranks substituted into the effective roster total (issue
+ * #132): `abilityMods` no longer folds a team aura into a hero's own mods at all, so the ONLY
+ * way an edit to the active hero's own Grito/Marcha/Fôlego/Presságio rank reaches the live
+ * preview is through this substitution. `selectEffectiveTeamBuffs` is either an explicit
+ * override or DERIVED from the roster's PERSISTED ranks either way — `state.heroes` still holds
+ * the active hero's persisted rank until the autosave debounce catches up with the live
+ * `state.abilities` draft, so the substitution is exactly as correct against an override as it
+ * is against the derived default.
  */
 function previewTeamBuffs(state: PlannerStore) {
+  const effective = selectEffectiveTeamBuffs(state);
   const savedActiveHero = state.heroes.find((hero) => hero.id === state.activeHeroId);
-  if (!savedActiveHero) return state.teamBuffs;
-  return substituteHeroAbilities(state.teamBuffs, savedActiveHero.abilities, state.abilities);
+  if (!savedActiveHero) return effective;
+  return substituteHeroAbilities(effective, savedActiveHero.abilities, state.abilities);
 }
 
 function depsEqual(left: readonly unknown[], right: readonly unknown[]): boolean {

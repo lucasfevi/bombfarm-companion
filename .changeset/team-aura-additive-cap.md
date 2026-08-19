@@ -47,12 +47,26 @@ Presságio Mortal at 114.28571428571428 — each ability's own rank-20 maximum, 
 constant. Five fielded rank-20 Fôlego carriers used to drive drain to a 100×-optimistic floor;
 they now cap at one carrier's worth.
 
+**The roster-wide total is now DERIVED by default, not a stored field starting at zero.** Once
+`abilityMods` stopped folding a hero's own rank into its own mods (above), the account's
+`teamBuffs` value became the ONLY source of any team-aura benefit — and that value defaulted to
+an all-zero `zeroTeamBuffs()` that nothing populated on import. A carrier's aura genuinely applied
+to nobody, including itself, until a user found the Account panel's auto-fill button by hand: a
+regression in shipped default behavior, not a modelling nuance. The farm board and the live
+advisor preview now read `computeTeamBuffsFromDeployed(heroes)` — the same pure roster total the
+auto-fill button always wrote — whenever the account carries no explicit override, so a fresh
+import shows the real total its own roster carries. The Account panel's manual fields remain a
+genuine override: editing one, or pressing Reset (an explicit all-zero override, distinct from no
+override at all), still pins the account to that exact figure regardless of later roster changes,
+exactly as before. A pre-existing local save's stored `teamBuffs` migrates on next load: an
+all-zero value (the old ubiquitous, never-touched default) is indistinguishable from "never
+touched" and becomes derive-by-default; any value with a genuinely nonzero entry was a real
+auto-fill snapshot or hand edit and carries forward as an explicit override, unchanged.
+
 **What moves in the planner**: any roster with two or more carriers of the same team aura sees a
 lower (correctly capped) bonus than before; a non-carrier standing with a carrier now correctly
-receives the SAME bonus the carrier does, where it previously received none. A roster with at
-most one total carrier per aura, and no Contra o Relógio contribution to the gate advisor, is
-unaffected in shape but may still move: a hero's own rank no longer self-applies without a real
-account-level `teamBuffs` total behind it (previously it leaked through regardless of context),
-so farm-board figures computed before the team-buffs auto-fill button is pressed lose that
-hero's own aura contribution — matching the account-wide total actually on file, not a per-hero
-exception to it.
+receives the SAME bonus the carrier does, where it previously received none. A fresh import, or
+any account that never pressed auto-fill or edited a team-buff field by hand, now shows its
+roster's real team-aura total immediately instead of a blank zero panel. A roster with at most one
+total carrier per aura, no Contra o Relógio contribution to the gate advisor, and an explicit
+account-level override already on file, is unaffected in shape.

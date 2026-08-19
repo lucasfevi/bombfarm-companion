@@ -27,7 +27,7 @@ import { AccountTeamBuffFields } from './account-team-buff-fields';
 export function AccountColumn() {
   const { t } = useAppLang();
   const heroes = usePlannerStore(selectHeroes);
-  const setTeamBuffs = usePlannerStore((state) => state.setTeamBuffs);
+  const setTeamBuffsOverride = usePlannerStore((state) => state.setTeamBuffsOverride);
 
   return (
     <Panel>
@@ -51,11 +51,16 @@ export function AccountColumn() {
               <Button
                 type="button"
                 variant="default"
-                onClick={() => setTeamBuffs(computeTeamBuffsFromDeployed(heroes))}
+                onClick={() => setTeamBuffsOverride(computeTeamBuffsFromDeployed(heroes))}
               >
                 {t.teamBuffsAutoFill}
               </Button>
-              <Button type="button" variant="ghost" onClick={() => setTeamBuffs(zeroTeamBuffs())}>
+              {/* Explicit all-zero OVERRIDE (issue #132) — a deliberate "model this roster with
+                  no team auras" choice, distinct from the default (no override: derived from the
+                  deployed roster). There is currently no separate control to clear an override
+                  back to derived; re-pressing "auto-fill" is the way back to the roster's real
+                  total. */}
+              <Button type="button" variant="ghost" onClick={() => setTeamBuffsOverride(zeroTeamBuffs())}>
                 {t.reset}
               </Button>
             </div>
