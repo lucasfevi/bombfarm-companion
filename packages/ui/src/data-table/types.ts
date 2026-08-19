@@ -1,4 +1,4 @@
-import type { HTMLAttributes, ReactNode, TdHTMLAttributes, ThHTMLAttributes } from 'react';
+import type { HTMLAttributes, ReactNode, Ref, TdHTMLAttributes, ThHTMLAttributes, UIEventHandler } from 'react';
 import type { DataTableCellVariants } from '../data-table.recipe';
 
 export type SortDir = 'asc' | 'desc';
@@ -14,7 +14,11 @@ export type DataTableRootProps = {
   rowHeight?: string;
   className?: string;
   children: ReactNode;
-};
+  /** Fires on the scroll container — a row-virtualizing caller reads `scrollTop` from it. */
+  onScroll?: UIEventHandler<HTMLDivElement>;
+  /** Ref to the scroll container div, for callers that need to read its metrics directly. */
+  ref?: Ref<HTMLDivElement>;
+} & Omit<HTMLAttributes<HTMLDivElement>, 'className' | 'children' | 'onScroll'>;
 
 export type DataTableTableProps = HTMLAttributes<HTMLTableElement>;
 

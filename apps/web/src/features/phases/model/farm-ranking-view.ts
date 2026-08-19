@@ -79,14 +79,6 @@ export const FARM_COLUMNS: readonly FarmColumnDef[] = [
     sortKey: 'clearSecs',
   },
   { id: 'oneShot', headerKey: 'farmRankingColOneShot', align: 'left', numeric: false, sortKey: null },
-  { id: 'jaula', headerKey: 'farmRankingColJaula', align: 'left', numeric: false, sortKey: null },
-  {
-    id: 'infeasible',
-    headerKey: 'farmRankingColInfeasible',
-    align: 'left',
-    numeric: false,
-    sortKey: null,
-  },
 ] as const;
 
 export const DEFAULT_SORT: { key: FarmSortKey; direction: FarmSortDir } = {
@@ -131,11 +123,10 @@ export type FarmFilters = {
   unlockedOnly: boolean;
   ato: number | null;
   gate: GateFilter;
-  feasibleOnly: boolean;
 };
 
 export function defaultFarmFilters(): FarmFilters {
-  return { unlockedOnly: true, ato: null, gate: 'all', feasibleOnly: false };
+  return { unlockedOnly: true, ato: null, gate: 'all' };
 }
 
 /**
@@ -152,7 +143,6 @@ export function applyFarmFilters(
     if (filters.ato != null && row.ato !== filters.ato) return false;
     if (filters.gate === 'gate' && !row.gate) return false;
     if (filters.gate === 'non-gate' && row.gate) return false;
-    if (filters.feasibleOnly && row.infeasible) return false;
     return true;
   });
 }

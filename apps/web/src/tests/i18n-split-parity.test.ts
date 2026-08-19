@@ -79,6 +79,24 @@ const fixture = JSON.parse(readFileSync(fixturePath, 'utf8')) as {
  * The Cage panel rework (2026-08-19) moved the early-arrival row's explanation out of a
  * tooltip and into a new section description under the panel's art (`phasesJaulaSectionDesc`,
  * in `KEYS_ADDED`), so `phasesJaulaEarlyHint` has no reader left.
+ *
+ * The Farm Ranking redesign's third pass (2026-08-19) removed the FEASIBLE column and its
+ * "Feasible only" filter switch from the board — the underlying `infeasible` row field and its
+ * `@bombfarm/domain` computation are untouched, only the board's own column/filter went away, so
+ * `farmRankingColInfeasible`, `farmRankingFilterFeasibleLabel` and `farmRankingInfeasibleBadge`
+ * have no reader left. The same pass switched the difficulty filter's options from bare numbers
+ * to `gameDifficultyLabel(ato, lang)` calls, which needed no new string.
+ *
+ * The Farm Ranking redesign's fourth pass (2026-08-19) removed the cage-window column from the
+ * table entirely (the underlying `jaulaEarlyCapPct`/`jaulaWindowSecs` fields are untouched and
+ * still read by the Phase explorer's own Cage panel), so `farmRankingColJaula` has no reader
+ * left.
+ *
+ * The Farm Ranking redesign's sixth pass (2026-08-19) dropped the trailing "consumed"/"consumidas"
+ * annotation from the keys cell — a gate row now reads the signed rate alone (`-15.5/h`), the same
+ * shape a non-gate row's gain already has — so `farmRankingKeysConsumed` has no reader left. The
+ * same pass replaced the row's "Gate" chip with the game's own clock icon; `farmRankingGateBadge`
+ * itself is untouched, now carried as the icon's tooltip and `sr-only` accessible name.
  */
 const KEYS_REMOVED: readonly string[] = [
   'phasesGoldComumWiki',
@@ -88,6 +106,14 @@ const KEYS_REMOVED: readonly string[] = [
   'phasesMapGoldWiki',
   'phasesMapGoldActual',
   'phasesJaulaEarlyHint',
+  'farmRankingColInfeasible',
+  'farmRankingFilterFeasibleLabel',
+  'farmRankingInfeasibleBadge',
+  'farmRankingColJaula',
+  'farmRankingKeysConsumed',
+  // Farm board redesign (2026-08-19): the locked-phase "Push target" badge is withdrawn — it
+  // wrapped onto a second line in the phase cell and grew every row it appeared on.
+  'farmRankingPushTargetBadge',
 ];
 
 /**
@@ -178,12 +204,25 @@ const KEYS_ADDED: readonly string[] = [
  * share..." paragraph (`explainSections.0.p.1`) in both locales, back to describing crit chance and
  * cooldown as a percent of the birth roll — the 2026-08-18 game patch reverted the flat-addend
  * shape the 2026-08-15 one had introduced.
+ *
+ * The Farm Ranking redesign (2026-08-19) moved "/hr" off the six rate column headers
+ * (`farmRankingColGold`/`Chests`/`Keys`/`Gems`/`TimePieces`/`Xp`) and onto each cell's own value
+ * instead (`formatRatePerHour`/`formatSignedRatePerHour` in `farm-ranking-format.ts`). The
+ * chest/key/gem/time-piece headers were reworded to the Drops panel's own vocabulary at the same
+ * time (e.g. "Chests / hr" -> "Item chest"); that wording now survives as the tooltip and
+ * screen-reader text behind each header's icon.
  */
 const PROSE_EDITED_PATHS: readonly string[] = [
   'phasesGoldActualHint',
   'phasesJaulaSection',
   'phasesJaulaEarly',
   'explainSections.0.p.1',
+  'farmRankingColGold',
+  'farmRankingColChests',
+  'farmRankingColKeys',
+  'farmRankingColGems',
+  'farmRankingColTimePieces',
+  'farmRankingColXp',
 ];
 
 function omitKeys<T extends Record<string, unknown>>(obj: T, keys: readonly string[]): Partial<T> {
@@ -322,10 +361,15 @@ describe('i18n split parity', () => {
  * its EN counterpart, except an explicit allowlist. `navPhases` ("Farm") is the
  * design's own allowlisted collision. `farmRankingReturnBonusVip` ("VIP") is added on the same
  * rationale — a universal loanword used unchanged in Brazilian Portuguese gaming UI, not a
- * missed translation.
+ * missed translation. `farmRankingColXp` ("XP") joins them for the same reason once the fourth
+ * pass dropped its "/hr"/"/ h" suffix — the abbreviation itself was never translated.
  */
 describe('Farm Ranking i18n parity', () => {
-  const EN_PT_COLLISION_ALLOWLIST = new Set(['navPhases', 'farmRankingReturnBonusVip']);
+  const EN_PT_COLLISION_ALLOWLIST = new Set([
+    'navPhases',
+    'farmRankingReturnBonusVip',
+    'farmRankingColXp',
+  ]);
 
   it('EN and PT key sets are equal at runtime', () => {
     expect(Object.keys(STRINGS.pt).sort()).toEqual(Object.keys(STRINGS.en).sort());

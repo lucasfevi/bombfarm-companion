@@ -1,23 +1,27 @@
 'use client';
 
-import { sub, type Strings } from '@/shared/i18n';
-import { Switch, Tooltip, cn } from '@bombfarm/ui';
+import { sub, type Lang, type Strings } from '@/shared/i18n';
+import { Switch, cn } from '@bombfarm/ui';
+import { HeroIdentityChip, rosterInactiveChromeClass } from '@/shared/game-art';
+import type { HeroRecord } from '@/shared/lib/storage';
 import type { FarmPoolEntry } from '@/shared/stores';
 
 type Props = {
   entries: FarmPoolEntry[];
+  heroes: readonly HeroRecord[];
   onToggle: (heroId: string, enabled: boolean) => void;
+  lang: Lang;
   t: Strings;
 };
 
 /**
- * Inline, horizontally-scrolling Switch chip row — one per roster hero.
- * Composes `Switch` + `Tooltip` locally rather than importing `roster`'s `HeroActiveToggle`:
- * that component is bound to `battleAllowed` semantics and a cross-feature reach for
- * it would need a new lint allowlist entry for a control whose meaning here is different
- * (estimation-local, never a save write).
+ * Composes `Switch` locally rather than importing `roster`'s `HeroActiveToggle`: that component
+ * is bound to `battleAllowed` semantics and a cross-feature reach for it would need a new lint
+ * allowlist entry for a control whose meaning here is different (estimation-local, never a save
+ * write). `heroes` is a separate prop because `deriveFarmPoolEntries` stays a pure id/name/enabled
+ * derivation — the full record is resolved here, as `FarmRespecHeroGrid` does.
  */
-export function FarmRotationPool({ entries, onToggle, t }: Props) {
+export function FarmRotationPool({ entries, heroes, onToggle, lang, t }: Props) {
   if (entries.length === 0) return null;
 
   return (
@@ -25,38 +29,37 @@ export function FarmRotationPool({ entries, onToggle, t }: Props) {
       role="group"
       aria-label={t.farmRankingPoolLabel}
       data-testid="farm-pool"
-      className="flex flex-wrap items-center gap-2 overflow-x-auto"
+      className="flex flex-col gap-2"
     >
       <span className="text-[11px] font-bold tracking-[0.03em] text-muted uppercase">
         {t.farmRankingPoolLabel}
       </span>
-      <Tooltip.Provider delay={200} closeDelay={80}>
-        {entries.map((entry) => (
-          <Tooltip.Root key={entry.heroId}>
-            <Tooltip.Trigger
-              render={<span />}
-              className={cn(
-                'inline-flex shrink-0 items-center gap-1.5 rounded-full border border-line bg-surface px-2 py-1',
-              )}
+      <div className="flex flex-wrap gap-2">
+        {entries.map((entry) => {
+          const hero = heroes.find((candidate) => candidate.id === entry.heroId);
+          return (
+            <div
+              key={entry.heroId}
               data-testid={`farm-pool-hero-${entry.heroId}`}
+              className="flex w-56 shrink-0 items-center gap-2 rounded-sm border border-line bg-surface p-2"
             >
+              <div className={cn('min-w-0 flex-1', !entry.enabled && rosterInactiveChromeClass)}>
+                <HeroIdentityChip
+                  hero={hero}
+                  fallbackName={entry.heroName}
+                  lang={lang}
+                  variant="stacked"
+                />
+              </div>
               <Switch
                 checked={entry.enabled}
                 onCheckedChange={(checked) => onToggle(entry.heroId, checked)}
                 aria-label={sub(t.farmRankingPoolHeroAria, { name: entry.heroName })}
               />
-              <span className="max-w-32 truncate text-xs whitespace-nowrap text-ink">
-                {entry.heroName}
-              </span>
-            </Tooltip.Trigger>
-            <Tooltip.Portal>
-              <Tooltip.Positioner sideOffset={6}>
-                <Tooltip.Popup>{entry.heroName}</Tooltip.Popup>
-              </Tooltip.Positioner>
-            </Tooltip.Portal>
-          </Tooltip.Root>
-        ))}
-      </Tooltip.Provider>
+            </div>
+          );
+        })}
+      </div>
     </div>
   );
 }

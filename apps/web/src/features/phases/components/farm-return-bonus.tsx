@@ -3,6 +3,11 @@
 import { Select } from '@bombfarm/ui';
 import type { Strings } from '@/shared/i18n';
 import type { ReturnBonusMode } from '@bombfarm/domain/farm-rate';
+import {
+  farmFieldClass,
+  farmFieldControlClass,
+  farmFieldLabelClass,
+} from './farm-ranking-filters';
 
 type Props = {
   value: ReturnBonusMode;
@@ -18,21 +23,20 @@ type Props = {
  */
 export function FarmReturnBonus({ value, onChange, t }: Props) {
   return (
-    <label
-      className="flex flex-col gap-[3px] text-[11px] tracking-[0.03em] text-muted uppercase"
-      data-testid="farm-return-bonus"
-    >
-      <span>{t.farmRankingReturnBonusLabel}</span>
-      <Select
-        size="compact"
-        aria-label={t.farmRankingReturnBonusLabel}
-        value={value}
-        onChange={(event) => onChange(event.target.value as ReturnBonusMode)}
-      >
-        <option value="off">{t.farmRankingReturnBonusOff}</option>
-        <option value="on">{t.farmRankingReturnBonusOn}</option>
-        <option value="vip">{t.farmRankingReturnBonusVip}</option>
-      </Select>
+    <label className={farmFieldClass} data-testid="farm-return-bonus">
+      <span className={farmFieldLabelClass}>{t.farmRankingReturnBonusLabel}</span>
+      <div className={farmFieldControlClass}>
+        <Select
+          size="compact"
+          aria-label={t.farmRankingReturnBonusLabel}
+          value={value}
+          onChange={(event) => onChange(event.target.value as ReturnBonusMode)}
+        >
+          <option value="off">{t.farmRankingReturnBonusOff}</option>
+          <option value="on">{t.farmRankingReturnBonusOn}</option>
+          <option value="vip">{t.farmRankingReturnBonusVip}</option>
+        </Select>
+      </div>
     </label>
   );
 }

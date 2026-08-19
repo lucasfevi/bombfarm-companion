@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { HERO_SKIN_COUNT, heroAvatarSrc, isKnownSkin, normalizeSkin, propIconSrc } from '../src/wiki-assets';
+import { HERO_SKIN_COUNT, heroAvatarSrc, isKnownSkin, normalizeSkin, propIconSrc, goldIconSrc, clockIconSrc } from '../src/wiki-assets';
 import { PROPS } from '../src/phases';
 
 describe('heroAvatarSrc display map', () => {
@@ -34,6 +34,16 @@ describe('heroAvatarSrc display map', () => {
     expect(isKnownSkin(6)).toBe(true);
     expect(isKnownSkin(7)).toBe(true);
     expect(isKnownSkin(8)).toBe(false);
+  });
+});
+
+describe('nav chrome', () => {
+  it('points at the bundled gold coin chrome', () => {
+    expect(goldIconSrc()).toBe('/wiki-assets/nav/icon_gold.png');
+  });
+
+  it('points at the bundled gate-timer clock chrome', () => {
+    expect(clockIconSrc()).toBe('/wiki-assets/icons/icon_clock.png');
   });
 });
 

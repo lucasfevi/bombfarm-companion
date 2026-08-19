@@ -10,6 +10,8 @@ export function DataTableRoot({
   rowHeight = '2rem',
   className,
   children,
+  ref,
+  ...rest
 }: DataTableRootProps) {
   const style =
     scrollable && (maxRows != null || minRows != null)
@@ -20,7 +22,12 @@ export function DataTableRoot({
       : undefined;
 
   return (
-    <div className={cn(scrollable && 'isolate min-h-0 overflow-auto', className)} style={style}>
+    <div
+      ref={ref}
+      className={cn(scrollable && 'isolate min-h-0 overflow-auto', className)}
+      style={style}
+      {...rest}
+    >
       {children}
     </div>
   );

@@ -26,7 +26,6 @@ describe('Farm Ranking board — testids present (design §4.3)', () => {
     ['src/features/phases/components/farm-ranking-board.tsx', 'farm-ranking'],
     ['src/features/phases/components/farm-ranking-board.tsx', 'farm-ranking-empty'],
     ['src/features/phases/components/farm-ranking-filters.tsx', 'farm-filter-unlocked'],
-    ['src/features/phases/components/farm-ranking-filters.tsx', 'farm-filter-feasible'],
     ['src/features/phases/components/farm-ranking-filters.tsx', 'farm-filter-ato'],
     ['src/features/phases/components/farm-ranking-filters.tsx', 'farm-filter-gate'],
     ['src/features/phases/components/farm-rotation-pool.tsx', 'farm-pool'],
@@ -324,6 +323,13 @@ describe('Farm Respec Advisor re-rank toggle and mode marking', () => {
     expect(source).toContain('usePlannerStore(selectFarmReRankActive)');
   });
 
+  it('the toggle renders nothing until a fresh proposal exists — gated on selectFarmRespecView', () => {
+    const source = read('src/features/phases/components/farm-respec-rerank-toggle.tsx');
+    expect(source).toContain('usePlannerStore(selectFarmRespecView)');
+    expect(source).toMatch(/if \(!hasProposal\) return null;/);
+    expect(source).not.toContain('state.farmRespecPanelOpen');
+  });
+
   it('re-rank mode is marked three independent, non-colour ways: an always-mounted Banner, the sr-only caption, and a data-farm-mode attribute', () => {
     const toggleSource = read('src/features/phases/components/farm-respec-rerank-toggle.tsx');
     const tableSource = read('src/features/phases/components/farm-ranking-table.tsx');
@@ -352,7 +358,7 @@ describe('Farm Respec Advisor re-rank toggle and mode marking', () => {
 });
 
 describe('Farm Respec Advisor toolbar/panel wiring', () => {
-  it('the board renders the toolbar between the pool/filters block and the table', () => {
+  it('the board renders the toolbar between the pool and the table', () => {
     const source = read('src/features/phases/components/farm-ranking-board.tsx');
     const poolIndex = source.indexOf('<FarmRotationPool');
     const toolbarIndex = source.indexOf('<FarmRespecToolbar');
@@ -363,17 +369,32 @@ describe('Farm Respec Advisor toolbar/panel wiring', () => {
   });
 });
 
-describe('Farm Ranking row — badges are text, always mounted (no-layout-shift rule 1)', () => {
-  it('gate, push-target and infeasible badges render a t.* text child unconditionally (never {cond && ...})', () => {
+describe('Farm Ranking filter row placement', () => {
+  it('the filters sit below the respec toolbar and above the table', () => {
+    const source = read('src/features/phases/components/farm-ranking-board.tsx');
+    const toolbarIndex = source.indexOf('<FarmRespecToolbar');
+    const filtersIndex = source.indexOf('<FarmRankingFilters');
+    const tableIndex = source.indexOf('<FarmRankingTable');
+    expect(filtersIndex).toBeGreaterThan(toolbarIndex);
+    expect(tableIndex).toBeGreaterThan(filtersIndex);
+  });
+
+  it('the filters render above the empty states, so a fully-filtered board can be un-filtered', () => {
+    const source = read('src/features/phases/components/farm-ranking-board.tsx');
+    const filtersIndex = source.indexOf('<FarmRankingFilters');
+    const emptyIndex = source.indexOf('farm-ranking-empty');
+    expect(filtersIndex).toBeGreaterThan(-1);
+    expect(emptyIndex).toBeGreaterThan(filtersIndex);
+  });
+});
+
+describe('Farm Ranking row — the gate marker is always mounted (no-layout-shift rule 1)', () => {
+  it('the gate marker renders its t.* text child unconditionally (never {cond && ...})', () => {
     const source = read('src/features/phases/components/farm-ranking-row.tsx');
     expect(source).toContain('{t.farmRankingGateBadge}');
-    expect(source).toContain('{t.farmRankingPushTargetBadge}');
-    expect(source).toContain('{t.farmRankingInfeasibleBadge}');
     // Visibility is toggled via `invisible` + `aria-hidden`, not conditional mounting.
-    expect(source).toMatch(/cn\(!row\.gate && 'invisible'\)/);
+    expect(source).toMatch(/!row\.gate && 'invisible'/);
     expect(source).toMatch(/aria-hidden=\{!row\.gate\}/);
-    expect(source).toMatch(/cn\(!row\.locked && 'invisible'\)/);
-    expect(source).toMatch(/cn\(!row\.infeasible && 'invisible'\)/);
   });
 
   it('row activation is keyboard-operable (Enter/Space) and exposes aria-current', () => {
