@@ -246,7 +246,6 @@ export function computeAdvisorPipeline(input: AdvisorPipelineInput): AdvisorPipe
     critDmgMult,
     teamCritPctOfBase,
     treeSheet,
-    combatCritChancePctOfBase: mods.combatCritChancePctOfBase,
     penetrationPp: mods.penetrationPp,
     context,
     dmgMult,

@@ -71,16 +71,19 @@ function listFiles(dir: string, acc: string[] = []): string[] {
  */
 const SRC_ALLOWLIST: Record<string, number[]> = {
   // Line numbers only — still SIX matches, unchanged in kind. Re-measured after issue #132's
-  // team-aura rewrite (`stackTeamBonusMult`/`TEAM_MULT_BONUS_CAP` replaced by
-  // `combineTeamAuraPct`, `teamGateMult` removed) shifted every line below the new comment
-  // block by -1.
-  'derive.ts': [26, 96, 114, 160, 215, 226],
+  // team-aura rewrite: first pass replaced `stackTeamBonusMult`/`TEAM_MULT_BONUS_CAP` with
+  // `combineTeamAuraPct` and removed `teamGateMult`; second pass folded Presságio's own rank
+  // into the same capped combination (`teamCritPctOfBase`) and removed the now-redundant
+  // `combatCritChancePctOfBase` DeriveInput field, adding doc comments above both.
+  'derive.ts': [28, 102, 120, 168, 223, 234],
   // Line numbers only — still FOUR matches, unchanged in kind. Re-measured against the merged
   // tree rather than resolved to either side: this branch's House-cycle plumbing
   // (`houseCycleSecs`, then `houseCycleSecsHouseIdx`/`houseCycleSecsLevel`) and #87's farm-objective
   // rank mode each inserted lines above these hits, so BOTH pins were stale after the merge —
-  // 341 from here and 325 from develop are each correct only in isolation.
-  'advisor-pipeline.ts': [111, 217, 246, 346],
+  // 341 from here and 325 from develop are each correct only in isolation. Issue #132's crit-
+  // combination fix removed the `combatCritChancePctOfBase` pass-through line, shifting the
+  // last hit down by one.
+  'advisor-pipeline.ts': [111, 217, 246, 345],
   // +1 (line number only): the flat-crit-damage fix's `brutalStrike` LedgerNote arm
   // (review item 5, PR #90) added one line above this hit.
   'stat-breakdown/types.ts': [106],

@@ -175,7 +175,6 @@ function buildFixture(opts: FixtureOpts = {}) {
     critDmgMult: mults.critDmgMult,
     teamCritPctOfBase: mults.teamCritPctOfBase,
     treeSheet,
-    combatCritChancePctOfBase: mods.combatCritChancePctOfBase,
     penetrationPp: mods.penetrationPp,
     context,
     dmgMult: mults.dmgMult,

@@ -18,6 +18,8 @@ export type CombatMults = {
   teamAtkMult: number;
   teamSpeedMult: number;
   teamDrainMult: number;
+  /** The hero's own Presságio rank combined with every other carrier's, already clamped at
+   *  `TEAM_BUFF_CAP.pressagio_mortal` — the single value `derive()` adds to `baseCrit`. */
   teamCritPctOfBase: number;
   attackMult: number;
   speedMult: number;
@@ -83,7 +85,11 @@ export function computeCombatMults(input: ComputeCombatMultsInput): CombatMults 
   const teamSpeedMult =
     1 + combineTeamAuraPct(0, teamBuffs.marcha_acelerada || 0, TEAM_BUFF_CAP.marcha_acelerada) / 100;
   const teamDrainMult = Math.max(0.01, 1 - folegoPct / 100);
-  const teamCritPctOfBase = combineTeamAuraPct(0, teamBuffs.pressagio_mortal || 0, TEAM_BUFF_CAP.pressagio_mortal);
+  const teamCritPctOfBase = combineTeamAuraPct(
+    mods.combatCritChancePctOfBase,
+    teamBuffs.pressagio_mortal || 0,
+    TEAM_BUFF_CAP.pressagio_mortal,
+  );
   return {
     teamAtkMult,
     teamSpeedMult,
@@ -112,10 +118,12 @@ export type DeriveInput = {
   energyMult: number;
   speedMult: number;
   critDmgMult: number;
+  /** The hero's own Presságio rank already folded in and capped, one resolved value — see
+   *  `CombatMults.teamCritPctOfBase`. There is no separate "own" input here, matching
+   *  `attackMult`/`speedMult`: the combination happens once, in `computeCombatMults`. */
   teamCritPctOfBase: number;
   /** The whole skill tree, once (BSP-23c) — replaces the four scattered tree inputs. */
   treeSheet: TreeSheetTotals;
-  combatCritChancePctOfBase: number;
   penetrationPp: number;
   context: Context;
   dmgMult: number;
@@ -160,7 +168,6 @@ export function derive(input: DeriveInput): DeriveResult {
     critDmgMult,
     teamCritPctOfBase,
     treeSheet,
-    combatCritChancePctOfBase,
     penetrationPp,
     context,
     dmgMult,
@@ -203,15 +210,16 @@ export function derive(input: DeriveInput): DeriveResult {
   };
   const adjusted: SheetStats = { ...gearedX };
   for (const key of SHEET_KEYS) adjusted[key] = gearedX[key] + pts[key] * delta[key];
-  // Combat-only ability/team crit-chance additions (e.g. Presságio Mortal) use the rolled
-  // base ≈ naked / (1+sheetO) — unrelated to the skill tree, which the sheet already carries.
+  // Presságio Mortal (own rank + every other carrier, already combined and capped at
+  // TEAM_BUFF_CAP.pressagio_mortal by computeCombatMults) uses the rolled base ≈
+  // naked / (1+sheetO) — unrelated to the skill tree, which the sheet already carries.
   const baseCrit = naked.critChance / oCrit;
   const effective: HeroSheet = {
     rarity,
     attack: adjusted.attack * attackMult,
     energy: adjusted.energy * energyMult,
     speed: adjusted.speed * speedMult,
-    critChance: adjusted.critChance + ((combatCritChancePctOfBase + teamCritPctOfBase) / 100) * baseCrit,
+    critChance: adjusted.critChance + (teamCritPctOfBase / 100) * baseCrit,
     critDmg: adjusted.critDmg * critDmgMult,
     penetration: adjusted.penetration + penetrationPp,
     cdr: adjusted.cdr,

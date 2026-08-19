@@ -138,7 +138,6 @@ export function scoreHeroLoadout(
     critDmgMult: mults.critDmgMult,
     teamCritPctOfBase: mults.teamCritPctOfBase,
     treeSheet: ctx.treeSheet,
-    combatCritChancePctOfBase: ctx.mods.combatCritChancePctOfBase,
     penetrationPp: ctx.mods.penetrationPp,
     context,
     dmgMult: mults.dmgMult,

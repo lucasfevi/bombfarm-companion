@@ -6002,7 +6002,7 @@
         "teamAtkMult": "1",
         "teamSpeedMult": "1",
         "teamDrainMult": "1",
-        "teamCritPctOfBase": "0",
+        "teamCritPctOfBase": "17.142857142857142",
         "attackMult": "1",
         "speedMult": "1",
         "gateAttackMult": "1",
@@ -6234,7 +6234,7 @@
                 "note": null
               },
               {
-                "source": "abilities",
+                "source": "team",
                 "op": "+",
                 "amount": "1.3459312692483605",
                 "running": "9.197197006530462",

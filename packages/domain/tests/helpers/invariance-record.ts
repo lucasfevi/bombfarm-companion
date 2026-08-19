@@ -351,7 +351,6 @@ function recordHero(
     critDmgMult: mults.critDmgMult,
     teamCritPctOfBase: mults.teamCritPctOfBase,
     treeSheet: tree,
-    combatCritChancePctOfBase: mods.combatCritChancePctOfBase,
     penetrationPp: mods.penetrationPp,
     context,
     dmgMult: mults.dmgMult,

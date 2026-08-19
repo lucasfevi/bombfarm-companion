@@ -21,12 +21,18 @@ loose `Record<string, number>`, so the orphaned key is read harmlessly and never
 Grito de Guerra / Marcha Acelerada / Fôlego de Mineiro rank into an already-combined multiplier,
 and the team term was then stacked on top of that — so a carrier's own investment counted twice
 once any other carrier was on the field, while a non-carrier (or a roster with the aura at its
-default zero) read correctly by accident. `AbilityMods` now exposes Fôlego's own contribution
+default zero) read correctly by accident. Presságio Mortal had the same defect in a different
+shape: its team term was capped on its own, then a hero's own Presságio rank was added back on
+top, uncapped — a hero maxing Presságio while standing with other maxed carriers read 228.57% of
+base against a 114.29% cap, exactly double. `AbilityMods` now exposes Fôlego's own contribution
 separately (`ownTeamDrainPct`, decoupled from Bateria Extra's self-only `drainMult`, since the two
 abilities share an effect kind but not a cap), and the combination site
 (`combineTeamAuraPct`, `derive.ts`) adds a hero's own rank to the other carriers' total and clamps
-the COMBINED figure once — never a pre-folded multiplier stacked on top of a second, independent
-team term.
+the COMBINED figure once, for all four auras — never a pre-folded multiplier (or a second,
+independent additive term) stacked on top of an already-capped team total. The now-redundant
+`combatCritChancePctOfBase` input to `derive()` is removed; `teamCritPctOfBase` alone carries the
+fully combined, capped Presságio figure, matching how `attackMult`/`speedMult` already carried
+Grito/Marcha's combined totals.
 
 **The cap was global and five times too generous.** `stackTeamBonusMult` clamped every aura at a
 single +100% figure attributed to a `combate.team_mult_bonus_cap` wiki key that does not exist —

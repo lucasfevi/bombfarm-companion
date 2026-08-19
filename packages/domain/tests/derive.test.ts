@@ -150,6 +150,20 @@ describe('team aura faults (issue #132)', () => {
     });
     expect(m.gateAttackMult).toBeCloseTo(1.4, 6);
   });
+
+  it('Fault 2/4 (Presságio): a maxed carrier standing with other maxed carriers receives exactly the cap, not twice it', () => {
+    // A hero at Presságio Mortal rank 20 (own = 114.28571428571428, the cap by itself)
+    // standing with ANOTHER rank-20 carrier (others = 114.28571428571428 too) must still read
+    // the cap once — 114.28571428571428, not 228.57142857142856.
+    const mods = abilityMods({ pressagio_mortal: 20 });
+    const m = computeCombatMults({
+      mods,
+      teamBuffs: { ...zeroTeamBuffs(), pressagio_mortal: TEAM_BUFF_PER_LEVEL.pressagio_mortal * 20 },
+      extraDmgPct: 0,
+    });
+    expect(m.teamCritPctOfBase).toBeCloseTo(TEAM_BUFF_CAP.pressagio_mortal, 6);
+    expect(m.teamCritPctOfBase).not.toBeCloseTo(TEAM_BUFF_CAP.pressagio_mortal * 2, 6);
+  });
 });
 
 describe('derive', () => {
@@ -177,7 +191,6 @@ describe('derive', () => {
       critDmgMult: mults.critDmgMult,
       teamCritPctOfBase: mults.teamCritPctOfBase,
       treeSheet: ZERO_TREE,
-      combatCritChancePctOfBase: 0,
       penetrationPp: 0,
       context: baseCtx(),
       dmgMult: mults.dmgMult,
@@ -216,7 +229,6 @@ describe('derive', () => {
       critDmgMult: mults.critDmgMult,
       teamCritPctOfBase: mults.teamCritPctOfBase,
       treeSheet: ZERO_TREE,
-      combatCritChancePctOfBase: 0,
       penetrationPp: 0,
       context: baseCtx(),
       dmgMult: mults.dmgMult,
@@ -247,7 +259,6 @@ describe('derive', () => {
       critDmgMult: 1,
       teamCritPctOfBase: 0,
       treeSheet: ZERO_TREE,
-      combatCritChancePctOfBase: 0,
       penetrationPp: 0,
       context: baseCtx(),
       dmgMult: 1,
@@ -272,7 +283,6 @@ describe('derive', () => {
       critDmgMult: 1,
       teamCritPctOfBase: 0,
       treeSheet: ZERO_TREE,
-      combatCritChancePctOfBase: 0,
       penetrationPp: 0,
       context: baseCtx(),
       dmgMult: 1,
@@ -326,7 +336,6 @@ describe('derive', () => {
       critDmgMult: mults.critDmgMult,
       teamCritPctOfBase: 0,
       treeSheet,
-      combatCritChancePctOfBase: 0,
       penetrationPp: 0,
       context: baseCtx(),
       dmgMult: mults.dmgMult,
@@ -379,7 +388,6 @@ describe('derive', () => {
       critDmgMult: mults.critDmgMult,
       teamCritPctOfBase: 0,
       treeSheet,
-      combatCritChancePctOfBase: 0,
       penetrationPp: 0,
       context: baseCtx(),
       mitigationPct: 6.7,
@@ -419,7 +427,6 @@ describe('derive', () => {
       critDmgMult: 1,
       teamCritPctOfBase: 0,
       treeSheet: tree,
-      combatCritChancePctOfBase: 0,
       penetrationPp: 0,
       context: baseCtx(),
       dmgMult: 1,
@@ -456,7 +463,6 @@ describe('derive', () => {
       critDmgMult: 1,
       teamCritPctOfBase: 0,
       treeSheet: tree,
-      combatCritChancePctOfBase: 0,
       penetrationPp: 0,
       context: baseCtx(),
       dmgMult: 1,
@@ -504,7 +510,6 @@ describe('derive', () => {
       critDmgMult: 1,
       teamCritPctOfBase: 0,
       treeSheet: tree,
-      combatCritChancePctOfBase: 0,
       penetrationPp: 0,
       context: baseCtx(),
       dmgMult: 1,
@@ -537,7 +542,6 @@ describe('derive', () => {
       critDmgMult: 1,
       teamCritPctOfBase: 0,
       treeSheet: ZERO_TREE,
-      combatCritChancePctOfBase: 0,
       penetrationPp: 0,
       context: baseCtx(),
       dmgMult: 1,

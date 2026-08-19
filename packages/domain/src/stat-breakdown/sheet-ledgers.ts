@@ -63,7 +63,10 @@ export function ledgerCritChance(facts: PipelineFacts): StatBreakdown {
     facts.pts.critChance * POINT_GAIN.critChancePctOfBase * 100,
     baseCrit,
   );
-  pushAddPctOfBase(steps, 'abilities', facts.mods.combatCritChancePctOfBase, baseCrit);
+  // Presságio Mortal — own rank + every other carrier, already combined and capped by
+  // computeCombatMults (issue #132). ONE line, not two: `facts.teamCritPctOfBase` already
+  // includes `facts.mods.combatCritChancePctOfBase` (this hero's own rank), so pushing them
+  // as separate additive steps would double-count it in the fold.
   pushAddPctOfBase(steps, 'team', facts.teamCritPctOfBase, baseCrit);
   return { kind: 'ledger', total: facts.effective.critChance, steps };
 }
