@@ -30,7 +30,30 @@ async function importAccount486(page: Page): Promise<void> {
   await expect(page.getByRole('dialog')).toBeHidden();
 }
 
+/**
+ * `captureSeededState` reads `bf-hp-account-v1` straight out of localStorage, bypassing React.
+ * The account autosave (`persist-account.ts`) debounces its write by `AUTOSAVE_MS` (700ms), so a
+ * capture taken immediately after `importAccount486` resolves can still see the pre-import
+ * default sitting in storage from boot (all-zero tree, no `max_phase`) rather than the
+ * just-imported account — and re-seeding that default silently swaps in a much weaker account
+ * than the one the test believes it is driving. Poll for `max_phase`, the one field only a real
+ * import of this fixture ever sets, instead of sleeping a fixed delay: sleeping either races
+ * under load or over-waits needlessly.
+ */
+async function waitForAccountAutosave(page: Page): Promise<void> {
+  await page.waitForFunction(() => {
+    const raw = localStorage.getItem('bf-hp-account-v1');
+    if (!raw) return false;
+    try {
+      return JSON.parse(raw).maxPhase != null;
+    } catch {
+      return false;
+    }
+  });
+}
+
 async function captureSeededState(page: Page, lang: 'en' | 'pt'): Promise<SeededState> {
+  await waitForAccountAutosave(page);
   const raw = await page.evaluate(() => ({
     heroes: JSON.parse(localStorage.getItem('bf-hp-heroes-v1') ?? '[]') as SeededState['heroes'],
     activeHeroId: JSON.parse(localStorage.getItem('bf-hp-active-hero-v1') ?? 'null') as string | null,
