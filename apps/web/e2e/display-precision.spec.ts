@@ -167,10 +167,12 @@ test.describe('display precision sweep (BSPW6-05, AC-25, AC-26)', () => {
 
   test('Effective panel sheet group renders combat-delta Speed at 2 dp', async ({ page }) => {
     // Marcha adds a combat speed mult so Speed differs from sheet Total and stays listed.
+    // Marcha's own cap (TEAM_BUFF_CAP.marcha_acelerada, packages/domain/src/team-buffs.ts) is
+    // 3.7 — stay well under it so this seed reads as an unclamped rank, not a clamped one.
     const seeded = precisionHero();
     seeded.account = {
       ...seeded.account!,
-      teamBuffs: { marcha_acelerada: 10 },
+      teamBuffs: { marcha_acelerada: 2 },
     };
     await seedLocalStorage(page, seeded);
     await page.goto('/');
@@ -181,8 +183,8 @@ test.describe('display precision sweep (BSPW6-05, AC-25, AC-26)', () => {
       has: page.getByRole('heading', { name: /^Effective stats$/i, level: 2 }),
     });
     const speedBtn = effective.getByRole('button', { name: /Show breakdown of Speed/i });
-    // adjusted 75 × 1.10 Marcha → 82.50
-    await expect(speedBtn).toContainText('82.50');
+    // adjusted 75 × 1.02 Marcha → 76.50
+    await expect(speedBtn).toContainText('76.50');
   });
 
   test('ledger step amounts (pctOfBase term) render at 2 dp', async ({ page }) => {
