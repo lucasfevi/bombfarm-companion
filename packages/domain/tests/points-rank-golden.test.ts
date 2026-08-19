@@ -91,14 +91,21 @@ describe('DPS next-point ranking — golden fixture (pre-deletion, pinned byte-f
   });
 
   it('Jon L38 — full ranking pinned to full precision', () => {
+    // RE-MEASURED for issue #132 (team-aura roster shape): Jon carries folego_mineiro 18
+    // himself. This fixture's account.teamBuffs is zeroTeamBuffs() (farm-rate-fixtures.ts
+    // reproduces production's post-import default, before the team-buffs auto-fill button is
+    // ever pressed) — so under the confirmed rule Jon's own rank now correctly contributes
+    // NOTHING to his own drain (it only exists inside a real roster total), where the old
+    // model let a hero's own rank leak through into their own mods regardless of context. His
+    // uptime/duty shifts accordingly, moving every gainPct downstream of it.
     const result = pipelineForHero(heroByName('Jon'), account, phase, mitigationPct);
     expect(pick(result.ranking)).toEqual([
       { stat: 'attack', gainPct: 2.7210974575787805 },
-      { stat: 'energy', gainPct: 2.3198024157065955 },
-      { stat: 'critDmg', gainPct: 0.3844374051138466 },
-      { stat: 'critChance', gainPct: 0.06045133145871073 },
+      { stat: 'energy', gainPct: 2.4574138114716204 },
+      { stat: 'critDmg', gainPct: 0.3844374051138688 },
+      { stat: 'critChance', gainPct: 0.06045133145873294 },
       { stat: 'cdr', gainPct: 0.01848900890673022 },
-      { stat: 'penetration', gainPct: 0.0008367710926826533 },
+      { stat: 'penetration', gainPct: 0.0008367710927048577 },
       { stat: 'speed', gainPct: 0 },
     ]);
   });

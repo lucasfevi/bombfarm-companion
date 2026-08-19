@@ -71,9 +71,16 @@ describe('selectAdvisorPipeline', () => {
   // both were wrong afterwards: #87 removed `rankMode` (computeAdvisorPipeline no longer reads
   // it) leaving 22, while this branch added three. Counted off the merged selector, not summed
   // from either commit message.
-  it('dep tuple has exactly 25 members in spec order (MP5 F3 dropped the 5 keystone-derived entries: treeGlassCannon, treeCritDmgMult, treeTempoDobrado, treeAbisso, treeAbissoBase; statPointsAvailable dropped with the level-pool budget; rankMode dropped because computeAdvisorPipeline no longer reads it; the House-ceiling fix added houseCycleSecs and its regression repair added houseCycleSecsHouseIdx/houseCycleSecsLevel — all three are pipeline inputs, so an edit to any MUST recompute)', () => {
+  //
+  // 27 = 25 + 2, issue #132's team-aura roster shape. `abilityMods` no longer folds a team aura
+  // into a hero's own mods at all, so the ONLY way an edit to the active hero's own Grito/
+  // Marcha/Fôlego/Presságio rank reaches the live preview is `previewTeamBuffs`'s substitution
+  // of `state.heroes` (the active hero's last-persisted ranks) against `state.abilities` (the
+  // live draft) into `state.teamBuffs` — both new deps must invalidate the cache exactly like
+  // `state.abilities` already does.
+  it('dep tuple has exactly 27 members in spec order (MP5 F3 dropped the 5 keystone-derived entries: treeGlassCannon, treeCritDmgMult, treeTempoDobrado, treeAbisso, treeAbissoBase; statPointsAvailable dropped with the level-pool budget; rankMode dropped because computeAdvisorPipeline no longer reads it; the House-ceiling fix added houseCycleSecs and its regression repair added houseCycleSecsHouseIdx/houseCycleSecsLevel; issue #132 added heroes/activeHeroId for the team-buffs substitution — all five are pipeline inputs, so an edit to any MUST recompute)', () => {
     const tuple = readAdvisorDepTuple(usePlannerStore.getState());
-    expect(tuple).toHaveLength(25);
+    expect(tuple).toHaveLength(27);
   });
 
   it('selectDps stays stable when heroName changes', () => {

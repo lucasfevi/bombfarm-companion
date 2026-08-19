@@ -38,17 +38,18 @@ const ZERO_TREE: TreeSheetTotals = {
 };
 
 describe('computeCombatMults', () => {
-  it('applies team buffs and ability mods', () => {
-    const mods = abilityMods({ grito_guerra: 0 });
-    mods.attackMult = 1.1;
-    mods.speedMult = 1.02;
-    mods.gateAttackMult = 1.2;
-    mods.dmgMult = 1.15;
+  it('applies the roster-wide team-buffs total and the hero’s own SELF ability mods (issue #132)', () => {
+    // Team auras (Grito/Marcha/Fôlego/Presságio) never reach a hero's own AbilityMods any more
+    // — `teamBuffs` is the roster-wide total (already including this hero, if it carries any of
+    // them) and is the SOLE source for all four. `mods.gateAttackMult`/`dmgMult` stay own-only
+    // (Contra o Relógio / second-blast / execute are self abilities, unaffected).
+    const mods = abilityMods({ contra_relogio: 10 }); // +20% gate (self)
+    mods.dmgMult = 1.15; // overridden directly for a round test number
 
     const teamBuffs = {
       ...zeroTeamBuffs(),
-      grito_guerra: 10,
-      marcha_acelerada: 1,
+      grito_guerra: 11,
+      marcha_acelerada: 3,
       folego_mineiro: 20,
       pressagio_mortal: 8,
     };
@@ -59,16 +60,10 @@ describe('computeCombatMults', () => {
       extraDmgPct: 10,
     });
 
-    // Own + others stack additively (not 1.1×1.1).
-    expect(m.teamAtkMult).toBeCloseTo(1.1, 6);
-    expect(m.teamSpeedMult).toBeCloseTo(1.01, 6);
+    expect(m.attackMult).toBeCloseTo(1.11, 6);
+    expect(m.speedMult).toBeCloseTo(1.03, 6);
     expect(m.teamDrainMult).toBeCloseTo(0.8, 6);
     expect(m.teamCritPctOfBase).toBe(8);
-    expect(m.attackMult).toBeCloseTo(1.2, 6); // +10% own + +10% team
-    // No more Tempo factor here (the keystone sheet-math correction moved Tempo Dobrado's
-    // ×1.33333 to applySkillTree) — just +2% own + +1% team, well under Marcha's 3.7 cap
-    // (Fault 4) — same shape as attackMult.
-    expect(m.speedMult).toBeCloseTo(1.03, 6);
     // Contra o Relógio is a self ability, not a team aura (Fault 1) — gateAttackMult reads
     // `mods` alone, unaffected by teamBuffs.
     expect(m.gateAttackMult).toBeCloseTo(1.2, 6);
@@ -76,9 +71,7 @@ describe('computeCombatMults', () => {
     // was deleted with it, MP5 F2) — energyMult/critDmgMult are permanent identity here now.
     expect(m.energyMult).toBe(1);
     expect(m.critDmgMult).toBe(1);
-    // REWRITTEN (was `1.25 * 1.15 * 1.1` — the 1.25 was `treeDanoTotal`, which no longer
-    // participates here; `dmg_static` now lives on the sheet only, applied once). `dmgMult`
-    // is exactly `mods.dmgMult × (1 + extraDmgPct/100)`.
+    // `dmgMult` is exactly `mods.dmgMult × (1 + extraDmgPct/100)`.
     expect(m.dmgMult).toBeCloseTo(1.15 * 1.1, 6);
   });
 
@@ -99,40 +92,32 @@ describe('computeCombatMults', () => {
     expect('treeTempoDobrado' in input).toBe(false);
   });
 
-  it('stacks own Grito + other heroes’ Grito additively, not multiplicatively', () => {
-    // RETIRED (issue #132): this test used to pin a real math-check screenshot (Brenna grito
-    // +20% own, Dara grito +20% team → ×1.4, not ×1.44; predictHitDamage ≈5404/9522). That
-    // screenshot predates the confirmed per-ability cap (Fault 4) — the maintainer's own
-    // roster shows two carriers clamp at ONE carrier's maximum, and Grito's confirmed cap is
-    // 20 (rank 20 × 1%/level), well under the 40% the screenshot's own+team combo totals. The
-    // screenshot numbers are therefore no longer a reachable state under the confirmed rule,
-    // so the hit-damage pins are gone; the shape they proved (additive, not squared) is kept
-    // below with a combo that stays under the cap.
-    const mods = abilityMods({});
-    mods.attackMult = 1.1; // own +10%
-    const m = computeCombatMults({
-      mods,
-      teamBuffs: { ...zeroTeamBuffs(), grito_guerra: 5 }, // team +5%
-      extraDmgPct: 0,
-    });
-    expect(mods.attackMult).toBeCloseTo(1.1, 6);
-    expect(m.attackMult).toBeCloseTo(1.15, 6);
-    expect(m.attackMult).not.toBeCloseTo(1.1 * 1.05, 6);
+  it('the field is a property of the roster, not the hero: carrier and non-carrier read the same total (issue #132)', () => {
+    // A rank-20 carrier and a non-carrier standing in the SAME field both read the SAME
+    // teamBuffs — computeCombatMults never adds anything extra for the carrier, because
+    // abilityMods never gave it anything to add. This is the shape fix itself: no own-vs-
+    // others distinction anywhere in this function.
+    const teamBuffs = { ...zeroTeamBuffs(), grito_guerra: 20 };
+    const carrierMods = abilityMods({ grito_guerra: 20 });
+    const nonCarrierMods = abilityMods({});
+    const carrier = computeCombatMults({ mods: carrierMods, teamBuffs, extraDmgPct: 0 });
+    const nonCarrier = computeCombatMults({ mods: nonCarrierMods, teamBuffs, extraDmgPct: 0 });
+    expect(carrier.attackMult).toBeCloseTo(1.2, 6);
+    expect(carrier.attackMult).toBeCloseTo(nonCarrier.attackMult, 10);
   });
 
-  it('caps combined team attack bonus at the ability’s own maximum (Fault 4)', () => {
-    expect(combineTeamAuraPct(80, 40, TEAM_BUFF_CAP.grito_guerra)).toBeCloseTo(
+  it('caps the roster-wide total at the ability’s own maximum (Fault 4)', () => {
+    expect(combineTeamAuraPct(0, 120, TEAM_BUFF_CAP.grito_guerra)).toBeCloseTo(
       TEAM_BUFF_CAP.grito_guerra,
       6,
     );
-    const mods = abilityMods({ grito_guerra: 10 }); // +10% (current perLevel 1)
     const m = computeCombatMults({
-      mods,
+      mods: abilityMods({}),
       teamBuffs: { ...zeroTeamBuffs(), grito_guerra: 100 },
       extraDmgPct: 0,
     });
-    // Own 10% + others 100% would be 110% under the old global +100% cap; the real cap is
-    // Grito's own maximum (20%), not a shared global figure.
+    // 100% would apply under the old global +100% cap; the real cap is Grito's own maximum
+    // (20%), not a shared global figure.
     expect(m.attackMult).toBeCloseTo(1 + TEAM_BUFF_CAP.grito_guerra / 100, 6);
   });
 

@@ -1,7 +1,7 @@
 {
   "meta": {
     "heroCount": 13,
-    "scalarCount": 2819
+    "scalarCount": 2791
   },
   "heroes": {
     "save-20260813-5heroes.json::Jon@38": {
@@ -216,9 +216,7 @@
         "luck": 3
       },
       "computeCombatMults": {
-        "teamAtkMult": "1",
-        "teamSpeedMult": "1",
-        "teamDrainMult": "0.8200000000000001",
+        "teamDrainMult": "1",
         "teamCritPctOfBase": "0",
         "attackMult": "1",
         "speedMult": "1",
@@ -232,7 +230,7 @@
         "mitigation": "0.02881469",
         "blastRange": "1",
         "walkDelay": "0.15",
-        "drainMult": "0.6560000000000001"
+        "drainMult": "0.8"
       },
       "derive": {
         "delta": {
@@ -276,7 +274,7 @@
           "attackPerPoint": "29.99499060938544",
           "energyPerPoint": "18.915960616876202"
         },
-        "dps": "526.6359616191198",
+        "dps": "468.7348013298887",
         "active": "1204.3773013798407",
         "hit": "1828.9955674082282"
       },
@@ -288,15 +286,15 @@
           },
           {
             "stat": "energy",
-            "gainPct": "2.3198024157065955"
+            "gainPct": "2.4574138114716204"
           },
           {
             "stat": "critDmg",
-            "gainPct": "0.3844374051138466"
+            "gainPct": "0.3844374051138688"
           },
           {
             "stat": "critChance",
-            "gainPct": "0.06045133145871073"
+            "gainPct": "0.06045133145873294"
           },
           {
             "stat": "cdr",
@@ -304,7 +302,7 @@
           },
           {
             "stat": "penetration",
-            "gainPct": "0.0008367710926826533"
+            "gainPct": "0.0008367710927048577"
           },
           {
             "stat": "speed",
@@ -315,7 +313,7 @@
           "stat": "attack",
           "gainPct": "2.7210974575787805"
         },
-        "dps": "213.81530128527902",
+        "dps": "185.47963634471395",
         "active": "703.2259272312126",
         "predHit": "1071.1632631124191",
         "effective": {
@@ -343,9 +341,9 @@
           "recommend": true,
           "tier": "gate",
           "gainIsLowerBound": true,
-          "currentDps": "213.81530128527902",
-          "reoptDps": "242.17171562241023",
-          "gainPct": "13.262107139515344"
+          "currentDps": "185.47963634471395",
+          "reoptDps": "210.08515444641293",
+          "gainPct": "13.265886534287574"
         }
       },
       "buildStatBreakdown": {
@@ -596,24 +594,24 @@
             "value": "0.46945552529320467"
           },
           "fieldSeconds": {
-            "substituted": "315.8 / 0.66 = 481s (8.0m)",
-            "value": "481.44533347832845"
+            "substituted": "315.8 / 0.80 = 395s (6.6m)",
+            "value": "394.7851734522294"
           },
           "rest": {
             "substituted": "1102 / 60 = 18.4m",
             "value": "18.366666666666667"
           },
           "uptime": {
-            "substituted": "100 × 481 / (481 + 1102) = 30.4%",
-            "value": "30.40492294235036"
+            "substituted": "100 × 395 / (395 + 1102) = 26.4%",
+            "value": "26.375540087806005"
           },
           "activeDps": {
             "substituted": "1110 × 0.47 × (1 + 0.5 × 1.0) × 0.9 × 1.000 = 703",
             "value": "703.2259272312126"
           },
           "sustainedDps": {
-            "substituted": "703 × (481 / (481 + 1102)) = 214",
-            "value": "213.81530128527902"
+            "substituted": "703 × (395 / (395 + 1102)) = 185",
+            "value": "185.47963634471395"
           }
         }
       }
@@ -830,8 +828,6 @@
         "luck": 0
       },
       "computeCombatMults": {
-        "teamAtkMult": "1",
-        "teamSpeedMult": "1",
         "teamDrainMult": "1",
         "teamCritPctOfBase": "0",
         "attackMult": "1",
@@ -1381,8 +1377,6 @@
         "luck": 0
       },
       "computeCombatMults": {
-        "teamAtkMult": "1",
-        "teamSpeedMult": "1",
         "teamDrainMult": "1",
         "teamCritPctOfBase": "0",
         "attackMult": "1",
@@ -1939,8 +1933,6 @@
         "luck": 0
       },
       "computeCombatMults": {
-        "teamAtkMult": "1",
-        "teamSpeedMult": "1",
         "teamDrainMult": "1",
         "teamCritPctOfBase": "0",
         "attackMult": "1",
@@ -2497,8 +2489,6 @@
         "luck": 0
       },
       "computeCombatMults": {
-        "teamAtkMult": "1",
-        "teamSpeedMult": "1",
         "teamDrainMult": "1",
         "teamCritPctOfBase": "0",
         "attackMult": "1",
@@ -3118,8 +3108,6 @@
         "luck": 0
       },
       "computeCombatMults": {
-        "teamAtkMult": "1",
-        "teamSpeedMult": "1",
         "teamDrainMult": "1",
         "teamCritPctOfBase": "0",
         "attackMult": "1",
@@ -3718,9 +3706,7 @@
         "luck": 0
       },
       "computeCombatMults": {
-        "teamAtkMult": "1",
-        "teamSpeedMult": "1",
-        "teamDrainMult": "0.9299999999999999",
+        "teamDrainMult": "1",
         "teamCritPctOfBase": "0",
         "attackMult": "1",
         "speedMult": "1",
@@ -3734,7 +3720,7 @@
         "mitigation": "0.0263606",
         "blastRange": "1",
         "walkDelay": "0.15",
-        "drainMult": "0.744"
+        "drainMult": "0.8"
       },
       "derive": {
         "delta": {
@@ -3778,7 +3764,7 @@
           "attackPerPoint": "23.296799999999998",
           "energyPerPoint": "15.991006514398105"
         },
-        "dps": "243.36028943467545",
+        "dps": "231.8190324291944",
         "active": "718.8050037347955",
         "hit": "1091.3700124606876"
       },
@@ -3790,11 +3776,11 @@
           },
           {
             "stat": "energy",
-            "gainPct": "2.8119357414343016"
+            "gainPct": "2.861881407138678"
           },
           {
             "stat": "critDmg",
-            "gainPct": "0.3801657670964298"
+            "gainPct": "0.380165767096452"
           },
           {
             "stat": "critChance",
@@ -3802,7 +3788,7 @@
           },
           {
             "stat": "cdr",
-            "gainPct": "0.01848900890673022"
+            "gainPct": "0.018489008906708015"
           },
           {
             "stat": "penetration",
@@ -3817,7 +3803,7 @@
           "stat": "attack",
           "gainPct": "3.437469724387743"
         },
-        "dps": "105.06026916699794",
+        "dps": "99.39322251528813",
         "active": "433.2453522523067",
         "predHit": "660.1883161320089",
         "effective": {
@@ -3845,9 +3831,9 @@
           "recommend": true,
           "tier": "gate",
           "gainIsLowerBound": true,
-          "currentDps": "105.06026916699794",
-          "reoptDps": "126.26892023179245",
-          "gainPct": "20.18712804845608"
+          "currentDps": "99.39322251528813",
+          "reoptDps": "119.4578596159362",
+          "gainPct": "20.18712804845606"
         }
       },
       "buildStatBreakdown": {
@@ -4084,24 +4070,24 @@
             "value": "0.46945552529320467"
           },
           "fieldSeconds": {
-            "substituted": "267.0 / 0.74 = 359s (6.0m)",
-            "value": "358.8601914170205"
+            "substituted": "267.0 / 0.80 = 334s (5.6m)",
+            "value": "333.73997801782906"
           },
           "rest": {
             "substituted": "1121 / 60 = 18.7m",
             "value": "18.683333333333334"
           },
           "uptime": {
-            "substituted": "100 × 359 / (359 + 1121) = 24.2%",
-            "value": "24.249600975711"
+            "substituted": "100 × 334 / (334 + 1121) = 22.9%",
+            "value": "22.941555402400496"
           },
           "activeDps": {
             "substituted": "684 × 0.47 × (1 + 0.5 × 1.0) × 0.9 × 1.000 = 433",
             "value": "433.2453522523067"
           },
           "sustainedDps": {
-            "substituted": "433 × (359 / (359 + 1121)) = 105",
-            "value": "105.06026916699794"
+            "substituted": "433 × (334 / (334 + 1121)) = 99",
+            "value": "99.39322251528813"
           }
         }
       }
@@ -4318,8 +4304,6 @@
         "luck": 0
       },
       "computeCombatMults": {
-        "teamAtkMult": "1",
-        "teamSpeedMult": "1",
         "teamDrainMult": "1",
         "teamCritPctOfBase": "0",
         "attackMult": "1",
@@ -4897,8 +4881,6 @@
         "luck": 0
       },
       "computeCombatMults": {
-        "teamAtkMult": "1",
-        "teamSpeedMult": "1",
         "teamDrainMult": "1",
         "teamCritPctOfBase": "0",
         "attackMult": "1",
@@ -5462,8 +5444,6 @@
         "luck": 0
       },
       "computeCombatMults": {
-        "teamAtkMult": "1",
-        "teamSpeedMult": "1",
         "teamDrainMult": "1",
         "teamCritPctOfBase": "0",
         "attackMult": "1",
@@ -5999,10 +5979,8 @@
         "luck": 0
       },
       "computeCombatMults": {
-        "teamAtkMult": "1",
-        "teamSpeedMult": "1",
         "teamDrainMult": "1",
-        "teamCritPctOfBase": "17.142857142857142",
+        "teamCritPctOfBase": "0",
         "attackMult": "1",
         "speedMult": "1",
         "gateAttackMult": "1",
@@ -6052,22 +6030,22 @@
           "attack": "132.81737356607945",
           "energy": "139.10190606214542",
           "speed": "46.482071596796395",
-          "critChance": "9.197197006530462",
+          "critChance": "7.851265737282103",
           "critDmg": "47.18809446989278",
           "penetration": "0.8087413696425868",
           "cdr": "0.9529132800078656",
           "attackPerPoint": "12.3336",
           "energyPerPoint": "9.3467796576"
         },
-        "dps": "9.438184755292774",
-        "active": "85.49900527313937",
+        "dps": "9.380734357495042",
+        "active": "84.9785713134738",
         "hit": "129.34454312179813"
       },
       "pipelineForHero": {
         "ranking": [
           {
             "stat": "attack",
-            "gainPct": "12.872094608449114"
+            "gainPct": "12.872094608449158"
           },
           {
             "stat": "energy",
@@ -6075,19 +6053,19 @@
           },
           {
             "stat": "critDmg",
-            "gainPct": "0.4407321541166631"
+            "gainPct": "0.3785389389362903"
           },
           {
             "stat": "critChance",
-            "gainPct": "0.07101520666861205"
+            "gainPct": "0.07145012484424118"
           },
           {
             "stat": "cdr",
-            "gainPct": "0.017890376717444312"
+            "gainPct": "0.017890376717466516"
           },
           {
             "stat": "penetration",
-            "gainPct": "0.00043782617589194217"
+            "gainPct": "0.00043782617591414663"
           },
           {
             "stat": "speed",
@@ -6096,16 +6074,16 @@
         ],
         "best": {
           "stat": "attack",
-          "gainPct": "12.872094608449114"
+          "gainPct": "12.872094608449158"
         },
-        "dps": "6.808857152154378",
-        "active": "61.680347296617576",
+        "dps": "6.767411518054042",
+        "active": "61.30489792998953",
         "predHit": "93.31121824385988",
         "effective": {
           "attack": "95.81657356607946",
           "energy": "139.10190606214542",
           "speed": "46.482071596796395",
-          "critChance": "9.197197006530462",
+          "critChance": "7.851265737282103",
           "critDmg": "47.18809446989278",
           "penetration": "0.8087413696425868",
           "cdr": "0.9529132800078656",
@@ -6126,9 +6104,9 @@
           "recommend": false,
           "tier": "gate",
           "gainIsLowerBound": true,
-          "currentDps": "6.808857152154378",
-          "reoptDps": "6.80885715215438",
-          "gainPct": "4.440892098500626e-14"
+          "currentDps": "6.767411518054042",
+          "reoptDps": "6.767411518054044",
+          "gainPct": "2.220446049250313e-14"
         }
       },
       "buildStatBreakdown": {
@@ -6224,20 +6202,13 @@
             ]
           },
           "critChance": {
-            "total": "9.197197006530462",
+            "total": "7.851265737282103",
             "steps": [
               {
                 "source": "base",
                 "op": "+",
                 "amount": "7.851265737282103",
                 "running": "7.851265737282103",
-                "note": null
-              },
-              {
-                "source": "team",
-                "op": "+",
-                "amount": "1.3459312692483605",
-                "running": "9.197197006530462",
                 "note": null
               }
             ]
@@ -6297,8 +6268,8 @@
             "value": "137.34300405978033"
           },
           "critFactor": {
-            "substituted": "1 + (9.2/100) × (47.2/100) = 1.043",
-            "value": "1.0433998201202375"
+            "substituted": "1 + (7.9/100) × (47.2/100) = 1.037",
+            "value": "1.03704862693191"
           },
           "fuse": {
             "substituted": "max(2 × (1 − 1.0/100), 0.4) = 1.98s",
@@ -6321,12 +6292,12 @@
             "value": "11.038941008893707"
           },
           "activeDps": {
-            "substituted": "97 × 0.47 × (1 + 0.5 × 1.0) × 0.9 × 1.000 = 62",
-            "value": "61.680347296617576"
+            "substituted": "97 × 0.47 × (1 + 0.5 × 1.0) × 0.9 × 1.000 = 61",
+            "value": "61.30489792998953"
           },
           "sustainedDps": {
-            "substituted": "62 × (139 / (139 + 1121)) = 7",
-            "value": "6.808857152154378"
+            "substituted": "61 × (139 / (139 + 1121)) = 7",
+            "value": "6.767411518054042"
           }
         }
       }
@@ -6543,8 +6514,6 @@
         "luck": 0
       },
       "computeCombatMults": {
-        "teamAtkMult": "1",
-        "teamSpeedMult": "1",
         "teamDrainMult": "1",
         "teamCritPctOfBase": "0",
         "attackMult": "1",
@@ -7087,8 +7056,6 @@
         "luck": 0
       },
       "computeCombatMults": {
-        "teamAtkMult": "1",
-        "teamSpeedMult": "1",
         "teamDrainMult": "1",
         "teamCritPctOfBase": "0",
         "attackMult": "1",
@@ -7415,108 +7382,108 @@
   },
   "scorer": {
     "save-20260813-5heroes.json": {
-      "objective": "702.2127402683922",
+      "objective": "679.5939604978169",
       "regime": "underSaturated",
-      "sumDuty": "1.0079643591356273",
+      "sumDuty": "0.9743973799753971",
       "slots": "3",
       "perHero": {
         "584": {
-          "sustained": "210.87981659119637",
+          "sustained": "190.11617724714785",
           "active": "680.8569342349027",
-          "duty": "0.3097270601028213",
-          "fieldSeconds": "494.46994153378097",
+          "duty": "0.27923072776043106",
+          "fieldSeconds": "426.9220038138887",
           "hit": "1036.9863759997297"
         },
         "18796": {
-          "sustained": "6.954782292560993",
+          "sustained": "6.918235800336457",
           "active": "75.81402086277203",
-          "duty": "0.09173477693723131",
-          "fieldSeconds": "111.30198714857393",
+          "duty": "0.09125272240683399",
+          "fieldSeconds": "110.65837837629336",
           "hit": "115.41439076358579"
         },
         "19274": {
-          "sustained": "7.703466311683467",
+          "sustained": "7.664380886024278",
           "active": "62.52769763413611",
-          "duty": "0.123200863028065",
-          "fieldSeconds": "154.84430279642638",
+          "duty": "0.12257577323365283",
+          "fieldSeconds": "153.94890861550832",
           "hit": "95.76800549702254"
         },
         "20140": {
-          "sustained": "6.513715595717341",
+          "sustained": "6.480710347766798",
           "active": "52.37547350615878",
-          "duty": "0.12436576053009621",
-          "fieldSeconds": "156.51634201414365",
+          "duty": "0.12373559442865444",
+          "fieldSeconds": "155.61127919086178",
           "hit": "79.62214382667842"
         },
         "20402": {
-          "sustained": "470.160959477234",
+          "sustained": "468.41445621654145",
           "active": "1309.8744410716195",
-          "duty": "0.3589358985374134",
-          "fieldSeconds": "617.0168619421819",
+          "duty": "0.35760256214582486",
+          "fieldSeconds": "613.4489340447138",
           "hit": "1909.6688503917178"
         }
       }
     },
     "payload-20260812-8heroes.json": {
-      "objective": "355.12067051333435",
+      "objective": "350.42754964418106",
       "regime": "underSaturated",
-      "sumDuty": "1.1643027534232313",
+      "sumDuty": "1.1534098586087034",
       "slots": "2",
       "perHero": {
         "555": {
-          "sustained": "90.01457448872762",
-          "active": "491.320960318641",
-          "duty": "0.18320931073315014",
-          "fieldSeconds": "251.44463573183967",
+          "sustained": "89.96829266353782",
+          "active": "491.36326516332457",
+          "duty": "0.18309934633317204",
+          "fieldSeconds": "251.25988860231544",
           "hit": "647.2543756693652"
         },
         "584": {
-          "sustained": "110.2656614056132",
-          "active": "437.5807320970838",
-          "duty": "0.25198929778550927",
-          "fieldSeconds": "377.64165937903283",
+          "sustained": "105.75055966201026",
+          "active": "437.58056564353484",
+          "duty": "0.24167106120557824",
+          "fieldSeconds": "357.25032469701927",
           "hit": "666.1536506845697"
         },
         "5217": {
-          "sustained": "60.93357206779792",
-          "active": "351.9850914404768",
-          "duty": "0.17311407087848837",
-          "fieldSeconds": "234.68880848045978",
+          "sustained": "60.89653236656826",
+          "active": "351.98500535322773",
+          "duty": "0.1730088823114971",
+          "fieldSeconds": "234.51637257395484",
           "hit": "541.0799645469632"
         },
         "8818": {
-          "sustained": "63.97732515285161",
-          "active": "373.68567045763916",
-          "duty": "0.1712062575867598",
-          "fieldSeconds": "231.5681271867814",
+          "sustained": "63.9383285858325",
+          "active": "373.6854795786726",
+          "duty": "0.17110198838317844",
+          "fieldSeconds": "231.3979841783114",
           "hit": "558.8309522898629"
         },
         "9367": {
-          "sustained": "7.229687177508165",
-          "active": "77.01178221387288",
-          "duty": "0.0938776765018926",
-          "fieldSeconds": "116.13981096101031",
+          "sustained": "7.22487080633188",
+          "active": "77.01175286646321",
+          "duty": "0.0938151715473826",
+          "fieldSeconds": "116.05447807396708",
           "hit": "117.46705589297497"
         },
         "12091": {
-          "sustained": "6.631072987537158",
-          "active": "59.12720937859823",
-          "duty": "0.11214926354933556",
-          "fieldSeconds": "141.59961723001967",
+          "sustained": "6.590930594622801",
+          "active": "58.80763803126842",
+          "duty": "0.11207609785515206",
+          "fieldSeconds": "141.4955779342565",
           "hit": "89.44878199120213"
         },
         "12092": {
-          "sustained": "6.19213549623151",
-          "active": "73.78676311899473",
-          "duty": "0.08391932691566308",
-          "fieldSeconds": "102.69135485166778",
+          "sustained": "6.1879657369012975",
+          "active": "73.7867431205054",
+          "duty": "0.08386283870525864",
+          "fieldSeconds": "102.61590312059155",
           "hit": "114.30820289874772"
         },
         "12094": {
-          "sustained": "9.876641737067201",
-          "active": "104.14273451823175",
-          "duty": "0.09483754947243245",
-          "fieldSeconds": "117.45172692109915",
+          "sustained": "9.87006922837627",
+          "active": "104.14269784082528",
+          "duty": "0.09477447226748409",
+          "fieldSeconds": "117.36543011328227",
           "hit": "137.49387078269822"
         }
       }

@@ -1,6 +1,23 @@
 /**
  * Proof that the `farm-rate.ts` basis seam is a byte-identical refactor, not a rewrite.
  *
+ * RE-RECORDED 2026-08-19 (second pass) for issue #132's team-aura roster shape. This fixture's
+ * `account.teamBuffs` is `zeroTeamBuffs()` (farm-rate-fixtures.ts reproduces production's
+ * post-import default, before the team-buffs auto-fill button is ever pressed), and Jon (the
+ * corpus's only Fôlego de Mineiro carrier, rank 18) previously had his own rank silently boost
+ * his own drain regardless of that zero — the exact double-count the fix removes. Diffed field
+ * by field against the previous capture:
+ *
+ * - `heroFacts` — ONLY Jon's own `uptime` moved (0.2896 → 0.2505); every other per-hero field,
+ *   on Jon and on the other 4 heroes, is byte-identical. That is the correct footprint: uptime is
+ *   the one heroFacts field drain touches, and drain is per-hero.
+ * - `rows` — every throughput column moved on all 600 rows, because `heroesOnField` (the
+ *   squad-level House allocation) is a function of every hero's uptime together — Jon's own drop
+ *   ripples into the whole squad's concurrency split even though the other 4 heroes' own facts
+ *   did not move. Every structural column (`mitigationPct`, `ato`, `gate`, `locked`, `oneShot`,
+ *   `gateTimerSecs`, `jaulaEarlyCapPct`, `jaulaWindowSecs`, `phase`, `itemLevels`,
+ *   `itemLevelLabel`, `concurrencyScale`, `fortunaAura`) is untouched.
+ *
  * RE-RECORDED 2026-08-19 for the crit-chance/CDR revert (issue #132 — the 2026-08-18 patch put
  * both back to percent-of-base, three days after the 2026-08-15 patch that made them flat).
  * Diffed field by field against the previous capture before rewriting:

@@ -8,7 +8,6 @@ import { useAppLang } from '@/shared/context/app-lang';
 import { Button, Panel } from '@bombfarm/ui';
 import {
   usePlannerStore,
-  selectActiveHeroId,
   selectHeroes,
 } from '@/shared/stores';
 import {
@@ -28,7 +27,6 @@ import { AccountTeamBuffFields } from './account-team-buff-fields';
 export function AccountColumn() {
   const { t } = useAppLang();
   const heroes = usePlannerStore(selectHeroes);
-  const heroId = usePlannerStore(selectActiveHeroId);
   const setTeamBuffs = usePlannerStore((state) => state.setTeamBuffs);
 
   return (
@@ -53,7 +51,7 @@ export function AccountColumn() {
               <Button
                 type="button"
                 variant="default"
-                onClick={() => setTeamBuffs(computeTeamBuffsFromDeployed(heroes, heroId))}
+                onClick={() => setTeamBuffs(computeTeamBuffsFromDeployed(heroes))}
               >
                 {t.teamBuffsAutoFill}
               </Button>

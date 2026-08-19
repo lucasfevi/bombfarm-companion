@@ -15,11 +15,9 @@ import { SHEET_KEYS, type SheetKey } from './planner-constants';
 import { TEAM_BUFF_CAP, type TeamBuffId } from './team-buffs';
 
 export type CombatMults = {
-  teamAtkMult: number;
-  teamSpeedMult: number;
   teamDrainMult: number;
-  /** The hero's own Presságio rank combined with every other carrier's, already clamped at
-   *  `TEAM_BUFF_CAP.pressagio_mortal` — the single value `derive()` adds to `baseCrit`. */
+  /** The roster-wide Presságio total, already clamped at `TEAM_BUFF_CAP.pressagio_mortal` —
+   *  the single value `derive()` adds to `baseCrit`. */
   teamCritPctOfBase: number;
   attackMult: number;
   speedMult: number;
@@ -40,14 +38,16 @@ export type ComputeCombatMultsInput = {
 };
 
 /**
- * Team auras stack ADDITIVELY across every carrier's own rank — this hero's own copy plus every
- * other fielded carrier's — then clamp at that aura's own maximum (confirmed 2026-08-19: two
- * rank-20 Fôlego carriers give −20%, same as one rank-20 carrier alone; two rank-10 carriers
- * give the same −20% too). The cap is per ability ({@link TEAM_BUFF_CAP}), not a single global
- * figure — an earlier version of this comment cited `combate.team_mult_bonus_cap` as the source
- * of a single +100% cap, but that key does not exist in the live wiki payload or in this repo's
- * own drift capture; it was never a published constant. Do not multiply own `abilityMods` ×
- * `teamBuffs` either way — that overstates by the cross term (e.g. 1.2×1.2=1.44 vs correct 1.4).
+ * Team auras are a property of the FIELD (confirmed 2026-08-19): every deployed hero — carrier
+ * or not — experiences the SAME `min(cap, roster total)`, never an "own share" added on top of
+ * an others-only figure. `ownPct` stays as a parameter (rather than deleting it and inlining
+ * `Math.min`) so every call site names what it is doing: `computeCombatMults` below always
+ * passes `0`, because `teamBuffs` already carries every carrier including this hero (see
+ * `computeTeamBuffsFromDeployed` / `substituteHeroAbilities`, `team-buffs.ts`) — there is no
+ * separate "own" term left to add. The cap is per ability ({@link TEAM_BUFF_CAP}), not a single
+ * global figure — an earlier version of this comment cited `combate.team_mult_bonus_cap` as the
+ * source of a single +100% cap, but that key does not exist in the live wiki payload or in this
+ * repo's own drift capture; it was never a published constant.
  */
 export function combineTeamAuraPct(ownPct: number, othersPct: number, cap: number): number {
   return Math.min(cap, Math.max(0, ownPct) + Math.max(0, othersPct));
@@ -58,42 +58,20 @@ export function combineTeamAuraPct(ownPct: number, othersPct: number, cap: numbe
  * contributes anything here (BSP-23c) — `dmg_static` and `energia_add` are sheet-level
  * factors applied once by `applySkillTree`, not a second time on top of the combat sheet.
  *
- * `mods` is always THIS hero's own ability ranks — `teamBuffs` must therefore be the OTHER
- * fielded carriers' total, never a total that already includes this hero (see
- * `computeTeamBuffsFromDeployed`'s `excludeHeroId`). Contra o Relógio ("gate power") is a self
- * ability, not a team aura (its wiki `kind` is `gate_power`, not `team_*`) — `gateAttackMult`
- * reads `mods` alone.
+ * `teamBuffs` must be the FULL roster total for every aura, including whichever hero `mods`
+ * belongs to — `abilityMods` never folds a team aura into a hero's own mods (issue #132), so
+ * there is nothing left for this function to add back on top. Contra o Relógio ("gate power")
+ * is a self ability, not a team aura (its wiki `kind` is `gate_power`, not `team_*`) —
+ * `gateAttackMult` reads `mods` alone, same as before.
  */
 export function computeCombatMults(input: ComputeCombatMultsInput): CombatMults {
   const { mods, teamBuffs, extraDmgPct } = input;
-  const gritoPct = combineTeamAuraPct(
-    (mods.attackMult - 1) * 100,
-    teamBuffs.grito_guerra || 0,
-    TEAM_BUFF_CAP.grito_guerra,
-  );
-  const marchaPct = combineTeamAuraPct(
-    (mods.speedMult - 1) * 100,
-    teamBuffs.marcha_acelerada || 0,
-    TEAM_BUFF_CAP.marcha_acelerada,
-  );
-  const folegoPct = combineTeamAuraPct(
-    mods.ownTeamDrainPct,
-    teamBuffs.folego_mineiro || 0,
-    TEAM_BUFF_CAP.folego_mineiro,
-  );
-  const teamAtkMult = 1 + combineTeamAuraPct(0, teamBuffs.grito_guerra || 0, TEAM_BUFF_CAP.grito_guerra) / 100;
-  const teamSpeedMult =
-    1 + combineTeamAuraPct(0, teamBuffs.marcha_acelerada || 0, TEAM_BUFF_CAP.marcha_acelerada) / 100;
-  const teamDrainMult = Math.max(0.01, 1 - folegoPct / 100);
-  const teamCritPctOfBase = combineTeamAuraPct(
-    mods.combatCritChancePctOfBase,
-    teamBuffs.pressagio_mortal || 0,
-    TEAM_BUFF_CAP.pressagio_mortal,
-  );
+  const gritoPct = combineTeamAuraPct(0, teamBuffs.grito_guerra || 0, TEAM_BUFF_CAP.grito_guerra);
+  const marchaPct = combineTeamAuraPct(0, teamBuffs.marcha_acelerada || 0, TEAM_BUFF_CAP.marcha_acelerada);
+  const folegoPct = combineTeamAuraPct(0, teamBuffs.folego_mineiro || 0, TEAM_BUFF_CAP.folego_mineiro);
+  const teamCritPctOfBase = combineTeamAuraPct(0, teamBuffs.pressagio_mortal || 0, TEAM_BUFF_CAP.pressagio_mortal);
   return {
-    teamAtkMult,
-    teamSpeedMult,
-    teamDrainMult,
+    teamDrainMult: Math.max(0.01, 1 - folegoPct / 100),
     teamCritPctOfBase,
     attackMult: 1 + gritoPct / 100,
     speedMult: 1 + marchaPct / 100,
@@ -210,9 +188,9 @@ export function derive(input: DeriveInput): DeriveResult {
   };
   const adjusted: SheetStats = { ...gearedX };
   for (const key of SHEET_KEYS) adjusted[key] = gearedX[key] + pts[key] * delta[key];
-  // Presságio Mortal (own rank + every other carrier, already combined and capped at
-  // TEAM_BUFF_CAP.pressagio_mortal by computeCombatMults) uses the rolled base ≈
-  // naked / (1+sheetO) — unrelated to the skill tree, which the sheet already carries.
+  // Presságio Mortal (the roster-wide total, already capped at TEAM_BUFF_CAP.pressagio_mortal
+  // by computeCombatMults) uses the rolled base ≈ naked / (1+sheetO) — unrelated to the skill
+  // tree, which the sheet already carries.
   const baseCrit = naked.critChance / oCrit;
   const effective: HeroSheet = {
     rarity,

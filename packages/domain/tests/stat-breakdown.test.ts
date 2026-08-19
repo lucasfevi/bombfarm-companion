@@ -314,20 +314,22 @@ describe('stat-breakdown builder', () => {
     }
   });
 
-  it('F5 — uncapped team: ownTeamSplit note', () => {
-    // Own Grito 5 (+5%, W3 perLevel 1) + team Grito 10 → attackMult 1.15, under Grito's 20 cap.
+  it('F5 — uncapped team: ownTeamSplit note (issue #132: own is always 0, the hero’s own rank never reaches abilityMods)', () => {
+    // Grito de Guerra is a team aura — a hero's own rank (5, here, to prove it is harmlessly
+    // ignored) never reaches abilityMods, so the roster-wide team total (10) alone drives
+    // attackMult 1.10, under Grito's 20 cap.
     const { facts } = buildFixture({
       abilities: { grito_guerra: 5 },
       teamBuffs: { ...zeroTeamBuffs(), grito_guerra: 10 },
     });
-    expect(facts.attackMult).toBeCloseTo(1.15, 6);
+    expect(facts.attackMult).toBeCloseTo(1.1, 6);
     assertLedgersRecompose(facts);
     const atk = buildStatBreakdown('attack', facts);
     expect(atk.kind).toBe('ledger');
     if (atk.kind === 'ledger') {
       const step = atk.steps.find((s) => s.source === 'abilitiesTeam');
       expect(step?.note).toBe('ownTeamSplit');
-      expect(step?.splitOwn).toBeCloseTo(5, 5);
+      expect(step?.splitOwn).toBeCloseTo(0, 5);
       expect(step?.splitTeam).toBeCloseTo(10, 5);
     }
   });

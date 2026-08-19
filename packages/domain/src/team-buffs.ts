@@ -67,23 +67,45 @@ export const TEAM_BUFF_FIELDS = [
 ] as const satisfies readonly { id: TeamBuffId; label: string; hint: string; step: number }[];
 
 /**
- * Sums each team-wide ability's contribution (perLevel × level) across every deployed hero
- * except the one currently being edited, clamped at that aura's own cap ({@link TEAM_BUFF_CAP}).
- * The excluded hero's own copy still applies via `abilityMods()` — the combination site
- * (`computeCombatMults`) adds it back to this total and clamps the COMBINED figure again, so
- * clamping here only keeps this function's own return value (and the autofilled UI field it
- * feeds) from reading past the cap on its own.
+ * Sums each team-wide ability's contribution (perLevel × level) across EVERY deployed hero,
+ * excluding nobody — the aura is a property of the field (issue #132), so every hero standing
+ * in it (carrier or not) experiences the same total. Returns the raw, UNCAPPED sum: the cap
+ * ({@link TEAM_BUFF_CAP}) is applied once, at the combination site (`computeCombatMults`), not
+ * here — storing the raw figure lets the UI field this feeds show the true total even when it
+ * exceeds the cap, rather than silently rounding it off before the user ever sees it.
  */
-export function computeTeamBuffsFromDeployed(
-  heroes: HeroRecord[],
-  excludeHeroId: string | null,
-): Record<TeamBuffId, number> {
+export function computeTeamBuffsFromDeployed(heroes: HeroRecord[]): Record<TeamBuffId, number> {
   const out = zeroTeamBuffs();
-  const contributors = heroes.filter((hero) => hero.deployed && hero.id !== excludeHeroId);
+  const contributors = heroes.filter((hero) => hero.deployed);
   for (const buffId of TEAM_BUFF_ABILITY_IDS) {
     const perLevel = TEAM_BUFF_PER_LEVEL[buffId];
-    const sum = contributors.reduce((total, hero) => total + perLevel * (hero.abilities[buffId] ?? 0), 0);
-    out[buffId] = Math.min(TEAM_BUFF_CAP[buffId], sum);
+    out[buffId] = contributors.reduce((total, hero) => total + perLevel * (hero.abilities[buffId] ?? 0), 0);
+  }
+  return out;
+}
+
+/**
+ * Substitutes ONE hero's own contribution inside an already-computed roster total —
+ * `total − oldRank×perLevel + newRank×perLevel` per aura — so a live editor preview can move
+ * when the user changes THAT hero's own rank, without re-summing the whole roster and without
+ * excluding anyone from the stored total itself (the old `excludeHeroId` design's defect: the
+ * total two OTHER heroes read depended on which hero the exclusion happened to name). `oldAbilities`
+ * is the hero's last-persisted ranks (as already counted in `total`); `newAbilities` is the
+ * live-edited draft. Floors each aura at 0 — a `total` that was hand-typed, or computed before
+ * the roster last changed, cannot be assumed to actually contain `oldAbilities`' contribution,
+ * so the subtraction is not trusted to produce a negative result.
+ */
+export function substituteHeroAbilities(
+  total: Record<TeamBuffId, number>,
+  oldAbilities: Record<string, number>,
+  newAbilities: Record<string, number>,
+): Record<TeamBuffId, number> {
+  const out = { ...total };
+  for (const buffId of TEAM_BUFF_ABILITY_IDS) {
+    const perLevel = TEAM_BUFF_PER_LEVEL[buffId];
+    const oldContribution = perLevel * (oldAbilities[buffId] ?? 0);
+    const newContribution = perLevel * (newAbilities[buffId] ?? 0);
+    out[buffId] = Math.max(0, total[buffId] - oldContribution + newContribution);
   }
   return out;
 }

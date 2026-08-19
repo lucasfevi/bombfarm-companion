@@ -59,40 +59,33 @@ describe('computeCombatMults', () => {
     expect('treeEnergy' in input).toBe(false);
   });
 
-  it('stacks own Grito + other heroes’ Grito additively, not multiplicatively', () => {
-    // RETIRED (issue #132): this test used to pin a real math-check screenshot (Brenna grito
-    // +20% own, Dara grito +20% team → ×1.4, not ×1.44; predictHitDamage ≈5404/9522). That
-    // screenshot predates the confirmed per-ability cap (Fault 4) — the maintainer's own
-    // roster shows two carriers clamp at ONE carrier's maximum, and Grito's confirmed cap is
-    // 20 (rank 20 × 1%/level), well under the 40% the screenshot's own+team combo totals. The
-    // screenshot numbers are therefore no longer a reachable state under the confirmed rule,
-    // so the hit-damage pins are gone; the shape they proved (additive, not squared) is kept
-    // below with a combo that stays under the cap.
-    const mods = abilityMods({});
-    mods.attackMult = 1.1; // own +10%
-    const m = computeCombatMults({
-      mods,
-      teamBuffs: { ...zeroTeamBuffs(), grito_guerra: 5 }, // team +5%
-      extraDmgPct: 0,
-    });
-    expect(mods.attackMult).toBeCloseTo(1.1, 6);
-    expect(m.attackMult).toBeCloseTo(1.15, 6);
-    expect(m.attackMult).not.toBeCloseTo(1.1 * 1.05, 6);
+  it('the field is a property of the roster, not the hero: a rank-20 carrier and a non-carrier read the SAME total (issue #132)', () => {
+    // RETIRED the old "stacks own Grito + other heroes' Grito additively" pin (a real
+    // math-check screenshot at +20% own / +20% team → ×1.4): that screenshot's 40% total
+    // exceeds Grito's confirmed cap (20%) and predates abilityMods folding a team aura into a
+    // hero's own mods AT ALL, so it is no longer expressible under the confirmed shape. What it
+    // proved (additive stacking across carriers, capped once) is now the roster-level test
+    // below — every hero standing in the field reads the SAME `teamBuffs`, carrier or not,
+    // because `abilityMods` never gives a carrier anything extra to add.
+    const teamBuffs = { ...zeroTeamBuffs(), grito_guerra: 15 };
+    const carrier = computeCombatMults({ mods: abilityMods({ grito_guerra: 15 }), teamBuffs, extraDmgPct: 0 });
+    const nonCarrier = computeCombatMults({ mods: abilityMods({}), teamBuffs, extraDmgPct: 0 });
+    expect(carrier.attackMult).toBeCloseTo(1.15, 6);
+    expect(carrier.attackMult).toBeCloseTo(nonCarrier.attackMult, 10);
   });
 
-  it('caps combined team attack bonus at the ability’s own maximum (Fault 4)', () => {
-    expect(combineTeamAuraPct(80, 40, TEAM_BUFF_CAP.grito_guerra)).toBeCloseTo(
+  it('caps the roster-wide total at the ability’s own maximum (Fault 4)', () => {
+    expect(combineTeamAuraPct(0, 120, TEAM_BUFF_CAP.grito_guerra)).toBeCloseTo(
       TEAM_BUFF_CAP.grito_guerra,
       6,
     );
-    const mods = abilityMods({ grito_guerra: 10 }); // +10% (current perLevel 1)
     const m = computeCombatMults({
-      mods,
+      mods: abilityMods({}),
       teamBuffs: { ...zeroTeamBuffs(), grito_guerra: 100 },
       extraDmgPct: 0,
     });
-    // Own 10% + others 100% would be 110% under the old global +100% cap; the real cap is
-    // Grito's own maximum (20%), not a shared global figure.
+    // 100% would apply under the old global +100% cap; the real cap is Grito's own maximum
+    // (20%), not a shared global figure.
     expect(m.attackMult).toBeCloseTo(1 + TEAM_BUFF_CAP.grito_guerra / 100, 6);
   });
 
@@ -113,19 +106,12 @@ describe('computeCombatMults', () => {
 });
 
 describe('team aura faults (issue #132)', () => {
-  it('Fault 2/4: a carrier’s own rank is not double counted against the roster total — capped, not squared', () => {
-    // Jon carries folego_mineiro 20 himself; Doran ALSO carries folego_mineiro 20.
-    // computeTeamBuffsFromDeployed(heroes, 'jon') excludes Jon, so it hands back Doran's 20
-    // alone as "others". The old code multiplied mods.drainMult (which had folded Jon's own
-    // 20 in already) by teamDrainMult (Doran's 20 again) — 0.80 x 0.80 = 0.64. The confirmed
-    // rule caps the COMBINED total (own 20 + others 20 = 40) at Fôlego's own maximum (20),
-    // giving 0.80, not 0.64.
-    const jonMods = abilityMods({ folego_mineiro: 20 });
-    const m = computeCombatMults({
-      mods: jonMods,
-      teamBuffs: { ...zeroTeamBuffs(), folego_mineiro: 20 }, // Doran's contribution alone
-      extraDmgPct: 0,
-    });
+  it('Fault 2/4: two rank-20 Fôlego carriers cap the drain total at ONE carrier’s worth', () => {
+    // Jon and Doran both carry folego_mineiro 20. Under the confirmed rule the field total is
+    // min(cap, 20+20) = 20 (the cap), not 40 and not the old double-counted 0.64 drain
+    // multiplier (0.80 x 0.80) a stale exclude-based design used to produce.
+    const teamBuffs = { ...zeroTeamBuffs(), folego_mineiro: 40 }; // raw roster sum, uncapped
+    const m = computeCombatMults({ mods: abilityMods({}), teamBuffs, extraDmgPct: 0 });
     expect(m.teamDrainMult).toBeCloseTo(0.8, 6);
     expect(m.teamDrainMult).not.toBeCloseTo(0.64, 6);
   });
@@ -133,7 +119,7 @@ describe('team aura faults (issue #132)', () => {
   it('Fault 4: two rank-10 carriers give the same combined total as one rank-20 carrier', () => {
     const perLevel = TEAM_BUFF_PER_LEVEL.folego_mineiro;
     const oneRank20 = combineTeamAuraPct(0, perLevel * 20, TEAM_BUFF_CAP.folego_mineiro);
-    const twoRank10 = combineTeamAuraPct(perLevel * 10, perLevel * 10, TEAM_BUFF_CAP.folego_mineiro);
+    const twoRank10 = combineTeamAuraPct(0, perLevel * 10 + perLevel * 10, TEAM_BUFF_CAP.folego_mineiro);
     expect(twoRank10).toBeCloseTo(oneRank20, 10);
     expect(twoRank10).toBe(TEAM_BUFF_CAP.folego_mineiro);
   });
@@ -151,16 +137,14 @@ describe('team aura faults (issue #132)', () => {
     expect(m.gateAttackMult).toBeCloseTo(1.4, 6);
   });
 
-  it('Fault 2/4 (Presságio): a maxed carrier standing with other maxed carriers receives exactly the cap, not twice it', () => {
-    // A hero at Presságio Mortal rank 20 (own = 114.28571428571428, the cap by itself)
-    // standing with ANOTHER rank-20 carrier (others = 114.28571428571428 too) must still read
-    // the cap once — 114.28571428571428, not 228.57142857142856.
-    const mods = abilityMods({ pressagio_mortal: 20 });
-    const m = computeCombatMults({
-      mods,
-      teamBuffs: { ...zeroTeamBuffs(), pressagio_mortal: TEAM_BUFF_PER_LEVEL.pressagio_mortal * 20 },
-      extraDmgPct: 0,
-    });
+  it('Fault 2/4 (Presságio): two rank-20 carriers cap the crit total at ONE carrier’s worth', () => {
+    // Two carriers at Presságio Mortal rank 20 each (own = 114.28571428571428 apiece) must
+    // still read the cap once — 114.28571428571428, not 228.57142857142856.
+    const teamBuffs = {
+      ...zeroTeamBuffs(),
+      pressagio_mortal: TEAM_BUFF_PER_LEVEL.pressagio_mortal * 20 * 2,
+    };
+    const m = computeCombatMults({ mods: abilityMods({}), teamBuffs, extraDmgPct: 0 });
     expect(m.teamCritPctOfBase).toBeCloseTo(TEAM_BUFF_CAP.pressagio_mortal, 6);
     expect(m.teamCritPctOfBase).not.toBeCloseTo(TEAM_BUFF_CAP.pressagio_mortal * 2, 6);
   });

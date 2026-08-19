@@ -54,18 +54,21 @@ describe('Farm Respec Advisor — fixture integration (account-486, save-2026081
     importFixtureIntoStore();
   });
 
-  it('Tier 1 does not surface on this account — RE-MEASURED for issue #132', () => {
-    // Tier 1 (findGateCandidate) is a cheap LOWER-BOUND estimate, and `reoptBudget`
-    // (`points-reopt-core.ts`) now clamps to `level` no matter what — the deliberate reversal
-    // from "not clamped" that also moved `farm-optimize-486.test.ts`'s measured gain down. On
-    // this fixture the honest, clamped Tier 1 estimate is ~0.76%, below
-    // `FARM_RESPEC_MIN_GAIN_PCT` (1%), so the gate correctly stays quiet even though the full
-    // Tier 2 search (below) still finds a real, larger gain through a different reallocation.
+  it('Tier 1 DOES surface on this account — RE-MEASURED for issue #132\'s team-aura roster shape', () => {
+    // Tier 1 (findGateCandidate) is a cheap LOWER-BOUND estimate. Previously (issue #132's
+    // crit/CDR + reoptBudget-clamp pass) it sat at ~0.76%, below FARM_RESPEC_MIN_GAIN_PCT (1%),
+    // so the gate stayed quiet. This fixture's account.teamBuffs is zeroTeamBuffs()
+    // (production's post-import default before the auto-fill button is pressed) — under this
+    // round's roster-shape fix, Jon (folego_mineiro 18 own rank) no longer gets the own-rank
+    // drain leak the old model let through, so his uptime falls and the resulting reoptimization
+    // headroom pushes the honest Tier 1 estimate up past 1%, to ~1.55%. The gate now correctly
+    // surfaces a real, if modest, gain — this is a genuine behavior change (the recommendation
+    // banner now appears for this account), not a numeric wobble.
     const gate = selectFarmRespecGate(usePlannerStore.getState());
     expect(gate.reason).toBeNull();
-    expect(gate.result?.gainPct).toBeGreaterThan(0);
-    expect(gate.result?.gainPct).toBeLessThan(1);
-    expect(gate.shouldSurface).toBe(false);
+    expect(gate.result?.gainPct).toBeGreaterThan(1);
+    expect(gate.result?.gainPct).toBeLessThan(2);
+    expect(gate.shouldSurface).toBe(true);
   });
 
   it('Tier 1 is a lower bound: gainIsLowerBound is true and its gain never exceeds Tier 2\'s', () => {

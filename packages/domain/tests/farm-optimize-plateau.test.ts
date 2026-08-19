@@ -132,9 +132,15 @@ describe('the fixture reports a bounded, correctly-shaped plateau', () => {
     //   0.6395  2026-08-18 patch (issue #132): crit chance and CDR moved back to percent-of-base,
     //           so both stats compete for the pool again and pull the split away from the
     //           attack/energy pair once more — the mirror image of the 0.5402 → 0.5000 move
-    //           above, three days later. ← asserted below
-    expect(plateau.minEnergyShare).toBeCloseTo(0.6395348837209303, 4);
-    expect(plateau.maxEnergyShare).toBeCloseTo(0.6395348837209303, 4);
+    //           above, three days later.
+    //   0.5618  issue #132's team-aura roster shape: this fixture's account.teamBuffs is
+    //           zeroTeamBuffs(), so Jon (folego_mineiro 18, elsewhere in this 5-hero roster)
+    //           loses the own-rank drain leak the old model let through. His lower uptime shifts
+    //           the squad-level House allocation this solve reads, moving the winning build's
+    //           own energy/attack split even though nothing about ITS abilities changed. ←
+    //           asserted below
+    expect(plateau.minEnergyShare).toBeCloseTo(0.5617977528089888, 4);
+    expect(plateau.maxEnergyShare).toBeCloseTo(0.5617977528089888, 4);
     expect(plateau.minEnergyShare).toBe(plateau.maxEnergyShare);
   });
 

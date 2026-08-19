@@ -64,22 +64,25 @@ function ctx(
 }
 
 describe('computeRosterAuras', () => {
-  it('sums perLevel × rank × duty for optimize heroes excluding self', () => {
+  it('sums perLevel × rank × duty across EVERY optimize hero, excluding nobody (issue #132)', () => {
     const contexts = [
       ctx('a', 'optimize', { grito_guerra: 10 }),
       ctx('b', 'optimize', { grito_guerra: 5 }),
     ];
     const duty = { a: 0.5, b: 0.8 };
-    const forA = computeRosterAuras(contexts, duty, 'a');
-    expect(forA.grito_guerra).toBe(1 * 5 * 0.8);
-    const forB = computeRosterAuras(contexts, duty, 'b');
-    expect(forB.grito_guerra).toBe(1 * 10 * 0.5);
+    // 1 * 10 * 0.5 (a) + 1 * 5 * 0.8 (b) = 9. There is no per-hero exclusion any more — every
+    // hero, including a carrier, reads this SAME total (see the regression test below).
+    const auras = computeRosterAuras(contexts, duty);
+    expect(auras.grito_guerra).toBe(1 * 10 * 0.5 + 1 * 5 * 0.8);
   });
 
-  it('excluded hero never contributes to its own aura vector', () => {
+  it('a carrier’s own rank counts toward the total exactly like every other carrier’s (issue #132)', () => {
     const contexts = [ctx('self', 'optimize', { grito_guerra: 20 })];
-    const auras = computeRosterAuras(contexts, { self: 1 }, 'self');
-    expect(auras.grito_guerra).toBe(0);
+    const auras = computeRosterAuras(contexts, { self: 1 });
+    // The OLD exclude-based signature returned 0 here (the sole carrier excluded from its own
+    // total). Under the confirmed rule the field total includes every carrier, this one
+    // included, so a lone rank-20 carrier now reads its own 20.
+    expect(auras.grito_guerra).toBe(20);
   });
 
   it('donate and leaveAlone heroes contribute no aura', () => {
@@ -88,14 +91,14 @@ describe('computeRosterAuras', () => {
       ctx('don', 'donate', { grito_guerra: 10 }),
       ctx('leave', 'leaveAlone', { grito_guerra: 10 }),
     ];
-    const auras = computeRosterAuras(contexts, { opt: 1, don: 1, leave: 1 }, 'none');
+    const auras = computeRosterAuras(contexts, { opt: 1, don: 1, leave: 1 });
     expect(auras.grito_guerra).toBe(1 * 10 * 1);
   });
 
   it('halving carrier duty halves aura contribution', () => {
     const contexts = [ctx('a', 'optimize', { folego_mineiro: 10 })];
-    const full = computeRosterAuras(contexts, { a: 1 }, 'b');
-    const half = computeRosterAuras(contexts, { a: 0.5 }, 'b');
+    const full = computeRosterAuras(contexts, { a: 1 });
+    const half = computeRosterAuras(contexts, { a: 0.5 });
     expect(half.folego_mineiro).toBe(full.folego_mineiro / 2);
   });
 
@@ -104,7 +107,7 @@ describe('computeRosterAuras', () => {
       ctx('a', 'optimize', { grito_guerra: 60 }),
       ctx('b', 'optimize', { grito_guerra: 60 }),
     ];
-    const auras = computeRosterAuras(contexts, { a: 1, b: 1 }, 'c');
+    const auras = computeRosterAuras(contexts, { a: 1, b: 1 });
     expect(auras.grito_guerra).toBeGreaterThan(TEAM_BUFF_CAP.grito_guerra);
     const combined = combineTeamAuraPct(0, auras.grito_guerra, TEAM_BUFF_CAP.grito_guerra);
     expect(combined).toBe(TEAM_BUFF_CAP.grito_guerra);
@@ -119,7 +122,7 @@ describe('computeRosterAuras', () => {
         folego_mineiro: 1,
       }),
     ];
-    const auras = computeRosterAuras(contexts, { a: 1 }, 'b');
+    const auras = computeRosterAuras(contexts, { a: 1 });
     expect(auras.grito_guerra).toBeGreaterThan(0);
     expect(auras.pressagio_mortal).toBeGreaterThan(0);
     expect(auras.marcha_acelerada).toBeGreaterThan(0);
@@ -129,19 +132,19 @@ describe('computeRosterAuras', () => {
 
   it('zero duty yields zero contribution', () => {
     const contexts = [ctx('a', 'optimize', { grito_guerra: 10 })];
-    const auras = computeRosterAuras(contexts, { a: 0 }, 'b');
+    const auras = computeRosterAuras(contexts, { a: 0 });
     expect(auras.grito_guerra).toBe(0);
   });
 
   it('missing duty entry treated as zero', () => {
     const contexts = [ctx('a', 'optimize', { grito_guerra: 10 })];
-    const auras = computeRosterAuras(contexts, {}, 'b');
+    const auras = computeRosterAuras(contexts, {});
     expect(auras.grito_guerra).toBe(0);
   });
 
   it('rank 0 ability contributes nothing', () => {
     const contexts = [ctx('a', 'optimize', { grito_guerra: 0 })];
-    const auras = computeRosterAuras(contexts, { a: 1 }, 'b');
+    const auras = computeRosterAuras(contexts, { a: 1 });
     expect(auras.grito_guerra).toBe(0);
   });
 });

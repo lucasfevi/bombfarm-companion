@@ -20,7 +20,10 @@ export function ledgerAttack(facts: PipelineFacts): StatBreakdown {
   // contract, so the 'tree' step is sourced from the sheet, not added on top of it (AC-42).
   pushBirthThenGear(steps, 'attack', facts, (facts.treeDanoTotal - 1) * 100);
   pushAdd(steps, 'points', facts.pts.attack * facts.delta.attack);
-  const { note, split } = teamMultNote(facts.attackMult, facts.mods.attackMult, TEAM_BUFF_CAP.grito_guerra);
+  // Grito de Guerra is a team aura (issue #132) — `facts.attackMult` is already the full roster
+  // total, capped; there is no "own" share for a hero's own mods to contribute, so the note's
+  // own/team split degenerates to own=0 (ownMult=1, identity) by construction.
+  const { note, split } = teamMultNote(facts.attackMult, 1, TEAM_BUFF_CAP.grito_guerra);
   pushMul(steps, 'abilitiesTeam', facts.attackMult, note, split);
   return { kind: 'ledger', total: facts.effective.attack, steps };
 }
@@ -46,7 +49,8 @@ export function ledgerSpeed(facts: PipelineFacts): StatBreakdown {
     baseSpeed,
   );
 
-  const { note, split } = teamMultNote(facts.speedMult, facts.mods.speedMult, TEAM_BUFF_CAP.marcha_acelerada);
+  // Marcha Acelerada is a team aura (issue #132) — same reasoning as ledgerAttack above.
+  const { note, split } = teamMultNote(facts.speedMult, 1, TEAM_BUFF_CAP.marcha_acelerada);
   pushMul(steps, 'abilitiesTeam', facts.speedMult, note, split);
   return { kind: 'ledger', total: facts.effective.speed, steps };
 }
@@ -63,10 +67,8 @@ export function ledgerCritChance(facts: PipelineFacts): StatBreakdown {
     facts.pts.critChance * POINT_GAIN.critChancePctOfBase * 100,
     baseCrit,
   );
-  // Presságio Mortal — own rank + every other carrier, already combined and capped by
-  // computeCombatMults (issue #132). ONE line, not two: `facts.teamCritPctOfBase` already
-  // includes `facts.mods.combatCritChancePctOfBase` (this hero's own rank), so pushing them
-  // as separate additive steps would double-count it in the fold.
+  // Presságio Mortal is a team aura (issue #132) — `facts.teamCritPctOfBase` is already the
+  // full roster total, capped; there is no separate "own" line to add alongside it.
   pushAddPctOfBase(steps, 'team', facts.teamCritPctOfBase, baseCrit);
   return { kind: 'ledger', total: facts.effective.critChance, steps };
 }

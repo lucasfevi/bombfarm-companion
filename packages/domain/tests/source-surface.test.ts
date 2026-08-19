@@ -71,11 +71,14 @@ function listFiles(dir: string, acc: string[] = []): string[] {
  */
 const SRC_ALLOWLIST: Record<string, number[]> = {
   // Line numbers only — still SIX matches, unchanged in kind. Re-measured after issue #132's
-  // team-aura rewrite: first pass replaced `stackTeamBonusMult`/`TEAM_MULT_BONUS_CAP` with
-  // `combineTeamAuraPct` and removed `teamGateMult`; second pass folded Presságio's own rank
-  // into the same capped combination (`teamCritPctOfBase`) and removed the now-redundant
-  // `combatCritChancePctOfBase` DeriveInput field, adding doc comments above both.
-  'derive.ts': [28, 102, 120, 168, 223, 234],
+  // team-aura rewrite across three passes: (1) replaced `stackTeamBonusMult`/
+  // `TEAM_MULT_BONUS_CAP` with `combineTeamAuraPct` and removed `teamGateMult`; (2) folded
+  // Presságio's own rank into the same capped combination and removed the now-redundant
+  // `combatCritChancePctOfBase` DeriveInput field; (3) the roster-is-the-field rewrite dropped
+  // `teamAtkMult`/`teamSpeedMult` (now identical to `attackMult`/`speedMult`) and simplified
+  // `computeCombatMults` to a fixed `ownPct: 0` at every call site, each pass adding or moving
+  // doc comments above these hits.
+  'derive.ts': [26, 80, 98, 146, 201, 212],
   // Line numbers only — still FOUR matches, unchanged in kind. Re-measured against the merged
   // tree rather than resolved to either side: this branch's House-cycle plumbing
   // (`houseCycleSecs`, then `houseCycleSecsHouseIdx`/`houseCycleSecsLevel`) and #87's farm-objective

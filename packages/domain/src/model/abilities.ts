@@ -116,23 +116,11 @@ export function abilityPointBudget(rarity: RarityKey, level: number): number {
 }
 
 export interface AbilityMods {
-  /** <1 reduces drain — SELF sources only (Bateria Extra). Fôlego de Mineiro (team) is kept
-   *  out of this multiplier on purpose; see {@link ownTeamDrainPct}. */
+  /** <1 reduces drain — SELF only (Bateria Extra). Fôlego de Mineiro is a team aura: it never
+   *  touches a hero's own mods at all — see the module doc on team auras below. */
   drainMult: number;
-  /**
-   * Fôlego de Mineiro's OWN rank, percentage points (perLevel × count) — kept separate from
-   * {@link drainMult} rather than pre-folded into it. Fôlego shares its `drainPct` effect kind
-   * with Bateria Extra (a self-only ability), but the two do not share a cap: Fôlego is a team
-   * aura whose combined field total (this hero's own rank plus every other carrier's) clamps at
-   * `TEAM_BUFF_CAP.folego_mineiro`. The combination site needs this hero's own rank on its own
-   * to add to the other carriers' total before capping — a pre-folded multiplier cannot be
-   * un-folded there.
-   */
-  ownTeamDrainPct: number;
   /** Olho Clínico etc. — already in the unequipped sheet Σ. */
   sheetCritChancePctOfBase: number;
-  /** Presságio (own) etc. — combat-only, not on the inventory sheet. */
-  combatCritChancePctOfBase: number;
   /** Ponta de Diamante etc. — raw Σ units on the unequipped sheet (+2 per level). */
   sheetPenetrationRaw: number;
   penetrationPp: number;
@@ -141,24 +129,28 @@ export interface AbilityMods {
   sheetCritDmgFlat: number;
   rangeCells: number;
   dmgMult: number; // second blast + execute
-  attackMult: number;
-  speedMult: number;
-  gateAttackMult: number; // applies only inside timed phases
+  gateAttackMult: number; // applies only inside timed phases (self ability, Contra o Relógio)
 }
 
+/**
+ * Team auras — Grito de Guerra (`attackPct`), Marcha Acelerada (`speedPct`), Fôlego de Mineiro
+ * (`drainPct`) and Presságio Mortal (`critChancePctOfBase`, not `onSheet`) — never reach a
+ * hero's own `AbilityMods` (issue #132). Under the confirmed rule a team aura is a property of
+ * the FIELD: every deployed hero experiences the SAME capped roster total (`team-buffs.ts`,
+ * `computeCombatMults`), carrier or not, so there is no "this hero's own share" for `abilityMods`
+ * to fold in — doing so was exactly the double-count this rewrite removed. Their four
+ * `AbilityEffect` cases below are explicit no-ops rather than omitted, so a future kind added to
+ * the union still forces every switch in this file to handle it.
+ */
 export function abilityMods(levels: Record<string, number>): AbilityMods {
   const mods: AbilityMods = {
     drainMult: 1,
-    ownTeamDrainPct: 0,
     sheetCritChancePctOfBase: 0,
-    combatCritChancePctOfBase: 0,
     sheetPenetrationRaw: 0,
     penetrationPp: 0,
     sheetCritDmgFlat: 0,
     rangeCells: 0,
     dmgMult: 1,
-    attackMult: 1,
-    speedMult: 1,
     gateAttackMult: 1,
   };
   for (const ability of ABILITIES) {
@@ -167,14 +159,12 @@ export function abilityMods(levels: Record<string, number>): AbilityMods {
     const effect = ability.effect;
     switch (effect.kind) {
       case 'drainPct':
-        // Bateria Extra (self) and Fôlego de Mineiro (team) share this effect kind but not a
-        // cap — see AbilityMods.ownTeamDrainPct.
-        if (ability.id === 'folego_mineiro') mods.ownTeamDrainPct += effect.perLevel * count;
-        else mods.drainMult *= 1 - (effect.perLevel * count) / 100;
+        // Fôlego de Mineiro (team) — see the module doc above.
+        if (ability.id !== 'folego_mineiro') mods.drainMult *= 1 - (effect.perLevel * count) / 100;
         break;
       case 'critChancePctOfBase':
         if (effect.onSheet) mods.sheetCritChancePctOfBase += effect.perLevel * count;
-        else mods.combatCritChancePctOfBase += effect.perLevel * count;
+        // else: Presságio Mortal (team) — see the module doc above.
         break;
       case 'penetrationPp':
         if (effect.onSheet) mods.sheetPenetrationRaw += effect.perLevel * count;
@@ -193,10 +183,10 @@ export function abilityMods(levels: Record<string, number>): AbilityMods {
         mods.dmgMult *= 1 / (1 - (effect.perLevel * count) / 100);
         break;
       case 'attackPct':
-        mods.attackMult *= 1 + (effect.perLevel * count) / 100;
+        // Grito de Guerra (team) — see the module doc above.
         break;
       case 'speedPct':
-        mods.speedMult *= 1 + (effect.perLevel * count) / 100;
+        // Marcha Acelerada (team) — see the module doc above.
         break;
       case 'gateAttackPct':
         mods.gateAttackMult *= 1 + (effect.perLevel * count) / 100;

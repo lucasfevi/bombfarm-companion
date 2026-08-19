@@ -2,6 +2,7 @@ import {
   computeAdvisorPipeline,
   type AdvisorPipelineResult,
 } from '@bombfarm/domain/advisor-pipeline';
+import { substituteHeroAbilities } from '@bombfarm/domain/team-buffs';
 import type { PlannerStore } from '@/shared/stores/planner-store';
 
 /**
@@ -43,6 +44,12 @@ export function readAdvisorDepTuple(state: PlannerStore): readonly unknown[] {
     state.treeEnergy,
     state.treeLuckFlatPct,
     state.teamBuffs,
+    // The active hero's own team-aura ranks are folded into `state.teamBuffs` at combine time
+    // (issue #132's substitution, `substituteHeroAbilities`), not by `abilityMods` any more — so
+    // a change to EITHER the roster (the active hero's last-persisted ranks) or `activeHeroId`
+    // itself (switching heroes) must invalidate this cache exactly like `state.abilities` above.
+    state.heroes,
+    state.activeHeroId,
     state.houseIdx,
     state.houseLevel,
     state.houseCycleSecs,
@@ -56,6 +63,20 @@ export function readAdvisorDepTuple(state: PlannerStore): readonly unknown[] {
     state.targetProp,
     state.birth,
   ] as const;
+}
+
+/**
+ * The active hero's own team-aura ranks substituted into the stored roster total (issue #132):
+ * `abilityMods` no longer folds a team aura into a hero's own mods at all, so the ONLY way an
+ * edit to the active hero's own Grito/Marcha/Fôlego/Presságio rank reaches the live preview is
+ * through this substitution — `state.teamBuffs` was last computed (by the autofill button, or
+ * hand-typed) against the roster's PERSISTED ranks, and `state.heroes` still holds that
+ * persisted rank for the active hero until the autosave debounce catches up with `state.abilities`.
+ */
+function previewTeamBuffs(state: PlannerStore) {
+  const savedActiveHero = state.heroes.find((hero) => hero.id === state.activeHeroId);
+  if (!savedActiveHero) return state.teamBuffs;
+  return substituteHeroAbilities(state.teamBuffs, savedActiveHero.abilities, state.abilities);
 }
 
 function depsEqual(left: readonly unknown[], right: readonly unknown[]): boolean {
@@ -88,7 +109,7 @@ export function selectAdvisorPipeline(state: PlannerStore): AdvisorPipelineResul
     treeSpeed: state.treeSpeed,
     treeEnergy: state.treeEnergy,
     treeLuckFlatPct: state.treeLuckFlatPct,
-    teamBuffs: state.teamBuffs,
+    teamBuffs: previewTeamBuffs(state),
     houseIdx: state.houseIdx,
     houseLevel: state.houseLevel,
     houseCycleSecs: state.houseCycleSecs,

@@ -79,14 +79,20 @@ describe('rankNextPointForFarm — discrimination: a one-shotting squad inverts 
     // and STAYS out of it after the 2026-08-18 revert back to percent-of-base: the item catalog
     // and level-cap restructure that landed alongside both crit-chance patches is what keeps her
     // damage per bomb below a one-shot on a phase-42 prop, independent of the crit shape.
-    // RE-MEASURED for the 2026-08-18 revert (issue #132).
+    // RE-MEASURED for the 2026-08-18 revert (issue #132), and again for issue #132's team-aura
+    // roster shape: this fixture's account.teamBuffs is zeroTeamBuffs() (production's
+    // post-import default before the auto-fill button is pressed — farm-rate-fixtures.ts), so
+    // Jon's own folego_mineiro rank no longer silently boosts his own drain the way the old
+    // model let it. Jon's uptime shift ripples into the squad-level House allocation every
+    // hero's farm ranking reads, moving Bellatrix's own gainPct even though nothing about her
+    // build changed.
     const result = rankNextPointForFarm({ bases, account, heroId: bellatrix.id, maxPhase: 42 });
     const attack = result.rows!.find((r) => r.stat === 'attack')!;
     expect(attack.gainPct).toBeGreaterThan(0);
-    expect(attack.gainPct).toBeCloseTo(0.596347, 5);
+    expect(attack.gainPct).toBeCloseTo(0.8015745448860301, 5);
   });
 
-  it('farm ranks ENERGY first and speed second at maxPhase 42 — the order INVERTED when cadence stopped assuming every plant is walk-bound', () => {
+  it('farm ranks ENERGY first at maxPhase 42 — the order INVERTED when cadence stopped assuming every plant is walk-bound', () => {
     const result = rankNextPointForFarm({ bases, account, heroId: bellatrix.id, maxPhase: 42 });
     const rows = result.rows!;
     // This test used to assert speed first, energy second. The inversion is the point, and it is
@@ -102,10 +108,19 @@ describe('rankNextPointForFarm — discrimination: a one-shotting squad inverts 
     // The same correction is why `cdr` stopped scoring exactly 0 further down this file: the
     // fuse-bound mass that speed cannot help is precisely the mass CDR can.
     // RE-MEASURED for the 2026-08-18 revert (issue #132) — crit chance/CDR moved back to
-    // percent-of-base, shifting both figures slightly; the energy-first/speed-second order is
-    // unchanged.
-    expect(rows[0]).toEqual({ stat: 'energy', label: 'Energia', gainPct: 0.8069602610678572 });
-    expect(rows[1]).toEqual({ stat: 'speed', label: 'Velocidade', gainPct: 0.661840146116166 });
+    // percent-of-base, shifting both figures slightly; the energy-first order is unchanged.
+    //
+    // RE-MEASURED again for issue #132's team-aura roster shape: this fixture's
+    // account.teamBuffs is zeroTeamBuffs(), so Jon (folego_mineiro 18 own rank, elsewhere in
+    // this same 5-hero roster) loses the own-rank leak the old model let through — his uptime
+    // falls, which shifts the squad-level House-allocation contention every hero's farm ranking
+    // reads, Bellatrix included, even though nothing about HER build changed. That ripple moves
+    // attack enough to overtake speed for second place (0.802 vs 0.700) — the title is trimmed
+    // to the part of the claim that still holds (energy first); the full order is asserted below
+    // instead of pinning a "second place" that is no longer the discriminating claim.
+    expect(rows[0]).toEqual({ stat: 'energy', label: 'Energia', gainPct: 0.854075763565687 });
+    expect(rows[1]).toEqual({ stat: 'attack', label: 'Ataque', gainPct: 0.8015745448860301 });
+    expect(rows[2]).toEqual({ stat: 'speed', label: 'Velocidade', gainPct: 0.7004826079100468 });
   });
 
   it('DPS mode scores attack first and speed exactly 0 on the same hero (the inversion)', () => {
@@ -141,10 +156,12 @@ describe('rankNextPointForFarm — anti-"energy always wins" sensor', () => {
     // BACK into it at the 2026-08-18 revert — attack ranks above energy again, matching his
     // pre-2026-08-15 shape. Pinned so a future change that flips him away a second time is
     // visible rather than silent.
+    // RE-MEASURED for issue #132's team-aura roster shape (same Jon-uptime -> squad House
+    // allocation ripple as the Bellatrix tests above) — the flip itself is unaffected.
     const result = rankNextPointForFarm({ bases, account, heroId: heroByName('Perrin').id, maxPhase: 42 });
     const rows = result.rows!;
-    expect(rows.find((r) => r.stat === 'attack')!.gainPct).toBeCloseTo(0.147558, 5);
-    expect(rows.find((r) => r.stat === 'energy')!.gainPct).toBeCloseTo(0.140424, 5);
+    expect(rows.find((r) => r.stat === 'attack')!.gainPct).toBeCloseTo(0.147681236805286, 5);
+    expect(rows.find((r) => r.stat === 'energy')!.gainPct).toBeCloseTo(0.14054141113637453, 5);
     expect(rows[0].stat).toBe('attack');
   });
 });

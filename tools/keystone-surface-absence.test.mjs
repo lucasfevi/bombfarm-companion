@@ -124,7 +124,7 @@ const ALLOWLIST = [
   { file: 'apps/web/e2e/account-panel.spec.ts', count: 8, owner: 'F3 MSC-01 DOM absence proof' },
   { file: 'apps/web/src/tests/account-slice.test.ts', count: 3, owner: 'F3 MSC-03 runtime absence proof' },
   { file: 'apps/web/src/tests/advisor-selectors.test.ts', count: 1, owner: 'F3 dep-tuple-length test title' },
-  { file: 'apps/web/src/tests/derive.test.ts', count: 3, owner: 'F3 AC-29 compile-guard + explanatory comments' },
+  { file: 'apps/web/src/tests/derive.test.ts', count: 2, owner: 'F3 AC-29 compile-guard + explanatory comments' },
   { file: 'apps/web/src/tests/ds-panel-field.test.ts', count: 5, owner: 'F3 MSC-18 recipe absence proof' },
   // Re-measured for the 2026-08-17 fixture re-baseline: i18n-keystone-absence.test.ts now
   // holds KEYSTONE_KEYS_REMOVED's 12 literal keys directly (9 -> 15) instead of importing them
@@ -187,7 +187,7 @@ const CRIT_DMG_MULT_MAP = {
   'apps/web/src/shared/lib/stale-account.ts': [20],
   'apps/web/src/tests/advisor-pipeline.test.ts': [85],
   'apps/web/src/tests/derive.test.ts': [
-    76, 78, 149, 177, 215, 245, 269, 308, 322, 374, 413, 449, 495, 527,
+    71, 73, 134, 162, 200, 230, 254, 293, 307, 359, 398, 434, 480, 512,
   ],
   'apps/web/src/tests/fixture-corpus.test.ts': [23, 65],
   'apps/web/src/tests/fixtures/sheet-math/README.md': [6],

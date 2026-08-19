@@ -156,10 +156,14 @@ describe('farmObjectiveScales — the frozen blend normalizers, exported (lifted
   // Safe to re-record because the sibling test above — an independent brute-force
   // `currentBuildScales()` scan — still agrees with `farmObjectiveScales` to 6 decimals on the
   // same model. What changed is the model, not the agreement between the two routes to it.
-  it("on the committed fixture (maxPhase 42): goldScale ≈ 181 069.53, chestScale ≈ 1.28383", () => {
+  it("on the committed fixture (maxPhase 42): goldScale ≈ 171 080.74, chestScale ≈ 1.21267", () => {
     // RE-MEASURED for the 2026-08-18 crit-chance/CDR revert (issue #132).
+    // RE-MEASURED again for issue #132's team-aura roster shape: this fixture's
+    // account.teamBuffs is zeroTeamBuffs(), so Jon's own folego_mineiro rank no longer leaks
+    // into his own drain without a real roster total — his lower uptime ripples through the
+    // squad's House allocation into every currency's best-over-phase scale.
     const scales = farmObjectiveScales(squad, { maxPhase });
-    expect(scales.goldScale).toBeCloseTo(181069.53, 1);
-    expect(scales.chestScale).toBeCloseTo(1.28383, 3);
+    expect(scales.goldScale).toBeCloseTo(171080.74, 1);
+    expect(scales.chestScale).toBeCloseTo(1.21267, 3);
   });
 });

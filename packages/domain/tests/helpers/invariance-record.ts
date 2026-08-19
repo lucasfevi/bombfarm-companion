@@ -120,8 +120,6 @@ type HeroRecordEntry = {
   peelSheetSources: Record<SheetKey, SourceLinesRecord>;
   inferSpentPoints: SheetRecord;
   computeCombatMults: {
-    teamAtkMult: string;
-    teamSpeedMult: string;
     teamDrainMult: string;
     teamCritPctOfBase: string;
     attackMult: string;
@@ -478,8 +476,6 @@ function recordHero(
     peelSheetSources: sourceRecord,
     inferSpentPoints: sheetRecord(pts),
     computeCombatMults: {
-      teamAtkMult: num(mults.teamAtkMult),
-      teamSpeedMult: num(mults.teamSpeedMult),
       teamDrainMult: num(mults.teamDrainMult),
       teamCritPctOfBase: num(mults.teamCritPctOfBase),
       attackMult: num(mults.attackMult),
