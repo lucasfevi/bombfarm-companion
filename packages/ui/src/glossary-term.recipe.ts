@@ -4,7 +4,9 @@ export const glossaryTermTriggerClass = [
   'border-[color-mix(in_oklch,var(--accent)_55%,var(--muted))]',
   'font-inherit font-semibold text-ink',
   'hover:border-accent hover:text-accent',
-  'focus-visible:rounded-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent',
+  // `[outline-style:solid]`, not the bare `outline` utility: tailwind-merge groups bare `outline`
+  // with `outline-<width>`, so `cn()` drops one of the pair and leaves the ring unpainted.
+  'focus-visible:rounded-sm focus-visible:[outline-style:solid] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent',
 ].join(' ');
 
 /** Compact tooltip surface — reuses the help-tip token language. */

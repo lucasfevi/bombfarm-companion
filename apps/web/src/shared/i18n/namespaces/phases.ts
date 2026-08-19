@@ -26,7 +26,7 @@ export const en = {
   phasesItemDropsValue: "Level {range} items",
   phasesXpPerProp: "XP per prop",
   phasesXpActualHint: "base value × your skill tree's XP multiplier",
-  phasesGoldComum: "Gold (Comum)",
+  phasesGoldComum: "Gold (Common)",
   phasesGoldActualHint: "base value × (1 + your skill tree's team coin %)",
   phasesAvgGold: "Avg gold / prop",
   phasesMapGold: "Est. map gold",
