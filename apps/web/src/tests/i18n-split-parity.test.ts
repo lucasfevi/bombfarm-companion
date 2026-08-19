@@ -110,6 +110,12 @@ const KEYS_REMOVED: readonly string[] = [
  * removed before ever reaching a fixture re-baseline is dropped from this list rather than moved
  * to `KEYS_REMOVED` — it never existed in the frozen fixture, so its departure is invisible to
  * the comparison.
+ *
+ * The all-five-rows feature (2026-08-19): the Drops panel used to skip rows that cannot roll on
+ * the phase being viewed, so a gate phase showed 4 rows and a normal phase showed 2. It now
+ * always shows all 5, dimming the ones that do not apply and replacing their live percentage
+ * with a dash plus a small note naming which phase type the drop IS specific to —
+ * `phasesDropGateOnly` for the time/gem/stone chests, `phasesDropNonGateOnly` for the ready key.
  */
 const KEYS_ADDED: readonly string[] = [
   'phasesXpActualHint',
@@ -124,6 +130,8 @@ const KEYS_ADDED: readonly string[] = [
   'phasesAvgGold',
   'phasesMapGold',
   'treeXpMult',
+  'phasesDropGateOnly',
+  'phasesDropNonGateOnly',
 ];
 
 /**
@@ -137,7 +145,7 @@ const KEYS_ADDED: readonly string[] = [
  * "Wiki" -> "base value" for the same reason the drop-chance hint moved (the merged row already
  * shows the wiki number inline, so calling it "Wiki" a second time in the tooltip was the
  * confusing name), plus naming the account.tree source explicitly to match the drop-chance hint's
- * "your skill tree's Sorte" phrasing. `phasesXpActualHint` and `phasesDropActualHint` got the
+ * "your skill tree's luck" phrasing. `phasesXpActualHint` and `phasesDropActualHint` got the
  * same edit but are not listed here: both are already in `KEYS_ADDED` above (added since the last
  * re-baseline, never yet in the frozen fixture), and an added key's value is unconstrained by the
  * comparison regardless of what it is.

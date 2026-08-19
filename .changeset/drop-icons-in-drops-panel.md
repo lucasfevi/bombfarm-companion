@@ -137,3 +137,33 @@ anywhere in the pipeline, so the model genuinely has only one contributing sourc
 figure. `avgGold`/`mapGold` gain a tooltip they never had (`phasesGoldActualHint`, same as the
 `gold` row they share their math with) as a small, deliberate side effect of unifying every
 boosted row on the same subtext-tooltip shape rather than keeping one row an exception.
+
+**The English Drop-chances hint said "Sorte" instead of "luck".** The drop-chance boost
+breakdown above shipped with `phasesDropActualHint`'s EN copy reading "your skill tree's Sorte" —
+Portuguese leaking into the English namespace block, against this repo's own established
+convention (`stats.ts`'s `luck: "Luck"`, `gear.ts`'s `sorte: "Luck"`). Reworded to "your skill
+tree's luck" / "your squad's average luck"; the PT block, which correctly says "Sorte", is
+untouched. Four code comments in `phases-explorer.tsx` and `phase-fact-items.tsx` that said
+"Sorte" in prose are aligned to "luck" for the same reason, at no material cost to the diff.
+
+**The Drops panel always shows all five drop rows now, marked by phase type, instead of hiding
+the ones that cannot roll here.** A gate phase used to print 4 rows and a normal phase 2 — a
+reader comparing two phases side by side saw a different-shaped panel each time, and the layout
+math (`docs/`, `panel-field.recipe.ts`) never accounted for a row COUNT that could grow again
+later. Every row is now emitted in the fixed `chest, key, time, gem, stone` order regardless of
+phase type; a row that cannot roll on the phase being viewed is dimmed (`StatListItem` gains an
+optional `muted`, rendered as `opacity-45` on the row) and its value replaced by a dash plus a
+small note naming which phase type it IS specific to (`phasesDropGateOnly` for the three
+gate-only chests, `phasesDropNonGateOnly` for the ready key) rather than a live percentage.
+
+That last choice — dash, not a computed number — is deliberate: `row.actual` is still a real
+number for a drop that cannot roll here (the domain math does not gate it), but printing it next
+to a chest icon reads as "this can happen," which is false. A dash next to a dimmed, marked row
+reads as "not here" without inventing new UI vocabulary. `dropAppliesOnPhase` in
+`packages/domain/src/phase-wiki.ts` remains the one place that decides gate vs. non-gate; the
+panel only reads `DropChanceRow.applies`, never re-derives it.
+
+Measured in the browser on both phase types (map 1-1, non-gate, and map 1-10, a gate): the row
+count is 5 either way, the row list is 228px tall (was 181px at 4 rows), and the panel itself
+stays at 404.8px — byte-identical between the two phases and unchanged from before this PR, since
+its height still comes from the board grid rather than its content.

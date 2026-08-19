@@ -76,7 +76,7 @@ export function PhasesExplorer({ t, lang }: { t: Strings; lang: Lang }) {
 
   // Mean of the top-squad rows' pipeline-adjusted Luck (percentage points) -> fraction. Empty
   // roster -> 0 (no drop-chance boost), matching `dropAppliesOnPhase`'s "no boost" default.
-  // `row.luck` is `pipeline.adjusted.luck`, which already carries the tree's flat Sorte add on
+  // `row.luck` is `pipeline.adjusted.luck`, which already carries the tree's flat luck add on
   // EVERY hero (same convention `farm-rate.ts` documents for `heroLuckPct`) — so this mean equals
   // `mean(heroLuckPct) + treeLuckFlatPct` exactly, `treeLuckFlatPct` being a per-hero constant.
   // That is what makes `squadLuckPct` below a clean peel rather than an approximation.
@@ -87,7 +87,7 @@ export function PhasesExplorer({ t, lang }: { t: Strings; lang: Lang }) {
   }, [topSquadRows]);
 
   // The Drops panel's boost breakdown (`phase-fact-items.tsx`'s `dropItems`) wants the two
-  // components separately: the skill tree's flat Sorte add, and the squad's own average with that
+  // components separately: the skill tree's flat luck add, and the squad's own average with that
   // share peeled back out. `treeLuckFlatPct` is the account fact directly; `squadLuckPct` is
   // derived rather than re-averaged so it is guaranteed to sum to `luckFraction * 100` by
   // construction, not by two independent computations happening to agree. Zeroed with an empty

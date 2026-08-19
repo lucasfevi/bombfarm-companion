@@ -236,8 +236,8 @@ function dropLabel(dropId: DropChanceRow['id'], strings: Strings): string {
  * figure — eight of them on a gate phase's Drops panel, differing only by a parenthesised word.
  *
  * `terms` is the ordered list of boost components in PERCENTAGE POINTS, already matching the
- * sequence `tip` explains them in — e.g. `[20, 5]` for a drop chance's skill-tree Sorte then
- * squad Sorte, or `[56]` for a figure (gold, XP) this model tracks only one contributing source
+ * sequence `tip` explains them in — e.g. `[20, 5]` for a drop chance's skill-tree luck then
+ * squad luck, or `[56]` for a figure (gold, XP) this model tracks only one contributing source
  * for. Collapses to the bare total when `terms` is empty: with no save imported every multiplier
  * is 1, and a subtext repeating the total with a "+0%" term would say nothing the total does not.
  * A zero-valued term is expected to already be filtered out by the caller (`dropBoostTerms`,
@@ -281,7 +281,7 @@ function singleBoostTerm(base: number, total: number): number[] {
 }
 
 /**
- * `boostedValue`'s `terms` for one drop-chance row: skill-tree Sorte, then squad Sorte, matching
+ * `boostedValue`'s `terms` for one drop-chance row: skill-tree luck, then squad luck, matching
  * the order `phasesDropActualHint` explains them in. A term that is exactly zero is dropped
  * rather than printed as "+0%" — if only the tree or only the squad contributes, the row shows
  * that one term alone.
@@ -300,9 +300,28 @@ function dropBoostTerms(row: DropChanceRow, intel: PhaseIntelGlobal): number[] {
 }
 
 /**
- * Wiki/yours row pair per drop type that `applies` on this phase (gate vs. non-gate — see
- * `dropAppliesOnPhase`), skipping the rest. Three-decimal percentages: at wiki-base rates as low
- * as 0.005% (gem/stone), two decimals would collapse every rare-chest row to the same "0.01%".
+ * A drop-chance row's value when it cannot roll on the phase being viewed: a dash, not a
+ * percentage — showing a live-looking number next to a drop that cannot land here would read as
+ * "this can happen" when it cannot. The note under the dash names the phase type the drop IS
+ * specific to (`dropAppliesOnPhase`): every id but the ready key is gate-only, so it is the one
+ * exception this checks for by id rather than re-deriving from `applies` a second time.
+ */
+function inapplicableDropValue(dropId: DropChanceRow['id'], strings: Strings): React.ReactNode {
+  const note = dropId === 'key' ? strings.phasesDropNonGateOnly : strings.phasesDropGateOnly;
+  return (
+    <span className="flex flex-col items-end gap-0.5 leading-tight">
+      <span>—</span>
+      <span className="text-[10px] leading-snug">{note}</span>
+    </span>
+  );
+}
+
+/**
+ * One row per drop type, always all five — a row that cannot roll on this phase (gate vs.
+ * non-gate — see `dropAppliesOnPhase`) is dimmed and shows a dash rather than being skipped, so
+ * the panel keeps the same shape on every phase and a drop that cannot apply here never looks
+ * like it can. Three-decimal percentages on the rows that do apply: at wiki-base rates as low as
+ * 0.005% (gem/stone), two decimals would collapse every rare-chest row to the same "0.01%".
  */
 export function dropItems(
   intel: PhaseIntelGlobal,
@@ -315,20 +334,23 @@ export function dropItems(
     value: React.ReactNode;
     tip?: string;
     icon?: React.ReactNode;
+    muted?: boolean;
   }[] = [];
   for (const row of intel.dropChances) {
-    if (!row.applies) continue;
     items.push({
       id: row.id,
       label: dropLabel(row.id, strings),
-      value: boostedValue(
-        `${formatNumber(row.actual * 100, 3)}%`,
-        `${formatNumber(row.wiki * 100, 3)}%`,
-        dropBoostTerms(row, intel),
-        strings.phasesDropActualHint,
-        formatNumber,
-      ),
+      value: row.applies
+        ? boostedValue(
+            `${formatNumber(row.actual * 100, 3)}%`,
+            `${formatNumber(row.wiki * 100, 3)}%`,
+            dropBoostTerms(row, intel),
+            strings.phasesDropActualHint,
+            formatNumber,
+          )
+        : inapplicableDropValue(row.id, strings),
       icon: <DropIcon id={row.id} ato={intel.ato} />,
+      muted: !row.applies,
     });
   }
   return items;

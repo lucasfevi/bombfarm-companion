@@ -3,7 +3,7 @@
 import type { ReactNode } from 'react';
 import { cn } from './cn';
 import { Tooltip } from './tooltip';
-import { phasesStatListClass, statListClass } from './panel-field.recipe';
+import { phasesStatListClass, statListClass, statListMutedRowClass } from './panel-field.recipe';
 import { TipLabel } from './stat-list-tip-label';
 
 export type StatListItem = {
@@ -19,6 +19,8 @@ export type StatListItem = {
    * "hover this picture" and widens the hover target past the words it belongs to.
    */
   icon?: ReactNode;
+  /** Dims the row — for one that cannot apply right now, so it does not read as live. */
+  muted?: boolean;
 };
 
 export function StatList({
@@ -40,7 +42,7 @@ export function StatList({
       {items.map((item) => {
         const label = item.tip ? <TipLabel label={item.label} tip={item.tip} /> : item.label;
         return (
-          <div key={item.id}>
+          <div key={item.id} className={item.muted ? statListMutedRowClass : undefined}>
             <dt>
               {item.icon ? (
                 // BLOCK-level flex, not `inline-flex`: an inline-flex wrapper sits on the text

@@ -165,31 +165,49 @@ describe('dropItems', () => {
   const t = STRINGS.pt;
   const fmt = (n: number, d = 0) => n.toFixed(d);
 
-  it('phase 51 (non-gate): one chest row and one key row, totals matching the witness', () => {
+  it('phase 51 (non-gate): all five rows, chest and key live, the gate-only three dashed and dimmed', () => {
     const intel = computePhaseIntelGlobal(PHASE_NON_GATE, { luckFraction: LUCK_FRACTION })!;
     const items = dropItems(intel, t, fmt);
-    // Was four rows: every drop printed a wiki row and a yours row.
-    expect(items.map((row) => row.id)).toEqual(['chest', 'key']);
+    // Was two rows: the panel used to skip whichever drops do not apply on this phase.
+    expect(items.map((row) => row.id)).toEqual(['chest', 'key', 'time', 'gem', 'stone']);
     expect(total(items[0].value)).toBe('0.117%');
     // `intel` here only carries the COMBINED `luckFraction` (no `treeLuckFlatPct`/`squadLuckPct`
     // split — the live-tooltip witness measured the two on-field heroes' average, not a
     // tree/squad breakdown), so `dropBoostTerms` falls back to one combined term. See the
     // "decomposes into base + skill tree + squad" test below for the split case.
     expect(subtext(items[0].value)).toBe('0.100% + 17%');
+    expect(items[0].muted, 'chest applies on every phase').toBeFalsy();
+    expect(items[1].muted, 'key applies on non-gate phases').toBeFalsy();
+
+    const byId = (id: string) => items.find((row) => row.id === id)!;
+    for (const id of ['time', 'gem', 'stone'] as const) {
+      const row = byId(id);
+      expect(row.muted, `${id} is gate-only`).toBe(true);
+      expect(total(row.value), `${id} value`).toBe('—');
+      expect(subtext(row.value), `${id} note`).toBe(t.phasesDropGateOnly);
+    }
   });
 
-  it('phase 60 (gate): chest, time, gem, stone rows (no key), totals matching the witness', () => {
+  it('phase 60 (gate): all five rows, chest/time/gem/stone live, key dashed and dimmed', () => {
     const intel = computePhaseIntelGlobal(PHASE_GATE, { luckFraction: LUCK_FRACTION })!;
     const items = dropItems(intel, t, fmt);
-    expect(items.map((row) => row.id)).toEqual(['chest', 'time', 'gem', 'stone']);
-    const byId = (id: string) => items.find((row) => row.id === id)!.value;
-    expect(total(byId('chest'))).toBe('0.117%');
-    expect(total(byId('time'))).toBe('0.176%');
-    expect(total(byId('gem'))).toBe('0.006%');
-    expect(total(byId('stone'))).toBe('0.006%');
+    expect(items.map((row) => row.id)).toEqual(['chest', 'key', 'time', 'gem', 'stone']);
+    const byId = (id: string) => items.find((row) => row.id === id)!;
+    expect(total(byId('chest').value)).toBe('0.117%');
+    expect(total(byId('time').value)).toBe('0.176%');
+    expect(total(byId('gem').value)).toBe('0.006%');
+    expect(total(byId('stone').value)).toBe('0.006%');
     // The base each total was boosted from stays on the row, so the pair's second number is
     // still readable without re-deriving it from the luck multiplier.
-    expect(subtext(byId('time'))).toBe('0.150% + 17%');
+    expect(subtext(byId('time').value)).toBe('0.150% + 17%');
+    for (const id of ['chest', 'time', 'gem', 'stone'] as const) {
+      expect(byId(id).muted, `${id} applies on a gate phase`).toBeFalsy();
+    }
+
+    const key = byId('key');
+    expect(key.muted, 'key is non-gate-only').toBe(true);
+    expect(total(key.value)).toBe('—');
+    expect(subtext(key.value)).toBe(t.phasesDropNonGateOnly);
   });
 
   it('three-decimal precision keeps gem and stone distinguishable from a coarser rounding', () => {
@@ -206,19 +224,26 @@ describe('dropItems', () => {
     expect(subtext(chest)).toBeNull();
   });
 
-  it('every row explains its boost via a tooltip on the subtext, not the label', () => {
+  it('every applicable row explains its boost via a tooltip on the subtext, not the label', () => {
     const intel = computePhaseIntelGlobal(PHASE_GATE, { luckFraction: LUCK_FRACTION })!;
     const items = dropItems(intel, t, fmt);
+    const applicable = items.filter((row) => !row.muted);
     // Non-vacuity: this assertion used to select rows by an `id.endsWith('Actual')` filter, which
-    // the merge left matching nothing — the loop kept passing while checking zero rows.
-    expect(items.length, 'gate-phase drop rows').toBe(4);
-    for (const row of items) {
+    // the merge left matching nothing — the loop kept passing while checking zero rows. The panel
+    // now always emits five rows, one of which (`key`) is gate-phase-inapplicable, so the count
+    // pinned here is four, not `items.length`.
+    expect(applicable.length, 'applicable gate-phase drop rows').toBe(4);
+    for (const row of applicable) {
       expect(row.tip, `label tip on ${row.id}`).toBeUndefined();
       expect(subtextTip(row.value), `subtext tip on ${row.id}`).toBe(t.phasesDropActualHint);
     }
+
+    const key = items.find((row) => row.id === 'key')!;
+    expect(key.muted, 'key does not apply on a gate phase').toBe(true);
+    expect(subtextTip(key.value), 'the dashed key row carries no boost tooltip').toBeNull();
   });
 
-  it('decomposes into base + skill tree Sorte + squad Sorte, in that order, when intel carries the split', () => {
+  it('decomposes into base + skill tree luck + squad luck, in that order, when intel carries the split', () => {
     // `luckFraction` is the SUM of the two components — that is what `phases-explorer.tsx`
     // guarantees by construction (see its own comment), so this mirrors a real caller rather
     // than inventing an inconsistent split.
