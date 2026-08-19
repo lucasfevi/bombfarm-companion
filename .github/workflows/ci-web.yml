@@ -121,6 +121,9 @@ jobs:
     needs: changes
     if: github.event_name != 'pull_request' || needs.changes.outputs.web == 'true'
     runs-on: ubuntu-latest
+    # Browsers and OS packages baked in, so the apt half of `--with-deps` can't stall
+    # this required gate on a bad Ubuntu-mirror day. Tag must track `@playwright/test`.
+    container: mcr.microsoft.com/playwright:v1.61.1-noble
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
@@ -136,7 +139,7 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: Install Playwright Chromium (for the a11y test-runner)
-        run: pnpm exec playwright install --with-deps chromium
+        run: pnpm exec playwright install chromium
 
       - name: Build Storybook
         run: pnpm --filter @bombfarm/ui build-storybook
