@@ -118,8 +118,9 @@ describe('the House is the binding constraint (defect A)', () => {
 });
 
 describe('the resulting rates', () => {
-  it('clearSecs is ~106s — 67.5s before the House fix, 77.3s after it, ~107s once cadence is averaged over the hop distribution, 105.6s after crit went flat', () => {
-    expect(row.clearSecs).toBeCloseTo(105.62, 1);
+  it('clearSecs is ~106s — 67.5s before the House fix, 77.3s after it, ~107s once cadence is averaged over the hop distribution, 105.6s after crit went flat, 105.8s after the 2026-08-18 revert', () => {
+    // RE-MEASURED for issue #132 (crit chance/CDR back to percent-of-base): 105.62 → 105.81.
+    expect(row.clearSecs).toBeCloseTo(105.81, 1);
     expect(row.clearSecs).toBeGreaterThan(70);
   });
 
@@ -129,8 +130,10 @@ describe('the resulting rates', () => {
     expect(Math.abs(goldPerProp / OBSERVED_GOLD_PER_PROP - 1)).toBeLessThan(0.015);
   });
 
-  it('goldPerHour is ~365k — down 36% from the pre-fix 571,546 across the House, cadence and flat-crit changes', () => {
-    expect(row.goldPerHour).toBeCloseTo(365_087, -2);
+  it('goldPerHour is ~364k — down 36% from the pre-fix 571,546 across the House, cadence and crit-chance/CDR changes', () => {
+    // RE-MEASURED for issue #132: 365,087 → 364,417, a 0.18% move — the model reverted, the item
+    // catalog and level restructure that landed alongside it did not.
+    expect(row.goldPerHour).toBeCloseTo(364_417, -2);
     // A band, not a point, so a legitimate wiki-bundle refresh does not fail this file; tight
     // enough that re-opening any of the defects moves the number out of it.
     expect(row.goldPerHour).toBeGreaterThan(350_000);

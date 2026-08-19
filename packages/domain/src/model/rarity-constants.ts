@@ -28,36 +28,50 @@ export const BASE_ROLLS: Record<RarityKey, BaseRoll> = {
 };
 
 // Per-point increments (wiki `herois.ponto_inc`):
-// Ataque +10 native × levelPowerMult(level) · Energia +8 native · Velocidade / Sorte / Pen add
-// a bonus that is a percentage OF THE BASE ROLL (+2% / +3% / +2%).
+// Ataque +10 native × levelPowerMult(level) · Energia +8 native · Velocidade / Sorte /
+// Crit chance / Pen / CDR add a bonus that is a percentage OF THE BASE ROLL
+// (+2% / +3% / +2% / +2% / +2%).
 // Sorte (Luck): BSP-46 — measured against the Wave 0 fixtures at ≤8e-16 residual,
 // ★0 gear-free (vera-02-pts-luck-1.json) and confirmed exactly at ★1 with gear
 // (bellatrix-02-pts-each-1.json). +3% of the hero's birth roll, × starsMult.
 //
-// Crit chance, crit dmg and CDR are the exceptions: all three are **flat**, not percentages of
-// the roll (`critChanceFlat` / `critDmgFlat` / `cdrFlat`, below). Crit damage went flat at the
-// 2026-08-13 patch; crit chance and CDR followed at the 2026-08-15 one.
+// Crit dmg is the ONE exception: it is **flat**, not a percentage of the roll
+// (`critDmgFlat`, below).
+//
+// REVERTED at the 2026-08-18 patch: crit chance and CDR went flat for exactly three days
+// (2026-08-15 → 2026-08-18, commit 0418a82 / PR #102) and the 2026-08-18 patch put both back
+// to percent-of-base. Measured on account 486 across a 12-hero export (2026-08-18 23:20) and a
+// deliberate respec (2026-08-19 01:10): Sora (L10, ★0, no items, no crit/cooldown ability)
+// moved her crit multiplier 1.0309330166 → 1.1309330166 and her cooldown multiplier
+// 1.0000000000 → 1.1000000000 on a 5/5 respec — +0.1 on each for 5 points, no base-roll and no
+// level scaling. See the two constants below for how that single respec pins BOTH rates
+// separately, and why they land on different sides of their pre-2026-08-15 values.
 export const POINT_GAIN = {
   attackNative: 10,
   energyNative: 8,
   speedPctOfBase: 0.02,
   /**
-   * FLAT +0.024394 crit-chance percentage points per point — planner units, i.e. the same units
-   * as `SheetStats.critChance` (`save crit_chance × 100`), so one point moves the save's
-   * `crit_chance` fraction by exactly the wiki's `herois.ponto_inc` entry, `0.00024394`.
+   * 0.02 per point, ROUND-TRIPPED: this is the same value the repo carried before the
+   * 2026-08-15 patch. Two independent sources agree: measured on Sora's 2026-08-19 respec (see
+   * below), and separately, the wiki mirror's (held out of band, not in this repo) `ponto_inc`
+   * table publishes Chance de Crítico's per-point entry at exactly 0.02.
    *
-   * Measured on a deliberate respec (`respec-cdr-cc.json`, account 486, 2026-08-16): Torin L4,
-   * ★0, Comum, **no items at all**, moved from `crit_chance` 0.0565165826278963 to
-   * 0.0570044626278963 on exactly 2 points — Δ 0.00048788, i.e. `2 × 0.00024394`, residual
-   * **3.0e-18**. The same delta read as a percentage of his 0.0527272881 roll would have been
-   * 0.0000257; it is not. The account's tree total is byte-identical across the pair and he
-   * carries no crit ability, so nothing else could account for the move.
+   * The respec measurement, spelled out: on Sora's 2026-08-19 respec every OTHER stat (attack,
+   * energy, speed, luck, penetration, crit damage) solves to exactly zero spent points, so her
+   * 10 moved points are provably all crit chance + cooldown, and both observed deltas are
+   * exactly `birth × 0.1`. Her before-state is zero points in BOTH stats, so the before equation
+   * alone permits any integer split from (1,9) to (9,1) of `n_crit × r_crit = 0.1`,
+   * `n_cdr × r_cdr = 0.1`, `n_crit + n_cdr = 10` — the respec by itself cannot exclude any of
+   * them. Fixing `r_crit = 0.02` from the wiki table forces `n_crit = 5`, hence `n_cdr = 5` and,
+   * from the same respec, `r_cdr = 0.02` — see {@link POINT_GAIN.cdrPctOfBase}. The wiki table
+   * independently lists `r_cdr = 0.02` too, so this is not a one-way anchor: both rates are
+   * confirmed by both sources.
    *
-   * NO base-roll scaling and NO level scaling — the raw `ponto_inc` value, converted to planner
-   * units. Star behaviour is UNOBSERVED (every hero on the capture account is ★0); the flat term
-   * is not star-scaled here, the same conservative reading `critDmgFlat` documents.
+   * What would settle either rate from a capture alone, with no external table needed: a single
+   * future respec or level-up that puts a point into ONLY crit chance or ONLY cooldown gives
+   * `Δ = birth × rate` directly.
    */
-  critChanceFlat: 0.024394,
+  critChancePctOfBase: 0.02,
   /**
    * FLAT +5 crit-damage percentage points per point — planner units, i.e. the same units as
    * `SheetStats.critDmg` (`(save crit_dmg − 1) × 100`), so one point moves the save's
@@ -87,26 +101,34 @@ export const POINT_GAIN = {
    * star-scaled implicitly because it read the (already star-scaled) roll; the flat constant
    * here does not. If the game does star-scale this point and this model does not,
    * `inferSpentPoints` would over-recover points on a ★>0 hero holding crit-damage points, and
-   * `reoptBudget` — deliberately un-clamped to `level`, see `points-reopt-core.ts` — would
-   * amplify that bad vector rather than contain it. `tests/points-within-level-budget.test.ts`
+   * `reoptBudget` (`points-reopt-core.ts`) is now clamped to `level` no matter what, but that
+   * clamp is a backstop, not a fix — the bad vector would still be silently truncated rather
+   * than surfaced. `tests/points-within-level-budget.test.ts`
    * is the guard that would go red first if a future ★>0 capture proves this wrong.
    */
   critDmgFlat: 5,
   penetrationPctOfBase: 0.02,
   /**
-   * FLAT +0.03513 cooldown-reduction percentage points per point — planner units
-   * (`save cooldown_reduction × 100`), i.e. the wiki's `herois.ponto_inc` entry `0.0003513`.
+   * 0.02 per point. This is the stat where the SHAPE reverted at the 2026-08-18 patch but the
+   * MAGNITUDE did not: pre-2026-08-15 this repo carried `cdrPctOfBase: 0.1`, and the value that
+   * came back is HALF that, not a full round-trip — worth flagging plainly, because the crit
+   * chance rate above DID round-trip to its old value and the asymmetry reads like a typo if
+   * you are not looking for it.
    *
-   * Measured on the same respec pair as {@link POINT_GAIN.critChanceFlat}: Torin L4, no items,
-   * `cooldown_reduction` 0.00209084545389146 → 0.00279344545389146 on exactly 2 points —
-   * Δ 0.0007026, i.e. `2 × 0.0003513`, residual **−1.1e-19**. Read as 10% of his roll it would
-   * have been 0.000418; it is not.
+   * Confirmed by the same two independent sources as crit chance: measured on Sora's 2026-08-19
+   * respec (10 points split provably between crit chance and cooldown only, `n_crit × r_crit =
+   * 0.1`, `n_cdr × r_cdr = 0.1`, `n_crit + n_cdr = 10` — see
+   * {@link POINT_GAIN.critChancePctOfBase} for the full derivation), and separately, the wiki
+   * mirror's (held out of band, not in this repo) `ponto_inc` table publishes Red. de Cooldown's
+   * per-point entry at exactly 0.02 too. 0.1 is arithmetically impossible on the respec capture
+   * regardless of the table: at `r_cdr = 0.1` the observed +0.1 cooldown delta would need only 1
+   * point, leaving 4 of Sora's 10 respec points unexplained. Do not restore 0.1.
    *
-   * CDR is the thinnest-evidenced of the three flat stats: the game has **no cooldown ability
-   * and no cooldown tree node**, so gear and points are its only non-birth sources, and the item
-   * term rests on a single observation (Minato's `gold_elmo`, one roll, exact).
+   * CDR is still the thinnest-evidenced of the pooled stats otherwise: the game has **no
+   * cooldown ability and no cooldown tree node**, so gear and points are its only non-birth
+   * sources.
    */
-  cdrFlat: 0.03513,
+  cdrPctOfBase: 0.02,
   luckPctOfBase: 0.03,
 } as const;
 

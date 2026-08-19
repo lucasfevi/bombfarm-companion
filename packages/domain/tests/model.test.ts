@@ -151,9 +151,9 @@ describe('abilityMods', () => {
     expect(m.penetrationPp).toBe(0);
     expect(m.sheetPenetrationRaw).toBe(3);
     expect(m.attackMult).toBeCloseTo(1.02, 6);
-    // Flat planner pp since the 2026-08-15 patch: 10 x 0.04574 and 4 x 0.06099.
-    expect(m.sheetCritChanceFlat).toBeCloseTo(0.4574, 6);
-    expect(m.combatCritChanceFlat).toBeCloseTo(0.24396, 6);
+    // Percent-of-base since the 2026-08-18 revert: 10 x 4.285714285714286 and 4 x 5.714285714285714.
+    expect(m.sheetCritChancePctOfBase).toBeCloseTo(42.85714285714286, 6);
+    expect(m.combatCritChancePctOfBase).toBeCloseTo(22.857142857142858, 6);
   });
 
   it('treats Ponta de Diamante as on-sheet raw Σ (not combat penetrationPp)', () => {

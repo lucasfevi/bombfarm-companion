@@ -111,7 +111,7 @@ describe('the fixture reports a bounded, correctly-shaped plateau', () => {
     // collapses to a single point. That is spec-sanctioned behaviour, not an accident: min and
     // max both equal the winner's own share, never null, never an invented width.
     //
-    // RE-MEASURED FOUR TIMES, every time because the winning BUILD moved — never the plateau
+    // RE-MEASURED FIVE TIMES, every time because the winning BUILD moved — never the plateau
     // logic. The single-point collapse is unchanged throughout. Chronological; the LAST entry is
     // always the value asserted below.
     //   0.4744  original
@@ -128,9 +128,13 @@ describe('the fixture reports a bounded, correctly-shaped plateau', () => {
     //           more than an order of magnitude, so neither stat competes for the pool any more
     //           and the split reverts toward the attack/energy pair.
     //   0.5217  2026-08-16 item redistribution: chest/pants now lead Penetração/Recarga, so the
-    //           winning build's gear mix shifts and the split moves once more. ← asserted below
-    expect(plateau.minEnergyShare).toBeCloseTo(0.5217391304347826, 4);
-    expect(plateau.maxEnergyShare).toBeCloseTo(0.5217391304347826, 4);
+    //           winning build's gear mix shifts and the split moves once more.
+    //   0.6395  2026-08-18 patch (issue #132): crit chance and CDR moved back to percent-of-base,
+    //           so both stats compete for the pool again and pull the split away from the
+    //           attack/energy pair once more — the mirror image of the 0.5402 → 0.5000 move
+    //           above, three days later. ← asserted below
+    expect(plateau.minEnergyShare).toBeCloseTo(0.6395348837209303, 4);
+    expect(plateau.maxEnergyShare).toBeCloseTo(0.6395348837209303, 4);
     expect(plateau.minEnergyShare).toBe(plateau.maxEnergyShare);
   });
 

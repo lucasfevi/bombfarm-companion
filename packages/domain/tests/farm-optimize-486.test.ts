@@ -90,10 +90,16 @@ describe('the recommended phase reproduces the measured band', () => {
     expect(solved.recommendedPhase).toBeLessThanOrEqual(28);
   });
 
-  it('gainPct exceeds FARM_RESPEC_MIN_GAIN_PCT and sits inside the recorded band [8, 18] — measured ~12.79%', () => {
+  it('gainPct exceeds FARM_RESPEC_MIN_GAIN_PCT and sits inside the recorded band [4, 9] — measured ~6.19%', () => {
+    // RE-MEASURED for issue #132: ~12.79% → ~6.19%. Two independent changes both pull gainPct
+    // down together — crit chance/CDR moving back to percent-of-base (so a well-rolled hero's
+    // crit/cdr points are worth less relative to its now-larger baseline DPS than the flat model
+    // implied), and `reoptBudget` (`points-reopt-core.ts`) now clamping to `level` no matter
+    // what, which removes the phantom search headroom an over-budget `pts` used to hand the
+    // solver. Both are real, deliberate changes to this PR, not a regression.
     expect(solved.gainPct).toBeGreaterThan(1); // FARM_RESPEC_MIN_GAIN_PCT
-    expect(solved.gainPct).toBeGreaterThanOrEqual(8);
-    expect(solved.gainPct).toBeLessThanOrEqual(18);
+    expect(solved.gainPct).toBeGreaterThanOrEqual(4);
+    expect(solved.gainPct).toBeLessThanOrEqual(9);
   });
 
   it('the winning vector holds at least one Speed point — an attack/energy-only search would miss this gain', () => {

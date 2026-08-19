@@ -99,20 +99,19 @@ export function peelSheetSources(input: PeelSheetSourcesInput): SheetSourceLines
     pts.speed,
     tree.speedPct,
   );
-  // Crit chance is NOT a pooled key as of the 2026-08-15 patch: gear, the sheet ability and the
-  // stat point are all flat addends in planner percentage points, and so is the tree line
-  // (`crit_chance_add × 100`, measured — see `applySkillTree`).
-  const critChanceBase = birth.critChance * star;
-  const critChance: SourceLines = {
-    hero: critChanceBase + pts.critChance * POINT_GAIN.critChanceFlat,
-    gear: bonuses.critFlatPct,
-    ability: Math.max(0, sheetOther.critChanceFlat),
-    skillTree: tree.critChancePct,
-  };
-  // Crit damage is NOT a pooled key either: items never roll it (gear/apply.ts — Gear is
-  // structurally 0), and both the sheet ability and the stat point are flat addends in planner
-  // percentage points (POINT_GAIN.critDmgFlat). The tree line keeps `AD-BSP-22`'s
-  // percent-of-base shape, matching `applySkillTree`; `crit_dmg_add` is 0 on every capture.
+  const critChance = pooledLines(
+    birth.critChance,
+    star,
+    sheetOther.critChance,
+    bonuses.critPct,
+    POINT_GAIN.critChancePctOfBase,
+    pts.critChance,
+    tree.critChancePct,
+  );
+  // Crit damage is NOT a pooled key: items never roll it (gear/apply.ts — Gear is structurally
+  // 0), and both the sheet ability and the stat point are flat addends in planner percentage
+  // points (POINT_GAIN.critDmgFlat). The tree line keeps `AD-BSP-22`'s percent-of-base shape,
+  // matching `applySkillTree`; `crit_dmg_add` is 0 on every capture in the corpus.
   const critDmgBase = birth.critDmg * star;
   const critDmg: SourceLines = {
     hero: critDmgBase + pts.critDmg * POINT_GAIN.critDmgFlat,
@@ -130,13 +129,7 @@ export function peelSheetSources(input: PeelSheetSourcesInput): SheetSourceLines
     pts.penetration,
     0,
   );
-  // CDR is flat too, and has neither an ability nor a tree node — gear and points only.
-  const cdr: SourceLines = {
-    hero: birth.cdr * star + pts.cdr * POINT_GAIN.cdrFlat,
-    gear: bonuses.cdrFlatPct,
-    ability: Math.max(0, sheetOther.cdrFlat),
-    skillTree: 0,
-  };
+  const cdr = pooledLines(birth.cdr, star, sheetOther.cdr, bonuses.cdrPct, POINT_GAIN.cdrPctOfBase, pts.cdr, 0);
   // Luck's tree term is a flat percentage-point addend (AD-BSP-22), not base × pct.
   const luck: SourceLines = {
     ...pooledLines(birth.luck, star, 0, bonuses.luckPct, POINT_GAIN.luckPctOfBase, pts.luck, 0),

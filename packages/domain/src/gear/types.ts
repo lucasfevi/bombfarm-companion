@@ -47,41 +47,28 @@ export type GearBonuses = {
   energyPct: number;
   speedPct: number;
   luckPct: number;
-  /**
-   * Σ of the crit-chance rolls as **planner percentage points** (`SheetStats.critChance` units),
-   * ADDED to the sheet — not a pool fraction like `speedPct`/`penPct`/`luckPct`. The catalog
-   * stores these as save-side fractions, so `sumGearBonuses` converts (× 100) on the way in.
-   * See `POINT_GAIN.critChanceFlat` for the measurement.
-   */
-  critFlatPct: number;
+  critPct: number;
   penPct: number;
-  /** Σ of the cooldown rolls as planner percentage points, ADDED to the sheet. See `critFlatPct`. */
-  cdrFlatPct: number;
+  cdrPct: number;
 };
 
 /**
  * Non-item bonuses already baked into the unequipped sheet. Today that is sheet abilities only
  * (e.g. Olho Clínico, Ponta de Diamante). Tree / Marcha / team buffs are combat-only — not in here.
  *
- * `speed` and `penetration` are **fractions of the rolled base** (wiki `final = base × (1 + Σ)`).
- * The three `*Flat` keys are raw planner percentage points ADDED to the sheet, never multiplied
- * against the roll — the game moved crit damage to that shape at the 2026-08-13 patch, and crit
- * chance and CDR at the 2026-08-15 one. See `POINT_GAIN.critDmgFlat` / `.critChanceFlat` /
- * `.cdrFlat` for the measurements.
+ * `speed` / `critChance` / `penetration` / `cdr` are **fractions of the rolled base**
+ * (wiki `final = base × (1 + Σ)`). `critDmgFlat` is the one exception and is named for it:
+ * crit damage is flat-additive in this game, so it carries raw planner percentage points
+ * (`SheetStats.critDmg` units) that are ADDED to the sheet, never multiplied against the roll.
+ * See `POINT_GAIN.critDmgFlat` for the measurement that settled it.
  */
 export type SheetOtherPct = {
   speed: number;
-  /** FLAT crit-chance percentage points (planner units) — an addend, not a pool fraction. */
-  critChanceFlat: number;
+  critChance: number;
   /** FLAT crit-damage percentage points (planner units) — an addend, not a pool fraction. */
   critDmgFlat: number;
   penetration: number;
-  /**
-   * FLAT cooldown percentage points (planner units) — an addend, not a pool fraction.
-   * Structurally 0 today: the game has no cooldown ability. Kept for symmetry with the other
-   * two flat keys and as the forward-safe slot if one is ever added.
-   */
-  cdrFlat: number;
+  cdr: number;
 };
 
 export type PointAlloc = Record<keyof SheetStats, number>;

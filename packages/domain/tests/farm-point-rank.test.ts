@@ -73,15 +73,17 @@ describe('rankNextPointForFarm — discrimination: a one-shotting squad inverts 
     assertResultIsFinite(result);
   });
 
-  it('Bellatrix STOPPED one-shotting at maxPhase 42 when crit chance went flat', () => {
+  it('Bellatrix does not one-shot at maxPhase 42', () => {
     // The discrimination this file rests on is that a one-shotting hero scores attack at exactly
-    // 0. Bellatrix crossed out of that regime at the 2026-08-15 patch: with crit chance a flat
-    // addend her damage per bomb no longer clears a phase-42 prop in one hit, so an attack point
-    // buys throughput again. Pinned so the crossing cannot happen a second time unnoticed.
+    // 0. Bellatrix crossed out of that regime at the 2026-08-15 patch (crit chance going flat)
+    // and STAYS out of it after the 2026-08-18 revert back to percent-of-base: the item catalog
+    // and level-cap restructure that landed alongside both crit-chance patches is what keeps her
+    // damage per bomb below a one-shot on a phase-42 prop, independent of the crit shape.
+    // RE-MEASURED for the 2026-08-18 revert (issue #132).
     const result = rankNextPointForFarm({ bases, account, heroId: bellatrix.id, maxPhase: 42 });
     const attack = result.rows!.find((r) => r.stat === 'attack')!;
     expect(attack.gainPct).toBeGreaterThan(0);
-    expect(attack.gainPct).toBeCloseTo(0.576082, 5);
+    expect(attack.gainPct).toBeCloseTo(0.596347, 5);
   });
 
   it('farm ranks ENERGY first and speed second at maxPhase 42 — the order INVERTED when cadence stopped assuming every plant is walk-bound', () => {
@@ -99,8 +101,11 @@ describe('rankNextPointForFarm — discrimination: a one-shotting squad inverts 
     //
     // The same correction is why `cdr` stopped scoring exactly 0 further down this file: the
     // fuse-bound mass that speed cannot help is precisely the mass CDR can.
-    expect(rows[0]).toEqual({ stat: 'energy', label: 'Energia', gainPct: 0.8068174597261724 });
-    expect(rows[1]).toEqual({ stat: 'speed', label: 'Velocidade', gainPct: 0.6619637701077874 });
+    // RE-MEASURED for the 2026-08-18 revert (issue #132) — crit chance/CDR moved back to
+    // percent-of-base, shifting both figures slightly; the energy-first/speed-second order is
+    // unchanged.
+    expect(rows[0]).toEqual({ stat: 'energy', label: 'Energia', gainPct: 0.8069602610678572 });
+    expect(rows[1]).toEqual({ stat: 'speed', label: 'Velocidade', gainPct: 0.661840146116166 });
   });
 
   it('DPS mode scores attack first and speed exactly 0 on the same hero (the inversion)', () => {
@@ -130,14 +135,17 @@ describe('rankNextPointForFarm — anti-"energy always wins" sensor', () => {
     expect(rows[0].stat).toBe('attack');
   });
 
-  it('Perrin L4 FLIPPED at maxPhase 42 — recorded, not hidden', () => {
-    // The sensor exists to prove "energy always wins" is false. Perrin stopped being an example
-    // of that at maxPhase 42; the measured pair is pinned here so the flip is a tracked fact and
-    // a future change that flips him BACK is visible rather than silent.
+  it('Perrin L4 FLIPPED BACK at maxPhase 42 (issue #132) — recorded, not hidden', () => {
+    // The sensor exists to prove "energy always wins" is false. Perrin flipped OUT of that claim
+    // at the 2026-08-15 patch (attack 0.127926 < energy 0.142735, pinned in that PR) and flipped
+    // BACK into it at the 2026-08-18 revert — attack ranks above energy again, matching his
+    // pre-2026-08-15 shape. Pinned so a future change that flips him away a second time is
+    // visible rather than silent.
     const result = rankNextPointForFarm({ bases, account, heroId: heroByName('Perrin').id, maxPhase: 42 });
     const rows = result.rows!;
-    expect(rows.find((r) => r.stat === 'attack')!.gainPct).toBeCloseTo(0.127926, 5);
-    expect(rows.find((r) => r.stat === 'energy')!.gainPct).toBeCloseTo(0.142735, 5);
+    expect(rows.find((r) => r.stat === 'attack')!.gainPct).toBeCloseTo(0.147558, 5);
+    expect(rows.find((r) => r.stat === 'energy')!.gainPct).toBeCloseTo(0.140424, 5);
+    expect(rows[0].stat).toBe('attack');
   });
 });
 

@@ -48,18 +48,19 @@ function poolFactor(percent: number): number {
 /**
  * Hero + Ability sheet: no gear, no points, no skill tree (DEC-03). Attack scales by
  * level and stars; energy/critChance/critDmg/penetration/cdr/luck scale by stars only;
- * speed is never star-scaled (level-stars-sheet.md). The two remaining POOLED keys
- * (`speed`, `penetration`) fold in the on-sheet ability contribution multiplicatively;
+ * speed is never star-scaled (level-stars-sheet.md). Pooled keys (those present on
+ * {@link SheetOtherPct}) fold in the on-sheet ability contribution multiplicatively;
  * luck takes no `sheetOther` term (AD-BSP-19).
  *
- * Crit chance, crit damage and CDR are the exceptions: their on-sheet ability contributions
- * (`sheetOther.critChanceFlat` — Olho Clínico; `sheetOther.critDmgFlat` — Golpe Brutal; CDR has
- * no ability) are FLAT addends in planner percentage points, added AFTER the star factor. See
- * `POINT_GAIN.critChanceFlat` / `.critDmgFlat` / `.cdrFlat` for the measurements.
- *
- * No capture carries a ★>0 hero with any contribution to those three, so whether the flat terms
- * would themselves star-scale is unobserved; not star-scaling them is the conservative reading
+ * Crit damage is the exception: its on-sheet ability contribution (`sheetOther.critDmgFlat`,
+ * Golpe Brutal) is a FLAT addend in planner percentage points, added AFTER the star factor —
+ * see `POINT_GAIN.critDmgFlat` and the `critDmgFlat` ability kind for the measurement.
+ * No capture carries a ★>0 hero with any crit-damage contribution, so whether the flat term
+ * would itself star-scale is unobserved; not star-scaling it is the conservative reading
  * (the game's own ★0 sheets are reproduced exactly either way).
+ *
+ * Crit chance and CDR were flat addends for exactly three days (2026-08-15 → 2026-08-18); the
+ * 2026-08-18 patch put both back in the shared pool. See `POINT_GAIN` in `rarity-constants.ts`.
  */
 export function nakedFromBirth(
   birth: BirthStats,
@@ -72,36 +73,27 @@ export function nakedFromBirth(
     attack: birth.attack * levelPowerMult(level) * star,
     energy: birth.energy * star,
     speed: birth.speed * poolFactor(sheetOther.speed),
-    critChance: birth.critChance * star + Math.max(0, sheetOther.critChanceFlat),
+    critChance: birth.critChance * poolFactor(sheetOther.critChance) * star,
     critDmg: birth.critDmg * star + Math.max(0, sheetOther.critDmgFlat),
     penetration: birth.penetration * poolFactor(sheetOther.penetration) * star,
-    cdr: birth.cdr * star + Math.max(0, sheetOther.cdrFlat),
+    cdr: birth.cdr * poolFactor(sheetOther.cdr) * star,
     luck: birth.luck * star,
   };
 }
 
 /**
  * Apply the skill tree on top of a sheet that already carries gear + points
- * (`applyPoints`'s output).
- *
- * `speed_add` is the last `AD-BSP-22` percent-of-base shape left: it adds `base × add`, where
- * `base = naked.speed / (1 + sheetOther.speed)` recovers the pre-ability roll.
- *
- * **`crit_chance_add` is a FLAT percentage-point addend** as of the 2026-08-15 patch — measured
- * on `black-save-08.16.2026-12.29am.json`, where Torin L4 carries no items and no crit ability,
- * so his entire sheet-minus-birth delta is this term alone and lands on
- * `crit_chance_add × 100` exactly (0.003789294525 planner pp, residual ~0). The other seven
- * heroes on that capture confirm it with gear and ability stacked on top.
- *
- * `crit_dmg_add` is `0` on every capture in the corpus, so its own shape stays unmeasured; it is
- * left as percent-of-base, which is what `AD-BSP-22` read it as. Note that this now makes crit
- * damage the only tree term still modelled that way — crit damage itself went flat at the
- * 2026-08-13 patch, so the prior that this term is flat too is strong but untested. A capture
- * with a nonzero `crit_dmg_add` settles it.
- *
- * `energia_add` multiplies the energy subtotal; `dmg_static` multiplies the attack subtotal;
- * `luck_add` is a flat percentage-point addend. Penetration and cdr receive exactly `0` —
- * `skills.totals` has no node for either today (AD-BSP-22's forward-safety clause).
+ * (`applyPoints`'s output). Exactly the four `AD-BSP-22` shapes: `speed_add` /
+ * `crit_chance_add` / `crit_dmg_add` add `base × add` to the shared pool, where
+ * `base = naked[key] / (1 + sheetOther[key])` recovers the pre-ability roll (the same
+ * base the tree/ability additions already use in `derive.ts`) — for crit damage the
+ * ability term is a flat addend, so its base is `naked.critDmg − sheetOther.critDmgFlat`.
+ * `crit_dmg_add` is `0` on every capture in the corpus, so the tree term's own shape
+ * (percent-of-base, as `AD-BSP-22` reads it) is untouched here and remains unmeasured;
+ * `energia_add` multiplies
+ * the energy subtotal; `dmg_static` multiplies the attack subtotal; `luck_add` is a flat
+ * percentage-point addend. Penetration and cdr receive exactly `0` — `skills.totals` has
+ * no node for either today (AD-BSP-22's forward-safety clause).
  */
 export function applySkillTree(
   sheet: SheetStats,
@@ -110,12 +102,13 @@ export function applySkillTree(
   tree: TreeSheetTotals,
 ): SheetStats {
   const baseSpeed = naked.speed / poolFactor(sheetOther.speed);
+  const baseCritChance = naked.critChance / poolFactor(sheetOther.critChance);
   const baseCritDmg = naked.critDmg - Math.max(0, sheetOther.critDmgFlat);
   return {
     attack: sheet.attack * tree.danoStatic,
     energy: sheet.energy * (1 + tree.energyPct / 100),
     speed: sheet.speed + baseSpeed * (tree.speedPct / 100),
-    critChance: sheet.critChance + tree.critChancePct,
+    critChance: sheet.critChance + baseCritChance * (tree.critChancePct / 100),
     critDmg: sheet.critDmg + baseCritDmg * (tree.critDmgPct / 100),
     penetration: sheet.penetration,
     cdr: sheet.cdr,

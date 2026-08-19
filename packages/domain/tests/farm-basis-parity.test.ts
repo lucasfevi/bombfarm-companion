@@ -1,7 +1,23 @@
 /**
  * Proof that the `farm-rate.ts` basis seam is a byte-identical refactor, not a rewrite.
  *
- * RE-RECORDED 2026-08-18 for the per-ato hop-density rescale (`hopScaleForAto` — `HOP_DISTRIBUTION`
+ * RE-RECORDED 2026-08-19 for the crit-chance/CDR revert (issue #132 — the 2026-08-18 patch put
+ * both back to percent-of-base, three days after the 2026-08-15 patch that made them flat).
+ * Diffed field by field against the previous capture before rewriting:
+ *
+ * - `heroFacts` — `avgHitBase`, `fuseSecs`, `cycleSecs`, `plantsPerSec` and `plantsPerSecByAto`
+ *   moved on some/all of the 5 heroes — every one of them downstream of the hero's crit
+ *   multiplier, which is exactly what changed. No field unrelated to combat throughput moved.
+ * - `rows` — every throughput column moved on all 600 rows (`goldPerHour`, `chestsPerHour`,
+ *   `keysPerHour`, `xpPerHour`, `propsPerHour`, `cyclesPerHour`, `clearSecs`, `expectedHtk`,
+ *   `gemsPerHour`, `timePiecesPerHour`, `stoneChestsPerHour`), plus `heroesOnField` (the House
+ *   allocation re-ranks slightly when hero throughput moves). Every structural column —
+ *   `mitigationPct`, `ato`, `gate`, `locked`, `oneShot`, `gateTimerSecs`, `jaulaEarlyCapPct`,
+ *   `jaulaWindowSecs`, `phase`, `itemLevels`, `itemLevelLabel`, `concurrencyScale`,
+ *   `fortunaAura` — is untouched, which is the signature of a damage-model change and not a
+ *   table change.
+ *
+ * PREVIOUSLY RE-RECORDED 2026-08-18 for the per-ato hop-density rescale (`hopScaleForAto` — `HOP_DISTRIBUTION`
  * is measured at ato 1's 50 props and was previously applied unscaled to every ato). Diffed field
  * by field against the previous capture before rewriting, and the footprint is exactly the change:
  *

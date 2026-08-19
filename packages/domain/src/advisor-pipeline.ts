@@ -109,7 +109,7 @@ export type AdvisorPipelineResult = {
   energyMult: number;
   speedMult: number;
   critDmgMult: number;
-  teamCritChanceFlat: number;
+  teamCritPctOfBase: number;
   /** The whole skill tree, once (BSP-23c) — surfaced for Wave 6's breakdown. */
   treeSheet: TreeSheetTotals;
   A: DeriveResult;
@@ -183,7 +183,7 @@ export function computeAdvisorPipeline(input: AdvisorPipelineInput): AdvisorPipe
   const mods = abilityMods(abilities);
   const sheetOther: SheetOtherPct = {
     ...emptySheetOther(),
-    critChanceFlat: mods.sheetCritChanceFlat,
+    critChance: mods.sheetCritChancePctOfBase / 100,
     penetration: mods.sheetPenetrationRaw,
     critDmgFlat: mods.sheetCritDmgFlat,
   };
@@ -215,7 +215,7 @@ export function computeAdvisorPipeline(input: AdvisorPipelineInput): AdvisorPipe
     gateAttackMult,
     energyMult,
     critDmgMult,
-    teamCritChanceFlat,
+    teamCritPctOfBase,
     teamDrainMult,
     dmgMult,
   } = mults;
@@ -244,9 +244,9 @@ export function computeAdvisorPipeline(input: AdvisorPipelineInput): AdvisorPipe
     energyMult,
     speedMult,
     critDmgMult,
-    teamCritChanceFlat,
+    teamCritPctOfBase,
     treeSheet,
-    combatCritChanceFlat: mods.combatCritChanceFlat,
+    combatCritChancePctOfBase: mods.combatCritChancePctOfBase,
     penetrationPp: mods.penetrationPp,
     context,
     dmgMult,
@@ -344,7 +344,7 @@ export function computeAdvisorPipeline(input: AdvisorPipelineInput): AdvisorPipe
     energyMult,
     speedMult,
     critDmgMult,
-    teamCritChanceFlat,
+    teamCritPctOfBase,
     treeSheet,
     A: equippedResult,
     B: cloneResult,
