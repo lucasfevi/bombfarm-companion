@@ -183,12 +183,18 @@ export function jaulaItems(
       id: 'early',
       label: strings.phasesJaulaEarly,
       value: `${formatNumber(intel.jaulaEarlyCapPct, 1)}%`,
-      tip: strings.phasesJaulaEarlyHint,
     },
     {
       id: 'window',
       label: strings.phasesJaulaWindow,
-      value: formatDurationShort(intel.jaulaWindowSecs),
+      value: (
+        <span className="flex flex-col items-end gap-0.5 leading-tight">
+          <span>{formatDurationShort(intel.jaulaWindowSecs)}</span>
+          <span className="text-[10px] leading-snug">
+            {sub(strings.phasesJaulaWindowVip, { dur: formatDurationShort(intel.jaulaWindowVipSecs) })}
+          </span>
+        </span>
+      ),
     },
     {
       id: 'hp',
