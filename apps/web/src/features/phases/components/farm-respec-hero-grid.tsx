@@ -1,9 +1,11 @@
 'use client';
 
 import type { FarmRespecHeroEntry, FarmRespecResult } from '@bombfarm/domain/farm-optimize';
-import type { Lang, Strings } from '@/shared/i18n';
+import { sub, type Lang, type Strings } from '@/shared/i18n';
+import { GoldValue } from '@/shared/game-art';
 import type { HeroRecord } from '@/shared/lib/storage';
 import { partitionHeroEntries } from '@/features/phases/model/farm-respec-view';
+import { formatGold } from '@/features/phases/model/farm-respec-format';
 import { FarmRespecHeroCard } from './farm-respec-hero-card';
 
 /**
@@ -11,9 +13,13 @@ import { FarmRespecHeroCard } from './farm-respec-hero-card';
  * No hero is ever omitted — `partitionHeroEntries` splits, it does not filter.
  *
  * The groups are separate grids so the second one starts on its own row rather than filling a
- * gap left in the first. Their tracks differ deliberately: an unchanged card carries two short
- * lines against a changed card's eight-row table, so a shared track sized for the table left it
- * as a mostly-empty full-height box. `items-start` stops the survivors stretching to their row.
+ * gap left in the first. Their tracks differ deliberately: an unchanged card is an identity chip
+ * against a changed card's eight-row table, so a shared track sized for the table left it as a
+ * mostly-empty full-height box. `items-start` stops the survivors stretching to their row.
+ *
+ * The unchanged group's note is stated ONCE above it, carrying the summed gold those builds save
+ * — repeated per card it was the same sentence three or four times over, and the individual
+ * amounts were a total the player had to add up themselves.
  */
 export function FarmRespecHeroGrid({
   result,
@@ -46,8 +52,17 @@ export function FarmRespecHeroGrid({
         </div>
       ) : null}
       {groups.unchanged.length > 0 ? (
-        <div className="grid grid-cols-[repeat(auto-fit,minmax(15rem,1fr))] items-start gap-2 border-t border-line/50 pt-2">
-          {groups.unchanged.map(card)}
+        <div className="flex flex-col gap-1.5 border-t border-line/50 pt-2">
+          <p className="m-0 text-[11px] text-muted">
+            <GoldValue>
+              {sub(t.farmRespecUnchangedGroupNote, {
+                gold: formatGold(result.unchangedRespecCostGold),
+              })}
+            </GoldValue>
+          </p>
+          <div className="grid grid-cols-[repeat(auto-fit,minmax(15rem,1fr))] items-start gap-2">
+            {groups.unchanged.map(card)}
+          </div>
         </div>
       ) : null}
     </div>

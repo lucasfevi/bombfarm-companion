@@ -98,12 +98,19 @@ const fixture = JSON.parse(readFileSync(fixturePath, 'utf8')) as {
  * same pass replaced the row's "Gate" chip with the game's own clock icon; `farmRankingGateBadge`
  * itself is untouched, now carried as the icon's tooltip and `sr-only` accessible name.
  *
+ * The unchanged-hero group (2026-08-20): every hero needing no respec repeated the same two
+ * lines on its own card. They are now stated once above the group, over the summed gold those
+ * builds save (`farmRespecUnchangedGroupNote`, in `KEYS_ADDED`), so the per-card
+ * `farmRespecUnchangedNote` and `farmRespecUnchangedGoldSaved` have no reader left.
+ *
  * The Respec Advisor's energy-allocation section (2026-08-20) is gone in two steps: its bar first,
  * then the sentence beneath it, so `farmRespecPlateauLabel`, `farmRespecPlateauRange` and
  * `farmRespecPlateauSharp` have no reader left. The domain's `plateau` field and everything that
  * computes it are untouched.
  */
 const KEYS_REMOVED: readonly string[] = [
+  'farmRespecUnchangedNote',
+  'farmRespecUnchangedGoldSaved',
   'farmRespecPlateauLabel',
   'farmRespecPlateauRange',
   'farmRespecPlateauSharp',
@@ -177,6 +184,7 @@ const KEYS_REMOVED: readonly string[] = [
  * no separate trigger-label key exists.
  */
 const KEYS_ADDED: readonly string[] = [
+  'farmRespecUnchangedGroupNote',
   'phasesXpActualHint',
   'phasesDropsSection',
   'phasesDropChest',

@@ -286,12 +286,21 @@ describe('Farm Respec Advisor hero cards — full target allocations, luck kept,
     expect(source).toContain('t.farmRespecLuckHint');
   });
 
-  it('an unchanged hero renders de-emphasized, never hidden outright, stating no respec is needed and naming the gold not spent', () => {
+  it('an unchanged hero renders de-emphasized, never hidden outright', () => {
     const source = read('src/features/phases/components/farm-respec-hero-card.tsx');
     expect(source).toContain('!entry.changed');
     expect(source).not.toMatch(/display:\s*none/);
-    expect(source).toContain('t.farmRespecUnchangedNote');
-    expect(source).toContain('t.farmRespecUnchangedGoldSaved');
+  });
+
+  // The note and the gold saved are stated once for the whole group, not per card — repeated on
+  // every card they were the same sentence several times over, and the amounts were a total the
+  // player had to sum themselves.
+  it('the unchanged group states its note once, over the summed gold from the domain', () => {
+    const grid = read('src/features/phases/components/farm-respec-hero-grid.tsx');
+    expect(grid).toContain('t.farmRespecUnchangedGroupNote');
+    expect(grid).toContain('result.unchangedRespecCostGold');
+    const card = read('src/features/phases/components/farm-respec-hero-card.tsx');
+    expect(card).not.toMatch(/farmRespecUnchanged/);
   });
 
   it('no move is annotated as optional/negligible/minor/skippable at any magnitude — no conditional class keyed on delta size', () => {

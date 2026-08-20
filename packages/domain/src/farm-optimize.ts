@@ -170,6 +170,10 @@ export type FarmRespecResult = {
 
   /** ABSOLUTE GOLD, summed over CHANGED heroes only. 0 when `keptCurrent`. */
   respecCostGold: number;
+  /** ABSOLUTE GOLD, the mirror of `respecCostGold`: summed over UNCHANGED heroes, the respec
+   *  cost the player does NOT have to pay because those builds are already right. 0 when every
+   *  hero changed. */
+  unchangedRespecCostGold: number;
   /** HOURS. `respecCostGold / (proposedGoldPerHour - currentGoldPerHour)`, always denominated in
    *  GOLD whatever the objective. null when the denominator is `<= 0` or non-finite — reachable
    *  under `'chests'`. Never negative, never `Infinity`. */
@@ -323,6 +327,9 @@ function assembleResult(params: {
   const chestsGainPct = signedPctChange(currentChestsPerHour, proposedChestsPerHour);
 
   const respecCostGoldTotal = heroEntries.filter((h) => h.changed).reduce((sum, h) => sum + h.respecCostGold, 0);
+  const unchangedRespecCostGold = heroEntries
+    .filter((h) => !h.changed)
+    .reduce((sum, h) => sum + h.respecCostGold, 0);
 
   const deltaGold = proposedGoldPerHour - currentGoldPerHour;
   const paybackHours = deltaGold > 0 && Number.isFinite(deltaGold) ? respecCostGoldTotal / deltaGold : null;
@@ -345,6 +352,7 @@ function assembleResult(params: {
     goldGainPct,
     chestsGainPct,
     respecCostGold: respecCostGoldTotal,
+    unchangedRespecCostGold,
     paybackHours,
     heroes: heroEntries,
     frontier,
