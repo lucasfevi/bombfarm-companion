@@ -25,12 +25,6 @@ export function formatHours(value: number): string {
   return formatNumber(value, 1);
 }
 
-/** An energy-share fraction (`0..1`) as a whole percent — e.g. `0.55` -> `55`. */
-export function formatSharePct(fraction: number): string {
-  if (!Number.isFinite(fraction)) return '—';
-  return formatNumber(fraction * 100, 0);
-}
-
 /** A signed percent change, one decimal — `+12.8`, `-5.3`, or `0.0` (no sign on zero). */
 export function formatSignedPct(value: number): string {
   if (!Number.isFinite(value)) return '—';

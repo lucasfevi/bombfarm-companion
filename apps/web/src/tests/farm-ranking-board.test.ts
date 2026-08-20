@@ -44,7 +44,6 @@ describe('Farm Ranking board — testids present (design §4.3)', () => {
     ['src/features/phases/components/farm-respec-metrics.tsx', 'farm-respec-metric-phase'],
     ['src/features/phases/components/farm-respec-metrics.tsx', 'farm-respec-metric-cost'],
     ['src/features/phases/components/farm-respec-metrics.tsx', 'farm-respec-metric-payback'],
-    ['src/features/phases/components/farm-respec-plateau.tsx', 'farm-respec-plateau'],
     ['src/features/phases/components/farm-respec-hero-grid.tsx', 'farm-respec-heroes'],
     ['src/features/phases/components/farm-respec-frontier.tsx', 'farm-respec-frontier'],
     ['src/features/phases/components/farm-respec-rerank-toggle.tsx', 'farm-respec-rerank'],
@@ -172,7 +171,7 @@ describe('Farm Respec Advisor toolbar — visibility, controls and layout stabil
 
 });
 
-describe('Farm Respec Advisor panel — in-place expansion, banners, plateau', () => {
+describe('Farm Respec Advisor panel — in-place expansion and banners', () => {
   it('is a plain <section> in normal flow — no role="dialog", no portal', () => {
     const source = read('src/features/phases/components/farm-respec-panel.tsx');
     expect(source).toMatch(/<section[\s\S]*?id="farm-respec-panel"/);
@@ -206,7 +205,6 @@ describe('Farm Respec Advisor panel — in-place expansion, banners, plateau', (
     for (const file of [
       'src/features/phases/components/farm-respec-panel.tsx',
       'src/features/phases/components/farm-respec-metrics.tsx',
-      'src/features/phases/components/farm-respec-plateau.tsx',
     ]) {
       expect(read(file)).not.toMatch(/winningSeed/);
     }
@@ -216,21 +214,16 @@ describe('Farm Respec Advisor panel — in-place expansion, banners, plateau', (
     for (const file of [
       'src/features/phases/components/farm-respec-panel.tsx',
       'src/features/phases/components/farm-respec-metrics.tsx',
-      'src/features/phases/components/farm-respec-plateau.tsx',
     ]) {
       expect(read(file)).not.toMatch(/\btry\s*\{/);
     }
   });
 
-  // The band this once guarded is gone — it drew two unlabelled markers on a bare rail, and
-  // nothing at all on a sharp optimum, where min === max collapses it to zero width. The
-  // sentence always carried the same numbers, so it is now the whole section: no decorative
-  // graphic to hide from assistive tech, and none to reintroduce without one.
-  it('the plateau is the sentence alone — no decorative graphic', () => {
-    const source = read('src/features/phases/components/farm-respec-plateau.tsx');
-    expect(source).toContain('sentence');
-    expect(source).not.toMatch(/aria-hidden/);
-    expect(source).not.toMatch(/<svg|absolute/);
+  // The energy-allocation section is gone entirely — bar first, then the sentence. Nothing in
+  // the panel reads `result.plateau` any more; this pins that so it cannot creep back untested.
+  it('the panel renders no energy-allocation section', () => {
+    const source = read('src/features/phases/components/farm-respec-panel.tsx');
+    expect(source).not.toMatch(/[Pp]lateau/);
   });
 
   it('the chest explainer renders whenever the objective is not gold', () => {

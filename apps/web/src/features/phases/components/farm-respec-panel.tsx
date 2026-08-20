@@ -5,7 +5,6 @@ import { sub, type Lang, type Strings } from '@/shared/i18n';
 import { selectFarmRespecView, selectHeroes, usePlannerStore } from '@/shared/stores';
 import { resolvePanelState } from '@/features/phases/model/farm-respec-view';
 import { FarmRespecMetrics } from './farm-respec-metrics';
-import { FarmRespecPlateau } from './farm-respec-plateau';
 import { FarmRespecHeroGrid } from './farm-respec-hero-grid';
 import { FarmRespecFrontier } from './farm-respec-frontier';
 
@@ -87,9 +86,6 @@ export function FarmRespecPanel({ t, lang }: { t: Strings; lang: Lang }) {
             <p className="m-0 text-[11px] text-muted" data-testid="farm-respec-chest-explainer">
               {t.farmRespecChestExplainer}
             </p>
-          ) : null}
-          {panelState.result.plateau ? (
-            <FarmRespecPlateau t={t} plateau={panelState.result.plateau} />
           ) : null}
           <div>
             <h4 className="m-0 mb-2 text-[11px] tracking-[0.03em] text-muted uppercase">

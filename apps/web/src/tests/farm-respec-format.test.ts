@@ -4,7 +4,6 @@ import {
   formatGainPct,
   formatGold,
   formatHours,
-  formatSharePct,
   formatSignedPct,
 } from '@/features/phases/model/farm-respec-format';
 import { WEB_PACKAGE_ROOT } from './helpers/web-package-root';
@@ -57,21 +56,6 @@ describe('farm-respec-format', () => {
 
     it('non-finite input renders the dash', () => {
       expect(formatHours(Number.POSITIVE_INFINITY)).toBe('—');
-    });
-  });
-
-  describe('formatSharePct', () => {
-    it.each([
-      [0.55, '55'],
-      [0.754, '75'],
-      [1, '100'],
-      [0, '0'],
-    ])('formats fraction %s as whole-percent %s', (fraction, expected) => {
-      expect(formatSharePct(fraction)).toBe(expected);
-    });
-
-    it('non-finite input renders the dash', () => {
-      expect(formatSharePct(Number.NaN)).toBe('—');
     });
   });
 

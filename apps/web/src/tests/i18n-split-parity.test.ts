@@ -97,8 +97,16 @@ const fixture = JSON.parse(readFileSync(fixturePath, 'utf8')) as {
  * shape a non-gate row's gain already has — so `farmRankingKeysConsumed` has no reader left. The
  * same pass replaced the row's "Gate" chip with the game's own clock icon; `farmRankingGateBadge`
  * itself is untouched, now carried as the icon's tooltip and `sr-only` accessible name.
+ *
+ * The Respec Advisor's energy-allocation section (2026-08-20) is gone in two steps: its bar first,
+ * then the sentence beneath it, so `farmRespecPlateauLabel`, `farmRespecPlateauRange` and
+ * `farmRespecPlateauSharp` have no reader left. The domain's `plateau` field and everything that
+ * computes it are untouched.
  */
 const KEYS_REMOVED: readonly string[] = [
+  'farmRespecPlateauLabel',
+  'farmRespecPlateauRange',
+  'farmRespecPlateauSharp',
   'phasesGoldComumWiki',
   'phasesGoldComumActual',
   'phasesAvgGoldWiki',
