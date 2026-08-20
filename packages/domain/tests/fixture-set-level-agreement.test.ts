@@ -54,9 +54,13 @@ const DATED_CAPTURES = [
   'packages/game-data/fixtures/inventory-bag-v2.json',
 ] as const;
 
+// `.claude` holds agent worktrees — each a full checkout of some other branch, carrying its own
+// copy of the fixture tree. Walking into them checks stale fixtures from unrelated branches
+// against the current catalog, which fails locally while CI (a fresh clone) stays green.
 const SKIP_DIRS = new Set([
   'node_modules',
   '.git',
+  '.claude',
   'dist',
   'out',
   '.next',
