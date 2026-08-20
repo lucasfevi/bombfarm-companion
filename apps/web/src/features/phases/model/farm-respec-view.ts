@@ -63,18 +63,18 @@ export function partitionHeroEntries(result: FarmRespecResult): FarmRespecHeroGr
   return { changed, unchanged };
 }
 
-export type FarmRespecPaybackKind = 'hours' | 'no-gold-gain' | 'no-change';
+export type FarmRespecPaybackKind = 'hours' | 'no-change';
 
 /**
- * Exactly one of three kinds — never a fourth branch, never a fallback glyph. `paybackHours`
- * is `null` whenever the proposed build does not pay for itself in gold (reachable under the
- * chests objective), and the two `null` sub-cases read differently to the player: earning LESS
- * gold than today vs. earning the SAME gold as today.
+ * Exactly one of two kinds — never a third branch, never a fallback glyph.
+ *
+ * A third kind used to cover "the proposed build earns LESS gold than today", reachable only
+ * under the chests objective. The optimizer is gold-only now, and the search always compares the
+ * current build as one of its own candidates, so the winner's gold can never come in under it:
+ * a null `paybackHours` means the two are EQUAL, and nothing else.
  */
 export function resolvePaybackKind(result: FarmRespecResult): FarmRespecPaybackKind {
-  if (result.paybackHours != null) return 'hours';
-  if (result.proposedGoldPerHour < result.currentGoldPerHour) return 'no-gold-gain';
-  return 'no-change';
+  return result.paybackHours != null ? 'hours' : 'no-change';
 }
 
 const TERMINAL_OUTCOMES: readonly FarmRespecOutcome[] = [

@@ -147,10 +147,10 @@ describe('farm-respec-view', () => {
       expect(resolvePaybackKind(result({ paybackHours: 2.5 }))).toBe('hours');
     });
 
-    it('null payback with a gold LOSS resolves to "no-gold-gain"', () => {
+    it('a null payback always resolves to "no-change" — there is no third kind', () => {
       expect(
         resolvePaybackKind(result({ paybackHours: null, proposedGoldPerHour: 80, currentGoldPerHour: 100 })),
-      ).toBe('no-gold-gain');
+      ).toBe('no-change');
     });
 
     it('null payback with UNCHANGED gold resolves to "no-change"', () => {

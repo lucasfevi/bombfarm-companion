@@ -5,9 +5,9 @@ import { cn } from './cn';
 import { Tooltip } from './tooltip';
 import { glossaryTermTriggerClass } from './glossary-term.recipe';
 
-export type TipLabelProps = { label: ReactNode; tip: string };
+export type TipLabelProps = { label: ReactNode; tip: string; className?: string };
 
-export function TipLabel({ label, tip }: TipLabelProps) {
+export function TipLabel({ label, tip, className }: TipLabelProps) {
   const aria =
     typeof label === 'string' || typeof label === 'number' ? `${label}: ${tip}` : tip;
 
@@ -20,6 +20,7 @@ export function TipLabel({ label, tip }: TipLabelProps) {
         className={cn(
           glossaryTermTriggerClass,
           'font-normal text-muted hover:text-ink',
+          className,
         )}
         aria-label={aria}
       >

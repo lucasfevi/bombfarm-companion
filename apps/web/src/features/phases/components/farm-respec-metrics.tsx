@@ -25,9 +25,7 @@ export function FarmRespecMetrics({
   const paybackText =
     paybackKind === 'hours'
       ? sub(t.farmRespecPaybackHours, { hours: formatHours(result.paybackHours ?? 0) })
-      : paybackKind === 'no-gold-gain'
-        ? t.farmRespecPaybackNoGoldGain
-        : t.farmRespecPaybackNoChange;
+      : t.farmRespecPaybackNoChange;
   const phaseChange = resolvePhaseChange(result);
   const phaseLabel = (phase: number | null) => (phase != null ? formatPhaseLabel(phase, lang) : '—');
 
@@ -84,7 +82,11 @@ export function FarmRespecMetrics({
       <div data-testid="farm-respec-metric-payback" className="rounded-sm border border-line p-2">
         <Tooltip.Provider delay={180} closeDelay={80}>
           <div className="text-[10px] tracking-[0.03em] text-muted uppercase">
-            <TipLabel label={t.farmRespecMetricPayback} tip={t.farmRespecPaybackTip} />
+            <TipLabel
+              label={t.farmRespecMetricPayback}
+              tip={t.farmRespecPaybackTip}
+              className="tracking-[0.03em] uppercase"
+            />
           </div>
         </Tooltip.Provider>
         <div className="text-[13px] font-bold">{paybackText}</div>

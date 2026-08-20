@@ -16,9 +16,16 @@ export const deltaTableHeadNumericCellClass = 'py-1 pl-2 text-right font-normal'
 
 export const deltaTableRowRecipe = cva('border-t border-line/50', {
   variants: {
-    /** A row the change never touches, dimmed so the rows that DO move carry the eye. Matches
-     *  `statListMutedRowClass`'s opacity — the repo's existing "present but not live" treatment. */
-    unaffected: { true: 'opacity-45', false: '' },
+    /**
+     * A row the change never touches, dimmed so the rows that DO move carry the eye.
+     *
+     * The muted TOKEN, not an opacity: `statListMutedRowClass`'s `opacity-45` is the repo's
+     * usual "present but not live" treatment, but applied to ink-coloured table text it drops
+     * below the WCAG AA contrast floor and axe fails every story that renders such a row.
+     * `text-muted` is the same de-emphasis one step lighter, and it already passes on this very
+     * table's header row.
+     */
+    unaffected: { true: 'text-muted', false: '' },
   },
   defaultVariants: { unaffected: false },
 });

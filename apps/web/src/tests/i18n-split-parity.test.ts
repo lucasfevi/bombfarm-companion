@@ -98,6 +98,11 @@ const fixture = JSON.parse(readFileSync(fixturePath, 'utf8')) as {
  * same pass replaced the row's "Gate" chip with the game's own clock icon; `farmRankingGateBadge`
  * itself is untouched, now carried as the icon's tooltip and `sr-only` accessible name.
  *
+ * Gold-only, second pass (2026-08-20): with the chests objective gone, the search always compares
+ * the current build as one of its own candidates, so the proposed build's gold can never come in
+ * BELOW it. `resolvePaybackKind`'s third kind was therefore unreachable and is deleted, leaving
+ * `farmRespecPaybackNoGoldGain` with no reader.
+ *
  * The toolbar headline (2026-08-20) is now the lower-bound gain alone. The recommended phase,
  * the respec cost and the payback are all in the panel's metric tiles one click away; restated on
  * the toolbar they made a single line carry four facts before the player could make the only
@@ -128,6 +133,7 @@ const fixture = JSON.parse(readFileSync(fixturePath, 'utf8')) as {
  * computes it are untouched.
  */
 const KEYS_REMOVED: readonly string[] = [
+  'farmRespecPaybackNoGoldGain',
   'farmRespecHeadlinePhase',
   'farmRespecHeadlineCost',
   'farmRespecObjectiveLabel',
