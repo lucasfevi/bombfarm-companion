@@ -1,6 +1,6 @@
 ---
-'@bombfarm/domain': minor
-'@bombfarm/web': minor
+"@bombfarm/domain": minor
+"@bombfarm/web": minor
 ---
 
 Farm Ranking: price team auras over the rotation, and refit the per-ato hop density law
