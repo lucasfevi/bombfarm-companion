@@ -11,7 +11,7 @@ import {
   deltaTableHeadRowClass,
   deltaTableHeadCellClass,
   deltaTableHeadNumericCellClass,
-  deltaTableRowClass,
+  deltaTableRowRecipe,
   deltaTableLabelCellClass,
   deltaTableLabelInnerClass,
   deltaTableNumericCellClass,
@@ -59,8 +59,11 @@ function formatValue(value: number, decimals: number): string {
   });
 }
 
+/** An em dash for no change — `+0` reads as a value the player has to parse before discovering
+ *  it says nothing, and eight of them in a column drown the two rows that did move. */
 function formatDelta(delta: number, decimals: number): string {
-  return `${delta >= 0 ? '+' : ''}${formatValue(delta, decimals)}`;
+  if (delta === 0) return '—';
+  return `${delta > 0 ? '+' : ''}${formatValue(delta, decimals)}`;
 }
 
 function deltaTone(delta: number): 'up' | 'down' | 'flat' {
@@ -115,7 +118,11 @@ export function DeltaTable({
         {visibleRows.map((row) => {
           const delta = row.target - row.now;
           return (
-            <tr key={row.id} data-testid={row.testId} className={deltaTableRowClass}>
+            <tr
+              key={row.id}
+              data-testid={row.testId}
+              className={deltaTableRowRecipe({ unaffected: delta === 0 })}
+            >
               <th scope="row" className={deltaTableLabelCellClass}>
                 <span className={deltaTableLabelInnerClass}>
                   {row.label}

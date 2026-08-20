@@ -14,7 +14,14 @@ export const deltaTableHeadRowClass = 'text-[10px] tracking-[0.03em] text-muted 
 export const deltaTableHeadCellClass = 'py-1 pr-1 text-left font-normal';
 export const deltaTableHeadNumericCellClass = 'py-1 pl-2 text-right font-normal';
 
-export const deltaTableRowClass = 'border-t border-line/50';
+export const deltaTableRowRecipe = cva('border-t border-line/50', {
+  variants: {
+    /** A row the change never touches, dimmed so the rows that DO move carry the eye. Matches
+     *  `statListMutedRowClass`'s opacity — the repo's existing "present but not live" treatment. */
+    unaffected: { true: 'opacity-45', false: '' },
+  },
+  defaultVariants: { unaffected: false },
+});
 export const deltaTableLabelCellClass = 'py-1 pr-1 text-left align-middle font-normal';
 export const deltaTableLabelInnerClass =
   'flex items-center gap-1 overflow-hidden text-ellipsis whitespace-nowrap';
