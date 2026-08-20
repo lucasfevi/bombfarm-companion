@@ -141,7 +141,7 @@ export function dropIconSrc(dropId: DropRateId, ato: number): string | null {
   const difficulty = DIFFICULTY_SLUG[band - 1];
   switch (dropId) {
     case 'chest':
-      return `${WIKI_ASSETS_BASE}/chests/item_chest.png`;
+      return chestIconSrc();
     case 'key': {
       // Keys stay filed by RARITY, not difficulty: the art is the rarity's key, and the band is
       // only how this planner picks one. Renaming them `key_easy`…`key_inferno` would assert the
@@ -164,6 +164,11 @@ export function dropIconSrc(dropId: DropRateId, ato: number): string | null {
 /** Wiki gold coin chrome (nav footer icon). */
 export function goldIconSrc(): string {
   return `${WIKI_ASSETS_BASE}/nav/icon_gold.png`;
+}
+
+/** The neutral item-chest sprite — same fixed art `dropIconSrc('chest', ato)` returns. */
+export function chestIconSrc(): string {
+  return `${WIKI_ASSETS_BASE}/chests/item_chest.png`;
 }
 
 /** The game's own gate-timer clock — used to mark a gate phase instead of a generic chip. */

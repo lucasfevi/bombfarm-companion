@@ -5,15 +5,16 @@ import type {
   FarmRespecFrontierEntry,
   FarmRespecHeroEntry,
   FarmRespecOutcome,
-  FarmRespecPlateau,
   FarmRespecResult,
 } from '@bombfarm/domain/farm-optimize';
 import {
   buildHeroCardRows,
-  buildPlateauGeometry,
+  partitionHeroEntries,
   resolveFrontierEntries,
+  resolveFrontierHeroNames,
   resolvePanelState,
   resolvePaybackKind,
+  resolvePhaseChange,
 } from '@/features/phases/model/farm-respec-view';
 import type { FarmRespecProposal } from '@/shared/stores/slices/phases-slice';
 import { WEB_PACKAGE_ROOT } from './helpers/web-package-root';
@@ -50,10 +51,10 @@ describe('farm-respec-view', () => {
       expect(rows.map((row) => row.key)).toEqual([...SHEET_PANEL_KEYS]);
     });
 
-    it('each row has exactly the five documented fields — no optional/negligible/minor/skip field exists', () => {
+    it('each row has exactly the four documented fields — no optional/negligible/minor/skip field exists', () => {
       const rows = buildHeroCardRows(heroEntry());
       for (const row of rows) {
-        expect(Object.keys(row).sort()).toEqual(['current', 'delta', 'keep', 'key', 'target']);
+        expect(Object.keys(row).sort()).toEqual(['current', 'keep', 'key', 'target']);
       }
     });
 
@@ -66,10 +67,9 @@ describe('farm-respec-view', () => {
       const attackRow = buildHeroCardRows(entry).find((row) => row.key === 'attack')!;
       expect(attackRow.target).toBe(7);
       expect(attackRow.current).toBe(2);
-      expect(attackRow.delta).toBe(5);
     });
 
-    it('the luck row keeps keep:true and delta:0 even when luck is the majority of the hero\'s level', () => {
+    it('the luck row keeps keep:true even when luck is the majority of the hero\'s level', () => {
       const entry = heroEntry({
         level: 40,
         currentPts: { ...ZERO_PTS(), luck: 35 },
@@ -77,7 +77,7 @@ describe('farm-respec-view', () => {
       });
       const luckRow = buildHeroCardRows(entry).find((row) => row.key === 'luck')!;
       expect(luckRow.keep).toBe(true);
-      expect(luckRow.delta).toBe(0);
+      expect(luckRow.current).toBe(35);
       expect(luckRow.target).toBe(35);
     });
 
@@ -89,45 +89,47 @@ describe('farm-respec-view', () => {
     });
   });
 
-  describe('buildPlateauGeometry', () => {
-    const plateau = (overrides: Partial<FarmRespecPlateau> = {}): FarmRespecPlateau => ({
-      minEnergyShare: 0.55,
-      maxEnergyShare: 0.75,
-      tolerancePct: 1,
-      currentEnergyShare: 0.4,
-      proposedEnergyShare: 0.6,
-      ...overrides,
+  describe('partitionHeroEntries', () => {
+    function withHeroes(heroes: FarmRespecHeroEntry[]): FarmRespecResult {
+      return { heroes } as unknown as FarmRespecResult;
+    }
+
+    const mixed = [
+      heroEntry({ heroId: 'a', changed: true }),
+      heroEntry({ heroId: 'b', changed: false }),
+      heroEntry({ heroId: 'c', changed: true }),
+      heroEntry({ heroId: 'd', changed: false }),
+    ];
+
+    // The invariant the hero grid's old source-scanning guard stood in for: a partition, so no
+    // hero can be dropped on the way to a card.
+    it('every entry lands in exactly one group — the two lengths sum to the input\'s', () => {
+      const groups = partitionHeroEntries(withHeroes(mixed));
+      expect(groups.changed.length + groups.unchanged.length).toBe(mixed.length);
+      expect([...groups.changed, ...groups.unchanged].map((entry) => entry.heroId).sort()).toEqual([
+        'a',
+        'b',
+        'c',
+        'd',
+      ]);
     });
 
-    it('a normal band converts each fraction to a CSS percent', () => {
-      const geometry = buildPlateauGeometry(plateau());
-      expect(geometry.bandLeftPct).toBeCloseTo(55, 9);
-      expect(geometry.bandWidthPct).toBeCloseTo(20, 9);
-      expect(geometry.currentPct).toBeCloseTo(40, 9);
-      expect(geometry.proposedPct).toBeCloseTo(60, 9);
+    it('preserves input order within each group', () => {
+      const groups = partitionHeroEntries(withHeroes(mixed));
+      expect(groups.changed.map((entry) => entry.heroId)).toEqual(['a', 'c']);
+      expect(groups.unchanged.map((entry) => entry.heroId)).toEqual(['b', 'd']);
     });
 
-    it('min === max yields a zero-width band with both markers still present', () => {
-      const geometry = buildPlateauGeometry(
-        plateau({ minEnergyShare: 0.6, maxEnergyShare: 0.6, currentEnergyShare: 0.5, proposedEnergyShare: 0.6 }),
-      );
-      expect(geometry.bandWidthPct).toBeCloseTo(0, 9);
-      expect(geometry.bandLeftPct).toBeCloseTo(60, 9);
-      expect(geometry.currentPct).toBeCloseTo(50, 9);
-      expect(geometry.proposedPct).toBeCloseTo(60, 9);
+    it('an all-changed roster yields an empty unchanged group, and vice versa', () => {
+      const allChanged = partitionHeroEntries(withHeroes([heroEntry({ changed: true })]));
+      expect(allChanged.unchanged).toEqual([]);
+      const allUnchanged = partitionHeroEntries(withHeroes([heroEntry({ changed: false })]));
+      expect(allUnchanged.changed).toEqual([]);
     });
 
-    it('current outside the band is passed through, not clamped', () => {
-      const geometry = buildPlateauGeometry(
-        plateau({ minEnergyShare: 0.5, maxEnergyShare: 0.7, currentEnergyShare: 0.2 }),
-      );
-      expect(geometry.currentPct).toBeCloseTo(20, 9);
-    });
-
-    it('proposed lands inside the band on a normal case', () => {
-      const geometry = buildPlateauGeometry(plateau());
-      expect(geometry.proposedPct).toBeGreaterThanOrEqual(geometry.bandLeftPct);
-      expect(geometry.proposedPct).toBeLessThanOrEqual(geometry.bandLeftPct + geometry.bandWidthPct);
+    it('an empty roster yields two empty groups, not a throw', () => {
+      const groups = partitionHeroEntries(withHeroes([]));
+      expect(groups).toEqual({ changed: [], unchanged: [] });
     });
   });
 
@@ -145,10 +147,10 @@ describe('farm-respec-view', () => {
       expect(resolvePaybackKind(result({ paybackHours: 2.5 }))).toBe('hours');
     });
 
-    it('null payback with a gold LOSS resolves to "no-gold-gain"', () => {
+    it('a null payback always resolves to "no-change" — there is no third kind', () => {
       expect(
         resolvePaybackKind(result({ paybackHours: null, proposedGoldPerHour: 80, currentGoldPerHour: 100 })),
-      ).toBe('no-gold-gain');
+      ).toBe('no-change');
     });
 
     it('null payback with UNCHANGED gold resolves to "no-change"', () => {
@@ -194,6 +196,103 @@ describe('farm-respec-view', () => {
     it('"nothingToGain" is NOT terminal — it resolves as a normal result', () => {
       const view = proposal('nothingToGain');
       expect(resolvePanelState(view, 'done').kind).toBe('result');
+    });
+  });
+
+  describe('resolvePhaseChange', () => {
+    function result(currentPhase: number | null, recommendedPhase: number | null): FarmRespecResult {
+      return { currentPhase, recommendedPhase } as FarmRespecResult;
+    }
+
+    it('both phases null resolves to {kind: "both-null"}', () => {
+      expect(resolvePhaseChange(result(null, null))).toEqual({ kind: 'both-null' });
+    });
+
+    it('the same non-null phase on both sides resolves to {kind: "same", phase}', () => {
+      expect(resolvePhaseChange(result(51, 51))).toEqual({ kind: 'same', phase: 51 });
+    });
+
+    it('a genuine move (both sides non-null, different) resolves to {kind: "moved", ...}', () => {
+      expect(resolvePhaseChange(result(27, 51))).toEqual({
+        kind: 'moved',
+        currentPhase: 27,
+        recommendedPhase: 51,
+      });
+    });
+
+    it('current null, recommended non-null resolves to {kind: "moved", ...} — not "same"', () => {
+      expect(resolvePhaseChange(result(null, 51))).toEqual({
+        kind: 'moved',
+        currentPhase: null,
+        recommendedPhase: 51,
+      });
+    });
+
+    it('current non-null, recommended null resolves to {kind: "moved", ...} — not "same"', () => {
+      expect(resolvePhaseChange(result(27, null))).toEqual({
+        kind: 'moved',
+        currentPhase: 27,
+        recommendedPhase: null,
+      });
+    });
+  });
+
+  describe('resolveFrontierHeroNames', () => {
+    function frontierEntry(
+      heroIds: string[],
+      heroes: FarmRespecHeroEntry[],
+    ): FarmRespecFrontierEntry {
+      return {
+        heroCount: heroIds.length,
+        heroIds,
+        heroes,
+        recommendedPhase: 28,
+        proposedObjective: 1,
+        gainPct: 5,
+        respecCostGold: 72000,
+        paybackHours: 0.1,
+        proposedGoldPerHour: 10,
+        proposedChestsPerHour: 1,
+      };
+    }
+
+    // Red against the shipped implementation, which rendered `entry.heroes` — the FULL enabled
+    // pool — under a "1 hero" label.
+    it('names only the tier\'s own heroes, never every enabled hero', () => {
+      const entry = frontierEntry(
+        ['h2'],
+        [
+          heroEntry({ heroId: 'h1', heroName: 'Minato' }),
+          heroEntry({ heroId: 'h2', heroName: 'Bellatrix' }),
+          heroEntry({ heroId: 'h3', heroName: 'Yara' }),
+        ],
+      );
+      expect(resolveFrontierHeroNames(entry)).toEqual(['Bellatrix']);
+    });
+
+    it('the name count always equals heroCount', () => {
+      const heroes = [
+        heroEntry({ heroId: 'h1', heroName: 'Minato' }),
+        heroEntry({ heroId: 'h2', heroName: 'Bellatrix' }),
+        heroEntry({ heroId: 'h3', heroName: 'Yara' }),
+      ];
+      for (const heroIds of [['h1'], ['h1', 'h3']]) {
+        const entry = frontierEntry(heroIds, heroes);
+        expect(resolveFrontierHeroNames(entry)).toHaveLength(entry.heroCount);
+      }
+    });
+
+    it('follows heroIds order, not the order heroes happens to be in', () => {
+      const entry = frontierEntry(
+        ['h3', 'h1'],
+        [heroEntry({ heroId: 'h1', heroName: 'Minato' }), heroEntry({ heroId: 'h3', heroName: 'Yara' })],
+      );
+      expect(resolveFrontierHeroNames(entry)).toEqual(['Yara', 'Minato']);
+    });
+
+    it('an unmatched id falls back to the id — never a list shorter than heroCount', () => {
+      const entry = frontierEntry(['h1', 'ghost'], [heroEntry({ heroId: 'h1', heroName: 'Minato' })]);
+      expect(resolveFrontierHeroNames(entry)).toEqual(['Minato', 'ghost']);
     });
   });
 

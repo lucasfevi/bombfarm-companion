@@ -174,7 +174,10 @@ const CRIT_DMG_MULT_MAP = {
   // +2 (line numbers only) from the House/field-slots untangling follow-up: two new
   // AccountShared rows (`fieldSlots`, `houseCycleSecs`) landed above this section. Match itself
   // is unchanged in count and in kind.
-  'apps/web/docs/local-data-compat.md': [108, 116],
+  // +1 more (line number only): the Farm Respec Advisor objective picker's removal replaced the
+  // `farmObjective` row above this section with a prose paragraph, a net +1 line. Match itself is
+  // unchanged in count and in kind.
+  'apps/web/docs/local-data-compat.md': [109, 117],
   'apps/web/src/features/planner/components/advice-column.tsx': [38, 59],
   // +16 (line number only): the House-ceiling fix added `fieldSlots`/`houseCycleSecs`, with
   // their doc comments, to `AccountShared` above this line. The match itself is unchanged in
@@ -217,7 +220,9 @@ const CRIT_DMG_MULT_MAP = {
   // gaining its two-line explanation. Count and kind unchanged.
   // +4 more (line numbers only) from issue #132's account-shared.ts entry and the legacy-drop
   // suite entry just above, +2 lines each. Count and kind unchanged.
-  'tools/keystone-surface-absence.test.mjs': [13, 156, 159, 263, 268, 278, 287],
+  // +3 more (line numbers only) from the Farm Respec Advisor objective picker removal's own
+  // explanatory comment above the local-data-compat.md entry. Count and kind unchanged.
+  'tools/keystone-surface-absence.test.mjs': [13, 156, 159, 268, 273, 283, 292],
   'tools/save-acceptance-guards.test.mjs': [53],
 };
 

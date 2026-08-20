@@ -5,9 +5,6 @@
 // Re-exported below so the slice / components reference the type through this file, not a
 // second direct import site.
 import type { ReturnBonusMode } from '@bombfarm/domain/farm-rate';
-// Type-only import — the ReturnBonusMode precedent directly above. A pure `import type` erases
-// at compile time and is allowed by the farm-ranking-guards.test.ts runtime-import boundary.
-import type { FarmObjectiveKind } from '@bombfarm/domain/farm-optimize';
 
 export type { ReturnBonusMode };
 
@@ -18,10 +15,14 @@ const MAX_POOL_ENTRIES = 200;
 
 const RETURN_BONUS_MODES: readonly ReturnBonusMode[] = ['off', 'on', 'vip'];
 
-const FARM_OBJECTIVE_KINDS: readonly FarmObjectiveKind[] = ['gold', 'chests', 'blend'];
-
 export type PhasesViewState = {
-  phase: number;
+  /**
+   * Absent means the user has never explicitly chosen a phase — distinct from a genuinely
+   * persisted phase 1. Consumers that need a concrete number (rather than "was this chosen")
+   * fall back to 1 themselves; this type must not do that coercion, or "never chosen" becomes
+   * unrepresentable.
+   */
+  phase?: number;
   /**
    * Farm Ranking rotation pool — hero id -> enabled override.
    * Absent id => follow `HeroRecord.battleAllowed`. Never a save write; estimation-local only.
@@ -29,17 +30,17 @@ export type PhasesViewState = {
   farmPool?: Record<string, boolean>;
   /** Return-bonus estimate. Absent/unrecognized => `'off'`. */
   farmReturnBonus?: ReturnBonusMode;
-  /** Respec-advisor objective preset. Absent/unrecognized => `'gold'`. */
-  farmObjective?: FarmObjectiveKind;
 };
 
 export function defaultPhasesView(): PhasesViewState {
-  return { phase: 1 };
+  return {};
 }
 
-function normalizePhase(raw: unknown): number {
-  const phase = typeof raw === 'number' ? raw : 1;
-  return Math.max(1, Math.min(600, Math.round(phase)));
+/** `undefined` for anything that isn't a finite number — including a genuinely absent key —
+ *  so "never chosen" survives the read instead of being coerced to phase 1. */
+function normalizePhase(raw: unknown): number | undefined {
+  if (typeof raw !== 'number' || !Number.isFinite(raw)) return undefined;
+  return Math.max(1, Math.min(600, Math.round(raw)));
 }
 
 /**
@@ -66,10 +67,6 @@ function normalizeReturnBonus(raw: unknown): ReturnBonusMode {
   return RETURN_BONUS_MODES.includes(raw as ReturnBonusMode) ? (raw as ReturnBonusMode) : 'off';
 }
 
-function normalizeFarmObjective(raw: unknown): FarmObjectiveKind {
-  return FARM_OBJECTIVE_KINDS.includes(raw as FarmObjectiveKind) ? (raw as FarmObjectiveKind) : 'gold';
-}
-
 export function loadPhasesView(): PhasesViewState {
   try {
     const raw = localStorage.getItem(PHASES_VIEW_KEY);
@@ -83,7 +80,6 @@ export function loadPhasesView(): PhasesViewState {
       phase: normalizePhase(record.phase),
       farmPool: normalizeFarmPool(record.farmPool),
       farmReturnBonus: normalizeReturnBonus(record.farmReturnBonus),
-      farmObjective: normalizeFarmObjective(record.farmObjective),
     };
   } catch {
     return defaultPhasesView();

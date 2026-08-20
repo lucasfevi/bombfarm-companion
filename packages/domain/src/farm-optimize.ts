@@ -160,8 +160,20 @@ export type FarmRespecResult = {
   currentChestsPerHour: number;
   proposedChestsPerHour: number;
 
+  /** PERCENT, SIGNED — current -> proposed gold/hr. Unlike `gainPct` this is NOT clamped to
+   *  `>= 0`: under the chests objective gold legitimately falls. 0 when `currentGoldPerHour <=
+   *  0`, never NaN/Infinity. */
+  goldGainPct: number;
+  /** PERCENT, SIGNED — current -> proposed chests/hr. Same shape as `goldGainPct`, mirrored for
+   *  the gold objective where chests can legitimately fall. 0 when `currentChestsPerHour <= 0`. */
+  chestsGainPct: number;
+
   /** ABSOLUTE GOLD, summed over CHANGED heroes only. 0 when `keptCurrent`. */
   respecCostGold: number;
+  /** ABSOLUTE GOLD, the mirror of `respecCostGold`: summed over UNCHANGED heroes, the respec
+   *  cost the player does NOT have to pay because those builds are already right. 0 when every
+   *  hero changed. */
+  unchangedRespecCostGold: number;
   /** HOURS. `respecCostGold / (proposedGoldPerHour - currentGoldPerHour)`, always denominated in
    *  GOLD whatever the objective. null when the denominator is `<= 0` or non-finite — reachable
    *  under `'chests'`. Never negative, never `Infinity`. */
@@ -249,6 +261,14 @@ function goldChestReadout(
   return { goldPerHour: scales.goldScale, chestsPerHour: scales.chestScale };
 }
 
+/** Percent change from `current` to `proposed`, SIGNED. 0 when `current <= 0` — never a division
+ *  by zero, never NaN/Infinity. Callers that need a `gainPct`-style non-negative reading clamp
+ *  the result themselves; this helper stays signed so a caller reporting a legitimate loss (gold
+ *  under the chests objective, chests under the gold objective) is not lied to. */
+function signedPctChange(current: number, proposed: number): number {
+  return current > 0 ? (proposed / current - 1) * 100 : 0;
+}
+
 function assembleResult(params: {
   objective: ResolvedFarmObjective;
   outcome: FarmRespecOutcome;
@@ -302,9 +322,14 @@ function assembleResult(params: {
   const proposedChestsPerHour = proposedReadout.chestsPerHour;
 
   // currentObjective <= 0 ⇒ gainPct 0, never a division by zero.
-  const gainPct = currentObjective > 0 ? Math.max(0, (proposedObjective / currentObjective - 1) * 100) : 0;
+  const gainPct = Math.max(0, signedPctChange(currentObjective, proposedObjective));
+  const goldGainPct = signedPctChange(currentGoldPerHour, proposedGoldPerHour);
+  const chestsGainPct = signedPctChange(currentChestsPerHour, proposedChestsPerHour);
 
   const respecCostGoldTotal = heroEntries.filter((h) => h.changed).reduce((sum, h) => sum + h.respecCostGold, 0);
+  const unchangedRespecCostGold = heroEntries
+    .filter((h) => !h.changed)
+    .reduce((sum, h) => sum + h.respecCostGold, 0);
 
   const deltaGold = proposedGoldPerHour - currentGoldPerHour;
   const paybackHours = deltaGold > 0 && Number.isFinite(deltaGold) ? respecCostGoldTotal / deltaGold : null;
@@ -324,7 +349,10 @@ function assembleResult(params: {
     proposedGoldPerHour,
     currentChestsPerHour,
     proposedChestsPerHour,
+    goldGainPct,
+    chestsGainPct,
     respecCostGold: respecCostGoldTotal,
+    unchangedRespecCostGold,
     paybackHours,
     heroes: heroEntries,
     frontier,

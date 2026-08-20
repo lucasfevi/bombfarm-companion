@@ -24,9 +24,10 @@ describe('phases-view-storage', () => {
     vi.unstubAllGlobals();
   });
 
-  it('defaults to phase 1', () => {
+  it('defaults to no stored phase (never chosen), not phase 1', () => {
     vi.stubGlobal('localStorage', memoryLocalStorage());
     expect(loadPhasesView()).toEqual(defaultPhasesView());
+    expect(loadPhasesView().phase).toBeUndefined();
   });
 
   it('clamps saved phase to 1..600', () => {
@@ -45,18 +46,17 @@ describe('phases-view-storage', () => {
 
   // Farm Ranking T2: the additive farmPool / farmReturnBonus normalize table.
   describe('farmPool / farmReturnBonus normalize (design §6.1)', () => {
-    it('the literal shipped payload {"phase":151} loads with the phase preserved, pool empty, bonus off, objective gold', () => {
+    it('the literal shipped payload {"phase":151} loads with the phase preserved, pool empty, bonus off', () => {
       vi.stubGlobal('localStorage', memoryLocalStorage());
       localStorage.setItem('bf-hp-phases-view-v1', '{"phase":151}');
       expect(loadPhasesView()).toEqual({
         phase: 151,
         farmPool: {},
         farmReturnBonus: 'off',
-        farmObjective: 'gold',
       });
     });
 
-    it('the shipped three-field payload {phase, farmPool, farmReturnBonus} loads with objective defaulted to gold', () => {
+    it('the shipped three-field payload {phase, farmPool, farmReturnBonus} round-trips as-is', () => {
       vi.stubGlobal('localStorage', memoryLocalStorage());
       localStorage.setItem(
         'bf-hp-phases-view-v1',
@@ -66,8 +66,17 @@ describe('phases-view-storage', () => {
         phase: 12,
         farmPool: { h1: true },
         farmReturnBonus: 'vip',
-        farmObjective: 'gold',
       });
+    });
+
+    // A stale payload from before the objective picker's removal must still load without
+    // throwing — the unrecognized key is simply dropped, never surfaced.
+    it('a stale farmObjective key from before the picker\'s removal is ignored, not surfaced', () => {
+      vi.stubGlobal('localStorage', memoryLocalStorage());
+      localStorage.setItem('bf-hp-phases-view-v1', '{"phase":1,"farmObjective":"chests"}');
+      const view = loadPhasesView();
+      expect(view).toEqual({ phase: 1, farmPool: {}, farmReturnBonus: 'off' });
+      expect('farmObjective' in view).toBe(false);
     });
 
     it('non-JSON, an array, and null all fall back to the default with no throw', () => {
@@ -132,56 +141,11 @@ describe('phases-view-storage', () => {
       expect(loadPhasesView().farmReturnBonus).toBe('vip');
     });
 
-    it('defaultPhasesView() omits farmPool/farmReturnBonus/farmObjective so an untouched payload stays byte-identical', () => {
-      expect(defaultPhasesView()).toEqual({ phase: 1 });
-      expect(Object.keys(defaultPhasesView())).toEqual(['phase']);
-    });
-  });
-
-  // Farm Respec Advisor T2: the additive farmObjective normalize table (design §6).
-  describe('farmObjective normalize (design §6)', () => {
-    it('absent farmObjective normalizes to gold', () => {
-      vi.stubGlobal('localStorage', memoryLocalStorage());
-      localStorage.setItem('bf-hp-phases-view-v1', '{"phase":1}');
-      expect(loadPhasesView().farmObjective).toBe('gold');
-    });
-
-    it('each of the three preset literals round-trips as itself', () => {
-      vi.stubGlobal('localStorage', memoryLocalStorage());
-      for (const kind of ['gold', 'chests', 'blend']) {
-        localStorage.setItem('bf-hp-phases-view-v1', JSON.stringify({ phase: 1, farmObjective: kind }));
-        expect(loadPhasesView().farmObjective).toBe(kind);
-      }
-    });
-
-    it('an unrecognized string normalizes to gold', () => {
-      vi.stubGlobal('localStorage', memoryLocalStorage());
-      localStorage.setItem('bf-hp-phases-view-v1', '{"phase":1,"farmObjective":"bogus"}');
-      expect(loadPhasesView().farmObjective).toBe('gold');
-    });
-
-    it('a number normalizes to gold', () => {
-      vi.stubGlobal('localStorage', memoryLocalStorage());
-      localStorage.setItem('bf-hp-phases-view-v1', '{"phase":1,"farmObjective":7}');
-      expect(loadPhasesView().farmObjective).toBe('gold');
-    });
-
-    it('null normalizes to gold', () => {
-      vi.stubGlobal('localStorage', memoryLocalStorage());
-      localStorage.setItem('bf-hp-phases-view-v1', '{"phase":1,"farmObjective":null}');
-      expect(loadPhasesView().farmObjective).toBe('gold');
-    });
-
-    it('an array normalizes to gold', () => {
-      vi.stubGlobal('localStorage', memoryLocalStorage());
-      localStorage.setItem('bf-hp-phases-view-v1', '{"phase":1,"farmObjective":["gold"]}');
-      expect(loadPhasesView().farmObjective).toBe('gold');
-    });
-
-    it('an object normalizes to gold', () => {
-      vi.stubGlobal('localStorage', memoryLocalStorage());
-      localStorage.setItem('bf-hp-phases-view-v1', '{"phase":1,"farmObjective":{"kind":"blend"}}');
-      expect(loadPhasesView().farmObjective).toBe('gold');
+    it('defaultPhasesView() omits phase/farmPool/farmReturnBonus so an untouched payload stays byte-identical', () => {
+      // phase is omitted too (not defaulted to 1): a genuinely unmade choice must stay
+      // distinguishable from a persisted phase 1 — see the Farm Ranking board's auto-select.
+      expect(defaultPhasesView()).toEqual({});
+      expect(Object.keys(defaultPhasesView())).toEqual([]);
     });
   });
 });

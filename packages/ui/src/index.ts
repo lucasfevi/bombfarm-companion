@@ -101,11 +101,18 @@ export {
   sortableTableHeaderButtonClass,
 } from './data-table.recipe';
 export { StatList, type StatListItem } from './stat-list';
+export { TipLabel, type TipLabelProps } from './stat-list-tip-label';
 export {
   MetricScoreboard,
   type MetricScoreboardCell,
   type MetricScoreboardProps,
 } from './metric-scoreboard';
+export {
+  DeltaTable,
+  type DeltaTableRow,
+  type DeltaTableColumnLabels,
+  type DeltaTableProps,
+} from './delta-table';
 export { Toast } from './toast';
 export {
   toastQueueReducer,

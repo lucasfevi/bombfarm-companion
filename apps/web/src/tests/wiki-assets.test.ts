@@ -4,7 +4,7 @@ import { readFileSync } from 'node:fs';
 import { parseSaveFile } from '@bombfarm/domain/import-save';
 import { normalizeHero } from '@/shared/lib/storage';
 import { WEB_PACKAGE_ROOT } from './helpers/web-package-root';
-import { HERO_SKIN_COUNT, heroAvatarSrc, isKnownSkin, itemIconSrc, normalizeSkin, rarityCrystalSrc, abilityIconSrc, goldIconSrc, clockIconSrc, propIconSrc, dropIconSrc } from '@bombfarm/domain/wiki-assets';
+import { HERO_SKIN_COUNT, heroAvatarSrc, isKnownSkin, itemIconSrc, normalizeSkin, rarityCrystalSrc, abilityIconSrc, goldIconSrc, chestIconSrc, clockIconSrc, propIconSrc, dropIconSrc } from '@bombfarm/domain/wiki-assets';
 import { DROP_RATES, type DropRateId } from '@bombfarm/domain/phase-wiki';
 
 describe('wiki-assets', () => {
@@ -141,6 +141,11 @@ describe('wiki-assets', () => {
 
   it('points at the bundled gold coin chrome', () => {
     expect(goldIconSrc()).toBe('/wiki-assets/nav/icon_gold.png');
+  });
+
+  it('points at the bundled item-chest sprite, matching dropIconSrc(\'chest\', ato)', () => {
+    expect(chestIconSrc()).toBe('/wiki-assets/chests/item_chest.png');
+    expect(chestIconSrc()).toBe(dropIconSrc('chest', 3));
   });
 
   it('points at the bundled gate-timer clock chrome', () => {

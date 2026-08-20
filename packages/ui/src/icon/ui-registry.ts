@@ -7,6 +7,7 @@ import {
   HiMiniExclamationTriangle,
   HiMiniInformationCircle,
   HiMiniArrowPath,
+  HiMiniLockClosed,
 } from 'react-icons/hi2';
 import { BiCoffee } from 'react-icons/bi';
 import type { IconGlyph } from './types';
@@ -30,4 +31,6 @@ export const uiIconRegistry = {
   'information-circle': HiMiniInformationCircle,
   // toast/notification `progress` variant spinner (m2-toast-settings, TST-13)
   'arrow-path': HiMiniArrowPath,
+  // DeltaTable locked-row glyph — replaces a Chip + HelpTip pair on a row a table can't change
+  'lock-closed': HiMiniLockClosed,
 } as const satisfies Record<string, IconGlyph>;

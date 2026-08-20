@@ -146,3 +146,25 @@ export function applyFarmFilters(
     return true;
   });
 }
+
+/**
+ * The row with the highest `goldPerHour`, skipping `infeasible` rows; ties break by the lower
+ * `phase` for determinism. `null` for an empty list (or one with no feasible row). Callers should
+ * feed this the already filtered/sorted `visibleRows`, never the raw row set — an independent
+ * max-search here on purpose, so a later change to `DEFAULT_SORT` cannot silently change which
+ * row this picks.
+ */
+export function pickBestFarmRow(rows: readonly FarmRateRow[]): FarmRateRow | null {
+  let best: FarmRateRow | null = null;
+  for (const row of rows) {
+    if (row.infeasible) continue;
+    if (
+      best === null ||
+      row.goldPerHour > best.goldPerHour ||
+      (row.goldPerHour === best.goldPerHour && row.phase < best.phase)
+    ) {
+      best = row;
+    }
+  }
+  return best;
+}

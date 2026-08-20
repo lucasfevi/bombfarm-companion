@@ -4,8 +4,7 @@ import {
   formatGainPct,
   formatGold,
   formatHours,
-  formatSharePct,
-  formatSignedPoints,
+  formatSignedPct,
 } from '@/features/phases/model/farm-respec-format';
 import { WEB_PACKAGE_ROOT } from './helpers/web-package-root';
 
@@ -60,36 +59,22 @@ describe('farm-respec-format', () => {
     });
   });
 
-  describe('formatSharePct', () => {
-    it.each([
-      [0.55, '55'],
-      [0.754, '75'],
-      [1, '100'],
-      [0, '0'],
-    ])('formats fraction %s as whole-percent %s', (fraction, expected) => {
-      expect(formatSharePct(fraction)).toBe(expected);
+  describe('formatSignedPct', () => {
+    it('a positive change gets a plus sign, one decimal', () => {
+      expect(formatSignedPct(12.793113950535506)).toBe('+12.8');
     });
 
-    it('non-finite input renders the dash', () => {
-      expect(formatSharePct(Number.NaN)).toBe('—');
-    });
-  });
-
-  describe('formatSignedPoints', () => {
-    it('a positive delta gets a plus sign', () => {
-      expect(formatSignedPoints(3)).toBe('+3');
-    });
-
-    it('a negative delta gets a minus sign, magnitude only after it', () => {
-      expect(formatSignedPoints(-2)).toBe('-2');
+    it('a negative change gets a minus sign, magnitude only after it', () => {
+      expect(formatSignedPct(-10.649355160356)).toBe('-10.6');
     });
 
     it('zero gets no sign', () => {
-      expect(formatSignedPoints(0)).toBe('0');
+      expect(formatSignedPct(0)).toBe('0.0');
     });
 
-    it('non-finite input renders the dash', () => {
-      expect(formatSignedPoints(Number.NaN)).toBe('—');
+    it('non-finite input renders the dash, never NaN or Infinity text', () => {
+      expect(formatSignedPct(Number.NaN)).toBe('—');
+      expect(formatSignedPct(Number.POSITIVE_INFINITY)).toBe('—');
     });
   });
 });

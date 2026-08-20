@@ -10,6 +10,7 @@ import {
   getFarmRespecGateComputeCount,
   getFarmRespecRowsComputeCount,
   getFarmRespecSolveCount,
+  readFarmDepTuple,
   readFarmRespecDepTuple,
   resetFarmRankingCache,
   resetFarmRankingComputeCount,
@@ -323,10 +324,11 @@ const MINIMAL_ACCOUNT: AccountShared = {
 };
 
 /**
- * The 16 mutators readFarmRespecDepTuple must react to: the 15 inherited from the ranking
- * tuple (mirrors the "every dep-tuple member drives a recompute" list above), plus the
- * objective, appended last. Reused by the Tier 1 recompute test, the staleness test and the
- * proposed-rows compute-count test so all three drive the exact same 16 members.
+ * The 15 mutators readFarmRespecDepTuple must react to (mirrors the "every dep-tuple member
+ * drives a recompute" list above — readFarmRespecDepTuple is currently identical to
+ * readFarmDepTuple, now that the objective picker is gone). Reused by the Tier 1 recompute
+ * test, the staleness test and the proposed-rows compute-count test so all three drive the
+ * exact same 15 members.
  */
 function respecTupleMutators(): { name: string; mutate: () => void }[] {
   return [
@@ -426,7 +428,6 @@ function respecTupleMutators(): { name: string; mutate: () => void }[] {
     },
     { name: 'farmPoolOverrides', mutate: () => usePlannerStore.getState().setFarmHeroEnabled('a', false) },
     { name: 'farmReturnBonus', mutate: () => usePlannerStore.getState().setFarmReturnBonus('vip') },
-    { name: 'farmObjective', mutate: () => usePlannerStore.getState().setFarmObjective('chests') },
   ];
 }
 
@@ -454,25 +455,13 @@ describe('readFarmRespecDepTuple', () => {
 
   // 19 ranking members since the House-ceiling fix added `fieldSlots` and `houseCycleSecs` to
   // `readFarmDepTuple`, and its regression repair added `houseCycleSecsHouseIdx`/
-  // `houseCycleSecsLevel`. This tuple SPREADS that one rather than restating it, so the growth is
-  // inherited by design — the objective stays appended last, which is the invariant under test.
-  it('has 20 members — the 19 ranking members plus the objective, appended last', () => {
+  // `houseCycleSecsLevel`. With the objective picker gone, readFarmRespecDepTuple no longer
+  // appends anything of its own — it is currently identical to readFarmDepTuple.
+  it('has 19 members, identical to readFarmDepTuple', () => {
     usePlannerStore.getState().hydrateRoster([farmHero('a')], null);
     const tuple = readFarmRespecDepTuple(usePlannerStore.getState());
-    expect(tuple).toHaveLength(20);
-    expect(tuple[19]).toBe(usePlannerStore.getState().farmObjective);
-  });
-
-  it('changing the objective changes ONLY the last entry — the first 19 stay identity-equal', () => {
-    usePlannerStore.getState().hydrateRoster([farmHero('a')], null);
-    const before = readFarmRespecDepTuple(usePlannerStore.getState());
-    usePlannerStore.getState().setFarmObjective('blend');
-    const after = readFarmRespecDepTuple(usePlannerStore.getState());
-    for (let index = 0; index < 19; index++) {
-      expect(Object.is(before[index], after[index]), `entry ${index} changed unexpectedly`).toBe(true);
-    }
-    expect(before[19]).toBe('gold');
-    expect(after[19]).toBe('blend');
+    expect(tuple).toHaveLength(19);
+    expect(tuple).toEqual(readFarmDepTuple(usePlannerStore.getState()));
   });
 });
 
@@ -554,7 +543,7 @@ describe('selectFarmRespecGate (Tier 1)', () => {
     expect(result?.objective.kind).toBe('gold');
   });
 
-  describe('every one of the 16 tuple members drives a gate recompute, and NEVER a solve', () => {
+  describe('every one of the 15 tuple members drives a gate recompute, and NEVER a solve', () => {
     beforeEach(() => {
       usePlannerStore.getState().hydrateRoster([farmHero('a')], null);
       selectFarmRespecGate(usePlannerStore.getState());

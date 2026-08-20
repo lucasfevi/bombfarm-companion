@@ -6,7 +6,10 @@ const sampleSave = path.join(process.cwd(), 'e2e/fixtures/sample-save.json');
 
 test.describe('Phases page', () => {
   test('loads phase intel and top nav', async ({ page }) => {
-    await seedLocalStorage(page, { ...importedRoster, lang: 'en' });
+    // An explicit phase, so this stays a test about the page loading rather than about which
+    // map it opens on: with none stored the board auto-picks the best gold/hr map and the
+    // explorer follows it (see 'a fresh load opens on the best gold/hr map' below).
+    await seedLocalStorage(page, { ...importedRoster, lang: 'en', phasesView: { phase: 1 } });
     await page.goto('/farm');
 
     await expect(page.getByRole('link', { name: /^Farm$/i })).toBeVisible();

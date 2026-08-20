@@ -85,19 +85,24 @@ test.describe('Farm Respec Advisor', () => {
     await importAccount486(page);
   });
 
-  // 1. The callout appears and names a phase in the band; the gain reads as a lower bound.
-  test('the toolbar callout names a recommended phase in 26-28, with a lower-bound gain', async ({ page }) => {
+  // 1. The callout appears with a lower-bound gain and nothing else; the recommended phase it
+  // used to restate is the panel's Phase tile, so the 26-28 band is asserted there instead.
+  test('the toolbar callout is the lower-bound gain alone; the panel names a phase in 26-28', async ({ page }) => {
     await expect(toolbar(page)).toBeVisible();
     await expect(headline(page)).toContainText(/at least/i);
-    // Scoped to the ONE leaf span carrying the phase — sibling spans in the headline have no
-    // literal whitespace between them in the DOM (only a CSS flex gap), so reading the whole
-    // container's concatenated textContent would run this span's digits into the next span's.
-    const phaseText = await headline(page).getByText(/#\d+/).textContent();
-    const phaseMatch = phaseText?.match(/#(\d+)/);
-    expect(phaseMatch, `no phase number found in "${phaseText}"`).not.toBeNull();
-    const phase = Number(phaseMatch![1]);
-    expect(phase).toBeGreaterThanOrEqual(26);
-    expect(phase).toBeLessThanOrEqual(28);
+    // The phase, the cost and the payback all moved into the panel — none of them may creep back.
+    await expect(headline(page)).not.toContainText(/#\d+/);
+    await expect(headline(page)).not.toContainText(/gold to respec|pays for itself/i);
+
+    await optimizeButton(page).click();
+    await expect(panel(page)).toBeVisible();
+    const phaseText = (await page.getByTestId('farm-respec-metric-phase').textContent()) ?? '';
+    const phases = [...phaseText.matchAll(/#(\d+)/g)].map((match) => Number(match[1]));
+    expect(phases.length, `no phase number found in "${phaseText}"`).toBeGreaterThan(0);
+    // The tile reads `current -> recommended`; the recommendation is the last one it prints.
+    const recommended = phases[phases.length - 1];
+    expect(recommended).toBeGreaterThanOrEqual(26);
+    expect(recommended).toBeLessThanOrEqual(28);
   });
 
   // 2. Optimize expands the panel IN PLACE — DOM order between the toolbar and the table's
@@ -140,7 +145,9 @@ test.describe('Farm Respec Advisor', () => {
     expect(changedCardKeyCount).toBeGreaterThan(0);
     expect(changedCardKeyCount % 8).toBe(0); // every changed card contributes exactly 8 rows
 
-    await expect(heroGrid(page).getByText('Keep', { exact: true }).first()).toBeVisible();
+    // The Luck row's lock glyph carries "Keep" as its accessible name (DeltaTable's `lockLabel`),
+    // not visible text — a compact icon replaces the old Chip + HelpTip pair.
+    await expect(heroGrid(page).getByRole('button', { name: 'Keep' }).first()).toBeVisible();
     await expect(heroGrid(page).getByText(/no respec needed/i).first()).toBeVisible();
 
     const panelText = (await panel(page).textContent()) ?? '';
@@ -208,32 +215,7 @@ test.describe('Farm Respec Advisor', () => {
     }
   });
 
-  // 7. The objective picker re-solves and persists across a reload.
-  test('selecting the chests objective re-solves and shows the explainer; the selection survives a reload', async ({ page }) => {
-    const objectiveSelect = toolbar(page).getByLabel(/^Objective$/i);
-    await objectiveSelect.click();
-    // Anchored to the start — "Balanced" also contains the word "chests" in its own label.
-    await page.getByRole('option', { name: /^Chests \/ hr/i }).click();
-
-    await optimizeButton(page).click();
-    await expect(panel(page)).toBeVisible();
-    await expect(page.getByTestId('farm-respec-chest-explainer')).toBeVisible();
-
-    const captured = await captureSeededState(page, 'en');
-    expect(captured.phasesView?.farmObjective).toBe('chests');
-
-    await seedLocalStorage(page, captured);
-    await page.goto('/farm');
-
-    await expect(toolbar(page).getByLabel(/^Objective$/i)).toContainText(/Chests/i);
-    const stored = await page.evaluate(() => {
-      const raw = localStorage.getItem('bf-hp-phases-view-v1');
-      return raw ? (JSON.parse(raw) as { farmObjective?: string }) : null;
-    });
-    expect(stored?.farmObjective).toBe('chests');
-  });
-
-  // 8. PT — the toolbar, panel and tiles render in Portuguese, no EN leakage.
+  // 7. PT — the toolbar, panel and tiles render in Portuguese, no EN leakage.
   test('renders in Portuguese with no EN leakage in the toolbar or panel', async ({ page }) => {
     const captured = await captureSeededState(page, 'pt');
     await seedLocalStorage(page, captured);
@@ -250,7 +232,7 @@ test.describe('Farm Respec Advisor', () => {
     expect(panelText).not.toMatch(/Optimize|Payback|Respec cost/i);
   });
 
-  // 9. Keyboard reachability and the busy state.
+  // 8. Keyboard reachability and the busy state.
   test('Optimize is keyboard-activatable and exposes aria-expanded; the re-rank switch is keyboard-reachable with an accessible name', async ({ page }) => {
     await optimizeButton(page).focus();
     await expect(optimizeButton(page)).toBeFocused();

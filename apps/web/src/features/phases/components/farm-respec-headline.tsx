@@ -1,50 +1,22 @@
 'use client';
 
 import type { FarmRespecResult } from '@bombfarm/domain/farm-optimize';
-import { sub, type Lang, type Strings } from '@/shared/i18n';
-import { formatPhaseLabel } from '@/features/phases/model/farm-ranking-format';
-import { resolvePaybackKind } from '@/features/phases/model/farm-respec-view';
-import { formatGainPct, formatGold, formatHours } from '@/features/phases/model/farm-respec-format';
+import { sub, type Strings } from '@/shared/i18n';
+import { formatGainPct } from '@/features/phases/model/farm-respec-format';
 
 /**
- * The toolbar's headline — gain % (labelled a LOWER BOUND), recommended phase, respec cost and
- * payback in words. Only ever mounted by the toolbar when Tier 1 says there is something to say;
- * this component has no visibility logic of its own.
+ * The toolbar's headline: the gain, labelled a LOWER BOUND, and nothing else. The phase, the
+ * respec cost and the payback all live in the panel's metric tiles a click away — restated here
+ * they made a single line the player had to read four facts out of before deciding whether to
+ * open the panel at all, which is the only decision this line supports.
+ *
+ * Only ever mounted by the toolbar when Tier 1 says there is something to say; this component
+ * has no visibility logic of its own.
  */
-export function FarmRespecHeadline({
-  t,
-  lang,
-  result,
-}: {
-  t: Strings;
-  lang: Lang;
-  result: FarmRespecResult;
-}) {
-  const paybackKind = resolvePaybackKind(result);
-  const paybackText =
-    paybackKind === 'hours'
-      ? sub(t.farmRespecPaybackHours, { hours: formatHours(result.paybackHours ?? 0) })
-      : paybackKind === 'no-gold-gain'
-        ? t.farmRespecPaybackNoGoldGain
-        : t.farmRespecPaybackNoChange;
-
+export function FarmRespecHeadline({ t, result }: { t: Strings; result: FarmRespecResult }) {
   return (
-    <div
-      data-testid="farm-respec-headline"
-      className="flex flex-wrap items-baseline gap-x-3 gap-y-1 text-[12px]"
-    >
-      <span className="font-bold text-accent">
-        {sub(t.farmRespecHeadlineGain, { pct: formatGainPct(result.gainPct) })}
-      </span>
-      {result.recommendedPhase != null ? (
-        <span className="text-muted">
-          {t.farmRespecHeadlinePhase}: {formatPhaseLabel(result.recommendedPhase, lang)}
-        </span>
-      ) : null}
-      <span className="text-muted">
-        {sub(t.farmRespecHeadlineCost, { gold: formatGold(result.respecCostGold) })}
-      </span>
-      <span className="text-muted">{paybackText}</span>
-    </div>
+    <span data-testid="farm-respec-headline" className="text-[12px] font-bold text-accent">
+      {sub(t.farmRespecHeadlineGain, { pct: formatGainPct(result.gainPct) })}
+    </span>
   );
 }

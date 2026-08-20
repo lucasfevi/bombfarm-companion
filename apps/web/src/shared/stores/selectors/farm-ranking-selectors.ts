@@ -19,8 +19,6 @@ import {
   solveFarmRespec,
   FARM_RESPEC_MIN_GAIN_PCT,
   type FarmRespecResult,
-  type FarmObjective,
-  type FarmObjectiveKind,
 } from '@bombfarm/domain/farm-optimize';
 import type { AccountShared } from '@/shared/lib/storage';
 import type { PlannerStore } from '@/shared/stores/planner-store';
@@ -215,23 +213,14 @@ export function selectFarmRankingRows(state: PlannerStore): FarmRankingResult {
 // readFarmDepTuple above are not edited.
 // -------------------------------------------------------------------------------------------
 
-/** The three presets the objective picker offers. Blend's weight is the frozen GOLD share —
- *  item A collapses w===1 to 'gold' and w===0 to 'chests', so 0.5 is the only blend value this
- *  surface can ever emit and there is no free weight control to clamp. */
-const FARM_BLEND_GOLD_WEIGHT = 0.5;
-
-function toObjective(kind: FarmObjectiveKind): FarmObjective {
-  return kind === 'blend' ? { kind, weight: FARM_BLEND_GOLD_WEIGHT } : { kind };
-}
-
 /**
- * The 19 ranking members PLUS the objective — the one input that changes the RECOMMENDATION
- * without changing the current build's ranking. Spreads readFarmDepTuple rather than restating
- * its members, so a future addition to the ranking tuple is inherited automatically (the
- * House-ceiling fix's `fieldSlots`/`houseCycleSecs` arrived exactly that way).
+ * The gate/solve dependency tuple. With the objective picker gone, the Respec Advisor's
+ * recommendation depends on nothing the ranking board doesn't already — this is currently
+ * identical to {@link readFarmDepTuple}, kept as its own named entry point so the Tier 1/Tier 2
+ * call sites read "the respec deps", not a re-derivation of the ranking ones.
  */
 export function readFarmRespecDepTuple(state: PlannerStore) {
-  return [...readFarmDepTuple(state), state.farmObjective] as const;
+  return readFarmDepTuple(state);
 }
 
 function buildFarmRespecInput(state: PlannerStore, enabledHeroIds: readonly string[]) {
@@ -239,7 +228,6 @@ function buildFarmRespecInput(state: PlannerStore, enabledHeroIds: readonly stri
     heroes: state.heroes,
     account: buildAccount(state),
     enabledHeroIds,
-    objective: toObjective(state.farmObjective),
     maxPhase: state.maxPhase,
     returnBonus: state.farmReturnBonus,
   };
@@ -299,9 +287,9 @@ function computeFarmRespecGate(state: PlannerStore): FarmRespecGate {
 
 /**
  * Module-level single-entry memo — Tier 1. Same shape as {@link selectFarmRankingRows}, over
- * its own 18-member tuple (the 17 ranking members plus the objective). Returns the SAME object
- * identity on a cache hit and must be subscribed to WITHOUT `useShallow`, for the identical
- * reason `selectFarmRankingRows` is.
+ * the same {@link readFarmDepTuple}-derived tuple. Returns the SAME object identity on a cache
+ * hit and must be subscribed to WITHOUT `useShallow`, for the identical reason
+ * `selectFarmRankingRows` is.
  */
 export function selectFarmRespecGate(state: PlannerStore): FarmRespecGate {
   const deps = readFarmRespecDepTuple(state);

@@ -97,8 +97,56 @@ const fixture = JSON.parse(readFileSync(fixturePath, 'utf8')) as {
  * shape a non-gate row's gain already has — so `farmRankingKeysConsumed` has no reader left. The
  * same pass replaced the row's "Gate" chip with the game's own clock icon; `farmRankingGateBadge`
  * itself is untouched, now carried as the icon's tooltip and `sr-only` accessible name.
+ *
+ * Gold-only, second pass (2026-08-20): with the chests objective gone, the search always compares
+ * the current build as one of its own candidates, so the proposed build's gold can never come in
+ * BELOW it. `resolvePaybackKind`'s third kind was therefore unreachable and is deleted, leaving
+ * `farmRespecPaybackNoGoldGain` with no reader.
+ *
+ * The toolbar headline (2026-08-20) is now the lower-bound gain alone. The recommended phase,
+ * the respec cost and the payback are all in the panel's metric tiles one click away; restated on
+ * the toolbar they made a single line carry four facts before the player could make the only
+ * decision it supports — whether to open the panel. So `farmRespecHeadlinePhase` and
+ * `farmRespecHeadlineCost` have no reader left.
+ *
+ * The objective picker's removal (2026-08-20): the solver optimizes gold/hr and nothing else now
+ * — offering chests/blend as a choice was misleading without also being able to filter which
+ * chest, so the picker is gone, not merely relabelled. `farmRespecObjectiveLabel` (its
+ * `aria-label`), `farmRespecObjectiveGold`, `farmRespecObjectiveBlend` and
+ * `farmRespecObjectiveChests` (its three options) all lose their reader together. The panel's
+ * chest explainer, gated on a non-gold objective that can no longer be selected, goes with it —
+ * `farmRespecChestExplainer`. The gold tile's "gives up N gold/hr" line
+ * (`farmRespecGoldGivenUp`) turns out to have been dead under a pure gold objective even before
+ * this change (the solver maximises gold, so the proposed rate can only be `>=` the current one
+ * by construction) — confirmed against `packages/domain/src/farm-optimize.ts`'s search, which
+ * always includes the current build as a candidate, so removing the objective choice only made
+ * that already-unreachable branch official.
+ *
+ * The unchanged-hero group (2026-08-20): every hero needing no respec repeated the same two
+ * lines on its own card. They are now stated once above the group, over the summed gold those
+ * builds save (`farmRespecUnchangedGroupNote`, in `KEYS_ADDED`), so the per-card
+ * `farmRespecUnchangedNote` and `farmRespecUnchangedGoldSaved` have no reader left.
+ *
+ * The Respec Advisor's energy-allocation section (2026-08-20) is gone in two steps: its bar first,
+ * then the sentence beneath it, so `farmRespecPlateauLabel`, `farmRespecPlateauRange` and
+ * `farmRespecPlateauSharp` have no reader left. The domain's `plateau` field and everything that
+ * computes it are untouched.
  */
 const KEYS_REMOVED: readonly string[] = [
+  'farmRespecPaybackNoGoldGain',
+  'farmRespecHeadlinePhase',
+  'farmRespecHeadlineCost',
+  'farmRespecObjectiveLabel',
+  'farmRespecObjectiveGold',
+  'farmRespecObjectiveBlend',
+  'farmRespecObjectiveChests',
+  'farmRespecChestExplainer',
+  'farmRespecGoldGivenUp',
+  'farmRespecUnchangedNote',
+  'farmRespecUnchangedGoldSaved',
+  'farmRespecPlateauLabel',
+  'farmRespecPlateauRange',
+  'farmRespecPlateauSharp',
   'phasesGoldComumWiki',
   'phasesGoldComumActual',
   'phasesAvgGoldWiki',
@@ -158,8 +206,18 @@ const KEYS_REMOVED: readonly string[] = [
  * panel-level description under the new cage art. `phasesJaulaWindowVip` labels the VIP
  * guarantee window now shown as subtext under the normal window, once the committed wiki bundle's
  * stale VIP figure was corrected to match the live wiki.
+ *
+ * The metric tile row rework (2026-08-19) added a fifth Farm Respec Advisor tile —
+ * `farmRespecMetricPhase` labels the recommended-phase before/after tile, and
+ * `farmRespecMetricPhaseSame` is the muted note it shows in place of a repeated label when the
+ * proposal does not move the phase. The tile also carries a tooltip explaining what the Payback
+ * figure divides, since players were reading "pays for itself in N h" as computed against the NEW
+ * gold/hr rather than the increase over the current one: `farmRespecPaybackTip` is the tooltip
+ * body, triggered by the Payback label itself (`TipLabel`) rather than a separate `?` control, so
+ * no separate trigger-label key exists.
  */
 const KEYS_ADDED: readonly string[] = [
+  'farmRespecUnchangedGroupNote',
   'phasesXpActualHint',
   'phasesDropsSection',
   'phasesDropChest',
@@ -177,6 +235,9 @@ const KEYS_ADDED: readonly string[] = [
   'phasesDropNonGateOnly',
   'phasesJaulaSectionDesc',
   'phasesJaulaWindowVip',
+  'farmRespecMetricPhase',
+  'farmRespecMetricPhaseSame',
+  'farmRespecPaybackTip',
 ];
 
 /**

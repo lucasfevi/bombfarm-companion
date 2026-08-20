@@ -7,6 +7,7 @@ import {
   DEFAULT_SORT,
   defaultFarmFilters,
   FARM_COLUMNS,
+  pickBestFarmRow,
   sortFarmRows,
   type FarmSortKey,
 } from '@/features/phases/model/farm-ranking-view';
@@ -223,6 +224,58 @@ describe('applyFarmFilters', () => {
   it('a combination matching zero rows returns an empty array', () => {
     const result = applyFarmFilters(rows, { unlockedOnly: false, ato: 5, gate: 'all' });
     expect(result).toEqual([]);
+  });
+});
+
+describe('pickBestFarmRow', () => {
+  it('returns null for an empty list', () => {
+    expect(pickBestFarmRow([])).toBeNull();
+  });
+
+  it('picks the highest goldPerHour row', () => {
+    const rows = [
+      row({ phase: 1, goldPerHour: 100 }),
+      row({ phase: 2, goldPerHour: 300 }),
+      row({ phase: 3, goldPerHour: 200 }),
+    ];
+    expect(pickBestFarmRow(rows)?.phase).toBe(2);
+  });
+
+  it('skips infeasible rows even when they carry the highest goldPerHour', () => {
+    const rows = [
+      row({ phase: 1, goldPerHour: 100, infeasible: false }),
+      row({ phase: 2, goldPerHour: 9999, infeasible: true }),
+      row({ phase: 3, goldPerHour: 200, infeasible: false }),
+    ];
+    expect(pickBestFarmRow(rows)?.phase).toBe(3);
+  });
+
+  it('returns null when every row is infeasible', () => {
+    const rows = [
+      row({ phase: 1, goldPerHour: 100, infeasible: true }),
+      row({ phase: 2, goldPerHour: 200, infeasible: true }),
+    ];
+    expect(pickBestFarmRow(rows)).toBeNull();
+  });
+
+  it('breaks a goldPerHour tie by the lower phase', () => {
+    const rows = [
+      row({ phase: 8, goldPerHour: 100 }),
+      row({ phase: 2, goldPerHour: 100 }),
+      row({ phase: 5, goldPerHour: 100 }),
+    ];
+    expect(pickBestFarmRow(rows)?.phase).toBe(2);
+  });
+
+  it('is independent of input order and of DEFAULT_SORT — an unsorted list still resolves to the max', () => {
+    const rows = [
+      row({ phase: 4, goldPerHour: 50 }),
+      row({ phase: 1, goldPerHour: 400 }),
+      row({ phase: 7, goldPerHour: 10 }),
+      row({ phase: 3, goldPerHour: 400 }),
+    ];
+    // Tie between phase 1 and phase 3 at the max value — lower phase wins regardless of position.
+    expect(pickBestFarmRow(rows)?.phase).toBe(1);
   });
 });
 

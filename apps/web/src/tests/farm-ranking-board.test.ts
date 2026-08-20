@@ -33,7 +33,6 @@ describe('Farm Ranking board — testids present (design §4.3)', () => {
     ['src/features/phases/components/farm-ranking-table.tsx', 'farm-ranking-table'],
     ['src/features/phases/components/farm-ranking-table.tsx', 'farm-sort-live'],
     ['src/features/phases/components/farm-respec-toolbar.tsx', 'farm-respec-toolbar'],
-    ['src/features/phases/components/farm-respec-toolbar.tsx', 'farm-respec-objective'],
     ['src/features/phases/components/farm-respec-toolbar.tsx', 'farm-respec-optimize'],
     ['src/features/phases/components/farm-respec-headline.tsx', 'farm-respec-headline'],
     ['src/features/phases/components/farm-respec-panel.tsx', 'farm-respec-panel'],
@@ -41,9 +40,9 @@ describe('Farm Ranking board — testids present (design §4.3)', () => {
     ['src/features/phases/components/farm-respec-metrics.tsx', 'farm-respec-metrics'],
     ['src/features/phases/components/farm-respec-metrics.tsx', 'farm-respec-metric-gold'],
     ['src/features/phases/components/farm-respec-metrics.tsx', 'farm-respec-metric-chests'],
+    ['src/features/phases/components/farm-respec-metrics.tsx', 'farm-respec-metric-phase'],
     ['src/features/phases/components/farm-respec-metrics.tsx', 'farm-respec-metric-cost'],
     ['src/features/phases/components/farm-respec-metrics.tsx', 'farm-respec-metric-payback'],
-    ['src/features/phases/components/farm-respec-plateau.tsx', 'farm-respec-plateau'],
     ['src/features/phases/components/farm-respec-hero-grid.tsx', 'farm-respec-heroes'],
     ['src/features/phases/components/farm-respec-frontier.tsx', 'farm-respec-frontier'],
     ['src/features/phases/components/farm-respec-rerank-toggle.tsx', 'farm-respec-rerank'],
@@ -124,12 +123,10 @@ describe('Farm Respec Advisor toolbar — visibility, controls and layout stabil
     expect(source).toMatch(/if \(!degraded && !gate\.shouldSurface\) return null;/);
   });
 
-  it('the objective picker is a three-option Select over the FarmObjectiveKind literals verbatim, dispatching setFarmObjective and nothing else', () => {
+  it('no objective picker remains — Optimize is the only control in the toolbar', () => {
     const source = read('src/features/phases/components/farm-respec-toolbar.tsx');
-    expect(source).toContain('<option value="gold">');
-    expect(source).toContain('<option value="blend">');
-    expect(source).toContain('<option value="chests">');
-    expect(source).toContain('setFarmObjective(event.target.value');
+    expect(source).not.toContain('Select');
+    expect(source).not.toContain('setFarmObjective');
   });
 
   it('Optimize is a real button with aria-busy, aria-expanded and aria-controls pointing at the panel', () => {
@@ -161,17 +158,16 @@ describe('Farm Respec Advisor toolbar — visibility, controls and layout stabil
     expect(source).not.toMatch(/useShallow\([^)]*selectFarmRespecGate/);
   });
 
-  it('the headline shows the lower-bound gain, the phase, the cost and one of the three payback strings', () => {
+  // The headline is the lower-bound gain and nothing else — the phase, the cost and the payback
+  // are the panel's metric tiles now, not four facts crammed into one toolbar line.
+  it('the headline shows the lower-bound gain alone', () => {
     const source = read('src/features/phases/components/farm-respec-headline.tsx');
     expect(source).toContain('t.farmRespecHeadlineGain');
-    expect(source).toContain('t.farmRespecHeadlinePhase');
-    expect(source).toContain('t.farmRespecHeadlineCost');
-    expect(source).toContain('resolvePaybackKind(result)');
+    expect(source).not.toMatch(/formatPhaseLabel|formatGold|formatHours|resolvePaybackKind/);
   });
-
 });
 
-describe('Farm Respec Advisor panel — in-place expansion, banners, plateau', () => {
+describe('Farm Respec Advisor panel — in-place expansion and banners', () => {
   it('is a plain <section> in normal flow — no role="dialog", no portal', () => {
     const source = read('src/features/phases/components/farm-respec-panel.tsx');
     expect(source).toMatch(/<section[\s\S]*?id="farm-respec-panel"/);
@@ -205,7 +201,6 @@ describe('Farm Respec Advisor panel — in-place expansion, banners, plateau', (
     for (const file of [
       'src/features/phases/components/farm-respec-panel.tsx',
       'src/features/phases/components/farm-respec-metrics.tsx',
-      'src/features/phases/components/farm-respec-plateau.tsx',
     ]) {
       expect(read(file)).not.toMatch(/winningSeed/);
     }
@@ -215,21 +210,16 @@ describe('Farm Respec Advisor panel — in-place expansion, banners, plateau', (
     for (const file of [
       'src/features/phases/components/farm-respec-panel.tsx',
       'src/features/phases/components/farm-respec-metrics.tsx',
-      'src/features/phases/components/farm-respec-plateau.tsx',
     ]) {
       expect(read(file)).not.toMatch(/\btry\s*\{/);
     }
   });
 
-  it('the plateau band is aria-hidden; the sentence beside it is the accessible content', () => {
-    const source = read('src/features/phases/components/farm-respec-plateau.tsx');
-    expect(source).toMatch(/aria-hidden[\s\S]*?<div/);
-    expect(source).toContain('sentence');
-  });
-
-  it('the chest explainer renders whenever the objective is not gold', () => {
+  // The energy-allocation section is gone entirely — bar first, then the sentence. Nothing in
+  // the panel reads `result.plateau` any more; this pins that so it cannot creep back untested.
+  it('the panel renders no energy-allocation section', () => {
     const source = read('src/features/phases/components/farm-respec-panel.tsx');
-    expect(source).toContain("objective !== 'gold'");
+    expect(source).not.toMatch(/[Pp]lateau/);
   });
 
   it('the panel has a real heading wired via aria-labelledby, and a close button that closes it', () => {
@@ -246,9 +236,15 @@ describe('Farm Respec Advisor hero cards — full target allocations, luck kept,
     expect(source).toContain('farm-respec-key-${entry.heroId}-${row.key}');
   });
 
-  it('the grid maps result.heroes with NO filter — the enabled-hero count equals the card count', () => {
+  // The grid renders two groups now (changed heroes, then unchanged), so it no longer maps
+  // `result.heroes` directly. The invariant this guarded — no hero is dropped — is proved
+  // against `partitionHeroEntries` itself in farm-respec-view.test.ts, which is stronger than
+  // scanning for an absent `.filter(`; what is left to assert here is that BOTH groups render.
+  it('the grid renders both hero groups — never only the changed ones', () => {
     const source = read('src/features/phases/components/farm-respec-hero-grid.tsx');
-    expect(source).toMatch(/result\.heroes\.map\(/);
+    expect(source).toContain('partitionHeroEntries(result)');
+    expect(source).toMatch(/groups\.changed\.map\(/);
+    expect(source).toMatch(/groups\.unchanged\.map\(/);
     expect(source).not.toMatch(/result\.heroes\.filter\(/);
   });
 
@@ -264,29 +260,38 @@ describe('Farm Respec Advisor hero cards — full target allocations, luck kept,
     expect(cardSource).toMatch(/import\s*\{[^}]*HeroIdentityChip[^}]*\}\s*from\s*'@\/shared\/game-art'/);
   });
 
-  it('the changed-hero table shows the absolute target as the primary column, with current and signed delta as secondary columns', () => {
+  it('the changed-hero table passes current, target and change to the shared DeltaTable ledger, chronological order (current before target)', () => {
     const source = read('src/features/phases/components/farm-respec-hero-card.tsx');
-    expect(source).toContain('t.farmRespecKeyTarget');
     expect(source).toContain('t.farmRespecKeyCurrent');
+    expect(source).toContain('t.farmRespecKeyTarget');
     expect(source).toContain('t.farmRespecKeyDelta');
     expect(source).toContain('row.target');
     expect(source).toContain('row.current');
-    expect(source).toContain('formatSignedPoints(row.delta)');
+    expect(source.indexOf('t.farmRespecKeyCurrent')).toBeLessThan(source.indexOf('t.farmRespecKeyTarget'));
   });
 
-  it('the luck row carries the keep chip and its HelpTip note', () => {
+  it('the luck row is locked, carrying the same hint text through DeltaTable\'s lock glyph', () => {
     const source = read('src/features/phases/components/farm-respec-hero-card.tsx');
-    expect(source).toContain('row.keep');
+    expect(source).toContain('locked: row.keep');
     expect(source).toContain('t.farmRespecLuckKeep');
     expect(source).toContain('t.farmRespecLuckHint');
   });
 
-  it('an unchanged hero renders de-emphasized, never hidden outright, stating no respec is needed and naming the gold not spent', () => {
+  it('an unchanged hero renders de-emphasized, never hidden outright', () => {
     const source = read('src/features/phases/components/farm-respec-hero-card.tsx');
     expect(source).toContain('!entry.changed');
     expect(source).not.toMatch(/display:\s*none/);
-    expect(source).toContain('t.farmRespecUnchangedNote');
-    expect(source).toContain('t.farmRespecUnchangedGoldSaved');
+  });
+
+  // The note and the gold saved are stated once for the whole group, not per card — repeated on
+  // every card they were the same sentence several times over, and the amounts were a total the
+  // player had to sum themselves.
+  it('the unchanged group states its note once, over the summed gold from the domain', () => {
+    const grid = read('src/features/phases/components/farm-respec-hero-grid.tsx');
+    expect(grid).toContain('t.farmRespecUnchangedGroupNote');
+    expect(grid).toContain('result.unchangedRespecCostGold');
+    const card = read('src/features/phases/components/farm-respec-hero-card.tsx');
+    expect(card).not.toMatch(/farmRespecUnchanged/);
   });
 
   it('no move is annotated as optional/negligible/minor/skippable at any magnitude — no conditional class keyed on delta size', () => {
