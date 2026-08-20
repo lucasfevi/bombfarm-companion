@@ -28,7 +28,7 @@
 export type { RarityKey, BaseRoll } from './rarity-constants';
 export { BASE_ROLLS, POINT_GAIN, STAT_CAPS } from './rarity-constants';
 
-export { HOUSES, houseRestSeconds, splitHouseRest } from './house';
+export { HOUSES, houseRestSeconds, resolveHouseRestSeconds, splitHouseRest } from './house';
 
 export type {
   HeroSheet,
@@ -51,6 +51,7 @@ export {
   bombsPerSecond,
   critFactor,
   mitigationFactor,
+  HERO_MAX_LEVEL,
   levelPowerMult,
   attackPointGain,
   clampCritChancePct,
@@ -61,9 +62,11 @@ export {
   sustainedDps,
   activeDps,
   gateDamage,
+  GRID_SPEED_COEF,
+  EFF_IA,
 } from './combat';
 
-export { rankNextPoint, energySwitchPoint } from './points-rank';
+export { rankNextPoint, energySwitchPoint, RANK_STATS } from './points-rank';
 
 export type { BirthStats, TreeSheetTotals, ComposeSheetFromBirthInput } from '../birth-sheet';
 export {

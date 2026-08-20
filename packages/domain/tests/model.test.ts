@@ -6,6 +6,7 @@ import {
   marginalFuseSeconds,
   FUSE_FLOOR,
   houseRestSeconds,
+  resolveHouseRestSeconds,
   splitHouseRest,
   isSheetAbility,
   levelPowerMult,
@@ -22,6 +23,8 @@ import {
   attackPointGain,
   STAT_CAPS,
   critMilestones,
+  GRID_SPEED_COEF,
+  EFF_IA,
   type HeroSheet,
   type Context,
   type AbilityMods,
@@ -48,6 +51,13 @@ const sampleHero = (): HeroSheet => ({
   cdr: 10,
   attackPerPoint: POINT_GAIN.attackNative,
   energyPerPoint: POINT_GAIN.energyNative,
+});
+
+describe('GRID_SPEED_COEF / EFF_IA', () => {
+  it('are importable from @bombfarm/domain/model and equal their wiki-sourced values', () => {
+    expect(GRID_SPEED_COEF).toBe(0.0386);
+    expect(EFF_IA).toBe(0.9);
+  });
 });
 
 describe('fuseSeconds', () => {
@@ -130,6 +140,9 @@ describe('bombs / DPS', () => {
 
 describe('abilityMods', () => {
   it('stacks modeled combat effects (W3 rank-20 perLevel values)', () => {
+    // grito_guerra and pressagio_mortal are team auras (issue #132) — abilityMods never folds
+    // them into a hero's own mods, so they are included here only to prove they are harmlessly
+    // ignored (no field they used to populate moves).
     const m = abilityMods({
       bateria_extra: 5,
       ponta_diamante: 3,
@@ -140,9 +153,8 @@ describe('abilityMods', () => {
     expect(m.drainMult).toBeCloseTo(0.95, 6);
     expect(m.penetrationPp).toBe(0);
     expect(m.sheetPenetrationRaw).toBe(3);
-    expect(m.attackMult).toBeCloseTo(1.02, 6);
-    expect(m.sheetCritChancePctOfBase).toBeCloseTo(7.5, 6);
-    expect(m.combatCritChancePctOfBase).toBeCloseTo(4, 6);
+    // Percent-of-base since the 2026-08-18 revert: 10 x 4.285714285714286.
+    expect(m.sheetCritChancePctOfBase).toBeCloseTo(42.85714285714286, 6);
   });
 
   it('treats Ponta de Diamante as on-sheet raw Σ (not combat penetrationPp)', () => {
@@ -164,7 +176,7 @@ describe('rankNextPoint', () => {
   it('returns all stats ranked by gain', () => {
     const ranking = rankNextPoint(sampleHero(), baseCtx());
     expect(ranking).toHaveLength(7);
-    expect(ranking[0].dpsGainPct).toBeGreaterThanOrEqual(ranking[6].dpsGainPct);
+    expect(ranking[0].gainPct).toBeGreaterThanOrEqual(ranking[6].gainPct);
   });
 
   it('AC-46: BASE_ROLLS does not influence the ranking when effectiveDeltas is supplied (L-02, GAP-W2-01)', () => {
@@ -199,7 +211,7 @@ describe('rankNextPoint', () => {
     };
     const ranking = rankNextPoint(h, baseCtx(), { effectiveDeltas: deltas });
     const crit = ranking.find((r) => r.stat === 'critChance');
-    expect(crit?.dpsGainPct).toBe(0);
+    expect(crit?.gainPct).toBe(0);
   });
 
   it('scores zero for CDR at 80% cap', () => {
@@ -215,7 +227,7 @@ describe('rankNextPoint', () => {
     };
     const ranking = rankNextPoint(h, baseCtx(), { effectiveDeltas: deltas });
     const cdr = ranking.find((r) => r.stat === 'cdr');
-    expect(cdr?.dpsGainPct).toBe(0);
+    expect(cdr?.gainPct).toBe(0);
   });
 
   it('still ranks CDR above zero at 70% and real DPS still improves toward the 80% cap', () => {
@@ -232,7 +244,7 @@ describe('rankNextPoint', () => {
     const ctx = baseCtx();
     const ranking = rankNextPoint(h, ctx, { effectiveDeltas: deltas });
     const cdr = ranking.find((r) => r.stat === 'cdr')!;
-    expect(cdr.dpsGainPct).toBeGreaterThan(0);
+    expect(cdr.gainPct).toBeGreaterThan(0);
     // Floor is 0.4s at 80% CDR — 70→75 still shortens real fuse.
     const cur = sustainedDps(h, ctx);
     const next = sustainedDps({ ...h, cdr: 75 }, ctx);
@@ -253,7 +265,7 @@ describe('rankNextPoint', () => {
     for (const cdr of [70, 75, 79]) {
       const gain = rankNextPoint({ ...sampleHero(), cdr }, ctx, { effectiveDeltas: deltas }).find(
         (r) => r.stat === 'cdr',
-      )!.dpsGainPct;
+      )!.gainPct;
       expect(gain).toBeGreaterThan(0);
     }
   });
@@ -271,7 +283,7 @@ describe('rankNextPoint', () => {
     };
     const ctx = { ...baseCtx(), mitigation: 0.5 };
     const pen = rankNextPoint(h, ctx, { effectiveDeltas: deltas }).find((r) => r.stat === 'penetration')!;
-    expect(pen.dpsGainPct).toBeGreaterThan(0);
+    expect(pen.gainPct).toBeGreaterThan(0);
   });
 
   it('scores zero for penetration at 100% combat bypass cap', () => {
@@ -287,7 +299,7 @@ describe('rankNextPoint', () => {
     };
     const ctx = { ...baseCtx(), mitigation: 0.5 };
     const pen = rankNextPoint(h, ctx, { effectiveDeltas: deltas }).find((r) => r.stat === 'penetration');
-    expect(pen?.dpsGainPct).toBe(0);
+    expect(pen?.gainPct).toBe(0);
   });
 
   it('scores zero for penetration above 100% on sheet (combat already saturated)', () => {
@@ -303,7 +315,7 @@ describe('rankNextPoint', () => {
     };
     const ctx = { ...baseCtx(), mitigation: 0.5 };
     const pen = rankNextPoint(h, ctx, { effectiveDeltas: deltas }).find((r) => r.stat === 'penetration');
-    expect(pen?.dpsGainPct).toBe(0);
+    expect(pen?.gainPct).toBe(0);
     const cur = sustainedDps(h, ctx);
     const next = sustainedDps({ ...h, penetration: 136 }, ctx);
     expect(next).toBeCloseTo(cur, 6);
@@ -322,7 +334,7 @@ describe('rankNextPoint', () => {
     };
     const ranking = rankNextPoint(h, baseCtx(), { effectiveDeltas: tiny });
     expect(ranking[0].stat).toBe('critDmg');
-    expect(ranking[0].dpsGainPct).toBeGreaterThan(ranking.find((r) => r.stat === 'attack')!.dpsGainPct);
+    expect(ranking[0].gainPct).toBeGreaterThan(ranking.find((r) => r.stat === 'attack')!.gainPct);
   });
 });
 
@@ -338,6 +350,50 @@ describe('houseRestSeconds', () => {
   it('interpolates casa rest time', () => {
     expect(houseRestSeconds(0, 1)).toBe(19 * 60);
     expect(houseRestSeconds(0, 20)).toBe(17 * 60);
+  });
+});
+
+describe('resolveHouseRestSeconds', () => {
+  it('no cycleSecs at all (absent casa) — pure table path, unchanged behaviour', () => {
+    expect(resolveHouseRestSeconds(null, 0, 11)).toBe(houseRestSeconds(0, 11));
+    expect(resolveHouseRestSeconds(undefined, 2, 6)).toBe(houseRestSeconds(2, 6));
+    expect(resolveHouseRestSeconds(0, 0, 11)).toBe(houseRestSeconds(0, 11));
+    expect(resolveHouseRestSeconds(-5, 0, 11)).toBe(houseRestSeconds(0, 11));
+  });
+
+  it('no anchor supplied (3-arg call) trusts cycleSecs unconditionally — every non-web caller', () => {
+    // account 486: Casa I level 11, casa.cycle_secs 1168.42105263158.
+    expect(resolveHouseRestSeconds(1168.42105263158, 0, 11)).toBeCloseTo(1168.42105263158, 9);
+    // Old (buggy) behaviour for a caller with no picker: the figure wins even for a DIFFERENT
+    // house/level, because such a caller has no independent request to diverge from the import.
+    expect(resolveHouseRestSeconds(1168.42105263158, 4, 1)).toBeCloseTo(1168.42105263158, 9);
+  });
+
+  it('requested house/level EQUAL the anchor — the exact save figure', () => {
+    expect(resolveHouseRestSeconds(1168.42105263158, 0, 11, 0, 11)).toBeCloseTo(
+      1168.42105263158,
+      9,
+    );
+  });
+
+  it('requested house DIFFERS from the anchor — table fallback, and the value actually changes', () => {
+    const atAnchor = resolveHouseRestSeconds(1168.42105263158, 0, 11, 0, 11);
+    const differentHouse = resolveHouseRestSeconds(1168.42105263158, 4, 11, 0, 11);
+    expect(differentHouse).toBe(houseRestSeconds(4, 11));
+    expect(differentHouse).not.toBeCloseTo(atAnchor, 0);
+  });
+
+  it('requested level DIFFERS from the anchor (same house) — table fallback, and the value actually changes', () => {
+    const atAnchor = resolveHouseRestSeconds(1168.42105263158, 0, 11, 0, 11);
+    const differentLevel = resolveHouseRestSeconds(1168.42105263158, 0, 1, 0, 11);
+    expect(differentLevel).toBe(houseRestSeconds(0, 1));
+    expect(differentLevel).not.toBeCloseTo(atAnchor, 0);
+  });
+
+  it('anchor explicitly known-absent (null) never matches — safe degrade, not a silent trust', () => {
+    expect(resolveHouseRestSeconds(1168.42105263158, 0, 11, null, null)).toBe(
+      houseRestSeconds(0, 11),
+    );
   });
 });
 

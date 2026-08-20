@@ -90,6 +90,10 @@ jobs:
     needs: [changes, build-e2e]
     if: github.event_name != 'pull_request' || needs.changes.outputs.e2e == 'true'
     runs-on: ubuntu-latest
+    # Browsers and their OS packages are baked in. On a bare runner the apt half of
+    # `playwright install --with-deps` is at the mercy of the Ubuntu mirrors: normally
+    # ~25s, but it has taken 15min on a bad day. Tag must track `@playwright/test`.
+    container: mcr.microsoft.com/playwright:v1.61.1-noble
     timeout-minutes: 20
     strategy:
       fail-fast: false
@@ -115,8 +119,11 @@ jobs:
         working-directory: .
         run: pnpm install --frozen-lockfile
 
+      # A no-op while the image tag matches the lockfile; if they ever drift this
+      # fetches the right build (seconds) instead of failing on a missing executable.
+      # No `--with-deps` — the apt packages are the image's job.
       - name: Install Playwright Chromium
-        run: pnpm exec playwright install --with-deps chromium
+        run: pnpm exec playwright install chromium
 
       - name: Download static export
         uses: actions/download-artifact@v4
@@ -163,6 +170,10 @@ jobs:
         contains(join(github.event.pull_request.labels.*.name, ','), 'visual-ci')
       )
     runs-on: ubuntu-latest
+    # Same image as smoke-shard, same reason. When `visual.spec.ts` comes off
+    # `describe.skip`, capture the baselines in here — the committed PNGs predate
+    # the container and its font rendering differs, against `maxDiffPixelRatio: 0`.
+    container: mcr.microsoft.com/playwright:v1.61.1-noble
     timeout-minutes: 15
     defaults:
       run:
@@ -185,7 +196,7 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: Install Playwright Chromium
-        run: pnpm exec playwright install --with-deps chromium
+        run: pnpm exec playwright install chromium
 
       - name: Download static export
         uses: actions/download-artifact@v4

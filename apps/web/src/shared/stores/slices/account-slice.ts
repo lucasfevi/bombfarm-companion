@@ -4,7 +4,7 @@ import { DEFAULT_CASA_SLOTS } from '@bombfarm/domain/casa-slots';
 import { effectiveFarmPhase } from '@bombfarm/domain/farm-context';
 import type { AccountImportData } from '@bombfarm/domain/import-save';
 import { phaseLine } from '@bombfarm/domain/phases';
-import { zeroTeamBuffs, type TeamBuffId } from '@bombfarm/domain/team-buffs';
+import type { TeamBuffId } from '@bombfarm/domain/team-buffs';
 import {
   DEFAULT_CONTEXT,
   DEFAULT_TREE,
@@ -12,10 +12,12 @@ import {
 } from '@/shared/lib/storage';
 import type { PlannerStore } from '@/shared/stores/planner-store';
 
-function teamBuffsEqual(
-  left: Record<TeamBuffId, number>,
-  right: Record<TeamBuffId, number>,
+function teamBuffsOverrideEqual(
+  left: Record<TeamBuffId, number> | null,
+  right: Record<TeamBuffId, number> | null,
 ): boolean {
+  if (left === right) return true;
+  if (!left || !right) return false;
   for (const buffId of Object.keys(left) as TeamBuffId[]) {
     if (left[buffId] !== right[buffId]) return false;
   }
@@ -30,16 +32,57 @@ export type AccountSlice = {
   treeEnergy: number;
   treeTeamCoinPct: number;
   treeLuckFlatPct: number;
-  teamBuffs: Record<TeamBuffId, number>;
+  /** `skills.totals.xp_mult` — scales `xpPerPropWiki` the same way `treeTeamCoinPct` scales
+   *  gold per prop. `1` (not `0`) is the no-boost default, matching {@link TreeState.xpMult}. */
+  treeXpMult: number;
+  /**
+   * The user's explicit team-buffs OVERRIDE — `null` means "derive from the deployed roster"
+   * (issue #132; see `selectEffectiveTeamBuffs`, `account-selectors.ts`). This is the ONLY
+   * field the store itself tracks; the effective (override-or-derived) value is always computed,
+   * never stored, so it can never go stale against the roster.
+   */
+  teamBuffsOverride: Record<TeamBuffId, number> | null;
   houseIdx: number;
   houseLevel: number;
   phase: number | null;
   mitigationPct: number;
   rankMode: RankMode;
   targetProp: string | null;
+  /** HOUSE RECOVERY slots (`casa.slots`) — how many heroes the House refills at a time. */
   slots: number;
+  /**
+   * FIELD slots (`skills.field_slots`) — how many heroes may be deployed at once. A different
+   * game concept from {@link slots}, and a different number on a real save (6 vs 3 on account
+   * 486). `null` when the last import carried no `skills.field_slots`, which sends the farm
+   * board back to `slots` as a legacy fallback.
+   */
+  fieldSlots: number | null;
+  /**
+   * `casa.cycle_secs` — a full 0 → 100% House fill in seconds, straight off the save. `null`
+   * falls the whole app back to the `HOUSES` table interpolation, which runs ~7.8% fast. Feeds
+   * `Context.restSeconds` for the advisor, the team plan and the farm board alike, so it belongs
+   * to shared account state rather than to any one surface.
+   */
+  houseCycleSecs: number | null;
+  /**
+   * The (house, level) `houseCycleSecs` was captured at — the import's OWN `houseIdx`/
+   * `houseLevel` at the moment it set `houseCycleSecs`, snapshotted separately from
+   * {@link houseIdx}/{@link houseLevel} because THOSE are the live picker: `setHouseIdx`/
+   * `setHouseLevel` move them without touching this. `resolveHouseRestSeconds` trusts
+   * `houseCycleSecs` only while the picker sits on this exact pair — this is the fix for the
+   * House-ceiling regression where a picker move stopped changing any computed number because a
+   * mismatched save figure kept winning regardless of the requested house/level.
+   */
+  houseCycleSecsHouseIdx: number | null;
+  houseCycleSecsLevel: number | null;
+  /**
+   * `account.max_phase`. `null` when the browser account predates this feature, was
+   * assembled by hand, or the last import's payload carried neither source — `FarmRateOptions`
+   * treats `null` as "show every phase, no lock badges".
+   */
+  maxPhase: number | null;
 
-  setTeamBuffs: (value: Record<TeamBuffId, number>) => void;
+  setTeamBuffsOverride: (value: Record<TeamBuffId, number> | null) => void;
   setHouseIdx: (value: number) => void;
   setHouseLevel: (value: number) => void;
   setFarmPhase: (value: number | null) => void;
@@ -67,7 +110,8 @@ export const createAccountSlice: StateCreator<
   treeEnergy: defaultTree.energy,
   treeTeamCoinPct: defaultTree.teamCoinPct,
   treeLuckFlatPct: defaultTree.luckFlatPct ?? 0,
-  teamBuffs: zeroTeamBuffs(),
+  treeXpMult: defaultTree.xpMult ?? 1,
+  teamBuffsOverride: null,
   houseIdx: defaultCtx.houseIdx,
   houseLevel: defaultCtx.houseLevel,
   phase: defaultCtx.phase,
@@ -75,10 +119,15 @@ export const createAccountSlice: StateCreator<
   rankMode: defaultCtx.rankMode,
   targetProp: defaultCtx.targetProp,
   slots: DEFAULT_CASA_SLOTS,
+  fieldSlots: null,
+  houseCycleSecs: null,
+  houseCycleSecsHouseIdx: null,
+  houseCycleSecsLevel: null,
+  maxPhase: null,
 
-  setTeamBuffs: (value) => {
-    if (teamBuffsEqual(get().teamBuffs, value)) return;
-    set({ teamBuffs: value });
+  setTeamBuffsOverride: (value) => {
+    if (teamBuffsOverrideEqual(get().teamBuffsOverride, value)) return;
+    set({ teamBuffsOverride: value });
   },
   setHouseIdx: (value) => {
     if (get().houseIdx === value) return;
@@ -120,10 +169,10 @@ export const createAccountSlice: StateCreator<
       treeEnergy: shared.tree.energy,
       treeTeamCoinPct: shared.tree.teamCoinPct ?? 0,
       treeLuckFlatPct: shared.tree.luckFlatPct ?? 0,
-      teamBuffs: {
-        ...zeroTeamBuffs(),
-        ...(shared.teamBuffs as Record<TeamBuffId, number>),
-      },
+      treeXpMult: shared.tree.xpMult ?? 1,
+      // `shared` already went through `normalizeAccount` (issue #132) — `teamBuffsOverride` is
+      // `null` (derive from the roster) or an already-clean `Record<TeamBuffId, number>`.
+      teamBuffsOverride: shared.teamBuffsOverride ?? null,
       houseIdx: shared.context.houseIdx,
       houseLevel: shared.context.houseLevel,
       phase: shared.context.phase,
@@ -131,6 +180,11 @@ export const createAccountSlice: StateCreator<
       rankMode: shared.context.rankMode,
       targetProp: shared.context.targetProp,
       slots: shared.slots ?? DEFAULT_CASA_SLOTS,
+      fieldSlots: shared.fieldSlots ?? null,
+      houseCycleSecs: shared.houseCycleSecs ?? null,
+      houseCycleSecsHouseIdx: shared.houseCycleSecsHouseIdx ?? null,
+      houseCycleSecsLevel: shared.houseCycleSecsLevel ?? null,
+      maxPhase: shared.maxPhase ?? null,
     });
   },
 
@@ -144,12 +198,28 @@ export const createAccountSlice: StateCreator<
       patch.treeEnergy = data.tree.energy;
       patch.treeTeamCoinPct = data.tree.teamCoinPct ?? 0;
       patch.treeLuckFlatPct = data.tree.luckFlatPct;
+      patch.treeXpMult = data.tree.xpMult ?? 1;
     }
     if (data.houseIdx != null) {
       patch.houseIdx = data.houseIdx;
       if (data.houseLevel != null) patch.houseLevel = data.houseLevel;
     }
     if (data.slots != null) patch.slots = data.slots;
+    // UNCONDITIONAL, for the same reason `maxPhase` below is: both readers are total
+    // (`number | null` on every path), so absence is the payload ASSERTING this account has no
+    // `skills.field_slots` / `casa.cycle_secs`, not a section it declined to send. Keeping a
+    // stale field cap or a stale House cycle would score the board against a house the player
+    // no longer has.
+    patch.fieldSlots = data.fieldSlots ?? null;
+    patch.houseCycleSecs = data.houseCycleSecs ?? null;
+    // The anchor rides along with `houseCycleSecs`, UNCONDITIONALLY for the same reason: it is
+    // `data.houseIdx`/`data.houseLevel` at THIS import (not `patch.houseIdx`/`houseLevel` above,
+    // which stay untouched by a re-import that carries no `casa` block) — the house/level pair
+    // `data.houseCycleSecs` was measured at. A payload with no `casa` block sets both to `null`,
+    // matching `houseCycleSecs` going `null` on the same line, so the anchor can never outlive
+    // the figure it anchors.
+    patch.houseCycleSecsHouseIdx = data.houseIdx ?? null;
+    patch.houseCycleSecsLevel = data.houseLevel ?? null;
     if (data.phase != null) {
       // Same clamp `setFarmPhase` relies on downstream reads for (AD-BSP style: reuse, don't
       // reimplement) — and the same mitigation-sync/skipPhaseMitigationSync contract as
@@ -162,6 +232,18 @@ export const createAccountSlice: StateCreator<
         if (line) patch.mitigationPct = +(line.mitig * 100).toFixed(2);
       }
     }
+    // UNCONDITIONAL, unlike every sibling field above.
+    // AccountImportData.maxPhase is required-and-total (number | null on every path), so a
+    // payload carrying no max_phase source is an ASSERTION that this account has no known max
+    // phase, not an absence to be ignored. Preserving a stale value here would leave lock
+    // badges asserting progress the payload just contradicted (D24's "confidently wrong"
+    // shape). Both the file-import and API-refresh paths reach this branch — both funnel
+    // through parseAccountPayload -> mapAccountData.
+    // `data.maxPhase` is optional on AccountImportData's TYPE only so hand-built test fixtures
+    // elsewhere keep compiling (see that type's own doc comment) — real production data always carries a
+    // concrete `number | null`. Coerce a merely-absent field to `null` so the slice's own
+    // `number | null` invariant never sees `undefined`.
+    patch.maxPhase = data.maxPhase ?? null;
     if (Object.keys(patch).length > 0) set(patch);
   },
 });

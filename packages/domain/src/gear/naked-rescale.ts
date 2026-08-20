@@ -1,4 +1,4 @@
-import { BASE_ROLLS, levelPowerMult, type AbilityEffect, type AbilityMods, type RarityKey } from '../model';
+import { BASE_ROLLS, HERO_MAX_LEVEL, levelPowerMult, type AbilityEffect, type AbilityMods, type RarityKey } from '../model';
 import { applyGear } from './apply';
 import { emptySheetOther, starsMult } from './catalog';
 import type {
@@ -30,7 +30,8 @@ export function defaultNaked(
     energy: base.energy * mult,
     speed: base.speed * (1 + otherClamped(other.speed)),
     critChance: base.critChance * (1 + otherClamped(other.critChance)) * mult,
-    critDmg: base.critDmg * (1 + otherClamped(other.critDmg)) * mult,
+    // Flat sheet-ability addend, applied after the star factor — matches `nakedFromBirth`.
+    critDmg: base.critDmg * mult + otherClamped(other.critDmgFlat),
     penetration: base.penetration * (1 + otherClamped(other.penetration)) * mult,
     cdr: base.cdr * (1 + otherClamped(other.cdr)) * mult,
     // AD-BSP-19: star-scaled, no `other` term (ASM-02) and level-independent (ASM-04).
@@ -62,20 +63,24 @@ export function rescaleNakedPen(
 }
 
 /**
- * Spending/removing a sheet crit-damage ability (Golpe Brutal) rescales naked crit dmg by the
- * other-ratio — same shape as `rescaleNakedPen`, not `rescaleNakedCrit`'s rarity-midpoint reset
- * (DEC-06: that form discards the hero's own roll, the defect BSP-31a names).
+ * Spending/removing a sheet crit-damage ability (Golpe Brutal) shifts naked crit dmg by the
+ * FLAT difference in the ability's contribution — not a ratio, because crit damage is
+ * flat-additive (`POINT_GAIN.critDmgFlat`). The hero's own roll is preserved exactly, which is
+ * what `rescaleNakedPen` achieves by ratio for the pooled pen ability and what
+ * `rescaleNakedCrit`'s rarity-midpoint reset does not (DEC-06 / BSP-31a).
+ *
+ * Arguments are the previous/next ability Σ in planner percentage points
+ * (`AbilityMods.sheetCritDmgFlat`), not fractions.
  */
 export function rescaleNakedCritDmg(
   naked: SheetStats,
-  oldOtherPct: number,
-  newOtherPct: number,
+  oldFlat: number,
+  newFlat: number,
 ): SheetStats {
-  const oldO = Math.max(0, oldOtherPct);
-  const newO = Math.max(0, newOtherPct);
-  if (oldO === newO) return naked;
-  const ratio = (1 + newO) / (1 + oldO);
-  return { ...naked, critDmg: naked.critDmg * ratio };
+  const oldF = Math.max(0, oldFlat);
+  const newF = Math.max(0, newFlat);
+  if (oldF === newF) return naked;
+  return { ...naked, critDmg: naked.critDmg - oldF + newF };
 }
 
 /**
@@ -117,8 +122,8 @@ export function nakedAfterSheetAbilityChange(
       );
     case 'penetrationPp':
       return rescaleNakedPen(naked, prevMods.sheetPenetrationRaw, nextMods.sheetPenetrationRaw);
-    case 'critDmgPctOfBase':
-      return rescaleNakedCritDmg(naked, prevMods.sheetCritDmgPctOfBase, nextMods.sheetCritDmgPctOfBase);
+    case 'critDmgFlat':
+      return rescaleNakedCritDmg(naked, prevMods.sheetCritDmgFlat, nextMods.sheetCritDmgFlat);
     default:
       return naked;
   }
@@ -154,20 +159,30 @@ export function rescaleNakedCrit(
 /**
  * Adding/removing a ★ (gems ritual) rescales every naked sheet stat except Speed
  * (Attack, Energy, Crit %, Crit Dmg, Penetration, CDR, Luck).
+ *
+ * `critDmgFlat` is the sheet-ability crit-damage addend already inside `naked`
+ * (`SheetOtherPct.critDmgFlat`). It is held OUT of the ★ ratio so this stays the algebraic
+ * inverse of `nakedFromBirth` (`birth × star + flat`); leaving it in would silently star-scale
+ * Golpe Brutal's contribution. Defaults to `0`, which is exactly the old behaviour for every
+ * hero without the ability. Whether the game itself star-scales that term is unobserved — no
+ * capture pairs ★>0 with any crit-damage contribution — so this follows `nakedFromBirth`
+ * rather than inventing a second answer.
  */
 export function rescaleNakedForStars(
   naked: SheetStats,
   fromStars: number,
   toStars: number,
+  critDmgFlat = 0,
 ): SheetStats {
   const ratio = starsMult(toStars) / starsMult(fromStars);
   if (ratio === 1) return naked;
+  const flat = Math.max(0, critDmgFlat);
   return {
     ...naked,
     attack: naked.attack * ratio,
     energy: naked.energy * ratio,
     critChance: naked.critChance * ratio,
-    critDmg: naked.critDmg * ratio,
+    critDmg: (naked.critDmg - flat) * ratio + flat,
     penetration: naked.penetration * ratio,
     cdr: naked.cdr * ratio,
     luck: naked.luck * ratio,
@@ -236,13 +251,13 @@ export function rescaleHeroForStars(
     geared,
     loadout,
     sheetOther,
-    rescaleNakedForStars(naked, fromStars, toStars),
+    rescaleNakedForStars(naked, fromStars, toStars, sheetOther.critDmgFlat),
   );
 }
 
-/** Level-up CTA: enabled when level < 100. */
+/** Level-up CTA: enabled below the game's hero level ceiling ({@link HERO_MAX_LEVEL}). */
 export function canLevelUp(level: number): boolean {
-  return level < 100;
+  return level < HERO_MAX_LEVEL;
 }
 
 /** Star-upgrade CTA: enabled when stars < 3. */
@@ -252,7 +267,7 @@ export function canStarUp(stars: number): boolean {
 
 /** +1 level target for Level-up CTA (clamped). */
 export function nextLevelStep(level: number): number {
-  return Math.min(100, Math.max(0, Math.round(level)) + 1);
+  return Math.min(HERO_MAX_LEVEL, Math.max(0, Math.round(level)) + 1);
 }
 
 /** +1 star target for Star-upgrade CTA (clamped). */

@@ -5,13 +5,20 @@
  *
  * The in-game "Hero" line bundles the player's spent points with the birth roll (there is
  * no separate "Points" tooltip row) — proven against the Bellatrix crit-damage tooltip
- * (`554.9184% = (1.67344467136338−1)×2×(1+39×0.08)×100`, AC-15). "Ability" is the
- * pool's on-sheet-ability share (`base × sheetOther[key]`); for attack/energy there is no
- * ability pool term, so `ability` is structurally `0` there. The skill-tree line uses the
- * SAME `base = naked[key]/(1+sheetOther[key])` the additive `AD-BSP-22` shapes use in
+ * (`554.9184% = (1.67344467136338−1)×2×(1+39×0.08)×100`, AC-15). That AC-15 arithmetic is
+ * HISTORICAL: it was read off `save-20260801-crit-dmg-tree.json`, a PRE-2026-08-13-patch
+ * capture (deleted in the MP5 corpus rebaseline), and it was correct for that build — crit
+ * damage was a shared-pool percentage of the roll then, and that file fits it to float
+ * precision on all three of its crit-damage-bearing heroes. The patch changed the shape: on
+ * every post-patch capture crit damage is FLAT (`POINT_GAIN.critDmgFlat`), which is why the
+ * `critDmg` block below no longer goes through `pooledLines`. The *bundling* claim AC-15
+ * actually makes — points ride the Hero line — is unaffected and still holds.
+ *
+ * "Ability" is the pool's on-sheet-ability share (`base × sheetOther[key]`); for attack/energy
+ * there is no ability pool term, so `ability` is structurally `0` there. The skill-tree line uses
+ * the SAME `base = naked[key]/(1+sheetOther[key])` the additive `AD-BSP-22` shapes use in
  * `applySkillTree` — not the full hero+gear+ability subtotal — except for the
- * multiplicative-subtotal keys (attack, energy) and the flat-addend key (luck), where the
- * tree line is `(hero+gear+ability) × (factor−1)` / `luck_add × 100` respectively.
+ * multiplicative-subtotal keys (attack, energy) and the flat-addend keys (crit damage, luck).
  */
 import { attackPointGain, levelPowerMult } from './model/combat';
 import { POINT_GAIN } from './model/rarity-constants';
@@ -101,16 +108,17 @@ export function peelSheetSources(input: PeelSheetSourcesInput): SheetSourceLines
     pts.critChance,
     tree.critChancePct,
   );
-  // Items never roll crit damage (gear/apply.ts) — gearPct is structurally 0.
-  const critDmg = pooledLines(
-    birth.critDmg,
-    star,
-    sheetOther.critDmg,
-    0,
-    POINT_GAIN.critDmgPctOfBase,
-    pts.critDmg,
-    tree.critDmgPct,
-  );
+  // Crit damage is NOT a pooled key: items never roll it (gear/apply.ts — Gear is structurally
+  // 0), and both the sheet ability and the stat point are flat addends in planner percentage
+  // points (POINT_GAIN.critDmgFlat). The tree line keeps `AD-BSP-22`'s percent-of-base shape,
+  // matching `applySkillTree`; `crit_dmg_add` is 0 on every capture in the corpus.
+  const critDmgBase = birth.critDmg * star;
+  const critDmg: SourceLines = {
+    hero: critDmgBase + pts.critDmg * POINT_GAIN.critDmgFlat,
+    gear: 0,
+    ability: Math.max(0, sheetOther.critDmgFlat),
+    skillTree: critDmgBase * (tree.critDmgPct / 100),
+  };
   // AD-BSP-22: skills.totals has no node for penetration or cdr — tree line is exactly 0.
   const penetration = pooledLines(
     birth.penetration,

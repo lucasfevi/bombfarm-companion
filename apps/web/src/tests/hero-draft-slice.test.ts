@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { emptyLoadout } from '@bombfarm/domain/gear';
+import { HERO_MAX_LEVEL } from '@bombfarm/domain/model';
 import { normalizeHero } from '@/shared/lib/storage';
 import { resetPlannerStoreForTests, usePlannerStore } from '@/shared/stores';
 
@@ -97,11 +98,15 @@ describe('hero-draft slice', () => {
     expect('setObsCrit' in s).toBe(false);
   });
 
-  it('setHeroLevel clamps to 0–100', () => {
+  it('setHeroLevel clamps to 0–HERO_MAX_LEVEL', () => {
     usePlannerStore.getState().setHeroLevel(-5);
     expect(usePlannerStore.getState().level).toBe(0);
+    usePlannerStore.getState().setHeroLevel(HERO_MAX_LEVEL + 50);
+    expect(usePlannerStore.getState().level).toBe(HERO_MAX_LEVEL);
+    // The 2026-08-15 patch raised the ceiling 100 → 500; a level the old cap rejected is now
+    // a legal value the slice must keep verbatim.
     usePlannerStore.getState().setHeroLevel(150);
-    expect(usePlannerStore.getState().level).toBe(100);
+    expect(usePlannerStore.getState().level).toBe(150);
   });
 
   it('setStars clamps to 0–3', () => {

@@ -28,6 +28,9 @@ export function farmFromAccount(input: TeamPlanInput): FarmContext {
     houseLevel: input.account.houseLevel,
     phase: input.account.phase,
     mitigationPct: input.account.mitigationPct,
+    cycleSecs: input.account.cycleSecs,
+    cycleSecsHouseIdx: input.account.cycleSecsHouseIdx,
+    cycleSecsLevel: input.account.cycleSecsLevel,
   };
 }
 
@@ -43,7 +46,7 @@ export function evaluateAt(
     contexts,
     loadoutsByHeroId: loadoutsFromAssignment(assignment, itemById),
     ptsByHeroId,
-    slots: gearInput.account.slots,
+    slots: gearInput.account.fieldSlots,
     farm: farmFromAccount(gearInput),
     forgeFloor,
   };

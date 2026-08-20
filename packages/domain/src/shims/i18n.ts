@@ -15,7 +15,6 @@ const EN: Strings = {
   setupNeedSheet: 'Enter your geared sheet (defaults are not your hero)',
   setupNeedUnspentPts: 'Spend remaining points ({left} left of {max})',
   setupNeedUnspentAbilities: 'Spend remaining ability points ({left} left of {max})',
-  setupNeedTargetProp: 'Pick a target prop (oneshot ranking)',
   setupBannerTitle: 'Finish setup before trusting the ranking',
   tabHeroWarnTitle: 'Abilities need attention',
   tabGearWarnTitle: 'Gear needs attention',

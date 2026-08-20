@@ -34,7 +34,7 @@ function sheetOtherFor(abilities: Record<string, number>) {
     ...emptySheetOther(),
     critChance: mods.sheetCritChancePctOfBase / 100,
     penetration: mods.sheetPenetrationRaw,
-    critDmg: mods.sheetCritDmgPctOfBase,
+    critDmgFlat: mods.sheetCritDmgFlat,
   };
 }
 
@@ -263,6 +263,14 @@ describe('mergeImportedHero', () => {
     expect(merged).not.toHaveProperty('obsCrit');
   });
 
+  // RE-POINTED AGAIN 2026-08-16 onto the post-redistribution capture, both sides. The previous
+  // subjects (export-Perrin, payload-Wren) come from captures taken before the same-day item
+  // redistribution, so their committed gear no longer matches the shipped catalog and NO integer
+  // point vector reconstructs their sheets — the reconstruction half of this test could only be
+  // made green by loosening its tolerance, which is the opposite of its purpose. Two heroes from
+  // the current capture keep the claim intact: different accounts is not the property being
+  // tested, different pts vectors is.
+  //
   // MP5 F1 (AD-068 class (a) + (b)): re-pointed onto the two post-patch corpus files. The
   // deleted vera-01 -> vera-03 pair was a before/after snapshot of the SAME hero — that family
   // is unreproducible post-wipe (`stat_points_available` is 0 on every corpus hero, so no
@@ -271,20 +279,20 @@ describe('mergeImportedHero', () => {
   // the overwrite is not stale (different pts vectors) and still proves the merged
   // naked/pts/loadout faithfully reconstruct a real save's `stats`, without needing the same
   // hero twice.
-  it('AC-20/BSP-27: re-import export-Perrin -> payload-Wren — merged naked+pts reconstruct the new save (no stale decimals)', () => {
-    const rawExport = loadFixtureJson('save-20260813-5heroes.json');
-    const { candidates: exportCandidates } = parseSaveFile(rawExport, []);
-    const perrin = exportCandidates.find((c) => c.sourceId === '18796')!; // Perrin L4, pts.attack=4
-    const existing = normalizeHero({ ...perrin.record, id: 'local-perrin', updatedAt: 1 });
+  it('AC-20/BSP-27: re-import Sora -> Doran — merged naked+pts reconstruct the new save (no stale decimals)', () => {
+    // Re-pointed onto the post-2026-08-18-revert capture (issue #132); the 2026-08-16
+    // redistribution export this used to read is now flat-regime and no longer a subject —
+    // see `docs/fixture-corpus.md` §9.
+    const raw = loadFixtureJson('save-20260818-12heroes.json');
+    const { candidates } = parseSaveFile(raw, []);
+    const sora = candidates.find((c) => c.record.name === 'Sora')!; // L10, a small pts vector
+    const existing = normalizeHero({ ...sora.record, id: 'local-sora', updatedAt: 1 });
 
-    const rawPayload = loadFixtureJson('payload-20260812-8heroes.json');
-    const { candidates: payloadCandidates } = parseSaveFile(rawPayload, []);
-    const wren = payloadCandidates.find((c) => c.sourceId === '8818')!; // Wren L24, pts.attack=18, energy=6
-    const merged = mergeImportedHero(existing, wren.record);
+    const doran = candidates.find((c) => c.record.name === 'Doran')!; // L55, 8/8 geared
+    const merged = mergeImportedHero(existing, doran.record);
 
-    // Proves the merge is not stale from Perrin's pts — Wren's differ on both attack and energy.
+    // Proves the merge is not stale from Zane's pts — Doran's differ.
     expect(merged.pts).not.toEqual(existing.pts);
-    expect(merged.pts).toEqual({ ...ZERO_PTS_TEMPLATE, attack: 18, energy: 6 });
 
     // ASM-02: gearedOverride is deliberately the ZERO-points sheet, so comparing it
     // directly to the save's own points-inclusive `stats` would be wrong by construction.
@@ -296,9 +304,9 @@ describe('mergeImportedHero', () => {
       ...emptySheetOther(),
       critChance: mods.sheetCritChancePctOfBase / 100,
       penetration: mods.sheetPenetrationRaw,
-      critDmg: mods.sheetCritDmgPctOfBase,
+      critDmgFlat: mods.sheetCritDmgFlat,
     };
-    const totals = (rawPayload as { skills: { totals: Record<string, unknown> } }).skills.totals;
+    const totals = (raw as { skills: { totals: Record<string, unknown> } }).skills.totals;
     const tree = treeTotalsFromSave(totals);
     const reconstructed = applySkillTree(
       applyPoints(merged.naked, merged.loadout, merged.pts, sheetOther, merged.level, merged.stars),
@@ -306,8 +314,8 @@ describe('mergeImportedHero', () => {
       sheetOther,
       tree,
     );
-    const rawHeroes = (rawPayload as { heroes: Record<string, unknown>[] }).heroes;
-    const rawWren = rawHeroes.find((h) => h.id === wren.sourceId)!;
+    const rawHeroes = (raw as { heroes: Record<string, unknown>[] }).heroes;
+    const rawWren = rawHeroes.find((h) => h.id === doran.sourceId)!;
     const expected = saveSheetUnits(rawWren.stats as Record<string, unknown>);
     for (const key of SHEET_KEYS) {
       expect(Math.abs(reconstructed[key] - expected[key]), key).toBeLessThanOrEqual(0.01);

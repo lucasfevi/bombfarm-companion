@@ -70,10 +70,32 @@ function listFiles(dir: string, acc: string[] = []): string[] {
  * `derive()`). Re-measured against the tree at every T5-T9 commit, not copied from a document.
  */
 const SRC_ALLOWLIST: Record<string, number[]> = {
-  'derive.ts': [27, 78, 96, 142, 197, 208],
-  'advisor-pipeline.ts': [89, 192, 218, 320],
-  'stat-breakdown/types.ts': [105],
-  'team-plan/score.ts': [135],
+  // Line numbers only — still SIX matches, unchanged in kind. Re-measured after issue #132's
+  // team-aura rewrite across three passes: (1) replaced `stackTeamBonusMult`/
+  // `TEAM_MULT_BONUS_CAP` with `combineTeamAuraPct` and removed `teamGateMult`; (2) folded
+  // Presságio's own rank into the same capped combination and removed the now-redundant
+  // `combatCritChancePctOfBase` DeriveInput field; (3) the roster-is-the-field rewrite dropped
+  // `teamAtkMult`/`teamSpeedMult` (now identical to `attackMult`/`speedMult`) and simplified
+  // `computeCombatMults` to a fixed `ownPct: 0` at every call site, each pass adding or moving
+  // doc comments above these hits.
+  'derive.ts': [26, 80, 98, 146, 201, 212],
+  // Line numbers only — still FOUR matches, unchanged in kind. Re-measured against the merged
+  // tree rather than resolved to either side: this branch's House-cycle plumbing
+  // (`houseCycleSecs`, then `houseCycleSecsHouseIdx`/`houseCycleSecsLevel`) and #87's farm-objective
+  // rank mode each inserted lines above these hits, so BOTH pins were stale after the merge —
+  // 341 from here and 325 from develop are each correct only in isolation. Issue #132's crit-
+  // combination fix removed the `combatCritChancePctOfBase` pass-through line, shifting the
+  // last hit down by one.
+  // +3 (line numbers only): surfacing `fieldSecs` on the pipeline result added a documented
+  // field to the output type and one line to the returned object, above these hits.
+  'advisor-pipeline.ts': [111, 220, 249, 348],
+  // +1 (line number only): the flat-crit-damage fix's `brutalStrike` LedgerNote arm
+  // (review item 5, PR #90) added one line above this hit.
+  'stat-breakdown/types.ts': [106],
+  // +1 (line number only): the `cycleSecs` pass-through added one line above this hit.
+  // +2 more: the House-ceiling regression repair's `cycleSecsHouseIdx`/`cycleSecsLevel`
+  // pass-through (PR #86 finding, house.ts:38) added two more lines above it.
+  'team-plan/score.ts': [138],
 };
 
 /**

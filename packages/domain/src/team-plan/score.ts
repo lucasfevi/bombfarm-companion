@@ -119,6 +119,9 @@ export function scoreHeroLoadout(
     houseLevel: farm.houseLevel,
     mitigationPct: farm.mitigationPct,
     phase: farm.phase,
+    cycleSecs: farm.cycleSecs,
+    cycleSecsHouseIdx: farm.cycleSecsHouseIdx,
+    cycleSecsLevel: farm.cycleSecsLevel,
   });
 
   const deriveResult = derive({
@@ -135,7 +138,6 @@ export function scoreHeroLoadout(
     critDmgMult: mults.critDmgMult,
     teamCritPctOfBase: mults.teamCritPctOfBase,
     treeSheet: ctx.treeSheet,
-    combatCritChancePctOfBase: ctx.mods.combatCritChancePctOfBase,
     penetrationPp: ctx.mods.penetrationPp,
     context,
     dmgMult: mults.dmgMult,

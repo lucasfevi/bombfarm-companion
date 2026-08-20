@@ -68,12 +68,18 @@ disabled specifically to save Actions minutes, and when it did run it used two j
 45-minute `windows-latest` packaging build, which bills at double the Linux rate on a private
 repo). This job's monthly cost is a small fraction of a single one of those runs.
 
-## 7. The known adjacency
+## 7. The adjacency, removed
 
-[`packages/game-data/src/parsers/inventory.ts`](../packages/game-data/src/parsers/inventory.ts)
-builds a wiki asset URL (`computeIconUrl`) into `InventoryItem.iconUrl`. Nothing renders that field
-today — the actual item-icon and ability-icon components read `itemIconSrc`/`abilityIconSrc` from
-`packages/domain/src/wiki-assets.ts`, which serve bundled local assets, not a live wiki URL. If a
-future change makes `iconUrl` render, that would make the wiki a runtime dependency of shipped
-code — this doc (and the narrowed rule above) would need amending first, and the narrowed-rule
-guard's hostname census (`tools/wiki-drift-narrowed-rule.test.mjs`) would need a ninth entry.
+`packages/game-data/src/parsers/inventory.ts` used to build a wiki asset URL (`computeIconUrl`)
+into `InventoryItem.iconUrl`, from the item's instance level. Nothing ever rendered that field, and
+both the builder and the field are now **deleted**: item art is bundled-only. The item-icon and
+ability-icon components read `itemIconSrc`/`abilityIconSrc` from
+`packages/domain/src/wiki-assets.ts`, which resolve local files under
+`apps/web/public/wiki-assets/`, never a live wiki URL.
+
+No shipped code composes a wiki URL at runtime any more. The narrowed-rule guard's hostname census
+(`tools/wiki-drift-narrowed-rule.test.mjs`) is correspondingly **7 files, 11 matches** — credit
+links, i18n strings, a test title, a provenance comment, and the `WIKI_URL` constant itself. Adding
+an eighth entry means something new names the wiki host in shipped code; that is a reviewable diff
+by construction, and if it is a runtime dependency it needs this doc and the rule in §1 amended
+first.

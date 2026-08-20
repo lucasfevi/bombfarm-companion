@@ -47,7 +47,8 @@ function bakeSheetOtherIntoNaked(n: SheetStats, o: SheetOtherPct): SheetStats {
     ...n,
     speed: n.speed * otherFactor(o.speed),
     critChance: n.critChance * otherFactor(o.critChance),
-    critDmg: n.critDmg * otherFactor(o.critDmg),
+    // Flat addend, not a pool factor (POINT_GAIN.critDmgFlat).
+    critDmg: n.critDmg + Math.max(0, o.critDmgFlat),
     penetration: n.penetration * otherFactor(o.penetration),
     cdr: n.cdr * otherFactor(o.cdr),
   };
@@ -97,7 +98,7 @@ function buildFixture(opts: FixtureOpts = {}) {
       ...emptySheetOther(),
       critChance: mods.sheetCritChancePctOfBase / 100,
       penetration: mods.sheetPenetrationRaw,
-      critDmg: mods.sheetCritDmgPctOfBase,
+      critDmgFlat: mods.sheetCritDmgFlat,
     } satisfies SheetOtherPct);
 
   const naked =
@@ -134,7 +135,8 @@ function buildFixture(opts: FixtureOpts = {}) {
       energy: (naked.energy + 40) * (1 + treeEnergy / 100),
       speed: poolBump(naked.speed, sheetOther.speed, treeSpeed),
       critChance: poolBump(naked.critChance, sheetOther.critChance, treeCritChance),
-      critDmg: poolBump(naked.critDmg, sheetOther.critDmg, treeCritDmg),
+      critDmg: poolBump(naked.critDmg - Math.max(0, sheetOther.critDmgFlat), 0, treeCritDmg)
+        + Math.max(0, sheetOther.critDmgFlat),
     } satisfies SheetStats);
 
   const treeSheet: TreeSheetTotals = {
@@ -173,7 +175,6 @@ function buildFixture(opts: FixtureOpts = {}) {
     critDmgMult: mults.critDmgMult,
     teamCritPctOfBase: mults.teamCritPctOfBase,
     treeSheet,
-    combatCritChancePctOfBase: mods.combatCritChancePctOfBase,
     penetrationPp: mods.penetrationPp,
     context,
     dmgMult: mults.dmgMult,
@@ -317,37 +318,41 @@ describe('stat-breakdown builder', () => {
     }
   });
 
-  it('F5 — uncapped team: ownTeamSplit note', () => {
-    // Own Grito 10 (+10%, W3 perLevel 1) + team Grito 20 → attackMult 1.3
+  it('F5 — uncapped team: ownTeamSplit note (issue #132: own is always 0, the hero’s own rank never reaches abilityMods)', () => {
+    // Grito de Guerra is a team aura — a hero's own rank (5, here, to prove it is harmlessly
+    // ignored) never reaches abilityMods, so the roster-wide team total (10) alone drives
+    // attackMult 1.10, under Grito's 20 cap.
     const { facts } = buildFixture({
-      abilities: { grito_guerra: 10 },
-      teamBuffs: { ...zeroTeamBuffs(), grito_guerra: 20 },
+      abilities: { grito_guerra: 5 },
+      teamBuffs: { ...zeroTeamBuffs(), grito_guerra: 10 },
     });
-    expect(facts.attackMult).toBeCloseTo(1.3, 6);
+    expect(facts.attackMult).toBeCloseTo(1.1, 6);
     assertLedgersRecompose(facts);
     const atk = buildStatBreakdown('attack', facts);
     expect(atk.kind).toBe('ledger');
     if (atk.kind === 'ledger') {
       const step = atk.steps.find((s) => s.source === 'abilitiesTeam');
       expect(step?.note).toBe('ownTeamSplit');
-      expect(step?.splitOwn).toBeCloseTo(10, 5);
-      expect(step?.splitTeam).toBeCloseTo(20, 5);
+      expect(step?.splitOwn).toBeCloseTo(0, 5);
+      expect(step?.splitTeam).toBeCloseTo(10, 5);
     }
   });
 
   it('F6 — capped team: capped note; still recomposes', () => {
+    // Own Grito 10 (+10%) + team Grito 100 (+100%) would total 110% under the old global cap;
+    // the real cap is Grito's own maximum (20%, Fault 4).
     const { facts } = buildFixture({
       abilities: { grito_guerra: 10 },
       teamBuffs: { ...zeroTeamBuffs(), grito_guerra: 100 },
     });
-    expect(facts.attackMult).toBe(2);
+    expect(facts.attackMult).toBeCloseTo(1.2, 6);
     assertLedgersRecompose(facts);
     const atk = buildStatBreakdown('attack', facts);
     expect(atk.kind).toBe('ledger');
     if (atk.kind === 'ledger') {
       const step = atk.steps.find((s) => s.source === 'abilitiesTeam');
       expect(step?.note).toBe('capped');
-      expect(step?.amount).toBe(2);
+      expect(step?.amount).toBeCloseTo(1.2, 6);
     }
   });
 
@@ -395,8 +400,9 @@ describe('stat-breakdown builder', () => {
       expect(crit.steps.map((s) => s.source)).toEqual(['base', 'stars', 'sheetAbilities']);
       const sheet = crit.steps.find((s) => s.source === 'sheetAbilities');
       expect(sheet?.note).toBe('keenEye');
-      // olho_clinico @10, W3 perLevel 0.75 -> +7.5% (was +15% pre-W3).
-      expect(sheet?.amount).toBeCloseTo(1.075, 6);
+      // olho_clinico @10, post-2026-08-18-revert perLevel 4.285714285714286 -> +42.857% (was
+      // +7.5% pre-2026-08-15, and a FLAT +0.4574 pp during the 2026-08-15..08-18 flat regime).
+      expect(sheet?.amount).toBeCloseTo(1.4285714285714286, 6);
     }
 
     const pen = buildStatBreakdown('penetration', facts);
@@ -406,6 +412,29 @@ describe('stat-breakdown builder', () => {
       expect(sheet?.note).toBe('diamondTip');
       // ponta_diamante @10, W3 perLevel 1.0 -> raw Σ 10 (was 20 pre-W3).
       expect(sheet?.amount).toBeCloseTo(11, 6);
+    }
+  });
+
+  it('peels birth → stars → Brutal Strike (Golpe Brutal) as a flat crit-dmg addend, noted brutalStrike', () => {
+    const level = 26;
+    const stars = 2;
+    const { facts } = buildFixture({
+      level,
+      stars,
+      abilities: { golpe_brutal: 10 },
+    });
+    assertLedgersRecompose(facts);
+    assertFormulasMatch(facts);
+
+    const cd = buildStatBreakdown('critDmg', facts);
+    expect(cd.kind).toBe('ledger');
+    if (cd.kind === 'ledger') {
+      expect(cd.steps.map((s) => s.source)).toEqual(['base', 'stars', 'sheetAbilities']);
+      const sheet = cd.steps.find((s) => s.source === 'sheetAbilities');
+      expect(sheet?.note).toBe('brutalStrike');
+      // golpe_brutal @10, perLevel 4 -> flat +40 planner pp, unscaled by ★ (POINT_GAIN.critDmgFlat).
+      expect(sheet?.op).toBe('+');
+      expect(sheet?.amount).toBeCloseTo(40, 6);
     }
   });
 
@@ -458,7 +487,7 @@ describe('stat-breakdown builder', () => {
     if (critDmg.kind === 'ledger') {
       const tree = critDmg.steps.find((s) => s.source === 'tree' && s.op === '+');
       expect(tree?.pctOfBase?.percent).toBeCloseTo(12, 6);
-      expect(tree?.pctOfBase?.base).toBeCloseTo(facts.naked.critDmg / (1 + facts.sheetOther.critDmg), 6);
+      expect(tree?.pctOfBase?.base).toBeCloseTo(facts.naked.critDmg - Math.max(0, facts.sheetOther.critDmgFlat), 6);
     }
   });
 

@@ -18,6 +18,7 @@ These are **current truth**. Do not invent planning/spec paths in this repo.
 | [i18n.md](i18n.md) | Lang policy, game-labels, plain-language player copy |
 | [validation.md](validation.md) | Author ≠ validator |
 | [git-commits.md](git-commits.md) | Atomic commits by default; commitlint |
+| [line-endings.md](line-endings.md) | LF everywhere; no in-place stream edits |
 | [branching.md](branching.md) | `develop` integration, `main` release-only |
 | [releases.md](releases.md) | Changesets release rail, artifacts, recovery |
 | [hard-truths.md](hard-truths.md) | How to propose / accept new hard truths |

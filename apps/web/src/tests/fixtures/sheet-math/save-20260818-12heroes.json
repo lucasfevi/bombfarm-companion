@@ -1,0 +1,5747 @@
+{
+  "account": {
+    "bag_capacity": 75,
+    "bag_tabs": 3,
+    "gold": "188915",
+    "items_count": 115,
+    "locked": true,
+    "max_phase": 85,
+    "phase": 51
+  },
+  "casa": {
+    "active_casa": 2,
+    "cycle_secs": 1067.36842105263,
+    "cycle_secs_per_house": [
+      1140,
+      1067.36842105263,
+      960,
+      840,
+      660
+    ],
+    "levels": [
+      20,
+      5,
+      0,
+      0,
+      0
+    ],
+    "slots": 5,
+    "slots_per_house": [
+      3,
+      5,
+      7,
+      9,
+      9
+    ],
+    "upgrade_cost": [
+      1,
+      2
+    ]
+  },
+  "export_version": 1,
+  "generated_at": 1787105992,
+  "heroes": [
+    {
+      "abilities": [
+        {
+          "code": "misericordia",
+          "level": 20,
+          "max": 20,
+          "slot": 7
+        },
+        {
+          "code": "contra_relogio",
+          "level": 20,
+          "max": 20,
+          "slot": 9
+        },
+        {
+          "code": "olho_clinico",
+          "level": 20,
+          "max": 20,
+          "slot": 10
+        }
+      ],
+      "ability_points_spent": 60,
+      "ability_points_total": 67,
+      "ability_reroll_cost": "201000",
+      "ability_reroll_stone": "skill_stone_raro",
+      "battle_allowed": true,
+      "birth_stats": {
+        "cooldown_reduction": 0.0172855781912348,
+        "crit_chance": 0.050811133098848,
+        "crit_dmg": 1.66252971472748,
+        "dmg": 189.465460112182,
+        "energia": 229.491490082966,
+        "luck": 0.0922693386123672,
+        "penetration": 3.19435111293399,
+        "speed": 49.6635699637221
+      },
+      "id": "20402",
+      "in_field": true,
+      "in_market": false,
+      "level": 67,
+      "marketable": false,
+      "name": "Minato",
+      "rank": "B",
+      "rarity": 2,
+      "skin": 5,
+      "skin_birth": 0,
+      "slots": [
+        "338705",
+        "176190",
+        "328328",
+        "346603",
+        "289364",
+        "247401",
+        "226030",
+        "308236"
+      ],
+      "stars": 0,
+      "stat_points_available": 0,
+      "stat_ranges": {
+        "cooldown_reduction": {
+          "max": 0.04,
+          "min": 0.01
+        },
+        "crit_chance": {
+          "max": 0.1,
+          "min": 0.04
+        },
+        "crit_dmg": {
+          "max": 1.8,
+          "min": 1.5
+        },
+        "dmg": {
+          "max": 200,
+          "min": 150
+        },
+        "energia": {
+          "max": 240,
+          "min": 140
+        },
+        "luck": {
+          "max": 0.1,
+          "min": 0.02
+        },
+        "penetration": {
+          "max": 4,
+          "min": 1
+        },
+        "speed": {
+          "max": 53.5,
+          "min": 48.5
+        }
+      },
+      "stats": {
+        "cooldown_reduction": 0.0188335934631947,
+        "crit_chance": 0.0986186046662835,
+        "crit_dmg": 1.66252971472748,
+        "dmg": 5113.22850410597,
+        "energia": 931.292343467717,
+        "luck": 0.253481828572307,
+        "penetration": 7.59488920611186,
+        "power": 49701.4569955585,
+        "speed": 51.844975129232
+      },
+      "xp": "561591"
+    },
+    {
+      "abilities": [
+        {
+          "code": "olho_clinico",
+          "level": 20,
+          "max": 20,
+          "slot": 10
+        },
+        {
+          "code": "folego_mineiro",
+          "level": 20,
+          "max": 20,
+          "slot": 12
+        },
+        {
+          "code": "grito_guerra",
+          "level": 20,
+          "max": 20,
+          "slot": 16
+        }
+      ],
+      "ability_points_spent": 60,
+      "ability_points_total": 69,
+      "ability_reroll_cost": "207000",
+      "ability_reroll_stone": "skill_stone_raro",
+      "battle_allowed": true,
+      "birth_stats": {
+        "cooldown_reduction": 0.0140105943523081,
+        "crit_chance": 0.0882828079936793,
+        "crit_dmg": 1.56189189149062,
+        "dmg": 154.153809160423,
+        "energia": 170.902704601483,
+        "luck": 0.0652516634671464,
+        "penetration": 2.2707530903888,
+        "speed": 53.2531890798293
+      },
+      "id": "26863",
+      "in_field": false,
+      "in_market": false,
+      "level": 69,
+      "marketable": false,
+      "name": "Jon",
+      "rank": "D",
+      "rarity": 2,
+      "skin": 5,
+      "skin_birth": 0,
+      "slots": [
+        "249626",
+        "207144",
+        "216708",
+        "39949",
+        "246785",
+        "213533",
+        "207121",
+        "273714"
+      ],
+      "stars": 0,
+      "stat_points_available": 0,
+      "stat_ranges": {
+        "cooldown_reduction": {
+          "max": 0.04,
+          "min": 0.01
+        },
+        "crit_chance": {
+          "max": 0.1,
+          "min": 0.04
+        },
+        "crit_dmg": {
+          "max": 1.8,
+          "min": 1.5
+        },
+        "dmg": {
+          "max": 200,
+          "min": 150
+        },
+        "energia": {
+          "max": 240,
+          "min": 140
+        },
+        "luck": {
+          "max": 0.1,
+          "min": 0.02
+        },
+        "penetration": {
+          "max": 4,
+          "min": 1
+        },
+        "speed": {
+          "max": 53.5,
+          "min": 48.5
+        }
+      },
+      "stats": {
+        "cooldown_reduction": 0.0148715758847277,
+        "crit_chance": 0.170619086028832,
+        "crit_dmg": 1.56189189149062,
+        "dmg": 4798.07719758233,
+        "energia": 795.537069760697,
+        "luck": 0.216344577367356,
+        "penetration": 4.47065868435747,
+        "power": 47303.8680985054,
+        "speed": 55.5364966722448
+      },
+      "xp": "28978"
+    },
+    {
+      "abilities": [
+        {
+          "code": "misericordia",
+          "level": 20,
+          "max": 20,
+          "slot": 7
+        },
+        {
+          "code": "explosao_ampla",
+          "level": 20,
+          "max": 20,
+          "slot": 8
+        }
+      ],
+      "ability_points_spent": 40,
+      "ability_points_total": 64,
+      "ability_reroll_cost": "128000",
+      "ability_reroll_stone": "skill_stone_incomum",
+      "battle_allowed": true,
+      "birth_stats": {
+        "cooldown_reduction": 0.0273897343592064,
+        "crit_chance": 0.0326181508597585,
+        "crit_dmg": 1.67734893509601,
+        "dmg": 105.838241925555,
+        "energia": 151.533479147882,
+        "luck": 0.0395527272814475,
+        "penetration": 2.25064870036701,
+        "speed": 47.4698718818999
+      },
+      "id": "30140",
+      "in_field": false,
+      "in_market": false,
+      "level": 64,
+      "marketable": false,
+      "name": "Bellatrix",
+      "rank": "A",
+      "rarity": 1,
+      "skin": 5,
+      "skin_birth": 1,
+      "slots": [
+        "238050",
+        "326400",
+        "326530",
+        "320306",
+        "326616",
+        "307865",
+        "223295",
+        "241872"
+      ],
+      "stars": 0,
+      "stat_points_available": 0,
+      "stat_ranges": {
+        "cooldown_reduction": {
+          "max": 0.03,
+          "min": 0.005
+        },
+        "crit_chance": {
+          "max": 0.09,
+          "min": 0.03
+        },
+        "crit_dmg": {
+          "max": 1.7,
+          "min": 1.45
+        },
+        "dmg": {
+          "max": 110,
+          "min": 65
+        },
+        "energia": {
+          "max": 160,
+          "min": 120
+        },
+        "luck": {
+          "max": 0.07,
+          "min": 0.01
+        },
+        "penetration": {
+          "max": 2.5,
+          "min": 0.5
+        },
+        "speed": {
+          "max": 51.5,
+          "min": 47
+        }
+      },
+      "stats": {
+        "cooldown_reduction": 0.0315976314098533,
+        "crit_chance": 0.0367277381519685,
+        "crit_dmg": 1.67734893509601,
+        "dmg": 4033.51378831719,
+        "energia": 897.964296183595,
+        "luck": 0.199438434046293,
+        "penetration": 7.41813811640965,
+        "power": 60885.4382654465,
+        "speed": 49.6850462378482
+      },
+      "xp": "91152"
+    },
+    {
+      "abilities": [
+        {
+          "code": "misericordia",
+          "level": 15,
+          "max": 20,
+          "slot": 7
+        },
+        {
+          "code": "folego_mineiro",
+          "level": 20,
+          "max": 20,
+          "slot": 12
+        },
+        {
+          "code": "golpe_brutal",
+          "level": 20,
+          "max": 20,
+          "slot": 17
+        }
+      ],
+      "ability_points_spent": 55,
+      "ability_points_total": 55,
+      "ability_reroll_cost": "165000",
+      "ability_reroll_stone": "skill_stone_raro",
+      "battle_allowed": true,
+      "birth_stats": {
+        "cooldown_reduction": 0.032605095894367,
+        "crit_chance": 0.050708184267457,
+        "crit_dmg": 1.73127772084681,
+        "dmg": 184.837150438044,
+        "energia": 213.7789317416,
+        "luck": 0.0817074864986839,
+        "penetration": 3.9852619775144,
+        "speed": 53.054438127617
+      },
+      "id": "36928",
+      "in_field": false,
+      "in_market": false,
+      "level": 55,
+      "marketable": false,
+      "name": "Doran",
+      "rank": "S",
+      "rarity": 2,
+      "skin": 6,
+      "skin_birth": 1,
+      "slots": [
+        "233286",
+        "200467",
+        "218827",
+        "86238",
+        "282978",
+        "264482",
+        "336850",
+        "277564"
+      ],
+      "stars": 0,
+      "stat_points_available": 0,
+      "stat_ranges": {
+        "cooldown_reduction": {
+          "max": 0.04,
+          "min": 0.01
+        },
+        "crit_chance": {
+          "max": 0.1,
+          "min": 0.04
+        },
+        "crit_dmg": {
+          "max": 1.8,
+          "min": 1.5
+        },
+        "dmg": {
+          "max": 200,
+          "min": 150
+        },
+        "energia": {
+          "max": 240,
+          "min": 140
+        },
+        "luck": {
+          "max": 0.1,
+          "min": 0.02
+        },
+        "penetration": {
+          "max": 4,
+          "min": 1
+        },
+        "speed": {
+          "max": 53.5,
+          "min": 48.5
+        }
+      },
+      "stats": {
+        "cooldown_reduction": 0.0346087500379327,
+        "crit_chance": 0.0554902134881545,
+        "crit_dmg": 2.53127772084681,
+        "dmg": 3941.84187402291,
+        "energia": 817.831429036311,
+        "luck": 0.240252475088791,
+        "penetration": 9.47535887773823,
+        "power": 40430.5307267696,
+        "speed": 55.5302154185676
+      },
+      "xp": "108594"
+    },
+    {
+      "abilities": [
+        {
+          "code": "explosao_ampla",
+          "level": 20,
+          "max": 20,
+          "slot": 8
+        }
+      ],
+      "ability_points_spent": 20,
+      "ability_points_total": 40,
+      "ability_reroll_cost": "40000",
+      "ability_reroll_stone": "skill_stone_comum",
+      "battle_allowed": true,
+      "birth_stats": {
+        "cooldown_reduction": 0.0163950906620084,
+        "crit_chance": 0.027479335377459,
+        "crit_dmg": 1.4845245909497,
+        "dmg": 60.7755181753784,
+        "energia": 90.2878622854172,
+        "luck": 0.0142393362354651,
+        "penetration": 0.744748683034621,
+        "speed": 46.9073309659468
+      },
+      "id": "39855",
+      "in_field": false,
+      "in_market": false,
+      "level": 40,
+      "marketable": false,
+      "name": "WB #2",
+      "rank": "D",
+      "rarity": 0,
+      "skin": 3,
+      "skin_birth": 1,
+      "slots": [
+        "298985",
+        "241346",
+        "211500",
+        "304376",
+        "321427",
+        "187674",
+        "123970",
+        "49367"
+      ],
+      "stars": 0,
+      "stat_points_available": 0,
+      "stat_ranges": {
+        "cooldown_reduction": {
+          "max": 0.02,
+          "min": 0
+        },
+        "crit_chance": {
+          "max": 0.08,
+          "min": 0.02
+        },
+        "crit_dmg": {
+          "max": 1.6,
+          "min": 1.4
+        },
+        "dmg": {
+          "max": 70,
+          "min": 40
+        },
+        "energia": {
+          "max": 120,
+          "min": 80
+        },
+        "luck": {
+          "max": 0.05,
+          "min": 0
+        },
+        "penetration": {
+          "max": 1.5,
+          "min": 0
+        },
+        "speed": {
+          "max": 50,
+          "min": 46
+        }
+      },
+      "stats": {
+        "cooldown_reduction": 0.0179063616967031,
+        "crit_chance": 0.0286195902277504,
+        "crit_dmg": 1.4845245909497,
+        "dmg": 1719.12331669287,
+        "energia": 541.193911060529,
+        "luck": 0.155025311443168,
+        "penetration": 1.25773157590887,
+        "power": 22667.3284543451,
+        "speed": 49.0370198580146
+      },
+      "xp": "17242"
+    },
+    {
+      "abilities": [
+        {
+          "code": "explosao_ampla",
+          "level": 20,
+          "max": 20,
+          "slot": 8
+        }
+      ],
+      "ability_points_spent": 20,
+      "ability_points_total": 43,
+      "ability_reroll_cost": "43000",
+      "ability_reroll_stone": "skill_stone_comum",
+      "battle_allowed": true,
+      "birth_stats": {
+        "cooldown_reduction": 0.00653636970865784,
+        "crit_chance": 0.0410749188206384,
+        "crit_dmg": 1.59810764975359,
+        "dmg": 60.7700446032451,
+        "energia": 116.753882991618,
+        "luck": 0.00904121337849406,
+        "penetration": 0.482262382532167,
+        "speed": 49.230307710202
+      },
+      "id": "41990",
+      "in_field": true,
+      "in_market": false,
+      "level": 43,
+      "marketable": false,
+      "name": "WB #1",
+      "rank": "B",
+      "rarity": 0,
+      "skin": 3,
+      "skin_birth": 3,
+      "slots": [
+        "214059",
+        "328390",
+        "251739",
+        "94603",
+        "333201",
+        "259675",
+        "155058",
+        "214880"
+      ],
+      "stars": 0,
+      "stat_points_available": 0,
+      "stat_ranges": {
+        "cooldown_reduction": {
+          "max": 0.02,
+          "min": 0
+        },
+        "crit_chance": {
+          "max": 0.08,
+          "min": 0.02
+        },
+        "crit_dmg": {
+          "max": 1.6,
+          "min": 1.4
+        },
+        "dmg": {
+          "max": 70,
+          "min": 40
+        },
+        "energia": {
+          "max": 120,
+          "min": 80
+        },
+        "luck": {
+          "max": 0.05,
+          "min": 0
+        },
+        "penetration": {
+          "max": 1.5,
+          "min": 0
+        },
+        "speed": {
+          "max": 50,
+          "min": 46
+        }
+      },
+      "stats": {
+        "cooldown_reduction": 0.00703846239890247,
+        "crit_chance": 0.0427793223212041,
+        "crit_dmg": 1.59810764975359,
+        "dmg": 2034.70446852472,
+        "energia": 661.335937684553,
+        "luck": 0.149233608029367,
+        "penetration": 0.925172154649709,
+        "power": 28225.8763066089,
+        "speed": 51.3411284387625
+      },
+      "xp": "99715"
+    },
+    {
+      "abilities": [
+        {
+          "code": "contra_relogio",
+          "level": 1,
+          "max": 20,
+          "slot": 9
+        },
+        {
+          "code": "olho_clinico",
+          "level": 20,
+          "max": 20,
+          "slot": 10
+        },
+        {
+          "code": "passagem_bastao",
+          "level": 20,
+          "max": 20,
+          "slot": 13
+        }
+      ],
+      "ability_points_spent": 41,
+      "ability_points_total": 41,
+      "ability_reroll_cost": "123000",
+      "ability_reroll_stone": "skill_stone_raro",
+      "battle_allowed": true,
+      "birth_stats": {
+        "cooldown_reduction": 0.0175732132444754,
+        "crit_chance": 0.0432607558276214,
+        "crit_dmg": 1.69048525899987,
+        "dmg": 165.093384672819,
+        "energia": 145.423090752205,
+        "luck": 0.0692859429021039,
+        "penetration": 1.09513390734511,
+        "speed": 53.2361960170992
+      },
+      "id": "45497",
+      "in_field": false,
+      "in_market": false,
+      "level": 41,
+      "marketable": false,
+      "name": "Manco #1",
+      "rank": "E",
+      "rarity": 2,
+      "skin": 2,
+      "skin_birth": 3,
+      "slots": [
+        "303153",
+        "123976",
+        "261156",
+        "286927",
+        "316530",
+        "177861",
+        "167962",
+        "108251"
+      ],
+      "stars": 0,
+      "stat_points_available": 0,
+      "stat_ranges": {
+        "cooldown_reduction": {
+          "max": 0.04,
+          "min": 0.01
+        },
+        "crit_chance": {
+          "max": 0.1,
+          "min": 0.04
+        },
+        "crit_dmg": {
+          "max": 1.8,
+          "min": 1.5
+        },
+        "dmg": {
+          "max": 200,
+          "min": 150
+        },
+        "energia": {
+          "max": 240,
+          "min": 140
+        },
+        "luck": {
+          "max": 0.1,
+          "min": 0.02
+        },
+        "penetration": {
+          "max": 4,
+          "min": 1
+        },
+        "speed": {
+          "max": 53.5,
+          "min": 48.5
+        }
+      },
+      "stats": {
+        "cooldown_reduction": 0.0194630596317542,
+        "crit_chance": 0.0825934275900036,
+        "crit_dmg": 1.69048525899987,
+        "dmg": 2314.66538169277,
+        "energia": 624.759326916872,
+        "luck": 0.214194431797846,
+        "penetration": 2.10090488785085,
+        "power": 21383.1601548633,
+        "speed": 55.6532283440049
+      },
+      "xp": "203699"
+    },
+    {
+      "abilities": [
+        {
+          "code": "misericordia",
+          "level": 7,
+          "max": 20,
+          "slot": 7
+        },
+        {
+          "code": "brecha",
+          "level": 19,
+          "max": 20,
+          "slot": 20
+        }
+      ],
+      "ability_points_spent": 26,
+      "ability_points_total": 26,
+      "ability_reroll_cost": "52000",
+      "ability_reroll_stone": "skill_stone_incomum",
+      "battle_allowed": true,
+      "birth_stats": {
+        "cooldown_reduction": 0.0162926649515561,
+        "crit_chance": 0.0606068499088965,
+        "crit_dmg": 1.69060003306166,
+        "dmg": 90.9117236332646,
+        "energia": 152.379987736256,
+        "luck": 0.0460950255914916,
+        "penetration": 1.70485728487537,
+        "speed": 51.2670311436526
+      },
+      "id": "48381",
+      "in_field": true,
+      "in_market": false,
+      "level": 26,
+      "marketable": false,
+      "name": "Isolde",
+      "rank": "S",
+      "rarity": 1,
+      "skin": 2,
+      "skin_birth": 0,
+      "slots": [
+        "140170",
+        "207167",
+        "126276",
+        null,
+        "207119",
+        "164025",
+        "193060",
+        "217047"
+      ],
+      "stars": 0,
+      "stat_points_available": 0,
+      "stat_ranges": {
+        "cooldown_reduction": {
+          "max": 0.03,
+          "min": 0.005
+        },
+        "crit_chance": {
+          "max": 0.09,
+          "min": 0.03
+        },
+        "crit_dmg": {
+          "max": 1.7,
+          "min": 1.45
+        },
+        "dmg": {
+          "max": 110,
+          "min": 65
+        },
+        "energia": {
+          "max": 160,
+          "min": 120
+        },
+        "luck": {
+          "max": 0.07,
+          "min": 0.01
+        },
+        "penetration": {
+          "max": 2.5,
+          "min": 0.5
+        },
+        "speed": {
+          "max": 51.5,
+          "min": 47
+        }
+      },
+      "stats": {
+        "cooldown_reduction": 0.0165429698866012,
+        "crit_chance": 0.0644019871020887,
+        "crit_dmg": 1.69060003306166,
+        "dmg": 1166.03655150386,
+        "energia": 485.544457139004,
+        "luck": 0.188660675256846,
+        "penetration": 3.66203344791229,
+        "power": 9882.71010224234,
+        "speed": 53.4651793385978
+      },
+      "xp": "16830"
+    },
+    {
+      "abilities": [
+        {
+          "code": "contra_relogio",
+          "level": 10,
+          "max": 20,
+          "slot": 9
+        }
+      ],
+      "ability_points_spent": 10,
+      "ability_points_total": 10,
+      "ability_reroll_cost": "10000",
+      "ability_reroll_stone": "skill_stone_comum",
+      "battle_allowed": true,
+      "birth_stats": {
+        "cooldown_reduction": 0.0053092368371934,
+        "crit_chance": 0.020468833839467,
+        "crit_dmg": 1.51410594417922,
+        "dmg": 40.7613381395351,
+        "energia": 119.869847359061,
+        "luck": 0.00604011682722954,
+        "penetration": 1.44824240282051,
+        "speed": 47.8422492056814
+      },
+      "id": "48763",
+      "in_field": false,
+      "in_market": false,
+      "level": 10,
+      "marketable": false,
+      "name": "Sora",
+      "rank": "D",
+      "rarity": 0,
+      "skin": 2,
+      "skin_birth": 2,
+      "slots": [
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null
+      ],
+      "stars": 0,
+      "stat_points_available": 0,
+      "stat_ranges": {
+        "cooldown_reduction": {
+          "max": 0.02,
+          "min": 0
+        },
+        "crit_chance": {
+          "max": 0.08,
+          "min": 0.02
+        },
+        "crit_dmg": {
+          "max": 1.6,
+          "min": 1.4
+        },
+        "dmg": {
+          "max": 70,
+          "min": 40
+        },
+        "energia": {
+          "max": 120,
+          "min": 80
+        },
+        "luck": {
+          "max": 0.05,
+          "min": 0
+        },
+        "penetration": {
+          "max": 1.5,
+          "min": 0
+        },
+        "speed": {
+          "max": 50,
+          "min": 46
+        }
+      },
+      "stats": {
+        "cooldown_reduction": 0.0053092368371934,
+        "crit_chance": 0.0211019966157918,
+        "crit_dmg": 1.51410594417922,
+        "dmg": 334.110978971775,
+        "energia": 229.466950485041,
+        "luck": 0.14394906262723,
+        "penetration": 1.44824240282051,
+        "power": 2251.22582570239,
+        "speed": 49.6518941467642
+      },
+      "xp": "371"
+    },
+    {
+      "abilities": [
+        {
+          "code": "contra_relogio",
+          "level": 10,
+          "max": 20,
+          "slot": 9
+        }
+      ],
+      "ability_points_spent": 10,
+      "ability_points_total": 10,
+      "ability_reroll_cost": "10000",
+      "ability_reroll_stone": "skill_stone_comum",
+      "battle_allowed": true,
+      "birth_stats": {
+        "cooldown_reduction": 0.00885710733620046,
+        "crit_chance": 0.0422936753474694,
+        "crit_dmg": 1.57071826993038,
+        "dmg": 63.7843435064939,
+        "energia": 109.429338781869,
+        "luck": 0.0485157762018757,
+        "penetration": 0.226497076039878,
+        "speed": 47.0527988906614
+      },
+      "id": "49417",
+      "in_field": false,
+      "in_market": false,
+      "level": 10,
+      "marketable": false,
+      "name": "Joric",
+      "rank": "B",
+      "rarity": 0,
+      "skin": 2,
+      "skin_birth": 1,
+      "slots": [
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null
+      ],
+      "stars": 0,
+      "stat_points_available": 0,
+      "stat_ranges": {
+        "cooldown_reduction": {
+          "max": 0.02,
+          "min": 0
+        },
+        "crit_chance": {
+          "max": 0.08,
+          "min": 0.02
+        },
+        "crit_dmg": {
+          "max": 1.6,
+          "min": 1.4
+        },
+        "dmg": {
+          "max": 70,
+          "min": 40
+        },
+        "energia": {
+          "max": 120,
+          "min": 80
+        },
+        "luck": {
+          "max": 0.05,
+          "min": 0
+        },
+        "penetration": {
+          "max": 1.5,
+          "min": 0
+        },
+        "speed": {
+          "max": 50,
+          "min": 46
+        }
+      },
+      "stats": {
+        "cooldown_reduction": 0.00885710733620046,
+        "crit_chance": 0.0436019463077989,
+        "crit_dmg": 1.57071826993038,
+        "dmg": 388.758362718595,
+        "energia": 209.48067605904,
+        "luck": 0.186424722001876,
+        "penetration": 0.226497076039878,
+        "power": 2650.12566064444,
+        "speed": 48.8325826777948
+      },
+      "xp": "1676"
+    },
+    {
+      "abilities": [
+        {
+          "code": "grito_guerra",
+          "level": 2,
+          "max": 20,
+          "slot": 16
+        }
+      ],
+      "ability_points_spent": 2,
+      "ability_points_total": 2,
+      "ability_reroll_cost": "2000",
+      "ability_reroll_stone": "skill_stone_comum",
+      "battle_allowed": true,
+      "birth_stats": {
+        "cooldown_reduction": 0.00892591672899278,
+        "crit_chance": 0.0410154419190342,
+        "crit_dmg": 1.52539265680096,
+        "dmg": 40.3788158014027,
+        "energia": 84.383751912021,
+        "luck": 0.0061185345810446,
+        "penetration": 0.124341881769469,
+        "speed": 48.9403919325193
+      },
+      "id": "50181",
+      "in_field": false,
+      "in_market": false,
+      "level": 2,
+      "marketable": false,
+      "name": "Aric",
+      "rank": "E",
+      "rarity": 0,
+      "skin": 2,
+      "skin_birth": 2,
+      "slots": [
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null
+      ],
+      "stars": 0,
+      "stat_points_available": 0,
+      "stat_ranges": {
+        "cooldown_reduction": {
+          "max": 0.02,
+          "min": 0
+        },
+        "crit_chance": {
+          "max": 0.08,
+          "min": 0.02
+        },
+        "crit_dmg": {
+          "max": 1.6,
+          "min": 1.4
+        },
+        "dmg": {
+          "max": 70,
+          "min": 40
+        },
+        "energia": {
+          "max": 120,
+          "min": 80
+        },
+        "luck": {
+          "max": 0.05,
+          "min": 0
+        },
+        "penetration": {
+          "max": 1.5,
+          "min": 0
+        },
+        "speed": {
+          "max": 50,
+          "min": 46
+        }
+      },
+      "stats": {
+        "cooldown_reduction": 0.00892591672899278,
+        "crit_chance": 0.0422841732635416,
+        "crit_dmg": 1.52539265680096,
+        "dmg": 109.593900026956,
+        "energia": 161.535887867919,
+        "luck": 0.144027480381045,
+        "penetration": 0.124341881769469,
+        "power": 717.535742875598,
+        "speed": 50.7915743945841
+      },
+      "xp": "81"
+    },
+    {
+      "abilities": [
+        {
+          "code": "bateria_extra",
+          "level": 2,
+          "max": 20,
+          "slot": 1
+        }
+      ],
+      "ability_points_spent": 2,
+      "ability_points_total": 2,
+      "ability_reroll_cost": "2000",
+      "ability_reroll_stone": "skill_stone_comum",
+      "battle_allowed": true,
+      "birth_stats": {
+        "cooldown_reduction": 0.00030959891752053,
+        "crit_chance": 0.0778525092059151,
+        "crit_dmg": 1.42710498574353,
+        "dmg": 68.8274130628867,
+        "energia": 91.3010285009216,
+        "luck": 0.0204431117208482,
+        "penetration": 0.439187147754454,
+        "speed": 49.0502179451561
+      },
+      "id": "50883",
+      "in_field": false,
+      "in_market": false,
+      "level": 2,
+      "marketable": false,
+      "name": "Eryn",
+      "rank": "C",
+      "rarity": 0,
+      "skin": 2,
+      "skin_birth": 0,
+      "slots": [
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null
+      ],
+      "stars": 0,
+      "stat_points_available": 0,
+      "stat_ranges": {
+        "cooldown_reduction": {
+          "max": 0.02,
+          "min": 0
+        },
+        "crit_chance": {
+          "max": 0.08,
+          "min": 0.02
+        },
+        "crit_dmg": {
+          "max": 1.6,
+          "min": 1.4
+        },
+        "dmg": {
+          "max": 70,
+          "min": 40
+        },
+        "energia": {
+          "max": 120,
+          "min": 80
+        },
+        "luck": {
+          "max": 0.05,
+          "min": 0
+        },
+        "penetration": {
+          "max": 1.5,
+          "min": 0
+        },
+        "speed": {
+          "max": 50,
+          "min": 46
+        }
+      },
+      "stats": {
+        "cooldown_reduction": 0.00030959891752053,
+        "crit_chance": 0.0802607221631977,
+        "crit_dmg": 1.42710498574353,
+        "dmg": 161.23109566917,
+        "energia": 174.777636309977,
+        "luck": 0.158352057520848,
+        "penetration": 0.439187147754454,
+        "power": 1079.09332059169,
+        "speed": 50.9055546033857
+      },
+      "xp": "81"
+    }
+  ],
+  "items": [
+    {
+      "category": 0,
+      "def_id": "ember_calca",
+      "equip_slot": 3,
+      "equipped_on": "26863",
+      "id": "39949",
+      "in_stash": false,
+      "level": 10,
+      "locked": false,
+      "market_state": 0,
+      "power": 10.513317141942,
+      "rarity": 2,
+      "sell_value": "180",
+      "sellable": true,
+      "set": "ember",
+      "slot": 3,
+      "stats": [
+        {
+          "effective": 0.0153630444,
+          "stat": 6,
+          "value": 0.00936771
+        },
+        {
+          "effective": 0.0012628,
+          "stat": 2,
+          "value": 0.00077
+        },
+        {
+          "effective": 0.0574,
+          "stat": 1,
+          "value": 0.035
+        }
+      ],
+      "tradable": true,
+      "upgrade": 8
+    },
+    {
+      "category": 0,
+      "def_id": "ember_amuleto",
+      "equip_slot": 7,
+      "equipped_on": "39855",
+      "id": "49367",
+      "in_stash": false,
+      "level": 10,
+      "locked": false,
+      "market_state": 0,
+      "power": 215.342215298726,
+      "rarity": 1,
+      "sell_value": "140",
+      "sellable": true,
+      "set": "ember",
+      "slot": 7,
+      "stats": [
+        {
+          "effective": 0.050512,
+          "stat": 3,
+          "value": 0.0308
+        },
+        {
+          "effective": 31.57,
+          "stat": 0,
+          "value": 19.25
+        }
+      ],
+      "tradable": false,
+      "upgrade": 8
+    },
+    {
+      "category": 0,
+      "def_id": "ember_calca",
+      "equip_slot": 3,
+      "equipped_on": "36928",
+      "id": "86238",
+      "in_stash": false,
+      "level": 10,
+      "locked": false,
+      "market_state": 0,
+      "power": 10.513317141942,
+      "rarity": 2,
+      "sell_value": "180",
+      "sellable": true,
+      "set": "ember",
+      "slot": 3,
+      "stats": [
+        {
+          "effective": 0.0153630444,
+          "stat": 6,
+          "value": 0.00936771
+        },
+        {
+          "effective": 0.0012628,
+          "stat": 2,
+          "value": 0.00077
+        },
+        {
+          "effective": 0.0574,
+          "stat": 1,
+          "value": 0.035
+        }
+      ],
+      "tradable": false,
+      "upgrade": 8
+    },
+    {
+      "category": 0,
+      "def_id": "ember_calca",
+      "equip_slot": 3,
+      "equipped_on": "41990",
+      "id": "94603",
+      "in_stash": false,
+      "level": 10,
+      "locked": false,
+      "market_state": 0,
+      "power": 10.513317141942,
+      "rarity": 2,
+      "sell_value": "180",
+      "sellable": true,
+      "set": "ember",
+      "slot": 3,
+      "stats": [
+        {
+          "effective": 0.0153630444,
+          "stat": 6,
+          "value": 0.00936771
+        },
+        {
+          "effective": 0.0012628,
+          "stat": 2,
+          "value": 0.00077
+        },
+        {
+          "effective": 0.0574,
+          "stat": 1,
+          "value": 0.035
+        }
+      ],
+      "tradable": true,
+      "upgrade": 8
+    },
+    {
+      "category": 0,
+      "def_id": "ember_amuleto",
+      "equip_slot": 7,
+      "equipped_on": "45497",
+      "id": "108251",
+      "in_stash": false,
+      "level": 10,
+      "locked": false,
+      "market_state": 0,
+      "power": 215.984803243771,
+      "rarity": 2,
+      "sell_value": "180",
+      "sellable": true,
+      "set": "ember",
+      "slot": 7,
+      "stats": [
+        {
+          "effective": 0.050512,
+          "stat": 3,
+          "value": 0.0308
+        },
+        {
+          "effective": 31.57,
+          "stat": 0,
+          "value": 19.25
+        },
+        {
+          "effective": 0.0105619772,
+          "stat": 4,
+          "value": 0.00644023
+        }
+      ],
+      "tradable": true,
+      "upgrade": 8
+    },
+    {
+      "category": 0,
+      "def_id": "ember_anel",
+      "equip_slot": 6,
+      "equipped_on": "39855",
+      "id": "123970",
+      "in_stash": false,
+      "level": 10,
+      "locked": false,
+      "market_state": 0,
+      "power": 3.3156443506457,
+      "rarity": 2,
+      "sell_value": "180",
+      "sellable": true,
+      "set": "ember",
+      "slot": 6,
+      "stats": [
+        {
+          "effective": 0.0105619772,
+          "stat": 4,
+          "value": 0.00644023
+        },
+        {
+          "effective": 0.2296,
+          "stat": 5,
+          "value": 0.14
+        },
+        {
+          "effective": 0.0153630444,
+          "stat": 6,
+          "value": 0.00936771
+        }
+      ],
+      "tradable": true,
+      "upgrade": 8
+    },
+    {
+      "category": 0,
+      "def_id": "ember_elmo",
+      "equip_slot": 1,
+      "equipped_on": "45497",
+      "id": "123976",
+      "in_stash": false,
+      "level": 10,
+      "locked": false,
+      "market_state": 0,
+      "power": 226.42708964351,
+      "rarity": 2,
+      "sell_value": "180",
+      "sellable": true,
+      "set": "ember",
+      "slot": 1,
+      "stats": [
+        {
+          "effective": 0.0574,
+          "stat": 1,
+          "value": 0.035
+        },
+        {
+          "effective": 0.050512,
+          "stat": 3,
+          "value": 0.0308
+        },
+        {
+          "effective": 31.57,
+          "stat": 0,
+          "value": 19.25
+        }
+      ],
+      "tradable": true,
+      "upgrade": 8
+    },
+    {
+      "category": 0,
+      "def_id": "ember_peito",
+      "equip_slot": 2,
+      "equipped_on": "48381",
+      "id": "126276",
+      "in_stash": false,
+      "level": 10,
+      "locked": false,
+      "market_state": 0,
+      "power": 3.43022459157783,
+      "rarity": 2,
+      "sell_value": "180",
+      "sellable": true,
+      "set": "ember",
+      "slot": 2,
+      "stats": [
+        {
+          "effective": 0.2296,
+          "stat": 5,
+          "value": 0.14
+        },
+        {
+          "effective": 0.0153630444,
+          "stat": 6,
+          "value": 0.00936771
+        },
+        {
+          "effective": 0.0012628,
+          "stat": 2,
+          "value": 0.00077
+        }
+      ],
+      "tradable": true,
+      "upgrade": 8
+    },
+    {
+      "category": 0,
+      "def_id": "ember_bota",
+      "equip_slot": null,
+      "equipped_on": null,
+      "id": "138750",
+      "in_stash": false,
+      "level": 10,
+      "locked": false,
+      "market_state": 0,
+      "power": 10.0433072596786,
+      "rarity": 1,
+      "sell_value": "140",
+      "sellable": true,
+      "set": "ember",
+      "slot": 4,
+      "stats": [
+        {
+          "effective": 0.0012628,
+          "stat": 2,
+          "value": 0.00077
+        },
+        {
+          "effective": 0.0574,
+          "stat": 1,
+          "value": 0.035
+        }
+      ],
+      "tradable": false,
+      "upgrade": 8
+    },
+    {
+      "category": 0,
+      "def_id": "ember_arma",
+      "equip_slot": 0,
+      "equipped_on": "48381",
+      "id": "140170",
+      "in_stash": false,
+      "level": 10,
+      "locked": false,
+      "market_state": 0,
+      "power": 216.709627123787,
+      "rarity": 2,
+      "sell_value": "180",
+      "sellable": true,
+      "set": "ember",
+      "slot": 0,
+      "stats": [
+        {
+          "effective": 31.57,
+          "stat": 0,
+          "value": 19.25
+        },
+        {
+          "effective": 0.0105619772,
+          "stat": 4,
+          "value": 0.00644023
+        },
+        {
+          "effective": 0.2296,
+          "stat": 5,
+          "value": 0.14
+        }
+      ],
+      "tradable": true,
+      "upgrade": 8
+    },
+    {
+      "category": 0,
+      "def_id": "ember_arma",
+      "equip_slot": null,
+      "equipped_on": null,
+      "id": "146258",
+      "in_stash": false,
+      "level": 10,
+      "locked": false,
+      "market_state": 0,
+      "power": 216.709627123787,
+      "rarity": 2,
+      "sell_value": "180",
+      "sellable": true,
+      "set": "ember",
+      "slot": 0,
+      "stats": [
+        {
+          "effective": 31.57,
+          "stat": 0,
+          "value": 19.25
+        },
+        {
+          "effective": 0.0105619772,
+          "stat": 4,
+          "value": 0.00644023
+        },
+        {
+          "effective": 0.2296,
+          "stat": 5,
+          "value": 0.14
+        }
+      ],
+      "tradable": false,
+      "upgrade": 8
+    },
+    {
+      "category": 0,
+      "def_id": "ember_arma",
+      "equip_slot": null,
+      "equipped_on": null,
+      "id": "148048",
+      "in_stash": false,
+      "level": 10,
+      "locked": false,
+      "market_state": 0,
+      "power": 216.709627123787,
+      "rarity": 2,
+      "sell_value": "180",
+      "sellable": true,
+      "set": "ember",
+      "slot": 0,
+      "stats": [
+        {
+          "effective": 31.57,
+          "stat": 0,
+          "value": 19.25
+        },
+        {
+          "effective": 0.0105619772,
+          "stat": 4,
+          "value": 0.00644023
+        },
+        {
+          "effective": 0.2296,
+          "stat": 5,
+          "value": 0.14
+        }
+      ],
+      "tradable": true,
+      "upgrade": 8
+    },
+    {
+      "category": 0,
+      "def_id": "ember_anel",
+      "equip_slot": 6,
+      "equipped_on": "41990",
+      "id": "155058",
+      "in_stash": false,
+      "level": 10,
+      "locked": false,
+      "market_state": 0,
+      "power": 3.3156443506457,
+      "rarity": 2,
+      "sell_value": "180",
+      "sellable": true,
+      "set": "ember",
+      "slot": 6,
+      "stats": [
+        {
+          "effective": 0.0105619772,
+          "stat": 4,
+          "value": 0.00644023
+        },
+        {
+          "effective": 0.2296,
+          "stat": 5,
+          "value": 0.14
+        },
+        {
+          "effective": 0.0153630444,
+          "stat": 6,
+          "value": 0.00936771
+        }
+      ],
+      "tradable": true,
+      "upgrade": 8
+    },
+    {
+      "category": 0,
+      "def_id": "ember_luva",
+      "equip_slot": 5,
+      "equipped_on": "48381",
+      "id": "164025",
+      "in_stash": false,
+      "level": 10,
+      "locked": false,
+      "market_state": 0,
+      "power": 216.84482436173,
+      "rarity": 2,
+      "sell_value": "180",
+      "sellable": true,
+      "set": "ember",
+      "slot": 5,
+      "stats": [
+        {
+          "effective": 31.57,
+          "stat": 0,
+          "value": 19.25
+        },
+        {
+          "effective": 0.2296,
+          "stat": 5,
+          "value": 0.14
+        },
+        {
+          "effective": 0.0012628,
+          "stat": 2,
+          "value": 0.00077
+        }
+      ],
+      "tradable": true,
+      "upgrade": 8
+    },
+    {
+      "category": 0,
+      "def_id": "ember_anel",
+      "equip_slot": 6,
+      "equipped_on": "45497",
+      "id": "167962",
+      "in_stash": false,
+      "level": 10,
+      "locked": false,
+      "market_state": 0,
+      "power": 3.3156443506457,
+      "rarity": 2,
+      "sell_value": "180",
+      "sellable": true,
+      "set": "ember",
+      "slot": 6,
+      "stats": [
+        {
+          "effective": 0.0105619772,
+          "stat": 4,
+          "value": 0.00644023
+        },
+        {
+          "effective": 0.2296,
+          "stat": 5,
+          "value": 0.14
+        },
+        {
+          "effective": 0.0153630444,
+          "stat": 6,
+          "value": 0.00936771
+        }
+      ],
+      "tradable": true,
+      "upgrade": 8
+    },
+    {
+      "category": 0,
+      "def_id": "ember_bota",
+      "equip_slot": null,
+      "equipped_on": null,
+      "id": "172386",
+      "in_stash": false,
+      "level": 10,
+      "locked": false,
+      "market_state": 0,
+      "power": 10.0433072596786,
+      "rarity": 1,
+      "sell_value": "140",
+      "sellable": true,
+      "set": "ember",
+      "slot": 4,
+      "stats": [
+        {
+          "effective": 0.0012628,
+          "stat": 2,
+          "value": 0.00077
+        },
+        {
+          "effective": 0.0574,
+          "stat": 1,
+          "value": 0.035
+        }
+      ],
+      "tradable": false,
+      "upgrade": 8
+    },
+    {
+      "category": 0,
+      "def_id": "gold_elmo",
+      "equip_slot": 1,
+      "equipped_on": "20402",
+      "id": "176190",
+      "in_stash": false,
+      "level": 20,
+      "locked": false,
+      "market_state": 0,
+      "power": 456.570679636057,
+      "rarity": 2,
+      "sell_value": "360",
+      "sellable": true,
+      "set": "gold",
+      "slot": 1,
+      "stats": [
+        {
+          "effective": 0.1148,
+          "stat": 1,
+          "value": 0.07
+        },
+        {
+          "effective": 0.101024,
+          "stat": 3,
+          "value": 0.0616
+        },
+        {
+          "effective": 63.14,
+          "stat": 0,
+          "value": 38.5
+        }
+      ],
+      "tradable": true,
+      "upgrade": 8
+    },
+    {
+      "category": 0,
+      "def_id": "ember_peito",
+      "equip_slot": null,
+      "equipped_on": null,
+      "id": "176310",
+      "in_stash": false,
+      "level": 10,
+      "locked": false,
+      "market_state": 0,
+      "power": 3.43022459157783,
+      "rarity": 2,
+      "sell_value": "180",
+      "sellable": true,
+      "set": "ember",
+      "slot": 2,
+      "stats": [
+        {
+          "effective": 0.2296,
+          "stat": 5,
+          "value": 0.14
+        },
+        {
+          "effective": 0.0153630444,
+          "stat": 6,
+          "value": 0.00936771
+        },
+        {
+          "effective": 0.0012628,
+          "stat": 2,
+          "value": 0.00077
+        }
+      ],
+      "tradable": true,
+      "upgrade": 8
+    },
+    {
+      "category": 0,
+      "def_id": "gold_luva",
+      "equip_slot": 5,
+      "equipped_on": "45497",
+      "id": "177861",
+      "in_stash": false,
+      "level": 20,
+      "locked": false,
+      "market_state": 0,
+      "power": 426.694586729596,
+      "rarity": 0,
+      "sell_value": "200",
+      "sellable": true,
+      "set": "gold",
+      "slot": 5,
+      "stats": [
+        {
+          "effective": 63.14,
+          "stat": 0,
+          "value": 38.5
+        }
+      ],
+      "tradable": false,
+      "upgrade": 8
+    },
+    {
+      "category": 0,
+      "def_id": "gold_luva",
+      "equip_slot": 5,
+      "equipped_on": "39855",
+      "id": "187674",
+      "in_stash": false,
+      "level": 20,
+      "locked": false,
+      "market_state": 0,
+      "power": 426.694586729596,
+      "rarity": 0,
+      "sell_value": "200",
+      "sellable": true,
+      "set": "gold",
+      "slot": 5,
+      "stats": [
+        {
+          "effective": 63.14,
+          "stat": 0,
+          "value": 38.5
+        }
+      ],
+      "tradable": false,
+      "upgrade": 8
+    },
+    {
+      "category": 0,
+      "def_id": "gold_anel",
+      "equip_slot": 6,
+      "equipped_on": "48381",
+      "id": "193060",
+      "in_stash": false,
+      "level": 20,
+      "locked": false,
+      "market_state": 0,
+      "power": 5.6990575269333,
+      "rarity": 1,
+      "sell_value": "280",
+      "sellable": true,
+      "set": "gold",
+      "slot": 6,
+      "stats": [
+        {
+          "effective": 0.0211239544,
+          "stat": 4,
+          "value": 0.01288046
+        },
+        {
+          "effective": 0.4592,
+          "stat": 5,
+          "value": 0.28
+        }
+      ],
+      "tradable": false,
+      "upgrade": 8
+    },
+    {
+      "category": 0,
+      "def_id": "ember_anel",
+      "equip_slot": null,
+      "equipped_on": null,
+      "id": "196490",
+      "in_stash": false,
+      "level": 10,
+      "locked": false,
+      "market_state": 0,
+      "power": 3.3156443506457,
+      "rarity": 2,
+      "sell_value": "180",
+      "sellable": true,
+      "set": "ember",
+      "slot": 6,
+      "stats": [
+        {
+          "effective": 0.0105619772,
+          "stat": 4,
+          "value": 0.00644023
+        },
+        {
+          "effective": 0.2296,
+          "stat": 5,
+          "value": 0.14
+        },
+        {
+          "effective": 0.0153630444,
+          "stat": 6,
+          "value": 0.00936771
+        }
+      ],
+      "tradable": true,
+      "upgrade": 8
+    },
+    {
+      "category": 0,
+      "def_id": "gold_elmo",
+      "equip_slot": 1,
+      "equipped_on": "36928",
+      "id": "200467",
+      "in_stash": false,
+      "level": 20,
+      "locked": false,
+      "market_state": 0,
+      "power": 456.570679636057,
+      "rarity": 2,
+      "sell_value": "360",
+      "sellable": true,
+      "set": "gold",
+      "slot": 1,
+      "stats": [
+        {
+          "effective": 0.1148,
+          "stat": 1,
+          "value": 0.07
+        },
+        {
+          "effective": 0.101024,
+          "stat": 3,
+          "value": 0.0616
+        },
+        {
+          "effective": 63.14,
+          "stat": 0,
+          "value": 38.5
+        }
+      ],
+      "tradable": true,
+      "upgrade": 8
+    },
+    {
+      "category": 0,
+      "def_id": "gold_bota",
+      "equip_slot": 4,
+      "equipped_on": "48381",
+      "id": "207119",
+      "in_stash": false,
+      "level": 20,
+      "locked": false,
+      "market_state": 0,
+      "power": 19.8694700529438,
+      "rarity": 1,
+      "sell_value": "280",
+      "sellable": true,
+      "set": "gold",
+      "slot": 4,
+      "stats": [
+        {
+          "effective": 0.0025256,
+          "stat": 2,
+          "value": 0.00154
+        },
+        {
+          "effective": 0.1148,
+          "stat": 1,
+          "value": 0.07
+        }
+      ],
+      "tradable": false,
+      "upgrade": 8
+    },
+    {
+      "category": 0,
+      "def_id": "gold_anel",
+      "equip_slot": 6,
+      "equipped_on": "26863",
+      "id": "207121",
+      "in_stash": false,
+      "level": 20,
+      "locked": false,
+      "market_state": 0,
+      "power": 3.47402714642635,
+      "rarity": 1,
+      "sell_value": "280",
+      "sellable": true,
+      "set": "gold",
+      "slot": 6,
+      "stats": [
+        {
+          "effective": 0.01288046,
+          "stat": 4,
+          "value": 0.01288046
+        },
+        {
+          "effective": 0.28,
+          "stat": 5,
+          "value": 0.28
+        }
+      ],
+      "tradable": false,
+      "upgrade": 0
+    },
+    {
+      "category": 0,
+      "def_id": "ember_arma",
+      "equip_slot": null,
+      "equipped_on": null,
+      "id": "207128",
+      "in_stash": false,
+      "level": 10,
+      "locked": false,
+      "market_state": 0,
+      "power": 216.709627123787,
+      "rarity": 2,
+      "sell_value": "180",
+      "sellable": true,
+      "set": "ember",
+      "slot": 0,
+      "stats": [
+        {
+          "effective": 31.57,
+          "stat": 0,
+          "value": 19.25
+        },
+        {
+          "effective": 0.0105619772,
+          "stat": 4,
+          "value": 0.00644023
+        },
+        {
+          "effective": 0.2296,
+          "stat": 5,
+          "value": 0.14
+        }
+      ],
+      "tradable": true,
+      "upgrade": 8
+    },
+    {
+      "category": 0,
+      "def_id": "ember_elmo",
+      "equip_slot": 1,
+      "equipped_on": "26863",
+      "id": "207144",
+      "in_stash": false,
+      "level": 10,
+      "locked": false,
+      "market_state": 0,
+      "power": 226.42708964351,
+      "rarity": 2,
+      "sell_value": "180",
+      "sellable": true,
+      "set": "ember",
+      "slot": 1,
+      "stats": [
+        {
+          "effective": 0.0574,
+          "stat": 1,
+          "value": 0.035
+        },
+        {
+          "effective": 0.050512,
+          "stat": 3,
+          "value": 0.0308
+        },
+        {
+          "effective": 31.57,
+          "stat": 0,
+          "value": 19.25
+        }
+      ],
+      "tradable": true,
+      "upgrade": 8
+    },
+    {
+      "category": 0,
+      "def_id": "ember_elmo",
+      "equip_slot": 1,
+      "equipped_on": "48381",
+      "id": "207167",
+      "in_stash": false,
+      "level": 10,
+      "locked": false,
+      "market_state": 0,
+      "power": 226.42708964351,
+      "rarity": 2,
+      "sell_value": "180",
+      "sellable": true,
+      "set": "ember",
+      "slot": 1,
+      "stats": [
+        {
+          "effective": 0.0574,
+          "stat": 1,
+          "value": 0.035
+        },
+        {
+          "effective": 0.050512,
+          "stat": 3,
+          "value": 0.0308
+        },
+        {
+          "effective": 31.57,
+          "stat": 0,
+          "value": 19.25
+        }
+      ],
+      "tradable": true,
+      "upgrade": 8
+    },
+    {
+      "category": 0,
+      "def_id": "gold_peito",
+      "equip_slot": 2,
+      "equipped_on": "39855",
+      "id": "211500",
+      "in_stash": false,
+      "level": 20,
+      "locked": false,
+      "market_state": 0,
+      "power": 5.5437168035005,
+      "rarity": 1,
+      "sell_value": "280",
+      "sellable": true,
+      "set": "gold",
+      "slot": 2,
+      "stats": [
+        {
+          "effective": 0.4592,
+          "stat": 5,
+          "value": 0.28
+        },
+        {
+          "effective": 0.0307260888,
+          "stat": 6,
+          "value": 0.01873542
+        }
+      ],
+      "tradable": false,
+      "upgrade": 8
+    },
+    {
+      "category": 0,
+      "def_id": "coal_luva",
+      "equip_slot": 5,
+      "equipped_on": "26863",
+      "id": "213533",
+      "in_stash": false,
+      "level": 30,
+      "locked": false,
+      "market_state": 0,
+      "power": 640.041880094393,
+      "rarity": 0,
+      "sell_value": "300",
+      "sellable": true,
+      "set": "coal",
+      "slot": 5,
+      "stats": [
+        {
+          "effective": 94.71,
+          "stat": 0,
+          "value": 57.75
+        }
+      ],
+      "tradable": false,
+      "upgrade": 8
+    },
+    {
+      "category": 0,
+      "def_id": "coal_arma",
+      "equip_slot": 0,
+      "equipped_on": "41990",
+      "id": "214059",
+      "in_stash": false,
+      "level": 30,
+      "locked": false,
+      "market_state": 0,
+      "power": 640.041880094393,
+      "rarity": 0,
+      "sell_value": "300",
+      "sellable": true,
+      "set": "coal",
+      "slot": 0,
+      "stats": [
+        {
+          "effective": 94.71,
+          "stat": 0,
+          "value": 57.75
+        }
+      ],
+      "tradable": false,
+      "upgrade": 8
+    },
+    {
+      "category": 0,
+      "def_id": "gold_amuleto",
+      "equip_slot": 7,
+      "equipped_on": "41990",
+      "id": "214880",
+      "in_stash": false,
+      "level": 20,
+      "locked": false,
+      "market_state": 0,
+      "power": 431.294196637575,
+      "rarity": 1,
+      "sell_value": "280",
+      "sellable": true,
+      "set": "gold",
+      "slot": 7,
+      "stats": [
+        {
+          "effective": 0.101024,
+          "stat": 3,
+          "value": 0.0616
+        },
+        {
+          "effective": 63.14,
+          "stat": 0,
+          "value": 38.5
+        }
+      ],
+      "tradable": false,
+      "upgrade": 8
+    },
+    {
+      "category": 0,
+      "def_id": "coal_peito",
+      "equip_slot": 2,
+      "equipped_on": "26863",
+      "id": "216708",
+      "in_stash": false,
+      "level": 30,
+      "locked": false,
+      "market_state": 0,
+      "power": 8.31885478740969,
+      "rarity": 1,
+      "sell_value": "420",
+      "sellable": true,
+      "set": "coal",
+      "slot": 2,
+      "stats": [
+        {
+          "effective": 0.6888,
+          "stat": 5,
+          "value": 0.42
+        },
+        {
+          "effective": 0.0460891332,
+          "stat": 6,
+          "value": 0.02810313
+        }
+      ],
+      "tradable": false,
+      "upgrade": 8
+    },
+    {
+      "category": 3,
+      "def_id": "time_part_epico",
+      "equip_slot": null,
+      "equipped_on": null,
+      "id": "216747",
+      "in_stash": true,
+      "level": 0,
+      "locked": false,
+      "market_state": 0,
+      "power": 0,
+      "rarity": 3,
+      "sell_value": "220",
+      "sellable": true,
+      "set": "",
+      "stats": [],
+      "tradable": false,
+      "upgrade": 0
+    },
+    {
+      "category": 0,
+      "def_id": "ember_amuleto",
+      "equip_slot": 7,
+      "equipped_on": "48381",
+      "id": "217047",
+      "in_stash": false,
+      "level": 10,
+      "locked": false,
+      "market_state": 0,
+      "power": 215.342215298726,
+      "rarity": 1,
+      "sell_value": "140",
+      "sellable": true,
+      "set": "ember",
+      "slot": 7,
+      "stats": [
+        {
+          "effective": 0.050512,
+          "stat": 3,
+          "value": 0.0308
+        },
+        {
+          "effective": 31.57,
+          "stat": 0,
+          "value": 19.25
+        }
+      ],
+      "tradable": false,
+      "upgrade": 8
+    },
+    {
+      "category": 0,
+      "def_id": "coal_peito",
+      "equip_slot": 2,
+      "equipped_on": "36928",
+      "id": "218827",
+      "in_stash": false,
+      "level": 30,
+      "locked": false,
+      "market_state": 0,
+      "power": 10.3064898049399,
+      "rarity": 2,
+      "sell_value": "540",
+      "sellable": true,
+      "set": "coal",
+      "slot": 2,
+      "stats": [
+        {
+          "effective": 0.6888,
+          "stat": 5,
+          "value": 0.42
+        },
+        {
+          "effective": 0.0460891332,
+          "stat": 6,
+          "value": 0.02810313
+        },
+        {
+          "effective": 0.0037884,
+          "stat": 2,
+          "value": 0.00231
+        }
+      ],
+      "tradable": true,
+      "upgrade": 8
+    },
+    {
+      "category": 0,
+      "def_id": "coal_anel",
+      "equip_slot": 6,
+      "equipped_on": "30140",
+      "id": "223295",
+      "in_stash": false,
+      "level": 30,
+      "locked": false,
+      "market_state": 0,
+      "power": 9.96114026209125,
+      "rarity": 2,
+      "sell_value": "540",
+      "sellable": true,
+      "set": "coal",
+      "slot": 6,
+      "stats": [
+        {
+          "effective": 0.0316859316,
+          "stat": 4,
+          "value": 0.01932069
+        },
+        {
+          "effective": 0.6888,
+          "stat": 5,
+          "value": 0.42
+        },
+        {
+          "effective": 0.0460891332,
+          "stat": 6,
+          "value": 0.02810313
+        }
+      ],
+      "tradable": true,
+      "upgrade": 8
+    },
+    {
+      "category": 0,
+      "def_id": "gold_anel",
+      "equip_slot": 6,
+      "equipped_on": "20402",
+      "id": "226030",
+      "in_stash": false,
+      "level": 20,
+      "locked": false,
+      "market_state": 0,
+      "power": 5.6990575269333,
+      "rarity": 1,
+      "sell_value": "280",
+      "sellable": true,
+      "set": "gold",
+      "slot": 6,
+      "stats": [
+        {
+          "effective": 0.0211239544,
+          "stat": 4,
+          "value": 0.01288046
+        },
+        {
+          "effective": 0.4592,
+          "stat": 5,
+          "value": 0.28
+        }
+      ],
+      "tradable": false,
+      "upgrade": 8
+    },
+    {
+      "category": 0,
+      "def_id": "coal_arma",
+      "equip_slot": 0,
+      "equipped_on": "36928",
+      "id": "233286",
+      "in_stash": false,
+      "level": 30,
+      "locked": false,
+      "market_state": 0,
+      "power": 642.555290707225,
+      "rarity": 1,
+      "sell_value": "420",
+      "sellable": true,
+      "set": "coal",
+      "slot": 0,
+      "stats": [
+        {
+          "effective": 94.71,
+          "stat": 0,
+          "value": 57.75
+        },
+        {
+          "effective": 0.0316859316,
+          "stat": 4,
+          "value": 0.01932069
+        }
+      ],
+      "tradable": false,
+      "upgrade": 8
+    },
+    {
+      "category": 0,
+      "def_id": "coal_arma",
+      "equip_slot": 0,
+      "equipped_on": "30140",
+      "id": "238050",
+      "in_stash": false,
+      "level": 30,
+      "locked": false,
+      "market_state": 0,
+      "power": 642.555290707225,
+      "rarity": 1,
+      "sell_value": "420",
+      "sellable": true,
+      "set": "coal",
+      "slot": 0,
+      "stats": [
+        {
+          "effective": 94.71,
+          "stat": 0,
+          "value": 57.75
+        },
+        {
+          "effective": 0.0316859316,
+          "stat": 4,
+          "value": 0.01932069
+        }
+      ],
+      "tradable": false,
+      "upgrade": 8
+    },
+    {
+      "category": 3,
+      "def_id": "time_part_epico",
+      "equip_slot": null,
+      "equipped_on": null,
+      "id": "238166",
+      "in_stash": true,
+      "level": 0,
+      "locked": false,
+      "market_state": 0,
+      "power": 0,
+      "rarity": 3,
+      "sell_value": "220",
+      "sellable": true,
+      "set": "",
+      "stats": [],
+      "tradable": true,
+      "upgrade": 0
+    },
+    {
+      "category": 3,
+      "def_id": "time_part_epico",
+      "equip_slot": null,
+      "equipped_on": null,
+      "id": "238943",
+      "in_stash": true,
+      "level": 0,
+      "locked": false,
+      "market_state": 0,
+      "power": 0,
+      "rarity": 3,
+      "sell_value": "220",
+      "sellable": true,
+      "set": "",
+      "stats": [],
+      "tradable": true,
+      "upgrade": 0
+    },
+    {
+      "category": 3,
+      "def_id": "time_part_epico",
+      "equip_slot": null,
+      "equipped_on": null,
+      "id": "240568",
+      "in_stash": true,
+      "level": 0,
+      "locked": false,
+      "market_state": 0,
+      "power": 0,
+      "rarity": 3,
+      "sell_value": "220",
+      "sellable": true,
+      "set": "",
+      "stats": [],
+      "tradable": true,
+      "upgrade": 0
+    },
+    {
+      "category": 0,
+      "def_id": "coal_elmo",
+      "equip_slot": 1,
+      "equipped_on": "39855",
+      "id": "241346",
+      "in_stash": false,
+      "level": 30,
+      "locked": false,
+      "market_state": 0,
+      "power": 32.6322666161711,
+      "rarity": 1,
+      "sell_value": "420",
+      "sellable": true,
+      "set": "coal",
+      "slot": 1,
+      "stats": [
+        {
+          "effective": 0.1722,
+          "stat": 1,
+          "value": 0.105
+        },
+        {
+          "effective": 0.151536,
+          "stat": 3,
+          "value": 0.0924
+        }
+      ],
+      "tradable": false,
+      "upgrade": 8
+    },
+    {
+      "category": 0,
+      "def_id": "coal_amuleto",
+      "equip_slot": 7,
+      "equipped_on": "30140",
+      "id": "241872",
+      "in_stash": false,
+      "level": 30,
+      "locked": false,
+      "market_state": 0,
+      "power": 650.380129964836,
+      "rarity": 2,
+      "sell_value": "540",
+      "sellable": true,
+      "set": "coal",
+      "slot": 7,
+      "stats": [
+        {
+          "effective": 0.151536,
+          "stat": 3,
+          "value": 0.0924
+        },
+        {
+          "effective": 94.71,
+          "stat": 0,
+          "value": 57.75
+        },
+        {
+          "effective": 0.0316859316,
+          "stat": 4,
+          "value": 0.01932069
+        }
+      ],
+      "tradable": true,
+      "upgrade": 8
+    },
+    {
+      "category": 0,
+      "def_id": "coal_bota",
+      "equip_slot": 4,
+      "equipped_on": "26863",
+      "id": "246785",
+      "in_stash": false,
+      "level": 30,
+      "locked": false,
+      "market_state": 0,
+      "power": 29.4894650090548,
+      "rarity": 1,
+      "sell_value": "420",
+      "sellable": true,
+      "set": "coal",
+      "slot": 4,
+      "stats": [
+        {
+          "effective": 0.0037884,
+          "stat": 2,
+          "value": 0.00231
+        },
+        {
+          "effective": 0.1722,
+          "stat": 1,
+          "value": 0.105
+        }
+      ],
+      "tradable": false,
+      "upgrade": 8
+    },
+    {
+      "category": 0,
+      "def_id": "coal_luva",
+      "equip_slot": 5,
+      "equipped_on": "20402",
+      "id": "247401",
+      "in_stash": false,
+      "level": 30,
+      "locked": false,
+      "market_state": 0,
+      "power": 640.041880094393,
+      "rarity": 0,
+      "sell_value": "300",
+      "sellable": true,
+      "set": "coal",
+      "slot": 5,
+      "stats": [
+        {
+          "effective": 94.71,
+          "stat": 0,
+          "value": 57.75
+        }
+      ],
+      "tradable": false,
+      "upgrade": 8
+    },
+    {
+      "category": 0,
+      "def_id": "coal_arma",
+      "equip_slot": 0,
+      "equipped_on": "26863",
+      "id": "249626",
+      "in_stash": false,
+      "level": 30,
+      "locked": false,
+      "market_state": 0,
+      "power": 642.555290707225,
+      "rarity": 1,
+      "sell_value": "420",
+      "sellable": true,
+      "set": "coal",
+      "slot": 0,
+      "stats": [
+        {
+          "effective": 94.71,
+          "stat": 0,
+          "value": 57.75
+        },
+        {
+          "effective": 0.0316859316,
+          "stat": 4,
+          "value": 0.01932069
+        }
+      ],
+      "tradable": false,
+      "upgrade": 8
+    },
+    {
+      "category": 0,
+      "def_id": "coal_peito",
+      "equip_slot": 2,
+      "equipped_on": "41990",
+      "id": "251739",
+      "in_stash": false,
+      "level": 30,
+      "locked": false,
+      "market_state": 0,
+      "power": 8.31885478740969,
+      "rarity": 1,
+      "sell_value": "420",
+      "sellable": true,
+      "set": "coal",
+      "slot": 2,
+      "stats": [
+        {
+          "effective": 0.6888,
+          "stat": 5,
+          "value": 0.42
+        },
+        {
+          "effective": 0.0460891332,
+          "stat": 6,
+          "value": 0.02810313
+        }
+      ],
+      "tradable": false,
+      "upgrade": 8
+    },
+    {
+      "category": 0,
+      "def_id": "coal_elmo",
+      "equip_slot": null,
+      "equipped_on": null,
+      "id": "252179",
+      "in_stash": false,
+      "level": 30,
+      "locked": false,
+      "market_state": 0,
+      "power": 32.6322666161711,
+      "rarity": 1,
+      "sell_value": "420",
+      "sellable": true,
+      "set": "coal",
+      "slot": 1,
+      "stats": [
+        {
+          "effective": 0.1722,
+          "stat": 1,
+          "value": 0.105
+        },
+        {
+          "effective": 0.151536,
+          "stat": 3,
+          "value": 0.0924
+        }
+      ],
+      "tradable": false,
+      "upgrade": 8
+    },
+    {
+      "category": 0,
+      "def_id": "coal_luva",
+      "equip_slot": 5,
+      "equipped_on": "41990",
+      "id": "259675",
+      "in_stash": false,
+      "level": 30,
+      "locked": false,
+      "market_state": 0,
+      "power": 640.041880094393,
+      "rarity": 0,
+      "sell_value": "300",
+      "sellable": true,
+      "set": "coal",
+      "slot": 5,
+      "stats": [
+        {
+          "effective": 94.71,
+          "stat": 0,
+          "value": 57.75
+        }
+      ],
+      "tradable": false,
+      "upgrade": 8
+    },
+    {
+      "category": 0,
+      "def_id": "coal_peito",
+      "equip_slot": 2,
+      "equipped_on": "45497",
+      "id": "261156",
+      "in_stash": false,
+      "level": 30,
+      "locked": false,
+      "market_state": 0,
+      "power": 8.31885478740969,
+      "rarity": 1,
+      "sell_value": "420",
+      "sellable": true,
+      "set": "coal",
+      "slot": 2,
+      "stats": [
+        {
+          "effective": 0.6888,
+          "stat": 5,
+          "value": 0.42
+        },
+        {
+          "effective": 0.0460891332,
+          "stat": 6,
+          "value": 0.02810313
+        }
+      ],
+      "tradable": false,
+      "upgrade": 8
+    },
+    {
+      "category": 0,
+      "def_id": "coal_luva",
+      "equip_slot": 5,
+      "equipped_on": "36928",
+      "id": "264482",
+      "in_stash": false,
+      "level": 30,
+      "locked": false,
+      "market_state": 0,
+      "power": 640.041880094393,
+      "rarity": 0,
+      "sell_value": "300",
+      "sellable": true,
+      "set": "coal",
+      "slot": 5,
+      "stats": [
+        {
+          "effective": 94.71,
+          "stat": 0,
+          "value": 57.75
+        }
+      ],
+      "tradable": false,
+      "upgrade": 8
+    },
+    {
+      "category": 0,
+      "def_id": "coal_amuleto",
+      "equip_slot": 7,
+      "equipped_on": "26863",
+      "id": "273714",
+      "in_stash": false,
+      "level": 30,
+      "locked": false,
+      "market_state": 0,
+      "power": 647.855944016548,
+      "rarity": 1,
+      "sell_value": "420",
+      "sellable": true,
+      "set": "coal",
+      "slot": 7,
+      "stats": [
+        {
+          "effective": 0.151536,
+          "stat": 3,
+          "value": 0.0924
+        },
+        {
+          "effective": 94.71,
+          "stat": 0,
+          "value": 57.75
+        }
+      ],
+      "tradable": false,
+      "upgrade": 8
+    },
+    {
+      "category": 4,
+      "def_id": "map_key_raro",
+      "equip_slot": null,
+      "equipped_on": null,
+      "id": "276693",
+      "in_stash": true,
+      "level": 0,
+      "locked": false,
+      "market_state": 0,
+      "power": 0,
+      "rarity": 2,
+      "sell_value": "180",
+      "sellable": true,
+      "set": "",
+      "stats": [],
+      "tradable": true,
+      "upgrade": 0
+    },
+    {
+      "category": 0,
+      "def_id": "coal_amuleto",
+      "equip_slot": 7,
+      "equipped_on": "36928",
+      "id": "277564",
+      "in_stash": false,
+      "level": 30,
+      "locked": false,
+      "market_state": 0,
+      "power": 647.855944016548,
+      "rarity": 1,
+      "sell_value": "420",
+      "sellable": true,
+      "set": "coal",
+      "slot": 7,
+      "stats": [
+        {
+          "effective": 0.151536,
+          "stat": 3,
+          "value": 0.0924
+        },
+        {
+          "effective": 94.71,
+          "stat": 0,
+          "value": 57.75
+        }
+      ],
+      "tradable": false,
+      "upgrade": 8
+    },
+    {
+      "category": 4,
+      "def_id": "map_key_raro",
+      "equip_slot": null,
+      "equipped_on": null,
+      "id": "278420",
+      "in_stash": true,
+      "level": 0,
+      "locked": false,
+      "market_state": 0,
+      "power": 0,
+      "rarity": 2,
+      "sell_value": "180",
+      "sellable": true,
+      "set": "",
+      "stats": [],
+      "tradable": true,
+      "upgrade": 0
+    },
+    {
+      "category": 4,
+      "def_id": "map_key_raro",
+      "equip_slot": null,
+      "equipped_on": null,
+      "id": "279180",
+      "in_stash": true,
+      "level": 0,
+      "locked": false,
+      "market_state": 0,
+      "power": 0,
+      "rarity": 2,
+      "sell_value": "180",
+      "sellable": true,
+      "set": "",
+      "stats": [],
+      "tradable": true,
+      "upgrade": 0
+    },
+    {
+      "category": 4,
+      "def_id": "map_key_raro",
+      "equip_slot": null,
+      "equipped_on": null,
+      "id": "279599",
+      "in_stash": true,
+      "level": 0,
+      "locked": false,
+      "market_state": 0,
+      "power": 0,
+      "rarity": 2,
+      "sell_value": "180",
+      "sellable": true,
+      "set": "",
+      "stats": [],
+      "tradable": true,
+      "upgrade": 0
+    },
+    {
+      "category": 4,
+      "def_id": "map_key_raro",
+      "equip_slot": null,
+      "equipped_on": null,
+      "id": "282752",
+      "in_stash": true,
+      "level": 0,
+      "locked": false,
+      "market_state": 0,
+      "power": 0,
+      "rarity": 2,
+      "sell_value": "180",
+      "sellable": true,
+      "set": "",
+      "stats": [],
+      "tradable": true,
+      "upgrade": 0
+    },
+    {
+      "category": 0,
+      "def_id": "coal_bota",
+      "equip_slot": 4,
+      "equipped_on": "36928",
+      "id": "282978",
+      "in_stash": false,
+      "level": 30,
+      "locked": false,
+      "market_state": 0,
+      "power": 29.4894650090548,
+      "rarity": 1,
+      "sell_value": "420",
+      "sellable": true,
+      "set": "coal",
+      "slot": 4,
+      "stats": [
+        {
+          "effective": 0.0037884,
+          "stat": 2,
+          "value": 0.00231
+        },
+        {
+          "effective": 0.1722,
+          "stat": 1,
+          "value": 0.105
+        }
+      ],
+      "tradable": false,
+      "upgrade": 8
+    },
+    {
+      "category": 4,
+      "def_id": "map_key_raro",
+      "equip_slot": null,
+      "equipped_on": null,
+      "id": "285378",
+      "in_stash": true,
+      "level": 0,
+      "locked": false,
+      "market_state": 0,
+      "power": 0,
+      "rarity": 2,
+      "sell_value": "180",
+      "sellable": true,
+      "set": "",
+      "stats": [],
+      "tradable": true,
+      "upgrade": 0
+    },
+    {
+      "category": 4,
+      "def_id": "map_key_raro",
+      "equip_slot": null,
+      "equipped_on": null,
+      "id": "285421",
+      "in_stash": true,
+      "level": 0,
+      "locked": false,
+      "market_state": 0,
+      "power": 0,
+      "rarity": 2,
+      "sell_value": "180",
+      "sellable": true,
+      "set": "",
+      "stats": [],
+      "tradable": true,
+      "upgrade": 0
+    },
+    {
+      "category": 4,
+      "def_id": "map_key_raro",
+      "equip_slot": null,
+      "equipped_on": null,
+      "id": "285968",
+      "in_stash": true,
+      "level": 0,
+      "locked": false,
+      "market_state": 0,
+      "power": 0,
+      "rarity": 2,
+      "sell_value": "180",
+      "sellable": true,
+      "set": "",
+      "stats": [],
+      "tradable": true,
+      "upgrade": 0
+    },
+    {
+      "category": 0,
+      "def_id": "coal_calca",
+      "equip_slot": 3,
+      "equipped_on": "45497",
+      "id": "286927",
+      "in_stash": false,
+      "level": 30,
+      "locked": false,
+      "market_state": 0,
+      "power": 3.37534549988754,
+      "rarity": 1,
+      "sell_value": "420",
+      "sellable": true,
+      "set": "coal",
+      "slot": 3,
+      "stats": [
+        {
+          "effective": 0.0460891332,
+          "stat": 6,
+          "value": 0.02810313
+        },
+        {
+          "effective": 0.0037884,
+          "stat": 2,
+          "value": 0.00231
+        }
+      ],
+      "tradable": false,
+      "upgrade": 8
+    },
+    {
+      "category": 0,
+      "def_id": "coal_bota",
+      "equip_slot": 4,
+      "equipped_on": "20402",
+      "id": "289364",
+      "in_stash": false,
+      "level": 30,
+      "locked": false,
+      "market_state": 0,
+      "power": 29.4894650090548,
+      "rarity": 1,
+      "sell_value": "420",
+      "sellable": true,
+      "set": "coal",
+      "slot": 4,
+      "stats": [
+        {
+          "effective": 0.0037884,
+          "stat": 2,
+          "value": 0.00231
+        },
+        {
+          "effective": 0.1722,
+          "stat": 1,
+          "value": 0.105
+        }
+      ],
+      "tradable": false,
+      "upgrade": 8
+    },
+    {
+      "category": 0,
+      "def_id": "coal_calca",
+      "equip_slot": null,
+      "equipped_on": null,
+      "id": "290770",
+      "in_stash": false,
+      "level": 30,
+      "locked": false,
+      "market_state": 0,
+      "power": 1.39925890206746,
+      "rarity": 0,
+      "sell_value": "300",
+      "sellable": true,
+      "set": "coal",
+      "slot": 3,
+      "stats": [
+        {
+          "effective": 0.0460891332,
+          "stat": 6,
+          "value": 0.02810313
+        }
+      ],
+      "tradable": false,
+      "upgrade": 8
+    },
+    {
+      "category": 4,
+      "def_id": "map_key_raro",
+      "equip_slot": null,
+      "equipped_on": null,
+      "id": "292780",
+      "in_stash": true,
+      "level": 0,
+      "locked": false,
+      "market_state": 0,
+      "power": 0,
+      "rarity": 2,
+      "sell_value": "180",
+      "sellable": true,
+      "set": "",
+      "stats": [],
+      "tradable": true,
+      "upgrade": 0
+    },
+    {
+      "category": 4,
+      "def_id": "map_key_raro",
+      "equip_slot": null,
+      "equipped_on": null,
+      "id": "293323",
+      "in_stash": true,
+      "level": 0,
+      "locked": false,
+      "market_state": 0,
+      "power": 0,
+      "rarity": 2,
+      "sell_value": "180",
+      "sellable": true,
+      "set": "",
+      "stats": [],
+      "tradable": true,
+      "upgrade": 0
+    },
+    {
+      "category": 4,
+      "def_id": "map_key_raro",
+      "equip_slot": null,
+      "equipped_on": null,
+      "id": "294164",
+      "in_stash": true,
+      "level": 0,
+      "locked": false,
+      "market_state": 0,
+      "power": 0,
+      "rarity": 2,
+      "sell_value": "180",
+      "sellable": true,
+      "set": "",
+      "stats": [],
+      "tradable": true,
+      "upgrade": 0
+    },
+    {
+      "category": 4,
+      "def_id": "map_key_raro",
+      "equip_slot": null,
+      "equipped_on": null,
+      "id": "294375",
+      "in_stash": true,
+      "level": 0,
+      "locked": false,
+      "market_state": 0,
+      "power": 0,
+      "rarity": 2,
+      "sell_value": "180",
+      "sellable": true,
+      "set": "",
+      "stats": [],
+      "tradable": true,
+      "upgrade": 0
+    },
+    {
+      "category": 4,
+      "def_id": "map_key_raro",
+      "equip_slot": null,
+      "equipped_on": null,
+      "id": "294471",
+      "in_stash": true,
+      "level": 0,
+      "locked": false,
+      "market_state": 0,
+      "power": 0,
+      "rarity": 2,
+      "sell_value": "180",
+      "sellable": true,
+      "set": "",
+      "stats": [],
+      "tradable": true,
+      "upgrade": 0
+    },
+    {
+      "category": 4,
+      "def_id": "map_key_raro",
+      "equip_slot": null,
+      "equipped_on": null,
+      "id": "294498",
+      "in_stash": true,
+      "level": 0,
+      "locked": false,
+      "market_state": 0,
+      "power": 0,
+      "rarity": 2,
+      "sell_value": "180",
+      "sellable": true,
+      "set": "",
+      "stats": [],
+      "tradable": true,
+      "upgrade": 0
+    },
+    {
+      "category": 4,
+      "def_id": "map_key_raro",
+      "equip_slot": null,
+      "equipped_on": null,
+      "id": "295290",
+      "in_stash": true,
+      "level": 0,
+      "locked": false,
+      "market_state": 0,
+      "power": 0,
+      "rarity": 2,
+      "sell_value": "180",
+      "sellable": true,
+      "set": "",
+      "stats": [],
+      "tradable": true,
+      "upgrade": 0
+    },
+    {
+      "category": 4,
+      "def_id": "map_key_raro",
+      "equip_slot": null,
+      "equipped_on": null,
+      "id": "296484",
+      "in_stash": true,
+      "level": 0,
+      "locked": false,
+      "market_state": 0,
+      "power": 0,
+      "rarity": 2,
+      "sell_value": "180",
+      "sellable": true,
+      "set": "",
+      "stats": [],
+      "tradable": true,
+      "upgrade": 0
+    },
+    {
+      "category": 5,
+      "def_id": "skill_stone_comum",
+      "equip_slot": null,
+      "equipped_on": null,
+      "id": "296791",
+      "in_stash": true,
+      "level": 0,
+      "locked": false,
+      "market_state": 0,
+      "power": 0,
+      "rarity": 0,
+      "sell_value": "100",
+      "sellable": true,
+      "set": "",
+      "stats": [],
+      "tradable": false,
+      "upgrade": 0
+    },
+    {
+      "category": 0,
+      "def_id": "ember_arma",
+      "equip_slot": null,
+      "equipped_on": null,
+      "id": "298454",
+      "in_stash": false,
+      "level": 10,
+      "locked": false,
+      "market_state": 0,
+      "power": 132.017461061012,
+      "rarity": 2,
+      "sell_value": "180",
+      "sellable": true,
+      "set": "ember",
+      "slot": 0,
+      "stats": [
+        {
+          "effective": 19.25,
+          "stat": 0,
+          "value": 19.25
+        },
+        {
+          "effective": 0.00644023,
+          "stat": 4,
+          "value": 0.00644023
+        },
+        {
+          "effective": 0.14,
+          "stat": 5,
+          "value": 0.14
+        }
+      ],
+      "tradable": false,
+      "upgrade": 0
+    },
+    {
+      "category": 0,
+      "def_id": "coal_arma",
+      "equip_slot": 0,
+      "equipped_on": "39855",
+      "id": "298985",
+      "in_stash": false,
+      "level": 30,
+      "locked": false,
+      "market_state": 0,
+      "power": 640.041880094393,
+      "rarity": 0,
+      "sell_value": "300",
+      "sellable": true,
+      "set": "coal",
+      "slot": 0,
+      "stats": [
+        {
+          "effective": 94.71,
+          "stat": 0,
+          "value": 57.75
+        }
+      ],
+      "tradable": false,
+      "upgrade": 8
+    },
+    {
+      "category": 4,
+      "def_id": "map_key_raro",
+      "equip_slot": null,
+      "equipped_on": null,
+      "id": "299201",
+      "in_stash": true,
+      "level": 0,
+      "locked": false,
+      "market_state": 0,
+      "power": 0,
+      "rarity": 2,
+      "sell_value": "180",
+      "sellable": true,
+      "set": "",
+      "stats": [],
+      "tradable": true,
+      "upgrade": 0
+    },
+    {
+      "category": 4,
+      "def_id": "map_key_raro",
+      "equip_slot": null,
+      "equipped_on": null,
+      "id": "301474",
+      "in_stash": true,
+      "level": 0,
+      "locked": false,
+      "market_state": 0,
+      "power": 0,
+      "rarity": 2,
+      "sell_value": "180",
+      "sellable": true,
+      "set": "",
+      "stats": [],
+      "tradable": true,
+      "upgrade": 0
+    },
+    {
+      "category": 4,
+      "def_id": "map_key_raro",
+      "equip_slot": null,
+      "equipped_on": null,
+      "id": "302227",
+      "in_stash": true,
+      "level": 0,
+      "locked": false,
+      "market_state": 0,
+      "power": 0,
+      "rarity": 2,
+      "sell_value": "180",
+      "sellable": true,
+      "set": "",
+      "stats": [],
+      "tradable": true,
+      "upgrade": 0
+    },
+    {
+      "category": 0,
+      "def_id": "coal_arma",
+      "equip_slot": 0,
+      "equipped_on": "45497",
+      "id": "303153",
+      "in_stash": false,
+      "level": 30,
+      "locked": false,
+      "market_state": 0,
+      "power": 640.041880094393,
+      "rarity": 0,
+      "sell_value": "300",
+      "sellable": true,
+      "set": "coal",
+      "slot": 0,
+      "stats": [
+        {
+          "effective": 94.71,
+          "stat": 0,
+          "value": 57.75
+        }
+      ],
+      "tradable": false,
+      "upgrade": 8
+    },
+    {
+      "category": 4,
+      "def_id": "map_key_raro",
+      "equip_slot": null,
+      "equipped_on": null,
+      "id": "303437",
+      "in_stash": true,
+      "level": 0,
+      "locked": false,
+      "market_state": 0,
+      "power": 0,
+      "rarity": 2,
+      "sell_value": "180",
+      "sellable": true,
+      "set": "",
+      "stats": [],
+      "tradable": true,
+      "upgrade": 0
+    },
+    {
+      "category": 4,
+      "def_id": "map_key_raro",
+      "equip_slot": null,
+      "equipped_on": null,
+      "id": "303578",
+      "in_stash": true,
+      "level": 0,
+      "locked": false,
+      "market_state": 0,
+      "power": 0,
+      "rarity": 2,
+      "sell_value": "180",
+      "sellable": true,
+      "set": "",
+      "stats": [],
+      "tradable": true,
+      "upgrade": 0
+    },
+    {
+      "category": 4,
+      "def_id": "map_key_raro",
+      "equip_slot": null,
+      "equipped_on": null,
+      "id": "303646",
+      "in_stash": true,
+      "level": 0,
+      "locked": false,
+      "market_state": 0,
+      "power": 0,
+      "rarity": 2,
+      "sell_value": "180",
+      "sellable": true,
+      "set": "",
+      "stats": [],
+      "tradable": true,
+      "upgrade": 0
+    },
+    {
+      "category": 4,
+      "def_id": "map_key_raro",
+      "equip_slot": null,
+      "equipped_on": null,
+      "id": "303942",
+      "in_stash": true,
+      "level": 0,
+      "locked": false,
+      "market_state": 0,
+      "power": 0,
+      "rarity": 2,
+      "sell_value": "180",
+      "sellable": true,
+      "set": "",
+      "stats": [],
+      "tradable": true,
+      "upgrade": 0
+    },
+    {
+      "category": 0,
+      "def_id": "coal_calca",
+      "equip_slot": 3,
+      "equipped_on": "39855",
+      "id": "304376",
+      "in_stash": false,
+      "level": 30,
+      "locked": false,
+      "market_state": 0,
+      "power": 3.37534549988754,
+      "rarity": 1,
+      "sell_value": "420",
+      "sellable": true,
+      "set": "coal",
+      "slot": 3,
+      "stats": [
+        {
+          "effective": 0.0460891332,
+          "stat": 6,
+          "value": 0.02810313
+        },
+        {
+          "effective": 0.0037884,
+          "stat": 2,
+          "value": 0.00231
+        }
+      ],
+      "tradable": false,
+      "upgrade": 8
+    },
+    {
+      "category": 4,
+      "def_id": "map_key_raro",
+      "equip_slot": null,
+      "equipped_on": null,
+      "id": "304877",
+      "in_stash": true,
+      "level": 0,
+      "locked": false,
+      "market_state": 0,
+      "power": 0,
+      "rarity": 2,
+      "sell_value": "180",
+      "sellable": true,
+      "set": "",
+      "stats": [],
+      "tradable": true,
+      "upgrade": 0
+    },
+    {
+      "category": 4,
+      "def_id": "map_key_raro",
+      "equip_slot": null,
+      "equipped_on": null,
+      "id": "305581",
+      "in_stash": true,
+      "level": 0,
+      "locked": false,
+      "market_state": 0,
+      "power": 0,
+      "rarity": 2,
+      "sell_value": "180",
+      "sellable": true,
+      "set": "",
+      "stats": [],
+      "tradable": true,
+      "upgrade": 0
+    },
+    {
+      "category": 0,
+      "def_id": "ember_arma",
+      "equip_slot": null,
+      "equipped_on": null,
+      "id": "305598",
+      "in_stash": false,
+      "level": 10,
+      "locked": false,
+      "market_state": 0,
+      "power": 130.457740587226,
+      "rarity": 1,
+      "sell_value": "140",
+      "sellable": true,
+      "set": "ember",
+      "slot": 0,
+      "stats": [
+        {
+          "effective": 19.25,
+          "stat": 0,
+          "value": 19.25
+        },
+        {
+          "effective": 0.00644023,
+          "stat": 4,
+          "value": 0.00644023
+        }
+      ],
+      "tradable": false,
+      "upgrade": 0
+    },
+    {
+      "category": 4,
+      "def_id": "map_key_raro",
+      "equip_slot": null,
+      "equipped_on": null,
+      "id": "305649",
+      "in_stash": true,
+      "level": 0,
+      "locked": false,
+      "market_state": 0,
+      "power": 0,
+      "rarity": 2,
+      "sell_value": "180",
+      "sellable": true,
+      "set": "",
+      "stats": [],
+      "tradable": true,
+      "upgrade": 0
+    },
+    {
+      "category": 4,
+      "def_id": "map_key_raro",
+      "equip_slot": null,
+      "equipped_on": null,
+      "id": "306172",
+      "in_stash": true,
+      "level": 0,
+      "locked": false,
+      "market_state": 0,
+      "power": 0,
+      "rarity": 2,
+      "sell_value": "180",
+      "sellable": true,
+      "set": "",
+      "stats": [],
+      "tradable": true,
+      "upgrade": 0
+    },
+    {
+      "category": 4,
+      "def_id": "map_key_raro",
+      "equip_slot": null,
+      "equipped_on": null,
+      "id": "306449",
+      "in_stash": true,
+      "level": 0,
+      "locked": false,
+      "market_state": 0,
+      "power": 0,
+      "rarity": 2,
+      "sell_value": "180",
+      "sellable": true,
+      "set": "",
+      "stats": [],
+      "tradable": true,
+      "upgrade": 0
+    },
+    {
+      "category": 4,
+      "def_id": "map_key_raro",
+      "equip_slot": null,
+      "equipped_on": null,
+      "id": "307168",
+      "in_stash": true,
+      "level": 0,
+      "locked": false,
+      "market_state": 0,
+      "power": 0,
+      "rarity": 2,
+      "sell_value": "180",
+      "sellable": true,
+      "set": "",
+      "stats": [],
+      "tradable": true,
+      "upgrade": 0
+    },
+    {
+      "category": 4,
+      "def_id": "map_key_raro",
+      "equip_slot": null,
+      "equipped_on": null,
+      "id": "307217",
+      "in_stash": true,
+      "level": 0,
+      "locked": false,
+      "market_state": 0,
+      "power": 0,
+      "rarity": 2,
+      "sell_value": "180",
+      "sellable": true,
+      "set": "",
+      "stats": [],
+      "tradable": true,
+      "upgrade": 0
+    },
+    {
+      "category": 4,
+      "def_id": "map_key_raro",
+      "equip_slot": null,
+      "equipped_on": null,
+      "id": "307239",
+      "in_stash": true,
+      "level": 0,
+      "locked": false,
+      "market_state": 0,
+      "power": 0,
+      "rarity": 2,
+      "sell_value": "180",
+      "sellable": true,
+      "set": "",
+      "stats": [],
+      "tradable": true,
+      "upgrade": 0
+    },
+    {
+      "category": 4,
+      "def_id": "map_key_raro",
+      "equip_slot": null,
+      "equipped_on": null,
+      "id": "307300",
+      "in_stash": true,
+      "level": 0,
+      "locked": false,
+      "market_state": 0,
+      "power": 0,
+      "rarity": 2,
+      "sell_value": "180",
+      "sellable": true,
+      "set": "",
+      "stats": [],
+      "tradable": true,
+      "upgrade": 0
+    },
+    {
+      "category": 4,
+      "def_id": "map_key_raro",
+      "equip_slot": null,
+      "equipped_on": null,
+      "id": "307400",
+      "in_stash": true,
+      "level": 0,
+      "locked": false,
+      "market_state": 0,
+      "power": 0,
+      "rarity": 2,
+      "sell_value": "180",
+      "sellable": true,
+      "set": "",
+      "stats": [],
+      "tradable": true,
+      "upgrade": 0
+    },
+    {
+      "category": 0,
+      "def_id": "coal_luva",
+      "equip_slot": 5,
+      "equipped_on": "30140",
+      "id": "307865",
+      "in_stash": false,
+      "level": 30,
+      "locked": false,
+      "market_state": 0,
+      "power": 650.693758280741,
+      "rarity": 1,
+      "sell_value": "420",
+      "sellable": true,
+      "set": "coal",
+      "slot": 5,
+      "stats": [
+        {
+          "effective": 94.71,
+          "stat": 0,
+          "value": 57.75
+        },
+        {
+          "effective": 0.6888,
+          "stat": 5,
+          "value": 0.42
+        }
+      ],
+      "tradable": false,
+      "upgrade": 8
+    },
+    {
+      "category": 4,
+      "def_id": "map_key_raro",
+      "equip_slot": null,
+      "equipped_on": null,
+      "id": "307909",
+      "in_stash": true,
+      "level": 0,
+      "locked": false,
+      "market_state": 0,
+      "power": 0,
+      "rarity": 2,
+      "sell_value": "180",
+      "sellable": true,
+      "set": "",
+      "stats": [],
+      "tradable": true,
+      "upgrade": 0
+    },
+    {
+      "category": 4,
+      "def_id": "map_key_raro",
+      "equip_slot": null,
+      "equipped_on": null,
+      "id": "307924",
+      "in_stash": true,
+      "level": 0,
+      "locked": false,
+      "market_state": 0,
+      "power": 0,
+      "rarity": 2,
+      "sell_value": "180",
+      "sellable": true,
+      "set": "",
+      "stats": [],
+      "tradable": true,
+      "upgrade": 0
+    },
+    {
+      "category": 4,
+      "def_id": "map_key_raro",
+      "equip_slot": null,
+      "equipped_on": null,
+      "id": "308109",
+      "in_stash": true,
+      "level": 0,
+      "locked": false,
+      "market_state": 0,
+      "power": 0,
+      "rarity": 2,
+      "sell_value": "180",
+      "sellable": true,
+      "set": "",
+      "stats": [],
+      "tradable": true,
+      "upgrade": 0
+    },
+    {
+      "category": 0,
+      "def_id": "coal_amuleto",
+      "equip_slot": 7,
+      "equipped_on": "20402",
+      "id": "308236",
+      "in_stash": false,
+      "level": 30,
+      "locked": false,
+      "market_state": 0,
+      "power": 647.855944016548,
+      "rarity": 1,
+      "sell_value": "420",
+      "sellable": true,
+      "set": "coal",
+      "slot": 7,
+      "stats": [
+        {
+          "effective": 0.151536,
+          "stat": 3,
+          "value": 0.0924
+        },
+        {
+          "effective": 94.71,
+          "stat": 0,
+          "value": 57.75
+        }
+      ],
+      "tradable": false,
+      "upgrade": 8
+    },
+    {
+      "category": 4,
+      "def_id": "map_key_raro",
+      "equip_slot": null,
+      "equipped_on": null,
+      "id": "309130",
+      "in_stash": true,
+      "level": 0,
+      "locked": false,
+      "market_state": 0,
+      "power": 0,
+      "rarity": 2,
+      "sell_value": "180",
+      "sellable": true,
+      "set": "",
+      "stats": [],
+      "tradable": true,
+      "upgrade": 0
+    },
+    {
+      "category": 4,
+      "def_id": "map_key_raro",
+      "equip_slot": null,
+      "equipped_on": null,
+      "id": "310782",
+      "in_stash": true,
+      "level": 0,
+      "locked": false,
+      "market_state": 0,
+      "power": 0,
+      "rarity": 2,
+      "sell_value": "180",
+      "sellable": true,
+      "set": "",
+      "stats": [],
+      "tradable": true,
+      "upgrade": 0
+    },
+    {
+      "category": 4,
+      "def_id": "map_key_raro",
+      "equip_slot": null,
+      "equipped_on": null,
+      "id": "312056",
+      "in_stash": true,
+      "level": 0,
+      "locked": false,
+      "market_state": 0,
+      "power": 0,
+      "rarity": 2,
+      "sell_value": "180",
+      "sellable": true,
+      "set": "",
+      "stats": [],
+      "tradable": true,
+      "upgrade": 0
+    },
+    {
+      "category": 4,
+      "def_id": "map_key_raro",
+      "equip_slot": null,
+      "equipped_on": null,
+      "id": "312858",
+      "in_stash": true,
+      "level": 0,
+      "locked": false,
+      "market_state": 0,
+      "power": 0,
+      "rarity": 2,
+      "sell_value": "180",
+      "sellable": true,
+      "set": "",
+      "stats": [],
+      "tradable": true,
+      "upgrade": 0
+    },
+    {
+      "category": 4,
+      "def_id": "map_key_raro",
+      "equip_slot": null,
+      "equipped_on": null,
+      "id": "313599",
+      "in_stash": true,
+      "level": 0,
+      "locked": false,
+      "market_state": 0,
+      "power": 0,
+      "rarity": 2,
+      "sell_value": "180",
+      "sellable": true,
+      "set": "",
+      "stats": [],
+      "tradable": true,
+      "upgrade": 0
+    },
+    {
+      "category": 4,
+      "def_id": "map_key_raro",
+      "equip_slot": null,
+      "equipped_on": null,
+      "id": "314282",
+      "in_stash": true,
+      "level": 0,
+      "locked": false,
+      "market_state": 0,
+      "power": 0,
+      "rarity": 2,
+      "sell_value": "180",
+      "sellable": true,
+      "set": "",
+      "stats": [],
+      "tradable": true,
+      "upgrade": 0
+    },
+    {
+      "category": 0,
+      "def_id": "coal_bota",
+      "equip_slot": 4,
+      "equipped_on": "45497",
+      "id": "316530",
+      "in_stash": false,
+      "level": 30,
+      "locked": false,
+      "market_state": 0,
+      "power": 29.4894650090548,
+      "rarity": 1,
+      "sell_value": "420",
+      "sellable": true,
+      "set": "coal",
+      "slot": 4,
+      "stats": [
+        {
+          "effective": 0.0037884,
+          "stat": 2,
+          "value": 0.00231
+        },
+        {
+          "effective": 0.1722,
+          "stat": 1,
+          "value": 0.105
+        }
+      ],
+      "tradable": false,
+      "upgrade": 8
+    },
+    {
+      "category": 4,
+      "def_id": "map_key_raro",
+      "equip_slot": null,
+      "equipped_on": null,
+      "id": "317108",
+      "in_stash": true,
+      "level": 0,
+      "locked": false,
+      "market_state": 0,
+      "power": 0,
+      "rarity": 2,
+      "sell_value": "180",
+      "sellable": true,
+      "set": "",
+      "stats": [],
+      "tradable": true,
+      "upgrade": 0
+    },
+    {
+      "category": 4,
+      "def_id": "map_key_raro",
+      "equip_slot": null,
+      "equipped_on": null,
+      "id": "317360",
+      "in_stash": true,
+      "level": 0,
+      "locked": false,
+      "market_state": 0,
+      "power": 0,
+      "rarity": 2,
+      "sell_value": "180",
+      "sellable": true,
+      "set": "",
+      "stats": [],
+      "tradable": true,
+      "upgrade": 0
+    },
+    {
+      "category": 4,
+      "def_id": "map_key_raro",
+      "equip_slot": null,
+      "equipped_on": null,
+      "id": "319916",
+      "in_stash": true,
+      "level": 0,
+      "locked": false,
+      "market_state": 0,
+      "power": 0,
+      "rarity": 2,
+      "sell_value": "180",
+      "sellable": true,
+      "set": "",
+      "stats": [],
+      "tradable": true,
+      "upgrade": 0
+    },
+    {
+      "category": 4,
+      "def_id": "map_key_raro",
+      "equip_slot": null,
+      "equipped_on": null,
+      "id": "320052",
+      "in_stash": true,
+      "level": 0,
+      "locked": false,
+      "market_state": 0,
+      "power": 0,
+      "rarity": 2,
+      "sell_value": "180",
+      "sellable": true,
+      "set": "",
+      "stats": [],
+      "tradable": true,
+      "upgrade": 0
+    },
+    {
+      "category": 4,
+      "def_id": "map_key_raro",
+      "equip_slot": null,
+      "equipped_on": null,
+      "id": "320273",
+      "in_stash": true,
+      "level": 0,
+      "locked": false,
+      "market_state": 0,
+      "power": 0,
+      "rarity": 2,
+      "sell_value": "180",
+      "sellable": true,
+      "set": "",
+      "stats": [],
+      "tradable": true,
+      "upgrade": 0
+    },
+    {
+      "category": 0,
+      "def_id": "coal_calca",
+      "equip_slot": 3,
+      "equipped_on": "30140",
+      "id": "320306",
+      "in_stash": false,
+      "level": 30,
+      "locked": false,
+      "market_state": 0,
+      "power": 30.9236149875396,
+      "rarity": 2,
+      "sell_value": "540",
+      "sellable": true,
+      "set": "coal",
+      "slot": 3,
+      "stats": [
+        {
+          "effective": 0.0460891332,
+          "stat": 6,
+          "value": 0.02810313
+        },
+        {
+          "effective": 0.0037884,
+          "stat": 2,
+          "value": 0.00231
+        },
+        {
+          "effective": 0.1722,
+          "stat": 1,
+          "value": 0.105
+        }
+      ],
+      "tradable": true,
+      "upgrade": 8
+    },
+    {
+      "category": 4,
+      "def_id": "map_key_raro",
+      "equip_slot": null,
+      "equipped_on": null,
+      "id": "320762",
+      "in_stash": true,
+      "level": 0,
+      "locked": false,
+      "market_state": 0,
+      "power": 0,
+      "rarity": 2,
+      "sell_value": "180",
+      "sellable": true,
+      "set": "",
+      "stats": [],
+      "tradable": true,
+      "upgrade": 0
+    },
+    {
+      "category": 0,
+      "def_id": "coal_bota",
+      "equip_slot": 4,
+      "equipped_on": "39855",
+      "id": "321427",
+      "in_stash": false,
+      "level": 30,
+      "locked": false,
+      "market_state": 0,
+      "power": 29.4894650090548,
+      "rarity": 1,
+      "sell_value": "420",
+      "sellable": true,
+      "set": "coal",
+      "slot": 4,
+      "stats": [
+        {
+          "effective": 0.0037884,
+          "stat": 2,
+          "value": 0.00231
+        },
+        {
+          "effective": 0.1722,
+          "stat": 1,
+          "value": 0.105
+        }
+      ],
+      "tradable": false,
+      "upgrade": 8
+    },
+    {
+      "category": 4,
+      "def_id": "map_key_raro",
+      "equip_slot": null,
+      "equipped_on": null,
+      "id": "322130",
+      "in_stash": true,
+      "level": 0,
+      "locked": false,
+      "market_state": 0,
+      "power": 0,
+      "rarity": 2,
+      "sell_value": "180",
+      "sellable": true,
+      "set": "",
+      "stats": [],
+      "tradable": true,
+      "upgrade": 0
+    },
+    {
+      "category": 4,
+      "def_id": "map_key_raro",
+      "equip_slot": null,
+      "equipped_on": null,
+      "id": "322615",
+      "in_stash": true,
+      "level": 0,
+      "locked": false,
+      "market_state": 0,
+      "power": 0,
+      "rarity": 2,
+      "sell_value": "180",
+      "sellable": true,
+      "set": "",
+      "stats": [],
+      "tradable": true,
+      "upgrade": 0
+    },
+    {
+      "category": 4,
+      "def_id": "map_key_raro",
+      "equip_slot": null,
+      "equipped_on": null,
+      "id": "323290",
+      "in_stash": true,
+      "level": 0,
+      "locked": false,
+      "market_state": 0,
+      "power": 0,
+      "rarity": 2,
+      "sell_value": "180",
+      "sellable": true,
+      "set": "",
+      "stats": [],
+      "tradable": true,
+      "upgrade": 0
+    },
+    {
+      "category": 4,
+      "def_id": "map_key_raro",
+      "equip_slot": null,
+      "equipped_on": null,
+      "id": "324035",
+      "in_stash": true,
+      "level": 0,
+      "locked": false,
+      "market_state": 0,
+      "power": 0,
+      "rarity": 2,
+      "sell_value": "180",
+      "sellable": true,
+      "set": "",
+      "stats": [],
+      "tradable": true,
+      "upgrade": 0
+    },
+    {
+      "category": 4,
+      "def_id": "map_key_raro",
+      "equip_slot": null,
+      "equipped_on": null,
+      "id": "324337",
+      "in_stash": true,
+      "level": 0,
+      "locked": false,
+      "market_state": 0,
+      "power": 0,
+      "rarity": 2,
+      "sell_value": "180",
+      "sellable": true,
+      "set": "",
+      "stats": [],
+      "tradable": true,
+      "upgrade": 0
+    },
+    {
+      "category": 4,
+      "def_id": "map_key_raro",
+      "equip_slot": null,
+      "equipped_on": null,
+      "id": "324733",
+      "in_stash": true,
+      "level": 0,
+      "locked": false,
+      "market_state": 0,
+      "power": 0,
+      "rarity": 2,
+      "sell_value": "180",
+      "sellable": true,
+      "set": "",
+      "stats": [],
+      "tradable": true,
+      "upgrade": 0
+    },
+    {
+      "category": 4,
+      "def_id": "map_key_raro",
+      "equip_slot": null,
+      "equipped_on": null,
+      "id": "324815",
+      "in_stash": true,
+      "level": 0,
+      "locked": false,
+      "market_state": 0,
+      "power": 0,
+      "rarity": 2,
+      "sell_value": "180",
+      "sellable": true,
+      "set": "",
+      "stats": [],
+      "tradable": true,
+      "upgrade": 0
+    },
+    {
+      "category": 0,
+      "def_id": "coal_arma",
+      "equip_slot": null,
+      "equipped_on": null,
+      "id": "325679",
+      "in_stash": false,
+      "level": 30,
+      "locked": false,
+      "market_state": 0,
+      "power": 640.041880094393,
+      "rarity": 0,
+      "sell_value": "300",
+      "sellable": true,
+      "set": "coal",
+      "slot": 0,
+      "stats": [
+        {
+          "effective": 94.71,
+          "stat": 0,
+          "value": 57.75
+        }
+      ],
+      "tradable": false,
+      "upgrade": 8
+    },
+    {
+      "category": 4,
+      "def_id": "map_key_raro",
+      "equip_slot": null,
+      "equipped_on": null,
+      "id": "325895",
+      "in_stash": true,
+      "level": 0,
+      "locked": false,
+      "market_state": 0,
+      "power": 0,
+      "rarity": 2,
+      "sell_value": "180",
+      "sellable": true,
+      "set": "",
+      "stats": [],
+      "tradable": false,
+      "upgrade": 0
+    },
+    {
+      "category": 5,
+      "def_id": "skill_stone_comum",
+      "equip_slot": null,
+      "equipped_on": null,
+      "id": "326047",
+      "in_stash": true,
+      "level": 0,
+      "locked": false,
+      "market_state": 0,
+      "power": 0,
+      "rarity": 0,
+      "sell_value": "100",
+      "sellable": true,
+      "set": "",
+      "stats": [],
+      "tradable": false,
+      "upgrade": 0
+    },
+    {
+      "category": 0,
+      "def_id": "clay_elmo",
+      "equip_slot": 1,
+      "equipped_on": "30140",
+      "id": "326400",
+      "in_stash": false,
+      "level": 40,
+      "locked": false,
+      "market_state": 0,
+      "power": 43.1228547186497,
+      "rarity": 1,
+      "sell_value": "560",
+      "sellable": true,
+      "set": "clay",
+      "slot": 1,
+      "stats": [
+        {
+          "effective": 0.2296,
+          "stat": 1,
+          "value": 0.14
+        },
+        {
+          "effective": 0.202048,
+          "stat": 3,
+          "value": 0.1232
+        }
+      ],
+      "tradable": false,
+      "upgrade": 8
+    },
+    {
+      "category": 0,
+      "def_id": "clay_peito",
+      "equip_slot": 2,
+      "equipped_on": "30140",
+      "id": "326530",
+      "in_stash": false,
+      "level": 40,
+      "locked": false,
+      "market_state": 0,
+      "power": 11.0961826099465,
+      "rarity": 1,
+      "sell_value": "560",
+      "sellable": true,
+      "set": "clay",
+      "slot": 2,
+      "stats": [
+        {
+          "effective": 0.9184,
+          "stat": 5,
+          "value": 0.56
+        },
+        {
+          "effective": 0.0614521776,
+          "stat": 6,
+          "value": 0.03747084
+        }
+      ],
+      "tradable": false,
+      "upgrade": 8
+    },
+    {
+      "category": 0,
+      "def_id": "clay_bota",
+      "equip_slot": 4,
+      "equipped_on": "30140",
+      "id": "326616",
+      "in_stash": false,
+      "level": 40,
+      "locked": false,
+      "market_state": 0,
+      "power": 45.8504826557373,
+      "rarity": 2,
+      "sell_value": "720",
+      "sellable": true,
+      "set": "clay",
+      "slot": 4,
+      "stats": [
+        {
+          "effective": 0.0050512,
+          "stat": 2,
+          "value": 0.00308
+        },
+        {
+          "effective": 0.2296,
+          "stat": 1,
+          "value": 0.14
+        },
+        {
+          "effective": 0.202048,
+          "stat": 3,
+          "value": 0.1232
+        }
+      ],
+      "tradable": false,
+      "upgrade": 8
+    },
+    {
+      "category": 0,
+      "def_id": "clay_amuleto",
+      "equip_slot": null,
+      "equipped_on": null,
+      "id": "326728",
+      "in_stash": false,
+      "level": 40,
+      "locked": false,
+      "market_state": 0,
+      "power": 4.12204613138215,
+      "rarity": 0,
+      "sell_value": "400",
+      "sellable": true,
+      "set": "clay",
+      "slot": 7,
+      "stats": [
+        {
+          "effective": 0.1232,
+          "stat": 3,
+          "value": 0.1232
+        }
+      ],
+      "tradable": false,
+      "upgrade": 0
+    },
+    {
+      "category": 4,
+      "def_id": "map_key_raro",
+      "equip_slot": null,
+      "equipped_on": null,
+      "id": "326943",
+      "in_stash": true,
+      "level": 0,
+      "locked": false,
+      "market_state": 0,
+      "power": 0,
+      "rarity": 2,
+      "sell_value": "180",
+      "sellable": true,
+      "set": "",
+      "stats": [],
+      "tradable": false,
+      "upgrade": 0
+    },
+    {
+      "category": 5,
+      "def_id": "skill_stone_comum",
+      "equip_slot": null,
+      "equipped_on": null,
+      "id": "327387",
+      "in_stash": true,
+      "level": 0,
+      "locked": false,
+      "market_state": 0,
+      "power": 0,
+      "rarity": 0,
+      "sell_value": "100",
+      "sellable": true,
+      "set": "",
+      "stats": [],
+      "tradable": false,
+      "upgrade": 0
+    },
+    {
+      "category": 0,
+      "def_id": "clay_peito",
+      "equip_slot": 2,
+      "equipped_on": "20402",
+      "id": "328328",
+      "in_stash": false,
+      "level": 40,
+      "locked": false,
+      "market_state": 0,
+      "power": 11.0961826099465,
+      "rarity": 1,
+      "sell_value": "560",
+      "sellable": true,
+      "set": "clay",
+      "slot": 2,
+      "stats": [
+        {
+          "effective": 0.9184,
+          "stat": 5,
+          "value": 0.56
+        },
+        {
+          "effective": 0.0614521776,
+          "stat": 6,
+          "value": 0.03747084
+        }
+      ],
+      "tradable": false,
+      "upgrade": 8
+    },
+    {
+      "category": 0,
+      "def_id": "clay_elmo",
+      "equip_slot": 1,
+      "equipped_on": "41990",
+      "id": "328390",
+      "in_stash": false,
+      "level": 40,
+      "locked": false,
+      "market_state": 0,
+      "power": 36.2013250625862,
+      "rarity": 0,
+      "sell_value": "400",
+      "sellable": true,
+      "set": "clay",
+      "slot": 1,
+      "stats": [
+        {
+          "effective": 0.2296,
+          "stat": 1,
+          "value": 0.14
+        }
+      ],
+      "tradable": false,
+      "upgrade": 8
+    },
+    {
+      "category": 4,
+      "def_id": "map_key_raro",
+      "equip_slot": null,
+      "equipped_on": null,
+      "id": "329615",
+      "in_stash": true,
+      "level": 0,
+      "locked": false,
+      "market_state": 0,
+      "power": 0,
+      "rarity": 2,
+      "sell_value": "180",
+      "sellable": true,
+      "set": "",
+      "stats": [],
+      "tradable": true,
+      "upgrade": 0
+    },
+    {
+      "category": 4,
+      "def_id": "map_key_raro",
+      "equip_slot": null,
+      "equipped_on": null,
+      "id": "329768",
+      "in_stash": true,
+      "level": 0,
+      "locked": false,
+      "market_state": 0,
+      "power": 0,
+      "rarity": 2,
+      "sell_value": "180",
+      "sellable": true,
+      "set": "",
+      "stats": [],
+      "tradable": true,
+      "upgrade": 0
+    },
+    {
+      "category": 4,
+      "def_id": "map_key_raro",
+      "equip_slot": null,
+      "equipped_on": null,
+      "id": "330872",
+      "in_stash": true,
+      "level": 0,
+      "locked": false,
+      "market_state": 0,
+      "power": 0,
+      "rarity": 2,
+      "sell_value": "180",
+      "sellable": true,
+      "set": "",
+      "stats": [],
+      "tradable": true,
+      "upgrade": 0
+    },
+    {
+      "category": 4,
+      "def_id": "map_key_raro",
+      "equip_slot": null,
+      "equipped_on": null,
+      "id": "331794",
+      "in_stash": true,
+      "level": 0,
+      "locked": false,
+      "market_state": 0,
+      "power": 0,
+      "rarity": 2,
+      "sell_value": "180",
+      "sellable": true,
+      "set": "",
+      "stats": [],
+      "tradable": true,
+      "upgrade": 0
+    },
+    {
+      "category": 0,
+      "def_id": "coal_bota",
+      "equip_slot": 4,
+      "equipped_on": "41990",
+      "id": "333201",
+      "in_stash": false,
+      "level": 30,
+      "locked": false,
+      "market_state": 0,
+      "power": 34.6604793623776,
+      "rarity": 2,
+      "sell_value": "540",
+      "sellable": true,
+      "set": "coal",
+      "slot": 4,
+      "stats": [
+        {
+          "effective": 0.0037884,
+          "stat": 2,
+          "value": 0.00231
+        },
+        {
+          "effective": 0.1722,
+          "stat": 1,
+          "value": 0.105
+        },
+        {
+          "effective": 0.151536,
+          "stat": 3,
+          "value": 0.0924
+        }
+      ],
+      "tradable": false,
+      "upgrade": 8
+    },
+    {
+      "category": 4,
+      "def_id": "map_key_raro",
+      "equip_slot": null,
+      "equipped_on": null,
+      "id": "333582",
+      "in_stash": true,
+      "level": 0,
+      "locked": false,
+      "market_state": 0,
+      "power": 0,
+      "rarity": 2,
+      "sell_value": "180",
+      "sellable": true,
+      "set": "",
+      "stats": [],
+      "tradable": true,
+      "upgrade": 0
+    },
+    {
+      "category": 4,
+      "def_id": "map_key_raro",
+      "equip_slot": null,
+      "equipped_on": null,
+      "id": "334019",
+      "in_stash": true,
+      "level": 0,
+      "locked": false,
+      "market_state": 0,
+      "power": 0,
+      "rarity": 2,
+      "sell_value": "180",
+      "sellable": true,
+      "set": "",
+      "stats": [],
+      "tradable": true,
+      "upgrade": 0
+    },
+    {
+      "category": 4,
+      "def_id": "map_key_raro",
+      "equip_slot": null,
+      "equipped_on": null,
+      "id": "335048",
+      "in_stash": true,
+      "level": 0,
+      "locked": false,
+      "market_state": 0,
+      "power": 0,
+      "rarity": 2,
+      "sell_value": "180",
+      "sellable": true,
+      "set": "",
+      "stats": [],
+      "tradable": true,
+      "upgrade": 0
+    },
+    {
+      "category": 4,
+      "def_id": "map_key_raro",
+      "equip_slot": null,
+      "equipped_on": null,
+      "id": "335158",
+      "in_stash": true,
+      "level": 0,
+      "locked": false,
+      "market_state": 0,
+      "power": 0,
+      "rarity": 2,
+      "sell_value": "180",
+      "sellable": true,
+      "set": "",
+      "stats": [],
+      "tradable": true,
+      "upgrade": 0
+    },
+    {
+      "category": 4,
+      "def_id": "map_key_raro",
+      "equip_slot": null,
+      "equipped_on": null,
+      "id": "335559",
+      "in_stash": true,
+      "level": 0,
+      "locked": false,
+      "market_state": 0,
+      "power": 0,
+      "rarity": 2,
+      "sell_value": "180",
+      "sellable": true,
+      "set": "",
+      "stats": [],
+      "tradable": true,
+      "upgrade": 0
+    },
+    {
+      "category": 4,
+      "def_id": "map_key_raro",
+      "equip_slot": null,
+      "equipped_on": null,
+      "id": "335651",
+      "in_stash": true,
+      "level": 0,
+      "locked": false,
+      "market_state": 0,
+      "power": 0,
+      "rarity": 2,
+      "sell_value": "180",
+      "sellable": true,
+      "set": "",
+      "stats": [],
+      "tradable": true,
+      "upgrade": 0
+    },
+    {
+      "category": 0,
+      "def_id": "coal_anel",
+      "equip_slot": 6,
+      "equipped_on": "36928",
+      "id": "336850",
+      "in_stash": false,
+      "level": 30,
+      "locked": false,
+      "market_state": 0,
+      "power": 8.55176316283269,
+      "rarity": 1,
+      "sell_value": "420",
+      "sellable": true,
+      "set": "coal",
+      "slot": 6,
+      "stats": [
+        {
+          "effective": 0.0316859316,
+          "stat": 4,
+          "value": 0.01932069
+        },
+        {
+          "effective": 0.6888,
+          "stat": 5,
+          "value": 0.42
+        }
+      ],
+      "tradable": false,
+      "upgrade": 8
+    },
+    {
+      "category": 0,
+      "def_id": "coal_calca",
+      "equip_slot": null,
+      "equipped_on": null,
+      "id": "338498",
+      "in_stash": false,
+      "level": 30,
+      "locked": false,
+      "market_state": 0,
+      "power": 3.37534549988754,
+      "rarity": 1,
+      "sell_value": "420",
+      "sellable": true,
+      "set": "coal",
+      "slot": 3,
+      "stats": [
+        {
+          "effective": 0.0460891332,
+          "stat": 6,
+          "value": 0.02810313
+        },
+        {
+          "effective": 0.0037884,
+          "stat": 2,
+          "value": 0.00231
+        }
+      ],
+      "tradable": false,
+      "upgrade": 8
+    },
+    {
+      "category": 0,
+      "def_id": "coal_arma",
+      "equip_slot": 0,
+      "equipped_on": "20402",
+      "id": "338705",
+      "in_stash": false,
+      "level": 30,
+      "locked": false,
+      "market_state": 0,
+      "power": 642.555290707225,
+      "rarity": 1,
+      "sell_value": "420",
+      "sellable": true,
+      "set": "coal",
+      "slot": 0,
+      "stats": [
+        {
+          "effective": 94.71,
+          "stat": 0,
+          "value": 57.75
+        },
+        {
+          "effective": 0.0316859316,
+          "stat": 4,
+          "value": 0.01932069
+        }
+      ],
+      "tradable": false,
+      "upgrade": 8
+    },
+    {
+      "category": 4,
+      "def_id": "map_key_raro",
+      "equip_slot": null,
+      "equipped_on": null,
+      "id": "339387",
+      "in_stash": true,
+      "level": 0,
+      "locked": false,
+      "market_state": 0,
+      "power": 0,
+      "rarity": 2,
+      "sell_value": "180",
+      "sellable": true,
+      "set": "",
+      "stats": [],
+      "tradable": true,
+      "upgrade": 0
+    },
+    {
+      "category": 4,
+      "def_id": "map_key_raro",
+      "equip_slot": null,
+      "equipped_on": null,
+      "id": "339499",
+      "in_stash": true,
+      "level": 0,
+      "locked": false,
+      "market_state": 0,
+      "power": 0,
+      "rarity": 2,
+      "sell_value": "180",
+      "sellable": true,
+      "set": "",
+      "stats": [],
+      "tradable": true,
+      "upgrade": 0
+    },
+    {
+      "category": 4,
+      "def_id": "map_key_raro",
+      "equip_slot": null,
+      "equipped_on": null,
+      "id": "342234",
+      "in_stash": true,
+      "level": 0,
+      "locked": false,
+      "market_state": 0,
+      "power": 0,
+      "rarity": 2,
+      "sell_value": "180",
+      "sellable": true,
+      "set": "",
+      "stats": [],
+      "tradable": true,
+      "upgrade": 0
+    },
+    {
+      "category": 4,
+      "def_id": "map_key_raro",
+      "equip_slot": null,
+      "equipped_on": null,
+      "id": "342418",
+      "in_stash": true,
+      "level": 0,
+      "locked": false,
+      "market_state": 0,
+      "power": 0,
+      "rarity": 2,
+      "sell_value": "180",
+      "sellable": true,
+      "set": "",
+      "stats": [],
+      "tradable": true,
+      "upgrade": 0
+    },
+    {
+      "category": 4,
+      "def_id": "map_key_raro",
+      "equip_slot": null,
+      "equipped_on": null,
+      "id": "342430",
+      "in_stash": true,
+      "level": 0,
+      "locked": false,
+      "market_state": 0,
+      "power": 0,
+      "rarity": 2,
+      "sell_value": "180",
+      "sellable": true,
+      "set": "",
+      "stats": [],
+      "tradable": true,
+      "upgrade": 0
+    },
+    {
+      "category": 4,
+      "def_id": "map_key_raro",
+      "equip_slot": null,
+      "equipped_on": null,
+      "id": "342554",
+      "in_stash": true,
+      "level": 0,
+      "locked": false,
+      "market_state": 0,
+      "power": 0,
+      "rarity": 2,
+      "sell_value": "180",
+      "sellable": true,
+      "set": "",
+      "stats": [],
+      "tradable": true,
+      "upgrade": 0
+    },
+    {
+      "category": 4,
+      "def_id": "map_key_raro",
+      "equip_slot": null,
+      "equipped_on": null,
+      "id": "342649",
+      "in_stash": true,
+      "level": 0,
+      "locked": false,
+      "market_state": 0,
+      "power": 0,
+      "rarity": 2,
+      "sell_value": "180",
+      "sellable": true,
+      "set": "",
+      "stats": [],
+      "tradable": true,
+      "upgrade": 0
+    },
+    {
+      "category": 4,
+      "def_id": "map_key_raro",
+      "equip_slot": null,
+      "equipped_on": null,
+      "id": "342862",
+      "in_stash": true,
+      "level": 0,
+      "locked": false,
+      "market_state": 0,
+      "power": 0,
+      "rarity": 2,
+      "sell_value": "180",
+      "sellable": true,
+      "set": "",
+      "stats": [],
+      "tradable": true,
+      "upgrade": 0
+    },
+    {
+      "category": 4,
+      "def_id": "map_key_raro",
+      "equip_slot": null,
+      "equipped_on": null,
+      "id": "343259",
+      "in_stash": true,
+      "level": 0,
+      "locked": false,
+      "market_state": 0,
+      "power": 0,
+      "rarity": 2,
+      "sell_value": "180",
+      "sellable": true,
+      "set": "",
+      "stats": [],
+      "tradable": true,
+      "upgrade": 0
+    },
+    {
+      "category": 4,
+      "def_id": "map_key_raro",
+      "equip_slot": null,
+      "equipped_on": null,
+      "id": "344390",
+      "in_stash": true,
+      "level": 0,
+      "locked": false,
+      "market_state": 0,
+      "power": 0,
+      "rarity": 2,
+      "sell_value": "180",
+      "sellable": true,
+      "set": "",
+      "stats": [],
+      "tradable": true,
+      "upgrade": 0
+    },
+    {
+      "category": 4,
+      "def_id": "map_key_raro",
+      "equip_slot": null,
+      "equipped_on": null,
+      "id": "345151",
+      "in_stash": true,
+      "level": 0,
+      "locked": false,
+      "market_state": 0,
+      "power": 0,
+      "rarity": 2,
+      "sell_value": "180",
+      "sellable": true,
+      "set": "",
+      "stats": [],
+      "tradable": true,
+      "upgrade": 0
+    },
+    {
+      "category": 4,
+      "def_id": "map_key_raro",
+      "equip_slot": null,
+      "equipped_on": null,
+      "id": "345186",
+      "in_stash": true,
+      "level": 0,
+      "locked": false,
+      "market_state": 0,
+      "power": 0,
+      "rarity": 2,
+      "sell_value": "180",
+      "sellable": true,
+      "set": "",
+      "stats": [],
+      "tradable": true,
+      "upgrade": 0
+    },
+    {
+      "category": 0,
+      "def_id": "coal_calca",
+      "equip_slot": 3,
+      "equipped_on": "20402",
+      "id": "346603",
+      "in_stash": false,
+      "level": 30,
+      "locked": false,
+      "market_state": 0,
+      "power": 19.0726631852122,
+      "rarity": 2,
+      "sell_value": "540",
+      "sellable": true,
+      "set": "coal",
+      "slot": 3,
+      "stats": [
+        {
+          "effective": 0.02810313,
+          "stat": 6,
+          "value": 0.02810313
+        },
+        {
+          "effective": 0.00231,
+          "stat": 2,
+          "value": 0.00231
+        },
+        {
+          "effective": 0.105,
+          "stat": 1,
+          "value": 0.105
+        }
+      ],
+      "tradable": true,
+      "upgrade": 0
+    },
+    {
+      "category": 4,
+      "def_id": "map_key_raro",
+      "equip_slot": null,
+      "equipped_on": null,
+      "id": "346651",
+      "in_stash": true,
+      "level": 0,
+      "locked": false,
+      "market_state": 0,
+      "power": 0,
+      "rarity": 2,
+      "sell_value": "180",
+      "sellable": true,
+      "set": "",
+      "stats": [],
+      "tradable": true,
+      "upgrade": 0
+    },
+    {
+      "category": 4,
+      "def_id": "map_key_raro",
+      "equip_slot": null,
+      "equipped_on": null,
+      "id": "347259",
+      "in_stash": true,
+      "level": 0,
+      "locked": false,
+      "market_state": 0,
+      "power": 0,
+      "rarity": 2,
+      "sell_value": "180",
+      "sellable": true,
+      "set": "",
+      "stats": [],
+      "tradable": true,
+      "upgrade": 0
+    },
+    {
+      "category": 4,
+      "def_id": "map_key_raro",
+      "equip_slot": null,
+      "equipped_on": null,
+      "id": "347342",
+      "in_stash": true,
+      "level": 0,
+      "locked": false,
+      "market_state": 0,
+      "power": 0,
+      "rarity": 2,
+      "sell_value": "180",
+      "sellable": true,
+      "set": "",
+      "stats": [],
+      "tradable": true,
+      "upgrade": 0
+    },
+    {
+      "category": 4,
+      "def_id": "map_key_raro",
+      "equip_slot": null,
+      "equipped_on": null,
+      "id": "347516",
+      "in_stash": true,
+      "level": 0,
+      "locked": false,
+      "market_state": 0,
+      "power": 0,
+      "rarity": 2,
+      "sell_value": "180",
+      "sellable": true,
+      "set": "",
+      "stats": [],
+      "tradable": true,
+      "upgrade": 0
+    },
+    {
+      "category": 4,
+      "def_id": "map_key_raro",
+      "equip_slot": null,
+      "equipped_on": null,
+      "id": "348114",
+      "in_stash": true,
+      "level": 0,
+      "locked": false,
+      "market_state": 0,
+      "power": 0,
+      "rarity": 2,
+      "sell_value": "180",
+      "sellable": true,
+      "set": "",
+      "stats": [],
+      "tradable": true,
+      "upgrade": 0
+    },
+    {
+      "category": 4,
+      "def_id": "map_key_raro",
+      "equip_slot": null,
+      "equipped_on": null,
+      "id": "350632",
+      "in_stash": true,
+      "level": 0,
+      "locked": false,
+      "market_state": 0,
+      "power": 0,
+      "rarity": 2,
+      "sell_value": "180",
+      "sellable": true,
+      "set": "",
+      "stats": [],
+      "tradable": true,
+      "upgrade": 0
+    },
+    {
+      "category": 4,
+      "def_id": "map_key_raro",
+      "equip_slot": null,
+      "equipped_on": null,
+      "id": "350756",
+      "in_stash": true,
+      "level": 0,
+      "locked": false,
+      "market_state": 0,
+      "power": 0,
+      "rarity": 2,
+      "sell_value": "180",
+      "sellable": true,
+      "set": "",
+      "stats": [],
+      "tradable": true,
+      "upgrade": 0
+    },
+    {
+      "category": 4,
+      "def_id": "map_key_raro",
+      "equip_slot": null,
+      "equipped_on": null,
+      "id": "352999",
+      "in_stash": true,
+      "level": 0,
+      "locked": false,
+      "market_state": 0,
+      "power": 0,
+      "rarity": 2,
+      "sell_value": "180",
+      "sellable": true,
+      "set": "",
+      "stats": [],
+      "tradable": true,
+      "upgrade": 0
+    },
+    {
+      "category": 4,
+      "def_id": "map_key_raro",
+      "equip_slot": null,
+      "equipped_on": null,
+      "id": "353244",
+      "in_stash": true,
+      "level": 0,
+      "locked": false,
+      "market_state": 0,
+      "power": 0,
+      "rarity": 2,
+      "sell_value": "180",
+      "sellable": true,
+      "set": "",
+      "stats": [],
+      "tradable": true,
+      "upgrade": 0
+    },
+    {
+      "category": 4,
+      "def_id": "map_key_raro",
+      "equip_slot": null,
+      "equipped_on": null,
+      "id": "354578",
+      "in_stash": true,
+      "level": 0,
+      "locked": false,
+      "market_state": 0,
+      "power": 0,
+      "rarity": 2,
+      "sell_value": "180",
+      "sellable": true,
+      "set": "",
+      "stats": [],
+      "tradable": true,
+      "upgrade": 0
+    },
+    {
+      "category": 0,
+      "def_id": "coal_peito",
+      "equip_slot": null,
+      "equipped_on": null,
+      "id": "354729",
+      "in_stash": false,
+      "level": 30,
+      "locked": false,
+      "market_state": 0,
+      "power": 6.27879793559896,
+      "rarity": 2,
+      "sell_value": "540",
+      "sellable": true,
+      "set": "coal",
+      "slot": 2,
+      "stats": [
+        {
+          "effective": 0.42,
+          "stat": 5,
+          "value": 0.42
+        },
+        {
+          "effective": 0.02810313,
+          "stat": 6,
+          "value": 0.02810313
+        },
+        {
+          "effective": 0.00231,
+          "stat": 2,
+          "value": 0.00231
+        }
+      ],
+      "tradable": true,
+      "upgrade": 0
+    },
+    {
+      "category": 4,
+      "def_id": "map_key_raro",
+      "equip_slot": null,
+      "equipped_on": null,
+      "id": "354976",
+      "in_stash": true,
+      "level": 0,
+      "locked": false,
+      "market_state": 0,
+      "power": 0,
+      "rarity": 2,
+      "sell_value": "180",
+      "sellable": true,
+      "set": "",
+      "stats": [],
+      "tradable": true,
+      "upgrade": 0
+    },
+    {
+      "category": 4,
+      "def_id": "map_key_raro",
+      "equip_slot": null,
+      "equipped_on": null,
+      "id": "355423",
+      "in_stash": true,
+      "level": 0,
+      "locked": false,
+      "market_state": 0,
+      "power": 0,
+      "rarity": 2,
+      "sell_value": "180",
+      "sellable": true,
+      "set": "",
+      "stats": [],
+      "tradable": true,
+      "upgrade": 0
+    },
+    {
+      "category": 4,
+      "def_id": "map_key_raro",
+      "equip_slot": null,
+      "equipped_on": null,
+      "id": "355503",
+      "in_stash": true,
+      "level": 0,
+      "locked": false,
+      "market_state": 0,
+      "power": 0,
+      "rarity": 2,
+      "sell_value": "180",
+      "sellable": true,
+      "set": "",
+      "stats": [],
+      "tradable": true,
+      "upgrade": 0
+    },
+    {
+      "category": 4,
+      "def_id": "map_key_raro",
+      "equip_slot": null,
+      "equipped_on": null,
+      "id": "355677",
+      "in_stash": true,
+      "level": 0,
+      "locked": false,
+      "market_state": 0,
+      "power": 0,
+      "rarity": 2,
+      "sell_value": "180",
+      "sellable": true,
+      "set": "",
+      "stats": [],
+      "tradable": true,
+      "upgrade": 0
+    }
+  ],
+  "skills": {
+    "bag_tabs": 3,
+    "field_slots": 9,
+    "gold": "188915",
+    "levels": {
+      "C01": 10,
+      "D01": 10,
+      "D02": 10,
+      "D03": 6,
+      "D05": 10,
+      "D06": 6,
+      "D09": 6,
+      "E01": 10,
+      "E02": 10,
+      "E03": 6,
+      "E05": 10,
+      "E06": 6,
+      "E09": 6,
+      "G01": 5,
+      "G02": 10,
+      "H01": 10,
+      "H02": 10,
+      "H03": 10,
+      "H04": 10,
+      "H05": 10,
+      "H06": 10,
+      "H08": 10,
+      "N01": 1,
+      "N02": 5,
+      "N03": 1,
+      "N04": 5,
+      "N05": 1,
+      "N06": 5,
+      "N07": 1,
+      "N08": 5,
+      "N09": 1,
+      "N10": 5,
+      "N11": 1,
+      "N12": 5,
+      "N13": 1,
+      "N14": 5,
+      "N15": 1,
+      "O01": 10,
+      "O02": 10,
+      "O03": 9,
+      "O05": 10,
+      "O06": 8,
+      "O09": 8,
+      "P05": 10,
+      "S01": 10,
+      "S02": 1,
+      "S03": 10,
+      "S06": 6,
+      "V01": 5,
+      "V02": 5,
+      "V03": 9
+    },
+    "max_phase": 85,
+    "refunds": {
+      "C01": "55619",
+      "D01": "55619",
+      "D02": "372458",
+      "D03": "1165716",
+      "D05": "372458",
+      "D06": "1165716",
+      "D09": "1165716",
+      "E01": "55619",
+      "E02": "372458",
+      "E03": "1165716",
+      "E05": "372458",
+      "E06": "1165716",
+      "E09": "1165716",
+      "G01": "35314",
+      "G02": "1041784",
+      "H01": "8305",
+      "H02": "8305",
+      "H03": "7558",
+      "H04": "7496",
+      "H05": "8309",
+      "H06": "8305",
+      "H08": "11428",
+      "N01": "1500",
+      "N02": "28928",
+      "N03": "34414",
+      "N04": "61842",
+      "N05": "67327",
+      "N06": "94756",
+      "N07": "100241",
+      "N08": "127670",
+      "N09": "133155",
+      "N10": "160583",
+      "N11": "166069",
+      "N12": "193497",
+      "N13": "198983",
+      "N14": "226411",
+      "N15": "231897",
+      "O01": "44794",
+      "O02": "267667",
+      "O03": "1337633",
+      "O05": "267667",
+      "O06": "1118662",
+      "O09": "1118662",
+      "P05": "372995",
+      "S01": "55671",
+      "S02": "25000",
+      "S03": "372995",
+      "S06": "1167743",
+      "V01": "18561",
+      "V02": "111929",
+      "V03": "1384985"
+    },
+    "totals": {
+      "bag_tabs_bonus": 1,
+      "coin_add": 0.9768749998,
+      "crit_chance_add": 0.03093301657,
+      "crit_dmg_add": 0,
+      "dmg_static": 1.74529342166183,
+      "energia_add": 0.9143008483,
+      "geo_mult": 1.05595218884932,
+      "luck_add": 0.1379089458,
+      "speed_add": 0.037825248,
+      "team_dmg_add": 0.652814815,
+      "vagas_campo": 8,
+      "xp_mult": 1.56
+    }
+  }
+}

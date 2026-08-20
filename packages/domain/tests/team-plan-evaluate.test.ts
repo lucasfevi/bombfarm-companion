@@ -32,6 +32,7 @@ function accountFromFixture(raw: Record<string, unknown>): TeamPlanAccountInput 
     phase: 1,
     mitigationPct: 6.7,
     slots: 6,
+    fieldSlots: 6,
   };
 }
 
@@ -154,9 +155,10 @@ describe('evaluateRoster', () => {
         cdr: 4,
         luck: 0,
       },
-      sheetOther: { speed: 0, critChance: 0, critDmg: 0, penetration: 0, cdr: 0 },
+      sheetOther: { speed: 0, critChance: 0, critDmgFlat: 0, penetration: 0, cdr: 0 },
       mods: {
         drainMult: 1,
+        ownTeamDrainPct: 0,
         combatCritChancePctOfBase: 0,
         penetrationPp: 0,
         rangeCells: 0,
@@ -166,7 +168,7 @@ describe('evaluateRoster', () => {
         gateAttackMult: 1,
         sheetCritChancePctOfBase: 0,
         sheetPenetrationRaw: 0,
-        sheetCritDmgPctOfBase: 0,
+        sheetCritDmgFlat: 0,
       },
       treeSheet: {
         danoStatic: 1,
@@ -215,9 +217,10 @@ describe('evaluateRoster', () => {
         cdr: 4,
         luck: 0,
       },
-      sheetOther: { speed: 0, critChance: 0, critDmg: 0, penetration: 0, cdr: 0 },
+      sheetOther: { speed: 0, critChance: 0, critDmgFlat: 0, penetration: 0, cdr: 0 },
       mods: {
         drainMult: 1,
+        ownTeamDrainPct: 0,
         combatCritChancePctOfBase: 0,
         penetrationPp: 0,
         rangeCells: 0,
@@ -227,7 +230,7 @@ describe('evaluateRoster', () => {
         gateAttackMult: 1,
         sheetCritChancePctOfBase: 0,
         sheetPenetrationRaw: 0,
-        sheetCritDmgPctOfBase: 0,
+        sheetCritDmgFlat: 0,
       },
       treeSheet: {
         danoStatic: 1,
@@ -277,9 +280,10 @@ describe('evaluateRoster', () => {
         cdr: 4,
         luck: 0,
       },
-      sheetOther: { speed: 0, critChance: 0, critDmg: 0, penetration: 0, cdr: 0 },
+      sheetOther: { speed: 0, critChance: 0, critDmgFlat: 0, penetration: 0, cdr: 0 },
       mods: {
         drainMult: 1,
+        ownTeamDrainPct: 0,
         combatCritChancePctOfBase: 0,
         penetrationPp: 0,
         rangeCells: 0,
@@ -289,7 +293,7 @@ describe('evaluateRoster', () => {
         gateAttackMult: 1,
         sheetCritChancePctOfBase: 0,
         sheetPenetrationRaw: 0,
-        sheetCritDmgPctOfBase: 0,
+        sheetCritDmgFlat: 0,
       },
       treeSheet: {
         danoStatic: 1,
@@ -342,9 +346,10 @@ describe('evaluateRoster', () => {
         cdr: 4,
         luck: 0,
       },
-      sheetOther: { speed: 0, critChance: 0, critDmg: 0, penetration: 0, cdr: 0 },
+      sheetOther: { speed: 0, critChance: 0, critDmgFlat: 0, penetration: 0, cdr: 0 },
       mods: {
         drainMult: 1,
+        ownTeamDrainPct: 0,
         combatCritChancePctOfBase: 0,
         penetrationPp: 0,
         rangeCells: 0,
@@ -354,7 +359,7 @@ describe('evaluateRoster', () => {
         gateAttackMult: 1,
         sheetCritChancePctOfBase: 0,
         sheetPenetrationRaw: 0,
-        sheetCritDmgPctOfBase: 0,
+        sheetCritDmgFlat: 0,
       },
       treeSheet: {
         danoStatic: 1,

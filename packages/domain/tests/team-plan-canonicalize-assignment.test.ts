@@ -140,7 +140,7 @@ describe('canonicalizeAssignment', () => {
         contexts,
         loadoutsByHeroId: loadoutsFromAssignment(state, itemById),
         ptsByHeroId,
-        slots: input.account.slots,
+        slots: input.account.fieldSlots,
         farm: farmFromAccount(input),
         forgeFloor: 12,
       });
@@ -392,7 +392,8 @@ describe('buildWaterfall canonicalizes at the applied floor', () => {
       inventory: [...forged.map((entry) => (entry.id === target.id ? worn : entry)), spare, ...ballast],
       // More slots than heroes keeps the roster under-saturated, where the objective is a plain sum
       // of sustained DPS and therefore monotone in upgrade — that is what makes the tie exact.
-      account: { ...base.account, slots: base.heroes.length + 1 },
+      // `fieldSlots`, not `slots` (House recovery), is what the saturation math reads.
+      account: { ...base.account, fieldSlots: base.heroes.length + 1 },
     };
     return { input, worn, spare };
   }
@@ -441,7 +442,7 @@ describe('buildWaterfall canonicalizes at the applied floor', () => {
       contexts,
       loadoutsByHeroId: loadoutsFromAssignment(result.assignment, itemById),
       ptsByHeroId,
-      slots: input.account.slots,
+      slots: input.account.fieldSlots,
       farm: farmFromAccount(input),
       forgeFloor: result.forgeFloorApplied,
     });

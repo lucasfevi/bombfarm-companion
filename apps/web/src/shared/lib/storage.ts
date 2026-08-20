@@ -11,6 +11,10 @@ import {
   type HeroContext,
   type TreeState,
 } from './account-shared';
+import { readJson, writeJson } from './storage-json';
+import { migrateCritDmgFlatBakeOnce } from './storage-critdmg-migration';
+import { migrateCritChanceFlatBakeOnce } from './storage-critchance-migration';
+import { migrateCritCdrRepoolBakeOnce } from './storage-critcdr-repool-migration';
 
 export {
   DEFAULT_ACCOUNT,
@@ -19,6 +23,17 @@ export {
   normalizeAccount,
 } from './account-shared';
 export type { AccountShared, HeroContext, TreeState } from './account-shared';
+
+// The localStorage primitives live in `./storage-json` so this module and the one-shot
+// migrations can share them without importing each other. Re-exported here so
+// `@/shared/lib/storage` stays the single import site for the rest of the app.
+export {
+  clearStorageWriteErrorListenersForTests,
+  onStorageWriteError,
+  readJson,
+  writeJson,
+} from './storage-json';
+export type { StorageWriteErrorListener } from './storage-json';
 
 const HEROES_KEY = 'bf-hp-heroes-v1';
 const ACTIVE_KEY = 'bf-hp-active-hero-v1';
@@ -71,7 +86,7 @@ export type HeroRecord = {
    * recommendations. Defaults to `true` when absent.
    */
   battleAllowed?: boolean;
-  /** Cosmetic avatar skin from save `skin` (0–6; see `HERO_SKIN_COUNT`). Display-only. */
+  /** Cosmetic avatar skin from save `skin` (0–7; see `HERO_SKIN_COUNT`). Display-only. */
   skin?: number;
   /**
    * Birth roll in planner units (from save `birth_stats`). Additive — missing on pre-persist
@@ -90,57 +105,7 @@ function uid(): string {
   return `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
 }
 
-export function readJson<T>(key: string, fallback: T): T {
-  try {
-    const raw = localStorage.getItem(key);
-    if (!raw) return fallback;
-    return JSON.parse(raw) as T;
-  } catch {
-    return fallback;
-  }
-}
 
-export type StorageWriteErrorListener = (info: { key: string; error: unknown }) => void;
-
-const writeErrorListeners = new Set<StorageWriteErrorListener>();
-
-/**
- * Register a listener for localStorage write failures (quota / private mode).
- * Returns an unsubscribe function. Each listener invocation is individually
- * try/caught so one bad listener cannot break the save path (MOD-45, ASM-11).
- */
-export function onStorageWriteError(listener: StorageWriteErrorListener): () => void {
-  writeErrorListeners.add(listener);
-  return () => {
-    writeErrorListeners.delete(listener);
-  };
-}
-
-/** Vitest helper — clears the write-error listener set. */
-export function clearStorageWriteErrorListenersForTests(): void {
-  writeErrorListeners.clear();
-}
-
-function notifyWriteError(key: string, error: unknown): void {
-  for (const listener of writeErrorListeners) {
-    try {
-      listener({ key, error });
-    } catch {
-      // Contain listener failures — do not break the save path.
-    }
-  }
-}
-
-/** Returns true on success, false on any setItem throw — never rethrows (MOD-45). */
-export function writeJson(key: string, value: unknown): boolean {
-  try {
-    localStorage.setItem(key, JSON.stringify(value));
-    return true;
-  } catch (error) {
-    notifyWriteError(key, error);
-    return false;
-  }
-}
 
 /**
  * Older saves computed Geared live from naked + equipped items (`manualGeared: false`)
@@ -155,7 +120,7 @@ function migrateGearedOverride(raw: Partial<HeroRecord>): SheetStats {
     ...emptySheetOther(),
     critChance: mods.sheetCritChancePctOfBase / 100,
     penetration: mods.sheetPenetrationRaw,
-    critDmg: mods.sheetCritDmgPctOfBase,
+    critDmgFlat: mods.sheetCritDmgFlat,
   };
   return applyGear(naked, loadout, sheetOther);
 }
@@ -198,6 +163,7 @@ function reconcileActiveHero(heroes: HeroRecord[]) {
   else localStorage.removeItem(ACTIVE_KEY);
 }
 
+
 export function loadHeroes(): HeroRecord[] {
   let list = readJson<Partial<HeroRecord>[]>(HEROES_KEY, []);
   let fromLegacy = false;
@@ -211,12 +177,29 @@ export function loadHeroes(): HeroRecord[] {
     }
   }
 
+  const { list: critDmgMigratedList, changed: critDmgMigrationChanged } = migrateCritDmgFlatBakeOnce(list);
+  list = critDmgMigratedList;
+
+  const { list: critChanceMigratedList, changed: critChanceMigrationChanged } =
+    migrateCritChanceFlatBakeOnce(list);
+  list = critChanceMigratedList;
+
+  const { list: critCdrRepoolMigratedList, changed: critCdrRepoolMigrationChanged } =
+    migrateCritCdrRepoolBakeOnce(list);
+  list = critCdrRepoolMigratedList;
+
   const imported = list.filter(hasSourceId);
   const normalized = imported.map((hero) =>
     normalizeHero({ ...hero, id: hero.id ?? uid(), name: hero.name ?? 'Hero' }),
   );
 
-  if (imported.length !== list.length || fromLegacy) {
+  if (
+    imported.length !== list.length ||
+    fromLegacy ||
+    critDmgMigrationChanged ||
+    critChanceMigrationChanged ||
+    critCdrRepoolMigrationChanged
+  ) {
     saveHeroes(normalized);
     reconcileActiveHero(normalized);
   }
@@ -281,12 +264,89 @@ export function upsertHero(
 }
 
 /**
+ * Structural equality over the JSON-shaped value tree a `HeroRecord` is made of (nested plain
+ * objects — `naked`, `pts`, `abilities`, `loadout`, `altLoadout`, `birth`, `gearedOverride` — plus
+ * primitives and `null`). Recursive by construction, so it can never MISS a nested edit the way a
+ * shallow compare would: an unequal leaf anywhere propagates a `false` all the way up.
+ *
+ * Deliberate choices:
+ * - key UNION, not just `Object.keys(left)`, so a key present on one side and absent on the other
+ *   is unequal — and `{ sourceId: undefined }` vs `{}` (the shape `normalizeHero` can produce for
+ *   optional fields) is equal, matching what a localStorage round-trip does to them.
+ * - `left === right` first, so `0`/`-0` compare EQUAL. `-0` is a known escapee into stored records
+ *   (see `point-inference.ts`), and `JSON.stringify(-0)` is `"0"` — a saved record can differ from
+ *   its in-memory twin by sign of zero alone, which is not an edit.
+ * - `NaN === NaN` is treated as equal for the same reason: it is not a change.
+ *
+ * Not `JSON.stringify` on both sides: that is key-ORDER sensitive (two records with identical
+ * values but different insertion order would read as different) and it silently erases `undefined`
+ * asymmetries instead of deciding them.
+ */
+function jsonValueEqual(left: unknown, right: unknown): boolean {
+  if (left === right) return true;
+  // `Number.isNaN` narrows to the number NaN on its own — no `typeof` guard needed.
+  if (Number.isNaN(left) && Number.isNaN(right)) return true;
+  if (typeof left !== 'object' || typeof right !== 'object' || left === null || right === null) {
+    return false;
+  }
+  const leftIsArray = Array.isArray(left);
+  if (leftIsArray !== Array.isArray(right)) return false;
+  if (leftIsArray) {
+    const leftArray = left as unknown[];
+    const rightArray = right as unknown[];
+    if (leftArray.length !== rightArray.length) return false;
+    return leftArray.every((item, index) => jsonValueEqual(item, rightArray[index]));
+  }
+  const leftRecord = left as Record<string, unknown>;
+  const rightRecord = right as Record<string, unknown>;
+  for (const key of new Set([...Object.keys(leftRecord), ...Object.keys(rightRecord)])) {
+    if (!jsonValueEqual(leftRecord[key], rightRecord[key])) return false;
+  }
+  return true;
+}
+
+/**
+ * `updatedAt` is a SAVE stamp, not hero data: `upsertHero` re-stamps it with `Date.now()` on every
+ * autosave fire whether or not anything changed, so including it here would make this comparison
+ * unsatisfiable and the identity guard below inert. Every consumer of `updatedAt`
+ * (`roster-compare`'s `updated` sort key, the team-plan cache key in `stores/team-plan/types.ts`)
+ * wants "when did this hero's data last change" — which a no-op autosave is not. localStorage
+ * still receives the fresh stamp from `upsertHero`; only the in-memory copy declines to churn for
+ * it, and the next real edit advances it in both places.
+ */
+function heroRecordsValueEqual(left: HeroRecord, right: HeroRecord): boolean {
+  const { updatedAt: _leftStamp, ...leftData } = left;
+  const { updatedAt: _rightStamp, ...rightData } = right;
+  return jsonValueEqual(leftData, rightData);
+}
+
+/**
  * Apply an `upsertHero` result into React state without a full `loadHeroes()` reload.
  * Updates the matching id in place; appends when the saved hero is new to the list.
+ *
+ * Returns the SAME array reference when `saved` is value-equal to the record already at that
+ * index. This is load-bearing, not a micro-optimisation: `state.heroes` is member 0 of
+ * `readFarmDepTuple` (`stores/selectors/farm-ranking-selectors.ts`), whose members are compared
+ * with `Object.is`. A fresh array identity therefore invalidates every memo keyed on that tuple
+ * AND makes `selectFarmRespecView` judge a still-valid respec proposal stale — silently, since
+ * `selectFarmRespecStatus` then collapses to `'idle'` and no error surfaces. The 700ms debounced
+ * hero autosave (`persistence/persist-hero-draft.ts`) round-trips the roster and calls this after
+ * any interaction, so `.map()`'s unconditional new array dropped live proposals on a timer.
+ * Reference equality cannot serve here: `saved` is rebuilt by `normalizeHero`, so `===` never
+ * hits — see {@link heroRecordsValueEqual} for the comparison and why `updatedAt` is excluded.
+ *
+ * Scope: this guards STATE identity only. `upsertHero` above still runs its `saveHeroes` /
+ * `writeJson` on a no-op fire. `writeHeroBattleAllowed` (`persistence/persist-roster.ts`) and
+ * {@link importHeroes} below hold the same return-the-same-array contract; the first guards one
+ * level earlier, its compare sitting BEFORE `saveHeroes`. The consumer half lives in
+ * `roster-slice.ts`'s `commitRoster`, which declines to `set` when the returned reference is
+ * unchanged. Skipping the redundant write here would change `upsertHero`'s save semantics and is
+ * deliberately left alone.
  */
 export function patchHeroInList(heroes: HeroRecord[], saved: HeroRecord): HeroRecord[] {
   const existingIndex = heroes.findIndex((hero) => hero.id === saved.id);
   if (existingIndex < 0) return [...heroes, saved];
+  if (heroRecordsValueEqual(heroes[existingIndex], saved)) return heroes;
   return heroes.map((hero, index) => (index === existingIndex ? saved : hero));
 }
 
@@ -312,6 +372,22 @@ export function patchHeroInList(heroes: HeroRecord[], saved: HeroRecord): HeroRe
  * create/update-only behavior; `removed` is always `0` in that case. AC-27: this sync takes
  * only heroes/records/sourceIds — no account identifier or save-generation timestamp field
  * is part of its input shape at all, so none can gate a removal.
+ *
+ * Returns the SAME `heroes` array reference when the sync changed nothing — no record created,
+ * none removed, and every merged record value-equal (per {@link heroRecordsValueEqual}, which
+ * ignores the `updatedAt` stamp `mergeImportedHero` refreshes) to the one it replaced. Same
+ * contract, same reason as {@link patchHeroInList}: `state.heroes` is member 0 of
+ * `readFarmDepTuple` (`stores/selectors/farm-ranking-selectors.ts`), compared with `Object.is`,
+ * so a fresh-but-equal array reads as a real planner edit and silently drops a live farm-respec
+ * proposal. Re-importing an unchanged save file used to do exactly that.
+ *
+ * Two things this deliberately does NOT change:
+ * - `created`/`updated`/`removed` keep their meaning. `updated` still counts every record
+ *   matched and overwritten from the save, value-equal merges included — the counts report what
+ *   the save touched, not whether the data moved, and the import summary UI reads them that way.
+ * - Save semantics. `saveHeroes(next)` below still writes the freshly-merged, freshly-stamped
+ *   records on a no-op import, exactly as before; only the RETURNED array's identity changes.
+ *   Same scope as `patchHeroInList`: the guard protects in-memory state, not the write.
  */
 export function importHeroes(
   heroes: HeroRecord[],
@@ -321,14 +397,20 @@ export function importHeroes(
   let next = [...heroes];
   let created = 0;
   let updated = 0;
+  // Tracks whether any record's DATA moved — independent of `created`/`updated`, which count
+  // what the save touched. Only this decides which array reference comes back.
+  let dataChanged = false;
   for (const record of records) {
     const existingIndex = next.findIndex((hero) => hero.sourceId === record.sourceId);
     if (existingIndex >= 0) {
-      next[existingIndex] = normalizeHero(mergeImportedHero(next[existingIndex], record));
+      const merged = normalizeHero(mergeImportedHero(next[existingIndex], record));
+      if (!heroRecordsValueEqual(next[existingIndex], merged)) dataChanged = true;
+      next[existingIndex] = merged;
       updated++;
     } else {
       next.push(normalizeHero({ ...record, id: uid(), updatedAt: Date.now() }));
       created++;
+      dataChanged = true;
     }
   }
 
@@ -343,7 +425,11 @@ export function importHeroes(
 
   saveHeroes(next);
   if (removed > 0) reconcileActiveHero(next);
-  return { heroes: next, created, updated, removed };
+  // `next` starts as a copy of `heroes` and the filter above only ever drops entries, so
+  // "nothing created, nothing removed, every merge value-equal" means `next` is element-wise
+  // equal to `heroes` — the original reference is the safe one to hand back.
+  const settled = dataChanged || removed > 0 ? next : heroes;
+  return { heroes: settled, created, updated, removed };
 }
 
 export function deleteHero(heroes: HeroRecord[], heroId: string): HeroRecord[] {

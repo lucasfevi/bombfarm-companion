@@ -5,6 +5,7 @@ import { panelHClass, panelTitleClass, tipClass } from '@bombfarm/ui/panel-field
 import { useAppLang } from '@/shared/context/app-lang';
 import { formatNumber } from '@/shared/lib/format-number';
 import { sub } from '@/shared/i18n';
+import { formatClearTime } from '../model/phases-page';
 import type { HeroPhaseFit } from '@bombfarm/domain/phase-intel';
 import type { HeroRecord } from '@/shared/lib/storage';
 import { PhasesHeroSwitcher } from './phases-hero-switcher';
@@ -51,9 +52,24 @@ export function PhasesHeroPanel({
                 ),
               },
               {
+                id: 'normalHit',
+                label: t.phasesNormalHit,
+                value: formatNumber(heroFit.normalHit, 0),
+              },
+              {
+                id: 'critHit',
+                label: t.phasesCritHit,
+                value: formatNumber(heroFit.critHit, 0),
+              },
+              {
                 id: 'avgHit',
                 label: t.phasesAvgHit,
                 value: formatNumber(heroFit.avgHit, 0),
+              },
+              {
+                id: 'fieldTime',
+                label: t.phasesFieldTime,
+                value: formatClearTime(heroFit.fieldSecs),
               },
             ]}
           />

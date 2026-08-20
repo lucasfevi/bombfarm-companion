@@ -34,7 +34,7 @@ function rawSheetOther(abilities: Record<string, number>): SheetOtherPct {
     ...emptySheetOther(),
     critChance: mods.sheetCritChancePctOfBase / 100,
     penetration: mods.sheetPenetrationRaw,
-    critDmg: mods.sheetCritDmgPctOfBase,
+    critDmgFlat: mods.sheetCritDmgFlat,
   };
 }
 
@@ -120,13 +120,30 @@ function baseSave() {
         },
         // Recomputed 2026-08-11 for the catalog v4 rebalance (item stats ×0.7): dmg,
         // penetration and luck are the amuleto's 3 rolls, so only those three move.
+        //
+        // Recomputed a THIRD time 2026-08-16 for the same-day item redistribution: the
+        // amuleto this hero wears now rolls sorte > dmg > crit rather than
+        // dmg/penetration/luck, so energia, speed, penetration and luck all move with it.
+        //
+        // NOT recomputed when the item was re-identified `steel_amuleto` -> `gold_amuleto`
+        // (level 20 is Gold's native level post-2026-08-15; Steel moved to 120). The swap is
+        // stat-neutral by construction: Steel's valores are exactly 6x Gold's and
+        // `nivelMult[120] / nivelMult[20]` is also exactly 6, so `scaledValores` cancels the
+        // two and both items contribute the same rolls at level 20. Every value below is
+        // unchanged; only the def id moved.
+        //
+        // Recomputed 2026-08-16 for the flat crit-chance/CDR change, then recomputed AGAIN for
+        // the 2026-08-18 revert back to percent-of-base (issue #132): `crit_chance` moves
+        // 0.15348 → 0.61506 → 0.15580. The reverted value lands close to the original because
+        // the shape round-tripped — the small residual difference from 0.15348165135 is the
+        // item catalog's crit-base rescale (`gold_amuleto`'s crit roll moved with it).
         stats: {
           dmg: 1031.0318879571785,
           energia: 456.7372881,
           speed: 46.223410365,
-          crit_chance: 0.15348165135,
+          crit_chance: 0.15580013415,
           crit_dmg: 2.196153846,
-          penetration: 1.504,
+          penetration: 1,
           cooldown_reduction: 0.02,
           power: 13133.6,
           luck: 0.08389992750000001,
@@ -231,7 +248,7 @@ function baseSave() {
     ],
     items: [
       {
-        def_id: 'steel_amuleto',
+        def_id: 'gold_amuleto',
         equip_slot: 7,
         equipped_on: '1001',
         id: '27133',
@@ -240,7 +257,7 @@ function baseSave() {
         upgrade: 10,
       },
       {
-        def_id: 'steel_anel',
+        def_id: 'gold_anel',
         equip_slot: 2,
         equipped_on: '1004',
         id: '27134',
@@ -298,6 +315,15 @@ describe('parseSaveFile — birth_stats reject gate (BSPW5-01)', () => {
     const { rejected, candidates } = parseSaveFile(raw, []);
     expect(rejected).toBeNull();
     expect(candidates).toHaveLength(5);
+  });
+
+  // The corpus's largest roster to date (11 heroes) — proves the acceptance gate scales past the
+  // 5/8/9-hero captures above without special-casing anything on hero count.
+  it('AC-04 (real fixture, largest roster): the 11-hero capture is not rejected', () => {
+    const raw = loadFixtureJson('save-20260817-11heroes.json');
+    const { rejected, candidates } = parseSaveFile(raw, []);
+    expect(rejected).toBeNull();
+    expect(candidates).toHaveLength(11);
   });
 
   // MP5 F1 — RECORDED LOSS (AD-068 "deleted, not weakened"): `gale-01-points-reset.json`
@@ -364,7 +390,7 @@ describe('parseSaveFile', () => {
     expect(cora.gearCount).toBe(1);
     expect(cora.abilityCount).toBe(2);
     expect(cora.record.abilities).toEqual({ detonacao_dupla: 10, passagem_bastao: 10 });
-    expect(cora.record.loadout.amuleto).toEqual({ defId: 'steel_amuleto', rarityIdx: 2, level: 20, upgrade: 10 });
+    expect(cora.record.loadout.amuleto).toEqual({ defId: 'gold_amuleto', rarityIdx: 2, level: 20, upgrade: 10 });
     expect(cora.record.stars).toBe(2);
 
     // AC-06 (ASM-02): gearedOverride is the tree-inclusive, ZERO-points sheet — composed
@@ -534,7 +560,20 @@ describe('parseSaveFile', () => {
 
   it('returns nulls for account data when casa/skills are absent (payload entry point — a FILE lacking skills entirely is now rejected upstream by MSG-11\'s gate, so this is parseAccountPayload\'s territory, not parseSaveFile\'s)', () => {
     const { account } = parseAccountPayload({ heroes: [] }, []);
-    expect(account).toEqual({ tree: null, houseIdx: null, houseLevel: null, phase: null });
+    // Farm Ranking: @bombfarm/domain's mapAccountMaxPhase added the additive, required
+    // `maxPhase: number | null` field to AccountImportData — every rejection path is `null`.
+    // House-ceiling fix: `fieldSlots` (`skills.field_slots`) and `houseCycleSecs`
+    // (`casa.cycle_secs`) joined the same total-reader family — absent section ⇒ `null`, never a
+    // substituted default, so a consumer can tell "the save said nothing" from "the save said 3".
+    expect(account).toEqual({
+      tree: null,
+      houseIdx: null,
+      houseLevel: null,
+      fieldSlots: null,
+      houseCycleSecs: null,
+      phase: null,
+      maxPhase: null,
+    });
   });
 
   it('missing stats block still composes naked/gearedOverride from birth, but cannot infer pts', () => {

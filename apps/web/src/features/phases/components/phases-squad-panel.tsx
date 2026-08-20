@@ -16,7 +16,7 @@ import { PhasesTop9Table } from './phases-top9-table';
 
 export function PhasesSquadPanel({
   topSquadRows,
-  casaSlots,
+  slots,
   heroesById,
   activeHeroId,
   squadDps,
@@ -24,20 +24,21 @@ export function PhasesSquadPanel({
   onSelectHero,
 }: {
   topSquadRows: RosterDpsRow[];
-  casaSlots: number;
+  /** FIELD concurrency cap the squad was ranked against — not the House recovery number. */
+  slots: number;
   heroesById: Map<string, HeroRecord>;
   activeHeroId: string;
   squadDps: number;
   clearSecs: number | null;
   onSelectHero: (h: HeroRecord) => void;
 }) {
-  const { t, lang } = useAppLang();
+  const { t } = useAppLang();
 
   return (
     <Panel className="min-w-0">
       <div className={panelHClass}>
         <h2 className={panelTitleClass}>
-          {sub(t.phasesSquadSection, { slots: String(casaSlots) })}
+          {sub(t.phasesSquadSection, { slots: String(slots) })}
         </h2>
       </div>
       <p className={tipClass}>{t.phasesSquadTip}</p>
@@ -61,7 +62,6 @@ export function PhasesSquadPanel({
           rows={topSquadRows}
           heroesById={heroesById}
           activeHeroId={activeHeroId}
-          lang={lang}
           t={t}
           formatNumber={formatNumber}
           onSelectHero={onSelectHero}

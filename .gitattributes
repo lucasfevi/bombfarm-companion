@@ -1,1 +1,54 @@
+# Line endings — LF everywhere, in the index and in the working tree.
+#
+# See docs/line-endings.md. The whole tree was normalized in one mechanical
+# commit listed in .git-blame-ignore-revs; tools/line-endings.test.mjs fails
+# the build if a CRLF or mixed-ending file is ever committed again.
+
+# Baseline. `text=auto` lets Git decide what is text; `eol=lf` pins the
+# checkout so Windows clones get LF too, regardless of core.autocrlf.
+* text=auto eol=lf
+
+# Binaries — enumerated, not left to auto-detection, so nothing here can be
+# sniffed as text and rewritten on checkout or by a renormalize.
+# *.png is the only one tracked today (bundled art under
+# apps/web/public/wiki-assets/); the rest are pre-declared so adding one of
+# them later cannot corrupt it.
+*.png    binary
+*.jpg    binary
+*.jpeg   binary
+*.gif    binary
+*.webp   binary
+*.avif   binary
+*.ico    binary
+*.icns   binary
+*.bmp    binary
+*.pdf    binary
+*.woff   binary
+*.woff2  binary
+*.ttf    binary
+*.otf    binary
+*.eot    binary
+*.mp3    binary
+*.mp4    binary
+*.ogg    binary
+*.wav    binary
+*.webm   binary
+*.zip    binary
+*.gz     binary
+*.tgz    binary
+*.bz2    binary
+*.xz     binary
+*.7z     binary
+*.exe    binary
+*.dll    binary
+*.dylib  binary
+*.so     binary
+*.node   binary
+*.wasm   binary
+*.db     binary
+*.sqlite binary
+*.sqlite3 binary
+
+# Husky hooks must be LF or the shell refuses them. Redundant under the
+# baseline above, kept explicit because breaking it breaks every commit.
 .husky/* text eol=lf

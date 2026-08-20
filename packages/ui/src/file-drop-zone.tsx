@@ -1,7 +1,7 @@
 'use client';
 
 import { useRef, useState, type ReactNode } from 'react';
-import { Button } from './button';
+import { buttonRecipe } from './button.recipe';
 import { fileDropZoneRecipe } from './file-drop-zone.recipe';
 
 export type FileDropZoneProps = {
@@ -59,18 +59,14 @@ export function FileDropZone({
         }}
       />
       <span>{hint}</span>
-      {/* Decorative label, not a second control: the outer role="button" div already
-          handles click/keyboard activation (onFile fires from its own onClick /
-          onKeyDown above), so a real nested <button> here would be an axe
-          "nested-interactive" violation — two overlapping interactive elements with
-          ambiguous activation target for screen reader / keyboard users. Render as a
-          <span> (Base UI `render`) with tabIndex={-1}, matching the documented pattern
-          for a trigger nested inside an already-focusable ancestor (see
-          AbbreviatedNumber / docs/design-system.md "Tooltip trigger nested inside
-          another interactive control"). */}
-      <Button type="button" render={<span />} tabIndex={-1}>
-        {chooseLabel}
-      </Button>
+      {/* Button-styled label, deliberately not a control: the outer role="button" div already
+          handles click/keyboard activation, so a real nested <button> here would be an axe
+          "nested-interactive" violation — two overlapping interactive elements with an
+          ambiguous activation target. Wears `buttonRecipe` directly rather than the `Button`
+          primitive, which is a Base UI button and warns (correctly) when rendered as a
+          non-<button>; `nativeButton={false}` would silence that by restoring the very
+          role="button" this needs not to have. */}
+      <span className={buttonRecipe()}>{chooseLabel}</span>
       {error ? <p className="m-0 text-xs text-down">{error}</p> : null}
     </div>
   );

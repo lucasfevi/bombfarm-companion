@@ -4,7 +4,7 @@
 // so a save file from any account — not just the one used to build this — works.
 
 import catalog from './data/catalog.json';
-import { resolveCasaSlots } from './casa-slots';
+import { resolveCasaSlots, resolveFieldSlots } from './casa-slots';
 import { mapInventoryItem, type InventoryItem } from './inventory';
 import { ABILITIES, RarityKey, abilityMods } from './model';
 import { EquippedItem, Loadout, emptyLoadout, emptySheetOther } from './gear';
@@ -21,6 +21,7 @@ import { composeSheetFromBirth, nakedFromBirth, type BirthStats, type TreeSheetT
 import { inferSpentPoints, type PointInferenceIssue } from './point-inference';
 import { ACCOUNT_SECTIONS, sectionHasData } from './account-fidelity';
 import { missingPostUpdateKeys } from './save-schema';
+import { WIKI_PHASE_LINES } from './phase-wiki';
 import type { AccountPayload } from '@bombfarm/contracts';
 
 const RARITY_BY_IDX: RarityKey[] = ['Comum', 'Incomum', 'Raro', 'Épico', 'Lendária', 'Mítico'];
@@ -61,15 +62,51 @@ export type AccountImportData = {
     speed: number;
     energy: number;
     teamCoinPct?: number;
+    /** `skills.totals.xp_mult` verbatim (not a percentage). Absent/non-finite/zero → 1 (no XP boost). */
+    xpMult?: number;
     /** `luck_add × 100` — flat percentage points (AD-BSP-22, ASM-01, BSPW5-03). */
     luckFlatPct: number;
   } | null;
   houseIdx: number | null;
   houseLevel: number | null;
-  /** Casa field slots from the save (`casa.slots` ladder) when `casa` is present. */
+  /**
+   * HOUSE RECOVERY slots from the save (`casa.slots` ladder) when `casa` is present — how many
+   * heroes the House refills at a time, NOT the field concurrency cap. See {@link fieldSlots}
+   * for that. The name is kept (`slots`) because it is the persisted key on every stored
+   * account and on `AccountShared`; the meaning was always `casa.slots`, only its downstream
+   * READING as a field cap was wrong.
+   */
   slots?: number | null;
+  /**
+   * `skills.field_slots` — how many heroes may stand on the field at once. `null` when the save
+   * does not carry the key. Deliberately separate from {@link slots}: 6 vs 3 on account 486.
+   */
+  fieldSlots?: number | null;
+  /**
+   * `casa.cycle_secs` — a full 0 → 100% House fill in seconds, straight off the save. `null` when
+   * absent, which sends every consumer back to the `HOUSES` table interpolation
+   * (`resolveHouseRestSeconds`). Preferred over the table because the table is a whole-minute
+   * reconstruction that runs ~7.8% fast (1077s vs a measured 1168.42s at Casa I level 11).
+   */
+  houseCycleSecs?: number | null;
   /** `account.phase` — the phase the player is currently farming. Null when absent. */
   phase: number | null;
+  /**
+   * `account.max_phase` — the furthest phase this account has reached. Falls back to
+   * `skills.max_phase` when `account.max_phase` is not a finite number; `null` when neither is.
+   * Normalized to an integer in `[1, WIKI_PHASE_LINES.length]`.
+   *
+   * SPEC_DEVIATION (design.md §5.1 specifies this field as *required*, precisely so every
+   * construction site is a forced compile error). Kept optional instead: `apps/web/src/tests/
+   * {account-slice,persist-account}.test.ts` construct `AccountImportData` literals without this
+   * field, and both `spec.md` P2-3 AC-5 and `tasks.md` §0.5 forbid touching any file under
+   * `apps/web/src` in this item ("zero web source files in the diff"). A required field would
+   * force edits there to keep `pnpm typecheck` green, which the two constraints together rule
+   * out. `mapAccountData`'s both return paths and `EMPTY_ACCOUNT_DATA` still set it explicitly on
+   * every branch, so real production data always carries a concrete value — the optionality only
+   * relaxes what *test fixtures elsewhere* are forced to supply.
+   */
+  maxPhase?: number | null;
 };
 
 /**
@@ -128,11 +165,55 @@ function mapAccountPhase(raw: Record<string, unknown>): number | null {
   return typeof phase === 'number' && Number.isFinite(phase) ? phase : null;
 }
 
+/**
+ * `account.max_phase` — the furthest phase this account has reached. Falls back to
+ * `skills.max_phase`; the 2026-08-13 export carries both and they agree (42 / 42). Preferring
+ * `account` follows the design; the fallback covers a payload that carries `skills` without
+ * `account`, which `AD-036`'s per-section fidelity model makes a real shape.
+ *
+ * Same latent-divergence family as `field_slots` vs `skills.totals.vagas_campo` (`AD-063`) —
+ * this reader RECORDS the two sources and does not reconcile them.
+ */
+function mapAccountMaxPhase(raw: Record<string, unknown>): number | null {
+  const account = isObject(raw.account) ? raw.account : null;
+  const accountValue = account?.max_phase;
+  const skills = isObject(raw.skills) ? raw.skills : null;
+  const skillsValue = skills?.max_phase;
+
+  const rawValue =
+    typeof accountValue === 'number' && Number.isFinite(accountValue)
+      ? accountValue
+      : typeof skillsValue === 'number' && Number.isFinite(skillsValue)
+        ? skillsValue
+        : null;
+  if (rawValue === null) return null;
+
+  const rounded = Math.round(rawValue);
+  if (rounded < 1) return null;
+  return Math.min(rounded, WIKI_PHASE_LINES.length);
+}
+
+/**
+ * `casa.cycle_secs` — the House's own full-fill countdown. Positive-finite or `null`; never a
+ * substituted table value, so the caller can tell "the save said 1168.42" from "the save said
+ * nothing and the HOUSES interpolation was used".
+ */
+function mapHouseCycleSecs(casa: Record<string, unknown> | null): number | null {
+  if (!casa) return null;
+  const raw = casa.cycle_secs;
+  if (typeof raw !== 'number' || !Number.isFinite(raw) || raw <= 0) return null;
+  return raw;
+}
+
 function mapAccountData(raw: Record<string, unknown>): AccountImportData {
   const skills = isObject(raw.skills) ? raw.skills : null;
   const totals = skills && isObject(skills.totals) ? skills.totals : null;
   const casa = isObject(raw.casa) ? raw.casa : null;
   const phase = mapAccountPhase(raw);
+  const maxPhase = mapAccountMaxPhase(raw);
+  // Read off `skills`, not `casa` — the field cap is a skill-tree quantity and is present even on
+  // a payload that omits `casa` entirely (`AD-036` per-section fidelity).
+  const fieldSlots = resolveFieldSlots(skills);
 
   // MOD-36: single-pass optional-field parse — stays null unless the save carries `totals`.
   let tree: AccountImportData['tree'] = null;
@@ -144,6 +225,7 @@ function mapAccountData(raw: Record<string, unknown>): AccountImportData {
       speed: asNumber(totals.speed_add) * 100,
       energy: asNumber(totals.energia_add) * 100,
       teamCoinPct: asNumber(totals.coin_add ?? totals.team_coin_add) * 100,
+      xpMult: asNumber(totals.xp_mult, 1) || 1,
       // BSPW5-03 (ASM-01): flat Luck percentage points — absent key defaults to 0.
       luckFlatPct: asNumber(totals.luck_add) * 100,
     };
@@ -164,14 +246,27 @@ function mapAccountData(raw: Record<string, unknown>): AccountImportData {
       houseIdx,
       houseLevel,
       slots: resolveCasaSlots(casa, houseIdx),
+      fieldSlots,
+      houseCycleSecs: mapHouseCycleSecs(casa),
       phase,
+      maxPhase,
     };
   }
 
-  return { tree, houseIdx, houseLevel, phase };
+  // No `casa` block: `slots` and `houseCycleSecs` stay absent (both are casa-sourced), but
+  // `fieldSlots` still comes through — it lives on `skills`, a section a payload can carry alone.
+  return { tree, houseIdx, houseLevel, fieldSlots, houseCycleSecs: null, phase, maxPhase };
 }
 
-const EMPTY_ACCOUNT_DATA: AccountImportData = { tree: null, houseIdx: null, houseLevel: null, phase: null };
+const EMPTY_ACCOUNT_DATA: AccountImportData = {
+  tree: null,
+  houseIdx: null,
+  houseLevel: null,
+  fieldSlots: null,
+  houseCycleSecs: null,
+  phase: null,
+  maxPhase: null,
+};
 
 /**
  * Normalises a raw file object into an `AccountPayload` with no projection, validation, or
@@ -417,7 +512,7 @@ export function parseAccountPayload(payload: AccountPayload, existing: HeroRecor
       ...emptySheetOther(),
       critChance: mods.sheetCritChancePctOfBase / 100,
       penetration: mods.sheetPenetrationRaw,
-      critDmg: mods.sheetCritDmgPctOfBase,
+      critDmgFlat: mods.sheetCritDmgFlat,
     };
 
     // BSPW5-04 (ASM-02): birth-backed composition — birth_stats is guaranteed usable here,

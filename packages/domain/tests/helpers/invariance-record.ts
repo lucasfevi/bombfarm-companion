@@ -120,10 +120,7 @@ type HeroRecordEntry = {
   peelSheetSources: Record<SheetKey, SourceLinesRecord>;
   inferSpentPoints: SheetRecord;
   computeCombatMults: {
-    teamAtkMult: string;
-    teamSpeedMult: string;
     teamDrainMult: string;
-    teamGateMult: string;
     teamCritPctOfBase: string;
     attackMult: string;
     speedMult: string;
@@ -166,8 +163,8 @@ type HeroRecordEntry = {
    * both subjects rather than duplicating the (expensive) pipeline call.
    */
   pipelineForHero: {
-    ranking: { stat: string; dpsGainPct: string }[];
-    best: { stat: string; dpsGainPct: string };
+    ranking: { stat: string; gainPct: string }[];
+    best: { stat: string; gainPct: string };
     dps: string;
     active: string;
     predHit: string;
@@ -352,7 +349,6 @@ function recordHero(
     critDmgMult: mults.critDmgMult,
     teamCritPctOfBase: mults.teamCritPctOfBase,
     treeSheet: tree,
-    combatCritChancePctOfBase: mods.combatCritChancePctOfBase,
     penetrationPp: mods.penetrationPp,
     context,
     dmgMult: mults.dmgMult,
@@ -480,10 +476,7 @@ function recordHero(
     peelSheetSources: sourceRecord,
     inferSpentPoints: sheetRecord(pts),
     computeCombatMults: {
-      teamAtkMult: num(mults.teamAtkMult),
-      teamSpeedMult: num(mults.teamSpeedMult),
       teamDrainMult: num(mults.teamDrainMult),
-      teamGateMult: num(mults.teamGateMult),
       teamCritPctOfBase: num(mults.teamCritPctOfBase),
       attackMult: num(mults.attackMult),
       speedMult: num(mults.speedMult),
@@ -519,8 +512,8 @@ function recordHero(
       hit: num(deriveResult.hit),
     },
     pipelineForHero: {
-      ranking: pipelineResult.ranking.map((p) => ({ stat: p.stat, dpsGainPct: num(p.dpsGainPct) })),
-      best: { stat: pipelineResult.best.stat, dpsGainPct: num(pipelineResult.best.dpsGainPct) },
+      ranking: pipelineResult.ranking.map((p) => ({ stat: p.stat, gainPct: num(p.gainPct) })),
+      best: { stat: pipelineResult.best.stat, gainPct: num(pipelineResult.best.gainPct) },
       dps: num(pipelineResult.dps),
       active: num(pipelineResult.active),
       predHit: num(pipelineResult.predHit),
@@ -612,7 +605,7 @@ export function recordInvarianceSurface(): InvarianceRecord {
       contexts: built.contexts,
       loadoutsByHeroId,
       ptsByHeroId,
-      slots: input.account.slots,
+      slots: input.account.fieldSlots,
       farm,
       forgeFloor: input.forgeFloor,
     });

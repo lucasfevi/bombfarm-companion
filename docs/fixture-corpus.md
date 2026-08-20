@@ -164,31 +164,45 @@ reading, never our own model's output pasted back in.
 The bar (`AD-071`, measured, not assumed): literal bit-exactness (`Object.is` on every hero) is
 unachievable — residuals of ~1e-15 to ~4e-12 from IEEE-754 association order differing between
 the game's own accumulation and this forward chain's. Four claims instead, together stronger than
-either a bare `Object.is` or a bare tolerance: (A) 12 of 13 heroes have zero inference issues; (D)
-the 13th is pinned by kind and key (§7); (B) the round trip lands within `SHEET_ABS_TOL` (1e-6)
+either a bare `Object.is` or a bare tolerance: (A) all 13 heroes have zero inference issues — it
+was 12 of 13 until the flat-crit-damage fix resolved the 13th (§7); (D) Bellatrix L42's
+crit-damage split is pinned exactly; (B) the round trip lands within `SHEET_ABS_TOL` (1e-6)
 for every issue-free hero — measured max |Δ| 4e-12, six orders of magnitude of headroom; (C) at
 least 2 heroes match bit-exactly (`Object.is`, all 8 keys) — measured exactly 2 (payload →
 Bellatrix L27, Lyra L3).
 
-**The one residual gap, accepted and not designed around:** a round trip cannot discriminate
-between two different point splits that both reproduce the observed `stats`. That is an ambiguity
-in *inference*, not an error in *application*. It is narrower coverage than the deleted
-before/after fixtures gave (which pinned a single point's marginal value directly), and no task
-in this feature closes it.
+**The residual gap, accepted and not designed around:** a round trip cannot in general
+discriminate between two different point splits that both reproduce the observed `stats`. That is
+an ambiguity in *inference*, not an error in *application*. It is narrower coverage than the
+deleted before/after fixtures gave (which pinned a single point's marginal value directly), and no
+task in this feature closes it. §7 records one case that LOOKED like that gap and was not.
 
-## 7. The known inference ambiguity
+## 7. The "known inference ambiguity" — RESOLVED
 
-`save-20260813-5heroes.json` → **Bellatrix L42**: `inferSpentPoints` returns
+**Was:** `save-20260813-5heroes.json` → **Bellatrix L42**: `inferSpentPoints` returned
 `{ kind: 'nonIntegerPoints', key: 'critDmg', raw: 1.8867078294204, residual: 0.1132921705796 }`.
-Rounding to 2 points and forward-composing lands at `critDmg` 76.8534 vs. the observed 76.2530 —
-Δ = 0.60 (all her other keys match to ≤ 3.9e-12). Every other hero on both post-patch substrates
-returns **zero** inference issues.
+Rounding to 2 points and forward-composing landed at `critDmg` 76.8534 vs. the observed 76.2530 —
+Δ = 0.60 (all her other keys matched to ≤ 3.9e-12). Recorded as a real game observation the model
+could not split, pinned rather than fixed, and flagged "worth a second look … if `critDmg`
+modelling changes".
 
-This is recorded as a **real game observation**, pinned by `point-roundtrip.test.ts`'s claim D —
-**not a bug F1 fixes**. The fixture is a game observation and `packages/domain/src` is out of
-this feature's scope; editing the fixture to make the ambiguity disappear would be exactly the
-kind of pasted-back-in model output `AD-068` forbids. Flagged as worth a second look in F2 or MP4
-if `critDmg` modelling changes.
+**It was a modelling error, not an ambiguity.** Crit-damage stat points are **flat** — `+5` planner
+percentage points each, the same for every hero — not 8% of the hero's roll. Two heroes settle it,
+each holding exactly 2 crit-damage points (pinned by their budgets: every other stat solves to an
+exact integer, and `level − stat_points_available` leaves exactly 2):
+
+| Hero | crit-damage roll | observed sheet Δ | Δ if 8% of roll |
+| --- | --- | --- | --- |
+| Bellatrix L42 (`save-20260813-5heroes.json`) | 66.252971472748 | **10.0** | 10.6005 |
+| Fenn L49 (account 11882, captured 2026-08-15, not committed) | 67.127583786901 | **10.0** | 10.7404 |
+
+Same Δ off different rolls ⇒ flat, and `10 / 2 = 5`. With `POINT_GAIN.critDmgFlat` Bellatrix
+solves to exactly 2 with zero issues, and all 13 corpus heroes are issue-free. The fixture was
+never edited — the model moved to meet it, which is the direction `AD-068` requires.
+
+The same unit error sat in the Golpe Brutal ability (`+4` flat per level, not 4% of the roll); see
+`packages/domain/tests/points-within-level-budget.test.ts` for the level-ceiling invariant that
+now guards both.
 
 ## 8. The keystone-identifier handoff number
 
@@ -205,3 +219,41 @@ therefore asserts **total-match stability across the whole tracked tree**, faili
 direction — the operative part of MFR-15 AC-4 — rather than a narrower, permanently-red
 per-surface check. `validation.md`'s author must re-derive this number independently before
 reading the committed constant.
+
+## 9. The crit-chance/CDR shape reverted twice in five days (issue #132)
+
+The 2026-08-15 patch moved crit chance and cooldown reduction from percent-of-base to flat
+addends (commit `0418a82` / PR #102), and the 2026-08-18 patch — three days later — moved both
+back to percent-of-base, rescaling the item catalog's `crit`/`cooldown` bases by the same factor
+in the process. Today's model (percent-of-base, matching the shape this corpus originally
+documented before 2026-08-15) is a genuine round-trip in SHAPE but not in every MAGNITUDE: crit
+chance's per-point rate returned to its pre-2026-08-15 value (`0.02`), while cooldown's did not —
+it is `0.02` now, HALF the pre-2026-08-15 `0.1`. See `POINT_GAIN` in
+`packages/domain/src/model/rarity-constants.ts` for the full measurement and the wiki-mirror
+corroboration.
+
+**Retired as non-subjects of the level-budget invariant** (still committed, still read by the
+structural suites — see each file's own README row for what it may/may not prove):
+`save-20260816-5heroes-gear-cdr-crit.json`, `save-20260816-9heroes-redistrib.json`,
+`save-20260816-respec-cdr-crit.json` (already excluded, pre-redistribution) and
+`save-20260817-11heroes.json`. All four were captured inside the three-day flat-regime window (or
+before it), so none of them solve under today's percent-of-base model — the same "no single model
+reproduces both this file and the current game" reasoning §5 and §6 already apply to the
+pre-2026-08-15 captures.
+
+**Added, the new sheet-math anchor pair:**
+
+- **`save-20260818-12heroes.json`** — account 486, phase 51, 12 heroes, the first whole-roster
+  witness for the reverted percent-of-base shape (zero inference issues, every budget exactly on
+  `level`). Isolates the tree term (four item-free, ability-free heroes) and the `olho_clinico`
+  ability term (three rank-20 heroes, each landing on exactly 6/7 after tree + gear) separately.
+- **`save-20260819-respec-crit-cdr.json`** — the same account ~2 hours later, with Sora
+  respecced from 10 attack points into 5 crit chance + 5 cooldown. The per-point-rate witness:
+  no items, no crit/cooldown ability, so her whole move is the two stat-point terms, both
+  `+0.1` for 5 points — `0.02` per point for both stats.
+
+The flat-crit-cdr shape test (`packages/domain/tests/flat-crit-cdr-shape.test.ts` and its web
+twin) is inverted, not deleted: it now discriminates percent-of-base FROM flat, using the same
+matched-pair argument in reverse — identical gear/ability/tree inputs must produce EQUAL deltas
+under a flat model and PROPORTIONAL (to the birth roll) deltas under percent-of-base, and the
+2026-08-18 capture shows the latter.

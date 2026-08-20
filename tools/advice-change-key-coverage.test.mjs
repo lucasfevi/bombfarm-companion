@@ -18,7 +18,23 @@ import { readFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
-import { CHANGE_KEY_INPUTS, heroChangeKey, sharedChangeKey } from '../apps/desktop/renderer/lib/planning/hero-advice.ts';
+import { assertWorkspaceDistBuilt } from './require-workspace-dist.mjs';
+
+// The build-prerequisite guard, per-file rather than as the `tools` project's `globalSetup`
+// (see tools/vitest.config.ts for why: .github/workflows/line-endings.yml runs this project
+// build-free by design, and this is the ONLY one of its 33 files that needs a build).
+//
+// The two lines below must stay in this order and this shape. `hero-advice.ts` imports
+// `@bombfarm/domain/account-fidelity` and `/roster-dps`, which resolve through the real
+// `exports` map at ./dist/**; a static `import` of it would be HOISTED above this call and die
+// first with `Cannot find package '@bombfarm/domain/account-fidelity'`, which points nowhere
+// near the fix. Top-level `await import(...)` runs in statement order, so the assert fires
+// first and the failure names the unbuilt package and `pnpm build`.
+assertWorkspaceDistBuilt('tools');
+
+const { CHANGE_KEY_INPUTS, heroChangeKey, sharedChangeKey } = await import(
+  '../apps/desktop/renderer/lib/planning/hero-advice.ts'
+);
 
 const root = resolve(fileURLToPath(new URL('..', import.meta.url)));
 const ROSTER_DPS_PATH = join(root, 'packages/domain/src/roster-dps.ts');
@@ -150,6 +166,9 @@ describe('per-field mutation — a path listed but not actually read by the key 
       },
       teamBuffs: { buffA: 0 },
       context: { houseIdx: 0, houseLevel: 1, phase: 30, mitigationPct: 5, rankMode: 'dps', targetProp: null },
+      houseCycleSecs: 1168.42105263158,
+      houseCycleSecsHouseIdx: 0,
+      houseCycleSecsLevel: 1,
     };
   }
 
@@ -167,11 +186,37 @@ describe('per-field mutation — a path listed but not actually read by the key 
   const contextPaths = CHANGE_KEY_INPUTS.filter((path) => path.startsWith('context.'));
   const teamBuffsPath = CHANGE_KEY_INPUTS.filter((path) => path === 'account.teamBuffs');
   const scalarPaths = CHANGE_KEY_INPUTS.filter((path) => path === 'phase' || path === 'mitigationPct');
+  // Account-root scalars — `account.houseCycleSecs` (`casa.cycle_secs`) and the (house, level)
+  // pair it is anchored to ride here rather than under `context.*` because they are captured
+  // measurements on the account, not HeroContext fields the house pickers write.
+  const accountRootPaths = CHANGE_KEY_INPUTS.filter(
+    (path) =>
+      path === 'account.houseCycleSecs' ||
+      path === 'account.houseCycleSecsHouseIdx' ||
+      path === 'account.houseCycleSecsLevel',
+  );
 
-  it('the four path groups above cover CHANGE_KEY_INPUTS completely (sanity — otherwise some path is silently untested)', () => {
-    const covered = heroPaths.length + sharedTreePaths.length + contextPaths.length + teamBuffsPath.length + scalarPaths.length;
+  it('the path groups above cover CHANGE_KEY_INPUTS completely (sanity — otherwise some path is silently untested)', () => {
+    const covered =
+      heroPaths.length +
+      sharedTreePaths.length +
+      contextPaths.length +
+      teamBuffsPath.length +
+      scalarPaths.length +
+      accountRootPaths.length;
     expect(covered).toBe(CHANGE_KEY_INPUTS.length);
   });
+
+  for (const path of accountRootPaths) {
+    it(`mutating ${path} changes sharedChangeKey`, () => {
+      const shared = baselineShared();
+      const before = sharedChangeKey(shared, 30, 5);
+      const field = path.slice('account.'.length);
+      shared[field] = mutateValue(shared[field]);
+      const after = sharedChangeKey(shared, 30, 5);
+      expect(after, `sharedChangeKey did not change when ${path} was mutated`).not.toBe(before);
+    });
+  }
 
   for (const path of heroPaths) {
     it(`mutating ${path} changes heroChangeKey`, () => {

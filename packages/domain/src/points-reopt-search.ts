@@ -48,10 +48,10 @@ function restrictedGreedyWalk(
   let current = { ...startPts };
   for (let step = 0; step < steps; step++) {
     const sheet = buildCandidateSheet(effective, basePts, effectiveDelta, current);
-    const best = rankNextPoint(sheet, context, { effectiveDeltas: effectiveDelta, mode: 'dps' }).find((row) =>
+    const best = rankNextPoint(sheet, context, { effectiveDeltas: effectiveDelta }).find((row) =>
       allowed.includes(row.stat),
     );
-    if (!best || best.dpsGainPct <= 0) break;
+    if (!best || best.gainPct <= 0) break;
     current = { ...current, [best.stat]: current[best.stat] + 1 };
   }
   return current;
@@ -87,7 +87,7 @@ function refundReplaceWalk(
     if (cheapestStat === null) break; // nothing left to give up.
     const removedPts = { ...current, [cheapestStat]: current[cheapestStat] - 1 };
     const removedSheet = buildCandidateSheet(effective, basePts, effectiveDelta, removedPts);
-    const best = rankNextPoint(removedSheet, context, { effectiveDeltas: effectiveDelta, mode: 'dps' })[0];
+    const best = rankNextPoint(removedSheet, context, { effectiveDeltas: effectiveDelta })[0];
     if (!best) break;
     const swapped = { ...removedPts, [best.stat]: removedPts[best.stat] + 1 };
     const swappedScore = scoreOf(effective, basePts, effectiveDelta, context, swapped);

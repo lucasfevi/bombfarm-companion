@@ -308,7 +308,7 @@ describe('computeAdvisorPipeline', () => {
     );
     expect(out.effective.critChance).toBeCloseTo(100, 6);
     const critRank = out.ranking.find((r) => r.stat === 'critChance');
-    expect(critRank?.dpsGainPct).toBe(0);
+    expect(critRank?.gainPct).toBe(0);
   });
 
   it('ranks CDR with positive gain at 70% effective CDR (below 80% cap)', () => {
@@ -325,7 +325,7 @@ describe('computeAdvisorPipeline', () => {
     );
     expect(out.effective.cdr).toBeCloseTo(70, 1);
     const cdrRank = out.ranking.find((r) => r.stat === 'cdr');
-    expect(cdrRank?.dpsGainPct).toBeGreaterThan(0);
+    expect(cdrRank?.gainPct).toBeGreaterThan(0);
   });
 
   it('ranks CDR at zero when effective CDR is at 80% cap', () => {
@@ -341,7 +341,7 @@ describe('computeAdvisorPipeline', () => {
     );
     expect(out.effective.cdr).toBeCloseTo(80, 1);
     const cdrRank = out.ranking.find((r) => r.stat === 'cdr');
-    expect(cdrRank?.dpsGainPct).toBe(0);
+    expect(cdrRank?.gainPct).toBe(0);
   });
 
   it('ranks penetration with positive gain at 70% effective pen', () => {
@@ -358,7 +358,7 @@ describe('computeAdvisorPipeline', () => {
     );
     expect(out.effective.penetration).toBeCloseTo(70, 1);
     const penRank = out.ranking.find((r) => r.stat === 'penetration');
-    expect(penRank?.dpsGainPct).toBeGreaterThan(0);
+    expect(penRank?.gainPct).toBeGreaterThan(0);
   });
 
   it('ranks penetration at zero when effective pen is at 100% bypass cap', () => {
@@ -375,7 +375,7 @@ describe('computeAdvisorPipeline', () => {
     );
     expect(out.effective.penetration).toBeCloseTo(100, 1);
     const penRank = out.ranking.find((r) => r.stat === 'penetration');
-    expect(penRank?.dpsGainPct).toBe(0);
+    expect(penRank?.gainPct).toBe(0);
   });
 
   it('ranks penetration at zero when sheet pen exceeds 100% (combat saturated)', () => {
@@ -392,7 +392,7 @@ describe('computeAdvisorPipeline', () => {
     );
     expect(out.effective.penetration).toBeGreaterThan(100);
     const penRank = out.ranking.find((r) => r.stat === 'penetration');
-    expect(penRank?.dpsGainPct).toBe(0);
+    expect(penRank?.gainPct).toBe(0);
   });
 
   it('spentDelta counts luck points against the level budget (BSPW2-AC-29, AD-BSP-19)', () => {
@@ -401,21 +401,18 @@ describe('computeAdvisorPipeline', () => {
     expect(out.spentDelta).toBe(6);
   });
 
-  it('AC-17: sheetOther.critDmg is wired from golpe_brutal into the marginal point delta', () => {
-    // sheetOther.critDmg un-bakes naked.critDmg to the pre-ability base for the marginal
-    // point-gain and tree-bonus terms (derive.ts:148,158,169) — it does not re-add the
-    // ability's effect a second time (that is already baked into naked/geared by
-    // rescaleNakedCritDmg, matching how items never separately roll crit dmg). So the
-    // discriminating signal for this builder is `delta.critDmg`, not `effective.critDmg`.
+  it('AC-17: sheetOther.critDmgFlat is wired from golpe_brutal, and does NOT scale the point delta', () => {
+    // Golpe Brutal is a FLAT sheet addend (POINT_GAIN.critDmgFlat), already baked into
+    // naked/geared by rescaleNakedCritDmg — items never separately roll crit dmg. The
+    // discriminating signal for this builder is therefore `sheetOther.critDmgFlat` itself.
     const withoutGolpe = computeAdvisorPipeline(baseInput({ abilities: {} }));
     const withGolpe = computeAdvisorPipeline(baseInput({ abilities: { golpe_brutal: 13 } }));
-    expect(withGolpe.sheetOther.critDmg).toBeCloseTo(0.52, 10);
-    expect(withoutGolpe.sheetOther.critDmg).toBe(0);
-    // naked.critDmg is held fixed at 80 by baseInput() in both cases (isolating this term):
-    // delta.critDmg = POINT_GAIN.critDmgPctOfBase * naked.critDmg / (1 + sheetOther.critDmg).
-    expect(withoutGolpe.pointDelta.critDmg).toBeCloseTo(0.08 * 80, 10);
-    expect(withGolpe.pointDelta.critDmg).toBeCloseTo((0.08 * 80) / 1.52, 10);
-    expect(withGolpe.pointDelta.critDmg).toBeLessThan(withoutGolpe.pointDelta.critDmg);
+    expect(withGolpe.sheetOther.critDmgFlat).toBe(52);
+    expect(withoutGolpe.sheetOther.critDmgFlat).toBe(0);
+    // A crit-damage point buys the same +5 either way: the marginal gain is flat, so unlike
+    // every pooled stat it is NOT diluted by the ability's contribution.
+    expect(withoutGolpe.pointDelta.critDmg).toBeCloseTo(5, 10);
+    expect(withGolpe.pointDelta.critDmg).toBeCloseTo(5, 10);
   });
 
   describe('resetAdvice (BSPW4-11, BSPW4-15, AC-64l)', () => {
@@ -450,12 +447,16 @@ describe('computeAdvisorPipeline', () => {
       expect(out.resetAdvice.reoptDps).toBeCloseTo(direct.reoptDps, 6);
     });
 
-    it('AC-70: the gate is unaffected by rankMode — oneshot mode with a target prop produces byte-identical resetAdvice to dps mode', () => {
+    it('AC-70: the gate is unaffected by rankMode — farm mode with a target prop produces byte-identical resetAdvice to dps mode', () => {
+      // rankMode still exists on AdvisorPipelineInput (the persisted UI setting), but this
+      // pipeline no longer reads it for anything — the pipeline computes one hero's advice and
+      // the farm objective needs the whole rotation, so they cannot be the same call. This case
+      // stays as the regression guard for that: the field is present and inert.
       const dpsMode = computeAdvisorPipeline(baseInput({ rankMode: 'dps' }));
-      const oneshotMode = computeAdvisorPipeline(
-        baseInput({ rankMode: 'oneshot', targetProp: PROPS[1]?.name ?? PROPS[0].name }),
+      const farmMode = computeAdvisorPipeline(
+        baseInput({ rankMode: 'farm', targetProp: PROPS[1]?.name ?? PROPS[0].name }),
       );
-      expect(oneshotMode.resetAdvice).toEqual(dpsMode.resetAdvice);
+      expect(farmMode.resetAdvice).toEqual(dpsMode.resetAdvice);
     });
   });
 

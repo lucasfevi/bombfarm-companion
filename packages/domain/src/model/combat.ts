@@ -1,8 +1,10 @@
 import { POINT_GAIN, STAT_CAPS } from './rarity-constants';
 import type { Context, HeroSheet } from './types';
 
-const GRID_SPEED_COEF = 0.0386;
-const EFF_IA = 0.9;
+/** `velocidade_grid = velocidade × 0.0386` — wiki Combate grid-speed coefficient. */
+export const GRID_SPEED_COEF = 0.0386;
+/** `eficiência_IA = 0.9` — wiki Combate AI-efficiency factor. */
+export const EFF_IA = 0.9;
 
 export function staminaFactor(energy: number): number {
   return 1 - 0.5 / (1.3 + 0.003 * energy);
@@ -60,6 +62,14 @@ export function mitigationFactor(mitigation: number, penetrationPct: number): nu
   const pen = clampPenPct(penetrationPct);
   return 1 - mitigation * (1 - pen / 100);
 }
+
+/**
+ * Hero level ceiling — wiki `herois.nivel_max`. Raised 100 → 500 by the 2026-08-15 patch, which
+ * also flattened the XP curve above 49 (`curva_nivel[50].xp_para_proximo` 1,426,483 → 356,621)
+ * so the new headroom is reachable. `levelPowerMult` stays linear across the whole range:
+ * `curva_nivel[500].power_mult` is 20.96 = 1 + 0.04 × 499, exactly what the formula returns.
+ */
+export const HERO_MAX_LEVEL = 500;
 
 /** Linear level power from wiki `herois.curva_nivel` / `combate.level_power` (+0.04 per level).
  * Scales intrinsic Attack (poder). Sheet Attack at level L is birth×stars×points × this mult

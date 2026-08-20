@@ -145,8 +145,8 @@ const ABILITY_EFFECTS: Record<string, Bilingual> = {
     en: '+0.185% TEAM speed/level',
   },
   pressagio_mortal: {
-    pt: '+1% chance de crítico do TIME/nível (% da base)',
-    en: '+1% TEAM crit chance/level (% of base)',
+    pt: '+5.714% chance de crítico do TIME/nível (% da base)',
+    en: '+5.714% TEAM crit chance/level (% of base)',
   },
   fantasma: {
     pt: 'atravessa rocha; +0.05% Ataque de passagem/nível (não modelado)',
@@ -169,8 +169,8 @@ const ABILITY_EFFECTS: Record<string, Bilingual> = {
     en: '+2% Attack in timed phase/level',
   },
   olho_clinico: {
-    pt: '+0.75% chance de crítico/nível (% da base, altera atributos)',
-    en: '+0.75% crit chance/level (% of base, affects stats)',
+    pt: '+4.286% chance de crítico/nível (% da base, altera atributos)',
+    en: '+4.286% crit chance/level (% of base, affects stats)',
   },
   detonacao_dupla: {
     pt: '+1.5% chance de 2ª explosão (50% dano)/nível',
@@ -189,24 +189,24 @@ const ABILITY_EFFECTS: Record<string, Bilingual> = {
     en: '+2.5% chance chest upgrades rarity/level (loot)',
   },
   veia_ouro: {
-    pt: '+4% ouro/nível (loot)',
-    en: '+4% gold/level (loot)',
+    pt: '+2% ouro (próprio)/nível, +40% no teto (loot)',
+    en: '+2% gold (self)/level, +40% at cap (loot)',
   },
   grito_guerra: {
     pt: '+1% Ataque do TIME/nível',
     en: '+1% TEAM Attack/level',
   },
   golpe_brutal: {
-    pt: '+4% dano crítico/nível (% da base, altera atributos)',
-    en: '+4% crit damage/level (% of base, affects stats)',
+    pt: '+4% dano crítico/nível (valor fixo, altera atributos)',
+    en: '+4% crit damage/level (flat, affects stats)',
   },
   matilha: {
     pt: '+2% dano por aliado na rotação/nível, +40% no teto (não modelado)',
     en: '+2% dmg per ally in rotation/level, +40% at cap (not modeled)',
   },
   fortuna: {
-    pt: '+2% ouro ganho/nível, +40% no teto (loot, aura capada)',
-    en: '+2% gold gained/level, +40% at cap (loot, capped aura)',
+    pt: '+0.5% ouro do TIME/nível, +10% no teto (loot, aura capada)',
+    en: '+0.5% TEAM gold/level, +10% at cap (loot, capped aura)',
   },
   brecha: {
     pt: '+1 Penetração/nível, +20 no teto (herói na ficha: não comprovado)',
@@ -301,7 +301,12 @@ const SET_LABELS: Record<string, Bilingual> = {
   gold: { pt: 'Ouro', en: 'Gold' },
   iron: { pt: 'Ferro', en: 'Iron' },
   jade: { pt: 'Jade', en: 'Jade' },
+  // The three nv280/290/300 sets added by the 2026-08-15 patch. The wiki publishes set SLUGS
+  // only (`itens.defs[].set`), never display names, so these PT strings are translations, not
+  // captures — confirm them against the in-game item names before they ship to players.
+  magma: { pt: 'Magma', en: 'Magma' },
   midnight: { pt: 'Meia-noite', en: 'Midnight' },
+  obsidian: { pt: 'Obsidiana', en: 'Obsidian' },
   platinum: { pt: 'Platina', en: 'Platinum' },
   sandstorm: { pt: 'Tempestade de Areia', en: 'Sandstorm' },
   shadow: { pt: 'Sombra', en: 'Shadow' },
@@ -312,5 +317,6 @@ const SET_LABELS: Record<string, Bilingual> = {
   topaz: { pt: 'Topázio', en: 'Topaz' },
   toxic: { pt: 'Tóxico', en: 'Toxic' },
   venom: { pt: 'Veneno', en: 'Venom' },
+  void: { pt: 'Vazio', en: 'Void' },
   wooden: { pt: 'Madeira', en: 'Wooden' },
 };

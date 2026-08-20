@@ -20,20 +20,6 @@ export const ITEM_LEVELS: number[] = [...catalog.levels];
 export const ITEM_RARITIES = catalog.rarities;
 export const SETS_BY_LEVEL: Record<string, string[]> = catalog.setsByLevel;
 
-/**
- * Catalog v4: Dano has two regimes. Below this item level it is a flat number
- * that scales on the `nivelMult` ladder; at or above it, the roll is a fraction
- * of the hero's Attack (`dmgPct`) and leaves the ladder entirely.
- * The regime follows the ITEM's level, not its def's `nativeLevel` — a def can
- * be scaled across the boundary.
- */
-export const DMG_PCT_MIN_LEVEL = catalog.dmgPctMinLevel;
-const DMG_PCT_BY_LEVEL = catalog.dmgPct as Record<string, number>;
-
-export function isDmgPctLevel(level: number): boolean {
-  return level >= DMG_PCT_MIN_LEVEL;
-}
-
 const defById = new Map(catalog.defs.map((definition) => [definition.id, definition]));
 
 export function emptyLoadout(): Loadout {
@@ -62,11 +48,12 @@ export function itemLabel(item: EquippedItem, lang: Lang = 'pt'): string {
  * Flat Dano stays fractional (e.g. 96.25 × 1.8 = 173.25) — the sheet sums the
  * raw values; ceil was overstating attack by 0.5 per half-point piece.
  *
- * Dano is the exception to plain ladder scaling: from {@link DMG_PCT_MIN_LEVEL}
- * up it is a fraction of Attack, read off `dmgPct` for the TARGET level rather
- * than rescaled from the def's stored roll. Every def shares one Dano base per
- * level, so the def only supplies which stats it rolls and in what order.
- * `unit` tells callers which regime a roll came back in.
+ * Dano is flat at EVERY item level again (2026-08-15 patch — "o dano dos itens voltou a
+ * funcionar de forma mais direta"). Catalog v4's second regime, in which a nv50+ roll was a
+ * fraction of the hero's Attack, is gone: the wiki payload no longer publishes
+ * `itens.dmg_pct_min_level`, and every `nivel_mult` row now carries a `dmg_flat` on the one
+ * ladder (19.25 × mult, through nv300). `unit` stays on the return shape because
+ * {@link GearBonuses} still separates a flat Dano term from the percent stats.
  */
 export function scaledValores(defId: string, rarityIdx: number, level: number, upgrade = 0) {
   const definition = defById.get(defId);
@@ -78,13 +65,29 @@ export function scaledValores(defId: string, rarityIdx: number, level: number, u
   const count = ITEM_RARITIES[rarityIdx]?.statCount ?? 1;
   return definition.valores.slice(0, count).map((roll): ScaledValor => {
     if (roll.stat !== 'dmg') return { stat: roll.stat, valor: roll.valor * scale, unit: 'pct' };
-    if (isDmgPctLevel(level)) {
-      return { stat: roll.stat, valor: (DMG_PCT_BY_LEVEL[String(level)] ?? 0) * forja, unit: 'pct' };
-    }
     return { stat: roll.stat, valor: roll.valor * scale, unit: 'flat' };
   });
 }
 
+/**
+ * `catalog.json`'s `statBase.crit` / `statBase.cooldown` (and every def's stored `crit` /
+ * `cooldown` `valor`) carry the 2026-08-18 rescale: `0.00112704` → `0.00644023` and
+ * `0.00098361` → `0.00936771` — the ROUNDED values, not the raw `×40/7` / `×200/21` fractions
+ * (`0.006440228571428571` / `0.009367714285714285`), because the game's own save exports store
+ * the rounded figures verbatim: every crit/cooldown item stat's pre-forja `value` field across
+ * both committed post-2026-08-18 captures (`save-20260818-12heroes.json`,
+ * `save-20260819-respec-crit-cdr.json`) matches `statBase × nivelMult[nativeLevel]` at this
+ * rounded base to zero residual — a level-20 item reads 0.01288046 crit, a level-30 item reads
+ * 0.02810313 cooldown, and so on for every native level present, with no exception. No other
+ * `statBase` value differs anywhere in those items: dmg 19.25, energia 0.035, velocidade
+ * 0.00077, sorte 0.0308, penetracao 0.14 all still match.
+ *
+ * This landed in the SAME patch as the crit-chance/CDR shape change, not a separate one: a
+ * capture taken before the 2026-08-18 patch (see `docs/fixture-corpus.md`'s non-subject list)
+ * still carries the old `0.00112704` / `0.00098361` values and their multiples. The catalog
+ * rescale and the shape revert are one same-day boundary and cannot be usefully split into two
+ * commits that each make sense on their own.
+ */
 export function sumGearBonuses(loadout: Loadout): GearBonuses {
   const totals: GearBonuses = {
     dmgFlat: 0,
@@ -130,20 +133,17 @@ export function sumGearBonuses(loadout: Loadout): GearBonuses {
 }
 
 /**
- * ⚠ UNCONFIRMED ASSUMPTION (catalog v4, 2026-08-11). The wiki states only that a
- * nv50+ item's Dano is "% da Ataque do herói" and never says which Attack. We
- * assume it multiplies the NAKED attack, with flat gear Dano and spent attack
- * points added outside the product:
+ * attack = naked × (1 + Σ dmgPct) + Σ dmgFlat + points × atkPt
  *
- *   attack = naked × (1 + Σ dmgPct) + Σ dmgFlat + points × atkPt
+ * `bonuses.dmgPct` is structurally 0 with the post-2026-08-15 catalog: no def carries a
+ * percentage-of-Attack Dano roll any more (see {@link scaledValores}). The term is kept —
+ * rather than deleted along with the regime — because it is the only inverse-safe place to
+ * reintroduce one, and because {@link decomposeAttack} must stay the exact inverse of this
+ * function for every historical loadout a stored planner draft can still hold.
  *
- * Chosen because it matches how this codebase already treats every other percent
- * stat (`sharedForward` multiplies the naked base; flat gains sit outside).
- * The live alternative is that points fall INSIDE the product.
- *
- * This could not be settled empirically: the server wipe destroyed the save
- * exports, so re-capture needs a hero re-levelled to nv50+ gear. To flip the
- * assumption, change only these two functions — every caller routes through them.
+ * Catalog v4's ⚠ unconfirmed nv50+ assumption (whether spent attack points fell inside or
+ * outside the product) is now MOOT rather than resolved — the regime it described no longer
+ * exists in the game. See `docs/game-update-2026-08-15.md` §3.
  */
 export function composeAttack(nakedAttack: number, bonuses: GearBonuses, flatPoints = 0): number {
   return nakedAttack * (1 + bonuses.dmgPct) + bonuses.dmgFlat + flatPoints;
@@ -179,7 +179,7 @@ export function itemValores(item: EquippedItem): ScaledValor[] {
 }
 
 export function emptySheetOther(): SheetOtherPct {
-  return { speed: 0, critChance: 0, critDmg: 0, penetration: 0, cdr: 0 };
+  return { speed: 0, critChance: 0, critDmgFlat: 0, penetration: 0, cdr: 0 };
 }
 
 /**

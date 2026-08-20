@@ -72,6 +72,24 @@ W5-migrated planner components (`PlannerTabs`, `HeroAbilitiesTab`, `GearTab` —
 
 **W7 closed this**: `ALLOWLIST_FILES` is **empty** and the rule is strict. The `Switch` / `Select` entries were removed not by changing those components but by fixing the counter — per **AD-022**, MOD-17 counts only a component's **own non-DOM props**, excluding native HTML/ARIA attributes and surfaces inherited via `ComponentPropsWithoutRef`. The rule targets prop-drilled god-components, not DOM pass-through primitives. The migrated six must never join an allowlist.
 
+## The farm respec on-demand solve is a slice action, not a selector
+
+The Farm page's respec advisor runs a cheap, dependency-driven check on every relevant store
+change (a memoized selector, the same shape as every other board selector) but its full solve
+only runs when the player clicks Optimize — an explicit event, not a store write. That solve is a
+plain `runFarmRespec()` action on `phases-slice.ts`, not a selector, because a selector's contract
+is to answer the SAME question every time its inputs are read — it cannot decide "only compute
+this on a click," and a selector that quietly skipped its own recompute on some renders but not
+others would violate the one invariant every other memoized selector in this store relies on. The
+result is stored in the slice, keyed on the exact dependency tuple that produced it (element-wise
+identity comparison, the same comparison the read-side memo already uses) — not a separate
+timestamp or version counter, because the question "is this proposal still valid" and the question
+"would a fresh compute produce a different memo key" are the same question, and answering it twice
+in two different ways is exactly the kind of drift this store's memoization discipline exists to
+prevent. When the store changes under a fresh proposal, the stored result simply stops matching
+the live tuple — the derivation that reads it treats a mismatched key as "nothing to show" without
+an effect, a subscription, or a write-on-render ever running.
+
 ## What the store claims (post-W8)
 
 - **Claims:** `zustand` root store; session/account/roster/phases/hero-draft; explicit persistence; MOD-43..46 fixes; `AppLangProvider` removed (`useAppLang` reads session); `_bag` / dual autosave effects gone; memoized `selectAdvisorPipeline`; prop bags / god-hook / `AppShellBridgeProvider` deleted.

@@ -47,7 +47,7 @@ function hero(id: string, dpsSeed: number): HeroRecord {
   };
 }
 
-const account = (slots?: number): AccountShared => ({
+const account = (slots?: number, fieldSlots?: number | null): AccountShared => ({
   tree: {
     danoTotal: 1,
     critChance: 0,
@@ -66,6 +66,7 @@ const account = (slots?: number): AccountShared => ({
     targetProp: 'stone',
   },
   slots,
+  fieldSlots,
 });
 
 describe('rankRosterByDps slots', () => {
@@ -80,6 +81,20 @@ describe('rankRosterByDps slots', () => {
     const rows = rankRosterByDps({
       heroes,
       account: account(6),
+      phase: 1,
+      mitigationPct: 1,
+    });
+    expect(rows).toHaveLength(6);
+  });
+
+  // Finding 5: account.slots (casa.slots, HOUSE recovery) and account.fieldSlots
+  // (skills.field_slots, FIELD concurrency) routinely disagree on a real save (account 486:
+  // 3 vs 6). The squad-strength panel this ranks for is who can be on the FIELD, so fieldSlots
+  // must win — the old bug read account.slots and would report 3 rows here.
+  it('prefers account.fieldSlots over account.slots when limit is omitted', () => {
+    const rows = rankRosterByDps({
+      heroes,
+      account: account(3, 6),
       phase: 1,
       mitigationPct: 1,
     });

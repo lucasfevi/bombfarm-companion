@@ -11,7 +11,7 @@ Canonical keys (current):
 | --- | --- |
 | `bf-hp-heroes-v1` | `HeroRecord[]` |
 | `bf-hp-active-hero-v1` | active hero id |
-| `bf-hp-account-v1` | `AccountShared` (tree, team buffs, context, slots, forgeFloor) |
+| `bf-hp-account-v1` | `AccountShared` (tree, team buffs, context, slots, fieldSlots, houseCycleSecs, forgeFloor) |
 | `bf-hp-inventory-v1` | `InventorySnapshot` (`version`, `importedAt`, `items[]`) |
 | `bf-hp-gear-scope-v1` | Team plan per-hero scope map (`Record<heroId, ScopeState>`) — see below |
 
@@ -35,7 +35,7 @@ UI chrome prefs (`bf_lang`, guide/roster open state, etc.) are separate and must
 | Field | Default | Notes |
 | --- | --- | --- |
 | `battleAllowed` | `true` | From save `battle_allowed` — the save is always source of truth. Toggleable in the hero strip and roster picker; a local toggle is overwritten when a later import carries a different `battle_allowed`. Disabled heroes (`false`) are excluded from roster respec recommendations. On the gear optimizer (W1+), `battleAllowed === false` seeds that hero's default scope to **Donate** (`scopeByHeroId`); Phases DPS math still treats the hero like any other unless a surface explicitly filters them. |
-| `skin` | `0` | From save `skin` (0–6; `HERO_SKIN_COUNT` in `wiki-assets.ts`). Stored index stays the save value — do **not** rewrite `1`↔`2` on disk. Display remaps via `heroAvatarSrc` because wiki filenames `hero2`/`hero3` are swapped vs in-game skins 1/2. |
+| `skin` | `0` | From save `skin` (0–7; `HERO_SKIN_COUNT` in `wiki-assets.ts`). Stored index stays the save value — do **not** rewrite `1`↔`2` on disk. Display remaps via `heroAvatarSrc` because wiki filenames `hero2`/`hero3` are swapped vs in-game skins 1/2. |
 | `sourceId` | **required for roster** | Save export hero id. Heroes without a non-empty `sourceId` are **dropped on load** (see [`import-only-heroes.md`](import-only-heroes.md)). `importHeroes()` always sets it; `normalizeHero` keeps it when present. |
 | `luck` | `0` | On `naked`, `gearedOverride` and `pts` (`SheetStats` / `PointAlloc`, BSP-40). Stored in **percent** (Bellatrix ≈ 17.76), not the save's fraction — see `AD-BSP-19a`. Pre-`luck` records load with `0` filled by `normalizeSheetStats` / `normalizePointAlloc`; the key stays `bf-hp-heroes-v1` (additive, rule 6). Displayed as an eighth sheet stat since Wave 6 (`SHEET_PANEL_KEYS`, sheet table / Points table / Effective panel / ledger breakdown via `ledgerLuck`) but deliberately **never scored for DPS** — `AD-BSP-20`'s "not displayed yet" is stale after this wave. |
 | `birth` | omit / `undefined` | Birth roll in planner units from save `birth_stats`. Additive — missing until re-import. The read-only Stats panel recomposes Total via `peelSheetStages` / `composeSheetFromBirth` when present; without it the panel shows need chrome and asks for a fresh import. |
@@ -57,13 +57,33 @@ Imported heroes store their **fixed ability pool** in `abilities`, including **l
 | Field | Default | Notes |
 | --- | --- | --- |
 | `targetProp` | `'stone'` (was `null`) | Ranking/HTK prop on `HeroContext` (`AccountShared.context`, key `bf-hp-account-v1`). Previously normalized absent/empty-string to `null`, which `isTargetPropUnset` read as true and the Account tab soft-dotted. `DEFAULT_CONTEXT` and `normalizeContext` (`storage.ts`) now coerce absence/`''` to `DEFAULT_TARGET_PROP` (`'stone'`, `farm-context.ts`) — matching the Account target-prop `Select`'s own default, which can no longer emit `''`. `isTargetPropUnset` still exists as a guard, but is now reachable only via hand-edited localStorage that bypasses normalization, not through any normal load/import/UI path. Records with an explicit non-empty `targetProp` are unaffected either way. |
+| `rankMode` | `'farm'` (was `'dps'`) | Next-point ranking mode on `HeroContext` (`AccountShared.context`, key `bf-hp-account-v1`). New accounts and any record with the field absent now default to `'farm'`. The retired `'oneshot'` value migrates to `'farm'` on load, same as any other unrecognized string, number, `null` or object — `normalizeContext` (`account-shared.ts`) resolves through an allow-list of exactly `'dps'` (respected as a deliberate past choice) and everything else (`'farm'`), so no unpredicted stored value can survive. No storage-key bump — the normalized value simply reaches disk on the next ordinary save, same as every other field on this key. |
 
 ### AccountShared fields (additive on `-v1`)
 
 | Field | Default | Notes |
 | --- | --- | --- |
-| `slots` | `9` (`DEFAULT_CASA_SLOTS`) | Casa field-slot count from save `casa` (`resolveCasaSlots`). Written on import when the save carries a `casa` block; absent records normalize to `9`. Clamped to `>= 1`. Drives Phases squad ranking (`rankRosterByDps`) and optimizer slot limits. |
+| `slots` | `9` (`DEFAULT_CASA_SLOTS`) | HOUSE RECOVERY slot count from save `casa` (`resolveCasaSlots`, `casa.slots`) — how many heroes the House refills at once, NOT the field concurrency cap (see `fieldSlots` below; the name predates that distinction). Written on import when the save carries a `casa` block; absent records normalize to `9`. Clamped to `>= 1`. Now only a legacy fallback for `fieldSlots` on records stored before the split (`AD-063`). |
+| `fieldSlots` | `null` | FIELD concurrency cap from save `skills.field_slots` (`resolveFieldSlots`) — how many heroes may be deployed at once. Drives Phases squad ranking (`rankRosterByDps`) and the team-plan optimizer's saturation cap. `null` when the last import carried no `skills.field_slots` (pre-split record, or a payload missing the `skills` section) — falls back to `slots` above, then `DEFAULT_CASA_SLOTS`. A real save can carry both with different values (account 486: `slots` 3 vs `fieldSlots` 6); `AD-063` records `field_slots` verbatim and does not reconcile it against `skills.totals.vagas_campo`. |
+| `houseCycleSecs` | `null` | `casa.cycle_secs` — the House's own full 0→100% recovery countdown, in seconds. `null`/absent falls back to the `HOUSES` table interpolation (`resolveHouseRestSeconds`). Feeds the farm board, the advisor, and the team-plan scorer's duty cycle alike. |
 | `forgeFloor` | `10` | Optimizer forge floor (`clampForgeFloor`, bounded by `FORJA_MAX`). Persisted on `bf-hp-account-v1` and hydrated into the team-plan slice. **Import never overwrites** an existing browser value — only `normalizeAccount` / explicit UI edits change it. |
+
+### `bf-hp-phases-view-v1` — additive fields
+
+| Field | Default | Notes |
+| --- | --- | --- |
+| `farmPool` | `{}` (absent) | Farm Ranking rotation-pool override map, `Record<heroId, boolean>`. A hero id absent from the map follows `HeroRecord.battleAllowed` — the map records only explicit local overrides. Bounded to the first 200 entries on load; a non-boolean entry or an empty-string key is dropped, siblings kept. An id naming a hero no longer in the roster is **kept in storage, ignored on use** — a read must not write (the `bf-hp-gear-scope-v1` precedent). **Never** written back to the save or to `bf-hp-heroes-v1` — this is estimation-local only. |
+| `farmReturnBonus` | `'off'` (absent) | Farm Ranking Return Bonus estimate — `'off' \| 'on' \| 'vip'`, `@bombfarm/domain/farm-rate`'s `ReturnBonusMode` reused verbatim as the persisted value rather than a local union. A stored value outside those three literals normalizes to `'off'`. |
+
+Both fields stay **absent** on `defaultPhasesView()` and on every payload the player has never interacted with, so an untouched user's stored bytes are unchanged. `savePhasesView` writes the **whole** `PhasesViewState` on every call — the slice's private `persistPhasesView` is the only composer, fixing a shipped bug where a one-field literal write (`savePhasesView({ phase })`) would have silently erased these fields the moment a second one existed.
+
+`farmObjective` (the Farm Respec Advisor's objective preset, `'gold' | 'chests' | 'blend'`) was **removed** once the objective picker itself was withdrawn from the product — the advisor now only ever optimizes gold/hr, so the field had nothing left to hold. `loadPhasesView` no longer reads or normalizes it; a stored key from before the removal is simply an unrecognized property on the parsed object and is ignored, never surfaced and never causing a read to throw.
+
+### `bf-hp-account-v1` — additive field
+
+| Field | Default | Notes |
+| --- | --- | --- |
+| `maxPhase` | `null` | `account.max_phase` — the furthest phase this account has reached. Mirrors the optional field `@bombfarm/domain` added to its own storage shim. `null`/absent means no lock badges anywhere on the Farm Ranking board, and its unlocked-only filter renders disabled with a one-line reason rather than silently filtering to nothing. Clamped/rounded to an integer in `1..600` on load, the same way `context.phase` already is. **Written unconditionally by `applyAccountImport`** from `AccountImportData.maxPhase` — unlike every sibling field on this record, which is written only `if (data.field != null)`. This field is required-and-total, so a payload carrying no `max_phase` source is an assertion that this account has no known max phase: a re-import must **clear** a stale value, not preserve it, or a lock badge would keep asserting progress the payload just contradicted. Both the file-import and API-refresh paths reach this (both funnel through `parseAccountPayload` → `mapAccountData`). |
 
 ### `bf-hp-inventory-v1` (account-scoped collection)
 

@@ -67,7 +67,6 @@ export function selectPlannerTabStatuses(state: PlannerStore): PlannerTabStatuse
     level: state.level,
     abilityPtsLeft,
     abilityPointsMax,
-    targetProp: state.targetProp,
     resetAdviceRecommend,
     t: selectStrings(state),
   });

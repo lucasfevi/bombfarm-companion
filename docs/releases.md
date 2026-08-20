@@ -255,6 +255,7 @@ A changesets bump updates the displayed version without additional code edits.
 | [ci-web.yml](../.github/workflows/ci-web.yml) | push, PR, dispatch | Web quality gate |
 | [ci-desktop.yml](../.github/workflows/ci-desktop.yml) | push, PR, dispatch | Desktop quality gate |
 | [e2e-web.yml](../.github/workflows/e2e-web.yml) | push, PR, dispatch | Web e2e gate |
+| [line-endings.yml](../.github/workflows/line-endings.yml) | push, PR, dispatch | LF policy gate — deliberately unfiltered ([line-endings.md](line-endings.md)) |
 
 ## Related
 

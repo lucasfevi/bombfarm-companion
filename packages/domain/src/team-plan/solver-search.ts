@@ -164,6 +164,9 @@ function farmFromAccount(input: TeamPlanInput): FarmContext {
     houseLevel: input.account.houseLevel,
     phase: input.account.phase,
     mitigationPct: input.account.mitigationPct,
+    cycleSecs: input.account.cycleSecs,
+    cycleSecsHouseIdx: input.account.cycleSecsHouseIdx,
+    cycleSecsLevel: input.account.cycleSecsLevel,
   };
 }
 
@@ -188,7 +191,7 @@ export function evaluateAssignment(
     contexts,
     loadoutsByHeroId: loadouts,
     ptsByHeroId,
-    slots: input.account.slots,
+    slots: input.account.fieldSlots,
     farm: farmFromAccount(input),
     forgeFloor: input.forgeFloor,
     scoreMemo: budget.scoreMemo,
@@ -248,7 +251,7 @@ function beamCandidates(
         contexts,
         loadoutsByHeroId,
         ptsByHeroId,
-        slots: input.account.slots,
+        slots: input.account.fieldSlots,
         farm,
         forgeFloor: input.forgeFloor,
         scoreMemo: budget.scoreMemo,

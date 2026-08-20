@@ -25,12 +25,14 @@ function solveSpentPoints(hero: SaveHeroSheet, tree: TreeSheetTotals): Record<Sh
   const naked = nakedFromBirth(birth, hero.level, hero.stars, hero.sheetOther);
   const baseSpeed = naked.speed / poolFactor(hero.sheetOther.speed);
   const baseCritChance = naked.critChance / poolFactor(hero.sheetOther.critChance);
-  const baseCritDmg = naked.critDmg / poolFactor(hero.sheetOther.critDmg);
+  // Crit damage is flat-additive: the ability addend peels by subtraction, and the point
+  // count is a plain division by POINT_GAIN.critDmgFlat (no pool base involved).
+  const baseCritDmg = naked.critDmg - Math.max(0, hero.sheetOther.critDmgFlat);
   const observed = hero.sheet;
   const pool = {
     speed: baseSpeed > 1e-12 ? (observed.speed - naked.speed) / baseSpeed : 0,
     critChance: baseCritChance > 1e-12 ? (observed.critChance - naked.critChance) / baseCritChance : 0,
-    critDmg: baseCritDmg > 1e-12 ? (observed.critDmg - naked.critDmg) / baseCritDmg : 0,
+    critDmg: observed.critDmg - naked.critDmg - baseCritDmg * (tree.critDmgPct / 100),
     penetration:
       naked.penetration /
         poolFactor(hero.sheetOther.penetration) >
@@ -60,7 +62,7 @@ function solveSpentPoints(hero: SaveHeroSheet, tree: TreeSheetTotals): Record<Sh
       0,
       Math.round((pool.critChance - bonuses.critPct - tree.critChancePct / 100) / POINT_GAIN.critChancePctOfBase),
     ),
-    critDmg: Math.max(0, Math.round((pool.critDmg - tree.critDmgPct / 100) / POINT_GAIN.critDmgPctOfBase)),
+    critDmg: Math.max(0, Math.round(pool.critDmg / POINT_GAIN.critDmgFlat)),
     penetration: Math.max(
       0,
       Math.round((pool.penetration - bonuses.penPct) / POINT_GAIN.penetrationPctOfBase),

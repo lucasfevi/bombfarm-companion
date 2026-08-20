@@ -1,8 +1,8 @@
 import { SessionToken } from './session.js';
 
 /**
- * Pure INI parse for `session.cfg` (LAR-11 parse half). Adapted from
- * `bombfarm-bot/src/lib/api.ts:73-101` with two deliberate changes: this returns a result union
+ * Pure INI parse for `session.cfg` (LAR-11 parse half). Adapted from the internal automation
+ * prototype's API client with two deliberate changes: this returns a result union
  * instead of throwing (the desktop needs a *status* to report, not an exception to catch), and
  * the token is wrapped in `SessionToken` at the moment of parse — no plain string of it exists
  * above this module (asserted by `session-cfg.type.test.ts`... folded into `session.type.test.ts`

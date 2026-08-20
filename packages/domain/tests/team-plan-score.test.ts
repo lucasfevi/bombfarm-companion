@@ -2,7 +2,6 @@ import { describe, expect, it, vi } from 'vitest';
 import * as advisorPipeline from '@bombfarm/domain/advisor-pipeline';
 import * as deriveModule from '@bombfarm/domain/derive';
 import { computeAdvisorPipeline } from '@bombfarm/domain/advisor-pipeline';
-import { stackTeamBonusMult, TEAM_MULT_BONUS_CAP } from '@bombfarm/domain/derive';
 import { zeroTeamBuffs, type TeamBuffId } from '@bombfarm/domain/team-buffs';
 import { PROPS } from '@bombfarm/domain/phases';
 import { ZERO_PTS } from '@bombfarm/domain/planner-constants';
@@ -31,6 +30,7 @@ function accountFromFixture(raw: Record<string, unknown>): TeamPlanAccountInput 
     phase: 1,
     mitigationPct: 6.7,
     slots: 6,
+    fieldSlots: 6,
   };
 }
 
@@ -103,9 +103,10 @@ describe('scoreHeroLoadout', () => {
         cdr: 0,
         luck: 0,
       },
-      sheetOther: { speed: 0, critChance: 0, critDmg: 0, penetration: 0, cdr: 0 },
+      sheetOther: { speed: 0, critChance: 0, critDmgFlat: 0, penetration: 0, cdr: 0 },
       mods: {
         drainMult: 1,
+        ownTeamDrainPct: 0,
         combatCritChancePctOfBase: 0,
         penetrationPp: 0,
         rangeCells: 0,
@@ -115,7 +116,7 @@ describe('scoreHeroLoadout', () => {
         gateAttackMult: 1,
         sheetCritChancePctOfBase: 0,
         sheetPenetrationRaw: 0,
-        sheetCritDmgPctOfBase: 0,
+        sheetCritDmgFlat: 0,
       },
       treeSheet: {
         danoStatic: 1,
@@ -232,9 +233,10 @@ describe('scoreHeroLoadout', () => {
         cdr: 10,
         luck: 2,
       },
-      sheetOther: { speed: 0, critChance: 0, critDmg: 0, penetration: 0, cdr: 0 },
+      sheetOther: { speed: 0, critChance: 0, critDmgFlat: 0, penetration: 0, cdr: 0 },
       mods: {
         drainMult: 1,
+        ownTeamDrainPct: 0,
         combatCritChancePctOfBase: 0,
         penetrationPp: 0,
         rangeCells: 0,
@@ -244,7 +246,7 @@ describe('scoreHeroLoadout', () => {
         gateAttackMult: 1,
         sheetCritChancePctOfBase: 0,
         sheetPenetrationRaw: 0,
-        sheetCritDmgPctOfBase: 0,
+        sheetCritDmgFlat: 0,
       },
       treeSheet: {
         danoStatic: 1,

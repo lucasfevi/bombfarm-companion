@@ -25,9 +25,10 @@ function ctx(name: string, abilities: Record<string, number>, scope: HeroPlanCon
       cdr: 0,
       luck: 0,
     },
-    sheetOther: { speed: 0, critChance: 0, critDmg: 0, penetration: 0, cdr: 0 },
+    sheetOther: { speed: 0, critChance: 0, critDmgFlat: 0, penetration: 0, cdr: 0 },
     mods: {
       drainMult: 1,
+      ownTeamDrainPct: 0,
       combatCritChancePctOfBase: 0,
       penetrationPp: 0,
       rangeCells: 0,
@@ -37,7 +38,7 @@ function ctx(name: string, abilities: Record<string, number>, scope: HeroPlanCon
       gateAttackMult: 1,
       sheetCritChancePctOfBase: 0,
       sheetPenetrationRaw: 0,
-      sheetCritDmgPctOfBase: 0,
+      sheetCritDmgFlat: 0,
     },
     treeSheet: {
       danoStatic: 1,

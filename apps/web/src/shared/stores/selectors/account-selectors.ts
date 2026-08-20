@@ -1,6 +1,6 @@
 import type { PlannerStore } from '@/shared/stores/planner-store';
 import type { AccountShared } from '@/shared/lib/storage';
-import type { TeamBuffId } from '@bombfarm/domain/team-buffs';
+import { computeTeamBuffsFromDeployed, type TeamBuffId } from '@bombfarm/domain/team-buffs';
 
 export const selectTreeDanoTotal = (state: PlannerStore) => state.treeDanoTotal;
 export const selectTreeCritChance = (state: PlannerStore) => state.treeCritChance;
@@ -9,23 +9,70 @@ export const selectTreeSpeed = (state: PlannerStore) => state.treeSpeed;
 export const selectTreeEnergy = (state: PlannerStore) => state.treeEnergy;
 export const selectTreeTeamCoinPct = (state: PlannerStore) => state.treeTeamCoinPct;
 export const selectTreeLuckFlatPct = (state: PlannerStore) => state.treeLuckFlatPct;
-export const selectTeamBuffs = (state: PlannerStore) => state.teamBuffs;
+export const selectTreeXpMult = (state: PlannerStore) => state.treeXpMult;
+/** The user's explicit override, or `null` when the panel has never been touched (issue #132)
+ *  — read this directly only to decide whether an override is active; combat math should read
+ *  {@link selectEffectiveTeamBuffs} instead. */
+export const selectTeamBuffsOverride = (state: PlannerStore) => state.teamBuffsOverride;
 export const selectHouseIdx = (state: PlannerStore) => state.houseIdx;
 export const selectHouseLevel = (state: PlannerStore) => state.houseLevel;
 export const selectFarmPhase = (state: PlannerStore) => state.phase;
 export const selectMitigationPct = (state: PlannerStore) => state.mitigationPct;
 export const selectRankMode = (state: PlannerStore) => state.rankMode;
 export const selectSlots = (state: PlannerStore) => state.slots;
+export const selectFieldSlots = (state: PlannerStore) => state.fieldSlots;
+export const selectHouseCycleSecs = (state: PlannerStore) => state.houseCycleSecs;
+export const selectHouseCycleSecsHouseIdx = (state: PlannerStore) => state.houseCycleSecsHouseIdx;
+export const selectHouseCycleSecsLevel = (state: PlannerStore) => state.houseCycleSecsLevel;
 export const selectTargetProp = (state: PlannerStore) => state.targetProp;
+export const selectMaxPhase = (state: PlannerStore) => state.maxPhase;
+
+/**
+ * The roster-wide team-buffs total every combat computation should actually use (issue #132):
+ * the explicit override when one is set, else DERIVED from the deployed roster
+ * (`computeTeamBuffsFromDeployed`) — never a stored field that silently starts at zero. A hero
+ * carrying a team aura otherwise got no benefit from it until a user found the auto-fill button;
+ * deriving by default closes that gap without taking away the override as a deliberate "what if"
+ * planning affordance.
+ *
+ * Module-level single-entry cache (AD-012 shape, matching `selectAdvisorPipeline`/
+ * `selectFarmRankingRows`) — returns the SAME reference while neither `state.heroes` nor
+ * `state.teamBuffsOverride` changed, so every dep tuple that used to read `state.teamBuffs`
+ * directly can depend on this selector's result instead of listing `heroes`/`teamBuffsOverride`
+ * separately.
+ */
+let effectiveTeamBuffsCache: {
+  heroes: PlannerStore['heroes'];
+  override: PlannerStore['teamBuffsOverride'];
+  result: Record<TeamBuffId, number>;
+} | null = null;
+
+export function resetEffectiveTeamBuffsCache(): void {
+  effectiveTeamBuffsCache = null;
+}
+
+export function selectEffectiveTeamBuffs(state: PlannerStore): Record<TeamBuffId, number> {
+  if (
+    effectiveTeamBuffsCache &&
+    Object.is(effectiveTeamBuffsCache.heroes, state.heroes) &&
+    Object.is(effectiveTeamBuffsCache.override, state.teamBuffsOverride)
+  ) {
+    return effectiveTeamBuffsCache.result;
+  }
+  const result = state.teamBuffsOverride ?? computeTeamBuffsFromDeployed(state.heroes);
+  effectiveTeamBuffsCache = { heroes: state.heroes, override: state.teamBuffsOverride, result };
+  return result;
+}
 
 /** Nested AccountShared for persistence writes — inverse of hydrateAccount. */
 let accountSharedCache: AccountShared | null = null;
 let accountSharedTuple: ReturnType<typeof selectAccountTuple> | null = null;
 
-/** Clears the referential cache — call from `resetPlannerStoreForTests`. */
+/** Clears the referential caches — call from `resetPlannerStoreForTests`. */
 export function clearAccountSharedSelectorCache(): void {
   accountSharedCache = null;
   accountSharedTuple = null;
+  resetEffectiveTeamBuffsCache();
 }
 
 /**
@@ -54,8 +101,13 @@ export function selectAccountShared(state: PlannerStore): AccountShared {
       energy: state.treeEnergy,
       teamCoinPct: state.treeTeamCoinPct,
       luckFlatPct: state.treeLuckFlatPct,
+      xpMult: state.treeXpMult,
     },
-    teamBuffs: state.teamBuffs,
+    // `teamBuffs` is deprecated (see AccountShared's own doc comment) — written only so an old
+    // app build reading this file sees a plausible value, never read back for the override
+    // decision by this build. `teamBuffsOverride` is the authoritative field.
+    teamBuffs: state.teamBuffsOverride ?? {},
+    teamBuffsOverride: state.teamBuffsOverride,
     context: {
       houseIdx: state.houseIdx,
       houseLevel: state.houseLevel,
@@ -65,7 +117,12 @@ export function selectAccountShared(state: PlannerStore): AccountShared {
       targetProp: state.targetProp,
     },
     slots: state.slots,
+    fieldSlots: state.fieldSlots,
+    houseCycleSecs: state.houseCycleSecs,
+    houseCycleSecsHouseIdx: state.houseCycleSecsHouseIdx,
+    houseCycleSecsLevel: state.houseCycleSecsLevel,
     forgeFloor: state.forgeFloor,
+    maxPhase: state.maxPhase,
   };
   return accountSharedCache;
 }
@@ -80,7 +137,8 @@ export function selectAccountTuple(state: PlannerStore) {
     state.treeEnergy,
     state.treeTeamCoinPct,
     state.treeLuckFlatPct,
-    state.teamBuffs,
+    state.treeXpMult,
+    state.teamBuffsOverride,
     state.houseIdx,
     state.houseLevel,
     state.phase,
@@ -88,7 +146,12 @@ export function selectAccountTuple(state: PlannerStore) {
     state.rankMode,
     state.targetProp,
     state.slots,
+    state.fieldSlots,
+    state.houseCycleSecs,
+    state.houseCycleSecsHouseIdx,
+    state.houseCycleSecsLevel,
     state.forgeFloor,
+    state.maxPhase,
   ] as const;
 }
 

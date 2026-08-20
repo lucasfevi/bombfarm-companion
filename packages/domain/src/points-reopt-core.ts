@@ -99,9 +99,24 @@ export function budgetOf(pts: Record<SheetKey, number>): number {
  * The `budgetOf(pts)` floor cannot bring that compounding back: the search never places more
  * than the budget it was given, so feeding a result back yields `budgetOf(pts) <= previous
  * budget` and the sequence is non-increasing, settling immediately rather than growing.
+ *
+ * **CLAMPED to `level`, no matter what** (reversed from the earlier "not clamped, deliberately"
+ * stance reviewed at the flat-crit-damage fix). The floor above is still real — an over-spent
+ * hero really does hold those points — but leaving the result un-clamped let a single bad
+ * `pts` (from `inferSpentPoints` or anywhere else upstream) turn into a proposal the hero cannot
+ * actually hold, and the advisor cannot tell the difference between "this budget is real" and
+ * "this budget is a bug" once it has a number in hand. Concretely, on a level-69 hero the
+ * un-clamped floor produced a 210-point respec budget; the advisor sold a +18.9% gold/hr
+ * proposal for 429,000 gold, of which the achievable gain was 0% — 101% of the advertised gain
+ * was phantom, because the search had ~3× the points the hero can ever hold. Clamping here does
+ * not remove the need to fix an upstream bug that overshoots `level` —
+ * `tests/points-within-level-budget.test.ts` still asserts `Σ pts ≤ level` over every committed
+ * capture and is still the guard that should go red first if `inferSpentPoints` regresses — but
+ * it does mean this function can no longer amplify that bug into a proposal, which is worth more
+ * than the theoretical case for staying unclamped.
  */
 export function reoptBudget(pts: Record<SheetKey, number>, level: number): number {
-  return Math.max(0, level - pts.luck, budgetOf(pts));
+  return Math.max(0, Math.min(level, Math.max(level - pts.luck, budgetOf(pts))));
 }
 
 export type GreedyWalkResult = {
@@ -113,11 +128,12 @@ export type GreedyWalkResult = {
 };
 
 /**
- * `AD-BSP-08` verbatim: repeated best `rankNextPoint`, always scored `mode: 'dps'` regardless
- * of any caller rankMode (`AC-70`) — this module never exposes a rankMode parameter, so there
- * is nothing for a caller to set incorrectly. `startScore` seeds the exact incremental product
- * chain (`dpsGainPct` is defined as `(sustainedDps(next)/sustainedDps(current) - 1) x 100`, so
- * chaining it through accepted steps reproduces the true final DPS with no extra scoring call).
+ * `AD-BSP-08` verbatim: repeated best `rankNextPoint`. `rankNextPoint` itself has no mode
+ * parameter any more — it always scores sustained DPS (`AC-70`) — so this module never exposes
+ * a rankMode parameter either, and there is nothing for a caller to set incorrectly.
+ * `startScore` seeds the exact incremental product chain (`gainPct` is defined as
+ * `(sustainedDps(next)/sustainedDps(current) - 1) x 100`, so chaining it through accepted steps
+ * reproduces the true final DPS with no extra scoring call).
  */
 export function greedyWalk(
   startPts: Record<SheetKey, number>,
@@ -142,11 +158,11 @@ export function greedyWalk(
       break;
     }
     const sheet = buildCandidateSheet(effective, basePts, effectiveDelta, current);
-    const ranking = rankNextPoint(sheet, context, { effectiveDeltas: effectiveDelta, mode: 'dps' });
+    const ranking = rankNextPoint(sheet, context, { effectiveDeltas: effectiveDelta });
     evaluations += STEP_COST;
     const best = ranking[0];
-    if (!best || best.dpsGainPct <= 0) break; // AC-51/AC-52: never spend into a zero-gain stat.
-    score *= 1 + best.dpsGainPct / 100;
+    if (!best || best.gainPct <= 0) break; // AC-51/AC-52: never spend into a zero-gain stat.
+    score *= 1 + best.gainPct / 100;
     current = { ...current, [best.stat]: current[best.stat] + 1 };
     remaining -= 1;
   }

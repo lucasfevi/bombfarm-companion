@@ -1,5 +1,6 @@
 import { expect, type Page } from '@playwright/test';
 import type { AccountShared, HeroRecord } from '../../src/shared/lib/storage';
+import type { PhasesViewState } from '../../src/shared/lib/phases-view-storage';
 import type { InventorySnapshot } from '@bombfarm/domain/inventory';
 
 /** Keys mirror `src/shared/lib/storage.ts` + i18n/guide chrome — keep in sync. */
@@ -7,8 +8,29 @@ const HEROES_KEY = 'bf-hp-heroes-v1';
 const ACTIVE_KEY = 'bf-hp-active-hero-v1';
 const ACCOUNT_KEY = 'bf-hp-account-v1';
 const INVENTORY_KEY = 'bf-hp-inventory-v1';
+const PHASES_VIEW_KEY = 'bf-hp-phases-view-v1';
 const LANG_KEY = 'bf_lang';
 const GUIDE_HIDDEN_KEY = 'bf_guide_hidden';
+
+/**
+ * One-shot storage-migration markers, seeded as already-done.
+ *
+ * Seeded heroes are authored in CURRENT units, so replaying a legacy conversion over them would
+ * corrupt them. More importantly it breaks reload-stability: `seedLocalStorage` uses
+ * `addInitScript`, which re-writes the heroes key on EVERY navigation, but the markers a
+ * migration writes are not re-written by it. Without these, the first load migrates the seed and
+ * saves the result, then a `page.reload()` restores the raw seed while the marker persists — so
+ * the migration no longer runs and storage differs before/after. Any test asserting
+ * "storage is byte-identical across a reload" then fails for a reason that has nothing to do with
+ * what it is testing (`farm-ranking.spec.ts`, `team-plan-states.spec.ts`).
+ *
+ * Add the marker here whenever a new one-shot migration lands in `storage.ts`.
+ */
+const MIGRATION_MARKER_KEYS = [
+  'bf-hp-critdmg-flat-migrated-v1',
+  'bf-hp-critchance-flat-migrated-v1',
+  'bf-hp-critcdr-repool-migrated-v1',
+] as const;
 
 export type SeededState = {
   heroes: HeroRecord[];
@@ -18,6 +40,8 @@ export type SeededState = {
   lang?: 'pt' | 'en';
   /** When true (default), suppress the first-run guide overlay. */
   guideHidden?: boolean;
+  /** Seeds bf-hp-phases-view-v1 — phase, farmPool and farmReturnBonus. */
+  phasesView?: PhasesViewState;
 };
 
 const emptySheet = () => ({
@@ -193,10 +217,11 @@ export async function seedLocalStorage(page: Page, state: SeededState): Promise<
     lang: state.lang ?? 'pt',
     // Default hide guide; only show when guideHidden is explicitly false.
     guideHidden: state.guideHidden !== false,
+    phasesView: state.phasesView ?? null,
   };
 
   await page.addInitScript(
-    ({ heroes, activeHeroId, account, inventory, lang, guideHidden, keys }) => {
+    ({ heroes, activeHeroId, account, inventory, lang, guideHidden, phasesView, keys }) => {
       localStorage.setItem(keys.heroes, JSON.stringify(heroes));
       if (activeHeroId) localStorage.setItem(keys.active, activeHeroId);
       else localStorage.removeItem(keys.active);
@@ -206,6 +231,11 @@ export async function seedLocalStorage(page: Page, state: SeededState): Promise<
       else localStorage.removeItem(keys.inventory);
       localStorage.setItem(keys.lang, lang);
       localStorage.setItem(keys.guideHidden, guideHidden ? '1' : '0');
+      if (phasesView) localStorage.setItem(keys.phasesView, JSON.stringify(phasesView));
+      else localStorage.removeItem(keys.phasesView);
+      // Re-asserted on every navigation, exactly like the heroes key above — see
+      // MIGRATION_MARKER_KEYS for why these have to move together with it.
+      for (const marker of keys.migrationMarkers) localStorage.setItem(marker, 'true');
     },
     {
       ...payload,
@@ -216,6 +246,8 @@ export async function seedLocalStorage(page: Page, state: SeededState): Promise<
         inventory: INVENTORY_KEY,
         lang: LANG_KEY,
         guideHidden: GUIDE_HIDDEN_KEY,
+        phasesView: PHASES_VIEW_KEY,
+        migrationMarkers: [...MIGRATION_MARKER_KEYS],
       },
     },
   );

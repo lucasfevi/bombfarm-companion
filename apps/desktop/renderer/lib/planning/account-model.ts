@@ -5,7 +5,7 @@
 import { ACCOUNT_SECTIONS, deriveAccountFidelity, sectionHasData } from '@bombfarm/domain/account-fidelity';
 import { parseAccountPayload } from '@bombfarm/domain/import-save';
 import { phaseLine } from '@bombfarm/domain/phases';
-import { zeroTeamBuffs } from '@bombfarm/domain/team-buffs';
+import { computeTeamBuffsFromDeployed } from '@bombfarm/domain/team-buffs';
 import { DEFAULT_TARGET_PROP } from '@bombfarm/domain/farm-context';
 import type { AccountPayload, AccountSection, AccountView, SectionStatus } from '@bombfarm/contracts';
 import type { AccountShared } from '@bombfarm/domain/shims/storage';
@@ -154,10 +154,15 @@ export function buildPlanningModel(view: AccountView): PlanningModel {
   // values below is `null`, or the backing section is not usable, `shared` stays `null` and
   // `pipelineForHero` is never called for any hero (see `hero-advice.ts`).
   //
-  // `teamBuffs` is not gated here: it is not one of the five account sections and MP2's ingest
-  // never populates it (there is no team-buffs UI on the desktop, out of scope for F2). Using
-  // `zeroTeamBuffs()` supplies the identity value `pipelineForHero` expects for a dimension the
-  // desktop does not model yet — it is not a stand-in for missing section data.
+  // `teamBuffs` is not gated here: it is not one of the five account sections. Issue #132:
+  // `zeroTeamBuffs()` used to be a harmless placeholder because `abilityMods` folded a hero's
+  // own rank into its own combat mods regardless of any account-wide total; once that folding
+  // was removed, a stored zero here meant every hero — including a carrier itself — read zero
+  // team-aura benefit, with no UI on the desktop to correct it (no auto-fill button, no manual
+  // fields). `computeTeamBuffsFromDeployed` derives the true total from this same `heroes`
+  // roster, exactly as the web farm board does. Always derived, never an override: there is no
+  // team-buffs UI on the desktop (out of scope for F2), so there is nothing for an override to
+  // record.
   const shared: AccountShared | null =
     skillsUsable &&
     casaUsable &&
@@ -177,7 +182,7 @@ export function buildPlanningModel(view: AccountView): PlanningModel {
             teamCoinPct: tree.teamCoinPct ?? 0,
             luckFlatPct: tree.luckFlatPct,
           },
-          teamBuffs: zeroTeamBuffs(),
+          teamBuffs: computeTeamBuffsFromDeployed(heroes.map((entry) => entry.hero)),
           context: {
             houseIdx,
             houseLevel,
@@ -187,6 +192,8 @@ export function buildPlanningModel(view: AccountView): PlanningModel {
             targetProp: DEFAULT_TARGET_PROP,
           },
           slots: parsed.account.slots ?? undefined,
+          fieldSlots: parsed.account.fieldSlots ?? null,
+          houseCycleSecs: parsed.account.houseCycleSecs ?? null,
         }
       : null;
 

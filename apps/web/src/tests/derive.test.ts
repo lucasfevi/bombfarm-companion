@@ -1,10 +1,10 @@
 import { describe, expect, it } from 'vitest';
 import { abilityMods, predictHitDamage, sustainedDps, type Context } from '@bombfarm/domain/model';
 import { emptySheet, emptySheetOther, type SheetStats } from '@bombfarm/domain/gear';
-import { computeCombatMults, derive, stackTeamBonusMult, TEAM_MULT_BONUS_CAP, type DeriveInput } from '@bombfarm/domain/derive';
+import { computeCombatMults, combineTeamAuraPct, derive, type DeriveInput } from '@bombfarm/domain/derive';
 import type { TreeSheetTotals } from '@bombfarm/domain/birth-sheet';
 import { ZERO_PTS } from '@bombfarm/domain/planner-constants';
-import { zeroTeamBuffs } from '@bombfarm/domain/team-buffs';
+import { TEAM_BUFF_CAP, zeroTeamBuffs } from '@bombfarm/domain/team-buffs';
 import { extractHero, loadFixtureJson, treeTotalsFromSave } from '@/tests/helpers/sheet-math-fixtures';
 
 const baseCtx = (): Context => ({
@@ -38,19 +38,19 @@ const ZERO_TREE: TreeSheetTotals = {
 };
 
 describe('computeCombatMults', () => {
-  it('applies team buffs and ability mods', () => {
-    const mods = abilityMods({ grito_guerra: 0 });
-    mods.attackMult = 1.1;
-    mods.speedMult = 1.05;
-    mods.gateAttackMult = 1.2;
-    mods.dmgMult = 1.15;
+  it('applies the roster-wide team-buffs total and the hero’s own SELF ability mods (issue #132)', () => {
+    // Team auras (Grito/Marcha/Fôlego/Presságio) never reach a hero's own AbilityMods any more
+    // — `teamBuffs` is the roster-wide total (already including this hero, if it carries any of
+    // them) and is the SOLE source for all four. `mods.gateAttackMult`/`dmgMult` stay own-only
+    // (Contra o Relógio / second-blast / execute are self abilities, unaffected).
+    const mods = abilityMods({ contra_relogio: 10 }); // +20% gate (self)
+    mods.dmgMult = 1.15; // overridden directly for a round test number
 
     const teamBuffs = {
       ...zeroTeamBuffs(),
-      grito_guerra: 10,
-      marcha_acelerada: 5,
+      grito_guerra: 11,
+      marcha_acelerada: 3,
       folego_mineiro: 20,
-      contra_relogio: 15,
       pressagio_mortal: 8,
     };
 
@@ -60,24 +60,18 @@ describe('computeCombatMults', () => {
       extraDmgPct: 10,
     });
 
-    // Own + others stack additively (not 1.1×1.1).
-    expect(m.teamAtkMult).toBeCloseTo(1.1, 6);
-    expect(m.teamSpeedMult).toBeCloseTo(1.05, 6);
+    expect(m.attackMult).toBeCloseTo(1.11, 6);
+    expect(m.speedMult).toBeCloseTo(1.03, 6);
     expect(m.teamDrainMult).toBeCloseTo(0.8, 6);
-    expect(m.teamGateMult).toBeCloseTo(1.15, 6);
     expect(m.teamCritPctOfBase).toBe(8);
-    expect(m.attackMult).toBeCloseTo(1.2, 6); // +10% own + +10% team
-    // No more Tempo factor here (the keystone sheet-math correction moved Tempo Dobrado's
-    // ×1.33333 to applySkillTree) — just +5% own + +5% team, same shape as attackMult.
-    expect(m.speedMult).toBeCloseTo(1.1, 6);
-    expect(m.gateAttackMult).toBeCloseTo(1.35, 6); // +20% own + +15% team
+    // Contra o Relógio is a self ability, not a team aura (Fault 1) — gateAttackMult reads
+    // `mods` alone, unaffected by teamBuffs.
+    expect(m.gateAttackMult).toBeCloseTo(1.2, 6);
     // Glass Cannon no longer exists (MP5 removed all five keystones; TreeSheetTotals.glassCannon
     // was deleted with it, MP5 F2) — energyMult/critDmgMult are permanent identity here now.
     expect(m.energyMult).toBe(1);
     expect(m.critDmgMult).toBe(1);
-    // REWRITTEN (was `1.25 * 1.15 * 1.1` — the 1.25 was `treeDanoTotal`, which no longer
-    // participates here; `dmg_static` now lives on the sheet only, applied once). `dmgMult`
-    // is exactly `mods.dmgMult × (1 + extraDmgPct/100)`.
+    // `dmgMult` is exactly `mods.dmgMult × (1 + extraDmgPct/100)`.
     expect(m.dmgMult).toBeCloseTo(1.15 * 1.1, 6);
   });
 
@@ -98,51 +92,33 @@ describe('computeCombatMults', () => {
     expect('treeTempoDobrado' in input).toBe(false);
   });
 
-  it('stacks own Grito + other heroes’ Grito additively (Brenna/Dara math-check)', () => {
-    // Brenna grito 10 (+20%) + Dara on field grito 10 (+20%) → ×1.4, not ×1.44.
-    // Clay-gloves sheet + imported tree/mit reproduce the Math check screenshot.
-    // This screenshot predates the W3 (AD-BSP-18) 10->20 catalog rebalance (grito_guerra
-    // was 2%/level then, 1%/level now) — override attackMult with the historical +20% own
-    // contribution directly rather than deriving it from the live (post-rebalance) catalog,
-    // so this test keeps proving computeCombatMults' additive stacking against the real
-    // math-check numbers it was written against.
-    //
-    // ASM-07 / L-07 (DEC-01): this capture is PRE-TREE — `brenna-03-clay-luva.json`'s
-    // `stats.dmg` (1934.60587600238) is the OLD exporter's raw, tree-free sheet value, not
-    // the tree-inclusive sheet `save-20260801-crit-dmg-tree.json` produces. The local `tree`
-    // literal below is applied ONCE, exactly as `AD-BSP-12` requires — do not re-derive this
-    // number from the live (post-wave) model; that would convert a real observation into a
-    // tautology (see `design.md`'s `DEC-01`).
-    const mods = abilityMods({});
-    mods.attackMult = 1.2;
-    const m = computeCombatMults({
-      mods,
-      teamBuffs: { ...zeroTeamBuffs(), grito_guerra: 20 },
-      extraDmgPct: 0,
-    });
-    expect(mods.attackMult).toBeCloseTo(1.2, 6);
-    expect(m.attackMult).toBeCloseTo(1.4, 6);
-    expect(m.attackMult).not.toBeCloseTo(1.44, 6);
-
-    const atk = 1934.6;
-    const pen = 74.7;
-    const mit = 0.058;
-    const tree = 2.02493208666875;
-    const pred = predictHitDamage(atk * m.attackMult, mit, pen, tree);
-    expect(pred).toBeCloseTo(5404, 0);
-    // Crit ratio matches sheet (+76.2%); observed crit 9521 ≈ pred × 1.762.
-    expect(pred * (1 + 0.762)).toBeCloseTo(9522, 0);
+  it('the field is a property of the roster, not the hero: carrier and non-carrier read the same total (issue #132)', () => {
+    // A rank-20 carrier and a non-carrier standing in the SAME field both read the SAME
+    // teamBuffs — computeCombatMults never adds anything extra for the carrier, because
+    // abilityMods never gave it anything to add. This is the shape fix itself: no own-vs-
+    // others distinction anywhere in this function.
+    const teamBuffs = { ...zeroTeamBuffs(), grito_guerra: 20 };
+    const carrierMods = abilityMods({ grito_guerra: 20 });
+    const nonCarrierMods = abilityMods({});
+    const carrier = computeCombatMults({ mods: carrierMods, teamBuffs, extraDmgPct: 0 });
+    const nonCarrier = computeCombatMults({ mods: nonCarrierMods, teamBuffs, extraDmgPct: 0 });
+    expect(carrier.attackMult).toBeCloseTo(1.2, 6);
+    expect(carrier.attackMult).toBeCloseTo(nonCarrier.attackMult, 10);
   });
 
-  it('caps combined team attack bonus at +100%', () => {
-    expect(stackTeamBonusMult(1.8, 40)).toBeCloseTo(1 + TEAM_MULT_BONUS_CAP, 6);
-    const mods = abilityMods({ grito_guerra: 10 }); // +20%
+  it('caps the roster-wide total at the ability’s own maximum (Fault 4)', () => {
+    expect(combineTeamAuraPct(0, 120, TEAM_BUFF_CAP.grito_guerra)).toBeCloseTo(
+      TEAM_BUFF_CAP.grito_guerra,
+      6,
+    );
     const m = computeCombatMults({
-      mods,
+      mods: abilityMods({}),
       teamBuffs: { ...zeroTeamBuffs(), grito_guerra: 100 },
       extraDmgPct: 0,
     });
-    expect(m.attackMult).toBe(2);
+    // 100% would apply under the old global +100% cap; the real cap is Grito's own maximum
+    // (20%), not a shared global figure.
+    expect(m.attackMult).toBeCloseTo(1 + TEAM_BUFF_CAP.grito_guerra / 100, 6);
   });
 
   it('returns identity-ish mults with empty buffs and default tree', () => {
@@ -186,7 +162,6 @@ describe('derive', () => {
       critDmgMult: mults.critDmgMult,
       teamCritPctOfBase: mults.teamCritPctOfBase,
       treeSheet: ZERO_TREE,
-      combatCritChancePctOfBase: 0,
       penetrationPp: 0,
       context: baseCtx(),
       dmgMult: mults.dmgMult,
@@ -225,7 +200,6 @@ describe('derive', () => {
       critDmgMult: mults.critDmgMult,
       teamCritPctOfBase: mults.teamCritPctOfBase,
       treeSheet: ZERO_TREE,
-      combatCritChancePctOfBase: 0,
       penetrationPp: 0,
       context: baseCtx(),
       dmgMult: mults.dmgMult,
@@ -256,7 +230,6 @@ describe('derive', () => {
       critDmgMult: 1,
       teamCritPctOfBase: 0,
       treeSheet: ZERO_TREE,
-      combatCritChancePctOfBase: 0,
       penetrationPp: 0,
       context: baseCtx(),
       dmgMult: 1,
@@ -281,7 +254,6 @@ describe('derive', () => {
       critDmgMult: 1,
       teamCritPctOfBase: 0,
       treeSheet: ZERO_TREE,
-      combatCritChancePctOfBase: 0,
       penetrationPp: 0,
       context: baseCtx(),
       dmgMult: 1,
@@ -335,7 +307,6 @@ describe('derive', () => {
       critDmgMult: mults.critDmgMult,
       teamCritPctOfBase: 0,
       treeSheet,
-      combatCritChancePctOfBase: 0,
       penetrationPp: 0,
       context: baseCtx(),
       dmgMult: mults.dmgMult,
@@ -388,7 +359,6 @@ describe('derive', () => {
       critDmgMult: mults.critDmgMult,
       teamCritPctOfBase: 0,
       treeSheet,
-      combatCritChancePctOfBase: 0,
       penetrationPp: 0,
       context: baseCtx(),
       mitigationPct: 6.7,
@@ -428,7 +398,6 @@ describe('derive', () => {
       critDmgMult: 1,
       teamCritPctOfBase: 0,
       treeSheet: tree,
-      combatCritChancePctOfBase: 0,
       penetrationPp: 0,
       context: baseCtx(),
       dmgMult: 1,
@@ -465,7 +434,6 @@ describe('derive', () => {
       critDmgMult: 1,
       teamCritPctOfBase: 0,
       treeSheet: tree,
-      combatCritChancePctOfBase: 0,
       penetrationPp: 0,
       context: baseCtx(),
       dmgMult: 1,
@@ -512,7 +480,6 @@ describe('derive', () => {
       critDmgMult: 1,
       teamCritPctOfBase: 0,
       treeSheet: tree,
-      combatCritChancePctOfBase: 0,
       penetrationPp: 0,
       context: baseCtx(),
       dmgMult: 1,
@@ -523,9 +490,10 @@ describe('derive', () => {
     // `tree` above is set, proving no tree divisor leaked into the pooled deltas.
     expect(result.delta.speed).toBeCloseTo(0.02 * naked.speed, 9);
     expect(result.delta.critChance).toBeCloseTo(0.02 * naked.critChance, 9);
-    expect(result.delta.critDmg).toBeCloseTo(0.08 * naked.critDmg, 9);
+    // Crit damage is flat (POINT_GAIN.critDmgFlat) — `naked.critDmg` deliberately absent.
+    expect(result.delta.critDmg).toBeCloseTo(5, 9);
     expect(result.delta.penetration).toBeCloseTo(0.02 * naked.penetration, 9);
-    expect(result.delta.cdr).toBeCloseTo(0.1 * naked.cdr, 9);
+    expect(result.delta.cdr).toBeCloseTo(0.02 * naked.cdr, 9);
     expect(result.delta.luck).toBeCloseTo(0.03 * naked.luck, 9);
   });
 
@@ -544,7 +512,6 @@ describe('derive', () => {
       critDmgMult: 1,
       teamCritPctOfBase: 0,
       treeSheet: ZERO_TREE,
-      combatCritChancePctOfBase: 0,
       penetrationPp: 0,
       context: baseCtx(),
       dmgMult: 1,

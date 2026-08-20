@@ -7,6 +7,20 @@ export type RosterDpsRow = {
   heroId: string;
   heroName: string;
   dps: number;
+  /** One non-crit bomb against this phase's mitigation (`pipeline.predHit`). */
+  normalHit: number;
+  /** The same bomb on a crit — `normalHit × (1 + critDmg/100)`, NOT the crit-weighted mean
+   *  `HeroPhaseFit.avgHit` that the hits-to-kill table runs on. */
+  critHit: number;
+  /** Seconds on field per deployment (`pipeline.fieldSecs`). */
+  fieldSecs: number;
+  /**
+   * Pipeline-adjusted Luck, PERCENTAGE POINTS (`pipelineForHero(...).adjusted.luck` — same units
+   * `farm-rate.ts`'s `heroLuckPct`/`sorteFraction` use). Carried here so a caller wanting "this
+   * squad's average luck" (the web Phases board's drop-chance panel) can average the rows this
+   * function already computed instead of re-running the advisor pipeline a second time per hero.
+   */
+  luck: number;
 };
 
 export type RosterDpsInput = {
@@ -47,6 +61,13 @@ export function pipelineForHero(
     teamBuffs: account.teamBuffs,
     houseIdx: context.houseIdx,
     houseLevel: context.houseLevel,
+    houseCycleSecs: account.houseCycleSecs ?? null,
+    // NOT coerced with `?? null`: `undefined` (the field absent — every non-web-store account,
+    // including every fixture predating this field) must reach `resolveHouseRestSeconds` as
+    // `undefined` so it keeps trusting `houseCycleSecs` unconditionally, its pre-existing
+    // behaviour. Only the web planner's account store populates a real anchor value here.
+    houseCycleSecsHouseIdx: account.houseCycleSecsHouseIdx,
+    houseCycleSecsLevel: account.houseCycleSecsLevel,
     phase,
     mitigationPct,
     rankMode: context.rankMode,
@@ -65,15 +86,30 @@ export function computeHeroSoloDps(
   return pipelineForHero(hero, account, phase, mitigationPct).dps;
 }
 
-/** Top heroes by solo DPS — an omitted `limit` falls back to `account.slots`, then {@link DEFAULT_CASA_SLOTS}. */
+/**
+ * Top heroes by solo DPS — an omitted `limit` falls back to `account.fieldSlots` (FIELD
+ * concurrency, `skills.field_slots`), then `account.slots` (HOUSE recovery, `casa.slots` —
+ * a pre-`skills.field_slots` fallback only, same `AD-063` convention as `SquadFarmFacts` in
+ * `farm-rate.ts`), then {@link DEFAULT_CASA_SLOTS}. The squad this ranks is who can be ON THE
+ * FIELD at once, not who the House can refill at once.
+ */
 export function rankRosterByDps(input: RosterDpsInput, limit?: number): RosterDpsRow[] {
-  const effectiveLimit = limit ?? input.account.slots ?? DEFAULT_CASA_SLOTS;
+  const effectiveLimit = limit ?? input.account.fieldSlots ?? input.account.slots ?? DEFAULT_CASA_SLOTS;
   const clampedLimit = Number.isFinite(effectiveLimit) && effectiveLimit >= 1 ? Math.round(effectiveLimit) : 1;
-  const rows = input.heroes.map((hero) => ({
-    heroId: hero.id,
-    heroName: hero.name,
-    dps: computeHeroSoloDps(hero, input.account, input.phase, input.mitigationPct),
-  }));
+  const rows = input.heroes.map((hero) => {
+    // One pipeline run per hero, not two: `computeHeroSoloDps` would call `pipelineForHero`
+    // again internally for the same inputs just to read `.dps`.
+    const pipeline = pipelineForHero(hero, input.account, input.phase, input.mitigationPct);
+    return {
+      heroId: hero.id,
+      heroName: hero.name,
+      dps: pipeline.dps,
+      normalHit: pipeline.predHit,
+      critHit: pipeline.predCrit,
+      fieldSecs: pipeline.fieldSecs,
+      luck: pipeline.adjusted.luck,
+    };
+  });
   rows.sort((left, right) => right.dps - left.dps);
   return rows.slice(0, clampedLimit);
 }
@@ -101,12 +137,15 @@ export function computeHeroPhaseFitFromRecord(
   mitigationPct: number,
 ) {
   const out = pipelineForHero(hero, account, phase, mitigationPct);
-  return computeHeroPhaseFit(
-    hero.id,
-    hero.name,
-    out.stoneHp,
+  return computeHeroPhaseFit({
+    heroId: hero.id,
+    heroName: hero.name,
+    stoneHp: out.stoneHp,
     mitigationPct,
-    out.effective.penetration,
-    out.avgHit,
-  );
+    penetration: out.effective.penetration,
+    normalHit: out.predHit,
+    critHit: out.predCrit,
+    avgHit: out.avgHit,
+    fieldSecs: out.fieldSecs,
+  });
 }

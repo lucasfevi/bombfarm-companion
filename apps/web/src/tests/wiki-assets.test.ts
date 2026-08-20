@@ -1,6 +1,11 @@
 import { describe, expect, it } from 'vitest';
+import { join } from 'node:path';
+import { readFileSync } from 'node:fs';
+import { parseSaveFile } from '@bombfarm/domain/import-save';
 import { normalizeHero } from '@/shared/lib/storage';
-import { heroAvatarSrc, itemIconSrc, normalizeSkin, rarityCrystalSrc, abilityIconSrc, goldIconSrc } from '@bombfarm/domain/wiki-assets';
+import { WEB_PACKAGE_ROOT } from './helpers/web-package-root';
+import { HERO_SKIN_COUNT, heroAvatarSrc, isKnownSkin, itemIconSrc, normalizeSkin, rarityCrystalSrc, abilityIconSrc, goldIconSrc, chestIconSrc, clockIconSrc, propIconSrc, dropIconSrc } from '@bombfarm/domain/wiki-assets';
+import { DROP_RATES, type DropRateId } from '@bombfarm/domain/phase-wiki';
 
 describe('wiki-assets', () => {
   it('maps save skin to bundled avatar paths', () => {
@@ -11,14 +16,57 @@ describe('wiki-assets', () => {
     expect(heroAvatarSrc(4)).toBe('/wiki-assets/hero/hero5_avatar.png');
     expect(heroAvatarSrc(5)).toBe('/wiki-assets/hero/hero6_avatar.png');
     expect(heroAvatarSrc(6)).toBe('/wiki-assets/hero/hero7_avatar.png');
+    expect(heroAvatarSrc(7)).toBe('/wiki-assets/hero/hero8_avatar.png');
   });
 
   it('clamps skin to 0..(HERO_SKIN_COUNT-1)', () => {
     expect(normalizeSkin(-1)).toBe(0);
     expect(normalizeSkin(5)).toBe(5);
     expect(normalizeSkin(6.4)).toBe(6);
-    expect(normalizeSkin(99)).toBe(6);
+    expect(normalizeSkin(7)).toBe(7);
+    expect(normalizeSkin(99)).toBe(7);
     expect(normalizeSkin('x')).toBe(0);
+  });
+
+  it('treats skin 7 as known and 8 as unknown', () => {
+    expect(HERO_SKIN_COUNT).toBe(8);
+    expect(isKnownSkin(7)).toBe(true);
+    expect(isKnownSkin(8)).toBe(false);
+  });
+
+  /**
+   * End-to-end through `parseSaveFile`, not just the predicate: `isKnownSkin` shares the
+   * `HERO_SKIN_COUNT` bound, so before the 8th appearance landed a save carrying `skin: 7`
+   * was rejected as out of range and the real value was replaced by the neutral placeholder
+   * `0` — the stored value on disk was discarded, not merely mis-rendered. Nothing covered
+   * this boundary through the actual import path, which is why the regression was invisible.
+   */
+  it('keeps a saved skin 7 through import, and still degrades skin 8 to the placeholder', () => {
+    const raw = JSON.parse(
+      readFileSync(
+        join(WEB_PACKAGE_ROOT, '../../packages/domain/tests/fixtures/sheet-math/payload-20260812-8heroes.json'),
+        'utf8',
+      ),
+    ) as { heroes: Record<string, unknown>[] };
+
+    const withSkin = (value: unknown) => {
+      const clone = structuredClone(raw);
+      clone.heroes[0].skin = value;
+      return parseSaveFile(clone, []);
+    };
+
+    const skinIssues = (candidate: { issues: string[] }) =>
+      candidate.issues.filter((issue) => /unknown skin/i.test(issue));
+
+    const known = withSkin(7).candidates[0];
+    expect(known.record.skin).toBe(7);
+    expect(skinIssues(known)).toEqual([]);
+
+    // One past the end must NOT clamp to the nearest index (AD-BSP-29) — a nearest-index
+    // clamp would render a different hero's face, the exact failure this whole change is about.
+    const unknown = withSkin(8).candidates[0];
+    expect(unknown.record.skin).toBe(0);
+    expect(skinIssues(unknown)).toHaveLength(1);
   });
 
   it('builds item icon paths from catalog defs', () => {
@@ -37,8 +85,71 @@ describe('wiki-assets', () => {
     expect(abilityIconSrc('')).toBeNull();
   });
 
+  it('builds prop icon paths from the prop name', () => {
+    expect(propIconSrc('bush')).toBe('/wiki-assets/env/bush.png');
+    expect(propIconSrc('purple_crystal')).toBe('/wiki-assets/env/purple_crystal.png');
+    expect(propIconSrc('')).toBeNull();
+  });
+
+  /**
+   * Pinned per id at both ends of the difficulty range, because the whole mapping is four
+   * separate per-band families plus one fixed sprite, filed under three directories (`key/`,
+   * `houses/`, `chests/`) that no other helper reaches. A typo in any one of them is invisible
+   * to every other assertion in this file.
+   *
+   * The difficulty WORD is part of what is pinned. These sprites are renamed on the way in — see
+   * `docs/bundled-art-provenance.md` — so a path here is this repo's own name, not upstream's,
+   * and nothing outside this helper would catch it drifting back.
+   */
+  it('maps each drop-chance row to the art of that phase’s difficulty band', () => {
+    expect(dropIconSrc('key', 1)).toBe('/wiki-assets/key/key_uncommon.png');
+    expect(dropIconSrc('key', 5)).toBe('/wiki-assets/key/key_mythic.png');
+    expect(dropIconSrc('time', 1)).toBe('/wiki-assets/houses/house_easy.png');
+    expect(dropIconSrc('time', 5)).toBe('/wiki-assets/houses/house_inferno.png');
+    expect(dropIconSrc('stone', 1)).toBe('/wiki-assets/chests/skill_stone_chest_easy.png');
+    expect(dropIconSrc('stone', 5)).toBe('/wiki-assets/chests/skill_stone_chest_inferno.png');
+    expect(dropIconSrc('gem', 1)).toBe('/wiki-assets/chests/gem_chest_easy.png');
+    expect(dropIconSrc('gem', 5)).toBe('/wiki-assets/chests/gem_chest_inferno.png');
+  });
+
+  /**
+   * An item chest's grade follows the map level it drops at, not the difficulty, so tinting it
+   * by band would assert a relationship the game does not have.
+   */
+  it('keeps the item chest fixed across every difficulty band', () => {
+    const paths = [1, 2, 3, 4, 5].map((ato) => dropIconSrc('chest', ato));
+    expect(new Set(paths).size, 'distinct item-chest sprites').toBe(1);
+    expect(paths[0]).toBe('/wiki-assets/chests/item_chest.png');
+  });
+
+  it('clamps an out-of-range or non-finite band instead of building a path to nothing', () => {
+    expect(dropIconSrc('time', 0)).toBe('/wiki-assets/houses/house_easy.png');
+    expect(dropIconSrc('time', 9)).toBe('/wiki-assets/houses/house_inferno.png');
+    expect(dropIconSrc('gem', Number.NaN)).toBe('/wiki-assets/chests/gem_chest_easy.png');
+    expect(dropIconSrc('key', 2.4)).toBe('/wiki-assets/key/key_rare.png');
+  });
+
+  it('gives every drop row a distinct sprite, in every difficulty band', () => {
+    const ids = Object.keys(DROP_RATES) as DropRateId[];
+    for (const ato of [1, 2, 3, 4, 5]) {
+      const paths = ids.map((id) => dropIconSrc(id, ato));
+      // Two rows sharing one sprite would make the icons decorative noise instead of something
+      // to match a row against — the whole reason they are here.
+      expect(new Set(paths).size, `distinct sprites at ato ${ato}`).toBe(ids.length);
+    }
+  });
+
   it('points at the bundled gold coin chrome', () => {
     expect(goldIconSrc()).toBe('/wiki-assets/nav/icon_gold.png');
+  });
+
+  it('points at the bundled item-chest sprite, matching dropIconSrc(\'chest\', ato)', () => {
+    expect(chestIconSrc()).toBe('/wiki-assets/chests/item_chest.png');
+    expect(chestIconSrc()).toBe(dropIconSrc('chest', 3));
+  });
+
+  it('points at the bundled gate-timer clock chrome', () => {
+    expect(clockIconSrc()).toBe('/wiki-assets/icons/icon_clock.png');
   });
 });
 

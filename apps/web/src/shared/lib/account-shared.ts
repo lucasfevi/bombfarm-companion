@@ -38,6 +38,14 @@ export type TreeState = {
    * only; no Account UI field yet (CARRY-05).
    */
   luckFlatPct?: number;
+  /**
+   * `skills.totals.xp_mult` verbatim (not a percentage) — scales XP per prop the same way
+   * `teamCoinPct` scales gold per prop. Optional, same precedent as {@link luckFlatPct}: so
+   * pre-existing literals (e.g. `e2e/fixtures/seed.ts`) keep typechecking; every read site
+   * defaults absence to `1` (NOT `0` — a `?? 0` here would silently zero every XP figure) and
+   * `normalizeTree`'s rebuild fills it on load.
+   */
+  xpMult?: number;
 };
 
 export type HeroContext = {
@@ -47,7 +55,7 @@ export type HeroContext = {
   phase: number | null;
   mitigationPct: number;
   rankMode: RankMode;
-  /** Oneshot / HTK prop — null until set on Account. */
+  /** Highlighted row in the prop hits-to-kill table — null until set on Account. */
   targetProp: string | null;
   /** @deprecated always serial — ignored on load. */
   cycleModel?: 'serial' | 'wiki';
@@ -60,12 +68,66 @@ export type HeroContext = {
 /** Shared across every hero on this browser (tree, team buffs, farming context). */
 export type AccountShared = {
   tree: TreeState;
+  /**
+   * @deprecated superseded by {@link teamBuffsOverride} (issue #132) — the roster-wide total is
+   * now DERIVED from the deployed roster by default, not stored here. Kept, and still written
+   * on save, only so an old app build reading a fresh file sees SOMETHING plausible (the current
+   * override, or `{}` when there is none) instead of a missing field; no current code reads it
+   * for the override decision.
+   */
   teamBuffs: Record<string, number>;
+  /**
+   * The user's explicit team-buffs OVERRIDE — `null`/absent means "derive from the deployed
+   * roster" (`computeTeamBuffsFromDeployed`, `@bombfarm/domain/team-buffs`), the default for a
+   * fresh import and for every account that has never touched the Account panel's team-buff
+   * fields. A hero carrying a team aura otherwise got ZERO benefit from it until a user found
+   * the auto-fill button — that was the actual regression this field exists to close, not
+   * "0 means unset": the Reset button still writes an EXPLICIT all-zero override
+   * (`zeroTeamBuffs()`), which stays a genuine "model this roster with no team auras at all"
+   * choice, distinguishable from never having touched the panel.
+   */
+  teamBuffsOverride?: Record<string, number> | null;
   context: HeroContext;
-  /** Casa field slots — defaults to {@link DEFAULT_CASA_SLOTS} when absent on load. */
+  /**
+   * HOUSE RECOVERY slots (`casa.slots`) — how many heroes the House refills at a time. Defaults
+   * to {@link DEFAULT_CASA_SLOTS} when absent on load. NOT the field concurrency cap: that is
+   * {@link fieldSlots}, and the two are different numbers on a real save.
+   */
   slots?: number;
+  /**
+   * FIELD slots (`skills.field_slots`) — how many heroes may be deployed at once. `null` on a
+   * record persisted before the split (and on any account whose save carried no
+   * `skills.field_slots`), which sends readers back to {@link slots} — the value they used to
+   * read for this, wrongly, and still the only number such a record carries.
+   */
+  fieldSlots?: number | null;
+  /**
+   * `casa.cycle_secs` — full 0 → 100% House fill, seconds. `null` falls back to the `HOUSES`
+   * table interpolation. Written by import alongside `slots`.
+   */
+  houseCycleSecs?: number | null;
+  /**
+   * The (house, level) `houseCycleSecs` above was captured at — the import's own `houseIdx`/
+   * `houseLevel` at the moment it set `houseCycleSecs`, NOT the live picker (`context.houseIdx`/
+   * `houseLevel`), which the House/House-level pickers can move independently afterward.
+   * `resolveHouseRestSeconds` trusts `houseCycleSecs` only when the picker's current house/level
+   * still equal these — otherwise the House-ceiling regression is back: a picker move stops
+   * changing every computed number because the frozen save figure keeps winning regardless of
+   * what house/level is actually requested.
+   */
+  houseCycleSecsHouseIdx?: number | null;
+  houseCycleSecsLevel?: number | null;
   /** Optimizer forge floor — defaults to `10` when absent; import never overwrites. */
   forgeFloor?: number;
+  /**
+   * `account.max_phase` — furthest phase reached. Mirrors `@bombfarm/domain`'s
+   * `AccountImportData.maxPhase: number | null` (dual-source, total). `null`/absent means no
+   * lock badges anywhere and the Farm Ranking unlocked-only filter renders non-applicable.
+   * Written UNCONDITIONALLY by `applyAccountImport` — unlike every sibling field
+   * on this type, a re-import carrying no `max_phase` clears a stale value rather than keeping
+   * it, because a stale lock badge would assert progress the payload just contradicted.
+   */
+  maxPhase?: number | null;
 };
 
 export const DEFAULT_TREE = (): TreeState => ({
@@ -76,6 +138,7 @@ export const DEFAULT_TREE = (): TreeState => ({
   energy: 0,
   teamCoinPct: 0,
   luckFlatPct: 0,
+  xpMult: 1,
 });
 
 export const DEFAULT_CONTEXT = (): HeroContext => ({
@@ -83,13 +146,14 @@ export const DEFAULT_CONTEXT = (): HeroContext => ({
   houseLevel: 0,
   phase: null,
   mitigationPct: 1,
-  rankMode: 'dps',
+  rankMode: 'farm',
   targetProp: DEFAULT_TARGET_PROP,
 });
 
 export const DEFAULT_ACCOUNT = (): AccountShared => ({
   tree: DEFAULT_TREE(),
   teamBuffs: {},
+  teamBuffsOverride: null,
   context: DEFAULT_CONTEXT(),
 });
 
@@ -111,7 +175,19 @@ function normalizeTree(raw?: Partial<TreeState> | null): TreeState {
     energy: raw.energy ?? base.energy,
     teamCoinPct: raw.teamCoinPct ?? base.teamCoinPct,
     luckFlatPct: raw.luckFlatPct ?? base.luckFlatPct,
+    xpMult: raw.xpMult ?? base.xpMult,
   };
+}
+
+/**
+ * `'dps'` is a deliberate past choice and is respected. EVERYTHING else — absent, the retired
+ * `'oneshot'` value, a hand-edited junk string, a number, null — resolves to the `'farm'`
+ * default. Total by construction: there is no input for which this throws or returns a
+ * non-RankMode. An allow-list rather than `raw.rankMode ?? 'farm'`, deliberately: a `??` default
+ * only catches `null`/`undefined` and would let an unpredicted junk value straight through.
+ */
+function normalizeRankMode(raw: unknown): RankMode {
+  return raw === 'dps' ? 'dps' : 'farm';
 }
 
 function normalizeContext(raw?: Partial<HeroContext> | null): HeroContext {
@@ -130,7 +206,7 @@ function normalizeContext(raw?: Partial<HeroContext> | null): HeroContext {
     houseLevel: raw.houseLevel ?? base.houseLevel,
     phase,
     mitigationPct: raw.mitigationPct ?? base.mitigationPct,
-    rankMode: raw.rankMode ?? base.rankMode,
+    rankMode: normalizeRankMode(raw.rankMode),
     targetProp,
   };
 }
@@ -145,12 +221,74 @@ function normalizeSlots(raw?: number): number {
   return Math.max(1, Math.round(value));
 }
 
+/**
+ * `null` when absent or unusable — the same "one inhabitant for known-absent" shape as
+ * `normalizeMaxPhase` below, and deliberately NOT `normalizeSlots`'s substitute-a-default shape:
+ * a reader must be able to tell "this save carries no field-slot count" from "this save says 9",
+ * because the fallback for the former is `slots`, not the Casa default.
+ */
+function normalizeFieldSlots(raw?: number | null): number | null {
+  if (raw == null || !Number.isFinite(raw) || raw < 1) return null;
+  return Math.max(1, Math.round(raw));
+}
+
+/** `null` when absent or non-positive — absence means "use the `HOUSES` table". */
+function normalizeHouseCycleSecs(raw?: number | null): number | null {
+  if (raw == null || !Number.isFinite(raw) || raw <= 0) return null;
+  return raw;
+}
+
+/**
+ * `null` when absent or non-finite — same "one inhabitant for known-absent" shape as
+ * {@link normalizeMaxPhase}. No range clamp: this is an ANCHOR (the house/level `houseCycleSecs`
+ * was captured at), not a live picker value, so it only ever needs to compare equal to one.
+ */
+function normalizeHouseCycleAnchor(raw?: number | null): number | null {
+  if (raw == null || !Number.isFinite(raw)) return null;
+  return Math.round(raw);
+}
+
+/**
+ * `null` when absent or non-finite (`@bombfarm/domain`'s reader is total, `number | null`; one
+ * inhabitant for "known-absent" the whole way through), else integer-clamped `1..600` — the
+ * same template as `normalizeContext`'s `phase` clamp.
+ */
+function normalizeMaxPhase(raw?: number | null): number | null {
+  if (raw == null || !Number.isFinite(raw)) return null;
+  return Math.max(1, Math.min(600, Math.round(raw)));
+}
+
+/**
+ * Migrates a persisted record to the override-or-derived shape (issue #132). A record already
+ * written by this code carries `teamBuffsOverride` (possibly `null`) — trusted as-is. An older
+ * record carries only the legacy `teamBuffs`, which was the ubiquitous, never-updated `{}` /
+ * all-zero default for every account that had not pressed the auto-fill button — indistinguishable
+ * from "never touched", so it migrates to `null` (derive from the roster) rather than freezing
+ * that default as a permanent all-zero override. A legacy value with any genuinely nonzero entry
+ * WAS a real auto-fill snapshot or hand edit, so it carries forward as an explicit override.
+ */
+function normalizeTeamBuffsOverride(raw?: Partial<AccountShared> | null): Record<string, number> | null {
+  if (raw && 'teamBuffsOverride' in raw) {
+    return raw.teamBuffsOverride ?? null;
+  }
+  const legacy = raw?.teamBuffs;
+  if (!legacy) return null;
+  const hasNonZero = Object.values(legacy).some((value) => typeof value === 'number' && value !== 0);
+  return hasNonZero ? { ...legacy } : null;
+}
+
 export function normalizeAccount(raw?: Partial<AccountShared> | null): AccountShared {
   return {
     tree: normalizeTree(raw?.tree),
     teamBuffs: raw?.teamBuffs ?? {},
+    teamBuffsOverride: normalizeTeamBuffsOverride(raw),
     context: normalizeContext(raw?.context),
     slots: normalizeSlots(raw?.slots),
+    fieldSlots: normalizeFieldSlots(raw?.fieldSlots),
+    houseCycleSecs: normalizeHouseCycleSecs(raw?.houseCycleSecs),
+    houseCycleSecsHouseIdx: normalizeHouseCycleAnchor(raw?.houseCycleSecsHouseIdx),
+    houseCycleSecsLevel: normalizeHouseCycleAnchor(raw?.houseCycleSecsLevel),
     forgeFloor: normalizeForgeFloor(raw?.forgeFloor),
+    maxPhase: normalizeMaxPhase(raw?.maxPhase),
   };
 }

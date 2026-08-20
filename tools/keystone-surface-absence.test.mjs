@@ -80,7 +80,7 @@ const CLAUSE_A_PATTERN =
  * Every file below is a measured, justified survivor — none is a live, editable, or rendered
  * keystone surface. Categories:
  *   - F4-owned raw save/API schema literals (fingerprint key space, not typed tree fields)
- *   - The frozen i18n fixture (`docs/naming.md:74`, MOD-03) and F1's provenance manifest
+ *   - F1's provenance manifest
  *   - CHANGELOGs (historical release prose)
  *   - This guard's own source, and the sibling `tools/` guards that must name the tokens they
  *     forbid or discharge (`AD-038`'s closed pin, F1's own negative-discriminator guard)
@@ -99,8 +99,11 @@ const CLAUSE_A_PATTERN =
  *     onto the post-patch schema, so neither carries a clause-A token anymore.
  */
 const ALLOWLIST = [
-  // Frozen fixture (MOD-03, docs/naming.md:74) — AD-081, byte-unchanged by design.
-  { file: 'apps/web/src/tests/fixtures/i18n-strings-main.json', count: 32, owner: 'frozen fixture (AD-081)' },
+  // The frozen i18n fixture (MOD-03, docs/naming.md:74) used to carry a clause-A entry here
+  // (AD-081, count 32) while it still held retired keystone strings as historical baseline. The
+  // 2026-08-17 re-baseline (docs/naming.md:74, apps/web/src/tests/i18n-split-parity.test.ts)
+  // regenerated it from live STRINGS, so it now carries zero clause-A matches — REMOVED rather
+  // than pinned at 0, per this guard's own "stale entry" check below.
   // F1's provenance manifest — must name the forbidden keys to forbid them.
   { file: 'apps/web/src/tests/fixtures/sheet-math/README.md', count: 2, owner: "F1 provenance manifest" },
   // (CHANGELOGs used to be pinned here; they are excluded from the scan now — see
@@ -121,10 +124,14 @@ const ALLOWLIST = [
   { file: 'apps/web/e2e/account-panel.spec.ts', count: 8, owner: 'F3 MSC-01 DOM absence proof' },
   { file: 'apps/web/src/tests/account-slice.test.ts', count: 3, owner: 'F3 MSC-03 runtime absence proof' },
   { file: 'apps/web/src/tests/advisor-selectors.test.ts', count: 1, owner: 'F3 dep-tuple-length test title' },
-  { file: 'apps/web/src/tests/derive.test.ts', count: 3, owner: 'F3 AC-29 compile-guard + explanatory comments' },
+  { file: 'apps/web/src/tests/derive.test.ts', count: 2, owner: 'F3 AC-29 compile-guard + explanatory comments' },
   { file: 'apps/web/src/tests/ds-panel-field.test.ts', count: 5, owner: 'F3 MSC-18 recipe absence proof' },
-  { file: 'apps/web/src/tests/i18n-keystone-absence.test.ts', count: 9, owner: 'F3 MSC-05/06 value-scan suite' },
-  { file: 'apps/web/src/tests/i18n-split-parity.test.ts', count: 10, owner: 'F3 MSC-07 KEYSTONE_KEYS_REMOVED list' },
+  // Re-measured for the 2026-08-17 fixture re-baseline: i18n-keystone-absence.test.ts now
+  // holds KEYSTONE_KEYS_REMOVED's 12 literal keys directly (9 -> 15) instead of importing them
+  // from i18n-split-parity.test.ts, which dropped to zero clause-A matches and lost its entry
+  // below — its bookkeeping no longer names any keystone identifier (see that file's own
+  // top-of-file comment).
+  { file: 'apps/web/src/tests/i18n-keystone-absence.test.ts', count: 15, owner: 'F3 MSC-05/06 value-scan suite + its own copy of the retired-key list' },
   { file: 'apps/web/src/tests/import-inventory-sync.test.ts', count: 4, owner: 'F3 explanatory comment (recorded loss)' },
   { file: 'apps/web/src/tests/import-save.test.ts', count: 2, owner: 'F4/T7 flipped baseSave() literal + historical comment' },
   { file: 'apps/web/src/tests/stat-breakdown.test.ts', count: 1, owner: 'F3 explanatory comment' },
@@ -140,8 +147,10 @@ const ALLOWLIST = [
   { file: 'apps/web/src/tests/import-rejection-copy.test.ts', count: 3, owner: 'F4/T8 forbidden-token guard test' },
   { file: 'tools/save-acceptance-guards.test.mjs', count: 7, owner: 'F4/T7 acceptance-gate absence proof (MSG-11)' },
   // This guard's own source — its filename, doc comment and error messages necessarily name
-  // the tokens it forbids (the same self-reference AD-080 allowlist #10 anticipates).
-  { file: 'tools/keystone-surface-absence.test.mjs', count: 11, owner: 'this guard, self-reference' },
+  // the tokens it forbids (the same self-reference AD-080 allowlist #10 anticipates). Count
+  // moved 11 -> 14 with the 2026-08-17 fixture re-baseline's explanatory comments above (this
+  // file's own entries, not a scanned-file content change).
+  { file: 'tools/keystone-surface-absence.test.mjs', count: 14, owner: 'this guard, self-reference' },
 ];
 
 // --- Clause B — pinned per-line map for critDmgMult / crit_dmg_mult -----------------------
@@ -162,24 +171,58 @@ const CRIT_DMG_MULT_MAP = {
   'apps/desktop/src/main/storage/account-store-restore.test.ts': [497, 530, 548, 581],
   'apps/desktop/src/main/storage/stale-sections.test.ts': [66, 81, 84, 88, 98, 105, 111, 123, 128, 164, 182],
   'apps/desktop/src/main/storage/stale-sections.ts': [11],
-  'apps/web/docs/local-data-compat.md': [89, 97],
+  // +2 (line numbers only) from the House/field-slots untangling follow-up: two new
+  // AccountShared rows (`fieldSlots`, `houseCycleSecs`) landed above this section. Match itself
+  // is unchanged in count and in kind.
+  // +1 more (line number only): the Farm Respec Advisor objective picker's removal replaced the
+  // `farmObjective` row above this section with a prose paragraph, a net +1 line. Match itself is
+  // unchanged in count and in kind.
+  'apps/web/docs/local-data-compat.md': [109, 117],
   'apps/web/src/features/planner/components/advice-column.tsx': [38, 59],
-  'apps/web/src/shared/lib/account-shared.ts': [99],
+  // +16 (line number only): the House-ceiling fix added `fieldSlots`/`houseCycleSecs`, with
+  // their doc comments, to `AccountShared` above this line. The match itself is unchanged in
+  // count and in kind — still `normalizeTree`'s doc comment naming a stale key it discards.
+  // +11 more: the House-ceiling regression repair (PR #86 finding, house.ts:38) added
+  // `houseCycleSecsHouseIdx`/`houseCycleSecsLevel`, with their doc comment, above this line too.
+  // +9 more (line number only): the XP-multiplier feature added `TreeState.xpMult`, with its
+  // doc comment, above this line too. Match itself is unchanged in count and in kind.
+  // +19 more (line number only): issue #132's derived-vs-override team-buffs split added the
+  // deprecation doc comment on `teamBuffs`, the new `teamBuffsOverride` field with its own doc
+  // comment, and the `normalizeTeamBuffsOverride` migration helper with its doc comment, all
+  // above this line. Match itself is unchanged in count and in kind.
+  'apps/web/src/shared/lib/account-shared.ts': [163],
   'apps/web/src/shared/lib/stale-account.ts': [20],
   'apps/web/src/tests/advisor-pipeline.test.ts': [85],
   'apps/web/src/tests/derive.test.ts': [
-    75, 77, 158, 186, 225, 256, 281, 321, 335, 388, 428, 465, 512, 544,
+    71, 73, 134, 162, 200, 230, 254, 293, 307, 359, 398, 434, 480, 512,
   ],
   'apps/web/src/tests/fixture-corpus.test.ts': [23, 65],
   'apps/web/src/tests/fixtures/sheet-math/README.md': [6],
   'apps/web/src/tests/fixtures/storage-roundtrip-20260729.json': [3],
-  'apps/web/src/tests/points-reopt.test.ts': [107, 491],
+  'apps/web/src/tests/points-reopt.test.ts': [107, 490],
   'apps/web/src/tests/stale-account-drop.test.ts': [31, 72, 73, 78, 89],
-  'apps/web/src/tests/stat-breakdown.test.ts': [124, 173, 200],
-  'apps/web/src/tests/storage-legacy-keystone-fields.test.ts': [40, 109],
+  'apps/web/src/tests/stat-breakdown.test.ts': [125, 175, 201],
+  // +1 (line number only): issue #132's rewrite of the "existing empty state" comment above line
+  // 109 added a net one line. Match itself is unchanged in count and in kind.
+  'apps/web/src/tests/storage-legacy-keystone-fields.test.ts': [40, 110],
   'apps/web/src/tests/storage-stat-points-available-compat.test.ts': [104],
   'tools/fixture-corpus-parity.test.mjs': [117, 169],
-  'tools/keystone-surface-absence.test.mjs': [13, 147, 150, 225, 230, 240, 249],
+  // Self-map. The last four shifted +3 (line numbers only) when the account-shared entry above
+  // gained its three-line explanation; count and kind are unchanged.
+  // Line numbers only — the House-ceiling regression repair (PR #86 finding, house.ts:38) added
+  // explanatory comment lines above this point (the account-shared.ts entry above, and this
+  // entry's own comment), shifting every self-reference below it down.
+  // +3 (line numbers only) from the House/field-slots untangling follow-up's own explanatory
+  // comment above the local-data-compat.md self-map entry. Count and kind unchanged.
+  // +9 (line numbers only) from the 2026-08-17 fixture re-baseline's explanatory comments above
+  // (clause-A allowlist entries and this self-map entry itself). Count and kind unchanged.
+  // +2 more (line numbers only) from the XP-multiplier feature's account-shared.ts entry above
+  // gaining its two-line explanation. Count and kind unchanged.
+  // +4 more (line numbers only) from issue #132's account-shared.ts entry and the legacy-drop
+  // suite entry just above, +2 lines each. Count and kind unchanged.
+  // +3 more (line numbers only) from the Farm Respec Advisor objective picker removal's own
+  // explanatory comment above the local-data-compat.md entry. Count and kind unchanged.
+  'tools/keystone-surface-absence.test.mjs': [13, 156, 159, 268, 273, 283, 292],
   'tools/save-acceptance-guards.test.mjs': [53],
 };
 
@@ -195,7 +238,7 @@ describe('keystone surface absence — the repo-wide identifier guard (MP5 F3, M
   });
 
   it('the clause-A allowlist is exactly the enumerated set (non-wideable)', () => {
-    expect(ALLOWLIST.length).toBe(28);
+    expect(ALLOWLIST.length).toBe(26);
     expect(ALLOWLIST.every((entry) => entry.file && entry.count > 0 && entry.owner)).toBe(true);
   });
 

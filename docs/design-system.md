@@ -93,7 +93,7 @@ Wiki-sourced game assets (heroes, items, abilities, …). **Do not overlay cryst
 
 **Gear slot chrome** ([`slot-editor.tsx`](../apps/web/src/features/gear/components/slot-editor.tsx)): outer slot card stays **neutral** (`border-line`); equipped rarity reads from the item frame only. Filled slots hide the slot-name label, center the `xl` icon, and pin clear at `absolute -top-1 -right-1`. Empty slots show the slot name inside a dashed placeholder sharing `artFrameRadiusClass`. Gear compare clones reuse `GearSlotStatsGrid` under the alt-loadout editors.
 
-Asset path helpers: [`packages/domain/src/wiki-assets.ts`](../packages/domain/src/wiki-assets.ts) (domain helper, not under `design-system/`). Save `skin` is the in-game index; `heroAvatarSrc` remaps display paths (`[1,3,2,4,5,6,7]`) so wiki filenames stay canonical.
+Asset path helpers: [`packages/domain/src/wiki-assets.ts`](../packages/domain/src/wiki-assets.ts) (domain helper, not under `design-system/`). Save `skin` is the in-game index; `heroAvatarSrc` remaps display paths (`[1,3,2,4,5,6,7,8]`) so wiki filenames stay canonical.
 
 ### Form controls (`Num` / `Select`)
 

@@ -1,5 +1,7 @@
 {
-  "syncedAt": "2026-08-03",
+  "syncedAt": "2026-08-14",
+  "sourcePulledAt": "2026-08-14T07:04:49.855Z",
+  "emittedAt": "2026-08-14",
   "source": "official-wiki-export",
   "props": [
     {
@@ -73,15 +75,15 @@
   "bossHpMult": 10,
   "repHpMult": 1.29,
   "jaula": {
-    "adiantaProbIni": 0.01,
-    "adiantaProbMax": 0.5,
-    "janelaSecsPorAto": [
-      10800,
-      9900,
-      9000,
-      8100,
-      7200
+    "adiantaProbPorAto": [
+      0.05,
+      0.1,
+      0.15,
+      0.2,
+      0.25
     ],
+    "janelaSecs": 12600,
+    "janelaSecsVip": 10800,
     "hpMult": 10
   },
   "heroChestRarityByAto": [
@@ -102,28 +104,28 @@
       0
     ],
     [
-      0.7,
-      0.22,
-      0.06,
-      0.019,
-      0.001,
+      0.7000000000000001,
+      0.22000000000000003,
+      0.07500000000000001,
+      0.004700000000000001,
+      0.00030000000000000003,
       0
     ],
     [
-      0.6,
-      0.27,
-      0.09,
-      0.03,
-      0.009,
-      0.001
+      0.6500000000000001,
+      0.22000000000000003,
+      0.11500000000000002,
+      0.011200000000000002,
+      0.0035000000000000005,
+      0.00030000000000000003
     ],
     [
-      0.5,
-      0.32,
-      0.12,
-      0.04,
-      0.015,
-      0.005
+      0.545,
+      0.27,
+      0.16,
+      0.017,
+      0.006,
+      0.002
     ]
   ],
   "chestRarityDist": [
@@ -134,55 +136,320 @@
     0.0004,
     0.0001
   ],
+  "drops": {
+    "chestDropRate": 0.001,
+    "keyDropRate": 0.001,
+    "gemChestDropRate": 0.00005,
+    "timechestDropRate": 0.0015,
+    "stoneChestDropRate": 0.00005,
+    "keyGateCost": 1,
+    "bonusAdd": 0.4,
+    "bonusAddVip": 0.8,
+    "bonusCapSecs": 28800
+  },
+  "timechestRarityByAto": [
+    [
+      0,
+      0.91,
+      0.09,
+      0,
+      0,
+      0
+    ],
+    [
+      0,
+      0.6,
+      0.27,
+      0.13,
+      0,
+      0
+    ],
+    [
+      0,
+      0.39000000000000007,
+      0.30000000000000004,
+      0.18000000000000002,
+      0.11000000000000001,
+      0.020000000000000004
+    ],
+    [
+      0,
+      0.3,
+      0.24,
+      0.19,
+      0.15,
+      0.12
+    ],
+    [
+      0,
+      0.25000000000000006,
+      0.22000000000000003,
+      0.20000000000000004,
+      0.18000000000000002,
+      0.15000000000000002
+    ]
+  ],
+  "gems": {
+    "chestDropRate": 0.00005,
+    "perRank": 3,
+    "rankDistByAto": [
+      [
+        1,
+        0,
+        0
+      ],
+      [
+        0.75,
+        0.25,
+        0
+      ],
+      [
+        0.5,
+        0.4,
+        0.1
+      ],
+      [
+        0.4,
+        0.4,
+        0.2
+      ],
+      [
+        0.3,
+        0.4,
+        0.3
+      ]
+    ],
+    "list": [
+      {
+        "defId": "gem_emerald",
+        "name": "Emerald",
+        "rank": 1,
+        "rarity": 2
+      },
+      {
+        "defId": "gem_sapphire",
+        "name": "Sapphire",
+        "rank": 1,
+        "rarity": 2
+      },
+      {
+        "defId": "gem_aquamarine",
+        "name": "Aquamarine",
+        "rank": 1,
+        "rarity": 2
+      },
+      {
+        "defId": "gem_topaz",
+        "name": "Topaz",
+        "rank": 2,
+        "rarity": 3
+      },
+      {
+        "defId": "gem_citrine",
+        "name": "Citrine",
+        "rank": 2,
+        "rarity": 3
+      },
+      {
+        "defId": "gem_roselite",
+        "name": "Roselite",
+        "rank": 2,
+        "rarity": 3
+      },
+      {
+        "defId": "gem_diamond",
+        "name": "Diamond",
+        "rank": 3,
+        "rarity": 4
+      },
+      {
+        "defId": "gem_oceanite",
+        "name": "Oceanite",
+        "rank": 3,
+        "rarity": 4
+      },
+      {
+        "defId": "gem_amethyst",
+        "name": "Amethyst",
+        "rank": 3,
+        "rarity": 4
+      }
+    ]
+  },
+  "lootAbilities": {
+    "veia_ouro": {
+      "code": "veia_ouro",
+      "kind": "gold_self",
+      "perLevel": 0.02,
+      "maxLevel": 20
+    },
+    "fortuna": {
+      "code": "fortuna",
+      "kind": "team_gold",
+      "perLevel": 0.005,
+      "maxLevel": 20
+    },
+    "olho_lapidador": {
+      "code": "olho_lapidador",
+      "kind": "chest_upgrade",
+      "perLevel": 0.025,
+      "maxLevel": 20
+    }
+  },
   "itemPorFase": [
     {
       "min": 1,
-      "max": 50,
+      "max": 30,
       "itemLevel": 10
     },
     {
-      "min": 31,
+      "min": 21,
       "max": 50,
       "itemLevel": 20
     },
     {
-      "min": 51,
-      "max": 100,
+      "min": 41,
+      "max": 70,
       "itemLevel": 30
     },
     {
-      "min": 71,
-      "max": 150,
+      "min": 61,
+      "max": 90,
       "itemLevel": 40
     },
     {
-      "min": 91,
-      "max": 150,
+      "min": 81,
+      "max": 110,
       "itemLevel": 50
     },
     {
-      "min": 151,
-      "max": 210,
+      "min": 101,
+      "max": 130,
       "itemLevel": 60
     },
     {
-      "min": 181,
-      "max": 300,
+      "min": 121,
+      "max": 150,
       "itemLevel": 70
     },
     {
-      "min": 211,
-      "max": 300,
+      "min": 141,
+      "max": 170,
       "itemLevel": 80
     },
     {
-      "min": 301,
-      "max": 600,
+      "min": 161,
+      "max": 190,
       "itemLevel": 90
+    },
+    {
+      "min": 181,
+      "max": 210,
+      "itemLevel": 100
+    },
+    {
+      "min": 201,
+      "max": 230,
+      "itemLevel": 110
+    },
+    {
+      "min": 221,
+      "max": 250,
+      "itemLevel": 120
+    },
+    {
+      "min": 241,
+      "max": 270,
+      "itemLevel": 130
+    },
+    {
+      "min": 261,
+      "max": 290,
+      "itemLevel": 140
+    },
+    {
+      "min": 281,
+      "max": 310,
+      "itemLevel": 150
+    },
+    {
+      "min": 301,
+      "max": 330,
+      "itemLevel": 160
+    },
+    {
+      "min": 321,
+      "max": 350,
+      "itemLevel": 170
+    },
+    {
+      "min": 341,
+      "max": 370,
+      "itemLevel": 180
+    },
+    {
+      "min": 361,
+      "max": 390,
+      "itemLevel": 190
+    },
+    {
+      "min": 381,
+      "max": 410,
+      "itemLevel": 200
+    },
+    {
+      "min": 401,
+      "max": 430,
+      "itemLevel": 210
+    },
+    {
+      "min": 421,
+      "max": 450,
+      "itemLevel": 220
+    },
+    {
+      "min": 441,
+      "max": 470,
+      "itemLevel": 230
+    },
+    {
+      "min": 461,
+      "max": 490,
+      "itemLevel": 240
+    },
+    {
+      "min": 481,
+      "max": 510,
+      "itemLevel": 250
+    },
+    {
+      "min": 501,
+      "max": 530,
+      "itemLevel": 260
+    },
+    {
+      "min": 521,
+      "max": 550,
+      "itemLevel": 270
+    },
+    {
+      "min": 541,
+      "max": 570,
+      "itemLevel": 280
+    },
+    {
+      "min": 561,
+      "max": 590,
+      "itemLevel": 290
+    },
+    {
+      "min": 581,
+      "max": 600,
+      "itemLevel": 300
     }
   ],
-  "xpFaseIni": 3,
-  "xpFaseFim": 300,
+  "xpFaseIni": 18,
+  "xpFaseFim": 1800,
   "gateSecsPorAto": [
     600,
     540,
@@ -358,5997 +625,6597 @@
       "gate": false,
       "ato": 1,
       "mundo": 1,
-      "estrela": 1
+      "estrela": 1,
+      "xpProp": 18
     },
     {
       "phase": 2,
       "hp": 58,
       "mitig": 0.010818030050083473,
-      "goldComum": 6.081632653061225,
+      "goldComum": 5,
       "gate": false,
       "ato": 1,
       "mundo": 1,
-      "estrela": 1
+      "estrela": 1,
+      "xpProp": 21
     },
     {
       "phase": 3,
       "hp": 63,
       "mitig": 0.011636060100166944,
-      "goldComum": 11.16326530612245,
+      "goldComum": 8,
       "gate": false,
       "ato": 1,
       "mundo": 1,
-      "estrela": 1
+      "estrela": 1,
+      "xpProp": 24
     },
     {
       "phase": 4,
       "hp": 70,
       "mitig": 0.012454090150250417,
-      "goldComum": 16.244897959183675,
+      "goldComum": 12,
       "gate": false,
       "ato": 1,
       "mundo": 1,
-      "estrela": 1
+      "estrela": 1,
+      "xpProp": 27
     },
     {
       "phase": 5,
       "hp": 76,
       "mitig": 0.01327212020033389,
-      "goldComum": 21.3265306122449,
+      "goldComum": 16,
       "gate": false,
       "ato": 1,
       "mundo": 1,
-      "estrela": 1
+      "estrela": 1,
+      "xpProp": 30
     },
     {
       "phase": 6,
       "hp": 84,
       "mitig": 0.014090150250417363,
-      "goldComum": 26.408163265306122,
+      "goldComum": 20,
       "gate": false,
       "ato": 1,
       "mundo": 1,
-      "estrela": 1
+      "estrela": 1,
+      "xpProp": 33
     },
     {
       "phase": 7,
       "hp": 92,
       "mitig": 0.014908180300500834,
-      "goldComum": 31.48979591836735,
+      "goldComum": 24,
       "gate": false,
       "ato": 1,
       "mundo": 1,
-      "estrela": 1
+      "estrela": 1,
+      "xpProp": 36
     },
     {
       "phase": 8,
       "hp": 101,
       "mitig": 0.01572621035058431,
-      "goldComum": 36.57142857142857,
+      "goldComum": 27,
       "gate": false,
       "ato": 1,
       "mundo": 1,
-      "estrela": 1
+      "estrela": 1,
+      "xpProp": 39
     },
     {
       "phase": 9,
       "hp": 111,
       "mitig": 0.01654424040066778,
-      "goldComum": 41.6530612244898,
+      "goldComum": 31,
       "gate": false,
       "ato": 1,
       "mundo": 1,
-      "estrela": 1
+      "estrela": 1,
+      "xpProp": 42
     },
     {
       "phase": 10,
       "hp": 122,
       "mitig": 0.01736227045075125,
-      "goldComum": 46.734693877551024,
+      "goldComum": 35,
       "gate": true,
       "ato": 1,
       "mundo": 1,
-      "estrela": 1
+      "estrela": 1,
+      "xpProp": 45
     },
     {
       "phase": 11,
       "hp": 134,
       "mitig": 0.018180300500834724,
-      "goldComum": 51.816326530612244,
+      "goldComum": 39,
       "gate": false,
       "ato": 1,
       "mundo": 2,
-      "estrela": 1
+      "estrela": 1,
+      "xpProp": 48
     },
     {
       "phase": 12,
       "hp": 148,
       "mitig": 0.018998330550918197,
-      "goldComum": 56.89795918367347,
+      "goldComum": 43,
       "gate": false,
       "ato": 1,
       "mundo": 2,
-      "estrela": 1
+      "estrela": 1,
+      "xpProp": 51
     },
     {
       "phase": 13,
       "hp": 162,
       "mitig": 0.01981636060100167,
-      "goldComum": 61.9795918367347,
+      "goldComum": 46,
       "gate": false,
       "ato": 1,
       "mundo": 2,
-      "estrela": 1
+      "estrela": 1,
+      "xpProp": 54
     },
     {
       "phase": 14,
       "hp": 178,
       "mitig": 0.02063439065108514,
-      "goldComum": 67.06122448979592,
+      "goldComum": 50,
       "gate": false,
       "ato": 1,
       "mundo": 2,
-      "estrela": 1
+      "estrela": 1,
+      "xpProp": 57
     },
     {
       "phase": 15,
       "hp": 196,
       "mitig": 0.021452420701168616,
-      "goldComum": 72.14285714285714,
+      "goldComum": 54,
       "gate": false,
       "ato": 1,
       "mundo": 2,
-      "estrela": 1
+      "estrela": 1,
+      "xpProp": 60
     },
     {
       "phase": 16,
       "hp": 215,
       "mitig": 0.022270450751252086,
-      "goldComum": 77.22448979591837,
+      "goldComum": 58,
       "gate": false,
       "ato": 1,
       "mundo": 2,
-      "estrela": 1
+      "estrela": 1,
+      "xpProp": 63
     },
     {
       "phase": 17,
       "hp": 236,
       "mitig": 0.02308848080133556,
-      "goldComum": 82.3061224489796,
+      "goldComum": 62,
       "gate": false,
       "ato": 1,
       "mundo": 2,
-      "estrela": 1
+      "estrela": 1,
+      "xpProp": 66
     },
     {
       "phase": 18,
       "hp": 259,
       "mitig": 0.02390651085141903,
-      "goldComum": 87.38775510204081,
+      "goldComum": 66,
       "gate": false,
       "ato": 1,
       "mundo": 2,
-      "estrela": 1
+      "estrela": 1,
+      "xpProp": 69
     },
     {
       "phase": 19,
       "hp": 285,
       "mitig": 0.0247245409015025,
-      "goldComum": 92.46938775510205,
+      "goldComum": 69,
       "gate": false,
       "ato": 1,
       "mundo": 2,
-      "estrela": 1
+      "estrela": 1,
+      "xpProp": 72
     },
     {
       "phase": 20,
       "hp": 313,
       "mitig": 0.025542570951585977,
-      "goldComum": 97.55102040816327,
+      "goldComum": 73,
       "gate": true,
       "ato": 1,
       "mundo": 2,
-      "estrela": 1
+      "estrela": 1,
+      "xpProp": 75
     },
     {
       "phase": 21,
       "hp": 344,
       "mitig": 0.026360601001669447,
-      "goldComum": 102.63265306122449,
+      "goldComum": 77,
       "gate": false,
       "ato": 1,
       "mundo": 3,
-      "estrela": 1
+      "estrela": 1,
+      "xpProp": 77
     },
     {
       "phase": 22,
       "hp": 378,
       "mitig": 0.027178631051752923,
-      "goldComum": 107.71428571428572,
+      "goldComum": 81,
       "gate": false,
       "ato": 1,
       "mundo": 3,
-      "estrela": 1
+      "estrela": 1,
+      "xpProp": 80
     },
     {
       "phase": 23,
       "hp": 415,
       "mitig": 0.027996661101836393,
-      "goldComum": 112.79591836734694,
+      "goldComum": 85,
       "gate": false,
       "ato": 1,
       "mundo": 3,
-      "estrela": 1
+      "estrela": 1,
+      "xpProp": 83
     },
     {
       "phase": 24,
       "hp": 456,
       "mitig": 0.028814691151919862,
-      "goldComum": 117.87755102040816,
+      "goldComum": 88,
       "gate": false,
       "ato": 1,
       "mundo": 3,
-      "estrela": 1
+      "estrela": 1,
+      "xpProp": 86
     },
     {
       "phase": 25,
       "hp": 501,
       "mitig": 0.02963272120200334,
-      "goldComum": 122.9591836734694,
+      "goldComum": 92,
       "gate": false,
       "ato": 1,
       "mundo": 3,
-      "estrela": 1
+      "estrela": 1,
+      "xpProp": 89
     },
     {
       "phase": 26,
       "hp": 550,
       "mitig": 0.030450751252086808,
-      "goldComum": 128.0408163265306,
+      "goldComum": 96,
       "gate": false,
       "ato": 1,
       "mundo": 3,
-      "estrela": 1
+      "estrela": 1,
+      "xpProp": 92
     },
     {
       "phase": 27,
       "hp": 604,
       "mitig": 0.031268781302170284,
-      "goldComum": 133.12244897959184,
+      "goldComum": 100,
       "gate": false,
       "ato": 1,
       "mundo": 3,
-      "estrela": 1
+      "estrela": 1,
+      "xpProp": 95
     },
     {
       "phase": 28,
       "hp": 664,
       "mitig": 0.032086811352253754,
-      "goldComum": 138.20408163265307,
+      "goldComum": 104,
       "gate": false,
       "ato": 1,
       "mundo": 3,
-      "estrela": 1
+      "estrela": 1,
+      "xpProp": 98
     },
     {
       "phase": 29,
       "hp": 729,
       "mitig": 0.03290484140233723,
-      "goldComum": 143.28571428571428,
+      "goldComum": 107,
       "gate": false,
       "ato": 1,
       "mundo": 3,
-      "estrela": 1
+      "estrela": 1,
+      "xpProp": 101
     },
     {
       "phase": 30,
       "hp": 801,
       "mitig": 0.0337228714524207,
-      "goldComum": 148.3673469387755,
+      "goldComum": 111,
       "gate": true,
       "ato": 1,
       "mundo": 3,
-      "estrela": 1
+      "estrela": 1,
+      "xpProp": 104
     },
     {
       "phase": 31,
       "hp": 880,
       "mitig": 0.03454090150250417,
-      "goldComum": 153.44897959183675,
+      "goldComum": 115,
       "gate": false,
       "ato": 1,
       "mundo": 4,
-      "estrela": 1
+      "estrela": 1,
+      "xpProp": 107
     },
     {
       "phase": 32,
       "hp": 967,
       "mitig": 0.035358931552587645,
-      "goldComum": 158.53061224489795,
+      "goldComum": 119,
       "gate": false,
       "ato": 1,
       "mundo": 4,
-      "estrela": 1
+      "estrela": 1,
+      "xpProp": 110
     },
     {
       "phase": 33,
       "hp": 1062,
       "mitig": 0.036176961602671115,
-      "goldComum": 163.6122448979592,
+      "goldComum": 123,
       "gate": false,
       "ato": 1,
       "mundo": 4,
-      "estrela": 1
+      "estrela": 1,
+      "xpProp": 113
     },
     {
       "phase": 34,
       "hp": 1167,
       "mitig": 0.03699499165275459,
-      "goldComum": 168.69387755102042,
+      "goldComum": 127,
       "gate": false,
       "ato": 1,
       "mundo": 4,
-      "estrela": 1
+      "estrela": 1,
+      "xpProp": 116
     },
     {
       "phase": 35,
       "hp": 1282,
       "mitig": 0.03781302170283806,
-      "goldComum": 173.77551020408163,
+      "goldComum": 130,
       "gate": false,
       "ato": 1,
       "mundo": 4,
-      "estrela": 1
+      "estrela": 1,
+      "xpProp": 119
     },
     {
       "phase": 36,
       "hp": 1408,
       "mitig": 0.03863105175292154,
-      "goldComum": 178.85714285714286,
+      "goldComum": 134,
       "gate": false,
       "ato": 1,
       "mundo": 4,
-      "estrela": 1
+      "estrela": 1,
+      "xpProp": 122
     },
     {
       "phase": 37,
       "hp": 1547,
       "mitig": 0.03944908180300501,
-      "goldComum": 183.9387755102041,
+      "goldComum": 138,
       "gate": false,
       "ato": 1,
       "mundo": 4,
-      "estrela": 1
+      "estrela": 1,
+      "xpProp": 125
     },
     {
       "phase": 38,
       "hp": 1700,
       "mitig": 0.040267111853088476,
-      "goldComum": 189.0204081632653,
+      "goldComum": 142,
       "gate": false,
       "ato": 1,
       "mundo": 4,
-      "estrela": 1
+      "estrela": 1,
+      "xpProp": 128
     },
     {
       "phase": 39,
       "hp": 1867,
       "mitig": 0.04108514190317195,
-      "goldComum": 194.10204081632654,
+      "goldComum": 146,
       "gate": false,
       "ato": 1,
       "mundo": 4,
-      "estrela": 1
+      "estrela": 1,
+      "xpProp": 131
     },
     {
       "phase": 40,
       "hp": 2051,
       "mitig": 0.04190317195325542,
-      "goldComum": 199.18367346938777,
+      "goldComum": 149,
       "gate": true,
       "ato": 1,
       "mundo": 4,
-      "estrela": 1
+      "estrela": 1,
+      "xpProp": 134
     },
     {
       "phase": 41,
       "hp": 2253,
       "mitig": 0.0427212020033389,
-      "goldComum": 204.26530612244898,
+      "goldComum": 153,
       "gate": false,
       "ato": 1,
       "mundo": 5,
-      "estrela": 1
+      "estrela": 1,
+      "xpProp": 137
     },
     {
       "phase": 42,
       "hp": 2475,
       "mitig": 0.04353923205342237,
-      "goldComum": 209.3469387755102,
+      "goldComum": 157,
       "gate": false,
       "ato": 1,
       "mundo": 5,
-      "estrela": 1
+      "estrela": 1,
+      "xpProp": 140
     },
     {
       "phase": 43,
       "hp": 2719,
       "mitig": 0.044357262103505844,
-      "goldComum": 214.42857142857144,
+      "goldComum": 161,
       "gate": false,
       "ato": 1,
       "mundo": 5,
-      "estrela": 1
+      "estrela": 1,
+      "xpProp": 143
     },
     {
       "phase": 44,
       "hp": 2987,
       "mitig": 0.045175292153589314,
-      "goldComum": 219.51020408163265,
+      "goldComum": 165,
       "gate": false,
       "ato": 1,
       "mundo": 5,
-      "estrela": 1
+      "estrela": 1,
+      "xpProp": 146
     },
     {
       "phase": 45,
       "hp": 3282,
       "mitig": 0.04599332220367279,
-      "goldComum": 224.59183673469389,
+      "goldComum": 168,
       "gate": false,
       "ato": 1,
       "mundo": 5,
-      "estrela": 1
+      "estrela": 1,
+      "xpProp": 149
     },
     {
       "phase": 46,
       "hp": 3605,
       "mitig": 0.04681135225375626,
-      "goldComum": 229.67346938775512,
+      "goldComum": 172,
       "gate": false,
       "ato": 1,
       "mundo": 5,
-      "estrela": 1
+      "estrela": 1,
+      "xpProp": 152
     },
     {
       "phase": 47,
       "hp": 3960,
       "mitig": 0.04762938230383973,
-      "goldComum": 234.75510204081633,
+      "goldComum": 176,
       "gate": false,
       "ato": 1,
       "mundo": 5,
-      "estrela": 1
+      "estrela": 1,
+      "xpProp": 155
     },
     {
       "phase": 48,
       "hp": 4350,
       "mitig": 0.048447412353923205,
-      "goldComum": 239.83673469387756,
+      "goldComum": 180,
       "gate": false,
       "ato": 1,
       "mundo": 5,
-      "estrela": 1
+      "estrela": 1,
+      "xpProp": 158
     },
     {
       "phase": 49,
       "hp": 4779,
       "mitig": 0.049265442404006675,
-      "goldComum": 244.9183673469388,
+      "goldComum": 184,
       "gate": false,
       "ato": 1,
       "mundo": 5,
-      "estrela": 1
+      "estrela": 1,
+      "xpProp": 161
     },
     {
       "phase": 50,
       "hp": 5250,
       "mitig": 0.05008347245409015,
-      "goldComum": 250,
+      "goldComum": 188,
       "gate": true,
       "ato": 1,
       "mundo": 5,
-      "estrela": 1
+      "estrela": 1,
+      "xpProp": 164
     },
     {
       "phase": 51,
       "hp": 5250,
       "mitig": 0.05090150250417362,
-      "goldComum": 500,
+      "goldComum": 375,
       "gate": false,
       "ato": 2,
       "mundo": 1,
-      "estrela": 1
+      "estrela": 1,
+      "xpProp": 167
     },
     {
       "phase": 52,
       "hp": 5500,
       "mitig": 0.0517195325542571,
-      "goldComum": 510.1010101010101,
+      "goldComum": 383,
       "gate": false,
       "ato": 2,
       "mundo": 1,
-      "estrela": 1
+      "estrela": 1,
+      "xpProp": 170
     },
     {
       "phase": 53,
       "hp": 5762,
       "mitig": 0.05253756260434057,
-      "goldComum": 520.2020202020202,
+      "goldComum": 390,
       "gate": false,
       "ato": 2,
       "mundo": 1,
-      "estrela": 1
+      "estrela": 1,
+      "xpProp": 173
     },
     {
       "phase": 54,
       "hp": 6036,
       "mitig": 0.053355592654424036,
-      "goldComum": 530.3030303030303,
+      "goldComum": 398,
       "gate": false,
       "ato": 2,
       "mundo": 1,
-      "estrela": 1
+      "estrela": 1,
+      "xpProp": 176
     },
     {
       "phase": 55,
       "hp": 6324,
       "mitig": 0.05417362270450751,
-      "goldComum": 540.4040404040404,
+      "goldComum": 405,
       "gate": false,
       "ato": 2,
       "mundo": 1,
-      "estrela": 1
+      "estrela": 1,
+      "xpProp": 179
     },
     {
       "phase": 56,
       "hp": 6625,
       "mitig": 0.05499165275459098,
-      "goldComum": 550.5050505050505,
+      "goldComum": 413,
       "gate": false,
       "ato": 2,
       "mundo": 1,
-      "estrela": 1
+      "estrela": 1,
+      "xpProp": 182
     },
     {
       "phase": 57,
       "hp": 6940,
       "mitig": 0.05580968280467446,
-      "goldComum": 560.6060606060606,
+      "goldComum": 420,
       "gate": false,
       "ato": 2,
       "mundo": 1,
-      "estrela": 1
+      "estrela": 1,
+      "xpProp": 185
     },
     {
       "phase": 58,
       "hp": 7271,
       "mitig": 0.05662771285475793,
-      "goldComum": 570.7070707070707,
+      "goldComum": 428,
       "gate": false,
       "ato": 2,
       "mundo": 1,
-      "estrela": 1
+      "estrela": 1,
+      "xpProp": 188
     },
     {
       "phase": 59,
       "hp": 7617,
       "mitig": 0.0574457429048414,
-      "goldComum": 580.8080808080808,
+      "goldComum": 436,
       "gate": false,
       "ato": 2,
       "mundo": 1,
-      "estrela": 1
+      "estrela": 1,
+      "xpProp": 191
     },
     {
       "phase": 60,
       "hp": 7980,
       "mitig": 0.058263772954924874,
-      "goldComum": 590.9090909090909,
+      "goldComum": 443,
       "gate": true,
       "ato": 2,
       "mundo": 1,
-      "estrela": 1
+      "estrela": 1,
+      "xpProp": 194
     },
     {
       "phase": 61,
       "hp": 8359,
       "mitig": 0.05908180300500834,
-      "goldComum": 601.010101010101,
+      "goldComum": 451,
       "gate": false,
       "ato": 2,
       "mundo": 1,
-      "estrela": 2
+      "estrela": 2,
+      "xpProp": 196
     },
     {
       "phase": 62,
       "hp": 8758,
       "mitig": 0.05989983305509182,
-      "goldComum": 611.1111111111111,
+      "goldComum": 458,
       "gate": false,
       "ato": 2,
       "mundo": 1,
-      "estrela": 2
+      "estrela": 2,
+      "xpProp": 199
     },
     {
       "phase": 63,
       "hp": 9175,
       "mitig": 0.06071786310517529,
-      "goldComum": 621.2121212121212,
+      "goldComum": 466,
       "gate": false,
       "ato": 2,
       "mundo": 1,
-      "estrela": 2
+      "estrela": 2,
+      "xpProp": 202
     },
     {
       "phase": 64,
       "hp": 9611,
       "mitig": 0.061535893155258765,
-      "goldComum": 631.3131313131313,
+      "goldComum": 473,
       "gate": false,
       "ato": 2,
       "mundo": 1,
-      "estrela": 2
+      "estrela": 2,
+      "xpProp": 205
     },
     {
       "phase": 65,
       "hp": 10069,
       "mitig": 0.062353923205342235,
-      "goldComum": 641.4141414141413,
+      "goldComum": 481,
       "gate": false,
       "ato": 2,
       "mundo": 1,
-      "estrela": 2
+      "estrela": 2,
+      "xpProp": 208
     },
     {
       "phase": 66,
       "hp": 10548,
       "mitig": 0.0631719532554257,
-      "goldComum": 651.5151515151515,
+      "goldComum": 489,
       "gate": false,
       "ato": 2,
       "mundo": 1,
-      "estrela": 2
+      "estrela": 2,
+      "xpProp": 211
     },
     {
       "phase": 67,
       "hp": 11051,
       "mitig": 0.06398998330550917,
-      "goldComum": 661.6161616161617,
+      "goldComum": 496,
       "gate": false,
       "ato": 2,
       "mundo": 1,
-      "estrela": 2
+      "estrela": 2,
+      "xpProp": 214
     },
     {
       "phase": 68,
       "hp": 11577,
       "mitig": 0.06480801335559265,
-      "goldComum": 671.7171717171717,
+      "goldComum": 504,
       "gate": false,
       "ato": 2,
       "mundo": 1,
-      "estrela": 2
+      "estrela": 2,
+      "xpProp": 217
     },
     {
       "phase": 69,
       "hp": 12128,
       "mitig": 0.06562604340567613,
-      "goldComum": 681.8181818181818,
+      "goldComum": 511,
       "gate": false,
       "ato": 2,
       "mundo": 1,
-      "estrela": 2
+      "estrela": 2,
+      "xpProp": 220
     },
     {
       "phase": 70,
       "hp": 12706,
       "mitig": 0.06644407345575959,
-      "goldComum": 691.9191919191919,
+      "goldComum": 519,
       "gate": true,
       "ato": 2,
       "mundo": 1,
-      "estrela": 2
+      "estrela": 2,
+      "xpProp": 223
     },
     {
       "phase": 71,
       "hp": 13311,
       "mitig": 0.06726210350584307,
-      "goldComum": 702.0202020202021,
+      "goldComum": 527,
       "gate": false,
       "ato": 2,
       "mundo": 2,
-      "estrela": 1
+      "estrela": 1,
+      "xpProp": 226
     },
     {
       "phase": 72,
       "hp": 13944,
       "mitig": 0.06808013355592654,
-      "goldComum": 712.1212121212121,
+      "goldComum": 534,
       "gate": false,
       "ato": 2,
       "mundo": 2,
-      "estrela": 1
+      "estrela": 1,
+      "xpProp": 229
     },
     {
       "phase": 73,
       "hp": 14608,
       "mitig": 0.06889816360601,
-      "goldComum": 722.2222222222222,
+      "goldComum": 542,
       "gate": false,
       "ato": 2,
       "mundo": 2,
-      "estrela": 1
+      "estrela": 1,
+      "xpProp": 232
     },
     {
       "phase": 74,
       "hp": 15304,
       "mitig": 0.06971619365609348,
-      "goldComum": 732.3232323232323,
+      "goldComum": 549,
       "gate": false,
       "ato": 2,
       "mundo": 2,
-      "estrela": 1
+      "estrela": 1,
+      "xpProp": 235
     },
     {
       "phase": 75,
       "hp": 16033,
       "mitig": 0.07053422370617696,
-      "goldComum": 742.4242424242424,
+      "goldComum": 557,
       "gate": false,
       "ato": 2,
       "mundo": 2,
-      "estrela": 1
+      "estrela": 1,
+      "xpProp": 238
     },
     {
       "phase": 76,
       "hp": 16796,
       "mitig": 0.07135225375626043,
-      "goldComum": 752.5252525252525,
+      "goldComum": 564,
       "gate": false,
       "ato": 2,
       "mundo": 2,
-      "estrela": 1
+      "estrela": 1,
+      "xpProp": 241
     },
     {
       "phase": 77,
       "hp": 17596,
       "mitig": 0.0721702838063439,
-      "goldComum": 762.6262626262626,
+      "goldComum": 572,
       "gate": false,
       "ato": 2,
       "mundo": 2,
-      "estrela": 1
+      "estrela": 1,
+      "xpProp": 244
     },
     {
       "phase": 78,
       "hp": 18434,
       "mitig": 0.07298831385642737,
-      "goldComum": 772.7272727272727,
+      "goldComum": 580,
       "gate": false,
       "ato": 2,
       "mundo": 2,
-      "estrela": 1
+      "estrela": 1,
+      "xpProp": 247
     },
     {
       "phase": 79,
       "hp": 19311,
       "mitig": 0.07380634390651084,
-      "goldComum": 782.8282828282828,
+      "goldComum": 587,
       "gate": false,
       "ato": 2,
       "mundo": 2,
-      "estrela": 1
+      "estrela": 1,
+      "xpProp": 250
     },
     {
       "phase": 80,
       "hp": 20231,
       "mitig": 0.07462437395659431,
-      "goldComum": 792.9292929292928,
+      "goldComum": 595,
       "gate": true,
       "ato": 2,
       "mundo": 2,
-      "estrela": 1
+      "estrela": 1,
+      "xpProp": 253
     },
     {
       "phase": 81,
       "hp": 21194,
       "mitig": 0.07544240400667779,
-      "goldComum": 803.030303030303,
+      "goldComum": 602,
       "gate": false,
       "ato": 2,
       "mundo": 2,
-      "estrela": 2
+      "estrela": 2,
+      "xpProp": 256
     },
     {
       "phase": 82,
       "hp": 22204,
       "mitig": 0.07626043405676126,
-      "goldComum": 813.1313131313132,
+      "goldComum": 610,
       "gate": false,
       "ato": 2,
       "mundo": 2,
-      "estrela": 2
+      "estrela": 2,
+      "xpProp": 259
     },
     {
       "phase": 83,
       "hp": 23261,
       "mitig": 0.07707846410684473,
-      "goldComum": 823.2323232323232,
+      "goldComum": 617,
       "gate": false,
       "ato": 2,
       "mundo": 2,
-      "estrela": 2
+      "estrela": 2,
+      "xpProp": 262
     },
     {
       "phase": 84,
       "hp": 24368,
       "mitig": 0.0778964941569282,
-      "goldComum": 833.3333333333333,
+      "goldComum": 625,
       "gate": false,
       "ato": 2,
       "mundo": 2,
-      "estrela": 2
+      "estrela": 2,
+      "xpProp": 265
     },
     {
       "phase": 85,
       "hp": 25529,
       "mitig": 0.07871452420701168,
-      "goldComum": 843.4343434343434,
+      "goldComum": 633,
       "gate": false,
       "ato": 2,
       "mundo": 2,
-      "estrela": 2
+      "estrela": 2,
+      "xpProp": 268
     },
     {
       "phase": 86,
       "hp": 26744,
       "mitig": 0.07953255425709514,
-      "goldComum": 853.5353535353536,
+      "goldComum": 640,
       "gate": false,
       "ato": 2,
       "mundo": 2,
-      "estrela": 2
+      "estrela": 2,
+      "xpProp": 271
     },
     {
       "phase": 87,
       "hp": 28018,
       "mitig": 0.08035058430717862,
-      "goldComum": 863.6363636363636,
+      "goldComum": 648,
       "gate": false,
       "ato": 2,
       "mundo": 2,
-      "estrela": 2
+      "estrela": 2,
+      "xpProp": 274
     },
     {
       "phase": 88,
       "hp": 29352,
       "mitig": 0.0811686143572621,
-      "goldComum": 873.7373737373737,
+      "goldComum": 655,
       "gate": false,
       "ato": 2,
       "mundo": 2,
-      "estrela": 2
+      "estrela": 2,
+      "xpProp": 277
     },
     {
       "phase": 89,
       "hp": 30749,
       "mitig": 0.08198664440734557,
-      "goldComum": 883.8383838383838,
+      "goldComum": 663,
       "gate": false,
       "ato": 2,
       "mundo": 2,
-      "estrela": 2
+      "estrela": 2,
+      "xpProp": 280
     },
     {
       "phase": 90,
       "hp": 32214,
       "mitig": 0.08280467445742903,
-      "goldComum": 893.939393939394,
+      "goldComum": 670,
       "gate": true,
       "ato": 2,
       "mundo": 2,
-      "estrela": 2
+      "estrela": 2,
+      "xpProp": 283
     },
     {
       "phase": 91,
       "hp": 33747,
       "mitig": 0.08362270450751251,
-      "goldComum": 904.040404040404,
+      "goldComum": 678,
       "gate": false,
       "ato": 2,
       "mundo": 3,
-      "estrela": 1
+      "estrela": 1,
+      "xpProp": 286
     },
     {
       "phase": 92,
       "hp": 35354,
       "mitig": 0.08444073455759599,
-      "goldComum": 914.1414141414141,
+      "goldComum": 686,
       "gate": false,
       "ato": 2,
       "mundo": 3,
-      "estrela": 1
+      "estrela": 1,
+      "xpProp": 289
     },
     {
       "phase": 93,
       "hp": 37038,
       "mitig": 0.08525876460767945,
-      "goldComum": 924.2424242424242,
+      "goldComum": 693,
       "gate": false,
       "ato": 2,
       "mundo": 3,
-      "estrela": 1
+      "estrela": 1,
+      "xpProp": 292
     },
     {
       "phase": 94,
       "hp": 38801,
       "mitig": 0.08607679465776293,
-      "goldComum": 934.3434343434343,
+      "goldComum": 701,
       "gate": false,
       "ato": 2,
       "mundo": 3,
-      "estrela": 1
+      "estrela": 1,
+      "xpProp": 295
     },
     {
       "phase": 95,
       "hp": 40649,
       "mitig": 0.0868948247078464,
-      "goldComum": 944.4444444444443,
+      "goldComum": 708,
       "gate": false,
       "ato": 2,
       "mundo": 3,
-      "estrela": 1
+      "estrela": 1,
+      "xpProp": 298
     },
     {
       "phase": 96,
       "hp": 42584,
       "mitig": 0.08771285475792988,
-      "goldComum": 954.5454545454545,
+      "goldComum": 716,
       "gate": false,
       "ato": 2,
       "mundo": 3,
-      "estrela": 1
+      "estrela": 1,
+      "xpProp": 301
     },
     {
       "phase": 97,
       "hp": 44612,
       "mitig": 0.08853088480801334,
-      "goldComum": 964.6464646464647,
+      "goldComum": 723,
       "gate": false,
       "ato": 2,
       "mundo": 3,
-      "estrela": 1
+      "estrela": 1,
+      "xpProp": 304
     },
     {
       "phase": 98,
       "hp": 46736,
       "mitig": 0.08934891485809682,
-      "goldComum": 974.7474747474747,
+      "goldComum": 731,
       "gate": false,
       "ato": 2,
       "mundo": 3,
-      "estrela": 1
+      "estrela": 1,
+      "xpProp": 307
     },
     {
       "phase": 99,
       "hp": 48962,
       "mitig": 0.0901669449081803,
-      "goldComum": 984.8484848484848,
+      "goldComum": 739,
       "gate": false,
       "ato": 2,
       "mundo": 3,
-      "estrela": 1
+      "estrela": 1,
+      "xpProp": 310
     },
     {
       "phase": 100,
       "hp": 51293,
       "mitig": 0.09098497495826376,
-      "goldComum": 994.9494949494949,
+      "goldComum": 746,
       "gate": true,
       "ato": 2,
       "mundo": 3,
-      "estrela": 1
+      "estrela": 1,
+      "xpProp": 313
     },
     {
       "phase": 101,
       "hp": 53735,
       "mitig": 0.09180300500834723,
-      "goldComum": 1005.0505050505051,
+      "goldComum": 754,
       "gate": false,
       "ato": 2,
       "mundo": 3,
-      "estrela": 2
+      "estrela": 2,
+      "xpProp": 315
     },
     {
       "phase": 102,
       "hp": 56294,
       "mitig": 0.09262103505843071,
-      "goldComum": 1015.1515151515151,
+      "goldComum": 761,
       "gate": false,
       "ato": 2,
       "mundo": 3,
-      "estrela": 2
+      "estrela": 2,
+      "xpProp": 318
     },
     {
       "phase": 103,
       "hp": 58975,
       "mitig": 0.09343906510851419,
-      "goldComum": 1025.2525252525252,
+      "goldComum": 769,
       "gate": false,
       "ato": 2,
       "mundo": 3,
-      "estrela": 2
+      "estrela": 2,
+      "xpProp": 321
     },
     {
       "phase": 104,
       "hp": 61783,
       "mitig": 0.09425709515859765,
-      "goldComum": 1035.3535353535353,
+      "goldComum": 777,
       "gate": false,
       "ato": 2,
       "mundo": 3,
-      "estrela": 2
+      "estrela": 2,
+      "xpProp": 324
     },
     {
       "phase": 105,
       "hp": 64724,
       "mitig": 0.09507512520868112,
-      "goldComum": 1045.4545454545455,
+      "goldComum": 784,
       "gate": false,
       "ato": 2,
       "mundo": 3,
-      "estrela": 2
+      "estrela": 2,
+      "xpProp": 327
     },
     {
       "phase": 106,
       "hp": 67806,
       "mitig": 0.0958931552587646,
-      "goldComum": 1055.5555555555557,
+      "goldComum": 792,
       "gate": false,
       "ato": 2,
       "mundo": 3,
-      "estrela": 2
+      "estrela": 2,
+      "xpProp": 330
     },
     {
       "phase": 107,
       "hp": 71035,
       "mitig": 0.09671118530884806,
-      "goldComum": 1065.6565656565656,
+      "goldComum": 799,
       "gate": false,
       "ato": 2,
       "mundo": 3,
-      "estrela": 2
+      "estrela": 2,
+      "xpProp": 333
     },
     {
       "phase": 108,
       "hp": 74417,
       "mitig": 0.09752921535893154,
-      "goldComum": 1075.7575757575758,
+      "goldComum": 807,
       "gate": false,
       "ato": 2,
       "mundo": 3,
-      "estrela": 2
+      "estrela": 2,
+      "xpProp": 336
     },
     {
       "phase": 109,
       "hp": 77961,
       "mitig": 0.09834724540901502,
-      "goldComum": 1085.8585858585857,
+      "goldComum": 814,
       "gate": false,
       "ato": 2,
       "mundo": 3,
-      "estrela": 2
+      "estrela": 2,
+      "xpProp": 339
     },
     {
       "phase": 110,
       "hp": 81673,
       "mitig": 0.09916527545909848,
-      "goldComum": 1095.9595959595958,
+      "goldComum": 822,
       "gate": true,
       "ato": 2,
       "mundo": 3,
-      "estrela": 2
+      "estrela": 2,
+      "xpProp": 342
     },
     {
       "phase": 111,
       "hp": 85562,
       "mitig": 0.09998330550918196,
-      "goldComum": 1106.060606060606,
+      "goldComum": 830,
       "gate": false,
       "ato": 2,
       "mundo": 4,
-      "estrela": 1
+      "estrela": 1,
+      "xpProp": 345
     },
     {
       "phase": 112,
       "hp": 89636,
       "mitig": 0.10080133555926543,
-      "goldComum": 1116.1616161616162,
+      "goldComum": 837,
       "gate": false,
       "ato": 2,
       "mundo": 4,
-      "estrela": 1
+      "estrela": 1,
+      "xpProp": 348
     },
     {
       "phase": 113,
       "hp": 93904,
       "mitig": 0.10161936560934891,
-      "goldComum": 1126.2626262626263,
+      "goldComum": 845,
       "gate": false,
       "ato": 2,
       "mundo": 4,
-      "estrela": 1
+      "estrela": 1,
+      "xpProp": 351
     },
     {
       "phase": 114,
       "hp": 98375,
       "mitig": 0.10243739565943237,
-      "goldComum": 1136.3636363636365,
+      "goldComum": 852,
       "gate": false,
       "ato": 2,
       "mundo": 4,
-      "estrela": 1
+      "estrela": 1,
+      "xpProp": 354
     },
     {
       "phase": 115,
       "hp": 103060,
       "mitig": 0.10325542570951585,
-      "goldComum": 1146.4646464646464,
+      "goldComum": 860,
       "gate": false,
       "ato": 2,
       "mundo": 4,
-      "estrela": 1
+      "estrela": 1,
+      "xpProp": 357
     },
     {
       "phase": 116,
       "hp": 107967,
       "mitig": 0.10407345575959932,
-      "goldComum": 1156.5656565656564,
+      "goldComum": 867,
       "gate": false,
       "ato": 2,
       "mundo": 4,
-      "estrela": 1
+      "estrela": 1,
+      "xpProp": 360
     },
     {
       "phase": 117,
       "hp": 113108,
       "mitig": 0.10489148580968279,
-      "goldComum": 1166.6666666666665,
+      "goldComum": 875,
       "gate": false,
       "ato": 2,
       "mundo": 4,
-      "estrela": 1
+      "estrela": 1,
+      "xpProp": 363
     },
     {
       "phase": 118,
       "hp": 118494,
       "mitig": 0.10570951585976626,
-      "goldComum": 1176.7676767676767,
+      "goldComum": 883,
       "gate": false,
       "ato": 2,
       "mundo": 4,
-      "estrela": 1
+      "estrela": 1,
+      "xpProp": 366
     },
     {
       "phase": 119,
       "hp": 124136,
       "mitig": 0.10652754590984974,
-      "goldComum": 1186.8686868686868,
+      "goldComum": 890,
       "gate": false,
       "ato": 2,
       "mundo": 4,
-      "estrela": 1
+      "estrela": 1,
+      "xpProp": 369
     },
     {
       "phase": 120,
       "hp": 130047,
       "mitig": 0.10734557595993321,
-      "goldComum": 1196.969696969697,
+      "goldComum": 898,
       "gate": true,
       "ato": 2,
       "mundo": 4,
-      "estrela": 1
+      "estrela": 1,
+      "xpProp": 372
     },
     {
       "phase": 121,
       "hp": 136239,
       "mitig": 0.10816360601001668,
-      "goldComum": 1207.0707070707072,
+      "goldComum": 905,
       "gate": false,
       "ato": 2,
       "mundo": 4,
-      "estrela": 2
+      "estrela": 2,
+      "xpProp": 375
     },
     {
       "phase": 122,
       "hp": 142726,
       "mitig": 0.10898163606010015,
-      "goldComum": 1217.171717171717,
+      "goldComum": 913,
       "gate": false,
       "ato": 2,
       "mundo": 4,
-      "estrela": 2
+      "estrela": 2,
+      "xpProp": 378
     },
     {
       "phase": 123,
       "hp": 149522,
       "mitig": 0.10979966611018363,
-      "goldComum": 1227.2727272727273,
+      "goldComum": 920,
       "gate": false,
       "ato": 2,
       "mundo": 4,
-      "estrela": 2
+      "estrela": 2,
+      "xpProp": 381
     },
     {
       "phase": 124,
       "hp": 156641,
       "mitig": 0.11061769616026709,
-      "goldComum": 1237.3737373737372,
+      "goldComum": 928,
       "gate": false,
       "ato": 2,
       "mundo": 4,
-      "estrela": 2
+      "estrela": 2,
+      "xpProp": 384
     },
     {
       "phase": 125,
       "hp": 164100,
       "mitig": 0.11143572621035057,
-      "goldComum": 1247.4747474747473,
+      "goldComum": 936,
       "gate": false,
       "ato": 2,
       "mundo": 4,
-      "estrela": 2
+      "estrela": 2,
+      "xpProp": 387
     },
     {
       "phase": 126,
       "hp": 171914,
       "mitig": 0.11225375626043405,
-      "goldComum": 1257.5757575757575,
+      "goldComum": 943,
       "gate": false,
       "ato": 2,
       "mundo": 4,
-      "estrela": 2
+      "estrela": 2,
+      "xpProp": 390
     },
     {
       "phase": 127,
       "hp": 180100,
       "mitig": 0.11307178631051752,
-      "goldComum": 1267.6767676767677,
+      "goldComum": 951,
       "gate": false,
       "ato": 2,
       "mundo": 4,
-      "estrela": 2
+      "estrela": 2,
+      "xpProp": 393
     },
     {
       "phase": 128,
       "hp": 188675,
       "mitig": 0.11388981636060098,
-      "goldComum": 1277.7777777777778,
+      "goldComum": 958,
       "gate": false,
       "ato": 2,
       "mundo": 4,
-      "estrela": 2
+      "estrela": 2,
+      "xpProp": 396
     },
     {
       "phase": 129,
       "hp": 197659,
       "mitig": 0.11470784641068446,
-      "goldComum": 1287.878787878788,
+      "goldComum": 966,
       "gate": false,
       "ato": 2,
       "mundo": 4,
-      "estrela": 2
+      "estrela": 2,
+      "xpProp": 399
     },
     {
       "phase": 130,
       "hp": 207071,
       "mitig": 0.11552587646076794,
-      "goldComum": 1297.979797979798,
+      "goldComum": 973,
       "gate": true,
       "ato": 2,
       "mundo": 4,
-      "estrela": 2
+      "estrela": 2,
+      "xpProp": 402
     },
     {
       "phase": 131,
       "hp": 216931,
       "mitig": 0.1163439065108514,
-      "goldComum": 1308.080808080808,
+      "goldComum": 981,
       "gate": false,
       "ato": 2,
       "mundo": 5,
-      "estrela": 1
+      "estrela": 1,
+      "xpProp": 405
     },
     {
       "phase": 132,
       "hp": 227260,
       "mitig": 0.11716193656093488,
-      "goldComum": 1318.181818181818,
+      "goldComum": 989,
       "gate": false,
       "ato": 2,
       "mundo": 5,
-      "estrela": 1
+      "estrela": 1,
+      "xpProp": 408
     },
     {
       "phase": 133,
       "hp": 238081,
       "mitig": 0.11797996661101835,
-      "goldComum": 1328.2828282828282,
+      "goldComum": 996,
       "gate": false,
       "ato": 2,
       "mundo": 5,
-      "estrela": 1
+      "estrela": 1,
+      "xpProp": 411
     },
     {
       "phase": 134,
       "hp": 249418,
       "mitig": 0.11879799666110183,
-      "goldComum": 1338.3838383838383,
+      "goldComum": 1004,
       "gate": false,
       "ato": 2,
       "mundo": 5,
-      "estrela": 1
+      "estrela": 1,
+      "xpProp": 414
     },
     {
       "phase": 135,
       "hp": 261294,
       "mitig": 0.11961602671118529,
-      "goldComum": 1348.4848484848485,
+      "goldComum": 1011,
       "gate": false,
       "ato": 2,
       "mundo": 5,
-      "estrela": 1
+      "estrela": 1,
+      "xpProp": 417
     },
     {
       "phase": 136,
       "hp": 273735,
       "mitig": 0.12043405676126877,
-      "goldComum": 1358.5858585858587,
+      "goldComum": 1019,
       "gate": false,
       "ato": 2,
       "mundo": 5,
-      "estrela": 1
+      "estrela": 1,
+      "xpProp": 420
     },
     {
       "phase": 137,
       "hp": 286770,
       "mitig": 0.12125208681135224,
-      "goldComum": 1368.6868686868686,
+      "goldComum": 1027,
       "gate": false,
       "ato": 2,
       "mundo": 5,
-      "estrela": 1
+      "estrela": 1,
+      "xpProp": 423
     },
     {
       "phase": 138,
       "hp": 300424,
       "mitig": 0.1220701168614357,
-      "goldComum": 1378.7878787878788,
+      "goldComum": 1034,
       "gate": false,
       "ato": 2,
       "mundo": 5,
-      "estrela": 1
+      "estrela": 1,
+      "xpProp": 426
     },
     {
       "phase": 139,
       "hp": 314729,
       "mitig": 0.12288814691151918,
-      "goldComum": 1388.8888888888887,
+      "goldComum": 1042,
       "gate": false,
       "ato": 2,
       "mundo": 5,
-      "estrela": 1
+      "estrela": 1,
+      "xpProp": 429
     },
     {
       "phase": 140,
       "hp": 329715,
       "mitig": 0.12370617696160266,
-      "goldComum": 1398.9898989898988,
+      "goldComum": 1049,
       "gate": true,
       "ato": 2,
       "mundo": 5,
-      "estrela": 1
+      "estrela": 1,
+      "xpProp": 432
     },
     {
       "phase": 141,
       "hp": 345415,
       "mitig": 0.12452420701168614,
-      "goldComum": 1409.090909090909,
+      "goldComum": 1057,
       "gate": false,
       "ato": 2,
       "mundo": 5,
-      "estrela": 2
+      "estrela": 2,
+      "xpProp": 434
     },
     {
       "phase": 142,
       "hp": 361862,
       "mitig": 0.1253422370617696,
-      "goldComum": 1419.1919191919192,
+      "goldComum": 1064,
       "gate": false,
       "ato": 2,
       "mundo": 5,
-      "estrela": 2
+      "estrela": 2,
+      "xpProp": 437
     },
     {
       "phase": 143,
       "hp": 379092,
       "mitig": 0.12616026711185307,
-      "goldComum": 1429.2929292929293,
+      "goldComum": 1072,
       "gate": false,
       "ato": 2,
       "mundo": 5,
-      "estrela": 2
+      "estrela": 2,
+      "xpProp": 440
     },
     {
       "phase": 144,
       "hp": 397143,
       "mitig": 0.12697829716193657,
-      "goldComum": 1439.3939393939395,
+      "goldComum": 1080,
       "gate": false,
       "ato": 2,
       "mundo": 5,
-      "estrela": 2
+      "estrela": 2,
+      "xpProp": 443
     },
     {
       "phase": 145,
       "hp": 416054,
       "mitig": 0.12779632721202003,
-      "goldComum": 1449.4949494949494,
+      "goldComum": 1087,
       "gate": false,
       "ato": 2,
       "mundo": 5,
-      "estrela": 2
+      "estrela": 2,
+      "xpProp": 446
     },
     {
       "phase": 146,
       "hp": 435864,
       "mitig": 0.1286143572621035,
-      "goldComum": 1459.5959595959596,
+      "goldComum": 1095,
       "gate": false,
       "ato": 2,
       "mundo": 5,
-      "estrela": 2
+      "estrela": 2,
+      "xpProp": 449
     },
     {
       "phase": 147,
       "hp": 456618,
       "mitig": 0.12943238731218698,
-      "goldComum": 1469.6969696969695,
+      "goldComum": 1102,
       "gate": false,
       "ato": 2,
       "mundo": 5,
-      "estrela": 2
+      "estrela": 2,
+      "xpProp": 452
     },
     {
       "phase": 148,
       "hp": 478360,
       "mitig": 0.13025041736227044,
-      "goldComum": 1479.7979797979797,
+      "goldComum": 1110,
       "gate": false,
       "ato": 2,
       "mundo": 5,
-      "estrela": 2
+      "estrela": 2,
+      "xpProp": 455
     },
     {
       "phase": 149,
       "hp": 501138,
       "mitig": 0.1310684474123539,
-      "goldComum": 1489.8989898989898,
+      "goldComum": 1117,
       "gate": false,
       "ato": 2,
       "mundo": 5,
-      "estrela": 2
+      "estrela": 2,
+      "xpProp": 458
     },
     {
       "phase": 150,
       "hp": 525000,
       "mitig": 0.1318864774624374,
-      "goldComum": 1500,
+      "goldComum": 1125,
       "gate": true,
       "ato": 2,
       "mundo": 5,
-      "estrela": 2
+      "estrela": 2,
+      "xpProp": 461
     },
     {
       "phase": 151,
       "hp": 525000,
       "mitig": 0.13270450751252086,
-      "goldComum": 2000,
+      "goldComum": 1500,
       "gate": false,
       "ato": 3,
       "mundo": 1,
-      "estrela": 1
+      "estrela": 1,
+      "xpProp": 464
     },
     {
       "phase": 152,
       "hp": 541480,
       "mitig": 0.13352253756260432,
-      "goldComum": 2010.0671140939598,
+      "goldComum": 1508,
       "gate": false,
       "ato": 3,
       "mundo": 1,
-      "estrela": 1
+      "estrela": 1,
+      "xpProp": 467
     },
     {
       "phase": 153,
       "hp": 558477,
       "mitig": 0.1343405676126878,
-      "goldComum": 2020.1342281879195,
+      "goldComum": 1515,
       "gate": false,
       "ato": 3,
       "mundo": 1,
-      "estrela": 1
+      "estrela": 1,
+      "xpProp": 470
     },
     {
       "phase": 154,
       "hp": 576007,
       "mitig": 0.13515859766277127,
-      "goldComum": 2030.201342281879,
+      "goldComum": 1523,
       "gate": false,
       "ato": 3,
       "mundo": 1,
-      "estrela": 1
+      "estrela": 1,
+      "xpProp": 473
     },
     {
       "phase": 155,
       "hp": 594088,
       "mitig": 0.13597662771285476,
-      "goldComum": 2040.268456375839,
+      "goldComum": 1530,
       "gate": false,
       "ato": 3,
       "mundo": 1,
-      "estrela": 1
+      "estrela": 1,
+      "xpProp": 476
     },
     {
       "phase": 156,
       "hp": 612736,
       "mitig": 0.13679465776293823,
-      "goldComum": 2050.3355704697988,
+      "goldComum": 1538,
       "gate": false,
       "ato": 3,
       "mundo": 1,
-      "estrela": 1
+      "estrela": 1,
+      "xpProp": 479
     },
     {
       "phase": 157,
       "hp": 631970,
       "mitig": 0.1376126878130217,
-      "goldComum": 2060.402684563758,
+      "goldComum": 1545,
       "gate": false,
       "ato": 3,
       "mundo": 1,
-      "estrela": 1
+      "estrela": 1,
+      "xpProp": 482
     },
     {
       "phase": 158,
       "hp": 651807,
       "mitig": 0.13843071786310518,
-      "goldComum": 2070.469798657718,
+      "goldComum": 1553,
       "gate": false,
       "ato": 3,
       "mundo": 1,
-      "estrela": 1
+      "estrela": 1,
+      "xpProp": 485
     },
     {
       "phase": 159,
       "hp": 672267,
       "mitig": 0.13924874791318864,
-      "goldComum": 2080.536912751678,
+      "goldComum": 1560,
       "gate": false,
       "ato": 3,
       "mundo": 1,
-      "estrela": 1
+      "estrela": 1,
+      "xpProp": 488
     },
     {
       "phase": 160,
       "hp": 693369,
       "mitig": 0.14006677796327213,
-      "goldComum": 2090.6040268456377,
+      "goldComum": 1568,
       "gate": true,
       "ato": 3,
       "mundo": 1,
-      "estrela": 1
+      "estrela": 1,
+      "xpProp": 491
     },
     {
       "phase": 161,
       "hp": 715134,
       "mitig": 0.1408848080133556,
-      "goldComum": 2100.6711409395975,
+      "goldComum": 1576,
       "gate": false,
       "ato": 3,
       "mundo": 1,
-      "estrela": 2
+      "estrela": 2,
+      "xpProp": 494
     },
     {
       "phase": 162,
       "hp": 737582,
       "mitig": 0.14170283806343906,
-      "goldComum": 2110.738255033557,
+      "goldComum": 1583,
       "gate": false,
       "ato": 3,
       "mundo": 1,
-      "estrela": 2
+      "estrela": 2,
+      "xpProp": 497
     },
     {
       "phase": 163,
       "hp": 760735,
       "mitig": 0.14252086811352255,
-      "goldComum": 2120.8053691275168,
+      "goldComum": 1591,
       "gate": false,
       "ato": 3,
       "mundo": 1,
-      "estrela": 2
+      "estrela": 2,
+      "xpProp": 500
     },
     {
       "phase": 164,
       "hp": 784614,
       "mitig": 0.143338898163606,
-      "goldComum": 2130.8724832214766,
+      "goldComum": 1598,
       "gate": false,
       "ato": 3,
       "mundo": 1,
-      "estrela": 2
+      "estrela": 2,
+      "xpProp": 503
     },
     {
       "phase": 165,
       "hp": 809243,
       "mitig": 0.14415692821368947,
-      "goldComum": 2140.939597315436,
+      "goldComum": 1606,
       "gate": false,
       "ato": 3,
       "mundo": 1,
-      "estrela": 2
+      "estrela": 2,
+      "xpProp": 506
     },
     {
       "phase": 166,
       "hp": 834645,
       "mitig": 0.14497495826377296,
-      "goldComum": 2151.006711409396,
+      "goldComum": 1613,
       "gate": false,
       "ato": 3,
       "mundo": 1,
-      "estrela": 2
+      "estrela": 2,
+      "xpProp": 509
     },
     {
       "phase": 167,
       "hp": 860844,
       "mitig": 0.14579298831385643,
-      "goldComum": 2161.0738255033557,
+      "goldComum": 1621,
       "gate": false,
       "ato": 3,
       "mundo": 1,
-      "estrela": 2
+      "estrela": 2,
+      "xpProp": 512
     },
     {
       "phase": 168,
       "hp": 887866,
       "mitig": 0.1466110183639399,
-      "goldComum": 2171.1409395973155,
+      "goldComum": 1628,
       "gate": false,
       "ato": 3,
       "mundo": 1,
-      "estrela": 2
+      "estrela": 2,
+      "xpProp": 515
     },
     {
       "phase": 169,
       "hp": 915735,
       "mitig": 0.14742904841402338,
-      "goldComum": 2181.2080536912754,
+      "goldComum": 1636,
       "gate": false,
       "ato": 3,
       "mundo": 1,
-      "estrela": 2
+      "estrela": 2,
+      "xpProp": 518
     },
     {
       "phase": 170,
       "hp": 944480,
       "mitig": 0.14824707846410684,
-      "goldComum": 2191.2751677852348,
+      "goldComum": 1643,
       "gate": true,
       "ato": 3,
       "mundo": 1,
-      "estrela": 2
+      "estrela": 2,
+      "xpProp": 521
     },
     {
       "phase": 171,
       "hp": 974127,
       "mitig": 0.1490651085141903,
-      "goldComum": 2201.3422818791946,
+      "goldComum": 1651,
       "gate": false,
       "ato": 3,
       "mundo": 1,
-      "estrela": 3
+      "estrela": 3,
+      "xpProp": 524
     },
     {
       "phase": 172,
       "hp": 1004705,
       "mitig": 0.1498831385642738,
-      "goldComum": 2211.4093959731545,
+      "goldComum": 1659,
       "gate": false,
       "ato": 3,
       "mundo": 1,
-      "estrela": 3
+      "estrela": 3,
+      "xpProp": 527
     },
     {
       "phase": 173,
       "hp": 1036242,
       "mitig": 0.15070116861435726,
-      "goldComum": 2221.476510067114,
+      "goldComum": 1666,
       "gate": false,
       "ato": 3,
       "mundo": 1,
-      "estrela": 3
+      "estrela": 3,
+      "xpProp": 530
     },
     {
       "phase": 174,
       "hp": 1068770,
       "mitig": 0.15151919866444072,
-      "goldComum": 2231.5436241610737,
+      "goldComum": 1674,
       "gate": false,
       "ato": 3,
       "mundo": 1,
-      "estrela": 3
+      "estrela": 3,
+      "xpProp": 533
     },
     {
       "phase": 175,
       "hp": 1102318,
       "mitig": 0.1523372287145242,
-      "goldComum": 2241.6107382550335,
+      "goldComum": 1681,
       "gate": false,
       "ato": 3,
       "mundo": 1,
-      "estrela": 3
+      "estrela": 3,
+      "xpProp": 536
     },
     {
       "phase": 176,
       "hp": 1136920,
       "mitig": 0.15315525876460767,
-      "goldComum": 2251.6778523489934,
+      "goldComum": 1689,
       "gate": false,
       "ato": 3,
       "mundo": 1,
-      "estrela": 3
+      "estrela": 3,
+      "xpProp": 539
     },
     {
       "phase": 177,
       "hp": 1172607,
       "mitig": 0.15397328881469116,
-      "goldComum": 2261.7449664429532,
+      "goldComum": 1696,
       "gate": false,
       "ato": 3,
       "mundo": 1,
-      "estrela": 3
+      "estrela": 3,
+      "xpProp": 542
     },
     {
       "phase": 178,
       "hp": 1209415,
       "mitig": 0.15479131886477462,
-      "goldComum": 2271.8120805369126,
+      "goldComum": 1704,
       "gate": false,
       "ato": 3,
       "mundo": 1,
-      "estrela": 3
+      "estrela": 3,
+      "xpProp": 545
     },
     {
       "phase": 179,
       "hp": 1247378,
       "mitig": 0.1556093489148581,
-      "goldComum": 2281.8791946308725,
+      "goldComum": 1711,
       "gate": false,
       "ato": 3,
       "mundo": 1,
-      "estrela": 3
+      "estrela": 3,
+      "xpProp": 548
     },
     {
       "phase": 180,
       "hp": 1286533,
       "mitig": 0.15642737896494158,
-      "goldComum": 2291.9463087248323,
+      "goldComum": 1719,
       "gate": true,
       "ato": 3,
       "mundo": 1,
-      "estrela": 3
+      "estrela": 3,
+      "xpProp": 551
     },
     {
       "phase": 181,
       "hp": 1326917,
       "mitig": 0.15724540901502504,
-      "goldComum": 2302.0134228187917,
+      "goldComum": 1727,
       "gate": false,
       "ato": 3,
       "mundo": 2,
-      "estrela": 1
+      "estrela": 1,
+      "xpProp": 553
     },
     {
       "phase": 182,
       "hp": 1368569,
       "mitig": 0.1580634390651085,
-      "goldComum": 2312.0805369127515,
+      "goldComum": 1734,
       "gate": false,
       "ato": 3,
       "mundo": 2,
-      "estrela": 1
+      "estrela": 1,
+      "xpProp": 556
     },
     {
       "phase": 183,
       "hp": 1411528,
       "mitig": 0.158881469115192,
-      "goldComum": 2322.1476510067114,
+      "goldComum": 1742,
       "gate": false,
       "ato": 3,
       "mundo": 2,
-      "estrela": 1
+      "estrela": 1,
+      "xpProp": 559
     },
     {
       "phase": 184,
       "hp": 1455836,
       "mitig": 0.15969949916527545,
-      "goldComum": 2332.2147651006712,
+      "goldComum": 1749,
       "gate": false,
       "ato": 3,
       "mundo": 2,
-      "estrela": 1
+      "estrela": 1,
+      "xpProp": 562
     },
     {
       "phase": 185,
       "hp": 1501534,
       "mitig": 0.16051752921535892,
-      "goldComum": 2342.281879194631,
+      "goldComum": 1757,
       "gate": false,
       "ato": 3,
       "mundo": 2,
-      "estrela": 1
+      "estrela": 1,
+      "xpProp": 565
     },
     {
       "phase": 186,
       "hp": 1548667,
       "mitig": 0.1613355592654424,
-      "goldComum": 2352.3489932885905,
+      "goldComum": 1764,
       "gate": false,
       "ato": 3,
       "mundo": 2,
-      "estrela": 1
+      "estrela": 1,
+      "xpProp": 568
     },
     {
       "phase": 187,
       "hp": 1597279,
       "mitig": 0.16215358931552587,
-      "goldComum": 2362.4161073825503,
+      "goldComum": 1772,
       "gate": false,
       "ato": 3,
       "mundo": 2,
-      "estrela": 1
+      "estrela": 1,
+      "xpProp": 571
     },
     {
       "phase": 188,
       "hp": 1647417,
       "mitig": 0.16297161936560933,
-      "goldComum": 2372.48322147651,
+      "goldComum": 1779,
       "gate": false,
       "ato": 3,
       "mundo": 2,
-      "estrela": 1
+      "estrela": 1,
+      "xpProp": 574
     },
     {
       "phase": 189,
       "hp": 1699129,
       "mitig": 0.16378964941569282,
-      "goldComum": 2382.5503355704695,
+      "goldComum": 1787,
       "gate": false,
       "ato": 3,
       "mundo": 2,
-      "estrela": 1
+      "estrela": 1,
+      "xpProp": 577
     },
     {
       "phase": 190,
       "hp": 1752465,
       "mitig": 0.16460767946577629,
-      "goldComum": 2392.6174496644294,
+      "goldComum": 1794,
       "gate": true,
       "ato": 3,
       "mundo": 2,
-      "estrela": 1
+      "estrela": 1,
+      "xpProp": 580
     },
     {
       "phase": 191,
       "hp": 1807474,
       "mitig": 0.16542570951585978,
-      "goldComum": 2402.6845637583892,
+      "goldComum": 1802,
       "gate": false,
       "ato": 3,
       "mundo": 2,
-      "estrela": 2
+      "estrela": 2,
+      "xpProp": 583
     },
     {
       "phase": 192,
       "hp": 1864210,
       "mitig": 0.16624373956594324,
-      "goldComum": 2412.751677852349,
+      "goldComum": 1810,
       "gate": false,
       "ato": 3,
       "mundo": 2,
-      "estrela": 2
+      "estrela": 2,
+      "xpProp": 586
     },
     {
       "phase": 193,
       "hp": 1922727,
       "mitig": 0.1670617696160267,
-      "goldComum": 2422.818791946309,
+      "goldComum": 1817,
       "gate": false,
       "ato": 3,
       "mundo": 2,
-      "estrela": 2
+      "estrela": 2,
+      "xpProp": 589
     },
     {
       "phase": 194,
       "hp": 1983081,
       "mitig": 0.1678797996661102,
-      "goldComum": 2432.8859060402683,
+      "goldComum": 1825,
       "gate": false,
       "ato": 3,
       "mundo": 2,
-      "estrela": 2
+      "estrela": 2,
+      "xpProp": 592
     },
     {
       "phase": 195,
       "hp": 2045330,
       "mitig": 0.16869782971619365,
-      "goldComum": 2442.953020134228,
+      "goldComum": 1832,
       "gate": false,
       "ato": 3,
       "mundo": 2,
-      "estrela": 2
+      "estrela": 2,
+      "xpProp": 595
     },
     {
       "phase": 196,
       "hp": 2109532,
       "mitig": 0.16951585976627712,
-      "goldComum": 2453.020134228188,
+      "goldComum": 1840,
       "gate": false,
       "ato": 3,
       "mundo": 2,
-      "estrela": 2
+      "estrela": 2,
+      "xpProp": 598
     },
     {
       "phase": 197,
       "hp": 2175750,
       "mitig": 0.1703338898163606,
-      "goldComum": 2463.0872483221474,
+      "goldComum": 1847,
       "gate": false,
       "ato": 3,
       "mundo": 2,
-      "estrela": 2
+      "estrela": 2,
+      "xpProp": 601
     },
     {
       "phase": 198,
       "hp": 2244046,
       "mitig": 0.17115191986644407,
-      "goldComum": 2473.1543624161072,
+      "goldComum": 1855,
       "gate": false,
       "ato": 3,
       "mundo": 2,
-      "estrela": 2
+      "estrela": 2,
+      "xpProp": 604
     },
     {
       "phase": 199,
       "hp": 2314486,
       "mitig": 0.17196994991652753,
-      "goldComum": 2483.221476510067,
+      "goldComum": 1862,
       "gate": false,
       "ato": 3,
       "mundo": 2,
-      "estrela": 2
+      "estrela": 2,
+      "xpProp": 607
     },
     {
       "phase": 200,
       "hp": 2387137,
       "mitig": 0.17278797996661102,
-      "goldComum": 2493.288590604027,
+      "goldComum": 1870,
       "gate": true,
       "ato": 3,
       "mundo": 2,
-      "estrela": 2
+      "estrela": 2,
+      "xpProp": 610
     },
     {
       "phase": 201,
       "hp": 2462069,
       "mitig": 0.17360601001669448,
-      "goldComum": 2503.3557046979868,
+      "goldComum": 1878,
       "gate": false,
       "ato": 3,
       "mundo": 2,
-      "estrela": 3
+      "estrela": 3,
+      "xpProp": 613
     },
     {
       "phase": 202,
       "hp": 2539353,
       "mitig": 0.17442404006677795,
-      "goldComum": 2513.422818791946,
+      "goldComum": 1885,
       "gate": false,
       "ato": 3,
       "mundo": 2,
-      "estrela": 3
+      "estrela": 3,
+      "xpProp": 616
     },
     {
       "phase": 203,
       "hp": 2619063,
       "mitig": 0.17524207011686144,
-      "goldComum": 2523.489932885906,
+      "goldComum": 1893,
       "gate": false,
       "ato": 3,
       "mundo": 2,
-      "estrela": 3
+      "estrela": 3,
+      "xpProp": 619
     },
     {
       "phase": 204,
       "hp": 2701274,
       "mitig": 0.1760601001669449,
-      "goldComum": 2533.557046979866,
+      "goldComum": 1900,
       "gate": false,
       "ato": 3,
       "mundo": 2,
-      "estrela": 3
+      "estrela": 3,
+      "xpProp": 622
     },
     {
       "phase": 205,
       "hp": 2786067,
       "mitig": 0.1768781302170284,
-      "goldComum": 2543.6241610738252,
+      "goldComum": 1908,
       "gate": false,
       "ato": 3,
       "mundo": 2,
-      "estrela": 3
+      "estrela": 3,
+      "xpProp": 625
     },
     {
       "phase": 206,
       "hp": 2873521,
       "mitig": 0.17769616026711185,
-      "goldComum": 2553.691275167785,
+      "goldComum": 1915,
       "gate": false,
       "ato": 3,
       "mundo": 2,
-      "estrela": 3
+      "estrela": 3,
+      "xpProp": 628
     },
     {
       "phase": 207,
       "hp": 2963720,
       "mitig": 0.17851419031719531,
-      "goldComum": 2563.758389261745,
+      "goldComum": 1923,
       "gate": false,
       "ato": 3,
       "mundo": 2,
-      "estrela": 3
+      "estrela": 3,
+      "xpProp": 631
     },
     {
       "phase": 208,
       "hp": 3056750,
       "mitig": 0.1793322203672788,
-      "goldComum": 2573.8255033557048,
+      "goldComum": 1930,
       "gate": false,
       "ato": 3,
       "mundo": 2,
-      "estrela": 3
+      "estrela": 3,
+      "xpProp": 634
     },
     {
       "phase": 209,
       "hp": 3152701,
       "mitig": 0.18015025041736227,
-      "goldComum": 2583.8926174496646,
+      "goldComum": 1938,
       "gate": false,
       "ato": 3,
       "mundo": 2,
-      "estrela": 3
+      "estrela": 3,
+      "xpProp": 637
     },
     {
       "phase": 210,
       "hp": 3251664,
       "mitig": 0.18096828046744573,
-      "goldComum": 2593.959731543624,
+      "goldComum": 1945,
       "gate": true,
       "ato": 3,
       "mundo": 2,
-      "estrela": 3
+      "estrela": 3,
+      "xpProp": 640
     },
     {
       "phase": 211,
       "hp": 3353733,
       "mitig": 0.18178631051752922,
-      "goldComum": 2604.026845637584,
+      "goldComum": 1953,
       "gate": false,
       "ato": 3,
       "mundo": 3,
-      "estrela": 1
+      "estrela": 1,
+      "xpProp": 643
     },
     {
       "phase": 212,
       "hp": 3459005,
       "mitig": 0.18260434056761268,
-      "goldComum": 2614.0939597315437,
+      "goldComum": 1961,
       "gate": false,
       "ato": 3,
       "mundo": 3,
-      "estrela": 1
+      "estrela": 1,
+      "xpProp": 646
     },
     {
       "phase": 213,
       "hp": 3567583,
       "mitig": 0.18342237061769615,
-      "goldComum": 2624.161073825503,
+      "goldComum": 1968,
       "gate": false,
       "ato": 3,
       "mundo": 3,
-      "estrela": 1
+      "estrela": 1,
+      "xpProp": 649
     },
     {
       "phase": 214,
       "hp": 3679568,
       "mitig": 0.18424040066777964,
-      "goldComum": 2634.228187919463,
+      "goldComum": 1976,
       "gate": false,
       "ato": 3,
       "mundo": 3,
-      "estrela": 1
+      "estrela": 1,
+      "xpProp": 652
     },
     {
       "phase": 215,
       "hp": 3795069,
       "mitig": 0.1850584307178631,
-      "goldComum": 2644.2953020134228,
+      "goldComum": 1983,
       "gate": false,
       "ato": 3,
       "mundo": 3,
-      "estrela": 1
+      "estrela": 1,
+      "xpProp": 655
     },
     {
       "phase": 216,
       "hp": 3914196,
       "mitig": 0.18587646076794656,
-      "goldComum": 2654.3624161073826,
+      "goldComum": 1991,
       "gate": false,
       "ato": 3,
       "mundo": 3,
-      "estrela": 1
+      "estrela": 1,
+      "xpProp": 658
     },
     {
       "phase": 217,
       "hp": 4037061,
       "mitig": 0.18669449081803005,
-      "goldComum": 2664.4295302013425,
+      "goldComum": 1998,
       "gate": false,
       "ato": 3,
       "mundo": 3,
-      "estrela": 1
+      "estrela": 1,
+      "xpProp": 661
     },
     {
       "phase": 218,
       "hp": 4163784,
       "mitig": 0.1875125208681135,
-      "goldComum": 2674.496644295302,
+      "goldComum": 2006,
       "gate": false,
       "ato": 3,
       "mundo": 3,
-      "estrela": 1
+      "estrela": 1,
+      "xpProp": 664
     },
     {
       "phase": 219,
       "hp": 4294484,
       "mitig": 0.18833055091819698,
-      "goldComum": 2684.5637583892617,
+      "goldComum": 2013,
       "gate": false,
       "ato": 3,
       "mundo": 3,
-      "estrela": 1
+      "estrela": 1,
+      "xpProp": 667
     },
     {
       "phase": 220,
       "hp": 4429287,
       "mitig": 0.18914858096828047,
-      "goldComum": 2694.6308724832215,
+      "goldComum": 2021,
       "gate": true,
       "ato": 3,
       "mundo": 3,
-      "estrela": 1
+      "estrela": 1,
+      "xpProp": 670
     },
     {
       "phase": 221,
       "hp": 4568321,
       "mitig": 0.18996661101836393,
-      "goldComum": 2704.697986577181,
+      "goldComum": 2029,
       "gate": false,
       "ato": 3,
       "mundo": 3,
-      "estrela": 2
+      "estrela": 2,
+      "xpProp": 672
     },
     {
       "phase": 222,
       "hp": 4711720,
       "mitig": 0.19078464106844742,
-      "goldComum": 2714.7651006711408,
+      "goldComum": 2036,
       "gate": false,
       "ato": 3,
       "mundo": 3,
-      "estrela": 2
+      "estrela": 2,
+      "xpProp": 675
     },
     {
       "phase": 223,
       "hp": 4859619,
       "mitig": 0.19160267111853088,
-      "goldComum": 2724.8322147651006,
+      "goldComum": 2044,
       "gate": false,
       "ato": 3,
       "mundo": 3,
-      "estrela": 2
+      "estrela": 2,
+      "xpProp": 678
     },
     {
       "phase": 224,
       "hp": 5012162,
       "mitig": 0.19242070116861434,
-      "goldComum": 2734.8993288590605,
+      "goldComum": 2051,
       "gate": false,
       "ato": 3,
       "mundo": 3,
-      "estrela": 2
+      "estrela": 2,
+      "xpProp": 681
     },
     {
       "phase": 225,
       "hp": 5169492,
       "mitig": 0.19323873121869783,
-      "goldComum": 2744.9664429530203,
+      "goldComum": 2059,
       "gate": false,
       "ato": 3,
       "mundo": 3,
-      "estrela": 2
+      "estrela": 2,
+      "xpProp": 684
     },
     {
       "phase": 226,
       "hp": 5331761,
       "mitig": 0.1940567612687813,
-      "goldComum": 2755.0335570469797,
+      "goldComum": 2066,
       "gate": false,
       "ato": 3,
       "mundo": 3,
-      "estrela": 2
+      "estrela": 2,
+      "xpProp": 687
     },
     {
       "phase": 227,
       "hp": 5499124,
       "mitig": 0.19487479131886476,
-      "goldComum": 2765.1006711409395,
+      "goldComum": 2074,
       "gate": false,
       "ato": 3,
       "mundo": 3,
-      "estrela": 2
+      "estrela": 2,
+      "xpProp": 690
     },
     {
       "phase": 228,
       "hp": 5671740,
       "mitig": 0.19569282136894825,
-      "goldComum": 2775.1677852348994,
+      "goldComum": 2081,
       "gate": false,
       "ato": 3,
       "mundo": 3,
-      "estrela": 2
+      "estrela": 2,
+      "xpProp": 693
     },
     {
       "phase": 229,
       "hp": 5849775,
       "mitig": 0.1965108514190317,
-      "goldComum": 2785.234899328859,
+      "goldComum": 2089,
       "gate": false,
       "ato": 3,
       "mundo": 3,
-      "estrela": 2
+      "estrela": 2,
+      "xpProp": 696
     },
     {
       "phase": 230,
       "hp": 6033398,
       "mitig": 0.19732888146911517,
-      "goldComum": 2795.3020134228186,
+      "goldComum": 2096,
       "gate": true,
       "ato": 3,
       "mundo": 3,
-      "estrela": 2
+      "estrela": 2,
+      "xpProp": 699
     },
     {
       "phase": 231,
       "hp": 6222785,
       "mitig": 0.19814691151919867,
-      "goldComum": 2805.3691275167785,
+      "goldComum": 2104,
       "gate": false,
       "ato": 3,
       "mundo": 3,
-      "estrela": 3
+      "estrela": 3,
+      "xpProp": 702
     },
     {
       "phase": 232,
       "hp": 6418117,
       "mitig": 0.19896494156928213,
-      "goldComum": 2815.4362416107383,
+      "goldComum": 2112,
       "gate": false,
       "ato": 3,
       "mundo": 3,
-      "estrela": 3
+      "estrela": 3,
+      "xpProp": 705
     },
     {
       "phase": 233,
       "hp": 6619580,
       "mitig": 0.1997829716193656,
-      "goldComum": 2825.503355704698,
+      "goldComum": 2119,
       "gate": false,
       "ato": 3,
       "mundo": 3,
-      "estrela": 3
+      "estrela": 3,
+      "xpProp": 708
     },
     {
       "phase": 234,
       "hp": 6827367,
       "mitig": 0.20060100166944908,
-      "goldComum": 2835.5704697986575,
+      "goldComum": 2127,
       "gate": false,
       "ato": 3,
       "mundo": 3,
-      "estrela": 3
+      "estrela": 3,
+      "xpProp": 711
     },
     {
       "phase": 235,
       "hp": 7041677,
       "mitig": 0.20141903171953254,
-      "goldComum": 2845.6375838926174,
+      "goldComum": 2134,
       "gate": false,
       "ato": 3,
       "mundo": 3,
-      "estrela": 3
+      "estrela": 3,
+      "xpProp": 714
     },
     {
       "phase": 236,
       "hp": 7262713,
       "mitig": 0.20223706176961603,
-      "goldComum": 2855.7046979865772,
+      "goldComum": 2142,
       "gate": false,
       "ato": 3,
       "mundo": 3,
-      "estrela": 3
+      "estrela": 3,
+      "xpProp": 717
     },
     {
       "phase": 237,
       "hp": 7490688,
       "mitig": 0.2030550918196995,
-      "goldComum": 2865.7718120805366,
+      "goldComum": 2149,
       "gate": false,
       "ato": 3,
       "mundo": 3,
-      "estrela": 3
+      "estrela": 3,
+      "xpProp": 720
     },
     {
       "phase": 238,
       "hp": 7725819,
       "mitig": 0.20387312186978296,
-      "goldComum": 2875.8389261744965,
+      "goldComum": 2157,
       "gate": false,
       "ato": 3,
       "mundo": 3,
-      "estrela": 3
+      "estrela": 3,
+      "xpProp": 723
     },
     {
       "phase": 239,
       "hp": 7968331,
       "mitig": 0.20469115191986645,
-      "goldComum": 2885.9060402684563,
+      "goldComum": 2164,
       "gate": false,
       "ato": 3,
       "mundo": 3,
-      "estrela": 3
+      "estrela": 3,
+      "xpProp": 726
     },
     {
       "phase": 240,
       "hp": 8218455,
       "mitig": 0.2055091819699499,
-      "goldComum": 2895.973154362416,
+      "goldComum": 2172,
       "gate": true,
       "ato": 3,
       "mundo": 3,
-      "estrela": 3
+      "estrela": 3,
+      "xpProp": 729
     },
     {
       "phase": 241,
       "hp": 8476430,
       "mitig": 0.20632721202003337,
-      "goldComum": 2906.040268456376,
+      "goldComum": 2180,
       "gate": false,
       "ato": 3,
       "mundo": 4,
-      "estrela": 1
+      "estrela": 1,
+      "xpProp": 732
     },
     {
       "phase": 242,
       "hp": 8742503,
       "mitig": 0.20714524207011686,
-      "goldComum": 2916.1073825503354,
+      "goldComum": 2187,
       "gate": false,
       "ato": 3,
       "mundo": 4,
-      "estrela": 1
+      "estrela": 1,
+      "xpProp": 735
     },
     {
       "phase": 243,
       "hp": 9016929,
       "mitig": 0.20796327212020033,
-      "goldComum": 2926.1744966442952,
+      "goldComum": 2195,
       "gate": false,
       "ato": 3,
       "mundo": 4,
-      "estrela": 1
+      "estrela": 1,
+      "xpProp": 738
     },
     {
       "phase": 244,
       "hp": 9299968,
       "mitig": 0.2087813021702838,
-      "goldComum": 2936.241610738255,
+      "goldComum": 2202,
       "gate": false,
       "ato": 3,
       "mundo": 4,
-      "estrela": 1
+      "estrela": 1,
+      "xpProp": 741
     },
     {
       "phase": 245,
       "hp": 9591892,
       "mitig": 0.20959933222036728,
-      "goldComum": 2946.3087248322145,
+      "goldComum": 2210,
       "gate": false,
       "ato": 3,
       "mundo": 4,
-      "estrela": 1
+      "estrela": 1,
+      "xpProp": 744
     },
     {
       "phase": 246,
       "hp": 9892979,
       "mitig": 0.21041736227045074,
-      "goldComum": 2956.3758389261743,
+      "goldComum": 2217,
       "gate": false,
       "ato": 3,
       "mundo": 4,
-      "estrela": 1
+      "estrela": 1,
+      "xpProp": 747
     },
     {
       "phase": 247,
       "hp": 10203517,
       "mitig": 0.2112353923205342,
-      "goldComum": 2966.442953020134,
+      "goldComum": 2225,
       "gate": false,
       "ato": 3,
       "mundo": 4,
-      "estrela": 1
+      "estrela": 1,
+      "xpProp": 750
     },
     {
       "phase": 248,
       "hp": 10523803,
       "mitig": 0.2120534223706177,
-      "goldComum": 2976.510067114094,
+      "goldComum": 2232,
       "gate": false,
       "ato": 3,
       "mundo": 4,
-      "estrela": 1
+      "estrela": 1,
+      "xpProp": 753
     },
     {
       "phase": 249,
       "hp": 10854143,
       "mitig": 0.21287145242070116,
-      "goldComum": 2986.577181208054,
+      "goldComum": 2240,
       "gate": false,
       "ato": 3,
       "mundo": 4,
-      "estrela": 1
+      "estrela": 1,
+      "xpProp": 756
     },
     {
       "phase": 250,
       "hp": 11194852,
       "mitig": 0.21368948247078465,
-      "goldComum": 2996.6442953020132,
+      "goldComum": 2247,
       "gate": true,
       "ato": 3,
       "mundo": 4,
-      "estrela": 1
+      "estrela": 1,
+      "xpProp": 759
     },
     {
       "phase": 251,
       "hp": 11546256,
       "mitig": 0.2145075125208681,
-      "goldComum": 3006.711409395973,
+      "goldComum": 2255,
       "gate": false,
       "ato": 3,
       "mundo": 4,
-      "estrela": 2
+      "estrela": 2,
+      "xpProp": 762
     },
     {
       "phase": 252,
       "hp": 11908690,
       "mitig": 0.21532554257095157,
-      "goldComum": 3016.778523489933,
+      "goldComum": 2263,
       "gate": false,
       "ato": 3,
       "mundo": 4,
-      "estrela": 2
+      "estrela": 2,
+      "xpProp": 765
     },
     {
       "phase": 253,
       "hp": 12282501,
       "mitig": 0.21614357262103506,
-      "goldComum": 3026.8456375838923,
+      "goldComum": 2270,
       "gate": false,
       "ato": 3,
       "mundo": 4,
-      "estrela": 2
+      "estrela": 2,
+      "xpProp": 768
     },
     {
       "phase": 254,
       "hp": 12668046,
       "mitig": 0.21696160267111853,
-      "goldComum": 3036.912751677852,
+      "goldComum": 2278,
       "gate": false,
       "ato": 3,
       "mundo": 4,
-      "estrela": 2
+      "estrela": 2,
+      "xpProp": 771
     },
     {
       "phase": 255,
       "hp": 13065693,
       "mitig": 0.217779632721202,
-      "goldComum": 3046.979865771812,
+      "goldComum": 2285,
       "gate": false,
       "ato": 3,
       "mundo": 4,
-      "estrela": 2
+      "estrela": 2,
+      "xpProp": 774
     },
     {
       "phase": 256,
       "hp": 13475822,
       "mitig": 0.21859766277128548,
-      "goldComum": 3057.046979865772,
+      "goldComum": 2293,
       "gate": false,
       "ato": 3,
       "mundo": 4,
-      "estrela": 2
+      "estrela": 2,
+      "xpProp": 777
     },
     {
       "phase": 257,
       "hp": 13898825,
       "mitig": 0.21941569282136894,
-      "goldComum": 3067.1140939597317,
+      "goldComum": 2300,
       "gate": false,
       "ato": 3,
       "mundo": 4,
-      "estrela": 2
+      "estrela": 2,
+      "xpProp": 780
     },
     {
       "phase": 258,
       "hp": 14335106,
       "mitig": 0.2202337228714524,
-      "goldComum": 3077.181208053691,
+      "goldComum": 2308,
       "gate": false,
       "ato": 3,
       "mundo": 4,
-      "estrela": 2
+      "estrela": 2,
+      "xpProp": 783
     },
     {
       "phase": 259,
       "hp": 14785082,
       "mitig": 0.2210517529215359,
-      "goldComum": 3087.248322147651,
+      "goldComum": 2315,
       "gate": false,
       "ato": 3,
       "mundo": 4,
-      "estrela": 2
+      "estrela": 2,
+      "xpProp": 786
     },
     {
       "phase": 260,
       "hp": 15249182,
       "mitig": 0.22186978297161936,
-      "goldComum": 3097.3154362416108,
+      "goldComum": 2323,
       "gate": true,
       "ato": 3,
       "mundo": 4,
-      "estrela": 2
+      "estrela": 2,
+      "xpProp": 789
     },
     {
       "phase": 261,
       "hp": 15727850,
       "mitig": 0.22268781302170282,
-      "goldComum": 3107.38255033557,
+      "goldComum": 2331,
       "gate": false,
       "ato": 3,
       "mundo": 4,
-      "estrela": 3
+      "estrela": 3,
+      "xpProp": 791
     },
     {
       "phase": 262,
       "hp": 16221544,
       "mitig": 0.2235058430717863,
-      "goldComum": 3117.44966442953,
+      "goldComum": 2338,
       "gate": false,
       "ato": 3,
       "mundo": 4,
-      "estrela": 3
+      "estrela": 3,
+      "xpProp": 794
     },
     {
       "phase": 263,
       "hp": 16730735,
       "mitig": 0.22432387312186977,
-      "goldComum": 3127.51677852349,
+      "goldComum": 2346,
       "gate": false,
       "ato": 3,
       "mundo": 4,
-      "estrela": 3
+      "estrela": 3,
+      "xpProp": 797
     },
     {
       "phase": 264,
       "hp": 17255908,
       "mitig": 0.22514190317195323,
-      "goldComum": 3137.5838926174497,
+      "goldComum": 2353,
       "gate": false,
       "ato": 3,
       "mundo": 4,
-      "estrela": 3
+      "estrela": 3,
+      "xpProp": 800
     },
     {
       "phase": 265,
       "hp": 17797567,
       "mitig": 0.22595993322203672,
-      "goldComum": 3147.6510067114095,
+      "goldComum": 2361,
       "gate": false,
       "ato": 3,
       "mundo": 4,
-      "estrela": 3
+      "estrela": 3,
+      "xpProp": 803
     },
     {
       "phase": 266,
       "hp": 18356229,
       "mitig": 0.2267779632721202,
-      "goldComum": 3157.718120805369,
+      "goldComum": 2368,
       "gate": false,
       "ato": 3,
       "mundo": 4,
-      "estrela": 3
+      "estrela": 3,
+      "xpProp": 806
     },
     {
       "phase": 267,
       "hp": 18932427,
       "mitig": 0.22759599332220368,
-      "goldComum": 3167.7852348993288,
+      "goldComum": 2376,
       "gate": false,
       "ato": 3,
       "mundo": 4,
-      "estrela": 3
+      "estrela": 3,
+      "xpProp": 809
     },
     {
       "phase": 268,
       "hp": 19526711,
       "mitig": 0.22841402337228714,
-      "goldComum": 3177.8523489932886,
+      "goldComum": 2383,
       "gate": false,
       "ato": 3,
       "mundo": 4,
-      "estrela": 3
+      "estrela": 3,
+      "xpProp": 812
     },
     {
       "phase": 269,
       "hp": 20139650,
       "mitig": 0.2292320534223706,
-      "goldComum": 3187.919463087248,
+      "goldComum": 2391,
       "gate": false,
       "ato": 3,
       "mundo": 4,
-      "estrela": 3
+      "estrela": 3,
+      "xpProp": 815
     },
     {
       "phase": 270,
       "hp": 20771829,
       "mitig": 0.2300500834724541,
-      "goldComum": 3197.986577181208,
+      "goldComum": 2398,
       "gate": true,
       "ato": 3,
       "mundo": 4,
-      "estrela": 3
+      "estrela": 3,
+      "xpProp": 818
     },
     {
       "phase": 271,
       "hp": 21423852,
       "mitig": 0.23086811352253755,
-      "goldComum": 3208.0536912751677,
+      "goldComum": 2406,
       "gate": false,
       "ato": 3,
       "mundo": 5,
-      "estrela": 1
+      "estrela": 1,
+      "xpProp": 821
     },
     {
       "phase": 272,
       "hp": 22096342,
       "mitig": 0.23168614357262102,
-      "goldComum": 3218.1208053691275,
+      "goldComum": 2414,
       "gate": false,
       "ato": 3,
       "mundo": 5,
-      "estrela": 1
+      "estrela": 1,
+      "xpProp": 824
     },
     {
       "phase": 273,
       "hp": 22789941,
       "mitig": 0.2325041736227045,
-      "goldComum": 3228.1879194630874,
+      "goldComum": 2421,
       "gate": false,
       "ato": 3,
       "mundo": 5,
-      "estrela": 1
+      "estrela": 1,
+      "xpProp": 827
     },
     {
       "phase": 274,
       "hp": 23505312,
       "mitig": 0.23332220367278797,
-      "goldComum": 3238.2550335570468,
+      "goldComum": 2429,
       "gate": false,
       "ato": 3,
       "mundo": 5,
-      "estrela": 1
+      "estrela": 1,
+      "xpProp": 830
     },
     {
       "phase": 275,
       "hp": 24243138,
       "mitig": 0.23414023372287143,
-      "goldComum": 3248.3221476510066,
+      "goldComum": 2436,
       "gate": false,
       "ato": 3,
       "mundo": 5,
-      "estrela": 1
+      "estrela": 1,
+      "xpProp": 833
     },
     {
       "phase": 276,
       "hp": 25004124,
       "mitig": 0.23495826377295492,
-      "goldComum": 3258.3892617449665,
+      "goldComum": 2444,
       "gate": false,
       "ato": 3,
       "mundo": 5,
-      "estrela": 1
+      "estrela": 1,
+      "xpProp": 836
     },
     {
       "phase": 277,
       "hp": 25788998,
       "mitig": 0.23577629382303839,
-      "goldComum": 3268.456375838926,
+      "goldComum": 2451,
       "gate": false,
       "ato": 3,
       "mundo": 5,
-      "estrela": 1
+      "estrela": 1,
+      "xpProp": 839
     },
     {
       "phase": 278,
       "hp": 26598509,
       "mitig": 0.23659432387312185,
-      "goldComum": 3278.5234899328857,
+      "goldComum": 2459,
       "gate": false,
       "ato": 3,
       "mundo": 5,
-      "estrela": 1
+      "estrela": 1,
+      "xpProp": 842
     },
     {
       "phase": 279,
       "hp": 27433430,
       "mitig": 0.23741235392320534,
-      "goldComum": 3288.5906040268455,
+      "goldComum": 2466,
       "gate": false,
       "ato": 3,
       "mundo": 5,
-      "estrela": 1
+      "estrela": 1,
+      "xpProp": 845
     },
     {
       "phase": 280,
       "hp": 28294559,
       "mitig": 0.2382303839732888,
-      "goldComum": 3298.6577181208054,
+      "goldComum": 2474,
       "gate": true,
       "ato": 3,
       "mundo": 5,
-      "estrela": 1
+      "estrela": 1,
+      "xpProp": 848
     },
     {
       "phase": 281,
       "hp": 29182719,
       "mitig": 0.2390484140233723,
-      "goldComum": 3308.7248322147652,
+      "goldComum": 2482,
       "gate": false,
       "ato": 3,
       "mundo": 5,
-      "estrela": 2
+      "estrela": 2,
+      "xpProp": 851
     },
     {
       "phase": 282,
       "hp": 30098757,
       "mitig": 0.23986644407345575,
-      "goldComum": 3318.7919463087246,
+      "goldComum": 2489,
       "gate": false,
       "ato": 3,
       "mundo": 5,
-      "estrela": 2
+      "estrela": 2,
+      "xpProp": 854
     },
     {
       "phase": 283,
       "hp": 31043550,
       "mitig": 0.24068447412353922,
-      "goldComum": 3328.8590604026845,
+      "goldComum": 2497,
       "gate": false,
       "ato": 3,
       "mundo": 5,
-      "estrela": 2
+      "estrela": 2,
+      "xpProp": 857
     },
     {
       "phase": 284,
       "hp": 32018000,
       "mitig": 0.2415025041736227,
-      "goldComum": 3338.9261744966443,
+      "goldComum": 2504,
       "gate": false,
       "ato": 3,
       "mundo": 5,
-      "estrela": 2
+      "estrela": 2,
+      "xpProp": 860
     },
     {
       "phase": 285,
       "hp": 33023038,
       "mitig": 0.24232053422370617,
-      "goldComum": 3348.9932885906037,
+      "goldComum": 2512,
       "gate": false,
       "ato": 3,
       "mundo": 5,
-      "estrela": 2
+      "estrela": 2,
+      "xpProp": 863
     },
     {
       "phase": 286,
       "hp": 34059623,
       "mitig": 0.24313856427378963,
-      "goldComum": 3359.0604026845635,
+      "goldComum": 2519,
       "gate": false,
       "ato": 3,
       "mundo": 5,
-      "estrela": 2
+      "estrela": 2,
+      "xpProp": 866
     },
     {
       "phase": 287,
       "hp": 35128747,
       "mitig": 0.24395659432387312,
-      "goldComum": 3369.1275167785234,
+      "goldComum": 2527,
       "gate": false,
       "ato": 3,
       "mundo": 5,
-      "estrela": 2
+      "estrela": 2,
+      "xpProp": 869
     },
     {
       "phase": 288,
       "hp": 36231430,
       "mitig": 0.24477462437395658,
-      "goldComum": 3379.1946308724832,
+      "goldComum": 2534,
       "gate": false,
       "ato": 3,
       "mundo": 5,
-      "estrela": 2
+      "estrela": 2,
+      "xpProp": 872
     },
     {
       "phase": 289,
       "hp": 37368726,
       "mitig": 0.24559265442404005,
-      "goldComum": 3389.261744966443,
+      "goldComum": 2542,
       "gate": false,
       "ato": 3,
       "mundo": 5,
-      "estrela": 2
+      "estrela": 2,
+      "xpProp": 875
     },
     {
       "phase": 290,
       "hp": 38541722,
       "mitig": 0.24641068447412354,
-      "goldComum": 3399.3288590604025,
+      "goldComum": 2549,
       "gate": true,
       "ato": 3,
       "mundo": 5,
-      "estrela": 2
+      "estrela": 2,
+      "xpProp": 878
     },
     {
       "phase": 291,
       "hp": 39751538,
       "mitig": 0.247228714524207,
-      "goldComum": 3409.3959731543623,
+      "goldComum": 2557,
       "gate": false,
       "ato": 3,
       "mundo": 5,
-      "estrela": 3
+      "estrela": 3,
+      "xpProp": 881
     },
     {
       "phase": 292,
       "hp": 40999329,
       "mitig": 0.24804674457429046,
-      "goldComum": 3419.463087248322,
+      "goldComum": 2565,
       "gate": false,
       "ato": 3,
       "mundo": 5,
-      "estrela": 3
+      "estrela": 3,
+      "xpProp": 884
     },
     {
       "phase": 293,
       "hp": 42286289,
       "mitig": 0.24886477462437395,
-      "goldComum": 3429.5302013422815,
+      "goldComum": 2572,
       "gate": false,
       "ato": 3,
       "mundo": 5,
-      "estrela": 3
+      "estrela": 3,
+      "xpProp": 887
     },
     {
       "phase": 294,
       "hp": 43613646,
       "mitig": 0.24968280467445741,
-      "goldComum": 3439.5973154362414,
+      "goldComum": 2580,
       "gate": false,
       "ato": 3,
       "mundo": 5,
-      "estrela": 3
+      "estrela": 3,
+      "xpProp": 890
     },
     {
       "phase": 295,
       "hp": 44982668,
       "mitig": 0.2505008347245409,
-      "goldComum": 3449.6644295302012,
+      "goldComum": 2587,
       "gate": false,
       "ato": 3,
       "mundo": 5,
-      "estrela": 3
+      "estrela": 3,
+      "xpProp": 893
     },
     {
       "phase": 296,
       "hp": 46394663,
       "mitig": 0.25131886477462434,
-      "goldComum": 3459.731543624161,
+      "goldComum": 2595,
       "gate": false,
       "ato": 3,
       "mundo": 5,
-      "estrela": 3
+      "estrela": 3,
+      "xpProp": 896
     },
     {
       "phase": 297,
       "hp": 47850981,
       "mitig": 0.2521368948247078,
-      "goldComum": 3469.798657718121,
+      "goldComum": 2602,
       "gate": false,
       "ato": 3,
       "mundo": 5,
-      "estrela": 3
+      "estrela": 3,
+      "xpProp": 899
     },
     {
       "phase": 298,
       "hp": 49353012,
       "mitig": 0.2529549248747913,
-      "goldComum": 3479.8657718120803,
+      "goldComum": 2610,
       "gate": false,
       "ato": 3,
       "mundo": 5,
-      "estrela": 3
+      "estrela": 3,
+      "xpProp": 902
     },
     {
       "phase": 299,
       "hp": 50902192,
       "mitig": 0.2537729549248748,
-      "goldComum": 3489.93288590604,
+      "goldComum": 2617,
       "gate": false,
       "ato": 3,
       "mundo": 5,
-      "estrela": 3
+      "estrela": 3,
+      "xpProp": 905
     },
     {
       "phase": 300,
       "hp": 52500000,
       "mitig": 0.25459098497495825,
-      "goldComum": 3500,
+      "goldComum": 2625,
       "gate": true,
       "ato": 3,
       "mundo": 5,
-      "estrela": 3
+      "estrela": 3,
+      "xpProp": 908
     },
     {
       "phase": 301,
       "hp": 52500000,
       "mitig": 0.2554090150250417,
-      "goldComum": 4500,
+      "goldComum": 3375,
       "gate": false,
       "ato": 4,
       "mundo": 1,
-      "estrela": 1
+      "estrela": 1,
+      "xpProp": 910
     },
     {
       "phase": 302,
       "hp": 54147963,
       "mitig": 0.25622704507512517,
-      "goldComum": 4513.422818791946,
+      "goldComum": 3385,
       "gate": false,
       "ato": 4,
       "mundo": 1,
-      "estrela": 1
+      "estrela": 1,
+      "xpProp": 913
     },
     {
       "phase": 303,
       "hp": 55847655,
       "mitig": 0.25704507512520863,
-      "goldComum": 4526.845637583892,
+      "goldComum": 3395,
       "gate": false,
       "ato": 4,
       "mundo": 1,
-      "estrela": 1
+      "estrela": 1,
+      "xpProp": 916
     },
     {
       "phase": 304,
       "hp": 57600700,
       "mitig": 0.25786310517529215,
-      "goldComum": 4540.268456375839,
+      "goldComum": 3405,
       "gate": false,
       "ato": 4,
       "mundo": 1,
-      "estrela": 1
+      "estrela": 1,
+      "xpProp": 919
     },
     {
       "phase": 305,
       "hp": 59408772,
       "mitig": 0.2586811352253756,
-      "goldComum": 4553.6912751677855,
+      "goldComum": 3415,
       "gate": false,
       "ato": 4,
       "mundo": 1,
-      "estrela": 1
+      "estrela": 1,
+      "xpProp": 922
     },
     {
       "phase": 306,
       "hp": 61273600,
       "mitig": 0.2594991652754591,
-      "goldComum": 4567.114093959732,
+      "goldComum": 3425,
       "gate": false,
       "ato": 4,
       "mundo": 1,
-      "estrela": 1
+      "estrela": 1,
+      "xpProp": 925
     },
     {
       "phase": 307,
       "hp": 63196964,
       "mitig": 0.26031719532554254,
-      "goldComum": 4580.536912751678,
+      "goldComum": 3435,
       "gate": false,
       "ato": 4,
       "mundo": 1,
-      "estrela": 1
+      "estrela": 1,
+      "xpProp": 928
     },
     {
       "phase": 308,
       "hp": 65180702,
       "mitig": 0.26113522537562606,
-      "goldComum": 4593.959731543624,
+      "goldComum": 3445,
       "gate": false,
       "ato": 4,
       "mundo": 1,
-      "estrela": 1
+      "estrela": 1,
+      "xpProp": 931
     },
     {
       "phase": 309,
       "hp": 67226709,
       "mitig": 0.2619532554257095,
-      "goldComum": 4607.38255033557,
+      "goldComum": 3456,
       "gate": false,
       "ato": 4,
       "mundo": 1,
-      "estrela": 1
+      "estrela": 1,
+      "xpProp": 934
     },
     {
       "phase": 310,
       "hp": 69336940,
       "mitig": 0.262771285475793,
-      "goldComum": 4620.805369127517,
+      "goldComum": 3466,
       "gate": true,
       "ato": 4,
       "mundo": 1,
-      "estrela": 1
+      "estrela": 1,
+      "xpProp": 937
     },
     {
       "phase": 311,
       "hp": 71513411,
       "mitig": 0.26358931552587644,
-      "goldComum": 4634.228187919463,
+      "goldComum": 3476,
       "gate": false,
       "ato": 4,
       "mundo": 1,
-      "estrela": 2
+      "estrela": 2,
+      "xpProp": 940
     },
     {
       "phase": 312,
       "hp": 73758200,
       "mitig": 0.2644073455759599,
-      "goldComum": 4647.6510067114095,
+      "goldComum": 3486,
       "gate": false,
       "ato": 4,
       "mundo": 1,
-      "estrela": 2
+      "estrela": 2,
+      "xpProp": 943
     },
     {
       "phase": 313,
       "hp": 76073453,
       "mitig": 0.26522537562604337,
-      "goldComum": 4661.073825503356,
+      "goldComum": 3496,
       "gate": false,
       "ato": 4,
       "mundo": 1,
-      "estrela": 2
+      "estrela": 2,
+      "xpProp": 946
     },
     {
       "phase": 314,
       "hp": 78461381,
       "mitig": 0.2660434056761269,
-      "goldComum": 4674.496644295302,
+      "goldComum": 3506,
       "gate": false,
       "ato": 4,
       "mundo": 1,
-      "estrela": 2
+      "estrela": 2,
+      "xpProp": 949
     },
     {
       "phase": 315,
       "hp": 80924266,
       "mitig": 0.26686143572621035,
-      "goldComum": 4687.919463087248,
+      "goldComum": 3516,
       "gate": false,
       "ato": 4,
       "mundo": 1,
-      "estrela": 2
+      "estrela": 2,
+      "xpProp": 952
     },
     {
       "phase": 316,
       "hp": 83464459,
       "mitig": 0.2676794657762938,
-      "goldComum": 4701.342281879195,
+      "goldComum": 3526,
       "gate": false,
       "ato": 4,
       "mundo": 1,
-      "estrela": 2
+      "estrela": 2,
+      "xpProp": 955
     },
     {
       "phase": 317,
       "hp": 86084390,
       "mitig": 0.2684974958263773,
-      "goldComum": 4714.765100671141,
+      "goldComum": 3536,
       "gate": false,
       "ato": 4,
       "mundo": 1,
-      "estrela": 2
+      "estrela": 2,
+      "xpProp": 958
     },
     {
       "phase": 318,
       "hp": 88786559,
       "mitig": 0.26931552587646074,
-      "goldComum": 4728.187919463087,
+      "goldComum": 3546,
       "gate": false,
       "ato": 4,
       "mundo": 1,
-      "estrela": 2
+      "estrela": 2,
+      "xpProp": 961
     },
     {
       "phase": 319,
       "hp": 91573548,
       "mitig": 0.27013355592654426,
-      "goldComum": 4741.6107382550335,
+      "goldComum": 3556,
       "gate": false,
       "ato": 4,
       "mundo": 1,
-      "estrela": 2
+      "estrela": 2,
+      "xpProp": 964
     },
     {
       "phase": 320,
       "hp": 94448021,
       "mitig": 0.2709515859766277,
-      "goldComum": 4755.03355704698,
+      "goldComum": 3566,
       "gate": true,
       "ato": 4,
       "mundo": 1,
-      "estrela": 2
+      "estrela": 2,
+      "xpProp": 967
     },
     {
       "phase": 321,
       "hp": 97412722,
       "mitig": 0.2717696160267112,
-      "goldComum": 4768.456375838926,
+      "goldComum": 3576,
       "gate": false,
       "ato": 4,
       "mundo": 1,
-      "estrela": 3
+      "estrela": 3,
+      "xpProp": 970
     },
     {
       "phase": 322,
       "hp": 100470485,
       "mitig": 0.27258764607679464,
-      "goldComum": 4781.879194630872,
+      "goldComum": 3586,
       "gate": false,
       "ato": 4,
       "mundo": 1,
-      "estrela": 3
+      "estrela": 3,
+      "xpProp": 973
     },
     {
       "phase": 323,
       "hp": 103624230,
       "mitig": 0.2734056761268781,
-      "goldComum": 4795.302013422819,
+      "goldComum": 3596,
       "gate": false,
       "ato": 4,
       "mundo": 1,
-      "estrela": 3
+      "estrela": 3,
+      "xpProp": 976
     },
     {
       "phase": 324,
       "hp": 106876971,
       "mitig": 0.27422370617696157,
-      "goldComum": 4808.724832214765,
+      "goldComum": 3607,
       "gate": false,
       "ato": 4,
       "mundo": 1,
-      "estrela": 3
+      "estrela": 3,
+      "xpProp": 979
     },
     {
       "phase": 325,
       "hp": 110231814,
       "mitig": 0.2750417362270451,
-      "goldComum": 4822.147651006711,
+      "goldComum": 3617,
       "gate": false,
       "ato": 4,
       "mundo": 1,
-      "estrela": 3
+      "estrela": 3,
+      "xpProp": 982
     },
     {
       "phase": 326,
       "hp": 113691965,
       "mitig": 0.27585976627712855,
-      "goldComum": 4835.5704697986575,
+      "goldComum": 3627,
       "gate": false,
       "ato": 4,
       "mundo": 1,
-      "estrela": 3
+      "estrela": 3,
+      "xpProp": 985
     },
     {
       "phase": 327,
       "hp": 117260730,
       "mitig": 0.276677796327212,
-      "goldComum": 4848.993288590604,
+      "goldComum": 3637,
       "gate": false,
       "ato": 4,
       "mundo": 1,
-      "estrela": 3
+      "estrela": 3,
+      "xpProp": 988
     },
     {
       "phase": 328,
       "hp": 120941517,
       "mitig": 0.2774958263772955,
-      "goldComum": 4862.416107382551,
+      "goldComum": 3647,
       "gate": false,
       "ato": 4,
       "mundo": 1,
-      "estrela": 3
+      "estrela": 3,
+      "xpProp": 991
     },
     {
       "phase": 329,
       "hp": 124737843,
       "mitig": 0.27831385642737894,
-      "goldComum": 4875.838926174497,
+      "goldComum": 3657,
       "gate": false,
       "ato": 4,
       "mundo": 1,
-      "estrela": 3
+      "estrela": 3,
+      "xpProp": 994
     },
     {
       "phase": 330,
       "hp": 128653335,
       "mitig": 0.2791318864774624,
-      "goldComum": 4889.261744966443,
+      "goldComum": 3667,
       "gate": true,
       "ato": 4,
       "mundo": 1,
-      "estrela": 3
+      "estrela": 3,
+      "xpProp": 997
     },
     {
       "phase": 331,
       "hp": 132691733,
       "mitig": 0.2799499165275459,
-      "goldComum": 4902.684563758389,
+      "goldComum": 3677,
       "gate": false,
       "ato": 4,
       "mundo": 2,
-      "estrela": 1
+      "estrela": 1,
+      "xpProp": 1000
     },
     {
       "phase": 332,
       "hp": 136856896,
       "mitig": 0.2807679465776294,
-      "goldComum": 4916.107382550335,
+      "goldComum": 3687,
       "gate": false,
       "ato": 4,
       "mundo": 2,
-      "estrela": 1
+      "estrela": 1,
+      "xpProp": 1003
     },
     {
       "phase": 333,
       "hp": 141152802,
       "mitig": 0.28158597662771284,
-      "goldComum": 4929.5302013422815,
+      "goldComum": 3697,
       "gate": false,
       "ato": 4,
       "mundo": 2,
-      "estrela": 1
+      "estrela": 1,
+      "xpProp": 1006
     },
     {
       "phase": 334,
       "hp": 145583556,
       "mitig": 0.2824040066777963,
-      "goldComum": 4942.953020134229,
+      "goldComum": 3707,
       "gate": false,
       "ato": 4,
       "mundo": 2,
-      "estrela": 1
+      "estrela": 1,
+      "xpProp": 1009
     },
     {
       "phase": 335,
       "hp": 150153390,
       "mitig": 0.28322203672787977,
-      "goldComum": 4956.375838926175,
+      "goldComum": 3717,
       "gate": false,
       "ato": 4,
       "mundo": 2,
-      "estrela": 1
+      "estrela": 1,
+      "xpProp": 1012
     },
     {
       "phase": 336,
       "hp": 154866670,
       "mitig": 0.2840400667779633,
-      "goldComum": 4969.798657718121,
+      "goldComum": 3727,
       "gate": false,
       "ato": 4,
       "mundo": 2,
-      "estrela": 1
+      "estrela": 1,
+      "xpProp": 1015
     },
     {
       "phase": 337,
       "hp": 159727899,
       "mitig": 0.28485809682804675,
-      "goldComum": 4983.221476510067,
+      "goldComum": 3737,
       "gate": false,
       "ato": 4,
       "mundo": 2,
-      "estrela": 1
+      "estrela": 1,
+      "xpProp": 1018
     },
     {
       "phase": 338,
       "hp": 164741721,
       "mitig": 0.2856761268781302,
-      "goldComum": 4996.644295302013,
+      "goldComum": 3747,
       "gate": false,
       "ato": 4,
       "mundo": 2,
-      "estrela": 1
+      "estrela": 1,
+      "xpProp": 1021
     },
     {
       "phase": 339,
       "hp": 169912926,
       "mitig": 0.2864941569282137,
-      "goldComum": 5010.067114093959,
+      "goldComum": 3758,
       "gate": false,
       "ato": 4,
       "mundo": 2,
-      "estrela": 1
+      "estrela": 1,
+      "xpProp": 1024
     },
     {
       "phase": 340,
       "hp": 175246453,
       "mitig": 0.28731218697829713,
-      "goldComum": 5023.4899328859065,
+      "goldComum": 3768,
       "gate": true,
       "ato": 4,
       "mundo": 2,
-      "estrela": 1
+      "estrela": 1,
+      "xpProp": 1027
     },
     {
       "phase": 341,
       "hp": 180747398,
       "mitig": 0.2881302170283806,
-      "goldComum": 5036.912751677853,
+      "goldComum": 3778,
       "gate": false,
       "ato": 4,
       "mundo": 2,
-      "estrela": 2
+      "estrela": 2,
+      "xpProp": 1029
     },
     {
       "phase": 342,
       "hp": 186421017,
       "mitig": 0.2889482470784641,
-      "goldComum": 5050.335570469799,
+      "goldComum": 3788,
       "gate": false,
       "ato": 4,
       "mundo": 2,
-      "estrela": 2
+      "estrela": 2,
+      "xpProp": 1032
     },
     {
       "phase": 343,
       "hp": 192272730,
       "mitig": 0.2897662771285476,
-      "goldComum": 5063.758389261745,
+      "goldComum": 3798,
       "gate": false,
       "ato": 4,
       "mundo": 2,
-      "estrela": 2
+      "estrela": 2,
+      "xpProp": 1035
     },
     {
       "phase": 344,
       "hp": 198308126,
       "mitig": 0.29058430717863104,
-      "goldComum": 5077.181208053691,
+      "goldComum": 3808,
       "gate": false,
       "ato": 4,
       "mundo": 2,
-      "estrela": 2
+      "estrela": 2,
+      "xpProp": 1038
     },
     {
       "phase": 345,
       "hp": 204532973,
       "mitig": 0.2914023372287145,
-      "goldComum": 5090.604026845637,
+      "goldComum": 3818,
       "gate": false,
       "ato": 4,
       "mundo": 2,
-      "estrela": 2
+      "estrela": 2,
+      "xpProp": 1041
     },
     {
       "phase": 346,
       "hp": 210953215,
       "mitig": 0.29222036727879797,
-      "goldComum": 5104.026845637583,
+      "goldComum": 3828,
       "gate": false,
       "ato": 4,
       "mundo": 2,
-      "estrela": 2
+      "estrela": 2,
+      "xpProp": 1044
     },
     {
       "phase": 347,
       "hp": 217574988,
       "mitig": 0.29303839732888143,
-      "goldComum": 5117.4496644295305,
+      "goldComum": 3838,
       "gate": false,
       "ato": 4,
       "mundo": 2,
-      "estrela": 2
+      "estrela": 2,
+      "xpProp": 1047
     },
     {
       "phase": 348,
       "hp": 224404616,
       "mitig": 0.29385642737896495,
-      "goldComum": 5130.872483221477,
+      "goldComum": 3848,
       "gate": false,
       "ato": 4,
       "mundo": 2,
-      "estrela": 2
+      "estrela": 2,
+      "xpProp": 1050
     },
     {
       "phase": 349,
       "hp": 231448625,
       "mitig": 0.2946744574290484,
-      "goldComum": 5144.295302013423,
+      "goldComum": 3858,
       "gate": false,
       "ato": 4,
       "mundo": 2,
-      "estrela": 2
+      "estrela": 2,
+      "xpProp": 1053
     },
     {
       "phase": 350,
       "hp": 238713744,
       "mitig": 0.29549248747913187,
-      "goldComum": 5157.718120805369,
+      "goldComum": 3868,
       "gate": true,
       "ato": 4,
       "mundo": 2,
-      "estrela": 2
+      "estrela": 2,
+      "xpProp": 1056
     },
     {
       "phase": 351,
       "hp": 246206913,
       "mitig": 0.29631051752921533,
-      "goldComum": 5171.140939597315,
+      "goldComum": 3878,
       "gate": false,
       "ato": 4,
       "mundo": 2,
-      "estrela": 3
+      "estrela": 3,
+      "xpProp": 1059
     },
     {
       "phase": 352,
       "hp": 253935291,
       "mitig": 0.2971285475792988,
-      "goldComum": 5184.563758389262,
+      "goldComum": 3888,
       "gate": false,
       "ato": 4,
       "mundo": 2,
-      "estrela": 3
+      "estrela": 3,
+      "xpProp": 1062
     },
     {
       "phase": 353,
       "hp": 261906261,
       "mitig": 0.2979465776293823,
-      "goldComum": 5197.986577181208,
+      "goldComum": 3898,
       "gate": false,
       "ato": 4,
       "mundo": 2,
-      "estrela": 3
+      "estrela": 3,
+      "xpProp": 1065
     },
     {
       "phase": 354,
       "hp": 270127438,
       "mitig": 0.2987646076794658,
-      "goldComum": 5211.4093959731545,
+      "goldComum": 3909,
       "gate": false,
       "ato": 4,
       "mundo": 2,
-      "estrela": 3
+      "estrela": 3,
+      "xpProp": 1068
     },
     {
       "phase": 355,
       "hp": 278606676,
       "mitig": 0.29958263772954924,
-      "goldComum": 5224.832214765101,
+      "goldComum": 3919,
       "gate": false,
       "ato": 4,
       "mundo": 2,
-      "estrela": 3
+      "estrela": 3,
+      "xpProp": 1071
     },
     {
       "phase": 356,
       "hp": 287352075,
       "mitig": 0.3004006677796327,
-      "goldComum": 5238.255033557047,
+      "goldComum": 3929,
       "gate": false,
       "ato": 4,
       "mundo": 2,
-      "estrela": 3
+      "estrela": 3,
+      "xpProp": 1074
     },
     {
       "phase": 357,
       "hp": 296371990,
       "mitig": 0.30121869782971616,
-      "goldComum": 5251.677852348993,
+      "goldComum": 3939,
       "gate": false,
       "ato": 4,
       "mundo": 2,
-      "estrela": 3
+      "estrela": 3,
+      "xpProp": 1077
     },
     {
       "phase": 358,
       "hp": 305675038,
       "mitig": 0.3020367278797996,
-      "goldComum": 5265.10067114094,
+      "goldComum": 3949,
       "gate": false,
       "ato": 4,
       "mundo": 2,
-      "estrela": 3
+      "estrela": 3,
+      "xpProp": 1080
     },
     {
       "phase": 359,
       "hp": 315270106,
       "mitig": 0.30285475792988314,
-      "goldComum": 5278.523489932886,
+      "goldComum": 3959,
       "gate": false,
       "ato": 4,
       "mundo": 2,
-      "estrela": 3
+      "estrela": 3,
+      "xpProp": 1083
     },
     {
       "phase": 360,
       "hp": 325166362,
       "mitig": 0.3036727879799666,
-      "goldComum": 5291.946308724832,
+      "goldComum": 3969,
       "gate": true,
       "ato": 4,
       "mundo": 2,
-      "estrela": 3
+      "estrela": 3,
+      "xpProp": 1086
     },
     {
       "phase": 361,
       "hp": 335373259,
       "mitig": 0.30449081803005007,
-      "goldComum": 5305.3691275167785,
+      "goldComum": 3979,
       "gate": false,
       "ato": 4,
       "mundo": 3,
-      "estrela": 1
+      "estrela": 1,
+      "xpProp": 1089
     },
     {
       "phase": 362,
       "hp": 345900548,
       "mitig": 0.30530884808013353,
-      "goldComum": 5318.791946308725,
+      "goldComum": 3989,
       "gate": false,
       "ato": 4,
       "mundo": 3,
-      "estrela": 1
+      "estrela": 1,
+      "xpProp": 1092
     },
     {
       "phase": 363,
       "hp": 356758286,
       "mitig": 0.306126878130217,
-      "goldComum": 5332.214765100671,
+      "goldComum": 3999,
       "gate": false,
       "ato": 4,
       "mundo": 3,
-      "estrela": 1
+      "estrela": 1,
+      "xpProp": 1095
     },
     {
       "phase": 364,
       "hp": 367956846,
       "mitig": 0.3069449081803005,
-      "goldComum": 5345.637583892618,
+      "goldComum": 4009,
       "gate": false,
       "ato": 4,
       "mundo": 3,
-      "estrela": 1
+      "estrela": 1,
+      "xpProp": 1098
     },
     {
       "phase": 365,
       "hp": 379506926,
       "mitig": 0.307762938230384,
-      "goldComum": 5359.060402684564,
+      "goldComum": 4019,
       "gate": false,
       "ato": 4,
       "mundo": 3,
-      "estrela": 1
+      "estrela": 1,
+      "xpProp": 1101
     },
     {
       "phase": 366,
       "hp": 391419560,
       "mitig": 0.30858096828046744,
-      "goldComum": 5372.48322147651,
+      "goldComum": 4029,
       "gate": false,
       "ato": 4,
       "mundo": 3,
-      "estrela": 1
+      "estrela": 1,
+      "xpProp": 1104
     },
     {
       "phase": 367,
       "hp": 403706130,
       "mitig": 0.3093989983305509,
-      "goldComum": 5385.906040268456,
+      "goldComum": 4039,
       "gate": false,
       "ato": 4,
       "mundo": 3,
-      "estrela": 1
+      "estrela": 1,
+      "xpProp": 1107
     },
     {
       "phase": 368,
       "hp": 416378372,
       "mitig": 0.31021702838063436,
-      "goldComum": 5399.3288590604025,
+      "goldComum": 4049,
       "gate": false,
       "ato": 4,
       "mundo": 3,
-      "estrela": 1
+      "estrela": 1,
+      "xpProp": 1110
     },
     {
       "phase": 369,
       "hp": 429448392,
       "mitig": 0.3110350584307178,
-      "goldComum": 5412.751677852349,
+      "goldComum": 4060,
       "gate": false,
       "ato": 4,
       "mundo": 3,
-      "estrela": 1
+      "estrela": 1,
+      "xpProp": 1113
     },
     {
       "phase": 370,
       "hp": 442928678,
       "mitig": 0.31185308848080134,
-      "goldComum": 5426.174496644296,
+      "goldComum": 4070,
       "gate": true,
       "ato": 4,
       "mundo": 3,
-      "estrela": 1
+      "estrela": 1,
+      "xpProp": 1116
     },
     {
       "phase": 371,
       "hp": 456832106,
       "mitig": 0.3126711185308848,
-      "goldComum": 5439.597315436242,
+      "goldComum": 4080,
       "gate": false,
       "ato": 4,
       "mundo": 3,
-      "estrela": 2
+      "estrela": 2,
+      "xpProp": 1119
     },
     {
       "phase": 372,
       "hp": 471171961,
       "mitig": 0.31348914858096827,
-      "goldComum": 5453.020134228188,
+      "goldComum": 4090,
       "gate": false,
       "ato": 4,
       "mundo": 3,
-      "estrela": 2
+      "estrela": 2,
+      "xpProp": 1122
     },
     {
       "phase": 373,
       "hp": 485961939,
       "mitig": 0.31430717863105173,
-      "goldComum": 5466.442953020134,
+      "goldComum": 4100,
       "gate": false,
       "ato": 4,
       "mundo": 3,
-      "estrela": 2
+      "estrela": 2,
+      "xpProp": 1125
     },
     {
       "phase": 374,
       "hp": 501216172,
       "mitig": 0.3151252086811352,
-      "goldComum": 5479.86577181208,
+      "goldComum": 4110,
       "gate": false,
       "ato": 4,
       "mundo": 3,
-      "estrela": 2
+      "estrela": 2,
+      "xpProp": 1128
     },
     {
       "phase": 375,
       "hp": 516949231,
       "mitig": 0.31594323873121866,
-      "goldComum": 5493.2885906040265,
+      "goldComum": 4120,
       "gate": false,
       "ato": 4,
       "mundo": 3,
-      "estrela": 2
+      "estrela": 2,
+      "xpProp": 1131
     },
     {
       "phase": 376,
       "hp": 533176148,
       "mitig": 0.3167612687813022,
-      "goldComum": 5506.7114093959735,
+      "goldComum": 4130,
       "gate": false,
       "ato": 4,
       "mundo": 3,
-      "estrela": 2
+      "estrela": 2,
+      "xpProp": 1134
     },
     {
       "phase": 377,
       "hp": 549912424,
       "mitig": 0.31757929883138564,
-      "goldComum": 5520.13422818792,
+      "goldComum": 4140,
       "gate": false,
       "ato": 4,
       "mundo": 3,
-      "estrela": 2
+      "estrela": 2,
+      "xpProp": 1137
     },
     {
       "phase": 378,
       "hp": 567174048,
       "mitig": 0.3183973288814691,
-      "goldComum": 5533.557046979866,
+      "goldComum": 4150,
       "gate": false,
       "ato": 4,
       "mundo": 3,
-      "estrela": 2
+      "estrela": 2,
+      "xpProp": 1140
     },
     {
       "phase": 379,
       "hp": 584977509,
       "mitig": 0.31921535893155256,
-      "goldComum": 5546.979865771812,
+      "goldComum": 4160,
       "gate": false,
       "ato": 4,
       "mundo": 3,
-      "estrela": 2
+      "estrela": 2,
+      "xpProp": 1143
     },
     {
       "phase": 380,
       "hp": 603339818,
       "mitig": 0.320033388981636,
-      "goldComum": 5560.402684563758,
+      "goldComum": 4170,
       "gate": true,
       "ato": 4,
       "mundo": 3,
-      "estrela": 2
+      "estrela": 2,
+      "xpProp": 1146
     },
     {
       "phase": 381,
       "hp": 622278515,
       "mitig": 0.32085141903171954,
-      "goldComum": 5573.825503355705,
+      "goldComum": 4180,
       "gate": false,
       "ato": 4,
       "mundo": 3,
-      "estrela": 3
+      "estrela": 3,
+      "xpProp": 1148
     },
     {
       "phase": 382,
       "hp": 641811694,
       "mitig": 0.321669449081803,
-      "goldComum": 5587.2483221476505,
+      "goldComum": 4190,
       "gate": false,
       "ato": 4,
       "mundo": 3,
-      "estrela": 3
+      "estrela": 3,
+      "xpProp": 1151
     },
     {
       "phase": 383,
       "hp": 661958014,
       "mitig": 0.32248747913188647,
-      "goldComum": 5600.6711409395975,
+      "goldComum": 4201,
       "gate": false,
       "ato": 4,
       "mundo": 3,
-      "estrela": 3
+      "estrela": 3,
+      "xpProp": 1154
     },
     {
       "phase": 384,
       "hp": 682736723,
       "mitig": 0.32330550918196993,
-      "goldComum": 5614.093959731544,
+      "goldComum": 4211,
       "gate": false,
       "ato": 4,
       "mundo": 3,
-      "estrela": 3
+      "estrela": 3,
+      "xpProp": 1157
     },
     {
       "phase": 385,
       "hp": 704167670,
       "mitig": 0.3241235392320534,
-      "goldComum": 5627.51677852349,
+      "goldComum": 4221,
       "gate": false,
       "ato": 4,
       "mundo": 3,
-      "estrela": 3
+      "estrela": 3,
+      "xpProp": 1160
     },
     {
       "phase": 386,
       "hp": 726271330,
       "mitig": 0.32494156928213686,
-      "goldComum": 5640.939597315436,
+      "goldComum": 4231,
       "gate": false,
       "ato": 4,
       "mundo": 3,
-      "estrela": 3
+      "estrela": 3,
+      "xpProp": 1163
     },
     {
       "phase": 387,
       "hp": 749068819,
       "mitig": 0.3257595993322204,
-      "goldComum": 5654.362416107382,
+      "goldComum": 4241,
       "gate": false,
       "ato": 4,
       "mundo": 3,
-      "estrela": 3
+      "estrela": 3,
+      "xpProp": 1166
     },
     {
       "phase": 388,
       "hp": 772581916,
       "mitig": 0.32657762938230384,
-      "goldComum": 5667.785234899329,
+      "goldComum": 4251,
       "gate": false,
       "ato": 4,
       "mundo": 3,
-      "estrela": 3
+      "estrela": 3,
+      "xpProp": 1169
     },
     {
       "phase": 389,
       "hp": 796833083,
       "mitig": 0.3273956594323873,
-      "goldComum": 5681.208053691275,
+      "goldComum": 4261,
       "gate": false,
       "ato": 4,
       "mundo": 3,
-      "estrela": 3
+      "estrela": 3,
+      "xpProp": 1172
     },
     {
       "phase": 390,
       "hp": 821845489,
       "mitig": 0.32821368948247076,
-      "goldComum": 5694.6308724832215,
+      "goldComum": 4271,
       "gate": true,
       "ato": 4,
       "mundo": 3,
-      "estrela": 3
+      "estrela": 3,
+      "xpProp": 1175
     },
     {
       "phase": 391,
       "hp": 847643029,
       "mitig": 0.3290317195325542,
-      "goldComum": 5708.053691275168,
+      "goldComum": 4281,
       "gate": false,
       "ato": 4,
       "mundo": 4,
-      "estrela": 1
+      "estrela": 1,
+      "xpProp": 1178
     },
     {
       "phase": 392,
       "hp": 874250347,
       "mitig": 0.3298497495826377,
-      "goldComum": 5721.476510067114,
+      "goldComum": 4291,
       "gate": false,
       "ato": 4,
       "mundo": 4,
-      "estrela": 1
+      "estrela": 1,
+      "xpProp": 1181
     },
     {
       "phase": 393,
       "hp": 901692863,
       "mitig": 0.3306677796327212,
-      "goldComum": 5734.899328859061,
+      "goldComum": 4301,
       "gate": false,
       "ato": 4,
       "mundo": 4,
-      "estrela": 1
+      "estrela": 1,
+      "xpProp": 1184
     },
     {
       "phase": 394,
       "hp": 929996793,
       "mitig": 0.33148580968280467,
-      "goldComum": 5748.322147651006,
+      "goldComum": 4311,
       "gate": false,
       "ato": 4,
       "mundo": 4,
-      "estrela": 1
+      "estrela": 1,
+      "xpProp": 1187
     },
     {
       "phase": 395,
       "hp": 959189177,
       "mitig": 0.33230383973288813,
-      "goldComum": 5761.744966442953,
+      "goldComum": 4321,
       "gate": false,
       "ato": 4,
       "mundo": 4,
-      "estrela": 1
+      "estrela": 1,
+      "xpProp": 1190
     },
     {
       "phase": 396,
       "hp": 989297903,
       "mitig": 0.3331218697829716,
-      "goldComum": 5775.167785234899,
+      "goldComum": 4331,
       "gate": false,
       "ato": 4,
       "mundo": 4,
-      "estrela": 1
+      "estrela": 1,
+      "xpProp": 1193
     },
     {
       "phase": 397,
       "hp": 1020351735,
       "mitig": 0.33393989983305505,
-      "goldComum": 5788.5906040268455,
+      "goldComum": 4341,
       "gate": false,
       "ato": 4,
       "mundo": 4,
-      "estrela": 1
+      "estrela": 1,
+      "xpProp": 1196
     },
     {
       "phase": 398,
       "hp": 1052380340,
       "mitig": 0.33475792988313857,
-      "goldComum": 5802.013422818792,
+      "goldComum": 4352,
       "gate": false,
       "ato": 4,
       "mundo": 4,
-      "estrela": 1
+      "estrela": 1,
+      "xpProp": 1199
     },
     {
       "phase": 399,
       "hp": 1085414315,
       "mitig": 0.33557595993322203,
-      "goldComum": 5815.436241610738,
+      "goldComum": 4362,
       "gate": false,
       "ato": 4,
       "mundo": 4,
-      "estrela": 1
+      "estrela": 1,
+      "xpProp": 1202
     },
     {
       "phase": 400,
       "hp": 1119485219,
       "mitig": 0.3363939899833055,
-      "goldComum": 5828.859060402685,
+      "goldComum": 4372,
       "gate": true,
       "ato": 4,
       "mundo": 4,
-      "estrela": 1
+      "estrela": 1,
+      "xpProp": 1205
     },
     {
       "phase": 401,
       "hp": 1154625601,
       "mitig": 0.33721202003338896,
-      "goldComum": 5842.281879194631,
+      "goldComum": 4382,
       "gate": false,
       "ato": 4,
       "mundo": 4,
-      "estrela": 2
+      "estrela": 2,
+      "xpProp": 1208
     },
     {
       "phase": 402,
       "hp": 1190869031,
       "mitig": 0.3380300500834724,
-      "goldComum": 5855.704697986577,
+      "goldComum": 4392,
       "gate": false,
       "ato": 4,
       "mundo": 4,
-      "estrela": 2
+      "estrela": 2,
+      "xpProp": 1211
     },
     {
       "phase": 403,
       "hp": 1228250134,
       "mitig": 0.3388480801335559,
-      "goldComum": 5869.127516778523,
+      "goldComum": 4402,
       "gate": false,
       "ato": 4,
       "mundo": 4,
-      "estrela": 2
+      "estrela": 2,
+      "xpProp": 1214
     },
     {
       "phase": 404,
       "hp": 1266804621,
       "mitig": 0.3396661101836394,
-      "goldComum": 5882.5503355704695,
+      "goldComum": 4412,
       "gate": false,
       "ato": 4,
       "mundo": 4,
-      "estrela": 2
+      "estrela": 2,
+      "xpProp": 1217
     },
     {
       "phase": 405,
       "hp": 1306569325,
       "mitig": 0.34048414023372287,
-      "goldComum": 5895.973154362417,
+      "goldComum": 4422,
       "gate": false,
       "ato": 4,
       "mundo": 4,
-      "estrela": 2
+      "estrela": 2,
+      "xpProp": 1220
     },
     {
       "phase": 406,
       "hp": 1347582233,
       "mitig": 0.3413021702838063,
-      "goldComum": 5909.395973154363,
+      "goldComum": 4432,
       "gate": false,
       "ato": 4,
       "mundo": 4,
-      "estrela": 2
+      "estrela": 2,
+      "xpProp": 1223
     },
     {
       "phase": 407,
       "hp": 1389882528,
       "mitig": 0.3421202003338898,
-      "goldComum": 5922.818791946309,
+      "goldComum": 4442,
       "gate": false,
       "ato": 4,
       "mundo": 4,
-      "estrela": 2
+      "estrela": 2,
+      "xpProp": 1226
     },
     {
       "phase": 408,
       "hp": 1433510618,
       "mitig": 0.34293823038397325,
-      "goldComum": 5936.241610738255,
+      "goldComum": 4452,
       "gate": false,
       "ato": 4,
       "mundo": 4,
-      "estrela": 2
+      "estrela": 2,
+      "xpProp": 1229
     },
     {
       "phase": 409,
       "hp": 1478508184,
       "mitig": 0.34375626043405677,
-      "goldComum": 5949.664429530201,
+      "goldComum": 4462,
       "gate": false,
       "ato": 4,
       "mundo": 4,
-      "estrela": 2
+      "estrela": 2,
+      "xpProp": 1232
     },
     {
       "phase": 410,
       "hp": 1524918214,
       "mitig": 0.34457429048414023,
-      "goldComum": 5963.087248322147,
+      "goldComum": 4472,
       "gate": true,
       "ato": 4,
       "mundo": 4,
-      "estrela": 2
+      "estrela": 2,
+      "xpProp": 1235
     },
     {
       "phase": 411,
       "hp": 1572785043,
       "mitig": 0.3453923205342237,
-      "goldComum": 5976.5100671140935,
+      "goldComum": 4482,
       "gate": false,
       "ato": 4,
       "mundo": 4,
-      "estrela": 3
+      "estrela": 3,
+      "xpProp": 1238
     },
     {
       "phase": 412,
       "hp": 1622154402,
       "mitig": 0.34621035058430716,
-      "goldComum": 5989.932885906041,
+      "goldComum": 4492,
       "gate": false,
       "ato": 4,
       "mundo": 4,
-      "estrela": 3
+      "estrela": 3,
+      "xpProp": 1241
     },
     {
       "phase": 413,
       "hp": 1673073453,
       "mitig": 0.3470283806343906,
-      "goldComum": 6003.355704697987,
+      "goldComum": 4503,
       "gate": false,
       "ato": 4,
       "mundo": 4,
-      "estrela": 3
+      "estrela": 3,
+      "xpProp": 1244
     },
     {
       "phase": 414,
       "hp": 1725590841,
       "mitig": 0.3478464106844741,
-      "goldComum": 6016.778523489933,
+      "goldComum": 4513,
       "gate": false,
       "ato": 4,
       "mundo": 4,
-      "estrela": 3
+      "estrela": 3,
+      "xpProp": 1247
     },
     {
       "phase": 415,
       "hp": 1779756737,
       "mitig": 0.3486644407345576,
-      "goldComum": 6030.201342281879,
+      "goldComum": 4523,
       "gate": false,
       "ato": 4,
       "mundo": 4,
-      "estrela": 3
+      "estrela": 3,
+      "xpProp": 1250
     },
     {
       "phase": 416,
       "hp": 1835622889,
       "mitig": 0.34948247078464106,
-      "goldComum": 6043.624161073825,
+      "goldComum": 4533,
       "gate": false,
       "ato": 4,
       "mundo": 4,
-      "estrela": 3
+      "estrela": 3,
+      "xpProp": 1253
     },
     {
       "phase": 417,
       "hp": 1893242667,
       "mitig": 0.3503005008347245,
-      "goldComum": 6057.046979865772,
+      "goldComum": 4543,
       "gate": false,
       "ato": 4,
       "mundo": 4,
-      "estrela": 3
+      "estrela": 3,
+      "xpProp": 1256
     },
     {
       "phase": 418,
       "hp": 1952671115,
       "mitig": 0.351118530884808,
-      "goldComum": 6070.4697986577185,
+      "goldComum": 4553,
       "gate": false,
       "ato": 4,
       "mundo": 4,
-      "estrela": 3
+      "estrela": 3,
+      "xpProp": 1259
     },
     {
       "phase": 419,
       "hp": 2013965009,
       "mitig": 0.35193656093489145,
-      "goldComum": 6083.892617449665,
+      "goldComum": 4563,
       "gate": false,
       "ato": 4,
       "mundo": 4,
-      "estrela": 3
+      "estrela": 3,
+      "xpProp": 1262
     },
     {
       "phase": 420,
       "hp": 2077182905,
       "mitig": 0.3527545909849749,
-      "goldComum": 6097.315436241611,
+      "goldComum": 4573,
       "gate": true,
       "ato": 4,
       "mundo": 4,
-      "estrela": 3
+      "estrela": 3,
+      "xpProp": 1265
     },
     {
       "phase": 421,
       "hp": 2142385195,
       "mitig": 0.35357262103505843,
-      "goldComum": 6110.738255033557,
+      "goldComum": 4583,
       "gate": false,
       "ato": 4,
       "mundo": 5,
-      "estrela": 1
+      "estrela": 1,
+      "xpProp": 1267
     },
     {
       "phase": 422,
       "hp": 2209634170,
       "mitig": 0.3543906510851419,
-      "goldComum": 6124.161073825503,
+      "goldComum": 4593,
       "gate": false,
       "ato": 4,
       "mundo": 5,
-      "estrela": 1
+      "estrela": 1,
+      "xpProp": 1270
     },
     {
       "phase": 423,
       "hp": 2278994075,
       "mitig": 0.35520868113522536,
-      "goldComum": 6137.583892617449,
+      "goldComum": 4603,
       "gate": false,
       "ato": 4,
       "mundo": 5,
-      "estrela": 1
+      "estrela": 1,
+      "xpProp": 1273
     },
     {
       "phase": 424,
       "hp": 2350531171,
       "mitig": 0.3560267111853088,
-      "goldComum": 6151.006711409396,
+      "goldComum": 4613,
       "gate": false,
       "ato": 4,
       "mundo": 5,
-      "estrela": 1
+      "estrela": 1,
+      "xpProp": 1276
     },
     {
       "phase": 425,
       "hp": 2424313800,
       "mitig": 0.3568447412353923,
-      "goldComum": 6164.4295302013425,
+      "goldComum": 4623,
       "gate": false,
       "ato": 4,
       "mundo": 5,
-      "estrela": 1
+      "estrela": 1,
+      "xpProp": 1279
     },
     {
       "phase": 426,
       "hp": 2500412448,
       "mitig": 0.3576627712854758,
-      "goldComum": 6177.852348993289,
+      "goldComum": 4633,
       "gate": false,
       "ato": 4,
       "mundo": 5,
-      "estrela": 1
+      "estrela": 1,
+      "xpProp": 1282
     },
     {
       "phase": 427,
       "hp": 2578899816,
       "mitig": 0.35848080133555926,
-      "goldComum": 6191.275167785235,
+      "goldComum": 4643,
       "gate": false,
       "ato": 4,
       "mundo": 5,
-      "estrela": 1
+      "estrela": 1,
+      "xpProp": 1285
     },
     {
       "phase": 428,
       "hp": 2659850884,
       "mitig": 0.3592988313856427,
-      "goldComum": 6204.697986577181,
+      "goldComum": 4654,
       "gate": false,
       "ato": 4,
       "mundo": 5,
-      "estrela": 1
+      "estrela": 1,
+      "xpProp": 1288
     },
     {
       "phase": 429,
       "hp": 2743342987,
       "mitig": 0.3601168614357262,
-      "goldComum": 6218.120805369128,
+      "goldComum": 4664,
       "gate": false,
       "ato": 4,
       "mundo": 5,
-      "estrela": 1
+      "estrela": 1,
+      "xpProp": 1291
     },
     {
       "phase": 430,
       "hp": 2829455888,
       "mitig": 0.36093489148580965,
-      "goldComum": 6231.543624161074,
+      "goldComum": 4674,
       "gate": true,
       "ato": 4,
       "mundo": 5,
-      "estrela": 1
+      "estrela": 1,
+      "xpProp": 1294
     },
     {
       "phase": 431,
       "hp": 2918271853,
       "mitig": 0.3617529215358931,
-      "goldComum": 6244.96644295302,
+      "goldComum": 4684,
       "gate": false,
       "ato": 4,
       "mundo": 5,
-      "estrela": 2
+      "estrela": 2,
+      "xpProp": 1297
     },
     {
       "phase": 432,
       "hp": 3009875731,
       "mitig": 0.36257095158597663,
-      "goldComum": 6258.3892617449665,
+      "goldComum": 4694,
       "gate": false,
       "ato": 4,
       "mundo": 5,
-      "estrela": 2
+      "estrela": 2,
+      "xpProp": 1300
     },
     {
       "phase": 433,
       "hp": 3104355033,
       "mitig": 0.3633889816360601,
-      "goldComum": 6271.812080536913,
+      "goldComum": 4704,
       "gate": false,
       "ato": 4,
       "mundo": 5,
-      "estrela": 2
+      "estrela": 2,
+      "xpProp": 1303
     },
     {
       "phase": 434,
       "hp": 3201800018,
       "mitig": 0.36420701168614356,
-      "goldComum": 6285.234899328859,
+      "goldComum": 4714,
       "gate": false,
       "ato": 4,
       "mundo": 5,
-      "estrela": 2
+      "estrela": 2,
+      "xpProp": 1306
     },
     {
       "phase": 435,
       "hp": 3302303779,
       "mitig": 0.365025041736227,
-      "goldComum": 6298.657718120805,
+      "goldComum": 4724,
       "gate": false,
       "ato": 4,
       "mundo": 5,
-      "estrela": 2
+      "estrela": 2,
+      "xpProp": 1309
     },
     {
       "phase": 436,
       "hp": 3405962330,
       "mitig": 0.3658430717863105,
-      "goldComum": 6312.080536912752,
+      "goldComum": 4734,
       "gate": false,
       "ato": 4,
       "mundo": 5,
-      "estrela": 2
+      "estrela": 2,
+      "xpProp": 1312
     },
     {
       "phase": 437,
       "hp": 3512874698,
       "mitig": 0.36666110183639394,
-      "goldComum": 6325.503355704698,
+      "goldComum": 4744,
       "gate": false,
       "ato": 4,
       "mundo": 5,
-      "estrela": 2
+      "estrela": 2,
+      "xpProp": 1315
     },
     {
       "phase": 438,
       "hp": 3623143022,
       "mitig": 0.36747913188647746,
-      "goldComum": 6338.926174496644,
+      "goldComum": 4754,
       "gate": false,
       "ato": 4,
       "mundo": 5,
-      "estrela": 2
+      "estrela": 2,
+      "xpProp": 1318
     },
     {
       "phase": 439,
       "hp": 3736872642,
       "mitig": 0.3682971619365609,
-      "goldComum": 6352.3489932885905,
+      "goldComum": 4764,
       "gate": false,
       "ato": 4,
       "mundo": 5,
-      "estrela": 2
+      "estrela": 2,
+      "xpProp": 1321
     },
     {
       "phase": 440,
       "hp": 3854172208,
       "mitig": 0.3691151919866444,
-      "goldComum": 6365.771812080537,
+      "goldComum": 4774,
       "gate": true,
       "ato": 4,
       "mundo": 5,
-      "estrela": 2
+      "estrela": 2,
+      "xpProp": 1324
     },
     {
       "phase": 441,
       "hp": 3975153781,
       "mitig": 0.36993322203672785,
-      "goldComum": 6379.194630872484,
+      "goldComum": 4784,
       "gate": false,
       "ato": 4,
       "mundo": 5,
-      "estrela": 3
+      "estrela": 3,
+      "xpProp": 1327
     },
     {
       "phase": 442,
       "hp": 4099932938,
       "mitig": 0.3707512520868113,
-      "goldComum": 6392.61744966443,
+      "goldComum": 4794,
       "gate": false,
       "ato": 4,
       "mundo": 5,
-      "estrela": 3
+      "estrela": 3,
+      "xpProp": 1330
     },
     {
       "phase": 443,
       "hp": 4228628883,
       "mitig": 0.37156928213689483,
-      "goldComum": 6406.040268456376,
+      "goldComum": 4805,
       "gate": false,
       "ato": 4,
       "mundo": 5,
-      "estrela": 3
+      "estrela": 3,
+      "xpProp": 1333
     },
     {
       "phase": 444,
       "hp": 4361364564,
       "mitig": 0.3723873121869783,
-      "goldComum": 6419.463087248322,
+      "goldComum": 4815,
       "gate": false,
       "ato": 4,
       "mundo": 5,
-      "estrela": 3
+      "estrela": 3,
+      "xpProp": 1336
     },
     {
       "phase": 445,
       "hp": 4498266788,
       "mitig": 0.37320534223706175,
-      "goldComum": 6432.885906040268,
+      "goldComum": 4825,
       "gate": false,
       "ato": 4,
       "mundo": 5,
-      "estrela": 3
+      "estrela": 3,
+      "xpProp": 1339
     },
     {
       "phase": 446,
       "hp": 4639466340,
       "mitig": 0.3740233722871452,
-      "goldComum": 6446.3087248322145,
+      "goldComum": 4835,
       "gate": false,
       "ato": 4,
       "mundo": 5,
-      "estrela": 3
+      "estrela": 3,
+      "xpProp": 1342
     },
     {
       "phase": 447,
       "hp": 4785098114,
       "mitig": 0.3748414023372287,
-      "goldComum": 6459.731543624161,
+      "goldComum": 4845,
       "gate": false,
       "ato": 4,
       "mundo": 5,
-      "estrela": 3
+      "estrela": 3,
+      "xpProp": 1345
     },
     {
       "phase": 448,
       "hp": 4935301236,
       "mitig": 0.37565943238731214,
-      "goldComum": 6473.154362416108,
+      "goldComum": 4855,
       "gate": false,
       "ato": 4,
       "mundo": 5,
-      "estrela": 3
+      "estrela": 3,
+      "xpProp": 1348
     },
     {
       "phase": 449,
       "hp": 5090219198,
       "mitig": 0.37647746243739566,
-      "goldComum": 6486.577181208054,
+      "goldComum": 4865,
       "gate": false,
       "ato": 4,
       "mundo": 5,
-      "estrela": 3
+      "estrela": 3,
+      "xpProp": 1351
     },
     {
       "phase": 450,
       "hp": 5250000000,
       "mitig": 0.3772954924874791,
-      "goldComum": 6500,
+      "goldComum": 4875,
       "gate": true,
       "ato": 4,
       "mundo": 5,
-      "estrela": 3
+      "estrela": 3,
+      "xpProp": 1354
     },
     {
       "phase": 451,
       "hp": 5250000000,
       "mitig": 0.3781135225375626,
-      "goldComum": 8000,
+      "goldComum": 6000,
       "gate": false,
       "ato": 5,
       "mundo": 1,
-      "estrela": 1
+      "estrela": 1,
+      "xpProp": 1357
     },
     {
       "phase": 452,
       "hp": 5414796284,
       "mitig": 0.37893155258764605,
-      "goldComum": 8020.13422818792,
+      "goldComum": 6015,
       "gate": false,
       "ato": 5,
       "mundo": 1,
-      "estrela": 1
+      "estrela": 1,
+      "xpProp": 1360
     },
     {
       "phase": 453,
       "hp": 5584765485,
       "mitig": 0.3797495826377295,
-      "goldComum": 8040.268456375839,
+      "goldComum": 6030,
       "gate": false,
       "ato": 5,
       "mundo": 1,
-      "estrela": 1
+      "estrela": 1,
+      "xpProp": 1363
     },
     {
       "phase": 454,
       "hp": 5760069980,
       "mitig": 0.38056761268781303,
-      "goldComum": 8060.402684563758,
+      "goldComum": 6045,
       "gate": false,
       "ato": 5,
       "mundo": 1,
-      "estrela": 1
+      "estrela": 1,
+      "xpProp": 1366
     },
     {
       "phase": 455,
       "hp": 5940877243,
       "mitig": 0.3813856427378965,
-      "goldComum": 8080.536912751678,
+      "goldComum": 6060,
       "gate": false,
       "ato": 5,
       "mundo": 1,
-      "estrela": 1
+      "estrela": 1,
+      "xpProp": 1369
     },
     {
       "phase": 456,
       "hp": 6127360003,
       "mitig": 0.38220367278797995,
-      "goldComum": 8100.6711409395975,
+      "goldComum": 6076,
       "gate": false,
       "ato": 5,
       "mundo": 1,
-      "estrela": 1
+      "estrela": 1,
+      "xpProp": 1372
     },
     {
       "phase": 457,
       "hp": 6319696415,
       "mitig": 0.3830217028380634,
-      "goldComum": 8120.805369127516,
+      "goldComum": 6091,
       "gate": false,
       "ato": 5,
       "mundo": 1,
-      "estrela": 1
+      "estrela": 1,
+      "xpProp": 1375
     },
     {
       "phase": 458,
       "hp": 6518070221,
       "mitig": 0.3838397328881469,
-      "goldComum": 8140.939597315436,
+      "goldComum": 6106,
       "gate": false,
       "ato": 5,
       "mundo": 1,
-      "estrela": 1
+      "estrela": 1,
+      "xpProp": 1378
     },
     {
       "phase": 459,
       "hp": 6722670936,
       "mitig": 0.38465776293823034,
-      "goldComum": 8161.073825503356,
+      "goldComum": 6121,
       "gate": false,
       "ato": 5,
       "mundo": 1,
-      "estrela": 1
+      "estrela": 1,
+      "xpProp": 1381
     },
     {
       "phase": 460,
       "hp": 6933694019,
       "mitig": 0.38547579298831386,
-      "goldComum": 8181.208053691275,
+      "goldComum": 6136,
       "gate": true,
       "ato": 5,
       "mundo": 1,
-      "estrela": 1
+      "estrela": 1,
+      "xpProp": 1384
     },
     {
       "phase": 461,
       "hp": 7151341069,
       "mitig": 0.3862938230383973,
-      "goldComum": 8201.342281879195,
+      "goldComum": 6151,
       "gate": false,
       "ato": 5,
       "mundo": 1,
-      "estrela": 2
+      "estrela": 2,
+      "xpProp": 1386
     },
     {
       "phase": 462,
       "hp": 7375820008,
       "mitig": 0.3871118530884808,
-      "goldComum": 8221.476510067114,
+      "goldComum": 6166,
       "gate": false,
       "ato": 5,
       "mundo": 1,
-      "estrela": 2
+      "estrela": 2,
+      "xpProp": 1389
     },
     {
       "phase": 463,
       "hp": 7607345290,
       "mitig": 0.38792988313856425,
-      "goldComum": 8241.610738255033,
+      "goldComum": 6181,
       "gate": false,
       "ato": 5,
       "mundo": 1,
-      "estrela": 2
+      "estrela": 2,
+      "xpProp": 1392
     },
     {
       "phase": 464,
       "hp": 7846138097,
       "mitig": 0.3887479131886477,
-      "goldComum": 8261.744966442953,
+      "goldComum": 6196,
       "gate": false,
       "ato": 5,
       "mundo": 1,
-      "estrela": 2
+      "estrela": 2,
+      "xpProp": 1395
     },
     {
       "phase": 465,
       "hp": 8092426554,
       "mitig": 0.38956594323873117,
-      "goldComum": 8281.879194630872,
+      "goldComum": 6211,
       "gate": false,
       "ato": 5,
       "mundo": 1,
-      "estrela": 2
+      "estrela": 2,
+      "xpProp": 1398
     },
     {
       "phase": 466,
       "hp": 8346445949,
       "mitig": 0.3903839732888147,
-      "goldComum": 8302.013422818793,
+      "goldComum": 6227,
       "gate": false,
       "ato": 5,
       "mundo": 1,
-      "estrela": 2
+      "estrela": 2,
+      "xpProp": 1401
     },
     {
       "phase": 467,
       "hp": 8608438955,
       "mitig": 0.39120200333889815,
-      "goldComum": 8322.147651006711,
+      "goldComum": 6242,
       "gate": false,
       "ato": 5,
       "mundo": 1,
-      "estrela": 2
+      "estrela": 2,
+      "xpProp": 1404
     },
     {
       "phase": 468,
       "hp": 8878655859,
       "mitig": 0.3920200333889816,
-      "goldComum": 8342.28187919463,
+      "goldComum": 6257,
       "gate": false,
       "ato": 5,
       "mundo": 1,
-      "estrela": 2
+      "estrela": 2,
+      "xpProp": 1407
     },
     {
       "phase": 469,
       "hp": 9157354810,
       "mitig": 0.3928380634390651,
-      "goldComum": 8362.41610738255,
+      "goldComum": 6272,
       "gate": false,
       "ato": 5,
       "mundo": 1,
-      "estrela": 2
+      "estrela": 2,
+      "xpProp": 1410
     },
     {
       "phase": 470,
       "hp": 9444802057,
       "mitig": 0.39365609348914854,
-      "goldComum": 8382.55033557047,
+      "goldComum": 6287,
       "gate": true,
       "ato": 5,
       "mundo": 1,
-      "estrela": 2
+      "estrela": 2,
+      "xpProp": 1413
     },
     {
       "phase": 471,
       "hp": 9741272206,
       "mitig": 0.39447412353923206,
-      "goldComum": 8402.68456375839,
+      "goldComum": 6302,
       "gate": false,
       "ato": 5,
       "mundo": 1,
-      "estrela": 3
+      "estrela": 3,
+      "xpProp": 1416
     },
     {
       "phase": 472,
       "hp": 10047048484,
       "mitig": 0.3952921535893155,
-      "goldComum": 8422.818791946309,
+      "goldComum": 6317,
       "gate": false,
       "ato": 5,
       "mundo": 1,
-      "estrela": 3
+      "estrela": 3,
+      "xpProp": 1419
     },
     {
       "phase": 473,
       "hp": 10362423009,
       "mitig": 0.396110183639399,
-      "goldComum": 8442.953020134228,
+      "goldComum": 6332,
       "gate": false,
       "ato": 5,
       "mundo": 1,
-      "estrela": 3
+      "estrela": 3,
+      "xpProp": 1422
     },
     {
       "phase": 474,
       "hp": 10687697067,
       "mitig": 0.39692821368948245,
-      "goldComum": 8463.087248322148,
+      "goldComum": 6347,
       "gate": false,
       "ato": 5,
       "mundo": 1,
-      "estrela": 3
+      "estrela": 3,
+      "xpProp": 1425
     },
     {
       "phase": 475,
       "hp": 11023181402,
       "mitig": 0.3977462437395659,
-      "goldComum": 8483.221476510067,
+      "goldComum": 6362,
       "gate": false,
       "ato": 5,
       "mundo": 1,
-      "estrela": 3
+      "estrela": 3,
+      "xpProp": 1428
     },
     {
       "phase": 476,
       "hp": 11369196513,
       "mitig": 0.39856427378964937,
-      "goldComum": 8503.355704697986,
+      "goldComum": 6378,
       "gate": false,
       "ato": 5,
       "mundo": 1,
-      "estrela": 3
+      "estrela": 3,
+      "xpProp": 1431
     },
     {
       "phase": 477,
       "hp": 11726072959,
       "mitig": 0.3993823038397329,
-      "goldComum": 8523.489932885906,
+      "goldComum": 6393,
       "gate": false,
       "ato": 5,
       "mundo": 1,
-      "estrela": 3
+      "estrela": 3,
+      "xpProp": 1434
     },
     {
       "phase": 478,
       "hp": 12094151673,
       "mitig": 0.40020033388981635,
-      "goldComum": 8543.624161073825,
+      "goldComum": 6408,
       "gate": false,
       "ato": 5,
       "mundo": 1,
-      "estrela": 3
+      "estrela": 3,
+      "xpProp": 1437
     },
     {
       "phase": 479,
       "hp": 12473784292,
       "mitig": 0.4010183639398998,
-      "goldComum": 8563.758389261744,
+      "goldComum": 6423,
       "gate": false,
       "ato": 5,
       "mundo": 1,
-      "estrela": 3
+      "estrela": 3,
+      "xpProp": 1440
     },
     {
       "phase": 480,
       "hp": 12865333492,
       "mitig": 0.4018363939899833,
-      "goldComum": 8583.892617449665,
+      "goldComum": 6438,
       "gate": true,
       "ato": 5,
       "mundo": 1,
-      "estrela": 3
+      "estrela": 3,
+      "xpProp": 1443
     },
     {
       "phase": 481,
       "hp": 13269173331,
       "mitig": 0.40265442404006674,
-      "goldComum": 8604.026845637583,
+      "goldComum": 6453,
       "gate": false,
       "ato": 5,
       "mundo": 2,
-      "estrela": 1
+      "estrela": 1,
+      "xpProp": 1446
     },
     {
       "phase": 482,
       "hp": 13685689608,
       "mitig": 0.4034724540901502,
-      "goldComum": 8624.161073825504,
+      "goldComum": 6468,
       "gate": false,
       "ato": 5,
       "mundo": 2,
-      "estrela": 1
+      "estrela": 1,
+      "xpProp": 1449
     },
     {
       "phase": 483,
       "hp": 14115280235,
       "mitig": 0.4042904841402337,
-      "goldComum": 8644.295302013423,
+      "goldComum": 6483,
       "gate": false,
       "ato": 5,
       "mundo": 2,
-      "estrela": 1
+      "estrela": 1,
+      "xpProp": 1452
     },
     {
       "phase": 484,
       "hp": 14558355612,
       "mitig": 0.4051085141903172,
-      "goldComum": 8664.429530201342,
+      "goldComum": 6498,
       "gate": false,
       "ato": 5,
       "mundo": 2,
-      "estrela": 1
+      "estrela": 1,
+      "xpProp": 1455
     },
     {
       "phase": 485,
       "hp": 15015339023,
       "mitig": 0.40592654424040064,
-      "goldComum": 8684.563758389262,
+      "goldComum": 6513,
       "gate": false,
       "ato": 5,
       "mundo": 2,
-      "estrela": 1
+      "estrela": 1,
+      "xpProp": 1458
     },
     {
       "phase": 486,
       "hp": 15486667037,
       "mitig": 0.4067445742904841,
-      "goldComum": 8704.697986577181,
+      "goldComum": 6529,
       "gate": false,
       "ato": 5,
       "mundo": 2,
-      "estrela": 1
+      "estrela": 1,
+      "xpProp": 1461
     },
     {
       "phase": 487,
       "hp": 15972789928,
       "mitig": 0.40756260434056757,
-      "goldComum": 8724.832214765102,
+      "goldComum": 6544,
       "gate": false,
       "ato": 5,
       "mundo": 2,
-      "estrela": 1
+      "estrela": 1,
+      "xpProp": 1464
     },
     {
       "phase": 488,
       "hp": 16474172104,
       "mitig": 0.4083806343906511,
-      "goldComum": 8744.96644295302,
+      "goldComum": 6559,
       "gate": false,
       "ato": 5,
       "mundo": 2,
-      "estrela": 1
+      "estrela": 1,
+      "xpProp": 1467
     },
     {
       "phase": 489,
       "hp": 16991292551,
       "mitig": 0.40919866444073455,
-      "goldComum": 8765.100671140939,
+      "goldComum": 6574,
       "gate": false,
       "ato": 5,
       "mundo": 2,
-      "estrela": 1
+      "estrela": 1,
+      "xpProp": 1470
     },
     {
       "phase": 490,
       "hp": 17524645288,
       "mitig": 0.410016694490818,
-      "goldComum": 8785.23489932886,
+      "goldComum": 6589,
       "gate": true,
       "ato": 5,
       "mundo": 2,
-      "estrela": 1
+      "estrela": 1,
+      "xpProp": 1473
     },
     {
       "phase": 491,
       "hp": 18074739845,
       "mitig": 0.4108347245409015,
-      "goldComum": 8805.369127516778,
+      "goldComum": 6604,
       "gate": false,
       "ato": 5,
       "mundo": 2,
-      "estrela": 2
+      "estrela": 2,
+      "xpProp": 1476
     },
     {
       "phase": 492,
       "hp": 18642101742,
       "mitig": 0.41165275459098494,
-      "goldComum": 8825.503355704697,
+      "goldComum": 6619,
       "gate": false,
       "ato": 5,
       "mundo": 2,
-      "estrela": 2
+      "estrela": 2,
+      "xpProp": 1479
     },
     {
       "phase": 493,
       "hp": 19227272998,
       "mitig": 0.4124707846410684,
-      "goldComum": 8845.637583892618,
+      "goldComum": 6634,
       "gate": false,
       "ato": 5,
       "mundo": 2,
-      "estrela": 2
+      "estrela": 2,
+      "xpProp": 1482
     },
     {
       "phase": 494,
       "hp": 19830812644,
       "mitig": 0.4132888146911519,
-      "goldComum": 8865.771812080537,
+      "goldComum": 6649,
       "gate": false,
       "ato": 5,
       "mundo": 2,
-      "estrela": 2
+      "estrela": 2,
+      "xpProp": 1485
     },
     {
       "phase": 495,
       "hp": 20453297260,
       "mitig": 0.4141068447412354,
-      "goldComum": 8885.906040268455,
+      "goldComum": 6664,
       "gate": false,
       "ato": 5,
       "mundo": 2,
-      "estrela": 2
+      "estrela": 2,
+      "xpProp": 1488
     },
     {
       "phase": 496,
       "hp": 21095321523,
       "mitig": 0.41492487479131884,
-      "goldComum": 8906.040268456376,
+      "goldComum": 6680,
       "gate": false,
       "ato": 5,
       "mundo": 2,
-      "estrela": 2
+      "estrela": 2,
+      "xpProp": 1491
     },
     {
       "phase": 497,
       "hp": 21757498780,
       "mitig": 0.4157429048414023,
-      "goldComum": 8926.174496644295,
+      "goldComum": 6695,
       "gate": false,
       "ato": 5,
       "mundo": 2,
-      "estrela": 2
+      "estrela": 2,
+      "xpProp": 1494
     },
     {
       "phase": 498,
       "hp": 22440461627,
       "mitig": 0.41656093489148577,
-      "goldComum": 8946.308724832215,
+      "goldComum": 6710,
       "gate": false,
       "ato": 5,
       "mundo": 2,
-      "estrela": 2
+      "estrela": 2,
+      "xpProp": 1497
     },
     {
       "phase": 499,
       "hp": 23144862520,
       "mitig": 0.4173789649415693,
-      "goldComum": 8966.442953020134,
+      "goldComum": 6725,
       "gate": false,
       "ato": 5,
       "mundo": 2,
-      "estrela": 2
+      "estrela": 2,
+      "xpProp": 1500
     },
     {
       "phase": 500,
       "hp": 23871374393,
       "mitig": 0.41819699499165275,
-      "goldComum": 8986.577181208053,
+      "goldComum": 6740,
       "gate": true,
       "ato": 5,
       "mundo": 2,
-      "estrela": 2
+      "estrela": 2,
+      "xpProp": 1503
     },
     {
       "phase": 501,
       "hp": 24620691306,
       "mitig": 0.4190150250417362,
-      "goldComum": 9006.711409395974,
+      "goldComum": 6755,
       "gate": false,
       "ato": 5,
       "mundo": 2,
-      "estrela": 3
+      "estrela": 3,
+      "xpProp": 1505
     },
     {
       "phase": 502,
       "hp": 25393529104,
       "mitig": 0.4198330550918197,
-      "goldComum": 9026.845637583892,
+      "goldComum": 6770,
       "gate": false,
       "ato": 5,
       "mundo": 2,
-      "estrela": 3
+      "estrela": 3,
+      "xpProp": 1508
     },
     {
       "phase": 503,
       "hp": 26190626101,
       "mitig": 0.42065108514190314,
-      "goldComum": 9046.979865771813,
+      "goldComum": 6785,
       "gate": false,
       "ato": 5,
       "mundo": 2,
-      "estrela": 3
+      "estrela": 3,
+      "xpProp": 1511
     },
     {
       "phase": 504,
       "hp": 27012743788,
       "mitig": 0.4214691151919866,
-      "goldComum": 9067.114093959732,
+      "goldComum": 6800,
       "gate": false,
       "ato": 5,
       "mundo": 2,
-      "estrela": 3
+      "estrela": 3,
+      "xpProp": 1514
     },
     {
       "phase": 505,
       "hp": 27860667558,
       "mitig": 0.4222871452420701,
-      "goldComum": 9087.24832214765,
+      "goldComum": 6815,
       "gate": false,
       "ato": 5,
       "mundo": 2,
-      "estrela": 3
+      "estrela": 3,
+      "xpProp": 1517
     },
     {
       "phase": 506,
       "hp": 28735207460,
       "mitig": 0.4231051752921536,
-      "goldComum": 9107.382550335571,
+      "goldComum": 6831,
       "gate": false,
       "ato": 5,
       "mundo": 2,
-      "estrela": 3
+      "estrela": 3,
+      "xpProp": 1520
     },
     {
       "phase": 507,
       "hp": 29637198966,
       "mitig": 0.42392320534223704,
-      "goldComum": 9127.51677852349,
+      "goldComum": 6846,
       "gate": false,
       "ato": 5,
       "mundo": 2,
-      "estrela": 3
+      "estrela": 3,
+      "xpProp": 1523
     },
     {
       "phase": 508,
       "hp": 30567503777,
       "mitig": 0.4247412353923205,
-      "goldComum": 9147.651006711409,
+      "goldComum": 6861,
       "gate": false,
       "ato": 5,
       "mundo": 2,
-      "estrela": 3
+      "estrela": 3,
+      "xpProp": 1526
     },
     {
       "phase": 509,
       "hp": 31527010641,
       "mitig": 0.42555926544240397,
-      "goldComum": 9167.78523489933,
+      "goldComum": 6876,
       "gate": false,
       "ato": 5,
       "mundo": 2,
-      "estrela": 3
+      "estrela": 3,
+      "xpProp": 1529
     },
     {
       "phase": 510,
       "hp": 32516636203,
       "mitig": 0.42637729549248743,
-      "goldComum": 9187.919463087248,
+      "goldComum": 6891,
       "gate": true,
       "ato": 5,
       "mundo": 2,
-      "estrela": 3
+      "estrela": 3,
+      "xpProp": 1532
     },
     {
       "phase": 511,
       "hp": 33537325881,
       "mitig": 0.42719532554257095,
-      "goldComum": 9208.053691275167,
+      "goldComum": 6906,
       "gate": false,
       "ato": 5,
       "mundo": 3,
-      "estrela": 1
+      "estrela": 1,
+      "xpProp": 1535
     },
     {
       "phase": 512,
       "hp": 34590054773,
       "mitig": 0.4280133555926544,
-      "goldComum": 9228.187919463087,
+      "goldComum": 6921,
       "gate": false,
       "ato": 5,
       "mundo": 3,
-      "estrela": 1
+      "estrela": 1,
+      "xpProp": 1538
     },
     {
       "phase": 513,
       "hp": 35675828580,
       "mitig": 0.4288313856427379,
-      "goldComum": 9248.322147651006,
+      "goldComum": 6936,
       "gate": false,
       "ato": 5,
       "mundo": 3,
-      "estrela": 1
+      "estrela": 1,
+      "xpProp": 1541
     },
     {
       "phase": 514,
       "hp": 36795684576,
       "mitig": 0.42964941569282133,
-      "goldComum": 9268.456375838927,
+      "goldComum": 6951,
       "gate": false,
       "ato": 5,
       "mundo": 3,
-      "estrela": 1
+      "estrela": 1,
+      "xpProp": 1544
     },
     {
       "phase": 515,
       "hp": 37950692592,
       "mitig": 0.4304674457429048,
-      "goldComum": 9288.590604026846,
+      "goldComum": 6966,
       "gate": false,
       "ato": 5,
       "mundo": 3,
-      "estrela": 1
+      "estrela": 1,
+      "xpProp": 1547
     },
     {
       "phase": 516,
       "hp": 39141956043,
       "mitig": 0.4312854757929883,
-      "goldComum": 9308.724832214764,
+      "goldComum": 6982,
       "gate": false,
       "ato": 5,
       "mundo": 3,
-      "estrela": 1
+      "estrela": 1,
+      "xpProp": 1550
     },
     {
       "phase": 517,
       "hp": 40370612977,
       "mitig": 0.4321035058430718,
-      "goldComum": 9328.859060402685,
+      "goldComum": 6997,
       "gate": false,
       "ato": 5,
       "mundo": 3,
-      "estrela": 1
+      "estrela": 1,
+      "xpProp": 1553
     },
     {
       "phase": 518,
       "hp": 41637837167,
       "mitig": 0.43292153589315524,
-      "goldComum": 9348.993288590604,
+      "goldComum": 7012,
       "gate": false,
       "ato": 5,
       "mundo": 3,
-      "estrela": 1
+      "estrela": 1,
+      "xpProp": 1556
     },
     {
       "phase": 519,
       "hp": 42944839232,
       "mitig": 0.4337395659432387,
-      "goldComum": 9369.127516778524,
+      "goldComum": 7027,
       "gate": false,
       "ato": 5,
       "mundo": 3,
-      "estrela": 1
+      "estrela": 1,
+      "xpProp": 1559
     },
     {
       "phase": 520,
       "hp": 44292867789,
       "mitig": 0.43455759599332217,
-      "goldComum": 9389.261744966443,
+      "goldComum": 7042,
       "gate": true,
       "ato": 5,
       "mundo": 3,
-      "estrela": 1
+      "estrela": 1,
+      "xpProp": 1562
     },
     {
       "phase": 521,
       "hp": 45683210649,
       "mitig": 0.43537562604340563,
-      "goldComum": 9409.395973154362,
+      "goldComum": 7057,
       "gate": false,
       "ato": 5,
       "mundo": 3,
-      "estrela": 2
+      "estrela": 2,
+      "xpProp": 1565
     },
     {
       "phase": 522,
       "hp": 47117196050,
       "mitig": 0.43619365609348915,
-      "goldComum": 9429.530201342282,
+      "goldComum": 7072,
       "gate": false,
       "ato": 5,
       "mundo": 3,
-      "estrela": 2
+      "estrela": 2,
+      "xpProp": 1568
     },
     {
       "phase": 523,
       "hp": 48596193921,
       "mitig": 0.4370116861435726,
-      "goldComum": 9449.664429530201,
+      "goldComum": 7087,
       "gate": false,
       "ato": 5,
       "mundo": 3,
-      "estrela": 2
+      "estrela": 2,
+      "xpProp": 1571
     },
     {
       "phase": 524,
       "hp": 50121617192,
       "mitig": 0.43782971619365607,
-      "goldComum": 9469.79865771812,
+      "goldComum": 7102,
       "gate": false,
       "ato": 5,
       "mundo": 3,
-      "estrela": 2
+      "estrela": 2,
+      "xpProp": 1574
     },
     {
       "phase": 525,
       "hp": 51694923147,
       "mitig": 0.43864774624373953,
-      "goldComum": 9489.93288590604,
+      "goldComum": 7117,
       "gate": false,
       "ato": 5,
       "mundo": 3,
-      "estrela": 2
+      "estrela": 2,
+      "xpProp": 1577
     },
     {
       "phase": 526,
       "hp": 53317614811,
       "mitig": 0.439465776293823,
-      "goldComum": 9510.06711409396,
+      "goldComum": 7133,
       "gate": false,
       "ato": 5,
       "mundo": 3,
-      "estrela": 2
+      "estrela": 2,
+      "xpProp": 1580
     },
     {
       "phase": 527,
       "hp": 54991242390,
       "mitig": 0.44028380634390646,
-      "goldComum": 9530.201342281878,
+      "goldComum": 7148,
       "gate": false,
       "ato": 5,
       "mundo": 3,
-      "estrela": 2
+      "estrela": 2,
+      "xpProp": 1583
     },
     {
       "phase": 528,
       "hp": 56717404752,
       "mitig": 0.44110183639399,
-      "goldComum": 9550.335570469799,
+      "goldComum": 7163,
       "gate": false,
       "ato": 5,
       "mundo": 3,
-      "estrela": 2
+      "estrela": 2,
+      "xpProp": 1586
     },
     {
       "phase": 529,
       "hp": 58497750950,
       "mitig": 0.44191986644407344,
-      "goldComum": 9570.469798657718,
+      "goldComum": 7178,
       "gate": false,
       "ato": 5,
       "mundo": 3,
-      "estrela": 2
+      "estrela": 2,
+      "xpProp": 1589
     },
     {
       "phase": 530,
       "hp": 60333981803,
       "mitig": 0.4427378964941569,
-      "goldComum": 9590.604026845638,
+      "goldComum": 7193,
       "gate": true,
       "ato": 5,
       "mundo": 3,
-      "estrela": 2
+      "estrela": 2,
+      "xpProp": 1592
     },
     {
       "phase": 531,
       "hp": 62227851517,
       "mitig": 0.44355592654424036,
-      "goldComum": 9610.738255033557,
+      "goldComum": 7208,
       "gate": false,
       "ato": 5,
       "mundo": 3,
-      "estrela": 3
+      "estrela": 3,
+      "xpProp": 1595
     },
     {
       "phase": 532,
       "hp": 64181169363,
       "mitig": 0.4443739565943238,
-      "goldComum": 9630.872483221476,
+      "goldComum": 7223,
       "gate": false,
       "ato": 5,
       "mundo": 3,
-      "estrela": 3
+      "estrela": 3,
+      "xpProp": 1598
     },
     {
       "phase": 533,
       "hp": 66195801403,
       "mitig": 0.44519198664440734,
-      "goldComum": 9651.006711409396,
+      "goldComum": 7238,
       "gate": false,
       "ato": 5,
       "mundo": 3,
-      "estrela": 3
+      "estrela": 3,
+      "xpProp": 1601
     },
     {
       "phase": 534,
       "hp": 68273672277,
       "mitig": 0.4460100166944908,
-      "goldComum": 9671.140939597315,
+      "goldComum": 7253,
       "gate": false,
       "ato": 5,
       "mundo": 3,
-      "estrela": 3
+      "estrela": 3,
+      "xpProp": 1604
     },
     {
       "phase": 535,
       "hp": 70416767036,
       "mitig": 0.44682804674457427,
-      "goldComum": 9691.275167785236,
+      "goldComum": 7268,
       "gate": false,
       "ato": 5,
       "mundo": 3,
-      "estrela": 3
+      "estrela": 3,
+      "xpProp": 1607
     },
     {
       "phase": 536,
       "hp": 72627133043,
       "mitig": 0.44764607679465773,
-      "goldComum": 9711.409395973154,
+      "goldComum": 7284,
       "gate": false,
       "ato": 5,
       "mundo": 3,
-      "estrela": 3
+      "estrela": 3,
+      "xpProp": 1610
     },
     {
       "phase": 537,
       "hp": 74906881928,
       "mitig": 0.4484641068447412,
-      "goldComum": 9731.543624161073,
+      "goldComum": 7299,
       "gate": false,
       "ato": 5,
       "mundo": 3,
-      "estrela": 3
+      "estrela": 3,
+      "xpProp": 1613
     },
     {
       "phase": 538,
       "hp": 77258191601,
       "mitig": 0.44928213689482466,
-      "goldComum": 9751.677852348994,
+      "goldComum": 7314,
       "gate": false,
       "ato": 5,
       "mundo": 3,
-      "estrela": 3
+      "estrela": 3,
+      "xpProp": 1616
     },
     {
       "phase": 539,
       "hp": 79683308341,
       "mitig": 0.4501001669449082,
-      "goldComum": 9771.812080536913,
+      "goldComum": 7329,
       "gate": false,
       "ato": 5,
       "mundo": 3,
-      "estrela": 3
+      "estrela": 3,
+      "xpProp": 1619
     },
     {
       "phase": 540,
       "hp": 82184548933,
       "mitig": 0.45091819699499164,
-      "goldComum": 9791.946308724831,
+      "goldComum": 7344,
       "gate": true,
       "ato": 5,
       "mundo": 3,
-      "estrela": 3
+      "estrela": 3,
+      "xpProp": 1622
     },
     {
       "phase": 541,
       "hp": 84764302889,
       "mitig": 0.4517362270450751,
-      "goldComum": 9812.080536912752,
+      "goldComum": 7359,
       "gate": false,
       "ato": 5,
       "mundo": 4,
-      "estrela": 1
+      "estrela": 1,
+      "xpProp": 1624
     },
     {
       "phase": 542,
       "hp": 87425034723,
       "mitig": 0.45255425709515856,
-      "goldComum": 9832.21476510067,
+      "goldComum": 7374,
       "gate": false,
       "ato": 5,
       "mundo": 4,
-      "estrela": 1
+      "estrela": 1,
+      "xpProp": 1627
     },
     {
       "phase": 543,
       "hp": 90169286314,
       "mitig": 0.453372287145242,
-      "goldComum": 9852.34899328859,
+      "goldComum": 7389,
       "gate": false,
       "ato": 5,
       "mundo": 4,
-      "estrela": 1
+      "estrela": 1,
+      "xpProp": 1630
     },
     {
       "phase": 544,
       "hp": 92999679326,
       "mitig": 0.45419031719532554,
-      "goldComum": 9872.48322147651,
+      "goldComum": 7404,
       "gate": false,
       "ato": 5,
       "mundo": 4,
-      "estrela": 1
+      "estrela": 1,
+      "xpProp": 1633
     },
     {
       "phase": 545,
       "hp": 95918917719,
       "mitig": 0.455008347245409,
-      "goldComum": 9892.617449664429,
+      "goldComum": 7419,
       "gate": false,
       "ato": 5,
       "mundo": 4,
-      "estrela": 1
+      "estrela": 1,
+      "xpProp": 1636
     },
     {
       "phase": 546,
       "hp": 98929790330,
       "mitig": 0.45582637729549247,
-      "goldComum": 9912.75167785235,
+      "goldComum": 7435,
       "gate": false,
       "ato": 5,
       "mundo": 4,
-      "estrela": 1
+      "estrela": 1,
+      "xpProp": 1639
     },
     {
       "phase": 547,
       "hp": 102035173534,
       "mitig": 0.45664440734557593,
-      "goldComum": 9932.885906040268,
+      "goldComum": 7450,
       "gate": false,
       "ato": 5,
       "mundo": 4,
-      "estrela": 1
+      "estrela": 1,
+      "xpProp": 1642
     },
     {
       "phase": 548,
       "hp": 105238033998,
       "mitig": 0.4574624373956594,
-      "goldComum": 9953.020134228187,
+      "goldComum": 7465,
       "gate": false,
       "ato": 5,
       "mundo": 4,
-      "estrela": 1
+      "estrela": 1,
+      "xpProp": 1645
     },
     {
       "phase": 549,
       "hp": 108541431509,
       "mitig": 0.45828046744574286,
-      "goldComum": 9973.154362416108,
+      "goldComum": 7480,
       "gate": false,
       "ato": 5,
       "mundo": 4,
-      "estrela": 1
+      "estrela": 1,
+      "xpProp": 1648
     },
     {
       "phase": 550,
       "hp": 111948521904,
       "mitig": 0.4590984974958264,
-      "goldComum": 9993.288590604026,
+      "goldComum": 7495,
       "gate": true,
       "ato": 5,
       "mundo": 4,
-      "estrela": 1
+      "estrela": 1,
+      "xpProp": 1651
     },
     {
       "phase": 551,
       "hp": 115462560077,
       "mitig": 0.45991652754590984,
-      "goldComum": 10013.422818791947,
+      "goldComum": 7510,
       "gate": false,
       "ato": 5,
       "mundo": 4,
-      "estrela": 2
+      "estrela": 2,
+      "xpProp": 1654
     },
     {
       "phase": 552,
       "hp": 119086903094,
       "mitig": 0.4607345575959933,
-      "goldComum": 10033.557046979866,
+      "goldComum": 7525,
       "gate": false,
       "ato": 5,
       "mundo": 4,
-      "estrela": 2
+      "estrela": 2,
+      "xpProp": 1657
     },
     {
       "phase": 553,
       "hp": 122825013399,
       "mitig": 0.46155258764607676,
-      "goldComum": 10053.691275167785,
+      "goldComum": 7540,
       "gate": false,
       "ato": 5,
       "mundo": 4,
-      "estrela": 2
+      "estrela": 2,
+      "xpProp": 1660
     },
     {
       "phase": 554,
       "hp": 126680462121,
       "mitig": 0.4623706176961602,
-      "goldComum": 10073.825503355703,
+      "goldComum": 7555,
       "gate": false,
       "ato": 5,
       "mundo": 4,
-      "estrela": 2
+      "estrela": 2,
+      "xpProp": 1663
     },
     {
       "phase": 555,
       "hp": 130656932485,
       "mitig": 0.4631886477462437,
-      "goldComum": 10093.959731543624,
+      "goldComum": 7570,
       "gate": false,
       "ato": 5,
       "mundo": 4,
-      "estrela": 2
+      "estrela": 2,
+      "xpProp": 1666
     },
     {
       "phase": 556,
       "hp": 134758223333,
       "mitig": 0.4640066777963272,
-      "goldComum": 10114.093959731545,
+      "goldComum": 7586,
       "gate": false,
       "ato": 5,
       "mundo": 4,
-      "estrela": 2
+      "estrela": 2,
+      "xpProp": 1669
     },
     {
       "phase": 557,
       "hp": 138988252750,
       "mitig": 0.46482470784641067,
-      "goldComum": 10134.228187919463,
+      "goldComum": 7601,
       "gate": false,
       "ato": 5,
       "mundo": 4,
-      "estrela": 2
+      "estrela": 2,
+      "xpProp": 1672
     },
     {
       "phase": 558,
       "hp": 143351061811,
       "mitig": 0.46564273789649413,
-      "goldComum": 10154.362416107382,
+      "goldComum": 7616,
       "gate": false,
       "ato": 5,
       "mundo": 4,
-      "estrela": 2
+      "estrela": 2,
+      "xpProp": 1675
     },
     {
       "phase": 559,
       "hp": 147850818439,
       "mitig": 0.4664607679465776,
-      "goldComum": 10174.496644295301,
+      "goldComum": 7631,
       "gate": false,
       "ato": 5,
       "mundo": 4,
-      "estrela": 2
+      "estrela": 2,
+      "xpProp": 1678
     },
     {
       "phase": 560,
       "hp": 152491821384,
       "mitig": 0.46727879799666105,
-      "goldComum": 10194.630872483222,
+      "goldComum": 7646,
       "gate": true,
       "ato": 5,
       "mundo": 4,
-      "estrela": 2
+      "estrela": 2,
+      "xpProp": 1681
     },
     {
       "phase": 561,
       "hp": 157278504337,
       "mitig": 0.4680968280467446,
-      "goldComum": 10214.76510067114,
+      "goldComum": 7661,
       "gate": false,
       "ato": 5,
       "mundo": 4,
-      "estrela": 3
+      "estrela": 3,
+      "xpProp": 1684
     },
     {
       "phase": 562,
       "hp": 162215440159,
       "mitig": 0.46891485809682804,
-      "goldComum": 10234.899328859061,
+      "goldComum": 7676,
       "gate": false,
       "ato": 5,
       "mundo": 4,
-      "estrela": 3
+      "estrela": 3,
+      "xpProp": 1687
     },
     {
       "phase": 563,
       "hp": 167307345253,
       "mitig": 0.4697328881469115,
-      "goldComum": 10255.03355704698,
+      "goldComum": 7691,
       "gate": false,
       "ato": 5,
       "mundo": 4,
-      "estrela": 3
+      "estrela": 3,
+      "xpProp": 1690
     },
     {
       "phase": 564,
       "hp": 172559084068,
       "mitig": 0.47055091819699496,
-      "goldComum": 10275.167785234898,
+      "goldComum": 7706,
       "gate": false,
       "ato": 5,
       "mundo": 4,
-      "estrela": 3
+      "estrela": 3,
+      "xpProp": 1693
     },
     {
       "phase": 565,
       "hp": 177975673749,
       "mitig": 0.4713689482470784,
-      "goldComum": 10295.302013422819,
+      "goldComum": 7721,
       "gate": false,
       "ato": 5,
       "mundo": 4,
-      "estrela": 3
+      "estrela": 3,
+      "xpProp": 1696
     },
     {
       "phase": 566,
       "hp": 183562288925,
       "mitig": 0.4721869782971619,
-      "goldComum": 10315.436241610738,
+      "goldComum": 7737,
       "gate": false,
       "ato": 5,
       "mundo": 4,
-      "estrela": 3
+      "estrela": 3,
+      "xpProp": 1699
     },
     {
       "phase": 567,
       "hp": 189324266657,
       "mitig": 0.4730050083472454,
-      "goldComum": 10335.570469798658,
+      "goldComum": 7752,
       "gate": false,
       "ato": 5,
       "mundo": 4,
-      "estrela": 3
+      "estrela": 3,
+      "xpProp": 1702
     },
     {
       "phase": 568,
       "hp": 195267111536,
       "mitig": 0.47382303839732887,
-      "goldComum": 10355.704697986577,
+      "goldComum": 7767,
       "gate": false,
       "ato": 5,
       "mundo": 4,
-      "estrela": 3
+      "estrela": 3,
+      "xpProp": 1705
     },
     {
       "phase": 569,
       "hp": 201396500939,
       "mitig": 0.47464106844741233,
-      "goldComum": 10375.838926174496,
+      "goldComum": 7782,
       "gate": false,
       "ato": 5,
       "mundo": 4,
-      "estrela": 3
+      "estrela": 3,
+      "xpProp": 1708
     },
     {
       "phase": 570,
       "hp": 207718290456,
       "mitig": 0.4754590984974958,
-      "goldComum": 10395.973154362415,
+      "goldComum": 7797,
       "gate": true,
       "ato": 5,
       "mundo": 4,
-      "estrela": 3
+      "estrela": 3,
+      "xpProp": 1711
     },
     {
       "phase": 571,
       "hp": 214238519482,
       "mitig": 0.47627712854757925,
-      "goldComum": 10416.107382550335,
+      "goldComum": 7812,
       "gate": false,
       "ato": 5,
       "mundo": 5,
-      "estrela": 1
+      "estrela": 1,
+      "xpProp": 1714
     },
     {
       "phase": 572,
       "hp": 220963416986,
       "mitig": 0.4770951585976627,
-      "goldComum": 10436.241610738256,
+      "goldComum": 7827,
       "gate": false,
       "ato": 5,
       "mundo": 5,
-      "estrela": 1
+      "estrela": 1,
+      "xpProp": 1717
     },
     {
       "phase": 573,
       "hp": 227899407465,
       "mitig": 0.47791318864774623,
-      "goldComum": 10456.375838926175,
+      "goldComum": 7842,
       "gate": false,
       "ato": 5,
       "mundo": 5,
-      "estrela": 1
+      "estrela": 1,
+      "xpProp": 1720
     },
     {
       "phase": 574,
       "hp": 235053117079,
       "mitig": 0.4787312186978297,
-      "goldComum": 10476.510067114094,
+      "goldComum": 7857,
       "gate": false,
       "ato": 5,
       "mundo": 5,
-      "estrela": 1
+      "estrela": 1,
+      "xpProp": 1723
     },
     {
       "phase": 575,
       "hp": 242431379981,
       "mitig": 0.47954924874791316,
-      "goldComum": 10496.644295302012,
+      "goldComum": 7872,
       "gate": false,
       "ato": 5,
       "mundo": 5,
-      "estrela": 1
+      "estrela": 1,
+      "xpProp": 1726
     },
     {
       "phase": 576,
       "hp": 250041244846,
       "mitig": 0.4803672787979966,
-      "goldComum": 10516.778523489933,
+      "goldComum": 7888,
       "gate": false,
       "ato": 5,
       "mundo": 5,
-      "estrela": 1
+      "estrela": 1,
+      "xpProp": 1729
     },
     {
       "phase": 577,
       "hp": 257889981607,
       "mitig": 0.4811853088480801,
-      "goldComum": 10536.912751677852,
+      "goldComum": 7903,
       "gate": false,
       "ato": 5,
       "mundo": 5,
-      "estrela": 1
+      "estrela": 1,
+      "xpProp": 1732
     },
     {
       "phase": 578,
       "hp": 265985088397,
       "mitig": 0.4820033388981636,
-      "goldComum": 10557.046979865772,
+      "goldComum": 7918,
       "gate": false,
       "ato": 5,
       "mundo": 5,
-      "estrela": 1
+      "estrela": 1,
+      "xpProp": 1735
     },
     {
       "phase": 579,
       "hp": 274334298714,
       "mitig": 0.48282136894824706,
-      "goldComum": 10577.181208053691,
+      "goldComum": 7933,
       "gate": false,
       "ato": 5,
       "mundo": 5,
-      "estrela": 1
+      "estrela": 1,
+      "xpProp": 1738
     },
     {
       "phase": 580,
       "hp": 282945588809,
       "mitig": 0.4836393989983305,
-      "goldComum": 10597.31543624161,
+      "goldComum": 7948,
       "gate": true,
       "ato": 5,
       "mundo": 5,
-      "estrela": 1
+      "estrela": 1,
+      "xpProp": 1741
     },
     {
       "phase": 581,
       "hp": 291827185306,
       "mitig": 0.484457429048414,
-      "goldComum": 10617.44966442953,
+      "goldComum": 7963,
       "gate": false,
       "ato": 5,
       "mundo": 5,
-      "estrela": 2
+      "estrela": 2,
+      "xpProp": 1743
     },
     {
       "phase": 582,
       "hp": 300987573059,
       "mitig": 0.48527545909849745,
-      "goldComum": 10637.58389261745,
+      "goldComum": 7978,
       "gate": false,
       "ato": 5,
       "mundo": 5,
-      "estrela": 2
+      "estrela": 2,
+      "xpProp": 1746
     },
     {
       "phase": 583,
       "hp": 310435503262,
       "mitig": 0.4860934891485809,
-      "goldComum": 10657.71812080537,
+      "goldComum": 7993,
       "gate": false,
       "ato": 5,
       "mundo": 5,
-      "estrela": 2
+      "estrela": 2,
+      "xpProp": 1749
     },
     {
       "phase": 584,
       "hp": 320180001806,
       "mitig": 0.48691151919866443,
-      "goldComum": 10677.852348993289,
+      "goldComum": 8008,
       "gate": false,
       "ato": 5,
       "mundo": 5,
-      "estrela": 2
+      "estrela": 2,
+      "xpProp": 1752
     },
     {
       "phase": 585,
       "hp": 330230377902,
       "mitig": 0.4877295492487479,
-      "goldComum": 10697.986577181207,
+      "goldComum": 8023,
       "gate": false,
       "ato": 5,
       "mundo": 5,
-      "estrela": 2
+      "estrela": 2,
+      "xpProp": 1755
     },
     {
       "phase": 586,
       "hp": 340596232976,
       "mitig": 0.48854757929883136,
-      "goldComum": 10718.120805369126,
+      "goldComum": 8039,
       "gate": false,
       "ato": 5,
       "mundo": 5,
-      "estrela": 2
+      "estrela": 2,
+      "xpProp": 1758
     },
     {
       "phase": 587,
       "hp": 351287469840,
       "mitig": 0.4893656093489148,
-      "goldComum": 10738.255033557047,
+      "goldComum": 8054,
       "gate": false,
       "ato": 5,
       "mundo": 5,
-      "estrela": 2
+      "estrela": 2,
+      "xpProp": 1761
     },
     {
       "phase": 588,
       "hp": 362314302153,
       "mitig": 0.4901836393989983,
-      "goldComum": 10758.389261744967,
+      "goldComum": 8069,
       "gate": false,
       "ato": 5,
       "mundo": 5,
-      "estrela": 2
+      "estrela": 2,
+      "xpProp": 1764
     },
     {
       "phase": 589,
       "hp": 373687264178,
       "mitig": 0.4910016694490818,
-      "goldComum": 10778.523489932886,
+      "goldComum": 8084,
       "gate": false,
       "ato": 5,
       "mundo": 5,
-      "estrela": 2
+      "estrela": 2,
+      "xpProp": 1767
     },
     {
       "phase": 590,
       "hp": 385417220846,
       "mitig": 0.49181969949916526,
-      "goldComum": 10798.657718120805,
+      "goldComum": 8099,
       "gate": true,
       "ato": 5,
       "mundo": 5,
-      "estrela": 2
+      "estrela": 2,
+      "xpProp": 1770
     },
     {
       "phase": 591,
       "hp": 397515378138,
       "mitig": 0.4926377295492487,
-      "goldComum": 10818.791946308724,
+      "goldComum": 8114,
       "gate": false,
       "ato": 5,
       "mundo": 5,
-      "estrela": 3
+      "estrela": 3,
+      "xpProp": 1773
     },
     {
       "phase": 592,
       "hp": 409993293784,
       "mitig": 0.4934557595993322,
-      "goldComum": 10838.926174496644,
+      "goldComum": 8129,
       "gate": false,
       "ato": 5,
       "mundo": 5,
-      "estrela": 3
+      "estrela": 3,
+      "xpProp": 1776
     },
     {
       "phase": 593,
       "hp": 422862888313,
       "mitig": 0.49427378964941565,
-      "goldComum": 10859.060402684563,
+      "goldComum": 8144,
       "gate": false,
       "ato": 5,
       "mundo": 5,
-      "estrela": 3
+      "estrela": 3,
+      "xpProp": 1779
     },
     {
       "phase": 594,
       "hp": 436136456433,
       "mitig": 0.4950918196994991,
-      "goldComum": 10879.194630872484,
+      "goldComum": 8159,
       "gate": false,
       "ato": 5,
       "mundo": 5,
-      "estrela": 3
+      "estrela": 3,
+      "xpProp": 1782
     },
     {
       "phase": 595,
       "hp": 449826678782,
       "mitig": 0.49590984974958263,
-      "goldComum": 10899.328859060402,
+      "goldComum": 8174,
       "gate": false,
       "ato": 5,
       "mundo": 5,
-      "estrela": 3
+      "estrela": 3,
+      "xpProp": 1785
     },
     {
       "phase": 596,
       "hp": 463946634040,
       "mitig": 0.4967278797996661,
-      "goldComum": 10919.463087248321,
+      "goldComum": 8190,
       "gate": false,
       "ato": 5,
       "mundo": 5,
-      "estrela": 3
+      "estrela": 3,
+      "xpProp": 1788
     },
     {
       "phase": 597,
       "hp": 478509811422,
       "mitig": 0.49754590984974956,
-      "goldComum": 10939.597315436242,
+      "goldComum": 8205,
       "gate": false,
       "ato": 5,
       "mundo": 5,
-      "estrela": 3
+      "estrela": 3,
+      "xpProp": 1791
     },
     {
       "phase": 598,
       "hp": 493530123570,
       "mitig": 0.498363939899833,
-      "goldComum": 10959.73154362416,
+      "goldComum": 8220,
       "gate": false,
       "ato": 5,
       "mundo": 5,
-      "estrela": 3
+      "estrela": 3,
+      "xpProp": 1794
     },
     {
       "phase": 599,
       "hp": 509021919837,
       "mitig": 0.4991819699499165,
-      "goldComum": 10979.865771812081,
+      "goldComum": 8235,
       "gate": false,
       "ato": 5,
       "mundo": 5,
-      "estrela": 3
+      "estrela": 3,
+      "xpProp": 1797
     },
     {
       "phase": 600,
       "hp": 525000000000,
       "mitig": 0.49999999999999994,
-      "goldComum": 11000,
+      "goldComum": 8250,
       "gate": true,
       "ato": 5,
       "mundo": 5,
-      "estrela": 3
+      "estrela": 3,
+      "xpProp": 1800
     }
   ]
 }

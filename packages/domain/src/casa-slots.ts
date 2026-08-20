@@ -1,4 +1,19 @@
-/** Casa field-slot count resolved from a save `casa` block (RGO-3, ASM-S02). */
+/**
+ * Slot counts resolved from a save (RGO-3, ASM-S02).
+ *
+ * TWO DIFFERENT GAME CONCEPTS, two different keys — do not collapse them:
+ *
+ * - **House recovery slots** — `casa.slots`. How many heroes the House recovers AT A TIME.
+ *   Heroes beyond that queue behind a full House at frozen energy (the bot's reference reader
+ *   distinguishes them by `recovering === true`; a hero `in_casa` without it is queued, not
+ *   filling). {@link resolveCasaSlots} reads this.
+ * - **Field slots** — `skills.field_slots`. How many heroes may stand on the field AT ONCE.
+ *   {@link resolveFieldSlots} reads this.
+ *
+ * They routinely disagree: account 486 carries `casa.slots: 3` against `skills.field_slots: 6`.
+ * Reading one where the other is meant silently caps a 6-wide field at 3 (or lets 6 heroes
+ * recover in a 3-slot House). `farm-rate.ts` did exactly the former until the House-ceiling fix.
+ */
 
 export const CASA_SLOTS_PER_HOUSE = [3, 6, 9, 9, 9] as const;
 
@@ -19,6 +34,9 @@ function clampSlots(value: number): number {
 }
 
 /**
+ * HOUSE RECOVERY slots — how many heroes the House refills simultaneously, NOT the field
+ * concurrency cap (that is {@link resolveFieldSlots}).
+ *
  * Three-tier ladder: `casa.slots` → `casa.slots_per_house[houseIdx]` → {@link DEFAULT_CASA_SLOTS}.
  * Result is always a finite integer >= 1.
  */
@@ -41,4 +59,23 @@ export function resolveCasaSlots(casa: unknown, houseIdx: number | null): number
   }
 
   return clampSlots(DEFAULT_CASA_SLOTS);
+}
+
+/**
+ * FIELD slots — how many heroes may be deployed at once — from `skills.field_slots`.
+ * `null` when the save does not carry the key, so a caller can keep its own fallback rather
+ * than inherit an invented number here.
+ *
+ * `AD-063` convention, followed verbatim: the save carries BOTH `skills.field_slots` and
+ * `skills.totals.vagas_campo` and they disagree (6 vs 5 on account 486, 3 vs 2 on the
+ * 2026-08-13 export). This reader RECORDS `field_slots` and does not reconcile the pair —
+ * `vagas_campo` is the skill tree's own purchased-node total, `field_slots` is the count the
+ * client reports for the field itself, and `field_slots` is the one that has matched observed
+ * deployments. The divergence stays a latent, documented fact rather than an averaged guess.
+ */
+export function resolveFieldSlots(skills: unknown): number | null {
+  if (!isObject(skills)) return null;
+  const raw = skills.field_slots;
+  if (typeof raw !== 'number' || !Number.isFinite(raw) || raw < 1) return null;
+  return clampSlots(raw);
 }

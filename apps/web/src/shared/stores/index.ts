@@ -27,14 +27,20 @@ export {
   selectTreeSpeed,
   selectTreeEnergy,
   selectTreeTeamCoinPct,
-  selectTeamBuffs,
+  selectTeamBuffsOverride,
+  selectEffectiveTeamBuffs,
+  resetEffectiveTeamBuffsCache,
   selectHouseIdx,
   selectHouseLevel,
+  selectHouseCycleSecs,
+  selectHouseCycleSecsHouseIdx,
+  selectHouseCycleSecsLevel,
   selectFarmPhase,
   selectMitigationPct,
   selectRankMode,
   selectTargetProp,
   selectSlots,
+  selectMaxPhase,
 } from '@/shared/stores/selectors/account-selectors';
 export {
   selectTeamPlanIsStale,
@@ -50,8 +56,6 @@ export {
 } from '@/shared/stores/selectors/roster-selectors';
 export {
   selectDps,
-  selectBestStat,
-  selectBestGainPct,
   selectAdvisorPipeline,
   getAdvisorPipelineComputeCount,
   resetAdvisorPipelineCache,
@@ -85,5 +89,59 @@ export {
   selectPointsTabStatus,
   resetPlannerTabStatusCache,
 } from '@/shared/stores/selectors/tab-status-selectors';
-export { selectPhasesViewPhase } from '@/shared/stores/selectors/phases-selectors';
+export {
+  selectPhasesViewPhase,
+  selectPhasesViewPhaseChosen,
+} from '@/shared/stores/selectors/phases-selectors';
 export { selectTreeSheetTotals } from '@/shared/stores/selectors/tree-sheet-selectors';
+export {
+  selectFarmRankingRows,
+  selectFarmPoolEntries,
+  deriveFarmPoolEntries,
+  selectFarmReturnBonus,
+  resetFarmRankingCache,
+  getFarmRankingComputeCount,
+  resetFarmRankingComputeCount,
+  readFarmRespecDepTuple,
+  computeFarmRespecShouldSurface,
+  selectFarmRespecGate,
+  getFarmRespecGateComputeCount,
+  resetFarmRespecGateComputeCount,
+  runFarmRespecSolve,
+  getFarmRespecSolveCount,
+  resetFarmRespecSolveCount,
+  selectFarmRespecIsStale,
+  selectFarmRespecView,
+  selectFarmRespecStatus,
+  selectFarmReRankActive,
+  selectFarmBoardRows,
+  getFarmRespecRowsComputeCount,
+  resetFarmRespecRowsComputeCount,
+} from '@/shared/stores/selectors/farm-ranking-selectors';
+export type {
+  FarmRankingResult,
+  FarmRankingReason,
+  FarmPoolEntry,
+  FarmRespecGate,
+  FarmRespecGateReason,
+} from '@/shared/stores/selectors/farm-ranking-selectors';
+export {
+  selectFarmPoolBases,
+  resetFarmPoolBasesCache,
+  getFarmPoolBasesComputeCount,
+  resetFarmPoolBasesComputeCount,
+  selectDraftFarmBasis,
+  resetDraftFarmBasisCache,
+  getDraftFarmBasisComputeCount,
+  resetDraftFarmBasisComputeCount,
+  selectNextPointRanking,
+  resetNextPointRankingCache,
+  getNextPointRankingComputeCount,
+  resetNextPointRankingComputeCount,
+  getFarmRankComputeCount,
+  resetFarmRankComputeCount,
+  selectNextPointBest,
+  selectBestStat,
+  selectBestGainPct,
+} from '@/shared/stores/selectors/next-point-selectors';
+export type { NextPointRanking } from '@/shared/stores/selectors/next-point-selectors';

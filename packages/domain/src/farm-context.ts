@@ -1,7 +1,7 @@
 import type { AbilityMods, Context } from './model';
 import type { CycleModel } from './model';
 import type { HeroContext } from './shims/storage';
-import { houseRestSeconds } from './model/house';
+import { resolveHouseRestSeconds } from './model/house';
 import { wikiPhaseLine } from './phase-wiki';
 
 /** Fixed serial bomb cycle — not user-editable. */
@@ -55,6 +55,28 @@ export type FarmContextForHeroInput = {
   houseLevel: number;
   mitigationPct: number;
   phase?: number | null;
+  /**
+   * `casa.cycle_secs` from the save — the House's own full-fill countdown, in seconds. Absent
+   * (`undefined`/`null`) falls back to the {@link HOUSES} interpolation, which is a ~7.8%-fast
+   * reconstruction; see {@link resolveHouseRestSeconds}.
+   *
+   * DELIBERATELY NOT farm-board-only: this feeds `Context.restSeconds`, which the ADVISOR
+   * (`advisor-pipeline.ts`) and the TEAM-PLAN scorer (`team-plan/score.ts`) read for duty cycle
+   * and sustained DPS exactly as the farm board does. Rest time is rest time — special-casing the
+   * measured cycle to one surface would leave the other two knowingly wrong.
+   */
+  cycleSecs?: number | null;
+  /**
+   * The (house, level) `cycleSecs` above was captured at — `casa.active_casa - 1` /
+   * `casa.levels[active_casa - 1]` at import time. Omitted, {@link resolveHouseRestSeconds} trusts
+   * `cycleSecs` unconditionally (the pre-existing behaviour, still correct for every caller with
+   * no picker able to request a house/level other than the account's own). The web planner DOES
+   * have such a picker, so it supplies these so a picker move away from the account's real
+   * configuration actually falls back to the {@link HOUSES} table instead of returning the frozen
+   * save figure for the wrong house/level.
+   */
+  cycleSecsHouseIdx?: number | null;
+  cycleSecsLevel?: number | null;
 };
 
 /** Shared per-hero farm `Context` — AD-RGO-27 drain path for advisor + team-plan scorer. */
@@ -63,7 +85,13 @@ export function farmContextForHero(input: FarmContextForHeroInput): Context {
     phase: input.phase ?? null,
     mitigationPct: input.mitigationPct,
   });
-  const rest = houseRestSeconds(input.houseIdx, input.houseLevel);
+  const rest = resolveHouseRestSeconds(
+    input.cycleSecs,
+    input.houseIdx,
+    input.houseLevel,
+    input.cycleSecsHouseIdx,
+    input.cycleSecsLevel,
+  );
   return {
     restSeconds: rest,
     mitigation: mitPct / 100,

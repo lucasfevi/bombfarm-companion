@@ -29,10 +29,13 @@ describe('account slice', () => {
     expect(s.treeCritChance).toBe(0);
     expect(s.treeTeamCoinPct).toBe(0);
     expect(s.treeLuckFlatPct).toBe(0);
-    expect(s.teamBuffs).toEqual(zeroTeamBuffs());
+    expect(s.treeXpMult).toBe(1);
+    // null = derive from the deployed roster (issue #132) — not zeroTeamBuffs(), which used to
+    // leave every carrier's own aura at 0% until someone found the auto-fill button.
+    expect(s.teamBuffsOverride).toBeNull();
     expect(s.houseIdx).toBe(0);
     expect(s.phase).toBeNull();
-    expect(s.rankMode).toBe('dps');
+    expect(s.rankMode).toBe('farm');
     expect(s.targetProp).toBe('stone');
   });
 
@@ -83,6 +86,50 @@ describe('account slice', () => {
     expect(normalized.context.targetProp).toBe('stone');
   });
 
+  it('normalizeAccount defaults tree.xpMult to 1 (not 0) when the field is absent (pre-existing record)', () => {
+    const preXpMultTree = {
+      danoTotal: 1.2,
+      critChance: 5,
+      critDmg: 10,
+      speed: 3,
+      energy: 4,
+      teamCoinPct: 7,
+      luckFlatPct: 6,
+      // xpMult intentionally absent — the shape every record saved before this feature has.
+    };
+    const normalized = normalizeAccount({
+      tree: preXpMultTree,
+      teamBuffs: zeroTeamBuffs(),
+      context: {
+        houseIdx: 0,
+        houseLevel: 0,
+        phase: null,
+        mitigationPct: 1,
+        rankMode: 'dps',
+        targetProp: null,
+      },
+    });
+    expect(normalized.tree.xpMult).toBe(1);
+  });
+
+  it('applyAccountImport writes tree.xpMult, defaulting absence to 1', () => {
+    usePlannerStore.getState().applyAccountImport({
+      tree: { ...sampleTree, xpMult: 1.56 },
+      houseIdx: null,
+      houseLevel: null,
+      phase: null,
+    });
+    expect(usePlannerStore.getState().treeXpMult).toBe(1.56);
+
+    usePlannerStore.getState().applyAccountImport({
+      tree: { ...sampleTree },
+      houseIdx: null,
+      houseLevel: null,
+      phase: null,
+    });
+    expect(usePlannerStore.getState().treeXpMult).toBe(1);
+  });
+
   it('selectAccountShared returns a stable reference while the account tuple is unchanged', () => {
     const a = selectAccountShared(usePlannerStore.getState());
     const b = selectAccountShared(usePlannerStore.getState());
@@ -96,6 +143,65 @@ describe('account slice', () => {
     const c = selectAccountShared(usePlannerStore.getState());
     expect(c).not.toBe(a);
     expect(c.tree.danoTotal).toBe(1.5);
+  });
+
+  describe('teamBuffsOverride migration from a legacy (pre-issue-132) record (no teamBuffsOverride key)', () => {
+    it('an all-zero legacy teamBuffs migrates to null (derive) — indistinguishable from "never touched"', () => {
+      const shared = normalizeAccount({
+        tree: { ...sampleTree },
+        teamBuffs: zeroTeamBuffs(),
+        context: {
+          houseIdx: 0,
+          houseLevel: 0,
+          phase: null,
+          mitigationPct: 1,
+          rankMode: 'dps',
+          targetProp: null,
+        },
+      });
+      expect(shared.teamBuffsOverride).toBeNull();
+      usePlannerStore.getState().hydrateAccount(shared);
+      expect(usePlannerStore.getState().teamBuffsOverride).toBeNull();
+    });
+
+    it('a legacy teamBuffs with any nonzero entry migrates to an explicit override', () => {
+      const legacy = { ...zeroTeamBuffs(), folego_mineiro: 20 };
+      const shared = normalizeAccount({
+        tree: { ...sampleTree },
+        teamBuffs: legacy,
+        context: {
+          houseIdx: 0,
+          houseLevel: 0,
+          phase: null,
+          mitigationPct: 1,
+          rankMode: 'dps',
+          targetProp: null,
+        },
+      });
+      expect(shared.teamBuffsOverride).toEqual(legacy);
+      usePlannerStore.getState().hydrateAccount(shared);
+      expect(usePlannerStore.getState().teamBuffsOverride).toEqual(legacy);
+    });
+
+    it('a record already carrying teamBuffsOverride (current schema) is trusted as-is, even when null', () => {
+      const shared = normalizeAccount({
+        tree: { ...sampleTree },
+        // Legacy field present and NONZERO, but the new field is ALSO present and null — the
+        // new field wins, proving this is a schema-version check, not a value heuristic once a
+        // record has been written by the current code.
+        teamBuffs: { ...zeroTeamBuffs(), grito_guerra: 5 },
+        teamBuffsOverride: null,
+        context: {
+          houseIdx: 0,
+          houseLevel: 0,
+          phase: null,
+          mitigationPct: 1,
+          rankMode: 'dps',
+          targetProp: null,
+        },
+      });
+      expect(shared.teamBuffsOverride).toBeNull();
+    });
   });
 
   it('hydrateAccount → selectAccountShared round-trips through normalizeAccount', () => {
@@ -149,12 +255,12 @@ describe('account slice', () => {
     expect(usePlannerStore.getState().houseLevel).toBe(5);
   });
 
-  it('setTeamBuffs returns previous reference when shallow-equal', () => {
+  it('setTeamBuffsOverride returns previous reference when shallow-equal', () => {
     const buffs = { ...zeroTeamBuffs(), grito_guerra: 1 };
-    usePlannerStore.getState().setTeamBuffs(buffs);
-    const ref = usePlannerStore.getState().teamBuffs;
-    usePlannerStore.getState().setTeamBuffs({ ...buffs });
-    expect(usePlannerStore.getState().teamBuffs).toBe(ref);
+    usePlannerStore.getState().setTeamBuffsOverride(buffs);
+    const ref = usePlannerStore.getState().teamBuffsOverride;
+    usePlannerStore.getState().setTeamBuffsOverride({ ...buffs });
+    expect(usePlannerStore.getState().teamBuffsOverride).toBe(ref);
   });
 
   it('preserves full-precision tree floats through applyAccountImport (no UI round-trip)', () => {

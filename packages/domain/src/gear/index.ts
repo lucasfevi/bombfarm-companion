@@ -25,8 +25,6 @@ export {
   ITEM_LEVELS,
   ITEM_RARITIES,
   SETS_BY_LEVEL,
-  DMG_PCT_MIN_LEVEL,
-  isDmgPctLevel,
   composeAttack,
   decomposeAttack,
   emptyLoadout,

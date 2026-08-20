@@ -44,6 +44,19 @@ export type FarmContext = {
   houseLevel: number;
   phase: number | null;
   mitigationPct: number;
+  /**
+   * `casa.cycle_secs` when the save carried it. Absent falls back to the `HOUSES` table — the
+   * scorer's historical behaviour. Threaded here rather than left to the farm board alone
+   * because `farmContextForHero` produces the `restSeconds` this scorer's duty cycle divides by.
+   */
+  cycleSecs?: number | null;
+  /**
+   * The (house, level) `cycleSecs` above was captured at — see
+   * `FarmContextForHeroInput.cycleSecsHouseIdx`/`cycleSecsLevel` (`farm-context.ts`). Omitted,
+   * `cycleSecs` is trusted unconditionally regardless of `houseIdx`/`houseLevel` above.
+   */
+  cycleSecsHouseIdx?: number | null;
+  cycleSecsLevel?: number | null;
 };
 
 export type HeroPlanContext = {
@@ -135,7 +148,20 @@ export type TeamPlanAccountInput = {
   houseLevel: number;
   phase: number | null;
   mitigationPct: number;
+  /** HOUSE RECOVERY slots (`casa.slots`) — NOT the field concurrency cap; see {@link fieldSlots}. */
   slots: number;
+  /**
+   * FIELD concurrency cap — how many heroes may be deployed at once. Already resolved with its
+   * fallback (`account.fieldSlots ?? account.slots`, `farm-rate.ts`'s `SquadFarmFacts` convention)
+   * by the caller. This, not {@link slots}, is what `evaluateRoster`'s saturation math means by
+   * "slots" — the roster objective divides duty against how many heroes can fight at once.
+   */
+  fieldSlots: number;
+  /** `casa.cycle_secs` — see {@link FarmContext.cycleSecs}. Optional: absent keeps the table. */
+  cycleSecs?: number | null;
+  /** See {@link FarmContext.cycleSecsHouseIdx}/`cycleSecsLevel`. */
+  cycleSecsHouseIdx?: number | null;
+  cycleSecsLevel?: number | null;
 };
 
 export type TeamPlanInput = {

@@ -14,9 +14,8 @@ const HOSTNAME_PATTERN = 'wiki\\.bombfarm\\.net';
  * that fails on widening **and** on silent narrowing, applied here to the wiki-client surface.
  *
  * Clause A bans a **client call** to the wiki host — not the hostname, which appears
- * legitimately 8 times (credit links, i18n strings, provenance comments, a runtime URL builder
- * nothing renders today). Clause B pins that hostname surface as a census so a ninth appearance
- * is a reviewable diff, not a silent one.
+ * legitimately 11 times (credit links, i18n strings, provenance comments). Clause B pins that
+ * hostname surface as a census so an eighth appearance is a reviewable diff, not a silent one.
  */
 
 function gitGrep(pattern, pathspecs, flags = '-nE') {
@@ -105,15 +104,16 @@ describe('Clause A — no HTTP client call targeting the wiki host, anywhere und
 });
 
 // =============================================================================================
-// Clause B — the census: the hostname's 8 legitimate files, pinned per-file with an exact count
+// Clause B — the census: the hostname's 7 legitimate files, pinned per-file with an exact count
 // =============================================================================================
 
 /**
  * Measured directly against this tree (`git grep -c "wiki\.bombfarm\.net" -- apps packages`):
- * 8 files, 12 matches. Design's own §2.5 table (not its summary prose) sums to the same 12 —
- * every one of its per-file counts below is reproduced verbatim; only the prose total this test
- * does not repeat ("14") was arithmetically wrong. The tree wins over that one summary figure,
- * per this repo's own precedent for reconciling spec/design against the measured tree.
+ * 7 files, 11 matches. It was 8 files / 12 matches until the runtime URL builder in
+ * `packages/game-data/src/parsers/inventory.ts` was deleted — item art is bundled-only, so no
+ * shipped code composes a wiki URL any more. Every remaining entry is a credit link, an i18n
+ * string, a test title, a provenance comment, or the `WIKI_URL` constant itself. The measured
+ * tree is the authority here, per this repo's own precedent for reconciling docs against it.
  */
 const HOSTNAME_CENSUS = [
   { file: 'apps/web/src/features/planner/components/explain-section.tsx', count: 2, owner: 'outbound wiki credit anchor + its label' },
@@ -123,11 +123,6 @@ const HOSTNAME_CENSUS = [
   { file: 'packages/domain/src/model/index.ts', count: 1, owner: 'provenance comment' },
   { file: 'packages/domain/src/wiki-assets.ts', count: 1, owner: 'WIKI_URL constant declaration' },
   { file: 'packages/domain/tests/fixtures/i18n-strings-main.json', count: 2, owner: 'i18n parity fixture' },
-  {
-    file: 'packages/game-data/src/parsers/inventory.ts',
-    count: 1,
-    owner: 'runtime URL builder (computeIconUrl) — a URL builder that nothing renders today; a future caller would need docs/wiki-drift-check.md amended first',
-  },
 ];
 
 function actualHostnameCensus() {
@@ -140,27 +135,22 @@ function actualHostnameCensus() {
   return counts;
 }
 
-describe('Clause B — the hostname census: 8 files, exact per-file counts, an owner for each', () => {
-  it('the census is exactly the enumerated set, 8 entries, each with a positive count and an owner', () => {
-    expect(HOSTNAME_CENSUS.length).toBe(8);
+describe('Clause B — the hostname census: 7 files, exact per-file counts, an owner for each', () => {
+  it('the census is exactly the enumerated set, 7 entries, each with a positive count and an owner', () => {
+    expect(HOSTNAME_CENSUS.length).toBe(7);
     expect(HOSTNAME_CENSUS.every((e) => e.file && e.count > 0 && e.owner)).toBe(true);
   });
 
-  it('git grep -c "wiki\\.bombfarm\\.net" -- apps packages reports exactly these 8 files with these exact counts', () => {
+  it('git grep -c "wiki\\.bombfarm\\.net" -- apps packages reports exactly these 7 files with these exact counts', () => {
     const actual = actualHostnameCensus();
     const expectedFiles = HOSTNAME_CENSUS.map((e) => e.file).sort();
     const actualFiles = Object.keys(actual).sort();
 
-    expect(actualFiles, 'a file gained/lost a match, disappeared, or a ninth file appeared').toEqual(expectedFiles);
+    expect(actualFiles, 'a file gained/lost a match, disappeared, or an eighth file appeared').toEqual(expectedFiles);
 
     for (const entry of HOSTNAME_CENSUS) {
       expect(actual[entry.file], `${entry.file} (${entry.owner}): match count`).toBe(entry.count);
     }
-  });
-
-  it('the inventory.ts entry is explicitly noted as a URL builder nothing renders today', () => {
-    const entry = HOSTNAME_CENSUS.find((e) => e.file === 'packages/game-data/src/parsers/inventory.ts');
-    expect(entry.owner).toMatch(/nothing renders today/);
   });
 });
 
@@ -184,11 +174,11 @@ describe('Clause B — the comparison logic itself fails in both directions (syn
 
   it('a simulated REMOVED file fails the comparison (silent narrowing)', () => {
     const observed = Object.fromEntries(HOSTNAME_CENSUS.map((e) => [e.file, e.count]));
-    delete observed['packages/game-data/src/parsers/inventory.ts'];
+    delete observed['packages/domain/src/model/index.ts'];
     expect(censusMatches(HOSTNAME_CENSUS, observed)).toBe(false);
   });
 
-  it('a simulated NINTH file fails the comparison', () => {
+  it('a simulated EIGHTH file fails the comparison', () => {
     const observed = Object.fromEntries(HOSTNAME_CENSUS.map((e) => [e.file, e.count]));
     observed['apps/web/src/some-new-file.ts'] = 1;
     expect(censusMatches(HOSTNAME_CENSUS, observed)).toBe(false);
@@ -269,7 +259,7 @@ describe('Clause C — red states: losing any one of the three elements turns th
 });
 
 // =============================================================================================
-// MWD-32 — reference hygiene: no research-repo name, no bot-repo name, no .specs/ path, no
+// MWD-32 — reference hygiene: no research-repo name, no bot-repo name, no specs-directory path, no
 // private decision identifier, in any file this feature authored end-to-end
 // =============================================================================================
 
@@ -298,10 +288,17 @@ const FULLY_AUTHORED_FILES = [
   // other repo-wide identifier-absence guard takes for itself.
 ];
 
+// This guard must not spell the names it exists to catch — the same self-reference problem a
+// "no console.log" lint rule has to dodge in its own implementation. Earlier revisions assembled
+// each name from parts (`['bombfarm', 'x'].join('-')`), which defeats `git grep` but still shows
+// the name to anyone reading the file. A negative lookahead on this repo's OWN name avoids
+// naming a sibling at all, and catches a sibling added later for free.
+const SIBLING_REPO_PATTERN = /bombfarm-(?!companion)[a-z][a-z-]*/i;
+const SPECS_DIR_SEGMENT = ['.specs', '/'].join('');
+
 const FORBIDDEN_REFERENCE_PATTERNS = [
-  { name: 'research-repo name', pattern: /bombfarm-research/i },
-  { name: 'bot-repo name', pattern: /bombfarm-bot/i },
-  { name: '.specs/ path', pattern: /\.specs\// },
+  { name: 'sibling-repo name', pattern: SIBLING_REPO_PATTERN },
+  { name: 'specs-directory path', pattern: new RegExp(SPECS_DIR_SEGMENT.replace('.', '\\.').replace('/', '\\/')) },
   { name: 'AD-prefixed decision id', pattern: /\bAD-\d+\b/ },
   { name: 'bare D-number decision id', pattern: /\bD\d{1,3}\b/ },
 ];
@@ -310,7 +307,7 @@ function referenceHygieneOffenses(text) {
   return FORBIDDEN_REFERENCE_PATTERNS.filter(({ pattern }) => pattern.test(text)).map((p) => p.name);
 }
 
-describe('MWD-32 — reference hygiene: no research-repo name, bot-repo name, .specs/ path, or private decision id', () => {
+describe('MWD-32 — reference hygiene: no sibling-repo name, specs-directory path, or private decision id', () => {
   for (const file of FULLY_AUTHORED_FILES) {
     it(`${file} carries none of the forbidden references`, () => {
       const text = readFileSync(join(root, file), 'utf8');
@@ -318,11 +315,17 @@ describe('MWD-32 — reference hygiene: no research-repo name, bot-repo name, .s
     });
   }
 
-  it('red state: a fixture string naming the research repo is caught', () => {
-    const fixture = 'See bombfarm-research/.specs/features/mp5-wiki-drift-check/design.md (AD-092).';
+  // The fixture names a sibling that does not exist, so this public file exercises the guard
+  // without naming a real private repo.
+  it('red state: a fixture string naming a sibling repo is caught', () => {
+    const fixture = `See bombfarm-elsewhere/${SPECS_DIR_SEGMENT}features/mp5-wiki-drift-check/design.md (AD-092).`;
     expect(referenceHygieneOffenses(fixture)).toEqual(
-      expect.arrayContaining(['research-repo name', '.specs/ path', 'AD-prefixed decision id']),
+      expect.arrayContaining(['sibling-repo name', 'specs-directory path', 'AD-prefixed decision id']),
     );
+  });
+
+  it('green state: this repo\'s own name is not an offense', () => {
+    expect(referenceHygieneOffenses('See the bombfarm-companion README.')).toEqual([]);
   });
 
   it('red state: a fixture string naming a bare decision id is caught', () => {

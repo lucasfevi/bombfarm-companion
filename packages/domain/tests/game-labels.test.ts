@@ -19,6 +19,7 @@ import { ITEM_RARITIES, SLOTS, type Slot } from '@bombfarm/domain/gear';
 import { TEAM_BUFF_ABILITY_IDS, TEAM_BUFF_FIELDS } from '@bombfarm/domain/team-buffs';
 import { PROPS } from '@bombfarm/domain/phases';
 import { RARITIES } from '@bombfarm/domain/planner-constants';
+import { LOOT_ABILITY_VALUES } from '@bombfarm/domain/phase-wiki';
 import catalog from '@bombfarm/domain/data/catalog.json';
 
 describe('abilityName / abilityEffectText', () => {
@@ -38,11 +39,11 @@ describe('abilityName / abilityEffectText', () => {
   it('keeps effect-text numbers aligned with AbilityEffect.perLevel (W3 rank-20 curves)', () => {
     // Spot-check modeled abilities: EN copy must mention the same perLevel figure.
     expect(abilityEffectText('ponta_diamante', 'en')).toMatch(/\+1 /);
-    expect(abilityEffectText('olho_clinico', 'en')).toMatch(/0\.75/);
+    expect(abilityEffectText('olho_clinico', 'en')).toMatch(/4\.286/);
     expect(abilityEffectText('bateria_extra', 'en')).toMatch(/1%/);
     // 0.185, not the naive-halved 0.2 (AD-BSP-18's central counterexample).
     expect(abilityEffectText('marcha_acelerada', 'en')).toMatch(/0\.185%/);
-    expect(abilityEffectText('pressagio_mortal', 'en')).toMatch(/1%/);
+    expect(abilityEffectText('pressagio_mortal', 'en')).toMatch(/5\.714/);
     expect(abilityEffectText('misericordia', 'en')).toMatch(/1\.25%/);
     expect(abilityEffectText('explosao_ampla', 'en')).toMatch(/0\.1 /);
     expect(abilityEffectText('contra_relogio', 'en')).toMatch(/2%/);
@@ -54,6 +55,33 @@ describe('abilityName / abilityEffectText', () => {
     expect(abilityEffectText('passagem_bastao', 'en')).toMatch(/120/);
     expect(abilityEffectText('passagem_bastao', 'en')).not.toMatch(/speed/i);
     expect(abilityEffectText('passagem_bastao', 'pt')).not.toMatch(/velocidade/i);
+  });
+
+  it('veia_ouro and fortuna numerals are derived from LOOT_ABILITY_VALUES, not retyped', () => {
+    // pct(x): fraction -> percentage-point string with no trailing zero, e.g. 0.02 -> '2%', 0.005 -> '0.5%'.
+    const pct = (fraction: number): string => `${(fraction * 100).toString()}%`;
+
+    const veiaOuroPerLevel = pct(LOOT_ABILITY_VALUES.veia_ouro.perLevel); // '2%'
+    const veiaOuroCap = pct(LOOT_ABILITY_VALUES.veia_ouro.perLevel * LOOT_ABILITY_VALUES.veia_ouro.max); // '40%'
+    const fortunaPerLevel = pct(LOOT_ABILITY_VALUES.fortuna.perLevel); // '0.5%'
+    const fortunaCap = pct(LOOT_ABILITY_VALUES.fortuna.perLevel * LOOT_ABILITY_VALUES.fortuna.max); // '10%'
+
+    for (const lang of ['pt', 'en'] as const) {
+      const veiaOuroText = abilityEffectText('veia_ouro', lang);
+      expect(veiaOuroText).toContain(veiaOuroPerLevel);
+      expect(veiaOuroText).toContain(veiaOuroCap);
+      // Old per-level figure must not survive as a per-level claim.
+      expect(veiaOuroText).not.toMatch(/\+4% ouro\/nível|^\+4% gold\/level/);
+
+      const fortunaText = abilityEffectText('fortuna', lang);
+      expect(fortunaText).toContain(fortunaPerLevel);
+      expect(fortunaText).toContain(fortunaCap);
+      expect(fortunaText).not.toContain('+2% ouro ganho');
+      expect(fortunaText).not.toContain('+2% gold gained');
+    }
+
+    // olho_lapidador is untouched by this fix (already correct against the wiki).
+    expect(abilityEffectText('olho_lapidador', 'pt')).toBe('+2.5% chance de baú subir raridade/nível (loot)');
   });
 
   it('falls back to raw id for unknown ability', () => {

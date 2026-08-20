@@ -171,23 +171,24 @@ export const plannerStageClass = 'w-full min-w-0';
 
 /**
  * Phases page board — equal-width cells per row via named areas:
- * · ≥1100: map | economy | jaula · props · hero | squad
- * · ≥720:  map | economy · jaula | props · hero | squad
+ * · ≥1100: map | economy | jaula · drops | props · hero | squad
+ * · ≥720:  map | economy · jaula | drops · props · hero | squad
  * · else:  stacked
  */
 export const phasesBoardClass = [
   'grid gap-2.5',
   'grid-cols-1',
-  '[grid-template-areas:"map"_"economy"_"jaula"_"props"_"roster"]',
+  '[grid-template-areas:"map"_"economy"_"jaula"_"drops"_"props"_"roster"]',
   'min-[720px]:grid-cols-[repeat(2,minmax(14rem,1fr))]',
-  'min-[720px]:[grid-template-areas:"map_economy"_"jaula_props"_"roster_roster"]',
+  'min-[720px]:[grid-template-areas:"map_economy"_"jaula_drops"_"props_props"_"roster_roster"]',
   'min-[1100px]:grid-cols-[repeat(3,minmax(14rem,1fr))]',
-  'min-[1100px]:[grid-template-areas:"map_economy_jaula"_"props_props_props"_"roster_roster_roster"]',
+  'min-[1100px]:[grid-template-areas:"map_economy_jaula"_"drops_props_props"_"roster_roster_roster"]',
 ].join(' ');
 
 export const phasesBoardMapClass = '[grid-area:map] min-w-0';
 export const phasesBoardEconomyClass = '[grid-area:economy] min-w-0';
 export const phasesBoardJaulaClass = '[grid-area:jaula] min-w-0';
+export const phasesBoardDropsClass = '[grid-area:drops] min-w-0';
 export const phasesBoardPropsClass = '[grid-area:props] min-w-0';
 /** Side-by-side Your hero | Top 9 on ≥720px; stack on narrow. */
 export const phasesBoardRosterClass =
@@ -251,6 +252,9 @@ export const statListClass =
 /** Phases intel panels — compact rows; value column sizes to content (map names stay one line). */
 export const phasesStatListClass =
   'm-0 grid gap-0 [&_>div]:grid [&_>div]:grid-cols-[minmax(0,1fr)_auto] [&_>div]:items-start [&_>div]:gap-x-3 [&_>div]:border-b [&_>div]:border-[color-mix(in_oklch,var(--line)_70%,transparent)] [&_>div]:py-1.5 [&_>div:last-child]:border-b-0 [&_>div:last-child]:pb-0 [&_dt]:m-0 [&_dt]:pt-0.5 [&_dt]:text-[11px] [&_dt]:leading-[1.35] [&_dt]:text-muted [&_dd]:m-0 [&_dd]:min-w-[7rem] [&_dd]:text-right [&_dd]:font-mono [&_dd]:text-xs [&_dd]:font-semibold [&_dd]:text-ink [&_dd]:tabular-nums [&_dd]:leading-snug [&_dd]:whitespace-nowrap';
+/** A `StatList` row that cannot apply right now — dimmed rather than hidden, so a value that
+ *  cannot be read as live never sits at full contrast next to the rows that are. */
+export const statListMutedRowClass = 'opacity-45';
 export const statListCompareClass =
   'm-0 grid gap-[5px] [&_>div]:grid [&_>div]:grid-cols-[minmax(0,1fr)_auto] [&_>div]:items-baseline [&_>div]:gap-x-3 [&_>div]:gap-y-2 [&_>div]:border-b [&_>div]:border-[color-mix(in_oklch,var(--line)_70%,transparent)] [&_>div]:py-1 [&_>div:last-child]:border-b-0 [&_>div:last-child]:pb-0 [&_dt]:m-0 [&_dt]:text-[11px] [&_dt]:leading-[1.35] [&_dt]:text-muted [&_dd]:m-0 [&_dd]:flex [&_dd]:flex-row [&_dd]:items-baseline [&_dd]:justify-end [&_dd]:gap-1.5 [&_dd]:whitespace-nowrap [&_dd_strong]:text-xs [&_dd_strong]:font-semibold [&_dd_strong]:text-accent [&_dd_em]:font-mono [&_dd_em]:text-[11px] [&_dd_em]:font-medium [&_dd_em]:not-italic';
 export const importWarningsClass = 'mt-2.5 shrink-0 text-xs text-muted [&_summary]:cursor-pointer';

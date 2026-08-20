@@ -51,6 +51,16 @@ function poolFactor(percent: number): number {
  * speed is never star-scaled (level-stars-sheet.md). Pooled keys (those present on
  * {@link SheetOtherPct}) fold in the on-sheet ability contribution multiplicatively;
  * luck takes no `sheetOther` term (AD-BSP-19).
+ *
+ * Crit damage is the exception: its on-sheet ability contribution (`sheetOther.critDmgFlat`,
+ * Golpe Brutal) is a FLAT addend in planner percentage points, added AFTER the star factor —
+ * see `POINT_GAIN.critDmgFlat` and the `critDmgFlat` ability kind for the measurement.
+ * No capture carries a ★>0 hero with any crit-damage contribution, so whether the flat term
+ * would itself star-scale is unobserved; not star-scaling it is the conservative reading
+ * (the game's own ★0 sheets are reproduced exactly either way).
+ *
+ * Crit chance and CDR were flat addends for exactly three days (2026-08-15 → 2026-08-18); the
+ * 2026-08-18 patch put both back in the shared pool. See `POINT_GAIN` in `rarity-constants.ts`.
  */
 export function nakedFromBirth(
   birth: BirthStats,
@@ -64,7 +74,7 @@ export function nakedFromBirth(
     energy: birth.energy * star,
     speed: birth.speed * poolFactor(sheetOther.speed),
     critChance: birth.critChance * poolFactor(sheetOther.critChance) * star,
-    critDmg: birth.critDmg * poolFactor(sheetOther.critDmg) * star,
+    critDmg: birth.critDmg * star + Math.max(0, sheetOther.critDmgFlat),
     penetration: birth.penetration * poolFactor(sheetOther.penetration) * star,
     cdr: birth.cdr * poolFactor(sheetOther.cdr) * star,
     luck: birth.luck * star,
@@ -76,7 +86,11 @@ export function nakedFromBirth(
  * (`applyPoints`'s output). Exactly the four `AD-BSP-22` shapes: `speed_add` /
  * `crit_chance_add` / `crit_dmg_add` add `base × add` to the shared pool, where
  * `base = naked[key] / (1 + sheetOther[key])` recovers the pre-ability roll (the same
- * base the tree/ability additions already use in `derive.ts`); `energia_add` multiplies
+ * base the tree/ability additions already use in `derive.ts`) — for crit damage the
+ * ability term is a flat addend, so its base is `naked.critDmg − sheetOther.critDmgFlat`.
+ * `crit_dmg_add` is `0` on every capture in the corpus, so the tree term's own shape
+ * (percent-of-base, as `AD-BSP-22` reads it) is untouched here and remains unmeasured;
+ * `energia_add` multiplies
  * the energy subtotal; `dmg_static` multiplies the attack subtotal; `luck_add` is a flat
  * percentage-point addend. Penetration and cdr receive exactly `0` — `skills.totals` has
  * no node for either today (AD-BSP-22's forward-safety clause).
@@ -89,7 +103,7 @@ export function applySkillTree(
 ): SheetStats {
   const baseSpeed = naked.speed / poolFactor(sheetOther.speed);
   const baseCritChance = naked.critChance / poolFactor(sheetOther.critChance);
-  const baseCritDmg = naked.critDmg / poolFactor(sheetOther.critDmg);
+  const baseCritDmg = naked.critDmg - Math.max(0, sheetOther.critDmgFlat);
   return {
     attack: sheet.attack * tree.danoStatic,
     energy: sheet.energy * (1 + tree.energyPct / 100),

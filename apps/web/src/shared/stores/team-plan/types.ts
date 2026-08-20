@@ -55,6 +55,8 @@ export function computeTeamPlanInputSignature(input: {
   slots: number;
   treeDanoTotal: number;
   houseIdx: number;
+  /** `casa.cycle_secs` — moves every hero's duty cycle, so a change must re-run the plan. */
+  houseCycleSecs: number | null;
 }): string {
   return JSON.stringify({
     heroIds: input.heroes.map((hero) => hero.id).sort(),
@@ -67,6 +69,7 @@ export function computeTeamPlanInputSignature(input: {
     slots: input.slots,
     treeDanoTotal: input.treeDanoTotal,
     houseIdx: input.houseIdx,
+    houseCycleSecs: input.houseCycleSecs,
   });
 }
 

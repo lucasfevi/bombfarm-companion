@@ -64,8 +64,30 @@ export type AdvisorPipelineInput = {
   teamBuffs: Record<TeamBuffId, number>;
   houseIdx: number;
   houseLevel: number;
+  /**
+   * `casa.cycle_secs` when the save carried it — the House's measured full-fill countdown.
+   * Omitted/`null` falls back to the `HOUSES` interpolation, which is this pipeline's historical
+   * behaviour and still the right answer for a hand-built account with no capture behind it.
+   */
+  houseCycleSecs?: number | null;
+  /**
+   * The (house, level) `houseCycleSecs` above was captured at — see
+   * `FarmContextForHeroInput.cycleSecsHouseIdx`/`cycleSecsLevel` (`farm-context.ts`). Omitted,
+   * `houseCycleSecs` is trusted unconditionally regardless of `houseIdx`/`houseLevel` (this
+   * pipeline's historical behaviour). The web planner's account store supplies these so its House
+   * picker actually changes DPS once it has moved off the account's own imported house/level.
+   */
+  houseCycleSecsHouseIdx?: number | null;
+  houseCycleSecsLevel?: number | null;
   phase: number | null;
   mitigationPct: number;
+  /**
+   * The persisted UI setting (dps/farm). NOT read by this pipeline: farm-mode ranking needs
+   * the whole rotation and this call computes one hero's advice, so the two cannot be the same
+   * call — a farm ranker composes above this pipeline instead, in the web layer, from
+   * already-extracted per-hero bases. Kept on this input so the type still names the setting
+   * that gates which ranker the web layer calls.
+   */
   rankMode: RankMode;
   targetProp: string | null;
   /**
@@ -104,6 +126,9 @@ export type AdvisorPipelineResult = {
   best: PointValue;
   eSwitch: number;
   spentDelta: number;
+  /** Seconds on field per deployment — `uptime`'s numerator, surfaced for callers that print
+   *  the deployment length rather than the duty-cycle ratio derived from it. */
+  fieldSecs: number;
   uptime: number;
   mitF: number;
   predCrit: number;
@@ -144,9 +169,12 @@ export function computeAdvisorPipeline(input: AdvisorPipelineInput): AdvisorPipe
     teamBuffs,
     houseIdx,
     houseLevel,
+    houseCycleSecs,
+    houseCycleSecsHouseIdx,
+    houseCycleSecsLevel,
     phase,
     mitigationPct,
-    rankMode,
+    // input.rankMode is intentionally not destructured — see its doc comment above.
     targetProp,
     birth,
   } = input;
@@ -160,7 +188,7 @@ export function computeAdvisorPipeline(input: AdvisorPipelineInput): AdvisorPipe
     ...emptySheetOther(),
     critChance: mods.sheetCritChancePctOfBase / 100,
     penetration: mods.sheetPenetrationRaw,
-    critDmg: mods.sheetCritDmgPctOfBase,
+    critDmgFlat: mods.sheetCritDmgFlat,
   };
 
   const { treeSheet, nakedForDerive, gearedForDerive } = resolveDeriveSheets({
@@ -202,6 +230,9 @@ export function computeAdvisorPipeline(input: AdvisorPipelineInput): AdvisorPipe
     houseLevel,
     mitigationPct: mitPct,
     phase,
+    cycleSecs: houseCycleSecs,
+    cycleSecsHouseIdx: houseCycleSecsHouseIdx,
+    cycleSecsLevel: houseCycleSecsLevel,
   });
   const rest = context.restSeconds;
 
@@ -218,7 +249,6 @@ export function computeAdvisorPipeline(input: AdvisorPipelineInput): AdvisorPipe
     critDmgMult,
     teamCritPctOfBase,
     treeSheet,
-    combatCritChancePctOfBase: mods.combatCritChancePctOfBase,
     penetrationPp: mods.penetrationPp,
     context,
     dmgMult,
@@ -256,12 +286,10 @@ export function computeAdvisorPipeline(input: AdvisorPipelineInput): AdvisorPipe
   const targetPropDef = PROPS.find((prop) => prop.name === propName) ?? PROPS[1];
   const targetHp = propHp(stoneHp, targetPropDef.hpMult);
 
+  // The one-shot heuristic that used to read targetHp/dmgMult/mitPct here is gone —
+  // rankNextPoint only scores sustained DPS now, unconditionally.
   const ranking = rankNextPoint(effective, context, {
     effectiveDeltas: equippedResult.effectiveDelta,
-    mode: rankMode,
-    targetPropHp: targetHp,
-    hitDmgMult: dmgMult,
-    mitigation: mitPct / 100,
   });
 
   // DEBUG: name/toast/guide/roster edits must not bump this when deps are stable.
@@ -334,6 +362,7 @@ export function computeAdvisorPipeline(input: AdvisorPipelineInput): AdvisorPipe
     best,
     eSwitch,
     spentDelta,
+    fieldSecs: field,
     uptime,
     mitF,
     predCrit,

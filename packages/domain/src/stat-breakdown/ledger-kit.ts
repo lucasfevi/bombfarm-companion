@@ -1,6 +1,5 @@
 import { levelPowerMult } from '../model';
 import { starsMult, type SheetOtherPct } from '../gear';
-import { TEAM_MULT_BONUS_CAP } from '../derive';
 import type { SheetDisplayKey } from '../planner-constants';
 import type {
   LedgerNote,
@@ -24,22 +23,31 @@ function otherFactor(percent: number): number {
   return 1 + Math.max(0, percent);
 }
 
+/**
+ * The MULTIPLICATIVE sheet-ability share for this key, as a fraction of the roll. `critDmg`
+ * is deliberately 0 here — its sheet ability is a flat addend, reported by
+ * {@link sheetAbilityFlatFor} instead (see `POINT_GAIN.critDmgFlat`).
+ */
 function sheetOtherFor(statKey: SheetDisplayKey, otherPct: SheetOtherPct): number {
   switch (statKey) {
     case 'speed':
       return otherPct.speed;
     case 'critChance':
       return otherPct.critChance;
-    case 'critDmg':
-      return otherPct.critDmg;
     case 'penetration':
       return otherPct.penetration;
     case 'cdr':
       return otherPct.cdr;
+    case 'critDmg':
     case 'attack':
     case 'energy':
       return 0;
   }
+}
+
+/** The FLAT sheet-ability addend for this key (planner units). Only crit damage has one. */
+function sheetAbilityFlatFor(statKey: SheetDisplayKey, otherPct: SheetOtherPct): number {
+  return statKey === 'critDmg' ? Math.max(0, otherPct.critDmgFlat) : 0;
 }
 
 /**
@@ -53,7 +61,8 @@ function sheetOtherFor(statKey: SheetDisplayKey, otherPct: SheetOtherPct): numbe
  * values rather than to this peeled figure.
  */
 export function birthFromNaked(statKey: SheetDisplayKey, facts: PipelineFacts): number {
-  const naked = facts.naked[statKey];
+  // Peel the flat sheet-ability addend (crit damage only) before the multiplicative peels.
+  const naked = facts.naked[statKey] - sheetAbilityFlatFor(statKey, facts.sheetOther);
   const levelMult = levelPowerMult(facts.level);
   const starMult = starsMult(facts.stars);
   const otherMult = otherFactor(sheetOtherFor(statKey, facts.sheetOther));
@@ -75,6 +84,7 @@ export function birthFromNaked(statKey: SheetDisplayKey, facts: PipelineFacts): 
 function sheetAbilityNote(statKey: SheetDisplayKey): LedgerNote | undefined {
   if (statKey === 'critChance') return 'keenEye';
   if (statKey === 'penetration') return 'diamondTip';
+  if (statKey === 'critDmg') return 'brutalStrike';
   return undefined;
 }
 
@@ -118,12 +128,16 @@ export function pushBirthThenGear(
   if (other > EPS) {
     pushMul(steps, 'sheetAbilities', otherFactor(other), sheetAbilityNote(statKey));
   }
+  // Crit damage's sheet ability (Golpe Brutal) is a flat addend, not a pool factor.
+  const abilityFlat = sheetAbilityFlatFor(statKey, facts.sheetOther);
+  if (abilityFlat > EPS) {
+    pushAdd(steps, 'sheetAbilities', abilityFlat, sheetAbilityNote(statKey));
+  }
 
   const gearedValue = gearedFor(statKey, facts);
   // Energy: geared = naked × (1 + energyPct) → delta = energyPct × naked.
   // Shared pool: geared − naked = gearPct × (naked / (1+other)).
-  const base =
-    statKey === 'energy' ? naked : naked / otherFactor(sheetOtherFor(statKey, facts.sheetOther));
+  const base = statKey === 'energy' ? naked : (naked - abilityFlat) / otherFactor(other);
 
   if (statKey === 'attack' || statKey === 'energy') {
     const treeMult = 1 + treePct / 100;
@@ -209,17 +223,19 @@ export function pushMul(
   });
 }
 
-/** Own/team split note for a combined additive team mult (before tempo). */
+/** Own/team split note for a combined additive team mult (before tempo). `capPct` is the
+ *  aura's own maximum, in percentage points ({@link TEAM_BUFF_CAP}) — per ability, not global. */
 export function teamMultNote(
   combinedFactor: number,
   ownMult: number,
+  capPct: number,
 ): { note?: LedgerNote; split?: { own: number; team: number } } {
-  const combinedBonus = combinedFactor - 1;
-  if (combinedBonus >= TEAM_MULT_BONUS_CAP - EPS) {
+  const combinedBonusPct = (combinedFactor - 1) * 100;
+  if (combinedBonusPct >= capPct - EPS) {
     return { note: 'capped' };
   }
   const own = Math.max(0, ownMult - 1) * 100;
-  const team = Math.max(0, combinedBonus - (ownMult - 1)) * 100;
+  const team = Math.max(0, combinedBonusPct - own);
   if (own < EPS && team < EPS) return {};
   return { note: 'ownTeamSplit', split: { own, team } };
 }

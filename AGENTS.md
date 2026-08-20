@@ -29,6 +29,7 @@ This repository contains **application code only**. Do not invent planning/spec 
 
 ```bash
 pnpm install
+pnpm build
 pnpm typecheck
 pnpm lint
 pnpm test
@@ -36,6 +37,17 @@ pnpm --filter @bombfarm/domain test
 pnpm --filter @bombfarm/web test
 pnpm test:smoke   # Windows — builds static renderer + launches Electron
 ```
+
+`pnpm build` is not optional and has to come first: the workspace packages publish their types
+and entry points from `dist/` (`packages/domain`'s `exports` map, for one, points every subpath
+at `./dist/**`), so on a freshly cloned tree `pnpm typecheck`, `pnpm lint` and three of the vitest
+projects — `@bombfarm/desktop`, `@bombfarm/game-api` and `tools` — all fail to resolve them until
+the packages are built. All three run `tools/require-workspace-dist.mjs`, which throws and names
+the unbuilt packages instead of letting the affected files die at collection: the first two as a
+project-wide `globalSetup`, and `tools` as a per-file call from the single file that needs a build
+(`globalSetup` would also fire in the deliberately build-free `line-endings` CI job, which runs
+that project with a filename filter). `apps/web` and `packages/domain` alias `@bombfarm/domain` to
+`src/` and need no build.
 
 ## Conventions
 
@@ -46,6 +58,11 @@ pnpm test:smoke   # Windows — builds static renderer + launches Electron
 - TypeScript strict at the monorepo base; planner-origin packages `@bombfarm/domain`
   and `@bombfarm/ui` intentionally keep a documented exception (see
   [`docs/typescript-planner-origin.md`](docs/typescript-planner-origin.md))
+- **Never use `sed -i` (or any in-place stream edit) on a tracked file.** Use the editing
+  tools instead, which preserve existing endings. Do not convert a file's endings as a side
+  effect of a change — the repo is LF everywhere (`.gitattributes`), and a stream edit that
+  rewrites endings turns a one-line change into a whole-file diff that buries the real change
+  and destroys `git blame`. See [`docs/line-endings.md`](docs/line-endings.md)
 - No secrets in the repo
 - Do not mention other fan tools in user-facing docs
 - **Changesets are mandatory** on any PR touching `@bombfarm/web` or `@bombfarm/domain` user-visible
@@ -54,6 +71,78 @@ pnpm test:smoke   # Windows — builds static renderer + launches Electron
   `.changeset/<slug>.md` (see [`.changeset/README.md`](.changeset/README.md) for the frontmatter
   format). Internal-only changes (CI config, tests, docs) don't need one; if a changeset genuinely
   doesn't apply, label the PR `skip-changeset` instead of skipping silently.
+
+## Comments
+
+Write almost no comments. A well-named function and well-named variables should make code
+self-explanatory; a comment restating what the next line does is noise, not documentation.
+
+Add a comment only when:
+
+- **The logic is genuinely too complex to follow by reading it.** Even then, treat this as a
+  signal before reaching for a comment: a function that needs prose to be understood usually
+  needs to be broken into smaller, well-named pieces instead. Reach for a comment only after
+  refactoring is not the fix — the code is inherently intricate (a bitwise trick, a tight
+  numerical routine) and no decomposition removes that.
+- **There is specific business logic that isn't explicit from the code itself** — a game-balance
+  constant, a workaround for an external quirk, a non-obvious invariant the surrounding code
+  depends on. Here a short comment explaining *why* earns its place.
+
+If you touch a file that carries many comments, treat that as a prompt to revisit them against
+this rule while you're in there: remove ones that just narrate what the code already says, and
+keep only the few that explain real complexity or non-obvious business logic.
+
+## Out-of-scope findings — ask before you file
+
+Work here routinely turns up a real defect outside the current change: a neighbouring code path
+with the same bug, a shared invariant with no owner, a stale doc. Those findings are worth more
+than the session they were found in, and **whether they belong in the current PR is the
+maintainer's call, not the agent's** — an agent filing an issue unilaterally often defers
+something that was three lines from code already being touched.
+
+**So: verify it, then ask. Do not decide alone, and do not leave it in a chat aside, a task chip,
+or a `TODO` comment** — all three die with the session, and the finding gets rediscovered from
+scratch weeks later as if it were new.
+
+### The decision brief
+
+Present each finding as a short brief and stop for an answer. **Concise and concrete — three or
+four sentences per heading, with a real example rather than a description of one.** A brief that
+takes longer to read than the fix takes to make has failed.
+
+- **What and where** — the symptom, the file and line, and the evidence it is real (the grep,
+  the failing case, the call path). One pasted witness, not a paragraph of reasoning.
+- **Why it matters** — the concrete consequence, ideally a number or a user-visible symptom.
+  "`xpPerHour` reads ~36% low on a 1.56× account, so the Farm board and the Phases panel print
+  different XP for the same phase" beats "XP handling is inconsistent".
+- **What fixing it takes** — the actual blast radius: files, packages, whether a fixture must be
+  re-captured, whether it needs its own changeset. Say if it is genuinely small; say if you are
+  unsure how far it reaches.
+- **Cost of waiting** — what gets worse. Two surfaces drifting apart, a guard that silently stops
+  guarding, a capture that expires. If nothing gets worse, say that plainly — "no decay, purely
+  cosmetic" is a useful answer and makes deferring easy.
+
+Then ask directly: fold it into this change, or file it? Batch several findings into one question
+rather than interrupting per finding.
+
+### After the call
+
+- **Fold in** → do it in the same PR, and say in the PR body why the scope widened.
+- **File** → open the issue and reference it from the PR that found it, so the trail survives.
+
+```bash
+gh issue create --title "<imperative summary>" --label tech-debt --body "<what, where, evidence>"
+```
+
+A filed issue **must stand alone**: file paths, line numbers, the evidence, and why it was not
+fixed now. Whoever picks it up months later has none of the conversation it came from.
+
+**Two exceptions to asking.** Fix inline without asking when it is a one-line change inside code
+you are already editing. File without asking when the finding is unrelated to the current work
+and needs no judgement about scope — a broken guard in a package this change never touches.
+
+Verify before either. A claim that a neighbouring path "was checked and is fine" needs the same
+evidence as a claim that it is broken.
 
 ## Flavors
 

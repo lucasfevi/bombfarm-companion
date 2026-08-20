@@ -16,7 +16,10 @@ import { teamPlanInputFromFixture } from './helpers/team-plan-fixtures';
 
 function waterfallFromFixture(file: string, forgeFloor?: number, slots?: number) {
   const input = teamPlanInputFromFixture(file, forgeFloor);
-  if (slots !== undefined) input.account.slots = slots;
+  // `runTeamPlan`'s saturation math reads `account.fieldSlots`, not `account.slots` (the House
+  // recovery number) — see `waterfall-guards.ts`/`solver-search.ts`. Override the field that
+  // actually drives the regime this grid exercises.
+  if (slots !== undefined) input.account.fieldSlots = slots;
   const built = buildHeroPlanContexts(input.heroes, input.account, input.scopeByHeroId);
   if (built.blocked) throw new Error('blocked');
   const result = runTeamPlan(input);
@@ -40,6 +43,19 @@ function ptsWithResets(
 // (default subject) and save-20260813-5heroes.json (forge-specific assertions, per
 // design.md §6.3 — the payload's uniform-0 upgrades cannot exercise a forge/no-forge choice).
 describe('buildWaterfall', () => {
+  // Finding 4: the roster objective's saturation cap must read `account.fieldSlots` (FIELD
+  // concurrency), never `account.slots` (HOUSE recovery) — a real save can carry both, disagreeing
+  // (account 486: casa.slots 3 vs skills.field_slots 6). Setting them to different values here
+  // discriminates the two: the old bug read `slots` and would report `3`.
+  it('the reported plan.slots tracks account.fieldSlots, not account.slots', () => {
+    const input = teamPlanInputFromFixture('payload-20260812-8heroes.json');
+    input.account.slots = 3;
+    input.account.fieldSlots = 6;
+    const result = runTeamPlan(input);
+    if (result.blocked) throw new Error('blocked');
+    expect(result.plan.slots).toBe(6);
+  });
+
   it('emits three steps in today → gear → respec order', () => {
     const { plan } = waterfallFromFixture('payload-20260812-8heroes.json');
     expect(plan.steps.map((step) => step.id)).toEqual(['today', 'gear', 'respec']);
@@ -141,7 +157,7 @@ describe('buildWaterfall', () => {
       contexts: built.contexts,
       loadoutsByHeroId: plan.proposedLoadouts,
       ptsByHeroId: pts,
-      slots: input.account.slots,
+      slots: input.account.fieldSlots,
       farm: farmFromAccount(input),
       forgeFloor: plan.forgeFloorApplied,
     });
@@ -173,7 +189,7 @@ describe('buildWaterfall', () => {
         contexts: built.contexts,
         loadoutsByHeroId: plan.proposedLoadouts,
         ptsByHeroId: withoutOne,
-        slots: input.account.slots,
+        slots: input.account.fieldSlots,
         farm: farmFromAccount(input),
         forgeFloor: plan.forgeFloorApplied,
       });

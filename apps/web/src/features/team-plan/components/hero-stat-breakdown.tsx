@@ -3,8 +3,8 @@
 import { gameSheetView } from '@bombfarm/domain/model';
 import { SHEET_PANEL_KEYS } from '@bombfarm/domain/planner-constants';
 import type { TeamPlanHeroStats } from '@bombfarm/domain/team-plan/types';
+import { DeltaTable, type DeltaTableRow } from '@bombfarm/ui';
 import type { Strings } from '@/shared/i18n';
-import { StatDeltaGrid, type StatDeltaRow } from './stat-delta-grid';
 
 /** `HeroSheet` fields shown in the Combat grid, in display order (no Luck — see below). */
 const BREAKDOWN_STAT_KEYS = SHEET_PANEL_KEYS.filter(
@@ -28,12 +28,12 @@ function statRows(
   before: TeamPlanHeroStats,
   after: TeamPlanHeroStats,
   keys: readonly (keyof TeamPlanHeroStats)[],
-): StatDeltaRow[] {
+): DeltaTableRow[] {
   return keys.map((key) => ({
-    key,
+    id: key,
     label: strings.statShort[key],
-    before: before[key],
-    after: after[key],
+    now: before[key],
+    target: after[key],
   }));
 }
 
@@ -71,19 +71,19 @@ function hitRows(
   hitAfter: number,
   combatBefore: TeamPlanHeroStats,
   combatAfter: TeamPlanHeroStats,
-): StatDeltaRow[] {
+): DeltaTableRow[] {
   return [
     {
-      key: 'hitNormal',
+      id: 'hitNormal',
       label: strings.teamPlanHeroHitNormal,
-      before: hitBefore,
-      after: hitAfter,
+      now: hitBefore,
+      target: hitAfter,
     },
     {
-      key: 'hitCritical',
+      id: 'hitCritical',
       label: strings.teamPlanHeroHitCritical,
-      before: hitBefore * (1 + combatBefore.critDmg / 100),
-      after: hitAfter * (1 + combatAfter.critDmg / 100),
+      now: hitBefore * (1 + combatBefore.critDmg / 100),
+      target: hitAfter * (1 + combatAfter.critDmg / 100),
     },
   ];
 }
@@ -108,19 +108,40 @@ export function HeroStatBreakdown({
   const sheetRows = statRows(t, capSheetStats(sheetBefore), capSheetStats(sheetAfter), SHEET_ONLY_STAT_KEYS);
   const combatRows = statRows(t, combatBefore, combatAfter, BREAKDOWN_STAT_KEYS);
   const hitDamageRows = hitRows(t, hitBefore, hitAfter, combatBefore, combatAfter);
+  const columnLabels = {
+    label: t.colStat,
+    now: t.teamPlanColBefore,
+    target: t.teamPlanColAfter,
+    change: t.teamPlanColDelta,
+  };
   return (
     <div className="flex flex-col gap-3">
       <section className="min-w-0">
         <h4 className={subheadingClass}>{t.teamPlanHeroBreakdownStatsSheetTitle}</h4>
-        <StatDeltaGrid t={t} rows={sheetRows} decimals={2} />
+        <DeltaTable
+          caption={t.teamPlanHeroBreakdownStatsSheetTitle}
+          columnLabels={columnLabels}
+          rows={sheetRows}
+          decimals={2}
+        />
       </section>
       <section className="min-w-0">
         <h4 className={subheadingClass}>{t.teamPlanHeroBreakdownStatsCombatTitle}</h4>
-        <StatDeltaGrid t={t} rows={combatRows} decimals={2} />
+        <DeltaTable
+          caption={t.teamPlanHeroBreakdownStatsCombatTitle}
+          columnLabels={columnLabels}
+          rows={combatRows}
+          decimals={2}
+        />
       </section>
       <section className="min-w-0">
         <h4 className={subheadingClass}>{t.teamPlanHeroBreakdownHitTitle}</h4>
-        <StatDeltaGrid t={t} rows={hitDamageRows} decimals={0} />
+        <DeltaTable
+          caption={t.teamPlanHeroBreakdownHitTitle}
+          columnLabels={columnLabels}
+          rows={hitDamageRows}
+          decimals={0}
+        />
       </section>
     </div>
   );

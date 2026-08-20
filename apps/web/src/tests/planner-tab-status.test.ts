@@ -16,7 +16,6 @@ function base(overrides: Partial<PlannerTabStatusInput> = {}): PlannerTabStatusI
     level: 40,
     abilityPtsLeft: 0,
     abilityPointsMax: 30,
-    targetProp: 'stone',
     resetAdviceRecommend: false,
     t,
     ...overrides,
@@ -48,15 +47,9 @@ describe('computePlannerTabStatuses', () => {
     expect(s.setupPrereqsReady).toBe(true);
   });
 
-  it('never warns Account when target prop is set', () => {
+  it('Account tab never warns — target-prop ranking requirement is gone (the old unset-prop soft-dot case, inverted)', () => {
     const s = computePlannerTabStatuses(base());
     expect(s.accountTabStatus).toEqual({ badge: null, title: '', issues: [] });
-  });
-
-  it('Account soft-dots when target prop unset', () => {
-    const s = computePlannerTabStatuses(base({ targetProp: null }));
-    expect(s.accountTabStatus.badge).toBe('soft');
-    expect(s.accountTabStatus.issues).toEqual([t.setupNeedTargetProp]);
   });
 
   it('Abilities tab soft-dots for default sheet and unspent ability points', () => {

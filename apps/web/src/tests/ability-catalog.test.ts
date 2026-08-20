@@ -12,6 +12,7 @@ import {
   abilityMods,
   isSheetAbility,
 } from '@bombfarm/domain/model';
+import { TEAM_BUFF_PER_LEVEL } from '@bombfarm/domain/team-buffs';
 import { loadFixtureJson } from './helpers/sheet-math-fixtures';
 
 const root = resolve(__dirname, '../../../../packages/domain');
@@ -19,12 +20,9 @@ const readSrc = (rel: string) => readFileSync(resolve(root, rel), 'utf8');
 
 const IDENTITY_MODS = {
   drainMult: 1,
-  combatCritChancePctOfBase: 0,
   penetrationPp: 0,
   rangeCells: 0,
   dmgMult: 1,
-  attackMult: 1,
-  speedMult: 1,
   gateAttackMult: 1,
 };
 
@@ -107,12 +105,24 @@ describe('rank-20 migration (T3, AD-BSP-18, BSPW3-02/-03)', () => {
   }> = [
     { id: 'bateria_extra', perLevel: 1, wikiTotalAtCap: 20, citation: 'W0-14:200' },
     { id: 'marcha_acelerada', perLevel: 0.185, wikiTotalAtCap: 3.7, citation: 'W0-14:202' },
-    { id: 'pressagio_mortal', perLevel: 1, wikiTotalAtCap: 20, citation: 'W0-14:203' },
+    // 2026-08-18 patch reverted both crit-chance abilities to percent-of-base and rescaled their
+    // values by ×40/7 from the pre-2026-08-15 figures (see `abilities.ts`).
+    {
+      id: 'pressagio_mortal',
+      perLevel: 5.714285714285714,
+      wikiTotalAtCap: 114.28571428571428,
+      citation: 'wiki habilidades 2026-08-18 (published; no capture owns this ability)',
+    },
     { id: 'ponta_diamante', perLevel: 1, wikiTotalAtCap: 20, citation: 'W0-14:205' },
     { id: 'misericordia', perLevel: 1.25, wikiTotalAtCap: 25, citation: 'W0-14:206' },
     { id: 'explosao_ampla', perLevel: 0.1, wikiTotalAtCap: 2, citation: 'W0-14:207' },
     { id: 'contra_relogio', perLevel: 2, wikiTotalAtCap: 40, citation: 'W0-14:208' },
-    { id: 'olho_clinico', perLevel: 0.75, wikiTotalAtCap: 15, citation: 'W0-14:209' },
+    {
+      id: 'olho_clinico',
+      perLevel: 4.285714285714286,
+      wikiTotalAtCap: 85.71428571428571,
+      citation: 'measured, account 486 2026-08-18 export',
+    },
     { id: 'detonacao_dupla', perLevel: 1.5, wikiTotalAtCap: 30, citation: 'W0-14:210' },
     { id: 'folego_mineiro', perLevel: 1, wikiTotalAtCap: 20, citation: 'W0-14:211' },
     { id: 'grito_guerra', perLevel: 1, wikiTotalAtCap: 20, citation: 'W0-14:215' },
@@ -128,30 +138,41 @@ describe('rank-20 migration (T3, AD-BSP-18, BSPW3-02/-03)', () => {
   );
 
   it('AC-08b: marcha_acelerada at rank 13 is 2.405, not the naive-halved 2.6', () => {
-    const mods = abilityMods({ marcha_acelerada: 13 });
-    expect(mods.speedMult).toBeCloseTo(1 + 2.405 / 100, 10);
+    // Marcha Acelerada is a team aura (issue #132) — abilityMods no longer folds it into a
+    // hero's own mods at all; TEAM_BUFF_PER_LEVEL is the live rate the roster-wide total uses.
+    expect(TEAM_BUFF_PER_LEVEL.marcha_acelerada * 13).toBeCloseTo(2.405, 10);
     // Naive halving (0.2 x 13 = 2.6) is outside tolerance of the correct 0.185 x 13 = 2.405.
-    expect(mods.speedMult).not.toBeCloseTo(1 + 2.6 / 100, 6);
+    expect(TEAM_BUFF_PER_LEVEL.marcha_acelerada * 13).not.toBeCloseTo(2.6, 6);
   });
 
-  it('AC-08b: every changed ability at rank 13 matches perLevel x 13, not old-value x 13', () => {
+  it('AC-08b: every changed SELF ability at rank 13 matches perLevel x 13, not old-value x 13', () => {
+    // Grito de Guerra, Marcha Acelerada, Fôlego de Mineiro and Presságio Mortal are team auras
+    // (issue #132) — abilityMods no longer folds any of them into a hero's own mods, so they
+    // are covered by TEAM_BUFF_PER_LEVEL (above) and the MID_CURVE_ABILITIES catalog check
+    // instead of here. This test is now SELF abilities only.
     expect(abilityMods({ bateria_extra: 13 }).drainMult).toBeCloseTo(1 - 13 / 100, 10);
-    expect(abilityMods({ pressagio_mortal: 13 }).combatCritChancePctOfBase).toBeCloseTo(13, 10);
     expect(abilityMods({ ponta_diamante: 13 }).sheetPenetrationRaw).toBeCloseTo(13, 10);
     expect(abilityMods({ misericordia: 13 }).dmgMult).toBeCloseTo(1 / (1 - 16.25 / 100), 10);
     expect(abilityMods({ explosao_ampla: 13 }).rangeCells).toBeCloseTo(1.3, 10);
     expect(abilityMods({ contra_relogio: 13 }).gateAttackMult).toBeCloseTo(1.26, 10);
-    expect(abilityMods({ olho_clinico: 13 }).sheetCritChancePctOfBase).toBeCloseTo(9.75, 10);
+    expect(abilityMods({ olho_clinico: 13 }).sheetCritChancePctOfBase).toBeCloseTo(4.285714285714286 * 13, 10);
     expect(abilityMods({ detonacao_dupla: 13 }).dmgMult).toBeCloseTo(1 + (19.5 / 100) * 0.5, 10);
-    expect(abilityMods({ folego_mineiro: 13 }).drainMult).toBeCloseTo(1 - 13 / 100, 10);
-    expect(abilityMods({ grito_guerra: 13 }).attackMult).toBeCloseTo(1.13, 10);
+  });
+
+  it('a hero\'s own rank in a team aura never touches that hero\'s own AbilityMods (issue #132)', () => {
+    const mods = abilityMods({
+      grito_guerra: 20,
+      marcha_acelerada: 20,
+      folego_mineiro: 20,
+      pressagio_mortal: 20,
+    });
+    expect(mods).toMatchObject(IDENTITY_MODS);
   });
 
   it('AC-06 / BSP-38: rank 20 and a mid-curve rank both survive unclamped through abilityMods', () => {
-    // explosao_ampla @20, marcha_acelerada @17 both exist in the fixture — see AC-25 for the
-    // storage round-trip proof; this checks the pure catalog math handles both without clamping.
+    // explosao_ampla @20 exists in the fixture — see AC-25 for the storage round-trip proof;
+    // this checks the pure catalog math handles it without clamping.
     expect(abilityMods({ explosao_ampla: 20 }).rangeCells).toBeCloseTo(2, 10);
-    expect(abilityMods({ marcha_acelerada: 17 }).speedMult).toBeCloseTo(1 + (0.185 * 17) / 100, 10);
   });
 
   it('passagem_bastao is rank-20 damage-on-enter copy and stays unmodeled', () => {
@@ -172,20 +193,22 @@ describe('rank-20 migration (T3, AD-BSP-18, BSPW3-02/-03)', () => {
   });
 });
 
-describe('golpe_brutal — critDmgPctOfBase (T1, AD-BSP-32 / BSP-37d)', () => {
-  it('AC-12: is a rank-20 onSheet critDmgPctOfBase ability with perLevel 0.04 (W0-14:216)', () => {
+describe('golpe_brutal — critDmgFlat (flat crit damage, POINT_GAIN.critDmgFlat)', () => {
+  it('AC-12: is a rank-20 onSheet critDmgFlat ability with perLevel 4 (planner percentage points)', () => {
     const def = ABILITIES.find((a) => a.id === 'golpe_brutal');
     expect(def).toBeDefined();
     expect(def).toMatchObject({
       max: 20,
-      effect: { kind: 'critDmgPctOfBase', perLevel: 0.04, onSheet: true },
+      effect: { kind: 'critDmgFlat', perLevel: 4, onSheet: true },
     });
   });
 
-  it('AC-13: abilityMods sheetCritDmgPctOfBase is exact at rank 1 / 13 / 20 (DEC-05 fraction unit)', () => {
-    expect(abilityMods({ golpe_brutal: 1 }).sheetCritDmgPctOfBase).toBe(0.04);
-    expect(abilityMods({ golpe_brutal: 13 }).sheetCritDmgPctOfBase).toBeCloseTo(0.52, 10);
-    expect(abilityMods({ golpe_brutal: 20 }).sheetCritDmgPctOfBase).toBeCloseTo(0.8, 10);
+  it('AC-13: abilityMods sheetCritDmgFlat is exact at rank 1 / 13 / 20 (flat planner pp)', () => {
+    // Rank 20 must land on exactly 80 — the +0.8 `crit_dmg` delta observed on Ivo
+    // (id 21076, L38, account 11882 capture 2026-08-15), in planner units.
+    expect(abilityMods({ golpe_brutal: 1 }).sheetCritDmgFlat).toBe(4);
+    expect(abilityMods({ golpe_brutal: 13 }).sheetCritDmgFlat).toBe(52);
+    expect(abilityMods({ golpe_brutal: 20 }).sheetCritDmgFlat).toBe(80);
   });
 
   it('AC-14: SHEET_ABILITIES is exactly ponta_diamante, olho_clinico, golpe_brutal', () => {
@@ -202,13 +225,9 @@ describe('golpe_brutal — critDmgPctOfBase (T1, AD-BSP-32 / BSP-37d)', () => {
     expect(isSheetAbility(def)).toBe(true);
 
     const mods = abilityMods({ golpe_brutal: 13 });
-    expect(mods.sheetCritDmgPctOfBase).toBe(0.52);
+    expect(mods.sheetCritDmgFlat).toBe(52);
     expect(mods.drainMult).toBe(IDENTITY_MODS.drainMult);
-    expect(mods.attackMult).toBe(IDENTITY_MODS.attackMult);
-    expect(mods.speedMult).toBe(IDENTITY_MODS.speedMult);
     expect(mods.gateAttackMult).toBe(IDENTITY_MODS.gateAttackMult);
-    expect(mods.drainMult).toBe(IDENTITY_MODS.drainMult);
-    expect(mods.combatCritChancePctOfBase).toBe(IDENTITY_MODS.combatCritChancePctOfBase);
     expect(mods.penetrationPp).toBe(IDENTITY_MODS.penetrationPp);
     expect(mods.rangeCells).toBe(IDENTITY_MODS.rangeCells);
     expect(mods.dmgMult).toBe(IDENTITY_MODS.dmgMult);
@@ -224,38 +243,32 @@ describe('golpe_brutal — critDmgPctOfBase (T1, AD-BSP-32 / BSP-37d)', () => {
   // docs/fixture-corpus.md.
 });
 
-describe('sheetOther.critDmg wiring — all four production builders (AC-17)', () => {
-  // advisor-pipeline.ts is proven behaviorally in advisor-pipeline.test.ts (AC-17): its
-  // sheetOther.critDmg is the only builder that is numerically load-bearing today, because
-  // it is the sole caller that ever divides by `1 + sheetOther.critDmg` with a non-zero
-  // crit-dmg point spend or tree bonus in play (derive.ts:148,158,169).
+describe('sheetOther.critDmgFlat wiring — all four production builders (AC-17)', () => {
+  // advisor-pipeline.ts is proven behaviorally in advisor-pipeline.test.ts (AC-17).
   //
   // The other three builders feed `applyGear` (import-merge.ts, storage.ts) or `reverseSheet`
   // with ZERO_PTS_TEMPLATE (import-save.ts). `applyGear`'s critDmg field is a direct
   // `naked.critDmg` pass-through (items never roll crit damage — gear/apply.ts), and
-  // `reverseSheet`'s shared-pool division cancels exactly when the crit-dmg "gearPct" term
-  // is zero: sharedReverse(geared, 0, otherPct) === geared for any otherPct (verified
-  // numerically during authoring). So at today's call sites this is not a behavioral gap —
-  // both the whole-value pass-through (applyGear) and the reverse-shared-pool math
-  // (reverseSheet at zero spent points) are mathematically insensitive to sheetOther.critDmg.
+  // `reverseSheet`'s crit-damage term subtracts `pts.critDmg × POINT_GAIN.critDmgFlat`,
+  // which is 0 at zero spent points. So at today's call sites this is not a behavioral gap.
   // Wiring it anyway is still correct (AC-17's literal requirement, and defensive against a
   // future caller that does pass real points), so these three are guarded with a source
   // presence check rather than a false behavioral claim — disclosed, not silently assumed.
-  it('import-save.ts reads mods.sheetCritDmgPctOfBase into its sheetOther builder', () => {
+  it('import-save.ts reads mods.sheetCritDmgFlat into its sheetOther builder', () => {
     const src = readSrc('src/import-save.ts');
-    expect(src).toMatch(/critDmg:\s*mods\.sheetCritDmgPctOfBase/);
+    expect(src).toMatch(/critDmgFlat:\s*mods\.sheetCritDmgFlat/);
   });
 
-  it('import-merge.ts reads mods.sheetCritDmgPctOfBase into its sheetOther builder', () => {
+  it('import-merge.ts reads mods.sheetCritDmgFlat into its sheetOther builder', () => {
     const src = readSrc('src/import-merge.ts');
-    expect(src).toMatch(/critDmg:\s*mods\.sheetCritDmgPctOfBase/);
+    expect(src).toMatch(/critDmgFlat:\s*mods\.sheetCritDmgFlat/);
   });
 
-  it('storage.ts (migrateGearedOverride) reads mods.sheetCritDmgPctOfBase into its sheetOther builder', () => {
+  it('storage.ts (migrateGearedOverride) reads mods.sheetCritDmgFlat into its sheetOther builder', () => {
     const src = readFileSync(
       resolve(__dirname, '../shared/lib/storage.ts'),
       'utf8',
     );
-    expect(src).toMatch(/critDmg:\s*mods\.sheetCritDmgPctOfBase/);
+    expect(src).toMatch(/critDmgFlat:\s*mods\.sheetCritDmgFlat/);
   });
 });

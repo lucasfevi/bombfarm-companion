@@ -60,9 +60,10 @@ describe('legacy keystone-carrying account is dropped whole (MP5 F4, AD-089 — 
 
   it('drops the whole account instead of loading it with the five keystone fields merely discarded — the app starts from defaults', () => {
     // The store's actual "existing empty state" (MSG-22) — captured on the pristine, never-
-    // hydrated store `beforeEach` just reset to. Not literal `DEFAULT_ACCOUNT()`: `hydrateAccount`
-    // always merges `teamBuffs` onto `zeroTeamBuffs()` (`account-slice.ts`), so the store's real
-    // baseline carries every buff id at `0`, not `DEFAULT_ACCOUNT()`'s bare `{}`.
+    // hydrated store `beforeEach` just reset to. Not necessarily `DEFAULT_ACCOUNT()` verbatim:
+    // this snapshot goes through whatever `selectAccountShared` currently derives (issue #132:
+    // an unset `teamBuffsOverride` reads back as `{}` here, not a real roster-derived total,
+    // since the pristine store has no roster either).
     const emptyStateAccount = selectAccountShared(usePlannerStore.getState());
 
     localStorage.setItem('bf-hp-account-v1', LEGACY_ACCOUNT_JSON);

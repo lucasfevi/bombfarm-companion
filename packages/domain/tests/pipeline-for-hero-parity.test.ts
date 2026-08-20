@@ -72,7 +72,7 @@ describe('pipelineForHero ≡ computeAdvisorPipeline assembled from advisor-sele
     slots: accountData.slots ?? undefined,
   };
 
-  it('ranking order, each dpsGainPct, best.stat and dps are identical between the two call paths', () => {
+  it('ranking order, each gainPct, best.stat and dps are identical between the two call paths', () => {
     const viaExportedPipeline = pipelineForHero(hero, account, phase, mitigationPct);
 
     // Assembled field-for-field with advisor-selectors.ts's `selectAdvisorPipeline` — the web's
@@ -105,7 +105,7 @@ describe('pipelineForHero ≡ computeAdvisorPipeline assembled from advisor-sele
       birth: hero.birth,
     });
 
-    // Not a snapshot, not a deep-equal on the whole result: ranking order, each dpsGainPct,
+    // Not a snapshot, not a deep-equal on the whole result: ranking order, each gainPct,
     // best.stat and dps — the fields MPV-03 actually promises are identical. Both paths now
     // receive byte-identical arguments, so MKR-26's "unconditional identity" is tightened from
     // a 9-decimal closeness bound to exact identity (design TD-9).
@@ -113,7 +113,7 @@ describe('pipelineForHero ≡ computeAdvisorPipeline assembled from advisor-sele
       viaWebFieldList.ranking.map((entry) => entry.stat),
     );
     viaExportedPipeline.ranking.forEach((entry, index) => {
-      expect(entry.dpsGainPct).toBe(viaWebFieldList.ranking[index]!.dpsGainPct);
+      expect(entry.gainPct).toBe(viaWebFieldList.ranking[index]!.gainPct);
     });
     expect(viaExportedPipeline.best.stat).toBe(viaWebFieldList.best.stat);
     expect(viaExportedPipeline.dps).toBe(viaWebFieldList.dps);

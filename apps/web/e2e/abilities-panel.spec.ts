@@ -156,14 +156,18 @@ test.describe('abilities panel (ABX residual)', () => {
       has: page.getByRole('heading', { name: /^Stats$/i, level: 2 }),
     });
     const critRow = stats.locator('tr').filter({ hasText: /^Crit %/ });
-    // The Stats table is birth→Total now, so the old "Naked" column is gone and the same
-    // discriminator lives in two cells: Birth is the hero's own roll (9.51, NOT the Raro
-    // midpoint 7), and Δ ability is that roll scaled by Keen Eye 1's +0.75%:
-    //   9.51 x 0.0075 = 0.0713 -> "+0.07"   vs the midpoint bug's 7 x 0.0075 = "+0.05".
+    // RE-POINTED for the 2026-08-18 revert (issue #132), which restored the premise this
+    // sensor rests on but rescaled Keen Eye's own value in the process (×40/7 from the
+    // pre-2026-08-15 figure — see `abilities.ts`).
+    //
+    // The Stats table is birth→Total, so the discriminator lives in two cells: Birth is the
+    // hero's own roll (9.51, NOT the Raro midpoint 7), and Δ ability is that roll scaled by
+    // Keen Eye 1's new +4.285714285714286%/rank:
+    //   9.51 x 0.04285714285714286 = 0.4076 -> "+0.41"   vs the midpoint bug's 7 x (same) = "+0.30".
     await expect(critRow.locator('td').nth(1)).toHaveText('9.51');
-    await expect(critRow.locator('td').nth(4)).toHaveText('+0.07');
+    await expect(critRow.locator('td').nth(4)).toHaveText('+0.41');
     await expect(critRow).not.toContainText('7.05');
-    await expect(critRow.locator('td').nth(4)).not.toHaveText('+0.05');
+    await expect(critRow.locator('td').nth(4)).not.toHaveText('+0.30');
   });
 
   test('imported hero identity lives in hero strip; tab is abilities-only', async ({ page }) => {

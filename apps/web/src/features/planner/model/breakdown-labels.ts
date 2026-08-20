@@ -156,5 +156,6 @@ export function ledgerStepNote(
   }
   if (step.note === 'keenEye') return strings.bdNoteKeenEye;
   if (step.note === 'diamondTip') return strings.bdNoteDiamondTip;
+  if (step.note === 'brutalStrike') return strings.bdNoteBrutalStrike;
   return null;
 }

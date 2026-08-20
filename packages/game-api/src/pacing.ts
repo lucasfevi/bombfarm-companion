@@ -7,7 +7,7 @@ import type { RequestOutcome } from './request.js';
  * bare number here is how an invented figure becomes folklore (`pacing.test.ts` reads this
  * source and fails if any value loses its comment).
  *
- * Reused from `bombfarm-bot/src/lib/rate-limit.ts:9-10,66-89`: the cooldown-detection shape (see
+ * Reused from the internal automation prototype's rate-limit module: the cooldown-detection shape (see
  * `request.ts`'s `COOLDOWN_BODY_PATTERN`) and the 429/503 checks. The *write*-pacing half
  * (`beforeWrite`, `dryRun`, `min_write_interval_ms`) is not ported — it guards a surface this
  * package does not have (`D24`: no writes).
@@ -40,7 +40,7 @@ export const READ_PACING = {
   /** Unmeasured. Backoff ceiling — never wait longer than 15 minutes between retries. */
   backoffCapMs: 900_000,
 
-  /** Reused verbatim from `bombfarm-bot/src/lib/api.ts`'s request timeout. */
+  /** Reused verbatim from the internal automation prototype's request timeout. */
   requestTimeoutMs: 15_000,
 } as const;
 

@@ -2,6 +2,7 @@ import type { StateCreator } from 'zustand';
 import {
   ABILITIES,
   abilityPointBudget,
+  HERO_MAX_LEVEL,
   type RarityKey,
 } from '@bombfarm/domain/model';
 import {
@@ -150,7 +151,7 @@ export const createHeroDraftSlice: StateCreator<
     else set({ rarity: value });
   },
   setHeroLevel: (value) => {
-    const clamped = Math.max(0, Math.min(100, Math.round(value)));
+    const clamped = Math.max(0, Math.min(HERO_MAX_LEVEL, Math.round(value)));
     if (get().level === clamped) return;
     set({ level: clamped });
   },
