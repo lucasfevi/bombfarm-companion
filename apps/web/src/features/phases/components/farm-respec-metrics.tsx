@@ -10,9 +10,7 @@ import { formatGold, formatHours, formatSignedPct } from '@/features/phases/mode
 
 /**
  * The five metric tiles — gold/hr, chests/hr, recommended phase, respec cost, payback — each
- * current -> proposed where the result carries both. The gold tile renders WHATEVER the
- * objective is (item A returns both rates unconditionally for exactly this) and carries a
- * second line naming the gold given up when the proposed build earns less of it.
+ * current -> proposed where the result carries both.
  */
 export function FarmRespecMetrics({
   t,
@@ -30,7 +28,6 @@ export function FarmRespecMetrics({
       : paybackKind === 'no-gold-gain'
         ? t.farmRespecPaybackNoGoldGain
         : t.farmRespecPaybackNoChange;
-  const goldGivenUp = result.proposedGoldPerHour < result.currentGoldPerHour;
   const phaseChange = resolvePhaseChange(result);
   const phaseLabel = (phase: number | null) => (phase != null ? formatPhaseLabel(phase, lang) : '—');
 
@@ -50,15 +47,6 @@ export function FarmRespecMetrics({
             ({formatSignedPct(result.goldGainPct)}%)
           </span>
         </div>
-        {goldGivenUp ? (
-          <div className="mt-0.5 text-[10px] text-muted">
-            <GoldValue>
-              {sub(t.farmRespecGoldGivenUp, {
-                gold: formatRate(result.currentGoldPerHour - result.proposedGoldPerHour),
-              })}
-            </GoldValue>
-          </div>
-        ) : null}
       </div>
       <div data-testid="farm-respec-metric-chests" className="rounded-sm border border-line p-2">
         <div className="flex items-center gap-1 text-[10px] tracking-[0.03em] text-muted uppercase">

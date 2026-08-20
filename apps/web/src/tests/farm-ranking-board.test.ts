@@ -33,7 +33,6 @@ describe('Farm Ranking board — testids present (design §4.3)', () => {
     ['src/features/phases/components/farm-ranking-table.tsx', 'farm-ranking-table'],
     ['src/features/phases/components/farm-ranking-table.tsx', 'farm-sort-live'],
     ['src/features/phases/components/farm-respec-toolbar.tsx', 'farm-respec-toolbar'],
-    ['src/features/phases/components/farm-respec-toolbar.tsx', 'farm-respec-objective'],
     ['src/features/phases/components/farm-respec-toolbar.tsx', 'farm-respec-optimize'],
     ['src/features/phases/components/farm-respec-headline.tsx', 'farm-respec-headline'],
     ['src/features/phases/components/farm-respec-panel.tsx', 'farm-respec-panel'],
@@ -124,12 +123,10 @@ describe('Farm Respec Advisor toolbar — visibility, controls and layout stabil
     expect(source).toMatch(/if \(!degraded && !gate\.shouldSurface\) return null;/);
   });
 
-  it('the objective picker is a three-option Select over the FarmObjectiveKind literals verbatim, dispatching setFarmObjective and nothing else', () => {
+  it('no objective picker remains — Optimize is the only control in the toolbar', () => {
     const source = read('src/features/phases/components/farm-respec-toolbar.tsx');
-    expect(source).toContain('<option value="gold">');
-    expect(source).toContain('<option value="blend">');
-    expect(source).toContain('<option value="chests">');
-    expect(source).toContain('setFarmObjective(event.target.value');
+    expect(source).not.toContain('Select');
+    expect(source).not.toContain('setFarmObjective');
   });
 
   it('Optimize is a real button with aria-busy, aria-expanded and aria-controls pointing at the panel', () => {
@@ -161,14 +158,13 @@ describe('Farm Respec Advisor toolbar — visibility, controls and layout stabil
     expect(source).not.toMatch(/useShallow\([^)]*selectFarmRespecGate/);
   });
 
-  it('the headline shows the lower-bound gain, the phase, the cost and one of the three payback strings', () => {
+  // The headline is the lower-bound gain and nothing else — the phase, the cost and the payback
+  // are the panel's metric tiles now, not four facts crammed into one toolbar line.
+  it('the headline shows the lower-bound gain alone', () => {
     const source = read('src/features/phases/components/farm-respec-headline.tsx');
     expect(source).toContain('t.farmRespecHeadlineGain');
-    expect(source).toContain('t.farmRespecHeadlinePhase');
-    expect(source).toContain('t.farmRespecHeadlineCost');
-    expect(source).toContain('resolvePaybackKind(result)');
+    expect(source).not.toMatch(/formatPhaseLabel|formatGold|formatHours|resolvePaybackKind/);
   });
-
 });
 
 describe('Farm Respec Advisor panel — in-place expansion and banners', () => {
@@ -224,11 +220,6 @@ describe('Farm Respec Advisor panel — in-place expansion and banners', () => {
   it('the panel renders no energy-allocation section', () => {
     const source = read('src/features/phases/components/farm-respec-panel.tsx');
     expect(source).not.toMatch(/[Pp]lateau/);
-  });
-
-  it('the chest explainer renders whenever the objective is not gold', () => {
-    const source = read('src/features/phases/components/farm-respec-panel.tsx');
-    expect(source).toContain("objective !== 'gold'");
   });
 
   it('the panel has a real heading wired via aria-labelledby, and a close button that closes it', () => {

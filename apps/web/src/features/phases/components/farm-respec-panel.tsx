@@ -21,7 +21,6 @@ export function FarmRespecPanel({ t, lang }: { t: Strings; lang: Lang }) {
   const view = usePlannerStore(selectFarmRespecView);
   const status = usePlannerStore((state) => state.farmRespecStatus);
   const panelOpen = usePlannerStore((state) => state.farmRespecPanelOpen);
-  const objective = usePlannerStore((state) => state.farmObjective);
   const heroes = usePlannerStore(selectHeroes);
   const setFarmRespecPanelOpen = usePlannerStore((state) => state.setFarmRespecPanelOpen);
 
@@ -82,11 +81,6 @@ export function FarmRespecPanel({ t, lang }: { t: Strings; lang: Lang }) {
             </Banner>
           ) : null}
           <FarmRespecMetrics t={t} lang={lang} result={panelState.result} />
-          {objective !== 'gold' ? (
-            <p className="m-0 text-[11px] text-muted" data-testid="farm-respec-chest-explainer">
-              {t.farmRespecChestExplainer}
-            </p>
-          ) : null}
           <div>
             <h4 className="m-0 mb-2 text-[11px] tracking-[0.03em] text-muted uppercase">
               {t.farmRespecHeroesHeading}

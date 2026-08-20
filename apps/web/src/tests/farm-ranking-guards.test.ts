@@ -182,10 +182,10 @@ describe('guard (g) — @bombfarm/domain/farm-optimize: one RUNTIME importer', (
     ).toBe(true);
   });
 
-  it("a pure `import type { FarmObjectiveKind }` (phases-view-storage.ts's and phases-slice.ts's shape) is correctly classified as non-runtime", () => {
+  it('a pure `import type { FarmRespecResult }` clause is correctly classified as non-runtime', () => {
     expect(
       importsRuntimeBinding(
-        "import type { FarmObjectiveKind } from '@bombfarm/domain/farm-optimize';",
+        "import type { FarmRespecResult } from '@bombfarm/domain/farm-optimize';",
         '@bombfarm/domain/farm-optimize',
       ),
     ).toBe(false);

@@ -7,7 +7,7 @@ import {
 // Type-only import — erases at compile time, so this slice never becomes a runtime importer of
 // @bombfarm/domain/farm-optimize (farm-ranking-guards.test.ts guard (g) scopes runtime imports
 // to farm-ranking-selectors.ts only).
-import type { FarmObjectiveKind, FarmRespecResult } from '@bombfarm/domain/farm-optimize';
+import type { FarmRespecResult } from '@bombfarm/domain/farm-optimize';
 import { scheduleAfterPaint } from '@/shared/lib/schedule-after-paint';
 // Legal intra-element import (boundaries/elements declares one `shared-stores` element covering
 // both slices/ and selectors/) — the reverse edge of the same shape already ships in
@@ -38,8 +38,6 @@ export type PhasesSlice = {
   farmPoolOverrides: Record<string, boolean>;
   /** Farm Ranking return-bonus estimate — `@bombfarm/domain`'s `ReturnBonusMode` verbatim. */
   farmReturnBonus: ReturnBonusMode;
-  /** Farm Respec Advisor objective preset — PERSISTED and re-solved on change. */
-  farmObjective: FarmObjectiveKind;
   /** The on-demand Tier 2 result. EPHEMERAL — never persisted (spec Out of scope). */
   farmRespecProposal: FarmRespecProposal | null;
   /** EPHEMERAL. */
@@ -55,7 +53,6 @@ export type PhasesSlice = {
   syncDefaultPhaseSelection: (phase: number) => void;
   setFarmHeroEnabled: (heroId: string, enabled: boolean) => void;
   setFarmReturnBonus: (mode: ReturnBonusMode) => void;
-  setFarmObjective: (kind: FarmObjectiveKind) => void;
   setFarmRespecReRank: (active: boolean) => void;
   setFarmRespecPanelOpen: (open: boolean) => void;
   /** Runs Tier 2 on demand, off the render path — see the action body for the full contract. */
@@ -84,7 +81,6 @@ export const createPhasesSlice: StateCreator<
       ...(state.phasesViewPhaseChosen ? { phase: state.phasesViewPhase } : {}),
       farmPool: state.farmPoolOverrides,
       farmReturnBonus: state.farmReturnBonus,
-      farmObjective: state.farmObjective,
     });
   }
 
@@ -93,7 +89,6 @@ export const createPhasesSlice: StateCreator<
     phasesViewPhaseChosen: false,
     farmPoolOverrides: {},
     farmReturnBonus: 'off',
-    farmObjective: 'gold',
     farmRespecProposal: null,
     farmRespecStatus: 'idle',
     farmRespecReRank: false,
@@ -105,7 +100,6 @@ export const createPhasesSlice: StateCreator<
         phasesViewPhaseChosen: view.phase != null,
         farmPoolOverrides: view.farmPool ?? {},
         farmReturnBonus: view.farmReturnBonus ?? 'off',
-        farmObjective: view.farmObjective ?? 'gold',
       });
     },
 
@@ -145,15 +139,6 @@ export const createPhasesSlice: StateCreator<
     setFarmReturnBonus: (mode) => {
       if (get().farmReturnBonus === mode) return;
       set({ farmReturnBonus: mode });
-      persistPhasesView(get());
-    },
-
-    // Does NOT clear farmRespecProposal: the objective is part of the dependency tuple the
-    // proposal is keyed on (readFarmRespecDepTuple), so the staleness derivation hides a stale
-    // proposal on the very next render. One invalidation mechanism, not two.
-    setFarmObjective: (kind) => {
-      if (get().farmObjective === kind) return;
-      set({ farmObjective: kind });
       persistPhasesView(get());
     },
 

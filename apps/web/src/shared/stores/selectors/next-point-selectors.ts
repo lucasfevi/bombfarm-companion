@@ -10,7 +10,6 @@
  */
 import type { HeroFarmBasis } from '@bombfarm/domain/farm-point-rank';
 import { computeHeroFarmBases, rankNextPointForFarm, type FarmPointRankOutcome } from '@bombfarm/domain/farm-point-rank';
-import type { FarmObjective, FarmObjectiveKind } from '@bombfarm/domain/farm-optimize';
 import type { PointValue, RankMode } from '@bombfarm/domain/model';
 import type { PlannerStore } from '@/shared/stores/planner-store';
 import type { HeroRecord } from '@/shared/lib/storage';
@@ -22,15 +21,6 @@ import {
   resolveEnabledHeroIds,
   buildAccount,
 } from '@/shared/stores/selectors/farm-ranking-selectors';
-
-/** Same GOLD-share weight the Farm Ranking board's objective picker uses — item A collapses
- *  weight===1 to 'gold' and weight===0 to 'chests', so 0.5 is the only blend value either
- *  surface can ever emit. */
-const FARM_BLEND_GOLD_WEIGHT = 0.5;
-
-function toFarmObjective(kind: FarmObjectiveKind): FarmObjective {
-  return kind === 'blend' ? { kind, weight: FARM_BLEND_GOLD_WEIGHT } : { kind };
-}
 
 function depsEqual(left: readonly unknown[], right: readonly unknown[]): boolean {
   if (left.length !== right.length) return false;
@@ -260,7 +250,6 @@ function computeNextPointRanking(state: PlannerStore): NextPointRanking {
     bases,
     account: buildAccount(state),
     heroId: activeHeroId,
-    objective: toFarmObjective(state.farmObjective),
     maxPhase: state.maxPhase,
     returnBonus: state.farmReturnBonus,
   });
@@ -286,7 +275,6 @@ function readNextPointDepTuple(state: PlannerStore) {
     'farm',
     selectFarmPoolBases(state),
     selectDraftFarmBasis(state),
-    state.farmObjective,
     state.maxPhase,
     state.farmReturnBonus,
     pipeline,

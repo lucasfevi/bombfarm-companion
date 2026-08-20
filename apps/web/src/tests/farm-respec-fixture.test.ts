@@ -143,13 +143,6 @@ describe('Farm Respec Advisor — fixture integration (account-486, save-2026081
     expect(proposedTop).toBeLessThanOrEqual(28);
   });
 
-  it('a pure chests objective recommends phase 1 with a null payback (the reachable never-a-glyph case)', () => {
-    usePlannerStore.getState().setFarmObjective('chests');
-    const solve = runFarmRespecSolve(usePlannerStore.getState());
-    expect(solve.recommendedPhase).toBe(1);
-    expect(solve.paybackHours).toBeNull();
-  });
-
   it('the frontier is non-empty on this multi-searchable-hero fixture and is cost-ascending', () => {
     const solve = runFarmRespecSolve(usePlannerStore.getState());
     expect(solve.frontier.length).toBeGreaterThan(0);

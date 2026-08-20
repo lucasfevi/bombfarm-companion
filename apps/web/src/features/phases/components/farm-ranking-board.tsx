@@ -116,7 +116,7 @@ export function FarmRankingBoard({ t, lang }: { t: Strings; lang: Lang }) {
           />
         </div>
       ) : null}
-      <FarmRespecToolbar t={t} lang={lang} />
+      <FarmRespecToolbar t={t} />
       <FarmRespecPanel t={t} lang={lang} />
       {result.reason !== 'no-roster' ? (
         <div className="mb-2 flex flex-wrap items-start justify-between gap-3 border-b border-line pb-3">
