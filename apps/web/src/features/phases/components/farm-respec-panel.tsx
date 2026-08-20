@@ -82,7 +82,7 @@ export function FarmRespecPanel({ t, lang }: { t: Strings; lang: Lang }) {
               {t.farmRespecBudgetExhausted}
             </Banner>
           ) : null}
-          <FarmRespecMetrics t={t} result={panelState.result} />
+          <FarmRespecMetrics t={t} lang={lang} result={panelState.result} />
           {objective !== 'gold' ? (
             <p className="m-0 text-[11px] text-muted" data-testid="farm-respec-chest-explainer">
               {t.farmRespecChestExplainer}

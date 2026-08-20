@@ -63,6 +63,7 @@ const FROZEN_BARREL_VALUE_EXPORTS = [
   'ToastItem',
   'ToastProvider',
   'ToastViewport',
+  'TipLabel',
   'Tooltip',
   'TooltipStatusBody',
   'abilityCardRecipe',

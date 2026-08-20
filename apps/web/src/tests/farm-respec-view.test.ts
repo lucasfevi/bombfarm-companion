@@ -14,6 +14,7 @@ import {
   resolveFrontierEntries,
   resolvePanelState,
   resolvePaybackKind,
+  resolvePhaseChange,
 } from '@/features/phases/model/farm-respec-view';
 import type { FarmRespecProposal } from '@/shared/stores/slices/phases-slice';
 import { WEB_PACKAGE_ROOT } from './helpers/web-package-root';
@@ -194,6 +195,44 @@ describe('farm-respec-view', () => {
     it('"nothingToGain" is NOT terminal — it resolves as a normal result', () => {
       const view = proposal('nothingToGain');
       expect(resolvePanelState(view, 'done').kind).toBe('result');
+    });
+  });
+
+  describe('resolvePhaseChange', () => {
+    function result(currentPhase: number | null, recommendedPhase: number | null): FarmRespecResult {
+      return { currentPhase, recommendedPhase } as FarmRespecResult;
+    }
+
+    it('both phases null resolves to {kind: "both-null"}', () => {
+      expect(resolvePhaseChange(result(null, null))).toEqual({ kind: 'both-null' });
+    });
+
+    it('the same non-null phase on both sides resolves to {kind: "same", phase}', () => {
+      expect(resolvePhaseChange(result(51, 51))).toEqual({ kind: 'same', phase: 51 });
+    });
+
+    it('a genuine move (both sides non-null, different) resolves to {kind: "moved", ...}', () => {
+      expect(resolvePhaseChange(result(27, 51))).toEqual({
+        kind: 'moved',
+        currentPhase: 27,
+        recommendedPhase: 51,
+      });
+    });
+
+    it('current null, recommended non-null resolves to {kind: "moved", ...} — not "same"', () => {
+      expect(resolvePhaseChange(result(null, 51))).toEqual({
+        kind: 'moved',
+        currentPhase: null,
+        recommendedPhase: 51,
+      });
+    });
+
+    it('current non-null, recommended null resolves to {kind: "moved", ...} — not "same"', () => {
+      expect(resolvePhaseChange(result(27, null))).toEqual({
+        kind: 'moved',
+        currentPhase: 27,
+        recommendedPhase: null,
+      });
     });
   });
 

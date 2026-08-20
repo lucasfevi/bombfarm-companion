@@ -37,3 +37,10 @@ export function formatSignedPoints(value: number): string {
   const sign = value > 0 ? '+' : value < 0 ? '-' : '';
   return `${sign}${formatNumber(Math.abs(value), 0)}`;
 }
+
+/** A signed percent change, one decimal — `+12.8`, `-5.3`, or `0.0` (no sign on zero). */
+export function formatSignedPct(value: number): string {
+  if (!Number.isFinite(value)) return '—';
+  const sign = value > 0 ? '+' : value < 0 ? '-' : '';
+  return `${sign}${formatNumber(Math.abs(value), 1)}`;
+}

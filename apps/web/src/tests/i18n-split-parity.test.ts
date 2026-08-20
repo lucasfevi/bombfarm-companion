@@ -158,6 +158,15 @@ const KEYS_REMOVED: readonly string[] = [
  * panel-level description under the new cage art. `phasesJaulaWindowVip` labels the VIP
  * guarantee window now shown as subtext under the normal window, once the committed wiki bundle's
  * stale VIP figure was corrected to match the live wiki.
+ *
+ * The metric tile row rework (2026-08-19) added a fifth Farm Respec Advisor tile —
+ * `farmRespecMetricPhase` labels the recommended-phase before/after tile, and
+ * `farmRespecMetricPhaseSame` is the muted note it shows in place of a repeated label when the
+ * proposal does not move the phase. The tile also carries a tooltip explaining what the Payback
+ * figure divides, since players were reading "pays for itself in N h" as computed against the NEW
+ * gold/hr rather than the increase over the current one: `farmRespecPaybackTip` is the tooltip
+ * body, triggered by the Payback label itself (`TipLabel`) rather than a separate `?` control, so
+ * no separate trigger-label key exists.
  */
 const KEYS_ADDED: readonly string[] = [
   'phasesXpActualHint',
@@ -177,6 +186,9 @@ const KEYS_ADDED: readonly string[] = [
   'phasesDropNonGateOnly',
   'phasesJaulaSectionDesc',
   'phasesJaulaWindowVip',
+  'farmRespecMetricPhase',
+  'farmRespecMetricPhaseSame',
+  'farmRespecPaybackTip',
 ];
 
 /**

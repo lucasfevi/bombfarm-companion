@@ -101,6 +101,7 @@ export {
   sortableTableHeaderButtonClass,
 } from './data-table.recipe';
 export { StatList, type StatListItem } from './stat-list';
+export { TipLabel, type TipLabelProps } from './stat-list-tip-label';
 export {
   MetricScoreboard,
   type MetricScoreboardCell,

@@ -115,6 +115,27 @@ export function resolvePanelState(
   return { kind: 'result', result, budgetExhausted: result.budgetExhausted };
 }
 
+export type FarmRespecPhaseChange =
+  | { kind: 'both-null' }
+  | { kind: 'same'; phase: number }
+  | { kind: 'moved'; currentPhase: number | null; recommendedPhase: number | null };
+
+/**
+ * Whether the Phase tile has one label to show or two. `currentPhase`/`recommendedPhase` are
+ * independently nullable (item A: null when nothing is feasible on that side), so `'moved'`
+ * covers every combination of one side null and the other not, not just a genuine two-sided move.
+ * `'same'` fires only when BOTH sides are the identical non-null phase — the no-op proposal that
+ * would otherwise print `Normal 1-1 (#51) -> Normal 1-1 (#51)`.
+ */
+export function resolvePhaseChange(result: FarmRespecResult): FarmRespecPhaseChange {
+  const { currentPhase, recommendedPhase } = result;
+  if (currentPhase == null && recommendedPhase == null) return { kind: 'both-null' };
+  if (currentPhase != null && currentPhase === recommendedPhase) {
+    return { kind: 'same', phase: currentPhase };
+  }
+  return { kind: 'moved', currentPhase, recommendedPhase };
+}
+
 /**
  * Passes `result.frontier` through UNCHANGED — item A guarantees cost-ascending order, and this
  * file does not sort, filter or reverse it. An empty frontier (one searchable hero) yields `null`

@@ -41,6 +41,7 @@ describe('Farm Ranking board — testids present (design §4.3)', () => {
     ['src/features/phases/components/farm-respec-metrics.tsx', 'farm-respec-metrics'],
     ['src/features/phases/components/farm-respec-metrics.tsx', 'farm-respec-metric-gold'],
     ['src/features/phases/components/farm-respec-metrics.tsx', 'farm-respec-metric-chests'],
+    ['src/features/phases/components/farm-respec-metrics.tsx', 'farm-respec-metric-phase'],
     ['src/features/phases/components/farm-respec-metrics.tsx', 'farm-respec-metric-cost'],
     ['src/features/phases/components/farm-respec-metrics.tsx', 'farm-respec-metric-payback'],
     ['src/features/phases/components/farm-respec-plateau.tsx', 'farm-respec-plateau'],

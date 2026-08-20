@@ -1,19 +1,28 @@
 'use client';
 
 import type { FarmRespecResult } from '@bombfarm/domain/farm-optimize';
-import { sub, type Strings } from '@/shared/i18n';
-import { GoldValue } from '@/shared/game-art';
-import { formatRate } from '@/features/phases/model/farm-ranking-format';
-import { resolvePaybackKind } from '@/features/phases/model/farm-respec-view';
-import { formatGold, formatHours } from '@/features/phases/model/farm-respec-format';
+import { TipLabel, Tooltip } from '@bombfarm/ui';
+import { sub, type Lang, type Strings } from '@/shared/i18n';
+import { GoldIcon, GoldValue, ChestIcon } from '@/shared/game-art';
+import { formatPhaseLabel, formatRate } from '@/features/phases/model/farm-ranking-format';
+import { resolvePaybackKind, resolvePhaseChange } from '@/features/phases/model/farm-respec-view';
+import { formatGold, formatHours, formatSignedPct } from '@/features/phases/model/farm-respec-format';
 
 /**
- * The four metric tiles — gold/hr, chests/hr, respec cost, payback — each current -> proposed
- * where the result carries both. The gold tile renders WHATEVER the objective is (item A
- * returns both rates unconditionally for exactly this) and carries a second line naming the
- * gold given up when the proposed build earns less of it.
+ * The five metric tiles — gold/hr, chests/hr, recommended phase, respec cost, payback — each
+ * current -> proposed where the result carries both. The gold tile renders WHATEVER the
+ * objective is (item A returns both rates unconditionally for exactly this) and carries a
+ * second line naming the gold given up when the proposed build earns less of it.
  */
-export function FarmRespecMetrics({ t, result }: { t: Strings; result: FarmRespecResult }) {
+export function FarmRespecMetrics({
+  t,
+  lang,
+  result,
+}: {
+  t: Strings;
+  lang: Lang;
+  result: FarmRespecResult;
+}) {
   const paybackKind = resolvePaybackKind(result);
   const paybackText =
     paybackKind === 'hours'
@@ -22,18 +31,24 @@ export function FarmRespecMetrics({ t, result }: { t: Strings; result: FarmRespe
         ? t.farmRespecPaybackNoGoldGain
         : t.farmRespecPaybackNoChange;
   const goldGivenUp = result.proposedGoldPerHour < result.currentGoldPerHour;
+  const phaseChange = resolvePhaseChange(result);
+  const phaseLabel = (phase: number | null) => (phase != null ? formatPhaseLabel(phase, lang) : '—');
 
   return (
     <div
       data-testid="farm-respec-metrics"
-      className="grid grid-cols-2 gap-2 sm:grid-cols-4"
+      className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-5"
     >
       <div data-testid="farm-respec-metric-gold" className="rounded-sm border border-line p-2">
-        <div className="text-[10px] tracking-[0.03em] text-muted uppercase">
+        <div className="flex items-center gap-1 text-[10px] tracking-[0.03em] text-muted uppercase">
+          <GoldIcon className="size-3" />
           {t.farmRespecMetricGold}
         </div>
         <div className="text-[13px] font-bold">
-          {formatRate(result.currentGoldPerHour)} → {formatRate(result.proposedGoldPerHour)}
+          {formatRate(result.currentGoldPerHour)} → {formatRate(result.proposedGoldPerHour)}{' '}
+          <span className="text-[10px] font-normal text-muted">
+            ({formatSignedPct(result.goldGainPct)}%)
+          </span>
         </div>
         {goldGivenUp ? (
           <div className="mt-0.5 text-[10px] text-muted">
@@ -46,12 +61,29 @@ export function FarmRespecMetrics({ t, result }: { t: Strings; result: FarmRespe
         ) : null}
       </div>
       <div data-testid="farm-respec-metric-chests" className="rounded-sm border border-line p-2">
-        <div className="text-[10px] tracking-[0.03em] text-muted uppercase">
+        <div className="flex items-center gap-1 text-[10px] tracking-[0.03em] text-muted uppercase">
+          <ChestIcon className="size-3" />
           {t.farmRespecMetricChests}
         </div>
         <div className="text-[13px] font-bold">
-          {formatRate(result.currentChestsPerHour)} → {formatRate(result.proposedChestsPerHour)}
+          {formatRate(result.currentChestsPerHour)} → {formatRate(result.proposedChestsPerHour)}{' '}
+          <span className="text-[10px] font-normal text-muted">
+            ({formatSignedPct(result.chestsGainPct)}%)
+          </span>
         </div>
+      </div>
+      <div data-testid="farm-respec-metric-phase" className="rounded-sm border border-line p-2">
+        <div className="text-[10px] tracking-[0.03em] text-muted uppercase">
+          {t.farmRespecMetricPhase}
+        </div>
+        <div className="text-[11px] font-bold text-wrap">
+          {phaseChange.kind === 'same'
+            ? phaseLabel(phaseChange.phase)
+            : `${phaseLabel(result.currentPhase)} → ${phaseLabel(result.recommendedPhase)}`}
+        </div>
+        {phaseChange.kind === 'same' ? (
+          <div className="mt-0.5 text-[10px] text-muted">{t.farmRespecMetricPhaseSame}</div>
+        ) : null}
       </div>
       <div data-testid="farm-respec-metric-cost" className="rounded-sm border border-line p-2">
         <div className="text-[10px] tracking-[0.03em] text-muted uppercase">
@@ -62,9 +94,11 @@ export function FarmRespecMetrics({ t, result }: { t: Strings; result: FarmRespe
         </div>
       </div>
       <div data-testid="farm-respec-metric-payback" className="rounded-sm border border-line p-2">
-        <div className="text-[10px] tracking-[0.03em] text-muted uppercase">
-          {t.farmRespecMetricPayback}
-        </div>
+        <Tooltip.Provider delay={180} closeDelay={80}>
+          <div className="text-[10px] tracking-[0.03em] text-muted uppercase">
+            <TipLabel label={t.farmRespecMetricPayback} tip={t.farmRespecPaybackTip} />
+          </div>
+        </Tooltip.Provider>
         <div className="text-[13px] font-bold">{paybackText}</div>
       </div>
     </div>
