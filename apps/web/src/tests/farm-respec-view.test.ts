@@ -5,12 +5,10 @@ import type {
   FarmRespecFrontierEntry,
   FarmRespecHeroEntry,
   FarmRespecOutcome,
-  FarmRespecPlateau,
   FarmRespecResult,
 } from '@bombfarm/domain/farm-optimize';
 import {
   buildHeroCardRows,
-  buildPlateauGeometry,
   resolveFrontierEntries,
   resolvePanelState,
   resolvePaybackKind,
@@ -87,48 +85,6 @@ describe('farm-respec-view', () => {
       for (const row of rows) {
         if (row.key !== 'luck') expect(row.keep).toBe(false);
       }
-    });
-  });
-
-  describe('buildPlateauGeometry', () => {
-    const plateau = (overrides: Partial<FarmRespecPlateau> = {}): FarmRespecPlateau => ({
-      minEnergyShare: 0.55,
-      maxEnergyShare: 0.75,
-      tolerancePct: 1,
-      currentEnergyShare: 0.4,
-      proposedEnergyShare: 0.6,
-      ...overrides,
-    });
-
-    it('a normal band converts each fraction to a CSS percent', () => {
-      const geometry = buildPlateauGeometry(plateau());
-      expect(geometry.bandLeftPct).toBeCloseTo(55, 9);
-      expect(geometry.bandWidthPct).toBeCloseTo(20, 9);
-      expect(geometry.currentPct).toBeCloseTo(40, 9);
-      expect(geometry.proposedPct).toBeCloseTo(60, 9);
-    });
-
-    it('min === max yields a zero-width band with both markers still present', () => {
-      const geometry = buildPlateauGeometry(
-        plateau({ minEnergyShare: 0.6, maxEnergyShare: 0.6, currentEnergyShare: 0.5, proposedEnergyShare: 0.6 }),
-      );
-      expect(geometry.bandWidthPct).toBeCloseTo(0, 9);
-      expect(geometry.bandLeftPct).toBeCloseTo(60, 9);
-      expect(geometry.currentPct).toBeCloseTo(50, 9);
-      expect(geometry.proposedPct).toBeCloseTo(60, 9);
-    });
-
-    it('current outside the band is passed through, not clamped', () => {
-      const geometry = buildPlateauGeometry(
-        plateau({ minEnergyShare: 0.5, maxEnergyShare: 0.7, currentEnergyShare: 0.2 }),
-      );
-      expect(geometry.currentPct).toBeCloseTo(20, 9);
-    });
-
-    it('proposed lands inside the band on a normal case', () => {
-      const geometry = buildPlateauGeometry(plateau());
-      expect(geometry.proposedPct).toBeGreaterThanOrEqual(geometry.bandLeftPct);
-      expect(geometry.proposedPct).toBeLessThanOrEqual(geometry.bandLeftPct + geometry.bandWidthPct);
     });
   });
 

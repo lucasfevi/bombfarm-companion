@@ -222,10 +222,15 @@ describe('Farm Respec Advisor panel — in-place expansion, banners, plateau', (
     }
   });
 
-  it('the plateau band is aria-hidden; the sentence beside it is the accessible content', () => {
+  // The band this once guarded is gone — it drew two unlabelled markers on a bare rail, and
+  // nothing at all on a sharp optimum, where min === max collapses it to zero width. The
+  // sentence always carried the same numbers, so it is now the whole section: no decorative
+  // graphic to hide from assistive tech, and none to reintroduce without one.
+  it('the plateau is the sentence alone — no decorative graphic', () => {
     const source = read('src/features/phases/components/farm-respec-plateau.tsx');
-    expect(source).toMatch(/aria-hidden[\s\S]*?<div/);
     expect(source).toContain('sentence');
+    expect(source).not.toMatch(/aria-hidden/);
+    expect(source).not.toMatch(/<svg|absolute/);
   });
 
   it('the chest explainer renders whenever the objective is not gold', () => {

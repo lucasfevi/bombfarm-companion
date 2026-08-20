@@ -4,9 +4,8 @@
  * components have none of their own to get wrong.
  *
  * Zero rate arithmetic. The only arithmetic in this file is integer point subtraction
- * (`proposedPts[key] - currentPts[key]`) and a fraction-to-percent `× 100` for CSS positions —
- * both stated in the design as the one allowed carve-out; everything else is item A's own field,
- * read and passed through.
+ * (`proposedPts[key] - currentPts[key]`), the one carve-out the design allows; everything else
+ * is item A's own field, read and passed through.
  */
 import { SHEET_PANEL_KEYS, type SheetKey } from '@bombfarm/domain/planner-constants';
 // Type-only imports erase at compile time — this file never becomes a runtime importer of
@@ -15,7 +14,6 @@ import type {
   FarmRespecFrontierEntry,
   FarmRespecHeroEntry,
   FarmRespecOutcome,
-  FarmRespecPlateau,
   FarmRespecResult,
 } from '@bombfarm/domain/farm-optimize';
 import type { FarmRespecProposal, FarmRespecStatus } from '@/shared/stores/slices/phases-slice';
@@ -44,24 +42,6 @@ export function buildHeroCardRows(entry: FarmRespecHeroEntry): FarmRespecKeyRow[
     delta: entry.proposedPts[key] - entry.currentPts[key],
     keep: key === 'luck',
   }));
-}
-
-export type FarmRespecPlateauGeometry = {
-  bandLeftPct: number;
-  bandWidthPct: number;
-  currentPct: number;
-  proposedPct: number;
-};
-
-/** Fraction -> percent (`× 100`) for CSS positions only. `min === max` yields a zero-width band
- *  with both markers still present — the domain's real no-neighbour case, not an error state. */
-export function buildPlateauGeometry(plateau: FarmRespecPlateau): FarmRespecPlateauGeometry {
-  return {
-    bandLeftPct: plateau.minEnergyShare * 100,
-    bandWidthPct: (plateau.maxEnergyShare - plateau.minEnergyShare) * 100,
-    currentPct: plateau.currentEnergyShare * 100,
-    proposedPct: plateau.proposedEnergyShare * 100,
-  };
 }
 
 export type FarmRespecPaybackKind = 'hours' | 'no-gold-gain' | 'no-change';
