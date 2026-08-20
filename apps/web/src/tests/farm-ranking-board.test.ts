@@ -245,9 +245,15 @@ describe('Farm Respec Advisor hero cards — full target allocations, luck kept,
     expect(source).toContain('farm-respec-key-${entry.heroId}-${row.key}');
   });
 
-  it('the grid maps result.heroes with NO filter — the enabled-hero count equals the card count', () => {
+  // The grid renders two groups now (changed heroes, then unchanged), so it no longer maps
+  // `result.heroes` directly. The invariant this guarded — no hero is dropped — is proved
+  // against `partitionHeroEntries` itself in farm-respec-view.test.ts, which is stronger than
+  // scanning for an absent `.filter(`; what is left to assert here is that BOTH groups render.
+  it('the grid renders both hero groups — never only the changed ones', () => {
     const source = read('src/features/phases/components/farm-respec-hero-grid.tsx');
-    expect(source).toMatch(/result\.heroes\.map\(/);
+    expect(source).toContain('partitionHeroEntries(result)');
+    expect(source).toMatch(/groups\.changed\.map\(/);
+    expect(source).toMatch(/groups\.unchanged\.map\(/);
     expect(source).not.toMatch(/result\.heroes\.filter\(/);
   });
 

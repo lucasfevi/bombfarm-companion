@@ -9,6 +9,7 @@ import type {
 } from '@bombfarm/domain/farm-optimize';
 import {
   buildHeroCardRows,
+  partitionHeroEntries,
   resolveFrontierEntries,
   resolveFrontierHeroNames,
   resolvePanelState,
@@ -85,6 +86,50 @@ describe('farm-respec-view', () => {
       for (const row of rows) {
         if (row.key !== 'luck') expect(row.keep).toBe(false);
       }
+    });
+  });
+
+  describe('partitionHeroEntries', () => {
+    function withHeroes(heroes: FarmRespecHeroEntry[]): FarmRespecResult {
+      return { heroes } as unknown as FarmRespecResult;
+    }
+
+    const mixed = [
+      heroEntry({ heroId: 'a', changed: true }),
+      heroEntry({ heroId: 'b', changed: false }),
+      heroEntry({ heroId: 'c', changed: true }),
+      heroEntry({ heroId: 'd', changed: false }),
+    ];
+
+    // The invariant the hero grid's old source-scanning guard stood in for: a partition, so no
+    // hero can be dropped on the way to a card.
+    it('every entry lands in exactly one group — the two lengths sum to the input\'s', () => {
+      const groups = partitionHeroEntries(withHeroes(mixed));
+      expect(groups.changed.length + groups.unchanged.length).toBe(mixed.length);
+      expect([...groups.changed, ...groups.unchanged].map((entry) => entry.heroId).sort()).toEqual([
+        'a',
+        'b',
+        'c',
+        'd',
+      ]);
+    });
+
+    it('preserves input order within each group', () => {
+      const groups = partitionHeroEntries(withHeroes(mixed));
+      expect(groups.changed.map((entry) => entry.heroId)).toEqual(['a', 'c']);
+      expect(groups.unchanged.map((entry) => entry.heroId)).toEqual(['b', 'd']);
+    });
+
+    it('an all-changed roster yields an empty unchanged group, and vice versa', () => {
+      const allChanged = partitionHeroEntries(withHeroes([heroEntry({ changed: true })]));
+      expect(allChanged.unchanged).toEqual([]);
+      const allUnchanged = partitionHeroEntries(withHeroes([heroEntry({ changed: false })]));
+      expect(allUnchanged.changed).toEqual([]);
+    });
+
+    it('an empty roster yields two empty groups, not a throw', () => {
+      const groups = partitionHeroEntries(withHeroes([]));
+      expect(groups).toEqual({ changed: [], unchanged: [] });
     });
   });
 

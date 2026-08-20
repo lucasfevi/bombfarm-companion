@@ -42,6 +42,27 @@ export function buildHeroCardRows(entry: FarmRespecHeroEntry): FarmRespecKeyRow[
   }));
 }
 
+export type FarmRespecHeroGroups = {
+  changed: readonly FarmRespecHeroEntry[];
+  unchanged: readonly FarmRespecHeroEntry[];
+};
+
+/**
+ * The hero cards split into the ones the player has to act on and the ones they do not, in
+ * `result.heroes`' own order within each group.
+ *
+ * A PARTITION, never a filter: every entry lands in exactly one group and the two lengths always
+ * sum to the input's, so an unchanged hero is still always rendered — just grouped after the
+ * changed ones instead of interleaved between them, where its two short lines left a full-height
+ * hole in the grid.
+ */
+export function partitionHeroEntries(result: FarmRespecResult): FarmRespecHeroGroups {
+  const changed: FarmRespecHeroEntry[] = [];
+  const unchanged: FarmRespecHeroEntry[] = [];
+  for (const entry of result.heroes) (entry.changed ? changed : unchanged).push(entry);
+  return { changed, unchanged };
+}
+
 export type FarmRespecPaybackKind = 'hours' | 'no-gold-gain' | 'no-change';
 
 /**
