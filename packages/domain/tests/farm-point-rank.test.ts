@@ -89,7 +89,11 @@ describe('rankNextPointForFarm — discrimination: a one-shotting squad inverts 
     const result = rankNextPointForFarm({ bases, account, heroId: bellatrix.id, maxPhase: 42 });
     const attack = result.rows!.find((r) => r.stat === 'attack')!;
     expect(attack.gainPct).toBeGreaterThan(0);
-    expect(attack.gainPct).toBeCloseTo(0.8015745448860301, 5);
+    // RE-MEASURED 2026-08-20 for rotation-priced team auras (Jon's folego_mineiro is now credited
+    // over the rotation instead of read off an empty deployed line-up) and the
+    // HOP_DENSITY_EXPONENT refit. Both move every hero's plant rate and the squad House
+    // allocation together, so the RANKING claim under test is unaffected — only the magnitudes.
+    expect(attack.gainPct).toBeCloseTo(0.7844030511711564, 5);
   });
 
   it('farm ranks ENERGY first at maxPhase 42 — the order INVERTED when cadence stopped assuming every plant is walk-bound', () => {
@@ -118,9 +122,13 @@ describe('rankNextPointForFarm — discrimination: a one-shotting squad inverts 
     // attack enough to overtake speed for second place (0.802 vs 0.700) — the title is trimmed
     // to the part of the claim that still holds (energy first); the full order is asserted below
     // instead of pinning a "second place" that is no longer the discriminating claim.
-    expect(rows[0]).toEqual({ stat: 'energy', label: 'Energia', gainPct: 0.854075763565687 });
-    expect(rows[1]).toEqual({ stat: 'attack', label: 'Ataque', gainPct: 0.8015745448860301 });
-    expect(rows[2]).toEqual({ stat: 'speed', label: 'Velocidade', gainPct: 0.7004826079100468 });
+    // RE-MEASURED 2026-08-20 for rotation-priced team auras (Jon's folego_mineiro is now credited
+    // over the rotation instead of read off an empty deployed line-up) and the
+    // HOP_DENSITY_EXPONENT refit. Both move every hero's plant rate and the squad House
+    // allocation together, so the RANKING claim under test is unaffected — only the magnitudes.
+    expect(rows[0]).toEqual({ stat: 'energy', label: 'Energia', gainPct: 0.837626329165575 });
+    expect(rows[1]).toEqual({ stat: 'attack', label: 'Ataque', gainPct: 0.7844030511711564 });
+    expect(rows[2]).toEqual({ stat: 'speed', label: 'Velocidade', gainPct: 0.6987714511533794 });
   });
 
   it('DPS mode scores attack first and speed exactly 0 on the same hero (the inversion)', () => {
@@ -160,8 +168,12 @@ describe('rankNextPointForFarm — anti-"energy always wins" sensor', () => {
     // allocation ripple as the Bellatrix tests above) — the flip itself is unaffected.
     const result = rankNextPointForFarm({ bases, account, heroId: heroByName('Perrin').id, maxPhase: 42 });
     const rows = result.rows!;
-    expect(rows.find((r) => r.stat === 'attack')!.gainPct).toBeCloseTo(0.147681236805286, 5);
-    expect(rows.find((r) => r.stat === 'energy')!.gainPct).toBeCloseTo(0.14054141113637453, 5);
+    // RE-MEASURED 2026-08-20 for rotation-priced team auras (Jon's folego_mineiro is now credited
+    // over the rotation instead of read off an empty deployed line-up) and the
+    // HOP_DENSITY_EXPONENT refit. Both move every hero's plant rate and the squad House
+    // allocation together, so the RANKING claim under test is unaffected — only the magnitudes.
+    expect(rows.find((r) => r.stat === 'attack')!.gainPct).toBeCloseTo(0.1559212493234874, 5);
+    expect(rows.find((r) => r.stat === 'energy')!.gainPct).toBeCloseTo(0.14838305041389166, 5);
     expect(rows[0].stat).toBe('attack');
   });
 });

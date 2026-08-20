@@ -145,6 +145,11 @@ export function buildAccount(state: PlannerStore): AccountShared {
     // when set, wins) — never the stale, silently-zero stored field a fresh import used to
     // leave every carrier's own aura at 0% until someone found the auto-fill button.
     teamBuffs: selectEffectiveTeamBuffs(state),
+    // Which of the two `teamBuffs` came back. @bombfarm/domain re-derives the auras over the
+    // rotation pool when the total is DERIVED (a deployed-line-up snapshot is the wrong quantity
+    // for a board that cycles a whole pool through the House), and passes it through verbatim when
+    // it is an override — a hand-typed "assume this much aura" has no carriers behind it to weight.
+    teamBuffsOverride: state.teamBuffsOverride,
     context: {
       houseIdx: state.houseIdx,
       houseLevel: state.houseLevel,

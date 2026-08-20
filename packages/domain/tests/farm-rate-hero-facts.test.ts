@@ -10,6 +10,7 @@ import {
   computeHeroFarmFacts,
   computeSquadFarmFacts,
   cycleSecondsForHero,
+  farmPricedAccount,
   type HeroFarmFacts,
 } from '@bombfarm/domain/farm-rate';
 import { pipelineForHero } from '@bombfarm/domain/roster-dps';
@@ -21,6 +22,10 @@ import type { AccountShared, HeroRecord } from '@bombfarm/domain/shims/storage';
 import { loadFarmRateFixture, withAbilityLevels } from './helpers/farm-rate-fixtures';
 
 const { heroes, account } = loadFarmRateFixture();
+/** The account the farm-rate module actually prices against — team auras weighted over the
+ *  rotation rather than read off the deployed line-up. Any assertion comparing a `HeroFarmFacts`
+ *  field against a direct `pipelineForHero` call has to use this, not `account`. */
+const priced = farmPricedAccount({ heroes, account });
 
 describe('computeHeroFarmFacts — the base pipeline call (design.md §0 trap #1)', () => {
   it('mitF === 1 on the base call — proves phase=1 + mitigationPct=0 never bakes in phase-1 mitigation', () => {
@@ -36,7 +41,7 @@ describe('computeHeroFarmFacts — uptime is a fraction (design.md §0 trap #2)'
     const facts = computeHeroFarmFacts({ heroes, account });
     expect(facts).toHaveLength(5);
     for (const fact of facts) {
-      const pipeline = pipelineForHero(heroes.find((h) => h.id === fact.heroId)!, account, 1, 0);
+      const pipeline = pipelineForHero(heroes.find((h) => h.id === fact.heroId)!, priced, 1, 0);
       expect(fact.uptime).toBeGreaterThan(0);
       expect(fact.uptime).toBeLessThanOrEqual(1);
       expect(fact.uptime).toBeCloseTo(pipeline.uptime / 100, 12);

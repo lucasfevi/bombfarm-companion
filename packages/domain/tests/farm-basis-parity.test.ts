@@ -1,6 +1,25 @@
 /**
  * Proof that the `farm-rate.ts` basis seam is a byte-identical refactor, not a rewrite.
  *
+ * RE-RECORDED 2026-08-20 for two changes at once — team auras priced over the ROTATION rather
+ * than off the deployed line-up (`computeTeamBuffsOverRotation`), and the `HOP_DENSITY_EXPONENT`
+ * refit (0.5 → 0.124). Diffed field by field against the previous capture:
+ *
+ * - `heroFacts` — exactly two fields moved, one per change. `uptime` rose on all 5 heroes
+ *   (Jon 0.2505 → 0.2607, Bellatrix 0.3187 → 0.3304) because this corpus is the MIRROR case of
+ *   the defect: its `account.teamBuffs` is all-zero (no hero is deployed), yet Jon carries Fôlego
+ *   de Mineiro rank 18 and sits in the rotation pool, so the board used to grant the roster none
+ *   of an aura it genuinely runs on for a quarter of every rotation and now prices it at 5.21.
+ *   `plantsPerSecByAto` moved on all 5 from the exponent refit. `avgHitBase` did NOT move, which
+ *   is the load-bearing negative: no hero in this corpus carries Grito de Guerra, so the aura
+ *   change must not touch a damage term here — and it does not.
+ * - `rows` — every throughput column moved on all 600 rows (row 42: 113,791 → 118,196 gold/hr,
+ *   clearSecs 499.57 → 480.95), as both changes reach throughput. Every structural column
+ *   (`mitigationPct`, `ato`, `gate`, `locked`, `oneShot`, `gateTimerSecs`, `jaulaEarlyCapPct`,
+ *   `jaulaWindowSecs`, `phase`, `itemLevels`, `itemLevelLabel`, `concurrencyScale`,
+ *   `fortunaAura`) is untouched. `concurrencyScale` staying put confirms the field cap is still
+ *   not binding on this corpus; `fortunaAura` staying put confirms no hero here carries Fortuna.
+ *
  * RE-RECORDED 2026-08-19 (second pass) for issue #132's team-aura roster shape. This fixture's
  * `account.teamBuffs` is `zeroTeamBuffs()` (farm-rate-fixtures.ts reproduces production's
  * post-import default, before the team-buffs auto-fill button is ever pressed), and Jon (the
@@ -202,6 +221,8 @@ import {
   squadFactsFromBases,
   heroFactsFromBasis,
   computeFarmRates,
+  farmPricedAccount,
+  farmTeamBuffs,
   type HeroFarmFacts,
   type FarmRateRow,
 } from '@bombfarm/domain/farm-rate';
@@ -269,7 +290,10 @@ describe('uptime — the §2.1 trap, asserted directly', () => {
     const facts = computeHeroFarmFacts({ heroes, account });
     for (const fact of facts) {
       const hero = heroes.find((h) => h.id === fact.heroId)!;
-      const pipeline = pipelineForHero(hero, account, 1, 0);
+      // The account farm-rate ACTUALLY prices against — team auras weighted over the rotation,
+      // not `account.teamBuffs`. Handing the pipeline the raw account here would compare two
+      // different accounts and read the (correct) difference as a §2.1 parity break.
+      const pipeline = pipelineForHero(hero, farmPricedAccount({ heroes, account }), 1, 0);
       expect(fact.uptime).toBe(pipeline.uptime / 100);
     }
   });
@@ -283,8 +307,15 @@ describe('the moved-vector case — the affine claim itself', () => {
 
     const reconstructed = heroFactsFromBasis(jonBasis, movedPts);
 
+    // The re-run must price the SAME team auras the basis was built with, pinned via the override
+    // path. Left to re-derive them it would not: rotation-weighted auras are a function of every
+    // hero's uptime, moving 5 points from attack into energy moves this hero's uptime, and the
+    // affine claim under test is about the point vector alone — it holds the whole pipeline-
+    // derived context fixed, auras included (see `heroFactsFromBasis`'s own note). Comparing
+    // against a re-priced run would test the aura feedback loop, not the reconstruction.
+    const pinned = { ...account, teamBuffs: farmTeamBuffs({ heroes: [jon], account }), teamBuffsOverride: {} };
     const movedHero: HeroRecord = { ...jon, pts: movedPts };
-    const [realRun] = computeHeroFarmFacts({ heroes: [movedHero], account });
+    const [realRun] = computeHeroFarmFacts({ heroes: [movedHero], account: pinned });
 
     expectCloseRel(reconstructed.avgHitBase, realRun.avgHitBase, 1e-9);
     expectCloseRel(reconstructed.penetrationPct, realRun.penetrationPct, 1e-9);
@@ -315,9 +346,9 @@ describe('pipeline-call count — the basis is extracted once and never re-deriv
     resetEnergySwitchPointCallCount();
   });
 
-  it('computeHeroFarmBases costs |enabled|; 200 subsequent heroFactsFromBasis calls cost 0', () => {
+  it('computeHeroFarmBases costs 2x|enabled| (rotation-priced auras); 200 subsequent heroFactsFromBasis calls cost 0', () => {
     const bases = computeHeroFarmBases({ heroes, account });
-    expect(energySwitchPointCallCount).toBe(heroes.length);
+    expect(energySwitchPointCallCount).toBe(2 * heroes.length);
 
     resetEnergySwitchPointCallCount();
     for (let i = 0; i < 200; i++) {

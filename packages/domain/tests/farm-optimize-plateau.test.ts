@@ -137,10 +137,14 @@ describe('the fixture reports a bounded, correctly-shaped plateau', () => {
     //           zeroTeamBuffs(), so Jon (folego_mineiro 18, elsewhere in this 5-hero roster)
     //           loses the own-rank drain leak the old model let through. His lower uptime shifts
     //           the squad-level House allocation this solve reads, moving the winning build's
-    //           own energy/attack split even though nothing about ITS abilities changed. ←
+    //           own energy/attack split even though nothing about ITS abilities changed.
+    //   0.5568  2026-08-20 rotation-priced team auras + the HOP_DENSITY_EXPONENT refit. Jon's
+    //           folego_mineiro is credited again — not at its full rank as before issue #132, but
+    //           at the share of the rotation he is actually on the field for — which lifts every
+    //           hero's field seconds and shifts the same allocation back part of the way. ←
     //           asserted below
-    expect(plateau.minEnergyShare).toBeCloseTo(0.5617977528089888, 4);
-    expect(plateau.maxEnergyShare).toBeCloseTo(0.5617977528089888, 4);
+    expect(plateau.minEnergyShare).toBeCloseTo(0.5568181818181818, 4);
+    expect(plateau.maxEnergyShare).toBeCloseTo(0.5568181818181818, 4);
     expect(plateau.minEnergyShare).toBe(plateau.maxEnergyShare);
   });
 
