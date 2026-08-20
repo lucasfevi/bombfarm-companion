@@ -1,5 +1,44 @@
 # @bombfarm/game-api
 
+## 0.2.1
+
+### Patch Changes
+
+- Updated dependencies [5025de1]
+- Updated dependencies [3d0d97b]
+- Updated dependencies [5770a5e]
+- Updated dependencies [f5671be]
+- Updated dependencies [ab1c1b9]
+- Updated dependencies [06bcc05]
+- Updated dependencies [54fcaa3]
+- Updated dependencies [d6ec791]
+- Updated dependencies [387f85c]
+- Updated dependencies [dfa285a]
+- Updated dependencies [5a742c9]
+- Updated dependencies [5a742c9]
+- Updated dependencies [dd793f0]
+- Updated dependencies [37c30bf]
+- Updated dependencies [37c30bf]
+- Updated dependencies [687aacb]
+- Updated dependencies [c6f077e]
+- Updated dependencies [796ce3b]
+- Updated dependencies [0418a82]
+- Updated dependencies [0418a82]
+- Updated dependencies [4fcaa1a]
+- Updated dependencies [20f53bb]
+- Updated dependencies [5a742c9]
+- Updated dependencies [bbd5397]
+- Updated dependencies [3e2cf46]
+- Updated dependencies [3e2cf46]
+- Updated dependencies [c8a3bc8]
+- Updated dependencies [3d0d97b]
+- Updated dependencies [71fb344]
+- Updated dependencies [590a5e9]
+- Updated dependencies [4fcaa1a]
+- Updated dependencies [560f83d]
+  - @bombfarm/domain@0.6.0
+  - @bombfarm/contracts@0.3.1
+
 ## 0.2.0
 
 ### Minor Changes
