@@ -86,7 +86,9 @@ const SRC_ALLOWLIST: Record<string, number[]> = {
   // 341 from here and 325 from develop are each correct only in isolation. Issue #132's crit-
   // combination fix removed the `combatCritChancePctOfBase` pass-through line, shifting the
   // last hit down by one.
-  'advisor-pipeline.ts': [111, 217, 246, 345],
+  // +3 (line numbers only): surfacing `fieldSecs` on the pipeline result added a documented
+  // field to the output type and one line to the returned object, above these hits.
+  'advisor-pipeline.ts': [111, 220, 249, 348],
   // +1 (line number only): the flat-crit-damage fix's `brutalStrike` LedgerNote arm
   // (review item 5, PR #90) added one line above this hit.
   'stat-breakdown/types.ts': [106],

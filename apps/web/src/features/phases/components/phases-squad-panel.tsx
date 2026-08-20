@@ -32,7 +32,7 @@ export function PhasesSquadPanel({
   clearSecs: number | null;
   onSelectHero: (h: HeroRecord) => void;
 }) {
-  const { t, lang } = useAppLang();
+  const { t } = useAppLang();
 
   return (
     <Panel className="min-w-0">
@@ -62,7 +62,6 @@ export function PhasesSquadPanel({
           rows={topSquadRows}
           heroesById={heroesById}
           activeHeroId={activeHeroId}
-          lang={lang}
           t={t}
           formatNumber={formatNumber}
           onSelectHero={onSelectHero}

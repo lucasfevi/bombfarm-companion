@@ -222,18 +222,32 @@ export type HeroPhaseFit = {
   penetration: number;
   penGap: number;
   penOk: boolean;
+  /** One non-crit bomb against this phase's mitigation. */
+  normalHit: number;
+  /** The same bomb on a crit — `normalHit × (1 + critDmg/100)`. */
+  critHit: number;
+  /** The crit-WEIGHTED mean the hits-to-kill table below runs on: it sits between
+   *  {@link normalHit} and {@link critHit}, and equals neither. */
   avgHit: number;
+  /** Seconds on field per deployment. */
+  fieldSecs: number;
   propHits: { name: string; hp: number; hits: number }[];
 };
 
-export function computeHeroPhaseFit(
-  heroId: string,
-  heroName: string,
-  stoneHp: number,
-  mitigationPct: number,
-  penetration: number,
-  avgHit: number,
-): HeroPhaseFit {
+export type HeroPhaseFitInput = {
+  heroId: string;
+  heroName: string;
+  stoneHp: number;
+  mitigationPct: number;
+  penetration: number;
+  normalHit: number;
+  critHit: number;
+  avgHit: number;
+  fieldSecs: number;
+};
+
+export function computeHeroPhaseFit(input: HeroPhaseFitInput): HeroPhaseFit {
+  const { heroId, heroName, stoneHp, mitigationPct, penetration, normalHit, critHit, avgHit, fieldSecs } = input;
   const penGapVal = penGap(mitigationPct, penetration);
   const propHits = PROPS.map((prop) => {
     const hitPoints = propHp(stoneHp, prop.hpMult);
@@ -245,15 +259,12 @@ export function computeHeroPhaseFit(
     penetration,
     penGap: penGapVal,
     penOk: penGapVal <= 0,
+    normalHit,
+    critHit,
     avgHit,
+    fieldSecs,
     propHits,
   };
-}
-
-/** Estimate map clear seconds from squad sustained DPS (mid-map model). */
-export function estimateClearSeconds(totalMapHp: number, squadDps: number): number | null {
-  if (squadDps <= 0 || !Number.isFinite(squadDps)) return null;
-  return totalMapHp / squadDps;
 }
 
 export { critFactor, mitigationFactor, hitsToKill, propHp };

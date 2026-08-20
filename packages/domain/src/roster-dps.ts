@@ -7,6 +7,13 @@ export type RosterDpsRow = {
   heroId: string;
   heroName: string;
   dps: number;
+  /** One non-crit bomb against this phase's mitigation (`pipeline.predHit`). */
+  normalHit: number;
+  /** The same bomb on a crit — `normalHit × (1 + critDmg/100)`, NOT the crit-weighted mean
+   *  `HeroPhaseFit.avgHit` that the hits-to-kill table runs on. */
+  critHit: number;
+  /** Seconds on field per deployment (`pipeline.fieldSecs`). */
+  fieldSecs: number;
   /**
    * Pipeline-adjusted Luck, PERCENTAGE POINTS (`pipelineForHero(...).adjusted.luck` — same units
    * `farm-rate.ts`'s `heroLuckPct`/`sorteFraction` use). Carried here so a caller wanting "this
@@ -97,6 +104,9 @@ export function rankRosterByDps(input: RosterDpsInput, limit?: number): RosterDp
       heroId: hero.id,
       heroName: hero.name,
       dps: pipeline.dps,
+      normalHit: pipeline.predHit,
+      critHit: pipeline.predCrit,
+      fieldSecs: pipeline.fieldSecs,
       luck: pipeline.adjusted.luck,
     };
   });
@@ -127,12 +137,15 @@ export function computeHeroPhaseFitFromRecord(
   mitigationPct: number,
 ) {
   const out = pipelineForHero(hero, account, phase, mitigationPct);
-  return computeHeroPhaseFit(
-    hero.id,
-    hero.name,
-    out.stoneHp,
+  return computeHeroPhaseFit({
+    heroId: hero.id,
+    heroName: hero.name,
+    stoneHp: out.stoneHp,
     mitigationPct,
-    out.effective.penetration,
-    out.avgHit,
-  );
+    penetration: out.effective.penetration,
+    normalHit: out.predHit,
+    critHit: out.predCrit,
+    avgHit: out.avgHit,
+    fieldSecs: out.fieldSecs,
+  });
 }

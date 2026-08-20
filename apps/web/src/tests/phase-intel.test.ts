@@ -1,9 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import {
-  computePhaseIntelGlobal,
-  estimateClearSeconds,
-  penGap,
-} from '@bombfarm/domain/phase-intel';
+import { computePhaseIntelGlobal, penGap } from '@bombfarm/domain/phase-intel';
 
 describe('phase-intel', () => {
   it('computes phase 1 globals from wiki snapshot', () => {
@@ -26,10 +22,5 @@ describe('phase-intel', () => {
   it('penGap never negative', () => {
     expect(penGap(50, 30)).toBe(20);
     expect(penGap(30, 50)).toBe(0);
-  });
-
-  it('estimateClearSeconds divides HP by DPS', () => {
-    expect(estimateClearSeconds(1000, 100)).toBe(10);
-    expect(estimateClearSeconds(1000, 0)).toBeNull();
   });
 });
