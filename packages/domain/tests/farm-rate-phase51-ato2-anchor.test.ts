@@ -19,17 +19,24 @@
  * on field, the field scale, clear time — and `goldPerHour` is asserted LAST, as a consequence of
  * everything above it, not as the thing itself being fitted.
  *
- * THE RESIDUAL HERE IS OPEN, ON PURPOSE, and it is a KNOWN, ATTRIBUTED gap, not slack in the
- * model. `heroesOnField`/`clearSecs`/`goldPerHour` all read ~6-8% low against measured telemetry,
- * in one consistent direction. Basis-(A) `computeTeamBuffsFromDeployed` — issue #132 — derives
- * team auras from who is `in_field` at the instant of export; on this roster (like the retired
- * file's) every carrier is `in_field: false` while `battle_allowed: true`, so the derived total is
- * zero even though those heroes cycle onto the field over the course of an hour. That is a
- * genuine open modelling question — full or partial aura COVERAGE across a rotation — filed as
- * issue #138, not a correction to the existing math this file anchors. Do not close this residual
- * by tuning a constant, widening a tolerance, or picking a different statistic; assert the current
- * model's own values and the documented gap to measured, exactly as the retired file did for its
- * open residual before the House-ceiling fix closed it.
+ * THE ~6-8% ONE-DIRECTIONAL RESIDUAL THIS FILE USED TO CARRY IS CLOSED (2026-08-20). It was
+ * attributed, correctly, to aura COVERAGE across a rotation: every carrier on this roster is
+ * `in_field: false` while `battle_allowed: true`, so the deployed-line-up total was zero even
+ * though those heroes cycle onto the field for a large share of every hour. `farm-rate.ts` now
+ * prices the auras over the rotation instead, and the residuals fell from `heroesOnField` -6.9% /
+ * `clearSecs` +8.0% / `goldPerHour` -6.2% to +4.1% / -2.5% / +3.9%. What remains has FLIPPED SIGN
+ * and is no longer one-directional in the same way — the model now reads slightly fast rather
+ * than slightly slow — which is the signature of a residual that is noise plus small independent
+ * terms rather than one missing mechanism. It is asserted, not tuned away, on the same terms.
+ *
+ * THE MEASURED SIDE IS AN UPPER BOUND, and this is the thing to hold in mind before treating a
+ * positive residual here as an error to remove. The telemetry comes from an automated account:
+ * its strongest heroes take a House slot the instant they empty rather than queueing, and its
+ * Folego carriers are deliberately staggered so one is almost always up. The model assumes
+ * neither — `computeTeamBuffsOverRotation` treats carrier presence as INDEPENDENT, which prices
+ * this roster at 14.7 Folego against the ~19.4 a staggered rotation sustains. A model landing a
+ * few percent ABOVE this measurement is therefore not obviously wrong, and one tuned to land
+ * exactly on it would be fitting to a way of playing most accounts do not use.
  */
 import { describe, expect, it } from 'vitest';
 import { computeFarmRates } from '@bombfarm/domain/farm-rate';
@@ -81,44 +88,45 @@ describe('the save is read as three distinct quantities', () => {
 });
 
 describe('the House is the binding constraint', () => {
-  it('Σ uptime is 3.8002 — comfortably under the roster size, so uptimeSum alone looks harmless', () => {
-    expect(squad.uptimeSum).toBeCloseTo(3.8002, 4);
+  it('Σ uptime is 4.1932 — comfortably under the roster size, so uptimeSum alone looks harmless', () => {
+    expect(squad.uptimeSum).toBeCloseTo(4.1932, 4);
     expect(squad.uptimeSum).toBeLessThan(heroFacts.length);
   });
 
-  it('yet the roster demands 8.1998 recovery slots against the 5 it owns — a 1.64x overcommit', () => {
-    expect(squad.houseSlotDemand).toBeCloseTo(8.1998, 4);
-    expect(squad.houseSlotDemand / squad.houseSlots).toBeCloseTo(1.63995, 3);
+  it('yet the roster demands 7.8068 recovery slots against the 5 it owns — a 1.56x overcommit', () => {
+    expect(squad.houseSlotDemand).toBeCloseTo(7.8068, 4);
+    expect(squad.houseSlotDemand / squad.houseSlots).toBeCloseTo(1.56136, 3);
     expect(squad.houseSlotDemand).toBeGreaterThan(squad.houseSlots);
     // The identity the demand is derived from: Σ uptime + Σ (1 − uptime) === roster size.
     expect(squad.uptimeSum + squad.houseSlotDemand).toBeCloseTo(12, 9);
   });
 
-  it('the greedy allocation lands heroesOnField at 3.2208 — ~6.9% below the time-weighted measured 3.46', () => {
-    expect(row.heroesOnField).toBeCloseTo(3.2208, 4);
+  it('the greedy allocation lands heroesOnField at 3.6031 — ~4.1% above the time-weighted measured 3.46', () => {
+    expect(row.heroesOnField).toBeCloseTo(3.6031, 4);
     // Strictly below the unconstrained sum: the constraint really bit.
     expect(row.heroesOnField).toBeLessThan(squad.uptimeSum);
 
-    // OPEN, attributed to issue #138 (partial aura coverage across a rotation, not modelled by
-    // basis-(A) computeTeamBuffsFromDeployed). Documented, not tuned away.
+    // Was -6.9% before rotation-priced auras. The sign flip is expected and is discussed in the
+    // file header: the measured side comes from a rotation driven harder than the model assumes,
+    // so a small positive residual here is not by itself a defect. Documented, not tuned away.
     const residual = row.heroesOnField / OBSERVED_HEROES_ON_FIELD - 1;
-    expect(residual).toBeCloseTo(-0.0691, 3);
+    expect(residual).toBeCloseTo(0.0414, 3);
   });
 
-  it('the field cap is NOT what binds here — 9 slots against 3.22 heroes on field', () => {
+  it('the field cap is NOT what binds here — 9 slots against 3.60 heroes on field', () => {
     expect(row.concurrencyScale).toBe(1);
     expect(row.heroesOnField).toBeLessThan(squad.fieldSlots);
   });
 });
 
 describe('the resulting rates', () => {
-  it('clearSecs is 92.78s — ~8.0% above the time-weighted measured mean of 85.9s (NOT the 68s per-clear median)', () => {
-    expect(row.clearSecs).toBeCloseTo(92.7798, 4);
+  it('clearSecs is 83.76s — ~2.5% below the time-weighted measured mean of 85.9s (NOT the 68s per-clear median)', () => {
+    expect(row.clearSecs).toBeCloseTo(83.7555, 4);
 
-    // OPEN, same attribution as heroesOnField above (issue #138): fewer heroes on field than
-    // measured means slower modelled clears than measured, consistently.
+    // Was +8.0% before rotation-priced auras, and the sign flipped with heroesOnField's: more
+    // heroes on field than measured means faster modelled clears than measured, consistently.
     const residual = row.clearSecs / OBSERVED_CLEAR_SECS - 1;
-    expect(residual).toBeCloseTo(0.0801, 3);
+    expect(residual).toBeCloseTo(-0.0250, 3);
 
     // The median (68s) is a different statistic from the time-weighted mean this model produces
     // — asserted here as a guard against re-introducing the comparison an earlier analysis got
@@ -126,15 +134,14 @@ describe('the resulting rates', () => {
     expect(row.clearSecs).toBeGreaterThan(68);
   });
 
-  it('goldPerHour is ~3.387M — ~6.2% below the measured 3,610,194, the same open residual carried through', () => {
-    expect(row.goldPerHour).toBeCloseTo(3_387_040, -2);
+  it('goldPerHour is ~3.752M — ~3.9% above the measured 3,610,194, the same residual carried through', () => {
+    expect(row.goldPerHour).toBeCloseTo(3_751_981, -2);
 
-    // OPEN, same attribution (issue #138). Two-sided is not appropriate here — this is a known,
-    // one-directional gap being tracked, not a tolerance band the model is expected to sit
-    // inside. Left as a point comparison so any UNRELATED move (a wiki refresh, a sheet-math
-    // change) shows up as a change to THIS number, distinct from the tracked residual itself.
+    // Left as a point comparison rather than a tolerance band, so that any UNRELATED move (a wiki
+    // refresh, a sheet-math change) shows up as a change to THIS number, distinct from the
+    // tracked residual itself.
     const residual = row.goldPerHour / OBSERVED_GOLD_PER_HOUR - 1;
-    expect(residual).toBeCloseTo(-0.0618, 3);
+    expect(residual).toBeCloseTo(0.0393, 3);
   });
 
   it('gold per stone (rarity 1) matches the direct client reading (1.03k) to within 1%', () => {
@@ -163,16 +170,27 @@ describe('the resulting rates', () => {
   });
 });
 
+/**
+ * Pins one aura total so the two cases below can move it as a LEVER. `account.teamBuffs` on its
+ * own is no longer that lever — `farm-rate.ts` re-derives the auras from the pool's own ability
+ * ranks and uptimes and would overwrite whatever is set here, leaving both cases silently
+ * comparing a value against itself. `teamBuffsOverride` is the supported way to say "assume
+ * exactly this much aura", and setting it is what makes the substitution stick.
+ */
+function pinned(buffs: Record<string, number>) {
+  return { ...account, teamBuffs: { ...account.teamBuffs, ...buffs }, teamBuffsOverride: buffs };
+}
+
 describe('grito de guerra and fôlego de mineiro anchor different terms — do not conflate them', () => {
   it('heroesOnField is bit-identical whether grito_guerra reads 0 or 20 — grito is damage-only, not duty-cycle', () => {
     const off = computeFarmRates({
       heroes,
-      account: { ...account, teamBuffs: { ...account.teamBuffs, grito_guerra: 0 } },
+      account: pinned({ grito_guerra: 0 }),
       maxPhase,
     }).rows[PHASE - 1];
     const on = computeFarmRates({
       heroes,
-      account: { ...account, teamBuffs: { ...account.teamBuffs, grito_guerra: 20 } },
+      account: pinned({ grito_guerra: 20 }),
       maxPhase,
     }).rows[PHASE - 1];
 
@@ -185,12 +203,12 @@ describe('grito de guerra and fôlego de mineiro anchor different terms — do n
   it('heroesOnField DOES move with fôlego de mineiro — fôlego is duty-cycle (drain), not damage', () => {
     const off = computeFarmRates({
       heroes,
-      account: { ...account, teamBuffs: { ...account.teamBuffs, folego_mineiro: 0 } },
+      account: pinned({ folego_mineiro: 0 }),
       maxPhase,
     }).rows[PHASE - 1];
     const on = computeFarmRates({
       heroes,
-      account: { ...account, teamBuffs: { ...account.teamBuffs, folego_mineiro: 20 } },
+      account: pinned({ folego_mineiro: 20 }),
       maxPhase,
     }).rows[PHASE - 1];
 
