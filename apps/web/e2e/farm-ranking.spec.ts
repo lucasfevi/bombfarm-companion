@@ -177,6 +177,28 @@ test.describe('Farm Ranking board', () => {
   });
 
   // 5. Row -> picker sync.
+  test('a fresh load opens on the best gold/hr map, in the explorer too, without persisting it', async ({
+    page,
+  }) => {
+    await seedLocalStorage(page, { ...importedRoster, account: accountWithMaxPhase, lang: 'en' });
+    await page.goto('/farm');
+
+    // Default sort is gold descending, so the first row is the best gold/hr map.
+    const firstRow = rows(page).first();
+    await expect(firstRow).toHaveAttribute('aria-current', 'true');
+    const phase = (await firstRow.getAttribute('data-testid'))?.replace('farm-row-', '');
+    expect(phase).not.toBe('1');
+
+    // The explorer's own panels read the same shared phase — the board must never claim a row is
+    // current while the panels below it describe a different map.
+    await expect(page.getByRole('definition').getByText(`#${phase}`, { exact: false })).toBeVisible();
+
+    // An auto-pick is a derived default, not a choice: nothing is written, so the next load
+    // re-picks against whatever the roster can farm by then.
+    const view = await page.evaluate(() => localStorage.getItem('bf-hp-phases-view-v1'));
+    expect(view).toBeNull();
+  });
+
   test('activating a row drives the explorer and persists the phase', async ({ page }) => {
     await seedLocalStorage(page, { ...importedRoster, account: accountWithMaxPhase, lang: 'en' });
     await page.goto('/farm');

@@ -21,7 +21,13 @@ const RETURN_BONUS_MODES: readonly ReturnBonusMode[] = ['off', 'on', 'vip'];
 const FARM_OBJECTIVE_KINDS: readonly FarmObjectiveKind[] = ['gold', 'chests', 'blend'];
 
 export type PhasesViewState = {
-  phase: number;
+  /**
+   * Absent means the user has never explicitly chosen a phase — distinct from a genuinely
+   * persisted phase 1. Consumers that need a concrete number (rather than "was this chosen")
+   * fall back to 1 themselves; this type must not do that coercion, or "never chosen" becomes
+   * unrepresentable.
+   */
+  phase?: number;
   /**
    * Farm Ranking rotation pool — hero id -> enabled override.
    * Absent id => follow `HeroRecord.battleAllowed`. Never a save write; estimation-local only.
@@ -34,12 +40,14 @@ export type PhasesViewState = {
 };
 
 export function defaultPhasesView(): PhasesViewState {
-  return { phase: 1 };
+  return {};
 }
 
-function normalizePhase(raw: unknown): number {
-  const phase = typeof raw === 'number' ? raw : 1;
-  return Math.max(1, Math.min(600, Math.round(phase)));
+/** `undefined` for anything that isn't a finite number — including a genuinely absent key —
+ *  so "never chosen" survives the read instead of being coerced to phase 1. */
+function normalizePhase(raw: unknown): number | undefined {
+  if (typeof raw !== 'number' || !Number.isFinite(raw)) return undefined;
+  return Math.max(1, Math.min(600, Math.round(raw)));
 }
 
 /**

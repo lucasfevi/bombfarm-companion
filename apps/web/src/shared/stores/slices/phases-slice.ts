@@ -31,6 +31,9 @@ export type FarmRespecStatus = 'idle' | 'solving' | 'done' | 'failed';
 
 export type PhasesSlice = {
   phasesViewPhase: number;
+  /** `true` once the user has explicitly picked a phase (a click, or a hydrated stored `phase`) —
+   *  distinguishes a genuine choice of phase 1 from `phasesViewPhase`'s own unchosen default. */
+  phasesViewPhaseChosen: boolean;
   /** Farm Ranking rotation pool override map. */
   farmPoolOverrides: Record<string, boolean>;
   /** Farm Ranking return-bonus estimate — `@bombfarm/domain`'s `ReturnBonusMode` verbatim. */
@@ -48,6 +51,8 @@ export type PhasesSlice = {
 
   hydratePhasesView: (view: PhasesViewState) => void;
   setPhasesViewPhase: (phase: number) => void;
+  /** The board's auto-picked best-gold/hr default — see the action body for the full contract. */
+  syncDefaultPhaseSelection: (phase: number) => void;
   setFarmHeroEnabled: (heroId: string, enabled: boolean) => void;
   setFarmReturnBonus: (mode: ReturnBonusMode) => void;
   setFarmObjective: (kind: FarmObjectiveKind) => void;
@@ -68,10 +73,15 @@ export const createPhasesSlice: StateCreator<
    * including `setPhasesViewPhase` — goes through this, so a second persisted field can never
    * be silently erased by a partial-literal write again. Reads current slice values via `get()`
    * rather than trusting a caller-supplied patch.
+   *
+   * `phase` is omitted while `phasesViewPhaseChosen` is false: writing `phase: 1` for an
+   * unchosen selection would make the auto-picked "best map" default indistinguishable from a
+   * real choice on the very next unrelated write (e.g. toggling a rotation-pool hero), freezing
+   * the user onto phase 1 before the auto-select ever gets to run.
    */
   function persistPhasesView(state: PlannerStore): void {
     savePhasesView({
-      phase: state.phasesViewPhase,
+      ...(state.phasesViewPhaseChosen ? { phase: state.phasesViewPhase } : {}),
       farmPool: state.farmPoolOverrides,
       farmReturnBonus: state.farmReturnBonus,
       farmObjective: state.farmObjective,
@@ -80,6 +90,7 @@ export const createPhasesSlice: StateCreator<
 
   return {
     phasesViewPhase: 1,
+    phasesViewPhaseChosen: false,
     farmPoolOverrides: {},
     farmReturnBonus: 'off',
     farmObjective: 'gold',
@@ -90,7 +101,8 @@ export const createPhasesSlice: StateCreator<
 
     hydratePhasesView: (view) => {
       set({
-        phasesViewPhase: view.phase,
+        phasesViewPhase: view.phase ?? 1,
+        phasesViewPhaseChosen: view.phase != null,
         farmPoolOverrides: view.farmPool ?? {},
         farmReturnBonus: view.farmReturnBonus ?? 'off',
         farmObjective: view.farmObjective ?? 'gold',
@@ -99,9 +111,27 @@ export const createPhasesSlice: StateCreator<
 
     setPhasesViewPhase: (phase) => {
       const clamped = Math.max(1, Math.min(600, Math.round(phase)));
-      if (get().phasesViewPhase === clamped) return;
-      set({ phasesViewPhase: clamped });
+      const current = get();
+      // Not just an equality check on the number: the FIRST explicit pick of the phase the
+      // unchosen default already happens to sit on (phase 1) must still flip `chosen` and
+      // persist, or clicking phase 1 on a fresh load would silently do nothing.
+      if (current.phasesViewPhase === clamped && current.phasesViewPhaseChosen) return;
+      set({ phasesViewPhase: clamped, phasesViewPhaseChosen: true });
       persistPhasesView(get());
+    },
+
+    /**
+     * Writes `phasesViewPhase` so every phase-reading surface — the board's highlighted row and
+     * the Phases explorer's seven panels below it — agrees on which map is shown. Deliberately
+     * leaves `phasesViewPhaseChosen` false and does NOT persist: the pick stays a derived
+     * default that re-syncs to the best map on the next load, rather than hardening into a
+     * choice the user never made. A real pick (`setPhasesViewPhase`) always wins from then on.
+     */
+    syncDefaultPhaseSelection: (phase) => {
+      const clamped = Math.max(1, Math.min(600, Math.round(phase)));
+      const current = get();
+      if (current.phasesViewPhaseChosen || current.phasesViewPhase === clamped) return;
+      set({ phasesViewPhase: clamped });
     },
 
     setFarmHeroEnabled: (heroId, enabled) => {

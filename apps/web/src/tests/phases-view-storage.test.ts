@@ -24,9 +24,10 @@ describe('phases-view-storage', () => {
     vi.unstubAllGlobals();
   });
 
-  it('defaults to phase 1', () => {
+  it('defaults to no stored phase (never chosen), not phase 1', () => {
     vi.stubGlobal('localStorage', memoryLocalStorage());
     expect(loadPhasesView()).toEqual(defaultPhasesView());
+    expect(loadPhasesView().phase).toBeUndefined();
   });
 
   it('clamps saved phase to 1..600', () => {
@@ -132,9 +133,11 @@ describe('phases-view-storage', () => {
       expect(loadPhasesView().farmReturnBonus).toBe('vip');
     });
 
-    it('defaultPhasesView() omits farmPool/farmReturnBonus/farmObjective so an untouched payload stays byte-identical', () => {
-      expect(defaultPhasesView()).toEqual({ phase: 1 });
-      expect(Object.keys(defaultPhasesView())).toEqual(['phase']);
+    it('defaultPhasesView() omits phase/farmPool/farmReturnBonus/farmObjective so an untouched payload stays byte-identical', () => {
+      // phase is omitted too (not defaulted to 1): a genuinely unmade choice must stay
+      // distinguishable from a persisted phase 1 — see the Farm Ranking board's auto-select.
+      expect(defaultPhasesView()).toEqual({});
+      expect(Object.keys(defaultPhasesView())).toEqual([]);
     });
   });
 

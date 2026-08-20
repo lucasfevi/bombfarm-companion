@@ -89,7 +89,10 @@ export {
   selectPointsTabStatus,
   resetPlannerTabStatusCache,
 } from '@/shared/stores/selectors/tab-status-selectors';
-export { selectPhasesViewPhase } from '@/shared/stores/selectors/phases-selectors';
+export {
+  selectPhasesViewPhase,
+  selectPhasesViewPhaseChosen,
+} from '@/shared/stores/selectors/phases-selectors';
 export { selectTreeSheetTotals } from '@/shared/stores/selectors/tree-sheet-selectors';
 export {
   selectFarmRankingRows,

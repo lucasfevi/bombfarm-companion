@@ -85,6 +85,22 @@ describe('phases slice', () => {
     expect(loadPhasesView().phase).toBe(42);
   });
 
+  it('syncDefaultPhaseSelection moves the shared phase without choosing or persisting it', () => {
+    usePlannerStore.getState().syncDefaultPhaseSelection(27);
+
+    expect(usePlannerStore.getState().phasesViewPhase).toBe(27);
+    expect(usePlannerStore.getState().phasesViewPhaseChosen).toBe(false);
+    expect(localStorage.getItem('bf-hp-phases-view-v1')).toBeNull();
+  });
+
+  it('syncDefaultPhaseSelection never overrides a phase the user actually picked', () => {
+    usePlannerStore.getState().setPhasesViewPhase(25);
+    usePlannerStore.getState().syncDefaultPhaseSelection(27);
+
+    expect(usePlannerStore.getState().phasesViewPhase).toBe(25);
+    expect(loadPhasesView().phase).toBe(25);
+  });
+
   it('hydratePhasesView does not write', () => {
     usePlannerStore.getState().hydratePhasesView({ phase: 88 });
     expect(usePlannerStore.getState().phasesViewPhase).toBe(88);
@@ -182,9 +198,28 @@ describe('phases slice', () => {
     });
 
     it('the persisted payload never carries the four ephemeral fields', () => {
+      // No setPhasesViewPhase call in this test, so the phase is still unchosen — `phase`
+      // itself is correctly omitted here too (see the "omits phase while unchosen" test below).
       usePlannerStore.getState().setFarmObjective('chests');
       const raw = JSON.parse(localStorage.getItem('bf-hp-phases-view-v1')!) as Record<string, unknown>;
-      expect(Object.keys(raw).sort()).toEqual(['farmObjective', 'farmPool', 'farmReturnBonus', 'phase']);
+      expect(Object.keys(raw).sort()).toEqual(['farmObjective', 'farmPool', 'farmReturnBonus']);
+    });
+
+    it('omits phase while unchosen, so a later write cannot freeze the auto-select onto phase 1', () => {
+      usePlannerStore.getState().setFarmHeroEnabled('hero-1', true);
+      const raw = JSON.parse(localStorage.getItem('bf-hp-phases-view-v1')!) as Record<string, unknown>;
+      expect('phase' in raw).toBe(false);
+
+      usePlannerStore.getState().setPhasesViewPhase(7);
+      const afterChoice = JSON.parse(localStorage.getItem('bf-hp-phases-view-v1')!) as Record<string, unknown>;
+      expect(afterChoice.phase).toBe(7);
+    });
+
+    it('setPhasesViewPhase(1) on a fresh, unchosen store still marks the phase chosen and persists it', () => {
+      expect(usePlannerStore.getState().phasesViewPhaseChosen).toBe(false);
+      usePlannerStore.getState().setPhasesViewPhase(1);
+      expect(usePlannerStore.getState().phasesViewPhaseChosen).toBe(true);
+      expect(loadPhasesView().phase).toBe(1);
     });
 
     it('setFarmObjective does NOT clear an existing farmRespecProposal — invalidation is the staleness derivation\'s job', () => {

@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Banner, EmptyState, Panel } from '@bombfarm/ui';
 import type { Lang, Strings } from '@/shared/i18n';
 import {
@@ -11,12 +11,14 @@ import {
   selectHeroes,
   selectMaxPhase,
   selectPhasesViewPhase,
+  selectPhasesViewPhaseChosen,
   usePlannerStore,
 } from '@/shared/stores';
 import {
   applyFarmFilters,
   DEFAULT_SORT,
   defaultFarmFilters,
+  pickBestFarmRow,
   sortFarmRows,
   type FarmFilters,
   type FarmSortDir,
@@ -49,7 +51,9 @@ export function FarmRankingBoard({ t, lang }: { t: Strings; lang: Lang }) {
   const returnBonus = usePlannerStore(selectFarmReturnBonus);
   const maxPhase = usePlannerStore(selectMaxPhase);
   const currentPhase = usePlannerStore(selectPhasesViewPhase);
+  const phasesViewPhaseChosen = usePlannerStore(selectPhasesViewPhaseChosen);
   const setPhasesViewPhase = usePlannerStore((state) => state.setPhasesViewPhase);
+  const syncDefaultPhaseSelection = usePlannerStore((state) => state.syncDefaultPhaseSelection);
   const setFarmHeroEnabled = usePlannerStore((state) => state.setFarmHeroEnabled);
   const setFarmReturnBonus = usePlannerStore((state) => state.setFarmReturnBonus);
 
@@ -63,6 +67,21 @@ export function FarmRankingBoard({ t, lang }: { t: Strings; lang: Lang }) {
     const filtered = applyFarmFilters(result.rows, effectiveFilters);
     return sortFarmRows(filtered, sort.key, sort.direction);
   }, [result.rows, filters, sort, maxPhaseKnown]);
+
+  // Read from `visibleRows` — after filtering, so a locked or filtered-out phase is never
+  // auto-selected.
+  const bestPhase = useMemo(() => pickBestFarmRow(visibleRows)?.phase ?? null, [visibleRows]);
+
+  // Nothing chosen yet (fresh load, no click, no persisted phase): point the shared phase at the
+  // current best gold/hr map instead of the store's phase-1 default. This writes the store rather
+  // than highlighting locally because `phasesViewPhase` also drives the Phases explorer below —
+  // a local-only highlight left the board claiming a row was current while seven panels beneath
+  // it described phase 1. `syncDefaultPhaseSelection` leaves the phase unchosen and unpersisted,
+  // so this re-runs against the best map on the next load and any real pick wins for good.
+  useEffect(() => {
+    if (phasesViewPhaseChosen || bestPhase == null) return;
+    syncDefaultPhaseSelection(bestPhase);
+  }, [phasesViewPhaseChosen, bestPhase, syncDefaultPhaseSelection]);
 
   function onSort(key: FarmSortKey) {
     setSort((previous) =>
