@@ -49,10 +49,10 @@ describe('farm-respec-view', () => {
       expect(rows.map((row) => row.key)).toEqual([...SHEET_PANEL_KEYS]);
     });
 
-    it('each row has exactly the five documented fields — no optional/negligible/minor/skip field exists', () => {
+    it('each row has exactly the four documented fields — no optional/negligible/minor/skip field exists', () => {
       const rows = buildHeroCardRows(heroEntry());
       for (const row of rows) {
-        expect(Object.keys(row).sort()).toEqual(['current', 'delta', 'keep', 'key', 'target']);
+        expect(Object.keys(row).sort()).toEqual(['current', 'keep', 'key', 'target']);
       }
     });
 
@@ -65,10 +65,9 @@ describe('farm-respec-view', () => {
       const attackRow = buildHeroCardRows(entry).find((row) => row.key === 'attack')!;
       expect(attackRow.target).toBe(7);
       expect(attackRow.current).toBe(2);
-      expect(attackRow.delta).toBe(5);
     });
 
-    it('the luck row keeps keep:true and delta:0 even when luck is the majority of the hero\'s level', () => {
+    it('the luck row keeps keep:true even when luck is the majority of the hero\'s level', () => {
       const entry = heroEntry({
         level: 40,
         currentPts: { ...ZERO_PTS(), luck: 35 },
@@ -76,7 +75,7 @@ describe('farm-respec-view', () => {
       });
       const luckRow = buildHeroCardRows(entry).find((row) => row.key === 'luck')!;
       expect(luckRow.keep).toBe(true);
-      expect(luckRow.delta).toBe(0);
+      expect(luckRow.current).toBe(35);
       expect(luckRow.target).toBe(35);
     });
 

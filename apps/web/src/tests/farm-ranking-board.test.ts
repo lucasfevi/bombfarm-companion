@@ -270,19 +270,19 @@ describe('Farm Respec Advisor hero cards — full target allocations, luck kept,
     expect(cardSource).toMatch(/import\s*\{[^}]*HeroIdentityChip[^}]*\}\s*from\s*'@\/shared\/game-art'/);
   });
 
-  it('the changed-hero table shows the absolute target as the primary column, with current and signed delta as secondary columns', () => {
+  it('the changed-hero table passes current, target and change to the shared DeltaTable ledger, chronological order (current before target)', () => {
     const source = read('src/features/phases/components/farm-respec-hero-card.tsx');
-    expect(source).toContain('t.farmRespecKeyTarget');
     expect(source).toContain('t.farmRespecKeyCurrent');
+    expect(source).toContain('t.farmRespecKeyTarget');
     expect(source).toContain('t.farmRespecKeyDelta');
     expect(source).toContain('row.target');
     expect(source).toContain('row.current');
-    expect(source).toContain('formatSignedPoints(row.delta)');
+    expect(source.indexOf('t.farmRespecKeyCurrent')).toBeLessThan(source.indexOf('t.farmRespecKeyTarget'));
   });
 
-  it('the luck row carries the keep chip and its HelpTip note', () => {
+  it('the luck row is locked, carrying the same hint text through DeltaTable\'s lock glyph', () => {
     const source = read('src/features/phases/components/farm-respec-hero-card.tsx');
-    expect(source).toContain('row.keep');
+    expect(source).toContain('locked: row.keep');
     expect(source).toContain('t.farmRespecLuckKeep');
     expect(source).toContain('t.farmRespecLuckHint');
   });

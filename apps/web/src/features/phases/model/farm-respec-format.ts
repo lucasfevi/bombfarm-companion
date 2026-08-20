@@ -31,13 +31,6 @@ export function formatSharePct(fraction: number): string {
   return formatNumber(fraction * 100, 0);
 }
 
-/** A signed integer point delta — `+3`, `-2`, or `0` (no sign on zero). */
-export function formatSignedPoints(value: number): string {
-  if (!Number.isFinite(value)) return '—';
-  const sign = value > 0 ? '+' : value < 0 ? '-' : '';
-  return `${sign}${formatNumber(Math.abs(value), 0)}`;
-}
-
 /** A signed percent change, one decimal — `+12.8`, `-5.3`, or `0.0` (no sign on zero). */
 export function formatSignedPct(value: number): string {
   if (!Number.isFinite(value)) return '—';

@@ -3,9 +3,9 @@
  * render without knowing how; every branching decision the panel needs lives here so the
  * components have none of their own to get wrong.
  *
- * Zero rate arithmetic. The only arithmetic in this file is integer point subtraction
- * (`proposedPts[key] - currentPts[key]`), the one carve-out the design allows; everything else
- * is item A's own field, read and passed through.
+ * Zero rate arithmetic, and zero point arithmetic too — the shared `DeltaTable` ledger primitive
+ * now derives the per-key change from `current`/`target` itself, so this file no longer computes
+ * a delta of its own. Every field below is item A's own field, read and passed through.
  */
 import { SHEET_PANEL_KEYS, type SheetKey } from '@bombfarm/domain/planner-constants';
 // Type-only imports erase at compile time — this file never becomes a runtime importer of
@@ -22,24 +22,22 @@ export type FarmRespecKeyRow = {
   key: SheetKey;
   current: number;
   target: number;
-  delta: number;
   keep: boolean;
 };
 
 /**
  * All eight keys, in `SHEET_PANEL_KEYS` order. `target` is the ABSOLUTE value to set after the
  * respec — a respec refunds every point, so a diff alone is not executable at the moment the
- * player needs it. `delta` is the secondary column the player uses to judge whether a move is
- * worth performing (the game does not display per-stat spent points). Luck's `keep` is true and
- * its `delta` is 0 for every input — item A freezes it, so the one subtraction this file performs
- * naturally yields 0 there too.
+ * player needs it. The change column the player uses to judge whether a move is worth performing
+ * (the game does not display per-stat spent points) is `DeltaTable`'s own `target - current`, not
+ * a field this file carries. Luck's `keep` is true for every input — item A freezes it, so that
+ * subtraction naturally yields 0 there too.
  */
 export function buildHeroCardRows(entry: FarmRespecHeroEntry): FarmRespecKeyRow[] {
   return SHEET_PANEL_KEYS.map((key) => ({
     key,
     current: entry.currentPts[key],
     target: entry.proposedPts[key],
-    delta: entry.proposedPts[key] - entry.currentPts[key],
     keep: key === 'luck',
   }));
 }

@@ -17,6 +17,9 @@ import * as DesignSystem from '@bombfarm/ui';
 // toast system — deliberately NOT named `Toast`, which stays the legacy
 // export), NotificationCenter, Slider, SettingsSection, SettingsRow, SaveBar
 // added. Legacy `Toast` is unchanged and stays byte-compatible for `apps/web`.
+// DeltaTable (2026-08-20): the shared Stat/Now/Target/Change ledger table —
+// replaces the Team Plan CSS-grid stand-in and the Farm Respec hero card's
+// own inline `<table>`, added.
 const FROZEN_BARREL_VALUE_EXPORTS = [
   'AbilityCard',
   'Accordion',
@@ -29,6 +32,7 @@ const FROZEN_BARREL_VALUE_EXPORTS = [
   'ConfirmDialog',
   'DEFAULT_HUE',
   'DataTable',
+  'DeltaTable',
   'Dialog',
   'EmptyState',
   'FieldRequired',

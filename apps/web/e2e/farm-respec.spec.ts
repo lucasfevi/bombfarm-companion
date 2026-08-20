@@ -140,7 +140,9 @@ test.describe('Farm Respec Advisor', () => {
     expect(changedCardKeyCount).toBeGreaterThan(0);
     expect(changedCardKeyCount % 8).toBe(0); // every changed card contributes exactly 8 rows
 
-    await expect(heroGrid(page).getByText('Keep', { exact: true }).first()).toBeVisible();
+    // The Luck row's lock glyph carries "Keep" as its accessible name (DeltaTable's `lockLabel`),
+    // not visible text — a compact icon replaces the old Chip + HelpTip pair.
+    await expect(heroGrid(page).getByRole('button', { name: 'Keep' }).first()).toBeVisible();
     await expect(heroGrid(page).getByText(/no respec needed/i).first()).toBeVisible();
 
     const panelText = (await panel(page).textContent()) ?? '';

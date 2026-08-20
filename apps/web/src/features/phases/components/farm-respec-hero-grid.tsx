@@ -24,7 +24,7 @@ export function FarmRespecHeroGrid({
   return (
     <div
       data-testid="farm-respec-heroes"
-      className="grid grid-cols-[repeat(auto-fit,minmax(17.5rem,1fr))] gap-2"
+      className="grid grid-cols-[repeat(auto-fit,minmax(21rem,1fr))] gap-2"
     >
       {result.heroes.map((entry) => (
         <FarmRespecHeroCard

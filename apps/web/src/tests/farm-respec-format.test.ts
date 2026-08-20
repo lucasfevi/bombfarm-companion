@@ -6,7 +6,6 @@ import {
   formatHours,
   formatSharePct,
   formatSignedPct,
-  formatSignedPoints,
 } from '@/features/phases/model/farm-respec-format';
 import { WEB_PACKAGE_ROOT } from './helpers/web-package-root';
 
@@ -73,24 +72,6 @@ describe('farm-respec-format', () => {
 
     it('non-finite input renders the dash', () => {
       expect(formatSharePct(Number.NaN)).toBe('—');
-    });
-  });
-
-  describe('formatSignedPoints', () => {
-    it('a positive delta gets a plus sign', () => {
-      expect(formatSignedPoints(3)).toBe('+3');
-    });
-
-    it('a negative delta gets a minus sign, magnitude only after it', () => {
-      expect(formatSignedPoints(-2)).toBe('-2');
-    });
-
-    it('zero gets no sign', () => {
-      expect(formatSignedPoints(0)).toBe('0');
-    });
-
-    it('non-finite input renders the dash', () => {
-      expect(formatSignedPoints(Number.NaN)).toBe('—');
     });
   });
 

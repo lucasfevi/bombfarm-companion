@@ -107,6 +107,12 @@ export {
   type MetricScoreboardCell,
   type MetricScoreboardProps,
 } from './metric-scoreboard';
+export {
+  DeltaTable,
+  type DeltaTableRow,
+  type DeltaTableColumnLabels,
+  type DeltaTableProps,
+} from './delta-table';
 export { Toast } from './toast';
 export {
   toastQueueReducer,
