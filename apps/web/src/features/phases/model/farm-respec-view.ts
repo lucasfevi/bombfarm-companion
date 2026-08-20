@@ -124,3 +124,19 @@ export function resolveFrontierEntries(
 ): readonly FarmRespecFrontierEntry[] | null {
   return result.frontier.length > 0 ? result.frontier : null;
 }
+
+/**
+ * The heroes a frontier tier actually respecs, named. `entry.heroes` is EVERY enabled hero — a
+ * tier carries a complete squad allocation, with the ones it does not touch pinned to their
+ * current build — so rendering it prints the whole rotation pool under a "1 hero" label. The
+ * tier's own heroes are `entry.heroIds`, which is what `heroCount` counts, so the names come
+ * from there and the count can never disagree with the list.
+ *
+ * An id with no matching entry falls back to the id itself rather than being dropped: a silently
+ * shorter list would contradict `heroCount` again, which is the bug this exists to fix.
+ */
+export function resolveFrontierHeroNames(entry: FarmRespecFrontierEntry): string[] {
+  return entry.heroIds.map(
+    (heroId) => entry.heroes.find((hero) => hero.heroId === heroId)?.heroName ?? heroId,
+  );
+}

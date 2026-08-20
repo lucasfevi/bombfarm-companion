@@ -2,7 +2,10 @@
 
 import type { FarmRespecResult } from '@bombfarm/domain/farm-optimize';
 import { sub, type Strings } from '@/shared/i18n';
-import { resolveFrontierEntries } from '@/features/phases/model/farm-respec-view';
+import {
+  resolveFrontierEntries,
+  resolveFrontierHeroNames,
+} from '@/features/phases/model/farm-respec-view';
 import { formatGainPct, formatGold, formatHours } from '@/features/phases/model/farm-respec-format';
 
 function heroCountLabel(strings: Strings, heroCount: number): string {
@@ -34,7 +37,7 @@ export function FarmRespecFrontier({ t, result }: { t: Strings; result: FarmResp
           >
             <span className="font-bold">{heroCountLabel(t, entry.heroCount)}</span>
             <span className="text-muted">
-              {entry.heroes.map((hero) => hero.heroName).join(', ')}
+              {resolveFrontierHeroNames(entry).join(', ')}
             </span>
             <span>
               {sub(t.farmRespecFrontierGainCost, {

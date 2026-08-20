@@ -10,6 +10,7 @@ import type {
 import {
   buildHeroCardRows,
   resolveFrontierEntries,
+  resolveFrontierHeroNames,
   resolvePanelState,
   resolvePaybackKind,
   resolvePhaseChange,
@@ -188,6 +189,65 @@ describe('farm-respec-view', () => {
         currentPhase: 27,
         recommendedPhase: null,
       });
+    });
+  });
+
+  describe('resolveFrontierHeroNames', () => {
+    function frontierEntry(
+      heroIds: string[],
+      heroes: FarmRespecHeroEntry[],
+    ): FarmRespecFrontierEntry {
+      return {
+        heroCount: heroIds.length,
+        heroIds,
+        heroes,
+        recommendedPhase: 28,
+        proposedObjective: 1,
+        gainPct: 5,
+        respecCostGold: 72000,
+        paybackHours: 0.1,
+        proposedGoldPerHour: 10,
+        proposedChestsPerHour: 1,
+      };
+    }
+
+    // Red against the shipped implementation, which rendered `entry.heroes` — the FULL enabled
+    // pool — under a "1 hero" label.
+    it('names only the tier\'s own heroes, never every enabled hero', () => {
+      const entry = frontierEntry(
+        ['h2'],
+        [
+          heroEntry({ heroId: 'h1', heroName: 'Minato' }),
+          heroEntry({ heroId: 'h2', heroName: 'Bellatrix' }),
+          heroEntry({ heroId: 'h3', heroName: 'Yara' }),
+        ],
+      );
+      expect(resolveFrontierHeroNames(entry)).toEqual(['Bellatrix']);
+    });
+
+    it('the name count always equals heroCount', () => {
+      const heroes = [
+        heroEntry({ heroId: 'h1', heroName: 'Minato' }),
+        heroEntry({ heroId: 'h2', heroName: 'Bellatrix' }),
+        heroEntry({ heroId: 'h3', heroName: 'Yara' }),
+      ];
+      for (const heroIds of [['h1'], ['h1', 'h3']]) {
+        const entry = frontierEntry(heroIds, heroes);
+        expect(resolveFrontierHeroNames(entry)).toHaveLength(entry.heroCount);
+      }
+    });
+
+    it('follows heroIds order, not the order heroes happens to be in', () => {
+      const entry = frontierEntry(
+        ['h3', 'h1'],
+        [heroEntry({ heroId: 'h1', heroName: 'Minato' }), heroEntry({ heroId: 'h3', heroName: 'Yara' })],
+      );
+      expect(resolveFrontierHeroNames(entry)).toEqual(['Yara', 'Minato']);
+    });
+
+    it('an unmatched id falls back to the id — never a list shorter than heroCount', () => {
+      const entry = frontierEntry(['h1', 'ghost'], [heroEntry({ heroId: 'h1', heroName: 'Minato' })]);
+      expect(resolveFrontierHeroNames(entry)).toEqual(['Minato', 'ghost']);
     });
   });
 
