@@ -1,6 +1,6 @@
 ---
-'@bombfarm/domain': patch
-'@bombfarm/web': patch
+"@bombfarm/domain": patch
+"@bombfarm/web": patch
 ---
 
 Fix the Farm page printing two different clear times for the same phase

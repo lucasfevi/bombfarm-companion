@@ -1,6 +1,6 @@
 ---
-'@bombfarm/domain': patch
-'@bombfarm/web': patch
+"@bombfarm/domain": patch
+"@bombfarm/web": patch
 ---
 
 Show per-phase combat numbers on the Farm page's hero and squad panels
