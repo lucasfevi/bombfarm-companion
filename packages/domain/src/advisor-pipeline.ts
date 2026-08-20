@@ -126,6 +126,9 @@ export type AdvisorPipelineResult = {
   best: PointValue;
   eSwitch: number;
   spentDelta: number;
+  /** Seconds on field per deployment — `uptime`'s numerator, surfaced for callers that print
+   *  the deployment length rather than the duty-cycle ratio derived from it. */
+  fieldSecs: number;
   uptime: number;
   mitF: number;
   predCrit: number;
@@ -359,6 +362,7 @@ export function computeAdvisorPipeline(input: AdvisorPipelineInput): AdvisorPipe
     best,
     eSwitch,
     spentDelta,
+    fieldSecs: field,
     uptime,
     mitF,
     predCrit,

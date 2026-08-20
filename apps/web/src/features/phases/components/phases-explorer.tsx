@@ -12,10 +12,7 @@ import { PhasePropMixTable } from './phase-prop-mix-table';
 import { PhasesHeroPanel } from './phases-hero-panel';
 import { PhasesSquadPanel } from './phases-squad-panel';
 import { PhasesEmptyRoster } from './phases-empty-roster';
-import {
-  computePhaseIntelGlobal,
-  estimateClearSeconds,
-} from '@bombfarm/domain/phase-intel';
+import { computePhaseIntelGlobal } from '@bombfarm/domain/phase-intel';
 import {
   computeHeroPhaseFitFromRecord,
   rankRosterByDps,
@@ -29,6 +26,7 @@ import {
   selectHeroes,
   selectActiveHeroId,
   selectAccountShared,
+  selectFarmBoardRows,
   selectPhasesViewPhase,
   commitActiveHero,
 } from '@/shared/stores';
@@ -39,6 +37,8 @@ export function PhasesExplorer({ t, lang }: { t: Strings; lang: Lang }) {
   const heroes = usePlannerStore(selectHeroes);
   const activeHeroId = usePlannerStore(selectActiveHeroId);
   const account = usePlannerStore(useShallow(selectAccountShared));
+  // The ranking board's own rows — no `useShallow`, same carve-out the board itself relies on.
+  const farmRows = usePlannerStore(selectFarmBoardRows);
   // FIELD concurrency — who can be on the field at once, not the House recovery number
   // (`account.slots`). `account.slots` here is only the pre-`skills.field_slots` fallback
   // (`AD-063`, same convention as `SquadFarmFacts` in `farm-rate.ts`).
@@ -113,7 +113,16 @@ export function PhasesExplorer({ t, lang }: { t: Strings; lang: Lang }) {
   const heroesById = useMemo(() => new Map(heroes.map((hero) => [hero.id, hero])), [heroes]);
 
   const squadDps = sumTopDps(topSquadRows);
-  const clearSecs = intel ? estimateClearSeconds(intel.totalMapHp, squadDps) : null;
+
+  // The SAME number the ranking board prints for this phase, read off its row rather than
+  // re-derived. The panel used to divide total map HP by summed solo DPS, which credits the
+  // overkill a killing blow wastes: on the phase-51 anchor roster that model reads 52.6s against
+  // a measured 85.9s, where `FarmRateRow.clearSecs` — which charges `ceil(propHp / avgHit)` per
+  // prop and adds the gate boss — reads 83.8s.
+  const clearSecs = useMemo(
+    () => farmRows.rows.find((row) => row.phase === phase)?.clearSecs ?? null,
+    [farmRows, phase],
+  );
 
   const activeHero =
     heroes.find((hero) => hero.id === activeHeroId) ?? heroes[0];

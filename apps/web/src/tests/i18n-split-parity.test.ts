@@ -238,6 +238,16 @@ const KEYS_ADDED: readonly string[] = [
   'farmRespecMetricPhase',
   'farmRespecMetricPhaseSame',
   'farmRespecPaybackTip',
+  // The Phases hero/squad panel rework (2026-08-20): the hero panel breaks its single
+  // crit-weighted "avg hit" into normal/crit/average plus field time, and the Top-N table trades
+  // gear, abilities and power — roster facts that say nothing about this phase — for the same
+  // three per-phase combat numbers. Four stat labels and three (shorter) column headers.
+  'phasesNormalHit',
+  'phasesCritHit',
+  'phasesFieldTime',
+  'phasesColNormalHit',
+  'phasesColCritHit',
+  'phasesColFieldTime',
 ];
 
 /**
@@ -284,6 +294,10 @@ const PROSE_EDITED_PATHS: readonly string[] = [
   'farmRankingColGems',
   'farmRankingColTimePieces',
   'farmRankingColXp',
+  // The clear-time single-model fix (2026-08-20): the squad panel now prints the ranking board's
+  // own `clearSecs` for the selected phase instead of modelling clear time a second way, so
+  // `phasesClearDisclaimer` no longer describes a "mid-map sustained" estimate.
+  'phasesClearDisclaimer',
 ];
 
 function omitKeys<T extends Record<string, unknown>>(obj: T, keys: readonly string[]): Partial<T> {
