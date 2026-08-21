@@ -205,10 +205,21 @@ function mapHouseCycleSecs(casa: Record<string, unknown> | null): number | null 
   return raw;
 }
 
+/**
+ * `raw.casa` carries either the whole `/rotation` route body — a nested `casa` house object
+ * alongside `field_size`/`heroes`/`rescues_left`/`rescues_max` — or, from a save-file export, the
+ * house object directly (`save-schema.ts`'s `CASA_LEVEL`, unchanged by this feature). Prefers the
+ * nested shape; falls back to treating the value itself as the house.
+ */
+function resolveCasaHouse(raw: Record<string, unknown>): Record<string, unknown> | null {
+  if (!isObject(raw.casa)) return null;
+  return isObject(raw.casa.casa) ? raw.casa.casa : raw.casa;
+}
+
 function mapAccountData(raw: Record<string, unknown>): AccountImportData {
   const skills = isObject(raw.skills) ? raw.skills : null;
   const totals = skills && isObject(skills.totals) ? skills.totals : null;
-  const casa = isObject(raw.casa) ? raw.casa : null;
+  const casa = resolveCasaHouse(raw);
   const phase = mapAccountPhase(raw);
   const maxPhase = mapAccountMaxPhase(raw);
   // Read off `skills`, not `casa` — the field cap is a skill-tree quantity and is present even on

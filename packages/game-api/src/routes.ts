@@ -12,7 +12,9 @@ import type { ConsentedSession } from './session.js';
 export interface RouteDescriptor {
   readonly section: AccountSection;
   readonly path: '/state' | '/roster' | '/skill/state' | '/rotation' | '/inventory';
-  /** `/roster` -> `.heroes`, `/rotation` -> `.casa`, `/inventory` -> `.items`; identity for the rest. */
+  /** `/roster` -> `.heroes`, `/inventory` -> `.items`; identity for the rest — including
+   *  `/rotation`, whose whole body (field list, per-hero rotation state, house, rescues) is the
+   *  `casa` section now, not just its `casa` child. */
   readonly project: (body: Record<string, unknown>) => unknown;
   /** Arrays must be non-empty for `heroes` — an account with zero heroes cannot produce planner
    *  advice and is far more likely to be an error body (spec edge case). Everything else just
@@ -46,7 +48,7 @@ export const ROUTES: readonly RouteDescriptor[] = [
   {
     section: 'casa',
     path: '/rotation',
-    project: (body) => body.casa,
+    project: (body) => body,
     acceptProjected: isPlainObject,
   },
   {
@@ -80,7 +82,12 @@ export type SectionFailureReason =
 
 export type SectionOutcome =
   | { readonly kind: 'ok'; readonly body: unknown }
-  | { readonly kind: 'drift'; readonly missingKeys: readonly string[]; readonly addedKeys: readonly string[] }
+  | {
+      readonly kind: 'drift';
+      readonly body: unknown;
+      readonly missingKeys: readonly string[];
+      readonly addedKeys: readonly string[];
+    }
   | { readonly kind: 'failed'; readonly reason: SectionFailureReason };
 
 /** Reads one route through the pacing gate, checks its shape, and projects it. Never throws for
@@ -110,10 +117,16 @@ export async function readSection(
       }
       const fingerprint = ROUTE_FINGERPRINTS[route.section];
       const shape = checkShape(outcome.json, fingerprint);
-      if (!shape.ok) {
-        return { kind: 'drift', missingKeys: shape.missingKeys, addedKeys: shape.addedKeys };
-      }
       const projected = route.project(outcome.json);
+      if (!shape.ok) {
+        // The shape broke, but the section may still be usable: project anyway and only give up
+        // on it (fall through to `failed`) if the drifted body doesn't even hold the shape this
+        // section's own consumers require (e.g. the key being projected is itself gone).
+        if (route.acceptProjected(projected)) {
+          return { kind: 'drift', body: projected, missingKeys: shape.missingKeys, addedKeys: shape.addedKeys };
+        }
+        return { kind: 'failed', reason: 'empty_roster' };
+      }
       if (!route.acceptProjected(projected)) {
         return { kind: 'failed', reason: 'empty_roster' };
       }

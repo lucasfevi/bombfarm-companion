@@ -83,10 +83,10 @@ describe('ROUTES — projections over the committed body (LAR-07 route half)', (
     expect(projected).toBe(body);
   });
 
-  it('/rotation (casa) projects .casa', () => {
+  it('/rotation (casa) projects the whole body', () => {
     const body = bodyFor('/rotation');
     const projected = routeFor('/rotation').project(body);
-    expect(projected).toBe(body.casa);
+    expect(projected).toBe(body);
   });
 
   it('/inventory (items) projects .items', () => {
@@ -115,6 +115,75 @@ describe('readSection — /roster with zero heroes is empty_roster, not an empty
     const outcome = await readSection(session, transport, gate, rosterRoute);
 
     expect(outcome).toEqual({ kind: 'failed', reason: 'empty_roster' });
+  });
+});
+
+describe('readSection — /rotation.heroes[] empty is not a failure, unlike /roster (spec edge case)', () => {
+  it('resolves ok with an empty heroes array — an account can legitimately have no rotation entries', async () => {
+    const rotationRoute = routeFor('/rotation');
+    const body = { ...bodyFor('/rotation'), heroes: [] };
+    const gate = createPacingGate(createTestClock());
+    const transport = fixedResponseTransport({ status: 200, body: JSON.stringify(body) });
+
+    const outcome = await readSection(session, transport, gate, rotationRoute);
+
+    expect(outcome).toEqual({ kind: 'ok', body });
+  });
+});
+
+describe('readSection — a shape-broken but still-usable /rotation body drifts with its whole body carried, not discarded', () => {
+  it('an added top-level key next to four untouched keys drifts, carrying the mutated body and naming only the added key', async () => {
+    const rotationRoute = routeFor('/rotation');
+    const body = { ...bodyFor('/rotation'), seasonal_flag: true };
+    const gate = createPacingGate(createTestClock());
+    const transport = fixedResponseTransport({ status: 200, body: JSON.stringify(body) });
+
+    const outcome = await readSection(session, transport, gate, rotationRoute);
+
+    expect(outcome).toEqual({ kind: 'drift', body, missingKeys: [], addedKeys: ['casa.seasonal_flag'] });
+  });
+
+  it('a missing top-level key still drifts (not fails) as long as the projected body is itself an acceptable shape', async () => {
+    const rotationRoute = routeFor('/rotation');
+    const fullBody = bodyFor('/rotation');
+    const body = Object.fromEntries(Object.entries(fullBody).filter(([key]) => key !== 'rescues_max'));
+    const gate = createPacingGate(createTestClock());
+    const transport = fixedResponseTransport({ status: 200, body: JSON.stringify(body) });
+
+    const outcome = await readSection(session, transport, gate, rotationRoute);
+
+    expect(outcome.kind).toBe('drift');
+    if (outcome.kind === 'drift') {
+      expect(outcome.body).toEqual(body);
+      expect(outcome.missingKeys).toContain('casa.rescues_max');
+    }
+  });
+});
+
+describe('readSection — a shape break severe enough to break acceptProjected falls back to failed, not a half-populated drift', () => {
+  it('/roster shape-drifted AND zero heroes is still failed/empty_roster, never a drift carrying an unusable body', async () => {
+    const rosterRoute = routeFor('/roster');
+    const gate = createPacingGate(createTestClock());
+    // A top-level added key AND an empty heroes array: the shape check fails (added key), and
+    // the drifted projection (still `[]`) fails /roster's own acceptProjected — this must fall
+    // through to `failed`, never surface as a `drift` carrying an empty roster.
+    const transport = fixedResponseTransport({ status: 200, body: '{"heroes":[],"future_key":1}' });
+
+    const outcome = await readSection(session, transport, gate, rosterRoute);
+
+    expect(outcome).toEqual({ kind: 'failed', reason: 'empty_roster' });
+  });
+});
+
+describe('readSection — /rotation returning a non-object body still fails, never drifts (unchanged)', () => {
+  it('a 200 with a JSON array body is malformed_json, not a drift', async () => {
+    const rotationRoute = routeFor('/rotation');
+    const gate = createPacingGate(createTestClock());
+    const transport = fixedResponseTransport({ status: 200, body: '[]' });
+
+    const outcome = await readSection(session, transport, gate, rotationRoute);
+
+    expect(outcome).toEqual({ kind: 'failed', reason: 'malformed_json' });
   });
 });
 

@@ -172,18 +172,20 @@ describe('ROUTE_FINGERPRINTS (LAR-18, MP5 F4)', () => {
 });
 
 describe('SECTION_FINGERPRINTS — the projected shapes derive from ROUTE_FINGERPRINTS (design §5.3)', () => {
-  it('account and skills project as identity — their section fingerprint IS their route fingerprint', () => {
+  it('account, skills and casa project as identity — their section fingerprint IS their route fingerprint', () => {
     expect(SECTION_FINGERPRINTS.account).toEqual({ kind: 'object', ...ROUTE_FINGERPRINTS.account });
     expect(SECTION_FINGERPRINTS.skills).toEqual({ kind: 'object', ...ROUTE_FINGERPRINTS.skills });
+    // `/rotation` used to unwrap to its nested `casa` child only; it now yields its whole body,
+    // so `casa` joined `account`/`skills` as an identity projection.
+    expect(SECTION_FINGERPRINTS.casa).toEqual({ kind: 'object', ...ROUTE_FINGERPRINTS.casa });
   });
 
-  it('casa: the section level equals the `casa` child declared inside the /rotation route level', () => {
+  it('casa: the whole-body level still declares the nested casa child at SCHEMA_LEVELS.casa', () => {
     const routeCasaChild = ROUTE_FINGERPRINTS.casa.level.children?.casa;
     expect(routeCasaChild?.kind).toBe('object');
     if (routeCasaChild?.kind === 'object') {
-      expect(SECTION_FINGERPRINTS.casa).toMatchObject({ kind: 'object', root: 'casa', level: routeCasaChild.level });
+      expect(routeCasaChild.level).toEqual(SCHEMA_LEVELS.casa);
     }
-    expect((SECTION_FINGERPRINTS.casa as { level: SchemaLevel }).level).toEqual(SCHEMA_LEVELS.casa);
   });
 
   it('heroes: the section element equals the array element declared inside the /roster route level', () => {

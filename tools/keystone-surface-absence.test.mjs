@@ -168,8 +168,8 @@ const CRIT_DMG_MULT_MAP = {
   'apps/desktop/renderer/lib/planning/fixtures/synthetic-views.ts': [123],
   'apps/desktop/renderer/lib/planning/hero-advice.test.ts': [47],
   'apps/desktop/renderer/lib/planning/withhold-matrix.test.ts': [192, 209],
-  'apps/desktop/src/main/storage/account-store-restore.test.ts': [497, 530, 548, 581],
-  'apps/desktop/src/main/storage/stale-sections.test.ts': [66, 81, 84, 88, 98, 105, 111, 123, 128, 164, 182],
+  'apps/desktop/src/main/storage/account-store-restore.test.ts': [507, 540, 558, 591],
+  'apps/desktop/src/main/storage/stale-sections.test.ts': [66, 81, 84, 88, 98, 105, 111, 123, 128, 164, 224],
   'apps/desktop/src/main/storage/stale-sections.ts': [11],
   // +2 (line numbers only) from the House/field-slots untangling follow-up: two new
   // AccountShared rows (`fieldSlots`, `houseCycleSecs`) landed above this section. Match itself
@@ -201,7 +201,7 @@ const CRIT_DMG_MULT_MAP = {
   'apps/web/src/tests/fixtures/storage-roundtrip-20260729.json': [3],
   'apps/web/src/tests/points-reopt.test.ts': [107, 490],
   'apps/web/src/tests/stale-account-drop.test.ts': [31, 72, 73, 78, 89],
-  'apps/web/src/tests/stat-breakdown.test.ts': [125, 175, 201],
+  'apps/web/src/tests/stat-breakdown.test.ts': [126, 176, 202],
   // +1 (line number only): issue #132's rewrite of the "existing empty state" comment above line
   // 109 added a net one line. Match itself is unchanged in count and in kind.
   'apps/web/src/tests/storage-legacy-keystone-fields.test.ts': [40, 110],

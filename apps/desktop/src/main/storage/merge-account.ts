@@ -10,10 +10,14 @@ export interface MergeOpts {
 
 /**
  * APS-06's teeth: serves live sections over stored last-known-good, per section, in
- * `ACCOUNT_SECTIONS` order. Pure — no DB, no clock. The branch is `!== 'resolved'`, not an
- * enumeration (design TD-9): a live section cast to a future status (e.g. `degraded`,
- * `AD-023`) falls through to the stored value exactly like `stale`/`missing` do, with no
- * edit needed here when that member is added.
+ * `ACCOUNT_SECTIONS` order. Pure — no DB, no clock.
+ *
+ * `resolved` and `degraded` are both "this cycle actually read and parsed something" — a
+ * `degraded` live section now carries a real, usable body (a shape break costs one datum, not
+ * the whole section), so it is preferred over stored last-known-good exactly like `resolved` is,
+ * just reported with its own status instead of being promoted to `resolved`. Anything else
+ * (`stale`, `missing`, or a genuinely unrecognized future status) falls through to the stored
+ * value exactly as before.
  */
 export function mergeStoredIntoLive(live: AccountPayload, restored: RestoredAccount, opts: MergeOpts): AccountView {
   const liveUntyped = live as unknown as Record<string, unknown>;
@@ -28,6 +32,17 @@ export function mergeStoredIntoLive(live: AccountPayload, restored: RestoredAcco
 
     if (liveFidelity?.status === 'resolved' && liveBody !== undefined) {
       fidelity[section] = { status: 'resolved', capturedAt: liveFidelity.capturedAt };
+      merged[section] = liveBody;
+      continue;
+    }
+
+    if (liveFidelity?.status === 'degraded' && liveBody !== undefined) {
+      fidelity[section] = {
+        status: 'degraded',
+        capturedAt: liveFidelity.capturedAt,
+        missingKeys: liveFidelity.missingKeys,
+        addedKeys: liveFidelity.addedKeys,
+      };
       merged[section] = liveBody;
       continue;
     }

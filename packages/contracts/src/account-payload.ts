@@ -3,9 +3,11 @@ export type AccountSection = 'account' | 'heroes' | 'skills' | 'casa' | 'items';
 
 /**
  * `resolved` — read in this capture. `stale` — last-known-good, older than this capture.
- * `missing` — never seen, or not recoverable at all. `degraded` — the source answered, but the
- * response's shape is no longer one this app parses safely (LAR-19, `AD-023`). It carries no
- * body: a section nothing can compute from is safer than a plausible wrong number (`D24`).
+ * `missing` — never seen, or not recoverable at all. `degraded` — the source answered, and its
+ * shape no longer matches the one this section is fingerprinted against (LAR-19), but the
+ * projection this section actually needs still held up, so its body IS carried alongside the
+ * status — only the reported keys are in question, not the whole section (a projection that lost
+ * the key it needed never reaches `degraded` at all, it reaches `missing` instead).
  */
 export type SectionStatus = 'resolved' | 'stale' | 'missing' | 'degraded';
 
@@ -51,7 +53,10 @@ export interface AccountPayload {
   readonly heroes?: readonly unknown[] | undefined;
   /** `/skill/state`. `skills.totals` drives the tree. */
   readonly skills?: Record<string, unknown> | undefined;
-  /** `/rotation`. `active_casa`, `levels`, `slots`. */
+  /** `/rotation`'s whole body — `field_size`, `heroes` (per-hero rotation state), `casa` (the
+   *  house object: `active_casa`, `levels`, `slots`, …), `rescues_left`, `rescues_max`. A save
+   *  export's `casa` key carries the house object directly instead (no wrapping route body);
+   *  readers that need the house resolve either shape (`import-save.ts`'s single read site). */
   readonly casa?: Record<string, unknown> | undefined;
   /** `/inventory` items. Absent ⇒ the "no items list" warning, then parsing continues. */
   readonly items?: readonly unknown[] | undefined;
