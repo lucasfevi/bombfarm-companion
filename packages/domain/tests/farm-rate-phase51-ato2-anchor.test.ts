@@ -88,14 +88,18 @@ describe('the save is read as three distinct quantities', () => {
 });
 
 describe('the House is the binding constraint', () => {
-  it('Σ uptime is 4.1932 — comfortably under the roster size, so uptimeSum alone looks harmless', () => {
-    expect(squad.uptimeSum).toBeCloseTo(4.1932, 4);
+  it('Σ uptime is 4.1937 — comfortably under the roster size, so uptimeSum alone looks harmless', () => {
+    // RE-MEASURED 2026-08-21 for the additive drain-reduction fix (was 4.1932): a fraction of a
+    // recovery slot, from whichever roster heroes hold both a self and a team drain reduction.
+    expect(squad.uptimeSum).toBeCloseTo(4.1937, 4);
     expect(squad.uptimeSum).toBeLessThan(heroFacts.length);
   });
 
-  it('yet the roster demands 7.8068 recovery slots against the 5 it owns — a 1.56x overcommit', () => {
-    expect(squad.houseSlotDemand).toBeCloseTo(7.8068, 4);
-    expect(squad.houseSlotDemand / squad.houseSlots).toBeCloseTo(1.56136, 3);
+  it('yet the roster demands 7.8063 recovery slots against the 5 it owns — a 1.56x overcommit', () => {
+    // RE-MEASURED 2026-08-21 for the additive drain-reduction fix (was 7.8068) — the mirror of
+    // the uptimeSum move above (uptimeSum + houseSlotDemand === roster size, always).
+    expect(squad.houseSlotDemand).toBeCloseTo(7.8063, 4);
+    expect(squad.houseSlotDemand / squad.houseSlots).toBeCloseTo(1.56126, 3);
     expect(squad.houseSlotDemand).toBeGreaterThan(squad.houseSlots);
     // The identity the demand is derived from: Σ uptime + Σ (1 − uptime) === roster size.
     expect(squad.uptimeSum + squad.houseSlotDemand).toBeCloseTo(12, 9);

@@ -93,7 +93,10 @@ describe('rankNextPointForFarm — discrimination: a one-shotting squad inverts 
     // over the rotation instead of read off an empty deployed line-up) and the
     // HOP_DENSITY_EXPONENT refit. Both move every hero's plant rate and the squad House
     // allocation together, so the RANKING claim under test is unaffected — only the magnitudes.
-    expect(attack.gainPct).toBeCloseTo(0.7844030511711564, 5);
+    // RE-MEASURED 2026-08-21 for the additive drain-reduction fix — Jon (the only fixture hero
+    // with both a self and a team drain reduction) now sustains more field time, which again
+    // ripples into the squad House allocation every hero's farm ranking reads.
+    expect(attack.gainPct).toBeCloseTo(0.7688310554390121, 5);
   });
 
   it('farm ranks ENERGY first at maxPhase 42 — the order INVERTED when cadence stopped assuming every plant is walk-bound', () => {
@@ -126,9 +129,11 @@ describe('rankNextPointForFarm — discrimination: a one-shotting squad inverts 
     // over the rotation instead of read off an empty deployed line-up) and the
     // HOP_DENSITY_EXPONENT refit. Both move every hero's plant rate and the squad House
     // allocation together, so the RANKING claim under test is unaffected — only the magnitudes.
-    expect(rows[0]).toEqual({ stat: 'energy', label: 'Energia', gainPct: 0.837626329165575 });
-    expect(rows[1]).toEqual({ stat: 'attack', label: 'Ataque', gainPct: 0.7844030511711564 });
-    expect(rows[2]).toEqual({ stat: 'speed', label: 'Velocidade', gainPct: 0.6987714511533794 });
+    // RE-MEASURED 2026-08-21 for the additive drain-reduction fix, same Jon-uptime -> squad
+    // House allocation ripple as the case above — the energy-first order is unaffected.
+    expect(rows[0]).toEqual({ stat: 'energy', label: 'Energia', gainPct: 0.8335856468024483 });
+    expect(rows[1]).toEqual({ stat: 'attack', label: 'Ataque', gainPct: 0.7688310554390121 });
+    expect(rows[2]).toEqual({ stat: 'speed', label: 'Velocidade', gainPct: 0.6959031347665512 });
   });
 
   it('DPS mode scores attack first and speed exactly 0 on the same hero (the inversion)', () => {
@@ -172,8 +177,10 @@ describe('rankNextPointForFarm — anti-"energy always wins" sensor', () => {
     // over the rotation instead of read off an empty deployed line-up) and the
     // HOP_DENSITY_EXPONENT refit. Both move every hero's plant rate and the squad House
     // allocation together, so the RANKING claim under test is unaffected — only the magnitudes.
-    expect(rows.find((r) => r.stat === 'attack')!.gainPct).toBeCloseTo(0.1559212493234874, 5);
-    expect(rows.find((r) => r.stat === 'energy')!.gainPct).toBeCloseTo(0.14838305041389166, 5);
+    // RE-MEASURED 2026-08-21 for the additive drain-reduction fix, same Jon-uptime -> squad
+    // House allocation ripple as the Bellatrix tests above — the flip itself is unaffected.
+    expect(rows.find((r) => r.stat === 'attack')!.gainPct).toBeCloseTo(0.15626445974643577, 5);
+    expect(rows.find((r) => r.stat === 'energy')!.gainPct).toBeCloseTo(0.14870966791928897, 5);
     expect(rows[0].stat).toBe('attack');
   });
 });

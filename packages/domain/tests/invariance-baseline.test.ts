@@ -16,6 +16,17 @@
  * the walk below decodes leaves back to numbers for a same-value comparison (`Object.is`) only
  * to name the first differing hero/function/stat on failure.
  *
+ * RE-RECORDED (4) at the additive drain-reduction fix: a hero's own drain reduction (Bateria
+ * Extra) and the team's (Fôlego de Mineiro) used to be combined multiplicatively; measurement
+ * showed they add instead, each capped at 20%, floored at a combined 60%. Moved: only the
+ * `scorer.*` block on both corpus files (`objective`, `sumDuty`, and every hero's `duty` /
+ * `fieldSeconds` / `sustained`) — the team-plan scorer is the one recorded subject that scores a
+ * roster where a hero's own drain ability and a roster-wide Fôlego total can both be nonzero at
+ * once. NOT moved: every per-hero `heroes.*` entry (`applySkillTree`, `composeSheetFromBirth`,
+ * `sheetsFromBirth`, `peelSheetStages`, `peelSheetSources`, `inferSpentPoints`, `derive.*`), each
+ * recorded with only one drain term active at a time, where additive and multiplicative combine
+ * to the same number.
+ *
  * RE-RECORDED (3) at the 2026-08-18 patch (issue #132), which reverted crit chance and cooldown
  * from the flat addends the 2026-08-15 patch introduced back to percent-of-base, three days
  * later. **473** of the ~2800+ recorded scalars moved — every `critChance`/`cdr` field on every
