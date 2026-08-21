@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import type { AccountFidelity, AccountPayload, AccountSection, AccountView, SectionStatus } from '@bombfarm/contracts';
+import type { AccountFidelity, AccountPayload, AccountSection, AccountView, SectionFidelity } from '@bombfarm/contracts';
 import { deriveAccountFidelity } from '@bombfarm/domain/account-fidelity';
 import { ADVICE_REQUIRES, buildPlanningModel, isUsable } from './account-model';
 
@@ -64,14 +64,15 @@ function required<T>(value: T | null | undefined, message: string): T {
 }
 
 describe('isUsable (AD-036)', () => {
-  const cases: [SectionStatus, boolean][] = [
-    ['resolved', true],
-    ['stale', true],
-    ['missing', false],
-    ['degraded', false],
+  const cases: [string, SectionFidelity, boolean][] = [
+    ['resolved', { status: 'resolved', capturedAt: NOW }, true],
+    ['stale', { status: 'stale', capturedAt: NOW }, true],
+    ['missing', { status: 'missing' }, false],
+    ['degraded, missing key', { status: 'degraded', capturedAt: NOW, missingKeys: ['gold'], addedKeys: [] }, false],
+    ['degraded, added key only', { status: 'degraded', capturedAt: NOW, missingKeys: [], addedKeys: ['gold'] }, true],
   ];
-  it.each(cases)('status "%s" is usable=%s', (status, expected) => {
-    expect(isUsable(status)).toBe(expected);
+  it.each(cases)('%s is usable=%s', (_label, fidelity, expected) => {
+    expect(isUsable(fidelity)).toBe(expected);
   });
 });
 

@@ -118,7 +118,33 @@ describe('mergeStoredIntoLive', () => {
     expect((view.payload as unknown as Record<string, unknown>).account).toEqual({ phase: 1 });
   });
 
-  it('live degraded with a present body wins over stored — carried through with its own status, missingKeys and addedKeys', () => {
+  it('live degraded with only addedKeys (no missing key) wins over stored — carried through with its own status, missingKeys and addedKeys', () => {
+    const degradedFidelity: SectionFidelity = {
+      status: 'degraded',
+      capturedAt: 'live-t',
+      missingKeys: [],
+      addedKeys: ['seasonal_flag'],
+    };
+    const live: AccountPayload = {
+      casa: { field_size: 5, heroes: [], casa: { active_casa: 1 } },
+      fidelity: { account: MISSING_LIVE, heroes: MISSING_LIVE, skills: MISSING_LIVE, casa: degradedFidelity, items: MISSING_LIVE },
+    };
+    const restored = restoredAccount(
+      { casa: { field_size: 3, heroes: [], casa: { active_casa: 0 } } },
+      storedFidelity({ casa: { status: 'stale', capturedAt: 'stored-t' } }),
+    );
+
+    const view = mergeStoredIntoLive(live, restored, { gameRunning: true, binding: 'node:sqlite' });
+
+    expect(view.payload.fidelity?.casa).toEqual(degradedFidelity);
+    expect((view.payload as unknown as Record<string, unknown>).casa).toEqual({
+      field_size: 5,
+      heroes: [],
+      casa: { active_casa: 1 },
+    });
+  });
+
+  it('live degraded with a missing key defers to a usable stored row — an incomplete body is not preferred, reported stale', () => {
     const degradedFidelity: SectionFidelity = {
       status: 'degraded',
       capturedAt: 'live-t',
@@ -133,6 +159,29 @@ describe('mergeStoredIntoLive', () => {
       { casa: { field_size: 3, heroes: [], casa: { active_casa: 0 } } },
       storedFidelity({ casa: { status: 'stale', capturedAt: 'stored-t' } }),
     );
+
+    const view = mergeStoredIntoLive(live, restored, { gameRunning: true, binding: 'node:sqlite' });
+
+    expect(view.payload.fidelity?.casa).toEqual({ status: 'stale', capturedAt: 'stored-t' });
+    expect((view.payload as unknown as Record<string, unknown>).casa).toEqual({
+      field_size: 3,
+      heroes: [],
+      casa: { active_casa: 0 },
+    });
+  });
+
+  it('live degraded with a missing key and no usable stored row takes the live body anyway, still reported degraded', () => {
+    const degradedFidelity: SectionFidelity = {
+      status: 'degraded',
+      capturedAt: 'live-t',
+      missingKeys: ['rescues_left'],
+      addedKeys: [],
+    };
+    const live: AccountPayload = {
+      casa: { field_size: 5, heroes: [], casa: { active_casa: 1 } },
+      fidelity: { account: MISSING_LIVE, heroes: MISSING_LIVE, skills: MISSING_LIVE, casa: degradedFidelity, items: MISSING_LIVE },
+    };
+    const restored = restoredAccount({}, storedFidelity());
 
     const view = mergeStoredIntoLive(live, restored, { gameRunning: true, binding: 'node:sqlite' });
 

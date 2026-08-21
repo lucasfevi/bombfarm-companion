@@ -3,11 +3,10 @@ export type AccountSection = 'account' | 'heroes' | 'skills' | 'casa' | 'items';
 
 /**
  * `resolved` — read in this capture. `stale` — last-known-good, older than this capture.
- * `missing` — never seen, or not recoverable at all. `degraded` — the source answered, and its
- * shape no longer matches the one this section is fingerprinted against (LAR-19), but the
- * projection this section actually needs still held up, so its body IS carried alongside the
- * status — only the reported keys are in question, not the whole section (a projection that lost
- * the key it needed never reaches `degraded` at all, it reaches `missing` instead).
+ * `missing` — never seen, or not recoverable at all. `degraded` — the source answered with a
+ * shape that no longer matches its fingerprint (LAR-19); the body is carried alongside the status
+ * regardless, but it is only trustworthy when nothing this section reads was lost — see
+ * `isTrustworthySection` for the added-vs-missing distinction that decides that.
  */
 export type SectionStatus = 'resolved' | 'stale' | 'missing' | 'degraded';
 
@@ -26,6 +25,15 @@ export type SectionFidelity =
        *  collection present, the other silently dropped) becomes unrepresentable. */
       readonly addedKeys: readonly string[];
     };
+
+/**
+ * Whether a `degraded` section's body is safe to compute from. An added key is a game update we
+ * do not read yet — harmless. A missing key is a field this repo declares gone, and a parser can
+ * silently substitute a default in its place — not safe, even though a body was returned.
+ */
+export function isTrustworthySection(fidelity: Extract<SectionFidelity, { readonly status: 'degraded' }>): boolean {
+  return fidelity.missingKeys.length === 0;
+}
 
 export type AccountFidelity = { readonly [S in AccountSection]: SectionFidelity };
 

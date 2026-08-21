@@ -167,7 +167,7 @@ const CRIT_DMG_MULT_MAP = {
   'apps/desktop/renderer/lib/planning/account-view-store.test.ts': [36],
   'apps/desktop/renderer/lib/planning/fixtures/synthetic-views.ts': [123],
   'apps/desktop/renderer/lib/planning/hero-advice.test.ts': [47],
-  'apps/desktop/renderer/lib/planning/withhold-matrix.test.ts': [192, 209],
+  'apps/desktop/renderer/lib/planning/withhold-matrix.test.ts': [237, 254],
   'apps/desktop/src/main/storage/account-store-restore.test.ts': [507, 540, 558, 591],
   'apps/desktop/src/main/storage/stale-sections.test.ts': [66, 81, 84, 88, 98, 105, 111, 123, 128, 164, 224],
   'apps/desktop/src/main/storage/stale-sections.ts': [11],

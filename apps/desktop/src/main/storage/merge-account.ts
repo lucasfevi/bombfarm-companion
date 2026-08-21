@@ -1,4 +1,5 @@
 import type { AccountPayload, AccountSection, AccountView, RestoredAccount, SectionFidelity } from '@bombfarm/contracts';
+import { isTrustworthySection } from '@bombfarm/contracts';
 import { ACCOUNT_SECTIONS } from './account-schema.js';
 
 export interface MergeOpts {
@@ -12,12 +13,14 @@ export interface MergeOpts {
  * APS-06's teeth: serves live sections over stored last-known-good, per section, in
  * `ACCOUNT_SECTIONS` order. Pure — no DB, no clock.
  *
- * `resolved` and `degraded` are both "this cycle actually read and parsed something" — a
- * `degraded` live section now carries a real, usable body (a shape break costs one datum, not
- * the whole section), so it is preferred over stored last-known-good exactly like `resolved` is,
- * just reported with its own status instead of being promoted to `resolved`. Anything else
- * (`stale`, `missing`, or a genuinely unrecognized future status) falls through to the stored
- * value exactly as before.
+ * `resolved` and `degraded` are both "this cycle actually read and parsed something", but a
+ * `degraded` live section is preferred over stored last-known-good only when `isTrustworthySection`
+ * says its body lost nothing — an added key is harmless, a missing one means the body may already
+ * carry a substituted default. A degraded section that did lose a key falls through to the stored
+ * row exactly like `stale`/`missing` does; only when no usable stored row exists is the live
+ * degraded body served anyway (still reported `degraded`, since it is better than nothing).
+ * Anything else (`stale`, `missing`, or a genuinely unrecognized future status) falls through to
+ * the stored value exactly as before.
  */
 export function mergeStoredIntoLive(live: AccountPayload, restored: RestoredAccount, opts: MergeOpts): AccountView {
   const liveUntyped = live as unknown as Record<string, unknown>;
@@ -29,6 +32,8 @@ export function mergeStoredIntoLive(live: AccountPayload, restored: RestoredAcco
   for (const section of ACCOUNT_SECTIONS) {
     const liveFidelity = live.fidelity?.[section];
     const liveBody = liveUntyped[section];
+    const storedFidelity = restored.payload.fidelity[section];
+    const storedUsable = storedFidelity.status === 'stale';
 
     if (liveFidelity?.status === 'resolved' && liveBody !== undefined) {
       fidelity[section] = { status: 'resolved', capturedAt: liveFidelity.capturedAt };
@@ -36,7 +41,7 @@ export function mergeStoredIntoLive(live: AccountPayload, restored: RestoredAcco
       continue;
     }
 
-    if (liveFidelity?.status === 'degraded' && liveBody !== undefined) {
+    if (liveFidelity?.status === 'degraded' && liveBody !== undefined && (isTrustworthySection(liveFidelity) || !storedUsable)) {
       fidelity[section] = {
         status: 'degraded',
         capturedAt: liveFidelity.capturedAt,
@@ -47,8 +52,7 @@ export function mergeStoredIntoLive(live: AccountPayload, restored: RestoredAcco
       continue;
     }
 
-    const storedFidelity = restored.payload.fidelity[section];
-    if (storedFidelity.status === 'stale') {
+    if (storedUsable) {
       fidelity[section] = { status: 'stale', capturedAt: storedFidelity.capturedAt };
       merged[section] = restoredUntyped[section];
       continue;
