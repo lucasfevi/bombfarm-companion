@@ -24,4 +24,18 @@ export type { RouteDescriptor, SectionFailureReason, SectionOutcome } from './ro
 export { createGameApiClient } from './client.js';
 export type { GameApiClient } from './client.js';
 export { assembleAccountPayload } from './assemble.js';
+export {
+  PORTUGUESE_WIRE_TOKENS,
+  ROTATION_WIRE_LEXICON,
+  renderWireGlossary,
+  stateSymbolForToken,
+  stateToken,
+  wireKey,
+} from './rotation/lexicon.js';
+export type { RotationStateSymbol, RotationWireSymbol, WireLexiconEntry, WireVocabularyKind, WireVocabularyOrigin } from './rotation/lexicon.js';
+export { normalizeRotation } from './rotation/normalize.js';
+// vocabulary-guard.ts is deliberately NOT re-exported here: it reaches `node:fs` to read the
+// repo tree, and this barrel is imported by apps/desktop's
+// browser-side renderer (via consent-modal.tsx) as well as by Node consumers. Its test imports
+// it directly by relative path instead — see rotation/vocabulary-guard.test.ts.
 

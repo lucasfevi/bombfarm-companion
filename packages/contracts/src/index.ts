@@ -18,6 +18,14 @@ export type {
   SectionStatus,
 } from './account-payload.js';
 export type {
+  FieldDrop,
+  HouseSnapshot,
+  RotationHeroActivity,
+  RotationHeroSnapshot,
+  RotationNormalizeResult,
+  RotationSnapshot,
+} from './rotation-snapshot.js';
+export type {
   AccountStoreReason,
   AccountStoreStatus,
   AccountView,
