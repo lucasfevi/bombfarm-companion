@@ -1,6 +1,3 @@
-import { existsSync, readFileSync, readdirSync } from 'node:fs';
-import { dirname, join, relative, resolve, sep } from 'node:path';
-import { fileURLToPath } from 'node:url';
 import { PORTUGUESE_WIRE_TOKENS } from './lexicon.js';
 
 /**
@@ -18,7 +15,11 @@ export const VOCABULARY_GUARD_SCOPE_EXTRA_FILES: readonly string[] = ['packages/
  *  never as a pass; deliberately widen this alongside any edit that legitimately grows the scope. */
 export const VOCABULARY_GUARD_MIN_SCOPE_FILES = 3;
 
-function isScopeExcluded(repoRelativePath: string): boolean {
+/** Whether `repoRelativePath` is out of the guard's scope even though it lives under
+ *  {@link VOCABULARY_GUARD_SCOPE_DIR} — exported so `resolveScopeFiles()` (a filesystem walk that
+ *  cannot live in this dependency-free module, see the file-level split) can apply the same rule
+ *  it declares here. */
+export function isScopeExcluded(repoRelativePath: string): boolean {
   return repoRelativePath.endsWith('/lexicon.ts') || repoRelativePath.endsWith('.test.ts');
 }
 
@@ -62,60 +63,4 @@ export function findWireVocabularyViolations(files: ReadonlyArray<ScopedFile>): 
   }
 
   return violations;
-}
-
-const HERE = dirname(fileURLToPath(import.meta.url));
-const REPO_ROOT = resolve(HERE, '..', '..', '..', '..');
-const REPO_ROOT_MARKER = 'pnpm-workspace.yaml';
-
-function assertIsRepoRoot(root: string): void {
-  if (!existsSync(join(root, REPO_ROOT_MARKER))) {
-    throw new Error(
-      `[vocabulary-guard] resolved root "${root}" is not the repo root — it has no ${REPO_ROOT_MARKER}. ` +
-        'resolveScopeFiles() must run against the real repo root, or it silently scans nothing.',
-    );
-  }
-}
-
-function toPosixPath(path: string): string {
-  return path.split(sep).join('/');
-}
-
-function walkFiles(dir: string): readonly string[] {
-  const results: string[] = [];
-  for (const entry of readdirSync(dir, { withFileTypes: true })) {
-    const entryPath = join(dir, entry.name);
-    if (entry.isDirectory()) {
-      results.push(...walkFiles(entryPath));
-    } else if (entry.isFile()) {
-      results.push(entryPath);
-    }
-  }
-  return results;
-}
-
-/** Resolves the guard's scope against the real tree via a plain recursive filesystem walk — not
- *  `git ls-files`, which prints a warning and exits 0 on a wrong root, and never sees a
- *  gitignored in-scope file at all. Reads every resolved file's source from disk. Throws (rather
- *  than returning an empty or truncated list) if `root` is not this repo's root, or if the scope
- *  resolves to fewer than {@link VOCABULARY_GUARD_MIN_SCOPE_FILES} files. */
-export function resolveScopeFiles(root: string = REPO_ROOT): ReadonlyArray<ScopedFile> {
-  assertIsRepoRoot(root);
-
-  const scopeDirAbs = resolve(root, VOCABULARY_GUARD_SCOPE_DIR);
-  const scopedPaths = walkFiles(scopeDirAbs)
-    .map((absPath) => toPosixPath(relative(root, absPath)))
-    .filter((repoRelativePath) => !isScopeExcluded(repoRelativePath));
-
-  const paths = [...scopedPaths, ...VOCABULARY_GUARD_SCOPE_EXTRA_FILES];
-
-  if (paths.length < VOCABULARY_GUARD_MIN_SCOPE_FILES) {
-    throw new Error(
-      `[vocabulary-guard] scope resolved to only ${String(paths.length)} file(s), below the declared minimum of ` +
-        `${String(VOCABULARY_GUARD_MIN_SCOPE_FILES)} (VOCABULARY_GUARD_MIN_SCOPE_FILES). This is a guard ` +
-        'failure — it is scanning too little — not a pass.',
-    );
-  }
-
-  return paths.map((path) => ({ path, source: readFileSync(resolve(root, path), 'utf8') }));
 }

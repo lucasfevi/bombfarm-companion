@@ -4,6 +4,7 @@ import { PacingRefusedError, type PacingGate } from './pacing.js';
 import { requestGet, type HttpTransport } from './request.js';
 import { checkShape } from './shape.js';
 import type { ConsentedSession } from './session.js';
+import { isPlainObject } from './type-guards.js';
 
 /**
  * The five GET readers and their projections into the section a shape the contract expects
@@ -20,10 +21,6 @@ export interface RouteDescriptor {
    *  advice and is far more likely to be an error body (spec edge case). Everything else just
    *  needs the right JS shape (object for scalar sections, array for `items`). */
   readonly acceptProjected: (projected: unknown) => boolean;
-}
-
-function isPlainObject(value: unknown): value is Record<string, unknown> {
-  return typeof value === 'object' && value !== null && !Array.isArray(value);
 }
 
 export const ROUTES: readonly RouteDescriptor[] = [

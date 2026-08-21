@@ -6,6 +6,7 @@ import type {
   RotationSnapshot,
 } from '@bombfarm/contracts';
 import { stateSymbolForToken, wireKey } from './lexicon.js';
+import { isPlainObject } from '../type-guards.js';
 
 /**
  * Every rotation cycle observed so far runs well under half an hour (the committed fixture's
@@ -14,10 +15,6 @@ import { stateSymbolForToken, wireKey } from './lexicon.js';
  * above a day, while every real cycle length stays far below it.
  */
 const CYCLE_SECONDS_PLAUSIBILITY_CEILING = 86_400;
-
-function isPlainObject(value: unknown): value is Record<string, unknown> {
-  return typeof value === 'object' && value !== null && !Array.isArray(value);
-}
 
 function isFiniteNumber(value: unknown): value is number {
   return typeof value === 'number' && Number.isFinite(value);
@@ -53,6 +50,11 @@ function validateNumberList(raw: unknown, path: string): Validated<readonly numb
   if (raw === undefined) return { drop: { path, reason: 'missing' } };
   if (!Array.isArray(raw)) return { drop: { path, reason: 'wrong_type' } };
   return { value: raw.filter(isFiniteNumber) };
+}
+
+function collectDrop<T>(validated: Validated<T>, drops: FieldDrop[]): T | undefined {
+  if (validated.drop) drops.push(validated.drop);
+  return validated.value;
 }
 
 interface RosterEntry {
@@ -113,35 +115,36 @@ function normalizeHero(
   }
   seenIds.add(idRaw);
 
-  const level = validateNumber(raw[wireKey('heroLevel')], heroPath(index, `.${wireKey('heroLevel')}`), {
-    min: 0,
-    integer: true,
-  });
-  if (level.drop) drops.push(level.drop);
-
-  const energy = validateNumber(raw[wireKey('heroEnergy')], heroPath(index, `.${wireKey('heroEnergy')}`), {
-    min: 0,
-  });
-  if (energy.drop) drops.push(energy.drop);
-
-  const energyMax = validateNumber(raw[wireKey('heroEnergyMax')], heroPath(index, `.${wireKey('heroEnergyMax')}`), {
-    min: 0,
-  });
-  if (energyMax.drop) drops.push(energyMax.drop);
-
-  const energyFraction = validateNumber(
-    raw[wireKey('heroEnergyFraction')],
-    heroPath(index, `.${wireKey('heroEnergyFraction')}`),
-    { min: 0, max: 1 },
+  const level = collectDrop(
+    validateNumber(raw[wireKey('heroLevel')], heroPath(index, `.${wireKey('heroLevel')}`), {
+      min: 0,
+      integer: true,
+    }),
+    drops,
   );
-  if (energyFraction.drop) drops.push(energyFraction.drop);
+
+  const energy = collectDrop(
+    validateNumber(raw[wireKey('heroEnergy')], heroPath(index, `.${wireKey('heroEnergy')}`), { min: 0 }),
+    drops,
+  );
+
+  const energyMax = collectDrop(
+    validateNumber(raw[wireKey('heroEnergyMax')], heroPath(index, `.${wireKey('heroEnergyMax')}`), { min: 0 }),
+    drops,
+  );
+
+  const energyFraction = collectDrop(
+    validateNumber(raw[wireKey('heroEnergyFraction')], heroPath(index, `.${wireKey('heroEnergyFraction')}`), {
+      min: 0,
+      max: 1,
+    }),
+    drops,
+  );
 
   // A hero whose current energy exceeds its own ceiling is still self-consistent enough to
   // render: keep both raw values, but the reported fraction cannot honestly be < 1 here.
   const resolvedFraction =
-    energy.value !== undefined && energyMax.value !== undefined && energy.value > energyMax.value
-      ? 1
-      : energyFraction.value;
+    energy !== undefined && energyMax !== undefined && energy > energyMax ? 1 : energyFraction;
 
   const statePath = heroPath(index, `.${wireKey('heroState')}`);
   const stateRaw = raw[wireKey('heroState')];
@@ -159,34 +162,39 @@ function normalizeHero(
     }
   }
 
-  const onField = validateBoolean(raw[wireKey('heroOnField')], heroPath(index, `.${wireKey('heroOnField')}`));
-  if (onField.drop) drops.push(onField.drop);
-
-  const inHouse = validateBoolean(raw[wireKey('heroInHouse')], heroPath(index, `.${wireKey('heroInHouse')}`));
-  if (inHouse.drop) drops.push(inHouse.drop);
-
-  const recovering = validateBoolean(raw[wireKey('heroRecovering')], heroPath(index, `.${wireKey('heroRecovering')}`));
-  if (recovering.drop) drops.push(recovering.drop);
-
-  const battleAllowed = validateBoolean(
-    raw[wireKey('heroBattleAllowed')],
-    heroPath(index, `.${wireKey('heroBattleAllowed')}`),
+  const onField = collectDrop(
+    validateBoolean(raw[wireKey('heroOnField')], heroPath(index, `.${wireKey('heroOnField')}`)),
+    drops,
   );
-  if (battleAllowed.drop) drops.push(battleAllowed.drop);
+
+  const inHouse = collectDrop(
+    validateBoolean(raw[wireKey('heroInHouse')], heroPath(index, `.${wireKey('heroInHouse')}`)),
+    drops,
+  );
+
+  const recovering = collectDrop(
+    validateBoolean(raw[wireKey('heroRecovering')], heroPath(index, `.${wireKey('heroRecovering')}`)),
+    drops,
+  );
+
+  const battleAllowed = collectDrop(
+    validateBoolean(raw[wireKey('heroBattleAllowed')], heroPath(index, `.${wireKey('heroBattleAllowed')}`)),
+    drops,
+  );
 
   const rosterEntry = rosterIndex.get(idRaw);
 
   return {
     id: idRaw,
-    ...(level.value !== undefined ? { level: level.value } : {}),
-    ...(energy.value !== undefined ? { energy: energy.value } : {}),
-    ...(energyMax.value !== undefined ? { energyMax: energyMax.value } : {}),
+    ...(level !== undefined ? { level } : {}),
+    ...(energy !== undefined ? { energy } : {}),
+    ...(energyMax !== undefined ? { energyMax } : {}),
     ...(resolvedFraction !== undefined ? { energyFraction: resolvedFraction } : {}),
     ...(activity !== undefined ? { activity } : {}),
-    ...(onField.value !== undefined ? { onField: onField.value } : {}),
-    ...(inHouse.value !== undefined ? { inHouse: inHouse.value } : {}),
-    ...(recovering.value !== undefined ? { recovering: recovering.value } : {}),
-    ...(battleAllowed.value !== undefined ? { battleAllowed: battleAllowed.value } : {}),
+    ...(onField !== undefined ? { onField } : {}),
+    ...(inHouse !== undefined ? { inHouse } : {}),
+    ...(recovering !== undefined ? { recovering } : {}),
+    ...(battleAllowed !== undefined ? { battleAllowed } : {}),
     ...(rosterEntry?.name !== undefined ? { name: rosterEntry.name } : {}),
     ...(rosterEntry?.grade !== undefined ? { grade: rosterEntry.grade } : {}),
   };
@@ -203,19 +211,17 @@ function normalizeHouse(raw: unknown, drops: FieldDrop[]): HouseSnapshot | undef
     return undefined;
   }
 
-  const houseLevels = validateNumberList(raw[wireKey('houseLevels')], `${housePath}.${wireKey('houseLevels')}`);
-  if (houseLevels.drop) drops.push(houseLevels.drop);
+  const houseLevels = collectDrop(
+    validateNumberList(raw[wireKey('houseLevels')], `${housePath}.${wireKey('houseLevels')}`),
+    drops,
+  );
 
   const activePath = `${housePath}.${wireKey('houseActive')}`;
-  const activeRaw = raw[wireKey('houseActive')];
+  const activeValue = collectDrop(validateNumber(raw[wireKey('houseActive')], activePath, { integer: true }), drops);
   let activeHouseIndex: number | undefined;
-  if (activeRaw === undefined) {
-    drops.push({ path: activePath, reason: 'missing' });
-  } else if (!isFiniteNumber(activeRaw) || !Number.isInteger(activeRaw)) {
-    drops.push({ path: activePath, reason: 'wrong_type' });
-  } else {
-    const zeroBased = activeRaw - 1;
-    const withinBounds = houseLevels.value === undefined || zeroBased < houseLevels.value.length;
+  if (activeValue !== undefined) {
+    const zeroBased = activeValue - 1;
+    const withinBounds = houseLevels === undefined || zeroBased < houseLevels.length;
     if (zeroBased < 0 || !withinBounds) {
       drops.push({ path: activePath, reason: 'out_of_range' });
     } else {
@@ -224,47 +230,47 @@ function normalizeHouse(raw: unknown, drops: FieldDrop[]): HouseSnapshot | undef
   }
 
   const cycleSecondsPath = `${housePath}.${wireKey('houseCycleSeconds')}`;
-  const cycleSecondsRaw = raw[wireKey('houseCycleSeconds')];
+  const cycleSecondsValue = collectDrop(validateNumber(raw[wireKey('houseCycleSeconds')], cycleSecondsPath), drops);
   let cycleSeconds: number | undefined;
-  if (cycleSecondsRaw === undefined) {
-    drops.push({ path: cycleSecondsPath, reason: 'missing' });
-  } else if (!isFiniteNumber(cycleSecondsRaw)) {
-    drops.push({ path: cycleSecondsPath, reason: 'wrong_type' });
-  } else if (cycleSecondsRaw <= 0 || cycleSecondsRaw > CYCLE_SECONDS_PLAUSIBILITY_CEILING) {
-    drops.push({ path: cycleSecondsPath, reason: 'out_of_range' });
-  } else {
-    cycleSeconds = cycleSecondsRaw;
+  if (cycleSecondsValue !== undefined) {
+    if (cycleSecondsValue <= 0 || cycleSecondsValue > CYCLE_SECONDS_PLAUSIBILITY_CEILING) {
+      drops.push({ path: cycleSecondsPath, reason: 'out_of_range' });
+    } else {
+      cycleSeconds = cycleSecondsValue;
+    }
   }
 
-  const slots = validateNumber(raw[wireKey('houseSlots')], `${housePath}.${wireKey('houseSlots')}`, {
-    min: 0,
-    integer: true,
-  });
-  if (slots.drop) drops.push(slots.drop);
-
-  const slotsPerHouse = validateNumberList(
-    raw[wireKey('houseSlotsPerHouse')],
-    `${housePath}.${wireKey('houseSlotsPerHouse')}`,
+  const slots = collectDrop(
+    validateNumber(raw[wireKey('houseSlots')], `${housePath}.${wireKey('houseSlots')}`, { min: 0, integer: true }),
+    drops,
   );
-  if (slotsPerHouse.drop) drops.push(slotsPerHouse.drop);
 
-  const cycleSecondsPerHouse = validateNumberList(
-    raw[wireKey('houseCycleSecondsPerHouse')],
-    `${housePath}.${wireKey('houseCycleSecondsPerHouse')}`,
+  const slotsPerHouse = collectDrop(
+    validateNumberList(raw[wireKey('houseSlotsPerHouse')], `${housePath}.${wireKey('houseSlotsPerHouse')}`),
+    drops,
   );
-  if (cycleSecondsPerHouse.drop) drops.push(cycleSecondsPerHouse.drop);
 
-  const upgradeCost = validateNumberList(raw[wireKey('houseUpgradeCost')], `${housePath}.${wireKey('houseUpgradeCost')}`);
-  if (upgradeCost.drop) drops.push(upgradeCost.drop);
+  const cycleSecondsPerHouse = collectDrop(
+    validateNumberList(
+      raw[wireKey('houseCycleSecondsPerHouse')],
+      `${housePath}.${wireKey('houseCycleSecondsPerHouse')}`,
+    ),
+    drops,
+  );
+
+  const upgradeCost = collectDrop(
+    validateNumberList(raw[wireKey('houseUpgradeCost')], `${housePath}.${wireKey('houseUpgradeCost')}`),
+    drops,
+  );
 
   return {
     ...(activeHouseIndex !== undefined ? { activeHouseIndex } : {}),
-    ...(houseLevels.value !== undefined ? { houseLevels: houseLevels.value } : {}),
+    ...(houseLevels !== undefined ? { houseLevels } : {}),
     ...(cycleSeconds !== undefined ? { cycleSeconds } : {}),
-    ...(slots.value !== undefined ? { slots: slots.value } : {}),
-    ...(slotsPerHouse.value !== undefined ? { slotsPerHouse: slotsPerHouse.value } : {}),
-    ...(cycleSecondsPerHouse.value !== undefined ? { cycleSecondsPerHouse: cycleSecondsPerHouse.value } : {}),
-    ...(upgradeCost.value !== undefined ? { upgradeCost: upgradeCost.value } : {}),
+    ...(slots !== undefined ? { slots } : {}),
+    ...(slotsPerHouse !== undefined ? { slotsPerHouse } : {}),
+    ...(cycleSecondsPerHouse !== undefined ? { cycleSecondsPerHouse } : {}),
+    ...(upgradeCost !== undefined ? { upgradeCost } : {}),
   };
 }
 
@@ -273,25 +279,25 @@ function normalizeRescues(
   drops: FieldDrop[],
 ): { readonly rescuesLeft?: number; readonly rescuesMax?: number } {
   const maxPath = wireKey('rescuesMax');
-  const max = validateNumber(body[wireKey('rescuesMax')], maxPath, { min: 0, integer: true });
-  if (max.drop) drops.push(max.drop);
+  const max = collectDrop(validateNumber(body[wireKey('rescuesMax')], maxPath, { min: 0, integer: true }), drops);
 
   const leftPath = wireKey('rescuesLeft');
-  const leftRaw = body[wireKey('rescuesLeft')];
+  const leftValue = collectDrop(
+    validateNumber(body[wireKey('rescuesLeft')], leftPath, { min: 0, integer: true }),
+    drops,
+  );
   let rescuesLeft: number | undefined;
-  if (leftRaw === undefined) {
-    drops.push({ path: leftPath, reason: 'missing' });
-  } else if (!isFiniteNumber(leftRaw) || !Number.isInteger(leftRaw)) {
-    drops.push({ path: leftPath, reason: 'wrong_type' });
-  } else if (leftRaw < 0 || (max.value !== undefined && leftRaw > max.value)) {
-    drops.push({ path: leftPath, reason: 'out_of_range' });
-  } else {
-    rescuesLeft = leftRaw;
+  if (leftValue !== undefined) {
+    if (max !== undefined && leftValue > max) {
+      drops.push({ path: leftPath, reason: 'out_of_range' });
+    } else {
+      rescuesLeft = leftValue;
+    }
   }
 
   return {
     ...(rescuesLeft !== undefined ? { rescuesLeft } : {}),
-    ...(max.value !== undefined ? { rescuesMax: max.value } : {}),
+    ...(max !== undefined ? { rescuesMax: max } : {}),
   };
 }
 
@@ -311,8 +317,10 @@ export function normalizeRotation(body: unknown, roster: unknown): RotationNorma
 
   const rosterIndex = buildRosterIndex(roster);
 
-  const fieldSize = validateNumber(body[wireKey('fieldSize')], wireKey('fieldSize'), { min: 0, integer: true });
-  if (fieldSize.drop) drops.push(fieldSize.drop);
+  const fieldSize = collectDrop(
+    validateNumber(body[wireKey('fieldSize')], wireKey('fieldSize'), { min: 0, integer: true }),
+    drops,
+  );
 
   const heroesPath = wireKey('heroesList');
   const heroesRaw = body[wireKey('heroesList')];
@@ -333,7 +341,7 @@ export function normalizeRotation(body: unknown, roster: unknown): RotationNorma
   const rescues = normalizeRescues(body, drops);
 
   const snapshot: RotationSnapshot = {
-    ...(fieldSize.value !== undefined ? { fieldSize: fieldSize.value } : {}),
+    ...(fieldSize !== undefined ? { fieldSize } : {}),
     heroes,
     ...(house !== undefined ? { house } : {}),
     ...rescues,

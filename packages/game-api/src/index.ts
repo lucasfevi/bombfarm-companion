@@ -29,13 +29,12 @@ export {
   ROTATION_WIRE_LEXICON,
   renderWireGlossary,
   stateSymbolForToken,
-  stateToken,
   wireKey,
 } from './rotation/lexicon.js';
 export type { RotationStateSymbol, RotationWireSymbol, WireLexiconEntry, WireVocabularyKind, WireVocabularyOrigin } from './rotation/lexicon.js';
 export { normalizeRotation } from './rotation/normalize.js';
-// vocabulary-guard.ts is deliberately NOT re-exported here: it reaches `node:fs` to read the
-// repo tree, and this barrel is imported by apps/desktop's
-// browser-side renderer (via consent-modal.tsx) as well as by Node consumers. Its test imports
-// it directly by relative path instead — see rotation/vocabulary-guard.test.ts.
+// vocabulary-guard.ts is not re-exported here: nothing outside this package needs it — only its
+// own test does, and that test imports it directly by relative path (see
+// rotation/vocabulary-guard.test.ts). It no longer reaches `node:fs`; the filesystem walk that
+// used to live here now lives in that test file instead.
 

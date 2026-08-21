@@ -245,15 +245,6 @@ export function wireKey(symbol: RotationWireSymbol): string {
   return entry.wireToken;
 }
 
-/** The wire token for a declared `state` value, looked up by its domain symbol. */
-export function stateToken(symbol: RotationStateSymbol): string {
-  const entry = STATE_ENTRIES.find((candidate) => candidate.symbol === symbol);
-  if (!entry) {
-    throw new Error(`[rotation-lexicon] no entry declared for state symbol "${symbol}"`);
-  }
-  return entry.wireToken;
-}
-
 /** The domain symbol for a wire `state` token, or `undefined` for anything not in
  *  {@link STATE_ENTRIES} — an unrecognized token is a normalizer validation failure, not a
  *  lexicon lookup failure, so this returns `undefined` rather than throwing. */
