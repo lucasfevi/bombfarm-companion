@@ -133,18 +133,25 @@ function normalizeHero(
     drops,
   );
 
-  const energyFraction = collectDrop(
-    validateNumber(raw[wireKey('heroEnergyFraction')], heroPath(index, `.${wireKey('heroEnergyFraction')}`), {
-      min: 0,
-      max: 1,
-    }),
-    drops,
+  const validatedFraction = validateNumber(
+    raw[wireKey('heroEnergyFraction')],
+    heroPath(index, `.${wireKey('heroEnergyFraction')}`),
+    { min: 0, max: 1 },
   );
 
-  // A hero whose current energy exceeds its own ceiling is still self-consistent enough to
-  // render: keep both raw values, but the reported fraction cannot honestly be < 1 here.
-  const resolvedFraction =
-    energy !== undefined && energyMax !== undefined && energy > energyMax ? 1 : energyFraction;
+  // A hero whose current energy exceeds its own ceiling makes the wire's own fraction land above
+  // its declared [0,1] interval — that specific out-of-range case is clamped to 1 rather than
+  // dropped. A missing or wrong-typed fraction is still dropped and left absent regardless of the
+  // energy/max relationship: a value is never invented for a field the wire did not supply.
+  const energyExceedsMax = energy !== undefined && energyMax !== undefined && energy > energyMax;
+  let resolvedFraction = validatedFraction.value;
+  if (resolvedFraction === undefined) {
+    if (energyExceedsMax && validatedFraction.drop?.reason === 'out_of_range') {
+      resolvedFraction = 1;
+    } else if (validatedFraction.drop) {
+      drops.push(validatedFraction.drop);
+    }
+  }
 
   const statePath = heroPath(index, `.${wireKey('heroState')}`);
   const stateRaw = raw[wireKey('heroState')];

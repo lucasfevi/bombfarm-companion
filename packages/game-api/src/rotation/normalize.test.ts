@@ -273,8 +273,23 @@ describe('edge cases', () => {
     expect(result.drops).toEqual([]);
   });
 
-  it('energia_atual > energia_max → keeps both, clamps the fraction to 1.0 rather than dropping', () => {
+  it('energia_atual > energia_max with a present, valid energia_pct → keeps the wire fraction as-is, no drop', () => {
     const result = normalizeRotation(withHeroKeySet(0, 'energia_atual', 999), rosterHeroes);
+    const hero = required(
+      result.snapshot.heroes.find((candidate) => candidate.id === '555'),
+      'hero 555 missing from snapshot',
+    );
+    expect(hero.energy).toBe(999);
+    expect(hero.energyMax).toBe(238.63487669725936);
+    expect(hero.energyFraction).toBe(0.6967926613616499);
+    expect(result.drops.filter((drop) => drop.path.startsWith('heroes[0]'))).toEqual([]);
+  });
+
+  it('out-of-range energia_pct with energia_atual > energia_max → clamps the fraction to 1.0, no drop', () => {
+    const result = normalizeRotation(
+      withHeroPatch(0, { energia_atual: 999, energia_pct: 1.5 }),
+      rosterHeroes,
+    );
     const hero = required(
       result.snapshot.heroes.find((candidate) => candidate.id === '555'),
       'hero 555 missing from snapshot',
@@ -283,6 +298,44 @@ describe('edge cases', () => {
     expect(hero.energyMax).toBe(238.63487669725936);
     expect(hero.energyFraction).toBe(1);
     expect(result.drops.filter((drop) => drop.path.startsWith('heroes[0]'))).toEqual([]);
+  });
+
+  it('out-of-range energia_pct with energia_atual within max → drops the fraction, absent from the snapshot', () => {
+    const result = normalizeRotation(withHeroKeySet(0, 'energia_pct', 1.5), rosterHeroes);
+    const hero = required(
+      result.snapshot.heroes.find((candidate) => candidate.id === '555'),
+      'hero 555 missing from snapshot',
+    );
+    expect(hero.energyFraction).toBeUndefined();
+    expect(result.drops).toEqual([{ path: 'heroes[0].energia_pct', reason: 'out_of_range' }]);
+  });
+
+  it('missing energia_pct with energia_atual > energia_max → drops the fraction, absent regardless of the energy/max relationship', () => {
+    const clone = withHeroKeyDeleted(0, 'energia_pct');
+    const heroes = clone['heroes'] as Record<string, unknown>[];
+    required(heroes[0], 'no fixture hero at index 0').energia_atual = 999;
+    const result = normalizeRotation(clone, rosterHeroes);
+    const hero = required(
+      result.snapshot.heroes.find((candidate) => candidate.id === '555'),
+      'hero 555 missing from snapshot',
+    );
+    expect(hero.energy).toBe(999);
+    expect(hero.energyFraction).toBeUndefined();
+    expect(result.drops).toEqual([{ path: 'heroes[0].energia_pct', reason: 'missing' }]);
+  });
+
+  it('wrong-typed energia_pct with energia_atual > energia_max → drops the fraction, absent regardless of the energy/max relationship', () => {
+    const result = normalizeRotation(
+      withHeroPatch(0, { energia_atual: 999, energia_pct: 'lots' }),
+      rosterHeroes,
+    );
+    const hero = required(
+      result.snapshot.heroes.find((candidate) => candidate.id === '555'),
+      'hero 555 missing from snapshot',
+    );
+    expect(hero.energy).toBe(999);
+    expect(hero.energyFraction).toBeUndefined();
+    expect(result.drops).toEqual([{ path: 'heroes[0].energia_pct', reason: 'wrong_type' }]);
   });
 
   it('energia_max === 0 → no division by zero, no Infinity, no NaN anywhere in the snapshot', () => {

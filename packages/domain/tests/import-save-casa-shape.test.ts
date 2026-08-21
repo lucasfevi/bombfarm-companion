@@ -55,6 +55,18 @@ describe('import-save — casa resolves either the whole /rotation body or a bar
     expect(result.account.houseCycleSecs).toBeNull();
   });
 
+  it('a drifted /rotation body with no nested house resolves slots and house cycle seconds as absent, not a default', () => {
+    const result = parseAccountPayload(
+      payloadWithCasa({ field_size: 5, heroes: [], rescues_left: 1, rescues_max: 3 }),
+      [],
+    );
+
+    expect(result.account.houseIdx).toBeNull();
+    expect(result.account.houseLevel).toBeNull();
+    expect(result.account.slots).toBeUndefined();
+    expect(result.account.houseCycleSecs).toBeNull();
+  });
+
   it('a nested casa that is itself not an object falls back to treating the outer value as the house', () => {
     // `casa.casa` present but non-object (e.g. a stray scalar) is not the nested-house shape —
     // the resolver's fallback treats the whole `casa` value as the house object instead, so
