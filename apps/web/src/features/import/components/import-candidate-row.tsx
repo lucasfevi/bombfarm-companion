@@ -6,6 +6,7 @@ import { rarityLabel } from '@bombfarm/domain/game-labels';
 import { formatNumber } from '@/shared/lib/format-number';
 import type { Lang, Strings } from '@/shared/i18n';
 import { cn, DataTable, Switch, Tooltip } from '@bombfarm/ui';
+import { MAX_STARS } from '@bombfarm/domain/gear';
 import {
   HeroAbilityIcons,
   HeroAvatar,
@@ -25,7 +26,7 @@ export function ImportCandidateRow({
   lang: Lang;
 }) {
   const rarIdx = RARITIES.indexOf(candidate.rarity);
-  const stars = Math.max(0, Math.min(3, Math.round(candidate.record.stars ?? 0)));
+  const stars = Math.max(0, Math.min(MAX_STARS, Math.round(candidate.record.stars ?? 0)));
   const battleAllowed = candidate.record.battleAllowed ?? true;
   const statusLabel = battleAllowed ? t.heroBattleActive : t.heroBattleInactive;
   const statusTitle = battleAllowed ? t.heroBattleActiveTitle : t.heroBattleInactiveTitle;
