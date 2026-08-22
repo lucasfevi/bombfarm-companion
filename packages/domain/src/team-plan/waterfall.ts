@@ -99,13 +99,18 @@ function buildMoveList(
     const from = before.get(itemId) ?? { heroId: null, slot: null };
     const to = after.get(itemId) ?? { heroId: null, slot: null };
     if (from.heroId === to.heroId && from.slot === to.slot) continue;
-    if (from.heroId) {
+    // The baseline assignment only has slots for optimize-scoped heroes, so a donor's equipped
+    // piece sits in its `pool` and reads as ownerless here. `equippedBy` is the save's own
+    // truth: without it the plan claims the item comes from the inventory and never tells the
+    // player to strip it off the hero who is actually wearing it.
+    const fromHeroId = from.heroId ?? item.equippedBy;
+    if (fromHeroId) {
       unequips.push({
         phase: 'unequip',
         itemId,
         defId: item.defId,
         slot: item.slot,
-        fromHeroId: from.heroId,
+        fromHeroId,
         toHeroId: null,
       });
     }
@@ -115,7 +120,7 @@ function buildMoveList(
         itemId,
         defId: item.defId,
         slot: item.slot,
-        fromHeroId: from.heroId,
+        fromHeroId,
         toHeroId: to.heroId,
       });
     }
