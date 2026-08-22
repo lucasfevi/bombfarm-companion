@@ -1,8 +1,12 @@
 'use client';
 
 import { Panel, StatList, type StatListItem } from '@bombfarm/ui';
-import { panelHClass, panelTitleClass, tipClass } from '@bombfarm/ui/panel-field.recipe';
-import { AbilityIcon, GoldIcon } from '@/shared/game-art';
+import {
+  accountStatListClass,
+  panelHClass,
+  panelTitleClass,
+  tipClass,
+} from '@bombfarm/ui/panel-field.recipe';
 import { formatNumber } from '@/shared/lib/format-number';
 import { sub } from '@/shared/i18n';
 import { useAppLang } from '@/shared/context/app-lang';
@@ -26,16 +30,6 @@ import {
 const pct = (value: number) => `+${formatNumber(value, 2)}%`;
 const mult = (value: number) => `×${formatNumber(value, 3)}`;
 
-/** Ability art reused as stat art: each of these is the game's own icon for that stat's node. */
-const STAT_ABILITY_ICON = {
-  squadDmg: 'grito_guerra',
-  critChance: 'olho_clinico',
-  critDmg: 'golpe_brutal',
-  speed: 'marcha_acelerada',
-  energy: 'bateria_extra',
-  luck: 'fortuna',
-} as const;
-
 export function AccountTreePanel() {
   const { t } = useAppLang();
   const danoTotal = usePlannerStore(selectTreeDanoTotal);
@@ -53,12 +47,7 @@ export function AccountTreePanel() {
   const fieldSlots = usePlannerStore(selectFieldSlots);
 
   const damageItems: StatListItem[] = [
-    {
-      id: 'squad-dmg',
-      label: t.accountSquadDmg,
-      value: pct(squadDmgPct),
-      icon: <AbilityIcon code={STAT_ABILITY_ICON.squadDmg} size="xs" />,
-    },
+    { id: 'squad-dmg', label: t.accountSquadDmg, value: pct(squadDmgPct) },
     { id: 'geo-mult', label: t.accountGeoMult, value: mult(geoMult) },
     {
       id: 'dano-total',
@@ -76,43 +65,12 @@ export function AccountTreePanel() {
   ];
 
   const statItems: StatListItem[] = [
-    {
-      id: 'crit-chance',
-      label: t.treeCrit,
-      value: pct(critChance),
-      icon: <AbilityIcon code={STAT_ABILITY_ICON.critChance} size="xs" />,
-    },
-    {
-      id: 'crit-dmg',
-      label: t.treeCritDmg,
-      value: pct(critDmg),
-      icon: <AbilityIcon code={STAT_ABILITY_ICON.critDmg} size="xs" />,
-    },
-    {
-      id: 'speed',
-      label: t.treeSpeed,
-      value: pct(speed),
-      icon: <AbilityIcon code={STAT_ABILITY_ICON.speed} size="xs" />,
-    },
-    {
-      id: 'energy',
-      label: t.treeEnergy,
-      value: pct(energy),
-      icon: <AbilityIcon code={STAT_ABILITY_ICON.energy} size="xs" />,
-    },
-    {
-      id: 'gold',
-      label: t.treeTeamCoin,
-      tip: t.treeTeamCoinHint,
-      value: pct(teamCoinPct),
-      icon: <GoldIcon />,
-    },
-    {
-      id: 'luck',
-      label: t.accountLuckFlat,
-      value: `+${formatNumber(luckFlatPct, 2)} pp`,
-      icon: <AbilityIcon code={STAT_ABILITY_ICON.luck} size="xs" />,
-    },
+    { id: 'crit-chance', label: t.treeCrit, value: pct(critChance) },
+    { id: 'crit-dmg', label: t.treeCritDmg, value: pct(critDmg) },
+    { id: 'speed', label: t.treeSpeed, value: pct(speed) },
+    { id: 'energy', label: t.treeEnergy, value: pct(energy) },
+    { id: 'gold', label: t.treeTeamCoin, tip: t.treeTeamCoinHint, value: pct(teamCoinPct) },
+    { id: 'luck', label: t.accountLuckFlat, value: `+${formatNumber(luckFlatPct, 2)} pp` },
     { id: 'xp', label: t.treeXpMult, value: mult(xpMult) },
     {
       id: 'field-slots',
@@ -120,7 +78,10 @@ export function AccountTreePanel() {
       // The game's own summary shows the tree's BONUS; the usable total is one more, and it is
       // the total every farm computation caps the field at. Both, so neither reading surprises.
       tip: t.accountFieldSlotsTip,
-      value: fieldSlots != null ? sub(t.accountBonusOfTotal, { bonus: `+${fieldSlotsBonus}`, total: String(fieldSlots) }) : `+${fieldSlotsBonus}`,
+      value:
+        fieldSlots != null
+          ? sub(t.accountBonusOfTotal, { bonus: `+${fieldSlotsBonus}`, total: String(fieldSlots) })
+          : `+${fieldSlotsBonus}`,
     },
     { id: 'bag-tabs', label: t.accountBagTabs, value: `+${bagTabsBonus}` },
   ];
@@ -131,9 +92,19 @@ export function AccountTreePanel() {
         <h2 className={panelTitleClass}>{t.panelTree}</h2>
       </div>
       <p className={tipClass}>{t.accountTreeTip}</p>
-      <StatList variant="phases" items={damageItems} aria-label={t.accountTreeDamageGroup} />
+      <StatList
+        variant="phases"
+        className={accountStatListClass}
+        items={damageItems}
+        aria-label={t.accountTreeDamageGroup}
+      />
       <div className="mt-3 border-t border-line pt-3">
-        <StatList variant="phases" items={statItems} aria-label={t.accountTreeBonusGroup} />
+        <StatList
+          variant="phases"
+          className={accountStatListClass}
+          items={statItems}
+          aria-label={t.accountTreeBonusGroup}
+        />
       </div>
     </Panel>
   );

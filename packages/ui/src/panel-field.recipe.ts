@@ -252,6 +252,17 @@ export const statListClass =
 /** Phases intel panels — compact rows; value column sizes to content (map names stay one line). */
 export const phasesStatListClass =
   'm-0 grid gap-0 [&_>div]:grid [&_>div]:grid-cols-[minmax(0,1fr)_auto] [&_>div]:items-start [&_>div]:gap-x-3 [&_>div]:border-b [&_>div]:border-[color-mix(in_oklch,var(--line)_70%,transparent)] [&_>div]:py-1.5 [&_>div:last-child]:border-b-0 [&_>div:last-child]:pb-0 [&_dt]:m-0 [&_dt]:pt-0.5 [&_dt]:text-[11px] [&_dt]:leading-[1.35] [&_dt]:text-muted [&_dd]:m-0 [&_dd]:min-w-[7rem] [&_dd]:text-right [&_dd]:font-mono [&_dd]:text-xs [&_dd]:font-semibold [&_dd]:text-ink [&_dd]:tabular-nums [&_dd]:leading-snug [&_dd]:whitespace-nowrap';
+/**
+ * Account page stat rows — every row the same height, and vertically centred.
+ *
+ * The Account panels are pure readouts with no art and no wrapping labels, so a row's height
+ * should not depend on whether its label happens to carry a tooltip underline or a second line.
+ * Layered over {@link phasesStatListClass}, which stays `items-start` for the Phases panels whose
+ * labels genuinely do wrap.
+ */
+export const accountStatListClass =
+  '[&_>div]:min-h-8 [&_>div]:items-center [&_dt]:pt-0';
+
 /** A `StatList` row that cannot apply right now — dimmed rather than hidden, so a value that
  *  cannot be read as live never sits at full contrast next to the rows that are. */
 export const statListMutedRowClass = 'opacity-45';

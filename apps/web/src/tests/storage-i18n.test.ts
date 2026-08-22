@@ -29,13 +29,14 @@ describe('account house chrome (AHK-11)', () => {
     expect(STRINGS.pt.houseLevelLabel).not.toMatch(/\bNv casa\b/);
   });
 
-  it('the next-House labels name the House they describe, in both langs', () => {
-    expect(STRINGS.en.accountNextHouseCycle).toContain('{house}');
-    expect(STRINGS.en.accountNextHouseSlots).toContain('{house}');
-    expect(STRINGS.pt.accountNextHouseCycle).toContain('{house}');
-    expect(STRINGS.pt.accountNextHouseSlots).toContain('{house}');
-    expect(sub(STRINGS.en.accountNextHouseCycle, { house: 'Casa IV' })).toBe('Casa IV cycle');
-    expect(sub(STRINGS.pt.accountNextHouseCycle, { house: 'Casa IV' })).toBe('Ciclo da Casa IV');
+  it('the next-House heading names the House it introduces, in both langs', () => {
+    // The two rows under it reuse the current-House labels, so the heading is the only thing
+    // saying which House they describe — a heading that lost its placeholder would leave the
+    // block ambiguous rather than merely untranslated.
+    expect(STRINGS.en.accountNextHouse).toContain('{house}');
+    expect(STRINGS.pt.accountNextHouse).toContain('{house}');
+    expect(sub(STRINGS.en.accountNextHouse, { house: 'Casa IV' })).toBe('Next House — Casa IV');
+    expect(sub(STRINGS.pt.accountNextHouse, { house: 'Casa IV' })).toBe('Próxima Casa — Casa IV');
   });
 
   it('the total-damage tip prints the product, not three unrelated numbers', () => {

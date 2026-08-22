@@ -11,8 +11,13 @@ import {
 } from '@bombfarm/domain/model';
 import { houseIconSrc } from '@bombfarm/domain/wiki-assets';
 import { Panel, StatList, type StatListItem } from '@bombfarm/ui';
-import { panelHClass, panelTitleClass, tipClass } from '@bombfarm/ui/panel-field.recipe';
-import { HouseIcon } from '@/shared/game-art';
+import {
+  accountStatListClass,
+  heroAbilTitleClass,
+  panelHClass,
+  panelTitleClass,
+  tipClass,
+} from '@bombfarm/ui/panel-field.recipe';
 import { sub } from '@/shared/i18n';
 import { useAppLang } from '@/shared/context/app-lang';
 import {
@@ -28,6 +33,27 @@ import {
 function restText(totalSeconds: number): string {
   const { minutes, seconds } = splitHouseRest(totalSeconds);
   return `${minutes} min ${seconds} s`;
+}
+
+/** A signed duration, dropping the minutes part when the gap is under a minute. */
+function restDeltaText(deltaSeconds: number): string {
+  const sign = deltaSeconds < 0 ? '−' : '+';
+  const { minutes, seconds } = splitHouseRest(Math.abs(deltaSeconds));
+  return minutes === 0 ? `${sign}${seconds} s` : `${sign}${minutes} min ${seconds} s`;
+}
+
+/**
+ * The upgrade delta, or `null` when there is none.
+ *
+ * `betterWhen` is which direction counts as an improvement, because the two rows disagree: a
+ * SHORTER cycle is better, a LARGER slot count is better. A zero delta returns `null` rather than
+ * rendering `+0` — Casa IV → Casa V adds no slots at all, and a green `+0` there would read as a
+ * gain the upgrade does not give.
+ */
+function deltaTone(delta: number, betterWhen: 'lower' | 'higher'): string | null {
+  if (delta === 0) return null;
+  const isBetter = betterWhen === 'lower' ? delta < 0 : delta > 0;
+  return isBetter ? 'text-up' : 'text-down';
 }
 
 export function AccountHousePanel() {
@@ -52,18 +78,9 @@ export function AccountHousePanel() {
   const nextIdx = houseIdx + 1;
   const hasNext = nextIdx < HOUSES.length;
 
-  const items: StatListItem[] = [
-    {
-      id: 'house',
-      label: t.house,
-      value: houseLabel(houseIdx, lang),
-      icon: <HouseIcon houseIdx={houseIdx} />,
-    },
-    {
-      id: 'level',
-      label: t.houseLevelLabel,
-      value: `${houseLevel} / ${HOUSE_MAX_LEVEL}`,
-    },
+  const currentItems: StatListItem[] = [
+    { id: 'house', label: t.house, value: houseLabel(houseIdx, lang) },
+    { id: 'level', label: t.houseLevelLabel, value: `${houseLevel} / ${HOUSE_MAX_LEVEL}` },
     {
       id: 'cycle',
       label: t.accountHouseCycle,
@@ -78,29 +95,46 @@ export function AccountHousePanel() {
     },
   ];
 
+  let nextItems: StatListItem[] = [];
   if (hasNext) {
     // The NEXT house at level 1 — its base, which is what the game reports for a house the
     // account has not levelled yet. Read from the wiki-sourced table rather than the save: the
     // save only carries a countdown for houses this account owns.
-    items.push(
-      {
-        id: 'next-house',
-        label: t.accountNextHouse,
-        tip: t.accountNextHouseTip,
-        value: houseLabel(nextIdx, lang),
-        icon: <HouseIcon houseIdx={nextIdx} />,
-      },
+    const nextRest = houseRestSeconds(nextIdx, 1);
+    const nextSlots = CASA_SLOTS_PER_HOUSE[nextIdx] ?? slots;
+    const restDelta = nextRest - Math.round(currentRest);
+    const slotsDelta = nextSlots - slots;
+    const restTone = deltaTone(restDelta, 'lower');
+    const slotsTone = deltaTone(slotsDelta, 'higher');
+
+    nextItems = [
       {
         id: 'next-cycle',
-        label: sub(t.accountNextHouseCycle, { house: houseLabel(nextIdx, lang) }),
-        value: restText(houseRestSeconds(nextIdx, 1)),
+        label: t.accountHouseCycle,
+        value: (
+          <>
+            {restText(nextRest)}
+            {restTone ? (
+              <span className={`ml-2 ${restTone}`}>{restDeltaText(restDelta)}</span>
+            ) : null}
+          </>
+        ),
       },
       {
         id: 'next-slots',
-        label: sub(t.accountNextHouseSlots, { house: houseLabel(nextIdx, lang) }),
-        value: CASA_SLOTS_PER_HOUSE[nextIdx] ?? slots,
+        label: t.accountCasaSlots,
+        value: (
+          <>
+            {nextSlots}
+            {slotsTone ? (
+              <span className={`ml-2 ${slotsTone}`}>
+                {slotsDelta > 0 ? `+${slotsDelta}` : `−${Math.abs(slotsDelta)}`}
+              </span>
+            ) : null}
+          </>
+        ),
       },
-    );
+    ];
   }
 
   return (
@@ -116,7 +150,16 @@ export function AccountHousePanel() {
         className="mx-auto mb-2 h-20 w-auto object-contain"
       />
       <p className={tipClass}>{hasNext ? t.accountHouseTip : t.accountHouseTipMaxed}</p>
-      <StatList variant="phases" items={items} />
+      <StatList variant="phases" className={accountStatListClass} items={currentItems} />
+
+      {hasNext ? (
+        <div className="mt-3 border-t border-line pt-3">
+          <h3 className={heroAbilTitleClass}>
+            {sub(t.accountNextHouse, { house: houseLabel(nextIdx, lang) })}
+          </h3>
+          <StatList variant="phases" className={accountStatListClass} items={nextItems} />
+        </div>
+      ) : null}
     </Panel>
   );
 }

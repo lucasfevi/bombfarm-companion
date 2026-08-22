@@ -16,10 +16,7 @@ export const en = {
   accountHouseCycleTip: "A full 0 → 100% refill for one hero. Taken from your save when it recorded one for this exact House and level, otherwise interpolated between the House's own level-1 and level-20 figures.",
   accountCasaSlots: "Recovery slots",
   accountCasaSlotsTip: "How many heroes the House refills at the same time. Heroes beyond this wait at frozen energy until a slot frees up.",
-  accountNextHouse: "Next House",
-  accountNextHouseTip: "What unlocking the next House buys you, at its level 1.",
-  accountNextHouseCycle: "{house} cycle",
-  accountNextHouseSlots: "{house} slots",
+  accountNextHouse: "Next House — {house}",
 
   accountTreeTip: "Every account-wide bonus your skill tree grants, as the game totals them. Read-only — re-import your save to refresh.",
   accountTreeDamageGroup: "Damage",
@@ -65,10 +62,7 @@ export const pt: typeof en = {
   accountHouseCycleTip: "Um enchimento completo de 0 → 100% para um herói. Vem do seu save quando ele registrou um valor para esta Casa e nível exatos; caso contrário é interpolado entre os valores de nível 1 e nível 20 da própria Casa.",
   accountCasaSlots: "Vagas de descanso",
   accountCasaSlotsTip: "Quantos heróis a Casa recupera ao mesmo tempo. Heróis além disso esperam com energia congelada até vagar um espaço.",
-  accountNextHouse: "Próxima Casa",
-  accountNextHouseTip: "O que desbloquear a próxima Casa te dá, no nível 1 dela.",
-  accountNextHouseCycle: "Ciclo da {house}",
-  accountNextHouseSlots: "Vagas da {house}",
+  accountNextHouse: "Próxima Casa — {house}",
 
   accountTreeTip: "Todos os bônus da conta que sua árvore de habilidades concede, como o jogo os soma. Só leitura — reimporte o save para atualizar.",
   accountTreeDamageGroup: "Dano",

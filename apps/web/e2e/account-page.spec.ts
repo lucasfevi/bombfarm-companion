@@ -41,6 +41,24 @@ function accountRoster(lang: 'pt' | 'en'): SeededState {
   };
 }
 
+/** The same roster parked on a specific House, for the next-House edge cases. */
+function atHouse(lang: 'pt' | 'en', houseIdx: number, houseLevel: number, slots: number): SeededState {
+  const seeded = accountRoster(lang);
+  return {
+    ...seeded,
+    account: {
+      ...seeded.account!,
+      context: { ...seeded.account!.context, houseIdx, houseLevel },
+      slots,
+      // The captured cycle anchors to the imported house/level; move the picker and it must fall
+      // back to the table, which is what these cases are about.
+      houseCycleSecs: null,
+      houseCycleSecsHouseIdx: null,
+      houseCycleSecsLevel: null,
+    },
+  };
+}
+
 function panel(page: Page, heading: RegExp) {
   return page.locator('section').filter({
     has: page.getByRole('heading', { name: heading, level: 2 }),
@@ -98,14 +116,45 @@ test.describe('account page — House panel', () => {
     await expect(house.getByText('7', { exact: true })).toBeVisible();
   });
 
-  test('previews what the next House buys, at its own level 1', async ({ page }) => {
+  test('the next House is a heading plus its gains, shown as green deltas', async ({ page }) => {
     await openAccount(page, 'en');
     const house = panel(page, /^House$/i);
 
-    await expect(house).toContainText('House IV (Legendary)');
-    // Casa IV base = 840 s = 14 min 0 s, and its slot-ladder value is 9.
+    await expect(
+      house.getByRole('heading', { name: /Next House — House IV \(Legendary\)/i }),
+    ).toBeVisible();
+    // Casa IV base = 840 s = 14 min 0 s, against Casa III level 6's 944 s → 1 min 44 s faster,
+    // and its ladder gives 9 slots against 7.
     await expect(house).toContainText('14 min 0 s');
-    await expect(house.getByText('9', { exact: true })).toBeVisible();
+    const faster = house.getByText('−1 min 44 s');
+    const moreSlots = house.getByText('+2', { exact: true });
+    await expect(faster).toBeVisible();
+    await expect(moreSlots).toBeVisible();
+    // Green, via the design system's own improvement token — not a hardcoded colour.
+    await expect(faster).toHaveClass(/text-up/);
+    await expect(moreSlots).toHaveClass(/text-up/);
+  });
+
+  test('a delta of zero is omitted rather than shown as +0', async ({ page }) => {
+    // Casa IV → Casa V keeps the slot count at 9, so only the cycle improves.
+    await seedLocalStorage(page, atHouse('en', 3, 1, 9));
+    await page.goto('/');
+    await gotoAccountPage(page);
+    const house = panel(page, /^House$/i);
+
+    await expect(house.getByText('−3 min 0 s')).toBeVisible();
+    await expect(house.getByText('+0', { exact: true })).toHaveCount(0);
+    await expect(house.getByText('−0', { exact: true })).toHaveCount(0);
+  });
+
+  test('the last House shows no next-House block at all', async ({ page }) => {
+    await seedLocalStorage(page, atHouse('en', 4, 20, 9));
+    await page.goto('/');
+    await gotoAccountPage(page);
+    const house = panel(page, /^House$/i);
+
+    await expect(house).toContainText('House V (Mythic)');
+    await expect(house.getByRole('heading', { name: /Next House/i })).toHaveCount(0);
   });
 
   test('PT chrome renders the House panel in Portuguese', async ({ page }) => {
@@ -114,6 +163,7 @@ test.describe('account page — House panel', () => {
     await expect(house).toContainText('Casa III (Épico)');
     await expect(house).toContainText('15 min 44 s');
     await expect(house).toContainText('6 / 20');
+    await expect(house.getByRole('heading', { name: /Próxima Casa — Casa IV/i })).toBeVisible();
   });
 });
 
@@ -135,6 +185,19 @@ test.describe('account page — Skill Tree panel', () => {
     await openAccount(page, 'en');
     const tree = panel(page, /^Skill Tree$/i);
     await expect(tree).toContainText('+8 (9 total)');
+  });
+
+  test('carries no icons, and every row is exactly the same height', async ({ page }) => {
+    await openAccount(page, 'en');
+    const tree = panel(page, /^Skill Tree$/i);
+
+    await expect(tree.locator('img')).toHaveCount(0);
+
+    const heights = await tree.locator('dl > div').evaluateAll((rows) =>
+      rows.map((row) => Math.round(row.getBoundingClientRect().height)),
+    );
+    expect(heights.length).toBeGreaterThan(6);
+    expect(new Set(heights).size).toBe(1);
   });
 
   test('carries luck and the XP multiplier, and stays entirely read-only', async ({ page }) => {
