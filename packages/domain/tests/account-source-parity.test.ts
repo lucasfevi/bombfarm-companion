@@ -15,6 +15,7 @@
 // where the two now deliberately diverge — asserted directly below, in both directions, rather
 // than left as an unstated exception to the headline equality claim.
 import { describe, expect, it } from 'vitest';
+import type { AccountPayload } from '@bombfarm/contracts';
 import { parseAccountPayload, parseSaveFile } from '@bombfarm/domain/import-save';
 import { deriveAccountFidelity } from '@bombfarm/domain/account-fidelity';
 import type { HeroRecord } from '@bombfarm/domain/shims/storage';
@@ -51,8 +52,44 @@ describe('parseAccountPayload and parseSaveFile agree on every canonical fixture
         id: 'existing-1',
         sourceId: firstSourceId,
         name: 'Pre-existing',
-        updatedAt: '2026-01-01T00:00:00.000Z',
-      } as HeroRecord,
+        updatedAt: 1767225600000,
+        rarity: 'Comum',
+        level: 1,
+        stars: 0,
+        naked: {
+          attack: 0,
+          energy: 0,
+          speed: 0,
+          critChance: 0,
+          critDmg: 0,
+          penetration: 0,
+          cdr: 0,
+          luck: 0,
+        },
+        loadout: {},
+        altLoadout: null,
+        gearedOverride: {
+          attack: 0,
+          energy: 0,
+          speed: 0,
+          critChance: 0,
+          critDmg: 0,
+          penetration: 0,
+          cdr: 0,
+          luck: 0,
+        },
+        abilities: {},
+        pts: {
+          attack: 0,
+          energy: 0,
+          speed: 0,
+          critChance: 0,
+          critDmg: 0,
+          penetration: 0,
+          cdr: 0,
+          luck: 0,
+        },
+      },
     ];
 
     const viaFile = parseSaveFile(raw, existing);
@@ -69,7 +106,7 @@ describe('rejections are preserved through the seam (ACS-03)', () => {
   it('heroes omitted: notASaveFile through both entry points', () => {
     const payload = { not_a_save: true };
     const viaFile = parseSaveFile(payload, []);
-    const viaEntryPoint = parseAccountPayload(payload, []);
+    const viaEntryPoint = parseAccountPayload(payload as AccountPayload, []);
     expect(viaFile.rejected).toEqual({ reason: 'notASaveFile', heroNames: [] });
     expect(viaEntryPoint.rejected).toEqual({ reason: 'notASaveFile', heroNames: [] });
     expect(viaFile).toEqual(viaEntryPoint);
@@ -78,7 +115,7 @@ describe('rejections are preserved through the seam (ACS-03)', () => {
   it('heroes not an array: notASaveFile through both entry points', () => {
     const payload = { heroes: 'not-an-array' };
     const viaFile = parseSaveFile(payload, []);
-    const viaEntryPoint = parseAccountPayload(payload, []);
+    const viaEntryPoint = parseAccountPayload(payload as unknown as AccountPayload, []);
     expect(viaFile.rejected).toEqual({ reason: 'notASaveFile', heroNames: [] });
     expect(viaEntryPoint.rejected).toEqual({ reason: 'notASaveFile', heroNames: [] });
     expect(viaFile).toEqual(viaEntryPoint);
@@ -86,7 +123,7 @@ describe('rejections are preserved through the seam (ACS-03)', () => {
 
   it('payload is null: notASaveFile through both entry points, never throws', () => {
     const viaFile = parseSaveFile(null, []);
-    const viaEntryPoint = parseAccountPayload(null, []);
+    const viaEntryPoint = parseAccountPayload(null as unknown as AccountPayload, []);
     expect(viaFile.rejected).toEqual({ reason: 'notASaveFile', heroNames: [] });
     expect(viaEntryPoint.rejected).toEqual({ reason: 'notASaveFile', heroNames: [] });
     expect(viaFile).toEqual(viaEntryPoint);
@@ -94,7 +131,7 @@ describe('rejections are preserved through the seam (ACS-03)', () => {
 
   it('payload is a non-object (number): notASaveFile through both entry points, never throws', () => {
     const viaFile = parseSaveFile(42, []);
-    const viaEntryPoint = parseAccountPayload(42, []);
+    const viaEntryPoint = parseAccountPayload(42 as AccountPayload, []);
     expect(viaFile.rejected).toEqual({ reason: 'notASaveFile', heroNames: [] });
     expect(viaEntryPoint.rejected).toEqual({ reason: 'notASaveFile', heroNames: [] });
     expect(viaFile).toEqual(viaEntryPoint);
