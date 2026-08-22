@@ -8,6 +8,7 @@ import type {
   LiveCurrency,
   LiveTick,
 } from '@bombfarm/contracts';
+import { isLiveCurrency } from '@bombfarm/contracts';
 import { buildSnapshot } from '@bombfarm/game-data';
 import { tickToRawGameState } from '../live-source/tick-to-raw-state.js';
 import { log } from '../logging.js';
@@ -273,7 +274,7 @@ export class GameReaderService {
       return;
     }
 
-    if (!this.latestLiveTick || this.latestLiveCurrency?.kind !== 'live') {
+    if (!this.latestLiveTick || !this.latestLiveCurrency || !isLiveCurrency(this.latestLiveCurrency)) {
       this.updateStatus({
         status: 'stale',
         updatedAt: new Date().toISOString(),

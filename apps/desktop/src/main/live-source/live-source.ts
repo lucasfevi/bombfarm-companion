@@ -11,7 +11,7 @@ import type {
   RecoveryCountdown,
   RotationSnapshot,
 } from '@bombfarm/contracts';
-import { liveGap } from '@bombfarm/contracts';
+import { isLiveCurrency, liveGap } from '@bombfarm/contracts';
 import { normalizeRotation } from '@bombfarm/game-api';
 import {
   createInitialFieldCountdownState,
@@ -189,7 +189,7 @@ export class LiveSource {
   }
 
   getView(): LiveView {
-    const recovery = this.#currency.kind === 'live' ? this.#recovery : freezeRecoveryCountdowns(this.#fieldState);
+    const recovery = isLiveCurrency(this.#currency) ? this.#recovery : freezeRecoveryCountdowns(this.#fieldState);
     return {
       currency: this.#currency,
       field: this.#field,
@@ -207,7 +207,7 @@ export class LiveSource {
     if (view.payload.casa === undefined) return;
     const { snapshot } = normalizeRotation(view.payload.casa, view.payload.heroes);
     this.#rotation = snapshot;
-    if (this.#currency.kind === 'live') {
+    if (isLiveCurrency(this.#currency)) {
       this.#touch();
       return;
     }
