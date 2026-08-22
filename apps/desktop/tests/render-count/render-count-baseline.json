@@ -7,9 +7,18 @@
     "distinctComponents": 60
   },
   "recordedOnly": {
-    "note": "Measured across 10 runs in two sessions on one machine, each from a fresh build (pnpm test:render-count, matching what CI runs): componentRenders varies run to run (background game:status churn — see render-count.spec.mjs's module doc comment — is not phase-locked to the measurement window), so these are not exact-match gated. The quiet range is wider than any single session observed: one session read 19596-20976 and another read 18768 repeatably, which is why a run landing outside a range is reported rather than failed. distinctComponents IS exact-match gated above; it stayed 60 across every run.",
-    "quietComponentRendersRange": [18768, 20976],
-    "oneHeroChangeComponentRendersRange": [4551, 5655],
-    "oneHeroChangeNetOfBackgroundRange": [0, 475]
+    "note": "Measured across runs on one machine, each from a fresh build (pnpm test:render-count, matching what CI runs): componentRenders varies run to run because the remaining background churn is not phase-locked to the measurement window, so these are not exact-match gated and a run landing outside a range is reported rather than failed. These ranges were re-measured after the status-push fix: a quiet window used to cost 18216-20976 component renders because a status event fired on every poll, and now costs roughly half that. What remains is the raw snapshot push, which fires on genuinely changed state and still lands in state above the planning tree. distinctComponents IS exact-match gated above; it stayed 60 across every run.",
+    "quietComponentRendersRange": [
+      8970,
+      10350
+    ],
+    "oneHeroChangeComponentRendersRange": [
+      2343,
+      2619
+    ],
+    "oneHeroChangeNetOfBackgroundRange": [
+      0,
+      475
+    ]
   }
 }

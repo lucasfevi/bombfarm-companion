@@ -140,9 +140,11 @@ function HomePageContent({
     const offStatus = bridge.on('game:status', (next) => {
       setStatus(next);
     });
+    // Deliberately does not touch status: main emits `game:status` first whenever the status
+    // actually changed, and every snapshot carries a status object with a fresh read timestamp,
+    // so setting it here re-introduced a new reference — and a full re-render — on every poll.
     const offSnapshot = bridge.on('snapshot:updated', (next) => {
       setSnapshot(next);
-      setStatus(next.status);
     });
 
     return () => {
