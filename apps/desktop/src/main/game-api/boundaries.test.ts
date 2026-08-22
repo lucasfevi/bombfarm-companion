@@ -250,7 +250,7 @@ describe('Guard 3 — no path to the network or the token file bypasses consent 
 });
 
 // -------------------------------------------------------------------------------------------
-// Guard 4 — the account path never reaches the live tap (LAR-26, D24). The account's only
+// Guard 4 — the account path never reaches the live tap. The account's only
 // legitimate source is the authenticated route this file itself drives (`readSection`/
 // `assembleAccountPayload`); the live tap (`live-source/`) reads intercepted traffic outside
 // that route, and — same as the OS-level memory read it replaced — must never become a second,
@@ -461,7 +461,7 @@ describe('Guard 4 parser — the new edge shapes it walks, and the type-only edg
   });
 });
 
-describe('Guard 4 — the account path never reaches the live tap (LAR-26, D24)', () => {
+describe('Guard 4 — the account path never reaches the live tap', () => {
   const { violations, visited } = walkImportGraph(ACCOUNT_REFRESH_FILE);
 
   it('walked a non-empty import graph from account-refresh.ts', () => {
@@ -472,7 +472,7 @@ describe('Guard 4 — the account path never reaches the live tap (LAR-26, D24)'
   it('reaches no edge into live-source/ or its LiveSource class', () => {
     expect(
       violations,
-      `D24: the account is never sourced from the live tap, in this feature or as a fallback. Violations: ${JSON.stringify(violations)}`,
+      `The account is never sourced from the live tap, in this feature or as a fallback. Violations: ${JSON.stringify(violations)}`,
     ).toEqual([]);
   });
 });

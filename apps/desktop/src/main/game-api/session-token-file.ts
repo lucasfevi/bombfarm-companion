@@ -5,8 +5,8 @@ import type { GrantedConsent, SessionCfgParseReason, SessionToken } from '@bombf
 import { parseSessionCfg } from '@bombfarm/game-api';
 
 /**
- * The gated fs read (LAR-11, the same one-module split `AD-024` applies to network access,
- * applied here to fs instead). Takes a
+ * The gated fs read, the same one-module split applied to network access,
+ * applied here to fs instead. Takes a
  * `GrantedConsent`, so calling it for anything but a granted player is a compile error — the
  * type half of "never open `session.cfg` before consent". Never throws: every failure mode
  * (missing file, unreadable, malformed content) is a distinct named result.
