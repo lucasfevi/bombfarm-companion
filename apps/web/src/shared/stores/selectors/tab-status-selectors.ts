@@ -77,7 +77,5 @@ export function selectPlannerTabStatuses(state: PlannerStore): PlannerTabStatuse
 export const selectSetupReady = (state: PlannerStore) => selectPlannerTabStatuses(state).setupReady;
 export const selectHeroTabStatus = (state: PlannerStore) => selectPlannerTabStatuses(state).heroTabStatus;
 export const selectGearTabStatus = (state: PlannerStore) => selectPlannerTabStatuses(state).gearTabStatus;
-export const selectAccountTabStatus = (state: PlannerStore) =>
-  selectPlannerTabStatuses(state).accountTabStatus;
 export const selectPointsTabStatus = (state: PlannerStore) =>
   selectPlannerTabStatuses(state).pointsTabStatus;

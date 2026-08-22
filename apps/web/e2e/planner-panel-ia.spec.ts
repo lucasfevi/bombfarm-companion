@@ -6,15 +6,20 @@ function activePanel(page: import('@playwright/test').Page) {
 }
 
 test.describe('planner tabs IA (PTI)', () => {
-  test('tab list exposes Abilities / Gear / Account / Points (no Check)', async ({ page }) => {
+  test('tab list exposes Abilities / Gear / Points (no Check, no Account)', async ({ page }) => {
     await seedLocalStorage(page, { ...importedRoster, lang: 'en' });
     await page.goto('/');
     await selectSavedHero(page, 'Cora');
 
-    for (const name of [/^Abilities$/i, /^Gear$/i, /^Account$/i, /^Points$/i]) {
+    for (const name of [/^Abilities$/i, /^Gear$/i, /^Points$/i]) {
       await expect(page.getByRole('tab', { name })).toBeVisible();
     }
     await expect(page.getByRole('tab', { name: /^Check$/i })).toHaveCount(0);
+    // Account left the tab strip for a nav route of its own.
+    await expect(page.getByRole('tab', { name: /^Account$/i })).toHaveCount(0);
+    await expect(
+      page.getByRole('navigation').getByRole('link', { name: /^Account$/i }),
+    ).toBeVisible();
   });
 
   test('Points tab stacks Points / Next point then Stats then Effective', async ({ page }) => {
@@ -271,5 +276,17 @@ test.describe('HeroStrip reset-advice warn chrome + roster banner', () => {
     await expect(strip.getByText(/required/i)).toHaveCount(0);
     const warnInputs = strip.locator('input.border-warn, [data-num].border-warn');
     await expect(warnInputs).toHaveCount(0);
+  });
+
+  test('advice column has no Context panel heading', async ({ page }) => {
+    // Moved here from the account specs when the Account panel became its own page: this has
+    // always been about the planner's Points tab, not about the Account panel.
+    await seedLocalStorage(page, importedRoster);
+    await page.goto('/');
+    await selectSavedHero(page, 'Cora');
+    await page.getByRole('tab', { name: /^pontos$/i }).click();
+    const advice = activePanel(page);
+    await expect(advice.getByRole('heading', { name: /^Contexto$/i })).toHaveCount(0);
+    await expect(advice.getByRole('heading', { name: /^Context$/i })).toHaveCount(0);
   });
 });

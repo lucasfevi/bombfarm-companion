@@ -1,4 +1,4 @@
-export const PLANNER_TAB_IDS = ['hero', 'gear', 'account', 'points'] as const;
+export const PLANNER_TAB_IDS = ['hero', 'gear', 'points'] as const;
 export type PlannerTabId = (typeof PLANNER_TAB_IDS)[number];
 
 export const PLANNER_TAB_STORAGE_KEY = 'bf-hp-planner-tab-v1';
@@ -12,6 +12,8 @@ export function loadPlannerTab(setupReady: boolean): PlannerTabId {
   try {
     const raw = window.localStorage.getItem(PLANNER_TAB_STORAGE_KEY);
     if (raw === 'check') return 'points';
+    // A stored `'account'` needs no branch: the tab is a route of its own now, so it fails
+    // `isPlannerTabId` and falls through to the same default a first-time visitor gets.
     if (isPlannerTabId(raw)) return raw;
   } catch {
     /* ignore */

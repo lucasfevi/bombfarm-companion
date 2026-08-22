@@ -161,6 +161,22 @@ export function dropIconSrc(dropId: DropRateId, ato: number): string | null {
   }
 }
 
+/**
+ * The House itself, by 0-based house index (Casa I..V).
+ *
+ * Same five sprites `dropIconSrc('time', ato)` reaches, and deliberately so: the game files one
+ * House per difficulty band, and the five Casas run through the same five rarity tiers in the
+ * same order (Incomum → Mítico). So Casa N and band N are the same picture, and a player already
+ * reads the colour language — green Casa I through red Casa V.
+ *
+ * Out-of-range indices clamp rather than return `null`: every caller has a real house in hand,
+ * and a missing sprite would silently drop the row's art instead of showing the nearest House.
+ */
+export function houseIconSrc(houseIndex: number): string {
+  const band = clampAto(houseIndex + 1);
+  return `${WIKI_ASSETS_BASE}/houses/house_${DIFFICULTY_SLUG[band - 1]}.png`;
+}
+
 /** Wiki gold coin chrome (nav footer icon). */
 export function goldIconSrc(): string {
   return `${WIKI_ASSETS_BASE}/nav/icon_gold.png`;

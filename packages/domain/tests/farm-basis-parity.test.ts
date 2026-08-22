@@ -1,6 +1,27 @@
 /**
  * Proof that the `farm-rate.ts` basis seam is a byte-identical refactor, not a rewrite.
  *
+ * RE-RECORDED 2026-08-21 for the additive drain-reduction fix: a hero's own drain reduction and
+ * the team's used to be combined multiplicatively; measurement showed they add instead, each
+ * capped at 20%, floored at a combined 60%. Jon is this corpus's only hero with both arms —
+ * Bateria Extra rank 20 (self, capped at 20%) and Fôlego de Mineiro rank 18 (team, 18%) — so his
+ * own combined rate moves from 0.8 × 0.82 = 0.656 to 1 − 0.20 − 0.18 = 0.62. Diffed field by
+ * field against the previous capture:
+ *
+ * - `heroFacts.uptime` moved on all 5 heroes: Jon's own move is the large one, and because
+ *   auras are priced over the rotation (weighted by every hero's uptime), his slightly changed
+ *   presence weight ripples a smaller, second-order move into the shared roster-wide Fôlego
+ *   total the other 4 heroes read — none of whom carry a drain ability of their own.
+ *   `avgHitBase`, `penetrationPct`, `fuseSecs`, `walkSpeedCells`, `cycleSecs`, `plantsPerSec`,
+ *   `blocksPerBomb`, `heroLuckPct`, `veiaOuroLevel`, `fortunaLevel` and `degenerate` are
+ *   byte-identical — the fix touches drain and nothing upstream of it.
+ * - `rows` — every throughput column downstream of uptime moved on all 600 rows
+ *   (`goldPerHour`, `chestsPerHour`, `keysPerHour`, `gemsPerHour`, `timePiecesPerHour`,
+ *   `stoneChestsPerHour`, `xpPerHour`, `propsPerHour`, `cyclesPerHour`, `clearSecs`,
+ *   `expectedHtk`, `heroesOnField`). `mitigationPct`, `ato`, `gate`, `locked`, `oneShot`,
+ *   `infeasible`, `itemLevels`, `itemLevelLabel`, `jaulaEarlyCapPct`, `jaulaWindowSecs`,
+ *   `gateTimerSecs`, `fortunaAura` and `concurrencyScale` are byte-identical.
+ *
  * RE-RECORDED 2026-08-20 for two changes at once — team auras priced over the ROTATION rather
  * than off the deployed line-up (`computeTeamBuffsOverRotation`), and the `HOP_DENSITY_EXPONENT`
  * refit (0.5 → 0.124). Diffed field by field against the previous capture:

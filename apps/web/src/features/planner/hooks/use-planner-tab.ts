@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import {
+  isPlannerTabId,
   loadPlannerTab,
   savePlannerTab,
   type PlannerTabId,
@@ -15,9 +16,7 @@ export function usePlannerTab(setupReady: boolean) {
   }, [tab]);
 
   const setTab = useCallback((next: string) => {
-    if (next === 'hero' || next === 'gear' || next === 'account' || next === 'points') {
-      setTabState(next);
-    }
+    if (isPlannerTabId(next)) setTabState(next);
   }, []);
 
   return { tab, setTab };

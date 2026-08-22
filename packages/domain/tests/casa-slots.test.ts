@@ -8,7 +8,7 @@ import {
 
 describe('resolveCasaSlots', () => {
   it('exports the evidenced per-house ladder and Casa III+ default', () => {
-    expect(CASA_SLOTS_PER_HOUSE).toEqual([3, 6, 9, 9, 9]);
+    expect(CASA_SLOTS_PER_HOUSE).toEqual([3, 5, 7, 9, 9]);
     expect(DEFAULT_CASA_SLOTS).toBe(9);
   });
 

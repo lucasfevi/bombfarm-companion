@@ -164,6 +164,31 @@ describe('judgeStoredSection', () => {
     // `keystones`/`abisso_base`/`crit_dmg_mult` are not real `casa` keys, so a `casa` body
     // carrying one is dropped by the fingerprint trigger, but the retired-key path never
     // special-cases it — this just confirms the section guard, not a casa-specific vocabulary.
+    // Wrapped in the current-contract shape (a nested `casa` house object) so this stays a test
+    // of retired-key scoping, not an incidental hit on the pre-contract structural check below.
+    const verdict = judgeStoredSection('casa', {
+      field_size: 5,
+      heroes: [],
+      rescues_left: 0,
+      rescues_max: 0,
+      casa: {
+        active_casa: 0,
+        levels: [],
+        cycle_secs: [],
+        slots: 1,
+        slots_per_house: [],
+        cycle_secs_per_house: [],
+        upgrade_cost: [],
+      },
+    });
+    expect(verdict).toEqual({ drop: false });
+  });
+
+  it('PRE-CONTRACT STRUCTURAL TRIGGER: a stored casa body with no nested casa house object is dropped, naming casa.casa', () => {
+    // A row written before `/rotation` started yielding its whole body holds the bare house
+    // object directly — under the current contract that reads as a rotation body missing
+    // field_size/heroes/rescues_left/rescues_max, so it is dropped rather than served as if it
+    // were four-fifths of a rotation body.
     const verdict = judgeStoredSection('casa', {
       active_casa: 0,
       levels: [],
@@ -173,7 +198,24 @@ describe('judgeStoredSection', () => {
       cycle_secs_per_house: [],
       upgrade_cost: [],
     });
-    expect(verdict).toEqual({ drop: false });
+    expect(verdict.drop).toBe(true);
+    if (!verdict.drop) throw new Error('unreachable');
+    expect(verdict.triggers).toEqual(['casa.casa']);
+  });
+
+  it('PRE-CONTRACT STRUCTURAL TRIGGER is scoped to casa only — a non-casa section is never judged by it', () => {
+    // `heroes`/`skills`/`items`/`account` never had a "whole body vs. one nested key" contract
+    // change, so this structural check must never fire for them even when their body happens to
+    // lack a `casa` key (which is every one of them, by construction).
+    expect(judgeStoredSection('account', { phase: 1 })).toEqual({ drop: false });
+    expect(judgeStoredSection('heroes', [{ id: 'h1' }])).toEqual({ drop: false });
+  });
+
+  it('a stored casa body carrying a nested casa object survives the structural check regardless of what else it is missing', () => {
+    // Narrow, positive-only: this checks for the nested house object's PRESENCE, never at what
+    // else the body lacks — a partial/synthetic stored casa row (this suite seeds several
+    // elsewhere) with a nested `casa` key must not be falsely dropped.
+    expect(judgeStoredSection('casa', { casa: { active_casa: 1 } })).toEqual({ drop: false });
   });
 
   it('triggers are path-qualified key names only, never a stored value', () => {

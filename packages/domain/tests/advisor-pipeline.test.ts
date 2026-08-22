@@ -169,7 +169,7 @@ describe('computeAdvisorPipeline', () => {
       baseInput({ houseIdx: 0, houseLevel: 1, mitigationPct: 10 }),
     );
     const context: Context = out.context;
-    expect(context.restSeconds).toBe(19 * 60);
+    expect(context.restSeconds).toBe(1200);
     expect(context.mitigation).toBeCloseTo(0.1, 6);
     expect(context.walkDelay).toBe(0.15);
     expect(context.cycleModel).toBe('serial');

@@ -20,10 +20,20 @@ const ALL_OK: Record<AccountSection, SectionOutcome> = {
 };
 
 const FAILED: SectionOutcome = { kind: 'failed', reason: 'transport_error' };
-const DRIFT_MISSING_TOTALS: SectionOutcome = { kind: 'drift', missingKeys: ['totals'], addedKeys: [] };
+const DRIFT_MISSING_TOTALS: SectionOutcome = {
+  kind: 'drift',
+  body: { totals: 'still-usable' },
+  missingKeys: ['totals'],
+  addedKeys: [],
+};
 // MP5 F4 (T6): a drift outcome whose ONLY finding is an added key — proves addedKeys threads
 // through assembleAccountPayload independently of missingKeys, not merely alongside it.
-const DRIFT_ADDED_REFUNDS: SectionOutcome = { kind: 'drift', missingKeys: [], addedKeys: ['refunds'] };
+const DRIFT_ADDED_REFUNDS: SectionOutcome = {
+  kind: 'drift',
+  body: { totals: {}, refunds: {} },
+  missingKeys: [],
+  addedKeys: ['refunds'],
+};
 
 describe('assembleAccountPayload — arity and no history/grade (R-1 closed by signature)', () => {
   it('has arity 2 — no history parameter', () => {
@@ -62,11 +72,12 @@ describe('assembleAccountPayload — per-outcome mapping (LAR-14, LAR-15)', () =
     expect(payload.fidelity?.account).toEqual({ status: 'resolved', capturedAt: NOW });
   });
 
-  it('drift -> no body, fidelity degraded with capturedAt, missingKeys and addedKeys', () => {
+  it('drift -> body present (the projection readSection already accepted), fidelity degraded with capturedAt, missingKeys and addedKeys', () => {
     const outcomes: Record<AccountSection, SectionOutcome> = { ...ALL_OK, account: DRIFT_MISSING_TOTALS };
     const payload = assembleAccountPayload(outcomes, NOW);
 
-    expect('account' in payload).toBe(false);
+    expect('account' in payload).toBe(true);
+    expect(payload.account).toEqual({ totals: 'still-usable' });
     expect(payload.fidelity?.account).toEqual({
       status: 'degraded',
       capturedAt: NOW,
@@ -79,7 +90,8 @@ describe('assembleAccountPayload — per-outcome mapping (LAR-14, LAR-15)', () =
     const outcomes: Record<AccountSection, SectionOutcome> = { ...ALL_OK, skills: DRIFT_ADDED_REFUNDS };
     const payload = assembleAccountPayload(outcomes, NOW);
 
-    expect('skills' in payload).toBe(false);
+    expect('skills' in payload).toBe(true);
+    expect(payload.skills).toEqual({ totals: {}, refunds: {} });
     expect(payload.fidelity?.skills).toEqual({
       status: 'degraded',
       capturedAt: NOW,
@@ -96,6 +108,16 @@ describe('assembleAccountPayload — per-outcome mapping (LAR-14, LAR-15)', () =
     expect(payload.fidelity?.account).toEqual({ status: 'missing' });
     expect(payload.fidelity?.account.capturedAt).toBeUndefined();
   });
+
+  it('a section that was never read (failed) stays distinguishable from one that was read and drifted (degraded) — different status, key presence and body', () => {
+    const outcomes: Record<AccountSection, SectionOutcome> = { ...ALL_OK, account: FAILED, casa: DRIFT_MISSING_TOTALS };
+    const payload = assembleAccountPayload(outcomes, NOW);
+
+    expect(payload.fidelity?.account.status).toBe('missing');
+    expect(payload.fidelity?.casa.status).toBe('degraded');
+    expect('account' in payload).toBe(false);
+    expect('casa' in payload).toBe(true);
+  });
 });
 
 describe('assembleAccountPayload — the skills-never-fabricated rule (LAR-10, D24)', () => {
@@ -103,12 +125,14 @@ describe('assembleAccountPayload — the skills-never-fabricated rule (LAR-10, D
     const outcomes: Record<AccountSection, SectionOutcome> = { ...ALL_OK, skills: FAILED };
     const payload = assembleAccountPayload(outcomes, NOW);
     expect('skills' in payload).toBe(false);
+    expect(payload.skills).toBeUndefined();
   });
 
-  it("emits no 'skills' key at all when the skills outcome is drift — key absent, not undefined", () => {
+  it("emits the 'skills' key when the skills outcome is drift — a drift outcome only ever carries a body readSection already judged usable, never a fabricated one", () => {
     const outcomes: Record<AccountSection, SectionOutcome> = { ...ALL_OK, skills: DRIFT_MISSING_TOTALS };
     const payload = assembleAccountPayload(outcomes, NOW);
-    expect('skills' in payload).toBe(false);
+    expect('skills' in payload).toBe(true);
+    expect(payload.skills).toEqual({ totals: 'still-usable' });
   });
 });
 
@@ -141,16 +165,18 @@ describe('assembleAccountPayload — the outcome matrix (LAR-17)', () => {
   }
 
   for (const driftingSection of sections) {
-    it(`only ${driftingSection} drifted -> every other section still delivered with its body`, () => {
+    it(`only ${driftingSection} drifted -> every section, including the drifted one, still delivered with a body`, () => {
       const outcomes: Record<AccountSection, SectionOutcome> = { ...ALL_OK, [driftingSection]: DRIFT_MISSING_TOTALS };
       const payload = assembleAccountPayload(outcomes, NOW);
 
       for (const section of sections) {
+        expect(section in payload).toBe(true);
         if (section === driftingSection) {
-          expect(section in payload).toBe(false);
           expect(payload.fidelity?.[section].status).toBe('degraded');
+          expect((payload as unknown as Record<AccountSection, unknown>)[section]).toEqual({
+            totals: 'still-usable',
+          });
         } else {
-          expect(section in payload).toBe(true);
           expect(payload.fidelity?.[section].status).toBe('resolved');
         }
       }

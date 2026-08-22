@@ -270,6 +270,15 @@ export async function selectSavedHero(page: Page, name: string) {
 }
 
 /**
+ * Navigate to the Account page through the site nav — the affordance a real user has, so a
+ * broken nav link fails these specs rather than being routed around by a direct `goto`.
+ */
+export async function gotoAccountPage(page: Page): Promise<void> {
+  await page.getByRole('navigation').getByRole('link', { name: /^account$|^conta$/i }).click();
+  await expect(page).toHaveURL(/\/account/);
+}
+
+/**
  * Roster-scaling probe for `RES-06`. Same active hero and account as `importedRoster`,
  * padded to 30 heroes so a perf capture can answer whether render counts scale with
  * roster size or are flat.

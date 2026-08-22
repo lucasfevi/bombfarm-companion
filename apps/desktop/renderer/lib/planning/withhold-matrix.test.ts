@@ -5,7 +5,7 @@
  * automatically (`AD-041`'s payoff).
  */
 import { describe, expect, it } from 'vitest';
-import type { SectionStatus } from '@bombfarm/contracts';
+import type { SectionFidelity, SectionStatus } from '@bombfarm/contracts';
 import { ACCOUNT_SECTIONS } from '@bombfarm/domain/account-fidelity';
 import { computeAdvisorPipeline } from '@bombfarm/domain/advisor-pipeline';
 import { pipelineForHero } from '@bombfarm/domain/roster-dps';
@@ -17,6 +17,8 @@ import { adviceForHero } from './hero-advice';
 import type { AdviceQuantity, PlanningModel } from './types';
 import { REAL_DMG_STATIC, syntheticAccountPayload, syntheticAccountView } from './fixtures/synthetic-views';
 
+const NOW = '2026-08-12T00:00:00.000Z';
+
 const ADVICE_QUANTITIES = Object.keys(ADVICE_REQUIRES) as AdviceQuantity[];
 // `SectionStatus`'s 4 members — hand-listed once here because it is a pure type with no runtime
 // source; `AccountSection` and `AdviceQuantity` above both come from a real exported value.
@@ -25,6 +27,16 @@ const SECTION_STATUSES: readonly SectionStatus[] = ['resolved', 'stale', 'missin
 function required<T>(value: T | null | undefined, message: string): T {
   if (value === null || value === undefined) throw new Error(message);
   return value;
+}
+
+/** Mirrors `synthetic-views.ts`'s own default degraded shape (a missing-key drift), so `isUsable`
+ *  is exercised against the same fidelity the matrix's fixture actually builds for each status. */
+function fidelityForStatus(status: SectionStatus): SectionFidelity {
+  if (status === 'missing') return { status: 'missing' };
+  if (status === 'degraded') {
+    return { status: 'degraded', capturedAt: NOW, missingKeys: ['totals.dmg_static'], addedKeys: [] };
+  }
+  return { status, capturedAt: NOW };
 }
 
 function firstHero(model: PlanningModel) {
@@ -71,7 +83,7 @@ describe('withhold matrix — exhaustive by construction (AdviceQuantity × Acco
         caseCount++;
         const requiredSections = ADVICE_REQUIRES[quantity];
         const sectionMatters = requiredSections.includes(section);
-        const expectUsable = !sectionMatters || isUsable(status);
+        const expectUsable = !sectionMatters || isUsable(fidelityForStatus(status));
 
         it(`quantity="${quantity}", varying section="${section}" to status="${status}" ⇒ usable=${String(expectUsable)}`, () => {
           const view = syntheticAccountView({ sectionStatuses: { [section]: status } });
@@ -146,6 +158,39 @@ describe('MPV-09/MPV-10 — the absence assertion: the identity-tree fallback DP
     // not drop the hero, it only marks its numbers withheld.
     const advice = adviceForHero(model, hero.hero.id);
     expect(advice.withheld).toBe(true);
+  });
+});
+
+describe('degraded shape: added-only vs missing-key (isTrustworthySection)', () => {
+  it('a casa degraded section with only addedKeys leaves dps/nextPointRanking/resetAdvice rendering', () => {
+    const view = syntheticAccountView({
+      sectionStatuses: { casa: 'degraded' },
+      missingKeysBySection: { casa: [] },
+      addedKeysBySection: { casa: ['seasonal_flag'] },
+    });
+    const model = buildPlanningModel(view);
+    const casaSection = required(model.sections.find((s) => s.section === 'casa'), 'expected a casa section');
+    expect(casaSection.usable).toBe(true);
+    for (const quantity of ['dps', 'nextPointRanking', 'resetAdvice'] as const) {
+      expect(isQuantityUsable(model.sections, quantity)).toBe(true);
+    }
+    const hero = firstHero(model);
+    expect(adviceForHero(model, hero.hero.id).withheld).toBe(false);
+  });
+
+  it('a casa degraded section with a missing key withholds dps/nextPointRanking/resetAdvice', () => {
+    const view = syntheticAccountView({
+      sectionStatuses: { casa: 'degraded' },
+      missingKeysBySection: { casa: ['levels'] },
+    });
+    const model = buildPlanningModel(view);
+    const casaSection = required(model.sections.find((s) => s.section === 'casa'), 'expected a casa section');
+    expect(casaSection.usable).toBe(false);
+    for (const quantity of ['dps', 'nextPointRanking', 'resetAdvice'] as const) {
+      expect(isQuantityUsable(model.sections, quantity)).toBe(false);
+    }
+    const hero = firstHero(model);
+    expect(adviceForHero(model, hero.hero.id).withheld).toBe(true);
   });
 });
 

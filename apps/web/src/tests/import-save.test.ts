@@ -573,6 +573,10 @@ describe('parseSaveFile', () => {
       houseCycleSecs: null,
       phase: null,
       maxPhase: null,
+      // Account page: `account.player_name` / `account.account_id` join the same total-reader
+      // family — a payload with no `account` section asserts "no identity", never a placeholder.
+      playerName: null,
+      accountId: null,
     });
   });
 

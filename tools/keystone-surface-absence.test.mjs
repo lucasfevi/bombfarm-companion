@@ -121,7 +121,9 @@ const ALLOWLIST = [
   { file: 'apps/web/src/tests/fixtures/storage-roundtrip-20260729.json', count: 1, owner: 'F3 fixture history log (AD-083)' },
   // F3's own absence-proving tests (MSC-01/03/05/06/07/10/18) — each must name the token once to
   // prove it is gone.
-  { file: 'apps/web/e2e/account-panel.spec.ts', count: 8, owner: 'F3 MSC-01 DOM absence proof' },
+  // The Account panel became its own page; its MSC-01 DOM proof moved with it, and the page
+  // being read-only means one shared EN+PT assertion replaces the old per-language pair.
+  { file: 'apps/web/e2e/account-page.spec.ts', count: 4, owner: 'F3 MSC-01 DOM absence proof' },
   { file: 'apps/web/src/tests/account-slice.test.ts', count: 3, owner: 'F3 MSC-03 runtime absence proof' },
   { file: 'apps/web/src/tests/advisor-selectors.test.ts', count: 1, owner: 'F3 dep-tuple-length test title' },
   { file: 'apps/web/src/tests/derive.test.ts', count: 2, owner: 'F3 AC-29 compile-guard + explanatory comments' },
@@ -167,9 +169,9 @@ const CRIT_DMG_MULT_MAP = {
   'apps/desktop/renderer/lib/planning/account-view-store.test.ts': [36],
   'apps/desktop/renderer/lib/planning/fixtures/synthetic-views.ts': [123],
   'apps/desktop/renderer/lib/planning/hero-advice.test.ts': [47],
-  'apps/desktop/renderer/lib/planning/withhold-matrix.test.ts': [192, 209],
-  'apps/desktop/src/main/storage/account-store-restore.test.ts': [497, 530, 548, 581],
-  'apps/desktop/src/main/storage/stale-sections.test.ts': [66, 81, 84, 88, 98, 105, 111, 123, 128, 164, 182],
+  'apps/desktop/renderer/lib/planning/withhold-matrix.test.ts': [237, 254],
+  'apps/desktop/src/main/storage/account-store-restore.test.ts': [507, 540, 558, 591],
+  'apps/desktop/src/main/storage/stale-sections.test.ts': [66, 81, 84, 88, 98, 105, 111, 123, 128, 164, 224],
   'apps/desktop/src/main/storage/stale-sections.ts': [11],
   // +2 (line numbers only) from the House/field-slots untangling follow-up: two new
   // AccountShared rows (`fieldSlots`, `houseCycleSecs`) landed above this section. Match itself
@@ -190,7 +192,7 @@ const CRIT_DMG_MULT_MAP = {
   // deprecation doc comment on `teamBuffs`, the new `teamBuffsOverride` field with its own doc
   // comment, and the `normalizeTeamBuffsOverride` migration helper with its doc comment, all
   // above this line. Match itself is unchanged in count and in kind.
-  'apps/web/src/shared/lib/account-shared.ts': [163],
+  'apps/web/src/shared/lib/account-shared.ts': [187],
   'apps/web/src/shared/lib/stale-account.ts': [20],
   'apps/web/src/tests/advisor-pipeline.test.ts': [85],
   'apps/web/src/tests/derive.test.ts': [
@@ -201,7 +203,7 @@ const CRIT_DMG_MULT_MAP = {
   'apps/web/src/tests/fixtures/storage-roundtrip-20260729.json': [3],
   'apps/web/src/tests/points-reopt.test.ts': [107, 490],
   'apps/web/src/tests/stale-account-drop.test.ts': [31, 72, 73, 78, 89],
-  'apps/web/src/tests/stat-breakdown.test.ts': [125, 175, 201],
+  'apps/web/src/tests/stat-breakdown.test.ts': [126, 176, 202],
   // +1 (line number only): issue #132's rewrite of the "existing empty state" comment above line
   // 109 added a net one line. Match itself is unchanged in count and in kind.
   'apps/web/src/tests/storage-legacy-keystone-fields.test.ts': [40, 110],
@@ -222,7 +224,7 @@ const CRIT_DMG_MULT_MAP = {
   // suite entry just above, +2 lines each. Count and kind unchanged.
   // +3 more (line numbers only) from the Farm Respec Advisor objective picker removal's own
   // explanatory comment above the local-data-compat.md entry. Count and kind unchanged.
-  'tools/keystone-surface-absence.test.mjs': [13, 156, 159, 268, 273, 283, 292],
+  'tools/keystone-surface-absence.test.mjs': [13, 158, 161, 270, 275, 285, 294],
   'tools/save-acceptance-guards.test.mjs': [53],
 };
 

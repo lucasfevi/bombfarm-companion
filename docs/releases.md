@@ -161,7 +161,9 @@ Required contexts on the release head: `ci-web-required`, `ci-desktop-required`,
 
 ### Cost notes
 
-1. **Windows smoke** on feature PRs is opt-in via the `windows-ci` label (always on `develop`/`main` pushes).
+1. **Windows smoke** runs on every feature PR matching the desktop path filter, and on
+   `develop`/`main` pushes. It was opt-in until a broken spec rode the default branch for eight
+   consecutive pushes without gating anything.
 2. **Visual e2e** on feature PRs is opt-in via the `visual-ci` label (always on `develop`/`main` pushes when e2e paths match).
 3. Smoke e2e uses **2** shards.
 

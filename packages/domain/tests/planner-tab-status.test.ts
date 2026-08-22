@@ -41,15 +41,13 @@ describe('computePlannerTabStatuses', () => {
     const s = computePlannerTabStatuses(base());
     expect(s.heroTabStatus.badge).toBeNull();
     expect(s.gearTabStatus.badge).toBeNull();
-    expect(s.accountTabStatus.badge).toBeNull();
     expect(s.pointsTabStatus.badge).toBeNull();
     expect(s.setupReady).toBe(true);
     expect(s.setupPrereqsReady).toBe(true);
   });
 
-  it('Account tab never warns — target-prop ranking requirement is gone (the old unset-prop soft-dot case, inverted)', () => {
-    const s = computePlannerTabStatuses(base());
-    expect(s.accountTabStatus).toEqual({ badge: null, title: '', issues: [] });
+  it('exposes no Account tab status — Account is a route of its own, not a planner tab', () => {
+    expect('accountTabStatus' in computePlannerTabStatuses(base())).toBe(false);
   });
 
   it('Abilities tab soft-dots for default sheet and unspent ability points', () => {

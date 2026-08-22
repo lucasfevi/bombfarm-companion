@@ -2,7 +2,6 @@
 
 import { HeroAbilitiesTab } from './hero-abilities-tab';
 import { GearTab } from './gear-tab';
-import { AccountColumn } from '@/features/account';
 import { AdviceColumn } from './advice-column';
 import { HeroStrip } from './hero-strip';
 import { ResetAdviceRosterBanner } from './reset-advice-roster-banner';
@@ -16,7 +15,6 @@ import {
   selectSetupReady,
   selectHeroTabStatus,
   selectGearTabStatus,
-  selectAccountTabStatus,
   selectPointsTabStatus,
   selectShouldShowEmptyState,
 } from '@/shared/stores';
@@ -32,7 +30,6 @@ export function PlannerTabs() {
   const setupReady = usePlannerStore(selectSetupReady);
   const heroTabStatus = usePlannerStore(selectHeroTabStatus);
   const gearTabStatus = usePlannerStore(selectGearTabStatus);
-  const accountTabStatus = usePlannerStore(selectAccountTabStatus);
   const pointsTabStatus = usePlannerStore(selectPointsTabStatus);
   const noHeroYet = usePlannerStore(selectShouldShowEmptyState);
   const { tab, setTab } = usePlannerTab(setupReady);
@@ -55,13 +52,6 @@ export function PlannerTabs() {
               {t.tabGear}
             </Tabs.Tab>
             <Tabs.Tab
-              value="account"
-              badge={accountTabStatus.badge}
-              status={statusProp(accountTabStatus)}
-            >
-              {t.tabAccount}
-            </Tabs.Tab>
-            <Tabs.Tab
               value="points"
               badge={pointsTabStatus.badge}
               status={statusProp(pointsTabStatus)}
@@ -75,9 +65,6 @@ export function PlannerTabs() {
             </Tabs.Panel>
             <Tabs.Panel value="gear">
               <GearTab />
-            </Tabs.Panel>
-            <Tabs.Panel value="account">
-              <AccountColumn />
             </Tabs.Panel>
             <Tabs.Panel value="points">
               <AdviceColumn />

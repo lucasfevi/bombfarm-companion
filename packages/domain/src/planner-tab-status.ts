@@ -24,7 +24,6 @@ export type PlannerTabStatusStrings = Pick<
   | 'setupBannerTitle'
   | 'tabHeroWarnTitle'
   | 'tabGearWarnTitle'
-  | 'tabAccountWarnTitle'
   | 'tabPointsWarnTitle'
   | 'tabPointsResetAdvice'
 >;
@@ -46,7 +45,6 @@ export type PlannerTabStatusInput = {
 export type PlannerTabStatuses = {
   heroTabStatus: TabStatus;
   gearTabStatus: TabStatus;
-  accountTabStatus: TabStatus;
   pointsTabStatus: TabStatus;
   setupPrereqIssues: string[];
   setupIssues: string[];
@@ -91,11 +89,6 @@ export function computePlannerTabStatuses(input: PlannerTabStatusInput): Planner
     );
   }
 
-  // Empty extension point: nothing requires setup on the Account tab any more (target-prop
-  // ranking is gone), but `tabStatus` already returns the null badge for an empty issue list,
-  // so the next Account-tab issue slots in here without touching the shape.
-  const accountIssues: string[] = [];
-
   return {
     heroTabStatus: tabStatus('soft', t.tabHeroWarnTitle, heroIssues),
     // Sheet Δ vs items+points used to warn here while Stats lived on Gear; Stats is on
@@ -103,7 +96,6 @@ export function computePlannerTabStatuses(input: PlannerTabStatusInput): Planner
     gearTabStatus: tabStatus('soft', t.tabGearWarnTitle, [
       ...(!hasGear ? [t.setupNeedGear] : []),
     ]),
-    accountTabStatus: tabStatus('soft', t.tabAccountWarnTitle, accountIssues),
     pointsTabStatus: tabStatus(
       resetAdviceRecommend ? 'warn' : 'soft',
       resetAdviceRecommend ? t.tabPointsWarnTitle : t.setupBannerTitle,

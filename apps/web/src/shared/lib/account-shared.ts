@@ -46,6 +46,19 @@ export type TreeState = {
    * `normalizeTree`'s rebuild fills it on load.
    */
   xpMult?: number;
+  /**
+   * `team_dmg_add × 100` and `geo_mult` — the two factors {@link danoTotal} is the product of
+   * (verified to full double precision on two captures). DISPLAY ONLY: every damage computation
+   * still reads `danoTotal`, which is the value the game client itself counts with. Optional for
+   * the same reason {@link luckFlatPct} is — pre-existing persisted records and test literals
+   * predate them, and the Account page renders a dash when they are absent.
+   */
+  squadDmgPct?: number;
+  geoMult?: number;
+  /** `vagas_campo` — field slots the TREE grants; `skills.field_slots` is always this plus one. */
+  fieldSlotsBonus?: number;
+  /** `bag_tabs_bonus` — extra bag tabs the tree grants. */
+  bagTabsBonus?: number;
 };
 
 export type HeroContext = {
@@ -128,6 +141,13 @@ export type AccountShared = {
    * it, because a stale lock badge would assert progress the payload just contradicted.
    */
   maxPhase?: number | null;
+  /**
+   * `account.player_name` / `account.account_id` — who the imported save belongs to, shown as
+   * the Account page's header. `null`/absent whenever the save carried neither (they are
+   * optional export keys), which renders as "no account imported" rather than a blank name.
+   */
+  playerName?: string | null;
+  accountId?: string | null;
 };
 
 export const DEFAULT_TREE = (): TreeState => ({
@@ -139,6 +159,10 @@ export const DEFAULT_TREE = (): TreeState => ({
   teamCoinPct: 0,
   luckFlatPct: 0,
   xpMult: 1,
+  squadDmgPct: 0,
+  geoMult: 1,
+  fieldSlotsBonus: 0,
+  bagTabsBonus: 0,
 });
 
 export const DEFAULT_CONTEXT = (): HeroContext => ({
@@ -176,7 +200,16 @@ function normalizeTree(raw?: Partial<TreeState> | null): TreeState {
     teamCoinPct: raw.teamCoinPct ?? base.teamCoinPct,
     luckFlatPct: raw.luckFlatPct ?? base.luckFlatPct,
     xpMult: raw.xpMult ?? base.xpMult,
+    squadDmgPct: raw.squadDmgPct ?? base.squadDmgPct,
+    geoMult: raw.geoMult ?? base.geoMult,
+    fieldSlotsBonus: raw.fieldSlotsBonus ?? base.fieldSlotsBonus,
+    bagTabsBonus: raw.bagTabsBonus ?? base.bagTabsBonus,
   };
+}
+
+/** A non-empty trimmed string, else `null` — a blank name is an absent name, not a label. */
+function normalizeIdentityText(raw?: string | null): string | null {
+  return typeof raw === 'string' && raw.trim() !== '' ? raw.trim() : null;
 }
 
 /**
@@ -266,6 +299,12 @@ function normalizeMaxPhase(raw?: number | null): number | null {
  * from "never touched", so it migrates to `null` (derive from the roster) rather than freezing
  * that default as a permanent all-zero override. A legacy value with any genuinely nonzero entry
  * WAS a real auto-fill snapshot or hand edit, so it carries forward as an explicit override.
+ *
+ * STILL HONOURED even though the Account page's team-buff fields are gone: `farm-rate`'s
+ * `priceTeamBuffs` branches on this field, and it stays the supported way for a caller to say
+ * "assume this much aura" without a carrier attribution to weight. Dropping stored overrides
+ * would silently move the Farm board for accounts that set one — a maintainer call, not a
+ * side effect of removing a panel.
  */
 function normalizeTeamBuffsOverride(raw?: Partial<AccountShared> | null): Record<string, number> | null {
   if (raw && 'teamBuffsOverride' in raw) {
@@ -290,5 +329,7 @@ export function normalizeAccount(raw?: Partial<AccountShared> | null): AccountSh
     houseCycleSecsLevel: normalizeHouseCycleAnchor(raw?.houseCycleSecsLevel),
     forgeFloor: normalizeForgeFloor(raw?.forgeFloor),
     maxPhase: normalizeMaxPhase(raw?.maxPhase),
+    playerName: normalizeIdentityText(raw?.playerName),
+    accountId: normalizeIdentityText(raw?.accountId),
   };
 }

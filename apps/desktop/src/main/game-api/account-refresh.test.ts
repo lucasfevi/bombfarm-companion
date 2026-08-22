@@ -557,9 +557,16 @@ describe('account-refresh — a drifted section is logged with path-qualified ke
 
     const view = await refresh.refreshNow();
 
-    // A drifted section is a shape failure, not merely logged-and-served (MP5 F4: added keys are
-    // fatal) — the section resolves nothing this cycle.
-    expect(fidelityOf(view).account).toEqual({ status: 'missing' });
+    // A drifted section still reports the shape break (added keys are still fatal to the
+    // fingerprint check), but `/state` projects identity, so the drifted body is still a usable
+    // object — the section is served degraded, carrying its body, not discarded as missing.
+    expect(fidelityOf(view).account).toEqual({
+      status: 'degraded',
+      capturedAt: '2026-08-12T00:01:00.000Z',
+      missingKeys: ['account.crystals'],
+      addedKeys: ['account.some_future_key'],
+    });
+    expect(view?.payload.account).toEqual(driftedState);
 
     const drift = records.find((r) => r.record.event === 'section.drift');
     expect(drift).toBeDefined();

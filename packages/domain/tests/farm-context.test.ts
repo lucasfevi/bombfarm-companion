@@ -9,6 +9,7 @@ import {
   isTargetPropUnset,
 } from '@bombfarm/domain/farm-context';
 import { abilityMods } from '@bombfarm/domain/model';
+import { combineDrainRate } from '@bombfarm/domain/drain';
 import { computeAdvisorPipeline } from '@bombfarm/domain/advisor-pipeline';
 import { zeroTeamBuffs } from '@bombfarm/domain/team-buffs';
 import { PROPS } from '@bombfarm/domain/phases';
@@ -140,10 +141,7 @@ describe('farmContextForHero', () => {
     expect(ctx.drainMult).toBe(0.8);
   });
 
-  // AD-068 class (b): re-pointed, not deleted — bateria_extra and folego_mineiro are the two
-  // surviving drain arms this case's real content is about; the drain ×2 arm the case's old
-  // name referenced no longer participates (its whole subject is the deleted arm).
-  it('drainMult with bateria_extra and folego_mineiro combined', () => {
+  it('drainMult with bateria_extra and folego_mineiro combines the two reductions additively', () => {
     const mods = abilityMods({ bateria_extra: 10 });
     const ctx = farmContextForHero({
       mods,
@@ -153,7 +151,8 @@ describe('farmContextForHero', () => {
       mitigationPct: 6.7,
       phase: 1,
     });
-    expect(ctx.drainMult).toBe(mods.drainMult * 0.75);
+    expect(ctx.drainMult).toBe(combineDrainRate(mods.drainMult, 0.75));
+    expect(ctx.drainMult).not.toBeCloseTo(mods.drainMult * 0.75, 6);
   });
 });
 

@@ -1,0 +1,151 @@
+{
+  "snapshot": {
+    "fieldSize": 2,
+    "heroes": [
+      {
+        "id": "555",
+        "level": 25,
+        "energy": 166.27903082759252,
+        "energyMax": 238.63487669725936,
+        "energyFraction": 0.6967926613616499,
+        "activity": "resting",
+        "onField": false,
+        "inHouse": true,
+        "recovering": true,
+        "battleAllowed": true,
+        "name": "Nyx",
+        "grade": "A"
+      },
+      {
+        "id": "584",
+        "level": 27,
+        "energy": 158.83108999963656,
+        "energyMax": 263.14808999960667,
+        "energyFraction": 0.6035806302066413,
+        "activity": "inField",
+        "onField": true,
+        "inHouse": false,
+        "recovering": false,
+        "battleAllowed": true,
+        "name": "Bellatrix",
+        "grade": "D"
+      },
+      {
+        "id": "5217",
+        "level": 22,
+        "energy": 26.654818065545285,
+        "energyMax": 222.06621658232618,
+        "energyFraction": 0.12003094606542097,
+        "activity": "resting",
+        "onField": false,
+        "inHouse": true,
+        "recovering": true,
+        "battleAllowed": true,
+        "name": "Cora",
+        "grade": "E"
+      },
+      {
+        "id": "8818",
+        "level": 24,
+        "energy": 98.04526800970042,
+        "energyMax": 225.77144231964127,
+        "energyFraction": 0.4342678019963681,
+        "activity": "resting",
+        "onField": false,
+        "inHouse": true,
+        "recovering": true,
+        "battleAllowed": true,
+        "name": "Wren",
+        "grade": "S"
+      },
+      {
+        "id": "9367",
+        "level": 3,
+        "energy": 0,
+        "energyMax": 114.09119170237985,
+        "energyFraction": 0,
+        "activity": "benched",
+        "onField": false,
+        "inHouse": true,
+        "recovering": false,
+        "battleAllowed": false,
+        "name": "Lyra",
+        "grade": "A"
+      },
+      {
+        "id": "12091",
+        "level": 3,
+        "energy": 0,
+        "energyMax": 139.10190606214542,
+        "energyFraction": 0,
+        "activity": "benched",
+        "onField": false,
+        "inHouse": true,
+        "recovering": false,
+        "battleAllowed": false,
+        "name": "Mira",
+        "grade": "B"
+      },
+      {
+        "id": "12092",
+        "level": 3,
+        "energy": 0,
+        "energyMax": 100.87995628382778,
+        "energyFraction": 0,
+        "activity": "benched",
+        "onField": false,
+        "inHouse": true,
+        "recovering": false,
+        "battleAllowed": false,
+        "name": "Bryn",
+        "grade": "D"
+      },
+      {
+        "id": "12094",
+        "level": 5,
+        "energy": 0,
+        "energyMax": 115.37996644776113,
+        "energyFraction": 0,
+        "activity": "resting",
+        "onField": false,
+        "inHouse": true,
+        "recovering": false,
+        "battleAllowed": true,
+        "name": "Devin",
+        "grade": "D"
+      }
+    ],
+    "house": {
+      "activeHouseIndex": 0,
+      "houseLevels": [
+        4,
+        0,
+        0,
+        0,
+        0
+      ],
+      "cycleSeconds": 1190.5263157894735,
+      "slots": 3,
+      "slotsPerHouse": [
+        3,
+        5,
+        7,
+        9,
+        9
+      ],
+      "cycleSecondsPerHouse": [
+        1190.5263157894735,
+        1080,
+        960,
+        840,
+        660
+      ],
+      "upgradeCost": [
+        1
+      ]
+    },
+    "rescuesLeft": 7,
+    "rescuesMax": 15
+  },
+  "drops": []
+}
