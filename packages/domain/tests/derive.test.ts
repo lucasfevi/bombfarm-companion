@@ -415,8 +415,10 @@ describe('derive', () => {
       dmgMult: 1,
       mitigationPct: 0,
     });
-    // attackPointGain(10) × starsMult(1) × danoStatic = (10 × (1+0.04×9)) × 1.5 × 1.78324567735483
-    const expected = 10 * (1 + 0.04 * 9) * 1.5 * 1.78324567735483;
+    // attackPointGain(10) × starsMult(1) × danoStatic = (10 × (1+0.04×9)) × 1.25 × 1.78324567735483
+    // The 1.25 stays a LITERAL, not `starsMult(1)` — this assertion's whole value is being
+    // computed independently of the code under test (see the AC-34 companion below).
+    const expected = 10 * (1 + 0.04 * 9) * 1.25 * 1.78324567735483;
     expect(result.delta.attack).toBeCloseTo(expected, 9);
   });
 
@@ -454,7 +456,7 @@ describe('derive', () => {
     // Independent literal computation (not re-derived from the code under test): gem is
     // exactly gearMult * (1 + energyPct/100) by construction of `geared` above.
     const gem = gearMult * (1 + energyPct / 100);
-    const star = 1 + 0.5 * 2;
+    const star = 1 + 0.25 * 2;
     const expected = 8 * gem * star;
     expect(result.delta.energy).toBeCloseTo(expected, 9);
 

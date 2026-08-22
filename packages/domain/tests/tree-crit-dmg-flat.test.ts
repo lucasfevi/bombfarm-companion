@@ -109,7 +109,9 @@ describe('skill tree crit_dmg_add is flat, not percent-of-base', () => {
     const nakedAt4 = nakedFromBirth(birth, 50, 4, other).critDmg;
     expect(nakedAt0).toBeCloseTo(birth.critDmg, 9);
     expect(nakedAt4 / nakedAt0).toBeCloseTo(starsMult(4), 9);
-    expect(starsMult(4)).toBeGreaterThan(2);
+    // Only that the ★ factor really moves the base — the magnitude itself is pinned in
+    // gear.test.ts, so this stays a bound and does not restate `STAR_MULT_PER_STAR`.
+    expect(starsMult(4)).toBeGreaterThan(1.5);
   });
 
   /**

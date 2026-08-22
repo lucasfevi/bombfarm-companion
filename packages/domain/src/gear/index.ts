@@ -38,6 +38,8 @@ export {
   itemValores,
   emptySheetOther,
   starsMult,
+  STAR_MULT_PER_STAR,
+  MAX_STARS,
 } from './catalog';
 
 export {
