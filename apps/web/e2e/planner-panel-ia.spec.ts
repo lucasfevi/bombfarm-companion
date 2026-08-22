@@ -277,4 +277,16 @@ test.describe('HeroStrip reset-advice warn chrome + roster banner', () => {
     const warnInputs = strip.locator('input.border-warn, [data-num].border-warn');
     await expect(warnInputs).toHaveCount(0);
   });
+
+  test('advice column has no Context panel heading', async ({ page }) => {
+    // Moved here from the account specs when the Account panel became its own page: this has
+    // always been about the planner's Points tab, not about the Account panel.
+    await seedLocalStorage(page, importedRoster);
+    await page.goto('/');
+    await selectSavedHero(page, 'Cora');
+    await page.getByRole('tab', { name: /^pontos$/i }).click();
+    const advice = activePanel(page);
+    await expect(advice.getByRole('heading', { name: /^Contexto$/i })).toHaveCount(0);
+    await expect(advice.getByRole('heading', { name: /^Context$/i })).toHaveCount(0);
+  });
 });

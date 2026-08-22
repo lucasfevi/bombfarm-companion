@@ -11,6 +11,7 @@ export { GoldValue } from '@/shared/game-art/gold-value';
 export { GoldIcon } from '@/shared/game-art/gold-icon';
 export { ChestIcon } from '@/shared/game-art/chest-icon';
 export { ClockIcon } from '@/shared/game-art/clock-icon';
+export { HouseIcon } from '@/shared/game-art/house-icon';
 export {
   artFrameRecipe,
   artFrameRadiusClass,

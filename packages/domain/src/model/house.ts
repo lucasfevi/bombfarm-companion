@@ -14,10 +14,21 @@ export const HOUSES = [
   { name: 'Casa V (Mítico)', cycleSecsLvl1: 660, cycleSecsLvl20: 600 },
 ] as const;
 
+/** Highest House level the game allows (wiki `rotacao.casa_max_level`). */
+export const HOUSE_MAX_LEVEL = 20;
+
+/**
+ * Level is CLAMPED to 1..20 rather than extrapolated. Level 0 means "not unlocked yet", and the
+ * game reports the level-1 base for such a house rather than a value worse than base: two
+ * captures carry `casa.levels` entries of `0` alongside a `casa.cycle_secs_per_house` holding
+ * exactly `cycleSecsLvl1` for those houses (840 for Casa IV, 660 for Casa V). Extrapolating
+ * below level 1 invented a cycle LONGER than the house can ever have.
+ */
 export function houseRestSeconds(houseIndex: number, level: number): number {
   const house = HOUSES[houseIndex];
+  const clampedLevel = Math.min(HOUSE_MAX_LEVEL, Math.max(1, level));
   const secs =
-    house.cycleSecsLvl1 + ((house.cycleSecsLvl20 - house.cycleSecsLvl1) * (level - 1)) / 19;
+    house.cycleSecsLvl1 + ((house.cycleSecsLvl20 - house.cycleSecsLvl1) * (clampedLevel - 1)) / 19;
   return Math.round(secs);
 }
 

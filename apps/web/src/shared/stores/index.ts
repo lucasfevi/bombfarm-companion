@@ -44,6 +44,12 @@ export {
   selectSlots,
   selectFieldSlots,
   selectMaxPhase,
+  selectPlayerName,
+  selectAccountId,
+  selectTreeSquadDmgPct,
+  selectTreeGeoMult,
+  selectTreeFieldSlotsBonus,
+  selectTreeBagTabsBonus,
 } from '@/shared/stores/selectors/account-selectors';
 export {
   selectTeamPlanIsStale,

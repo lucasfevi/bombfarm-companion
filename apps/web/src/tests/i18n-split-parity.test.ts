@@ -131,12 +131,40 @@ const fixture = JSON.parse(readFileSync(fixturePath, 'utf8')) as {
  * then the sentence beneath it, so `farmRespecPlateauLabel`, `farmRespecPlateauRange` and
  * `farmRespecPlateauSharp` have no reader left. The domain's `plateau` field and everything that
  * computes it are untouched.
+ * The Account page rework (2026-08-22) split the one big Account panel into an identity header, a
+ * House panel and a Skill Tree panel, mirroring how the Farm page is built from small focused
+ * sections. The farm-phase field, the target-prop picker and the team-buff fields left the page
+ * entirely, taking `accountFarmSection`/`accountFarmPhaseLabel`/`accountFarmPhaseHint`/
+ * `accountTargetPropHint`/`panelTeamBuffs`/`teamBuffsAutoFill`/`deployedTitle` with them. The
+ * panel-wide `accountTip` and the `accountWide` chip are superseded by each new panel's own
+ * description, `accountTreeUnsetNote` and `treeCritDmgShort` lost their last readers with the old
+ * tree fields, and `houseRestHint`/`houseLvl` are replaced by the House panel's own rows
+ * (`accountHouseCycle`, `houseLevelLabel` as `X / 20`).
+ *
+ * Several PROSE edits ride along and are deliberately NOT listed as deltas because the keys are
+ * themselves new or already declared: the tree stat labels (`treeDano`, `treeCrit`, `treeCritDmg`,
+ * `treeSpeed`, `treeEnergy`, `treeTeamCoin`, `treeXpMult`) are reworded to the game's own Bonus
+ * summary wording — they are in `PROSE_EDITED_PATHS` below.
+ *
  * The Account page (2026-08-22) promoted the planner's Account tab to a nav route of its own.
  * With no Account tab left in the tab strip, its label and its warn-tooltip title have no reader:
  * `tabAccount` is replaced by `navAccount` (in `KEYS_ADDED`) and `tabAccountWarnTitle` goes away
  * outright — `computePlannerTabStatuses` no longer returns an `accountTabStatus` at all.
  */
 const KEYS_REMOVED: readonly string[] = [
+  'accountTargetPropHint',
+  'accountFarmSection',
+  'accountFarmPhaseLabel',
+  'accountFarmPhaseHint',
+  'accountTip',
+  'accountTreeUnsetNote',
+  'accountWide',
+  'deployedTitle',
+  'houseLvl',
+  'houseRestHint',
+  'panelTeamBuffs',
+  'teamBuffsAutoFill',
+  'treeCritDmgShort',
   'tabAccount',
   'tabAccountWarnTitle',
   'farmRespecPaybackNoGoldGain',
@@ -228,17 +256,34 @@ const KEYS_REMOVED: readonly string[] = [
  * values the save already carried but nothing rendered outside the import dialog.
  */
 const KEYS_ADDED: readonly string[] = [
-  'navAccount',
-  'accountSavePanel',
-  'accountSaveTip',
-  'accountSaveProgress',
-  'accountSaveRotation',
-  'accountMaxPhase',
-  'accountLuckFlat',
-  'accountFieldSlots',
   'accountCasaSlots',
-  'accountSaveHouseCycle',
-  'accountSaveHouseCycleAt',
+  'accountFieldSlots',
+  'accountLuckFlat',
+  'accountMaxPhase',
+  'treeXpMult',
+  'accountIdentityTip',
+  'accountPlayerName',
+  'accountIdLabel',
+  'accountCurrentPhase',
+  'accountHouseTip',
+  'accountHouseTipMaxed',
+  'accountHouseCycle',
+  'accountHouseCycleTip',
+  'accountCasaSlotsTip',
+  'accountNextHouse',
+  'accountNextHouseTip',
+  'accountNextHouseCycle',
+  'accountNextHouseSlots',
+  'accountTreeTip',
+  'accountTreeDamageGroup',
+  'accountTreeBonusGroup',
+  'accountSquadDmg',
+  'accountGeoMult',
+  'accountTotalDmgTip',
+  'accountFieldSlotsTip',
+  'accountBonusOfTotal',
+  'accountBagTabs',
+  'navAccount',
   'farmRespecUnchangedGroupNote',
   'phasesXpActualHint',
   'phasesDropsSection',
@@ -252,7 +297,6 @@ const KEYS_ADDED: readonly string[] = [
   'phasesGoldComum',
   'phasesAvgGold',
   'phasesMapGold',
-  'treeXpMult',
   'phasesDropGateOnly',
   'phasesDropNonGateOnly',
   'phasesJaulaSectionDesc',
@@ -306,6 +350,13 @@ const KEYS_ADDED: readonly string[] = [
  * screen-reader text behind each header's icon.
  */
 const PROSE_EDITED_PATHS: readonly string[] = [
+  'treeDano',
+  'treeCrit',
+  'treeCritDmg',
+  'treeSpeed',
+  'treeEnergy',
+  'treeTeamCoin',
+  'treeTeamCoinHint',
   'phasesGoldActualHint',
   'phasesJaulaSection',
   'phasesJaulaEarly',

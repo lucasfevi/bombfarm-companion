@@ -19,10 +19,27 @@ of Energy is worth more against a longer cycle than it used to be). The per-hous
 ladder is corrected from the same source: Casa II and Casa III were listed at 6 and 9 slots and
 are really 5 and 7.
 
-The Account panel is now a page of its own at `/account`, reachable from the site nav, and leaves
-the planner's tab strip — the planner keeps Abilities, Gear and Points. Alongside the existing
-House, Farm, Skill Tree and Team buffs controls, the page adds a "From your save" panel for the
-account-wide values the save already carried but nothing outside the import dialog ever showed:
-furthest phase reached, flat Luck and the XP multiplier from the skill tree, the two different
-slot counts (field slots vs House recovery slots, which are genuinely different numbers), and the
-House countdown recorded in the save with the house and level it was captured at.
+A second correction rides along: House level 0 (a house you have not unlocked) used to extrapolate
+BELOW the level-1 base, inventing a cycle longer than the house can ever have. The game reports the
+base for such a house, so the level is now clamped to 1..20.
+
+The Account panel becomes a page of its own at `/account`, reachable from the site nav, and leaves
+the planner's tab strip — the planner keeps Abilities, Gear and Points. It is rebuilt the way the
+Farm page is, as small focused sections instead of one long panel:
+
+- **A header** naming the account: player name, account ID, current phase and furthest phase. The
+  first two come from `account.player_name` / `account.account_id`, which are optional export keys
+  the app never read before; a save without them shows dashes rather than a blank header.
+- **A House section** with the current House and its level as `13 / 20`, its recovery cycle and
+  recovery slots — and what the next House gives you at its own level 1, so the upgrade is a
+  comparison rather than a guess.
+- **A Skill Tree section** mirroring the game's own Bonus summary, including the part the game
+  leaves implicit: Total damage is not a third independent bonus, it is `(1 + squad damage) ×
+  multiplicative damage`, and the panel prints that working. Luck and the XP multiplier moved here,
+  and field slots show both the tree's bonus and the usable total (they differ by exactly one).
+
+The farm-phase field, the target-prop picker and the team-buff fields are gone from the page along
+with the strings and components that served only them; the page is now entirely read-only,
+import-sourced facts. Note that a stored team-buffs override is still honoured by the farm-rate
+math — nothing can author a new one, so an account that set one before keeps it with no UI to
+change it.

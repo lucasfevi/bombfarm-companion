@@ -66,6 +66,18 @@ export type AccountImportData = {
     xpMult?: number;
     /** `luck_add × 100` — flat percentage points (AD-BSP-22, ASM-01, BSPW5-03). */
     luckFlatPct: number;
+    /**
+     * `team_dmg_add × 100` — the tree's "Squad damage" percentage, one of the two factors
+     * {@link danoTotal} is the product of. Carried so the Account page can show that product
+     * rather than assert an opaque total; nothing computes damage from it.
+     */
+    squadDmgPct?: number;
+    /** `geo_mult` verbatim — the tree's "Multiplicative damage" factor. See {@link squadDmgPct}. */
+    geoMult?: number;
+    /** `vagas_campo` — field slots the TREE grants, one less than `skills.field_slots`. */
+    fieldSlotsBonus?: number;
+    /** `bag_tabs_bonus` — extra bag tabs the tree grants. */
+    bagTabsBonus?: number;
   } | null;
   houseIdx: number | null;
   houseLevel: number | null;
@@ -107,6 +119,18 @@ export type AccountImportData = {
    * relaxes what *test fixtures elsewhere* are forced to supply.
    */
   maxPhase?: number | null;
+  /**
+   * `account.player_name` and `account.account_id` — who this save belongs to.
+   *
+   * Both are `allowance` keys on the export fingerprint, never required: a real export carries
+   * them, and the committed corpus has them scrubbed precisely because they identify a person.
+   * `null` on every path that does not supply them, so a scrubbed fixture and a pre-identity
+   * save are indistinguishable from "this account has no name", which is the honest reading.
+   *
+   * Never put a real capture's values in a tracked fixture — invent them (`'Tester'` / `'1'`).
+   */
+  playerName?: string | null;
+  accountId?: string | null;
 };
 
 /**
@@ -154,9 +178,13 @@ function bool(value: unknown, fallback = false): boolean {
  * Maps `skills.totals` (skill-tree aggregate bonuses) and `casa` (current house)
  * into the app's account-wide TreeState/HeroContext shape.
  *
- * `danoTotal` is `dmg_static` taken as an OPAQUE, already-computed total — do not try to
- * reconstruct it from `(1 + team_dmg_add) * geo_mult`. That product does not match: measured
- * `2.797` predicted vs `3624.70` actual on a real save.
+ * `danoTotal` is read from `dmg_static` and stays the single source every damage computation
+ * uses. It IS `(1 + team_dmg_add) × geo_mult` — verified to full double precision on two
+ * independent captures (`1.179 × 1.0258485392687 = 1.2094754277978` and
+ * `1.855814815 × 1.17623666193598 = 2.18287742316694`, both equal to their save's own
+ * `dmg_static`). The two factors are carried alongside it for DISPLAY only, so the Account page
+ * can show the product instead of an unexplained total; no math reconstructs `danoTotal` from
+ * them, because `dmg_static` is the value the client itself counts with.
  */
 function mapAccountPhase(raw: Record<string, unknown>): number | null {
   const account = isObject(raw.account) ? raw.account : null;
@@ -226,6 +254,36 @@ function resolveCasaHouse(raw: Record<string, unknown>): Record<string, unknown>
   return casa;
 }
 
+/**
+ * `account.player_name` / `account.account_id`. Both are optional on the export fingerprint and
+ * scrubbed from the committed corpus, so absence is normal and never an error.
+ *
+ * `account_id` is normalised to a STRING: real exports serialise it as a JSON number (`486.0`),
+ * but it is an identifier, not a quantity — nothing adds to it, and keeping it numeric would
+ * eventually print a rounded or exponent-formatted id. A blank or whitespace-only name is `null`
+ * rather than an empty label.
+ */
+function mapAccountIdentity(raw: Record<string, unknown>): {
+  playerName: string | null;
+  accountId: string | null;
+} {
+  const account = isObject(raw.account) ? raw.account : null;
+  if (!account) return { playerName: null, accountId: null };
+
+  const rawName = account.player_name;
+  const playerName = typeof rawName === 'string' && rawName.trim() !== '' ? rawName.trim() : null;
+
+  const rawId = account.account_id;
+  let accountId: string | null = null;
+  if (typeof rawId === 'number' && Number.isFinite(rawId)) {
+    accountId = String(rawId);
+  } else if (typeof rawId === 'string' && rawId.trim() !== '') {
+    accountId = rawId.trim();
+  }
+
+  return { playerName, accountId };
+}
+
 function mapAccountData(raw: Record<string, unknown>): AccountImportData {
   const skills = isObject(raw.skills) ? raw.skills : null;
   const totals = skills && isObject(skills.totals) ? skills.totals : null;
@@ -235,6 +293,7 @@ function mapAccountData(raw: Record<string, unknown>): AccountImportData {
   // Read off `skills`, not `casa` — the field cap is a skill-tree quantity and is present even on
   // a payload that omits `casa` entirely (`AD-036` per-section fidelity).
   const fieldSlots = resolveFieldSlots(skills);
+  const { playerName, accountId } = mapAccountIdentity(raw);
 
   // MOD-36: single-pass optional-field parse — stays null unless the save carries `totals`.
   let tree: AccountImportData['tree'] = null;
@@ -249,6 +308,10 @@ function mapAccountData(raw: Record<string, unknown>): AccountImportData {
       xpMult: asNumber(totals.xp_mult, 1) || 1,
       // BSPW5-03 (ASM-01): flat Luck percentage points — absent key defaults to 0.
       luckFlatPct: asNumber(totals.luck_add) * 100,
+      squadDmgPct: asNumber(totals.team_dmg_add) * 100,
+      geoMult: asNumber(totals.geo_mult, 1) || 1,
+      fieldSlotsBonus: asNumber(totals.vagas_campo),
+      bagTabsBonus: asNumber(totals.bag_tabs_bonus),
     };
   }
 
@@ -271,12 +334,24 @@ function mapAccountData(raw: Record<string, unknown>): AccountImportData {
       houseCycleSecs: mapHouseCycleSecs(casa),
       phase,
       maxPhase,
+      playerName,
+      accountId,
     };
   }
 
   // No `casa` block: `slots` and `houseCycleSecs` stay absent (both are casa-sourced), but
   // `fieldSlots` still comes through — it lives on `skills`, a section a payload can carry alone.
-  return { tree, houseIdx, houseLevel, fieldSlots, houseCycleSecs: null, phase, maxPhase };
+  return {
+    tree,
+    houseIdx,
+    houseLevel,
+    fieldSlots,
+    houseCycleSecs: null,
+    phase,
+    maxPhase,
+    playerName,
+    accountId,
+  };
 }
 
 const EMPTY_ACCOUNT_DATA: AccountImportData = {
@@ -287,6 +362,8 @@ const EMPTY_ACCOUNT_DATA: AccountImportData = {
   houseCycleSecs: null,
   phase: null,
   maxPhase: null,
+  playerName: null,
+  accountId: null,
 };
 
 /**

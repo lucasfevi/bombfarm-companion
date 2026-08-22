@@ -24,12 +24,12 @@ const MAX_PROPS = 8;
 /** Reviewed empty — no component is exempted from the 8-prop budget (MOD-17, error). */
 const ALLOWLIST_FILES = new Set<string>([]);
 
-/** W5-migrated components — must stay ≤8 and never live under ALLOWLIST_FILES. */
+/** W5-migrated components — must stay ≤8 and never live under ALLOWLIST_FILES.
+ *  `AccountColumn` left the list when the Account page replaced it with focused panels. */
 const MIGRATED_SIX = [
   'src/features/planner/components/planner-tabs.tsx::PlannerTabs',
   'src/features/planner/components/hero-abilities-tab.tsx::HeroAbilitiesTab',
   'src/features/planner/components/gear-tab.tsx::GearTab',
-  'src/features/account/components/account-column.tsx::AccountColumn',
   'src/features/planner/components/advice-column.tsx::AdviceColumn',
   'src/features/planner/components/hero-strip.tsx::HeroStrip',
   'src/features/planner/components/hero-planner.tsx::HeroPlanner',

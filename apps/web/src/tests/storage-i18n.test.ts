@@ -29,13 +29,23 @@ describe('account house chrome (AHK-11)', () => {
     expect(STRINGS.pt.houseLevelLabel).not.toMatch(/\bNv casa\b/);
   });
 
-  it('houseRestHint uses {minutes} + {seconds} placeholders in both langs', () => {
-    expect(STRINGS.en.houseRestHint).toContain('{minutes}');
-    expect(STRINGS.en.houseRestHint).toContain('{seconds}');
-    expect(STRINGS.pt.houseRestHint).toContain('{minutes}');
-    expect(STRINGS.pt.houseRestHint).toContain('{seconds}');
-    expect(sub(STRINGS.en.houseRestHint, { minutes: 9, seconds: 22 })).toBe('Rest 9 min 22 s');
-    expect(sub(STRINGS.pt.houseRestHint, { minutes: 9, seconds: 22 })).toBe('Descanso 9 min 22 s');
+  it('the next-House labels name the House they describe, in both langs', () => {
+    expect(STRINGS.en.accountNextHouseCycle).toContain('{house}');
+    expect(STRINGS.en.accountNextHouseSlots).toContain('{house}');
+    expect(STRINGS.pt.accountNextHouseCycle).toContain('{house}');
+    expect(STRINGS.pt.accountNextHouseSlots).toContain('{house}');
+    expect(sub(STRINGS.en.accountNextHouseCycle, { house: 'Casa IV' })).toBe('Casa IV cycle');
+    expect(sub(STRINGS.pt.accountNextHouseCycle, { house: 'Casa IV' })).toBe('Ciclo da Casa IV');
+  });
+
+  it('the total-damage tip prints the product, not three unrelated numbers', () => {
+    for (const lang of ['en', 'pt'] as const) {
+      const tip = STRINGS[lang].accountTotalDmgTip;
+      expect(tip).toContain('{squad}');
+      expect(tip).toContain('{geo}');
+      expect(tip).toContain('{total}');
+      expect(tip).toMatch(/\(1 \+ \{squad\}%\)\s*×\s*\{geo\}\s*=\s*\{total\}/);
+    }
   });
 
   it('import preview chrome is distinct from the upload step', () => {

@@ -5,6 +5,7 @@ import {
   fuseSeconds,
   marginalFuseSeconds,
   FUSE_FLOOR,
+  HOUSE_MAX_LEVEL,
   houseRestSeconds,
   resolveHouseRestSeconds,
   splitHouseRest,
@@ -357,6 +358,22 @@ describe('houseRestSeconds', () => {
   it('reproduces a captured casa.cycle_secs to the rounded second', () => {
     // account 486: Casa I level 11, casa.cycle_secs 1168.42105263158.
     expect(houseRestSeconds(0, 11)).toBe(1168);
+    // Same account after levelling: Casa III level 13, casa.cycle_secs 922.105263157895.
+    expect(houseRestSeconds(2, 13)).toBe(922);
+  });
+
+  it('clamps level 0 to the level-1 base rather than extrapolating past it', () => {
+    // A house the account has not unlocked reads `levels: 0`, and the save's own
+    // `cycle_secs_per_house` reports that house's BASE for it (840 for Casa IV, 660 for Casa V
+    // on a capture whose `levels` are [20, 20, 13, 0, 0]). Extrapolating below level 1 invented
+    // a cycle LONGER than the house can ever have.
+    expect(houseRestSeconds(3, 0)).toBe(840);
+    expect(houseRestSeconds(4, 0)).toBe(660);
+    expect(houseRestSeconds(3, 0)).toBe(houseRestSeconds(3, 1));
+  });
+
+  it('clamps above the max level too, so the ladder never runs past its own endpoint', () => {
+    expect(houseRestSeconds(0, 999)).toBe(houseRestSeconds(0, HOUSE_MAX_LEVEL));
   });
 });
 

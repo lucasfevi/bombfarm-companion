@@ -26,6 +26,12 @@ export const selectHouseCycleSecsHouseIdx = (state: PlannerStore) => state.house
 export const selectHouseCycleSecsLevel = (state: PlannerStore) => state.houseCycleSecsLevel;
 export const selectTargetProp = (state: PlannerStore) => state.targetProp;
 export const selectMaxPhase = (state: PlannerStore) => state.maxPhase;
+export const selectPlayerName = (state: PlannerStore) => state.playerName;
+export const selectAccountId = (state: PlannerStore) => state.accountId;
+export const selectTreeSquadDmgPct = (state: PlannerStore) => state.treeSquadDmgPct;
+export const selectTreeGeoMult = (state: PlannerStore) => state.treeGeoMult;
+export const selectTreeFieldSlotsBonus = (state: PlannerStore) => state.treeFieldSlotsBonus;
+export const selectTreeBagTabsBonus = (state: PlannerStore) => state.treeBagTabsBonus;
 
 /**
  * The roster-wide team-buffs total every combat computation should actually use (issue #132):
@@ -102,6 +108,10 @@ export function selectAccountShared(state: PlannerStore): AccountShared {
       teamCoinPct: state.treeTeamCoinPct,
       luckFlatPct: state.treeLuckFlatPct,
       xpMult: state.treeXpMult,
+      squadDmgPct: state.treeSquadDmgPct,
+      geoMult: state.treeGeoMult,
+      fieldSlotsBonus: state.treeFieldSlotsBonus,
+      bagTabsBonus: state.treeBagTabsBonus,
     },
     // `teamBuffs` is deprecated (see AccountShared's own doc comment) — written only so an old
     // app build reading this file sees a plausible value, never read back for the override
@@ -123,6 +133,8 @@ export function selectAccountShared(state: PlannerStore): AccountShared {
     houseCycleSecsLevel: state.houseCycleSecsLevel,
     forgeFloor: state.forgeFloor,
     maxPhase: state.maxPhase,
+    playerName: state.playerName,
+    accountId: state.accountId,
   };
   return accountSharedCache;
 }
@@ -138,6 +150,10 @@ export function selectAccountTuple(state: PlannerStore) {
     state.treeTeamCoinPct,
     state.treeLuckFlatPct,
     state.treeXpMult,
+    state.treeSquadDmgPct,
+    state.treeGeoMult,
+    state.treeFieldSlotsBonus,
+    state.treeBagTabsBonus,
     state.teamBuffsOverride,
     state.houseIdx,
     state.houseLevel,
@@ -152,6 +168,8 @@ export function selectAccountTuple(state: PlannerStore) {
     state.houseCycleSecsLevel,
     state.forgeFloor,
     state.maxPhase,
+    state.playerName,
+    state.accountId,
   ] as const;
 }
 

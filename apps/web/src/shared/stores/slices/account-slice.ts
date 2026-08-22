@@ -35,6 +35,13 @@ export type AccountSlice = {
   /** `skills.totals.xp_mult` — scales `xpPerPropWiki` the same way `treeTeamCoinPct` scales
    *  gold per prop. `1` (not `0`) is the no-boost default, matching {@link TreeState.xpMult}. */
   treeXpMult: number;
+  /** `team_dmg_add × 100` and `geo_mult` — the two factors `treeDanoTotal` is the product of.
+   *  DISPLAY ONLY (the Account page shows the product); damage math reads `treeDanoTotal`. */
+  treeSquadDmgPct: number;
+  treeGeoMult: number;
+  /** `vagas_campo` / `bag_tabs_bonus` — counts the tree grants, shown on the Account page. */
+  treeFieldSlotsBonus: number;
+  treeBagTabsBonus: number;
   /**
    * The user's explicit team-buffs OVERRIDE — `null` means "derive from the deployed roster"
    * (issue #132; see `selectEffectiveTeamBuffs`, `account-selectors.ts`). This is the ONLY
@@ -81,6 +88,10 @@ export type AccountSlice = {
    * treats `null` as "show every phase, no lock badges".
    */
   maxPhase: number | null;
+  /** `account.player_name` / `account.account_id` — the Account page header. `null` when the
+   *  imported save carried neither (both are optional export keys). */
+  playerName: string | null;
+  accountId: string | null;
 
   setTeamBuffsOverride: (value: Record<TeamBuffId, number> | null) => void;
   setHouseIdx: (value: number) => void;
@@ -111,6 +122,10 @@ export const createAccountSlice: StateCreator<
   treeTeamCoinPct: defaultTree.teamCoinPct,
   treeLuckFlatPct: defaultTree.luckFlatPct ?? 0,
   treeXpMult: defaultTree.xpMult ?? 1,
+  treeSquadDmgPct: defaultTree.squadDmgPct ?? 0,
+  treeGeoMult: defaultTree.geoMult ?? 1,
+  treeFieldSlotsBonus: defaultTree.fieldSlotsBonus ?? 0,
+  treeBagTabsBonus: defaultTree.bagTabsBonus ?? 0,
   teamBuffsOverride: null,
   houseIdx: defaultCtx.houseIdx,
   houseLevel: defaultCtx.houseLevel,
@@ -124,6 +139,8 @@ export const createAccountSlice: StateCreator<
   houseCycleSecsHouseIdx: null,
   houseCycleSecsLevel: null,
   maxPhase: null,
+  playerName: null,
+  accountId: null,
 
   setTeamBuffsOverride: (value) => {
     if (teamBuffsOverrideEqual(get().teamBuffsOverride, value)) return;
@@ -170,6 +187,10 @@ export const createAccountSlice: StateCreator<
       treeTeamCoinPct: shared.tree.teamCoinPct ?? 0,
       treeLuckFlatPct: shared.tree.luckFlatPct ?? 0,
       treeXpMult: shared.tree.xpMult ?? 1,
+      treeSquadDmgPct: shared.tree.squadDmgPct ?? 0,
+      treeGeoMult: shared.tree.geoMult ?? 1,
+      treeFieldSlotsBonus: shared.tree.fieldSlotsBonus ?? 0,
+      treeBagTabsBonus: shared.tree.bagTabsBonus ?? 0,
       // `shared` already went through `normalizeAccount` (issue #132) — `teamBuffsOverride` is
       // `null` (derive from the roster) or an already-clean `Record<TeamBuffId, number>`.
       teamBuffsOverride: shared.teamBuffsOverride ?? null,
@@ -185,6 +206,8 @@ export const createAccountSlice: StateCreator<
       houseCycleSecsHouseIdx: shared.houseCycleSecsHouseIdx ?? null,
       houseCycleSecsLevel: shared.houseCycleSecsLevel ?? null,
       maxPhase: shared.maxPhase ?? null,
+      playerName: shared.playerName ?? null,
+      accountId: shared.accountId ?? null,
     });
   },
 
@@ -199,6 +222,10 @@ export const createAccountSlice: StateCreator<
       patch.treeTeamCoinPct = data.tree.teamCoinPct ?? 0;
       patch.treeLuckFlatPct = data.tree.luckFlatPct;
       patch.treeXpMult = data.tree.xpMult ?? 1;
+      patch.treeSquadDmgPct = data.tree.squadDmgPct ?? 0;
+      patch.treeGeoMult = data.tree.geoMult ?? 1;
+      patch.treeFieldSlotsBonus = data.tree.fieldSlotsBonus ?? 0;
+      patch.treeBagTabsBonus = data.tree.bagTabsBonus ?? 0;
     }
     if (data.houseIdx != null) {
       patch.houseIdx = data.houseIdx;
@@ -244,6 +271,10 @@ export const createAccountSlice: StateCreator<
     // concrete `number | null`. Coerce a merely-absent field to `null` so the slice's own
     // `number | null` invariant never sees `undefined`.
     patch.maxPhase = data.maxPhase ?? null;
+    // UNCONDITIONAL, same reasoning as `maxPhase`: a re-import from a DIFFERENT account that
+    // carries no identity must not leave the previous account's name in the page header.
+    patch.playerName = data.playerName ?? null;
+    patch.accountId = data.accountId ?? null;
     if (Object.keys(patch).length > 0) set(patch);
   },
 });
