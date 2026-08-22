@@ -136,8 +136,8 @@ function buildFixture(opts: FixtureOpts = {}) {
       energy: (naked.energy + 40) * (1 + treeEnergy / 100),
       speed: poolBump(naked.speed, sheetOther.speed, treeSpeed),
       critChance: poolBump(naked.critChance, sheetOther.critChance, treeCritChance),
-      critDmg: poolBump(naked.critDmg - Math.max(0, sheetOther.critDmgFlat), 0, treeCritDmg)
-        + Math.max(0, sheetOther.critDmgFlat),
+      // Crit damage takes no pool bump: the tree node is a flat percentage-point addend.
+      critDmg: naked.critDmg + treeCritDmg,
     } satisfies SheetStats);
 
   const treeSheet: TreeSheetTotals = {
@@ -486,9 +486,11 @@ describe('stat-breakdown builder', () => {
     const critDmg = buildStatBreakdown('critDmg', facts);
     expect(critDmg.kind).toBe('ledger');
     if (critDmg.kind === 'ledger') {
+      // Crit damage's tree node is a FLAT percentage-point addend, so its step carries a bare
+      // amount and no `pctOfBase` provenance — unlike crit chance's, asserted above.
       const tree = critDmg.steps.find((s) => s.source === 'tree' && s.op === '+');
-      expect(tree?.pctOfBase?.percent).toBeCloseTo(12, 6);
-      expect(tree?.pctOfBase?.base).toBeCloseTo(facts.naked.critDmg - Math.max(0, facts.sheetOther.critDmgFlat), 6);
+      expect(tree?.amount).toBeCloseTo(12, 6);
+      expect(tree?.pctOfBase).toBeUndefined();
     }
   });
 

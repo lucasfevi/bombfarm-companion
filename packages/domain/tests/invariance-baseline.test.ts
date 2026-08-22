@@ -16,6 +16,29 @@
  * the walk below decodes leaves back to numbers for a same-value comparison (`Object.is`) only
  * to name the first differing hero/function/stat on failure.
  *
+ * RE-RECORDED (6) at the Tier 1 reset-budget level clamp. `findGateCandidate` took
+ * `budgetOf(pts)` un-clamped, so a hero whose inferred spend exceeds its level was handed more
+ * points to re-place than the game can ever grant it — the same phantom-proposal failure the
+ * `reoptBudget` clamp already closed for Tier 2, left open on the tier that actually drives the
+ * reset panel. `resetBudget(pts, level)` closes it.
+ *
+ * Exactly **14** of the 2791 recorded scalars moved, and every one is a `resetAdvice` field
+ * (`gainPct`, `reoptDps`, `recommend`) on one of FIVE heroes — Bellatrix@27, Nyx@25 and Wren@24
+ * in `payload-20260812-8heroes.json`, Jon@38 and Bellatrix@42 in `save-20260813-5heroes.json`.
+ * All five are over-recovered (35, 29, 25, 44 and 46 points against levels 27, 25, 24, 38 and
+ * 42), because both corpus files predate the 2026-08-15 patch and today's sheet math cannot
+ * explain their numbers. Every one of their `gainPct` values collapses to `0` and `recommend`
+ * to `false`: they were respec proposals built on points the hero cannot hold — Bellatrix@27's
+ * advertised `+20.19%` was the largest.
+ *
+ * NOT moved, and the proof this was the clamp and nothing else: every sheet key on every subject,
+ * every `inferSpentPoints` value (the clamp reads `pts`, it never rewrites it), every hero whose
+ * recovery already fit its level, and `meta.scalarCount`. The crit-damage tree-shape fix that
+ * shipped alongside it moves nothing here either — every committed fixture carries
+ * `crit_dmg_add: 0`, which is exactly why the shape went unmeasured for so long and why
+ * `save-20260822-15heroes-tree-crit-dmg.json` was committed to close that gap.
+ *
+ * ---
  * RE-RECORDED (5) at the corrected House cycle table. The `HOUSES` endpoints were a whole-minute
  * reconstruction running a full minute short per house; the wiki's
  * `rotacao.casas[].cycle_secs_base`/`cycle_secs_max` replaced them, and neither corpus file

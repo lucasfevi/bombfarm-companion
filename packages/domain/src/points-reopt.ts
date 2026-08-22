@@ -15,6 +15,7 @@ import { sustainedDps, type Context, type EffectiveDeltas, type HeroSheet } from
 import type { SheetKey } from './planner-constants';
 import {
   budgetOf,
+  resetBudget,
   buildCandidateSheet,
   cappedStatsOf,
   greedyWalk,
@@ -37,6 +38,7 @@ export {
   budgetOf,
   greedyWalk,
   reoptBudget,
+  resetBudget,
 } from './points-reopt-core';
 export type { GreedyWalkResult } from './points-reopt-core';
 export {
@@ -57,11 +59,11 @@ export type ReoptInput = {
   /**
    * The hero's level — its whole stat-point pool.
    *
-   * Read by Tier 2 only (`reoptBudget`), because the two tiers answer different questions and
-   * so take different budgets. Tier 2 is "what is the best build for this hero", which spends
-   * the pool. Tier 1 is "is a **reset** worth buying", and a reset only moves points that are
-   * already spent — see `findGateCandidate`. Both tiers still take one input shape so callers
-   * need not know which reads what.
+   * The two tiers answer different questions and so take different budgets — Tier 2 is "what
+   * is the best build for this hero", which spends the pool (`reoptBudget`); Tier 1 is "is a
+   * **reset** worth buying", and a reset only moves points that are already spent
+   * (`resetBudget`, see `findGateCandidate`). Both read this as the ceiling neither budget may
+   * exceed: a hero can never hold more points than its level.
    */
   level: number;
 };
@@ -105,16 +107,16 @@ export type ReoptResult = {
  * resolve in its favour, so the returned candidate can never score below the player's own.
  */
 export function findGateCandidate(input: ReoptInput): ReoptResult {
-  const { pts, effective, effectiveDelta, context } = input;
-  // `budgetOf(pts)`, NOT `reoptBudget(pts, level)`: this tier drives `buildResetAdvice`, whose
-  // whole claim is "spend a real in-game reset to reach this build". A reset only redistributes
+  const { pts, effective, effectiveDelta, context, level } = input;
+  // `resetBudget`, NOT `reoptBudget`: this tier drives `buildResetAdvice`, whose whole claim
+  // is "spend a real in-game reset to reach this build". A reset only redistributes
   // points that are already spent, so unplaced pool is not this question's budget — a hero with
   // points still banked does not need a reset, it needs to spend them, which is what the Points
   // panel's own unspent counter and the (Tier 2) Optimize build control are for. Counting the
   // pool here would tell every freshly imported, unallocated hero to buy a respec it has no use
   // for. Non-compounding for the same reason Tier 2 is: the walk places at most `budget`, so
-  // feeding a result back can only shrink it.
-  const budget = budgetOf(pts);
+  // feeding a result back can only shrink it. `resetBudget` adds only the level ceiling.
+  const budget = resetBudget(pts, level);
   const cappedOnEntry = cappedStatsOf(effective);
 
   if (budget <= 0) {
