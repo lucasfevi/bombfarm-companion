@@ -152,10 +152,56 @@ jobs:
         run: pnpm --filter @bombfarm/desktop exec playwright install
 
       - name: App boot smoke test
-        run: pnpm --filter @bombfarm/desktop exec playwright test -c playwright.config.ts
+        # Explicit --project: playwright.config.ts also carries the render-count instrument
+        # project below, and a bare `playwright test` runs every project by default — this job
+        # is the required gate and must keep running exactly the specs it always has.
+        run: pnpm --filter @bombfarm/desktop exec playwright test -c playwright.config.ts --project=electron-smoke
         env:
           NODE_ENV: production
           BFC_FLAVOR: dev
+
+  render-count-windows:
+    # Advisory only (continue-on-error): a render-profiling instrument for the upcoming live
+    # tab, not a correctness check on shipped behaviour. Two of its three measured numbers
+    # (component render counts) were measured to vary run-to-run on one machine — see
+    # render-count-baseline.json's `recordedOnly` note — so this is a signal to read, not a gate
+    # to trust blindly on a shared runner it has never run on.
+    name: Render-count instrument (advisory — component counts vary run to run, not yet gated)
+    runs-on: windows-latest
+    needs: quality
+    if: needs.quality.result == 'success'
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build packages and desktop shell
+        run: pnpm --filter @bombfarm/desktop build
+        env:
+          NODE_ENV: production
+          BFC_FLAVOR: dev
+
+      - name: Install Playwright
+        run: pnpm --filter @bombfarm/desktop exec playwright install
+
+      - name: Render-count instrument
+        run: pnpm --filter @bombfarm/desktop exec playwright test -c playwright.config.ts --project=render-count-instrument
+        env:
+          NODE_ENV: production
+          BFC_FLAVOR: dev
+          BFC_GAME_READER: fixture
+
+      - name: Compare against baseline (gated fields only)
+        run: pnpm --filter @bombfarm/desktop render-count:compare
 
   ci-desktop-required:
     name: ci-desktop-required

@@ -234,6 +234,52 @@ jobs:
           if-no-files-found: ignore
           retention-days: 1
 
+  perf:
+    name: perf-render-counts (advisory, non-blocking)
+    needs: [changes]
+    if: github.event_name != 'pull_request' || needs.changes.outputs.e2e == 'true'
+    runs-on: ubuntu-latest
+    # Same image as smoke-shard/visual-e2e — pinned to match @playwright/test.
+    container: mcr.microsoft.com/playwright:v1.61.1-noble
+    timeout-minutes: 20
+    # Advisory only: componentRenders is deterministic on a dedicated host, but this has
+    # not yet been observed on a shared GitHub-hosted runner. Promote to a required check
+    # once it has run clean across real PRs here, not before.
+    continue-on-error: true
+    defaults:
+      run:
+        working-directory: apps/web
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install dependencies
+        working-directory: .
+        run: pnpm install --frozen-lockfile
+
+      - name: Install Playwright Chromium
+        run: pnpm exec playwright install chromium
+
+      - name: Build perf-measurement bundle
+        run: pnpm perf:build:profile
+
+      - name: Capture render counts (prod-profile)
+        env:
+          CI: '1'
+        run: pnpm perf:capture:profile
+
+      - name: Compare against committed baseline
+        run: pnpm perf:compare
+
   report:
     needs: [changes, build-e2e, smoke-shard, visual-e2e]
     if: >

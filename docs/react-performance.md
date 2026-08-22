@@ -28,6 +28,16 @@ Structural splits and the memoized advisor **selector** (not a component-level `
 
    The profiling build is unminified so names survive — never judge **bundle size** from it.
 
+10. **A CI job checks `componentRenders` against a committed baseline** (`apps/web/e2e/perf/baseline.json`, `prod-profile`, `P-02`–`P-05`) — exact match, no tolerance. It is currently advisory (non-blocking) pending a run of clean history on the actual CI runner; see the workflow for the promotion criterion. A mismatch means one of two things:
+    - **A real regression** — investigate before merging, same as rule 6's method.
+    - **A deliberate change** to a gated interaction (its render count is now legitimately different) — refresh the baseline in the same PR:
+      ```
+      pnpm --filter @bombfarm/web perf:build:profile
+      PERF_FORCE=1 pnpm --filter @bombfarm/web perf:capture:profile
+      pnpm --filter @bombfarm/web perf:compare
+      ```
+      then hand-copy the new `medianComponentRenders` per scenario from `apps/web/e2e/perf/out/perf-baseline.raw.json` into `apps/web/e2e/perf/baseline.json`. Never widen the guard's tolerance instead — it compares exactly on purpose.
+
 ```tsx
 // ❌ BAD — bare pipeline object as dep; any store write invalidates
 useMemo(() => computeAdvisorPipeline(inputs), [inputs]);
