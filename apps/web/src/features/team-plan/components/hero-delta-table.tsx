@@ -72,7 +72,7 @@ export function HeroDeltaTable({ t, lang, plan }: { t: Strings; lang: Lang; plan
               pointReset && hero
                 ? // `pointReset.pts` is always a full absolute PointAlloc (buildPointResets uses
                   // `finalPtsByHeroId[heroId]`) — the domain type just widens it for storage ease.
-                  { before: hero.pts, after: pointReset.pts as PointAlloc }
+                  { before: hero.pts, after: pointReset.pts as PointAlloc, level: hero.level }
                 : null;
 
             return (

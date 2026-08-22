@@ -13,7 +13,8 @@ import {
   type RarityKey,
 } from './model';
 import { applyPoints, emptySheetOther, type Loadout, type SheetOtherPct, type SheetStats } from './gear';
-import { SHEET_KEYS, type SheetKey } from './planner-constants';
+import { spentPointsOf } from './point-inference';
+import type { SheetKey } from './planner-constants';
 import { computeCombatMults, derive, type DeriveResult } from './derive';
 import { applySkillTree, type BirthStats, type TreeSheetTotals } from './birth-sheet';
 import { resolveCloneGeared, resolveDeriveSheets } from './advisor-pipeline-sheets';
@@ -296,7 +297,7 @@ export function computeAdvisorPipeline(input: AdvisorPipelineInput): AdvisorPipe
   energySwitchPointCallCount += 1;
   const eSwitch = energySwitchPoint(effective, context);
   const best = ranking[0];
-  const spentDelta = SHEET_KEYS.reduce((sum, key) => sum + pts[key], 0);
+  const spentDelta = spentPointsOf(pts);
   const field = fieldSeconds(effective, context);
   const uptime = (100 * field) / (field + rest);
 

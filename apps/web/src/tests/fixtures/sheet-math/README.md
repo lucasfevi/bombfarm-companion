@@ -148,3 +148,17 @@ does not touch.
 | SHA-256 (committed file) | `e8b8bc03d4615329fd66c2c40f2c3f95ba05b864623006e745f4fb9ae58c1716` |
 | May prove | **the per-POINT crit-chance and CDR rates, and their split** — Sora owns no items and no crit/cooldown ability, so her entire sheet move between the two files is the stat-point term alone: her crit multiplier moves `1.0309330166 → 1.1309330166` and her cooldown multiplier `1.0000000000 → 1.1000000000` on exactly 10 moved points, both by exactly `+0.1`. Every other stat (attack, energy, speed, luck, penetration, crit damage) solves to zero points for her, so the 10 are provably all crit chance + cooldown. Combined with the external crit-chance anchor (0.02, corroborated by the wiki mirror's `ponto_inc` table), this pins the split at 5 + 5 and both rates at `0.02` each |
 | May **not** prove | anything the sibling export cannot — it is the same account ~2 hours later. In particular the respec touched one ★0 hero, so star scaling of the point term stays unobserved |
+
+## `save-20260822-15heroes-tree-crit-dmg.json`
+
+| Field | Value |
+| --- | --- |
+| Source capture | live save export, captured externally from the game client |
+| Capture date | 2026-08-22 |
+| Account | 486, `phase: 51`, `max_phase: 122` — 15 heroes, levels 1 to 97, one (`Buff S #1`) carrying `golpe_brutal` 20/20 |
+| Capture log entry | *Skill-tree crit-damage shape*, 2026-08-22 row (tracked externally to this repo) |
+| Scrub | `account.account_id`, `account.player_name` removed — nothing else changed |
+| SHA-256 (unscrubbed source) | `51269bc374a8c11ec7bb8e14cf329acbedcf41fc155bd6cf8ed043a0a3cb5dc9` |
+| SHA-256 (committed file) | `099ffada706f8ade35d0efde493609794e84e80d81cdadcd811767a7c084742c` |
+| May prove | **the skill tree's `crit_dmg_add` shape** — the first capture in the corpus with a nonzero value (`0.081730769`), which is what makes it worth committing. All 15 heroes gain the SAME `+8.1730769` crit-damage percentage points over their birth roll, across rolls spanning `45.03 … 73.13` and levels `1 … 97`: the node is a FLAT addend, not percent-of-base (which would have spread it over `3.68 … 5.98`, hero by hero). Items never roll crit damage and no hero here holds a crit-damage point, so the tree is the only term in the gap. `Buff S #1` additionally proves the tree's flat term and Golpe Brutal's flat `+80` simply stack. With the shape corrected, every hero solves to a whole-number point vector with zero inference issues, each landing exactly on `level` |
+| May **not** prove | star scaling of the tree's crit-damage term (every hero is ★0), nor whether it would scale with a crit-damage point present (none is spent anywhere in the roster); the per-POINT crit-chance/CDR rates (see `save-20260819-respec-crit-cdr.json`) |

@@ -119,6 +119,32 @@ export function reoptBudget(pts: Record<SheetKey, number>, level: number): numbe
   return Math.max(0, Math.min(level, Math.max(level - pts.luck, budgetOf(pts))));
 }
 
+/**
+ * Tier 1's budget: `budgetOf(pts)`, under the same level ceiling Tier 2 carries.
+ *
+ * The floor is deliberately absent — a reset only redistributes points that are already spent,
+ * so unplaced pool is not this tier's budget (see `findGateCandidate`). The ceiling is the same
+ * `level` Tier 2 already carries, and for the same reason: a hero is granted exactly one point
+ * per level, so a budget above its level is an upstream `pts` bug and never a real hero.
+ *
+ * `level`, not the tighter `level - pts.luck` the seven non-Luck keys can actually hold: an
+ * over-spent hero (`clampPointStep`'s one reachable overspend — a level lowered while points are
+ * spent) can hold Luck alone worth its whole level, and the tighter bound would drop such a hero
+ * to a 0 budget and the `budget <= 0` fast path, refusing to reallocate points it demonstrably
+ * has. The looser ceiling still satisfies the display rule in full.
+ *
+ * The point-reset panel prints this number as points the player would have to re-place. Showing
+ * more of them than the hero's level advertises a build the game will not let anyone buy — a
+ * level-97 hero was offered 98, one crit-damage point of it phantom, because the skill tree's
+ * `crit_dmg_add` was being charged percent-of-base and the unexplained residual landed in
+ * `critDmg`. That specific bug is fixed (`applySkillTree`), and
+ * `tests/points-within-level-budget.test.ts` is still the guard that should go red first if
+ * inference regresses again; this ceiling only stops the next one reaching the panel.
+ */
+export function resetBudget(pts: Record<SheetKey, number>, level: number): number {
+  return Math.max(0, Math.min(budgetOf(pts), level));
+}
+
 export type GreedyWalkResult = {
   pts: Record<SheetKey, number>;
   score: number;

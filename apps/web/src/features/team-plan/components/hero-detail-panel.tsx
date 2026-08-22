@@ -37,7 +37,7 @@ export function HeroDetailPanel({
   flowRows: GearFlowRow[];
   heroByScopeKey: Map<string, HeroRecord>;
   heroNameFallback: (heroId: string) => string;
-  pointsReset: { before: PointAlloc; after: PointAlloc } | null;
+  pointsReset: { before: PointAlloc; after: PointAlloc; level: number } | null;
 }) {
   return (
     <div className={accordionLedgerBodyClass}>
@@ -56,7 +56,12 @@ export function HeroDetailPanel({
           <section className="min-w-0">
             <h3 className={sectionTitleClass}>{t.teamPlanHeroBreakdownPointsTitle}</h3>
             {pointsReset ? (
-              <HeroPointBreakdown t={t} pointsBefore={pointsReset.before} pointsAfter={pointsReset.after} />
+              <HeroPointBreakdown
+                t={t}
+                pointsBefore={pointsReset.before}
+                pointsAfter={pointsReset.after}
+                level={pointsReset.level}
+              />
             ) : (
               <p className="m-0 text-[12px] text-muted">{t.teamPlanHeroBreakdownPointsEmpty}</p>
             )}
