@@ -25,9 +25,21 @@ vi.mock('electron-log/main.js', () => ({
   },
 }));
 
-import type { AccountPayload, AccountView } from '@bombfarm/contracts';
+// The non-fixture path now reports status from real process detection (`findProcessId`,
+// process.ts — a synchronous PowerShell spawn, deliberately left untouched and out of scope
+// for this feature). Mocked here so every test controls whether "the game" is running without
+// actually shelling out, the same way `process.ts` itself is never exercised for real in a unit
+// test elsewhere in this repo.
+vi.mock('./process.js', () => ({
+  findProcessId: vi.fn(() => null as number | null),
+}));
+
+import type { AccountPayload, AccountView, LiveTick } from '@bombfarm/contracts';
 import type { AccountCommitter } from './game-reader-service.js';
 import { GameReaderService } from './game-reader-service.js';
+import { findProcessId } from './process.js';
+
+const mockedFindProcessId = vi.mocked(findProcessId);
 
 describe('GameReaderService — cold boot status (design R-2 / APS-03)', () => {
   it('reports not_running on construction in memory mode, never a restored connected status', () => {
@@ -57,6 +69,69 @@ describe('GameReaderService — cold boot status (design R-2 / APS-03)', () => {
     expect(secondRest).toEqual(firstRest);
     expect(secondUpdatedAt).toMatch(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/);
     expect(second.getStatus().status).toBe('not_running');
+  });
+});
+
+describe('GameReaderService — the live (non-fixture) tick never fabricates a reading', () => {
+  it('reports not_running when process detection finds nothing, regardless of any ingested tick', () => {
+    mockedFindProcessId.mockReturnValue(null);
+    const service = new GameReaderService('/fake/user-data', { mode: 'memory' });
+    service.ingestLiveTick({ heroes: [], gold: 500, phase: 12 });
+
+    (service as unknown as { tick(): void }).tick();
+
+    expect(service.getStatus().status).toBe('not_running');
+    expect(service.getSnapshot().mapped).toBeNull();
+  });
+
+  it('reports stale — not a fabricated snapshot — when the process is running but no live-tap frame has arrived yet', () => {
+    mockedFindProcessId.mockReturnValue(4242);
+    const service = new GameReaderService('/fake/user-data', { mode: 'memory' });
+
+    (service as unknown as { tick(): void }).tick();
+
+    expect(service.getStatus().status).toBe('stale');
+    expect(service.getSnapshot().mapped).toBeNull();
+  });
+
+  it('reports stale when the ingested tick carries no gold, rather than inventing gold: 0', () => {
+    mockedFindProcessId.mockReturnValue(4242);
+    const service = new GameReaderService('/fake/user-data', { mode: 'memory' });
+    service.ingestLiveTick({ heroes: [] });
+
+    (service as unknown as { tick(): void }).tick();
+
+    expect(service.getStatus().status).toBe('stale');
+    expect(service.getSnapshot().mapped).toBeNull();
+  });
+
+  it('reports connected and maps the snapshot from the live tap once a real frame has been ingested', () => {
+    mockedFindProcessId.mockReturnValue(4242);
+    const service = new GameReaderService('/fake/user-data', { mode: 'memory' });
+    const tick: LiveTick = { heroes: [], gold: 123456, phase: 26, wave: 3 };
+    service.ingestLiveTick(tick, '2026-08-22T00:00:00.000Z');
+
+    (service as unknown as { tick(): void }).tick();
+
+    expect(service.getStatus().status).toBe('connected');
+    const snapshot = service.getSnapshot();
+    expect(snapshot.mapped?.gold).toBe(123456);
+    expect(snapshot.mapped?.phase).toBe(26);
+    expect(snapshot.raw.state).toEqual({ t: 'snap', gold: 123456, kinds: [], hps: [], phase: 26, wave: 3 });
+    expect(snapshot.raw.inventory).toBeNull();
+  });
+
+  it('a later tick reflects a newer ingested frame — the snapshot channel tracks the tap, not a frozen first read', () => {
+    mockedFindProcessId.mockReturnValue(4242);
+    const service = new GameReaderService('/fake/user-data', { mode: 'memory' });
+
+    service.ingestLiveTick({ heroes: [], gold: 100 }, '2026-08-22T00:00:00.000Z');
+    (service as unknown as { tick(): void }).tick();
+    expect(service.getSnapshot().mapped?.gold).toBe(100);
+
+    service.ingestLiveTick({ heroes: [], gold: 900 }, '2026-08-22T00:00:01.000Z');
+    (service as unknown as { tick(): void }).tick();
+    expect(service.getSnapshot().mapped?.gold).toBe(900);
   });
 });
 
@@ -106,18 +181,19 @@ describe('GameReaderService — account store wiring (T10, design §8/TD-8)', ()
     expect(service.getAccountView()).toBe(FAKE_VIEW);
   });
 
-  it('does not call accountStore.commit() during a memory-mode tick (F2 owns that call site)', async () => {
+  it('never calls accountStore.commit() from a live (non-fixture) tick — F2 owns that call site, sourced from the authenticated route', () => {
+    mockedFindProcessId.mockReturnValue(4242);
     const { committer, calls } = fakeCommitter();
-    const service = new GameReaderService('/fake/user-data', { mode: 'memory', pollDetachedMs: 5 });
+    const service = new GameReaderService('/fake/user-data', { mode: 'memory' });
     service.setAccountStore(committer);
+    service.ingestLiveTick({ heroes: [], gold: 500 });
 
-    service.start();
-    await new Promise((resolve) => setTimeout(resolve, 200));
-    service.stop();
+    (service as unknown as { tick(): void }).tick();
+    (service as unknown as { tick(): void }).tick();
 
     expect(calls).toHaveLength(0);
     expect(service.getAccountView()).toBeNull();
-  }, 10_000);
+  });
 
   it('does nothing when no account store has been set (fixture mode)', () => {
     const service = new GameReaderService('/fake/user-data', { mode: 'fixture' });
@@ -170,8 +246,8 @@ describe('GameReaderService — shutdown ordering (fix/fixture-tick-after-db-clo
     }).not.toThrow();
     service.stop();
 
-    // Recovers the same way tickMemory() already did before this fix: logged and marked
-    // stale, not left mid-crash.
+    // Recovers the same way tickLive() already does: logged and marked stale, not left
+    // mid-crash.
     expect(service.getStatus().status).toBe('stale');
   });
 
