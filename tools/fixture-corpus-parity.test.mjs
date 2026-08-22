@@ -237,7 +237,12 @@ describe('cross-package fixture corpus parity (MP5 F1)', () => {
     'packages/domain/src/stat-breakdown/types.ts': 1,
     'packages/domain/src/team-plan/score.ts': 1,
     'packages/domain/tests/advisor-pipeline.test.ts': 1,
-    'packages/domain/tests/derive.test.ts': 14,
+    // Re-measured for the domain test-typecheck widening: two of this pattern's matches sat on
+    // `TreeSheetTotals`-typed object literals as excess-property keys that type never had (the
+    // surviving field lives on `DeriveInput`/`ComputeCombatMultsInput` elsewhere in this same
+    // file, untouched) — `tsc -p tsconfig.typecheck.json` caught them, dropping this file from
+    // 14 to 12.
+    'packages/domain/tests/derive.test.ts': 12,
     'packages/domain/tests/fidelity-compare.test.ts': 1,
     'packages/domain/tests/fixture-corpus.test.ts': 2,
     'packages/domain/tests/fixtures/i18n-strings-main.json': 9,

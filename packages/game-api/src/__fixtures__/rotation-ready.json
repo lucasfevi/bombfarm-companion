@@ -1,0 +1,218 @@
+{
+  "field_size": 9,
+  "heroes": [
+    {
+      "id": "20402",
+      "level": 88,
+      "energia_atual": 1196.8733714950176,
+      "energia_max": 1603.7933714946475,
+      "energia_pct": 0.7462765420832219,
+      "state": "EM_CAMPO",
+      "in_field": true,
+      "in_casa": false,
+      "recovering": false,
+      "battle_allowed": true
+    },
+    {
+      "id": "26863",
+      "level": 89,
+      "energia_atual": 393.79998591763365,
+      "energia_max": 1816.7999859165075,
+      "energia_pct": 0.21675472752658367,
+      "state": "EM_CAMPO",
+      "in_field": true,
+      "in_casa": false,
+      "recovering": false,
+      "battle_allowed": true
+    },
+    {
+      "id": "30140",
+      "level": 97,
+      "energia_atual": 334.3101442611523,
+      "energia_max": 1801.6899097034855,
+      "energia_pct": 0.1855536529680469,
+      "state": "DESCANSANDO",
+      "in_field": false,
+      "in_casa": true,
+      "recovering": true,
+      "battle_allowed": true
+    },
+    {
+      "id": "36928",
+      "level": 78,
+      "energia_atual": 75.07265172447018,
+      "energia_max": 1606.5526517235885,
+      "energia_pct": 0.04672903290404367,
+      "state": "EM_CAMPO",
+      "in_field": true,
+      "in_casa": false,
+      "recovering": false,
+      "battle_allowed": true
+    },
+    {
+      "id": "39855",
+      "level": 67,
+      "energia_atual": 265.42688064177463,
+      "energia_max": 1275.1868806412067,
+      "energia_pct": 0.20814743679632988,
+      "state": "EM_CAMPO",
+      "in_field": true,
+      "in_casa": false,
+      "recovering": false,
+      "battle_allowed": true
+    },
+    {
+      "id": "41990",
+      "level": 74,
+      "energia_atual": 135.98392753786172,
+      "energia_max": 1095.0239275374386,
+      "energia_pct": 0.124183521581735,
+      "state": "EM_CAMPO",
+      "in_field": true,
+      "in_casa": false,
+      "recovering": false,
+      "battle_allowed": true
+    },
+    {
+      "id": "45497",
+      "level": 61,
+      "energia_atual": 96.38931935185012,
+      "energia_max": 1790.9493193507974,
+      "energia_pct": 0.05382023841232445,
+      "state": "EM_CAMPO",
+      "in_field": true,
+      "in_casa": false,
+      "recovering": false,
+      "battle_allowed": true
+    },
+    {
+      "id": "52557",
+      "level": 48,
+      "energia_atual": 159.54043187018488,
+      "energia_max": 703.89029623914,
+      "energia_pct": 0.22665525114155366,
+      "state": "DESCANSANDO",
+      "in_field": false,
+      "in_casa": true,
+      "recovering": true,
+      "battle_allowed": true
+    },
+    {
+      "id": "52562",
+      "level": 44,
+      "energia_atual": 1477.6646379607562,
+      "energia_max": 1596.504637960648,
+      "energia_pct": 0.925562383488158,
+      "state": "EM_CAMPO",
+      "in_field": true,
+      "in_casa": false,
+      "recovering": false,
+      "battle_allowed": true
+    },
+    {
+      "id": "59925",
+      "level": 57,
+      "energia_atual": 452.3514638054112,
+      "energia_max": 1129.4814638047953,
+      "energia_pct": 0.40049480961078404,
+      "state": "EM_CAMPO",
+      "in_field": true,
+      "in_casa": false,
+      "recovering": false,
+      "battle_allowed": true
+    },
+    {
+      "id": "62532",
+      "level": 30,
+      "energia_atual": 360.57078339036303,
+      "energia_max": 463.41078339041565,
+      "energia_pct": 0.7780802612152172,
+      "state": "EM_CAMPO",
+      "in_field": true,
+      "in_casa": false,
+      "recovering": false,
+      "battle_allowed": true
+    },
+    {
+      "id": "65174",
+      "level": 38,
+      "energia_atual": 792.0555997652638,
+      "energia_max": 792.0555997652638,
+      "energia_pct": 1,
+      "state": "NO_BANCO",
+      "in_field": false,
+      "in_casa": false,
+      "recovering": false,
+      "battle_allowed": false
+    },
+    {
+      "id": "66372",
+      "level": 4,
+      "energia_atual": 244.47663715022802,
+      "energia_max": 244.47663715022802,
+      "energia_pct": 1,
+      "state": "PRONTO",
+      "in_field": false,
+      "in_casa": false,
+      "recovering": false,
+      "battle_allowed": true
+    },
+    {
+      "id": "66373",
+      "level": 1,
+      "energia_atual": 262.44930947976746,
+      "energia_max": 262.44930947976746,
+      "energia_pct": 1,
+      "state": "PRONTO",
+      "in_field": false,
+      "in_casa": false,
+      "recovering": false,
+      "battle_allowed": true
+    },
+    {
+      "id": "66374",
+      "level": 4,
+      "energia_atual": 187.13100888008034,
+      "energia_max": 190.91560783268753,
+      "energia_pct": 0.9801765869455582,
+      "state": "DESCANSANDO",
+      "in_field": false,
+      "in_casa": true,
+      "recovering": true,
+      "battle_allowed": true
+    }
+  ],
+  "casa": {
+    "active_casa": 3,
+    "levels": [
+      20,
+      20,
+      13,
+      0,
+      0
+    ],
+    "cycle_secs": 922.1052631578947,
+    "slots": 7,
+    "slots_per_house": [
+      3,
+      5,
+      7,
+      9,
+      9
+    ],
+    "cycle_secs_per_house": [
+      1140,
+      1020,
+      922.1052631578947,
+      840,
+      660
+    ],
+    "upgrade_cost": [
+      1,
+      2,
+      3
+    ]
+  },
+  "rescues_left": 14,
+  "rescues_max": 15
+}

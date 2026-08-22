@@ -138,6 +138,7 @@ describe('rankNextPointForFarm — discrimination: a one-shotting squad inverts 
 
   it('DPS mode scores attack first and speed exactly 0 on the same hero (the inversion)', () => {
     const line = account.context;
+    if (line.phase == null) throw new Error('fixture must carry account.context.phase for this test');
     const dps = pipelineForHero(bellatrix, account, line.phase, line.mitigationPct);
     expect(dps.ranking[0].stat).toBe('attack');
     expect(dps.ranking[0].gainPct).toBeGreaterThan(0);

@@ -374,3 +374,64 @@ describe('classifyRotation — edge cases', () => {
     expect(status.recovering[0]?.recoverySeconds).toBeUndefined();
   });
 });
+
+describe('classifyRotation — the captured full-and-waiting state', () => {
+  const captured = loadFixtureJson('rotation-snapshot-ready.json', 'api') as unknown as RotationNormalizeResult;
+
+  it('normalizes with no drops, carrying all four activities', () => {
+    expect(captured.drops).toEqual([]);
+    const seen = new Set(captured.snapshot.heroes.map((hero) => hero.activity));
+    expect([...seen].sort()).toEqual(['benched', 'inField', 'ready', 'resting']);
+  });
+
+  it('every full-and-waiting hero is out of the house and off the field', () => {
+    const ready = captured.snapshot.heroes.filter((hero) => hero.activity === 'ready');
+    expect(ready.length).toBeGreaterThan(0);
+    for (const hero of ready) {
+      expect(hero.inHouse).toBe(false);
+      expect(hero.onField).toBe(false);
+      expect(hero.energyFraction).toBe(1);
+    }
+  });
+
+  it('classifies them as queued — not on field, not benched', () => {
+    const status = classifyRotation(captured);
+    const readyIds = captured.snapshot.heroes
+      .filter((hero) => hero.activity === 'ready')
+      .map((hero) => hero.id);
+
+    for (const id of readyIds) {
+      expect(heroIds(status.queued)).toContain(id);
+      expect(heroIds(status.onField)).not.toContain(id);
+      expect(heroIds(status.benched)).not.toContain(id);
+      expect(status.recovering.map((entry) => entry.hero.id)).not.toContain(id);
+    }
+  });
+
+  it('reconciles, and reads 9 of 9 on the field', () => {
+    const status = classifyRotation(captured);
+
+    expect(totalClassified(status)).toBe(captured.snapshot.heroes.length);
+    expect(status.unclassifiedCount).toBe(0);
+    expect(status.occupancy).toEqual({ occupied: 9, fieldSize: 9 });
+  });
+
+  // Every resting hero in this capture is being filled, so the queued list holds the
+  // full-and-waiting heroes alone. The mixed case — house-queued ahead of full-and-waiting — has
+  // no witness here and is covered against constructed heroes above.
+  it('separates the heroes being filled from the ones merely waiting', () => {
+    const status = classifyRotation(captured);
+    const readyIds = captured.snapshot.heroes
+      .filter((hero) => hero.activity === 'ready')
+      .map((hero) => hero.id);
+    const recoveringIds = captured.snapshot.heroes
+      .filter((hero) => hero.activity === 'resting')
+      .map((hero) => hero.id);
+
+    expect(heroIds(status.queued)).toEqual(readyIds);
+    expect(status.recovering.map((entry) => entry.hero.id).sort()).toEqual([...recoveringIds].sort());
+    for (const entry of status.recovering) {
+      expect(entry.recoverySeconds).toBeCloseTo((1 - (entry.hero.energyFraction ?? 0)) * 922.1052631578947, 6);
+    }
+  });
+});

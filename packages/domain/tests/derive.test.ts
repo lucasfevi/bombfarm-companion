@@ -41,7 +41,6 @@ const ZERO_TREE: TreeSheetTotals = {
   critChancePct: 0,
   critDmgPct: 0,
   luckFlatPct: 0,
-  critDmgMult: 1,
 };
 
 describe('computeCombatMults', () => {
@@ -478,7 +477,6 @@ describe('derive', () => {
       critChancePct: 40,
       critDmgPct: 20,
       luckFlatPct: 5,
-      critDmgMult: 1,
     };
     const result = derive({
       geared: naked,

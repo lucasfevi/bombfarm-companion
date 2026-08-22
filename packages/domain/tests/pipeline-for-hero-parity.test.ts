@@ -76,15 +76,15 @@ describe('pipelineForHero ≡ computeAdvisorPipeline assembled from advisor-sele
     const viaExportedPipeline = pipelineForHero(hero, account, phase, mitigationPct);
 
     // Assembled field-for-field with advisor-selectors.ts's `selectAdvisorPipeline` — the web's
-    // own field list, now identical on both sides (MKR-24/26). `statPointsAvailable`/`birth`
-    // are read the same way the web store reads them.
+    // own field list, now identical on both sides (MKR-24/26). `birth` is read the same way the
+    // web store reads it; `statPointsAvailable` is no longer part of that field list (it dropped
+    // out of `AdvisorPipelineInput`), so it is no longer assembled here either.
     const viaWebFieldList = computeAdvisorPipeline({
       naked: hero.naked,
       geared: hero.gearedOverride,
       loadout: hero.loadout,
       altLoadout: hero.altLoadout,
       pts: hero.pts,
-      statPointsAvailable: hero.statPointsAvailable ?? 0,
       abilities: hero.abilities,
       rarity: hero.rarity,
       level: hero.level,
@@ -130,7 +130,6 @@ describe('pipelineForHero ≡ computeAdvisorPipeline assembled from advisor-sele
       loadout: hero.loadout,
       altLoadout: hero.altLoadout,
       pts: hero.pts,
-      statPointsAvailable: hero.statPointsAvailable ?? 0,
       abilities: hero.abilities,
       rarity: hero.rarity,
       level: hero.level,
