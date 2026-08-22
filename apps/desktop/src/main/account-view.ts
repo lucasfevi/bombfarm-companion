@@ -65,7 +65,7 @@ export function resolveCachedAccountView(deps: AccountViewDeps): AccountView | n
   // the 60s until the game-API cycle's next run (T-fix-6, caught by
   // `account-restart.spec.mjs`). So: the game reader's own cache wins whenever it has one
   // (real production's memory-mode reader never populates it — see
-  // `GameReaderService.tickMemory()` — so this changes nothing there); only once consent
+  // `GameReaderService.tickLive()` — so this changes nothing there); only once consent
   // is granted does the game-API cycle's own (now genuinely fresher) view get first look.
   const consentGranted = deps.consentStore?.read().decision === 'granted';
   const cached =

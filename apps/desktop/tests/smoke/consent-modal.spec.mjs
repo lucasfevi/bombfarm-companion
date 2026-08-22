@@ -28,7 +28,7 @@ async function launchApp(env) {
       ELECTRON_ENABLE_LOGGING: '1',
       // No live game and no real token anywhere in this suite (SAFETY — the implementer
       // brief forbids running against the live game or a real token). Memory mode's
-      // tickMemory() scans for this process name and will never find it.
+      // tickLive() scans for this process name and will never find it.
       BFC_GAME_PROCESS: 'bfc-smoke-no-such-process.exe',
       // Redirects session-token-file.ts's sessionCfgPath() away from the real
       // %APPDATA%/Godot/app_userdata/BombFarm/session.cfg (T-fix-4). Without this, the first
