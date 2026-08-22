@@ -1,5 +1,5 @@
 ---
-'@bombfarm/domain': patch
+"@bombfarm/domain": patch
 ---
 
 Fix the skill tree's crit-damage node being charged as a percentage of the hero's roll when the

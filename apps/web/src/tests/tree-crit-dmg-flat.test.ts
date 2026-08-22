@@ -6,10 +6,10 @@
  * `applySkillTree` and `point-inference` said so in comments. `save-20260822-15heroes-tree-crit-dmg.json`
  * is the first capture with a nonzero value (`0.081730769`) and it separates them outright.
  *
- * This is the SECOND crit-damage term to be caught reading percent-of-base when the game applies
- * it flat — Golpe Brutal was the first (`abilities.ts`, the `critDmgFlat` kind), and the stat
- * point itself the reference case (`POINT_GAIN.critDmgFlat`). Every crit-damage term the game
- * has is flat; the file that proves it should stay next to the two that record the others.
+ * This is the THIRD crit-damage term to be caught reading percent-of-base when the game applies
+ * it flat — the stat point was the reference case (`POINT_GAIN.critDmgFlat`) and Golpe Brutal the
+ * second (`abilities.ts`, the `critDmgFlat` kind). Every crit-damage term the game has is flat;
+ * the file that proves it should stay next to the two that record the others.
  */
 import { describe, expect, it } from 'vitest';
 import { applySkillTree, nakedFromBirth } from '@bombfarm/domain/birth-sheet';
@@ -84,7 +84,7 @@ describe('skill tree crit_dmg_add is flat, not percent-of-base', () => {
    * credited `67.73 × 0.0817 = 5.54` of the 8.17 it actually gave, and inference charged the
    * `2.64` residual to points — `2.64 / 5 = 0.53`, which rounds to 1.
    */
-  it('no hero recovers a crit-damage point, and none exceeds its level', () => {
+  it('every hero solves exactly on its level, with no crit-damage point and no issue at all', () => {
     for (const hero of HEROES) {
       const { pts, issues } = inferSpentPoints({
         birth: hero.birth!,
@@ -98,11 +98,16 @@ describe('skill tree crit_dmg_add is flat, not percent-of-base', () => {
       });
       const label = `${hero.name} L${hero.level}`;
       expect(pts.critDmg, `${label}: crit-damage points`).toBe(0);
+      // Every hero here has `stat_points_available: 0`, so the budget IS the level and the
+      // solve lands on it exactly. Asserting equality rather than `<= level`: a `budgetMismatch`
+      // that happens to round to whole numbers on every key would slip past the weaker bound,
+      // and that is precisely the shape of the bug this file exists for.
       const spent = SHEET_KEYS.reduce((sum, key) => sum + pts[key], 0);
-      expect(spent, `${label}: total spent`).toBeLessThanOrEqual(hero.level);
+      expect(hero.statPointsAvailable, `${label}: fixture precondition`).toBe(0);
+      expect(spent, `${label}: total spent`).toBe(hero.level);
       expect(
-        issues.filter((i) => i.kind === 'nonIntegerPoints'),
-        `${label}: a non-integer solve means a sheet contribution is still mis-attributed`,
+        issues,
+        `${label}: any issue at all means a sheet contribution is still mis-attributed`,
       ).toEqual([]);
     }
   });
