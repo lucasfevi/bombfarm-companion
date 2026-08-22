@@ -24,7 +24,7 @@ export interface AccountCommitter {
   commit(live: AccountPayload, opts: { gameRunning: boolean }): AccountView;
 }
 
-export type GameReaderMode = 'memory' | 'fixture';
+export type GameReaderMode = 'live' | 'fixture';
 
 export interface GameReaderConfig {
   mode: GameReaderMode;
@@ -43,7 +43,7 @@ const DEFAULT_CONFIG: Omit<GameReaderConfig, 'mode'> = {
  * stale `BFC_GAME_READER=fixture` env var (a shell, a CI harness, a support machine) would
  * otherwise make a real install report itself `connected` and then throw on every tick. */
 function resolveDefaultMode(isPackaged: boolean): GameReaderMode {
-  return !isPackaged && process.env.BFC_GAME_READER === 'fixture' ? 'fixture' : 'memory';
+  return !isPackaged && process.env.BFC_GAME_READER === 'fixture' ? 'fixture' : 'live';
 }
 
 export class GameReaderService {
