@@ -32,12 +32,6 @@ test.describe('app boot smoke', () => {
       await page.waitForSelector('[data-testid="app-ready"]', { timeout: 60_000 });
       await expect(page.getByTestId('game-status-chip')).toHaveText('Connected', { timeout: 15_000 });
 
-      // Planning is the default tab, so the raw payload dump needs an explicit nav click. It is
-      // offered in the development flavors only, which this launch selects via BFC_FLAVOR.
-      await page.getByRole('button', { name: 'Diagnostics' }).click();
-      const snapshotJson = await page.getByTestId('game-snapshot-json').innerText();
-      expect(snapshotJson).toContain('"gold"');
-
       const flavor = await page.evaluate(async () => {
         const bridge = window.bfc;
         if (!bridge) throw new Error('preload bridge missing');
@@ -61,6 +55,18 @@ test.describe('app boot smoke', () => {
 
       await expect(page.getByTestId('flavor-badge')).toHaveText('DEV');
       await expect(page.getByTestId('app-version')).toHaveText(/^v\d+\.\d+\.\d+/);
+
+      // Planning is the default tab, so the raw payload dump needs an explicit nav click.
+      // Diagnostics is offered in the development flavors only and the renderer learns its flavor
+      // from an async `app:getEnvironment`, so wait for the three-item development nav rather than
+      // racing it — the environment reaching the DOM is already asserted above. Located by
+      // position, not by label: packages/ui ships no testid on these buttons and the labels are
+      // translated, which is the same reasoning i18n.spec.mjs's own nav helper records.
+      const navButtons = page.locator('nav[aria-label="Main"] button');
+      await expect(navButtons).toHaveCount(3, { timeout: 30_000 });
+      await navButtons.nth(1).click();
+      const snapshotJson = await page.getByTestId('game-snapshot-json').innerText();
+      expect(snapshotJson).toContain('"gold"');
 
       // MP3 F1 (AD-032) — the renderer's @bombfarm/domain value import reached the DOM.
       await expect(page.getByTestId('domain-label-probe')).toHaveText('Common');
