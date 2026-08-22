@@ -19,9 +19,11 @@ Thank you for your interest in contributing!
 
 CI is **path-filtered**: web-only PRs run `ci-web` / `e2e-web`; desktop-only PRs run `ci-desktop`. Changes under `packages/ui` wake both.
 
+The desktop Windows smoke runs on every PR that matches the desktop path filter. It is a real
+gate: a failure blocks the merge.
+
 Optional heavy gates on PRs (always run on `develop`/`main` pushes):
 
-- Label **`windows-ci`** — desktop Windows smoke
 - Label **`visual-ci`** — Playwright visual e2e
 
 ## Changesets

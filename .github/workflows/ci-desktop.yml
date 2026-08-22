@@ -1,7 +1,8 @@
 name: CI Desktop
 
-# Path-filtered desktop quality + optional Windows smoke.
-# Windows smoke runs on push to develop/main, workflow_dispatch, or PRs labeled `windows-ci`.
+# Path-filtered desktop quality + Windows smoke.
+# The smoke runs on every pull request that matches the path filter, and on push and
+# workflow_dispatch.
 
 on:
   workflow_dispatch:
@@ -26,7 +27,7 @@ on:
       - '.github/workflows/ci-desktop.yml'
       - '.github/workflows/wiki-drift.yml'
   pull_request:
-    types: [opened, synchronize, reopened, labeled]
+    types: [opened, synchronize, reopened]
 
 concurrency:
   group: ci-desktop-${{ github.ref }}
@@ -123,12 +124,11 @@ jobs:
     name: App boot smoke (Windows)
     runs-on: windows-latest
     needs: quality
-    if: >
-      needs.quality.result == 'success' &&
-      (
-        github.event_name != 'pull_request' ||
-        contains(join(github.event.pull_request.labels.*.name, ','), 'windows-ci')
-      )
+    # Runs on every pull request. It used to need a `windows-ci` label, which meant the desktop
+    # smoke was skipped by default and only its post-merge run could fail — and a failing
+    # post-merge run gates nothing, so a genuinely broken spec sat on the default branch through
+    # eight consecutive pushes before anyone looked.
+    if: needs.quality.result == 'success'
     steps:
       - uses: actions/checkout@v4
 
