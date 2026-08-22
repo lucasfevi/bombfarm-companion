@@ -1,5 +1,64 @@
 # @bombfarm/contracts
 
+## 0.3.2
+
+### Patch Changes
+
+- b1e2591: Stop a harmless added field from hiding DPS, next-point ranking and reset advice
+
+  A game update that only adds a field this app doesn't read used to be treated exactly like one
+  that removes a field it does read: either kind of shape drift made the desktop withhold DPS,
+  next-point ranking and reset advice for every hero, even though nothing the planner actually
+  needed was missing. Now those two cases are told apart. A drift that only adds fields is
+  harmless — nothing read was lost, so advice keeps rendering as normal, just flagged as drifted.
+  A drift that drops a field this app reads still falls back to the last good reading instead of
+  computing from an incomplete body (and guessing at the missing value), exactly as it did before
+  shape drift got its own status.
+
+- 635abe3: Add rotation status classification: field, recovering, queued, and benched
+
+  `@bombfarm/domain` now exposes `classifyRotation`, which sorts a normalized `/rotation` snapshot's
+  heroes into four lists — on the field, recovering at the house, queued for a house slot, and
+  benched — plus an occupancy count and the house panel's read-only figures (active house level,
+  slots, cycle time, rescues). Classification keys off each hero's own activity, never off whether
+  the game currently has them parked at the house: a benched hero and a queued one can both sit at
+  the house at the same time, so that flag alone cannot tell them apart. Each recovering hero also
+  carries its own remaining recovery time, derived from the house's cycle length and how full its
+  energy is.
+
+  The rotation vocabulary also gains the fourth hero state the game reports — fully recovered and
+  waiting for a field slot. It was previously unrecognised, which cost a hero its activity; it now
+  reads as its own state and is listed alongside the heroes queued for a house slot.
+
+- b1e2591: Add a normalized, English-named `/rotation` snapshot, replacing raw wire fields at the boundary
+
+  `/rotation`'s wire body mixes Portuguese and English keys (a house object keyed by a Portuguese
+  name, energy fields with Portuguese names, alongside plain English fields like `cycle_secs` and
+  `battle_allowed`). `@bombfarm/game-api` now exposes `normalizeRotation(body, roster)`, translating
+  that wire body plus a `/roster` heroes list into an English-named `RotationSnapshot` (new types in
+  `@bombfarm/contracts`): per-hero energy, activity, and field/house status, joined with the roster's
+  name and grade where a match exists. Every field is validated and dropped independently on failure
+  — a bad or missing field never takes a sibling, a hero, or the whole section down with it — and
+  each drop is reported with the wire field it came from and why.
+
+  This is additive: nothing existing reads from `normalizeRotation` yet, so no shipped behavior
+  changes. A generated reference table of the wire-to-domain vocabulary lives at
+  `docs/wire-vocabulary.md`, and a guard confines Portuguese wire vocabulary to the one lexicon
+  module that documents it, everywhere else in this new boundary.
+
+- b1e2591: Keep per-hero rotation state, and stop a cosmetic shape change from blanking a whole account section
+
+  The `/rotation` read used to keep only its `casa` (house) sub-object and discard the rest of the
+  body — the field list and, most importantly, each hero's in-field/energy/recovery state, even
+  though that state was already being validated. That data now reaches storage.
+
+  Separately, any account section whose response shape drifted from what this app expects (a game
+  update adding or removing a field) used to be dropped entirely for that cycle, even when the data
+  that mattered was still there — a mismatch was correctly detected, but the section was then
+  processed as if the source hadn't answered at all. A drifted section that still holds a usable body
+  is now kept and reported as degraded (naming the keys that changed), rather than discarded. A
+  section that lost the very data it needs still reports missing, unchanged.
+
 ## 0.3.1
 
 ### Patch Changes
