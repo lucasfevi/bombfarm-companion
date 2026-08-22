@@ -58,9 +58,6 @@ export function inferSpentPoints(input: InferSpentPointsInput): PointInferenceRe
   const naked = nakedFromBirth(birth, level, stars, sheetOther);
   const baseSpeed = naked.speed / poolFactor(sheetOther.speed);
   const baseCritChance = naked.critChance / poolFactor(sheetOther.critChance);
-  // Flat sheet-ability addend, so the pre-ability roll is recovered by subtraction, not
-  // division (POINT_GAIN.critDmgFlat).
-  const baseCritDmg = naked.critDmg - Math.max(0, sheetOther.critDmgFlat);
 
   // Invert applySkillTree to recover the pre-tree (gear + points) pool subtotal.
   const pool = {
@@ -68,7 +65,7 @@ export function inferSpentPoints(input: InferSpentPointsInput): PointInferenceRe
     energy: sheet.energy / (1 + tree.energyPct / 100),
     speed: sheet.speed - baseSpeed * (tree.speedPct / 100),
     critChance: sheet.critChance - baseCritChance * (tree.critChancePct / 100),
-    critDmg: sheet.critDmg - baseCritDmg * (tree.critDmgPct / 100),
+    critDmg: sheet.critDmg - tree.critDmgPct,
     penetration: sheet.penetration,
     cdr: sheet.cdr,
     luck: sheet.luck - tree.luckFlatPct,

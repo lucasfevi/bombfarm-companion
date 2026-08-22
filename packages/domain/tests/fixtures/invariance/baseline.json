@@ -338,12 +338,12 @@
           "luck": 0.1483843313045874
         },
         "resetAdvice": {
-          "recommend": true,
+          "recommend": false,
           "tier": "gate",
           "gainIsLowerBound": true,
           "currentDps": "176.18084897312647",
-          "reoptDps": "199.64091291984894",
-          "gainPct": "13.315899022771148"
+          "reoptDps": "176.18084897312647",
+          "gainPct": "0"
         }
       },
       "buildStatBreakdown": {
@@ -2611,12 +2611,12 @@
           "luck": 0.2768080158371016
         },
         "resetAdvice": {
-          "recommend": true,
+          "recommend": false,
           "tier": "gate",
           "gainIsLowerBound": true,
           "currentDps": "319.3946106031123",
-          "reoptDps": "337.4727309159657",
-          "gainPct": "5.660120650976697"
+          "reoptDps": "319.3946106031123",
+          "gainPct": "0"
         }
       },
       "buildStatBreakdown": {
@@ -3230,12 +3230,12 @@
           "luck": 0.18513205740268912
         },
         "resetAdvice": {
-          "recommend": true,
+          "recommend": false,
           "tier": "gate",
           "gainIsLowerBound": true,
           "currentDps": "71.9815325328766",
-          "reoptDps": "79.22157295544909",
-          "gainPct": "10.058191549708528"
+          "reoptDps": "71.9815325328766",
+          "gainPct": "0"
         }
       },
       "buildStatBreakdown": {
@@ -3828,12 +3828,12 @@
           "luck": 0.14838433130458736
         },
         "resetAdvice": {
-          "recommend": true,
+          "recommend": false,
           "tier": "gate",
           "gainIsLowerBound": true,
           "currentDps": "94.83013262692893",
-          "reoptDps": "113.97361292884783",
-          "gainPct": "20.187128048456103"
+          "reoptDps": "94.83013262692893",
+          "gainPct": "0"
         }
       },
       "buildStatBreakdown": {
@@ -5007,8 +5007,8 @@
           "tier": "gate",
           "gainIsLowerBound": true,
           "currentDps": "62.41753785661312",
-          "reoptDps": "62.4589134169805",
-          "gainPct": "0.0662883570679007"
+          "reoptDps": "62.41753785661312",
+          "gainPct": "0"
         }
       },
       "buildStatBreakdown": {

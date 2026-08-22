@@ -75,9 +75,9 @@ export function ledgerCritChance(facts: PipelineFacts): StatBreakdown {
 
 export function ledgerCritDmg(facts: PipelineFacts): StatBreakdown {
   const steps: LedgerStep[] = [];
-  // AD-BSP-22: crit_dmg_add still joins the shared pool — 'tree' lives inside
-  // pushBirthThenGear (AC-41). The POINTS line does not: crit-damage points are flat
-  // (POINT_GAIN.critDmgFlat), so this is a plain add with no `pctOfBase` provenance.
+  // Every crit-damage term is a flat percentage-point addend — the tree node (inside
+  // pushBirthThenGear, AC-41) as much as the point (POINT_GAIN.critDmgFlat) — so neither
+  // line carries `pctOfBase` provenance.
   pushBirthThenGear(steps, 'critDmg', facts, facts.treeCritDmg);
   pushAdd(steps, 'points', facts.pts.critDmg * POINT_GAIN.critDmgFlat);
   return { kind: 'ledger', total: facts.effective.critDmg, steps };

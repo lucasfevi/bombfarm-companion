@@ -145,8 +145,9 @@ describe('spent stat points never exceed the hero level (corpus sweep)', () => {
   /**
    * Non-vacuity, re-measured after the 2026-08-18 patch narrowed the swept set a second time.
    * Excluding every non-current-regime capture ({@link NON_CURRENT_REGIME_CAPTURES}) leaves the
-   * TWO post-revert exports — `save-20260818-12heroes.json` (12 heroes) and
-   * `save-20260819-respec-crit-cdr.json` (12) — both under `sheet-math/`.
+   * THREE post-revert exports — `save-20260818-12heroes.json` (12 heroes),
+   * `save-20260819-respec-crit-cdr.json` (12) and `save-20260822-15heroes-tree-crit-dmg.json`
+   * (15) — all under `sheet-math/`.
    *
    * The directory-spread half of this guard is therefore GONE, not merely relaxed, and the count
    * is what carries it instead. It comes back on its own the moment a post-patch capture lands in
@@ -161,8 +162,9 @@ describe('spent stat points never exceed the hero level (corpus sweep)', () => {
     expect(Object.fromEntries([...byFile].sort()), `walked ${FIXTURES_DIR}`).toEqual({
       'sheet-math/save-20260818-12heroes.json': 12,
       'sheet-math/save-20260819-respec-crit-cdr.json': 12,
+      'sheet-math/save-20260822-15heroes-tree-crit-dmg.json': 15,
     });
-    expect(SUBJECTS.length).toBe(24);
+    expect(SUBJECTS.length).toBe(39);
     const dirs = new Set(SUBJECTS.map((s) => s.file.split('/')[0]));
     expect(dirs, `capture directories reached: ${[...dirs].join(', ')}`).toEqual(new Set(['sheet-math']));
   });

@@ -13,9 +13,11 @@ import {
 } from '@bombfarm/domain/model';
 import { computeCombatMults, derive } from '@bombfarm/domain/derive';
 import {
+  budgetOf,
   findGateCandidate,
   optimizeBuild,
   reoptBudget,
+  resetBudget,
   REOPT_FULL_MAX_EVALUATIONS,
   REOPT_GATE_MAX_EVALUATIONS,
   REOPT_KEYS,
@@ -544,9 +546,11 @@ describe('optimizeBuild — Tier 2 (BSPW4-10)', () => {
  *   `max(level - luck, budgetOf(pts))`: the level pool (what `clampPointStep` has always let
  *   the steppers reach), floored at what the hero already holds so an over-spent hero can still
  *   reallocate it.
- * - **Tier 1 / `findGateCandidate`** — "is a reset worth buying?" — takes `budgetOf(pts)`. A
- *   reset only moves points already spent, so unplaced pool is not its budget; counting it
- *   would tell every freshly imported, unallocated hero to buy a respec it has no use for.
+ * - **Tier 1 / `findGateCandidate`** — "is a reset worth buying?" — takes `resetBudget(pts,
+ *   level)`, `min(budgetOf(pts), level)`. A reset only moves points already spent, so unplaced
+ *   pool is not its budget; counting it would tell every freshly imported, unallocated hero to
+ *   buy a respec it has no use for. Under the same `level` ceiling Tier 2 carries: the panel
+ *   prints this number as points to re-place, and a hero can never hold more than its level.
  *
  * Neither can compound: each places at most the budget it was handed, so feeding a result back
  * is non-increasing.
@@ -577,6 +581,30 @@ describe('reoptBudget / the per-tier point budgets', () => {
     expect(reoptBudget(overSpent, 45)).toBe(37);
     // Never negative, and 0 only when there is genuinely nothing on either side.
     expect(reoptBudget(ZERO_PTS(), -5)).toBe(0);
+  });
+
+  it('Tier 1 is capped at the hero level — a reset never offers more points than the game grants', () => {
+    // The shape the reported defect arrived in: inference recovered 98 points for a level-97
+    // hero (one phantom crit-damage point, from the skill tree's crit_dmg_add being charged
+    // percent-of-base), and the point-reset panel offered all 98 to re-place.
+    const overRecovered: Record<SheetKey, number> = {
+      ...ZERO_PTS(),
+      attack: 67,
+      energy: 24,
+      speed: 6,
+      critDmg: 1,
+    };
+    expect(budgetOf(overRecovered)).toBe(98);
+    expect(resetBudget(overRecovered, 97)).toBe(97);
+
+    // The floor stays absent: banked-but-unspent pool is still not a reset's budget.
+    expect(resetBudget(ZERO_PTS(), 97)).toBe(0);
+    // Under the ceiling, the budget is exactly what is placed — the clamp is a no-op.
+    expect(resetBudget({ ...ZERO_PTS(), attack: 30, luck: 5 }, 97)).toBe(30);
+    // `level`, not `level - luck`: an over-spent hero holding Luck worth its whole level keeps a
+    // searchable budget rather than dropping to the `budget <= 0` fast path.
+    expect(resetBudget({ ...ZERO_PTS(), cdr: 32, luck: 8 }, 8)).toBe(8);
+    expect(resetBudget(ZERO_PTS(), -5)).toBe(0);
   });
 
   it('both tiers still search an over-spent hero rather than taking the budget<=0 fast path', () => {

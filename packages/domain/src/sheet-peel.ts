@@ -109,15 +109,13 @@ export function peelSheetSources(input: PeelSheetSourcesInput): SheetSourceLines
     tree.critChancePct,
   );
   // Crit damage is NOT a pooled key: items never roll it (gear/apply.ts — Gear is structurally
-  // 0), and both the sheet ability and the stat point are flat addends in planner percentage
-  // points (POINT_GAIN.critDmgFlat). The tree line keeps `AD-BSP-22`'s percent-of-base shape,
-  // matching `applySkillTree`; `crit_dmg_add` is 0 on every capture in the corpus.
-  const critDmgBase = birth.critDmg * star;
+  // 0), and the sheet ability, the stat point and the tree node are all flat addends in planner
+  // percentage points (POINT_GAIN.critDmgFlat, and `applySkillTree` for the tree measurement).
   const critDmg: SourceLines = {
-    hero: critDmgBase + pts.critDmg * POINT_GAIN.critDmgFlat,
+    hero: birth.critDmg * star + pts.critDmg * POINT_GAIN.critDmgFlat,
     gear: 0,
     ability: Math.max(0, sheetOther.critDmgFlat),
-    skillTree: critDmgBase * (tree.critDmgPct / 100),
+    skillTree: tree.critDmgPct,
   };
   // AD-BSP-22: skills.totals has no node for penetration or cdr — tree line is exactly 0.
   const penetration = pooledLines(

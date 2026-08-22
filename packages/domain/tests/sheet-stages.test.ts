@@ -25,14 +25,14 @@ function solveSpentPoints(hero: SaveHeroSheet, tree: TreeSheetTotals): Record<Sh
   const naked = nakedFromBirth(birth, hero.level, hero.stars, hero.sheetOther);
   const baseSpeed = naked.speed / poolFactor(hero.sheetOther.speed);
   const baseCritChance = naked.critChance / poolFactor(hero.sheetOther.critChance);
-  // Crit damage is flat-additive: the ability addend peels by subtraction, and the point
-  // count is a plain division by POINT_GAIN.critDmgFlat (no pool base involved).
-  const baseCritDmg = naked.critDmg - Math.max(0, hero.sheetOther.critDmgFlat);
   const observed = hero.sheet;
   const pool = {
     speed: baseSpeed > 1e-12 ? (observed.speed - naked.speed) / baseSpeed : 0,
     critChance: baseCritChance > 1e-12 ? (observed.critChance - naked.critChance) / baseCritChance : 0,
-    critDmg: observed.critDmg - naked.critDmg - baseCritDmg * (tree.critDmgPct / 100),
+    // Crit damage is flat-additive throughout: the ability addend is already inside `naked`,
+    // the tree node subtracts as a bare percentage-point amount, and the point count below is
+    // a plain division by POINT_GAIN.critDmgFlat. No pool base is involved anywhere.
+    critDmg: observed.critDmg - naked.critDmg - tree.critDmgPct,
     penetration:
       naked.penetration /
         poolFactor(hero.sheetOther.penetration) >
