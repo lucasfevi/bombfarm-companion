@@ -158,6 +158,10 @@ async function runScenarioReps(
     if (i >= WARMUP_DISCARD) {
       reps.push(aggregateRepetition(windowed))
     }
+
+    // Outside the window: undoes what `run` accumulated so the next loop starts from the
+    // same state. The following loop's leading `waitForQuiet` absorbs its commit.
+    await scenario.reset?.(page)
   }
 
   return aggregateScenario(reps, {
@@ -167,11 +171,20 @@ async function runScenarioReps(
   })
 }
 
-test.describe.configure({ mode: 'serial' })
+/**
+ * The dead-timer condition the validity check below catches is an instrument failure, not a
+ * code regression — retrying re-runs from a fresh page/context, which is the reset a corrupted
+ * profiler session needs. Exhausting all attempts still fails the test; nothing gets written.
+ */
+test.describe.configure({ mode: 'serial', retries: 2 })
 
 test.describe('perf measurement driver', () => {
-  test('capture all MOD-33 scenarios ×7', async ({ page }) => {
+  test('capture all MOD-33 scenarios ×7', async ({ page }, testInfo) => {
     test.setTimeout(900_000)
+    if (testInfo.retry > 0) {
+      // eslint-disable-next-line no-console
+      console.log(`[perf] attempt ${testInfo.retry + 1} (prior attempt failed — see its error above)`)
+    }
     const outPath = resolveOutPath()
     if (fs.existsSync(outPath) && process.env.PERF_FORCE !== '1') {
       throw new Error(
@@ -204,6 +217,23 @@ test.describe('perf measurement driver', () => {
     for (const m of results) {
       if (m.skipped) continue
       expect(m.medianComponentRenders, `${m.id} median componentRenders`).toBeGreaterThan(0)
+    }
+
+    // A repetition with renders but zero recorded commit duration means the profiler timer
+    // was not actually reporting this capture — not a fast measurement, a dead one. Never let
+    // that reach a baseline file silently.
+    for (const m of results) {
+      if (m.skipped) continue
+      const deadTimer = m.repetitions.find(
+        (r) => r.componentRenders > 0 && r.totalCommitDurationMs === 0,
+      )
+      if (deadTimer) {
+        throw new Error(
+          `${m.id}: a repetition recorded ${deadTimer.componentRenders} componentRenders with ` +
+            `0ms total commit duration — the profiler timer did not report for this capture. ` +
+            `Discard this run rather than writing it as a baseline.`,
+        )
+      }
     }
 
     const payload = {
