@@ -32,6 +32,9 @@ test.describe('app boot smoke', () => {
       await page.waitForSelector('[data-testid="app-ready"]', { timeout: 60_000 });
       await expect(page.getByTestId('game-status-chip')).toHaveText('Connected', { timeout: 15_000 });
 
+      // Planning is the default tab, so the raw payload dump needs an explicit nav click. It is
+      // offered in the development flavors only, which this launch selects via BFC_FLAVOR.
+      await page.getByRole('button', { name: 'Diagnostics' }).click();
       const snapshotJson = await page.getByTestId('game-snapshot-json').innerText();
       expect(snapshotJson).toContain('"gold"');
 
