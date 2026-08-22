@@ -1,0 +1,221 @@
+{
+  "snapshot": {
+    "fieldSize": 9,
+    "heroes": [
+      {
+        "id": "20402",
+        "level": 88,
+        "energy": 1196.8733714950176,
+        "energyMax": 1603.7933714946475,
+        "energyFraction": 0.7462765420832219,
+        "activity": "inField",
+        "onField": true,
+        "inHouse": false,
+        "recovering": false,
+        "battleAllowed": true
+      },
+      {
+        "id": "26863",
+        "level": 89,
+        "energy": 393.79998591763365,
+        "energyMax": 1816.7999859165075,
+        "energyFraction": 0.21675472752658367,
+        "activity": "inField",
+        "onField": true,
+        "inHouse": false,
+        "recovering": false,
+        "battleAllowed": true
+      },
+      {
+        "id": "30140",
+        "level": 97,
+        "energy": 334.3101442611523,
+        "energyMax": 1801.6899097034855,
+        "energyFraction": 0.1855536529680469,
+        "activity": "resting",
+        "onField": false,
+        "inHouse": true,
+        "recovering": true,
+        "battleAllowed": true
+      },
+      {
+        "id": "36928",
+        "level": 78,
+        "energy": 75.07265172447018,
+        "energyMax": 1606.5526517235885,
+        "energyFraction": 0.04672903290404367,
+        "activity": "inField",
+        "onField": true,
+        "inHouse": false,
+        "recovering": false,
+        "battleAllowed": true
+      },
+      {
+        "id": "39855",
+        "level": 67,
+        "energy": 265.42688064177463,
+        "energyMax": 1275.1868806412067,
+        "energyFraction": 0.20814743679632988,
+        "activity": "inField",
+        "onField": true,
+        "inHouse": false,
+        "recovering": false,
+        "battleAllowed": true
+      },
+      {
+        "id": "41990",
+        "level": 74,
+        "energy": 135.98392753786172,
+        "energyMax": 1095.0239275374386,
+        "energyFraction": 0.124183521581735,
+        "activity": "inField",
+        "onField": true,
+        "inHouse": false,
+        "recovering": false,
+        "battleAllowed": true
+      },
+      {
+        "id": "45497",
+        "level": 61,
+        "energy": 96.38931935185012,
+        "energyMax": 1790.9493193507974,
+        "energyFraction": 0.05382023841232445,
+        "activity": "inField",
+        "onField": true,
+        "inHouse": false,
+        "recovering": false,
+        "battleAllowed": true
+      },
+      {
+        "id": "52557",
+        "level": 48,
+        "energy": 159.54043187018488,
+        "energyMax": 703.89029623914,
+        "energyFraction": 0.22665525114155366,
+        "activity": "resting",
+        "onField": false,
+        "inHouse": true,
+        "recovering": true,
+        "battleAllowed": true
+      },
+      {
+        "id": "52562",
+        "level": 44,
+        "energy": 1477.6646379607562,
+        "energyMax": 1596.504637960648,
+        "energyFraction": 0.925562383488158,
+        "activity": "inField",
+        "onField": true,
+        "inHouse": false,
+        "recovering": false,
+        "battleAllowed": true
+      },
+      {
+        "id": "59925",
+        "level": 57,
+        "energy": 452.3514638054112,
+        "energyMax": 1129.4814638047953,
+        "energyFraction": 0.40049480961078404,
+        "activity": "inField",
+        "onField": true,
+        "inHouse": false,
+        "recovering": false,
+        "battleAllowed": true
+      },
+      {
+        "id": "62532",
+        "level": 30,
+        "energy": 360.57078339036303,
+        "energyMax": 463.41078339041565,
+        "energyFraction": 0.7780802612152172,
+        "activity": "inField",
+        "onField": true,
+        "inHouse": false,
+        "recovering": false,
+        "battleAllowed": true
+      },
+      {
+        "id": "65174",
+        "level": 38,
+        "energy": 792.0555997652638,
+        "energyMax": 792.0555997652638,
+        "energyFraction": 1,
+        "activity": "benched",
+        "onField": false,
+        "inHouse": false,
+        "recovering": false,
+        "battleAllowed": false
+      },
+      {
+        "id": "66372",
+        "level": 4,
+        "energy": 244.47663715022802,
+        "energyMax": 244.47663715022802,
+        "energyFraction": 1,
+        "activity": "ready",
+        "onField": false,
+        "inHouse": false,
+        "recovering": false,
+        "battleAllowed": true
+      },
+      {
+        "id": "66373",
+        "level": 1,
+        "energy": 262.44930947976746,
+        "energyMax": 262.44930947976746,
+        "energyFraction": 1,
+        "activity": "ready",
+        "onField": false,
+        "inHouse": false,
+        "recovering": false,
+        "battleAllowed": true
+      },
+      {
+        "id": "66374",
+        "level": 4,
+        "energy": 187.13100888008034,
+        "energyMax": 190.91560783268753,
+        "energyFraction": 0.9801765869455582,
+        "activity": "resting",
+        "onField": false,
+        "inHouse": true,
+        "recovering": true,
+        "battleAllowed": true
+      }
+    ],
+    "house": {
+      "activeHouseIndex": 2,
+      "houseLevels": [
+        20,
+        20,
+        13,
+        0,
+        0
+      ],
+      "cycleSeconds": 922.1052631578947,
+      "slots": 7,
+      "slotsPerHouse": [
+        3,
+        5,
+        7,
+        9,
+        9
+      ],
+      "cycleSecondsPerHouse": [
+        1140,
+        1020,
+        922.1052631578947,
+        840,
+        660
+      ],
+      "upgradeCost": [
+        1,
+        2,
+        3
+      ]
+    },
+    "rescuesLeft": 14,
+    "rescuesMax": 15
+  },
+  "drops": []
+}
