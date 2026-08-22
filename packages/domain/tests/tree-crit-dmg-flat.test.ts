@@ -13,6 +13,7 @@
  */
 import { describe, expect, it } from 'vitest';
 import { applySkillTree, nakedFromBirth } from '@bombfarm/domain/birth-sheet';
+import { emptySheetOther, starsMult } from '@bombfarm/domain/gear';
 import { inferSpentPoints } from '@bombfarm/domain/point-inference';
 import { SHEET_KEYS } from '@bombfarm/domain/planner-constants';
 import { extractHero, loadFixtureJson, treeTotalsFromSave } from './helpers/sheet-math-fixtures';
@@ -76,6 +77,39 @@ describe('skill tree crit_dmg_add is flat, not percent-of-base', () => {
       const withTree = applySkillTree(naked, naked, hero.sheetOther, tree);
       expect(withTree.critDmg, `${hero.name} L${hero.level}`).toBeCloseTo(hero.sheet.critDmg, 6);
     }
+  });
+
+  /**
+   * ★ SCALING IS UNOBSERVED, AND THIS PINS THE CHOICE MADE IN ITS ABSENCE.
+   *
+   * The replaced percent-of-base shape read `birth.critDmg × star` as its base, so it scaled
+   * with stars; a flat addend does not. Every hero in this capture — and in the whole corpus —
+   * is ★0, so no capture can say which the game does. Flat-and-unscaled is the choice, for
+   * consistency with every other flat term: the crit-damage stat point, Golpe Brutal, and
+   * `luck_add` are all ★-independent, and `rescaleNakedForStars` already holds `critDmgFlat`
+   * out of the ★ ratio deliberately.
+   *
+   * Asserted rather than left implicit so the choice cannot drift silently. If a capture ever
+   * shows a ★>0 hero gaining `star × crit_dmg_add`, THIS is the test that should be rewritten,
+   * with the capture cited — not `applySkillTree` quietly patched. Until then, a ★>0 hero on a
+   * tree that does scale would be under-credited, land a non-integer `critDmg` solve, and trip
+   * the over-budget warning (`pointsExceedLevel`) rather than silently inventing points.
+   */
+  it('the tree term does not scale with stars — the unobserved half of the shape, pinned', () => {
+    const birth = HEROES[0].birth!;
+    const other = emptySheetOther();
+    const gains = [0, 1, 2, 4].map((stars) => {
+      const naked = nakedFromBirth(birth, 50, stars, other);
+      return applySkillTree(naked, naked, other, tree).critDmg - naked.critDmg;
+    });
+    for (const gain of gains) expect(gain).toBeCloseTo(tree.critDmgPct, 9);
+    // Non-vacuity: the ★ multiplier really is moving the base these gains sit on, so a constant
+    // gain is a claim about the tree term and not an artifact of nothing changing.
+    const nakedAt0 = nakedFromBirth(birth, 50, 0, other).critDmg;
+    const nakedAt4 = nakedFromBirth(birth, 50, 4, other).critDmg;
+    expect(nakedAt0).toBeCloseTo(birth.critDmg, 9);
+    expect(nakedAt4 / nakedAt0).toBeCloseTo(starsMult(4), 9);
+    expect(starsMult(4)).toBeGreaterThan(2);
   });
 
   /**

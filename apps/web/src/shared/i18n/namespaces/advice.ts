@@ -31,6 +31,13 @@ export const en = {
   // `level - spentDelta`, shown only when > 0. Not HeroRecord.statPointsAvailable: that is an
   // import-time snapshot which would keep claiming "+46 unspent" after those 46 were spent.
   pointsUnspentBanked: "+{count} unspent",
+  // Shown whenever `pointsExceedLevel(pts, level)` — the hero holds more points than the game
+  // grants. Never a large build: one point per level is a hard ceiling, so this is always a
+  // mis-attributed sheet contribution. Names the numbers, gives the one fix that usually works
+  // (a fresh export), and escalates only if it survives that. Deliberately does NOT say which
+  // stat is wrong: the residual lands wherever the mis-attribution happens to fall, so naming a
+  // stat would send the player chasing the symptom.
+  pointsOverBudgetWarning: "These stat points don't add up: {spent} points on a level-{level} hero, and the game grants only one per level. Import a fresh save export — if it still reads this way, please report it on Discord.",
   // BSPW4-15/AC-04 — Tier 1 (the automatic gate) is a lower bound: "at least ~{pct}%", never a
   // bare percentage or a future-tense promise, and it names Optimize build as the definitive
   // answer. `{pct}` is Tier 1's own gainPct, already floored at 0 by the seed comparison.
@@ -173,6 +180,7 @@ export const pt: typeof en = {
   colAfter: "Depois",
   colPreview: "Prévia",
   pointsUnspentBanked: "+{count} não gastos",
+  pointsOverBudgetWarning: "Estes pontos de atributo não fecham: {spent} pontos em um herói de nível {level}, e o jogo concede apenas um por nível. Importe um save novo — se continuar assim, avise no Discord.",
   resetAdviceGainLine: "Uma checagem rápida encontrou um possível ganho de pelo menos ~{pct}%. Otimizar build dá a resposta definitiva.",
   pointsStepMinusFiveAria: "Remover 5 pontos de {stat}",
   pointsStepPlusFiveAria: "Adicionar 5 pontos a {stat}",

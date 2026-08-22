@@ -1,5 +1,6 @@
 ---
 "@bombfarm/domain": patch
+"@bombfarm/web": patch
 ---
 
 Fix the skill tree's crit-damage node being charged as a percentage of the hero's roll when the
@@ -23,3 +24,12 @@ Separately, and as defence in depth: the reset panel's budget is now clamped to 
 so a bad point vector from anywhere upstream can no longer be sold as a respec proposal larger
 than the game allows. The optimizer's budget already carried this clamp; the reset tier, which is
 the one the panel actually shows, did not.
+
+And when a hero does hold more points than its level, both the Points panel and the team plan's
+point-reset table now say so, instead of quietly printing the impossible number. The Points
+panel's spent/level counter already turned red on this and explained nothing; the reset table
+showed an unclamped "before" against a clamped "after", so the reset appeared to destroy a point.
+The new line names the numbers, asks for a fresh save export — which fixes it whenever the cause
+was stale data — and points to Discord if it survives that. It is deliberately mute about which
+stat is wrong: the unexplained residual lands wherever the mis-attribution happens to fall, so
+naming one would send you chasing the symptom.
