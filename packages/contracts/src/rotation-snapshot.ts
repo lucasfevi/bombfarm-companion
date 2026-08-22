@@ -6,8 +6,9 @@
  */
 
 /** A hero's rotation activity. Every member here is the English rendering of one wire `state`
- *  token declared in `packages/game-api/src/rotation/lexicon.ts` — `resting`/`inField`/`benched`. */
-export type RotationHeroActivity = 'resting' | 'inField' | 'benched';
+ *  token declared in `packages/game-api/src/rotation/lexicon.ts` —
+ *  `resting`/`inField`/`benched`/`ready`. */
+export type RotationHeroActivity = 'resting' | 'inField' | 'benched' | 'ready';
 
 /** One field a normalizer dropped, and why. `path` names the field's WIRE location (e.g. a
  *  specific hero's energy field, or the house's cycle-time field) so a report is diagnosable

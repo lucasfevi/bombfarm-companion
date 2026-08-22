@@ -55,9 +55,10 @@ export type RotationWireSymbol =
   | 'houseCycleSecondsPerHouse'
   | 'houseUpgradeCost';
 
-/** The `state` wire value observed in the committed rotation fixture. Only three tokens are
- *  present there (`DESCANSANDO`, `EM_CAMPO`, `NO_BANCO`) — a fourth was not found. */
-export type RotationStateSymbol = 'resting' | 'inField' | 'benched';
+/** The four `state` wire values: `DESCANSANDO`, `EM_CAMPO`, and `NO_BANCO` are present in the
+ *  committed rotation fixture; `PRONTO` is documented from a live observation instead — it is
+ *  produced by the House "Skip" action and does not appear in the fixture's captured moment. */
+export type RotationStateSymbol = 'resting' | 'inField' | 'benched' | 'ready';
 
 const KEY_ENTRIES: ReadonlyArray<{
   readonly symbol: RotationWireSymbol;
@@ -232,6 +233,7 @@ const STATE_ENTRIES: ReadonlyArray<{
   { symbol: 'resting', wireToken: 'DESCANSANDO', description: 'The hero is resting/recovering at the house.' },
   { symbol: 'inField', wireToken: 'EM_CAMPO', description: 'The hero is deployed on the field.' },
   { symbol: 'benched', wireToken: 'NO_BANCO', description: 'The hero is benched (not battle-eligible).' },
+  { symbol: 'ready', wireToken: 'PRONTO', description: 'The hero is fully recovered and waiting for a field slot.' },
 ];
 
 /** Looks up a declared `/rotation` wire key by its stable symbol. The only sanctioned way for
