@@ -127,8 +127,9 @@ export class GameReaderService {
     this.windowProvider = provider;
   }
 
-  /** Injected once at boot (design §8, TD-8). Only fixture-mode ticks call `commit()` on it —
-   * F3 has no live-mode producer; F2 owns that call site. */
+  /** Injected once at boot. Only fixture-mode ticks call `commit()` on it — the live path has
+   * no account-data producer of its own, because account data comes from the authenticated
+   * read path instead. */
   setAccountStore(store: AccountCommitter): void {
     this.accountStore = store;
   }
@@ -140,8 +141,8 @@ export class GameReaderService {
 
   /** Called by index.ts for every frame the live tap's `LiveSource` publishes. Cheap and
    *  synchronous — it only caches the frame for the next poll `tick()` to pick up, it never
-   *  reaches `accountStore.commit()` (F2 owns account data, sourced from the authenticated
-   *  route, never from here). */
+   *  reaches `accountStore.commit()` (account data is sourced from the authenticated route,
+   *  never from here). */
   ingestLiveTick(tick: LiveTick, takenAt: string = new Date().toISOString()): void {
     this.latestLiveTick = { tick, takenAt };
   }

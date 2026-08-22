@@ -288,7 +288,7 @@ describe('GameReaderService — account store wiring (T10, design §8/TD-8)', ()
     expect(service.getAccountView()).toBe(FAKE_VIEW);
   });
 
-  it('never calls accountStore.commit() from a live (non-fixture) tick — F2 owns that call site, sourced from the authenticated route', () => {
+  it('never calls accountStore.commit() from a live (non-fixture) tick — sourced from the authenticated route', () => {
     mockedFindProcessId.mockReturnValue(4242);
     const { committer, calls } = fakeCommitter();
     const service = new GameReaderService('/fake/user-data', { mode: 'live' });
