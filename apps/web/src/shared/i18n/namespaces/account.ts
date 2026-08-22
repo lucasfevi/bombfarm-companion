@@ -19,8 +19,9 @@ export const en = {
   accountNextHouse: "Next House — {house}",
 
   accountTreeTip: "Every account-wide bonus your skill tree grants, as the game totals them. Read-only — re-import your save to refresh.",
-  accountTreeDamageGroup: "Damage",
-  accountTreeBonusGroup: "Other bonuses",
+  accountTreeGroupDamage: "Damage",
+  accountTreeGroupField: "Field",
+  accountTreeGroupRewards: "Rewards",
   accountSquadDmg: "Squad damage",
   accountGeoMult: "Multiplicative damage",
   accountTotalDmgTip: "Total damage is the product of the two above, not a third separate bonus: (1 + {squad}%) × {geo} = {total}. Every damage number in this planner already includes it, so never add squad or multiplicative damage on top again.",
@@ -65,8 +66,9 @@ export const pt: typeof en = {
   accountNextHouse: "Próxima Casa — {house}",
 
   accountTreeTip: "Todos os bônus da conta que sua árvore de habilidades concede, como o jogo os soma. Só leitura — reimporte o save para atualizar.",
-  accountTreeDamageGroup: "Dano",
-  accountTreeBonusGroup: "Outros bônus",
+  accountTreeGroupDamage: "Dano",
+  accountTreeGroupField: "Campo",
+  accountTreeGroupRewards: "Recompensas",
   accountSquadDmg: "Dano do esquadrão",
   accountGeoMult: "Dano multiplicativo",
   accountTotalDmgTip: "O dano total é o produto dos dois acima, não um terceiro bônus separado: (1 + {squad}%) × {geo} = {total}. Todo número de dano deste planner já inclui isso, então nunca some dano do esquadrão ou multiplicativo de novo.",

@@ -1,12 +1,10 @@
 /**
  * Rate / duration / sign / label formatting for the Farm Ranking board — PURE, no React, no
- * math. Wraps the shipped `format-number.ts` and `phases-page.ts`'s `formatClearTime`; composes
- * the phase label from the shipped `formatPhaseCoord`.
+ * math. Wraps the shipped `format-number.ts` and `phases-page.ts`'s `formatClearTime`, and
+ * re-exports the shared phase label.
  * Does not re-implement anything `@bombfarm/domain` already computed — comparison, slicing and
  * string composition only.
  */
-import { formatPhaseCoord } from '@bombfarm/domain/phase-wiki';
-import type { Lang } from '@/shared/i18n';
 import { formatCompactNumber, formatNumber } from '@/shared/lib/format-number';
 
 /** A non-negative rate (gold/hr, chests/hr, gems/hr, time-pieces/hr, xp/hr). */
@@ -64,12 +62,9 @@ export function formatOneShot(oneShot: boolean, labels: { yes: string; no: strin
 }
 
 /**
- * Composes the phase label from the shipped `formatPhaseCoord`, e.g. `Normal 1-1 (#51)` — the
- * in-game difficulty + map coordinate, not the wiki flavour name `phase-fact-items.tsx`'s
- * `mapName` shows. `@bombfarm/domain`'s own `formatPhaseLabel` renders the phase number without
- * the `#` (`Hard 1-1 (151)`); this wraps the same `formatPhaseCoord` rather than that helper so
- * the board can keep the `#`.
+ * Re-exported, not defined here: the Account page prints the same label and cannot import from
+ * this feature (MOD-09 denies cross-feature edges), so the definition moved to
+ * `@/shared/lib/phase-label`. Kept as a re-export so this module stays the board's one import
+ * surface for its formatters.
  */
-export function formatPhaseLabel(phase: number, lang: Lang): string {
-  return `${formatPhaseCoord(phase, lang)} (#${phase})`;
-}
+export { formatPhaseLabel } from '@/shared/lib/phase-label';

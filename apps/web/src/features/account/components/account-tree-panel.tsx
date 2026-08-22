@@ -3,6 +3,7 @@
 import { Panel, StatList, type StatListItem } from '@bombfarm/ui';
 import {
   accountStatListClass,
+  heroAbilTitleClass,
   panelHClass,
   panelTitleClass,
   tipClass,
@@ -62,16 +63,13 @@ export function AccountTreePanel() {
       }),
       value: mult(danoTotal),
     },
-  ];
-
-  const statItems: StatListItem[] = [
     { id: 'crit-chance', label: t.treeCrit, value: pct(critChance) },
     { id: 'crit-dmg', label: t.treeCritDmg, value: pct(critDmg) },
+  ];
+
+  const fieldItems: StatListItem[] = [
     { id: 'speed', label: t.treeSpeed, value: pct(speed) },
     { id: 'energy', label: t.treeEnergy, value: pct(energy) },
-    { id: 'gold', label: t.treeTeamCoin, tip: t.treeTeamCoinHint, value: pct(teamCoinPct) },
-    { id: 'luck', label: t.accountLuckFlat, value: `+${formatNumber(luckFlatPct, 2)} pp` },
-    { id: 'xp', label: t.treeXpMult, value: mult(xpMult) },
     {
       id: 'field-slots',
       label: t.accountFieldSlots,
@@ -83,7 +81,19 @@ export function AccountTreePanel() {
           ? sub(t.accountBonusOfTotal, { bonus: `+${fieldSlotsBonus}`, total: String(fieldSlots) })
           : `+${fieldSlotsBonus}`,
     },
+  ];
+
+  const rewardItems: StatListItem[] = [
+    { id: 'gold', label: t.treeTeamCoin, tip: t.treeTeamCoinHint, value: pct(teamCoinPct) },
+    { id: 'luck', label: t.accountLuckFlat, value: `+${formatNumber(luckFlatPct, 2)} pp` },
+    { id: 'xp', label: t.treeXpMult, value: mult(xpMult) },
     { id: 'bag-tabs', label: t.accountBagTabs, value: `+${bagTabsBonus}` },
+  ];
+
+  const groups = [
+    { id: 'damage', heading: t.accountTreeGroupDamage, items: damageItems },
+    { id: 'field', heading: t.accountTreeGroupField, items: fieldItems },
+    { id: 'rewards', heading: t.accountTreeGroupRewards, items: rewardItems },
   ];
 
   return (
@@ -92,20 +102,17 @@ export function AccountTreePanel() {
         <h2 className={panelTitleClass}>{t.panelTree}</h2>
       </div>
       <p className={tipClass}>{t.accountTreeTip}</p>
-      <StatList
-        variant="phases"
-        className={accountStatListClass}
-        items={damageItems}
-        aria-label={t.accountTreeDamageGroup}
-      />
-      <div className="mt-3 border-t border-line pt-3">
-        <StatList
-          variant="phases"
-          className={accountStatListClass}
-          items={statItems}
-          aria-label={t.accountTreeBonusGroup}
-        />
-      </div>
+      {groups.map((group, index) => (
+        <div key={group.id} className={index === 0 ? undefined : 'mt-3 border-t border-line pt-3'}>
+          <h3 className={heroAbilTitleClass}>{group.heading}</h3>
+          <StatList
+            variant="phases"
+            className={accountStatListClass}
+            items={group.items}
+            aria-label={group.heading}
+          />
+        </div>
+      ))}
     </Panel>
   );
 }

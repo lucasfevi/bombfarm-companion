@@ -112,26 +112,24 @@ export function AccountHousePanel() {
         id: 'next-cycle',
         label: t.accountHouseCycle,
         value: (
-          <>
-            {restText(nextRest)}
-            {restTone ? (
-              <span className={`ml-2 ${restTone}`}>{restDeltaText(restDelta)}</span>
-            ) : null}
-          </>
+          <span className="flex flex-col items-end leading-tight">
+            <span>{restText(nextRest)}</span>
+            {restTone ? <span className={restTone}>{restDeltaText(restDelta)}</span> : null}
+          </span>
         ),
       },
       {
         id: 'next-slots',
         label: t.accountCasaSlots,
         value: (
-          <>
-            {nextSlots}
+          <span className="flex flex-col items-end leading-tight">
+            <span>{nextSlots}</span>
             {slotsTone ? (
-              <span className={`ml-2 ${slotsTone}`}>
+              <span className={slotsTone}>
                 {slotsDelta > 0 ? `+${slotsDelta}` : `−${Math.abs(slotsDelta)}`}
               </span>
             ) : null}
-          </>
+          </span>
         ),
       },
     ];

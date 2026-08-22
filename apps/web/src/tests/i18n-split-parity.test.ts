@@ -256,6 +256,9 @@ const KEYS_REMOVED: readonly string[] = [
  * values the save already carried but nothing rendered outside the import dialog.
  */
 const KEYS_ADDED: readonly string[] = [
+  'accountTreeGroupDamage',
+  'accountTreeGroupField',
+  'accountTreeGroupRewards',
   'accountCasaSlots',
   'accountFieldSlots',
   'accountLuckFlat',
@@ -272,8 +275,6 @@ const KEYS_ADDED: readonly string[] = [
   'accountCasaSlotsTip',
   'accountNextHouse',
   'accountTreeTip',
-  'accountTreeDamageGroup',
-  'accountTreeBonusGroup',
   'accountSquadDmg',
   'accountGeoMult',
   'accountTotalDmgTip',

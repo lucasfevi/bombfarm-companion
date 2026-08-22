@@ -79,8 +79,10 @@ test.describe('account page — identity header', () => {
     for (const [label, value] of [
       ['Player', 'Tester'],
       ['Account ID', '4242'],
-      ['Current phase', '1'],
-      ['Furthest phase', '122'],
+      // The game's own coordinates, not a bare ordinal: importedRoster farms phase 1, and the
+      // seeded max is 122.
+      ['Current phase', 'Easy 1-1 (#1)'],
+      ['Furthest phase', 'Normal 4-12 (#122)'],
     ] as const) {
       // Assert on the fact CELL, not the panel: a value landing under the wrong label would
       // still satisfy `panel.toContainText(value)`.
@@ -185,6 +187,22 @@ test.describe('account page — Skill Tree panel', () => {
     await openAccount(page, 'en');
     const tree = panel(page, /^Skill Tree$/i);
     await expect(tree).toContainText('+8 (9 total)');
+  });
+
+  test('sorts the bonuses into named groups', async ({ page }) => {
+    await openAccount(page, 'en');
+    const tree = panel(page, /^Skill Tree$/i);
+
+    for (const heading of ['Damage', 'Field', 'Rewards']) {
+      await expect(tree.getByRole('heading', { name: heading, exact: true })).toBeVisible();
+    }
+    // Each group holds the rows it claims — crit sits under Damage, not among the readouts.
+    // Located by the list's own aria-label rather than `getByLabel`, which also matches the
+    // tooltip triggers whose accessible name starts with the row label.
+    await expect(tree.locator('dl[aria-label="Damage"]')).toContainText('Crit chance');
+    await expect(tree.locator('dl[aria-label="Field"]')).toContainText('Field slots');
+    await expect(tree.locator('dl[aria-label="Rewards"]')).toContainText('Hero XP');
+    await expect(tree.locator('dl[aria-label="Damage"]')).not.toContainText('Hero XP');
   });
 
   test('carries no icons, and every row is exactly the same height', async ({ page }) => {

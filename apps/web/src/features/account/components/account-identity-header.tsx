@@ -3,6 +3,7 @@
 import { Panel } from '@bombfarm/ui';
 import { panelHClass, panelTitleClass, tipClass } from '@bombfarm/ui/panel-field.recipe';
 import { useAppLang } from '@/shared/context/app-lang';
+import { formatPhaseLabel } from '@/shared/lib/phase-label';
 import { AccountIdentityFact } from './account-identity-fact';
 import {
   usePlannerStore,
@@ -20,7 +21,7 @@ const EM_DASH = '—';
  * a blank header, so "nothing imported yet" stays legible.
  */
 export function AccountIdentityHeader() {
-  const { t } = useAppLang();
+  const { t, lang } = useAppLang();
   const playerName = usePlannerStore(selectPlayerName);
   const accountId = usePlannerStore(selectAccountId);
   const phase = usePlannerStore(selectFarmPhase);
@@ -35,8 +36,14 @@ export function AccountIdentityHeader() {
       <div className="grid grid-cols-2 gap-x-6 gap-y-3 min-[560px]:grid-cols-4">
         <AccountIdentityFact label={t.accountPlayerName} value={playerName ?? EM_DASH} />
         <AccountIdentityFact label={t.accountIdLabel} value={accountId ?? EM_DASH} />
-        <AccountIdentityFact label={t.accountCurrentPhase} value={phase != null ? String(phase) : EM_DASH} />
-        <AccountIdentityFact label={t.accountMaxPhase} value={maxPhase != null ? String(maxPhase) : EM_DASH} />
+        <AccountIdentityFact
+          label={t.accountCurrentPhase}
+          value={phase != null ? formatPhaseLabel(phase, lang) : EM_DASH}
+        />
+        <AccountIdentityFact
+          label={t.accountMaxPhase}
+          value={maxPhase != null ? formatPhaseLabel(maxPhase, lang) : EM_DASH}
+        />
       </div>
     </Panel>
   );
