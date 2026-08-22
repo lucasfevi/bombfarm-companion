@@ -1,4 +1,6 @@
 import { test, expect, _electron as electron } from '@playwright/test';
+import fs from 'node:fs';
+import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -7,6 +9,10 @@ const desktopRoot = path.join(__dirname, '..', '..');
 
 test.describe('app boot smoke', () => {
   test('main window mounts renderer and IPC round-trips', async () => {
+    // Its own profile, like every other spec here: this smoke now clicks, and a click needs a
+    // known consent state. Reusing the developer's real profile made the modal present in CI and
+    // absent locally, which is the difference that hid a blocked click behind a local pass.
+    const userDataDir = fs.mkdtempSync(path.join(os.tmpdir(), 'bfc-app-boot-'));
     const electronExec = path.join(
       desktopRoot,
       'node_modules',
@@ -23,6 +29,7 @@ test.describe('app boot smoke', () => {
         NODE_ENV: 'production',
         BFC_FLAVOR: 'dev',
         BFC_GAME_READER: 'fixture',
+        BFC_USER_DATA_DIR: userDataDir,
         ELECTRON_ENABLE_LOGGING: '1',
       },
     });
@@ -62,6 +69,14 @@ test.describe('app boot smoke', () => {
       // racing it — the environment reaching the DOM is already asserted above. Located by
       // position, not by label: packages/ui ships no testid on these buttons and the labels are
       // translated, which is the same reasoning i18n.spec.mjs's own nav helper records.
+      // The consent modal's backdrop covers the sidebar, so it has to go before any nav click.
+      // Decline rather than accept, matching every other spec here: accepting switches on the
+      // account refresh path, which would shadow the fixture reader this smoke is asserting.
+      const consentModal = page.getByTestId('consent-modal');
+      await expect(consentModal).toBeVisible({ timeout: 30_000 });
+      await page.getByTestId('consent-decline').click();
+      await expect(consentModal).toBeHidden({ timeout: 15_000 });
+
       const navButtons = page.locator('nav[aria-label="Main"] button');
       await expect(navButtons).toHaveCount(3, { timeout: 30_000 });
       await navButtons.nth(1).click();
@@ -81,6 +96,7 @@ test.describe('app boot smoke', () => {
       await app.close();
     } finally {
       await app.close().catch(() => undefined);
+      fs.rmSync(userDataDir, { recursive: true, force: true });
     }
   });
 });
