@@ -36,7 +36,6 @@
     "@bombfarm/tap-runtime": "workspace:*",
     "@bombfarm/ui": "workspace:*",
     "electron-log": "^5.4.1",
-    "koffi": "^2.12.2",
     "next": "^15.4.2",
     "react": "^19.1.0",
     "react-dom": "^19.1.0"
