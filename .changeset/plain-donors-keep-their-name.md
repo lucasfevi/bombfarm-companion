@@ -1,5 +1,5 @@
 ---
-'@bombfarm/domain': patch
+"@bombfarm/domain": patch
 ---
 
 Farm Respec Advisor: name the hero an item is taken from, instead of calling it Inventory.
