@@ -14,6 +14,7 @@
     "tests/save-schema.test.ts",
     "tests/export-fingerprint.test.ts",
     "tests/save-acceptance.test.ts",
-    "tests/helpers/require-fixture.ts"
+    "tests/helpers/require-fixture.ts",
+    "tests/rotation-status.test.ts"
   ]
 }
