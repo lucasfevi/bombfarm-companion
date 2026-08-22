@@ -6,15 +6,20 @@ function activePanel(page: import('@playwright/test').Page) {
 }
 
 test.describe('planner tabs IA (PTI)', () => {
-  test('tab list exposes Abilities / Gear / Account / Points (no Check)', async ({ page }) => {
+  test('tab list exposes Abilities / Gear / Points (no Check, no Account)', async ({ page }) => {
     await seedLocalStorage(page, { ...importedRoster, lang: 'en' });
     await page.goto('/');
     await selectSavedHero(page, 'Cora');
 
-    for (const name of [/^Abilities$/i, /^Gear$/i, /^Account$/i, /^Points$/i]) {
+    for (const name of [/^Abilities$/i, /^Gear$/i, /^Points$/i]) {
       await expect(page.getByRole('tab', { name })).toBeVisible();
     }
     await expect(page.getByRole('tab', { name: /^Check$/i })).toHaveCount(0);
+    // Account left the tab strip for a nav route of its own.
+    await expect(page.getByRole('tab', { name: /^Account$/i })).toHaveCount(0);
+    await expect(
+      page.getByRole('navigation').getByRole('link', { name: /^Account$/i }),
+    ).toBeVisible();
   });
 
   test('Points tab stacks Points / Next point then Stats then Effective', async ({ page }) => {

@@ -35,9 +35,17 @@ describe('planner-tab persistence (PTI-04)', () => {
   });
 
   it('accepts only locked tab ids', () => {
-    expect(PLANNER_TAB_IDS).toEqual(['hero', 'gear', 'account', 'points']);
+    expect(PLANNER_TAB_IDS).toEqual(['hero', 'gear', 'points']);
     expect(isPlannerTabId('points')).toBe(true);
     expect(isPlannerTabId('items')).toBe(false);
+    // Account is a nav route of its own now, not a planner tab.
+    expect(isPlannerTabId('account')).toBe(false);
+  });
+
+  it('a stored account tab falls back to the first-visit default', () => {
+    localStorage.setItem(PLANNER_TAB_STORAGE_KEY, 'account');
+    expect(loadPlannerTab(true)).toBe('points');
+    expect(loadPlannerTab(false)).toBe('hero');
   });
 
   it('defaults to points when setup ready, else hero', () => {

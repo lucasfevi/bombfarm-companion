@@ -85,8 +85,8 @@ export type AccountImportData = {
   /**
    * `casa.cycle_secs` — a full 0 → 100% House fill in seconds, straight off the save. `null` when
    * absent, which sends every consumer back to the `HOUSES` table interpolation
-   * (`resolveHouseRestSeconds`). Preferred over the table because the table is a whole-minute
-   * reconstruction that runs ~7.8% fast (1077s vs a measured 1168.42s at Casa I level 11).
+   * (`resolveHouseRestSeconds`). Preferred over the table only for its sub-second precision —
+   * the two agree to the rounded second (1168 vs a measured 1168.42 at Casa I level 11).
    */
   houseCycleSecs?: number | null;
   /** `account.phase` — the phase the player is currently farming. Null when absent. */

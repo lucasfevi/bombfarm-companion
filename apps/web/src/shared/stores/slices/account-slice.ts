@@ -59,7 +59,7 @@ export type AccountSlice = {
   fieldSlots: number | null;
   /**
    * `casa.cycle_secs` — a full 0 → 100% House fill in seconds, straight off the save. `null`
-   * falls the whole app back to the `HOUSES` table interpolation, which runs ~7.8% fast. Feeds
+   * falls the whole app back to the `HOUSES` table interpolation, accurate to the second. Feeds
    * `Context.restSeconds` for the advisor, the team plan and the farm board alike, so it belongs
    * to shared account state rather than to any one surface.
    */

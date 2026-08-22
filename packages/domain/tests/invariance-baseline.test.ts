@@ -16,6 +16,24 @@
  * the walk below decodes leaves back to numbers for a same-value comparison (`Object.is`) only
  * to name the first differing hero/function/stat on failure.
  *
+ * RE-RECORDED (5) at the corrected House cycle table. The `HOUSES` endpoints were a whole-minute
+ * reconstruction running a full minute short per house; the wiki's
+ * `rotacao.casas[].cycle_secs_base`/`cycle_secs_max` replaced them, and neither corpus file
+ * carries `casa.cycle_secs`, so both resolve rest through the table. **235** of the 2791 recorded
+ * scalars moved and `meta.scalarCount` did NOT — no key was added, removed or renamed, only
+ * values. Every one is downstream of `restSeconds`: the rest itself
+ * (`farmContextForHero.restSeconds`, `buildStatBreakdown.derived.rest`), the duty cycle it drives
+ * (`uptime`, and the scorer's `duty`/`fieldSeconds`/`active`/`sustained`/`objective`/`sumDuty`),
+ * and the throughput hanging off that (`sustainedDps`, `derive.dps`, `pipelineForHero.dps`,
+ * `resetAdvice.currentDps`/`reoptDps`/`gainPct`, `ranking[].gainPct`, `best.gainPct`).
+ *
+ * NOT moved, and the proof this was a House-cycle change and nothing else: every sheet key on
+ * every subject (`applySkillTree`, `composeSheetFromBirth`, `sheetsFromBirth`, `peelSheetStages`,
+ * `peelSheetSources`), every `inferSpentPoints` value, and `avgHitBase` — rest seconds enter
+ * after the damage math, never inside it. The MKR-14 `formulaDmg` entries were again held at
+ * their PRE-deletion values through this re-record, so `PERMITTED_DELTAS` stays a live exception.
+ *
+ * ---
  * RE-RECORDED (4) at the additive drain-reduction fix: a hero's own drain reduction (Bateria
  * Extra) and the team's (Fôlego de Mineiro) used to be combined multiplicatively; measurement
  * showed they add instead, each capped at 20%, floored at a combined 60%. Moved: only the

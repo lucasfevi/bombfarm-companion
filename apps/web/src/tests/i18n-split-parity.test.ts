@@ -131,8 +131,14 @@ const fixture = JSON.parse(readFileSync(fixturePath, 'utf8')) as {
  * then the sentence beneath it, so `farmRespecPlateauLabel`, `farmRespecPlateauRange` and
  * `farmRespecPlateauSharp` have no reader left. The domain's `plateau` field and everything that
  * computes it are untouched.
+ * The Account page (2026-08-22) promoted the planner's Account tab to a nav route of its own.
+ * With no Account tab left in the tab strip, its label and its warn-tooltip title have no reader:
+ * `tabAccount` is replaced by `navAccount` (in `KEYS_ADDED`) and `tabAccountWarnTitle` goes away
+ * outright — `computePlannerTabStatuses` no longer returns an `accountTabStatus` at all.
  */
 const KEYS_REMOVED: readonly string[] = [
+  'tabAccount',
+  'tabAccountWarnTitle',
   'farmRespecPaybackNoGoldGain',
   'farmRespecHeadlinePhase',
   'farmRespecHeadlineCost',
@@ -215,8 +221,24 @@ const KEYS_REMOVED: readonly string[] = [
  * gold/hr rather than the increase over the current one: `farmRespecPaybackTip` is the tooltip
  * body, triggered by the Payback label itself (`TipLabel`) rather than a separate `?` control, so
  * no separate trigger-label key exists.
+ *
+ * The Account page (2026-08-22): `navAccount` is the new nav label (replacing the retired
+ * `tabAccount`), and the ten `accountSave*`/`accountMaxPhase`/`accountLuckFlat`/
+ * `accountFieldSlots`/`accountCasaSlots` keys are the new "From your save" panel — account-wide
+ * values the save already carried but nothing rendered outside the import dialog.
  */
 const KEYS_ADDED: readonly string[] = [
+  'navAccount',
+  'accountSavePanel',
+  'accountSaveTip',
+  'accountSaveProgress',
+  'accountSaveRotation',
+  'accountMaxPhase',
+  'accountLuckFlat',
+  'accountFieldSlots',
+  'accountCasaSlots',
+  'accountSaveHouseCycle',
+  'accountSaveHouseCycleAt',
   'farmRespecUnchangedGroupNote',
   'phasesXpActualHint',
   'phasesDropsSection',

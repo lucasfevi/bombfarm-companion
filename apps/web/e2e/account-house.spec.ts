@@ -1,5 +1,10 @@
 import { test, expect, type Page } from '@playwright/test';
-import { importedRoster, seedLocalStorage, selectSavedHero } from './fixtures/seed';
+import {
+  gotoAccountPage,
+  importedRoster,
+  seedLocalStorage,
+  selectSavedHero,
+} from './fixtures/seed';
 
 function accountPanel(page: Page, lang: 'pt' | 'en' = 'pt') {
   const title = lang === 'en' ? /^Account$/i : /^Conta$/i;
@@ -7,16 +12,18 @@ function accountPanel(page: Page, lang: 'pt' | 'en' = 'pt') {
 }
 
 function restParts(houseIdx: number, houseLevel: number): { minutes: number; seconds: number } {
+  // Mirrors `HOUSES` — the wiki's `rotacao.casas[].cycle_secs_base`/`cycle_secs_max`.
   const houses = [
-    { minutesLvl1: 19, minutesLvl20: 17 },
-    { minutesLvl1: 16, minutesLvl20: 14 },
-    { minutesLvl1: 13, minutesLvl20: 11 },
-    { minutesLvl1: 10, minutesLvl20: 8 },
-    { minutesLvl1: 7, minutesLvl20: 5 },
+    { cycleSecsLvl1: 1200, cycleSecsLvl20: 1140 },
+    { cycleSecsLvl1: 1080, cycleSecsLvl20: 1020 },
+    { cycleSecsLvl1: 960, cycleSecsLvl20: 900 },
+    { cycleSecsLvl1: 840, cycleSecsLvl20: 780 },
+    { cycleSecsLvl1: 660, cycleSecsLvl20: 600 },
   ] as const;
   const h = houses[houseIdx] ?? houses[0];
-  const mins = h.minutesLvl1 + ((h.minutesLvl20 - h.minutesLvl1) * (houseLevel - 1)) / 19;
-  const totalSec = Math.round(mins * 60);
+  const totalSec = Math.round(
+    h.cycleSecsLvl1 + ((h.cycleSecsLvl20 - h.cycleSecsLvl1) * (houseLevel - 1)) / 19,
+  );
   return { minutes: Math.floor(totalSec / 60), seconds: totalSec % 60 };
 }
 
@@ -47,7 +54,7 @@ test.describe('account house fields (AHK)', () => {
     await seedLocalStorage(page, importedRoster);
     await page.goto('/');
     await selectSavedHero(page, 'Cora');
-    await page.getByRole('tab', { name: /^account$|^conta$/i }).click();
+    await gotoAccountPage(page);
 
     const account = accountPanel(page);
     const houseHeading = account.getByRole('heading', { name: /^Casa$/i, level: 3 });
@@ -70,7 +77,7 @@ test.describe('account house fields (AHK)', () => {
     await seedLocalStorage(page, importedRoster);
     await page.goto('/');
     await selectSavedHero(page, 'Cora');
-    await page.getByRole('tab', { name: /^account$|^conta$/i }).click();
+    await gotoAccountPage(page);
 
     const account = accountPanel(page);
     const houseBlock = account.locator('div').filter({
@@ -106,8 +113,6 @@ test.describe('account house fields (AHK)', () => {
     await seedLocalStorage(page, importedRoster);
     await page.goto('/');
     await selectSavedHero(page, 'Cora');
-    await page.getByRole('tab', { name: /^account$|^conta$/i }).click();
-
     await page.getByRole('tab', { name: /^pontos$/i }).click();
     const advice = page.locator('[data-slot="tabs-panel"][data-state="active"]');
     await expect(advice.getByRole('heading', { name: /^Contexto$/i })).toHaveCount(0);
@@ -118,7 +123,7 @@ test.describe('account house fields (AHK)', () => {
     await seedLocalStorage(page, { ...importedRoster, lang: 'en' });
     await page.goto('/');
     await selectSavedHero(page, 'Cora');
-    await page.getByRole('tab', { name: /^account$|^conta$/i }).click();
+    await gotoAccountPage(page);
 
     const account = accountPanel(page, 'en');
     await expect(account.getByRole('heading', { name: /^House$/i, level: 3 })).toBeVisible();

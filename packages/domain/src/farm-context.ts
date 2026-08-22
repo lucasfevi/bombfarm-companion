@@ -58,8 +58,8 @@ export type FarmContextForHeroInput = {
   phase?: number | null;
   /**
    * `casa.cycle_secs` from the save — the House's own full-fill countdown, in seconds. Absent
-   * (`undefined`/`null`) falls back to the {@link HOUSES} interpolation, which is a ~7.8%-fast
-   * reconstruction; see {@link resolveHouseRestSeconds}.
+   * (`undefined`/`null`) falls back to the {@link HOUSES} interpolation, which agrees with it to
+   * the rounded second; see {@link resolveHouseRestSeconds}.
    *
    * DELIBERATELY NOT farm-board-only: this feeds `Context.restSeconds`, which the ADVISOR
    * (`advisor-pipeline.ts`) and the TEAM-PLAN scorer (`team-plan/score.ts`) read for duty cycle

@@ -15,7 +15,8 @@
  * recover in a 3-slot House). `farm-rate.ts` did exactly the former until the House-ceiling fix.
  */
 
-export const CASA_SLOTS_PER_HOUSE = [3, 6, 9, 9, 9] as const;
+/** Per-house recovery-slot ladder, from the wiki's `rotacao.casas[].slots`. */
+export const CASA_SLOTS_PER_HOUSE = [3, 5, 7, 9, 9] as const;
 
 /** Casa III+ default when neither `casa.slots` nor `slots_per_house[houseIdx]` applies. */
 export const DEFAULT_CASA_SLOTS = 9;

@@ -10,7 +10,7 @@ import { REFERRAL_CODE } from '@/shared/referral';
 import { useReferralCopy } from './use-referral-copy';
 import { NavLink } from './site-nav-link';
 
-export type SiteSection = 'planner' | 'farm' | 'teamPlan';
+export type SiteSection = 'planner' | 'farm' | 'teamPlan' | 'account';
 
 export function SiteHeader({
   t,
@@ -32,6 +32,7 @@ export function SiteHeader({
   const plannerActive = pathname === '/';
   const farmActive = pathname.startsWith('/farm');
   const teamPlanActive = pathname.startsWith('/team-plan');
+  const accountActive = pathname.startsWith('/account');
 
   return (
     <header className="sticky top-0 z-30 min-h-top border-b border-line bg-[color-mix(in_oklch,var(--surface)_92%,transparent)] px-4 py-2.5 backdrop-blur-[14px]">
@@ -63,6 +64,9 @@ export function SiteHeader({
             </NavLink>
             <NavLink href="/team-plan" active={teamPlanActive}>
               {t.navTeamPlan}
+            </NavLink>
+            <NavLink href="/account" active={accountActive}>
+              {t.navAccount}
             </NavLink>
           </nav>
         </div>

@@ -1,5 +1,6 @@
 import { test, expect, type Page } from '@playwright/test';
 import {
+  gotoAccountPage,
   importedRoster,
   seedLocalStorage,
   selectSavedHero,
@@ -33,7 +34,7 @@ test.describe('account panel chrome', () => {
     await seedLocalStorage(page, { ...importedRoster, lang: 'en' });
     await page.goto('/');
     await selectSavedHero(page, 'Cora');
-    await page.getByRole('tab', { name: /^account$|^conta$/i }).click();
+    await gotoAccountPage(page);
 
     const account = accountPanel(page, 'en');
     await expect(account.getByRole('heading', { name: /^Account$/i, level: 2 })).toBeVisible();
@@ -41,16 +42,17 @@ test.describe('account panel chrome', () => {
     await expect(account.getByText(/^Da conta$/i)).toHaveCount(0);
   });
 
-  test('tree ×1 does not show required chrome or Account tab warning', async ({ page }) => {
+  test('tree ×1 shows no required chrome, and the planner has no Account tab at all', async ({
+    page,
+  }) => {
     await seedLocalStorage(page, treeDefaultState('en'));
     await page.goto('/');
     await selectSavedHero(page, 'Cora');
 
-    await expect(page.getByRole('tab', { name: /^Account$/i }).locator('[data-tab-badge]')).toHaveCount(
-      0,
-    );
+    // Account is a nav route now — the tab it used to occupy is gone, badge and all.
+    await expect(page.getByRole('tab', { name: /^Account$/i })).toHaveCount(0);
 
-    await page.getByRole('tab', { name: /^account$|^conta$/i }).click();
+    await gotoAccountPage(page);
     const account = accountPanel(page, 'en');
     await expect(account.getByText(/^required$/i)).toHaveCount(0);
     await expect(page.locator('[data-tab-status-banner]')).toHaveCount(0);
@@ -60,7 +62,7 @@ test.describe('account panel chrome', () => {
     await seedLocalStorage(page, { ...importedRoster, lang: 'en' });
     await page.goto('/');
     await selectSavedHero(page, 'Cora');
-    await page.getByRole('tab', { name: /^account$|^conta$/i }).click();
+    await gotoAccountPage(page);
 
     const account = accountPanel(page, 'en');
     const houseBlock = account
@@ -92,7 +94,7 @@ test.describe('account panel chrome', () => {
     await seedLocalStorage(page, { ...importedRoster, lang: 'en' });
     await page.goto('/');
     await selectSavedHero(page, 'Cora');
-    await page.getByRole('tab', { name: /^account$|^conta$/i }).click();
+    await gotoAccountPage(page);
 
     const account = accountPanel(page, 'en');
     const treeRows = account.locator('label').filter({
@@ -124,7 +126,7 @@ test.describe('account panel chrome', () => {
     await seedLocalStorage(page, importedRoster);
     await page.goto('/');
     await selectSavedHero(page, 'Cora');
-    await page.getByRole('tab', { name: /^account$|^conta$/i }).click();
+    await gotoAccountPage(page);
 
     const account = accountPanel(page, 'pt');
     const treeRows = account.locator('label').filter({
@@ -151,11 +153,34 @@ test.describe('account panel chrome', () => {
     }
   });
 
+  test('From your save panel renders the account-wide values the tab never showed', async ({
+    page,
+  }) => {
+    await seedLocalStorage(page, { ...importedRoster, lang: 'en' });
+    await page.goto('/');
+    await selectSavedHero(page, 'Cora');
+    await gotoAccountPage(page);
+
+    const save = page.locator('section').filter({
+      has: page.getByRole('heading', { name: /^From your save$/i, level: 2 }),
+    });
+    await expect(save).toBeVisible();
+
+    // The two slot counts are different game concepts and must both be readable here.
+    const fieldSlots = save.locator('div').filter({ hasText: /^Field slots/ }).first();
+    const casaSlots = save.locator('div').filter({ hasText: /^House recovery slots/ }).first();
+    await expect(fieldSlots).toBeVisible();
+    await expect(casaSlots).toBeVisible();
+
+    await expect(save.getByText(/^Furthest phase reached$/i)).toBeVisible();
+    await expect(save.getByText(/^House cycle in save$/i)).toBeVisible();
+  });
+
   test('PT: Conta panel has no Da conta chip; no obrigatório at tree ×1', async ({ page }) => {
     await seedLocalStorage(page, treeDefaultState('pt'));
     await page.goto('/');
     await selectSavedHero(page, 'Cora');
-    await page.getByRole('tab', { name: /^account$|^conta$/i }).click();
+    await gotoAccountPage(page);
 
     const account = accountPanel(page, 'pt');
     await expect(account.getByRole('heading', { name: /^Conta$/i, level: 2 })).toBeVisible();

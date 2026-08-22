@@ -63,11 +63,11 @@ describe('planner tabs IA (PTI-*)', () => {
   const tabLabels = {
     tabHero: { en: 'Abilities', pt: 'Habilidades' },
     tabGear: { en: 'Gear', pt: 'Equipamento' },
-    tabAccount: { en: 'Account', pt: 'Conta' },
     tabPoints: { en: 'Points', pt: 'Pontos' },
     // Farm Ranking (T1): renamed Phases -> Farm, identical in both languages.
     navPhases: { en: 'Farm', pt: 'Farm' },
     navPlanner: { en: 'Planner', pt: 'Planner' },
+    navAccount: { en: 'Account', pt: 'Conta' },
     tabHeroWarnTitle: { en: 'Abilities need attention', pt: 'Habilidades precisam de atenção' },
     tabGearWarnTitle: { en: 'Gear needs attention', pt: 'Equipamento precisa de atenção' },
   } as const;

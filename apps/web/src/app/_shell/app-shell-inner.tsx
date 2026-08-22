@@ -24,7 +24,8 @@ export function AppShellInner({
   const pathname = usePathname();
   const onFarm = pathname.startsWith('/farm');
   const onTeamPlan = pathname.startsWith('/team-plan');
-  const onSectionPage = onFarm || onTeamPlan;
+  const onAccount = pathname.startsWith('/account');
+  const onSectionPage = onFarm || onTeamPlan || onAccount;
   const { lang, setLang, t } = useAppLang();
   const importDialogOpen = usePlannerStore((state) => state.importDialogOpen);
   const setImportDialogOpen = usePlannerStore((state) => state.setImportDialogOpen);

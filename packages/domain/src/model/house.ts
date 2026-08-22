@@ -1,30 +1,33 @@
-// House recovery time in seconds: Casa 1..5, level 1..20 (linear).
-// Casa 1: 19→17 min, Casa 2: 16→14, Casa 3: 13→11, Casa 4: 10→8, Casa 5: 7→5.
+/**
+ * House recovery cycle in seconds: Casa 1..5, level 1..20, linear between the level-1 and
+ * level-20 endpoints.
+ *
+ * Endpoints are the wiki's `rotacao.casas[].cycle_secs_base` / `cycle_secs_max`. They are exact
+ * seconds, not a whole-minute reconstruction: interpolating them reproduces a captured
+ * `casa.cycle_secs` of `1168.42`s (Casa I level 11) to the rounded second.
+ */
 export const HOUSES = [
-  { name: 'Casa I (Incomum)', minutesLvl1: 19, minutesLvl20: 17 },
-  { name: 'Casa II (Raro)', minutesLvl1: 16, minutesLvl20: 14 },
-  { name: 'Casa III (Épico)', minutesLvl1: 13, minutesLvl20: 11 },
-  { name: 'Casa IV (Lendária)', minutesLvl1: 10, minutesLvl20: 8 },
-  { name: 'Casa V (Mítico)', minutesLvl1: 7, minutesLvl20: 5 },
+  { name: 'Casa I (Incomum)', cycleSecsLvl1: 1200, cycleSecsLvl20: 1140 },
+  { name: 'Casa II (Raro)', cycleSecsLvl1: 1080, cycleSecsLvl20: 1020 },
+  { name: 'Casa III (Épico)', cycleSecsLvl1: 960, cycleSecsLvl20: 900 },
+  { name: 'Casa IV (Lendária)', cycleSecsLvl1: 840, cycleSecsLvl20: 780 },
+  { name: 'Casa V (Mítico)', cycleSecsLvl1: 660, cycleSecsLvl20: 600 },
 ] as const;
 
 export function houseRestSeconds(houseIndex: number, level: number): number {
   const house = HOUSES[houseIndex];
-  const mins = house.minutesLvl1 + ((house.minutesLvl20 - house.minutesLvl1) * (level - 1)) / 19;
-  return Math.round(mins * 60);
+  const secs =
+    house.cycleSecsLvl1 + ((house.cycleSecsLvl20 - house.cycleSecsLvl1) * (level - 1)) / 19;
+  return Math.round(secs);
 }
 
 /**
  * A full 0 → 100% House fill in seconds, preferring the save's own `casa.cycle_secs` over the
  * {@link HOUSES} table.
  *
- * The table above is a RECONSTRUCTION (whole-minute endpoints, linearly interpolated, rounded to
- * the second); the save carries the number the client actually counts down. They disagree, and the
- * table runs fast: `houseRestSeconds(0, 11)` is `1077`s against a measured `casa.cycle_secs` of
- * `1168.42` on account 486 — the table is ~7.8% short, which inflates every duty cycle derived
- * from it. Where the save says, the save wins; {@link houseRestSeconds} is the fallback for
- * payloads that predate the key (and for hand-built accounts / UI-entered house pickers, which
- * have no captured cycle at all).
+ * The save carries the number the client actually counts down, at sub-second precision; the table
+ * agrees with it to the rounded second and is the fallback for payloads that predate the key (and
+ * for hand-built accounts / UI-entered house pickers, which have no captured cycle at all).
  *
  * Total by construction: a non-finite or non-positive `cycleSecs` (absent key, `null`, `0`, a
  * string that slipped through a boundary) degrades to the table rather than poisoning every
@@ -43,8 +46,7 @@ export function houseRestSeconds(houseIndex: number, level: number): number {
  * this keeps its pre-existing behaviour: trust `cycleSecs` unconditionally whenever positive. That
  * is still correct for every caller that has no independent picker to diverge from the import —
  * i.e. every caller outside the web planner's account store — so this default does not need those
- * call sites to thread an anchor they cannot get out of sync with. Passing an anchor (even
- * explicitly `null`, meaning "no recorded anchor") activates the comparison.
+ * call sites to thread an anchor they cannot get out of sync with.
  */
 export function resolveHouseRestSeconds(
   cycleSecs: number | null | undefined,
