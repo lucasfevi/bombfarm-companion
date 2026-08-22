@@ -3,6 +3,7 @@ import { app, BrowserWindow, ipcMain } from 'electron';
 import {
   DEFAULT_SETTINGS,
   isIpcChannel,
+  liveGap,
   resolveStartupLocale,
   type AccountView,
   type AppLocale,
@@ -11,6 +12,7 @@ import {
   type IpcEventChannel,
   type IpcEvents,
   type IpcInvokeChannel,
+  type LiveView,
   type SettingsWriteResult,
 } from '@bombfarm/contracts';
 import { type ConsentEvent, createPacingGate, initialConsent, reduceConsent } from '@bombfarm/game-api';
@@ -25,6 +27,7 @@ import { createConsentStore, type ConsentStore } from './game-api/consent-store.
 import { createSettingsStore, type SettingsStore } from './game-api/settings-store.js';
 import { nodeHttpsTransport } from './game-api/https-transport.js';
 import { readSessionToken, sessionCfgPath } from './game-api/session-token-file.js';
+import { LiveSource } from './live-source/live-source.js';
 import { configureLogging, log } from './logging.js';
 import { createAccountStore, type AccountStore } from './storage/account-store.js';
 import { createStorage, openAccountDatabase, type Storage } from './storage/index.js';
@@ -36,6 +39,7 @@ let accountStore: AccountStore | null = null;
 let accountRefresh: AccountRefreshHandle | null = null;
 let consentStore: ConsentStore | null = null;
 let settingsStore: SettingsStore | null = null;
+let liveSource: LiveSource | null = null;
 // MP3 F4 (AD-053) — the resolved language, held in a module-level `let` exactly as
 // `consentStore`'s own value is. Defaults to `DEFAULT_SETTINGS` until `bootstrap()` resolves it
 // (inside `whenReady()`, where `app.getLocale()` is documented valid) so `settings:get` never
@@ -68,6 +72,11 @@ function applyConsentEvent(event: ConsentEvent): ConsentRecord {
 function applyLocale(next: AppLocale): SettingsWriteResult {
   currentSettings = { schemaVersion: 1, locale: next };
   return settingsStore?.write(currentSettings) ?? { settings: currentSettings, persisted: false, reason: 'no_store' };
+}
+
+function defaultLiveView(): LiveView {
+  const now = new Date().toISOString();
+  return { currency: liveGap('neverAttached', now), field: [], recovery: [], rotation: null, updatedAt: now };
 }
 
 function registerIpcHandlers(): void {
@@ -110,7 +119,15 @@ function registerIpcHandlers(): void {
     'consent:get': (): ConsentRecord => consentStore?.read() ?? initialConsent(),
     'consent:accept': (): ConsentRecord => applyConsentEvent({ type: 'accept', now: new Date().toISOString() }),
     'consent:decline': (): ConsentRecord => applyConsentEvent({ type: 'decline' }),
-    'consent:revoke': (): ConsentRecord => applyConsentEvent({ type: 'revoke' }),
+    // The tap must be torn down before the revoke is recorded, not after and not concurrently —
+    // otherwise an already-attached tap keeps reading real game traffic past the moment consent
+    // says it should have stopped, since the tap's own poll loop only re-checks consent before
+    // attaching, never against a session already in progress.
+    'consent:revoke': async (): Promise<ConsentRecord> => {
+      await liveSource?.forceDetach();
+      return applyConsentEvent({ type: 'revoke' });
+    },
+    'live:get': (): LiveView => liveSource?.getView() ?? defaultLiveView(),
   };
 
   ipcMain.handle('bfc:invoke', (_event, channel: string) => {
@@ -215,6 +232,17 @@ async function bootstrap(): Promise<void> {
   // valid. A stored override always wins over the OS (MIN-09); source is logged so "why did it
   // open in English?" is answerable from a log line rather than a guess (MIN-06/MIN-07).
   settingsStore = createSettingsStore(accountOpen.db);
+
+  liveSource = new LiveSource({
+    consent: () => consentStore?.read().decision === 'granted',
+    userDataDir,
+    log,
+  });
+  liveSource.subscribe((event) => {
+    emitEvent('live:event', event);
+  });
+  liveSource.start();
+
   const storedSettings = settingsStore.read();
   const systemLocale = app.getLocale();
   const { locale, source } = resolveStartupLocale({ stored: storedSettings?.locale ?? null, systemLocale });
@@ -228,9 +256,11 @@ async function bootstrap(): Promise<void> {
 
   // MP3 F3 (AD-043) — declared before accountRefresh so its onView callback can close over it;
   // assigned once every producer it reads (gameReader, consentStore, accountRefresh) exists.
-  // Both producers below "ping" it and ignore their own payload argument — the notifier always
-  // re-resolves the CURRENT cached view itself (resolveCachedAccountView), so the push and the
-  // pull are provably the same function (design.md §2.3).
+  // Both producers below "ping" the notifier and ignore their own payload argument for that call
+  // — the notifier always re-resolves the CURRENT cached view itself (resolveCachedAccountView),
+  // so the push and the pull are provably the same function (design.md §2.3). accountRefresh's
+  // callback additionally forwards its argument to liveSource — a separate consumer with its own
+  // reason to want the freshly committed view.
   let notifier: ReturnType<typeof createAccountNotifier> | null = null;
 
   accountRefresh = createAccountRefresh({
@@ -248,8 +278,9 @@ async function bootstrap(): Promise<void> {
     // account-refresh.ts itself is unmodified (TD-10, MP2 owns that file's commit semantics) —
     // only what the listener does changed: it used to emit unconditionally on every commit
     // (AD-031 fact 2); it now asks the notifier, which emits only on a real change.
-    onView: () => {
+    onView: (view) => {
       notifier?.notifyIfChanged();
+      liveSource?.ingestRotation(view);
     },
   });
 
@@ -360,6 +391,8 @@ if (!gotLock) {
     gameReader = null;
     accountRefresh?.stop();
     accountRefresh = null;
+    void liveSource?.teardown();
+    liveSource = null;
     consentStore = null;
     // MP3 F4 — settingsStore borrows accountOpen.db, which accountStore.close() already owns
     // below; it holds no timer and opens no handle of its own, so it must not gain a close().

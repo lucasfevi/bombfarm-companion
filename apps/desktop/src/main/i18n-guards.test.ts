@@ -161,7 +161,16 @@ const GUARD_1_EXCLUDE = (path: string): boolean =>
   // A PowerShell cmdlet string built for execSync() (game-reader/process.ts) — assigned to a
   // local variable first, so it is one indirection away from the NON_PROSE_CALL_CONTEXT check
   // above and is excluded by file instead. Never rendered; findProcessId() returns a PID or null.
-  path.endsWith(join('game-reader', 'process.ts'));
+  path.endsWith(join('game-reader', 'process.ts')) ||
+  // Same shape, same reason (live-source/live-source.ts): its own PowerShell cmdlet strings are
+  // assigned to a local variable before reaching execSync(). Never rendered; the calls return a
+  // process list or a file's bytes.
+  path.endsWith(join('live-source', 'live-source.ts')) ||
+  // live-source/image-scan.ts's READ_HOOK_ANCHORS: literal text this module looks for inside the
+  // game's own on-disk binary, not text this app ever displays — the same "technical, never
+  // rendered" shape the two exclusions above cover, just reached as a plain array instead of an
+  // execSync() argument.
+  path.endsWith(join('live-source', 'image-scan.ts'));
 
 describe('Guard 1 — no player-facing literal outside the i18n source (MIN-02, AD-055)', () => {
   // What this rule CANNOT catch, stated rather than glossed (design §9, hazard 2): a one-word
