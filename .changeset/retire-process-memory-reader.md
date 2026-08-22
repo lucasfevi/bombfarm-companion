@@ -1,6 +1,7 @@
 ---
 "@bombfarm/desktop": patch
 "@bombfarm/game-data": patch
+"@bombfarm/contracts": patch
 ---
 
 Remove the process-memory reading path from the desktop app. The diagnostics snapshot panel now
