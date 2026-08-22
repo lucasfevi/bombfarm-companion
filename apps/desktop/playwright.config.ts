@@ -23,5 +23,14 @@ export default defineConfig({
         'i18n.spec.mjs',
       ],
     },
+    {
+      // A separate project so it can be run (or excluded) independently of `electron-smoke` —
+      // `ci-desktop.yml` and the `test:smoke`/`test:render-count` scripts all pass an explicit
+      // `--project` so a bare `playwright test` here never silently runs both. This one is an
+      // advisory render-profiling instrument, not part of the required smoke gate.
+      name: 'render-count-instrument',
+      testDir: './tests/render-count',
+      testMatch: ['render-count.spec.mjs'],
+    },
   ],
 });

@@ -18,25 +18,12 @@ import { AppShell, EmptyState, StatusChip } from '@bombfarm/ui';
 import { rarityLabel } from '@bombfarm/domain/game-labels';
 import { CopyProvider, useCopy, useLocale, type Copy } from '../lib/copy';
 import { formatAge } from '../lib/format';
+import { navItemsFor } from './nav-items';
 import { ConsentModal } from './consent-modal';
 import { PlanningView } from './planning/planning-view';
 import { LanguageSection } from './settings/language-section';
 
-/**
- * `app-boot.spec.mjs` (unmodified, per design.md TD-8) asserts `app-ready`/`game-snapshot-json`/
- * `domain-label-probe` are visible immediately after boot, with no navigation. Those testids
- * live under the Diagnostics tab's content. Design's own TD-8 names "Planning (default)", but
- * that is only compatible with the existing, un-editable smoke if Diagnostics' content stays
- * visible without an explicit nav click — it does not (conditional mounting, not a CSS-hidden
- * trick, is what keeps `overflow-y:auto` scoped to `AppShell`'s `<main>` per MPV-15).
- *
- * SPEC_DEVIATION: the initial `activeNavId` here is `'diagnostics'`, not `'planning'`.
- * Reason: `app-boot.spec.mjs` cannot be edited and never navigates before its assertions, so
- * whichever tab is default must carry its testids. T7's new smoke explicitly navigates to
- * Planning before asserting `roster-list`/`next-point-top-stat` — MPV-01/02's own Independent
- * Test is satisfied by a smoke that interacts first, not by Planning being pre-selected.
- */
-const DEFAULT_NAV_ID = 'diagnostics';
+const DEFAULT_NAV_ID = 'planning';
 
 function statusLabel(status: GameStatusInfo['status'], t: Copy): string {
   switch (status) {
@@ -153,9 +140,11 @@ function HomePageContent({
     const offStatus = bridge.on('game:status', (next) => {
       setStatus(next);
     });
+    // Deliberately does not touch status: main emits `game:status` first whenever the status
+    // actually changed, and every snapshot carries a status object with a fresh read timestamp,
+    // so setting it here re-introduced a new reference — and a full re-render — on every poll.
     const offSnapshot = bridge.on('snapshot:updated', (next) => {
       setSnapshot(next);
-      setStatus(next.status);
     });
 
     return () => {
@@ -185,13 +174,7 @@ function HomePageContent({
       <AppShell
         title={environment?.productName}
         badge={environment?.badgeLabel ?? null}
-        items={[
-          { id: 'planning', label: t.shellPlanningNavLabel, icon: 'check-circle' },
-          { id: 'diagnostics', label: t.shellDiagnosticsNavLabel, icon: 'information-circle' },
-          // MP3 F4 (MIN-16, TD-12) — packages/ui's icon registry has no dedicated "settings"
-          // glyph and must not change (DS-09); 'arrow-path' is reused rather than adding one.
-          { id: 'settings', label: t.settingsNavLabel, icon: 'arrow-path' },
-        ]}
+        items={navItemsFor(environment?.flavor ?? null, t)}
         activeId={activeNavId}
         onNavigate={setActiveNavId}
         status={
@@ -220,34 +203,38 @@ function HomePageContent({
           ) : null
         }
       >
-        {activeNavId === 'planning' ? (
-          <PlanningView />
-        ) : activeNavId === 'settings' ? (
-          <LanguageSection locale={locale} onLocaleChange={onLocaleChange} persistWarning={persistWarning} />
-        ) : (
-          <section data-testid="app-ready" className="space-y-4">
-            {/* MP3 F1/F4 probe — proves a @bombfarm/domain value, and now the LANGUAGE, reach
-                the DOM. Not planner UI. */}
-            <span data-testid="domain-label-probe" className="sr-only">
-              {rarityLabel('Comum', lang)}
-            </span>
-            {error ? (
-              <EmptyState title={t.emptyBridgeUnavailableTitle} description={error} />
-            ) : rawJson ? (
-              <div className="space-y-2">
-                <h2 className="text-sm font-medium text-muted">{t.shellDiagnosticsSnapshotTitle}</h2>
-                <pre
-                  data-testid="game-snapshot-json"
-                  className="max-h-[480px] overflow-auto rounded-lg border border-line bg-bg-2 p-4 text-xs leading-relaxed"
-                >
-                  {rawJson}
-                </pre>
-              </div>
-            ) : (
-              <EmptyState title={t.emptyNoSnapshotTitle} description={t.emptyNoSnapshotDescription} />
-            )}
-          </section>
-        )}
+        {/* `app-ready` marks the renderer as mounted, so it belongs to the shell and not to
+            whichever tab happens to be showing — six smoke specs wait on it purely as a boot
+            signal. The probe beside it proves a @bombfarm/domain value and the active language
+            reached the DOM; it is not planner UI. */}
+        <div data-testid="app-ready" className="space-y-4">
+          <span data-testid="domain-label-probe" className="sr-only">
+            {rarityLabel('Comum', lang)}
+          </span>
+          {activeNavId === 'settings' ? (
+            <LanguageSection locale={locale} onLocaleChange={onLocaleChange} persistWarning={persistWarning} />
+          ) : activeNavId === 'diagnostics' ? (
+            <section className="space-y-4">
+              {error ? (
+                <EmptyState title={t.emptyBridgeUnavailableTitle} description={error} />
+              ) : rawJson ? (
+                <div className="space-y-2">
+                  <h2 className="text-sm font-medium text-muted">{t.shellDiagnosticsSnapshotTitle}</h2>
+                  <pre
+                    data-testid="game-snapshot-json"
+                    className="max-h-[480px] overflow-auto rounded-lg border border-line bg-bg-2 p-4 text-xs leading-relaxed"
+                  >
+                    {rawJson}
+                  </pre>
+                </div>
+              ) : (
+                <EmptyState title={t.emptyNoSnapshotTitle} description={t.emptyNoSnapshotDescription} />
+              )}
+            </section>
+          ) : (
+            <PlanningView />
+          )}
+        </div>
       </AppShell>
     </>
   );

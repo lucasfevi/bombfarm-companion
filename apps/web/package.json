@@ -20,7 +20,12 @@
     "test:e2e:smoke": "node e2e/scripts/docker-run.mjs smoke",
     "test:e2e:visual": "node e2e/scripts/docker-run.mjs visual",
     "test:e2e:host": "playwright test",
-    "test:e2e:host:smoke": "playwright test --project=smoke"
+    "test:e2e:host:smoke": "playwright test --project=smoke",
+    "perf:capture": "node e2e/scripts/docker-run.mjs perf",
+    "perf:host": "node e2e/scripts/perf-host.mjs",
+    "perf:build:profile": "node e2e/scripts/perf-build-profile.mjs",
+    "perf:capture:profile": "node e2e/scripts/perf-profile-host.mjs",
+    "perf:compare": "node e2e/scripts/perf-compare-baseline.mjs"
   },
   "dependencies": {
     "@base-ui/react": "^1.6.0",

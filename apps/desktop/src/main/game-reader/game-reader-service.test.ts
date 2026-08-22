@@ -200,3 +200,65 @@ describe('GameReaderService — shutdown ordering (fix/fixture-tick-after-db-clo
     expect(calls).toHaveLength(1); // unchanged — the post-stop tick was a no-op
   });
 });
+
+describe('GameReaderService — status pushes', () => {
+  function statusSpy() {
+    const channels: string[] = [];
+    const provider = () =>
+      ({
+        webContents: {
+          send: (channel: string) => {
+            channels.push(channel);
+          },
+        },
+      }) as never;
+    return { provider, channels };
+  }
+
+  const statusPushes = (channels: string[]) =>
+    channels.filter((channel) => channel === 'bfc:event:game:status').length;
+
+  it('does not push a status event for ticks that only carry a newer read timestamp', () => {
+    const { provider, channels } = statusSpy();
+    const service = new GameReaderService('/fake/user-data', { mode: 'fixture' });
+    service.setWindowProvider(provider);
+
+    service.start();
+    // start() settles on `connected`, which is a genuine transition and does push once.
+    const afterStart = statusPushes(channels);
+
+    // `updatedAt` is an ISO string, so ticks inside one millisecond stamp the SAME value and
+    // would not have re-emitted even under the old whole-object comparison. Step the clock
+    // between ticks so every one of them genuinely carries a newer timestamp — otherwise this
+    // test could pass with the defect present.
+    for (let i = 0; i < 20; i += 1) {
+      const startedAt = Date.now();
+      while (Date.now() === startedAt) {
+        /* advance past this millisecond */
+      }
+      (service as unknown as { tick(): void }).tick();
+    }
+    service.stop();
+
+    // Every one of those ticks stamps a fresh `updatedAt` while the status itself is unchanged.
+    // Comparing whole objects made each one a change, so the renderer took a state update — and
+    // re-rendered everything above the planning tree — at the poll interval.
+    expect(statusPushes(channels)).toBe(afterStart);
+  });
+
+  it('still pushes when the status itself changes', () => {
+    const { provider, channels } = statusSpy();
+    const service = new GameReaderService('/fake/user-data', { mode: 'fixture' });
+    service.setWindowProvider(provider);
+
+    service.start();
+    const afterStart = statusPushes(channels);
+
+    (
+      service as unknown as { updateStatus(next: { status: string; updatedAt: string }): void }
+    ).updateStatus({ status: 'stale', updatedAt: new Date().toISOString() });
+    service.stop();
+
+    expect(statusPushes(channels)).toBe(afterStart + 1);
+  });
+});

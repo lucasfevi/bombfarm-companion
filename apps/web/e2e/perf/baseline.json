@@ -1,0 +1,10 @@
+{
+  "captureMode": "prod-profile",
+  "fixture": "importedRoster",
+  "scenarios": [
+    { "id": "P-02", "medianComponentRenders": 7538 },
+    { "id": "P-03", "medianComponentRenders": 13532 },
+    { "id": "P-04", "medianComponentRenders": 7280 },
+    { "id": "P-05", "medianComponentRenders": 2371 }
+  ]
+}

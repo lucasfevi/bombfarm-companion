@@ -1,0 +1,24 @@
+{
+  "fixture": "account-full",
+  "captureMode": "production-electron-static-export",
+  "gate": {
+    "hookInstalled": true,
+    "sawCommit": true,
+    "distinctComponents": 60
+  },
+  "recordedOnly": {
+    "note": "Measured across runs on one machine, each from a fresh build (pnpm test:render-count, matching what CI runs): componentRenders varies run to run because the remaining background churn is not phase-locked to the measurement window, so these are not exact-match gated and a run landing outside a range is reported rather than failed. These ranges were re-measured after the status-push fix: a quiet window used to cost 18216-20976 component renders because a status event fired on every poll, and now costs roughly half that. What remains is the raw snapshot push, which fires on genuinely changed state and still lands in state above the planning tree. distinctComponents IS exact-match gated above; it stayed 60 across every run.",
+    "quietComponentRendersRange": [
+      8970,
+      10350
+    ],
+    "oneHeroChangeComponentRendersRange": [
+      2343,
+      2619
+    ],
+    "oneHeroChangeNetOfBackgroundRange": [
+      0,
+      475
+    ]
+  }
+}

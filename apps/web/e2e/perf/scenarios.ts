@@ -16,6 +16,8 @@ export type Scenario = {
   precondition: (page: Page) => Promise<Locator>
   /** Drive the interaction (measurement window already open). */
   run: (page: Page, target: Locator) => Promise<void>
+  /** Undo accumulated state after a loop, outside the measurement window. */
+  reset?: (page: Page) => Promise<void>
   skip?: { reason: string }
   /** Human-readable selector recipe recorded in the baseline. */
   selectorRecipe: string
@@ -81,6 +83,16 @@ export const scenarios: Scenario[] = [
         await target.click()
       }
     },
+    // The level-47 stat budget the fixture ships is finite; 8 clicks × 9 loops would exhaust
+    // it partway through a capture. Undo via the panel-level reset, not per-click decrements,
+    // so it costs one commit instead of 8 — the driver runs this after the measurement window
+    // closes, so it never contributes to componentRenders.
+    reset: async (page) => {
+      const points = page.locator('section').filter({
+        has: page.getByRole('heading', { name: /^pontos$|^points$/i, level: 2 }),
+      })
+      await points.getByRole('button', { name: /^zerar$|^reset$/i }).click()
+    },
   },
   {
     id: 'P-03',
@@ -99,8 +111,10 @@ export const scenarios: Scenario[] = [
       // option name below it are deliberately loose about what follows the number.
       const goTo20 = /(?:^|\D)10(?:\D|$)/.test(label)
       await target.click()
+      // Digit-bounded on both sides — "20" must not also match "200" (a real option on this
+      // gear, since #106 folded the set name into the label).
       const opt = page.getByRole('option', {
-        name: goTo20 ? /nível 20|level 20/i : /nível 10|level 10/i,
+        name: goTo20 ? /(?:nível|level) 20(?!\d)/i : /(?:nível|level) 10(?!\d)/i,
       })
       await opt.click()
     },
