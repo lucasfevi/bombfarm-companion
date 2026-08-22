@@ -8,6 +8,7 @@ export { accountChangeKey } from './account-change-key.js';
  *  body, never at either module's top level, so the two modules finish initialising before either
  *  is actually called. */
 export * from './locale.js';
+export { isTrustworthySection } from './account-payload.js';
 export type {
   AccountFidelity,
   AccountFidelityGrade,
@@ -17,6 +18,14 @@ export type {
   SectionFidelity,
   SectionStatus,
 } from './account-payload.js';
+export type {
+  FieldDrop,
+  HouseSnapshot,
+  RotationHeroActivity,
+  RotationHeroSnapshot,
+  RotationNormalizeResult,
+  RotationSnapshot,
+} from './rotation-snapshot.js';
 export type {
   AccountStoreReason,
   AccountStoreStatus,

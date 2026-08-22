@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { abilityMods, levelPowerMult, mitigationFactor, type Context } from '@bombfarm/domain/model';
+import { combineDrainRate } from '@bombfarm/domain/drain';
 import { emptySheetOther, starsMult, type SheetOtherPct, type SheetStats } from '@bombfarm/domain/gear';
 import { computeCombatMults, derive } from '@bombfarm/domain/derive';
 import type { TreeSheetTotals } from '@bombfarm/domain/birth-sheet';
@@ -154,7 +155,7 @@ function buildFixture(opts: FixtureOpts = {}) {
   const context: Context = {
     ...baseCtx(),
     restSeconds: rest,
-    drainMult: mods.drainMult * mults.teamDrainMult,
+    drainMult: combineDrainRate(mods.drainMult, mults.teamDrainMult),
   };
 
   const deriveResult = derive({

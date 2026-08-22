@@ -135,10 +135,11 @@ export const ROUTE_FINGERPRINTS: Readonly<Record<AccountSection, RouteFingerprin
 // `ROUTE_FINGERPRINTS[section]` fingerprints the whole route BODY (what `checkShape` is handed
 // at `routes.ts`). `SECTION_FINGERPRINTS[section]` fingerprints the PROJECTED body: what
 // `persist` writes and `restore` reads — `heroes` -> array of `hero`, `items` -> array of `item`,
-// `casa` -> `casa` (unwrapped from its `/rotation` route body), `account`/`skills` -> identical to
-// their route levels (their routes project as identity). Needed because stored rows hold the
-// PROJECTED shape, not the route body — apps/desktop's `AccountStore.restore()` (T10) checks
-// against these, never against `ROUTE_FINGERPRINTS`.
+// `account`/`skills`/`casa` -> identical to their route levels (all three routes project as
+// identity — `casa`'s route, `/rotation`, used to unwrap to its nested `casa` child only; it now
+// yields the whole rotation body, so its section fingerprint is the whole `ROTATION_LEVEL` too).
+// Needed because stored rows hold the PROJECTED shape, not the route body — apps/desktop's
+// `AccountStore.restore()` (T10) checks against these, never against `ROUTE_FINGERPRINTS`.
 
 /** A section fingerprint is either object-rooted (checked via `checkSchema` directly) or
  *  array-rooted (each element checked via `checkSchema`, indexed `root[i]…` — `heroes[3].in_market`,
@@ -158,14 +159,7 @@ export type SectionFingerprint =
 export const SECTION_FINGERPRINTS: Readonly<Record<AccountSection, SectionFingerprint>> = {
   account: { kind: 'object', ...ROUTE_FINGERPRINTS.account },
   skills: { kind: 'object', ...ROUTE_FINGERPRINTS.skills },
-  casa: {
-    kind: 'object',
-    root: 'casa',
-    level: SCHEMA_LEVELS.casa,
-    gameBuild: GAME_BUILD,
-    capturedAt: CAPTURED_AT,
-    sourceArtifact: SOURCE_ARTIFACT,
-  },
+  casa: { kind: 'object', ...ROUTE_FINGERPRINTS.casa },
   heroes: {
     kind: 'array',
     root: 'heroes',

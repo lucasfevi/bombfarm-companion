@@ -156,7 +156,7 @@ describe('farmObjectiveScales — the frozen blend normalizers, exported (lifted
   // Safe to re-record because the sibling test above — an independent brute-force
   // `currentBuildScales()` scan — still agrees with `farmObjectiveScales` to 6 decimals on the
   // same model. What changed is the model, not the agreement between the two routes to it.
-  it("on the committed fixture (maxPhase 42): goldScale ≈ 177 814.71, chestScale ≈ 1.26707", () => {
+  it("on the committed fixture (maxPhase 42): goldScale ≈ 178 814.72, chestScale ≈ 1.27450", () => {
     // RE-MEASURED for the 2026-08-18 crit-chance/CDR revert (issue #132).
     // RE-MEASURED again for issue #132's team-aura roster shape.
     // RE-MEASURED 2026-08-20 for rotation-priced team auras + the HOP_DENSITY_EXPONENT refit.
@@ -164,8 +164,12 @@ describe('farmObjectiveScales — the frozen blend normalizers, exported (lifted
     // deployed, so the board used to price his aura at zero, and ato-2 hops were being shortened
     // by a square-root density law the capture does not support. Gold and chests move together,
     // which is why the argmax-preservation argument above still holds.
+    // RE-MEASURED 2026-08-21 for the additive drain-reduction fix: this fixture's only Folego
+    // carrier (Jon) also carries his own Bateria Extra, and the two reductions now add (0.62
+    // combined) instead of multiplying (0.656), raising his field time and so the fixture's
+    // throughput ceiling on every currency together.
     const scales = farmObjectiveScales(squad, { maxPhase });
-    expect(scales.goldScale).toBeCloseTo(177814.71, 1);
-    expect(scales.chestScale).toBeCloseTo(1.26707, 3);
+    expect(scales.goldScale).toBeCloseTo(178814.72, 1);
+    expect(scales.chestScale).toBeCloseTo(1.2745, 3);
   });
 });

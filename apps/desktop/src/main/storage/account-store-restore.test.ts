@@ -86,16 +86,26 @@ function cleanAccountBody(overrides: Record<string, unknown> = {}): Record<strin
   };
 }
 
-function cleanCasaBody(overrides: Record<string, unknown> = {}): Record<string, unknown> {
+/** A post-change `casa` section body — the current contract wraps the house object
+ *  (`active_casa`/`levels`/…) in a nested `casa` key alongside the rest of the rotation body, so
+ *  `overrides` targets the HOUSE, not the top level. `stale-sections.ts`'s structural check drops
+ *  the pre-contract bare-house shape this helper used to return. */
+function cleanCasaBody(houseOverrides: Record<string, unknown> = {}): Record<string, unknown> {
   return {
-    active_casa: 0,
-    levels: [],
-    cycle_secs: [],
-    slots: 1,
-    slots_per_house: [],
-    cycle_secs_per_house: [],
-    upgrade_cost: [],
-    ...overrides,
+    field_size: 6,
+    heroes: [],
+    rescues_left: 0,
+    rescues_max: 0,
+    casa: {
+      active_casa: 0,
+      levels: [],
+      cycle_secs: [],
+      slots: 1,
+      slots_per_house: [],
+      cycle_secs_per_house: [],
+      upgrade_cost: [],
+      ...houseOverrides,
+    },
   };
 }
 
@@ -417,8 +427,8 @@ describe('createAccountStore().restore()', () => {
       const body = cleanCasaBody({ active_casa: '' });
       seedSectionRow(open.db, '', 'casa', body, '2026-08-12T00:00:00.000Z');
       const store = createAccountStore(open);
-      const restoredBody = sectionField(store.restore().payload, 'casa') as { active_casa: string };
-      expect(restoredBody.active_casa).toBe('');
+      const restoredBody = sectionField(store.restore().payload, 'casa') as { casa: { active_casa: string } };
+      expect(restoredBody.casa.active_casa).toBe('');
       store.close();
     });
 

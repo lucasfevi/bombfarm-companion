@@ -7,13 +7,18 @@ import { parseAccountPayload } from '@bombfarm/domain/import-save';
 import { phaseLine } from '@bombfarm/domain/phases';
 import { computeTeamBuffsFromDeployed } from '@bombfarm/domain/team-buffs';
 import { DEFAULT_TARGET_PROP } from '@bombfarm/domain/farm-context';
-import type { AccountPayload, AccountSection, AccountView, SectionStatus } from '@bombfarm/contracts';
+import type { AccountPayload, AccountSection, AccountView, SectionFidelity } from '@bombfarm/contracts';
+import { isTrustworthySection } from '@bombfarm/contracts';
 import type { AccountShared } from '@bombfarm/domain/shims/storage';
 import type { Availability, AdviceQuantity, PlanningModel, RosterEntry, SectionUsability } from './types';
 
-/** `AD-036`: the withhold gate is per-section usability, not `AccountFidelityReport.grade`. */
-export function isUsable(status: SectionStatus): boolean {
-  return status === 'resolved' || status === 'stale';
+/**
+ * `AD-036`: the withhold gate is per-section usability, not `AccountFidelityReport.grade`. A
+ * `degraded` section is usable only when `isTrustworthySection` says its body lost nothing.
+ */
+export function isUsable(fidelity: SectionFidelity): boolean {
+  if (fidelity.status === 'degraded') return isTrustworthySection(fidelity);
+  return fidelity.status === 'resolved' || fidelity.status === 'stale';
 }
 
 /**
@@ -47,17 +52,16 @@ export function withheldSections(sections: readonly SectionUsability[], quantity
 function buildSections(payload: AccountPayload): SectionUsability[] {
   const fidelity = payload.fidelity;
   return ACCOUNT_SECTIONS.map((section) => {
-    const sectionFidelity = fidelity?.[section];
     // No fidelity block for this section reads as `missing` — the conservative, withhold-safe
     // default (D24). This differs from `deriveAccountFidelity`'s own "absent fidelity ⇒ grade
     // full" rule, which exists for a different origin path (the web's direct-file import, where
     // every section IS present by construction); the desktop's `AccountView` always carries a
     // real fidelity block from game-api/merge-account, so this branch is defensive only.
-    const status: SectionStatus = sectionFidelity?.status ?? 'missing';
-    const capturedAt = sectionFidelity && sectionFidelity.status !== 'missing' ? sectionFidelity.capturedAt : null;
-    const missingKeys =
-      sectionFidelity && sectionFidelity.status === 'degraded' ? sectionFidelity.missingKeys : [];
-    return { section, status, capturedAt, missingKeys, usable: isUsable(status) };
+    const sectionFidelity: SectionFidelity = fidelity?.[section] ?? { status: 'missing' };
+    const status = sectionFidelity.status;
+    const capturedAt = sectionFidelity.status !== 'missing' ? sectionFidelity.capturedAt : null;
+    const missingKeys = sectionFidelity.status === 'degraded' ? sectionFidelity.missingKeys : [];
+    return { section, status, capturedAt, missingKeys, usable: isUsable(sectionFidelity) };
   });
 }
 

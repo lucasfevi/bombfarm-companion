@@ -24,4 +24,17 @@ export type { RouteDescriptor, SectionFailureReason, SectionOutcome } from './ro
 export { createGameApiClient } from './client.js';
 export type { GameApiClient } from './client.js';
 export { assembleAccountPayload } from './assemble.js';
+export {
+  PORTUGUESE_WIRE_TOKENS,
+  ROTATION_WIRE_LEXICON,
+  renderWireGlossary,
+  stateSymbolForToken,
+  wireKey,
+} from './rotation/lexicon.js';
+export type { RotationStateSymbol, RotationWireSymbol, WireLexiconEntry, WireVocabularyKind, WireVocabularyOrigin } from './rotation/lexicon.js';
+export { normalizeRotation } from './rotation/normalize.js';
+// vocabulary-guard.ts is not re-exported here: nothing outside this package needs it — only its
+// own test does, and that test imports it directly by relative path (see
+// rotation/vocabulary-guard.test.ts). It no longer reaches `node:fs`; the filesystem walk that
+// used to live here now lives in that test file instead.
 

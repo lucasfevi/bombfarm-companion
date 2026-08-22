@@ -101,11 +101,11 @@ describe('mergeStoredIntoLive', () => {
     expect(view.payload.fidelity?.account.status).not.toBe('stale');
   });
 
-  it('a cast-in future live status (e.g. degraded) is served as stale from the store, not as resolved', () => {
-    const degradedFidelity = { status: 'degraded' } as unknown as SectionFidelity;
+  it('a cast-in genuinely-unrecognized live status is served as stale from the store, not as resolved', () => {
+    const unknownFidelity = { status: 'quantum' } as unknown as SectionFidelity;
     const live: AccountPayload = {
       account: { phase: 999 },
-      fidelity: { account: degradedFidelity, heroes: MISSING_LIVE, skills: MISSING_LIVE, casa: MISSING_LIVE, items: MISSING_LIVE },
+      fidelity: { account: unknownFidelity, heroes: MISSING_LIVE, skills: MISSING_LIVE, casa: MISSING_LIVE, items: MISSING_LIVE },
     };
     const restored = restoredAccount(
       { account: { phase: 1 } },
@@ -116,6 +116,103 @@ describe('mergeStoredIntoLive', () => {
 
     expect(view.payload.fidelity?.account).toEqual({ status: 'stale', capturedAt: 'stored-t' });
     expect((view.payload as unknown as Record<string, unknown>).account).toEqual({ phase: 1 });
+  });
+
+  it('live degraded with only addedKeys (no missing key) wins over stored — carried through with its own status, missingKeys and addedKeys', () => {
+    const degradedFidelity: SectionFidelity = {
+      status: 'degraded',
+      capturedAt: 'live-t',
+      missingKeys: [],
+      addedKeys: ['seasonal_flag'],
+    };
+    const live: AccountPayload = {
+      casa: { field_size: 5, heroes: [], casa: { active_casa: 1 } },
+      fidelity: { account: MISSING_LIVE, heroes: MISSING_LIVE, skills: MISSING_LIVE, casa: degradedFidelity, items: MISSING_LIVE },
+    };
+    const restored = restoredAccount(
+      { casa: { field_size: 3, heroes: [], casa: { active_casa: 0 } } },
+      storedFidelity({ casa: { status: 'stale', capturedAt: 'stored-t' } }),
+    );
+
+    const view = mergeStoredIntoLive(live, restored, { gameRunning: true, binding: 'node:sqlite' });
+
+    expect(view.payload.fidelity?.casa).toEqual(degradedFidelity);
+    expect((view.payload as unknown as Record<string, unknown>).casa).toEqual({
+      field_size: 5,
+      heroes: [],
+      casa: { active_casa: 1 },
+    });
+  });
+
+  it('live degraded with a missing key defers to a usable stored row — an incomplete body is not preferred, reported stale', () => {
+    const degradedFidelity: SectionFidelity = {
+      status: 'degraded',
+      capturedAt: 'live-t',
+      missingKeys: ['rescues_left'],
+      addedKeys: ['seasonal_flag'],
+    };
+    const live: AccountPayload = {
+      casa: { field_size: 5, heroes: [], casa: { active_casa: 1 } },
+      fidelity: { account: MISSING_LIVE, heroes: MISSING_LIVE, skills: MISSING_LIVE, casa: degradedFidelity, items: MISSING_LIVE },
+    };
+    const restored = restoredAccount(
+      { casa: { field_size: 3, heroes: [], casa: { active_casa: 0 } } },
+      storedFidelity({ casa: { status: 'stale', capturedAt: 'stored-t' } }),
+    );
+
+    const view = mergeStoredIntoLive(live, restored, { gameRunning: true, binding: 'node:sqlite' });
+
+    expect(view.payload.fidelity?.casa).toEqual({ status: 'stale', capturedAt: 'stored-t' });
+    expect((view.payload as unknown as Record<string, unknown>).casa).toEqual({
+      field_size: 3,
+      heroes: [],
+      casa: { active_casa: 0 },
+    });
+  });
+
+  it('live degraded with a missing key and no usable stored row takes the live body anyway, still reported degraded', () => {
+    const degradedFidelity: SectionFidelity = {
+      status: 'degraded',
+      capturedAt: 'live-t',
+      missingKeys: ['rescues_left'],
+      addedKeys: [],
+    };
+    const live: AccountPayload = {
+      casa: { field_size: 5, heroes: [], casa: { active_casa: 1 } },
+      fidelity: { account: MISSING_LIVE, heroes: MISSING_LIVE, skills: MISSING_LIVE, casa: degradedFidelity, items: MISSING_LIVE },
+    };
+    const restored = restoredAccount({}, storedFidelity());
+
+    const view = mergeStoredIntoLive(live, restored, { gameRunning: true, binding: 'node:sqlite' });
+
+    expect(view.payload.fidelity?.casa).toEqual(degradedFidelity);
+    expect((view.payload as unknown as Record<string, unknown>).casa).toEqual({
+      field_size: 5,
+      heroes: [],
+      casa: { active_casa: 1 },
+    });
+  });
+
+  it('live degraded but body absent falls through to the stored value, same as live resolved but body absent', () => {
+    const degradedFidelity: SectionFidelity = {
+      status: 'degraded',
+      capturedAt: 'live-t',
+      missingKeys: ['rescues_left'],
+      addedKeys: [],
+    };
+    const live: AccountPayload = {
+      // No `casa` field even though fidelity claims degraded.
+      fidelity: { account: MISSING_LIVE, heroes: MISSING_LIVE, skills: MISSING_LIVE, casa: degradedFidelity, items: MISSING_LIVE },
+    };
+    const restored = restoredAccount(
+      { casa: { active_casa: 1 } },
+      storedFidelity({ casa: { status: 'stale', capturedAt: 'stored-t' } }),
+    );
+
+    const view = mergeStoredIntoLive(live, restored, { gameRunning: true, binding: null });
+
+    expect(view.payload.fidelity?.casa).toEqual({ status: 'stale', capturedAt: 'stored-t' });
+    expect((view.payload as unknown as Record<string, unknown>).casa).toEqual({ active_casa: 1 });
   });
 
   it('serves sections in ACCOUNT_SECTIONS canonical order regardless of input key order', () => {
@@ -293,6 +390,40 @@ describe('createAccountStore().commit()', () => {
       { gameRunning: false },
     );
     expect(view.gameRunning).toBe(false);
+    store.close();
+  });
+
+  it('a drifted casa body survives commit()\'s own persist-then-restore round trip: its body, missingKeys and addedKeys all reach the committed view', () => {
+    const open = openTestAccountDb('node:sqlite');
+    const store = createAccountStore(open);
+
+    const view = store.commit(
+      {
+        casa: { field_size: 5, heroes: [], casa: { active_casa: 1 }, rescues_left: 2, rescues_max: 3 },
+        fidelity: {
+          account: MISSING_LIVE,
+          heroes: MISSING_LIVE,
+          skills: MISSING_LIVE,
+          casa: { status: 'degraded', capturedAt: 't1', missingKeys: [], addedKeys: ['seasonal_flag'] },
+          items: MISSING_LIVE,
+        },
+      },
+      { gameRunning: true },
+    );
+
+    expect(view.payload.fidelity?.casa).toEqual({
+      status: 'degraded',
+      capturedAt: 't1',
+      missingKeys: [],
+      addedKeys: ['seasonal_flag'],
+    });
+    expect((view.payload as unknown as Record<string, unknown>).casa).toEqual({
+      field_size: 5,
+      heroes: [],
+      casa: { active_casa: 1 },
+      rescues_left: 2,
+      rescues_max: 3,
+    });
     store.close();
   });
 });

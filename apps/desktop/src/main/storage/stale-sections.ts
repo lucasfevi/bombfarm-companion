@@ -68,6 +68,20 @@ function sanitizeForFingerprint(body: unknown): unknown {
   return { ...body, totals: cleanTotals };
 }
 
+/**
+ * `MSG-19`-style, but for a DIFFERENT contract change: a stored `casa` row written before
+ * the `/rotation` route started yielding its whole body holds the bare house object directly
+ * (no nested `casa` key) — under the current contract that shape reads as a rotation body that
+ * lost `field_size`/`heroes`/`rescues_left`/`rescues_max`, four of its five keys, which is exactly
+ * the "plausible wrong number" `D24` exists to prevent. A POSITIVE structural check only: it
+ * looks for the nested house object the current contract requires, never at what is missing
+ * elsewhere in the body, so it never mistakes an otherwise-valid partial/synthetic stored `casa`
+ * body (this store's own test suite seeds several) for a pre-contract row.
+ */
+function isPreContractCasaBody(section: AccountSection, body: unknown): boolean {
+  return section === 'casa' && isObject(body) && !isObject(body.casa);
+}
+
 export function judgeStoredSection(section: AccountSection, body: unknown): SectionDropVerdict {
   const triggers: string[] = [...retiredKeyTriggers(section, body)];
 
@@ -76,6 +90,10 @@ export function judgeStoredSection(section: AccountSection, body: unknown): Sect
     if (!shape.ok) {
       triggers.push(...shape.addedKeys);
     }
+  }
+
+  if (isPreContractCasaBody(section, body)) {
+    triggers.push('casa.casa');
   }
 
   if (triggers.length === 0) return { drop: false };

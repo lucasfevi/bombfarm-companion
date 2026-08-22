@@ -3,9 +3,10 @@ export type AccountSection = 'account' | 'heroes' | 'skills' | 'casa' | 'items';
 
 /**
  * `resolved` — read in this capture. `stale` — last-known-good, older than this capture.
- * `missing` — never seen, or not recoverable at all. `degraded` — the source answered, but the
- * response's shape is no longer one this app parses safely (LAR-19, `AD-023`). It carries no
- * body: a section nothing can compute from is safer than a plausible wrong number (`D24`).
+ * `missing` — never seen, or not recoverable at all. `degraded` — the source answered with a
+ * shape that no longer matches its fingerprint (LAR-19); the body is carried alongside the status
+ * regardless, but it is only trustworthy when nothing this section reads was lost — see
+ * `isTrustworthySection` for the added-vs-missing distinction that decides that.
  */
 export type SectionStatus = 'resolved' | 'stale' | 'missing' | 'degraded';
 
@@ -24,6 +25,15 @@ export type SectionFidelity =
        *  collection present, the other silently dropped) becomes unrepresentable. */
       readonly addedKeys: readonly string[];
     };
+
+/**
+ * Whether a `degraded` section's body is safe to compute from. An added key is a game update we
+ * do not read yet — harmless. A missing key is a field this repo declares gone, and a parser can
+ * silently substitute a default in its place — not safe, even though a body was returned.
+ */
+export function isTrustworthySection(fidelity: Extract<SectionFidelity, { readonly status: 'degraded' }>): boolean {
+  return fidelity.missingKeys.length === 0;
+}
 
 export type AccountFidelity = { readonly [S in AccountSection]: SectionFidelity };
 
@@ -51,7 +61,10 @@ export interface AccountPayload {
   readonly heroes?: readonly unknown[] | undefined;
   /** `/skill/state`. `skills.totals` drives the tree. */
   readonly skills?: Record<string, unknown> | undefined;
-  /** `/rotation`. `active_casa`, `levels`, `slots`. */
+  /** `/rotation`'s whole body — `field_size`, `heroes` (per-hero rotation state), `casa` (the
+   *  house object: `active_casa`, `levels`, `slots`, …), `rescues_left`, `rescues_max`. A save
+   *  export's `casa` key carries the house object directly instead (no wrapping route body);
+   *  readers that need the house resolve either shape (`import-save.ts`'s single read site). */
   readonly casa?: Record<string, unknown> | undefined;
   /** `/inventory` items. Absent ⇒ the "no items list" warning, then parsing continues. */
   readonly items?: readonly unknown[] | undefined;
