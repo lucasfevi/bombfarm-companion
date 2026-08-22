@@ -311,8 +311,19 @@ export class GameReaderService {
     });
   }
 
+  /**
+   * `updatedAt` is when this status was read, not part of what the status *is* — every poll
+   * carries a fresh one, so comparing the whole object made every poll a "change" and pushed a
+   * status event at the poll interval forever. The renderer applies each push into state above
+   * the planning tree, so that alone recommitted the whole window ~20 times a second. Compare
+   * only the fields a consumer can act on; `this.status` still carries the new timestamp for
+   * anyone who asks for it.
+   */
   private updateStatus(next: GameStatusInfo): void {
-    const changed = JSON.stringify(next) !== JSON.stringify(this.status);
+    const changed =
+      next.status !== this.status.status ||
+      next.staleAgeMs !== this.status.staleAgeMs ||
+      next.processName !== this.status.processName;
     this.status = next;
     this.payload = { ...this.payload, status: next };
     if (changed) {
