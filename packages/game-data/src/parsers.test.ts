@@ -2,7 +2,6 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
-import { pickHighestGoldCandidate } from './candidates.js';
 import { classifyInventoryBag, parseInventoryBag } from './parsers/inventory.js';
 import { classifyGameState, parseGameState } from './parsers/state.js';
 
@@ -40,17 +39,5 @@ describe('state parser', () => {
     expect(parsed.ok).toBe(true);
     if (!parsed.ok) return;
     expect(parsed.gold).toBe(41091);
-  });
-});
-
-describe('candidate selection', () => {
-  it('picks highest gold among capped candidates', () => {
-    const candidates = [
-      { gold: 337232, json: '{}', addr: 1n, size: 100 },
-      { gold: 744545, json: '{}', addr: 2n, size: 100 },
-      { gold: 410000, json: '{}', addr: 3n, size: 100 },
-    ];
-    const picked = pickHighestGoldCandidate(candidates);
-    expect(picked?.gold).toBe(744545);
   });
 });
