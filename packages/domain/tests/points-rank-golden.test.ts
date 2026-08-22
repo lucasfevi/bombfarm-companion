@@ -4,6 +4,23 @@
  * byte-for-byte — this file is the proof, not a claim. Values were read off a real run of the
  * current (pre-deletion) code, not hand-derived.
  *
+ * RE-RECORDED for the corrected House cycle table. The `HOUSES` endpoints were a whole-minute
+ * reconstruction and ran short of the real cycle by a full minute per house; the wiki's
+ * `rotacao.casas[].cycle_secs_base`/`cycle_secs_max` replaced them. This fixture's account
+ * carries no `casa.cycle_secs`, so it resolves rest through the table and every duty cycle moved.
+ * The footprint is:
+ *
+ * - **`energy` on all three subjects**, and only `energy` at any meaningful magnitude — a longer
+ *   House cycle means a larger share of the rotation is spent refilling, so a point of Energy
+ *   (which buys field seconds) is worth more than it was. It moves UP on every subject and never
+ *   changes rank order.
+ * - Three 13th-significant-digit re-associations off the changed uptime feeding the same shared
+ *   computation: `penetration` on Bellatrix and Lyra, `critDmg` on Jon. Not on every subject,
+ *   and nowhere near enough to reorder.
+ * - `attack`, `critChance`, `cdr` and `speed` are byte-identical on every subject — the proof
+ *   this was a duty-cycle change and touched no per-point rate.
+ *
+ * ---
  * RE-RECORDED for the 2026-08-18 crit-chance/CDR revert (issue #132). Diffed value by value
  * against the previous golden first; the footprint is:
  *
@@ -81,11 +98,11 @@ describe('DPS next-point ranking — golden fixture (pre-deletion, pinned byte-f
     const result = pipelineForHero(heroByName('Bellatrix'), account, phase, mitigationPct);
     expect(pick(result.ranking)).toEqual([
       { stat: 'attack', gainPct: 2.124613721702273 },
-      { stat: 'energy', gainPct: 1.3870977028320741 },
+      { stat: 'energy', gainPct: 1.419237680643981 },
       { stat: 'critDmg', gainPct: 0.45173381134235857 },
       { stat: 'critChance', gainPct: 0.07215154969466564 },
       { stat: 'cdr', gainPct: 0.03270868386004988 },
-      { stat: 'penetration', gainPct: 0.0018927950044211883 },
+      { stat: 'penetration', gainPct: 0.0018927950044433928 },
       { stat: 'speed', gainPct: 0 },
     ]);
   });
@@ -101,8 +118,8 @@ describe('DPS next-point ranking — golden fixture (pre-deletion, pinned byte-f
     const result = pipelineForHero(heroByName('Jon'), account, phase, mitigationPct);
     expect(pick(result.ranking)).toEqual([
       { stat: 'attack', gainPct: 2.7210974575787805 },
-      { stat: 'energy', gainPct: 2.4574138114716204 },
-      { stat: 'critDmg', gainPct: 0.3844374051138688 },
+      { stat: 'energy', gainPct: 2.5026538249044217 },
+      { stat: 'critDmg', gainPct: 0.3844374051138466 },
       { stat: 'critChance', gainPct: 0.06045133145873294 },
       { stat: 'cdr', gainPct: 0.01848900890673022 },
       { stat: 'penetration', gainPct: 0.0008367710927048577 },
@@ -114,11 +131,11 @@ describe('DPS next-point ranking — golden fixture (pre-deletion, pinned byte-f
     const result = pipelineForHero(heroByName('Lyra'), account, phase, mitigationPct);
     expect(pick(result.ranking)).toEqual([
       { stat: 'attack', gainPct: 14.754149056578392 },
-      { stat: 'energy', gainPct: 6.080634761133874 },
+      { stat: 'energy', gainPct: 6.132090157267234 },
       { stat: 'critDmg', gainPct: 0.30733791355714857 },
       { stat: 'critChance', gainPct: 0.05162744444042744 },
       { stat: 'cdr', gainPct: 0.03458638173732265 },
-      { stat: 'penetration', gainPct: 0.0008296399027774015 },
+      { stat: 'penetration', gainPct: 0.0008296399027551971 },
       { stat: 'speed', gainPct: 0 },
     ]);
   });

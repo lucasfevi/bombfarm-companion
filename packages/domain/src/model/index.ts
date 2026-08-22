@@ -28,7 +28,13 @@
 export type { RarityKey, BaseRoll } from './rarity-constants';
 export { BASE_ROLLS, POINT_GAIN, STAT_CAPS } from './rarity-constants';
 
-export { HOUSES, houseRestSeconds, resolveHouseRestSeconds, splitHouseRest } from './house';
+export {
+  HOUSES,
+  HOUSE_MAX_LEVEL,
+  houseRestSeconds,
+  resolveHouseRestSeconds,
+  splitHouseRest,
+} from './house';
 
 export type {
   HeroSheet,

@@ -121,7 +121,9 @@ const ALLOWLIST = [
   { file: 'apps/web/src/tests/fixtures/storage-roundtrip-20260729.json', count: 1, owner: 'F3 fixture history log (AD-083)' },
   // F3's own absence-proving tests (MSC-01/03/05/06/07/10/18) — each must name the token once to
   // prove it is gone.
-  { file: 'apps/web/e2e/account-panel.spec.ts', count: 8, owner: 'F3 MSC-01 DOM absence proof' },
+  // The Account panel became its own page; its MSC-01 DOM proof moved with it, and the page
+  // being read-only means one shared EN+PT assertion replaces the old per-language pair.
+  { file: 'apps/web/e2e/account-page.spec.ts', count: 4, owner: 'F3 MSC-01 DOM absence proof' },
   { file: 'apps/web/src/tests/account-slice.test.ts', count: 3, owner: 'F3 MSC-03 runtime absence proof' },
   { file: 'apps/web/src/tests/advisor-selectors.test.ts', count: 1, owner: 'F3 dep-tuple-length test title' },
   { file: 'apps/web/src/tests/derive.test.ts', count: 2, owner: 'F3 AC-29 compile-guard + explanatory comments' },
@@ -190,7 +192,7 @@ const CRIT_DMG_MULT_MAP = {
   // deprecation doc comment on `teamBuffs`, the new `teamBuffsOverride` field with its own doc
   // comment, and the `normalizeTeamBuffsOverride` migration helper with its doc comment, all
   // above this line. Match itself is unchanged in count and in kind.
-  'apps/web/src/shared/lib/account-shared.ts': [163],
+  'apps/web/src/shared/lib/account-shared.ts': [187],
   'apps/web/src/shared/lib/stale-account.ts': [20],
   'apps/web/src/tests/advisor-pipeline.test.ts': [85],
   'apps/web/src/tests/derive.test.ts': [
@@ -222,7 +224,7 @@ const CRIT_DMG_MULT_MAP = {
   // suite entry just above, +2 lines each. Count and kind unchanged.
   // +3 more (line numbers only) from the Farm Respec Advisor objective picker removal's own
   // explanatory comment above the local-data-compat.md entry. Count and kind unchanged.
-  'tools/keystone-surface-absence.test.mjs': [13, 156, 159, 268, 273, 283, 292],
+  'tools/keystone-surface-absence.test.mjs': [13, 158, 161, 270, 275, 285, 294],
   'tools/save-acceptance-guards.test.mjs': [53],
 };
 

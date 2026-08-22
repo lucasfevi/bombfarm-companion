@@ -27,6 +27,8 @@ export {
   selectTreeSpeed,
   selectTreeEnergy,
   selectTreeTeamCoinPct,
+  selectTreeLuckFlatPct,
+  selectTreeXpMult,
   selectTeamBuffsOverride,
   selectEffectiveTeamBuffs,
   resetEffectiveTeamBuffsCache,
@@ -40,7 +42,14 @@ export {
   selectRankMode,
   selectTargetProp,
   selectSlots,
+  selectFieldSlots,
   selectMaxPhase,
+  selectPlayerName,
+  selectAccountId,
+  selectTreeSquadDmgPct,
+  selectTreeGeoMult,
+  selectTreeFieldSlotsBonus,
+  selectTreeBagTabsBonus,
 } from '@/shared/stores/selectors/account-selectors';
 export {
   selectTeamPlanIsStale,
@@ -85,7 +94,6 @@ export {
   selectSetupReady,
   selectHeroTabStatus,
   selectGearTabStatus,
-  selectAccountTabStatus,
   selectPointsTabStatus,
   resetPlannerTabStatusCache,
 } from '@/shared/stores/selectors/tab-status-selectors';

@@ -337,16 +337,18 @@ describe('energySwitchPoint', () => {
 });
 
 describe('houseRestSeconds', () => {
-  it('interpolates casa rest time', () => {
-    expect(houseRestSeconds(0, 1)).toBe(19 * 60);
-    expect(houseRestSeconds(0, 20)).toBe(17 * 60);
+  it('interpolates casa rest time between the wiki endpoints', () => {
+    expect(houseRestSeconds(0, 1)).toBe(1200);
+    expect(houseRestSeconds(0, 20)).toBe(1140);
+    expect(houseRestSeconds(4, 1)).toBe(660);
+    expect(houseRestSeconds(4, 20)).toBe(600);
   });
 });
 
 describe('splitHouseRest', () => {
   it('keeps remainder seconds from interpolated rest', () => {
-    // Casa IV L7: 10 + ((8-10)*6)/19 → ~9m 22s
-    expect(splitHouseRest(houseRestSeconds(3, 7))).toEqual({ minutes: 9, seconds: 22 });
+    // Casa IV L7: 840 + ((780-840)*6)/19 → ~13m 41s
+    expect(splitHouseRest(houseRestSeconds(3, 7))).toEqual({ minutes: 13, seconds: 41 });
     expect(splitHouseRest(19 * 60)).toEqual({ minutes: 19, seconds: 0 });
   });
 });

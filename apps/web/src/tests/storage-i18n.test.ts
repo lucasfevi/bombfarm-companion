@@ -29,13 +29,24 @@ describe('account house chrome (AHK-11)', () => {
     expect(STRINGS.pt.houseLevelLabel).not.toMatch(/\bNv casa\b/);
   });
 
-  it('houseRestHint uses {minutes} + {seconds} placeholders in both langs', () => {
-    expect(STRINGS.en.houseRestHint).toContain('{minutes}');
-    expect(STRINGS.en.houseRestHint).toContain('{seconds}');
-    expect(STRINGS.pt.houseRestHint).toContain('{minutes}');
-    expect(STRINGS.pt.houseRestHint).toContain('{seconds}');
-    expect(sub(STRINGS.en.houseRestHint, { minutes: 9, seconds: 22 })).toBe('Rest 9 min 22 s');
-    expect(sub(STRINGS.pt.houseRestHint, { minutes: 9, seconds: 22 })).toBe('Descanso 9 min 22 s');
+  it('the next-House heading names the House it introduces, in both langs', () => {
+    // The two rows under it reuse the current-House labels, so the heading is the only thing
+    // saying which House they describe — a heading that lost its placeholder would leave the
+    // block ambiguous rather than merely untranslated.
+    expect(STRINGS.en.accountNextHouse).toContain('{house}');
+    expect(STRINGS.pt.accountNextHouse).toContain('{house}');
+    expect(sub(STRINGS.en.accountNextHouse, { house: 'Casa IV' })).toBe('Next House — Casa IV');
+    expect(sub(STRINGS.pt.accountNextHouse, { house: 'Casa IV' })).toBe('Próxima Casa — Casa IV');
+  });
+
+  it('the total-damage tip prints the product, not three unrelated numbers', () => {
+    for (const lang of ['en', 'pt'] as const) {
+      const tip = STRINGS[lang].accountTotalDmgTip;
+      expect(tip).toContain('{squad}');
+      expect(tip).toContain('{geo}');
+      expect(tip).toContain('{total}');
+      expect(tip).toMatch(/\(1 \+ \{squad\}%\)\s*×\s*\{geo\}\s*=\s*\{total\}/);
+    }
   });
 
   it('import preview chrome is distinct from the upload step', () => {
@@ -63,11 +74,11 @@ describe('planner tabs IA (PTI-*)', () => {
   const tabLabels = {
     tabHero: { en: 'Abilities', pt: 'Habilidades' },
     tabGear: { en: 'Gear', pt: 'Equipamento' },
-    tabAccount: { en: 'Account', pt: 'Conta' },
     tabPoints: { en: 'Points', pt: 'Pontos' },
     // Farm Ranking (T1): renamed Phases -> Farm, identical in both languages.
     navPhases: { en: 'Farm', pt: 'Farm' },
     navPlanner: { en: 'Planner', pt: 'Planner' },
+    navAccount: { en: 'Account', pt: 'Conta' },
     tabHeroWarnTitle: { en: 'Abilities need attention', pt: 'Habilidades precisam de atenção' },
     tabGearWarnTitle: { en: 'Gear needs attention', pt: 'Equipamento precisa de atenção' },
   } as const;

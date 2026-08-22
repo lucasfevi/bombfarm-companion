@@ -72,6 +72,8 @@ describe('parseSaveFile — the positive acceptance gate (MSG-11, MSG-12, MSG-13
       houseCycleSecs: null,
       phase: null,
       maxPhase: null,
+      playerName: null,
+      accountId: null,
     });
   });
 
