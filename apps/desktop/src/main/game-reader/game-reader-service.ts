@@ -5,6 +5,7 @@ import type {
   GameSnapshotPayload,
   GameStatusInfo,
   IpcEventChannel,
+  LiveCurrency,
   LiveTick,
 } from '@bombfarm/contracts';
 import { buildSnapshot } from '@bombfarm/game-data';
@@ -68,6 +69,14 @@ export class GameReaderService {
    *  the first frame arrives is exactly the "nothing to show yet" case `tickLive()` reports
    *  honestly rather than inventing a snapshot for. */
   private latestLiveTick: { tick: LiveTick; takenAt: string } | null = null;
+  /** The live tap's own read on whether it is currently delivering, via `ingestLiveCurrency()`.
+   *  `latestLiveTick` only ever grows staler by itself — nothing here expires it on age — so
+   *  `tickLive()` cannot tell a frozen tap from a live one by looking at the cached tick alone.
+   *  This is the same silence watch the tap already runs (attach loss, a hook gone quiet, the
+   *  client no longer streaming): reusing it here means `tickLive()` degrades honestly the
+   *  moment the tap itself reports a gap, instead of replaying the last frame as `connected`
+   *  forever. */
+  private latestLiveCurrency: LiveCurrency | null = null;
   private fixtureTick = 0;
   private fixtureBundle: FixtureBundle | null = null;
   /** Flipped once by `stop()`, never reset (until a hypothetical future `start()` re-arms it).
@@ -123,6 +132,14 @@ export class GameReaderService {
    *  route, never from here). */
   ingestLiveTick(tick: LiveTick, takenAt: string = new Date().toISOString()): void {
     this.latestLiveTick = { tick, takenAt };
+  }
+
+  /** Called by index.ts for every currency transition the live tap publishes — `live` once a
+   *  frame has been proven, `gap` the moment the tap loses that proof (attach lost, hook gone
+   *  quiet, client no longer streaming). `tickLive()` trusts this over the mere presence of a
+   *  cached tick, so a stalled tap is reported honestly instead of replaying its last frame. */
+  ingestLiveCurrency(currency: LiveCurrency): void {
+    this.latestLiveCurrency = currency;
   }
 
   start(): void {
@@ -240,8 +257,9 @@ export class GameReaderService {
    * never inferred from whether a live-tap frame has arrived, since the tap can lag attach by a
    * few polls and reporting `not_running` for that gap would be dishonest. The snapshot channel,
    * separately, reflects whatever the live tap has delivered through `ingestLiveTick()` — this
-   * never fabricates a reading of its own; with no frame yet it reports `stale` and leaves the
-   * previous snapshot in place rather than inventing one.
+   * never fabricates a reading of its own; with no frame yet, or once the tap's own currency
+   * says it has stopped delivering (`ingestLiveCurrency()`), it reports `stale` and leaves the
+   * previous snapshot in place rather than replaying a frozen one as `connected`.
    */
   private tickLive(): void {
     const pid = findProcessId(this.config.processName);
@@ -255,7 +273,7 @@ export class GameReaderService {
       return;
     }
 
-    if (!this.latestLiveTick) {
+    if (!this.latestLiveTick || this.latestLiveCurrency?.kind !== 'live') {
       this.updateStatus({
         status: 'stale',
         updatedAt: new Date().toISOString(),
