@@ -48,6 +48,12 @@ function resolveDefaultMode(isPackaged: boolean): GameReaderMode {
   return !isPackaged && process.env.BFC_GAME_READER === 'fixture' ? 'fixture' : 'live';
 }
 
+function ageMsSince(sinceAtIso: string | undefined, nowMs: number): number | undefined {
+  if (!sinceAtIso) return undefined;
+  const since = Date.parse(sinceAtIso);
+  return Number.isNaN(since) ? undefined : Math.max(0, nowMs - since);
+}
+
 export class GameReaderService {
   private readonly config: GameReaderConfig;
   private readonly isPackaged: boolean;
@@ -78,6 +84,11 @@ export class GameReaderService {
    *  moment the tap itself reports a gap, instead of replaying the last frame as `connected`
    *  forever. */
   private latestLiveCurrency: LiveCurrency | null = null;
+  /** `takenAt` of the `latestLiveTick` frame `tickLive()` last ran the adapt+build chain on.
+   *  The tap's frame cadence is far coarser than `pollAttachedMs`, so most polls see the exact
+   *  same cached frame; re-running `tickToRawGameState()`/`buildSnapshot()` on byte-identical
+   *  input every ~50ms just to discover nothing changed is wasted work `tickLive()` now skips. */
+  private lastProcessedFrameAt: string | null = null;
   private fixtureTick = 0;
   private fixtureBundle: FixtureBundle | null = null;
   /** Flipped once by `stop()`, never reset (until a hypothetical future `start()` re-arms it).
@@ -117,7 +128,7 @@ export class GameReaderService {
   }
 
   /** Injected once at boot (design §8, TD-8). Only fixture-mode ticks call `commit()` on it —
-   * F3 has no memory-mode producer; F2 owns that call site. */
+   * F3 has no live-mode producer; F2 owns that call site. */
   setAccountStore(store: AccountCommitter): void {
     this.accountStore = store;
   }
@@ -266,6 +277,7 @@ export class GameReaderService {
     const pid = findProcessId(this.config.processName);
     if (!pid) {
       this.latestLiveTick = null;
+      this.lastProcessedFrameAt = null;
       this.updateStatus({
         status: 'not_running',
         updatedAt: new Date().toISOString(),
@@ -275,9 +287,24 @@ export class GameReaderService {
     }
 
     if (!this.latestLiveTick || !this.latestLiveCurrency || !isLiveCurrency(this.latestLiveCurrency)) {
+      const staleAgeMs = ageMsSince(
+        this.latestLiveCurrency?.kind === 'gap' ? this.latestLiveCurrency.sinceAt : undefined,
+        Date.now(),
+      );
       this.updateStatus({
         status: 'stale',
         updatedAt: new Date().toISOString(),
+        processName: this.config.processName,
+        ...(staleAgeMs !== undefined ? { staleAgeMs } : {}),
+      });
+      return;
+    }
+
+    const takenAt = this.latestLiveTick.takenAt;
+    if (takenAt === this.lastProcessedFrameAt) {
+      this.updateStatus({
+        status: 'connected',
+        updatedAt: takenAt,
         processName: this.config.processName,
       });
       return;
@@ -285,16 +312,18 @@ export class GameReaderService {
 
     const raw = tickToRawGameState(this.latestLiveTick.tick);
     if (!raw) {
+      const staleAgeMs = ageMsSince(takenAt, Date.now());
       this.updateStatus({
         status: 'stale',
         updatedAt: new Date().toISOString(),
         processName: this.config.processName,
+        ...(staleAgeMs !== undefined ? { staleAgeMs } : {}),
       });
       return;
     }
 
-    const takenAt = this.latestLiveTick.takenAt;
     const built = buildSnapshot({ takenAt, source: 'live', state: raw });
+    this.lastProcessedFrameAt = takenAt;
 
     this.updateStatus({
       status: 'connected',

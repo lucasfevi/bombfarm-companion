@@ -48,8 +48,14 @@ function liveCurrency(at = '2026-08-22T00:00:00.000Z'): LiveCurrency {
   return { kind: 'live', lastFrameAt: at, sinceAt: at };
 }
 
+/** `tick()` is private; every test drives it through this cast rather than waiting on the real
+ *  poll timer. */
+function forceTick(service: GameReaderService): void {
+  (service as unknown as { tick(): void }).tick();
+}
+
 describe('GameReaderService — cold boot status (design R-2 / APS-03)', () => {
-  it('reports not_running on construction in memory mode, never a restored connected status', () => {
+  it('reports not_running on construction in live mode, never a restored connected status', () => {
     const service = new GameReaderService('/fake/user-data', { mode: 'live' });
     expect(service.getStatus().status).toBe('not_running');
   });
@@ -85,7 +91,7 @@ describe('GameReaderService — the live (non-fixture) tick never fabricates a r
     const service = new GameReaderService('/fake/user-data', { mode: 'live' });
     service.ingestLiveTick({ heroes: [], gold: 500, phase: 12 });
 
-    (service as unknown as { tick(): void }).tick();
+    forceTick(service);
 
     expect(service.getStatus().status).toBe('not_running');
     expect(service.getSnapshot().mapped).toBeNull();
@@ -95,7 +101,7 @@ describe('GameReaderService — the live (non-fixture) tick never fabricates a r
     mockedFindProcessId.mockReturnValue(4242);
     const service = new GameReaderService('/fake/user-data', { mode: 'live' });
 
-    (service as unknown as { tick(): void }).tick();
+    forceTick(service);
 
     expect(service.getStatus().status).toBe('stale');
     expect(service.getSnapshot().mapped).toBeNull();
@@ -106,7 +112,7 @@ describe('GameReaderService — the live (non-fixture) tick never fabricates a r
     const service = new GameReaderService('/fake/user-data', { mode: 'live' });
     service.ingestLiveTick({ heroes: [] });
 
-    (service as unknown as { tick(): void }).tick();
+    forceTick(service);
 
     expect(service.getStatus().status).toBe('stale');
     expect(service.getSnapshot().mapped).toBeNull();
@@ -119,7 +125,7 @@ describe('GameReaderService — the live (non-fixture) tick never fabricates a r
     service.ingestLiveTick(tick, '2026-08-22T00:00:00.000Z');
     service.ingestLiveCurrency(liveCurrency());
 
-    (service as unknown as { tick(): void }).tick();
+    forceTick(service);
 
     expect(service.getStatus().status).toBe('connected');
     const snapshot = service.getSnapshot();
@@ -136,7 +142,7 @@ describe('GameReaderService — the live (non-fixture) tick never fabricates a r
     const service = new GameReaderService('/fake/user-data', { mode: 'live' });
     service.ingestLiveTick({ heroes: [], gold: 123456 }, '2026-08-22T00:00:00.000Z');
 
-    (service as unknown as { tick(): void }).tick();
+    forceTick(service);
 
     expect(service.getStatus().status).toBe('stale');
     expect(service.getSnapshot().mapped).toBeNull();
@@ -148,11 +154,11 @@ describe('GameReaderService — the live (non-fixture) tick never fabricates a r
     service.ingestLiveCurrency(liveCurrency());
 
     service.ingestLiveTick({ heroes: [], gold: 100 }, '2026-08-22T00:00:00.000Z');
-    (service as unknown as { tick(): void }).tick();
+    forceTick(service);
     expect(service.getSnapshot().mapped?.gold).toBe(100);
 
     service.ingestLiveTick({ heroes: [], gold: 900 }, '2026-08-22T00:00:01.000Z');
-    (service as unknown as { tick(): void }).tick();
+    forceTick(service);
     expect(service.getSnapshot().mapped?.gold).toBe(900);
   });
 
@@ -163,7 +169,7 @@ describe('GameReaderService — the live (non-fixture) tick never fabricates a r
     service.ingestLiveTick(tick, '2026-08-22T00:00:00.000Z');
     service.ingestLiveCurrency(liveCurrency('2026-08-22T00:00:00.000Z'));
 
-    (service as unknown as { tick(): void }).tick();
+    forceTick(service);
     expect(service.getStatus().status).toBe('connected');
     expect(service.getSnapshot().mapped?.gold).toBe(123456);
 
@@ -172,7 +178,7 @@ describe('GameReaderService — the live (non-fixture) tick never fabricates a r
     // `ingestLiveCurrency()`. No new tick ever arrives: `latestLiveTick` is untouched.
     service.ingestLiveCurrency(liveGap('clientNotStreaming', '2026-08-22T00:01:00.000Z'));
 
-    (service as unknown as { tick(): void }).tick();
+    forceTick(service);
 
     expect(service.getStatus().status).toBe('stale');
     // The previous snapshot is left in place rather than being wiped — only the status flips.
@@ -184,13 +190,55 @@ describe('GameReaderService — the live (non-fixture) tick never fabricates a r
     const service = new GameReaderService('/fake/user-data', { mode: 'live' });
     service.ingestLiveTick({ heroes: [], gold: 500 }, '2026-08-22T00:00:00.000Z');
     service.ingestLiveCurrency(liveCurrency());
-    (service as unknown as { tick(): void }).tick();
+    forceTick(service);
     expect(service.getStatus().status).toBe('connected');
 
     mockedFindProcessId.mockReturnValue(null);
-    (service as unknown as { tick(): void }).tick();
+    forceTick(service);
 
     expect(service.getStatus().status).toBe('not_running');
+  });
+
+  it('does not re-run the parse chain for an unchanged frame — the mapped snapshot keeps its object identity across a repeat poll', () => {
+    mockedFindProcessId.mockReturnValue(4242);
+    const service = new GameReaderService('/fake/user-data', { mode: 'live' });
+    service.ingestLiveTick({ heroes: [], gold: 123456, phase: 26 }, '2026-08-22T00:00:00.000Z');
+    service.ingestLiveCurrency(liveCurrency());
+
+    forceTick(service);
+    const firstMapped = service.getSnapshot().mapped;
+    expect(service.getStatus().status).toBe('connected');
+
+    // Same cached frame, no new ingestLiveTick() in between — the poll that finds nothing new
+    // must not rebuild the snapshot from scratch.
+    forceTick(service);
+    const secondMapped = service.getSnapshot().mapped;
+
+    expect(service.getStatus().status).toBe('connected');
+    expect(secondMapped).toBe(firstMapped);
+  });
+
+  it('reports a staleAgeMs derived from the tap-reported gap\'s sinceAt when the tap has stalled', () => {
+    mockedFindProcessId.mockReturnValue(4242);
+    const service = new GameReaderService('/fake/user-data', { mode: 'live' });
+    const sinceAt = new Date(Date.now() - 5_000).toISOString();
+    service.ingestLiveCurrency(liveGap('clientNotStreaming', sinceAt));
+
+    forceTick(service);
+
+    expect(service.getStatus().status).toBe('stale');
+    expect(service.getStatus().staleAgeMs).toBeGreaterThanOrEqual(5_000);
+    expect(service.getStatus().staleAgeMs).toBeLessThan(10_000);
+  });
+
+  it('leaves staleAgeMs unset when the process is running but no currency has ever been reported', () => {
+    mockedFindProcessId.mockReturnValue(4242);
+    const service = new GameReaderService('/fake/user-data', { mode: 'live' });
+
+    forceTick(service);
+
+    expect(service.getStatus().status).toBe('stale');
+    expect(service.getStatus().staleAgeMs).toBeUndefined();
   });
 });
 
@@ -247,8 +295,8 @@ describe('GameReaderService — account store wiring (T10, design §8/TD-8)', ()
     service.setAccountStore(committer);
     service.ingestLiveTick({ heroes: [], gold: 500 });
 
-    (service as unknown as { tick(): void }).tick();
-    (service as unknown as { tick(): void }).tick();
+    forceTick(service);
+    forceTick(service);
 
     expect(calls).toHaveLength(0);
     expect(service.getAccountView()).toBeNull();
@@ -330,7 +378,7 @@ describe('GameReaderService — shutdown ordering (fix/fixture-tick-after-db-clo
 
     // Simulate a timer callback that still fires after stop() cleared it (the private
     // dispatcher is exactly what scheduleNext()'s setTimeout callback invokes).
-    (service as unknown as { tick(): void }).tick();
+    forceTick(service);
 
     expect(calls).toHaveLength(1); // unchanged — the post-stop tick was a no-op
   });
@@ -371,7 +419,7 @@ describe('GameReaderService — status pushes', () => {
       while (Date.now() === startedAt) {
         /* advance past this millisecond */
       }
-      (service as unknown as { tick(): void }).tick();
+      forceTick(service);
     }
     service.stop();
 
