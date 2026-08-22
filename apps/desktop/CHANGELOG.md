@@ -1,5 +1,68 @@
 # @bombfarm/desktop
 
+## 0.4.1
+
+### Patch Changes
+
+- ab3d19e: Open the desktop app on Planning, and keep the raw payload view out of shipped builds
+
+  The app opened on Diagnostics — a dump of the raw account payload — so the first
+  thing anyone saw was JSON rather than their roster. It now opens on Planning.
+
+  Diagnostics itself is a maintainer's tool, and it is no longer offered at all in
+  the production flavor; the development flavors keep it. Until the flavor is
+  known it is treated as production, so a shipped build never flashes the tab into
+  its sidebar and then removes it.
+
+- 673676c: Stop the desktop app re-rendering itself twenty times a second
+
+  While the game was running, the app rebuilt its whole window on every poll —
+  fifty milliseconds apart — whether or not anything had changed. Two things
+  caused it, and both mistook "we read this again" for "this is different": the
+  status carried the time it was read, and comparing the whole status object made
+  every read look like a change; the renderer then re-applied that status a second
+  time from each snapshot push.
+
+  Neither the read time nor the re-application is visible anywhere in the app, so
+  nothing on screen changes — a quiet window now costs about half the component
+  renders it used to.
+
+- b1e2591: Stop a harmless added field from hiding DPS, next-point ranking and reset advice
+
+  A game update that only adds a field this app doesn't read used to be treated exactly like one
+  that removes a field it does read: either kind of shape drift made the desktop withhold DPS,
+  next-point ranking and reset advice for every hero, even though nothing the planner actually
+  needed was missing. Now those two cases are told apart. A drift that only adds fields is
+  harmless — nothing read was lost, so advice keeps rendering as normal, just flagged as drifted.
+  A drift that drops a field this app reads still falls back to the last good reading instead of
+  computing from an incomplete body (and guessing at the missing value), exactly as it did before
+  shape drift got its own status.
+
+- b1e2591: Keep per-hero rotation state, and stop a cosmetic shape change from blanking a whole account section
+
+  The `/rotation` read used to keep only its `casa` (house) sub-object and discard the rest of the
+  body — the field list and, most importantly, each hero's in-field/energy/recovery state, even
+  though that state was already being validated. That data now reaches storage.
+
+  Separately, any account section whose response shape drifted from what this app expects (a game
+  update adding or removing a field) used to be dropped entirely for that cycle, even when the data
+  that mattered was still there — a mismatch was correctly detected, but the section was then
+  processed as if the source hadn't answered at all. A drifted section that still holds a usable body
+  is now kept and reported as degraded (naming the keys that changed), rather than discarded. A
+  section that lost the very data it needs still reports missing, unchanged.
+
+- Updated dependencies [7772ae0]
+- Updated dependencies [b1e2591]
+- Updated dependencies [b1e2591]
+- Updated dependencies [f2d6231]
+- Updated dependencies [635abe3]
+- Updated dependencies [b1e2591]
+- Updated dependencies [b1e2591]
+  - @bombfarm/domain@0.6.1
+  - @bombfarm/contracts@0.3.2
+  - @bombfarm/game-api@0.2.2
+  - @bombfarm/game-data@0.0.5
+
 ## 0.4.0
 
 ### Minor Changes
