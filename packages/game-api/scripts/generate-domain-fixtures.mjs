@@ -12,6 +12,7 @@ import { readFileSync, writeFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { assembleAccountPayload } from '../dist/assemble.js';
 import { ROUTES } from '../dist/routes.js';
+import { normalizeRotation } from '../dist/rotation/normalize.js';
 
 const NOW = '2026-08-12T13:15:38.000Z';
 
@@ -55,3 +56,8 @@ writeFixture('assembled-payload-partial.json', assembleAccountPayload(partialOut
 const driftOutcomes = okOutcomesFromBodies(before);
 driftOutcomes.skills = { kind: 'drift', missingKeys: ['totals'] };
 writeFixture('assembled-payload-drift.json', assembleAccountPayload(driftOutcomes, NOW));
+
+// The `/rotation` body normalized against its own cycle's `/roster` heroes for name/grade — the
+// same join `routes.ts`'s `casa`/`heroes` sections perform in production.
+const rotationSnapshotResult = normalizeRotation(before['/rotation'], before['/roster'].heroes);
+writeFixture('rotation-snapshot.json', rotationSnapshotResult);

@@ -38,3 +38,4 @@ The `/rotation` route mixes Portuguese and English wire vocabulary. This is the 
 | `DESCANSANDO` | `resting` | The hero is resting/recovering at the house. | Portuguese |
 | `EM_CAMPO` | `inField` | The hero is deployed on the field. | Portuguese |
 | `NO_BANCO` | `benched` | The hero is benched (not battle-eligible). | Portuguese |
+| `PRONTO` | `ready` | The hero is fully recovered and waiting for a field slot. | Portuguese |
