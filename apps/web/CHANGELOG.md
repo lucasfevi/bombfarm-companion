@@ -1,5 +1,12 @@
 # @bombfarm/web
 
+## 0.7.1
+
+### Patch Changes
+
+- Updated dependencies [587ed60]
+  - @bombfarm/domain@0.6.2
+
 ## 0.7.0
 
 ### Minor Changes
