@@ -241,7 +241,7 @@ async function bootstrap(): Promise<void> {
   liveSource.subscribe((event) => {
     emitEvent('live:event', event);
     if (event.type === 'frame') {
-      gameReader?.ingestLiveTick(event.frame.tick, event.frame.at);
+      gameReader?.ingestLiveTick(event.frame);
     } else {
       gameReader?.ingestLiveCurrency(event.currency);
     }

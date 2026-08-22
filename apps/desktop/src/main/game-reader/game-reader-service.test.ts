@@ -34,7 +34,7 @@ vi.mock('./process.js', () => ({
   findProcessId: vi.fn(() => null as number | null),
 }));
 
-import type { AccountPayload, AccountView, LiveCurrency, LiveTick } from '@bombfarm/contracts';
+import type { AccountPayload, AccountView, LiveCurrency, LiveFrame, LiveTick } from '@bombfarm/contracts';
 import { liveGap } from '@bombfarm/contracts';
 import type { AccountCommitter } from './game-reader-service.js';
 import { GameReaderService } from './game-reader-service.js';
@@ -46,6 +46,10 @@ const mockedFindProcessId = vi.mocked(findProcessId);
  *  now requires before it will report `connected`, on top of a cached tick. */
 function liveCurrency(at = '2026-08-22T00:00:00.000Z'): LiveCurrency {
   return { kind: 'live', lastFrameAt: at, sinceAt: at };
+}
+
+function liveFrame(tick: LiveTick, at = '2026-08-22T00:00:00.000Z', sequence = 1): LiveFrame {
+  return { at, sequence, tick };
 }
 
 /** `tick()` is private; every test drives it through this cast rather than waiting on the real
@@ -89,7 +93,7 @@ describe('GameReaderService — the live (non-fixture) tick never fabricates a r
   it('reports not_running when process detection finds nothing, regardless of any ingested tick', () => {
     mockedFindProcessId.mockReturnValue(null);
     const service = new GameReaderService('/fake/user-data', { mode: 'live' });
-    service.ingestLiveTick({ heroes: [], gold: 500, phase: 12 });
+    service.ingestLiveTick(liveFrame({ heroes: [], gold: 500, phase: 12 }));
 
     forceTick(service);
 
@@ -110,7 +114,7 @@ describe('GameReaderService — the live (non-fixture) tick never fabricates a r
   it('reports stale when the ingested tick carries no gold, rather than inventing gold: 0', () => {
     mockedFindProcessId.mockReturnValue(4242);
     const service = new GameReaderService('/fake/user-data', { mode: 'live' });
-    service.ingestLiveTick({ heroes: [] });
+    service.ingestLiveTick(liveFrame({ heroes: [] }));
 
     forceTick(service);
 
@@ -122,7 +126,7 @@ describe('GameReaderService — the live (non-fixture) tick never fabricates a r
     mockedFindProcessId.mockReturnValue(4242);
     const service = new GameReaderService('/fake/user-data', { mode: 'live' });
     const tick: LiveTick = { heroes: [], gold: 123456, phase: 26, wave: 3 };
-    service.ingestLiveTick(tick, '2026-08-22T00:00:00.000Z');
+    service.ingestLiveTick(liveFrame(tick, '2026-08-22T00:00:00.000Z'));
     service.ingestLiveCurrency(liveCurrency());
 
     forceTick(service);
@@ -140,7 +144,7 @@ describe('GameReaderService — the live (non-fixture) tick never fabricates a r
     // the exact shape a caller that forgets to wire ingestLiveCurrency() would produce.
     mockedFindProcessId.mockReturnValue(4242);
     const service = new GameReaderService('/fake/user-data', { mode: 'live' });
-    service.ingestLiveTick({ heroes: [], gold: 123456 }, '2026-08-22T00:00:00.000Z');
+    service.ingestLiveTick(liveFrame({ heroes: [], gold: 123456 }, '2026-08-22T00:00:00.000Z'));
 
     forceTick(service);
 
@@ -153,11 +157,25 @@ describe('GameReaderService — the live (non-fixture) tick never fabricates a r
     const service = new GameReaderService('/fake/user-data', { mode: 'live' });
     service.ingestLiveCurrency(liveCurrency());
 
-    service.ingestLiveTick({ heroes: [], gold: 100 }, '2026-08-22T00:00:00.000Z');
+    service.ingestLiveTick(liveFrame({ heroes: [], gold: 100 }, '2026-08-22T00:00:00.000Z', 1));
     forceTick(service);
     expect(service.getSnapshot().mapped?.gold).toBe(100);
 
-    service.ingestLiveTick({ heroes: [], gold: 900 }, '2026-08-22T00:00:01.000Z');
+    service.ingestLiveTick(liveFrame({ heroes: [], gold: 900 }, '2026-08-22T00:00:01.000Z', 2));
+    forceTick(service);
+    expect(service.getSnapshot().mapped?.gold).toBe(900);
+  });
+
+  it('processes two frames that share the same `at` timestamp but carry distinct sequence numbers — the dedup key this guards against being millisecond-resolution', () => {
+    mockedFindProcessId.mockReturnValue(4242);
+    const service = new GameReaderService('/fake/user-data', { mode: 'live' });
+    service.ingestLiveCurrency(liveCurrency());
+
+    service.ingestLiveTick(liveFrame({ heroes: [], gold: 100 }, '2026-08-22T00:00:00.000Z', 1));
+    forceTick(service);
+    expect(service.getSnapshot().mapped?.gold).toBe(100);
+
+    service.ingestLiveTick(liveFrame({ heroes: [], gold: 900 }, '2026-08-22T00:00:00.000Z', 2));
     forceTick(service);
     expect(service.getSnapshot().mapped?.gold).toBe(900);
   });
@@ -166,7 +184,7 @@ describe('GameReaderService — the live (non-fixture) tick never fabricates a r
     mockedFindProcessId.mockReturnValue(4242);
     const service = new GameReaderService('/fake/user-data', { mode: 'live' });
     const tick: LiveTick = { heroes: [], gold: 123456, phase: 26 };
-    service.ingestLiveTick(tick, '2026-08-22T00:00:00.000Z');
+    service.ingestLiveTick(liveFrame(tick, '2026-08-22T00:00:00.000Z'));
     service.ingestLiveCurrency(liveCurrency('2026-08-22T00:00:00.000Z'));
 
     forceTick(service);
@@ -188,7 +206,7 @@ describe('GameReaderService — the live (non-fixture) tick never fabricates a r
   it('reports not_running (never a stale connected) when the process disappears entirely, even with a live currency still cached', () => {
     mockedFindProcessId.mockReturnValue(4242);
     const service = new GameReaderService('/fake/user-data', { mode: 'live' });
-    service.ingestLiveTick({ heroes: [], gold: 500 }, '2026-08-22T00:00:00.000Z');
+    service.ingestLiveTick(liveFrame({ heroes: [], gold: 500 }, '2026-08-22T00:00:00.000Z'));
     service.ingestLiveCurrency(liveCurrency());
     forceTick(service);
     expect(service.getStatus().status).toBe('connected');
@@ -202,7 +220,7 @@ describe('GameReaderService — the live (non-fixture) tick never fabricates a r
   it('does not re-run the parse chain for an unchanged frame — the mapped snapshot keeps its object identity across a repeat poll', () => {
     mockedFindProcessId.mockReturnValue(4242);
     const service = new GameReaderService('/fake/user-data', { mode: 'live' });
-    service.ingestLiveTick({ heroes: [], gold: 123456, phase: 26 }, '2026-08-22T00:00:00.000Z');
+    service.ingestLiveTick(liveFrame({ heroes: [], gold: 123456, phase: 26 }, '2026-08-22T00:00:00.000Z'));
     service.ingestLiveCurrency(liveCurrency());
 
     forceTick(service);
@@ -293,7 +311,7 @@ describe('GameReaderService — account store wiring (T10, design §8/TD-8)', ()
     const { committer, calls } = fakeCommitter();
     const service = new GameReaderService('/fake/user-data', { mode: 'live' });
     service.setAccountStore(committer);
-    service.ingestLiveTick({ heroes: [], gold: 500 });
+    service.ingestLiveTick(liveFrame({ heroes: [], gold: 500 }));
 
     forceTick(service);
     forceTick(service);

@@ -6,6 +6,7 @@ import type {
   GameStatusInfo,
   IpcEventChannel,
   LiveCurrency,
+  LiveFrame,
   LiveTick,
 } from '@bombfarm/contracts';
 import { isLiveCurrency } from '@bombfarm/contracts';
@@ -75,7 +76,7 @@ export class GameReaderService {
    *  tap frames reports this cached one rather than blocking on a fresh one — and `null` until
    *  the first frame arrives is exactly the "nothing to show yet" case `tickLive()` reports
    *  honestly rather than inventing a snapshot for. */
-  private latestLiveTick: { tick: LiveTick; takenAt: string } | null = null;
+  private latestLiveTick: { tick: LiveTick; takenAt: string; sequence: number } | null = null;
   /** The live tap's own read on whether it is currently delivering, via `ingestLiveCurrency()`.
    *  `latestLiveTick` only ever grows staler by itself — nothing here expires it on age — so
    *  `tickLive()` cannot tell a frozen tap from a live one by looking at the cached tick alone.
@@ -84,11 +85,14 @@ export class GameReaderService {
    *  moment the tap itself reports a gap, instead of replaying the last frame as `connected`
    *  forever. */
   private latestLiveCurrency: LiveCurrency | null = null;
-  /** `takenAt` of the `latestLiveTick` frame `tickLive()` last ran the adapt+build chain on.
+  /** `sequence` of the `latestLiveTick` frame `tickLive()` last ran the adapt+build chain on.
    *  The tap's frame cadence is far coarser than `pollAttachedMs`, so most polls see the exact
    *  same cached frame; re-running `tickToRawGameState()`/`buildSnapshot()` on byte-identical
-   *  input every ~50ms just to discover nothing changed is wasted work `tickLive()` now skips. */
-  private lastProcessedFrameAt: string | null = null;
+   *  input every ~50ms just to discover nothing changed is wasted work `tickLive()` now skips.
+   *  Keyed on `sequence` rather than `takenAt`: two distinct frames can share the same
+   *  millisecond timestamp under batched delivery, and a timestamp comparison would then drop
+   *  the second one. */
+  private lastProcessedFrameSequence: number | null = null;
   private fixtureTick = 0;
   private fixtureBundle: FixtureBundle | null = null;
   /** Flipped once by `stop()`, never reset (until a hypothetical future `start()` re-arms it).
@@ -143,8 +147,8 @@ export class GameReaderService {
    *  synchronous — it only caches the frame for the next poll `tick()` to pick up, it never
    *  reaches `accountStore.commit()` (account data is sourced from the authenticated route,
    *  never from here). */
-  ingestLiveTick(tick: LiveTick, takenAt: string = new Date().toISOString()): void {
-    this.latestLiveTick = { tick, takenAt };
+  ingestLiveTick(frame: LiveFrame): void {
+    this.latestLiveTick = { tick: frame.tick, takenAt: frame.at, sequence: frame.sequence };
   }
 
   /** Called by index.ts for every currency transition the live tap publishes — `live` once a
@@ -278,7 +282,7 @@ export class GameReaderService {
     const pid = findProcessId(this.config.processName);
     if (!pid) {
       this.latestLiveTick = null;
-      this.lastProcessedFrameAt = null;
+      this.lastProcessedFrameSequence = null;
       this.updateStatus({
         status: 'not_running',
         updatedAt: new Date().toISOString(),
@@ -301,8 +305,8 @@ export class GameReaderService {
       return;
     }
 
-    const takenAt = this.latestLiveTick.takenAt;
-    if (takenAt === this.lastProcessedFrameAt) {
+    const { takenAt, sequence } = this.latestLiveTick;
+    if (sequence === this.lastProcessedFrameSequence) {
       this.updateStatus({
         status: 'connected',
         updatedAt: takenAt,
@@ -324,7 +328,7 @@ export class GameReaderService {
     }
 
     const built = buildSnapshot({ takenAt, source: 'live', state: raw });
-    this.lastProcessedFrameAt = takenAt;
+    this.lastProcessedFrameSequence = sequence;
 
     this.updateStatus({
       status: 'connected',
