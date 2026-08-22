@@ -13,6 +13,7 @@ import { combineDrainRate } from '@bombfarm/domain/drain';
 import { computeAdvisorPipeline } from '@bombfarm/domain/advisor-pipeline';
 import { zeroTeamBuffs } from '@bombfarm/domain/team-buffs';
 import { PROPS } from '@bombfarm/domain/phases';
+import { ZERO_PTS } from '@bombfarm/domain/planner-constants';
 import {
   extractHero,
   loadFixtureJson,
@@ -68,8 +69,7 @@ describe('farmContextForHero', () => {
       geared: hero.sheet,
       loadout: hero.loadout,
       altLoadout: null,
-      pts: {},
-      statPointsAvailable: 0,
+      pts: ZERO_PTS(),
       abilities: hero.abilities,
       rarity: hero.rarity,
       level: hero.level,

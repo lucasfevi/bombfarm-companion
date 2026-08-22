@@ -4,9 +4,12 @@ import {
   computePlannerTabStatuses,
   tabStatus,
   type PlannerTabStatusInput,
+  type PlannerTabStatusStrings,
 } from '@bombfarm/domain/planner-tab-status';
 
-const t = STRINGS.en;
+// `STRINGS.en` is typed as the loose `Strings` bag (`shims/i18n.ts`); the EN fixture literal it
+// resolves to carries every key `PlannerTabStatusStrings` picks, verified by inspection above.
+const t = STRINGS.en as PlannerTabStatusStrings;
 
 function base(overrides: Partial<PlannerTabStatusInput> = {}): PlannerTabStatusInput {
   return {

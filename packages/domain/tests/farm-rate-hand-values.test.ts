@@ -94,7 +94,7 @@ function handAllocateHouse(terms: readonly number[], houseSlots: number): number
     .filter((index) => demand[index] > 0)
     .sort((left, right) => terms[right] / demand[right] - terms[left] / demand[left] || left - right);
 
-  const activity = heroFacts.map((_hero, index) => (demand[index] > 0 ? 0 : 1));
+  const activity: number[] = heroFacts.map((_hero, index) => (demand[index] > 0 ? 0 : 1));
   let budget = houseSlots;
   for (const index of order) {
     if (budget <= 0) break;
