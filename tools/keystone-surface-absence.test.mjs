@@ -195,8 +195,11 @@ const CRIT_DMG_MULT_MAP = {
   'apps/web/src/shared/lib/account-shared.ts': [187],
   'apps/web/src/shared/lib/stale-account.ts': [20],
   'apps/web/src/tests/advisor-pipeline.test.ts': [85],
+  // +2 (line numbers only): the star-multiplier change (0.5 -> 0.25) added two explanatory
+  // lines to the AC-33 expectation above the last three hits. Still FOURTEEN matches,
+  // unchanged in kind.
   'apps/web/src/tests/derive.test.ts': [
-    71, 73, 134, 162, 200, 230, 254, 293, 307, 359, 398, 434, 480, 512,
+    71, 73, 134, 162, 200, 230, 254, 293, 307, 359, 398, 436, 482, 514,
   ],
   'apps/web/src/tests/fixture-corpus.test.ts': [23, 65],
   'apps/web/src/tests/fixtures/sheet-math/README.md': [6],
@@ -224,7 +227,10 @@ const CRIT_DMG_MULT_MAP = {
   // suite entry just above, +2 lines each. Count and kind unchanged.
   // +3 more (line numbers only) from the Farm Respec Advisor objective picker removal's own
   // explanatory comment above the local-data-compat.md entry. Count and kind unchanged.
-  'tools/keystone-surface-absence.test.mjs': [13, 158, 161, 270, 275, 285, 294],
+  // +3 (line numbers only): this file's own star-multiplier note above. Still SEVEN matches —
+  // the pattern's own `\b`-escaped literal on the `grepCounts` line is not one of them, because
+  // the escape leaves no word boundary before the identifier.
+  'tools/keystone-surface-absence.test.mjs': [13, 158, 161, 276, 281, 291, 300],
   'tools/save-acceptance-guards.test.mjs': [53],
 };
 

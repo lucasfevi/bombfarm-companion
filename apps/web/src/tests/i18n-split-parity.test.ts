@@ -151,6 +151,12 @@ const fixture = JSON.parse(readFileSync(fixturePath, 'utf8')) as {
  * `tabAccount` is replaced by `navAccount` (in `KEYS_ADDED`) and `tabAccountWarnTitle` goes away
  * outright — `computePlannerTabStatuses` no longer returns an `accountTabStatus` at all.
  *
+ * The star-multiplier change (2026-08-22) rewords `explainSections.0.p.0`, EN and PT
+ * (in `PROSE_EDITED_PATHS`): the wiki's `gemas.mult_por_estrela` moved 0.5 -> 0.25, so the
+ * formula those paragraphs quote moves `(1 + 0.5 x *)` -> `(1 + 0.25 x *)`. Copy only — the
+ * sentence, the stat list and the Speed-is-exempt clause are all unchanged, because only the
+ * magnitude moved and not the scope.
+ *
  * The over-budget warning (2026-08-22) adds `pointsOverBudgetWarning` (in `KEYS_ADDED`). Both the
  * Points panel and the team plan's POINT RESET table can show a hero holding more stat points
  * than its level, which the game never grants; the panel's spent/level counter already turned red
@@ -366,6 +372,7 @@ const PROSE_EDITED_PATHS: readonly string[] = [
   'phasesGoldActualHint',
   'phasesJaulaSection',
   'phasesJaulaEarly',
+  'explainSections.0.p.0',
   'explainSections.0.p.1',
   'farmRankingColGold',
   'farmRankingColChests',

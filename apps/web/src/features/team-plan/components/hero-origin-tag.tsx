@@ -4,6 +4,7 @@ import { RARITIES } from '@bombfarm/domain/planner-constants';
 import { cn } from '@bombfarm/ui';
 import { rarityTextClass } from '@/shared/game-art';
 import type { HeroRecord } from '@/shared/lib/storage';
+import { MAX_STARS } from '@bombfarm/domain/gear';
 
 /** `{rarityColor}Name ★★★ Lv {level}` — condensed hero identity for a card's "From" line. */
 export function HeroOriginTag({
@@ -22,7 +23,7 @@ export function HeroOriginTag({
   if (!hero) return <span className="text-ink">{heroNameFallback(heroId)}</span>;
 
   const rarIdx = RARITIES.indexOf(hero.rarity);
-  const stars = Math.max(0, Math.min(3, Math.round(hero.stars ?? 0)));
+  const stars = Math.max(0, Math.min(MAX_STARS, Math.round(hero.stars ?? 0)));
 
   return (
     <span>

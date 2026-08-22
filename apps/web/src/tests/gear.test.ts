@@ -21,6 +21,8 @@ import {
   rescaleHeroForStars,
   rescaleCatalogApply,
   starsMult,
+  STAR_MULT_PER_STAR,
+  MAX_STARS,
   itemLabel,
   type SheetStats,
   type Loadout,
@@ -293,15 +295,20 @@ describe('defaultNaked (static naked sheet)', () => {
     }
   });
 
-  it('scales Attack, Energy, Crit %, Crit Dmg, Pen, CDR with stars; Speed exempt (1★ = ×1.5)', () => {
+  it('scales Attack, Energy, Crit %, Crit Dmg, Pen, CDR with stars; Speed exempt (1★ = ×1.25)', () => {
     const noStars = defaultNaked('Lendária', 1, undefined, 0);
     const oneStar = defaultNaked('Lendária', 1, undefined, 1);
-    expect(oneStar.attack).toBeCloseTo(noStars.attack * 1.5, 6);
-    expect(oneStar.energy).toBeCloseTo(noStars.energy * 1.5, 6);
-    expect(oneStar.critChance).toBeCloseTo(noStars.critChance * 1.5, 6);
-    expect(oneStar.critDmg).toBeCloseTo(noStars.critDmg * 1.5, 6);
-    expect(oneStar.penetration).toBeCloseTo(noStars.penetration * 1.5, 6);
-    expect(oneStar.cdr).toBeCloseTo(noStars.cdr * 1.5, 6);
+    // The SCOPE assertion — which stats the star reaches — is the 2026-07-23 in-game
+    // measurement and is independent of the magnitude, so it is written against
+    // `starsMult(1)` rather than a literal. `speed` is the control and stays a hard equality.
+    const oneStarFactor = starsMult(1);
+    expect(oneStarFactor).toBeGreaterThan(1);
+    expect(oneStar.attack).toBeCloseTo(noStars.attack * oneStarFactor, 6);
+    expect(oneStar.energy).toBeCloseTo(noStars.energy * oneStarFactor, 6);
+    expect(oneStar.critChance).toBeCloseTo(noStars.critChance * oneStarFactor, 6);
+    expect(oneStar.critDmg).toBeCloseTo(noStars.critDmg * oneStarFactor, 6);
+    expect(oneStar.penetration).toBeCloseTo(noStars.penetration * oneStarFactor, 6);
+    expect(oneStar.cdr).toBeCloseTo(noStars.cdr * oneStarFactor, 6);
     expect(oneStar.speed).toBe(noStars.speed);
   });
 });
@@ -321,36 +328,54 @@ describe('defaultNaked vs nakedFromBirth (BSPW4-07, AC-48)', () => {
 });
 
 describe('starsMult (wiki: Gemas & Estrelas ritual)', () => {
-  it('maps 0/1/2/3 stars to ×1/×1.5/×2/×2.5', () => {
+  // The MAGNITUDE, written as literals on purpose — this is the one place the shipped number is
+  // pinned against the wiki's `gemas.mult_por_estrela`, so it must fail loudly when the constant
+  // moves. It last moved 0.5 → 0.25, which took ×2.5 at max stars down to ×1.75.
+  it('maps 0/1/2/3 stars to ×1/×1.25/×1.5/×1.75', () => {
     expect(starsMult(0)).toBe(1);
-    expect(starsMult(1)).toBe(1.5);
-    expect(starsMult(2)).toBe(2);
-    expect(starsMult(3)).toBe(2.5);
+    expect(starsMult(1)).toBe(1.25);
+    expect(starsMult(2)).toBe(1.5);
+    expect(starsMult(3)).toBe(1.75);
   });
 
-  it('clamps out-of-range star counts to 0..3', () => {
+  it('is 1 + STAR_MULT_PER_STAR × ★, the wiki`s own formula', () => {
+    for (const stars of [0, 1, 2, 3]) {
+      expect(starsMult(stars)).toBeCloseTo(1 + STAR_MULT_PER_STAR * stars, 12);
+    }
+    expect(STAR_MULT_PER_STAR).toBe(0.25);
+    expect(MAX_STARS).toBe(3);
+  });
+
+  it('clamps out-of-range star counts to 0..MAX_STARS', () => {
     expect(starsMult(-1)).toBe(1);
-    expect(starsMult(5)).toBe(2.5);
+    expect(starsMult(5)).toBe(starsMult(MAX_STARS));
+    expect(starsMult(5)).toBe(1.75);
   });
 });
 
 describe('rescaleNakedForStars', () => {
+  // WHICH stats a rescale reaches, not by how much — the ratio is written as
+  // `starsMult(2) / starsMult(0)` so these stay assertions about scope when the magnitude
+  // moves. `starsMult`'s own describe above is where the number itself is pinned.
+  const ratio0to2 = starsMult(2) / starsMult(0);
+
   it('rescales starred stats and preserves Speed (and identity of untouched fields)', () => {
     const custom: SheetStats = { ...naked(), critChance: 12.3, speed: 55.5 };
     const next = rescaleNakedForStars(custom, 0, 2);
-    expect(next.attack).toBeCloseTo(custom.attack * 2, 6);
-    expect(next.energy).toBeCloseTo(custom.energy * 2, 6);
-    expect(next.critChance).toBeCloseTo(custom.critChance * 2, 6);
-    expect(next.critDmg).toBeCloseTo(custom.critDmg * 2, 6);
-    expect(next.penetration).toBeCloseTo(custom.penetration * 2, 6);
-    expect(next.cdr).toBeCloseTo(custom.cdr * 2, 6);
+    expect(ratio0to2).toBeGreaterThan(1);
+    expect(next.attack).toBeCloseTo(custom.attack * ratio0to2, 6);
+    expect(next.energy).toBeCloseTo(custom.energy * ratio0to2, 6);
+    expect(next.critChance).toBeCloseTo(custom.critChance * ratio0to2, 6);
+    expect(next.critDmg).toBeCloseTo(custom.critDmg * ratio0to2, 6);
+    expect(next.penetration).toBeCloseTo(custom.penetration * ratio0to2, 6);
+    expect(next.cdr).toBeCloseTo(custom.cdr * ratio0to2, 6);
     expect(next.speed).toBe(custom.speed);
   });
 
   it('rescales luck alongside the other starred stats (BSPW2-AC-06)', () => {
     const custom: SheetStats = { ...naked(), luck: 8.4 };
     const next = rescaleNakedForStars(custom, 0, 2);
-    expect(next.luck).toBeCloseTo(custom.luck * 2, 6);
+    expect(next.luck).toBeCloseTo(custom.luck * ratio0to2, 6);
   });
 
   it('is a no-op when the star count does not change', () => {

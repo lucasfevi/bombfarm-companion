@@ -137,16 +137,20 @@ function baseSave() {
         // 0.15348 → 0.61506 → 0.15580. The reverted value lands close to the original because
         // the shape round-tripped — the small residual difference from 0.15348165135 is the
         // item catalog's crit-base rescale (`gold_amuleto`'s crit roll moved with it).
+        //
+        // Recomputed 2026-08-22 for `STAR_MULT_PER_STAR` 0.5 → 0.25: this hero is ★2, so its
+        // star factor moves ×2 → ×1.5 and every star-scaled stat drops with it. `speed` is the
+        // control — it is the one stat the star never touched, and it does NOT move here.
         stats: {
-          dmg: 1031.0318879571785,
-          energia: 456.7372881,
+          dmg: 807.3824274417394,
+          energia: 342.55296607500003,
           speed: 46.223410365,
-          crit_chance: 0.15580013415,
-          crit_dmg: 2.196153846,
-          penetration: 1,
-          cooldown_reduction: 0.02,
+          crit_chance: 0.11685010061250001,
+          crit_dmg: 1.946153846,
+          penetration: 0.75,
+          cooldown_reduction: 0.015,
           power: 13133.6,
-          luck: 0.08389992750000001,
+          luck: 0.0727911275,
         },
       },
       {

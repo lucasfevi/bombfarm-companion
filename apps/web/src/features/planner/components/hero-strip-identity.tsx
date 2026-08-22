@@ -17,6 +17,7 @@ import {
 } from '@/shared/stores';
 import { HeroActiveToggle } from '@/features/roster';
 import { HeroAvatar, rarityTextClass } from '@/shared/game-art';
+import { MAX_STARS } from '@bombfarm/domain/gear';
 
 export function HeroStripIdentity({ onOpenPicker }: { onOpenPicker: () => void }) {
   const { t, lang } = useAppLang();
@@ -35,7 +36,7 @@ export function HeroStripIdentity({ onOpenPicker }: { onOpenPicker: () => void }
   const rarIdx = RARITIES.indexOf(rarity);
   const rarTextClass = rarityTextClass(rarIdx) ?? 'text-muted';
   const rankMark = heroRank?.trim() || '—';
-  const starCount = Math.max(0, Math.min(3, Math.round(stars)));
+  const starCount = Math.max(0, Math.min(MAX_STARS, Math.round(stars)));
 
   return (
     <div className="grid w-full grid-cols-[minmax(0,1fr)_auto] items-stretch border-b border-line bg-[color-mix(in_oklch,var(--bg)_35%,var(--surface))] xl:border-r xl:border-b-0">

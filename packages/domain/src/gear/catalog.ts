@@ -183,10 +183,32 @@ export function emptySheetOther(): SheetOtherPct {
 }
 
 /**
- * Gems→stars ritual (wiki "Gemas & Estrelas" + in-game capture 2026-07-23): each ★
- * multiplies intrinsic sheet stats by 1 + 0.5×★ before items — Attack, Energy, Crit %,
- * Crit Dmg, Penetration, CDR, Luck. Speed is exempt (unequipped + geared sheets stay
- * flat across ★).
+ * Per-★ share of the intrinsic base — the wiki's own `gemas.mult_por_estrela`.
+ *
+ * **0.25, halved from the 0.5 measured in-game on 2026-07-23.** That measurement (two heroes
+ * taken 0★→1★, one geared and one unequipped) was correct for its build; a later patch
+ * compressed the whole curve, and the same patch cut every base drop rate, rescaled the hero XP
+ * curve and the item-stat bases, and reshaped the gem rank draw into a per-difficulty matrix.
+ * The scope did NOT change with it — see {@link starsMult}.
+ *
+ * Named rather than inlined so the value is greppable against the wiki field it mirrors: this
+ * one went stale for over a week because a magic `0.5` in an arithmetic expression matches no
+ * search anyone would think to run.
+ */
+export const STAR_MULT_PER_STAR = 0.25;
+
+/** `gemas.max_estrelas` — the ritual's ceiling, and the clamp {@link starsMult} applies. */
+export const MAX_STARS = 3;
+
+/**
+ * Gems→stars ritual (wiki "Gemas & Estrelas"): each ★ multiplies intrinsic sheet stats by
+ * `1 + STAR_MULT_PER_STAR × ★` before items — Attack, Energy, Crit %, Crit Dmg, Penetration,
+ * CDR, Luck. Speed is exempt (unequipped + geared sheets stay flat across ★).
+ *
+ * The SCOPE above is the 2026-07-23 in-game measurement and still stands; only the magnitude
+ * moved (`STAR_MULT_PER_STAR`). The wiki agrees on both: it still calls Speed the one stat left
+ * out, and still multiplies the intrinsic base — birth roll plus spent points — before items,
+ * abilities and tree.
  *
  * Lives here (not naked-rescale.ts, its design "ships" home) because both `apply.ts`
  * and `naked-rescale.ts` call it; putting it in either would force the other to import
@@ -194,5 +216,5 @@ export function emptySheetOther(): SheetOtherPct {
  * to avoid. `catalog.ts` is a shared downward dependency of both, so it stays cycle-free.
  */
 export function starsMult(stars: number): number {
-  return 1 + 0.5 * Math.max(0, Math.min(3, Math.round(stars)));
+  return 1 + STAR_MULT_PER_STAR * Math.max(0, Math.min(MAX_STARS, Math.round(stars)));
 }

@@ -1,7 +1,7 @@
 /**
  * AD-BSP-19, as code — the game's own birth → naked → displayed-sheet formula block.
  *
- * `P = 1 + 0.04 × (level − 1)` (levelPowerMult) · `S = 1 + 0.5 × ★` (starsMult, ★ exempt for speed).
+ * `P = 1 + 0.04 × (level − 1)` (levelPowerMult) · `S = 1 + 0.25 × ★` (starsMult, ★ exempt for speed).
  * Pooled keys (speed, critChance, critDmg, penetration, cdr) fold gear + points + tree `_add`
  * terms into one shared `sharedForward` pool (already `gear/apply.ts`); attack and energy are
  * multiplicative-subtotal shapes; luck's tree term is a flat percentage-point addend
