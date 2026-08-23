@@ -1,3 +1,5 @@
+import path from 'node:path';
+import { pathToFileURL } from 'node:url';
 import { describe, expect, it, vi } from 'vitest';
 import {
   ElectronBinaryMissingAfterExtractError,
@@ -75,12 +77,19 @@ describe('extractElectronBinary', () => {
 });
 
 describe('isRunAsEntryPoint', () => {
+  // Derived from the running platform: a driveless `file:///repo/...` URL is not a valid
+  // Windows file URL, and a `file:///C:/...` one does not round-trip on POSIX.
+  const modulePath = path.resolve('repo/apps/desktop/scripts/ensure-electron.mjs');
+  const moduleUrl = pathToFileURL(modulePath).href;
+  const otherEntryPath = path.resolve('repo/apps/desktop/scripts/some-other-entry.mjs');
+  const missingEntryPath = path.resolve('gone/entry.mjs');
+
   it('returns true and stays silent when argv[1] resolves to the same real path as the module', () => {
     const onSkippedEntryPoint = vi.fn();
     const result = isRunAsEntryPoint({
-      importMetaUrl: 'file:///C:/repo/apps/desktop/scripts/ensure-electron.mjs',
-      argv1: 'C:/repo/apps/desktop/scripts/ensure-electron.mjs',
-      realpathSync: (p) => p.replace(/\\/g, '/').toLowerCase(),
+      importMetaUrl: moduleUrl,
+      argv1: modulePath,
+      realpathSync: (p) => p,
       onSkippedEntryPoint,
     });
 
@@ -91,7 +100,7 @@ describe('isRunAsEntryPoint', () => {
   it('returns false and stays silent when argv[1] is absent (a plain import, e.g. a test)', () => {
     const onSkippedEntryPoint = vi.fn();
     const result = isRunAsEntryPoint({
-      importMetaUrl: 'file:///C:/repo/apps/desktop/scripts/ensure-electron.mjs',
+      importMetaUrl: moduleUrl,
       argv1: undefined,
       realpathSync: vi.fn(),
       onSkippedEntryPoint,
@@ -103,12 +112,11 @@ describe('isRunAsEntryPoint', () => {
 
   it('returns false and logs a clear message when argv[1] is present but resolves to a different real path', () => {
     const onSkippedEntryPoint = vi.fn();
-    const realpathSync = (p) =>
-      p.includes('ensure-electron.mjs') ? 'C:/real/ensure-electron.mjs' : 'C:/real/some-other-entry.mjs';
+    const realpathSync = (p) => p;
 
     const result = isRunAsEntryPoint({
-      importMetaUrl: 'file:///C:/repo/apps/desktop/scripts/ensure-electron.mjs',
-      argv1: 'C:/repo/apps/desktop/scripts/some-other-entry.mjs',
+      importMetaUrl: moduleUrl,
+      argv1: otherEntryPath,
       realpathSync,
       onSkippedEntryPoint,
     });
@@ -123,13 +131,13 @@ describe('isRunAsEntryPoint', () => {
   it('falls back to a resolved path and still reports a mismatch when argv[1] cannot be realpath-resolved', () => {
     const onSkippedEntryPoint = vi.fn();
     const realpathSync = (p) => {
-      if (p.includes('ensure-electron.mjs')) return 'C:/real/ensure-electron.mjs';
+      if (p.includes('ensure-electron.mjs')) return p;
       throw new Error('ENOENT');
     };
 
     const result = isRunAsEntryPoint({
-      importMetaUrl: 'file:///C:/repo/apps/desktop/scripts/ensure-electron.mjs',
-      argv1: 'C:/gone/entry.mjs',
+      importMetaUrl: moduleUrl,
+      argv1: missingEntryPath,
       realpathSync,
       onSkippedEntryPoint,
     });
