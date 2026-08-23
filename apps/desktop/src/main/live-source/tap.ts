@@ -35,7 +35,10 @@ export interface HookCandidateResolution {
 }
 
 export interface HookCandidateSource {
-  resolve(pid: number): HookCandidateResolution;
+  /** `maxCandidates` bounds how many freshly-ranked candidates come back; a cache hit ignores it
+   *  and always returns its single address. Tap widens this across consecutive fresh-discovery
+   *  validation failures, so the same rescan can return more of the ranked list next time. */
+  resolve(pid: number, maxCandidates?: number): HookCandidateResolution;
   /** Persists `address` as the validated hook for `buildId`, the value `resolve` returned for this
    *  same attach attempt. */
   commit(pid: number, address: number, buildId: string | null): void;
@@ -66,6 +69,11 @@ export const STALENESS_CHECK_INTERVAL_MS = 15_000;
 export const STALENESS_THRESHOLD_MS = 45_000;
 
 const DEFAULT_POLL_INTERVAL_MS = 5_000;
+
+/** Candidate-window widths tried across consecutive fresh-discovery validation failures: the
+ *  happy path always starts at the first entry, and each further failure moves one step right,
+ *  plateauing at the last entry instead of growing without bound. */
+const HOOK_DISCOVERY_WIDTHS = [4, 8, 16, 32] as const;
 
 export interface TapDeps {
   readonly processName: string;
@@ -118,6 +126,13 @@ export class Tap {
    *  candidate scan every 5s while nothing about the target process has changed. Cleared the
    *  moment a different pid is attempted. */
   #lastFailedDiscoveryPid: number | null = null;
+
+  /** How many consecutive fresh-discovery validation failures the current build has racked up —
+   *  an index into {@link HOOK_DISCOVERY_WIDTHS}, not a raw candidate count. Reset on a confirmed
+   *  winner and whenever `resolve` reports a different build id, so a rebuild starts over rather
+   *  than inheriting the previous build's widened window. */
+  #discoveryEscalationLevel = 0;
+  #discoveryEscalationBuildId: string | null = null;
 
   #currency: LiveCurrency;
 
@@ -176,6 +191,20 @@ export class Tap {
     const next: LiveCurrency = { kind: 'live', lastFrameAt: now, sinceAt: now };
     this.#currency = next;
     this.#emitCurrency(next);
+  }
+
+  #currentDiscoveryWidth(): number {
+    const index = Math.min(this.#discoveryEscalationLevel, HOOK_DISCOVERY_WIDTHS.length - 1);
+    return HOOK_DISCOVERY_WIDTHS[index] ?? HOOK_DISCOVERY_WIDTHS[0];
+  }
+
+  /** A different build id than the one the current escalation streak belongs to means a rebuild
+   *  happened — a fresh ranking problem, not a continuation of the last one — so the streak
+   *  restarts at the narrowest window. */
+  #syncDiscoveryEscalation(buildId: string | null): void {
+    if (buildId === this.#discoveryEscalationBuildId) return;
+    this.#discoveryEscalationBuildId = buildId;
+    this.#discoveryEscalationLevel = 0;
   }
 
   #schedulePoll(delayMs: number): void {
@@ -247,7 +276,8 @@ export class Tap {
       return;
     }
 
-    const candidateResolution = this.#deps.candidates.resolve(pid);
+    const candidateResolution = this.#deps.candidates.resolve(pid, this.#currentDiscoveryWidth());
+    if (!candidateResolution.fromCache) this.#syncDiscoveryEscalation(candidateResolution.buildId);
     if (candidateResolution.addresses.length === 0) {
       this.#lastFailedDiscoveryPid = pid;
       this.#reportGap('attachFailed');
@@ -331,6 +361,7 @@ export class Tap {
 
   #confirmWinner(address: number, stream: TlsConnections): void {
     this.#winner = { address, stream };
+    this.#discoveryEscalationLevel = 0;
 
     this.#log.info({
       scope: 'live-source',
@@ -391,6 +422,15 @@ export class Tap {
       await this.#attemptAttach(pid);
     } else {
       this.#reportGap('attachFailed');
+      this.#discoveryEscalationLevel += 1;
+      this.#log.info({
+        scope: 'live-source',
+        event: 'tap.discovery_widened',
+        pid,
+        buildId,
+        maxCandidates: this.#currentDiscoveryWidth(),
+      });
+      await this.#attemptAttach(pid);
     }
   }
 
@@ -485,16 +525,14 @@ export interface HookCandidateSourceDeps {
   readonly image: ProcessImageSource;
   readonly log?: HookCacheLogPort;
   readonly now?: () => number;
-  readonly maxCandidates?: number;
 }
 
 /**
  * The real {@link HookCandidateSource}: a cache hit yields the single previously-validated
  * address, a miss falls through to `image-scan.ts`'s anchor ranking and hooks the top few at
- * once.
+ * once — or more, when the caller widens `maxCandidates` after a prior fresh-discovery failure.
  */
 export function createHookCandidateSource(deps: HookCandidateSourceDeps): HookCandidateSource {
-  const maxCandidates = deps.maxCandidates ?? 4;
   const now = deps.now ?? Date.now;
 
   function tryParseImage(pid: number, image: Buffer): ParsedPe | null {
@@ -507,7 +545,7 @@ export function createHookCandidateSource(deps: HookCandidateSourceDeps): HookCa
   }
 
   return {
-    resolve(pid) {
+    resolve(pid, maxCandidates = 4) {
       const image = deps.image.read(pid);
       const parsed = image ? tryParseImage(pid, image) : null;
       const buildId = parsed?.buildId ?? null;
