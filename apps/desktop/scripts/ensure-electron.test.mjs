@@ -4,6 +4,7 @@ import {
   ElectronExtractionTimeoutError,
   EXTRACTION_TIMEOUT_MS,
   extractElectronBinary,
+  isRunAsEntryPoint,
 } from './ensure-electron.mjs';
 
 describe('extractElectronBinary', () => {
@@ -70,5 +71,70 @@ describe('extractElectronBinary', () => {
     } finally {
       vi.useRealTimers();
     }
+  });
+});
+
+describe('isRunAsEntryPoint', () => {
+  it('returns true and stays silent when argv[1] resolves to the same real path as the module', () => {
+    const onSkippedEntryPoint = vi.fn();
+    const result = isRunAsEntryPoint({
+      importMetaUrl: 'file:///C:/repo/apps/desktop/scripts/ensure-electron.mjs',
+      argv1: 'C:/repo/apps/desktop/scripts/ensure-electron.mjs',
+      realpathSync: (p) => p.replace(/\\/g, '/').toLowerCase(),
+      onSkippedEntryPoint,
+    });
+
+    expect(result).toBe(true);
+    expect(onSkippedEntryPoint).not.toHaveBeenCalled();
+  });
+
+  it('returns false and stays silent when argv[1] is absent (a plain import, e.g. a test)', () => {
+    const onSkippedEntryPoint = vi.fn();
+    const result = isRunAsEntryPoint({
+      importMetaUrl: 'file:///C:/repo/apps/desktop/scripts/ensure-electron.mjs',
+      argv1: undefined,
+      realpathSync: vi.fn(),
+      onSkippedEntryPoint,
+    });
+
+    expect(result).toBe(false);
+    expect(onSkippedEntryPoint).not.toHaveBeenCalled();
+  });
+
+  it('returns false and logs a clear message when argv[1] is present but resolves to a different real path', () => {
+    const onSkippedEntryPoint = vi.fn();
+    const realpathSync = (p) =>
+      p.includes('ensure-electron.mjs') ? 'C:/real/ensure-electron.mjs' : 'C:/real/some-other-entry.mjs';
+
+    const result = isRunAsEntryPoint({
+      importMetaUrl: 'file:///C:/repo/apps/desktop/scripts/ensure-electron.mjs',
+      argv1: 'C:/repo/apps/desktop/scripts/some-other-entry.mjs',
+      realpathSync,
+      onSkippedEntryPoint,
+    });
+
+    expect(result).toBe(false);
+    expect(onSkippedEntryPoint).toHaveBeenCalledTimes(1);
+    const [message] = onSkippedEntryPoint.mock.calls[0];
+    expect(message).toContain('ensure-electron.mjs');
+    expect(message).toContain('did not run as the entry point');
+  });
+
+  it('falls back to a resolved path and still reports a mismatch when argv[1] cannot be realpath-resolved', () => {
+    const onSkippedEntryPoint = vi.fn();
+    const realpathSync = (p) => {
+      if (p.includes('ensure-electron.mjs')) return 'C:/real/ensure-electron.mjs';
+      throw new Error('ENOENT');
+    };
+
+    const result = isRunAsEntryPoint({
+      importMetaUrl: 'file:///C:/repo/apps/desktop/scripts/ensure-electron.mjs',
+      argv1: 'C:/gone/entry.mjs',
+      realpathSync,
+      onSkippedEntryPoint,
+    });
+
+    expect(result).toBe(false);
+    expect(onSkippedEntryPoint).toHaveBeenCalledTimes(1);
   });
 });

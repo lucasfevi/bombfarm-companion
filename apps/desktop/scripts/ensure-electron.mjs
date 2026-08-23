@@ -2,7 +2,7 @@ import { downloadArtifact } from '@electron/get';
 import extract from 'extract-zip';
 import fs from 'node:fs';
 import path from 'node:path';
-import { fileURLToPath, pathToFileURL } from 'node:url';
+import { fileURLToPath } from 'node:url';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const desktopRoot = path.join(__dirname, '..');
@@ -90,7 +90,39 @@ async function main() {
   console.log('Extracted Electron to', dist);
 }
 
-const isMainModule = import.meta.url === pathToFileURL(process.argv[1] ?? '').href;
+/**
+ * Raw URL string comparison (`import.meta.url === pathToFileURL(argv[1]).href`) can go false
+ * for the same file — a symlinked checkout, or a Windows drive-letter case mismatch — which
+ * would skip `main()` silently and exit 0 with nothing downloaded. Comparing `realpathSync`
+ * output instead is robust to that; a mismatch that's still worth a stderr line (as opposed to
+ * a plain `import` with no `argv[1]` at all, which is legitimate and stays silent) means this
+ * script loaded but did not run as the entry point.
+ */
+export function isRunAsEntryPoint({
+  importMetaUrl,
+  argv1,
+  realpathSync = fs.realpathSync,
+  onSkippedEntryPoint = (message) => console.error(message),
+} = {}) {
+  if (!argv1) return false;
+
+  const modulePath = realpathSync(fileURLToPath(importMetaUrl));
+  let entryPath;
+  try {
+    entryPath = realpathSync(argv1);
+  } catch {
+    entryPath = path.resolve(argv1);
+  }
+
+  if (modulePath === entryPath) return true;
+
+  onSkippedEntryPoint(
+    `ensure-electron.mjs was loaded but did not run as the entry point (module: ${modulePath}, argv[1]: ${entryPath}) — skipping main().`,
+  );
+  return false;
+}
+
+const isMainModule = isRunAsEntryPoint({ importMetaUrl: import.meta.url, argv1: process.argv[1] });
 if (isMainModule) {
   main().catch((error) => {
     console.error(error);
