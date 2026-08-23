@@ -1,7 +1,7 @@
 import { createRequire } from 'node:module';
 import { existsSync, readFileSync, readdirSync } from 'node:fs';
 import path from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 import minimatch from 'minimatch';
 import { listPackage } from '@electron/asar';
 import { resolveBuildFlavor } from '@bombfarm/contracts';
@@ -161,26 +161,7 @@ export function collectNativeDependencyClosure(rootPackageJsonPath) {
 }
 
 export function findNodeBinaries(dir) {
-  const results = [];
-  const stack = [dir];
-  while (stack.length > 0) {
-    const current = stack.pop();
-    let entries;
-    try {
-      entries = readdirSync(current, { withFileTypes: true });
-    } catch {
-      continue;
-    }
-    for (const entry of entries) {
-      const full = path.join(current, entry.name);
-      if (entry.isDirectory()) {
-        stack.push(full);
-      } else if (entry.isFile() && entry.name.endsWith('.node')) {
-        results.push(path.relative(dir, full).split(path.sep).join('/'));
-      }
-    }
-  }
-  return results;
+  return walkRelativeFiles(dir).filter((file) => file.endsWith('.node'));
 }
 
 export function findMissingNativeBinaries(closure, unpackRoot) {
@@ -288,8 +269,7 @@ export function runPackagingGateChecks(flavor, { desktopRootDir = desktopRoot } 
   }
 }
 
-const isMainModule = process.argv[1] !== undefined
-  && path.resolve(fileURLToPath(import.meta.url)) === path.resolve(process.argv[1]);
+const isMainModule = import.meta.url === pathToFileURL(process.argv[1] ?? '').href;
 
 if (isMainModule) {
   const flavor = resolveBuildFlavor(process.env.BFC_FLAVOR);
