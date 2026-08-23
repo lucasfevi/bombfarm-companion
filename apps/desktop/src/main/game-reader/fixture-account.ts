@@ -4,14 +4,15 @@ import { loadFixtureBundle } from './fixture-data.js';
 
 /**
  * `AD-039` (MP3 F2, design.md §3) — a test-only fixture-source override. Honoured **only** when
- * `BFC_GAME_READER === 'fixture'` (already a test-only mode); reads an `AccountPayload`-shaped
- * JSON file from `BFC_FIXTURE_ACCOUNT_FILE` verbatim, in place of the committed
- * `hero-record.json` fixture bundle. Not new ingest — no route, no anchor, no reader, no cadence
- * added; a fixture-source override on the fixture reader only.
+ * not packaged and `BFC_GAME_READER === 'fixture'` (already a test-only mode); reads an
+ * `AccountPayload`-shaped JSON file from `BFC_FIXTURE_ACCOUNT_FILE` verbatim, in place of the
+ * committed `hero-record.json` fixture bundle. Not new ingest — no route, no anchor, no reader,
+ * no cadence added; a fixture-source override on the fixture reader only.
  * `fixture-account.test.ts` asserts this is ignored in every other `BFC_GAME_READER` mode, so it
  * can never leak a synthetic account to a real player.
  */
-function loadOverridePayload(): AccountPayload | null {
+function loadOverridePayload(isPackaged: boolean): AccountPayload | null {
+  if (isPackaged) return null;
   if (process.env.BFC_GAME_READER !== 'fixture') return null;
   const overridePath = process.env.BFC_FIXTURE_ACCOUNT_FILE;
   if (!overridePath) return null;
@@ -25,8 +26,8 @@ function loadOverridePayload(): AccountPayload | null {
  * partial — `skills`/`casa` have no fixture and stay `missing`, so the smoke exercises the
  * partial-poll rules (APS-05/06/07), not only the happy path.
  */
-export function buildFixtureAccountPayload(now: string): AccountPayload {
-  const override = loadOverridePayload();
+export function buildFixtureAccountPayload(now: string, isPackaged = false): AccountPayload {
+  const override = loadOverridePayload(isPackaged);
   if (override) return override;
 
   const fixtures = loadFixtureBundle();

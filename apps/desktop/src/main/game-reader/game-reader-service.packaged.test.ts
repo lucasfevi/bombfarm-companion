@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 
 vi.mock('electron', () => ({
   app: {
@@ -56,5 +56,28 @@ describe('GameReaderService — fixture mode, fixtures genuinely missing', () =>
     expect(() => (service as unknown as { getFixtureBundle(): unknown }).getFixtureBundle()).toThrow(
       /game-data fixtures directory not found/,
     );
+  });
+});
+
+describe('GameReaderService — default mode selection respects isPackaged', () => {
+  const savedEnv = process.env.BFC_GAME_READER;
+
+  afterEach(() => {
+    if (savedEnv === undefined) delete process.env.BFC_GAME_READER;
+    else process.env.BFC_GAME_READER = savedEnv;
+  });
+
+  it('does not select fixture mode when packaged, even with BFC_GAME_READER=fixture set', () => {
+    process.env.BFC_GAME_READER = 'fixture';
+    const service = new GameReaderService('/fake/user-data', {}, { isPackaged: true });
+    expect(service.getMode()).toBe('memory');
+    expect(service.getStatus().status).toBe('not_running');
+  });
+
+  it('still selects fixture mode when unpackaged and BFC_GAME_READER=fixture is set', () => {
+    process.env.BFC_GAME_READER = 'fixture';
+    const service = new GameReaderService('/fake/user-data', {}, { isPackaged: false });
+    expect(service.getMode()).toBe('fixture');
+    expect(service.getStatus().status).toBe('connected');
   });
 });

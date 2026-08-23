@@ -29,8 +29,7 @@ export interface GameReaderConfig {
   staleRepeatThreshold: number;
 }
 
-const DEFAULT_CONFIG: GameReaderConfig = {
-  mode: process.env.BFC_GAME_READER === 'fixture' ? 'fixture' : 'memory',
+const DEFAULT_CONFIG: Omit<GameReaderConfig, 'mode'> = {
   processName: process.env.BFC_GAME_PROCESS ?? 'BombFarm.exe',
   pollAttachedMs: 50,
   pollDetachedMs: 10_000,
@@ -38,8 +37,16 @@ const DEFAULT_CONFIG: GameReaderConfig = {
   staleRepeatThreshold: 4,
 };
 
+/** A packaged install must be structurally unable to select fixture mode — an inherited or
+ * stale `BFC_GAME_READER=fixture` env var (a shell, a CI harness, a support machine) would
+ * otherwise make a real install report itself `connected` and then throw on every tick. */
+function resolveDefaultMode(isPackaged: boolean): GameReaderMode {
+  return !isPackaged && process.env.BFC_GAME_READER === 'fixture' ? 'fixture' : 'memory';
+}
+
 export class GameReaderService {
   private readonly config: GameReaderConfig;
+  private readonly isPackaged: boolean;
   private status: GameStatusInfo;
   private payload: GameSnapshotPayload;
   private timer: NodeJS.Timeout | null = null;
@@ -68,8 +75,14 @@ export class GameReaderService {
    * which must call `stop()` before closing the account store). */
   private stopped = false;
 
-  constructor(_userDataDir: string, config: Partial<GameReaderConfig> = {}) {
-    this.config = { ...DEFAULT_CONFIG, ...config };
+  constructor(
+    _userDataDir: string,
+    config: Partial<GameReaderConfig> = {},
+    deps: { isPackaged?: boolean } = {},
+  ) {
+    this.isPackaged = deps.isPackaged ?? false;
+    const mode = config.mode ?? resolveDefaultMode(this.isPackaged);
+    this.config = { ...DEFAULT_CONFIG, ...config, mode };
 
     // Never restore `status` from disk (design R-2 / APS-03): a cold boot with the game
     // closed always reports `not_running`, never a previous session's `connected`.
@@ -125,6 +138,10 @@ export class GameReaderService {
 
   getStatus(): GameStatusInfo {
     return this.status;
+  }
+
+  getMode(): GameReaderMode {
+    return this.config.mode;
   }
 
   getSnapshot(): GameSnapshotPayload {
@@ -204,7 +221,9 @@ export class GameReaderService {
     });
 
     if (this.accountStore) {
-      this.lastAccountView = this.accountStore.commit(buildFixtureAccountPayload(takenAt), { gameRunning: true });
+      this.lastAccountView = this.accountStore.commit(buildFixtureAccountPayload(takenAt, this.isPackaged), {
+        gameRunning: true,
+      });
       this.onAccountCommitted?.();
     }
   }

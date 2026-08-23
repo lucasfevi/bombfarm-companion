@@ -218,7 +218,7 @@ async function bootstrap(): Promise<void> {
     items: initialRestore.payload.fidelity.items.status,
   });
 
-  gameReader = new GameReaderService(userDataDir);
+  gameReader = new GameReaderService(userDataDir, {}, { isPackaged: resolveAppEnv().isPackaged });
   gameReader.setAccountStore(accountStore);
 
   // MP2 F2 — the consented game-API account reader. Independent of the game reader's own
@@ -307,7 +307,7 @@ async function bootstrap(): Promise<void> {
   log.info({
     scope: 'main',
     event: 'game-reader.started',
-    mode: process.env.BFC_GAME_READER === 'fixture' ? 'fixture' : 'memory',
+    mode: gameReader.getMode(),
   });
 
   accountRefresh.start();
