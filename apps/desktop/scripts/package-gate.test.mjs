@@ -3,6 +3,7 @@ import { existsSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:
 import os from 'node:os';
 import path from 'node:path';
 import { afterEach, describe, expect, it } from 'vitest';
+import { createBuilderConfig } from './builder-config.mjs';
 import {
   assertAsarExists,
   assertAsarUnpackPatternsMatch,
@@ -374,16 +375,20 @@ describe('runPackagingGateChecks', () => {
     return desktopRootDir;
   }
 
+  /** The real config minus its `asarUnpack` patterns: a fabricated tree was never built to
+   *  satisfy them, and `assertAsarUnpackPatternsMatch` has its own dedicated tests above. */
+  const configForFakeTree = () => ({ ...createBuilderConfig('dev'), asarUnpack: [] });
+
   it('passes for a packaged tree with a matching native binary and a renderer entry', async () => {
     const desktopRootDir = await buildFakePackagedApp();
-    expect(() => runPackagingGateChecks('dev', { desktopRootDir })).not.toThrow();
+    expect(() => runPackagingGateChecks('dev', { desktopRootDir, config: configForFakeTree() })).not.toThrow();
   });
 
   it('aggregates every failing check into one PackagingGateError', async () => {
     const desktopRootDir = await buildFakePackagedApp();
     rmSync(path.join(desktopRootDir, 'release', 'dev', 'win-unpacked', 'resources', 'app.asar'));
 
-    expectPackagingGateError(() => runPackagingGateChecks('dev', { desktopRootDir }), 'resources/app.asar');
+    expectPackagingGateError(() => runPackagingGateChecks('dev', { desktopRootDir, config: configForFakeTree() }), 'resources/app.asar');
   });
 
   it('fails when a .node binary is sealed inside app.asar, even when it belongs to no dependency in apps/desktop\'s own manifest', async () => {
@@ -399,7 +404,7 @@ describe('runPackagingGateChecks', () => {
     await createPackage(asarSrcDir, path.join(unpackedDir, 'resources', 'app.asar'));
 
     expectPackagingGateError(
-      () => runPackagingGateChecks('dev', { desktopRootDir }),
+      () => runPackagingGateChecks('dev', { desktopRootDir, config: configForFakeTree() }),
       'sharp-win32-x64.node',
     );
   });
@@ -407,7 +412,7 @@ describe('runPackagingGateChecks', () => {
   it('throws when the flavor output directory does not exist at all', () => {
     const desktopRootDir = makeTempDir('gate-run-no-output');
     writeJson(path.join(desktopRootDir, 'package.json'), { name: '@bombfarm/desktop' });
-    expect(() => runPackagingGateChecks('dev', { desktopRootDir })).toThrow(PackagingGateError);
+    expect(() => runPackagingGateChecks('dev', { desktopRootDir, config: configForFakeTree() })).toThrow(PackagingGateError);
     expect(existsSync(path.join(desktopRootDir, 'release'))).toBe(false);
   });
 });

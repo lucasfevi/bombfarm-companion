@@ -20,6 +20,8 @@ const shared = {
     'electron-log/main.js',
     'electron-log/renderer.js',
     'koffi',
+    '@bombfarm/tap-runtime',
+    'frida',
   ],
   logLevel: 'info',
 };
