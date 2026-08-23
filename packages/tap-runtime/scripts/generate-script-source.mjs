@@ -18,7 +18,10 @@ function splice(template, marker, replacement) {
   if (!template.includes(marker)) {
     throw new Error(`tap-runtime: bootstrap-template.js is missing the ${marker} marker`);
   }
-  return template.replace(marker, replacement);
+  // Replacer function, not a string: `$&`, `$'` and friends in the spliced source would otherwise
+  // be expanded as replacement patterns, corrupting the injected script with nothing to catch it
+  // until it throws inside the target process.
+  return template.replace(marker, () => replacement);
 }
 
 const template = readSource('bootstrap-template.js');
