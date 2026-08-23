@@ -9,12 +9,21 @@ import type { TapAgent, TapAgentHost } from './agent.js';
 
 export interface FridaNativePointer {
   toInt32(): number;
+  toUInt32(): number;
   toString(): string;
   readByteArray(length: number): ArrayBuffer | null;
 }
 
+export interface FridaReturnValue {
+  toInt32(): number;
+}
+
 export interface FridaInvocationArgs {
   [index: number]: FridaNativePointer;
+}
+
+export interface FridaInvocationContext {
+  [key: string]: unknown;
 }
 
 export interface FridaInvocationListener {
@@ -22,7 +31,13 @@ export interface FridaInvocationListener {
 }
 
 export interface FridaInterceptor {
-  attach(pointer: FridaNativePointer, callbacks: { onEnter(args: FridaInvocationArgs): void }): FridaInvocationListener;
+  attach(
+    pointer: FridaNativePointer,
+    callbacks: {
+      onEnter(this: FridaInvocationContext, args: FridaInvocationArgs): void;
+      onLeave(this: FridaInvocationContext, retval: FridaReturnValue): void;
+    },
+  ): FridaInvocationListener;
 }
 
 export interface FridaGlobals {
