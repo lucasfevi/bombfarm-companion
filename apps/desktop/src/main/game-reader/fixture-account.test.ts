@@ -125,4 +125,12 @@ describe('AD-039 — BFC_FIXTURE_ACCOUNT_FILE override', () => {
     const fixtures = loadFixtureBundle();
     expect(payload.heroes).toEqual(fixtures.heroRecords);
   });
+
+  it('is ignored when packaged, even with BFC_GAME_READER "fixture" and BFC_FIXTURE_ACCOUNT_FILE set', () => {
+    process.env.BFC_GAME_READER = 'fixture';
+    process.env.BFC_FIXTURE_ACCOUNT_FILE = overridePath;
+    const payload = buildFixtureAccountPayload(NOW, true);
+    expect(payload).not.toEqual(overridePayload);
+    expect(payload.fidelity?.heroes).toEqual({ status: 'resolved', capturedAt: NOW });
+  });
 });

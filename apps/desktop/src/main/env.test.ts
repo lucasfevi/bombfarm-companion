@@ -79,8 +79,99 @@ describe('buildAppEnv', () => {
     ).toThrowError(/Invalid BFC_FLAVOR: \(missing stamp\)/);
   });
 
-  it('marks isDev when NODE_ENV is not production', () => {
+  it('marks isDev when NODE_ENV is explicitly development', () => {
     expect(buildAppEnv({ ...baseDeps, rawFlavor: 'dev' }).isDev).toBe(true);
+  });
+
+  describe('isDev', () => {
+    it('is true when unpackaged and NODE_ENV is development, with no renderer URL override', () => {
+      const env = buildAppEnv({
+        ...baseDeps,
+        rawFlavor: 'dev',
+        isPackaged: false,
+        nodeEnv: 'development',
+        rendererUrlOverride: undefined,
+      });
+      expect(env.isDev).toBe(true);
+    });
+
+    it('is true when unpackaged and a renderer URL override is set, with NODE_ENV unset', () => {
+      const env = buildAppEnv({
+        ...baseDeps,
+        rawFlavor: 'dev',
+        isPackaged: false,
+        nodeEnv: undefined,
+        rendererUrlOverride: 'http://127.0.0.1:3000',
+      });
+      expect(env.isDev).toBe(true);
+    });
+
+    it('is true when unpackaged with both signals set', () => {
+      const env = buildAppEnv({
+        ...baseDeps,
+        rawFlavor: 'dev',
+        isPackaged: false,
+        nodeEnv: 'development',
+        rendererUrlOverride: 'http://127.0.0.1:3000',
+      });
+      expect(env.isDev).toBe(true);
+    });
+
+    it('is false when unpackaged with neither NODE_ENV nor a renderer URL override set', () => {
+      const env = buildAppEnv({
+        ...baseDeps,
+        rawFlavor: 'dev',
+        isPackaged: false,
+        nodeEnv: undefined,
+        rendererUrlOverride: undefined,
+      });
+      expect(env.isDev).toBe(false);
+    });
+
+    it('is false when unpackaged and NODE_ENV is production', () => {
+      const env = buildAppEnv({
+        ...baseDeps,
+        rawFlavor: 'dev',
+        isPackaged: false,
+        nodeEnv: 'production',
+        rendererUrlOverride: undefined,
+      });
+      expect(env.isDev).toBe(false);
+    });
+
+    it('is false when packaged, even with NODE_ENV development and a renderer URL override set', () => {
+      const env = buildAppEnv({
+        ...baseDeps,
+        rawFlavor: 'beta',
+        isPackaged: true,
+        bakedFlavor: 'beta',
+        nodeEnv: 'development',
+        rendererUrlOverride: 'http://127.0.0.1:3000',
+      });
+      expect(env.isDev).toBe(false);
+    });
+
+    it('is false when packaged, even with NODE_ENV unset', () => {
+      const env = buildAppEnv({
+        ...baseDeps,
+        rawFlavor: 'beta',
+        isPackaged: true,
+        bakedFlavor: 'beta',
+        nodeEnv: undefined,
+      });
+      expect(env.isDev).toBe(false);
+    });
+
+    it('is false when packaged and NODE_ENV is production', () => {
+      const env = buildAppEnv({
+        ...baseDeps,
+        rawFlavor: 'beta',
+        isPackaged: true,
+        bakedFlavor: 'beta',
+        nodeEnv: 'production',
+      });
+      expect(env.isDev).toBe(false);
+    });
   });
 
   it('marks isPackaged from deps', () => {
@@ -169,6 +260,22 @@ describe('resolveAppEnv', () => {
         delete process.env.BFC_USER_DATA_DIR;
       } else {
         process.env.BFC_USER_DATA_DIR = previous;
+      }
+    }
+  });
+
+  it('threads process.env.BFC_RENDERER_URL through as the rendererUrlOverride, driving isDev', async () => {
+    vi.resetModules();
+    const previousUrl = process.env.BFC_RENDERER_URL;
+    process.env.BFC_RENDERER_URL = 'http://127.0.0.1:3000';
+    try {
+      const { resolveAppEnv: resolveFresh } = await import('./env.js');
+      expect(resolveFresh().isDev).toBe(true);
+    } finally {
+      if (previousUrl === undefined) {
+        delete process.env.BFC_RENDERER_URL;
+      } else {
+        process.env.BFC_RENDERER_URL = previousUrl;
       }
     }
   });

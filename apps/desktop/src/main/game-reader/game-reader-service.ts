@@ -3,6 +3,7 @@ import type { AccountPayload, AccountView, GameSnapshotPayload, GameStatusInfo, 
 import { buildSnapshot } from '@bombfarm/game-data';
 import { log } from '../logging.js';
 import { buildFixtureAccountPayload } from './fixture-account.js';
+import type { FixtureBundle } from './fixture-data.js';
 import {
   buildFixtureSnapshot,
   loadFixtureBundle,
@@ -28,8 +29,7 @@ export interface GameReaderConfig {
   staleRepeatThreshold: number;
 }
 
-const DEFAULT_CONFIG: GameReaderConfig = {
-  mode: process.env.BFC_GAME_READER === 'fixture' ? 'fixture' : 'memory',
+const DEFAULT_CONFIG: Omit<GameReaderConfig, 'mode'> = {
   processName: process.env.BFC_GAME_PROCESS ?? 'BombFarm.exe',
   pollAttachedMs: 50,
   pollDetachedMs: 10_000,
@@ -37,8 +37,16 @@ const DEFAULT_CONFIG: GameReaderConfig = {
   staleRepeatThreshold: 4,
 };
 
+/** A packaged install must be structurally unable to select fixture mode — an inherited or
+ * stale `BFC_GAME_READER=fixture` env var (a shell, a CI harness, a support machine) would
+ * otherwise make a real install report itself `connected` and then throw on every tick. */
+function resolveDefaultMode(isPackaged: boolean): GameReaderMode {
+  return !isPackaged && process.env.BFC_GAME_READER === 'fixture' ? 'fixture' : 'memory';
+}
+
 export class GameReaderService {
   private readonly config: GameReaderConfig;
+  private readonly isPackaged: boolean;
   private status: GameStatusInfo;
   private payload: GameSnapshotPayload;
   private timer: NodeJS.Timeout | null = null;
@@ -58,7 +66,7 @@ export class GameReaderService {
   private repeatCount = 0;
   private lastRelocate = 0;
   private fixtureTick = 0;
-  private fixtureBundle = loadFixtureBundle();
+  private fixtureBundle: FixtureBundle | null = null;
   /** Flipped once by `stop()`, never reset (until a hypothetical future `start()` re-arms it).
    * The explicit half of the shutdown-ordering contract: `clearTimeout` alone only stops a
    * tick that has not yet started firing — this flag additionally makes `tick()` a no-op for
@@ -67,8 +75,14 @@ export class GameReaderService {
    * which must call `stop()` before closing the account store). */
   private stopped = false;
 
-  constructor(_userDataDir: string, config: Partial<GameReaderConfig> = {}) {
-    this.config = { ...DEFAULT_CONFIG, ...config };
+  constructor(
+    _userDataDir: string,
+    config: Partial<GameReaderConfig> = {},
+    deps: { isPackaged?: boolean } = {},
+  ) {
+    this.isPackaged = deps.isPackaged ?? false;
+    const mode = config.mode ?? resolveDefaultMode(this.isPackaged);
+    this.config = { ...DEFAULT_CONFIG, ...config, mode };
 
     // Never restore `status` from disk (design R-2 / APS-03): a cold boot with the game
     // closed always reports `not_running`, never a previous session's `connected`.
@@ -126,6 +140,10 @@ export class GameReaderService {
     return this.status;
   }
 
+  getMode(): GameReaderMode {
+    return this.config.mode;
+  }
+
   getSnapshot(): GameSnapshotPayload {
     return this.payload;
   }
@@ -165,17 +183,27 @@ export class GameReaderService {
     }
   }
 
+  /** Only fixture mode ever reaches this — a non-fixture run must never touch the filesystem
+   * for these (dev/CI-only) fixtures, let alone throw if they are not resolvable, as a packaged
+   * install's would not be. Loaded at most once per instance; `tickFixture()` runs on a fast
+   * poll and must not re-read the fixture files on every tick. */
+  private getFixtureBundle(): FixtureBundle {
+    this.fixtureBundle ??= loadFixtureBundle();
+    return this.fixtureBundle;
+  }
+
   private tickFixture(): void {
     this.fixtureTick += 1;
     const takenAt = new Date().toISOString();
-    const state = rotateFixtureState(this.fixtureBundle.state, this.fixtureTick);
+    const fixtures = this.getFixtureBundle();
+    const state = rotateFixtureState(fixtures.state, this.fixtureTick);
     const built = buildSnapshot({
       takenAt,
       source: 'live',
       state,
-      inventory: this.fixtureBundle.inventory,
-      heroRecords: this.fixtureBundle.heroRecords,
-      heroEnergies: this.fixtureBundle.heroEnergies,
+      inventory: fixtures.inventory,
+      heroRecords: fixtures.heroRecords,
+      heroEnergies: fixtures.heroEnergies,
     });
 
     this.updateStatus({
@@ -188,12 +216,14 @@ export class GameReaderService {
       mapped: built.snapshot,
       raw: {
         state,
-        inventory: this.fixtureBundle.inventory,
+        inventory: fixtures.inventory,
       },
     });
 
     if (this.accountStore) {
-      this.lastAccountView = this.accountStore.commit(buildFixtureAccountPayload(takenAt), { gameRunning: true });
+      this.lastAccountView = this.accountStore.commit(buildFixtureAccountPayload(takenAt, this.isPackaged), {
+        gameRunning: true,
+      });
       this.onAccountCommitted?.();
     }
   }
