@@ -32,6 +32,7 @@ export function buildAppEnv(deps: {
    * data directory is what upgrades and support expect to find, so the override is silently
    * ignored (never trusted) once the app is packaged, regardless of who set it. */
   userDataOverride?: string | undefined;
+  rendererUrlOverride?: string | undefined;
 }): AppEnv {
   const { flavor, envConflict } = resolveRuntimeFlavor({
     raw: deps.rawFlavor,
@@ -47,9 +48,10 @@ export function buildAppEnv(deps: {
   return {
     flavor,
     descriptor,
-    // A packaged install has no NODE_ENV, so that check alone would default to dev;
-    // isPackaged must gate it so packaging can never fall into dev by omission.
-    isDev: !deps.isPackaged && deps.nodeEnv !== 'production',
+    // Every term is a positive assertion, so an unset environment can never mean dev.
+    isDev:
+      !deps.isPackaged &&
+      (deps.rendererUrlOverride !== undefined || deps.nodeEnv === 'development'),
     isPackaged: deps.isPackaged,
     appId: descriptor.appId,
     productName: descriptor.productName,
@@ -87,6 +89,7 @@ export function resolveAppEnv(): AppEnv {
     appDataPath: app.getPath('appData'),
     nodeEnv: process.env.NODE_ENV,
     userDataOverride: process.env.BFC_USER_DATA_DIR,
+    rendererUrlOverride: process.env.BFC_RENDERER_URL,
   });
   return cachedEnv;
 }
