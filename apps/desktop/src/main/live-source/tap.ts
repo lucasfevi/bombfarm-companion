@@ -332,6 +332,15 @@ export class Tap {
   #confirmWinner(address: number, stream: TlsConnections): void {
     this.#winner = { address, stream };
 
+    this.#log.info({
+      scope: 'live-source',
+      event: 'tap.winner_confirmed',
+      pid: this.#activePid,
+      address,
+      fromCache: this.#fromCache,
+      buildId: this.#activeBuildId,
+    });
+
     if (this.#validationTimer !== null) {
       this.#deps.clock.clearTimeout(this.#validationTimer);
       this.#validationTimer = null;

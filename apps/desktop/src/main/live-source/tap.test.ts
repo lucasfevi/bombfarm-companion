@@ -301,6 +301,53 @@ describe('Tap: ambiguous discovery', () => {
   });
 });
 
+describe('Tap: winner confirmation logging', () => {
+  it('logs tap.winner_confirmed exactly once when a candidate stream decodes its first events', async () => {
+    const { tap, clock, processes, candidates, runtime, infos } = createHarness();
+    processes.processes = [{ pid: 666, name: PROCESS_NAME }];
+    candidates.resolveResult = {
+      addresses: [0x1000, 0x2000],
+      fromCache: true,
+      buildId: 'build-winner-log',
+    };
+
+    tap.start();
+    await clock.advance(0);
+
+    const session = runtime.sessions[0];
+    if (!session) throw new Error('test setup: no session');
+    const winner = session.interceptorsByAddress.get(0x2000);
+    if (!winner) throw new Error('test setup: winner interceptor missing');
+    winner.fire({ ctx: 'conn', bytes: snapFrameBytes() });
+
+    const winnerLogs = infos.filter((record) => record.event === 'tap.winner_confirmed');
+    expect(winnerLogs).toHaveLength(1);
+    expect(winnerLogs[0]).toMatchObject({
+      scope: 'live-source',
+      event: 'tap.winner_confirmed',
+      pid: 666,
+      address: 0x2000,
+      fromCache: true,
+      buildId: 'build-winner-log',
+    });
+
+    winner.fire({ ctx: 'conn', bytes: snapFrameBytes() });
+    expect(infos.filter((record) => record.event === 'tap.winner_confirmed')).toHaveLength(1);
+  });
+
+  it('does not log tap.winner_confirmed when validation times out with no winner', async () => {
+    const { tap, clock, processes, candidates, infos } = createHarness();
+    processes.processes = [{ pid: 777, name: PROCESS_NAME }];
+    candidates.resolveResult = { addresses: [0x1000], fromCache: true, buildId: 'build-timeout' };
+
+    tap.start();
+    await clock.advance(0);
+    await clock.advance(20_000);
+
+    expect(infos.some((record) => record.event === 'tap.winner_confirmed')).toBe(false);
+  });
+});
+
 describe('Tap: a throwing attach or install does not kill the poll loop', () => {
   it('reports attachFailed, leaks nothing, and keeps polling when runtime.attach throws', async () => {
     class ThrowingAttachRuntime implements TapRuntime {
