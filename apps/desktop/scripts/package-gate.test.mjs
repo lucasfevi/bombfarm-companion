@@ -35,6 +35,19 @@ function writeFile(filePath, content = '') {
   writeFileSync(filePath, content);
 }
 
+function expectPackagingGateError(fn, ...substrings) {
+  try {
+    fn();
+    expect.fail('expected function to throw PackagingGateError');
+  } catch (error) {
+    expect(error).toBeInstanceOf(PackagingGateError);
+    for (const substring of substrings) {
+      expect(error.message).toContain(substring);
+    }
+    return error;
+  }
+}
+
 afterEach(() => {
   while (tempDirs.length > 0) {
     const dir = tempDirs.pop();
@@ -81,14 +94,7 @@ describe('assertAsarExists', () => {
 
   it('throws PackagingGateError naming the missing path when app.asar is absent', () => {
     const unpackedDir = makeTempDir('asar-missing');
-    expect(() => assertAsarExists(unpackedDir)).toThrow(PackagingGateError);
-    try {
-      assertAsarExists(unpackedDir);
-      expect.fail('expected assertAsarExists to throw');
-    } catch (error) {
-      expect(error.message).toContain('resources/app.asar');
-      expect(error.message).toContain(unpackedDir);
-    }
+    expectPackagingGateError(() => assertAsarExists(unpackedDir), 'resources/app.asar', unpackedDir);
   });
 });
 
@@ -115,14 +121,11 @@ describe('assertAsarUnpackPatternsMatch', () => {
     const config = {
       asarUnpack: ['node_modules/foo/**/*.node', 'node_modules/never-installed/**/*'],
     };
-    try {
-      assertAsarUnpackPatternsMatch(config, unpackedDir);
-      expect.fail('expected assertAsarUnpackPatternsMatch to throw');
-    } catch (error) {
-      expect(error).toBeInstanceOf(PackagingGateError);
-      expect(error.message).toContain('node_modules/never-installed/**/*');
-      expect(error.message).not.toContain('"node_modules/foo/**/*.node"');
-    }
+    const error = expectPackagingGateError(
+      () => assertAsarUnpackPatternsMatch(config, unpackedDir),
+      'node_modules/never-installed/**/*',
+    );
+    expect(error.message).not.toContain('"node_modules/foo/**/*.node"');
   });
 
   it('treats a wholly missing app.asar.unpacked directory as zero matches', () => {
@@ -227,13 +230,10 @@ describe('assertNativeBinariesUnpacked', () => {
 
     const unpackedDir = makeTempDir('assert-native-unpacked');
 
-    try {
-      assertNativeBinariesUnpacked(path.join(root, 'package.json'), unpackedDir);
-      expect.fail('expected assertNativeBinariesUnpacked to throw');
-    } catch (error) {
-      expect(error).toBeInstanceOf(PackagingGateError);
-      expect(error.message).toContain('node_modules/native-pkg/native.node');
-    }
+    expectPackagingGateError(
+      () => assertNativeBinariesUnpacked(path.join(root, 'package.json'), unpackedDir),
+      'node_modules/native-pkg/native.node',
+    );
   });
 
   it('passes once every closure binary is present under app.asar.unpacked', () => {
@@ -268,13 +268,7 @@ describe('assertRendererEntryPresent', () => {
     const asarPath = path.join(makeTempDir('asar-out-without-index'), 'app.asar');
     await createPackage(srcDir, asarPath);
 
-    try {
-      assertRendererEntryPresent(asarPath);
-      expect.fail('expected assertRendererEntryPresent to throw');
-    } catch (error) {
-      expect(error).toBeInstanceOf(PackagingGateError);
-      expect(error.message).toContain('renderer/out/index.html');
-    }
+    expectPackagingGateError(() => assertRendererEntryPresent(asarPath), 'renderer/out/index.html');
   });
 });
 
@@ -311,13 +305,7 @@ describe('runPackagingGateChecks', () => {
     const desktopRootDir = await buildFakePackagedApp();
     rmSync(path.join(desktopRootDir, 'release', 'dev', 'win-unpacked', 'resources', 'app.asar'));
 
-    try {
-      runPackagingGateChecks('dev', { desktopRootDir });
-      expect.fail('expected runPackagingGateChecks to throw');
-    } catch (error) {
-      expect(error).toBeInstanceOf(PackagingGateError);
-      expect(error.message).toContain('resources/app.asar');
-    }
+    expectPackagingGateError(() => runPackagingGateChecks('dev', { desktopRootDir }), 'resources/app.asar');
   });
 
   it('throws when the flavor output directory does not exist at all', () => {
