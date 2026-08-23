@@ -20,7 +20,9 @@ function resolveFixturesDir(): string {
   for (const candidate of candidates) {
     if (fs.existsSync(candidate)) return candidate;
   }
-  throw new Error('game-data fixtures directory not found');
+  throw new Error(
+    'game-data fixtures directory not found (needed for BFC_GAME_READER=fixture; these are dev/CI-only fixtures, not shipped in a packaged build)',
+  );
 }
 
 function loadJson(filePath: string): unknown {

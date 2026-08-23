@@ -3,6 +3,7 @@ import type { AccountPayload, AccountView, GameSnapshotPayload, GameStatusInfo, 
 import { buildSnapshot } from '@bombfarm/game-data';
 import { log } from '../logging.js';
 import { buildFixtureAccountPayload } from './fixture-account.js';
+import type { FixtureBundle } from './fixture-data.js';
 import {
   buildFixtureSnapshot,
   loadFixtureBundle,
@@ -58,7 +59,7 @@ export class GameReaderService {
   private repeatCount = 0;
   private lastRelocate = 0;
   private fixtureTick = 0;
-  private fixtureBundle = loadFixtureBundle();
+  private fixtureBundle: FixtureBundle | null = null;
   /** Flipped once by `stop()`, never reset (until a hypothetical future `start()` re-arms it).
    * The explicit half of the shutdown-ordering contract: `clearTimeout` alone only stops a
    * tick that has not yet started firing — this flag additionally makes `tick()` a no-op for
@@ -165,17 +166,27 @@ export class GameReaderService {
     }
   }
 
+  /** Only fixture mode ever reaches this — a non-fixture run must never touch the filesystem
+   * for these (dev/CI-only) fixtures, let alone throw if they are not resolvable, as a packaged
+   * install's would not be. Loaded at most once per instance; `tickFixture()` runs on a fast
+   * poll and must not re-read the fixture files on every tick. */
+  private getFixtureBundle(): FixtureBundle {
+    this.fixtureBundle ??= loadFixtureBundle();
+    return this.fixtureBundle;
+  }
+
   private tickFixture(): void {
     this.fixtureTick += 1;
     const takenAt = new Date().toISOString();
-    const state = rotateFixtureState(this.fixtureBundle.state, this.fixtureTick);
+    const fixtures = this.getFixtureBundle();
+    const state = rotateFixtureState(fixtures.state, this.fixtureTick);
     const built = buildSnapshot({
       takenAt,
       source: 'live',
       state,
-      inventory: this.fixtureBundle.inventory,
-      heroRecords: this.fixtureBundle.heroRecords,
-      heroEnergies: this.fixtureBundle.heroEnergies,
+      inventory: fixtures.inventory,
+      heroRecords: fixtures.heroRecords,
+      heroEnergies: fixtures.heroEnergies,
     });
 
     this.updateStatus({
@@ -188,7 +199,7 @@ export class GameReaderService {
       mapped: built.snapshot,
       raw: {
         state,
-        inventory: this.fixtureBundle.inventory,
+        inventory: fixtures.inventory,
       },
     });
 
