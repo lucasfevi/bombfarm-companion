@@ -15,7 +15,9 @@ export const PACKAGES_ROOT = join(here, '..', 'packages');
  * Every list is **measured**, not assumed, by moving each `packages/<name>/dist` aside in turn and
  * running that project alone (`pnpm vitest run --project <name>`):
  *
- * - `@bombfarm/desktop` — `contracts`, `domain`, `game-api`, `game-data`. Without all four the
+ * - `@bombfarm/desktop` — `contracts`, `domain`, `game-api`, `game-data`, `tap-runtime`. Measured
+ *   for `tap-runtime` by moving its `dist/` aside: `runtime.test.ts` fails at collection with
+ *   `Failed to resolve entry for package "@bombfarm/tap-runtime"`. Without all five the
  *   suite fails at collection; with only these four it is fully green (43 files / 653 tests) even
  *   when `ui` and `pricing` are unbuilt (re-confirmed for this extraction). Keep in sync with
  *   `apps/desktop`'s own `prebuild` script, which builds the same set plus `ui`, which the bundle
@@ -39,7 +41,7 @@ export const PACKAGES_ROOT = join(here, '..', 'packages');
  * Re-measure when a project gains an import of a new workspace package.
  */
 export const REQUIRED_DIST_PACKAGES = Object.freeze({
-  '@bombfarm/desktop': Object.freeze(['contracts', 'domain', 'game-api', 'game-data']),
+  '@bombfarm/desktop': Object.freeze(['contracts', 'domain', 'game-api', 'game-data', 'tap-runtime']),
   '@bombfarm/game-api': Object.freeze(['domain']),
   tools: Object.freeze(['domain']),
 });
