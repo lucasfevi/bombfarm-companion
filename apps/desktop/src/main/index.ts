@@ -240,6 +240,11 @@ async function bootstrap(): Promise<void> {
   });
   liveSource.subscribe((event) => {
     emitEvent('live:event', event);
+    if (event.type === 'frame') {
+      gameReader?.ingestLiveTick(event.frame);
+    } else {
+      gameReader?.ingestLiveCurrency(event.currency);
+    }
   });
   liveSource.start();
 
@@ -295,7 +300,7 @@ async function bootstrap(): Promise<void> {
 
   // MP3 F3 (AD-043 point 3) — fixture mode's ~20×/s ticker is the second producer that can
   // commit an account; wired the same way, ignoring its own payload argument for the same
-  // reason. Production's memory-mode reader never commits (GameReaderService.tickMemory() has
+  // reason. Production's live-tap-backed reader never commits (GameReaderService.tickLive() has
   // no commit site), so this callback never fires outside fixture-mode test builds.
   gameReader.onAccountCommitted = () => {
     notifier.notifyIfChanged();

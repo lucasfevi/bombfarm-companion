@@ -36,13 +36,13 @@ vi.mock('./fixture-data.js', async (importOriginal) => {
 
 import { GameReaderService } from './game-reader-service.js';
 
-describe('GameReaderService — packaged boot, fixtures unresolvable (memory mode)', () => {
+describe('GameReaderService — packaged boot, fixtures unresolvable (live mode)', () => {
   it('constructs without throwing', () => {
-    expect(() => new GameReaderService('/fake/user-data', { mode: 'memory' })).not.toThrow();
+    expect(() => new GameReaderService('/fake/user-data', { mode: 'live' })).not.toThrow();
   });
 
   it('starts and ticks without throwing', () => {
-    const service = new GameReaderService('/fake/user-data', { mode: 'memory' });
+    const service = new GameReaderService('/fake/user-data', { mode: 'live' });
     expect(() => {
       service.start();
       service.stop();
@@ -70,7 +70,7 @@ describe('GameReaderService — default mode selection respects isPackaged', () 
   it('does not select fixture mode when packaged, even with BFC_GAME_READER=fixture set', () => {
     process.env.BFC_GAME_READER = 'fixture';
     const service = new GameReaderService('/fake/user-data', {}, { isPackaged: true });
-    expect(service.getMode()).toBe('memory');
+    expect(service.getMode()).toBe('live');
     expect(service.getStatus().status).toBe('not_running');
   });
 

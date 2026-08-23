@@ -1,4 +1,3 @@
-export { pickHighestGoldCandidate, MAX_CANDIDATES, type MemoryCandidate } from './candidates.js';
 export { looksLikeFormatString, isPlausibleId, isPlausibleDefId, parseNumericField, isRecord } from './validation.js';
 export {
   classifyInventoryBag,
