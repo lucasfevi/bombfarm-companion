@@ -36,6 +36,8 @@ const NOOP_LOG_PORT: LogPort = { info: () => undefined };
 export interface FridaMessage {
   readonly type: string;
   readonly payload?: unknown;
+  readonly description?: string;
+  readonly stack?: string;
 }
 
 export interface FridaScript {
@@ -60,6 +62,19 @@ function isReadPayload(payload: unknown): payload is ReadPayload {
   if (typeof payload !== 'object' || payload === null) return false;
   const candidate = payload as { readonly type?: unknown; readonly address?: unknown };
   return candidate.type === 'read' && typeof candidate.address === 'number';
+}
+
+interface HookInstalledPayload {
+  readonly type: 'hook_installed';
+  readonly address: number;
+  readonly base: string;
+  readonly absoluteAddress: string;
+}
+
+function isHookInstalledPayload(payload: unknown): payload is HookInstalledPayload {
+  if (typeof payload !== 'object' || payload === null) return false;
+  const candidate = payload as { readonly type?: unknown };
+  return candidate.type === 'hook_installed';
 }
 
 class FridaTapInterceptor implements TapInterceptor {
@@ -167,9 +182,30 @@ export class FridaTapRuntime implements TapRuntime {
 
     const listeners = new Map<number, (event: TapReadEvent) => void>();
     script.message.connect((message, data) => {
-      if (message.type !== 'send' || !data) return;
+      if (message.type === 'error') {
+        this.#log.info({
+          scope: 'tap-runtime',
+          event: 'script.error',
+          pid,
+          description: message.description,
+          stack: message.stack,
+        });
+        return;
+      }
+      if (message.type !== 'send') return;
       const payload = message.payload;
-      if (!isReadPayload(payload)) return;
+      if (isHookInstalledPayload(payload)) {
+        this.#log.info({
+          scope: 'tap-runtime',
+          event: 'hook.installed',
+          pid,
+          address: payload.address,
+          base: payload.base,
+          absoluteAddress: payload.absoluteAddress,
+        });
+        return;
+      }
+      if (!data || !isReadPayload(payload)) return;
       const listener = listeners.get(payload.address);
       if (!listener) return;
       listener({ ctx: payload.ctx, bytes: new Uint8Array(data) });

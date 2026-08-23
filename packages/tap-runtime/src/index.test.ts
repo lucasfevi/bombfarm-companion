@@ -145,6 +145,43 @@ describe('FridaTapSession.installInterceptor', () => {
   });
 });
 
+describe('FridaTapRuntime script message handling', () => {
+  it('logs an error message from the injected script instead of swallowing it', async () => {
+    const fake = createFakeScript();
+    const { session } = createFakeSession(fake.script);
+    const log = { info: vi.fn() };
+    const runtime = new FridaTapRuntime({ attach: () => Promise.resolve(session), log });
+    await runtime.attach(7);
+
+    fake.deliver(
+      { type: 'error', description: 'ReferenceError: foo is not defined', stack: 'at agent.js:1:1' },
+      null,
+    );
+
+    expect(log.info).toHaveBeenCalledWith(
+      expect.objectContaining({
+        scope: 'tap-runtime',
+        event: 'script.error',
+        pid: 7,
+        description: 'ReferenceError: foo is not defined',
+        stack: 'at agent.js:1:1',
+      }),
+    );
+  });
+
+  it('does not throw and does not tear the session down when the script reports an error', async () => {
+    const fake = createFakeScript();
+    const { session } = createFakeSession(fake.script);
+    const runtime = new FridaTapRuntime({ attach: () => Promise.resolve(session) });
+    await runtime.attach(1);
+
+    expect(() => {
+      fake.deliver({ type: 'error', description: 'boom' }, null);
+    }).not.toThrow();
+    expect(fake.unloadCalls).toBe(0);
+  });
+});
+
 describe('TapInterceptor.detach', () => {
   it('posts a detach message and stops delivering to the removed listener', async () => {
     const fake = createFakeScript();
