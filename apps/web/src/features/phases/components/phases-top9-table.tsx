@@ -7,6 +7,7 @@ import { RARITIES } from '@bombfarm/domain/planner-constants';
 import type { RosterDpsRow } from '@bombfarm/domain/roster-dps';
 import type { HeroRecord } from '@/shared/lib/storage';
 import { formatClearTime } from '../model/phases-page';
+import { MAX_STARS } from '@bombfarm/domain/gear';
 
 type Props = {
   rows: RosterDpsRow[];
@@ -61,7 +62,7 @@ export function PhasesTop9Table({
             const selected = hero.id === activeHeroId;
             const rarIdx = RARITIES.indexOf(hero.rarity);
             const rarText = rarityTextClass(rarIdx) ?? 'text-muted';
-            const starCount = Math.max(0, Math.min(3, Math.round(hero.stars ?? 0)));
+            const starCount = Math.max(0, Math.min(MAX_STARS, Math.round(hero.stars ?? 0)));
             const battleAllowed = hero.battleAllowed ?? true;
             const inactiveChrome = !battleAllowed ? rosterInactiveChromeClass : undefined;
             return (

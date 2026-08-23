@@ -32,7 +32,9 @@ Use the shared helpers `rescaleHeroForLevel` / `rescaleHeroForStars` (or equival
 
 ## Star mult (capture-backed)
 
-`starsMult = 1 + 0.5 × ★` (0..3). Applies to intrinsic Attack, Energy, Crit %, Crit Dmg, Penetration, CDR before items. **Speed does not scale** (Bram geared + Orin unequipped, 2026-07-23). Luck scales with ★ and is on the planner sheet model (BSP-40, AD-BSP-19); it is not displayed until BSP-44 (Wave 6).
+`starsMult = 1 + STAR_MULT_PER_STAR × ★` (0..`MAX_STARS`), i.e. `1 + 0.25 × ★` over 0..3 today — ×1.75 at max stars. Applies to intrinsic Attack, Energy, Crit %, Crit Dmg, Penetration, CDR before items. **Speed does not scale** (Bram geared + Orin unequipped, 2026-07-23). Luck scales with ★ and is on the planner sheet model (BSP-40, AD-BSP-19); it is not displayed until BSP-44 (Wave 6).
+
+The per-★ share is the wiki's `gemas.mult_por_estrela` and it **moves between patches** — it was `0.5` (×2.5 at max stars) until a patch halved it. The 2026-07-23 capture above measured the SCOPE (which stats scale, and that Speed does not), and that has held across the change; only the magnitude moved. Read the magnitude from `STAR_MULT_PER_STAR` in `packages/domain/src/gear/catalog.ts`, never from a number written into prose — including this paragraph.
 
 ## Hard constraints
 

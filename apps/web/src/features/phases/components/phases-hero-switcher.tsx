@@ -9,6 +9,7 @@ import { rarityLabel } from '@bombfarm/domain/game-labels';
 import type { Lang, Strings } from '@/shared/i18n';
 import { RARITIES } from '@bombfarm/domain/planner-constants';
 import type { HeroRecord } from '@/shared/lib/storage';
+import { MAX_STARS } from '@bombfarm/domain/gear';
 
 type Props = {
   t: Strings;
@@ -26,7 +27,7 @@ export function PhasesHeroSwitcher({ t, lang, heroes, hero, formatNumber, onSele
   const [pickerOpen, setPickerOpen] = useState(false);
   const rarIdx = RARITIES.indexOf(hero.rarity);
   const rarTextClass = rarityTextClass(rarIdx) ?? 'text-muted';
-  const starCount = Math.max(0, Math.min(3, Math.round(hero.stars ?? 0)));
+  const starCount = Math.max(0, Math.min(MAX_STARS, Math.round(hero.stars ?? 0)));
   const rankMark = hero.rank?.trim() || '—';
 
   return (

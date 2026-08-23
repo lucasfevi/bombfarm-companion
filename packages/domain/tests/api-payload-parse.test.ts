@@ -59,6 +59,7 @@ describe('the API-assembled payload parses into unblocked ImportCandidates at fu
   it('every candidate carries usable birth_stats, reflected in a non-degenerate record.birth', () => {
     for (const candidate of result.candidates) {
       const birth = candidate.record.birth;
+      if (!birth) throw new Error('candidate.record.birth is missing — this test asserts it is always present');
       const values = Object.values(birth);
       expect(values.length).toBeGreaterThan(0);
       for (const value of values) {
@@ -166,7 +167,7 @@ describe('an all-missing payload grades unavailable (spec edge case: declined / 
     };
     const report = deriveAccountFidelity(allMissing);
     expect(report.grade).toBe('unavailable');
-    expect(report.degradedSections.sort()).toEqual(['account', 'casa', 'heroes', 'items', 'skills']);
+    expect([...report.degradedSections].sort()).toEqual(['account', 'casa', 'heroes', 'items', 'skills']);
   });
 });
 

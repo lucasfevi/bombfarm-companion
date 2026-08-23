@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { SHEET_PANEL_KEYS, ZERO_PTS, type SheetKey } from '@bombfarm/domain/planner-constants';
 import { optimizeBuild, reoptBudget } from '@bombfarm/domain/points-reopt';
+import { pointsExceedLevel } from '@bombfarm/domain/point-inference';
 import { sub } from '@/shared/i18n';
 import { useAppLang } from '@/shared/context/app-lang';
 import { formatNumber } from '@/shared/lib/format-number';
@@ -111,6 +112,12 @@ export function PointsTable() {
           </Button>
         </div>
       </div>
+      {pointsExceedLevel(pts, level) && (
+        // The counter above already turns red on this; it never said what to do about it.
+        <p role="alert" className="m-0 mb-2 max-w-prose border-l-2 border-warn py-1 pl-2.5 text-xs leading-snug text-warn">
+          {sub(t.pointsOverBudgetWarning, { spent: spentDelta, level })}
+        </p>
+      )}
       <PointsResetAdvice
         t={t}
         resetAdvice={resetAdvice}

@@ -88,7 +88,10 @@ const SRC_ALLOWLIST: Record<string, number[]> = {
   // last hit down by one.
   // +3 (line numbers only): surfacing `fieldSecs` on the pipeline result added a documented
   // field to the output type and one line to the returned object, above these hits.
-  'advisor-pipeline.ts': [111, 220, 249, 348],
+  // +1 (line number only): `spentDelta` now calls the shared `spentPointsOf` instead of
+  // re-summing SHEET_KEYS inline, so the import block gained a line above these hits. Still FOUR
+  // matches, unchanged in kind.
+  'advisor-pipeline.ts': [112, 221, 250, 349],
   // +1 (line number only): the flat-crit-damage fix's `brutalStrike` LedgerNote arm
   // (review item 5, PR #90) added one line above this hit.
   'stat-breakdown/types.ts': [106],

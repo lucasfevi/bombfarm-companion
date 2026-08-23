@@ -61,3 +61,9 @@ writeFixture('assembled-payload-drift.json', assembleAccountPayload(driftOutcome
 // same join `routes.ts`'s `casa`/`heroes` sections perform in production.
 const rotationSnapshotResult = normalizeRotation(before['/rotation'], before['/roster'].heroes);
 writeFixture('rotation-snapshot.json', rotationSnapshotResult);
+
+// A second, later capture whose roster is not the one the calibration bodies carry, so every
+// hero joins with no name — which is the routine absence the boundary already models, and the
+// reason this fixture is normalized against an empty roster rather than a mismatched one.
+const readyBody = loadBodies('rotation-ready.json');
+writeFixture('rotation-snapshot-ready.json', normalizeRotation(readyBody, []));

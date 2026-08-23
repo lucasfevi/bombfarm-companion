@@ -1,7 +1,7 @@
 /**
  * AD-BSP-19, as code — the game's own birth → naked → displayed-sheet formula block.
  *
- * `P = 1 + 0.04 × (level − 1)` (levelPowerMult) · `S = 1 + 0.5 × ★` (starsMult, ★ exempt for speed).
+ * `P = 1 + 0.04 × (level − 1)` (levelPowerMult) · `S = 1 + 0.25 × ★` (starsMult, ★ exempt for speed).
  * Pooled keys (speed, critChance, critDmg, penetration, cdr) fold gear + points + tree `_add`
  * terms into one shared `sharedForward` pool (already `gear/apply.ts`); attack and energy are
  * multiplicative-subtotal shapes; luck's tree term is a flat percentage-point addend
@@ -34,7 +34,10 @@ export type TreeSheetTotals = {
   speedPct: number;
   /** `crit_chance_add × 100` — percent of base, shared pool. Store: `treeCritChance`. */
   critChancePct: number;
-  /** `crit_dmg_add × 100` — percent of the crit-damage base, shared pool. Store: `treeCritDmg`. */
+  /**
+   * `crit_dmg_add × 100` — FLAT percentage points, added after gear and points, exactly like
+   * the crit-damage stat point and Golpe Brutal. Store: `treeCritDmg`.
+   */
   critDmgPct: number;
   /** `luck_add × 100` — FLAT percentage points, added after gear and points (AD-BSP-22). */
   luckFlatPct: number;
@@ -83,17 +86,19 @@ export function nakedFromBirth(
 
 /**
  * Apply the skill tree on top of a sheet that already carries gear + points
- * (`applyPoints`'s output). Exactly the four `AD-BSP-22` shapes: `speed_add` /
- * `crit_chance_add` / `crit_dmg_add` add `base × add` to the shared pool, where
- * `base = naked[key] / (1 + sheetOther[key])` recovers the pre-ability roll (the same
- * base the tree/ability additions already use in `derive.ts`) — for crit damage the
- * ability term is a flat addend, so its base is `naked.critDmg − sheetOther.critDmgFlat`.
- * `crit_dmg_add` is `0` on every capture in the corpus, so the tree term's own shape
- * (percent-of-base, as `AD-BSP-22` reads it) is untouched here and remains unmeasured;
- * `energia_add` multiplies
- * the energy subtotal; `dmg_static` multiplies the attack subtotal; `luck_add` is a flat
- * percentage-point addend. Penetration and cdr receive exactly `0` — `skills.totals` has
- * no node for either today (AD-BSP-22's forward-safety clause).
+ * (`applyPoints`'s output). `speed_add` / `crit_chance_add` add `base × add` to the shared
+ * pool, where `base = naked[key] / (1 + sheetOther[key])` recovers the pre-ability roll (the
+ * same base the tree/ability additions already use in `derive.ts`); `energia_add` multiplies
+ * the energy subtotal; `dmg_static` multiplies the attack subtotal; `luck_add` and
+ * `crit_dmg_add` are flat percentage-point addends. Penetration and cdr receive exactly `0` —
+ * `skills.totals` has no node for either today (AD-BSP-22's forward-safety clause).
+ *
+ * `crit_dmg_add` read percent-of-base until a save carrying a nonzero value settled it: all 15
+ * heroes on that account gained the SAME `+8.1730769` percentage points — matching
+ * `crit_dmg_add × 100` exactly — across birth rolls of 45.0 to 73.1 and levels 1 to 97, one of
+ * them also carrying Golpe Brutal's `+80`. Percent-of-base would have spread that gain over
+ * `3.68 … 5.98` points, hero by hero. Flat, like every other crit-damage term
+ * (`POINT_GAIN.critDmgFlat`, the `critDmgFlat` ability kind).
  */
 export function applySkillTree(
   sheet: SheetStats,
@@ -103,13 +108,12 @@ export function applySkillTree(
 ): SheetStats {
   const baseSpeed = naked.speed / poolFactor(sheetOther.speed);
   const baseCritChance = naked.critChance / poolFactor(sheetOther.critChance);
-  const baseCritDmg = naked.critDmg - Math.max(0, sheetOther.critDmgFlat);
   return {
     attack: sheet.attack * tree.danoStatic,
     energy: sheet.energy * (1 + tree.energyPct / 100),
     speed: sheet.speed + baseSpeed * (tree.speedPct / 100),
     critChance: sheet.critChance + baseCritChance * (tree.critChancePct / 100),
-    critDmg: sheet.critDmg + baseCritDmg * (tree.critDmgPct / 100),
+    critDmg: sheet.critDmg + tree.critDmgPct,
     penetration: sheet.penetration,
     cdr: sheet.cdr,
     luck: sheet.luck + tree.luckFlatPct,

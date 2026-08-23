@@ -52,15 +52,39 @@ function poolFactor(percent: number): number {
 /** Cap-adjacency epsilon for `saturatedStats` — well above float noise, well below 1%. */
 const CAP_EPS = 1e-6;
 
+/**
+ * Total points a `pts` vector holds, across all eight keys — Luck included, matching
+ * `spentDelta`'s own accounting.
+ */
+export function spentPointsOf(pts: Record<SheetKey, number>): number {
+  return SHEET_KEYS.reduce((sum, key) => sum + pts[key], 0);
+}
+
+/**
+ * `Σ pts > level` — the hero is holding more points than the game ever granted it.
+ *
+ * The game grants exactly one point per level, so this is never a large build; it is proof that
+ * some contribution to the sheet is being charged to spent points. It is the cheapest possible
+ * detector for that whole class of bug, and it needs nothing but the stored record: no saved
+ * sheet, no re-inference, no import-time state. `inferSpentPoints` already raises a
+ * `budgetMismatch` issue for the same condition, but that issue lives on the import candidate
+ * and is discarded once the hero is persisted — this survives, so a surface showing the points
+ * can warn about them.
+ *
+ * The one reachable non-bug overspend is `clampPointStep`'s: a level lowered while points are
+ * spent. That hero really does hold the points, and the warning is still the right thing to
+ * show, because the planner is still displaying an allocation the game will not let it rebuild.
+ */
+export function pointsExceedLevel(pts: Record<SheetKey, number>, level: number): boolean {
+  return spentPointsOf(pts) > level;
+}
+
 export function inferSpentPoints(input: InferSpentPointsInput): PointInferenceResult {
   const { birth, level, stars, sheetOther, loadout, tree, sheet, statPointsAvailable } = input;
 
   const naked = nakedFromBirth(birth, level, stars, sheetOther);
   const baseSpeed = naked.speed / poolFactor(sheetOther.speed);
   const baseCritChance = naked.critChance / poolFactor(sheetOther.critChance);
-  // Flat sheet-ability addend, so the pre-ability roll is recovered by subtraction, not
-  // division (POINT_GAIN.critDmgFlat).
-  const baseCritDmg = naked.critDmg - Math.max(0, sheetOther.critDmgFlat);
 
   // Invert applySkillTree to recover the pre-tree (gear + points) pool subtotal.
   const pool = {
@@ -68,7 +92,7 @@ export function inferSpentPoints(input: InferSpentPointsInput): PointInferenceRe
     energy: sheet.energy / (1 + tree.energyPct / 100),
     speed: sheet.speed - baseSpeed * (tree.speedPct / 100),
     critChance: sheet.critChance - baseCritChance * (tree.critChancePct / 100),
-    critDmg: sheet.critDmg - baseCritDmg * (tree.critDmgPct / 100),
+    critDmg: sheet.critDmg - tree.critDmgPct,
     penetration: sheet.penetration,
     cdr: sheet.cdr,
     luck: sheet.luck - tree.luckFlatPct,

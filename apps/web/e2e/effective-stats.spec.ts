@@ -294,7 +294,7 @@ test.describe('effective stats panel (EST / ESB)', () => {
     // gearedOverride is the OBSERVED (tree-inclusive) sheet and still feeds roster/power,
     // but it no longer drives the Stats table — that composes from `birth` (asserted below).
     // Kept deliberately divergent from the composed Total so a regression that re-pointed
-    // Stats at gearedOverride would show up as 25.00 instead of 43.00.
+    // Stats at gearedOverride would show up as 25.00 instead of 33.00.
     const gearedOverride = { ...naked, luck: 25 };
     const seeded = {
       ...importedRoster,
@@ -335,11 +335,12 @@ test.describe('effective stats panel (EST / ESB)', () => {
     });
     const luckRow = stats.locator('tr').filter({ hasText: /^Luck/ });
     // Stats composes from birth now, not from gearedOverride: birth.luck 20 × starsMult(2)
-    // = 40 (Δ stars +20.00), then the tree's flat luckFlatPct 3 (Δ tree +3.00) → Total 43.00.
+    // = 30 (Δ stars +10.00), then the tree's flat luckFlatPct 3 (Δ tree +3.00) → Total 33.00.
+    // The 30 tracks STAR_MULT_PER_STAR — it was 40 while a ★ was worth 0.5 of base.
     await expect(luckRow.locator('td').nth(1)).toHaveText('20.00');
     // Total is second-to-last: an "Over cap" column now trails it (rendered "—" for a stat
     // under its cap, and Luck has no cap at all), so `.last()` would read that instead.
-    await expect(luckRow.locator('td').nth(-2)).toHaveText('43.00');
+    await expect(luckRow.locator('td').nth(-2)).toHaveText('33.00');
 
     const panel = effectivePanel(page, 'en');
     await expect(panel.getByRole('button', { name: /Show breakdown of Luck/i })).toHaveCount(0);

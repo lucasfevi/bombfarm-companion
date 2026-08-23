@@ -14,6 +14,7 @@ import {
   type SheetStats,
 } from '@bombfarm/domain/gear';
 import { HERO_MAX_LEVEL } from '@bombfarm/domain/model';
+import { starsMult } from '@bombfarm/domain/gear';
 import { STRINGS } from '@/shared/i18n';
 
 const naked = (): SheetStats => ({
@@ -77,7 +78,12 @@ describe('CTA +1 shares rescale path with stepper (CTA-01/02/04)', () => {
     const viaStepper = rescaleHeroForStars(n0, geared, loadout, other, from, from + 1);
     const viaCta = rescaleHeroForStars(n0, geared, loadout, other, from, nextStarsStep(from));
     expect(viaCta).toEqual(viaStepper);
-    expect(viaCta.naked.energy).toBeCloseTo(n0.energy * 1.5, 8);
+    // The claim is that the CTA and the stepper take the SAME path (asserted above); this line
+    // only confirms a 0★→1★ step really moved a star-scaled stat, so it reads the ratio from
+    // `starsMult` rather than restating the magnitude gear.test.ts pins.
+    const oneStarRatio = starsMult(1) / starsMult(0);
+    expect(oneStarRatio).toBeGreaterThan(1);
+    expect(viaCta.naked.energy).toBeCloseTo(n0.energy * oneStarRatio, 8);
   });
 
   it('at max, next step is a no-op target (CTA-03 no thrash)', () => {

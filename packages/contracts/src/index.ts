@@ -1,5 +1,6 @@
 import type { AppFlavor, UpdateChannel } from './flavors.js';
 import type { SettingsWriteResult } from './locale.js';
+import type { LiveEvent, LiveView } from './live-source.js';
 
 export { accountChangeKey } from './account-change-key.js';
 /** MP3 F4 (`AD-049`) — the desktop locale token, its one domain/BCP-47 mapping, and the pure
@@ -26,6 +27,21 @@ export type {
   RotationNormalizeResult,
   RotationSnapshot,
 } from './rotation-snapshot.js';
+export type {
+  CountdownBasis,
+  FieldCountdown,
+  LiveCurrency,
+  LiveEvent,
+  LiveFrame,
+  LiveGapReason,
+  LiveHit,
+  LiveLootPop,
+  LiveTick,
+  LiveTickHero,
+  LiveView,
+  RecoveryCountdown,
+} from './live-source.js';
+export { isActionableGap, liveGap } from './live-source.js';
 export type {
   AccountStoreReason,
   AccountStoreStatus,
@@ -286,6 +302,7 @@ export interface IpcChannels {
   'consent:accept': { args: []; result: ConsentRecord };
   'consent:decline': { args: []; result: ConsentRecord };
   'consent:revoke': { args: []; result: ConsentRecord };
+  'live:get': { args: []; result: LiveView };
 }
 
 export type IpcInvokeChannel = keyof IpcChannels;
@@ -308,9 +325,15 @@ export const IPC_CHANNELS = [
   'consent:accept',
   'consent:decline',
   'consent:revoke',
+  'live:get',
 ] as const satisfies readonly IpcInvokeChannel[];
 
-export type IpcEventChannel = 'game:status' | 'snapshot:updated' | 'consent:changed' | 'account:changed';
+export type IpcEventChannel =
+  | 'game:status'
+  | 'snapshot:updated'
+  | 'consent:changed'
+  | 'account:changed'
+  | 'live:event';
 
 export interface IpcEvents {
   'game:status': GameStatusInfo;
@@ -326,6 +349,7 @@ export interface IpcEvents {
    * suppressed, not forwarded.
    */
   'account:changed': AccountView;
+  'live:event': LiveEvent;
 }
 
 export const IPC_EVENT_CHANNELS = [
@@ -333,6 +357,7 @@ export const IPC_EVENT_CHANNELS = [
   'consent:changed',
   'account:changed',
   'snapshot:updated',
+  'live:event',
 ] as const satisfies readonly IpcEventChannel[];
 
 export function isIpcChannel(value: string): value is IpcInvokeChannel {

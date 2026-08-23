@@ -37,11 +37,18 @@ describe('contracts IPC surface', () => {
       'consent:accept',
       'consent:decline',
       'consent:revoke',
+      'live:get',
     ]);
   });
 
   it('lists stable event channels, including consent:changed and account:changed', () => {
-    expect(IPC_EVENT_CHANNELS).toEqual(['game:status', 'consent:changed', 'account:changed', 'snapshot:updated']);
+    expect(IPC_EVENT_CHANNELS).toEqual([
+      'game:status',
+      'consent:changed',
+      'account:changed',
+      'snapshot:updated',
+      'live:event',
+    ]);
   });
 
   it('guards unknown channel names', () => {

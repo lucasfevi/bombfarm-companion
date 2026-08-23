@@ -1,5 +1,86 @@
 # @bombfarm/domain
 
+## 0.6.2
+
+### Patch Changes
+
+- 8692c92: Add the in-run live data source, alongside the existing periodic account sync
+
+  Groundwork for reading a running game session's live combat stream, so field and recovery
+  countdowns can eventually be built from real, observed energy drain rather than only the modelled
+  rate. Countdowns now carry where their number came from, and a number derived from the modelled
+  rate is never presented as an observed measurement.
+
+  The app reports whether it is reading live data and, when it is not, distinguishes a gap it could
+  act on — never attached, permission not granted, the read went quiet — from one it cannot, such as
+  the game being closed or idle. Recovery countdowns advance only while the game world is actually
+  advancing, so they freeze rather than counting down through time that never happened. Revoking
+  permission for the live read takes effect immediately, tearing the attachment down before the
+  revoke is recorded.
+
+  The live read itself is not enabled in this release: no instrumentation runtime ships yet, so the
+  app runs in its no-live-data mode, serving the periodic account sync and labelling every countdown
+  as modelled. That path is a supported state, not a failure.
+
+- 587ed60: Prove the full-and-waiting rotation state against a real capture
+
+  The fourth hero state — fully recovered and waiting for a field slot — was
+  implemented against its documented shape but had never been seen in a committed
+  body. A capture now carries it, along with the other three states, and the
+  classification is asserted against that rather than against constructed heroes.
+
+  The capture confirms the shape the classification was built on: a hero in that
+  state is out of the house and off the field at once, which is the pairing that
+  makes it impossible to identify from either flag alone.
+
+- dbb38f1: Halve the per-star multiplier: a ★ now adds 25% of the hero's intrinsic base, not 50%.
+
+  The wiki publishes this as `gemas.mult_por_estrela`, and it reads `0.25`. The shipped constant
+  was `0.5`, measured in-game on 2026-07-23 — correct for that build, but a later patch compressed
+  the whole curve, and the same patch cut every base drop rate, rescaled the hero XP curve and the
+  item-stat bases, and reshaped the gem rank draw. Max stars stays 3, so a fully-starred hero's
+  intrinsic base goes from ×2.5 to ×1.75.
+
+  Only the magnitude moved. The scope is unchanged and still matches the 2026-07-23 measurement:
+  Attack, Energy, Crit %, Crit Dmg, Penetration, CDR and Luck all scale; Speed does not.
+
+  This affects any hero above ★0 — its sheet, its DPS, its farm ranking, and the gain the star
+  upgrade advertises. ★0 heroes are untouched, since the factor is ×1 either way.
+
+- da61de5: Fix the skill tree's crit-damage node being charged as a percentage of the hero's roll when the
+  game adds it flat, which invented a stat point nobody spent.
+
+  The node was modelled percent-of-base on the strength of the game's own wording, and no capture
+  carried a nonzero value, so nothing could tell the two shapes apart. A capture with a nonzero one
+  separates them outright: all 15 heroes on the account gain the SAME crit-damage percentage points
+  over their birth roll, across rolls spanning 45.03 to 73.13 and levels 1 to 97. It is flat, like
+  every other crit-damage term — the stat point and Golpe Brutal both already are.
+
+  Charging it against the roll under-credited the tree on any hero whose crit-damage roll is below
+  100, and point inference charged the unexplained residual to crit-damage points. On a level-97
+  Bellatrix the tree was credited 5.54 of the 8.17 it actually gave, and the 2.64 left over became
+  `2.64 / 5 = 0.53` — one phantom point, rounded up. Her Stats panel read 78.27% crit damage where
+  the game exported 75.91%, and the point-reset panel offered 98 points to re-place on a hero that
+  can only ever hold 97. With the shape corrected, every hero solves to a whole-number point vector
+  with zero inference issues, each landing exactly on its level.
+
+  Separately, and as defence in depth: the reset panel's budget is now clamped to the hero's level,
+  so a bad point vector from anywhere upstream can no longer be sold as a respec proposal larger
+  than the game allows. The optimizer's budget already carried this clamp; the reset tier, which is
+  the one the panel actually shows, did not.
+
+  And when a hero does hold more points than its level, both the Points panel and the team plan's
+  point-reset table now say so, instead of quietly printing the impossible number. The Points
+  panel's spent/level counter already turned red on this and explained nothing; the reset table
+  showed an unclamped "before" against a clamped "after", so the reset appeared to destroy a point.
+  The new line names the numbers, asks for a fresh save export — which fixes it whenever the cause
+  was stale data — and points to Discord if it survives that. It is deliberately mute about which
+  stat is wrong: the unexplained residual lands wherever the mis-attribution happens to fall, so
+  naming one would send you chasing the symptom.
+
+- Updated dependencies [8692c92]
+  - @bombfarm/contracts@0.3.3
+
 ## 0.6.1
 
 ### Patch Changes

@@ -33,7 +33,7 @@ export interface RotationStatus {
 /** A hero's energy can exceed its own ceiling, so the fraction derived from the pair is capped
  *  the same way the normalizer caps the wire's own out-of-range fraction. Uncapped, a hero at
  *  120/100 would be given a negative remaining recovery. */
-function energyFractionOf(hero: RotationHeroSnapshot): number | undefined {
+export function energyFractionOf(hero: RotationHeroSnapshot): number | undefined {
   if (hero.energyFraction !== undefined) return hero.energyFraction;
   if (hero.energy !== undefined && hero.energyMax !== undefined && hero.energyMax > 0) {
     return Math.min(hero.energy / hero.energyMax, 1);
@@ -59,7 +59,7 @@ function byEnergyFraction(direction: 'ascending' | 'descending') {
   };
 }
 
-function recoverySecondsFor(hero: RotationHeroSnapshot, cycleSeconds: number | undefined): number | undefined {
+export function recoverySecondsFor(hero: RotationHeroSnapshot, cycleSeconds: number | undefined): number | undefined {
   if (cycleSeconds === undefined) return undefined;
   const fraction = energyFractionOf(hero);
   if (fraction === undefined) return undefined;

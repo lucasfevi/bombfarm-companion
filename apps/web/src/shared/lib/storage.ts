@@ -50,7 +50,7 @@ export type HeroRecord = {
   updatedAt: number;
   rarity: RarityKey;
   level: number;
-  /** Gems→stars ritual (0-3) — multiplies naked sheet by 1 + 0.5×★ except Speed (wiki + in-game capture). */
+  /** Gems→stars ritual (0..`MAX_STARS`) — multiplies the naked sheet by `starsMult(stars)` except Speed. */
   stars: number;
   naked: SheetStats;
   loadout: Loadout;

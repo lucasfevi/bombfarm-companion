@@ -96,7 +96,8 @@ function sheetAbilityNote(statKey: SheetDisplayKey): LedgerNote | undefined {
  * `treePct` is the skill-tree contribution for this key, in the SAME percent units for every
  * key: `energia_add`/`speed_add`/`crit_chance_add`/`crit_dmg_add` are already percent
  * (`TreeSheetTotals.*Pct`); `dmg_static` (a raw multiplier) is converted by the caller to
- * `(danoStatic − 1) × 100` so this function has one uniform contract.
+ * `(danoStatic − 1) × 100` so this function has one uniform contract. Units are uniform;
+ * placement is not — crit damage's is a flat addend, see below.
  *
  * Two placements, matching AD-BSP-12/22 (`BSP-23c`, single application):
  * - **attack / energy** — tree multiplies the WHOLE Hero+Gear(+Ability) subtotal. Pure gear is
@@ -154,14 +155,21 @@ export function pushBirthThenGear(
     return;
   }
 
-  const treeAmount = (treePct / 100) * base;
+  // Crit damage's tree node is a flat percentage-point addend, not a pool member — see
+  // `applySkillTree`. Charging it against `base` would leak the difference into the 'gear'
+  // line below, which is structurally 0 for crit damage.
+  const treeAmount = statKey === 'critDmg' ? treePct : (treePct / 100) * base;
   const gearDelta = gearedValue - naked - treeAmount;
   if (statKey === 'critDmg' || Math.abs(base) < EPS) {
     pushAdd(steps, 'gear', gearDelta);
   } else {
     pushAddPctOfBase(steps, 'gear', (gearDelta / base) * 100, base);
   }
-  pushAddPctOfBase(steps, 'tree', treePct, base);
+  if (statKey === 'critDmg') {
+    pushAdd(steps, 'tree', treePct);
+  } else {
+    pushAddPctOfBase(steps, 'tree', treePct, base);
+  }
 }
 
 export function pushBase(steps: LedgerStep[], base: number): void {

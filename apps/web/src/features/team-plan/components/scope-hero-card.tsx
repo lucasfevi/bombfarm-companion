@@ -10,6 +10,7 @@ import type { ScopeState } from '@/shared/stores/team-plan/types';
 import type { Lang, Strings } from '@/shared/i18n';
 import { sub } from '@/shared/i18n';
 import { shortHeroRecordId } from '@/shared/lib/hero-identity';
+import { MAX_STARS } from '@bombfarm/domain/gear';
 
 const SCOPE_OPTIONS: ScopeState[] = ['optimize', 'donate', 'leaveAlone'];
 
@@ -41,7 +42,7 @@ export function ScopeHeroCard({
     disabled: overlay,
   });
   const rarIdx = RARITIES.indexOf(hero.rarity);
-  const stars = Math.max(0, Math.min(3, Math.round(hero.stars ?? 0)));
+  const stars = Math.max(0, Math.min(MAX_STARS, Math.round(hero.stars ?? 0)));
   const battleAllowed = hero.battleAllowed ?? true;
   const shortId = shortHeroRecordId(hero);
   const label = sub(t.teamPlanHeroRowLabel, {

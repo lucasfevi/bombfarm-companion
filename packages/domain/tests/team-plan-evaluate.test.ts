@@ -121,7 +121,7 @@ describe('evaluateRoster', () => {
       sumDuty = 0;
       const nextDuties: Record<string, number> = {};
       for (const ctx of optimize) {
-        const auras = computeRosterAuras(input.contexts, duties, ctx.heroId);
+        const auras = computeRosterAuras(input.contexts, duties);
         const score = scoreHeroLoadout(
           ctx,
           input.loadoutsByHeroId[ctx.heroId] ?? {},
@@ -158,13 +158,9 @@ describe('evaluateRoster', () => {
       sheetOther: { speed: 0, critChance: 0, critDmgFlat: 0, penetration: 0, cdr: 0 },
       mods: {
         drainMult: 1,
-        ownTeamDrainPct: 0,
-        combatCritChancePctOfBase: 0,
         penetrationPp: 0,
         rangeCells: 0,
         dmgMult: 1,
-        attackMult: 1,
-        speedMult: 1,
         gateAttackMult: 1,
         sheetCritChancePctOfBase: 0,
         sheetPenetrationRaw: 0,
@@ -220,13 +216,9 @@ describe('evaluateRoster', () => {
       sheetOther: { speed: 0, critChance: 0, critDmgFlat: 0, penetration: 0, cdr: 0 },
       mods: {
         drainMult: 1,
-        ownTeamDrainPct: 0,
-        combatCritChancePctOfBase: 0,
         penetrationPp: 0,
         rangeCells: 0,
         dmgMult: 1,
-        attackMult: 1,
-        speedMult: 1,
         gateAttackMult: 1,
         sheetCritChancePctOfBase: 0,
         sheetPenetrationRaw: 0,
@@ -283,13 +275,9 @@ describe('evaluateRoster', () => {
       sheetOther: { speed: 0, critChance: 0, critDmgFlat: 0, penetration: 0, cdr: 0 },
       mods: {
         drainMult: 1,
-        ownTeamDrainPct: 0,
-        combatCritChancePctOfBase: 0,
         penetrationPp: 0,
         rangeCells: 0,
         dmgMult: 1,
-        attackMult: 1,
-        speedMult: 1,
         gateAttackMult: 1,
         sheetCritChancePctOfBase: 0,
         sheetPenetrationRaw: 0,
@@ -349,13 +337,9 @@ describe('evaluateRoster', () => {
       sheetOther: { speed: 0, critChance: 0, critDmgFlat: 0, penetration: 0, cdr: 0 },
       mods: {
         drainMult: 1,
-        ownTeamDrainPct: 0,
-        combatCritChancePctOfBase: 0,
         penetrationPp: 0,
         rangeCells: 0,
         dmgMult: 1,
-        attackMult: 1,
-        speedMult: 1,
         gateAttackMult: 1,
         sheetCritChancePctOfBase: 0,
         sheetPenetrationRaw: 0,
