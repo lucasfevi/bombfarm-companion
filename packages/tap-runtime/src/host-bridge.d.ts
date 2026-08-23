@@ -11,6 +11,7 @@ export interface FridaNativePointer {
   toInt32(): number;
   toUInt32(): number;
   toString(): string;
+  add(offset: number): FridaNativePointer;
   readByteArray(length: number): ArrayBuffer | null;
 }
 
@@ -40,8 +41,17 @@ export interface FridaInterceptor {
   ): FridaInvocationListener;
 }
 
+export interface FridaModule {
+  readonly base: FridaNativePointer;
+}
+
+export interface FridaProcess {
+  readonly mainModule: FridaModule;
+}
+
 export interface FridaGlobals {
   readonly Interceptor: FridaInterceptor;
+  readonly Process: FridaProcess;
   ptr(address: number): FridaNativePointer;
   send(message: unknown, data?: ArrayBuffer | null): void;
 }

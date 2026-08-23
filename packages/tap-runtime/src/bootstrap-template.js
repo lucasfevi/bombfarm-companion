@@ -1,6 +1,6 @@
 'use strict';
 
-/* global Interceptor, ptr, send, recv */
+/* global Interceptor, Process, ptr, send, recv */
 
 /**
  * The template for the script actually injected into the target process. `scripts/
@@ -29,7 +29,7 @@
   })(hostBridgeModule);
   const createHostBridge = hostBridgeModule.exports.createHostBridge;
 
-  const bridge = createHostBridge({ Interceptor, ptr, send }, createAgent);
+  const bridge = createHostBridge({ Interceptor, Process, ptr, send }, createAgent);
 
   function listen() {
     recv(function (message) {

@@ -5,11 +5,11 @@
 /**
  * Runs inside the target process alongside `agent.js`, so it is subject to the same constraint:
  * no imports from outside this file, only whatever is handed in explicitly. `createHostBridge`
- * takes Frida's globals (`Interceptor`, `ptr`, `send`) as a parameter instead of reading them off
- * `globalThis` for exactly one reason: it lets this file run — and be asserted against — under
- * plain Node/Vitest with fake stand-ins, the same way `agent.js` is tested with a fake `host`.
- * The real injected script (`bootstrap-template.js`) is the only place that wires in the genuine
- * Frida globals.
+ * takes Frida's globals (`Interceptor`, `Process`, `ptr`, `send`) as a parameter instead of
+ * reading them off `globalThis` for exactly one reason: it lets this file run — and be asserted
+ * against — under plain Node/Vitest with fake stand-ins, the same way `agent.js` is tested with a
+ * fake `host`. The real injected script (`bootstrap-template.js`) is the only place that wires in
+ * the genuine Frida globals.
  */
 
 /**
@@ -17,6 +17,7 @@
  *   - `Interceptor.attach(pointer, { onEnter(args), onLeave(retval) })` — installs a native hook;
  *     `onEnter`/`onLeave` share the same per-invocation `this`, which is how state crosses from
  *     one to the other. Returns `{ detach() }`.
+ *   - `Process.mainModule.base` — the running module's base address, used to rebase a hook target.
  *   - `ptr(address)` — turns a numeric address into a `NativePointer`.
  *   - `send(message, data?)` — ships `message` (JSON) and `data` (raw bytes) back to Node,
  *     received there as the `data` argument of `Script.message`'s handler.
@@ -43,7 +44,20 @@ function createHostBridge(frida, createAgent) {
   function makeHost() {
     return {
       hook(address, onCall) {
-        return frida.Interceptor.attach(frida.ptr(address), {
+        // `address` is an RVA from `image-scan.ts` parsing the on-disk PE image, but
+        // `Interceptor.attach` needs a runtime address, and ASLR relocates the module to a
+        // different base on every launch — so the RVA is rebased onto the live module here, at
+        // the last possible moment, only for the attach target. Everything else (the value handed
+        // to `onCall`/`host.send`, and the cache `tap.ts` commits) stays the RVA.
+        const base = frida.Process.mainModule.base;
+        const absoluteAddress = base.add(address);
+        frida.send({
+          type: 'hook_installed',
+          address,
+          base: base.toString(),
+          absoluteAddress: absoluteAddress.toString(),
+        });
+        return frida.Interceptor.attach(absoluteAddress, {
           onEnter(args) {
             this.tapCtx = args[0].toString();
             this.tapBuffer = args[1];

@@ -9,11 +9,14 @@ import type {
   FridaReturnValue,
 } from './host-bridge.js';
 
+const MODULE_BASE = 0x140000000;
+
 function fakePointer(address: number, memory: Map<number, Uint8Array>): FridaNativePointer {
   return {
     toInt32: () => address,
     toUInt32: () => address,
     toString: () => `0x${address.toString(16)}`,
+    add: (offset) => fakePointer(address + offset, memory),
     readByteArray: (length) => {
       const bytes = memory.get(address);
       if (!bytes) return null;
@@ -29,6 +32,7 @@ function createFakeFrida(): {
   fireOnLeave: (address: number, retval: FridaReturnValue) => void;
   detachedAddresses: number[];
   sent: { message: unknown; data: ArrayBuffer | null | undefined }[];
+  attachedPointers: number[];
 } {
   const memory = new Map<number, Uint8Array>();
   const callbacksByAddress = new Map<
@@ -41,11 +45,17 @@ function createFakeFrida(): {
   const contextsByAddress = new Map<number, FridaInvocationContext>();
   const detachedAddresses: number[] = [];
   const sent: { message: unknown; data: ArrayBuffer | null | undefined }[] = [];
+  // Every pointer `Interceptor.attach` was actually called with, absolute — kept separate from
+  // `sent` (which callers rely on to hold only 'read' payloads) so the rebase assertion below can
+  // check the attach target without disturbing every existing 'read'-shaped test.
+  const attachedPointers: number[] = [];
 
   const frida: FridaGlobals = {
     Interceptor: {
       attach: (pointer, callbacks) => {
-        const address = pointer.toInt32();
+        const absoluteAddress = pointer.toInt32();
+        attachedPointers.push(absoluteAddress);
+        const address = absoluteAddress - MODULE_BASE;
         callbacksByAddress.set(address, callbacks);
         return {
           detach: () => {
@@ -56,8 +66,15 @@ function createFakeFrida(): {
         };
       },
     },
+    Process: {
+      mainModule: {
+        base: fakePointer(MODULE_BASE, memory),
+      },
+    },
     ptr: (address) => fakePointer(address, memory),
     send: (message, data) => {
+      const typed = message as { readonly type?: unknown };
+      if (typed.type !== 'read') return;
       sent.push({ message, data });
     },
   };
@@ -81,7 +98,7 @@ function createFakeFrida(): {
     callbacks.onLeave?.call(context, retval);
   }
 
-  return { frida, memory, fireOnEnter, fireOnLeave, detachedAddresses, sent };
+  return { frida, memory, fireOnEnter, fireOnLeave, detachedAddresses, sent, attachedPointers };
 }
 
 function ctxArg(address: number): FridaNativePointer {
@@ -89,6 +106,7 @@ function ctxArg(address: number): FridaNativePointer {
     toInt32: () => address,
     toUInt32: () => address,
     toString: () => `ctx-${address.toString()}`,
+    add: (offset) => ctxArg(address + offset),
     readByteArray: () => null,
   };
 }
@@ -98,6 +116,7 @@ function lengthArg(value: number): FridaNativePointer {
     toInt32: () => value,
     toUInt32: () => value,
     toString: () => String(value),
+    add: (offset) => lengthArg(value + offset),
     readByteArray: () => null,
   };
 }
@@ -119,6 +138,23 @@ describe('host-bridge createHostBridge', () => {
     expect(sent).toHaveLength(1);
     expect(sent[0]?.message).toEqual({ type: 'read', address: 0x1000, ctx: 'ctx-4096' });
     expect(new Uint8Array(sent[0]?.data as ArrayBuffer)).toEqual(new Uint8Array([9, 9, 9, 9]));
+  });
+
+  it('attaches at the RVA rebased onto the running module base, not at the raw RVA', () => {
+    const { frida, memory, fireOnEnter, fireOnLeave, sent, attachedPointers } = createFakeFrida();
+    const bridge = createHostBridge(frida, createAgent);
+
+    bridge.handleMessage({ type: 'install', address: 0x1000 });
+
+    expect(attachedPointers).toEqual([MODULE_BASE + 0x1000]);
+
+    // The value that flows back out to Node must stay the plain RVA — `tap.ts` correlates its
+    // per-address listeners, and its cache, by exactly that number.
+    fireOnEnter(0x1000, { 0: ctxArg(0x1000), 1: frida.ptr(0x2000), 2: lengthArg(4) });
+    memory.set(0x2000, new Uint8Array([1, 2, 3, 4]));
+    fireOnLeave(0x1000, retvalArg(4));
+
+    expect(sent[0]?.message).toEqual({ type: 'read', address: 0x1000, ctx: 'ctx-4096' });
   });
 
   it('ignores a second install for the same address instead of double-hooking it', () => {
