@@ -264,10 +264,15 @@ export function assertNoNativeBinariesInAsar(entries) {
  * `PackagingGateError` naming every failing check, rather than stopping at the first one.
  *
  * @param {import('@bombfarm/contracts').AppFlavor} flavor
- * @param {{ desktopRootDir?: string }} [options]
+ * @param {{ desktopRootDir?: string, config?: ReturnType<typeof createBuilderConfig> }} [options]
+ *   `config` is injectable so a test can pair a fabricated output tree with the config that
+ *   describes it; a fabricated tree checked against the real config fails on whatever real
+ *   `asarUnpack` patterns it was never built to satisfy.
  */
-export function runPackagingGateChecks(flavor, { desktopRootDir = desktopRoot } = {}) {
-  const config = createBuilderConfig(flavor);
+export function runPackagingGateChecks(
+  flavor,
+  { desktopRootDir = desktopRoot, config = createBuilderConfig(flavor) } = {},
+) {
   const unpackedDir = resolveUnpackedDir(config, desktopRootDir);
 
   if (!existsSync(unpackedDir)) {
