@@ -1,4 +1,4 @@
-import { createPackage } from '@electron/asar';
+import { createPackage, createPackageWithOptions } from '@electron/asar';
 import { existsSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
@@ -7,10 +7,12 @@ import {
   assertAsarExists,
   assertAsarUnpackPatternsMatch,
   assertNativeBinariesUnpacked,
+  assertNoNativeBinariesInAsar,
   assertRendererEntryPresent,
   collectNativeDependencyClosure,
   findMissingNativeBinaries,
   findNodeBinaries,
+  listAsarEntries,
   normalizeAsarUnpack,
   PackagingGateError,
   resolveUnpackedDir,
@@ -251,6 +253,35 @@ describe('assertNativeBinariesUnpacked', () => {
   });
 });
 
+describe('listAsarEntries', () => {
+  it('returns each entry as its normalized path with a packed flag', async () => {
+    const srcDir = makeTempDir('asar-src-listing');
+    writeFile(path.join(srcDir, 'dist', 'main', 'index.cjs'), 'console.log(1);');
+    const asarPath = path.join(makeTempDir('asar-out-listing'), 'app.asar');
+    await createPackage(srcDir, asarPath);
+
+    const entries = listAsarEntries(asarPath);
+    expect(entries).toContainEqual({ path: '/dist/main/index.cjs', packed: true });
+  });
+
+  it('marks an asarUnpack-matched file as packed:false, distinct from a sealed one', async () => {
+    const srcDir = makeTempDir('asar-src-unpack-flag');
+    writeFile(path.join(srcDir, 'build', 'sealed.node'));
+    writeFile(path.join(srcDir, 'unpacked', 'redirected.node'));
+    const asarPath = path.join(makeTempDir('asar-out-unpack-flag'), 'app.asar');
+    await createPackageWithOptions(srcDir, asarPath, { unpackDir: 'unpacked' });
+
+    const entries = listAsarEntries(asarPath);
+    expect(entries).toContainEqual({ path: '/build/sealed.node', packed: true });
+    expect(entries).toContainEqual({ path: '/unpacked/redirected.node', packed: false });
+  });
+
+  it('throws PackagingGateError naming the archive when it cannot be listed', () => {
+    const asarPath = path.join(makeTempDir('asar-missing-for-listing'), 'does-not-exist.asar');
+    expectPackagingGateError(() => listAsarEntries(asarPath), asarPath);
+  });
+});
+
 describe('assertRendererEntryPresent', () => {
   it('passes when renderer/out/index.html is in the archive', async () => {
     const srcDir = makeTempDir('asar-src-with-index');
@@ -259,7 +290,7 @@ describe('assertRendererEntryPresent', () => {
     const asarPath = path.join(makeTempDir('asar-out-with-index'), 'app.asar');
     await createPackage(srcDir, asarPath);
 
-    expect(() => assertRendererEntryPresent(asarPath)).not.toThrow();
+    expect(() => assertRendererEntryPresent(listAsarEntries(asarPath))).not.toThrow();
   });
 
   it('throws PackagingGateError when renderer/out/index.html is missing', async () => {
@@ -268,7 +299,54 @@ describe('assertRendererEntryPresent', () => {
     const asarPath = path.join(makeTempDir('asar-out-without-index'), 'app.asar');
     await createPackage(srcDir, asarPath);
 
-    expectPackagingGateError(() => assertRendererEntryPresent(asarPath), 'renderer/out/index.html');
+    expectPackagingGateError(
+      () => assertRendererEntryPresent(listAsarEntries(asarPath)),
+      'renderer/out/index.html',
+    );
+  });
+});
+
+describe('assertNoNativeBinariesInAsar', () => {
+  it('does nothing when the archive has no .node entries', () => {
+    expect(() =>
+      assertNoNativeBinariesInAsar([
+        { path: '/dist/main/index.cjs', packed: true },
+        { path: '/renderer/out/index.html', packed: true },
+      ]),
+    ).not.toThrow();
+  });
+
+  it('does nothing when the only .node entries were redirected to app.asar.unpacked', () => {
+    // This is the shape electron-builder produces for every native module its asarUnpack config
+    // covers: a header entry still exists (so require() can resolve the path), but packed:false
+    // means the bytes live outside the archive and can load fine.
+    expect(() =>
+      assertNoNativeBinariesInAsar([
+        { path: '/node_modules/better-sqlite3/build/Release/better_sqlite3.node', packed: false },
+      ]),
+    ).not.toThrow();
+  });
+
+  it('throws PackagingGateError naming every .node entry sealed inside the archive, ignoring unpacked ones', () => {
+    const entries = [
+      { path: '/dist/main/index.cjs', packed: true },
+      { path: '/node_modules/@img/sharp-win32-x64/lib/sharp-win32-x64.node', packed: true },
+      { path: '/node_modules/better-sqlite3/build/Release/better_sqlite3.node', packed: false },
+    ];
+    const error = expectPackagingGateError(
+      () => assertNoNativeBinariesInAsar(entries),
+      '@img/sharp-win32-x64/lib/sharp-win32-x64.node',
+    );
+    expect(error.message).not.toContain('better-sqlite3');
+  });
+
+  it('catches a native binary that reached the package through a hoisted transitive dependency outside the closure walk', () => {
+    // The real defect this assertion exists for: a module like sharp reaches the package via a
+    // dependency of a sibling workspace package, so apps/desktop's own manifest never names it and
+    // the closure-based check never visits it — but a `.node` entry sealed inside app.asar is a
+    // defect no matter which manifest pulled the module in.
+    const entries = [{ path: '/node_modules/@img/sharp-win32-x64/lib/sharp-win32-x64.node', packed: true }];
+    expectPackagingGateError(() => assertNoNativeBinariesInAsar(entries), 'sharp-win32-x64.node');
   });
 });
 
@@ -306,6 +384,24 @@ describe('runPackagingGateChecks', () => {
     rmSync(path.join(desktopRootDir, 'release', 'dev', 'win-unpacked', 'resources', 'app.asar'));
 
     expectPackagingGateError(() => runPackagingGateChecks('dev', { desktopRootDir }), 'resources/app.asar');
+  });
+
+  it('fails when a .node binary is sealed inside app.asar, even when it belongs to no dependency in apps/desktop\'s own manifest', async () => {
+    const desktopRootDir = makeTempDir('gate-run-hoisted-native');
+    writeJson(path.join(desktopRootDir, 'package.json'), { name: '@bombfarm/desktop' });
+
+    const unpackedDir = path.join(desktopRootDir, 'release', 'dev', 'win-unpacked');
+    const asarSrcDir = makeTempDir('gate-run-hoisted-native-asar-src');
+    writeFile(path.join(asarSrcDir, 'renderer', 'out', 'index.html'), '<html></html>');
+    writeFile(
+      path.join(asarSrcDir, 'node_modules', '@img', 'sharp-win32-x64', 'lib', 'sharp-win32-x64.node'),
+    );
+    await createPackage(asarSrcDir, path.join(unpackedDir, 'resources', 'app.asar'));
+
+    expectPackagingGateError(
+      () => runPackagingGateChecks('dev', { desktopRootDir }),
+      'sharp-win32-x64.node',
+    );
   });
 
   it('throws when the flavor output directory does not exist at all', () => {

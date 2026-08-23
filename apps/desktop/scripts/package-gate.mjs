@@ -184,6 +184,11 @@ export function findMissingNativeBinaries(closure, unpackRoot) {
  * `apps/desktop`'s installed dependency tree, not a hardcoded package list, so a dependency added
  * later (a native module arriving in a future change, for one) is covered without editing this
  * file.
+ *
+ * Kept alongside `assertNoNativeBinariesInAsar` rather than replaced by it: this is the only check
+ * that catches a declared native dependency producing no packaged binary at all (missing from both
+ * app.asar and app.asar.unpacked); its known blind spot is a native module that arrives only
+ * through a hoisted dependency outside this manifest's own closure.
  */
 export function assertNativeBinariesUnpacked(rootPackageJsonPath, unpackedDir) {
   const closure = collectNativeDependencyClosure(rootPackageJsonPath);
@@ -199,25 +204,57 @@ export function assertNativeBinariesUnpacked(rootPackageJsonPath, unpackedDir) {
 }
 
 /**
- * The non-dev boot path resolves its window content relative to the bundled main as
- * `renderer/out/index.html`. If that file isn't in the archive, the packaged app has nothing to
- * load into its window.
+ * `listPackage`'s plain (non-`isPack`) output can't tell an actually-sealed file from one that
+ * `asarUnpack` redirected to `app.asar.unpacked` — both still get a header entry, since asar keeps
+ * the full tree so `require()`/`fs.stat` can resolve paths for unpacked files too. The `isPack`
+ * option prefixes each line with its real pack state (`"pack   : <path>"` / `"unpack : <path>"`),
+ * which is what distinguishes "sealed inside the archive" from "unpacked alongside it".
  */
-export function assertRendererEntryPresent(asarPath) {
-  let entries;
+export function listAsarEntries(asarPath) {
+  let raw;
   try {
-    entries = listPackage(asarPath);
+    raw = listPackage(asarPath, { isPack: true });
   } catch (error) {
     throw new PackagingGateError(
       `Packaging gate: could not list "${asarPath}": ${error instanceof Error ? error.message : String(error)}`,
     );
   }
-  const hasIndexHtml = entries.some((entry) =>
-    entry.replace(/\\/g, '/').endsWith('/renderer/out/index.html'),
-  );
+  return raw.map((line) => {
+    const separatorIndex = line.indexOf(' : ');
+    const packState = line.slice(0, separatorIndex).trim();
+    const entryPath = line.slice(separatorIndex + 3).replace(/\\/g, '/');
+    return { path: entryPath, packed: packState === 'pack' };
+  });
+}
+
+/**
+ * The non-dev boot path resolves its window content relative to the bundled main as
+ * `renderer/out/index.html`. If that file isn't in the archive, the packaged app has nothing to
+ * load into its window.
+ */
+export function assertRendererEntryPresent(entries) {
+  const hasIndexHtml = entries.some((entry) => entry.path.endsWith('/renderer/out/index.html'));
   if (!hasIndexHtml) {
     throw new PackagingGateError(
       'Packaging gate: "renderer/out/index.html" is missing from app.asar. The non-dev boot path loads this file relative to the bundled main — without it the packaged window has nothing to load.',
+    );
+  }
+}
+
+/**
+ * A `.node` file is machine code the OS loader maps directly off disk; it cannot be dlopen'd from
+ * inside an asar archive. So a `.node` entry still sealed inside app.asar (`packed: true` — as
+ * opposed to redirected out to app.asar.unpacked) is unloadable at runtime no matter which package
+ * put it there, declared or transitive, in apps/desktop's own manifest or hoisted in from
+ * elsewhere — unlike the closure walk below, this needs no source-tree reconstruction to know that.
+ */
+export function assertNoNativeBinariesInAsar(entries) {
+  const offenders = entries.filter((entry) => entry.packed && entry.path.endsWith('.node'));
+  if (offenders.length > 0) {
+    throw new PackagingGateError(
+      `Packaging gate: native binaries sealed inside app.asar, unloadable at runtime:\n${offenders
+        .map((entry) => `  - ${entry.path}`)
+        .join('\n')}`,
     );
   }
 }
@@ -259,7 +296,14 @@ export function runPackagingGateChecks(flavor, { desktopRootDir = desktopRoot } 
   record(() => assertAsarUnpackPatternsMatch(config, unpackedDir));
   record(() => assertNativeBinariesUnpacked(path.join(desktopRootDir, 'package.json'), unpackedDir));
   if (asarPath) {
-    record(() => assertRendererEntryPresent(asarPath));
+    let entries;
+    record(() => {
+      entries = listAsarEntries(asarPath);
+    });
+    if (entries) {
+      record(() => assertRendererEntryPresent(entries));
+      record(() => assertNoNativeBinariesInAsar(entries));
+    }
   }
 
   if (failures.length > 0) {
