@@ -1,6 +1,17 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { RuntimePort, RUNTIME_MODULE_SPECIFIER } from './runtime.js';
 import type { LogPort, TapRuntime } from './runtime.js';
+
+vi.mock('@bombfarm/tap-runtime', () => ({
+  createTapRuntime: (deps?: { log?: LogPort }) => {
+    deps?.log?.info({ scope: 'tap-runtime', event: 'hook.installed', pid: 4242, base: '0x0', absoluteAddress: '0x1000' });
+    return {
+      attach: () => {
+        throw new Error('not used by this test');
+      },
+    };
+  },
+}));
 
 function createLogSpy(): { log: LogPort; infos: Record<string, unknown>[] } {
   const infos: Record<string, unknown>[] = [];
@@ -69,5 +80,17 @@ describe('RuntimePort.resolve', () => {
   it('defaults to the real module specifier when no resolver is injected', () => {
     const port = new RuntimePort();
     expect(port).toBeInstanceOf(RuntimePort);
+  });
+
+  it('threads the injected log port through the default resolver to the runtime it builds', async () => {
+    const { log, infos } = createLogSpy();
+    const port = new RuntimePort({ log });
+
+    const result = await port.resolve();
+
+    expect(result.kind).toBe('ok');
+    expect(infos).toEqual([
+      { scope: 'tap-runtime', event: 'hook.installed', pid: 4242, base: '0x0', absoluteAddress: '0x1000' },
+    ]);
   });
 });

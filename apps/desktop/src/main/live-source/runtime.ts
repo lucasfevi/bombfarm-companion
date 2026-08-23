@@ -43,9 +43,11 @@ const NOOP_LOG_PORT: LogPort = { info: () => undefined };
  *  startup error. */
 export const RUNTIME_MODULE_SPECIFIER = '@bombfarm/tap-runtime';
 
-async function importRuntime(): Promise<TapRuntime> {
-  const mod = (await import(RUNTIME_MODULE_SPECIFIER)) as { createTapRuntime: () => TapRuntime };
-  return mod.createTapRuntime();
+async function importRuntime(deps: { readonly log: LogPort }): Promise<TapRuntime> {
+  const mod = (await import(RUNTIME_MODULE_SPECIFIER)) as {
+    createTapRuntime: (deps?: { readonly log?: LogPort }) => TapRuntime;
+  };
+  return mod.createTapRuntime({ log: deps.log });
 }
 
 export interface RuntimeResolved {
@@ -80,8 +82,8 @@ export class RuntimePort {
   #everResolved = false;
 
   constructor(deps: RuntimePortDeps = {}) {
-    this.#resolve = deps.resolve ?? importRuntime;
     this.#log = deps.log ?? NOOP_LOG_PORT;
+    this.#resolve = deps.resolve ?? (() => importRuntime({ log: this.#log }));
   }
 
   async resolve(): Promise<RuntimeResolution> {
