@@ -137,10 +137,10 @@ class FakeSession implements TapSession {
 class FakeRuntime implements TapRuntime {
   readonly sessions: FakeSession[] = [];
 
-  attach(pid: number): TapSession {
+  attach(pid: number): Promise<TapSession> {
     const session = new FakeSession(pid);
     this.sessions.push(session);
-    return session;
+    return Promise.resolve(session);
   }
 }
 
@@ -305,9 +305,9 @@ describe('Tap: a throwing attach or install does not kill the poll loop', () => 
   it('reports attachFailed, leaks nothing, and keeps polling when runtime.attach throws', async () => {
     class ThrowingAttachRuntime implements TapRuntime {
       attachCalls = 0;
-      attach(_pid: number): TapSession {
+      attach(_pid: number): Promise<TapSession> {
         this.attachCalls += 1;
-        throw new Error('attach: access is denied');
+        return Promise.reject(new Error('attach: access is denied'));
       }
     }
     const throwingRuntime = new ThrowingAttachRuntime();
@@ -347,10 +347,10 @@ describe('Tap: a throwing attach or install does not kill the poll loop', () => 
     }
     const sessions: ThrowingInstallSession[] = [];
     class ThrowingInstallRuntime implements TapRuntime {
-      attach(pid: number): TapSession {
+      attach(pid: number): Promise<TapSession> {
         const session = new ThrowingInstallSession(pid);
         sessions.push(session);
-        return session;
+        return Promise.resolve(session);
       }
     }
     const { tap, clock, processes, candidates } = createHarness({

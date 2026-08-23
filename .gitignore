@@ -1,5 +1,6 @@
 node_modules/
 dist/
+/packages/tap-runtime/src/script-source.js
 out/
 .next/
 .pnpm-store/

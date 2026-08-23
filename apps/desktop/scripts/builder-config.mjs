@@ -65,6 +65,13 @@ export function createBuilderConfig(flavor) {
       buildResources: 'assets',
     },
     files: ['dist/**/*', 'renderer/out/**/*', 'package.json', '!**/*.map'],
+    // frida ships one large prebuilt native addon (`frida_binding.node`), resolved at require()
+    // time by walking real filesystem paths under its own package directory — dlopen cannot load
+    // a `.node` file from inside app.asar, and the `bindings` package's own path search would not
+    // find it there either. Unpacking the whole package (not just the `.node` file) keeps it and
+    // its JS loader on the same real path electron-builder would otherwise split across the asar
+    // boundary.
+    asarUnpack: ['**/node_modules/frida/**/*'],
     extraMetadata,
     artifactName: '${name}-${version}-setup.${ext}',
     publish,

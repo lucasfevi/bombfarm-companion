@@ -23,7 +23,7 @@ export interface TapSession {
 }
 
 export interface TapRuntime {
-  attach(pid: number): TapSession;
+  attach(pid: number): Promise<TapSession>;
 }
 
 export type RuntimeResolver = () => Promise<TapRuntime>;
@@ -37,9 +37,10 @@ const NOOP_LOG_PORT: LogPort = { info: () => undefined };
 /** The one place the native module's specifier is written, so a test can swap the resolver
  *  wholesale and production code never repeats the string.
  *
- *  No package is declared for this specifier yet, so it never resolves and the app runs in
- *  tap-absent mode — the designed normal path, not a failure. Naming the runtime and adding it
- *  to `optionalDependencies` is a deliberate supply-chain decision, taken separately. */
+ *  `@bombfarm/tap-runtime` wraps a native module with per-platform prebuilds, so the `import()`
+ *  above can still fail on a platform with no prebuild, or when antivirus quarantines the binary
+ *  after the fact — both land here as `{ kind: 'unavailable' }`, the designed normal path, not a
+ *  startup error. */
 export const RUNTIME_MODULE_SPECIFIER = '@bombfarm/tap-runtime';
 
 async function importRuntime(): Promise<TapRuntime> {

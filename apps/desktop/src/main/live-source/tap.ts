@@ -257,7 +257,7 @@ export class Tap {
 
     let session: TapSession;
     try {
-      session = resolution.runtime.attach(pid);
+      session = await resolution.runtime.attach(pid);
     } catch (error) {
       this.#log.info({ scope: 'live-source', event: 'tap.attach_failed', pid, error: String(error) });
       this.#reportGap('attachFailed');

@@ -20,6 +20,7 @@ export default defineConfig({
       'packages/game-api/vitest.config.ts',
       'packages/game-data/vitest.config.ts',
       'packages/pricing/vitest.config.ts',
+      'packages/tap-runtime/vitest.config.ts',
       'packages/ui/vitest.config.ts',
       'apps/web/vitest.config.ts',
       'apps/desktop/vitest.config.ts',
