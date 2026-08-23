@@ -1,4 +1,5 @@
 import { downloadArtifact } from '@electron/get';
+import { spawn } from 'node:child_process';
 import extract from 'extract-zip';
 import fs from 'node:fs';
 import path from 'node:path';
@@ -38,6 +39,50 @@ export class ElectronBinaryMissingAfterExtractError extends Error {
   }
 }
 
+export function resolveSystemTarPath() {
+  if (process.platform === 'win32') {
+    return path.join(process.env.SystemRoot ?? 'C:\\Windows', 'System32', 'tar.exe');
+  }
+  return 'tar';
+}
+
+function runProcess(command, args) {
+  return new Promise((resolve, reject) => {
+    const child = spawn(command, args, { shell: false });
+    let stdout = '';
+    let stderr = '';
+    child.stdout?.on('data', (chunk) => {
+      stdout += chunk;
+    });
+    child.stderr?.on('data', (chunk) => {
+      stderr += chunk;
+    });
+    child.on('error', reject);
+    child.on('close', (code) => resolve({ code, stdout, stderr }));
+  });
+}
+
+// GNU tar cannot read zip archives, so "a tar exists" isn't enough — detection must
+// confirm the bsdtar/libarchive build specifically before trusting it with the zip.
+export function isLibarchiveTar(versionOutput) {
+  return /bsdtar|libarchive/i.test(versionOutput);
+}
+
+export async function probeTarVersion(tarPath) {
+  const { code, stdout, stderr } = await runProcess(tarPath, ['--version']);
+  if (code !== 0) {
+    throw new Error(`${tarPath} --version exited with code ${code}`);
+  }
+  return `${stdout}\n${stderr}`;
+}
+
+export async function extractWithOsTar({ tarPath, zip, dist: targetDir }) {
+  const { code, stderr } = await runProcess(tarPath, ['-xf', zip, '-C', targetDir]);
+  if (code !== 0) {
+    throw new Error(`${tarPath} extraction exited with code ${code}: ${stderr}`);
+  }
+}
+
 export async function extractElectronBinary({
   zip,
   dist: targetDir,
@@ -45,19 +90,47 @@ export async function extractElectronBinary({
   extractFn = extract,
   exists = fs.existsSync,
   timeoutMs = EXTRACTION_TIMEOUT_MS,
+  tarPath,
+  probeTar,
+  extractWithTar = extractWithOsTar,
 }) {
   let timer;
   // extract-zip can neither resolve nor reject on the large electron.exe entry; racing it
   // against a timer that rejects is what stops a stalled run from exiting 0 with nothing
   // extracted, since an unsettled promise alone leaves nothing to keep the event loop alive.
+  // Whichever extraction path runs below — OS tar or extract-zip — is raced the same way.
   const timeout = new Promise((_resolve, reject) => {
     timer = setTimeout(() => {
       reject(new ElectronExtractionTimeoutError(timeoutMs, zip, targetDir));
     }, timeoutMs);
   });
 
+  const runExtraction = async () => {
+    if (tarPath && probeTar) {
+      try {
+        const versionOutput = await probeTar(tarPath);
+        if (isLibarchiveTar(versionOutput)) {
+          try {
+            console.log('Extracting Electron with system tar:', tarPath);
+            await extractWithTar({ tarPath, zip, dist: targetDir });
+            return;
+          } catch (error) {
+            console.warn('System tar extraction failed, falling back to extract-zip:', error);
+          }
+        } else {
+          console.log('System tar is not libarchive-based; using extract-zip.');
+        }
+      } catch (error) {
+        console.log('System tar unavailable, using extract-zip:', error.message);
+      }
+    }
+
+    console.log('Extracting Electron with extract-zip.');
+    await extractFn(zip, { dir: targetDir });
+  };
+
   try {
-    await Promise.race([extractFn(zip, { dir: targetDir }), timeout]);
+    await Promise.race([runExtraction(), timeout]);
   } finally {
     clearTimeout(timer);
   }
@@ -83,7 +156,14 @@ async function main() {
   console.log('Zip:', zip);
 
   fs.mkdirSync(dist, { recursive: true });
-  await extractElectronBinary({ zip, dist, electronExe });
+  await extractElectronBinary({
+    zip,
+    dist,
+    electronExe,
+    tarPath: resolveSystemTarPath(),
+    probeTar: probeTarVersion,
+    extractWithTar: extractWithOsTar,
+  });
 
   fs.writeFileSync(path.join(electronDir, 'path.txt'), path.basename(electronExe));
   fs.writeFileSync(path.join(dist, 'version'), version);

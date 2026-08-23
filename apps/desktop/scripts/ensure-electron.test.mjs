@@ -9,6 +9,11 @@ import {
   isRunAsEntryPoint,
 } from './ensure-electron.mjs';
 
+const fakeTarPath = path.resolve('fake/bin/tar');
+const fakeZip = path.resolve('fake/electron.zip');
+const fakeDist = path.resolve('fake/dist');
+const fakeElectronExe = path.join(fakeDist, 'electron');
+
 describe('extractElectronBinary', () => {
   it('rejects with a timeout error instead of hanging when extraction never settles', async () => {
     const neverSettles = () => new Promise(() => {});
@@ -73,6 +78,166 @@ describe('extractElectronBinary', () => {
     } finally {
       vi.useRealTimers();
     }
+  });
+});
+
+describe('extractElectronBinary OS tar preference', () => {
+  it('uses the OS extractor and never calls extract-zip when bsdtar is detected', async () => {
+    const probeTar = vi.fn().mockResolvedValue('bsdtar 3.8.4 - libarchive 3.8.4 zlib/1.3.1');
+    const extractWithTar = vi.fn().mockResolvedValue(undefined);
+    const extractFn = vi.fn().mockResolvedValue(undefined);
+
+    await expect(
+      extractElectronBinary({
+        zip: fakeZip,
+        dist: fakeDist,
+        electronExe: fakeElectronExe,
+        tarPath: fakeTarPath,
+        probeTar,
+        extractWithTar,
+        extractFn,
+        exists: () => true,
+        timeoutMs: EXTRACTION_TIMEOUT_MS,
+      }),
+    ).resolves.toBeUndefined();
+
+    expect(probeTar).toHaveBeenCalledWith(fakeTarPath);
+    expect(extractWithTar).toHaveBeenCalledWith({ tarPath: fakeTarPath, zip: fakeZip, dist: fakeDist });
+    expect(extractFn).not.toHaveBeenCalled();
+  });
+
+  it('falls back to extract-zip when the probe reports GNU tar', async () => {
+    const probeTar = vi.fn().mockResolvedValue('tar (GNU tar) 1.34\nCopyright (C) 2021 Free Software Foundation, Inc.');
+    const extractWithTar = vi.fn().mockResolvedValue(undefined);
+    const extractFn = vi.fn().mockResolvedValue(undefined);
+
+    await expect(
+      extractElectronBinary({
+        zip: fakeZip,
+        dist: fakeDist,
+        electronExe: fakeElectronExe,
+        tarPath: fakeTarPath,
+        probeTar,
+        extractWithTar,
+        extractFn,
+        exists: () => true,
+        timeoutMs: EXTRACTION_TIMEOUT_MS,
+      }),
+    ).resolves.toBeUndefined();
+
+    expect(extractWithTar).not.toHaveBeenCalled();
+    expect(extractFn).toHaveBeenCalledWith(fakeZip, { dir: fakeDist });
+  });
+
+  it('falls back to extract-zip when no tar is available at all', async () => {
+    const probeTar = vi.fn().mockRejectedValue(new Error('spawn tar ENOENT'));
+    const extractWithTar = vi.fn().mockResolvedValue(undefined);
+    const extractFn = vi.fn().mockResolvedValue(undefined);
+
+    await expect(
+      extractElectronBinary({
+        zip: fakeZip,
+        dist: fakeDist,
+        electronExe: fakeElectronExe,
+        tarPath: fakeTarPath,
+        probeTar,
+        extractWithTar,
+        extractFn,
+        exists: () => true,
+        timeoutMs: EXTRACTION_TIMEOUT_MS,
+      }),
+    ).resolves.toBeUndefined();
+
+    expect(extractWithTar).not.toHaveBeenCalled();
+    expect(extractFn).toHaveBeenCalledWith(fakeZip, { dir: fakeDist });
+  });
+
+  it('falls back to extract-zip when the OS extractor exits non-zero', async () => {
+    const probeTar = vi.fn().mockResolvedValue('bsdtar 3.8.4 - libarchive 3.8.4 zlib/1.3.1');
+    const extractWithTar = vi.fn().mockRejectedValue(new Error('tar extraction exited with code 1'));
+    const extractFn = vi.fn().mockResolvedValue(undefined);
+
+    await expect(
+      extractElectronBinary({
+        zip: fakeZip,
+        dist: fakeDist,
+        electronExe: fakeElectronExe,
+        tarPath: fakeTarPath,
+        probeTar,
+        extractWithTar,
+        extractFn,
+        exists: () => true,
+        timeoutMs: EXTRACTION_TIMEOUT_MS,
+      }),
+    ).resolves.toBeUndefined();
+
+    expect(extractWithTar).toHaveBeenCalledTimes(1);
+    expect(extractFn).toHaveBeenCalledWith(fakeZip, { dir: fakeDist });
+  });
+
+  it('throws a clear error when the binary is still missing after a successful OS-tar extraction', async () => {
+    const probeTar = vi.fn().mockResolvedValue('bsdtar 3.8.4 - libarchive 3.8.4 zlib/1.3.1');
+    const extractWithTar = vi.fn().mockResolvedValue(undefined);
+    const extractFn = vi.fn().mockResolvedValue(undefined);
+
+    await expect(
+      extractElectronBinary({
+        zip: fakeZip,
+        dist: fakeDist,
+        electronExe: fakeElectronExe,
+        tarPath: fakeTarPath,
+        probeTar,
+        extractWithTar,
+        extractFn,
+        exists: () => false,
+        timeoutMs: EXTRACTION_TIMEOUT_MS,
+      }),
+    ).rejects.toThrow(ElectronBinaryMissingAfterExtractError);
+
+    expect(extractWithTar).toHaveBeenCalledTimes(1);
+    expect(extractFn).not.toHaveBeenCalled();
+  });
+
+  it('rejects with a timeout error instead of hanging when the OS extractor stalls', async () => {
+    const probeTar = vi.fn().mockResolvedValue('bsdtar 3.8.4 - libarchive 3.8.4 zlib/1.3.1');
+    const extractWithTar = vi.fn(() => new Promise(() => {}));
+    const extractFn = vi.fn().mockResolvedValue(undefined);
+
+    await expect(
+      extractElectronBinary({
+        zip: fakeZip,
+        dist: fakeDist,
+        electronExe: fakeElectronExe,
+        tarPath: fakeTarPath,
+        probeTar,
+        extractWithTar,
+        extractFn,
+        exists: () => true,
+        timeoutMs: 20,
+      }),
+    ).rejects.toThrow(ElectronExtractionTimeoutError);
+
+    expect(extractFn).not.toHaveBeenCalled();
+  });
+
+  it('does not probe for or invoke the OS extractor when tarPath/probeTar are not provided', async () => {
+    const extractWithTar = vi.fn().mockResolvedValue(undefined);
+    const extractFn = vi.fn().mockResolvedValue(undefined);
+
+    await expect(
+      extractElectronBinary({
+        zip: fakeZip,
+        dist: fakeDist,
+        electronExe: fakeElectronExe,
+        extractWithTar,
+        extractFn,
+        exists: () => true,
+        timeoutMs: EXTRACTION_TIMEOUT_MS,
+      }),
+    ).resolves.toBeUndefined();
+
+    expect(extractWithTar).not.toHaveBeenCalled();
+    expect(extractFn).toHaveBeenCalledWith(fakeZip, { dir: fakeDist });
   });
 });
 
