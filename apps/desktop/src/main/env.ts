@@ -47,7 +47,9 @@ export function buildAppEnv(deps: {
   return {
     flavor,
     descriptor,
-    isDev: deps.nodeEnv !== 'production',
+    // A packaged install has no NODE_ENV, so that check alone would default to dev;
+    // isPackaged must gate it so packaging can never fall into dev by omission.
+    isDev: !deps.isPackaged && deps.nodeEnv !== 'production',
     isPackaged: deps.isPackaged,
     appId: descriptor.appId,
     productName: descriptor.productName,

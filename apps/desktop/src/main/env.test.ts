@@ -83,6 +83,40 @@ describe('buildAppEnv', () => {
     expect(buildAppEnv({ ...baseDeps, rawFlavor: 'dev' }).isDev).toBe(true);
   });
 
+  describe('isDev', () => {
+    it('is true when unpackaged and NODE_ENV is unset', () => {
+      const env = buildAppEnv({ ...baseDeps, rawFlavor: 'dev', isPackaged: false, nodeEnv: undefined });
+      expect(env.isDev).toBe(true);
+    });
+
+    it('is false when unpackaged and NODE_ENV is production', () => {
+      const env = buildAppEnv({ ...baseDeps, rawFlavor: 'dev', isPackaged: false, nodeEnv: 'production' });
+      expect(env.isDev).toBe(false);
+    });
+
+    it('is false when packaged, even with NODE_ENV unset', () => {
+      const env = buildAppEnv({
+        ...baseDeps,
+        rawFlavor: 'beta',
+        isPackaged: true,
+        bakedFlavor: 'beta',
+        nodeEnv: undefined,
+      });
+      expect(env.isDev).toBe(false);
+    });
+
+    it('is false when packaged and NODE_ENV is production', () => {
+      const env = buildAppEnv({
+        ...baseDeps,
+        rawFlavor: 'beta',
+        isPackaged: true,
+        bakedFlavor: 'beta',
+        nodeEnv: 'production',
+      });
+      expect(env.isDev).toBe(false);
+    });
+  });
+
   it('marks isPackaged from deps', () => {
     expect(
       buildAppEnv({
