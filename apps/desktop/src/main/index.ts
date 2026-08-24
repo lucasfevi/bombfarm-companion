@@ -24,6 +24,7 @@ import { InvalidFlavorError, resolveAppEnv, RENDERER_DEV_URL, type AppEnv } from
 import { GameReaderService } from './game-reader/game-reader-service.js';
 import { createAccountRefresh, type AccountRefreshHandle } from './game-api/account-refresh.js';
 import { createConsentStore, type ConsentStore } from './game-api/consent-store.js';
+import { createLiveConsentGate } from './game-api/live-consent-gate.js';
 import { createSettingsStore, type SettingsStore } from './game-api/settings-store.js';
 import { nodeHttpsTransport } from './game-api/https-transport.js';
 import { readSessionToken, sessionCfgPath } from './game-api/session-token-file.js';
@@ -234,7 +235,7 @@ async function bootstrap(): Promise<void> {
   settingsStore = createSettingsStore(accountOpen.db);
 
   liveSource = new LiveSource({
-    consent: () => consentStore?.read().decision === 'granted',
+    consent: createLiveConsentGate(consentStore),
     userDataDir,
     log,
   });

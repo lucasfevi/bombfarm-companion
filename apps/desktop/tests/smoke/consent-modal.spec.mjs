@@ -61,7 +61,12 @@ test.describe('consent modal smoke (MP2 F2, LAR-01/03, Success Criterion "shown 
         await expect(modal).toBeVisible({ timeout: 30_000 });
 
         const body = page1.getByTestId('consent-modal-body');
-        await expect(body).toContainText('no disruptive action is taken without your approval');
+        await expect(body).toContainText(
+          'the companion observes the traffic the game client is already sending and receiving',
+        );
+        await expect(body).toContainText(
+          'attaching to another running program is the technique behavior-based detection is built to look for',
+        );
 
         await page1.getByTestId('consent-accept').click();
         await expect(modal).toBeHidden({ timeout: 15_000 });

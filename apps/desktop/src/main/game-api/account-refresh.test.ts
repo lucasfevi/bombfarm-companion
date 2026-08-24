@@ -8,7 +8,8 @@ import type {
   PacingClock,
   SessionToken,
 } from '@bombfarm/game-api';
-import { SessionToken as SessionTokenClass, createPacingGate } from '@bombfarm/game-api';
+import { CONSENT_TEXT, SessionToken as SessionTokenClass, createPacingGate } from '@bombfarm/game-api';
+import { consentRecord, grantedConsent } from '@bombfarm/game-api/test-fixtures';
 import type { AccountStore } from '../storage/account-store.js';
 import { createAccountStore } from '../storage/account-store.js';
 import type { SqliteBinding, SqliteDb, SqliteStatement } from '../storage/index.js';
@@ -40,9 +41,9 @@ function firstBinding(): SqliteBinding {
 
 const SENTINEL_TOKEN = 'sentinel-account-refresh-8b1e4d92-do-not-leak';
 
-const GRANTED: GrantedConsent = { decision: 'granted', grantedAt: '2026-08-12T13:15:38.000Z', textVersion: 1 };
-const DECLINED: ConsentRecord = { decision: 'declined', textVersion: 1 };
-const UNASKED: ConsentRecord = { decision: 'unasked', textVersion: 1 };
+const GRANTED = grantedConsent('2026-08-12T13:15:38.000Z');
+const DECLINED = consentRecord({ decision: 'declined' });
+const UNASKED = consentRecord({ decision: 'unasked' });
 
 function noopLog(): { info: () => void; warn: () => void; error: () => void } {
   return { info: () => undefined, warn: () => undefined, error: () => undefined };
@@ -306,6 +307,31 @@ describe('account-refresh — unasked consent (LAR-01)', () => {
 
     expect(transportCalls).toEqual([]);
     expect(view).not.toBeNull();
+  });
+});
+
+describe('account-refresh — a grant that predates the current disclosure', () => {
+  it('issues zero transport calls, exactly as an unanswered first run does', async () => {
+    const open = openTestAccountDb(firstBinding());
+    const store = createAccountStore(open);
+    const transportCalls: string[] = [];
+    const deps = baseDeps({
+      store,
+      consentStore: fixedConsentStore({ ...GRANTED, textVersion: CONSENT_TEXT.version - 1 }),
+      transport: (req) => {
+        transportCalls.push(req.path);
+        return Promise.reject(new Error('transport must never be called under a superseded grant'));
+      },
+      readToken: throwingReadToken(),
+    });
+    const refresh = createAccountRefresh(deps);
+
+    const view = await refresh.refreshNow();
+
+    expect(transportCalls).toEqual([]);
+    for (const section of ['account', 'heroes', 'skills', 'casa', 'items'] as const) {
+      expect(fidelityOf(view)[section].status).toBe('missing');
+    }
   });
 });
 

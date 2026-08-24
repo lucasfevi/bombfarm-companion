@@ -12,18 +12,18 @@
  * module-level statements — esbuild still executes them even though it strips the directive.
  */
 import { describe, expect, it } from 'vitest';
-import type { ConsentRecord, GrantedConsent } from './consent.js';
 import { ConsentRequiredError, type ConsentedSession, SessionToken, grantSession } from './session.js';
+import { consentRecord, grantedConsent } from './test-fixtures.js';
 
 describe('session.ts — type-level assertions (runtime half, so this file also runs under Vitest)', () => {
   it('a granted record constructs a session normally (sanity check for the assertions below)', () => {
-    const granted: GrantedConsent = { decision: 'granted', grantedAt: '2026-08-12T00:00:00.000Z', textVersion: 1 };
+    const granted = grantedConsent('2026-08-12T00:00:00.000Z');
     const session = grantSession(granted, { accountId: '486', token: SessionToken.create('x') });
     expect(session.accountId).toBe('486');
   });
 
   it('a declined record fails to compile at the grantSession call site (LAR-06)', () => {
-    const declined: ConsentRecord = { decision: 'declined', textVersion: 1 };
+    const declined = consentRecord({ decision: 'declined' });
     expect(() => {
       // @ts-expect-error - grantSession requires a GrantedConsent; a declined record is not one
       grantSession(declined, { accountId: '486', token: SessionToken.create('x') });
@@ -31,7 +31,7 @@ describe('session.ts — type-level assertions (runtime half, so this file also 
   });
 
   it('an unasked record fails to compile at the grantSession call site (LAR-06)', () => {
-    const unasked: ConsentRecord = { decision: 'unasked', textVersion: 1 };
+    const unasked = consentRecord({ decision: 'unasked' });
     expect(() => {
       // @ts-expect-error - grantSession requires a GrantedConsent; an unasked record is not one
       grantSession(unasked, { accountId: '486', token: SessionToken.create('x') });
@@ -39,7 +39,7 @@ describe('session.ts — type-level assertions (runtime half, so this file also 
   });
 
   it('a revoked record fails to compile at the grantSession call site (LAR-06)', () => {
-    const revoked: ConsentRecord = { decision: 'revoked', textVersion: 1 };
+    const revoked = consentRecord({ decision: 'revoked' });
     expect(() => {
       // @ts-expect-error - grantSession requires a GrantedConsent; a revoked record is not one
       grantSession(revoked, { accountId: '486', token: SessionToken.create('x') });

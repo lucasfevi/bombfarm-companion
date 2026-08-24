@@ -1,7 +1,9 @@
 import { inspect } from 'node:util';
 import { describe, expect, it } from 'vitest';
 import type { GrantedConsent } from './consent.js';
+import { CONSENT_TEXT } from './consent-text.js';
 import { ConsentRequiredError, RAW, SessionToken, grantSession } from './session.js';
+import { consentRecord, grantedConsent } from './test-fixtures.js';
 
 const SENTINEL = 'sentinel-7f3a9c2e-do-not-leak';
 
@@ -78,7 +80,7 @@ describe('grantSession — runtime enforcement (AD-025: independent of the compi
   const creds = { accountId: '486', token: SessionToken.create(SENTINEL) };
 
   it('constructs a ConsentedSession from a granted record', () => {
-    const granted: GrantedConsent = { decision: 'granted', grantedAt: NOW, textVersion: 1 };
+    const granted = grantedConsent(NOW);
     const session = grantSession(granted, creds);
     expect(session.accountId).toBe('486');
     expect(session.grantedAt).toBe(NOW);
@@ -86,22 +88,27 @@ describe('grantSession — runtime enforcement (AD-025: independent of the compi
   });
 
   it('throws ConsentRequiredError for an untyped caller passing a declined record cast through unknown', () => {
-    const declined = { decision: 'declined', textVersion: 1 } as unknown as GrantedConsent;
+    const declined = consentRecord({ decision: 'declined' }) as unknown as GrantedConsent;
     expect(() => grantSession(declined, creds)).toThrow(ConsentRequiredError);
   });
 
   it('throws ConsentRequiredError for an untyped caller passing an unasked record cast through unknown', () => {
-    const unasked = { decision: 'unasked', textVersion: 1 } as unknown as GrantedConsent;
+    const unasked = consentRecord({ decision: 'unasked' }) as unknown as GrantedConsent;
     expect(() => grantSession(unasked, creds)).toThrow(ConsentRequiredError);
   });
 
   it('throws ConsentRequiredError for an untyped caller passing a revoked record cast through unknown', () => {
-    const revoked = { decision: 'revoked', textVersion: 1 } as unknown as GrantedConsent;
+    const revoked = consentRecord({ decision: 'revoked' }) as unknown as GrantedConsent;
     expect(() => grantSession(revoked, creds)).toThrow(ConsentRequiredError);
   });
 
   it('throws ConsentRequiredError for a granted-shaped record missing grantedAt, cast through unknown', () => {
-    const malformed = { decision: 'granted', textVersion: 1 } as unknown as GrantedConsent;
+    const malformed = consentRecord({ decision: 'granted' }) as unknown as GrantedConsent;
     expect(() => grantSession(malformed, creds)).toThrow(ConsentRequiredError);
+  });
+
+  it('throws ConsentRequiredError for a granted record stamped with a stale textVersion', () => {
+    const stale = grantedConsent(NOW, { textVersion: CONSENT_TEXT.version - 1 });
+    expect(() => grantSession(stale, creds)).toThrow(ConsentRequiredError);
   });
 });

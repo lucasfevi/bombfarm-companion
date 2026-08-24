@@ -49,16 +49,25 @@ export function reduceConsent(record: ConsentRecord, event: ConsentEvent): Conse
 }
 
 /**
- * Unasked always shows the modal. A `granted` record whose `textVersion` predates the current
- * `CONSENT_TEXT.version` shows it again — a new disclosure cannot ride on an old agreement.
+ * Defined as the negation of `isGranted` for anything claiming to be granted, so the modal and the
+ * read gate can never disagree: whatever `isGranted` rejects is something the player still has to
+ * be asked about, including a record whose `grantedAt` is missing.
  */
 export function shouldShowConsentModal(record: ConsentRecord): boolean {
   if (record.decision === 'unasked') return true;
-  if (record.decision === 'granted' && record.textVersion < CONSENT_TEXT.version) return true;
-  return false;
+  return record.decision === 'granted' && !isGranted(record);
 }
 
-/** The type guard `grantSession` (T2) requires before it can even attempt a runtime construction. */
+/**
+ * The type guard `grantSession` (T2) requires before it can even attempt a runtime construction.
+ * Strict equality on `textVersion`, not `>=`: a record stamped with a version newer than this
+ * build understands must also fail, so a downgraded build re-prompts instead of assuming a grant
+ * it cannot have shown.
+ */
 export function isGranted(record: ConsentRecord): record is GrantedConsent {
-  return record.decision === 'granted' && typeof record.grantedAt === 'string';
+  return (
+    record.decision === 'granted' &&
+    typeof record.grantedAt === 'string' &&
+    record.textVersion === CONSENT_TEXT.version
+  );
 }

@@ -18,7 +18,25 @@ function getBridge(): NonNullable<Window['bfc']> | null {
   return (window as unknown as { bfc?: NonNullable<Window['bfc']> }).bfc ?? null;
 }
 
-export function ConsentModal() {
+/**
+ * `forceOpen` is how Settings' re-allow control reopens the modal for a record
+ * `shouldShowConsentModal` would otherwise reject (e.g. `revoked`) — the player must re-read the
+ * disclosure before granting again, never just flip a flag. Exported so this gate is directly
+ * unit-testable without a renderer (this project has no jsdom).
+ */
+export function isConsentModalVisible(record: ConsentRecord | null, forceOpen: boolean): boolean {
+  return record !== null && (forceOpen || shouldShowConsentModal(record));
+}
+
+export function ConsentModal({
+  forceOpen = false,
+  onDecided,
+}: {
+  forceOpen?: boolean;
+  /** Fires once accept/decline actually lands, so a caller that set `forceOpen` can drop it back
+   *  to `false` — otherwise the modal would stay visible after a decision was already made. */
+  onDecided?: () => void;
+} = {}) {
   const [record, setRecord] = useState<ConsentRecord | null>(null);
 
   useEffect(() => {
@@ -47,10 +65,11 @@ export function ConsentModal() {
     if (!bridge) return;
     void bridge.invoke(channel).then((next) => {
       setRecord(next);
+      onDecided?.();
     });
   };
 
-  if (!record || !shouldShowConsentModal(record)) {
+  if (!isConsentModalVisible(record, forceOpen)) {
     return null;
   }
 

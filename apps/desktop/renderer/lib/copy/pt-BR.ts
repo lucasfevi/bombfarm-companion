@@ -124,6 +124,15 @@ export const ptBR: Copy = {
     'Seu local de salvamento não pode ser gravado, então isso não vai sobreviver a um reinício.',
   settingsLanguageReasonUnknown: 'Essa escolha não pôde ser salva, então não vai sobreviver a um reinício.',
 
+  // settingsConsent* — o controle de revogar/permitir novamente o acesso à conta
+  settingsConsentSectionTitle: 'Acesso à conta',
+  settingsConsentStatusGranted: 'Acesso: permitido',
+  settingsConsentStatusNotGranted: 'Acesso: não permitido',
+  settingsConsentHelpGranted: 'O companion lê sua conta e permanece conectado ao cliente do jogo.',
+  settingsConsentHelpNotGranted: 'O companion não está lendo sua conta nem conectado ao cliente do jogo.',
+  settingsConsentRevokeAction: 'Desativar',
+  settingsConsentReallowAction: 'Revisar e permitir',
+
   // error* — MP3 F4 §2.8
   errorAccountReadFailedDescription: 'Tente novamente depois que o jogo terminar de carregar, ou reinicie o app.',
 };

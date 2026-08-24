@@ -222,7 +222,7 @@ export function createAccountRefresh(deps: AccountRefreshDeps): AccountRefreshHa
     },
     refreshNow: runCycle,
     onConsentChanged(record: ConsentRecord) {
-      if (record.decision === 'granted') {
+      if (isGranted(record)) {
         void runCycle().finally(scheduleNext);
       } else if (record.decision === 'revoked') {
         currentAbort?.abort();

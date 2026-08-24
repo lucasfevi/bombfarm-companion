@@ -119,6 +119,15 @@ export const en = {
   settingsLanguageReasonNotWritable: 'Your save location is not writable, so this will not survive a restart.',
   settingsLanguageReasonUnknown: 'This choice could not be saved, so it will not survive a restart.',
 
+  // settingsConsent* — the account access revoke/re-allow control
+  settingsConsentSectionTitle: 'Account access',
+  settingsConsentStatusGranted: 'Access: allowed',
+  settingsConsentStatusNotGranted: 'Access: not allowed',
+  settingsConsentHelpGranted: 'The companion reads your account and stays attached to the game client.',
+  settingsConsentHelpNotGranted: 'The companion is not reading your account and is not attached to the game client.',
+  settingsConsentRevokeAction: 'Turn off',
+  settingsConsentReallowAction: 'Review and allow',
+
   // error* — MP3 F4 §2.8: a main-process error crosses the boundary as a key, never as
   // pre-rendered English. The raw message is kept as diagnostic data only.
   errorAccountReadFailedDescription: 'Try again after the game finishes loading, or restart the app.',

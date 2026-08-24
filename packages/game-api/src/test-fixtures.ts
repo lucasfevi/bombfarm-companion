@@ -1,5 +1,7 @@
 import { existsSync, readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
+import type { ConsentRecord, GrantedConsent } from './consent.js';
+import { CONSENT_TEXT } from './consent-text.js';
 
 export type FixtureName = 'api-bodies.json' | 'api-bodies-after.json';
 
@@ -59,4 +61,22 @@ export function required<T>(value: T | undefined, message: string): T {
     throw new Error(message);
   }
   return value;
+}
+
+/** A consent record of any decision, stamped with the current `CONSENT_TEXT.version` unless the
+ *  caller overrides it (e.g. `CONSENT_TEXT.version - 1` for a stale-grant case). Test-support
+ *  only; not exported from `index.ts`. */
+export function consentRecord(
+  overrides: Partial<ConsentRecord> & Pick<ConsentRecord, 'decision'>,
+): ConsentRecord {
+  return { textVersion: CONSENT_TEXT.version, ...overrides };
+}
+
+/** A granted consent record — `grantedAt` is required, as {@link GrantedConsent} narrows it to be.
+ *  `textVersion` defaults to `CONSENT_TEXT.version`; override it for a stale or future grant. */
+export function grantedConsent(
+  grantedAt: string,
+  overrides: Partial<Omit<GrantedConsent, 'decision' | 'grantedAt'>> = {},
+): GrantedConsent {
+  return { decision: 'granted', grantedAt, textVersion: CONSENT_TEXT.version, ...overrides };
 }

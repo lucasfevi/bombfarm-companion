@@ -2,13 +2,12 @@ import { readdirSync, readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 import { createGameApiClient } from './client.js';
-import type { GrantedConsent } from './consent.js';
 import { createPacingGate, type PacingClock } from './pacing.js';
 import type { HttpTransport } from './request.js';
 import { SessionToken, grantSession } from './session.js';
-import { loadFixtureJson, required } from './test-fixtures.js';
+import { grantedConsent, loadFixtureJson, required } from './test-fixtures.js';
 
-const GRANTED: GrantedConsent = { decision: 'granted', grantedAt: '2026-08-12T13:15:38.000Z', textVersion: 1 };
+const GRANTED = grantedConsent('2026-08-12T13:15:38.000Z');
 const session = grantSession(GRANTED, { accountId: '486', token: SessionToken.create('sentinel-client-test') });
 
 function createTestClock(): PacingClock {

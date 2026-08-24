@@ -322,12 +322,12 @@ describe('Guard 2 — the pinned packages/ui + consent-text exception table (AD-
   it('the CONSENT_TEXT exception is recorded (AD-028) — not scanned mechanically, since packages/game-api is out of Guard 1\'s root, but named here so the boundary is documented in one place', () => {
     const consentTextPath = join(REPO_ROOT, 'packages', 'game-api', 'src', 'consent-text.ts');
     const source = readFileSync(consentTextPath, 'utf8');
-    // The five body paragraphs, title and two button labels are all untranslated by design
+    // The body paragraphs, title and two button labels are all untranslated by design
     // (AD-028 — the consent record carries a textVersion, so a PT-BR rendering could constitute
     // wording the player never agreed to). Asserted structurally: the file still exports the
     // same shape, so a future edit that removes this constant entirely is caught here too.
     expect(source).toContain('export const CONSENT_TEXT');
-    expect(source).toContain("title: 'Read your Bomb Farm account?'");
+    expect(source).toContain("title: 'Read your Bomb Farm account and attach to the game?'");
   });
 
   it('red state demonstrated: a pinned entry with a deliberately wrong owning-file path is caught (widening/staleness check)', () => {

@@ -203,7 +203,7 @@ test.describe('language smoke (MP3 F4) — detected, switched in place, and reme
       );
       try {
         // Launch 1 declined consent, and that decision persisted to the SAME account.db row
-        // (`consent-store.ts`'s `account_meta` key `consent_v1`) this launch reads on boot.
+        // (`consent-store.ts`'s disclosure-version-keyed `account_meta` row) this launch reads on boot.
         // `shouldShowConsentModal` (packages/game-api/src/consent.ts) returns false for a
         // `declined` decision exactly as it does for `granted` — so no modal is expected here,
         // and `dismissConsent()` (which waits for it to become visible) would hang. Asserting
