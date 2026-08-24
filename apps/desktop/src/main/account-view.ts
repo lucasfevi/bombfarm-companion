@@ -5,6 +5,7 @@
  * unit-testable without launching an app.
  */
 import { accountChangeKey } from '@bombfarm/contracts';
+import { isGranted } from '@bombfarm/game-api';
 import type { AccountPayload, AccountView, ConsentRecord, GameStatusInfo } from '@bombfarm/contracts';
 
 /**
@@ -67,7 +68,7 @@ export function resolveCachedAccountView(deps: AccountViewDeps): AccountView | n
   // (real production's live-tap reader never populates it — see
   // `GameReaderService.tickLive()` — so this changes nothing there); only once consent
   // is granted does the game-API cycle's own (now genuinely fresher) view get first look.
-  const consentGranted = deps.consentStore?.read().decision === 'granted';
+  const consentGranted = deps.consentStore ? isGranted(deps.consentStore.read()) : false;
   const cached =
     (consentGranted ? deps.accountRefresh?.getLastView() : null) ??
     deps.gameReader?.getAccountView() ??

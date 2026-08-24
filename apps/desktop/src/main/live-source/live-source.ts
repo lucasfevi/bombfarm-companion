@@ -52,6 +52,7 @@ const DEFAULT_PROCESS_NAME = process.env.BFC_GAME_PROCESS ?? 'BombFarm.exe';
 export interface TapHandle {
   start(): void;
   teardown(): Promise<void>;
+  pollNow(): void;
 }
 
 export interface LiveSourceDeps {
@@ -131,6 +132,9 @@ function createDefaultTapFactory(deps: {
         tap.start();
       },
       teardown: () => tap.teardown(),
+      pollNow: () => {
+        tap.pollNow();
+      },
     };
   };
 }
@@ -179,6 +183,13 @@ export class LiveSource {
 
   start(): void {
     this.#tap.start();
+  }
+
+  /** Mirrors `AccountRefreshHandle.onConsentChanged`: called from the same consent-changed path
+   *  in index.ts, so a grant is picked up without waiting out the tap's poll interval. Consent
+   *  itself is always re-read from the gate the tap already holds — this only wakes the loop. */
+  pollNow(): void {
+    this.#tap.pollNow();
   }
 
   subscribe(listener: (event: LiveEvent) => void): () => void {

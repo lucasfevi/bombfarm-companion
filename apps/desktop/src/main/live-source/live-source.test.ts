@@ -8,6 +8,7 @@ import { LiveSource, type TapHandle } from './live-source.js';
 class FakeTap implements TapHandle {
   startCount = 0;
   teardownCount = 0;
+  pollNowCount = 0;
 
   constructor(private readonly onEvent: (event: LiveEvent) => void) {}
 
@@ -18,6 +19,10 @@ class FakeTap implements TapHandle {
   teardown(): Promise<void> {
     this.teardownCount += 1;
     return Promise.resolve();
+  }
+
+  pollNow(): void {
+    this.pollNowCount += 1;
   }
 
   emit(event: LiveEvent): void {
@@ -280,6 +285,17 @@ describe('LiveSource: consent revoke forces the tap down', () => {
     const second = taps[1];
     if (!second) throw new Error('harness: expected a replacement tap after forceDetach()');
     expect(second.startCount).toBe(1);
+  });
+});
+
+describe('LiveSource: pollNow forwards to the current tap', () => {
+  it('nudges the active tap rather than waiting on its own poll interval', () => {
+    const { source, currentTap } = createHarness();
+    source.start();
+
+    source.pollNow();
+
+    expect(currentTap().pollNowCount).toBe(1);
   });
 });
 

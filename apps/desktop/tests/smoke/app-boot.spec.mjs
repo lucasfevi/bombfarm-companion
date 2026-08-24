@@ -69,12 +69,11 @@ test.describe('app boot smoke', () => {
       // racing it — the environment reaching the DOM is already asserted above. Located by
       // position, not by label: packages/ui ships no testid on these buttons and the labels are
       // translated, which is the same reasoning i18n.spec.mjs's own nav helper records.
-      // The consent modal's backdrop covers the sidebar, so it has to go before any nav click.
-      // Decline rather than accept, matching every other spec here: accepting switches on the
-      // account refresh path, which would shadow the fixture reader this smoke is asserting.
+      // Accept, matching every other spec here: the app shows a permission gate with no nav
+      // instead of its content until consent is granted, so nothing below is reachable otherwise.
       const consentModal = page.getByTestId('consent-modal');
       await expect(consentModal).toBeVisible({ timeout: 30_000 });
-      await page.getByTestId('consent-decline').click();
+      await page.getByTestId('consent-accept').click();
       await expect(consentModal).toBeHidden({ timeout: 15_000 });
 
       const navButtons = page.locator('nav[aria-label="Main"] button');

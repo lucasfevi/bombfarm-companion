@@ -5,6 +5,8 @@
  */
 import { describe, expect, it, vi } from 'vitest';
 import type { AccountPayload, AccountView, ConsentRecord, GameStatusInfo } from '@bombfarm/contracts';
+import { CONSENT_TEXT_VERSION } from '@bombfarm/game-api';
+import { consentRecord } from '@bombfarm/game-api/test-fixtures';
 import {
   createAccountNotifier,
   resolveAccountView,
@@ -58,8 +60,11 @@ function fakeGameReader(status: GameStatusInfo['status'], view: AccountView | nu
   };
 }
 
-function fakeConsentSource(decision: ConsentRecord['decision']): ConsentSourceLike {
-  return { read: () => ({ decision, textVersion: 1 }) };
+function fakeConsentSource(
+  decision: ConsentRecord['decision'],
+  textVersion = CONSENT_TEXT_VERSION,
+): ConsentSourceLike {
+  return { read: () => consentRecord({ decision, grantedAt: NOW, textVersion }) };
 }
 
 function fakeAccountRefresh(view: AccountView | null): AccountRefreshLike {
@@ -96,6 +101,17 @@ describe('resolveCachedAccountView — the pure-read half of AD-043', () => {
       accountRefresh: fakeAccountRefresh(refreshView),
     });
     expect(result?.payload.heroes).toEqual([{ id: 'from-refresh' }]);
+  });
+
+  it('falls back to the game reader when the stored grant predates the current disclosure, because the refresh cycle only produces a not-consented placeholder for it', () => {
+    const gameReaderView = makeView(makePayload({ heroes: [{ id: 'from-game-reader' }] }));
+    const placeholderView = makeView(makePayload({ heroes: [{ id: 'not-consented-placeholder' }] }));
+    const result = resolveCachedAccountView({
+      gameReader: fakeGameReader('connected', gameReaderView),
+      consentStore: fakeConsentSource('granted', CONSENT_TEXT_VERSION - 1),
+      accountRefresh: fakeAccountRefresh(placeholderView),
+    });
+    expect(result?.payload.heroes).toEqual([{ id: 'from-game-reader' }]);
   });
 
   it('gameRunning is always the FRESH game-reader status, never the cached view\'s own gameRunning', () => {

@@ -73,8 +73,10 @@ class FakeClock implements Clock {
 
 class FakeProcessLister implements ProcessLister {
   processes: TapTargetProcess[] = [];
+  listCalls = 0;
 
   list(processName: string): Promise<readonly TapTargetProcess[]> {
+    this.listCalls += 1;
     return Promise.resolve(this.processes.filter((p) => p.name === processName));
   }
 }
@@ -669,6 +671,81 @@ describe('Tap: consent gate', () => {
     await clock.advance(0);
 
     expect(runtime.sessions).toHaveLength(0);
+    expect(tap.getCurrency()).toMatchObject({ kind: 'gap', reason: 'consentMissing' });
+  });
+
+  it('honours a revoke that lands while the process list is still being fetched', async () => {
+    const harness = createHarness({ consent: true });
+    harness.processes.processes = [{ pid: 666, name: PROCESS_NAME }];
+
+    const realList = harness.processes.list.bind(harness.processes);
+    harness.processes.list = (processName: string) => {
+      harness.setConsent(false);
+      return realList(processName);
+    };
+
+    harness.tap.start();
+    await harness.clock.advance(0);
+
+    expect(harness.runtime.sessions).toHaveLength(0);
+    expect(harness.tap.getCurrency()).toMatchObject({ kind: 'gap', reason: 'consentMissing' });
+  });
+
+  it('performs zero process-list calls while consent is withheld, even with a matching process running', async () => {
+    const { tap, clock, processes } = createHarness({ consent: false });
+    processes.processes = [{ pid: 666, name: PROCESS_NAME }];
+
+    tap.start();
+    await clock.advance(0);
+    await clock.advance(1_000);
+    await clock.advance(1_000);
+
+    expect(processes.listCalls).toBe(0);
+  });
+
+  it('logs nothing naming a pid or the process while consent is withheld', async () => {
+    const { tap, clock, processes, infos } = createHarness({ consent: false });
+    processes.processes = [{ pid: 666, name: PROCESS_NAME }];
+
+    tap.start();
+    await clock.advance(0);
+
+    expect(infos.some((record) => record.event === 'tap.target_selected')).toBe(false);
+    expect(infos.every((record) => !('pid' in record))).toBe(true);
+  });
+
+  it('begins probing once consent is granted, without a restart', async () => {
+    const { tap, clock, processes, candidates, runtime, setConsent } = createHarness({ consent: false });
+    processes.processes = [{ pid: 9_001, name: PROCESS_NAME }];
+    candidates.resolveResult = { addresses: [0x1000], fromCache: false, buildId: null };
+
+    tap.start();
+    await clock.advance(0);
+    expect(processes.listCalls).toBe(0);
+
+    setConsent(true);
+    tap.pollNow();
+    await clock.advance(0);
+
+    expect(processes.listCalls).toBeGreaterThan(0);
+    expect(runtime.sessions).toHaveLength(1);
+  });
+
+  it('stops probing again once consent is revoked', async () => {
+    const { tap, clock, processes, setConsent } = createHarness({ consent: true, pollIntervalMs: 1_000 });
+    processes.processes = [];
+
+    tap.start();
+    await clock.advance(0);
+    await clock.advance(1_000);
+    const callsBeforeRevoke = processes.listCalls;
+    expect(callsBeforeRevoke).toBeGreaterThan(0);
+
+    setConsent(false);
+    await clock.advance(1_000);
+    await clock.advance(1_000);
+
+    expect(processes.listCalls).toBe(callsBeforeRevoke);
     expect(tap.getCurrency()).toMatchObject({ kind: 'gap', reason: 'consentMissing' });
   });
 });
