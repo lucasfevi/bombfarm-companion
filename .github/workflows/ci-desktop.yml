@@ -88,20 +88,24 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
+      # `tap-runtime` emits a generated `src/script-source.js` alongside its `dist/`, and both are
+      # gitignored. Omit it here and the desktop tests die at collection resolving that import
+      # rather than reporting anything about the code under test. `apps/desktop`'s own `prebuild`
+      # already builds it; this list is separate and has to say so too.
       - name: Build workspace packages (desktop deps)
-        run: pnpm -r --filter @bombfarm/contracts --filter @bombfarm/ui --filter @bombfarm/game-data --filter @bombfarm/game-api --filter @bombfarm/pricing --filter @bombfarm/domain build
+        run: pnpm -r --filter @bombfarm/contracts --filter @bombfarm/ui --filter @bombfarm/game-data --filter @bombfarm/game-api --filter @bombfarm/pricing --filter @bombfarm/domain --filter @bombfarm/tap-runtime build
 
       - name: Typecheck desktop + deps
         run: >
           pnpm --filter @bombfarm/contracts --filter @bombfarm/ui
           --filter @bombfarm/game-data --filter @bombfarm/game-api --filter @bombfarm/pricing
-          --filter @bombfarm/domain --filter @bombfarm/desktop typecheck
+          --filter @bombfarm/domain --filter @bombfarm/tap-runtime --filter @bombfarm/desktop typecheck
 
       - name: Lint desktop + deps
         run: >
           pnpm --filter @bombfarm/contracts --filter @bombfarm/ui
           --filter @bombfarm/game-data --filter @bombfarm/game-api --filter @bombfarm/pricing
-          --filter @bombfarm/domain --filter @bombfarm/desktop lint
+          --filter @bombfarm/domain --filter @bombfarm/tap-runtime --filter @bombfarm/desktop lint
 
       # apps/desktop/src/main/domain-edge.test.ts asserts against the esbuild main-process
       # bundle (MDW-03: domain code is actually inlined) and fails loudly in CI when it's

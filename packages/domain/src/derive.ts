@@ -16,9 +16,9 @@ import { TEAM_BUFF_CAP, type TeamBuffId } from './team-buffs';
 
 export type CombatMults = {
   teamDrainMult: number;
-  /** The roster-wide Presságio total, already clamped at `TEAM_BUFF_CAP.pressagio_mortal` —
-   *  the single value `derive()` adds to `baseCrit`. */
-  teamCritPctOfBase: number;
+  /** The roster-wide Presságio total in FLAT crit points, already clamped at
+   *  `TEAM_BUFF_CAP.pressagio_mortal` — the single value `derive()` adds to the sheet. */
+  teamCritFlat: number;
   attackMult: number;
   speedMult: number;
   gateAttackMult: number;
@@ -69,10 +69,10 @@ export function computeCombatMults(input: ComputeCombatMultsInput): CombatMults 
   const gritoPct = combineTeamAuraPct(0, teamBuffs.grito_guerra || 0, TEAM_BUFF_CAP.grito_guerra);
   const marchaPct = combineTeamAuraPct(0, teamBuffs.marcha_acelerada || 0, TEAM_BUFF_CAP.marcha_acelerada);
   const folegoPct = combineTeamAuraPct(0, teamBuffs.folego_mineiro || 0, TEAM_BUFF_CAP.folego_mineiro);
-  const teamCritPctOfBase = combineTeamAuraPct(0, teamBuffs.pressagio_mortal || 0, TEAM_BUFF_CAP.pressagio_mortal);
+  const teamCritFlat = combineTeamAuraPct(0, teamBuffs.pressagio_mortal || 0, TEAM_BUFF_CAP.pressagio_mortal);
   return {
     teamDrainMult: Math.max(0.01, 1 - folegoPct / 100),
-    teamCritPctOfBase,
+    teamCritFlat,
     attackMult: 1 + gritoPct / 100,
     speedMult: 1 + marchaPct / 100,
     gateAttackMult: mods.gateAttackMult,
@@ -96,10 +96,10 @@ export type DeriveInput = {
   energyMult: number;
   speedMult: number;
   critDmgMult: number;
-  /** The hero's own Presságio rank already folded in and capped, one resolved value — see
-   *  `CombatMults.teamCritPctOfBase`. There is no separate "own" input here, matching
-   *  `attackMult`/`speedMult`: the combination happens once, in `computeCombatMults`. */
-  teamCritPctOfBase: number;
+  /** The hero's own Presságio rank already folded in and capped, one resolved value in FLAT
+   *  crit points — see `CombatMults.teamCritFlat`. There is no separate "own" input here,
+   *  matching `attackMult`/`speedMult`: the combination happens once, in `computeCombatMults`. */
+  teamCritFlat: number;
   /** The whole skill tree, once (BSP-23c) — replaces the four scattered tree inputs. */
   treeSheet: TreeSheetTotals;
   penetrationPp: number;
@@ -144,7 +144,7 @@ export function derive(input: DeriveInput): DeriveResult {
     energyMult,
     speedMult,
     critDmgMult,
-    teamCritPctOfBase,
+    teamCritFlat,
     treeSheet,
     penetrationPp,
     context,
@@ -155,9 +155,13 @@ export function derive(input: DeriveInput): DeriveResult {
   const gem = naked.energy > 0 ? gearedX.energy / naked.energy : 1;
   // Shared pool: +1 pt adds naked×perPt/(1+O), not naked×perPt.
   const oSpeed = 1 + sheetOther.speed;
-  const oCrit = 1 + sheetOther.critChance;
   const oPen = 1 + sheetOther.penetration;
   const oCdr = 1 + sheetOther.cdr;
+  // The birth roll everything crit-chance scales off: gear, the stat point and the skill tree
+  // all read it, and Olho Clínico's flat points — which none of them multiply — come back off.
+  // Presságio Mortal no longer reads it at all: it is flat points now, added straight to the
+  // sheet below (already capped at TEAM_BUFF_CAP.pressagio_mortal by computeCombatMults).
+  const baseCrit = naked.critChance - Math.max(0, sheetOther.critChanceFlat);
   const star = starsMult(stars);
   const atkPt = attackPointGain(level) * star;
   // GAP-W4-01 (resolved, BSPW5-11/DISC-01): the six pooled shared-divisor deltas below
@@ -178,7 +182,7 @@ export function derive(input: DeriveInput): DeriveResult {
     attack: atkPt * treeSheet.danoStatic,
     energy: POINT_GAIN.energyNative * gem * star,
     speed: (POINT_GAIN.speedPctOfBase * naked.speed) / oSpeed,
-    critChance: (POINT_GAIN.critChancePctOfBase * naked.critChance) / oCrit,
+    critChance: POINT_GAIN.critChancePctOfBase * baseCrit,
     // Flat — no `naked.critDmg` factor and no shared-pool divisor (POINT_GAIN.critDmgFlat).
     critDmg: POINT_GAIN.critDmgFlat,
     penetration: (POINT_GAIN.penetrationPctOfBase * naked.penetration) / oPen,
@@ -188,16 +192,12 @@ export function derive(input: DeriveInput): DeriveResult {
   };
   const adjusted: SheetStats = { ...gearedX };
   for (const key of SHEET_KEYS) adjusted[key] = gearedX[key] + pts[key] * delta[key];
-  // Presságio Mortal (the roster-wide total, already capped at TEAM_BUFF_CAP.pressagio_mortal
-  // by computeCombatMults) uses the rolled base ≈ naked / (1+sheetO) — unrelated to the skill
-  // tree, which the sheet already carries.
-  const baseCrit = naked.critChance / oCrit;
   const effective: HeroSheet = {
     rarity,
     attack: adjusted.attack * attackMult,
     energy: adjusted.energy * energyMult,
     speed: adjusted.speed * speedMult,
-    critChance: adjusted.critChance + (teamCritPctOfBase / 100) * baseCrit,
+    critChance: adjusted.critChance + teamCritFlat,
     critDmg: adjusted.critDmg * critDmgMult,
     penetration: adjusted.penetration + penetrationPp,
     cdr: adjusted.cdr,

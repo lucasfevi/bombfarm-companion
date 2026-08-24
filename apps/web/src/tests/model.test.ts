@@ -143,8 +143,8 @@ describe('abilityMods', () => {
     expect(m.drainMult).toBeCloseTo(0.95, 6);
     expect(m.penetrationPp).toBe(0);
     expect(m.sheetPenetrationRaw).toBe(3);
-    // Percent-of-base since the 2026-08-18 revert: 10 x 4.285714285714286.
-    expect(m.sheetCritChancePctOfBase).toBeCloseTo(42.85714285714286, 6);
+    // FLAT crit points since the 2026-08-23 patch: 10 x 2.
+    expect(m.sheetCritChanceFlat).toBeCloseTo(20, 6);
   });
 
   it('treats Ponta de Diamante as on-sheet raw Σ (not combat penetrationPp)', () => {
@@ -374,8 +374,13 @@ describe('critMilestones (BSPW4-07, AC-47)', () => {
 });
 
 describe('BASE_ROLLS', () => {
-  it('has midpoints for every rarity', () => {
-    expect(BASE_ROLLS.Raro.attack).toBe(125);
-    expect(BASE_ROLLS.Mítico.energy).toBe(1025);
+  it('has midpoints for every rarity, resynced to the 2026-08-23 roll ranges', () => {
+    // Midpoints of `herois.roll_stats[].faixas`. A live save publishes the same bounds per hero
+    // in `heroes[].stat_ranges`, which is what caught Raro attack and the energy column drifting
+    // (150–200 → 175 and 140–240 → 190 for Raro, not the 125/270 this table used to carry).
+    expect(BASE_ROLLS.Raro.attack).toBe(175);
+    expect(BASE_ROLLS.Raro.energy).toBe(190);
+    expect(BASE_ROLLS.Mítico.attack).toBe(1100);
+    expect(BASE_ROLLS.Mítico.energy).toBe(750);
   });
 });

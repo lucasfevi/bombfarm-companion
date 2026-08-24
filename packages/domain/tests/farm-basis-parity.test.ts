@@ -1,6 +1,29 @@
 /**
  * Proof that the `farm-rate.ts` basis seam is a byte-identical refactor, not a rewrite.
  *
+ * RE-RECORDED 2026-08-23 for the crit-chance ability shape (Olho Clínico and Presságio Mortal
+ * restated in flat crit POINTS) and, on the gate rows only, the refreshed stone/time chest rates.
+ * Diffed field by field against the previous capture:
+ *
+ * - `heroFacts` — exactly ONE field moved, `avgHitBase`, and only on the 2 of 5 heroes carrying
+ *   Olho Clínico (Bellatrix and Jon, both rank 20). That is the whole correct footprint: the
+ *   ability is a crit-chance term, crit chance reaches throughput only through the average hit,
+ *   and nothing else in `heroFacts` depends on it. `uptime` is byte-identical on all 5 — the
+ *   load-bearing negative, since drain is untouched by this patch and an `uptime` move would mean
+ *   the change had leaked into the energy path. `penetrationPct`, `fuseSecs`, `walkSpeedCells`,
+ *   `cycleSecs`, `plantsPerSec`, `plantsPerSecByAto`, `blocksPerBomb`, `heroLuckPct`,
+ *   `veiaOuroLevel`, `fortunaLevel` and `degenerate` are byte-identical too.
+ * - `rows` — every throughput column downstream of the hit moved on the 580 reachable rows
+ *   (row 42: 118,767 → 138,139 gold/hr, `clearSecs` 478.6 → 411.5 — a rank-20 Olho hero's crit
+ *   rate goes from `roll + 43%` to `roll + 40 points`, so the squad clears materially faster).
+ *   `stoneChestsPerHour` and `timePiecesPerHour` moved on all 60 GATE rows for a second,
+ *   independent reason — the wiki refresh took the stone chest from 0.005% to 0.05% and the time
+ *   chest from 0.15% to 0.1%; `gemsPerHour` moved on 59 of those from the clear-rate change
+ *   alone, its own rate being unchanged. `heroesOnField` moved on only 4 rows, `mitigationPct`,
+ *   `ato`, `gate`, `locked`, `oneShot`, `infeasible`, `itemLevels`, `itemLevelLabel`,
+ *   `jaulaEarlyCapPct`, `jaulaWindowSecs`, `gateTimerSecs`, `fortunaAura` and `concurrencyScale`
+ *   not at all.
+ *
  * RE-RECORDED 2026-08-21 for the additive drain-reduction fix: a hero's own drain reduction and
  * the team's used to be combined multiplicatively; measurement showed they add instead, each
  * capped at 20%, floored at a combined 60%. Jon is this corpus's only hero with both arms —

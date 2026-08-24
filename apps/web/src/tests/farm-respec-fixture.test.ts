@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import { parseSaveFile } from '@bombfarm/domain/import-save';
 import type { FarmRateRow } from '@bombfarm/domain/farm-rate';
+import { FARM_RESPEC_MIN_GAIN_PCT } from '@bombfarm/domain/farm-optimize';
 import { importHeroes } from '@/shared/lib/storage';
 import {
   readFarmRespecDepTuple,
@@ -54,21 +55,36 @@ describe('Farm Respec Advisor — fixture integration (account-486, save-2026081
     importFixtureIntoStore();
   });
 
-  it('Tier 1 DOES surface on this account — RE-MEASURED for issue #132\'s team-aura roster shape', () => {
-    // Tier 1 (findGateCandidate) is a cheap LOWER-BOUND estimate. Previously (issue #132's
-    // crit/CDR + reoptBudget-clamp pass) it sat at ~0.76%, below FARM_RESPEC_MIN_GAIN_PCT (1%),
-    // so the gate stayed quiet. This fixture's account.teamBuffs is zeroTeamBuffs()
-    // (production's post-import default before the auto-fill button is pressed) — under this
-    // round's roster-shape fix, Jon (folego_mineiro 18 own rank) no longer gets the own-rank
-    // drain leak the old model let through, so his uptime falls and the resulting reoptimization
-    // headroom pushes the honest Tier 1 estimate up past 1%, to ~1.55%. The gate now correctly
-    // surfaces a real, if modest, gain — this is a genuine behavior change (the recommendation
-    // banner now appears for this account), not a numeric wobble.
+  it('Tier 1 stays QUIET on this account — the banner stopped surfacing at the 2026-08-23 patch', () => {
+    // Tier 1 (findGateCandidate) is a cheap LOWER-BOUND estimate, and it is compared against
+    // FARM_RESPEC_MIN_GAIN_PCT (1%) to decide whether the recommendation banner appears at all.
+    // This fixture's account has now sat on both sides of that line, and the history is the point:
+    //
+    //   ~0.76%  quiet   issue #132's crit/CDR + reoptBudget-clamp pass
+    //   ~1.55%  surfaced the team-aura roster shape (Jon's own-rank drain leak removed)
+    //   ~0.077% quiet   the 2026-08-23 crit-chance ability shape  <- asserted here
+    //
+    // The last move is the largest, and it is a real behaviour change rather than a wobble: two of
+    // this roster's heroes carry Olho Clinico, whose flat +40 crit points lift the CURRENT build's
+    // throughput much more than they lift the best reachable re-allocation of the same points. The
+    // headroom a respec could recover shrinks accordingly, and the honest estimate lands two orders
+    // of magnitude below the threshold. The banner correctly does not appear for this account.
+    //
+    // The Playwright suite (`e2e/farm-respec.spec.ts`) needs the banner to APPEAR to drive the UI
+    // at all, so it moved to the 2026-08-23 capture, which has real headroom (3.66% lower bound).
+    // The split is deliberate: this file keeps exercising the solver on a thin-headroom account
+    // and pins the quiet state, the e2e exercises the panel on one with headroom.
     const gate = selectFarmRespecGate(usePlannerStore.getState());
     expect(gate.reason).toBeNull();
-    expect(gate.result?.gainPct).toBeGreaterThan(1);
-    expect(gate.result?.gainPct).toBeLessThan(2);
-    expect(gate.shouldSurface).toBe(true);
+    expect(gate.result?.gainPct).toBeGreaterThan(0);
+    expect(gate.result?.gainPct).toBeLessThan(FARM_RESPEC_MIN_GAIN_PCT);
+    expect(gate.result?.gainPct).toBeCloseTo(0.0769568501229223, 6);
+    expect(gate.shouldSurface).toBe(false);
+
+    // Non-vacuity: `shouldSurface` is false because the gain is under the threshold, not because
+    // the gate bailed out — a null reason above already proves it ran, and a positive gain proves
+    // it found a real (if tiny) improvement rather than nothing at all.
+    expect(gate.result).not.toBeNull();
   });
 
   it('Tier 1 is a lower bound: gainIsLowerBound is true and its gain never exceeds Tier 2\'s', () => {

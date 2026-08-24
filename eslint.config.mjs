@@ -14,6 +14,7 @@ const companionNativePackages = [
   'packages/game-api/**/*.{ts,tsx}',
   'packages/game-data/**/*.{ts,tsx}',
   'packages/pricing/**/*.{ts,tsx}',
+  'packages/tap-runtime/**/*.{ts,tsx}',
 ];
 
 /** Planner-origin packages (`domain`, `ui`) — recommendedTypeChecked; see docs/typescript-planner-origin.md */

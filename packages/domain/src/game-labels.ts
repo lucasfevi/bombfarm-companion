@@ -145,8 +145,8 @@ const ABILITY_EFFECTS: Record<string, Bilingual> = {
     en: '+0.185% TEAM speed/level',
   },
   pressagio_mortal: {
-    pt: '+5.714% chance de crítico do TIME/nível (% da base)',
-    en: '+5.714% TEAM crit chance/level (% of base)',
+    pt: '+1 ponto de chance de crítico do TIME/nível (valor fixo)',
+    en: '+1 TEAM crit chance point/level (flat)',
   },
   fantasma: {
     pt: 'atravessa rocha; +0.05% Ataque de passagem/nível (não modelado)',
@@ -169,8 +169,8 @@ const ABILITY_EFFECTS: Record<string, Bilingual> = {
     en: '+2% Attack in timed phase/level',
   },
   olho_clinico: {
-    pt: '+4.286% chance de crítico/nível (% da base, altera atributos)',
-    en: '+4.286% crit chance/level (% of base, affects stats)',
+    pt: '+2 pontos de chance de crítico/nível (valor fixo, altera atributos)',
+    en: '+2 crit chance points/level (flat, affects stats)',
   },
   detonacao_dupla: {
     pt: '+1.5% chance de 2ª explosão (50% dano)/nível',
@@ -185,8 +185,8 @@ const ABILITY_EFFECTS: Record<string, Bilingual> = {
     en: '+4% Damage on ENTERING rotation (lasts 120s)/level (not modeled)',
   },
   olho_lapidador: {
-    pt: '+2.5% chance de baú subir raridade/nível (loot)',
-    en: '+2.5% chance chest upgrades rarity/level (loot)',
+    pt: '+2.5% chance de subir a raridade do drop do herói que destruiu o objeto/nível (loot, não vale para Jaulas)',
+    en: '+2.5% chance to upgrade the rarity of the drop from the hero that destroyed the object/level (loot, not Cages)',
   },
   veia_ouro: {
     pt: '+2% ouro (próprio)/nível, +40% no teto (loot)',
@@ -301,9 +301,12 @@ const SET_LABELS: Record<string, Bilingual> = {
   gold: { pt: 'Ouro', en: 'Gold' },
   iron: { pt: 'Ferro', en: 'Iron' },
   jade: { pt: 'Jade', en: 'Jade' },
-  // The three nv280/290/300 sets added by the 2026-08-15 patch. The wiki publishes set SLUGS
-  // only (`itens.defs[].set`), never display names, so these PT strings are translations, not
-  // captures — confirm them against the in-game item names before they ship to players.
+  // The three nv280/290/300 sets added by the 2026-08-15 patch. The 2026-08-23 patch corrected
+  // their names in-game, and the wiki's slugs did not move with it — `itens.defs[].set` and the
+  // item art filenames still read `obsidian`/`magma`/`void`, and the wiki never publishes
+  // display names for any set (it renders the slug verbatim). So these PT strings remain
+  // translations of the slug, not captures, and are as close to the game as the published data
+  // gets; only an in-game screenshot could tighten them.
   magma: { pt: 'Magma', en: 'Magma' },
   midnight: { pt: 'Meia-noite', en: 'Midnight' },
   obsidian: { pt: 'Obsidiana', en: 'Obsidian' },

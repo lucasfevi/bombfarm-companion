@@ -3,14 +3,23 @@ import { test, expect, type Page } from '@playwright/test';
 import { seedLocalStorage, type SeededState } from './fixtures/seed';
 
 /**
- * The committed account-486 fixture, imported through the shell's REAL import dialog — the same
- * flow `farm-ranking.spec.ts` scenario 11 drives. This is the only fixture with an `account`
- * block carrying a `max_phase`, which is what makes the 26-28 recommended-phase band
- * reproducible; `e2e/fixtures/sample-save.json` is a different, 3-hero account with no
- * `max_phase` and cannot stand in for it (`docs/fixture-corpus.md`). Not copied into
- * `e2e/fixtures/` — that would be a second copy of a scrubbed capture that drifts.
+ * The committed account-486 capture, imported through the shell's REAL import dialog — the same
+ * flow `farm-ranking.spec.ts` scenario 11 drives. It carries an `account` block with a
+ * `max_phase`, which is what makes the recommended-phase assertion reproducible;
+ * `e2e/fixtures/sample-save.json` is a different, 3-hero account with no `max_phase` and cannot
+ * stand in for it (`docs/fixture-corpus.md`). Not copied into `e2e/fixtures/` — that would be a
+ * second copy of a scrubbed capture that drifts.
+ *
+ * SWAPPED to the 2026-08-23 capture. The 5-hero 2026-08-13 one drove every case here until that
+ * patch restated the crit-chance abilities in points; under today's sheet math its best reachable
+ * respec is worth 0.077%, far below `FARM_RESPEC_MIN_GAIN_PCT`, so the toolbar callout this whole
+ * file drives never appears and there is no UI left to test. That account's flip to quiet is a
+ * real behaviour change and is asserted where it belongs, in
+ * `src/tests/farm-respec-fixture.test.ts`; this file needs an account with genuine headroom, and
+ * the 2026-08-23 capture has it (3.66% lower bound, 11.09% solved) while also being the only
+ * capture whose sheet math today's model reproduces.
  */
-const account486 = path.join(process.cwd(), 'src/tests/fixtures/sheet-math/save-20260813-5heroes.json');
+const account486 = path.join(process.cwd(), 'src/tests/fixtures/sheet-math/save-20260823-13heroes-crit-points.json');
 
 const table = (page: Page) => page.locator('[data-testid="farm-ranking-table"]');
 const rows = (page: Page) => table(page).locator('tbody tr');
@@ -24,7 +33,7 @@ async function importAccount486(page: Page): Promise<void> {
   await page.getByRole('button', { name: 'Import', exact: true }).click();
   await expect(page.getByRole('dialog')).toBeVisible();
   await page.locator('input[type="file"]').setInputFiles(account486);
-  // Jon is one of the five heroes in the committed fixture.
+  // Jon is one of the thirteen heroes in the committed capture.
   await expect(page.getByRole('dialog').getByText('Jon')).toBeVisible();
   await page.getByRole('button', { name: /import \d+ hero/i }).click();
   await expect(page.getByRole('dialog')).toBeHidden();
@@ -86,8 +95,8 @@ test.describe('Farm Respec Advisor', () => {
   });
 
   // 1. The callout appears with a lower-bound gain and nothing else; the recommended phase it
-  // used to restate is the panel's Phase tile, so the 26-28 band is asserted there instead.
-  test('the toolbar callout is the lower-bound gain alone; the panel names a phase in 26-28', async ({ page }) => {
+  // used to restate is the panel's Phase tile, so the band is asserted there instead.
+  test('the toolbar callout is the lower-bound gain alone; the panel names a phase in 50-54', async ({ page }) => {
     await expect(toolbar(page)).toBeVisible();
     await expect(headline(page)).toContainText(/at least/i);
     // The phase, the cost and the payback all moved into the panel — none of them may creep back.
@@ -101,8 +110,10 @@ test.describe('Farm Respec Advisor', () => {
     expect(phases.length, `no phase number found in "${phaseText}"`).toBeGreaterThan(0);
     // The tile reads `current -> recommended`; the recommendation is the last one it prints.
     const recommended = phases[phases.length - 1];
-    expect(recommended).toBeGreaterThanOrEqual(26);
-    expect(recommended).toBeLessThanOrEqual(28);
+    // The solver lands on 52 for this account; asserted as a narrow band rather than a point so
+    // a last-digit move in an unrelated constant does not fail a test about the UI.
+    expect(recommended).toBeGreaterThanOrEqual(50);
+    expect(recommended).toBeLessThanOrEqual(54);
   });
 
   // 2. Optimize expands the panel IN PLACE — DOM order between the toolbar and the table's
@@ -138,7 +149,7 @@ test.describe('Farm Respec Advisor', () => {
     await expect(heroGrid(page)).toBeVisible();
 
     const cardCount = await heroGrid(page).locator('[data-testid^="farm-respec-hero-"]').count();
-    expect(cardCount).toBe(5); // the committed fixture's five heroes
+    expect(cardCount).toBe(13); // the committed capture's thirteen heroes
 
     const keyRows = heroGrid(page).locator('[data-testid^="farm-respec-key-"]');
     const changedCardKeyCount = await keyRows.count();
@@ -176,9 +187,9 @@ test.describe('Farm Respec Advisor', () => {
     expect(gridOverflowX).not.toBe('auto');
   });
 
-  // 5. Re-rank moves the top-ranked phase into the 26-28 band, closes the panel, and marks the
+  // 5. Re-rank moves the top-ranked phase into the recommended band, closes the panel, and marks the
   // table as showing the proposed build.
-  test('re-rank moves the top-ranked phase into 26-28, closes the panel, and marks the table', async ({ page }) => {
+  test('re-rank moves the top-ranked phase into 50-54, closes the panel, and marks the table', async ({ page }) => {
     const beforePhase = await firstRowPhase(page);
 
     await optimizeButton(page).click();
@@ -191,8 +202,8 @@ test.describe('Farm Respec Advisor', () => {
 
     const afterPhase = await firstRowPhase(page);
     expect(afterPhase).not.toBe(beforePhase);
-    expect(afterPhase).toBeGreaterThanOrEqual(26);
-    expect(afterPhase).toBeLessThanOrEqual(28);
+    expect(afterPhase).toBeGreaterThanOrEqual(50);
+    expect(afterPhase).toBeLessThanOrEqual(54);
   });
 
   // 6. Invalidation: with re-rank on, changing an input reverts everything — no stale figure.

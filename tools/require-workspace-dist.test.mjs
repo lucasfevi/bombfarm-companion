@@ -93,7 +93,7 @@ afterAll(() => {
 describe('REQUIRED_DIST_PACKAGES', () => {
   it('is the measured set each project needs built', () => {
     expect(REQUIRED_DIST_PACKAGES).toEqual({
-      '@bombfarm/desktop': ['contracts', 'domain', 'game-api', 'game-data'],
+      '@bombfarm/desktop': ['contracts', 'domain', 'game-api', 'game-data', 'tap-runtime'],
       '@bombfarm/game-api': ['domain'],
       tools: ['domain'],
     });
@@ -204,6 +204,7 @@ describe('missingDistPackages', () => {
       'domain',
       'game-api',
       'game-data',
+      'tap-runtime',
     ]);
   });
 
@@ -212,12 +213,13 @@ describe('missingDistPackages', () => {
     expect(missingDistPackages('@bombfarm/desktop', root)).toEqual([]);
   });
 
-  it('still reports the other three when only domain is built (the false all-clear this closes)', () => {
+  it('still reports the others when only domain is built (the false all-clear this closes)', () => {
     const root = makeRoot('domain-only', ['domain']);
     expect(missingDistPackages('@bombfarm/desktop', root)).toEqual([
       'contracts',
       'game-api',
       'game-data',
+      'tap-runtime',
     ]);
     // Same root, different project: game-api and tools need domain alone and are satisfied.
     expect(missingDistPackages('@bombfarm/game-api', root)).toEqual([]);

@@ -12,7 +12,6 @@ import {
   gearBonusDeltas,
   defaultNaked,
   rescaleNakedForLevel,
-  rescaleNakedCrit,
   rescaleNakedCritChance,
   rescaleNakedCritDmg,
   rescaleNakedPen,
@@ -197,7 +196,7 @@ describe('shared-pool gear math', () => {
       luck: 0,
     };
     const other = emptySheetOther();
-    other.critChance = 0.15; // Olho-like sheet ability
+    other.critChanceFlat = 20; // Olho-like sheet ability (flat crit points)
     const sheet = applyPoints(naked(), loadout, pts, other);
     const recovered = reverseSheet(sheet, loadout, pts, other);
     for (const k of Object.keys(naked()) as (keyof SheetStats)[]) {
@@ -264,10 +263,12 @@ describe('defaultNaked (static naked sheet)', () => {
     expect(lv30.cdr).toBe(lv1.cdr);
   });
 
-  it('bakes a sheet-ability bonus (e.g. Olho Clínico) into naked crit %', () => {
-    const withOlho10 = defaultNaked('Incomum', 1, { ...emptySheetOther(), critChance: 0.15 });
+  it('bakes a sheet-ability addend (e.g. Olho Clínico) into naked crit %', () => {
+    // Flat crit points since the 2026-08-23 patch, added after the star factor like Golpe
+    // Brutal's crit damage — not a share of the roll.
+    const withOlho10 = defaultNaked('Incomum', 1, { ...emptySheetOther(), critChanceFlat: 20 });
     const withOlho0 = defaultNaked('Incomum', 1);
-    expect(withOlho10.critChance).toBeCloseTo(BASE_ROLLS.Incomum.critChance * 1.15, 6);
+    expect(withOlho10.critChance).toBeCloseTo(BASE_ROLLS.Incomum.critChance + 20, 6);
     expect(withOlho0.critChance).toBe(BASE_ROLLS.Incomum.critChance);
   });
 
@@ -444,60 +445,37 @@ describe('rescaleNakedCritDmg', () => {
 });
 
 describe('rescaleNakedCritChance (BSPW4-07, AC-44)', () => {
-  it('rescales only crit chance by (1+newOther)/(1+oldOther), preserving other stats', () => {
+  it('swaps only the crit-chance addend, preserving other stats', () => {
     const custom: SheetStats = { ...naked(), attack: 999, critChance: 9.51 };
-    const next = rescaleNakedCritChance(custom, 0, 0.075); // Olho Clínico rank 10, W3 0.75%/rank
-    expect(next.critChance).toBeCloseTo(9.51 * 1.075, 6);
+    const next = rescaleNakedCritChance(custom, 0, 20); // Olho Clínico rank 10 → +20 crit points
+    expect(next.critChance).toBeCloseTo(9.51 + 20, 6);
     expect(next.attack).toBe(custom.attack);
     expect(next.critDmg).toBe(custom.critDmg);
     expect(next.penetration).toBe(custom.penetration);
   });
 
-  it('is a no-op (same reference) when other pct does not change', () => {
+  it('is a no-op (same reference) when the addend does not change', () => {
     const n = naked();
-    expect(rescaleNakedCritChance(n, 0.075, 0.075)).toBe(n);
+    expect(rescaleNakedCritChance(n, 20, 20)).toBe(n);
   });
 
-  it('clamps a negative old/new other pct to zero', () => {
+  it('clamps a negative old/new addend to zero', () => {
     const custom: SheetStats = { ...naked(), critChance: 10 };
-    const next = rescaleNakedCritChance(custom, -0.5, 0.08);
-    expect(next.critChance).toBeCloseTo(10 * 1.08, 6);
+    const next = rescaleNakedCritChance(custom, -5, 8);
+    expect(next.critChance).toBeCloseTo(10 + 8, 6);
   });
 
-  it('AC-45: disagrees with rescaleNakedCrit (rarity-midpoint reset) for a non-midpoint hero, and preserves the hero\'s own roll', () => {
+  it('AC-45: preserves a non-midpoint hero’s own roll, where a rarity-midpoint reset would discard it', () => {
     // Bellatrix's actual birth crit-chance roll (9.51) vs Raro's rarity midpoint (7) — a 36%
-    // error (spec.md's evidence table). The two forms must NOT agree.
+    // error (spec.md's evidence table). Swapping the flat addend must move the sheet by the
+    // addend alone and leave the roll underneath untouched.
     const bellatrixCritChance = 9.51;
     const custom: SheetStats = { ...naked(), critChance: bellatrixCritChance };
 
-    const ratioForm = rescaleNakedCritChance(custom, 0, 0.15);
-    const midpointForm = rescaleNakedCrit(custom, 'Raro', 0.15);
-
-    expect(ratioForm.critChance).toBeCloseTo(bellatrixCritChance * 1.15, 6);
-    expect(midpointForm.critChance).toBeCloseTo(BASE_ROLLS.Raro.critChance * 1.15, 6);
-    expect(ratioForm.critChance).not.toBeCloseTo(midpointForm.critChance, 1);
-    // The ratio form preserves the 9.51-derived value; the midpoint form discards it.
-    expect(ratioForm.critChance / bellatrixCritChance).toBeCloseTo(1.15, 6);
-  });
-});
-
-describe('rescaleNakedCrit', () => {
-  it('rescales only crit %, preserving every other (possibly custom) stat', () => {
-    const custom: SheetStats = { ...naked(), attack: 999 }; // e.g. from a level-up rescale
-    const next = rescaleNakedCrit(custom, 'Comum', 0.15);
-    expect(next.critChance).toBeCloseTo(BASE_ROLLS.Comum.critChance * 1.15, 6);
-    expect(next.attack).toBe(custom.attack);
-    expect(next.speed).toBe(custom.speed);
-  });
-
-  it('keeps the star multiplier when rebuilding crit from Olho other', () => {
-    const custom: SheetStats = { ...naked(), critChance: 99 };
-    const next = rescaleNakedCrit(custom, 'Comum', 0.15, 2);
-    expect(next.critChance).toBeCloseTo(BASE_ROLLS.Comum.critChance * 1.15 * starsMult(2), 6);
-  });
-  it('clamps a negative other pct to zero', () => {
-    const next = rescaleNakedCrit(naked(), 'Comum', -0.5);
-    expect(next.critChance).toBe(BASE_ROLLS.Comum.critChance);
+    const next = rescaleNakedCritChance(custom, 0, 26);
+    expect(next.critChance).toBeCloseTo(bellatrixCritChance + 26, 6);
+    expect(next.critChance - 26).toBeCloseTo(bellatrixCritChance, 6);
+    expect(next.critChance).not.toBeCloseTo(BASE_ROLLS.Raro.critChance + 26, 1);
   });
 });
 

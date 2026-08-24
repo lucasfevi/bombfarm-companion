@@ -26,7 +26,7 @@ async function launchApp(env) {
       NODE_ENV: 'production',
       BFC_FLAVOR: 'dev',
       ELECTRON_ENABLE_LOGGING: '1',
-      // Memory mode's tickMemory() scans for a real OS process by this name. On a developer
+      // The live path's tickLive() scans for a real OS process by this name. On a developer
       // machine that actually has BombFarm running (this is the companion for that exact
       // game), the default 'BombFarm.exe' would be found for real and the "game not running"
       // launch would report connected — a false failure that has nothing to do with the

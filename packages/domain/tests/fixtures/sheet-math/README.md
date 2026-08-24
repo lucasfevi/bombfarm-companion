@@ -162,3 +162,17 @@ does not touch.
 | SHA-256 (committed file) | `099ffada706f8ade35d0efde493609794e84e80d81cdadcd811767a7c084742c` |
 | May prove | **the skill tree's `crit_dmg_add` shape** — the first capture in the corpus with a nonzero value (`0.081730769`), which is what makes it worth committing. All 15 heroes gain the SAME `+8.1730769` crit-damage percentage points over their birth roll, across rolls spanning `45.03 … 73.13` and levels `1 … 97`: the node is a FLAT addend, not percent-of-base (which would have spread it over `3.68 … 5.98`, hero by hero). Items never roll crit damage and no hero here holds a crit-damage point, so the tree is the only term in the gap. `Buff S #1` additionally proves the tree's flat term and Golpe Brutal's flat `+80` simply stack. With the shape corrected, every hero solves to a whole-number point vector with zero inference issues, each landing exactly on `level` |
 | May **not** prove | star scaling of the tree's crit-damage term (every hero is ★0), nor whether it would scale with a crit-damage point present (none is spent anywhere in the roster); the per-POINT crit-chance/CDR rates (see `save-20260819-respec-crit-cdr.json`) |
+
+## `save-20260823-13heroes-crit-points.json`
+
+| Field | Value |
+| --- | --- |
+| Source capture | live save export, captured externally from the game client |
+| Capture date | 2026-08-23 |
+| Account | 486, `phase: 51`, `max_phase: 137` — 13 heroes, levels 2 to 106; three carry `olho_clinico` (Minato and Jon at 20/20 with gear, Perrin at 13/20 with none) and one (`Buff S #1`) carries `golpe_brutal` 20/20 |
+| Capture log entry | *Crit-chance abilities restated in points*, 2026-08-23 row (tracked externally to this repo) |
+| Scrub | `account.account_id`, `account.player_name` removed — nothing else changed |
+| SHA-256 (unscrubbed source) | `53e9b06e7bd5263339b986d219e97ced795d96d2dc3e576cc81b567665ef82d3` |
+| SHA-256 (committed file) | `0c7bd67a30fda0f839b86c6dd38d21f0b3c41de519ca87c34e18c3a4fcee8552` |
+| May prove | **the crit-chance ABILITY shape** — the first capture taken after the patch that restated Olho Clínico and Presságio Mortal in flat crit POINTS. Perrin is the discriminating hero: `olho_clinico` 13/20, no gear, no crit-chance points, so his exported `crit_chance × 100` is exactly `6.02142890221474 + 13 × 2 + 6.02142890221474 × 0.08042584275 = 32.5057073962346` — the flat addend, its exclusion from the shared pool, and the tree reading the PRE-ability roll, all pinned by one hero. Minato (gear crit `+3.7869%`) and Jon (`+15.1474%`) add the gear leg: both solve to exactly zero crit-chance points under the pool-excluded reading and to fractional negatives if the `+40` rides inside the pool. Percent-of-base fits none of the three. All 13 heroes solve to a whole-number point vector with zero inference issues, each landing exactly on `level`. Also carries the ROLL RANGES the same patch changed, in `heroes[].stat_ranges` (`dmg 150–200` / `energia 140–240` for a Raro), which is what caught `BASE_ROLLS`' attack and energy columns drifting |
+| May **not** prove | star scaling of either flat sheet-ability addend (every hero is ★0); Presságio Mortal's own value (no hero on any capture owns it — its rate is the wiki's published one); the per-POINT crit-chance/CDR rates (nobody here holds a crit-chance or cooldown point — see `save-20260819-respec-crit-cdr.json`) |

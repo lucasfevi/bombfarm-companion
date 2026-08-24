@@ -44,7 +44,7 @@ export const TEAM_BUFF_PER_LEVEL: Record<TeamBuffId, number> = Object.fromEntrie
  */
 export const TEAM_BUFF_CAP: Record<TeamBuffId, number> = {
   grito_guerra: 20,
-  pressagio_mortal: 114.28571428571428,
+  pressagio_mortal: 20,
   marcha_acelerada: 3.7,
   folego_mineiro: 20,
 };
@@ -61,7 +61,7 @@ export function zeroTeamBuffs(): Record<TeamBuffId, number> {
 /** UI metadata for team-buff number fields (labels / hints / steps). */
 export const TEAM_BUFF_FIELDS = [
   { id: 'grito_guerra', label: 'Grito de Guerra', hint: 'Atk %', step: 1 },
-  { id: 'pressagio_mortal', label: 'Presságio Mortal', hint: 'Crit % base', step: 1 },
+  { id: 'pressagio_mortal', label: 'Presságio Mortal', hint: 'Crit pts', step: 1 },
   { id: 'marcha_acelerada', label: 'Marcha Acelerada', hint: 'Speed %', step: 0.1 },
   { id: 'folego_mineiro', label: 'Fôlego de Mineiro', hint: 'Drain −%', step: 1 },
 ] as const satisfies readonly { id: TeamBuffId; label: string; hint: string; step: number }[];

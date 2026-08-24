@@ -16,6 +16,30 @@
  * the walk below decodes leaves back to numbers for a same-value comparison (`Object.is`) only
  * to name the first differing hero/function/stat on failure.
  *
+ * RE-RECORDED (7) at the 2026-08-23 crit-chance ability shape. Olho Clínico and Presságio Mortal
+ * went from percentages of the hero's crit-chance roll to FLAT crit points, and the flat term
+ * sits outside the shared gear/points pool and outside the skill tree's base — see the
+ * `critChanceFlat` ability kind for the capture that pins all three.
+ *
+ * **142** of the 2791 recorded scalars moved, and **13** were renamed in place
+ * (`computeCombatMults.teamCritPctOfBase` → `teamCritFlat`, one per hero) — the only key change,
+ * and `meta.scalarCount` therefore did NOT move. Every moved value is either crit chance itself or
+ * something reading it: the three Olho-bearing heroes' `critChance` on every sheet-shaped subject
+ * (`naked`, `applySkillTree`, `composeSheetFromBirth`, `sheetsFromBirth`, `peelSheetStages`,
+ * `peelSheetSources`, `derive.adjusted`/`effective`), the `buildStatBreakdown` crit-chance ledger
+ * (whose ability step changed op from `×` to `+`), `derived.critFactor`, and the DPS/ranking
+ * figures hanging off the crit multiplier (`derive.dps`/`active`, `pipelineForHero.dps`/`active`/
+ * `ranking[].gainPct`/`best.gainPct`/`resetAdvice.*`, and the scorer's
+ * `perHero[].sustained`/`active`/`objective`).
+ *
+ * NOT moved, and the proof this was the crit-chance shape and nothing else: every OTHER sheet key
+ * on every subject, every `inferSpentPoints` value on every hero, `avgHitBase`, and every hero
+ * that carries no Olho Clínico rank at all. Both corpus files predate the patch, so their
+ * crit-chance numbers are characterization values rather than a claim about today's game — the
+ * capture that IS a claim is `save-20260823-13heroes-crit-points.json`, swept by
+ * `point-roundtrip.test.ts` and `points-within-level-budget.test.ts`.
+ *
+ * ---
  * RE-RECORDED (6) at the Tier 1 reset-budget level clamp. `findGateCandidate` took
  * `budgetOf(pts)` un-clamped, so a hero whose inferred spend exceeds its level was handed more
  * points to re-place than the game can ever grant it — the same phantom-proposal failure the

@@ -1,5 +1,6 @@
 node_modules/
 dist/
+/packages/tap-runtime/src/script-source.js
 out/
 .next/
 .pnpm-store/
@@ -10,6 +11,9 @@ coverage/
 .DS_Store
 Thumbs.db
 /release/
+# electron-builder's output. Rooted `/release/` above never covered it, so a stray `git add -A`
+# in apps/desktop stages a ~350MB installer and unpacked app.
+apps/desktop/release/
 playwright-report/
 test-results/
 storybook-static/

@@ -64,7 +64,12 @@ export type GearBonuses = {
  */
 export type SheetOtherPct = {
   speed: number;
-  critChance: number;
+  /**
+   * FLAT crit-chance percentage points (planner units) — an addend held OUTSIDE the shared
+   * pool, unlike `speed`/`penetration`/`cdr`, which are pool fractions. Olho Clínico is the
+   * only source; see the `critChanceFlat` ability kind for the measurement.
+   */
+  critChanceFlat: number;
   /** FLAT crit-damage percentage points (planner units) — an addend, not a pool fraction. */
   critDmgFlat: number;
   penetration: number;

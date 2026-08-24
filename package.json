@@ -46,7 +46,7 @@
       "esbuild",
       "sharp",
       "better-sqlite3",
-      "koffi"
+      "frida"
     ]
   }
 }

@@ -83,13 +83,18 @@ describe('bestFarmPhase — the non-unimodality pin', () => {
 });
 
 describe('bestFarmPhase — changing the objective changes the pick', () => {
-  it('the gold pick sits in 26–32 and the chest pick is phase 1', () => {
+  it('the gold pick sits in 26–34 and the chest pick is phase 1', () => {
+    // The band's upper edge moved 32 → 34 at the 2026-08-23 crit-chance ability shape: two of
+    // this fixture's heroes carry Olho Clínico 20, so the squad hits harder and its gold argmax
+    // walks up into phases it previously could not clear fast enough to be worth farming. The
+    // claim this test makes is unchanged — the gold pick is a mid-game phase and the chest pick
+    // is phase 1, and the two never coincide.
     const goldPick = bestFarmPhase(squad, goldObjective, scales, { maxPhase });
     const chestPick = bestFarmPhase(squad, chestObjective, scales, { maxPhase });
     expect(goldPick).not.toBeNull();
     expect(chestPick).not.toBeNull();
     expect(goldPick!.phase).toBeGreaterThanOrEqual(26);
-    expect(goldPick!.phase).toBeLessThanOrEqual(32);
+    expect(goldPick!.phase).toBeLessThanOrEqual(34);
     expect(chestPick!.phase).toBe(1);
     expect(goldPick!.phase).not.toBe(chestPick!.phase);
   });

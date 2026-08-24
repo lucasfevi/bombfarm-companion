@@ -15,8 +15,9 @@
  * actually makes — points ride the Hero line — is unaffected and still holds.
  *
  * "Ability" is the pool's on-sheet-ability share (`base × sheetOther[key]`); for attack/energy
- * there is no ability pool term, so `ability` is structurally `0` there. The skill-tree line uses
- * the SAME `base = naked[key]/(1+sheetOther[key])` the additive `AD-BSP-22` shapes use in
+ * there is no ability pool term, so `ability` is structurally `0` there, and for crit chance and
+ * crit damage the ability contribution is a flat addend rather than a share. The skill-tree line
+ * uses the SAME `base = naked[key]/(1+sheetOther[key])` the additive `AD-BSP-22` shapes use in
  * `applySkillTree` — not the full hero+gear+ability subtotal — except for the
  * multiplicative-subtotal keys (attack, energy) and the flat-addend keys (crit damage, luck).
  */
@@ -99,15 +100,21 @@ export function peelSheetSources(input: PeelSheetSourcesInput): SheetSourceLines
     pts.speed,
     tree.speedPct,
   );
-  const critChance = pooledLines(
-    birth.critChance,
-    star,
-    sheetOther.critChance,
-    bonuses.critPct,
-    POINT_GAIN.critChancePctOfBase,
-    pts.critChance,
-    tree.critChancePct,
-  );
+  // Crit chance is pooled for gear/points/tree but its ABILITY line is flat: Olho Clínico's
+  // points ride outside the pool (gear/apply.ts), so `pooledLines` sees no `other` term and the
+  // ability line is the raw addend — the same split `critDmg` uses below, minus the gear zero.
+  const critChance: SourceLines = {
+    ...pooledLines(
+      birth.critChance,
+      star,
+      0,
+      bonuses.critPct,
+      POINT_GAIN.critChancePctOfBase,
+      pts.critChance,
+      tree.critChancePct,
+    ),
+    ability: Math.max(0, sheetOther.critChanceFlat),
+  };
   // Crit damage is NOT a pooled key: items never roll it (gear/apply.ts — Gear is structurally
   // 0), and the sheet ability, the stat point and the tree node are all flat addends in planner
   // percentage points (POINT_GAIN.critDmgFlat, and `applySkillTree` for the tree measurement).

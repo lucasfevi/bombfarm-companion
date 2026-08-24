@@ -156,18 +156,26 @@ test.describe('abilities panel (ABX residual)', () => {
       has: page.getByRole('heading', { name: /^Stats$/i, level: 2 }),
     });
     const critRow = stats.locator('tr').filter({ hasText: /^Crit %/ });
-    // RE-POINTED for the 2026-08-18 revert (issue #132), which restored the premise this
-    // sensor rests on but rescaled Keen Eye's own value in the process (×40/7 from the
-    // pre-2026-08-15 figure — see `abilities.ts`).
+    // RE-POINTED for the 2026-08-23 patch, which made Keen Eye a FLAT +2 crit points per rank
+    // (see the `critChanceFlat` ability kind). That changes WHICH cell discriminates: a flat
+    // addend is identical whether the hero's own roll or the rarity midpoint feeds it, so the
+    // Δ ability cell can no longer tell the two apart on its own.
     //
-    // The Stats table is birth→Total, so the discriminator lives in two cells: Birth is the
-    // hero's own roll (9.51, NOT the Raro midpoint 7), and Δ ability is that roll scaled by
-    // Keen Eye 1's new +4.285714285714286%/rank:
-    //   9.51 x 0.04285714285714286 = 0.4076 -> "+0.41"   vs the midpoint bug's 7 x (same) = "+0.30".
+    // The Stats table is birth→Total, and the discriminator is now the pair at either end of it:
+    // Birth must be the hero's own roll (9.51, NOT the Raro midpoint 7.05), and Total must carry
+    // that roll through (11.56, NOT the midpoint bug's ~9.06). The ability cell is still asserted
+    // — as the constant it now is, so a regression that made it roll-dependent again would fail
+    // here rather than pass quietly.
     await expect(critRow.locator('td').nth(1)).toHaveText('9.51');
-    await expect(critRow.locator('td').nth(4)).toHaveText('+0.41');
+    // The ability's own cell is now the SAME for every roll, so it is asserted as a constant
+    // rather than as the discriminator it used to be.
+    await expect(critRow.locator('td').nth(4)).toHaveText('+2.00');
+    // The discriminator moved to Birth and Total: the midpoint bug would show 7.05 and a Total
+    // near 9.06, where preserving Cora's own roll gives 9.51 and 11.56 (the extra 0.05 is her
+    // skill-tree crit node, the row's other non-dash cell).
+    await expect(critRow.locator('td').nth(8)).toHaveText('11.56');
     await expect(critRow).not.toContainText('7.05');
-    await expect(critRow.locator('td').nth(4)).not.toHaveText('+0.30');
+    await expect(critRow).not.toContainText('9.06');
   });
 
   test('imported hero identity lives in hero strip; tab is abilities-only', async ({ page }) => {
