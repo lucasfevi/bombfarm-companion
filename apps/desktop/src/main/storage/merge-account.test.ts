@@ -393,7 +393,15 @@ describe('createAccountStore().commit()', () => {
     store.close();
   });
 
-  it('a drifted casa body survives commit()\'s own persist-then-restore round trip: its body, missingKeys and addedKeys all reach the committed view', () => {
+  /**
+   * This test used to be named for a persist-then-restore round trip it never performed. A
+   * drifted section is deliberately not written (`persist` allow-lists `resolved` alone), so
+   * restore returns nothing for it and the merge serves the live body — which is what actually
+   * makes the drifted body reach the view. Named as a round trip, it read as the proof that
+   * degraded sections survive storage, and it passed with `persist()` deleted. The pass-through
+   * is asserted here; the non-persistence it depends on is pinned in the test below.
+   */
+  it('a drifted casa body reaches the committed view from the live payload: its body, missingKeys and addedKeys all survive the merge', () => {
     const open = openTestAccountDb('node:sqlite');
     const store = createAccountStore(open);
 
@@ -424,6 +432,35 @@ describe('createAccountStore().commit()', () => {
       rescues_left: 2,
       rescues_max: 3,
     });
+    store.close();
+  });
+
+  /**
+   * The other half of the test above, and the reason it cannot be read as a storage proof:
+   * `persist` writes `resolved` sections alone, so a drifted body is never stored and a later
+   * restore cannot serve it. Asserted rather than assumed — without this, deleting `persist()`
+   * changes no test outcome anywhere in this file.
+   */
+  it('a drifted section is not written to storage, so a later restore cannot serve it', () => {
+    const open = openTestAccountDb('node:sqlite');
+    const store = createAccountStore(open);
+
+    const written = store.persist({
+      casa: { field_size: 5, heroes: [], casa: { active_casa: 1 }, rescues_left: 2, rescues_max: 3 },
+      fidelity: {
+        account: MISSING_LIVE,
+        heroes: MISSING_LIVE,
+        skills: MISSING_LIVE,
+        casa: { status: 'degraded', capturedAt: 't1', missingKeys: [], addedKeys: ['seasonal_flag'] },
+        items: MISSING_LIVE,
+      },
+    });
+
+    expect(written.written).not.toContain('casa');
+    expect(written.written).toEqual([]);
+
+    const restored = store.restore();
+    expect((restored.payload as unknown as Record<string, unknown>).casa).toBeUndefined();
     store.close();
   });
 });

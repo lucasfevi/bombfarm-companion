@@ -176,6 +176,27 @@ test.describe('Farm Ranking board', () => {
     await expect(table(page)).toHaveCount(0);
   });
 
+  test('the minimum item level filter keeps only phases whose LOWEST drop band clears it', async ({
+    page,
+  }) => {
+    await seedLocalStorage(page, { ...importedRoster, account: accountWithMaxPhase, lang: 'en' });
+    await page.goto('/farm');
+
+    await page.getByTestId('farm-filter-unlocked').getByRole('switch').click();
+    await expect(rowCountLocator(page)).toHaveAttribute('aria-rowcount', '600');
+
+    // The top band spans phases 581–600, but 581–590 overlap the level-290 band beneath it and
+    // still roll a 290 item, so a level-300 FLOOR leaves exactly the ten phases 591–600 — one
+    // exact answer, and one that a highest-band reading would get wrong (it would say twenty).
+    await page.getByTestId('farm-filter-item-level').getByLabel(/Min item level/i).click();
+    await page.getByRole('option', { name: 'Level 300+', exact: true }).click();
+    await expect(rowCountLocator(page)).toHaveAttribute('aria-rowcount', '10');
+
+    await page.getByTestId('farm-filter-item-level').getByLabel(/Min item level/i).click();
+    await page.getByRole('option', { name: /Any item level/i }).click();
+    await expect(rowCountLocator(page)).toHaveAttribute('aria-rowcount', '600');
+  });
+
   // 5. Row -> picker sync.
   test('a fresh load opens on the best gold/hr map, in the explorer too, without persisting it', async ({
     page,

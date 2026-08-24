@@ -189,6 +189,37 @@ describe('classifyRotation — fixture baseline', () => {
   });
 });
 
+describe('classifyRotation — the on-field list is ordered emptiest first', () => {
+  /**
+   * Reversing `onField`'s comparator left the whole domain suite green: every other on-field
+   * assertion compares ids as a set, or runs against a capture holding a single fielded hero.
+   * The order is the one thing this list is for — whoever leaves the field next is the answer
+   * the panel exists to give — so it is asserted here directly, against constructed heroes and
+   * against the nine-hero capture.
+   */
+  it('puts the emptiest hero first, whatever order the wire supplied', () => {
+    const heroes: RotationHeroSnapshot[] = [
+      { id: 'f-full', activity: 'inField', onField: true, energyFraction: 0.9 },
+      { id: 'f-empty', activity: 'inField', onField: true, energyFraction: 0.1 },
+      { id: 'f-mid', activity: 'inField', onField: true, energyFraction: 0.5 },
+    ];
+    const status = classifyRotation(snapshotResult({ heroes }));
+
+    expect(heroIds(status.onField)).toEqual(['f-empty', 'f-mid', 'f-full']);
+  });
+
+  it('holds the ordering across the captured nine-hero field', () => {
+    const captured = loadFixtureJson('rotation-snapshot-ready.json', 'api') as unknown as RotationNormalizeResult;
+    const status = classifyRotation(captured);
+    const fractions = status.onField.map((hero) => hero.energyFraction ?? 0);
+
+    expect(fractions.length).toBeGreaterThan(1);
+    for (let index = 1; index < fractions.length; index += 1) {
+      expect(fractions[index]).toBeGreaterThanOrEqual(fractions[index - 1] as number);
+    }
+  });
+});
+
 describe('classifyRotation — a ready hero not yet captured live', () => {
   it('a ready hero with inHouse:false and onField:false classifies as queued, not onField or benched', () => {
     const hero: RotationHeroSnapshot = {
