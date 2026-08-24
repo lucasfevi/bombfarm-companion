@@ -232,6 +232,8 @@ export type TeamPlan = {
   moveList: MoveAction[];
   pointResets: {
     heroId: string;
+    /** The hero's allocation as this run scored it — the only honest "before" for {@link pts}. */
+    ptsBefore: Record<string, number>;
     pts: Record<string, number>;
     /** Per-hero sustained % change, MAY be negative — the roster can still gain. Not floored. */
     gainPct: number;

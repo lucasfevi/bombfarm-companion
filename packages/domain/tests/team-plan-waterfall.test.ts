@@ -11,7 +11,8 @@ import {
   buildWaterfall,
   syntheticRegressionPerHero,
 } from '@bombfarm/domain/team-plan/waterfall';
-import { buildHeroPlanContexts } from '@bombfarm/domain/team-plan/hero-context';
+import { buildHeroPlanContexts, gearedSheetFromContext } from '@bombfarm/domain/team-plan/hero-context';
+import { SHEET_KEYS } from '@bombfarm/domain/planner-constants';
 import { teamPlanInputFromFixture } from './helpers/team-plan-fixtures';
 
 function waterfallFromFixture(file: string, forgeFloor?: number, slots?: number) {
@@ -205,6 +206,30 @@ describe('buildWaterfall', () => {
   // mode this repo tracks. The underlying invariant it wanted is unchanged in the code and
   // stays covered by 'every listed point reset is roster-justified' above. Recorded in
   // docs/fixture-corpus.md.
+
+  it('carries the allocation each reset was scored against, matching that hero sheetStatsBefore', () => {
+    const { input, plan } = waterfallFromFixture('save-20260813-5heroes.json', 10, 9);
+    expect(plan.pointResets.length).toBeGreaterThan(0);
+    const built = buildHeroPlanContexts(input.heroes, input.account, input.scopeByHeroId);
+    if (built.blocked) throw new Error('blocked');
+    const ctxById = new Map(built.contexts.map((ctx) => [ctx.heroId, ctx]));
+
+    for (const reset of plan.pointResets) {
+      const hero = input.heroes.find((candidate) => candidate.heroId === reset.heroId)!;
+      expect(reset.ptsBefore).toEqual(hero.pts);
+      // The sheet the panel prints beside this table is derived from the same vector, so a
+      // "before" sourced anywhere else would disagree with the row above it.
+      const sheet = gearedSheetFromContext(
+        ctxById.get(reset.heroId)!,
+        hero.loadout,
+        reset.ptsBefore as PointAlloc,
+      );
+      const row = plan.perHero.find((entry) => entry.heroId === reset.heroId)!;
+      for (const key of SHEET_KEYS) {
+        expect(Math.abs(row.sheetStatsBefore[key] - sheet[key])).toBeLessThan(1e-6);
+      }
+    }
+  });
 
   it('keeps negative per-hero deltas in the table', () => {
     const row = syntheticRegressionPerHero();

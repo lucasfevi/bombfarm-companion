@@ -30,6 +30,7 @@ export type WaterfallResult = {
   moveList: MoveAction[];
   pointResets: {
     heroId: string;
+    ptsBefore: Record<string, number>;
     pts: Record<string, number>;
     gainPct: number;
     rosterGainDps: number;
@@ -169,6 +170,7 @@ export function buildForgeList(
 
 function buildPointResets(
   acceptedHeroIds: string[],
+  currentPtsByHeroId: Record<string, PointAlloc>,
   finalPtsByHeroId: Record<string, PointAlloc>,
   gearStateEval: RosterEvaluation,
   respecStateEval: RosterEvaluation,
@@ -189,6 +191,11 @@ function buildPointResets(
     const level = heroLevelById.get(heroId) ?? 0;
     return {
       heroId,
+      // The vector this plan was SCORED against, not whatever the roster holds when the panel
+      // renders. A plan outlives the roster it was built from — the player can respec, re-import
+      // or edit points before reading it — and a screen that pairs this run's `pts` with a
+      // freshly-read "before" prints a reset whose deltas never happened.
+      ptsBefore: currentPtsByHeroId[heroId] ?? {},
       pts: finalPtsByHeroId[heroId] ?? {},
       gainPct,
       rosterGainDps: gainByHeroId[heroId] ?? 0,
@@ -338,6 +345,7 @@ export function buildWaterfall(input: BuildWaterfallInput): WaterfallResult {
     moveList: buildMoveList(currentAssignment, finalAssignment, itemById, contexts),
     pointResets: buildPointResets(
       respec.acceptedHeroIds,
+      pts,
       finalPtsByHeroId,
       gearEvaluation,
       respec.evaluation,
