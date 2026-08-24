@@ -79,8 +79,6 @@ describe('pointsResetView', () => {
       row(),
     );
 
-    // The roster has since moved to 87 attack / 7 crit dmg. The panel must still describe the
-    // reset this run actually proposed — 94 → 92 — not 87 → 92, which nothing ever scored.
     expect(view).toEqual({ before: SCORED_AT, after: PROPOSED, level: 109 });
   });
 

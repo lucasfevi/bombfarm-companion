@@ -191,10 +191,6 @@ function buildPointResets(
     const level = heroLevelById.get(heroId) ?? 0;
     return {
       heroId,
-      // The vector this plan was SCORED against, not whatever the roster holds when the panel
-      // renders. A plan outlives the roster it was built from — the player can respec, re-import
-      // or edit points before reading it — and a screen that pairs this run's `pts` with a
-      // freshly-read "before" prints a reset whose deltas never happened.
       ptsBefore: currentPtsByHeroId[heroId] ?? {},
       pts: finalPtsByHeroId[heroId] ?? {},
       gainPct,

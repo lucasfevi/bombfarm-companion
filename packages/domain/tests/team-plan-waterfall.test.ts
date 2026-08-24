@@ -217,8 +217,6 @@ describe('buildWaterfall', () => {
     for (const reset of plan.pointResets) {
       const hero = input.heroes.find((candidate) => candidate.heroId === reset.heroId)!;
       expect(reset.ptsBefore).toEqual(hero.pts);
-      // The sheet the panel prints beside this table is derived from the same vector, so a
-      // "before" sourced anywhere else would disagree with the row above it.
       const sheet = gearedSheetFromContext(
         ctxById.get(reset.heroId)!,
         hero.loadout,
