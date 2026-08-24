@@ -26,15 +26,18 @@ function effectivePanel(page: Page, lang: 'en' | 'pt') {
 
 /**
  * Sheet stats that `combatSheetDeltaAccount` actually pushes off sheet Total: Attack via
- * `grito_guerra`, Speed via `marcha_acelerada`. Crit chance is deliberately NOT here —
- * `pressagio_mortal` is a `critChancePctOfBase` TEAM buff that `derive.ts` folds into the
- * crit factor, not into `effective.critChance`, so crit chance stays equal to Total and the
- * panel correctly hides it. The crit buff's visible home is the derived Critical factor /
- * Critical Hit rows, asserted separately below.
+ * `grito_guerra`, Speed via `marcha_acelerada`, Crit Chance via `pressagio_mortal`.
+ *
+ * Crit Chance JOINED this list at the 2026-08-23 patch. `pressagio_mortal` used to be a
+ * percentage of each hero's own crit-chance roll, and at the rank this fixture sets (5) it moved
+ * Cora's effective crit by less than the panel's own display precision — so the row read equal to
+ * Total and was hidden. The ability now grants FLAT crit points (see the `critChanceFlat` ability
+ * kind), so rank 5 is +5 whole points on every hero and the row is visibly off Total. It still
+ * also feeds the derived Critical factor / Critical Hit rows, which are asserted separately below.
  */
-const EN_COMBAT_SHEET_LABELS = ['Attack', 'Speed'] as const;
+const EN_COMBAT_SHEET_LABELS = ['Attack', 'Speed', 'Crit Chance'] as const;
 
-const PT_COMBAT_SHEET_LABELS = ['Ataque', 'Velocidade'] as const;
+const PT_COMBAT_SHEET_LABELS = ['Ataque', 'Velocidade', 'Chance de Crítico'] as const;
 
 /** Account team buffs that push sheet stats off Total so they still appear under Effective. */
 function combatSheetDeltaAccount(base: NonNullable<typeof importedRoster.account>) {
@@ -120,10 +123,11 @@ test.describe('effective stats panel (EST / ESB)', () => {
     // Unchanged vs sheet Total (no combat mult) — stay hidden.
     await expect(panelDelta.getByRole('button', { name: /Show breakdown of Penetration/i })).toHaveCount(0);
     await expect(panelDelta.getByRole('button', { name: /Show breakdown of Luck/i })).toHaveCount(0);
-    // Crit chance too: the pressagio_mortal team buff lands on the crit factor, not on the
-    // sheet stat, so the sheet row stays equal to Total and is hidden — while the derived
-    // Critical factor row it DOES feed remains listed.
-    await expect(panelDelta.getByRole('button', { name: /Show breakdown of Crit Chance/i })).toHaveCount(0);
+    // Crit Chance is the opposite case and is covered by EN_COMBAT_SHEET_LABELS above: the
+    // pressagio_mortal team buff moves the sheet stat itself now, AND the derived Critical factor
+    // row it feeds. Both are asserted, because a change that dropped one while keeping the other
+    // would still leave the panel looking plausible.
+    await expect(panelDelta.getByRole('button', { name: /Show breakdown of Crit Chance/i })).toHaveCount(1);
     await expect(panelDelta.getByRole('button', { name: /Show breakdown of Critical factor/i })).toBeVisible();
 
     await page.getByRole('group', { name: 'Language' }).getByRole('button', { name: 'PT' }).click();

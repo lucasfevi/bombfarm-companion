@@ -86,6 +86,12 @@ const NON_CURRENT_REGIME_CAPTURES = [
   'sheet-math/save-20260816-5heroes-gear-cdr-crit.json',
   'sheet-math/save-20260816-9heroes-redistrib.json',
   'sheet-math/save-20260817-11heroes.json',
+  // Pre-2026-08-23: Olho Clínico was a percentage of the hero's crit-chance roll and became
+  // flat crit POINTS. All three carry three rank-20/18 Olho heroes apiece, so their crit-chance
+  // column solves only under the shape they were taken in.
+  'sheet-math/save-20260818-12heroes.json',
+  'sheet-math/save-20260819-respec-crit-cdr.json',
+  'sheet-math/save-20260822-15heroes-tree-crit-dmg.json',
 ];
 
 function isObject(value: unknown): value is Record<string, unknown> {
@@ -160,11 +166,9 @@ describe('spent stat points never exceed the hero level (corpus sweep)', () => {
     const byFile = new Map<string, number>();
     for (const s of SUBJECTS) byFile.set(s.file, (byFile.get(s.file) ?? 0) + 1);
     expect(Object.fromEntries([...byFile].sort()), `walked ${FIXTURES_DIR}`).toEqual({
-      'sheet-math/save-20260818-12heroes.json': 12,
-      'sheet-math/save-20260819-respec-crit-cdr.json': 12,
-      'sheet-math/save-20260822-15heroes-tree-crit-dmg.json': 15,
+      'sheet-math/save-20260823-13heroes-crit-points.json': 13,
     });
-    expect(SUBJECTS.length).toBe(39);
+    expect(SUBJECTS.length).toBe(13);
     const dirs = new Set(SUBJECTS.map((s) => s.file.split('/')[0]));
     expect(dirs, `capture directories reached: ${[...dirs].join(', ')}`).toEqual(new Set(['sheet-math']));
   });

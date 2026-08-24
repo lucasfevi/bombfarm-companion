@@ -44,12 +44,12 @@ function assertResultIsFinite(result: FarmPointRankResult): void {
 describe('rankNextPointForFarm — discrimination: a one-shotting squad inverts the two ranking modes', () => {
   const bellatrix = heroByName('Bellatrix');
 
-  // RE-TUNED at the 2026-08-15 patch. This used to sweep [42, 5, 1]; Bellatrix no longer
-  // one-shots at maxPhase 42 (her attack now scores 0.5721, not 0) because crit chance became a
-  // flat addend and her DPS fell with it. The regime move is REAL, so it is pinned below as its
-  // own case rather than deleted — and the one-shot claim keeps a top-of-ladder subject via Jon,
-  // who still one-shots at every phase on this fixture.
-  it.each([20, 5, 1])('at maxPhase %i: farm scores attack exactly 0 while energy and speed are positive', (mp) => {
+  // RE-TUNED at the 2026-08-15 patch, and AGAIN at the 2026-08-23 crit-chance ability shape.
+  // Bellatrix crossed OUT of the one-shot regime at the first (crit chance going flat cut her
+  // damage) and has now crossed back IN at the second: Olho Clinico 20 gives her a flat +40 crit
+  // points instead of ~43% of a 5.08 roll, and she one-shots a phase-42 prop again. So maxPhase
+  // 42 joins the sweep rather than standing outside it.
+  it.each([42, 20, 5, 1])('at maxPhase %i: farm scores attack exactly 0 while energy and speed are positive', (mp) => {
     const result = rankNextPointForFarm({ bases, account, heroId: bellatrix.id, maxPhase: mp });
     expect(result.outcome).toBe('ranked');
     const rows = result.rows!;
@@ -73,30 +73,29 @@ describe('rankNextPointForFarm — discrimination: a one-shotting squad inverts 
     assertResultIsFinite(result);
   });
 
-  it('Bellatrix does not one-shot at maxPhase 42', () => {
-    // The discrimination this file rests on is that a one-shotting hero scores attack at exactly
-    // 0. Bellatrix crossed out of that regime at the 2026-08-15 patch (crit chance going flat)
-    // and STAYS out of it after the 2026-08-18 revert back to percent-of-base: the item catalog
-    // and level-cap restructure that landed alongside both crit-chance patches is what keeps her
-    // damage per bomb below a one-shot on a phase-42 prop, independent of the crit shape.
-    // RE-MEASURED for the 2026-08-18 revert (issue #132), and again for issue #132's team-aura
-    // roster shape: this fixture's account.teamBuffs is zeroTeamBuffs() (production's
-    // post-import default before the auto-fill button is pressed — farm-rate-fixtures.ts), so
-    // Jon's own folego_mineiro rank no longer silently boosts his own drain the way the old
-    // model let it. Jon's uptime shift ripples into the squad-level House allocation every
-    // hero's farm ranking reads, moving Bellatrix's own gainPct even though nothing about her
-    // build changed.
+  /**
+   * THE FLIP, RECORDED. This case used to assert the opposite — "Bellatrix does NOT one-shot at
+   * maxPhase 42" — and it was the file's only non-one-shotting subject, the other half of the
+   * discrimination the whole describe block is named for. The 2026-08-23 patch moved her across
+   * the boundary, so the fixture no longer contains a hero that fails to one-shot at any phase
+   * this fixture can reach, and the "does not one-shot" half of the contrast has no subject left.
+   *
+   * Asserted as a boundary crossing rather than deleted, so the day a weaker hero or a stiffer
+   * phase puts a subject back on this side, the change is visible. Restoring the contrast needs a
+   * capture this corpus does not have — tracked in issue #171, not worked around here.
+   */
+  it('the flip: Bellatrix one-shots at maxPhase 42 too, so the fixture has no non-one-shotting subject left', () => {
     const result = rankNextPointForFarm({ bases, account, heroId: bellatrix.id, maxPhase: 42 });
-    const attack = result.rows!.find((r) => r.stat === 'attack')!;
-    expect(attack.gainPct).toBeGreaterThan(0);
-    // RE-MEASURED 2026-08-20 for rotation-priced team auras (Jon's folego_mineiro is now credited
-    // over the rotation instead of read off an empty deployed line-up) and the
-    // HOP_DENSITY_EXPONENT refit. Both move every hero's plant rate and the squad House
-    // allocation together, so the RANKING claim under test is unaffected — only the magnitudes.
-    // RE-MEASURED 2026-08-21 for the additive drain-reduction fix — Jon (the only fixture hero
-    // with both a self and a team drain reduction) now sustains more field time, which again
-    // ripples into the squad House allocation every hero's farm ranking reads.
-    expect(attack.gainPct).toBeCloseTo(0.7688310554390121, 5);
+    expect(result.rows!.find((r) => r.stat === 'attack')!.gainPct).toBe(0);
+
+    // Non-vacuity: an attack point scoring 0 has to mean "already one-shots", not "the ranker
+    // returned zeros" — every other fixture hero at this phase is checked for the same thing, and
+    // at least one still scores attack above 0, so a global collapse to zero would fail here.
+    const others = heroes
+      .filter((h) => h.id !== bellatrix.id)
+      .map((h) => rankNextPointForFarm({ bases, account, heroId: h.id, maxPhase: 42 }))
+      .map((r) => r.rows!.find((row) => row.stat === 'attack')!.gainPct);
+    expect(others.some((gain) => gain > 0)).toBe(true);
   });
 
   it('farm ranks ENERGY first at maxPhase 42 — the order INVERTED when cadence stopped assuming every plant is walk-bound', () => {
@@ -131,9 +130,14 @@ describe('rankNextPointForFarm — discrimination: a one-shotting squad inverts 
     // allocation together, so the RANKING claim under test is unaffected — only the magnitudes.
     // RE-MEASURED 2026-08-21 for the additive drain-reduction fix, same Jon-uptime -> squad
     // House allocation ripple as the case above — the energy-first order is unaffected.
-    expect(rows[0]).toEqual({ stat: 'energy', label: 'Energia', gainPct: 0.8335856468024483 });
-    expect(rows[1]).toEqual({ stat: 'attack', label: 'Ataque', gainPct: 0.7688310554390121 });
-    expect(rows[2]).toEqual({ stat: 'speed', label: 'Velocidade', gainPct: 0.6959031347665512 });
+    // RE-MEASURED 2026-08-23 for the crit-chance ability shape. Bellatrix crossed back into the
+    // one-shot regime (see the flip case above), so `attack` drops out of the top three entirely
+    // at exactly 0 and `cdr` takes third. The energy-first claim in the title is unaffected, which
+    // is the whole point of pinning the order rather than a single magnitude.
+    expect(rows[0]).toEqual({ stat: 'energy', label: 'Energia', gainPct: 0.8924520259542712 });
+    expect(rows[1]).toEqual({ stat: 'speed', label: 'Velocidade', gainPct: 0.7474749693929805 });
+    expect(rows[2]).toEqual({ stat: 'cdr', label: 'Red. de Cooldown', gainPct: 0.005521998430846331 });
+    expect(rows.find((r) => r.stat === 'attack')!.gainPct).toBe(0);
   });
 
   it('DPS mode scores attack first and speed exactly 0 on the same hero (the inversion)', () => {
@@ -164,25 +168,27 @@ describe('rankNextPointForFarm — anti-"energy always wins" sensor', () => {
     expect(rows[0].stat).toBe('attack');
   });
 
-  it('Perrin L4 FLIPPED BACK at maxPhase 42 (issue #132) — recorded, not hidden', () => {
+  it('Perrin L4 FLIPPED AGAIN at maxPhase 42 — recorded, not hidden', () => {
     // The sensor exists to prove "energy always wins" is false. Perrin flipped OUT of that claim
-    // at the 2026-08-15 patch (attack 0.127926 < energy 0.142735, pinned in that PR) and flipped
-    // BACK into it at the 2026-08-18 revert — attack ranks above energy again, matching his
-    // pre-2026-08-15 shape. Pinned so a future change that flips him away a second time is
-    // visible rather than silent.
-    // RE-MEASURED for issue #132's team-aura roster shape (same Jon-uptime -> squad House
-    // allocation ripple as the Bellatrix tests above) — the flip itself is unaffected.
+    // at the 2026-08-15 patch (attack 0.127926 < energy 0.142735), BACK into it at the 2026-08-18
+    // revert, and OUT again at the 2026-08-23 crit-chance ability shape — energy 0.115902 now
+    // edges attack 0.102167. He carries no Olho Clinico himself; what moves him is the squad-level
+    // House allocation every hero's farm ranking reads, which the two Olho heroes elsewhere in
+    // this roster shifted by clearing faster.
+    //
+    // With Bellatrix having crossed into the one-shot regime as well (see the flip case above),
+    // no hero on this fixture ranks attack over energy any more, so this sensor currently has no
+    // subject that demonstrates its claim. It is kept, pinned to the flipped values, so the next
+    // move is visible; restoring a real subject needs a capture this corpus does not have
+    // (issue #171).
     const result = rankNextPointForFarm({ bases, account, heroId: heroByName('Perrin').id, maxPhase: 42 });
     const rows = result.rows!;
-    // RE-MEASURED 2026-08-20 for rotation-priced team auras (Jon's folego_mineiro is now credited
-    // over the rotation instead of read off an empty deployed line-up) and the
-    // HOP_DENSITY_EXPONENT refit. Both move every hero's plant rate and the squad House
-    // allocation together, so the RANKING claim under test is unaffected — only the magnitudes.
-    // RE-MEASURED 2026-08-21 for the additive drain-reduction fix, same Jon-uptime -> squad
-    // House allocation ripple as the Bellatrix tests above — the flip itself is unaffected.
-    expect(rows.find((r) => r.stat === 'attack')!.gainPct).toBeCloseTo(0.15626445974643577, 5);
-    expect(rows.find((r) => r.stat === 'energy')!.gainPct).toBeCloseTo(0.14870966791928897, 5);
-    expect(rows[0].stat).toBe('attack');
+    expect(rows.find((r) => r.stat === 'attack')!.gainPct).toBeCloseTo(0.10216737518200514, 5);
+    expect(rows.find((r) => r.stat === 'energy')!.gainPct).toBeCloseTo(0.11590179936651346, 5);
+    expect(rows[0].stat).toBe('energy');
+    // The margin is thin (13%), which is why this is a sensor and not a claim about the game:
+    // it takes very little to move him back.
+    expect(rows[1].stat).toBe('attack');
   });
 });
 
@@ -307,11 +313,13 @@ describe('rankNextPointForFarm — design.md §4.4 edge/degenerate cases, full t
     assertResultIsFinite(result);
   });
 
-  it('a pool of exactly one hero (the ranked one) still ranks — solo Bellatrix argmaxes at phase 30', () => {
+  it('a pool of exactly one hero (the ranked one) still ranks — solo Bellatrix argmaxes at phase 33', () => {
     const soloBases = computeHeroFarmBases({ heroes, account, enabledHeroIds: [bellatrix.id] });
     const result = rankNextPointForFarm({ bases: soloBases, account, heroId: bellatrix.id, maxPhase: 42 });
     expect(result.outcome).toBe('ranked');
-    expect(result.phase).toBe(30);
+    // 30 until the 2026-08-23 crit-chance ability shape: a stronger Bellatrix clears deeper
+    // phases fast enough that the gold argmax walks up three.
+    expect(result.phase).toBe(33);
     expect(result.rows).toHaveLength(RANK_STATS.length);
     expect(result.evaluations).toBe(8);
     assertResultIsFinite(result);

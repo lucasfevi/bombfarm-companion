@@ -105,13 +105,13 @@ describe('rank-20 migration (T3, AD-BSP-18, BSPW3-02/-03)', () => {
   }> = [
     { id: 'bateria_extra', perLevel: 1, wikiTotalAtCap: 20, citation: 'W0-14:200' },
     { id: 'marcha_acelerada', perLevel: 0.185, wikiTotalAtCap: 3.7, citation: 'W0-14:202' },
-    // 2026-08-18 patch reverted both crit-chance abilities to percent-of-base and rescaled their
-    // values by ×40/7 from the pre-2026-08-15 figures (see `abilities.ts`).
+    // 2026-08-23 patch restated both crit-chance abilities in FLAT crit points, and the patch
+    // note states the at-cap totals outright: "+40 pontos de Crítico" and "+20 pontos".
     {
       id: 'pressagio_mortal',
-      perLevel: 5.714285714285714,
-      wikiTotalAtCap: 114.28571428571428,
-      citation: 'wiki habilidades 2026-08-18 (published; no capture owns this ability)',
+      perLevel: 1,
+      wikiTotalAtCap: 20,
+      citation: 'wiki habilidades 2026-08-23 (published; no capture owns this ability)',
     },
     { id: 'ponta_diamante', perLevel: 1, wikiTotalAtCap: 20, citation: 'W0-14:205' },
     { id: 'misericordia', perLevel: 1.25, wikiTotalAtCap: 25, citation: 'W0-14:206' },
@@ -119,9 +119,9 @@ describe('rank-20 migration (T3, AD-BSP-18, BSPW3-02/-03)', () => {
     { id: 'contra_relogio', perLevel: 2, wikiTotalAtCap: 40, citation: 'W0-14:208' },
     {
       id: 'olho_clinico',
-      perLevel: 4.285714285714286,
-      wikiTotalAtCap: 85.71428571428571,
-      citation: 'measured, account 486 2026-08-18 export',
+      perLevel: 2,
+      wikiTotalAtCap: 40,
+      citation: 'measured, account 486 2026-08-23 export',
     },
     { id: 'detonacao_dupla', perLevel: 1.5, wikiTotalAtCap: 30, citation: 'W0-14:210' },
     { id: 'folego_mineiro', perLevel: 1, wikiTotalAtCap: 20, citation: 'W0-14:211' },
@@ -155,7 +155,7 @@ describe('rank-20 migration (T3, AD-BSP-18, BSPW3-02/-03)', () => {
     expect(abilityMods({ misericordia: 13 }).dmgMult).toBeCloseTo(1 / (1 - 16.25 / 100), 10);
     expect(abilityMods({ explosao_ampla: 13 }).rangeCells).toBeCloseTo(1.3, 10);
     expect(abilityMods({ contra_relogio: 13 }).gateAttackMult).toBeCloseTo(1.26, 10);
-    expect(abilityMods({ olho_clinico: 13 }).sheetCritChancePctOfBase).toBeCloseTo(4.285714285714286 * 13, 10);
+    expect(abilityMods({ olho_clinico: 13 }).sheetCritChanceFlat).toBeCloseTo(2 * 13, 10);
     expect(abilityMods({ detonacao_dupla: 13 }).dmgMult).toBeCloseTo(1 + (19.5 / 100) * 0.5, 10);
   });
 
@@ -212,9 +212,13 @@ describe('rank-20 migration (T3, AD-BSP-18, BSPW3-02/-03)', () => {
     expect(abilityMods({ veia_ouro: 20, fortuna: 20 })).toMatchObject(IDENTITY_MODS);
   });
 
-  it('olho_lapidador text is unchanged by the gold-ability copy fix', () => {
+  it('olho_lapidador names its 2026-08-23 scope and keeps its rate', () => {
     const olhoLapidador = ABILITIES.find((a) => a.id === 'olho_lapidador')!;
-    expect(olhoLapidador.effectText).toBe('+2.5% chance de baú subir raridade/nível (loot)');
+    // The patch restated WHO the upgraded drop belongs to and excluded Jaulas; the per-level
+    // rate did not move (wiki `habilidades[].per_level` is still 0.025).
+    expect(olhoLapidador.effectText).toContain('+2.5%');
+    expect(olhoLapidador.effectText).toContain('não vale para Jaulas');
+    expect(olhoLapidador.effect).toEqual({ kind: 'none' });
   });
 });
 

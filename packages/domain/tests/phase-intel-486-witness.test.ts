@@ -74,7 +74,7 @@ describe('phase-intel — account-486 drop-chance witness (phase 51 / 60, luck 0
     }
   });
 
-  it('phase 60 (gate): time rounds to 0.176%, gem/stone round to 0.006%; key does not apply', () => {
+  it('phase 60 (gate): time and chest round to 0.117%, stone to 0.059%, gem to 0.006%; key does not apply', () => {
     const intel = computePhaseIntelGlobal(PHASE_GATE, { luckFraction: LUCK_FRACTION })!;
     expect(intel.gate).toBe(true);
 
@@ -82,16 +82,20 @@ describe('phase-intel — account-486 drop-chance witness (phase 51 / 60, luck 0
     expect(pct3(chest.actual)).toBe('0.117');
     expect(chest.applies).toBe(true);
 
+    // 0.176% until the 2026-08-23 patch cut the time-chest rate to 0.001, which is also the
+    // item-chest rate — the two rows now print the same number for a different reason each.
     const time = findRow(intel.dropChances, 'time');
-    expect(pct3(time.actual)).toBe('0.176');
+    expect(pct3(time.actual)).toBe('0.117');
     expect(time.applies).toBe(true);
 
     const gem = findRow(intel.dropChances, 'gem');
     expect(pct3(gem.actual)).toBe('0.006');
     expect(gem.applies).toBe(true);
 
+    // The 2026-08-23 patch raised the stone chest tenfold (0.005% → 0.05% base), so it no
+    // longer prints the same 0.006% the gem chest does.
     const stone = findRow(intel.dropChances, 'stone');
-    expect(pct3(stone.actual)).toBe('0.006');
+    expect(pct3(stone.actual)).toBe('0.059');
     expect(stone.applies).toBe(true);
 
     const key = findRow(intel.dropChances, 'key');

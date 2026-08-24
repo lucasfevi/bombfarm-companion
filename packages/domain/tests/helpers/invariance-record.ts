@@ -121,7 +121,7 @@ type HeroRecordEntry = {
   inferSpentPoints: SheetRecord;
   computeCombatMults: {
     teamDrainMult: string;
-    teamCritPctOfBase: string;
+    teamCritFlat: string;
     attackMult: string;
     speedMult: string;
     gateAttackMult: string;
@@ -347,7 +347,7 @@ function recordHero(
     energyMult: mults.energyMult,
     speedMult: mults.speedMult,
     critDmgMult: mults.critDmgMult,
-    teamCritPctOfBase: mults.teamCritPctOfBase,
+    teamCritFlat: mults.teamCritFlat,
     treeSheet: tree,
     penetrationPp: mods.penetrationPp,
     context,
@@ -412,7 +412,7 @@ function recordHero(
     energyMult: pipelineResult.energyMult,
     speedMult: pipelineResult.speedMult,
     critDmgMult: pipelineResult.critDmgMult,
-    teamCritPctOfBase: pipelineResult.teamCritPctOfBase,
+    teamCritFlat: pipelineResult.teamCritFlat,
     treeSpeed: pipelineResult.treeSheet.speedPct,
     treeCritChance: pipelineResult.treeSheet.critChancePct,
     treeCritDmg: pipelineResult.treeSheet.critDmgPct,
@@ -477,7 +477,7 @@ function recordHero(
     inferSpentPoints: sheetRecord(pts),
     computeCombatMults: {
       teamDrainMult: num(mults.teamDrainMult),
-      teamCritPctOfBase: num(mults.teamCritPctOfBase),
+      teamCritFlat: num(mults.teamCritFlat),
       attackMult: num(mults.attackMult),
       speedMult: num(mults.speedMult),
       gateAttackMult: num(mults.gateAttackMult),

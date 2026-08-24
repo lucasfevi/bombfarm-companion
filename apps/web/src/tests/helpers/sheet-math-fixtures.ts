@@ -136,7 +136,7 @@ export function extractHero(
   const mods = abilityMods(abilities);
   const sheetOther: SheetOtherPct = {
     ...emptySheetOther(),
-    critChance: mods.sheetCritChancePctOfBase / 100,
+    critChanceFlat: mods.sheetCritChanceFlat,
     penetration: mods.sheetPenetrationRaw,
     critDmgFlat: mods.sheetCritDmgFlat,
   };

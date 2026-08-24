@@ -1,7 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
   nakedAfterSheetAbilityChange,
-  rescaleNakedCrit,
   rescaleNakedCritChance,
   rescaleNakedCritDmg,
   rescaleNakedPen,
@@ -21,25 +20,20 @@ const naked = (): SheetStats => ({
 });
 
 describe('nakedAfterSheetAbilityChange (DEC-04, BSP-31a)', () => {
-  it("critChancePctOfBase dispatches to rescaleNakedCritChance, not rescaleNakedCrit — preserves a non-midpoint hero's own roll (AC-45's discriminating case)", () => {
+  it("critChanceFlat dispatches to rescaleNakedCritChance — preserves a non-midpoint hero's own roll (AC-45's discriminating case)", () => {
     const bellatrixCritChance = 9.51; // vs Raro's rarity midpoint (7) — a 36% error if reset.
     const custom: SheetStats = { ...naked(), critChance: bellatrixCritChance };
     const prevMods = abilityMods({});
-    const nextMods = abilityMods({ olho_clinico: 10 }); // 4.285714285714286%/rank onSheet=true.
+    const nextMods = abilityMods({ olho_clinico: 10 }); // +2 flat crit points/rank, onSheet=true.
 
-    const result = nakedAfterSheetAbilityChange(custom, 'critChancePctOfBase', prevMods, nextMods);
-    const expected = rescaleNakedCritChance(
-      custom,
-      prevMods.sheetCritChancePctOfBase / 100,
-      nextMods.sheetCritChancePctOfBase / 100,
-    );
+    const result = nakedAfterSheetAbilityChange(custom, 'critChanceFlat', prevMods, nextMods);
+    const expected = rescaleNakedCritChance(custom, prevMods.sheetCritChanceFlat, nextMods.sheetCritChanceFlat);
     expect(result.critChance).toBeCloseTo(expected.critChance, 10);
-    expect(result.critChance).toBeCloseTo(bellatrixCritChance * (1 + nextMods.sheetCritChancePctOfBase / 100), 6);
+    expect(result.critChance).toBeCloseTo(bellatrixCritChance + nextMods.sheetCritChanceFlat, 6);
+    expect(nextMods.sheetCritChanceFlat).toBe(20);
 
-    // The rescaleNakedCrit (rarity-midpoint) form disagrees — proving the dispatcher does NOT
-    // call it.
-    const midpointForm = rescaleNakedCrit(custom, 'Raro', nextMods.sheetCritChancePctOfBase / 100);
-    expect(result.critChance).not.toBeCloseTo(midpointForm.critChance, 1);
+    // A rarity-midpoint reset would land somewhere else entirely — the hero's own roll survives.
+    expect(result.critChance - nextMods.sheetCritChanceFlat).toBeCloseTo(bellatrixCritChance, 10);
   });
 
   it('penetrationPp dispatches to rescaleNakedPen', () => {

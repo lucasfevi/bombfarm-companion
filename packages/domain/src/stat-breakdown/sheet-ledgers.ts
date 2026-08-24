@@ -6,6 +6,7 @@ import {
   pushBase,
   pushBirthThenGear,
   pushMul,
+  teamAddNote,
   teamMultNote,
 } from './ledger-kit';
 import type {
@@ -57,7 +58,9 @@ export function ledgerSpeed(facts: PipelineFacts): StatBreakdown {
 
 export function ledgerCritChance(facts: PipelineFacts): StatBreakdown {
   const steps: LedgerStep[] = [];
-  const baseCrit = facts.naked.critChance / (1 + facts.sheetOther.critChance);
+  // Olho Clínico's points are flat and outside the pool, so they come off before the base the
+  // pooled sources (gear, the stat point, the tree) all scale.
+  const baseCrit = facts.naked.critChance - Math.max(0, facts.sheetOther.critChanceFlat);
   // AD-BSP-19/22: crit_chance_add joins the shared pool — 'tree' now lives inside
   // pushBirthThenGear, split from the observed gear delta (AC-41).
   pushBirthThenGear(steps, 'critChance', facts, facts.treeCritChance);
@@ -67,9 +70,10 @@ export function ledgerCritChance(facts: PipelineFacts): StatBreakdown {
     facts.pts.critChance * POINT_GAIN.critChancePctOfBase * 100,
     baseCrit,
   );
-  // Presságio Mortal is a team aura (issue #132) — `facts.teamCritPctOfBase` is already the
-  // full roster total, capped; there is no separate "own" line to add alongside it.
-  pushAddPctOfBase(steps, 'team', facts.teamCritPctOfBase, baseCrit);
+  // Presságio Mortal is a team aura (issue #132) — `facts.teamCritFlat` is already the full
+  // roster total, capped; there is no separate "own" line to add alongside it. Flat crit points
+  // since the 2026-08-23 patch, so it is a plain addend rather than a share of the roll.
+  pushAdd(steps, 'team', facts.teamCritFlat, teamAddNote(facts.teamCritFlat, TEAM_BUFF_CAP.pressagio_mortal));
   return { kind: 'ledger', total: facts.effective.critChance, steps };
 }
 

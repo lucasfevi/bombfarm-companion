@@ -608,7 +608,7 @@ export function parseAccountPayload(payload: AccountPayload, existing: HeroRecor
     const mods = abilityMods(abilities);
     const sheetOther = {
       ...emptySheetOther(),
-      critChance: mods.sheetCritChancePctOfBase / 100,
+      critChanceFlat: mods.sheetCritChanceFlat,
       penetration: mods.sheetPenetrationRaw,
       critDmgFlat: mods.sheetCritDmgFlat,
     };

@@ -156,7 +156,7 @@ describe('farmObjectiveScales — the frozen blend normalizers, exported (lifted
   // Safe to re-record because the sibling test above — an independent brute-force
   // `currentBuildScales()` scan — still agrees with `farmObjectiveScales` to 6 decimals on the
   // same model. What changed is the model, not the agreement between the two routes to it.
-  it("on the committed fixture (maxPhase 42): goldScale ≈ 178 814.72, chestScale ≈ 1.27450", () => {
+  it("on the committed fixture (maxPhase 42): goldScale ≈ 184 616.99, chestScale ≈ 1.27450", () => {
     // RE-MEASURED for the 2026-08-18 crit-chance/CDR revert (issue #132).
     // RE-MEASURED again for issue #132's team-aura roster shape.
     // RE-MEASURED 2026-08-20 for rotation-priced team auras + the HOP_DENSITY_EXPONENT refit.
@@ -168,8 +168,15 @@ describe('farmObjectiveScales — the frozen blend normalizers, exported (lifted
     // carrier (Jon) also carries his own Bateria Extra, and the two reductions now add (0.62
     // combined) instead of multiplying (0.656), raising his field time and so the fixture's
     // throughput ceiling on every currency together.
+    // RE-MEASURED 2026-08-23 for the crit-chance ability shape: two of this fixture's five
+    // heroes carry Olho Clínico 20, whose contribution goes from a percentage of their roll to
+    // a flat +40 crit points, so the squad's average hit and its whole throughput ceiling rise.
+    // Only `goldScale` moved: chests are a per-prop drop rate, so `chestScale` — chests per
+    // prop rather than per hour — is invariant to how fast the squad clears, and it is
+    // byte-identical at 1.2745. That is the load-bearing negative here: the shape change
+    // reaches throughput through the average hit and nowhere else.
     const scales = farmObjectiveScales(squad, { maxPhase });
-    expect(scales.goldScale).toBeCloseTo(178814.72, 1);
+    expect(scales.goldScale).toBeCloseTo(184616.99, 1);
     expect(scales.chestScale).toBeCloseTo(1.2745, 3);
   });
 });

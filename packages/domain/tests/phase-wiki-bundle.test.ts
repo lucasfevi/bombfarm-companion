@@ -191,8 +191,8 @@ describe('phase-wiki-bundle', () => {
         chest: 0.001,
         key: 0.001,
         gem: 0.00005,
-        time: 0.0015,
-        stone: 0.00005,
+        time: 0.001,
+        stone: 0.0005,
       });
       for (const value of Object.values(DROP_RATES)) {
         expect(Number.isFinite(value)).toBe(true);

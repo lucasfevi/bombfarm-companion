@@ -211,7 +211,7 @@ describe('buildHeroPlanContexts birth gate', () => {
 describe('heroModsAndSheetOther', () => {
   it('matches abilityMods-derived sheetOther', () => {
     const { mods, sheetOther } = heroModsAndSheetOther({ olho_clinico: 10 });
-    expect(mods.sheetCritChancePctOfBase).toBeGreaterThan(0);
-    expect(sheetOther.critChance).toBeGreaterThan(0);
+    expect(mods.sheetCritChanceFlat).toBeGreaterThan(0);
+    expect(sheetOther.critChanceFlat).toBe(mods.sheetCritChanceFlat);
   });
 });
