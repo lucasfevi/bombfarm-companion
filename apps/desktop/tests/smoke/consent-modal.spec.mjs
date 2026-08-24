@@ -62,10 +62,10 @@ test.describe('consent modal smoke (MP2 F2, LAR-01/03, Success Criterion "shown 
 
         const body = page1.getByTestId('consent-modal-body');
         await expect(body).toContainText(
-          'the companion observes the traffic the game client is already sending and receiving',
+          'it attaches to the running game client to read the traffic that client is already exchanging with that server',
         );
         await expect(body).toContainText(
-          'attaching to another running program is the technique behavior-based detection is built to look for',
+          'Attaching to another running program is the technique behavior-based detection looks for',
         );
 
         await page1.getByTestId('consent-accept').click();
