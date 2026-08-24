@@ -123,26 +123,34 @@ export type FarmFilters = {
   unlockedOnly: boolean;
   ato: number | null;
   gate: GateFilter;
+  /** Keep phases that can drop an item of at least this level. `null` => no item-level floor. */
+  minItemLevel: number | null;
 };
 
 export function defaultFarmFilters(): FarmFilters {
-  return { unlockedOnly: true, ato: null, gate: 'all' };
+  return { unlockedOnly: true, ato: null, gate: 'all', minItemLevel: null };
 }
 
 /**
  * Reads `row.locked` for the unlocked-only filter — does NOT take `maxPhase` and does NOT
  * compute lockedness (that is `@bombfarm/domain`'s, via `FarmRateOptions`). When `maxPhase` is `null`, every row
  * is `locked: false`, so `unlockedOnly` is a no-op and no row is excluded.
+ *
+ * `minItemLevel` reads `row.itemLevels`, the overlapping drop bands `@bombfarm/domain` already resolved for
+ * the phase. A row qualifies when ANY of its bands is at or above the floor — on an overlap the
+ * lower tier can still roll, so keeping the row is what "drops that level or higher" means.
  */
 export function applyFarmFilters(
   rows: readonly FarmRateRow[],
   filters: FarmFilters,
 ): FarmRateRow[] {
+  const minItemLevel = filters.minItemLevel;
   return rows.filter((row) => {
     if (filters.unlockedOnly && row.locked) return false;
     if (filters.ato != null && row.ato !== filters.ato) return false;
     if (filters.gate === 'gate' && !row.gate) return false;
     if (filters.gate === 'non-gate' && row.gate) return false;
+    if (minItemLevel != null && !row.itemLevels.some((level) => level >= minItemLevel)) return false;
     return true;
   });
 }

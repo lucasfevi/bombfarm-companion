@@ -28,6 +28,7 @@ describe('Farm Ranking board — testids present (design §4.3)', () => {
     ['src/features/phases/components/farm-ranking-filters.tsx', 'farm-filter-unlocked'],
     ['src/features/phases/components/farm-ranking-filters.tsx', 'farm-filter-ato'],
     ['src/features/phases/components/farm-ranking-filters.tsx', 'farm-filter-gate'],
+    ['src/features/phases/components/farm-ranking-filters.tsx', 'farm-filter-item-level'],
     ['src/features/phases/components/farm-rotation-pool.tsx', 'farm-pool'],
     ['src/features/phases/components/farm-return-bonus.tsx', 'farm-return-bonus'],
     ['src/features/phases/components/farm-ranking-table.tsx', 'farm-ranking-table'],

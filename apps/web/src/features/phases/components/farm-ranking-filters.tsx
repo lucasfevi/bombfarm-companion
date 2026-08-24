@@ -1,7 +1,8 @@
 'use client';
 
 import { HelpTip, Select, Switch } from '@bombfarm/ui';
-import { gameDifficultyLabel } from '@bombfarm/domain/phase-wiki';
+import { gameDifficultyLabel, ITEM_LEVEL_TIERS } from '@bombfarm/domain/phase-wiki';
+import { sub } from '@/shared/i18n';
 import type { Lang, Strings } from '@/shared/i18n';
 import type { FarmFilters, GateFilter } from '@/features/phases/model/farm-ranking-view';
 
@@ -25,7 +26,7 @@ export const farmFieldLabelClass =
   'flex h-4 items-center gap-1 text-[11px] leading-none tracking-[0.03em] text-muted uppercase';
 export const farmFieldControlClass = 'flex h-[26px] items-center';
 
-/** `Switch` x1 (unlocked-only) + `Select` x2 (ato, gate). */
+/** `Switch` x1 (unlocked-only) + `Select` x3 (ato, gate, minimum item level). */
 export function FarmRankingFilters({ filters, onChange, maxPhaseKnown, lang, t }: Props) {
   return (
     <div className="flex flex-wrap items-start gap-3">
@@ -86,6 +87,31 @@ export function FarmRankingFilters({ filters, onChange, maxPhaseKnown, lang, t }
             <option value="all">{t.farmRankingFilterGateAll}</option>
             <option value="gate">{t.farmRankingFilterGateOnly}</option>
             <option value="non-gate">{t.farmRankingFilterGateNonGate}</option>
+          </Select>
+        </div>
+      </label>
+
+      <label className={`${farmFieldClass} w-44 shrink-0`} data-testid="farm-filter-item-level">
+        <span className={farmFieldLabelClass}>{t.farmRankingFilterItemLevelLabel}</span>
+        <div className={farmFieldControlClass}>
+          <Select
+            size="compact"
+            className="w-full"
+            aria-label={t.farmRankingFilterItemLevelLabel}
+            value={filters.minItemLevel == null ? '' : String(filters.minItemLevel)}
+            onChange={(event) =>
+              onChange({
+                ...filters,
+                minItemLevel: event.target.value === '' ? null : Number(event.target.value),
+              })
+            }
+          >
+            <option value="">{t.farmRankingFilterItemLevelAll}</option>
+            {ITEM_LEVEL_TIERS.map((level) => (
+              <option key={level} value={level}>
+                {sub(t.farmRankingFilterItemLevelOption, { level: String(level) })}
+              </option>
+            ))}
           </Select>
         </div>
       </label>

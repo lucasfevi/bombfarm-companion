@@ -23,6 +23,7 @@
  */
 import { describe, expect, it } from 'vitest';
 import {
+  ITEM_LEVEL_TIERS,
   ITEM_POR_FASE,
   itemLevelDropLabel,
   itemLevelsForPhase,
@@ -173,6 +174,22 @@ describe('itemLevelDropLabel — how the table reaches the UI', () => {
   it('is non-empty for every phase 1…600', () => {
     for (let phase = 1; phase <= MAX_PHASE; phase++) {
       expect(itemLevelDropLabel(itemLevelsForPhase(phase)).length, `phase ${phase}`).toBeGreaterThan(0);
+    }
+  });
+});
+
+describe('ITEM_LEVEL_TIERS', () => {
+  it('is the closed form ladder — 10…300 in steps of ten, ascending and deduped', () => {
+    expect(ITEM_LEVEL_TIERS).toEqual(
+      Array.from({ length: BAND_COUNT }, (_unused, index) => expectedBand(index + 1).itemLevel),
+    );
+  });
+
+  it('every level a phase can drop is offered as a tier', () => {
+    for (let phase = 1; phase <= MAX_PHASE; phase++) {
+      for (const level of itemLevelsForPhase(phase)) {
+        expect(ITEM_LEVEL_TIERS, `phase ${phase}`).toContain(level);
+      }
     }
   });
 });

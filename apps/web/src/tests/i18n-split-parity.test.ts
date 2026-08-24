@@ -267,8 +267,18 @@ const KEYS_REMOVED: readonly string[] = [
  * `tabAccount`), and the ten `accountSave*`/`accountMaxPhase`/`accountLuckFlat`/
  * `accountFieldSlots`/`accountCasaSlots` keys are the new "From your save" panel — account-wide
  * values the save already carried but nothing rendered outside the import dialog.
+ *
+ * The Farm Ranking board's minimum-item-level filter (2026-08-23) is a fourth control beside the
+ * unlocked/difficulty/gate ones, so it brings its own label, its no-floor option and the
+ * `{level}` option template: `farmRankingFilterItemLevelLabel`,
+ * `farmRankingFilterItemLevelAll`, `farmRankingFilterItemLevelOption`. Nothing existing was
+ * reworded — the item-level COLUMN header (`farmRankingColItemLevel`) is a different string and
+ * is untouched.
  */
 const KEYS_ADDED: readonly string[] = [
+  'farmRankingFilterItemLevelLabel',
+  'farmRankingFilterItemLevelAll',
+  'farmRankingFilterItemLevelOption',
   'pointsOverBudgetWarning',
   'accountTreeGroupDamage',
   'accountTreeGroupField',

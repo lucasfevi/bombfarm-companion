@@ -172,11 +172,12 @@ describe('applyFarmFilters', () => {
     row({ phase: 4, ato: 2, gate: false, locked: false, infeasible: true }),
   ];
 
-  it('defaultFarmFilters() is unlocked-only on, no ato, gate all', () => {
+  it('defaultFarmFilters() is unlocked-only on, no ato, gate all, no item-level floor', () => {
     expect(defaultFarmFilters()).toEqual({
       unlockedOnly: true,
       ato: null,
       gate: 'all',
+      minItemLevel: null,
     });
   });
 
@@ -217,13 +218,74 @@ describe('applyFarmFilters', () => {
       unlockedOnly: true,
       ato: 2,
       gate: 'non-gate',
+      minItemLevel: null,
     });
     expect(result.map((entry) => entry.phase)).toEqual([4]);
   });
 
   it('a combination matching zero rows returns an empty array', () => {
-    const result = applyFarmFilters(rows, { unlockedOnly: false, ato: 5, gate: 'all' });
+    const result = applyFarmFilters(rows, {
+      unlockedOnly: false,
+      ato: 5,
+      gate: 'all',
+      minItemLevel: null,
+    });
     expect(result).toEqual([]);
+  });
+});
+
+describe('applyFarmFilters — minItemLevel', () => {
+  // Bands overlap by ten phases, so a row can carry two tiers; `itemLevels` is what
+  // `@bombfarm/domain` resolved for the phase, ascending.
+  const rows = [
+    row({ phase: 25, itemLevels: [10, 20] }),
+    row({ phase: 45, itemLevels: [20, 30] }),
+    row({ phase: 100, itemLevels: [50] }),
+  ];
+
+  it('null keeps every row', () => {
+    const result = applyFarmFilters(rows, { ...defaultFarmFilters(), minItemLevel: null });
+    expect(result.map((entry) => entry.phase)).toEqual([25, 45, 100]);
+  });
+
+  it('keeps rows whose highest band is at or above the floor', () => {
+    const result = applyFarmFilters(rows, { ...defaultFarmFilters(), minItemLevel: 30 });
+    expect(result.map((entry) => entry.phase)).toEqual([45, 100]);
+  });
+
+  it('keeps an overlap row on its UPPER tier — the lower tier can still roll there', () => {
+    const result = applyFarmFilters(rows, { ...defaultFarmFilters(), minItemLevel: 20 });
+    expect(result.map((entry) => entry.phase)).toEqual([25, 45, 100]);
+  });
+
+  it('excludes a row whose only band sits below the floor', () => {
+    const result = applyFarmFilters([row({ phase: 5, itemLevels: [10] })], {
+      ...defaultFarmFilters(),
+      minItemLevel: 20,
+    });
+    expect(result).toEqual([]);
+  });
+
+  it('excludes a row with no known bands', () => {
+    const result = applyFarmFilters([row({ phase: 5, itemLevels: [] })], {
+      ...defaultFarmFilters(),
+      minItemLevel: 10,
+    });
+    expect(result).toEqual([]);
+  });
+
+  it('narrows alongside the other filters', () => {
+    const mixed = [
+      row({ phase: 45, ato: 1, gate: true, itemLevels: [20, 30] }),
+      row({ phase: 46, ato: 1, gate: false, itemLevels: [20, 30] }),
+      row({ phase: 10, ato: 1, gate: false, itemLevels: [10] }),
+    ];
+    const result = applyFarmFilters(mixed, {
+      ...defaultFarmFilters(),
+      gate: 'non-gate',
+      minItemLevel: 30,
+    });
+    expect(result.map((entry) => entry.phase)).toEqual([46]);
   });
 });
 

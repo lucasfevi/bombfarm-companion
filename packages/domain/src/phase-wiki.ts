@@ -335,6 +335,11 @@ export function xpPerProp(phase: number): number {
   return XP_FASE_INI + progress * (XP_FASE_FIM - XP_FASE_INI);
 }
 
+/** Every item level the drop table can roll, ascending — the distinct `itemLevel` of each band. */
+export const ITEM_LEVEL_TIERS: number[] = [...new Set(ITEM_POR_FASE.map((band) => band.itemLevel))].sort(
+  (left, right) => left - right,
+);
+
 /** Item level tiers that can roll on this phase (overlapping bands). */
 export function itemLevelsForPhase(phase: number): number[] {
   const clampedPhase = Math.max(1, Math.min(MAX_PHASE, Math.round(phase)));
