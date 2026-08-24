@@ -29,55 +29,55 @@ import { inferSpentPoints } from '@bombfarm/domain/point-inference';
 import { SHEET_KEYS } from '@bombfarm/domain/planner-constants';
 import { expectSheetsClose, extractHero, loadFixtureJson, treeTotalsFromSave } from './helpers/sheet-math-fixtures';
 
-const EXPORT_FILE = 'save-20260818-12heroes.json';
+const EXPORT_FILE = 'save-20260823-13heroes-crit-points.json';
 
 /**
- * All 12 heroes of the post-revert corpus file — the suite's entire subject set.
+ * All 13 heroes of the post-2026-08-23 corpus file — the suite's entire subject set.
  *
- * The 2026-08-16/17 exports (`save-20260816-8heroes.json`, `save-20260816-respec-cdr-crit.json`,
- * `save-20260816-9heroes-redistrib.json`, `save-20260816-5heroes-gear-cdr-crit.json`,
- * `save-20260817-11heroes.json`) are NO LONGER subjects: they were captured during the
- * 2026-08-15..08-18 window when crit chance and cooldown were flat addends, and the 2026-08-18
- * patch reverted both to percent-of-base with a rescaled item catalog. No single model
- * reproduces both this file and the current game — the same reasoning that already excluded the
- * pre-2026-08-15 corpus. They stay for the structural suites and for the provenance they already
- * carry: the flat-regime respec pair is what pinned the (now-superseded) flat per-point rates,
- * and that measurement is recorded in `POINT_GAIN`'s comment history and the fixture README
- * rather than lost.
+ * `save-20260818-12heroes.json` and `save-20260819-respec-crit-cdr.json` are NO LONGER subjects,
+ * for the same reason `save-20260816-8heroes.json`, `save-20260816-respec-cdr-crit.json`,
+ * `save-20260816-9heroes-redistrib.json`, `save-20260816-5heroes-gear-cdr-crit.json` and
+ * `save-20260817-11heroes.json` stopped being ones before them: the 2026-08-23 patch restated
+ * both crit-chance ABILITIES in flat points (see the `critChanceFlat` ability kind), and no
+ * single model reproduces a capture from either side of that change. All of them stay committed
+ * for the structural suites and for the provenance they carry — the flat-regime respec pair
+ * pinned the (superseded) flat per-point rates, and the 08-18 file was the whole-roster witness
+ * for the percent-of-base revert.
  *
- * This file is the first whole-roster witness for the reverted percent-of-base shape (zero
- * inference issues, every budget exactly on `level`). It is also a crit-DAMAGE witness (Doran
- * holds `golpe_brutal` 20, landing on a flat `rank x 4` with residual exactly 0 — crit damage is
- * unaffected by either crit-chance patch) and, via the four item-free/ability-free heroes
- * (Sora/Joric/Aric/Eryn), the cleanest tree-only crit-chance witness in the corpus.
+ * This file is the first whole-roster witness for the flat crit-chance ABILITY: every one of the
+ * 13 heroes is issue-free with a budget landing exactly on `level`, and three of them carry
+ * `olho_clinico` — Minato and Jon at rank 20 with gear, and Perrin at rank 13 with none. Perrin
+ * is the discriminating one: gear-free and points-free, his sheet is
+ * `6.02142890221474 + 13 × 2 + 6.02142890221474 × 0.08042584275`, so the flat addend, the
+ * pool's exclusion of it, and the tree's pre-ability base are all pinned by one hero at once.
+ * It is also a crit-DAMAGE witness (Buff S #1 holds `golpe_brutal` 20, landing on a flat
+ * `rank × 4` — crit damage is unaffected by any of the crit-chance patches) and, via the four
+ * item-free heroes (Rowan/Perrin/Korin and, for cooldown, WB #3), the cleanest tree-only witness
+ * in the corpus.
  */
 const SUBJECTS: readonly { file: string; name: string; level: number }[] = [
-  { file: EXPORT_FILE, name: 'Minato', level: 67 },
-  { file: EXPORT_FILE, name: 'Jon', level: 69 },
-  { file: EXPORT_FILE, name: 'Bellatrix', level: 64 },
-  { file: EXPORT_FILE, name: 'Doran', level: 55 },
-  { file: EXPORT_FILE, name: 'WB #2', level: 40 },
-  { file: EXPORT_FILE, name: 'WB #1', level: 43 },
-  { file: EXPORT_FILE, name: 'Manco #1', level: 41 },
-  { file: EXPORT_FILE, name: 'Isolde', level: 26 },
-  { file: EXPORT_FILE, name: 'Sora', level: 10 },
-  { file: EXPORT_FILE, name: 'Joric', level: 10 },
-  { file: EXPORT_FILE, name: 'Aric', level: 2 },
-  { file: EXPORT_FILE, name: 'Eryn', level: 2 },
+  { file: EXPORT_FILE, name: 'Minato', level: 95 },
+  { file: EXPORT_FILE, name: 'Jon', level: 96 },
+  { file: EXPORT_FILE, name: 'Bellatrix', level: 106 },
+  { file: EXPORT_FILE, name: 'Buff S #1', level: 85 },
+  { file: EXPORT_FILE, name: 'WB #2', level: 77 },
+  { file: EXPORT_FILE, name: 'WB #1', level: 84 },
+  { file: EXPORT_FILE, name: 'Buff L #1', level: 68 },
+  { file: EXPORT_FILE, name: 'WB #3', level: 59 },
+  { file: EXPORT_FILE, name: 'Buff FL #1', level: 50 },
+  { file: EXPORT_FILE, name: 'Manco #2', level: 67 },
+  { file: EXPORT_FILE, name: 'Rowan', level: 2 },
+  { file: EXPORT_FILE, name: 'Perrin', level: 53 },
+  { file: EXPORT_FILE, name: 'Korin', level: 2 },
 ];
 
 /**
- * RESOLVED — formerly the one "genuinely point-ambiguous" hero (design.md §0 finding 5, §2.7),
- * pinned here and in `docs/fixture-corpus.md` as an inference ambiguity the round trip could not
- * discriminate. It was not an ambiguity: crit-damage points are FLAT (+5 planner percentage
- * points each, `POINT_GAIN.critDmgFlat`), and modelling them as 8% of the hero's roll left
- * Bellatrix's 2 crit-damage points solving to 1.8867 — a `nonIntegerPoints` issue on `critDmg`
- * with a residual of 0.113. Her sheet moves by exactly +10.0 off a roll of 66.252971472748, as
- * does Fenn's (account 11882, 2026-08-15) off a roll of 67.127583786901: same delta, different
- * rolls, so the gain cannot be a share of the roll. With the flat rate she solves to exactly 2.
- *
- * All 12 heroes are now issue-free; the claims below assert that with no exception carved out,
- * so a regression cannot reintroduce one quietly.
+ * All 13 heroes are issue-free; the claims below assert that with no exception carved out, so a
+ * regression cannot reintroduce one quietly. The two shapes that would each reintroduce one:
+ * modelling crit-damage points as a share of the roll (which left Bellatrix's 2 points solving
+ * to 1.8867 before `POINT_GAIN.critDmgFlat` was measured), and modelling Olho Clínico as a share
+ * of the roll or as a flat term INSIDE the gear pool — the latter charges the whole +40 to spent
+ * crit-chance points and puts Minato and Jon at fractional negatives.
  */
 
 type Subject = (typeof SUBJECTS)[number];
@@ -119,33 +119,59 @@ function prepare(s: Subject) {
 
 const PREPARED = SUBJECTS.map(prepare);
 
+/** The capture's own `skills.totals`, in the units `treeTotalsFromSave` produces — read from the
+ *  fixture rather than retyped, so a corpus swap cannot leave a stale literal behind. */
+const FIXTURE_TREE = treeTotalsFromSave(
+  (loadFixtureJson(EXPORT_FILE).skills as Record<string, unknown>).totals as Record<string, unknown>,
+);
+const TREE_CRIT_CHANCE_PCT = FIXTURE_TREE.critChancePct;
+const TREE_CRIT_DMG_PCT = FIXTURE_TREE.critDmgPct;
+
 describe('point round trip (AD-071) — birth + inferred points + gear + tree reproduces the observed stats', () => {
-  it('non-vacuity: iterates exactly 12 heroes and 96 key comparisons', () => {
-    expect(SUBJECTS.length, 'expected exactly 12 heroes on the post-revert capture').toBe(12);
-    expect(PREPARED.length).toBe(12);
+  it('non-vacuity: iterates exactly 13 heroes and 104 key comparisons', () => {
+    expect(SUBJECTS.length, 'expected exactly 13 heroes on the 2026-08-23 capture').toBe(13);
+    expect(PREPARED.length).toBe(13);
     const totalComparisons = PREPARED.length * SHEET_KEYS.length;
-    expect(totalComparisons, '12 heroes × 8 SHEET_KEYS').toBe(96);
+    expect(totalComparisons, '13 heroes × 8 SHEET_KEYS').toBe(104);
   });
 
   it('claim A — inferSpentPoints reports zero issues for every hero, with no exception carved out', () => {
-    expect(PREPARED.length, 'expected all 12 heroes to be checked').toBe(12);
+    expect(PREPARED.length, 'expected all 13 heroes to be checked').toBe(13);
     for (const p of PREPARED) {
       expect(p.inference.issues, `${subjectLabel(p.subject)} should be issue-free`).toEqual([]);
     }
   });
 
-  it('claim D — Doran pins crit DAMAGE as flat, post-revert', () => {
-    // Crit damage is unaffected by either crit-chance/CDR patch — it went flat at the
-    // 2026-08-13 patch and stays flat through both the 2026-08-15 and 2026-08-18 ones. Doran's
-    // sheet sits exactly `rank x 4` planner points above his roll, with a residual of exactly 0.
-    const p = PREPARED.find((x) => x.subject.name === 'Doran');
-    if (!p) throw new Error('Doran not found among prepared subjects');
+  it('claim D — Buff S #1 pins crit DAMAGE as flat', () => {
+    // Crit damage is unaffected by every crit-chance/CDR patch — it went flat at the 2026-08-13
+    // patch and has stayed flat through the three since. This hero's sheet sits exactly
+    // `rank x 4` planner points above its roll, plus the tree's own flat `crit_dmg_add`.
+    const p = PREPARED.find((x) => x.subject.name === 'Buff S #1');
+    if (!p) throw new Error('Buff S #1 not found among prepared subjects');
     expect(p.inference.issues).toEqual([]);
-    expect(p.hero.sheet.critDmg - p.hero.birth!.critDmg).toBeCloseTo(20 * 4, 9);
+    expect(p.hero.sheet.critDmg - p.hero.birth!.critDmg - TREE_CRIT_DMG_PCT).toBeCloseTo(20 * 4, 9);
   });
 
-  it('claim B is exhaustive: all 12 heroes are issue-free', () => {
-    expect(PREPARED.filter((p) => p.inference.issues.length === 0).length).toBe(12);
+  /**
+   * Claim E — the crit-CHANCE witness, and the discriminating one for the 2026-08-23 shape.
+   *
+   * Perrin holds `olho_clinico` 13/20, wears nothing, and solves to zero crit-chance points, so
+   * his sheet is exactly `roll + 13 x 2 + roll x crit_chance_add` with nothing else in it. Three
+   * separate model claims fail this if any is wrong: percent-of-base overshoots the rank term,
+   * pooling the flat addend inflates it by the tree factor, and reading the tree off the
+   * post-ability sheet inflates the tree line more than fivefold.
+   */
+  it('claim E — Perrin (Olho Clínico 13, gear-free) pins the flat addend, its exclusion from the pool, and the tree base', () => {
+    const p = PREPARED.find((x) => x.subject.name === 'Perrin');
+    if (!p) throw new Error('Perrin not found among prepared subjects');
+    expect(p.inference.issues).toEqual([]);
+    expect(p.inference.pts.critChance, 'no crit-chance points — the whole delta is ability + tree').toBe(0);
+    const roll = p.hero.birth!.critChance;
+    expect(p.hero.sheet.critChance).toBeCloseTo(roll + 13 * 2 + roll * (TREE_CRIT_CHANCE_PCT / 100), 9);
+  });
+
+  it('claim B is exhaustive: all 13 heroes are issue-free', () => {
+    expect(PREPARED.filter((p) => p.inference.issues.length === 0).length).toBe(13);
   });
 
   // Vitest's decimal-place fuzzy-equality matcher is banned in this file (grep-enforced): its
@@ -161,33 +187,31 @@ describe('point round trip (AD-071) — birth + inferred points + gear + tree re
   );
 
   /**
-   * Claim C keeps an EXACT floor so the suite cannot drift into tolerance-only. Its shape
-   * changed with the corpus and the model revert, and the change is a finding rather than a
-   * weakening — RE-MEASURED for issue #132.
+   * Claim C keeps an EXACT floor so the suite cannot drift into tolerance-only. Its shape moves
+   * with the corpus and the model, and the change is a re-measurement rather than a weakening.
    *
-   * `critDmg` is unaffected by either crit-chance/CDR patch: no gear term at all (items never
-   * roll it), so its chain is `roll x star + ability + point` and reproduces bit-exactly on
-   * every hero, same as before the revert. `critChance` and `cdr` went back through
-   * `sharedForward`'s divide-then-multiply pool once the model reverted, and that division
-   * reintroduces the accumulation-order sensitivity the flat shape had removed — no whole hero
-   * is bit-exact any more (was 0 already under the flat model too; every hero here is geared and
-   * ability-bearing), and `critChance` in particular misses on all 12 (the pool now touches
-   * every hero, where the flat model's plain sum did not). `cdr` still lands bit-exact on the 4
-   * heroes with no cooldown gear roll, where the pool's `other` term is 0 and the divide is a
-   * no-op.
+   * `critDmg` has no gear term at all (items never roll it), so its chain is
+   * `roll x star + ability + tree` and it reproduces bit-exactly on 11 of the 13 — the two
+   * misses (WB #1, Manco #2) come from the save→planner unit conversion `(x − 1) x 100`, not
+   * from the model: both carry only the tree's flat `crit_dmg_add`, whose exported delta is
+   * exactly `0.081730769` before that conversion. `critChance` and `cdr` run through
+   * `sharedForward`'s divide-then-multiply pool, whose accumulation order the game does not
+   * share, so neither is bit-exact on a geared hero; `cdr` still lands exactly on the 3 heroes
+   * with no cooldown gear roll, where the pool degenerates to a no-op.
    */
-  it('claim C — critDmg matches bit-exactly on every hero, cdr on the item-free ones, ≥20/96 overall', () => {
+  it('claim C — critDmg bit-exact on 11/13, cdr on the gear-free ones, ≥21/104 overall', () => {
     const critDmgExact = PREPARED.filter((p) => Object.is(p.forward.critDmg, p.hero.sheet.critDmg));
-    expect(critDmgExact.length, 'critDmg must be bit-exact on every hero — it has no gear term').toBe(12);
+    const critDmgMisses = PREPARED.filter((p) => !Object.is(p.forward.critDmg, p.hero.sheet.critDmg)).map((p) => subjectLabel(p.subject));
+    expect(critDmgExact.length, `critDmg bit-exact on ${critDmgExact.length}/13; misses: ${critDmgMisses.join(', ')}`).toBe(11);
 
     const cdrExact = PREPARED.filter((p) => Object.is(p.forward.cdr, p.hero.sheet.cdr));
     const cdrMisses = PREPARED.filter((p) => !Object.is(p.forward.cdr, p.hero.sheet.cdr)).map((p) => subjectLabel(p.subject));
-    expect(cdrExact.length, `cdr bit-exact on ${cdrExact.length}/12; misses: ${cdrMisses.join(', ')}`).toBe(4);
+    expect(cdrExact.length, `cdr bit-exact on ${cdrExact.length}/13; misses: ${cdrMisses.join(', ')}`).toBe(3);
 
     const exactComparisons = PREPARED.reduce(
       (sum, p) => sum + SHEET_KEYS.filter((key) => Object.is(p.forward[key], p.hero.sheet[key])).length,
       0,
     );
-    expect(exactComparisons, `${exactComparisons}/96 key comparisons bit-exact`).toBeGreaterThanOrEqual(20);
+    expect(exactComparisons, `${exactComparisons}/104 key comparisons bit-exact`).toBeGreaterThanOrEqual(21);
   });
 });

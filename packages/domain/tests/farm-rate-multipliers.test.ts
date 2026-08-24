@@ -15,7 +15,7 @@ import {
   type HeroFarmFacts,
   type SquadFarmFacts,
 } from '@bombfarm/domain/farm-rate';
-import { wikiPhaseLine, WIKI_PROPS, LOOT_ABILITY_VALUES } from '@bombfarm/domain/phase-wiki';
+import { wikiPhaseLine, WIKI_PROPS, LOOT_ABILITY_VALUES, DROP_RATES } from '@bombfarm/domain/phase-wiki';
 import { hitsToKill, propHp } from '@bombfarm/domain/phases';
 import { mitigationFactor, EFF_IA } from '@bombfarm/domain/model';
 import type { AccountShared, HeroRecord } from '@bombfarm/domain/shims/storage';
@@ -348,14 +348,20 @@ describe('XP tracks tree.xpMult, never gold/drops (issue #127)', () => {
   });
 });
 
-describe('stoneChestsPerHour mirrors gemsPerHour (issue #127) — same DROP_RATES base rate (0.00005)', () => {
-  it('on a gate phase, stoneChestsPerHour === gemsPerHour exactly', () => {
+describe('stoneChestsPerHour shares gemsPerHour’s gate rule but no longer its rate (issue #127)', () => {
+  it('on a gate phase, stoneChestsPerHour is DROP_RATES.stone / DROP_RATES.gem times gemsPerHour', () => {
+    // The two rates were equal (0.00005 apiece) until the 2026-08-23 patch raised the stone
+    // chest tenfold to 0.0005. The RATIO is asserted rather than the equality, so the two rows
+    // stay tied to the same props/luck/bonus terms and only the published rate separates them.
     const heroFacts = computeHeroFarmFacts({ heroes, account });
     const squad = computeSquadFarmFacts(heroFacts, account);
     const gateRow = computeFarmRateRow(10, squad)!;
     expect(gateRow.gate).toBe(true);
-    expect(gateRow.stoneChestsPerHour).toBe(gateRow.gemsPerHour);
-    expect(gateRow.stoneChestsPerHour).toBeGreaterThan(0);
+    expect(gateRow.stoneChestsPerHour).toBeCloseTo(
+      gateRow.gemsPerHour * (DROP_RATES.stone / DROP_RATES.gem),
+      12,
+    );
+    expect(gateRow.stoneChestsPerHour).toBeGreaterThan(gateRow.gemsPerHour);
   });
 
   it('on a non-gate phase, stoneChestsPerHour is 0, same as gemsPerHour', () => {

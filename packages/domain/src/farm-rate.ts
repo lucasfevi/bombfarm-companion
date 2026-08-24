@@ -871,7 +871,9 @@ export type FarmRateRow = {
   keysPerHour: number;
   gemsPerHour: number; // 0 on non-gate
   timePiecesPerHour: number; // 0 on non-gate
-  /** Same base rate as {@link gemsPerHour} (`0.00005`) — gate-only, `0` on non-gate. */
+  /** Gate-only, `0` on non-gate. Its own base rate (`DROP_RATES.stone`, wiki `pedra.drop_rate`),
+   *  which the 2026-08-23 patch raised tenfold to `0.0005` — it is no longer the same rate as
+   *  {@link gemsPerHour}, which stayed at `0.00005`. */
   stoneChestsPerHour: number;
   xpPerHour: number;
   propsPerHour: number;

@@ -32,7 +32,7 @@ function rawSheetOther(abilities: Record<string, number>): SheetOtherPct {
   const mods = abilityMods(abilities);
   return {
     ...emptySheetOther(),
-    critChance: mods.sheetCritChancePctOfBase / 100,
+    critChanceFlat: mods.sheetCritChanceFlat,
     penetration: mods.sheetPenetrationRaw,
     critDmgFlat: mods.sheetCritDmgFlat,
   };
@@ -455,7 +455,7 @@ describe('parseSaveFile', () => {
     const expected = expectedNaked(rawLorne, lorne.record.abilities);
     expect(lorne.record.naked).toEqual(expected);
     // AC-03 (birth-sheet.ts): Olho's on-sheet crit % multiplies the birth roll — naked
-    // crit is above the ability-free birth roll (poolFactor(sheetOther.critChance) > 1).
+    // crit is above the ability-free birth roll (sheetOther.critChanceFlat > 0).
     const withoutOlho = nakedFromBirth(rawBirth(rawLorne), rawLorne.level, rawLorne.stars ?? 0, emptySheetOther());
     expect(lorne.record.naked.critChance).toBeGreaterThan(withoutOlho.critChance);
   });

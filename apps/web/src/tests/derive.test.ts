@@ -63,7 +63,7 @@ describe('computeCombatMults', () => {
     expect(m.attackMult).toBeCloseTo(1.11, 6);
     expect(m.speedMult).toBeCloseTo(1.03, 6);
     expect(m.teamDrainMult).toBeCloseTo(0.8, 6);
-    expect(m.teamCritPctOfBase).toBe(8);
+    expect(m.teamCritFlat).toBe(8);
     // Contra o Relógio is a self ability, not a team aura (Fault 1) — gateAttackMult reads
     // `mods` alone, unaffected by teamBuffs.
     expect(m.gateAttackMult).toBeCloseTo(1.2, 6);
@@ -160,7 +160,7 @@ describe('derive', () => {
       energyMult: mults.energyMult,
       speedMult: mults.speedMult,
       critDmgMult: mults.critDmgMult,
-      teamCritPctOfBase: mults.teamCritPctOfBase,
+      teamCritFlat: mults.teamCritFlat,
       treeSheet: ZERO_TREE,
       penetrationPp: 0,
       context: baseCtx(),
@@ -198,7 +198,7 @@ describe('derive', () => {
       energyMult: mults.energyMult,
       speedMult: mults.speedMult,
       critDmgMult: mults.critDmgMult,
-      teamCritPctOfBase: mults.teamCritPctOfBase,
+      teamCritFlat: mults.teamCritFlat,
       treeSheet: ZERO_TREE,
       penetrationPp: 0,
       context: baseCtx(),
@@ -228,7 +228,7 @@ describe('derive', () => {
       energyMult: 1,
       speedMult: 1,
       critDmgMult: 1,
-      teamCritPctOfBase: 0,
+      teamCritFlat: 0,
       treeSheet: ZERO_TREE,
       penetrationPp: 0,
       context: baseCtx(),
@@ -252,7 +252,7 @@ describe('derive', () => {
       energyMult: 1,
       speedMult: 1,
       critDmgMult: 1,
-      teamCritPctOfBase: 0,
+      teamCritFlat: 0,
       treeSheet: ZERO_TREE,
       penetrationPp: 0,
       context: baseCtx(),
@@ -305,7 +305,7 @@ describe('derive', () => {
       energyMult: mults.energyMult,
       speedMult: mults.speedMult,
       critDmgMult: mults.critDmgMult,
-      teamCritPctOfBase: 0,
+      teamCritFlat: 0,
       treeSheet,
       penetrationPp: 0,
       context: baseCtx(),
@@ -357,7 +357,7 @@ describe('derive', () => {
       energyMult: mults.energyMult,
       speedMult: mults.speedMult,
       critDmgMult: mults.critDmgMult,
-      teamCritPctOfBase: 0,
+      teamCritFlat: 0,
       treeSheet,
       penetrationPp: 0,
       context: baseCtx(),
@@ -396,7 +396,7 @@ describe('derive', () => {
       energyMult: 1,
       speedMult: 1,
       critDmgMult: 1,
-      teamCritPctOfBase: 0,
+      teamCritFlat: 0,
       treeSheet: tree,
       penetrationPp: 0,
       context: baseCtx(),
@@ -434,7 +434,7 @@ describe('derive', () => {
       energyMult: 1,
       speedMult: 1,
       critDmgMult: 1,
-      teamCritPctOfBase: 0,
+      teamCritFlat: 0,
       treeSheet: tree,
       penetrationPp: 0,
       context: baseCtx(),
@@ -480,7 +480,7 @@ describe('derive', () => {
       energyMult: 1,
       speedMult: 1,
       critDmgMult: 1,
-      teamCritPctOfBase: 0,
+      teamCritFlat: 0,
       treeSheet: tree,
       penetrationPp: 0,
       context: baseCtx(),
@@ -512,7 +512,7 @@ describe('derive', () => {
       energyMult: 1,
       speedMult: 1,
       critDmgMult: 1,
-      teamCritPctOfBase: 0,
+      teamCritFlat: 0,
       treeSheet: ZERO_TREE,
       penetrationPp: 0,
       context: baseCtx(),

@@ -4,7 +4,9 @@
  * It was modelled percent-of-base on the strength of `AD-BSP-22`'s reading alone: every capture
  * in the corpus carried `crit_dmg_add: 0`, so nothing could tell the two shapes apart and both
  * `applySkillTree` and `point-inference` said so in comments. `save-20260822-15heroes-tree-crit-dmg.json`
- * is the first capture with a nonzero value (`0.081730769`) and it separates them outright.
+ * was the first capture with a nonzero value (`0.081730769`) and separated them outright; this
+ * file now reads the 2026-08-23 capture, which carries the same tree value and is the only one
+ * whose crit-CHANCE shape the current model reproduces.
  *
  * This is the THIRD crit-damage term to be caught reading percent-of-base when the game applies
  * it flat — the stat point was the reference case (`POINT_GAIN.critDmgFlat`) and Golpe Brutal the
@@ -18,7 +20,7 @@ import { inferSpentPoints } from '@bombfarm/domain/point-inference';
 import { SHEET_KEYS } from '@bombfarm/domain/planner-constants';
 import { extractHero, loadFixtureJson, treeTotalsFromSave } from './helpers/sheet-math-fixtures';
 
-const CAPTURE = 'save-20260822-15heroes-tree-crit-dmg.json';
+const CAPTURE = 'save-20260823-13heroes-crit-points.json';
 
 const raw = loadFixtureJson(CAPTURE);
 const heroesRaw = raw.heroes as Record<string, unknown>[];
@@ -30,18 +32,18 @@ const HEROES = heroesRaw.map((h) => extractHero(raw, String(h.name), Number(h.le
 describe('skill tree crit_dmg_add is flat, not percent-of-base', () => {
   it('the capture carries a nonzero crit_dmg_add — the whole reason it is committed', () => {
     expect(tree.critDmgPct).toBeCloseTo(8.1730769, 7);
-    expect(HEROES).toHaveLength(15);
+    expect(HEROES).toHaveLength(13);
   });
 
   /**
    * The witness. Every hero's `stats.crit_dmg − birth_stats.crit_dmg` is the SAME number, and it
-   * is `crit_dmg_add` — across birth rolls spanning 45.03 … 73.13 crit-damage percentage points
-   * and levels 1 … 97, one of them (Buff S #1) also carrying Golpe Brutal's flat +80. Items never
+   * is `crit_dmg_add` — across birth rolls spanning 47.51 … 73.13 crit-damage percentage points
+   * and levels 2 … 106, one of them (Buff S #1) also carrying Golpe Brutal's flat +80. Items never
    * roll crit damage and no hero here holds a crit-damage point, so the tree is the only term in
    * the gap.
    *
    * Percent-of-base cannot produce a constant gap from a varying base: it would have spread the
-   * same total over 3.68 … 5.98 points, hero by hero. That spread is asserted below, so this pair
+   * same total over 3.88 … 5.98 points, hero by hero. That spread is asserted below, so this pair
    * of tests fails in BOTH directions rather than merely agreeing with the current code.
    */
   it('every hero gains exactly crit_dmg_add, independent of its birth roll', () => {
@@ -65,7 +67,7 @@ describe('skill tree crit_dmg_add is flat, not percent-of-base', () => {
 
   it('the percent-of-base shape this replaces would have varied hero by hero', () => {
     const wouldHaveBeen = HEROES.map((h) => h.birth!.critDmg * (tree.critDmgPct / 100));
-    expect(Math.min(...wouldHaveBeen)).toBeCloseTo(3.68, 1);
+    expect(Math.min(...wouldHaveBeen)).toBeCloseTo(3.88, 1);
     expect(Math.max(...wouldHaveBeen)).toBeCloseTo(5.98, 1);
   });
 

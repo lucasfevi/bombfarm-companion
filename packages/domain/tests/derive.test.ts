@@ -137,15 +137,15 @@ describe('team aura faults (issue #132)', () => {
   });
 
   it('Fault 2/4 (Presságio): two rank-20 carriers cap the crit total at ONE carrier’s worth', () => {
-    // Two carriers at Presságio Mortal rank 20 each (own = 114.28571428571428 apiece) must
-    // still read the cap once — 114.28571428571428, not 228.57142857142856.
+    // Two carriers at Presságio Mortal rank 20 each (own = 20 crit points apiece) must still
+    // read the cap once — 20, not 40.
     const teamBuffs = {
       ...zeroTeamBuffs(),
       pressagio_mortal: TEAM_BUFF_PER_LEVEL.pressagio_mortal * 20 * 2,
     };
     const m = computeCombatMults({ mods: abilityMods({}), teamBuffs, extraDmgPct: 0 });
-    expect(m.teamCritPctOfBase).toBeCloseTo(TEAM_BUFF_CAP.pressagio_mortal, 6);
-    expect(m.teamCritPctOfBase).not.toBeCloseTo(TEAM_BUFF_CAP.pressagio_mortal * 2, 6);
+    expect(m.teamCritFlat).toBeCloseTo(TEAM_BUFF_CAP.pressagio_mortal, 6);
+    expect(m.teamCritFlat).not.toBeCloseTo(TEAM_BUFF_CAP.pressagio_mortal * 2, 6);
   });
 });
 
@@ -172,7 +172,7 @@ describe('derive', () => {
       energyMult: mults.energyMult,
       speedMult: mults.speedMult,
       critDmgMult: mults.critDmgMult,
-      teamCritPctOfBase: mults.teamCritPctOfBase,
+      teamCritFlat: mults.teamCritFlat,
       treeSheet: ZERO_TREE,
       penetrationPp: 0,
       context: baseCtx(),
@@ -210,7 +210,7 @@ describe('derive', () => {
       energyMult: mults.energyMult,
       speedMult: mults.speedMult,
       critDmgMult: mults.critDmgMult,
-      teamCritPctOfBase: mults.teamCritPctOfBase,
+      teamCritFlat: mults.teamCritFlat,
       treeSheet: ZERO_TREE,
       penetrationPp: 0,
       context: baseCtx(),
@@ -240,7 +240,7 @@ describe('derive', () => {
       energyMult: 1,
       speedMult: 1,
       critDmgMult: 1,
-      teamCritPctOfBase: 0,
+      teamCritFlat: 0,
       treeSheet: ZERO_TREE,
       penetrationPp: 0,
       context: baseCtx(),
@@ -264,7 +264,7 @@ describe('derive', () => {
       energyMult: 1,
       speedMult: 1,
       critDmgMult: 1,
-      teamCritPctOfBase: 0,
+      teamCritFlat: 0,
       treeSheet: ZERO_TREE,
       penetrationPp: 0,
       context: baseCtx(),
@@ -317,7 +317,7 @@ describe('derive', () => {
       energyMult: mults.energyMult,
       speedMult: mults.speedMult,
       critDmgMult: mults.critDmgMult,
-      teamCritPctOfBase: 0,
+      teamCritFlat: 0,
       treeSheet,
       penetrationPp: 0,
       context: baseCtx(),
@@ -369,7 +369,7 @@ describe('derive', () => {
       energyMult: mults.energyMult,
       speedMult: mults.speedMult,
       critDmgMult: mults.critDmgMult,
-      teamCritPctOfBase: 0,
+      teamCritFlat: 0,
       treeSheet,
       penetrationPp: 0,
       context: baseCtx(),
@@ -408,7 +408,7 @@ describe('derive', () => {
       energyMult: 1,
       speedMult: 1,
       critDmgMult: 1,
-      teamCritPctOfBase: 0,
+      teamCritFlat: 0,
       treeSheet: tree,
       penetrationPp: 0,
       context: baseCtx(),
@@ -446,7 +446,7 @@ describe('derive', () => {
       energyMult: 1,
       speedMult: 1,
       critDmgMult: 1,
-      teamCritPctOfBase: 0,
+      teamCritFlat: 0,
       treeSheet: tree,
       penetrationPp: 0,
       context: baseCtx(),
@@ -492,7 +492,7 @@ describe('derive', () => {
       energyMult: 1,
       speedMult: 1,
       critDmgMult: 1,
-      teamCritPctOfBase: 0,
+      teamCritFlat: 0,
       treeSheet: tree,
       penetrationPp: 0,
       context: baseCtx(),
@@ -524,7 +524,7 @@ describe('derive', () => {
       energyMult: 1,
       speedMult: 1,
       critDmgMult: 1,
-      teamCritPctOfBase: 0,
+      teamCritFlat: 0,
       treeSheet: ZERO_TREE,
       penetrationPp: 0,
       context: baseCtx(),

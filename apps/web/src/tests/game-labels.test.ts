@@ -38,11 +38,11 @@ describe('abilityName / abilityEffectText', () => {
   it('keeps effect-text numbers aligned with AbilityEffect.perLevel (W3 rank-20 curves)', () => {
     // Spot-check modeled abilities: EN copy must mention the same perLevel figure.
     expect(abilityEffectText('ponta_diamante', 'en')).toMatch(/\+1 /);
-    expect(abilityEffectText('olho_clinico', 'en')).toMatch(/4\.286/);
+    expect(abilityEffectText('olho_clinico', 'en')).toMatch(/\+2 crit chance points/);
     expect(abilityEffectText('bateria_extra', 'en')).toMatch(/1%/);
     // 0.185, not the naive-halved 0.2 (AD-BSP-18's central counterexample).
     expect(abilityEffectText('marcha_acelerada', 'en')).toMatch(/0\.185%/);
-    expect(abilityEffectText('pressagio_mortal', 'en')).toMatch(/5\.714/);
+    expect(abilityEffectText('pressagio_mortal', 'en')).toMatch(/\+1 TEAM crit chance point/);
     expect(abilityEffectText('misericordia', 'en')).toMatch(/1\.25%/);
     expect(abilityEffectText('explosao_ampla', 'en')).toMatch(/0\.1 /);
     expect(abilityEffectText('contra_relogio', 'en')).toMatch(/2%/);

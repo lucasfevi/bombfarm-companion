@@ -118,7 +118,7 @@ function migrateGearedOverride(raw: Partial<HeroRecord>): SheetStats {
   const mods = abilityMods(raw.abilities ?? {});
   const sheetOther = {
     ...emptySheetOther(),
-    critChance: mods.sheetCritChancePctOfBase / 100,
+    critChanceFlat: mods.sheetCritChanceFlat,
     penetration: mods.sheetPenetrationRaw,
     critDmgFlat: mods.sheetCritDmgFlat,
   };

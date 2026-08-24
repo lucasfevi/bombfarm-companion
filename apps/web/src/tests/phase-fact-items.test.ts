@@ -194,12 +194,15 @@ describe('dropItems', () => {
     expect(items.map((row) => row.id)).toEqual(['chest', 'key', 'time', 'gem', 'stone']);
     const byId = (id: string) => items.find((row) => row.id === id)!;
     expect(total(byId('chest').value)).toBe('0.117%');
-    expect(total(byId('time').value)).toBe('0.176%');
+    expect(total(byId('time').value)).toBe('0.117%');
     expect(total(byId('gem').value)).toBe('0.006%');
-    expect(total(byId('stone').value)).toBe('0.006%');
+    // Three decimals still separate every rare-chest row: the 2026-08-23 patch raised the stone
+    // chest tenfold, so it prints 0.059% where the gem chest stays at 0.006%.
+    expect(total(byId('stone').value)).toBe('0.059%');
     // The base each total was boosted from stays on the row, so the pair's second number is
     // still readable without re-deriving it from the luck multiplier.
-    expect(subtext(byId('time').value)).toBe('0.150% + 17%');
+    expect(subtext(byId('time').value)).toBe('0.100% + 17%');
+    expect(subtext(byId('stone').value)).toBe('0.050% + 17%');
     for (const id of ['chest', 'time', 'gem', 'stone'] as const) {
       expect(byId(id).muted, `${id} applies on a gate phase`).toBeFalsy();
     }

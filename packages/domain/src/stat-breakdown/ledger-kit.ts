@@ -24,20 +24,20 @@ function otherFactor(percent: number): number {
 }
 
 /**
- * The MULTIPLICATIVE sheet-ability share for this key, as a fraction of the roll. `critDmg`
- * is deliberately 0 here — its sheet ability is a flat addend, reported by
- * {@link sheetAbilityFlatFor} instead (see `POINT_GAIN.critDmgFlat`).
+ * The MULTIPLICATIVE sheet-ability share for this key, as a fraction of the roll. `critDmg` and
+ * `critChance` are deliberately 0 here — both their sheet abilities are flat addends, reported
+ * by {@link sheetAbilityFlatFor} instead (see `POINT_GAIN.critDmgFlat` and the `critChanceFlat`
+ * ability kind).
  */
 function sheetOtherFor(statKey: SheetDisplayKey, otherPct: SheetOtherPct): number {
   switch (statKey) {
     case 'speed':
       return otherPct.speed;
-    case 'critChance':
-      return otherPct.critChance;
     case 'penetration':
       return otherPct.penetration;
     case 'cdr':
       return otherPct.cdr;
+    case 'critChance':
     case 'critDmg':
     case 'attack':
     case 'energy':
@@ -45,9 +45,11 @@ function sheetOtherFor(statKey: SheetDisplayKey, otherPct: SheetOtherPct): numbe
   }
 }
 
-/** The FLAT sheet-ability addend for this key (planner units). Only crit damage has one. */
+/** The FLAT sheet-ability addend for this key (planner units) — crit damage and crit chance. */
 function sheetAbilityFlatFor(statKey: SheetDisplayKey, otherPct: SheetOtherPct): number {
-  return statKey === 'critDmg' ? Math.max(0, otherPct.critDmgFlat) : 0;
+  if (statKey === 'critDmg') return Math.max(0, otherPct.critDmgFlat);
+  if (statKey === 'critChance') return Math.max(0, otherPct.critChanceFlat);
+  return 0;
 }
 
 /**
@@ -129,7 +131,7 @@ export function pushBirthThenGear(
   if (other > EPS) {
     pushMul(steps, 'sheetAbilities', otherFactor(other), sheetAbilityNote(statKey));
   }
-  // Crit damage's sheet ability (Golpe Brutal) is a flat addend, not a pool factor.
+  // Crit damage's and crit chance's sheet abilities are flat addends, not pool factors.
   const abilityFlat = sheetAbilityFlatFor(statKey, facts.sheetOther);
   if (abilityFlat > EPS) {
     pushAdd(steps, 'sheetAbilities', abilityFlat, sheetAbilityNote(statKey));
@@ -246,6 +248,17 @@ export function teamMultNote(
   const team = Math.max(0, combinedBonusPct - own);
   if (own < EPS && team < EPS) return {};
   return { note: 'ownTeamSplit', split: { own, team } };
+}
+
+/**
+ * {@link teamMultNote}'s ADDITIVE twin, for a team aura that adds flat units rather than
+ * multiplying — Presságio Mortal's crit points since the 2026-08-23 patch. `amount` and `cap`
+ * are in the same flat units. There is no own/team split to report: a team aura is a property
+ * of the field, so every deployed hero reads the same roster total and the "own" share is 0 by
+ * construction (issue #132), which is exactly what {@link teamMultNote} degenerates to too.
+ */
+export function teamAddNote(amount: number, cap: number): LedgerNote | undefined {
+  return amount >= cap - EPS ? 'capped' : undefined;
 }
 
 /** Fold ledger steps to the final running value (ESB-10). */

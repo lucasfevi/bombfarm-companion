@@ -55,7 +55,6 @@ export {
   defaultNaked,
   rescaleNakedForLevel,
   rescaleNakedPen,
-  rescaleNakedCrit,
   rescaleNakedCritChance,
   rescaleNakedCritDmg,
   rescaleNakedForStars,

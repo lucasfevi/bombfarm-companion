@@ -84,7 +84,9 @@ export function inferSpentPoints(input: InferSpentPointsInput): PointInferenceRe
 
   const naked = nakedFromBirth(birth, level, stars, sheetOther);
   const baseSpeed = naked.speed / poolFactor(sheetOther.speed);
-  const baseCritChance = naked.critChance / poolFactor(sheetOther.critChance);
+  // Subtracted, not divided: Olho Clínico's crit points are a flat addend outside the pool.
+  const critChanceFlat = Math.max(0, sheetOther.critChanceFlat);
+  const baseCritChance = naked.critChance - critChanceFlat;
 
   // Invert applySkillTree to recover the pre-tree (gear + points) pool subtotal.
   const pool = {
@@ -115,11 +117,14 @@ export function inferSpentPoints(input: InferSpentPointsInput): PointInferenceRe
     attack: (pool.attack - composeAttack(naked.attack, bonuses)) / atkPt,
     energy: (pool.energy / gem - naked.energy) / (POINT_GAIN.energyNative * star),
     speed: solveShared(pool.speed, naked.speed, bonuses.speedPct, sheetOther.speed, POINT_GAIN.speedPctOfBase),
+    // `solveShared` with the flat ability addend peeled off both sides first: the pool
+    // multiplies the birth roll alone (gear/apply.ts `flatOutsidePoolForward`), so leaving
+    // Olho Clínico's +40 inside would charge the whole ability to spent crit-chance points.
     critChance: solveShared(
-      pool.critChance,
-      naked.critChance,
+      pool.critChance - critChanceFlat,
+      baseCritChance,
       bonuses.critPct,
-      sheetOther.critChance,
+      0,
       POINT_GAIN.critChancePctOfBase,
     ),
     // Not `solveShared`: crit damage never joined the shared pool once measured — the sheet

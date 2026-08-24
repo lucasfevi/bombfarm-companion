@@ -278,12 +278,13 @@ describe('phase 10 — gate hand-computed values (spec.md P1-2 AC-2)', () => {
     expect(Math.abs(row.timePiecesPerHour - handTime) / handTime).toBeLessThan(TOL);
   });
 
-  it('stoneChestsPerHour (gate-only) matches propsPerHour × DROP_RATES.stone × (1 + Sorte), the same base rate as gemsPerHour (issue #127)', () => {
+  it('stoneChestsPerHour (gate-only) matches propsPerHour × DROP_RATES.stone × (1 + Sorte)', () => {
     const sorteMult = 1 + squad.sorteFraction;
     const handStone = hand.propsPerHour * DROP_RATES.stone * sorteMult;
     expect(Math.abs(row.stoneChestsPerHour - handStone) / handStone).toBeLessThan(TOL);
-    expect(DROP_RATES.stone).toBe(DROP_RATES.gem);
-    expect(row.stoneChestsPerHour).toBe(row.gemsPerHour);
+    // It shared gemsPerHour's base rate until the 2026-08-23 patch raised the stone chest
+    // tenfold (issue #127's original claim). Same props/luck terms, its own published rate.
+    expect(row.stoneChestsPerHour).toBeCloseTo(row.gemsPerHour * (DROP_RATES.stone / DROP_RATES.gem), 12);
   });
 
   it('keysPerHour is negative and equals -(cyclesPerHour × KEY_GATE_COST)', () => {

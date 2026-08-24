@@ -24,7 +24,7 @@ function solveSpentPoints(hero: SaveHeroSheet, tree: TreeSheetTotals): Record<Sh
   if (!birth) throw new Error(`${hero.name} has no birth_stats`);
   const naked = nakedFromBirth(birth, hero.level, hero.stars, hero.sheetOther);
   const baseSpeed = naked.speed / poolFactor(hero.sheetOther.speed);
-  const baseCritChance = naked.critChance / poolFactor(hero.sheetOther.critChance);
+  const baseCritChance = naked.critChance - Math.max(0, hero.sheetOther.critChanceFlat);
   const observed = hero.sheet;
   const pool = {
     speed: baseSpeed > 1e-12 ? (observed.speed - naked.speed) / baseSpeed : 0,

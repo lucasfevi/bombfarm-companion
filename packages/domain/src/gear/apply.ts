@@ -21,10 +21,33 @@ function sharedReverse(geared: number, gearPct: number, otherPct: number): numbe
 }
 
 /**
+ * Crit chance's shared pool, with the on-sheet ability addend held OUT of it.
+ *
+ * Olho Clínico adds FLAT crit points that gear and spent points do NOT multiply — the pool
+ * scales the birth roll alone. Confirmed on account 486's 2026-08-23 capture: Minato (rank-20
+ * Olho, gear crit +3.7869%) and Jon (+15.1474%) both solve to exactly zero spent crit-chance
+ * points under this shape, and to fractional negatives if the +40 rides inside the pool.
+ *
+ * There is no `otherPct` parameter because no crit-chance source is a pool fraction any more;
+ * a future one would want {@link sharedForward}'s divisor restored around this.
+ */
+function flatOutsidePoolForward(naked: number, gearPct: number, flat: number): number {
+  const flatClamped = Math.max(0, flat);
+  return (naked - flatClamped) * (1 + gearPct) + flatClamped;
+}
+
+function flatOutsidePoolReverse(sheet: number, gearPct: number, flat: number): number {
+  const flatClamped = Math.max(0, flat);
+  const den = 1 + gearPct;
+  return den > 1e-9 ? (sheet - flatClamped) / den + flatClamped : sheet;
+}
+
+/**
  * Apply gear onto a naked (unequipped) sheet.
  * Ataque is flat; Energia multiplies (no sheet-ability energy % today).
- * Speed / crit / pen / CDR use the shared pool with `other` (sheet abilities). Items never roll
- * crit damage.
+ * Speed / pen / CDR use the shared pool with `other` (sheet abilities); crit chance pools the
+ * birth roll only, with Olho Clínico's flat points held out ({@link flatOutsidePoolForward}).
+ * Items never roll crit damage.
  */
 export function applyGear(
   naked: SheetStats,
@@ -36,7 +59,7 @@ export function applyGear(
     attack: composeAttack(naked.attack, bonuses),
     energy: naked.energy * (1 + bonuses.energyPct),
     speed: sharedForward(naked.speed, bonuses.speedPct, other.speed),
-    critChance: sharedForward(naked.critChance, bonuses.critPct, other.critChance),
+    critChance: flatOutsidePoolForward(naked.critChance, bonuses.critPct, other.critChanceFlat),
     critDmg: naked.critDmg,
     penetration: sharedForward(naked.penetration, bonuses.penPct, other.penetration),
     cdr: sharedForward(naked.cdr, bonuses.cdrPct, other.cdr),
@@ -56,7 +79,7 @@ export function reverseGear(
     attack: decomposeAttack(geared.attack, bonuses),
     energy: div(geared.energy, bonuses.energyPct),
     speed: sharedReverse(geared.speed, bonuses.speedPct, other.speed),
-    critChance: sharedReverse(geared.critChance, bonuses.critPct, other.critChance),
+    critChance: flatOutsidePoolReverse(geared.critChance, bonuses.critPct, other.critChanceFlat),
     critDmg: geared.critDmg,
     penetration: sharedReverse(geared.penetration, bonuses.penPct, other.penetration),
     cdr: sharedReverse(geared.cdr, bonuses.cdrPct, other.cdr),
@@ -83,7 +106,9 @@ export function projectGearedOntoLoadout(
  * Project naked → sheet with gear + simulated points in one shared Σ:
  * sheet = naked × (1 + other + gear + pts×perPt) / (1 + other).
  * Attack points use +10 × levelPowerMult(level) × starsMult(stars) (see attackPointGain).
- * Crit damage is outside the shared Σ — flat, see POINT_GAIN.critDmgFlat.
+ * Crit damage is outside the shared Σ — flat, see POINT_GAIN.critDmgFlat. Crit chance keeps its
+ * pool (gear and points are still percentages of the roll) but holds Olho Clínico's flat points
+ * out of it — see {@link flatOutsidePoolForward}.
  */
 export function applyPoints(
   naked: SheetStats,
@@ -105,10 +130,10 @@ export function applyPoints(
       bonuses.speedPct + pts.speed * POINT_GAIN.speedPctOfBase,
       other.speed,
     ),
-    critChance: sharedForward(
+    critChance: flatOutsidePoolForward(
       naked.critChance,
       bonuses.critPct + pts.critChance * POINT_GAIN.critChancePctOfBase,
-      other.critChance,
+      other.critChanceFlat,
     ),
     // Crit damage is flat-additive, not pooled: items never roll it, and both the sheet
     // ability (already inside `naked` via `other.critDmgFlat`) and the stat point add raw
@@ -156,10 +181,10 @@ export function reverseSheet(
       bonuses.speedPct + pts.speed * POINT_GAIN.speedPctOfBase,
       other.speed,
     ),
-    critChance: sharedReverse(
+    critChance: flatOutsidePoolReverse(
       sheet.critChance,
       bonuses.critPct + pts.critChance * POINT_GAIN.critChancePctOfBase,
-      other.critChance,
+      other.critChanceFlat,
     ),
     critDmg: sheet.critDmg - pts.critDmg * POINT_GAIN.critDmgFlat,
     penetration: sharedReverse(
