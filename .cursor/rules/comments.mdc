@@ -1,0 +1,14 @@
+---
+description: Minimal-comments hard truth
+alwaysApply: true
+---
+
+# Comments
+
+**Canonical hard truth:** [`docs/comments.md`](../../docs/comments.md)
+
+Write almost no comments — code and tests are the documentation. A comment-heavy file is a design
+defect: extract a named function or write a named test instead of narrating. Comments earn their
+place only for inherent complexity no decomposition removes, or business logic the code cannot
+show (a constant's origin, an external quirk, a non-obvious invariant) — and they explain *why*.
+Clean up narrating comments in any file you touch.
