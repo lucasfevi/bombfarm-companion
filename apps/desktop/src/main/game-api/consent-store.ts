@@ -1,18 +1,18 @@
 import type { ConsentDecision, ConsentRecord } from '@bombfarm/game-api';
-import { CONSENT_TEXT, initialConsent } from '@bombfarm/game-api';
+import { CONSENT_TEXT_VERSION, initialConsent } from '@bombfarm/game-api';
 import type { SqliteDb } from '../storage/index.js';
 
 /**
  * Persists the consent record over the *existing* `account_meta` key/value table (design.md
  * §3.11) — no new table, no migration. One row, key `consent_v<version>`,
- * value = JSON of the record. Keying by `CONSENT_TEXT.version` means a prior disclosure's grant
+ * value = JSON of the record. Keying by `CONSENT_TEXT_VERSION` means a prior disclosure's grant
  * (or decline) row is left untouched under its own key rather than migrated: it stays as evidence
  * of what was previously agreed, and a read at the current version finds no row and falls back to
  * `initialConsent()`, so the current disclosure is shown and re-answered. Unreadable or malformed
  * rows fall back the same way — the modal re-asks rather than assuming a decision that was never
  * actually recorded.
  */
-const CONSENT_META_KEY = `consent_v${String(CONSENT_TEXT.version)}`;
+const CONSENT_META_KEY = `consent_v${String(CONSENT_TEXT_VERSION)}`;
 
 const VALID_DECISIONS: readonly ConsentDecision[] = ['unasked', 'granted', 'declined', 'revoked'];
 
@@ -26,6 +26,7 @@ function isConsentRecord(value: unknown): value is ConsentRecord {
   if (!VALID_DECISIONS.includes(record.decision as ConsentDecision)) return false;
   if (typeof record.textVersion !== 'number') return false;
   if (record.grantedAt !== undefined && typeof record.grantedAt !== 'string') return false;
+  if (record.textLocale !== undefined && typeof record.textLocale !== 'string') return false;
   return true;
 }
 

@@ -13,6 +13,8 @@
  * `packages/game-api/src/consent.ts` imports it back type-only — the same AD-020 shape
  * (consumer -> contracts, type-only), applied in the direction that actually builds.
  */
+import type { AppLocale } from './locale.js';
+
 export type ConsentDecision = 'unasked' | 'granted' | 'declined' | 'revoked';
 
 export interface ConsentRecord {
@@ -21,4 +23,8 @@ export interface ConsentRecord {
   readonly grantedAt?: string;
   /** The disclosure text version the player actually saw when this decision was recorded. */
   readonly textVersion: number;
+  /** The language the disclosure was rendered in when this decision was recorded. Optional: a
+   *  record written before this field existed carries no locale, and is still valid — this is
+   *  provenance, not part of what `isGranted` checks. */
+  readonly textLocale?: AppLocale;
 }

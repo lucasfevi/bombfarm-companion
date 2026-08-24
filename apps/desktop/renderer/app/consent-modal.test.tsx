@@ -1,17 +1,17 @@
 import { describe, expect, it } from 'vitest';
-import { CONSENT_TEXT, initialConsent, type ConsentRecord } from '@bombfarm/game-api';
+import { CONSENT_TEXT_VERSION, initialConsent, type ConsentRecord } from '@bombfarm/game-api';
 import { isConsentModalVisible } from './consent-modal';
 
-const revoked: ConsentRecord = { decision: 'revoked', textVersion: CONSENT_TEXT.version };
+const revoked: ConsentRecord = { decision: 'revoked', textVersion: CONSENT_TEXT_VERSION };
 const granted: ConsentRecord = {
   decision: 'granted',
   grantedAt: '2026-08-24T00:00:00.000Z',
-  textVersion: CONSENT_TEXT.version,
+  textVersion: CONSENT_TEXT_VERSION,
 };
 const grantedOnAnOldDisclosure: ConsentRecord = {
   decision: 'granted',
   grantedAt: '2026-08-24T00:00:00.000Z',
-  textVersion: CONSENT_TEXT.version - 1,
+  textVersion: CONSENT_TEXT_VERSION - 1,
 };
 
 describe('isConsentModalVisible — does not appear on its own for a record that should not trigger it', () => {

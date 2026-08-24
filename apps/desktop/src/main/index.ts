@@ -118,8 +118,9 @@ function registerIpcHandlers(): void {
     // precedence comment this used to carry inline.
     'account:get': (): AccountView => resolveAccountView({ gameReader, consentStore, accountRefresh, accountStore }),
     'consent:get': (): ConsentRecord => consentStore?.read() ?? initialConsent(),
-    'consent:accept': (): ConsentRecord => applyConsentEvent({ type: 'accept', now: new Date().toISOString() }),
-    'consent:decline': (): ConsentRecord => applyConsentEvent({ type: 'decline' }),
+    'consent:accept': (): ConsentRecord =>
+      applyConsentEvent({ type: 'accept', now: new Date().toISOString(), locale: currentSettings.locale }),
+    'consent:decline': (): ConsentRecord => applyConsentEvent({ type: 'decline', locale: currentSettings.locale }),
     // The tap must be torn down before the revoke is recorded, not after and not concurrently —
     // otherwise an already-attached tap keeps reading real game traffic past the moment consent
     // says it should have stopped, since the tap's own poll loop only re-checks consent before

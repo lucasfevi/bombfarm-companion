@@ -9,39 +9,22 @@ import { ConsentSection } from './consent-section';
 // covers that).
 vi.mock('../../lib/copy', () => ({ useCopy: () => en }));
 
-function buttonElement(props: { granted: boolean; onRevoke: () => void; onReallow: () => void }) {
+function buttonElement(props: { onRevoke: () => void }) {
   const section = ConsentSection(props) as unknown as { props: { children: { props: { children: unknown } } } };
   return section.props.children.props.children as {
     props: { onClick: () => void; 'data-testid': string };
   };
 }
 
-describe('ConsentSection — granted invokes the revoke path', () => {
-  it('the rendered control is wired to onRevoke, and calling it never touches onReallow', () => {
+describe('ConsentSection — the rendered control is wired to onRevoke', () => {
+  it('calling it invokes onRevoke exactly once', () => {
     const onRevoke = vi.fn();
-    const onReallow = vi.fn();
-    const button = buttonElement({ granted: true, onRevoke, onReallow });
+    const button = buttonElement({ onRevoke });
 
     expect(button.props['data-testid']).toBe('settings-consent-revoke');
     expect(button.props.onClick).toBe(onRevoke);
 
     button.props.onClick();
     expect(onRevoke).toHaveBeenCalledTimes(1);
-    expect(onReallow).not.toHaveBeenCalled();
-  });
-});
-
-describe('ConsentSection — not-granted invokes the re-allow path', () => {
-  it('the rendered control is wired to onReallow, and calling it never touches onRevoke', () => {
-    const onRevoke = vi.fn();
-    const onReallow = vi.fn();
-    const button = buttonElement({ granted: false, onRevoke, onReallow });
-
-    expect(button.props['data-testid']).toBe('settings-consent-reallow');
-    expect(button.props.onClick).toBe(onReallow);
-
-    button.props.onClick();
-    expect(onReallow).toHaveBeenCalledTimes(1);
-    expect(onRevoke).not.toHaveBeenCalled();
   });
 });

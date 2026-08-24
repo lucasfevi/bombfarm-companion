@@ -27,10 +27,17 @@ function unwrap(source) {
 const CAUSE = 'attaching to another running program is the technique behavior-based detection is built to look for';
 const CONSEQUENCE = 'flag or quarantine';
 
+/**
+ * The pt-BR counterpart of `CAUSE`, given verbatim alongside the English disclosure text — the
+ * one fact the cross-surface guard below must not let a translation silently drop.
+ */
+const CAUSE_PT_BR =
+  'conectar-se a outro programa em execução é justamente a técnica que a detecção por comportamento procura';
+
+const CONSENT_TEXT_PATH = fileURLToPath(new URL('../../packages/game-api/src/consent-text.ts', import.meta.url));
+
 const surfaces = {
-  'the consent disclosure': fileURLToPath(
-    new URL('../../packages/game-api/src/consent-text.ts', import.meta.url),
-  ),
+  'the consent disclosure': CONSENT_TEXT_PATH,
   'README.md': fileURLToPath(new URL('../../README.md', import.meta.url)),
 };
 
@@ -51,4 +58,9 @@ describe('the antivirus notice names the same cause and consequence on every sur
       expect(source).toContain(CONSEQUENCE);
     });
   }
+
+  it('the pt-BR consent disclosure names the same detection cause, in Portuguese', () => {
+    const source = unwrap(readFileSync(CONSENT_TEXT_PATH, 'utf8'));
+    expect(source).toContain(CAUSE_PT_BR);
+  });
 });

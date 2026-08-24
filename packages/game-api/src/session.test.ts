@@ -1,7 +1,7 @@
 import { inspect } from 'node:util';
 import { describe, expect, it } from 'vitest';
 import type { GrantedConsent } from './consent.js';
-import { CONSENT_TEXT } from './consent-text.js';
+import { CONSENT_TEXT_VERSION } from './consent-text.js';
 import { ConsentRequiredError, RAW, SessionToken, grantSession } from './session.js';
 import { consentRecord, grantedConsent } from './test-fixtures.js';
 
@@ -108,7 +108,7 @@ describe('grantSession — runtime enforcement (AD-025: independent of the compi
   });
 
   it('throws ConsentRequiredError for a granted record stamped with a stale textVersion', () => {
-    const stale = grantedConsent(NOW, { textVersion: CONSENT_TEXT.version - 1 });
+    const stale = grantedConsent(NOW, { textVersion: CONSENT_TEXT_VERSION - 1 });
     expect(() => grantSession(stale, creds)).toThrow(ConsentRequiredError);
   });
 });

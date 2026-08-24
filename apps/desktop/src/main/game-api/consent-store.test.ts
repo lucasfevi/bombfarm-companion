@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { CONSENT_TEXT } from '@bombfarm/game-api';
+import { CONSENT_TEXT_VERSION } from '@bombfarm/game-api';
 import { consentRecord, grantedConsent } from '@bombfarm/game-api/test-fixtures';
 import { detectAvailableBindings, openTestAccountDb, warnForUnavailableBindings } from '../storage/test-support.js';
 import { createConsentStore } from './consent-store.js';
@@ -7,7 +7,7 @@ import { createConsentStore } from './consent-store.js';
 const availableBindings = detectAvailableBindings();
 warnForUnavailableBindings(availableBindings);
 
-const CURRENT_META_KEY = `consent_v${String(CONSENT_TEXT.version)}`;
+const CURRENT_META_KEY = `consent_v${String(CONSENT_TEXT_VERSION)}`;
 
 describe.each(availableBindings)('createConsentStore over the real account_meta table (%s)', (binding) => {
   it('read() returns initialConsent() (unasked) when no row has ever been written', () => {
@@ -24,6 +24,17 @@ describe.each(availableBindings)('createConsentStore over the real account_meta 
     store.write(granted);
 
     expect(store.read()).toEqual(granted);
+  });
+
+  it('write() then read() round-trips textLocale intact', () => {
+    const open = openTestAccountDb(binding);
+    const store = createConsentStore(open.db);
+    const granted = grantedConsent('2026-08-12T13:15:38.000Z', { textLocale: 'pt-BR' });
+
+    store.write(granted);
+
+    expect(store.read()).toEqual(granted);
+    expect(store.read().textLocale).toBe('pt-BR');
   });
 
   it('a later write() overwrites the earlier one — one row, not an accumulating history', () => {
@@ -50,7 +61,7 @@ describe.each(availableBindings)('createConsentStore over the real account_meta 
     if (!open.db) throw new Error('expected an open db for this binding');
     open.db
       .prepare('INSERT INTO account_meta (key, value) VALUES (?, ?)')
-      .run(CURRENT_META_KEY, JSON.stringify({ textVersion: CONSENT_TEXT.version }));
+      .run(CURRENT_META_KEY, JSON.stringify({ textVersion: CONSENT_TEXT_VERSION }));
 
     const store = createConsentStore(open.db);
 
@@ -62,7 +73,7 @@ describe.each(availableBindings)('createConsentStore over the real account_meta 
     if (!open.db) throw new Error('expected an open db for this binding');
     open.db
       .prepare('INSERT INTO account_meta (key, value) VALUES (?, ?)')
-      .run(CURRENT_META_KEY, JSON.stringify({ decision: 'maybe', textVersion: CONSENT_TEXT.version }));
+      .run(CURRENT_META_KEY, JSON.stringify({ decision: 'maybe', textVersion: CONSENT_TEXT_VERSION }));
 
     const store = createConsentStore(open.db);
 

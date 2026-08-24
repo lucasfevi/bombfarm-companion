@@ -13,6 +13,7 @@
 import { readFileSync, readdirSync } from 'node:fs';
 import { extname, join, resolve, sep } from 'node:path';
 import { describe, expect, it } from 'vitest';
+import { CONSENT_TEXT, CONSENT_TEXT_VERSION } from '@bombfarm/game-api';
 
 const DESKTOP_ROOT = resolve(__dirname, '../..');
 const RENDERER_ROOT = join(DESKTOP_ROOT, 'renderer');
@@ -285,7 +286,7 @@ const PINNED_EXCEPTIONS: readonly PinnedException[] = [
   },
 ];
 
-describe('Guard 2 — the pinned packages/ui + consent-text exception table (AD-055, AD-038 shape)', () => {
+describe('Guard 2 — the pinned packages/ui exception table', () => {
   it('every reachable exception still exists verbatim in its owning file — a widened list is a failure', () => {
     // "Widens" is proven the other direction here: this table IS the allowlist. A new untranslated
     // string reachable from the desktop is caught by Guard 1 above (it scans renderer + main, and
@@ -319,17 +320,6 @@ describe('Guard 2 — the pinned packages/ui + consent-text exception table (AD-
     ).toEqual([]);
   });
 
-  it('the CONSENT_TEXT exception is recorded (AD-028) — not scanned mechanically, since packages/game-api is out of Guard 1\'s root, but named here so the boundary is documented in one place', () => {
-    const consentTextPath = join(REPO_ROOT, 'packages', 'game-api', 'src', 'consent-text.ts');
-    const source = readFileSync(consentTextPath, 'utf8');
-    // The body paragraphs, title and two button labels are all untranslated by design
-    // (AD-028 — the consent record carries a textVersion, so a PT-BR rendering could constitute
-    // wording the player never agreed to). Asserted structurally: the file still exports the
-    // same shape, so a future edit that removes this constant entirely is caught here too.
-    expect(source).toContain('export const CONSENT_TEXT');
-    expect(source).toContain("title: 'Read your Bomb Farm account and attach to the game?'");
-  });
-
   it('red state demonstrated: a pinned entry with a deliberately wrong owning-file path is caught (widening/staleness check)', () => {
     const fixtureExceptions: readonly PinnedException[] = [
       { text: 'aria-label="Main"', owner: join(REPO_ROOT, 'packages', 'ui', 'src', 'does-not-exist.tsx'), permittedBy: 'x', reachable: true },
@@ -343,6 +333,39 @@ describe('Guard 2 — the pinned packages/ui + consent-text exception table (AD-
       }
     }
     expect(stale).toEqual(['aria-label="Main"']);
+  });
+});
+
+// ---------------------------------------------------------------------------------------------
+// Guard 2b — the consent disclosure is bilingual, not exempt
+// ---------------------------------------------------------------------------------------------
+
+/**
+ * The consent disclosure used to be a pinned Guard 2 exception: English only, by a recorded
+ * decision that a translated rendering could constitute wording the player never actually agreed
+ * to. That decision no longer holds — the disclosure is locale-keyed now, and the consent record
+ * traces a past agreement to the exact language it was shown in instead. This guard pins the shape
+ * that reversal depends on: both languages present, both bound to the one version number the
+ * record stamps, matched in structure, and never accidentally the same text.
+ */
+describe('Guard 2b — CONSENT_TEXT is bilingual, both locales tied to one version', () => {
+  it('both en and pt-BR entries exist', () => {
+    expect(CONSENT_TEXT.en).toBeDefined();
+    expect(CONSENT_TEXT['pt-BR']).toBeDefined();
+  });
+
+  it('both are stamped with the one version the consent record stores', () => {
+    expect(CONSENT_TEXT.en.version).toBe(CONSENT_TEXT_VERSION);
+    expect(CONSENT_TEXT['pt-BR'].version).toBe(CONSENT_TEXT_VERSION);
+  });
+
+  it('both carry the same number of clauses', () => {
+    expect(CONSENT_TEXT['pt-BR'].body.length).toBe(CONSENT_TEXT.en.body.length);
+  });
+
+  it('pt-BR is not accidentally the en text', () => {
+    expect(CONSENT_TEXT['pt-BR'].title).not.toBe(CONSENT_TEXT.en.title);
+    expect(CONSENT_TEXT['pt-BR'].body.join('\n')).not.toBe(CONSENT_TEXT.en.body.join('\n'));
   });
 });
 

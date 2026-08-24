@@ -12,7 +12,7 @@ const ACCOUNT_FULL_FIXTURE = path.join(__dirname, '..', 'fixtures', 'account-ful
  * MP3 F4 (`AD-057`) — the language end to end on a real Electron app, in one run: OS-detected
  * default, live switch, persisted choice, zero recompute, and the only real pixel measurement
  * available in this repo. Launcher shape reused verbatim from `planning-advice.spec.mjs` (its
- * `BFC_TOKEN_PATH_OVERRIDE`, its `BFC_GAME_PROCESS` pin, its `dismissConsent()` decline and the
+ * `BFC_TOKEN_PATH_OVERRIDE`, its `BFC_GAME_PROCESS` pin, its `acceptConsent()` helper and the
  * reasoning below — read, not edited) and `account-restart.spec.mjs`'s `mkdtempSync` +
  * `BFC_USER_DATA_DIR` relaunch pattern.
  *
@@ -76,10 +76,10 @@ async function launchApp(env, extraArgs = []) {
       BFC_GAME_PROCESS: 'bfc-smoke-no-such-process.exe',
       // SAFETY (T-fix-4, reproduced from planning-advice.spec.mjs because this spec launches
       // independently): redirects session-token-file.ts's sessionCfgPath() away from the real
-      // %APPDATA%/Godot/app_userdata/BombFarm/session.cfg. dismissConsent() below declines, so
-      // this is defense-in-depth rather than load-bearing today — but if consent were ever
-      // accepted, the next account-refresh cycle would otherwise open whichever real session.cfg
-      // exists on the machine running this suite and issue a live, authenticated request using
+      // %APPDATA%/Godot/app_userdata/BombFarm/session.cfg. acceptConsent() below grants, so this
+      // is load-bearing: without it the next account-refresh cycle would open whichever real
+      // session.cfg exists on the machine running this suite and issue a live, authenticated
+      // request using
       // the real player's token, purely as a side effect of a test run. Pointed at a path that
       // deliberately does not exist: readSessionToken degrades that to token_unavailable (no
       // network call at all).
@@ -92,14 +92,14 @@ async function launchApp(env, extraArgs = []) {
   return { app, page };
 }
 
-async function dismissConsent(page) {
-  // Decline, never accept (planning-advice.spec.mjs's reasoning, reproduced): accepting switches
-  // on accountRefresh, whose token_unavailable view then unconditionally shadows the fixture
-  // reader through mergeStoredIntoLive and can never be resolved. Declining keeps consentGranted
-  // false, so account:get/the notifier never even look at accountRefresh's view.
+async function acceptConsent(page) {
+  // Accept: the app shows a permission gate instead of its content until consent is granted, so
+  // nothing below is reachable otherwise. Accepting is safe for a fixture-backed suite now that a
+  // refresh cycle which resolves no section commits nothing — it can no longer overwrite the
+  // fixture reader's resolved sections with a token_unavailable placeholder.
   const modal = page.getByTestId('consent-modal');
   await expect(modal).toBeVisible({ timeout: 30_000 });
-  await page.getByTestId('consent-decline').click();
+  await page.getByTestId('consent-accept').click();
   await expect(modal).toBeHidden({ timeout: 15_000 });
 }
 
@@ -127,7 +127,7 @@ test.describe('language smoke (MP3 F4) — detected, switched in place, and reme
         ['--lang=pt-BR'],
       );
       try {
-        await dismissConsent(page1);
+        await acceptConsent(page1);
 
         // --- MIN-06: the app opened in PT-BR, detected from the OS locale -----------------
         await expect(page1.locator('html')).toHaveAttribute('lang', 'pt-BR');
@@ -202,14 +202,10 @@ test.describe('language smoke (MP3 F4) — detected, switched in place, and reme
         ['--lang=pt-BR'],
       );
       try {
-        // Launch 1 declined consent, and that decision persisted to the SAME account.db row
-        // (`consent-store.ts`'s disclosure-version-keyed `account_meta` row) this launch reads on boot.
-        // `shouldShowConsentModal` (packages/game-api/src/consent.ts) returns false for a
-        // `declined` decision exactly as it does for `granted` — so no modal is expected here,
-        // and `dismissConsent()` (which waits for it to become visible) would hang. Asserting
-        // absence, mirroring `consent-modal.spec.mjs`'s own granted-survives-restart check, turns
-        // that into positive proof the decision persisted across the restart — the same fact
-        // MIN-09 below relies on for the language choice.
+        // Launch 1 granted consent, and that decision persisted to the SAME account.db row
+        // (`consent-store.ts`'s disclosure-version-keyed `account_meta` row) this launch reads on
+        // boot, so no modal is expected here. Asserting its absence turns that into positive proof
+        // the decision survived the restart — the same fact the language assertion below relies on.
         await expect(page2.getByTestId('consent-modal')).toHaveCount(0);
 
         // --- MIN-09: English persists, read from settings, not from the (still pt-BR) OS ---

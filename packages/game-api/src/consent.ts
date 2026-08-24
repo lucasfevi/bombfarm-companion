@@ -1,5 +1,5 @@
-import type { ConsentDecision, ConsentRecord } from '@bombfarm/contracts';
-import { CONSENT_TEXT } from './consent-text.js';
+import type { AppLocale, ConsentDecision, ConsentRecord } from '@bombfarm/contracts';
+import { CONSENT_TEXT_VERSION } from './consent-text.js';
 
 /**
  * Consent — the pure state machine (LAR-01, LAR-03…05). No I/O, no clock: `now` is injected by
@@ -19,26 +19,33 @@ export interface GrantedConsent extends ConsentRecord {
 }
 
 export type ConsentEvent =
-  | { readonly type: 'accept'; readonly now: string }
-  | { readonly type: 'decline' }
+  | { readonly type: 'accept'; readonly now: string; readonly locale: AppLocale }
+  | { readonly type: 'decline'; readonly locale: AppLocale }
   | { readonly type: 'revoke' };
 
 /** A fresh consent record: nothing asked yet, stamped with the disclosure text version in force. */
 export function initialConsent(): ConsentRecord {
-  return { decision: 'unasked', textVersion: CONSENT_TEXT.version };
+  return { decision: 'unasked', textVersion: CONSENT_TEXT_VERSION };
 }
 
 /**
  * Every legal transition, `now` injected:
  * `unasked -> granted | declined`; `granted -> revoked`; `declined -> granted`
- * (the player may change their mind); `revoked -> granted`.
+ * (the player may change their mind); `revoked -> granted`. `accept`/`decline` also carry the
+ * locale the disclosure was rendered in, stamped onto the record as `textLocale` — provenance
+ * only; `isGranted` never looks at it.
  */
 export function reduceConsent(record: ConsentRecord, event: ConsentEvent): ConsentRecord {
   switch (event.type) {
     case 'accept':
-      return { decision: 'granted', grantedAt: event.now, textVersion: CONSENT_TEXT.version };
+      return {
+        decision: 'granted',
+        grantedAt: event.now,
+        textVersion: CONSENT_TEXT_VERSION,
+        textLocale: event.locale,
+      };
     case 'decline':
-      return { decision: 'declined', textVersion: CONSENT_TEXT.version };
+      return { decision: 'declined', textVersion: CONSENT_TEXT_VERSION, textLocale: event.locale };
     case 'revoke':
       return { decision: 'revoked', textVersion: record.textVersion };
     default: {
@@ -68,6 +75,6 @@ export function isGranted(record: ConsentRecord): record is GrantedConsent {
   return (
     record.decision === 'granted' &&
     typeof record.grantedAt === 'string' &&
-    record.textVersion === CONSENT_TEXT.version
+    record.textVersion === CONSENT_TEXT_VERSION
   );
 }

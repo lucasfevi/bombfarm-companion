@@ -124,14 +124,18 @@ export const ptBR: Copy = {
     'Seu local de salvamento não pode ser gravado, então isso não vai sobreviver a um reinício.',
   settingsLanguageReasonUnknown: 'Essa escolha não pôde ser salva, então não vai sobreviver a um reinício.',
 
-  // settingsConsent* — o controle de revogar/permitir novamente o acesso à conta
+  // settingsConsent* — o controle de revogar o acesso à conta (Configurações só é alcançável já permitido)
   settingsConsentSectionTitle: 'Acesso à conta',
   settingsConsentStatusGranted: 'Acesso: permitido',
-  settingsConsentStatusNotGranted: 'Acesso: não permitido',
   settingsConsentHelpGranted: 'O companion lê sua conta e permanece conectado ao cliente do jogo.',
-  settingsConsentHelpNotGranted: 'O companion não está lendo sua conta nem conectado ao cliente do jogo.',
   settingsConsentRevokeAction: 'Desativar',
-  settingsConsentReallowAction: 'Revisar e permitir',
+
+  // consentGate* — o portão de permissão mostrado no lugar do conteúdo do app quando o acesso não é permitido
+  consentGateTitle: 'Este app precisa da sua permissão para funcionar',
+  consentGateBody:
+    'Desculpe — o companion não tem nada a mostrar sem acesso à sua conta. Ele lê sua conta e se conecta ao programa do jogo em execução, e não fará nenhuma das duas coisas até que você permita.',
+  consentGateReadAgainAction: 'Ler o aviso novamente',
+  consentGateLanguageLabel: 'Idioma',
 
   // error* — MP3 F4 §2.8
   errorAccountReadFailedDescription: 'Tente novamente depois que o jogo terminar de carregar, ou reinicie o app.',

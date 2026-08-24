@@ -1,4 +1,5 @@
 ---
+"@bombfarm/contracts": minor
 "@bombfarm/game-api": minor
 "@bombfarm/desktop": minor
 ---
@@ -15,3 +16,12 @@ review and accept the new one before the companion reads their account again.
 A new Account access control in Settings makes the disclosure's "reversible" promise real: turning
 access off stops the reads and detaches from the game client immediately, and turning it back on
 re-shows the same disclosure so the player reviews it again before allowing.
+
+The dialog is now shown in Portuguese as well as English, and the recorded decision remembers which
+language it was shown in, so an agreement is always traceable to the exact wording the player read.
+
+The desktop app no longer runs without this permission. Declining now shows a screen explaining
+that the companion has nothing to show without account access, with a control to read the
+disclosure again and accept. That screen carries its own language switch, so a player whose
+computer language does not match the language they read can still understand what they are
+agreeing to.

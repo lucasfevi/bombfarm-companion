@@ -5,7 +5,7 @@
  */
 import { describe, expect, it, vi } from 'vitest';
 import type { AccountPayload, AccountView, ConsentRecord, GameStatusInfo } from '@bombfarm/contracts';
-import { CONSENT_TEXT } from '@bombfarm/game-api';
+import { CONSENT_TEXT_VERSION } from '@bombfarm/game-api';
 import { consentRecord } from '@bombfarm/game-api/test-fixtures';
 import {
   createAccountNotifier,
@@ -62,7 +62,7 @@ function fakeGameReader(status: GameStatusInfo['status'], view: AccountView | nu
 
 function fakeConsentSource(
   decision: ConsentRecord['decision'],
-  textVersion = CONSENT_TEXT.version,
+  textVersion = CONSENT_TEXT_VERSION,
 ): ConsentSourceLike {
   return { read: () => consentRecord({ decision, grantedAt: NOW, textVersion }) };
 }
@@ -108,7 +108,7 @@ describe('resolveCachedAccountView — the pure-read half of AD-043', () => {
     const placeholderView = makeView(makePayload({ heroes: [{ id: 'not-consented-placeholder' }] }));
     const result = resolveCachedAccountView({
       gameReader: fakeGameReader('connected', gameReaderView),
-      consentStore: fakeConsentSource('granted', CONSENT_TEXT.version - 1),
+      consentStore: fakeConsentSource('granted', CONSENT_TEXT_VERSION - 1),
       accountRefresh: fakeAccountRefresh(placeholderView),
     });
     expect(result?.payload.heroes).toEqual([{ id: 'from-game-reader' }]);

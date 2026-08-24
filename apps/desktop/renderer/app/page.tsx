@@ -16,10 +16,11 @@ import { AppShell, EmptyState, StatusChip } from '@bombfarm/ui';
 // is a probe, not planning UI — F2 (mp3-planning-views) is what actually renders advice. MP3 F4
 // gives it a second purpose: proving the LANGUAGE reaches the domain edge, not just a value.
 import { rarityLabel } from '@bombfarm/domain/game-labels';
-import { isGranted, type ConsentRecord } from '@bombfarm/game-api';
+import type { ConsentRecord } from '@bombfarm/game-api';
 import { CopyProvider, useCopy, useLocale, type Copy } from '../lib/copy';
 import { formatAge } from '../lib/format';
 import { navItemsFor } from './nav-items';
+import { ConsentGate, isConsentGateVisible } from './consent-gate';
 import { ConsentModal } from './consent-modal';
 import { PlanningView } from './planning/planning-view';
 import { ConsentSection } from './settings/consent-section';
@@ -191,6 +192,10 @@ function HomePageContent({
     // locale) — listed to satisfy exhaustive-deps without changing the once-on-mount behaviour.
   }, [t.emptyBridgeUnavailableTitle]);
 
+  const consentLoaded = consent !== null;
+  const gated = isConsentGateVisible(consent);
+  const granted = consentLoaded && !gated;
+
   const rawJson = useMemo(() => {
     if (!snapshot) return null;
     return JSON.stringify(
@@ -210,7 +215,7 @@ function HomePageContent({
       <AppShell
         title={environment?.productName}
         badge={environment?.badgeLabel ?? null}
-        items={navItemsFor(environment?.flavor ?? null, t)}
+        items={granted ? navItemsFor(environment?.flavor ?? null, t) : []}
         activeId={activeNavId}
         onNavigate={setActiveNavId}
         status={
@@ -247,14 +252,12 @@ function HomePageContent({
           <span data-testid="domain-label-probe" className="sr-only">
             {rarityLabel('Comum', lang)}
           </span>
-          {activeNavId === 'settings' ? (
+          {!consentLoaded ? null : gated ? (
+            <ConsentGate locale={locale} onLocaleChange={onLocaleChange} onReadAgain={onConsentReallow} />
+          ) : activeNavId === 'settings' ? (
             <>
               <LanguageSection locale={locale} onLocaleChange={onLocaleChange} persistWarning={persistWarning} />
-              <ConsentSection
-                granted={consent !== null && isGranted(consent)}
-                onRevoke={onConsentRevoke}
-                onReallow={onConsentReallow}
-              />
+              <ConsentSection onRevoke={onConsentRevoke} />
             </>
           ) : activeNavId === 'diagnostics' ? (
             <section className="space-y-4">
