@@ -20,4 +20,4 @@ We will acknowledge receipt within a reasonable timeframe and work on a fix befo
 
 ## Scope
 
-This app may read local game process memory (read-only) and ships committed / mirrored public wiki-derived data (no live wiki HTTP client in this repo). It must never transmit Steam credentials, game auth tokens, or raw inventory dumps without explicit user action.
+This app ships committed / mirrored public wiki-derived data (no live wiki HTTP client in this repo). It must never transmit Steam credentials, game auth tokens, or raw inventory dumps without explicit user action.
