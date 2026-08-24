@@ -55,15 +55,17 @@ function poolFactor(percent: number): number {
  * {@link SheetOtherPct}) fold in the on-sheet ability contribution multiplicatively;
  * luck takes no `sheetOther` term (AD-BSP-19).
  *
- * Crit damage is the exception: its on-sheet ability contribution (`sheetOther.critDmgFlat`,
- * Golpe Brutal) is a FLAT addend in planner percentage points, added AFTER the star factor —
- * see `POINT_GAIN.critDmgFlat` and the `critDmgFlat` ability kind for the measurement.
- * No capture carries a ★>0 hero with any crit-damage contribution, so whether the flat term
- * would itself star-scale is unobserved; not star-scaling it is the conservative reading
- * (the game's own ★0 sheets are reproduced exactly either way).
+ * Crit damage and crit chance are the exceptions: their on-sheet ability contributions
+ * (`sheetOther.critDmgFlat` / `sheetOther.critChanceFlat` — Golpe Brutal and Olho Clínico) are
+ * FLAT addends in planner percentage points, added AFTER the star factor. See
+ * `POINT_GAIN.critDmgFlat` and the `critDmgFlat` / `critChanceFlat` ability kinds for the two
+ * measurements. No capture carries a ★>0 hero with either contribution, so whether the flat
+ * terms would themselves star-scale is unobserved; not star-scaling them is the conservative
+ * reading (the game's own ★0 sheets are reproduced exactly either way).
  *
- * Crit chance and CDR were flat addends for exactly three days (2026-08-15 → 2026-08-18); the
- * 2026-08-18 patch put both back in the shared pool. See `POINT_GAIN` in `rarity-constants.ts`.
+ * The crit-chance STAT POINT is unaffected and stays a percentage of the roll — the 2026-08-23
+ * patch moved the two crit-chance abilities, not the point. See `POINT_GAIN` in
+ * `rarity-constants.ts`.
  */
 export function nakedFromBirth(
   birth: BirthStats,
@@ -76,7 +78,7 @@ export function nakedFromBirth(
     attack: birth.attack * levelPowerMult(level) * star,
     energy: birth.energy * star,
     speed: birth.speed * poolFactor(sheetOther.speed),
-    critChance: birth.critChance * poolFactor(sheetOther.critChance) * star,
+    critChance: birth.critChance * star + Math.max(0, sheetOther.critChanceFlat),
     critDmg: birth.critDmg * star + Math.max(0, sheetOther.critDmgFlat),
     penetration: birth.penetration * poolFactor(sheetOther.penetration) * star,
     cdr: birth.cdr * poolFactor(sheetOther.cdr) * star,
@@ -107,7 +109,10 @@ export function applySkillTree(
   tree: TreeSheetTotals,
 ): SheetStats {
   const baseSpeed = naked.speed / poolFactor(sheetOther.speed);
-  const baseCritChance = naked.critChance / poolFactor(sheetOther.critChance);
+  // Subtracted, not divided out: Olho Clínico's contribution is a flat addend, and the tree
+  // reads the birth roll alone. Perrin (`olho_clinico` 13/20, no gear, 2026-08-23 capture)
+  // pins this — his tree line is `6.02142890221474 × 0.08042584275`, not `32.02… × …`.
+  const baseCritChance = naked.critChance - Math.max(0, sheetOther.critChanceFlat);
   return {
     attack: sheet.attack * tree.danoStatic,
     energy: sheet.energy * (1 + tree.energyPct / 100),

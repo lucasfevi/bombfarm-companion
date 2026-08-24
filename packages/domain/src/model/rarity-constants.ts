@@ -17,14 +17,30 @@ export interface BaseRoll {
   cdr: number; // %
 }
 
-// Midpoints of the wiki roll ranges per rarity.
+/**
+ * Midpoints of the wiki roll ranges per rarity (`herois.roll_stats[].faixas`).
+ *
+ * ATTACK and ENERGY resynced at the 2026-08-23 patch. The patch note raises Attack for the top
+ * three tiers only ("Épico 300–400, Lendário 500–600 e Mítico 1000–1200"), but the wiki's table
+ * also disagreed with the values this file had carried since the repo's first commit for Raro
+ * attack and for five of the six energy tiers — drift from some earlier patch that was never
+ * picked up here. A live save settles it independently of the wiki: an account's exported
+ * `heroes[].stat_ranges` publishes each hero's own tier bounds, and on the 2026-08-23 capture
+ * they read `dmg 150–200` / `energia 140–240` for a Raro, `dmg 65–110` / `energia 120–160` for
+ * an Incomum and `dmg 40–70` / `energia 80–120` for a Comum — the wiki's numbers, not this
+ * table's former ones. Every other stat below already matched and is unchanged.
+ *
+ * These are rarity AVERAGES, used only where a hero's own roll is unavailable: `defaultNaked`
+ * (hand-built heroes with no `birth`) and `critMilestones`' fallback. Every birth-backed path
+ * reads the hero's actual roll and never touches this table.
+ */
 export const BASE_ROLLS: Record<RarityKey, BaseRoll> = {
   Comum: { attack: 55, energy: 100, speed: 48, luck: 2.5, critChance: 5, critDmg: 50, penetration: 0.75, cdr: 1 },
-  Incomum: { attack: 87.5, energy: 170, speed: 49.25, luck: 4, critChance: 6, critDmg: 57.5, penetration: 1.5, cdr: 1.75 },
-  Raro: { attack: 125, energy: 270, speed: 51, luck: 6, critChance: 7, critDmg: 65, penetration: 2.5, cdr: 2.5 },
-  Épico: { attack: 165, energy: 425, speed: 53.25, luck: 8.5, critChance: 8.5, critDmg: 75, penetration: 4, cdr: 4 },
-  Lendária: { attack: 202.5, energy: 665, speed: 54.5, luck: 10.5, critChance: 9.25, critDmg: 81.5, penetration: 5, cdr: 5 },
-  Mítico: { attack: 240, energy: 1025, speed: 55.75, luck: 12.5, critChance: 10, critDmg: 90, penetration: 6, cdr: 6 },
+  Incomum: { attack: 87.5, energy: 140, speed: 49.25, luck: 4, critChance: 6, critDmg: 57.5, penetration: 1.5, cdr: 1.75 },
+  Raro: { attack: 175, energy: 190, speed: 51, luck: 6, critChance: 7, critDmg: 65, penetration: 2.5, cdr: 2.5 },
+  Épico: { attack: 350, energy: 285, speed: 53.25, luck: 8.5, critChance: 8.5, critDmg: 75, penetration: 4, cdr: 4 },
+  Lendária: { attack: 550, energy: 475, speed: 54.5, luck: 10.5, critChance: 9.25, critDmg: 81.5, penetration: 5, cdr: 5 },
+  Mítico: { attack: 1100, energy: 750, speed: 55.75, luck: 12.5, critChance: 10, critDmg: 90, penetration: 6, cdr: 6 },
 };
 
 // Per-point increments (wiki `herois.ponto_inc`):
@@ -40,7 +56,10 @@ export const BASE_ROLLS: Record<RarityKey, BaseRoll> = {
 //
 // REVERTED at the 2026-08-18 patch: crit chance and CDR went flat for exactly three days
 // (2026-08-15 → 2026-08-18, commit 0418a82 / PR #102) and the 2026-08-18 patch put both back
-// to percent-of-base. Measured on account 486 across a 12-hero export (2026-08-18 23:20) and a
+// to percent-of-base. The 2026-08-23 patch did NOT move them again — it restated the two
+// crit-chance ABILITIES in flat points (see the `critChanceFlat` ability kind) and left
+// `herois.ponto_inc`'s crit-chance and cooldown entries at 0.02 apiece, so the two POINTS below
+// are unchanged. Measured on account 486 across a 12-hero export (2026-08-18 23:20) and a
 // deliberate respec (2026-08-19 01:10): Sora (L10, ★0, no items, no crit/cooldown ability)
 // moved her crit multiplier 1.0309330166 → 1.1309330166 and her cooldown multiplier
 // 1.0000000000 → 1.1000000000 on a 5/5 respec — +0.1 on each for 5 points, no base-roll and no

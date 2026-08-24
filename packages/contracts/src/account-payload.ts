@@ -47,7 +47,7 @@ export interface AccountFidelityReport {
 
 /**
  * Source-neutral account data. Deliberately carries NO `export_version` and NO
- * `generated_at` (ACS-06) — live memory provably never retains them (AD-006/MP0),
+ * `generated_at` — the authenticated read path provably never retains them,
  * and a field only one source can populate is a lie in the type.
  *
  * Section bodies stay loosely typed: the parser is defensive by design and

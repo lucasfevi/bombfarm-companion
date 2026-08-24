@@ -47,8 +47,8 @@ function bakeSheetOtherIntoNaked(n: SheetStats, o: SheetOtherPct): SheetStats {
   return {
     ...n,
     speed: n.speed * otherFactor(o.speed),
-    critChance: n.critChance * otherFactor(o.critChance),
-    // Flat addend, not a pool factor (POINT_GAIN.critDmgFlat).
+    // Flat addends, not pool factors (POINT_GAIN.critDmgFlat, the `critChanceFlat` kind).
+    critChance: n.critChance + Math.max(0, o.critChanceFlat),
     critDmg: n.critDmg + Math.max(0, o.critDmgFlat),
     penetration: n.penetration * otherFactor(o.penetration),
     cdr: n.cdr * otherFactor(o.cdr),
@@ -97,7 +97,7 @@ function buildFixture(opts: FixtureOpts = {}) {
     opts.sheetOther ??
     ({
       ...emptySheetOther(),
-      critChance: mods.sheetCritChancePctOfBase / 100,
+      critChanceFlat: mods.sheetCritChanceFlat,
       penetration: mods.sheetPenetrationRaw,
       critDmgFlat: mods.sheetCritDmgFlat,
     } satisfies SheetOtherPct);
@@ -131,7 +131,7 @@ function buildFixture(opts: FixtureOpts = {}) {
       attack: (naked.attack + 50) * treeDanoTotal,
       energy: (naked.energy + 40) * (1 + treeEnergy / 100),
       speed: poolBump(naked.speed, sheetOther.speed, treeSpeed),
-      critChance: poolBump(naked.critChance, sheetOther.critChance, treeCritChance),
+      critChance: poolBump(naked.critChance - sheetOther.critChanceFlat, 0, treeCritChance) + sheetOther.critChanceFlat,
       // Crit damage takes no pool bump: the tree node is a flat percentage-point addend.
       critDmg: naked.critDmg + treeCritDmg,
     } satisfies SheetStats);
@@ -170,7 +170,7 @@ function buildFixture(opts: FixtureOpts = {}) {
     energyMult: mults.energyMult,
     speedMult: mults.speedMult,
     critDmgMult: mults.critDmgMult,
-    teamCritPctOfBase: mults.teamCritPctOfBase,
+    teamCritFlat: mults.teamCritFlat,
     treeSheet,
     penetrationPp: mods.penetrationPp,
     context,
@@ -196,7 +196,7 @@ function buildFixture(opts: FixtureOpts = {}) {
     energyMult: mults.energyMult,
     speedMult: mults.speedMult,
     critDmgMult: mults.critDmgMult,
-    teamCritPctOfBase: mults.teamCritPctOfBase,
+    teamCritFlat: mults.teamCritFlat,
     treeSpeed,
     treeCritChance,
     treeCritDmg,
@@ -397,9 +397,11 @@ describe('stat-breakdown builder', () => {
       expect(crit.steps.map((s) => s.source)).toEqual(['base', 'stars', 'sheetAbilities']);
       const sheet = crit.steps.find((s) => s.source === 'sheetAbilities');
       expect(sheet?.note).toBe('keenEye');
-      // olho_clinico @10, post-2026-08-18-revert perLevel 4.285714285714286 -> +42.857% (was
-      // +7.5% pre-2026-08-15, and a FLAT +0.4574 pp during the 2026-08-15..08-18 flat regime).
-      expect(sheet?.amount).toBeCloseTo(1.4285714285714286, 6);
+      // olho_clinico @10, post-2026-08-23 perLevel 2 -> a FLAT +20 crit points, so this step is
+      // an ADD rather than a pool multiply and its amount does not scale with the hero's roll
+      // or with ★ (matching `nakedFromBirth`'s `birth × star + flat`).
+      expect(sheet?.op).toBe('+');
+      expect(sheet?.amount).toBeCloseTo(20, 6);
     }
 
     const pen = buildStatBreakdown('penetration', facts);
@@ -473,7 +475,7 @@ describe('stat-breakdown builder', () => {
     if (crit.kind === 'ledger') {
       const tree = crit.steps.find((s) => s.source === 'tree' && s.op === '+');
       expect(tree?.pctOfBase?.percent).toBeCloseTo(6, 6);
-      expect(tree?.pctOfBase?.base).toBeCloseTo(facts.naked.critChance / (1 + facts.sheetOther.critChance), 6);
+      expect(tree?.pctOfBase?.base).toBeCloseTo(facts.naked.critChance - facts.sheetOther.critChanceFlat, 6);
       const treeIndex = crit.steps.findIndex((s) => s.source === 'tree');
       const combatIndex = crit.steps.findIndex((s) => s.source === 'abilities' || s.source === 'team');
       expect(treeIndex).toBeGreaterThanOrEqual(0);

@@ -141,10 +141,14 @@ describe('the fixture reports a bounded, correctly-shaped plateau', () => {
     //   0.5568  2026-08-20 rotation-priced team auras + the HOP_DENSITY_EXPONENT refit. Jon's
     //           folego_mineiro is credited again — not at its full rank as before issue #132, but
     //           at the share of the rotation he is actually on the field for — which lifts every
-    //           hero's field seconds and shifts the same allocation back part of the way. ←
-    //           asserted below
-    expect(plateau.minEnergyShare).toBeCloseTo(0.5568181818181818, 4);
-    expect(plateau.maxEnergyShare).toBeCloseTo(0.5568181818181818, 4);
+    //           hero's field seconds and shifts the same allocation back part of the way.
+    //   0.6279  2026-08-23 crit-chance ability shape: Olho Clínico's contribution stops scaling
+    //           with the hero's crit roll and becomes a flat +40 points at rank 20, so a
+    //           crit-chance POINT is worth far less at the margin on an Olho hero than it was.
+    //           The pool's winning build spends elsewhere and the split moves back toward
+    //           energy. ← asserted below
+    expect(plateau.minEnergyShare).toBeCloseTo(0.627906976744186, 4);
+    expect(plateau.maxEnergyShare).toBeCloseTo(0.627906976744186, 4);
     expect(plateau.minEnergyShare).toBe(plateau.maxEnergyShare);
   });
 

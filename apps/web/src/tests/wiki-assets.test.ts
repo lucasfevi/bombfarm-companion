@@ -17,31 +17,34 @@ describe('wiki-assets', () => {
     expect(heroAvatarSrc(5)).toBe('/wiki-assets/hero/hero6_avatar.png');
     expect(heroAvatarSrc(6)).toBe('/wiki-assets/hero/hero7_avatar.png');
     expect(heroAvatarSrc(7)).toBe('/wiki-assets/hero/hero8_avatar.png');
+    expect(heroAvatarSrc(8)).toBe('/wiki-assets/hero/hero9_avatar.png');
   });
 
   it('clamps skin to 0..(HERO_SKIN_COUNT-1)', () => {
     expect(normalizeSkin(-1)).toBe(0);
     expect(normalizeSkin(5)).toBe(5);
     expect(normalizeSkin(6.4)).toBe(6);
-    expect(normalizeSkin(7)).toBe(7);
-    expect(normalizeSkin(99)).toBe(7);
+    expect(normalizeSkin(8)).toBe(8);
+    expect(normalizeSkin(99)).toBe(8);
     expect(normalizeSkin('x')).toBe(0);
   });
 
-  it('treats skin 7 as known and 8 as unknown', () => {
-    expect(HERO_SKIN_COUNT).toBe(8);
-    expect(isKnownSkin(7)).toBe(true);
-    expect(isKnownSkin(8)).toBe(false);
+  it('treats skin 8 as known and 9 as unknown', () => {
+    // The 2026-08-23 patch added a 9th cosmetic ("Sentinela Real"), which the wiki reports as
+    // `skins.total: 9`. Before it landed here, a hero wearing it imported as the placeholder.
+    expect(HERO_SKIN_COUNT).toBe(9);
+    expect(isKnownSkin(8)).toBe(true);
+    expect(isKnownSkin(9)).toBe(false);
   });
 
   /**
    * End-to-end through `parseSaveFile`, not just the predicate: `isKnownSkin` shares the
-   * `HERO_SKIN_COUNT` bound, so before the 8th appearance landed a save carrying `skin: 7`
+   * `HERO_SKIN_COUNT` bound, so before a new appearance lands here a save carrying that skin
    * was rejected as out of range and the real value was replaced by the neutral placeholder
    * `0` — the stored value on disk was discarded, not merely mis-rendered. Nothing covered
    * this boundary through the actual import path, which is why the regression was invisible.
    */
-  it('keeps a saved skin 7 through import, and still degrades skin 8 to the placeholder', () => {
+  it('keeps a saved skin 8 through import, and still degrades skin 9 to the placeholder', () => {
     const raw = JSON.parse(
       readFileSync(
         join(WEB_PACKAGE_ROOT, '../../packages/domain/tests/fixtures/sheet-math/payload-20260812-8heroes.json'),
@@ -58,13 +61,13 @@ describe('wiki-assets', () => {
     const skinIssues = (candidate: { issues: string[] }) =>
       candidate.issues.filter((issue) => /unknown skin/i.test(issue));
 
-    const known = withSkin(7).candidates[0];
-    expect(known.record.skin).toBe(7);
+    const known = withSkin(8).candidates[0];
+    expect(known.record.skin).toBe(8);
     expect(skinIssues(known)).toEqual([]);
 
     // One past the end must NOT clamp to the nearest index (AD-BSP-29) — a nearest-index
     // clamp would render a different hero's face, the exact failure this whole change is about.
-    const unknown = withSkin(8).candidates[0];
+    const unknown = withSkin(9).candidates[0];
     expect(unknown.record.skin).toBe(0);
     expect(skinIssues(unknown)).toHaveLength(1);
   });

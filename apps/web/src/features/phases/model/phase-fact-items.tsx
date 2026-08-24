@@ -326,8 +326,8 @@ function inapplicableDropValue(dropId: DropChanceRow['id'], strings: Strings): R
  * One row per drop type, always all five — a row that cannot roll on this phase (gate vs.
  * non-gate — see `dropAppliesOnPhase`) is dimmed and shows a dash rather than being skipped, so
  * the panel keeps the same shape on every phase and a drop that cannot apply here never looks
- * like it can. Three-decimal percentages on the rows that do apply: at wiki-base rates as low as
- * 0.005% (gem/stone), two decimals would collapse every rare-chest row to the same "0.01%".
+ * like it can. Three-decimal percentages on the rows that do apply: at a wiki-base rate as low as
+ * 0.005% (gem), two decimals would collapse every rare-chest row to the same "0.01%".
  */
 export function dropItems(
   intel: PhaseIntelGlobal,

@@ -97,6 +97,12 @@ export function isActionableGap(reason: LiveGapReason): boolean {
   return reason !== 'clientNotStreaming';
 }
 
+/** The one `kind === 'live'` check — callers compare against this instead of the literal, so a
+ *  future third `LiveCurrency` variant can't leave one call site silently treating it as live. */
+export function isLiveCurrency(currency: LiveCurrency): boolean {
+  return currency.kind === 'live';
+}
+
 export type LiveCurrency =
   | { readonly kind: 'live'; readonly lastFrameAt: string; readonly sinceAt: string }
   | {

@@ -76,10 +76,12 @@ export const WIKI_EMITTED_AT: string = wiki.emittedAt;
  *    chest ← `drops.chestDropRate`       0.001    — item/hero chest, ANY phase
  *    key   ← `drops.keyDropRate`         0.001    — ready key, NON-gate phases only
  *    gem   ← `drops.gemChestDropRate`    0.00005  — gem chest, GATE phases only
- *    time  ← `drops.timechestDropRate`   0.0015   — time chest, GATE phases only
+ *    time  ← `drops.timechestDropRate`   0.001    — time chest, GATE phases only
  *                                                   (api source is `rotacao`, not `drops`)
- *    stone ← `drops.stoneChestDropRate`  0.00005  — stone chest, GATE phases only
- *                                                   (live wiki key `pedra.drop_rate`) */
+ *    stone ← `drops.stoneChestDropRate`  0.0005   — stone chest, GATE phases only
+ *                                                   (live wiki key `pedra.drop_rate`; raised
+ *                                                   tenfold from 0.00005 by the 2026-08-23
+ *                                                   patch, so it is no longer the gem rate) */
 export type DropRates = { chest: number; key: number; gem: number; time: number; stone: number };
 export const DROP_RATES: DropRates = {
   chest: wiki.drops.chestDropRate,
@@ -332,6 +334,11 @@ export function xpPerProp(phase: number): number {
   const progress = (clampedPhase - 1) / (MAX_PHASE - 1);
   return XP_FASE_INI + progress * (XP_FASE_FIM - XP_FASE_INI);
 }
+
+/** Every item level the drop table can roll, ascending — the distinct `itemLevel` of each band. */
+export const ITEM_LEVEL_TIERS: number[] = [...new Set(ITEM_POR_FASE.map((band) => band.itemLevel))].sort(
+  (left, right) => left - right,
+);
 
 /** Item level tiers that can roll on this phase (overlapping bands). */
 export function itemLevelsForPhase(phase: number): number[] {

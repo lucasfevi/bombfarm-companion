@@ -1,15 +1,25 @@
 import type { BrowserWindow } from 'electron';
-import type { AccountPayload, AccountView, GameSnapshotPayload, GameStatusInfo, IpcEventChannel } from '@bombfarm/contracts';
+import type {
+  AccountPayload,
+  AccountView,
+  GameSnapshotPayload,
+  GameStatusInfo,
+  IpcEventChannel,
+  LiveCurrency,
+  LiveFrame,
+  LiveTick,
+} from '@bombfarm/contracts';
+import { isLiveCurrency } from '@bombfarm/contracts';
 import { buildSnapshot } from '@bombfarm/game-data';
+import { tickToRawGameState } from '../live-source/tick-to-raw-state.js';
 import { log } from '../logging.js';
 import { buildFixtureAccountPayload } from './fixture-account.js';
+import type { FixtureBundle } from './fixture-data.js';
 import {
   buildFixtureSnapshot,
   loadFixtureBundle,
   rotateFixtureState,
 } from './fixture-data.js';
-import type { ScanTarget } from './memory-scanner.js';
-import { MemoryScanner } from './memory-scanner.js';
 import { findProcessId } from './process.js';
 
 /** The subset of `AccountStore` the game reader needs to persist a fixture tick's payload. */
@@ -17,28 +27,37 @@ export interface AccountCommitter {
   commit(live: AccountPayload, opts: { gameRunning: boolean }): AccountView;
 }
 
-export type GameReaderMode = 'memory' | 'fixture';
+export type GameReaderMode = 'live' | 'fixture';
 
 export interface GameReaderConfig {
   mode: GameReaderMode;
   processName: string;
   pollAttachedMs: number;
   pollDetachedMs: number;
-  relocateMs: number;
-  staleRepeatThreshold: number;
 }
 
-const DEFAULT_CONFIG: GameReaderConfig = {
-  mode: process.env.BFC_GAME_READER === 'fixture' ? 'fixture' : 'memory',
+const DEFAULT_CONFIG: Omit<GameReaderConfig, 'mode'> = {
   processName: process.env.BFC_GAME_PROCESS ?? 'BombFarm.exe',
   pollAttachedMs: 50,
   pollDetachedMs: 10_000,
-  relocateMs: 15_000,
-  staleRepeatThreshold: 4,
 };
+
+/** A packaged install must be structurally unable to select fixture mode — an inherited or
+ * stale `BFC_GAME_READER=fixture` env var (a shell, a CI harness, a support machine) would
+ * otherwise make a real install report itself `connected` and then throw on every tick. */
+function resolveDefaultMode(isPackaged: boolean): GameReaderMode {
+  return !isPackaged && process.env.BFC_GAME_READER === 'fixture' ? 'fixture' : 'live';
+}
+
+function ageMsSince(sinceAtIso: string | undefined, nowMs: number): number | undefined {
+  if (!sinceAtIso) return undefined;
+  const since = Date.parse(sinceAtIso);
+  return Number.isNaN(since) ? undefined : Math.max(0, nowMs - since);
+}
 
 export class GameReaderService {
   private readonly config: GameReaderConfig;
+  private readonly isPackaged: boolean;
   private status: GameStatusInfo;
   private payload: GameSnapshotPayload;
   private timer: NodeJS.Timeout | null = null;
@@ -52,13 +71,30 @@ export class GameReaderService {
    * fixture mode ever calls `accountStore.commit()` from this class at all. */
   onAccountCommitted?: () => void;
 
-  private scanner: MemoryScanner | null = null;
-  private target: ScanTarget | null = null;
-  private lastHash: string | null = null;
-  private repeatCount = 0;
-  private lastRelocate = 0;
+  /** The most recent frame the live tap has delivered, via `ingestLiveTick()`. The tap is
+   *  push-based and this class's own `tick()` is a poll loop, so a tick that lands between two
+   *  tap frames reports this cached one rather than blocking on a fresh one — and `null` until
+   *  the first frame arrives is exactly the "nothing to show yet" case `tickLive()` reports
+   *  honestly rather than inventing a snapshot for. */
+  private latestLiveTick: { tick: LiveTick; takenAt: string; sequence: number } | null = null;
+  /** The live tap's own read on whether it is currently delivering, via `ingestLiveCurrency()`.
+   *  `latestLiveTick` only ever grows staler by itself — nothing here expires it on age — so
+   *  `tickLive()` cannot tell a frozen tap from a live one by looking at the cached tick alone.
+   *  This is the same silence watch the tap already runs (attach loss, a hook gone quiet, the
+   *  client no longer streaming): reusing it here means `tickLive()` degrades honestly the
+   *  moment the tap itself reports a gap, instead of replaying the last frame as `connected`
+   *  forever. */
+  private latestLiveCurrency: LiveCurrency | null = null;
+  /** `sequence` of the `latestLiveTick` frame `tickLive()` last ran the adapt+build chain on.
+   *  The tap's frame cadence is far coarser than `pollAttachedMs`, so most polls see the exact
+   *  same cached frame; re-running `tickToRawGameState()`/`buildSnapshot()` on byte-identical
+   *  input every ~50ms just to discover nothing changed is wasted work `tickLive()` now skips.
+   *  Keyed on `sequence` rather than `takenAt`: two distinct frames can share the same
+   *  millisecond timestamp under batched delivery, and a timestamp comparison would then drop
+   *  the second one. */
+  private lastProcessedFrameSequence: number | null = null;
   private fixtureTick = 0;
-  private fixtureBundle = loadFixtureBundle();
+  private fixtureBundle: FixtureBundle | null = null;
   /** Flipped once by `stop()`, never reset (until a hypothetical future `start()` re-arms it).
    * The explicit half of the shutdown-ordering contract: `clearTimeout` alone only stops a
    * tick that has not yet started firing — this flag additionally makes `tick()` a no-op for
@@ -67,8 +103,14 @@ export class GameReaderService {
    * which must call `stop()` before closing the account store). */
   private stopped = false;
 
-  constructor(_userDataDir: string, config: Partial<GameReaderConfig> = {}) {
-    this.config = { ...DEFAULT_CONFIG, ...config };
+  constructor(
+    _userDataDir: string,
+    config: Partial<GameReaderConfig> = {},
+    deps: { isPackaged?: boolean } = {},
+  ) {
+    this.isPackaged = deps.isPackaged ?? false;
+    const mode = config.mode ?? resolveDefaultMode(this.isPackaged);
+    this.config = { ...DEFAULT_CONFIG, ...config, mode };
 
     // Never restore `status` from disk (design R-2 / APS-03): a cold boot with the game
     // closed always reports `not_running`, never a previous session's `connected`.
@@ -89,8 +131,9 @@ export class GameReaderService {
     this.windowProvider = provider;
   }
 
-  /** Injected once at boot (design §8, TD-8). Only fixture-mode ticks call `commit()` on it —
-   * F3 has no memory-mode producer; F2 owns that call site. */
+  /** Injected once at boot. Only fixture-mode ticks call `commit()` on it — the live path has
+   * no account-data producer of its own, because account data comes from the authenticated
+   * read path instead. */
   setAccountStore(store: AccountCommitter): void {
     this.accountStore = store;
   }
@@ -98,6 +141,22 @@ export class GameReaderService {
   /** The most recently committed merged view, or `null` before any fixture tick has run. */
   getAccountView(): AccountView | null {
     return this.lastAccountView;
+  }
+
+  /** Called by index.ts for every frame the live tap's `LiveSource` publishes. Cheap and
+   *  synchronous — it only caches the frame for the next poll `tick()` to pick up, it never
+   *  reaches `accountStore.commit()` (account data is sourced from the authenticated route,
+   *  never from here). */
+  ingestLiveTick(frame: LiveFrame): void {
+    this.latestLiveTick = { tick: frame.tick, takenAt: frame.at, sequence: frame.sequence };
+  }
+
+  /** Called by index.ts for every currency transition the live tap publishes — `live` once a
+   *  frame has been proven, `gap` the moment the tap loses that proof (attach lost, hook gone
+   *  quiet, client no longer streaming). `tickLive()` trusts this over the mere presence of a
+   *  cached tick, so a stalled tap is reported honestly instead of replaying its last frame. */
+  ingestLiveCurrency(currency: LiveCurrency): void {
+    this.latestLiveCurrency = currency;
   }
 
   start(): void {
@@ -118,12 +177,14 @@ export class GameReaderService {
       clearTimeout(this.timer);
       this.timer = null;
     }
-    this.scanner?.close();
-    this.scanner = null;
   }
 
   getStatus(): GameStatusInfo {
     return this.status;
+  }
+
+  getMode(): GameReaderMode {
+    return this.config.mode;
   }
 
   getSnapshot(): GameSnapshotPayload {
@@ -150,13 +211,11 @@ export class GameReaderService {
       if (this.config.mode === 'fixture') {
         this.tickFixture();
       } else {
-        this.tickMemory();
+        this.tickLive();
       }
     } catch (err) {
       log.error({ scope: 'game-reader', event: 'tick.failed', err });
-      this.scanner?.close();
-      this.scanner = null;
-      this.target = null;
+      this.latestLiveTick = null;
       this.updateStatus({
         status: 'stale',
         updatedAt: new Date().toISOString(),
@@ -165,17 +224,27 @@ export class GameReaderService {
     }
   }
 
+  /** Only fixture mode ever reaches this — a non-fixture run must never touch the filesystem
+   * for these (dev/CI-only) fixtures, let alone throw if they are not resolvable, as a packaged
+   * install's would not be. Loaded at most once per instance; `tickFixture()` runs on a fast
+   * poll and must not re-read the fixture files on every tick. */
+  private getFixtureBundle(): FixtureBundle {
+    this.fixtureBundle ??= loadFixtureBundle();
+    return this.fixtureBundle;
+  }
+
   private tickFixture(): void {
     this.fixtureTick += 1;
     const takenAt = new Date().toISOString();
-    const state = rotateFixtureState(this.fixtureBundle.state, this.fixtureTick);
+    const fixtures = this.getFixtureBundle();
+    const state = rotateFixtureState(fixtures.state, this.fixtureTick);
     const built = buildSnapshot({
       takenAt,
       source: 'live',
       state,
-      inventory: this.fixtureBundle.inventory,
-      heroRecords: this.fixtureBundle.heroRecords,
-      heroEnergies: this.fixtureBundle.heroEnergies,
+      inventory: fixtures.inventory,
+      heroRecords: fixtures.heroRecords,
+      heroEnergies: fixtures.heroEnergies,
     });
 
     this.updateStatus({
@@ -188,22 +257,32 @@ export class GameReaderService {
       mapped: built.snapshot,
       raw: {
         state,
-        inventory: this.fixtureBundle.inventory,
+        inventory: fixtures.inventory,
       },
     });
 
     if (this.accountStore) {
-      this.lastAccountView = this.accountStore.commit(buildFixtureAccountPayload(takenAt), { gameRunning: true });
+      this.lastAccountView = this.accountStore.commit(buildFixtureAccountPayload(takenAt, this.isPackaged), {
+        gameRunning: true,
+      });
       this.onAccountCommitted?.();
     }
   }
 
-  private tickMemory(): void {
+  /**
+   * The non-fixture path. Status comes from real process detection (`findProcessId`) — it is
+   * never inferred from whether a live-tap frame has arrived, since the tap can lag attach by a
+   * few polls and reporting `not_running` for that gap would be dishonest. The snapshot channel,
+   * separately, reflects whatever the live tap has delivered through `ingestLiveTick()` — this
+   * never fabricates a reading of its own; with no frame yet, or once the tap's own currency
+   * says it has stopped delivering (`ingestLiveCurrency()`), it reports `stale` and leaves the
+   * previous snapshot in place rather than replaying a frozen one as `connected`.
+   */
+  private tickLive(): void {
     const pid = findProcessId(this.config.processName);
     if (!pid) {
-      this.scanner?.close();
-      this.scanner = null;
-      this.target = null;
+      this.latestLiveTick = null;
+      this.lastProcessedFrameSequence = null;
       this.updateStatus({
         status: 'not_running',
         updatedAt: new Date().toISOString(),
@@ -212,102 +291,54 @@ export class GameReaderService {
       return;
     }
 
-    if (!this.scanner) {
-      this.scanner = new MemoryScanner(pid);
-      if (!this.scanner.open()) {
-        this.scanner = null;
-        this.updateStatus({
-          status: 'not_running',
-          updatedAt: new Date().toISOString(),
-          processName: this.config.processName,
-        });
-        return;
-      }
-      this.target = this.scanner.relocate(null);
-      this.lastRelocate = Date.now();
-      this.lastHash = null;
-      this.repeatCount = 0;
-    }
-
-    if (!this.target) {
-      this.target = this.scanner.relocate(null);
-      this.lastRelocate = Date.now();
-      if (!this.target) {
-        this.updateStatus({
-          status: 'stale',
-          updatedAt: new Date().toISOString(),
-          processName: this.config.processName,
-          staleAgeMs: Date.now() - this.lastRelocate,
-        });
-        return;
-      }
-    }
-
-    if (Date.now() - this.lastRelocate > this.config.relocateMs) {
-      this.target = this.scanner.relocate(this.target);
-      this.lastRelocate = Date.now();
-      this.lastHash = null;
-      this.repeatCount = 0;
-    }
-
-    if (!this.target) {
-      return;
-    }
-
-    const read = this.scanner.readAt(this.target);
-    if (!read.state) {
-      this.target = this.scanner.relocate(this.target);
-      this.lastRelocate = Date.now();
+    if (!this.latestLiveTick || !this.latestLiveCurrency || !isLiveCurrency(this.latestLiveCurrency)) {
+      const staleAgeMs = ageMsSince(
+        this.latestLiveCurrency?.kind === 'gap' ? this.latestLiveCurrency.sinceAt : undefined,
+        Date.now(),
+      );
       this.updateStatus({
         status: 'stale',
         updatedAt: new Date().toISOString(),
         processName: this.config.processName,
-        staleAgeMs: 0,
+        ...(staleAgeMs !== undefined ? { staleAgeMs } : {}),
       });
       return;
     }
 
-    if (read.hash && read.hash === this.lastHash) {
-      this.repeatCount += 1;
-      if (this.repeatCount >= this.config.staleRepeatThreshold) {
-        this.target = this.scanner.relocate(this.target);
-        this.lastRelocate = Date.now();
-        this.lastHash = null;
-        this.repeatCount = 0;
-        this.updateStatus({
-          status: 'stale',
-          updatedAt: new Date().toISOString(),
-          processName: this.config.processName,
-          staleAgeMs: this.config.pollAttachedMs * this.config.staleRepeatThreshold,
-        });
-        return;
-      }
-    } else {
-      this.repeatCount = 0;
-      this.lastHash = read.hash;
+    const { takenAt, sequence } = this.latestLiveTick;
+    if (sequence === this.lastProcessedFrameSequence) {
+      this.updateStatus({
+        status: 'connected',
+        updatedAt: takenAt,
+        processName: this.config.processName,
+      });
+      return;
     }
 
-    const takenAt = new Date().toISOString();
-    const built = buildSnapshot({
-      takenAt,
-      source: 'live',
-      state: read.state,
-      inventory: read.inventory,
-    });
+    const raw = tickToRawGameState(this.latestLiveTick.tick);
+    if (!raw) {
+      const staleAgeMs = ageMsSince(takenAt, Date.now());
+      this.updateStatus({
+        status: 'stale',
+        updatedAt: new Date().toISOString(),
+        processName: this.config.processName,
+        ...(staleAgeMs !== undefined ? { staleAgeMs } : {}),
+      });
+      return;
+    }
+
+    const built = buildSnapshot({ takenAt, source: 'live', state: raw });
+    this.lastProcessedFrameSequence = sequence;
 
     this.updateStatus({
-      status: read.suspectStale ? 'stale' : 'connected',
+      status: 'connected',
       updatedAt: takenAt,
       processName: this.config.processName,
-      ...(read.suspectStale ? { staleAgeMs: 0 } : {}),
     });
     this.updateSnapshot({
       status: this.status,
       mapped: built.snapshot,
-      raw: {
-        state: read.state,
-        inventory: read.inventory,
-      },
+      raw: { state: raw, inventory: null },
     });
   }
 

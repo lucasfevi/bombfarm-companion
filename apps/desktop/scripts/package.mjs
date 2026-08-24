@@ -72,3 +72,17 @@ await run('pnpm', [
   '--publish',
   'never',
 ]);
+
+const { runPackagingGateChecks, PackagingGateError } = await import('./package-gate.mjs');
+
+try {
+  runPackagingGateChecks(flavor);
+} catch (error) {
+  if (error instanceof PackagingGateError) {
+    console.error(error.message);
+    process.exit(1);
+  }
+  throw error;
+}
+
+console.log(`Packaging gate passed for flavor "${flavor}".`);

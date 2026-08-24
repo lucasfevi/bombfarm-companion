@@ -91,11 +91,9 @@ export function useHeroBuildActions() {
       if (ability && isSheetAbility(ability)) {
         const prevMods = abilityMods(abilities);
         const nextMods = abilityMods(nextAbilities);
-        // DEC-04/BSP-31a: the crit-chance path now rescales by the sheet-ability ratio
-        // (rescaleNakedCritChance, via the dispatcher) — never the rarity-midpoint reset
-        // rescaleNakedCrit used to apply. penetrationPp / critDmgFlat are unaffected;
-        // the dispatcher returns naked unchanged for every other kind, matching the old
-        // no-op fallthrough.
+        // DEC-04/BSP-31a: every sheet-ability kind goes through the dispatcher, which
+        // preserves the hero's own roll. It returns naked unchanged for every non-sheet
+        // kind, matching the old no-op fallthrough.
         setNaked(nakedAfterSheetAbilityChange(nakedRef.current, ability.effect.kind, prevMods, nextMods));
       }
     },
@@ -126,10 +124,9 @@ export function useHeroBuildActions() {
     const next = resetHeroAbilities(previous);
     const prevMods = abilityMods(previous);
     const nextMods = abilityMods(next);
-    // DEC-04/BSP-31a: same dispatcher as setAbilityLevel — preserves the hero's own crit roll
-    // instead of resetting it to the rarity midpoint.
-    if (prevMods.sheetCritChancePctOfBase !== nextMods.sheetCritChancePctOfBase) {
-      setNaked(nakedAfterSheetAbilityChange(nakedRef.current, 'critChancePctOfBase', prevMods, nextMods));
+    // DEC-04/BSP-31a: same dispatcher as setAbilityLevel — preserves the hero's own crit roll.
+    if (prevMods.sheetCritChanceFlat !== nextMods.sheetCritChanceFlat) {
+      setNaked(nakedAfterSheetAbilityChange(nakedRef.current, 'critChanceFlat', prevMods, nextMods));
     }
     if (prevMods.sheetPenetrationRaw !== nextMods.sheetPenetrationRaw) {
       setNaked(rescaleNakedPen(nakedRef.current, prevMods.sheetPenetrationRaw, nextMods.sheetPenetrationRaw));

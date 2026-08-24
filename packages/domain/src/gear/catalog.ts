@@ -179,7 +179,7 @@ export function itemValores(item: EquippedItem): ScaledValor[] {
 }
 
 export function emptySheetOther(): SheetOtherPct {
-  return { speed: 0, critChance: 0, critDmgFlat: 0, penetration: 0, cdr: 0 };
+  return { speed: 0, critChanceFlat: 0, critDmgFlat: 0, penetration: 0, cdr: 0 };
 }
 
 /**

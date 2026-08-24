@@ -9,7 +9,7 @@ export function recomputeGearedSheet(
   const mods = abilityMods(hero.abilities);
   const sheetOther = {
     ...emptySheetOther(),
-    critChance: mods.sheetCritChancePctOfBase / 100,
+    critChanceFlat: mods.sheetCritChanceFlat,
     penetration: mods.sheetPenetrationRaw,
     critDmgFlat: mods.sheetCritDmgFlat,
   };

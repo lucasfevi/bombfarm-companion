@@ -250,27 +250,38 @@ describe('Guard 3 — no path to the network or the token file bypasses consent 
 });
 
 // -------------------------------------------------------------------------------------------
-// Guard 4 — memory does not populate the account (LAR-26, D24).
+// Guard 4 — the account path never reaches the live tap. The account's only
+// legitimate source is the authenticated route this file itself drives (`readSection`/
+// `assembleAccountPayload`); the live tap (`live-source/`) reads intercepted traffic outside
+// that route, and — same as the OS-level memory read it replaced — must never become a second,
+// unconsented producer of account data. `AccountCommitter` is imported `import type` from
+// `game-reader-service.ts` for exactly this reason: it is erased at compile time, so it cannot
+// smuggle in a runtime edge to the tap. This guard proves that stays true.
 // -------------------------------------------------------------------------------------------
 
-const FORBIDDEN_MODULE_MARKERS = ['memory-scanner', 'koffi', 'candidates'];
-const FORBIDDEN_NAMES = ['pickHighestGoldCandidate'];
+// Trailing slash deliberately: `packages/contracts/src/live-source.ts` (the pure type/helper
+// module every runtime import of `@bombfarm/contracts` can legitimately reach) happens to share
+// its filename with this directory. A bare `live-source` marker would flag that unrelated file's
+// own `./live-source.js` specifier; the slash only matches a path that names this directory.
+const FORBIDDEN_MODULE_MARKERS = ['live-source/'];
+const FORBIDDEN_NAMES = ['LiveSource'];
 
 /**
  * A fully `import type { ... } from '...'` or `export type { ... } from '...'` statement is
  * erased at compile time — it cannot smuggle in a runtime dependency, so both are deliberately
  * excluded here (this is exactly the shape `account-refresh.ts` uses to reuse
- * `game-reader-service.ts`'s `AccountCommitter` interface without ever importing its
- * koffi-loading module at runtime).
+ * `game-reader-service.ts`'s `AccountCommitter` interface without ever importing the live tap's
+ * module at runtime).
  *
  * Covers four value-level edge shapes (T-fix-3): a static `import ... from`, a re-export chain
  * (`export { X [as Y] } from '...'` / `export * from '...'`) — the exact shape a Verifier used to
  * defeat this walker (`export { pickHighestGoldCandidate as legacyGoldPicker } from
  * '@bombfarm/game-data'` wired into `account-refresh.ts` was invisible to the old, import-only
- * regex) — a dynamic `import('...')` with a static string argument, and a CommonJS `require(...)`.
- * A computed/templated specifier in either of the last two cannot be resolved statically and is
- * out of scope, the same way every other guard in this file only defeats syntactic, not
- * arbitrary-runtime-value, obfuscation.
+ * regex, back when this guard's forbidden names still named the process-memory reader this app no
+ * longer has) — a dynamic `import('...')` with a static string argument, and a CommonJS
+ * `require(...)`. A computed/templated specifier in either of the last two cannot be resolved
+ * statically and is out of scope, the same way every other guard in this file only defeats
+ * syntactic, not arbitrary-runtime-value, obfuscation.
  */
 function parseImportSpecifiers(text: string): string[] {
   const specifiers: string[] = [];
@@ -409,9 +420,9 @@ function walkImportGraph(startFile: string): { violations: GraphViolation[]; vis
 
 describe('Guard 4 parser — the new edge shapes it walks, and the type-only edges it still excludes (T-fix-3)', () => {
   it('follows a re-export chain (export { X as Y } from "...") as a value edge, matching on the original name', () => {
-    const text = "export { pickHighestGoldCandidate as legacyGoldPicker } from '@bombfarm/game-data';";
-    expect(parseImportSpecifiers(text)).toEqual(['@bombfarm/game-data']);
-    expect(importedNamesFrom(text, '@bombfarm/game-data')).toEqual(['pickHighestGoldCandidate']);
+    const text = "export { LiveSource as liveSourceAlias } from '../live-source/live-source.js';";
+    expect(parseImportSpecifiers(text)).toEqual(['../live-source/live-source.js']);
+    expect(importedNamesFrom(text, '../live-source/live-source.js')).toEqual(['LiveSource']);
   });
 
   it('excludes an `export type { ... } from` re-export — erased at compile time, same as `import type`', () => {
@@ -425,18 +436,18 @@ describe('Guard 4 parser — the new edge shapes it walks, and the type-only edg
   });
 
   it('follows a dynamic import() with a static string argument', () => {
-    const text = "const mod = await import('@bombfarm/game-data');";
-    expect(parseImportSpecifiers(text)).toEqual(['@bombfarm/game-data']);
+    const text = "const mod = await import('../live-source/live-source.js');";
+    expect(parseImportSpecifiers(text)).toEqual(['../live-source/live-source.js']);
   });
 
   it('extracts a forbidden name destructured directly off a dynamic import()', () => {
-    const text = "const { pickHighestGoldCandidate } = await import('@bombfarm/game-data');";
-    expect(importedNamesFrom(text, '@bombfarm/game-data')).toEqual(['pickHighestGoldCandidate']);
+    const text = "const { LiveSource } = await import('../live-source/live-source.js');";
+    expect(importedNamesFrom(text, '../live-source/live-source.js')).toEqual(['LiveSource']);
   });
 
   it('follows a require(...) call', () => {
-    const text = "const mod = require('@bombfarm/game-data');";
-    expect(parseImportSpecifiers(text)).toEqual(['@bombfarm/game-data']);
+    const text = "const mod = require('../live-source/live-source.js');";
+    expect(parseImportSpecifiers(text)).toEqual(['../live-source/live-source.js']);
   });
 
   it('resolveWorkspaceImport resolves a bare @bombfarm/<name> specifier to that package\'s own src/index.ts', () => {
@@ -450,7 +461,7 @@ describe('Guard 4 parser — the new edge shapes it walks, and the type-only edg
   });
 });
 
-describe('Guard 4 — the account path never reaches memory (LAR-26, D24)', () => {
+describe('Guard 4 — the account path never reaches the live tap', () => {
   const { violations, visited } = walkImportGraph(ACCOUNT_REFRESH_FILE);
 
   it('walked a non-empty import graph from account-refresh.ts', () => {
@@ -458,10 +469,10 @@ describe('Guard 4 — the account path never reaches memory (LAR-26, D24)', () =
     expect(visited.has(ACCOUNT_REFRESH_FILE)).toBe(true);
   });
 
-  it('reaches no edge to memory-scanner, koffi, candidates.ts, or pickHighestGoldCandidate', () => {
+  it('reaches no edge into live-source/ or its LiveSource class', () => {
     expect(
       violations,
-      `D24: no account-state memory path, in this feature or as a fallback. Violations: ${JSON.stringify(violations)}`,
+      `The account is never sourced from the live tap, in this feature or as a fallback. Violations: ${JSON.stringify(violations)}`,
     ).toEqual([]);
   });
 });

@@ -81,10 +81,12 @@ class FakeProcessLister implements ProcessLister {
 
 class FakeHookCandidateSource implements HookCandidateSource {
   resolveResult: HookCandidateResolution = { addresses: [], fromCache: false, buildId: null };
+  readonly resolveCalls: { pid: number; maxCandidates: number | undefined }[] = [];
   readonly committed: { pid: number; address: number; buildId: string | null }[] = [];
   readonly invalidated: { pid: number; buildId: string | null }[] = [];
 
-  resolve(_pid: number): HookCandidateResolution {
+  resolve(pid: number, maxCandidates?: number): HookCandidateResolution {
+    this.resolveCalls.push({ pid, maxCandidates });
     return this.resolveResult;
   }
 
@@ -137,10 +139,10 @@ class FakeSession implements TapSession {
 class FakeRuntime implements TapRuntime {
   readonly sessions: FakeSession[] = [];
 
-  attach(pid: number): TapSession {
+  attach(pid: number): Promise<TapSession> {
     const session = new FakeSession(pid);
     this.sessions.push(session);
-    return session;
+    return Promise.resolve(session);
   }
 }
 
@@ -301,13 +303,161 @@ describe('Tap: ambiguous discovery', () => {
   });
 });
 
+describe('Tap: fresh-discovery escalation widens the candidate window', () => {
+  it('requests the top 4 candidates on the first fresh discovery attempt', async () => {
+    const { tap, clock, processes, candidates } = createHarness();
+    processes.processes = [{ pid: 7_001, name: PROCESS_NAME }];
+    candidates.resolveResult = {
+      addresses: [0x1000, 0x2000, 0x3000, 0x4000],
+      fromCache: false,
+      buildId: 'build-first',
+    };
+
+    tap.start();
+    await clock.advance(0);
+
+    expect(candidates.resolveCalls).toEqual([{ pid: 7_001, maxCandidates: 4 }]);
+  });
+
+  it('widens the requested window on each consecutive fresh-discovery validation failure, then plateaus', async () => {
+    const { tap, clock, processes, candidates } = createHarness();
+    processes.processes = [{ pid: 7_002, name: PROCESS_NAME }];
+    candidates.resolveResult = {
+      addresses: [0x1000, 0x2000, 0x3000, 0x4000],
+      fromCache: false,
+      buildId: 'build-escalate',
+    };
+
+    tap.start();
+    await clock.advance(0);
+    await clock.advance(20_000);
+    await clock.advance(20_000);
+    await clock.advance(20_000);
+    await clock.advance(20_000);
+
+    expect(candidates.resolveCalls.map((call) => call.maxCandidates)).toEqual([4, 8, 16, 32, 32]);
+  });
+
+  it('resets the width to 4 for the next fresh discovery once a winner is confirmed', async () => {
+    const { tap, clock, processes, candidates, runtime } = createHarness();
+    processes.processes = [{ pid: 7_003, name: PROCESS_NAME }];
+    candidates.resolveResult = {
+      addresses: [0x1000, 0x2000, 0x3000, 0x4000],
+      fromCache: false,
+      buildId: 'build-reset-on-winner',
+    };
+
+    tap.start();
+    await clock.advance(0);
+    await clock.advance(20_000);
+
+    const session = runtime.sessions[runtime.sessions.length - 1];
+    if (!session) throw new Error('test setup: no session');
+    const winner = session.interceptorsByAddress.get(0x1000);
+    if (!winner) throw new Error('test setup: winner interceptor missing');
+    winner.fire({ ctx: 'conn', bytes: snapFrameBytes() });
+    expect(tap.getCurrency().kind).toBe('live');
+
+    processes.processes = [];
+    await clock.advance(1_000);
+    processes.processes = [{ pid: 7_003, name: PROCESS_NAME }];
+    await clock.advance(1_000);
+
+    expect(candidates.resolveCalls.map((call) => call.maxCandidates)).toEqual([4, 8, 4]);
+  });
+
+  it('restarts escalation once a build id change is observed, instead of continuing to climb', async () => {
+    const { tap, clock, processes, candidates } = createHarness();
+    processes.processes = [{ pid: 7_004, name: PROCESS_NAME }];
+    candidates.resolveResult = {
+      addresses: [0x1000, 0x2000, 0x3000, 0x4000],
+      fromCache: false,
+      buildId: 'build-old',
+    };
+
+    tap.start();
+    await clock.advance(0);
+    await clock.advance(20_000);
+
+    candidates.resolveResult = {
+      addresses: [0x9000, 0x9001, 0x9002, 0x9003],
+      fromCache: false,
+      buildId: 'build-new',
+    };
+    await clock.advance(20_000);
+    await clock.advance(20_000);
+
+    expect(candidates.resolveCalls.map((call) => call.maxCandidates)).toEqual([4, 8, 16, 8]);
+  });
+
+  it('leaves the escalation window untouched when a cache-sourced address fails validation', async () => {
+    const { tap, clock, processes, candidates } = createHarness();
+    processes.processes = [{ pid: 7_005, name: PROCESS_NAME }];
+    candidates.resolveResult = { addresses: [0x1000], fromCache: true, buildId: 'build-cache' };
+
+    tap.start();
+    await clock.advance(0);
+    await clock.advance(20_000);
+
+    expect(candidates.invalidated).toEqual([{ pid: 7_005, buildId: 'build-cache' }]);
+    expect(candidates.resolveCalls.map((call) => call.maxCandidates)).toEqual([4, 4]);
+  });
+});
+
+describe('Tap: winner confirmation logging', () => {
+  it('logs tap.winner_confirmed exactly once when a candidate stream decodes its first events', async () => {
+    const { tap, clock, processes, candidates, runtime, infos } = createHarness();
+    processes.processes = [{ pid: 666, name: PROCESS_NAME }];
+    candidates.resolveResult = {
+      addresses: [0x1000, 0x2000],
+      fromCache: true,
+      buildId: 'build-winner-log',
+    };
+
+    tap.start();
+    await clock.advance(0);
+
+    const session = runtime.sessions[0];
+    if (!session) throw new Error('test setup: no session');
+    const winner = session.interceptorsByAddress.get(0x2000);
+    if (!winner) throw new Error('test setup: winner interceptor missing');
+    winner.fire({ ctx: 'conn', bytes: snapFrameBytes() });
+
+    const winnerLogs = infos.filter((record) => record.event === 'tap.winner_confirmed');
+    expect(winnerLogs).toHaveLength(1);
+    expect(winnerLogs[0]).toMatchObject({
+      scope: 'live-source',
+      event: 'tap.winner_confirmed',
+      pid: 666,
+      address: 0x2000,
+      fromCache: true,
+      buildId: 'build-winner-log',
+    });
+
+    winner.fire({ ctx: 'conn', bytes: snapFrameBytes() });
+    expect(infos.filter((record) => record.event === 'tap.winner_confirmed')).toHaveLength(1);
+  });
+
+  it('does not log tap.winner_confirmed when validation times out with no winner', async () => {
+    const { tap, clock, processes, candidates, infos } = createHarness();
+    processes.processes = [{ pid: 777, name: PROCESS_NAME }];
+    candidates.resolveResult = { addresses: [0x1000], fromCache: true, buildId: 'build-timeout' };
+
+    tap.start();
+    await clock.advance(0);
+    await clock.advance(20_000);
+
+    expect(infos.some((record) => record.event === 'tap.winner_confirmed')).toBe(false);
+  });
+});
+
 describe('Tap: a throwing attach or install does not kill the poll loop', () => {
   it('reports attachFailed, leaks nothing, and keeps polling when runtime.attach throws', async () => {
     class ThrowingAttachRuntime implements TapRuntime {
       attachCalls = 0;
-      attach(_pid: number): TapSession {
+      attach(_pid: number): Promise<TapSession> {
         this.attachCalls += 1;
-        throw new Error('attach: access is denied');
+        return Promise.reject(new Error('attach: access is denied'));
       }
     }
     const throwingRuntime = new ThrowingAttachRuntime();
@@ -347,10 +497,10 @@ describe('Tap: a throwing attach or install does not kill the poll loop', () => 
     }
     const sessions: ThrowingInstallSession[] = [];
     class ThrowingInstallRuntime implements TapRuntime {
-      attach(pid: number): TapSession {
+      attach(pid: number): Promise<TapSession> {
         const session = new ThrowingInstallSession(pid);
         sessions.push(session);
-        return session;
+        return Promise.resolve(session);
       }
     }
     const { tap, clock, processes, candidates } = createHarness({

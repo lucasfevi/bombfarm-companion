@@ -95,14 +95,21 @@ describe('DPS next-point ranking — golden fixture (pre-deletion, pinned byte-f
   }
 
   it('Bellatrix L42 — full ranking pinned to full precision', () => {
+    // RE-MEASURED for the 2026-08-23 crit-chance ability shape. Bellatrix carries
+    // `olho_clinico` 20/20 off a 5.081 birth roll: percent-of-base gave her `+4.36` crit points,
+    // flat gives her `+40`, so her crit rate goes from single digits to the mid-forties and the
+    // whole crit branch of the derivative moves with it. `critDmg` jumps from 0.452 to 1.685 and
+    // OVERTAKES `energy` — crit damage is worth more the more often it lands. This fixture's
+    // sheet numbers are a pre-patch capture; the ranking is characterization, not a claim about
+    // what the game would print for her today.
     const result = pipelineForHero(heroByName('Bellatrix'), account, phase, mitigationPct);
     expect(pick(result.ranking)).toEqual([
-      { stat: 'attack', gainPct: 2.124613721702273 },
+      { stat: 'attack', gainPct: 2.124613721702251 },
+      { stat: 'critDmg', gainPct: 1.6848046058554278 },
       { stat: 'energy', gainPct: 1.419237680643981 },
-      { stat: 'critDmg', gainPct: 0.45173381134235857 },
-      { stat: 'critChance', gainPct: 0.07215154969466564 },
+      { stat: 'critChance', gainPct: 0.05757950726386074 },
       { stat: 'cdr', gainPct: 0.03270868386004988 },
-      { stat: 'penetration', gainPct: 0.0018927950044433928 },
+      { stat: 'penetration', gainPct: 0.0018927950043989838 },
       { stat: 'speed', gainPct: 0 },
     ]);
   });
@@ -128,12 +135,15 @@ describe('DPS next-point ranking — golden fixture (pre-deletion, pinned byte-f
   });
 
   it('Lyra L2 — full ranking pinned to full precision', () => {
+    // RE-MEASURED for the 2026-08-23 crit-chance ability shape. Lyra carries `olho_clinico` at
+    // rank 2 only, so her crit rate moves by `+4` points rather than Bellatrix's `+40` and the
+    // rank ORDER is unchanged — the same shape change, at a magnitude that does not reorder.
     const result = pipelineForHero(heroByName('Lyra'), account, phase, mitigationPct);
     expect(pick(result.ranking)).toEqual([
-      { stat: 'attack', gainPct: 14.754149056578392 },
-      { stat: 'energy', gainPct: 6.132090157267234 },
-      { stat: 'critDmg', gainPct: 0.30733791355714857 },
-      { stat: 'critChance', gainPct: 0.05162744444042744 },
+      { stat: 'attack', gainPct: 14.75414905657837 },
+      { stat: 'energy', gainPct: 6.1320901572672115 },
+      { stat: 'critDmg', gainPct: 0.47049017889033706 },
+      { stat: 'critChance', gainPct: 0.0508105727768271 },
       { stat: 'cdr', gainPct: 0.03458638173732265 },
       { stat: 'penetration', gainPct: 0.0008296399027551971 },
       { stat: 'speed', gainPct: 0 },

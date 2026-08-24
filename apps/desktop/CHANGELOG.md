@@ -1,5 +1,51 @@
 # @bombfarm/desktop
 
+## 0.4.3
+
+### Patch Changes
+
+- a84101b: Fix a packaged build failing to boot with `game-data fixtures directory not found`. `GameReaderService` loaded its dev/CI-only fixture bundle eagerly in a field initializer, so every instantiation resolved fixture paths regardless of read mode — paths that only exist in the monorepo source tree, never in an installed app. The fixture bundle is now loaded lazily, only when fixture mode actually needs it, so a normal (memory-mode) run never touches the filesystem for it.
+
+  Fix a second, independent boot failure: an installed app launched from the Start menu could try to load the development server (`http://127.0.0.1:3000`) instead of its bundled renderer, failing with `ERR_CONNECTION_REFUSED`. Dev-mode detection relied solely on an environment variable that a packaged install never sets, so its absence was silently read as "development". It now also requires the app to be unpackaged, and requires an explicit dev signal (a renderer URL override or `NODE_ENV=development`) rather than merely the absence of `NODE_ENV=production`, so an unset environment can never be read as dev.
+
+- a844381: Remove the process-memory reading path from the desktop app. The diagnostics snapshot panel now
+  sources its gold/phase/wave reading from the in-run live data source instead of scanning the
+  game's process memory directly, and the app no longer depends on a native FFI library to read a
+  running game's memory. Account data was never sourced from process memory in the first place — it
+  has always come from the authenticated periodic sync — so this has no effect on account, hero,
+  skill, casa, or inventory data.
+- 4cd94f9: Fix a self-healing gap in the live tap's hook discovery: a fresh scan that failed validation used
+  to retry the identical top-4 ranked candidates forever, so a future game rebuild that pushed the
+  real read function past rank 4 would leave the tap unable to attach no matter how long it waited.
+
+  Repeated fresh-discovery validation failures now widen the requested candidate window (4 → 8 → 16
+  → 32, then plateau) instead of repeating the same slice. The window resets to 4 once a winner is
+  confirmed, and whenever the scanned build id changes, so a rebuild starts its own escalation rather
+  than inheriting the previous build's widened window. A cache-sourced failure keeps its existing
+  invalidate-and-retry behaviour unchanged.
+
+- 4cd94f9: Add the `@bombfarm/tap-runtime` package: a Frida-backed implementation of the desktop app's
+  process-instrumentation port. Until now `@bombfarm/tap-runtime` was named as the live tap's
+  runtime dependency but never actually existed, so every attach attempt failed immediately and the
+  live tap could never come up.
+
+  The port's `attach()` is now asynchronous, matching Frida's own async attach/script lifecycle. The
+  agent script that runs inside the target process (`agent.js`) moves into the new package unchanged
+  and is embedded as a string at build time, alongside a small bridge that maps Frida's native hook
+  and messaging primitives onto the same host contract the agent already expects.
+
+  `frida` is a regular dependency now, kept external from the esbuild bundle and unpacked from the
+  packaged app's asar archive so its native addon can load.
+
+- Updated dependencies [d1dce84]
+- Updated dependencies [a844381]
+- Updated dependencies [4cd94f9]
+  - @bombfarm/domain@0.6.3
+  - @bombfarm/game-data@0.0.7
+  - @bombfarm/contracts@0.3.4
+  - @bombfarm/tap-runtime@0.2.0
+  - @bombfarm/game-api@0.2.4
+
 ## 0.4.2
 
 ### Patch Changes

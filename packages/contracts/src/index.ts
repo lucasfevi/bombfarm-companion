@@ -41,7 +41,7 @@ export type {
   LiveView,
   RecoveryCountdown,
 } from './live-source.js';
-export { isActionableGap, liveGap } from './live-source.js';
+export { isActionableGap, isLiveCurrency, liveGap } from './live-source.js';
 export type {
   AccountStoreReason,
   AccountStoreStatus,

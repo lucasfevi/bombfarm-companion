@@ -1,36 +1,56 @@
 /**
  * Proof that the `farm-rate.ts` basis seam is a byte-identical refactor, not a rewrite.
  *
- * RE-RECORDED 2026-08-23 for the gate boss's seconds. `propsPerHour` was `3600 × propsPerSec`,
- * which charges nothing for the boss even though `clearSecs` counts it and the boss drops no
- * props — so a gate row's own two numbers described different clocks, and every rate derived from
- * `propsPerHour` read high by the boss's share of the cycle (2% at the first gate, ~12% at 50 on
- * this corpus).
+ * RE-RECORDED 2026-08-23 for TWO changes landing together on one branch, re-recorded once on top
+ * of the crit-chance capture below rather than merged into it.
  *
- * Footprint: **the 60 gate rows only, and on them only the seven props-driven columns** —
- * `propsPerHour`, `goldPerHour`, `chestsPerHour`, `gemsPerHour`, `timePiecesPerHour`,
- * `stoneChestsPerHour`, `xpPerHour`. All 540 non-gate rows are byte-identical, and so is
- * `heroFacts`. `clearSecs`, `cyclesPerHour`, `keysPerHour`, `heroesOnField`, `concurrencyScale`
+ * 1. `FarmRateRow.fieldContentionPct` — a new column, so it appears on all 600 rows and nothing
+ *    else moves for it. It reports how OFTEN the field is full with a rested hero benched, and
+ *    deliberately does not correct what that costs: the cost depends on which hero takes a freed
+ *    slot and the game fixes no such rule. A version that did correct throughput was written,
+ *    measured and dropped — it scored well against a simulation deploying the strongest hero
+ *    first, which is an automation's behaviour rather than the game's, and read ~12% off once
+ *    that assumption became uniformly-random deployment.
+ * 2. The gate boss's seconds. `propsPerHour` was `3600 × propsPerSec`, charging nothing for the
+ *    boss even though `clearSecs` counts it and the boss drops no props — so a gate row's own two
+ *    numbers described different clocks and every rate derived from `propsPerHour` read high by
+ *    the boss's share of the cycle (~2% at the first gate, ~12% at 50 on this corpus).
+ *
+ * Footprint, verified field by field: `heroFacts` is byte-identical on all 5 heroes.
+ * `fieldContentionPct` is added to all 600 rows. Beyond that **only the 60 gate rows move, and on
+ * them only the seven props-driven columns** — `propsPerHour`, `goldPerHour`, `chestsPerHour`,
+ * `gemsPerHour`, `timePiecesPerHour`, `stoneChestsPerHour`, `xpPerHour`. All 540 non-gate rows are
+ * untouched, and `clearSecs`, `cyclesPerHour`, `keysPerHour`, `heroesOnField`, `concurrencyScale`
  * and `expectedHtk` do not move on any row, gate included: the boss's seconds were always in
- * `clearSecs`: only the loot rates ignored them.
+ * `clearSecs`; only the loot rates ignored them.
  *
  * Non-gate rows are held bit-exact on purpose. `cyclesPerHour × propCount` is algebraically the
  * same value as `3600 × propsPerSec` off a gate, but the rearrangement is not bit-equal in
  * IEEE754, so the production expression branches on `line.gate` rather than being simplified.
  * A diff here that touches a non-gate row means that branch was flattened.
  *
- * PREVIOUSLY RE-RECORDED 2026-08-23 for `FarmRateRow.fieldContentionPct`. The smallest re-record this file
- * has taken: **exactly one field moved, and it is the new one**. `heroFacts` is byte-identical on
- * all 5 heroes, and so is every pre-existing row column on all 600 rows — `concurrencyScale`,
- * `heroesOnField` and every throughput column included.
+ * PREVIOUSLY RE-RECORDED 2026-08-23 for the crit-chance ability shape (Olho Clínico and Presságio Mortal
+ * restated in flat crit POINTS) and, on the gate rows only, the refreshed stone/time chest rates.
+ * Diffed field by field against the previous capture:
  *
- * That footprint is the point rather than an accident. The new field reports how OFTEN the field
- * is full with a rested hero benched; it deliberately does not correct what that costs, because
- * the cost depends on which hero takes a freed slot and the game fixes no such rule. A version
- * that did correct throughput was written, measured and dropped: it scored well against a
- * simulation that deployed the strongest hero first, which is an automation's behaviour rather
- * than the game's, and read ~12% off once that assumption was replaced with uniformly-random
- * deployment. Anything here other than one added column would mean that correction had leaked in.
+ * - `heroFacts` — exactly ONE field moved, `avgHitBase`, and only on the 2 of 5 heroes carrying
+ *   Olho Clínico (Bellatrix and Jon, both rank 20). That is the whole correct footprint: the
+ *   ability is a crit-chance term, crit chance reaches throughput only through the average hit,
+ *   and nothing else in `heroFacts` depends on it. `uptime` is byte-identical on all 5 — the
+ *   load-bearing negative, since drain is untouched by this patch and an `uptime` move would mean
+ *   the change had leaked into the energy path. `penetrationPct`, `fuseSecs`, `walkSpeedCells`,
+ *   `cycleSecs`, `plantsPerSec`, `plantsPerSecByAto`, `blocksPerBomb`, `heroLuckPct`,
+ *   `veiaOuroLevel`, `fortunaLevel` and `degenerate` are byte-identical too.
+ * - `rows` — every throughput column downstream of the hit moved on the 580 reachable rows
+ *   (row 42: 118,767 → 138,139 gold/hr, `clearSecs` 478.6 → 411.5 — a rank-20 Olho hero's crit
+ *   rate goes from `roll + 43%` to `roll + 40 points`, so the squad clears materially faster).
+ *   `stoneChestsPerHour` and `timePiecesPerHour` moved on all 60 GATE rows for a second,
+ *   independent reason — the wiki refresh took the stone chest from 0.005% to 0.05% and the time
+ *   chest from 0.15% to 0.1%; `gemsPerHour` moved on 59 of those from the clear-rate change
+ *   alone, its own rate being unchanged. `heroesOnField` moved on only 4 rows, `mitigationPct`,
+ *   `ato`, `gate`, `locked`, `oneShot`, `infeasible`, `itemLevels`, `itemLevelLabel`,
+ *   `jaulaEarlyCapPct`, `jaulaWindowSecs`, `gateTimerSecs`, `fortunaAura` and `concurrencyScale`
+ *   not at all.
  *
  * RE-RECORDED 2026-08-21 for the additive drain-reduction fix: a hero's own drain reduction and
  * the team's used to be combined multiplicatively; measurement showed they add instead, each

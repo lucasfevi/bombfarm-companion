@@ -1,7 +1,6 @@
 'use client';
 
 import type { TeamPlan } from '@bombfarm/domain/team-plan/types';
-import type { PointAlloc } from '@bombfarm/domain/gear';
 import { Accordion, Panel, Tooltip } from '@bombfarm/ui';
 import { panelHClass, panelTitleClass, tipClass } from '@bombfarm/ui/panel-field.recipe';
 import { accordionStackClass } from '@bombfarm/ui/accordion.recipe';
@@ -10,6 +9,7 @@ import { sub } from '@/shared/i18n';
 import { usePlannerStore, selectHeroes, selectInventoryItems } from '@/shared/stores';
 import { shortHeroRecordId } from '@/shared/lib/hero-identity';
 import { buildGearFlowRows, groupGearFlowRows } from '@/features/team-plan/model/gear-flow-rows';
+import { pointsResetView } from '@/features/team-plan/model/points-reset-view';
 import { HeroIdentityChip } from '@/shared/game-art';
 import { HeroDetailPanel } from './hero-detail-panel';
 import { AbbreviatedNumber } from './abbreviated-number';
@@ -67,13 +67,7 @@ export function HeroDeltaTable({ t, lang, plan }: { t: Strings; lang: Lang; plan
                   id: shortHeroRecordId(hero),
                 })
               : row.heroName;
-            const pointReset = plan.pointResets.find((reset) => reset.heroId === row.heroId);
-            const pointsReset =
-              pointReset && hero
-                ? // `pointReset.pts` is always a full absolute PointAlloc (buildPointResets uses
-                  // `finalPtsByHeroId[heroId]`) — the domain type just widens it for storage ease.
-                  { before: hero.pts, after: pointReset.pts as PointAlloc, level: hero.level }
-                : null;
+            const pointsReset = pointsResetView(plan, row);
 
             return (
               <Accordion.Item key={row.heroId} value={row.heroId}>
