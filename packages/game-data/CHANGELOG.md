@@ -1,5 +1,18 @@
 # @bombfarm/game-data
 
+## 0.0.7
+
+### Patch Changes
+
+- a844381: Remove the process-memory reading path from the desktop app. The diagnostics snapshot panel now
+  sources its gold/phase/wave reading from the in-run live data source instead of scanning the
+  game's process memory directly, and the app no longer depends on a native FFI library to read a
+  running game's memory. Account data was never sourced from process memory in the first place — it
+  has always come from the authenticated periodic sync — so this has no effect on account, hero,
+  skill, casa, or inventory data.
+- Updated dependencies [a844381]
+  - @bombfarm/contracts@0.3.4
+
 ## 0.0.6
 
 ### Patch Changes
