@@ -13,7 +13,7 @@
 import { readFileSync, readdirSync } from 'node:fs';
 import { extname, join, resolve, sep } from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { CONSENT_TEXT, CONSENT_TEXT_VERSION } from '@bombfarm/game-api';
+import { CONSENT_TEXT, CONSENT_TEXT_VERSION, type ConsentText } from '@bombfarm/game-api';
 
 const DESKTOP_ROOT = resolve(__dirname, '../..');
 const RENDERER_ROOT = join(DESKTOP_ROOT, 'renderer');
@@ -365,7 +365,10 @@ describe('Guard 2b — CONSENT_TEXT is bilingual, both locales tied to one versi
 
   it('pt-BR is not accidentally the en text', () => {
     expect(CONSENT_TEXT['pt-BR'].title).not.toBe(CONSENT_TEXT.en.title);
-    expect(CONSENT_TEXT['pt-BR'].body.join('\n')).not.toBe(CONSENT_TEXT.en.body.join('\n'));
+    const flatten = (text: ConsentText): string =>
+      text.body.map((clause) => `${clause.heading}\n${clause.text}`).join('\n');
+
+    expect(flatten(CONSENT_TEXT['pt-BR'])).not.toBe(flatten(CONSENT_TEXT.en));
   });
 });
 

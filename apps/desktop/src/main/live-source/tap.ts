@@ -149,6 +149,14 @@ export class Tap {
     this.#schedulePoll(0);
   }
 
+  /** Re-checks consent right away instead of leaving it to the next scheduled poll — called when
+   *  the consent record changes, so a fresh grant does not sit idle for up to a full interval. */
+  pollNow(): void {
+    if (this.#stopped) return;
+    if (this.#pollTimer !== null) this.#deps.clock.clearTimeout(this.#pollTimer);
+    this.#schedulePoll(0);
+  }
+
   async teardown(): Promise<void> {
     if (this.#stopped) return;
     this.#stopped = true;
@@ -216,11 +224,32 @@ export class Tap {
     }, delayMs);
   }
 
+  /** Consent is the first thing checked, before the process list is ever touched — enumerating
+   *  and identifying the player's running processes is itself something consent must cover, not
+   *  just the eventual attach. */
   async #pollTick(): Promise<void> {
     if (this.#stopped) return;
 
+    if (!this.#deps.consent()) {
+      this.#reportGap('consentMissing');
+      if (!this.#isStopped()) {
+        this.#schedulePoll(this.#deps.pollIntervalMs ?? DEFAULT_POLL_INTERVAL_MS);
+      }
+      return;
+    }
+
     const found = await this.#deps.processes.list(this.#deps.processName);
     if (this.#isStopped()) return;
+
+    // Re-checked after the await: listing processes is a subprocess spawn, and a revoke landing
+    // during it must not be overtaken by an attach this tick already decided to make.
+    if (!this.#deps.consent()) {
+      this.#reportGap('consentMissing');
+      if (!this.#isStopped()) {
+        this.#schedulePoll(this.#deps.pollIntervalMs ?? DEFAULT_POLL_INTERVAL_MS);
+      }
+      return;
+    }
 
     if (this.#session && this.#activePid !== null) {
       if (!this.#teardownInFlight && !found.some((p) => p.pid === this.#activePid)) {
@@ -239,11 +268,7 @@ export class Tap {
           pid: target.pid,
           candidateCount: found.length,
         });
-        if (!this.#deps.consent()) {
-          this.#reportGap('consentMissing');
-        } else {
-          await this.#attemptAttach(target.pid);
-        }
+        await this.#attemptAttach(target.pid);
       }
     }
 

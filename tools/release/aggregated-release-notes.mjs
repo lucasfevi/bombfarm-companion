@@ -10,7 +10,7 @@ import { extractChangelogSection } from './changelog-section.mjs';
 const DESKTOP_PACKAGE_NAME = '@bombfarm/desktop';
 
 export const ANTIVIRUS_NOTICE =
-  "> **Antivirus notice.** Your antivirus may flag or quarantine this build. The desktop companion attaches to the running Bomb Farm client to read the data that client is already exchanging with the game's server, and attaching to another running program is the technique behavior-based detection is built to look for. The warning is about that technique, not about a virus.";
+  "> **Antivirus notice.** Your antivirus may flag or quarantine this build. The desktop companion attaches to the running Bomb Farm client to read the data that client is already exchanging with the game's server, and attaching to another running program is the technique behavior-based detection looks for. The warning is about that technique, not about a virus.";
 
 /**
  * @param {VersionDiff} diff

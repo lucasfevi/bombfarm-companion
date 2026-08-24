@@ -59,6 +59,8 @@ function applyConsentEvent(event: ConsentEvent): ConsentRecord {
   consentStore?.write(next);
   emitEvent('consent:changed', next);
   accountRefresh?.onConsentChanged(next);
+  liveSource?.pollNow();
+  gameReader?.pollNow();
   return next;
 }
 
@@ -220,14 +222,20 @@ async function bootstrap(): Promise<void> {
     items: initialRestore.payload.fidelity.items.status,
   });
 
-  gameReader = new GameReaderService(userDataDir, {}, { isPackaged: resolveAppEnv().isPackaged });
-  gameReader.setAccountStore(accountStore);
-
   // MP2 F2 — the consented game-API account reader. Independent of the game reader's own
   // memory/fixture ticking: consent gates every request structurally (LAR-01/AD-025/AD-028),
   // so this cycle issues nothing at all until the player has accepted the first-run modal (T9).
-  // Constructed before registerIpcHandlers() so the consent:* handlers never see a null store.
+  // Constructed before registerIpcHandlers() so the consent:* handlers never see a null store,
+  // and before the game reader so its own live-mode process lookups can be gated by the same
+  // predicate the live tap already checks.
   consentStore = createConsentStore(accountOpen.db);
+
+  gameReader = new GameReaderService(
+    userDataDir,
+    {},
+    { isPackaged: resolveAppEnv().isPackaged, consent: createLiveConsentGate(consentStore) },
+  );
+  gameReader.setAccountStore(accountStore);
 
   // MP3 F4 (AD-052/AD-053) — same db handle consentStore takes. Resolved ONCE, here, inside
   // whenReady() (bootstrap()'s own calling context), where app.getLocale() is documented to be

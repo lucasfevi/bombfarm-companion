@@ -16,7 +16,7 @@ Monorepo with `@bombfarm/desktop` (Electron) and `@bombfarm/web` (Next.js static
 
 ## Antivirus
 
-Your antivirus may flag or quarantine the desktop companion. The companion attaches to the running Bomb Farm client to read the data that client is already exchanging with the game's server, and attaching to another running program is the technique behavior-based detection is built to look for. The warning is about that technique, not about a virus.
+Your antivirus may flag or quarantine the desktop companion. The companion attaches to the running Bomb Farm client to read the data that client is already exchanging with the game's server, and attaching to another running program is the technique behavior-based detection looks for. The warning is about that technique, not about a virus.
 
 The companion sends nothing of its own to the game, does not modify the game client, and has no code path that writes to your account. Attaching is disclosed before it happens and cannot start until you allow it, and you can withdraw that permission at any time.
 

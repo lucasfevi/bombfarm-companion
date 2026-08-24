@@ -58,6 +58,13 @@ function ageMsSince(sinceAtIso: string | undefined, nowMs: number): number | und
 export class GameReaderService {
   private readonly config: GameReaderConfig;
   private readonly isPackaged: boolean;
+  /** Checked at the top of every live tick, before `findProcessId` ever runs — enumerating and
+   *  identifying the player's game process is itself something consent must cover, the same gate
+   *  the live tap applies to its own process lister. Defaults to *denied*: a caller that forgets
+   *  to wire this probes the player's processes ungated, which is the defect this field exists to
+   *  prevent, so the safe direction is the one that costs a test rather than the one that costs a
+   *  player. */
+  private readonly consent: () => boolean;
   private status: GameStatusInfo;
   private payload: GameSnapshotPayload;
   private timer: NodeJS.Timeout | null = null;
@@ -106,9 +113,10 @@ export class GameReaderService {
   constructor(
     _userDataDir: string,
     config: Partial<GameReaderConfig> = {},
-    deps: { isPackaged?: boolean } = {},
+    deps: { isPackaged?: boolean; consent?: () => boolean } = {},
   ) {
     this.isPackaged = deps.isPackaged ?? false;
+    this.consent = deps.consent ?? (() => false);
     const mode = config.mode ?? resolveDefaultMode(this.isPackaged);
     this.config = { ...DEFAULT_CONFIG, ...config, mode };
 
@@ -177,6 +185,18 @@ export class GameReaderService {
       clearTimeout(this.timer);
       this.timer = null;
     }
+  }
+
+  /** Re-checks consent right away instead of leaving it to the next scheduled poll — called from
+   *  the same consent-changed path the live tap's own `pollNow()` is, so a fresh grant is not
+   *  reflected only up to `pollDetachedMs` later. */
+  pollNow(): void {
+    if (this.stopped) return;
+    if (this.timer) {
+      clearTimeout(this.timer);
+      this.timer = null;
+    }
+    this.scheduleNext(0);
   }
 
   getStatus(): GameStatusInfo {
@@ -279,6 +299,17 @@ export class GameReaderService {
    * previous snapshot in place rather than replaying a frozen one as `connected`.
    */
   private tickLive(): void {
+    if (!this.consent()) {
+      this.latestLiveTick = null;
+      this.lastProcessedFrameSequence = null;
+      this.updateStatus({
+        status: 'not_running',
+        updatedAt: new Date().toISOString(),
+        processName: this.config.processName,
+      });
+      return;
+    }
+
     const pid = findProcessId(this.config.processName);
     if (!pid) {
       this.latestLiveTick = null;

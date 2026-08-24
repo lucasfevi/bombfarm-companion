@@ -1,5 +1,5 @@
 export { CONSENT_TEXT, CONSENT_TEXT_VERSION, consentTextFor } from './consent-text.js';
-export type { ConsentText } from './consent-text.js';
+export type { ConsentClause, ConsentText } from './consent-text.js';
 export {
   initialConsent,
   isGranted,

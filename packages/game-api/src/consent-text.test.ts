@@ -2,17 +2,18 @@ import { createHash } from 'node:crypto';
 import { describe, expect, it } from 'vitest';
 import { CONSENT_TEXT, CONSENT_TEXT_VERSION, consentTextFor } from './consent-text.js';
 
-/** The sha256 of each locale's `body.join('\n')` at each `version` it has ever shipped under.
- *  Recompute and add a new key — for BOTH locales — when `CONSENT_TEXT_VERSION` is bumped, so
- *  editing either language's text without bumping the shared version fails here. `en`'s `1` entry
- *  predates the pt-BR translation, which shipped starting at version 2. */
+/** The sha256 of each locale's `body.map((c) => \`${c.heading}\n${c.text}\`).join('\n')` at each
+ *  `version` it has ever shipped under. Recompute and add a new key — for BOTH locales — when
+ *  `CONSENT_TEXT_VERSION` is bumped, so editing either language's text without bumping the shared
+ *  version fails here. `en`'s `1` entry predates the pt-BR translation, which shipped starting at
+ *  version 2. */
 const KNOWN_BODY_DIGESTS: Readonly<Record<'en' | 'pt-BR', Readonly<Record<number, string>>>> = {
   en: {
     1: '4353ef5f05a0ae24b720b46af0f8967949e8b590495d32d45b727ada1b212779',
-    2: 'aa131a69c42e9161560254449cb5fe70b05f5bfbb140963f86fe82e65abcfbf5',
+    2: '6821259f4832b5e77f0ce6f5b8d8c8ddd8dcda0f91b1887e4308df1db422aac2',
   },
   'pt-BR': {
-    2: 'ac31532fac1ec12785a75a37b0de0fe1fafda091a64e61fc422f5ec675277105',
+    2: '1aa62c031159c769ae95530b147d7dc2f9eafdc3229f06e27a7d3d56ce0d886d',
   },
 };
 
@@ -26,8 +27,8 @@ describe.each([
     expect(text.declineLabel.length).toBeGreaterThan(0);
   });
 
-  it('carries exactly the seven clauses', () => {
-    expect(text.body).toHaveLength(7);
+  it('carries exactly the five clauses', () => {
+    expect(text.body).toHaveLength(5);
   });
 
   it('is stamped with the shared CONSENT_TEXT_VERSION', () => {
@@ -35,7 +36,9 @@ describe.each([
   });
 
   it('binds body to its version — editing the text without bumping CONSENT_TEXT_VERSION fails', () => {
-    const digest = createHash('sha256').update(text.body.join('\n')).digest('hex');
+    const digest = createHash('sha256')
+      .update(text.body.map((clause) => `${clause.heading}\n${clause.text}`).join('\n'))
+      .digest('hex');
     expect(KNOWN_BODY_DIGESTS[locale][text.version]).toBeDefined();
     expect(digest).toBe(KNOWN_BODY_DIGESTS[locale][text.version]);
   });
@@ -54,116 +57,82 @@ describe('consentTextFor', () => {
 describe('CONSENT_TEXT.en — clause content', () => {
   const { body } = CONSENT_TEXT.en;
 
-  it('states WHAT is used — the session token the game itself already uses', () => {
-    const clause = body.find((p) => p.startsWith('What:'));
+  it('states the attach, and that it reads traffic the client already exchanges', () => {
+    const clause = body.find((c) => c.heading === 'Reads your account.');
     expect(clause).toBeDefined();
-    expect(clause).toMatch(/session token/i);
-    expect(clause).toMatch(/game itself already/i);
+    expect(clause?.text).toMatch(/attaches to the running game client/i);
+    expect(clause?.text).toMatch(/traffic that client is already exchanging/i);
   });
 
-  it('states WHERE it is sent — api.bombfarm.net and nowhere else', () => {
-    const clause = body.find((p) => p.startsWith('Where:'));
+  it('states it sends nothing of its own, and cannot change the account, the client, or progress', () => {
+    const clause = body.find((c) => c.heading === 'Never writes.');
     expect(clause).toBeDefined();
-    expect(clause).toContain('api.bombfarm.net');
-    expect(clause).toMatch(/nowhere else|never sent to us or anyone else/i);
+    expect(clause?.text).toMatch(/sends nothing of its own/i);
+    expect(clause?.text).toMatch(/change your account, your game client, or your progress/i);
   });
 
-  it('states ATTACHING — what the tap observes, and that it sends nothing and modifies neither the client nor game state', () => {
-    const clause = body.find((p) => p.startsWith('Attaching:'));
+  it('states the token goes to one host and never into a log', () => {
+    const clause = body.find((c) => c.heading === 'Your token stays put.');
     expect(clause).toBeDefined();
-    expect(clause).toMatch(/observes the traffic/i);
-    expect(clause).toMatch(/sends nothing of its own/i);
-    expect(clause).toMatch(/does not modify the.*game client/i);
-    expect(clause).toMatch(/does not modify your game state/i);
-  });
-
-  it('states access is READ-ONLY, with no code path that writes to the account', () => {
-    const clause = body.find((p) => p.startsWith('Read-only:'));
-    expect(clause).toBeDefined();
-    expect(clause).toMatch(/read-only/i);
-    expect(clause).toMatch(/changes nothing/i);
-    expect(clause).toMatch(/no code.*path that writes to your account/i);
+    expect(clause?.text).toContain('api.bombfarm.net');
+    expect(clause?.text).toMatch(/never into a log/i);
   });
 
   it('states ANTIVIRUS may flag or quarantine the companion, and why', () => {
-    const clause = body.find((p) => p.startsWith('Antivirus:'));
+    const clause = body.find((c) => c.heading === 'Antivirus may flag or quarantine it.');
     expect(clause).toBeDefined();
-    expect(clause).toMatch(/flag or quarantine/i);
-    expect(clause).toContain(
-      'attaching to another running program is the technique behavior-based detection is built to look for',
+    expect(clause?.text).toContain(
+      'Attaching to another running program is the technique behavior-based detection looks for',
     );
   });
 
-  it('states ACCOUNT RISK — attaching is detectable in principle, and the consequence lands on the player', () => {
-    const clause = body.find((p) => p.startsWith('Account risk:'));
+  it('states it is detectable in principle, the consequence lands on the player, and it can be turned off', () => {
+    const clause = body.find((c) => c.heading === 'The risk is yours.');
     expect(clause).toBeDefined();
-    expect(clause).toMatch(/detectable in principle/i);
-    expect(clause).toMatch(/consequence lands on your account/i);
-  });
-
-  it('states the decision is REVERSIBLE, and that reversing it detaches from the game client', () => {
-    const clause = body.find((p) => p.startsWith('Reversible:'));
-    expect(clause).toBeDefined();
-    expect(clause).toMatch(/turn this off later/i);
-    expect(clause).toMatch(/detaches from the game client/i);
+    expect(clause?.text).toMatch(/detectable in principle/i);
+    expect(clause?.text).toMatch(/consequence falls on your account/i);
+    expect(clause?.text).toMatch(/turn it off at any time/i);
   });
 });
 
 describe('CONSENT_TEXT["pt-BR"] — clause content, the same facts in Portuguese', () => {
   const { body } = CONSENT_TEXT['pt-BR'];
 
-  it('states WHAT is used — the session token the game itself already uses', () => {
-    const clause = body.find((p) => p.startsWith('O que:'));
+  it('states the attach, and that it reads traffic the client already exchanges', () => {
+    const clause = body.find((c) => c.heading === 'Lê sua conta.');
     expect(clause).toBeDefined();
-    expect(clause).toMatch(/token de sessão/i);
-    expect(clause).toMatch(/próprio jogo já salva/i);
+    expect(clause?.text).toMatch(/conectando-se ao cliente do jogo em execução/i);
+    expect(clause?.text).toMatch(/tráfego que esse cliente já troca/i);
   });
 
-  it('states WHERE it is sent — api.bombfarm.net and nowhere else', () => {
-    const clause = body.find((p) => p.startsWith('Para onde:'));
+  it('states it sends nothing of its own, and cannot change the account, the client, or progress', () => {
+    const clause = body.find((c) => c.heading === 'Nunca escreve.');
     expect(clause).toBeDefined();
-    expect(clause).toContain('api.bombfarm.net');
-    expect(clause).toMatch(/para mais nenhum lugar|nunca é enviado para nós/i);
+    expect(clause?.text).toMatch(/não envia nada de si mesmo/i);
+    expect(clause?.text).toMatch(/alterar sua conta, o cliente do jogo ou seu progresso/i);
   });
 
-  it('states ATTACHING — what the tap observes, and that it sends nothing and modifies neither the client nor game state', () => {
-    const clause = body.find((p) => p.startsWith('Conexão ao jogo:'));
+  it('states the token goes to one host and never into a log', () => {
+    const clause = body.find((c) => c.heading === 'Seu token não sai do lugar.');
     expect(clause).toBeDefined();
-    expect(clause).toMatch(/observa o tráfego/i);
-    expect(clause).toMatch(/não envia nada por conta própria/i);
-    expect(clause).toMatch(/não modifica o programa do jogo/i);
-    expect(clause).toMatch(/não modifica o estado da sua partida/i);
-  });
-
-  it('states access is READ-ONLY, with no code path that writes to the account', () => {
-    const clause = body.find((p) => p.startsWith('Somente leitura:'));
-    expect(clause).toBeDefined();
-    expect(clause).toMatch(/somente leitura|apenas lê/i);
-    expect(clause).toMatch(/não altera nada/i);
-    expect(clause).toMatch(/não existe nenhum.*caminho no código que escreva na sua conta/i);
+    expect(clause?.text).toContain('api.bombfarm.net');
+    expect(clause?.text).toMatch(/nunca para um log/i);
   });
 
   it('states ANTIVIRUS may flag or quarantine the companion, and why', () => {
-    const clause = body.find((p) => p.startsWith('Antivírus:'));
+    const clause = body.find((c) => c.heading === 'O antivírus pode sinalizar ou colocar em quarentena.');
     expect(clause).toBeDefined();
-    expect(clause).toMatch(/sinalizar ou colocar.*em quarentena/i);
-    expect(clause).toContain(
-      'conectar-se a outro programa em execução é justamente a técnica que a detecção por comportamento procura',
+    expect(clause?.text).toContain(
+      'Conectar-se a outro programa em execução é a técnica que a detecção por comportamento procura',
     );
   });
 
-  it('states ACCOUNT RISK — attaching is detectable in principle, and the consequence lands on the player', () => {
-    const clause = body.find((p) => p.startsWith('Risco para a conta:'));
+  it('states it is detectable in principle, the consequence lands on the player, and it can be turned off', () => {
+    const clause = body.find((c) => c.heading === 'O risco é seu.');
     expect(clause).toBeDefined();
-    expect(clause).toMatch(/detectável em princípio/i);
-    expect(clause).toMatch(/consequência recai sobre a sua conta/i);
-  });
-
-  it('states the decision is REVERSIBLE, and that reversing it detaches from the game client', () => {
-    const clause = body.find((p) => p.startsWith('Reversível:'));
-    expect(clause).toBeDefined();
-    expect(clause).toMatch(/desativar isso depois/i);
-    expect(clause).toMatch(/a conexão com o programa do jogo é encerrada/i);
+    expect(clause?.text).toMatch(/detectável em princípio/i);
+    expect(clause?.text).toMatch(/consequência recai sobre a sua conta/i);
+    expect(clause?.text).toMatch(/desativar quando quiser/i);
   });
 });
 
@@ -177,7 +146,9 @@ describe('CONSENT_TEXT — the two locales are not accidentally the same text', 
   });
 
   it('the pt-BR body is not byte-identical to the en body', () => {
-    expect(CONSENT_TEXT['pt-BR'].body.join('\n')).not.toBe(CONSENT_TEXT.en.body.join('\n'));
+    const flatten = (body: typeof CONSENT_TEXT.en.body) =>
+      body.map((c) => `${c.heading}\n${c.text}`).join('\n');
+    expect(flatten(CONSENT_TEXT['pt-BR'].body)).not.toBe(flatten(CONSENT_TEXT.en.body));
   });
 
   it('the pt-BR title and labels are not byte-identical to en', () => {

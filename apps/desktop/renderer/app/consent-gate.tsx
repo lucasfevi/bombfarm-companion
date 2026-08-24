@@ -42,7 +42,10 @@ export function ConsentGate({
           </Button>
         }
       >
-        <SettingsRow label={t.consentGateLanguageLabel}>
+        <SettingsRow
+          label={t.consentGateLanguageLabel}
+          className="[&_label_[data-select]]:w-56"
+        >
           <Select
             value={locale}
             onChange={(event) => {

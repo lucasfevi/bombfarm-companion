@@ -20,11 +20,23 @@ function unwrap(source) {
 }
 
 /**
+ * Case-insensitive substring check — a clause that opens a sentence with `needle` capitalizes
+ * its first letter, and that alone must not read as a different cause or consequence.
+ *
+ * @param {string} haystack
+ * @param {string} needle
+ * @returns {boolean}
+ */
+function containsCaseInsensitive(haystack, needle) {
+  return haystack.toLowerCase().includes(needle.toLowerCase());
+}
+
+/**
  * The release-note preamble is the one surface that is a code constant rather than prose, so the
  * two claims every surface owes the reader are read off it instead of retyped here — a reworded
  * notice cannot leave this guard asserting wording no surface uses any more.
  */
-const CAUSE = 'attaching to another running program is the technique behavior-based detection is built to look for';
+const CAUSE = 'attaching to another running program is the technique behavior-based detection looks for';
 const CONSEQUENCE = 'flag or quarantine';
 
 /**
@@ -32,7 +44,7 @@ const CONSEQUENCE = 'flag or quarantine';
  * one fact the cross-surface guard below must not let a translation silently drop.
  */
 const CAUSE_PT_BR =
-  'conectar-se a outro programa em execução é justamente a técnica que a detecção por comportamento procura';
+  'conectar-se a outro programa em execução é a técnica que a detecção por comportamento procura';
 
 const CONSENT_TEXT_PATH = fileURLToPath(new URL('../../packages/game-api/src/consent-text.ts', import.meta.url));
 
@@ -43,24 +55,24 @@ const surfaces = {
 
 describe('the antivirus notice names the same cause and consequence on every surface', () => {
   it('the release-note preamble carries both claims the other surfaces are measured against', () => {
-    expect(ANTIVIRUS_NOTICE).toContain(CAUSE);
-    expect(ANTIVIRUS_NOTICE).toContain(CONSEQUENCE);
+    expect(containsCaseInsensitive(ANTIVIRUS_NOTICE, CAUSE)).toBe(true);
+    expect(containsCaseInsensitive(ANTIVIRUS_NOTICE, CONSEQUENCE)).toBe(true);
   });
 
   for (const [label, path] of Object.entries(surfaces)) {
     const source = unwrap(readFileSync(path, 'utf8'));
 
     it(`${label} names attaching-to-a-running-program as the detection cause`, () => {
-      expect(source).toContain(CAUSE);
+      expect(containsCaseInsensitive(source, CAUSE)).toBe(true);
     });
 
     it(`${label} says the app may be flagged or quarantined`, () => {
-      expect(source).toContain(CONSEQUENCE);
+      expect(containsCaseInsensitive(source, CONSEQUENCE)).toBe(true);
     });
   }
 
   it('the pt-BR consent disclosure names the same detection cause, in Portuguese', () => {
     const source = unwrap(readFileSync(CONSENT_TEXT_PATH, 'utf8'));
-    expect(source).toContain(CAUSE_PT_BR);
+    expect(containsCaseInsensitive(source, CAUSE_PT_BR)).toBe(true);
   });
 });
