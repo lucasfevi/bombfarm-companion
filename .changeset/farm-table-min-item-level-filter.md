@@ -1,6 +1,6 @@
 ---
-'@bombfarm/domain': minor
-'@bombfarm/web': minor
+"@bombfarm/domain": minor
+"@bombfarm/web": minor
 ---
 
 Farm Ranking: filter the board by minimum item level
