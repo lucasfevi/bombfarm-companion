@@ -139,7 +139,6 @@ function handComputeRow(stoneHp: number, mitig: number, goldComum: number, phase
   const concurrencyScale = heroesOnField > 0 ? Math.min(1, squad.fieldSlots / heroesOnField) : 1;
   const propsPerSec = concurrencyScale * shareDenom;
   const bossPerSec = concurrencyScale * bossRateSum;
-  const propsPerHour = 3600 * propsPerSec;
 
   const expectedHtk = perHero.reduce((sum, x) => {
     const share = shareDenom > 0 ? x.term / shareDenom : 0;
@@ -156,6 +155,9 @@ function handComputeRow(stoneHp: number, mitig: number, goldComum: number, phase
   const propCount = propCountForAto(ato);
   const clearSecs = propCount / propsPerSec + (gate ? 1 / bossPerSec : 0);
   const cyclesPerHour = Number.isFinite(clearSecs) && clearSecs > 0 ? 3600 / clearSecs : 0;
+  // The boss is part of a gate cycle and drops nothing, so the hourly prop rate follows the
+  // cycle, not the raw prop rate. Non-gate keeps the plain expression bit-for-bit.
+  const propsPerHour = gate ? cyclesPerHour * propCount : 3600 * propsPerSec;
 
   const eGold = goldComum * goldShareFactor;
   const goldMult = squad.teamCoinMult * (1 + fortunaAura) * 1; // bonus = 1 ('off')
@@ -297,17 +299,24 @@ describe('phase 10 — gate hand-computed values (spec.md P1-2 AC-2)', () => {
     expect(propHp(line.hp, BOSS_HP_MULT_WIKI)).toBe(line.hp * 10);
   });
 
-  it('the boss pays ZERO gold/chest/gem/time/xp — only clearSecs/cyclesPerHour/keysPerHour differ from a props-only clear', () => {
-    // Recompute clearSecs with the boss term removed (props-only clear, as on a non-gate row).
+  it('the boss pays ZERO loot of its own, but its seconds still cost every hourly rate', () => {
+    // The same row with the boss term removed (a props-only clear, as on a non-gate row).
     const propsOnlyHand = handComputeRow(line.hp, line.mitig, line.goldComum, 10, false, line.ato);
-    // Every loot column is identical whether or not the boss term is included in clearSecs —
-    // because loot is driven by propsPerHour, which never includes the boss.
-    expect(propsOnlyHand.propsPerHour).toBeCloseTo(hand.propsPerHour, 9);
-    expect(propsOnlyHand.goldPerHour).toBeCloseTo(hand.goldPerHour, 6);
-    expect(propsOnlyHand.chestsPerHour).toBeCloseTo(hand.chestsPerHour, 9);
-    expect(propsOnlyHand.xpPerHour).toBeCloseTo(hand.xpPerHour, 6);
-    // Only clearSecs (and what derives from it) differs — the boss term genuinely adds seconds.
     expect(propsOnlyHand.clearSecs).toBeLessThan(hand.clearSecs);
+
+    // PER CYCLE the boss changes nothing: it drops no props, so it pays no gold, chest or XP.
+    const perCycle = (r: typeof hand, rate: number) => rate / (3600 / r.clearSecs);
+    expect(perCycle(hand, hand.propsPerHour)).toBeCloseTo(perCycle(propsOnlyHand, propsOnlyHand.propsPerHour), 9);
+    expect(perCycle(hand, hand.goldPerHour)).toBeCloseTo(perCycle(propsOnlyHand, propsOnlyHand.goldPerHour), 6);
+    expect(perCycle(hand, hand.xpPerHour)).toBeCloseTo(perCycle(propsOnlyHand, propsOnlyHand.xpPerHour), 6);
+
+    // PER HOUR everything is lower, by exactly the boss's share of the cycle — fewer cycles fit.
+    const cycleRatio = propsOnlyHand.clearSecs / hand.clearSecs;
+    expect(cycleRatio).toBeLessThan(1);
+    expect(hand.propsPerHour / propsOnlyHand.propsPerHour).toBeCloseTo(cycleRatio, 12);
+    expect(hand.goldPerHour / propsOnlyHand.goldPerHour).toBeCloseTo(cycleRatio, 12);
+    expect(hand.chestsPerHour / propsOnlyHand.chestsPerHour).toBeCloseTo(cycleRatio, 12);
+    expect(hand.xpPerHour / propsOnlyHand.xpPerHour).toBeCloseTo(cycleRatio, 12);
   });
 });
 

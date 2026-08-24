@@ -163,6 +163,13 @@ const fixture = JSON.parse(readFileSync(fixturePath, 'utf8')) as {
  * on it but said nothing, and the reset table rendered an unclamped BEFORE against a clamped
  * AFTER. The new string is the one place that explains it and names the fix. No existing key
  * changed: the counter, `pointsUnspentBanked` and the reset-advice line are all untouched.
+ *
+ * The field-contention notice (2026-08-23) adds `farmRankingContentionTitle` and
+ * `farmRankingContentionDesc` (both in `KEYS_ADDED`). The farm board's field cap is now priced
+ * over the distribution of how many heroes hold full energy rather than over their mean, which
+ * makes "how often is a rested hero benched behind a full field" a number the board actually
+ * knows (`FarmRateRow.fieldContentionPct`). The banner is the one place that reports it and names
+ * the fix — dropping the weakest heroes from the rotation pool. No existing key changed.
  */
 const KEYS_REMOVED: readonly string[] = [
   'accountTargetPropHint',
@@ -269,6 +276,8 @@ const KEYS_REMOVED: readonly string[] = [
  * values the save already carried but nothing rendered outside the import dialog.
  */
 const KEYS_ADDED: readonly string[] = [
+  'farmRankingContentionTitle',
+  'farmRankingContentionDesc',
   'pointsOverBudgetWarning',
   'accountTreeGroupDamage',
   'accountTreeGroupField',

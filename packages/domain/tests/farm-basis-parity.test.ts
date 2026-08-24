@@ -1,6 +1,37 @@
 /**
  * Proof that the `farm-rate.ts` basis seam is a byte-identical refactor, not a rewrite.
  *
+ * RE-RECORDED 2026-08-23 for the gate boss's seconds. `propsPerHour` was `3600 × propsPerSec`,
+ * which charges nothing for the boss even though `clearSecs` counts it and the boss drops no
+ * props — so a gate row's own two numbers described different clocks, and every rate derived from
+ * `propsPerHour` read high by the boss's share of the cycle (2% at the first gate, ~12% at 50 on
+ * this corpus).
+ *
+ * Footprint: **the 60 gate rows only, and on them only the seven props-driven columns** —
+ * `propsPerHour`, `goldPerHour`, `chestsPerHour`, `gemsPerHour`, `timePiecesPerHour`,
+ * `stoneChestsPerHour`, `xpPerHour`. All 540 non-gate rows are byte-identical, and so is
+ * `heroFacts`. `clearSecs`, `cyclesPerHour`, `keysPerHour`, `heroesOnField`, `concurrencyScale`
+ * and `expectedHtk` do not move on any row, gate included: the boss's seconds were always in
+ * `clearSecs`: only the loot rates ignored them.
+ *
+ * Non-gate rows are held bit-exact on purpose. `cyclesPerHour × propCount` is algebraically the
+ * same value as `3600 × propsPerSec` off a gate, but the rearrangement is not bit-equal in
+ * IEEE754, so the production expression branches on `line.gate` rather than being simplified.
+ * A diff here that touches a non-gate row means that branch was flattened.
+ *
+ * PREVIOUSLY RE-RECORDED 2026-08-23 for `FarmRateRow.fieldContentionPct`. The smallest re-record this file
+ * has taken: **exactly one field moved, and it is the new one**. `heroFacts` is byte-identical on
+ * all 5 heroes, and so is every pre-existing row column on all 600 rows — `concurrencyScale`,
+ * `heroesOnField` and every throughput column included.
+ *
+ * That footprint is the point rather than an accident. The new field reports how OFTEN the field
+ * is full with a rested hero benched; it deliberately does not correct what that costs, because
+ * the cost depends on which hero takes a freed slot and the game fixes no such rule. A version
+ * that did correct throughput was written, measured and dropped: it scored well against a
+ * simulation that deployed the strongest hero first, which is an automation's behaviour rather
+ * than the game's, and read ~12% off once that assumption was replaced with uniformly-random
+ * deployment. Anything here other than one added column would mean that correction had leaked in.
+ *
  * RE-RECORDED 2026-08-21 for the additive drain-reduction fix: a hero's own drain reduction and
  * the team's used to be combined multiplicatively; measurement showed they add instead, each
  * capped at 20%, floored at a combined 60%. Jon is this corpus's only hero with both arms —

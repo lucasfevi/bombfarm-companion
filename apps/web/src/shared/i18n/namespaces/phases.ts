@@ -123,6 +123,9 @@ export const en = {
   farmRankingFilterGateNonGate: "Non-gates only",
   farmRankingPoolLabel: "Rotation pool",
   farmRankingPoolHeroAria: "Include {name} in the farm estimate",
+  farmRankingContentionTitle: "Your field is the bottleneck",
+  farmRankingContentionDesc:
+    "{pct} of the time a rested hero waits on the bench because the field is already full. More field slots (you have {slots}) is the direct fix. Turning heroes off above lowers the waiting too, but usually lowers the total as well: a hero that only sometimes gets a slot still earns while it has one. The gold/hr estimate does not model this wait, so it reads slightly high here.",
   farmRankingReturnBonusLabel: "Return Bonus",
   farmRankingReturnBonusOff: "Off",
   farmRankingReturnBonusOn: "On",
@@ -299,6 +302,9 @@ export const pt: typeof en = {
   farmRankingFilterGateNonGate: "Apenas não-portões",
   farmRankingPoolLabel: "Pool de rotação",
   farmRankingPoolHeroAria: "Incluir {name} na estimativa de farm",
+  farmRankingContentionTitle: "Seu campo é o gargalo",
+  farmRankingContentionDesc:
+    "Em {pct} do tempo um herói descansado espera no banco porque o campo já está cheio. Mais vagas de campo (você tem {slots}) é a solução direta. Desligar heróis acima também reduz a espera, mas costuma reduzir o total junto: um herói que só às vezes pega vaga ainda produz enquanto está nela. A estimativa de ouro/h não modela essa espera, então fica um pouco alta aqui.",
   farmRankingReturnBonusLabel: "Bônus de Retorno",
   farmRankingReturnBonusOff: "Desligado",
   farmRankingReturnBonusOn: "Ligado",

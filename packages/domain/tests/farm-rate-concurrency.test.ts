@@ -266,3 +266,64 @@ describe('House recovery-slot ceiling', () => {
     expect(Number.isFinite(row.goldPerHour)).toBe(true);
   });
 });
+
+/**
+ * `fieldContentionPct` — the frequency the field is full with a rested hero benched.
+ *
+ * A DIAGNOSTIC ONLY. `concurrencyScale` is unchanged by its introduction; these cases exist to
+ * hold that separation, because the reason the frequency ships and a corrected magnitude does not
+ * is that the frequency needs no assumption about WHICH hero takes a freed slot.
+ */
+describe('field contention (row.fieldContentionPct)', () => {
+  const wideHouse = { ...account, slots: 1000 };
+  const rowFor = (count: number, uptime: number, fieldSlots: number) => {
+    const facts = Array.from({ length: count }, (_, i) => syntheticHero({ heroId: `h${i}`, uptime }));
+    return computeFarmRateRow(42, computeSquadFarmFacts(facts, { ...wideHouse, fieldSlots }))!;
+  };
+
+  it('is exactly 0 whenever the field cannot fill, however low each hero own uptime is', () => {
+    expect(rowFor(10, 0.6, 10).fieldContentionPct).toBe(0);
+    expect(rowFor(10, 0.6, 1000).fieldContentionPct).toBe(0);
+    expect(rowFor(3, 0.2, 3).fieldContentionPct).toBe(0);
+  });
+
+  it('is 100 when every hero is always deployed and they outnumber the slots', () => {
+    // uptime 1 ⇒ no fluctuation at all ⇒ the field is over-subscribed every single second.
+    expect(rowFor(4, 1, 3).fieldContentionPct).toBeCloseTo(100, 9);
+  });
+
+  it('reports a mean UNDER the cap that still fluctuates across it — the case a mean cannot see', () => {
+    // Ten heroes at uptime 0.6 ⇒ mean occupancy 6.0 against 8 slots. `concurrencyScale` reads 1
+    // (its mean genuinely sits under the cap); the field is nonetheless full with someone waiting
+    // a real share of the time, and that is the whole point of reporting the frequency.
+    const row = rowFor(10, 0.6, 8);
+    expect(row.concurrencyScale).toBe(1);
+    expect(row.fieldContentionPct).toBeGreaterThan(1);
+    expect(row.fieldContentionPct).toBeLessThan(50);
+
+    // Tightening the cap onto the mean makes it unmistakable rather than marginal.
+    // `toBeCloseTo`, not `toBe`: 10 x 0.7 sums to 7.000000000000001 in IEEE754, so the ratio
+    // lands a bit under 1 rather than exactly on it. The claim is "the mean does not bind".
+    const tighter = rowFor(10, 0.7, 7);
+    expect(tighter.concurrencyScale).toBeCloseTo(1, 12);
+    expect(tighter.fieldContentionPct).toBeGreaterThan(30);
+  });
+
+  it('rises monotonically as slots are removed, and stays a percentage throughout', () => {
+    let previous = -1;
+    for (const slots of [10, 9, 8, 7, 6, 5, 4, 3, 2, 1]) {
+      const { fieldContentionPct } = rowFor(10, 0.6, slots);
+      expect(fieldContentionPct).toBeGreaterThanOrEqual(previous);
+      expect(fieldContentionPct).toBeGreaterThanOrEqual(0);
+      expect(fieldContentionPct).toBeLessThanOrEqual(100);
+      previous = fieldContentionPct;
+    }
+  });
+
+  it('never emits NaN on the degenerate inputs (empty pool, zero uptime, zero slots)', () => {
+    const emptyRow = computeFarmRateRow(42, computeSquadFarmFacts([], { ...wideHouse, fieldSlots: 2 }))!;
+    expect(emptyRow.fieldContentionPct).toBe(0);
+    expect(Number.isFinite(rowFor(5, 0, 2).fieldContentionPct)).toBe(true);
+    expect(Number.isFinite(rowFor(5, 0.5, 0).fieldContentionPct)).toBe(true);
+  });
+});

@@ -307,11 +307,14 @@ describe('rankNextPointForFarm — design.md §4.4 edge/degenerate cases, full t
     assertResultIsFinite(result);
   });
 
-  it('a pool of exactly one hero (the ranked one) still ranks — solo Bellatrix argmaxes at phase 30', () => {
+  // Phase 29, not the gate at 30: this squad spends 10.3% of a phase-30 cycle on the boss, which
+  // drops nothing, so 30 pays 94.7k/h against 29's 101.8k/h. Before gate rows charged for the
+  // boss's seconds this argmaxed at 30.
+  it('a pool of exactly one hero (the ranked one) still ranks — solo Bellatrix argmaxes at phase 29', () => {
     const soloBases = computeHeroFarmBases({ heroes, account, enabledHeroIds: [bellatrix.id] });
     const result = rankNextPointForFarm({ bases: soloBases, account, heroId: bellatrix.id, maxPhase: 42 });
     expect(result.outcome).toBe('ranked');
-    expect(result.phase).toBe(30);
+    expect(result.phase).toBe(29);
     expect(result.rows).toHaveLength(RANK_STATS.length);
     expect(result.evaluations).toBe(8);
     assertResultIsFinite(result);

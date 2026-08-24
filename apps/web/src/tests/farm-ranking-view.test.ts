@@ -8,6 +8,8 @@ import {
   defaultFarmFilters,
   FARM_COLUMNS,
   pickBestFarmRow,
+  pickContentionNotice,
+  CONTENTION_NOTICE_MIN_PCT,
   sortFarmRows,
   type FarmSortKey,
 } from '@/features/phases/model/farm-ranking-view';
@@ -38,6 +40,7 @@ function row(overrides: Partial<FarmRateRow> & { phase: number }): FarmRateRow {
     jaulaWindowSecs: 0,
     expectedHtk: 1,
     heroesOnField: 1,
+    fieldContentionPct: 0,
     concurrencyScale: 1,
     fortunaAura: 0,
     ...overrides,
@@ -286,5 +289,39 @@ describe('React-free source (both files)', () => {
       'utf8',
     );
     expect(source).not.toMatch(/from ['"]react['"]/);
+  });
+});
+
+describe('pickContentionNotice', () => {
+  const contending = (overrides: Partial<FarmRateRow> = {}) =>
+    row({ phase: 51, fieldContentionPct: 26.1, concurrencyScale: 0.988, ...overrides });
+
+  it('reports the row own contention, and only that', () => {
+    const notice = pickContentionNotice(contending())!;
+    expect(notice.pct).toBeCloseTo(26.1, 9);
+    // Frequency only: what the wait costs depends on who takes a freed slot, which the game does
+    // not fix, so the notice deliberately carries no throughput figure.
+    expect(Object.keys(notice)).toEqual(['pct']);
+  });
+
+  it('stays silent below the threshold, and speaks at exactly the threshold', () => {
+    expect(pickContentionNotice(contending({ fieldContentionPct: 4.999 }))).toBeNull();
+    expect(pickContentionNotice(contending({ fieldContentionPct: CONTENTION_NOTICE_MIN_PCT }))).not.toBeNull();
+  });
+
+  it('stays silent on an uncontended board — the common case, and the one that must not nag', () => {
+    expect(pickContentionNotice(contending({ fieldContentionPct: 0, concurrencyScale: 1 }))).toBeNull();
+  });
+
+  it('stays silent on an infeasible row, and on no row at all', () => {
+    expect(pickContentionNotice(contending({ infeasible: true }))).toBeNull();
+    expect(pickContentionNotice(null)).toBeNull();
+    expect(pickContentionNotice(undefined)).toBeNull();
+  });
+
+  it('never emits NaN from a degenerate row', () => {
+    const notice = pickContentionNotice(contending({ fieldContentionPct: 100, concurrencyScale: 0 }))!;
+    expect(Number.isFinite(notice.pct)).toBe(true);
+    expect(notice.pct).toBeCloseTo(100, 9);
   });
 });
