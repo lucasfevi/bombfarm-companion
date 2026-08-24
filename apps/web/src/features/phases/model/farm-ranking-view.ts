@@ -117,13 +117,18 @@ export function sortFarmRows(
   });
 }
 
+/** `levels` is `@bombfarm/domain`'s ascending band list; empty means nothing is guaranteed. */
+function lowestItemLevelAtLeast(levels: readonly number[], floor: number): boolean {
+  return levels.length > 0 && Math.min(...levels) >= floor;
+}
+
 export type GateFilter = 'all' | 'gate' | 'non-gate';
 
 export type FarmFilters = {
   unlockedOnly: boolean;
   ato: number | null;
   gate: GateFilter;
-  /** Keep phases that can drop an item of at least this level. `null` => no item-level floor. */
+  /** Keep phases whose LOWEST drop band is at least this level. `null` => no item-level floor. */
   minItemLevel: number | null;
 };
 
@@ -137,8 +142,10 @@ export function defaultFarmFilters(): FarmFilters {
  * is `locked: false`, so `unlockedOnly` is a no-op and no row is excluded.
  *
  * `minItemLevel` reads `row.itemLevels`, the overlapping drop bands `@bombfarm/domain` already resolved for
- * the phase. A row qualifies when ANY of its bands is at or above the floor — on an overlap the
- * lower tier can still roll, so keeping the row is what "drops that level or higher" means.
+ * the phase. A row qualifies only when its LOWEST band is at or above the floor: bands overlap by
+ * ten phases, and inside an overlap the lower tier still rolls, so a phase that can hand back a
+ * level-10 item is not a level-20 farm. A row with no known bands guarantees nothing and is
+ * excluded.
  */
 export function applyFarmFilters(
   rows: readonly FarmRateRow[],
@@ -150,7 +157,7 @@ export function applyFarmFilters(
     if (filters.ato != null && row.ato !== filters.ato) return false;
     if (filters.gate === 'gate' && !row.gate) return false;
     if (filters.gate === 'non-gate' && row.gate) return false;
-    if (minItemLevel != null && !row.itemLevels.some((level) => level >= minItemLevel)) return false;
+    if (minItemLevel != null && !lowestItemLevelAtLeast(row.itemLevels, minItemLevel)) return false;
     return true;
   });
 }

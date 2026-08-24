@@ -234,9 +234,11 @@ describe('applyFarmFilters', () => {
   });
 });
 
-describe('applyFarmFilters — minItemLevel', () => {
+describe('applyFarmFilters — minItemLevel (the floor is the LOWEST band, not the highest)', () => {
   // Bands overlap by ten phases, so a row can carry two tiers; `itemLevels` is what
-  // `@bombfarm/domain` resolved for the phase, ascending.
+  // `@bombfarm/domain` resolved for the phase, ascending. The filter answers "every item this
+  // phase drops is at least level N", so an overlap row is judged on its LOWER tier — that is
+  // the level it can still hand back.
   const rows = [
     row({ phase: 25, itemLevels: [10, 20] }),
     row({ phase: 45, itemLevels: [20, 30] }),
@@ -248,14 +250,25 @@ describe('applyFarmFilters — minItemLevel', () => {
     expect(result.map((entry) => entry.phase)).toEqual([25, 45, 100]);
   });
 
-  it('keeps rows whose highest band is at or above the floor', () => {
-    const result = applyFarmFilters(rows, { ...defaultFarmFilters(), minItemLevel: 30 });
+  it('keeps only rows whose lowest band is at or above the floor', () => {
+    const result = applyFarmFilters(rows, { ...defaultFarmFilters(), minItemLevel: 20 });
     expect(result.map((entry) => entry.phase)).toEqual([45, 100]);
   });
 
-  it('keeps an overlap row on its UPPER tier — the lower tier can still roll there', () => {
-    const result = applyFarmFilters(rows, { ...defaultFarmFilters(), minItemLevel: 20 });
-    expect(result.map((entry) => entry.phase)).toEqual([25, 45, 100]);
+  it('excludes an overlap row on its LOWER tier even though its upper tier clears the floor', () => {
+    const result = applyFarmFilters([row({ phase: 45, itemLevels: [20, 30] })], {
+      ...defaultFarmFilters(),
+      minItemLevel: 30,
+    });
+    expect(result).toEqual([]);
+  });
+
+  it('keeps a single-tier row sitting exactly on the floor', () => {
+    const result = applyFarmFilters([row({ phase: 55, itemLevels: [30] })], {
+      ...defaultFarmFilters(),
+      minItemLevel: 30,
+    });
+    expect(result.map((entry) => entry.phase)).toEqual([55]);
   });
 
   it('excludes a row whose only band sits below the floor', () => {
@@ -266,7 +279,7 @@ describe('applyFarmFilters — minItemLevel', () => {
     expect(result).toEqual([]);
   });
 
-  it('excludes a row with no known bands', () => {
+  it('excludes a row with no known bands — it guarantees nothing', () => {
     const result = applyFarmFilters([row({ phase: 5, itemLevels: [] })], {
       ...defaultFarmFilters(),
       minItemLevel: 10,
@@ -276,16 +289,16 @@ describe('applyFarmFilters — minItemLevel', () => {
 
   it('narrows alongside the other filters', () => {
     const mixed = [
-      row({ phase: 45, ato: 1, gate: true, itemLevels: [20, 30] }),
-      row({ phase: 46, ato: 1, gate: false, itemLevels: [20, 30] }),
-      row({ phase: 10, ato: 1, gate: false, itemLevels: [10] }),
+      row({ phase: 55, ato: 1, gate: true, itemLevels: [30] }),
+      row({ phase: 56, ato: 1, gate: false, itemLevels: [30] }),
+      row({ phase: 45, ato: 1, gate: false, itemLevels: [20, 30] }),
     ];
     const result = applyFarmFilters(mixed, {
       ...defaultFarmFilters(),
       gate: 'non-gate',
       minItemLevel: 30,
     });
-    expect(result.map((entry) => entry.phase)).toEqual([46]);
+    expect(result.map((entry) => entry.phase)).toEqual([56]);
   });
 });
 

@@ -176,7 +176,7 @@ test.describe('Farm Ranking board', () => {
     await expect(table(page)).toHaveCount(0);
   });
 
-  test('the minimum item level filter keeps only the phases that can drop that level', async ({
+  test('the minimum item level filter keeps only phases whose LOWEST drop band clears it', async ({
     page,
   }) => {
     await seedLocalStorage(page, { ...importedRoster, account: accountWithMaxPhase, lang: 'en' });
@@ -185,11 +185,12 @@ test.describe('Farm Ranking board', () => {
     await page.getByTestId('farm-filter-unlocked').getByRole('switch').click();
     await expect(rowCountLocator(page)).toHaveAttribute('aria-rowcount', '600');
 
-    // The top band runs phases 581–600 and is the only one that rolls level 300, so the floor
-    // has one exact answer rather than a "fewer than before" inequality.
+    // The top band spans phases 581–600, but 581–590 overlap the level-290 band beneath it and
+    // still roll a 290 item, so a level-300 FLOOR leaves exactly the ten phases 591–600 — one
+    // exact answer, and one that a highest-band reading would get wrong (it would say twenty).
     await page.getByTestId('farm-filter-item-level').getByLabel(/Min item level/i).click();
     await page.getByRole('option', { name: 'Level 300+', exact: true }).click();
-    await expect(rowCountLocator(page)).toHaveAttribute('aria-rowcount', '20');
+    await expect(rowCountLocator(page)).toHaveAttribute('aria-rowcount', '10');
 
     await page.getByTestId('farm-filter-item-level').getByLabel(/Min item level/i).click();
     await page.getByRole('option', { name: /Any item level/i }).click();
