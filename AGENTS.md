@@ -53,6 +53,9 @@ that project with a filename filter). `apps/web` and `packages/domain` alias `@b
 
 - Conventional Commits (`feat:`, `fix:`, `chore:`, …) — enforced by commitlint
 - Feature work branches from and merges into `develop`; `main` is release-only — see [`docs/branching.md`](docs/branching.md)
+- **Branch names are `<type>/<kebab-case-summary>`** with a commitlint type (`feat/rotation-pool-redesign`,
+  `docs/comments-hard-truth`). When tooling hands you a generated name with a random suffix, rename it
+  with `git branch -m <type>/<summary>` before the first push — see [`docs/branching.md`](docs/branching.md#branch-names)
 - IPC types live in `@bombfarm/contracts`; both main and renderer import from there
 - No Node integration in the renderer; use preload `contextBridge`
 - TypeScript strict at the monorepo base; planner-origin packages `@bombfarm/domain`
@@ -74,23 +77,28 @@ that project with a filename filter). `apps/web` and `packages/domain` alias `@b
 
 ## Comments
 
-Write almost no comments. A well-named function and well-named variables should make code
-self-explanatory; a comment restating what the next line does is noise, not documentation.
+**Hard truth: [`docs/comments.md`](docs/comments.md).** Read it before adding one.
 
-Add a comment only when:
+Write almost no comments. **Code and tests are the documentation** — a well-named function with
+well-named variables says what it does, and behaviour you want to explain belongs in a test with a
+sentence for a name, where it is proven and fails when it stops being true. A comment restating
+the next line is a second copy of the logic that nothing keeps in sync.
 
-- **The logic is genuinely too complex to follow by reading it.** Even then, treat this as a
-  signal before reaching for a comment: a function that needs prose to be understood usually
-  needs to be broken into smaller, well-named pieces instead. Reach for a comment only after
-  refactoring is not the fix — the code is inherently intricate (a bitwise trick, a tight
-  numerical routine) and no decomposition removes that.
-- **There is specific business logic that isn't explicit from the code itself** — a game-balance
-  constant, a workaround for an external quirk, a non-obvious invariant the surrounding code
-  depends on. Here a short comment explaining *why* earns its place.
+**Wanting to comment is a finding about the code, not a documentation need.** Treat it like a
+300-line function: the fix is to extract a named function, name an intermediate value, or split
+the file. Reach for prose only once you have established that decomposition is not the fix.
 
-If you touch a file that carries many comments, treat that as a prompt to revisit them against
-this rule while you're in there: remove ones that just narrate what the code already says, and
-keep only the few that explain real complexity or non-obvious business logic.
+Two shapes earn a comment, and both explain *why*, never *what*:
+
+- **Inherent complexity that no decomposition removes** — a bitwise trick, a tight numerical
+  routine, an algorithm whose correctness argument is invisible in its steps.
+- **Business logic the code cannot show** — a game-balance constant and where its value came from,
+  a workaround for an external quirk, a non-obvious invariant the surrounding code depends on.
+
+**Clean up the file you touch.** A comment-heavy file you open is in scope: delete the narration,
+keep the few that earn their place. Don't turn it into a whole-file rewrite of code you aren't
+otherwise changing — that buries the real diff. Deliberately no lint rule enforces this; no
+threshold can tell a constant's provenance from noise, so review carries it.
 
 ## Out-of-scope findings — ask before you file
 
