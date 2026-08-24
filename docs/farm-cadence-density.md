@@ -363,6 +363,61 @@ per-ato `alpha` split was crowding wearing a hop-length costume. There is no evi
 per-ato hop term, and the 0.85s "too generous" per-bomb overhead below is an artefact of
 attributing crowding loss to the cycle model. Kept as a record of the dead end — do not act on it.
 
+## The geometry, simulated — and one correction
+
+A sequential simulation of a whole clear on the real 19x16 grid (304 tiles), hero walking to the
+nearest prop, bomb placed on an adjacent tile, cross blast passing through props. Both mechanics
+are owner-confirmed; the grid is fixed at every ato, so only the prop count changes.
+
+**CORRECTION to an earlier claim in this document's history: `blocksPerBomb` 1.50 and 2.50 are NOT
+derived geometry.** Simulated on the real grid at a full ato-1 map they come out at **1.22**
+(reach 1) and **2.24** (reach 3); nothing reproduces 1.50, and 2.50 sits between reach 3 and
+reach 4. `1 + 0.5 x blastRange` is a heuristic, not a derivation, and it was asserted here as
+derived without being checked.
+
+What the simulation does show is the shape the model is missing — both terms move a long way
+inside a single clear:
+
+| props left | blocks, reach 1 | hop, reach 1 | blocks, reach 3 | hop, reach 3 |
+| --- | --- | --- | --- | --- |
+| 50 | 1.218 | 0.62 | 2.241 | 0.69 |
+| 30 | 1.105 | 2.03 | 1.612 | 2.64 |
+| 10 | 1.074 | 2.88 | 1.480 | 3.39 |
+| 3 | 1.047 | 4.14 | 1.261 | 4.83 |
+| 1 | 1.000 | 6.17 | 1.000 | 7.18 |
+
+Averaged over a whole clear that is **1.10** blocks at reach 1 and **1.58** at reach 3 — against
+the 1.50 and 2.50 the model applies throughout. The shipped constants are roughly the FULL-MAP
+values, held for the entire clear.
+
+## Does the integral reproduce the measured curves? Partly.
+
+`rate(p) = blocks(p) / max(fuse, hop(p)/walkSpeed)`, with the simulated terms and each hero's own
+sheet values. Nothing fitted. Scored against the measured within-clear decay:
+
+| | mean absolute error |
+| --- | --- |
+| shipped model (both terms constant) | **53%** hero A, **100%** hero C |
+| simulated geometry, nothing fitted | **33%** |
+| same, with hop doubled | 20% |
+
+So the integral is the right direction and takes a large bite out of a very large error — but 33%
+unfitted is not shippable, and the hop-doubling that improves it is a free parameter, which is
+exactly what the acceptance bar below forbids.
+
+**The gap is hop, and it is not small.** A greedy nearest-prop hero walks 2.35 cells per plant
+averaged over a clear; the capture behind the shipped `HOP_DISTRIBUTION` measured **4.77**. Some of
+that is contention (that capture is multi-hero, this simulation is solo), but the residual says the
+real pathing is materially worse than greedy-nearest, and by how much is not derivable. `EFF_IA`
+takes a flat 10% for imperfect AI, which is an order of magnitude short of covering it at low
+density.
+
+**What would close it: hop(p) measured, not modelled.** Plant-to-plant distance as a function of
+props remaining. Explosion centroids in gameplay video mark plant locations, so consecutive plants
+give hops directly — but attributing plants to heroes needs a SOLO clip. One hero, an ato-1 phase
+it one-shots, two or three minutes, whole grid in frame. That single measurement removes the last
+free parameter from the integral.
+
 ## What the fix has to look like
 
 ```
