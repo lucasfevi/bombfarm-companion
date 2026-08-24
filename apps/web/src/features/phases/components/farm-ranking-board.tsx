@@ -2,12 +2,13 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import { Banner, EmptyState, Panel } from '@bombfarm/ui';
-import type { Lang, Strings } from '@/shared/i18n';
+import { sub, type Lang, type Strings } from '@/shared/i18n';
 import {
   deriveFarmPoolEntries,
   selectFarmBoardRows,
   selectFarmReRankActive,
   selectFarmReturnBonus,
+  selectFieldSlots,
   selectHeroes,
   selectMaxPhase,
   selectPhasesViewPhase,
@@ -19,11 +20,13 @@ import {
   DEFAULT_SORT,
   defaultFarmFilters,
   pickBestFarmRow,
+  pickContentionNotice,
   sortFarmRows,
   type FarmFilters,
   type FarmSortDir,
   type FarmSortKey,
 } from '@/features/phases/model/farm-ranking-view';
+import { formatMitigationPct } from '@/features/phases/model/farm-ranking-format';
 import { FarmRankingFilters } from './farm-ranking-filters';
 import { FarmRotationPool } from './farm-rotation-pool';
 import { FarmReturnBonus } from './farm-return-bonus';
@@ -50,6 +53,7 @@ export function FarmRankingBoard({ t, lang }: { t: Strings; lang: Lang }) {
   );
   const returnBonus = usePlannerStore(selectFarmReturnBonus);
   const maxPhase = usePlannerStore(selectMaxPhase);
+  const fieldSlots = usePlannerStore(selectFieldSlots);
   const currentPhase = usePlannerStore(selectPhasesViewPhase);
   const phasesViewPhaseChosen = usePlannerStore(selectPhasesViewPhaseChosen);
   const setPhasesViewPhase = usePlannerStore((state) => state.setPhasesViewPhase);
@@ -91,6 +95,14 @@ export function FarmRankingBoard({ t, lang }: { t: Strings; lang: Lang }) {
     );
   }
 
+  // The row the player is actually looking at — contention is per-row, never an aggregate.
+  const contention = useMemo(() => {
+    if (result.reason != null) return null;
+    return pickContentionNotice(
+      result.rows.find((candidate) => candidate.phase === currentPhase) ?? pickBestFarmRow(visibleRows),
+    );
+  }, [result.reason, result.rows, currentPhase, visibleRows]);
+
   const empty =
     result.reason === 'no-roster'
       ? { title: t.farmRankingEmptyNoRosterTitle, description: t.farmRankingEmptyNoRosterDesc }
@@ -114,6 +126,16 @@ export function FarmRankingBoard({ t, lang }: { t: Strings; lang: Lang }) {
             lang={lang}
             t={t}
           />
+        </div>
+      ) : null}
+      {contention ? (
+        <div className="mb-3" data-testid="farm-contention-notice">
+          <Banner tone="warn" title={t.farmRankingContentionTitle}>
+            {sub(t.farmRankingContentionDesc, {
+              pct: `${formatMitigationPct(contention.pct)}%`,
+              slots: String(fieldSlots ?? '—'),
+            })}
+          </Banner>
         </div>
       ) : null}
       <FarmRespecToolbar t={t} />

@@ -183,3 +183,35 @@ export function pickBestFarmRow(rows: readonly FarmRateRow[]): FarmRateRow | nul
   }
   return best;
 }
+
+/**
+ * Under this, the field is contending too little for a banner to earn its place. Every roster
+ * with more heroes than field slots contends a little; a notice reading "0.1% of the time" is
+ * noise that teaches people to ignore the notice that matters.
+ */
+export const CONTENTION_NOTICE_MIN_PCT = 5;
+
+export type ContentionNotice = {
+  /** Share of wall clock with a rested hero benched behind a full field — PERCENT. */
+  pct: number;
+};
+
+/**
+ * The field-contention notice for the row the player is looking at, or `null` when there is
+ * nothing worth saying.
+ *
+ * PER-ROW, NEVER AGGREGATED: `fieldContentionPct` is phase-dependent (the House allocation it
+ * reads is), so this takes the one row being shown rather than reducing over the table. The board
+ * feeds it the current phase's row, falling back to the best one before a phase is chosen.
+ *
+ * FREQUENCY ONLY, never a throughput cost. What the wait COSTS depends on which hero takes a
+ * freed slot, which the game does not fix; the frequency does not. The copy says as much rather
+ * than quoting a magnitude the model cannot stand behind — and it does not promise that benching
+ * heroes helps, because it usually does not: on a 14-hero roster at 9 slots, dropping the five
+ * weakest takes contention 26.1% -> 0% and gold/hr 19.97M -> 17.17M.
+ */
+export function pickContentionNotice(row: FarmRateRow | null | undefined): ContentionNotice | null {
+  if (!row || row.infeasible) return null;
+  if (!(row.fieldContentionPct >= CONTENTION_NOTICE_MIN_PCT)) return null;
+  return { pct: row.fieldContentionPct };
+}

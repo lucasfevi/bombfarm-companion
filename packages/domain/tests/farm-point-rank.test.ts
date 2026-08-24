@@ -319,6 +319,11 @@ describe('rankNextPointForFarm — design.md §4.4 edge/degenerate cases, full t
     expect(result.outcome).toBe('ranked');
     // 30 until the 2026-08-23 crit-chance ability shape: a stronger Bellatrix clears deeper
     // phases fast enough that the gold argmax walks up three.
+    //
+    // Making gate rows pay for the boss (same day) does not move it again, though it would have:
+    // the old argmax at 30 IS a gate, and charging it the boss drops it from 105.6k/h to
+    // 100.2k/h. By then 33 was already ahead at 112.9k/h, so the gate correction only widens a
+    // gap the crit change had opened. Both effects are live here; neither is masking the other.
     expect(result.phase).toBe(33);
     expect(result.rows).toHaveLength(RANK_STATS.length);
     expect(result.evaluations).toBe(8);

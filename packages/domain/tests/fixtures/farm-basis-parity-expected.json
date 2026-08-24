@@ -145,6 +145,7 @@
       "expectedHtk": 1.0506078582815483,
       "heroesOnField": 0.8046149172831303,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.09540789202198112,
       "fortunaAura": 0
     },
     {
@@ -175,6 +176,7 @@
       "expectedHtk": 1.0603233666754905,
       "heroesOnField": 0.8046149172831303,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.09540789202198112,
       "fortunaAura": 0
     },
     {
@@ -205,6 +207,7 @@
       "expectedHtk": 1.069723321184054,
       "heroesOnField": 0.8046149172831303,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.09540789202198112,
       "fortunaAura": 0
     },
     {
@@ -235,6 +238,7 @@
       "expectedHtk": 1.0722016609399523,
       "heroesOnField": 0.8046149172831303,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.09540789202198112,
       "fortunaAura": 0
     },
     {
@@ -265,6 +269,7 @@
       "expectedHtk": 1.089771220345442,
       "heroesOnField": 0.8046149172831303,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.09540789202198112,
       "fortunaAura": 0
     },
     {
@@ -295,6 +300,7 @@
       "expectedHtk": 1.093898350852451,
       "heroesOnField": 0.8046149172831303,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.09540789202198112,
       "fortunaAura": 0
     },
     {
@@ -325,6 +331,7 @@
       "expectedHtk": 1.1134383307038644,
       "heroesOnField": 0.8046149172831303,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.09540789202198112,
       "fortunaAura": 0
     },
     {
@@ -355,6 +362,7 @@
       "expectedHtk": 1.0887755736281706,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -385,6 +393,7 @@
       "expectedHtk": 1.1111628176469874,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -393,14 +402,14 @@
       "gate": true,
       "locked": false,
       "mitigationPct": 1.7362270450751252,
-      "goldPerHour": 74380.16347720608,
-      "chestsPerHour": 1.162849268349477,
+      "goldPerHour": 72285.03101560201,
+      "chestsPerHour": 1.1300942549672042,
       "keysPerHour": -20.534152932814877,
-      "gemsPerHour": 0.05814246341747385,
-      "timePiecesPerHour": 1.162849268349477,
-      "stoneChestsPerHour": 0.5814246341747386,
-      "xpPerHour": 52770.48017131592,
-      "propsPerHour": 1056.466069495814,
+      "gemsPerHour": 0.056504712748360206,
+      "timePiecesPerHour": 1.1300942549672042,
+      "stoneChestsPerHour": 0.5650471274836021,
+      "xpPerHour": 51284.04694970517,
+      "propsPerHour": 1026.7076466407439,
       "cyclesPerHour": 20.534152932814877,
       "clearSecs": 175.31767742154935,
       "gateTimerSecs": 600,
@@ -415,6 +424,7 @@
       "expectedHtk": 1.1180680178141487,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -445,6 +455,7 @@
       "expectedHtk": 1.1709787928402802,
       "heroesOnField": 0.8046149172831303,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.09540789202198112,
       "fortunaAura": 0
     },
     {
@@ -475,6 +486,7 @@
       "expectedHtk": 1.182329315551527,
       "heroesOnField": 0.8046149172831303,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.09540789202198112,
       "fortunaAura": 0
     },
     {
@@ -505,6 +517,7 @@
       "expectedHtk": 1.1891230875614167,
       "heroesOnField": 0.8046149172831303,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.09540789202198112,
       "fortunaAura": 0
     },
     {
@@ -535,6 +548,7 @@
       "expectedHtk": 1.1994103654116794,
       "heroesOnField": 0.8046149172831303,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.09540789202198112,
       "fortunaAura": 0
     },
     {
@@ -565,6 +579,7 @@
       "expectedHtk": 1.1743418961487135,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -595,6 +610,7 @@
       "expectedHtk": 1.186882226927477,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -625,6 +641,7 @@
       "expectedHtk": 1.2299924877700847,
       "heroesOnField": 0.8046149172831303,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.09540789202198112,
       "fortunaAura": 0
     },
     {
@@ -655,6 +672,7 @@
       "expectedHtk": 1.2385703441311884,
       "heroesOnField": 0.8046149172831303,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.09540789202198112,
       "fortunaAura": 0
     },
     {
@@ -685,6 +703,7 @@
       "expectedHtk": 1.245075291433389,
       "heroesOnField": 0.8046149172831303,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.09540789202198112,
       "fortunaAura": 0
     },
     {
@@ -693,14 +712,14 @@
       "gate": true,
       "locked": false,
       "mitigationPct": 2.5542570951585977,
-      "goldPerHour": 142608.2732311915,
-      "chestsPerHour": 1.0689470692744962,
+      "goldPerHour": 135925.5221983692,
+      "chestsPerHour": 1.0188552550384053,
       "keysPerHour": -18.51290680525393,
-      "gemsPerHour": 0.053447353463724805,
-      "timePiecesPerHour": 1.0689470692744962,
-      "stoneChestsPerHour": 0.5344735346372481,
-      "xpPerHour": 80848.6127690501,
-      "propsPerHour": 971.1545077363375,
+      "gemsPerHour": 0.05094276275192027,
+      "timePiecesPerHour": 1.0188552550384053,
+      "stoneChestsPerHour": 0.5094276275192027,
+      "xpPerHour": 77059.97457686948,
+      "propsPerHour": 925.6453402626965,
       "cyclesPerHour": 18.51290680525393,
       "clearSecs": 194.45892737807802,
       "gateTimerSecs": 600,
@@ -715,6 +734,7 @@
       "expectedHtk": 1.252631912634379,
       "heroesOnField": 0.8046149172831303,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.09540789202198112,
       "fortunaAura": 0
     },
     {
@@ -746,6 +766,7 @@
       "expectedHtk": 1.2220008486903704,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -777,6 +798,7 @@
       "expectedHtk": 1.2418312666904199,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -808,6 +830,7 @@
       "expectedHtk": 1.304880889962615,
       "heroesOnField": 0.8046149172831303,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.09540789202198112,
       "fortunaAura": 0
     },
     {
@@ -839,6 +862,7 @@
       "expectedHtk": 1.2717359367413912,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -870,6 +894,7 @@
       "expectedHtk": 1.3567659390066091,
       "heroesOnField": 0.8046149172831303,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.09540789202198112,
       "fortunaAura": 0
     },
     {
@@ -901,6 +926,7 @@
       "expectedHtk": 1.3450289441869265,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -932,6 +958,7 @@
       "expectedHtk": 1.3494989330124716,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -963,6 +990,7 @@
       "expectedHtk": 1.3864579262790333,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -994,6 +1022,7 @@
       "expectedHtk": 1.4010915969608746,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -1002,14 +1031,14 @@
       "gate": true,
       "locked": false,
       "mitigationPct": 3.37228714524207,
-      "goldPerHour": 181013.66364692693,
-      "chestsPerHour": 0.8923242988365333,
+      "goldPerHour": 166042.26958110026,
+      "chestsPerHour": 0.8185213690286928,
       "keysPerHour": -14.872779767294672,
-      "gemsPerHour": 0.044616214941826667,
-      "timePiecesPerHour": 0.8923242988365333,
-      "stoneChestsPerHour": 0.44616214941826665,
-      "xpPerHour": 93586.06068307794,
-      "propsPerHour": 810.690061357224,
+      "gemsPerHour": 0.040926068451434636,
+      "timePiecesPerHour": 0.8185213690286928,
+      "stoneChestsPerHour": 0.4092606845143464,
+      "xpPerHour": 85845.68481682485,
+      "propsPerHour": 743.6389883647336,
       "cyclesPerHour": 14.872779767294672,
       "clearSecs": 242.0529353844411,
       "gateTimerSecs": 600,
@@ -1025,6 +1054,7 @@
       "expectedHtk": 1.4570314606195758,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -1055,6 +1085,7 @@
       "expectedHtk": 1.4834311411111862,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -1085,6 +1116,7 @@
       "expectedHtk": 1.553332779386961,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -1115,6 +1147,7 @@
       "expectedHtk": 1.5830358694989468,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -1145,6 +1178,7 @@
       "expectedHtk": 1.7594806978931083,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -1175,6 +1209,7 @@
       "expectedHtk": 1.8475313825680173,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -1205,6 +1240,7 @@
       "expectedHtk": 1.9233673577484338,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -1235,6 +1271,7 @@
       "expectedHtk": 2.047570824463415,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -1265,6 +1302,7 @@
       "expectedHtk": 2.0890598030602616,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -1295,6 +1333,7 @@
       "expectedHtk": 2.2917507453414903,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -1303,14 +1342,14 @@
       "gate": true,
       "locked": false,
       "mitigationPct": 4.190317195325542,
-      "goldPerHour": 149627.05811981135,
-      "chestsPerHour": 0.5494879949516621,
+      "goldPerHour": 133986.40584534642,
+      "chestsPerHour": 0.49204951580205464,
       "keysPerHour": -8.940687879428356,
-      "gemsPerHour": 0.027474399747583107,
-      "timePiecesPerHour": 0.5494879949516621,
-      "stoneChestsPerHour": 0.27474399747583106,
-      "xpPerHour": 74253.70274323292,
-      "propsPerHour": 499.2181171388525,
+      "gemsPerHour": 0.024602475790102735,
+      "timePiecesPerHour": 0.49204951580205464,
+      "stoneChestsPerHour": 0.24602475790102732,
+      "xpPerHour": 66491.8957593087,
+      "propsPerHour": 447.03439397141784,
       "cyclesPerHour": 8.940687879428356,
       "clearSecs": 402.65358197809877,
       "gateTimerSecs": 600,
@@ -1325,6 +1364,7 @@
       "expectedHtk": 2.3661018774295615,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -1356,6 +1396,7 @@
       "expectedHtk": 2.538714411817282,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -1387,6 +1428,7 @@
       "expectedHtk": 2.700475850215315,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -1418,6 +1460,7 @@
       "expectedHtk": 3.037659559725515,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -1449,6 +1492,7 @@
       "expectedHtk": 3.254150211095869,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -1480,6 +1524,7 @@
       "expectedHtk": 3.69989298393573,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -1511,6 +1556,7 @@
       "expectedHtk": 3.904987376058017,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -1542,6 +1588,7 @@
       "expectedHtk": 4.084462186482121,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -1573,6 +1620,7 @@
       "expectedHtk": 4.394552449545238,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -1604,6 +1652,7 @@
       "expectedHtk": 4.872383264555165,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -1612,14 +1661,14 @@
       "gate": true,
       "locked": false,
       "mitigationPct": 5.008347245409015,
-      "goldPerHour": 84016.16369084342,
-      "chestsPerHour": 0.24453404822205888,
+      "goldPerHour": 73975.5464782871,
+      "chestsPerHour": 0.21531023382999484,
       "keysPerHour": -3.912251787877243,
-      "gemsPerHour": 0.012226702411102944,
-      "timePiecesPerHour": 0.24453404822205888,
-      "stoneChestsPerHour": 0.12226702411102944,
-      "xpPerHour": 40442.52790755872,
-      "propsPerHour": 222.16286479652115,
+      "gemsPerHour": 0.010765511691499741,
+      "timePiecesPerHour": 0.21531023382999484,
+      "stoneChestsPerHour": 0.10765511691499742,
+      "xpPerHour": 35609.31577325867,
+      "propsPerHour": 195.61258939386215,
       "cyclesPerHour": 3.912251787877243,
       "clearSecs": 920.1861728724091,
       "gateTimerSecs": 600,
@@ -1635,6 +1684,7 @@
       "expectedHtk": 5.316824327463326,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -1665,6 +1715,7 @@
       "expectedHtk": 5.317101689692105,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -1695,6 +1746,7 @@
       "expectedHtk": 5.739514678731945,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -1725,6 +1777,7 @@
       "expectedHtk": 5.8681435515562095,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -1755,6 +1808,7 @@
       "expectedHtk": 6.049319455794372,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -1785,6 +1839,7 @@
       "expectedHtk": 6.084291623844847,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -1815,6 +1870,7 @@
       "expectedHtk": 6.547451894519437,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -1845,6 +1901,7 @@
       "expectedHtk": 6.642042012375963,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -1875,6 +1932,7 @@
       "expectedHtk": 6.991971981850996,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -1905,6 +1963,7 @@
       "expectedHtk": 7.247267867719881,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -1913,14 +1972,14 @@
       "gate": true,
       "locked": false,
       "mitigationPct": 5.826377295492487,
-      "goldPerHour": 139792.4048406313,
-      "chestsPerHour": 0.17266892676639548,
+      "goldPerHour": 127647.95691666822,
+      "chestsPerHour": 0.15766833505619698,
       "keysPerHour": -1.9099207524657327,
-      "gemsPerHour": 0.008633446338319774,
-      "timePiecesPerHour": 0.17266892676639548,
-      "stoneChestsPerHour": 0.08633446338319774,
-      "xpPerHour": 33780.88536077613,
-      "propsPerHour": 156.8723198698622,
+      "gemsPerHour": 0.007883416752809848,
+      "timePiecesPerHour": 0.15766833505619698,
+      "stoneChestsPerHour": 0.07883416752809849,
+      "xpPerHour": 30846.175112697816,
+      "propsPerHour": 143.24405643492994,
       "cyclesPerHour": 1.9099207524657327,
       "clearSecs": 1884.8949598313716,
       "gateTimerSecs": 540,
@@ -1935,6 +1994,7 @@
       "expectedHtk": 7.715204047441377,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -1966,6 +2026,7 @@
       "expectedHtk": 7.917632117692733,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -1997,6 +2058,7 @@
       "expectedHtk": 8.257313996302159,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -2028,6 +2090,7 @@
       "expectedHtk": 8.506837410567126,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -2059,6 +2122,7 @@
       "expectedHtk": 9.233969126858003,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -2090,6 +2154,7 @@
       "expectedHtk": 9.53879707758866,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -2121,6 +2186,7 @@
       "expectedHtk": 10.171025641515753,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -2152,6 +2218,7 @@
       "expectedHtk": 10.478013604937175,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -2183,6 +2250,7 @@
       "expectedHtk": 10.752304095234884,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -2214,6 +2282,7 @@
       "expectedHtk": 11.157822890075494,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -2222,14 +2291,14 @@
       "gate": true,
       "locked": false,
       "mitigationPct": 6.644407345575959,
-      "goldPerHour": 103139.05627203258,
-      "chestsPerHour": 0.10874020193963244,
+      "goldPerHour": 94139.70071778203,
+      "chestsPerHour": 0.09925212074452543,
       "keysPerHour": -1.2022939486780173,
-      "gemsPerHour": 0.005437010096981622,
-      "timePiecesPerHour": 0.10874020193963244,
-      "stoneChestsPerHour": 0.05437010096981622,
-      "xpPerHour": 24454.01118139918,
-      "propsPerHour": 98.79211078010414,
+      "gemsPerHour": 0.004962606037226271,
+      "timePiecesPerHour": 0.09925212074452543,
+      "stoneChestsPerHour": 0.04962606037226271,
+      "xpPerHour": 22320.286583720223,
+      "propsPerHour": 90.1720461508513,
       "cyclesPerHour": 1.2022939486780173,
       "clearSecs": 2994.276070305753,
       "gateTimerSecs": 540,
@@ -2245,6 +2314,7 @@
       "expectedHtk": 12.250998056772197,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -2275,6 +2345,7 @@
       "expectedHtk": 12.390757371307938,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -2305,6 +2376,7 @@
       "expectedHtk": 13.222616438367645,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -2335,6 +2407,7 @@
       "expectedHtk": 13.498018456892725,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -2365,6 +2438,7 @@
       "expectedHtk": 14.28535919989254,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -2395,6 +2469,7 @@
       "expectedHtk": 15.146674055038439,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -2425,6 +2500,7 @@
       "expectedHtk": 15.522109226218557,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -2455,6 +2531,7 @@
       "expectedHtk": 16.393735765133528,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -2485,6 +2562,7 @@
       "expectedHtk": 17.174492587959797,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -2515,6 +2593,7 @@
       "expectedHtk": 17.926261236596574,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -2523,14 +2602,14 @@
       "gate": true,
       "locked": false,
       "mitigationPct": 7.462437395659431,
-      "goldPerHour": 76907.67905022916,
-      "chestsPerHour": 0.07072729999754174,
+      "goldPerHour": 69982.69817596846,
+      "chestsPerHour": 0.06435881760645058,
       "keysPerHour": -0.7796127314143646,
-      "gemsPerHour": 0.0035363649998770876,
-      "timePiecesPerHour": 0.07072729999754174,
-      "stoneChestsPerHour": 0.03536364999877087,
-      "xpPerHour": 18045.241917998424,
-      "propsPerHour": 64.25681699960269,
+      "gemsPerHour": 0.0032179408803225296,
+      "timePiecesPerHour": 0.06435881760645058,
+      "stoneChestsPerHour": 0.03217940880322529,
+      "xpPerHour": 16420.398252232204,
+      "propsPerHour": 58.47095485607735,
       "cyclesPerHour": 0.7796127314143646,
       "clearSecs": 4617.677283782835,
       "gateTimerSecs": 540,
@@ -2545,6 +2624,7 @@
       "expectedHtk": 18.83538609139265,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -2576,6 +2656,7 @@
       "expectedHtk": 19.63618787748955,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -2607,6 +2688,7 @@
       "expectedHtk": 20.253963982456824,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -2638,6 +2720,7 @@
       "expectedHtk": 21.633660875381544,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -2669,6 +2752,7 @@
       "expectedHtk": 22.400008812080024,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -2700,6 +2784,7 @@
       "expectedHtk": 23.594564849371082,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -2731,6 +2816,7 @@
       "expectedHtk": 24.386033122253913,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -2762,6 +2848,7 @@
       "expectedHtk": 25.77068869202831,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -2793,6 +2880,7 @@
       "expectedHtk": 26.97393651395416,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -2824,6 +2912,7 @@
       "expectedHtk": 28.128445567688996,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -2832,14 +2921,14 @@
       "gate": true,
       "locked": false,
       "mitigationPct": 8.280467445742904,
-      "goldPerHour": 55225.7303085684,
-      "chestsPerHour": 0.04510254046083362,
+      "goldPerHour": 50147.59799945343,
+      "chestsPerHour": 0.04095525862938287,
       "keysPerHour": -0.4961129217923153,
-      "gemsPerHour": 0.002255127023041681,
-      "timePiecesPerHour": 0.04510254046083362,
-      "stoneChestsPerHour": 0.02255127023041681,
-      "xpPerHour": 12871.896780937142,
-      "propsPerHour": 40.97633712455716,
+      "gemsPerHour": 0.0020477629314691434,
+      "timePiecesPerHour": 0.04095525862938287,
+      "stoneChestsPerHour": 0.020477629314691433,
+      "xpPerHour": 11688.2964091965,
+      "propsPerHour": 37.208469134423645,
       "cyclesPerHour": 0.4961129217923153,
       "clearSecs": 7256.412485678101,
       "gateTimerSecs": 540,
@@ -2855,6 +2944,7 @@
       "expectedHtk": 29.53660678631385,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -2885,6 +2975,7 @@
       "expectedHtk": 30.838068474699902,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -2915,6 +3006,7 @@
       "expectedHtk": 32.448894508301855,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -2945,6 +3037,7 @@
       "expectedHtk": 33.673637368564194,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -2975,6 +3068,7 @@
       "expectedHtk": 35.499979284133246,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -3005,6 +3099,7 @@
       "expectedHtk": 37.5041456449246,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -3035,6 +3130,7 @@
       "expectedHtk": 39.10163865515793,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -3065,6 +3161,7 @@
       "expectedHtk": 41.01211634438143,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -3095,6 +3192,7 @@
       "expectedHtk": 42.837680952744115,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -3125,6 +3223,7 @@
       "expectedHtk": 44.52794055068999,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -3133,14 +3232,14 @@
       "gate": true,
       "locked": false,
       "mitigationPct": 9.098497495826376,
-      "goldPerHour": 38691.420868102716,
-      "chestsPerHour": 0.028379856224120422,
+      "goldPerHour": 35098.15748164093,
+      "chestsPerHour": 0.02574422548233882,
       "keysPerHour": -0.3118535531395751,
-      "gemsPerHour": 0.0014189928112060212,
-      "timePiecesPerHour": 0.028379856224120422,
-      "stoneChestsPerHour": 0.014189928112060211,
-      "xpPerHour": 8957.970681198334,
-      "propsPerHour": 25.783526699474233,
+      "gemsPerHour": 0.001287211274116941,
+      "timePiecesPerHour": 0.02574422548233882,
+      "stoneChestsPerHour": 0.01287211274116941,
+      "xpPerHour": 8126.045997546193,
+      "propsPerHour": 23.38901648546813,
       "cyclesPerHour": 0.3118535531395751,
       "clearSecs": 11543.880015979046,
       "gateTimerSecs": 540,
@@ -3155,6 +3254,7 @@
       "expectedHtk": 46.94090033913628,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -3186,6 +3286,7 @@
       "expectedHtk": 49.37710364326071,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -3217,6 +3318,7 @@
       "expectedHtk": 51.61763152912334,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -3248,6 +3350,7 @@
       "expectedHtk": 54.41883098465256,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -3279,6 +3382,7 @@
       "expectedHtk": 56.871940468138334,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -3310,6 +3414,7 @@
       "expectedHtk": 59.66152520840002,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -3341,6 +3446,7 @@
       "expectedHtk": 62.42616084349676,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -3372,6 +3478,7 @@
       "expectedHtk": 65.41561791963323,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -3403,6 +3510,7 @@
       "expectedHtk": 68.51409986894188,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -3434,6 +3542,7 @@
       "expectedHtk": 71.65717733703127,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -3442,14 +3551,14 @@
       "gate": true,
       "locked": false,
       "mitigationPct": 9.916527545909847,
-      "goldPerHour": 26598.309597403575,
-      "chestsPerHour": 0.01770584096386439,
+      "goldPerHour": 24127.191709770545,
+      "chestsPerHour": 0.01606087852137662,
       "keysPerHour": -0.19455399957052258,
-      "gemsPerHour": 0.0008852920481932197,
-      "timePiecesPerHour": 0.01770584096386439,
-      "stoneChestsPerHour": 0.008852920481932196,
-      "xpPerHour": 6106.576095008121,
-      "propsPerHour": 16.086023115241876,
+      "gemsPerHour": 0.000803043926068831,
+      "timePiecesPerHour": 0.01606087852137662,
+      "stoneChestsPerHour": 0.00803043926068831,
+      "xpPerHour": 5539.244198772134,
+      "propsPerHour": 14.591549967789193,
       "cyclesPerHour": 0.19455399957052258,
       "clearSecs": 18503.860151664783,
       "gateTimerSecs": 540,
@@ -3465,6 +3574,7 @@
       "expectedHtk": 75.23935210839593,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -3495,6 +3605,7 @@
       "expectedHtk": 79.16302831604395,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -3525,6 +3636,7 @@
       "expectedHtk": 82.5986076151305,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -3555,6 +3667,7 @@
       "expectedHtk": 86.4888043434258,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -3585,6 +3698,7 @@
       "expectedHtk": 90.808997643984,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -3615,6 +3729,7 @@
       "expectedHtk": 95.11149595162843,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -3645,6 +3760,7 @@
       "expectedHtk": 99.60930218159959,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -3675,6 +3791,7 @@
       "expectedHtk": 104.36226740600513,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -3705,6 +3822,7 @@
       "expectedHtk": 109.25036282058997,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -3735,6 +3853,7 @@
       "expectedHtk": 114.85533098377684,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -3743,14 +3862,14 @@
       "gate": true,
       "locked": false,
       "mitigationPct": 10.734557595993321,
-      "goldPerHour": 18209.845965484485,
-      "chestsPerHour": 0.011095944486410238,
+      "goldPerHour": 16508.34063259633,
+      "chestsPerHour": 0.010059153249798827,
       "keysPerHour": -0.12185189586213482,
-      "gemsPerHour": 0.0005547972243205119,
-      "timePiecesPerHour": 0.011095944486410238,
-      "stoneChestsPerHour": 0.005547972243205119,
-      "xpPerHour": 4162.577413397755,
-      "propsPerHour": 10.080832639246717,
+      "gemsPerHour": 0.0005029576624899413,
+      "timePiecesPerHour": 0.010059153249798827,
+      "stoneChestsPerHour": 0.0050295766248994135,
+      "xpPerHour": 3773.6313629544534,
+      "propsPerHour": 9.138892189660112,
       "cyclesPerHour": 0.12185189586213482,
       "clearSecs": 29544.0622776448,
       "gateTimerSecs": 540,
@@ -3765,6 +3884,7 @@
       "expectedHtk": 120.05972130511614,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -3796,6 +3916,7 @@
       "expectedHtk": 126.13781052293012,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -3827,6 +3948,7 @@
       "expectedHtk": 132.2677827806068,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -3858,6 +3980,7 @@
       "expectedHtk": 138.5076697860268,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -3889,6 +4012,7 @@
       "expectedHtk": 144.90408695144902,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -3920,6 +4044,7 @@
       "expectedHtk": 152.4059264446072,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -3951,6 +4076,7 @@
       "expectedHtk": 159.90445939919005,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -3982,6 +4108,7 @@
       "expectedHtk": 167.19199995351084,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -4013,6 +4140,7 @@
       "expectedHtk": 175.4949641037553,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -4044,6 +4172,7 @@
       "expectedHtk": 184.1578744601621,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -4052,14 +4181,14 @@
       "gate": true,
       "locked": false,
       "mitigationPct": 11.552587646076793,
-      "goldPerHour": 12268.042554534824,
-      "chestsPerHour": 0.006899168838513849,
+      "goldPerHour": 11123.922434626887,
+      "chestsPerHour": 0.006255750962866868,
       "keysPerHour": -0.07577925258092155,
-      "gemsPerHour": 0.00034495844192569246,
-      "timePiecesPerHour": 0.006899168838513849,
-      "stoneChestsPerHour": 0.0034495844192569246,
-      "xpPerHour": 2796.906411879563,
-      "propsPerHour": 6.2679987716363295,
+      "gemsPerHour": 0.0003127875481433434,
+      "timePiecesPerHour": 0.006255750962866868,
+      "stoneChestsPerHour": 0.003127875481433434,
+      "xpPerHour": 2536.0663564994115,
+      "propsPerHour": 5.683443943569117,
       "cyclesPerHour": 0.07577925258092155,
       "clearSecs": 47506.40679855885,
       "gateTimerSecs": 540,
@@ -4075,6 +4204,7 @@
       "expectedHtk": 193.09224543378727,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -4105,6 +4235,7 @@
       "expectedHtk": 202.18161099181486,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -4135,6 +4266,7 @@
       "expectedHtk": 211.70363515759288,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -4165,6 +4297,7 @@
       "expectedHtk": 222.1280225383751,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -4195,6 +4328,7 @@
       "expectedHtk": 233.0499270514874,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -4225,6 +4359,7 @@
       "expectedHtk": 244.31097227925744,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -4255,6 +4390,7 @@
       "expectedHtk": 256.1266805582886,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -4285,6 +4421,7 @@
       "expectedHtk": 268.72380839062976,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -4315,6 +4452,7 @@
       "expectedHtk": 281.4353367709955,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -4345,6 +4483,7 @@
       "expectedHtk": 295.0131129568806,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -4353,14 +4492,14 @@
       "gate": true,
       "locked": false,
       "mitigationPct": 12.370617696160267,
-      "goldPerHour": 8260.356225246083,
-      "chestsPerHour": 0.0043088128188416485,
+      "goldPerHour": 7487.815393940103,
+      "chestsPerHour": 0.0039058357865877358,
       "keysPerHour": -0.04731347497180306,
-      "gemsPerHour": 0.0002154406409420824,
-      "timePiecesPerHour": 0.0043088128188416485,
-      "stoneChestsPerHour": 0.0021544064094208243,
-      "xpPerHour": 1877.1392174643354,
-      "propsPerHour": 3.9146213243750734,
+      "gemsPerHour": 0.00019529178932938682,
+      "timePiecesPerHour": 0.0039058357865877358,
+      "stoneChestsPerHour": 0.0019529178932938679,
+      "xpPerHour": 1701.5818138859256,
+      "propsPerHour": 3.54851062288523,
       "cyclesPerHour": 0.04731347497180306,
       "clearSecs": 76088.26031369406,
       "gateTimerSecs": 540,
@@ -4375,6 +4514,7 @@
       "expectedHtk": 309.174721359464,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -4406,6 +4546,7 @@
       "expectedHtk": 324.16742951155226,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -4437,6 +4578,7 @@
       "expectedHtk": 339.8536232493425,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -4468,6 +4610,7 @@
       "expectedHtk": 356.2113385476282,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -4499,6 +4642,7 @@
       "expectedHtk": 373.95726999047054,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -4530,6 +4674,7 @@
       "expectedHtk": 391.7841736098858,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -4561,6 +4706,7 @@
       "expectedHtk": 411.15258123022545,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -4592,6 +4738,7 @@
       "expectedHtk": 430.977209602832,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -4623,6 +4770,7 @@
       "expectedHtk": 451.49023312274784,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -4654,6 +4802,7 @@
       "expectedHtk": 473.41299688330207,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -4662,14 +4811,14 @@
       "gate": true,
       "locked": false,
       "mitigationPct": 13.18864774624374,
-      "goldPerHour": 5516.596501830438,
-      "chestsPerHour": 0.002683199949034847,
+      "goldPerHour": 5000.400261706006,
+      "chestsPerHour": 0.0024321288901429585,
       "keysPerHour": -0.029461676235116134,
-      "gemsPerHour": 0.00013415999745174236,
-      "timePiecesPerHour": 0.002683199949034847,
-      "stoneChestsPerHour": 0.0013415999745174235,
-      "xpPerHour": 1247.4095671959387,
-      "propsPerHour": 2.437727555052547,
+      "gemsPerHour": 0.00012160644450714793,
+      "timePiecesPerHour": 0.0024321288901429585,
+      "stoneChestsPerHour": 0.0012160644450714792,
+      "xpPerHour": 1130.687575970346,
+      "propsPerHour": 2.20962571763371,
       "cyclesPerHour": 0.029461676235116134,
       "clearSecs": 122192.64006808502,
       "gateTimerSecs": 540,
@@ -4685,6 +4834,7 @@
       "expectedHtk": 496.4877862101331,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -4715,6 +4865,7 @@
       "expectedHtk": 496.9005735848882,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -4745,6 +4896,7 @@
       "expectedHtk": 513.3880897275851,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -4775,6 +4927,7 @@
       "expectedHtk": 529.3692833594348,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -4805,6 +4958,7 @@
       "expectedHtk": 546.8117446014023,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -4835,6 +4989,7 @@
       "expectedHtk": 564.4710737669877,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -4865,6 +5020,7 @@
       "expectedHtk": 582.321545005821,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -4895,6 +5051,7 @@
       "expectedHtk": 601.3022507518997,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -4925,6 +5082,7 @@
       "expectedHtk": 620.8590889193832,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -4955,6 +5113,7 @@
       "expectedHtk": 640.788664914374,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -4963,14 +5122,14 @@
       "gate": true,
       "locked": false,
       "mitigationPct": 14.006677796327214,
-      "goldPerHour": 5870.007077417447,
-      "chestsPerHour": 0.0020484572563948997,
+      "goldPerHour": 5448.0821717842055,
+      "chestsPerHour": 0.0019012180583497754,
       "keysPerHour": -0.01727285232943539,
-      "gemsPerHour": 0.00010242286281974499,
-      "timePiecesPerHour": 0.0020484572563948997,
-      "stoneChestsPerHour": 0.0010242286281974499,
-      "xpPerHour": 1014.293182989694,
-      "propsPerHour": 1.8610542613707892,
+      "gemsPerHour": 0.00009506090291748877,
+      "timePiecesPerHour": 0.0019012180583497754,
+      "stoneChestsPerHour": 0.0009506090291748877,
+      "xpPerHour": 941.3877248065584,
+      "propsPerHour": 1.727285232943539,
       "cyclesPerHour": 0.01727285232943539,
       "clearSecs": 208419.5436479874,
       "gateTimerSecs": 480,
@@ -4985,6 +5144,7 @@
       "expectedHtk": 661.4059642020645,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -5016,6 +5176,7 @@
       "expectedHtk": 683.099151846064,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -5047,6 +5208,7 @@
       "expectedHtk": 704.8141801524158,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -5078,6 +5240,7 @@
       "expectedHtk": 727.7648302392431,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -5109,6 +5272,7 @@
       "expectedHtk": 750.9939593147276,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -5140,6 +5304,7 @@
       "expectedHtk": 775.3456187131543,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -5171,6 +5336,7 @@
       "expectedHtk": 800.5595704150614,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -5202,6 +5368,7 @@
       "expectedHtk": 826.1079501488241,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -5233,6 +5400,7 @@
       "expectedHtk": 852.9248710450292,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -5264,6 +5432,7 @@
       "expectedHtk": 880.0929467727267,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -5272,14 +5441,14 @@
       "gate": true,
       "locked": false,
       "mitigationPct": 14.824707846410684,
-      "goldPerHour": 4475.835370683655,
-      "chestsPerHour": 0.0014906335108147944,
+      "goldPerHour": 4154.046129666616,
+      "chestsPerHour": 0.001383464728597858,
       "keysPerHour": -0.012568985369723904,
-      "gemsPerHour": 0.00007453167554073973,
-      "timePiecesPerHour": 0.0014906335108147944,
-      "stoneChestsPerHour": 0.0007453167554073972,
-      "xpPerHour": 783.1838293266518,
-      "propsPerHour": 1.3542629892733167,
+      "gemsPerHour": 0.00006917323642989291,
+      "timePiecesPerHour": 0.001383464728597858,
+      "stoneChestsPerHour": 0.000691732364298929,
+      "xpPerHour": 726.8769929165032,
+      "propsPerHour": 1.2568985369723904,
       "cyclesPerHour": 0.012568985369723904,
       "clearSecs": 286419.30069165793,
       "gateTimerSecs": 480,
@@ -5295,6 +5464,7 @@
       "expectedHtk": 908.9168041392038,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -5325,6 +5495,7 @@
       "expectedHtk": 938.1460432766942,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -5355,6 +5526,7 @@
       "expectedHtk": 968.7444538810903,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -5385,6 +5557,7 @@
       "expectedHtk": 999.6792343231605,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -5415,6 +5588,7 @@
       "expectedHtk": 1032.266339379465,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -5445,6 +5619,7 @@
       "expectedHtk": 1065.5885734148972,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -5475,6 +5650,7 @@
       "expectedHtk": 1099.8996355128893,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -5505,6 +5681,7 @@
       "expectedHtk": 1135.5631044149086,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -5535,6 +5712,7 @@
       "expectedHtk": 1172.0700055971038,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -5565,6 +5743,7 @@
       "expectedHtk": 1210.1108268823277,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -5573,14 +5752,14 @@
       "gate": true,
       "locked": false,
       "mitigationPct": 15.642737896494157,
-      "goldPerHour": 3407.102375723325,
-      "chestsPerHour": 0.0010845351856118694,
+      "goldPerHour": 3162.0927610499075,
+      "chestsPerHour": 0.0010065447061299857,
       "keysPerHour": -0.009144610212175684,
-      "gemsPerHour": 0.000054226759280593476,
-      "timePiecesPerHour": 0.0010845351856118694,
-      "stoneChestsPerHour": 0.0005422675928059347,
-      "xpPerHour": 602.629452785607,
-      "propsPerHour": 0.9853165461415068,
+      "gemsPerHour": 0.000050327235306499276,
+      "timePiecesPerHour": 0.0010065447061299857,
+      "stoneChestsPerHour": 0.0005032723530649929,
+      "xpPerHour": 559.293505186877,
+      "propsPerHour": 0.9144610212175684,
       "cyclesPerHour": 0.009144610212175684,
       "clearSecs": 393674.5160779782,
       "gateTimerSecs": 480,
@@ -5595,6 +5774,7 @@
       "expectedHtk": 1249.2557777442719,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -5626,6 +5806,7 @@
       "expectedHtk": 1289.6298036633164,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -5657,6 +5838,7 @@
       "expectedHtk": 1331.3796320294175,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -5688,6 +5870,7 @@
       "expectedHtk": 1374.5720448951306,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -5719,6 +5902,7 @@
       "expectedHtk": 1418.8674938169574,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -5750,6 +5934,7 @@
       "expectedHtk": 1464.665098822858,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -5781,6 +5966,7 @@
       "expectedHtk": 1512.1243305515964,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -5812,6 +5998,7 @@
       "expectedHtk": 1560.9883626753474,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -5843,6 +6030,7 @@
       "expectedHtk": 1611.527226964538,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -5874,6 +6062,7 @@
       "expectedHtk": 1663.6596391435332,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -5882,14 +6071,14 @@
       "gate": true,
       "locked": false,
       "mitigationPct": 16.46076794657763,
-      "goldPerHour": 2586.6513336186326,
-      "chestsPerHour": 0.000788950568063867,
+      "goldPerHour": 2400.629698136999,
+      "chestsPerHour": 0.0007322123934680317,
       "keysPerHour": -0.006652259845003512,
-      "gemsPerHour": 0.00003944752840319335,
-      "timePiecesPerHour": 0.000788950568063867,
-      "stoneChestsPerHour": 0.0003944752840319335,
-      "xpPerHour": 461.45876026675506,
-      "propsPerHour": 0.7167734704360904,
+      "gemsPerHour": 0.000036610619673401585,
+      "timePiecesPerHour": 0.0007322123934680317,
+      "stoneChestsPerHour": 0.00036610619673401585,
+      "xpPerHour": 428.27248882132614,
+      "propsPerHour": 0.6652259845003512,
       "cyclesPerHour": 0.006652259845003512,
       "clearSecs": 541169.4798278132,
       "gateTimerSecs": 480,
@@ -5905,6 +6094,7 @@
       "expectedHtk": 1717.2962434357557,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -5935,6 +6125,7 @@
       "expectedHtk": 1772.8737655145003,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -5965,6 +6156,7 @@
       "expectedHtk": 1830.0312085067999,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -5995,6 +6187,7 @@
       "expectedHtk": 1889.3986579742782,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -6025,6 +6218,7 @@
       "expectedHtk": 1950.706701789977,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -6055,6 +6249,7 @@
       "expectedHtk": 2013.4473129514054,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -6085,6 +6280,7 @@
       "expectedHtk": 2078.6880499470503,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -6115,6 +6311,7 @@
       "expectedHtk": 2145.925396068276,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -6145,6 +6342,7 @@
       "expectedHtk": 2215.425691737546,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -6175,6 +6373,7 @@
       "expectedHtk": 2287.0230085012113,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -6183,14 +6382,14 @@
       "gate": true,
       "locked": false,
       "mitigationPct": 17.2787979966611,
-      "goldPerHour": 1961.189647476693,
-      "chestsPerHour": 0.0005738684188597981,
+      "goldPerHour": 1820.1277503095423,
+      "chestsPerHour": 0.0005325919579153764,
       "keysPerHour": -0.004838678130851581,
-      "gemsPerHour": 0.000028693420942989908,
-      "timePiecesPerHour": 0.0005738684188597981,
-      "stoneChestsPerHour": 0.00028693420942989907,
-      "xpPerHour": 353.0183400761058,
-      "propsPerHour": 0.5213680993591874,
+      "gemsPerHour": 0.00002662959789576882,
+      "timePiecesPerHour": 0.0005325919579153764,
+      "stoneChestsPerHour": 0.0002662959789576882,
+      "xpPerHour": 327.6268962399606,
+      "propsPerHour": 0.48386781308515814,
       "cyclesPerHour": 0.004838678130851581,
       "clearSecs": 744004.8506318852,
       "gateTimerSecs": 480,
@@ -6205,6 +6404,7 @@
       "expectedHtk": 2360.927700960646,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -6236,6 +6436,7 @@
       "expectedHtk": 2437.081984704215,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -6267,6 +6468,7 @@
       "expectedHtk": 2516.254250411611,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -6298,6 +6500,7 @@
       "expectedHtk": 2597.7455456217403,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -6329,6 +6532,7 @@
       "expectedHtk": 2681.4828772166447,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -6360,6 +6564,7 @@
       "expectedHtk": 2768.5511427827537,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -6391,6 +6596,7 @@
       "expectedHtk": 2857.9325950051034,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -6422,6 +6628,7 @@
       "expectedHtk": 2950.5196762327905,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -6453,6 +6660,7 @@
       "expectedHtk": 3045.803423176068,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -6484,6 +6692,7 @@
       "expectedHtk": 3144.674077356878,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -6492,14 +6701,14 @@
       "gate": true,
       "locked": false,
       "mitigationPct": 18.096828046744573,
-      "goldPerHour": 1483.4238546093347,
-      "chestsPerHour": 0.00041733037216499987,
+      "goldPerHour": 1376.7300517865417,
+      "chestsPerHour": 0.000387314295302422,
       "keysPerHour": -0.0035188086913317514,
-      "gemsPerHour": 0.000020866518608249992,
-      "timePiecesPerHour": 0.00041733037216499987,
-      "stoneChestsPerHour": 0.00020866518608249994,
-      "xpPerHour": 269.3488184836226,
-      "propsPerHour": 0.3791509269195138,
+      "gemsPerHour": 0.0000193657147651211,
+      "timePiecesPerHour": 0.000387314295302422,
+      "stoneChestsPerHour": 0.000193657147651211,
+      "xpPerHour": 249.97616943220763,
+      "propsPerHour": 0.3518808691331751,
       "cyclesPerHour": 0.0035188086913317514,
       "clearSecs": 1023073.5216916611,
       "gateTimerSecs": 480,
@@ -6515,6 +6724,7 @@
       "expectedHtk": 3246.4971091462107,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -6545,6 +6755,7 @@
       "expectedHtk": 3351.430127663886,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -6575,6 +6786,7 @@
       "expectedHtk": 3459.6540514095927,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -6605,6 +6817,7 @@
       "expectedHtk": 3571.69224721472,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -6635,6 +6848,7 @@
       "expectedHtk": 3687.6015148845972,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -6665,6 +6879,7 @@
       "expectedHtk": 3806.808004657576,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -6695,6 +6910,7 @@
       "expectedHtk": 3929.837408673673,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -6725,6 +6941,7 @@
       "expectedHtk": 4057.247469860288,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -6755,6 +6972,7 @@
       "expectedHtk": 4188.481772052292,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -6785,6 +7003,7 @@
       "expectedHtk": 4324.316390024393,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -6793,14 +7012,14 @@
       "gate": true,
       "locked": false,
       "mitigationPct": 18.91485809682805,
-      "goldPerHour": 1120.9410098708042,
-      "chestsPerHour": 0.00030349447160642803,
+      "goldPerHour": 1040.310740314945,
+      "chestsPerHour": 0.0002816638481937297,
       "keysPerHour": -0.002558958471398939,
-      "gemsPerHour": 0.000015174723580321402,
-      "timePiecesPerHour": 0.00030349447160642803,
-      "stoneChestsPerHour": 0.00015174723580321401,
-      "xpPerHour": 205.05987834056944,
-      "propsPerHour": 0.27572929721738526,
+      "gemsPerHour": 0.000014083192409686485,
+      "timePiecesPerHour": 0.0002816638481937297,
+      "stoneChestsPerHour": 0.00014083192409686485,
+      "xpPerHour": 190.3097415179391,
+      "propsPerHour": 0.2558958471398939,
       "cyclesPerHour": 0.002558958471398939,
       "clearSecs": 1406822.3616118089,
       "gateTimerSecs": 480,
@@ -6815,6 +7034,7 @@
       "expectedHtk": 4464.206018716449,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -6846,6 +7066,7 @@
       "expectedHtk": 4608.576740527572,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -6877,6 +7098,7 @@
       "expectedHtk": 4757.668330555948,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -6908,6 +7130,7 @@
       "expectedHtk": 4911.866880376649,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -6939,6 +7162,7 @@
       "expectedHtk": 5071.01487700653,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -6970,6 +7194,7 @@
       "expectedHtk": 5234.986472560911,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -7001,6 +7226,7 @@
       "expectedHtk": 5404.986210012106,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -7032,6 +7258,7 @@
       "expectedHtk": 5579.44835106119,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -7063,6 +7290,7 @@
       "expectedHtk": 5760.306052021267,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -7094,6 +7322,7 @@
       "expectedHtk": 5946.788042461715,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -7102,14 +7331,14 @@
       "gate": true,
       "locked": false,
       "mitigationPct": 19.732888146911517,
-      "goldPerHour": 845.3116228981021,
-      "chestsPerHour": 0.00022067843833725137,
+      "goldPerHour": 784.5046480680002,
+      "chestsPerHour": 0.00020480406978247635,
       "keysPerHour": -0.001860675811637634,
-      "gemsPerHour": 0.000011033921916862569,
-      "timePiecesPerHour": 0.00022067843833725137,
-      "stoneChestsPerHour": 0.00011033921916862569,
-      "xpPerHour": 155.55794093318053,
-      "propsPerHour": 0.20048968401858577,
+      "gemsPerHour": 0.000010240203489123818,
+      "timePiecesPerHour": 0.00020480406978247635,
+      "stoneChestsPerHour": 0.00010240203489123817,
+      "xpPerHour": 144.3679755491524,
+      "propsPerHour": 0.1860675811637634,
       "cyclesPerHour": 0.001860675811637634,
       "clearSecs": 1934780.888472741,
       "gateTimerSecs": 480,
@@ -7125,6 +7354,7 @@
       "expectedHtk": 6139.529792765796,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -7155,6 +7385,7 @@
       "expectedHtk": 6338.318036799552,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -7185,6 +7416,7 @@
       "expectedHtk": 6543.348173843802,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -7215,6 +7447,7 @@
       "expectedHtk": 6755.638014262678,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -7245,6 +7478,7 @@
       "expectedHtk": 6974.520513388322,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -7275,6 +7509,7 @@
       "expectedHtk": 7200.162843805674,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -7305,6 +7540,7 @@
       "expectedHtk": 7433.686268194193,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -7335,6 +7571,7 @@
       "expectedHtk": 7674.225615708301,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -7365,6 +7602,7 @@
       "expectedHtk": 7922.898927722839,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -7395,6 +7633,7 @@
       "expectedHtk": 8179.372465697155,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -7403,14 +7642,14 @@
       "gate": true,
       "locked": false,
       "mitigationPct": 20.550918196994992,
-      "goldPerHour": 636.8849672686617,
-      "chestsPerHour": 0.00016044844667149172,
+      "goldPerHour": 591.0678466251615,
+      "chestsPerHour": 0.0001489058821331315,
       "keysPerHour": -0.0013528323601672337,
-      "gemsPerHour": 0.000008022422333574587,
-      "timePiecesPerHour": 0.00016044844667149172,
-      "stoneChestsPerHour": 0.00008022422333574586,
-      "xpPerHour": 117.95548849331935,
-      "propsPerHour": 0.14576982969799349,
+      "gemsPerHour": 0.000007445294106656575,
+      "timePiecesPerHour": 0.0001489058821331315,
+      "stoneChestsPerHour": 0.00007445294106656575,
+      "xpPerHour": 109.46984175237239,
+      "propsPerHour": 0.13528323601672337,
       "cyclesPerHour": 0.0013528323601672337,
       "clearSecs": 2661083.594684989,
       "gateTimerSecs": 480,
@@ -7425,6 +7664,7 @@
       "expectedHtk": 8444.219155119526,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -7456,6 +7696,7 @@
       "expectedHtk": 8718.245391160397,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -7487,6 +7728,7 @@
       "expectedHtk": 9000.58742109579,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -7518,6 +7760,7 @@
       "expectedHtk": 9291.868846679381,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -7549,6 +7792,7 @@
       "expectedHtk": 9593.128955230886,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -7580,6 +7824,7 @@
       "expectedHtk": 9903.816744267719,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -7611,6 +7856,7 @@
       "expectedHtk": 10224.773006862006,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -7642,6 +7888,7 @@
       "expectedHtk": 10555.842675757409,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -7673,6 +7920,7 @@
       "expectedHtk": 10898.464756675103,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -7704,6 +7952,7 @@
       "expectedHtk": 11251.515086552146,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -7712,14 +7961,14 @@
       "gate": true,
       "locked": false,
       "mitigationPct": 21.368948247078464,
-      "goldPerHour": 478.9621206187439,
-      "chestsPerHour": 0.00011663595115398684,
+      "goldPerHour": 444.50665609599713,
+      "chestsPerHour": 0.00010824542149817308,
       "keysPerHour": -0.000983425952990531,
-      "gemsPerHour": 0.000005831797557699343,
-      "timePiecesPerHour": 0.00011663595115398684,
-      "stoneChestsPerHour": 0.00005831797557699342,
-      "xpPerHour": 89.27488911563259,
-      "propsPerHour": 0.10596551782885563,
+      "gemsPerHour": 0.000005412271074908655,
+      "timePiecesPerHour": 0.00010824542149817308,
+      "stoneChestsPerHour": 0.00005412271074908654,
+      "xpPerHour": 82.85265311349926,
+      "propsPerHour": 0.09834259529905309,
       "cyclesPerHour": 0.000983425952990531,
       "clearSecs": 3660672.152339123,
       "gateTimerSecs": 480,
@@ -7735,6 +7984,7 @@
       "expectedHtk": 11616.159797966997,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -7765,6 +8015,7 @@
       "expectedHtk": 11991.821166356654,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -7795,6 +8046,7 @@
       "expectedHtk": 12380.971842928433,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -7825,6 +8077,7 @@
       "expectedHtk": 12782.296548158063,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -7855,6 +8108,7 @@
       "expectedHtk": 13197.135483177588,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -7885,6 +8139,7 @@
       "expectedHtk": 13624.217821850547,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -7915,6 +8170,7 @@
       "expectedHtk": 14065.593337488013,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -7945,6 +8201,7 @@
       "expectedHtk": 14521.722711396915,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -7975,6 +8232,7 @@
       "expectedHtk": 14992.646282750851,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -8005,6 +8263,7 @@
       "expectedHtk": 15478.382781332504,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -8013,14 +8272,14 @@
       "gate": true,
       "locked": false,
       "mitigationPct": 22.186978297161936,
-      "goldPerHour": 359.935455949488,
-      "chestsPerHour": 0.00008478319126491981,
+      "goldPerHour": 334.0418247025324,
+      "chestsPerHour": 0.00007868391803616063,
       "keysPerHour": -0.0007148552429170973,
-      "gemsPerHour": 0.000004239159563245991,
-      "timePiecesPerHour": 0.00008478319126491981,
-      "stoneChestsPerHour": 0.00004239159563245991,
-      "xpPerHour": 67.45930630214372,
-      "propsPerHour": 0.0770268058577327,
+      "gemsPerHour": 0.000003934195901808032,
+      "timePiecesPerHour": 0.00007868391803616063,
+      "stoneChestsPerHour": 0.000039341959018080316,
+      "xpPerHour": 62.60630731943646,
+      "propsPerHour": 0.07148552429170972,
       "cyclesPerHour": 0.0007148552429170973,
       "clearSecs": 5035984.607610267,
       "gateTimerSecs": 480,
@@ -8035,6 +8294,7 @@
       "expectedHtk": 15980.311976687488,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -8066,6 +8326,7 @@
       "expectedHtk": 16498.27596519988,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -8097,6 +8358,7 @@
       "expectedHtk": 17033.194723408447,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -8128,6 +8390,7 @@
       "expectedHtk": 17585.489082469474,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -8159,6 +8422,7 @@
       "expectedHtk": 18155.58873018003,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -8190,6 +8454,7 @@
       "expectedHtk": 18744.215895376616,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -8221,6 +8486,7 @@
       "expectedHtk": 19352.121815101054,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -8252,6 +8518,7 @@
       "expectedHtk": 19979.538906990325,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -8283,6 +8550,7 @@
       "expectedHtk": 20627.162444754056,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -8314,6 +8582,7 @@
       "expectedHtk": 21296.09488717522,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -8322,14 +8591,14 @@
       "gate": true,
       "locked": false,
       "mitigationPct": 23.005008347245408,
-      "goldPerHour": 270.05421697118015,
-      "chestsPerHour": 0.00006162204748419124,
+      "goldPerHour": 250.62626715075558,
+      "chestsPerHour": 0.00005718890046733702,
       "keysPerHour": -0.0005195697717664736,
-      "gemsPerHour": 0.000003081102374209562,
-      "timePiecesPerHour": 0.00006162204748419124,
-      "stoneChestsPerHour": 0.00003081102374209562,
-      "xpPerHour": 50.83285896560886,
-      "propsPerHour": 0.055984557992036006,
+      "gemsPerHour": 0.000002859445023366851,
+      "timePiecesPerHour": 0.00005718890046733702,
+      "stoneChestsPerHour": 0.00002859445023366851,
+      "xpPerHour": 47.17589613685228,
+      "propsPerHour": 0.051956977176647365,
       "cyclesPerHour": 0.0005195697717664736,
       "clearSecs": 6928809.556723134,
       "gateTimerSecs": 480,
@@ -8345,6 +8614,7 @@
       "expectedHtk": 21986.64117968761,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -8375,6 +8645,7 @@
       "expectedHtk": 22699.555297106403,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -8405,6 +8676,7 @@
       "expectedHtk": 23435.948332509455,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -8435,6 +8707,7 @@
       "expectedHtk": 24196.046934129055,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -8465,6 +8738,7 @@
       "expectedHtk": 24980.687557901154,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -8495,6 +8769,7 @@
       "expectedHtk": 25790.942439924842,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -8525,6 +8800,7 @@
       "expectedHtk": 26627.214479588147,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -8555,6 +8831,7 @@
       "expectedHtk": 27490.580475961455,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -8585,6 +8862,7 @@
       "expectedHtk": 28382.622080752175,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -8615,6 +8893,7 @@
       "expectedHtk": 29303.45356089731,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -8623,14 +8902,14 @@
       "gate": true,
       "locked": false,
       "mitigationPct": 23.82303839732888,
-      "goldPerHour": 202.47873065073009,
-      "chestsPerHour": 0.00004478308976726614,
+      "goldPerHour": 187.91219627932279,
+      "chestsPerHour": 0.00004156134685009051,
       "keysPerHour": -0.00037759109408900117,
-      "gemsPerHour": 0.000002239154488363307,
-      "timePiecesPerHour": 0.00004478308976726614,
-      "stoneChestsPerHour": 0.00002239154488363307,
-      "xpPerHour": 38.297022900406986,
-      "propsPerHour": 0.040686111359432876,
+      "gemsPerHour": 0.0000020780673425045254,
+      "timePiecesPerHour": 0.00004156134685009051,
+      "stoneChestsPerHour": 0.000020780673425045255,
+      "xpPerHour": 35.5418945044095,
+      "propsPerHour": 0.037759109408900114,
       "cyclesPerHour": 0.00037759109408900117,
       "clearSecs": 9534123.17280834,
       "gateTimerSecs": 480,
@@ -8645,6 +8924,7 @@
       "expectedHtk": 30253.87158040423,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -8676,6 +8956,7 @@
       "expectedHtk": 31235.22562012307,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -8707,6 +8988,7 @@
       "expectedHtk": 32248.680131901037,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -8738,6 +9020,7 @@
       "expectedHtk": 33294.86158692646,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -8769,6 +9052,7 @@
       "expectedHtk": 34375.16740175769,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -8800,6 +9084,7 @@
       "expectedHtk": 35490.38644340623,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -8831,6 +9116,7 @@
       "expectedHtk": 36641.85762163588,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -8862,6 +9148,7 @@
       "expectedHtk": 37830.740917852265,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -8893,6 +9180,7 @@
       "expectedHtk": 39058.180841235364,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -8924,6 +9212,7 @@
       "expectedHtk": 40325.7910180436,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -8932,14 +9221,14 @@
       "gate": true,
       "locked": false,
       "mitigationPct": 24.641068447412355,
-      "goldPerHour": 151.59494356343347,
-      "chestsPerHour": 0.000032542373099881225,
+      "goldPerHour": 140.68890528618752,
+      "chestsPerHour": 0.000030201210800419598,
       "keysPerHour": -0.00027438254756458064,
-      "gemsPerHour": 0.000001627118654994061,
-      "timePiecesPerHour": 0.000032542373099881225,
-      "stoneChestsPerHour": 0.000016271186549940613,
-      "xpPerHour": 28.813687658739003,
-      "propsPerHour": 0.029565235956759837,
+      "gemsPerHour": 0.00000151006054002098,
+      "timePiecesPerHour": 0.000030201210800419598,
+      "stoneChestsPerHour": 0.000015100605400209799,
+      "xpPerHour": 26.7407743205489,
+      "propsPerHour": 0.027438254756458065,
       "cyclesPerHour": 0.00027438254756458064,
       "clearSecs": 13120368.011572158,
       "gateTimerSecs": 480,
@@ -8955,6 +9244,7 @@
       "expectedHtk": 41633.77522082215,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -8985,6 +9275,7 @@
       "expectedHtk": 42985.18248651897,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -9015,6 +9306,7 @@
       "expectedHtk": 44380.10590215775,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -9045,6 +9337,7 @@
       "expectedHtk": 45820.53035336404,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -9075,6 +9368,7 @@
       "expectedHtk": 47307.493918197506,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -9105,6 +9399,7 @@
       "expectedHtk": 48842.71522906839,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -9135,6 +9430,7 @@
       "expectedHtk": 50428.17401857846,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -9165,6 +9461,7 @@
       "expectedHtk": 52064.66070434038,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -9195,6 +9492,7 @@
       "expectedHtk": 53754.882670676525,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -9225,6 +9523,7 @@
       "expectedHtk": 55499.66338298003,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -9233,14 +9532,14 @@
       "gate": true,
       "locked": false,
       "mitigationPct": 25.459098497495823,
-      "goldPerHour": 113.42940756983705,
-      "chestsPerHour": 0.000023644530555035417,
+      "goldPerHour": 105.26911558954917,
+      "chestsPerHour": 0.000021943505422314586,
       "keysPerHour": -0.00019936005082909504,
-      "gemsPerHour": 0.0000011822265277517708,
-      "timePiecesPerHour": 0.000023644530555035417,
-      "stoneChestsPerHour": 0.000011822265277517709,
-      "xpPerHour": 21.65068555536871,
-      "propsPerHour": 0.02148141202858347,
+      "gemsPerHour": 0.0000010971752711157293,
+      "timePiecesPerHour": 0.000021943505422314586,
+      "stoneChestsPerHour": 0.000010971752711157293,
+      "xpPerHour": 20.093100802962834,
+      "propsPerHour": 0.019936005082909505,
       "cyclesPerHour": 0.00019936005082909504,
       "clearSecs": 18057780.307681423,
       "gateTimerSecs": 480,
@@ -9255,6 +9554,7 @@
       "expectedHtk": 57301.27919600622,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -9286,6 +9586,7 @@
       "expectedHtk": 57363.353794104405,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -9317,6 +9618,7 @@
       "expectedHtk": 59225.727145898745,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -9348,6 +9650,7 @@
       "expectedHtk": 61148.05583125133,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -9379,6 +9682,7 @@
       "expectedHtk": 63133.26605568719,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -9410,6 +9714,7 @@
       "expectedHtk": 65182.95131300911,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -9441,6 +9746,7 @@
       "expectedHtk": 67299.3121159457,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -9472,6 +9778,7 @@
       "expectedHtk": 69484.70204253557,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -9503,6 +9810,7 @@
       "expectedHtk": 71740.58868546181,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -9534,6 +9842,7 @@
       "expectedHtk": 74069.98864067096,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -9542,14 +9851,14 @@
       "gate": true,
       "locked": false,
       "mitigationPct": 26.2771285475793,
-      "goldPerHour": 114.86039370986907,
-      "chestsPerHour": 0.000018133268072607272,
+      "goldPerHour": 109.21619013801559,
+      "chestsPerHour": 0.00001724220499055558,
       "keysPerHour": -0.000104432019016351,
-      "gemsPerHour": 9.066634036303636e-7,
-      "timePiecesPerHour": 0.000018133268072607272,
-      "stoneChestsPerHour": 0.000009066634036303636,
-      "xpPerHour": 17.134474166840885,
-      "propsPerHour": 0.016474347079370507,
+      "gemsPerHour": 8.62110249527779e-7,
+      "timePiecesPerHour": 0.00001724220499055558,
+      "stoneChestsPerHour": 0.00000862110249527779,
+      "xpPerHour": 16.292491502750426,
+      "propsPerHour": 0.01566480285245265,
       "cyclesPerHour": 0.000104432019016351,
       "clearSecs": 34472186.15428995,
       "gateTimerSecs": 420,
@@ -9565,6 +9874,7 @@
       "expectedHtk": 76475.31107736725,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -9595,6 +9905,7 @@
       "expectedHtk": 78958.6598121356,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -9625,6 +9936,7 @@
       "expectedHtk": 81522.53343365266,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -9655,6 +9967,7 @@
       "expectedHtk": 84170.58915402697,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -9685,6 +9998,7 @@
       "expectedHtk": 86904.11197389467,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -9715,6 +10029,7 @@
       "expectedHtk": 89726.4688945637,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -9745,6 +10060,7 @@
       "expectedHtk": 92640.68445271956,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -9775,6 +10091,7 @@
       "expectedHtk": 95649.45703327775,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -9805,6 +10122,7 @@
       "expectedHtk": 98756.2742843699,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -9835,6 +10153,7 @@
       "expectedHtk": 101964.23802054998,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -9843,14 +10162,14 @@
       "gate": true,
       "locked": false,
       "mitigationPct": 27.09515859766277,
-      "goldPerHour": 85.84466115121448,
-      "chestsPerHour": 0.000013172441898064002,
+      "goldPerHour": 81.62627442685145,
+      "chestsPerHour": 0.000012525151160526383,
       "keysPerHour": -0.00007586192281643988,
-      "gemsPerHour": 6.586220949032e-7,
-      "timePiecesPerHour": 0.000013172441898064002,
-      "stoneChestsPerHour": 0.000006586220949032001,
-      "xpPerHour": 12.845407139425433,
-      "propsPerHour": 0.011967361803875115,
+      "gemsPerHour": 6.262575580263191e-7,
+      "timePiecesPerHour": 0.000012525151160526383,
+      "stoneChestsPerHour": 0.000006262575580263192,
+      "xpPerHour": 12.214186814022312,
+      "propsPerHour": 0.011379288422465982,
       "cyclesPerHour": 0.00007586192281643988,
       "clearSecs": 47454636.87640477,
       "gateTimerSecs": 420,
@@ -9865,6 +10184,7 @@
       "expectedHtk": 105276.40413473736,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -9896,6 +10216,7 @@
       "expectedHtk": 108696.58555550252,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -9927,6 +10248,7 @@
       "expectedHtk": 112227.18971029489,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -9958,6 +10280,7 @@
       "expectedHtk": 115873.28969160235,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -9989,6 +10312,7 @@
       "expectedHtk": 119638.06758820443,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -10020,6 +10344,7 @@
       "expectedHtk": 123525.10315204307,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -10051,6 +10376,7 @@
       "expectedHtk": 127538.32749779614,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -10082,6 +10408,7 @@
       "expectedHtk": 131682.5007612387,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -10113,6 +10440,7 @@
       "expectedHtk": 135960.867397953,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -10144,6 +10472,7 @@
       "expectedHtk": 140378.9668675594,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -10152,14 +10481,14 @@
       "gate": true,
       "locked": false,
       "mitigationPct": 27.91318864774624,
-      "goldPerHour": 64.11860821366786,
-      "chestsPerHour": 0.000009567699278868487,
+      "goldPerHour": 60.96782899323038,
+      "chestsPerHour": 0.000009097543907204828,
       "keysPerHour": -0.000055101704152091114,
-      "gemsPerHour": 4.783849639434243e-7,
-      "timePiecesPerHour": 0.000009567699278868487,
-      "stoneChestsPerHour": 0.000004783849639434243,
-      "xpPerHour": 9.619617043266379,
-      "propsPerHour": 0.008692398857171857,
+      "gemsPerHour": 4.5487719536024136e-7,
+      "timePiecesPerHour": 0.000009097543907204828,
+      "stoneChestsPerHour": 0.000004548771953602414,
+      "xpPerHour": 9.146910440099203,
+      "propsPerHour": 0.008265255622813668,
       "cyclesPerHour": 0.000055101704152091114,
       "clearSecs": 65333732.51149038,
       "gateTimerSecs": 420,
@@ -10175,6 +10504,7 @@
       "expectedHtk": 144940.52083814397,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -10205,6 +10535,7 @@
       "expectedHtk": 149650.4808363323,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -10235,6 +10566,7 @@
       "expectedHtk": 154514.0317626258,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -10265,6 +10597,7 @@
       "expectedHtk": 159535.64457927347,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -10295,6 +10628,7 @@
       "expectedHtk": 164720.46152575663,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -10325,6 +10659,7 @@
       "expectedHtk": 170074.13119377207,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -10355,6 +10690,7 @@
       "expectedHtk": 175601.59283364314,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -10385,6 +10721,7 @@
       "expectedHtk": 181309.91275446914,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -10415,6 +10752,7 @@
       "expectedHtk": 187203.2703976386,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -10445,6 +10783,7 @@
       "expectedHtk": 193288.2753596507,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -10453,14 +10792,14 @@
       "gate": true,
       "locked": false,
       "mitigationPct": 28.731218697829714,
-      "goldPerHour": 47.84918850793047,
-      "chestsPerHour": 0.000006948611367218836,
+      "goldPerHour": 45.49788452816859,
+      "chestsPerHour": 0.000006607157351570224,
       "keysPerHour": -0.00004001801292590778,
-      "gemsPerHour": 3.4743056836094184e-7,
-      "timePiecesPerHour": 0.000006948611367218836,
-      "stoneChestsPerHour": 0.000003474305683609418,
-      "xpPerHour": 7.196537193366969,
-      "propsPerHour": 0.006312918053428571,
+      "gemsPerHour": 3.3035786757851127e-7,
+      "timePiecesPerHour": 0.000006607157351570224,
+      "stoneChestsPerHour": 0.000003303578675785112,
+      "xpPerHour": 6.842900129272065,
+      "propsPerHour": 0.006002701938886168,
       "cyclesPerHour": 0.00004001801292590778,
       "clearSecs": 89959489.15967661,
       "gateTimerSecs": 420,
@@ -10475,6 +10814,7 @@
       "expectedHtk": 199571.86312708905,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -10506,6 +10846,7 @@
       "expectedHtk": 206059.57367159883,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -10537,6 +10878,7 @@
       "expectedHtk": 212758.39655338682,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -10568,6 +10910,7 @@
       "expectedHtk": 219675.56197363755,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -10599,6 +10942,7 @@
       "expectedHtk": 226818.0603530042,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -10630,6 +10974,7 @@
       "expectedHtk": 234192.35063506532,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -10661,6 +11006,7 @@
       "expectedHtk": 241807.4895293432,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -10692,6 +11038,7 @@
       "expectedHtk": 249669.65355154462,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -10723,6 +11070,7 @@
       "expectedHtk": 257788.39592248725,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -10754,6 +11102,7 @@
       "expectedHtk": 266171.09186630324,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -10762,14 +11111,14 @@
       "gate": true,
       "locked": false,
       "mitigationPct": 29.549248747913186,
-      "goldPerHour": 35.66892088575531,
-      "chestsPerHour": 0.000005045890769246696,
+      "goldPerHour": 33.916152537281526,
+      "chestsPerHour": 0.000004797936039735277,
       "keysPerHour": -0.000029059980902403428,
-      "gemsPerHour": 2.522945384623348e-7,
-      "timePiecesPerHour": 0.000005045890769246696,
-      "stoneChestsPerHour": 0.000002522945384623348,
-      "xpPerHour": 5.373495274838275,
-      "propsPerHour": 0.004584267740614143,
+      "gemsPerHour": 2.398968019867639e-7,
+      "timePiecesPerHour": 0.000004797936039735277,
+      "stoneChestsPerHour": 0.0000023989680198676387,
+      "xpPerHour": 5.109442082184181,
+      "propsPerHour": 0.004358997135360514,
       "cyclesPerHour": 0.000029059980902403428,
       "clearSecs": 123881705.63808799,
       "gateTimerSecs": 420,
@@ -10785,6 +11134,7 @@
       "expectedHtk": 274827.05831719004,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -10815,6 +11165,7 @@
       "expectedHtk": 283764.7060559784,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -10845,6 +11196,7 @@
       "expectedHtk": 292993.2473232226,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -10875,6 +11227,7 @@
       "expectedHtk": 302522.2529888993,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -10905,6 +11258,7 @@
       "expectedHtk": 312362.10264692723,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -10935,6 +11289,7 @@
       "expectedHtk": 322521.5345857422,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -10965,6 +11320,7 @@
       "expectedHtk": 333011.8642384794,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -10995,6 +11351,7 @@
       "expectedHtk": 343844.7217384627,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -11025,6 +11382,7 @@
       "expectedHtk": 355030.0748465117,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -11055,6 +11413,7 @@
       "expectedHtk": 366579.2969606925,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -11063,14 +11422,14 @@
       "gate": true,
       "locked": false,
       "mitigationPct": 30.36727879799666,
-      "goldPerHour": 26.574936707117402,
-      "chestsPerHour": 0.0000036637470326845298,
+      "goldPerHour": 25.2690456577382,
+      "chestsPerHour": 0.0000034837106882935024,
       "keysPerHour": -0.000021100024100549188,
-      "gemsPerHour": 1.8318735163422647e-7,
-      "timePiecesPerHour": 0.0000036637470326845298,
-      "stoneChestsPerHour": 0.0000018318735163422649,
-      "xpPerHour": 4.01245720237846,
-      "propsPerHour": 0.003328569344796559,
+      "gemsPerHour": 1.7418553441467512e-7,
+      "timePiecesPerHour": 0.0000034837106882935024,
+      "stoneChestsPerHour": 0.0000017418553441467512,
+      "xpPerHour": 3.815285257837204,
+      "propsPerHour": 0.0031650036150823783,
       "cyclesPerHour": 0.000021100024100549188,
       "clearSecs": 170615918.86552867,
       "gateTimerSecs": 420,
@@ -11085,6 +11444,7 @@
       "expectedHtk": 378505.20364279195,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -11116,6 +11476,7 @@
       "expectedHtk": 390819.0709707431,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -11147,6 +11508,7 @@
       "expectedHtk": 403534.34788857447,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -11178,6 +11540,7 @@
       "expectedHtk": 416663.7209000838,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -11209,6 +11572,7 @@
       "expectedHtk": 430221.0892049862,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -11240,6 +11604,7 @@
       "expectedHtk": 444219.9263270274,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -11271,6 +11636,7 @@
       "expectedHtk": 458674.93344560184,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -11302,6 +11668,7 @@
       "expectedHtk": 473600.263290266,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -11333,6 +11700,7 @@
       "expectedHtk": 489012.3936630526,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -11364,6 +11732,7 @@
       "expectedHtk": 504926.7305254687,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -11372,14 +11741,14 @@
       "gate": true,
       "locked": false,
       "mitigationPct": 31.185308848080133,
-      "goldPerHour": 19.78425001109546,
-      "chestsPerHour": 0.000002659864554392586,
+      "goldPerHour": 18.812052746427398,
+      "chestsPerHour": 0.000002529158915173623,
       "keysPerHour": -0.000015318526375800547,
-      "gemsPerHour": 1.329932277196293e-7,
-      "timePiecesPerHour": 0.000002659864554392586,
-      "stoneChestsPerHour": 0.000001329932277196293,
-      "xpPerHour": 2.9934969836156355,
-      "propsPerHour": 0.0024165269976554257,
+      "gemsPerHour": 1.2645794575868118e-7,
+      "timePiecesPerHour": 0.000002529158915173623,
+      "stoneChestsPerHour": 0.0000012645794575868116,
+      "xpPerHour": 2.846396659993003,
+      "propsPerHour": 0.002297778956370082,
       "cyclesPerHour": 0.000015318526375800547,
       "clearSecs": 235009550.6371359,
       "gateTimerSecs": 420,
@@ -11395,6 +11764,7 @@
       "expectedHtk": 521360.1250529142,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -11425,6 +11795,7 @@
       "expectedHtk": 538328.3539565603,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -11455,6 +11826,7 @@
       "expectedHtk": 555849.5770019147,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -11485,6 +11857,7 @@
       "expectedHtk": 573942.0329772756,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -11515,6 +11888,7 @@
       "expectedHtk": 592623.7533807106,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -11545,6 +11919,7 @@
       "expectedHtk": 611914.4357702837,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -11575,6 +11950,7 @@
       "expectedHtk": 631834.118453515,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -11605,6 +11981,7 @@
       "expectedHtk": 652403.0491580946,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -11635,6 +12012,7 @@
       "expectedHtk": 673642.6354044959,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -11665,6 +12043,7 @@
       "expectedHtk": 695574.0211196353,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -11673,14 +12052,14 @@
       "gate": true,
       "locked": false,
       "mitigationPct": 32.003338898163605,
-      "goldPerHour": 14.714342008056905,
-      "chestsPerHour": 0.0000019308081841354933,
+      "goldPerHour": 13.991279556373328,
+      "chestsPerHour": 0.0000018359283112477154,
       "keysPerHour": -0.000011119790097490347,
-      "gemsPerHour": 9.654040920677466e-8,
-      "timePiecesPerHour": 0.0000019308081841354933,
-      "stoneChestsPerHour": 9.654040920677467e-7,
-      "xpPerHour": 2.2314073375729246,
-      "propsPerHour": 0.0017541683077629394,
+      "gemsPerHour": 9.179641556238577e-8,
+      "timePiecesPerHour": 0.0000018359283112477154,
+      "stoneChestsPerHour": 9.179641556238577e-7,
+      "xpPerHour": 2.121756028712036,
+      "propsPerHour": 0.001667968514623552,
       "cyclesPerHour": 0.000011119790097490347,
       "clearSecs": 323747118.28530765,
       "gateTimerSecs": 420,
@@ -11695,6 +12074,7 @@
       "expectedHtk": 718221.1718886202,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -11726,6 +12106,7 @@
       "expectedHtk": 741606.270600745,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -11757,6 +12138,7 @@
       "expectedHtk": 765752.9726845714,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -11788,6 +12170,7 @@
       "expectedHtk": 790687.7114507424,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -11819,6 +12202,7 @@
       "expectedHtk": 816435.5146059883,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -11850,6 +12234,7 @@
       "expectedHtk": 843022.5140996017,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -11881,6 +12266,7 @@
       "expectedHtk": 870476.1417265638,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -11912,6 +12298,7 @@
       "expectedHtk": 898825.4541371991,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -11943,6 +12330,7 @@
       "expectedHtk": 928099.3291265869,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -11974,6 +12362,7 @@
       "expectedHtk": 958327.4984718773,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -11982,14 +12371,14 @@
       "gate": true,
       "locked": false,
       "mitigationPct": 32.82136894824708,
-      "goldPerHour": 10.938517388276667,
-      "chestsPerHour": 0.0000014014036033925935,
+      "goldPerHour": 10.40099834371108,
+      "chestsPerHour": 0.0000013325385918734194,
       "keysPerHour": -0.000008070875833037089,
-      "gemsPerHour": 7.007018016962967e-8,
-      "timePiecesPerHour": 0.0000014014036033925935,
-      "stoneChestsPerHour": 7.007018016962968e-7,
-      "xpPerHour": 1.6605662414493816,
-      "propsPerHour": 0.0012731962748318048,
+      "gemsPerHour": 6.662692959367098e-8,
+      "timePiecesPerHour": 0.0000013325385918734194,
+      "stoneChestsPerHour": 6.662692959367097e-7,
+      "xpPerHour": 1.5789659707857937,
+      "propsPerHour": 0.0012106313749555633,
       "cyclesPerHour": 0.000008070875833037089,
       "clearSecs": 446048244.88364255,
       "gateTimerSecs": 420,
@@ -12005,6 +12394,7 @@
       "expectedHtk": 989541.7090014755,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -12035,6 +12425,7 @@
       "expectedHtk": 1021774.216959073,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -12065,6 +12456,7 @@
       "expectedHtk": 1055058.205116524,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -12095,6 +12487,7 @@
       "expectedHtk": 1089426.787345995,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -12125,6 +12518,7 @@
       "expectedHtk": 1124917.5271928157,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -12155,6 +12549,7 @@
       "expectedHtk": 1161565.1963733956,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -12185,6 +12580,7 @@
       "expectedHtk": 1199408.5443135663,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -12215,6 +12611,7 @@
       "expectedHtk": 1238486.831933963,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -12245,6 +12642,7 @@
       "expectedHtk": 1278839.7510414612,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -12275,6 +12673,7 @@
       "expectedHtk": 1320509.580312415,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -12283,14 +12682,14 @@
       "gate": true,
       "locked": false,
       "mitigationPct": 33.63939899833055,
-      "goldPerHour": 8.125980246941682,
-      "chestsPerHour": 0.0000010170210660630596,
+      "goldPerHour": 7.726669324632583,
+      "chestsPerHour": 9.67044619215276e-7,
       "keysPerHour": -0.000005857163983311131,
-      "gemsPerHour": 5.085105330315298e-8,
-      "timePiecesPerHour": 0.0000010170210660630596,
-      "stoneChestsPerHour": 5.085105330315298e-7,
-      "xpPerHour": 1.2358680471953414,
-      "propsPerHour": 0.0009239789519609294,
+      "gemsPerHour": 4.835223096076379e-8,
+      "timePiecesPerHour": 9.67044619215276e-7,
+      "stoneChestsPerHour": 4.83522309607638e-7,
+      "xpPerHour": 1.1751374528816707,
+      "propsPerHour": 0.0008785745974966697,
       "cyclesPerHour": 0.000005857163983311131,
       "clearSecs": 614631929.4213909,
       "gateTimerSecs": 420,
@@ -12305,6 +12704,7 @@
       "expectedHtk": 1363538.4388546662,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -12336,6 +12736,7 @@
       "expectedHtk": 1407971.8821014594,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -12367,6 +12768,7 @@
       "expectedHtk": 1453855.0505374623,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -12398,6 +12800,7 @@
       "expectedHtk": 1501234.9246840447,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -12429,6 +12832,7 @@
       "expectedHtk": 1550161.446837591,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -12460,6 +12864,7 @@
       "expectedHtk": 1600685.069518669,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -12491,6 +12896,7 @@
       "expectedHtk": 1652856.9951591424,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -12522,6 +12928,7 @@
       "expectedHtk": 1706732.1043517622,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -12553,6 +12960,7 @@
       "expectedHtk": 1762365.6406150674,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -12584,6 +12992,7 @@
       "expectedHtk": 1819814.8827157372,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -12592,14 +13001,14 @@
       "gate": true,
       "locked": false,
       "mitigationPct": 34.45742904841402,
-      "goldPerHour": 6.031226219535233,
-      "chestsPerHour": 7.379690755901287e-7,
+      "goldPerHour": 5.734851648804593,
+      "chestsPerHour": 7.017052612297772e-7,
       "keysPerHour": -0.00000425006530340876,
-      "gemsPerHour": 3.689845377950644e-8,
-      "timePiecesPerHour": 7.379690755901287e-7,
-      "stoneChestsPerHour": 3.6898453779506436e-7,
-      "xpPerHour": 0.9190946307502632,
-      "propsPerHour": 0.0006704560168875246,
+      "gemsPerHour": 3.508526306148886e-8,
+      "timePiecesPerHour": 7.017052612297772e-7,
+      "stoneChestsPerHour": 3.508526306148886e-7,
+      "xpPerHour": 0.8739303031766847,
+      "propsPerHour": 0.0006375097955113139,
       "cyclesPerHour": 0.00000425006530340876,
       "clearSecs": 847045808.2403167,
       "gateTimerSecs": 420,
@@ -12615,6 +13024,7 @@
       "expectedHtk": 1879140.1463442058,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -12645,6 +13055,7 @@
       "expectedHtk": 1940400.8928560494,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -12675,6 +13086,7 @@
       "expectedHtk": 2003662.1251703412,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -12705,6 +13117,7 @@
       "expectedHtk": 2068988.5617674715,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -12735,6 +13148,7 @@
       "expectedHtk": 2136448.3909182986,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -12765,6 +13179,7 @@
       "expectedHtk": 2206110.1842627786,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -12795,6 +13210,7 @@
       "expectedHtk": 2278046.489116821,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -12825,6 +13241,7 @@
       "expectedHtk": 2352332.2699156976,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -12855,6 +13272,7 @@
       "expectedHtk": 2429043.5583677655,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -12885,6 +13303,7 @@
       "expectedHtk": 2508260.0435606074,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -12893,14 +13312,14 @@
       "gate": true,
       "locked": false,
       "mitigationPct": 35.27545909849749,
-      "goldPerHour": 4.4745952785665715,
-      "chestsPerHour": 5.354105178700063e-7,
+      "goldPerHour": 4.254713508899906,
+      "chestsPerHour": 5.091004261548252e-7,
       "keysPerHour": -0.0000030835026851006,
-      "gemsPerHour": 2.6770525893500317e-8,
-      "timePiecesPerHour": 5.354105178700063e-7,
-      "stoneChestsPerHour": 2.6770525893500315e-7,
-      "xpPerHour": 0.6830186024873628,
-      "propsPerHour": 0.00048642851724343034,
+      "gemsPerHour": 2.5455021307741263e-8,
+      "timePiecesPerHour": 5.091004261548252e-7,
+      "stoneChestsPerHour": 2.545502130774126e-7,
+      "xpPerHour": 0.6494550442926013,
+      "propsPerHour": 0.00046252540276509003,
       "cyclesPerHour": 0.0000030835026851006,
       "clearSecs": 1167503442.5606635,
       "gateTimerSecs": 420,
@@ -12915,6 +13334,7 @@
       "expectedHtk": 2590063.6435360885,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -12946,6 +13366,7 @@
       "expectedHtk": 2674538.9302146295,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -12977,6 +13398,7 @@
       "expectedHtk": 2761773.2690868624,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -13008,6 +13430,7 @@
       "expectedHtk": 2851856.9129756456,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -13039,6 +13462,7 @@
       "expectedHtk": 2944883.0690369266,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -13070,6 +13494,7 @@
       "expectedHtk": 3040947.886026497,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -13101,6 +13526,7 @@
       "expectedHtk": 3140150.8248276124,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -13132,6 +13558,7 @@
       "expectedHtk": 3242594.9433314614,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -13163,6 +13590,7 @@
       "expectedHtk": 3348386.022508526,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -13194,6 +13622,7 @@
       "expectedHtk": 3457633.353428553,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -13202,14 +13631,14 @@
       "gate": true,
       "locked": false,
       "mitigationPct": 36.093489148580964,
-      "goldPerHour": 3.317635863264034,
-      "chestsPerHour": 3.88395642455589e-7,
+      "goldPerHour": 3.154607107227673,
+      "chestsPerHour": 3.6930986539951945e-7,
       "keysPerHour": -0.00000223682382313945,
-      "gemsPerHour": 1.941978212277945e-8,
-      "timePiecesPerHour": 3.88395642455589e-7,
-      "stoneChestsPerHour": 1.941978212277945e-7,
-      "xpPerHour": 0.5068316569586744,
-      "propsPerHour": 0.00035286328930383775,
+      "gemsPerHour": 1.8465493269975975e-8,
+      "timePiecesPerHour": 3.6930986539951945e-7,
+      "stoneChestsPerHour": 1.8465493269975973e-7,
+      "xpPerHour": 0.4819259295192177,
+      "propsPerHour": 0.0003355235734709175,
       "cyclesPerHour": 0.00000223682382313945,
       "clearSecs": 1609424918.8330312,
       "gateTimerSecs": 420,
@@ -13225,6 +13654,7 @@
       "expectedHtk": 3570450.2448440837,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -13255,6 +13685,7 @@
       "expectedHtk": 3686953.595691156,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -13285,6 +13716,7 @@
       "expectedHtk": 3807263.935885514,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -13315,6 +13747,7 @@
       "expectedHtk": 3931505.219261922,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -13345,6 +13778,7 @@
       "expectedHtk": 4059807.695833956,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -13375,6 +13809,7 @@
       "expectedHtk": 4192302.948112154,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -13405,6 +13840,7 @@
       "expectedHtk": 4329128.468621047,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -13435,6 +13871,7 @@
       "expectedHtk": 4470426.295175999,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -13465,6 +13902,7 @@
       "expectedHtk": 4616343.2021895535,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -13495,6 +13933,7 @@
       "expectedHtk": 4767028.935700228,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -13503,14 +13942,14 @@
       "gate": true,
       "locked": false,
       "mitigationPct": 36.911519198664436,
-      "goldPerHour": 2.4578040226193316,
-      "chestsPerHour": 2.817079970416658e-7,
+      "goldPerHour": 2.3370274230502326,
+      "chestsPerHour": 2.678648534708231e-7,
       "keysPerHour": -0.00000162239501773698,
-      "gemsPerHour": 1.4085399852083292e-8,
-      "timePiecesPerHour": 2.817079970416658e-7,
-      "stoneChestsPerHour": 1.408539985208329e-7,
-      "xpPerHour": 0.3761337198939779,
-      "propsPerHour": 0.0002559359570329999,
+      "gemsPerHour": 1.3393242673541155e-8,
+      "timePiecesPerHour": 2.678648534708231e-7,
+      "stoneChestsPerHour": 1.3393242673541155e-7,
+      "xpPerHour": 0.35765049208004634,
+      "propsPerHour": 0.000243359252660547,
       "cyclesPerHour": 0.00000162239501773698,
       "clearSecs": 2218941725.438426,
       "gateTimerSecs": 420,
@@ -13525,6 +13964,7 @@
       "expectedHtk": 4922640.930554863,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -13556,6 +13996,7 @@
       "expectedHtk": 5083340.699599708,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -13587,6 +14028,7 @@
       "expectedHtk": 5249293.481614217,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -13618,6 +14060,7 @@
       "expectedHtk": 5420672.762303011,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -13649,6 +14092,7 @@
       "expectedHtk": 5597654.937608993,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -13680,6 +14124,7 @@
       "expectedHtk": 5780424.8018360175,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -13711,6 +14156,7 @@
       "expectedHtk": 5969170.733002891,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -13742,6 +14188,7 @@
       "expectedHtk": 6164089.095159806,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -13773,6 +14220,7 @@
       "expectedHtk": 6365381.593266096,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -13804,6 +14252,7 @@
       "expectedHtk": 6573258.049104841,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -13812,14 +14261,14 @@
       "gate": true,
       "locked": false,
       "mitigationPct": 37.729549248747915,
-      "goldPerHour": 1.820120145273534,
-      "chestsPerHour": 2.0429595896177e-7,
+      "goldPerHour": 1.7306793613801628,
+      "chestsPerHour": 1.9425684656403166e-7,
       "keysPerHour": -0.0000011765684670576264,
-      "gemsPerHour": 1.02147979480885e-8,
-      "timePiecesPerHour": 2.0429595896177e-7,
-      "stoneChestsPerHour": 1.02147979480885e-7,
-      "xpPerHour": 0.27895461375588076,
-      "propsPerHour": 0.00018560595483244888,
+      "gemsPerHour": 9.712842328201585e-9,
+      "timePiecesPerHour": 1.9425684656403166e-7,
+      "stoneChestsPerHour": 9.712842328201583e-8,
+      "xpPerHour": 0.26524677178193834,
+      "propsPerHour": 0.00017648527005864395,
       "cyclesPerHour": 0.0000011765684670576264,
       "clearSecs": 3059745438.3618784,
       "gateTimerSecs": 420,
@@ -13835,6 +14284,7 @@
       "expectedHtk": 6787933.171803147,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -13865,6 +14315,7 @@
       "expectedHtk": 6796506.168744257,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -13895,6 +14346,7 @@
       "expectedHtk": 7018493.426791096,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -13925,6 +14377,7 @@
       "expectedHtk": 7247742.062289497,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -13955,6 +14408,7 @@
       "expectedHtk": 7484490.532124156,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -13985,6 +14439,7 @@
       "expectedHtk": 7728984.21678441,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -14015,6 +14470,7 @@
       "expectedHtk": 7981477.191382663,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -14045,6 +14501,7 @@
       "expectedHtk": 8242230.440569559,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -14075,6 +14532,7 @@
       "expectedHtk": 8511516.229835149,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -14105,6 +14563,7 @@
       "expectedHtk": 8789613.107871912,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -14113,14 +14572,14 @@
       "gate": true,
       "locked": false,
       "mitigationPct": 38.54757929883139,
-      "goldPerHour": 1.7410753051549037,
-      "chestsPerHour": 1.5526248916887699e-7,
+      "goldPerHour": 1.6761098135481476,
+      "chestsPerHour": 1.4946911314023516e-7,
       "keysPerHour": -6.789746993366648e-7,
-      "gemsPerHour": 7.76312445844385e-9,
-      "timePiecesPerHour": 1.5526248916887699e-7,
-      "stoneChestsPerHour": 7.763124458443849e-8,
-      "xpPerHour": 0.21669941695783518,
-      "propsPerHour": 0.00014105830922110814,
+      "gemsPerHour": 7.473455657011758e-9,
+      "timePiecesPerHour": 1.4946911314023516e-7,
+      "stoneChestsPerHour": 7.473455657011758e-8,
+      "xpPerHour": 0.20861361842179157,
+      "propsPerHour": 0.00013579493986733295,
       "cyclesPerHour": 6.789746993366648e-7,
       "clearSecs": 5302112145.735441,
       "gateTimerSecs": 360,
@@ -14135,6 +14594,7 @@
       "expectedHtk": 9076811.262740113,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -14166,6 +14626,7 @@
       "expectedHtk": 9373407.421663854,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -14197,6 +14658,7 @@
       "expectedHtk": 9679710.370283725,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -14228,6 +14690,7 @@
       "expectedHtk": 9996037.943767786,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -14259,6 +14722,7 @@
       "expectedHtk": 10322719.804657944,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -14290,6 +14754,7 @@
       "expectedHtk": 10660093.9201216,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -14321,6 +14786,7 @@
       "expectedHtk": 11008512.206739515,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -14352,6 +14818,7 @@
       "expectedHtk": 11368335.993460799,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -14383,6 +14850,7 @@
       "expectedHtk": 11739939.890289698,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -14414,6 +14882,7 @@
       "expectedHtk": 12123709.198813679,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -14422,14 +14891,14 @@
       "gate": true,
       "locked": false,
       "mitigationPct": 39.36560934891485,
-      "goldPerHour": 1.2933114763397655,
-      "chestsPerHour": 1.1256257272759893e-7,
+      "goldPerHour": 1.2450535878165003,
+      "chestsPerHour": 1.0836247693787183e-7,
       "keysPerHour": -4.922447096427058e-7,
-      "gemsPerHour": 5.6281286363799464e-9,
-      "timePiecesPerHour": 1.1256257272759893e-7,
-      "stoneChestsPerHour": 5.6281286363799464e-8,
-      "xpPerHour": 0.1603951680223986,
-      "propsPerHour": 0.00010226479219499664,
+      "gemsPerHour": 5.418123846893592e-9,
+      "timePiecesPerHour": 1.0836247693787183e-7,
+      "stoneChestsPerHour": 5.418123846893591e-8,
+      "xpPerHour": 0.15441027398898183,
+      "propsPerHour": 0.00009844894192854116,
       "cyclesPerHour": 4.922447096427058e-7,
       "clearSecs": 7313435633.697411,
       "gateTimerSecs": 360,
@@ -14445,6 +14914,7 @@
       "expectedHtk": 12520043.529740574,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -14475,6 +14945,7 @@
       "expectedHtk": 12929355.221694387,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -14505,6 +14976,7 @@
       "expectedHtk": 13352069.42995781,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -14535,6 +15007,7 @@
       "expectedHtk": 13788626.257774085,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -14565,6 +15038,7 @@
       "expectedHtk": 14239479.452809963,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -14595,6 +15069,7 @@
       "expectedHtk": 14705098.0053426,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -14625,6 +15100,7 @@
       "expectedHtk": 15185966.134423641,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -14655,6 +15131,7 @@
       "expectedHtk": 15682584.654134069,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -14685,6 +15162,7 @@
       "expectedHtk": 16195469.881014045,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -14715,6 +15193,7 @@
       "expectedHtk": 16725155.919435598,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -14723,14 +15202,14 @@
       "gate": true,
       "locked": false,
       "mitigationPct": 40.18363939899833,
-      "goldPerHour": 0.9599950282824945,
-      "chestsPerHour": 8.159289662982662e-8,
+      "goldPerHour": 0.9241743195055475,
+      "chestsPerHour": 7.854838566639641e-8,
       "keysPerHour": -3.568119554652359e-7,
-      "gemsPerHour": 4.079644831491331e-9,
-      "timePiecesPerHour": 8.159289662982662e-8,
-      "stoneChestsPerHour": 4.079644831491331e-8,
-      "xpPerHour": 0.11873364232099036,
-      "propsPerHour": 0.00007412837514499344,
+      "gemsPerHour": 3.92741928331982e-9,
+      "timePiecesPerHour": 7.854838566639641e-8,
+      "stoneChestsPerHour": 3.9274192833198206e-8,
+      "xpPerHour": 0.11430328268546645,
+      "propsPerHour": 0.00007136239109304717,
       "cyclesPerHour": 3.568119554652359e-7,
       "clearSecs": 10089348030.129969,
       "gateTimerSecs": 360,
@@ -14745,6 +15224,7 @@
       "expectedHtk": 17272193.641596448,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -14776,6 +15256,7 @@
       "expectedHtk": 17837152.537600122,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -14807,6 +15288,7 @@
       "expectedHtk": 18420621.57613054,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -14838,6 +15320,7 @@
       "expectedHtk": 19023207.364817962,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -14869,6 +15352,7 @@
       "expectedHtk": 19645537.424012125,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -14900,6 +15384,7 @@
       "expectedHtk": 20288260.000035316,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -14931,6 +15416,7 @@
       "expectedHtk": 20952044.09138672,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -14962,6 +15448,7 @@
       "expectedHtk": 21637582.758819576,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -14993,6 +15480,7 @@
       "expectedHtk": 22345587.628757715,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -15024,6 +15512,7 @@
       "expectedHtk": 23076798.569189575,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -15032,14 +15521,14 @@
       "gate": true,
       "locked": false,
       "mitigationPct": 41.0016694490818,
-      "goldPerHour": 0.712073710753375,
-      "chestsPerHour": 5.913434414528293e-8,
+      "goldPerHour": 0.6855037972032841,
+      "chestsPerHour": 5.6927838852285716e-8,
       "keysPerHour": -2.5859899384264177e-7,
-      "gemsPerHour": 2.9567172072641463e-9,
-      "timePiecesPerHour": 5.913434414528293e-8,
-      "stoneChestsPerHour": 2.9567172072641464e-8,
-      "xpPerHour": 0.08784107448649275,
-      "propsPerHour": 0.00005372444205090595,
+      "gemsPerHour": 2.846391942614286e-9,
+      "timePiecesPerHour": 5.6927838852285716e-8,
+      "stoneChestsPerHour": 2.8463919426142858e-8,
+      "xpPerHour": 0.08456342258050693,
+      "propsPerHour": 0.000051719798768528355,
       "cyclesPerHour": 2.5859899384264177e-7,
       "clearSecs": 13921167853.385426,
       "gateTimerSecs": 360,
@@ -15055,6 +15544,7 @@
       "expectedHtk": 23831976.67512382,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -15085,6 +15575,7 @@
       "expectedHtk": 24611907.886570953,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -15115,6 +15606,7 @@
       "expectedHtk": 25417406.498760194,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -15145,6 +15637,7 @@
       "expectedHtk": 26249312.138937153,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -15175,6 +15668,7 @@
       "expectedHtk": 27108490.9259074,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -15205,6 +15699,7 @@
       "expectedHtk": 27995839.697045624,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -15235,6 +15730,7 @@
       "expectedHtk": 28912283.323685758,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -15265,6 +15761,7 @@
       "expectedHtk": 29858777.191279277,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -15295,6 +15792,7 @@
       "expectedHtk": 30836308.81615361,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -15325,6 +15823,7 @@
       "expectedHtk": 31845898.11233493,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -15333,14 +15832,14 @@
       "gate": true,
       "locked": false,
       "mitigationPct": 41.819699499165274,
-      "goldPerHour": 0.5278129564412031,
-      "chestsPerHour": 4.285036149223141e-8,
+      "goldPerHour": 0.5081184434959632,
+      "chestsPerHour": 4.125146743550515e-8,
       "keysPerHour": -1.873878964742365e-7,
-      "gemsPerHour": 2.1425180746115704e-9,
-      "timePiecesPerHour": 4.285036149223141e-8,
-      "stoneChestsPerHour": 2.1425180746115704e-8,
-      "xpPerHour": 0.06494841826399969,
-      "propsPerHour": 0.00003893019862017688,
+      "gemsPerHour": 2.0625733717752576e-9,
+      "timePiecesPerHour": 4.125146743550515e-8,
+      "stoneChestsPerHour": 2.0625733717752575e-8,
+      "xpPerHour": 0.06252496986497261,
+      "propsPerHour": 0.0000374775792948473,
       "cyclesPerHour": 1.873878964742365e-7,
       "clearSecs": 19211486268.51124,
       "gateTimerSecs": 360,
@@ -15355,6 +15854,7 @@
       "expectedHtk": 32888597.93223974,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -15386,6 +15886,7 @@
       "expectedHtk": 33965496.08619842,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -15417,6 +15918,7 @@
       "expectedHtk": 35077716.65647748,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -15448,6 +15950,7 @@
       "expectedHtk": 36226420.500869736,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -15479,6 +15982,7 @@
       "expectedHtk": 37412805.67664728,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -15510,6 +16014,7 @@
       "expectedHtk": 38638111.24847056,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -15541,6 +16046,7 @@
       "expectedHtk": 39903616.167051025,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -15572,6 +16078,7 @@
       "expectedHtk": 41210641.94651647,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -15603,6 +16110,7 @@
       "expectedHtk": 42560553.43260658,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -15634,6 +16142,7 @@
       "expectedHtk": 43954759.85960384,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -15642,14 +16151,14 @@
       "gate": true,
       "locked": false,
       "mitigationPct": 42.637729549248746,
-      "goldPerHour": 0.3909690984318914,
-      "chestsPerHour": 3.104520433585447e-8,
+      "goldPerHour": 0.37638069944265984,
+      "chestsPerHour": 2.9886801205350884e-8,
       "keysPerHour": -1.3576304452612252e-7,
-      "gemsPerHour": 1.5522602167927235e-9,
-      "timePiecesPerHour": 3.104520433585447e-8,
-      "stoneChestsPerHour": 1.5522602167927235e-8,
-      "xpPerHour": 0.047963227124127546,
-      "propsPerHour": 0.000028205035591541143,
+      "gemsPerHour": 1.4943400602675444e-9,
+      "timePiecesPerHour": 2.9886801205350884e-8,
+      "stoneChestsPerHour": 1.4943400602675442e-8,
+      "xpPerHour": 0.04617355449551237,
+      "propsPerHour": 0.000027152608905224504,
       "cyclesPerHour": 1.3576304452612252e-7,
       "clearSecs": 26516788958.038685,
       "gateTimerSecs": 360,
@@ -15665,6 +16174,7 @@
       "expectedHtk": 45394718.46031704,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -15695,6 +16205,7 @@
       "expectedHtk": 46881932.69364418,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -15725,6 +16236,7 @@
       "expectedHtk": 48417956.37459472,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -15755,6 +16267,7 @@
       "expectedHtk": 50004394.40792605,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -15785,6 +16298,7 @@
       "expectedHtk": 51642905.144264124,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -15815,6 +16329,7 @@
       "expectedHtk": 53335200.436650075,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -15845,6 +16360,7 @@
       "expectedHtk": 55083049.06903042,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -15875,6 +16391,7 @@
       "expectedHtk": 56888279.049169935,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -15905,6 +16422,7 @@
       "expectedHtk": 58752776.58380936,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -15935,6 +16453,7 @@
       "expectedHtk": 60678492.582464024,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -15943,14 +16462,14 @@
       "gate": true,
       "locked": false,
       "mitigationPct": 43.45575959933222,
-      "goldPerHour": 0.28941402682569123,
-      "chestsPerHour": 2.2488365696229325e-8,
+      "goldPerHour": 0.27861499608436074,
+      "chestsPerHour": 2.1649247581812122e-8,
       "keysPerHour": -9.834333702063724e-8,
-      "gemsPerHour": 1.1244182848114661e-9,
-      "timePiecesPerHour": 2.2488365696229325e-8,
-      "stoneChestsPerHour": 1.1244182848114663e-8,
-      "xpPerHour": 0.03542370909523537,
-      "propsPerHour": 0.000020431018845806004,
+      "gemsPerHour": 1.0824623790906064e-9,
+      "timePiecesPerHour": 2.1649247581812122e-8,
+      "stoneChestsPerHour": 1.0824623790906061e-8,
+      "xpPerHour": 0.03410192891862426,
+      "propsPerHour": 0.00001966866740412745,
       "cyclesPerHour": 9.834333702063724e-8,
       "clearSecs": 36606445429.491005,
       "gateTimerSecs": 360,
@@ -15965,6 +16484,7 @@
       "expectedHtk": 62667440.106838286,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -15996,6 +16516,7 @@
       "expectedHtk": 64721699.480028,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -16027,6 +16548,7 @@
       "expectedHtk": 66843419.95212275,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -16058,6 +16580,7 @@
       "expectedHtk": 69034820.69986269,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -16089,6 +16612,7 @@
       "expectedHtk": 71298194.51985164,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -16120,6 +16644,7 @@
       "expectedHtk": 73635910.75495276,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -16151,6 +16676,7 @@
       "expectedHtk": 76050415.23241444,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -16182,6 +16708,7 @@
       "expectedHtk": 78544235.20594089,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -16213,6 +16740,7 @@
       "expectedHtk": 81119982.17897329,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -16244,6 +16772,7 @@
       "expectedHtk": 83780352.09435514,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -16252,14 +16781,14 @@
       "gate": true,
       "locked": false,
       "mitigationPct": 44.27378964941569,
-      "goldPerHour": 0.21410077964729587,
-      "chestsPerHour": 1.6287053698307348e-8,
+      "goldPerHour": 0.2061119446361248,
+      "chestsPerHour": 1.5679327817868196e-8,
       "keysPerHour": -7.122452704292077e-8,
-      "gemsPerHour": 8.143526849153674e-10,
-      "timePiecesPerHour": 1.6287053698307348e-8,
-      "stoneChestsPerHour": 8.143526849153674e-9,
-      "xpPerHour": 0.026148133876663624,
-      "propsPerHour": 0.00001479703352158519,
+      "gemsPerHour": 7.839663908934097e-10,
+      "timePiecesPerHour": 1.5679327817868196e-8,
+      "stoneChestsPerHour": 7.839663908934098e-9,
+      "xpPerHour": 0.025172457245617234,
+      "propsPerHour": 0.000014244905408584154,
       "cyclesPerHour": 7.122452704292077e-8,
       "clearSecs": 50544386175.15279,
       "gateTimerSecs": 360,
@@ -16275,6 +16804,7 @@
       "expectedHtk": 86528130.65358713,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -16305,6 +16835,7 @@
       "expectedHtk": 89366195.82260473,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -16335,6 +16866,7 @@
       "expectedHtk": 92297520.0248335,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -16365,6 +16897,7 @@
       "expectedHtk": 95325173.88743556,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -16395,6 +16928,7 @@
       "expectedHtk": 98452329.62426162,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -16425,6 +16959,7 @@
       "expectedHtk": 101682263.43049935,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -16455,6 +16990,7 @@
       "expectedHtk": 105018360.44588485,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -16485,6 +17021,7 @@
       "expectedHtk": 108464116.81899974,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -16515,6 +17052,7 @@
       "expectedHtk": 112023144.44312325,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -16545,6 +17083,7 @@
       "expectedHtk": 115699174.78438228,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -16553,14 +17092,14 @@
       "gate": true,
       "locked": false,
       "mitigationPct": 45.09181969949916,
-      "goldPerHour": 0.15828675871070128,
-      "chestsPerHour": 1.1793596299030334e-8,
+      "goldPerHour": 0.15238053640462199,
+      "chestsPerHour": 1.1353536738157426e-8,
       "keysPerHour": -5.157429539282598e-8,
-      "gemsPerHour": 5.896798149515167e-10,
-      "timePiecesPerHour": 1.1793596299030334e-8,
-      "stoneChestsPerHour": 5.896798149515167e-9,
-      "xpPerHour": 0.019290887825315507,
-      "propsPerHour": 0.000010714659815662737,
+      "gemsPerHour": 5.676768369078713e-10,
+      "timePiecesPerHour": 1.1353536738157426e-8,
+      "stoneChestsPerHour": 5.676768369078713e-9,
+      "xpPerHour": 0.018571078582230352,
+      "propsPerHour": 0.000010314859078565197,
       "cyclesPerHour": 5.157429539282598e-8,
       "clearSecs": 69802213924.20152,
       "gateTimerSecs": 360,
@@ -16575,6 +17114,7 @@
       "expectedHtk": 119496061.64533535,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -16606,6 +17146,7 @@
       "expectedHtk": 123417786.96719483,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -16637,6 +17178,7 @@
       "expectedHtk": 127468463.37810996,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -16668,6 +17210,7 @@
       "expectedHtk": 131652340.79202387,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -16699,6 +17242,7 @@
       "expectedHtk": 135973806.2657768,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -16730,6 +17274,7 @@
       "expectedHtk": 140437395.66817257,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -16761,6 +17306,7 @@
       "expectedHtk": 145047791.78036344,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -16792,6 +17338,7 @@
       "expectedHtk": 149809833.94443884,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -16823,6 +17370,7 @@
       "expectedHtk": 154728519.41971573,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -16854,6 +17402,7 @@
       "expectedHtk": 159809012.96726584,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -16862,14 +17411,14 @@
       "gate": true,
       "locked": false,
       "mitigationPct": 45.90984974958264,
-      "goldPerHour": 0.11695105037029467,
-      "chestsPerHour": 8.538209942079729e-9,
+      "goldPerHour": 0.11258720522294663,
+      "chestsPerHour": 8.219620020015658e-9,
       "keysPerHour": -3.733824276133644e-8,
-      "gemsPerHour": 4.269104971039864e-10,
-      "timePiecesPerHour": 8.538209942079729e-9,
-      "stoneChestsPerHour": 4.2691049710398646e-9,
-      "xpPerHour": 0.014215724908027617,
-      "propsPerHour": 0.000007757092293519961,
+      "gemsPerHour": 4.1098100100078294e-10,
+      "timePiecesPerHour": 8.219620020015658e-9,
+      "stoneChestsPerHour": 4.109810010007829e-9,
+      "xpPerHour": 0.013685287413370556,
+      "propsPerHour": 0.000007467648552267287,
       "cyclesPerHour": 3.733824276133644e-8,
       "clearSecs": 96415892494.21727,
       "gateTimerSecs": 360,
@@ -16885,6 +17434,7 @@
       "expectedHtk": 165056647.69656092,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -16915,6 +17465,7 @@
       "expectedHtk": 170476934.07238328,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -16945,6 +17496,7 @@
       "expectedHtk": 176075564.71510074,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -16975,6 +17527,7 @@
       "expectedHtk": 181858419.84355664,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -17005,6 +17558,7 @@
       "expectedHtk": 187831574.7018742,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -17035,6 +17589,7 @@
       "expectedHtk": 194001304.46375945,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -17065,6 +17620,7 @@
       "expectedHtk": 200374091.87366688,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -17095,6 +17651,7 @@
       "expectedHtk": 206956634.61555564,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -17125,6 +17682,7 @@
       "expectedHtk": 213755851.5988532,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -17155,6 +17713,7 @@
       "expectedHtk": 220778890.7114427,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -17163,14 +17722,14 @@
       "gate": true,
       "locked": false,
       "mitigationPct": 46.727879799666105,
-      "goldPerHour": 0.0863578550054395,
-      "chestsPerHour": 6.1801909349503366e-9,
+      "goldPerHour": 0.08313554699278553,
+      "chestsPerHour": 5.949586796297662e-9,
       "keysPerHour": -2.7026445941400206e-8,
-      "gemsPerHour": 3.0900954674751685e-10,
-      "timePiecesPerHour": 6.1801909349503366e-9,
-      "stoneChestsPerHour": 3.0900954674751683e-9,
-      "xpPerHour": 0.010476704975543736,
-      "propsPerHour": 0.000005614796520487984,
+      "gemsPerHour": 2.9747933981488313e-10,
+      "timePiecesPerHour": 5.949586796297662e-9,
+      "stoneChestsPerHour": 2.974793398148831e-9,
+      "xpPerHour": 0.010085783149303612,
+      "propsPerHour": 0.000005405289188280041,
       "cyclesPerHour": 2.7026445941400206e-8,
       "clearSecs": 133202863883.97722,
       "gateTimerSecs": 360,
@@ -17185,6 +17744,7 @@
       "expectedHtk": 228033134.4456193,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -17216,6 +17776,7 @@
       "expectedHtk": 235526211.61314085,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -17247,6 +17808,7 @@
       "expectedHtk": 243266002.50374207,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -17278,6 +17840,7 @@
       "expectedHtk": 251260647.78821093,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -17309,6 +17872,7 @@
       "expectedHtk": 259518557.57795197,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -17340,6 +17904,7 @@
       "expectedHtk": 268048420.65908492,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -17371,6 +17936,7 @@
       "expectedHtk": 276859211.4315226,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -17402,6 +17968,7 @@
       "expectedHtk": 285960203.7388604,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -17433,6 +18000,7 @@
       "expectedHtk": 295360976.8465756,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -17464,6 +18032,7 @@
       "expectedHtk": 305071426.3446607,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -17472,14 +18041,14 @@
       "gate": true,
       "locked": false,
       "mitigationPct": 47.54590984974958,
-      "goldPerHour": 0.06372974661930797,
-      "chestsPerHour": 4.472486077666131e-9,
+      "goldPerHour": 0.0613517710047085,
+      "chestsPerHour": 4.3056022691856565e-9,
       "keysPerHour": -1.9558522458354326e-8,
-      "gemsPerHour": 2.2362430388330653e-10,
-      "timePiecesPerHour": 4.472486077666131e-9,
-      "stoneChestsPerHour": 2.2362430388330653e-9,
-      "xpPerHour": 0.007717099770947917,
-      "propsPerHour": 0.000004063320944470552,
+      "gemsPerHour": 2.1528011345928282e-10,
+      "timePiecesPerHour": 4.3056022691856565e-9,
+      "stoneChestsPerHour": 2.1528011345928282e-9,
+      "xpPerHour": 0.007429148287626224,
+      "propsPerHour": 0.000003911704491670865,
       "cyclesPerHour": 1.9558522458354326e-8,
       "clearSecs": 184062983677.0864,
       "gateTimerSecs": 360,
@@ -17495,6 +18064,7 @@
       "expectedHtk": 315101776.9304123,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -17525,6 +18095,7 @@
       "expectedHtk": 325462590.50751734,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -17555,6 +18126,7 @@
       "expectedHtk": 336164779.1595284,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -17585,6 +18157,7 @@
       "expectedHtk": 347219616.11100006,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -17615,6 +18188,7 @@
       "expectedHtk": 358638746.59885836,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -17645,6 +18219,7 @@
       "expectedHtk": 370434203.43535066,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -17675,6 +18250,7 @@
       "expectedHtk": 382618416.0461899,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -17705,6 +18281,7 @@
       "expectedHtk": 395204226.1104094,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -17735,6 +18312,7 @@
       "expectedHtk": 408204900.6436765,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -17765,6 +18343,7 @@
       "expectedHtk": 421634145.9672289,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -17773,14 +18352,14 @@
       "gate": true,
       "locked": false,
       "mitigationPct": 48.363939899833056,
-      "goldPerHour": 0.0470033815375522,
-      "chestsPerHour": 3.2359781804375024e-9,
+      "goldPerHour": 0.04524952402021602,
+      "chestsPerHour": 3.1152327261309456e-9,
       "keysPerHour": -1.4151179191141681e-8,
-      "gemsPerHour": 1.6179890902187514e-10,
-      "timePiecesPerHour": 3.2359781804375024e-9,
-      "stoneChestsPerHour": 1.6179890902187512e-9,
-      "xpPerHour": 0.005681453596591923,
-      "propsPerHour": 0.000002939934901548723,
+      "gemsPerHour": 1.557616363065473e-10,
+      "timePiecesPerHour": 3.1152327261309456e-9,
+      "stoneChestsPerHour": 1.5576163630654728e-9,
+      "xpPerHour": 0.005469459059734643,
+      "propsPerHour": 0.000002830235838228336,
       "cyclesPerHour": 1.4151179191141681e-8,
       "clearSecs": 254395761043.96436,
       "gateTimerSecs": 360,
@@ -17795,6 +18374,7 @@
       "expectedHtk": 435506122.65827847,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -17826,6 +18406,7 @@
       "expectedHtk": 449835459.3483956,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -17857,6 +18438,7 @@
       "expectedHtk": 464637269.5823474,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -17888,6 +18470,7 @@
       "expectedHtk": 479927168.3525127,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -17919,6 +18502,7 @@
       "expectedHtk": 495721287.7338135,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -17950,6 +18534,7 @@
       "expectedHtk": 512036293.7926235,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -17981,6 +18566,7 @@
       "expectedHtk": 528889405.43533695,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -18012,6 +18598,7 @@
       "expectedHtk": 546298411.3258051,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -18043,6 +18630,7 @@
       "expectedHtk": 564281690.4068731,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -18074,6 +18662,7 @@
       "expectedHtk": 582858231.3314029,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -18082,14 +18671,14 @@
       "gate": true,
       "locked": false,
       "mitigationPct": 49.18196994991653,
-      "goldPerHour": 0.0346470324036461,
-      "chestsPerHour": 2.3408251938793654e-9,
+      "goldPerHour": 0.033354232688816106,
+      "chestsPerHour": 2.253480970343625e-9,
       "keysPerHour": -1.0236606962834029e-8,
-      "gemsPerHour": 1.1704125969396824e-10,
-      "timePiecesPerHour": 2.3408251938793654e-9,
-      "stoneChestsPerHour": 1.1704125969396827e-9,
-      "xpPerHour": 0.004178278244410275,
-      "propsPerHour": 0.0000021266749348044355,
+      "gemsPerHour": 1.1267404851718124e-10,
+      "timePiecesPerHour": 2.253480970343625e-9,
+      "stoneChestsPerHour": 1.1267404851718124e-9,
+      "xpPerHour": 0.004022372339976004,
+      "propsPerHour": 0.0000020473213925668056,
       "cyclesPerHour": 1.0236606962834029e-8,
       "clearSecs": 351679029298.52563,
       "gateTimerSecs": 360,
@@ -18105,6 +18694,7 @@
       "expectedHtk": 602047651.4239687,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -18135,6 +18725,7 @@
       "expectedHtk": 621870217.6021878,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -18165,6 +18756,7 @@
       "expectedHtk": 642346870.6835898,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -18195,6 +18787,7 @@
       "expectedHtk": 663499244.6795335,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -18225,6 +18818,7 @@
       "expectedHtk": 685349690.490273,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -18255,6 +18849,7 @@
       "expectedHtk": 707921301.1404791,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -18285,6 +18880,7 @@
       "expectedHtk": 731237935.5798352,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -18315,6 +18911,7 @@
       "expectedHtk": 755324243.6867043,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -18345,6 +18942,7 @@
       "expectedHtk": 780205693.1825942,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -18375,6 +18973,7 @@
       "expectedHtk": 805908596.9123602,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     },
     {
@@ -18383,14 +18982,14 @@
       "gate": true,
       "locked": false,
       "mitigationPct": 49.99999999999999,
-      "goldPerHour": 0.025524427524201292,
-      "chestsPerHour": 1.6929198665094947e-9,
+      "goldPerHour": 0.024572023512900536,
+      "chestsPerHour": 1.6297512148268812e-9,
       "keysPerHour": -7.403267590424836e-9,
-      "gemsPerHour": 8.464599332547474e-11,
-      "timePiecesPerHour": 1.6929198665094947e-9,
-      "stoneChestsPerHour": 8.464599332547474e-10,
-      "xpPerHour": 0.003073010292178897,
-      "propsPerHour": 0.0000015380431892787272,
+      "gemsPerHour": 8.148756074134406e-11,
+      "timePiecesPerHour": 1.6297512148268812e-9,
+      "stoneChestsPerHour": 8.148756074134406e-10,
+      "xpPerHour": 0.002958345729133765,
+      "propsPerHour": 0.0000014806535180849672,
       "cyclesPerHour": 7.403267590424836e-9,
       "clearSecs": 486271765275.12415,
       "gateTimerSecs": 360,
@@ -18405,6 +19004,7 @@
       "expectedHtk": 832460140.759547,
       "heroesOnField": 0.7774545570406133,
       "concurrencyScale": 1,
+      "fieldContentionPct": 0.06778014029303614,
       "fortunaAura": 0
     }
   ]
