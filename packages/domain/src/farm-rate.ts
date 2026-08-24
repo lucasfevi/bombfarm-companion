@@ -848,6 +848,37 @@ const FIELD_DEMAND_EPSILON = 1e-13;
  * against 24.4% measured at 9 slots, 0% against 0% wherever the field cannot fill, and worst case
  * 7 points out on a small pool at a hard cap.
  */
+/**
+ * One-entry memo. The fixed point costs `O(rounds × heroes²)` per call and {@link buildRow} calls
+ * it once per phase, but its inputs are the House-ALLOCATED duty cycles, which only move when the
+ * House ranking moves — on a roster whose House is slack they are identical on all 600 rows, and
+ * even when it binds they change across bands of phases rather than every row. Recomputing an
+ * unchanged answer 600 times per table put the optimizer 4x slower (5.7s → 23.5s on a 13-hero
+ * capture, same 7352 evaluations) and timed the Farm Respec panel out in e2e.
+ *
+ * Safe because the function is pure: same inputs, same output, so the memo cannot change a
+ * result — only skip re-deriving one. Size one is deliberate; the access pattern is a long run of
+ * repeats, not a working set.
+ */
+let contentionMemo: { slots: number; uptime: readonly number[]; value: number } | null = null;
+
+/** Bumped once per fixed point actually SOLVED (memo misses only). Tests read it to prove the
+ *  cost tracks distinct House allocations rather than row count. Mutable by design, same test
+ *  API as `energySwitchPointCallCount`. */
+export let fieldContentionSolveCount = 0;
+
+export function resetFieldContentionSolveCount(): void {
+  fieldContentionSolveCount = 0;
+}
+
+function sameUptimeVector(left: readonly number[], right: readonly number[]): boolean {
+  if (left.length !== right.length) return false;
+  for (let index = 0; index < left.length; index++) {
+    if (left[index] !== right[index]) return false;
+  }
+  return true;
+}
+
 function fieldContentionFraction(effectiveUptime: readonly number[], fieldSlots: number): number {
   const count = effectiveUptime.length;
   // A non-finite slot count means "no field constraint", matching `allocateHouseSlots`'s budget.
@@ -855,6 +886,12 @@ function fieldContentionFraction(effectiveUptime: readonly number[], fieldSlots:
   const slots = Math.max(0, fieldSlots);
   // Every hero fits even standing together: no distribution can cross the cap.
   if (slots >= count) return 0;
+
+  if (contentionMemo !== null && contentionMemo.slots === slots && sameUptimeVector(contentionMemo.uptime, effectiveUptime)) {
+    return contentionMemo.value;
+  }
+
+  fieldContentionSolveCount += 1;
 
   const phi = effectiveUptime.map((uptime) =>
     uptime >= 1 ? Infinity : uptime <= 0 ? 0 : uptime / (1 - uptime),
@@ -894,7 +931,9 @@ function fieldContentionFraction(effectiveUptime: readonly number[], fieldSlots:
   const pmf = poissonBinomial(demand);
   let contention = 0;
   for (let taken = 0; taken < pmf.length; taken++) if (taken > slots) contention += pmf[taken];
-  return Math.min(1, Math.max(0, contention));
+  const value = Math.min(1, Math.max(0, contention));
+  contentionMemo = { slots, uptime: effectiveUptime.slice(), value };
+  return value;
 }
 
 /** See {@link HeroFarmFacts.plantsPerSecByAto} for why the array may be absent. */
