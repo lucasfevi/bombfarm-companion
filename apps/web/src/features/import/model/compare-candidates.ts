@@ -2,7 +2,6 @@ import type { ImportCandidate, ParseRejection } from '@bombfarm/domain/import-sa
 import type { PointInferenceIssue } from '@bombfarm/domain/point-inference';
 import { raritySortIdx, rankSortIdx } from '@bombfarm/domain/roster-sort';
 import type { StatKey } from '@bombfarm/domain/model';
-import type { HeroRecord } from '@/shared/lib/storage';
 import { sub, type Strings } from '@/shared/i18n';
 
 export const STAT_KEYS: StatKey[] = [
@@ -53,27 +52,6 @@ export function compareCandidates(
   const comparison = compareByKey(left, right, key);
   if (comparison !== 0) return comparison * direction;
   return left.name.localeCompare(right.name, undefined, { sensitivity: 'base' });
-}
-
-/**
- * How many heroes this save will REMOVE from the roster.
- *
- * The created/updated/removed breakdown this replaces was bookkeeping from when an import was a
- * merge the player curated. The save is the source of truth now, so how many rows were created
- * against updated is not a decision the player makes or a number they act on — the one thing they
- * cannot undo is a hero leaving, and that is what survives.
- *
- * A hero with no `sourceId` was never imported and is never removed. A **blocked** candidate's
- * `sourceId` still counts toward the save's own set, so an existing hero with that `sourceId` is
- * kept, not removed (`W5 AC-28`, `DEC-08`) — the hero is in the save, the planner just cannot
- * rebuild it this time.
- */
-export function countRemovedHeroes(
-  candidates: ImportCandidate[],
-  existing: HeroRecord[],
-): number {
-  const saveSourceIds = new Set(candidates.map((candidate) => candidate.sourceId));
-  return existing.filter((hero) => !!hero.sourceId && !saveSourceIds.has(hero.sourceId)).length;
 }
 
 /**

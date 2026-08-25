@@ -82,44 +82,32 @@ test.describe('import dialog reviews, does not curate (BSPW6-07)', () => {
   });
 
   /**
-   * NARROWED (2026-08-25) from a created/updated/removed assertion. That breakdown was
-   * bookkeeping from when an import was a merge the player curated — the save is the source of
-   * truth now, so the split between created and updated is not a decision they make. What is left
-   * is the part they cannot undo, and it must appear ONLY when something is actually leaving,
-   * which is what the second case pins.
+   * DELETED (2026-08-25): the created/updated/removed breakdown AND the removed-hero note. Both
+   * were from when an import was a merge the player curated — the save is the source of truth
+   * now, so neither the created/updated split nor a sentence explaining why absent heroes leave is
+   * something the player decides or acts on. The REMOVAL behaviour itself is unchanged and is
+   * still covered, one test up, by "importing a save that omits a previously-imported hero removes
+   * exactly that hero".
    */
-  test('a hero leaving the roster is called out; nothing else is (AC-34)', async ({ page }) => {
-    // The orphan (9999) is absent from sample-save.json, so it is the one being removed.
-    const seeded = {
+  test('the dialog states no sync bookkeeping at all', async ({ page }) => {
+    await seedLocalStorage(page, {
       ...importedRoster,
       heroes: [
         importedRoster.heroes[0],
         { ...importedRoster.heroes[0], id: 'seed-orphan', name: 'Orphan', sourceId: '9999' },
       ],
-    };
-    await seedLocalStorage(page, seeded);
+    });
     await page.goto('/');
     await page.getByRole('button', { name: /^Importar$/i }).click();
     await page.locator('input[type="file"]').setInputFiles(sampleSave);
     await expect(page.getByRole('dialog').getByText('Cora').first()).toBeVisible();
 
+    // An orphan IS leaving on this seed, so if any of these copy shapes survived, they would show.
     const dialog = page.getByRole('dialog');
-    await expect(dialog.getByText(/não estão nesse save não existem mais no jogo/i)).toBeVisible();
     await expect(dialog.getByText(/criados \d/i)).toHaveCount(0);
     await expect(dialog.getByText(/atualizados \d/i)).toHaveCount(0);
-  });
-
-  test('no removal, no note — the warning is not permanent chrome', async ({ page }) => {
-    // Seeded roster is exactly sample-save.json's own heroes, so nothing leaves.
-    await seedLocalStorage(page, importedRoster);
-    await page.goto('/');
-    await page.getByRole('button', { name: /^Importar$/i }).click();
-    await page.locator('input[type="file"]').setInputFiles(sampleSave);
-    await expect(page.getByRole('dialog').getByText('Cora').first()).toBeVisible();
-
-    await expect(
-      page.getByRole('dialog').getByText(/não estão nesse save não existem mais no jogo/i),
-    ).toHaveCount(0);
+    await expect(dialog.getByText(/removidos \d/i)).toHaveCount(0);
+    await expect(dialog.getByText(/não existem mais no jogo/i)).toHaveCount(0);
   });
 
   test('a rejected save shows the rejection reason, not "no heroes found" (BSP-06, AC-36)', async ({

@@ -8,6 +8,14 @@ import * as pf from '@bombfarm/ui/panel-field.recipe';
  *
  * `chrome.ts` was deleted at T15, so its exact class strings are inlined below
  * as the frozen source-of-truth snapshot captured from the pre-migration file.
+ *
+ * THREE BUNDLES HAVE DELIBERATELY DIVERGED (2026-08-25), and the snapshot moved with them rather
+ * than the guard being loosened. `importResetWarningClass`, `importAccountClass` and
+ * `importWarningsClass` stack vertically inside the import dialog and each carried its own margin
+ * — `mt-2.5 mb-0`, `mb-3.5` and `mt-2.5` — so the gaps between sections were three different
+ * sizes and changed again whenever a section was added or removed. The spacing now belongs to the
+ * dialog's own flex column (`gap-3`), which is one value for every pair, and these three carry no
+ * vertical margin at all. Nothing else uses them; the drift is intentional and confined.
  */
 
 const fieldControlDesc =
@@ -69,7 +77,7 @@ const chrome = {
     'm-0 list-disc py-0 pl-[18px] text-xs leading-[1.45] text-ink marker:text-warn',
   setupBannerPClass: 'm-0 text-xs leading-[1.45] text-ink',
   importResetWarningClass:
-    'mt-2.5 mb-0 max-w-none rounded-sm border border-[color-mix(in_oklch,var(--warn)_45%,var(--line))] bg-[color-mix(in_oklch,var(--warn)_12%,var(--surface))] px-3.5 py-2.5 [&_h2]:mb-1.5 [&_h2]:m-0 [&_h2]:text-[13px] [&_h2]:font-bold [&_ul]:m-0 [&_ul]:list-disc [&_ul]:py-0 [&_ul]:pl-[18px] [&_ul]:text-xs [&_ul]:leading-[1.45] [&_ul]:text-ink [&_ul]:marker:text-warn [&_p]:m-0 [&_p]:text-xs [&_p]:leading-[1.45] [&_p]:text-ink',
+    'max-w-none rounded-sm border border-[color-mix(in_oklch,var(--warn)_45%,var(--line))] bg-[color-mix(in_oklch,var(--warn)_12%,var(--surface))] px-3.5 py-2.5 [&_h2]:mb-1.5 [&_h2]:m-0 [&_h2]:text-[13px] [&_h2]:font-bold [&_ul]:m-0 [&_ul]:list-disc [&_ul]:py-0 [&_ul]:pl-[18px] [&_ul]:text-xs [&_ul]:leading-[1.45] [&_ul]:text-ink [&_ul]:marker:text-warn [&_p]:m-0 [&_p]:text-xs [&_p]:leading-[1.45] [&_p]:text-ink',
   explainClass: 'mx-auto mt-4 w-[min(var(--maxw),calc(100%-32px))]',
   explainBodyClass: 'mt-2 w-full p-4',
   explainSourceClass: 'mb-2 text-[13px] leading-normal font-semibold [&_a]:text-accent',
@@ -83,7 +91,7 @@ const chrome = {
   dialogActionsClass:
     'mt-3.5 flex flex-wrap items-center justify-end gap-2 border-t border-line pt-3',
   importAccountClass:
-    'mb-3.5 shrink-0 border border-[color-mix(in_oklch,var(--accent)_28%,var(--line))] bg-[linear-gradient(135deg,color-mix(in_oklch,var(--accent)_9%,var(--surface)),color-mix(in_oklch,var(--bg)_40%,var(--surface)))] px-3.5 py-3 text-xs',
+    'shrink-0 border border-[color-mix(in_oklch,var(--accent)_28%,var(--line))] bg-[linear-gradient(135deg,color-mix(in_oklch,var(--accent)_9%,var(--surface)),color-mix(in_oklch,var(--bg)_40%,var(--surface)))] px-3.5 py-3 text-xs',
   importAccountLeadClass: 'm-0 mb-2.5 text-[11px] tracking-[0.01em] text-muted',
   importAccountGridClass:
     'grid grid-cols-[minmax(0,1.35fr)_minmax(0,1fr)] gap-x-5 gap-y-3.5 max-[560px]:grid-cols-1',
@@ -95,7 +103,7 @@ const chrome = {
     'm-0 grid gap-0 [&_>div]:grid [&_>div]:grid-cols-[minmax(0,1fr)_auto] [&_>div]:items-start [&_>div]:gap-x-3 [&_>div]:border-b [&_>div]:border-[color-mix(in_oklch,var(--line)_70%,transparent)] [&_>div]:py-1.5 [&_>div:last-child]:border-b-0 [&_>div:last-child]:pb-0 [&_dt]:m-0 [&_dt]:pt-0.5 [&_dt]:text-[11px] [&_dt]:leading-[1.35] [&_dt]:text-muted [&_dd]:m-0 [&_dd]:min-w-[7rem] [&_dd]:text-right [&_dd]:font-mono [&_dd]:text-xs [&_dd]:font-semibold [&_dd]:text-ink [&_dd]:tabular-nums [&_dd]:leading-snug [&_dd]:whitespace-nowrap',
   statListCompareClass:
     'm-0 grid gap-[5px] [&_>div]:grid [&_>div]:grid-cols-[minmax(0,1fr)_auto] [&_>div]:items-baseline [&_>div]:gap-x-3 [&_>div]:gap-y-2 [&_>div]:border-b [&_>div]:border-[color-mix(in_oklch,var(--line)_70%,transparent)] [&_>div]:py-1 [&_>div:last-child]:border-b-0 [&_>div:last-child]:pb-0 [&_dt]:m-0 [&_dt]:text-[11px] [&_dt]:leading-[1.35] [&_dt]:text-muted [&_dd]:m-0 [&_dd]:flex [&_dd]:flex-row [&_dd]:items-baseline [&_dd]:justify-end [&_dd]:gap-1.5 [&_dd]:whitespace-nowrap [&_dd_strong]:text-xs [&_dd_strong]:font-semibold [&_dd_strong]:text-accent [&_dd_em]:font-mono [&_dd_em]:text-[11px] [&_dd_em]:font-medium [&_dd_em]:not-italic',
-  importWarningsClass: 'mt-2.5 shrink-0 text-xs text-muted [&_summary]:cursor-pointer',
+  importWarningsClass: 'shrink-0 text-xs text-muted [&_summary]:cursor-pointer',
   importActionsClass:
     'mt-0 flex shrink-0 flex-wrap items-center justify-between gap-2.5 border-t border-line bg-surface py-3 pb-4',
   importActionsEndClass: 'ml-auto flex gap-2 max-[560px]:w-full max-[560px]:justify-end',

@@ -1,98 +1,13 @@
 import { describe, expect, it } from 'vitest';
-import type { ImportCandidate, ParseRejection } from '@bombfarm/domain/import-save';
+import type { ParseRejection } from '@bombfarm/domain/import-save';
 import type { PointInferenceIssue } from '@bombfarm/domain/point-inference';
-import type { HeroRecord } from '@/shared/lib/storage';
 import {
   pointIssueCopyKey,
   pointIssueCopyText,
   rejectionText,
-  countRemovedHeroes,
   type PointIssueCopyKey,
 } from '@/features/import/model/compare-candidates';
 import { STRINGS, type Lang } from '@/shared/i18n';
-
-function cand(
-  partial: Partial<ImportCandidate> & Pick<ImportCandidate, 'name' | 'sourceId'>,
-): ImportCandidate {
-  return {
-    level: 1,
-    rarity: 'Comum',
-    rank: 'E',
-    power: 100,
-    abilityCount: 0,
-    gearCount: 0,
-    issues: [],
-    pointIssues: [],
-    blocked: false,
-    matchedExistingId: null,
-    matchedExistingName: null,
-    isGearRefresh: false,
-    record: { name: partial.name, sourceId: partial.sourceId } as ImportCandidate['record'],
-    ...partial,
-  };
-}
-
-function hero(partial: Partial<HeroRecord> & Pick<HeroRecord, 'id' | 'name'>): HeroRecord {
-  return {
-    updatedAt: 0,
-    rarity: 'Comum',
-    level: 1,
-    stars: 0,
-    naked: {} as HeroRecord['naked'],
-    loadout: {},
-    altLoadout: null,
-    gearedOverride: {} as HeroRecord['gearedOverride'],
-    abilities: {},
-    pts: {} as HeroRecord['pts'],
-    ...partial,
-  };
-}
-
-/**
- * NARROWED from `summarizeImportSync` when the created/updated/removed breakdown was removed from
- * the dialog: the save is the source of truth, so how many rows were created against updated is
- * not a decision the player makes. What survives is the count that drives the one warning left,
- * and the two rules that were never about presentation — who is safe from removal.
- */
-describe('countRemovedHeroes (AC-34, W5 AC-28, DEC-08)', () => {
-  it('empty roster, empty save: nothing is removed', () => {
-    expect(countRemovedHeroes([], [])).toBe(0);
-  });
-
-  it('an existing hero absent from the save counts as removed', () => {
-    const candidates = [cand({ sourceId: 's1', name: 'Vera', matchedExistingId: 'h1' })];
-    const existing = [
-      hero({ id: 'h1', name: 'Vera', sourceId: 's1' }),
-      hero({ id: 'h2', name: 'Gale', sourceId: 's2' }),
-    ];
-    expect(countRemovedHeroes(candidates, existing)).toBe(1);
-  });
-
-  it('a hero with no sourceId (never imported) is never counted as removed', () => {
-    expect(countRemovedHeroes([], [hero({ id: 'h1', name: 'Local only' })])).toBe(0);
-  });
-
-  it('a BLOCKED candidate still keeps its hero — it is in the save, just unreadable (W5 AC-28)', () => {
-    const candidates = [cand({ sourceId: 's1', name: 'Broken', blocked: true })];
-    const existing = [hero({ id: 'h1', name: 'Broken', sourceId: 's1' })];
-    // The discriminating case: a blocked candidate contributes nothing to the roster, but its
-    // sourceId stays in the keep set, so the hero already there is preserved rather than wiped.
-    expect(countRemovedHeroes(candidates, existing)).toBe(0);
-  });
-
-  it('mixed: one leaving, one staying, and a blocked one that protects its own', () => {
-    const candidates = [
-      cand({ sourceId: 'existing', name: 'Existing', matchedExistingId: 'h1' }),
-      cand({ sourceId: 'broken', name: 'Broken', blocked: true }),
-    ];
-    const existing = [
-      hero({ id: 'h1', name: 'Existing', sourceId: 'existing' }),
-      hero({ id: 'h2', name: 'Broken', sourceId: 'broken' }),
-      hero({ id: 'h3', name: 'Gone', sourceId: 'gone' }),
-    ];
-    expect(countRemovedHeroes(candidates, existing)).toBe(1);
-  });
-});
 
 function issue(saturatedStats: ('critChance' | 'cdr')[]): PointInferenceIssue[] {
   return [{ kind: 'budgetMismatch', recovered: 10, budget: 12, difference: 2, saturatedStats }];
