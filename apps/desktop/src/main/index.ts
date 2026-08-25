@@ -12,10 +12,16 @@ import {
   type IpcEventChannel,
   type IpcEvents,
   type IpcInvokeChannel,
+  type LiveDiagnosticsDumpOutcome,
   type LiveView,
   type SettingsWriteResult,
 } from '@bombfarm/contracts';
-import { type ConsentEvent, createPacingGate, initialConsent, reduceConsent } from '@bombfarm/game-api';
+import {
+  type ConsentEvent,
+  createPacingGate,
+  initialConsent,
+  reduceConsent,
+} from '@bombfarm/game-api';
 import { createAccountNotifier, resolveAccountView } from './account-view.js';
 import { applyAppIdentity } from './app-identity.js';
 import { createBootRecord } from './boot-record.js';
@@ -132,6 +138,8 @@ function registerIpcHandlers(): void {
       return applyConsentEvent({ type: 'revoke' });
     },
     'live:get': (): LiveView => liveSource?.getView() ?? defaultLiveView(),
+    'live:dumpDiagnostics': (): LiveDiagnosticsDumpOutcome =>
+      liveSource?.dumpDiagnostics() ?? { written: false, reason: 'no-source' },
   };
 
   ipcMain.handle('bfc:invoke', (_event, channel: string) => {
@@ -246,6 +254,7 @@ async function bootstrap(): Promise<void> {
   liveSource = new LiveSource({
     consent: createLiveConsentGate(consentStore),
     userDataDir,
+    flavor: resolveAppEnv().flavor,
     log,
   });
   liveSource.subscribe((event) => {
@@ -289,7 +298,15 @@ async function bootstrap(): Promise<void> {
     // `BFC_TOKEN_PATH_OVERRIDE` escape hatch (T-fix-4) can ever apply — and, symmetrically,
     // cannot apply in a packaged build no matter what is set in its environment. See
     // `session-token-file.ts`'s `SessionCfgPathDeps` doc comment.
-    readToken: (consent) => readSessionToken(consent, undefined, sessionCfgPath({ isPackaged: resolveAppEnv().isPackaged })),
+    readToken: (consent) => {
+      const result = readSessionToken(consent, undefined, sessionCfgPath({ isPackaged: resolveAppEnv().isPackaged }));
+      if (result.ok) {
+        const redact = (text: string): string => result.token.redactFrom(text);
+        log.setCredentialRedactor(redact);
+        liveSource?.setCredentialRedactor(redact);
+      }
+      return result;
+    },
     // account-refresh.ts itself is unmodified (TD-10, MP2 owns that file's commit semantics) —
     // only what the listener does changed: it used to emit unconditionally on every commit
     // (AD-031 fact 2); it now asks the notifier, which emits only on a real change.
@@ -416,5 +433,6 @@ if (!gotLock) {
     storage = null;
     accountStore?.close();
     accountStore = null;
+    log.flush();
   });
 }

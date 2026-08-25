@@ -1,8 +1,8 @@
 import type { AppFlavor, UpdateChannel } from './flavors.js';
 import type { SettingsWriteResult } from './locale.js';
-import type { LiveEvent, LiveView } from './live-source.js';
+import type { LiveDiagnosticsDumpOutcome, LiveEvent, LiveView } from './live-source.js';
 
-export { accountChangeKey } from './account-change-key.js';
+export { accountChangeKey, canonicalStringify } from './account-change-key.js';
 /** MP3 F4 (`AD-049`) — the desktop locale token, its one domain/BCP-47 mapping, and the pure
  *  startup resolution. `locale.ts` itself imports `AppSettings`/`DEFAULT_SETTINGS` back from this
  *  file (see its own doc comment) — safe because every such value is read only inside a function
@@ -31,6 +31,8 @@ export type {
   CountdownBasis,
   FieldCountdown,
   LiveCurrency,
+  LiveDiagnosticsDumpOutcome,
+  LiveDiagnosticsDumpReason,
   LiveEvent,
   LiveFrame,
   LiveGapReason,
@@ -303,6 +305,9 @@ export interface IpcChannels {
   'consent:decline': { args: []; result: ConsentRecord };
   'consent:revoke': { args: []; result: ConsentRecord };
   'live:get': { args: []; result: LiveView };
+  /** The manual counterpart to the ring's existing parse-failure trigger (`frame-ring.ts`) — a
+   *  player-initiated write of the same scrubbed dump, so it can be attached to a bug report. */
+  'live:dumpDiagnostics': { args: []; result: LiveDiagnosticsDumpOutcome };
 }
 
 export type IpcInvokeChannel = keyof IpcChannels;
@@ -326,6 +331,7 @@ export const IPC_CHANNELS = [
   'consent:decline',
   'consent:revoke',
   'live:get',
+  'live:dumpDiagnostics',
 ] as const satisfies readonly IpcInvokeChannel[];
 
 export type IpcEventChannel =

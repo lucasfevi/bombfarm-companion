@@ -125,6 +125,21 @@ export const en = {
   settingsConsentHelpGranted: 'The companion reads your account and stays attached to the game client.',
   settingsConsentRevokeAction: 'Turn off',
 
+  // settingsDiagnostics* — the manual frame-ring dump control (a bug-report affordance)
+  settingsDiagnosticsSectionTitle: 'Diagnostics',
+  settingsDiagnosticsSaveLabel: 'Save a bug report file',
+  settingsDiagnosticsSaveHelp:
+    'Writes a local file with details about recent game traffic. Nothing is sent anywhere — you choose if and when to share it.',
+  settingsDiagnosticsSaveAction: 'Save file',
+  settingsDiagnosticsSavedTitle: 'File saved',
+  settingsDiagnosticsSavedBody: 'Wrote a diagnostics file to {path}.',
+  settingsDiagnosticsNotSavedTitle: 'Nothing saved',
+  // One key per LiveDiagnosticsDumpReason (@bombfarm/contracts), mapped exhaustively by
+  // DIAGNOSTICS_DUMP_REASON_COPY_KEY below.
+  settingsDiagnosticsReasonRateLimited: 'You just saved one. Wait a few seconds and try again.',
+  settingsDiagnosticsReasonWriteFailed: 'The file could not be written. Check your save location and try again.',
+  settingsDiagnosticsReasonNoSource: 'There is nothing to save yet. The app has not connected to the game.',
+
   // consentGate* — the permission gate shown instead of app content when access is not allowed
   consentGateTitle: 'This app needs your permission to work',
   consentGateBody:

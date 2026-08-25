@@ -69,6 +69,11 @@ describe('live IPC surface', () => {
     expect(IPC_EVENT_CHANNELS).toContain('live:event');
   });
 
+  it('registers live:dumpDiagnostics as an invoke channel', () => {
+    expect(isIpcChannel('live:dumpDiagnostics')).toBe(true);
+    expect(IPC_CHANNELS).toContain('live:dumpDiagnostics');
+  });
+
   it('keeps the pre-existing channels the live seam does not retire', () => {
     expect(isIpcChannel('game:getSnapshot')).toBe(true);
     expect(isIpcEventChannel('snapshot:updated')).toBe(true);

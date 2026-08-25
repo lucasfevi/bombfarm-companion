@@ -2,6 +2,7 @@ import type { AccountView, LiveCurrency, LiveEvent, LiveFrame, LiveTick } from '
 import { liveGap } from '@bombfarm/contracts';
 import { wireKey } from '@bombfarm/game-api';
 import { describe, expect, it } from 'vitest';
+import { createBoundaryLog } from '../boundary-log/index.js';
 import { generateReplayStream } from './fixtures/generate-replay-stream.js';
 import { LiveSource, type TapHandle } from './live-source.js';
 
@@ -296,6 +297,125 @@ describe('LiveSource: pollNow forwards to the current tap', () => {
     source.pollNow();
 
     expect(currentTap().pollNowCount).toBe(1);
+  });
+});
+
+describe('LiveSource: rotation field drops are deduplicated and lose their hero index', () => {
+  /** Every validated field present except whatever `omit` names, so a test can isolate exactly
+   *  one drop per hero instead of also tripping over the fields this suite does not care about. */
+  function completeHero(id: string, extra: Record<string, unknown> = {}): Record<string, unknown> {
+    return {
+      [wireKey('heroId')]: id,
+      [wireKey('heroLevel')]: 10,
+      [wireKey('heroEnergy')]: 40,
+      [wireKey('heroEnergyMax')]: 100,
+      [wireKey('heroEnergyFraction')]: 0.4,
+      [wireKey('heroState')]: 'EM_CAMPO',
+      [wireKey('heroOnField')]: true,
+      [wireKey('heroInHouse')]: false,
+      [wireKey('heroRecovering')]: false,
+      [wireKey('heroBattleAllowed')]: true,
+      ...extra,
+    };
+  }
+
+  function heroMissingEnergyMax(id: string): Record<string, unknown> {
+    const { [wireKey('heroEnergyMax')]: _omitted, ...rest } = completeHero(id);
+    return rest;
+  }
+
+  function bodyWithHeroes(heroes: readonly Record<string, unknown>[]): Record<string, unknown> {
+    return {
+      [wireKey('fieldSize')]: heroes.length,
+      [wireKey('heroesList')]: heroes,
+      [wireKey('house')]: {
+        [wireKey('houseActive')]: 1,
+        [wireKey('houseLevels')]: [1],
+        [wireKey('houseCycleSeconds')]: 600,
+        [wireKey('houseSlots')]: heroes.length,
+        [wireKey('houseSlotsPerHouse')]: [heroes.length],
+        [wireKey('houseCycleSecondsPerHouse')]: [600],
+        [wireKey('houseUpgradeCost')]: [0],
+      },
+      [wireKey('rescuesLeft')]: 2,
+      [wireKey('rescuesMax')]: 2,
+    };
+  }
+
+  /** Wires `LiveSource` to a real {@link createBoundaryLog} instance, the same shared-log shape
+   *  production threads in — a bare spy `LogPort` would record every call unfiltered and this
+   *  suite's whole point is proving the dedup collapse actually happens on the real path. */
+  function harnessWithWarnSpy() {
+    const warnRecords: Record<string, unknown>[] = [];
+    const boundaryLog = createBoundaryLog({
+      transport: {
+        info: () => undefined,
+        warn: (record) => warnRecords.push(record),
+        error: () => undefined,
+        debug: () => undefined,
+      },
+      now: () => Date.now(),
+    });
+    const source = new LiveSource({
+      consent: () => true,
+      userDataDir: 'unused-in-tests',
+      createTap: (onEvent) => new FakeTap(onEvent),
+      log: boundaryLog,
+    });
+    return { source, warnRecords };
+  }
+
+  function fieldDropWarnings(warnRecords: readonly Record<string, unknown>[]): Record<string, unknown>[] {
+    return warnRecords.filter((record) => record.event === 'rotation.field_dropped');
+  }
+
+  it('eight heroes missing the same field collapse into exactly one line, path index normalised away', () => {
+    const { source, warnRecords } = harnessWithWarnSpy();
+    source.start();
+
+    const heroIds = Array.from({ length: 8 }, (_, i) => `hero-${String(i)}`);
+    source.ingestRotation(buildAccountView(bodyWithHeroes(heroIds.map(heroMissingEnergyMax))));
+
+    const drops = fieldDropWarnings(warnRecords);
+    expect(drops).toHaveLength(1);
+    expect(drops[0]).toMatchObject({ path: 'heroes[].energia_max', reason: 'missing' });
+  });
+
+  it('drops on two different field paths stay distinct', () => {
+    const { source, warnRecords } = harnessWithWarnSpy();
+    source.start();
+
+    const heroWrongTypeLevel = completeHero('hero-level', { [wireKey('heroLevel')]: 'not-a-number' });
+    source.ingestRotation(
+      buildAccountView(bodyWithHeroes([heroMissingEnergyMax('hero-energy'), heroWrongTypeLevel])),
+    );
+
+    const drops = fieldDropWarnings(warnRecords);
+    expect(drops).toHaveLength(2);
+    expect(drops.map((drop) => drop.path).sort()).toEqual(['heroes[].energia_max', 'heroes[].level']);
+  });
+
+  it('drops on the same field path but different reasons stay distinct', () => {
+    const { source, warnRecords } = harnessWithWarnSpy();
+    source.start();
+
+    const heroWrongTypeLevel = completeHero('hero-wrong-type', { [wireKey('heroLevel')]: 'not-a-number' });
+    const { [wireKey('heroLevel')]: _omitted, ...heroMissingLevel } = completeHero('hero-missing-level');
+    source.ingestRotation(buildAccountView(bodyWithHeroes([heroWrongTypeLevel, heroMissingLevel])));
+
+    const drops = fieldDropWarnings(warnRecords);
+    expect(drops).toHaveLength(2);
+    expect(drops.every((drop) => drop.path === 'heroes[].level')).toBe(true);
+    expect(drops.map((drop) => drop.reason).sort()).toEqual(['missing', 'wrong_type']);
+  });
+});
+
+describe('LiveSource: manual diagnostics dump', () => {
+  it('reports written: false with reason no-source rather than a silent success when no ring is attached', () => {
+    const { source } = createHarness();
+    source.start();
+
+    expect(source.dumpDiagnostics()).toEqual({ written: false, reason: 'no-source' });
   });
 });
 

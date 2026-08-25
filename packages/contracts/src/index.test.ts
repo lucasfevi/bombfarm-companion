@@ -38,6 +38,7 @@ describe('contracts IPC surface', () => {
       'consent:decline',
       'consent:revoke',
       'live:get',
+      'live:dumpDiagnostics',
     ]);
   });
 

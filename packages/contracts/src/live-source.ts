@@ -25,7 +25,8 @@ export interface LiveLootPop {
 
 export interface LiveHit {
   readonly cell: number;
-  readonly amount: number;
+  /** The wire's own name for this value. */
+  readonly damage: number;
   readonly critical?: boolean;
 }
 
@@ -36,6 +37,7 @@ export interface LiveTick {
   readonly phase?: number;
   readonly wave?: number;
   readonly gold?: number;
+  /** On the wire's own 0-255 scale, not a [0, 1] fraction. */
   readonly roomHp?: number;
   /** The server's own "nothing is being fought" flag. */
   readonly idle?: boolean;
@@ -164,3 +166,11 @@ export interface LiveView {
   readonly rotation: RotationSnapshot | null;
   readonly updatedAt: string;
 }
+
+/** `no-source` covers the frame ring itself never having been constructed (no tap has attached
+ *  yet), distinct from the ring existing but declining the write (`rate-limited`/`write-failed`). */
+export type LiveDiagnosticsDumpReason = 'rate-limited' | 'write-failed' | 'no-source';
+
+export type LiveDiagnosticsDumpOutcome =
+  | { readonly written: true; readonly path: string }
+  | { readonly written: false; readonly reason: LiveDiagnosticsDumpReason };
