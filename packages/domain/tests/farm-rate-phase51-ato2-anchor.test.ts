@@ -132,9 +132,16 @@ describe('nothing binds on this account — the structural change since the reti
     expect(row.heroesOnField).toBeCloseTo(7.3648, 4);
   });
 
-  it('the field cap does not bind either — 9 slots against 7.36 heroes on field', () => {
-    expect(row.concurrencyScale).toBe(1);
+  it('the field cap bites LIGHTLY — the mean fits under 9 slots, but the peaks do not', () => {
+    // Mean occupancy 7.36 against 9 slots, so a mean-versus-cap comparison charged nothing and
+    // this used to assert exactly 1. The game admits heroes FIFO, identity-blind, so the squad
+    // loses the share of demand the slots cannot serve — and demand crosses 9 often enough here
+    // to cost 2%. Small, and the right sign: `min` is concave, so the old form could only ever
+    // run optimistic.
     expect(row.heroesOnField).toBeLessThan(squad.fieldSlots);
+    expect(row.concurrencyScale).toBeLessThan(1);
+    expect(row.concurrencyScale).toBeCloseTo(0.98020, 4);
+    expect(row.fieldContentionPct).toBeGreaterThan(0);
   });
 
   it('heroesOnField is 7.3648 — ~6.9% BELOW the time-weighted measured 7.913', () => {
@@ -147,11 +154,15 @@ describe('nothing binds on this account — the structural change since the reti
 });
 
 describe('the resulting rates', () => {
-  it('clearSecs is 23.89s — ~17.0% below the time-weighted measured mean of 28.77s (NOT the 27s per-clear median)', () => {
-    expect(row.clearSecs).toBeCloseTo(23.886, 3);
+  it('clearSecs is 24.37s — ~15.3% below the time-weighted measured mean of 28.77s (NOT the 27s per-clear median)', () => {
+    // 23.886s / -17.0% before the FIFO field queue. The queue charges this roster 2% of its
+    // throughput, which lengthens the modelled clear and moves it TOWARD the measurement. Still
+    // short by 15%, and that remainder is cadence, not concurrency — see
+    // `docs/farm-cadence-density.md`.
+    expect(row.clearSecs).toBeCloseTo(24.3685, 3);
 
     const residual = row.clearSecs / OBSERVED_CLEAR_SECS - 1;
-    expect(residual).toBeCloseTo(-0.1698, 3);
+    expect(residual).toBeCloseTo(-0.1531, 3);
 
     // The median (27s) is a different statistic from the time-weighted mean this model produces —
     // asserted as a guard against re-introducing the comparison an earlier analysis got a
@@ -161,14 +172,15 @@ describe('the resulting rates', () => {
     expect(row.clearSecs).toBeLessThan(27);
   });
 
-  it('goldPerHour is ~20.87M — ~9.7% above the measured 19,033,500, the same residual carried through', () => {
-    expect(row.goldPerHour).toBeCloseTo(20_874_078, -3);
+  it('goldPerHour is ~20.46M — ~7.5% above the measured 19,033,500, the same residual carried through', () => {
+    // 20,874,078 / +9.7% before the FIFO field queue took 2% off this roster's throughput.
+    expect(row.goldPerHour).toBeCloseTo(20_460_729, -3);
 
     // Left as a point comparison rather than a tolerance band, so that any UNRELATED move (a wiki
     // refresh, a sheet-math change) shows up as a change to THIS number, distinct from the
     // tracked residual itself.
     const residual = row.goldPerHour / OBSERVED_GOLD_PER_HOUR - 1;
-    expect(residual).toBeCloseTo(0.0967, 3);
+    expect(residual).toBeCloseTo(0.0750, 3);
   });
 });
 

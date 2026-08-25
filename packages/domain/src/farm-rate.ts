@@ -860,7 +860,21 @@ const FIELD_DEMAND_EPSILON = 1e-13;
  * result — only skip re-deriving one. Size one is deliberate; the access pattern is a long run of
  * repeats, not a working set.
  */
-let contentionMemo: { slots: number; uptime: readonly number[]; value: number } | null = null;
+/**
+ * What the field queue does to a rotation: how much of the demand it serves, and how often
+ * somebody is left waiting. Both fall out of the same demand fixed point, so they are solved
+ * together rather than twice.
+ */
+type FieldQueueOutcome = {
+  /** `E[min(slots, X)] / E[X]` — the share of wanted field time the queue actually grants. */
+  servedFraction: number;
+  /** `P(X > slots)` — how often a rested hero is left behind a full field. */
+  contention: number;
+};
+
+const UNCONTENDED_FIELD: FieldQueueOutcome = Object.freeze({ servedFraction: 1, contention: 0 });
+
+let contentionMemo: { slots: number; uptime: readonly number[]; value: FieldQueueOutcome } | null = null;
 
 /** Bumped once per fixed point actually SOLVED (memo misses only). Tests read it to prove the
  *  cost tracks distinct House allocations rather than row count. Mutable by design, same test
@@ -879,13 +893,13 @@ function sameUptimeVector(left: readonly number[], right: readonly number[]): bo
   return true;
 }
 
-function fieldContentionFraction(effectiveUptime: readonly number[], fieldSlots: number): number {
+function fieldQueueOutcome(effectiveUptime: readonly number[], fieldSlots: number): FieldQueueOutcome {
   const count = effectiveUptime.length;
   // A non-finite slot count means "no field constraint", matching `allocateHouseSlots`'s budget.
-  if (count === 0 || !Number.isFinite(fieldSlots)) return 0;
+  if (count === 0 || !Number.isFinite(fieldSlots)) return UNCONTENDED_FIELD;
   const slots = Math.max(0, fieldSlots);
   // Every hero fits even standing together: no distribution can cross the cap.
-  if (slots >= count) return 0;
+  if (slots >= count) return UNCONTENDED_FIELD;
 
   if (contentionMemo !== null && contentionMemo.slots === slots && sameUptimeVector(contentionMemo.uptime, effectiveUptime)) {
     return contentionMemo.value;
@@ -930,8 +944,17 @@ function fieldContentionFraction(effectiveUptime: readonly number[], fieldSlots:
 
   const pmf = poissonBinomial(demand);
   let contention = 0;
-  for (let taken = 0; taken < pmf.length; taken++) if (taken > slots) contention += pmf[taken];
-  const value = Math.min(1, Math.max(0, contention));
+  let wanted = 0;
+  let served = 0;
+  for (const value of demand) wanted += value;
+  for (let taken = 0; taken < pmf.length; taken++) {
+    served += pmf[taken] * Math.min(slots, taken);
+    if (taken > slots) contention += pmf[taken];
+  }
+  const value: FieldQueueOutcome = {
+    servedFraction: wanted > 0 ? Math.min(1, Math.max(0, served / wanted)) : 1,
+    contention: Math.min(1, Math.max(0, contention)),
+  };
   contentionMemo = { slots, uptime: effectiveUptime.slice(), value };
   return value;
 }
@@ -1023,30 +1046,39 @@ export type FarmRateRow = {
    */
   heroesOnField: number;
   /**
-   * The FIELD-slot cap actually applied: `min(1, fieldSlots / heroesOnField)`; `1` when
-   * `heroesOnField === 0`. Applied AFTER the House ceiling — the House decides how many heroes
-   * the rotation can keep fed, and only then does the field cap ask whether they all fit.
-   * Capping raw `uptimeSum` instead would charge the roster twice for the same shortage.
+   * The share of wanted field time the queue actually grants: `E[min(fieldSlots, X)] / E[X]`,
+   * with `X` the Poisson-binomial number of House-fed heroes holding full energy. `1` when the
+   * field cannot fill. Applied AFTER the House ceiling — the House decides how many heroes the
+   * rotation can keep fed, and only then does the field ask whether they all fit. Capping raw
+   * `uptimeSum` instead would charge the roster twice for the same shortage.
    *
-   * KNOWN APPROXIMATE, and left that way deliberately. It compares a MEAN against the cap, so it
-   * misses the loss whenever occupancy fluctuates across a cap its average sits under (`min` is
-   * concave: `E[min(c, X)] <= min(c, E[X])`). Correcting it needs to know which hero takes a
-   * freed slot, and the game fixes no such rule — a player redeploys whoever they notice.
-   * Measured against a 240h simulation with uniformly-random deployment, this expression is
-   * within 6.7% across seven roster/slot regimes and no simple closed form tested beat it
-   * (unbiased-Jensen 5.7%, proportional water-filling 6.7%); a deployment-order model fitted to
-   * "strongest first" scored 2.0% but is an AUTOMATION's behaviour, not the game's, and reads 12%
-   * off when that assumption is dropped. {@link fieldContentionPct} reports the frequency, which
-   * needs no such assumption, instead of pretending to a corrected magnitude.
+   * WHY THE EXPECTATION AND NOT `min(1, fieldSlots / heroesOnField)`, which this used to be:
+   * the game admits heroes to the field FIFO, by who finished resting first. That rule is
+   * IDENTITY-BLIND — it does not read a hero's power — so the loss needs no assumption about who
+   * takes a freed slot, and the whole reason this factor was left approximate is gone. Comparing
+   * a mean against the cap misses every loss where occupancy fluctuates across a cap its average
+   * sits under, and `min` is concave, so it can only ever run optimistic:
+   * `E[min(c, X)] <= min(c, E[X])`.
+   *
+   * Worth 6-7% on a roster whose field is contended (account 486, 9 slots: 0.964 -> 0.904) and
+   * EXACTLY nothing where the field cannot fill, which is the sharp check on it. It does not
+   * close the board's remaining throughput gap — see `docs/farm-cadence-density.md` — but it is
+   * the part of that gap with a known mechanism behind it.
+   *
+   * Do NOT reintroduce a deployment-order term on top. Strongest-first scored better against a
+   * simulation that itself deployed strongest-first, and read ~12% off once that assumption was
+   * dropped; it is an AUTOMATION's behaviour layered over FIFO, not the game's.
    */
   concurrencyScale: number;
   /**
    * `P(more heroes hold full energy than the field has room for)`, a FRACTION × 100 — how much of
    * the rotation's wall clock is spent with a rested hero benched behind a full field.
    *
-   * A DIAGNOSTIC, not a term: nothing multiplies by it. See {@link fieldContentionFraction} for
-   * why the frequency is reportable when a correction factor is not. `0` exactly when the field
-   * cannot fill.
+   * Reported for the player, not used as a term — {@link concurrencyScale} carries the throughput
+   * cost, and both come out of the same demand fixed point in {@link fieldQueueOutcome}. A
+   * frequency and a magnitude answer different questions: 44% of the time somebody is waiting is
+   * what tells a player to buy field slots, while the 7% it costs is what the estimate needs.
+   * `0` exactly when the field cannot fill.
    */
   fieldContentionPct: number;
   /**
@@ -1118,10 +1150,11 @@ function buildRow(line: WikiPhaseLine, squad: SquadFarmFacts, options: FarmRateO
   }
   const fortunaAura = Math.min(FORTUNA_AURA_CAP, fortunaWeightedSum);
 
-  // Constraint 2 — field slots, applied to what the House can actually keep fed (never to the
+  // Constraint 2 — the field queue, applied to what the House can actually keep fed (never to the
   // unconstrained `uptimeSum`, which would double-charge the same shortage).
-  const concurrencyScale = heroesOnField > 0 ? Math.min(1, squad.fieldSlots / heroesOnField) : 1;
-  const fieldContention = fieldContentionFraction(effectiveUptime, squad.fieldSlots);
+  const fieldQueue = heroesOnField > 0 ? fieldQueueOutcome(effectiveUptime, squad.fieldSlots) : UNCONTENDED_FIELD;
+  const concurrencyScale = fieldQueue.servedFraction;
+  const fieldContention = fieldQueue.contention;
 
   const propsPerSec = concurrencyScale * shareDenom;
   const bossPerSec = concurrencyScale * bossRateSum;

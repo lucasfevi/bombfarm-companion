@@ -49,8 +49,11 @@ function syntheticHero(overrides: Partial<HeroFarmFacts> & { heroId: string }): 
 const UNCONSTRAINED_HOUSE = { ...account, slots: 1000 };
 
 describe('field-slot cap (row.concurrencyScale)', () => {
-  it('heroesOnField > fieldSlots ⇒ every rate scales by exactly fieldSlots / heroesOnField', () => {
+  it('heroesOnField > fieldSlots at uptime 1 ⇒ every rate scales by exactly fieldSlots / heroesOnField', () => {
     // uptime 1 ⇒ House demand 0 ⇒ the House ceiling is inert and heroesOnField === Σ uptime === 4.
+    // uptime 1 also makes demand DETERMINISTIC — always exactly 4 heroes want the field — which is
+    // the one case where the queue's E[min(c, X)] / E[X] collapses to the plain ratio of means.
+    // Anywhere demand fluctuates the scale is strictly lower; see the stochastic cases below.
     const heroesFacts: HeroFarmFacts[] = [
       syntheticHero({ heroId: 'a' }),
       syntheticHero({ heroId: 'b' }),
@@ -233,19 +236,28 @@ describe('House recovery-slot ceiling', () => {
     expect(row.heroesOnField).toBeCloseTo(1, 12);
     expect(row.heroesOnField).toBeLessThan(squad.uptimeSum);
 
-    // CORRECT ordering: the field cap divides fieldSlots by the House-allocated heroesOnField
-    // (1.0), not by the raw uptimeSum (2.0) — 0.5/1.0 = 0.5, not 0.5/2.0 = 0.25.
-    expect(row.concurrencyScale).toBeCloseTo(0.5, 12);
-    const doubleChargedScale = squad.fieldSlots / squad.uptimeSum;
-    expect(doubleChargedScale).toBeCloseTo(0.25, 12);
-    expect(row.concurrencyScale).not.toBeCloseTo(doubleChargedScale, 6);
+    // CORRECT ordering: the queue runs over the House-ALLOCATED duty cycles, not the raw ones.
+    // The reference squad below has the same field cap with the House wide open, so its
+    // effective uptimes are the unthrottled 0.5s — applying the queue to THOSE is the
+    // double-charging error, and it lands somewhere else.
+    const doubleCharged = computeFarmRateRow(
+      42,
+      computeSquadFarmFacts(facts, { ...house(1000), fieldSlots: 0.5 }),
+    )!;
+    expect(row.concurrencyScale).not.toBeCloseTo(doubleCharged.concurrencyScale, 6);
+    expect(row.concurrencyScale).toBeGreaterThan(doubleCharged.concurrencyScale);
+
+    // Recorded: 0.309, not the 0.5 a mean-versus-cap comparison gives. Demand here is genuinely
+    // stochastic (four half-time heroes against half a slot), so the served share sits well under
+    // the ratio of the means — see `concurrencyScale`'s own note on why that ratio ran optimistic.
+    expect(row.concurrencyScale).toBeCloseTo(0.309017, 5);
+    expect(row.concurrencyScale).toBeLessThan(squad.fieldSlots / row.heroesOnField);
 
     // The field-cap-only reference squad (same House constraint, field wide open) isolates the
-    // scale factor: propsPerHour must drop by exactly `concurrencyScale` (0.5), not by the
-    // double-charging variant's 0.25.
+    // scale factor: propsPerHour must drop by exactly `concurrencyScale`, whatever it is.
     const referenceRow = computeFarmRateRow(42, computeSquadFarmFacts(facts, { ...bothBinding, fieldSlots: 1000 }))!;
     expect(referenceRow.concurrencyScale).toBe(1);
-    expect(row.propsPerHour / referenceRow.propsPerHour).toBeCloseTo(0.5, 9);
+    expect(row.propsPerHour / referenceRow.propsPerHour).toBeCloseTo(row.concurrencyScale, 9);
   });
 
   it('a hero with ZERO field seconds (uptime 0) costs a full slot, delivers nothing, and is ranked last', () => {
@@ -292,21 +304,23 @@ describe('field contention (row.fieldContentionPct)', () => {
     expect(rowFor(4, 1, 3).fieldContentionPct).toBeCloseTo(100, 9);
   });
 
-  it('reports a mean UNDER the cap that still fluctuates across it — the case a mean cannot see', () => {
-    // Ten heroes at uptime 0.6 ⇒ mean occupancy 6.0 against 8 slots. `concurrencyScale` reads 1
-    // (its mean genuinely sits under the cap); the field is nonetheless full with someone waiting
-    // a real share of the time, and that is the whole point of reporting the frequency.
+  it('charges a mean UNDER the cap that still fluctuates across it — the case a mean cannot see', () => {
+    // Ten heroes at uptime 0.6 ⇒ mean occupancy 6.0 against 8 slots, so a mean-versus-cap
+    // comparison would read exactly 1 and charge nothing. Demand crosses 8 a real share of the
+    // time, and since the game admits FIFO the squad genuinely loses that time.
     const row = rowFor(10, 0.6, 8);
-    expect(row.concurrencyScale).toBe(1);
+    expect(8 / row.heroesOnField).toBeGreaterThan(1); // the mean fits, comfortably
+    expect(row.concurrencyScale).toBeLessThan(1); // and it is still charged
+    expect(row.concurrencyScale).toBeGreaterThan(0.95); // by a little, matching a small overflow
     expect(row.fieldContentionPct).toBeGreaterThan(1);
     expect(row.fieldContentionPct).toBeLessThan(50);
 
-    // Tightening the cap onto the mean makes it unmistakable rather than marginal.
-    // `toBeCloseTo`, not `toBe`: 10 x 0.7 sums to 7.000000000000001 in IEEE754, so the ratio
-    // lands a bit under 1 rather than exactly on it. The claim is "the mean does not bind".
+    // Tightening the cap onto the mean makes it unmistakable rather than marginal: the frequency
+    // climbs past 30% and the scale falls further, while a mean-versus-cap read would still be 1.
     const tighter = rowFor(10, 0.7, 7);
-    expect(tighter.concurrencyScale).toBeCloseTo(1, 12);
+    expect(7 / tighter.heroesOnField).toBeCloseTo(1, 12);
     expect(tighter.fieldContentionPct).toBeGreaterThan(30);
+    expect(tighter.concurrencyScale).toBeLessThan(row.concurrencyScale);
   });
 
   it('rises monotonically as slots are removed, and stays a percentage throughout', () => {
