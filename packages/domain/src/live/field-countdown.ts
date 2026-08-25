@@ -1,5 +1,4 @@
 import type {
-  CountdownBasis,
   FieldCountdown,
   LiveTick,
   RecoveryCountdown,
@@ -15,10 +14,6 @@ export interface DrainMultipliers {
   readonly teamDrainMult: number;
 }
 
-/** No reduction known for a hero (not yet resolved by the caller) is the same as the base
- *  law's unreduced rate — `combineDrainRate(1, 1)`. */
-const UNRESOLVED_DRAIN_MULTIPLIERS: DrainMultipliers = { selfDrainMult: 1, teamDrainMult: 1 };
-
 export interface DrainRejectionReport {
   readonly heroId: string;
   readonly reason: 'rateOutOfRange';
@@ -27,9 +22,19 @@ export interface DrainRejectionReport {
 interface HeroDrainState {
   readonly window: readonly DrainSample[];
   readonly hasReportedRejection: boolean;
+  /** The resolved multipliers this hero's window was last fitted under — `undefined` when the
+   *  caller could not resolve any. Compared, not merely stored: {@link ingestFieldCountdownTick}
+   *  discards the window the tick this changes value, since that is the one thing that actually
+   *  invalidates a fitted slope. */
+  readonly resolvedMultipliers: DrainMultipliers | undefined;
 }
 
-const EMPTY_HERO_DRAIN_STATE: HeroDrainState = { window: [], hasReportedRejection: false };
+const EMPTY_HERO_DRAIN_STATE: HeroDrainState = { window: [], hasReportedRejection: false, resolvedMultipliers: undefined };
+
+function sameMultipliers(a: DrainMultipliers | undefined, b: DrainMultipliers | undefined): boolean {
+  if (a === undefined || b === undefined) return a === b;
+  return a.selfDrainMult === b.selfDrainMult && a.teamDrainMult === b.teamDrainMult;
+}
 
 /** Everything this module derives from `rotation` alone, cached against its reference identity —
  *  `rotation` changes on the slow authenticated cycle while a frame arrives ~10x/second, so
@@ -107,11 +112,16 @@ function computeRecovery(rotation: RotationSnapshot | null): readonly RecoveryCo
   return recovery;
 }
 
+function secondsRemainingFor(drainPerSecond: number, latestKnownEnergy: number): number {
+  return drainPerSecond > 0 ? Math.max(0, latestKnownEnergy / drainPerSecond) : 0;
+}
+
 /**
  * Assembles the live view's field and recovery countdowns from one frame. A hero's basis is
- * `'observed'` only when its rolling window carries a trusted fit; any field-membership change
- * this tick drops every remaining hero's samples, since an aura carrier's arrival or departure
- * changes everyone else's true drain rate, not just the hero that moved.
+ * `'observed'` only when its rolling window carries a trusted fit; a hero's window is discarded
+ * only when ITS OWN resolved drain multipliers change value tick to tick, never merely because
+ * some other hero joined or left the field. A hero whose fit is untrusted and whose multipliers
+ * cannot be resolved gets no entry at all — an absent countdown beats a wrong one.
  */
 export function ingestFieldCountdownTick(
   state: FieldCountdownState,
@@ -132,7 +142,7 @@ export function ingestFieldCountdownTick(
   const heroDrainStates = new Map<string, HeroDrainState>();
   for (const [heroId, drainState] of state.heroDrainStates) {
     if (!newFieldIds.has(heroId)) continue; // departed: discard, start clean on return
-    heroDrainStates.set(heroId, membershipChanged ? { ...drainState, window: [] } : drainState);
+    heroDrainStates.set(heroId, drainState);
   }
 
   const rejections: DrainRejectionReport[] = [];
@@ -146,34 +156,33 @@ export function ingestFieldCountdownTick(
         ? hero.energyFraction * energyMax
         : undefined;
 
+    const resolvedMultipliers = modelledDrainMultipliers?.get(hero.id);
     let drainState = heroDrainStates.get(hero.id) ?? EMPTY_HERO_DRAIN_STATE;
+    if (!sameMultipliers(resolvedMultipliers, drainState.resolvedMultipliers)) {
+      drainState = { ...drainState, window: [], resolvedMultipliers };
+    }
     if (absoluteEnergyNow !== undefined && sampleSource === 'tap') {
       drainState = { ...drainState, window: pushDrainSample(drainState.window, { atMs, energy: absoluteEnergyNow }) };
     }
 
     const fit = sampleSource === 'tap' ? fitDrainRate(drainState.window) : { trusted: false as const, reason: 'insufficientSamples' as const };
 
-    let basis: CountdownBasis;
-    let drainPerSecond: number;
-    if (fit.trusted) {
-      basis = 'observed';
-      drainPerSecond = fit.ratePerSecond;
-    } else {
-      basis = 'modelled';
-      const multipliers = modelledDrainMultipliers?.get(hero.id) ?? UNRESOLVED_DRAIN_MULTIPLIERS;
-      drainPerSecond = combineDrainRate(multipliers.selfDrainMult, multipliers.teamDrainMult);
-
-      if (fit.reason === 'rateOutOfRange' && !drainState.hasReportedRejection) {
-        rejections.push({ heroId: hero.id, reason: 'rateOutOfRange' });
-        drainState = { ...drainState, hasReportedRejection: true };
-      }
+    if (!fit.trusted && fit.reason === 'rateOutOfRange' && !drainState.hasReportedRejection) {
+      rejections.push({ heroId: hero.id, reason: 'rateOutOfRange' });
+      drainState = { ...drainState, hasReportedRejection: true };
     }
     heroDrainStates.set(hero.id, drainState);
 
     const latestKnownEnergy = absoluteEnergyNow ?? drainState.window.at(-1)?.energy ?? 0;
-    const secondsRemaining = drainPerSecond > 0 ? Math.max(0, latestKnownEnergy / drainPerSecond) : 0;
-
-    field.push({ heroId: hero.id, secondsRemaining, drainPerSecond, basis });
+    let entry: FieldCountdown | undefined;
+    if (fit.trusted) {
+      const drainPerSecond = fit.ratePerSecond;
+      entry = { heroId: hero.id, secondsRemaining: secondsRemainingFor(drainPerSecond, latestKnownEnergy), drainPerSecond, basis: 'observed' };
+    } else if (resolvedMultipliers !== undefined) {
+      const drainPerSecond = combineDrainRate(resolvedMultipliers.selfDrainMult, resolvedMultipliers.teamDrainMult);
+      entry = { heroId: hero.id, secondsRemaining: secondsRemainingFor(drainPerSecond, latestKnownEnergy), drainPerSecond, basis: 'modelled' };
+    }
+    if (entry !== undefined) field.push(entry);
   }
 
   const recovery = rotationCache.recovery;

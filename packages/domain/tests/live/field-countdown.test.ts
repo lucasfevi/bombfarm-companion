@@ -30,6 +30,10 @@ describe('ingestFieldCountdownTick — provenance', () => {
     const ratePerSecond = 0.8;
     const rotation = rotationOf([{ id: 'h1', energyMax }]);
 
+    const modelledDrainMultipliers = new Map<string, DrainMultipliers>([
+      ['h1', { selfDrainMult: 1, teamDrainMult: 1 }],
+    ]);
+
     let state: FieldCountdownState = createInitialFieldCountdownState();
     let firstBasis: string | undefined;
     let laterBasis: string | undefined;
@@ -42,6 +46,7 @@ describe('ingestFieldCountdownTick — provenance', () => {
         tick: tick([{ id: 'h1', energyFraction: energy / energyMax }]),
         rotation,
         atMs,
+        modelledDrainMultipliers,
       });
       state = result.state;
       if (i === 0) firstBasis = result.field[0].basis;
@@ -83,6 +88,9 @@ describe('ingestFieldCountdownTick — sample provenance', () => {
     // that gate alone would otherwise evict every sample before 8 could accumulate, masking
     // whether `sampleSource` is the thing actually stopping this from ever being trusted.
     const restIntervalMs = 3_000;
+    const modelledDrainMultipliers = new Map<string, DrainMultipliers>([
+      ['h7', { selfDrainMult: 1, teamDrainMult: 1 }],
+    ]);
 
     let state: FieldCountdownState = createInitialFieldCountdownState();
     const bases: string[] = [];
@@ -95,6 +103,7 @@ describe('ingestFieldCountdownTick — sample provenance', () => {
         rotation,
         atMs,
         sampleSource: 'rest',
+        modelledDrainMultipliers,
       });
       state = result.state;
       bases.push(result.field[0].basis);
@@ -113,6 +122,7 @@ describe('ingestFieldCountdownTick — sample provenance', () => {
         tick: tick([{ id: 'h7', energyFraction: energy / energyMax }]),
         rotation,
         atMs,
+        modelledDrainMultipliers,
       });
       tapState = result.state;
       tapBases = [...tapBases, result.field[0].basis];
@@ -176,9 +186,57 @@ describe('ingestFieldCountdownTick — field-membership recompute', () => {
     }
   });
 
+  it("a non-carrier joining or leaving the field leaves every other hero's rate and basis unchanged", () => {
+    const energyMax = 1000;
+    const rotation = rotationOf([{ id: 'h1', energyMax }, { id: 'noise', energyMax }]);
+    const modelledDrainMultipliers = new Map<string, DrainMultipliers>([
+      ['h1', { selfDrainMult: 1, teamDrainMult: 1 }],
+      ['noise', { selfDrainMult: 1, teamDrainMult: 1 }],
+    ]);
+
+    let state: FieldCountdownState = createInitialFieldCountdownState();
+    for (let i = 0; i < 8; i += 1) {
+      const atMs = i * INTERVAL_MS;
+      const result = ingestFieldCountdownTick(state, {
+        tick: tick([{ id: 'h1', energyFraction: energyAt(900, 0.8, atMs) / energyMax }]),
+        rotation,
+        atMs,
+        modelledDrainMultipliers,
+      });
+      state = result.state;
+      if (i === 7) expect(result.field.find((c) => c.heroId === 'h1')?.basis).toBe('observed');
+    }
+
+    const joinAtMs = 8 * INTERVAL_MS;
+    const joined = ingestFieldCountdownTick(state, {
+      tick: tick([
+        { id: 'h1', energyFraction: energyAt(900, 0.8, joinAtMs) / energyMax },
+        { id: 'noise', energyFraction: 0.5 },
+      ]),
+      rotation,
+      atMs: joinAtMs,
+      modelledDrainMultipliers,
+    });
+    state = joined.state;
+    expect(joined.field.find((c) => c.heroId === 'h1')?.basis).toBe('observed');
+
+    const leaveAtMs = 9 * INTERVAL_MS;
+    const left = ingestFieldCountdownTick(state, {
+      tick: tick([{ id: 'h1', energyFraction: energyAt(900, 0.8, leaveAtMs) / energyMax }]),
+      rotation,
+      atMs: leaveAtMs,
+      modelledDrainMultipliers,
+    });
+    expect(left.field.find((c) => c.heroId === 'h1')?.basis).toBe('observed');
+    expect(left.field.find((c) => c.heroId === 'h1')?.drainPerSecond).toBeCloseTo(0.8, 1);
+  });
+
   it('a hero that appears and leaves before a slope can be fitted never gets an observed countdown', () => {
     const energyMax = 1000;
     const rotation = rotationOf([{ id: 'h4', energyMax }]);
+    const modelledDrainMultipliers = new Map<string, DrainMultipliers>([
+      ['h4', { selfDrainMult: 1, teamDrainMult: 1 }],
+    ]);
     let state: FieldCountdownState = createInitialFieldCountdownState();
     const observedBases: string[] = [];
 
@@ -188,6 +246,7 @@ describe('ingestFieldCountdownTick — field-membership recompute', () => {
         tick: tick([{ id: 'h4', energyFraction: energyAt(900, 0.8, atMs) / energyMax }]),
         rotation,
         atMs,
+        modelledDrainMultipliers,
       });
       state = result.state;
       observedBases.push(result.field[0].basis);
@@ -201,6 +260,7 @@ describe('ingestFieldCountdownTick — field-membership recompute', () => {
       tick: tick([{ id: 'h4', energyFraction: 0.9 }]),
       rotation,
       atMs: 6 * INTERVAL_MS,
+      modelledDrainMultipliers,
     });
     observedBases.push(rejoined.field[0].basis);
 
@@ -331,5 +391,71 @@ describe('ingestFieldCountdownTick — onFieldHeroIdsSorted is rebuilt only when
 
     expect(second.state.onFieldHeroIdsSorted).not.toBe(first.state.onFieldHeroIdsSorted);
     expect(second.state.onFieldHeroIdsSorted).toEqual(['h1', 'h2']);
+  });
+});
+
+describe('ingestFieldCountdownTick — a hero the app knows nothing about renders no countdown', () => {
+  it('an untrusted fit with no resolvable roster data gets no field entry at all, not a fallback number', () => {
+    const rotation = rotationOf([{ id: 'h9', energyMax: 1000 }]);
+
+    const result = ingestFieldCountdownTick(createInitialFieldCountdownState(), {
+      tick: tick([{ id: 'h9', energyFraction: 0.5 }]),
+      rotation,
+      atMs: 0,
+      // No modelledDrainMultipliers entry for h9: roster data is unavailable for this hero.
+    });
+
+    expect(result.field.find((c) => c.heroId === 'h9')).toBeUndefined();
+  });
+});
+
+describe('ingestFieldCountdownTick — countdown stability regression', () => {
+  it("a hero's remaining field time never increases while its own drain conditions stay constant, even as unrelated heroes repeatedly join and leave the field", () => {
+    const energyMax = 1000;
+    const targetRate = 0.8; // combineDrainRate(0.8, 1) — the target's own Bateria Extra, no team aura
+    const rotation = rotationOf([
+      { id: 'target', energyMax },
+      { id: 'noise1', energyMax },
+      { id: 'noise2', energyMax },
+    ]);
+
+    const targetMultipliers: DrainMultipliers = { selfDrainMult: 0.8, teamDrainMult: 1 };
+    const noiseMultipliers: DrainMultipliers = { selfDrainMult: 1, teamDrainMult: 1 };
+
+    let state: FieldCountdownState = createInitialFieldCountdownState();
+    const remainingReadings: number[] = [];
+
+    const TOTAL_TICKS = 40;
+    for (let i = 0; i < TOTAL_TICKS; i += 1) {
+      const atMs = i * INTERVAL_MS;
+      const heroesOnField: LiveTickHero[] = [
+        { id: 'target', energyFraction: energyAt(900, targetRate, atMs) / energyMax },
+      ];
+      // Unaligned periods (3 and 5) put a membership change on nearly every tick, never settling.
+      if (i % 3 < 2) heroesOnField.push({ id: 'noise1', energyFraction: 0.5 });
+      if (i % 5 < 3) heroesOnField.push({ id: 'noise2', energyFraction: 0.5 });
+
+      const modelledDrainMultipliers = new Map<string, DrainMultipliers>([
+        ['target', targetMultipliers],
+        ['noise1', noiseMultipliers],
+        ['noise2', noiseMultipliers],
+      ]);
+
+      const result = ingestFieldCountdownTick(state, {
+        tick: tick(heroesOnField),
+        rotation,
+        atMs,
+        modelledDrainMultipliers,
+      });
+      state = result.state;
+
+      const targetReading = result.field.find((c) => c.heroId === 'target');
+      expect(targetReading).toBeDefined();
+      remainingReadings.push(targetReading!.secondsRemaining);
+    }
+
+    for (let i = 1; i < remainingReadings.length; i += 1) {
+      expect(remainingReadings[i]!).toBeLessThanOrEqual(remainingReadings[i - 1]!);
+    }
   });
 });

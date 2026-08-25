@@ -19,9 +19,13 @@ import { isLiveCurrency, liveGap } from '@bombfarm/contracts';
 import { identifyObservedBody, normalizeRotation } from '@bombfarm/game-api';
 import {
   createInitialFieldCountdownState,
+  extractRosterHeroAbilities,
   freezeRecoveryCountdowns,
   ingestFieldCountdownTick,
+  resolveFieldDrainMultipliers,
+  type DrainMultipliers,
   type FieldCountdownState,
+  type RosterHeroAbilities,
 } from '@bombfarm/domain/live';
 import { runPowerShellAsync, runPowerShellSync, stripExeSuffix } from '../game-reader/process.js';
 import { createFrameCapture, readFrameCaptureEnabledFromEnv } from './frame-capture.js';
@@ -280,6 +284,11 @@ export class LiveSource {
    *  onto a tap-observed rotation body — which arrives with no roster of its own — so an observed
    *  update does not blank names the app already knows. */
   #lastRosterRaw: unknown = undefined;
+  /** Extracted alongside {@link #lastRosterRaw} from the same self-fetched read, keyed by id — the
+   *  source `#ingestTick` reads each tick to resolve real per-hero {@link DrainMultipliers} for
+   *  whoever the tap reports on the field, since a tap frame alone carries no ability ranks. Ability
+   *  ranks only — never the full save-parse `HeroRecord`, which main may not build. */
+  #rosterHeroById: ReadonlyMap<string, RosterHeroAbilities> = new Map();
   #fieldState: FieldCountdownState = createInitialFieldCountdownState();
   #field: readonly FieldCountdown[] = [];
   #recovery: readonly RecoveryCountdown[] = [];
@@ -366,7 +375,8 @@ export class LiveSource {
    *  newest-wins rule against {@link ingestObservedRotation} deterministically. */
   ingestRotation(view: AccountView, atMs: number = this.#now()): void {
     if (view.payload.casa === undefined) return;
-    this.#applyRotationBody(view.payload.casa, atMs, { rosterRaw: view.payload.heroes });
+    const rosterHeroAbilities = extractRosterHeroAbilities(view.payload.heroes);
+    this.#applyRotationBody(view.payload.casa, atMs, { rosterRaw: view.payload.heroes, rosterHeroAbilities });
   }
 
   /** The tap-observed counterpart to {@link ingestRotation} — same fold, a body identified from
@@ -377,17 +387,25 @@ export class LiveSource {
     this.#applyRotationBody(body, atMs);
   }
 
-  /** `selfFetched`, when present, carries the read's own `/roster` array — assigned to
-   *  {@link #lastRosterRaw} only on this same branch, below the staleness check, so a read
-   *  rejected as older than what is already applied never overwrites the roster either. The two
-   *  halves of one read are accepted or rejected together. */
-  #applyRotationBody(body: unknown, atMs: number, selfFetched?: { readonly rosterRaw: unknown }): void {
+  /** `selfFetched`, when present, carries the read's own `/roster` array (plus the ability ranks
+   *  extracted from it) — assigned to {@link #lastRosterRaw} / {@link #rosterHeroById} only on this
+   *  same branch, below the staleness check, so a read rejected as older than what is already
+   *  applied never overwrites either. The three halves of one read are accepted or rejected
+   *  together. */
+  #applyRotationBody(
+    body: unknown,
+    atMs: number,
+    selfFetched?: { readonly rosterRaw: unknown; readonly rosterHeroAbilities: readonly RosterHeroAbilities[] },
+  ): void {
     if (this.#rotationAtMs !== null && atMs < this.#rotationAtMs) {
       this.#log.info({ scope: 'live-source', event: 'rotation.stale_ignored', atMs, appliedAtMs: this.#rotationAtMs });
       return;
     }
     this.#rotationAtMs = atMs;
-    if (selfFetched) this.#lastRosterRaw = selfFetched.rosterRaw;
+    if (selfFetched) {
+      this.#lastRosterRaw = selfFetched.rosterRaw;
+      this.#rosterHeroById = new Map(selfFetched.rosterHeroAbilities.map((hero) => [hero.id, hero]));
+    }
     const { snapshot, drops } = normalizeRotation(body, this.#lastRosterRaw);
     reportRotationDrops(this.#log, drops);
     this.#rotation = snapshot;
@@ -490,7 +508,20 @@ export class LiveSource {
   }
 
   #ingestTick(tick: LiveTick, atMs: number, sampleSource: 'tap' | 'rest' = 'tap'): void {
-    const result = ingestFieldCountdownTick(this.#fieldState, { tick, rotation: this.#rotation, atMs, sampleSource });
+    const onFieldHeroes: RosterHeroAbilities[] = [];
+    for (const heroOnField of tick.heroes) {
+      const hero = this.#rosterHeroById.get(heroOnField.id);
+      if (hero !== undefined) onFieldHeroes.push(hero);
+    }
+    const modelledDrainMultipliers: ReadonlyMap<string, DrainMultipliers> = resolveFieldDrainMultipliers(onFieldHeroes);
+
+    const result = ingestFieldCountdownTick(this.#fieldState, {
+      tick,
+      rotation: this.#rotation,
+      atMs,
+      modelledDrainMultipliers,
+      sampleSource,
+    });
     this.#fieldState = result.state;
     this.#field = result.field;
     this.#recovery = result.recovery;

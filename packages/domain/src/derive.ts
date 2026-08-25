@@ -54,6 +54,16 @@ export function combineTeamAuraPct(ownPct: number, othersPct: number, cap: numbe
 }
 
 /**
+ * The Fôlego de Mineiro half of {@link computeCombatMults}, factored out so the live field
+ * countdown (`resolveFieldDrainMultipliers`) can derive the same capped team drain multiplier
+ * from a live on-field set without reimplementing the cap/floor arithmetic.
+ */
+export function teamDrainMultFromTeamBuffs(teamBuffs: Record<TeamBuffId, number>): number {
+  const folegoPct = combineTeamAuraPct(0, teamBuffs.folego_mineiro || 0, TEAM_BUFF_CAP.folego_mineiro);
+  return Math.max(0.01, 1 - folegoPct / 100);
+}
+
+/**
  * Team / combat multipliers used by the advisor pipeline. The skill tree no longer
  * contributes anything here (BSP-23c) — `dmg_static` and `energia_add` are sheet-level
  * factors applied once by `applySkillTree`, not a second time on top of the combat sheet.
@@ -68,10 +78,9 @@ export function computeCombatMults(input: ComputeCombatMultsInput): CombatMults 
   const { mods, teamBuffs, extraDmgPct } = input;
   const gritoPct = combineTeamAuraPct(0, teamBuffs.grito_guerra || 0, TEAM_BUFF_CAP.grito_guerra);
   const marchaPct = combineTeamAuraPct(0, teamBuffs.marcha_acelerada || 0, TEAM_BUFF_CAP.marcha_acelerada);
-  const folegoPct = combineTeamAuraPct(0, teamBuffs.folego_mineiro || 0, TEAM_BUFF_CAP.folego_mineiro);
   const teamCritFlat = combineTeamAuraPct(0, teamBuffs.pressagio_mortal || 0, TEAM_BUFF_CAP.pressagio_mortal);
   return {
-    teamDrainMult: Math.max(0.01, 1 - folegoPct / 100),
+    teamDrainMult: teamDrainMultFromTeamBuffs(teamBuffs),
     teamCritFlat,
     attackMult: 1 + gritoPct / 100,
     speedMult: 1 + marchaPct / 100,

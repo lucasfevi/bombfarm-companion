@@ -125,9 +125,32 @@ function buildRotationBody(opts: {
   };
 }
 
+/** The smallest per-hero shape `parseAccountPayload` accepts without rejecting the whole read —
+ *  see `hasUsableBirthStats` (`packages/domain/src/save-units.ts`). No ability ranks, so every
+ *  hero built with this resolves the drain law's unreduced base rate — the same rate the fixed
+ *  fallback this file's tests were already written against used to hardcode. */
+const MINIMAL_BIRTH_STATS = {
+  dmg: 1, energia: 1, speed: 1, crit_chance: 0, crit_dmg: 1, penetration: 0, cooldown_reduction: 0, luck: 0,
+};
+
+function minimalRosterHero(id: string): Record<string, unknown> {
+  return { id, name: id, birth_stats: MINIMAL_BIRTH_STATS, stats: { ...MINIMAL_BIRTH_STATS }, abilities: [] };
+}
+
+function heroIdsFromCasaBody(casa: Record<string, unknown>): string[] {
+  const heroesList = casa[wireKey('heroesList')];
+  if (!Array.isArray(heroesList)) return [];
+  return heroesList
+    .map((hero) => (hero as Record<string, unknown>)[wireKey('heroId')])
+    .filter((id): id is string => typeof id === 'string');
+}
+
+/** Every hero named in `casa`'s own `heroesList` also gets a minimal roster record, so the
+ *  multipliers `LiveSource` resolves for them are never merely absent — matching a real account,
+ *  where a rotation body and its roster describe the same heroes. */
 function buildAccountView(casa: Record<string, unknown>): AccountView {
   return {
-    payload: { casa, heroes: [] },
+    payload: { casa, heroes: heroIdsFromCasaBody(casa).map(minimalRosterHero) },
     gameRunning: true,
     store: { status: 'ok', reason: null, binding: 'sqlite' },
   };
@@ -181,6 +204,11 @@ describe('LiveSource: driven live from a replayed frame sequence', () => {
     source.start();
 
     const stream = generateReplayStream();
+    const [firstCombatFrame] = stream.frames.slice(6, 12);
+    if (!firstCombatFrame) throw new Error('fixture missing expected combat frame');
+    const combatHeroIds = firstCombatFrame.tick.heroes.map((hero) => hero.id);
+    source.ingestRotation(buildAccountView(bodyWithHeroes(combatHeroIds.map((id) => completeHero(id)))));
+
     goLive();
     for (const frame of stream.frames.slice(6, 12)) pushFrame(frame.tick);
 
@@ -623,5 +651,76 @@ describe('LiveSource: no raw payload on the seam', () => {
     expect(Object.keys(frameEvent.frame).sort()).toEqual(['at', 'sequence', 'tick']);
     expect(frameEvent.frame.tick).toEqual(combatFrame.tick);
     expect(JSON.stringify(frameEvent)).not.toMatch(/"raw"|"json"|"payload"/);
+  });
+});
+
+describe('LiveSource: countdown stability regression', () => {
+  it("a hero's displayed field time never increases while its own drain conditions stay constant, even as unrelated heroes repeatedly join and leave the field", () => {
+    const { source, pushFrame, goLive, clock } = createHarness();
+    source.start();
+
+    // The target carries real drain reduction (Bateria Extra rank 13, -13% self) and no team aura
+    // is ever present — its true combined drain rate never changes for the length of this run.
+    const casa = bodyWithHeroes([completeHero('target'), completeHero('noise1'), completeHero('noise2')]);
+    source.ingestRotation(
+      {
+        payload: {
+          casa,
+          heroes: [
+            { ...minimalRosterHero('target'), abilities: [{ code: 'bateria_extra', level: 13 }] },
+            minimalRosterHero('noise1'),
+            minimalRosterHero('noise2'),
+          ],
+        },
+        gameRunning: true,
+        store: { status: 'ok', reason: null, binding: 'sqlite' },
+      },
+      clock.ms,
+    );
+    goLive();
+
+    const energyMax = 100;
+    const trueRatePerSecond = 0.87; // combineDrainRate(0.87, 1) — Bateria Extra 13, no team aura
+    const startEnergy = 90;
+
+    const remainingReadings: number[] = [];
+    const bases: string[] = [];
+
+    // Three long stable stretches (each well past the 8-sample / 2s trust gates at this 100ms
+    // cadence), each separated by exactly one membership change from a non-carrier — long enough
+    // to let the fit regain 'observed' between disruptions, which is what turns a wipe-triggered
+    // fallback into a VISIBLE jump rather than a wrong-but-steady line indistinguishable from a
+    // correct one.
+    const TOTAL_TICKS = 70;
+    for (let i = 0; i < TOTAL_TICKS; i += 1) {
+      const heroes: { id: string; energyFraction: number }[] = [
+        { id: 'target', energyFraction: (startEnergy - trueRatePerSecond * (i * 0.1)) / energyMax },
+      ];
+      if (i >= 25 && i < 50) heroes.push({ id: 'noise1', energyFraction: 0.5 });
+      if (i >= 50) heroes.push({ id: 'noise2', energyFraction: 0.5 });
+
+      pushFrame({ heroes });
+
+      const view = source.getView();
+      const targetReading = view.field.find((entry) => entry.heroId === 'target');
+      if (targetReading) {
+        remainingReadings.push(targetReading.secondsRemaining);
+        bases.push(targetReading.basis);
+      }
+    }
+
+    expect(remainingReadings.length).toBeGreaterThan(TOTAL_TICKS / 2);
+    let previousReading: number | undefined;
+    for (const reading of remainingReadings) {
+      if (previousReading !== undefined) expect(reading).toBeLessThanOrEqual(previousReading);
+      previousReading = reading;
+    }
+
+    // Once the fit is trusted it stays trusted for the rest of the run — the estimated/measured
+    // marker must not blink on and off while the target's own conditions never change.
+    const firstObservedIndex = bases.indexOf('observed');
+    if (firstObservedIndex !== -1) {
+      expect(bases.slice(firstObservedIndex).every((basis) => basis === 'observed')).toBe(true);
+    }
   });
 });

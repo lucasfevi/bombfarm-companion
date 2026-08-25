@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import type { FieldCountdown, LiveTick } from '@bombfarm/contracts';
-import { createInitialFieldCountdownState, ingestFieldCountdownTick } from '@bombfarm/domain/live';
+import { createInitialFieldCountdownState, ingestFieldCountdownTick, type DrainMultipliers } from '@bombfarm/domain/live';
 import { classifyRotation } from '@bombfarm/domain/rotation-status';
 import { normalizeRotation, wireKey } from '@bombfarm/game-api';
 import { describe, expect, it } from 'vitest';
@@ -114,6 +114,15 @@ describe('replay-stream.bin drives the full path: bytes -> ticks -> field countd
     const normalized = normalizeRotation(buildRotationBody(), []);
     expect(normalized.drops).toEqual([]);
 
+    // No hero here carries a drain-reduction ability — the unreduced base is the true rate for
+    // every one of them, the same rate the countdown falls back to once a fit is trusted.
+    const modelledDrainMultipliers = new Map<string, DrainMultipliers>(
+      ['hero-01', 'hero-02', 'hero-03', 'hero-04', 'hero-05', 'hero-06'].map((id) => [
+        id,
+        { selfDrainMult: 1, teamDrainMult: 1 },
+      ]),
+    );
+
     let state = createInitialFieldCountdownState();
     let atMs = 1_700_000_000_000;
     let fieldCountdownCount = 0;
@@ -121,7 +130,13 @@ describe('replay-stream.bin drives the full path: bytes -> ticks -> field countd
     const trackedHeroSecondsRemaining: number[] = [];
     const trackedHeroEnergyFractions: number[] = [];
     for (const tick of ticks) {
-      const result = ingestFieldCountdownTick(state, { tick, rotation: normalized.snapshot, atMs, sampleSource: 'tap' });
+      const result = ingestFieldCountdownTick(state, {
+        tick,
+        rotation: normalized.snapshot,
+        atMs,
+        sampleSource: 'tap',
+        modelledDrainMultipliers,
+      });
       state = result.state;
       fieldCountdownCount += result.field.length;
       auraCarrierOnField.push(result.field.some((entry: FieldCountdown) => entry.heroId === generated.auraCarrierId));

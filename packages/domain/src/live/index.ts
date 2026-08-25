@@ -23,3 +23,7 @@ export {
   freezeRecoveryCountdowns,
   ingestFieldCountdownTick,
 } from './field-countdown';
+
+export type { RosterHeroAbilities } from './drain-multipliers';
+export { resolveFieldDrainMultipliers } from './drain-multipliers';
+export { extractRosterHeroAbilities } from './roster-ability-ranks';
