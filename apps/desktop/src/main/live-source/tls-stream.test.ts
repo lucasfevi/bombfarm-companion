@@ -180,6 +180,37 @@ describe('TlsConnections: good frames preceding a malformed frame in the same ch
     expect(events).toEqual([{ kind: 'tick', tick: { heroes: [{ id: 'hero-02' }] } }]);
   });
 
+  it('emits ticks for both valid frames when a malformed frame arrives between them in one push', () => {
+    const conn = new TlsConnections();
+    const frameA = buildServerTextFrame(Buffer.from(JSON.stringify({ t: 'snap', heroes: [{ id: 'hero-01' }] })));
+    const malformed = buildOversized64BitLengthFrame();
+    const frameB = buildServerTextFrame(Buffer.from(JSON.stringify({ t: 'snap', heroes: [{ id: 'hero-02' }] })));
+
+    const events = conn.push('sandwiched', Buffer.concat([frameA, malformed, frameB]));
+
+    expect(events).toEqual([
+      { kind: 'tick', tick: { heroes: [{ id: 'hero-01' }] } },
+      { kind: 'tick', tick: { heroes: [{ id: 'hero-02' }] } },
+    ]);
+  });
+
+  it('terminates and still delivers the frames after the second malformed frame, given two in one push', () => {
+    const conn = new TlsConnections();
+    const frameA = buildServerTextFrame(Buffer.from(JSON.stringify({ t: 'snap', heroes: [{ id: 'hero-01' }] })));
+    const malformed1 = buildOversized64BitLengthFrame();
+    const frameB = buildServerTextFrame(Buffer.from(JSON.stringify({ t: 'snap', heroes: [{ id: 'hero-02' }] })));
+    const malformed2 = buildOversized64BitLengthFrame();
+    const frameC = buildServerTextFrame(Buffer.from(JSON.stringify({ t: 'snap', heroes: [{ id: 'hero-03' }] })));
+
+    const events = conn.push('double-malformed', Buffer.concat([frameA, malformed1, frameB, malformed2, frameC]));
+
+    expect(events).toEqual([
+      { kind: 'tick', tick: { heroes: [{ id: 'hero-01' }] } },
+      { kind: 'tick', tick: { heroes: [{ id: 'hero-02' }] } },
+      { kind: 'tick', tick: { heroes: [{ id: 'hero-03' }] } },
+    ]);
+  });
+
   it('pushes the pre-failure frames into the ring before the parse failure dumps it, so the dump is not empty', () => {
     class FakeRing implements FrameRingPort {
       pushed: Buffer[] = [];

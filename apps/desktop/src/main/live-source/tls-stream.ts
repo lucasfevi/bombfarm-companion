@@ -355,14 +355,17 @@ export class TlsConnections {
       for (const frame of state.decoder.push(bytes)) this.#handleFrame(frame, events);
       return state;
     } catch (error) {
-      // A frame the decoder cannot parse (the 64-bit length form is the one case ws-frame.ts
-      // itself throws on) leaves the decoder's internal buffer in a state this class has no way
-      // to inspect or rewind, so whatever the decoder still had buffered past the bad frame is
-      // unrecoverable. The frames it had already decoded in this same call, carried on a
-      // FrameDecodeError, are not lost, though: deliver them before dropping to a fresh
-      // head-state resync, the only way back onto a real frame boundary for what follows.
       if (error instanceof FrameDecodeError) {
         for (const frame of error.decoded) this.#handleFrame(frame, events);
+        this.#ring?.dumpToDisk('parse-failure');
+        // #advanceHead only re-enters #advanceWs at an offset scanForWsFrameStart confirmed holds
+        // a complete frame whose payload parses as a snap message and whose header
+        // parseResyncCandidate accepts (0x81, unmasked, length field <= 125 or the 16-bit form).
+        // parseHeader throws only on the 64-bit length form, which parseResyncCandidate rejects
+        // outright, so a re-entered decoder always consumes at least that confirmed frame before
+        // it can throw again — the remainder is strictly shorter on every round, and this
+        // recursion terminates.
+        return this.#advanceHead(INITIAL_HEAD_STATE, error.remainder, events);
       }
       this.#ring?.dumpToDisk('parse-failure');
       return INITIAL_HEAD_STATE;
