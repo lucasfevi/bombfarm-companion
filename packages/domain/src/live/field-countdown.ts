@@ -31,14 +31,35 @@ interface HeroDrainState {
 
 const EMPTY_HERO_DRAIN_STATE: HeroDrainState = { window: [], hasReportedRejection: false };
 
-export interface FieldCountdownState {
-  readonly onFieldHeroIds: ReadonlySet<string>;
-  readonly heroDrainStates: ReadonlyMap<string, HeroDrainState>;
+/** Everything this module derives from `rotation` alone, cached against its reference identity —
+ *  `rotation` changes on the slow authenticated cycle while a frame arrives ~10x/second, so
+ *  rebuilding either the hero-lookup map or the recovery list on every tick redoes the same work
+ *  roughly 600 times per real change. */
+interface RotationCache {
+  readonly rotation: RotationSnapshot | null;
+  readonly heroSnapshotById: ReadonlyMap<string, RotationHeroSnapshot>;
   readonly recovery: readonly RecoveryCountdown[];
 }
 
+export interface FieldCountdownState {
+  readonly onFieldHeroIds: ReadonlySet<string>;
+  /** `[...onFieldHeroIds].sort()`, held here so a caller polling every tick (the fast publisher,
+   *  four times a second) reads it rather than re-deriving it — rebuilt only on the tick below
+   *  where membership actually changes, never on every tick regardless. */
+  readonly onFieldHeroIdsSorted: readonly string[];
+  readonly heroDrainStates: ReadonlyMap<string, HeroDrainState>;
+  readonly recovery: readonly RecoveryCountdown[];
+  readonly rotationCache: RotationCache | null;
+}
+
 export function createInitialFieldCountdownState(): FieldCountdownState {
-  return { onFieldHeroIds: new Set(), heroDrainStates: new Map(), recovery: [] };
+  return { onFieldHeroIds: new Set(), onFieldHeroIdsSorted: [], heroDrainStates: new Map(), recovery: [], rotationCache: null };
+}
+
+function deriveRotationCache(rotation: RotationSnapshot | null): RotationCache {
+  const heroSnapshotById = new Map<string, RotationHeroSnapshot>();
+  for (const hero of rotation?.heroes ?? []) heroSnapshotById.set(hero.id, hero);
+  return { rotation, heroSnapshotById, recovery: computeRecovery(rotation) };
 }
 
 export interface FieldCountdownInput {
@@ -98,11 +119,15 @@ export function ingestFieldCountdownTick(
 ): FieldCountdownResult {
   const { tick, rotation, atMs, modelledDrainMultipliers, sampleSource = 'tap' } = input;
 
-  const heroSnapshotById = new Map<string, RotationHeroSnapshot>();
-  for (const hero of rotation?.heroes ?? []) heroSnapshotById.set(hero.id, hero);
+  const rotationCache =
+    state.rotationCache && state.rotationCache.rotation === rotation
+      ? state.rotationCache
+      : deriveRotationCache(rotation);
+  const heroSnapshotById = rotationCache.heroSnapshotById;
 
   const newFieldIds = new Set(tick.heroes.map((hero) => hero.id));
   const membershipChanged = !sameMembership(newFieldIds, state.onFieldHeroIds);
+  const onFieldHeroIdsSorted = membershipChanged ? [...newFieldIds].sort() : state.onFieldHeroIdsSorted;
 
   const heroDrainStates = new Map<string, HeroDrainState>();
   for (const [heroId, drainState] of state.heroDrainStates) {
@@ -151,10 +176,10 @@ export function ingestFieldCountdownTick(
     field.push({ heroId: hero.id, secondsRemaining, drainPerSecond, basis });
   }
 
-  const recovery = computeRecovery(rotation);
+  const recovery = rotationCache.recovery;
 
   return {
-    state: { onFieldHeroIds: newFieldIds, heroDrainStates, recovery },
+    state: { onFieldHeroIds: newFieldIds, onFieldHeroIdsSorted, heroDrainStates, recovery, rotationCache },
     field,
     recovery,
     rejections,

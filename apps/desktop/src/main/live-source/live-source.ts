@@ -1,6 +1,7 @@
 import { closeSync, openSync, readFileSync, writeFileSync, writeSync } from 'node:fs';
 import path from 'node:path';
 import type {
+  AccountSection,
   AccountView,
   AppFlavor,
   FieldCountdown,
@@ -15,7 +16,7 @@ import type {
   RotationSnapshot,
 } from '@bombfarm/contracts';
 import { isLiveCurrency, liveGap } from '@bombfarm/contracts';
-import { normalizeRotation } from '@bombfarm/game-api';
+import { identifyObservedBody, normalizeRotation } from '@bombfarm/game-api';
 import {
   createInitialFieldCountdownState,
   freezeRecoveryCountdowns,
@@ -141,7 +142,10 @@ export interface LiveSourceDeps {
   /** Test seam: overrides how the underlying attach mechanism is built. Production leaves this
    *  unset and gets a real tap wired against this machine's process list and instrumentation
    *  runtime. */
-  readonly createTap?: (onEvent: (event: LiveEvent) => void) => TapHandle;
+  readonly createTap?: (
+    onEvent: (event: LiveEvent) => void,
+    onHttpBody: (body: Buffer, atMs: number) => void,
+  ) => TapHandle;
 }
 
 function createProcessLister(): ProcessLister {
@@ -199,7 +203,7 @@ function createDefaultTapFactory(deps: {
   readonly flavor: AppFlavor;
   readonly log: LogPort;
   readonly ring: FrameRing;
-}): (onEvent: (event: LiveEvent) => void) => TapHandle {
+}): (onEvent: (event: LiveEvent) => void, onHttpBody: (body: Buffer, atMs: number) => void) => TapHandle {
   const ring = deps.ring;
 
   const capture = createFrameCapture({
@@ -210,7 +214,7 @@ function createDefaultTapFactory(deps: {
     log: deps.log,
   });
 
-  return (onEvent) => {
+  return (onEvent, onHttpBody) => {
     const tap = new Tap({
       processName: deps.processName,
       runtime: new RuntimePort({ log: deps.log }),
@@ -223,6 +227,7 @@ function createDefaultTapFactory(deps: {
       consent: deps.consent,
       clock: createSystemClock(),
       onEvent,
+      onHttpBody,
       log: deps.log,
       ring,
       capture,
@@ -254,7 +259,10 @@ function fieldHeroesFromRotation(rotation: RotationSnapshot): readonly LiveTickH
 export class LiveSource {
   readonly #log: LogPort;
   readonly #now: () => number;
-  readonly #createTap: (onEvent: (event: LiveEvent) => void) => TapHandle;
+  readonly #createTap: (
+    onEvent: (event: LiveEvent) => void,
+    onHttpBody: (body: Buffer, atMs: number) => void,
+  ) => TapHandle;
   /** `null` under the `createTap` test seam, which bypasses the default factory and therefore
    *  never owns a ring of its own. */
   readonly #ring: FrameRing | null;
@@ -264,6 +272,14 @@ export class LiveSource {
 
   #currency: LiveCurrency;
   #rotation: RotationSnapshot | null = null;
+  /** When the currently-applied {@link #rotation} was captured — self-fetched or tap-observed,
+   *  compared by this value alone so whichever is newer wins regardless of which method happened
+   *  to be called second. */
+  #rotationAtMs: number | null = null;
+  /** The `/roster` heroes array from the most recent self-fetched read, reused to join name/grade
+   *  onto a tap-observed rotation body — which arrives with no roster of its own — so an observed
+   *  update does not blank names the app already knows. */
+  #lastRosterRaw: unknown = undefined;
   #fieldState: FieldCountdownState = createInitialFieldCountdownState();
   #field: readonly FieldCountdown[] = [];
   #recovery: readonly RecoveryCountdown[] = [];
@@ -289,9 +305,14 @@ export class LiveSource {
     }
     this.#currency = liveGap('neverAttached', this.#nowIso());
     this.#updatedAt = this.#nowIso();
-    this.#tap = this.#createTap((event) => {
-      this.#handleTapEvent(event);
-    });
+    this.#tap = this.#createTap(
+      (event) => {
+        this.#handleTapEvent(event);
+      },
+      (body, atMs) => {
+        this.#handleObservedHttpBody(body, atMs);
+      },
+    );
   }
 
   start(): void {
@@ -332,6 +353,7 @@ export class LiveSource {
       field: this.#field,
       recovery,
       rotation: this.#rotation,
+      onFieldHeroIds: this.#fieldState.onFieldHeroIdsSorted,
       updatedAt: this.#updatedAt,
     };
   }
@@ -339,10 +361,34 @@ export class LiveSource {
   /** The REST rotation projection: the base view every countdown falls back to when no live tap
    *  frame is available. Left untouched (never set to an empty snapshot) until a `/rotation` read
    *  actually resolves, so {@link LiveView.rotation} stays `null` rather than lying about having
-   *  seen an account with no heroes. */
-  ingestRotation(view: AccountView): void {
+   *  seen an account with no heroes. `atMs` defaults to "now" — a self-fetched read is applied at
+   *  the moment this app finished reading it — but is overridable so a caller can prove the
+   *  newest-wins rule against {@link ingestObservedRotation} deterministically. */
+  ingestRotation(view: AccountView, atMs: number = this.#now()): void {
     if (view.payload.casa === undefined) return;
-    const { snapshot, drops } = normalizeRotation(view.payload.casa, view.payload.heroes);
+    this.#applyRotationBody(view.payload.casa, atMs, { rosterRaw: view.payload.heroes });
+  }
+
+  /** The tap-observed counterpart to {@link ingestRotation} — same fold, a body identified from
+   *  the client's own traffic instead of a request this app made. `atMs` decides which of the two
+   *  wins when both are current: whichever timestamp is newer, never whichever call happened
+   *  second. */
+  ingestObservedRotation(body: unknown, atMs: number): void {
+    this.#applyRotationBody(body, atMs);
+  }
+
+  /** `selfFetched`, when present, carries the read's own `/roster` array — assigned to
+   *  {@link #lastRosterRaw} only on this same branch, below the staleness check, so a read
+   *  rejected as older than what is already applied never overwrites the roster either. The two
+   *  halves of one read are accepted or rejected together. */
+  #applyRotationBody(body: unknown, atMs: number, selfFetched?: { readonly rosterRaw: unknown }): void {
+    if (this.#rotationAtMs !== null && atMs < this.#rotationAtMs) {
+      this.#log.info({ scope: 'live-source', event: 'rotation.stale_ignored', atMs, appliedAtMs: this.#rotationAtMs });
+      return;
+    }
+    this.#rotationAtMs = atMs;
+    if (selfFetched) this.#lastRosterRaw = selfFetched.rosterRaw;
+    const { snapshot, drops } = normalizeRotation(body, this.#lastRosterRaw);
     reportRotationDrops(this.#log, drops);
     this.#rotation = snapshot;
     if (isLiveCurrency(this.#currency)) {
@@ -350,6 +396,61 @@ export class LiveSource {
       return;
     }
     this.#ingestTick({ heroes: fieldHeroesFromRotation(snapshot) }, this.#now(), 'rest');
+  }
+
+  /** Reads the client's own traffic before this app's own requests: {@link identifyObservedBody}
+   *  is the strict, shape-only discriminator (the tap sees responses with no URL, so a path is
+   *  never available to identify by) — a match resolves to exactly one route or not at all, never
+   *  a guess. Only the rotation route is wired downstream this slice; every other identified
+   *  section is named in the log and otherwise left alone, the seam the next one plugs into. */
+  #handleObservedHttpBody(bodyBuf: Buffer, atMs: number): void {
+    let parsed: unknown;
+    try {
+      parsed = JSON.parse(bodyBuf.toString('utf8'));
+    } catch {
+      this.#log.warn({ scope: 'live-source', event: 'observed_body.malformed_json', byteLength: bodyBuf.length });
+      return;
+    }
+
+    const identification = identifyObservedBody(parsed);
+    if (identification.kind === 'unidentified') {
+      this.#log.warn({ scope: 'live-source', event: 'observed_body.unidentified', byteLength: bodyBuf.length });
+      return;
+    }
+    if (identification.kind === 'ambiguous') {
+      this.#log.warn({
+        scope: 'live-source',
+        event: 'observed_body.ambiguous',
+        sections: identification.sections,
+        byteLength: bodyBuf.length,
+      });
+      return;
+    }
+
+    this.#log.info({
+      scope: 'live-source',
+      event: 'observed_body.identified',
+      section: identification.section,
+      byteLength: bodyBuf.length,
+    });
+    this.#dispatchObservedBody(identification.section, parsed, atMs);
+  }
+
+  #dispatchObservedBody(section: AccountSection, body: unknown, atMs: number): void {
+    switch (section) {
+      case 'casa':
+        this.ingestObservedRotation(body, atMs);
+        return;
+      case 'account':
+      case 'heroes':
+      case 'skills':
+      case 'items':
+        return;
+      default: {
+        const exhaustive: never = section;
+        return exhaustive;
+      }
+    }
   }
 
   /** Consent revoke has to win the race against a tap already attached: the tap's own poll loop
@@ -360,9 +461,14 @@ export class LiveSource {
    *  of the app holds, never changes identity. */
   async forceDetach(): Promise<void> {
     await this.#tap.teardown();
-    this.#tap = this.#createTap((event) => {
-      this.#handleTapEvent(event);
-    });
+    this.#tap = this.#createTap(
+      (event) => {
+        this.#handleTapEvent(event);
+      },
+      (body, atMs) => {
+        this.#handleObservedHttpBody(body, atMs);
+      },
+    );
     this.#tap.start();
   }
 
@@ -370,11 +476,14 @@ export class LiveSource {
     await this.#tap.teardown();
   }
 
+  // The tap itself only ever raises 'frame' or 'currency' — 'fastUpdate' is a channel this class's
+  // own consumers publish downstream (see live-fast-publisher.ts), never one the tap produces —
+  // so the branch below is exhaustive over what can actually arrive here.
   #handleTapEvent(event: LiveEvent): void {
     if (event.type === 'currency') {
       this.#currency = event.currency;
       this.#touch();
-    } else {
+    } else if (event.type === 'frame') {
       this.#ingestTick(event.frame.tick, Date.parse(event.frame.at));
     }
     this.#publish(event);

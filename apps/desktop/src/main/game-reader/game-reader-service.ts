@@ -2,24 +2,15 @@ import type { BrowserWindow } from 'electron';
 import type {
   AccountPayload,
   AccountView,
-  GameSnapshotPayload,
   GameStatusInfo,
-  IpcEventChannel,
   LiveCurrency,
   LiveFrame,
   LiveTick,
 } from '@bombfarm/contracts';
 import { isLiveCurrency } from '@bombfarm/contracts';
-import { buildSnapshot } from '@bombfarm/game-data';
 import { tickToRawGameState } from '../live-source/tick-to-raw-state.js';
 import { log } from '../logging.js';
 import { buildFixtureAccountPayload } from './fixture-account.js';
-import type { FixtureBundle } from './fixture-data.js';
-import {
-  buildFixtureSnapshot,
-  loadFixtureBundle,
-  rotateFixtureState,
-} from './fixture-data.js';
 import { findProcessId } from './process.js';
 
 /** The subset of `AccountStore` the game reader needs to persist a fixture tick's payload. */
@@ -66,7 +57,6 @@ export class GameReaderService {
    *  player. */
   private readonly consent: () => boolean;
   private status: GameStatusInfo;
-  private payload: GameSnapshotPayload;
   private timer: NodeJS.Timeout | null = null;
   private windowProvider: (() => BrowserWindow | null) | null = null;
   private accountStore: AccountCommitter | null = null;
@@ -92,16 +82,13 @@ export class GameReaderService {
    *  moment the tap itself reports a gap, instead of replaying the last frame as `connected`
    *  forever. */
   private latestLiveCurrency: LiveCurrency | null = null;
-  /** `sequence` of the `latestLiveTick` frame `tickLive()` last ran the adapt+build chain on.
+  /** `sequence` of the `latestLiveTick` frame `tickLive()` last ran `tickToRawGameState()` on.
    *  The tap's frame cadence is far coarser than `pollAttachedMs`, so most polls see the exact
-   *  same cached frame; re-running `tickToRawGameState()`/`buildSnapshot()` on byte-identical
-   *  input every ~50ms just to discover nothing changed is wasted work `tickLive()` now skips.
-   *  Keyed on `sequence` rather than `takenAt`: two distinct frames can share the same
-   *  millisecond timestamp under batched delivery, and a timestamp comparison would then drop
-   *  the second one. */
+   *  same cached frame; re-running the parse on byte-identical input every ~50ms just to
+   *  discover nothing changed is wasted work `tickLive()` now skips. Keyed on `sequence` rather
+   *  than `takenAt`: two distinct frames can share the same millisecond timestamp under batched
+   *  delivery, and a timestamp comparison would then drop the second one. */
   private lastProcessedFrameSequence: number | null = null;
-  private fixtureTick = 0;
-  private fixtureBundle: FixtureBundle | null = null;
   /** Flipped once by `stop()`, never reset (until a hypothetical future `start()` re-arms it).
    * The explicit half of the shutdown-ordering contract: `clearTimeout` alone only stops a
    * tick that has not yet started firing — this flag additionally makes `tick()` a no-op for
@@ -128,11 +115,6 @@ export class GameReaderService {
       updatedAt: now,
       processName: this.config.processName,
     };
-    this.payload = {
-      status: this.status,
-      mapped: null,
-      raw: { state: null, inventory: null },
-    } satisfies GameSnapshotPayload;
   }
 
   setWindowProvider(provider: () => BrowserWindow | null): void {
@@ -207,10 +189,6 @@ export class GameReaderService {
     return this.config.mode;
   }
 
-  getSnapshot(): GameSnapshotPayload {
-    return this.payload;
-  }
-
   private scheduleNext(delayMs: number): void {
     this.timer = setTimeout(() => {
       this.tick();
@@ -244,41 +222,13 @@ export class GameReaderService {
     }
   }
 
-  /** Only fixture mode ever reaches this — a non-fixture run must never touch the filesystem
-   * for these (dev/CI-only) fixtures, let alone throw if they are not resolvable, as a packaged
-   * install's would not be. Loaded at most once per instance; `tickFixture()` runs on a fast
-   * poll and must not re-read the fixture files on every tick. */
-  private getFixtureBundle(): FixtureBundle {
-    this.fixtureBundle ??= loadFixtureBundle();
-    return this.fixtureBundle;
-  }
-
   private tickFixture(): void {
-    this.fixtureTick += 1;
     const takenAt = new Date().toISOString();
-    const fixtures = this.getFixtureBundle();
-    const state = rotateFixtureState(fixtures.state, this.fixtureTick);
-    const built = buildSnapshot({
-      takenAt,
-      source: 'live',
-      state,
-      inventory: fixtures.inventory,
-      heroRecords: fixtures.heroRecords,
-      heroEnergies: fixtures.heroEnergies,
-    });
 
     this.updateStatus({
       status: 'connected',
       updatedAt: takenAt,
       processName: 'fixture',
-    });
-    this.updateSnapshot({
-      status: this.status,
-      mapped: built.snapshot,
-      raw: {
-        state,
-        inventory: fixtures.inventory,
-      },
     });
 
     if (this.accountStore) {
@@ -292,11 +242,11 @@ export class GameReaderService {
   /**
    * The non-fixture path. Status comes from real process detection (`findProcessId`) — it is
    * never inferred from whether a live-tap frame has arrived, since the tap can lag attach by a
-   * few polls and reporting `not_running` for that gap would be dishonest. The snapshot channel,
-   * separately, reflects whatever the live tap has delivered through `ingestLiveTick()` — this
-   * never fabricates a reading of its own; with no frame yet, or once the tap's own currency
-   * says it has stopped delivering (`ingestLiveCurrency()`), it reports `stale` and leaves the
-   * previous snapshot in place rather than replaying a frozen one as `connected`.
+   * few polls and reporting `not_running` for that gap would be dishonest. Whether the tap's
+   * latest tick actually parses into a `RawGameState` gates `connected` vs `stale`, separately
+   * from process detection — with no frame yet, or once the tap's own currency says it has
+   * stopped delivering (`ingestLiveCurrency()`), it reports `stale` rather than replaying a
+   * frozen reading as `connected`.
    */
   private tickLive(): void {
     if (!this.consent()) {
@@ -358,18 +308,12 @@ export class GameReaderService {
       return;
     }
 
-    const built = buildSnapshot({ takenAt, source: 'live', state: raw });
     this.lastProcessedFrameSequence = sequence;
 
     this.updateStatus({
       status: 'connected',
       updatedAt: takenAt,
       processName: this.config.processName,
-    });
-    this.updateSnapshot({
-      status: this.status,
-      mapped: built.snapshot,
-      raw: { state: raw, inventory: null },
     });
   }
 
@@ -387,43 +331,14 @@ export class GameReaderService {
       next.staleAgeMs !== this.status.staleAgeMs ||
       next.processName !== this.status.processName;
     this.status = next;
-    this.payload = { ...this.payload, status: next };
     if (changed) {
-      this.emit('game:status', next);
+      this.emit(next);
     }
   }
 
-  private updateSnapshot(next: GameSnapshotPayload): void {
-    const changed = JSON.stringify(next.raw) !== JSON.stringify(this.payload.raw);
-    this.payload = next;
-    if (changed) {
-      this.emit('snapshot:updated', next);
-    }
-  }
-
-  private emit(channel: 'game:status', payload: GameStatusInfo): void;
-  private emit(channel: 'snapshot:updated', payload: GameSnapshotPayload): void;
-  private emit(channel: IpcEventChannel, payload: GameStatusInfo | GameSnapshotPayload): void {
+  private emit(payload: GameStatusInfo): void {
     const window = this.windowProvider?.();
-    window?.webContents.send(`bfc:event:${channel}`, payload);
-    log.debug({ scope: 'game-reader', event: channel });
+    window?.webContents.send('bfc:event:game:status', payload);
+    log.debug({ scope: 'game-reader', event: 'game:status' });
   }
-}
-
-export function createInitialFixturePayload(): GameSnapshotPayload {
-  const takenAt = new Date().toISOString();
-  const built = buildFixtureSnapshot(takenAt);
-  const fixtures = loadFixtureBundle();
-  return {
-    status: {
-      status: 'connected',
-      updatedAt: takenAt,
-      processName: 'fixture',
-    },
-    mapped: built.snapshot,
-    raw: {
-      state: fixtures.state,
-      inventory: fixtures.inventory,
-    },
-  };
 }

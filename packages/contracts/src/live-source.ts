@@ -63,9 +63,26 @@ export interface LiveFrame {
   readonly tick: LiveTick;
 }
 
+/** The renderer's own display cadence, and — per {@link LiveEvent}'s `fastUpdate` variant — the
+ *  rate the main process paces the fast channel to before it ever reaches IPC. One constant, so
+ *  the two sides cannot drift onto different numbers. */
+export const LIVE_DISPLAY_REFRESH_MS = 250;
+
 export type LiveEvent =
   | { readonly type: 'frame'; readonly frame: LiveFrame }
-  | { readonly type: 'currency'; readonly currency: LiveCurrency };
+  | { readonly type: 'currency'; readonly currency: LiveCurrency }
+  /**
+   * The fast channel: field/recovery countdowns and the live on-field id set, folded once in the
+   * main process and paced to {@link LIVE_DISPLAY_REFRESH_MS} before crossing IPC — never one of
+   * these per tap frame. Superset of `frame` for what the renderer actually needs, so `frame`
+   * itself never has to reach the renderer at all.
+   */
+  | {
+      readonly type: 'fastUpdate';
+      readonly field: readonly FieldCountdown[];
+      readonly recovery: readonly RecoveryCountdown[];
+      readonly onFieldHeroIds: readonly string[];
+    };
 
 /**
  * Whose gap this is, not just that there is one.
@@ -164,6 +181,11 @@ export interface LiveView {
   readonly recovery: readonly RecoveryCountdown[];
   /** The slower authenticated projection this view is built on. Null before the first read. */
   readonly rotation: RotationSnapshot | null;
+  /** Every hero the live tap most recently showed standing on the field — the REST-derived
+   *  on-field set when no tap frame has arrived yet, so this is always the best on-field reading
+   *  available, never merely "absent because nothing is live". Authoritative over `rotation`'s own
+   *  per-hero activity for field membership the moment the two disagree. */
+  readonly onFieldHeroIds: readonly string[];
   readonly updatedAt: string;
 }
 

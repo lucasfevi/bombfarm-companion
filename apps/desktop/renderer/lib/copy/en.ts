@@ -14,17 +14,13 @@
 export const en = {
   // shell* — AppShell navigation and status chrome
   shellPlanningNavLabel: 'Planning',
-  shellDiagnosticsNavLabel: 'Diagnostics',
   shellStatusConnected: 'Connected',
   shellStatusNotRunning: 'Game not running',
   shellStatusStale: 'Stale',
   shellLoadingLabel: 'Loading…',
-  shellDiagnosticsSnapshotTitle: 'Current snapshot (raw and mapped)',
 
-  // empty* — placeholder states shown before real data has arrived (page.tsx's Diagnostics tab)
+  // empty* — placeholder states shown before real data has arrived
   emptyBridgeUnavailableTitle: 'Preload bridge unavailable',
-  emptyNoSnapshotTitle: 'No snapshot yet',
-  emptyNoSnapshotDescription: 'Waiting on the first read from the game.',
 
   // Account section names, in player language — never the raw section key (MPV-07, MPV-18)
   sectionNameAccount: 'your farm phase',
@@ -150,4 +146,61 @@ export const en = {
   // error* — MP3 F4 §2.8: a main-process error crosses the boundary as a key, never as
   // pre-rendered English. The raw message is kept as diagnostic data only.
   errorAccountReadFailedDescription: 'Try again after the game finishes loading, or restart the app.',
+
+  // live* — the Live screen: nav label and the top-of-panel freshness status line
+  liveNavLabel: 'Live',
+  liveStatusLiveLabel: 'Streaming live from the game',
+  liveStatusNotLiveLabel: 'Not live — showing the last known state',
+
+  // liveGapReason* — one cause per LiveGapReason (@bombfarm/contracts), exhaustively mapped by
+  // LIVE_GAP_REASON_COPY_KEY below. Every reason but consentMissing describes a gap the app is
+  // already retrying on its own, so no "try again" action is offered for those. consentMissing
+  // is the one reason with a real action, and it reuses the existing disclosure control rather
+  // than a second copy key.
+  liveGapReasonClientNotStreaming:
+    'The game is open, but it is not sending anything right now — a menu, an idle screen, or being logged out. The app keeps trying on its own.',
+  liveGapReasonNeverAttached: 'The app has not connected to the game yet this session. It keeps trying on its own.',
+  liveGapReasonAttachFailed: 'The app tried to connect to the game and could not. It keeps trying on its own.',
+  liveGapReasonDetached: 'The app was connected, but the game closed. It keeps trying on its own.',
+  liveGapReasonHookSilent:
+    'The connection went quiet on its own, even though the game is still open. The app keeps trying.',
+  liveGapReasonRuntimeUnavailable: 'The part of the app that reads the game could not load. It keeps trying on its own.',
+  liveGapReasonRuntimeUnavailableQuarantine:
+    'Security software likely blocked the part of the app that reads the game. It keeps trying on its own.',
+  liveGapReasonConsentMissing: 'You have not allowed the app to read your account and connect to the game yet.',
+
+  // liveList* — the four hero lists' headings, plus the lines shared by every list
+  liveListOnFieldTitle: 'On the field',
+  liveListRecoveringTitle: 'Recovering',
+  liveListQueuedTitle: 'Waiting for a rest slot',
+  liveListBenchedTitle: 'Benched',
+  liveListEmptyLine: 'No heroes here right now.',
+  liveUnclassifiedCount: 'Heroes not sorted into a list: {n}',
+  liveFieldExitPendingCount: 'Heroes just off the field, still updating: {n}',
+
+  // liveOccupancy* — field occupancy, reported as plain information, never a warning
+  liveOccupancyLabel: 'Field',
+  liveOccupancyValue: 'Field slots in use: {occupied} of {total}',
+  liveOccupancyValueUnknownTotal: 'Heroes on the field: {occupied}',
+
+  // liveHouse* — the house panel
+  liveHouseTitle: 'House',
+  liveHouseActiveLabel: 'Active house',
+  liveHouseLevelLabel: 'Level',
+  liveHouseSlotsLabel: 'Rest slots',
+  liveHouseCycleLabel: 'Full rest cycle',
+  liveHouseRescuesLabel: 'Daily rescues',
+  liveHouseRescuesValue: '{left} of {max} left today',
+  liveHouseAbsent: 'House data has not been sent for this account.',
+
+  // liveCountdown* — field/rest countdowns, and the qualifiers that mark one as estimated or paused
+  liveFieldCountdownLabel: 'Field time remaining',
+  liveRecoveryCountdownLabel: 'Rest time remaining',
+  liveCountdownEstimatedQualifier: 'estimate, not a direct reading',
+  liveCountdownPausedQualifier: 'not currently counting down',
+  liveCountdownLegend: 'Countdowns with a dashed underline are estimates, not direct readings.',
+
+  // liveNeverRead* — nothing has been read from the account yet this session
+  liveNeverReadTitle: 'Nothing read from your account yet',
+  liveNeverReadDescription: 'Open the game with the companion running, so it has something to read.',
 } as const;

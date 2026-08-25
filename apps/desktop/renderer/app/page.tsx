@@ -1,16 +1,15 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 import type {
   AppEnvironmentInfo,
   AppLocale,
-  GameSnapshotPayload,
   GameStatusInfo,
   LiveDiagnosticsDumpOutcome,
   SettingsWriteReason,
 } from '@bombfarm/contracts';
 import { DEFAULT_SETTINGS } from '@bombfarm/contracts';
-import { AppShell, EmptyState, StatusChip } from '@bombfarm/ui';
+import { AppShell, StatusChip } from '@bombfarm/ui';
 // MP3 F1 (AD-032) — proves the renderer can import @bombfarm/domain: a value import from a
 // FILE subpath that itself value-imports ./data/catalog.json, so a dist missing the JSON data
 // fails the static export build rather than surfacing later at runtime (spec edge case). This
@@ -23,12 +22,13 @@ import { formatAge } from '../lib/format';
 import { navItemsFor } from './nav-items';
 import { ConsentGate, isConsentGateVisible } from './consent-gate';
 import { ConsentModal } from './consent-modal';
+import { LiveView } from './live/live-view';
 import { PlanningView } from './planning/planning-view';
 import { ConsentSection } from './settings/consent-section';
 import { DiagnosticsSection } from './settings/diagnostics-section';
 import { LanguageSection } from './settings/language-section';
 
-const DEFAULT_NAV_ID = 'planning';
+const DEFAULT_NAV_ID = 'live';
 
 function statusLabel(status: GameStatusInfo['status'], t: Copy): string {
   switch (status) {
@@ -117,8 +117,6 @@ function HomePageContent({
   const [activeNavId, setActiveNavId] = useState(DEFAULT_NAV_ID);
   const [environment, setEnvironment] = useState<AppEnvironmentInfo | null>(null);
   const [status, setStatus] = useState<GameStatusInfo | null>(null);
-  const [snapshot, setSnapshot] = useState<GameSnapshotPayload | null>(null);
-  const [error, setError] = useState<string | null>(null);
   const [consent, setConsent] = useState<ConsentRecord | null>(null);
   const [consentForceOpen, setConsentForceOpen] = useState(false);
   const [diagnosticsDumpResult, setDiagnosticsDumpResult] = useState<LiveDiagnosticsDumpOutcome | null>(null);
@@ -165,60 +163,30 @@ function HomePageContent({
 
   useEffect(() => {
     const bridge = getBridge();
-    if (!bridge) {
-      setError(t.emptyBridgeUnavailableTitle);
-      return;
-    }
+    if (!bridge) return;
 
     void (async () => {
       try {
-        const [nextEnvironment, initialStatus, initialSnapshot] = await Promise.all([
+        const [nextEnvironment, initialStatus] = await Promise.all([
           bridge.invoke('app:getEnvironment'),
           bridge.invoke('game:getStatus'),
-          bridge.invoke('game:getSnapshot'),
         ]);
         setEnvironment(nextEnvironment);
         setStatus(initialStatus);
-        setSnapshot(initialSnapshot);
-      } catch (err) {
-        setError(err instanceof Error ? err.message : String(err));
+      } catch {
+        // Left null — the shell already renders a loading state, and `game:status` below
+        // keeps arriving on its own regardless of whether this initial read succeeded.
       }
     })();
 
-    const offStatus = bridge.on('game:status', (next) => {
+    return bridge.on('game:status', (next) => {
       setStatus(next);
     });
-    // Deliberately does not touch status: main emits `game:status` first whenever the status
-    // actually changed, and every snapshot carries a status object with a fresh read timestamp,
-    // so setting it here re-introduced a new reference — and a full re-render — on every poll.
-    const offSnapshot = bridge.on('snapshot:updated', (next) => {
-      setSnapshot(next);
-    });
-
-    return () => {
-      offStatus();
-      offSnapshot();
-    };
-    // `t.emptyBridgeUnavailableTitle` is a stable reference from the copy context (F2 mounts one
-    // locale) — listed to satisfy exhaustive-deps without changing the once-on-mount behaviour.
-  }, [t.emptyBridgeUnavailableTitle]);
+  }, []);
 
   const consentLoaded = consent !== null;
   const gated = isConsentGateVisible(consent);
   const granted = consentLoaded && !gated;
-
-  const rawJson = useMemo(() => {
-    if (!snapshot) return null;
-    return JSON.stringify(
-      {
-        status: snapshot.status,
-        mapped: snapshot.mapped,
-        raw: snapshot.raw,
-      },
-      null,
-      2,
-    );
-  }, [snapshot]);
 
   return (
     <>
@@ -226,7 +194,7 @@ function HomePageContent({
       <AppShell
         title={environment?.productName}
         badge={environment?.badgeLabel ?? null}
-        items={granted ? navItemsFor(environment?.flavor ?? null, t) : []}
+        items={granted ? navItemsFor(t) : []}
         activeId={activeNavId}
         onNavigate={setActiveNavId}
         status={
@@ -271,26 +239,10 @@ function HomePageContent({
               <ConsentSection onRevoke={onConsentRevoke} />
               <DiagnosticsSection onSave={onSaveDiagnostics} result={diagnosticsDumpResult} />
             </>
-          ) : activeNavId === 'diagnostics' ? (
-            <section className="space-y-4">
-              {error ? (
-                <EmptyState title={t.emptyBridgeUnavailableTitle} description={error} />
-              ) : rawJson ? (
-                <div className="space-y-2">
-                  <h2 className="text-sm font-medium text-muted">{t.shellDiagnosticsSnapshotTitle}</h2>
-                  <pre
-                    data-testid="game-snapshot-json"
-                    className="max-h-[480px] overflow-auto rounded-lg border border-line bg-bg-2 p-4 text-xs leading-relaxed"
-                  >
-                    {rawJson}
-                  </pre>
-                </div>
-              ) : (
-                <EmptyState title={t.emptyNoSnapshotTitle} description={t.emptyNoSnapshotDescription} />
-              )}
-            </section>
-          ) : (
+          ) : activeNavId === 'planning' ? (
             <PlanningView />
+          ) : (
+            <LiveView onReopenConsent={onConsentReallow} />
           )}
         </div>
       </AppShell>

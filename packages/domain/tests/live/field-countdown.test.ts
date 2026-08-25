@@ -249,6 +249,32 @@ describe('ingestFieldCountdownTick — rejection reporting', () => {
   });
 });
 
+describe('ingestFieldCountdownTick — recovery and the hero-snapshot lookup are computed once per rotation, not once per frame', () => {
+  it('recovery keeps the same array reference across ticks that reuse the same rotation object', () => {
+    const rotation = rotationOf([{ id: 'h5', activity: 'resting', recovering: true, energyFraction: 0.5 }], 600);
+    let state: FieldCountdownState = createInitialFieldCountdownState();
+
+    const first = ingestFieldCountdownTick(state, { tick: tick([]), rotation, atMs: 0 });
+    state = first.state;
+    const second = ingestFieldCountdownTick(state, { tick: tick([]), rotation, atMs: 100 });
+
+    expect(second.recovery).toBe(first.recovery);
+  });
+
+  it('a genuinely new rotation reference recomputes recovery, even one carrying identical content', () => {
+    const rotationA = rotationOf([{ id: 'h5', activity: 'resting', recovering: true, energyFraction: 0.5 }], 600);
+    const rotationB = rotationOf([{ id: 'h5', activity: 'resting', recovering: true, energyFraction: 0.5 }], 600);
+    let state: FieldCountdownState = createInitialFieldCountdownState();
+
+    const first = ingestFieldCountdownTick(state, { tick: tick([]), rotation: rotationA, atMs: 0 });
+    state = first.state;
+    const second = ingestFieldCountdownTick(state, { tick: tick([]), rotation: rotationB, atMs: 100 });
+
+    expect(second.recovery).not.toBe(first.recovery);
+    expect(second.recovery).toEqual(first.recovery);
+  });
+});
+
 describe('ingestFieldCountdownTick / freezeRecoveryCountdowns — recovery', () => {
   it('recovery is recomputed fresh from each frame and freezes on the last value when frames stop', () => {
     const rotation1 = rotationOf(
@@ -271,5 +297,39 @@ describe('ingestFieldCountdownTick / freezeRecoveryCountdowns — recovery', () 
 
     const frozen = freezeRecoveryCountdowns(state);
     expect(frozen).toEqual([{ heroId: 'h5', secondsRemaining: 240, advancing: false }]);
+  });
+});
+
+describe('ingestFieldCountdownTick — onFieldHeroIdsSorted is rebuilt only when membership actually changes', () => {
+  it('keeps the same array reference across ticks that report the same on-field ids, in any order', () => {
+    const rotation = rotationOf([{ id: 'h1' }, { id: 'h2' }]);
+    let state: FieldCountdownState = createInitialFieldCountdownState();
+
+    const first = ingestFieldCountdownTick(state, { tick: tick([{ id: 'h1' }, { id: 'h2' }]), rotation, atMs: 0 });
+    state = first.state;
+    const second = ingestFieldCountdownTick(state, {
+      tick: tick([{ id: 'h2' }, { id: 'h1' }]),
+      rotation,
+      atMs: INTERVAL_MS,
+    });
+
+    expect(second.state.onFieldHeroIdsSorted).toBe(first.state.onFieldHeroIdsSorted);
+    expect(second.state.onFieldHeroIdsSorted).toEqual(['h1', 'h2']);
+  });
+
+  it('rebuilds to a new, correctly sorted array the moment membership genuinely changes', () => {
+    const rotation = rotationOf([{ id: 'h1' }, { id: 'h2' }]);
+    let state: FieldCountdownState = createInitialFieldCountdownState();
+
+    const first = ingestFieldCountdownTick(state, { tick: tick([{ id: 'h1' }]), rotation, atMs: 0 });
+    state = first.state;
+    const second = ingestFieldCountdownTick(state, {
+      tick: tick([{ id: 'h1' }, { id: 'h2' }]),
+      rotation,
+      atMs: INTERVAL_MS,
+    });
+
+    expect(second.state.onFieldHeroIdsSorted).not.toBe(first.state.onFieldHeroIdsSorted);
+    expect(second.state.onFieldHeroIdsSorted).toEqual(['h1', 'h2']);
   });
 });
