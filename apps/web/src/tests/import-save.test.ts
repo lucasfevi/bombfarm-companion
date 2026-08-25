@@ -321,13 +321,15 @@ describe('parseSaveFile — birth_stats reject gate (BSPW5-01)', () => {
     expect(candidates).toHaveLength(5);
   });
 
-  // The corpus's largest roster to date (11 heroes) — proves the acceptance gate scales past the
-  // 5/8/9-hero captures above without special-casing anything on hero count.
-  it('AC-04 (real fixture, largest roster): the 11-hero capture is not rejected', () => {
-    const raw = loadFixtureJson('save-20260817-11heroes.json');
+  // The corpus's largest roster (15 heroes) — proves the acceptance gate scales past the 5-hero
+  // capture above without special-casing anything on hero count. Re-pointed off the retired
+  // 11-hero 2026-08-17 capture; the replacement is both larger and current-regime, so the claim
+  // it makes is strictly stronger than the one it replaces.
+  it('AC-04 (real fixture, largest roster): the 15-hero capture is not rejected', () => {
+    const raw = loadFixtureJson('save-20260822-15heroes-tree-crit-dmg.json');
     const { rejected, candidates } = parseSaveFile(raw, []);
     expect(rejected).toBeNull();
-    expect(candidates).toHaveLength(11);
+    expect(candidates).toHaveLength(15);
   });
 
   // MP5 F1 — RECORDED LOSS (AD-068 "deleted, not weakened"): `gale-01-points-reset.json`

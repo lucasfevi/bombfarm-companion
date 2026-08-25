@@ -11,8 +11,13 @@
  * inference recovered **50** points for a level-38 hero. Nothing in the suite objected, because
  * nothing looked at the ceiling.
  *
- * Two layers, deliberately:
+ * Three layers, deliberately:
  *
+ * 0. **The regime-independent form** (its own describe block, further down) — every hero the
+ *    IMPORTER produces, over the whole fixture tree with no exclusion list, asserting the weaker
+ *    but universally true claim that an inversion reporting NO issue never exceeds the ceiling.
+ *    Layer 1 below can only run where today's math reproduces the capture, which had narrowed it
+ *    to a single file; this one sweeps them all.
  * 1. **Corpus sweep** — every committed capture under `tests/fixtures/**`, discovered by walking
  *    the tree rather than by a hand-maintained list, so a capture dropped in later is covered
  *    without editing this file.
@@ -28,6 +33,7 @@ import { dirname, join, relative } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 import { inferSpentPoints } from '@bombfarm/domain/point-inference';
+import { parseAccountPayload } from '@bombfarm/domain/import-save';
 import { SHEET_KEYS } from '@bombfarm/domain/planner-constants';
 import { extractHero, treeTotalsFromSave, type SaveHeroSheet } from './helpers/sheet-math-fixtures';
 
@@ -65,11 +71,6 @@ const SKIPPED_DIRS = ['rejection'];
  * anywhere — that is the accepted cost of each patch, recorded in `docs/fixture-corpus.md`.
  */
 const NON_CURRENT_REGIME_CAPTURES = [
-  // Pre-REDISTRIBUTION as well: a second 2026-08-16 patch reshuffled which stats each slot rolls
-  // (239/240 defs), so these two captures' committed gear no longer matches the shipped catalog.
-  // Same reasoning as the pre-patch entries below — not subjects of a claim about today's math.
-  'sheet-math/save-20260816-8heroes.json',
-  'sheet-math/save-20260816-respec-cdr-crit.json',
   'sheet-math/save-20260813-5heroes.json',
   'sheet-math/payload-20260812-8heroes.json',
   'api/assembled-payload-after.json',
@@ -79,13 +80,9 @@ const NON_CURRENT_REGIME_CAPTURES = [
   'farm-rate/save-20260815-486-7heroes.json',
   'fidelity-gate/export-capture.json',
   'fidelity-gate/live-capture.json',
-  // Flat-regime (2026-08-15 .. 2026-08-18): crit chance and cooldown solve only under the flat
-  // model these three captures were taken under, not the percent-of-base model the game reverted
-  // to. `save-20260816-respec-cdr-crit.json` above is flat-regime too, already excluded for the
-  // redistribution reason.
-  'sheet-math/save-20260816-5heroes-gear-cdr-crit.json',
-  'sheet-math/save-20260816-9heroes-redistrib.json',
-  'sheet-math/save-20260817-11heroes.json',
+  // The five 2026-08-16/17 captures that used to sit here — two excluded for the stat
+  // REDISTRIBUTION that reshuffled 239 of 240 slot definitions, three for the flat crit/cooldown
+  // regime — have been retired from the corpus outright, so there is nothing left to exclude.
   // Pre-2026-08-23: Olho Clínico was a percentage of the hero's crit-chance roll and became
   // flat crit POINTS. All three carry three rank-20/18 Olho heroes apiece, so their crit-chance
   // column solves only under the shape they were taken in.
@@ -182,6 +179,110 @@ describe('spent stat points never exceed the hero level (corpus sweep)', () => {
       `heroes whose inferred spend exceeds their level — a hero is granted exactly one point ` +
         `per level, so this is a mis-attributed sheet contribution, not a large build:\n${offenders.join('\n')}`,
     ).toEqual([]);
+  });
+});
+
+/**
+ * The same ceiling, stated so that it does NOT need an exclusion list — and read off the
+ * production import path rather than off this file's own call to `inferSpentPoints`.
+ *
+ * WHY A SECOND FORM EXISTS. The sweep above can only run where today's sheet math reproduces the
+ * capture, so every capture from an older crit/cooldown regime has to be named and skipped. That
+ * shrank it to a single file, and a guard whose subject set is one capture is one deletion away
+ * from being vacuous. It also leaves the honest question unanswered: an old-regime capture is
+ * skipped, so nobody ever finds out whether importing it produces a legal hero.
+ *
+ * THE REGIME-INDEPENDENT STATEMENT. When `inferSpentPoints` cannot invert a sheet exactly it says
+ * so, on that hero, as a `PointInferenceIssue`. So the claim that holds under every regime is not
+ * "no hero over-spends" but: **an inversion that reports NO issue never claims more points than
+ * the hero's level.**
+ *
+ * An issue-flagged hero is the model admitting it could not solve the capture, and the excess is a
+ * diagnosis rather than a defect — measured across the corpus it lands in `critChance`, `cdr` and
+ * `penetration`, exactly the three columns the 2026-08-15 / 08-18 / 08-23 patches reshaped. An
+ * issue-FREE hero over the ceiling is the opposite: the model claiming it solved the sheet, with
+ * an answer the game cannot grant. That is a real defect under any regime, which is why this form
+ * needs no exclusion list and sweeps the whole corpus, old captures included.
+ *
+ * It reads `parseAccountPayload`, so the subject is the vector the app actually stores on a
+ * `HeroRecord`. The sweep above deliberately keeps its direct `inferSpentPoints` call: the two
+ * together say the inversion is exact AND that nothing between the inversion and the record
+ * inflates it.
+ */
+type ImportedHero = {
+  file: string;
+  name: string;
+  level: number;
+  spent: number;
+  issueFree: boolean;
+};
+
+function collectImported(): ImportedHero[] {
+  const imported: ImportedHero[] = [];
+  for (const path of listJson(FIXTURES_DIR)) {
+    const label = relative(FIXTURES_DIR, path).replace(/\\/g, '/');
+    const raw: unknown = JSON.parse(readFileSync(path, 'utf8'));
+    if (!isObject(raw) || !Array.isArray(raw.heroes)) continue;
+    const parsed = parseAccountPayload(raw as never, []);
+    if (parsed.rejected) continue;
+    for (const candidate of parsed.candidates) {
+      imported.push({
+        file: label,
+        name: candidate.record.name,
+        level: candidate.record.level,
+        spent: SHEET_KEYS.reduce((sum, key) => sum + candidate.record.pts[key], 0),
+        issueFree: candidate.pointIssues.length === 0,
+      });
+    }
+  }
+  return imported;
+}
+
+const IMPORTED = collectImported();
+
+describe('an issue-free inversion never over-spends (whole corpus, every regime)', () => {
+  /**
+   * Non-vacuity by COUNT and by SPREAD rather than by naming files: this sweep exists to survive
+   * the corpus changing under it, so pinning an exact file list would recreate the maintenance
+   * the exclusion list above imposes. What it pins instead is that the walk reaches several
+   * capture directories and finds a substantial number of issue-free heroes to make a claim
+   * about — both of which collapse if the walk breaks or if `pointIssues` starts firing on
+   * everything.
+   *
+   * Floors rather than exact counts, for the same reason: 61 issue-free heroes across 4
+   * directories at the time of writing, and the floors sit well under that, so a capture landing
+   * or leaving does not edit this file while a walk that silently stops walking does.
+   */
+  it('non-vacuity: the walk imports heroes from several directories, and most invert cleanly', () => {
+    expect(IMPORTED.length, 'heroes imported from the fixture tree').toBeGreaterThanOrEqual(100);
+    const issueFree = IMPORTED.filter((hero) => hero.issueFree);
+    expect(issueFree.length, 'issue-free heroes — the subjects of the claim below').toBeGreaterThanOrEqual(40);
+    const dirs = new Set(issueFree.map((hero) => hero.file.split('/')[0]));
+    expect(dirs.size, `directories reached: ${[...dirs].sort().join(', ')}`).toBeGreaterThanOrEqual(3);
+  });
+
+  it('no hero the model claims to have solved spends more than its level', () => {
+    const offenders = IMPORTED.filter((hero) => hero.issueFree && hero.spent > hero.level).map(
+      (hero) => `${hero.file} → ${hero.name} L${hero.level}: ${hero.spent} points, no inference issue`,
+    );
+    expect(
+      offenders,
+      'an inversion that reported no issue produced a build the game cannot grant — the model is ' +
+        `claiming an exact answer that exceeds the one-point-per-level budget:\n${offenders.join('\n')}`,
+    ).toEqual([]);
+  });
+
+  /**
+   * The other half of the same statement, and the reason the filter above is a filter rather than
+   * a blanket skip: the heroes this guard cannot vouch for are counted, not silently dropped. If a
+   * later change made today's math reproduce the old regimes, this goes red and says so; so does a
+   * change that starts failing to invert captures that used to solve cleanly.
+   */
+  it('every over-spent hero in the corpus is one the model already flagged', () => {
+    const overspent = IMPORTED.filter((hero) => hero.spent > hero.level);
+    expect(overspent.length, 'over-spent heroes in the corpus').toBeGreaterThan(0);
+    const unflagged = overspent.filter((hero) => hero.issueFree).map((hero) => `${hero.file} → ${hero.name}`);
+    expect(unflagged, 'over-spent heroes carrying NO inference issue').toEqual([]);
   });
 });
 
