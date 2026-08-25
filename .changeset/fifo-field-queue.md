@@ -9,7 +9,7 @@ Heroes join the field FIFO, by who finished resting first. `concurrencyScale` co
 
 FIFO is identity-blind: the queue does not read a hero's power, so the loss needs no assumption about who takes a freed slot, which is the reason this factor was left approximate until now. The scale is the served share of demand, `E[min(fieldSlots, X)] / E[X]`, over the same Poisson-binomial the contention diagnostic already solves.
 
-Worth 6–7% on a roster whose field is contended, and EXACTLY zero where the field cannot fill. Against nine hours of telemetry on a 9-slot account the board's error falls from +21.2% to +9.5%; on an account whose field never fills, every number is byte-identical. It does not close the remaining throughput gap — that is cadence, tracked in `docs/farm-cadence-density.md` — but it is the part with a known mechanism behind it.
+Worth 2% on a lightly contended roster and 9.6% on a hard-contended one, and EXACTLY zero where the field cannot fill. Against nine hours of telemetry on a 9-slot account the board's error falls from +21.2% to +9.5%; on an account whose field never fills, every number is byte-identical. It does not close the remaining throughput gap — that is per-hero cadence, measured and tracked out of band — but it is the part with a known mechanism behind it.
 
 Marginal stat values move accordingly: a point of Energy buys uptime, and uptime is what the queue rations, so Energy is worth slightly less at the margin once the field saturates. Attack, Speed and CDR are untouched to the digit.
 

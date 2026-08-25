@@ -157,8 +157,9 @@ describe('the resulting rates', () => {
   it('clearSecs is 24.37s — ~15.3% below the time-weighted measured mean of 28.77s (NOT the 27s per-clear median)', () => {
     // 23.886s / -17.0% before the FIFO field queue. The queue charges this roster 2% of its
     // throughput, which lengthens the modelled clear and moves it TOWARD the measurement. Still
-    // short by 15%, and that remainder is cadence, not concurrency — see
-    // `docs/farm-cadence-density.md`.
+    // short by 15%, and that remainder is cadence, not concurrency: the model puts FEWER heroes on
+    // the field than measured (above) and still clears FASTER, so the per-hero rate is the
+    // optimistic term. The measurements behind that are held out of band, not in this repo.
     expect(row.clearSecs).toBeCloseTo(24.3685, 3);
 
     const residual = row.clearSecs / OBSERVED_CLEAR_SECS - 1;
