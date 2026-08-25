@@ -56,3 +56,12 @@ companion's own paced reads remain in place for everything else — before the g
 route for the first time, and whenever you leave the app open without playing. A response the
 companion cannot confidently recognise, which is what a game update looks like from here, is
 discarded rather than guessed at, and the app falls back to reading for itself.
+
+A hero's remaining field time now counts steadily down instead of leaping up and down as heroes
+rotate on and off the field. When the app cannot measure a hero's drain directly it estimates it —
+but that estimate was never given the hero's own drain-reduction data, so it assumed no reduction
+at all and ran up to 40% out. It now uses each hero's real abilities and the field's actual aura.
+The app also stops discarding a hero's measurements every time some unrelated hero steps on or off
+the field, and only does so when that hero's own drain conditions genuinely change. Where no rate
+can be measured or estimated at all, no countdown is shown rather than one built from a number
+known to be wrong.
