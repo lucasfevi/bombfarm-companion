@@ -4,6 +4,7 @@
 import { describe, expect, it } from 'vitest';
 import { gateFarmRespec, solveFarmRespec, FARM_OPT_GATE_MAX_EVALUATIONS } from '@bombfarm/domain/farm-optimize';
 import type { HeroRecord } from '@bombfarm/domain/shims/storage';
+import { budgetOf } from '@bombfarm/domain/points-reopt-core';
 import { loadFarmRateFixture } from './helpers/farm-rate-fixtures';
 
 const { heroes, account, maxPhase } = loadFarmRateFixture();
@@ -101,9 +102,22 @@ describe('every §7 degenerate row returns the same outcome from the gate as fro
     );
   });
 
+  /**
+   * On a CLEAN capture, deliberately. The default fixture carries two heroes spending more points
+   * than their level allows — a state the game cannot produce — and since the search clamps every
+   * candidate to the legal budget, that illegal current build out-scores everything Tier 1 can
+   * reach. The gate honestly returns `nothingToGain` there while the full solve, exploring
+   * further, still finds a legal build worth 6.5%. Both are correct; neither is the "normal case"
+   * this assertion is about.
+   */
   it('an improved roster (normal case)', () => {
-    expect(gateFarmRespec({ heroes, account, maxPhase }).outcome).toBe('improved');
-    expect(solveFarmRespec({ heroes, account, maxPhase }).outcome).toBe('improved');
+    const clean = loadFarmRateFixture('save-20260823-13heroes-crit-points.json');
+    for (const hero of clean.heroes) {
+      expect(budgetOf(hero.pts), `${hero.name} spends more than level ${hero.level}`).toBeLessThanOrEqual(hero.level);
+    }
+    const input = { heroes: clean.heroes, account: clean.account, maxPhase: clean.maxPhase };
+    expect(gateFarmRespec(input).outcome).toBe('improved');
+    expect(solveFarmRespec(input).outcome).toBe('improved');
   });
 });
 

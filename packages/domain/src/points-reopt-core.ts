@@ -145,6 +145,40 @@ export function resetBudget(pts: Record<SheetKey, number>, level: number): numbe
   return Math.max(0, Math.min(budgetOf(pts), level));
 }
 
+/**
+ * `pts` with its reallocatable spend brought down to `budget`, shedding from the LAST
+ * {@link REOPT_KEYS} first. Luck is untouched — it is outside the reallocatable budget
+ * (`AD-BSP-21`).
+ *
+ * WHY THIS EXISTS. A search seeded from a hero's CURRENT build inherits that build's total, and
+ * every move the local search makes is a transfer, so the total never changes again. Seeds built
+ * from the budget are therefore safe by construction and the current-build seed is not: a hero
+ * spending more than {@link reoptBudget} allows carries the excess all the way into the proposal,
+ * and the advisor recommends a build the game will not sell. That went unnoticed because a
+ * budget-built seed happened to win; a change to the objective moved the winner and it surfaced.
+ *
+ * The state is UNREACHABLE in real play — the game grants one point per level and a level never
+ * goes down, owner-confirmed, and the 13-hero 2026-08-23 capture spends exactly its level on all
+ * thirteen. So this is a guard against malformed input, not a rule with gameplay meaning, and the
+ * shed ORDER only has to be deterministic rather than clever: no real roster reaches it, and a
+ * roster that does is already describing a hero that cannot exist.
+ */
+export function clampPtsToBudget(
+  pts: Record<SheetKey, number>,
+  budget: number,
+): Record<SheetKey, number> {
+  let excess = budgetOf(pts) - Math.max(0, budget);
+  if (excess <= 0) return pts;
+  const out = { ...pts };
+  for (let index = REOPT_KEYS.length - 1; index >= 0 && excess > 0; index--) {
+    const key = REOPT_KEYS[index];
+    const shed = Math.min(out[key], excess);
+    out[key] -= shed;
+    excess -= shed;
+  }
+  return out;
+}
+
 export type GreedyWalkResult = {
   pts: Record<SheetKey, number>;
   score: number;

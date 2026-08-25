@@ -1,7 +1,22 @@
 /**
  * Proof that the `farm-rate.ts` basis seam is a byte-identical refactor, not a rewrite.
  *
- * RE-RECORDED 2026-08-23 for TWO changes landing together on one branch, re-recorded once on top
+ * RE-RECORDED 2026-08-24 for the FIFO field queue. `concurrencyScale` was
+ * `min(1, fieldSlots / heroesOnField)` — a MEAN compared against the cap, which charges nothing
+ * whenever the average fits, however often the peaks do not. The game admits heroes to the field
+ * FIFO by who finished resting first, and that rule is identity-blind, so the served share
+ * `E[min(fieldSlots, X)] / E[X]` needs no assumption about who takes a freed slot. `min` is
+ * concave, so the old form could only ever run optimistic.
+ *
+ * Footprint: `heroFacts` byte-identical on all 5 heroes, and `heroesOnField`, `expectedHtk`,
+ * `fortunaAura` and `fieldContentionPct` unmoved on all 600 rows — `heroesOnField` is still the
+ * DEMAND (pre-queue), and only the scale applied to it changed. `concurrencyScale` and every
+ * throughput column downstream of it moved on all 600 rows, by at most **0.12%**: this corpus is
+ * 5 heroes against 9 field slots, so its demand only just crosses the cap (scale 1 -> 0.9988).
+ * The change is worth 6-7% on a roster whose field is genuinely contended, and exactly zero where
+ * the field cannot fill — a 13-hero capture at 9 slots was the validation, not this one.
+ *
+ * PREVIOUSLY RE-RECORDED 2026-08-23 for TWO changes landing together on one branch, re-recorded once on top
  * of the crit-chance capture below rather than merged into it.
  *
  * 1. `FarmRateRow.fieldContentionPct` — a new column, so it appears on all 600 rows and nothing

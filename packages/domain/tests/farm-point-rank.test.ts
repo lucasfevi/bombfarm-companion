@@ -134,7 +134,12 @@ describe('rankNextPointForFarm — discrimination: a one-shotting squad inverts 
     // one-shot regime (see the flip case above), so `attack` drops out of the top three entirely
     // at exactly 0 and `cdr` takes third. The energy-first claim in the title is unaffected, which
     // is the whole point of pinning the order rather than a single magnitude.
-    expect(rows[0]).toEqual({ stat: 'energy', label: 'Energia', gainPct: 0.8924520259542712 });
+    // RE-MEASURED 2026-08-24 for the FIFO field queue, and the footprint is the interesting part:
+    // ONLY energy moved (0.89245 -> 0.89122). Energy is the one ranked stat that buys UPTIME, and
+    // uptime is exactly what the queue rations — stacking it past what the field can absorb now
+    // pays less at the margin. `speed` and `cdr` are byte-identical, which is the load-bearing
+    // negative: neither touches uptime, so the queue must not reach them, and it does not.
+    expect(rows[0]).toEqual({ stat: 'energy', label: 'Energia', gainPct: 0.8912236148169272 });
     expect(rows[1]).toEqual({ stat: 'speed', label: 'Velocidade', gainPct: 0.7474749693929805 });
     expect(rows[2]).toEqual({ stat: 'cdr', label: 'Red. de Cooldown', gainPct: 0.005521998430846331 });
     expect(rows.find((r) => r.stat === 'attack')!.gainPct).toBe(0);
@@ -183,11 +188,14 @@ describe('rankNextPointForFarm — anti-"energy always wins" sensor', () => {
     // (issue #171).
     const result = rankNextPointForFarm({ bases, account, heroId: heroByName('Perrin').id, maxPhase: 42 });
     const rows = result.rows!;
-    expect(rows.find((r) => r.stat === 'attack')!.gainPct).toBeCloseTo(0.10216737518200514, 5);
-    expect(rows.find((r) => r.stat === 'energy')!.gainPct).toBeCloseTo(0.11590179936651346, 5);
+    // RE-MEASURED 2026-08-24 for the FIFO field queue. Same footprint as the Bellatrix case:
+    // `attack` is unchanged to eleven decimals and only `energy` falls (0.11590 -> 0.10815),
+    // because energy is the stat that buys the uptime the queue rations.
+    expect(rows.find((r) => r.stat === 'attack')!.gainPct).toBeCloseTo(0.10216737518198293, 5);
+    expect(rows.find((r) => r.stat === 'energy')!.gainPct).toBeCloseTo(0.10814756692312244, 5);
     expect(rows[0].stat).toBe('energy');
-    // The margin is thin (13%), which is why this is a sensor and not a claim about the game:
-    // it takes very little to move him back.
+    // The margin was thin at 13% and the queue has halved it to 5.8% — energy fell while attack
+    // held still. This is a sensor, not a claim about the game, and it is now close to tripping.
     expect(rows[1].stat).toBe('attack');
   });
 });
