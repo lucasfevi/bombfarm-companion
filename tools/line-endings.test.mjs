@@ -59,14 +59,30 @@ export function parseEolReport(output) {
     .filter((line) => line.trim() !== '')
     .map((line) => {
       const separator = line.lastIndexOf('\t');
-      const columns = line.slice(0, separator).trim().split(/\s+/);
-      return { indexEol: columns[0], path: line.slice(separator + 1) };
+      const head = line.slice(0, separator);
+      const columns = head.trim().split(/\s+/);
+      // The `attr/` column carries space-separated attributes of its own (`attr/text=auto eol=lf`),
+      // so it runs to the end of the head rather than being one whitespace-delimited column.
+      const attrStart = head.indexOf('attr/');
+      const attributes = attrStart === -1 ? [] : head.slice(attrStart + 'attr/'.length).trim().split(/\s+/).filter(Boolean);
+      return { indexEol: columns[0], attributes, path: line.slice(separator + 1) };
     });
+}
+
+/**
+ * A file `.gitattributes` declares `binary` reports `attr/-text`. Git still classifies its bytes,
+ * so one can come back `i/mixed` when the content happens to look like text — which is precisely
+ * the sniffing this declaration exists to overrule, not a policy violation. Declaring a file
+ * binary is a deliberate, reviewable edit to `.gitattributes`, so honouring it here cannot be
+ * used to smuggle a real text file past the rule.
+ */
+function isDeclaredBinary(entry) {
+  return entry.attributes.includes('-text');
 }
 
 /** Entries whose stored eol is not LF (or a legitimately exempt kind). */
 export function findOffenders(entries) {
-  return entries.filter((entry) => !ALLOWED_INDEX_EOL.has(entry.indexEol));
+  return entries.filter((entry) => !ALLOWED_INDEX_EOL.has(entry.indexEol) && !isDeclaredBinary(entry));
 }
 
 let cachedEntries = null;
@@ -130,17 +146,22 @@ describe('line-ending policy — LF everywhere in the index', () => {
   it('red state demonstrated: a planted CRLF and a planted mixed entry are both caught', () => {
     const planted = parseEolReport(
       [
-        'i/lf    w/lf    attr/                 \tsrc/fine.ts',
+        'i/lf    w/lf    attr/text=auto eol=lf \tsrc/fine.ts',
         'i/crlf  w/crlf  attr/                 \tsrc/with spaces/bad.ts',
         'i/mixed w/mixed attr/                 \tsrc/worse.ts',
         'i/-text w/-text attr/                 \tpublic/art.png',
         'i/none  w/none  attr/                 \tdata/oneline.json',
+        'i/mixed w/mixed attr/-text            \tfixtures/capture.bin',
+        'i/crlf  w/crlf  attr/text=auto eol=lf \tsrc/declared-text.ts',
       ].join('\n'),
     );
-    expect(planted).toHaveLength(5);
+    expect(planted).toHaveLength(7);
+    // A file `.gitattributes` declares binary is exempt; declaring one `text` cannot buy an
+    // exemption, so the escape hatch is exactly as wide as a reviewed `.gitattributes` edit.
     expect(findOffenders(planted).map((entry) => entry.path)).toEqual([
       'src/with spaces/bad.ts',
       'src/worse.ts',
+      'src/declared-text.ts',
     ]);
   });
 });

@@ -1,6 +1,6 @@
 import type { AppEnv } from './env.js';
 
-export interface BootRecord {
+export type BootRecord = {
   scope: 'main' | 'preload' | 'renderer';
   event: 'boot';
   flavor: AppEnv['flavor'];
@@ -9,7 +9,7 @@ export interface BootRecord {
   isPackaged: boolean;
   updateChannel: string;
   productName: string;
-}
+};
 
 export function createBootRecord(
   env: AppEnv,

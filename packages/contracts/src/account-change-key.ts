@@ -36,7 +36,14 @@ function canonicalize(value: unknown): unknown {
   return value;
 }
 
-function canonicalStringify(value: unknown): string {
+/**
+ * An order-independent identity string for a JSON-shaped value — the shared building block behind
+ * both this module's own {@link accountChangeKey} and the boundary log's dedup key
+ * (`apps/desktop/src/main/boundary-log/dedup.ts`). Delegates to `JSON.stringify` on the
+ * canonicalized value, so an explicit `undefined` property is dropped rather than serialised —
+ * `JSON.stringify`'s own behaviour for object properties.
+ */
+export function canonicalStringify(value: unknown): string {
   return JSON.stringify(canonicalize(value));
 }
 

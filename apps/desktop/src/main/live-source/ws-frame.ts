@@ -17,6 +17,20 @@ export interface DecodedFrame {
   readonly payload: Buffer;
 }
 
+/** Thrown by {@link FrameDecoder.push} when a frame header cannot be parsed (the 64-bit payload
+ *  length form is the one case that happens today). Carries every frame the same `push` call had
+ *  already decoded before the failure, so a caller can deliver them instead of discarding a whole
+ *  chunk's worth of good frames for the one bad frame that trails them. */
+export class FrameDecodeError extends Error {
+  readonly decoded: readonly DecodedFrame[];
+
+  constructor(message: string, decoded: readonly DecodedFrame[], options?: { readonly cause?: unknown }) {
+    super(message, options);
+    this.name = 'FrameDecodeError';
+    this.decoded = decoded;
+  }
+}
+
 interface ParsedHeader {
   readonly fin: boolean;
   readonly opcode: number;
@@ -99,7 +113,12 @@ export class FrameDecoder {
 
     const decoded: DecodedFrame[] = [];
     for (;;) {
-      const header = parseHeader(this.#buffer);
+      let header: ParsedHeader | undefined;
+      try {
+        header = parseHeader(this.#buffer);
+      } catch (cause) {
+        throw new FrameDecodeError('ws-frame: frame_header_parse_failed', decoded, { cause });
+      }
       if (!header) break;
 
       const frameLength = header.headerLength + header.payloadLength;

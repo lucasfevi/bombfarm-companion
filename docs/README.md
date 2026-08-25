@@ -27,7 +27,8 @@ These are **current truth**. Do not invent planning/spec paths in this repo.
 | [fidelity-gate.md](fidelity-gate.md) | The MP2 fidelity gate: live-vs-export sheet-math parity, the capture pair, the outstanding handoff |
 | [fixture-corpus.md](fixture-corpus.md) | MP5 F1: the post-2026-08-13-patch fixture corpus — provenance, what the deletion cost, the round-trip invariant, and the keystone handoff count |
 | [wiki-drift-check.md](wiki-drift-check.md) | MP5 F5: the scheduled wiki drift detector — the narrowed no-wiki-client rule, the four outcomes, accepting a drift, and the recurring cost |
-| [wire-vocabulary.md](wire-vocabulary.md) | Generated — the `/rotation` wire-to-domain vocabulary table; regenerate with `pnpm generate:wire-vocabulary` |
+| [wire-vocabulary.md](wire-vocabulary.md) | Generated — the wire-to-domain vocabulary tables for the `/rotation` route and the live combat frame; regenerate with `pnpm generate:wire-vocabulary` |
+| [live-logging.md](live-logging.md) | The shared log's dedup/redaction guarantees, the frame ring, and the dev-gated replay-fixture capture |
 
 ## Web-only
 

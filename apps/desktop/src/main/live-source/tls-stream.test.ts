@@ -1,4 +1,5 @@
 import type { LiveTick } from '@bombfarm/contracts';
+import { liveFrameWireKey as wireKey } from '@bombfarm/game-api';
 import { describe, expect, it } from 'vitest';
 import {
   buildHttpResponse,
@@ -7,7 +8,7 @@ import {
   generateReplayStream,
   type ReplayStream,
 } from './fixtures/generate-replay-stream.js';
-import { findWsFrameStart, TlsConnections, type Ctx, type TapEvent } from './tls-stream.js';
+import { findWsFrameStart, toLiveTick, TlsConnections, type Ctx, type FrameRingPort, type TapEvent } from './tls-stream.js';
 
 const stream = generateReplayStream();
 
@@ -150,6 +151,81 @@ describe('TlsConnections: malformed frame mid-stream', () => {
   });
 });
 
+describe('TlsConnections: good frames preceding a malformed frame in the same chunk survive', () => {
+  it('delivers every frame decoded before a malformed frame arriving in the same push call', () => {
+    const conn = new TlsConnections();
+    const frameA = buildServerTextFrame(Buffer.from(JSON.stringify({ t: 'snap', heroes: [{ id: 'hero-01' }] })));
+    const frameB = buildServerTextFrame(Buffer.from(JSON.stringify({ t: 'snap', heroes: [{ id: 'hero-02' }] })));
+    const frameC = buildServerTextFrame(Buffer.from(JSON.stringify({ t: 'snap', heroes: [{ id: 'hero-03' }] })));
+    const malformed = buildOversized64BitLengthFrame();
+
+    const events = conn.push('one-chunk', Buffer.concat([frameA, frameB, frameC, malformed]));
+
+    expect(events).toEqual([
+      { kind: 'tick', tick: { heroes: [{ id: 'hero-01' }] } },
+      { kind: 'tick', tick: { heroes: [{ id: 'hero-02' }] } },
+      { kind: 'tick', tick: { heroes: [{ id: 'hero-03' }] } },
+    ]);
+  });
+
+  it('still resyncs after the malformed frame, decoding frames that arrive in a later chunk', () => {
+    const conn = new TlsConnections();
+    const good = buildServerTextFrame(Buffer.from(JSON.stringify({ t: 'snap', heroes: [{ id: 'hero-01' }] })));
+    const malformed = buildOversized64BitLengthFrame();
+    const later = buildServerTextFrame(Buffer.from(JSON.stringify({ t: 'snap', heroes: [{ id: 'hero-02' }] })));
+
+    conn.push('one-chunk-resync', Buffer.concat([good, malformed]));
+    const events = conn.push('one-chunk-resync', later);
+
+    expect(events).toEqual([{ kind: 'tick', tick: { heroes: [{ id: 'hero-02' }] } }]);
+  });
+
+  it('pushes the pre-failure frames into the ring before the parse failure dumps it, so the dump is not empty', () => {
+    class FakeRing implements FrameRingPort {
+      pushed: Buffer[] = [];
+      dumpReasons: Array<'parse-failure' | 'manual'> = [];
+      push(bytes: Uint8Array): void {
+        this.pushed.push(Buffer.from(bytes));
+      }
+      dumpToDisk(reason: 'parse-failure' | 'manual'): void {
+        this.dumpReasons.push(reason);
+      }
+    }
+    const ring = new FakeRing();
+    const conn = new TlsConnections({ ring });
+    const frameA = buildServerTextFrame(Buffer.from(JSON.stringify({ t: 'snap', heroes: [{ id: 'hero-01' }] })));
+    const frameB = buildServerTextFrame(Buffer.from(JSON.stringify({ t: 'snap', heroes: [{ id: 'hero-02' }] })));
+    const malformed = buildOversized64BitLengthFrame();
+
+    conn.push('one-chunk-ring', Buffer.concat([frameA, frameB, malformed]));
+
+    expect(ring.pushed).toHaveLength(2);
+    expect(ring.dumpReasons.length).toBeGreaterThan(0);
+  });
+
+  it('dumps to disk exactly once for a single parse failure, even with several frames preceding it', () => {
+    class FakeRing implements FrameRingPort {
+      dumpReasons: Array<'parse-failure' | 'manual'> = [];
+      push(): void {
+        /* not exercised */
+      }
+      dumpToDisk(reason: 'parse-failure' | 'manual'): void {
+        this.dumpReasons.push(reason);
+      }
+    }
+    const ring = new FakeRing();
+    const conn = new TlsConnections({ ring });
+    const frameA = buildServerTextFrame(Buffer.from(JSON.stringify({ t: 'snap', heroes: [{ id: 'hero-01' }] })));
+    const frameB = buildServerTextFrame(Buffer.from(JSON.stringify({ t: 'snap', heroes: [{ id: 'hero-02' }] })));
+    const frameC = buildServerTextFrame(Buffer.from(JSON.stringify({ t: 'snap', heroes: [{ id: 'hero-03' }] })));
+    const malformed = buildOversized64BitLengthFrame();
+
+    conn.push('one-chunk-dump-once', Buffer.concat([frameA, frameB, frameC, malformed]));
+
+    expect(ring.dumpReasons).toEqual(['parse-failure']);
+  });
+});
+
 describe('TlsConnections: websocket upgrade caught live', () => {
   it('emits upgrade and starts decoding frames straight after the handshake headers', () => {
     const conn = new TlsConnections();
@@ -289,6 +365,91 @@ describe('TlsConnections: a frame split across the resync boundary is revisited,
       fastestMs,
       `512 pushes took ${fastestMs.toFixed(1)}ms (ceiling ${String(NO_RESYNC_MAX_MS)}ms) — scannedUpTo may be rescanning from 0`,
     ).toBeLessThan(NO_RESYNC_MAX_MS);
+  });
+});
+
+describe('TlsConnections: optional frame ring', () => {
+  class FakeRing implements FrameRingPort {
+    pushed: Buffer[] = [];
+    dumpReasons: Array<'parse-failure' | 'manual'> = [];
+
+    push(bytes: Uint8Array): void {
+      this.pushed.push(Buffer.from(bytes));
+    }
+
+    dumpToDisk(reason: 'parse-failure' | 'manual'): void {
+      this.dumpReasons.push(reason);
+    }
+  }
+
+  it('pushes every decoded frame payload into the ring', () => {
+    const ring = new FakeRing();
+    const conn = new TlsConnections({ ring });
+    const frame = buildServerTextFrame(Buffer.from(JSON.stringify({ t: 'snap', heroes: [{ id: 'hero-01' }] })));
+
+    conn.push('ringed', frame);
+
+    expect(ring.pushed).toHaveLength(1);
+    expect(JSON.parse(ring.pushed[0]?.toString('utf8') ?? '')).toEqual({ t: 'snap', heroes: [{ id: 'hero-01' }] });
+  });
+
+  it('dumps the ring to disk when a frame fails to parse', () => {
+    const ring = new FakeRing();
+    const conn = new TlsConnections({ ring });
+    const validFrame = buildServerTextFrame(Buffer.from(JSON.stringify({ t: 'snap', heroes: [] })));
+
+    conn.push('ringed', validFrame);
+    conn.push('ringed', buildOversized64BitLengthFrame());
+
+    expect(ring.dumpReasons).toEqual(['parse-failure']);
+  });
+
+  it('never touches the ring when none is configured', () => {
+    const conn = new TlsConnections();
+    expect(() => conn.push('unringed', buildOversized64BitLengthFrame())).not.toThrow();
+  });
+});
+
+describe('toLiveTick: wire money is dropped unless it is a well-formed digit string', () => {
+  const NOT_A_WELL_FORMED_DIGIT_STRING = [
+    { label: 'exponential notation', value: '1e5' },
+    { label: 'a leading plus sign', value: '+123' },
+    { label: 'leading whitespace', value: ' 123' },
+    { label: 'trailing whitespace', value: '123 ' },
+    { label: 'hex notation', value: '0x10' },
+    { label: 'the literal string Infinity', value: 'Infinity' },
+    { label: 'an empty string', value: '' },
+    { label: 'a non-numeric string', value: 'not-a-number' },
+  ];
+
+  it.each(NOT_A_WELL_FORMED_DIGIT_STRING)('drops tick.gold when the wire sends $label ($value)', ({ value }) => {
+    const tick = toLiveTick({ [wireKey('gold')]: value });
+
+    expect(tick.gold).toBeUndefined();
+    expect('gold' in tick).toBe(false);
+  });
+
+  it('drops tick.gold when the wire sends a genuine number instead of a digit string', () => {
+    const tick = toLiveTick({ [wireKey('gold')]: 123 });
+
+    expect('gold' in tick).toBe(false);
+  });
+
+  it('keeps a well-formed digit string as a finite number, for control', () => {
+    const tick = toLiveTick({ [wireKey('gold')]: '123' });
+
+    expect(tick.gold).toBe(123);
+  });
+
+  it.each(NOT_A_WELL_FORMED_DIGIT_STRING)('drops loot[].gold when the wire sends $label ($value), never NaN', ({ value }) => {
+    const raw = {
+      [wireKey('lootList')]: [{ [wireKey('lootCell')]: 1, [wireKey('lootGold')]: value }],
+    };
+
+    const tick = toLiveTick(raw);
+
+    expect(tick.loot).toHaveLength(1);
+    expect(tick.loot?.[0]).toEqual({ cell: 1 });
   });
 });
 

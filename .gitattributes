@@ -48,6 +48,8 @@
 *.db     binary
 *.sqlite binary
 *.sqlite3 binary
+*.bin    binary
+*.bfcc   binary
 
 # Husky hooks must be LF or the shell refuses them. Redundant under the
 # baseline above, kept explicit because breaking it breaks every commit.

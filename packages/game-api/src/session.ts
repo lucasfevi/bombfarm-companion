@@ -56,6 +56,12 @@ export class SessionToken {
   [RAW](): string {
     return this.#value;
   }
+
+  /** Lets a log or frame-ring redactor neutralize this token in text it does not control, without
+   *  ever handing the raw value back to the caller — the raw value never leaves the class. */
+  redactFrom(text: string): string {
+    return text.split(this.#value).join('[redacted]');
+  }
 }
 
 /** Thrown at runtime when a caller reaches `grantSession` with a non-`granted` record without

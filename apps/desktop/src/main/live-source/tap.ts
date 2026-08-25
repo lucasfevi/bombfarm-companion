@@ -1,11 +1,12 @@
 import type { LiveCurrency, LiveEvent, LiveGapReason } from '@bombfarm/contracts';
 import { liveGap } from '@bombfarm/contracts';
+import type { FrameCapture } from './frame-capture.js';
 import { discoverHookCandidates, parsePe, READ_HOOK_ANCHORS } from './image-scan.js';
 import type { ParsedPe } from './image-scan.js';
 import { lookupHook, readHookCacheFile, storeHook, writeHookCacheFile } from './hook-cache.js';
 import type { LogPort as HookCacheLogPort } from './hook-cache.js';
 import type { RuntimePort, TapInterceptor, TapReadEvent, TapSession } from './runtime.js';
-import { TlsConnections, type TapEvent } from './tls-stream.js';
+import { TlsConnections, type FrameRingPort, type TapEvent } from './tls-stream.js';
 
 /**
  * Attach loop, live-proof validation, silence watch, and the consent gate — the orchestration
@@ -86,6 +87,14 @@ export interface TapDeps {
   readonly onEvent: (event: LiveEvent) => void;
   readonly log?: LogPort;
   readonly pollIntervalMs?: number;
+  /** Fed every decoded frame payload across every candidate stream, so a parse failure can be
+   *  dumped with the bytes leading into it. Optional so every existing construction site and test
+   *  is unaffected. */
+  readonly ring?: FrameRingPort;
+  /** Fed the confirmed winner's raw bytes only — candidate bytes from a losing address never came
+   *  from the game's real stream and must never end up in a replay fixture. Optional for the same
+   *  reason as {@link ring}. */
+  readonly capture?: FrameCapture;
 }
 
 function chooseTarget(candidates: readonly TapTargetProcess[]): TapTargetProcess {
@@ -352,7 +361,10 @@ export class Tap {
         this.#candidates.clear();
         return false;
       }
-      const stream = new TlsConnections({ now: () => this.#deps.clock.now() });
+      const stream = new TlsConnections({
+        now: () => this.#deps.clock.now(),
+        ...(this.#deps.ring !== undefined ? { ring: this.#deps.ring } : {}),
+      });
       interceptor.onRead((event) => {
         this.#onCandidateRead(address, event);
       });
@@ -370,6 +382,7 @@ export class Tap {
   #onCandidateRead(address: number, event: TapReadEvent): void {
     if (this.#winner !== null) {
       if (address !== this.#winner.address) return;
+      this.#deps.capture?.push(event.ctx, event.bytes);
       this.#emitTapEvents(this.#winner.stream.push(event.ctx, event.bytes));
       return;
     }
@@ -381,6 +394,7 @@ export class Tap {
     if (events.length === 0) return;
 
     this.#confirmWinner(address, candidate.stream);
+    this.#deps.capture?.push(event.ctx, event.bytes);
     this.#emitTapEvents(events);
   }
 
