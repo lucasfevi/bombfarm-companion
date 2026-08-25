@@ -285,8 +285,22 @@ const KEYS_REMOVED: readonly string[] = [
  * The field-contention notice (2026-08-23) adds `farmRankingContentionTitle` and
  * `farmRankingContentionDesc` — a banner shown above the rotation pool when the field is full
  * often enough to matter. New strings only; nothing existing was reworded.
+ *
+ * The blocked-hero explanation (2026-08-25) adds seven `importBlocked*` keys. A hero the planner
+ * cannot rebuild used to be dimmed and nothing else, which reads as a rendering glitch rather
+ * than an explanation; the dialog now names the heroes, both causes (the save is older than the
+ * game, or the planner is), and the action for each. New strings only — nothing existing was
+ * reworded, and in particular `importIssuesCount` and the three `importPoint*` strings are
+ * untouched.
  */
 const KEYS_ADDED: readonly string[] = [
+  'importBlockedTitle',
+  'importBlockedBody',
+  'importBlockedOldSave',
+  'importBlockedAppBehind',
+  'importBlockedRest',
+  'importBlockedBadge',
+  'importBlockedTooltip',
   'farmRankingContentionTitle',
   'farmRankingContentionDesc',
   'farmRankingFilterItemLevelLabel',

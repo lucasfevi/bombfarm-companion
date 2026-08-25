@@ -8,6 +8,7 @@ import { dialogDescClass, importResetWarningClass } from '@bombfarm/ui/panel-fie
 import { useImportCandidates, type ImportDialogResult } from '../hooks/use-import-candidates';
 import { rejectionText } from '../model/compare-candidates';
 import { ImportAccountSummary } from './import-account-summary';
+import { ImportBlockedNotice } from './import-blocked-notice';
 import { ImportCandidateTable } from './import-candidate-table';
 import { ImportSyncSummary } from './import-sync-summary';
 import { ImportWarnings } from './import-warnings';
@@ -72,6 +73,8 @@ export function ImportHeroesDialog({ open, onOpenChange, existing, t, lang, onIm
                     ) : null}
 
                     <ImportSyncSummary candidates={importState.candidates} existing={existing} t={t} />
+
+                    <ImportBlockedNotice candidates={importState.candidates} t={t} />
 
                     <ImportCandidateTable
                       sorted={importState.sorted}
