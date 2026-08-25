@@ -6,7 +6,7 @@ import {
   pointIssueCopyKey,
   pointIssueCopyText,
   rejectionText,
-  summarizeImportSync,
+  countRemovedHeroes,
   type PointIssueCopyKey,
 } from '@/features/import/model/compare-candidates';
 import { STRINGS, type Lang } from '@/shared/i18n';
@@ -48,20 +48,15 @@ function hero(partial: Partial<HeroRecord> & Pick<HeroRecord, 'id' | 'name'>): H
   };
 }
 
-describe('summarizeImportSync (AC-32, W5 AC-28, DEC-08)', () => {
-  it('empty roster, empty save: everything is 0', () => {
-    expect(summarizeImportSync([], [])).toEqual({ created: 0, updated: 0, removed: 0 });
-  });
-
-  it('a fresh candidate with no existing match counts as created', () => {
-    const candidates = [cand({ sourceId: 's1', name: 'Vera' })];
-    expect(summarizeImportSync(candidates, [])).toEqual({ created: 1, updated: 0, removed: 0 });
-  });
-
-  it('a candidate matching an existing hero counts as updated, not created', () => {
-    const candidates = [cand({ sourceId: 's1', name: 'Vera', matchedExistingId: 'h1' })];
-    const existing = [hero({ id: 'h1', name: 'Vera', sourceId: 's1' })];
-    expect(summarizeImportSync(candidates, existing)).toEqual({ created: 0, updated: 1, removed: 0 });
+/**
+ * NARROWED from `summarizeImportSync` when the created/updated/removed breakdown was removed from
+ * the dialog: the save is the source of truth, so how many rows were created against updated is
+ * not a decision the player makes. What survives is the count that drives the one warning left,
+ * and the two rules that were never about presentation — who is safe from removal.
+ */
+describe('countRemovedHeroes (AC-34, W5 AC-28, DEC-08)', () => {
+  it('empty roster, empty save: nothing is removed', () => {
+    expect(countRemovedHeroes([], [])).toBe(0);
   });
 
   it('an existing hero absent from the save counts as removed', () => {
@@ -70,26 +65,23 @@ describe('summarizeImportSync (AC-32, W5 AC-28, DEC-08)', () => {
       hero({ id: 'h1', name: 'Vera', sourceId: 's1' }),
       hero({ id: 'h2', name: 'Gale', sourceId: 's2' }),
     ];
-    expect(summarizeImportSync(candidates, existing)).toEqual({ created: 0, updated: 1, removed: 1 });
+    expect(countRemovedHeroes(candidates, existing)).toBe(1);
   });
 
   it('a hero with no sourceId (never imported) is never counted as removed', () => {
-    const candidates: ImportCandidate[] = [];
-    const existing = [hero({ id: 'h1', name: 'Local only' })];
-    expect(summarizeImportSync(candidates, existing)).toEqual({ created: 0, updated: 0, removed: 0 });
+    expect(countRemovedHeroes([], [hero({ id: 'h1', name: 'Local only' })])).toBe(0);
   });
 
-  it('a blocked candidate is neither created, updated, nor counted as removed (W5 AC-28)', () => {
+  it('a BLOCKED candidate still keeps its hero — it is in the save, just unreadable (W5 AC-28)', () => {
     const candidates = [cand({ sourceId: 's1', name: 'Broken', blocked: true })];
     const existing = [hero({ id: 'h1', name: 'Broken', sourceId: 's1' })];
-    // The blocked candidate's sourceId stays in the keep set — the existing hero with that
-    // sourceId is preserved, not removed, and the candidate itself is not created/updated.
-    expect(summarizeImportSync(candidates, existing)).toEqual({ created: 0, updated: 0, removed: 0 });
+    // The discriminating case: a blocked candidate contributes nothing to the roster, but its
+    // sourceId stays in the keep set, so the hero already there is preserved rather than wiped.
+    expect(countRemovedHeroes(candidates, existing)).toBe(0);
   });
 
-  it('mixed: created + updated + removed + a neutral blocked candidate, all at once', () => {
+  it('mixed: one leaving, one staying, and a blocked one that protects its own', () => {
     const candidates = [
-      cand({ sourceId: 'new', name: 'New' }),
       cand({ sourceId: 'existing', name: 'Existing', matchedExistingId: 'h1' }),
       cand({ sourceId: 'broken', name: 'Broken', blocked: true }),
     ];
@@ -98,7 +90,7 @@ describe('summarizeImportSync (AC-32, W5 AC-28, DEC-08)', () => {
       hero({ id: 'h2', name: 'Broken', sourceId: 'broken' }),
       hero({ id: 'h3', name: 'Gone', sourceId: 'gone' }),
     ];
-    expect(summarizeImportSync(candidates, existing)).toEqual({ created: 1, updated: 1, removed: 1 });
+    expect(countRemovedHeroes(candidates, existing)).toBe(1);
   });
 });
 

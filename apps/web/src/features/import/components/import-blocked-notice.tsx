@@ -3,6 +3,7 @@
 import type { ImportCandidate } from '@bombfarm/domain/import-save';
 import type { Strings } from '@/shared/i18n';
 import { sub } from '@/shared/i18n';
+import { cn } from '@bombfarm/ui';
 import { importResetWarningClass } from '@bombfarm/ui/panel-field.recipe';
 
 /**
@@ -27,7 +28,9 @@ export function ImportBlockedNotice({
   if (blocked.length === 0) return null;
 
   return (
-    <div className={importResetWarningClass} role="status" data-testid="import-blocked-notice">
+    // `importResetWarningClass` ends in `mb-0`; `cn` resolves the conflict last-wins, so the
+    // notice does not sit flush against the candidate table below it.
+    <div className={cn(importResetWarningClass, 'mb-3')} role="status" data-testid="import-blocked-notice">
       <h2>{sub(t.importBlockedTitle, { count: blocked.length })}</h2>
       {/* The names sit directly under the title, not beside the "everything else is fine" line,
           where they read as examples of what DID import. */}

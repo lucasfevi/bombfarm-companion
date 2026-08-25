@@ -32,9 +32,9 @@ export const en = {
   importHouseName: "Name",
   importHouseLevel: "Level",
   importHouseRest: "Rest time",
-  // AC-32/BSP-49 — the review-before-confirm sync breakdown.
-  importSyncSummary: "Created {created} · Updated {updated} · Removed {removed}",
-  // BSP-51/AC-34 — states plainly what "Removed" means; shown only when removed > 0.
+  // BSP-51/AC-34 — the one thing about a sync the player cannot undo; shown only when something
+  // is actually leaving. The created/updated/removed breakdown that used to sit above it was
+  // bookkeeping from when an import was a curated merge, and the save is the source of truth now.
   importRemovedNote: "Heroes not in this save no longer exist in the game — they will be removed from your roster.",
   // BSP-04b/AC-35 — the three budgetMismatch branches, selected by pointIssueCopyKey.
   importPointShortfall: "Spent points don't fully add up on the sheet — a small shortfall, not a real stat difference.",
@@ -92,7 +92,6 @@ export const pt: typeof en = {
   importHouseName: "Nome",
   importHouseLevel: "Nível",
   importHouseRest: "Tempo de descanso",
-  importSyncSummary: "Criados {created} · Atualizados {updated} · Removidos {removed}",
   importRemovedNote: "Heróis que não estão nesse save não existem mais no jogo — serão removidos do seu elenco.",
   importPointShortfall: "Os pontos gastos não batem exatamente na ficha — uma pequena sobra, não uma diferença real de stat.",
   importPointOneSaturated: "Os pontos gastos não batem exatamente — os pontos que faltam provavelmente foram em {stat}, que já está no teto.",

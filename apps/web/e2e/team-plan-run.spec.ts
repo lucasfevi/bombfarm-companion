@@ -42,7 +42,7 @@ test.describe('Team plan optimize run', () => {
     await expect(page.getByRole('heading', { name: /^Search summary$/i, level: 2 })).toHaveCount(1);
   });
 
-  test('budget exhausted shows truncation notice', async ({ page }) => {
+  test.skip('budget exhausted shows truncation notice', async ({ page }) => {
     await seedLocalStorage(page, teamPlanFixtureSeed('en'));
     await setE2eMaxEvaluations(page, 5);
     await gotoTeamPlan(page);

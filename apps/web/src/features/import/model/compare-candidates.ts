@@ -56,36 +56,24 @@ export function compareCandidates(
 }
 
 /**
- * `AC-32` — the review-before-confirm breakdown for `AD-BSP-26`'s ungated dialog. A **blocked**
- * candidate (`W5 AC-11`) is excluded from both `created` and `updated` — `importHeroes` never
- * writes it (`ImportCandidate.blocked`'s own doc) — and its `sourceId` still counts toward the
- * save's own set, so an existing hero with that `sourceId` is NOT counted as `removed` either
- * (`W5 AC-28`, `DEC-08`): a blocked candidate is neutral on all three counts.
+ * How many heroes this save will REMOVE from the roster.
+ *
+ * The created/updated/removed breakdown this replaces was bookkeeping from when an import was a
+ * merge the player curated. The save is the source of truth now, so how many rows were created
+ * against updated is not a decision the player makes or a number they act on — the one thing they
+ * cannot undo is a hero leaving, and that is what survives.
+ *
+ * A hero with no `sourceId` was never imported and is never removed. A **blocked** candidate's
+ * `sourceId` still counts toward the save's own set, so an existing hero with that `sourceId` is
+ * kept, not removed (`W5 AC-28`, `DEC-08`) — the hero is in the save, the planner just cannot
+ * rebuild it this time.
  */
-export type ImportSyncSummary = {
-  created: number;
-  updated: number;
-  removed: number;
-};
-
-export function summarizeImportSync(
+export function countRemovedHeroes(
   candidates: ImportCandidate[],
   existing: HeroRecord[],
-): ImportSyncSummary {
-  let created = 0;
-  let updated = 0;
-  for (const candidate of candidates) {
-    if (candidate.blocked) continue;
-    if (candidate.matchedExistingId) updated += 1;
-    else created += 1;
-  }
-  // The save's own sourceId set — every candidate, blocked or not (DEC-08: a blocked
-  // candidate's sourceId still stays in importHeroes' keep set).
+): number {
   const saveSourceIds = new Set(candidates.map((candidate) => candidate.sourceId));
-  const removed = existing.filter(
-    (hero) => !!hero.sourceId && !saveSourceIds.has(hero.sourceId),
-  ).length;
-  return { created, updated, removed };
+  return existing.filter((hero) => !!hero.sourceId && !saveSourceIds.has(hero.sourceId)).length;
 }
 
 /**
