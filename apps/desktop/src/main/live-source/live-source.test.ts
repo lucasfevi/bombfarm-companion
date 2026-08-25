@@ -218,6 +218,43 @@ describe('LiveSource: driven live from a replayed frame sequence', () => {
   });
 });
 
+describe('LiveSource: an attached tap that is not producing frames', () => {
+  it('still shows countdowns from the rotation read when the tap is live but no frame has ever arrived', () => {
+    const { source, goLive } = createHarness();
+    source.start();
+
+    // The combat stream only emits while a battle runs, so a tap attached while the player sits on
+    // a menu reports `live` and delivers nothing. The rotation read is all the panel has.
+    goLive();
+    source.ingestRotation(buildAccountView(bodyWithHeroes([completeHero('584'), completeHero('555')])));
+
+    const view = source.getView();
+    expect(view.currency.kind).toBe('live');
+    expect(view.rotation?.heroes.length).toBe(2);
+    expect(view.field.length).toBeGreaterThan(0);
+  });
+
+  it('does not let a later rotation read overwrite countdowns a frame already measured', () => {
+    const { source, pushFrame, goLive } = createHarness();
+    source.start();
+
+    const stream = generateReplayStream();
+    const [firstCombatFrame] = stream.frames.slice(6, 12);
+    if (!firstCombatFrame) throw new Error('fixture missing expected combat frame');
+    const combatHeroIds = firstCombatFrame.tick.heroes.map((hero) => hero.id);
+    source.ingestRotation(buildAccountView(bodyWithHeroes(combatHeroIds.map((id) => completeHero(id)))));
+
+    goLive();
+    for (const frame of stream.frames.slice(6, 12)) pushFrame(frame.tick);
+    const measured = source.getView().field;
+    expect(measured.length).toBeGreaterThan(0);
+
+    source.ingestRotation(buildAccountView(bodyWithHeroes(combatHeroIds.map((id) => completeHero(id)))));
+
+    expect(source.getView().field).toEqual(measured);
+  });
+});
+
 describe('LiveSource: gap reasons', () => {
   it('an idle client is a non-actionable gap', () => {
     const { source, pushCurrency } = createHarness();

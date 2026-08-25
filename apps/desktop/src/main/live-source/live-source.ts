@@ -409,7 +409,11 @@ export class LiveSource {
     const { snapshot, drops } = normalizeRotation(body, this.#lastRosterRaw);
     reportRotationDrops(this.#log, drops);
     this.#rotation = snapshot;
-    if (isLiveCurrency(this.#currency)) {
+    // Frames only arrive while a battle is running, so an attached tap sitting on a menu reports
+    // `live` and produces nothing. Keying this on the currency alone left the panel with a perfectly
+    // good snapshot and no countdowns at all; what must not be overwritten is measured frame data
+    // that actually exists, which is what `#field` being non-empty means.
+    if (isLiveCurrency(this.#currency) && this.#field.length > 0) {
       this.#touch();
       return;
     }
