@@ -215,6 +215,7 @@ type ImportedHero = {
   level: number;
   spent: number;
   issueFree: boolean;
+  blocked: boolean;
 };
 
 function collectImported(): ImportedHero[] {
@@ -232,6 +233,7 @@ function collectImported(): ImportedHero[] {
         level: candidate.record.level,
         spent: SHEET_KEYS.reduce((sum, key) => sum + candidate.record.pts[key], 0),
         issueFree: candidate.pointIssues.length === 0,
+        blocked: candidate.blocked,
       });
     }
   }
@@ -273,16 +275,28 @@ describe('an issue-free inversion never over-spends (whole corpus, every regime)
   });
 
   /**
-   * The other half of the same statement, and the reason the filter above is a filter rather than
-   * a blanket skip: the heroes this guard cannot vouch for are counted, not silently dropped. If a
-   * later change made today's math reproduce the old regimes, this goes red and says so; so does a
-   * change that starts failing to invert captures that used to solve cleanly.
+   * The other half of the same statement: the heroes this guard cannot vouch for are counted, not
+   * silently dropped.
+   *
+   * RESTATED once the importer began REFUSING an over-budget vector. Before that, a hero today's
+   * math could not invert still carried its illegal spend on the record, so this counted those.
+   * Now it is blocked and its vector is zeroed, so counting over-spends here would find none and
+   * the assertion would quietly become vacuous — it went red on exactly that, which is the guard
+   * doing its job. The countable population is now the BLOCKED heroes, and the claim is the same
+   * one: the corpus still holds captures today's model cannot read, and not one of them reaches a
+   * record with an illegal vector on it.
    */
-  it('every over-spent hero in the corpus is one the model already flagged', () => {
-    const overspent = IMPORTED.filter((hero) => hero.spent > hero.level);
-    expect(overspent.length, 'over-spent heroes in the corpus').toBeGreaterThan(0);
-    const unflagged = overspent.filter((hero) => hero.issueFree).map((hero) => `${hero.file} → ${hero.name}`);
-    expect(unflagged, 'over-spent heroes carrying NO inference issue').toEqual([]);
+  it('the heroes it cannot vouch for are blocked, and none of them keeps a vector', () => {
+    const unreadable = IMPORTED.filter((hero) => hero.blocked);
+    expect(unreadable.length, 'heroes the importer refused, over the whole fixture tree').toBeGreaterThan(0);
+    const kept = unreadable
+      .filter((hero) => hero.spent > 0)
+      .map((hero) => `${hero.file} → ${hero.name}: ${hero.spent} points`);
+    expect(kept, 'blocked heroes that still carry a spent-point vector').toEqual([]);
+    // And nothing that DID import is over its level — the same claim as the assertion above,
+    // restated over the complement so the two together cover every hero the walk sees.
+    const imported = IMPORTED.filter((hero) => !hero.blocked && hero.spent > hero.level);
+    expect(imported, 'unblocked heroes above their level').toEqual([]);
   });
 });
 

@@ -2,7 +2,6 @@ import type { ImportCandidate, ParseRejection } from '@bombfarm/domain/import-sa
 import type { PointInferenceIssue } from '@bombfarm/domain/point-inference';
 import { raritySortIdx, rankSortIdx } from '@bombfarm/domain/roster-sort';
 import type { StatKey } from '@bombfarm/domain/model';
-import type { HeroRecord } from '@/shared/lib/storage';
 import { sub, type Strings } from '@/shared/i18n';
 
 export const STAT_KEYS: StatKey[] = [
@@ -53,39 +52,6 @@ export function compareCandidates(
   const comparison = compareByKey(left, right, key);
   if (comparison !== 0) return comparison * direction;
   return left.name.localeCompare(right.name, undefined, { sensitivity: 'base' });
-}
-
-/**
- * `AC-32` — the review-before-confirm breakdown for `AD-BSP-26`'s ungated dialog. A **blocked**
- * candidate (`W5 AC-11`) is excluded from both `created` and `updated` — `importHeroes` never
- * writes it (`ImportCandidate.blocked`'s own doc) — and its `sourceId` still counts toward the
- * save's own set, so an existing hero with that `sourceId` is NOT counted as `removed` either
- * (`W5 AC-28`, `DEC-08`): a blocked candidate is neutral on all three counts.
- */
-export type ImportSyncSummary = {
-  created: number;
-  updated: number;
-  removed: number;
-};
-
-export function summarizeImportSync(
-  candidates: ImportCandidate[],
-  existing: HeroRecord[],
-): ImportSyncSummary {
-  let created = 0;
-  let updated = 0;
-  for (const candidate of candidates) {
-    if (candidate.blocked) continue;
-    if (candidate.matchedExistingId) updated += 1;
-    else created += 1;
-  }
-  // The save's own sourceId set — every candidate, blocked or not (DEC-08: a blocked
-  // candidate's sourceId still stays in importHeroes' keep set).
-  const saveSourceIds = new Set(candidates.map((candidate) => candidate.sourceId));
-  const removed = existing.filter(
-    (hero) => !!hero.sourceId && !saveSourceIds.has(hero.sourceId),
-  ).length;
-  return { created, updated, removed };
 }
 
 /**
