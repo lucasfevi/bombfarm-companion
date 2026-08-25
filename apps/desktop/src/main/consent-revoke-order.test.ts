@@ -1,16 +1,14 @@
 /**
- * The revoke handler must tear the tap down *before* it records the revoke. The tap re-checks
- * consent only when deciding whether to attach, never against a session already in progress, so
- * recording the revoke first would leave an attached tap reading real game traffic past the
- * moment consent said to stop.
+ * The stop-before-record guarantee itself is proved behaviourally in
+ * `game-api/consent-applier.test.ts`, against `createConsentApplier` directly. What that suite
+ * cannot see is whether `index.ts` actually wires `forceDetach` into `beforeLosingConsent` rather
+ * than, say, reintroducing its own detach-then-record sequence beside it — `applyConsentEvent` is
+ * a module-level `const` built once at load time, with no exported hook to call and assert
+ * against, so this guard reads the source rather than calling it, the same approach the
+ * live-source boundary guard already takes in this directory.
  *
- * That ordering is load-bearing and invisible: swapping the two statements keeps every other test
- * green, because each one passes on its own and nothing else observes their sequence. The handler
- * lives inside a module-private `registerIpcHandlers`, so this guard reads the source rather than
- * calling it — the same approach the live-source boundary guard already takes in this directory.
- *
- * Comments are stripped before scanning: the handler documents its own ordering in prose directly
- * above itself, and a bare substring match would find the explanation instead of the code.
+ * Comments are stripped before scanning, since prose above the construction site could otherwise
+ * satisfy a bare substring match in place of the code.
  */
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
@@ -22,7 +20,16 @@ function stripComments(source: string): string {
   return source.replace(/\/\*[\s\S]*?\*\//g, '').replace(/(^|[^:])\/\/.*$/gm, '$1');
 }
 
-/** The body between `'consent:revoke':` and the start of the next handler entry. */
+/** The body between `createConsentApplier({` and its matching closing `});`. */
+function consentApplierConstruction(source: string): string {
+  const start = source.indexOf('createConsentApplier({');
+  expect(start).toBeGreaterThan(-1);
+  const end = source.indexOf('});', start);
+  expect(end).toBeGreaterThan(-1);
+  return source.slice(start, end);
+}
+
+/** The body of the `'consent:revoke':` handler entry, up to the next handler entry. */
 function revokeHandlerBody(source: string): string {
   const start = source.indexOf("'consent:revoke'");
   expect(start).toBeGreaterThan(-1);
@@ -32,25 +39,26 @@ function revokeHandlerBody(source: string): string {
   return rest.slice(0, end);
 }
 
-describe('consent revoke tears the tap down before recording the revoke', () => {
+describe('consent:revoke wires forceDetach into the applier as a pre-persist hook', () => {
   const source = stripComments(readFileSync(INDEX_PATH, 'utf8'));
-  const body = revokeHandlerBody(source);
 
-  it('calls forceDetach before applyConsentEvent', () => {
-    const detachAt = body.indexOf('forceDetach');
-    const recordAt = body.indexOf('applyConsentEvent');
+  it('lists forceDetach inside the beforeLosingConsent hooks passed to createConsentApplier', () => {
+    const construction = consentApplierConstruction(source);
+    const beforeStart = construction.indexOf('beforeLosingConsent');
+    const afterStart = construction.indexOf('afterApplied');
 
-    expect(detachAt).toBeGreaterThan(-1);
-    expect(recordAt).toBeGreaterThan(-1);
-    expect(detachAt).toBeLessThan(recordAt);
+    expect(beforeStart).toBeGreaterThan(-1);
+    expect(afterStart).toBeGreaterThan(beforeStart);
+
+    const beforeLosingConsentSection = construction.slice(beforeStart, afterStart);
+    expect(beforeLosingConsentSection).toContain('forceDetach');
   });
 
-  it('awaits the detach, so the revoke is not recorded while teardown is still in flight', () => {
-    expect(/await\s+liveSource\?\.forceDetach\(\)/.test(body)).toBe(true);
-  });
+  it('leaves the consent:revoke handler with no detach-then-record ordering of its own', () => {
+    const body = revokeHandlerBody(source);
 
-  it('scans the handler body, not the prose above it', () => {
-    expect(body).not.toContain('should have stopped');
-    expect(body.length).toBeLessThan(400);
+    expect(body).not.toContain('forceDetach');
+    expect(body).not.toContain('await');
+    expect(body).toContain('applyConsentEvent');
   });
 });
