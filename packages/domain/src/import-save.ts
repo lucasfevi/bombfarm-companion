@@ -18,7 +18,7 @@ import {
   treeTotalsFromSave,
 } from './save-units';
 import { composeSheetFromBirth, nakedFromBirth, type BirthStats, type TreeSheetTotals } from './birth-sheet';
-import { inferSpentPoints, type PointInferenceIssue } from './point-inference';
+import { inferSpentPoints, spentPointsOf, type PointInferenceIssue } from './point-inference';
 import { ACCOUNT_SECTIONS, sectionHasData } from './account-fidelity';
 import { missingPostUpdateKeys } from './save-schema';
 import { WIKI_PHASE_LINES } from './phase-wiki';
@@ -651,6 +651,27 @@ export function parseAccountPayload(payload: AccountPayload, existing: HeroRecor
         // DEC-04: one neutral English string on issues[]; the typed pointIssues[] above is
         // what Wave 6's BSP-04b copy actually names a saturated stat from.
         issues.push('Spent stat points could not be exactly matched to this save — the closest integer allocation was used.');
+      }
+      // The game grants exactly one point per level and `stat_points_available` is what is left
+      // unspent, so `level - available` is not an estimate of the budget, it IS the budget. An
+      // inversion that lands above it has charged an ability or gear contribution to spent
+      // points; the hero did not over-spend, our sheet math did. Block rather than store the
+      // vector, same call as the missing-`stats` case below and for the same reason — an invented
+      // allocation is worse than no hero, and this one has escaped before (the Respec Advisor
+      // budget escape, PR #183, was an over-recovered vector reaching a recommendation).
+      //
+      // Only the OVER direction blocks. Under-recovery is the cap-saturation case
+      // (`saturatedStats`), which yields a build the game can actually grant, so it stays a
+      // warning. Every issue-free hero lands exactly on the budget, so no capture that today's
+      // math can read is affected by this at all.
+      const spendBudget = Math.max(0, level - statPointsAvailable);
+      if (spentPointsOf(pts) > spendBudget) {
+        issues.push(
+          `Recovered ${spentPointsOf(pts)} spent stat points against a budget of ${spendBudget} ` +
+            '— hero blocked from import (the sheet cannot be inverted against the current model).',
+        );
+        pts = ZERO_PTS();
+        blocked = true;
       }
       power = asNumber(statsRaw.power);
     } else {
