@@ -1,5 +1,5 @@
 import { execFileSync } from 'node:child_process';
-import { readFileSync } from 'node:fs';
+import { closeSync, existsSync, openSync, readFileSync, readSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
@@ -179,5 +179,72 @@ describe('line-ending policy — the attributes that keep it that way', () => {
 
   it('keeps the husky hooks on LF', () => {
     expect(attributes).toMatch(/^\.husky\/\*\s+text\s+eol=lf\s*$/m);
+  });
+});
+
+const BOM_FIX_HINT = [
+  '.editorconfig sets `charset = utf-8`, which in EditorConfig means UTF-8',
+  '*without* a BOM (`utf-8-bom` is the separate value). An EditorConfig-aware editor',
+  'will strip a leading BOM on its next save of the file, landing as a one-byte',
+  "content diff in a commit that says nothing about encoding. Neither `git ls-files",
+  "--eol` nor `.gitattributes` can see this at all — `text=auto eol=lf` normalizes",
+  'line terminators only, and `git add --renormalize` leaves a BOM untouched. Fix:',
+  '',
+  '  strip the leading `ef bb bf` bytes with a byte-exact rewrite (read into a',
+  '  Buffer, drop the first 3 bytes, write the Buffer back) — never a text',
+  '  read/write or an in-place stream edit, either of which can rewrite endings too.',
+].join('\n');
+
+/** True when `buffer`'s first three bytes are the UTF-8 BOM (`ef bb bf`). */
+export function hasUtf8Bom(buffer) {
+  return buffer.length >= 3 && buffer[0] === 0xef && buffer[1] === 0xbb && buffer[2] === 0xbf;
+}
+
+function readFirstThreeBytes(path) {
+  const fd = openSync(path, 'r');
+  try {
+    const buffer = Buffer.alloc(3);
+    readSync(fd, buffer, 0, 3, 0);
+    return buffer;
+  } finally {
+    closeSync(fd);
+  }
+}
+
+describe('encoding policy — no UTF-8 BOM on a tracked text file', () => {
+  // A BOM is a content byte, not a line-ending, so it is invisible to both the index-eol
+  // guard above and to `.gitattributes` — this reads the first three bytes of each tracked
+  // text file straight off disk instead. See BOM_FIX_HINT for why an EditorConfig-clean
+  // repo can still grow one silently.
+  function trackedTextFiles() {
+    return readIndexEolEntries().filter((entry) => !isDeclaredBinary(entry));
+  }
+
+  it('checks a non-vacuous number of tracked text files', () => {
+    const checked = trackedTextFiles().filter((entry) => existsSync(join(root, entry.path)));
+    expect(
+      checked.length,
+      `Only ${checked.length} tracked text file(s) were found on disk from ${root}. ` +
+        'The guard cannot see the repository.',
+    ).toBeGreaterThan(MINIMUM_TRACKED_FILES);
+  });
+
+  it('no tracked text file starts with a UTF-8 BOM', () => {
+    const offenders = trackedTextFiles()
+      .filter((entry) => existsSync(join(root, entry.path)))
+      .filter((entry) => hasUtf8Bom(readFirstThreeBytes(join(root, entry.path))))
+      .map((entry) => entry.path);
+
+    expect(
+      offenders,
+      `${offenders.length} tracked file(s) start with a UTF-8 BOM:\n` +
+        `${offenders.map((path) => `  ${path}`).join('\n')}\n\n${BOM_FIX_HINT}`,
+    ).toEqual([]);
+  });
+
+  it('red state demonstrated: hasUtf8Bom catches a planted BOM and not a clean or short buffer', () => {
+    expect(hasUtf8Bom(Buffer.from([0xef, 0xbb, 0xbf, 0x7b, 0x7d]))).toBe(true);
+    expect(hasUtf8Bom(Buffer.from('export const x = 1;'))).toBe(false);
+    expect(hasUtf8Bom(Buffer.from([0xef, 0xbb]))).toBe(false);
   });
 });
