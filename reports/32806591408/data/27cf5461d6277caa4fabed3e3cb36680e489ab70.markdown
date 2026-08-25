@@ -1,0 +1,330 @@
+# Instructions
+
+- Following Playwright test failed.
+- Explain why, be concise, respect Playwright best practices.
+- Provide a snippet of code with the fix, if possible.
+
+# Test info
+
+- Name: team-plan-run.spec.ts >> Team plan optimize run >> budget exhausted shows truncation notice
+- Location: e2e/team-plan-run.spec.ts:45:7
+
+# Error details
+
+```
+Error: expect(locator).toBeVisible() failed
+
+Locator: getByText(/Search stopped early to save time/i)
+Expected: visible
+Timeout: 5000ms
+Error: element(s) not found
+
+Call log:
+  - Expect "toBeVisible" with timeout 5000ms
+  - waiting for getByText(/Search stopped early to save time/i)
+
+```
+
+```yaml
+- alert
+- banner:
+  - link "Bomb Farm Companion":
+    - /url: /
+  - navigation "Main sections":
+    - link "Planner":
+      - /url: /
+    - link "Farm":
+      - /url: /farm
+    - link "Team plan":
+      - /url: /team-plan
+    - link "Account":
+      - /url: /account
+  - button "Import"
+  - button "Copy my referral code — we both get a reward once you clear stage 151": F-S7999UQC
+  - link "Buy me a coffee":
+    - /url: https://buymeacoffee.com/lucasfevi
+  - group "Language":
+    - button "PT"
+    - button "EN"
+- region "Team plan":
+  - heading "Team plan" [level=1]
+  - heading "Search setup" [level=2]
+  - paragraph: Builds a plan of gear moves, forge work, and point resets for the heroes you mark Optimize — scored for combined roster DPS.
+  - text: Min forge (+)
+  - button "Min forge (+) −": −
+  - text: "10"
+  - button "Min forge (+) +": +
+  - paragraph: Every item is scored as if forged to at least this level. Anything lower shows up as a forge chore on that hero.
+  - button "Build a team plan of gear moves and point resets": Build team plan
+  - heading "Hero scope" [level=2]
+  - paragraph: Drag hero cards between columns. On small screens, use the menu on each card. Battle-disabled heroes start in Donate by default.
+  - region "Optimize":
+    - heading "Optimize" [level=3]
+    - text: "3"
+    - paragraph: Scored in the plan. These heroes can receive better items and may give items up.
+    - 'button "Perrin · Lv 4 · #18796"':
+      - img "Perrin"
+      - text: A Perrin Common Lv 4#18796
+    - 'button "Perrin · Lv 3 · #19274"':
+      - img "Perrin"
+      - text: S Perrin Common Lv 3#19274
+    - 'button "Lyra · Lv 2 · #20140"':
+      - img "Lyra"
+      - text: A Lyra Common Lv 2#20140
+  - region "Donate":
+    - heading "Donate" [level=3]
+    - text: "0"
+    - paragraph: Not scored. Their items join the pool for Optimize heroes; they receive nothing back.
+    - paragraph: Drop heroes here
+  - region "Leave alone":
+    - heading "Leave alone" [level=3]
+    - text: "0"
+    - paragraph: Frozen. Items stay put and this hero is ignored by the search.
+    - paragraph: Drop heroes here
+  - status
+  - region "Team plan results":
+    - heading "Plan results" [level=2]
+    - heading "Search summary" [level=2]
+    - status:
+      - paragraph:
+        - strong: "Field status:"
+        - text: Fits the field
+      - paragraph: Your Optimize heroes aren’t competing for battle slots — each keeps their full share of field time.
+      - paragraph:
+        - strong: "Battle load:"
+        - text: 0.30 of 3 slots
+      - paragraph: How hard your Optimize heroes pull on the field versus how many can fight at once.
+      - paragraph:
+        - text: Took
+        - strong: "0.0"
+        - text: s ·
+        - strong: "2"
+        - text: search passes ·
+        - strong: "2"
+        - text: builds checked · started from today's items
+    - heading "Gain breakdown" [level=2]
+    - paragraph: Best roster DPS found by this search
+    - group "Gain breakdown":
+      - paragraph: Total gain
+      - paragraph: +0.4 dps (+2.0%)
+      - text: Today
+      - strong: "19.0"
+      - text: Gear
+      - strong: "19.0"
+      - text: Reset points
+      - strong: "19.4"
+      - text: "+0.4"
+    - heading "Per-hero changes" [level=2]
+    - paragraph: The before/after totals above are combat-effective — team auras are applied and aren’t clamped to the game’s display caps (100% crit chance, 80% cooldown reduction); that’s deliberate, since this uncapped, aura-inclusive view is what the search actually optimizes against. Below, Hero sheet mirrors what the game’s own panel shows (capped); Combat stats keeps that same uncapped view.
+    - 'button "Detailed breakdown for Lyra · Lv 2 · #20140" [expanded]':
+      - img "Lyra"
+      - text: A Lyra Common Lv 2#20140 Before 5.9 After 5.9 Δ +0
+    - 'region "Detailed breakdown for Lyra · Lv 2 · #20140"':
+      - heading "Proposed items" [level=3]
+      - paragraph: No proposed items for this hero.
+      - heading "Point reset" [level=3]
+      - paragraph: No point reset is recommended for this hero.
+      - heading "Stat breakdown" [level=3]
+      - heading "Hero sheet" [level=4]
+      - table "Hero sheet":
+        - caption: Hero sheet
+        - rowgroup:
+          - row "Stat Before After Δ":
+            - columnheader "Stat"
+            - columnheader "Before"
+            - columnheader "After"
+            - columnheader "Δ"
+        - rowgroup:
+          - row "Attack 85.25 85.25 —":
+            - rowheader "Attack"
+            - cell "85.25"
+            - cell "85.25"
+            - cell "—"
+          - row "Energy 147.79 147.79 —":
+            - rowheader "Energy"
+            - cell "147.79"
+            - cell "147.79"
+            - cell "—"
+          - row "Speed 46.45 46.45 —":
+            - rowheader "Speed"
+            - cell "46.45"
+            - cell "46.45"
+            - cell "—"
+          - row "Luck 4.83 4.83 —":
+            - rowheader "Luck"
+            - cell "4.83"
+            - cell "4.83"
+            - cell "—"
+          - row "Crit % 9.85 9.85 —":
+            - rowheader "Crit %"
+            - cell "9.85"
+            - cell "9.85"
+            - cell "—"
+          - row "Crit dmg +% 47.09 47.09 —":
+            - rowheader "Crit dmg +%"
+            - cell "47.09"
+            - cell "47.09"
+            - cell "—"
+          - row "Pen % 1.40 1.40 —":
+            - rowheader "Pen %"
+            - cell "1.40"
+            - cell "1.40"
+            - cell "—"
+          - row "CDR % 1.83 1.83 —":
+            - rowheader "CDR %"
+            - cell "1.83"
+            - cell "1.83"
+            - cell "—"
+      - heading "Combat stats" [level=4]
+      - table "Combat stats":
+        - caption: Combat stats
+        - rowgroup:
+          - row "Stat Before After Δ":
+            - columnheader "Stat"
+            - columnheader "Before"
+            - columnheader "After"
+            - columnheader "Δ"
+        - rowgroup:
+          - row "Attack 85.25 85.25 —":
+            - rowheader "Attack"
+            - cell "85.25"
+            - cell "85.25"
+            - cell "—"
+          - row "Energy 147.79 147.79 —":
+            - rowheader "Energy"
+            - cell "147.79"
+            - cell "147.79"
+            - cell "—"
+          - row "Speed 46.45 46.45 —":
+            - rowheader "Speed"
+            - cell "46.45"
+            - cell "46.45"
+            - cell "—"
+          - row "Crit % 9.85 9.85 —":
+            - rowheader "Crit %"
+            - cell "9.85"
+            - cell "9.85"
+            - cell "—"
+          - row "Crit dmg +% 47.09 47.09 —":
+            - rowheader "Crit dmg +%"
+            - cell "47.09"
+            - cell "47.09"
+            - cell "—"
+          - row "Pen % 1.40 1.40 —":
+            - rowheader "Pen %"
+            - cell "1.40"
+            - cell "1.40"
+            - cell "—"
+          - row "CDR % 1.83 1.83 —":
+            - rowheader "CDR %"
+            - cell "1.83"
+            - cell "1.83"
+            - cell "—"
+      - heading "Hit damage" [level=4]
+      - table "Hit damage":
+        - caption: Hit damage
+        - rowgroup:
+          - row "Stat Before After Δ":
+            - columnheader "Stat"
+            - columnheader "Before"
+            - columnheader "After"
+            - columnheader "Δ"
+        - rowgroup:
+          - row "Normal hit 80 80 —":
+            - rowheader "Normal hit"
+            - cell "80"
+            - cell "80"
+            - cell "—"
+          - row "Critical hit 117 117 —":
+            - rowheader "Critical hit"
+            - cell "117"
+            - cell "117"
+            - cell "—"
+    - 'button "Detailed breakdown for Perrin · Lv 4 · #18796"':
+      - img "Perrin"
+      - text: A Perrin Common Lv 4#18796 Before 6.2 After 6.2 Δ +0
+    - 'button "Detailed breakdown for Perrin · Lv 3 · #19274"':
+      - img "Perrin"
+      - text: S Perrin Common Lv 3#19274 Before 6.9 After 7.3 Δ +0.4
+    - heading "Assumptions & limits" [level=2]
+    - paragraph: Team auras here come from the scoped roster, exclude the hero being scored, and are weighted by each carrier’s duty. The Account tab’s manual Team buffs are ignored on this page but still drive the Planner’s own DPS.
+    - paragraph: Planner DPS can differ from this page when roster-derived auras replace manual Team buffs, or when Baton Pass is modelled here only.
+    - paragraph: "Unmodelled abilities in scope: Breach (Perrin); Hero Hunter (Perrin)"
+    - paragraph: "Excluded from the pool — market-blocked: 0, unresolved items: 0, foreign owners: 12."
+    - paragraph: Forging to your minimum was left out of this plan — it did not improve roster DPS.
+- contentinfo:
+  - paragraph: This is an unofficial, fan-made tool. It is not affiliated with, endorsed by or connected to the BombFarm developers in any way.
+  - paragraph:
+    - text: Assets are from the official BombFarm wiki.
+    - link "wiki.bombfarm.net":
+      - /url: https://wiki.bombfarm.net
+    - text: .
+  - paragraph:
+    - text: Referral code
+    - code: F-S7999UQC
+    - button "Copy referral code"
+    - text: — a reward for us both at stage 151.
+  - text: v0.0.0-e2e
+  - link "Buy me a coffee":
+    - /url: https://buymeacoffee.com/lucasfevi
+```
+
+# Test source
+
+```ts
+  1  | import { test, expect } from '@playwright/test';
+  2  | import { teamPlanFixtureSeed } from './fixtures/team-plan-seed';
+  3  | import { seedLocalStorage } from './fixtures/seed';
+  4  | import {
+  5  |   clickOptimize,
+  6  |   gotoTeamPlan,
+  7  |   setE2eMaxEvaluations,
+  8  |   waitForOptimizeDone,
+  9  | } from './fixtures/team-plan-e2e';
+  10 | 
+  11 | test.describe('Team plan optimize run', () => {
+  12 |   test('optimize shows a plain-language search summary', async ({ page }) => {
+  13 |     await seedLocalStorage(page, teamPlanFixtureSeed('en'));
+  14 |     await gotoTeamPlan(page);
+  15 |     await clickOptimize(page);
+  16 |     await waitForOptimizeDone(page);
+  17 | 
+  18 |     const summary = page
+  19 |       .getByRole('heading', { name: /^Search summary$/i, level: 2 })
+  20 |       .locator('xpath=ancestor::section[1]');
+  21 |     await expect(summary.getByText(/^Field status:/i)).toBeVisible();
+  22 |     await expect(summary.getByText(/Fits the field|Field is full/i)).toBeVisible();
+  23 |     await expect(summary.getByText(/^Battle load:/i)).toBeVisible();
+  24 |     await expect(summary.getByText(/Took [\d.]+s/i)).toBeVisible();
+  25 |     await expect(summary.getByText(/search passes/i)).toBeVisible();
+  26 |     await expect(summary.getByText(/builds checked/i)).toBeVisible();
+  27 |     await expect(
+  28 |       summary.getByText(/started from today's items|started from an alternate setup/i),
+  29 |     ).toBeVisible();
+  30 |     await expect(summary.getByRole('button', { name: /Search details/i })).toHaveCount(0);
+  31 |   });
+  32 | 
+  33 |   test('second click while running does not duplicate summaries', async ({ page }) => {
+  34 |     await seedLocalStorage(page, teamPlanFixtureSeed('en'));
+  35 |     await gotoTeamPlan(page);
+  36 |     const button = page.getByRole('button', {
+  37 |       name: /Build a team plan of gear moves and point resets/i,
+  38 |     });
+  39 |     await button.click();
+  40 |     await button.click({ force: true });
+  41 |     await waitForOptimizeDone(page);
+  42 |     await expect(page.getByRole('heading', { name: /^Search summary$/i, level: 2 })).toHaveCount(1);
+  43 |   });
+  44 | 
+  45 |   test('budget exhausted shows truncation notice', async ({ page }) => {
+  46 |     await seedLocalStorage(page, teamPlanFixtureSeed('en'));
+  47 |     await setE2eMaxEvaluations(page, 5);
+  48 |     await gotoTeamPlan(page);
+  49 |     await clickOptimize(page);
+  50 |     await waitForOptimizeDone(page);
+> 51 |     await expect(page.getByText(/Search stopped early to save time/i)).toBeVisible();
+     |                                                                        ^ Error: expect(locator).toBeVisible() failed
+  52 |   });
+  53 | });
+  54 | 
+```

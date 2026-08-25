@@ -1,0 +1,287 @@
+# Instructions
+
+- Following Playwright test failed.
+- Explain why, be concise, respect Playwright best practices.
+- Provide a snippet of code with the fix, if possible.
+
+# Test info
+
+- Name: import-dialog.spec.ts >> import dialog reviews, does not curate (BSPW6-07) >> sync summary shows created / updated / removed before confirm (AC-32)
+- Location: e2e/import-dialog.spec.ts:84:7
+
+# Error details
+
+```
+Error: expect(locator).toBeVisible() failed
+
+Locator: getByRole('dialog').getByText(/criados 2/i)
+Expected: visible
+Timeout: 5000ms
+Error: element(s) not found
+
+Call log:
+  - Expect "toBeVisible" with timeout 5000ms
+  - waiting for getByRole('dialog').getByText(/criados 2/i)
+
+```
+
+```yaml
+- dialog "Revisar importação":
+  - heading "Revisar importação" [level=2]
+  - button "Fechar"
+  - paragraph: Confira a árvore de habilidades, a casa e o elenco deste save e importe.
+  - region "Árvore de habilidades":
+    - heading "Árvore de habilidades" [level=3]
+    - term: Dano total
+    - definition: ×1.969
+    - term: Chance de crítico
+    - definition: +51.48%
+    - term: Dano crítico
+    - definition: +19.62%
+    - term: Velocidade
+    - definition: +2.72%
+    - term: Energia máxima
+    - definition: +52.25%
+    - term: Ouro por alvo
+    - definition: +0.00%
+    - term: XP do herói
+    - definition: ×1.00
+  - region "Casa":
+    - heading "Casa" [level=3]
+    - term: Nome
+    - definition: Casa III (Épico)
+    - term: Nível
+    - definition: "6"
+    - term: Tempo de descanso
+    - definition: 12 min 28 s
+  - paragraph: Criados 1 · Atualizados 0 · Removidos 1
+  - paragraph: Heróis que não estão nesse save não existem mais no jogo — serão removidos do seu elenco.
+  - table:
+    - rowgroup:
+      - row "Avatar Rank Nome Raridade Nv Poder Equip. Habilidades Status":
+        - columnheader "Avatar"
+        - columnheader "Rank":
+          - button "Rank"
+        - columnheader "Nome":
+          - button "Nome"
+        - columnheader "Raridade":
+          - button "Raridade"
+        - columnheader "Nv":
+          - button "Nv"
+        - columnheader "Poder":
+          - button "Poder"
+        - columnheader "Equip.":
+          - button "Equip."
+        - columnheader "Habilidades"
+        - columnheader "Status"
+    - rowgroup:
+      - row "Cora S Cora Incomum Lv47 13,134 Arma — vazio Elmo — vazio Anel — vazio Ouro Amuleto +10. Lv 20 Raro Peito — vazio Calça — vazio Luva — vazio Bota — vazio Detonação Dupla, 10/20 Passagem de Bastão, 10/20 Ativar ou desativar este herói no planejador Ativado":
+        - cell "Cora":
+          - img "Cora"
+        - cell "S"
+        - cell "Cora"
+        - cell "Incomum"
+        - cell "Lv47"
+        - cell "13,134"
+        - cell "Arma — vazio Elmo — vazio Anel — vazio Ouro Amuleto +10. Lv 20 Raro Peito — vazio Calça — vazio Luva — vazio Bota — vazio":
+          - button "Arma — vazio"
+          - button "Elmo — vazio"
+          - button "Anel — vazio"
+          - button "Ouro Amuleto +10. Lv 20 Raro"
+          - button "Peito — vazio"
+          - button "Calça — vazio"
+          - button "Luva — vazio"
+          - button "Bota — vazio"
+        - cell "Detonação Dupla, 10/20 Passagem de Bastão, 10/20":
+          - button "Detonação Dupla, 10/20"
+          - button "Passagem de Bastão, 10/20"
+        - cell "Ativar ou desativar este herói no planejador Ativado":
+          - switch "Ativar ou desativar este herói no planejador" [checked] [disabled]
+          - text: Ativado
+      - row "Brenna A Brenna Raro Lv30 2,500 Arma — vazio Elmo — vazio Ouro Anel +5. Lv 20 Raro Amuleto — vazio Peito — vazio Calça — vazio Luva — vazio Bota — vazio Ponta de Diamante, 10/20 Ativar ou desativar este herói no planejador Ativado":
+        - cell "Brenna":
+          - img "Brenna"
+        - cell "A"
+        - cell "Brenna"
+        - cell "Raro"
+        - cell "Lv30"
+        - cell "2,500"
+        - cell "Arma — vazio Elmo — vazio Ouro Anel +5. Lv 20 Raro Amuleto — vazio Peito — vazio Calça — vazio Luva — vazio Bota — vazio":
+          - button "Arma — vazio"
+          - button "Elmo — vazio"
+          - button "Ouro Anel +5. Lv 20 Raro"
+          - button "Amuleto — vazio"
+          - button "Peito — vazio"
+          - button "Calça — vazio"
+          - button "Luva — vazio"
+          - button "Bota — vazio"
+        - cell "Ponta de Diamante, 10/20":
+          - button "Ponta de Diamante, 10/20"
+        - cell "Ativar ou desativar este herói no planejador Ativado":
+          - switch "Ativar ou desativar este herói no planejador" [checked] [disabled]
+          - text: Ativado
+      - row "Lorne C Lorne Incomum Lv11 996 Arma — vazio Elmo — vazio Anel — vazio Amuleto — vazio Peito — vazio Calça — vazio Luva — vazio Bota — vazio Marcha Acelerada, 0/20 Olho Clínico, 10/20 Ativar ou desativar este herói no planejador Ativado":
+        - cell "Lorne":
+          - img "Lorne"
+        - cell "C"
+        - cell "Lorne"
+        - cell "Incomum"
+        - cell "Lv11"
+        - cell "996"
+        - cell "Arma — vazio Elmo — vazio Anel — vazio Amuleto — vazio Peito — vazio Calça — vazio Luva — vazio Bota — vazio":
+          - button "Arma — vazio"
+          - button "Elmo — vazio"
+          - button "Anel — vazio"
+          - button "Amuleto — vazio"
+          - button "Peito — vazio"
+          - button "Calça — vazio"
+          - button "Luva — vazio"
+          - button "Bota — vazio"
+        - cell "Marcha Acelerada, 0/20 Olho Clínico, 10/20":
+          - button "Marcha Acelerada, 0/20"
+          - button "Olho Clínico, 10/20"
+        - cell "Ativar ou desativar este herói no planejador Ativado":
+          - switch "Ativar ou desativar este herói no planejador" [checked] [disabled]
+          - text: Ativado
+  - button "Tentar outro arquivo"
+  - button "Cancelar"
+  - button "Importar 3 herói(s)"
+```
+
+# Test source
+
+```ts
+  1   | import path from 'node:path';
+  2   | import { test, expect } from '@playwright/test';
+  3   | import { importedRoster, seedLocalStorage } from './fixtures/seed';
+  4   | 
+  5   | const sampleSave = path.join(process.cwd(), 'e2e/fixtures/sample-save.json');
+  6   | 
+  7   | async function openImportDialog(page: import('@playwright/test').Page) {
+  8   |   await page.getByRole('button', { name: /importar seu save/i }).click();
+  9   |   await expect(page.getByRole('dialog')).toBeVisible();
+  10  | }
+  11  | 
+  12  | /**
+  13  |  * `AD-BSP-26`/`BSP-49`/`AC-31` — the dialog reviews a full roster sync; it no longer curates
+  14  |  * a selection. `BSP-48`/`AC-33`/`DEC-08` — confirming removes any existing hero absent from
+  15  |  * the save's own sourceId set, in the same write.
+  16  |  */
+  17  | test.describe('import dialog reviews, does not curate (BSPW6-07)', () => {
+  18  |   test('has no selection checkboxes; status switches are read-only (AC-31)', async ({ page }) => {
+  19  |     await page.goto('/');
+  20  |     await openImportDialog(page);
+  21  |     await page.locator('input[type="file"]').setInputFiles(sampleSave);
+  22  |     await expect(page.getByRole('dialog').getByText('Cora')).toBeVisible();
+  23  | 
+  24  |     const dialog = page.getByRole('dialog');
+  25  |     await expect(dialog.locator('input[type="checkbox"]:not([disabled])')).toHaveCount(0);
+  26  |     await expect(dialog.getByRole('checkbox', { disabled: false })).toHaveCount(0);
+  27  |     await expect(dialog.locator('input[type="checkbox"][disabled]')).toHaveCount(3);
+  28  |   });
+  29  | 
+  30  |   test('confirm is enabled with no selection action required (AC-31)', async ({ page }) => {
+  31  |     await page.goto('/');
+  32  |     await openImportDialog(page);
+  33  |     await page.locator('input[type="file"]').setInputFiles(sampleSave);
+  34  | 
+  35  |     const confirm = page.getByRole('button', { name: /importar \d+ herói/i });
+  36  |     await expect(confirm).toBeVisible();
+  37  |     await expect(confirm).toBeEnabled();
+  38  |     // 3 candidates in sample-save.json (Cora, Lorne, Brenna) -> the {count} is the candidate
+  39  |     // count, not a selected count.
+  40  |     await expect(confirm).toHaveText(/importar 3 herói/i);
+  41  |   });
+  42  | 
+  43  |   test('importing a save that omits a previously-imported hero removes exactly that hero (BSP-48, AC-33, DEC-08)', async ({
+  44  |     page,
+  45  |   }) => {
+  46  |     // seed-orphan's sourceId (9999) is absent from sample-save.json's three heroes
+  47  |     // (1001/1002/1004) -- confirming the sync should remove it.
+  48  |     const seeded = {
+  49  |       ...importedRoster,
+  50  |       heroes: [
+  51  |         ...importedRoster.heroes,
+  52  |         {
+  53  |           ...importedRoster.heroes[0],
+  54  |           id: 'seed-orphan',
+  55  |           name: 'Orphan',
+  56  |           sourceId: '9999',
+  57  |         },
+  58  |       ],
+  59  |     };
+  60  |     await seedLocalStorage(page, seeded);
+  61  |     await page.goto('/');
+  62  | 
+  63  |     const heroStrip = page.getByRole('region', { name: /herói atual/i });
+  64  |     await heroStrip.getByRole('button', { name: /trocar herói/i }).click();
+  65  |     const picker = page.getByRole('dialog', { name: /trocar herói/i });
+  66  |     await expect(picker.getByText('Orphan')).toBeVisible();
+  67  |     await page.keyboard.press('Escape');
+  68  | 
+  69  |     // The roster is non-empty here — open via the shell header's own Import button, not the
+  70  |     // empty-workspace CTA `openImportDialog` uses.
+  71  |     await page.getByRole('button', { name: /^Importar$/i }).click();
+  72  |     await expect(page.getByRole('dialog')).toBeVisible();
+  73  |     await page.locator('input[type="file"]').setInputFiles(sampleSave);
+  74  |     await expect(page.getByRole('dialog').getByText('Cora')).toBeVisible();
+  75  |     await page.getByRole('button', { name: /importar \d+ herói/i }).click();
+  76  |     await expect(page.getByRole('dialog')).toBeHidden();
+  77  | 
+  78  |     await heroStrip.getByRole('button', { name: /trocar herói/i }).click();
+  79  |     const pickerAfter = page.getByRole('dialog', { name: /trocar herói/i });
+  80  |     await expect(pickerAfter.getByText('Cora')).toBeVisible();
+  81  |     await expect(pickerAfter.getByText('Orphan')).toHaveCount(0);
+  82  |   });
+  83  | 
+  84  |   test('sync summary shows created / updated / removed before confirm (AC-32)', async ({ page }) => {
+  85  |     // seed-cora shares sample-save.json's sourceId (1001) -> updated; Lorne/Brenna (1002/1004)
+  86  |     // are new -> created; the orphan (9999) is absent from the save -> removed.
+  87  |     const seeded = {
+  88  |       ...importedRoster,
+  89  |       heroes: [
+  90  |         importedRoster.heroes[0],
+  91  |         { ...importedRoster.heroes[0], id: 'seed-orphan', name: 'Orphan', sourceId: '9999' },
+  92  |       ],
+  93  |     };
+  94  |     await seedLocalStorage(page, seeded);
+  95  |     await page.goto('/');
+  96  |     await page.getByRole('button', { name: /^Importar$/i }).click();
+  97  |     await page.locator('input[type="file"]').setInputFiles(sampleSave);
+  98  |     await expect(page.getByRole('dialog').getByText('Cora')).toBeVisible();
+  99  | 
+  100 |     const dialog = page.getByRole('dialog');
+> 101 |     await expect(dialog.getByText(/criados 2/i)).toBeVisible();
+      |                                                  ^ Error: expect(locator).toBeVisible() failed
+  102 |     await expect(dialog.getByText(/atualizados 1/i)).toBeVisible();
+  103 |     await expect(dialog.getByText(/removidos 1/i)).toBeVisible();
+  104 |     await expect(dialog.getByText(/não estão nesse save não existem mais no jogo/i)).toBeVisible();
+  105 |   });
+  106 | 
+  107 |   test('a rejected save shows the rejection reason, not "no heroes found" (BSP-06, AC-36)', async ({
+  108 |     page,
+  109 |   }) => {
+  110 |     await page.goto('/');
+  111 |     await openImportDialog(page);
+  112 |     await page.locator('input[type="file"]').setInputFiles({
+  113 |       name: 'no-birth-stats.json',
+  114 |       mimeType: 'application/json',
+  115 |       buffer: Buffer.from(
+  116 |         JSON.stringify({
+  117 |           heroes: [{ name: 'SemNascimento', id: '1' }],
+  118 |           // MP5 F4 (MSG-11..13): the post-update key gate runs before missingBirthStats, so this
+  119 |           // fixture carries the three post-patch keys it needs to clear that gate — the point of
+  120 |           // this test is the birth-stats rejection specifically, not the shape rejection.
+  121 |           skills: { refunds: {}, totals: { vagas_campo: 0, bag_tabs_bonus: 0 } },
+  122 |         }),
+  123 |       ),
+  124 |     });
+  125 | 
+  126 |     const dialog = page.getByRole('dialog');
+  127 |     await expect(dialog.getByText(/está sem os stats de nascimento/i)).toBeVisible();
+  128 |     await expect(dialog.getByText('SemNascimento')).toBeVisible();
+  129 |     await expect(dialog.getByText(/nenhum herói encontrado/i)).toHaveCount(0);
+  130 |   });
+  131 | });
+  132 | 
+```

@@ -1,0 +1,511 @@
+# Instructions
+
+- Following Playwright test failed.
+- Explain why, be concise, respect Playwright best practices.
+- Provide a snippet of code with the fix, if possible.
+
+# Test info
+
+- Name: team-plan-states.spec.ts >> Team plan page states >> optimizing modal can cancel the run
+- Location: e2e/team-plan-states.spec.ts:60:7
+
+# Error details
+
+```
+Test timeout of 30000ms exceeded.
+```
+
+```
+Error: locator.click: Test timeout of 30000ms exceeded.
+Call log:
+  - waiting for getByRole('button', { name: /^Cancel$/i })
+    - locator resolved to <button tabindex="0" type="button" class="cursor-pointer rounded-sm border px-2.5 py-1.5 text-xs font-semibold disabled:cursor-not-allowed disabled:opacity-40 motion-safe:transition-[border-color,background-color] motion-safe:duration-[120ms] motion-safe:ease-out border-line bg-transparent hover:border-accent">Cancel</button>
+  - attempting click action
+    - waiting for element to be visible, enabled and stable
+    - element is not stable
+  - retrying click action
+    - waiting for element to be visible, enabled and stable
+  - element was detached from the DOM, retrying
+
+```
+
+# Page snapshot
+
+```yaml
+- generic [active] [ref=e1]:
+  - alert [ref=e2]
+  - generic [ref=e3]:
+    - banner [ref=e4]:
+      - generic [ref=e5]:
+        - generic [ref=e6]:
+          - link "Bomb Farm Companion" [ref=e7] [cursor=pointer]:
+            - /url: /
+            - generic [ref=e8]:
+              - generic [ref=e9]: Bomb Farm
+              - generic [ref=e10]: Companion
+          - navigation "Main sections" [ref=e11]:
+            - link "Planner" [ref=e12] [cursor=pointer]:
+              - /url: /
+            - link "Farm" [ref=e13] [cursor=pointer]:
+              - /url: /farm
+            - link "Team plan" [ref=e14] [cursor=pointer]:
+              - /url: /team-plan
+            - link "Account" [ref=e15] [cursor=pointer]:
+              - /url: /account
+        - generic [ref=e16]:
+          - button "Import" [ref=e17] [cursor=pointer]
+          - button "Copy my referral code — we both get a reward once you clear stage 151" [ref=e18] [cursor=pointer]:
+            - generic [ref=e19]: F-S7999UQC
+            - img [ref=e20]
+          - link "Buy me a coffee" [ref=e22] [cursor=pointer]:
+            - /url: https://buymeacoffee.com/lucasfevi
+            - img [ref=e23]
+          - group "Language" [ref=e25]:
+            - button "PT" [ref=e26] [cursor=pointer]
+            - button "EN" [ref=e27] [cursor=pointer]
+    - region "Team plan" [ref=e30]:
+      - heading "Team plan" [level=1] [ref=e32]
+      - generic [ref=e33]:
+        - generic [ref=e34]:
+          - heading "Search setup" [level=2] [ref=e36]
+          - paragraph [ref=e37]: Builds a plan of gear moves, forge work, and point resets for the heroes you mark Optimize — scored for combined roster DPS.
+          - generic [ref=e38]:
+            - generic [ref=e39]:
+              - generic [ref=e40]:
+                - generic [ref=e41]: Min forge (+)
+                - generic [ref=e42]:
+                  - button "Min forge (+) −" [ref=e43] [cursor=pointer]: −
+                  - generic [ref=e44]: "10"
+                  - button "Min forge (+) +" [ref=e45] [cursor=pointer]: +
+              - paragraph [ref=e46]: Every item is scored as if forged to at least this level. Anything lower shows up as a forge chore on that hero.
+            - button "Build a team plan of gear moves and point resets" [ref=e47] [cursor=pointer]: Build team plan
+        - generic [ref=e48]:
+          - heading "Hero scope" [level=2] [ref=e50]
+          - paragraph [ref=e51]: Drag hero cards between columns. On small screens, use the menu on each card. Battle-disabled heroes start in Donate by default.
+          - generic [ref=e52]:
+            - region "Optimize" [ref=e53]:
+              - generic [ref=e54]:
+                - generic [ref=e55]:
+                  - heading "Optimize" [level=3] [ref=e56]
+                  - generic [ref=e57]: "3"
+                - paragraph [ref=e58]: Scored in the plan. These heroes can receive better items and may give items up.
+              - generic [ref=e59]:
+                - 'button "Perrin · Lv 4 · #18796" [ref=e60]':
+                  - generic [ref=e61]:
+                    - img "Perrin" [ref=e64]
+                    - generic [ref=e65]:
+                      - generic [ref=e66]:
+                        - generic [ref=e67]: A
+                        - generic [ref=e68]: Perrin
+                      - generic [ref=e69]:
+                        - generic [ref=e70]: Common
+                        - generic [ref=e71]: "Lv 4 · #18796"
+                - 'button "Perrin · Lv 3 · #19274" [ref=e72]':
+                  - generic [ref=e73]:
+                    - img "Perrin" [ref=e76]
+                    - generic [ref=e77]:
+                      - generic [ref=e78]:
+                        - generic [ref=e79]: S
+                        - generic [ref=e80]: Perrin
+                      - generic [ref=e81]:
+                        - generic [ref=e82]: Common
+                        - generic [ref=e83]: "Lv 3 · #19274"
+                - 'button "Lyra · Lv 2 · #20140" [ref=e84]':
+                  - generic [ref=e85]:
+                    - img "Lyra" [ref=e88]
+                    - generic [ref=e89]:
+                      - generic [ref=e90]:
+                        - generic [ref=e91]: A
+                        - generic [ref=e92]: Lyra
+                      - generic [ref=e93]:
+                        - generic [ref=e94]: Common
+                        - generic [ref=e95]: "Lv 2 · #20140"
+            - region "Donate" [ref=e96]:
+              - generic [ref=e97]:
+                - generic [ref=e98]:
+                  - heading "Donate" [level=3] [ref=e99]
+                  - generic [ref=e100]: "0"
+                - paragraph [ref=e101]: Not scored. Their items join the pool for Optimize heroes; they receive nothing back.
+              - paragraph [ref=e103]: Drop heroes here
+            - region "Leave alone" [ref=e104]:
+              - generic [ref=e105]:
+                - generic [ref=e106]:
+                  - heading "Leave alone" [level=3] [ref=e107]
+                  - generic [ref=e108]: "0"
+                - paragraph [ref=e109]: Frozen. Items stay put and this hero is ignored by the search.
+              - paragraph [ref=e111]: Drop heroes here
+          - status [ref=e112]
+        - region "Team plan results" [ref=e113]:
+          - heading "Plan results" [level=2] [ref=e114]
+          - generic [ref=e115]:
+            - generic [ref=e116]:
+              - heading "Search summary" [level=2] [ref=e118]
+              - status [ref=e119]:
+                - generic [ref=e120]:
+                  - paragraph [ref=e121]:
+                    - strong [ref=e122]: "Field status:"
+                    - text: Fits the field
+                  - paragraph [ref=e123]: Your Optimize heroes aren’t competing for battle slots — each keeps their full share of field time.
+                - generic [ref=e124]:
+                  - paragraph [ref=e125]:
+                    - strong [ref=e126]: "Battle load:"
+                    - text: 0.30 of 3 slots
+                  - paragraph [ref=e127]: How hard your Optimize heroes pull on the field versus how many can fight at once.
+                - paragraph [ref=e128]:
+                  - text: Took
+                  - strong [ref=e129]: "0.0"
+                  - text: s ·
+                  - strong [ref=e130]: "2"
+                  - text: search passes ·
+                  - strong [ref=e131]: "2"
+                  - text: builds checked · started from today's items
+            - generic [ref=e132]:
+              - generic [ref=e133]:
+                - heading "Gain breakdown" [level=2] [ref=e134]
+                - paragraph [ref=e135]: Best roster DPS found by this search
+              - group "Gain breakdown" [ref=e136]:
+                - generic [ref=e137]:
+                  - paragraph [ref=e138]: Total gain
+                  - paragraph [ref=e139]: +0.4 dps (+2.0%)
+                - generic [ref=e140]:
+                  - generic [ref=e141]:
+                    - generic [ref=e142]: Today
+                    - strong [ref=e144]:
+                      - generic [ref=e145]: "19.0"
+                  - generic [ref=e146]:
+                    - generic [ref=e147]: Gear
+                    - strong [ref=e149]:
+                      - generic [ref=e150]: "19.0"
+                  - generic [ref=e151]:
+                    - generic [ref=e152]: Reset points
+                    - generic [ref=e153]:
+                      - strong [ref=e154]:
+                        - generic [ref=e155]: "19.4"
+                      - generic [ref=e157]: "+0.4"
+            - generic [ref=e158]:
+              - heading "Per-hero changes" [level=2] [ref=e160]
+              - paragraph [ref=e161]: The before/after totals above are combat-effective — team auras are applied and aren’t clamped to the game’s display caps (100% crit chance, 80% cooldown reduction); that’s deliberate, since this uncapped, aura-inclusive view is what the search actually optimizes against. Below, Hero sheet mirrors what the game’s own panel shows (capped); Combat stats keeps that same uncapped view.
+              - generic [ref=e162]:
+                - generic [ref=e163]:
+                  - 'button "Detailed breakdown for Lyra · Lv 2 · #20140" [expanded] [ref=e164] [cursor=pointer]':
+                    - generic [ref=e165]:
+                      - generic [ref=e166]:
+                        - img "Lyra" [ref=e169]
+                        - generic [ref=e170]:
+                          - generic [ref=e171]:
+                            - generic [ref=e172]: A
+                            - generic [ref=e173]: Lyra
+                          - generic [ref=e174]:
+                            - generic [ref=e175]: Common
+                            - generic [ref=e176]: "Lv 2 · #20140"
+                      - generic [ref=e177]:
+                        - generic [ref=e178]:
+                          - generic [ref=e179]: Before
+                          - generic [ref=e180]: "5.9"
+                        - generic [ref=e181]:
+                          - generic [ref=e182]: After
+                          - generic [ref=e183]: "5.9"
+                        - generic [ref=e184]:
+                          - generic [ref=e185]: Δ
+                          - generic [ref=e186]: "+0"
+                    - img [ref=e188]
+                  - 'region "Detailed breakdown for Lyra · Lv 2 · #20140" [ref=e190]':
+                    - generic [ref=e192]:
+                      - generic [ref=e193]:
+                        - heading "Proposed items" [level=3] [ref=e194]
+                        - paragraph [ref=e195]: No proposed items for this hero.
+                      - generic [ref=e196]:
+                        - generic [ref=e197]:
+                          - heading "Point reset" [level=3] [ref=e198]
+                          - paragraph [ref=e199]: No point reset is recommended for this hero.
+                        - generic [ref=e200]:
+                          - heading "Stat breakdown" [level=3] [ref=e201]
+                          - generic [ref=e202]:
+                            - generic [ref=e203]:
+                              - heading "Hero sheet" [level=4] [ref=e204]
+                              - table "Hero sheet" [ref=e205]:
+                                - caption [ref=e206]: Hero sheet
+                                - rowgroup [ref=e212]:
+                                  - row "Stat Before After Δ" [ref=e213]:
+                                    - columnheader "Stat" [ref=e214]
+                                    - columnheader "Before" [ref=e215]
+                                    - columnheader "After" [ref=e216]
+                                    - columnheader "Δ" [ref=e217]
+                                - rowgroup [ref=e218]:
+                                  - row "Attack 85.25 85.25 —" [ref=e219]:
+                                    - rowheader "Attack" [ref=e220]:
+                                      - generic [ref=e221]: Attack
+                                    - cell "85.25" [ref=e222]
+                                    - cell "85.25" [ref=e223]
+                                    - cell "—" [ref=e224]
+                                  - row "Energy 147.79 147.79 —" [ref=e225]:
+                                    - rowheader "Energy" [ref=e226]:
+                                      - generic [ref=e227]: Energy
+                                    - cell "147.79" [ref=e228]
+                                    - cell "147.79" [ref=e229]
+                                    - cell "—" [ref=e230]
+                                  - row "Speed 46.45 46.45 —" [ref=e231]:
+                                    - rowheader "Speed" [ref=e232]:
+                                      - generic [ref=e233]: Speed
+                                    - cell "46.45" [ref=e234]
+                                    - cell "46.45" [ref=e235]
+                                    - cell "—" [ref=e236]
+                                  - row "Luck 4.83 4.83 —" [ref=e237]:
+                                    - rowheader "Luck" [ref=e238]:
+                                      - generic [ref=e239]: Luck
+                                    - cell "4.83" [ref=e240]
+                                    - cell "4.83" [ref=e241]
+                                    - cell "—" [ref=e242]
+                                  - row "Crit % 9.85 9.85 —" [ref=e243]:
+                                    - rowheader "Crit %" [ref=e244]:
+                                      - generic [ref=e245]: Crit %
+                                    - cell "9.85" [ref=e246]
+                                    - cell "9.85" [ref=e247]
+                                    - cell "—" [ref=e248]
+                                  - row "Crit dmg +% 47.09 47.09 —" [ref=e249]:
+                                    - rowheader "Crit dmg +%" [ref=e250]:
+                                      - generic [ref=e251]: Crit dmg +%
+                                    - cell "47.09" [ref=e252]
+                                    - cell "47.09" [ref=e253]
+                                    - cell "—" [ref=e254]
+                                  - row "Pen % 1.40 1.40 —" [ref=e255]:
+                                    - rowheader "Pen %" [ref=e256]:
+                                      - generic [ref=e257]: Pen %
+                                    - cell "1.40" [ref=e258]
+                                    - cell "1.40" [ref=e259]
+                                    - cell "—" [ref=e260]
+                                  - row "CDR % 1.83 1.83 —" [ref=e261]:
+                                    - rowheader "CDR %" [ref=e262]:
+                                      - generic [ref=e263]: CDR %
+                                    - cell "1.83" [ref=e264]
+                                    - cell "1.83" [ref=e265]
+                                    - cell "—" [ref=e266]
+                            - generic [ref=e267]:
+                              - heading "Combat stats" [level=4] [ref=e268]
+                              - table "Combat stats" [ref=e269]:
+                                - caption [ref=e270]: Combat stats
+                                - rowgroup [ref=e276]:
+                                  - row "Stat Before After Δ" [ref=e277]:
+                                    - columnheader "Stat" [ref=e278]
+                                    - columnheader "Before" [ref=e279]
+                                    - columnheader "After" [ref=e280]
+                                    - columnheader "Δ" [ref=e281]
+                                - rowgroup [ref=e282]:
+                                  - row "Attack 85.25 85.25 —" [ref=e283]:
+                                    - rowheader "Attack" [ref=e284]:
+                                      - generic [ref=e285]: Attack
+                                    - cell "85.25" [ref=e286]
+                                    - cell "85.25" [ref=e287]
+                                    - cell "—" [ref=e288]
+                                  - row "Energy 147.79 147.79 —" [ref=e289]:
+                                    - rowheader "Energy" [ref=e290]:
+                                      - generic [ref=e291]: Energy
+                                    - cell "147.79" [ref=e292]
+                                    - cell "147.79" [ref=e293]
+                                    - cell "—" [ref=e294]
+                                  - row "Speed 46.45 46.45 —" [ref=e295]:
+                                    - rowheader "Speed" [ref=e296]:
+                                      - generic [ref=e297]: Speed
+                                    - cell "46.45" [ref=e298]
+                                    - cell "46.45" [ref=e299]
+                                    - cell "—" [ref=e300]
+                                  - row "Crit % 9.85 9.85 —" [ref=e301]:
+                                    - rowheader "Crit %" [ref=e302]:
+                                      - generic [ref=e303]: Crit %
+                                    - cell "9.85" [ref=e304]
+                                    - cell "9.85" [ref=e305]
+                                    - cell "—" [ref=e306]
+                                  - row "Crit dmg +% 47.09 47.09 —" [ref=e307]:
+                                    - rowheader "Crit dmg +%" [ref=e308]:
+                                      - generic [ref=e309]: Crit dmg +%
+                                    - cell "47.09" [ref=e310]
+                                    - cell "47.09" [ref=e311]
+                                    - cell "—" [ref=e312]
+                                  - row "Pen % 1.40 1.40 —" [ref=e313]:
+                                    - rowheader "Pen %" [ref=e314]:
+                                      - generic [ref=e315]: Pen %
+                                    - cell "1.40" [ref=e316]
+                                    - cell "1.40" [ref=e317]
+                                    - cell "—" [ref=e318]
+                                  - row "CDR % 1.83 1.83 —" [ref=e319]:
+                                    - rowheader "CDR %" [ref=e320]:
+                                      - generic [ref=e321]: CDR %
+                                    - cell "1.83" [ref=e322]
+                                    - cell "1.83" [ref=e323]
+                                    - cell "—" [ref=e324]
+                            - generic [ref=e325]:
+                              - heading "Hit damage" [level=4] [ref=e326]
+                              - table "Hit damage" [ref=e327]:
+                                - caption [ref=e328]: Hit damage
+                                - rowgroup [ref=e334]:
+                                  - row "Stat Before After Δ" [ref=e335]:
+                                    - columnheader "Stat" [ref=e336]
+                                    - columnheader "Before" [ref=e337]
+                                    - columnheader "After" [ref=e338]
+                                    - columnheader "Δ" [ref=e339]
+                                - rowgroup [ref=e340]:
+                                  - row "Normal hit 80 80 —" [ref=e341]:
+                                    - rowheader "Normal hit" [ref=e342]:
+                                      - generic [ref=e343]: Normal hit
+                                    - cell "80" [ref=e344]
+                                    - cell "80" [ref=e345]
+                                    - cell "—" [ref=e346]
+                                  - row "Critical hit 117 117 —" [ref=e347]:
+                                    - rowheader "Critical hit" [ref=e348]:
+                                      - generic [ref=e349]: Critical hit
+                                    - cell "117" [ref=e350]
+                                    - cell "117" [ref=e351]
+                                    - cell "—" [ref=e352]
+                - 'button "Detailed breakdown for Perrin · Lv 4 · #18796" [ref=e354] [cursor=pointer]':
+                  - generic [ref=e355]:
+                    - generic [ref=e356]:
+                      - img "Perrin" [ref=e359]
+                      - generic [ref=e360]:
+                        - generic [ref=e361]:
+                          - generic [ref=e362]: A
+                          - generic [ref=e363]: Perrin
+                        - generic [ref=e364]:
+                          - generic [ref=e365]: Common
+                          - generic [ref=e366]: "Lv 4 · #18796"
+                    - generic [ref=e367]:
+                      - generic [ref=e368]:
+                        - generic [ref=e369]: Before
+                        - generic [ref=e370]: "6.2"
+                      - generic [ref=e371]:
+                        - generic [ref=e372]: After
+                        - generic [ref=e373]: "6.2"
+                      - generic [ref=e374]:
+                        - generic [ref=e375]: Δ
+                        - generic [ref=e376]: "+0"
+                  - img [ref=e378]
+                - 'button "Detailed breakdown for Perrin · Lv 3 · #19274" [ref=e381] [cursor=pointer]':
+                  - generic [ref=e382]:
+                    - generic [ref=e383]:
+                      - img "Perrin" [ref=e386]
+                      - generic [ref=e387]:
+                        - generic [ref=e388]:
+                          - generic [ref=e389]: S
+                          - generic [ref=e390]: Perrin
+                        - generic [ref=e391]:
+                          - generic [ref=e392]: Common
+                          - generic [ref=e393]: "Lv 3 · #19274"
+                    - generic [ref=e394]:
+                      - generic [ref=e395]:
+                        - generic [ref=e396]: Before
+                        - generic [ref=e397]: "6.9"
+                      - generic [ref=e398]:
+                        - generic [ref=e399]: After
+                        - generic [ref=e400]: "7.3"
+                      - generic [ref=e401]:
+                        - generic [ref=e402]: Δ
+                        - generic [ref=e403]: "+0.4"
+                  - img [ref=e405]
+            - generic [ref=e407]:
+              - heading "Assumptions & limits" [level=2] [ref=e409]
+              - generic [ref=e410]:
+                - paragraph [ref=e411]: Team auras here come from the scoped roster, exclude the hero being scored, and are weighted by each carrier’s duty. The Account tab’s manual Team buffs are ignored on this page but still drive the Planner’s own DPS.
+                - paragraph [ref=e412]: Planner DPS can differ from this page when roster-derived auras replace manual Team buffs, or when Baton Pass is modelled here only.
+                - paragraph [ref=e413]: "Unmodelled abilities in scope: Breach (Perrin); Hero Hunter (Perrin)"
+                - paragraph [ref=e414]: "Excluded from the pool — market-blocked: 0, unresolved items: 0, foreign owners: 12."
+                - paragraph [ref=e415]: Forging to your minimum was left out of this plan — it did not improve roster DPS.
+    - contentinfo [ref=e416]:
+      - generic [ref=e417]:
+        - paragraph [ref=e418]: This is an unofficial, fan-made tool. It is not affiliated with, endorsed by or connected to the BombFarm developers in any way.
+        - paragraph [ref=e419]:
+          - text: Assets are from the official BombFarm wiki.
+          - link "wiki.bombfarm.net" [ref=e420] [cursor=pointer]:
+            - /url: https://wiki.bombfarm.net
+          - text: .
+        - paragraph [ref=e421]:
+          - generic [ref=e422]: Referral code
+          - code [ref=e423]: F-S7999UQC
+          - button "Copy referral code" [ref=e424] [cursor=pointer]:
+            - img [ref=e425]
+          - generic [ref=e427]: — a reward for us both at stage 151.
+      - generic [ref=e428]:
+        - generic [ref=e429]: v0.0.0-e2e
+        - link "Buy me a coffee" [ref=e430] [cursor=pointer]:
+          - /url: https://buymeacoffee.com/lucasfevi
+          - img [ref=e431]
+          - text: Buy me a coffee
+```
+
+# Test source
+
+```ts
+  1  | import { test, expect } from '@playwright/test';
+  2  | import { teamPlanFixtureSeed } from './fixtures/team-plan-seed';
+  3  | import { importedRoster, seedLocalStorage } from './fixtures/seed';
+  4  | import {
+  5  |   clickOptimize,
+  6  |   gotoTeamPlan,
+  7  |   setE2eForceError,
+  8  |   setE2eMaxEvaluations,
+  9  |   snapshotHeroesJson,
+  10 |   waitForOptimizeDone,
+  11 | } from './fixtures/team-plan-e2e';
+  12 | 
+  13 | test.describe('Team plan page states', () => {
+  14 |   test('no inventory shows empty state', async ({ page }) => {
+  15 |     await seedLocalStorage(page, { ...importedRoster, lang: 'en' });
+  16 |     await gotoTeamPlan(page);
+  17 |     await expect(page.getByRole('heading', { name: /No item inventory yet/i })).toBeVisible();
+  18 |   });
+  19 | 
+  20 |   test('blocked heroes without birth are named', async ({ page }) => {
+  21 |     const seed = teamPlanFixtureSeed('en');
+  22 |     const hero = seed.heroes[0];
+  23 |     if (!hero) throw new Error('fixture hero missing');
+  24 |     delete (hero as { birth?: unknown }).birth;
+  25 |     await seedLocalStorage(page, seed);
+  26 |     await gotoTeamPlan(page);
+  27 |     await clickOptimize(page);
+  28 |     const blocked = page.getByRole('heading', { name: /Cannot run — missing birth stats/i }).locator(
+  29 |       'xpath=ancestor::div[1]',
+  30 |     );
+  31 |     await expect(blocked).toBeVisible();
+  32 |     await expect(blocked).toContainText(hero.name);
+  33 |   });
+  34 | 
+  35 |   test('optimize without confirm leaves heroes storage unchanged', async ({ page }) => {
+  36 |     // Runs the real solver at its default (uncapped) evaluation budget on the 11-hero
+  37 |     // fixture — the only test in this file that does. waitForOptimizeDone's 120s expect
+  38 |     // timeout needs a matching test-level timeout, or Playwright's 30s default kills the
+  39 |     // test first (same pattern as perf.spec.ts's long-running capture).
+  40 |     test.setTimeout(150_000);
+  41 |     await seedLocalStorage(page, teamPlanFixtureSeed('en'));
+  42 |     await gotoTeamPlan(page);
+  43 |     const before = await snapshotHeroesJson(page);
+  44 |     await clickOptimize(page);
+  45 |     await waitForOptimizeDone(page);
+  46 |     await page.reload();
+  47 |     const after = await snapshotHeroesJson(page);
+  48 |     expect(after).toBe(before);
+  49 |   });
+  50 | 
+  51 |   test('runner error shows retry control', async ({ page }) => {
+  52 |     await setE2eForceError(page, true);
+  53 |     await seedLocalStorage(page, teamPlanFixtureSeed('en'));
+  54 |     await gotoTeamPlan(page);
+  55 |     await clickOptimize(page);
+  56 |     await expect(page.getByRole('heading', { name: /Search failed/i })).toBeVisible({ timeout: 120_000 });
+  57 |     await expect(page.getByRole('button', { name: /Try again/i })).toBeVisible();
+  58 |   });
+  59 | 
+  60 |   test('optimizing modal can cancel the run', async ({ page }) => {
+  61 |     await setE2eMaxEvaluations(page, 50_000);
+  62 |     await seedLocalStorage(page, teamPlanFixtureSeed('en'));
+  63 |     await gotoTeamPlan(page);
+  64 |     await clickOptimize(page);
+  65 |     await expect(page.getByRole('dialog', { name: /Building plan/i })).toBeVisible();
+  66 |     await expect(page.getByText(/^Elapsed /i)).toBeVisible();
+> 67 |     await page.getByRole('button', { name: /^Cancel$/i }).click();
+     |                                                           ^ Error: locator.click: Test timeout of 30000ms exceeded.
+  68 |     await expect(page.getByRole('dialog', { name: /Building plan/i })).toBeHidden();
+  69 |     await expect(
+  70 |       page.getByRole('button', { name: /Build a team plan of gear moves and point resets/i }),
+  71 |     ).toBeEnabled();
+  72 |   });
+  73 | });
+  74 | 
+```
