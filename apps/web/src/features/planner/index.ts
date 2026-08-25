@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 export { default } from './components/hero-planner';
 export { ExplainSection } from './components/explain-section';
