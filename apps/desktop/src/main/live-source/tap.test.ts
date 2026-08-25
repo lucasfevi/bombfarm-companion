@@ -7,6 +7,7 @@ import { buildHttpResponse, buildServerTextFrame } from './fixtures/generate-rep
 import type { LogPort as HookCacheLogPort } from './hook-cache.js';
 import { RuntimePort } from './runtime.js';
 import type { LogPort as RuntimeLogPort, TapInterceptor, TapReadEvent, TapRuntime, TapSession } from './runtime.js';
+import type { FrameCapture } from './frame-capture.js';
 import { createHookCandidateSource, Tap } from './tap.js';
 import type {
   Clock,
@@ -302,6 +303,67 @@ describe('Tap: ambiguous discovery', () => {
     }
     expect(tap.getCurrency().kind).toBe('live');
     expect(candidates.committed).toEqual([{ pid: 555, address: 0x3000, buildId: 'build-ambiguous' }]);
+  });
+});
+
+describe('Tap: frame capture receives only the confirmed winner\'s bytes', () => {
+  class FakeCapture implements FrameCapture {
+    pushed: { ctx: string | number; bytes: Buffer }[] = [];
+
+    push(ctx: string | number, bytes: Uint8Array): void {
+      this.pushed.push({ ctx, bytes: Buffer.from(bytes) });
+    }
+
+    close(): void {
+      /* not exercised here */
+    }
+  }
+
+  it("captures the confirming read and later winner reads, with their ctx, never a losing candidate's bytes", async () => {
+    const clock = new FakeClock();
+    const processes = new FakeProcessLister();
+    const candidates = new FakeHookCandidateSource();
+    const runtime = new FakeRuntime();
+    const runtimePort = new RuntimePort({ resolve: () => Promise.resolve(runtime) });
+    const capture = new FakeCapture();
+
+    const tap = new Tap({
+      processName: PROCESS_NAME,
+      runtime: runtimePort,
+      processes,
+      candidates,
+      consent: () => true,
+      clock,
+      onEvent: () => undefined,
+      pollIntervalMs: 1_000,
+      capture,
+    });
+
+    processes.processes = [{ pid: 777, name: PROCESS_NAME }];
+    candidates.resolveResult = { addresses: [0x1000, 0x2000], fromCache: false, buildId: 'build-capture' };
+
+    tap.start();
+    await clock.advance(0);
+
+    const session = runtime.sessions[0];
+    if (!session) throw new Error('test setup: no session');
+    const loser = session.interceptorsByAddress.get(0x1000);
+    const winner = session.interceptorsByAddress.get(0x2000);
+    if (!loser || !winner) throw new Error('test setup: expected two interceptors');
+
+    const confirmingBytes = snapFrameBytes();
+    winner.fire({ ctx: 'winner-conn', bytes: confirmingBytes });
+    expect(capture.pushed).toEqual([{ ctx: 'winner-conn', bytes: confirmingBytes }]);
+
+    loser.fire({ ctx: 'loser-conn', bytes: snapFrameBytes() });
+    expect(capture.pushed).toEqual([{ ctx: 'winner-conn', bytes: confirmingBytes }]);
+
+    const laterWinningBytes = snapFrameBytes();
+    winner.fire({ ctx: 'winner-conn', bytes: laterWinningBytes });
+    expect(capture.pushed).toEqual([
+      { ctx: 'winner-conn', bytes: confirmingBytes },
+      { ctx: 'winner-conn', bytes: laterWinningBytes },
+    ]);
   });
 });
 

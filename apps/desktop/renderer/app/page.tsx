@@ -6,6 +6,7 @@ import type {
   AppLocale,
   GameSnapshotPayload,
   GameStatusInfo,
+  LiveDiagnosticsDumpOutcome,
   SettingsWriteReason,
 } from '@bombfarm/contracts';
 import { DEFAULT_SETTINGS } from '@bombfarm/contracts';
@@ -24,6 +25,7 @@ import { ConsentGate, isConsentGateVisible } from './consent-gate';
 import { ConsentModal } from './consent-modal';
 import { PlanningView } from './planning/planning-view';
 import { ConsentSection } from './settings/consent-section';
+import { DiagnosticsSection } from './settings/diagnostics-section';
 import { LanguageSection } from './settings/language-section';
 
 const DEFAULT_NAV_ID = 'planning';
@@ -119,6 +121,7 @@ function HomePageContent({
   const [error, setError] = useState<string | null>(null);
   const [consent, setConsent] = useState<ConsentRecord | null>(null);
   const [consentForceOpen, setConsentForceOpen] = useState(false);
+  const [diagnosticsDumpResult, setDiagnosticsDumpResult] = useState<LiveDiagnosticsDumpOutcome | null>(null);
 
   useEffect(() => {
     const bridge = getBridge();
@@ -146,6 +149,14 @@ function HomePageContent({
 
   const onConsentReallow = () => {
     setConsentForceOpen(true);
+  };
+
+  const onSaveDiagnostics = () => {
+    const bridge = getBridge();
+    if (!bridge) return;
+    void bridge.invoke('live:dumpDiagnostics').then((result) => {
+      setDiagnosticsDumpResult(result);
+    });
   };
 
   const onConsentDecided = () => {
@@ -258,6 +269,7 @@ function HomePageContent({
             <>
               <LanguageSection locale={locale} onLocaleChange={onLocaleChange} persistWarning={persistWarning} />
               <ConsentSection onRevoke={onConsentRevoke} />
+              <DiagnosticsSection onSave={onSaveDiagnostics} result={diagnosticsDumpResult} />
             </>
           ) : activeNavId === 'diagnostics' ? (
             <section className="space-y-4">

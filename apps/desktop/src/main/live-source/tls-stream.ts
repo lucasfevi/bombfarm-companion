@@ -1,5 +1,7 @@
 import type { LiveHit, LiveLootPop, LiveTick, LiveTickHero } from '@bombfarm/contracts';
-import { DecodedFrame, FrameDecoder, OPCODE } from './ws-frame.js';
+import { isPlainObject, liveFrameWireKey as wireKey } from '@bombfarm/game-api';
+import type { FrameDumpReason } from './frame-ring.js';
+import { DecodedFrame, FrameDecodeError, FrameDecoder, OPCODE } from './ws-frame.js';
 
 /**
  * Demultiplexes the plaintext byte stream a hook hands the app for every TLS read in the game
@@ -29,78 +31,121 @@ const RESYNC_OVERLAP_BYTES = 8;
  *  from the interceptor would replace this; nothing upstream carries one yet. */
 const IDLE_SWEEP_TTL_MS = 5 * 60 * 1000;
 
-interface WireHero {
-  readonly id: string;
-  readonly energy?: number;
-  readonly x?: number;
-  readonly y?: number;
+/**
+ * Every field below is read out of the raw parsed JSON with {@link wireKey}, never with a typed
+ * interface's dotted field name — `packages/game-api/src/live-frame/lexicon.ts` names the
+ * abbreviated wire key each of these actually is (`heroes[].e`, `hits[].d`, `loot[].g`, and so
+ * on), and a `WireHero`/`WireHit`-style interface typed with those literal wire names would just
+ * re-embed the same abbreviations this module exists to translate out of.
+ */
+
+function isSnapMessage(value: unknown): value is Record<string, unknown> {
+  return isPlainObject(value) && value[wireKey('messageType')] === wireKey('snapMessageType');
 }
 
-interface WireLoot {
-  readonly cell: number;
-  readonly gold?: number;
+function readNumber(raw: Record<string, unknown>, key: string): number | undefined {
+  const value = raw[key];
+  return typeof value === 'number' && Number.isFinite(value) ? value : undefined;
 }
 
-interface WireHit {
-  readonly cell: number;
-  readonly amount: number;
-  readonly critical?: boolean;
+function readBoolean(raw: Record<string, unknown>, key: string): boolean | undefined {
+  const value = raw[key];
+  return typeof value === 'boolean' ? value : undefined;
 }
 
-interface WireSnapMessage {
-  readonly t: 'snap';
-  readonly heroes?: readonly WireHero[];
-  readonly phase?: number;
-  readonly wave?: number;
-  readonly gold?: number;
-  readonly roomHp?: number;
-  readonly idle?: boolean;
-  readonly loot?: readonly WireLoot[];
-  readonly hits?: readonly WireHit[];
-  readonly bonusSeconds?: number;
-  readonly bonusMultiplier?: number;
+function readString(raw: Record<string, unknown>, key: string): string | undefined {
+  const value = raw[key];
+  return typeof value === 'string' ? value : undefined;
 }
 
-function isSnapMessage(value: unknown): value is WireSnapMessage {
-  return typeof value === 'object' && value !== null && (value as { t?: unknown }).t === 'snap';
+/**
+ * Gold arrives on the wire as a digit string (observed `"9724194"`…`"10294318"` for the account
+ * total, `"1580"`…`"6636"` for a single loot payout), not a number — `LiveTick.gold` and
+ * `LiveLootPop.gold` are both typed `number`, so a value that is not a well-formed digit string is
+ * dropped here rather than reaching either as `NaN`.
+ */
+function readWireMoney(raw: Record<string, unknown>, key: string): number | undefined {
+  const value = raw[key];
+  if (typeof value !== 'string' || !/^\d+$/.test(value)) return undefined;
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : undefined;
 }
 
-function mapHero(hero: WireHero): LiveTickHero {
+function readArray(raw: Record<string, unknown>, key: string): readonly unknown[] {
+  const value = raw[key];
+  return Array.isArray(value) ? value : [];
+}
+
+/** `undefined` when the wire omitted the array entirely, so a tick with no loot/hits this tick is
+ *  told apart from one where the field was simply absent — matching the optional `readonly … []`
+ *  contract fields these feed. */
+function readOptionalArray(raw: Record<string, unknown>, key: string): readonly unknown[] | undefined {
+  const value = raw[key];
+  return Array.isArray(value) ? value : undefined;
+}
+
+function isDefined<T>(value: T | undefined): value is T {
+  return value !== undefined;
+}
+
+function mapHero(raw: unknown): LiveTickHero | undefined {
+  if (!isPlainObject(raw)) return undefined;
+  const id = readString(raw, wireKey('heroId'));
+  if (id === undefined) return undefined;
+
+  const energyFraction = readNumber(raw, wireKey('heroEnergyFraction'));
+  const x = readNumber(raw, wireKey('heroX'));
+  const y = readNumber(raw, wireKey('heroY'));
+
   return {
-    id: hero.id,
-    ...(hero.energy !== undefined ? { energyFraction: hero.energy } : {}),
-    ...(hero.x !== undefined ? { x: hero.x } : {}),
-    ...(hero.y !== undefined ? { y: hero.y } : {}),
+    id,
+    ...(energyFraction !== undefined ? { energyFraction } : {}),
+    ...(x !== undefined ? { x } : {}),
+    ...(y !== undefined ? { y } : {}),
   };
 }
 
-function mapLoot(loot: WireLoot): LiveLootPop {
-  return {
-    cell: loot.cell,
-    ...(loot.gold !== undefined ? { gold: loot.gold } : {}),
-  };
+function mapLoot(raw: unknown): LiveLootPop | undefined {
+  if (!isPlainObject(raw)) return undefined;
+  const cell = readNumber(raw, wireKey('lootCell'));
+  if (cell === undefined) return undefined;
+
+  const gold = readWireMoney(raw, wireKey('lootGold'));
+  return { cell, ...(gold !== undefined ? { gold } : {}) };
 }
 
-function mapHit(hit: WireHit): LiveHit {
-  return {
-    cell: hit.cell,
-    amount: hit.amount,
-    ...(hit.critical !== undefined ? { critical: hit.critical } : {}),
-  };
+function mapHit(raw: unknown): LiveHit | undefined {
+  if (!isPlainObject(raw)) return undefined;
+  const cell = readNumber(raw, wireKey('hitCell'));
+  const damage = readNumber(raw, wireKey('hitDamage'));
+  if (cell === undefined || damage === undefined) return undefined;
+
+  const critical = readBoolean(raw, wireKey('hitCritical'));
+  return { cell, damage, ...(critical !== undefined ? { critical } : {}) };
 }
 
-function toLiveTick(msg: WireSnapMessage): LiveTick {
+export function toLiveTick(raw: Record<string, unknown>): LiveTick {
+  const phase = readNumber(raw, wireKey('phase'));
+  const wave = readNumber(raw, wireKey('wave'));
+  const gold = readWireMoney(raw, wireKey('gold'));
+  const roomHp = readNumber(raw, wireKey('roomHp'));
+  const idle = readBoolean(raw, wireKey('idle'));
+  const lootRaw = readOptionalArray(raw, wireKey('lootList'));
+  const hitsRaw = readOptionalArray(raw, wireKey('hitsList'));
+  const bonusSeconds = readNumber(raw, wireKey('bonusSeconds'));
+  const bonusMultiplier = readNumber(raw, wireKey('bonusMultiplier'));
+
   return {
-    heroes: (msg.heroes ?? []).map(mapHero),
-    ...(msg.phase !== undefined ? { phase: msg.phase } : {}),
-    ...(msg.wave !== undefined ? { wave: msg.wave } : {}),
-    ...(msg.gold !== undefined ? { gold: msg.gold } : {}),
-    ...(msg.roomHp !== undefined ? { roomHp: msg.roomHp } : {}),
-    ...(msg.idle !== undefined ? { idle: msg.idle } : {}),
-    ...(msg.loot !== undefined ? { loot: msg.loot.map(mapLoot) } : {}),
-    ...(msg.hits !== undefined ? { hits: msg.hits.map(mapHit) } : {}),
-    ...(msg.bonusSeconds !== undefined ? { bonusSeconds: msg.bonusSeconds } : {}),
-    ...(msg.bonusMultiplier !== undefined ? { bonusMultiplier: msg.bonusMultiplier } : {}),
+    heroes: readArray(raw, wireKey('heroesList')).map(mapHero).filter(isDefined),
+    ...(phase !== undefined ? { phase } : {}),
+    ...(wave !== undefined ? { wave } : {}),
+    ...(gold !== undefined ? { gold } : {}),
+    ...(roomHp !== undefined ? { roomHp } : {}),
+    ...(idle !== undefined ? { idle } : {}),
+    ...(lootRaw !== undefined ? { loot: lootRaw.map(mapLoot).filter(isDefined) } : {}),
+    ...(hitsRaw !== undefined ? { hits: hitsRaw.map(mapHit).filter(isDefined) } : {}),
+    ...(bonusSeconds !== undefined ? { bonusSeconds } : {}),
+    ...(bonusMultiplier !== undefined ? { bonusMultiplier } : {}),
   };
 }
 
@@ -207,9 +252,18 @@ interface IgnoreState {
 
 type ConnState = HeadState | WsState | IgnoreState;
 
+export interface FrameRingPort {
+  push(bytes: Uint8Array): void;
+  dumpToDisk(reason: FrameDumpReason): void;
+}
+
 export interface TlsConnectionsDeps {
   readonly now?: () => number;
   readonly idleSweepTtlMs?: number;
+  /** Fed every decoded frame payload as it arrives, so a later parse failure can be dumped with
+   *  the bytes that led into it. Optional so every existing construction site and test is
+   *  unaffected. */
+  readonly ring?: FrameRingPort;
 }
 
 export class TlsConnections {
@@ -217,10 +271,12 @@ export class TlsConnections {
   #lastTouchedAt = new Map<Ctx, number>();
   readonly #now: () => number;
   readonly #idleSweepTtlMs: number;
+  readonly #ring: FrameRingPort | undefined;
 
   constructor(deps: TlsConnectionsDeps = {}) {
     this.#now = deps.now ?? Date.now;
     this.#idleSweepTtlMs = deps.idleSweepTtlMs ?? IDLE_SWEEP_TTL_MS;
+    this.#ring = deps.ring;
   }
 
   get size(): number {
@@ -298,16 +354,23 @@ export class TlsConnections {
     try {
       for (const frame of state.decoder.push(bytes)) this.#handleFrame(frame, events);
       return state;
-    } catch {
+    } catch (error) {
       // A frame the decoder cannot parse (the 64-bit length form is the one case ws-frame.ts
       // itself throws on) leaves the decoder's internal buffer in a state this class has no way
-      // to inspect or rewind, so whatever this decoder had already buffered is unrecoverable.
-      // Dropping to a fresh head-state resync is the only way back onto a real frame boundary.
+      // to inspect or rewind, so whatever the decoder still had buffered past the bad frame is
+      // unrecoverable. The frames it had already decoded in this same call, carried on a
+      // FrameDecodeError, are not lost, though: deliver them before dropping to a fresh
+      // head-state resync, the only way back onto a real frame boundary for what follows.
+      if (error instanceof FrameDecodeError) {
+        for (const frame of error.decoded) this.#handleFrame(frame, events);
+      }
+      this.#ring?.dumpToDisk('parse-failure');
       return INITIAL_HEAD_STATE;
     }
   }
 
   #handleFrame(frame: DecodedFrame, events: TapEvent[]): void {
+    this.#ring?.push(frame.payload);
     if (frame.opcode !== OPCODE.text) return;
     let json: unknown;
     try {

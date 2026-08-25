@@ -1,10 +1,19 @@
 import type { LiveTick } from '@bombfarm/contracts';
+import { liveFrameWireKey as wireKey } from '@bombfarm/game-api';
+import { toLiveTick } from '../tls-stream.js';
 
 /**
  * Synthesises the byte stream `tls-stream.ts` is decoding: an HTTP response, an idle run, a
  * combat run (with a hero leaving the field partway through), a frame the decoder cannot parse,
  * and a truncated tail — all deterministic from a seed, so the committed fixture this produces
  * can be regenerated and byte-compared rather than trusted blind.
+ *
+ * Every wire key below comes from the live-frame lexicon, the same way `tls-stream.ts` itself
+ * reads them, and the expected {@link LiveTick} for each frame is computed by calling
+ * `toLiveTick` on the constructed wire JSON rather than hand-building a second, parallel
+ * translation — the previous version of this file hand-built both sides using the wrong wire
+ * keys, and its own decoder test suite never caught it because generator and decoder agreed with
+ * each other while both disagreed with the game.
  */
 
 const DEFAULT_SEED = 20260822;
@@ -85,59 +94,49 @@ function buildSnapPayload(
   index: number,
 ): { readonly json: unknown; readonly tick: LiveTick } {
   const heroes = heroIds.map((id) => ({
-    id,
-    energy: Number((0.4 + rand() * 0.6).toFixed(4)),
-    x: Number((rand() * 800).toFixed(2)),
-    y: Number((rand() * 450).toFixed(2)),
+    [wireKey('heroId')]: id,
+    [wireKey('heroEnergyFraction')]: Number((0.4 + rand() * 0.6).toFixed(4)),
+    [wireKey('heroX')]: Number((rand() * 800).toFixed(2)),
+    [wireKey('heroY')]: Number((rand() * 450).toFixed(2)),
   }));
 
   const hits = idle
     ? undefined
     : Array.from({ length: 30 + Math.floor(rand() * 15) }, () => ({
-        cell: Math.floor(rand() * 64),
-        amount: Math.floor(200 + rand() * 4000),
-        critical: rand() < 0.25,
+        [wireKey('hitCell')]: Math.floor(rand() * 64),
+        [wireKey('hitDamage')]: Math.floor(200 + rand() * 4000),
+        [wireKey('hitCritical')]: rand() < 0.25,
       }));
 
   const loot =
     !idle && index % 5 === 0
       ? Array.from({ length: 1 + Math.floor(rand() * 3) }, () => ({
-          cell: Math.floor(rand() * 64),
-          gold: Math.floor(20 + rand() * 400),
+          [wireKey('lootCell')]: Math.floor(rand() * 64),
+          [wireKey('lootGold')]: String(Math.floor(20 + rand() * 400)),
         }))
       : undefined;
 
   const includeBonus = !idle && index % 7 === 0;
-  const roomHp = Number((idle ? 1 : Math.max(0, 1 - index * 0.01)).toFixed(4));
+  // The wire's own `room_hp` is a 0-255 scale, not the [0, 1] fraction this fixture used to
+  // synthesise — see packages/game-api/src/live-frame/lexicon.ts.
+  const roomHp = Math.max(0, Math.round(idle ? 255 : 255 - index * 2.55));
   const wave = idle ? 0 : 1 + Math.floor(index / 3);
   const gold = 100000 + index * 137;
 
-  const json = {
-    t: 'snap' as const,
-    heroes,
-    phase: 26,
-    wave,
-    gold,
-    roomHp,
-    idle,
-    ...(hits !== undefined ? { hits } : {}),
-    ...(loot !== undefined ? { loot } : {}),
-    ...(includeBonus ? { bonusSeconds: 30, bonusMultiplier: 2 } : {}),
+  const json: Record<string, unknown> = {
+    [wireKey('messageType')]: wireKey('snapMessageType'),
+    [wireKey('heroesList')]: heroes,
+    [wireKey('phase')]: 26,
+    [wireKey('wave')]: wave,
+    [wireKey('gold')]: String(gold),
+    [wireKey('roomHp')]: roomHp,
+    [wireKey('idle')]: idle,
+    ...(hits !== undefined ? { [wireKey('hitsList')]: hits } : {}),
+    ...(loot !== undefined ? { [wireKey('lootList')]: loot } : {}),
+    ...(includeBonus ? { [wireKey('bonusSeconds')]: 30, [wireKey('bonusMultiplier')]: 2 } : {}),
   };
 
-  const tick: LiveTick = {
-    heroes: heroes.map((h) => ({ id: h.id, energyFraction: h.energy, x: h.x, y: h.y })),
-    phase: 26,
-    wave,
-    gold,
-    roomHp,
-    idle,
-    ...(hits !== undefined ? { hits: hits.map((h) => ({ cell: h.cell, amount: h.amount, critical: h.critical })) } : {}),
-    ...(loot !== undefined ? { loot: loot.map((l) => ({ cell: l.cell, gold: l.gold })) } : {}),
-    ...(includeBonus ? { bonusSeconds: 30, bonusMultiplier: 2 } : {}),
-  };
-
-  return { json, tick };
+  return { json, tick: toLiveTick(json) };
 }
 
 export function generateReplayStream(seed: number = DEFAULT_SEED): ReplayStream {

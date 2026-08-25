@@ -130,6 +130,19 @@ export const ptBR: Copy = {
   settingsConsentHelpGranted: 'O companion lê sua conta e permanece conectado ao cliente do jogo.',
   settingsConsentRevokeAction: 'Desativar',
 
+  // settingsDiagnostics* — o controle manual de gravação do anel de quadros (um recurso de relatório de erro)
+  settingsDiagnosticsSectionTitle: 'Diagnóstico',
+  settingsDiagnosticsSaveLabel: 'Salvar arquivo para relatório de erro',
+  settingsDiagnosticsSaveHelp:
+    'Grava um arquivo local com detalhes do tráfego recente do jogo. Nada é enviado a lugar nenhum — você decide se e quando compartilhar.',
+  settingsDiagnosticsSaveAction: 'Salvar arquivo',
+  settingsDiagnosticsSavedTitle: 'Arquivo salvo',
+  settingsDiagnosticsSavedBody: 'Arquivo de diagnóstico salvo em {path}.',
+  settingsDiagnosticsNotSavedTitle: 'Nada foi salvo',
+  settingsDiagnosticsReasonRateLimited: 'Você acabou de salvar um. Espere alguns segundos e tente de novo.',
+  settingsDiagnosticsReasonWriteFailed: 'Não foi possível gravar o arquivo. Verifique o local de salvamento e tente de novo.',
+  settingsDiagnosticsReasonNoSource: 'Ainda não há nada para salvar. O app ainda não se conectou ao jogo.',
+
   // consentGate* — o portão de permissão mostrado no lugar do conteúdo do app quando o acesso não é permitido
   consentGateTitle: 'Este app precisa da sua permissão para funcionar',
   consentGateBody:

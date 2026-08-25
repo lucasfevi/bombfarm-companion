@@ -15,6 +15,7 @@ import type {
   AccountStoreReason,
   AppLocale,
   DomainLang,
+  LiveDiagnosticsDumpReason,
   SectionStatus,
   SettingsWriteReason,
 } from '@bombfarm/contracts';
@@ -82,6 +83,15 @@ export const SETTINGS_WRITE_REASON_COPY_KEY = {
   not_writable: 'settingsLanguageReasonNotWritable',
   unknown: 'settingsLanguageReasonUnknown',
 } as const satisfies Record<SettingsWriteReason, CopyKey>;
+
+/** Every `LiveDiagnosticsDumpReason` (`@bombfarm/contracts`), mapped exhaustively — a new reason
+ *  is a compile error, matching this file's other exhaustive maps. Read by
+ *  `app/settings/diagnostics-section.tsx`'s not-written `Banner`. */
+export const DIAGNOSTICS_DUMP_REASON_COPY_KEY = {
+  'rate-limited': 'settingsDiagnosticsReasonRateLimited',
+  'write-failed': 'settingsDiagnosticsReasonWriteFailed',
+  'no-source': 'settingsDiagnosticsReasonNoSource',
+} as const satisfies Record<LiveDiagnosticsDumpReason, CopyKey>;
 
 /**
  * Every `StatKey`, mapped exhaustively. `pipelineForHero`'s own `PointValue.label` is

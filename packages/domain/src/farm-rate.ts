@@ -1060,10 +1060,10 @@ export type FarmRateRow = {
    * sits under, and `min` is concave, so it can only ever run optimistic:
    * `E[min(c, X)] <= min(c, E[X])`.
    *
-   * Worth 6-7% on a roster whose field is contended (account 486, 9 slots: 0.964 -> 0.904) and
-   * EXACTLY nothing where the field cannot fill, which is the sharp check on it. It does not
-   * close the board's remaining throughput gap — see `docs/farm-cadence-density.md` — but it is
-   * the part of that gap with a known mechanism behind it.
+   * Worth 2% on a lightly contended 13-hero roster and 9.6% on a 16-hero one against the same 9
+   * slots, and EXACTLY nothing where the field cannot fill, which is the sharp check on it. It
+   * does not close the board's remaining throughput gap — that is per-hero cadence, measured
+   * against live telemetry held out of band — but it is the part with a known mechanism behind it.
    *
    * Do NOT reintroduce a deployment-order term on top. Strongest-first scored better against a
    * simulation that itself deployed strongest-first, and read ~12% off once that assumption was

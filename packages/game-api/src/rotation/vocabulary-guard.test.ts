@@ -4,7 +4,7 @@ import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 import {
   VOCABULARY_GUARD_MIN_SCOPE_FILES,
-  VOCABULARY_GUARD_SCOPE_DIR,
+  VOCABULARY_GUARD_SCOPE_DIRS,
   VOCABULARY_GUARD_SCOPE_EXTRA_FILES,
   findWireVocabularyViolations,
   isScopeExcluded,
@@ -49,10 +49,11 @@ function walkFiles(dir: string): readonly string[] {
 function resolveScopeFiles(root: string = REPO_ROOT): ReadonlyArray<ScopedFile> {
   assertIsRepoRoot(root);
 
-  const scopeDirAbs = resolve(root, VOCABULARY_GUARD_SCOPE_DIR);
-  const scopedPaths = walkFiles(scopeDirAbs)
-    .map((absPath) => toPosixPath(relative(root, absPath)))
-    .filter((repoRelativePath) => !isScopeExcluded(repoRelativePath));
+  const scopedPaths = VOCABULARY_GUARD_SCOPE_DIRS.flatMap((scopeDir) =>
+    walkFiles(resolve(root, scopeDir))
+      .map((absPath) => toPosixPath(relative(root, absPath)))
+      .filter((repoRelativePath) => !isScopeExcluded(repoRelativePath)),
+  );
 
   const paths = [...scopedPaths, ...VOCABULARY_GUARD_SCOPE_EXTRA_FILES];
 

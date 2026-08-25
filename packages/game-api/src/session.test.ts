@@ -75,6 +75,34 @@ describe('SessionToken — a token cannot be printed (LAR-12)', () => {
   });
 });
 
+describe('SessionToken#redactFrom', () => {
+  it('removes every occurrence of the raw value from a free-text string', () => {
+    const token = SessionToken.create(SENTINEL);
+    const text = `token=${SENTINEL} arrived twice: ${SENTINEL}`;
+
+    const redacted = token.redactFrom(text);
+
+    expect(redacted).not.toContain(SENTINEL);
+    expect(redacted).toBe('token=[redacted] arrived twice: [redacted]');
+  });
+
+  it('leaves text with no occurrence of the raw value untouched', () => {
+    const token = SessionToken.create(SENTINEL);
+    const text = 'nothing sensitive in this string';
+
+    expect(token.redactFrom(text)).toBe(text);
+  });
+
+  it('the raw value remains unreachable except through RAW, even after calling redactFrom', () => {
+    const token = SessionToken.create(SENTINEL);
+
+    token.redactFrom('irrelevant text');
+
+    expect(Object.keys(token)).toEqual([]);
+    expect(token[RAW]()).toBe(SENTINEL);
+  });
+});
+
 describe('grantSession — runtime enforcement (AD-025: independent of the compile-time check)', () => {
   const NOW = '2026-08-12T13:15:38.000Z';
   const creds = { accountId: '486', token: SessionToken.create(SENTINEL) };

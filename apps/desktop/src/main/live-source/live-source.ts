@@ -1,9 +1,12 @@
-import { readFileSync } from 'node:fs';
+import { closeSync, openSync, readFileSync, writeFileSync, writeSync } from 'node:fs';
 import path from 'node:path';
 import type {
   AccountView,
+  AppFlavor,
   FieldCountdown,
+  FieldDrop,
   LiveCurrency,
+  LiveDiagnosticsDumpOutcome,
   LiveEvent,
   LiveTick,
   LiveTickHero,
@@ -20,6 +23,9 @@ import {
   type FieldCountdownState,
 } from '@bombfarm/domain/live';
 import { runPowerShellAsync, runPowerShellSync, stripExeSuffix } from '../game-reader/process.js';
+import { createFrameCapture, readFrameCaptureEnabledFromEnv } from './frame-capture.js';
+import { FrameRing } from './frame-ring.js';
+import type { LogPort } from './log-port.js';
 import { RuntimePort } from './runtime.js';
 import {
   createHookCandidateSource,
@@ -40,14 +46,80 @@ import {
  * a rewrite of how the sample is produced.
  */
 
-export interface LogPort {
-  info(record: Record<string, unknown>): void;
-  warn(record: Record<string, unknown>): void;
-}
-
 const NOOP_LOG_PORT: LogPort = { info: () => undefined, warn: () => undefined };
 
 const DEFAULT_PROCESS_NAME = process.env.BFC_GAME_PROCESS ?? 'BombFarm.exe';
+
+/** ~10 frames/second at ~2 KB/frame: 50 frames is a 5-second window, big enough to see what led
+ *  into a parse failure without holding more raw payload in memory than that. */
+const FRAME_RING_MAX_FRAMES = 50;
+const FRAME_RING_MAX_BYTES = 500_000;
+
+/** Same ~2 KB/frame, ~10 frames/second basis, sized for a several-minute farming run (~1000s) so
+ *  one capture session can seed a realistic replay fixture without an unbounded dev-machine file. */
+const FRAME_CAPTURE_MAX_BYTES = 20_000_000;
+
+function nodeFrameDumpWritePort(): { write(destination: string, contents: string): void } {
+  return { write: (destination, contents) => { writeFileSync(destination, contents, 'utf8'); } };
+}
+
+/** Holds one open file handle across pushes instead of paying an open+write+close per frame.
+ *  `close()` clears the handle rather than leaving it open, so reusing this port afterward (a
+ *  consent-revoke reattach, say) reopens it lazily on the next append and keeps appending
+ *  correctly. */
+/**
+ * One process writes one capture file. The first open truncates, because the format carries a
+ * header exactly once and a run that appended to a previous run's file would bury a second header
+ * mid-stream — which the reader cannot distinguish from a corrupt record, so it stops there and
+ * silently discards everything after it. Reopening after `close()` appends, since that is the
+ * same capture continuing across a tap teardown (a consent revoke reattaches the same instance).
+ */
+function nodeFrameCaptureAppendPort(destination: string): { append(bytes: Uint8Array): void; close(): void } {
+  let fd: number | null = null;
+  let openedThisProcess = false;
+
+  function closeHandle(): void {
+    if (fd === null) return;
+    closeSync(fd);
+    fd = null;
+  }
+
+  return {
+    append: (bytes) => {
+      if (fd === null) {
+        fd = openSync(destination, openedThisProcess ? 'a' : 'w');
+        openedThisProcess = true;
+      }
+      try {
+        // writeSync is not obliged to consume the whole buffer, and a short write would truncate a
+        // length-prefixed record and desync every record after it.
+        let written = 0;
+        while (written < bytes.length) {
+          written += writeSync(fd, bytes, written, bytes.length - written);
+        }
+      } catch (error) {
+        closeHandle();
+        throw error;
+      }
+    },
+    close: closeHandle,
+  };
+}
+
+function heroPathWithoutIndex(path: string): string {
+  return path.replace(/heroes\[\d+\]/g, 'heroes[]');
+}
+
+function reportRotationDrops(log: LogPort, drops: readonly FieldDrop[]): void {
+  for (const drop of drops) {
+    log.warn({
+      scope: 'live-source',
+      event: 'rotation.field_dropped',
+      path: heroPathWithoutIndex(drop.path),
+      reason: drop.reason,
+    });
+  }
+}
 
 export interface TapHandle {
   start(): void;
@@ -59,6 +131,10 @@ export interface LiveSourceDeps {
   /** Checked at the attach site by the underlying tap, never inferred from construction order. */
   readonly consent: () => boolean;
   readonly userDataDir: string;
+  /** Gates the frame capture inside the default tap factory — irrelevant, and safe to omit, when
+   *  `createTap` overrides that factory entirely. Defaults to `'prod'`, the flavor capture never
+   *  runs under. */
+  readonly flavor?: AppFlavor;
   readonly processName?: string;
   readonly log?: LogPort;
   readonly now?: () => number;
@@ -106,12 +182,34 @@ function createProcessImageSource(): ProcessImageSource {
   };
 }
 
+function createFrameRing(deps: { readonly userDataDir: string; readonly log: LogPort }): FrameRing {
+  return new FrameRing({
+    maxFrames: FRAME_RING_MAX_FRAMES,
+    maxBytes: FRAME_RING_MAX_BYTES,
+    dumpPath: path.join(deps.userDataDir, 'live-frame-dump.json'),
+    writePort: nodeFrameDumpWritePort(),
+    log: deps.log,
+  });
+}
+
 function createDefaultTapFactory(deps: {
   readonly consent: () => boolean;
   readonly userDataDir: string;
   readonly processName: string;
+  readonly flavor: AppFlavor;
   readonly log: LogPort;
+  readonly ring: FrameRing;
 }): (onEvent: (event: LiveEvent) => void) => TapHandle {
+  const ring = deps.ring;
+
+  const capture = createFrameCapture({
+    flavor: deps.flavor,
+    enabled: readFrameCaptureEnabledFromEnv(process.env),
+    maxBytes: FRAME_CAPTURE_MAX_BYTES,
+    appendPort: nodeFrameCaptureAppendPort(path.join(deps.userDataDir, 'live-frame-capture.bin')),
+    log: deps.log,
+  });
+
   return (onEvent) => {
     const tap = new Tap({
       processName: deps.processName,
@@ -126,12 +224,17 @@ function createDefaultTapFactory(deps: {
       clock: createSystemClock(),
       onEvent,
       log: deps.log,
+      ring,
+      capture,
     });
     return {
       start: () => {
         tap.start();
       },
-      teardown: () => tap.teardown(),
+      teardown: async () => {
+        await tap.teardown();
+        capture.close();
+      },
       pollNow: () => {
         tap.pollNow();
       },
@@ -152,6 +255,9 @@ export class LiveSource {
   readonly #log: LogPort;
   readonly #now: () => number;
   readonly #createTap: (onEvent: (event: LiveEvent) => void) => TapHandle;
+  /** `null` under the `createTap` test seam, which bypasses the default factory and therefore
+   *  never owns a ring of its own. */
+  readonly #ring: FrameRing | null;
 
   #tap: TapHandle;
   #listeners: Array<(event: LiveEvent) => void> = [];
@@ -166,14 +272,21 @@ export class LiveSource {
   constructor(deps: LiveSourceDeps) {
     this.#log = deps.log ?? NOOP_LOG_PORT;
     this.#now = deps.now ?? Date.now;
-    this.#createTap =
-      deps.createTap ??
-      createDefaultTapFactory({
+    if (deps.createTap) {
+      this.#createTap = deps.createTap;
+      this.#ring = null;
+    } else {
+      const ring = createFrameRing({ userDataDir: deps.userDataDir, log: this.#log });
+      this.#ring = ring;
+      this.#createTap = createDefaultTapFactory({
         consent: deps.consent,
         userDataDir: deps.userDataDir,
         processName: deps.processName ?? DEFAULT_PROCESS_NAME,
+        flavor: deps.flavor ?? 'prod',
         log: this.#log,
+        ring,
       });
+    }
     this.#currency = liveGap('neverAttached', this.#nowIso());
     this.#updatedAt = this.#nowIso();
     this.#tap = this.#createTap((event) => {
@@ -185,11 +298,24 @@ export class LiveSource {
     this.#tap.start();
   }
 
+  /** Owns the frame ring, so this is the one place `index.ts` can hand it the same single-slot
+   *  credential redactor the boundary log gets, keeping the ring's dump provably free of the
+   *  session token — not just `account_id`/`player_name`. */
+  setCredentialRedactor(redact: ((text: string) => string) | null): void {
+    this.#ring?.setCredentialRedactor(redact);
+  }
+
   /** Mirrors `AccountRefreshHandle.onConsentChanged`: called from the same consent-changed path
    *  in index.ts, so a grant is picked up without waiting out the tap's poll interval. Consent
    *  itself is always re-read from the gate the tap already holds — this only wakes the loop. */
   pollNow(): void {
     this.#tap.pollNow();
+  }
+
+  /** `no-source` (never `dumpToDisk`'s own concern) covers the `createTap` test seam and the
+   *  window before any tap has attached, where there is no ring to own the dump at all. */
+  dumpDiagnostics(): LiveDiagnosticsDumpOutcome {
+    return this.#ring?.dumpToDisk('manual') ?? { written: false, reason: 'no-source' };
   }
 
   subscribe(listener: (event: LiveEvent) => void): () => void {
@@ -216,7 +342,8 @@ export class LiveSource {
    *  seen an account with no heroes. */
   ingestRotation(view: AccountView): void {
     if (view.payload.casa === undefined) return;
-    const { snapshot } = normalizeRotation(view.payload.casa, view.payload.heroes);
+    const { snapshot, drops } = normalizeRotation(view.payload.casa, view.payload.heroes);
+    reportRotationDrops(this.#log, drops);
     this.#rotation = snapshot;
     if (isLiveCurrency(this.#currency)) {
       this.#touch();
