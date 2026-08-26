@@ -5,9 +5,15 @@
  */
 export const appShellRootClass = 'flex h-dvh flex-col bg-bg text-ink font-sans';
 
-/** Top bar — verbatim from the web's `site-header.tsx` `<header>` classes (58px `min-h-top`). */
+/**
+ * Top bar — the web's `site-header.tsx` chrome minus the two things that only make sense there.
+ * `sticky` is inert in this shell (the root is a viewport-height column and `<main>` is the only
+ * scroll region, so nothing ever scrolls under the header), and a backdrop blur has nothing to
+ * blur for the same reason. Both would put this element on its own compositing layer, which the
+ * OS drags when `draggable` is on — enough to make the window stutter and snap while moving.
+ */
 export const appShellHeaderClass =
-  'sticky top-0 z-30 flex min-h-top shrink-0 items-center justify-between gap-3 border-b border-line bg-[color-mix(in_oklch,var(--surface)_92%,transparent)] px-4 py-2.5 backdrop-blur-[14px]';
+  'flex min-h-top shrink-0 items-center justify-between gap-3 border-b border-line bg-surface px-4 py-2.5';
 
 /** Brand lockup — name over an uppercase tag, styled like the web's `SiteHeader` brand block. */
 export const appShellBrandClass = 'flex flex-col justify-center';
