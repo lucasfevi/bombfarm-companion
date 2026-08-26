@@ -8,7 +8,7 @@ import type { LogPort as HookCacheLogPort } from './hook-cache.js';
 import { RuntimePort } from './runtime.js';
 import type { LogPort as RuntimeLogPort, TapInterceptor, TapReadEvent, TapRuntime, TapSession } from './runtime.js';
 import type { FrameCapture } from './frame-capture.js';
-import { createHookCandidateSource, Tap } from './tap.js';
+import { createHookCandidateSource, SESSION_DETACH_TIMEOUT_MS, Tap } from './tap.js';
 import type {
   Clock,
   HookCandidateResolution,
@@ -134,8 +134,9 @@ class FakeSession implements TapSession {
     return interceptor;
   }
 
-  detach(): void {
+  detach(): Promise<void> {
     this.detachCount += 1;
+    return Promise.resolve();
   }
 }
 
@@ -555,8 +556,9 @@ describe('Tap: a throwing attach or install does not kill the poll loop', () => 
       installInterceptor(_address: number): TapInterceptor {
         throw new Error('installInterceptor: address out of range');
       }
-      detach(): void {
+      detach(): Promise<void> {
         this.detachCount += 1;
+        return Promise.resolve();
       }
     }
     const sessions: ThrowingInstallSession[] = [];
@@ -1061,5 +1063,70 @@ describe('Tap: teardown', () => {
     const sessionCountAfterTeardown = runtime.sessions.length;
     await clock.advance(100_000);
     expect(runtime.sessions.length).toBe(sessionCountAfterTeardown);
+  });
+
+  it('does not resolve until the session detach promise settles', async () => {
+    const { tap, clock, processes, candidates, runtime } = createHarness();
+    processes.processes = [{ pid: 1_213, name: PROCESS_NAME }];
+    candidates.resolveResult = { addresses: [0x1000], fromCache: false, buildId: null };
+
+    tap.start();
+    await clock.advance(0);
+    const session = runtime.sessions[0];
+    if (!session) throw new Error('test setup: no session');
+
+    let release: (() => void) | undefined;
+    session.detach = () => {
+      session.detachCount += 1;
+      return new Promise<void>((resolve) => {
+        release = resolve;
+      });
+    };
+
+    let resolved = false;
+    const teardownPromise = tap.teardown();
+    void teardownPromise.then(() => {
+      resolved = true;
+    });
+
+    await flushMicrotasks();
+    expect(session.detachCount).toBe(1);
+    expect(resolved).toBe(false);
+
+    release?.();
+    await teardownPromise;
+    expect(resolved).toBe(true);
+  });
+
+  it('abandons a session detach that never settles once the timeout elapses, and still resolves', async () => {
+    const { tap, clock, processes, candidates, runtime, infos } = createHarness();
+    processes.processes = [{ pid: 1_214, name: PROCESS_NAME }];
+    candidates.resolveResult = { addresses: [0x1000], fromCache: false, buildId: null };
+
+    tap.start();
+    await clock.advance(0);
+    const session = runtime.sessions[0];
+    if (!session) throw new Error('test setup: no session');
+    session.detach = () => {
+      session.detachCount += 1;
+      return new Promise<void>(() => undefined);
+    };
+
+    let resolved = false;
+    const teardownPromise = tap.teardown();
+    void teardownPromise.then(() => {
+      resolved = true;
+    });
+
+    await flushMicrotasks();
+    expect(resolved).toBe(false);
+
+    await clock.advance(SESSION_DETACH_TIMEOUT_MS);
+    await teardownPromise;
+
+    expect(resolved).toBe(true);
+    expect(infos).toContainEqual(
+      expect.objectContaining({ event: 'tap.session_detach_timed_out', pid: 1_214 }),
+    );
   });
 });

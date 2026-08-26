@@ -86,30 +86,10 @@ describe('replay-stream.bin drives the full path: bytes -> ticks -> field countd
 
     const preMalformedFrames = generated.frames.filter((f) => f.endOffset <= generated.malformedFrame.offset);
     const postMalformedFrames = generated.frames.filter((f) => f.offset >= generated.malformedFrame.endOffset);
-    expect(ticks.slice(0, preMalformedFrames.length)).toEqual(preMalformedFrames.map((frame) => frame.tick));
 
-    /**
-     * Everything before the malformed frame arrives, every time — that is this fix's actual
-     * scope. What follows is a genuine, separate gap this rewrite exposes rather than hides: once
-     * `#advanceWs` resyncs, it drops the *rest of the push call it was mid-way through*, not just
-     * the malformed frame. Any complete frame sitting between the malformed frame and this chunk's
-     * end — plus the one that straddles the boundary — never reaches the resync scan at all,
-     * because `#advanceWs`'s catch returns `INITIAL_HEAD_STATE` with no buffer, discarding
-     * whatever the doomed `FrameDecoder` still held. Only frames whose bytes start at or after the
-     * end of the chunk that contained the malformed frame are recoverable; measured against this
-     * committed fixture at a 4 KiB chunk size, that drops exactly the two post-malformed frames
-     * nearest the malformed one (one fully inside the same chunk, one straddling its end), and the
-     * remaining six resync and decode correctly. Fixing that is out of scope here — the task that
-     * produced this test explicitly scoped the repair to frames preceding a failure, not bytes
-     * following one — so this asserts what actually happens instead of a frame count this
-     * implementation does not deliver.
-     */
-    const recoveredPostMalformedTicks = ticks.slice(preMalformedFrames.length);
-    expect(recoveredPostMalformedTicks.length).toBeGreaterThan(0);
-    expect(recoveredPostMalformedTicks).toEqual(
-      postMalformedFrames.slice(postMalformedFrames.length - recoveredPostMalformedTicks.length).map((frame) => frame.tick),
-    );
-    expect(recoveredPostMalformedTicks.every((tick) => tick.heroes.length > 0)).toBe(true);
+    // The remainder the malformed frame's FrameDecodeError now carries reaches the resync scan
+    // instead of being discarded, so every frame but the malformed one decodes, in order.
+    expect(ticks).toEqual([...preMalformedFrames, ...postMalformedFrames].map((frame) => frame.tick));
 
     const normalized = normalizeRotation(buildRotationBody(), []);
     expect(normalized.drops).toEqual([]);

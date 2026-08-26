@@ -359,11 +359,16 @@ export class LiveSource {
    *  first poll — is the only way to force an immediate stop, while this object, the one the rest
    *  of the app holds, never changes identity. */
   async forceDetach(): Promise<void> {
-    await this.#tap.teardown();
-    this.#tap = this.#createTap((event) => {
-      this.#handleTapEvent(event);
-    });
-    this.#tap.start();
+    // Replacement must run even if teardown rejects (e.g. an in-flight attach's resolve() throws),
+    // or #tap is left pointing at an instance whose poll loop is permanently stopped.
+    try {
+      await this.#tap.teardown();
+    } finally {
+      this.#tap = this.#createTap((event) => {
+        this.#handleTapEvent(event);
+      });
+      this.#tap.start();
+    }
   }
 
   async teardown(): Promise<void> {

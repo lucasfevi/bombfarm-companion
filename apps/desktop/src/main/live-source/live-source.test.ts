@@ -11,7 +11,10 @@ class FakeTap implements TapHandle {
   teardownCount = 0;
   pollNowCount = 0;
 
-  constructor(private readonly onEvent: (event: LiveEvent) => void) {}
+  constructor(
+    private readonly onEvent: (event: LiveEvent) => void,
+    private readonly teardownImpl: () => Promise<void> = () => Promise.resolve(),
+  ) {}
 
   start(): void {
     this.startCount += 1;
@@ -19,7 +22,7 @@ class FakeTap implements TapHandle {
 
   teardown(): Promise<void> {
     this.teardownCount += 1;
-    return Promise.resolve();
+    return this.teardownImpl();
   }
 
   pollNow(): void {
@@ -286,6 +289,35 @@ describe('LiveSource: consent revoke forces the tap down', () => {
     const second = taps[1];
     if (!second) throw new Error('harness: expected a replacement tap after forceDetach()');
     expect(second.startCount).toBe(1);
+  });
+
+  it('forceDetach replaces the tap even when the outgoing teardown rejects, so a later pollNow reaches the new one', async () => {
+    const taps: FakeTap[] = [];
+    let createCount = 0;
+    const source = new LiveSource({
+      consent: () => true,
+      userDataDir: 'unused-in-tests',
+      createTap: (onEvent) => {
+        createCount += 1;
+        const tap = new FakeTap(
+          onEvent,
+          createCount === 1 ? () => Promise.reject(new Error('attach in flight')) : undefined,
+        );
+        taps.push(tap);
+        return tap;
+      },
+    });
+    source.start();
+
+    await expect(source.forceDetach()).rejects.toThrow('attach in flight');
+
+    expect(taps).toHaveLength(2);
+    const second = taps[1];
+    if (!second) throw new Error('harness: expected a replacement tap after a rejected teardown');
+    expect(second.startCount).toBe(1);
+
+    source.pollNow();
+    expect(second.pollNowCount).toBe(1);
   });
 });
 

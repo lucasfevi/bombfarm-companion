@@ -180,6 +180,37 @@ describe('TlsConnections: good frames preceding a malformed frame in the same ch
     expect(events).toEqual([{ kind: 'tick', tick: { heroes: [{ id: 'hero-02' }] } }]);
   });
 
+  it('emits ticks for both valid frames when a malformed frame arrives between them in one push', () => {
+    const conn = new TlsConnections();
+    const frameA = buildServerTextFrame(Buffer.from(JSON.stringify({ t: 'snap', heroes: [{ id: 'hero-01' }] })));
+    const malformed = buildOversized64BitLengthFrame();
+    const frameB = buildServerTextFrame(Buffer.from(JSON.stringify({ t: 'snap', heroes: [{ id: 'hero-02' }] })));
+
+    const events = conn.push('sandwiched', Buffer.concat([frameA, malformed, frameB]));
+
+    expect(events).toEqual([
+      { kind: 'tick', tick: { heroes: [{ id: 'hero-01' }] } },
+      { kind: 'tick', tick: { heroes: [{ id: 'hero-02' }] } },
+    ]);
+  });
+
+  it('terminates and still delivers the frames after the second malformed frame, given two in one push', () => {
+    const conn = new TlsConnections();
+    const frameA = buildServerTextFrame(Buffer.from(JSON.stringify({ t: 'snap', heroes: [{ id: 'hero-01' }] })));
+    const malformed1 = buildOversized64BitLengthFrame();
+    const frameB = buildServerTextFrame(Buffer.from(JSON.stringify({ t: 'snap', heroes: [{ id: 'hero-02' }] })));
+    const malformed2 = buildOversized64BitLengthFrame();
+    const frameC = buildServerTextFrame(Buffer.from(JSON.stringify({ t: 'snap', heroes: [{ id: 'hero-03' }] })));
+
+    const events = conn.push('double-malformed', Buffer.concat([frameA, malformed1, frameB, malformed2, frameC]));
+
+    expect(events).toEqual([
+      { kind: 'tick', tick: { heroes: [{ id: 'hero-01' }] } },
+      { kind: 'tick', tick: { heroes: [{ id: 'hero-02' }] } },
+      { kind: 'tick', tick: { heroes: [{ id: 'hero-03' }] } },
+    ]);
+  });
+
   it('pushes the pre-failure frames into the ring before the parse failure dumps it, so the dump is not empty', () => {
     class FakeRing implements FrameRingPort {
       pushed: Buffer[] = [];
@@ -223,6 +254,39 @@ describe('TlsConnections: good frames preceding a malformed frame in the same ch
     conn.push('one-chunk-dump-once', Buffer.concat([frameA, frameB, frameC, malformed]));
 
     expect(ring.dumpReasons).toEqual(['parse-failure']);
+  });
+});
+
+describe('TlsConnections: a single push does not grow the call stack per frame', () => {
+  it('drains thousands of alternating malformed/valid frames in one push without overflowing the stack', () => {
+    const ALTERNATION_COUNT = 5_000;
+    const parts: Buffer[] = [];
+    const expectedIds: string[] = [];
+    for (let i = 0; i < ALTERNATION_COUNT; i += 1) {
+      parts.push(buildOversized64BitLengthFrame());
+      const id = `hero-${String(i)}`;
+      parts.push(buildServerTextFrame(Buffer.from(JSON.stringify({ t: 'snap', heroes: [{ id }] }))));
+      expectedIds.push(id);
+    }
+
+    const conn = new TlsConnections();
+    const events = conn.push('stack-safety-frames', Buffer.concat(parts));
+    const ticks = events.filter(isTick).map((e) => e.tick);
+
+    expect(ticks).toHaveLength(ALTERNATION_COUNT);
+    expect(ticks.map((t) => t.heroes[0]?.id)).toEqual(expectedIds);
+  });
+
+  it('drains thousands of back-to-back HTTP responses in one push without overflowing the stack', () => {
+    const RESPONSE_COUNT = 20_000;
+    const responses: Buffer[] = [];
+    for (let i = 0; i < RESPONSE_COUNT; i += 1) responses.push(buildHttpResponse(200, 'OK', ''));
+
+    const conn = new TlsConnections();
+    const events = conn.push('stack-safety-http', Buffer.concat(responses));
+
+    expect(events).toHaveLength(RESPONSE_COUNT);
+    expect(events.every((e) => e.kind === 'http' && e.status === 200)).toBe(true);
   });
 });
 
