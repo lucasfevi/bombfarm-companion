@@ -1,115 +1,111 @@
 import { DRAIN_RATE_FLOOR } from '../drain';
 
-/** At ~10 Hz, 8 samples is ~0.8s — two samples fit any line perfectly and say nothing. */
-export const MIN_TRUSTED_SAMPLES = 8;
-/** A sample count alone is satisfiable by a burst; the span is what makes the slope a rate. */
-export const MIN_TRUSTED_SPAN_MS = 2000;
-/** Admits a ~2s window carrying quantisation noise while still rejecting a hero whose energy
- *  is not moving linearly. */
-export const MIN_TRUSTED_R_SQUARED = 0.98;
-/** Bounded memory, and a slope that outlives the composition it was measured under is worse
- *  than no slope. */
-export const MAX_WINDOW_SAMPLES = 60;
-export const MAX_SAMPLE_AGE_MS = 30_000;
-/** Same floor `combineDrainRate` already enforces — a fitted rate below it, or above the
- *  law's unreduced base of 1, means the fit is wrong, not the law. */
+/** Same floor `combineDrainRate` already enforces — a derived rate below it, or above the
+ *  law's unreduced base of 1, means the measurement is wrong, not the law. */
 export const MIN_TRUSTED_DRAIN_RATE = DRAIN_RATE_FLOOR;
 export const MAX_TRUSTED_DRAIN_RATE = 1;
 
-export interface DrainSample {
-  readonly atMs: number;
-  readonly energy: number;
+export interface HeroEnergyClockState {
+  readonly lastEnergy: number | undefined;
+  readonly deltaPerFrame: number | undefined;
 }
 
-export type DrainFitRejectionReason =
-  | 'insufficientSamples'
-  | 'insufficientSpan'
-  | 'lowRSquared'
-  | 'rateOutOfRange';
+export const EMPTY_HERO_ENERGY_CLOCK: HeroEnergyClockState = {
+  lastEnergy: undefined,
+  deltaPerFrame: undefined,
+};
 
-export type DrainFit =
-  | {
-      readonly trusted: true;
-      readonly ratePerSecond: number;
-      readonly rSquared: number;
-      /** Absolute `atMs` at which the fitted line reaches zero energy, read off the regression
-       *  itself so a caller's countdown never has to re-derive it from a single jittery sample. */
-      readonly zeroAtMs: number;
-    }
-  | {
-      readonly trusted: false;
-      readonly reason: DrainFitRejectionReason;
-      readonly ratePerSecond?: number;
-      readonly rSquared?: number;
-    };
+const RATE_CHANGE_TOLERANCE = 1e-6;
 
-/**
- * Appends one `(timestampMs, absoluteEnergy)` sample to a hero's rolling window, discarding
- * samples older than {@link MAX_SAMPLE_AGE_MS} relative to the new sample and capping the
- * window at {@link MAX_WINDOW_SAMPLES}. Samples must be pushed in non-decreasing `atMs` order.
- */
-export function pushDrainSample(
-  window: readonly DrainSample[],
-  sample: DrainSample,
-): readonly DrainSample[] {
-  const kept = window.filter((existing) => sample.atMs - existing.atMs <= MAX_SAMPLE_AGE_MS);
-  const next = [...kept, sample];
-  return next.length > MAX_WINDOW_SAMPLES ? next.slice(next.length - MAX_WINDOW_SAMPLES) : next;
+function isRepeatOfCurrentRate(rawDelta: number, deltaPerFrame: number): boolean {
+  const frameCount = rawDelta / deltaPerFrame;
+  const nearestFrameCount = Math.max(1, Math.round(frameCount));
+  return Math.abs(frameCount - nearestFrameCount) <= RATE_CHANGE_TOLERANCE;
 }
 
 /**
- * Ordinary least squares over the window, reporting a hero's drain rate as a positive
- * energy/second figure (energy falls as time rises, so the raw regression slope is negated).
- * Trusted only when every gate in the module's constants passes; otherwise the caller falls
- * back to the modelled rate.
+ * Advances one hero's energy-based clock by a single newly-observed absolute energy reading.
+ * `deltaPerFrame` is the hero's own energy drop between two consecutive readings — exact, since
+ * the underlying energy is noiseless, and therefore needs no timing input at all.
+ *
+ * A missed frame reproduces the same per-frame drop scaled by an integer, which reads as a
+ * genuine rate change only if two real combined drain rates ever land in an exact integer ratio.
+ * The game's own reduction steps combine to a handful of rates between `DRAIN_RATE_FLOOR` and 1
+ * roughly a tenth apart, whose pairwise ratios never reach 2 — so treating an integer multiple of
+ * the current delta as a skip, and anything else as a new rate, cannot mistake one for the other
+ * in either direction: a rate that slows down and one that speeds up both land away from every
+ * integer the instant they happen.
  */
-export function fitDrainRate(window: readonly DrainSample[]): DrainFit {
-  if (window.length < MIN_TRUSTED_SAMPLES) {
-    return { trusted: false, reason: 'insufficientSamples' };
+export function advanceHeroEnergyClock(state: HeroEnergyClockState, energy: number): HeroEnergyClockState {
+  if (state.lastEnergy === undefined) return { lastEnergy: energy, deltaPerFrame: undefined };
+
+  const rawDelta = state.lastEnergy - energy;
+  if (rawDelta <= 0) {
+    // Energy rose (a recharge) or held flat (idle, or the server's own idle flag): neither is
+    // evidence of the drain rate, so tracking restarts from here rather than reporting a zero or
+    // negative one.
+    return { lastEnergy: energy, deltaPerFrame: undefined };
   }
 
-  const spanMs = window[window.length - 1].atMs - window[0].atMs;
-  if (spanMs < MIN_TRUSTED_SPAN_MS) {
-    return { trusted: false, reason: 'insufficientSpan' };
+  if (state.deltaPerFrame !== undefined && isRepeatOfCurrentRate(rawDelta, state.deltaPerFrame)) {
+    return { lastEnergy: energy, deltaPerFrame: state.deltaPerFrame };
+  }
+  return { lastEnergy: energy, deltaPerFrame: rawDelta };
+}
+
+/** ~1 minute of frames at the tap's own ~10 Hz cadence — long enough that arrival jitter averages
+ *  out to a barely-moving constant, short enough to still track a real change in the tap's own
+ *  pacing (a slower machine, a throttled connection) within a session. */
+const FRAME_CLOCK_WINDOW_FRAMES = 600;
+/** A gap this many times the current estimate is a stall or a resumed session, not the steady
+ *  cadence — excluded rather than folded in, so it cannot drag the average. */
+const FRAME_CLOCK_OUTLIER_MULTIPLE = 3;
+/** Below this many accepted gaps a single jittery arrival could still dominate the average, so
+ *  the estimate is not yet reported as measured. */
+export const MIN_FRAME_CLOCK_SAMPLES = 8;
+
+export interface FrameClockState {
+  readonly lastArrivalMs: number | undefined;
+  readonly secondsPerFrame: number | undefined;
+  readonly samplesAccepted: number;
+}
+
+export const INITIAL_FRAME_CLOCK_STATE: FrameClockState = {
+  lastArrivalMs: undefined,
+  secondsPerFrame: undefined,
+  samplesAccepted: 0,
+};
+
+/**
+ * Advances the single clock shared by every hero: a running average of the gap between
+ * successive frame arrivals. Each new gap is weighted `2 / (min(samplesAccepted, WINDOW) + 1)` —
+ * a plain average for the first {@link FRAME_CLOCK_WINDOW_FRAMES} samples so the estimate is
+ * usable almost immediately, then a fixed long-time-constant average once warmed up, so a stream
+ * that has run a while barely moves per frame and no single arrival's jitter can move it visibly.
+ */
+export function advanceFrameClock(state: FrameClockState, atMs: number): FrameClockState {
+  if (state.lastArrivalMs === undefined) return { ...state, lastArrivalMs: atMs };
+
+  const gapMs = atMs - state.lastArrivalMs;
+  if (gapMs <= 0) return { ...state, lastArrivalMs: atMs };
+
+  if (state.secondsPerFrame !== undefined && gapMs > state.secondsPerFrame * 1000 * FRAME_CLOCK_OUTLIER_MULTIPLE) {
+    return { ...state, lastArrivalMs: atMs };
   }
 
-  const n = window.length;
-  let sumT = 0;
-  let sumE = 0;
-  for (const sample of window) {
-    sumT += sample.atMs;
-    sumE += sample.energy;
-  }
-  const meanT = sumT / n;
-  const meanE = sumE / n;
+  const samplesAccepted = state.samplesAccepted + 1;
+  const weight = 2 / (Math.min(samplesAccepted, FRAME_CLOCK_WINDOW_FRAMES) + 1);
+  const gapSeconds = gapMs / 1000;
+  const secondsPerFrame =
+    state.secondsPerFrame === undefined
+      ? gapSeconds
+      : state.secondsPerFrame + weight * (gapSeconds - state.secondsPerFrame);
 
-  let sxx = 0;
-  let sxy = 0;
-  for (const sample of window) {
-    const dt = sample.atMs - meanT;
-    sxx += dt * dt;
-    sxy += dt * (sample.energy - meanE);
-  }
-  const slopePerMs = sxy / sxx;
-  const intercept = meanE - slopePerMs * meanT;
+  return { lastArrivalMs: atMs, secondsPerFrame, samplesAccepted };
+}
 
-  let ssRes = 0;
-  let ssTot = 0;
-  for (const sample of window) {
-    const residual = sample.energy - (slopePerMs * sample.atMs + intercept);
-    ssRes += residual * residual;
-    const deviation = sample.energy - meanE;
-    ssTot += deviation * deviation;
-  }
-  const rSquared = ssTot === 0 ? 1 : 1 - ssRes / ssTot;
-  const ratePerSecond = -slopePerMs * 1000;
-
-  if (rSquared < MIN_TRUSTED_R_SQUARED) {
-    return { trusted: false, reason: 'lowRSquared', ratePerSecond, rSquared };
-  }
-  if (ratePerSecond < MIN_TRUSTED_DRAIN_RATE || ratePerSecond > MAX_TRUSTED_DRAIN_RATE) {
-    return { trusted: false, reason: 'rateOutOfRange', ratePerSecond, rSquared };
-  }
-  const zeroAtMs = -intercept / slopePerMs;
-  return { trusted: true, ratePerSecond, rSquared, zeroAtMs };
+/** `undefined` until {@link MIN_FRAME_CLOCK_SAMPLES} gaps have been folded in — before that the
+ *  estimate exists but is not yet trustworthy enough for a caller to treat as measured. */
+export function measuredSecondsPerFrame(state: FrameClockState): number | undefined {
+  return state.samplesAccepted >= MIN_FRAME_CLOCK_SAMPLES ? state.secondsPerFrame : undefined;
 }

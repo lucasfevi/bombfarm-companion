@@ -1,3 +1,5 @@
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import type { LiveTick, LiveTickHero, RotationHeroSnapshot, RotationSnapshot } from '@bombfarm/contracts';
 import { combineDrainRate } from '@bombfarm/domain/drain';
@@ -5,11 +7,16 @@ import {
   createInitialFieldCountdownState,
   freezeRecoveryCountdowns,
   ingestFieldCountdownTick,
+  MIN_FRAME_CLOCK_SAMPLES,
   type DrainMultipliers,
   type FieldCountdownState,
 } from '@bombfarm/domain/live';
 
 const INTERVAL_MS = 300;
+/** Comfortably past {@link MIN_FRAME_CLOCK_SAMPLES} gaps so the shared frame clock — warmed up
+ *  once, globally, independent of any one hero — is measured by the last iteration of a warm-up
+ *  loop. */
+const WARM_UP_TICKS = MIN_FRAME_CLOCK_SAMPLES + 2;
 
 function tick(heroes: readonly LiveTickHero[]): LiveTick {
   return { heroes };
@@ -39,7 +46,7 @@ describe('ingestFieldCountdownTick — provenance', () => {
     let laterBasis: string | undefined;
     let laterRate: number | undefined;
 
-    for (let i = 0; i < 10; i += 1) {
+    for (let i = 0; i < WARM_UP_TICKS + 1; i += 1) {
       const atMs = i * INTERVAL_MS;
       const energy = energyAt(startEnergy, ratePerSecond, atMs);
       const result = ingestFieldCountdownTick(state, {
@@ -50,7 +57,7 @@ describe('ingestFieldCountdownTick — provenance', () => {
       });
       state = result.state;
       if (i === 0) firstBasis = result.field[0].basis;
-      if (i === 7) {
+      if (i === WARM_UP_TICKS) {
         laterBasis = result.field[0].basis;
         laterRate = result.field[0].drainPerSecond;
       }
@@ -84,9 +91,9 @@ describe('ingestFieldCountdownTick — sample provenance', () => {
     const energyMax = 1000;
     const ratePerSecond = 0.8;
     const rotation = rotationOf([{ id: 'h7', energyMax }]);
-    // Deliberately inside MAX_SAMPLE_AGE_MS (30s), unlike the ~60s production refresh cadence —
-    // that gate alone would otherwise evict every sample before 8 could accumulate, masking
-    // whether `sampleSource` is the thing actually stopping this from ever being trusted.
+    // Deliberately inside the shared frame clock's window, unlike the ~60s production refresh
+    // cadence — that alone would otherwise never accumulate enough gaps to warm the clock,
+    // masking whether `sampleSource` is the thing actually stopping this from ever being trusted.
     const restIntervalMs = 3_000;
     const modelledDrainMultipliers = new Map<string, DrainMultipliers>([
       ['h7', { selfDrainMult: 1, teamDrainMult: 1 }],
@@ -95,7 +102,7 @@ describe('ingestFieldCountdownTick — sample provenance', () => {
     let state: FieldCountdownState = createInitialFieldCountdownState();
     const bases: string[] = [];
 
-    for (let i = 0; i < 14; i += 1) {
+    for (let i = 0; i < WARM_UP_TICKS + 2; i += 1) {
       const atMs = i * restIntervalMs;
       const energy = energyAt(900, ratePerSecond, atMs);
       const result = ingestFieldCountdownTick(state, {
@@ -115,7 +122,7 @@ describe('ingestFieldCountdownTick — sample provenance', () => {
     // `sampleSource` is what suppressed it above, not some other gate rejecting these samples.
     let tapState: FieldCountdownState = createInitialFieldCountdownState();
     let tapBases: string[] = [];
-    for (let i = 0; i < 14; i += 1) {
+    for (let i = 0; i < WARM_UP_TICKS + 2; i += 1) {
       const atMs = i * restIntervalMs;
       const energy = energyAt(900, ratePerSecond, atMs);
       const result = ingestFieldCountdownTick(tapState, {
@@ -132,81 +139,6 @@ describe('ingestFieldCountdownTick — sample provenance', () => {
 });
 
 describe('ingestFieldCountdownTick — field-membership recompute', () => {
-  it("an aura carrier leaving mid-field raises every remaining hero's drain, but the rate eases toward the new estimate instead of jumping to it", () => {
-    const energyMax = 1000;
-    const rotation = rotationOf([
-      { id: 'carrier', energyMax },
-      { id: 'h2', energyMax },
-      { id: 'h3', energyMax },
-    ]);
-
-    let state: FieldCountdownState = createInitialFieldCountdownState();
-    let beforeByHero = new Map<string, number>();
-
-    for (let i = 0; i < 10; i += 1) {
-      const atMs = i * INTERVAL_MS;
-      const result = ingestFieldCountdownTick(state, {
-        tick: tick([
-          { id: 'carrier', energyFraction: energyAt(900, 0.6, atMs) / energyMax },
-          { id: 'h2', energyFraction: energyAt(900, 0.7, atMs) / energyMax },
-          { id: 'h3', energyFraction: energyAt(900, 0.65, atMs) / energyMax },
-        ]),
-        rotation,
-        atMs,
-      });
-      state = result.state;
-      if (i === 9) {
-        beforeByHero = new Map(result.field.map((c) => [c.heroId, c.drainPerSecond] as const));
-        expect(result.field.find((c) => c.heroId === 'h2')?.basis).toBe('observed');
-        expect(result.field.find((c) => c.heroId === 'h3')?.basis).toBe('observed');
-      }
-    }
-
-    const departureAtMs = 10 * INTERVAL_MS;
-    const modelledDrainMultipliers = new Map<string, DrainMultipliers>([
-      ['h2', { selfDrainMult: 1, teamDrainMult: 1 }],
-      ['h3', { selfDrainMult: 1, teamDrainMult: 1 }],
-    ]);
-
-    // Fewer than MIN_TRUSTED_SAMPLES ticks, so the fit never re-earns trust during this window
-    // and every reading below is driven purely by the blend, not by a fresh observed fit.
-    const STEPS = 5;
-    let afterState = state;
-    const ratesByHero = new Map<string, number[]>([['h2', []], ['h3', []]]);
-    let heroIdsAtFirstStep: string[] = [];
-
-    for (let i = 0; i < STEPS; i += 1) {
-      const atMs = departureAtMs + i * INTERVAL_MS;
-      const result = ingestFieldCountdownTick(afterState, {
-        tick: tick([
-          { id: 'h2', energyFraction: (energyAt(900, 0.7, departureAtMs) - i * INTERVAL_MS / 1000) / energyMax },
-          { id: 'h3', energyFraction: (energyAt(900, 0.65, departureAtMs) - i * INTERVAL_MS / 1000) / energyMax },
-        ]),
-        rotation,
-        atMs,
-        modelledDrainMultipliers,
-      });
-      afterState = result.state;
-      if (i === 0) heroIdsAtFirstStep = result.field.map((c) => c.heroId).sort();
-      for (const heroId of ['h2', 'h3']) {
-        const reading = result.field.find((c) => c.heroId === heroId)!;
-        expect(reading.basis).toBe('modelled');
-        ratesByHero.get(heroId)!.push(reading.drainPerSecond);
-      }
-    }
-
-    expect(heroIdsAtFirstStep).toEqual(['h2', 'h3']);
-
-    for (const heroId of ['h2', 'h3']) {
-      const rates = ratesByHero.get(heroId)!;
-      // No step at the transition: the very first post-departure reading starts from exactly
-      // the pre-departure observed rate, not an instant jump to the new modelled estimate.
-      expect(rates[0]).toBe(beforeByHero.get(heroId)!);
-      for (let i = 1; i < rates.length; i += 1) expect(rates[i]!).toBeGreaterThanOrEqual(rates[i - 1]!);
-      expect(rates[rates.length - 1]!).toBeGreaterThan(beforeByHero.get(heroId)!);
-    }
-  });
-
   it("a non-carrier joining or leaving the field leaves every other hero's rate and basis unchanged", () => {
     const energyMax = 1000;
     const rotation = rotationOf([{ id: 'h1', energyMax }, { id: 'noise', energyMax }]);
@@ -216,7 +148,7 @@ describe('ingestFieldCountdownTick — field-membership recompute', () => {
     ]);
 
     let state: FieldCountdownState = createInitialFieldCountdownState();
-    for (let i = 0; i < 8; i += 1) {
+    for (let i = 0; i < WARM_UP_TICKS + 1; i += 1) {
       const atMs = i * INTERVAL_MS;
       const result = ingestFieldCountdownTick(state, {
         tick: tick([{ id: 'h1', energyFraction: energyAt(900, 0.8, atMs) / energyMax }]),
@@ -225,10 +157,10 @@ describe('ingestFieldCountdownTick — field-membership recompute', () => {
         modelledDrainMultipliers,
       });
       state = result.state;
-      if (i === 7) expect(result.field.find((c) => c.heroId === 'h1')?.basis).toBe('observed');
+      if (i === WARM_UP_TICKS) expect(result.field.find((c) => c.heroId === 'h1')?.basis).toBe('observed');
     }
 
-    const joinAtMs = 8 * INTERVAL_MS;
+    const joinAtMs = (WARM_UP_TICKS + 1) * INTERVAL_MS;
     const joined = ingestFieldCountdownTick(state, {
       tick: tick([
         { id: 'h1', energyFraction: energyAt(900, 0.8, joinAtMs) / energyMax },
@@ -241,7 +173,7 @@ describe('ingestFieldCountdownTick — field-membership recompute', () => {
     state = joined.state;
     expect(joined.field.find((c) => c.heroId === 'h1')?.basis).toBe('observed');
 
-    const leaveAtMs = 9 * INTERVAL_MS;
+    const leaveAtMs = (WARM_UP_TICKS + 2) * INTERVAL_MS;
     const left = ingestFieldCountdownTick(state, {
       tick: tick([{ id: 'h1', energyFraction: energyAt(900, 0.8, leaveAtMs) / energyMax }]),
       rotation,
@@ -252,7 +184,7 @@ describe('ingestFieldCountdownTick — field-membership recompute', () => {
     expect(left.field.find((c) => c.heroId === 'h1')?.drainPerSecond).toBeCloseTo(0.8, 1);
   });
 
-  it('a hero that appears and leaves before a slope can be fitted never gets an observed countdown', () => {
+  it('a hero that appears and leaves before a rate can be measured never gets an observed countdown', () => {
     const energyMax = 1000;
     const rotation = rotationOf([{ id: 'h4', energyMax }]);
     const modelledDrainMultipliers = new Map<string, DrainMultipliers>([
@@ -261,6 +193,9 @@ describe('ingestFieldCountdownTick — field-membership recompute', () => {
     let state: FieldCountdownState = createInitialFieldCountdownState();
     const observedBases: string[] = [];
 
+    // Deliberately fewer ticks than MIN_FRAME_CLOCK_SAMPLES: the shared frame clock never warms
+    // up across this whole scenario, so 'observed' should never be reachable regardless of how
+    // quickly this one hero's own delta becomes known.
     for (let i = 0; i < 5; i += 1) {
       const atMs = i * INTERVAL_MS;
       const result = ingestFieldCountdownTick(state, {
@@ -291,13 +226,13 @@ describe('ingestFieldCountdownTick — field-membership recompute', () => {
 });
 
 describe('ingestFieldCountdownTick — rejection reporting', () => {
-  it('a fitted rate outside [0.60, 1.0] reports exactly once per field visit, and again on a fresh visit', () => {
+  it('an out-of-range observed rate reports exactly once per field visit, and again on a fresh visit', () => {
     const energyMax = 1000;
     const rotation = rotationOf([{ id: 'h6', energyMax }]);
     let state: FieldCountdownState = createInitialFieldCountdownState();
     const rejectionCounts: number[] = [];
 
-    for (let i = 0; i < 10; i += 1) {
+    for (let i = 0; i < WARM_UP_TICKS + 2; i += 1) {
       const atMs = i * INTERVAL_MS;
       const result = ingestFieldCountdownTick(state, {
         tick: tick([{ id: 'h6', energyFraction: energyAt(900, 1.5, atMs) / energyMax }]),
@@ -311,21 +246,21 @@ describe('ingestFieldCountdownTick — rejection reporting', () => {
     expect(rejectionCounts.filter((count) => count > 0)).toEqual([1]);
     expect(rejectionCounts.reduce((sum, count) => sum + count, 0)).toBe(1);
 
-    const departed = ingestFieldCountdownTick(state, { tick: tick([]), rotation, atMs: 10 * INTERVAL_MS });
+    const departedAtMs = (WARM_UP_TICKS + 2) * INTERVAL_MS;
+    const departed = ingestFieldCountdownTick(state, { tick: tick([]), rotation, atMs: departedAtMs });
     state = departed.state;
 
     const freshVisitCounts: number[] = [];
-    for (let i = 11; i < 19; i += 1) {
-      const atMs = i * INTERVAL_MS;
+    for (let i = 0; i < WARM_UP_TICKS + 2; i += 1) {
+      const atMs = departedAtMs + (i + 1) * INTERVAL_MS;
       const result = ingestFieldCountdownTick(state, {
-        tick: tick([{ id: 'h6', energyFraction: energyAt(900, 1.5, atMs - 11 * INTERVAL_MS) / energyMax }]),
+        tick: tick([{ id: 'h6', energyFraction: energyAt(900, 1.5, i * INTERVAL_MS) / energyMax }]),
         rotation,
         atMs,
       });
       state = result.state;
       freshVisitCounts.push(result.rejections.length);
     }
-
     expect(freshVisitCounts.filter((count) => count > 0)).toEqual([1]);
   });
 });
@@ -416,7 +351,7 @@ describe('ingestFieldCountdownTick — onFieldHeroIdsSorted is rebuilt only when
 });
 
 describe('ingestFieldCountdownTick — a hero the app knows nothing about renders no countdown', () => {
-  it('an untrusted fit with no resolvable roster data gets no field entry at all, not a fallback number', () => {
+  it('an untrusted rate with no resolvable roster data gets no field entry at all, not a fallback number', () => {
     const rotation = rotationOf([{ id: 'h9', energyMax: 1000 }]);
 
     const result = ingestFieldCountdownTick(createInitialFieldCountdownState(), {
@@ -481,80 +416,209 @@ describe('ingestFieldCountdownTick — countdown stability regression', () => {
   });
 });
 
-describe('ingestFieldCountdownTick — rate blending across a composition change', () => {
-  it("a hero's displayed remaining time decreases monotonically through a composition change and the fit's later recovery, with no step at either transition", () => {
-    const energyMax = 1000;
-    const startEnergy = 950;
-    const trueRatePerSecond = 0.8; // the hero's field energy never actually changes rate
-    const rotation = rotationOf([{ id: 'h', energyMax }]);
+describe('ingestFieldCountdownTick — a genuine rate change is adopted instantly, in both directions', () => {
+  function steppedDrain(count: number, startEnergy: number, deltaPerFrame: number): number[] {
+    return Array.from({ length: count }, (_, i) => startEnergy - i * deltaPerFrame);
+  }
 
-    // The estimate before the change agrees with the truth, so the first trust transition is
-    // clean; the estimate after does not, reproducing "the modelled law and the measured rate
-    // never agree exactly" once the hero's own multipliers change.
-    const multipliersBefore: DrainMultipliers = { selfDrainMult: 0.8, teamDrainMult: 1 };
-    const multipliersAfter: DrainMultipliers = { selfDrainMult: 1, teamDrainMult: 1 };
-    const CHANGE_AT_INDEX = 15;
-    const TOTAL_TICKS = 40;
+  it("an aura carrier leaving mid-field speeds up the remaining hero's countdown on the very next frame, with no multi-tick easing", () => {
+    const energyMax = 1000;
+    const rotation = rotationOf([{ id: 'carrier', energyMax }, { id: 'h2', energyMax }]);
+    const preRate = 0.7;
+    const postRate = 0.85; // not an integer multiple of preRate — a genuine change, not a skip
+    const preDelta = (preRate * INTERVAL_MS) / 1000;
+    const postDelta = (postRate * INTERVAL_MS) / 1000;
+    const POST_TICKS = 4;
+
+    const preEnergies = steppedDrain(WARM_UP_TICKS + 1, 900, preDelta);
+    const postStart = preEnergies[preEnergies.length - 1]! - postDelta;
+    const postEnergies = steppedDrain(POST_TICKS, postStart, postDelta);
 
     let state: FieldCountdownState = createInitialFieldCountdownState();
-    const readings: { secondsRemaining: number; drainPerSecond: number; basis: string }[] = [];
-
-    for (let i = 0; i < TOTAL_TICKS; i += 1) {
+    for (let i = 0; i < preEnergies.length; i += 1) {
       const atMs = i * INTERVAL_MS;
-      const multipliers = i < CHANGE_AT_INDEX ? multipliersBefore : multipliersAfter;
       const result = ingestFieldCountdownTick(state, {
-        tick: tick([{ id: 'h', energyFraction: energyAt(startEnergy, trueRatePerSecond, atMs) / energyMax }]),
+        tick: tick([
+          { id: 'carrier', energyFraction: energyAt(900, 0.6, atMs) / energyMax },
+          { id: 'h2', energyFraction: preEnergies[i]! / energyMax },
+        ]),
         rotation,
         atMs,
-        modelledDrainMultipliers: new Map([['h', multipliers]]),
       });
       state = result.state;
-      const reading = result.field.find((c) => c.heroId === 'h')!;
-      readings.push({ secondsRemaining: reading.secondsRemaining, drainPerSecond: reading.drainPerSecond, basis: reading.basis });
+      if (i === preEnergies.length - 1) expect(result.field.find((c) => c.heroId === 'h2')?.basis).toBe('observed');
     }
 
-    expect(readings.some((r) => r.basis === 'observed')).toBe(true);
-    expect(readings.some((r) => r.basis === 'modelled')).toBe(true);
-
-    for (let i = 1; i < readings.length; i += 1) {
-      expect(readings[i]!.secondsRemaining).toBeLessThanOrEqual(readings[i - 1]!.secondsRemaining);
+    const bases: string[] = [];
+    const rates: number[] = [];
+    for (let i = 0; i < postEnergies.length; i += 1) {
+      const atMs = (preEnergies.length + i) * INTERVAL_MS;
+      const result = ingestFieldCountdownTick(state, {
+        tick: tick([{ id: 'h2', energyFraction: postEnergies[i]! / energyMax }]),
+        rotation,
+        atMs,
+      });
+      state = result.state;
+      const reading = result.field.find((c) => c.heroId === 'h2')!;
+      bases.push(reading.basis);
+      rates.push(reading.drainPerSecond);
     }
 
-    // The rate itself must not jump at the composition change either: a step here is exactly
-    // what an instant fall-back to the modelled estimate used to produce.
-    expect(readings[CHANGE_AT_INDEX]!.drainPerSecond).toBe(readings[CHANGE_AT_INDEX - 1]!.drainPerSecond);
+    expect(bases.every((basis) => basis === 'observed')).toBe(true);
+    // The very first post-departure reading already reports the new rate — no intermediate
+    // value ever appears, proving there is no multi-tick blend easing toward it.
+    expect(rates[0]).toBeCloseTo(postRate, 6);
+    expect(new Set(rates.map((rate) => rate.toFixed(6))).size).toBe(1);
   });
 
-  it('a blended rate always reports as modelled, never as observed', () => {
+  it("a hero gaining drain reduction slows its own countdown on the very next frame, with no multi-tick easing", () => {
     const energyMax = 1000;
     const rotation = rotationOf([{ id: 'h', energyMax }]);
-    const rate = 0.8;
+    const preRate = 0.8;
+    const postRate = 0.65; // not an integer multiple of preRate — a genuine change, not a skip
+    const preDelta = (preRate * INTERVAL_MS) / 1000;
+    const postDelta = (postRate * INTERVAL_MS) / 1000;
+    const POST_TICKS = 4;
+
+    const preEnergies = steppedDrain(WARM_UP_TICKS + 1, 900, preDelta);
+    const postStart = preEnergies[preEnergies.length - 1]! - postDelta;
+    const postEnergies = steppedDrain(POST_TICKS, postStart, postDelta);
 
     let state: FieldCountdownState = createInitialFieldCountdownState();
-    for (let i = 0; i < 8; i += 1) {
+    for (let i = 0; i < preEnergies.length; i += 1) {
       const atMs = i * INTERVAL_MS;
       const result = ingestFieldCountdownTick(state, {
-        tick: tick([{ id: 'h', energyFraction: energyAt(900, rate, atMs) / energyMax }]),
+        tick: tick([{ id: 'h', energyFraction: preEnergies[i]! / energyMax }]),
         rotation,
         atMs,
-        modelledDrainMultipliers: new Map([['h', { selfDrainMult: 0.8, teamDrainMult: 1 }]]),
       });
       state = result.state;
-      if (i === 7) expect(result.field[0]!.basis).toBe('observed');
+      if (i === preEnergies.length - 1) expect(result.field[0]!.basis).toBe('observed');
     }
 
-    // Fewer than MIN_TRUSTED_SAMPLES ticks after the change: the fit cannot have re-earned
-    // trust, so every one of these readings must come from the blend.
-    for (let i = 8; i < 13; i += 1) {
-      const atMs = i * INTERVAL_MS;
+    const bases: string[] = [];
+    const rates: number[] = [];
+    for (let i = 0; i < postEnergies.length; i += 1) {
+      const atMs = (preEnergies.length + i) * INTERVAL_MS;
       const result = ingestFieldCountdownTick(state, {
-        tick: tick([{ id: 'h', energyFraction: energyAt(900, rate, atMs) / energyMax }]),
+        tick: tick([{ id: 'h', energyFraction: postEnergies[i]! / energyMax }]),
         rotation,
         atMs,
-        modelledDrainMultipliers: new Map([['h', { selfDrainMult: 1, teamDrainMult: 1 }]]),
       });
       state = result.state;
-      expect(result.field[0]!.basis).toBe('modelled');
+      bases.push(result.field[0]!.basis);
+      rates.push(result.field[0]!.drainPerSecond);
+    }
+
+    expect(bases.every((basis) => basis === 'observed')).toBe(true);
+    expect(rates[0]).toBeCloseTo(postRate, 6);
+    expect(new Set(rates.map((rate) => rate.toFixed(6))).size).toBe(1);
+  });
+});
+
+describe('ingestFieldCountdownTick — jitter in arrival timing never moves the per-hero countdown', () => {
+  it('feeding the same energy series through two different, noisy arrival-timestamp sequences reports the same frames-remaining figure', () => {
+    const energyMax = 1000;
+    const rotation = rotationOf([{ id: 'h', energyMax }]);
+    const deltaPerFrame = 0.24; // 0.8/s at the true INTERVAL_MS=300ms cadence, inside the valid rate range
+    const TICKS = WARM_UP_TICKS + 6;
+    const energies = Array.from({ length: TICKS }, (_, i) => 900 - i * deltaPerFrame);
+
+    function replay(atMsFor: (i: number) => number): { readonly secondsRemaining: number; readonly drainPerSecond: number } {
+      let state: FieldCountdownState = createInitialFieldCountdownState();
+      let last: { secondsRemaining: number; drainPerSecond: number } | undefined;
+      for (let i = 0; i < TICKS; i += 1) {
+        const result = ingestFieldCountdownTick(state, {
+          tick: tick([{ id: 'h', energyFraction: energies[i]! / energyMax }]),
+          rotation,
+          atMs: atMsFor(i),
+        });
+        state = result.state;
+        const reading = result.field[0];
+        // Only the FIRST observed reading: the never-rise clamp compares against a hero's
+        // previously displayed value, which would fold the clock's own (expected, shared)
+        // jitter into a later comparison and defeat the point of this test. The first observed
+        // reading has no prior displayed value to clamp against.
+        if (last === undefined && reading?.basis === 'observed') {
+          last = { secondsRemaining: reading.secondsRemaining, drainPerSecond: reading.drainPerSecond };
+        }
+      }
+      if (last === undefined) throw new Error('never reached observed — test setup is wrong');
+      return last;
+    }
+
+    const steady = replay((i) => i * INTERVAL_MS);
+    const jittered = replay((i) => i * INTERVAL_MS + (i % 2 === 0 ? 37 : -41));
+
+    // secondsRemaining = framesRemaining * secondsPerFrame and drainPerSecond = deltaPerFrame /
+    // secondsPerFrame, so their product cancels the (jitter-sensitive) secondsPerFrame term and
+    // leaves exactly framesRemaining * deltaPerFrame — a quantity jitter cannot touch since it
+    // never enters the per-hero computation at all.
+    const framesRemainingProxy = (reading: { secondsRemaining: number; drainPerSecond: number }) =>
+      reading.secondsRemaining * reading.drainPerSecond;
+
+    expect(framesRemainingProxy(jittered)).toBeCloseTo(framesRemainingProxy(steady), 6);
+  });
+});
+
+describe('ingestFieldCountdownTick — the real capture drives a perfectly smooth countdown', () => {
+  const fixture = JSON.parse(
+    readFileSync(join(__dirname, '..', 'fixtures', 'live-capture-energy-fractions.json'), 'utf8'),
+  ) as { readonly tickCount: number; readonly energyFractionByHeroId: Record<string, readonly number[]> };
+  const heroIds = Object.keys(fixture.energyFractionByHeroId);
+
+  it('carries the shape this test assumes: every hero present on every one of the committed capture ticks', () => {
+    expect(heroIds.length).toBe(9);
+    for (const heroId of heroIds) expect(fixture.energyFractionByHeroId[heroId]!.length).toBe(fixture.tickCount);
+  });
+
+  it('decreases every observed hero countdown by exactly the same amount every frame — no stutter, no step', () => {
+    // The tap wire never carries energyMax (see LiveTickHero) — it comes from the rotation
+    // projection instead, which this fixture has none of. Each hero gets a synthetic energyMax
+    // chosen so its own real per-frame fractional drop lands on TARGET_RATE_PER_SECOND: the
+    // absolute scale is arbitrary and does not affect whether the per-frame drop stays constant,
+    // only whether the resulting rate falls inside the sanity range every real drain rate does.
+    const FRAME_INTERVAL_MS = 100; // the tap's own ~10 Hz cadence
+    const TARGET_RATE_PER_SECOND = 0.8;
+    const energyMaxByHero = new Map(
+      heroIds.map((id) => {
+        const series = fixture.energyFractionByHeroId[id]!;
+        const perFrameFractionDrop = series[0]! - series[1]!;
+        const energyMax = TARGET_RATE_PER_SECOND / (perFrameFractionDrop * (1000 / FRAME_INTERVAL_MS));
+        return [id, energyMax] as const;
+      }),
+    );
+    const rotation = rotationOf(heroIds.map((id) => ({ id, energyMax: energyMaxByHero.get(id)! })));
+
+    let state: FieldCountdownState = createInitialFieldCountdownState();
+    const secondsRemainingByHero = new Map<string, number[]>(heroIds.map((id) => [id, []]));
+    const basisByHero = new Map<string, string[]>(heroIds.map((id) => [id, []]));
+
+    for (let i = 0; i < fixture.tickCount; i += 1) {
+      const atMs = i * FRAME_INTERVAL_MS;
+      const heroes = heroIds.map((id) => ({ id, energyFraction: fixture.energyFractionByHeroId[id]![i]! }));
+      const result = ingestFieldCountdownTick(state, { tick: tick(heroes), rotation, atMs });
+      state = result.state;
+      for (const heroId of heroIds) {
+        const reading = result.field.find((c) => c.heroId === heroId);
+        if (reading === undefined) continue;
+        secondsRemainingByHero.get(heroId)!.push(reading.secondsRemaining);
+        basisByHero.get(heroId)!.push(reading.basis);
+      }
+    }
+
+    for (const heroId of heroIds) {
+      const bases = basisByHero.get(heroId)!;
+      const readings = secondsRemainingByHero.get(heroId)!;
+      const firstObservedIndex = bases.indexOf('observed');
+      expect(firstObservedIndex).toBeGreaterThanOrEqual(0);
+      // Once observed, it stays observed for the rest of the real capture — the clock this
+      // rework introduces never loses trust once earned, on real data.
+      expect(bases.slice(firstObservedIndex).every((basis) => basis === 'observed')).toBe(true);
+
+      const observedReadings = readings.slice(firstObservedIndex);
+      const diffs = observedReadings.slice(1).map((value, i) => observedReadings[i]! - value);
+      for (const diff of diffs) expect(diff).toBeCloseTo(diffs[0]!, 9);
     }
   });
 });
@@ -570,7 +634,7 @@ describe('ingestFieldCountdownTick — the never-rise clamp', () => {
     let state: FieldCountdownState = createInitialFieldCountdownState();
     let beforeRecharge: number | undefined;
 
-    for (let i = 0; i < 10; i += 1) {
+    for (let i = 0; i < WARM_UP_TICKS + 1; i += 1) {
       const atMs = i * INTERVAL_MS;
       const result = ingestFieldCountdownTick(state, {
         tick: tick([{ id: 'h', energyFraction: energyAt(900, 0.8, atMs) / energyMax }]),
@@ -579,10 +643,10 @@ describe('ingestFieldCountdownTick — the never-rise clamp', () => {
         modelledDrainMultipliers,
       });
       state = result.state;
-      if (i === 9) beforeRecharge = result.field[0]!.secondsRemaining;
+      if (i === WARM_UP_TICKS) beforeRecharge = result.field[0]!.secondsRemaining;
     }
 
-    const rechargeAtMs = 10 * INTERVAL_MS;
+    const rechargeAtMs = (WARM_UP_TICKS + 1) * INTERVAL_MS;
     const recharged = ingestFieldCountdownTick(state, {
       tick: tick([{ id: 'h', energyFraction: 0.99 }]),
       rotation,
@@ -599,8 +663,10 @@ describe('ingestFieldCountdownTick — the never-rise clamp', () => {
 
     let state: FieldCountdownState = createInitialFieldCountdownState();
     let beforeChangeRemaining = 0;
-    for (let i = 0; i < 8; i += 1) {
+    let lastAtMs = 0;
+    for (let i = 0; i < WARM_UP_TICKS; i += 1) {
       const atMs = i * INTERVAL_MS;
+      lastAtMs = atMs;
       const result = ingestFieldCountdownTick(state, {
         tick: tick([{ id: 'h', energyFraction: energyAt(900, 0.8, atMs) / energyMax }]),
         rotation,
@@ -608,19 +674,19 @@ describe('ingestFieldCountdownTick — the never-rise clamp', () => {
         modelledDrainMultipliers: new Map([['h', { selfDrainMult: 0.8, teamDrainMult: 1 }]]),
       });
       state = result.state;
-      if (i === 7) beforeChangeRemaining = result.field[0]!.secondsRemaining;
+      if (i === WARM_UP_TICKS - 1) beforeChangeRemaining = result.field[0]!.secondsRemaining;
     }
 
-    const pinnedEnergy = energyAt(900, 0.8, 7 * INTERVAL_MS);
+    const pinnedEnergy = energyAt(900, 0.8, lastAtMs);
 
     // The multipliers now imply a much slower rate (DRAIN_RATE_FLOOR, 0.6/s — both terms at
     // their reduction cap) while the reported energy is pinned at its prior value: without the
     // clamp, dividing an unchanged energy by a falling rate reads as more remaining time even
-    // though the hero's own energy hasn't moved. Fewer than MIN_TRUSTED_SAMPLES ticks, so the
-    // fit never re-earns trust and every reading here is the blend.
+    // though the hero's own energy hasn't moved. Pinned (flat) energy also means the hero's own
+    // delta clock reports no rate known, so every reading here is the modelled fallback.
     let maxRemainingAfterChange = 0;
-    for (let i = 8; i < 15; i += 1) {
-      const atMs = i * INTERVAL_MS;
+    for (let i = 0; i < 7; i += 1) {
+      const atMs = lastAtMs + (i + 1) * INTERVAL_MS;
       const result = ingestFieldCountdownTick(state, {
         tick: tick([{ id: 'h', energyFraction: pinnedEnergy / energyMax }]),
         rotation,
