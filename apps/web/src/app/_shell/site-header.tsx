@@ -5,12 +5,18 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { BiCoffee, BiCopy } from 'react-icons/bi';
 import type { Strings, Lang } from '@/shared/i18n';
-import { Button, Tooltip, buttonRecipe } from '@bombfarm/ui';
+import { AppNav, Button, SegmentedToggle, Tooltip, buttonRecipe } from '@bombfarm/ui';
 import { REFERRAL_CODE } from '@/shared/referral';
 import { useReferralCopy } from './use-referral-copy';
-import { NavLink } from './site-nav-link';
 
 export type SiteSection = 'planner' | 'farm' | 'teamPlan' | 'account';
+
+const NAV_HREF: Record<SiteSection, string> = {
+  planner: '/',
+  farm: '/farm',
+  teamPlan: '/team-plan',
+  account: '/account',
+};
 
 export function SiteHeader({
   t,
@@ -52,23 +58,25 @@ export function SiteHeader({
               <div className="text-[11px] tracking-[0.04em] text-muted uppercase">{t.appSuiteTag}</div>
             </div>
           </Link>
-          <nav
-            className="inline-flex items-stretch gap-1 rounded-md border border-line bg-[color-mix(in_oklch,var(--surface-2)_55%,transparent)] p-1 shadow-[inset_0_1px_0_color-mix(in_oklch,var(--line)_35%,transparent)]"
-            aria-label={t.siteNavAria}
-          >
-            <NavLink href="/" active={plannerActive}>
-              {t.navPlanner}
-            </NavLink>
-            <NavLink href="/farm" active={farmActive}>
-              {t.navPhases}
-            </NavLink>
-            <NavLink href="/team-plan" active={teamPlanActive}>
-              {t.navTeamPlan}
-            </NavLink>
-            <NavLink href="/account" active={accountActive}>
-              {t.navAccount}
-            </NavLink>
-          </nav>
+          <AppNav
+            ariaLabel={t.siteNavAria}
+            items={[
+              { id: 'planner', label: t.navPlanner, active: plannerActive },
+              { id: 'farm', label: t.navPhases, active: farmActive },
+              { id: 'teamPlan', label: t.navTeamPlan, active: teamPlanActive },
+              { id: 'account', label: t.navAccount, active: accountActive },
+            ]}
+            renderItem={(item, className) => (
+              <Link
+                key={item.id}
+                href={NAV_HREF[item.id as SiteSection]}
+                aria-current={item.active ? 'page' : undefined}
+                className={className}
+              >
+                {item.label}
+              </Link>
+            )}
+          />
         </div>
         <div className="flex flex-nowrap items-center justify-end gap-1.5 max-[720px]:flex-wrap max-[720px]:justify-start">
           {onImport ? (
@@ -119,30 +127,17 @@ export function SiteHeader({
           >
             <BiCoffee size={16} aria-hidden="true" />
           </a>
-          <div
-            className="inline-flex h-8 shrink-0 overflow-hidden rounded-sm border border-line"
-            role="group"
-            aria-label="Language"
-          >
-            <button
-              type="button"
-              className={`cursor-pointer border-0 px-2.25 text-[11px] font-bold tracking-[0.03em] ${
-                lang === 'pt' ? 'bg-accent text-accent-ink' : 'bg-transparent'
-              }`}
-              onClick={() => onLangChange('pt')}
-            >
-              PT
-            </button>
-            <button
-              type="button"
-              className={`cursor-pointer border-0 px-2.25 text-[11px] font-bold tracking-[0.03em] ${
-                lang === 'en' ? 'bg-accent text-accent-ink' : 'bg-transparent'
-              }`}
-              onClick={() => onLangChange('en')}
-            >
-              EN
-            </button>
-          </div>
+          <SegmentedToggle
+            options={[
+              { id: 'pt', label: 'PT' },
+              { id: 'en', label: 'EN' },
+            ]}
+            value={lang}
+            onChange={(nextLang) => {
+              if (nextLang === 'pt' || nextLang === 'en') onLangChange(nextLang);
+            }}
+            ariaLabel="Language"
+          />
         </div>
       </div>
     </header>

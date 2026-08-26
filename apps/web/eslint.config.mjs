@@ -396,7 +396,6 @@ export default tseslint.config(
     files: ['src/**/*.{ts,tsx}'],
     ignores: [
       'src/app/_shell/site-header.tsx',
-      'src/app/_shell/topbar.tsx',
       'src/app/_shell/footer.tsx',
       'src/features/gear/components/slot-editor.tsx',
       'src/features/import/components/import-heroes-dialog.tsx',

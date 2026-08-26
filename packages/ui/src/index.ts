@@ -28,6 +28,10 @@ export {
 export { cn } from './cn';
 export { AppShell } from './AppShell';
 export type { AppShellProps, AppShellNavItem } from './AppShell';
+export { AppNav } from './app-nav';
+export type { AppNavItem, AppNavProps } from './app-nav';
+export { SegmentedToggle } from './segmented-toggle';
+export type { SegmentedToggleOption, SegmentedToggleProps } from './segmented-toggle';
 export { StatusChip, type StatusChipProps, type GameConnectionStatus } from './status-chip';
 export { EmptyState, type EmptyStateProps } from './empty-state';
 export { cssVariables, tokens, colorTokens, breakpoints, motionTokens, contrastPairs, DEFAULT_HUE } from './tokens';
