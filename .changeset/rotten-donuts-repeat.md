@@ -1,6 +1,6 @@
 ---
-'@bombfarm/domain': minor
-'@bombfarm/web': minor
+"@bombfarm/domain": minor
+"@bombfarm/web": minor
 ---
 
 Team plan: stop banking gear a hero could be wearing, and say why the field is crowded
