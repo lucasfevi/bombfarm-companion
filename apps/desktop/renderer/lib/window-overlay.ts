@@ -26,13 +26,24 @@ export function useOverlayInset(): number {
     const overlay = navigator.windowControlsOverlay;
     if (!overlay) return;
 
+    // Both events fire mid-transition while maximizing, and the overlay reports itself invisible
+    // for part of that — reading it right then yields a zero inset that no later event corrects.
+    // Reading on the next frame instead lets the window settle before it is measured.
+    let frame = 0;
     const update = (): void => {
       setInset(overlayInsetFrom(overlay, window.innerWidth));
     };
+    const schedule = (): void => {
+      cancelAnimationFrame(frame);
+      frame = requestAnimationFrame(update);
+    };
     update();
-    overlay.addEventListener('geometrychange', update);
+    overlay.addEventListener('geometrychange', schedule);
+    window.addEventListener('resize', schedule);
     return () => {
-      overlay.removeEventListener('geometrychange', update);
+      cancelAnimationFrame(frame);
+      overlay.removeEventListener('geometrychange', schedule);
+      window.removeEventListener('resize', schedule);
     };
   }, []);
 
