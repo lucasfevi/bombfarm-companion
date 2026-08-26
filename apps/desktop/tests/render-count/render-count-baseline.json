@@ -4,21 +4,21 @@
   "gate": {
     "hookInstalled": true,
     "sawCommit": true,
-    "distinctComponents": 60
+    "distinctComponents": 57
   },
   "recordedOnly": {
-    "note": "Measured across runs on one machine, each from a fresh build (pnpm test:render-count, matching what CI runs): componentRenders varies run to run because the remaining background churn is not phase-locked to the measurement window, so these are not exact-match gated and a run landing outside a range is reported rather than failed. These ranges were re-measured after the status-push fix: a quiet window used to cost 18216-20976 component renders because a status event fired on every poll, and now costs roughly half that. What remains is the raw snapshot push, which fires on genuinely changed state and still lands in state above the planning tree. distinctComponents IS exact-match gated above; it stayed 60 across every run.",
+    "note": "Re-measured after the live surface replaced the developer diagnostics tab. Two things moved, both deliberately. distinctComponents fell 60 to 57 because the deleted tab's components no longer exist. A quiet window now costs ZERO component renders, against 8970-10350 before: the previous figure was the raw snapshot push landing in state above the planning tree, and that push and its IPC channel are gone. A one-hero change costs 135 renders against 2343-2619, because the whole-tree rebuild that a snapshot arrival used to trigger no longer happens. The old ranges were wide because that background churn was not phase-locked to the measurement window; with it removed these are stable, and three consecutive local runs from fresh builds produced 0/135/57 every time. The ranges below keep a small margin for a slower CI machine rather than pinning exact values.",
     "quietComponentRendersRange": [
-      8970,
-      10350
+      0,
+      0
     ],
     "oneHeroChangeComponentRendersRange": [
-      2343,
-      2619
+      120,
+      150
     ],
     "oneHeroChangeNetOfBackgroundRange": [
-      0,
-      475
+      120,
+      150
     ]
   }
 }
