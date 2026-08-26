@@ -30,6 +30,8 @@ import { createLiveConsentGate } from './game-api/live-consent-gate.js';
 import { createSettingsStore, type SettingsStore } from './game-api/settings-store.js';
 import { nodeHttpsTransport } from './game-api/https-transport.js';
 import { readSessionToken, sessionCfgPath } from './game-api/session-token-file.js';
+import { createTriggeredRefresh, type TriggeredRefresh } from './game-api/triggered-refresh.js';
+import { createLiveFastPublisher, type LiveFastPublisher } from './live-source/live-fast-publisher.js';
 import { LiveSource } from './live-source/live-source.js';
 import { configureLogging, log } from './logging.js';
 import { createAccountStore, type AccountStore } from './storage/account-store.js';
@@ -43,6 +45,8 @@ let accountRefresh: AccountRefreshHandle | null = null;
 let consentStore: ConsentStore | null = null;
 let settingsStore: SettingsStore | null = null;
 let liveSource: LiveSource | null = null;
+let liveFastPublisher: LiveFastPublisher | null = null;
+let triggeredRefresh: TriggeredRefresh | null = null;
 // MP3 F4 (AD-053) — the resolved language, held in a module-level `let` exactly as
 // `consentStore`'s own value is. Defaults to `DEFAULT_SETTINGS` until `bootstrap()` resolves it
 // (inside `whenReady()`, where `app.getLocale()` is documented valid) so `settings:get` never
@@ -101,7 +105,14 @@ function applyLocale(next: AppLocale): SettingsWriteResult {
 
 function defaultLiveView(): LiveView {
   const now = new Date().toISOString();
-  return { currency: liveGap('neverAttached', now), field: [], recovery: [], rotation: null, updatedAt: now };
+  return {
+    currency: liveGap('neverAttached', now),
+    field: [],
+    recovery: [],
+    rotation: null,
+    onFieldHeroIds: [],
+    updatedAt: now,
+  };
 }
 
 function registerIpcHandlers(): void {
@@ -128,14 +139,6 @@ function registerIpcHandlers(): void {
     'game:getStatus': () => gameReader?.getStatus() ?? {
       status: 'not_running' as const,
       updatedAt: new Date().toISOString(),
-    },
-    'game:getSnapshot': () => gameReader?.getSnapshot() ?? {
-      status: {
-        status: 'not_running' as const,
-        updatedAt: new Date().toISOString(),
-      },
-      mapped: null,
-      raw: { state: null, inventory: null },
     },
     // MP3 F3 (AD-043) — the handler's pre-F3 body now lives, verbatim, in account-view.ts's
     // resolveAccountView(); this is a one-line call to it. See that file for the T-fix-6
@@ -267,15 +270,45 @@ async function bootstrap(): Promise<void> {
     flavor: resolveAppEnv().flavor,
     log,
   });
+  // The raw per-frame stream stays internal to main (the game reader still needs every tick);
+  // only `currency` crosses IPC immediately here. Field/recovery/on-field membership cross via
+  // `liveFastPublisher` below instead, paced to LIVE_DISPLAY_REFRESH_MS rather than the tap's own
+  // ~10Hz — publishing raw frames across IPC for the renderer to throttle is work in the wrong
+  // process.
+  // liveSource itself only ever raises 'frame' or 'currency' — 'fastUpdate' is constructed
+  // downstream, by liveFastPublisher, from a separate emit callback, never by LiveSource.
   liveSource.subscribe((event) => {
-    emitEvent('live:event', event);
     if (event.type === 'frame') {
       gameReader?.ingestLiveTick(event.frame);
-    } else {
+    } else if (event.type === 'currency') {
       gameReader?.ingestLiveCurrency(event.currency);
+      emitEvent('live:event', event);
     }
   });
   liveSource.start();
+
+  // `refreshNow` is read lazily so construction order doesn't matter — `accountRefresh` itself is
+  // assigned later in this function.
+  triggeredRefresh = createTriggeredRefresh({
+    refreshNow: () => accountRefresh?.refreshNow() ?? Promise.resolve(null),
+    now: () => Date.now(),
+  });
+  liveFastPublisher = createLiveFastPublisher({
+    getView: () => liveSource?.getView() ?? defaultLiveView(),
+    emit: (event) => {
+      emitEvent('live:event', event);
+    },
+    scheduler: {
+      schedule: (callback, intervalMs) => {
+        const timer = setInterval(callback, intervalMs);
+        return () => {
+          clearInterval(timer);
+        };
+      },
+    },
+    onFieldMembershipDiverged: () => triggeredRefresh?.notify(),
+  });
+  liveFastPublisher.start();
 
   const storedSettings = settingsStore.read();
   const systemLocale = app.getLocale();
@@ -433,6 +466,9 @@ if (!gotLock) {
     gameReader = null;
     accountRefresh?.stop();
     accountRefresh = null;
+    liveFastPublisher?.stop();
+    liveFastPublisher = null;
+    triggeredRefresh = null;
     void liveSource?.teardown();
     liveSource = null;
     consentStore = null;

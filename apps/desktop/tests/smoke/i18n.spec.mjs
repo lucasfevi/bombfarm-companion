@@ -103,11 +103,11 @@ async function acceptConsent(page) {
   await expect(modal).toBeHidden({ timeout: 15_000 });
 }
 
-/** The Planning/Diagnostics/Settings nav buttons live in AppShell's persistent sidebar
+/** The Live/Planning/Settings nav buttons live in AppShell's persistent sidebar
  *  (`packages/ui/src/AppShell.tsx`), which stays mounted across every `activeNavId` — unlike the
  *  content area, which conditionally mounts/unmounts per tab (`page.tsx`). `packages/ui` ships no
  *  `data-testid` on these buttons (DS-09 — it must not change), so they are located by role +
- *  position: Planning is always the first nav button, matching `AppShellNavItem[]`'s declared
+ *  position: Live is always the first nav button, matching `AppShellNavItem[]`'s declared
  *  order in `page.tsx`. */
 function navButton(page, index) {
   return page.locator('nav[aria-label="Main"] button').nth(index);
@@ -131,12 +131,12 @@ test.describe('language smoke (MP3 F4) — detected, switched in place, and reme
 
         // --- MIN-06: the app opened in PT-BR, detected from the OS locale -----------------
         await expect(page1.locator('html')).toHaveAttribute('lang', 'pt-BR');
-        await expect(navButton(page1, 0)).toHaveText(pt('shellPlanningNavLabel'));
-        await expect(navButton(page1, 1)).toHaveText(pt('shellDiagnosticsNavLabel'));
+        await expect(navButton(page1, 0)).toHaveText(pt('liveNavLabel'));
+        await expect(navButton(page1, 1)).toHaveText(pt('shellPlanningNavLabel'));
         await expect(navButton(page1, 2)).toHaveText(pt('settingsNavLabel'));
 
         // --- Navigate to Planning; MIN-17's "before" measurement + MIN-10's sentinel ------
-        await navButton(page1, 0).click();
+        await navButton(page1, 1).click();
         await page1.waitForSelector('[data-testid="planning-view"]', { timeout: 15_000 });
         await page1.waitForSelector('[data-testid="roster-list"]', { timeout: 20_000 });
 
@@ -162,8 +162,8 @@ test.describe('language smoke (MP3 F4) — detected, switched in place, and reme
         await page1.getByRole('option', { name: pt('settingsLanguageOptionEnglish') }).click();
 
         // The SAME persistent nav node changed in place — Planejamento -> Planning.
-        await expect(navButton(page1, 0)).toHaveText(en('shellPlanningNavLabel'), { timeout: 10_000 });
-        await expect(navButton(page1, 1)).toHaveText(en('shellDiagnosticsNavLabel'));
+        await expect(navButton(page1, 0)).toHaveText(en('liveNavLabel'), { timeout: 10_000 });
+        await expect(navButton(page1, 1)).toHaveText(en('shellPlanningNavLabel'));
         await expect(navButton(page1, 2)).toHaveText(en('settingsNavLabel'));
 
         // No reload occurred — the sentinel stamped before the switch survived it.
@@ -179,7 +179,7 @@ test.describe('language smoke (MP3 F4) — detected, switched in place, and reme
         // --- MIN-17: "after" measurement, back on Planning (settings unmounted the content
         //     area, so this is a fresh mount of planning-view — the width comparison is what
         //     matters, not node identity) --------------------------------------------------
-        await navButton(page1, 0).click();
+        await navButton(page1, 1).click();
         await page1.waitForSelector('[data-testid="planning-view"]', { timeout: 15_000 });
         await page1.waitForSelector('[data-testid="roster-list"]', { timeout: 15_000 });
         const planningBoxAfter = await page1.getByTestId('planning-view').boundingBox();
@@ -210,8 +210,8 @@ test.describe('language smoke (MP3 F4) — detected, switched in place, and reme
 
         // --- MIN-09: English persists, read from settings, not from the (still pt-BR) OS ---
         await expect(page2.locator('html')).toHaveAttribute('lang', 'en');
-        await expect(navButton(page2, 0)).toHaveText(en('shellPlanningNavLabel'));
-        await expect(navButton(page2, 1)).toHaveText(en('shellDiagnosticsNavLabel'));
+        await expect(navButton(page2, 0)).toHaveText(en('liveNavLabel'));
+        await expect(navButton(page2, 1)).toHaveText(en('shellPlanningNavLabel'));
       } finally {
         await app2.close().catch(() => undefined);
       }

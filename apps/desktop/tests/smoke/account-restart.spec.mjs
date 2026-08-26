@@ -77,6 +77,10 @@ test.describe('account restart round-trip smoke', () => {
       } finally {
         await app1.close().catch(() => undefined);
       }
+      // The fixture producer commits on EVERY tick, re-stamping capturedAt each time, so the
+      // value read above is a mid-stream sample and not necessarily the one that reached disk.
+      // What launch 2 must not do is stamp a NEW one, and this is the boundary that proves it.
+      const firstLaunchClosedAt = new Date().toISOString();
 
       expect(firstView.payload.fidelity?.account).toEqual({
         status: 'resolved',
@@ -98,8 +102,10 @@ test.describe('account restart round-trip smoke', () => {
         BFC_USER_DATA_DIR: userDataDir,
       });
       let secondView;
+      let secondViewAgain;
       try {
         secondView = await getAccount(page2);
+        secondViewAgain = await getAccount(page2);
       } finally {
         await app2.close().catch(() => undefined);
       }
@@ -109,10 +115,21 @@ test.describe('account restart round-trip smoke', () => {
       expect(secondView.payload.heroes).toEqual(firstView.payload.heroes);
       expect(secondView.payload.items).toEqual(firstView.payload.items);
 
-      // Timestamps are string-identical to launch 1's — never re-stamped.
-      expect(secondView.payload.fidelity.account.capturedAt).toBe(capturedAt.account);
-      expect(secondView.payload.fidelity.heroes.capturedAt).toBe(capturedAt.heroes);
-      expect(secondView.payload.fidelity.items.capturedAt).toBe(capturedAt.items);
+      // Never re-stamped: every timestamp still predates launch 1 closing, so it was carried
+      // from disk rather than generated now, and it is stable across repeated reads. Asserting
+      // string equality against `capturedAt` instead would be asserting which tick happened to
+      // commit last, which no behaviour guarantees.
+      for (const section of ['account', 'heroes', 'items']) {
+        const stamp = secondView.payload.fidelity[section].capturedAt;
+        expect(stamp, `section "${section}" must carry a stamp from launch 1`).toBeDefined();
+        expect(stamp >= capturedAt[section], `section "${section}" must not predate launch 1's read`).toBe(true);
+        expect(stamp < firstLaunchClosedAt, `section "${section}" must not be stamped after launch 1 closed`).toBe(
+          true,
+        );
+        expect(secondViewAgain.payload.fidelity[section].capturedAt, `section "${section}" must not re-stamp`).toBe(
+          stamp,
+        );
+      }
 
       // Every section is stale or missing — explicitly never resolved (the headline claim).
       for (const section of ['account', 'heroes', 'skills', 'casa', 'items']) {

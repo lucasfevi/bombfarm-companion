@@ -17,11 +17,16 @@ import { DecodedFrame, FrameDecodeError, FrameDecoder, OPCODE } from './ws-frame
 export type Ctx = string | number;
 
 export type TapEvent =
-  | { readonly kind: 'http'; readonly status: number }
+  | { readonly kind: 'http'; readonly status: number; readonly body?: Buffer }
   | { readonly kind: 'upgrade' }
   | { readonly kind: 'tick'; readonly tick: LiveTick };
 
 const HEAD_CAP_BYTES = 16 * 1024;
+/** Also the cap on a single HTTP response body's reassembly: 256 KiB gives roughly 3x headroom
+ *  over the ~85 KB largest body observed in a live capture (2026-08-25), so a legitimate response
+ *  completes well inside it while a declared length that never finishes arriving still gets
+ *  bounded — the same connection just gives up here, same as it already does for any other
+ *  unrecognisable byte run. */
 const GIVEUP_BYTES = 256 * 1024;
 /** Rewalked on every call so a header split across a chunk boundary — the only way an offset
  *  already ruled out can start matching later — is still found, without resyncing from 0. */
@@ -208,9 +213,25 @@ export function findWsFrameStart(buf: Buffer, fromOffset = 0): number | undefine
   return scanForWsFrameStart(buf, fromOffset).offset;
 }
 
+/** Why a response body, though fully buffered, was left unread rather than guessed at — the
+ *  three shapes {@link matchHttpResponse} cannot safely turn into a `Buffer` at all: chunked
+ *  framing (no declared length to reassemble by), no usable `Content-Length` (the same problem
+ *  under a different cause), and a declared `Content-Encoding` this app never decompresses. */
+export type HttpBodySkipReason = 'chunked' | 'compressed' | 'no_length';
+
+function bodySkipReason(headerText: string, hasContentLength: boolean): HttpBodySkipReason | undefined {
+  if (/\r\ntransfer-encoding:\s*chunked/i.test(headerText)) return 'chunked';
+  if (!hasContentLength) return 'no_length';
+  const encodingMatch = /\r\ncontent-encoding:\s*([\w-]+)/i.exec(headerText);
+  const encoding = (encodingMatch?.[1] ?? 'identity').toLowerCase();
+  return encoding === 'identity' ? undefined : 'compressed';
+}
+
 interface HttpMatch {
   readonly status: number;
   readonly totalLength: number;
+  readonly body?: Buffer;
+  readonly bodySkipReason?: HttpBodySkipReason;
 }
 
 function matchHttpResponse(buf: Buffer): HttpMatch | undefined {
@@ -228,7 +249,15 @@ function matchHttpResponse(buf: Buffer): HttpMatch | undefined {
   const totalLength = headerEnd + 4 + bodyLength;
   if (buf.length < totalLength) return undefined;
 
-  return { status: Number(statusText), totalLength };
+  const status = Number(statusText);
+  // A protocol upgrade handshake carries no body to identify — #advanceHead branches on this
+  // status before ever looking at `body`/`bodySkipReason`, so nothing downstream needs either.
+  if (status === 101) return { status, totalLength };
+
+  const skipReason = bodySkipReason(headerText, lengthMatch !== null);
+  if (skipReason) return { status, totalLength, bodySkipReason: skipReason };
+  if (bodyLength === 0) return { status, totalLength };
+  return { status, totalLength, body: buf.subarray(headerEnd + 4, totalLength) };
 }
 
 interface HeadState {
@@ -264,13 +293,23 @@ export interface FrameRingPort {
   dumpToDisk(reason: FrameDumpReason): void;
 }
 
+/** Just enough of the boundary log to report a body-reassembly skip once — the boundary log's own
+ *  dedup collapses repeats, so this class never needs to suppress anything itself. */
+export interface TlsConnectionsLogPort {
+  warn(record: Record<string, unknown>): void;
+}
+
 export interface TlsConnectionsDeps {
   readonly now?: () => number;
   readonly idleSweepTtlMs?: number;
-  /** Fed every decoded frame payload as it arrives, so a later parse failure can be dumped with
-   *  the bytes that led into it. Optional so every existing construction site and test is
-   *  unaffected. */
+  /** Fed every decoded websocket frame payload as it arrives, so a later parse failure can be
+   *  dumped with the bytes that led into it. An HTTP response body never goes through this ring —
+   *  a single ~85 KB account body would otherwise evict the whole 500 KB/50-frame budget's worth
+   *  of the combat frames this ring exists to preserve. Optional so every existing construction
+   *  site and test is unaffected. */
   readonly ring?: FrameRingPort;
+  /** Optional so every existing construction site and test is unaffected. */
+  readonly log?: TlsConnectionsLogPort;
 }
 
 export class TlsConnections {
@@ -279,11 +318,13 @@ export class TlsConnections {
   readonly #now: () => number;
   readonly #idleSweepTtlMs: number;
   readonly #ring: FrameRingPort | undefined;
+  readonly #log: TlsConnectionsLogPort | undefined;
 
   constructor(deps: TlsConnectionsDeps = {}) {
     this.#now = deps.now ?? Date.now;
     this.#idleSweepTtlMs = deps.idleSweepTtlMs ?? IDLE_SWEEP_TTL_MS;
     this.#ring = deps.ring;
+    this.#log = deps.log;
   }
 
   get size(): number {
@@ -350,7 +391,19 @@ export class TlsConnections {
         events.push({ kind: 'upgrade' });
         return { state: { kind: 'ws', decoder: new FrameDecoder() }, rest };
       }
-      events.push({ kind: 'http', status: httpMatch.status });
+      if (httpMatch.body !== undefined) {
+        events.push({ kind: 'http', status: httpMatch.status, body: httpMatch.body });
+      } else {
+        if (httpMatch.bodySkipReason) {
+          this.#log?.warn({
+            scope: 'live-source',
+            event: 'live-source.http_body_skipped',
+            reason: httpMatch.bodySkipReason,
+            status: httpMatch.status,
+          });
+        }
+        events.push({ kind: 'http', status: httpMatch.status });
+      }
       return { state: INITIAL_HEAD_STATE, rest };
     }
 

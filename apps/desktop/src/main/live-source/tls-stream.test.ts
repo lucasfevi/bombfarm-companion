@@ -8,6 +8,7 @@ import {
   generateReplayStream,
   type ReplayStream,
 } from './fixtures/generate-replay-stream.js';
+import { FrameRing } from './frame-ring.js';
 import { findWsFrameStart, toLiveTick, TlsConnections, type Ctx, type FrameRingPort, type TapEvent } from './tls-stream.js';
 
 const stream = generateReplayStream();
@@ -46,7 +47,11 @@ describe('TlsConnections: decoding the full replay stream', () => {
     const conn = new TlsConnections();
     const events = pushWholeStream(conn, 'main', stream);
 
-    expect(events[0]).toEqual({ kind: 'http', status: stream.httpResponse.status });
+    expect(events[0]).toEqual({
+      kind: 'http',
+      status: stream.httpResponse.status,
+      body: Buffer.from(JSON.stringify({ ok: true }), 'utf8'),
+    });
     expect(events.some((e) => e.kind === 'upgrade')).toBe(false);
 
     const ticks = events.filter(isTick).map((e) => e.tick);
@@ -321,6 +326,163 @@ describe('TlsConnections: HTTP recognition', () => {
     expect(conn.push('noise', valid)).toEqual([]);
   });
 });
+
+function buildRawHttpResponse(status: number, extraHeaders: readonly string[], body: string): Buffer {
+  const bodyBuf = Buffer.from(body, 'utf8');
+  const head = [`HTTP/1.1 ${String(status)} X`, 'Content-Type: application/json', ...extraHeaders].join('\r\n') + '\r\n\r\n';
+  return Buffer.concat([Buffer.from(head, 'latin1'), bodyBuf]);
+}
+
+describe('TlsConnections: HTTP body reassembly', () => {
+  it('buffers a body across multiple reads until content-length is satisfied, then delivers it whole', () => {
+    const json = JSON.stringify({ heroes: [], field_size: 3 });
+    const response = buildHttpResponse(200, 'OK', json);
+    const splitAt = response.length - 5;
+
+    const conn = new TlsConnections();
+    expect(conn.push('slow-body', response.subarray(0, splitAt))).toEqual([]);
+    expect(conn.push('slow-body', response.subarray(splitAt))).toEqual([
+      { kind: 'http', status: 200, body: Buffer.from(json, 'utf8') },
+    ]);
+  });
+
+  it('does not report a skip for a response with a genuinely empty body', () => {
+    const warnings: Record<string, unknown>[] = [];
+    const conn = new TlsConnections({ log: { warn: (record) => warnings.push(record) } });
+
+    conn.push('empty-body', buildHttpResponse(204, 'No Content', ''));
+
+    expect(warnings).toEqual([]);
+  });
+
+  it('skips a chunked body and reports the skip once via the injected log, rather than guessing at its framing', () => {
+    const warnings: Record<string, unknown>[] = [];
+    const conn = new TlsConnections({ log: { warn: (record) => warnings.push(record) } });
+
+    const events = conn.push(
+      'chunked',
+      buildRawHttpResponse(200, ['Transfer-Encoding: chunked'], '5\r\nhello\r\n0\r\n\r\n'),
+    );
+
+    expect(events).toEqual([{ kind: 'http', status: 200 }]);
+    expect(warnings).toEqual([
+      { scope: 'live-source', event: 'live-source.http_body_skipped', reason: 'chunked', status: 200 },
+    ]);
+  });
+
+  it('skips a compressed body and reports the skip once via the injected log, rather than guessing at its content', () => {
+    const warnings: Record<string, unknown>[] = [];
+    const conn = new TlsConnections({ log: { warn: (record) => warnings.push(record) } });
+
+    const events = conn.push(
+      'compressed',
+      buildRawHttpResponse(200, ['Content-Length: 5', 'Content-Encoding: gzip'], 'xxxxx'),
+    );
+
+    expect(events).toEqual([{ kind: 'http', status: 200 }]);
+    expect(warnings).toEqual([
+      { scope: 'live-source', event: 'live-source.http_body_skipped', reason: 'compressed', status: 200 },
+    ]);
+  });
+
+  it('skips a body with no usable content-length and reports the skip once via the injected log', () => {
+    const warnings: Record<string, unknown>[] = [];
+    const conn = new TlsConnections({ log: { warn: (record) => warnings.push(record) } });
+
+    const events = conn.push('no-length', buildRawHttpResponse(200, [], 'irrelevant body text'));
+
+    expect(events).toEqual([{ kind: 'http', status: 200 }]);
+    expect(warnings).toEqual([
+      { scope: 'live-source', event: 'live-source.http_body_skipped', reason: 'no_length', status: 200 },
+    ]);
+  });
+
+  it('never reports a skip for a websocket upgrade handshake, which carries no body to identify', () => {
+    const warnings: Record<string, unknown>[] = [];
+    const conn = new TlsConnections({ log: { warn: (record) => warnings.push(record) } });
+
+    conn.push('handshake', buildHttpResponse(101, 'Switching Protocols', ''));
+
+    expect(warnings).toEqual([]);
+  });
+
+  it('gives up on a declared body that never fully arrives, rather than buffering it without limit', () => {
+    const conn = new TlsConnections();
+    const headers = 'HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: 999999\r\n\r\n';
+    expect(conn.push('runaway-body', Buffer.from(headers, 'latin1'))).toEqual([]);
+
+    const chunk = Buffer.alloc(4096, 0x61);
+    let lastEvents: TapEvent[] = [];
+    for (let i = 0; i < 80; i += 1) {
+      lastEvents = conn.push('runaway-body', chunk);
+    }
+
+    expect(lastEvents).toEqual([]);
+    // Once the connection has given up (256 KiB — see GIVEUP_BYTES's own justification), further
+    // bytes are discarded outright rather than kept in an ever-growing buffer.
+    expect(conn.push('runaway-body', chunk)).toEqual([]);
+  });
+});
+
+describe('TlsConnections: an HTTP response body can never evict a combat frame from the shared ring', () => {
+  it('a burst of large HTTP bodies well over the ring budget leaves an earlier combat frame in place, because a body is never pushed into the ring at all', () => {
+    class FakeRing implements FrameRingPort {
+      pushed: Buffer[] = [];
+      push(bytes: Uint8Array): void {
+        this.pushed.push(Buffer.from(bytes));
+      }
+      dumpToDisk(): void {
+        /* not exercised */
+      }
+    }
+    const ring = new FakeRing();
+    const conn = new TlsConnections({ ring });
+    const combatFrame = buildServerTextFrame(Buffer.from(JSON.stringify({ t: 'snap', heroes: [{ id: 'hero-01' }] })));
+
+    conn.push('combat', combatFrame);
+    // 44 responses at ~85 KB each — the observed session's own numbers — several times over the
+    // ring's 500 KB budget, which is exactly what would evict the frame above if a body reached it.
+    for (let i = 0; i < 44; i += 1) {
+      conn.push(`account-${String(i)}`, buildHttpResponse(200, 'OK', 'x'.repeat(85_000)));
+    }
+
+    expect(ring.pushed).toHaveLength(1);
+    expect(JSON.parse(ring.pushed[0]?.toString('utf8') ?? '')).toEqual({ t: 'snap', heroes: [{ id: 'hero-01' }] });
+  });
+
+  it('a dump taken after an observed body carrying account_id and player_name arrives contains no trace of either value, because the body never entered the ring to begin with', () => {
+    const written: string[] = [];
+    const frameRing = new FrameRing({
+      maxFrames: 50,
+      maxBytes: 500_000,
+      dumpPath: 'unused-in-test.json',
+      writePort: {
+        write: (_destination, contents) => {
+          written.push(contents);
+        },
+      },
+    });
+    const conn = new TlsConnections({ ring: frameRing });
+    const combatFrame = buildServerTextFrame(Buffer.from(JSON.stringify({ t: 'snap', heroes: [{ id: 'hero-01' }] })));
+    const body = JSON.stringify({ account_id: 'acct-123', player_name: 'Lucas', gold: 500 });
+
+    conn.push('combat', combatFrame);
+    conn.push('http-body', buildHttpResponse(200, 'OK', body));
+    frameRing.dumpToDisk('manual');
+
+    const dumped = JSON.parse(required(written[0])) as { frameCount: number };
+    expect(dumped.frameCount).toBe(1);
+    expect(written[0]).not.toContain('acct-123');
+    expect(written[0]).not.toContain('Lucas');
+    expect(written[0]).not.toContain('account_id');
+    expect(written[0]).not.toContain('player_name');
+  });
+});
+
+function required<T>(value: T | undefined): T {
+  if (value === undefined) throw new Error('expected a defined value in test');
+  return value;
+}
 
 describe('TlsConnections: forget and reset', () => {
   it('drops per-connection state so a forgotten or reset connection starts fresh', () => {

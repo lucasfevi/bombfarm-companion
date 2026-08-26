@@ -18,7 +18,7 @@ import { ptBR } from './pt-BR';
 
 function Probe() {
   const t = useCopy();
-  return createElement('span', { 'data-testid': 'copy-probe' }, t.emptyNoSnapshotTitle);
+  return createElement('span', { 'data-testid': 'copy-probe' }, t.liveNeverReadTitle);
 }
 
 function LocaleProbe() {
@@ -29,22 +29,22 @@ function LocaleProbe() {
 describe('CopyProvider / useCopy (AD-040)', () => {
   it('useCopy() returns the en copy object even without a mounted Provider (context default)', () => {
     const html = renderToStaticMarkup(createElement(Probe));
-    expect(html).toContain(en.emptyNoSnapshotTitle);
+    expect(html).toContain(en.liveNeverReadTitle);
   });
 
   it('useCopy() returns en values when the Provider is mounted with locale="en"', () => {
     const html = renderToStaticMarkup(
       createElement(CopyProvider, { locale: 'en', children: createElement(Probe) }),
     );
-    expect(html).toContain(en.emptyNoSnapshotTitle);
+    expect(html).toContain(en.liveNeverReadTitle);
   });
 
   it('useCopy() returns pt-BR values when the Provider is mounted with locale="pt-BR"', () => {
     const html = renderToStaticMarkup(
       createElement(CopyProvider, { locale: 'pt-BR', children: createElement(Probe) }),
     );
-    expect(html).toContain(ptBR.emptyNoSnapshotTitle);
-    expect(html).not.toContain(en.emptyNoSnapshotTitle);
+    expect(html).toContain(ptBR.liveNeverReadTitle);
+    expect(html).not.toContain(en.liveNeverReadTitle);
   });
 });
 

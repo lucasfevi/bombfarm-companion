@@ -1,25 +1,21 @@
-export type { DrainFit, DrainFitRejectionReason, DrainSample } from './drain-slope';
+export type { DrainObservationResult, HeroDrainObservation } from './drain-checker';
 export {
-  MAX_SAMPLE_AGE_MS,
-  MAX_TRUSTED_DRAIN_RATE,
-  MAX_WINDOW_SAMPLES,
-  MIN_TRUSTED_DRAIN_RATE,
-  MIN_TRUSTED_R_SQUARED,
-  MIN_TRUSTED_SAMPLES,
-  MIN_TRUSTED_SPAN_MS,
-  fitDrainRate,
-  pushDrainSample,
-} from './drain-slope';
+  DRAIN_RATE_DISAGREEMENT_MARGIN,
+  drainRateDisagrees,
+  EMPTY_HERO_DRAIN_OBSERVATION,
+  observeDrainRate,
+} from './drain-checker';
 
 export type {
+  AdvanceRecoveryClockResult,
+  DrainDisagreementReport,
   DrainMultipliers,
-  DrainRejectionReport,
   FieldCountdownInput,
   FieldCountdownResult,
   FieldCountdownState,
 } from './field-countdown';
-export {
-  createInitialFieldCountdownState,
-  freezeRecoveryCountdowns,
-  ingestFieldCountdownTick,
-} from './field-countdown';
+export { advanceRecoveryClock, createInitialFieldCountdownState, ingestFieldCountdownTick } from './field-countdown';
+
+export type { RosterHeroAbilities } from './drain-multipliers';
+export { resolveFieldDrainMultipliers } from './drain-multipliers';
+export { extractRosterHeroAbilities } from './roster-ability-ranks';

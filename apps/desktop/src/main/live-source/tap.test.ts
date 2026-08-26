@@ -6,7 +6,7 @@ import { describe, expect, it, afterEach } from 'vitest';
 import { buildHttpResponse, buildServerTextFrame } from './fixtures/generate-replay-stream.js';
 import type { LogPort as HookCacheLogPort } from './hook-cache.js';
 import { RuntimePort } from './runtime.js';
-import type { LogPort as RuntimeLogPort, TapInterceptor, TapReadEvent, TapRuntime, TapSession } from './runtime.js';
+import type { TapInterceptor, TapReadEvent, TapRuntime, TapSession } from './runtime.js';
 import type { FrameCapture } from './frame-capture.js';
 import { createHookCandidateSource, SESSION_DETACH_TIMEOUT_MS, Tap } from './tap.js';
 import type {
@@ -163,9 +163,11 @@ function createHarness(options: HarnessOptions = {}) {
   const runtime = new FakeRuntime();
   const events: LiveEvent[] = [];
   const infos: Record<string, unknown>[] = [];
+  const warnings: Record<string, unknown>[] = [];
+  const httpBodies: Array<{ readonly body: Buffer; readonly atMs: number }> = [];
   let consent = options.consent ?? true;
 
-  const sharedLog: RuntimeLogPort = { info: (record) => infos.push(record) };
+  const sharedLog = { info: (record: Record<string, unknown>) => infos.push(record), warn: (record: Record<string, unknown>) => warnings.push(record) };
   const runtimePort = new RuntimePort({
     resolve: options.resolveRuntime ?? (() => Promise.resolve(runtime)),
     log: sharedLog,
@@ -179,6 +181,7 @@ function createHarness(options: HarnessOptions = {}) {
     consent: () => consent,
     clock,
     onEvent: (event) => events.push(event),
+    onHttpBody: (body, atMs) => httpBodies.push({ body, atMs }),
     log: sharedLog,
     pollIntervalMs: options.pollIntervalMs ?? 1_000,
   });
@@ -192,6 +195,8 @@ function createHarness(options: HarnessOptions = {}) {
     runtimePort,
     events,
     infos,
+    warnings,
+    httpBodies,
     setConsent: (value: boolean) => {
       consent = value;
     },
@@ -588,6 +593,41 @@ describe('Tap: a throwing attach or install does not kill the poll loop', () => 
 
     expect(sessions.length).toBeGreaterThan(1);
     for (const session of sessions) expect(session.detachCount).toBeGreaterThan(0);
+  });
+});
+
+describe('Tap: observed HTTP bodies reach onHttpBody', () => {
+  it('forwards a reassembled HTTP body once the response completes, stamped with the tap clock', async () => {
+    const { tap, clock, processes, candidates, runtime, httpBodies } = createHarness();
+    processes.processes = [{ pid: 6_001, name: PROCESS_NAME }];
+    candidates.resolveResult = { addresses: [0xa000], fromCache: false, buildId: null };
+
+    tap.start();
+    await clock.advance(0);
+    const interceptor = runtime.sessions[0]?.interceptorsByAddress.get(0xa000);
+    if (!interceptor) throw new Error('test setup: interceptor not installed');
+
+    const json = JSON.stringify({ field_size: 3 });
+    interceptor.fire({ ctx: 'rest-0', bytes: buildHttpResponse(200, 'OK', json) });
+
+    expect(httpBodies).toHaveLength(1);
+    expect(httpBodies[0]?.body.toString('utf8')).toBe(json);
+    expect(httpBodies[0]?.atMs).toBe(clock.now());
+  });
+
+  it('never calls onHttpBody for a status-only response with no body', async () => {
+    const { tap, clock, processes, candidates, runtime, httpBodies } = createHarness();
+    processes.processes = [{ pid: 6_002, name: PROCESS_NAME }];
+    candidates.resolveResult = { addresses: [0xb000], fromCache: false, buildId: null };
+
+    tap.start();
+    await clock.advance(0);
+    const interceptor = runtime.sessions[0]?.interceptorsByAddress.get(0xb000);
+    if (!interceptor) throw new Error('test setup: interceptor not installed');
+
+    interceptor.fire({ ctx: 'rest-0', bytes: buildHttpResponse(204, 'No Content', '') });
+
+    expect(httpBodies).toEqual([]);
   });
 });
 

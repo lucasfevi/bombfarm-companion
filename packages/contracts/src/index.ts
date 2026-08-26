@@ -43,7 +43,7 @@ export type {
   LiveView,
   RecoveryCountdown,
 } from './live-source.js';
-export { isActionableGap, isLiveCurrency, liveGap } from './live-source.js';
+export { isActionableGap, isConnectedCurrency, isLiveCurrency, liveGap, LIVE_DISPLAY_REFRESH_MS } from './live-source.js';
 export type {
   AccountStoreReason,
   AccountStoreStatus,
@@ -294,7 +294,6 @@ export interface IpcChannels {
   'settings:usePortuguese': { args: []; result: SettingsWriteResult };
   'storage:health': { args: []; result: { binding: string; ok: boolean } };
   'game:getStatus': { args: []; result: GameStatusInfo };
-  'game:getSnapshot': { args: []; result: GameSnapshotPayload };
   'account:get': { args: []; result: AccountView };
   /** MP2 F2 — consent for the game-API account reader (LAR-01, LAR-03…05). All four are
    *  zero-arg by design (TD-10): the existing `bfc:invoke` bridge forwards no arguments, so the
@@ -324,7 +323,6 @@ export const IPC_CHANNELS = [
   'settings:usePortuguese',
   'storage:health',
   'game:getStatus',
-  'game:getSnapshot',
   'account:get',
   'consent:get',
   'consent:accept',
@@ -336,14 +334,12 @@ export const IPC_CHANNELS = [
 
 export type IpcEventChannel =
   | 'game:status'
-  | 'snapshot:updated'
   | 'consent:changed'
   | 'account:changed'
   | 'live:event';
 
 export interface IpcEvents {
   'game:status': GameStatusInfo;
-  'snapshot:updated': GameSnapshotPayload;
   /** Fired whenever the consent record changes, from any cause (accept/decline/revoke). */
   'consent:changed': ConsentRecord;
   /**
@@ -362,7 +358,6 @@ export const IPC_EVENT_CHANNELS = [
   'game:status',
   'consent:changed',
   'account:changed',
-  'snapshot:updated',
   'live:event',
 ] as const satisfies readonly IpcEventChannel[];
 

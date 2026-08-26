@@ -16,6 +16,7 @@ import type {
   AppLocale,
   DomainLang,
   LiveDiagnosticsDumpReason,
+  LiveGapReason,
   SectionStatus,
   SettingsWriteReason,
 } from '@bombfarm/contracts';
@@ -92,6 +93,23 @@ export const DIAGNOSTICS_DUMP_REASON_COPY_KEY = {
   'write-failed': 'settingsDiagnosticsReasonWriteFailed',
   'no-source': 'settingsDiagnosticsReasonNoSource',
 } as const satisfies Record<LiveDiagnosticsDumpReason, CopyKey>;
+
+/**
+ * Every `LiveGapReason` (`@bombfarm/contracts`), mapped exhaustively — a new reason is a compile
+ * error, matching this file's other exhaustive maps. `runtimeUnavailable`'s quarantine-likely
+ * variant is not part of this map: it is a separate copy key
+ * (`liveGapReasonRuntimeUnavailableQuarantine`) the Live screen chooses at render time from
+ * `LiveCurrency.likelyQuarantine`, since that is a boolean orthogonal to the reason itself.
+ */
+export const LIVE_GAP_REASON_COPY_KEY = {
+  clientNotStreaming: 'liveGapReasonClientNotStreaming',
+  neverAttached: 'liveGapReasonNeverAttached',
+  consentMissing: 'liveGapReasonConsentMissing',
+  runtimeUnavailable: 'liveGapReasonRuntimeUnavailable',
+  attachFailed: 'liveGapReasonAttachFailed',
+  detached: 'liveGapReasonDetached',
+  hookSilent: 'liveGapReasonHookSilent',
+} as const satisfies Record<LiveGapReason, CopyKey>;
 
 /**
  * Every `StatKey`, mapped exhaustively. `pipelineForHero`'s own `PointValue.label` is

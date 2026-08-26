@@ -55,9 +55,10 @@ export interface Clock {
 
 export interface LogPort {
   info(record: Record<string, unknown>): void;
+  warn(record: Record<string, unknown>): void;
 }
 
-const NOOP_LOG_PORT: LogPort = { info: () => undefined };
+const NOOP_LOG_PORT: LogPort = { info: () => undefined, warn: () => undefined };
 
 /** Once per attach, not once per rescan: a validation timeout only ever fires for the attempt
  *  that is currently in flight. */
@@ -101,6 +102,10 @@ export interface TapDeps {
    *  from the game's real stream and must never end up in a replay fixture. Optional for the same
    *  reason as {@link ring}. */
   readonly capture?: FrameCapture;
+  /** Fed a reassembled HTTP response body the moment `TlsConnections` delivers one (never a
+   *  status-only response — see {@link TapEvent}'s `body` field), stamped with this same clock.
+   *  Optional so every existing construction site and test is unaffected. */
+  readonly onHttpBody?: (body: Buffer, atMs: number) => void;
 }
 
 function chooseTarget(candidates: readonly TapTargetProcess[]): TapTargetProcess {
@@ -369,6 +374,7 @@ export class Tap {
       }
       const stream = new TlsConnections({
         now: () => this.#deps.clock.now(),
+        log: this.#log,
         ...(this.#deps.ring !== undefined ? { ring: this.#deps.ring } : {}),
       });
       interceptor.onRead((event) => {
@@ -441,6 +447,9 @@ export class Tap {
   #emitTapEvents(events: readonly TapEvent[]): void {
     for (const event of events) {
       this.#lastTrafficAt = this.#deps.clock.now();
+      if (event.kind === 'http' && event.body !== undefined) {
+        this.#deps.onHttpBody?.(event.body, this.#deps.clock.now());
+      }
       if (event.kind !== 'tick') continue;
       this.#sequence += 1;
       this.#lastFrameAt = this.#deps.clock.now();

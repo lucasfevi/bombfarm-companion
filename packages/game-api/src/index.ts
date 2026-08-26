@@ -24,6 +24,8 @@ export { ROUTE_FINGERPRINTS, SECTION_FINGERPRINTS, checkSectionShape } from './f
 export type { RouteFingerprint, SectionFingerprint } from './fingerprints.js';
 export { checkShape } from './shape.js';
 export type { ShapeCheckResult } from './shape.js';
+export { identifyObservedBody } from './identify-observed-body.js';
+export type { ObservedBodyIdentification } from './identify-observed-body.js';
 export { ROUTES, readSection } from './routes.js';
 export type { RouteDescriptor, SectionFailureReason, SectionOutcome } from './routes.js';
 export { createGameApiClient } from './client.js';

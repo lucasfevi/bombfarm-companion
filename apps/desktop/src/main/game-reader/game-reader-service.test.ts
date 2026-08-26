@@ -34,14 +34,24 @@ vi.mock('./process.js', () => ({
   findProcessId: vi.fn(() => null as number | null),
 }));
 
+// Wrapped rather than replaced, so the real parse still runs (the connected/stale gate depends
+// on its actual return value) — this is a spy on call count and call arguments, used to prove the
+// sequence-dedup skip below without a `mapped` snapshot to compare object identity against.
+vi.mock('../live-source/tick-to-raw-state.js', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../live-source/tick-to-raw-state.js')>();
+  return { tickToRawGameState: vi.fn(actual.tickToRawGameState) };
+});
+
 import type { AccountPayload, AccountView, LiveCurrency, LiveFrame, LiveTick } from '@bombfarm/contracts';
 import { liveGap } from '@bombfarm/contracts';
 import { log } from '../logging.js';
+import { tickToRawGameState } from '../live-source/tick-to-raw-state.js';
 import type { AccountCommitter } from './game-reader-service.js';
 import { GameReaderService } from './game-reader-service.js';
 import { findProcessId } from './process.js';
 
 const mockedFindProcessId = vi.mocked(findProcessId);
+const mockedTickToRawGameState = vi.mocked(tickToRawGameState);
 
 /** A `live` currency, the tap's own proof it is currently delivering — the signal `tickLive()`
  *  now requires before it will report `connected`, on top of a cached tick. */
@@ -70,13 +80,6 @@ describe('GameReaderService — cold boot status (design R-2 / APS-03)', () => {
     expect(service.getStatus().status).toBe('connected');
   });
 
-  it('starts with no mapped snapshot and no raw state/inventory — nothing restored from disk', () => {
-    const service = new GameReaderService('/fake/user-data', { mode: 'live' }, { consent: () => true });
-    const snapshot = service.getSnapshot();
-    expect(snapshot.mapped).toBeNull();
-    expect(snapshot.raw).toEqual({ state: null, inventory: null });
-  });
-
   it('a second instance over the same userDataDir starts fresh, independent of the first', () => {
     const first = new GameReaderService('/fake/user-data', { mode: 'live' }, { consent: () => true });
     const second = new GameReaderService('/fake/user-data', { mode: 'live' }, { consent: () => true });
@@ -99,17 +102,15 @@ describe('GameReaderService — the live (non-fixture) tick never fabricates a r
     forceTick(service);
 
     expect(service.getStatus().status).toBe('not_running');
-    expect(service.getSnapshot().mapped).toBeNull();
   });
 
-  it('reports stale — not a fabricated snapshot — when the process is running but no live-tap frame has arrived yet', () => {
+  it('reports stale — not a fabricated connected status — when the process is running but no live-tap frame has arrived yet', () => {
     mockedFindProcessId.mockReturnValue(4242);
     const service = new GameReaderService('/fake/user-data', { mode: 'live' }, { consent: () => true });
 
     forceTick(service);
 
     expect(service.getStatus().status).toBe('stale');
-    expect(service.getSnapshot().mapped).toBeNull();
   });
 
   it('reports stale when the ingested tick carries no gold, rather than inventing gold: 0', () => {
@@ -120,11 +121,11 @@ describe('GameReaderService — the live (non-fixture) tick never fabricates a r
     forceTick(service);
 
     expect(service.getStatus().status).toBe('stale');
-    expect(service.getSnapshot().mapped).toBeNull();
   });
 
-  it('reports connected and maps the snapshot from the live tap once a real frame has been ingested', () => {
+  it('reports connected once a real frame has been ingested and parses', () => {
     mockedFindProcessId.mockReturnValue(4242);
+    mockedTickToRawGameState.mockClear();
     const service = new GameReaderService('/fake/user-data', { mode: 'live' }, { consent: () => true });
     const tick: LiveTick = { heroes: [], gold: 123456, phase: 26, wave: 3 };
     service.ingestLiveTick(liveFrame(tick, '2026-08-22T00:00:00.000Z'));
@@ -133,11 +134,7 @@ describe('GameReaderService — the live (non-fixture) tick never fabricates a r
     forceTick(service);
 
     expect(service.getStatus().status).toBe('connected');
-    const snapshot = service.getSnapshot();
-    expect(snapshot.mapped?.gold).toBe(123456);
-    expect(snapshot.mapped?.phase).toBe(26);
-    expect(snapshot.raw.state).toEqual({ t: 'snap', gold: 123456, kinds: [], hps: [], phase: 26, wave: 3 });
-    expect(snapshot.raw.inventory).toBeNull();
+    expect(mockedTickToRawGameState).toHaveBeenCalledWith(tick);
   });
 
   it('reports stale despite a cached tick when the tap has ingested a frame but never reported a live currency', () => {
@@ -150,35 +147,41 @@ describe('GameReaderService — the live (non-fixture) tick never fabricates a r
     forceTick(service);
 
     expect(service.getStatus().status).toBe('stale');
-    expect(service.getSnapshot().mapped).toBeNull();
   });
 
-  it('a later tick reflects a newer ingested frame — the snapshot channel tracks the tap, not a frozen first read', () => {
+  it('a later tick reflects a newer ingested frame — the parse chain tracks the tap, not a frozen first read', () => {
     mockedFindProcessId.mockReturnValue(4242);
+    mockedTickToRawGameState.mockClear();
     const service = new GameReaderService('/fake/user-data', { mode: 'live' }, { consent: () => true });
     service.ingestLiveCurrency(liveCurrency());
 
-    service.ingestLiveTick(liveFrame({ heroes: [], gold: 100 }, '2026-08-22T00:00:00.000Z', 1));
+    const firstTick: LiveTick = { heroes: [], gold: 100 };
+    service.ingestLiveTick(liveFrame(firstTick, '2026-08-22T00:00:00.000Z', 1));
     forceTick(service);
-    expect(service.getSnapshot().mapped?.gold).toBe(100);
+    expect(mockedTickToRawGameState).toHaveBeenLastCalledWith(firstTick);
 
-    service.ingestLiveTick(liveFrame({ heroes: [], gold: 900 }, '2026-08-22T00:00:01.000Z', 2));
+    const secondTick: LiveTick = { heroes: [], gold: 900 };
+    service.ingestLiveTick(liveFrame(secondTick, '2026-08-22T00:00:01.000Z', 2));
     forceTick(service);
-    expect(service.getSnapshot().mapped?.gold).toBe(900);
+    expect(mockedTickToRawGameState).toHaveBeenLastCalledWith(secondTick);
+    expect(service.getStatus().status).toBe('connected');
   });
 
   it('processes two frames that share the same `at` timestamp but carry distinct sequence numbers — the dedup key this guards against being millisecond-resolution', () => {
     mockedFindProcessId.mockReturnValue(4242);
+    mockedTickToRawGameState.mockClear();
     const service = new GameReaderService('/fake/user-data', { mode: 'live' }, { consent: () => true });
     service.ingestLiveCurrency(liveCurrency());
 
-    service.ingestLiveTick(liveFrame({ heroes: [], gold: 100 }, '2026-08-22T00:00:00.000Z', 1));
+    const firstTick: LiveTick = { heroes: [], gold: 100 };
+    service.ingestLiveTick(liveFrame(firstTick, '2026-08-22T00:00:00.000Z', 1));
     forceTick(service);
-    expect(service.getSnapshot().mapped?.gold).toBe(100);
+    expect(mockedTickToRawGameState).toHaveBeenLastCalledWith(firstTick);
 
-    service.ingestLiveTick(liveFrame({ heroes: [], gold: 900 }, '2026-08-22T00:00:00.000Z', 2));
+    const secondTick: LiveTick = { heroes: [], gold: 900 };
+    service.ingestLiveTick(liveFrame(secondTick, '2026-08-22T00:00:00.000Z', 2));
     forceTick(service);
-    expect(service.getSnapshot().mapped?.gold).toBe(900);
+    expect(mockedTickToRawGameState).toHaveBeenLastCalledWith(secondTick);
   });
 
   it('degrades from connected to stale when the tap reports it has stopped delivering, even though the last tick is still cached — the frozen-tick regression this guards against', () => {
@@ -190,7 +193,6 @@ describe('GameReaderService — the live (non-fixture) tick never fabricates a r
 
     forceTick(service);
     expect(service.getStatus().status).toBe('connected');
-    expect(service.getSnapshot().mapped?.gold).toBe(123456);
 
     // The tap itself detects the client has stopped streaming (or the hook has gone silent) and
     // reports a gap — exactly what `Tap`'s own staleness watch does, forwarded through
@@ -200,8 +202,6 @@ describe('GameReaderService — the live (non-fixture) tick never fabricates a r
     forceTick(service);
 
     expect(service.getStatus().status).toBe('stale');
-    // The previous snapshot is left in place rather than being wiped — only the status flips.
-    expect(service.getSnapshot().mapped?.gold).toBe(123456);
   });
 
   it('reports not_running (never a stale connected) when the process disappears entirely, even with a live currency still cached', () => {
@@ -218,23 +218,23 @@ describe('GameReaderService — the live (non-fixture) tick never fabricates a r
     expect(service.getStatus().status).toBe('not_running');
   });
 
-  it('does not re-run the parse chain for an unchanged frame — the mapped snapshot keeps its object identity across a repeat poll', () => {
+  it('does not re-run the parse chain for an unchanged frame', () => {
     mockedFindProcessId.mockReturnValue(4242);
+    mockedTickToRawGameState.mockClear();
     const service = new GameReaderService('/fake/user-data', { mode: 'live' }, { consent: () => true });
     service.ingestLiveTick(liveFrame({ heroes: [], gold: 123456, phase: 26 }, '2026-08-22T00:00:00.000Z'));
     service.ingestLiveCurrency(liveCurrency());
 
     forceTick(service);
-    const firstMapped = service.getSnapshot().mapped;
     expect(service.getStatus().status).toBe('connected');
+    expect(mockedTickToRawGameState).toHaveBeenCalledTimes(1);
 
     // Same cached frame, no new ingestLiveTick() in between — the poll that finds nothing new
-    // must not rebuild the snapshot from scratch.
+    // must not re-run the parse from scratch.
     forceTick(service);
-    const secondMapped = service.getSnapshot().mapped;
 
     expect(service.getStatus().status).toBe('connected');
-    expect(secondMapped).toBe(firstMapped);
+    expect(mockedTickToRawGameState).toHaveBeenCalledTimes(1);
   });
 
   it('reports a staleAgeMs derived from the tap-reported gap\'s sinceAt when the tap has stalled', () => {

@@ -4,6 +4,7 @@ import { wireKey } from '@bombfarm/game-api';
 import { describe, expect, it } from 'vitest';
 import { createBoundaryLog } from '../boundary-log/index.js';
 import { generateReplayStream } from './fixtures/generate-replay-stream.js';
+import type { LogPort } from './log-port.js';
 import { LiveSource, type TapHandle } from './live-source.js';
 
 class FakeTap implements TapHandle {
@@ -13,6 +14,7 @@ class FakeTap implements TapHandle {
 
   constructor(
     private readonly onEvent: (event: LiveEvent) => void,
+    private readonly onHttpBody: (body: Buffer, atMs: number) => void,
     private readonly teardownImpl: () => Promise<void> = () => Promise.resolve(),
   ) {}
 
@@ -32,9 +34,17 @@ class FakeTap implements TapHandle {
   emit(event: LiveEvent): void {
     this.onEvent(event);
   }
+
+  emitHttpBody(body: unknown, atMs: number): void {
+    this.onHttpBody(Buffer.from(JSON.stringify(body), 'utf8'), atMs);
+  }
+
+  emitRawHttpBody(bytes: Buffer, atMs: number): void {
+    this.onHttpBody(bytes, atMs);
+  }
 }
 
-function createHarness() {
+function createHarness(opts: { readonly log?: LogPort } = {}) {
   const taps: FakeTap[] = [];
   let sequence = 0;
   const clock = { ms: 1_700_000_000_000 };
@@ -43,8 +53,9 @@ function createHarness() {
     consent: () => true,
     userDataDir: 'unused-in-tests',
     now: () => clock.ms,
-    createTap: (onEvent) => {
-      const tap = new FakeTap(onEvent);
+    ...(opts.log ? { log: opts.log } : {}),
+    createTap: (onEvent, onHttpBody) => {
+      const tap = new FakeTap(onEvent, onHttpBody);
       taps.push(tap);
       return tap;
     },
@@ -115,11 +126,76 @@ function buildRotationBody(opts: {
   };
 }
 
+/** The smallest per-hero shape `parseAccountPayload` accepts without rejecting the whole read —
+ *  see `hasUsableBirthStats` (`packages/domain/src/save-units.ts`). No ability ranks, so every
+ *  hero built with this resolves the drain law's unreduced base rate — the same rate the fixed
+ *  fallback this file's tests were already written against used to hardcode. */
+const MINIMAL_BIRTH_STATS = {
+  dmg: 1, energia: 1, speed: 1, crit_chance: 0, crit_dmg: 1, penetration: 0, cooldown_reduction: 0, luck: 0,
+};
+
+function minimalRosterHero(id: string): Record<string, unknown> {
+  return { id, name: id, birth_stats: MINIMAL_BIRTH_STATS, stats: { ...MINIMAL_BIRTH_STATS }, abilities: [] };
+}
+
+function heroIdsFromCasaBody(casa: Record<string, unknown>): string[] {
+  const heroesList = casa[wireKey('heroesList')];
+  if (!Array.isArray(heroesList)) return [];
+  return heroesList
+    .map((hero) => (hero as Record<string, unknown>)[wireKey('heroId')])
+    .filter((id): id is string => typeof id === 'string');
+}
+
+/** Every hero named in `casa`'s own `heroesList` also gets a minimal roster record, so the
+ *  multipliers `LiveSource` resolves for them are never merely absent — matching a real account,
+ *  where a rotation body and its roster describe the same heroes. */
 function buildAccountView(casa: Record<string, unknown>): AccountView {
   return {
-    payload: { casa, heroes: [] },
+    payload: { casa, heroes: heroIdsFromCasaBody(casa).map(minimalRosterHero) },
     gameRunning: true,
     store: { status: 'ok', reason: null, binding: 'sqlite' },
+  };
+}
+
+/** Every validated field present except whatever `extra` overrides, so a test can isolate exactly
+ *  one drop per hero instead of also tripping over the fields it does not care about. This also
+ *  happens to be the complete `ROTATION_HERO_LEVEL` key set (`packages/game-api/src/fingerprints.ts`)
+ *  — the same shape a real `/rotation` body carries — which is what makes {@link bodyWithHeroes}
+ *  usable for `identifyObservedBody`-driven tests, not only for `normalizeRotation` ones. */
+function completeHero(id: string, extra: Record<string, unknown> = {}): Record<string, unknown> {
+  return {
+    [wireKey('heroId')]: id,
+    [wireKey('heroLevel')]: 10,
+    [wireKey('heroEnergy')]: 40,
+    [wireKey('heroEnergyMax')]: 100,
+    [wireKey('heroEnergyFraction')]: 0.4,
+    [wireKey('heroState')]: 'EM_CAMPO',
+    [wireKey('heroOnField')]: true,
+    [wireKey('heroInHouse')]: false,
+    [wireKey('heroRecovering')]: false,
+    [wireKey('heroBattleAllowed')]: true,
+    ...extra,
+  };
+}
+
+/** The complete `/rotation` route shape (`packages/game-api/src/fingerprints.ts`'s `ROTATION_LEVEL`
+ *  + `CASA_LEVEL`), not `buildRotationBody`'s simplified one — a body built with this is what
+ *  `identifyObservedBody` recognises as the `casa` route. */
+function bodyWithHeroes(heroes: readonly Record<string, unknown>[]): Record<string, unknown> {
+  return {
+    [wireKey('fieldSize')]: heroes.length,
+    [wireKey('heroesList')]: heroes,
+    [wireKey('house')]: {
+      [wireKey('houseActive')]: 1,
+      [wireKey('houseLevels')]: [1],
+      [wireKey('houseCycleSeconds')]: 600,
+      [wireKey('houseSlots')]: heroes.length,
+      [wireKey('houseSlotsPerHouse')]: [heroes.length],
+      [wireKey('houseCycleSecondsPerHouse')]: [600],
+      [wireKey('houseUpgradeCost')]: [0],
+    },
+    [wireKey('rescuesLeft')]: 2,
+    [wireKey('rescuesMax')]: 2,
   };
 }
 
@@ -129,12 +205,54 @@ describe('LiveSource: driven live from a replayed frame sequence', () => {
     source.start();
 
     const stream = generateReplayStream();
+    const [firstCombatFrame] = stream.frames.slice(6, 12);
+    if (!firstCombatFrame) throw new Error('fixture missing expected combat frame');
+    const combatHeroIds = firstCombatFrame.tick.heroes.map((hero) => hero.id);
+    source.ingestRotation(buildAccountView(bodyWithHeroes(combatHeroIds.map((id) => completeHero(id)))));
+
     goLive();
     for (const frame of stream.frames.slice(6, 12)) pushFrame(frame.tick);
 
     const view = source.getView();
     expect(view.currency.kind).toBe('live');
     expect(view.field.length).toBeGreaterThan(0);
+  });
+});
+
+describe('LiveSource: an attached tap that is not producing frames', () => {
+  it('still shows countdowns from the rotation read when the tap is live but no frame has ever arrived', () => {
+    const { source, goLive } = createHarness();
+    source.start();
+
+    // The combat stream only emits while a battle runs, so a tap attached while the player sits on
+    // a menu reports `live` and delivers nothing. The rotation read is all the panel has.
+    goLive();
+    source.ingestRotation(buildAccountView(bodyWithHeroes([completeHero('584'), completeHero('555')])));
+
+    const view = source.getView();
+    expect(view.currency.kind).toBe('live');
+    expect(view.rotation?.heroes.length).toBe(2);
+    expect(view.field.length).toBeGreaterThan(0);
+  });
+
+  it('does not let a later rotation read overwrite countdowns a frame already measured', () => {
+    const { source, pushFrame, goLive } = createHarness();
+    source.start();
+
+    const stream = generateReplayStream();
+    const [firstCombatFrame] = stream.frames.slice(6, 12);
+    if (!firstCombatFrame) throw new Error('fixture missing expected combat frame');
+    const combatHeroIds = firstCombatFrame.tick.heroes.map((hero) => hero.id);
+    source.ingestRotation(buildAccountView(bodyWithHeroes(combatHeroIds.map((id) => completeHero(id)))));
+
+    goLive();
+    for (const frame of stream.frames.slice(6, 12)) pushFrame(frame.tick);
+    const measured = source.getView().field;
+    expect(measured.length).toBeGreaterThan(0);
+
+    source.ingestRotation(buildAccountView(bodyWithHeroes(combatHeroIds.map((id) => completeHero(id)))));
+
+    expect(source.getView().field).toEqual(measured);
   });
 });
 
@@ -235,19 +353,15 @@ describe('LiveSource: composition with the REST rotation projection', () => {
   });
 });
 
-describe('LiveSource: REST refreshes must never earn an observed basis', () => {
-  it('a dozen REST-only refreshes, draining linearly the whole time, stay modelled — with no tap ever attached', () => {
+describe('LiveSource: REST refreshes populate the field countdown from the drain law alone', () => {
+  it('a dozen REST-only refreshes, draining linearly the whole time, report modelled countdowns — with no tap ever attached', () => {
     const { source, clock } = createHarness();
     source.start();
 
     const energyMax = 1000;
     const ratePerSecond = 0.8;
     let energyFraction = 0.9;
-    const observedBases: string[] = [];
-    // Spacing is inside the drain-fit's own 30s sample-age window (unlike the real ~60s refresh
-    // cadence), so a dozen calls actually accumulate enough samples to reach the observed-slope
-    // gates — otherwise the age window alone would keep every countdown modelled and this test
-    // would pass whether or not REST provenance were respected.
+    const bases: string[] = [];
     const refreshIntervalMs = 3_000;
 
     for (let i = 0; i < 14; i += 1) {
@@ -263,15 +377,14 @@ describe('LiveSource: REST refreshes must never earn an observed basis', () => {
 
       const view = source.getView();
       expect(view.currency.kind).toBe('gap');
-      for (const countdown of view.field) observedBases.push(countdown.basis);
+      for (const countdown of view.field) bases.push(countdown.basis);
 
       clock.ms += refreshIntervalMs;
       energyFraction -= (ratePerSecond * (refreshIntervalMs / 1000)) / energyMax;
     }
 
-    expect(observedBases.length).toBeGreaterThanOrEqual(14);
-    expect(observedBases.every((basis) => basis === 'modelled')).toBe(true);
-    expect(observedBases).not.toContain('observed');
+    expect(bases.length).toBeGreaterThanOrEqual(14);
+    expect(bases.every((basis) => basis === 'modelled')).toBe(true);
   });
 });
 
@@ -297,10 +410,11 @@ describe('LiveSource: consent revoke forces the tap down', () => {
     const source = new LiveSource({
       consent: () => true,
       userDataDir: 'unused-in-tests',
-      createTap: (onEvent) => {
+      createTap: (onEvent, onHttpBody) => {
         createCount += 1;
         const tap = new FakeTap(
           onEvent,
+          onHttpBody,
           createCount === 1 ? () => Promise.reject(new Error('attach in flight')) : undefined,
         );
         taps.push(tap);
@@ -333,45 +447,9 @@ describe('LiveSource: pollNow forwards to the current tap', () => {
 });
 
 describe('LiveSource: rotation field drops are deduplicated and lose their hero index', () => {
-  /** Every validated field present except whatever `omit` names, so a test can isolate exactly
-   *  one drop per hero instead of also tripping over the fields this suite does not care about. */
-  function completeHero(id: string, extra: Record<string, unknown> = {}): Record<string, unknown> {
-    return {
-      [wireKey('heroId')]: id,
-      [wireKey('heroLevel')]: 10,
-      [wireKey('heroEnergy')]: 40,
-      [wireKey('heroEnergyMax')]: 100,
-      [wireKey('heroEnergyFraction')]: 0.4,
-      [wireKey('heroState')]: 'EM_CAMPO',
-      [wireKey('heroOnField')]: true,
-      [wireKey('heroInHouse')]: false,
-      [wireKey('heroRecovering')]: false,
-      [wireKey('heroBattleAllowed')]: true,
-      ...extra,
-    };
-  }
-
   function heroMissingEnergyMax(id: string): Record<string, unknown> {
     const { [wireKey('heroEnergyMax')]: _omitted, ...rest } = completeHero(id);
     return rest;
-  }
-
-  function bodyWithHeroes(heroes: readonly Record<string, unknown>[]): Record<string, unknown> {
-    return {
-      [wireKey('fieldSize')]: heroes.length,
-      [wireKey('heroesList')]: heroes,
-      [wireKey('house')]: {
-        [wireKey('houseActive')]: 1,
-        [wireKey('houseLevels')]: [1],
-        [wireKey('houseCycleSeconds')]: 600,
-        [wireKey('houseSlots')]: heroes.length,
-        [wireKey('houseSlotsPerHouse')]: [heroes.length],
-        [wireKey('houseCycleSecondsPerHouse')]: [600],
-        [wireKey('houseUpgradeCost')]: [0],
-      },
-      [wireKey('rescuesLeft')]: 2,
-      [wireKey('rescuesMax')]: 2,
-    };
   }
 
   /** Wires `LiveSource` to a real {@link createBoundaryLog} instance, the same shared-log shape
@@ -391,7 +469,7 @@ describe('LiveSource: rotation field drops are deduplicated and lose their hero 
     const source = new LiveSource({
       consent: () => true,
       userDataDir: 'unused-in-tests',
-      createTap: (onEvent) => new FakeTap(onEvent),
+      createTap: (onEvent, onHttpBody) => new FakeTap(onEvent, onHttpBody),
       log: boundaryLog,
     });
     return { source, warnRecords };
@@ -442,6 +520,171 @@ describe('LiveSource: rotation field drops are deduplicated and lose their hero 
   });
 });
 
+describe('LiveSource: onFieldHeroIds tracks the live tap within one frame', () => {
+  it('a hero the very next frame stops naming is off the on-field list on that same read, no cycle wait', () => {
+    const { source, pushFrame, goLive } = createHarness();
+    source.start();
+    goLive();
+
+    pushFrame({ heroes: [{ id: 'h1' }, { id: 'h2' }] });
+    expect(source.getView().onFieldHeroIds).toEqual(['h1', 'h2']);
+
+    pushFrame({ heroes: [{ id: 'h1' }] });
+    expect(source.getView().onFieldHeroIds).toEqual(['h1']);
+  });
+
+  it('getView() returns the same onFieldHeroIds array reference across calls when membership has not changed, rather than sorting a fresh one every time', () => {
+    const { source, pushFrame, goLive } = createHarness();
+    source.start();
+    goLive();
+    pushFrame({ heroes: [{ id: 'h1' }, { id: 'h2' }] });
+
+    const first = source.getView().onFieldHeroIds;
+    const second = source.getView().onFieldHeroIds;
+
+    expect(second).toBe(first);
+  });
+
+  it('with no tap frame yet, falls back to the REST rotation projection\'s own on-field heroes', () => {
+    const { source } = createHarness();
+    source.start();
+
+    const body = buildRotationBody({
+      fieldHeroId: 'hero-field',
+      fieldEnergyFraction: 0.8,
+      fieldEnergyMax: 100,
+      restingHeroId: 'hero-resting',
+      restingEnergyFraction: 0.3,
+      cycleSeconds: 600,
+    });
+    source.ingestRotation(buildAccountView(body));
+
+    expect(source.getView().onFieldHeroIds).toEqual(['hero-field']);
+  });
+});
+
+function createSpyLog(): { readonly log: LogPort; readonly infoRecords: Record<string, unknown>[]; readonly warnRecords: Record<string, unknown>[] } {
+  const infoRecords: Record<string, unknown>[] = [];
+  const warnRecords: Record<string, unknown>[] = [];
+  const log = createBoundaryLog({
+    transport: {
+      info: (record) => infoRecords.push(record),
+      warn: (record) => warnRecords.push(record),
+      error: () => undefined,
+      debug: () => undefined,
+    },
+    now: () => Date.now(),
+  });
+  return { log, infoRecords, warnRecords };
+}
+
+describe('LiveSource: observed and self-fetched rotation converge on one path, newest wins by timestamp', () => {
+  it('an observed rotation body older than the currently applied one is dropped, not applied', () => {
+    const { source, currentTap, clock } = createHarness();
+    source.start();
+
+    source.ingestRotation(buildAccountView(bodyWithHeroes([completeHero('hero-self')])), clock.ms);
+    currentTap().emitHttpBody(bodyWithHeroes([completeHero('hero-observed')]), clock.ms - 1_000);
+
+    expect(source.getView().rotation?.heroes.map((hero) => hero.id)).toEqual(['hero-self']);
+  });
+
+  it('a newer observed rotation body wins over an older self-fetched one applied afterward — decided by timestamp, not by which call happened last', () => {
+    const { source, currentTap, clock } = createHarness();
+    source.start();
+
+    currentTap().emitHttpBody(bodyWithHeroes([completeHero('hero-observed')]), clock.ms + 5_000);
+    source.ingestRotation(buildAccountView(bodyWithHeroes([completeHero('hero-self')])), clock.ms);
+
+    expect(source.getView().rotation?.heroes.map((hero) => hero.id)).toEqual(['hero-observed']);
+  });
+
+  it('a newer self-fetched rotation body wins over an older observed one', () => {
+    const { source, currentTap, clock } = createHarness();
+    source.start();
+
+    currentTap().emitHttpBody(bodyWithHeroes([completeHero('hero-observed')]), clock.ms);
+    source.ingestRotation(buildAccountView(bodyWithHeroes([completeHero('hero-self')])), clock.ms + 5_000);
+
+    expect(source.getView().rotation?.heroes.map((hero) => hero.id)).toEqual(['hero-self']);
+  });
+
+  it('a self-fetched read rejected as stale does not overwrite the roster cache either — the next observed body still joins names from the last read that actually applied', () => {
+    const { source, currentTap, clock } = createHarness();
+    source.start();
+
+    function accountViewWithRoster(rosterHeroes: readonly Record<string, unknown>[]): AccountView {
+      return {
+        payload: { casa: bodyWithHeroes([completeHero('h1')]), heroes: rosterHeroes },
+        gameRunning: true,
+        store: { status: 'ok', reason: null, binding: 'sqlite' },
+      };
+    }
+
+    source.ingestRotation(accountViewWithRoster([{ id: 'h1', name: 'Alice', rank: 'gold' }]), clock.ms);
+
+    // A stale self-fetched read: its rotation body is rejected, and per the newest-wins rule its
+    // roster must be rejected right along with it, never applied on its own.
+    source.ingestRotation(accountViewWithRoster([{ id: 'h1', name: 'Bob', rank: 'silver' }]), clock.ms - 1_000);
+
+    // An observed body carries no roster of its own — it joins whatever #lastRosterRaw currently
+    // holds. If the stale read's roster had leaked through, this would name the hero "Bob".
+    currentTap().emitHttpBody(bodyWithHeroes([completeHero('h1')]), clock.ms + 1_000);
+
+    const hero = source.getView().rotation?.heroes.find((candidate) => candidate.id === 'h1');
+    expect(hero?.name).toBe('Alice');
+  });
+
+  it('identifies a real /rotation-shaped body observed from traffic and feeds it through the same rotation the Live screen already renders', () => {
+    const { source, currentTap, clock } = createHarness();
+    source.start();
+
+    currentTap().emitHttpBody(bodyWithHeroes([completeHero('hero-from-traffic')]), clock.ms);
+
+    const view = source.getView();
+    expect(view.rotation?.heroes.map((hero) => hero.id)).toEqual(['hero-from-traffic']);
+    expect(view.onFieldHeroIds).toEqual(['hero-from-traffic']);
+  });
+});
+
+describe('LiveSource: an observed body identification failure falls back to the self-fetched read, and says so', () => {
+  it('an observed body matching no declared route is dropped and reported once, never guessed at', () => {
+    const { log, warnRecords } = createSpyLog();
+    const { source, currentTap } = createHarness({ log });
+    source.start();
+
+    currentTap().emitHttpBody({ totally: 'unrecognisable', shape: 1 }, Date.now());
+
+    expect(warnRecords).toHaveLength(1);
+    expect(warnRecords[0]).toMatchObject({ event: 'observed_body.unidentified' });
+  });
+
+  it('the self-fetched rotation still updates the view after an observed body fails to identify, proving the fallback engages', () => {
+    const { log } = createSpyLog();
+    const { source, currentTap, clock } = createHarness({ log });
+    source.start();
+
+    currentTap().emitHttpBody({ totally: 'unrecognisable', shape: 1 }, clock.ms);
+    expect(source.getView().rotation).toBeNull();
+
+    source.ingestRotation(buildAccountView(bodyWithHeroes([completeHero('hero-fallback')])), clock.ms + 1_000);
+
+    expect(source.getView().rotation?.heroes.map((hero) => hero.id)).toEqual(['hero-fallback']);
+  });
+
+  it('a malformed (non-JSON) observed body is dropped and reported once, never crashing the source', () => {
+    const { log, warnRecords } = createSpyLog();
+    const { source, currentTap } = createHarness({ log });
+    source.start();
+
+    expect(() => {
+      currentTap().emitRawHttpBody(Buffer.from('not json at all', 'utf8'), Date.now());
+    }).not.toThrow();
+    expect(warnRecords).toHaveLength(1);
+    expect(warnRecords[0]).toMatchObject({ event: 'observed_body.malformed_json' });
+  });
+});
+
 describe('LiveSource: manual diagnostics dump', () => {
   it('reports written: false with reason no-source rather than a silent success when no ring is attached', () => {
     const { source } = createHarness();
@@ -471,5 +714,194 @@ describe('LiveSource: no raw payload on the seam', () => {
     expect(Object.keys(frameEvent.frame).sort()).toEqual(['at', 'sequence', 'tick']);
     expect(frameEvent.frame.tick).toEqual(combatFrame.tick);
     expect(JSON.stringify(frameEvent)).not.toMatch(/"raw"|"json"|"payload"/);
+  });
+});
+
+describe('LiveSource: countdown stability regression', () => {
+  it("a hero's displayed field time never increases while its own drain conditions stay constant, even as unrelated heroes repeatedly join and leave the field", () => {
+    const { source, pushFrame, goLive, clock } = createHarness();
+    source.start();
+
+    // The target carries real drain reduction (Bateria Extra rank 13, -13% self) and no team aura
+    // is ever present — its true combined drain rate never changes for the length of this run.
+    const casa = bodyWithHeroes([completeHero('target'), completeHero('noise1'), completeHero('noise2')]);
+    source.ingestRotation(
+      {
+        payload: {
+          casa,
+          heroes: [
+            { ...minimalRosterHero('target'), abilities: [{ code: 'bateria_extra', level: 13 }] },
+            minimalRosterHero('noise1'),
+            minimalRosterHero('noise2'),
+          ],
+        },
+        gameRunning: true,
+        store: { status: 'ok', reason: null, binding: 'sqlite' },
+      },
+      clock.ms,
+    );
+    goLive();
+
+    const energyMax = 100;
+    const trueRatePerSecond = 0.87; // combineDrainRate(0.87, 1) — Bateria Extra 13, no team aura
+    const startEnergy = 90;
+
+    const remainingReadings: number[] = [];
+    const bases: string[] = [];
+
+    // Three stretches, each separated by a membership change from a non-carrier who never affects
+    // the target's own multipliers — the countdown is driven by the law alone, so none of this
+    // should move the target's own rate.
+    const TOTAL_TICKS = 70;
+    for (let i = 0; i < TOTAL_TICKS; i += 1) {
+      const heroes: { id: string; energyFraction: number }[] = [
+        { id: 'target', energyFraction: (startEnergy - trueRatePerSecond * (i * 0.1)) / energyMax },
+      ];
+      if (i >= 25 && i < 50) heroes.push({ id: 'noise1', energyFraction: 0.5 });
+      if (i >= 50) heroes.push({ id: 'noise2', energyFraction: 0.5 });
+
+      pushFrame({ heroes });
+
+      const view = source.getView();
+      const targetReading = view.field.find((entry) => entry.heroId === 'target');
+      if (targetReading) {
+        remainingReadings.push(targetReading.secondsRemaining);
+        bases.push(targetReading.basis);
+      }
+    }
+
+    expect(remainingReadings.length).toBeGreaterThan(TOTAL_TICKS / 2);
+    let previousReading: number | undefined;
+    for (const reading of remainingReadings) {
+      if (previousReading !== undefined) expect(reading).toBeLessThanOrEqual(previousReading);
+      previousReading = reading;
+    }
+    expect(bases.every((basis) => basis === 'modelled')).toBe(true);
+  });
+});
+
+describe('LiveSource: the field countdown freezes when frames stop, and runs no clock of its own', () => {
+  it('holds the exact last computed value across repeated reads with no new frame, however much real time passes', () => {
+    const { source, pushFrame, goLive, clock } = createHarness();
+    source.start();
+
+    source.ingestRotation(buildAccountView(bodyWithHeroes([completeHero('h1')])));
+    goLive();
+    pushFrame({ heroes: [{ id: 'h1', energyFraction: 0.4 }] });
+
+    const first = source.getView().field;
+    expect(first.length).toBeGreaterThan(0);
+
+    clock.ms += 10_000; // real time passes with no new frame arriving
+    expect(source.getView().field).toEqual(first);
+  });
+});
+
+function heroRecovery(source: LiveSource, heroId: string): { secondsRemaining: number; advancing: boolean } {
+  const entry = source.getView().recovery.find((candidate) => candidate.heroId === heroId);
+  if (!entry) throw new Error(`expected a recovery entry for ${heroId}`);
+  return entry;
+}
+
+describe('LiveSource: recovery ticks in real time between account reads, and freezes when the connection drops', () => {
+  it("decreases second by second while connected, then holds the instant the connection is lost", () => {
+    const { source, pushCurrency, clock } = createHarness();
+    source.start();
+
+    const body = buildRotationBody({
+      fieldHeroId: 'hero-field',
+      fieldEnergyFraction: 0.8,
+      fieldEnergyMax: 100,
+      restingHeroId: 'hero-resting',
+      restingEnergyFraction: 0.3,
+      cycleSeconds: 600,
+    });
+    source.ingestRotation(buildAccountView(body), clock.ms);
+    pushCurrency({ kind: 'live', lastFrameAt: new Date(clock.ms).toISOString(), sinceAt: new Date(clock.ms).toISOString() });
+
+    const atRead = heroRecovery(source, 'hero-resting');
+    expect(atRead.advancing).toBe(true);
+
+    clock.ms += 5_000;
+    const fiveSecondsLater = heroRecovery(source, 'hero-resting');
+    expect(fiveSecondsLater.secondsRemaining).toBeCloseTo(atRead.secondsRemaining - 5, 6);
+
+    pushCurrency(liveGap('hookSilent', new Date(clock.ms).toISOString()));
+    const justDisconnected = heroRecovery(source, 'hero-resting');
+    expect(justDisconnected.advancing).toBe(false);
+    expect(justDisconnected.secondsRemaining).toBeCloseTo(fiveSecondsLater.secondsRemaining, 6);
+
+    clock.ms += 5_000;
+    const stillDisconnected = heroRecovery(source, 'hero-resting');
+    expect(stillDisconnected.secondsRemaining).toBeCloseTo(justDisconnected.secondsRemaining, 6);
+  });
+
+  it('a non-actionable gap — the combat stream paused, everything else still proving the game is reachable — keeps recovery advancing', () => {
+    const { source, pushCurrency, clock } = createHarness();
+    source.start();
+
+    const body = buildRotationBody({
+      fieldHeroId: 'hero-field',
+      fieldEnergyFraction: 0.8,
+      fieldEnergyMax: 100,
+      restingHeroId: 'hero-resting',
+      restingEnergyFraction: 0.3,
+      cycleSeconds: 600,
+    });
+    source.ingestRotation(buildAccountView(body), clock.ms);
+    pushCurrency(liveGap('clientNotStreaming', new Date(clock.ms).toISOString()));
+
+    const atRead = heroRecovery(source, 'hero-resting');
+    expect(atRead.advancing).toBe(true);
+
+    clock.ms += 3_000;
+    const later = heroRecovery(source, 'hero-resting');
+    expect(later.advancing).toBe(true);
+    expect(later.secondsRemaining).toBeCloseTo(atRead.secondsRemaining - 3, 6);
+  });
+});
+
+describe('LiveSource: the background drain-rate checker', () => {
+  it('logs once when real frame data disagrees with the law, using the same log the rest of the app shares', () => {
+    const { log, warnRecords } = createSpyLog();
+    const { source, pushFrame, goLive } = createHarness({ log });
+    source.start();
+
+    // No ability ranks resolve for this hero, so the law's own rate is the unreduced base, 1.0/s.
+    // The frames below drain at 0.5/s instead — a disagreement no measurement machinery is left to
+    // hide, and the one thing left to catch a wrong law.
+    source.ingestRotation(buildAccountView(bodyWithHeroes([completeHero('h1')])));
+    goLive();
+
+    const startFraction = 0.4;
+    const energyMax = 100;
+    const trueRatePerSecond = 0.5;
+    for (let i = 0; i < 5; i += 1) {
+      const fraction = startFraction - (trueRatePerSecond * (i * 0.1)) / energyMax;
+      pushFrame({ heroes: [{ id: 'h1', energyFraction: fraction }] });
+    }
+
+    const disagreements = warnRecords.filter((record) => record.event === 'drain.rate_disagreement');
+    expect(disagreements).toHaveLength(1);
+    expect(disagreements[0]).toMatchObject({ heroId: 'h1' });
+  });
+
+  it('stays silent across a whole run when the frames agree with the law', () => {
+    const { log, warnRecords } = createSpyLog();
+    const { source, pushFrame, goLive } = createHarness({ log });
+    source.start();
+
+    source.ingestRotation(buildAccountView(bodyWithHeroes([completeHero('h1')])));
+    goLive();
+
+    const startFraction = 0.4;
+    const energyMax = 100;
+    const trueRatePerSecond = 1; // the unreduced base rate, exactly what this hero's law predicts
+    for (let i = 0; i < 5; i += 1) {
+      const fraction = startFraction - (trueRatePerSecond * (i * 0.1)) / energyMax;
+      pushFrame({ heroes: [{ id: 'h1', energyFraction: fraction }] });
+    }
+
+    expect(warnRecords.filter((record) => record.event === 'drain.rate_disagreement')).toHaveLength(0);
   });
 });
