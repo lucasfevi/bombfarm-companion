@@ -1,7 +1,7 @@
 'use client';
 
 import { Tooltip, cn } from '@bombfarm/ui';
-import { rosterIconTooltipTriggerClass } from '@/shared/game-art/game-art.recipe';
+import { rosterIconTooltipTriggerClass } from '@/shared/game-art';
 import { formatCompactNumber, formatNumber } from '@/shared/lib/format-number';
 
 /**

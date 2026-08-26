@@ -3,11 +3,11 @@
 import type { SyntheticEvent } from 'react';
 import { abilityName } from '@bombfarm/domain/game-labels';
 import { heroAbilityIconEntries } from '@bombfarm/domain/hero-abilities';
-import type { Lang } from '@/shared/i18n';
+import type { Lang } from '@bombfarm/domain/shims/i18n';
 
 import { cn, Tooltip } from '@bombfarm/ui';
-import { AbilityIcon } from '@/shared/game-art/ability-icon';
-import { rosterIconTooltipTriggerClass } from '@/shared/game-art/game-art.recipe';
+import { AbilityIcon } from './ability-icon';
+import { rosterIconTooltipTriggerClass } from './game-art.recipe';
 
 type Props = {
   abilities: Record<string, number>;

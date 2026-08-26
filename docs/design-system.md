@@ -74,9 +74,21 @@ All exported from the barrel [`packages/ui/src/index.ts`](../packages/ui/src/ind
 | `SegmentedToggle` | `<div role="group">` + `<button>` | generic bordered flush button group: `options` (`{id, label}`), `value`, `onChange`, `ariaLabel`; no language semantics (DS-09) — extracted verbatim from the web's former inline PT/EN control (T4a) | `segmented-toggle.recipe.ts` |
 | `AppShell` | `<header>`/`<main>`/`<footer>` | desktop-only top-bar shell (used solely by `apps/desktop/renderer/app/page.tsx`): sticky header (brand `title`/`badge` lockup, an `AppNav` pill built from `items`/`activeId`/`onNavigate`, and a right-hand `actions` slot), a single scrolling `<main>`, and a slim status strip (`status`/`progress`/`version`). Same top-bar shape as the web's `SiteHeader`, replacing the desktop's earlier icon-rail sidebar (T4a). `draggable`/`overlayInset` are implemented for a later custom-title-bar task and default off | `AppShell.recipe.ts` |
 
-### Game art (`apps/web/src/shared/game-art/`)
+### Game art (`packages/game-art/src/`)
 
-Wiki-sourced game assets (heroes, items, abilities, …). **Do not overlay crystal gems** on item art. Hero avatars stay square with a **neutral fill + rarity border**. Gear frames are **portrait `18/19`** (in-game inventory pitch) with a **radial rarity plate** (`--rar-slot-N-glow/mid/edge`, legendary adds faint vertical rays) plus the matching rarity border. Export from [`apps/web/src/shared/game-art/index.ts`](../apps/web/src/shared/game-art/index.ts).
+Wiki-sourced game assets (heroes, items, abilities, …), shared by the web planner and the desktop
+Planning surfaces. It is its own workspace package rather than part of `packages/ui` because it
+depends on `@bombfarm/domain` (hero/gear shapes, `wiki-assets.ts` URL builders) and `@bombfarm/ui`,
+which DS-09 forbids `packages/ui` itself from doing. **Do not overlay crystal gems** on item art.
+Hero avatars stay square with a **neutral fill + rarity border**. Gear frames are **portrait
+`18/19`** (in-game inventory pitch) with a **radial rarity plate** (`--rar-slot-N-glow/mid/edge`,
+legendary adds faint vertical rays) plus the matching rarity border. Export from
+[`packages/game-art/src/index.ts`](../packages/game-art/src/index.ts); the web keeps a thin
+re-export barrel at [`apps/web/src/shared/game-art/index.ts`](../apps/web/src/shared/game-art/index.ts)
+so its existing `@/shared/game-art` call sites are unchanged. Bundled sprites live in
+`packages/game-art/assets/`; each app copies them into its own `public/wiki-assets/` at build time
+(`apps/*/scripts/copy-wiki-assets.mjs`, wired as a `prebuild` step) since Next only serves files
+under an app's own public root.
 
 | Component | Role | Recipe |
 | --- | --- | --- |
@@ -216,7 +228,7 @@ concerns out of primitives entirely. Imports of `shared/lib/**` (e.g. `cn`) rema
 The boundary is **lint-enforced, not grep-checked** — `eslint-plugin-boundaries`'
 `boundaries/element-types` rule (`eslint.config.mjs`, `error`) declares
 `@bombfarm/ui` sources as a boundary and allows them to depend on only themselves and
-shared lib helpers; every other edge (into a feature, into `@bombfarm/domain`, `shared/game-art`,
+shared lib helpers; every other edge (into a feature, into `@bombfarm/domain`, `@bombfarm/game-art`,
 `shared/context`, `shared/i18n`) is `disallow` by default. Package-aware element mapping is
 tracked debt for `mp1-ci-vercel-rebrand` / hygiene — until then, treat the reuse boundary as
 convention + review, not a fully wired package path. Run `pnpm lint` — a violation of still-mapped

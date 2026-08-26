@@ -15,6 +15,7 @@ const WORKSPACE_PACKAGES = [
   { name: '@bombfarm/contracts', path: 'packages/contracts/package.json' },
   { name: '@bombfarm/domain', path: 'packages/domain/package.json' },
   { name: '@bombfarm/game-api', path: 'packages/game-api/package.json' },
+  { name: '@bombfarm/game-art', path: 'packages/game-art/package.json' },
   { name: '@bombfarm/game-data', path: 'packages/game-data/package.json' },
   { name: '@bombfarm/pricing', path: 'packages/pricing/package.json' },
   { name: '@bombfarm/tap-runtime', path: 'packages/tap-runtime/package.json' },
@@ -75,7 +76,7 @@ describe('workspace package privacy', () => {
 });
 
 describe('changeset package selector coverage', () => {
-  it('offers the same nine workspace packages changesets would version', async () => {
+  it('offers the same ten workspace packages changesets would version', async () => {
     const { getPackages } = await import('@manypkg/get-packages');
     const { packages } = await getPackages(root);
     const discoveredNames = packages
@@ -87,7 +88,7 @@ describe('changeset package selector coverage', () => {
     );
 
     expect(discoveredNames).toEqual(expectedNames);
-    expect(discoveredNames).toHaveLength(9);
+    expect(discoveredNames).toHaveLength(10);
   });
 });
 

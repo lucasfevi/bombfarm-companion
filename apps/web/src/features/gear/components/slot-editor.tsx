@@ -12,10 +12,9 @@ import {
 } from '@bombfarm/domain/gear';
 import { sub, type Lang, type Strings } from '@/shared/i18n';
 import { itemRarityLabel, setName, slotLabel } from '@bombfarm/domain/game-labels';
-import { artFrameRadiusClass } from '@/shared/game-art/game-art.recipe';
 
 import { Button, Select, cn } from '@bombfarm/ui';
-import { ItemIcon } from '@/shared/game-art';
+import { artFrameRadiusClass, ItemIcon } from '@/shared/game-art';
 
 export type SlotPatchHandler = (slot: Slot, patch: Partial<EquippedItem> | null) => void;
 

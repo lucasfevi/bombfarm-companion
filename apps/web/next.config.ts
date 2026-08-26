@@ -81,7 +81,7 @@ const nextConfig: NextConfig = {
     NEXT_PUBLIC_APP_VERSION_LABEL_OVERRIDE: process.env.BFC_VERSION_LABEL_OVERRIDE ?? '',
   },
   reactStrictMode: true,
-  transpilePackages: ['@bombfarm/domain', '@bombfarm/ui'],
+  transpilePackages: ['@bombfarm/domain', '@bombfarm/ui', '@bombfarm/game-art'],
   // Pin Turbopack's resolve root to the pnpm workspace root.
   // apps/web alone breaks when `next` is hoisted to the repo root (`Next.js package not found`).
   turbopack: {

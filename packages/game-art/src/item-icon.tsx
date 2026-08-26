@@ -2,8 +2,8 @@ import type { EquippedItem } from '@bombfarm/domain/gear';
 import { itemIconSrc } from '@bombfarm/domain/wiki-assets';
 
 import { cn } from '@bombfarm/ui';
-import { ArtFrame, type ArtFrameSize } from '@/shared/game-art/art-frame';
-import { iconMetaGlyphRecipe } from '@/shared/game-art/game-art.recipe';
+import { ArtFrame, type ArtFrameSize } from './art-frame';
+import { iconMetaGlyphRecipe } from './game-art.recipe';
 
 type Props = {
   equipped: EquippedItem;

@@ -32,6 +32,7 @@ export const ptBR: Copy = {
   sectionNameItems: 'seu equipamento',
 
   // planning* — the Planning screen
+  planningRosterColumnAvatar: 'Avatar',
   planningRosterColumnName: 'Herói',
   planningRosterColumnLevel: 'Nível',
   planningRosterColumnStars: 'Estrelas',

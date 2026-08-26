@@ -3,6 +3,7 @@
 @source '../app/**/*.{ts,tsx}';
 @source '../lib/**/*.{ts,tsx}';
 @source '../../../../packages/ui/src/**/*.{ts,tsx}';
+@source '../../../../packages/game-art/src/**/*.{ts,tsx}';
 
 /* @fontsource-variable/dm-sans registers its family as 'DM Sans Variable', not 'DM Sans' —
    bridge it (and the mono face) to the --font-dm-sans / --font-ibm-plex-mono variables

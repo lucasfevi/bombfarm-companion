@@ -302,8 +302,10 @@ export default tseslint.config(
               allow: 'index.{ts,tsx}',
             },
             {
+              // The recipe and every component now live in @bombfarm/game-art (a workspace
+              // package, reached as an external module); this folder is just the re-export barrel.
               target: { element: { type: 'shared-game-art' } },
-              allow: '{index.{ts,tsx},game-art.recipe.ts}',
+              allow: 'index.{ts,tsx}',
             },
             {
               target: {

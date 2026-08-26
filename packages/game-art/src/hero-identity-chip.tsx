@@ -3,10 +3,11 @@
 import { RARITIES } from '@bombfarm/domain/planner-constants';
 import { rarityLabel } from '@bombfarm/domain/game-labels';
 import { cn } from '@bombfarm/ui';
-import { HeroAvatar, rarityTextClass } from '@/shared/game-art';
-import type { HeroRecord } from '@/shared/lib/storage';
-import type { Lang } from '@/shared/i18n';
-import { shortHeroRecordId } from '@/shared/lib/hero-identity';
+import { HeroAvatar } from './hero-avatar';
+import { rarityTextClass } from './game-art.recipe';
+import type { HeroRecord } from '@bombfarm/domain/shims/storage';
+import type { Lang } from '@bombfarm/domain/shims/i18n';
+import { shortHeroRecordId } from '@bombfarm/domain/shims/hero-identity';
 
 /** Compact avatar + rank/name/rarity/level·id block — the `ScopeHeroCard` identity, sized down for a row. */
 export function HeroIdentityChip({
@@ -14,6 +15,7 @@ export function HeroIdentityChip({
   fallbackName,
   lang,
   variant = 'inline',
+  nameTestId,
 }: {
   hero: HeroRecord | undefined;
   fallbackName: string;
@@ -23,9 +25,15 @@ export function HeroIdentityChip({
    * id, so a grid of chips keeps one uniform height regardless of name or rarity length.
    */
   variant?: 'inline' | 'stacked';
+  /** `data-testid` on the element carrying the hero's own name, for a caller that needs one. */
+  nameTestId?: string;
 }) {
   if (!hero) {
-    return <span className="truncate text-[13px] font-bold text-ink">{fallbackName}</span>;
+    return (
+      <span data-testid={nameTestId} className="truncate text-[13px] font-bold text-ink">
+        {fallbackName}
+      </span>
+    );
   }
 
   const rarIdx = RARITIES.indexOf(hero.rarity);
@@ -58,7 +66,9 @@ export function HeroIdentityChip({
           >
             {hero.rank?.trim() || '—'}
           </span>
-          <span className="truncate text-[13px] leading-none font-bold text-ink">{hero.name}</span>
+          <span data-testid={nameTestId} className="truncate text-[13px] leading-none font-bold text-ink">
+            {hero.name}
+          </span>
           {stars > 0 ? (
             <span className="shrink-0 text-[10px] leading-none tracking-tight text-rar-4" aria-hidden>
               {'★'.repeat(stars)}

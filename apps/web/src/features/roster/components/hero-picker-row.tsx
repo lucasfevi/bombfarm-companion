@@ -4,6 +4,7 @@ import { memo } from 'react';
 import type { HeroRecord } from '@/shared/lib/storage';
 import { RARITIES } from '@bombfarm/domain/planner-constants';
 import type { Lang, Strings } from '@/shared/i18n';
+import { sub } from '@/shared/i18n';
 import { rarityLabel } from '@bombfarm/domain/game-labels';
 import { cn, DataTable } from '@bombfarm/ui';
 import { usePlannerStore } from '@/shared/stores';
@@ -116,7 +117,13 @@ export const HeroPickerRow = memo(function HeroPickerRow({
         {formatNumber(powerShown, 0)}
       </DataTable.Cell>
       <DataTable.Cell className={cn('max-[720px]:hidden py-2', inactiveChrome)} nowrap={false} data-roster-wrap>
-        <HeroGearIcons loadout={hero.loadout} lang={lang} t={t} />
+        <HeroGearIcons
+          loadout={hero.loadout}
+          lang={lang}
+          emptySlotAriaLabel={(slotName) => sub(t.gearSlotEmptyAria, { slot: slotName })}
+          emptySlotTip={t.gearSlotEmptyTip}
+          lvLabel={t.rankLv}
+        />
       </DataTable.Cell>
       <DataTable.Cell className={cn('max-[960px]:hidden py-2', inactiveChrome)} nowrap={false} data-roster-wrap>
         <HeroAbilityIcons abilities={hero.abilities} lang={lang} />

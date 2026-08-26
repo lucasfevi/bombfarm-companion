@@ -6,7 +6,13 @@ const nextConfig: NextConfig = {
   output: 'export',
   trailingSlash: true,
   images: { unoptimized: true },
-  transpilePackages: ['@bombfarm/ui', '@bombfarm/contracts', '@bombfarm/game-api', '@bombfarm/domain'],
+  transpilePackages: [
+    '@bombfarm/ui',
+    '@bombfarm/contracts',
+    '@bombfarm/game-api',
+    '@bombfarm/domain',
+    '@bombfarm/game-art',
+  ],
 };
 
 export default nextConfig;

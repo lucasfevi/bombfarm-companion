@@ -5,6 +5,7 @@ import { RARITIES } from '@bombfarm/domain/planner-constants';
 import { rarityLabel } from '@bombfarm/domain/game-labels';
 import { formatNumber } from '@/shared/lib/format-number';
 import type { Lang, Strings } from '@/shared/i18n';
+import { sub } from '@/shared/i18n';
 import { cn, DataTable, Switch, Tooltip } from '@bombfarm/ui';
 import { MAX_STARS } from '@bombfarm/domain/gear';
 import {
@@ -88,7 +89,13 @@ export function ImportCandidateRow({
         {formatNumber(candidate.power, 0)}
       </DataTable.Cell>
       <DataTable.Cell className={cn('max-[720px]:hidden py-2', inactiveChrome)} nowrap={false} data-roster-wrap>
-        <HeroGearIcons loadout={candidate.record.loadout} lang={lang} t={t} />
+        <HeroGearIcons
+          loadout={candidate.record.loadout}
+          lang={lang}
+          emptySlotAriaLabel={(slotName) => sub(t.gearSlotEmptyAria, { slot: slotName })}
+          emptySlotTip={t.gearSlotEmptyTip}
+          lvLabel={t.rankLv}
+        />
       </DataTable.Cell>
       <DataTable.Cell className={cn('max-[960px]:hidden py-2', inactiveChrome)} nowrap={false} data-roster-wrap>
         <HeroAbilityIcons abilities={candidate.record.abilities} lang={lang} />

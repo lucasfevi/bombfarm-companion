@@ -21,6 +21,12 @@ storybook-static/
 .env.*
 .specs/
 
+# @bombfarm/game-art's assets, copied in by each app's prebuild step
+# (apps/*/scripts/copy-wiki-assets.mjs) — the package under packages/game-art/assets is the
+# tracked copy.
+/apps/web/public/wiki-assets/
+/apps/desktop/renderer/public/wiki-assets/
+
 # Local agent dev-server config — ports and commands are per-machine.
 .claude/launch.json
 

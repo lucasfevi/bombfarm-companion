@@ -30,6 +30,7 @@ export const en = {
   sectionNameItems: 'your gear',
 
   // planning* — the Planning screen
+  planningRosterColumnAvatar: 'Avatar',
   planningRosterColumnName: 'Hero',
   planningRosterColumnLevel: 'Level',
   planningRosterColumnStars: 'Stars',

@@ -4,6 +4,7 @@
  * `useAccountView` more than once; this component only reads the already-built `PlanningModel`).
  */
 import { Num, Panel, StatList } from '@bombfarm/ui';
+import { HeroIdentityChip } from '@bombfarm/game-art';
 import { isQuantityUsable, withheldSections } from '../../lib/planning/account-model';
 import { adviceForHero } from '../../lib/planning/hero-advice';
 import { useCopy, useLocale } from '../../lib/copy';
@@ -13,7 +14,7 @@ import { WithheldNotice } from './withheld-notice';
 
 export function HeroDetail({ model, heroId }: { model: PlanningModel; heroId: string | null }) {
   const t = useCopy();
-  const { locale } = useLocale();
+  const { locale, lang } = useLocale();
   const entry = heroId ? model.heroes.find((candidate) => candidate.hero.id === heroId) : undefined;
 
   if (!entry) {
@@ -53,9 +54,7 @@ export function HeroDetail({ model, heroId }: { model: PlanningModel; heroId: st
 
   return (
     <Panel data-testid="hero-detail">
-      <h2 data-testid="hero-detail-name" className="m-0 text-base leading-none font-bold text-ink">
-        {entry.hero.name}
-      </h2>
+      <HeroIdentityChip hero={entry.hero} fallbackName={entry.hero.name} lang={lang} nameTestId="hero-detail-name" />
       <StatList
         aria-label={entry.hero.name}
         items={[
