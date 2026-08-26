@@ -20,6 +20,5 @@ export const appShellActionsClass = 'flex shrink-0 items-center gap-2';
  *  the viewport — the window itself must never scroll. */
 export const appShellMainClass = 'min-h-0 flex-1 overflow-y-auto px-6 py-6';
 
-/** Compact status strip (~28px) — slimmer than the header's `py-2.5`. */
 export const appShellStatusBarClass =
   'flex shrink-0 flex-wrap items-center gap-x-4 gap-y-1 border-t border-line px-6 py-1 text-sm';
