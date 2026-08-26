@@ -126,6 +126,26 @@ describe('FrameDecoder', () => {
     expect(decoded[1]?.payload.toString('utf8')).toBe('two');
   });
 
+  it('carries a remainder on the thrown error that starts at the malformed frame and still holds the frame trailing it', () => {
+    const a = buildFrame({ fin: true, opcode: OPCODE.text, payload: Buffer.from('one') });
+    const malformed = buildOversized64BitLengthFrame();
+    const b = buildFrame({ fin: true, opcode: OPCODE.text, payload: Buffer.from('two') });
+    const decoder = new FrameDecoder();
+
+    let caught: unknown;
+    try {
+      decoder.push(Buffer.concat([a, malformed, b]));
+    } catch (error) {
+      caught = error;
+    }
+
+    expect(caught).toBeInstanceOf(FrameDecodeError);
+    const frameError = caught as FrameDecodeError;
+    expect(frameError.decoded).toHaveLength(1);
+    expect(frameError.decoded[0]?.payload.toString('utf8')).toBe('one');
+    expect(frameError.remainder).toEqual(Buffer.concat([malformed, b]));
+  });
+
   it('imports nothing that can open a network connection', () => {
     const source = readFileSync(resolve(HERE, 'ws-frame.ts'), 'utf8');
     const importSpecifiers = [...source.matchAll(/(?:import|export)\s+(?:type\s+)?[^'";]*?from\s+['"]([^'"]+)['"]/g)].map(

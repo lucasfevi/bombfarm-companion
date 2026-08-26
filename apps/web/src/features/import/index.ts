@@ -1,1 +1,1 @@
-﻿export { ImportHeroesDialog } from './components/import-heroes-dialog';
+export { ImportHeroesDialog } from './components/import-heroes-dialog';

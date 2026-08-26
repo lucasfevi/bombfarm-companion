@@ -172,6 +172,8 @@ const fixture = JSON.parse(readFileSync(fixturePath, 'utf8')) as {
  * the fix — dropping the weakest heroes from the rotation pool. No existing key changed.
  */
 const KEYS_REMOVED: readonly string[] = [
+  'importSyncSummary',
+  'importRemovedNote',
   'accountTargetPropHint',
   'accountFarmSection',
   'accountFarmPhaseLabel',
@@ -285,8 +287,29 @@ const KEYS_REMOVED: readonly string[] = [
  * The field-contention notice (2026-08-23) adds `farmRankingContentionTitle` and
  * `farmRankingContentionDesc` — a banner shown above the rotation pool when the field is full
  * often enough to matter. New strings only; nothing existing was reworded.
+ *
+ * `importSyncSummary` is REMOVED (2026-08-25). The created/updated/removed breakdown was
+ * bookkeeping from when an import was a merge the player curated; the save is the source of truth
+ * now, so the split between created and updated is not a decision they make or a number they act
+ * on. `importRemovedNote` goes with it: it existed to explain what "Removed" meant, and under a
+ * source-of-truth import a sentence about why absent heroes leave is not something the player
+ * decides or acts on either. The removal BEHAVIOUR is unchanged.
+ *
+ * The blocked-hero explanation (2026-08-25) adds seven `importBlocked*` keys. A hero the planner
+ * cannot rebuild used to be dimmed and nothing else, which reads as a rendering glitch rather
+ * than an explanation; the dialog now names the heroes, both causes (the save is older than the
+ * game, or the planner is), and the action for each. New strings only — nothing existing was
+ * reworded, and in particular `importIssuesCount` and the three `importPoint*` strings are
+ * untouched.
  */
 const KEYS_ADDED: readonly string[] = [
+  'importBlockedTitle',
+  'importBlockedBody',
+  'importBlockedOldSave',
+  'importBlockedAppBehind',
+  'importBlockedRest',
+  'importBlockedBadge',
+  'importBlockedTooltip',
   'farmRankingContentionTitle',
   'farmRankingContentionDesc',
   'farmRankingFilterItemLevelLabel',

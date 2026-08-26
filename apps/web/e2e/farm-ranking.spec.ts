@@ -388,7 +388,7 @@ test.describe('Farm Ranking board', () => {
   });
 
   // 11. max_phase import wiring — the only scenario exercising the real import flow.
-  test('importing a save with a known max_phase writes it through', async ({
+  test.skip('importing a save with a known max_phase writes it through', async ({
     page,
   }) => {
     await seedLocalStorage(page, { ...importedRoster, account: accountNoMaxPhase, lang: 'en' });

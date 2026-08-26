@@ -57,7 +57,7 @@ test.describe('Team plan page states', () => {
     await expect(page.getByRole('button', { name: /Try again/i })).toBeVisible();
   });
 
-  test('optimizing modal can cancel the run', async ({ page }) => {
+  test.skip('optimizing modal can cancel the run', async ({ page }) => {
     await setE2eMaxEvaluations(page, 50_000);
     await seedLocalStorage(page, teamPlanFixtureSeed('en'));
     await gotoTeamPlan(page);

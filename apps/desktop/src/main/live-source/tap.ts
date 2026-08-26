@@ -69,6 +69,12 @@ export const VALIDATION_WINDOW_MS = 20_000;
  *  looks for. */
 export const STALENESS_CHECK_INTERVAL_MS = 15_000;
 export const STALENESS_THRESHOLD_MS = 45_000;
+/** Bounds how long a teardown waits on the real session detach (the frida IPC that unloads the
+ *  injected script) — long enough for a healthy runtime to finish, short enough that a wedged
+ *  instrumentation process cannot freeze `consent:revoke` and the settings UI behind it. Teardown
+ *  proceeds regardless once this elapses, degrading to the same fire-and-forget outcome as before
+ *  this bound existed. */
+export const SESSION_DETACH_TIMEOUT_MS = 2_000;
 
 const DEFAULT_POLL_INTERVAL_MS = 5_000;
 
@@ -333,7 +339,7 @@ export class Tap {
       return;
     }
     if (this.#isStopped()) {
-      session.detach();
+      await this.#detachSessionWithTimeout(session);
       return;
     }
 
@@ -523,7 +529,7 @@ export class Tap {
     return this.#currency;
   }
 
-  #teardownSession(): Promise<void> {
+  async #teardownSession(): Promise<void> {
     this.#teardownInFlight = true;
     try {
       if (this.#validationTimer !== null) {
@@ -540,13 +546,41 @@ export class Tap {
       this.#lastFrameAt = null;
       this.#lastTrafficAt = null;
       if (this.#session) {
-        this.#session.detach();
+        const session = this.#session;
         this.#session = null;
+        await this.#detachSessionWithTimeout(session);
       }
     } finally {
       this.#teardownInFlight = false;
     }
-    return Promise.resolve();
+  }
+
+  #detachSessionWithTimeout(session: TapSession): Promise<void> {
+    return new Promise((resolve) => {
+      let settled = false;
+      const finish = (): void => {
+        if (settled) return;
+        settled = true;
+        resolve();
+      };
+
+      const timer = this.#deps.clock.setTimeout(() => {
+        this.#log.info({ scope: 'live-source', event: 'tap.session_detach_timed_out', pid: session.pid });
+        finish();
+      }, SESSION_DETACH_TIMEOUT_MS);
+
+      session.detach().then(
+        () => {
+          this.#deps.clock.clearTimeout(timer);
+          finish();
+        },
+        (error: unknown) => {
+          this.#deps.clock.clearTimeout(timer);
+          this.#log.info({ scope: 'live-source', event: 'tap.session_detach_failed', pid: session.pid, error: String(error) });
+          finish();
+        },
+      );
+    });
   }
 }
 

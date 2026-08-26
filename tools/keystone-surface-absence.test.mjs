@@ -211,7 +211,7 @@ const CRIT_DMG_MULT_MAP = {
   // 109 added a net one line. Match itself is unchanged in count and in kind.
   'apps/web/src/tests/storage-legacy-keystone-fields.test.ts': [40, 110],
   'apps/web/src/tests/storage-stat-points-available-compat.test.ts': [104],
-  'tools/fixture-corpus-parity.test.mjs': [117, 169],
+  'tools/fixture-corpus-parity.test.mjs': [198, 250],
   // Self-map. The last four shifted +3 (line numbers only) when the account-shared entry above
   // gained its three-line explanation; count and kind are unchanged.
   // Line numbers only — the House-ceiling regression repair (PR #86 finding, house.ts:38) added

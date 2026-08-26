@@ -215,38 +215,57 @@ describe('TapInterceptor.detach', () => {
 });
 
 describe('TapSession.detach', () => {
-  it('unloads the script and detaches the session asynchronously without throwing', async () => {
+  it('resolves only once the script unload and the underlying session detach have both settled', async () => {
     const fake = createFakeScript();
+    let resolveUnload: (() => void) | undefined;
+    fake.script.unload = () => new Promise((resolve) => { resolveUnload = resolve; });
+
     const fakeSession = createFakeSession(fake.script);
+    let resolveSessionDetach: (() => void) | undefined;
+    let sessionDetachCalls = 0;
+    fakeSession.session.detach = () => {
+      sessionDetachCalls += 1;
+      return new Promise((resolve) => { resolveSessionDetach = resolve; });
+    };
+
     const runtime = new FridaTapRuntime({ attach: () => Promise.resolve(fakeSession.session) });
     const tapSession = await runtime.attach(1);
 
-    expect(() => {
-      tapSession.detach();
-    }).not.toThrow();
-    await vi.waitFor(() => {
-      expect(fakeSession.detachCalls).toBe(1);
+    let settled = false;
+    const detachPromise = tapSession.detach().then(() => {
+      settled = true;
     });
-    expect(fake.unloadCalls).toBe(1);
+
+    await Promise.resolve();
+    await Promise.resolve();
+    expect(settled).toBe(false);
+    expect(sessionDetachCalls).toBe(0);
+
+    resolveUnload?.();
+    await Promise.resolve();
+    await Promise.resolve();
+    expect(settled).toBe(false);
+    expect(sessionDetachCalls).toBe(1);
+
+    resolveSessionDetach?.();
+    await detachPromise;
+    expect(settled).toBe(true);
   });
 
-  it('is idempotent — a second call tears nothing down again', async () => {
+  it('is idempotent — an already-detached session resolves without repeating the teardown', async () => {
     const fake = createFakeScript();
     const fakeSession = createFakeSession(fake.script);
     const runtime = new FridaTapRuntime({ attach: () => Promise.resolve(fakeSession.session) });
     const tapSession = await runtime.attach(1);
 
-    tapSession.detach();
-    await vi.waitFor(() => {
-      expect(fakeSession.detachCalls).toBe(1);
-    });
-    tapSession.detach();
+    await tapSession.detach();
+    await tapSession.detach();
 
     expect(fakeSession.detachCalls).toBe(1);
     expect(fake.unloadCalls).toBe(1);
   });
 
-  it('never produces an unhandled rejection when the underlying teardown rejects', async () => {
+  it('resolves rather than rejects, and logs the failure, when the underlying session detach rejects', async () => {
     const fake = createFakeScript();
     const { session } = createFakeSession(fake.script);
     session.detach = () => Promise.reject(new Error('detach failed'));
@@ -254,11 +273,26 @@ describe('TapSession.detach', () => {
     const runtime = new FridaTapRuntime({ attach: () => Promise.resolve(session), log });
     const tapSession = await runtime.attach(1);
 
-    expect(() => {
-      tapSession.detach();
-    }).not.toThrow();
-    await vi.waitFor(() => {
-      expect(log.info).toHaveBeenCalled();
-    });
+    await expect(tapSession.detach()).resolves.toBeUndefined();
+
+    expect(log.info).toHaveBeenCalledWith(
+      expect.objectContaining({ scope: 'tap-runtime', event: 'session.session_detach_failed', pid: 1 }),
+    );
+  });
+
+  it('resolves rather than rejects, and still detaches the session, when script.unload() rejects', async () => {
+    const fake = createFakeScript();
+    fake.script.unload = () => Promise.reject(new Error('unload failed'));
+    const fakeSession = createFakeSession(fake.script);
+    const log = { info: vi.fn() };
+    const runtime = new FridaTapRuntime({ attach: () => Promise.resolve(fakeSession.session), log });
+    const tapSession = await runtime.attach(1);
+
+    await expect(tapSession.detach()).resolves.toBeUndefined();
+
+    expect(fakeSession.detachCalls).toBe(1);
+    expect(log.info).toHaveBeenCalledWith(
+      expect.objectContaining({ scope: 'tap-runtime', event: 'session.script_unload_failed', pid: 1 }),
+    );
   });
 });

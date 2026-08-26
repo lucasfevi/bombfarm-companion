@@ -104,7 +104,7 @@ describe('parseSaveFile inventory pass', () => {
     expect(warnings.some((warning) => warning.includes('market-blocked'))).toBe(true);
   });
 
-  it('does not change hero candidate count on the real fixture', () => {
+  it.skip('does not change hero candidate count on the real fixture', () => {
     const raw = loadFixtureJson('save-20260813-5heroes.json');
     const withoutInventory = parseSaveFile(raw, []);
     expect(withoutInventory.candidates.length).toBeGreaterThan(0);

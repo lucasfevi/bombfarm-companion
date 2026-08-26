@@ -281,6 +281,13 @@ interface IgnoreState {
 
 type ConnState = HeadState | WsState | IgnoreState;
 
+interface AdvanceStep {
+  readonly state: ConnState;
+  /** Bytes this step could not finish with — the loop in `#advance` re-enters `state` with them,
+   *  so a read carrying many HTTP responses or many malformed frames costs iterations, not stack. */
+  readonly rest?: Buffer;
+}
+
 export interface FrameRingPort {
   push(bytes: Uint8Array): void;
   dumpToDisk(reason: FrameDumpReason): void;
@@ -359,13 +366,22 @@ export class TlsConnections {
     }
   }
 
+  /** Terminates: every step below that returns `rest` strictly shrinks it. An HTTP step consumes
+   *  at least the response header. A frame-decode-error step's remainder starts at the malformed
+   *  frame, and the head scan that follows can't re-enter `ws` there — `parseHeader` throws only
+   *  on the 64-bit length form, which `parseResyncCandidate` rejects outright — so it must find a
+   *  later offset or find nothing and stop. */
   #advance(state: ConnState, bytes: Buffer, events: TapEvent[]): ConnState {
-    if (state.kind === 'ignore') return state;
-    if (state.kind === 'ws') return this.#advanceWs(state, bytes, events);
-    return this.#advanceHead(state, bytes, events);
+    let step: AdvanceStep = { state, rest: bytes };
+    while (step.rest !== undefined) {
+      const { state: current, rest } = step;
+      if (current.kind === 'ignore') return current;
+      step = current.kind === 'ws' ? this.#advanceWs(current, rest, events) : this.#advanceHead(current, rest, events);
+    }
+    return step.state;
   }
 
-  #advanceHead(state: HeadState, bytes: Buffer, events: TapEvent[]): ConnState {
+  #advanceHead(state: HeadState, bytes: Buffer, events: TapEvent[]): AdvanceStep {
     const buf = Buffer.concat([state.buf, bytes]);
 
     const httpMatch = matchHttpResponse(buf);
@@ -373,7 +389,7 @@ export class TlsConnections {
       const rest = buf.subarray(httpMatch.totalLength);
       if (httpMatch.status === 101) {
         events.push({ kind: 'upgrade' });
-        return this.#enterWs(rest, events);
+        return { state: { kind: 'ws', decoder: new FrameDecoder() }, rest };
       }
       if (httpMatch.body !== undefined) {
         events.push({ kind: 'http', status: httpMatch.status, body: httpMatch.body });
@@ -388,37 +404,31 @@ export class TlsConnections {
         }
         events.push({ kind: 'http', status: httpMatch.status });
       }
-      return this.#advanceHead(INITIAL_HEAD_STATE, rest, events);
+      return { state: INITIAL_HEAD_STATE, rest };
     }
 
     const scanFrom = Math.max(0, state.scannedUpTo - RESYNC_OVERLAP_BYTES);
     const scanResult = scanForWsFrameStart(buf, scanFrom);
-    if (scanResult.offset !== undefined) return this.#enterWs(buf.subarray(scanResult.offset), events);
+    if (scanResult.offset !== undefined) {
+      return { state: { kind: 'ws', decoder: new FrameDecoder() }, rest: buf.subarray(scanResult.offset) };
+    }
 
-    if (buf.length >= GIVEUP_BYTES) return { kind: 'ignore' };
-    return { kind: 'head', buf, scannedUpTo: scanResult.incompleteAt ?? buf.length };
+    if (buf.length >= GIVEUP_BYTES) return { state: { kind: 'ignore' } };
+    return { state: { kind: 'head', buf, scannedUpTo: scanResult.incompleteAt ?? buf.length } };
   }
 
-  #enterWs(bytes: Buffer, events: TapEvent[]): ConnState {
-    return this.#advanceWs({ kind: 'ws', decoder: new FrameDecoder() }, bytes, events);
-  }
-
-  #advanceWs(state: WsState, bytes: Buffer, events: TapEvent[]): ConnState {
+  #advanceWs(state: WsState, bytes: Buffer, events: TapEvent[]): AdvanceStep {
     try {
       for (const frame of state.decoder.push(bytes)) this.#handleFrame(frame, events);
-      return state;
+      return { state };
     } catch (error) {
-      // A frame the decoder cannot parse (the 64-bit length form is the one case ws-frame.ts
-      // itself throws on) leaves the decoder's internal buffer in a state this class has no way
-      // to inspect or rewind, so whatever the decoder still had buffered past the bad frame is
-      // unrecoverable. The frames it had already decoded in this same call, carried on a
-      // FrameDecodeError, are not lost, though: deliver them before dropping to a fresh
-      // head-state resync, the only way back onto a real frame boundary for what follows.
       if (error instanceof FrameDecodeError) {
         for (const frame of error.decoded) this.#handleFrame(frame, events);
+        this.#ring?.dumpToDisk('parse-failure');
+        return { state: INITIAL_HEAD_STATE, rest: error.remainder };
       }
       this.#ring?.dumpToDisk('parse-failure');
-      return INITIAL_HEAD_STATE;
+      return { state: INITIAL_HEAD_STATE };
     }
   }
 

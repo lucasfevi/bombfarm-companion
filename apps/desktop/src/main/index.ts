@@ -16,12 +16,7 @@ import {
   type LiveView,
   type SettingsWriteResult,
 } from '@bombfarm/contracts';
-import {
-  type ConsentEvent,
-  createPacingGate,
-  initialConsent,
-  reduceConsent,
-} from '@bombfarm/game-api';
+import { createPacingGate, initialConsent } from '@bombfarm/game-api';
 import { createAccountNotifier, resolveAccountView } from './account-view.js';
 import { applyAppIdentity } from './app-identity.js';
 import { createBootRecord } from './boot-record.js';
@@ -29,6 +24,7 @@ import { fuseSecondsForCdr } from './domain-edge.js';
 import { InvalidFlavorError, resolveAppEnv, RENDERER_DEV_URL, type AppEnv } from './env.js';
 import { GameReaderService } from './game-reader/game-reader-service.js';
 import { createAccountRefresh, type AccountRefreshHandle } from './game-api/account-refresh.js';
+import { createConsentApplier } from './game-api/consent-applier.js';
 import { createConsentStore, type ConsentStore } from './game-api/consent-store.js';
 import { createLiveConsentGate } from './game-api/live-consent-gate.js';
 import { createSettingsStore, type SettingsStore } from './game-api/settings-store.js';
@@ -62,17 +58,37 @@ function emitEvent<C extends IpcEventChannel>(channel: C, payload: IpcEvents[C])
 }
 
 /** Reads, transitions, persists, and announces one consent event — the single path every
- *  consent:* handler below goes through (LAR-01/03…05). */
-function applyConsentEvent(event: ConsentEvent): ConsentRecord {
-  const current = consentStore?.read() ?? initialConsent();
-  const next = reduceConsent(current, event);
-  consentStore?.write(next);
-  emitEvent('consent:changed', next);
-  accountRefresh?.onConsentChanged(next);
-  liveSource?.pollNow();
-  gameReader?.pollNow();
-  return next;
-}
+ *  consent:* handler below goes through (LAR-01/03…05). Every dep below reads the module-level
+ *  `let` bindings lazily, through its own closure, because they are still null at this point in
+ *  the module and are only assigned once `bootstrap()` runs. */
+const applyConsentEvent = createConsentApplier({
+  read: () => consentStore?.read() ?? initialConsent(),
+  write: (next) => {
+    consentStore?.write(next);
+  },
+  beforeLosingConsent: [
+    async () => {
+      await liveSource?.forceDetach();
+    },
+  ],
+  afterApplied: [
+    (next) => {
+      emitEvent('consent:changed', next);
+    },
+    (next) => {
+      accountRefresh?.onConsentChanged(next);
+    },
+    () => {
+      liveSource?.pollNow();
+    },
+    () => {
+      gameReader?.pollNow();
+    },
+  ],
+  onError: (error) => {
+    log.error({ scope: 'main', event: 'consent.pre_persist_hook_failed', error: String(error) });
+  },
+});
 
 /**
  * MP3 F4 (`AD-051`/`AD-052`, design.md §4.1) — the one path both `settings:useEnglish` and
@@ -129,17 +145,11 @@ function registerIpcHandlers(): void {
     // precedence comment this used to carry inline.
     'account:get': (): AccountView => resolveAccountView({ gameReader, consentStore, accountRefresh, accountStore }),
     'consent:get': (): ConsentRecord => consentStore?.read() ?? initialConsent(),
-    'consent:accept': (): ConsentRecord =>
+    'consent:accept': (): Promise<ConsentRecord> =>
       applyConsentEvent({ type: 'accept', now: new Date().toISOString(), locale: currentSettings.locale }),
-    'consent:decline': (): ConsentRecord => applyConsentEvent({ type: 'decline', locale: currentSettings.locale }),
-    // The tap must be torn down before the revoke is recorded, not after and not concurrently —
-    // otherwise an already-attached tap keeps reading real game traffic past the moment consent
-    // says it should have stopped, since the tap's own poll loop only re-checks consent before
-    // attaching, never against a session already in progress.
-    'consent:revoke': async (): Promise<ConsentRecord> => {
-      await liveSource?.forceDetach();
-      return applyConsentEvent({ type: 'revoke' });
-    },
+    'consent:decline': (): Promise<ConsentRecord> =>
+      applyConsentEvent({ type: 'decline', locale: currentSettings.locale }),
+    'consent:revoke': (): Promise<ConsentRecord> => applyConsentEvent({ type: 'revoke' }),
     'live:get': (): LiveView => liveSource?.getView() ?? defaultLiveView(),
     'live:dumpDiagnostics': (): LiveDiagnosticsDumpOutcome =>
       liveSource?.dumpDiagnostics() ?? { written: false, reason: 'no-source' },

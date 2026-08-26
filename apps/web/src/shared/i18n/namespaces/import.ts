@@ -32,10 +32,6 @@ export const en = {
   importHouseName: "Name",
   importHouseLevel: "Level",
   importHouseRest: "Rest time",
-  // AC-32/BSP-49 — the review-before-confirm sync breakdown.
-  importSyncSummary: "Created {created} · Updated {updated} · Removed {removed}",
-  // BSP-51/AC-34 — states plainly what "Removed" means; shown only when removed > 0.
-  importRemovedNote: "Heroes not in this save no longer exist in the game — they will be removed from your roster.",
   // BSP-04b/AC-35 — the three budgetMismatch branches, selected by pointIssueCopyKey.
   importPointShortfall: "Spent points don't fully add up on the sheet — a small shortfall, not a real stat difference.",
   importPointOneSaturated: "Spent points don't fully add up — the missing points are likely in {stat}, which is already at its cap.",
@@ -47,6 +43,17 @@ export const en = {
   // MP5 F4 (MSG-14): the positive-discriminator rejection — deliberately generic. Names no
   // keystone, node id, version, date or field path, so it stays accurate after the next patch.
   importRejectedUnsupportedShape: "The planner can't use this save file. Export a fresh save from the game and import that one.",
+  // A blocked candidate used to be dimmed and nothing else, which reads as a rendering glitch
+  // rather than an explanation. Every way a hero can block — gear the catalog does not know, a
+  // missing `stats` block, a sheet that inverts above the point budget — comes down to the same
+  // two causes for the player, so the copy names both and says what to do about each.
+  importBlockedTitle: "{count} hero(es) can't be imported from this file",
+  importBlockedBody: "The planner could not rebuild their stat sheet. That means one of two things: this save was exported before a game update that changed how stats are calculated, or the game has been updated more recently than the planner has.",
+  importBlockedOldSave: "If you still have the game open, export a fresh save and import that one — that fixes it immediately.",
+  importBlockedAppBehind: "If a fresh save does the same thing, the planner is the one that is behind. An update is on the way; nothing is wrong with your account.",
+  importBlockedRest: "Every other hero in this file imports normally.",
+  importBlockedBadge: "can't import",
+  importBlockedTooltip: "Skipped: the planner could not rebuild this hero's stat sheet from this save.",
 };
 
 export const pt: typeof en = {
@@ -81,12 +88,17 @@ export const pt: typeof en = {
   importHouseName: "Nome",
   importHouseLevel: "Nível",
   importHouseRest: "Tempo de descanso",
-  importSyncSummary: "Criados {created} · Atualizados {updated} · Removidos {removed}",
-  importRemovedNote: "Heróis que não estão nesse save não existem mais no jogo — serão removidos do seu elenco.",
   importPointShortfall: "Os pontos gastos não batem exatamente na ficha — uma pequena sobra, não uma diferença real de stat.",
   importPointOneSaturated: "Os pontos gastos não batem exatamente — os pontos que faltam provavelmente foram em {stat}, que já está no teto.",
   importPointBothSaturated: "Os pontos gastos não batem exatamente, e Chance de Crítico e Redução de recarga já estão no teto — não dá para recuperar a divisão exata entre eles.",
   importRejectedNotASaveFile: "Esse arquivo não parece ser um save exportado do BombFarm.",
   importRejectedMissingBirthStats: "Esse save está sem os stats de nascimento necessários para pontos precisos de: {names}. Reexporte de uma versão atualizada do jogo.",
   importRejectedUnsupportedShape: "O planner não consegue usar esse save. Exporte um save novo do jogo e importe esse.",
+  importBlockedTitle: "{count} herói(s) não podem ser importados deste arquivo",
+  importBlockedBody: "O planner não conseguiu remontar a ficha de atributos deles. Isso significa uma de duas coisas: este save foi exportado antes de uma atualização do jogo que mudou o cálculo dos atributos, ou o jogo foi atualizado mais recentemente que o planner.",
+  importBlockedOldSave: "Se o jogo ainda estiver aberto, exporte um save novo e importe ele — isso resolve na hora.",
+  importBlockedAppBehind: "Se um save novo fizer a mesma coisa, quem está atrasado é o planner. Uma atualização está a caminho; não há nada de errado com a sua conta.",
+  importBlockedRest: "Todos os outros heróis deste arquivo são importados normalmente.",
+  importBlockedBadge: "não importável",
+  importBlockedTooltip: "Ignorado: o planner não conseguiu remontar a ficha deste herói a partir deste save.",
 };
