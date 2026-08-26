@@ -17,9 +17,13 @@ function saturatedSeed() {
   // regime. `duty = fieldSeconds / (fieldSeconds + restSeconds)` (model/combat.ts) is driven by
   // house rest time, not slots or phase/mitigation — measured, phase and mitigationPct have
   // zero effect on sumDuty. Maxing the house (Casa V, level 20 — the shortest rest in
-  // `HOUSES`) measures sumDuty ~2.12, comfortably above `slots: 1` (a >2x margin, not a
-  // boundary case). Both overrides are local to this scenario, the same category as the
-  // pre-existing `slots` override — team-plan-seed.ts's own defaults are untouched.
+  // `HOUSES`) is as far as this roster reaches, and it is NOT far enough. Re-measured
+  // 2026-08-26 through `runTeamPlan`: this fixture tops out at sumDuty 0.531 there, and
+  // 0.325 at the export's own Casa II L6, against a slots floor of 1 that `evaluateRoster`
+  // clamps and no override can go under. The ~2.12 this comment used to quote does not
+  // reproduce. The skip below is therefore structural, not a flake: the saturated regime is
+  // unreachable on a 5-hero roster, and covering that callout needs a fixture whose summed
+  // duty clears 1 — bigger than anything this suite currently seeds.
   return {
     ...base,
     account: {

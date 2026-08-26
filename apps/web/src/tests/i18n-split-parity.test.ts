@@ -295,6 +295,13 @@ const KEYS_REMOVED: readonly string[] = [
  * source-of-truth import a sentence about why absent heroes leave is not something the player
  * decides or acts on either. The removal BEHAVIOUR is unchanged.
  *
+ * The contested-field explanation (2026-08-26) adds three `teamPlanContention*` keys. A crowded
+ * field makes the roster objective a duty-weighted mean, so a hero under the mean scores as a
+ * DPS loss the moment they gain uptime — the plan no longer acts on that by banking their gear,
+ * so the page has to say what the player is looking at instead: the break-even, who is under it,
+ * and that concentrating the field is their call. New strings only; `teamPlanSaturationCallout`
+ * itself is untouched and still carries the battle-load figure.
+ *
  * The blocked-hero explanation (2026-08-25) adds seven `importBlocked*` keys. A hero the planner
  * cannot rebuild used to be dimmed and nothing else, which reads as a rendering glitch rather
  * than an explanation; the dialog now names the heroes, both causes (the save is older than the
@@ -303,6 +310,9 @@ const KEYS_REMOVED: readonly string[] = [
  * untouched.
  */
 const KEYS_ADDED: readonly string[] = [
+  'teamPlanContentionDilution',
+  'teamPlanContentionHeroes',
+  'teamPlanContentionHeroesOverflow',
   'importBlockedTitle',
   'importBlockedBody',
   'importBlockedOldSave',

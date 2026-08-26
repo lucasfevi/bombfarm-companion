@@ -11,6 +11,7 @@
 import type { PointAlloc } from '../gear/types';
 import type { InventoryItem } from '../inventory';
 import { evaluateRoster } from './evaluate';
+import { fillBareSlots } from './fill-bare-slots';
 import { loadoutsFromAssignment, type AssignmentState } from './solver-assignment';
 import type {
   EvaluateRosterInput,
@@ -237,10 +238,38 @@ export function chooseGearCandidate(input: ChooseGearCandidateInput): ChosenGear
   const todayEvaluation = evaluateAt(contexts, baselineAssignment, currentPts, gearInput, itemById, 0);
   const sameAssignment = assignmentsMatch(baselineAssignment, planAssignment);
 
-  const declared: GearCandidate[] = [{ key: 'none', assignment: baselineAssignment, floor: 0 }];
-  if (floor > 0) declared.push({ key: 'forgeOnly', assignment: baselineAssignment, floor });
-  if (!sameAssignment) declared.push({ key: 'movesOnly', assignment: planAssignment, floor: 0 });
-  if (floor > 0 && !sameAssignment) declared.push({ key: 'forgeMoves', assignment: planAssignment, floor });
+  // Every candidate competes gear-complete (`fill-bare-slots.ts`): the search is rewarded for
+  // banking gear it should be wearing, so each candidate assignment — the untouched baseline
+  // included — is topped up from the bag before it is scored. Applying it here rather than to
+  // the winner alone keeps the four candidates comparable to each other, and `todayEvaluation`
+  // above is taken from the RAW baseline so the "Today" column still reports the player's real
+  // current roster.
+  const heroOrder = [...contexts]
+    .filter((ctx) => ctx.scope === 'optimize')
+    .sort((a, b) => {
+      const diff =
+        (todayEvaluation.perHero[b.heroId]?.sustained ?? 0) -
+        (todayEvaluation.perHero[a.heroId]?.sustained ?? 0);
+      return diff !== 0 ? diff : a.heroId.localeCompare(b.heroId);
+    })
+    .map((ctx) => ctx.heroId);
+  const geared = (assignment: AssignmentState): AssignmentState =>
+    fillBareSlots({
+      assignment,
+      contexts,
+      itemById,
+      forgeFloor: floor,
+      baseline: baselineAssignment,
+      heroOrder,
+    });
+
+  const gearedBaseline = geared(baselineAssignment);
+  const gearedPlan = sameAssignment ? gearedBaseline : geared(planAssignment);
+
+  const declared: GearCandidate[] = [{ key: 'none', assignment: gearedBaseline, floor: 0 }];
+  if (floor > 0) declared.push({ key: 'forgeOnly', assignment: gearedBaseline, floor });
+  if (!sameAssignment) declared.push({ key: 'movesOnly', assignment: gearedPlan, floor: 0 });
+  if (floor > 0 && !sameAssignment) declared.push({ key: 'forgeMoves', assignment: gearedPlan, floor });
 
   type Evaluated = { candidate: GearCandidate; gearEvaluation: RosterEvaluation; respec: AcceptedRespec };
   // Every declared candidate is scored — none is discarded on its own `gearEvaluation` (option B:

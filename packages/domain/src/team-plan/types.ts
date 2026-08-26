@@ -265,6 +265,24 @@ export type TeamPlan = {
     foreignOwnedItemCount: number;
     marketBlockedItemCount: number;
     unresolvedDefItemCount: number;
+    /**
+     * Populated only in the saturated regime — the roster wants more field time than it has
+     * slots, so the objective is a duty-weighted MEAN and its gradient in one hero's duty is
+     * `active_i - meanActive`. Every hero below that mean therefore reads as a DPS loss when
+     * they gain uptime, which is why plans are held gear-complete by `fill-bare-slots.ts`
+     * rather than allowed to bank the gear the objective wants to drop. The player is the one
+     * who can actually fix it (bench a hero, or accept the dilution), so name the heroes and
+     * let them decide. `null` when the field is not contested.
+     */
+    fieldContention: {
+      /** Field time the roster wants, in hero-slots. Above `slots` by definition here. */
+      sumDuty: number;
+      slots: number;
+      /** Duty-weighted mean active DPS — the break-even a hero must clear to not dilute. */
+      meanActiveDps: number;
+      /** Heroes below {@link meanActiveDps}, worst first. Gearing these reads as a loss. */
+      dilutingHeroNames: string[];
+    } | null;
   };
   run: {
     rounds: number;

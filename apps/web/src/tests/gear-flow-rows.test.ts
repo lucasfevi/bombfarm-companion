@@ -44,6 +44,7 @@ function emptyPlan(overrides: Partial<TeamPlan> = {}): TeamPlan {
       foreignOwnedItemCount: 0,
       marketBlockedItemCount: 0,
       unresolvedDefItemCount: 0,
+      fieldContention: null,
     },
     run: {
       rounds: 0,

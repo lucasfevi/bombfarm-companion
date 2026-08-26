@@ -55,6 +55,7 @@ function plan(pointResets: TeamPlan['pointResets']): TeamPlan {
       foreignOwnedItemCount: 0,
       marketBlockedItemCount: 0,
       unresolvedDefItemCount: 0,
+      fieldContention: null,
     },
     run: { rounds: 0, evaluations: 0, budgetExhausted: false, elapsedMs: 0, seedUsed: 'current' },
   };

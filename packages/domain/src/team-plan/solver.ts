@@ -15,7 +15,13 @@ import {
 } from './solver-search';
 import { loadoutsFromAssignment } from './solver-assignment';
 import { buildWaterfall } from './waterfall';
-import type { TeamPlan, TeamPlanInput, TeamPlanResult, HeroPlanContext } from './types';
+import type {
+  RosterEvaluation,
+  TeamPlan,
+  TeamPlanInput,
+  TeamPlanResult,
+  HeroPlanContext,
+} from './types';
 
 export {
   TEAM_PLAN_BEAM_WIDTH,
@@ -58,6 +64,31 @@ function loadoutDriftHeroNames(input: TeamPlanInput): string[] {
 
 function currentPtsByHeroId(input: TeamPlanInput): Record<string, import('../gear/types').PointAlloc> {
   return Object.fromEntries(input.heroes.map((hero) => [hero.heroId, hero.pts]));
+}
+
+/**
+ * The contested-field disclosure (`TeamPlan.disclosures.fieldContention`). Reads the FINAL
+ * evaluation, so it describes the roster the player is being shown, not an intermediate one.
+ */
+function fieldContention(
+  finalEvaluation: RosterEvaluation,
+  contexts: HeroPlanContext[],
+): TeamPlan['disclosures']['fieldContention'] {
+  if (finalEvaluation.regime !== 'saturated') return null;
+  const meanActiveDps =
+    finalEvaluation.slots > 0 ? finalEvaluation.objective / finalEvaluation.slots : 0;
+  const dilutingHeroNames = contexts
+    .filter((ctx) => ctx.scope === 'optimize')
+    .map((ctx) => ({ name: ctx.name, active: finalEvaluation.perHero[ctx.heroId]?.active ?? 0 }))
+    .filter((row) => row.active < meanActiveDps)
+    .sort((a, b) => a.active - b.active || a.name.localeCompare(b.name))
+    .map((row) => row.name);
+  return {
+    sumDuty: finalEvaluation.sumDuty,
+    slots: finalEvaluation.slots,
+    meanActiveDps,
+    dilutingHeroNames,
+  };
 }
 
 function evaluateCurrentAssignment(
@@ -186,6 +217,7 @@ export function runTeamPlan(
       foreignOwnedItemCount: gearPool.excluded.foreignOwner,
       marketBlockedItemCount: gearPool.excluded.marketBlocked,
       unresolvedDefItemCount: gearPool.excluded.unresolvedDef,
+      fieldContention: fieldContention(waterfall.finalEvaluation, contexts),
     },
     run: {
       rounds: best.rounds,

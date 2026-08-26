@@ -102,6 +102,10 @@ export const en = {
   teamPlanDisclosuresTitle: 'Assumptions & limits',
   teamPlanSaturationCallout:
     'Your field is full (battle load {duty} vs {slots} slots). Roster DPS is shared across who can fight at once — advice only; this page will not bench or donate heroes for you.',
+  teamPlanContentionDilution:
+    'Because that share is contested, a hero producing under {mean} dps dilutes it — gearing them up reads here as a roster DPS drop even though the hero genuinely gets stronger. This plan dresses them anyway and never banks an item someone could wear; whether to concentrate the field instead is your call.',
+  teamPlanContentionHeroes: 'Under that line right now: {heroes}.',
+  teamPlanContentionHeroesOverflow: '{heroes} and {count} more',
   teamPlanAuraDisclosure:
     'Team auras here come from the scoped roster, exclude the hero being scored, and are weighted by each carrier’s duty. The Account tab’s manual Team buffs are ignored on this page but still drive the Planner’s own DPS.',
   teamPlanPlannerDivergence:
@@ -228,6 +232,10 @@ export const pt: typeof en = {
   teamPlanDisclosuresTitle: 'Premissas e limites',
   teamPlanSaturationCallout:
     'Seu campo está lotado (carga de batalha {duty} vs {slots} slots). O DPS do roster é dividido entre quem pode lutar ao mesmo tempo — só orientação; esta página não banca nem doa heróis por você.',
+  teamPlanContentionDilution:
+    'Como essa fatia é disputada, um herói que produz menos de {mean} dps a dilui — equipá-lo aparece aqui como queda de DPS do roster, mesmo o herói ficando de fato mais forte. Este plano o equipa assim mesmo e nunca guarda um item que alguém poderia usar; concentrar o campo, se preferir, é decisão sua.',
+  teamPlanContentionHeroes: 'Abaixo dessa linha agora: {heroes}.',
+  teamPlanContentionHeroesOverflow: '{heroes} e mais {count}',
   teamPlanAuraDisclosure:
     'Auras de time aqui vêm do roster no escopo, excluem o herói pontuado e são ponderadas pelo duty de cada portador. Os buffs manuais da aba Conta são ignorados nesta página, mas ainda movem o DPS do Planner.',
   teamPlanPlannerDivergence:
