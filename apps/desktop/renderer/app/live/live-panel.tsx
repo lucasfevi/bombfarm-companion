@@ -5,7 +5,6 @@ import { FieldCountdown } from './field-countdown';
 import { FreshnessLine, type ReachedLiveFreshness } from './freshness-line';
 import { HeroList } from './hero-list';
 import { HousePanel } from './house-panel';
-import { OccupancyReadout } from './occupancy-readout';
 import { RecoveryCountdown } from './recovery-countdown';
 
 export function LivePanel({
@@ -22,17 +21,24 @@ export function LivePanel({
   const t = useCopy();
   const { locale } = useLocale();
 
+  const onFieldCount =
+    slow.occupancy.fieldSize !== undefined
+      ? `${formatCount(slow.occupancy.occupied, locale)}/${formatCount(slow.occupancy.fieldSize, locale)}`
+      : formatCount(slow.occupancy.occupied, locale);
+
   return (
     <div data-testid="live-panel" className="flex flex-col gap-4">
       <FreshnessLine freshness={freshness} onReopenConsent={onReopenConsent} />
-      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-        <HousePanel house={slow.house} />
-        <OccupancyReadout occupancy={slow.occupancy} />
-      </div>
+      <HousePanel house={slow.house} />
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
         <HeroList
           testId="live-list-on-field"
           title={t.liveListOnFieldTitle}
+          headerTrailing={
+            <span data-testid="live-occupancy" className="text-xs text-muted tabular-nums">
+              {onFieldCount}
+            </span>
+          }
           emptyLine={t.liveListEmptyLine}
           heroes={slow.onField}
           renderTrailing={(hero: LiveHeroFact) => (

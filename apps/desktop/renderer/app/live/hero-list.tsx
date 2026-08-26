@@ -6,19 +6,22 @@ import { HeroRow } from './hero-row';
 export function HeroList<T extends LiveHeroFact>({
   testId,
   title,
+  headerTrailing,
   emptyLine,
   heroes,
   renderTrailing,
 }: {
   testId: string;
   title: string;
+  /** Right-hand side of the panel header row — e.g. the on-field count. */
+  headerTrailing?: ReactNode;
   emptyLine: string;
   heroes: readonly T[];
   renderTrailing?: (hero: T) => ReactNode;
 }) {
   return (
     <Panel data-testid={testId}>
-      <PanelHeader title={title} />
+      <PanelHeader title={title}>{headerTrailing}</PanelHeader>
       {heroes.length === 0 ? (
         <p data-testid={`${testId}-empty`} className="m-0 text-sm text-muted">
           {emptyLine}

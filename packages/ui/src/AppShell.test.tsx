@@ -181,4 +181,18 @@ describe('AppShell', () => {
     const headerMatch = out.match(/<header[^>]*style="([^"]*)"/);
     expect(headerMatch?.[1]).toMatch(/padding-right:\s*140px/);
   });
+
+  it('renders the brand slot left of the title when provided', () => {
+    const out = html({
+      brand: createElement('span', { 'data-testid': 'brand-slot' }, 'mark'),
+      children: 'body',
+    });
+    expect(out).toContain('data-testid="brand-slot"');
+    expect(out.indexOf('data-testid="brand-slot"')).toBeLessThan(out.indexOf('Bomb Farm Companion'));
+  });
+
+  it('renders no brand slot markup when brand is omitted', () => {
+    const out = html({ children: 'body' });
+    expect(out).not.toContain('data-testid="brand-slot"');
+  });
 });

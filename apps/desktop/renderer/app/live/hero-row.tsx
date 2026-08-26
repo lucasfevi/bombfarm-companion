@@ -22,7 +22,7 @@ export function HeroRow({ hero, trailing }: { hero: LiveHeroFact; trailing?: Rea
         level={hero.level}
         skin={hero.skin}
         lang={lang}
-        size="xs"
+        size="md"
         variant="stacked"
         nameTestId={`live-hero-row-${hero.id}-name`}
       />

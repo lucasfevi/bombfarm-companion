@@ -169,19 +169,16 @@ export const ptBR: Copy = {
     'Um antivírus provavelmente bloqueou a parte do app que lê o jogo. Ele continua tentando por conta própria.',
   liveGapReasonConsentMissing: 'Você ainda não permitiu que o app leia sua conta e se conecte ao jogo.',
 
-  // liveList* — os títulos das quatro listas de heróis, mais as linhas compartilhadas por todas elas
-  liveListOnFieldTitle: 'No campo',
+  // liveList* — os títulos das quatro listas de heróis, mais as linhas compartilhadas por todas
+  // elas. O cabeçalho da lista de campo também traz a contagem ocupado/tamanho do campo
+  // (`live-panel.tsx`) — sem chave própria, é renderizada como um simples "X/Y".
+  liveListOnFieldTitle: 'Campo',
   liveListRecoveringTitle: 'Recuperando energia',
   liveListQueuedTitle: 'Na fila para descansar',
   liveListBenchedTitle: 'No banco',
   liveListEmptyLine: 'Nenhum herói aqui no momento.',
   liveUnclassifiedCount: 'Heróis não classificados em nenhuma lista: {n}',
   liveFieldExitPendingCount: 'Heróis que acabaram de sair do campo, ainda atualizando: {n}',
-
-  // liveOccupancy* — ocupação do campo, informada como dado neutro, nunca como alerta
-  liveOccupancyLabel: 'Campo',
-  liveOccupancyValue: 'Vagas de campo em uso: {occupied} de {total}',
-  liveOccupancyValueUnknownTotal: 'Heróis no campo: {occupied}',
 
   // liveHouse* — o painel da casa
   liveHouseTitle: 'Casa',

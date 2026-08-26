@@ -15,6 +15,9 @@ export const appShellRootClass = 'flex h-dvh flex-col bg-bg text-ink font-sans';
 export const appShellHeaderClass =
   'relative flex min-h-top shrink-0 items-center justify-between gap-3 border-b border-line bg-surface px-4 py-2.5';
 
+/** Brand row — mark beside the lockup, same shape as the web's `SiteHeader` `<Link>`. */
+export const appShellBrandRowClass = 'flex items-center gap-2.5';
+
 /** Brand lockup — name over an uppercase tag, styled like the web's `SiteHeader` brand block. */
 export const appShellBrandClass = 'flex flex-col justify-center';
 export const appShellBrandNameClass = 'text-[13px] leading-1.1 font-bold text-ink';

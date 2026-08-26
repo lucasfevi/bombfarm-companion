@@ -12,6 +12,14 @@
    Do not redeclare unlayered here — it overrides text-* utilities on
    button/input/select (cascade: unlayered > @layer utilities). */
 
+html {
+  /* Reserve the scrollbar gutter permanently — otherwise a panel expanding past the
+     viewport height mid-transition makes the scrollbar appear, narrowing content width
+     and reflowing it right as a Motion height:'auto' animation is settling, producing a
+     visible correction jump at the end of the animation. */
+  scrollbar-gutter: stable;
+}
+
 /* ——— Hero roster details chevron (permanent keep-exception, AD-003) ——— */
 .roster-summary::-webkit-details-marker {
   display: none;

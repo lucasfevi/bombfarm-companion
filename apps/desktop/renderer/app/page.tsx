@@ -9,7 +9,7 @@ import type {
   SettingsWriteReason,
 } from '@bombfarm/contracts';
 import { DEFAULT_SETTINGS } from '@bombfarm/contracts';
-import { AppShell, SegmentedToggle, StatusChip } from '@bombfarm/ui';
+import { AppShell, BrandMark, SegmentedToggle, StatusChip } from '@bombfarm/ui';
 // MP3 F1 (AD-032) — proves the renderer can import @bombfarm/domain: a value import from a
 // FILE subpath that itself value-imports ./data/catalog.json, so a dist missing the JSON data
 // fails the static export build rather than surfacing later at runtime (spec edge case). This
@@ -206,6 +206,7 @@ function HomePageContent({
         items={granted ? navItemsFor(t) : []}
         activeId={activeNavId}
         onNavigate={setActiveNavId}
+        brand={<BrandMark />}
         draggable
         overlayInset={overlayInset}
         actions={

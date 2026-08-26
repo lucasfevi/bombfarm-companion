@@ -25,7 +25,7 @@ describe('CountdownValue — flipping muted causes no reflow', () => {
     expect(render(true)).toContain('2:00');
   });
 
-  it('only border-style/colour utility classes differ between the two states', () => {
+  it('only the text colour utility class differs between the two states — no border either way', () => {
     const classOf = (html: string) => /data-testid="live-countdown-x" class="([^"]*)"/.exec(html)?.[1]?.split(' ') ?? [];
     const clearClasses = new Set(classOf(render(false)));
     const mutedClasses = new Set(classOf(render(true)));
@@ -33,8 +33,9 @@ describe('CountdownValue — flipping muted causes no reflow', () => {
     const onlyInClear = [...clearClasses].filter((token) => !mutedClasses.has(token));
     const onlyInMuted = [...mutedClasses].filter((token) => !clearClasses.has(token));
 
-    expect(onlyInClear.sort()).toEqual(['border-transparent', 'text-ink']);
-    expect(onlyInMuted.sort()).toEqual(['border-muted', 'text-muted']);
+    expect(onlyInClear.sort()).toEqual(['text-ink']);
+    expect(onlyInMuted.sort()).toEqual(['text-muted']);
+    expect([...clearClasses, ...mutedClasses].some((token) => token.startsWith('border'))).toBe(false);
   });
 });
 

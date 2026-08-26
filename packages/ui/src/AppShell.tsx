@@ -5,6 +5,7 @@ import {
   appShellActionsClass,
   appShellBrandClass,
   appShellBrandNameClass,
+  appShellBrandRowClass,
   appShellBrandTagClass,
   appShellDragStripClass,
   appShellHeaderClass,
@@ -26,6 +27,8 @@ export interface AppShellProps extends PropsWithChildren {
   items?: AppShellNavItem[];
   activeId?: string;
   onNavigate?: (id: string) => void;
+  /** Mark rendered left of the brand lockup — e.g. `BrandMark`. Renders nothing when omitted. */
+  brand?: ReactNode;
   /** Right-hand header slot — e.g. the desktop's PT/EN `SegmentedToggle`. */
   actions?: ReactNode;
   /** Status-bar slots — absent ones render nothing (no empty boxes, no layout shift). */
@@ -70,6 +73,7 @@ export function AppShell({
   items = [],
   activeId,
   onNavigate,
+  brand,
   actions,
   status,
   progress,
@@ -90,13 +94,16 @@ export function AppShell({
       <header className={appShellHeaderClass} style={headerStyle}>
         {draggable ? <div aria-hidden className={appShellDragStripClass} style={dragStripStyle} /> : null}
         <div className="relative flex min-w-0 items-center gap-4">
-          <div className={appShellBrandClass}>
-            <div className={appShellBrandNameClass}>{title}</div>
-            {badge ? (
-              <span data-testid="flavor-badge" className={appShellBrandTagClass}>
-                {badge}
-              </span>
-            ) : null}
+          <div className={appShellBrandRowClass}>
+            {brand}
+            <div className={appShellBrandClass}>
+              <div className={appShellBrandNameClass}>{title}</div>
+              {badge ? (
+                <span data-testid="flavor-badge" className={appShellBrandTagClass}>
+                  {badge}
+                </span>
+              ) : null}
+            </div>
           </div>
           {navItems.length > 0 ? <AppNav items={navItems} onSelect={onNavigate} /> : null}
         </div>

@@ -26,6 +26,9 @@ import * as GameArt from '@bombfarm/game-art';
 // AppNav / SegmentedToggle (T4a, desktop/web UI sync): the web's segmented nav pill and PT/EN
 // bordered toggle group, extracted so both apps share one implementation. AppShell's nav rail
 // became a top bar built from AppNav; its own export is unchanged (still a value export).
+// BrandMark (L5, desktop/web UI sync): the header mark's five shapes, inlined as a component
+// instead of a binary asset both apps would need their own copy step for. AppShell gained an
+// optional `brand` slot for it; the web's own header keeps its `<Image src="/favicon.svg">`.
 const FROZEN_BARREL_VALUE_EXPORTS = [
   'AbilityCard',
   'Accordion',
@@ -33,6 +36,7 @@ const FROZEN_BARREL_VALUE_EXPORTS = [
   'AppShell',
   'Bar',
   'Banner',
+  'BrandMark',
   'Button',
   'Chip',
   'Collapsible',

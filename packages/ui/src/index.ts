@@ -28,6 +28,8 @@ export {
 export { cn } from './cn';
 export { AppShell } from './AppShell';
 export type { AppShellProps, AppShellNavItem } from './AppShell';
+export { BrandMark } from './brand-mark';
+export type { BrandMarkProps } from './brand-mark';
 export { AppNav } from './app-nav';
 export type { AppNavItem, AppNavProps } from './app-nav';
 export { SegmentedToggle } from './segmented-toggle';

@@ -24,7 +24,7 @@ function slowModel(overrides: Partial<LiveSlowModel> = {}): LiveSlowModel {
 const emptyFast: LiveFastModel = { field: {}, recovery: {} };
 
 describe('LivePanel — composition', () => {
-  it('carries the panel root testid and the freshness line', () => {
+  it('carries the panel root testid, the freshness line, the house panel, and the field occupancy count', () => {
     const html = renderToStaticMarkup(
       createElement(LivePanel, { freshness: { kind: 'live' }, slow: slowModel(), fast: emptyFast }),
     );
@@ -32,6 +32,41 @@ describe('LivePanel — composition', () => {
     expect(html).toContain('data-testid="live-freshness"');
     expect(html).toContain('data-testid="live-house"');
     expect(html).toContain('data-testid="live-occupancy"');
+  });
+
+  it('there is no separate occupancy panel — the count lives in the on-field list header', () => {
+    const html = renderToStaticMarkup(
+      createElement(LivePanel, { freshness: { kind: 'live' }, slow: slowModel(), fast: emptyFast }),
+    );
+    const onFieldPanelStart = html.indexOf('data-testid="live-list-on-field"');
+    const onFieldPanelEnd = html.indexOf('data-testid="live-list-recovering"');
+    const occupancyIndex = html.indexOf('data-testid="live-occupancy"');
+    expect(occupancyIndex).toBeGreaterThan(onFieldPanelStart);
+    expect(occupancyIndex).toBeLessThan(onFieldPanelEnd);
+  });
+
+  it('renders occupied against the field size when the field size is known', () => {
+    const html = renderToStaticMarkup(
+      createElement(LivePanel, {
+        freshness: { kind: 'live' },
+        slow: slowModel({ occupancy: { occupied: 2, fieldSize: 5 } }),
+        fast: emptyFast,
+      }),
+    );
+    expect(html).toMatch(/data-testid="live-occupancy"[^>]*>2\/5</);
+  });
+
+  it('renders occupied-only, never "occupied/undefined", when the field size was never sent', () => {
+    const html = renderToStaticMarkup(
+      createElement(LivePanel, {
+        freshness: { kind: 'live' },
+        slow: slowModel({ occupancy: { occupied: 3 } }),
+        fast: emptyFast,
+      }),
+    );
+    expect(html).toMatch(/data-testid="live-occupancy"[^>]*>3</);
+    expect(html).not.toContain('undefined');
+    expect(html).not.toContain('3/');
   });
 
   it('renders every hero exactly where the classifier put it, in the order given', () => {
