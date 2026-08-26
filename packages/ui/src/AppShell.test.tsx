@@ -159,13 +159,21 @@ describe('AppShell', () => {
     expect(out).not.toContain('app-region');
   });
 
-  it('applies -webkit-app-region: drag to the header and no-drag to its interactive regions when draggable', () => {
+  it('draws the drag handle as one empty rectangle, and never marks the header itself', () => {
     const out = html({ items: NAV_ITEMS, draggable: true, children: 'body' });
     const headerMatch = out.match(/<header[^>]*style="([^"]*)"/);
-    expect(headerMatch?.[1]).toMatch(/-webkit-app-region:\s*drag/);
-    const noDragMatches = out.match(/-webkit-app-region:\s*no-drag/g) ?? [];
-    // Brand block + nav wrapper — the two interactive regions in this render (no actions passed).
-    expect(noDragMatches.length).toBe(2);
+    expect(headerMatch?.[1] ?? '').not.toMatch(/-webkit-app-region/);
+    expect(out.match(/-webkit-app-region:\s*drag/g) ?? []).toHaveLength(1);
+    // Nothing needs excusing from a region that contains nothing.
+    expect(out).not.toContain('no-drag');
+    expect(out).toMatch(/<div aria-hidden="true"[^>]*style="[^"]*-webkit-app-region:\s*drag[^"]*"><\/div>/);
+  });
+
+  it('stops the drag handle short of the room reserved for the OS caption buttons', () => {
+    const out = html({ items: NAV_ITEMS, draggable: true, overlayInset: 140, children: 'body' });
+    const stripMatch = out.match(/<div aria-hidden="true"[^>]*style="([^"]*)"><\/div>/);
+    expect(stripMatch?.[1]).toMatch(/right:\s*140px/);
+    expect(stripMatch?.[1]).toMatch(/-webkit-app-region:\s*drag/);
   });
 
   it('reserves overlayInset as right padding on the header', () => {

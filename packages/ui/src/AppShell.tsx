@@ -1,10 +1,12 @@
 import type { CSSProperties, PropsWithChildren, ReactNode } from 'react';
 import { AppNav } from './app-nav';
+import { cn } from './cn';
 import {
   appShellActionsClass,
   appShellBrandClass,
   appShellBrandNameClass,
   appShellBrandTagClass,
+  appShellDragStripClass,
   appShellHeaderClass,
   appShellMainClass,
   appShellRootClass,
@@ -46,7 +48,15 @@ interface AppRegionStyle extends CSSProperties {
   WebkitAppRegion?: 'drag' | 'no-drag';
 }
 
-const NO_DRAG_STYLE: AppRegionStyle = { WebkitAppRegion: 'no-drag' };
+/**
+ * The drag handle is its own empty rectangle behind the header's content rather than the header
+ * itself. Chromium builds the draggable region as a polygon over every `app-region` element, so
+ * marking the header and then un-marking each interactive child makes that region a many-sided
+ * shape recomputed against the whole subtree; one static rectangle with nothing inside it does
+ * not. It also has to stop short of `overlayInset`, because the OS already claims that strip for
+ * its caption buttons and two claims on the same pixels is what makes a drag stick and jump.
+ */
+const DRAG_STRIP_STYLE: AppRegionStyle = { WebkitAppRegion: 'drag' };
 
 /**
  * AppShell — sticky top bar (brand + nav pill + actions) over a single scrolling `<main>`, plus a
@@ -70,19 +80,17 @@ export function AppShell({
 }: AppShellProps) {
   const navItems = items.map((item) => ({ id: item.id, label: item.label, active: item.id === activeId }));
 
-  let headerStyle: AppRegionStyle | undefined;
-  if (draggable || overlayInset) {
-    headerStyle = {};
-    if (draggable) headerStyle.WebkitAppRegion = 'drag';
-    if (overlayInset) headerStyle.paddingRight = overlayInset;
-  }
-  const interactiveStyle = draggable ? NO_DRAG_STYLE : undefined;
+  const headerStyle = overlayInset ? { paddingRight: overlayInset } : undefined;
+  const dragStripStyle = overlayInset
+    ? { ...DRAG_STRIP_STYLE, right: overlayInset }
+    : DRAG_STRIP_STYLE;
 
   return (
     <div className={appShellRootClass}>
       <header className={appShellHeaderClass} style={headerStyle}>
-        <div className="flex min-w-0 items-center gap-4">
-          <div className={appShellBrandClass} style={interactiveStyle}>
+        {draggable ? <div aria-hidden className={appShellDragStripClass} style={dragStripStyle} /> : null}
+        <div className="relative flex min-w-0 items-center gap-4">
+          <div className={appShellBrandClass}>
             <div className={appShellBrandNameClass}>{title}</div>
             {badge ? (
               <span data-testid="flavor-badge" className={appShellBrandTagClass}>
@@ -90,18 +98,10 @@ export function AppShell({
               </span>
             ) : null}
           </div>
-          {navItems.length > 0 ? (
-            <div style={interactiveStyle}>
-              <AppNav items={navItems} onSelect={onNavigate} />
-            </div>
-          ) : null}
+          {navItems.length > 0 ? <AppNav items={navItems} onSelect={onNavigate} /> : null}
         </div>
 
-        {actions ? (
-          <div className={appShellActionsClass} style={interactiveStyle}>
-            {actions}
-          </div>
-        ) : null}
+        {actions ? <div className={cn(appShellActionsClass, 'relative')}>{actions}</div> : null}
       </header>
 
       <main className={appShellMainClass}>{children}</main>

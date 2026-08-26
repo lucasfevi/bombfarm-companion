@@ -13,7 +13,7 @@ export const appShellRootClass = 'flex h-dvh flex-col bg-bg text-ink font-sans';
  * OS drags when `draggable` is on — enough to make the window stutter and snap while moving.
  */
 export const appShellHeaderClass =
-  'flex min-h-top shrink-0 items-center justify-between gap-3 border-b border-line bg-surface px-4 py-2.5';
+  'relative flex min-h-top shrink-0 items-center justify-between gap-3 border-b border-line bg-surface px-4 py-2.5';
 
 /** Brand lockup — name over an uppercase tag, styled like the web's `SiteHeader` brand block. */
 export const appShellBrandClass = 'flex flex-col justify-center';
@@ -21,6 +21,9 @@ export const appShellBrandNameClass = 'text-[13px] leading-1.1 font-bold text-in
 export const appShellBrandTagClass = 'text-[11px] font-semibold tracking-wide text-muted uppercase';
 
 export const appShellActionsClass = 'flex shrink-0 items-center gap-2';
+
+/** Sits behind the header's content; the content wrappers are positioned so they paint above it. */
+export const appShellDragStripClass = 'absolute top-0 bottom-0 left-0';
 
 /** `min-h-0` lets this flex child actually shrink so `overflow-y-auto` scrolls instead of growing
  *  the viewport — the window itself must never scroll. */
