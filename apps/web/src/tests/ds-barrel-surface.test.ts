@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import * as DesignSystem from '@bombfarm/ui';
+import * as GameArt from '@bombfarm/game-art';
 
 // Frozen at T1.1 (pre-Phase-2 split) — every VALUE the design-system barrel
 // exports today. Type-only exports are erased at runtime and are not part of
@@ -115,5 +116,41 @@ describe('design-system barrel surface (frozen)', () => {
   it('exports exactly the frozen value name set — no dropped or renamed export', () => {
     const actual = Object.keys(DesignSystem).sort();
     expect(actual).toEqual(FROZEN_BARREL_VALUE_EXPORTS);
+  });
+});
+
+// HeroIdentity (L4, desktop/web UI sync): the avatar+rank/name/rarity/level primitive extracted
+// from HeroIdentityChip so a caller without a full HeroRecord (a live roster join, mid-flight)
+// can render the same identity block. HeroIdentityChip stays as a thin HeroRecord adapter over it.
+const FROZEN_GAME_ART_BARREL_VALUE_EXPORTS = [
+  'AbilityIcon',
+  'ArtFrame',
+  'ChestIcon',
+  'ClockIcon',
+  'DropIcon',
+  'GoldIcon',
+  'GoldValue',
+  'HeroAbilityIcons',
+  'HeroAvatar',
+  'HeroGearIcons',
+  'HeroIdentity',
+  'HeroIdentityChip',
+  'HouseIcon',
+  'ItemIcon',
+  'PropIcon',
+  'abilityIconRecipe',
+  'artFrameRadiusClass',
+  'artFrameRecipe',
+  'iconMetaGlyphRecipe',
+  'rarityDotClass',
+  'rarityTextClass',
+  'rosterIconTooltipTriggerClass',
+  'rosterInactiveChromeClass',
+].sort();
+
+describe('game-art barrel surface (frozen)', () => {
+  it('exports exactly the frozen value name set — no dropped or renamed export', () => {
+    const actual = Object.keys(GameArt).sort();
+    expect(actual).toEqual(FROZEN_GAME_ART_BARREL_VALUE_EXPORTS);
   });
 });

@@ -2,6 +2,8 @@ export {
   ArtFrame,
   type ArtFrameSize,
   HeroAvatar,
+  HeroIdentity,
+  type HeroIdentityVariant,
   HeroIdentityChip,
   ItemIcon,
   AbilityIcon,
