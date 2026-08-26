@@ -352,19 +352,15 @@ describe('LiveSource: composition with the REST rotation projection', () => {
   });
 });
 
-describe('LiveSource: REST refreshes must never earn an observed basis', () => {
-  it('a dozen REST-only refreshes, draining linearly the whole time, stay modelled — with no tap ever attached', () => {
+describe('LiveSource: REST refreshes populate the field countdown from the drain law alone', () => {
+  it('a dozen REST-only refreshes, draining linearly the whole time, report modelled countdowns — with no tap ever attached', () => {
     const { source, clock } = createHarness();
     source.start();
 
     const energyMax = 1000;
     const ratePerSecond = 0.8;
     let energyFraction = 0.9;
-    const observedBases: string[] = [];
-    // Spacing is inside the drain-fit's own 30s sample-age window (unlike the real ~60s refresh
-    // cadence), so a dozen calls actually accumulate enough samples to reach the observed-slope
-    // gates — otherwise the age window alone would keep every countdown modelled and this test
-    // would pass whether or not REST provenance were respected.
+    const bases: string[] = [];
     const refreshIntervalMs = 3_000;
 
     for (let i = 0; i < 14; i += 1) {
@@ -380,15 +376,14 @@ describe('LiveSource: REST refreshes must never earn an observed basis', () => {
 
       const view = source.getView();
       expect(view.currency.kind).toBe('gap');
-      for (const countdown of view.field) observedBases.push(countdown.basis);
+      for (const countdown of view.field) bases.push(countdown.basis);
 
       clock.ms += refreshIntervalMs;
       energyFraction -= (ratePerSecond * (refreshIntervalMs / 1000)) / energyMax;
     }
 
-    expect(observedBases.length).toBeGreaterThanOrEqual(14);
-    expect(observedBases.every((basis) => basis === 'modelled')).toBe(true);
-    expect(observedBases).not.toContain('observed');
+    expect(bases.length).toBeGreaterThanOrEqual(14);
+    expect(bases.every((basis) => basis === 'modelled')).toBe(true);
   });
 });
 
@@ -723,11 +718,9 @@ describe('LiveSource: countdown stability regression', () => {
     const remainingReadings: number[] = [];
     const bases: string[] = [];
 
-    // Three long stable stretches (each well past the 8-sample / 2s trust gates at this 100ms
-    // cadence), each separated by exactly one membership change from a non-carrier — long enough
-    // to let the fit regain 'observed' between disruptions, which is what turns a wipe-triggered
-    // fallback into a VISIBLE jump rather than a wrong-but-steady line indistinguishable from a
-    // correct one.
+    // Three stretches, each separated by a membership change from a non-carrier who never affects
+    // the target's own multipliers — the countdown is driven by the law alone, so none of this
+    // should move the target's own rate.
     const TOTAL_TICKS = 70;
     for (let i = 0; i < TOTAL_TICKS; i += 1) {
       const heroes: { id: string; energyFraction: number }[] = [
@@ -752,12 +745,132 @@ describe('LiveSource: countdown stability regression', () => {
       if (previousReading !== undefined) expect(reading).toBeLessThanOrEqual(previousReading);
       previousReading = reading;
     }
+    expect(bases.every((basis) => basis === 'modelled')).toBe(true);
+  });
+});
 
-    // Once the fit is trusted it stays trusted for the rest of the run — the estimated/measured
-    // marker must not blink on and off while the target's own conditions never change.
-    const firstObservedIndex = bases.indexOf('observed');
-    if (firstObservedIndex !== -1) {
-      expect(bases.slice(firstObservedIndex).every((basis) => basis === 'observed')).toBe(true);
+describe('LiveSource: the field countdown freezes when frames stop, and runs no clock of its own', () => {
+  it('holds the exact last computed value across repeated reads with no new frame, however much real time passes', () => {
+    const { source, pushFrame, goLive, clock } = createHarness();
+    source.start();
+
+    source.ingestRotation(buildAccountView(bodyWithHeroes([completeHero('h1')])));
+    goLive();
+    pushFrame({ heroes: [{ id: 'h1', energyFraction: 0.4 }] });
+
+    const first = source.getView().field;
+    expect(first.length).toBeGreaterThan(0);
+
+    clock.ms += 10_000; // real time passes with no new frame arriving
+    expect(source.getView().field).toEqual(first);
+  });
+});
+
+function heroRecovery(source: LiveSource, heroId: string): { secondsRemaining: number; advancing: boolean } {
+  const entry = source.getView().recovery.find((candidate) => candidate.heroId === heroId);
+  if (!entry) throw new Error(`expected a recovery entry for ${heroId}`);
+  return entry;
+}
+
+describe('LiveSource: recovery ticks in real time between account reads, and freezes when the connection drops', () => {
+  it("decreases second by second while connected, then holds the instant the connection is lost", () => {
+    const { source, pushCurrency, clock } = createHarness();
+    source.start();
+
+    const body = buildRotationBody({
+      fieldHeroId: 'hero-field',
+      fieldEnergyFraction: 0.8,
+      fieldEnergyMax: 100,
+      restingHeroId: 'hero-resting',
+      restingEnergyFraction: 0.3,
+      cycleSeconds: 600,
+    });
+    source.ingestRotation(buildAccountView(body), clock.ms);
+    pushCurrency({ kind: 'live', lastFrameAt: new Date(clock.ms).toISOString(), sinceAt: new Date(clock.ms).toISOString() });
+
+    const atRead = heroRecovery(source, 'hero-resting');
+    expect(atRead.advancing).toBe(true);
+
+    clock.ms += 5_000;
+    const fiveSecondsLater = heroRecovery(source, 'hero-resting');
+    expect(fiveSecondsLater.secondsRemaining).toBeCloseTo(atRead.secondsRemaining - 5, 6);
+
+    pushCurrency(liveGap('hookSilent', new Date(clock.ms).toISOString()));
+    const justDisconnected = heroRecovery(source, 'hero-resting');
+    expect(justDisconnected.advancing).toBe(false);
+    expect(justDisconnected.secondsRemaining).toBeCloseTo(fiveSecondsLater.secondsRemaining, 6);
+
+    clock.ms += 5_000;
+    const stillDisconnected = heroRecovery(source, 'hero-resting');
+    expect(stillDisconnected.secondsRemaining).toBeCloseTo(justDisconnected.secondsRemaining, 6);
+  });
+
+  it('a non-actionable gap — the combat stream paused, everything else still proving the game is reachable — keeps recovery advancing', () => {
+    const { source, pushCurrency, clock } = createHarness();
+    source.start();
+
+    const body = buildRotationBody({
+      fieldHeroId: 'hero-field',
+      fieldEnergyFraction: 0.8,
+      fieldEnergyMax: 100,
+      restingHeroId: 'hero-resting',
+      restingEnergyFraction: 0.3,
+      cycleSeconds: 600,
+    });
+    source.ingestRotation(buildAccountView(body), clock.ms);
+    pushCurrency(liveGap('clientNotStreaming', new Date(clock.ms).toISOString()));
+
+    const atRead = heroRecovery(source, 'hero-resting');
+    expect(atRead.advancing).toBe(true);
+
+    clock.ms += 3_000;
+    const later = heroRecovery(source, 'hero-resting');
+    expect(later.advancing).toBe(true);
+    expect(later.secondsRemaining).toBeCloseTo(atRead.secondsRemaining - 3, 6);
+  });
+});
+
+describe('LiveSource: the background drain-rate checker', () => {
+  it('logs once when real frame data disagrees with the law, using the same log the rest of the app shares', () => {
+    const { log, warnRecords } = createSpyLog();
+    const { source, pushFrame, goLive } = createHarness({ log });
+    source.start();
+
+    // No ability ranks resolve for this hero, so the law's own rate is the unreduced base, 1.0/s.
+    // The frames below drain at 0.5/s instead — a disagreement no measurement machinery is left to
+    // hide, and the one thing left to catch a wrong law.
+    source.ingestRotation(buildAccountView(bodyWithHeroes([completeHero('h1')])));
+    goLive();
+
+    const startFraction = 0.4;
+    const energyMax = 100;
+    const trueRatePerSecond = 0.5;
+    for (let i = 0; i < 5; i += 1) {
+      const fraction = startFraction - (trueRatePerSecond * (i * 0.1)) / energyMax;
+      pushFrame({ heroes: [{ id: 'h1', energyFraction: fraction }] });
     }
+
+    const disagreements = warnRecords.filter((record) => record.event === 'drain.rate_disagreement');
+    expect(disagreements).toHaveLength(1);
+    expect(disagreements[0]).toMatchObject({ heroId: 'h1' });
+  });
+
+  it('stays silent across a whole run when the frames agree with the law', () => {
+    const { log, warnRecords } = createSpyLog();
+    const { source, pushFrame, goLive } = createHarness({ log });
+    source.start();
+
+    source.ingestRotation(buildAccountView(bodyWithHeroes([completeHero('h1')])));
+    goLive();
+
+    const startFraction = 0.4;
+    const energyMax = 100;
+    const trueRatePerSecond = 1; // the unreduced base rate, exactly what this hero's law predicts
+    for (let i = 0; i < 5; i += 1) {
+      const fraction = startFraction - (trueRatePerSecond * (i * 0.1)) / energyMax;
+      pushFrame({ heroes: [{ id: 'h1', energyFraction: fraction }] });
+    }
+
+    expect(warnRecords.filter((record) => record.event === 'drain.rate_disagreement')).toHaveLength(0);
   });
 });

@@ -12,17 +12,17 @@ import type {
   LiveTick,
   LiveTickHero,
   LiveView,
-  RecoveryCountdown,
   RotationSnapshot,
 } from '@bombfarm/contracts';
-import { isLiveCurrency, liveGap } from '@bombfarm/contracts';
+import { isConnectedCurrency, isLiveCurrency, liveGap } from '@bombfarm/contracts';
 import { identifyObservedBody, normalizeRotation } from '@bombfarm/game-api';
 import {
+  advanceRecoveryClock,
   createInitialFieldCountdownState,
   extractRosterHeroAbilities,
-  freezeRecoveryCountdowns,
   ingestFieldCountdownTick,
   resolveFieldDrainMultipliers,
+  type DrainDisagreementReport,
   type DrainMultipliers,
   type FieldCountdownState,
   type RosterHeroAbilities,
@@ -122,6 +122,21 @@ function reportRotationDrops(log: LogPort, drops: readonly FieldDrop[]): void {
       event: 'rotation.field_dropped',
       path: heroPathWithoutIndex(drop.path),
       reason: drop.reason,
+    });
+  }
+}
+
+/** The background checker's only output: the law and the independently observed rate disagreed
+ *  by more than its margin. Never drives the display — see `ingestFieldCountdownTick`'s own doc
+ *  comment for why the check exists at all. */
+function reportDrainDisagreements(log: LogPort, disagreements: readonly DrainDisagreementReport[]): void {
+  for (const disagreement of disagreements) {
+    log.warn({
+      scope: 'live-source',
+      event: 'drain.rate_disagreement',
+      heroId: disagreement.heroId,
+      observedDrainPerSecond: disagreement.observedDrainPerSecond,
+      modelledDrainPerSecond: disagreement.modelledDrainPerSecond,
     });
   }
 }
@@ -291,7 +306,6 @@ export class LiveSource {
   #rosterHeroById: ReadonlyMap<string, RosterHeroAbilities> = new Map();
   #fieldState: FieldCountdownState = createInitialFieldCountdownState();
   #field: readonly FieldCountdown[] = [];
-  #recovery: readonly RecoveryCountdown[] = [];
   #updatedAt: string;
 
   constructor(deps: LiveSourceDeps) {
@@ -355,8 +369,13 @@ export class LiveSource {
     };
   }
 
+  /** Recovery runs on the server's own clock, not on combat frames, so it is advanced here — on
+   *  every call, not only when a new frame or rotation read arrives — rather than cached alongside
+   *  `#field`. See {@link advanceRecoveryClock} for what `connected` decides. */
   getView(): LiveView {
-    const recovery = isLiveCurrency(this.#currency) ? this.#recovery : freezeRecoveryCountdowns(this.#fieldState);
+    const connected = isConnectedCurrency(this.#currency);
+    const { state, recovery } = advanceRecoveryClock(this.#fieldState, this.#now(), connected);
+    this.#fieldState = state;
     return {
       currency: this.#currency,
       field: this.#field,
@@ -528,7 +547,7 @@ export class LiveSource {
     });
     this.#fieldState = result.state;
     this.#field = result.field;
-    this.#recovery = result.recovery;
+    reportDrainDisagreements(this.#log, result.disagreements);
     this.#touch();
   }
 

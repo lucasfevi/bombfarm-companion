@@ -122,6 +122,15 @@ export function isLiveCurrency(currency: LiveCurrency): boolean {
   return currency.kind === 'live';
 }
 
+/** Whether the app is still in touch with the game at all, for a clock that runs on the server's
+ *  own timer rather than on combat frames (recovery, not the field countdown). `clientNotStreaming`
+ *  is a gap in the combat stream alone — the hook is still proven live by other traffic, per its
+ *  own doc comment on {@link LiveGapReason} — so it counts as connected here even though it is a
+ *  gap; every other gap reason means the read path itself is down. */
+export function isConnectedCurrency(currency: LiveCurrency): boolean {
+  return currency.kind === 'live' || !currency.actionable;
+}
+
 export type LiveCurrency =
   | { readonly kind: 'live'; readonly lastFrameAt: string; readonly sinceAt: string }
   | {

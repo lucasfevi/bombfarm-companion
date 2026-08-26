@@ -8,51 +8,44 @@ import type {
 import { combineDrainRate } from '../drain';
 import { recoverySecondsFor } from '../rotation-status';
 import {
-  advanceFrameClock,
-  advanceHeroEnergyClock,
-  EMPTY_HERO_ENERGY_CLOCK,
-  INITIAL_FRAME_CLOCK_STATE,
-  MAX_TRUSTED_DRAIN_RATE,
-  measuredSecondsPerFrame,
-  MIN_TRUSTED_DRAIN_RATE,
-  type FrameClockState,
-  type HeroEnergyClockState,
-} from './drain-slope';
+  drainRateDisagrees,
+  EMPTY_HERO_DRAIN_OBSERVATION,
+  observeDrainRate,
+  type HeroDrainObservation,
+} from './drain-checker';
 
 export interface DrainMultipliers {
   readonly selfDrainMult: number;
   readonly teamDrainMult: number;
 }
 
-export interface DrainRejectionReport {
+export interface DrainDisagreementReport {
   readonly heroId: string;
-  readonly reason: 'rateOutOfRange';
+  readonly observedDrainPerSecond: number;
+  readonly modelledDrainPerSecond: number;
 }
 
 interface HeroDrainState {
-  readonly energyClock: HeroEnergyClockState;
-  /** Updated from any sample source, tap or rest — unlike {@link HeroEnergyClockState.lastEnergy},
-   *  which only a tap frame advances. This is what the never-rise clamp below compares against. */
-  readonly lastEnergy: number | undefined;
-  readonly lastSecondsRemaining: number | undefined;
-  readonly hasReportedRejection: boolean;
+  readonly observation: HeroDrainObservation;
+  readonly hasReportedDisagreement: boolean;
 }
 
 const EMPTY_HERO_DRAIN_STATE: HeroDrainState = {
-  energyClock: EMPTY_HERO_ENERGY_CLOCK,
-  lastEnergy: undefined,
-  lastSecondsRemaining: undefined,
-  hasReportedRejection: false,
+  observation: EMPTY_HERO_DRAIN_OBSERVATION,
+  hasReportedDisagreement: false,
 };
 
 /** Everything this module derives from `rotation` alone, cached against its reference identity —
  *  `rotation` changes on the slow authenticated cycle while a frame arrives ~10x/second, so
- *  rebuilding either the hero-lookup map or the recovery list on every tick redoes the same work
- *  roughly 600 times per real change. */
+ *  rebuilding either the hero-lookup map or the recovery-at-read list on every tick redoes the
+ *  same work roughly 600 times per real change. */
 interface RotationCache {
   readonly rotation: RotationSnapshot | null;
   readonly heroSnapshotById: ReadonlyMap<string, RotationHeroSnapshot>;
-  readonly recovery: readonly RecoveryCountdown[];
+  /** Recovery as the rotation read itself reported it, with no elapsed-time adjustment yet — see
+   *  {@link advanceRecoveryClock}, which is where that adjustment happens. */
+  readonly recoveryAtRead: readonly RecoveryCountdown[];
+  readonly recoveryReadAtMs: number;
 }
 
 export interface FieldCountdownState {
@@ -62,10 +55,10 @@ export interface FieldCountdownState {
    *  where membership actually changes, never on every tick regardless. */
   readonly onFieldHeroIdsSorted: readonly string[];
   readonly heroDrainStates: ReadonlyMap<string, HeroDrainState>;
-  /** One clock, shared by every hero — see {@link advanceFrameClock}. */
-  readonly frameClock: FrameClockState;
-  readonly recovery: readonly RecoveryCountdown[];
   readonly rotationCache: RotationCache | null;
+  /** The latest instant {@link advanceRecoveryClock} has been allowed to advance recovery to —
+   *  see its own doc comment for what pins and moves this. */
+  readonly recoveryAnchorMs: number | undefined;
 }
 
 export function createInitialFieldCountdownState(): FieldCountdownState {
@@ -73,16 +66,29 @@ export function createInitialFieldCountdownState(): FieldCountdownState {
     onFieldHeroIds: new Set(),
     onFieldHeroIdsSorted: [],
     heroDrainStates: new Map(),
-    frameClock: INITIAL_FRAME_CLOCK_STATE,
-    recovery: [],
     rotationCache: null,
+    recoveryAnchorMs: undefined,
   };
 }
 
-function deriveRotationCache(rotation: RotationSnapshot | null): RotationCache {
+function computeRecoveryAtRead(rotation: RotationSnapshot | null): readonly RecoveryCountdown[] {
+  const cycleSeconds = rotation?.house?.cycleSeconds;
+  if (rotation === null || cycleSeconds === undefined) return [];
+
+  const recovery: RecoveryCountdown[] = [];
+  for (const hero of rotation.heroes) {
+    if (hero.activity !== 'resting' || hero.recovering !== true) continue;
+    const recoverySeconds = recoverySecondsFor(hero, cycleSeconds);
+    if (recoverySeconds === undefined) continue;
+    recovery.push({ heroId: hero.id, secondsRemaining: Math.max(0, recoverySeconds), advancing: true });
+  }
+  return recovery;
+}
+
+function deriveRotationCache(rotation: RotationSnapshot | null, atMs: number): RotationCache {
   const heroSnapshotById = new Map<string, RotationHeroSnapshot>();
   for (const hero of rotation?.heroes ?? []) heroSnapshotById.set(hero.id, hero);
-  return { rotation, heroSnapshotById, recovery: computeRecovery(rotation) };
+  return { rotation, heroSnapshotById, recoveryAtRead: computeRecoveryAtRead(rotation), recoveryReadAtMs: atMs };
 }
 
 export interface FieldCountdownInput {
@@ -90,18 +96,17 @@ export interface FieldCountdownInput {
   readonly rotation: RotationSnapshot | null;
   readonly atMs: number;
   readonly modelledDrainMultipliers?: ReadonlyMap<string, DrainMultipliers>;
-  /** `'tap'` (the default) is a genuine live-stream frame and may feed the observed clock.
+  /** `'tap'` (the default) is a genuine live-stream frame and may feed the background checker.
    *  `'rest'` is an authenticated-refresh reading standing in for one: real energy values, but at
-   *  ~60s spacing rather than the tap's own cadence, so it must never earn an `observed` basis and
-   *  never advances either clock. */
+   *  ~60s spacing rather than the tap's own cadence, so it never advances the checker's own
+   *  two-point observation — a gap that wide could straddle a recharge the checker would never see. */
   readonly sampleSource?: 'tap' | 'rest';
 }
 
 export interface FieldCountdownResult {
   readonly state: FieldCountdownState;
   readonly field: readonly FieldCountdown[];
-  readonly recovery: readonly RecoveryCountdown[];
-  readonly rejections: readonly DrainRejectionReport[];
+  readonly disagreements: readonly DrainDisagreementReport[];
 }
 
 function sameMembership(a: ReadonlySet<string>, b: ReadonlySet<string>): boolean {
@@ -112,33 +117,17 @@ function sameMembership(a: ReadonlySet<string>, b: ReadonlySet<string>): boolean
   return true;
 }
 
-function computeRecovery(rotation: RotationSnapshot | null): readonly RecoveryCountdown[] {
-  const cycleSeconds = rotation?.house?.cycleSeconds;
-  if (rotation === null || cycleSeconds === undefined) return [];
-
-  const recovery: RecoveryCountdown[] = [];
-  for (const hero of rotation.heroes) {
-    if (hero.activity !== 'resting' || hero.recovering !== true) continue;
-    const recoverySeconds = recoverySecondsFor(hero, cycleSeconds);
-    if (recoverySeconds === undefined) continue;
-    recovery.push({
-      heroId: hero.id,
-      secondsRemaining: Math.max(0, recoverySeconds),
-      advancing: true,
-    });
-  }
-  return recovery;
-}
-
-function secondsRemainingFor(drainPerSecond: number, latestKnownEnergy: number): number {
-  return drainPerSecond > 0 ? Math.max(0, latestKnownEnergy / drainPerSecond) : 0;
-}
-
 /**
- * Assembles the live view's field and recovery countdowns from one frame. A hero's basis is
- * `'observed'` only when both its own energy-drop-per-frame and the shared frame clock are
- * measured; a hero whose fit is untrusted and whose multipliers cannot be resolved gets no entry
- * at all — an absent countdown beats a wrong one.
+ * Assembles the live view's field countdowns from one frame, driven by the drain law
+ * (`combineDrainRate`) rather than a measured rate: `secondsRemaining = energy / drainPerSecond`
+ * is exact on the very first reading and needs no warm-up. A hero with no resolvable roster
+ * multipliers gets no entry at all — an absent countdown beats a wrong one.
+ *
+ * Alongside the displayed number, each tap frame also feeds a background check: the same energy
+ * series gives an independently observed rate, compared against the law and reported in
+ * `disagreements` when the two disagree by more than {@link drainRateDisagrees}'s margin. That
+ * check never feeds `secondsRemaining` — it exists to catch the law itself being wrong, which a
+ * number derived from the law never could.
  */
 export function ingestFieldCountdownTick(
   state: FieldCountdownState,
@@ -149,7 +138,7 @@ export function ingestFieldCountdownTick(
   const rotationCache =
     state.rotationCache && state.rotationCache.rotation === rotation
       ? state.rotationCache
-      : deriveRotationCache(rotation);
+      : deriveRotationCache(rotation, atMs);
   const heroSnapshotById = rotationCache.heroSnapshotById;
 
   const newFieldIds = new Set(tick.heroes.map((hero) => hero.id));
@@ -162,10 +151,7 @@ export function ingestFieldCountdownTick(
     heroDrainStates.set(heroId, drainState);
   }
 
-  const frameClock = sampleSource === 'tap' ? advanceFrameClock(state.frameClock, atMs) : state.frameClock;
-  const secondsPerFrame = measuredSecondsPerFrame(frameClock);
-
-  const rejections: DrainRejectionReport[] = [];
+  const disagreements: DrainDisagreementReport[] = [];
   const field: FieldCountdown[] = [];
 
   for (const hero of tick.heroes) {
@@ -176,89 +162,79 @@ export function ingestFieldCountdownTick(
         ? hero.energyFraction * energyMax
         : undefined;
 
-    const resolvedMultipliers = modelledDrainMultipliers?.get(hero.id);
     let drainState = heroDrainStates.get(hero.id) ?? EMPTY_HERO_DRAIN_STATE;
+    const resolvedMultipliers = modelledDrainMultipliers?.get(hero.id);
 
-    const previousEnergy = drainState.lastEnergy;
-    const energyRose = absoluteEnergyNow !== undefined && previousEnergy !== undefined && absoluteEnergyNow > previousEnergy;
-
-    let deltaPerFrame = drainState.energyClock.deltaPerFrame;
-    if (absoluteEnergyNow !== undefined && sampleSource === 'tap') {
-      const energyClock = advanceHeroEnergyClock(drainState.energyClock, absoluteEnergyNow);
-      drainState = { ...drainState, energyClock };
-      deltaPerFrame = energyClock.deltaPerFrame;
-    }
-
-    const observedDrainPerSecond =
-      sampleSource === 'tap' && deltaPerFrame !== undefined && secondsPerFrame !== undefined
-        ? deltaPerFrame / secondsPerFrame
-        : undefined;
-    const rateOutOfRange =
-      observedDrainPerSecond !== undefined &&
-      (observedDrainPerSecond < MIN_TRUSTED_DRAIN_RATE || observedDrainPerSecond > MAX_TRUSTED_DRAIN_RATE);
-
-    if (rateOutOfRange && !drainState.hasReportedRejection) {
-      rejections.push({ heroId: hero.id, reason: 'rateOutOfRange' });
-      drainState = { ...drainState, hasReportedRejection: true };
-    }
-
-    const latestKnownEnergy = absoluteEnergyNow ?? drainState.lastEnergy ?? 0;
-    let entry: FieldCountdown | undefined;
-    if (observedDrainPerSecond !== undefined && !rateOutOfRange) {
-      const framesRemaining = latestKnownEnergy / deltaPerFrame!;
-      entry = {
+    if (resolvedMultipliers !== undefined && absoluteEnergyNow !== undefined) {
+      const modelledDrainPerSecond = combineDrainRate(resolvedMultipliers.selfDrainMult, resolvedMultipliers.teamDrainMult);
+      field.push({
         heroId: hero.id,
-        secondsRemaining: Math.max(0, framesRemaining * secondsPerFrame!),
-        drainPerSecond: observedDrainPerSecond,
-        basis: 'observed',
-      };
-    } else if (resolvedMultipliers !== undefined) {
-      const drainPerSecond = combineDrainRate(resolvedMultipliers.selfDrainMult, resolvedMultipliers.teamDrainMult);
-      entry = {
-        heroId: hero.id,
-        secondsRemaining: secondsRemainingFor(drainPerSecond, latestKnownEnergy),
-        drainPerSecond,
+        secondsRemaining: absoluteEnergyNow / modelledDrainPerSecond,
+        drainPerSecond: modelledDrainPerSecond,
         basis: 'modelled',
-      };
-    }
+      });
 
-    // A hero's true rate can genuinely fall (a buff expiring, say), which would otherwise raise
-    // the displayed remaining time even though nothing about the hero's own energy changed. This
-    // clamp holds the number flat instead — under-reporting until the truth catches down to it —
-    // trading exactness for a countdown that never visibly ticks backward. An exact per-frame
-    // delta makes the countdown monotone by construction, so in normal operation this clamp
-    // should never bind; it stays as a cheap backstop for the modelled fallback path.
-    if (entry !== undefined) {
-      const secondsRemaining =
-        !energyRose && drainState.lastSecondsRemaining !== undefined
-          ? Math.min(entry.secondsRemaining, drainState.lastSecondsRemaining)
-          : entry.secondsRemaining;
-      entry = { ...entry, secondsRemaining };
-      drainState = { ...drainState, lastSecondsRemaining: secondsRemaining };
-    }
-    if (absoluteEnergyNow !== undefined) {
-      drainState = { ...drainState, lastEnergy: absoluteEnergyNow };
+      if (sampleSource === 'tap') {
+        const observation = observeDrainRate(drainState.observation, absoluteEnergyNow, atMs);
+        drainState = { ...drainState, observation: observation.state };
+        const { observedDrainPerSecond } = observation;
+        if (observedDrainPerSecond !== undefined && drainRateDisagrees(observedDrainPerSecond, modelledDrainPerSecond)) {
+          if (!drainState.hasReportedDisagreement) {
+            disagreements.push({ heroId: hero.id, observedDrainPerSecond, modelledDrainPerSecond });
+          }
+          drainState = { ...drainState, hasReportedDisagreement: true };
+        }
+      }
+    } else if (sampleSource === 'tap' && absoluteEnergyNow !== undefined) {
+      drainState = { ...drainState, observation: observeDrainRate(drainState.observation, absoluteEnergyNow, atMs).state };
     }
 
     heroDrainStates.set(hero.id, drainState);
-    if (entry !== undefined) field.push(entry);
   }
 
-  const recovery = rotationCache.recovery;
-
   return {
-    state: { onFieldHeroIds: newFieldIds, onFieldHeroIdsSorted, heroDrainStates, frameClock, recovery, rotationCache },
+    state: { onFieldHeroIds: newFieldIds, onFieldHeroIdsSorted, heroDrainStates, rotationCache, recoveryAnchorMs: state.recoveryAnchorMs },
     field,
-    recovery,
-    rejections,
+    disagreements,
   };
 }
 
+export interface AdvanceRecoveryClockResult {
+  readonly state: FieldCountdownState;
+  readonly recovery: readonly RecoveryCountdown[];
+}
+
+/** A read at least as recent as the pinned anchor keeps the anchor pinned (still frozen); an
+ *  actually fresher read overrides it, since fresher information beats extrapolation. */
+function pinnedAnchorMs(readAtMs: number, priorAnchorMs: number | undefined): number {
+  return priorAnchorMs !== undefined && priorAnchorMs >= readAtMs ? priorAnchorMs : readAtMs;
+}
+
 /**
- * Called when frames have stopped arriving. There is no wall-clock timer here: the world does
- * not advance while the client is not streaming, so recovery simply freezes on whatever value
- * the last frame computed, with `advancing` forced to `false`.
+ * Recovery runs on the server's own clock regardless of whether combat frames are streaming, so
+ * `connected` — not frame arrival — decides whether it may advance. While connected, the anchor
+ * tracks the current instant, so the gap between it and the read grows in real time. A fresher
+ * read (even one that arrives while disconnected) becomes the new anchor outright, since it is
+ * simply better information than anything extrapolated from the old one. Otherwise, once
+ * disconnected the anchor stops moving, so every later call reports exactly the figure it did the
+ * instant connection was lost — never advancing through unconfirmed time, never leaping back to
+ * the stale read either.
  */
-export function freezeRecoveryCountdowns(state: FieldCountdownState): readonly RecoveryCountdown[] {
-  return state.recovery.map((entry) => ({ ...entry, advancing: false }));
+export function advanceRecoveryClock(state: FieldCountdownState, nowMs: number, connected: boolean): AdvanceRecoveryClockResult {
+  const cache = state.rotationCache;
+  if (cache === null) return { state, recovery: [] };
+
+  const readAtMs = cache.recoveryReadAtMs;
+  const priorAnchorMs = state.recoveryAnchorMs;
+  const anchorMs = connected ? Math.max(nowMs, readAtMs) : pinnedAnchorMs(readAtMs, priorAnchorMs);
+
+  const elapsedSeconds = Math.max(0, (anchorMs - readAtMs) / 1000);
+  const recovery = cache.recoveryAtRead.map((entry) => ({
+    heroId: entry.heroId,
+    secondsRemaining: Math.max(0, entry.secondsRemaining - elapsedSeconds),
+    advancing: connected,
+  }));
+
+  const nextState = anchorMs === priorAnchorMs ? state : { ...state, recoveryAnchorMs: anchorMs };
+  return { state: nextState, recovery };
 }
