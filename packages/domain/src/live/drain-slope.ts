@@ -32,6 +32,9 @@ export type DrainFit =
       readonly trusted: true;
       readonly ratePerSecond: number;
       readonly rSquared: number;
+      /** Absolute `atMs` at which the fitted line reaches zero energy, read off the regression
+       *  itself so a caller's countdown never has to re-derive it from a single jittery sample. */
+      readonly zeroAtMs: number;
     }
   | {
       readonly trusted: false;
@@ -107,5 +110,6 @@ export function fitDrainRate(window: readonly DrainSample[]): DrainFit {
   if (ratePerSecond < MIN_TRUSTED_DRAIN_RATE || ratePerSecond > MAX_TRUSTED_DRAIN_RATE) {
     return { trusted: false, reason: 'rateOutOfRange', ratePerSecond, rSquared };
   }
-  return { trusted: true, ratePerSecond, rSquared };
+  const zeroAtMs = -intercept / slopePerMs;
+  return { trusted: true, ratePerSecond, rSquared, zeroAtMs };
 }

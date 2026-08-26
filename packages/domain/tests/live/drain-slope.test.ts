@@ -98,6 +98,20 @@ describe('fitDrainRate — trust gates', () => {
   });
 });
 
+describe('fitDrainRate — zeroAtMs', () => {
+  it('matches a direct division of the latest sample by the fitted rate, on a perfect linear fit', () => {
+    const window = linearWindow(10, 300, 900, 0.8);
+    const fit = fitDrainRate(window);
+    expect(fit.trusted).toBe(true);
+    if (!fit.trusted) return;
+
+    const latest = window[window.length - 1]!;
+    const viaZeroCrossing = (fit.zeroAtMs - latest.atMs) / 1000;
+    const viaDivision = latest.energy / fit.ratePerSecond;
+    expect(viaZeroCrossing).toBeCloseTo(viaDivision, 6);
+  });
+});
+
 describe('pushDrainSample', () => {
   it('keeps at most MAX_WINDOW_SAMPLES, dropping the oldest first', () => {
     let window: readonly DrainSample[] = [];

@@ -7,7 +7,7 @@ import type {
 } from '@bombfarm/contracts';
 import { combineDrainRate } from '../drain';
 import { recoverySecondsFor } from '../rotation-status';
-import { fitDrainRate, pushDrainSample, type DrainSample } from './drain-slope';
+import { fitDrainRate, pushDrainSample, MIN_TRUSTED_SPAN_MS, type DrainSample } from './drain-slope';
 
 export interface DrainMultipliers {
   readonly selfDrainMult: number;
@@ -19,6 +19,19 @@ export interface DrainRejectionReport {
   readonly reason: 'rateOutOfRange';
 }
 
+/** How long a rate eases from the last trusted measurement to the new modelled estimate after a
+ *  composition change. Matches {@link MIN_TRUSTED_SPAN_MS} — the fit needs that long to earn
+ *  trust again after its window is cleared, so the blend lands on the modelled estimate right as
+ *  a fresh observed rate would otherwise take over, instead of holding the old slope any longer
+ *  than the fit itself would have. */
+const RATE_BLEND_DURATION_MS = MIN_TRUSTED_SPAN_MS;
+
+interface RateBlend {
+  readonly fromRate: number;
+  readonly toRate: number;
+  readonly startAtMs: number;
+}
+
 interface HeroDrainState {
   readonly window: readonly DrainSample[];
   readonly hasReportedRejection: boolean;
@@ -27,9 +40,25 @@ interface HeroDrainState {
    *  discards the window the tick this changes value, since that is the one thing that actually
    *  invalidates a fitted slope. */
   readonly resolvedMultipliers: DrainMultipliers | undefined;
+  /** The most recently displayed rate, trusted or blended — the anchor a new blend eases from,
+   *  so a second composition change before the first blend finishes never snaps back past it. */
+  readonly lastRate: number | undefined;
+  /** Set when this hero's own multipliers change while a rate is carried; cleared once a fresh
+   *  fit earns trust again. */
+  readonly rateBlend: RateBlend | undefined;
+  readonly lastEnergy: number | undefined;
+  readonly lastSecondsRemaining: number | undefined;
 }
 
-const EMPTY_HERO_DRAIN_STATE: HeroDrainState = { window: [], hasReportedRejection: false, resolvedMultipliers: undefined };
+const EMPTY_HERO_DRAIN_STATE: HeroDrainState = {
+  window: [],
+  hasReportedRejection: false,
+  resolvedMultipliers: undefined,
+  lastRate: undefined,
+  rateBlend: undefined,
+  lastEnergy: undefined,
+  lastSecondsRemaining: undefined,
+};
 
 function sameMultipliers(a: DrainMultipliers | undefined, b: DrainMultipliers | undefined): boolean {
   if (a === undefined || b === undefined) return a === b;
@@ -159,7 +188,15 @@ export function ingestFieldCountdownTick(
     const resolvedMultipliers = modelledDrainMultipliers?.get(hero.id);
     let drainState = heroDrainStates.get(hero.id) ?? EMPTY_HERO_DRAIN_STATE;
     if (!sameMultipliers(resolvedMultipliers, drainState.resolvedMultipliers)) {
-      drainState = { ...drainState, window: [], resolvedMultipliers };
+      const rateBlend: RateBlend | undefined =
+        drainState.lastRate !== undefined && resolvedMultipliers !== undefined
+          ? {
+              fromRate: drainState.lastRate,
+              toRate: combineDrainRate(resolvedMultipliers.selfDrainMult, resolvedMultipliers.teamDrainMult),
+              startAtMs: atMs,
+            }
+          : undefined;
+      drainState = { ...drainState, window: [], resolvedMultipliers, rateBlend };
     }
     if (absoluteEnergyNow !== undefined && sampleSource === 'tap') {
       drainState = { ...drainState, window: pushDrainSample(drainState.window, { atMs, energy: absoluteEnergyNow }) };
@@ -171,17 +208,45 @@ export function ingestFieldCountdownTick(
       rejections.push({ heroId: hero.id, reason: 'rateOutOfRange' });
       drainState = { ...drainState, hasReportedRejection: true };
     }
-    heroDrainStates.set(hero.id, drainState);
 
     const latestKnownEnergy = absoluteEnergyNow ?? drainState.window.at(-1)?.energy ?? 0;
     let entry: FieldCountdown | undefined;
     if (fit.trusted) {
-      const drainPerSecond = fit.ratePerSecond;
-      entry = { heroId: hero.id, secondsRemaining: secondsRemainingFor(drainPerSecond, latestKnownEnergy), drainPerSecond, basis: 'observed' };
+      const latestSampleAtMs = drainState.window.at(-1)!.atMs;
+      const secondsRemaining = Math.max(0, (fit.zeroAtMs - latestSampleAtMs) / 1000);
+      entry = { heroId: hero.id, secondsRemaining, drainPerSecond: fit.ratePerSecond, basis: 'observed' };
+      drainState = { ...drainState, lastRate: fit.ratePerSecond, rateBlend: undefined };
+    } else if (drainState.rateBlend !== undefined) {
+      const { fromRate, toRate, startAtMs } = drainState.rateBlend;
+      const progress = Math.min(1, Math.max(0, (atMs - startAtMs) / RATE_BLEND_DURATION_MS));
+      const drainPerSecond = fromRate + (toRate - fromRate) * progress;
+      entry = { heroId: hero.id, secondsRemaining: secondsRemainingFor(drainPerSecond, latestKnownEnergy), drainPerSecond, basis: 'modelled' };
+      drainState = { ...drainState, lastRate: drainPerSecond };
     } else if (resolvedMultipliers !== undefined) {
       const drainPerSecond = combineDrainRate(resolvedMultipliers.selfDrainMult, resolvedMultipliers.teamDrainMult);
       entry = { heroId: hero.id, secondsRemaining: secondsRemainingFor(drainPerSecond, latestKnownEnergy), drainPerSecond, basis: 'modelled' };
+      drainState = { ...drainState, lastRate: drainPerSecond };
     }
+
+    // A hero's true rate can genuinely fall (a buff expiring, say), which would otherwise raise
+    // the displayed remaining time even though nothing about the hero's own energy changed. This
+    // clamp holds the number flat instead — under-reporting until the truth catches down to it —
+    // trading exactness for a countdown that never visibly ticks backward.
+    if (entry !== undefined) {
+      const previousEnergy = drainState.lastEnergy;
+      const energyRose = absoluteEnergyNow !== undefined && previousEnergy !== undefined && absoluteEnergyNow > previousEnergy;
+      const secondsRemaining =
+        !energyRose && drainState.lastSecondsRemaining !== undefined
+          ? Math.min(entry.secondsRemaining, drainState.lastSecondsRemaining)
+          : entry.secondsRemaining;
+      entry = { ...entry, secondsRemaining };
+      drainState = { ...drainState, lastSecondsRemaining: secondsRemaining };
+    }
+    if (absoluteEnergyNow !== undefined) {
+      drainState = { ...drainState, lastEnergy: absoluteEnergyNow };
+    }
+
+    heroDrainStates.set(hero.id, drainState);
     if (entry !== undefined) field.push(entry);
   }
 
