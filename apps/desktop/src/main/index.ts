@@ -1,5 +1,5 @@
 import path from 'node:path';
-import { app, BrowserWindow, ipcMain } from 'electron';
+import { app, BrowserWindow, ipcMain, Menu } from 'electron';
 import {
   DEFAULT_SETTINGS,
   isIpcChannel,
@@ -167,10 +167,14 @@ async function createMainWindow(): Promise<void> {
   const env = resolveAppEnv();
 
   mainWindow = new BrowserWindow({
-    width: 1024,
-    height: 640,
+    width: 1280,
+    height: 800,
+    minWidth: 960,
+    minHeight: 640,
+    backgroundColor: '#17100c',
     show: false,
     title: env.productName,
+    icon: path.join(__dirname, '../../assets/icon.ico'),
     webPreferences: {
       preload: path.join(__dirname, '../preload/index.cjs'),
       contextIsolation: true,
@@ -207,6 +211,15 @@ async function createMainWindow(): Promise<void> {
   });
 
   if (env.isDev) {
+    mainWindow.webContents.on('before-input-event', (_event, input) => {
+      if (input.type !== 'keyDown' || input.isAutoRepeat) return;
+      if (input.control && !input.shift && input.key.toLowerCase() === 'r') {
+        mainWindow?.webContents.reload();
+      } else if (input.control && input.shift && input.key.toLowerCase() === 'i') {
+        mainWindow?.webContents.toggleDevTools();
+      }
+    });
+
     log.info({ scope: 'main', event: 'renderer.load_url', url: RENDERER_DEV_URL });
     await mainWindow.loadURL(RENDERER_DEV_URL);
     if (process.env.BFC_OPEN_DEVTOOLS === '1') {
@@ -409,6 +422,11 @@ const { gotLock } = applyAppIdentity(app, {
   appId: env.appId,
   userDataPath: env.userDataPath,
 });
+
+// Windows-only app: Chromium supplies cut/copy/paste/select-all/undo natively inside editable
+// fields with no menu present, so this costs no accelerators. Only macOS needs the Edit menu's
+// roles for them.
+Menu.setApplicationMenu(null);
 
 configureLogging(env);
 
