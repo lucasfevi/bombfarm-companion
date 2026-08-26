@@ -29,8 +29,6 @@ describe('PanelHeader', () => {
     expect(html.indexOf('<h2')).toBeLessThan(html.indexOf('data-testid="counter"'));
   });
 
-
-
   it('merges a caller className with the header row classes, caller winning on conflicts', () => {
     const html = render({ title: 'Points', className: 'mb-0' });
     expect(html).toContain('mb-0');
