@@ -23,6 +23,11 @@ import { createBootRecord } from './boot-record.js';
 import { fuseSecondsForCdr } from './domain-edge.js';
 import { InvalidFlavorError, resolveAppEnv, RENDERER_DEV_URL, type AppEnv } from './env.js';
 import { GameReaderService } from './game-reader/game-reader-service.js';
+import {
+  registerRendererProtocol,
+  registerRendererSchemeAsPrivileged,
+  RENDERER_ENTRY_URL,
+} from './renderer-protocol.js';
 import { createAccountRefresh, type AccountRefreshHandle } from './game-api/account-refresh.js';
 import { createConsentApplier } from './game-api/consent-applier.js';
 import { createConsentStore, type ConsentStore } from './game-api/consent-store.js';
@@ -226,8 +231,8 @@ async function createMainWindow(): Promise<void> {
       mainWindow.webContents.openDevTools({ mode: 'detach' });
     }
   } else {
-    const indexPath = path.join(__dirname, '../../renderer/out/index.html');
-    await mainWindow.loadFile(indexPath);
+    log.info({ scope: 'main', event: 'renderer.load_url', url: RENDERER_ENTRY_URL });
+    await mainWindow.loadURL(RENDERER_ENTRY_URL);
   }
 }
 
@@ -390,6 +395,7 @@ async function bootstrap(): Promise<void> {
   };
 
   registerIpcHandlers();
+  registerRendererProtocol(path.join(__dirname, '../../renderer/out'));
   await createMainWindow();
   gameReader.start();
   log.info({
@@ -417,6 +423,7 @@ function resolveBootEnv(): AppEnv {
 }
 
 const env = resolveBootEnv();
+registerRendererSchemeAsPrivileged();
 const { gotLock } = applyAppIdentity(app, {
   productName: env.productName,
   appId: env.appId,
