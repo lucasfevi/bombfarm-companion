@@ -44,6 +44,10 @@ export interface RotationHeroSnapshot {
   readonly rarity?: number;
   /** The roster entry's `stars` field. Same join source and absence rule as `name`. */
   readonly stars?: number;
+  /** The roster entry's `skin` field. Same join source and absence rule as `name`, but also
+   *  bounded to the known avatar set — an out-of-range value is left absent rather than carried,
+   *  the same treatment the Planning import path already gives it. */
+  readonly skin?: number;
 }
 
 export interface HouseSnapshot {

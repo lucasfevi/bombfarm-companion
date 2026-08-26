@@ -24,7 +24,7 @@ export function HeroRow({ hero, trailing }: { hero: LiveHeroFact; trailing?: Rea
       <span className="flex min-w-0 items-center gap-2">
         <span className="shrink-0">
           <HeroAvatar
-            skin={0}
+            skin={hero.skin ?? 0}
             rarityIdx={hero.rarity ?? NEUTRAL_RARITY_IDX}
             size="xs"
             name={hero.name ?? hero.id}

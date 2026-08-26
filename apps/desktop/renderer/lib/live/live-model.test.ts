@@ -70,6 +70,18 @@ describe('buildLiveSlowModel — absent is not zero', () => {
     expect('stars' in (unidentifiedFact ?? {})).toBe(false);
   });
 
+  it('a hero with a joined skin carries it through; a hero without one has no skin key at all', () => {
+    const skinned = hero({ id: 'skinned', activity: 'benched', skin: 4 });
+    const skinless = hero({ id: 'skinless', activity: 'benched' });
+
+    const slow = buildLiveSlowModel({ snapshot: { heroes: [skinned, skinless] }, drops: [] });
+
+    const skinnedFact = slow.benched.find((entry) => entry.id === 'skinned');
+    const skinlessFact = slow.benched.find((entry) => entry.id === 'skinless');
+    expect(skinnedFact).toEqual({ id: 'skinned', skin: 4 });
+    expect('skin' in (skinlessFact ?? {})).toBe(false);
+  });
+
   it('never re-sorts what classifyRotation returned', () => {
     const b = hero({ id: 'b', activity: 'benched' });
     const a = hero({ id: 'a', activity: 'benched' });

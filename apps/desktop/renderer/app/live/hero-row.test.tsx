@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { createElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
+import { heroAvatarSrc } from '@bombfarm/domain/wiki-assets';
 import { HeroRow } from './hero-row';
 
 describe('HeroRow', () => {
@@ -74,5 +75,19 @@ describe('HeroRow', () => {
   it('renders a HeroAvatar image for every hero, including an id-only one', () => {
     const html = renderToStaticMarkup(createElement(HeroRow, { hero: { id: 'hero-7' } }));
     expect(html).toContain('<img');
+  });
+
+  it('renders distinct portraits for heroes with distinct joined skins, not the same placeholder for every hero', () => {
+    const first = renderToStaticMarkup(createElement(HeroRow, { hero: { id: 'hero-a', skin: 2 } }));
+    const second = renderToStaticMarkup(createElement(HeroRow, { hero: { id: 'hero-b', skin: 6 } }));
+
+    expect(first).toContain(heroAvatarSrc(2));
+    expect(second).toContain(heroAvatarSrc(6));
+    expect(heroAvatarSrc(2)).not.toBe(heroAvatarSrc(6));
+  });
+
+  it('falls back to the neutral placeholder skin when the roster join has not caught up to this hero yet', () => {
+    const html = renderToStaticMarkup(createElement(HeroRow, { hero: { id: 'hero-7' } }));
+    expect(html).toContain(heroAvatarSrc(0));
   });
 });
