@@ -257,6 +257,39 @@ describe('TlsConnections: good frames preceding a malformed frame in the same ch
   });
 });
 
+describe('TlsConnections: a single push does not grow the call stack per frame', () => {
+  it('drains thousands of alternating malformed/valid frames in one push without overflowing the stack', () => {
+    const ALTERNATION_COUNT = 5_000;
+    const parts: Buffer[] = [];
+    const expectedIds: string[] = [];
+    for (let i = 0; i < ALTERNATION_COUNT; i += 1) {
+      parts.push(buildOversized64BitLengthFrame());
+      const id = `hero-${String(i)}`;
+      parts.push(buildServerTextFrame(Buffer.from(JSON.stringify({ t: 'snap', heroes: [{ id }] }))));
+      expectedIds.push(id);
+    }
+
+    const conn = new TlsConnections();
+    const events = conn.push('stack-safety-frames', Buffer.concat(parts));
+    const ticks = events.filter(isTick).map((e) => e.tick);
+
+    expect(ticks).toHaveLength(ALTERNATION_COUNT);
+    expect(ticks.map((t) => t.heroes[0]?.id)).toEqual(expectedIds);
+  });
+
+  it('drains thousands of back-to-back HTTP responses in one push without overflowing the stack', () => {
+    const RESPONSE_COUNT = 20_000;
+    const responses: Buffer[] = [];
+    for (let i = 0; i < RESPONSE_COUNT; i += 1) responses.push(buildHttpResponse(200, 'OK', ''));
+
+    const conn = new TlsConnections();
+    const events = conn.push('stack-safety-http', Buffer.concat(responses));
+
+    expect(events).toHaveLength(RESPONSE_COUNT);
+    expect(events.every((e) => e.kind === 'http' && e.status === 200)).toBe(true);
+  });
+});
+
 describe('TlsConnections: websocket upgrade caught live', () => {
   it('emits upgrade and starts decoding frames straight after the handshake headers', () => {
     const conn = new TlsConnections();
