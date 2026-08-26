@@ -32,12 +32,12 @@ export interface AppShellProps extends PropsWithChildren {
   progress?: ReactNode;
   version?: ReactNode;
   /**
-   * Reserved for the desktop's custom title bar (a later task). Applies
-   * `-webkit-app-region: drag` to the header and `no-drag` to its interactive regions (brand, nav,
-   * actions) so the OS can still move the window by its chrome. No caller passes this yet.
+   * The desktop's custom title bar. Applies `-webkit-app-region: drag` to the header and
+   * `no-drag` to its interactive regions (brand, nav, actions) so the OS can still move the
+   * window by its chrome.
    */
   draggable?: boolean;
-  /** Reserved alongside `draggable` — right padding (px) held clear for OS caption buttons. */
+  /** Right padding (px) held clear for OS caption buttons, alongside `draggable`. */
   overlayInset?: number;
 }
 

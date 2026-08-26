@@ -19,6 +19,7 @@ import { rarityLabel } from '@bombfarm/domain/game-labels';
 import type { ConsentRecord } from '@bombfarm/game-api';
 import { CopyProvider, useCopy, useLocale, type Copy } from '../lib/copy';
 import { formatAge } from '../lib/format';
+import { useOverlayInset } from '../lib/window-overlay';
 import { navItemsFor } from './nav-items';
 import { ConsentGate, isConsentGateVisible } from './consent-gate';
 import { ConsentModal } from './consent-modal';
@@ -121,6 +122,7 @@ function HomePageContent({
 }) {
   const t = useCopy();
   const { lang } = useLocale();
+  const overlayInset = useOverlayInset();
   const [activeNavId, setActiveNavId] = useState(DEFAULT_NAV_ID);
   const [environment, setEnvironment] = useState<AppEnvironmentInfo | null>(null);
   const [status, setStatus] = useState<GameStatusInfo | null>(null);
@@ -204,6 +206,8 @@ function HomePageContent({
         items={granted ? navItemsFor(t) : []}
         activeId={activeNavId}
         onNavigate={setActiveNavId}
+        draggable
+        overlayInset={overlayInset}
         actions={
           <SegmentedToggle
             options={LOCALE_OPTIONS}

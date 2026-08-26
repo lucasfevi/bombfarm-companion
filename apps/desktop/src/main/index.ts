@@ -180,6 +180,12 @@ async function createMainWindow(): Promise<void> {
     show: false,
     title: env.productName,
     icon: path.join(__dirname, '../../assets/icon.ico'),
+    titleBarStyle: 'hidden',
+    // `--surface`/`--ink` (packages/ui/src/styles.css) as sRGB hex — Electron's titleBarOverlay
+    // can't take `oklch()`. Height matches AppShell's own header token (`--spacing-top`, 58px),
+    // not the OS caption default, so the overlay's Minimize/Maximize/Close buttons sit centred
+    // against it.
+    titleBarOverlay: { color: '#261d19', symbolColor: '#efe6e1', height: 58 },
     webPreferences: {
       preload: path.join(__dirname, '../preload/index.cjs'),
       contextIsolation: true,
