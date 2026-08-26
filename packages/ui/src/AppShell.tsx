@@ -62,6 +62,13 @@ interface AppRegionStyle extends CSSProperties {
 const DRAG_STRIP_STYLE: AppRegionStyle = { WebkitAppRegion: 'drag' };
 
 /**
+ * Painting above the drag handle is not enough to stay out of it. The draggable region is built
+ * from this property alone — paint order and stacking are not consulted — so anything that takes
+ * a click has to say so, or the window manager claims the press before the button ever sees it.
+ */
+const NO_DRAG_STYLE: AppRegionStyle = { WebkitAppRegion: 'no-drag' };
+
+/**
  * AppShell — sticky top bar (brand + nav pill + actions) over a single scrolling `<main>`, plus a
  * slim status strip. Same top-bar shape as the web's `SiteHeader`, built from the shared `AppNav`
  * pill rather than the desktop's former icon-rail sidebar. Nav is controlled (`activeId` +
@@ -88,13 +95,14 @@ export function AppShell({
   const dragStripStyle = overlayInset
     ? { ...DRAG_STRIP_STYLE, right: overlayInset }
     : DRAG_STRIP_STYLE;
+  const interactiveStyle = draggable ? NO_DRAG_STYLE : undefined;
 
   return (
     <div className={appShellRootClass}>
       <header className={appShellHeaderClass} style={headerStyle}>
         {draggable ? <div aria-hidden className={appShellDragStripClass} style={dragStripStyle} /> : null}
         <div className="relative flex min-w-0 items-center gap-4">
-          <div className={appShellBrandRowClass}>
+          <div className={appShellBrandRowClass} style={interactiveStyle}>
             {brand}
             <div className={appShellBrandClass}>
               <div className={appShellBrandNameClass}>{title}</div>
@@ -105,10 +113,18 @@ export function AppShell({
               ) : null}
             </div>
           </div>
-          {navItems.length > 0 ? <AppNav items={navItems} onSelect={onNavigate} /> : null}
+          {navItems.length > 0 ? (
+            <div style={interactiveStyle}>
+              <AppNav items={navItems} onSelect={onNavigate} />
+            </div>
+          ) : null}
         </div>
 
-        {actions ? <div className={cn(appShellActionsClass, 'relative')}>{actions}</div> : null}
+        {actions ? (
+          <div className={cn(appShellActionsClass, 'relative')} style={interactiveStyle}>
+            {actions}
+          </div>
+        ) : null}
       </header>
 
       <main className={appShellMainClass}>{children}</main>

@@ -164,9 +164,25 @@ describe('AppShell', () => {
     const headerMatch = out.match(/<header[^>]*style="([^"]*)"/);
     expect(headerMatch?.[1] ?? '').not.toMatch(/-webkit-app-region/);
     expect(out.match(/-webkit-app-region:\s*drag/g) ?? []).toHaveLength(1);
-    // Nothing needs excusing from a region that contains nothing.
-    expect(out).not.toContain('no-drag');
     expect(out).toMatch(/<div aria-hidden="true"[^>]*style="[^"]*-webkit-app-region:\s*drag[^"]*"><\/div>/);
+  });
+
+  it('excuses every region that takes a click from the drag handle', () => {
+    // Painting above the handle does not exclude anything from it: the region is built from the
+    // property alone. A control left unmarked is a control the window manager presses instead.
+    const out = html({
+      items: NAV_ITEMS,
+      draggable: true,
+      actions: createElement('span', null, 'PT/EN'),
+      children: 'body',
+    });
+    // Brand row, nav wrapper, actions wrapper.
+    expect(out.match(/-webkit-app-region:\s*no-drag/g) ?? []).toHaveLength(3);
+  });
+
+  it('marks nothing at all when the shell is not the title bar', () => {
+    const out = html({ items: NAV_ITEMS, actions: createElement('span', null, 'PT/EN'), children: 'body' });
+    expect(out).not.toContain('app-region');
   });
 
   it('stops the drag handle short of the room reserved for the OS caption buttons', () => {
