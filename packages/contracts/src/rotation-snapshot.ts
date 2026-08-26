@@ -40,6 +40,10 @@ export interface RotationHeroSnapshot {
   readonly name?: string;
   /** The roster entry's `rank` field. Same absence rule as `name`. */
   readonly grade?: string;
+  /** The roster entry's `rarity` field. Same join source and absence rule as `name`. */
+  readonly rarity?: number;
+  /** The roster entry's `stars` field. Same join source and absence rule as `name`. */
+  readonly stars?: number;
 }
 
 export interface HouseSnapshot {

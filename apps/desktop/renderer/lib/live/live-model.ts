@@ -15,6 +15,8 @@ export interface LiveHeroFact {
   readonly name?: string;
   readonly grade?: string;
   readonly level?: number;
+  readonly rarity?: number;
+  readonly stars?: number;
 }
 
 export interface LiveRecoveringHeroFact extends LiveHeroFact {
@@ -88,6 +90,8 @@ function heroFact(hero: RotationHeroSnapshot): LiveHeroFact {
     ...(hero.name !== undefined ? { name: hero.name } : {}),
     ...(hero.grade !== undefined ? { grade: hero.grade } : {}),
     ...(hero.level !== undefined ? { level: hero.level } : {}),
+    ...(hero.rarity !== undefined ? { rarity: hero.rarity } : {}),
+    ...(hero.stars !== undefined ? { stars: hero.stars } : {}),
   };
 }
 

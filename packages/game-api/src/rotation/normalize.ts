@@ -60,11 +60,17 @@ function collectDrop<T>(validated: Validated<T>, drops: FieldDrop[]): T | undefi
 interface RosterEntry {
   readonly name?: string;
   readonly grade?: string;
+  readonly rarity?: number;
+  readonly stars?: number;
 }
 
-/** `/roster`'s own wire keys (`id`, `name`, `rank`) — a different route's vocabulary, outside
- *  this lexicon's declared rotation key sets, so they are plain literals here rather than routed
- *  through `wireKey()`. None is Portuguese-origin. */
+function isNonNegativeFiniteNumber(value: unknown): value is number {
+  return typeof value === 'number' && Number.isFinite(value) && value >= 0;
+}
+
+/** `/roster`'s own wire keys (`id`, `name`, `rank`, `rarity`, `stars`) — a different route's
+ *  vocabulary, outside this lexicon's declared rotation key sets, so they are plain literals here
+ *  rather than routed through `wireKey()`. None is Portuguese-origin. */
 function buildRosterIndex(roster: unknown): ReadonlyMap<string, RosterEntry> {
   const index = new Map<string, RosterEntry>();
   if (!Array.isArray(roster)) return index;
@@ -75,9 +81,13 @@ function buildRosterIndex(roster: unknown): ReadonlyMap<string, RosterEntry> {
     if (typeof id !== 'string') continue;
     const name = candidate['name'];
     const grade = candidate['rank'];
+    const rarity = candidate['rarity'];
+    const stars = candidate['stars'];
     index.set(id, {
       ...(typeof name === 'string' ? { name } : {}),
       ...(typeof grade === 'string' ? { grade } : {}),
+      ...(isNonNegativeFiniteNumber(rarity) ? { rarity } : {}),
+      ...(isNonNegativeFiniteNumber(stars) ? { stars } : {}),
     });
   }
   return index;
@@ -204,6 +214,8 @@ function normalizeHero(
     ...(battleAllowed !== undefined ? { battleAllowed } : {}),
     ...(rosterEntry?.name !== undefined ? { name: rosterEntry.name } : {}),
     ...(rosterEntry?.grade !== undefined ? { grade: rosterEntry.grade } : {}),
+    ...(rosterEntry?.rarity !== undefined ? { rarity: rosterEntry.rarity } : {}),
+    ...(rosterEntry?.stars !== undefined ? { stars: rosterEntry.stars } : {}),
   };
 }
 
