@@ -53,7 +53,7 @@ export function HeroDetail({ model, heroId }: { model: PlanningModel; heroId: st
 
   return (
     <Panel data-testid="hero-detail">
-      <h2 data-testid="hero-detail-name" className="text-base font-semibold text-ink">
+      <h2 data-testid="hero-detail-name" className="m-0 text-base leading-none font-bold text-ink">
         {entry.hero.name}
       </h2>
       <StatList

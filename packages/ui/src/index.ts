@@ -39,6 +39,7 @@ export { Stepper, type StepperProps } from './stepper';
 export { RankControl } from './rank-control';
 export { AbilityCard, type AbilityCardProps } from './ability-card';
 export { Panel, type PanelProps } from './panel';
+export { PanelHeader, type PanelHeaderProps } from './panel-header';
 export { Fields, type FieldsProps, type FieldsLayout } from './fields';
 export { Bar, type BarProps } from './bar';
 export { Num } from './num';

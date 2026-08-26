@@ -1,4 +1,4 @@
-import { Panel } from '@bombfarm/ui';
+import { Panel, PanelHeader } from '@bombfarm/ui';
 import type { RotationOccupancy } from '@bombfarm/domain/rotation-status';
 import { sub, useCopy, useLocale } from '../../lib/copy';
 import { formatCount } from '../../lib/format';
@@ -17,7 +17,7 @@ export function OccupancyReadout({ occupancy }: { occupancy: RotationOccupancy }
 
   return (
     <Panel data-testid="live-occupancy">
-      <h2 className="text-base font-semibold text-ink">{t.liveOccupancyLabel}</h2>
+      <PanelHeader title={t.liveOccupancyLabel} />
       <p className="m-0 text-sm text-ink">{value}</p>
     </Panel>
   );

@@ -20,6 +20,8 @@ import * as DesignSystem from '@bombfarm/ui';
 // DeltaTable (2026-08-20): the shared Stat/Now/Target/Change ledger table —
 // replaces the Team Plan CSS-grid stand-in and the Farm Respec hero card's
 // own inline `<table>`, added.
+// PanelHeader (2026-08-26): the panelHClass/panelTitleClass header row + <h2>,
+// promoted from five desktop call sites that hand-rolled the heading, added.
 const FROZEN_BARREL_VALUE_EXPORTS = [
   'AbilityCard',
   'Accordion',
@@ -50,6 +52,7 @@ const FROZEN_BARREL_VALUE_EXPORTS = [
   'NotificationCenter',
   'Num',
   'Panel',
+  'PanelHeader',
   'RankControl',
   'SaveBar',
   'Select',
