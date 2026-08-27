@@ -42,8 +42,11 @@ const guardModule = path.join(__dirname, 'require-workspace-dist.mjs');
  * `tools` carries it per-file instead (`globalSetupConfig: null`). `globalSetup` runs once per
  * PROJECT before collection regardless of any filename filter, and
  * `.github/workflows/line-endings.yml` runs `pnpm vitest run --project tools line-endings`
- * build-free by design — a project-wide guard there failed a job that needed no build. Exactly one
- * of the project's 33 files needs `packages/domain/dist`, so the assert lives in that file.
+ * build-free by design — a project-wide guard there failed a job that needed no build. Two of the
+ * project's files each need one required package — `advice-change-key-coverage.test.mjs` needs
+ * `domain`, `derived-fixture-drift.test.mjs` needs `game-api` (and transitively `domain`, through
+ * `@bombfarm/domain/wiki-assets`) — so the assert lives in both, each calling the same shared
+ * check for the whole `tools` list.
  */
 const WIRED_PROJECTS = [
   { project: '@bombfarm/desktop', globalSetupConfig: 'apps/desktop/vitest.config.ts' },
@@ -51,9 +54,22 @@ const WIRED_PROJECTS = [
   { project: 'tools', globalSetupConfig: null },
 ];
 
-/** The `tools` project's per-file wiring — the config that must NOT carry it, and the file that must. */
+/** The `tools` project's per-file wiring — the config that must NOT carry it, and the files that must. */
 const TOOLS_CONFIG = 'tools/vitest.config.ts';
-const TOOLS_GUARDED_FILE = 'tools/advice-change-key-coverage.test.mjs';
+const TOOLS_GUARDED_FILES = [
+  {
+    file: 'tools/advice-change-key-coverage.test.mjs',
+    dynamicImportTarget: "'../apps/desktop/renderer/lib/planning/hero-advice.ts'",
+    dynamicImportPattern: /await import\(\s*'\.\.\/apps\/desktop\/renderer\/lib\/planning\/hero-advice\.ts'\s*\)/,
+    staticImportPattern: /^import\b[^\n]*hero-advice\.ts/m,
+  },
+  {
+    file: 'tools/derived-fixture-drift.test.mjs',
+    dynamicImportTarget: "'../packages/game-api/scripts/generate-domain-fixtures.mjs'",
+    dynamicImportPattern: /await import\(\s*'\.\.\/packages\/game-api\/scripts\/generate-domain-fixtures\.mjs'\s*\)/,
+    staticImportPattern: /^import\b[^\n]*generate-domain-fixtures\.mjs/m,
+  },
+];
 
 /**
  * The guard is exercised against injected fixture roots, never against real build output:
@@ -95,7 +111,7 @@ describe('REQUIRED_DIST_PACKAGES', () => {
     expect(REQUIRED_DIST_PACKAGES).toEqual({
       '@bombfarm/desktop': ['contracts', 'domain', 'game-api', 'game-data', 'tap-runtime'],
       '@bombfarm/game-api': ['domain'],
-      tools: ['domain'],
+      tools: ['domain', 'game-api'],
     });
   });
 
@@ -134,43 +150,45 @@ describe('guard wiring (every consumer reaches this one module)', () => {
   }
 
   /**
-   * The `tools` half of the wiring, asserted in two pieces so neither can rot unnoticed: the
-   * project must NOT have a globalSetup (re-adding one re-breaks the build-free line-endings
-   * job), and its one build-dependent file must carry the assert itself (deleting that call
-   * turns this red, rather than silently downgrading the guard to a collection-time crash).
+   * The `tools` half of the wiring, asserted in two pieces per file so neither can rot unnoticed:
+   * the project must NOT have a globalSetup (re-adding one re-breaks the build-free line-endings
+   * job), and each build-dependent file must carry the assert itself (deleting that call turns
+   * this red, rather than silently downgrading the guard to a collection-time crash).
    */
   describe(`the tools project carries the guard per-file, not project-wide`, () => {
-    const guardedSource = readFileSync(path.join(repoRoot, TOOLS_GUARDED_FILE), 'utf8');
-
     it(`${TOOLS_CONFIG} declares no globalSetup — line-endings.yml runs this project build-free`, () => {
       expect(globalSetupTargets(TOOLS_CONFIG)).toEqual([]);
     });
 
-    it(`${TOOLS_GUARDED_FILE} imports the shared guard`, () => {
-      expect(guardedSource).toMatch(/from '\.\/require-workspace-dist\.mjs'/);
-    });
+    for (const { file, dynamicImportTarget, dynamicImportPattern, staticImportPattern } of TOOLS_GUARDED_FILES) {
+      describe(file, () => {
+        const guardedSource = readFileSync(path.join(repoRoot, file), 'utf8');
 
-    it(`${TOOLS_GUARDED_FILE} calls assertWorkspaceDistBuilt('tools') at top level`, () => {
-      expect(guardedSource).toMatch(/^assertWorkspaceDistBuilt\('tools'\);$/m);
-    });
+        it('imports the shared guard', () => {
+          expect(guardedSource).toMatch(/from '\.\/require-workspace-dist\.mjs'/);
+        });
 
-    /**
-     * The hoisting hazard this arrangement exists to dodge: ESM `import` statements are hoisted,
-     * so a static import of hero-advice.ts would resolve — and fail — BEFORE any top-level call
-     * could run, handing back `Cannot find package '@bombfarm/domain/account-fidelity'` instead
-     * of the guard's actionable message. It must arrive via a dynamic import placed after the
-     * assert.
-     */
-    it('pulls hero-advice.ts in by dynamic import, after the assert — never by a hoisted static import', () => {
-      expect(guardedSource).not.toMatch(/^import\b[^\n]*hero-advice\.ts/m);
+        it(`calls assertWorkspaceDistBuilt('tools') at top level`, () => {
+          expect(guardedSource).toMatch(/^assertWorkspaceDistBuilt\('tools'\);$/m);
+        });
 
-      const assertIndex = guardedSource.indexOf("assertWorkspaceDistBuilt('tools');");
-      const dynamicImportIndex = guardedSource.search(
-        /await import\(\s*'\.\.\/apps\/desktop\/renderer\/lib\/planning\/hero-advice\.ts'\s*\)/,
-      );
-      expect(assertIndex).toBeGreaterThan(-1);
-      expect(dynamicImportIndex).toBeGreaterThan(assertIndex);
-    });
+        /**
+         * The hoisting hazard this arrangement exists to dodge: ESM `import` statements are
+         * hoisted, so a static import of the build-dependent module would resolve — and fail —
+         * BEFORE any top-level call could run, handing back a bare `Cannot find module`/`Cannot
+         * find package` error instead of the guard's actionable message. It must arrive via a
+         * dynamic import placed after the assert.
+         */
+        it(`pulls ${dynamicImportTarget} in by dynamic import, after the assert — never by a hoisted static import`, () => {
+          expect(guardedSource).not.toMatch(staticImportPattern);
+
+          const assertIndex = guardedSource.indexOf("assertWorkspaceDistBuilt('tools');");
+          const dynamicImportIndex = guardedSource.search(dynamicImportPattern);
+          expect(assertIndex).toBeGreaterThan(-1);
+          expect(dynamicImportIndex).toBeGreaterThan(assertIndex);
+        });
+      });
+    }
   });
 
   it('the desktop and game-api project names match their package manifests', () => {
@@ -221,15 +239,16 @@ describe('missingDistPackages', () => {
       'game-data',
       'tap-runtime',
     ]);
-    // Same root, different project: game-api and tools need domain alone and are satisfied.
+    // Same root, different project: game-api needs domain alone and is satisfied; tools needs
+    // domain AND game-api, so it is still short one.
     expect(missingDistPackages('@bombfarm/game-api', root)).toEqual([]);
-    expect(missingDistPackages('tools', root)).toEqual([]);
+    expect(missingDistPackages('tools', root)).toEqual(['game-api']);
   });
 
-  it('reports domain for game-api and tools when only the others are built', () => {
-    const root = makeRoot('no-domain', ['contracts', 'game-api', 'game-data', 'pricing', 'ui']);
+  it('reports domain for game-api, and domain+game-api in declaration order for tools, when only the others are built', () => {
+    const root = makeRoot('no-domain', ['contracts', 'game-data', 'pricing', 'ui']);
     expect(missingDistPackages('@bombfarm/game-api', root)).toEqual(['domain']);
-    expect(missingDistPackages('tools', root)).toEqual(['domain']);
+    expect(missingDistPackages('tools', root)).toEqual(['domain', 'game-api']);
   });
 });
 

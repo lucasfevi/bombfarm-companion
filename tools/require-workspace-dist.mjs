@@ -28,13 +28,17 @@ export const PACKAGES_ROOT = join(here, '..', 'packages');
  *   `game-data`, `pricing`, `ui` leaves it green at 14 files / 203 tests. `contracts` looks like a
  *   dependency and is not: every `@bombfarm/contracts` specifier under `packages/game-api/src` is
  *   an `import type`, erased before it can be resolved.
- * - `tools` — `domain` only, and needed by exactly ONE of the project's 33 files. Removing
- *   `domain/dist` fails `advice-change-key-coverage.test.mjs` at collection (it pulls in
- *   `apps/desktop/renderer/lib/planning/hero-advice.ts`, which imports
- *   `@bombfarm/domain/account-fidelity` and `/roster-dps`) — 484 tests drop to 450. Removing any
- *   other package's `dist` leaves the project green at 33 files / 484 tests. Because the need is
- *   one file wide, this project calls the assert per-file instead of as `globalSetup`; the entry
- *   stays here because that call still reads it. See `tools/vitest.config.ts`.
+ * - `tools` — `domain` and `game-api`, each needed by exactly ONE of the project's 34 files, and
+ *   not the same one. Removing `domain/dist` fails `advice-change-key-coverage.test.mjs` at
+ *   collection (it pulls in `apps/desktop/renderer/lib/planning/hero-advice.ts`, which imports
+ *   `@bombfarm/domain/account-fidelity` and `/roster-dps`). Removing `game-api/dist` instead fails
+ *   `derived-fixture-drift.test.mjs` at collection — it imports
+ *   `packages/game-api/scripts/generate-domain-fixtures.mjs`, which resolves `../dist/assemble.js`
+ *   etc. by relative path (never through `@bombfarm/game-api`'s own exports map), and that chain
+ *   also reaches `@bombfarm/domain/wiki-assets`, so `domain/dist` is required for this file too.
+ *   Removing any other package's `dist` leaves the project green. Because the need is one-file-wide
+ *   per entry, this project calls the assert per-file instead of as `globalSetup`; the entries stay
+ *   here because those calls still read them. See `tools/vitest.config.ts`.
  *
  * A short list here is worse than no guard: an earlier revision checked `domain` alone for the
  * desktop project and handed back a false all-clear while 20+ files still died at collection.
@@ -43,7 +47,7 @@ export const PACKAGES_ROOT = join(here, '..', 'packages');
 export const REQUIRED_DIST_PACKAGES = Object.freeze({
   '@bombfarm/desktop': Object.freeze(['contracts', 'domain', 'game-api', 'game-data', 'tap-runtime']),
   '@bombfarm/game-api': Object.freeze(['domain']),
-  tools: Object.freeze(['domain']),
+  tools: Object.freeze(['domain', 'game-api']),
 });
 
 /**
