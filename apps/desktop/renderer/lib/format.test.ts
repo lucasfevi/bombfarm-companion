@@ -138,4 +138,13 @@ describe('formatEnergyPercent (both locales, AD-054)', () => {
     expect(formatEnergyPercent(1.4, 'en')).toBe('100%');
     expect(formatEnergyPercent(-0.2, 'en')).toBe('0%');
   });
+
+  it('prints every exact hundredth as itself — flooring a binary float used to lose 29, 57 and 58', () => {
+    // `energyFractionOf` derives the fraction as `energy / energyMax`, so an exact hundredth is
+    // routine. `0.29 * 100` is 28.999999999999996, which floored to 28 before the epsilon.
+    const wrong = Array.from({ length: 101 }, (_, i) => i).filter(
+      (i) => formatEnergyPercent(i / 100, 'en') !== `${String(i)}%`,
+    );
+    expect(wrong).toEqual([]);
+  });
 });

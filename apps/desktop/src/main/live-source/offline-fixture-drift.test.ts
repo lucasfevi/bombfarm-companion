@@ -3,6 +3,8 @@ import { resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { FIELD_SLOTS_MAX } from '@bombfarm/domain/casa-slots';
 
+type Generable = Iterable<Buffer>;
+
 /** `__dirname`, not `import.meta.url`: `tsconfig.main.json` builds this tree to CommonJS. */
 const HERE = __dirname;
 const COMMITTED = resolve(HERE, '..', '..', '..', 'tests', 'fixtures', 'account-offline.json');
@@ -136,11 +138,43 @@ describe('the caps account fixture matches its generator', () => {
  * below is the proof that the deleting machinery introduces nothing of its own.
  */
 describe('the caps replay capture is the recorded one, minus three heroes', () => {
-  it('splicing nothing returns the capture byte-for-byte — the codec adds no bytes of its own', async () => {
+  it('re-encodes every recorded frame byte-for-byte — the encoder reproduces what it did not cut', async () => {
+    // The guard that used to stand here spliced an empty id list, which is vacuous: the walker
+    // short-circuited before parsing, so the encoder was never reached and a frame silently
+    // re-headered into a different WebSocket length form would still have passed.
+    const { reencodeFrame, capturePayloads } = (await import(SPLICER)) as {
+      reencodeFrame: (payload: Buffer) => Buffer;
+      capturePayloads: (data: Buffer) => Generable;
+    };
+    const payloads = [...capturePayloads(readFileSync(CAPTURE))];
+    expect(payloads.length).toBeGreaterThan(0);
+    expect(payloads.filter((payload) => !reencodeFrame(payload).equals(payload))).toEqual([]);
+  });
+
+  it('keeps a frame in the length form it arrived in, even when a shorter one would now fit', async () => {
+    // The recorded frames are all far above the 125-byte boundary, so no assertion over the real
+    // capture can reach this: a fresh encoder picking the shortest form that fits reproduces them
+    // exactly. It is a SPLICED frame that can cross the boundary downwards, and re-headering it
+    // would rewrite two bytes nothing asked to change. Hence a frame built at the boundary.
+    const { reencodeFrame } = (await import(SPLICER)) as { reencodeFrame: (payload: Buffer) => Buffer };
+
+    const body = Buffer.from('{"heroes":[]}', 'utf8');
+    expect(body.length).toBeLessThanOrEqual(125);
+    const sixteenBitHeader = Buffer.alloc(4);
+    sixteenBitHeader.writeUInt8(0x81, 0);
+    sixteenBitHeader.writeUInt8(126, 1);
+    sixteenBitHeader.writeUInt16BE(body.length, 2);
+    const payload = Buffer.concat([sixteenBitHeader, body]);
+
+    expect(reencodeFrame(payload).equals(payload)).toBe(true);
+  });
+
+  it('splicing an id no frame carries changes nothing, having parsed every frame to find out', async () => {
     const { spliceCaptureHeroes } = (await import(SPLICER)) as {
       spliceCaptureHeroes: (data: Buffer, ids: readonly string[]) => Buffer;
     };
     const source = readFileSync(CAPTURE);
+    expect(spliceCaptureHeroes(source, ['no-hero-has-this-id']).equals(source)).toBe(true);
     expect(spliceCaptureHeroes(source, []).equals(source)).toBe(true);
   });
 

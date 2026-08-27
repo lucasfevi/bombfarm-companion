@@ -1,6 +1,6 @@
 import { Bar } from '@bombfarm/ui';
 import { useCopy, useLocale } from '../../lib/copy';
-import { formatEnergyPercent } from '../../lib/format';
+import { energyPercent, formatEnergyPercent } from '../../lib/format';
 
 /**
  * How full a hero's energy is. Rendered on every card, in every rotation state, because it is the
@@ -15,8 +15,9 @@ export function EnergyBar({ testId, fraction }: { testId: string; fraction: numb
   const t = useCopy();
   const { locale } = useLocale();
 
+  // The same floored number the label prints, so the fill and the reading beside it never disagree.
   const known = fraction !== undefined;
-  const percent = known ? Math.min(Math.max(fraction, 0), 1) * 100 : 0;
+  const percent = known ? energyPercent(fraction) : 0;
 
   return (
     <div data-testid={testId} className="flex items-center gap-2">

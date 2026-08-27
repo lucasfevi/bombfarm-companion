@@ -135,14 +135,24 @@ agree with each other while both drift from the game — with the suite green th
 same failure this mode exists to avoid; see [why it does not fake a server](#why-it-does-not-fake-a-server).
 
 `scripts/splice-capture.mjs` deletes byte ranges instead, so every surviving byte is the byte the
-game sent. `spliceCaptureHeroes(bytes, [])` returning its input unchanged is the guard that keeps
-that claim true, and it runs in the drift test. Removing heroes is safe because a hero entry is a
-flat object of scalars and nothing else in a frame addresses heroes — `bombs`, `hits`, `explosions`
-and `loot` are all keyed by grid cell, and `kinds`/`hps` are whole-grid arrays.
+game sent. Removing heroes is safe because a hero entry is a flat object of scalars and nothing else
+in a frame addresses heroes — `bombs`, `hits`, `explosions` and `loot` are all keyed by grid cell,
+and `kinds`/`hps` are whole-grid arrays.
+
+Two guards in the drift test keep that claim true, and **the obvious one does not work**: splicing
+an empty id list returns the input unchanged by construction, because the walker never parses. So
+the guards instead re-encode every recorded frame through the encoder and compare bytes, and pin a
+frame built at the 125-byte boundary to prove a spliced frame keeps the WebSocket length form it
+arrived in rather than being re-headered into a shorter one. Both were arrived at by mutating the
+encoder until the tests caught it — the first version of each did not.
 
 **Deleting is the only edit that stays honest.** Adding a hero, or changing a value to one the game
 never emitted, needs bytes nobody recorded — at which point the capture is a belief about the wire,
 not a reading of it, and it can no longer fail honestly.
+
+Each scenario also gets its own database (`.offline-user-data-<name>`). Committed sections outlive
+the fixture that produced them, so a shared one means `--account caps` followed by a bare
+`pnpm dev:offline` opens on the caps account's `casa` until the first tick overwrites it.
 
 **4. Nothing needs registering.** `dev-offline.mjs` resolves scenarios by naming convention, so
 committing the fixture pair is the whole wiring step. It also validates the name before it builds
@@ -214,7 +224,7 @@ Set any of these before the command; the script only fills in what you left blan
 | `BFC_LIVE_SOURCE` | `replay` | `replay` reads a capture; anything else uses the real tap |
 | `BFC_REPLAY_CAPTURE` | the committed `live-capture.bfcc` | Any `.bfcc` capture. A scenario with its own capture sets this for you |
 | `BFC_RENDERER_PORT` | `3100` | Renderer dev-server port |
-| `BFC_USER_DATA_DIR` | `.offline-user-data/` at the repo root | Where this mode's database lives |
+| `BFC_USER_DATA_DIR` | `.offline-user-data/` at the repo root, or `.offline-user-data-<name>/` for a named scenario | Where this mode's database lives |
 
 Paths must be **Windows-style** (`C:/...` or `C:\...`). A Git-Bash path like `/c/Users/...` reaches
 `readFileSync` unchanged and throws.
@@ -240,8 +250,9 @@ startup.
 
 ### Its database is its own
 
-This mode keeps its account database in `.offline-user-data/` at the repo root, not in the shared
-`Bomb Farm Companion (Dev)` profile. Committed sections outlive the fixture that produced them, so
+This mode keeps its account database at the repo root, not in the shared
+`Bomb Farm Companion (Dev)` profile — and each scenario keeps its own (`.offline-user-data/` for the
+default, `.offline-user-data-<name>/` for a named one). Committed sections outlive the fixture that produced them, so
 without that separation a `casa` section written by one fixture reaches the Live screen on a later
 run driven by a different one — the same id-only rows, from a cause the banner cannot show you.
 Delete the directory to reset.

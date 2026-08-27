@@ -32,6 +32,18 @@ describe('EnergyBar — the reading', () => {
   });
 });
 
+describe('EnergyBar — the fill and the reading agree', () => {
+  it('draws the track to the same whole percentage the label prints, for every exact hundredth', () => {
+    const disagreeing = Array.from({ length: 101 }, (_, i) => i).filter((i) => {
+      const html = render(i / 100);
+      const width = fillWidth(html);
+      const label = /data-testid="live-energy-x-value"[^>]*>([^<]*)</.exec(html)?.[1];
+      return width !== `${String(i)}%` || label !== `${String(i)}%`;
+    });
+    expect(disagreeing).toEqual([]);
+  });
+});
+
 describe('EnergyBar — energy that was never sent', () => {
   it('reads as missing, never as 0% — an empty track alone would claim a hero has no energy', () => {
     const value = (html: string) => /data-testid="live-energy-x-value"[^>]*>([^<]*)</.exec(html)?.[1];

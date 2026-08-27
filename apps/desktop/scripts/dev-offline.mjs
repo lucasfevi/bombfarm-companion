@@ -113,15 +113,24 @@ function printAvailableAccounts(typed) {
  */
 function runBuildStep(script) {
   const pnpmEntry = process.env.npm_execpath;
-  const [command, leading] =
-    pnpmEntry !== undefined && pnpmEntry !== ''
-      ? [process.execPath, [pnpmEntry]]
-      : [process.platform === 'win32' ? 'pnpm.cmd' : 'pnpm', []];
+  const hasEntry = pnpmEntry !== undefined && pnpmEntry !== '';
+  // `npm_execpath` is pnpm's JS CLI under a normal install, but a standalone `@pnpm/exe` install
+  // points it at the executable itself — which `node` cannot run.
+  const entryIsScript = hasEntry && /\.[cm]?js$/.test(pnpmEntry);
+
+  const [command, leading] = entryIsScript
+    ? [process.execPath, [pnpmEntry]]
+    : hasEntry
+      ? [pnpmEntry, []]
+      : ['pnpm', []];
 
   const result = spawnSync(command, [...leading, script], {
     cwd: desktopRoot,
     stdio: 'inherit',
-    shell: false,
+    // Only the last resort goes through a shell, and only because Node refuses to spawn a Windows
+    // `.cmd` shim without one (the CVE-2024-27980 fix): a bare `pnpm` here IS that shim. Nothing
+    // player-supplied reaches this — `script` is one of two literals below.
+    shell: !hasEntry && process.platform === 'win32',
   });
   if (result.error !== undefined) {
     console.error(`dev:offline: could not run "${script}": ${result.error.message}`);
@@ -199,8 +208,21 @@ const applied = [
   // Its own user data, so a run never inherits an account committed by an earlier one. The
   // stored sections outlive the fixture that produced them, and a stale `casa` reaches the Live
   // screen as hero ids with no names long after the fixture behind it is gone.
-  useDefault('BFC_USER_DATA_DIR', path.join(repoRoot, '.offline-user-data')),
+  useDefault('BFC_USER_DATA_DIR', path.join(repoRoot, userDataDirName(scenario))),
 ];
+
+/**
+ * One database per scenario. The stored sections outlive the fixture that produced them, so a
+ * shared directory means `--account caps` and then a bare `pnpm dev:offline` opens on the caps
+ * account's committed `casa` until the first fixture tick overwrites it — the same stale-section
+ * confusion this mode already separates itself from the shared Dev profile to avoid. The default
+ * keeps the original path so an existing working directory is not orphaned.
+ */
+function userDataDirName(chosen) {
+  return chosen === null || chosen.name === 'default'
+    ? '.offline-user-data'
+    : `.offline-user-data-${chosen.name}`;
+}
 
 // Resolved BEFORE anything is built, so a mistyped name costs a moment rather than a full rebuild.
 runBuildStep('predev');
