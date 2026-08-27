@@ -3,6 +3,12 @@ export { HeroAvatar } from './hero-avatar';
 export { HeroIdentity, type HeroIdentityVariant } from './hero-identity';
 export { HeroIdentityChip } from './hero-identity-chip';
 export { ItemIcon } from './item-icon';
+export { InventoryGrid } from './inventory-grid';
+export type {
+  InventoryBadge,
+  InventoryGridLabels,
+  InventoryGridProps,
+} from './inventory-grid';
 export { AbilityIcon } from './ability-icon';
 export { PropIcon } from './prop-icon';
 export { DropIcon } from './drop-icon';
@@ -25,3 +31,10 @@ export {
   type ArtFrameRecipeSize,
   type AbilityIconRecipeSize,
 } from './game-art.recipe';
+export {
+  inventoryCardRecipe,
+  inventoryBadgeRecipe,
+  inventoryGridClass,
+  type InventoryCardTone,
+  type InventoryBadgeTone,
+} from './inventory-grid.recipe';

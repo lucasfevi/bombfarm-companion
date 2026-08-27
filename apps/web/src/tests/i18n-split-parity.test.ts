@@ -325,6 +325,12 @@ const KEYS_REMOVED: readonly string[] = [
  * permanently wrong about it with nothing on screen saying so. The banner names the fields and
  * asks for a fresh export; it borrows the Account page's own labels for the field names rather
  * than adding five more keys.
+ *
+ * The inventory surface (2026-08-26) adds `navInventory` and the `inventory*` block: a new
+ * route listing every item a save carries, not just the gear the optimizer pools. The five
+ * `inventoryGroup*` keys name the item kinds; `inventoryGroupOther` and
+ * `inventoryUnknownCategory` exist because the catalog names gear only, so an item type a patch
+ * adds is shown and labelled unknown rather than silently filed as gear.
  */
 const KEYS_ADDED: readonly string[] = [
   'accountMissingFieldsTitle',
@@ -334,6 +340,29 @@ const KEYS_ADDED: readonly string[] = [
   'referralNoticeReward',
   'referralNoticeCopy',
   'referralNoticeDismiss',
+  'navInventory',
+  'inventoryTitle',
+  'inventoryTip',
+  'inventoryGroupEquipment',
+  'inventoryGroupGem',
+  'inventoryGroupKey',
+  'inventoryGroupMaterial',
+  'inventoryGroupOther',
+  'inventoryBadgeEquipped',
+  'inventoryBadgeStash',
+  'inventoryBadgeLocked',
+  'inventoryBadgeTradable',
+  'inventoryBadgeMarketBlocked',
+  'inventoryBadgeUnresolved',
+  'inventoryDetailSetSlot',
+  'inventoryDetailLevel',
+  'inventoryDetailSellValue',
+  'inventoryUnknownCategory',
+  'inventorySkipped',
+  'inventoryEmptyTitle',
+  'inventoryEmptyBody',
+  'inventoryCount',
+  'inventoryFilterAll',
   'importBlockedTitle',
   'importBlockedBody',
   'importBlockedOldSave',

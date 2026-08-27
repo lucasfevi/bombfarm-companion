@@ -10,6 +10,7 @@ import * as phases from './namespaces/phases';
 import * as teamPlan from './namespaces/team-plan';
 import * as importNs from './namespaces/import';
 import * as stats from './namespaces/stats';
+import * as inventory from './namespaces/inventory';
 
 const en = {
   ...chrome.en,
@@ -23,6 +24,7 @@ const en = {
   ...teamPlan.en,
   ...importNs.en,
   ...stats.en,
+  ...inventory.en,
 };
 const pt = {
   ...chrome.pt,
@@ -36,6 +38,7 @@ const pt = {
   ...teamPlan.pt,
   ...importNs.pt,
   ...stats.pt,
+  ...inventory.pt,
 };
 
 export type Strings = typeof en;

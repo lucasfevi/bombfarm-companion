@@ -126,9 +126,14 @@ describe('design-system barrel surface (frozen)', () => {
 // HeroIdentity (L4, desktop/web UI sync): the avatar+rank/name/rarity/level primitive extracted
 // from HeroIdentityChip so a caller without a full HeroRecord (a live roster join, mid-flight)
 // can render the same identity block. HeroIdentityChip stays as a thin HeroRecord adapter over it.
+//
+// InventoryGrid (2026-08-26): the inventory surface both shells render. It lives here rather than
+// in @bombfarm/ui because it composes ItemIcon and the rarity classes, which are game vocabulary;
+// it carries no strings of its own, so each shell supplies its own locale.
 const FROZEN_GAME_ART_BARREL_VALUE_EXPORTS = [
   'AbilityIcon',
   'ArtFrame',
+  'InventoryGrid',
   'ChestIcon',
   'ClockIcon',
   'DropIcon',
@@ -146,6 +151,9 @@ const FROZEN_GAME_ART_BARREL_VALUE_EXPORTS = [
   'artFrameRadiusClass',
   'artFrameRecipe',
   'iconMetaGlyphRecipe',
+  'inventoryBadgeRecipe',
+  'inventoryCardRecipe',
+  'inventoryGridClass',
   'rarityDotClass',
   'rarityTextClass',
   'rosterIconTooltipTriggerClass',

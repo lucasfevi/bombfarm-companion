@@ -22,9 +22,12 @@ import { ptBR } from './pt-BR';
  */
 // planningRosterColumnAvatar: "Avatar" is a loanword — same spelling in pt-BR (the web planner's
 // equivalent `heroAvatarCol` string is likewise "Avatar" in both its `en` and `pt` namespaces).
+// inventoryDetailSetSlot: pure layout, no words — two placeholders joined by a separator, and
+// both of the values it joins are themselves already localised before they reach it.
 const IDENTICAL_IN_BOTH_LANGUAGES: readonly (keyof typeof en)[] = [
   'ageShortSeconds',
   'planningRosterColumnAvatar',
+  'inventoryDetailSetSlot',
 ];
 
 function placeholderSet(value: string): Set<string> {
