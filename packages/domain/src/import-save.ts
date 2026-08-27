@@ -158,16 +158,13 @@ export type ParseResult = {
   inventory: InventoryItem[];
   rejected: ParseRejection | null;
   /**
-   * Issue #141 — the `REQUIRED_ACCOUNT_FIELDS` this parse did not produce, so a caller can tell
-   * "the save was missing this" from "nothing has been imported yet", which the `null`s on
-   * {@link AccountImportData} cannot. Empty on a reject: a rejected file yields no account at
-   * all, and reporting its all-null `EMPTY_ACCOUNT_DATA` as five missing fields would name a
-   * consequence of the reject rather than a second, separate defect.
+   * Lets a caller tell "the save was missing this" from "nothing has been imported yet", which
+   * the `null`s on {@link AccountImportData} cannot. Empty on a reject — a rejected file yields
+   * no account to judge.
    *
    * Asserted by {@link parseSaveFile} ALONE, never by {@link parseAccountPayload} — the same
-   * split the `unsupportedSaveShape` gate above already makes, and for the same reason: a
-   * payload legitimately omits whole sections per poll (`AD-036`), so absence there is a
-   * degraded cycle, not a malformed export.
+   * split the `unsupportedSaveShape` gate above makes, and for the same reason: a payload
+   * legitimately omits whole sections per poll (`AD-036`).
    */
   accountMissingRequired: readonly RequiredAccountField[];
 };
@@ -447,8 +444,6 @@ export function parseSaveFile(raw: unknown, existing: HeroRecord[]): ParseResult
 
   return {
     ...result,
-    // The diagnosis lives in `warnings` as data too (MSG-15's shape), naming the fields rather
-    // than relying on the caller's copy to have been written yet.
     warnings: [
       ...result.warnings,
       `This save is missing account field(s) the planner needs (${accountMissingRequired.join(', ')}) ` +

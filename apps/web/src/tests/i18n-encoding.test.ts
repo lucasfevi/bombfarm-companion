@@ -1,12 +1,9 @@
 /**
  * Every user-facing string is well-formed text, in both languages.
  *
- * Written after a Portuguese banner title shipped as "O save importado estÃ¡ sem dados da conta"
- * — a UTF-8 `á` whose bytes were re-encoded as if they were Latin-1, so the accented character
- * became two. The whole suite stayed green: `i18n-split-parity` compares KEY SETS, the copy
- * contract greps for over-claiming phrases, and neither reads a string's characters. A garbled
- * headline is invisible to every check the repo had, and only a Portuguese reader would ever see
- * it, which is precisely the class of defect that survives review.
+ * Written after a Portuguese banner title shipped as "estÃ¡" and the whole suite stayed green:
+ * `i18n-split-parity` compares key sets and the copy contract greps for phrases, so neither
+ * reads a string's characters. Only a Portuguese reader would ever have seen it.
  */
 import { describe, expect, it } from 'vitest';
 import { STRINGS, type Lang } from '@/shared/i18n';

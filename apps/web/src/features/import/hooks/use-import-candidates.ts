@@ -19,7 +19,6 @@ export type ImportDialogResult = {
   updated: number;
   removed: number;
   account: AccountImportData | null;
-  /** Issue #141 — required fields this save omitted; the store keeps them for the banner. */
   accountMissingRequired: readonly RequiredAccountField[];
 };
 

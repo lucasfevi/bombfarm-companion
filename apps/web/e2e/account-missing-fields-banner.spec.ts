@@ -2,13 +2,8 @@ import { test, expect } from '@playwright/test';
 import { importedRoster, seedLocalStorage, type SeededState } from './fixtures/seed';
 
 /**
- * Issue #141 — a save that omitted a field only the save can supply must say so, on every page.
- *
- * The harm lands on the Farm board, not on Account: a missing furthest phase lets the Respec
- * Advisor recommend spending real gold toward a phase the player cannot enter. So the banner is
- * checked on Farm as well as on the planner, and the silent case is checked too — an account
- * stored before this rule carries no verdict and must not be greeted by a warning about a save
- * the player may no longer have.
+ * Farm is checked alongside the planner because that is where the harm lands: a missing furthest
+ * phase lets the Respec Advisor recommend spending real gold toward an unreachable phase.
  */
 function seedWith(missingRequiredFields?: string[]): SeededState {
   const account = { ...importedRoster.account!, maxPhase: 122 } as SeededState['account'];

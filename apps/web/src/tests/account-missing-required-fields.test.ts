@@ -1,13 +1,3 @@
-/**
- * Issue #141 — the three states of `missingRequiredFields`, and why `null` and `[]` are not
- * interchangeable.
- *
- * - `null`  — no import has been checked against the required-field rule: a fresh browser, or an
- *             account stored before the rule existed. Must stay silent, and must not change the
- *             persisted bytes of such a record (no migration was intended).
- * - `[]`    — imported and complete.
- * - a list  — imported from a save that omitted these; the banner names them.
- */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { AccountImportData } from '@bombfarm/domain/import-save';
 import { normalizeAccount, type AccountShared } from '@/shared/lib/storage';

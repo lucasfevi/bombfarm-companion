@@ -93,12 +93,7 @@ export type AccountSlice = {
    *  imported save carried neither (both are optional export keys). */
   playerName: string | null;
   accountId: string | null;
-  /**
-   * Issue #141 — required save fields the last import did not carry, or `null` when no import
-   * has been checked against that rule (a fresh browser, or a record stored before the rule).
-   * `null` and `[]` are NOT the same state: only a non-empty list raises the re-import banner,
-   * and only `[]` is a positive statement that the stored account is complete.
-   */
+  /** See {@link AccountShared.missingRequiredFields} for what `null` vs `[]` mean. */
   missingRequiredFields: readonly RequiredAccountField[] | null;
 
   setTeamBuffsOverride: (value: Record<TeamBuffId, number> | null) => void;
@@ -285,10 +280,8 @@ export const createAccountSlice: StateCreator<
     // carries no identity must not leave the previous account's name in the page header.
     patch.playerName = data.playerName ?? null;
     patch.accountId = data.accountId ?? null;
-    // UNCONDITIONAL, and `[]` rather than `null` when the caller passes nothing: reaching this
-    // function at all means an import happened, so the "never checked" state (`null`) is over
-    // either way. A caller that does not supply the parse's verdict is asserting the account is
-    // complete — the pre-#141 assumption, now written down instead of implied.
+    // `[]`, never `null`: reaching this function means an import happened, so "never checked"
+    // is over even when the caller supplies no verdict.
     patch.missingRequiredFields = missingRequired ?? [];
     if (Object.keys(patch).length > 0) set(patch);
   },

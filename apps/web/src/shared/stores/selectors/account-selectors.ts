@@ -28,7 +28,6 @@ export const selectTargetProp = (state: PlannerStore) => state.targetProp;
 export const selectMaxPhase = (state: PlannerStore) => state.maxPhase;
 export const selectPlayerName = (state: PlannerStore) => state.playerName;
 export const selectAccountId = (state: PlannerStore) => state.accountId;
-/** Issue #141 — `null` means no import has been checked against the required-field rule. */
 export const selectMissingRequiredFields = (state: PlannerStore) => state.missingRequiredFields;
 export const selectTreeSquadDmgPct = (state: PlannerStore) => state.treeSquadDmgPct;
 export const selectTreeGeoMult = (state: PlannerStore) => state.treeGeoMult;
@@ -137,10 +136,8 @@ export function selectAccountShared(state: PlannerStore): AccountShared {
     maxPhase: state.maxPhase,
     playerName: state.playerName,
     accountId: state.accountId,
-    // Issue #141 — OMITTED, not written as `null`, when no import has been checked against the
-    // required-field rule: an account stored before the rule must round-trip byte-identically
-    // (`storage-roundtrip.test.ts`, the MOD-21 tripwire), and an absent key is exactly the
-    // "never checked" state `normalizeAccount` reads back.
+    // Omitted, not written as `null`, so a pre-rule account round-trips byte-identically
+    // (`storage-roundtrip.test.ts`, the MOD-21 tripwire).
     ...(state.missingRequiredFields != null
       ? { missingRequiredFields: state.missingRequiredFields }
       : {}),

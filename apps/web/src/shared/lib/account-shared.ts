@@ -153,15 +153,11 @@ export type AccountShared = {
   playerName?: string | null;
   accountId?: string | null;
   /**
-   * Issue #141 — the `REQUIRED_ACCOUNT_FIELDS` the last import did not carry. Three states, and
-   * they are not interchangeable:
-   *
-   * - absent/`null` — no import has been checked against this rule: a fresh browser, or a record
-   *   stored before the rule existed. Deliberately NOT migrated to `[]`: such a record may well
-   *   hold a `null` the rule would flag, and it must keep working until the user re-imports
-   *   rather than being greeted by a banner about a save they no longer have.
-   * - `[]` — imported and complete.
-   * - non-empty — imported from a save that omitted these; the banner names them.
+   * The `REQUIRED_ACCOUNT_FIELDS` the last import did not carry. Three states, not
+   * interchangeable: absent/`null` is "no import has been checked against this rule" (a fresh
+   * browser, or a record stored before it existed), `[]` is "imported and complete", non-empty
+   * is what the banner names. A pre-rule record is deliberately NOT migrated to `[]` — it may
+   * hold a `null` the rule would flag, and it must keep working until the user re-imports.
    */
   missingRequiredFields?: readonly RequiredAccountField[] | null;
 };

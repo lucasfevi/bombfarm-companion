@@ -192,10 +192,10 @@ const CRIT_DMG_MULT_MAP = {
   // deprecation doc comment on `teamBuffs`, the new `teamBuffsOverride` field with its own doc
   // comment, and the `normalizeTeamBuffsOverride` migration helper with its doc comment, all
   // above this line. Match itself is unchanged in count and in kind.
-  // +16 more (line number only): issue #141's required-save-field check added the
+  // +12 more (line number only): issue #141's required-save-field check added the
   // `missingRequiredFields` field with its doc comment, and the domain import that types it,
   // above this line. Match itself is unchanged in count and in kind.
-  'apps/web/src/shared/lib/account-shared.ts': [203],
+  'apps/web/src/shared/lib/account-shared.ts': [199],
   'apps/web/src/shared/lib/stale-account.ts': [20],
   'apps/web/src/tests/advisor-pipeline.test.ts': [85],
   // +2 (line numbers only): the star-multiplier change (0.5 -> 0.25) added two explanatory

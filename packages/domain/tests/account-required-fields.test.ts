@@ -1,14 +1,10 @@
 /**
- * Issue #141 — a save that omits a field only the save can supply must say so, and must still
- * import.
+ * `maxPhase` is the field that proves this matters: `resolveUpperPhase` reads a null ceiling as
+ * "no ceiling" and returns 600, so the Farm Respec Advisor can recommend spending real gold
+ * toward a phase the player cannot enter.
  *
- * The pre-#141 shape had `null` doing double duty on every account field: "nothing imported yet"
- * and "the imported save was missing this". `maxPhase` is the case that proves it matters —
- * `resolveUpperPhase` reads a null ceiling as "no ceiling" and returns 600, so the Farm Respec
- * Advisor can recommend spending real gold toward a phase the player cannot enter.
- *
- * Fixture-independent by construction: every save below is built here rather than read from the
- * corpus, so a capture being retired cannot take these assertions with it.
+ * Every save below is built here rather than read from the corpus, so a capture being retired
+ * cannot take these assertions with it.
  */
 import { describe, expect, it } from 'vitest';
 import {
@@ -83,12 +79,9 @@ describe('parseSaveFile reports required fields the save did not carry', () => {
   });
 
   /**
-   * `tree` is required but is UNREACHABLE as a finding on this path, and deliberately so: the
-   * save-version gate already demands keys that live inside `skills.totals`, so a file without
-   * totals is rejected whole before any account value is read. It stays on the required list
-   * because the list states what the planner needs, not what today's gate happens to catch —
-   * re-baselining that gate to a version without those keys must not quietly make a
-   * tree-less save importable.
+   * `tree` stays on the required list even though the version gate always catches it first: the
+   * list states what the planner needs, not what today's gate happens to reject, so
+   * re-baselining that gate must not quietly make a tree-less save importable.
    */
   it('a save with no skill-tree totals is rejected by the version gate before the field check', () => {
     const save = completeSave();
