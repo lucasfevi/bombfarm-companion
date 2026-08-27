@@ -1,6 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import type { FarmRateRow } from '@bombfarm/domain/farm-rate';
+import { FIELD_SLOTS_MAX } from '@bombfarm/domain/casa-slots';
 import * as phasesStrings from '@/shared/i18n/namespaces/phases';
 import {
   applyFarmFilters,
@@ -371,32 +372,57 @@ describe('pickContentionNotice', () => {
   const contending = (overrides: Partial<FarmRateRow> = {}) =>
     row({ phase: 51, fieldContentionPct: 26.1, concurrencyScale: 0.988, ...overrides });
 
-  it('reports the row own contention, and only that', () => {
-    const notice = pickContentionNotice(contending())!;
+  it('reports the row own contention', () => {
+    const notice = pickContentionNotice(contending(), 5)!;
     expect(notice.pct).toBeCloseTo(26.1, 9);
-    // Frequency only: what the wait costs depends on who takes a freed slot, which the game does
-    // not fix, so the notice deliberately carries no throughput figure.
-    expect(Object.keys(notice)).toEqual(['pct']);
+  });
+
+  it('reports what the wait COSTS separately from how often it happens — they diverge hard', () => {
+    const notice = pickContentionNotice(contending(), 5)!;
+    // 26.1% of wall clock with somebody benched costs 1.2% of the rate: the queue is saturated,
+    // not idle. Reading the frequency as the cost would overstate the loss twentyfold.
+    expect(notice.costPct).toBeCloseTo(1.2, 9);
+  });
+
+  it('takes the cost from concurrencyScale, the same factor buildRow already charged', () => {
+    expect(pickContentionNotice(contending({ concurrencyScale: 0.9 }), 5)!.costPct).toBeCloseTo(10, 9);
+    expect(pickContentionNotice(contending({ concurrencyScale: 1 }), 5)!.costPct).toBeCloseTo(0, 9);
+  });
+
+  it('flags a field already at the cap, so the copy can stop prescribing slots that do not exist', () => {
+    expect(pickContentionNotice(contending(), FIELD_SLOTS_MAX)!.atMaxSlots).toBe(true);
+    expect(pickContentionNotice(contending(), FIELD_SLOTS_MAX - 1)!.atMaxSlots).toBe(false);
+  });
+
+  it('treats a field ABOVE the known cap as maxed — a game patch must not resurrect the advice', () => {
+    expect(pickContentionNotice(contending(), FIELD_SLOTS_MAX + 3)!.atMaxSlots).toBe(true);
+  });
+
+  it('reads an unknown slot count as not-maxed, keeping the actionable copy', () => {
+    expect(pickContentionNotice(contending(), null)!.atMaxSlots).toBe(false);
+    expect(pickContentionNotice(contending(), undefined)!.atMaxSlots).toBe(false);
   });
 
   it('stays silent below the threshold, and speaks at exactly the threshold', () => {
-    expect(pickContentionNotice(contending({ fieldContentionPct: 4.999 }))).toBeNull();
-    expect(pickContentionNotice(contending({ fieldContentionPct: CONTENTION_NOTICE_MIN_PCT }))).not.toBeNull();
+    expect(pickContentionNotice(contending({ fieldContentionPct: 4.999 }), 5)).toBeNull();
+    expect(pickContentionNotice(contending({ fieldContentionPct: CONTENTION_NOTICE_MIN_PCT }), 5)).not.toBeNull();
   });
 
   it('stays silent on an uncontended board — the common case, and the one that must not nag', () => {
-    expect(pickContentionNotice(contending({ fieldContentionPct: 0, concurrencyScale: 1 }))).toBeNull();
+    expect(pickContentionNotice(contending({ fieldContentionPct: 0, concurrencyScale: 1 }), 5)).toBeNull();
   });
 
   it('stays silent on an infeasible row, and on no row at all', () => {
-    expect(pickContentionNotice(contending({ infeasible: true }))).toBeNull();
-    expect(pickContentionNotice(null)).toBeNull();
-    expect(pickContentionNotice(undefined)).toBeNull();
+    expect(pickContentionNotice(contending({ infeasible: true }), 5)).toBeNull();
+    expect(pickContentionNotice(null, 5)).toBeNull();
+    expect(pickContentionNotice(undefined, 5)).toBeNull();
   });
 
   it('never emits NaN from a degenerate row', () => {
-    const notice = pickContentionNotice(contending({ fieldContentionPct: 100, concurrencyScale: 0 }))!;
+    const notice = pickContentionNotice(contending({ fieldContentionPct: 100, concurrencyScale: 0 }), 5)!;
     expect(Number.isFinite(notice.pct)).toBe(true);
     expect(notice.pct).toBeCloseTo(100, 9);
+    expect(notice.costPct).toBeCloseTo(100, 9);
+    expect(Number.isFinite(pickContentionNotice(contending({ concurrencyScale: Number.NaN }), 5)!.costPct)).toBe(true);
   });
 });

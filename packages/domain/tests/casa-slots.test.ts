@@ -6,6 +6,7 @@ import {
   DEFAULT_CASA_SLOTS,
   FIELD_SLOTS_MAX,
   resolveCasaSlots,
+  resolveFieldSlots,
 } from '@bombfarm/domain/casa-slots';
 
 describe('resolveCasaSlots', () => {
@@ -62,5 +63,11 @@ describe('the two ceilings', () => {
   it('the field ceiling is the wiki field size, and is not the House ladder wearing its name', () => {
     expect(FIELD_SLOTS_MAX).toBe(9);
     expect(resolveCasaSlots({ slots: FIELD_SLOTS_MAX }, 0)).toBe(FIELD_SLOTS_MAX);
+  });
+
+  it('the field ceiling does NOT clamp resolveFieldSlots — a raised track surfaces, not truncates', () => {
+    // It is advice's ceiling, not the reader's. A patch that adds a tenth slot shows up as a 10
+    // the board caps the field at, rather than the account silently farming nine.
+    expect(resolveFieldSlots({ field_slots: FIELD_SLOTS_MAX + 1 })).toBe(FIELD_SLOTS_MAX + 1);
   });
 });

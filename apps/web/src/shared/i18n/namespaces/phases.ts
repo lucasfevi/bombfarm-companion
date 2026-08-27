@@ -127,8 +127,11 @@ export const en = {
   farmRankingPoolLabel: "Rotation pool",
   farmRankingPoolHeroAria: "Include {name} in the farm estimate",
   farmRankingContentionTitle: "Your field is the bottleneck",
+  farmRankingContentionTitleMaxSlots: "Your field is saturated",
   farmRankingContentionDesc:
-    "{pct} of the time a rested hero waits on the bench because the field is already full. More field slots (you have {slots}) is the direct fix. Turning heroes off above lowers the waiting too, but usually lowers the total as well: a hero that only sometimes gets a slot still earns while it has one. The gold/hr estimate does not model this wait, so it reads slightly high here.",
+    "{pct} of the time a rested hero waits on the bench because all {slots} of your field slots are taken. More field slots is the direct fix — the cap is {max}. The gold/hr estimate already charges this wait: it costs about {cost} of the rate you would get with room for everyone. Turning heroes off above lowers the waiting too, but usually lowers the total as well: a hero that only sometimes gets a slot still earns while it has one.",
+  farmRankingContentionDescMaxSlots:
+    "{pct} of the time a rested hero waits on the bench because all {slots} of your field slots are taken. {slots} is the maximum, so this one is structural — there are no more slots to buy. The gold/hr estimate already charges this wait: it costs about {cost} of the rate you would get with room for everyone. Turning heroes off above lowers the waiting too, but usually lowers the total as well: a hero that only sometimes gets a slot still earns while it has one.",
   farmRankingReturnBonusLabel: "Return Bonus",
   farmRankingReturnBonusOff: "Off",
   farmRankingReturnBonusOn: "On",
@@ -309,8 +312,11 @@ export const pt: typeof en = {
   farmRankingPoolLabel: "Pool de rotação",
   farmRankingPoolHeroAria: "Incluir {name} na estimativa de farm",
   farmRankingContentionTitle: "Seu campo é o gargalo",
+  farmRankingContentionTitleMaxSlots: "Seu campo está saturado",
   farmRankingContentionDesc:
-    "Em {pct} do tempo um herói descansado espera no banco porque o campo já está cheio. Mais vagas de campo (você tem {slots}) é a solução direta. Desligar heróis acima também reduz a espera, mas costuma reduzir o total junto: um herói que só às vezes pega vaga ainda produz enquanto está nela. A estimativa de ouro/h não modela essa espera, então fica um pouco alta aqui.",
+    "Em {pct} do tempo um herói descansado espera no banco porque suas {slots} vagas de campo estão todas ocupadas. Mais vagas de campo é a solução direta — o limite é {max}. A estimativa de ouro/h já cobra essa espera: ela custa cerca de {cost} da taxa que você teria com vaga para todos. Desligar heróis acima também reduz a espera, mas costuma reduzir o total junto: um herói que só às vezes pega vaga ainda produz enquanto está nela.",
+  farmRankingContentionDescMaxSlots:
+    "Em {pct} do tempo um herói descansado espera no banco porque suas {slots} vagas de campo estão todas ocupadas. {slots} é o máximo, então essa espera é estrutural — não há mais vagas para comprar. A estimativa de ouro/h já cobra essa espera: ela custa cerca de {cost} da taxa que você teria com vaga para todos. Desligar heróis acima também reduz a espera, mas costuma reduzir o total junto: um herói que só às vezes pega vaga ainda produz enquanto está nela.",
   farmRankingReturnBonusLabel: "Bônus de Retorno",
   farmRankingReturnBonusOff: "Desligado",
   farmRankingReturnBonusOn: "Ligado",

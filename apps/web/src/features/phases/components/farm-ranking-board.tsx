@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import { Banner, EmptyState, Panel } from '@bombfarm/ui';
+import { FIELD_SLOTS_MAX } from '@bombfarm/domain/casa-slots';
 import { sub, type Lang, type Strings } from '@/shared/i18n';
 import {
   deriveFarmPoolEntries,
@@ -100,8 +101,9 @@ export function FarmRankingBoard({ t, lang }: { t: Strings; lang: Lang }) {
     if (result.reason != null) return null;
     return pickContentionNotice(
       result.rows.find((candidate) => candidate.phase === currentPhase) ?? pickBestFarmRow(visibleRows),
+      fieldSlots,
     );
-  }, [result.reason, result.rows, currentPhase, visibleRows]);
+  }, [result.reason, result.rows, currentPhase, visibleRows, fieldSlots]);
 
   const empty =
     result.reason === 'no-roster'
@@ -130,11 +132,25 @@ export function FarmRankingBoard({ t, lang }: { t: Strings; lang: Lang }) {
       ) : null}
       {contention ? (
         <div className="mb-3" data-testid="farm-contention-notice">
-          <Banner tone="warn" title={t.farmRankingContentionTitle}>
-            {sub(t.farmRankingContentionDesc, {
-              pct: `${formatMitigationPct(contention.pct)}%`,
-              slots: String(fieldSlots ?? '—'),
-            })}
+          <Banner
+            tone="warn"
+            title={
+              contention.atMaxSlots
+                ? t.farmRankingContentionTitleMaxSlots
+                : t.farmRankingContentionTitle
+            }
+          >
+            {sub(
+              contention.atMaxSlots
+                ? t.farmRankingContentionDescMaxSlots
+                : t.farmRankingContentionDesc,
+              {
+                pct: `${formatMitigationPct(contention.pct)}%`,
+                cost: `${formatMitigationPct(contention.costPct)}%`,
+                slots: String(fieldSlots ?? '—'),
+                max: String(FIELD_SLOTS_MAX),
+              },
+            )}
           </Banner>
         </div>
       ) : null}
