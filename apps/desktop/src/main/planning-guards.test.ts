@@ -11,9 +11,9 @@
  * here), and a bare substring match would flag that prose as a violation of the very rule it is
  * documenting. Stripping comments means each guard asserts real code, not text.
  */
-import { readdirSync, readFileSync } from 'node:fs';
-import { extname, join, resolve, sep } from 'node:path';
+import { join, resolve, sep } from 'node:path';
 import { describe, expect, it } from 'vitest';
+import { guardScanner } from './guard-scan';
 
 const DESKTOP_ROOT = resolve(__dirname, '../..');
 const RENDERER_ROOT = join(DESKTOP_ROOT, 'renderer');
@@ -24,47 +24,7 @@ const PLANNING_APP_ROOT = join(RENDERER_ROOT, 'app', 'planning');
  *  this file is also picked up by `tsconfig.main.json`'s CommonJS build. */
 const SELF_PATH = __filename;
 
-type FileEntry = { path: string; source: string };
-
-function isTestFile(path: string): boolean {
-  return /\.(test|spec)\.(ts|tsx|mjs)$/.test(path);
-}
-
-function walk(dir: string, extensions: readonly string[]): string[] {
-  const files: string[] = [];
-  for (const entry of readdirSync(dir, { withFileTypes: true })) {
-    const full = join(dir, entry.name);
-    if (entry.isDirectory()) {
-      // `.claude` is skipped wholesale (not just `.claude/worktrees`): it holds only local,
-      // git-excluded agent/session state — nothing under it is committed application source a
-      // guard should ever scan. This `walk()` currently only ever runs against DESKTOP_ROOT
-      // (a sibling of repo-root `.claude`, so this branch is inert today), but it is reproduced
-      // verbatim from the same copy `i18n-guards.test.ts` took (see that file's own header) and
-      // whose REPO_ROOT-walking guard did hit this hole in practice — kept consistent here so a
-      // future REPO_ROOT-scoped guard added to this file doesn't reintroduce it silently.
-      if (
-        entry.name === 'node_modules' ||
-        entry.name === 'out' ||
-        entry.name === 'dist' ||
-        entry.name === '.next' ||
-        entry.name === '.next-dev' ||
-        entry.name === '.claude'
-      )
-        continue;
-      files.push(...walk(full, extensions));
-    } else if (entry.isFile() && extensions.includes(extname(entry.name))) {
-      files.push(full);
-    }
-  }
-  return files;
-}
-
-function readAll(dir: string, extensions: readonly string[], opts: { includeTests?: boolean } = {}): FileEntry[] {
-  return walk(dir, extensions)
-    .filter((path) => path !== SELF_PATH)
-    .filter((path) => (opts.includeTests ? true : !isTestFile(path)))
-    .map((path) => ({ path, source: readFileSync(path, 'utf8') }));
-}
+const { readAll } = guardScanner(SELF_PATH);
 
 /** Strips `//` line comments and `/* *\/` block comments (dumb text slicing, not a full parser —
  *  the repo's own established convention here, per `contracts-import-is-type-only.test.ts`). */

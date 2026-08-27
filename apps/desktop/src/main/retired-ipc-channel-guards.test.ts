@@ -4,13 +4,12 @@
  * repurposing them. This guard is the executable form of "retired, not repurposed": neither
  * channel name may reappear anywhere in the tracked main, preload, contracts, or renderer source.
  *
- * `walk`/`readAll`/`stripComments`/`SELF_PATH` are reproduced from `planning-guards.test.ts`'s own
- * copy (not imported — that file exports nothing, by the same convention this one follows), same
- * reasoning: each guard file owns its scan.
+ * `walk`/`readAll` come from `guard-scan.ts`, shared with the other guards in this folder.
+ * `stripComments` stays local — see that module's note on why it is the one piece not shared.
  */
-import { readFileSync, readdirSync } from 'node:fs';
-import { extname, join, resolve } from 'node:path';
+import { resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
+import { type FileEntry, guardScanner } from './guard-scan';
 
 const DESKTOP_ROOT = resolve(__dirname, '../..');
 const CONTRACTS_ROOT = resolve(DESKTOP_ROOT, '..', '..', 'packages', 'contracts', 'src');
@@ -20,35 +19,10 @@ const CONTRACTS_ROOT = resolve(DESKTOP_ROOT, '..', '..', 'packages', 'contracts'
  *  is also picked up by `tsconfig.main.json`'s CommonJS build. */
 const SELF_PATH = __filename;
 
-type FileEntry = { path: string; source: string };
+const { readAll } = guardScanner(SELF_PATH);
 
-function walk(dir: string, extensions: readonly string[]): string[] {
-  const files: string[] = [];
-  for (const entry of readdirSync(dir, { withFileTypes: true })) {
-    const full = join(dir, entry.name);
-    if (entry.isDirectory()) {
-      if (
-        entry.name === 'node_modules' ||
-        entry.name === 'out' ||
-        entry.name === 'dist' ||
-        entry.name === '.next' ||
-        entry.name === '.next-dev' ||
-        entry.name === '.claude'
-      )
-        continue;
-      files.push(...walk(full, extensions));
-    } else if (entry.isFile() && extensions.includes(extname(entry.name))) {
-      files.push(full);
-    }
-  }
-  return files;
-}
-
-function readAll(dir: string, extensions: readonly string[]): FileEntry[] {
-  return walk(dir, extensions)
-    .filter((path) => path !== SELF_PATH)
-    .map((path) => ({ path, source: readFileSync(path, 'utf8') }));
-}
+/** This guard scans tests too — a retired channel name may not reappear in a spec either. */
+const INCLUDING_TESTS = { includeTests: true } as const;
 
 /** Strips `//` line comments and `/* *\/` block comments (dumb text slicing, not a full parser —
  *  the repo's own established convention, per `planning-guards.test.ts`). */
@@ -56,9 +30,9 @@ function stripComments(source: string): string {
   return source.replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/.*$/gm, '');
 }
 
-const ALL_SOURCE = () => [
-  ...readAll(DESKTOP_ROOT, ['.ts', '.tsx', '.mjs']),
-  ...readAll(CONTRACTS_ROOT, ['.ts']),
+const ALL_SOURCE = (): FileEntry[] => [
+  ...readAll(DESKTOP_ROOT, ['.ts', '.tsx', '.mjs'], INCLUDING_TESTS),
+  ...readAll(CONTRACTS_ROOT, ['.ts'], INCLUDING_TESTS),
 ];
 
 describe('game:getSnapshot and snapshot:updated are retired, not repurposed', () => {

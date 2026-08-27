@@ -5,14 +5,14 @@
  * `tools/` untouched keeps `ci-fidelity.yml`'s `--project tools` step out of this feature's blast
  * radius entirely (design §11 — that step is the exact surface F3 broke).
  *
- * `walk`/`readAll`/`stripComments`/`SELF_PATH` below are read from `planning-guards.test.ts`'s
- * own copy (not imported — that file exports nothing, by the same convention this one follows)
- * and reproduced here rather than factored into a shared module, matching its own stated reason:
- * each guard file owns its scan.
+ * `walk`/`readAll`/`isTestFile` come from `guard-scan.ts`, shared with the other guards in this
+ * folder. `stripComments` stays local — this file's copy carries a deliberate divergence, noted
+ * on the function itself.
  */
-import { readFileSync, readdirSync } from 'node:fs';
-import { extname, join, resolve, sep } from 'node:path';
+import { readFileSync } from 'node:fs';
+import { join, resolve, sep } from 'node:path';
 import { describe, expect, it } from 'vitest';
+import { guardScanner, isTestFile, walk } from './guard-scan';
 import { CONSENT_TEXT, CONSENT_TEXT_VERSION, type ConsentText } from '@bombfarm/game-api';
 
 const DESKTOP_ROOT = resolve(__dirname, '../..');
@@ -24,46 +24,7 @@ const REPO_ROOT = resolve(DESKTOP_ROOT, '..', '..');
  *  shapes as plain JS string literals. */
 const SELF_PATH = __filename;
 
-type FileEntry = { path: string; source: string };
-
-function isTestFile(path: string): boolean {
-  return /\.(test|spec)\.(ts|tsx|mjs)$/.test(path);
-}
-
-function walk(dir: string, extensions: readonly string[]): string[] {
-  const files: string[] = [];
-  for (const entry of readdirSync(dir, { withFileTypes: true })) {
-    const full = join(dir, entry.name);
-    if (entry.isDirectory()) {
-      // `.claude` is skipped wholesale, not just `.claude/worktrees`: it holds only local,
-      // git-excluded agent/session state (`.claude/launch.json` is gitignored dev-server config;
-      // `.claude/worktrees/*` are full sibling copies of this repo's source tree used by other
-      // agent sessions) — nothing under it is committed application source a guard should ever
-      // scan. Without this, a REPO_ROOT walk descends into every one of those sibling copies and
-      // can trip a guard against a file that isn't part of this working tree at all.
-      if (
-        entry.name === 'node_modules' ||
-        entry.name === 'out' ||
-        entry.name === 'dist' ||
-        entry.name === '.next' ||
-        entry.name === '.next-dev' ||
-        entry.name === '.claude'
-      )
-        continue;
-      files.push(...walk(full, extensions));
-    } else if (entry.isFile() && extensions.includes(extname(entry.name))) {
-      files.push(full);
-    }
-  }
-  return files;
-}
-
-function readAll(dir: string, extensions: readonly string[], opts: { includeTests?: boolean } = {}): FileEntry[] {
-  return walk(dir, extensions)
-    .filter((path) => path !== SELF_PATH)
-    .filter((path) => (opts.includeTests ? true : !isTestFile(path)))
-    .map((path) => ({ path, source: readFileSync(path, 'utf8') }));
-}
+const { readAll } = guardScanner(SELF_PATH);
 
 /**
  * Strips `//` line comments and `/* *\/` block comments (dumb text slicing, not a full parser —

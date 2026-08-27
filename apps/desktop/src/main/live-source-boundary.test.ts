@@ -9,38 +9,16 @@
  * doc comments (this file included), and a bare substring match would flag that prose as a
  * violation of the rule it documents.
  */
-import { readdirSync, readFileSync } from 'node:fs';
-import { extname, join, resolve, sep } from 'node:path';
+import { readFileSync } from 'node:fs';
+import { join, resolve, sep } from 'node:path';
 import { describe, expect, it } from 'vitest';
+import { type FileEntry, walk } from './guard-scan';
 
 const DESKTOP_ROOT = resolve(__dirname, '../..');
 const LIVE_SOURCE_DIR = join(DESKTOP_ROOT, 'src', 'main', 'live-source');
 const SELF_PATH = __filename;
 
 const INTERNAL_MODULE_STEMS = ['tap', 'agent', 'runtime', 'ws-frame', 'tls-stream', 'image-scan', 'hook-cache'] as const;
-
-type FileEntry = { path: string; source: string };
-
-function walk(dir: string, extensions: readonly string[]): string[] {
-  const files: string[] = [];
-  for (const entry of readdirSync(dir, { withFileTypes: true })) {
-    const full = join(dir, entry.name);
-    if (entry.isDirectory()) {
-      if (
-        entry.name === 'node_modules' ||
-        entry.name === 'out' ||
-        entry.name === 'dist' ||
-        entry.name === '.next' ||
-        entry.name === '.next-dev'
-      )
-        continue;
-      files.push(...walk(full, extensions));
-    } else if (entry.isFile() && extensions.includes(extname(entry.name))) {
-      files.push(full);
-    }
-  }
-  return files;
-}
 
 function readOutsideLiveSource(): FileEntry[] {
   return walk(DESKTOP_ROOT, ['.ts', '.tsx'])
