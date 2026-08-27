@@ -16,7 +16,7 @@ it applied, and every one of them is overridable.
 
 | Surface | Source | Fidelity |
 | --- | --- | --- |
-| Account, Planning, Inventory | `apps/desktop/tests/fixtures/account-offline.json` — 8 heroes, 30 items, all five sections `resolved` | Real captured bodies |
+| Account, Planning, Inventory | `apps/desktop/tests/fixtures/account-offline.json` — 13 heroes, 221 items, all five sections `resolved` | Real captured bodies |
 | Live | `live-capture.bfcc` — 60 records decoding to 58 ticks, replayed at ~10 Hz | Real captured bytes, looped |
 | Consent flow | Unchanged | Real |
 
@@ -24,33 +24,46 @@ You still have to grant consent in the app before anything appears — the nav i
 do, exactly as in a real run. That is deliberate: the consent gate is part of what you want to be
 able to exercise.
 
-### The account fixture is generated, and re-keyed on purpose
+### The account fixture is generated, and stitched from two captures
 
-`account-offline.json` is built by `apps/desktop/scripts/generate-offline-fixture.mjs`, which
-drives the real route projections and the real `assembleAccountPayload` over the committed
-calibration bodies. Regenerate it after either changes:
+`account-offline.json` is built by `apps/desktop/scripts/generate-offline-fixture.mjs`. Regenerate
+it after either input changes:
 
 ```bash
 node scripts/generate-offline-fixture.mjs
 ```
 
-Two things about it are worth knowing, because both are load-bearing and neither is obvious.
+It stitches two committed captures into one account:
+
+- **a post-2026-08-15 save export** supplies `account`, `heroes`, `skills` and `items`. Its section
+  shapes are the ones the five routes already return, so nothing is translated. Being post-patch is
+  what keeps its gear agreeing with the current `catalog.setsByLevel` — a fixture built from the
+  older API calibration bodies does not, and has to be excluded from
+  `fixture-set-level-agreement.test.ts` rather than satisfying it.
+- **the replay capture** supplies who is on the field and each of their energy fractions.
+
+Three things about it are worth knowing, because none is obvious and all three are load-bearing.
 
 **Its `casa` section is the whole `/rotation` body**, per-hero rotation state included — not just
-the inner `casa` child. `/rotation` projects identity, so that is what a real read produces, and a
-fixture carrying only the house object leaves `normalizeRotation` with no heroes and the Live
-screen with nothing to fold frames onto. Running the real projection is what keeps this true as
-the projection changes.
+the inner house object. `/rotation` projects identity, so that is what a real read produces, and a
+save export carries only the house object. A fixture without the per-hero half leaves
+`normalizeRotation` with no heroes and the Live screen with nothing to fold frames onto.
 
-**Its hero ids are re-keyed onto the replay capture's ids.** The account bodies and the capture
-come from two different accounts with disjoint ids, and left alone the Live screen counts the
-capture's heroes on the field while listing none of them — the roster join finds nothing, so it
-looks broken rather than empty. Only the opaque id is substituted: every level, energy value,
-name, rarity and rotation state stays as captured, and the capture's own bytes are never touched.
+**Its hero ids are re-keyed onto the capture's.** The save and the capture are two different
+accounts with disjoint ids, and left alone the Live screen counts the capture's heroes on the field
+while listing none of them — the roster join finds nothing, so it looks broken rather than empty.
+Only the opaque id is substituted, and the capture's bytes are never touched.
 
-The capture shows nine distinct heroes on the field across its run and the roster holds eight, so
-one capture hero stays unknown to the roster. That is a state the real app already handles — a
-roster read older than the field it is describing.
+**Its on-field set matches the capture's.** The nine heroes the capture shows fighting are the nine
+the rotation marks `EM_CAMPO`, which is also exactly `field_slots`. When those two disagreed, the
+field list visibly alternated between the rotation's answer and the capture's, because every
+rotation ingest replaces the field with a tick built from the rotation's own on-field set.
+
+Each on-field hero's energy is real on both halves: the fraction is the capture's observed value,
+the maximum is the save's own `stats.energia`. The four heroes the capture never shows are resting,
+and neither capture records a resting hero's energy — those reuse the capture's observed fractions,
+cycled. That is the one place this fixture puts a measurement somewhere it was not measured, so
+read a recovery countdown here as layout, never as a reading.
 
 ## Why it does not fake a server
 
@@ -126,13 +139,8 @@ Worth knowing before you trust a screen you developed against it.
   hand-authoring one reintroduces exactly the failure mode described above.
 - **No error responses.** Cooldown, unauthorized and malformed-body handling are covered by unit
   tests, not by this mode.
-- **Its gear predates the level→set re-key.** The calibration bodies were captured 2026-08-12, and
-  the 2026-08-15 patch moved every one of the 30 levels — so this fixture shows `wooden` and
-  `forest` items at level 10 where the live game now gives `ember`. It is a correct record of that
-  date, which is why `fixture-set-level-agreement.test.ts` excludes it by name rather than
-  repairing it. Fine for layout and interaction work; do not read a set/level pairing off it. The
-  repo holds no post-patch API-payload capture to regenerate from — the newer captures are save
-  exports, a different shape.
+- **Its resting-hero energy is reassigned, not measured.** See above — field countdowns are real
+  on both halves, recovery countdowns are shaped like real ones but are not readings.
 
 ## Guard rails
 

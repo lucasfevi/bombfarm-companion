@@ -57,6 +57,9 @@ let settingsStore: SettingsStore | null = null;
 let liveSource: LiveSource | null = null;
 let liveFastPublisher: LiveFastPublisher | null = null;
 let triggeredRefresh: TriggeredRefresh | null = null;
+/** Fixture mode only — see `gameReader.onAccountCommitted` for why a re-ingest of an unchanged
+ *  rotation is not free. */
+let lastIngestedRotationBody: string | null = null;
 // MP3 F4 (AD-053) — the resolved language, held in a module-level `let` exactly as
 // `consentStore`'s own value is. Defaults to `DEFAULT_SETTINGS` until `bootstrap()` resolves it
 // (inside `whenReady()`, where `app.getLocale()` is documented valid) so `settings:get` never
@@ -429,8 +432,18 @@ async function bootstrap(): Promise<void> {
     // `ingestRotation` — so without this the Live screen folds frames onto an empty roster and
     // shows nothing at all while ticks are arriving. Safe by the same reasoning as the comment
     // above: this callback provably never fires outside fixture mode.
+    //
+    // Only on a CHANGED rotation, though. The fixture ticker re-commits the same body several
+    // times a minute, and every `ingestRotation` whose staleness guard does not hold replaces the
+    // frame-measured field with a REST tick built from the rotation's own on-field set. Against a
+    // replayed capture that disagrees about who is fighting, that lands as a visible flicker:
+    // the next frame restores the measured countdowns, the tick after that drops them again.
     const committed = gameReader?.getAccountView();
-    if (committed) liveSource?.ingestRotation(committed);
+    if (!committed) return;
+    const rotationBody = JSON.stringify(committed.payload.casa ?? null);
+    if (rotationBody === lastIngestedRotationBody) return;
+    lastIngestedRotationBody = rotationBody;
+    liveSource?.ingestRotation(committed);
   };
 
   registerIpcHandlers();

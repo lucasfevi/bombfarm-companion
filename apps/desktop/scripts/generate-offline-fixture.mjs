@@ -1,71 +1,59 @@
 import { readFileSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { pathToFileURL } from 'node:url';
 
 /**
  * Regenerates `tests/fixtures/account-offline.json`, the account `pnpm dev:offline` runs against.
  *
- * Drives the real `ROUTES` projections and the real `assembleAccountPayload` over the committed,
- * scrubbed calibration bodies — never hand-authored JSON. That matters for one specific reason:
- * `/rotation` projects its *whole* body into the `casa` section, per-hero rotation state included,
- * and a fixture that carried only the inner `casa` child would leave the Live screen with no
- * roster to fold frames onto. Running the real projection is what keeps this file honest as that
- * projection changes.
- *
- * Run `pnpm --filter @bombfarm/game-api build` first, then from `apps/desktop`:
  *   node scripts/generate-offline-fixture.mjs
+ *
+ * Built from two committed captures, and nothing else:
+ *
+ * - a **save export** supplies `account`, `heroes`, `skills` and `items`. Its section shapes are
+ *   the same ones the five routes return, so no translation is needed. It is post-patch, which is
+ *   what keeps its gear agreeing with the current `catalog.setsByLevel` — the pre-patch API
+ *   calibration bodies do not, and a fixture built from those has to be excluded from
+ *   `fixture-set-level-agreement.test.ts` rather than satisfying it.
+ * - the **replay capture** supplies who is on the field and each of their energy fractions, so the
+ *   account and the frames the Live screen folds onto it describe one account at one moment.
+ *
+ * The `casa` section is assembled here rather than copied, because a save export carries only the
+ * house object while `/rotation` projects its *whole* body — per-hero rotation state included —
+ * into that section. Every per-hero field written below comes from one of the two captures; the
+ * ones neither carries (`energia_atual`, `energia_max`, the rescue counts) are omitted rather
+ * than invented, which `normalizeRotation` already treats as optional.
  */
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const desktopRoot = path.resolve(__dirname, '..');
 const repoRoot = path.resolve(desktopRoot, '..', '..');
-const gameApiDist = path.join(repoRoot, 'packages', 'game-api', 'dist');
 
-/** The instant the calibration bodies were captured — fixed so regenerating is a no-op diff. */
-const CAPTURED_AT = '2026-08-12T13:15:38.000Z';
-
-const { ROUTES } = await import(pathToFileURL(path.join(gameApiDist, 'routes.js')).href);
-const { assembleAccountPayload } = await import(pathToFileURL(path.join(gameApiDist, 'assemble.js')).href);
-
-const bodies = JSON.parse(
-  readFileSync(
-    path.join(repoRoot, 'packages', 'game-api', 'src', '__fixtures__', 'api-bodies.json'),
-    'utf8',
-  ),
+const SAVE_EXPORT = path.join(
+  repoRoot,
+  'packages',
+  'domain',
+  'tests',
+  'fixtures',
+  'sheet-math',
+  'save-20260823-13heroes-crit-points.json',
 );
+const CAPTURE = path.join(desktopRoot, 'src', 'main', 'live-source', 'fixtures', 'live-capture.bfcc');
+const DESTINATION = path.join(desktopRoot, 'tests', 'fixtures', 'account-offline.json');
 
-const outcomes = {};
-for (const route of ROUTES) {
-  outcomes[route.section] = {
-    kind: 'ok',
-    body: route.project(bodies[route.path] ?? {}),
-    unknownKeys: [],
-  };
-}
-
-const payload = assembleAccountPayload(outcomes, CAPTURED_AT);
+/** The save export's own `generated_at`, as an ISO instant — fixed, so regenerating is a no-op diff. */
+const CAPTURED_AT = '2026-08-23T00:00:00.000Z';
 
 /**
- * The account bodies and the replay capture come from two different accounts, and their hero ids
- * are disjoint — which leaves the Live screen counting the capture's heroes on the field while
- * listing none of them, because the roster join finds nothing. Re-keying the account's heroes onto
- * the capture's ids makes the two fixtures describe one account.
- *
- * Only the opaque id is substituted: every level, energy value, name, rarity and rotation state
- * stays exactly as captured, and the capture's own bytes are never touched. Heroes past the
- * capture's own hero count keep their original ids — the roster is simply larger than what that
- * six-second slice happened to show on the field.
+ * Walks the `.bfcc` container (5-byte header, then ctxType(1) ctxLength(4 LE) ctx
+ * payloadLength(4 LE) payload) and reads each record's frame JSON directly. Parsed here rather
+ * than imported because `capture-format.ts` is bundled into the Electron main output rather than
+ * emitted per module.
  */
-function replayHeroIdsInFirstAppearanceOrder() {
-  const bytes = readFileSync(
-    path.join(desktopRoot, 'src', 'main', 'live-source', 'fixtures', 'live-capture.bfcc'),
-  );
+function readCapture() {
+  const bytes = readFileSync(CAPTURE);
+  const order = [];
+  const energyById = new Map();
 
-  // The `.bfcc` container, per capture-format.ts: a 5-byte header, then records of
-  // ctxType(1) ctxLength(4 LE) ctx payloadLength(4 LE) payload. Parsed here rather than imported
-  // because `capture-format.ts` is bundled into the Electron main output, not emitted per module.
-  const seen = [];
   let offset = 5;
   while (offset + 5 <= bytes.length) {
     const ctxLength = bytes.readUInt32LE(offset + 1);
@@ -75,57 +63,115 @@ function replayHeroIdsInFirstAppearanceOrder() {
     const payloadEnd = payloadStart + payloadLength;
     if (payloadEnd > bytes.length) break;
 
-    // Each record holds one server text frame; the JSON starts at its first brace.
     const payload = bytes.subarray(payloadStart, payloadEnd);
     const braceAt = payload.indexOf(0x7b);
     if (braceAt !== -1) {
       try {
         const frame = JSON.parse(payload.subarray(braceAt).toString('utf8'));
         for (const hero of frame.heroes ?? []) {
-          if (typeof hero?.id === 'string' && !seen.includes(hero.id)) seen.push(hero.id);
+          if (typeof hero?.id !== 'string') continue;
+          if (!order.includes(hero.id)) order.push(hero.id);
+          if (typeof hero.e === 'number') energyById.set(hero.id, hero.e);
         }
       } catch {
-        // A record that is not a complete frame contributes no ids; the rest still do.
+        // A record that is not a complete frame contributes nothing; the rest still do.
       }
     }
     offset = payloadEnd;
   }
-  return seen;
+  return { order, energyById };
 }
 
-const replayIds = replayHeroIdsInFirstAppearanceOrder();
-const roster = payload.heroes ?? [];
-const idByOriginal = new Map();
-roster.forEach((hero, index) => {
+const save = JSON.parse(readFileSync(SAVE_EXPORT, 'utf8'));
+const { order: replayIds, energyById } = readCapture();
+
+/**
+ * The save's heroes and the capture's heroes are different accounts, so the roster is re-keyed
+ * onto the capture's ids in first-appearance order. Without it the Live screen counts the
+ * capture's heroes on the field and lists none of them, the roster join having found nothing.
+ * Only the opaque id is substituted; the capture's own bytes are never touched.
+ */
+const roster = save.heroes ?? [];
+const replayIdSet = new Set(replayIds);
+
+/**
+ * On-field membership is decided by POSITION, not by id: the first `replayIds.length` heroes take
+ * the capture's ids and are the ones it shows fighting. Deciding by id membership instead counts
+ * any hero whose own save id happens to equal one of the capture's — which both overstates the
+ * field and leaves two heroes sharing an id. A retained id that would collide is suffixed for the
+ * same reason; every id in the roster has to be distinct for the rotation join to mean anything.
+ */
+const rekeyedRoster = roster.map((hero, index) => {
   const replacement = replayIds[index];
-  if (replacement !== undefined) idByOriginal.set(String(hero.id), replacement);
+  const original = String(hero.id);
+  const id = replacement ?? (replayIdSet.has(original) ? `${original}-roster` : original);
+  return { ...hero, id, in_field: index < replayIds.length };
 });
 
-const rekey = (hero) => {
-  const replacement = idByOriginal.get(String(hero.id));
-  return replacement === undefined ? hero : { ...hero, id: replacement };
+/**
+ * `secondsRemaining` is `energyFraction * energyMax / drainPerSecond`, so a rotation entry with a
+ * fraction and no maximum yields no countdown at all — the screen lists the hero and prints "not
+ * available" beside it. The maximum is the save's own `stats.energia`, and the fraction is the
+ * capture's observed `e`, so both halves of every on-field hero's energy are captured values.
+ *
+ * The four heroes the capture never shows are resting, and neither capture records a resting
+ * hero's energy. Rather than invent a number, they reuse the capture's own observed fractions,
+ * cycled — real values, reassigned. It is the one place this fixture puts a measurement somewhere
+ * it was not measured, and it is why a recovery countdown here is worth looking at only as
+ * layout, never as a reading.
+ */
+const observedFractions = replayIds
+  .map((id) => energyById.get(id))
+  .filter((fraction) => fraction !== undefined);
+
+const rotationHeroes = rekeyedRoster.map((hero, index) => {
+  const onField = hero.in_field;
+  const restingFraction = observedFractions[index % Math.max(1, observedFractions.length)];
+  const energyFraction = onField ? energyById.get(hero.id) : restingFraction;
+  const energyMax = typeof hero.stats?.energia === 'number' ? hero.stats.energia : undefined;
+
+  return {
+    id: hero.id,
+    level: hero.level,
+    ...(energyFraction !== undefined ? { energia_pct: energyFraction } : {}),
+    ...(energyMax !== undefined ? { energia_max: energyMax } : {}),
+    ...(energyMax !== undefined && energyFraction !== undefined
+      ? { energia_atual: energyMax * energyFraction }
+      : {}),
+    state: onField ? 'EM_CAMPO' : 'DESCANSANDO',
+    in_field: onField,
+    in_casa: !onField,
+    recovering: !onField,
+    battle_allowed: Boolean(hero.battle_allowed),
+  };
+});
+
+const resolved = { status: 'resolved', capturedAt: CAPTURED_AT };
+
+const payload = {
+  account: save.account,
+  heroes: rekeyedRoster,
+  skills: save.skills,
+  casa: {
+    field_size: save.skills?.field_slots ?? replayIds.length,
+    heroes: rotationHeroes,
+    casa: save.casa,
+  },
+  items: save.items,
+  fidelity: {
+    account: resolved,
+    heroes: resolved,
+    skills: resolved,
+    casa: resolved,
+    items: resolved,
+  },
 };
 
-const rekeyed = {
-  ...payload,
-  heroes: roster.map(rekey),
-  ...(payload.casa !== undefined
-    ? {
-        casa: {
-          ...payload.casa,
-          ...(Array.isArray(payload.casa.heroes) ? { heroes: payload.casa.heroes.map(rekey) } : {}),
-        },
-      }
-    : {}),
-};
+writeFileSync(DESTINATION, `${JSON.stringify(payload, null, 2)}\n`, 'utf8');
 
-const destination = path.join(desktopRoot, 'tests', 'fixtures', 'account-offline.json');
-writeFileSync(destination, `${JSON.stringify(rekeyed, null, 2)}\n`, 'utf8');
-
-const rotationHeroes = Array.isArray(rekeyed.casa?.heroes) ? rekeyed.casa.heroes.length : 0;
-console.log(`wrote ${destination}`);
+console.log(`wrote ${DESTINATION}`);
 console.log(
-  `  ${(rekeyed.heroes ?? []).length} roster heroes, ${(rekeyed.items ?? []).length} items, ` +
-    `${rotationHeroes} heroes with rotation state`,
+  `  ${rekeyedRoster.length} heroes (${rotationHeroes.filter((h) => h.in_field).length} on field), ` +
+    `${(save.items ?? []).length} items, field_size ${String(payload.casa.field_size)}`,
 );
-console.log(`  ${idByOriginal.size} of them re-keyed onto the replay capture's hero ids`);
+console.log(`  ${String(Math.min(replayIds.length, rekeyedRoster.length))} heroes re-keyed onto the replay capture's ids`);

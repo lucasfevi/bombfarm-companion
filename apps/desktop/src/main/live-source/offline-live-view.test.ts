@@ -60,7 +60,7 @@ describe('offline mode produces a Live view with something in it', () => {
 
     const view = source.getView();
     expect(view.rotation).not.toBeNull();
-    expect(view.rotation?.heroes.length).toBe(8);
+    expect(view.rotation?.heroes.length).toBe(13);
     expect(view.recovery.length).toBeGreaterThan(0);
     await source.teardown();
   });
@@ -86,6 +86,33 @@ describe('offline mode produces a Live view with something in it', () => {
     await source.teardown();
   });
 
+  /**
+   * The flicker this pins down: an `ingestRotation` whose staleness guard does not hold replaces
+   * the field with a REST tick built from the rotation's OWN on-field set, and the fixture ticker
+   * re-commits several times a minute. When the rotation disagreed with the capture about who was
+   * fighting — one hero against nine — the list visibly alternated between the two answers.
+   *
+   * It holds still because the generator makes the two agree. `index.ts` additionally ingests only
+   * a CHANGED rotation, so this stays true even for a rotation that does disagree.
+   */
+  it('keeps the same field membership when the same rotation is ingested again mid-replay', async () => {
+    const source = offlineLiveSource();
+    source.ingestRotation(offlineAccountView());
+    source.start();
+    vi.advanceTimersByTime(REPLAY_FRAME_INTERVAL_MS * 60);
+
+    const before = source.getView();
+    expect(before.field.length).toBeGreaterThan(0);
+    const idsBefore = before.field.map((entry) => entry.heroId).sort();
+
+    source.ingestRotation(offlineAccountView());
+
+    const after = source.getView();
+    expect(after.field.map((entry) => entry.heroId).sort()).toEqual(idsBefore);
+    expect(after.onFieldHeroIds).toEqual(before.onFieldHeroIds);
+    await source.teardown();
+  });
+
   it('reports the stream as connected rather than as a gap', async () => {
     const source = offlineLiveSource();
     source.ingestRotation(offlineAccountView());
@@ -108,14 +135,8 @@ describe('the committed offline account fixture', () => {
     const casa = payload.casa;
 
     expect(casa).toBeDefined();
-    expect(Object.keys(casa ?? {}).sort()).toEqual([
-      'casa',
-      'field_size',
-      'heroes',
-      'rescues_left',
-      'rescues_max',
-    ]);
-    expect(Array.isArray(casa?.heroes) ? casa.heroes.length : 0).toBe(8);
+    expect(Object.keys(casa ?? {}).sort()).toEqual(['casa', 'field_size', 'heroes']);
+    expect(Array.isArray(casa?.heroes) ? casa.heroes.length : 0).toBe(13);
   });
 
   it('resolves all five sections, so no screen reads as missing data', () => {
