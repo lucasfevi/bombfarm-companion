@@ -246,11 +246,11 @@ export const en = {
   inventorySortDescending: 'Descending',
   inventoryFilterSetsLabel: 'Filter by set',
   inventoryFilterAllSets: 'All sets',
+  inventoryFilterSetsOwned: 'Sets you own',
   inventoryFilterSetsSelected: '{chosen} of {total} sets',
   inventorySetOption: 'Level {level} · {set}',
   inventoryUnknownCategory: 'a kind this app does not recognise yet ({codes})',
   inventorySkipped: '{count} entries could not be read and are not shown.',
   inventoryEmptyTitle: 'No items read yet',
   inventoryEmptyDescription: 'Open the game with the companion running, so it has something to read.',
-  inventoryCountLabel: '{count} items',
 } as const;

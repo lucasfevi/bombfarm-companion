@@ -225,6 +225,7 @@ export function inventoryLabels(
     heroOption: (heroId) => heroOption(heroId, heroBySourceId, strings),
     setOption: (group) =>
       sub(strings.inventorySetOption, { level: group.level, set: setName(group.set, lang) }),
+    setOptionCount: (group) => formatNumber(group.count, 0),
     gold: (amount) => formatNumber(amount, 0),
     searchText: (item) => searchText(item, strings, lang),
     toolbar: {
@@ -240,6 +241,7 @@ export function inventoryLabels(
       allHeroes: strings.inventoryFilterAllHeroes,
       setsLabel: strings.inventoryFilterSetsLabel,
       allSets: strings.inventoryFilterAllSets,
+      setsOwned: strings.inventoryFilterSetsOwned,
       setsSelected: (chosen, total) => sub(strings.inventoryFilterSetsSelected, { chosen, total }),
       sortLabel: strings.inventorySortLabel,
       sortKey: (key) => strings[SORT_KEY[key]] as string,

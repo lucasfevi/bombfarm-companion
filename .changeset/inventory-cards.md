@@ -1,5 +1,6 @@
 ---
 "@bombfarm/domain": minor
+"@bombfarm/ui": minor
 "@bombfarm/game-art": minor
 "@bombfarm/web": minor
 "@bombfarm/desktop": minor
@@ -20,9 +21,15 @@ shows "Lv 0" — it shows its name and its tier and nothing it does not have. An
 single card with a count and the stack's total value. Chests and skill stones get their own
 sections rather than falling into "Other", which is where the app used to put them.
 
-Above the grid there is now a search box and filters — by kind, by rarity, and equipped-only — so
-finding one item among several hundred does not mean scrolling. Search matches the item's name in
-your own language as well as the game's internal id.
+Above the grid there is now a search box, sorting, and filters — by kind, by rarity, by the hero
+wearing it, by set, and equipped-only — so finding one item among several hundred does not mean
+scrolling. Search matches the item's name in your own language as well as the game's internal id.
+
+Filtering by set is how you filter by level: every set sits at exactly one item level, so the list
+reads "Lv 30 · Coal" and is ordered by level. It starts with everything chosen, shows how many
+pieces of each set you own — 41 beside Coal tells you it is most of your gear before you have
+filtered anything — and carries its own "Clear" that takes a narrowed list straight back to every
+set. Only gear has a set, so narrowing here shows gear alone.
 
 The English planner also stops showing Portuguese item names. Gear was being named by
 title-casing the game's own slot token, so an English player saw "Gold · Elmo" where they should

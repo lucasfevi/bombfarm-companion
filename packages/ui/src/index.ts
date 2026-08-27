@@ -49,7 +49,13 @@ export { PanelHeader, type PanelHeaderProps } from './panel-header';
 export { Fields, type FieldsProps, type FieldsLayout } from './fields';
 export { Bar, type BarProps } from './bar';
 export { Num } from './num';
-export { Select, SelectMultiple, type SelectProps, type SelectMultipleProps } from './select';
+export {
+  Select,
+  SelectMultiple,
+  type SelectProps,
+  type SelectMultipleProps,
+  type SelectMultipleHeader,
+} from './select';
 export { Switch, type SwitchProps } from './switch';
 export { Accordion } from './accordion';
 export type {

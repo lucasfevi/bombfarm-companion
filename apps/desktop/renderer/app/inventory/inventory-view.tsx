@@ -57,13 +57,7 @@ export function InventoryView() {
   return (
     <div data-testid="inventory-view">
       <Panel>
-        <PanelHeader title={t.inventoryTitle}>
-          {inventory.items.length > 0 ? (
-            <span className="text-xs text-muted">
-              {t.inventoryCountLabel.replace('{count}', String(inventory.items.length))}
-            </span>
-          ) : null}
-        </PanelHeader>
+        <PanelHeader title={t.inventoryTitle} />
         <InventoryGrid view={inventory} labels={labels} />
       </Panel>
     </div>

@@ -60,6 +60,7 @@ export const en = {
 
   inventoryFilterSetsLabel: "Filter by set",
   inventoryFilterAllSets: "All sets",
+  inventoryFilterSetsOwned: "Sets you own",
   inventoryFilterSetsSelected: "{chosen} of {total} sets",
   inventorySetOption: "Lv {level} · {set}",
 
@@ -69,7 +70,6 @@ export const en = {
   inventoryEmptyTitle: "No items imported yet",
   inventoryEmptyBody: "Import a save file and every item it carries shows up here — gear, gems, keys, house parts, skill stones and chests.",
 
-  inventoryCount: "{count} items",
 };
 
 export const pt: typeof en = {
@@ -134,6 +134,7 @@ export const pt: typeof en = {
 
   inventoryFilterSetsLabel: "Filtrar por conjunto",
   inventoryFilterAllSets: "Todos os conjuntos",
+  inventoryFilterSetsOwned: "Conjuntos que você tem",
   inventoryFilterSetsSelected: "{chosen} de {total} conjuntos",
   inventorySetOption: "Nv {level} · {set}",
 
@@ -143,5 +144,4 @@ export const pt: typeof en = {
   inventoryEmptyTitle: "Nenhum item importado ainda",
   inventoryEmptyBody: "Importe um save e todos os itens aparecem aqui — equipamentos, gemas, chaves, peças de Casa, pedras de habilidade e baús.",
 
-  inventoryCount: "{count} itens",
 };

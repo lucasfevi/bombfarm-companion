@@ -40,6 +40,26 @@ export const selectItemCompactClass =
 /** A multi-select row: the checkbox sits ahead of the label, so the labels stay in one column. */
 export const selectCheckItemClass = 'gap-2';
 
+/**
+ * The popup's header row. Sticky against the popup's own scroll, so the caption and the clear
+ * action stay reachable on a list long enough to scroll — the popup caps at 16rem.
+ */
+export const selectPopupHeaderClass =
+  'sticky top-0 z-10 -mt-1 mb-1 flex items-center justify-between gap-3 border-b border-line bg-surface px-2.5 pt-2 pb-1.5';
+
+export const selectPopupHeaderLabelClass =
+  'truncate text-[10px] font-semibold tracking-wide text-muted uppercase';
+
+export const selectPopupHeaderActionClass =
+  'shrink-0 cursor-pointer border-0 bg-transparent p-0 text-[11px] font-semibold text-accent underline-offset-2 hover:underline focus-visible:underline focus-visible:outline-none';
+
+/**
+ * An option's trailing node. `ml-auto` rather than a grid column: the label is a Base UI
+ * `ItemText` whose width the popup does not control, and a fixed column would truncate it.
+ */
+export const selectItemTrailingClass =
+  'ml-auto shrink-0 pl-3 font-mono text-[11px] tabular-nums text-muted';
+
 /** The checkbox itself. Base UI's `ItemIndicator` renders only when the item is selected, so the
  *  box is drawn here and the tick inside it. */
 export const selectCheckboxClass =

@@ -19,6 +19,10 @@ import {
   selectValueClass,
   selectCheckItemClass,
   selectCheckboxClass,
+  selectItemTrailingClass,
+  selectPopupHeaderActionClass,
+  selectPopupHeaderClass,
+  selectPopupHeaderLabelClass,
   type SelectSize,
 } from './select.recipe';
 
@@ -50,6 +54,19 @@ export type SelectProps = Omit<ComponentPropsWithoutRef<'select'>, 'size' | 'onC
   onChange?: (event: ChangeEvent<HTMLSelectElement>) => void;
 };
 
+/**
+ * The row above the list. Words, never vocabulary of its own: the design system supplies the
+ * chrome and the caller supplies every string, since only the caller has a locale.
+ */
+export type SelectMultipleHeader = {
+  /** Caption on the left. */
+  label: ReactNode;
+  /** Action on the right, drawn only when supplied. Resets the selection to the caller's default,
+   *  which is not always the empty list — a filter where "none chosen" means "all of them" ticks
+   *  every box again. */
+  clear?: { label: ReactNode; onClear: () => void };
+};
+
 export type SelectMultipleProps = Omit<
   ComponentPropsWithoutRef<'select'>,
   'size' | 'onChange' | 'value' | 'defaultValue' | 'multiple'
@@ -62,6 +79,13 @@ export type SelectMultipleProps = Omit<
    * "Coal, Glacier, Iron" outgrows the trigger by the third pick. Callers summarise instead.
    */
   renderValue?: (selected: readonly string[]) => ReactNode;
+  header?: SelectMultipleHeader;
+  /**
+   * Right-aligned trailing node for one option, keyed by its value — a count, a hint, a unit.
+   * A function rather than a prop on the `<option>` children, which are intrinsic elements and
+   * carry no room for one.
+   */
+  optionTrailing?: (value: string) => ReactNode;
 };
 
 /**
@@ -78,6 +102,8 @@ export function SelectMultiple({
   value,
   onValueChange,
   renderValue,
+  header,
+  optionTrailing,
   disabled,
   name,
   id,
@@ -120,22 +146,48 @@ export function SelectMultiple({
           align="start"
         >
           <BaseSelect.Popup className={selectPopupClass}>
+            {header ? (
+              <div data-testid="select-popup-header" className={selectPopupHeaderClass}>
+                <span className={selectPopupHeaderLabelClass}>{header.label}</span>
+                {header.clear ? (
+                  <button
+                    type="button"
+                    data-testid="select-popup-clear"
+                    className={selectPopupHeaderActionClass}
+                    // Base UI moves focus through the list itself; letting the button take it on
+                    // press dismisses the popup and breaks arrow-key navigation afterwards.
+                    onMouseDown={(event) => event.preventDefault()}
+                    onClick={() => header.clear?.onClear()}
+                  >
+                    {header.clear.label}
+                  </button>
+                ) : null}
+              </div>
+            ) : null}
             <BaseSelect.List>
-              {items.map((item) => (
-                <BaseSelect.Item
-                  key={item.value === '' ? '__empty' : item.value}
-                  value={item.value}
-                  disabled={item.disabled}
-                  className={cn(itemClass, selectCheckItemClass)}
-                >
-                  <span className={selectCheckboxClass} aria-hidden>
-                    <BaseSelect.ItemIndicator>
-                      <Icon name="check" className="size-3" />
-                    </BaseSelect.ItemIndicator>
-                  </span>
-                  <BaseSelect.ItemText>{item.label}</BaseSelect.ItemText>
-                </BaseSelect.Item>
-              ))}
+              {items.map((item) => {
+                const trailing = optionTrailing?.(item.value);
+                return (
+                  <BaseSelect.Item
+                    key={item.value === '' ? '__empty' : item.value}
+                    value={item.value}
+                    disabled={item.disabled}
+                    className={cn(itemClass, selectCheckItemClass)}
+                  >
+                    <span className={selectCheckboxClass} aria-hidden>
+                      <BaseSelect.ItemIndicator>
+                        <Icon name="check" className="size-3" />
+                      </BaseSelect.ItemIndicator>
+                    </span>
+                    <BaseSelect.ItemText>{item.label}</BaseSelect.ItemText>
+                    {trailing ? (
+                      <span data-testid="select-item-trailing" className={selectItemTrailingClass}>
+                        {trailing}
+                      </span>
+                    ) : null}
+                  </BaseSelect.Item>
+                );
+              })}
             </BaseSelect.List>
           </BaseSelect.Popup>
         </BaseSelect.Positioner>

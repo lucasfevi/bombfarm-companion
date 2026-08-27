@@ -112,6 +112,8 @@ export interface InventoryToolbarLabels {
   allHeroes: string;
   setsLabel: string;
   allSets: string;
+  /** Caption over the set list inside the popup, e.g. "Sets you own". */
+  setsOwned: string;
   /** Trigger text once the list is narrowed, e.g. "4 of 9 sets". */
   setsSelected: (chosen: number, total: number) => string;
   sortLabel: string;
@@ -146,6 +148,9 @@ export interface InventoryGridLabels {
   /** One set-filter option, e.g. "Lv 30 · Coal". Level leads because the level is what the list
    *  ranks by — the set name is how a player says it. */
   setOption: (group: InventorySetGroup) => string;
+  /** How many gear pieces of that set the account holds, at the row's right edge. Localized by
+   *  the caller: it is a number, and a thousands separator is not the same in every locale. */
+  setOptionCount: (group: InventorySetGroup) => string;
   /** Footer right, beside the gold coin. */
   gold: (amount: number) => string;
   /** What free-text search matches against for one item. */
@@ -607,6 +612,17 @@ function InventoryToolbar({
                   ? labels.toolbar.setsSelected(filter.sets.length, allSetIds.length)
                   : labels.toolbar.allSets
               }
+              header={{
+                label: labels.toolbar.setsOwned,
+                clear: {
+                  label: labels.toolbar.clear,
+                  onClear: () => onFilterChange({ ...filter, sets: [] }),
+                },
+              }}
+              optionTrailing={(value) => {
+                const group = sets.find((entry) => entry.set === value);
+                return group ? labels.setOptionCount(group) : null;
+              }}
             >
               {sets.map((group) => (
                 <option key={group.set} value={group.set}>

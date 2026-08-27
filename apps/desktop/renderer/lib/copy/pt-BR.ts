@@ -245,11 +245,11 @@ export const ptBR: Copy = {
   inventorySortDescending: 'Decrescente',
   inventoryFilterSetsLabel: 'Filtrar por conjunto',
   inventoryFilterAllSets: 'Todos os conjuntos',
+  inventoryFilterSetsOwned: 'Conjuntos que você tem',
   inventoryFilterSetsSelected: '{chosen} de {total} conjuntos',
   inventorySetOption: 'Nível {level} · {set}',
   inventoryUnknownCategory: 'um tipo que este app ainda não reconhece ({codes})',
   inventorySkipped: '{count} entradas não puderam ser lidas e não aparecem aqui.',
   inventoryEmptyTitle: 'Nenhum item lido ainda',
   inventoryEmptyDescription: 'Abra o jogo com o companion em execução, para que ele tenha o que ler.',
-  inventoryCountLabel: '{count} itens',
 };

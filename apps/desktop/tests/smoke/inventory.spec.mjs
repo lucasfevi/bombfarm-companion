@@ -313,6 +313,58 @@ test.describe('inventory smoke', () => {
   });
 
   /**
+   * The popup's own chrome: a caption over the list, a count against each set, and an action that
+   * takes a narrowed list back to every set.
+   *
+   * The counts are asserted against the grid rather than against themselves — a row saying "41"
+   * has to mean the account holds 41 pieces of that set, and the only proof of that is what
+   * survives when the set is unticked.
+   */
+  test('the set popup heads its list, counts every set, and clears back to all of them', async () => {
+    await withInventory(async (page) => {
+      const view = page.getByTestId('inventory-view');
+      const trigger = view.getByRole('combobox', { name: 'Filter by set' });
+      const before = await cards(page).count();
+
+      await trigger.click();
+      const options = page.getByRole('option');
+      await expect(options.first()).toBeVisible({ timeout: 10_000 });
+      const total = await options.count();
+
+      await expect(page.getByTestId('select-popup-header')).toContainText('Sets you own');
+      await expect(page.getByTestId('select-popup-clear')).toHaveText('Clear');
+
+      // One count per row, and they share a right edge — the column is what makes them scannable.
+      const counts = page.getByTestId('select-item-trailing');
+      expect(await counts.count()).toBe(total);
+      const numbers = (await counts.allInnerTexts()).map((text) => Number(text.trim()));
+      expect(numbers.every((value) => Number.isInteger(value) && value > 0)).toBe(true);
+
+      const rightEdges = await counts.evaluateAll((nodes) =>
+        nodes.map((node) => Math.round(node.getBoundingClientRect().right)),
+      );
+      expect(new Set(rightEdges).size).toBe(1);
+
+      // Unticking the first set leaves exactly the pieces the other rows claim. A narrowed set
+      // filter is gear only, so the whole grid is the sum of the surviving counts.
+      const survivors = numbers.reduce((sum, value) => sum + value, 0) - numbers[0];
+      await options.first().click();
+      await expect.poll(() => cards(page).count(), { timeout: 10_000 }).toBe(survivors);
+
+      // Clear returns the filter to every set — which is what an unnarrowed set filter IS, so the
+      // boxes tick again rather than emptying.
+      await page.getByTestId('select-popup-clear').click();
+      for (let index = 0; index < total; index += 1) {
+        await expect(options.nth(index)).toHaveAttribute('data-selected', '');
+      }
+
+      await page.keyboard.press('Escape');
+      await expect(trigger).toHaveText('All sets');
+      await expect(cards(page)).toHaveCount(before);
+    });
+  });
+
+  /**
    * The direction toggle carries the design system tooltip, not the browser's `title`. A native
    * one ignores the theme, waits about a second, and cannot be dismissed — and it is invisible to
    * this assertion, which is the point: `getByRole('tooltip')` only finds a real one.

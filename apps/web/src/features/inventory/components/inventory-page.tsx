@@ -5,7 +5,6 @@ import { InventoryGrid } from '@bombfarm/game-art';
 import { Panel, PanelHeader } from '@bombfarm/ui';
 import type { InventoryView } from '@bombfarm/domain/inventory-view';
 import { useAppLang } from '@/shared/context/app-lang';
-import { sub } from '@/shared/i18n';
 import { usePlannerStore } from '@/shared/stores';
 import { inventoryViewFromStorage, loadInventoryView } from '@/shared/lib/inventory-view-storage';
 import { inventoryLabels } from '../model/inventory-labels';
@@ -31,11 +30,7 @@ export function InventoryPage() {
   return (
     <div className="mx-auto flex w-full max-w-app flex-col gap-4 p-4">
       <Panel>
-        <PanelHeader title={t.inventoryTitle}>
-          {view.items.length > 0 ? (
-            <span className="text-xs text-muted">{sub(t.inventoryCount, { count: view.items.length })}</span>
-          ) : null}
-        </PanelHeader>
+        <PanelHeader title={t.inventoryTitle} />
         <p className="pb-3 text-sm text-muted">{t.inventoryTip}</p>
         <InventoryGrid view={view} labels={labels} />
       </Panel>
