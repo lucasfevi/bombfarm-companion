@@ -33,6 +33,7 @@ const EXCLUDED_DIR_NAMES = new Set([
   'dist',
   'out',
   '.next',
+  '.next-dev',
   'coverage',
   'playwright-report',
   'test-results',

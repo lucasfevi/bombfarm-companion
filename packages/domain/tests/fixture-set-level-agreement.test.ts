@@ -64,6 +64,7 @@ const SKIP_DIRS = new Set([
   'dist',
   'out',
   '.next',
+  '.next-dev',
   '.turbo',
   'coverage',
   'playwright-report',
