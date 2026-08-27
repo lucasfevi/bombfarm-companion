@@ -248,6 +248,7 @@ export const en = {
   inventoryFilterAllSets: 'All sets',
   inventoryFilterSetsOwned: 'Sets you own',
   inventoryFilterSetsSelected: '{chosen} of {total} sets',
+  inventoryFilterSelectAllSets: 'Select all',
   inventorySetOption: 'Level {level} · {set}',
   inventoryUnknownCategory: 'a kind this app does not recognise yet ({codes})',
   inventorySkipped: '{count} entries could not be read and are not shown.',

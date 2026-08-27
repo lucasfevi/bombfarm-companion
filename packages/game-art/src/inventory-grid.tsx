@@ -116,6 +116,8 @@ export interface InventoryToolbarLabels {
   setsOwned: string;
   /** Trigger text once the list is narrowed, e.g. "4 of 9 sets". */
   setsSelected: (chosen: number, total: number) => string;
+  /** The popup's action when the list is narrowed — the other half of `clear`. */
+  selectAllSets: string;
   sortLabel: string;
   sortKey: (key: InventorySortKey) => string;
   sortAscending: string;
@@ -508,12 +510,12 @@ function InventoryToolbar({
   const sets = useMemo(() => setsInView(view), [view]);
   const dirty = !isEmptyInventoryFilter(filter);
 
-  // An empty `sets` means every set, so the boxes start ticked. Selecting all of them again
-  // collapses back to empty rather than listing all nine — otherwise `Clear` would have nothing
-  // to clear and the filter would read as dirty while showing everything.
+  // A `null` `sets` means every set, so the boxes start ticked. Ticking the last one collapses
+  // back to `null` rather than listing all nine, which keeps the filter from reading as dirty
+  // while it shows everything. Unticking the last one is the empty list, and stays that way.
   const allSetIds = useMemo(() => sets.map((group) => group.set), [sets]);
-  const selectedSets = filter.sets.length > 0 ? filter.sets : allSetIds;
-  const setsAreNarrowed = filter.sets.length > 0;
+  const selectedSets = filter.sets ?? allSetIds;
+  const setsAreNarrowed = filter.sets !== null;
 
   const primary = sort[0] ?? DEFAULT_INVENTORY_SORT[0];
   const ascending = primary.direction === "asc";
@@ -617,22 +619,29 @@ function InventoryToolbar({
               onValueChange={(next) =>
                 onFilterChange({
                   ...filter,
-                  sets: next.length === allSetIds.length ? [] : next,
+                  sets: next.length === allSetIds.length ? null : next,
                 })
               }
               aria-label={labels.toolbar.setsLabel}
               className={inventorySetSelectClass}
               renderValue={() =>
-                setsAreNarrowed
+                filter.sets
                   ? labels.toolbar.setsSelected(filter.sets.length, allSetIds.length)
                   : labels.toolbar.allSets
               }
               header={{
                 label: labels.toolbar.setsOwned,
-                clear: {
-                  label: labels.toolbar.clear,
-                  onClear: () => onFilterChange({ ...filter, sets: [] }),
-                },
+                // One action, whichever of the two would move: everything ticked can only be
+                // cleared, anything less can only be filled back in.
+                action: setsAreNarrowed
+                  ? {
+                      label: labels.toolbar.selectAllSets,
+                      onAction: () => onFilterChange({ ...filter, sets: null }),
+                    }
+                  : {
+                      label: labels.toolbar.clear,
+                      onAction: () => onFilterChange({ ...filter, sets: [] }),
+                    },
               }}
               optionTrailing={(value) => {
                 const group = sets.find((entry) => entry.set === value);

@@ -230,6 +230,7 @@ export function inventoryLabels(
       allSets: t.inventoryFilterAllSets,
       setsOwned: t.inventoryFilterSetsOwned,
       setsSelected: (chosen, total) => fill(t.inventoryFilterSetsSelected, { chosen, total }),
+      selectAllSets: t.inventoryFilterSelectAllSets,
       sortLabel: t.inventorySortLabel,
       sortKey: (key) => t[SORT_KEY[key]],
       sortAscending: t.inventorySortAscending,

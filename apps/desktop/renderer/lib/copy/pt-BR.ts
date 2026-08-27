@@ -247,6 +247,7 @@ export const ptBR: Copy = {
   inventoryFilterAllSets: 'Todos os conjuntos',
   inventoryFilterSetsOwned: 'Conjuntos que você tem',
   inventoryFilterSetsSelected: '{chosen} de {total} conjuntos',
+  inventoryFilterSelectAllSets: 'Selecionar todos',
   inventorySetOption: 'Nível {level} · {set}',
   inventoryUnknownCategory: 'um tipo que este app ainda não reconhece ({codes})',
   inventorySkipped: '{count} entradas não puderam ser lidas e não aparecem aqui.',

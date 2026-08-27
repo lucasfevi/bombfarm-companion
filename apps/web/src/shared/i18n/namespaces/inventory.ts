@@ -62,6 +62,7 @@ export const en = {
   inventoryFilterAllSets: "All sets",
   inventoryFilterSetsOwned: "Sets you own",
   inventoryFilterSetsSelected: "{chosen} of {total} sets",
+  inventoryFilterSelectAllSets: "Select all",
   inventorySetOption: "Lv {level} · {set}",
 
   inventoryUnknownCategory: "unrecognized category {codes}",
@@ -136,6 +137,7 @@ export const pt: typeof en = {
   inventoryFilterAllSets: "Todos os conjuntos",
   inventoryFilterSetsOwned: "Conjuntos que você tem",
   inventoryFilterSetsSelected: "{chosen} de {total} conjuntos",
+  inventoryFilterSelectAllSets: "Selecionar todos",
   inventorySetOption: "Nv {level} · {set}",
 
   inventoryUnknownCategory: "categoria não reconhecida {codes}",

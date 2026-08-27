@@ -23,6 +23,8 @@ import {
   selectPopupHeaderActionClass,
   selectPopupHeaderClass,
   selectPopupHeaderLabelClass,
+  selectPopupMultipleClass,
+  selectListClass,
   type SelectSize,
 } from './select.recipe';
 
@@ -61,10 +63,12 @@ export type SelectProps = Omit<ComponentPropsWithoutRef<'select'>, 'size' | 'onC
 export type SelectMultipleHeader = {
   /** Caption on the left. */
   label: ReactNode;
-  /** Action on the right, drawn only when supplied. Resets the selection to the caller's default,
-   *  which is not always the empty list — a filter where "none chosen" means "all of them" ticks
-   *  every box again. */
-  clear?: { label: ReactNode; onClear: () => void };
+  /**
+   * Action on the right, drawn only when supplied. One button rather than a Select-all/Clear
+   * pair: whichever of the two is available is the only one that would do anything, so a pair
+   * always shows one dead control. The caller picks the word, having decided which way it goes.
+   */
+  action?: { label: ReactNode; onAction: () => void };
 };
 
 export type SelectMultipleProps = Omit<
@@ -145,26 +149,26 @@ export function SelectMultiple({
           sideOffset={4}
           align="start"
         >
-          <BaseSelect.Popup className={selectPopupClass}>
+          <BaseSelect.Popup className={cn(selectPopupClass, selectPopupMultipleClass)}>
             {header ? (
               <div data-testid="select-popup-header" className={selectPopupHeaderClass}>
                 <span className={selectPopupHeaderLabelClass}>{header.label}</span>
-                {header.clear ? (
+                {header.action ? (
                   <button
                     type="button"
-                    data-testid="select-popup-clear"
+                    data-testid="select-popup-action"
                     className={selectPopupHeaderActionClass}
                     // Base UI moves focus through the list itself; letting the button take it on
                     // press dismisses the popup and breaks arrow-key navigation afterwards.
                     onMouseDown={(event) => event.preventDefault()}
-                    onClick={() => header.clear?.onClear()}
+                    onClick={() => header.action?.onAction()}
                   >
-                    {header.clear.label}
+                    {header.action.label}
                   </button>
                 ) : null}
               </div>
             ) : null}
-            <BaseSelect.List>
+            <BaseSelect.List className={selectListClass}>
               {items.map((item) => {
                 const trailing = optionTrailing?.(item.value);
                 return (
@@ -267,7 +271,7 @@ export function Select({
           align="start"
         >
           <BaseSelect.Popup className={selectPopupClass}>
-            <BaseSelect.List>
+            <BaseSelect.List className={selectListClass}>
               {items.map((item) => (
                 <BaseSelect.Item
                   key={item.value === '' ? '__empty' : item.value}

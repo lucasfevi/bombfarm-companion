@@ -28,8 +28,8 @@ scrolling. Search matches the item's name in your own language as well as the ga
 Filtering by set is how you filter by level: every set sits at exactly one item level, so the list
 reads "Lv 30 · Coal" and is ordered by level. It starts with everything chosen, shows how many
 pieces of each set you own — 41 beside Coal tells you it is most of your gear before you have
-filtered anything — and carries its own "Clear" that takes a narrowed list straight back to every
-set. Only gear has a set, so narrowing here shows gear alone.
+filtered anything — and offers whichever of "Clear" and "Select all" would actually change
+something. Only gear has a set, so narrowing here shows gear alone.
 
 The English planner also stops showing Portuguese item names. Gear was being named by
 title-casing the game's own slot token, so an English player saw "Gold · Elmo" where they should

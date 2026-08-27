@@ -397,11 +397,15 @@ export type InventoryFilter = {
   /** Save hero ids, matched against `equippedBy`. Empty means every hero. */
   heroIds: readonly string[];
   /**
-   * Catalog set slugs. Empty means every set — including, importantly, the kinds that have no set
-   * at all. Naming a set is naming a gear level, since the two are the same axis, so a non-empty
-   * list also means "gear only".
+   * Catalog set slugs. `null` means every set — including, importantly, the kinds that have no set
+   * at all. Naming a set is naming a gear level, since the two are the same axis, so a list also
+   * means "gear only".
+   *
+   * The empty list is a real state and not a synonym for `null`: it is what the set picker holds
+   * when every box is unticked, and it matches nothing. Collapsing the two is what made the
+   * picker's `Clear` a no-op — unticking the last box read as "no filter" and re-ticked all of them.
    */
-  sets: readonly string[];
+  sets: readonly string[] | null;
   equippedOnly: boolean;
 };
 
@@ -410,7 +414,7 @@ export const EMPTY_INVENTORY_FILTER: InventoryFilter = {
   kinds: [],
   rarities: [],
   heroIds: [],
-  sets: [],
+  sets: null,
   equippedOnly: false,
 };
 
@@ -420,7 +424,7 @@ export function isEmptyInventoryFilter(filter: InventoryFilter): boolean {
     filter.kinds.length === 0 &&
     filter.rarities.length === 0 &&
     filter.heroIds.length === 0 &&
-    filter.sets.length === 0 &&
+    filter.sets === null &&
     !filter.equippedOnly
   );
 }
@@ -451,7 +455,7 @@ export function filterInventoryView(
   const kinds = filter.kinds.length > 0 ? new Set(filter.kinds) : null;
   const rarities = filter.rarities.length > 0 ? new Set(filter.rarities) : null;
   const heroIds = filter.heroIds.length > 0 ? new Set(filter.heroIds) : null;
-  const sets = filter.sets.length > 0 ? new Set(filter.sets) : null;
+  const sets = filter.sets ? new Set(filter.sets) : null;
 
   const items = view.items.filter((item) => {
     if (kinds && !kinds.has(item.kind)) return false;

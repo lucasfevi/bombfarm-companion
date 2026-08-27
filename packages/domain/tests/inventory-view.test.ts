@@ -22,6 +22,7 @@ import {
   EMPTY_INVENTORY_FILTER,
   DEFAULT_INVENTORY_SORT,
   type InventorySort,
+  type InventoryFilter,
   ITEM_KINDS,
   type InventoryViewItem,
   type ItemKind,
@@ -747,10 +748,18 @@ describe('setsInView and the set filter', () => {
     expect(filtered.groups.map((group) => group.kind)).toEqual(['equipment']);
   });
 
-  it('treats an empty list as every set, keeping the filter honestly empty', () => {
+  it('treats no list at all as every set, keeping the filter honestly empty', () => {
     const original = view();
-    expect(isEmptyInventoryFilter({ ...EMPTY_INVENTORY_FILTER, sets: [] })).toBe(true);
+    expect(isEmptyInventoryFilter({ ...EMPTY_INVENTORY_FILTER, sets: null })).toBe(true);
     expect(filterInventoryView(original, EMPTY_INVENTORY_FILTER, nameOf)).toBe(original);
+  });
+
+  /** The picker's `Clear` unticks every box, and the empty list is what that produces. Reading it
+   *  as "no filter" is what made `Clear` a no-op: it re-showed everything it had just hidden. */
+  it('treats the empty list as no sets rather than every set', () => {
+    const empty: InventoryFilter = { ...EMPTY_INVENTORY_FILTER, sets: [] };
+    expect(isEmptyInventoryFilter(empty)).toBe(false);
+    expect(filterInventoryView(view(), empty, nameOf).items).toEqual([]);
   });
 
   it('counts as a dirty filter once any set is named', () => {

@@ -393,6 +393,7 @@ const KEYS_ADDED: readonly string[] = [
   'inventoryFilterAllSets',
   'inventoryFilterSetsOwned',
   'inventoryFilterSetsSelected',
+  'inventoryFilterSelectAllSets',
   'inventorySetOption',
   'inventoryUnknownCategory',
   'inventorySkipped',

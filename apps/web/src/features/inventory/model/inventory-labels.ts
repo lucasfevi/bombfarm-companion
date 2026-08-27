@@ -243,6 +243,7 @@ export function inventoryLabels(
       allSets: strings.inventoryFilterAllSets,
       setsOwned: strings.inventoryFilterSetsOwned,
       setsSelected: (chosen, total) => sub(strings.inventoryFilterSetsSelected, { chosen, total }),
+      selectAllSets: strings.inventoryFilterSelectAllSets,
       sortLabel: strings.inventorySortLabel,
       sortKey: (key) => strings[SORT_KEY[key]] as string,
       sortAscending: strings.inventorySortAscending,

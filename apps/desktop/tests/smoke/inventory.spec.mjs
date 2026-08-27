@@ -335,7 +335,7 @@ test.describe('inventory smoke', () => {
    * has to mean the account holds 41 pieces of that set, and the only proof of that is what
    * survives when the set is unticked.
    */
-  test('the set popup heads its list, counts every set, and clears back to all of them', async () => {
+  test('the set popup heads its list, counts every set, and selects all of them back', async () => {
     await withInventory(async (page) => {
       const view = page.getByTestId('inventory-view');
       const trigger = view.getByRole('combobox', { name: 'Filter by set' });
@@ -347,7 +347,7 @@ test.describe('inventory smoke', () => {
       const total = await options.count();
 
       await expect(page.getByTestId('select-popup-header')).toContainText('Sets you own');
-      await expect(page.getByTestId('select-popup-clear')).toHaveText('Clear');
+      await expect(page.getByTestId('select-popup-action')).toHaveText('Clear');
 
       // One count per row, and they share a right edge — the column is what makes them scannable.
       const counts = page.getByTestId('select-item-trailing');
@@ -366,16 +366,76 @@ test.describe('inventory smoke', () => {
       await options.first().click();
       await expect.poll(() => cards(page).count(), { timeout: 10_000 }).toBe(survivors);
 
-      // Clear returns the filter to every set — which is what an unnarrowed set filter IS, so the
-      // boxes tick again rather than emptying.
-      await page.getByTestId('select-popup-clear').click();
+      // Narrowed, the action becomes the other half of the pair and puts every box back.
+      await expect(page.getByTestId('select-popup-action')).toHaveText('Select all');
+      await page.getByTestId('select-popup-action').click();
       for (let index = 0; index < total; index += 1) {
         await expect(options.nth(index)).toHaveAttribute('data-selected', '');
       }
+      await expect.poll(() => cards(page).count(), { timeout: 10_000 }).toBe(before);
 
       await page.keyboard.press('Escape');
       await expect(trigger).toHaveText('All sets');
       await expect(cards(page)).toHaveCount(before);
+    });
+  });
+
+  /**
+   * `Clear` has to empty the boxes. It used to do nothing at all: the filter read an empty set
+   * list as "every set", so clearing the selection and showing everything were the same state,
+   * and unticking the last box by hand silently ticked all of them again.
+   */
+  test('the set popup clears every box, and says so in the trigger', async () => {
+    await withInventory(async (page) => {
+      const view = page.getByTestId('inventory-view');
+      const trigger = view.getByRole('combobox', { name: 'Filter by set' });
+
+      await trigger.click();
+      const options = page.getByRole('option');
+      await expect(options.first()).toBeVisible({ timeout: 10_000 });
+      const total = await options.count();
+
+      await page.getByTestId('select-popup-action').click();
+      for (let index = 0; index < total; index += 1) {
+        await expect(options.nth(index)).not.toHaveAttribute('data-selected', '');
+      }
+      await expect.poll(() => cards(page).count(), { timeout: 10_000 }).toBe(0);
+
+      await page.keyboard.press('Escape');
+      await expect(trigger).toHaveText(`0 of ${total} sets`);
+    });
+  });
+
+  /**
+   * Only the list scrolls. A header that scrolls with the rows is no header, and a `sticky` one
+   * inside the scrolling box still loses: the scrollbar belongs to that box and paints the full
+   * height, straight across the header's right edge — which is what this popup did.
+   */
+  test('the set popup scrolls its list and not its header', async () => {
+    await withInventory(async (page) => {
+      const view = page.getByTestId('inventory-view');
+      await view.getByRole('combobox', { name: 'Filter by set' }).click();
+      await expect(page.getByRole('option').first()).toBeVisible({ timeout: 10_000 });
+
+      // Computed overflow rather than a measured scroll: which box owns the scrollbar is the
+      // whole fix, and it holds however many sets the fixture happens to carry.
+      const box = await page.getByTestId('select-popup-header').evaluate((header) => {
+        const popup = header.parentElement;
+        const list = header.nextElementSibling;
+        return {
+          popupOverflow: getComputedStyle(popup).overflowY,
+          listOverflow: getComputedStyle(list).overflowY,
+          popupOverflows: popup.scrollHeight > popup.clientHeight,
+          headerTop: Math.round(header.getBoundingClientRect().top),
+          popupTop: Math.round(popup.getBoundingClientRect().top),
+        };
+      });
+
+      expect(box.popupOverflow).toBe('hidden');
+      expect(box.listOverflow).toBe('auto');
+      expect(box.popupOverflows).toBe(false);
+      // Flush against the popup's own edge — no stray band of the list's padding above it.
+      expect(box.headerTop - box.popupTop).toBeLessThanOrEqual(1);
     });
   });
 
