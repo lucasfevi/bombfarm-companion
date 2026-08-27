@@ -12,11 +12,24 @@
  * module, compute the same payloads in memory, and diff them against the committed files without
  * ever calling `writeFileSync` — see `tools/derived-fixture-drift.test.mjs`.
  */
+import { register } from 'node:module';
 import { readFileSync, writeFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
-import { assembleAccountPayload } from '../dist/assemble.js';
-import { ROUTES } from '../dist/routes.js';
-import { normalizeRotation } from '../dist/rotation/normalize.js';
+
+// Only when run directly does this chain cross Node's own ESM loader — Vitest's module runner
+// (the drift guard's `import()`) already tolerates the missing attribute, so the hook is
+// registered here rather than unconditionally, to keep its effect scoped to this command.
+// Must run before the dynamic imports below load `../dist/**`, which is why both `isMain` and
+// this registration happen ahead of them instead of at the bottom of the file. See
+// `json-import-hooks.mjs` for why the attribute is missing at all.
+const isMain = process.argv[1] === fileURLToPath(import.meta.url);
+if (isMain) {
+  register(new URL('./json-import-hooks.mjs', import.meta.url));
+}
+
+const { assembleAccountPayload } = await import('../dist/assemble.js');
+const { ROUTES } = await import('../dist/routes.js');
+const { normalizeRotation } = await import('../dist/rotation/normalize.js');
 
 const NOW = '2026-08-12T13:15:38.000Z';
 
@@ -87,7 +100,6 @@ function writeFixture(name, payload) {
 
 // Only write when run directly (`node scripts/generate-domain-fixtures.mjs`) — importing this
 // module for `buildFixtures()` (the drift guard) must never touch the working tree.
-const isMain = process.argv[1] === fileURLToPath(import.meta.url);
 if (isMain) {
   for (const { name, payload } of buildFixtures()) writeFixture(name, payload);
 }
