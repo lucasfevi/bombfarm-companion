@@ -396,6 +396,12 @@ export type InventoryFilter = {
   rarities: readonly number[];
   /** Save hero ids, matched against `equippedBy`. Empty means every hero. */
   heroIds: readonly string[];
+  /**
+   * Catalog set slugs. Empty means every set — including, importantly, the kinds that have no set
+   * at all. Naming a set is naming a gear level, since the two are the same axis, so a non-empty
+   * list also means "gear only".
+   */
+  sets: readonly string[];
   equippedOnly: boolean;
 };
 
@@ -404,6 +410,7 @@ export const EMPTY_INVENTORY_FILTER: InventoryFilter = {
   kinds: [],
   rarities: [],
   heroIds: [],
+  sets: [],
   equippedOnly: false,
 };
 
@@ -413,6 +420,7 @@ export function isEmptyInventoryFilter(filter: InventoryFilter): boolean {
     filter.kinds.length === 0 &&
     filter.rarities.length === 0 &&
     filter.heroIds.length === 0 &&
+    filter.sets.length === 0 &&
     !filter.equippedOnly
   );
 }
@@ -443,11 +451,13 @@ export function filterInventoryView(
   const kinds = filter.kinds.length > 0 ? new Set(filter.kinds) : null;
   const rarities = filter.rarities.length > 0 ? new Set(filter.rarities) : null;
   const heroIds = filter.heroIds.length > 0 ? new Set(filter.heroIds) : null;
+  const sets = filter.sets.length > 0 ? new Set(filter.sets) : null;
 
   const items = view.items.filter((item) => {
     if (kinds && !kinds.has(item.kind)) return false;
     if (rarities && !rarities.has(item.rarityIdx)) return false;
     if (heroIds && (item.equippedBy === null || !heroIds.has(item.equippedBy))) return false;
+    if (sets && !sets.has(item.set)) return false;
     if (filter.equippedOnly && !item.equipped) return false;
     if (needles.length === 0) return true;
     const haystack = fold(searchText(item));
@@ -467,6 +477,32 @@ export function rarityIndicesInView(view: InventoryView): number[] {
 export function kindsInView(view: InventoryView): ItemKind[] {
   const present = new Set(view.items.map((item) => item.kind));
   return ITEM_KINDS.filter((kind) => present.has(kind));
+}
+
+export type InventorySetGroup = {
+  /** Catalog slug (`coal`), which is the filter's value. */
+  set: string;
+  /** The set's own item level. Every set sits at exactly one — there are 30 of each and the
+   *  catalog pairs them 1:1, which is why a set filter IS a level filter. */
+  level: number;
+  /** Gear pieces of this set the account holds. */
+  count: number;
+};
+
+/**
+ * The sets present in a view, in level order — the set filter's own options, so a set the account
+ * does not own is never offered. Level-ordered rather than alphabetical because the level is what
+ * the list actually ranks by; the names are just how a player says it.
+ */
+export function setsInView(view: InventoryView): InventorySetGroup[] {
+  const bySet = new Map<string, InventorySetGroup>();
+  for (const item of view.items) {
+    if (item.kind !== 'equipment' || !item.set) continue;
+    const existing = bySet.get(item.set);
+    if (existing) existing.count += 1;
+    else bySet.set(item.set, { set: item.set, level: item.level, count: 1 });
+  }
+  return [...bySet.values()].sort((a, b) => a.level - b.level || a.set.localeCompare(b.set));
 }
 
 /** Hero ids that wear at least one item in a view — the hero filter's own options, so a hero

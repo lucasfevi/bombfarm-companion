@@ -36,3 +36,11 @@ export const selectItemClass =
 
 export const selectItemCompactClass =
   'flex cursor-pointer items-center gap-2 px-2 py-1 text-[11px] text-ink outline-none select-none data-[highlighted]:bg-[color-mix(in_oklch,var(--accent)_18%,var(--surface))] data-[highlighted]:text-accent data-[disabled]:cursor-not-allowed data-[disabled]:opacity-40';
+
+/** A multi-select row: the checkbox sits ahead of the label, so the labels stay in one column. */
+export const selectCheckItemClass = 'gap-2';
+
+/** The checkbox itself. Base UI's `ItemIndicator` renders only when the item is selected, so the
+ *  box is drawn here and the tick inside it. */
+export const selectCheckboxClass =
+  'grid size-3.5 shrink-0 place-items-center rounded-[3px] border border-line text-accent-ink [[data-selected]_&]:border-accent [[data-selected]_&]:bg-accent';

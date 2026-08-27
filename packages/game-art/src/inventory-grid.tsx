@@ -8,12 +8,14 @@ import {
   isEmptyInventoryFilter,
   kindsInView,
   rarityIndicesInView,
+  setsInView,
   sortDirectionFor,
   sortInventoryView,
   withSortTerm,
   type InventoryEntry,
   type InventoryFilter,
   type InventoryGroup,
+  type InventorySetGroup,
   type InventorySort,
   type InventorySortKey,
   type InventoryView,
@@ -21,7 +23,7 @@ import {
   type InventoryViewStat,
   type ItemKind,
 } from "@bombfarm/domain/inventory-view";
-import { cn, Icon, Select, Tooltip } from "@bombfarm/ui";
+import { cn, Icon, Select, SelectMultiple, Tooltip } from "@bombfarm/ui";
 import { GoldIcon } from "./gold-icon";
 import { HeroAvatar } from "./hero-avatar";
 import { ItemIcon } from "./item-icon";
@@ -34,8 +36,10 @@ import {
   inventoryCountClass,
   inventoryCountValueClass,
   inventoryFieldClass,
+  inventoryFooterClass,
   inventoryGridClass,
   inventoryHeroSelectClass,
+  inventorySetSelectClass,
   inventorySortDirectionClass,
   inventorySortGroupClass,
   inventorySortSelectClass,
@@ -106,6 +110,10 @@ export interface InventoryToolbarLabels {
   noMatches: string;
   heroLabel: string;
   allHeroes: string;
+  setsLabel: string;
+  allSets: string;
+  /** Trigger text once the list is narrowed, e.g. "4 of 9 sets". */
+  setsSelected: (chosen: number, total: number) => string;
   sortLabel: string;
   sortKey: (key: InventorySortKey) => string;
   sortAscending: string;
@@ -135,6 +143,9 @@ export interface InventoryGridLabels {
   equippedBy?: (item: InventoryViewItem) => InventoryEquippedBy | null;
   /** Names the hero filter's options; a caller with no roster returns the id. */
   heroOption?: (heroId: string) => InventoryHeroOption;
+  /** One set-filter option, e.g. "Lv 30 · Coal". Level leads because the level is what the list
+   *  ranks by — the set name is how a player says it. */
+  setOption: (group: InventorySetGroup) => string;
   /** Footer right, beside the gold coin. */
   gold: (amount: number) => string;
   /** What free-text search matches against for one item. */
@@ -395,7 +406,7 @@ function InventoryCard({
           carrying one stat and a Mítico carrying four still line their footers up across a row. */}
       <span
         data-testid="inventory-card-footer"
-        className="mt-auto flex items-center justify-between gap-2 border-t border-line/60 pt-2"
+        className={inventoryFooterClass}
       >
         {/* One slot, two tenants that never coincide: only gear is worn, and only the fungible
             kinds stack. */}
@@ -474,7 +485,15 @@ function InventoryToolbar({
       .map(resolve)
       .sort((a, b) => a.name.localeCompare(b.name));
   }, [view, labels]);
+  const sets = useMemo(() => setsInView(view), [view]);
   const dirty = !isEmptyInventoryFilter(filter);
+
+  // An empty `sets` means every set, so the boxes start ticked. Selecting all of them again
+  // collapses back to empty rather than listing all nine — otherwise `Clear` would have nothing
+  // to clear and the filter would read as dirty while showing everything.
+  const allSetIds = useMemo(() => sets.map((group) => group.set), [sets]);
+  const selectedSets = filter.sets.length > 0 ? filter.sets : allSetIds;
+  const setsAreNarrowed = filter.sets.length > 0;
 
   const primary = sort[0] ?? DEFAULT_INVENTORY_SORT[0];
   const ascending = primary.direction === "asc";
@@ -569,6 +588,32 @@ function InventoryToolbar({
                 </option>
               ))}
             </Select>
+          ) : null}
+
+          {sets.length > 1 ? (
+            <SelectMultiple
+              size="compact"
+              value={selectedSets}
+              onValueChange={(next) =>
+                onFilterChange({
+                  ...filter,
+                  sets: next.length === allSetIds.length ? [] : next,
+                })
+              }
+              aria-label={labels.toolbar.setsLabel}
+              className={inventorySetSelectClass}
+              renderValue={() =>
+                setsAreNarrowed
+                  ? labels.toolbar.setsSelected(filter.sets.length, allSetIds.length)
+                  : labels.toolbar.allSets
+              }
+            >
+              {sets.map((group) => (
+                <option key={group.set} value={group.set}>
+                  {labels.setOption(group)}
+                </option>
+              ))}
+            </SelectMultiple>
           ) : null}
 
           <input

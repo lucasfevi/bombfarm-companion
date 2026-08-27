@@ -223,6 +223,8 @@ export function inventoryLabels(
     badges: (item) => badges(item, strings),
     equippedBy: (item) => equippedBy(item, heroBySourceId, strings),
     heroOption: (heroId) => heroOption(heroId, heroBySourceId, strings),
+    setOption: (group) =>
+      sub(strings.inventorySetOption, { level: group.level, set: setName(group.set, lang) }),
     gold: (amount) => formatNumber(amount, 0),
     searchText: (item) => searchText(item, strings, lang),
     toolbar: {
@@ -236,6 +238,9 @@ export function inventoryLabels(
       noMatches: strings.inventoryFilterNoMatches,
       heroLabel: strings.inventoryFilterHeroLabel,
       allHeroes: strings.inventoryFilterAllHeroes,
+      setsLabel: strings.inventoryFilterSetsLabel,
+      allSets: strings.inventoryFilterAllSets,
+      setsSelected: (chosen, total) => sub(strings.inventoryFilterSetsSelected, { chosen, total }),
       sortLabel: strings.inventorySortLabel,
       sortKey: (key) => strings[SORT_KEY[key]] as string,
       sortAscending: strings.inventorySortAscending,

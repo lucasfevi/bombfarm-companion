@@ -42,6 +42,7 @@ export {
   inventoryCountClass,
   inventoryCountValueClass,
   inventoryFieldClass,
+  inventoryFooterClass,
   inventoryGridClass,
   inventorySortDirectionClass,
   inventorySortGroupClass,

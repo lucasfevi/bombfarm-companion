@@ -75,6 +75,18 @@ export const inventoryBadgeRecipe = cva('rounded-full border px-1.5 py-0.5 text-
 
 export type InventoryBadgeTone = NonNullable<VariantProps<typeof inventoryBadgeRecipe>['tone']>;
 
+/**
+ * The footer, pinned to the height of the tallest thing it can hold: the equipping hero's two
+ * stacked lines beside a 28px avatar measure 29, and the rule and padding above them add 9. A
+ * card with no hero — a stack, or a loose item — would otherwise collapse to one line of text and
+ * sit visibly shorter than its neighbours.
+ *
+ * `items-end` puts the sell value on the card's bottom edge rather than floating it against the
+ * middle of whatever shares the row.
+ */
+export const inventoryFooterClass =
+  'mt-auto flex min-h-[38px] items-end justify-between gap-2 border-t border-line/60 pt-2';
+
 /** Wide enough for a 64px icon beside four stat lines without the text wrapping to two columns. */
 export const inventoryGridClass = 'grid grid-cols-[repeat(auto-fill,minmax(17rem,1fr))] gap-2.5';
 
@@ -110,6 +122,9 @@ export const inventorySortDirectionClass =
  *  own — its options carry a rank, a name, stars and a level, and shrink-to-fit would jitter as
  *  the selection changed. */
 export const inventoryHeroSelectClass = `${TOOLBAR_FIELD_HEIGHT} w-52 shrink-0`;
+
+/** Narrower than the hero filter: its trigger only ever says "All sets" or "4 of 9 sets". */
+export const inventorySetSelectClass = `${TOOLBAR_FIELD_HEIGHT} w-36 shrink-0`;
 
 /** Toolbar chip — the kind and rarity filters, and the equipped toggle. */
 export const inventoryChipRecipe = cva(

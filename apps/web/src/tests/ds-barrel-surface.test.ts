@@ -66,6 +66,10 @@ const FROZEN_BARREL_VALUE_EXPORTS = [
   'SaveBar',
   'SegmentedToggle',
   'Select',
+  // `SelectMultiple` (2026-08-27): its own component rather than a `multiple?: boolean` branch on
+  // `Select` — the two disagree on the type of `value` and on what a change is, and a union that
+  // loose pushes the narrowing onto every call site. Base UI's select does the work.
+  'SelectMultiple',
   'SettingsRow',
   'SettingsSection',
   'Slider',
@@ -166,6 +170,7 @@ const FROZEN_GAME_ART_BARREL_VALUE_EXPORTS = [
   'inventoryCountClass',
   'inventoryCountValueClass',
   'inventoryFieldClass',
+  'inventoryFooterClass',
   'inventoryGridClass',
   'inventorySortDirectionClass',
   'inventorySortGroupClass',

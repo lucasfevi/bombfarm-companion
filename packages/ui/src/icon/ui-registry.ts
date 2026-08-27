@@ -2,6 +2,7 @@ import {
   HiMiniChevronDown,
   HiMiniChevronUp,
   HiMiniXMark,
+  HiMiniCheck,
   HiMiniCheckCircle,
   HiMiniXCircle,
   HiMiniExclamationTriangle,
@@ -20,6 +21,9 @@ export const uiIconRegistry = {
   'chevron-up': HiMiniChevronUp,
   // ConfirmDialog close mark
   'x-mark': HiMiniXMark,
+  // The tick inside a multi-select's checkbox. Bare, not `check-circle` — that one is the toast's
+  // success badge and carries its own ring.
+  check: HiMiniCheck,
   // Button coffee / coffee-full stories
   coffee: BiCoffee,
   // toast/notification `success` variant (m2-toast-settings, TST-13)

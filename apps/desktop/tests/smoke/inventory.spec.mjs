@@ -160,6 +160,24 @@ test.describe('inventory smoke', () => {
     });
   });
 
+  /** A card with no hero would otherwise collapse its footer to one line of text and sit visibly
+   *  shorter than the card beside it. */
+  test('gives every card the same footer height, with the sell value on the bottom edge', async () => {
+    await withInventory(async (page) => {
+      const geometry = await page.getByTestId('inventory-card-footer').evaluateAll((footers) =>
+        footers.map((footer) => {
+          const box = footer.getBoundingClientRect();
+          const gold = footer.lastElementChild.getBoundingClientRect();
+          return { height: Math.round(box.height), bottomGap: Math.round(box.bottom - gold.bottom) };
+        }),
+      );
+
+      expect(geometry.length).toBeGreaterThan(1);
+      expect(new Set(geometry.map((row) => row.height)).size).toBe(1);
+      expect(new Set(geometry.map((row) => row.bottomGap))).toEqual(new Set([0]));
+    });
+  });
+
   test('names gear in the shell language and shows its forge-applied stats', async () => {
     await withInventory(async (page) => {
       const gearCard = cards(page).first();
@@ -243,6 +261,54 @@ test.describe('inventory smoke', () => {
       const footers = await page.getByTestId('inventory-card-footer').allInnerTexts();
       const heroNames = new Set(footers.map((text) => text.trim().split(/\r?\n/)[0].trim()));
       expect(heroNames.size).toBe(1);
+    });
+  });
+
+  /**
+   * Set and level are the same axis — the catalog pairs 30 sets with 30 levels, one each — so the
+   * set picker IS the level filter, with labels a player says out loud. It starts with everything
+   * ticked, which is the state an empty filter list represents.
+   */
+  test('filters by set, starting with every set chosen and staying open across picks', async () => {
+    await withInventory(async (page) => {
+      const view = page.getByTestId('inventory-view');
+      const before = await cards(page).count();
+      const trigger = view.getByRole('combobox', { name: 'Filter by set' });
+
+      await expect(trigger).toHaveText('All sets');
+      await trigger.click();
+
+      // The popup is portalled, so it is not in the DOM the instant the trigger is clicked.
+      const options = page.getByRole('option');
+      await expect(options.first()).toBeVisible({ timeout: 10_000 });
+      const total = await options.count();
+      expect(total).toBeGreaterThan(1);
+
+      // Level-ordered, and each label leads with its level.
+      const labels = await options.allInnerTexts();
+      expect(labels[0]).toMatch(/^Level \d+ · /);
+      const levels = labels.map((text) => Number(/Level (\d+)/.exec(text)?.[1] ?? 0));
+      expect([...levels].sort((a, b) => a - b)).toEqual(levels);
+
+      // Every box starts ticked.
+      for (let index = 0; index < total; index += 1) {
+        await expect(options.nth(index)).toHaveAttribute('data-selected', '');
+      }
+
+      // Unticking one leaves the popup open — that is what `multiple` buys.
+      await options.first().click();
+      await expect(options.first()).not.toHaveAttribute('data-selected', '');
+      expect(await options.count()).toBe(total);
+
+      await page.keyboard.press('Escape');
+      await expect(trigger).toHaveText(`${total - 1} of ${total} sets`);
+      expect(await cards(page).count()).toBeLessThan(before);
+
+      // Naming a set names a gear level, so a narrowed list is gear only.
+      const kinds = await page
+        .locator('[data-testid="inventory-group"]')
+        .evaluateAll((groups) => groups.map((group) => group.dataset.kind));
+      expect(kinds).toEqual(['equipment']);
     });
   });
 

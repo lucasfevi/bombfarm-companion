@@ -13,6 +13,8 @@ import {
   isStackableKind,
   kindsInView,
   heroIdsInView,
+  setsInView,
+  isEmptyInventoryFilter,
   rarityIndicesInView,
   sortInventoryView,
   withSortTerm,
@@ -691,5 +693,67 @@ describe('chest tiers from the def_id tail', () => {
     const twice = mapInventoryViewItem(JSON.parse(JSON.stringify(once)) as unknown)!;
     expect(twice.rarityIdx).toBe(2);
     expect(twice.rarityCode).toBe('raro');
+  });
+});
+
+/**
+ * The catalog pairs 30 sets with 30 levels, one each, so naming a set names a level. That is what
+ * makes the set filter a level filter with better labels — and what makes it gear-only, since
+ * nothing else carries a set at all.
+ */
+describe('setsInView and the set filter', () => {
+  const view = () =>
+    buildInventoryView([
+      { id: '1', def_id: 'coal_arma', category: 0, rarity: 2, level: 30, set: 'coal' },
+      { id: '2', def_id: 'coal_bota', category: 0, rarity: 1, level: 30, set: 'coal' },
+      { id: '3', def_id: 'ember_luva', category: 0, rarity: 0, level: 10, set: 'ember' },
+      { id: '4', def_id: 'glacier_arma', category: 0, rarity: 4, level: 60, set: 'glacier' },
+      { id: '5', def_id: 'map_key_epico', category: 4, rarity: 3 },
+    ]);
+
+  const nameOf = (item: InventoryViewItem) => item.defId;
+
+  it('lists the sets the account holds in level order, with a count each', () => {
+    expect(setsInView(view())).toEqual([
+      { set: 'ember', level: 10, count: 1 },
+      { set: 'coal', level: 30, count: 2 },
+      { set: 'glacier', level: 60, count: 1 },
+    ]);
+  });
+
+  it('offers no set for a kind that has none, so the key never reaches the list', () => {
+    const keysOnly = buildInventoryView([{ id: '1', def_id: 'map_key_epico', category: 4, rarity: 3 }]);
+    expect(setsInView(keysOnly)).toEqual([]);
+  });
+
+  it('narrows to the chosen sets', () => {
+    const filtered = filterInventoryView(view(), { ...EMPTY_INVENTORY_FILTER, sets: ['coal'] }, nameOf);
+    expect(filtered.items.map((item) => item.id)).toEqual(['1', '2']);
+  });
+
+  it('takes several sets at once, which a min/max range could not express', () => {
+    const filtered = filterInventoryView(
+      view(),
+      { ...EMPTY_INVENTORY_FILTER, sets: ['ember', 'glacier'] },
+      nameOf,
+    );
+    expect(filtered.items.map((item) => item.id)).toEqual(['3', '4']);
+  });
+
+  /** Naming a set is naming a gear level, so a narrowed list is implicitly gear-only. The key has
+   *  no set and cannot survive — worth pinning, because it changes what the screen shows. */
+  it('drops every kind that has no set at all', () => {
+    const filtered = filterInventoryView(view(), { ...EMPTY_INVENTORY_FILTER, sets: ['coal'] }, nameOf);
+    expect(filtered.groups.map((group) => group.kind)).toEqual(['equipment']);
+  });
+
+  it('treats an empty list as every set, keeping the filter honestly empty', () => {
+    const original = view();
+    expect(isEmptyInventoryFilter({ ...EMPTY_INVENTORY_FILTER, sets: [] })).toBe(true);
+    expect(filterInventoryView(original, EMPTY_INVENTORY_FILTER, nameOf)).toBe(original);
+  });
+
+  it('counts as a dirty filter once any set is named', () => {
+    expect(isEmptyInventoryFilter({ ...EMPTY_INVENTORY_FILTER, sets: ['coal'] })).toBe(false);
   });
 });

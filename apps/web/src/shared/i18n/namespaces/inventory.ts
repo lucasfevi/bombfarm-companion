@@ -58,6 +58,11 @@ export const en = {
   inventorySortDescending: "Descending",
 
 
+  inventoryFilterSetsLabel: "Filter by set",
+  inventoryFilterAllSets: "All sets",
+  inventoryFilterSetsSelected: "{chosen} of {total} sets",
+  inventorySetOption: "Lv {level} · {set}",
+
   inventoryUnknownCategory: "unrecognized category {codes}",
   inventorySkipped: "{count} row(s) could not be read and are not shown.",
 
@@ -126,6 +131,11 @@ export const pt: typeof en = {
   inventorySortAscending: "Crescente",
   inventorySortDescending: "Decrescente",
 
+
+  inventoryFilterSetsLabel: "Filtrar por conjunto",
+  inventoryFilterAllSets: "Todos os conjuntos",
+  inventoryFilterSetsSelected: "{chosen} de {total} conjuntos",
+  inventorySetOption: "Nv {level} · {set}",
 
   inventoryUnknownCategory: "categoria não reconhecida {codes}",
   inventorySkipped: "{count} linha(s) não puderam ser lidas e não aparecem aqui.",
