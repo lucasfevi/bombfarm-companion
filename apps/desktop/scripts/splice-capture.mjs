@@ -21,7 +21,8 @@
 /** Written as a code point so no layer of quoting between here and the file can eat it. */
 const BACKSLASH = 92;
 const WS_TEXT_FIRST_BYTE = 0x81;
-const CAPTURE_HEADER_BYTES = 5;
+const CAPTURE_MAGIC = 'BFCC';
+const CAPTURE_HEADER_BYTES = CAPTURE_MAGIC.length + 1;
 
 /** Byte span of the flat `{...}` starting at `start`, string-aware so a brace inside a string
  *  cannot end it early. Throws on a nested object rather than guessing: this file's whole claim is
@@ -66,22 +67,47 @@ function heroEntrySpans(text, arrayStart) {
 
 const HEROES_KEY = '"heroes":[';
 
-/** The frame text with every entry whose `"id"` is in `dropIds` cut out, commas repaired. */
+/**
+ * The frame text with every entry whose `"id"` is in `dropIds` cut out.
+ *
+ * Kept entries are copied together with the separator bytes that already stood between them, not
+ * re-joined with a fresh `','`. Re-joining would normalise any whitespace the game happens to put
+ * between entries — a byte changed outside the cut, which is the one thing this module promises not
+ * to do, and which the "leaves every byte outside the heroes array alone" guard masks out by
+ * construction and so could never catch.
+ */
 export function spliceFrameText(text, dropIds) {
   const keyAt = text.indexOf(HEROES_KEY);
   if (keyAt === -1) return text;
+  if (text.indexOf(HEROES_KEY, keyAt + 1) !== -1) {
+    throw new Error('splice-capture: frame carries more than one heroes array');
+  }
+
   const arrayStart = keyAt + HEROES_KEY.length - 1;
   const spans = heroEntrySpans(text, arrayStart);
+  if (spans.length === 0) return text;
 
-  const kept = spans.filter((span) => {
+  const dropped = (span) => {
     const id = /"id":"([^"]*)"/.exec(text.slice(span.start, span.end))?.[1];
-    return id === undefined || !dropIds.has(id);
-  });
-  if (kept.length === spans.length) return text;
+    return id !== undefined && dropIds.has(id);
+  };
+  if (!spans.some(dropped)) return text;
 
-  const body = kept.map((span) => text.slice(span.start, span.end)).join(',');
-  const arrayEnd = spans[spans.length - 1].end;
-  return `${text.slice(0, arrayStart + 1)}${body}${text.slice(arrayEnd)}`;
+  // Separators are copied one at a time from the bytes that followed the PREVIOUS kept entry, not
+  // taken as the whole run between two kept entries: that run contains the dropped entries, and
+  // copying it wholesale keeps the very heroes this is removing.
+  const keptIndices = spans.map((span, index) => (dropped(span) ? -1 : index)).filter((index) => index !== -1);
+
+  let body = keptIndices.length > 0 ? text.slice(arrayStart + 1, spans[0].start) : '';
+  for (const [position, index] of keptIndices.entries()) {
+    if (position > 0) {
+      const previous = keptIndices[position - 1];
+      body += text.slice(spans[previous].end, spans[previous + 1].start);
+    }
+    body += text.slice(spans[index].start, spans[index].end);
+  }
+
+  return `${text.slice(0, arrayStart + 1)}${body}${text.slice(spans[spans.length - 1].end)}`;
 }
 
 export function readFrame(payload) {
@@ -134,16 +160,23 @@ export function reencodeFrame(payload) {
 }
 
 /** Each record's payload, so a guard can walk a capture without reimplementing the container. */
+/**
+ * Each record's payload. Stops at the first record the file does not fully contain rather than
+ * reading past the end: a hard app exit truncates a capture mid-record, which `capture-format.ts`
+ * and the fixture generator's own reader both already tolerate. Reading on gives `ERR_OUT_OF_RANGE`
+ * or, worse, a confident-sounding complaint about an unterminated heroes array.
+ */
 export function* capturePayloads(data) {
   let offset = CAPTURE_HEADER_BYTES;
-  while (offset < data.length) {
-    offset += 1;
-    const ctxLength = data.readUInt32LE(offset);
-    offset += 4 + ctxLength;
-    const payloadLength = data.readUInt32LE(offset);
-    offset += 4;
-    yield data.subarray(offset, offset + payloadLength);
-    offset += payloadLength;
+  while (offset + 5 <= data.length) {
+    const ctxLength = data.readUInt32LE(offset + 1);
+    const lengthAt = offset + 5 + ctxLength;
+    if (lengthAt + 4 > data.length) return;
+    const payloadLength = data.readUInt32LE(lengthAt);
+    const payloadStart = lengthAt + 4;
+    if (payloadStart + payloadLength > data.length) return;
+    yield data.subarray(payloadStart, payloadStart + payloadLength);
+    offset = payloadStart + payloadLength;
   }
 }
 
@@ -153,21 +186,23 @@ export function* capturePayloads(data) {
  * @returns {Buffer} the same capture with those heroes gone and every other byte untouched
  */
 export function spliceCaptureHeroes(data, dropHeroIds) {
+  if (data.subarray(0, CAPTURE_MAGIC.length).toString('ascii') !== CAPTURE_MAGIC) {
+    throw new Error('splice-capture: not a capture file');
+  }
   const dropIds = new Set(dropHeroIds);
   const out = [data.subarray(0, CAPTURE_HEADER_BYTES)];
 
   let offset = CAPTURE_HEADER_BYTES;
-  while (offset < data.length) {
+  while (offset + 5 <= data.length) {
     const recordStart = offset;
-    offset += 1;
-    const ctxLength = data.readUInt32LE(offset);
-    offset += 4;
-    offset += ctxLength;
-    const payloadLength = data.readUInt32LE(offset);
-    offset += 4;
-    const payload = data.subarray(offset, offset + payloadLength);
-    const payloadStart = offset;
-    offset += payloadLength;
+    const ctxLength = data.readUInt32LE(offset + 1);
+    const lengthAt = offset + 5 + ctxLength;
+    if (lengthAt + 4 > data.length) break;
+    const payloadLength = data.readUInt32LE(lengthAt);
+    const payloadStart = lengthAt + 4;
+    if (payloadStart + payloadLength > data.length) break;
+    const payload = data.subarray(payloadStart, payloadStart + payloadLength);
+    offset = payloadStart + payloadLength;
 
     const frame = readFrame(payload);
     if (frame === null) {
@@ -175,6 +210,12 @@ export function spliceCaptureHeroes(data, dropHeroIds) {
       continue;
     }
 
+    // Every walker downstream — the fixture generator's own capture reader, and the drift test's —
+    // reads one frame per record too, so a record holding two would be spliced in its first and
+    // copied through in its second, with nothing reporting the half that was missed.
+    if (frame.offset + frame.length !== payload.length) {
+      throw new Error('splice-capture: record payload is not exactly one WebSocket frame');
+    }
     const text = payload.subarray(frame.offset, frame.offset + frame.length).toString('utf8');
     const spliced = spliceFrameText(text, dropIds);
     if (spliced === text) {

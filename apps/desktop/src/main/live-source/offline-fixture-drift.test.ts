@@ -151,6 +151,26 @@ describe('the caps replay capture is the recorded one, minus three heroes', () =
     expect(payloads.filter((payload) => !reencodeFrame(payload).equals(payload))).toEqual([]);
   });
 
+  it('round-trips all three WebSocket length forms, not only the one the capture happens to use', async () => {
+    // Every recorded frame is the 16-bit form and sits far above the 125-byte boundary, so no
+    // assertion over the real capture reaches the 7-bit or 64-bit branches at all — a mutant that
+    // broke either survived the other guards here. A capture that ever carries a short frame (a
+    // heartbeat, an ack) and loses a hero from it goes straight through the 7-bit branch.
+    const { reencodeFrame } = (await import(SPLICER)) as { reencodeFrame: (payload: Buffer) => Buffer };
+    const body = Buffer.from('{"heroes":[{"id":"a"}]}', 'utf8');
+
+    const sevenBit = Buffer.concat([Buffer.from([0x81, body.length]), body]);
+    expect(body.length).toBeLessThanOrEqual(125);
+    expect(reencodeFrame(sevenBit).equals(sevenBit)).toBe(true);
+
+    const sixtyFourBitHeader = Buffer.alloc(10);
+    sixtyFourBitHeader.writeUInt8(0x81, 0);
+    sixtyFourBitHeader.writeUInt8(127, 1);
+    sixtyFourBitHeader.writeBigUInt64BE(BigInt(body.length), 2);
+    const sixtyFourBit = Buffer.concat([sixtyFourBitHeader, body]);
+    expect(reencodeFrame(sixtyFourBit).equals(sixtyFourBit)).toBe(true);
+  });
+
   it('keeps a frame in the length form it arrived in, even when a shorter one would now fit', async () => {
     // The recorded frames are all far above the 125-byte boundary, so no assertion over the real
     // capture can reach this: a fresh encoder picking the shortest form that fits reproduces them
@@ -167,6 +187,56 @@ describe('the caps replay capture is the recorded one, minus three heroes', () =
     const payload = Buffer.concat([sixteenBitHeader, body]);
 
     expect(reencodeFrame(payload).equals(payload)).toBe(true);
+  });
+
+  it('preserves the separator bytes between the entries it keeps, rather than re-joining them', async () => {
+    // Re-joining with a fresh comma is a byte changed outside the cut, and the "every byte outside
+    // the heroes array" guard masks the array out by construction, so only this can catch it.
+    const { spliceFrameText } = (await import(SPLICER)) as {
+      spliceFrameText: (text: string, dropIds: Set<string>) => string;
+    };
+    const text = '{"heroes":[ {"id":"a"} , {"id":"b"} , {"id":"c"} ],"wave":1}';
+
+    // Every subset, because dropping the FIRST entry worked while dropping a MIDDLE one silently
+    // kept it — copying the whole run between two kept entries copies the dropped one with it.
+    const results = [['a'], ['b'], ['c'], ['a', 'b'], ['b', 'c'], ['a', 'c'], ['a', 'b', 'c'], []].map((drop) => ({
+      drop,
+      out: spliceFrameText(text, new Set(drop)),
+    }));
+
+    for (const { drop, out } of results) {
+      const parsed = JSON.parse(out) as { heroes: { id: string }[]; wave: number };
+      expect(parsed.heroes.map((hero) => hero.id)).toEqual(['a', 'b', 'c'].filter((id) => !drop.includes(id)));
+      expect(parsed.wave).toBe(1);
+    }
+    expect(results[1]?.out).toBe('{"heroes":[ {"id":"a"} , {"id":"c"} ],"wave":1}');
+  });
+
+  it('refuses a frame it cannot splice wholly, rather than splicing the half it understands', async () => {
+    const { spliceFrameText } = (await import(SPLICER)) as {
+      spliceFrameText: (text: string, dropIds: Set<string>) => string;
+    };
+    expect(() => spliceFrameText('{"heroes":[{"id":"a"}],"x":{"heroes":[{"id":"b"}]}}', new Set(['a']))).toThrow(
+      /more than one heroes array/,
+    );
+  });
+
+  it('stops at a record the file does not fully contain, the way every sibling walker does', async () => {
+    const { capturePayloads, spliceCaptureHeroes } = (await import(SPLICER)) as {
+      capturePayloads: (data: Buffer) => Iterable<Buffer>;
+      spliceCaptureHeroes: (data: Buffer, ids: readonly string[]) => Buffer;
+    };
+    const truncated = readFileSync(CAPTURE).subarray(0, 900);
+
+    expect(() => [...capturePayloads(truncated)]).not.toThrow();
+    expect(() => spliceCaptureHeroes(truncated, ['73099'])).not.toThrow();
+  });
+
+  it('refuses bytes that are not a capture at all', async () => {
+    const { spliceCaptureHeroes } = (await import(SPLICER)) as {
+      spliceCaptureHeroes: (data: Buffer, ids: readonly string[]) => Buffer;
+    };
+    expect(() => spliceCaptureHeroes(Buffer.from('NOPEpayload'), ['x'])).toThrow(/not a capture file/);
   });
 
   it('splicing an id no frame carries changes nothing, having parsed every frame to find out', async () => {

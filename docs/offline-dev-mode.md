@@ -139,12 +139,20 @@ game sent. Removing heroes is safe because a hero entry is a flat object of scal
 in a frame addresses heroes — `bombs`, `hits`, `explosions` and `loot` are all keyed by grid cell,
 and `kinds`/`hps` are whole-grid arrays.
 
-Two guards in the drift test keep that claim true, and **the obvious one does not work**: splicing
-an empty id list returns the input unchanged by construction, because the walker never parses. So
-the guards instead re-encode every recorded frame through the encoder and compare bytes, and pin a
-frame built at the 125-byte boundary to prove a spliced frame keeps the WebSocket length form it
-arrived in rather than being re-headered into a shorter one. Both were arrived at by mutating the
-encoder until the tests caught it — the first version of each did not.
+The guards in the drift test that keep this claim true were each arrived at by mutating the encoder
+until they caught it, and **every earlier version failed to**:
+
+- Splicing an empty id list returns the input by construction — the walker short-circuits before
+  parsing, so it proves nothing at all.
+- Re-encoding every recorded frame does exercise the encoder, but all 58 are the 16-bit length form
+  and none is near the 125-byte boundary, so a mutant that re-headered short frames survived it.
+- Synthetic frames in all three length forms, plus one at the boundary, are what finally bite.
+
+The separator guard has the same history: copying the run between two kept entries looks right and
+silently keeps any dropped entry that sat between them. It was caught by asserting every subset of a
+three-entry array, not one case.
+
+If you touch `splice-capture.mjs`, mutate it and watch a test fail before believing the suite.
 
 **Deleting is the only edit that stays honest.** Adding a hero, or changing a value to one the game
 never emitted, needs bytes nobody recorded — at which point the capture is a belief about the wire,

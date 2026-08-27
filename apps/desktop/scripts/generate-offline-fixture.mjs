@@ -238,13 +238,12 @@ export function buildCapsFixture() {
   const casa = payload.casa.casa;
 
   /**
-   * Four heroes, one per rotation state, in the order the screen stacks them. There are exactly
-   * four off the field and the replay pins the rest, so this list is the whole budget — every
-   * entry earns its place.
+   * How the seven heroes left off the narrowed field are dealt across the other three states, in
+   * the order the screen stacks them.
    *
    * The two Idle entries are the point of the exercise: `PRONTO` is full and waiting for a field
    * slot, while `DESCANSANDO` with `recovering: false` is part-filled and waiting for a rest slot.
-   * They share one list, and only their energy tells them apart. The benched hero carries no
+   * They share one list, and only their energy tells them apart. One benched hero carries no
    * energy figure at all, which is the one case a bar has to say so rather than draw itself empty.
    */
   const REDEALT = [
@@ -260,7 +259,15 @@ export function buildCapsFixture() {
   let redealt = 0;
   const heroes = payload.casa.heroes.map((hero) => {
     if (hero.in_field) return hero;
-    const change = REDEALT[redealt] ?? REDEALT[REDEALT.length - 1];
+    const change = REDEALT[redealt];
+    if (change === undefined) {
+      throw new Error(
+        `generate-offline-fixture: ${String(payload.casa.heroes.length)} heroes leave ` +
+          `${String(payload.casa.heroes.filter((entry) => !entry.in_field).length)} off the field, ` +
+          `but this deal covers ${String(REDEALT.length)}. Extend it rather than letting the tail ` +
+          'repeat one state, which is how a scenario quietly stops showing what it exists to show.',
+      );
+    }
     redealt += 1;
     const { energia_pct: fraction, ...state } = change;
     const next = { ...hero, ...state };

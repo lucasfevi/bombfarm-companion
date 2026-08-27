@@ -26,6 +26,7 @@ const repoRoot = path.resolve(desktopRoot, '..', '..');
  */
 const FIXTURE_DIR = path.join(repoRoot, 'apps', 'desktop', 'tests', 'fixtures');
 const CAPTURE_DIR = path.join(repoRoot, 'apps', 'desktop', 'src', 'main', 'live-source', 'fixtures');
+const DEFAULT_CAPTURE = path.join(CAPTURE_DIR, 'live-capture.bfcc');
 const DEFAULT_ACCOUNT_FIXTURE = path.join(FIXTURE_DIR, 'account-offline.json');
 
 /**
@@ -201,7 +202,12 @@ const applied = [
   scenario !== null
     ? applyScenarioValue('BFC_FIXTURE_ACCOUNT_FILE', scenario.account)
     : useDefault('BFC_FIXTURE_ACCOUNT_FILE', DEFAULT_ACCOUNT_FIXTURE),
-  ...(scenario?.capture ? [applyScenarioValue('BFC_REPLAY_CAPTURE', scenario.capture)] : []),
+  // Named on both paths, not only when a scenario ships its own frames: every other variable here
+  // announces itself when the environment already holds one, and this was the single override that
+  // could win in silence — with the capture it points at deciding who is on the field.
+  scenario?.capture
+    ? applyScenarioValue('BFC_REPLAY_CAPTURE', scenario.capture)
+    : useDefault('BFC_REPLAY_CAPTURE', DEFAULT_CAPTURE),
   useDefault('BFC_LIVE_SOURCE', 'replay'),
   useDefault('BFC_RENDERER_PORT', '3100'),
   useDefault('BFC_FLAVOR', 'dev'),
