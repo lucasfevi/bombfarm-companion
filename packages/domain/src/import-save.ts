@@ -20,6 +20,7 @@ import {
 import { composeSheetFromBirth, nakedFromBirth, type BirthStats, type TreeSheetTotals } from './birth-sheet';
 import { inferSpentPoints, spentPointsOf, type PointInferenceIssue } from './point-inference';
 import { ACCOUNT_SECTIONS, sectionHasData } from './account-fidelity';
+import { missingRequiredAccountFields, type RequiredAccountField } from './account-required-fields';
 import { missingPostUpdateKeys } from './save-schema';
 import { WIKI_PHASE_LINES } from './phase-wiki';
 import type { AccountPayload } from '@bombfarm/contracts';
@@ -156,6 +157,16 @@ export type ParseResult = {
   account: AccountImportData;
   inventory: InventoryItem[];
   rejected: ParseRejection | null;
+  /**
+   * Lets a caller tell "the save was missing this" from "nothing has been imported yet", which
+   * the `null`s on {@link AccountImportData} cannot. Empty on a reject — a rejected file yields
+   * no account to judge.
+   *
+   * Asserted by {@link parseSaveFile} ALONE, never by {@link parseAccountPayload} — the same
+   * split the `unsupportedSaveShape` gate above makes, and for the same reason: a payload
+   * legitimately omits whole sections per poll (`AD-036`).
+   */
+  accountMissingRequired: readonly RequiredAccountField[];
 };
 
 function isObject(value: unknown): value is Record<string, unknown> {
@@ -420,11 +431,26 @@ export function parseSaveFile(raw: unknown, existing: HeroRecord[]): ParseResult
         account: EMPTY_ACCOUNT_DATA,
         inventory: [],
         rejected: { reason: 'unsupportedSaveShape', heroNames: [] },
+        accountMissingRequired: [],
       };
     }
   }
 
-  return parseAccountPayload(payload, existing);
+  const result = parseAccountPayload(payload, existing);
+  if (result.rejected) return result;
+
+  const accountMissingRequired = missingRequiredAccountFields(result.account);
+  if (accountMissingRequired.length === 0) return result;
+
+  return {
+    ...result,
+    warnings: [
+      ...result.warnings,
+      `This save is missing account field(s) the planner needs (${accountMissingRequired.join(', ')}) ` +
+        '— export a fresh save from the game and import it again.',
+    ],
+    accountMissingRequired,
+  };
 }
 
 /**
@@ -461,6 +487,7 @@ export function parseAccountPayload(payload: AccountPayload, existing: HeroRecor
       account: EMPTY_ACCOUNT_DATA,
       inventory: [],
       rejected: { reason: 'notASaveFile', heroNames: [] },
+      accountMissingRequired: [],
     };
   }
 
@@ -487,6 +514,7 @@ export function parseAccountPayload(payload: AccountPayload, existing: HeroRecor
       account: EMPTY_ACCOUNT_DATA,
       inventory: [],
       rejected: { reason: 'missingBirthStats', heroNames: missingBirthHeroNames },
+      accountMissingRequired: [],
     };
   }
 
@@ -724,5 +752,12 @@ export function parseAccountPayload(payload: AccountPayload, existing: HeroRecor
     });
   }
 
-  return { candidates, warnings, account: mapAccountData(raw), inventory, rejected: null };
+  return {
+    candidates,
+    warnings,
+    account: mapAccountData(raw),
+    inventory,
+    rejected: null,
+    accountMissingRequired: [],
+  };
 }

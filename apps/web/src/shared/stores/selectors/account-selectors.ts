@@ -28,6 +28,7 @@ export const selectTargetProp = (state: PlannerStore) => state.targetProp;
 export const selectMaxPhase = (state: PlannerStore) => state.maxPhase;
 export const selectPlayerName = (state: PlannerStore) => state.playerName;
 export const selectAccountId = (state: PlannerStore) => state.accountId;
+export const selectMissingRequiredFields = (state: PlannerStore) => state.missingRequiredFields;
 export const selectTreeSquadDmgPct = (state: PlannerStore) => state.treeSquadDmgPct;
 export const selectTreeGeoMult = (state: PlannerStore) => state.treeGeoMult;
 export const selectTreeFieldSlotsBonus = (state: PlannerStore) => state.treeFieldSlotsBonus;
@@ -135,6 +136,11 @@ export function selectAccountShared(state: PlannerStore): AccountShared {
     maxPhase: state.maxPhase,
     playerName: state.playerName,
     accountId: state.accountId,
+    // Omitted, not written as `null`, so a pre-rule account round-trips byte-identically
+    // (`storage-roundtrip.test.ts`, the MOD-21 tripwire).
+    ...(state.missingRequiredFields != null
+      ? { missingRequiredFields: state.missingRequiredFields }
+      : {}),
   };
   return accountSharedCache;
 }
@@ -170,6 +176,7 @@ export function selectAccountTuple(state: PlannerStore) {
     state.maxPhase,
     state.playerName,
     state.accountId,
+    state.missingRequiredFields,
   ] as const;
 }
 
