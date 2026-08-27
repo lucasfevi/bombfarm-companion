@@ -2,7 +2,7 @@
   "name": "bombfarm-companion",
   "private": true,
   "description": "Bomb Farm Companion — desktop companion app",
-  "license": "MIT",
+  "license": "Apache-2.0",
   "packageManager": "pnpm@10.12.1",
   "engines": {
     "node": ">=22.0.0",

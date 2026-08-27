@@ -108,4 +108,6 @@ Report vulnerabilities privately — see [SECURITY.md](SECURITY.md).
 
 ## License
 
-[MIT](LICENSE)
+[Apache-2.0](LICENSE). Reuse it freely, including commercially — you must keep the
+copyright and attribution notices, reproduce [NOTICE](NOTICE), and state which files
+you changed.
