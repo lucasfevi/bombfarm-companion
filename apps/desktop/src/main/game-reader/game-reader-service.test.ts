@@ -547,3 +547,195 @@ describe('GameReaderService — status pushes', () => {
     expect(statusPushes(channels)).toBe(afterStart + 1);
   });
 });
+
+/**
+ * A gold-per-hour readout needs a balance that moves. The fixture account is a still photograph,
+ * so before this the balance sat at its captured value for the whole session and any rate built
+ * on it read zero — with the replay tap delivering the capture's own gold the entire time.
+ */
+describe('fixture mode advances the account balance from the streamed gold', () => {
+  /** Read from the first commit rather than hardcoded: which payload `buildFixtureAccountPayload`
+   *  loads depends on whether `BFC_FIXTURE_ACCOUNT_FILE` is set, and what this asserts is the
+   *  GAIN applied on top of that baseline, whatever it happens to be. */
+  /** Comfortably past `pollAttachedMs`, so one advance is one further fixture tick. */
+  const ONE_TICK_MS = 80;
+
+  function fixtureService() {
+    const committed: AccountPayload[] = [];
+    const service = new GameReaderService(
+      '/fake/user-data',
+      { mode: 'fixture' },
+      { isPackaged: false, consent: () => true },
+    );
+    service.setAccountStore({
+      commit: (live) => {
+        committed.push(live);
+        return { payload: live, gameRunning: true, store: { status: 'ok', reason: null, binding: null } };
+      },
+    });
+    return { service, committed };
+  }
+
+  function frameWithGold(gold: number, sequence: number): LiveFrame {
+    return { at: new Date(sequence).toISOString(), sequence, tick: { heroes: [], gold } };
+  }
+
+  function latestGold(committed: readonly AccountPayload[]): number {
+    const account = committed[committed.length - 1]?.account;
+    return Number(account?.gold);
+  }
+
+  it('holds the fixture baseline until a frame has arrived', () => {
+    vi.useFakeTimers();
+    try {
+      const { service, committed } = fixtureService();
+      service.start();
+      vi.advanceTimersByTime(ONE_TICK_MS);
+      service.stop();
+
+      expect(committed.length).toBeGreaterThan(0);
+      const baseline = Number((committed[0]?.account as Record<string, unknown>).gold);
+      expect(Number.isFinite(baseline)).toBe(true);
+      expect(latestGold(committed)).toBe(baseline);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("adds what the stream earned, rather than adopting the capture account's own balance", () => {
+    vi.useFakeTimers();
+    try {
+      const { service, committed } = fixtureService();
+      service.start();
+      const baseline = Number((committed[0]?.account as Record<string, unknown>).gold);
+
+      service.ingestLiveTick(frameWithGold(36_736_079, 1));
+      vi.advanceTimersByTime(ONE_TICK_MS);
+      service.ingestLiveTick(frameWithGold(36_767_047, 2));
+      vi.advanceTimersByTime(ONE_TICK_MS);
+      service.stop();
+
+      // The capture's own balance is ~36.7M; the fixture's is its own. What lands is the fixture's
+      // plus the stream's gain, never the capture's total.
+      expect(latestGold(committed)).toBe(baseline + (36_767_047 - 36_736_079));
+      expect(latestGold(committed)).not.toBe(36_767_047);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('keeps the balance a digit string, the way the wire sends it', () => {
+    vi.useFakeTimers();
+    try {
+      const { service, committed } = fixtureService();
+      service.start();
+      service.ingestLiveTick(frameWithGold(36_736_079, 1));
+      vi.advanceTimersByTime(ONE_TICK_MS);
+      service.ingestLiveTick(frameWithGold(36_740_000, 2));
+      vi.advanceTimersByTime(ONE_TICK_MS);
+      service.stop();
+
+      const account = committed[committed.length - 1]?.account as Record<string, unknown>;
+      expect(typeof account.gold).toBe('string');
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('never lets the balance fall, even if a later frame reports less gold', () => {
+    vi.useFakeTimers();
+    try {
+      const { service, committed } = fixtureService();
+      service.start();
+      service.ingestLiveTick(frameWithGold(36_767_047, 1));
+      vi.advanceTimersByTime(ONE_TICK_MS);
+      const high = latestGold(committed);
+
+      service.ingestLiveTick(frameWithGold(36_736_079, 2));
+      vi.advanceTimersByTime(ONE_TICK_MS);
+      service.stop();
+
+      expect(latestGold(committed)).toBeGreaterThanOrEqual(high);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+});
+
+/**
+ * The balance this mode commits is persisted, so a reading that fell would be written to disk.
+ * These drive the paths a reset could arrive on — a stop/start cycle, and a cleared frame cache —
+ * rather than only the happy sequence.
+ */
+describe('the streamed balance never falls, whatever resets upstream', () => {
+  const ONE_TICK_MS = 80;
+
+  function fixtureService() {
+    const committed: AccountPayload[] = [];
+    const service = new GameReaderService(
+      '/fake/user-data',
+      { mode: 'fixture' },
+      { isPackaged: false, consent: () => true },
+    );
+    service.setAccountStore({
+      commit: (live) => {
+        committed.push(live);
+        return { payload: live, gameRunning: true, store: { status: 'ok', reason: null, binding: null } };
+      },
+    });
+    return { service, committed };
+  }
+
+  function frameWithGold(gold: number, sequence: number): LiveFrame {
+    return { at: new Date(sequence).toISOString(), sequence, tick: { heroes: [], gold } };
+  }
+
+  function latestGold(committed: readonly AccountPayload[]): number {
+    return Number(committed[committed.length - 1]?.account?.gold);
+  }
+
+  it('holds the earned balance across a stop and a restart', () => {
+    vi.useFakeTimers();
+    try {
+      const { service, committed } = fixtureService();
+      service.start();
+      service.ingestLiveTick(frameWithGold(36_736_079, 1));
+      vi.advanceTimersByTime(ONE_TICK_MS);
+      service.ingestLiveTick(frameWithGold(36_767_047, 2));
+      vi.advanceTimersByTime(ONE_TICK_MS);
+      const earned = latestGold(committed);
+      service.stop();
+
+      // A restart re-baselining on the next frame would silently give the whole gain back.
+      service.start();
+      service.ingestLiveTick(frameWithGold(36_767_047, 3));
+      vi.advanceTimersByTime(ONE_TICK_MS);
+      service.stop();
+
+      expect(latestGold(committed)).toBeGreaterThanOrEqual(earned);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('holds it when a frame arrives reporting a balance below the first one seen', () => {
+    vi.useFakeTimers();
+    try {
+      const { service, committed } = fixtureService();
+      service.start();
+      service.ingestLiveTick(frameWithGold(36_767_047, 1));
+      vi.advanceTimersByTime(ONE_TICK_MS);
+      service.ingestLiveTick(frameWithGold(36_800_000, 2));
+      vi.advanceTimersByTime(ONE_TICK_MS);
+      const earned = latestGold(committed);
+
+      service.ingestLiveTick(frameWithGold(1_000, 3));
+      vi.advanceTimersByTime(ONE_TICK_MS);
+      service.stop();
+
+      expect(latestGold(committed)).toBe(earned);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+});

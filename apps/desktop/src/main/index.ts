@@ -38,6 +38,11 @@ import { readSessionToken, sessionCfgPath } from './game-api/session-token-file.
 import { createTriggeredRefresh, type TriggeredRefresh } from './game-api/triggered-refresh.js';
 import { createLiveFastPublisher, type LiveFastPublisher } from './live-source/live-fast-publisher.js';
 import { LiveSource } from './live-source/live-source.js';
+import {
+  createReplayTapFactory,
+  isReplayLiveSourceEnabled,
+  resolveReplayCapturePath,
+} from './live-source/replay-tap.js';
 import { configureLogging, log } from './logging.js';
 import { createAccountStore, type AccountStore } from './storage/account-store.js';
 import { createStorage, openAccountDatabase, type Storage } from './storage/index.js';
@@ -52,6 +57,9 @@ let settingsStore: SettingsStore | null = null;
 let liveSource: LiveSource | null = null;
 let liveFastPublisher: LiveFastPublisher | null = null;
 let triggeredRefresh: TriggeredRefresh | null = null;
+/** Fixture mode only — see `gameReader.onAccountCommitted` for why a re-ingest of an unchanged
+ *  rotation is not free. */
+let lastIngestedRotationBody: string | null = null;
 // MP3 F4 (AD-053) — the resolved language, held in a module-level `let` exactly as
 // `consentStore`'s own value is. Defaults to `DEFAULT_SETTINGS` until `bootstrap()` resolves it
 // (inside `whenReady()`, where `app.getLocale()` is documented valid) so `settings:get` never
@@ -288,11 +296,33 @@ async function bootstrap(): Promise<void> {
   // open in English?" is answerable from a log line rather than a guess (MIN-06/MIN-07).
   settingsStore = createSettingsStore(accountOpen.db);
 
+  // Replay mode swaps the whole attach mechanism for a reader over a committed byte capture, so
+  // an unpackaged dev build never lists processes and never loads the instrumentation runtime —
+  // which is what lets it run beside a packaged build that is tapping the real game.
+  const liveConsent = createLiveConsentGate(consentStore);
+  const replayLive = isReplayLiveSourceEnabled(process.env, resolveAppEnv().isPackaged);
+  if (replayLive) {
+    log.info({
+      scope: 'main',
+      event: 'live.replay_mode',
+      capture: resolveReplayCapturePath(process.env, __dirname),
+    });
+  }
+
   liveSource = new LiveSource({
-    consent: createLiveConsentGate(consentStore),
+    consent: liveConsent,
     userDataDir,
     flavor: resolveAppEnv().flavor,
     log,
+    ...(replayLive
+      ? {
+          createTap: createReplayTapFactory({
+            capturePath: resolveReplayCapturePath(process.env, __dirname),
+            consent: liveConsent,
+            log,
+          }),
+        }
+      : {}),
   });
   // The raw per-frame stream stays internal to main (the game reader still needs every tick);
   // only `currency` crosses IPC immediately here. Field/recovery/on-field membership cross via
@@ -398,6 +428,22 @@ async function bootstrap(): Promise<void> {
   // no commit site), so this callback never fires outside fixture-mode test builds.
   gameReader.onAccountCommitted = () => {
     notifier.notifyIfChanged();
+    // Fixture mode has no `accountRefresh` behind it, and that is the only other caller of
+    // `ingestRotation` — so without this the Live screen folds frames onto an empty roster and
+    // shows nothing at all while ticks are arriving. Safe by the same reasoning as the comment
+    // above: this callback provably never fires outside fixture mode.
+    //
+    // Only on a CHANGED rotation, though. The fixture ticker re-commits the same body several
+    // times a minute, and every `ingestRotation` whose staleness guard does not hold replaces the
+    // frame-measured field with a REST tick built from the rotation's own on-field set. Against a
+    // replayed capture that disagrees about who is fighting, that lands as a visible flicker:
+    // the next frame restores the measured countdowns, the tick after that drops them again.
+    const committed = gameReader?.getAccountView();
+    if (!committed) return;
+    const rotationBody = JSON.stringify(committed.payload.casa ?? null);
+    if (rotationBody === lastIngestedRotationBody) return;
+    lastIngestedRotationBody = rotationBody;
+    liveSource?.ingestRotation(committed);
   };
 
   registerIpcHandlers();
@@ -502,6 +548,7 @@ if (!gotLock) {
     triggeredRefresh = null;
     void liveSource?.teardown();
     liveSource = null;
+    lastIngestedRotationBody = null;
     consentStore = null;
     // MP3 F4 — settingsStore borrows accountOpen.db, which accountStore.close() already owns
     // below; it holds no timer and opens no handle of its own, so it must not gain a close().

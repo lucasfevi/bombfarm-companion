@@ -89,6 +89,12 @@ export class GameReaderService {
    *  than `takenAt`: two distinct frames can share the same millisecond timestamp under batched
    *  delivery, and a timestamp comparison would then drop the second one. */
   private lastProcessedFrameSequence: number | null = null;
+  /** Fixture mode only — the first streamed gold reading, so the fixture account's own balance is
+   *  advanced by what the stream has EARNED rather than replaced by another account's total. */
+  private firstStreamedGold: number | null = null;
+  /** Fixture mode only — the highest balance already committed, so a dropped or re-baselined
+   *  reading cannot persist a lower one. See {@link GameReaderService.withStreamedGold}. */
+  private lastStreamedGoldBalance: number | null = null;
   /** Flipped once by `stop()`, never reset (until a hypothetical future `start()` re-arms it).
    * The explicit half of the shutdown-ordering contract: `clearTimeout` alone only stops a
    * tick that has not yet started firing — this flag additionally makes `tick()` a no-op for
@@ -222,6 +228,40 @@ export class GameReaderService {
     }
   }
 
+  /**
+   * The fixture account is a still photograph: its gold never moves, so anything built on a
+   * balance over time — a rate, a session total — reads zero forever against it. The replay tap is
+   * already delivering the capture's own gold, tick by tick, and `tickFixture` is the only place
+   * in this mode that writes an account, so this is where the two meet.
+   *
+   * The baseline stays the FIXTURE's gold, advanced by what the stream has earned since its first
+   * frame. Using the capture's own balance instead would be a different account's, and would show
+   * as the displayed total lurching to an unrelated number the moment the first frame lands.
+   */
+  private withStreamedGold(payload: AccountPayload): AccountPayload {
+    const streamed = this.latestLiveTick?.tick.gold;
+    const account = payload.account;
+    if (streamed === undefined || account === undefined) return payload;
+
+    const baseline = Number(account.gold);
+    if (!Number.isFinite(baseline)) return payload;
+
+    this.firstStreamedGold ??= streamed;
+    const candidate = baseline + Math.max(0, streamed - this.firstStreamedGold);
+
+    // A high-water mark rather than a reset of the baseline. Every reading this commits is
+    // persisted, so a balance that fell would be written to disk — and re-baselining on a
+    // dropped reading is precisely how that happens: `gained` collapses to zero and the account
+    // loses everything the session had earned. Clamping instead means no upstream reset,
+    // whatever its cause, can make the stored balance go backwards.
+    const balance = Math.max(candidate, this.lastStreamedGoldBalance ?? candidate);
+    this.lastStreamedGoldBalance = balance;
+    if (balance === baseline) return payload;
+
+    // Back to the digit string the wire uses, which is what every reader of this field expects.
+    return { ...payload, account: { ...account, gold: String(balance) } };
+  }
+
   private tickFixture(): void {
     const takenAt = new Date().toISOString();
 
@@ -232,9 +272,10 @@ export class GameReaderService {
     });
 
     if (this.accountStore) {
-      this.lastAccountView = this.accountStore.commit(buildFixtureAccountPayload(takenAt, this.isPackaged), {
-        gameRunning: true,
-      });
+      this.lastAccountView = this.accountStore.commit(
+        this.withStreamedGold(buildFixtureAccountPayload(takenAt, this.isPackaged)),
+        { gameRunning: true },
+      );
       this.onAccountCommitted?.();
     }
   }
