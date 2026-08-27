@@ -118,11 +118,28 @@ describe('desktop inventory labels', () => {
     });
   });
 
-  it('names the hero filter options, falling back to the raw id when the roster has none', () => {
+  /** The dropdown draws the same identity block the card footer does, so the option carries the
+   *  same pieces — a bare name would make the list the one place a hero is unrecognisable. */
+  it('gives the hero filter options the full identity, falling back to the raw id', () => {
     const resolve = inventoryLabels(en, 'en', HEROES).heroOption;
     if (!resolve) throw new Error('labels carry no heroOption resolver');
-    expect(resolve('h1')).toEqual({ id: 'h1', name: 'Kendo' });
-    expect(resolve('nobody')).toEqual({ id: 'nobody', name: 'nobody' });
+
+    expect(resolve('h1')).toEqual({
+      id: 'h1',
+      name: 'Kendo',
+      rank: 'S',
+      rarityIdx: 5,
+      stars: 2,
+      level: 'Level 157',
+    });
+    expect(resolve('nobody')).toEqual({
+      id: 'nobody',
+      name: 'nobody',
+      rank: '',
+      rarityIdx: -1,
+      stars: 0,
+      level: '',
+    });
   });
 
   it('leaves a loose item with no hero line at all', () => {

@@ -34,6 +34,7 @@ import {
   inventoryCountClass,
   inventoryFieldClass,
   inventoryGridClass,
+  inventoryHeroSelectClass,
   inventorySortDirectionClass,
   inventorySortGroupClass,
   inventorySortSelectClass,
@@ -78,9 +79,19 @@ export interface InventoryStatText {
   value: string;
 }
 
+/**
+ * A hero in the filter list. Carries the same pieces the card's footer draws, so the dropdown
+ * reads as the same identity block rather than a bare name.
+ */
 export interface InventoryHeroOption {
   id: string;
   name: string;
+  /** Rank letter (`A`, `S`, …); empty when the hero has none. */
+  rank: string;
+  rarityIdx: number;
+  stars: number;
+  /** Already-localized, e.g. "Lv 85". */
+  level: string;
 }
 
 export interface InventoryToolbarLabels {
@@ -223,6 +234,33 @@ function EquippedByRow({ hero }: { hero: InventoryEquippedBy }) {
   );
 }
 
+/**
+ * One hero in the filter dropdown, drawn the way the card's own footer draws them: rank, name in
+ * the hero's tier colour, stars, level. A bare name would make this list the one place on the
+ * screen where a hero is not recognisable at a glance.
+ */
+function HeroOptionLabel({ hero }: { hero: InventoryHeroOption }) {
+  const stars = Math.max(0, Math.min(MAX_HERO_STARS, Math.round(hero.stars)));
+  return (
+    <span className="flex min-w-0 items-baseline gap-1">
+      {hero.rank ? (
+        <span className="shrink-0 text-[11px] font-black tracking-tight text-accent">{hero.rank}</span>
+      ) : null}
+      <span className={cn('truncate font-semibold', rarityTextClass(hero.rarityIdx) ?? 'text-ink')}>
+        {hero.name}
+      </span>
+      {stars > 0 ? (
+        <span className="shrink-0 text-[10px] tracking-tight text-rar-4" aria-hidden>
+          {'★'.repeat(stars)}
+        </span>
+      ) : null}
+      {hero.level ? (
+        <span className="shrink-0 text-[10px] tabular-nums text-muted">{hero.level}</span>
+      ) : null}
+    </span>
+  );
+}
+
 function InventoryCard({
   entry,
   labels,
@@ -262,9 +300,6 @@ function InventoryCard({
             >
               {labels.itemName(item)}
             </span>
-            {count > 1 ? (
-              <span className={inventoryCountClass}>&times;{count}</span>
-            ) : null}
           </span>
           {detailParts.length > 0 ? (
             <span className="flex min-w-0 items-baseline gap-1 text-xs">
@@ -337,7 +372,15 @@ function InventoryCard({
         data-testid="inventory-card-footer"
         className="mt-auto flex items-center justify-between gap-2 border-t border-line/60 pt-2"
       >
-        {equippedBy ? <EquippedByRow hero={equippedBy} /> : <span />}
+        {/* One slot, two tenants that never coincide: only gear is worn, and only the fungible
+            kinds stack. */}
+        {equippedBy ? (
+          <EquippedByRow hero={equippedBy} />
+        ) : count > 1 ? (
+          <span className={inventoryCountClass}>&times;{count}</span>
+        ) : (
+          <span />
+        )}
         {entry.sellValueGold > 0 ? (
           <span className="flex shrink-0 items-center gap-1 text-xs tabular-nums text-muted">
             <GoldIcon className="size-3.5" />
@@ -474,6 +517,32 @@ function InventoryToolbar({
             </Tooltip.Root>
           </span>
 
+          {/* A select rather than a chip per hero: a mature account fields dozens, and that many
+              chips would push the grid below the fold before a single item was shown. It sits
+              between the sort control and the search box because it narrows by WHO, a coarser cut
+              than the free text to its right. */}
+          {heroes.length > 0 ? (
+            <Select
+              size="compact"
+              value={filter.heroIds[0] ?? ""}
+              onChange={(event) =>
+                onFilterChange({
+                  ...filter,
+                  heroIds: event.target.value ? [event.target.value] : [],
+                })
+              }
+              aria-label={labels.toolbar.heroLabel}
+              className={inventoryHeroSelectClass}
+            >
+              <option value="">{labels.toolbar.allHeroes}</option>
+              {heroes.map((hero) => (
+                <option key={hero.id} value={hero.id}>
+                  <HeroOptionLabel hero={hero} />
+                </option>
+              ))}
+            </Select>
+          ) : null}
+
           <input
             type="search"
             value={filter.text}
@@ -564,28 +633,6 @@ function InventoryToolbar({
             >
               {labels.toolbar.equippedOnly}
             </button>
-          ) : null}
-          {/* A select rather than a chip per hero: a mature account fields dozens, and that many
-            chips would push the grid below the fold before a single item was shown. */}
-          {heroes.length > 0 ? (
-            <Select
-              size="compact"
-              value={filter.heroIds[0] ?? ""}
-              onChange={(event) =>
-                onFilterChange({
-                  ...filter,
-                  heroIds: event.target.value ? [event.target.value] : [],
-                })
-              }
-              aria-label={labels.toolbar.heroLabel}
-            >
-              <option value="">{labels.toolbar.allHeroes}</option>
-              {heroes.map((hero) => (
-                <option key={hero.id} value={hero.id}>
-                  {hero.name}
-                </option>
-              ))}
-            </Select>
           ) : null}
         </div>
       </div>

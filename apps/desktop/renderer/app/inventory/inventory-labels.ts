@@ -166,8 +166,22 @@ function equippedBy(
   };
 }
 
-function heroOption(heroId: string, heroes: ReadonlyMap<string, InventoryHero>): InventoryHeroOption {
-  return { id: heroId, name: heroes.get(heroId)?.name ?? heroId };
+function heroOption(
+  heroId: string,
+  heroes: ReadonlyMap<string, InventoryHero>,
+  t: Copy,
+): InventoryHeroOption {
+  const hero = heroes.get(heroId);
+  if (!hero) return { id: heroId, name: heroId, rank: '', rarityIdx: -1, stars: 0, level: '' };
+
+  return {
+    id: heroId,
+    name: hero.name,
+    rank: hero.rank,
+    rarityIdx: hero.rarityIdx,
+    stars: hero.stars,
+    level: fill(t.inventoryDetailLevel, { level: hero.level }),
+  };
 }
 
 /** Everything a card shows, joined — so a search for "glacier boots epic" narrows on all three. */
@@ -196,7 +210,7 @@ export function inventoryLabels(
     itemStat: (stat) => itemStat(stat, lang),
     badges: (item) => badges(item, t),
     equippedBy: (item) => equippedBy(item, heroes, t),
-    heroOption: (heroId) => heroOption(heroId, heroes),
+    heroOption: (heroId) => heroOption(heroId, heroes, t),
     gold: (amount) => number(amount, 0),
     searchText: (item) => searchText(item, t, lang),
     toolbar: {

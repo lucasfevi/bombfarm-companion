@@ -98,6 +98,11 @@ export const inventorySortSelectClass = 'h-full min-h-0 rounded-none border-0 fo
 export const inventorySortDirectionClass =
   'grid w-8 shrink-0 cursor-pointer place-items-center border-0 border-l border-l-line bg-bg-2 text-muted hover:text-ink focus-visible:outline-none';
 
+/** The hero filter sits between the sort control and the search box, so it needs a width of its
+ *  own — its options carry a rank, a name, stars and a level, and shrink-to-fit would jitter as
+ *  the selection changed. */
+export const inventoryHeroSelectClass = `${TOOLBAR_FIELD_HEIGHT} w-52 shrink-0`;
+
 /** Toolbar chip — the kind and rarity filters, and the equipped toggle. */
 export const inventoryChipRecipe = cva(
   'cursor-pointer rounded-full border px-2.5 py-1 text-xs leading-none motion-safe:transition-[border-color,background-color] motion-safe:duration-[120ms]',

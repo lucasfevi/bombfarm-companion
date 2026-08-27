@@ -69,11 +69,20 @@ export function ItemIcon({ item, size = 'md', className, showUpgrade, showLevel 
           draggable={false}
         />
       ) : null}
+      {/* Absolutely positioned, not `relative size-full`: the frame is a grid whose single row is
+          sized by its content, so a `height: 100%` child is circular and resolves to the image's
+          own intrinsic height instead. Every gear sprite is square and got away with it; the key
+          art is 139x180, which rendered 9px taller than the frame and was clipped by its
+          `overflow-hidden`. Pinning to the frame's box makes `object-contain` letterbox any
+          aspect, which is what it was there to do. */}
       {iconUrl ? (
-        <img src={iconUrl} alt="" className={cn('relative size-full object-contain', imgPad)} draggable={false} />
-      ) : (
-        <span className="size-full" aria-hidden="true" />
-      )}
+        <img
+          src={iconUrl}
+          alt=""
+          className={cn('absolute inset-0 size-full object-contain', imgPad)}
+          draggable={false}
+        />
+      ) : null}
       {withLevel ? (
         <span className={iconMetaGlyphRecipe({ size: glyphSize, place: 'top-end' })} aria-hidden="true">
           {Math.max(0, Math.round(item.level))}

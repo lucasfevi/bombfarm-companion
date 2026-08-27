@@ -204,22 +204,21 @@ test.describe('inventory smoke', () => {
       await view.getByRole('button', { name: 'Clear' }).click();
       await expect(cards(page)).toHaveCount(before);
 
-      // The hero filter: picking one hero leaves only what that hero wears.
-      //
-      // Picks a hero BY NAME rather than by index. Five of this fixture's `equipped_on` ids have
-      // no matching row in its `heroes` array, and those options fall back to the bare id — a
-      // by-index pick can land on one, and then the card correctly reads "Equipped" instead of a
-      // name. (Across all 63 real saves the same check finds 0 unmatched, so this is a property
-      // of the fixture, not of the format.)
-      const named = (await optionLabels(page, 'Filter by hero'))
-        .map((text) => text.trim())
-        .find((text) => /^[A-Za-z]/.test(text) && text !== 'All heroes');
-      expect(named).toBeDefined();
-      await chooseOption(page, 'Filter by hero', named);
+      // The hero filter narrows to one hero. Picked by position rather than by label: an option
+      // is a rank, a name, stars and a level rendered as markup, so its accessible name is the
+      // whole block concatenated and matching on it would be matching on formatting.
+      await page.getByRole('combobox', { name: 'Filter by hero' }).click();
+      await page.getByRole('option').nth(1).click();
+
       const wornByHero = await cards(page).count();
       expect(wornByHero).toBeGreaterThan(0);
       expect(wornByHero).toBeLessThan(before);
-      await expect(cards(page).first()).toContainText(named.trim());
+
+      // Every surviving card names the SAME hero — which is the actual claim, and one the option
+      // label cannot make on its own.
+      const footers = await page.getByTestId('inventory-card-footer').allInnerTexts();
+      const heroNames = new Set(footers.map((text) => text.trim().split(/\r?\n/)[0].trim()));
+      expect(heroNames.size).toBe(1);
     });
   });
 
