@@ -87,6 +87,7 @@ function makeResult(overrides: Partial<ParseResult> = {}): ParseResult {
     account: makeAccount(),
     inventory: [],
     rejected: null,
+    accountMissingRequired: [],
     ...overrides,
   };
 }

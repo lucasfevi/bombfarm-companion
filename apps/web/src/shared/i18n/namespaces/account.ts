@@ -89,7 +89,7 @@ export const pt: typeof en = {
   accountBonusOfTotal: "{bonus} ({total} no total)",
   accountBagTabs: "Abas da bolsa",
 
-  accountMissingFieldsTitle: "O save importado estÃ¡ sem dados da conta",
+  accountMissingFieldsTitle: "O save importado está sem dados da conta",
   accountMissingFieldsBody: "Exporte um save novo do jogo e importe de novo. Até lá o planejador precisa adivinhar esses valores, e o que ele recomenda pode estar errado — inclusive fases que você ainda não consegue entrar.",
 
   house: "Casa",
