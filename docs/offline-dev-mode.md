@@ -156,9 +156,14 @@ Worth knowing before you trust a screen you developed against it.
 - **The capture is about six seconds of one wave.** 58 ticks, 21 hits, 10 loot pops, nine distinct
   gold values, one connection. It exercises the decode and render path. It does not exercise
   anything that varies over minutes — cadence, room clears, rotation cycles.
-- **It loops.** Reaching the end restarts from a fresh decoder, so gold and wave jump backwards at
-  the seam. Anything fitting a trend across the loop point will see a discontinuity that no real
-  session produces.
+- **It loops.** Reaching the end restarts from a fresh decoder, so `wave` jumps backwards at the
+  seam. Gold does not: each completed pass's gain is carried into the next, so the balance only
+  climbs. The deltas inside a pass are the capture's own; it is the continuity BETWEEN passes that
+  is constructed, which is what looping already is.
+- **Its gold rate is a burst, not a session.** The capture's 5.8 s window pays out 30,968 gold —
+  about 19M/hour extrapolated, roughly fifty times the mid-game calibration anchor. Loot pops sum
+  to exactly the gold delta, which makes it a good stream to build a rate readout against; the
+  number that readout shows is not a plausible one.
 - **No bonus window.** `bonus_secs` / `bonus_mult` are documented in
   [wire-vocabulary.md](wire-vocabulary.md) but absent from this capture — it was taken outside one.
 - **One account, one moment.** The account fixture is a single capture pair. Any regime it does not

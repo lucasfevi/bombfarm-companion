@@ -106,6 +106,46 @@ describe('the replay tap drives the real decode path from the committed capture'
     await handle.teardown();
   });
 
+  /**
+   * Gold on the wire is an account total. Replayed from the top it would drop by a pass's whole
+   * takings every few seconds, and a rate read across that seam is negative — which is exactly
+   * what a gold-per-hour readout would do with it.
+   */
+  it('never lets gold go backwards, across several passes of the capture', async () => {
+    const { handle, frames } = drive();
+    handle.start();
+    advanceRecords(CAPTURE_RECORDS * 3);
+
+    const gold = frames()
+      .map((event) => event.frame.tick.gold)
+      .filter((value): value is number => value !== undefined);
+    expect(gold.length).toBeGreaterThan(CAPTURE_TICKS * 2);
+
+    const drops = gold.filter((value, index) => index > 0 && value < (gold[index - 1] as number));
+    expect(drops).toEqual([]);
+    await handle.teardown();
+  });
+
+  it('carries each completed pass forward, so three passes gain three passes worth', async () => {
+    const { handle, frames } = drive();
+    handle.start();
+    advanceRecords(CAPTURE_RECORDS);
+    const afterOne = frames();
+    const firstGold = afterOne[0]?.frame.tick.gold as number;
+    const onePassGain = (afterOne[afterOne.length - 1]?.frame.tick.gold as number) - firstGold;
+    expect(onePassGain).toBeGreaterThan(0);
+
+    advanceRecords(CAPTURE_RECORDS * 2);
+    const all = frames();
+    const totalGain = (all[all.length - 1]?.frame.tick.gold as number) - firstGold;
+
+    // Three passes of the same recording, so about three times one pass's takings — within a
+    // pass, since a pass boundary can land mid-tick.
+    expect(totalGain).toBeGreaterThan(onePassGain * 2);
+    expect(totalGain).toBeLessThanOrEqual(onePassGain * 3);
+    await handle.teardown();
+  });
+
   it('emits nothing while consent is withheld, and says why', async () => {
     const { handle, frames, currencies } = drive({ consent: () => false });
     handle.start();

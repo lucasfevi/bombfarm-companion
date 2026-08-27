@@ -1,6 +1,6 @@
 import { existsSync, readFileSync } from 'node:fs';
 import path from 'node:path';
-import type { LiveCurrency, LiveEvent } from '@bombfarm/contracts';
+import type { LiveCurrency, LiveEvent, LiveTick } from '@bombfarm/contracts';
 import { liveGap } from '@bombfarm/contracts';
 import { readCaptureRecords, type CaptureRecord } from './capture-format.js';
 import type { TapHandle } from './live-source.js';
@@ -96,6 +96,10 @@ class ReplayTap implements TapHandle {
   #timer: NodeJS.Timeout | null = null;
   #stopped = false;
   #currency: LiveCurrency;
+  /** Total gold gained by every pass completed so far — see {@link ReplayTap.#carryGold}. */
+  #goldCarried = 0;
+  #passFirstGold: number | null = null;
+  #passLastGold: number | null = null;
 
   constructor(deps: ReplayTapDeps) {
     this.#deps = deps;
@@ -169,12 +173,9 @@ class ReplayTap implements TapHandle {
     }, this.#intervalMs);
   }
 
-  /**
-   * One record per tick. Reaching the end restarts from a *fresh* {@link TlsConnections}: the
-   * capture is a slice out of the middle of a live connection, so replaying it back-to-back into
-   * the same decoder would hand it a frame boundary that does not line up with where the previous
-   * pass stopped.
-   */
+  /** One record per tick, decoded and emitted before the cursor advances — so the pass's last
+   *  record still goes through the decoder that has been reading the pass, not the fresh one
+   *  {@link ReplayTap.#restartPass} installs for the next. */
   #pump(): void {
     if (this.#stopped) return;
 
@@ -184,11 +185,6 @@ class ReplayTap implements TapHandle {
     }
 
     const record = this.#records[this.#cursor];
-    this.#cursor += 1;
-    if (this.#cursor >= this.#records.length) {
-      this.#cursor = 0;
-      this.#connections = new TlsConnections();
-    }
     if (record === undefined) return;
 
     for (const event of this.#connections.push(record.ctx, record.bytes)) {
@@ -200,9 +196,43 @@ class ReplayTap implements TapHandle {
       if (this.#currency.kind !== 'live') this.#reportLive();
       this.#deps.onEvent({
         type: 'frame',
-        frame: { at: this.#nowIso(), sequence: this.#sequence, tick: event.tick },
+        frame: { at: this.#nowIso(), sequence: this.#sequence, tick: this.#carryGold(event.tick) },
       });
     }
+
+    this.#cursor += 1;
+    if (this.#cursor >= this.#records.length) this.#restartPass();
+  }
+
+  /**
+   * Gold on the wire is an account total, so replaying the capture from the top would hand the
+   * app a balance that drops by a pass's whole takings every few seconds — and a rate read across
+   * that seam is negative. Each completed pass's gain is carried into the next instead, so the
+   * balance only ever climbs.
+   *
+   * Every gold figure the app sees is still the capture's: the deltas inside a pass are untouched,
+   * and the first tick of a pass repeats the last tick's balance rather than inventing a step. It
+   * is the continuity BETWEEN passes that is constructed, which is what looping already is.
+   */
+  #carryGold(tick: LiveTick): LiveTick {
+    const raw = tick.gold;
+    if (raw === undefined) return tick;
+    if (this.#passFirstGold === null) this.#passFirstGold = raw;
+    this.#passLastGold = raw;
+    return this.#goldCarried === 0 ? tick : { ...tick, gold: raw + this.#goldCarried };
+  }
+
+  /** A pass is decoded from a fresh {@link TlsConnections}: the capture is a slice out of the
+   *  middle of a live connection, so replaying it back-to-back into the same decoder would hand it
+   *  a frame boundary that does not line up with where the previous pass stopped. */
+  #restartPass(): void {
+    this.#cursor = 0;
+    this.#connections = new TlsConnections();
+    if (this.#passFirstGold !== null && this.#passLastGold !== null) {
+      this.#goldCarried += this.#passLastGold - this.#passFirstGold;
+    }
+    this.#passFirstGold = null;
+    this.#passLastGold = null;
   }
 
   /** A fresh grant should not wait out an interval, matching the real tap's own `pollNow`. */
