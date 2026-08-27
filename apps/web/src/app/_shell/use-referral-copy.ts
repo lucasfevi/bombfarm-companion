@@ -13,6 +13,9 @@ import { usePlannerStore } from '@/shared/stores';
  * element's text and says so, rather than leaving the click with no visible
  * effect. Callers that render the code inside the button itself can point
  * `codeRef` at the inner node.
+ *
+ * `copy` resolves to whether the code reached the clipboard, so a caller that would
+ * remove the code from the page on success can keep it there for the manual fallback.
  */
 export function useReferralCopy(strings: Strings) {
   const codeRef = useRef<HTMLElement>(null);
@@ -22,18 +25,19 @@ export function useReferralCopy(strings: Strings) {
     try {
       await navigator.clipboard.writeText(REFERRAL_CODE);
       flashToast(strings.referralCopied);
-      return;
+      return true;
     } catch {
       /* fall through to manual selection */
     }
     const code = codeRef.current;
-    if (!code) return;
+    if (!code) return false;
     const range = document.createRange();
     range.selectNodeContents(code);
     const selection = window.getSelection();
     selection?.removeAllRanges();
     selection?.addRange(range);
     flashToast(strings.referralCopyManual);
+    return false;
   }, [flashToast, strings.referralCopied, strings.referralCopyManual]);
 
   return { codeRef, copy };
