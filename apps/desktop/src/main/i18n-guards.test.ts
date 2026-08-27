@@ -261,7 +261,7 @@ interface PinnedException {
  */
 const PINNED_EXCEPTIONS: readonly PinnedException[] = [
   {
-    // T4a moved the nav landmark (and its default accessible name) out of AppShell.tsx into the
+    // The nav landmark, and its default accessible name, moved out of AppShell.tsx into the
     // shared AppNav primitive it now composes — same hardcoded "Main", new owning file.
     text: "ariaLabel = 'Main'",
     owner: join(REPO_ROOT, 'packages', 'ui', 'src', 'app-nav.tsx'),

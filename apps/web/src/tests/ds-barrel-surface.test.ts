@@ -23,7 +23,7 @@ import * as GameArt from '@bombfarm/game-art';
 // own inline `<table>`, added.
 // PanelHeader (2026-08-26): the panelHClass/panelTitleClass header row + <h2>,
 // promoted from five desktop call sites that hand-rolled the heading, added.
-// AppNav / SegmentedToggle (T4a, desktop/web UI sync): the web's segmented nav pill and PT/EN
+// AppNav / SegmentedToggle (2026-08-26): the web's segmented nav pill and PT/EN
 // bordered toggle group, extracted so both apps share one implementation. AppShell's nav rail
 // became a top bar built from AppNav; its own export is unchanged (still a value export).
 // BrandMark (L5, desktop/web UI sync): the header mark's five shapes, inlined as a component

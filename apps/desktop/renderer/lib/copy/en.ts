@@ -170,9 +170,6 @@ export const en = {
     'Security software likely blocked the part of the app that reads the game. It keeps trying on its own.',
   liveGapReasonConsentMissing: 'You have not allowed the app to read your account and connect to the game yet.',
 
-  // liveList* — the four hero lists' headings, plus the lines shared by every list. The on-field
-  // list's own header also carries the occupied/field-size count (`live-panel.tsx`) — no separate
-  // copy key needed, it renders as a bare "X/Y".
   liveListOnFieldTitle: 'Field',
   liveListRecoveringTitle: 'Recovering',
   liveListQueuedTitle: 'Waiting for a rest slot',

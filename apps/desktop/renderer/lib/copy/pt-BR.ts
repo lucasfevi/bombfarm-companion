@@ -169,9 +169,6 @@ export const ptBR: Copy = {
     'Um antivírus provavelmente bloqueou a parte do app que lê o jogo. Ele continua tentando por conta própria.',
   liveGapReasonConsentMissing: 'Você ainda não permitiu que o app leia sua conta e se conecte ao jogo.',
 
-  // liveList* — os títulos das quatro listas de heróis, mais as linhas compartilhadas por todas
-  // elas. O cabeçalho da lista de campo também traz a contagem ocupado/tamanho do campo
-  // (`live-panel.tsx`) — sem chave própria, é renderizada como um simples "X/Y".
   liveListOnFieldTitle: 'Campo',
   liveListRecoveringTitle: 'Recuperando energia',
   liveListQueuedTitle: 'Na fila para descansar',

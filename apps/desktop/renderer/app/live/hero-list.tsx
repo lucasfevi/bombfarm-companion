@@ -13,7 +13,6 @@ export function HeroList<T extends LiveHeroFact>({
 }: {
   testId: string;
   title: string;
-  /** Right-hand side of the panel header row — e.g. the on-field count. */
   headerTrailing?: ReactNode;
   emptyLine: string;
   heroes: readonly T[];

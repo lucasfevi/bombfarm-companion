@@ -47,7 +47,10 @@ export function HeroIdentity({
   /** `data-testid` on the element carrying the hero's own name, for a caller that needs one. */
   nameTestId?: string;
 }) {
-  const hasRarity = rarityIdx !== undefined;
+  // An index off the end reads as unknown, not as a rarity with no name: the roster join accepts
+  // any non-negative number so a new tier lands here before this list knows it, and
+  // `RARITIES.indexOf` answers -1 for a rarity it does not recognise.
+  const hasRarity = rarityIdx !== undefined && rarityIdx >= 0 && rarityIdx < RARITIES.length;
   const clampedStars = Math.max(0, Math.min(3, Math.round(stars)));
   const stacked = variant === 'stacked';
 
