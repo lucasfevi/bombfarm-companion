@@ -46,6 +46,7 @@ export {
   selectMaxPhase,
   selectPlayerName,
   selectAccountId,
+  selectMissingRequiredFields,
   selectTreeSquadDmgPct,
   selectTreeGeoMult,
   selectTreeFieldSlotsBonus,

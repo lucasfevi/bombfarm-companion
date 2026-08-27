@@ -12,6 +12,8 @@ import { Footer } from './footer';
 import type { HeroRecord } from '@/shared/lib/storage';
 import { pickHeroAfterImport } from '@bombfarm/domain/pick-hero-after-import';
 import type { AccountImportData } from '@bombfarm/domain/import-save';
+import type { RequiredAccountField } from '@bombfarm/domain/account-required-fields';
+import { AccountMissingFieldsBanner } from '@/features/account';
 import { sub } from '@/shared/i18n';
 import { workspaceShellClass } from '@bombfarm/ui/panel-field.recipe';
 import { usePlannerStore, selectStrings, commitActiveHero } from '@/shared/stores';
@@ -59,12 +61,13 @@ export function AppShellInner({
       created: number;
       updated: number;
       account?: AccountImportData | null;
+      accountMissingRequired?: readonly RequiredAccountField[];
     }) => {
-      const { heroes: merged, created, updated, account } = result;
+      const { heroes: merged, created, updated, account, accountMissingRequired } = result;
       setHeroes(merged);
       const picked = pickHeroAfterImport(merged, usePlannerStore.getState().activeHeroId);
       if (picked) commitActiveHero(picked);
-      if (account) applyAccountImport(account);
+      if (account) applyAccountImport(account, accountMissingRequired);
       const strings = selectStrings(usePlannerStore.getState());
       flashToast(sub(strings.importResultToast, { created, updated }));
       setImportDialogOpen(false);
@@ -98,6 +101,8 @@ export function AppShellInner({
       />
 
       {showReferralNotice ? <ReferralNotice t={t} onDismiss={dismissReferralNotice} /> : null}
+
+      <AccountMissingFieldsBanner />
 
       <ImportHeroesDialog
         open={importDialogOpen}

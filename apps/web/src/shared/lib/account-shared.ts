@@ -18,6 +18,10 @@
 import { DEFAULT_CASA_SLOTS } from '@bombfarm/domain/casa-slots';
 import { FORJA_MAX } from '@bombfarm/domain/gear';
 import type { RankMode } from '@bombfarm/domain/model';
+import {
+  toRequiredAccountFields,
+  type RequiredAccountField,
+} from '@bombfarm/domain/account-required-fields';
 import { DEFAULT_TARGET_PROP } from '@bombfarm/domain/farm-context';
 
 export type TreeState = {
@@ -148,6 +152,18 @@ export type AccountShared = {
    */
   playerName?: string | null;
   accountId?: string | null;
+  /**
+   * Issue #141 — the `REQUIRED_ACCOUNT_FIELDS` the last import did not carry. Three states, and
+   * they are not interchangeable:
+   *
+   * - absent/`null` — no import has been checked against this rule: a fresh browser, or a record
+   *   stored before the rule existed. Deliberately NOT migrated to `[]`: such a record may well
+   *   hold a `null` the rule would flag, and it must keep working until the user re-imports
+   *   rather than being greeted by a banner about a save they no longer have.
+   * - `[]` — imported and complete.
+   * - non-empty — imported from a save that omitted these; the banner names them.
+   */
+  missingRequiredFields?: readonly RequiredAccountField[] | null;
 };
 
 export const DEFAULT_TREE = (): TreeState => ({
@@ -317,6 +333,7 @@ function normalizeTeamBuffsOverride(raw?: Partial<AccountShared> | null): Record
 }
 
 export function normalizeAccount(raw?: Partial<AccountShared> | null): AccountShared {
+  const missing = toRequiredAccountFields(raw?.missingRequiredFields);
   return {
     tree: normalizeTree(raw?.tree),
     teamBuffs: raw?.teamBuffs ?? {},
@@ -331,5 +348,7 @@ export function normalizeAccount(raw?: Partial<AccountShared> | null): AccountSh
     maxPhase: normalizeMaxPhase(raw?.maxPhase),
     playerName: normalizeIdentityText(raw?.playerName),
     accountId: normalizeIdentityText(raw?.accountId),
+    // Omitted rather than `null` when absent on `raw` — see `selectAccountShared`.
+    ...(missing != null ? { missingRequiredFields: missing } : {}),
   };
 }

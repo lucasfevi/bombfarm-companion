@@ -39,6 +39,9 @@ export const en = {
   accountBonusOfTotal: "{bonus} ({total} total)",
   accountBagTabs: "Bag tabs",
 
+  accountMissingFieldsTitle: "Your imported save is missing account data",
+  accountMissingFieldsBody: "Export a fresh save from the game and import it again. Until you do, the planner has to guess these, and what it recommends can be wrong — including phases you cannot enter yet.",
+
   house: "House",
   houseLevelLabel: "House level",
   reset: "Reset",
@@ -85,6 +88,9 @@ export const pt: typeof en = {
   accountFieldSlotsTip: "O resumo do jogo mostra o que a árvore adiciona; o total, somando a vaga que toda conta já tem, é o que realmente limita seu campo.",
   accountBonusOfTotal: "{bonus} ({total} no total)",
   accountBagTabs: "Abas da bolsa",
+
+  accountMissingFieldsTitle: "O save importado estÃ¡ sem dados da conta",
+  accountMissingFieldsBody: "Exporte um save novo do jogo e importe de novo. Até lá o planejador precisa adivinhar esses valores, e o que ele recomenda pode estar errado — inclusive fases que você ainda não consegue entrar.",
 
   house: "Casa",
   houseLevelLabel: "Nível da casa",

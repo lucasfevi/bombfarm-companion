@@ -3,6 +3,7 @@ import type { RankMode } from '@bombfarm/domain/model';
 import { DEFAULT_CASA_SLOTS } from '@bombfarm/domain/casa-slots';
 import { effectiveFarmPhase } from '@bombfarm/domain/farm-context';
 import type { AccountImportData } from '@bombfarm/domain/import-save';
+import type { RequiredAccountField } from '@bombfarm/domain/account-required-fields';
 import { phaseLine } from '@bombfarm/domain/phases';
 import type { TeamBuffId } from '@bombfarm/domain/team-buffs';
 import {
@@ -92,6 +93,13 @@ export type AccountSlice = {
    *  imported save carried neither (both are optional export keys). */
   playerName: string | null;
   accountId: string | null;
+  /**
+   * Issue #141 — required save fields the last import did not carry, or `null` when no import
+   * has been checked against that rule (a fresh browser, or a record stored before the rule).
+   * `null` and `[]` are NOT the same state: only a non-empty list raises the re-import banner,
+   * and only `[]` is a positive statement that the stored account is complete.
+   */
+  missingRequiredFields: readonly RequiredAccountField[] | null;
 
   setTeamBuffsOverride: (value: Record<TeamBuffId, number> | null) => void;
   setHouseIdx: (value: number) => void;
@@ -102,7 +110,7 @@ export type AccountSlice = {
   setTargetProp: (value: string | null) => void;
 
   hydrateAccount: (shared: AccountShared) => void;
-  applyAccountImport: (data: AccountImportData) => void;
+  applyAccountImport: (data: AccountImportData, missingRequired?: readonly RequiredAccountField[]) => void;
 };
 
 const defaultTree = DEFAULT_TREE();
@@ -141,6 +149,7 @@ export const createAccountSlice: StateCreator<
   maxPhase: null,
   playerName: null,
   accountId: null,
+  missingRequiredFields: null,
 
   setTeamBuffsOverride: (value) => {
     if (teamBuffsOverrideEqual(get().teamBuffsOverride, value)) return;
@@ -208,10 +217,11 @@ export const createAccountSlice: StateCreator<
       maxPhase: shared.maxPhase ?? null,
       playerName: shared.playerName ?? null,
       accountId: shared.accountId ?? null,
+      missingRequiredFields: shared.missingRequiredFields ?? null,
     });
   },
 
-  applyAccountImport: (data) => {
+  applyAccountImport: (data, missingRequired) => {
     const patch: Partial<AccountSlice> = {};
     if (data.tree) {
       patch.treeDanoTotal = data.tree.danoTotal;
@@ -275,6 +285,11 @@ export const createAccountSlice: StateCreator<
     // carries no identity must not leave the previous account's name in the page header.
     patch.playerName = data.playerName ?? null;
     patch.accountId = data.accountId ?? null;
+    // UNCONDITIONAL, and `[]` rather than `null` when the caller passes nothing: reaching this
+    // function at all means an import happened, so the "never checked" state (`null`) is over
+    // either way. A caller that does not supply the parse's verdict is asserting the account is
+    // complete — the pre-#141 assumption, now written down instead of implied.
+    patch.missingRequiredFields = missingRequired ?? [];
     if (Object.keys(patch).length > 0) set(patch);
   },
 });

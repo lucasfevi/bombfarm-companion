@@ -306,8 +306,17 @@ const KEYS_REMOVED: readonly string[] = [
  * and the footer line state the code and the mutual reward, but neither has room to say what a
  * player has to do with it or that the game accepts one code per account, once. New strings
  * only; the existing `referral*` keys behind those two surfaces are untouched.
+ *
+ * The missing-required-save-field banner (issue #141) adds `accountMissingFieldsTitle` and
+ * `accountMissingFieldsBody`. Every account panel is read-only, so a save that omits the skill
+ * tree, the House, the House level, the current phase or the furthest phase leaves the planner
+ * permanently wrong about it with nothing on screen saying so. The banner names the fields and
+ * asks for a fresh export; it borrows the Account page's own labels for the field names rather
+ * than adding five more keys.
  */
 const KEYS_ADDED: readonly string[] = [
+  'accountMissingFieldsTitle',
+  'accountMissingFieldsBody',
   'referralNoticeTitle',
   'referralNoticeBody',
   'referralNoticeReward',
