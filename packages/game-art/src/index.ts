@@ -10,6 +10,8 @@ export type {
   InventoryEquippedBy,
   InventoryGridLabels,
   InventoryGridProps,
+  InventoryHeroOption,
+  InventoryStatText,
   InventoryToolbarLabels,
 } from './inventory-grid';
 export { AbilityIcon } from './ability-icon';
@@ -39,7 +41,15 @@ export {
   inventoryBadgeRecipe,
   inventoryChipRecipe,
   inventoryCountClass,
+  inventoryFieldClass,
   inventoryGridClass,
+  inventorySortDirectionClass,
+  inventorySortGroupClass,
+  inventorySortSelectClass,
+  inventoryStatLabelClass,
+  inventoryStatRowClass,
+  inventoryStatValueClass,
+  inventoryStatsPanelClass,
   type InventoryCardTone,
   type InventoryBadgeTone,
 } from './inventory-grid.recipe';

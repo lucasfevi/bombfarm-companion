@@ -70,6 +70,22 @@ export type InventoryBadgeTone = NonNullable<VariantProps<typeof inventoryBadgeR
 /** Wide enough for a 64px icon beside four stat lines without the text wrapping to two columns. */
 export const inventoryGridClass = 'grid grid-cols-[repeat(auto-fill,minmax(17rem,1fr))] gap-2.5';
 
+/** Toolbar field — the search box and the two selects, so they read as one control strip. */
+export const inventoryFieldClass =
+  'rounded-md border border-line bg-bg-2 px-2.5 py-1.5 text-sm text-ink placeholder:text-muted focus-visible:border-accent focus-visible:outline-none';
+
+/**
+ * The sort control is one segmented button: the key select and the direction toggle share an
+ * outline, so they read as a single "sorted by X, descending" rather than two loose fields.
+ */
+export const inventorySortGroupClass = 'flex shrink-0 items-stretch overflow-hidden rounded-md border border-line';
+
+export const inventorySortSelectClass =
+  'cursor-pointer border-0 bg-bg-2 py-1.5 pr-1.5 pl-2.5 text-sm text-ink focus-visible:outline-none';
+
+export const inventorySortDirectionClass =
+  'cursor-pointer border-0 border-l border-l-line bg-bg-2 px-2 text-sm text-muted hover:text-ink focus-visible:outline-none';
+
 /** Toolbar chip — the kind and rarity filters, and the equipped toggle. */
 export const inventoryChipRecipe = cva(
   'cursor-pointer rounded-full border px-2.5 py-1 text-xs leading-none motion-safe:transition-[border-color,background-color] motion-safe:duration-[120ms]',
@@ -83,6 +99,22 @@ export const inventoryChipRecipe = cva(
     defaultVariants: { active: false },
   },
 );
+
+/**
+ * The stat block, set into the card as its own panel. Sunk rather than raised: it is reference
+ * detail under the name, not a second heading, and an inset reads as "inside this card" without
+ * adding another border colour to a card that already carries a rarity one.
+ */
+export const inventoryStatsPanelClass =
+  'mt-1 flex flex-col gap-0.5 rounded-md bg-[color-mix(in_oklch,var(--bg)_45%,transparent)] px-2 py-1.5';
+
+/** One stat row: label left, value right, with the gap between them doing the aligning. */
+export const inventoryStatRowClass = 'flex items-baseline justify-between gap-3 text-xs leading-tight';
+
+export const inventoryStatLabelClass = 'min-w-0 truncate text-muted';
+
+/** Semibold and ink-coloured — the number is what the eye is scanning for, not the word. */
+export const inventoryStatValueClass = 'shrink-0 font-semibold tabular-nums text-ink';
 
 /** The stack count on a fungible item's card — the game draws this bottom-right of the tile. */
 export const inventoryCountClass =

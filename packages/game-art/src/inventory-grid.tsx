@@ -1,13 +1,19 @@
 import { useMemo, useState } from 'react';
 import {
+  DEFAULT_INVENTORY_SORT,
   EMPTY_INVENTORY_FILTER,
+  INVENTORY_SORT_KEYS,
   filterInventoryView,
+  heroIdsInView,
   isEmptyInventoryFilter,
   kindsInView,
   rarityIndicesInView,
+  sortInventoryView,
   type InventoryEntry,
   type InventoryFilter,
   type InventoryGroup,
+  type InventorySort,
+  type InventorySortKey,
   type InventoryView,
   type InventoryViewItem,
   type InventoryViewStat,
@@ -15,6 +21,7 @@ import {
 } from '@bombfarm/domain/inventory-view';
 import { cn } from '@bombfarm/ui';
 import { GoldIcon } from './gold-icon';
+import { HeroAvatar } from './hero-avatar';
 import { InventoryItemIcon } from './inventory-item-icon';
 import { rarityTextClass } from './game-art.recipe';
 import {
@@ -23,7 +30,15 @@ import {
   inventoryCardTone,
   inventoryChipRecipe,
   inventoryCountClass,
+  inventoryFieldClass,
   inventoryGridClass,
+  inventorySortDirectionClass,
+  inventorySortGroupClass,
+  inventorySortSelectClass,
+  inventoryStatLabelClass,
+  inventoryStatRowClass,
+  inventoryStatValueClass,
+  inventoryStatsPanelClass,
   type InventoryBadgeTone,
 } from './inventory-grid.recipe';
 
@@ -33,12 +48,34 @@ export interface InventoryBadge {
   tone?: InventoryBadgeTone;
 }
 
-/** The hero an item sits on. Resolved by the caller — this package holds no roster. */
+/**
+ * The hero an item sits on, as the pieces the card draws rather than a sentence — the footer
+ * shows the avatar, the rank letter, the name in the hero's rarity colour and the level, which is
+ * the roster's own identity block squeezed onto one line.
+ */
 export interface InventoryEquippedBy {
-  /** Localized hero name and level, e.g. "Kendo · Lv 157". Shown in the hero's rarity colour. */
-  text: string;
-  /** Hero rarity index; `-1` for a hero the caller could not resolve. */
+  name: string;
+  /** Rank letter (`A`, `S`, …); empty when the hero has none. */
+  rank: string;
+  /** `-1` for a hero the caller could not resolve, which reads as no colour. */
   rarityIdx: number;
+  /** Already-localized, e.g. "Lv 127". Empty when the level is not known. */
+  level: string;
+  skin: number;
+  /** The caller has no record of this hero — draw the name as a note, with no avatar. */
+  unknown: boolean;
+}
+
+/** One stat, split so the card can put the label and the number at opposite edges. */
+export interface InventoryStatText {
+  label: string;
+  /** Signed and unit-suffixed, e.g. "+5.51%" or "+90.2". */
+  value: string;
+}
+
+export interface InventoryHeroOption {
+  id: string;
+  name: string;
 }
 
 export interface InventoryToolbarLabels {
@@ -50,6 +87,12 @@ export interface InventoryToolbarLabels {
   clear: string;
   resultCount: (shown: number, total: number) => string;
   noMatches: string;
+  heroLabel: string;
+  allHeroes: string;
+  sortLabel: string;
+  sortKey: (key: InventorySortKey) => string;
+  sortAscending: string;
+  sortDescending: string;
 }
 
 export interface InventoryGridLabels {
@@ -59,11 +102,12 @@ export interface InventoryGridLabels {
   itemName: (item: InventoryViewItem) => string;
   /** Line under the name: rarity for everything, plus level and forge for gear. */
   itemDetail: (item: InventoryViewItem) => string;
-  /** One stat line, already localized and formatted (label, sign, value, unit). */
-  itemStat: (stat: InventoryViewStat) => string;
+  itemStat: (stat: InventoryViewStat) => InventoryStatText;
   badges: (item: InventoryViewItem) => InventoryBadge[];
   /** Footer left. `null` when the item is loose, or when the caller has no roster. */
   equippedBy?: (item: InventoryViewItem) => InventoryEquippedBy | null;
+  /** Names the hero filter's options; a caller with no roster returns the id. */
+  heroOption?: (heroId: string) => InventoryHeroOption;
   /** Footer right, beside the gold coin. */
   gold: (amount: number) => string;
   /** What free-text search matches against for one item. */
@@ -97,6 +141,39 @@ function toggle<T>(list: readonly T[], value: T): T[] {
 
 /** Four is what a Mítico rolls; showing all six of a future tier would push the footer around. */
 const MAX_STAT_LINES = 4;
+
+/**
+ * The equipping hero, compressed onto the footer's single line: avatar, rank, name in the hero's
+ * rarity colour, level. Deliberately not {@link HeroIdentity} — that block is two or three lines
+ * by design, and this has to sit beside the sell value without growing the card.
+ */
+function EquippedByRow({ hero }: { hero: InventoryEquippedBy }) {
+  if (hero.unknown) {
+    return <span className="min-w-0 truncate text-xs text-muted">{hero.name}</span>;
+  }
+
+  return (
+    <span className="flex min-w-0 items-center gap-1.5">
+      <HeroAvatar skin={hero.skin} rarityIdx={hero.rarityIdx} size="xs" name={hero.name} className="shrink-0" />
+      {hero.rank ? (
+        <span className="shrink-0 text-[11px] leading-none font-black tracking-tight text-accent">
+          {hero.rank}
+        </span>
+      ) : null}
+      <span
+        className={cn(
+          'min-w-0 truncate text-xs leading-none font-bold',
+          rarityTextClass(hero.rarityIdx) ?? 'text-ink',
+        )}
+      >
+        {hero.name}
+      </span>
+      {hero.level ? (
+        <span className="shrink-0 text-[10px] leading-none text-muted tabular-nums">{hero.level}</span>
+      ) : null}
+    </span>
+  );
+}
 
 function InventoryCard({
   entry,
@@ -132,15 +209,6 @@ function InventoryCard({
             {count > 1 ? <span className={inventoryCountClass}>&times;{count}</span> : null}
           </span>
           {detail ? <span className="truncate text-xs text-muted">{detail}</span> : null}
-          {stats.length > 0 ? (
-            <span className="mt-0.5 flex flex-col gap-px">
-              {stats.map((stat) => (
-                <span key={stat.code} className="truncate text-xs tabular-nums text-muted">
-                  {labels.itemStat(stat)}
-                </span>
-              ))}
-            </span>
-          ) : null}
           {badges.length > 0 ? (
             <span className="mt-1 flex flex-wrap gap-1">
               {badges.map((badge) => (
@@ -152,17 +220,25 @@ function InventoryCard({
           ) : null}
         </span>
       </span>
+
+      {stats.length > 0 ? (
+        <span className={inventoryStatsPanelClass}>
+          {stats.map((stat) => {
+            const text = labels.itemStat(stat);
+            return (
+              <span key={stat.code} className={inventoryStatRowClass}>
+                <span className={inventoryStatLabelClass}>{text.label}</span>
+                <span className={inventoryStatValueClass}>{text.value}</span>
+              </span>
+            );
+          })}
+        </span>
+      ) : null}
+
       {/* `mt-auto` is what pins this row to the bottom edge whatever sits above it, so a Comum
           carrying one stat and a Mítico carrying four still line their footers up across a row. */}
       <span className="mt-auto flex items-center justify-between gap-2 border-t border-line/60 pt-2">
-        <span
-          className={cn(
-            'min-w-0 truncate text-xs font-medium',
-            equippedBy ? (rarityTextClass(equippedBy.rarityIdx) ?? 'text-ink') : 'text-muted',
-          )}
-        >
-          {equippedBy ? equippedBy.text : ''}
-        </span>
+        {equippedBy ? <EquippedByRow hero={equippedBy} /> : <span />}
         {entry.sellValueGold > 0 ? (
           <span className="flex shrink-0 items-center gap-1 text-xs tabular-nums text-muted">
             <GoldIcon className="size-3.5" />
@@ -192,19 +268,32 @@ function InventoryToolbar({
   view,
   labels,
   filter,
-  onChange,
+  onFilterChange,
+  sort,
+  onSortChange,
   shown,
 }: {
   view: InventoryView;
   labels: InventoryGridLabels;
   filter: InventoryFilter;
-  onChange: (next: InventoryFilter) => void;
+  onFilterChange: (next: InventoryFilter) => void;
+  sort: InventorySort;
+  onSortChange: (next: InventorySort) => void;
   shown: number;
 }) {
   const kinds = useMemo(() => kindsInView(view), [view]);
   const rarities = useMemo(() => rarityIndicesInView(view), [view]);
   const anyEquipped = useMemo(() => view.items.some((item) => item.equipped), [view]);
+  const heroes = useMemo(() => {
+    const resolve = labels.heroOption;
+    if (!resolve) return [];
+    return heroIdsInView(view)
+      .map(resolve)
+      .sort((a, b) => a.name.localeCompare(b.name));
+  }, [view, labels]);
   const dirty = !isEmptyInventoryFilter(filter);
+
+  const ascending = sort.direction === 'asc';
 
   return (
     <div className="flex flex-col gap-2 pb-3">
@@ -212,18 +301,43 @@ function InventoryToolbar({
         <input
           type="search"
           value={filter.text}
-          onChange={(event) => onChange({ ...filter, text: event.target.value })}
+          onChange={(event) => onFilterChange({ ...filter, text: event.target.value })}
           placeholder={labels.toolbar.searchPlaceholder}
           aria-label={labels.toolbar.searchLabel}
-          className="min-w-40 flex-1 rounded-md border border-line bg-bg-2 px-2.5 py-1.5 text-sm text-ink placeholder:text-muted focus-visible:border-accent focus-visible:outline-none"
+          className={cn(inventoryFieldClass, 'min-w-40 flex-1')}
         />
+
+        <span className={inventorySortGroupClass}>
+          <select
+            value={sort.key}
+            onChange={(event) => onSortChange({ ...sort, key: event.target.value as InventorySortKey })}
+            aria-label={labels.toolbar.sortLabel}
+            className={inventorySortSelectClass}
+          >
+            {INVENTORY_SORT_KEYS.map((key) => (
+              <option key={key} value={key}>
+                {labels.toolbar.sortKey(key)}
+              </option>
+            ))}
+          </select>
+          <button
+            type="button"
+            onClick={() => onSortChange({ ...sort, direction: ascending ? 'desc' : 'asc' })}
+            aria-label={ascending ? labels.toolbar.sortAscending : labels.toolbar.sortDescending}
+            title={ascending ? labels.toolbar.sortAscending : labels.toolbar.sortDescending}
+            className={inventorySortDirectionClass}
+          >
+            <span aria-hidden>{ascending ? '↑' : '↓'}</span>
+          </button>
+        </span>
+
         <span className="shrink-0 text-xs tabular-nums text-muted">
           {labels.toolbar.resultCount(shown, view.items.length)}
         </span>
         {dirty ? (
           <button
             type="button"
-            onClick={() => onChange(EMPTY_INVENTORY_FILTER)}
+            onClick={() => onFilterChange(EMPTY_INVENTORY_FILTER)}
             className={inventoryChipRecipe({ active: false })}
           >
             {labels.toolbar.clear}
@@ -235,7 +349,7 @@ function InventoryToolbar({
         <button
           type="button"
           aria-pressed={filter.kinds.length === 0}
-          onClick={() => onChange({ ...filter, kinds: [] })}
+          onClick={() => onFilterChange({ ...filter, kinds: [] })}
           className={inventoryChipRecipe({ active: filter.kinds.length === 0 })}
         >
           {labels.toolbar.allKinds}
@@ -245,7 +359,7 @@ function InventoryToolbar({
             key={kind}
             type="button"
             aria-pressed={filter.kinds.includes(kind)}
-            onClick={() => onChange({ ...filter, kinds: toggle(filter.kinds, kind) })}
+            onClick={() => onFilterChange({ ...filter, kinds: toggle(filter.kinds, kind) })}
             className={inventoryChipRecipe({ active: filter.kinds.includes(kind) })}
           >
             {labels.groupTitle(kind)}
@@ -259,7 +373,7 @@ function InventoryToolbar({
             key={rarityIdx}
             type="button"
             aria-pressed={filter.rarities.includes(rarityIdx)}
-            onClick={() => onChange({ ...filter, rarities: toggle(filter.rarities, rarityIdx) })}
+            onClick={() => onFilterChange({ ...filter, rarities: toggle(filter.rarities, rarityIdx) })}
             className={cn(
               inventoryChipRecipe({ active: filter.rarities.includes(rarityIdx) }),
               !filter.rarities.includes(rarityIdx) && rarityTextClass(rarityIdx),
@@ -272,11 +386,30 @@ function InventoryToolbar({
           <button
             type="button"
             aria-pressed={filter.equippedOnly}
-            onClick={() => onChange({ ...filter, equippedOnly: !filter.equippedOnly })}
+            onClick={() => onFilterChange({ ...filter, equippedOnly: !filter.equippedOnly })}
             className={inventoryChipRecipe({ active: filter.equippedOnly })}
           >
             {labels.toolbar.equippedOnly}
           </button>
+        ) : null}
+        {/* A select rather than a chip per hero: a mature account fields dozens, and that many
+            chips would push the grid below the fold before a single item was shown. */}
+        {heroes.length > 0 ? (
+          <select
+            value={filter.heroIds[0] ?? ''}
+            onChange={(event) =>
+              onFilterChange({ ...filter, heroIds: event.target.value ? [event.target.value] : [] })
+            }
+            aria-label={labels.toolbar.heroLabel}
+            className={cn(inventoryFieldClass, 'cursor-pointer py-1 text-xs')}
+          >
+            <option value="">{labels.toolbar.allHeroes}</option>
+            {heroes.map((hero) => (
+              <option key={hero.id} value={hero.id}>
+                {hero.name}
+              </option>
+            ))}
+          </select>
         ) : null}
       </div>
     </div>
@@ -290,10 +423,15 @@ function InventoryToolbar({
  */
 export function InventoryGrid({ view, labels, onSelectItem, className }: InventoryGridProps) {
   const [filter, setFilter] = useState<InventoryFilter>(EMPTY_INVENTORY_FILTER);
+  const [sort, setSort] = useState<InventorySort>(DEFAULT_INVENTORY_SORT);
 
   const filtered = useMemo(
     () => filterInventoryView(view, filter, labels.searchText),
     [view, filter, labels],
+  );
+  const sorted = useMemo(
+    () => sortInventoryView(filtered, sort, labels.itemName),
+    [filtered, sort, labels],
   );
 
   if (view.items.length === 0) {
@@ -313,15 +451,17 @@ export function InventoryGrid({ view, labels, onSelectItem, className }: Invento
         view={view}
         labels={labels}
         filter={filter}
-        onChange={setFilter}
-        shown={filtered.items.length}
+        onFilterChange={setFilter}
+        sort={sort}
+        onSortChange={setSort}
+        shown={sorted.items.length}
       />
 
-      {filtered.items.length === 0 ? (
+      {sorted.items.length === 0 ? (
         <p className="px-6 py-10 text-center text-sm text-muted">{labels.toolbar.noMatches}</p>
       ) : (
         <div className="flex flex-col gap-5">
-          {filtered.groups.map((group) => {
+          {sorted.groups.map((group) => {
             const codes = group.kind === 'other' ? unknownCategoryCodes(group) : [];
             const note = codes.length > 0 ? labels.unknownCategoryNote?.(codes) : undefined;
 

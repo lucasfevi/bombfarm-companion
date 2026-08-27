@@ -46,6 +46,17 @@ export const en = {
   inventoryFilterCount: "{shown} of {total}",
   inventoryFilterNoMatches: "No items match those filters.",
 
+  inventoryFilterHeroLabel: "Filter by hero",
+  inventoryFilterAllHeroes: "All heroes",
+  inventorySortLabel: "Sort by",
+  inventorySortRarity: "Rarity",
+  inventorySortLevel: "Level",
+  inventorySortValue: "Value",
+  inventorySortName: "Name",
+  inventorySortCount: "Quantity",
+  inventorySortAscending: "Ascending",
+  inventorySortDescending: "Descending",
+
   inventoryUnknownCategory: "unrecognized category {codes}",
   inventorySkipped: "{count} row(s) could not be read and are not shown.",
 
@@ -102,6 +113,17 @@ export const pt: typeof en = {
   inventoryFilterClear: "Limpar",
   inventoryFilterCount: "{shown} de {total}",
   inventoryFilterNoMatches: "Nenhum item corresponde a esses filtros.",
+
+  inventoryFilterHeroLabel: "Filtrar por herói",
+  inventoryFilterAllHeroes: "Todos os heróis",
+  inventorySortLabel: "Ordenar por",
+  inventorySortRarity: "Raridade",
+  inventorySortLevel: "Nível",
+  inventorySortValue: "Valor",
+  inventorySortName: "Nome",
+  inventorySortCount: "Quantidade",
+  inventorySortAscending: "Crescente",
+  inventorySortDescending: "Decrescente",
 
   inventoryUnknownCategory: "categoria não reconhecida {codes}",
   inventorySkipped: "{count} linha(s) não puderam ser lidas e não aparecem aqui.",

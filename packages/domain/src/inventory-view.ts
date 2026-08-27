@@ -276,6 +276,10 @@ export type InventoryHero = {
   name: string;
   rarityIdx: number;
   level: number;
+  /** Rank letter (`A`, `S`, …); empty when the hero has not been ranked. */
+  rank: string;
+  /** Cosmetic skin index, for the avatar. */
+  skin: number;
 };
 
 /**
@@ -296,6 +300,8 @@ export function mapInventoryHeroes(rawHeroes: readonly unknown[] | undefined): M
       name: asString(raw.name, id),
       rarityIdx: Math.round(asNumber(raw.rarity ?? raw.rarityIdx, 0)),
       level: asNumber(raw.level, 1),
+      rank: asString(raw.rank),
+      skin: Math.round(asNumber(raw.skin, 0)),
     });
   }
   return byId;
@@ -365,6 +371,8 @@ export type InventoryFilter = {
   /** Empty means every kind — an explicit "all" beats making the caller list all seven. */
   kinds: readonly ItemKind[];
   rarities: readonly number[];
+  /** Save hero ids, matched against `equippedBy`. Empty means every hero. */
+  heroIds: readonly string[];
   equippedOnly: boolean;
 };
 
@@ -372,6 +380,7 @@ export const EMPTY_INVENTORY_FILTER: InventoryFilter = {
   text: '',
   kinds: [],
   rarities: [],
+  heroIds: [],
   equippedOnly: false,
 };
 
@@ -380,6 +389,7 @@ export function isEmptyInventoryFilter(filter: InventoryFilter): boolean {
     filter.text.trim() === '' &&
     filter.kinds.length === 0 &&
     filter.rarities.length === 0 &&
+    filter.heroIds.length === 0 &&
     !filter.equippedOnly
   );
 }
@@ -409,10 +419,12 @@ export function filterInventoryView(
   const needles = fold(filter.text).split(/\s+/).filter(Boolean);
   const kinds = filter.kinds.length > 0 ? new Set(filter.kinds) : null;
   const rarities = filter.rarities.length > 0 ? new Set(filter.rarities) : null;
+  const heroIds = filter.heroIds.length > 0 ? new Set(filter.heroIds) : null;
 
   const items = view.items.filter((item) => {
     if (kinds && !kinds.has(item.kind)) return false;
     if (rarities && !rarities.has(item.rarityIdx)) return false;
+    if (heroIds && (item.equippedBy === null || !heroIds.has(item.equippedBy))) return false;
     if (filter.equippedOnly && !item.equipped) return false;
     if (needles.length === 0) return true;
     const haystack = fold(searchText(item));
@@ -432,4 +444,72 @@ export function rarityIndicesInView(view: InventoryView): number[] {
 export function kindsInView(view: InventoryView): ItemKind[] {
   const present = new Set(view.items.map((item) => item.kind));
   return ITEM_KINDS.filter((kind) => present.has(kind));
+}
+
+/** Hero ids that wear at least one item in a view — the hero filter's own options, so a hero
+ *  carrying nothing is never offered. First-seen order; the caller sorts by whatever it can name. */
+export function heroIdsInView(view: InventoryView): string[] {
+  const ids: string[] = [];
+  const seen = new Set<string>();
+  for (const item of view.items) {
+    if (item.equippedBy === null || seen.has(item.equippedBy)) continue;
+    seen.add(item.equippedBy);
+    ids.push(item.equippedBy);
+  }
+  return ids;
+}
+
+export type InventorySortKey = 'rarity' | 'level' | 'value' | 'name' | 'count';
+export type InventorySortDirection = 'asc' | 'desc';
+export type InventorySort = { key: InventorySortKey; direction: InventorySortDirection };
+
+export const INVENTORY_SORT_KEYS: readonly InventorySortKey[] = ['rarity', 'level', 'value', 'name', 'count'];
+
+/** Best-first, which is what a player scanning for an upgrade wants before anything else. */
+export const DEFAULT_INVENTORY_SORT: InventorySort = { key: 'rarity', direction: 'desc' };
+
+/**
+ * Sorts within each group rather than across the whole view: the groups are the page's structure,
+ * and a sort that reordered them would put a key between two swords.
+ *
+ * `nameOf` is the caller's, since item names are localized and this package holds no i18n. It is
+ * also the tie-break for every other key, so a rarity sort still lists a set together rather than
+ * in whatever order the save happened to send.
+ */
+export function sortInventoryView(
+  view: InventoryView,
+  sort: InventorySort,
+  nameOf: (item: InventoryViewItem) => string,
+): InventoryView {
+  const sign = sort.direction === 'asc' ? 1 : -1;
+
+  const rank = (entry: InventoryEntry): number => {
+    switch (sort.key) {
+      case 'rarity':
+        return entry.item.rarityIdx;
+      case 'level':
+        return entry.item.level;
+      case 'value':
+        return entry.sellValueGold;
+      case 'count':
+        return entry.count;
+      case 'name':
+        return 0;
+    }
+  };
+
+  const groups = view.groups.map((group) => ({
+    ...group,
+    entries: [...group.entries].sort((a, b) => {
+      const delta = rank(a) - rank(b);
+      if (delta !== 0) return sign * delta;
+      const byName = nameOf(a.item).localeCompare(nameOf(b.item));
+      if (byName !== 0) return sort.key === 'name' ? sign * byName : byName;
+      // Last resort: the stack key. Without it two identically-named entries can swap places
+      // between renders, and a grid that reshuffles under a hover reads as a bug.
+      return a.key.localeCompare(b.key);
+    }),
+  }));
+
+  return { ...view, groups };
 }

@@ -133,7 +133,8 @@ test.describe('language smoke (MP3 F4) — detected, switched in place, and reme
         await expect(page1.locator('html')).toHaveAttribute('lang', 'pt-BR');
         await expect(navButton(page1, 0)).toHaveText(pt('liveNavLabel'));
         await expect(navButton(page1, 1)).toHaveText(pt('shellPlanningNavLabel'));
-        await expect(navButton(page1, 2)).toHaveText(pt('settingsNavLabel'));
+        await expect(navButton(page1, 2)).toHaveText(pt('inventoryNavLabel'));
+        await expect(navButton(page1, 3)).toHaveText(pt('settingsNavLabel'));
 
         // --- Navigate to Planning; MIN-17's "before" measurement + MIN-10's sentinel ------
         await navButton(page1, 1).click();
@@ -155,7 +156,7 @@ test.describe('language smoke (MP3 F4) — detected, switched in place, and reme
         expect(rosterBoxBefore).not.toBeNull();
 
         // --- MIN-08/MIN-16: navigate to Settings, drive the shipped Select to English -----
-        await navButton(page1, 2).click();
+        await navButton(page1, 3).click();
         const select = page1.getByRole('combobox', { name: pt('settingsLanguageLabel') });
         await expect(select).toBeVisible({ timeout: 10_000 });
         await select.click();
@@ -164,7 +165,8 @@ test.describe('language smoke (MP3 F4) — detected, switched in place, and reme
         // The SAME persistent nav node changed in place — Planejamento -> Planning.
         await expect(navButton(page1, 0)).toHaveText(en('liveNavLabel'), { timeout: 10_000 });
         await expect(navButton(page1, 1)).toHaveText(en('shellPlanningNavLabel'));
-        await expect(navButton(page1, 2)).toHaveText(en('settingsNavLabel'));
+        await expect(navButton(page1, 2)).toHaveText(en('inventoryNavLabel'));
+        await expect(navButton(page1, 3)).toHaveText(en('settingsNavLabel'));
 
         // No reload occurred — the sentinel stamped before the switch survived it.
         const sentinelAfter = await page1.evaluate(() => window.__bfcI18nSentinel);

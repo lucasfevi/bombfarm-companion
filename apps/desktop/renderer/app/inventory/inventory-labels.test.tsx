@@ -31,7 +31,9 @@ const ROWS = [
   { id: 's1', def_id: 'skill_stone_mitico', category: 5, rarity: 5, level: 0, sell_value: '300' },
 ];
 
-const HEROES = mapInventoryHeroes([{ id: 'h1', name: 'Kendo', rarity: 5, level: 157 }]);
+const HEROES = mapInventoryHeroes([
+  { id: 'h1', name: 'Kendo', rarity: 5, level: 157, rank: 'S', skin: 3 },
+]);
 
 function item(id: string): InventoryViewItem {
   const found = buildInventoryView(ROWS).items.find((entry) => entry.id === id);
@@ -71,22 +73,40 @@ describe('desktop inventory labels', () => {
     }
   });
 
-  it('suffixes a percent roll and leaves a flat damage roll bare', () => {
+  it('splits a stat into label and value, and suffixes only the percent one', () => {
     const labels = inventoryLabels(en, 'en');
     const stats = item('g1').stats;
-    expect(labels.itemStat(stats[0])).toBe('Damage +90.2');
-    expect(labels.itemStat(stats[1])).toBe('Penetration +65.60%');
+    expect(labels.itemStat(stats[0])).toEqual({ label: 'Damage', value: '+90.2' });
+    expect(labels.itemStat(stats[1])).toEqual({ label: 'Penetration', value: '+65.60%' });
   });
 
-  it('names the equipping hero with their level, and colours it by the hero rarity', () => {
+  it('hands the card the hero identity in pieces — rank, name, rarity, level, avatar skin', () => {
     expect(equippedByOf(inventoryLabels(en, 'en', HEROES), 'g1')).toEqual({
-      text: 'Kendo · Level 157',
+      name: 'Kendo',
+      rank: 'S',
       rarityIdx: 5,
+      level: 'Level 157',
+      skin: 3,
+      unknown: false,
     });
   });
 
   it('still reports a worn item as equipped when the hero is not in the roster it was given', () => {
-    expect(equippedByOf(inventoryLabels(en, 'en'), 'g1')).toEqual({ text: 'Equipped', rarityIdx: -1 });
+    expect(equippedByOf(inventoryLabels(en, 'en'), 'g1')).toEqual({
+      name: 'Equipped',
+      rank: '',
+      rarityIdx: -1,
+      level: '',
+      skin: 0,
+      unknown: true,
+    });
+  });
+
+  it('names the hero filter options, falling back to the raw id when the roster has none', () => {
+    const resolve = inventoryLabels(en, 'en', HEROES).heroOption;
+    if (!resolve) throw new Error('labels carry no heroOption resolver');
+    expect(resolve('h1')).toEqual({ id: 'h1', name: 'Kendo' });
+    expect(resolve('nobody')).toEqual({ id: 'nobody', name: 'nobody' });
   });
 
   it('leaves a loose item with no hero line at all', () => {

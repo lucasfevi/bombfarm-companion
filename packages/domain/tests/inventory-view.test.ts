@@ -12,8 +12,12 @@ import {
   filterInventoryView,
   isStackableKind,
   kindsInView,
+  heroIdsInView,
   rarityIndicesInView,
+  sortInventoryView,
   EMPTY_INVENTORY_FILTER,
+  DEFAULT_INVENTORY_SORT,
+  type InventorySort,
   ITEM_KINDS,
   type InventoryViewItem,
   type ItemKind,
@@ -245,10 +249,17 @@ describe('mapInventoryViewItem across the storage round trip', () => {
 describe('mapInventoryHeroes', () => {
   it('keys hero identity by the id an item equippedBy holds', () => {
     const heroes = mapInventoryHeroes([
-      { id: 'h1', name: 'Kendo', rarity: 5, level: 157 },
+      { id: 'h1', name: 'Kendo', rarity: 5, level: 157, rank: 'S', skin: 3 },
       { id: 'h2', name: 'Dano', rarity: 3, level: 60 },
     ]);
-    expect(heroes.get('h1')).toEqual({ id: 'h1', name: 'Kendo', rarityIdx: 5, level: 157 });
+    expect(heroes.get('h1')).toEqual({
+      id: 'h1',
+      name: 'Kendo',
+      rarityIdx: 5,
+      level: 157,
+      rank: 'S',
+      skin: 3,
+    });
 
     const item = mapInventoryViewItem({ id: 'i1', def_id: 'glacier_arma', equipped_on: 'h2' })!;
     expect(heroes.get(item.equippedBy!)?.name).toBe('Dano');
@@ -257,7 +268,7 @@ describe('mapInventoryHeroes', () => {
   it('falls back to the hero id as a name and skips rows with no id at all', () => {
     const heroes = mapInventoryHeroes([{ id: 'h3' }, { name: 'no id' }, null]);
     expect(heroes.size).toBe(1);
-    expect(heroes.get('h3')).toEqual({ id: 'h3', name: 'h3', rarityIdx: 0, level: 1 });
+    expect(heroes.get('h3')).toEqual({ id: 'h3', name: 'h3', rarityIdx: 0, level: 1, rank: '', skin: 0 });
   });
 
   it('returns an empty map when the payload carries no heroes array', () => {
@@ -466,5 +477,97 @@ describe('filterInventoryView', () => {
   it('offers only the kinds and rarities the account actually holds', () => {
     expect(kindsInView(view())).toEqual(['equipment', 'key']);
     expect(rarityIndicesInView(view())).toEqual([0, 3, 4]);
+  });
+});
+
+describe('hero filter', () => {
+  const view = () =>
+    buildInventoryView([
+      { id: '1', def_id: 'glacier_arma', category: 0, rarity: 4, level: 60, equipped_on: 'h1' },
+      { id: '2', def_id: 'ember_luva', category: 0, rarity: 0, level: 10, equipped_on: 'h2' },
+      { id: '3', def_id: 'clay_bota', category: 0, rarity: 2, level: 40 },
+      { id: '4', def_id: 'map_key_epico', category: 4, rarity: 3, equipped_on: 'h1' },
+    ]);
+
+  const nameOf = (item: InventoryViewItem) => item.defId;
+
+  it('offers every hero that wears something, and no one else', () => {
+    expect(heroIdsInView(view())).toEqual(['h1', 'h2']);
+  });
+
+  it('narrows to one hero across every kind they wear', () => {
+    const filtered = filterInventoryView(view(), { ...EMPTY_INVENTORY_FILTER, heroIds: ['h1'] }, nameOf);
+    expect(filtered.items.map((item) => item.id)).toEqual(['1', '4']);
+    expect(filtered.groups.map((group) => group.kind)).toEqual(['equipment', 'key']);
+  });
+
+  it('drops loose items, since nobody is wearing them', () => {
+    const filtered = filterInventoryView(view(), { ...EMPTY_INVENTORY_FILTER, heroIds: ['h1', 'h2'] }, nameOf);
+    expect(filtered.items.map((item) => item.id)).not.toContain('3');
+  });
+
+  it('combines with the other filters rather than replacing them', () => {
+    const filtered = filterInventoryView(
+      view(),
+      { ...EMPTY_INVENTORY_FILTER, heroIds: ['h1'], kinds: ['equipment'] },
+      nameOf,
+    );
+    expect(filtered.items.map((item) => item.id)).toEqual(['1']);
+  });
+});
+
+describe('sortInventoryView', () => {
+  const view = () =>
+    buildInventoryView([
+      { id: '1', def_id: 'glacier_arma', category: 0, rarity: 4, level: 60, sell_value: '900' },
+      { id: '2', def_id: 'ember_luva', category: 0, rarity: 0, level: 10, sell_value: '100' },
+      { id: '3', def_id: 'clay_bota', category: 0, rarity: 2, level: 40, sell_value: '500' },
+      { id: '4', def_id: 'map_key_epico', category: 4, rarity: 3, sell_value: '220' },
+    ]);
+
+  const nameOf = (item: InventoryViewItem) => item.defId;
+  const gearOrder = (sort: InventorySort) =>
+    sortInventoryView(view(), sort, nameOf)
+      .groups.find((group) => group.kind === 'equipment')
+      ?.entries.map((entry) => entry.item.id);
+
+  it('defaults to best-first, which is what a player scanning for an upgrade wants', () => {
+    expect(DEFAULT_INVENTORY_SORT).toEqual({ key: 'rarity', direction: 'desc' });
+    expect(gearOrder(DEFAULT_INVENTORY_SORT)).toEqual(['1', '3', '2']);
+  });
+
+  it.each([
+    ['rarity', 'asc', ['2', '3', '1']],
+    ['rarity', 'desc', ['1', '3', '2']],
+    ['level', 'asc', ['2', '3', '1']],
+    ['value', 'desc', ['1', '3', '2']],
+    ['name', 'asc', ['3', '2', '1']],
+  ] as const)('sorts by %s %s', (key, direction, expected) => {
+    expect(gearOrder({ key, direction })).toEqual([...expected]);
+  });
+
+  /** The groups are the page's structure; a sort that reordered them would file a key between
+   *  two swords. */
+  it('reorders within a group and never across groups', () => {
+    const sorted = sortInventoryView(view(), { key: 'value', direction: 'desc' }, nameOf);
+    expect(sorted.groups.map((group) => group.kind)).toEqual(['equipment', 'key']);
+  });
+
+  it('breaks a tie by name, so a rarity sort still lists a set together', () => {
+    const tied = buildInventoryView([
+      { id: 'b', def_id: 'glacier_bota', category: 0, rarity: 2, level: 60 },
+      { id: 'a', def_id: 'glacier_arma', category: 0, rarity: 2, level: 60 },
+    ]);
+    const order = sortInventoryView(tied, { key: 'rarity', direction: 'desc' }, nameOf).groups[0].entries.map(
+      (entry) => entry.item.id,
+    );
+    expect(order).toEqual(['a', 'b']);
+  });
+
+  it('leaves the item list itself untouched — only the grouped entries move', () => {
+    const original = view();
+    const sorted = sortInventoryView(original, { key: 'value', direction: 'asc' }, nameOf);
+    expect(sorted.items).toBe(original.items);
+    expect(sorted.skipped).toBe(original.skipped);
   });
 });

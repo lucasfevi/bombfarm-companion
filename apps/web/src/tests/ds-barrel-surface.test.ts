@@ -136,6 +136,10 @@ describe('design-system barrel surface (frozen)', () => {
 // rather than a widening of it: it lays the game's own rarity slot plate under the sprite, and
 // it takes an `InventoryViewItem` — which a gem or a key satisfies and an `EquippedItem` cannot,
 // since those carry no gear slot.
+//
+// The toolbar and stat-panel classes (2026-08-27) are exported for the same reason every other
+// recipe here is: both shells render the grid, and a shell that wants to match its chrome needs
+// the tokens rather than a copy of the class strings.
 const FROZEN_GAME_ART_BARREL_VALUE_EXPORTS = [
   'AbilityIcon',
   'ArtFrame',
@@ -162,7 +166,15 @@ const FROZEN_GAME_ART_BARREL_VALUE_EXPORTS = [
   'inventoryCardRecipe',
   'inventoryChipRecipe',
   'inventoryCountClass',
+  'inventoryFieldClass',
   'inventoryGridClass',
+  'inventorySortDirectionClass',
+  'inventorySortGroupClass',
+  'inventorySortSelectClass',
+  'inventoryStatLabelClass',
+  'inventoryStatRowClass',
+  'inventoryStatValueClass',
+  'inventoryStatsPanelClass',
   'rarityDotClass',
   'rarityTextClass',
   'rosterIconTooltipTriggerClass',

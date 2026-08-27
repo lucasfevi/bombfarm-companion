@@ -2,8 +2,15 @@ import type {
   InventoryBadge,
   InventoryEquippedBy,
   InventoryGridLabels,
+  InventoryHeroOption,
+  InventoryStatText,
 } from '@bombfarm/game-art';
-import type { InventoryViewItem, InventoryViewStat, ItemKind } from '@bombfarm/domain/inventory-view';
+import type {
+  InventorySortKey,
+  InventoryViewItem,
+  InventoryViewStat,
+  ItemKind,
+} from '@bombfarm/domain/inventory-view';
 import { itemRarityLabel, itemStatLabel, setName, slotLabel } from '@bombfarm/domain/game-labels';
 import { RARITIES } from '@bombfarm/domain/planner-constants';
 import type { Strings } from '@/shared/i18n';
@@ -94,12 +101,28 @@ function itemDetail(item: InventoryViewItem, strings: Strings, lang: Lang): stri
 /** Kinds whose only distinguishing feature is their tier, so the tier IS the name. */
 const NAMED_BY_RARITY = new Set<ItemKind>(['key', 'time', 'stone']);
 
-/** `dmg` is an absolute number; every other roll is a fraction the game shows as a percent. */
-function itemStat(stat: InventoryViewStat, lang: Lang): string {
+/**
+ * Split rather than joined: the card sets the label and the number at opposite edges of the stat
+ * panel, so a column of values lines up whatever the labels are called.
+ *
+ * `dmg` is an absolute number; every other roll is a fraction the game shows as a percent.
+ */
+function itemStat(stat: InventoryViewStat, lang: Lang): InventoryStatText {
   const label = stat.name ? itemStatLabel(stat.name, lang) : String(stat.code);
-  if (stat.unit === 'flat') return `${label} +${formatNumber(stat.effective, 1)}`;
-  return `${label} +${formatNumber(stat.effective * 100, 2)}%`;
+  const value =
+    stat.unit === 'flat'
+      ? `+${formatNumber(stat.effective, 1)}`
+      : `+${formatNumber(stat.effective * 100, 2)}%`;
+  return { label, value };
 }
+
+const SORT_KEY: Record<InventorySortKey, keyof Strings> = {
+  rarity: 'inventorySortRarity',
+  level: 'inventorySortLevel',
+  value: 'inventorySortValue',
+  name: 'inventorySortName',
+  count: 'inventorySortCount',
+};
 
 function badges(item: InventoryViewItem, strings: Strings): InventoryBadge[] {
   const list: InventoryBadge[] = [];
@@ -124,12 +147,29 @@ function equippedBy(
   if (!item.equippedBy) return null;
 
   const hero = heroBySourceId.get(item.equippedBy);
-  if (!hero) return { text: strings.inventoryEquippedByUnknown, rarityIdx: -1 };
+  if (!hero) {
+    return {
+      name: strings.inventoryEquippedByUnknown,
+      rank: '',
+      rarityIdx: -1,
+      level: '',
+      skin: 0,
+      unknown: true,
+    };
+  }
 
   return {
-    text: sub(strings.inventoryEquippedByHero, { hero: hero.name, level: hero.level }),
+    name: hero.name,
+    rank: hero.rank ?? '',
     rarityIdx: RARITIES.indexOf(hero.rarity),
+    level: sub(strings.inventoryDetailLevel, { level: hero.level }),
+    skin: hero.skin ?? 0,
+    unknown: false,
   };
+}
+
+function heroOption(heroId: string, heroBySourceId: ReadonlyMap<string, HeroRecord>): InventoryHeroOption {
+  return { id: heroId, name: heroBySourceId.get(heroId)?.name ?? heroId };
 }
 
 /** Everything a card shows, joined — so a search for "glacier boots epic" narrows on all three. */
@@ -160,6 +200,7 @@ export function inventoryLabels(
     itemStat: (stat) => itemStat(stat, lang),
     badges: (item) => badges(item, strings),
     equippedBy: (item) => equippedBy(item, heroBySourceId, strings),
+    heroOption: (heroId) => heroOption(heroId, heroBySourceId),
     gold: (amount) => formatNumber(amount, 0),
     searchText: (item) => searchText(item, strings, lang),
     toolbar: {
@@ -171,6 +212,12 @@ export function inventoryLabels(
       clear: strings.inventoryFilterClear,
       resultCount: (shown, total) => sub(strings.inventoryFilterCount, { shown, total }),
       noMatches: strings.inventoryFilterNoMatches,
+      heroLabel: strings.inventoryFilterHeroLabel,
+      allHeroes: strings.inventoryFilterAllHeroes,
+      sortLabel: strings.inventorySortLabel,
+      sortKey: (key) => strings[SORT_KEY[key]] as string,
+      sortAscending: strings.inventorySortAscending,
+      sortDescending: strings.inventorySortDescending,
     },
     unknownCategoryNote: (codes) => sub(strings.inventoryUnknownCategory, { codes: codes.join(', ') }),
     skippedNote: (count) => sub(strings.inventorySkipped, { count }),

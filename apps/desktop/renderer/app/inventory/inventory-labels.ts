@@ -1,6 +1,13 @@
-import type { InventoryBadge, InventoryEquippedBy, InventoryGridLabels } from '@bombfarm/game-art';
+import type {
+  InventoryBadge,
+  InventoryEquippedBy,
+  InventoryGridLabels,
+  InventoryHeroOption,
+  InventoryStatText,
+} from '@bombfarm/game-art';
 import type {
   InventoryHero,
+  InventorySortKey,
   InventoryViewItem,
   InventoryViewStat,
   ItemKind,
@@ -89,12 +96,26 @@ function number(value: number, decimals: number): string {
   return value.toLocaleString('en-US', { minimumFractionDigits: decimals, maximumFractionDigits: decimals });
 }
 
-/** `dmg` is an absolute number; every other roll is a fraction the game shows as a percent. */
-function itemStat(stat: InventoryViewStat, lang: 'pt' | 'en'): string {
+/**
+ * Split rather than joined: the card sets the label and the number at opposite edges of the stat
+ * panel, so a column of values lines up whatever the labels are called.
+ *
+ * `dmg` is an absolute number; every other roll is a fraction the game shows as a percent.
+ */
+function itemStat(stat: InventoryViewStat, lang: 'pt' | 'en'): InventoryStatText {
   const label = stat.name ? itemStatLabel(stat.name, lang) : String(stat.code);
-  if (stat.unit === 'flat') return `${label} +${number(stat.effective, 1)}`;
-  return `${label} +${number(stat.effective * 100, 2)}%`;
+  const value =
+    stat.unit === 'flat' ? `+${number(stat.effective, 1)}` : `+${number(stat.effective * 100, 2)}%`;
+  return { label, value };
 }
+
+const SORT_KEY: Record<InventorySortKey, keyof Copy> = {
+  rarity: 'inventorySortRarity',
+  level: 'inventorySortLevel',
+  value: 'inventorySortValue',
+  name: 'inventorySortName',
+  count: 'inventorySortCount',
+};
 
 function badges(item: InventoryViewItem, t: Copy): InventoryBadge[] {
   const list: InventoryBadge[] = [];
@@ -118,12 +139,22 @@ function equippedBy(
   if (!item.equippedBy) return null;
 
   const hero = heroes.get(item.equippedBy);
-  if (!hero) return { text: t.inventoryEquippedByUnknown, rarityIdx: -1 };
+  if (!hero) {
+    return { name: t.inventoryEquippedByUnknown, rank: '', rarityIdx: -1, level: '', skin: 0, unknown: true };
+  }
 
   return {
-    text: fill(t.inventoryEquippedByHero, { hero: hero.name, level: hero.level }),
+    name: hero.name,
+    rank: hero.rank,
     rarityIdx: hero.rarityIdx,
+    level: fill(t.inventoryDetailLevel, { level: hero.level }),
+    skin: hero.skin,
+    unknown: false,
   };
+}
+
+function heroOption(heroId: string, heroes: ReadonlyMap<string, InventoryHero>): InventoryHeroOption {
+  return { id: heroId, name: heroes.get(heroId)?.name ?? heroId };
 }
 
 /** Everything a card shows, joined — so a search for "glacier boots epic" narrows on all three. */
@@ -143,6 +174,7 @@ export function inventoryLabels(
     itemStat: (stat) => itemStat(stat, lang),
     badges: (item) => badges(item, t),
     equippedBy: (item) => equippedBy(item, heroes, t),
+    heroOption: (heroId) => heroOption(heroId, heroes),
     gold: (amount) => number(amount, 0),
     searchText: (item) => searchText(item, t, lang),
     toolbar: {
@@ -154,6 +186,12 @@ export function inventoryLabels(
       clear: t.inventoryFilterClear,
       resultCount: (shown, total) => fill(t.inventoryFilterCount, { shown, total }),
       noMatches: t.inventoryFilterNoMatches,
+      heroLabel: t.inventoryFilterHeroLabel,
+      allHeroes: t.inventoryFilterAllHeroes,
+      sortLabel: t.inventorySortLabel,
+      sortKey: (key) => t[SORT_KEY[key]],
+      sortAscending: t.inventorySortAscending,
+      sortDescending: t.inventorySortDescending,
     },
     unknownCategoryNote: (codes) => fill(t.inventoryUnknownCategory, { codes: codes.join(', ') }),
     skippedNote: (count) => fill(t.inventorySkipped, { count }),
