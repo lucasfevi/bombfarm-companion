@@ -82,96 +82,135 @@ function readCapture() {
   return { order, energyById };
 }
 
-const save = JSON.parse(readFileSync(SAVE_EXPORT, 'utf8'));
-const { order: replayIds, energyById } = readCapture();
-
 /**
- * The save's heroes and the capture's heroes are different accounts, so the roster is re-keyed
- * onto the capture's ids in first-appearance order. Without it the Live screen counts the
- * capture's heroes on the field and lists none of them, the roster join having found nothing.
- * Only the opaque id is substituted; the capture's own bytes are never touched.
+ * The whole fixture, as a pure value. Exported so `offline-fixture-drift.test.ts` can rebuild it
+ * and compare against the committed file — the same shape `replay-stream-drift.test.ts` uses for
+ * `replay-stream.bin`. Without that, a hand-edit of the JSON or a generator change without a
+ * regeneration goes unnoticed.
  */
-const roster = save.heroes ?? [];
-const replayIdSet = new Set(replayIds);
+export function buildOfflineFixture() {
+  const save = JSON.parse(readFileSync(SAVE_EXPORT, 'utf8'));
+  const { order: replayIds, energyById } = readCapture();
 
-/**
- * On-field membership is decided by POSITION, not by id: the first `replayIds.length` heroes take
- * the capture's ids and are the ones it shows fighting. Deciding by id membership instead counts
- * any hero whose own save id happens to equal one of the capture's — which both overstates the
- * field and leaves two heroes sharing an id. A retained id that would collide is suffixed for the
- * same reason; every id in the roster has to be distinct for the rotation join to mean anything.
- */
-const rekeyedRoster = roster.map((hero, index) => {
-  const replacement = replayIds[index];
-  const original = String(hero.id);
-  const id = replacement ?? (replayIdSet.has(original) ? `${original}-roster` : original);
-  return { ...hero, id, in_field: index < replayIds.length };
-});
+  /**
+   * The save's heroes and the capture's heroes are different accounts, so the roster is re-keyed
+   * onto the capture's ids in first-appearance order. Without it the Live screen counts the
+   * capture's heroes on the field and lists none of them, the roster join having found nothing.
+   * Only the opaque id is substituted; the capture's own bytes are never touched.
+   */
+  const roster = save.heroes ?? [];
+  const replayIdSet = new Set(replayIds);
 
-/**
- * `secondsRemaining` is `energyFraction * energyMax / drainPerSecond`, so a rotation entry with a
- * fraction and no maximum yields no countdown at all — the screen lists the hero and prints "not
- * available" beside it. The maximum is the save's own `stats.energia`, and the fraction is the
- * capture's observed `e`, so both halves of every on-field hero's energy are captured values.
- *
- * The four heroes the capture never shows are resting, and neither capture records a resting
- * hero's energy. Rather than invent a number, they reuse the capture's own observed fractions,
- * cycled — real values, reassigned. It is the one place this fixture puts a measurement somewhere
- * it was not measured, and it is why a recovery countdown here is worth looking at only as
- * layout, never as a reading.
- */
-const observedFractions = replayIds
-  .map((id) => energyById.get(id))
-  .filter((fraction) => fraction !== undefined);
+  /**
+   * On-field membership is decided by POSITION, not by id: the first `replayIds.length` heroes take
+   * the capture's ids and are the ones it shows fighting. Deciding by id membership instead counts
+   * any hero whose own save id happens to equal one of the capture's — which both overstates the
+   * field and leaves two heroes sharing an id. A retained id that would collide is suffixed for the
+   * same reason; every id in the roster has to be distinct for the rotation join to mean anything.
+   */
+  const rekeyedRoster = roster.map((hero, index) => {
+    const replacement = replayIds[index];
+    const original = String(hero.id);
+    const id = replacement ?? (replayIdSet.has(original) ? `${original}-roster` : original);
+    return { ...hero, id, in_field: index < replayIds.length };
+  });
 
-const rotationHeroes = rekeyedRoster.map((hero, index) => {
-  const onField = hero.in_field;
-  const restingFraction = observedFractions[index % Math.max(1, observedFractions.length)];
-  const energyFraction = onField ? energyById.get(hero.id) : restingFraction;
-  const energyMax = typeof hero.stats?.energia === 'number' ? hero.stats.energia : undefined;
+  /**
+   * `secondsRemaining` is `energyFraction * energyMax / drainPerSecond`, so a rotation entry with a
+   * fraction and no maximum yields no countdown at all — the screen lists the hero and prints "not
+   * available" beside it. The maximum is the save's own `stats.energia`, and the fraction is the
+   * capture's observed `e`, so both halves of every on-field hero's energy are captured values.
+   *
+   * The four heroes the capture never shows are resting, and neither capture records a resting
+   * hero's energy. Rather than invent a number, they reuse the capture's own observed fractions,
+   * cycled — real values, reassigned. It is the one place this fixture puts a measurement somewhere
+   * it was not measured, and it is why a recovery countdown here is worth looking at only as
+   * layout, never as a reading.
+   */
+  const observedFractions = replayIds
+    .map((id) => energyById.get(id))
+    .filter((fraction) => fraction !== undefined);
 
-  return {
-    id: hero.id,
-    level: hero.level,
-    ...(energyFraction !== undefined ? { energia_pct: energyFraction } : {}),
-    ...(energyMax !== undefined ? { energia_max: energyMax } : {}),
-    ...(energyMax !== undefined && energyFraction !== undefined
-      ? { energia_atual: energyMax * energyFraction }
-      : {}),
-    state: onField ? 'EM_CAMPO' : 'DESCANSANDO',
-    in_field: onField,
-    in_casa: !onField,
-    recovering: !onField,
-    battle_allowed: Boolean(hero.battle_allowed),
+  const rotationHeroes = rekeyedRoster.map((hero, index) => {
+    const onField = hero.in_field;
+    const restingFraction = observedFractions[index % Math.max(1, observedFractions.length)];
+    const energyFraction = onField ? energyById.get(hero.id) : restingFraction;
+    const energyMax = typeof hero.stats?.energia === 'number' ? hero.stats.energia : undefined;
+
+    return {
+      id: hero.id,
+      level: hero.level,
+      ...(energyFraction !== undefined ? { energia_pct: energyFraction } : {}),
+      ...(energyMax !== undefined ? { energia_max: energyMax } : {}),
+      ...(energyMax !== undefined && energyFraction !== undefined
+        ? { energia_atual: energyMax * energyFraction }
+        : {}),
+      state: onField ? 'EM_CAMPO' : 'DESCANSANDO',
+      in_field: onField,
+      in_casa: !onField,
+      recovering: !onField,
+      battle_allowed: Boolean(hero.battle_allowed),
+    };
+  });
+
+  const resolved = { status: 'resolved', capturedAt: CAPTURED_AT };
+
+  const payload = {
+    account: save.account,
+    heroes: rekeyedRoster,
+    skills: save.skills,
+    casa: {
+      field_size: save.skills?.field_slots ?? replayIds.length,
+      heroes: rotationHeroes,
+      casa: save.casa,
+    },
+    items: save.items,
+    fidelity: {
+      account: resolved,
+      heroes: resolved,
+      skills: resolved,
+      casa: resolved,
+      items: resolved,
+    },
   };
-});
 
-const resolved = { status: 'resolved', capturedAt: CAPTURED_AT };
+  /**
+   * The two halves of "who is fighting" come from different places — `field_size` from the save's
+   * skill state, membership from the capture's own hero count — and they agree today at nine. When
+   * they last disagreed the field list visibly alternated between the rotation's answer and the
+   * capture's, because every rotation ingest rebuilds the field from the rotation's on-field set.
+   * A re-capture with a different count would reintroduce that silently, so it fails here instead.
+   */
+  const onFieldCount = rotationHeroes.filter((hero) => hero.in_field).length;
+  if (onFieldCount !== payload.casa.field_size) {
+    throw new Error(
+      `generate-offline-fixture: the capture shows ${String(onFieldCount)} heroes on the field but ` +
+        `field_size is ${String(payload.casa.field_size)}. These must agree, or the Live screen ` +
+        'flickers between the rotation and the frames. Re-check the capture against the save export.',
+    );
+  }
 
-const payload = {
-  account: save.account,
-  heroes: rekeyedRoster,
-  skills: save.skills,
-  casa: {
-    field_size: save.skills?.field_slots ?? replayIds.length,
-    heroes: rotationHeroes,
-    casa: save.casa,
-  },
-  items: save.items,
-  fidelity: {
-    account: resolved,
-    heroes: resolved,
-    skills: resolved,
-    casa: resolved,
-    items: resolved,
-  },
-};
+  return payload;
+}
 
-writeFileSync(DESTINATION, `${JSON.stringify(payload, null, 2)}\n`, 'utf8');
+/** The exact bytes the committed fixture should hold, newline included. */
+export function serializeOfflineFixture() {
+  return `${JSON.stringify(buildOfflineFixture(), null, 2)}
+`;
+}
 
-console.log(`wrote ${DESTINATION}`);
-console.log(
-  `  ${rekeyedRoster.length} heroes (${rotationHeroes.filter((h) => h.in_field).length} on field), ` +
-    `${(save.items ?? []).length} items, field_size ${String(payload.casa.field_size)}`,
-);
-console.log(`  ${String(Math.min(replayIds.length, rekeyedRoster.length))} heroes re-keyed onto the replay capture's ids`);
+export const OFFLINE_FIXTURE_PATH = DESTINATION;
+
+// Written only when run as a script, so importing this for the drift guard has no side effects.
+if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
+  const payload = buildOfflineFixture();
+  writeFileSync(DESTINATION, serializeOfflineFixture(), 'utf8');
+
+  const onField = payload.casa.heroes.filter((hero) => hero.in_field).length;
+  console.log(`wrote ${DESTINATION}`);
+  console.log(
+    `  ${String(payload.heroes.length)} heroes (${String(onField)} on field), ` +
+      `${String(payload.items.length)} items, field_size ${String(payload.casa.field_size)}`,
+  );
+  console.log(`  ${String(onField)} heroes re-keyed onto the replay capture's ids`);
+}

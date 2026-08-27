@@ -92,6 +92,9 @@ export class GameReaderService {
   /** Fixture mode only — the first streamed gold reading, so the fixture account's own balance is
    *  advanced by what the stream has EARNED rather than replaced by another account's total. */
   private firstStreamedGold: number | null = null;
+  /** Fixture mode only — the highest balance already committed, so a dropped or re-baselined
+   *  reading cannot persist a lower one. See {@link GameReaderService.withStreamedGold}. */
+  private lastStreamedGoldBalance: number | null = null;
   /** Flipped once by `stop()`, never reset (until a hypothetical future `start()` re-arms it).
    * The explicit half of the shutdown-ordering contract: `clearTimeout` alone only stops a
    * tick that has not yet started firing — this flag additionally makes `tick()` a no-op for
@@ -240,15 +243,23 @@ export class GameReaderService {
     const account = payload.account;
     if (streamed === undefined || account === undefined) return payload;
 
-    this.firstStreamedGold ??= streamed;
-    const gained = streamed - this.firstStreamedGold;
-    if (gained <= 0) return payload;
-
     const baseline = Number(account.gold);
     if (!Number.isFinite(baseline)) return payload;
 
+    this.firstStreamedGold ??= streamed;
+    const candidate = baseline + Math.max(0, streamed - this.firstStreamedGold);
+
+    // A high-water mark rather than a reset of the baseline. Every reading this commits is
+    // persisted, so a balance that fell would be written to disk — and re-baselining on a
+    // dropped reading is precisely how that happens: `gained` collapses to zero and the account
+    // loses everything the session had earned. Clamping instead means no upstream reset,
+    // whatever its cause, can make the stored balance go backwards.
+    const balance = Math.max(candidate, this.lastStreamedGoldBalance ?? candidate);
+    this.lastStreamedGoldBalance = balance;
+    if (balance === baseline) return payload;
+
     // Back to the digit string the wire uses, which is what every reader of this field expects.
-    return { ...payload, account: { ...account, gold: String(baseline + gained) } };
+    return { ...payload, account: { ...account, gold: String(balance) } };
   }
 
   private tickFixture(): void {

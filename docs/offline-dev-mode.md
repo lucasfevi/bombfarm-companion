@@ -33,6 +33,11 @@ it after either input changes:
 node scripts/generate-offline-fixture.mjs
 ```
 
+`offline-fixture-drift.test.ts` rebuilds it and compares, so a hand-edit of the JSON or a generator
+change without a regeneration fails the suite rather than going unnoticed. The generator also
+refuses to write a fixture whose on-field count disagrees with `field_size` — that disagreement is
+what made the field list flicker, and it is not something to discover from the screen again.
+
 It stitches two committed captures into one account:
 
 - **a post-2026-08-15 save export** supplies `account`, `heroes`, `skills` and `items`. Its section

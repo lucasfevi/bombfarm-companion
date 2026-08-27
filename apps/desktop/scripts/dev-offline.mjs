@@ -18,10 +18,9 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const repoRoot = path.resolve(__dirname, '..', '..', '..');
 
 /**
- * Built by `scripts/generate-offline-fixture.mjs` from the committed calibration bodies, through
- * the real route projections: 8 heroes, 30 items, all five sections resolved, and — the part that
- * matters for the Live screen — a `casa` section carrying the whole `/rotation` body, per-hero
- * rotation state included, rather than only its inner `casa` child.
+ * Built by `scripts/generate-offline-fixture.mjs`: 13 heroes, 221 items, all five sections
+ * resolved, and — the part that matters for the Live screen — a `casa` section carrying the whole
+ * `/rotation` body, per-hero rotation state included, rather than only its inner `casa` child.
  */
 const DEFAULT_ACCOUNT_FIXTURE = path.join(
   repoRoot,
@@ -55,8 +54,12 @@ function warnIfAccountFixtureCannotDriveLive(fixturePath) {
   try {
     payload = JSON.parse(readFileSync(fixturePath, 'utf8'));
   } catch (error) {
+    // Not a fallback: `fixture-account.ts` reads the override with an unguarded `readFileSync`,
+    // so this throws inside the reader's tick, which logs `tick.failed`, reports `stale` and
+    // commits no account at all. The app opens with nothing in it.
     console.warn(`  !! cannot read ${fixturePath}: ${error.message}`);
-    console.warn('     The app will fall back to the committed game-data bundle.');
+    console.warn('     The app will open with NO account data — this is not a fallback.');
+    console.warn('     Unset BFC_FIXTURE_ACCOUNT_FILE to use the generated fixture this mode ships.');
     return;
   }
 

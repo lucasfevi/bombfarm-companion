@@ -66,8 +66,19 @@ export function resolveReplayCapturePath(
   return candidates.find((candidate) => existsSync(candidate)) ?? (candidates[0] as string);
 }
 
+/**
+ * Shared by every {@link ReplayTap} one factory builds, because a consent revoke tears the tap
+ * down and `LiveSource` rebuilds it — see `createReplayTapFactory`. Held per-factory rather than
+ * per-instance so the balance survives that.
+ */
+export interface GoldContinuity {
+  carried: number;
+  lastEmitted: number | null;
+}
+
 export interface ReplayTapDeps {
   readonly capturePath: string;
+  readonly goldContinuity: GoldContinuity;
   /** Checked on every frame, not just at start, so a revoke stops the stream mid-replay exactly
    *  as it detaches the real tap. */
   readonly consent: () => boolean;
@@ -95,11 +106,10 @@ class ReplayTap implements TapHandle {
   #sequence = 0;
   #timer: NodeJS.Timeout | null = null;
   #stopped = false;
+  /** Latched once the capture has proved unreadable, so `#pump` does not retry it ten times a
+   *  second for the life of the session. */
+  #loadFailed = false;
   #currency: LiveCurrency;
-  /** Total gold gained by every pass completed so far — see {@link ReplayTap.#carryGold}. */
-  #goldCarried = 0;
-  #passFirstGold: number | null = null;
-  #passLastGold: number | null = null;
 
   constructor(deps: ReplayTapDeps) {
     this.#deps = deps;
@@ -131,6 +141,25 @@ class ReplayTap implements TapHandle {
     if (this.#stopped) return;
     this.#emitCurrency(this.#currency);
 
+    this.#timer = setInterval(() => {
+      this.#pump();
+    }, this.#intervalMs);
+  }
+
+  /**
+   * Reading the capture is deferred until consent is granted, not done at `start()`. The path is
+   * overridable, and the documented way to use that is to point it at your own recorded session —
+   * real captured traffic. The real `Tap` gates attach on consent for the same reason, so loading
+   * a capture off disk before the player has agreed would be the one part of this mode that runs
+   * ahead of the gate it is meant to mirror.
+   *
+   * Returns false once it has given up, so `#pump` stops retrying a capture that will not load.
+   */
+  #ensureRecordsLoaded(): boolean {
+    if (this.#records.length > 0) return true;
+    if (this.#loadFailed) return false;
+    this.#loadFailed = true;
+
     if (!existsSync(this.#deps.capturePath)) {
       this.#log.warn({
         scope: 'live-source',
@@ -138,7 +167,7 @@ class ReplayTap implements TapHandle {
         path: this.#deps.capturePath,
       });
       this.#reportGap('attachFailed');
-      return;
+      return false;
     }
 
     try {
@@ -151,15 +180,16 @@ class ReplayTap implements TapHandle {
         message: error instanceof Error ? error.message : String(error),
       });
       this.#reportGap('attachFailed');
-      return;
+      return false;
     }
 
     if (this.#records.length === 0) {
       this.#log.warn({ scope: 'live-source', event: 'replay.capture_empty', path: this.#deps.capturePath });
       this.#reportGap('attachFailed');
-      return;
+      return false;
     }
 
+    this.#loadFailed = false;
     this.#log.info({
       scope: 'live-source',
       event: 'replay.started',
@@ -167,10 +197,7 @@ class ReplayTap implements TapHandle {
       records: this.#records.length,
       intervalMs: this.#intervalMs,
     });
-
-    this.#timer = setInterval(() => {
-      this.#pump();
-    }, this.#intervalMs);
+    return true;
   }
 
   /** One record per tick, decoded and emitted before the cursor advances — so the pass's last
@@ -183,6 +210,8 @@ class ReplayTap implements TapHandle {
       this.#reportGap('consentMissing');
       return;
     }
+
+    if (!this.#ensureRecordsLoaded()) return;
 
     const record = this.#records[this.#cursor];
     if (record === undefined) return;
@@ -205,21 +234,32 @@ class ReplayTap implements TapHandle {
   }
 
   /**
-   * Gold on the wire is an account total, so replaying the capture from the top would hand the
-   * app a balance that drops by a pass's whole takings every few seconds — and a rate read across
-   * that seam is negative. Each completed pass's gain is carried into the next instead, so the
-   * balance only ever climbs.
+   * Gold on the wire is an account total, and this reader restarts from the top of the capture —
+   * every loop, and again whenever the tap is rebuilt after a consent revoke. Replaying it raw
+   * would hand the app a balance that falls by a pass's whole takings, and a rate read across that
+   * seam is negative.
    *
-   * Every gold figure the app sees is still the capture's: the deltas inside a pass are untouched,
-   * and the first tick of a pass repeats the last tick's balance rather than inventing a step. It
-   * is the continuity BETWEEN passes that is constructed, which is what looping already is.
+   * So the emitted balance is monotone by construction: whenever the raw reading would go
+   * backwards, the shortfall is added to the carry instead. One rule covers both restarts, and it
+   * cannot be defeated by a partial pass — where an accumulate-on-pass-completion version silently
+   * dropped whatever the interrupted pass had earned.
+   *
+   * Every figure is still the capture's: deltas inside a pass are untouched, and a seam repeats
+   * the previous balance rather than inventing a step.
    */
   #carryGold(tick: LiveTick): LiveTick {
     const raw = tick.gold;
     if (raw === undefined) return tick;
-    if (this.#passFirstGold === null) this.#passFirstGold = raw;
-    this.#passLastGold = raw;
-    return this.#goldCarried === 0 ? tick : { ...tick, gold: raw + this.#goldCarried };
+
+    const continuity = this.#deps.goldContinuity;
+    let emitted = raw + continuity.carried;
+    if (continuity.lastEmitted !== null && emitted < continuity.lastEmitted) {
+      continuity.carried += continuity.lastEmitted - emitted;
+      emitted = continuity.lastEmitted;
+    }
+    continuity.lastEmitted = emitted;
+
+    return emitted === raw ? tick : { ...tick, gold: emitted };
   }
 
   /** A pass is decoded from a fresh {@link TlsConnections}: the capture is a slice out of the
@@ -228,11 +268,6 @@ class ReplayTap implements TapHandle {
   #restartPass(): void {
     this.#cursor = 0;
     this.#connections = new TlsConnections();
-    if (this.#passFirstGold !== null && this.#passLastGold !== null) {
-      this.#goldCarried += this.#passLastGold - this.#passFirstGold;
-    }
-    this.#passFirstGold = null;
-    this.#passLastGold = null;
   }
 
   /** A fresh grant should not wait out an interval, matching the real tap's own `pollNow`. */
@@ -257,9 +292,15 @@ export function createReplayTapFactory(deps: {
   readonly log?: LogPort;
   readonly intervalMs?: number;
 }): (onEvent: (event: LiveEvent) => void, onHttpBody: (body: Buffer, atMs: number) => void) => TapHandle {
+  // One per factory, deliberately outside the closure below: `LiveSource.forceDetach()` discards
+  // the tap and builds another through this same factory, and a balance that reset there would
+  // drop by everything the session had earned.
+  const goldContinuity: GoldContinuity = { carried: 0, lastEmitted: null };
+
   return (onEvent, onHttpBody) =>
     new ReplayTap({
       capturePath: deps.capturePath,
+      goldContinuity,
       consent: deps.consent,
       onEvent,
       onHttpBody,

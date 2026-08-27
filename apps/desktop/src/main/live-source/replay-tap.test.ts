@@ -146,6 +146,48 @@ describe('the replay tap drives the real decode path from the committed capture'
     await handle.teardown();
   });
 
+  /**
+   * `LiveSource.forceDetach()` discards the tap and builds another through the same factory, which
+   * is what a consent revoke does. Every other case here drives ONE handle, so none of them would
+   * notice a balance that resets on replacement — the earlier per-instance carry passed all of
+   * them while dropping the whole session's gold on the first revoke.
+   */
+  it('keeps the balance climbing across a tap rebuilt from the same factory', async () => {
+    const events: LiveEvent[] = [];
+    const factory = createReplayTapFactory({
+      capturePath: COMMITTED_CAPTURE,
+      consent: () => true,
+    });
+    const goldFrom = (list: readonly LiveEvent[]): number[] =>
+      list
+        .filter((event) => event.type === 'frame')
+        .map((event) => event.frame.tick.gold)
+        .filter((value): value is number => value !== undefined);
+
+    const first = factory(
+      (event) => events.push(event),
+      () => undefined,
+    );
+    first.start();
+    advanceRecords(CAPTURE_RECORDS + 20);
+    const beforeRebuild = goldFrom(events);
+    const highWater = beforeRebuild[beforeRebuild.length - 1] as number;
+    expect(highWater).toBeGreaterThan(beforeRebuild[0] as number);
+    await first.teardown();
+
+    const second = factory(
+      (event) => events.push(event),
+      () => undefined,
+    );
+    second.start();
+    advanceRecords(20);
+    const afterRebuild = goldFrom(events).slice(beforeRebuild.length);
+
+    expect(afterRebuild.length).toBeGreaterThan(0);
+    expect(Math.min(...afterRebuild)).toBeGreaterThanOrEqual(highWater);
+    await second.teardown();
+  });
+
   it('emits nothing while consent is withheld, and says why', async () => {
     const { handle, frames, currencies } = drive({ consent: () => false });
     handle.start();

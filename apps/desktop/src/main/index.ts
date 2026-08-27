@@ -548,6 +548,7 @@ if (!gotLock) {
     triggeredRefresh = null;
     void liveSource?.teardown();
     liveSource = null;
+    lastIngestedRotationBody = null;
     consentStore = null;
     // MP3 F4 — settingsStore borrows accountOpen.db, which accountStore.close() already owns
     // below; it holds no timer and opens no handle of its own, so it must not gain a close().
