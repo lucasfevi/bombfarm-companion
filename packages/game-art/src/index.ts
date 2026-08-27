@@ -6,6 +6,7 @@ export { ItemIcon } from './item-icon';
 export { InventoryGrid } from './inventory-grid';
 export type {
   InventoryBadge,
+  InventoryEquippedBy,
   InventoryGridLabels,
   InventoryGridProps,
 } from './inventory-grid';

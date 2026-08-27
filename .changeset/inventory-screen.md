@@ -9,7 +9,9 @@ An Inventory screen that shows every item you own, not just the gear
 
 Both the planner and the desktop app now have an Inventory tab listing everything the account
 carries, grouped by kind — gear, gems, keys, materials — with each item's level, forge, set and
-slot, what it sells for, and whether it is equipped, stashed, locked, or tradable.
+slot, what it sells for, whether it is stashed or locked, and the hero wearing it. Each card is
+framed in its item's rarity colour, and the hero on the "equipped by" line is named in the hero's
+own rarity colour with their level, so you can tell at a glance whose gear you are looking at.
 
 Until now the only item list either app kept was the optimizer's pool, which holds gear and
 nothing else: keys and anything else you own were read from the save and then dropped on the

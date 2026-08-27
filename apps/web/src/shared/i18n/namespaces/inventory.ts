@@ -9,16 +9,18 @@ export const en = {
   inventoryGroupMaterial: "Materials",
   inventoryGroupOther: "Other",
 
-  inventoryBadgeEquipped: "Equipped",
   inventoryBadgeStash: "Stash",
   inventoryBadgeLocked: "Locked",
-  inventoryBadgeTradable: "Tradable",
   inventoryBadgeMarketBlocked: "Market-blocked",
   inventoryBadgeUnresolved: "Not in catalog",
 
   inventoryDetailSetSlot: "{set} · {slot}",
   inventoryDetailLevel: "Lv {level}",
   inventoryDetailSellValue: "{gold} gold",
+
+  inventoryEquippedByLead: "Equipped by",
+  inventoryEquippedByHero: "{hero} · Lv {level}",
+  inventoryEquippedByUnknown: "a hero not in your roster",
 
   inventoryUnknownCategory: "unrecognized category {codes}",
   inventorySkipped: "{count} row(s) could not be read and are not shown.",
@@ -41,16 +43,18 @@ export const pt: typeof en = {
   inventoryGroupMaterial: "Materiais",
   inventoryGroupOther: "Outros",
 
-  inventoryBadgeEquipped: "Equipado",
   inventoryBadgeStash: "Depósito",
   inventoryBadgeLocked: "Bloqueado",
-  inventoryBadgeTradable: "Negociável",
   inventoryBadgeMarketBlocked: "Sem mercado",
   inventoryBadgeUnresolved: "Fora do catálogo",
 
   inventoryDetailSetSlot: "{set} · {slot}",
   inventoryDetailLevel: "Nv {level}",
   inventoryDetailSellValue: "{gold} de ouro",
+
+  inventoryEquippedByLead: "Equipado por",
+  inventoryEquippedByHero: "{hero} · Nv {level}",
+  inventoryEquippedByUnknown: "um herói fora do seu elenco",
 
   inventoryUnknownCategory: "categoria não reconhecida {codes}",
   inventorySkipped: "{count} linha(s) não puderam ser lidas e não aparecem aqui.",

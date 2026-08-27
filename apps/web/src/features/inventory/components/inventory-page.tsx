@@ -19,13 +19,14 @@ export function InventoryPage() {
   // in step without a second store slice. Read in an effect, never during render — this route
   // prerenders to static HTML, where `localStorage` does not exist.
   const importedAt = usePlannerStore((state) => state.inventory.importedAt);
+  const heroes = usePlannerStore((state) => state.heroes);
   const [view, setView] = useState<InventoryView>(EMPTY_VIEW);
 
   useEffect(() => {
     setView(inventoryViewFromStorage(loadInventoryView()));
   }, [importedAt]);
 
-  const labels = useMemo(() => inventoryLabels(t), [t]);
+  const labels = useMemo(() => inventoryLabels(t, heroes), [t, heroes]);
 
   return (
     <div className="mx-auto flex w-full max-w-app flex-col gap-4 p-4">

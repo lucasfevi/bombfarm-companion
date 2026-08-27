@@ -1,5 +1,5 @@
-import type { InventoryBadge, InventoryGridLabels } from '@bombfarm/game-art';
-import type { InventoryViewItem, ItemKind } from '@bombfarm/domain/inventory-view';
+import type { InventoryBadge, InventoryEquippedBy, InventoryGridLabels } from '@bombfarm/game-art';
+import type { InventoryHero, InventoryViewItem, ItemKind } from '@bombfarm/domain/inventory-view';
 import type { Copy } from '../../lib/copy';
 
 const GROUP_KEY: Record<ItemKind, keyof Copy> = {
@@ -37,21 +37,46 @@ function itemDetail(item: InventoryViewItem, t: Copy): string {
 
 function badges(item: InventoryViewItem, t: Copy): InventoryBadge[] {
   const list: InventoryBadge[] = [];
-  if (item.equipped) list.push({ key: 'equipped', label: t.inventoryBadgeEquipped, tone: 'accent' });
   if (item.inStash) list.push({ key: 'stash', label: t.inventoryBadgeStash });
   if (item.locked) list.push({ key: 'locked', label: t.inventoryBadgeLocked });
-  if (item.tradable) list.push({ key: 'tradable', label: t.inventoryBadgeTradable, tone: 'up' });
   if (item.marketBlocked) list.push({ key: 'market', label: t.inventoryBadgeMarketBlocked, tone: 'warn' });
   if (!item.defResolved) list.push({ key: 'unresolved', label: t.inventoryBadgeUnresolved, tone: 'warn' });
   return list;
 }
 
-export function inventoryLabels(t: Copy): InventoryGridLabels {
+/**
+ * A hero the app has not read is still reported as equipping the item — the item plainly is worn,
+ * and saying so beats dropping the line and making it look loose.
+ */
+function equippedBy(
+  item: InventoryViewItem,
+  heroes: ReadonlyMap<string, InventoryHero>,
+  t: Copy,
+): InventoryEquippedBy | null {
+  if (!item.equippedBy) return null;
+
+  const hero = heroes.get(item.equippedBy);
+  if (!hero) {
+    return { lead: t.inventoryEquippedByLead, hero: t.inventoryEquippedByUnknown, rarityIdx: -1 };
+  }
+
+  return {
+    lead: t.inventoryEquippedByLead,
+    hero: fill(t.inventoryEquippedByHero, { hero: hero.name, level: hero.level }),
+    rarityIdx: hero.rarityIdx,
+  };
+}
+
+export function inventoryLabels(
+  t: Copy,
+  heroes: ReadonlyMap<string, InventoryHero> = new Map(),
+): InventoryGridLabels {
   return {
     groupTitle: (kind) => t[GROUP_KEY[kind]],
     itemName: (item) => itemName(item, t),
     itemDetail: (item) => itemDetail(item, t),
     badges: (item) => badges(item, t),
+    equippedBy: (item) => equippedBy(item, heroes, t),
     unknownCategoryNote: (codes) => fill(t.inventoryUnknownCategory, { codes: codes.join(', ') }),
     skippedNote: (count) => fill(t.inventorySkipped, { count }),
     empty: { title: t.inventoryEmptyTitle, description: t.inventoryEmptyDescription },

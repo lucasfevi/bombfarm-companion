@@ -5,6 +5,7 @@ import { rarityTextClass } from './game-art.recipe';
 import {
   inventoryBadgeRecipe,
   inventoryCardRecipe,
+  inventoryCardTone,
   inventoryGridClass,
   type InventoryBadgeTone,
 } from './inventory-grid.recipe';
@@ -15,6 +16,16 @@ export interface InventoryBadge {
   tone?: InventoryBadgeTone;
 }
 
+/** The hero an item sits on. Resolved by the caller — this package holds no roster. */
+export interface InventoryEquippedBy {
+  /** Localized lead-in, e.g. "Equipped by". Rendered muted, ahead of the hero. */
+  lead: string;
+  /** Localized hero name and level, e.g. "Kendo · Lv 157". Rendered in the hero's rarity colour. */
+  hero: string;
+  /** Hero rarity index, for the name's colour. */
+  rarityIdx: number;
+}
+
 export interface InventoryGridLabels {
   groupTitle: (kind: ItemKind) => string;
   /** Display name for one item — the caller owns it, since set and slot tokens are localized
@@ -23,6 +34,9 @@ export interface InventoryGridLabels {
   /** Secondary line under the name; return an empty string to omit it. */
   itemDetail: (item: InventoryViewItem) => string;
   badges: (item: InventoryViewItem) => InventoryBadge[];
+  /** The hero line for an equipped item; `null` when the item is loose, or when the caller has
+   *  no roster to resolve `equippedBy` against. */
+  equippedBy?: (item: InventoryViewItem) => InventoryEquippedBy | null;
   /** Rendered in the `other` group's header — the raw category codes it holds, so an
    *  unrecognized item type can be reported without re-reading a capture. */
   unknownCategoryNote?: (codes: readonly number[]) => string;
@@ -56,7 +70,8 @@ function InventoryCard({
 }) {
   const detail = labels.itemDetail(item);
   const badges = labels.badges(item);
-  const tone = item.equipped ? 'equipped' : item.defResolved ? 'default' : 'unresolved';
+  const equippedBy = labels.equippedBy?.(item) ?? null;
+  const tone = inventoryCardTone(item.rarityIdx, item.defResolved);
   const interactive = Boolean(onSelect);
 
   const body = (
@@ -75,6 +90,14 @@ function InventoryCard({
           {labels.itemName(item)}
         </span>
         {detail ? <span className="truncate text-xs text-muted">{detail}</span> : null}
+        {equippedBy ? (
+          <span className="truncate text-xs text-muted">
+            {equippedBy.lead}{' '}
+            <span className={cn('font-medium', rarityTextClass(equippedBy.rarityIdx) ?? 'text-ink')}>
+              {equippedBy.hero}
+            </span>
+          </span>
+        ) : null}
         {badges.length > 0 ? (
           <span className="flex flex-wrap gap-1 pt-0.5">
             {badges.map((badge) => (

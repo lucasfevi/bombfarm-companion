@@ -5,6 +5,7 @@ import { mapInventoryItem } from '@bombfarm/domain/inventory';
 import {
   buildInventoryView,
   groupInventoryByKind,
+  mapInventoryHeroes,
   mapInventoryViewItem,
   resolveItemKind,
   ITEM_KINDS,
@@ -188,5 +189,70 @@ describe('buildInventoryView guards', () => {
 
   it('returns an empty view when the payload carries no items array at all', () => {
     expect(buildInventoryView(undefined)).toEqual({ items: [], groups: [], skipped: 0 });
+  });
+});
+
+describe('mapInventoryViewItem across the storage round trip', () => {
+  const wireRow = {
+    id: 'i1',
+    def_id: 'glacier_arma',
+    category: 0,
+    rarity: 4,
+    level: 60,
+    upgrade: 12,
+    sell_value: 1234,
+    market_state: 1,
+    in_stash: true,
+    locked: true,
+    tradable: true,
+    equipped_on: 'h1',
+    stats: [{ stat: 2, value: 10, effective: 12 }],
+  };
+
+  it('re-reads a mapped row into itself, so a reload shows what the import showed', () => {
+    const once = mapInventoryViewItem(wireRow)!;
+    const reloaded = mapInventoryViewItem(JSON.parse(JSON.stringify(once)) as unknown)!;
+    expect(reloaded).toEqual(once);
+  });
+
+  it('keeps the rarity a reload used to flatten to comum', () => {
+    const once = mapInventoryViewItem(wireRow)!;
+    const reloaded = mapInventoryViewItem(JSON.parse(JSON.stringify(once)) as unknown)!;
+    expect(once.rarityIdx).toBe(4);
+    expect(reloaded.rarityIdx).toBe(4);
+    expect(reloaded.rarityCode).toBe('lendaria');
+  });
+
+  it('keeps sell value, market state, stash flag and stats across the same trip', () => {
+    const reloaded = mapInventoryViewItem(
+      JSON.parse(JSON.stringify(mapInventoryViewItem(wireRow))) as unknown,
+    )!;
+    expect(reloaded.sellValueGold).toBe(1234);
+    expect(reloaded.marketBlocked).toBe(true);
+    expect(reloaded.inStash).toBe(true);
+    expect(reloaded.stats).toEqual([{ name: 'velocidade', code: 2, value: 10, effective: 12 }]);
+  });
+});
+
+describe('mapInventoryHeroes', () => {
+  it('keys hero identity by the id an item equippedBy holds', () => {
+    const heroes = mapInventoryHeroes([
+      { id: 'h1', name: 'Kendo', rarity: 5, level: 157 },
+      { id: 'h2', name: 'Dano', rarity: 3, level: 60 },
+    ]);
+    expect(heroes.get('h1')).toEqual({ id: 'h1', name: 'Kendo', rarityIdx: 5, level: 157 });
+
+    const item = mapInventoryViewItem({ id: 'i1', def_id: 'glacier_arma', equipped_on: 'h2' })!;
+    expect(heroes.get(item.equippedBy!)?.name).toBe('Dano');
+  });
+
+  it('falls back to the hero id as a name and skips rows with no id at all', () => {
+    const heroes = mapInventoryHeroes([{ id: 'h3' }, { name: 'no id' }, null]);
+    expect(heroes.size).toBe(1);
+    expect(heroes.get('h3')).toEqual({ id: 'h3', name: 'h3', rarityIdx: 0, level: 1 });
+  });
+
+  it('returns an empty map when the payload carries no heroes array', () => {
+    expect(mapInventoryHeroes(undefined).size).toBe(0);
   });
 });

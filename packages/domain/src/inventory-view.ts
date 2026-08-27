@@ -106,7 +106,7 @@ function mapStats(raw: unknown): InventoryViewStat[] {
   const stats: InventoryViewStat[] = [];
   for (const entry of raw) {
     if (!isObject(entry)) continue;
-    const code = Math.round(asNumber(entry.stat, -1));
+    const code = Math.round(asNumber(entry.stat ?? entry.code, -1));
     if (code < 0) continue;
     const value = asNumber(entry.value, 0);
     stats.push({
@@ -131,9 +131,10 @@ export function mapInventoryViewItem(raw: unknown): InventoryViewItem | null {
   const defId = asString(raw.def_id ?? raw.defId);
   if (!id || !defId) return null;
 
-  // `categoryCode` is this function's OWN output key: a stored view item is re-read through here
-  // on load, and without that fallback every gear row round-trips back as `other` — the wire's
-  // `category` is simply absent from the mapped shape.
+  // Every `??` below reaches for this function's OWN output key as a second source. A stored view
+  // item is re-read through here on load, and the mapped shape spells none of the wire's names —
+  // without the fallbacks a reloaded row comes back category-less, `comum`, worth zero gold and
+  // with no stats, which is what the inventory grid was rendering.
   const rawCategory = raw.category ?? raw.categoryCode;
   const categoryCode =
     rawCategory === undefined || rawCategory === null ? null : Math.round(asNumber(rawCategory, Number.NaN));
@@ -141,7 +142,7 @@ export function mapInventoryViewItem(raw: unknown): InventoryViewItem | null {
 
   const definition = defById.get(defId);
   const equippedBy = asString(raw.equipped_on ?? raw.equippedBy);
-  const rarityIdx = Math.round(asNumber(raw.rarity, 0));
+  const rarityIdx = Math.round(asNumber(raw.rarity ?? raw.rarityIdx, 0));
 
   return {
     id,
@@ -155,17 +156,48 @@ export function mapInventoryViewItem(raw: unknown): InventoryViewItem | null {
     level: asNumber(raw.level, definition?.nativeLevel ?? 0),
     upgrade: Math.round(asNumber(raw.upgrade, 0)),
     power: asNumber(raw.power, 0),
-    sellValueGold: asNumber(raw.sell_value, 0),
+    sellValueGold: asNumber(raw.sell_value ?? raw.sellValueGold, 0),
     sellable: raw.sellable !== false,
     tradable: raw.tradable === true,
-    marketBlocked: Math.round(asNumber(raw.market_state, 0)) !== 0,
+    marketBlocked: raw.marketBlocked === true || Math.round(asNumber(raw.market_state, 0)) !== 0,
     locked: raw.locked === true,
     equipped: equippedBy.length > 0,
     equippedBy: equippedBy.length > 0 ? equippedBy : null,
-    inStash: raw.in_stash === true,
+    inStash: raw.in_stash === true || raw.inStash === true,
     stats: mapStats(raw.stats),
     defResolved: Boolean(definition),
   };
+}
+
+export type InventoryHero = {
+  /** The save's own hero id — what an item's `equippedBy` holds. */
+  id: string;
+  name: string;
+  rarityIdx: number;
+  level: number;
+};
+
+/**
+ * Hero identity alone, keyed by the save's own hero id. Deliberately not a roster parse: the
+ * inventory surface needs a name to put on "equipped by", never a stat, and going through the
+ * full candidate pipeline for four display fields would re-derive every sheet on the account.
+ */
+export function mapInventoryHeroes(rawHeroes: readonly unknown[] | undefined): Map<string, InventoryHero> {
+  const byId = new Map<string, InventoryHero>();
+  if (!Array.isArray(rawHeroes)) return byId;
+
+  for (const raw of rawHeroes) {
+    if (!isObject(raw)) continue;
+    const id = asString(raw.id);
+    if (!id) continue;
+    byId.set(id, {
+      id,
+      name: asString(raw.name, id),
+      rarityIdx: Math.round(asNumber(raw.rarity ?? raw.rarityIdx, 0)),
+      level: asNumber(raw.level, 1),
+    });
+  }
+  return byId;
 }
 
 export function groupInventoryByKind(items: readonly InventoryViewItem[]): InventoryGroup[] {

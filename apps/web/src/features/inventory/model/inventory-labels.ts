@@ -1,8 +1,10 @@
-import type { InventoryGridLabels, InventoryBadge } from '@bombfarm/game-art';
+import type { InventoryGridLabels, InventoryBadge, InventoryEquippedBy } from '@bombfarm/game-art';
 import type { InventoryViewItem, ItemKind } from '@bombfarm/domain/inventory-view';
+import { RARITIES } from '@bombfarm/domain/planner-constants';
 import type { Strings } from '@/shared/i18n';
 import { sub } from '@/shared/i18n';
 import { formatNumber } from '@/shared/lib/format-number';
+import type { HeroRecord } from '@/shared/lib/storage';
 
 const GROUP_KEY: Record<ItemKind, keyof Strings> = {
   equipment: 'inventoryGroupEquipment',
@@ -37,21 +39,49 @@ function itemDetail(item: InventoryViewItem, strings: Strings): string {
 
 function badges(item: InventoryViewItem, strings: Strings): InventoryBadge[] {
   const list: InventoryBadge[] = [];
-  if (item.equipped) list.push({ key: 'equipped', label: strings.inventoryBadgeEquipped, tone: 'accent' });
   if (item.inStash) list.push({ key: 'stash', label: strings.inventoryBadgeStash });
   if (item.locked) list.push({ key: 'locked', label: strings.inventoryBadgeLocked });
-  if (item.tradable) list.push({ key: 'tradable', label: strings.inventoryBadgeTradable, tone: 'up' });
   if (item.marketBlocked) list.push({ key: 'market', label: strings.inventoryBadgeMarketBlocked, tone: 'warn' });
   if (!item.defResolved) list.push({ key: 'unresolved', label: strings.inventoryBadgeUnresolved, tone: 'warn' });
   return list;
 }
 
-export function inventoryLabels(strings: Strings): InventoryGridLabels {
+/**
+ * `equippedBy` is the save's own hero id, which is a roster entry's `sourceId`. A hero the roster
+ * does not hold is still reported as equipped — the item plainly is, and saying so beats dropping
+ * the line and making a worn item look loose.
+ */
+function equippedBy(
+  item: InventoryViewItem,
+  heroBySourceId: ReadonlyMap<string, HeroRecord>,
+  strings: Strings,
+): InventoryEquippedBy | null {
+  if (!item.equippedBy) return null;
+
+  const hero = heroBySourceId.get(item.equippedBy);
+  if (!hero) {
+    return { lead: strings.inventoryEquippedByLead, hero: strings.inventoryEquippedByUnknown, rarityIdx: -1 };
+  }
+
+  return {
+    lead: strings.inventoryEquippedByLead,
+    hero: sub(strings.inventoryEquippedByHero, { hero: hero.name, level: hero.level }),
+    rarityIdx: RARITIES.indexOf(hero.rarity),
+  };
+}
+
+export function inventoryLabels(strings: Strings, heroes: readonly HeroRecord[] = []): InventoryGridLabels {
+  const heroBySourceId = new Map<string, HeroRecord>();
+  for (const hero of heroes) {
+    if (hero.sourceId) heroBySourceId.set(hero.sourceId, hero);
+  }
+
   return {
     groupTitle: (kind) => strings[GROUP_KEY[kind]] as string,
     itemName: (item) => itemName(item, strings),
     itemDetail: (item) => itemDetail(item, strings),
     badges: (item) => badges(item, strings),
+    equippedBy: (item) => equippedBy(item, heroBySourceId, strings),
     unknownCategoryNote: (codes) => sub(strings.inventoryUnknownCategory, { codes: codes.join(', ') }),
     skippedNote: (count) => sub(strings.inventorySkipped, { count }),
     empty: { title: strings.inventoryEmptyTitle, description: strings.inventoryEmptyBody },
