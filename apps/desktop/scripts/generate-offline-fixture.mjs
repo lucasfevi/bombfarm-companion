@@ -1,6 +1,7 @@
 import { readFileSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { spliceCaptureHeroes } from './splice-capture.mjs';
 
 /**
  * Regenerates `tests/fixtures/account-offline.json`, the account `pnpm dev:offline` runs against.
@@ -39,6 +40,18 @@ const SAVE_EXPORT = path.join(
 );
 const CAPTURE = path.join(desktopRoot, 'src', 'main', 'live-source', 'fixtures', 'live-capture.bfcc');
 const DESTINATION = path.join(desktopRoot, 'tests', 'fixtures', 'account-offline.json');
+const CAPS_DESTINATION = path.join(desktopRoot, 'tests', 'fixtures', 'account-offline-caps.json');
+const CAPS_CAPTURE = path.join(desktopRoot, 'src', 'main', 'live-source', 'fixtures', 'live-capture-caps.bfcc');
+
+/**
+ * The three heroes the `caps` scenario takes off the field — the last three to appear, so the six
+ * that remain keep their positions and the roster re-key below is unchanged for them.
+ *
+ * Narrowing the field is the only way to see the field's own upgrade hint: `field_size` has to sit
+ * under the game's ceiling of nine, and the live tap's on-field set overrules the snapshot, so the
+ * frames have to agree or the screen reads "9/6".
+ */
+const CAPS_DROPPED_HERO_IDS = ['73099', '74555', '76184'];
 
 /** The save export's own `generated_at`, as an ISO instant — fixed, so regenerating is a no-op diff. */
 const CAPTURED_AT = '2026-08-23T00:00:00.000Z';
@@ -49,8 +62,7 @@ const CAPTURED_AT = '2026-08-23T00:00:00.000Z';
  * than imported because `capture-format.ts` is bundled into the Electron main output rather than
  * emitted per module.
  */
-function readCapture() {
-  const bytes = readFileSync(CAPTURE);
+function readCapture(bytes = readFileSync(CAPTURE)) {
   const order = [];
   const energyById = new Map();
 
@@ -88,9 +100,9 @@ function readCapture() {
  * `replay-stream.bin`. Without that, a hand-edit of the JSON or a generator change without a
  * regeneration goes unnoticed.
  */
-export function buildOfflineFixture() {
+export function buildOfflineFixture(captureBytes = readFileSync(CAPTURE), { fieldSizeFromCapture = false } = {}) {
   const save = JSON.parse(readFileSync(SAVE_EXPORT, 'utf8'));
-  const { order: replayIds, energyById } = readCapture();
+  const { order: replayIds, energyById } = readCapture(captureBytes);
 
   /**
    * The save's heroes and the capture's heroes are different accounts, so the roster is re-keyed
@@ -160,7 +172,9 @@ export function buildOfflineFixture() {
     heroes: rekeyedRoster,
     skills: save.skills,
     casa: {
-      field_size: save.skills?.field_slots ?? replayIds.length,
+      // A derived capture narrows the field on purpose, and the guard below is what keeps the two
+      // halves agreeing — so its own hero count is the field size, not the save's skill state.
+      field_size: fieldSizeFromCapture ? replayIds.length : (save.skills?.field_slots ?? replayIds.length),
       heroes: rotationHeroes,
       casa: save.casa,
     },
@@ -193,13 +207,111 @@ export function buildOfflineFixture() {
   return payload;
 }
 
+/**
+ * A second account, derived from the first, for looking at the rotation states the replay capture
+ * cannot produce on its own.
+ *
+ * The base fixture puts nine heroes on the field and the remaining four at the house, all
+ * recovering — so its Idle and Benched sections are empty on every run, and a rest-slot count that
+ * is already at the ceiling shows no upgrade hint. Nothing about the Live screen's four states can
+ * be looked at from it.
+ *
+ * WHAT IT CHANGES, and nothing else: the four off-field heroes are redealt across resting, idle
+ * (one full and waiting for the field, one part-filled and waiting for a rest slot) and benched;
+ * the house is moved down to Casa I, whose three rest slots sit under the ladder's own ceiling; a
+ * daily skip allowance is added; and one hero's energy is removed outright.
+ *
+ * The field is narrowed to six by {@link buildCapsCapture}, so the field's own upgrade hint shows
+ * too. That has to be done to the FRAMES, not to `field_size` alone: the live tap's on-field set
+ * overrules the snapshot, so a fixture claiming a narrower field than its capture shows would read
+ * "9/6" — the disagreement {@link buildOfflineFixture}'s own guard exists to prevent.
+ *
+ * Every energy figure here is one of the base fixture's own — reassigned, like its resting
+ * fractions already are. Read this account as layout, never as a reading.
+ */
+export function buildCapsCapture() {
+  return spliceCaptureHeroes(readFileSync(CAPTURE), CAPS_DROPPED_HERO_IDS);
+}
+
+export function buildCapsFixture() {
+  const payload = buildOfflineFixture(buildCapsCapture(), { fieldSizeFromCapture: true });
+  const casa = payload.casa.casa;
+
+  /**
+   * Four heroes, one per rotation state, in the order the screen stacks them. There are exactly
+   * four off the field and the replay pins the rest, so this list is the whole budget — every
+   * entry earns its place.
+   *
+   * The two Idle entries are the point of the exercise: `PRONTO` is full and waiting for a field
+   * slot, while `DESCANSANDO` with `recovering: false` is part-filled and waiting for a rest slot.
+   * They share one list, and only their energy tells them apart. The benched hero carries no
+   * energy figure at all, which is the one case a bar has to say so rather than draw itself empty.
+   */
+  const REDEALT = [
+    { state: 'DESCANSANDO', recovering: true, in_casa: true },
+    { state: 'DESCANSANDO', recovering: true, in_casa: true },
+    { state: 'DESCANSANDO', recovering: true, in_casa: true },
+    { state: 'PRONTO', recovering: false, in_casa: false, energia_pct: 1 },
+    { state: 'DESCANSANDO', recovering: false, in_casa: true, energia_pct: 0.17 },
+    { state: 'NO_BANCO', recovering: false, in_casa: false, energia_pct: null },
+    { state: 'NO_BANCO', recovering: false, in_casa: false },
+  ];
+
+  let redealt = 0;
+  const heroes = payload.casa.heroes.map((hero) => {
+    if (hero.in_field) return hero;
+    const change = REDEALT[redealt] ?? REDEALT[REDEALT.length - 1];
+    redealt += 1;
+    const { energia_pct: fraction, ...state } = change;
+    const next = { ...hero, ...state };
+    if (fraction === null) {
+      // Energy the game never sent — the one case an energy bar has to say so rather than draw
+      // itself empty, which would claim the hero has none.
+      delete next.energia_pct;
+      delete next.energia_atual;
+      return next;
+    }
+    if (fraction === undefined) return next;
+    return {
+      ...next,
+      energia_pct: fraction,
+      ...(typeof next.energia_max === 'number' ? { energia_atual: next.energia_max * fraction } : {}),
+    };
+  });
+
+  return {
+    ...payload,
+    casa: {
+      ...payload.casa,
+      heroes,
+      casa: {
+        ...casa,
+        active_casa: 1,
+        slots: 3,
+        ...(Array.isArray(casa.cycle_secs_per_house) ? { cycle_secs: casa.cycle_secs_per_house[0] } : {}),
+      },
+      rescues_left: 3,
+      rescues_max: 15,
+    },
+  };
+}
+
 /** The exact bytes the committed fixture should hold, newline included. */
 export function serializeOfflineFixture() {
   return `${JSON.stringify(buildOfflineFixture(), null, 2)}
 `;
 }
 
+/** @see serializeOfflineFixture */
+export function serializeCapsFixture() {
+  return `${JSON.stringify(buildCapsFixture(), null, 2)}
+`;
+}
+
 export const OFFLINE_FIXTURE_PATH = DESTINATION;
+export const CAPS_FIXTURE_PATH = CAPS_DESTINATION;
+export const CAPS_CAPTURE_PATH = CAPS_CAPTURE;
+export const CAPS_DROPPED_IDS = CAPS_DROPPED_HERO_IDS;
 
 // Written only when run as a script, so importing this for the drift guard has no side effects.
 if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
@@ -213,4 +325,22 @@ if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.me
       `${String(payload.items.length)} items, field_size ${String(payload.casa.field_size)}`,
   );
   console.log(`  ${String(onField)} heroes re-keyed onto the replay capture's ids`);
+
+  const capsCapture = buildCapsCapture();
+  writeFileSync(CAPS_CAPTURE, capsCapture, null);
+  console.log(`wrote ${CAPS_CAPTURE}`);
+  console.log(`  ${String(CAPS_DROPPED_HERO_IDS.length)} heroes cut from every frame, every other byte verbatim`);
+
+  const caps = buildCapsFixture();
+  writeFileSync(CAPS_DESTINATION, serializeCapsFixture(), 'utf8');
+  const byState = caps.casa.heroes.reduce((counts, hero) => {
+    counts[hero.state] = (counts[hero.state] ?? 0) + 1;
+    return counts;
+  }, {});
+  console.log(`wrote ${CAPS_DESTINATION}`);
+  console.log(
+    `  ${Object.entries(byState).map(([state, n]) => `${state} ${String(n)}`).join(', ')}, ` +
+      `field_size ${String(caps.casa.field_size)}, rest slots ${String(caps.casa.casa.slots)}, ` +
+      `skips ${String(caps.casa.rescues_left)}/${String(caps.casa.rescues_max)}`,
+  );
 }
