@@ -133,10 +133,10 @@ export const pt: typeof en = {
   inventorySortDescending: "Decrescente",
 
 
-  inventoryFilterSetsLabel: "Filtrar por conjunto",
-  inventoryFilterAllSets: "Todos os conjuntos",
-  inventoryFilterSetsOwned: "Conjuntos que você tem",
-  inventoryFilterSetsSelected: "{chosen} de {total} conjuntos",
+  inventoryFilterSetsLabel: "Filtrar por set",
+  inventoryFilterAllSets: "Todos os sets",
+  inventoryFilterSetsOwned: "Sets que você tem",
+  inventoryFilterSetsSelected: "{chosen} de {total} sets",
   inventoryFilterSelectAllSets: "Selecionar todos",
   inventorySetOption: "Nv {level} · {set}",
 
