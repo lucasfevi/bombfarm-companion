@@ -14,7 +14,7 @@ export function FieldCountdown({ testId, model }: { testId: string; model: LiveF
     <CountdownValue
       testId={testId}
       formatted={formatLiveDurationSeconds(model.secondsRemaining)}
-      muted={model.basis === 'modelled'}
+      qualified={model.basis === 'modelled'}
       qualifier={t.liveCountdownEstimatedQualifier}
     />
   );

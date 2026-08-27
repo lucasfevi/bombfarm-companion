@@ -1,41 +1,26 @@
 /**
- * The two branches repeat the wrapper because the shell's untranslated-prose guard only tolerates
- * a multi-class string written directly as `className="…"`, so a composed or interpolated form is
- * reported as player-facing text. Text colour (muted vs ink) and the `sr-only` qualifier carry the
- * modelled/direct distinction; neither adds or removes a border, so a hero whose basis flips as
- * the tap comes and goes still never reflows the row it sits in.
+ * Every countdown reads in one colour, estimated or not: a number that dims as the tap comes and
+ * goes reads as a different kind of number, when it is the same reading from a second-best basis.
+ * The modelled/paused distinction is carried by the `sr-only` qualifier alone.
  */
 export function CountdownValue({
   testId,
   formatted,
-  muted,
+  qualified,
   qualifier,
 }: {
   testId: string;
   formatted: string;
-  muted: boolean;
+  /** Whether {@link qualifier} applies — a modelled field time, or a rest clock that is not advancing. */
+  qualified: boolean;
   qualifier: string;
 }) {
-  const children = (
-    <>
-      <span>{formatted}</span>
-      <span data-testid={`${testId}-qualifier`} className="sr-only">
-        {muted ? qualifier : ''}
-      </span>
-    </>
-  );
-
-  if (muted) {
-    return (
-      <span data-testid={testId} className="inline-flex items-baseline gap-1 text-sm tabular-nums text-muted">
-        {children}
-      </span>
-    );
-  }
-
   return (
     <span data-testid={testId} className="inline-flex items-baseline gap-1 text-sm tabular-nums text-ink">
-      {children}
+      <span>{formatted}</span>
+      <span data-testid={`${testId}-qualifier`} className="sr-only">
+        {qualified ? qualifier : ''}
+      </span>
     </span>
   );
 }

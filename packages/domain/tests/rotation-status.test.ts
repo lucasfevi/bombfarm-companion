@@ -7,6 +7,7 @@ import type {
   RotationSnapshot,
 } from '@bombfarm/contracts';
 import { classifyRotation, type RotationStatus } from '@bombfarm/domain/rotation-status';
+import { CASA_SLOTS_MAX } from '@bombfarm/domain/casa-slots';
 import { loadFixtureJson } from './helpers/sheet-math-fixtures';
 
 const CYCLE_SECONDS = 1190.5263157894735;
@@ -118,6 +119,7 @@ describe('classifyRotation — fixture baseline', () => {
       activeHouseIndex: 0,
       activeHouseLevel: 4,
       slots: 3,
+      slotsMax: 9,
       cycleSeconds: 1190.5263157894735,
       rescuesLeft: 7,
       rescuesMax: 15,
@@ -556,5 +558,28 @@ describe('classifyRotation — the captured full-and-waiting state', () => {
     for (const entry of status.recovering) {
       expect(entry.recoverySeconds).toBeCloseTo((1 - (entry.hero.energyFraction ?? 0)) * 922.1052631578947, 6);
     }
+  });
+});
+
+describe('classifyRotation — the rest-slot ceiling', () => {
+  it('takes the ceiling from the account own ladder when the wire sent one', () => {
+    const status = classifyRotation(snapshotResult({ house: { slots: 3, slotsPerHouse: [3, 5, 7] } }));
+    expect(status.house.slotsMax).toBe(7);
+  });
+
+  it('falls back to the wiki ladder when the wire sent no per-house slots', () => {
+    const status = classifyRotation(snapshotResult({ house: { slots: 3 } }));
+    expect(status.house.slotsMax).toBe(CASA_SLOTS_MAX);
+  });
+
+  it('ignores unusable entries rather than letting one collapse the ceiling', () => {
+    const status = classifyRotation(snapshotResult({ house: { slots: 3, slotsPerHouse: [0, 5, Number.NaN] } }));
+    expect(status.house.slotsMax).toBe(5);
+  });
+
+  it('carries no ceiling when the slot count itself is unknown — a cap beside nothing says nothing', () => {
+    const status = classifyRotation(snapshotResult({ house: { cycleSeconds: CYCLE_SECONDS } }));
+    expect(status.house.slots).toBeUndefined();
+    expect(status.house.slotsMax).toBeUndefined();
   });
 });

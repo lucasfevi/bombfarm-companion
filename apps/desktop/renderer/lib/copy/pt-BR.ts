@@ -169,30 +169,27 @@ export const ptBR: Copy = {
     'Um antivírus provavelmente bloqueou a parte do app que lê o jogo. Ele continua tentando por conta própria.',
   liveGapReasonConsentMissing: 'Você ainda não permitiu que o app leia sua conta e se conecte ao jogo.',
 
+  liveHeroesTitle: 'Heróis',
   liveListOnFieldTitle: 'Campo',
-  liveListRecoveringTitle: 'Recuperando energia',
-  liveListQueuedTitle: 'Na fila para descansar',
+  liveListRecoveringTitle: 'Descansando',
+  liveListQueuedTitle: 'Ociosos',
   liveListBenchedTitle: 'No banco',
   liveListEmptyLine: 'Nenhum herói aqui no momento.',
+  liveEnergyLabel: 'Energia',
+  liveFieldSlotsHint: 'Compre mais vagas de campo na sua árvore de habilidades',
+  liveRestingSlotsHint: 'Ative uma casa superior para mais vagas de descanso',
+  liveRestingCycleValue: 'Ciclo completo de descanso {duration}',
+  liveRestingSkipsValue: '{left} de {max} resgates restantes hoje',
+  liveRestingSkipsNone: 'Nenhum resgate restante hoje',
   liveUnclassifiedCount: 'Heróis não classificados em nenhuma lista: {n}',
   liveFieldExitPendingCount: 'Heróis que acabaram de sair do campo, ainda atualizando: {n}',
 
-  // liveHouse* — o painel da casa
-  liveHouseTitle: 'Casa',
-  liveHouseActiveLabel: 'Casa ativa',
-  liveHouseLevelLabel: 'Nível',
-  liveHouseSlotsLabel: 'Vagas de descanso',
-  liveHouseCycleLabel: 'Ciclo completo de descanso',
-  liveHouseRescuesLabel: 'Resgates diários',
-  liveHouseRescuesValue: '{left} de {max} restantes hoje',
-  liveHouseAbsent: 'Os dados da casa ainda não foram enviados para esta conta.',
-
-  // liveCountdown* — contagens de campo/descanso, e os qualificadores que marcam uma como estimada ou pausada
+  // liveCountdown* — contagens de campo/descanso, e os qualificadores que marcam uma como estimada ou
+  // pausada. Toda contagem usa uma única cor, então o qualificador é a única coisa que marca uma delas.
   liveFieldCountdownLabel: 'Tempo restante no campo',
   liveRecoveryCountdownLabel: 'Tempo restante de descanso',
   liveCountdownEstimatedQualifier: 'estimativa, não uma leitura direta',
   liveCountdownPausedQualifier: 'não está contando no momento',
-  liveCountdownLegend: 'Contagens regressivas com sublinhado tracejado são estimativas, não leituras diretas.',
 
   // liveNeverRead* — nada foi lido da conta ainda nesta sessão
   liveNeverReadTitle: 'Nada foi lido da sua conta ainda',
