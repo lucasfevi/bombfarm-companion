@@ -4,8 +4,8 @@ import { renderToStaticMarkup } from 'react-dom/server';
 import { AppShell, type AppShellNavItem } from './AppShell';
 
 const NAV_ITEMS: AppShellNavItem[] = [
-  { id: 'inventory', label: 'Inventory', icon: 'chevron-down' },
-  { id: 'stats', label: 'Stats', icon: 'chevron-up', badge: 3 },
+  { id: 'inventory', label: 'Inventory' },
+  { id: 'stats', label: 'Stats' },
 ];
 
 function html(props: Parameters<typeof AppShell>[0]) {
@@ -13,11 +13,13 @@ function html(props: Parameters<typeof AppShell>[0]) {
 }
 
 /**
- * Walks the React element tree returned by calling the component function
- * directly (not through a DOM renderer — `packages/ui`'s Vitest environment
- * is `node`, with no jsdom/testing-library). This lets us grab a nav item's
- * real `onClick` prop and invoke it, exercising the exact handler React would
- * call on a click or on native button Enter/Space activation.
+ * Walks the React element tree returned by calling the component function directly (not through a
+ * DOM renderer — `packages/ui`'s Vitest environment is `node`, with no jsdom/testing-library).
+ * `AppShell`'s nav buttons live one function-component hop away now (inside `AppNav`), so a node
+ * whose `type` is itself a function is resolved by calling it — the same thing React would do —
+ * before continuing the walk. This still lets a test grab a nav item's real `onClick` prop and
+ * invoke it, exercising the exact handler React would call on a click or on native button
+ * Enter/Space activation.
  */
 function findAll(node: ReactNode, predicate: (el: ReactElement) => boolean, acc: ReactElement[] = []): ReactElement[] {
   if (Array.isArray(node)) {
@@ -26,6 +28,11 @@ function findAll(node: ReactNode, predicate: (el: ReactElement) => boolean, acc:
   }
   if (!isValidElement(node)) return acc;
   if (predicate(node)) acc.push(node);
+  if (typeof node.type === 'function') {
+    const rendered = (node.type as (props: unknown) => ReactNode)(node.props);
+    findAll(rendered, predicate, acc);
+    return acc;
+  }
   const children = (node.props as { children?: ReactNode }).children;
   if (children !== undefined) findAll(children, predicate, acc);
   return acc;
@@ -102,9 +109,23 @@ describe('AppShell', () => {
     expect(lastId).toBe('stats');
   });
 
-  it('renders an optional numeric badge next to the label (SHL-09)', () => {
+  it('renders each nav button with only its label as text — no icon, no badge', () => {
     const out = html({ items: NAV_ITEMS, children: 'body' });
-    expect(out).toContain('>3<');
+    expect(out).toMatch(/<button[^>]*>Inventory<\/button>/);
+    expect(out).toMatch(/<button[^>]*>Stats<\/button>/);
+  });
+
+  it('renders the actions slot on the right of the header when provided', () => {
+    const out = html({
+      actions: createElement('span', { 'data-testid': 'actions-slot' }, 'PT/EN'),
+      children: 'body',
+    });
+    expect(out).toContain('data-testid="actions-slot"');
+  });
+
+  it('omits the actions wrapper entirely when actions is not provided', () => {
+    const out = html({ children: 'body' });
+    expect(out).not.toContain('data-testid="actions-slot"');
   });
 
   it('produces no empty status-bar children when status/progress/version are all absent (SHL-08)', () => {
@@ -123,17 +144,71 @@ describe('AppShell', () => {
     expect(out).not.toContain('data-testid="progress-slot"');
   });
 
-  it('keeps collapsed nav labels in the accessibility tree via a visually-hidden span (SHL-06)', () => {
-    const out = html({ items: NAV_ITEMS, children: 'body' });
-    // Label text is present (queryable by accessible name) and only visually
-    // hidden below the `compact` breakpoint — never removed from markup.
-    expect(out).toMatch(/class="[^"]*sr-only[^"]*"[^>]*>Inventory</);
-    expect(out).not.toContain('display:none');
-  });
-
-  it('main is the only element carrying overflow-y-auto alongside the nav scroll region', () => {
+  it('main is the only scroll region — the header and status bar never scroll', () => {
     const out = html({ items: NAV_ITEMS, children: 'body' });
     const mainMatch = out.match(/<main[^>]*class="([^"]*)"/);
     expect(mainMatch?.[1]).toContain('overflow-y-auto');
+    const headerMatch = out.match(/<header[^>]*class="([^"]*)"/);
+    const footerMatch = out.match(/<footer[^>]*class="([^"]*)"/);
+    expect(headerMatch?.[1]).not.toContain('overflow-y-auto');
+    expect(footerMatch?.[1]).not.toContain('overflow-y-auto');
+  });
+
+  it('applies no drag styling by default', () => {
+    const out = html({ items: NAV_ITEMS, children: 'body' });
+    expect(out).not.toContain('app-region');
+  });
+
+  it('draws the drag handle as one empty rectangle, and never marks the header itself', () => {
+    const out = html({ items: NAV_ITEMS, draggable: true, children: 'body' });
+    const headerMatch = out.match(/<header[^>]*style="([^"]*)"/);
+    expect(headerMatch?.[1] ?? '').not.toMatch(/-webkit-app-region/);
+    expect(out.match(/-webkit-app-region:\s*drag/g) ?? []).toHaveLength(1);
+    expect(out).toMatch(/<div aria-hidden="true"[^>]*style="[^"]*-webkit-app-region:\s*drag[^"]*"><\/div>/);
+  });
+
+  it('excuses every region that takes a click from the drag handle', () => {
+    // Painting above the handle does not exclude anything from it: the region is built from the
+    // property alone. A control left unmarked is a control the window manager presses instead.
+    const out = html({
+      items: NAV_ITEMS,
+      draggable: true,
+      actions: createElement('span', null, 'PT/EN'),
+      children: 'body',
+    });
+    // Brand row, nav wrapper, actions wrapper.
+    expect(out.match(/-webkit-app-region:\s*no-drag/g) ?? []).toHaveLength(3);
+  });
+
+  it('marks nothing at all when the shell is not the title bar', () => {
+    const out = html({ items: NAV_ITEMS, actions: createElement('span', null, 'PT/EN'), children: 'body' });
+    expect(out).not.toContain('app-region');
+  });
+
+  it('stops the drag handle short of the room reserved for the OS caption buttons', () => {
+    const out = html({ items: NAV_ITEMS, draggable: true, overlayInset: 140, children: 'body' });
+    const stripMatch = out.match(/<div aria-hidden="true"[^>]*style="([^"]*)"><\/div>/);
+    expect(stripMatch?.[1]).toMatch(/right:\s*140px/);
+    expect(stripMatch?.[1]).toMatch(/-webkit-app-region:\s*drag/);
+  });
+
+  it('reserves overlayInset as right padding on the header', () => {
+    const out = html({ items: NAV_ITEMS, overlayInset: 140, children: 'body' });
+    const headerMatch = out.match(/<header[^>]*style="([^"]*)"/);
+    expect(headerMatch?.[1]).toMatch(/padding-right:\s*140px/);
+  });
+
+  it('renders the brand slot left of the title when provided', () => {
+    const out = html({
+      brand: createElement('span', { 'data-testid': 'brand-slot' }, 'mark'),
+      children: 'body',
+    });
+    expect(out).toContain('data-testid="brand-slot"');
+    expect(out.indexOf('data-testid="brand-slot"')).toBeLessThan(out.indexOf('Bomb Farm Companion'));
+  });
+
+  it('renders no brand slot markup when brand is omitted', () => {
+    const out = html({ children: 'body' });
+    expect(out).not.toContain('data-testid="brand-slot"');
   });
 });

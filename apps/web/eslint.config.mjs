@@ -302,8 +302,10 @@ export default tseslint.config(
               allow: 'index.{ts,tsx}',
             },
             {
+              // The recipe and every component now live in @bombfarm/game-art (a workspace
+              // package, reached as an external module); this folder is just the re-export barrel.
               target: { element: { type: 'shared-game-art' } },
-              allow: '{index.{ts,tsx},game-art.recipe.ts}',
+              allow: 'index.{ts,tsx}',
             },
             {
               target: {
@@ -396,7 +398,6 @@ export default tseslint.config(
     files: ['src/**/*.{ts,tsx}'],
     ignores: [
       'src/app/_shell/site-header.tsx',
-      'src/app/_shell/topbar.tsx',
       'src/app/_shell/footer.tsx',
       'src/features/gear/components/slot-editor.tsx',
       'src/features/import/components/import-heroes-dialog.tsx',

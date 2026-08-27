@@ -1,5 +1,5 @@
 import path from 'node:path';
-import { app, BrowserWindow, ipcMain } from 'electron';
+import { app, BrowserWindow, ipcMain, Menu } from 'electron';
 import {
   DEFAULT_SETTINGS,
   isIpcChannel,
@@ -23,6 +23,11 @@ import { createBootRecord } from './boot-record.js';
 import { fuseSecondsForCdr } from './domain-edge.js';
 import { InvalidFlavorError, resolveAppEnv, RENDERER_DEV_URL, type AppEnv } from './env.js';
 import { GameReaderService } from './game-reader/game-reader-service.js';
+import {
+  registerRendererProtocol,
+  registerRendererSchemeAsPrivileged,
+  RENDERER_ENTRY_URL,
+} from './renderer-protocol.js';
 import { createAccountRefresh, type AccountRefreshHandle } from './game-api/account-refresh.js';
 import { createConsentApplier } from './game-api/consent-applier.js';
 import { createConsentStore, type ConsentStore } from './game-api/consent-store.js';
@@ -167,10 +172,20 @@ async function createMainWindow(): Promise<void> {
   const env = resolveAppEnv();
 
   mainWindow = new BrowserWindow({
-    width: 1024,
-    height: 640,
+    width: 1280,
+    height: 800,
+    minWidth: 960,
+    minHeight: 640,
+    backgroundColor: '#17100c',
     show: false,
     title: env.productName,
+    icon: path.join(__dirname, '../../assets/icon.ico'),
+    titleBarStyle: 'hidden',
+    // `--surface`/`--ink` (packages/ui/src/styles.css) as sRGB hex — Electron's titleBarOverlay
+    // can't take `oklch()`. Height matches AppShell's own header token (`--spacing-top`, 58px),
+    // not the OS caption default, so the overlay's Minimize/Maximize/Close buttons sit centred
+    // against it.
+    titleBarOverlay: { color: '#261d19', symbolColor: '#efe6e1', height: 58 },
     webPreferences: {
       preload: path.join(__dirname, '../preload/index.cjs'),
       contextIsolation: true,
@@ -207,14 +222,23 @@ async function createMainWindow(): Promise<void> {
   });
 
   if (env.isDev) {
+    mainWindow.webContents.on('before-input-event', (_event, input) => {
+      if (input.type !== 'keyDown' || input.isAutoRepeat) return;
+      if (input.control && !input.shift && input.key.toLowerCase() === 'r') {
+        mainWindow?.webContents.reload();
+      } else if (input.control && input.shift && input.key.toLowerCase() === 'i') {
+        mainWindow?.webContents.toggleDevTools();
+      }
+    });
+
     log.info({ scope: 'main', event: 'renderer.load_url', url: RENDERER_DEV_URL });
     await mainWindow.loadURL(RENDERER_DEV_URL);
     if (process.env.BFC_OPEN_DEVTOOLS === '1') {
       mainWindow.webContents.openDevTools({ mode: 'detach' });
     }
   } else {
-    const indexPath = path.join(__dirname, '../../renderer/out/index.html');
-    await mainWindow.loadFile(indexPath);
+    log.info({ scope: 'main', event: 'renderer.load_url', url: RENDERER_ENTRY_URL });
+    await mainWindow.loadURL(RENDERER_ENTRY_URL);
   }
 }
 
@@ -377,6 +401,7 @@ async function bootstrap(): Promise<void> {
   };
 
   registerIpcHandlers();
+  registerRendererProtocol(path.join(__dirname, '../../renderer/out'));
   await createMainWindow();
   gameReader.start();
   log.info({
@@ -404,11 +429,17 @@ function resolveBootEnv(): AppEnv {
 }
 
 const env = resolveBootEnv();
+registerRendererSchemeAsPrivileged();
 const { gotLock } = applyAppIdentity(app, {
   productName: env.productName,
   appId: env.appId,
   userDataPath: env.userDataPath,
 });
+
+// Windows-only app: Chromium supplies cut/copy/paste/select-all/undo natively inside editable
+// fields with no menu present, so this costs no accelerators. Only macOS needs the Edit menu's
+// roles for them.
+Menu.setApplicationMenu(null);
 
 configureLogging(env);
 

@@ -68,6 +68,9 @@ importers:
       '@bombfarm/game-api':
         specifier: workspace:*
         version: link:../../packages/game-api
+      '@bombfarm/game-art':
+        specifier: workspace:*
+        version: link:../../packages/game-art
       '@bombfarm/game-data':
         specifier: workspace:*
         version: link:../../packages/game-data
@@ -77,6 +80,12 @@ importers:
       '@bombfarm/ui':
         specifier: workspace:*
         version: link:../../packages/ui
+      '@fontsource-variable/dm-sans':
+        specifier: ^5.3.0
+        version: 5.3.0
+      '@fontsource/ibm-plex-mono':
+        specifier: ^5.3.0
+        version: 5.3.0
       electron-log:
         specifier: ^5.4.1
         version: 5.4.4
@@ -139,6 +148,9 @@ importers:
       '@bombfarm/domain':
         specifier: workspace:*
         version: link:../../packages/domain
+      '@bombfarm/game-art':
+        specifier: workspace:*
+        version: link:../../packages/game-art
       '@bombfarm/ui':
         specifier: workspace:*
         version: link:../../packages/ui
@@ -286,6 +298,37 @@ importers:
         specifier: workspace:*
         version: link:../domain
     devDependencies:
+      typescript:
+        specifier: ^5.8.3
+        version: 5.9.3
+      vitest:
+        specifier: ^3.2.4
+        version: 3.2.7(@types/debug@4.1.13)(@types/node@22.20.1)(lightningcss@1.32.0)(terser@5.49.0)
+
+  packages/game-art:
+    dependencies:
+      '@bombfarm/domain':
+        specifier: workspace:*
+        version: link:../domain
+      '@bombfarm/ui':
+        specifier: workspace:*
+        version: link:../ui
+    devDependencies:
+      '@types/react':
+        specifier: ^19.1.8
+        version: 19.2.17
+      '@types/react-dom':
+        specifier: ^19.1.6
+        version: 19.2.3(@types/react@19.2.17)
+      class-variance-authority:
+        specifier: ^0.7.1
+        version: 0.7.1
+      react:
+        specifier: ^19.1.0
+        version: 19.2.7
+      react-dom:
+        specifier: ^19.1.0
+        version: 19.2.7(react@19.2.7)
       typescript:
         specifier: ^5.8.3
         version: 5.9.3

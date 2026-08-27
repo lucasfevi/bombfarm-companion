@@ -5,9 +5,14 @@ const nextConfig: NextConfig = {
   // Static export still lands in `out/` via `output: 'export'`.
   output: 'export',
   trailingSlash: true,
-  assetPrefix: './',
   images: { unoptimized: true },
-  transpilePackages: ['@bombfarm/ui', '@bombfarm/contracts', '@bombfarm/game-api', '@bombfarm/domain'],
+  transpilePackages: [
+    '@bombfarm/ui',
+    '@bombfarm/contracts',
+    '@bombfarm/game-api',
+    '@bombfarm/domain',
+    '@bombfarm/game-art',
+  ],
 };
 
 export default nextConfig;

@@ -5,6 +5,7 @@ import type {
   RotationNormalizeResult,
   RotationSnapshot,
 } from '@bombfarm/contracts';
+import { isKnownSkin } from '@bombfarm/domain/wiki-assets';
 import { stateSymbolForToken, wireKey } from './lexicon.js';
 import { isPlainObject } from '../type-guards.js';
 
@@ -60,11 +61,18 @@ function collectDrop<T>(validated: Validated<T>, drops: FieldDrop[]): T | undefi
 interface RosterEntry {
   readonly name?: string;
   readonly grade?: string;
+  readonly rarity?: number;
+  readonly stars?: number;
+  readonly skin?: number;
 }
 
-/** `/roster`'s own wire keys (`id`, `name`, `rank`) — a different route's vocabulary, outside
- *  this lexicon's declared rotation key sets, so they are plain literals here rather than routed
- *  through `wireKey()`. None is Portuguese-origin. */
+function isNonNegativeFiniteNumber(value: unknown): value is number {
+  return typeof value === 'number' && Number.isFinite(value) && value >= 0;
+}
+
+/** `/roster`'s own wire keys (`id`, `name`, `rank`, `rarity`, `stars`, `skin`) — a different
+ *  route's vocabulary, outside this lexicon's declared rotation key sets, so they are plain
+ *  literals here rather than routed through `wireKey()`. None is Portuguese-origin. */
 function buildRosterIndex(roster: unknown): ReadonlyMap<string, RosterEntry> {
   const index = new Map<string, RosterEntry>();
   if (!Array.isArray(roster)) return index;
@@ -75,9 +83,20 @@ function buildRosterIndex(roster: unknown): ReadonlyMap<string, RosterEntry> {
     if (typeof id !== 'string') continue;
     const name = candidate['name'];
     const grade = candidate['rank'];
+    const rarity = candidate['rarity'];
+    const stars = candidate['stars'];
+    // Unlike rarity/stars, an out-of-range skin has a rendering consequence beyond a missing
+    // stat: HeroAvatar's own normalizeSkin nearest-clamps rather than rejecting, so an unbounded
+    // value here would silently paint a DIFFERENT hero's portrait (the exact failure the Planning
+    // import path already guards against — see `isKnownSkin`'s doc comment). Reusing that same
+    // predicate keeps this join from diverging from how Planning treats the identical field.
+    const skin = candidate['skin'];
     index.set(id, {
       ...(typeof name === 'string' ? { name } : {}),
       ...(typeof grade === 'string' ? { grade } : {}),
+      ...(isNonNegativeFiniteNumber(rarity) ? { rarity } : {}),
+      ...(isNonNegativeFiniteNumber(stars) ? { stars } : {}),
+      ...(isKnownSkin(skin) ? { skin: Math.round(skin as number) } : {}),
     });
   }
   return index;
@@ -204,6 +223,9 @@ function normalizeHero(
     ...(battleAllowed !== undefined ? { battleAllowed } : {}),
     ...(rosterEntry?.name !== undefined ? { name: rosterEntry.name } : {}),
     ...(rosterEntry?.grade !== undefined ? { grade: rosterEntry.grade } : {}),
+    ...(rosterEntry?.rarity !== undefined ? { rarity: rosterEntry.rarity } : {}),
+    ...(rosterEntry?.stars !== undefined ? { stars: rosterEntry.stars } : {}),
+    ...(rosterEntry?.skin !== undefined ? { skin: rosterEntry.skin } : {}),
   };
 }
 

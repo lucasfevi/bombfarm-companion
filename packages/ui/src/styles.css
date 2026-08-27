@@ -54,6 +54,9 @@
   color-scheme: dark;
   --hue: 48;
 
+  font-family: var(--font);
+  font-optical-sizing: auto;
+
   /* WIN-1 numeric bounds for JS / raw CSS (compact < 1180, wide > 1500). */
   --breakpoint-compact-max: 1179px;
   --breakpoint-regular-min: 1180px;
@@ -108,11 +111,182 @@
   --maxw: var(--container-app);
   --font: var(--font-sans);
   --mono: var(--font-mono);
+
+  /* Fallbacks keep the shell dark if HMR briefly drops token CSS (avoids a white flash). */
+  background: var(--bg, oklch(18% 0.015 48));
+  color: var(--ink, oklch(93% 0.012 48));
 }
 
 @media (prefers-reduced-motion: reduce) {
   :root {
     --duration-micro: 0ms;
     --duration-panel: 0ms;
+  }
+}
+
+* {
+  box-sizing: border-box;
+  scrollbar-width: thin;
+  scrollbar-color: color-mix(in oklch, var(--muted) 55%, var(--line)) transparent;
+}
+
+/* Scrollbars — thin, hue-tinted to match the ochre UI chrome */
+*::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+*::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+*::-webkit-scrollbar-thumb {
+  background: color-mix(in oklch, var(--muted) 45%, var(--line));
+  border: 2px solid transparent;
+  background-clip: padding-box;
+  border-radius: 999px;
+}
+
+*::-webkit-scrollbar-thumb:hover {
+  background: color-mix(in oklch, var(--accent) 55%, var(--muted));
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+
+*::-webkit-scrollbar-thumb:active {
+  background: var(--accent);
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+
+*::-webkit-scrollbar-corner {
+  background: transparent;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  background:
+    radial-gradient(1200px 500px at 10% -10%, color-mix(in oklch, var(--accent) 12%, transparent), transparent),
+    var(--bg);
+  color: var(--ink);
+}
+
+/* Checkboxes — sharp ochre tiles, matching chips / inputs */
+input[type='checkbox'] {
+  appearance: none;
+  -webkit-appearance: none;
+  position: relative;
+  flex-shrink: 0;
+  width: 14px;
+  height: 14px;
+  margin: 0;
+  border: 1px solid var(--line);
+  border-radius: 2px;
+  background: var(--bg);
+  cursor: pointer;
+  vertical-align: middle;
+  transition:
+    border-color var(--duration-micro) ease-out,
+    background-color var(--duration-micro) ease-out,
+    box-shadow var(--duration-micro) ease-out;
+}
+input[type='checkbox']:hover {
+  border-color: color-mix(in oklch, var(--accent) 55%, var(--line));
+}
+input[type='checkbox']:focus-visible {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px color-mix(in oklch, var(--accent) 28%, transparent);
+}
+input[type='checkbox']:checked,
+input[type='checkbox']:indeterminate {
+  border-color: var(--accent);
+  background: var(--accent);
+}
+input[type='checkbox']:checked::after,
+input[type='checkbox']:indeterminate::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: var(--accent-ink);
+  -webkit-mask: center / 100% 100% no-repeat;
+  mask: center / 100% 100% no-repeat;
+}
+input[type='checkbox']:checked::after {
+  -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 14 14' fill='none'%3E%3Cpath d='M3.2 7.1 5.8 9.7 10.8 4.2' stroke='black' stroke-width='1.75' stroke-linecap='square' stroke-linejoin='miter'/%3E%3C/svg%3E");
+  mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 14 14' fill='none'%3E%3Cpath d='M3.2 7.1 5.8 9.7 10.8 4.2' stroke='black' stroke-width='1.75' stroke-linecap='square' stroke-linejoin='miter'/%3E%3C/svg%3E");
+}
+input[type='checkbox']:indeterminate::after {
+  -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 14 14' fill='none'%3E%3Cpath d='M3.5 7h7' stroke='black' stroke-width='1.75' stroke-linecap='square'/%3E%3C/svg%3E");
+  mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 14 14' fill='none'%3E%3Cpath d='M3.5 7h7' stroke='black' stroke-width='1.75' stroke-linecap='square'/%3E%3C/svg%3E");
+}
+input[type='checkbox']:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+/* Base table element styling (TW-07). Kept in @layer base so migrated per-table
+   utilities win by normal cascade (tailwind-first.md rule 9) instead of being
+   silently overridden by unlayered rules. */
+@layer base {
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 12.5px;
+    font-variant-numeric: tabular-nums;
+  }
+  th {
+    text-align: left;
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--muted);
+    font-weight: 600;
+    padding: 4px 6px;
+    border-bottom: 1px solid var(--line);
+  }
+  td {
+    padding: 4px 6px;
+    border-bottom: 1px solid color-mix(in oklch, var(--line) 70%, transparent);
+    vertical-align: middle;
+  }
+  tr:last-child td,
+  tr:last-child th {
+    border-bottom: none;
+  }
+}
+
+.btn.coffee {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 30px;
+  padding: 6px 0;
+  border: 1px solid #e5c700;
+  border-radius: 999px;
+  background: #ffdd00;
+  color: #111;
+  font-size: 12px;
+  font-weight: 600;
+  text-decoration: none;
+  line-height: 1;
+}
+.btn.coffee svg {
+  display: block;
+}
+.btn.coffee:hover {
+  border-color: #111;
+}
+.btn.coffee.full {
+  min-width: 0;
+  padding: 8px 16px;
+  gap: 8px;
+  font-weight: 700;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .btn.coffee {
+    transition: border-color var(--duration-micro) ease-out, background-color var(--duration-micro) ease-out;
   }
 }

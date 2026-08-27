@@ -14,4 +14,14 @@ declare global {
       logBoot: () => { ok: true; from: 'preload' };
     };
   }
+
+  /** Chromium's Window Controls Overlay API — not yet in TypeScript's `lib.dom`. */
+  interface WindowControlsOverlay extends EventTarget {
+    readonly visible: boolean;
+    getTitlebarAreaRect: () => DOMRect;
+  }
+
+  interface Navigator {
+    readonly windowControlsOverlay?: WindowControlsOverlay;
+  }
 }

@@ -57,6 +57,31 @@ describe('buildLiveSlowModel — absent is not zero', () => {
     expect(slow.benched).toEqual([{ id: 'nameless' }]);
   });
 
+  it('a hero with rarity/stars carries them through; a hero without either has no key for them at all', () => {
+    const identified = hero({ id: 'identified', activity: 'benched', rarity: 3, stars: 2 });
+    const unidentified = hero({ id: 'unidentified', activity: 'benched' });
+
+    const slow = buildLiveSlowModel({ snapshot: { heroes: [identified, unidentified] }, drops: [] });
+
+    const identifiedFact = slow.benched.find((entry) => entry.id === 'identified');
+    const unidentifiedFact = slow.benched.find((entry) => entry.id === 'unidentified');
+    expect(identifiedFact).toEqual({ id: 'identified', rarity: 3, stars: 2 });
+    expect('rarity' in (unidentifiedFact ?? {})).toBe(false);
+    expect('stars' in (unidentifiedFact ?? {})).toBe(false);
+  });
+
+  it('a hero with a joined skin carries it through; a hero without one has no skin key at all', () => {
+    const skinned = hero({ id: 'skinned', activity: 'benched', skin: 4 });
+    const skinless = hero({ id: 'skinless', activity: 'benched' });
+
+    const slow = buildLiveSlowModel({ snapshot: { heroes: [skinned, skinless] }, drops: [] });
+
+    const skinnedFact = slow.benched.find((entry) => entry.id === 'skinned');
+    const skinlessFact = slow.benched.find((entry) => entry.id === 'skinless');
+    expect(skinnedFact).toEqual({ id: 'skinned', skin: 4 });
+    expect('skin' in (skinlessFact ?? {})).toBe(false);
+  });
+
   it('never re-sorts what classifyRotation returned', () => {
     const b = hero({ id: 'b', activity: 'benched' });
     const a = hero({ id: 'a', activity: 'benched' });

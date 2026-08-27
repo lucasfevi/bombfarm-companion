@@ -5,7 +5,7 @@ import {
   abilityIconRecipe,
   iconMetaGlyphRecipe,
   type AbilityIconRecipeSize,
-} from '@/shared/game-art/game-art.recipe';
+} from './game-art.recipe';
 
 type Props = {
   code: string;

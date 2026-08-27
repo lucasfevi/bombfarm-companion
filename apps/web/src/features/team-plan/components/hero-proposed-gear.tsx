@@ -3,8 +3,7 @@
 import { formatItemRosterTooltip } from '@bombfarm/domain/game-labels';
 import { cn, Tooltip } from '@bombfarm/ui';
 import { mutedClass } from '@bombfarm/ui/panel-field.recipe';
-import { ItemIcon } from '@/shared/game-art';
-import { rosterIconTooltipTriggerClass } from '@/shared/game-art/game-art.recipe';
+import { ItemIcon, rosterIconTooltipTriggerClass } from '@/shared/game-art';
 import type { Lang, Strings } from '@/shared/i18n';
 import { sub } from '@/shared/i18n';
 import type { HeroRecord } from '@/shared/lib/storage';

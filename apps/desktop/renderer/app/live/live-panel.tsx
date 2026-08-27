@@ -5,7 +5,6 @@ import { FieldCountdown } from './field-countdown';
 import { FreshnessLine, type ReachedLiveFreshness } from './freshness-line';
 import { HeroList } from './hero-list';
 import { HousePanel } from './house-panel';
-import { OccupancyReadout } from './occupancy-readout';
 import { RecoveryCountdown } from './recovery-countdown';
 
 export function LivePanel({
@@ -22,39 +21,48 @@ export function LivePanel({
   const t = useCopy();
   const { locale } = useLocale();
 
+  const onFieldCount =
+    slow.occupancy.fieldSize !== undefined
+      ? `${formatCount(slow.occupancy.occupied, locale)}/${formatCount(slow.occupancy.fieldSize, locale)}`
+      : formatCount(slow.occupancy.occupied, locale);
+
   return (
     <div data-testid="live-panel" className="flex flex-col gap-4">
       <FreshnessLine freshness={freshness} onReopenConsent={onReopenConsent} />
+      <HousePanel house={slow.house} />
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-        <HousePanel house={slow.house} />
-        <OccupancyReadout occupancy={slow.occupancy} />
+        <HeroList
+          testId="live-list-on-field"
+          title={t.liveListOnFieldTitle}
+          headerTrailing={
+            <span data-testid="live-occupancy" className="text-xs text-muted tabular-nums">
+              {onFieldCount}
+            </span>
+          }
+          emptyLine={t.liveListEmptyLine}
+          heroes={slow.onField}
+          renderTrailing={(hero: LiveHeroFact) => (
+            <span className="flex items-center gap-1">
+              <span className="sr-only">{t.liveFieldCountdownLabel}</span>
+              <FieldCountdown testId={`live-countdown-field-${hero.id}`} model={fast.field[hero.id]} />
+            </span>
+          )}
+        />
+        <HeroList
+          testId="live-list-recovering"
+          title={t.liveListRecoveringTitle}
+          emptyLine={t.liveListEmptyLine}
+          heroes={slow.recovering}
+          renderTrailing={(hero: LiveRecoveringHeroFact) => (
+            <span className="flex items-center gap-1">
+              <span className="sr-only">{t.liveRecoveryCountdownLabel}</span>
+              <RecoveryCountdown testId={`live-countdown-recovery-${hero.id}`} model={fast.recovery[hero.id]} />
+            </span>
+          )}
+        />
+        <HeroList testId="live-list-queued" title={t.liveListQueuedTitle} emptyLine={t.liveListEmptyLine} heroes={slow.queued} />
+        <HeroList testId="live-list-benched" title={t.liveListBenchedTitle} emptyLine={t.liveListEmptyLine} heroes={slow.benched} />
       </div>
-      <HeroList
-        testId="live-list-on-field"
-        title={t.liveListOnFieldTitle}
-        emptyLine={t.liveListEmptyLine}
-        heroes={slow.onField}
-        renderTrailing={(hero: LiveHeroFact) => (
-          <span className="flex items-center gap-1">
-            <span className="sr-only">{t.liveFieldCountdownLabel}</span>
-            <FieldCountdown testId={`live-countdown-field-${hero.id}`} model={fast.field[hero.id]} />
-          </span>
-        )}
-      />
-      <HeroList
-        testId="live-list-recovering"
-        title={t.liveListRecoveringTitle}
-        emptyLine={t.liveListEmptyLine}
-        heroes={slow.recovering}
-        renderTrailing={(hero: LiveRecoveringHeroFact) => (
-          <span className="flex items-center gap-1">
-            <span className="sr-only">{t.liveRecoveryCountdownLabel}</span>
-            <RecoveryCountdown testId={`live-countdown-recovery-${hero.id}`} model={fast.recovery[hero.id]} />
-          </span>
-        )}
-      />
-      <HeroList testId="live-list-queued" title={t.liveListQueuedTitle} emptyLine={t.liveListEmptyLine} heroes={slow.queued} />
-      <HeroList testId="live-list-benched" title={t.liveListBenchedTitle} emptyLine={t.liveListEmptyLine} heroes={slow.benched} />
       {slow.unclassifiedCount > 0 ? (
         <p data-testid="live-unclassified-count" className="m-0 text-xs text-muted">
           {sub(t.liveUnclassifiedCount, { n: formatCount(slow.unclassifiedCount, locale) })}

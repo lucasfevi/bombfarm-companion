@@ -20,7 +20,12 @@ import { ptBR } from './pt-BR';
  * unlike minutes ('m' vs 'min', design §7 rule 3), there is no PT-BR-specific abbreviation to
  * translate to.
  */
-const IDENTICAL_IN_BOTH_LANGUAGES: readonly (keyof typeof en)[] = ['ageShortSeconds'];
+// planningRosterColumnAvatar: "Avatar" is a loanword — same spelling in pt-BR (the web planner's
+// equivalent `heroAvatarCol` string is likewise "Avatar" in both its `en` and `pt` namespaces).
+const IDENTICAL_IN_BOTH_LANGUAGES: readonly (keyof typeof en)[] = [
+  'ageShortSeconds',
+  'planningRosterColumnAvatar',
+];
 
 function placeholderSet(value: string): Set<string> {
   const matches = value.matchAll(/\{(\w+)\}/g);

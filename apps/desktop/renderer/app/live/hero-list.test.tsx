@@ -57,3 +57,27 @@ describe('HeroList — trailing content', () => {
     expect(html).toContain('data-testid="trailing-a"');
   });
 });
+
+describe('HeroList — header trailing content', () => {
+  it('renders the caller-supplied node in the panel header, after the title', () => {
+    const html = renderToStaticMarkup(
+      createElement(HeroList, {
+        testId: 'live-list-on-field',
+        title: 'Field',
+        headerTrailing: createElement('span', { 'data-testid': 'field-count' }, '2/5'),
+        emptyLine: 'empty',
+        heroes: [],
+      }),
+    );
+    expect(html).toContain('data-testid="field-count"');
+    expect(html).toContain('2/5');
+    expect(html.indexOf('<h2')).toBeLessThan(html.indexOf('data-testid="field-count"'));
+  });
+
+  it('renders no extra header markup when headerTrailing is omitted', () => {
+    const html = renderToStaticMarkup(
+      createElement(HeroList, { testId: 'live-list-benched', title: 'Benched', emptyLine: 'empty', heroes: [] }),
+    );
+    expect(html).not.toContain('data-testid="field-count"');
+  });
+});

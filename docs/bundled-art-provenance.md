@@ -1,9 +1,11 @@
 # Bundled art provenance
 
-`apps/web/public/wiki-assets/` is sourced from the Grimório's static assets, served under
-`/wiki/static/assets/`. Most of it is a byte-for-byte mirror at the same subpath, so a refresh is
-a straight re-fetch. The drop sprites are the exception on two counts, and this table is what a
-refresh has to be driven from.
+`packages/game-art/assets/` is sourced from the Grimório's static assets, served under
+`/wiki/static/assets/`. Both `apps/web` and `apps/desktop` copy this directory into their own
+`public/wiki-assets/` at build time (`apps/*/scripts/copy-wiki-assets.mjs`) so it serves at
+`/wiki-assets/...` — see [`docs/design-system.md`](design-system.md)'s Game art section. Most of
+it is a byte-for-byte mirror at the same subpath, so a refresh is a straight re-fetch. The drop
+sprites are the exception on two counts, and this table is what a refresh has to be driven from.
 
 ## Why these are renamed
 
@@ -19,7 +21,7 @@ this table is for.
 
 ## Drop sprites
 
-| Local path (`public/wiki-assets/…`) | Upstream | Notes |
+| Local path (`packages/game-art/assets/…`) | Upstream | Notes |
 | --- | --- | --- |
 | `chests/item_chest.png` | `icons/chest_0.png` | Not difficulty-scaled — one sprite for every band |
 | `chests/gem_chest_easy.png` | *(game client)* `ui/chests/gems/gem_chest_facil.png` | Not published by the wiki |

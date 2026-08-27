@@ -21,7 +21,7 @@ export const buttonRecipe = cva('', {
       'help-on': `${btnBase} min-w-[30px] rounded-full border-accent bg-bg-2 px-0 py-1.5 text-center font-bold text-accent hover:border-accent`,
       text: 'cursor-pointer border-0 bg-transparent p-0 text-[11px] tracking-[0.04em] text-muted uppercase hover:text-accent',
       icon: 'inline-grid size-5 shrink-0 cursor-pointer place-items-center rounded-sm border-0 bg-transparent p-0 text-muted hover:bg-[color-mix(in_oklch,var(--down)_12%,transparent)] hover:text-down',
-      // Permanent brand exception — Ko-fi hex + sizing in globals `.btn.coffee` (AD-003).
+      // Permanent brand exception — Ko-fi hex + sizing in `.btn.coffee`, styles.css (AD-003).
       coffee: 'btn coffee',
       'coffee-full': 'btn coffee full',
     },

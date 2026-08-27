@@ -1,11 +1,23 @@
 {
   "captureMode": "prod-profile",
   "fixture": "importedRoster",
-  "_note": "REFRESHED (1) for the Account page (2026-08-22), per docs/react-performance.md rule 10's deliberate-change path — never by widening the guard, which compares exactly on purpose. Every scenario moved DOWN and none moved up: P-02 7538->6778 (-760), P-03 13532->12240 (-1292), P-04 7280->6741 (-539), P-05 2371->2139 (-232). One cause: the Account panel left the planner's tab strip for its own route, so AccountColumn and its four field groups (house, farm target, skill tree, team buffs) no longer mount inside the tab panels and no longer re-render on every planner interaction. P-05 (switch planner tab) drops for the additional reason that there are three tabs to cycle instead of four. Captured on the host with PERF_FORCE=1 after perf:build:profile; all four scenarios reported deterministic=true, and the four figures reproduce the CI run's own numbers exactly (job 97048210106), which is what makes this a safe re-pin rather than a machine-local one.",
+  "_note": "REFRESHED (2) for the shared top bar (2026-08-26), per docs/react-performance.md rule 10's deliberate-change path — never by widening the guard, which compares exactly on purpose. Every scenario moved DOWN and none moved up: P-02 6778->6758 (-20), P-03 12240->12206 (-34), P-04 6741->6727 (-14), P-05 2139->2133 (-6). One cause: the header's four NavLink components became a single AppNav that renders its items inline, and the two language buttons became a single SegmentedToggle, so a header pass commits five components where it used to commit ten. The saving is per pass, which is why the scenario that drives the most passes (P-03) drops the most. Captured on the host with PERF_FORCE=1 after perf:build:profile; all four scenarios reported deterministic=true, and the four figures reproduce the CI run's own numbers exactly (job 98371569093), which is what makes this a safe re-pin rather than a machine-local one. REFRESHED (1) for the Account page (2026-08-22), per docs/react-performance.md rule 10's deliberate-change path — never by widening the guard, which compares exactly on purpose. Every scenario moved DOWN and none moved up: P-02 7538->6778 (-760), P-03 13532->12240 (-1292), P-04 7280->6741 (-539), P-05 2371->2139 (-232). One cause: the Account panel left the planner's tab strip for its own route, so AccountColumn and its four field groups (house, farm target, skill tree, team buffs) no longer mount inside the tab panels and no longer re-render on every planner interaction. P-05 (switch planner tab) drops for the additional reason that there are three tabs to cycle instead of four. Captured on the host with PERF_FORCE=1 after perf:build:profile; all four scenarios reported deterministic=true, and the four figures reproduce the CI run's own numbers exactly (job 97048210106), which is what makes this a safe re-pin rather than a machine-local one.",
   "scenarios": [
-    { "id": "P-02", "medianComponentRenders": 6778 },
-    { "id": "P-03", "medianComponentRenders": 12240 },
-    { "id": "P-04", "medianComponentRenders": 6741 },
-    { "id": "P-05", "medianComponentRenders": 2139 }
+    {
+      "id": "P-02",
+      "medianComponentRenders": 6758
+    },
+    {
+      "id": "P-03",
+      "medianComponentRenders": 12206
+    },
+    {
+      "id": "P-04",
+      "medianComponentRenders": 6727
+    },
+    {
+      "id": "P-05",
+      "medianComponentRenders": 2133
+    }
   ]
 }

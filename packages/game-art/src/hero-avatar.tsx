@@ -1,6 +1,6 @@
 import { heroAvatarSrc, normalizeSkin } from '@bombfarm/domain/wiki-assets';
 
-import { ArtFrame, type ArtFrameSize } from '@/shared/game-art/art-frame';
+import { ArtFrame, type ArtFrameSize } from './art-frame';
 
 type Props = {
   skin: number;

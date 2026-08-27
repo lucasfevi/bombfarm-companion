@@ -1,4 +1,4 @@
-import { Panel, StatList } from '@bombfarm/ui';
+import { Panel, PanelHeader, StatList } from '@bombfarm/ui';
 import type { RotationHousePanel } from '@bombfarm/domain/rotation-status';
 import { sub, useCopy, useLocale } from '../../lib/copy';
 import { formatCount } from '../../lib/format';
@@ -22,7 +22,7 @@ export function HousePanel({ house }: { house: RotationHousePanel }) {
   if (isHouseAbsent(house)) {
     return (
       <Panel data-testid="live-house">
-        <h2 className="text-base font-semibold text-ink">{t.liveHouseTitle}</h2>
+        <PanelHeader title={t.liveHouseTitle} />
         <p className="m-0 text-sm text-muted">{t.liveHouseAbsent}</p>
       </Panel>
     );
@@ -38,7 +38,7 @@ export function HousePanel({ house }: { house: RotationHousePanel }) {
 
   return (
     <Panel data-testid="live-house">
-      <h2 className="text-base font-semibold text-ink">{t.liveHouseTitle}</h2>
+      <PanelHeader title={t.liveHouseTitle} />
       <StatList
         aria-label={t.liveHouseTitle}
         items={[

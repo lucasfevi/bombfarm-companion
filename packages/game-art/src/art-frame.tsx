@@ -1,5 +1,5 @@
 import { cn } from '@bombfarm/ui';
-import { artFrameRecipe, type ArtFrameRecipeSize } from '@/shared/game-art/game-art.recipe';
+import { artFrameRecipe, type ArtFrameRecipeSize } from './game-art.recipe';
 
 export type ArtFrameSize = ArtFrameRecipeSize;
 export type ArtFrameShape = 'square' | 'portrait';

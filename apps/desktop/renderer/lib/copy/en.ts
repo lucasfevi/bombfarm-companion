@@ -30,6 +30,7 @@ export const en = {
   sectionNameItems: 'your gear',
 
   // planning* — the Planning screen
+  planningRosterColumnAvatar: 'Avatar',
   planningRosterColumnName: 'Hero',
   planningRosterColumnLevel: 'Level',
   planningRosterColumnStars: 'Stars',
@@ -169,19 +170,13 @@ export const en = {
     'Security software likely blocked the part of the app that reads the game. It keeps trying on its own.',
   liveGapReasonConsentMissing: 'You have not allowed the app to read your account and connect to the game yet.',
 
-  // liveList* — the four hero lists' headings, plus the lines shared by every list
-  liveListOnFieldTitle: 'On the field',
+  liveListOnFieldTitle: 'Field',
   liveListRecoveringTitle: 'Recovering',
   liveListQueuedTitle: 'Waiting for a rest slot',
   liveListBenchedTitle: 'Benched',
   liveListEmptyLine: 'No heroes here right now.',
   liveUnclassifiedCount: 'Heroes not sorted into a list: {n}',
   liveFieldExitPendingCount: 'Heroes just off the field, still updating: {n}',
-
-  // liveOccupancy* — field occupancy, reported as plain information, never a warning
-  liveOccupancyLabel: 'Field',
-  liveOccupancyValue: 'Field slots in use: {occupied} of {total}',
-  liveOccupancyValueUnknownTotal: 'Heroes on the field: {occupied}',
 
   // liveHouse* — the house panel
   liveHouseTitle: 'House',

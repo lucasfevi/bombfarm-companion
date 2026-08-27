@@ -11,7 +11,9 @@ recipes; conflicting utilities are resolved by `cn()` (`clsx` + `tailwind-merge`
 
 Design tokens are authored once in [`packages/ui/src/styles.css`](../packages/ui/src/styles.css)
 (`@theme` + `:root` aliases) with a typed mirror in
-[`packages/ui/src/tokens.ts`](../packages/ui/src/tokens.ts). Apps import
+[`packages/ui/src/tokens.ts`](../packages/ui/src/tokens.ts). The same file also carries the shared
+base element chrome (scrollbars, checkbox skin, base `table` styling, the `.btn.coffee` exception)
+so every app that imports it gets both the tokens and the chrome that dresses them. Apps import
 `@bombfarm/ui/styles.css` and add their own `@source` scan paths. The planner is **dark-only at runtime**:
 no `prefers-color-scheme` toggle. Primitives reference tokens **only** through Tailwind theme utilities
 (`bg-surface`, `text-muted`, `border-line`, …) or `color-mix(... var(--token) ...)`
@@ -31,8 +33,8 @@ brand button, `AD-003`).
 Because the token block is self-contained it is the first thing extractable as
 `@bombfarm/tokens` for the companion (see the staging table below).
 
-Bare-element `table` / `th` / `td` rules in `globals.css` `@layer base` are **base element
-styling**, not a design-system primitive and not a named CSS exception — see
+Bare-element `table` / `th` / `td` rules in `packages/ui/src/styles.css`'s `@layer base` are **base
+element styling**, not a design-system primitive and not a named CSS exception — see
 [`css-exceptions.md`](css-exceptions.md) (TW-07). **All planner tables** use the `DataTable`
 compound primitive under `design-system/` (`scrollable` for sticky lists that fill the parent or
 optionally `maxRows`/`minRows` rem caps; sticky heads are `z-20` with `border-separate` so row chrome
@@ -51,6 +53,7 @@ All exported from the barrel [`packages/ui/src/index.ts`](../packages/ui/src/ind
 | `AbilityCard` | `<div>` | compound `onSheet × selected` + `lockedOut` | `ability-card.recipe.ts` |
 | `Banner` | `<aside role="status">` | `tone`: `warn` \| `ok`; `layout`: `page` \| `embedded`; optional `title` | `panel-field.recipe.ts` (`setupBannerRecipe`) |
 | `Panel` | `<section>` | `focus` / `aligned` / `unverified` booleans (`need` is a no-op — required uses `FieldRequired`) | `panel-field.recipe.ts` |
+| `PanelHeader` | `<div>` + `<h2>` | `title` (required); optional `children` for the row's right-hand side (counters, actions). Section titles only — a hero name keeps bold sentence case | `panel-field.recipe.ts` (`panelHClass`/`panelTitleClass`) |
 | `Fields` | `<div>` | `layout`: `inline` \| `inline-dense` \| `stack` | `panel-field.recipe.ts` |
 | `Bar` | `<div>` | `pct` + `variant`: `fill` \| `best` | `bar.recipe.ts` |
 | `Num` | `@base-ui/react/button` spin + `<input type="number">` | composite numeric field — left chevron steppers, right-aligned value; hide native spinners | `stepper.recipe.ts` (`num*`) |
@@ -67,10 +70,25 @@ All exported from the barrel [`packages/ui/src/index.ts`](../packages/ui/src/ind
 | `MetricScoreboard` | `<div>` grid | equal-column KPI cells: `cells[]` of `{ id, label, value, tone, delta, deltaTone }`; keeps the invisible `+0.0%` placeholder for delta-less cells (no CLS) — promoted from the planner's `CompareMetricsStrip` (W6); grid is a fixed `grid-cols-1 sm:grid-cols-2 lg:grid-cols-4` — a caller with fewer than 4 cells passes `className="sm:grid-cols-N lg:grid-cols-N"` (`cn()`/tailwind-merge overrides both breakpoints) rather than leaving a blank trailing cell, e.g. `WaterfallPanel`'s 3-step scoreboard | `metric-scoreboard.recipe.ts` |
 | `GlossedText` | `<span>` | renders `template` with `terms: ReadonlyMap<token, tip>` tokens wrapped in `GlossaryTerm`; longest-token-first split; empty `terms` renders a plain wrapper — promoted from the planner's `GlossedFormula` (W6); the i18n glossary itself stays in `features/planner/model/formula-glossary.ts` | inline Tailwind |
 | `FileDropZone` | `<div role="button">` | click / keyboard / drag-drop file target; idle vs drag-over chrome via recipe; keeps Enter/Space and `input.value = ''` reset — promoted from import dialog (W6) | `file-drop-zone.recipe.ts` |
+| `AppNav` | `<nav>` + `<button>` | segmented nav pill: `items` (`{id, label, active}`), `ariaLabel` (default `'Main'`), `onSelect`; optional `renderItem` render prop lets a caller substitute its own element (the web supplies a Next `<Link>`) for the default `<button type="button">`; renders no `<nav>` at all when `items` is empty — extracted verbatim from the web's former `site-header.tsx` nav + `site-nav-link.tsx` (T4a) | `app-nav.recipe.ts` |
+| `SegmentedToggle` | `<div role="group">` + `<button>` | generic bordered flush button group: `options` (`{id, label}`), `value`, `onChange`, `ariaLabel`; no language semantics (DS-09) — extracted verbatim from the web's former inline PT/EN control (T4a) | `segmented-toggle.recipe.ts` |
+| `AppShell` | `<header>`/`<main>`/`<footer>` | desktop-only top-bar shell (used solely by `apps/desktop/renderer/app/page.tsx`): sticky header (brand `title`/`badge` lockup, an `AppNav` pill built from `items`/`activeId`/`onNavigate`, and a right-hand `actions` slot), a single scrolling `<main>`, and a slim status strip (`status`/`progress`/`version`). Same top-bar shape as the web's `SiteHeader`, replacing the desktop's earlier icon-rail sidebar (T4a). `draggable`/`overlayInset` are implemented for a later custom-title-bar task and default off | `AppShell.recipe.ts` |
 
-### Game art (`apps/web/src/shared/game-art/`)
+### Game art (`packages/game-art/src/`)
 
-Wiki-sourced game assets (heroes, items, abilities, …). **Do not overlay crystal gems** on item art. Hero avatars stay square with a **neutral fill + rarity border**. Gear frames are **portrait `18/19`** (in-game inventory pitch) with a **radial rarity plate** (`--rar-slot-N-glow/mid/edge`, legendary adds faint vertical rays) plus the matching rarity border. Export from [`apps/web/src/shared/game-art/index.ts`](../apps/web/src/shared/game-art/index.ts).
+Wiki-sourced game assets (heroes, items, abilities, …), shared by the web planner and the desktop
+Planning surfaces. It is its own workspace package rather than part of `packages/ui` because it
+depends on `@bombfarm/domain` (hero/gear shapes, `wiki-assets.ts` URL builders) and `@bombfarm/ui`,
+which DS-09 forbids `packages/ui` itself from doing. **Do not overlay crystal gems** on item art.
+Hero avatars stay square with a **neutral fill + rarity border**. Gear frames are **portrait
+`18/19`** (in-game inventory pitch) with a **radial rarity plate** (`--rar-slot-N-glow/mid/edge`,
+legendary adds faint vertical rays) plus the matching rarity border. Export from
+[`packages/game-art/src/index.ts`](../packages/game-art/src/index.ts); the web keeps a thin
+re-export barrel at [`apps/web/src/shared/game-art/index.ts`](../apps/web/src/shared/game-art/index.ts)
+so its existing `@/shared/game-art` call sites are unchanged. Bundled sprites live in
+`packages/game-art/assets/`; each app copies them into its own `public/wiki-assets/` at build time
+(`apps/*/scripts/copy-wiki-assets.mjs`, wired as a `prebuild` step) since Next only serves files
+under an app's own public root.
 
 | Component | Role | Recipe |
 | --- | --- | --- |
@@ -210,7 +228,7 @@ concerns out of primitives entirely. Imports of `shared/lib/**` (e.g. `cn`) rema
 The boundary is **lint-enforced, not grep-checked** — `eslint-plugin-boundaries`'
 `boundaries/element-types` rule (`eslint.config.mjs`, `error`) declares
 `@bombfarm/ui` sources as a boundary and allows them to depend on only themselves and
-shared lib helpers; every other edge (into a feature, into `@bombfarm/domain`, `shared/game-art`,
+shared lib helpers; every other edge (into a feature, into `@bombfarm/domain`, `@bombfarm/game-art`,
 `shared/context`, `shared/i18n`) is `disallow` by default. Package-aware element mapping is
 tracked debt for `mp1-ci-vercel-rebrand` / hygiene — until then, treat the reuse boundary as
 convention + review, not a fully wired package path. Run `pnpm lint` — a violation of still-mapped
@@ -264,7 +282,7 @@ Semantics live on a wrapping `<span>`; the inner `react-icons` SVG is always dec
 ### Lint seam
 
 - `packages/ui/**` and `apps/desktop/**`: raw `react-icons` or `*.svg` imports fail lint outside `packages/ui/src/icon/**`.
-- `apps/web/**`: nine planner files are **grandfathered** in `apps/web/eslint.config.mjs` (`site-header`, `topbar`, `footer`, `slot-editor`, `import-heroes-dialog`, `hero-picker-dialog`, `hero-strip`, `hero-strip-identity`, `phases-hero-switcher`). Delete an entry when that file migrates to `<Icon />`; any **new** web call site errors immediately.
+- `apps/web/**`: eight planner files are **grandfathered** in `apps/web/eslint.config.mjs` (`site-header`, `footer`, `slot-editor`, `import-heroes-dialog`, `hero-picker-dialog`, `hero-strip`, `hero-strip-identity`, `phases-hero-switcher`). Delete an entry when that file migrates to `<Icon />`; any **new** web call site errors immediately. (`topbar.tsx` — dead code, unreachable from any route — was deleted in T4a rather than migrated.)
 - `packages/ui/**/*.stories.tsx`: **covered too.** Stories are excluded from `packages/ui/tsconfig.json`, so root ESLint lints them with type checking off (`disableTypeChecked`) — the raw-icon ban applies. `tailwindcss/no-unnecessary-arbitrary-value` is deliberately off there: stories size demo frames to taste.
 - **Known gap:** `packages/ui/**/*.{test,spec}.{ts,tsx}` are still ignored by root ESLint (same tsconfig reason), so a raw icon import in a unit test is caught by review only. Narrow blast radius, no owning feature yet.
 

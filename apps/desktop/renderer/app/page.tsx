@@ -9,7 +9,7 @@ import type {
   SettingsWriteReason,
 } from '@bombfarm/contracts';
 import { DEFAULT_SETTINGS } from '@bombfarm/contracts';
-import { AppShell, StatusChip } from '@bombfarm/ui';
+import { AppShell, BrandMark, SegmentedToggle, StatusChip } from '@bombfarm/ui';
 // MP3 F1 (AD-032) — proves the renderer can import @bombfarm/domain: a value import from a
 // FILE subpath that itself value-imports ./data/catalog.json, so a dist missing the JSON data
 // fails the static export build rather than surfacing later at runtime (spec edge case). This
@@ -19,6 +19,7 @@ import { rarityLabel } from '@bombfarm/domain/game-labels';
 import type { ConsentRecord } from '@bombfarm/game-api';
 import { CopyProvider, useCopy, useLocale, type Copy } from '../lib/copy';
 import { formatAge } from '../lib/format';
+import { useOverlayInset } from '../lib/window-overlay';
 import { navItemsFor } from './nav-items';
 import { ConsentGate, isConsentGateVisible } from './consent-gate';
 import { ConsentModal } from './consent-modal';
@@ -29,6 +30,13 @@ import { DiagnosticsSection } from './settings/diagnostics-section';
 import { LanguageSection } from './settings/language-section';
 
 const DEFAULT_NAV_ID = 'live';
+
+// Matches the shipped Settings language `Select` (MIN-16) — same two locales, same
+// `onLocaleChange`, kept in sync only because both read/write the one `locale` state in `HomePage`.
+const LOCALE_OPTIONS: ReadonlyArray<{ id: AppLocale; label: string }> = [
+  { id: 'pt-BR', label: 'PT' },
+  { id: 'en', label: 'EN' },
+];
 
 function statusLabel(status: GameStatusInfo['status'], t: Copy): string {
   switch (status) {
@@ -114,6 +122,7 @@ function HomePageContent({
 }) {
   const t = useCopy();
   const { lang } = useLocale();
+  const overlayInset = useOverlayInset();
   const [activeNavId, setActiveNavId] = useState(DEFAULT_NAV_ID);
   const [environment, setEnvironment] = useState<AppEnvironmentInfo | null>(null);
   const [status, setStatus] = useState<GameStatusInfo | null>(null);
@@ -197,6 +206,19 @@ function HomePageContent({
         items={granted ? navItemsFor(t) : []}
         activeId={activeNavId}
         onNavigate={setActiveNavId}
+        brand={<BrandMark />}
+        draggable
+        overlayInset={overlayInset}
+        actions={
+          <SegmentedToggle
+            options={LOCALE_OPTIONS}
+            value={locale}
+            onChange={(id) => {
+              if (id === 'en' || id === 'pt-BR') onLocaleChange(id);
+            }}
+            ariaLabel={t.consentGateLanguageLabel}
+          />
+        }
         status={
           <span data-testid="game-status-chip">
             {status ? (

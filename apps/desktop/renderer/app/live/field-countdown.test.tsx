@@ -47,7 +47,7 @@ describe('FieldCountdown — an estimated reading is marked without moving the n
     expect(observed).not.toContain(en.liveCountdownEstimatedQualifier);
   });
 
-  it('flipping basis changes no layout-affecting class and no element structure, only colour/border-style utilities', () => {
+  it('flipping basis changes no layout-affecting class and no element structure, only text colour — no border either way', () => {
     const observed = render({ heroId: 'h1', secondsRemaining: 90, basis: 'observed' });
     const modelled = render({ heroId: 'h1', secondsRemaining: 90, basis: 'modelled' });
 
@@ -65,7 +65,8 @@ describe('FieldCountdown — an estimated reading is marked without moving the n
       (token) => observedTokens.has(token) !== modelledTokens.has(token),
     );
     for (const token of changed) {
-      expect(['border-transparent', 'text-ink', 'border-muted', 'text-muted']).toContain(token);
+      expect(['text-ink', 'text-muted']).toContain(token);
     }
+    expect([...observedTokens, ...modelledTokens].some((token) => token.startsWith('border'))).toBe(false);
   });
 });

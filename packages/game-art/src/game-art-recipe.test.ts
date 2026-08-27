@@ -5,7 +5,7 @@ import {
   iconMetaGlyphRecipe,
   rosterIconTooltipTriggerClass,
   rosterInactiveChromeClass,
-} from '@/shared/game-art/game-art.recipe';
+} from './game-art.recipe';
 
 describe('game-art.recipe', () => {
   it('artFrameRecipe encodes rarity border, shape, and fill', () => {
