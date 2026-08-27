@@ -45,7 +45,6 @@ const SEED_SAVE = 'apps/web/e2e/fixtures/sample-save.json';
  * CAPTURE asserts what the game did on its capture date and must never be rewritten.
  */
 const DATED_CAPTURES = [
-  'apps/web/src/tests/fixtures/sheet-math',
   'packages/domain/tests/fixtures/api',
   'packages/domain/tests/fixtures/farm-rate',
   'packages/domain/tests/fixtures/fidelity-gate',

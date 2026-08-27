@@ -10,8 +10,10 @@ on the deleted corpus onto a new post-patch corpus, and records here what that c
 
 ## 1. What the corpus is now
 
-Two captures, committed to both `packages/domain/tests/fixtures/sheet-math/` and
-`apps/web/src/tests/fixtures/sheet-math/`, byte-identical across trees:
+Two captures, committed once to `packages/domain/tests/fixtures/sheet-math/`. `apps/web` reads
+this same directory by relative path rather than holding its own copy — the two trees carried a
+byte-identical duplicate until it was deduped, and `tools/fixture-corpus-parity.test.mjs` now
+fails if that duplicate ever comes back:
 
 - **`save-20260813-5heroes.json`** — a scrubbed 2026-08-13 save export, account 486 (post-wipe),
   5 heroes (Jon L38 4/8 geared, Bellatrix L42 8/8 geared, two Perrins L4/L3 naked, Lyra L2 naked).

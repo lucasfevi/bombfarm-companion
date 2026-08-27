@@ -1,9 +1,12 @@
 # `sheet-math` fixture provenance
 
-The post-2026-08-13-patch corpus. Every fixture in this directory (and its byte-identical copy at
-`apps/web/src/tests/fixtures/sheet-math/`) satisfies the positive discriminator: it carries at
-least one of `skills.refunds`, `skills.totals.vagas_campo`, `skills.totals.bag_tabs_bonus`, and
-none of `keystones`, `abisso_base`, `crit_dmg_mult` — enforced by `fixture-corpus.test.ts`.
+The post-2026-08-13-patch corpus. This directory is the sole committed copy — `apps/web` reads it
+directly by relative path rather than holding a copy of its own, and
+`tools/fixture-corpus-parity.test.mjs` fails if one is ever committed there again.
+
+Every fixture here satisfies the positive discriminator: it carries at least one of
+`skills.refunds`, `skills.totals.vagas_campo`, `skills.totals.bag_tabs_bonus`, and none of
+`keystones`, `abisso_base`, `crit_dmg_mult` — enforced by `fixture-corpus.test.ts`.
 
 For what this deletion cost, the unreproducible fixture families it replaced, and the round-trip
 invariant's one accepted residual gap, see
