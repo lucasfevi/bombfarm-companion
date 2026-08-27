@@ -131,11 +131,10 @@ describe('design-system barrel surface (frozen)', () => {
 // in @bombfarm/ui because it composes ItemIcon and the rarity classes, which are game vocabulary;
 // it carries no strings of its own, so each shell supplies its own locale.
 //
-// InventoryItemIcon + inventoryChipRecipe/inventoryCountClass (2026-08-27): the grid grew a
-// search-and-filter toolbar and per-kind cards. `InventoryItemIcon` is a sibling of `ItemIcon`
-// rather than a widening of it: it lays the game's own rarity slot plate under the sprite, and
-// it takes an `InventoryViewItem` — which a gem or a key satisfies and an `EquippedItem` cannot,
-// since those carry no gear slot.
+// The toolbar and stat classes (2026-08-27): the grid grew a search-and-filter toolbar and
+// per-kind cards. `ItemIcon` absorbed the inventory'''s own icon rather than keeping a sibling —
+// it lays the game'''s rarity slot plate under every item tile the app draws, and takes a
+// structural shape both `EquippedItem` and `InventoryViewItem` satisfy.
 //
 // The toolbar and stat-panel classes (2026-08-27) are exported for the same reason every other
 // recipe here is: both shells render the grid, and a shell that wants to match its chrome needs
@@ -155,7 +154,6 @@ const FROZEN_GAME_ART_BARREL_VALUE_EXPORTS = [
   'HeroIdentity',
   'HeroIdentityChip',
   'HouseIcon',
-  'InventoryItemIcon',
   'ItemIcon',
   'PropIcon',
   'abilityIconRecipe',
@@ -172,6 +170,7 @@ const FROZEN_GAME_ART_BARREL_VALUE_EXPORTS = [
   'inventorySortGroupClass',
   'inventorySortSelectClass',
   'inventoryStatLabelClass',
+  'inventoryStatLeaderClass',
   'inventoryStatRowClass',
   'inventoryStatValueClass',
   'inventoryStatsPanelClass',

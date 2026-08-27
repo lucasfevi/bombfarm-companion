@@ -223,6 +223,31 @@ test.describe('inventory smoke', () => {
     });
   });
 
+  /**
+   * The direction toggle carries the design system tooltip, not the browser's `title`. A native
+   * one ignores the theme, waits about a second, and cannot be dismissed — and it is invisible to
+   * this assertion, which is the point: `getByRole('tooltip')` only finds a real one.
+   */
+  test('the sort direction toggle explains itself through the design system tooltip', async () => {
+    await withInventory(async (page) => {
+      const view = page.getByTestId('inventory-view');
+      const toggle = view.getByRole('button', { name: /Ascending|Descending/ });
+
+      // No browser tooltip: a native `title` here would satisfy a human squinting at the UI and
+      // still be the wrong control.
+      expect(await toggle.getAttribute('title')).toBeNull();
+      await expect(toggle).toHaveAttribute('data-base-ui-tooltip-trigger', '');
+
+      // The popup is a plain div carrying the design system's own slot attribute — Base UI puts
+      // the ARIA on the trigger (`aria-describedby`), so there is no `role="tooltip"` to find.
+      await toggle.hover();
+      await expect(page.locator('[data-slot="tooltip-popup"]')).toContainText(
+        /Ascending|Descending/,
+        { timeout: 10_000 },
+      );
+    });
+  });
+
   test('sorting reorders within a group, and the direction toggle reverses it', async () => {
     await withInventory(async (page) => {
       const view = page.getByTestId('inventory-view');
@@ -238,21 +263,34 @@ test.describe('inventory smoke', () => {
 
   /**
    * The headline of the multi-key order: choosing a second key must not throw the first away, it
-   * demotes it to a tie-break. Asserted through the UI because the promotion happens in the
-   * toolbar's `withSortTerm` call, not in the sort itself.
+   * demotes it to a tie-break. Nothing on screen names the tie-break, so this asserts the ORDER
+   * it produces — two items of the same rarity, ranked by the demoted key.
    */
   test('a newly chosen sort key becomes primary and the previous one becomes the tie-break', async () => {
     await withInventory(async (page) => {
       const view = page.getByTestId('inventory-view');
-      // Default is rarity desc, then level desc — so the tie-break line is already showing.
-      await expect(view.getByText(/then by/i)).toBeVisible();
+      // Gear only: it is the one kind that HAS a level, so it is the one kind whose order can
+      // show a level tie-break at all.
+      const levels = async () => {
+        const texts = await page
+          .locator('[data-testid="inventory-group"][data-kind="equipment"]')
+          .getByTestId('inventory-card')
+          .allInnerTexts();
+        return texts.map((text) => Number(/Level (\d+)/.exec(text)?.[1] ?? 0));
+      };
+
+      // Narrow to one rarity, so every visible card ties on the primary key and the order that
+      // remains is the tie-break's alone.
+      await view.getByRole('button', { name: 'Rare', exact: true }).click();
 
       await chooseOption(page, 'Sort by', 'Level');
-      await view.getByRole('button', { name: /Ascending|Descending/ }).click();
+      await view.getByRole('button', { name: 'Descending' }).click();
       await chooseOption(page, 'Sort by', 'Rarity');
 
-      // Rarity is now primary; level survives underneath it rather than being discarded.
-      await expect(view.getByText(/then by.*level/i)).toBeVisible();
+      // Rarity is primary now; level ascending survives underneath it rather than being dropped.
+      const ascending = await levels();
+      expect(ascending.length).toBeGreaterThan(1);
+      expect([...ascending].sort((a, b) => a - b)).toEqual(ascending);
     });
   });
 });

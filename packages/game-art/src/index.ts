@@ -2,8 +2,7 @@ export { ArtFrame, type ArtFrameSize } from './art-frame';
 export { HeroAvatar } from './hero-avatar';
 export { HeroIdentity, type HeroIdentityVariant } from './hero-identity';
 export { HeroIdentityChip } from './hero-identity-chip';
-export { ItemIcon } from './item-icon';
-export { InventoryItemIcon } from './inventory-item-icon';
+export { ItemIcon, type ItemIconItem } from './item-icon';
 export { InventoryGrid } from './inventory-grid';
 export type {
   InventoryBadge,
@@ -47,6 +46,7 @@ export {
   inventorySortGroupClass,
   inventorySortSelectClass,
   inventoryStatLabelClass,
+  inventoryStatLeaderClass,
   inventoryStatRowClass,
   inventoryStatValueClass,
   inventoryStatsPanelClass,

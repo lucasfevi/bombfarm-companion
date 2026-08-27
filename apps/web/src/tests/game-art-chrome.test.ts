@@ -216,11 +216,25 @@ describe('item icon meta glyphs', () => {
     expect(src).toContain('iconMetaGlyphRecipe');
     expect(src).toContain("place: 'top-end'");
     expect(src).toContain("place: 'bottom-end'");
-    expect(src).toContain("shape=\"portrait\"");
-    expect(src).toContain('fill="rarity"');
-    expect(src).toContain('showUpgrade && upgrade > 0');
+    expect(src).toContain('shape="portrait"');
+    expect(src).toContain('withUpgrade');
     expect(src).toContain('+{upgrade}');
-    expect(src).toContain('{level}');
+  });
+
+  /**
+   * The tile is backed by the game's own rarity plate. `fill="rarity"` — the hand-written CSS
+   * gradient that used to approximate it — survives only as the fallback for a rarity index the
+   * plates do not cover, which is why both appear here.
+   */
+  it('lays the game slot plate under the sprite, keeping the CSS gradient as the fallback', () => {
+    expect(src).toContain('raritySlotPlateSrc');
+    expect(src).toContain("fill={plate ? 'plate' : 'rarity'}");
+  });
+
+  /** Level and forge are gear's glyphs alone: every other kind arrives with both at 0. */
+  it('gates the level and forge glyphs on the item being gear', () => {
+    expect(src).toContain('isGear');
+    expect(src).toContain("item.kind === undefined || item.kind === 'equipment'");
   });
 
   it('keeps rarity frame when wiki PNG is missing', () => {
@@ -250,7 +264,7 @@ describe('gear tab slot chrome', () => {
   const src = read('features/gear/components/slot-editor.tsx');
 
   it('uses ItemIcon at xl with default level and upgrade glyphs', () => {
-    expect(src).toMatch(/<ItemIcon equipped=\{equipped\} size="xl"/);
+    expect(src).toMatch(/<ItemIcon item=\{equipped\} size="xl"/);
     expect(src).not.toContain('showLevel={false}');
     expect(src).not.toContain('showUpgrade={false}');
     expect(src).toContain('w-16');

@@ -18,6 +18,8 @@ const MIGRATED_UI_NAMES = [
   'information-circle',
   'arrow-path',
   'lock-closed',
+  'sort-ascending',
+  'sort-descending',
 ] as const;
 
 describe('icon registries — budget and membership', () => {
@@ -25,7 +27,7 @@ describe('icon registries — budget and membership', () => {
     expect(Object.keys(uiIconRegistry).length).toBeLessThanOrEqual(24);
   });
 
-  it('maps exactly the nine ui-chrome glyphs', () => {
+  it('maps exactly the declared ui-chrome glyphs', () => {
     expect(Object.keys(uiIconRegistry).sort()).toEqual([...MIGRATED_UI_NAMES].sort());
   });
 

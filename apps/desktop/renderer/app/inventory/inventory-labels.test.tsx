@@ -57,20 +57,34 @@ describe('desktop inventory labels', () => {
     expect(inventoryLabels(ptBR, 'pt').itemName(item('g1'))).toBe('Aço · Luva');
   });
 
-  it('gives gear its rarity, level and forge, and gives a gem only its rarity', () => {
+  /** The three parts stay apart so the card can colour each one; joining them would force it to
+   *  colour the separators too. */
+  it('gives gear a rarity, a level and a forge, and gives a gem only a rarity', () => {
     const labels = inventoryLabels(en, 'en');
-    expect(labels.itemDetail(item('g1'))).toBe('Rare · Level 20 · +8');
-    expect(labels.itemDetail(item('m1'))).toBe('Legendary');
+    expect(labels.itemRarity(item('g1'))).toBe('Rare');
+    expect(labels.itemLevel(item('g1'))).toBe('Level 20');
+    expect(labels.itemForge(item('g1'))).toBe('+8');
+
+    expect(labels.itemRarity(item('m1'))).toBe('Legendary');
+    expect(labels.itemLevel(item('m1'))).toBe('');
+    expect(labels.itemForge(item('m1'))).toBe('');
   });
 
-  /** A key, a house part and a skill stone are named by their tier, so repeating it below the
-   *  name read "Epic / Epic". */
-  it('leaves the detail line empty for the kinds whose name is already their tier', () => {
+  /**
+   * A key, a house part and a skill stone are named by their tier, so repeating it below the name
+   * read "Epic / Epic". The empty rarity is also the card's signal to colour the NAME instead.
+   */
+  it('leaves the rarity empty for the kinds whose name is already their tier', () => {
     const labels = inventoryLabels(en, 'en');
     for (const id of ['k1', 't1', 's1']) {
       expect(labels.itemName(item(id))).not.toBe('');
-      expect(labels.itemDetail(item(id))).toBe('');
+      expect(labels.itemRarity(item(id))).toBe('');
+      expect(labels.itemLevel(item(id))).toBe('');
     }
+  });
+
+  it('leaves the forge empty on an unforged item, so the card draws no separator for it', () => {
+    expect(inventoryLabels(en, 'en').itemForge(item('m1'))).toBe('');
   });
 
   it('splits a stat into label and value, and suffixes only the percent one', () => {

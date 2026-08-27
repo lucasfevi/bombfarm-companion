@@ -28,9 +28,6 @@ const IDENTICAL_IN_BOTH_LANGUAGES: readonly (keyof typeof en)[] = [
   'ageShortSeconds',
   'planningRosterColumnAvatar',
   'inventoryDetailSetSlot',
-  // Pure assembly — '{key} {direction}' carries no words of its own; both halves arrive already
-  // translated, and the space between them is the same in either language.
-  'inventorySortTerm',
 ];
 
 function placeholderSet(value: string): Set<string> {

@@ -77,19 +77,23 @@ function itemName(item: InventoryViewItem, t: Copy, lang: 'pt' | 'en'): string {
 const NAMED_BY_RARITY = new Set<ItemKind>(['key', 'time', 'stone']);
 
 /**
- * Only gear has a level and a forge; everything else arrives with both at 0 on the wire. A key,
- * a house part and a skill stone are already named by their tier, so repeating it here read
- * "Epic / Epic".
+ * The tier, on its own so the card can colour it. Empty for the kinds whose NAME is already
+ * their tier, which is what tells the card to colour the name instead of the line below it.
  */
-function itemDetail(item: InventoryViewItem, t: Copy, lang: 'pt' | 'en'): string {
+function itemRarity(item: InventoryViewItem, lang: 'pt' | 'en'): string {
   if (NAMED_BY_RARITY.has(item.kind)) return '';
+  return itemRarityLabel(item.rarityIdx, lang);
+}
 
-  const rarity = itemRarityLabel(item.rarityIdx, lang);
-  if (item.kind !== 'equipment') return rarity;
+/** Only gear has a level: everything else arrives with `level: 0` on the wire. */
+function itemLevel(item: InventoryViewItem, t: Copy): string {
+  if (item.kind !== 'equipment') return '';
+  return fill(t.inventoryDetailLevel, { level: item.level });
+}
 
-  const parts = [rarity, fill(t.inventoryDetailLevel, { level: item.level })];
-  if (item.upgrade > 0) parts.push('+' + String(item.upgrade));
-  return parts.join(' · ');
+/** The forge, split off so the card can accent it. */
+function itemForge(item: InventoryViewItem): string {
+  return item.kind === 'equipment' && item.upgrade > 0 ? '+' + String(item.upgrade) : '';
 }
 
 function number(value: number, decimals: number): string {
@@ -168,7 +172,14 @@ function heroOption(heroId: string, heroes: ReadonlyMap<string, InventoryHero>):
 
 /** Everything a card shows, joined — so a search for "glacier boots epic" narrows on all three. */
 function searchText(item: InventoryViewItem, t: Copy, lang: 'pt' | 'en'): string {
-  return [itemName(item, t, lang), itemDetail(item, t, lang), item.defId, item.set, item.slot ?? ''].join(' ');
+  return [
+    itemName(item, t, lang),
+    itemRarityLabel(item.rarityIdx, lang),
+    itemLevel(item, t),
+    item.defId,
+    item.set,
+    item.slot ?? '',
+  ].join(' ');
 }
 
 export function inventoryLabels(
@@ -179,7 +190,9 @@ export function inventoryLabels(
   return {
     groupTitle: (kind) => t[GROUP_KEY[kind]],
     itemName: (item) => itemName(item, t, lang),
-    itemDetail: (item) => itemDetail(item, t, lang),
+    itemRarity: (item) => itemRarity(item, lang),
+    itemLevel: (item) => itemLevel(item, t),
+    itemForge: (item) => itemForge(item),
     itemStat: (stat) => itemStat(stat, lang),
     badges: (item) => badges(item, t),
     equippedBy: (item) => equippedBy(item, heroes, t),
@@ -201,12 +214,6 @@ export function inventoryLabels(
       sortKey: (key) => t[SORT_KEY[key]],
       sortAscending: t.inventorySortAscending,
       sortDescending: t.inventorySortDescending,
-      sortTerm: (key, direction) =>
-        fill(t.inventorySortTerm, {
-          key: t[SORT_KEY[key]],
-          direction: (direction === 'asc' ? t.inventorySortAscending : t.inventorySortDescending).toLowerCase(),
-        }),
-      sortThenBy: (terms) => fill(t.inventorySortThenBy, { terms: terms.join(', ') }),
     },
     unknownCategoryNote: (codes) => fill(t.inventoryUnknownCategory, { codes: codes.join(', ') }),
     skippedNote: (count) => fill(t.inventorySkipped, { count }),

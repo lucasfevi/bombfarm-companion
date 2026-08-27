@@ -84,7 +84,7 @@ export function HeroGearIcons({
               onClick={stopRowActivation}
               onKeyDown={stopRowActivation}
             >
-              <ItemIcon equipped={equipped} size="lg" />
+              <ItemIcon item={equipped} size="lg" />
             </Tooltip.Trigger>
             <Tooltip.Portal>
               <Tooltip.Positioner sideOffset={6}>

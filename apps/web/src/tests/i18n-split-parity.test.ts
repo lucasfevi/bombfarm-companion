@@ -389,8 +389,6 @@ const KEYS_ADDED: readonly string[] = [
   'inventorySortCount',
   'inventorySortAscending',
   'inventorySortDescending',
-  'inventorySortThenBy',
-  'inventorySortTerm',
   'inventoryUnknownCategory',
   'inventorySkipped',
   'inventoryEmptyTitle',

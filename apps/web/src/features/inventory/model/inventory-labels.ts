@@ -80,22 +80,25 @@ function chestName(defId: string, strings: Strings): string {
 }
 
 /**
- * Gear gets rarity, level and forge; nothing else has any of the three — a gem's `level` and
- * `upgrade` both arrive as 0 on the wire, so printing "Lv 0" was showing a field the game does
- * not give that item.
- *
- * A key, a house part and a skill stone have no name of their own beyond their tier, so
- * {@link itemName} already prints the rarity. Repeating it here read "Épico / Épico".
+ * The tier, on its own so the card can colour it. Empty for the kinds whose NAME is already
+ * their tier — a key, a house part, a skill stone — which is what tells the card to colour the
+ * name instead of the line below it.
  */
-function itemDetail(item: InventoryViewItem, strings: Strings, lang: Lang): string {
+function itemRarity(item: InventoryViewItem, lang: Lang): string {
   if (NAMED_BY_RARITY.has(item.kind)) return '';
+  return itemRarityLabel(item.rarityIdx, lang);
+}
 
-  const rarity = itemRarityLabel(item.rarityIdx, lang);
-  if (item.kind !== 'equipment') return rarity;
+/** Only gear has a level: everything else arrives with `level: 0` on the wire. */
+function itemLevel(item: InventoryViewItem, strings: Strings): string {
+  if (item.kind !== 'equipment') return '';
+  return sub(strings.inventoryDetailLevel, { level: item.level });
+}
 
-  const parts = [rarity, sub(strings.inventoryDetailLevel, { level: item.level })];
-  if (item.upgrade > 0) parts.push(`+${item.upgrade}`);
-  return parts.join(' · ');
+/** The forge, split off so the card can accent it — it is the one number on that line the
+ *  player chose to put there. */
+function itemForge(item: InventoryViewItem): string {
+  return item.kind === 'equipment' && item.upgrade > 0 ? `+${item.upgrade}` : '';
 }
 
 /** Kinds whose only distinguishing feature is their tier, so the tier IS the name. */
@@ -178,7 +181,8 @@ function heroOption(heroId: string, heroBySourceId: ReadonlyMap<string, HeroReco
 function searchText(item: InventoryViewItem, strings: Strings, lang: Lang): string {
   return [
     itemName(item, strings, lang),
-    itemDetail(item, strings, lang),
+    itemRarityLabel(item.rarityIdx, lang),
+    itemLevel(item, strings),
     item.defId,
     item.set,
     item.slot ?? '',
@@ -198,7 +202,9 @@ export function inventoryLabels(
   return {
     groupTitle: (kind) => strings[GROUP_KEY[kind]] as string,
     itemName: (item) => itemName(item, strings, lang),
-    itemDetail: (item) => itemDetail(item, strings, lang),
+    itemRarity: (item) => itemRarity(item, lang),
+    itemLevel: (item) => itemLevel(item, strings),
+    itemForge: (item) => itemForge(item),
     itemStat: (stat) => itemStat(stat, lang),
     badges: (item) => badges(item, strings),
     equippedBy: (item) => equippedBy(item, heroBySourceId, strings),
@@ -220,15 +226,6 @@ export function inventoryLabels(
       sortKey: (key) => strings[SORT_KEY[key]] as string,
       sortAscending: strings.inventorySortAscending,
       sortDescending: strings.inventorySortDescending,
-      sortTerm: (key, direction) =>
-        sub(strings.inventorySortTerm, {
-          key: strings[SORT_KEY[key]] as string,
-          direction: (direction === 'asc'
-            ? strings.inventorySortAscending
-            : strings.inventorySortDescending
-          ).toLowerCase(),
-        }),
-      sortThenBy: (terms) => sub(strings.inventorySortThenBy, { terms: terms.join(', ') }),
     },
     unknownCategoryNote: (codes) => sub(strings.inventoryUnknownCategory, { codes: codes.join(', ') }),
     skippedNote: (count) => sub(strings.inventorySkipped, { count }),

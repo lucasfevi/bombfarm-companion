@@ -70,21 +70,33 @@ export type InventoryBadgeTone = NonNullable<VariantProps<typeof inventoryBadgeR
 /** Wide enough for a 64px icon beside four stat lines without the text wrapping to two columns. */
 export const inventoryGridClass = 'grid grid-cols-[repeat(auto-fill,minmax(17rem,1fr))] gap-2.5';
 
-/** Toolbar field — the search box and the two selects, so they read as one control strip. */
-export const inventoryFieldClass =
-  'rounded-md border border-line bg-bg-2 px-2.5 py-1.5 text-sm text-ink placeholder:text-muted focus-visible:border-accent focus-visible:outline-none';
+/**
+ * Toolbar field height. The design system `Select` renders at 40px on its `default` size, which
+ * is right for a settings form and too heavy for a filter bar sitting above a dense grid — so the
+ * bar runs at the `compact` size instead, and the search box is pinned to the same 30px so the
+ * two never read as different controls.
+ */
+const TOOLBAR_FIELD_HEIGHT = 'h-[30px]';
+
+export const inventoryFieldClass = `${TOOLBAR_FIELD_HEIGHT} rounded-sm border border-line bg-bg-2 px-2.5 text-sm text-ink placeholder:text-muted focus-visible:border-accent focus-visible:outline-none`;
 
 /**
  * The sort control is one segmented button: the key select and the direction toggle share an
  * outline, so they read as a single "sorted by X, descending" rather than two loose fields.
  */
-export const inventorySortGroupClass = 'flex shrink-0 items-stretch overflow-hidden rounded-md border border-line';
+export const inventorySortGroupClass = `flex ${TOOLBAR_FIELD_HEIGHT} shrink-0 items-stretch overflow-hidden rounded-sm border border-line`;
 
-export const inventorySortSelectClass =
-  'cursor-pointer border-0 bg-bg-2 py-1.5 pr-1.5 pl-2.5 text-sm text-ink focus-visible:outline-none';
+/**
+ * The select fills the group; the group's own border is the one that shows. Deliberately sets no
+ * padding: the field is an `items-stretch` flex whose first child is the chevron affix, so any
+ * padding here shifts that affix off the field's own centre line.
+ */
+export const inventorySortSelectClass = 'h-full min-h-0 rounded-none border-0 focus-visible:outline-none';
 
+/** `grid place-items-center` rather than padding: the glyph is a square SVG, and centring it by
+ *  eye with `px` leaves it a pixel high in a control this short. */
 export const inventorySortDirectionClass =
-  'cursor-pointer border-0 border-l border-l-line bg-bg-2 px-2 text-sm text-muted hover:text-ink focus-visible:outline-none';
+  'grid w-8 shrink-0 cursor-pointer place-items-center border-0 border-l border-l-line bg-bg-2 text-muted hover:text-ink focus-visible:outline-none';
 
 /** Toolbar chip — the kind and rarity filters, and the equipped toggle. */
 export const inventoryChipRecipe = cva(
@@ -101,20 +113,28 @@ export const inventoryChipRecipe = cva(
 );
 
 /**
- * The stat block, set into the card as its own panel. Sunk rather than raised: it is reference
- * detail under the name, not a second heading, and an inset reads as "inside this card" without
- * adding another border colour to a card that already carries a rarity one.
+ * The stat block. No rules and no second surface: the card already carries a rarity border and a
+ * rarity fill, and a boxed or fully-ruled list inside it was a third frame competing with both.
+ * What aligns the numbers instead is the monospace column — every value is the same glyph width,
+ * so they line up on their own — with a dotted leader carrying the eye from each label across to
+ * its own number rather than down the list.
  */
-export const inventoryStatsPanelClass =
-  'mt-1 flex flex-col gap-0.5 rounded-md bg-[color-mix(in_oklch,var(--bg)_45%,transparent)] px-2 py-1.5';
+export const inventoryStatsPanelClass = 'mt-2 flex flex-col gap-1';
 
-/** One stat row: label left, value right, with the gap between them doing the aligning. */
-export const inventoryStatRowClass = 'flex items-baseline justify-between gap-3 text-xs leading-tight';
+export const inventoryStatRowClass = 'flex items-baseline gap-1.5 text-xs leading-tight';
 
-export const inventoryStatLabelClass = 'min-w-0 truncate text-muted';
+/** The label carries the weight: the rows are scanned by stat name. */
+export const inventoryStatLabelClass = 'shrink-0 truncate font-semibold text-ink';
 
-/** Semibold and ink-coloured — the number is what the eye is scanning for, not the word. */
-export const inventoryStatValueClass = 'shrink-0 font-semibold tabular-nums text-ink';
+/**
+ * The leader. A repeating radial gradient rather than a dotted border, because a border-bottom
+ * renders as dashes at this size in every engine and the spacing cannot be tuned.
+ */
+export const inventoryStatLeaderClass =
+  'mb-[3px] h-px min-w-2 flex-1 bg-[radial-gradient(circle,color-mix(in_oklch,var(--line)_90%,transparent)_1px,transparent_1px)] bg-[length:4px_1px] bg-repeat-x';
+
+/** Mono and accent: the digits column is what does the aligning, so it has to be the column. */
+export const inventoryStatValueClass = 'shrink-0 font-mono text-[11px] font-medium tabular-nums text-accent';
 
 /** The stack count on a fungible item's card — the game draws this bottom-right of the tile. */
 export const inventoryCountClass =
