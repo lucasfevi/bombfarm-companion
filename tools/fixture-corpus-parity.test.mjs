@@ -355,4 +355,62 @@ describe('cross-package fixture corpus parity (MP5 F1)', () => {
       expect(actual[file], `${file}: match count`).toBe(DOMAIN_MATCH_MAP[file]);
     }
   });
+
+  // The general safety net behind the two named invariants above (AD-070): no OTHER capture may
+  // be committed at more than one path. Content-hash based, not filename based — a rename or a
+  // re-serialization of the same account state would otherwise slip past a name-only check.
+  // Scoped to the tree's fixture directories rather than every tracked file, so an incidental
+  // match (an empty `{}` config, a shared license header) can't produce a false positive.
+  const FIXTURE_ROOTS = [
+    'apps/desktop/renderer/lib/planning/fixtures',
+    'apps/desktop/src/main/live-source/fixtures',
+    'apps/desktop/tests/fixtures',
+    'apps/web/e2e/fixtures',
+    'apps/web/src/tests/fixtures',
+    'packages/domain/tests/fixtures',
+    'packages/game-api/src/__fixtures__',
+    'packages/game-data/fixtures',
+    'tools/release/__fixtures__',
+    'tools/wiki-drift/__fixtures__',
+  ];
+
+  // The two pairs the tests above already name and require (AD-070) are documented, intentional
+  // duplication, not drift — every other cross-path match is unexpected.
+  const KNOWN_DUPLICATE_PAIRS = [
+    [
+      'packages/domain/tests/fixtures/fidelity-gate/export-capture.json',
+      'packages/domain/tests/fixtures/sheet-math/save-20260813-5heroes.json',
+    ],
+    [
+      'packages/domain/tests/fixtures/api/assembled-payload-before.json',
+      'packages/domain/tests/fixtures/sheet-math/payload-20260812-8heroes.json',
+    ],
+  ];
+  const KNOWN_DUPLICATE_KEYS = new Set(KNOWN_DUPLICATE_PAIRS.map((pair) => [...pair].sort().join('|')));
+
+  it('no fixture JSON is committed at more than one path beyond the two AD-070 invariants above', () => {
+    const files = trackedFiles().filter(
+      (f) => f.endsWith('.json') && FIXTURE_ROOTS.some((fixtureRoot) => f === fixtureRoot || f.startsWith(`${fixtureRoot}/`)),
+    );
+    expect(files.length, 'walked the fixture roots for .json files').toBeGreaterThan(0);
+
+    const byHash = new Map();
+    for (const file of files) {
+      const hash = sha256(join(root, file));
+      const group = byHash.get(hash) ?? [];
+      group.push(file);
+      byHash.set(hash, group);
+    }
+
+    const unexpectedDuplicates = [];
+    for (const group of byHash.values()) {
+      if (group.length < 2) continue;
+      if (KNOWN_DUPLICATE_KEYS.has([...group].sort().join('|'))) continue;
+      unexpectedDuplicates.push(group);
+    }
+    expect(
+      unexpectedDuplicates,
+      `fixture content committed at more than one path: ${unexpectedDuplicates.map((g) => g.join(' == ')).join('; ')}`,
+    ).toEqual([]);
+  });
 });

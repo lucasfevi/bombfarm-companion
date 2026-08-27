@@ -49,7 +49,7 @@ const SRC_PATTERN =
  */
 const TESTS_PATTERN = /keystone|abisso|glass.?cannon|tempo.?dobrado|crit_dmg_mult|abissoBase|abisso_base/i;
 
-const SKIP_PATTERN = /\.skip\(|\.todo\(|\bxit\(|\bxdescribe\(/;
+const SKIP_PATTERN = /\.skip(\.each)?\(|\.todo(\.each)?\(|\bxit\(|\bxdescribe\(/;
 /** The same pattern, global, so the manifest below can COUNT matches and not just detect one. */
 const SKIP_PATTERN_GLOBAL = new RegExp(SKIP_PATTERN.source, 'g');
 
@@ -82,7 +82,7 @@ const F8_SKIP_MANIFEST: Record<string, number> = {
   'tests/farm-optimize-objective.test.ts': 1,
   'tests/farm-optimize-phase.test.ts': 1,
   'tests/farm-optimize-rate-gain-pct.test.ts': 1,
-  'tests/farm-point-rank.test.ts': 4,
+  'tests/farm-point-rank.test.ts': 7,
   'tests/farm-rate-gate-throughput.test.ts': 1,
   'tests/import-save-inventory.test.ts': 1,
   'tests/invariance-baseline.test.ts': 1,
