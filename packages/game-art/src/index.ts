@@ -40,6 +40,7 @@ export {
   inventoryBadgeRecipe,
   inventoryChipRecipe,
   inventoryCountClass,
+  inventoryCountValueClass,
   inventoryFieldClass,
   inventoryGridClass,
   inventorySortDirectionClass,

@@ -48,9 +48,17 @@ export type InventoryCardTone = NonNullable<VariantProps<typeof inventoryCardRec
 
 const RARITY_TONES = new Set(['rarity-0', 'rarity-1', 'rarity-2', 'rarity-3', 'rarity-4', 'rarity-5']);
 
-/** Rarity index → card tone, falling back to `comum` past the catalog's known rarities. */
-export function inventoryCardTone(rarityIdx: number, defResolved: boolean): InventoryCardTone {
-  if (!defResolved) return 'unresolved';
+/**
+ * Rarity index → card tone, falling back to `comum` past the catalog's known rarities.
+ *
+ * `recognised` is NOT `defResolved`. That flag only means "the gear catalog holds this id", and
+ * the catalog holds gear and nothing else — so every gem, key, house part, skill stone and chest
+ * failed it and drew the dashed unresolved border, even though the app names all of them. The
+ * question the tone actually asks is whether we know what the item IS, which is exactly the
+ * `other` bucket's job to answer.
+ */
+export function inventoryCardTone(rarityIdx: number, recognised: boolean): InventoryCardTone {
+  if (!recognised) return 'unresolved';
   const tone = `rarity-${Math.round(rarityIdx)}`;
   return RARITY_TONES.has(tone) ? (tone as InventoryCardTone) : 'rarity-0';
 }
@@ -141,6 +149,13 @@ export const inventoryStatLeaderClass =
 /** Mono and accent: the digits column is what does the aligning, so it has to be the column. */
 export const inventoryStatValueClass = 'shrink-0 font-mono text-[11px] font-medium tabular-nums text-accent';
 
-/** The stack count on a fungible item's card — the game draws this bottom-right of the tile. */
-export const inventoryCountClass =
-  'shrink-0 rounded-md border border-line bg-[color-mix(in_oklch,var(--bg)_60%,var(--surface))] px-1.5 py-0.5 text-xs font-semibold tabular-nums text-ink';
+/**
+ * The stack count, in the footer slot a gear card gives its equipping hero. Shaped like the sell
+ * value across the row from it — a mark, then a number — so the footer reads as one row of two
+ * facts rather than a badge on one side and a value on the other. It was a bordered pill, which
+ * made it the only boxed thing on the card and read as something you could press.
+ */
+export const inventoryCountClass = 'flex shrink-0 items-center gap-1 text-xs tabular-nums text-muted';
+
+/** Ink, not muted: the mark carries the meaning and the number carries the weight. */
+export const inventoryCountValueClass = 'font-semibold text-ink';

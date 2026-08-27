@@ -164,6 +164,26 @@ export function resolveItemKind(categoryCode: number | null, defId: string): Ite
   return 'other';
 }
 
+/**
+ * A chest's `rarity` is 0 on the wire whatever tier it is; the tier lives in the id's tail
+ * instead, so `chest_time_2` is the Raro time chest. Deriving it here rather than in a card means
+ * the border, the plate, the tier word and any future sort all agree without each one knowing the
+ * convention.
+ *
+ * Item chests are deliberately NOT in this list: their tail is a LEVEL (`chest_item_90`), not a
+ * rarity, and reading it as one would ask for rarity 90. Key chests ARE, on the same evidence as
+ * the other three — same id shape, and the only values the corpus holds (`_3`, `_5`) are valid
+ * rarity indices.
+ */
+const TIERED_CHEST = /^chest_(?:time|gem|skill|key)_(\d)$/;
+
+export function chestRarityIdx(defId: string, wireRarity: number): number {
+  const tail = TIERED_CHEST.exec(defId);
+  if (!tail) return wireRarity;
+  const tier = Number(tail[1]);
+  return tier >= 0 && tier <= 5 ? tier : wireRarity;
+}
+
 function statUnit(name: string | null): ItemStatUnit {
   return name === 'dmg' ? 'flat' : 'pct';
 }
@@ -240,7 +260,7 @@ export function mapInventoryViewItem(raw: unknown): InventoryViewItem | null {
 
   const definition = defById.get(defId);
   const equippedBy = asString(raw.equipped_on ?? raw.equippedBy);
-  const rarityIdx = Math.round(asNumber(raw.rarity ?? raw.rarityIdx, 0));
+  const rarityIdx = chestRarityIdx(defId, Math.round(asNumber(raw.rarity ?? raw.rarityIdx, 0)));
   const level = asNumber(raw.level, definition?.nativeLevel ?? 0);
   const upgrade = Math.round(asNumber(raw.upgrade, 0));
   const stats = mapStats(raw.stats);

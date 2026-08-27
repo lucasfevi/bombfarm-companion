@@ -32,6 +32,7 @@ import {
   inventoryCardTone,
   inventoryChipRecipe,
   inventoryCountClass,
+  inventoryCountValueClass,
   inventoryFieldClass,
   inventoryGridClass,
   inventoryHeroSelectClass,
@@ -167,6 +168,30 @@ function toggle<T>(list: readonly T[], value: T): T[] {
     : [...list, value];
 }
 
+/**
+ * The stack mark: three stacked plates. Inline rather than a design system icon because it is
+ * game vocabulary ("this is a pile of the same thing"), not UI chrome, and it is used in exactly
+ * one place — the registry it would otherwise join is budgeted for chrome shared across screens.
+ */
+function StackGlyph() {
+  return (
+    <svg
+      viewBox="0 0 16 16"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={1.4}
+      strokeLinejoin="round"
+      strokeLinecap="round"
+      className="size-3.5 shrink-0"
+      aria-hidden="true"
+    >
+      <path d="M8 1.6 14.4 5 8 8.4 1.6 5 8 1.6Z" />
+      <path d="m1.6 8 6.4 3.4L14.4 8" />
+      <path d="m1.6 11 6.4 3.4L14.4 11" />
+    </svg>
+  );
+}
+
 /** Four is what a Mítico rolls; showing all six of a future tier would push the footer around. */
 const MAX_STAT_LINES = 4;
 
@@ -280,7 +305,7 @@ function InventoryCard({
   const detailParts = [rarity, level, forge].filter(Boolean);
   const equippedBy = labels.equippedBy?.(item) ?? null;
   const stats = item.stats.slice(0, MAX_STAT_LINES);
-  const tone = inventoryCardTone(item.rarityIdx, item.defResolved);
+  const tone = inventoryCardTone(item.rarityIdx, item.kind !== 'other');
   const interactive = Boolean(onSelect);
 
   const body = (
@@ -377,7 +402,10 @@ function InventoryCard({
         {equippedBy ? (
           <EquippedByRow hero={equippedBy} />
         ) : count > 1 ? (
-          <span className={inventoryCountClass}>&times;{count}</span>
+          <span data-testid="inventory-card-count" className={inventoryCountClass}>
+            <StackGlyph />
+            <span className={inventoryCountValueClass}>{count}</span>
+          </span>
         ) : (
           <span />
         )}

@@ -131,8 +131,32 @@ test.describe('inventory smoke', () => {
       expect(cardCount).toBeGreaterThan(0);
       expect(cardCount).toBeLessThan(221);
 
-      // A stacked card states its count; gear never does.
-      await expect(view.locator('text=/^×\\d+$/').first()).toBeVisible();
+      // A stacked card states its count in the footer slot a gear card gives its hero; gear never
+      // does, because a forge level makes two swords different objects.
+      const counts = view.getByTestId('inventory-card-count');
+      expect(await counts.count()).toBeGreaterThan(0);
+      await expect(counts.first()).toHaveText(/^\d+$/);
+
+      const gearGroup = page.locator('[data-testid="inventory-group"][data-kind="equipment"]');
+      expect(await gearGroup.getByTestId('inventory-card-count').count()).toBe(0);
+    });
+  });
+
+  /**
+   * The bug this guards: the tone keyed off `defResolved`, which only means "the GEAR catalog
+   * holds this id" — so every gem, key, house part, skill stone and chest drew the dashed
+   * unresolved border despite the app naming all of them. Only a genuinely unknown row should.
+   */
+  test('gives every kind it can name a solid tier border, and only the unknown one a dashed', async () => {
+    await withInventory(async (page) => {
+      for (const kind of ['equipment', 'gem', 'key', 'time', 'stone', 'chest']) {
+        const card = page
+          .locator(`[data-testid="inventory-group"][data-kind="${kind}"]`)
+          .getByTestId('inventory-card')
+          .first();
+        const style = await card.evaluate((element) => getComputedStyle(element).borderStyle);
+        expect(style, `${kind} should not draw the unresolved border`).toBe('solid');
+      }
     });
   });
 

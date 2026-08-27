@@ -125,9 +125,25 @@ export function itemKindIconSrc(defId: string, rarityIdx: number): string | null
   }
 
   if (defId.startsWith('chest_')) {
-    if (defId.startsWith('chest_gem')) return `${WIKI_ASSETS_BASE}/chests/gem_chest_normal.png`;
-    if (defId.startsWith('chest_skill')) return `${WIKI_ASSETS_BASE}/chests/skill_stone_chest_normal.png`;
-    if (defId.startsWith('chest_key')) return `${WIKI_ASSETS_BASE}/key/key_rare.png`;
+    // Every family but the item chest is drawn per tier, and `rarityIdx` already carries the tier
+    // the id's tail encodes (see `chestRarityIdx`). Band and rarity index are the same number —
+    // the relationship `GATE_KEY_RARITY_INDEX` makes explicit — so one slug lookup serves all.
+    const band = DIFFICULTY_SLUG[Math.round(rarityIdx) - 1];
+    if (defId.startsWith('chest_gem')) {
+      return `${WIKI_ASSETS_BASE}/chests/gem_chest_${band ?? 'normal'}.png`;
+    }
+    if (defId.startsWith('chest_skill')) {
+      return `${WIKI_ASSETS_BASE}/chests/skill_stone_chest_${band ?? 'normal'}.png`;
+    }
+    if (defId.startsWith('chest_key')) {
+      const slug = CRYSTAL_SLUG[Math.round(rarityIdx)];
+      return slug ? `${WIKI_ASSETS_BASE}/key/key_${slug}.png` : chestIconSrc();
+    }
+    // A time chest pays out house parts, and the game files its icon as the House itself rather
+    // than as a chest — the same reason `dropIconSrc('time', …)` returns a House. Without this
+    // branch a `chest_time_*` row fell through to the neutral wooden chest, which is the art for
+    // an ITEM chest and says nothing about what is inside.
+    if (defId.startsWith('chest_time')) return band ? `${WIKI_ASSETS_BASE}/houses/house_${band}.png` : chestIconSrc();
     return chestIconSrc();
   }
 

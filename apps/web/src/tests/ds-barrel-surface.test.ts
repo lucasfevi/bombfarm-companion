@@ -164,6 +164,7 @@ const FROZEN_GAME_ART_BARREL_VALUE_EXPORTS = [
   'inventoryCardRecipe',
   'inventoryChipRecipe',
   'inventoryCountClass',
+  'inventoryCountValueClass',
   'inventoryFieldClass',
   'inventoryGridClass',
   'inventorySortDirectionClass',

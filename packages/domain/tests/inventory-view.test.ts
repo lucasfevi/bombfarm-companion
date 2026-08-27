@@ -657,3 +657,39 @@ describe('withSortTerm', () => {
     expect(sortDirectionFor(DEFAULT_INVENTORY_SORT, 'name')).toBeNull();
   });
 });
+
+/**
+ * A chest arrives with `rarity: 0` whatever tier it is, and the tier lives in the id's tail. The
+ * card's border, its slot plate and its tier word all read `rarityIdx`, so deriving it once at
+ * map time is what keeps the three agreeing.
+ */
+describe('chest tiers from the def_id tail', () => {
+  const rarityOf = (defId: string, wire = 0) =>
+    mapInventoryViewItem({ id: 'c', def_id: defId, category: 1, rarity: wire })!.rarityIdx;
+
+  it.each([
+    ['chest_time_2', 2],
+    ['chest_gem_2', 2],
+    ['chest_skill_2', 2],
+    ['chest_key_3', 3],
+    ['chest_key_5', 5],
+  ])('reads %s as rarity %i, not the 0 the wire sends', (defId, expected) => {
+    expect(rarityOf(defId)).toBe(expected);
+  });
+
+  /** The item chest's tail is a LEVEL, not a tier — reading it as one would ask for rarity 90. */
+  it.each(['chest_item_20', 'chest_item_90', 'chest_item_100'])('leaves %s on the wire rarity', (defId) => {
+    expect(rarityOf(defId)).toBe(0);
+  });
+
+  it('leaves a suffix-less chest alone rather than inventing a tier for it', () => {
+    expect(rarityOf('chest_gem')).toBe(0);
+  });
+
+  it('keeps the derived tier through the storage round trip', () => {
+    const once = mapInventoryViewItem({ id: 'c', def_id: 'chest_time_2', category: 1, rarity: 0 })!;
+    const twice = mapInventoryViewItem(JSON.parse(JSON.stringify(once)) as unknown)!;
+    expect(twice.rarityIdx).toBe(2);
+    expect(twice.rarityCode).toBe('raro');
+  });
+});
