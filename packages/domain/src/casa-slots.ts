@@ -28,6 +28,11 @@ export const CASA_SLOTS_MAX = Math.max(...CASA_SLOTS_PER_HOUSE);
  * The widest the field can ever be, from the wiki's `rotacao.campo` (`skill_tree.field_size`
  * agrees, and the last `vagas_campo` node reads "campo cheio" at this count). The tree starts at
  * `field_base_slots: 1` and adds eight of those nodes; an account below this can still buy one.
+ *
+ * A CEILING TO REPORT AGAINST, never a clamp: {@link resolveFieldSlots} still records whatever
+ * the save carries, so a game patch that raises the track shows up as a value above this rather
+ * than being silently truncated to it. Advice is what needs it — telling a player to buy field
+ * slots they cannot buy is worse than saying nothing.
  */
 export const FIELD_SLOTS_MAX = 9;
 

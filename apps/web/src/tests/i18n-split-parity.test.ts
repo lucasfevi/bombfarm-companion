@@ -168,8 +168,12 @@ const fixture = JSON.parse(readFileSync(fixturePath, 'utf8')) as {
  * `farmRankingContentionDesc` (both in `KEYS_ADDED`). The farm board's field cap is now priced
  * over the distribution of how many heroes hold full energy rather than over their mean, which
  * makes "how often is a rested hero benched behind a full field" a number the board actually
- * knows (`FarmRateRow.fieldContentionPct`). The banner is the one place that reports it and names
- * the fix — dropping the weakest heroes from the rotation pool. No existing key changed.
+ * knows (`FarmRateRow.fieldContentionPct`). The banner is the one place that reports it. No
+ * existing key changed.
+ *
+ * That notice is reworded and gains `farmRankingContentionTitleMaxSlots` /
+ * `farmRankingContentionDescMaxSlots` (2026-08-27) — see the `KEYS_ADDED` note above for why both
+ * original strings change.
  */
 const KEYS_REMOVED: readonly string[] = [
   'importSyncSummary',
@@ -288,6 +292,14 @@ const KEYS_REMOVED: readonly string[] = [
  * `farmRankingContentionDesc` — a banner shown above the rotation pool when the field is full
  * often enough to matter. New strings only; nothing existing was reworded.
  *
+ * That notice is REWORDED and gains a maxed-field variant (2026-08-27):
+ * `farmRankingContentionTitleMaxSlots` and `farmRankingContentionDescMaxSlots`. Both original
+ * strings change. `farmRankingContentionDesc` claimed the gold/hr estimate does not model the
+ * wait, which stopped being true when `concurrencyScale` became the queue's served share and
+ * started charging exactly that wait; it now reports the cost instead of denying it. And it
+ * prescribed more field slots unconditionally, which is not advice to a player already at the
+ * cap — the new variant says the wait is structural for them.
+ *
  * `importSyncSummary` is REMOVED (2026-08-25). The created/updated/removed breakdown was
  * bookkeeping from when an import was a merge the player curated; the save is the source of truth
  * now, so the split between created and updated is not a decision they make or a number they act
@@ -331,6 +343,8 @@ const KEYS_ADDED: readonly string[] = [
   'importBlockedTooltip',
   'farmRankingContentionTitle',
   'farmRankingContentionDesc',
+  'farmRankingContentionTitleMaxSlots',
+  'farmRankingContentionDescMaxSlots',
   'farmRankingFilterItemLevelLabel',
   'farmRankingFilterItemLevelAll',
   'farmRankingFilterItemLevelOption',
