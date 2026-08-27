@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { memo, useMemo, useState } from "react";
 import {
   DEFAULT_INVENTORY_SORT,
   EMPTY_INVENTORY_FILTER,
@@ -226,7 +226,9 @@ const MAX_HERO_STARS = 3;
 function EquippedByRow({ hero }: { hero: InventoryEquippedBy }) {
   if (hero.unknown) {
     return (
-      <span className="min-w-0 truncate text-xs text-muted">{hero.name}</span>
+      <span data-testid="inventory-card-hero" className="min-w-0 truncate text-xs text-muted">
+        {hero.name}
+      </span>
     );
   }
 
@@ -249,6 +251,7 @@ function EquippedByRow({ hero }: { hero: InventoryEquippedBy }) {
             </span>
           ) : null}
           <span
+            data-testid="inventory-card-hero"
             className={cn(
               "min-w-0 truncate text-xs font-bold",
               rarityTextClass(hero.rarityIdx) ?? "text-ink"
@@ -302,7 +305,19 @@ function HeroOptionLabel({ hero }: { hero: InventoryHeroOption }) {
   );
 }
 
-function InventoryCard({
+/**
+ * Memoised, and the sort path is why it pays: `sortInventoryView` re-sorts a COPY of each group's
+ * array, so every `InventoryEntry` object survives with the same reference. Reordering the grid
+ * therefore re-renders nothing — React only moves the host nodes it already has.
+ *
+ * That only holds while `labels` is stable, which is the shells' side of the bargain: both build
+ * it in a `useMemo`, and the desktop's had to be re-keyed off the account SECTIONS to keep it.
+ *
+ * It buys nothing in the web planner, where the React Compiler already emits this bailout — the
+ * measured floor there is under a microsecond a card against the desktop's 71. It is here for the
+ * shell that has no compiler, and as the guarantee that does not depend on having one.
+ */
+const InventoryCard = memo(function InventoryCard({
   entry,
   labels,
   onSelect,
@@ -458,7 +473,7 @@ function InventoryCard({
       {body}
     </button>
   );
-}
+});
 
 function InventoryToolbar({
   view,

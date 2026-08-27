@@ -22,8 +22,13 @@ export function InventoryView() {
   const accountViewState = useAccountView();
 
   const view = accountViewState.status === 'loaded' ? accountViewState.view : null;
-  const inventory = useMemo(() => buildInventoryView(view?.payload.items), [view]);
-  const heroes = useMemo(() => mapInventoryHeroes(view?.payload.heroes), [view]);
+  // Keyed on the SECTIONS, not on the `AccountView` — `accountChangeKey` hashes every section's
+  // whole body, so one gold tick mints a new view. Keyed on `view` these both re-derived, `labels`
+  // became a new object, and every card re-rendered for a change to a number the screen does not
+  // show. The IPC boundary structurally clones, so the section arrays are still the only cheap
+  // identity to key on; they just move far less often than their container.
+  const inventory = useMemo(() => buildInventoryView(view?.payload.items), [view?.payload.items]);
+  const heroes = useMemo(() => mapInventoryHeroes(view?.payload.heroes), [view?.payload.heroes]);
   const labels = useMemo(() => inventoryLabels(t, lang, heroes), [t, lang, heroes]);
 
   if (accountViewState.status === 'loading') {

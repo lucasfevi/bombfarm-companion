@@ -75,6 +75,19 @@ function cards(page) {
 }
 
 /**
+ * Read text from cards through `textContent`, never `innerText`.
+ *
+ * The card sets `content-visibility: auto`, so the browser skips rendering the ones nobody has
+ * scrolled to. `innerText` is defined in terms of RENDERED text and comes back empty for those —
+ * silently, so an assertion over it passes on whatever happens to be near the top and ignores the
+ * rest. `textContent` reads the DOM and is unaffected. (Geometry is fine either way: asking for a
+ * rect forces the skipped subtree to lay out.)
+ */
+function textOf(locator) {
+  return locator.evaluateAll((nodes) => nodes.map((node) => node.textContent ?? ''));
+}
+
+/**
  * The toolbar's dropdowns are the design system's `Select`, which is Base UI rather than a native
  * `<select>` — its popup is a real listbox so it can be themed. `selectOption()` does not drive
  * it; a user clicks the trigger and then the option, and so does this (the same idiom
@@ -184,7 +197,7 @@ test.describe('inventory smoke', () => {
 
       // English shell: the slot must be the English word, never the catalog's Portuguese token.
       // This is the "Gold · Elmo" regression, asserted on the running app.
-      const name = await gearCard.getByTestId('inventory-card-name').innerText();
+      const name = (await gearCard.getByTestId('inventory-card-name').textContent()) ?? '';
       expect(name).toMatch(/ · /);
       expect(name).not.toMatch(/Elmo|Bota|Calça|Luva|Peito|Arma|Anel|Amuleto/);
 
@@ -257,10 +270,12 @@ test.describe('inventory smoke', () => {
       expect(wornByHero).toBeLessThan(before);
 
       // Every surviving card names the SAME hero — which is the actual claim, and one the option
-      // label cannot make on its own.
-      const footers = await page.getByTestId('inventory-card-footer').allInnerTexts();
-      const heroNames = new Set(footers.map((text) => text.trim().split(/\r?\n/)[0].trim()));
-      expect(heroNames.size).toBe(1);
+      // label cannot make on its own. Read the name element directly: the footer's text runs
+      // together without the line breaks `innerText` used to supply, and `innerText` is unusable
+      // on these cards (see `textOf`).
+      const heroNames = await textOf(page.getByTestId('inventory-card-hero'));
+      expect(heroNames.length).toBe(wornByHero);
+      expect(new Set(heroNames.map((name) => name.trim())).size).toBe(1);
     });
   });
 
@@ -392,7 +407,7 @@ test.describe('inventory smoke', () => {
   test('sorting reorders within a group, and the direction toggle reverses it', async () => {
     await withInventory(async (page) => {
       const view = page.getByTestId('inventory-view');
-      const firstName = async () => cards(page).first().getByTestId('inventory-card-name').innerText();
+      const firstName = async () => cards(page).first().getByTestId('inventory-card-name').textContent();
 
       await chooseOption(page, 'Sort by', 'Name');
       const before = await firstName();
@@ -416,7 +431,7 @@ test.describe('inventory smoke', () => {
         const texts = await page
           .locator('[data-testid="inventory-group"][data-kind="equipment"]')
           .getByTestId('inventory-card')
-          .allInnerTexts();
+          .evaluateAll((nodes) => nodes.map((node) => node.textContent ?? ''));
         return texts.map((text) => Number(/Level (\d+)/.exec(text)?.[1] ?? 0));
       };
 
