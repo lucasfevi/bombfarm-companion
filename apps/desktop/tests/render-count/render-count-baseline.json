@@ -4,10 +4,10 @@
   "gate": {
     "hookInstalled": true,
     "sawCommit": true,
-    "distinctComponents": 57
+    "distinctComponents": 60
   },
   "recordedOnly": {
-    "note": "Re-measured after the live surface replaced the developer diagnostics tab. Two things moved, both deliberately. distinctComponents fell 60 to 57 because the deleted tab's components no longer exist. A quiet window now costs ZERO component renders, against 8970-10350 before: the previous figure was the raw snapshot push landing in state above the planning tree, and that push and its IPC channel are gone. A one-hero change costs 135 renders against 2343-2619, because the whole-tree rebuild that a snapshot arrival used to trigger no longer happens. The old ranges were wide because that background churn was not phase-locked to the measurement window; with it removed these are stable, and three consecutive local runs from fresh builds produced 0/135/57 every time. The ranges below keep a small margin for a slower CI machine rather than pinning exact values.",
+    "note": "Re-measured after the planner's hero art reached the desktop. distinctComponents rose 57 to 60: a roster row now draws an avatar in its rarity frame and the detail heading draws the shared identity block, so three component types the tree never had are in it. A one-hero change costs 141 renders against the 135 recorded before, which is those same three drawing for the two fixture heroes and the selected one; it stays inside the range below, so the range is unchanged. A quiet window still costs ZERO. Before that, the live surface replacing the developer diagnostics tab had moved the same figure 60 to 57, because the deleted tab's components no longer existed, and had taken a quiet window from 8970-10350 renders to zero and a one-hero change from 2343-2619 to 135: the old figures were a raw snapshot push landing in state above the planning tree, and that push and its IPC channel are gone. The ranges were wide because that churn was not phase-locked to the measurement window; with it removed they are stable. Three consecutive local runs from fresh builds produced 0/141/60 every time, matching CI. The ranges keep a small margin for a slower CI machine rather than pinning exact values.",
     "quietComponentRendersRange": [
       0,
       0
