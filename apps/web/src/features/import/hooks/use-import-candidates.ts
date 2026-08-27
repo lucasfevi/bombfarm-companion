@@ -4,6 +4,8 @@ import { useMemo, useState } from 'react';
 import { parseSaveFile, type AccountImportData, type ImportCandidate, type ParseRejection } from '@bombfarm/domain/import-save';
 import type { RequiredAccountField } from '@bombfarm/domain/account-required-fields';
 import type { InventoryItem } from '@bombfarm/domain/inventory';
+import type { InventoryViewItem } from '@bombfarm/domain/inventory-view';
+import { saveInventoryView } from '@/shared/lib/inventory-view-storage';
 import { importHeroes, type HeroRecord } from '@/shared/lib/storage';
 import { usePlannerStore } from '@/shared/stores';
 import type { Strings } from '@/shared/i18n';
@@ -51,6 +53,7 @@ export function useImportCandidates({
   const [accountData, setAccountData] = useState<AccountImportData | null>(null);
   const [accountMissingRequired, setAccountMissingRequired] = useState<readonly RequiredAccountField[]>([]);
   const [inventoryItems, setInventoryItems] = useState<InventoryItem[]>([]);
+  const [inventoryViewItems, setInventoryViewItems] = useState<InventoryViewItem[]>([]);
   const [sortKey, setSortKey] = useState<ImportSortKey>('power');
   const [sortDir, setSortDir] = useState<ImportSortDir>('desc');
 
@@ -67,6 +70,7 @@ export function useImportCandidates({
     setAccountData(null);
     setAccountMissingRequired([]);
     setInventoryItems([]);
+    setInventoryViewItems([]);
     setSortKey('power');
     setSortDir('desc');
   }
@@ -91,6 +95,7 @@ export function useImportCandidates({
       account,
       rejected: rejectedResult,
       inventory,
+      inventoryView,
       accountMissingRequired: missingRequired,
     } = parseSaveFile(raw, existing);
     setCandidates(found);
@@ -99,6 +104,7 @@ export function useImportCandidates({
     setAccountData(account);
     setAccountMissingRequired(missingRequired);
     setInventoryItems(inventory);
+    setInventoryViewItems(inventoryView);
     setSortKey('power');
     setSortDir('desc');
   }
@@ -122,6 +128,7 @@ export function useImportCandidates({
     const saveSourceIds = new Set(candidates.map((candidate) => candidate.sourceId));
     const result = importHeroes(usePlannerStore.getState().heroes, records, saveSourceIds);
     usePlannerStore.getState().replaceInventoryFromImport(inventoryItems);
+    saveInventoryView(inventoryViewItems);
     onImported({ ...result, account: accountData, accountMissingRequired });
     handleClose(false);
   }

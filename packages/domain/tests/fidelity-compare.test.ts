@@ -86,6 +86,9 @@ function makeResult(overrides: Partial<ParseResult> = {}): ParseResult {
     warnings: [],
     account: makeAccount(),
     inventory: [],
+    // Required on `ParseResult`, and every production return path sets it — including the two
+    // early rejections. A helper that omitted it was building a shape the parser cannot produce.
+    inventoryView: [],
     rejected: null,
     accountMissingRequired: [],
     ...overrides,

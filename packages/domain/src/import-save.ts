@@ -6,6 +6,7 @@
 import catalog from './data/catalog.json';
 import { resolveCasaSlots, resolveFieldSlots } from './casa-slots';
 import { mapInventoryItem, type InventoryItem } from './inventory';
+import { mapInventoryViewItem, type InventoryViewItem } from './inventory-view';
 import { ABILITIES, RarityKey, abilityMods } from './model';
 import { EquippedItem, Loadout, emptyLoadout, emptySheetOther } from './gear';
 import { ZERO_PTS, type SheetKey } from './planner-constants';
@@ -156,6 +157,9 @@ export type ParseResult = {
   warnings: string[];
   account: AccountImportData;
   inventory: InventoryItem[];
+  /** Every row the save carries, gear or not — what the inventory surface shows. `inventory`
+   *  above stays the optimizer's gear-only pool; the two are deliberately different lists. */
+  inventoryView: InventoryViewItem[];
   rejected: ParseRejection | null;
   /**
    * Lets a caller tell "the save was missing this" from "nothing has been imported yet", which
@@ -430,6 +434,7 @@ export function parseSaveFile(raw: unknown, existing: HeroRecord[]): ParseResult
         ],
         account: EMPTY_ACCOUNT_DATA,
         inventory: [],
+        inventoryView: [],
         rejected: { reason: 'unsupportedSaveShape', heroNames: [] },
         accountMissingRequired: [],
       };
@@ -486,6 +491,7 @@ export function parseAccountPayload(payload: AccountPayload, existing: HeroRecor
       warnings: [...warnings, 'This does not look like a BombFarm save file (missing a "heroes" list).'],
       account: EMPTY_ACCOUNT_DATA,
       inventory: [],
+      inventoryView: [],
       rejected: { reason: 'notASaveFile', heroNames: [] },
       accountMissingRequired: [],
     };
@@ -513,6 +519,7 @@ export function parseAccountPayload(payload: AccountPayload, existing: HeroRecor
       warnings,
       account: EMPTY_ACCOUNT_DATA,
       inventory: [],
+      inventoryView: [],
       rejected: { reason: 'missingBirthStats', heroNames: missingBirthHeroNames },
       accountMissingRequired: [],
     };
@@ -524,9 +531,13 @@ export function parseAccountPayload(payload: AccountPayload, existing: HeroRecor
   }
 
   const inventory: InventoryItem[] = [];
+  const inventoryView: InventoryViewItem[] = [];
   let unresolvedUnequipped = 0;
   let marketBlockedCount = 0;
   for (const item of items) {
+    const viewItem = mapInventoryViewItem(item);
+    if (viewItem) inventoryView.push(viewItem);
+
     const mapped = mapInventoryItem(item);
     if (!mapped) continue;
     if (!mapped.defResolved && !mapped.equipped) unresolvedUnequipped++;
@@ -757,6 +768,7 @@ export function parseAccountPayload(payload: AccountPayload, existing: HeroRecor
     warnings,
     account: mapAccountData(raw),
     inventory,
+    inventoryView,
     rejected: null,
     accountMissingRequired: [],
   };

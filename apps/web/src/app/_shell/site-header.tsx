@@ -9,12 +9,13 @@ import { AppNav, Button, SegmentedToggle, Tooltip, buttonRecipe } from '@bombfar
 import { REFERRAL_CODE } from '@/shared/referral';
 import { useReferralCopy } from './use-referral-copy';
 
-export type SiteSection = 'planner' | 'farm' | 'teamPlan' | 'account';
+export type SiteSection = 'planner' | 'farm' | 'teamPlan' | 'inventory' | 'account';
 
 const NAV_HREF: Record<SiteSection, string> = {
   planner: '/',
   farm: '/farm',
   teamPlan: '/team-plan',
+  inventory: '/inventory',
   account: '/account',
 };
 
@@ -38,6 +39,7 @@ export function SiteHeader({
   const plannerActive = pathname === '/';
   const farmActive = pathname.startsWith('/farm');
   const teamPlanActive = pathname.startsWith('/team-plan');
+  const inventoryActive = pathname.startsWith('/inventory');
   const accountActive = pathname.startsWith('/account');
 
   return (
@@ -64,6 +66,7 @@ export function SiteHeader({
               { id: 'planner', label: t.navPlanner, active: plannerActive },
               { id: 'farm', label: t.navPhases, active: farmActive },
               { id: 'teamPlan', label: t.navTeamPlan, active: teamPlanActive },
+              { id: 'inventory', label: t.navInventory, active: inventoryActive },
               { id: 'account', label: t.navAccount, active: accountActive },
             ]}
             renderItem={(item, className) => (

@@ -66,6 +66,10 @@ const FROZEN_BARREL_VALUE_EXPORTS = [
   'SaveBar',
   'SegmentedToggle',
   'Select',
+  // `SelectMultiple` (2026-08-27): its own component rather than a `multiple?: boolean` branch on
+  // `Select` — the two disagree on the type of `value` and on what a change is, and a union that
+  // loose pushes the narrowing onto every call site. Base UI's select does the work.
+  'SelectMultiple',
   'SettingsRow',
   'SettingsSection',
   'Slider',
@@ -126,9 +130,23 @@ describe('design-system barrel surface (frozen)', () => {
 // HeroIdentity (L4, desktop/web UI sync): the avatar+rank/name/rarity/level primitive extracted
 // from HeroIdentityChip so a caller without a full HeroRecord (a live roster join, mid-flight)
 // can render the same identity block. HeroIdentityChip stays as a thin HeroRecord adapter over it.
+//
+// InventoryGrid (2026-08-26): the inventory surface both shells render. It lives here rather than
+// in @bombfarm/ui because it composes ItemIcon and the rarity classes, which are game vocabulary;
+// it carries no strings of its own, so each shell supplies its own locale.
+//
+// The toolbar and stat classes (2026-08-27): the grid grew a search-and-filter toolbar and
+// per-kind cards. `ItemIcon` absorbed the inventory'''s own icon rather than keeping a sibling —
+// it lays the game'''s rarity slot plate under every item tile the app draws, and takes a
+// structural shape both `EquippedItem` and `InventoryViewItem` satisfy.
+//
+// The toolbar and stat-panel classes (2026-08-27) are exported for the same reason every other
+// recipe here is: both shells render the grid, and a shell that wants to match its chrome needs
+// the tokens rather than a copy of the class strings.
 const FROZEN_GAME_ART_BARREL_VALUE_EXPORTS = [
   'AbilityIcon',
   'ArtFrame',
+  'InventoryGrid',
   'ChestIcon',
   'ClockIcon',
   'DropIcon',
@@ -146,6 +164,22 @@ const FROZEN_GAME_ART_BARREL_VALUE_EXPORTS = [
   'artFrameRadiusClass',
   'artFrameRecipe',
   'iconMetaGlyphRecipe',
+  'inventoryBadgeRecipe',
+  'inventoryCardRecipe',
+  'inventoryChipRecipe',
+  'inventoryCountClass',
+  'inventoryCountValueClass',
+  'inventoryFieldClass',
+  'inventoryFooterClass',
+  'inventoryGridClass',
+  'inventorySortDirectionClass',
+  'inventorySortGroupClass',
+  'inventorySortSelectClass',
+  'inventoryStatLabelClass',
+  'inventoryStatLeaderClass',
+  'inventoryStatRowClass',
+  'inventoryStatValueClass',
+  'inventoryStatsPanelClass',
   'rarityDotClass',
   'rarityTextClass',
   'rosterIconTooltipTriggerClass',

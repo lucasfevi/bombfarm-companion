@@ -64,7 +64,7 @@ export function HeroProposedGear({
                 aria-label={`${tip.title}. ${tip.subtitle}${keptExisting ? `. ${t.teamPlanFlowRowExisting}` : ''}`}
                 className={cn(rosterIconTooltipTriggerClass, keptExisting && 'opacity-80')}
               >
-                <ItemIcon equipped={equipped} size="lg" />
+                <ItemIcon item={equipped} size="lg" />
               </Tooltip.Trigger>
               <Tooltip.Portal>
                 <Tooltip.Positioner sideOffset={6}>

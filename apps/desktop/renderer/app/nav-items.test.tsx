@@ -5,8 +5,8 @@ import { navItemsFor } from './nav-items';
 const t = STRINGS.en;
 
 describe('navItemsFor', () => {
-  it('offers exactly Live, Planning, Settings, in that order, in every flavor', () => {
-    expect(navItemsFor(t).map((item) => item.id)).toEqual(['live', 'planning', 'settings']);
+  it('offers exactly Live, Planning, Inventory, Settings, in that order, in every flavor', () => {
+    expect(navItemsFor(t).map((item) => item.id)).toEqual(['live', 'planning', 'inventory', 'settings']);
   });
 
   it('makes Live the first item, which the language smoke locates by position', () => {

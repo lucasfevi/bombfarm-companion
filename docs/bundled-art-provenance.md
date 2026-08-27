@@ -44,6 +44,27 @@ this table is for.
 and are filed by rarity, which is what the art actually is. The planner's band→rarity step lives
 in `GATE_KEY_RARITY_INDEX`, not in a filename.
 
+## Inventory art
+
+The Inventory screen shows every item the account carries, not just gear, so it needs art for the
+five non-gear families and for the plate an item sits on. Four directories were added for it.
+
+`background/` is the one that replaced code: the six plates are the game's own inventory slot
+backdrops, and the card used to approximate them with hand-written CSS gradients
+(`--rar-slot-*-glow/mid/edge`). The real plates are better art and one fewer thing to maintain.
+
+| Local path (`packages/game-art/assets/…`) | Upstream | Notes |
+| --- | --- | --- |
+| `background/slot_background_{common,uncommon,rare,epic,legendary,mythic}.png` | `background/slot_background_*.png` | Same subpath and names |
+| `gems/gem_*.png` | `icons/gem_*_icon.png` | `_icon` dropped so the filename is the `def_id` verbatim, which is how `itemKindIconSrc` reaches it |
+| `houseparts/houseparts_{uncommon,rare,epic,legendary,mythic}.png` | `houseparts/houseparts_*.png` | The game's name for what a save calls `time_part_*` |
+| `stones/skill_stone_{common,uncommon,rare,epic,legendary,mythic}.png` | *(game client)* `ui/icons/pedra_habilidades/pedra_habilidade_0N_*.png` | Not published by the wiki; renamed from the Portuguese and from a 1-based index |
+
+The skill stones are the second family after the gem chests that the wiki does not publish, and
+the only one filed under a Portuguese name with a 1-based index (`01_comum`…`06_mitico`). They
+are renamed on the way in for the same two reasons the drop sprites are, and the index→rarity
+step is `01` → rarity 0, so a refresh must not read the number as the rarity.
+
 ## Everything else
 
 `abilities/`, `env/`, `items/`, `hero/`, `icons/`, `key/` and `nav/` mirror upstream at the same

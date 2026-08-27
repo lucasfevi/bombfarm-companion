@@ -4,6 +4,7 @@ export function navItemsFor(t: Copy) {
   return [
     { id: 'live', label: t.liveNavLabel },
     { id: 'planning', label: t.shellPlanningNavLabel },
+    { id: 'inventory', label: t.inventoryNavLabel },
     { id: 'settings', label: t.settingsNavLabel },
   ];
 }

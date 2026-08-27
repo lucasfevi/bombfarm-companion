@@ -3,7 +3,7 @@ import { artFrameRecipe, type ArtFrameRecipeSize } from './game-art.recipe';
 
 export type ArtFrameSize = ArtFrameRecipeSize;
 export type ArtFrameShape = 'square' | 'portrait';
-export type ArtFrameFill = 'neutral' | 'rarity';
+export type ArtFrameFill = 'neutral' | 'rarity' | 'plate';
 
 type Props = {
   rarityIdx: number;

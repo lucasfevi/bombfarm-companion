@@ -25,6 +25,7 @@ import { ConsentGate, isConsentGateVisible } from './consent-gate';
 import { ConsentModal } from './consent-modal';
 import { LiveView } from './live/live-view';
 import { PlanningView } from './planning/planning-view';
+import { InventoryView } from './inventory/inventory-view';
 import { ConsentSection } from './settings/consent-section';
 import { DiagnosticsSection } from './settings/diagnostics-section';
 import { LanguageSection } from './settings/language-section';
@@ -263,6 +264,8 @@ function HomePageContent({
             </>
           ) : activeNavId === 'planning' ? (
             <PlanningView />
+          ) : activeNavId === 'inventory' ? (
+            <InventoryView />
           ) : (
             <LiveView onReopenConsent={onConsentReallow} />
           )}

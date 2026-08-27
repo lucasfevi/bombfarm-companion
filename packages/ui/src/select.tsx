@@ -17,6 +17,14 @@ import {
   selectPopupClass,
   selectPositionerClass,
   selectValueClass,
+  selectCheckItemClass,
+  selectCheckboxClass,
+  selectItemTrailingClass,
+  selectPopupHeaderActionClass,
+  selectPopupHeaderClass,
+  selectPopupHeaderLabelClass,
+  selectPopupMultipleClass,
+  selectListClass,
   type SelectSize,
 } from './select.recipe';
 
@@ -42,11 +50,155 @@ function optionsFromChildren(children: ReactNode): OptionItem[] {
   });
 }
 
-export type SelectProps = Omit<ComponentPropsWithoutRef<'select'>, 'size' | 'onChange'> & {
+export type SelectProps = Omit<ComponentPropsWithoutRef<'select'>, 'size' | 'onChange' | 'multiple'> & {
   /** Visual density — not the HTML `size` attribute (rows). */
   size?: SelectSize;
   onChange?: (event: ChangeEvent<HTMLSelectElement>) => void;
 };
+
+/**
+ * The row above the list. Words, never vocabulary of its own: the design system supplies the
+ * chrome and the caller supplies every string, since only the caller has a locale.
+ */
+export type SelectMultipleHeader = {
+  /** Caption on the left. */
+  label: ReactNode;
+  /**
+   * Action on the right, drawn only when supplied. One button rather than a Select-all/Clear
+   * pair: whichever of the two is available is the only one that would do anything, so a pair
+   * always shows one dead control. The caller picks the word, having decided which way it goes.
+   */
+  action?: { label: ReactNode; onAction: () => void };
+};
+
+export type SelectMultipleProps = Omit<
+  ComponentPropsWithoutRef<'select'>,
+  'size' | 'onChange' | 'value' | 'defaultValue' | 'multiple'
+> & {
+  size?: SelectSize;
+  value?: readonly string[];
+  onValueChange?: (next: string[]) => void;
+  /**
+   * Renders the trigger from the current selection — a multi-select has no single label, and
+   * "Coal, Glacier, Iron" outgrows the trigger by the third pick. Callers summarise instead.
+   */
+  renderValue?: (selected: readonly string[]) => ReactNode;
+  header?: SelectMultipleHeader;
+  /**
+   * Right-aligned trailing node for one option, keyed by its value — a count, a hint, a unit.
+   * A function rather than a prop on the `<option>` children, which are intrinsic elements and
+   * carry no room for one.
+   */
+  optionTrailing?: (value: string) => ReactNode;
+};
+
+/**
+ * Multi-select variant. Base UI's own `multiple` does the work — the value becomes an array, the
+ * popup stays open across picks, and each chosen item reports `data-selected` for the checkmark.
+ * Split into its own component rather than a `multiple?: boolean` branch on {@link Select}
+ * because the two disagree on the type of `value` and on what a change even is, and a union that
+ * loose pushes the narrowing onto every call site.
+ */
+export function SelectMultiple({
+  size = 'default',
+  className,
+  children,
+  value,
+  onValueChange,
+  renderValue,
+  header,
+  optionTrailing,
+  disabled,
+  name,
+  id,
+  'aria-label': ariaLabel,
+  title,
+}: SelectMultipleProps) {
+  const items = useMemo(() => optionsFromChildren(children), [children]);
+  const itemClass = size === 'compact' ? selectItemCompactClass : selectItemClass;
+  const selected = useMemo(() => [...(value ?? [])], [value]);
+
+  return (
+    <BaseSelect.Root
+      multiple
+      items={items}
+      value={selected}
+      onValueChange={(next: string[]) => onValueChange?.(next)}
+      disabled={disabled}
+      name={name}
+      id={id}
+      modal={false}
+    >
+      <BaseSelect.Trigger
+        data-select
+        data-select-multiple
+        title={title}
+        aria-label={ariaLabel}
+        className={cn(selectFieldRecipe({ size }), className)}
+      >
+        <span className={selectAffixClass} aria-hidden>
+          <Icon name="chevron-down" className="size-3.5" />
+        </span>
+        <span className={selectValueClass}>{renderValue?.(selected)}</span>
+      </BaseSelect.Trigger>
+
+      <BaseSelect.Portal>
+        <BaseSelect.Positioner
+          className={selectPositionerClass}
+          alignItemWithTrigger={false}
+          sideOffset={4}
+          align="start"
+        >
+          <BaseSelect.Popup className={cn(selectPopupClass, selectPopupMultipleClass)}>
+            {header ? (
+              <div data-testid="select-popup-header" className={selectPopupHeaderClass}>
+                <span className={selectPopupHeaderLabelClass}>{header.label}</span>
+                {header.action ? (
+                  <button
+                    type="button"
+                    data-testid="select-popup-action"
+                    className={selectPopupHeaderActionClass}
+                    // Base UI moves focus through the list itself; letting the button take it on
+                    // press dismisses the popup and breaks arrow-key navigation afterwards.
+                    onMouseDown={(event) => event.preventDefault()}
+                    onClick={() => header.action?.onAction()}
+                  >
+                    {header.action.label}
+                  </button>
+                ) : null}
+              </div>
+            ) : null}
+            <BaseSelect.List className={selectListClass}>
+              {items.map((item) => {
+                const trailing = optionTrailing?.(item.value);
+                return (
+                  <BaseSelect.Item
+                    key={item.value === '' ? '__empty' : item.value}
+                    value={item.value}
+                    disabled={item.disabled}
+                    className={cn(itemClass, selectCheckItemClass)}
+                  >
+                    <span className={selectCheckboxClass} aria-hidden>
+                      <BaseSelect.ItemIndicator>
+                        <Icon name="check" className="size-3" />
+                      </BaseSelect.ItemIndicator>
+                    </span>
+                    <BaseSelect.ItemText>{item.label}</BaseSelect.ItemText>
+                    {trailing ? (
+                      <span data-testid="select-item-trailing" className={selectItemTrailingClass}>
+                        {trailing}
+                      </span>
+                    ) : null}
+                  </BaseSelect.Item>
+                );
+              })}
+            </BaseSelect.List>
+          </BaseSelect.Popup>
+        </BaseSelect.Positioner>
+      </BaseSelect.Portal>
+    </BaseSelect.Root>
+  );
+}
 
 /**
  * Select primitive — Base UI select dressed like `Num` (left chevron affix).
@@ -119,7 +271,7 @@ export function Select({
           align="start"
         >
           <BaseSelect.Popup className={selectPopupClass}>
-            <BaseSelect.List>
+            <BaseSelect.List className={selectListClass}>
               {items.map((item) => (
                 <BaseSelect.Item
                   key={item.value === '' ? '__empty' : item.value}
