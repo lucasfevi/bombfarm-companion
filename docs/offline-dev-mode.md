@@ -111,9 +111,36 @@ Set any of these before the command; the script only fills in what you left blan
 | `BFC_LIVE_SOURCE` | `replay` | `replay` reads a capture; anything else uses the real tap |
 | `BFC_REPLAY_CAPTURE` | the committed `live-capture.bfcc` | Any `.bfcc` capture |
 | `BFC_RENDERER_PORT` | `3100` | Renderer dev-server port |
+| `BFC_USER_DATA_DIR` | `.offline-user-data/` at the repo root | Where this mode's database lives |
 
 Paths must be **Windows-style** (`C:/...` or `C:\...`). A Git-Bash path like `/c/Users/...` reaches
 `readFileSync` unchanged and throws.
+
+### A stale override is the most likely thing to go wrong
+
+`$env:NAME = '...'` in PowerShell outlives the command that used it, and this script honours a
+variable that is already set. So an override from an earlier run silently wins — and the symptom
+is not an error but a quietly wrong screen.
+
+The startup banner marks every value that came from your environment rather than from this script.
+Read it before believing what the app shows. To clear the lot:
+
+```powershell
+Remove-Item Env:BFC_GAME_READER, Env:BFC_FIXTURE_ACCOUNT_FILE, Env:BFC_LIVE_SOURCE, Env:BFC_RENDERER_PORT, Env:BFC_USER_DATA_DIR -ErrorAction SilentlyContinue
+```
+
+The specific failure worth recognising: an account fixture whose `casa` section holds only the
+house object leaves the Live screen listing **hero ids with no names**, and the House panel
+reporting that no house data was sent — `normalizeRotation` found no per-hero rotation state to
+join the roster against. The script checks for this and warns by name at startup.
+
+### Its database is its own
+
+This mode keeps its account database in `.offline-user-data/` at the repo root, not in the shared
+`Bomb Farm Companion (Dev)` profile. Committed sections outlive the fixture that produced them, so
+without that separation a `casa` section written by one fixture reaches the Live screen on a later
+run driven by a different one — the same id-only rows, from a cause the banner cannot show you.
+Delete the directory to reset.
 
 ### Recording your own capture
 
