@@ -21,6 +21,16 @@ export const CASA_SLOTS_PER_HOUSE = [3, 5, 7, 9, 9] as const;
 /** Casa III+ default when neither `casa.slots` nor `slots_per_house[houseIdx]` applies. */
 export const DEFAULT_CASA_SLOTS = 9;
 
+/** The most rest slots any House gives — the top of the {@link CASA_SLOTS_PER_HOUSE} ladder. */
+export const CASA_SLOTS_MAX = Math.max(...CASA_SLOTS_PER_HOUSE);
+
+/**
+ * The widest the field can ever be, from the wiki's `rotacao.campo` (`skill_tree.field_size`
+ * agrees, and the last `vagas_campo` node reads "campo cheio" at this count). The tree starts at
+ * `field_base_slots: 1` and adds eight of those nodes; an account below this can still buy one.
+ */
+export const FIELD_SLOTS_MAX = 9;
+
 function isObject(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null;
 }

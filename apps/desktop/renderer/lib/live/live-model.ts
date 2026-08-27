@@ -7,7 +7,7 @@ import type {
   RotationHeroSnapshot,
   RotationNormalizeResult,
 } from '@bombfarm/contracts';
-import { classifyRotation } from '@bombfarm/domain/rotation-status';
+import { classifyRotation, energyFractionOf } from '@bombfarm/domain/rotation-status';
 import type { RecoveringHero, RotationHousePanel, RotationOccupancy, RotationStatus } from '@bombfarm/domain/rotation-status';
 
 export interface LiveHeroFact {
@@ -18,6 +18,9 @@ export interface LiveHeroFact {
   readonly rarity?: number;
   readonly stars?: number;
   readonly skin?: number;
+  /** In [0, 1] — how full this hero's energy is. Absent when the snapshot carried no energy for
+   *  it, which is what tells a full hero apart from one whose figure has not arrived. */
+  readonly energyFraction?: number;
 }
 
 export interface LiveRecoveringHeroFact extends LiveHeroFact {
@@ -86,6 +89,7 @@ export const INITIAL_LIVE_MODEL: LiveModel = {
 };
 
 function heroFact(hero: RotationHeroSnapshot): LiveHeroFact {
+  const energyFraction = energyFractionOf(hero);
   return {
     id: hero.id,
     ...(hero.name !== undefined ? { name: hero.name } : {}),
@@ -94,6 +98,7 @@ function heroFact(hero: RotationHeroSnapshot): LiveHeroFact {
     ...(hero.rarity !== undefined ? { rarity: hero.rarity } : {}),
     ...(hero.stars !== undefined ? { stars: hero.stars } : {}),
     ...(hero.skin !== undefined ? { skin: hero.skin } : {}),
+    ...(energyFraction !== undefined ? { energyFraction } : {}),
   };
 }
 

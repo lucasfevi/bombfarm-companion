@@ -107,7 +107,7 @@ describe('buildLiveSlowModel — absent is not zero', () => {
 
     expect(slow.unclassifiedCount).toBe(0);
     expect(slow.occupancy).toEqual({ occupied: 0, fieldSize: 3 });
-    expect(slow.house).toEqual({ slots: 5, cycleSeconds: 900, rescuesLeft: 2, rescuesMax: 10 });
+    expect(slow.house).toEqual({ slots: 5, slotsMax: 9, cycleSeconds: 900, rescuesLeft: 2, rescuesMax: 10 });
   });
 });
 
@@ -132,5 +132,36 @@ describe('buildLiveFreshness', () => {
     const freshness = buildLiveFreshness({ kind: 'gap', reason: 'detached', actionable: false, sinceAt: 't' });
 
     expect('likelyQuarantine' in freshness).toBe(false);
+  });
+});
+
+describe('buildLiveSlowModel — energy travels with every hero', () => {
+  it('carries the wire own fraction through, in every list', () => {
+    const snapshot: RotationSnapshot = {
+      heroes: [
+        hero({ id: 'f1', activity: 'inField', energyFraction: 0.8 }),
+        hero({ id: 'r1', activity: 'resting', recovering: true, energyFraction: 0.3 }),
+        hero({ id: 'q1', activity: 'ready', energyFraction: 1 }),
+        hero({ id: 'b1', activity: 'benched', energyFraction: 0.5 }),
+      ],
+    };
+    const model = buildLiveSlowModel({ snapshot, drops: [] });
+
+    expect(model.onField[0]?.energyFraction).toBe(0.8);
+    expect(model.recovering[0]?.energyFraction).toBe(0.3);
+    expect(model.queued[0]?.energyFraction).toBe(1);
+    expect(model.benched[0]?.energyFraction).toBe(0.5);
+  });
+
+  it('derives the fraction from the energy pair when the wire sent no fraction of its own', () => {
+    const snapshot: RotationSnapshot = { heroes: [hero({ id: 'q1', activity: 'ready', energy: 30, energyMax: 120 })] };
+    expect(buildLiveSlowModel({ snapshot, drops: [] }).queued[0]?.energyFraction).toBe(0.25);
+  });
+
+  it('leaves the fraction absent — never zero — for a hero whose energy was never sent', () => {
+    const snapshot: RotationSnapshot = { heroes: [hero({ id: 'q1', activity: 'ready' })] };
+    const fact = buildLiveSlowModel({ snapshot, drops: [] }).queued[0];
+    expect(fact).toBeDefined();
+    expect(Object.hasOwn(fact ?? {}, 'energyFraction')).toBe(false);
   });
 });

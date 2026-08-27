@@ -8,7 +8,7 @@
 import { describe, expect, it } from 'vitest';
 import { en } from './copy/en';
 import { ptBR } from './copy/pt-BR';
-import { formatAge, formatCapturedAt, formatCount, formatDps, formatGainPct } from './format';
+import { formatAge, formatCapturedAt, formatCount, formatDps, formatEnergyPercent, formatGainPct } from './format';
 
 describe('formatAge (both locales, AD-054)', () => {
   it('formats zero as 0s in English', () => {
@@ -119,5 +119,32 @@ describe('formatCount (both locales, different grouping separator, AD-054)', () 
     expect(enResult).toBe('2,500');
     expect(ptResult).toBe('2.500');
     expect(ptResult).not.toBe(enResult);
+  });
+});
+
+describe('formatEnergyPercent (both locales, AD-054)', () => {
+  it('renders a whole percentage in each locale', () => {
+    expect(formatEnergyPercent(0.42, 'en')).toBe('42%');
+    expect(formatEnergyPercent(0.42, 'pt-BR')).toBe('42%');
+  });
+
+  it('floors rather than rounds, so a hero one tick short of full never reads 100%', () => {
+    expect(formatEnergyPercent(0.996, 'en')).toBe('99%');
+    expect(formatEnergyPercent(0.999999, 'en')).toBe('99%');
+    expect(formatEnergyPercent(1, 'en')).toBe('100%');
+  });
+
+  it('clamps outside [0, 1] rather than printing a percentage the bar cannot draw', () => {
+    expect(formatEnergyPercent(1.4, 'en')).toBe('100%');
+    expect(formatEnergyPercent(-0.2, 'en')).toBe('0%');
+  });
+
+  it('prints every exact hundredth as itself — flooring a binary float used to lose 29, 57 and 58', () => {
+    // `energyFractionOf` derives the fraction as `energy / energyMax`, so an exact hundredth is
+    // routine. `0.29 * 100` is 28.999999999999996, which floored to 28 before the epsilon.
+    const wrong = Array.from({ length: 101 }, (_, i) => i).filter(
+      (i) => formatEnergyPercent(i / 100, 'en') !== `${String(i)}%`,
+    );
+    expect(wrong).toEqual([]);
   });
 });

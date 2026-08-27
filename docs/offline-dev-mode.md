@@ -33,8 +33,9 @@ it after either input changes:
 node scripts/generate-offline-fixture.mjs
 ```
 
-`offline-fixture-drift.test.ts` rebuilds it and compares, so a hand-edit of the JSON or a generator
-change without a regeneration fails the suite rather than going unnoticed. The generator also
+`offline-fixture-drift.test.ts` rebuilds it, the `caps` account and the `caps` capture and compares
+all three, so a hand-edit of any of them, or a generator change without a regeneration, fails the
+suite rather than going unnoticed. The generator also
 refuses to write a fixture whose on-field count disagrees with `field_size` — that disagreement is
 what made the field list flicker, and it is not something to discover from the screen again.
 
@@ -69,6 +70,121 @@ the maximum is the save's own `stats.energia`. The four heroes the capture never
 and neither capture records a resting hero's energy — those reuse the capture's observed fractions,
 cycled. That is the one place this fixture puts a measurement somewhere it was not measured, so
 read a recovery countdown here as layout, never as a reading.
+
+## Scenarios — more than one account
+
+The default account puts nine heroes on the field and the other four at the house, all recovering.
+Its Idle and Benched sections are therefore empty on every run, its field and rest slots are both
+already at their ceilings, and it carries no daily skip allowance. A large part of the Live screen
+cannot be looked at from it at all.
+
+```bash
+pnpm dev:offline --account caps
+```
+
+`--account <name>` selects a **scenario**: the account `tests/fixtures/account-offline-<name>.json`,
+and — when one exists beside the default capture — the frames
+`src/main/live-source/fixtures/live-capture-<name>.bfcc`. `--account default` and omitting the flag
+both give the fixture above. An unknown name exits and lists what is committed rather than falling
+back; a fallback would open the app on the wrong account with one banner line to say so.
+
+It is also the one override here that **beats** a value already in your environment. Everything
+else in this mode yields to `$env:` — see the stale-override warning below — but a name you typed
+into this command must not lose to a variable set last week.
+
+### The committed scenarios
+
+| Name | What it is for |
+| --- | --- |
+| `default` | The real capture pair, untouched. Nine on the field, four resting, both caps maxed. |
+| `caps` | Six on the field of nine, three resting of three, two idle, two benched. Both cap hints showing, a daily skip allowance, and one hero with no energy figure at all. |
+
+### Adding another one
+
+**Read this before hand-writing anything.** Both halves of a scenario are generated and
+drift-tested, and both have a rule that is not obvious from looking at them.
+
+**1. The account is derived, never hand-written.** `account-offline.json` is 7,000+ lines, which is
+not a diff anyone reads — that is why `offline-fixture-drift.test.ts` rebuilds it from
+`scripts/generate-offline-fixture.mjs` and byte-compares. A new account belongs in that generator
+as a small, reviewable transform over `buildOfflineFixture()`, the way `buildCapsFixture()` is:
+
+```js
+export function buildYourFixture() {
+  const payload = buildOfflineFixture();
+  // …a named list of changes, and nothing else…
+}
+```
+
+Then export a `serializeYourFixture()`, write it from the run-as-script block, and add it to the
+drift test. Assert what the scenario exists to show, too — `caps` asserts that it reaches all four
+rotation states and sits below both ceilings, so a later edit that quietly flattens it fails here
+rather than being noticed from a screenshot months later.
+
+**2. The frames and the account have to agree about the field.** The live tap's on-field set
+**overrules** the snapshot, so an account claiming `field_size: 6` against a capture that shows nine
+heroes renders `Field · 9/6` and flickers. Changing `field_size` alone does not narrow the field —
+the frames have to change with it. The generator's own guard fails the build when the two disagree.
+
+**3. A capture is edited by DELETING BYTES, never by re-serialising.** This is the one that will
+bite. The obvious implementation — parse each frame, drop heroes, `JSON.stringify` — is wrong:
+the game writes whole floats with a trailing `.0` (`"gate":-1.0`) and `JSON.stringify` writes `-1`,
+so a round-trip that changes *nothing at all* still rewrites all 58 frames. Matching that formatting
+means reimplementing the game's encoder from its own output, and then our encoder and our decoder
+agree with each other while both drift from the game — with the suite green throughout. That is the
+same failure this mode exists to avoid; see [why it does not fake a server](#why-it-does-not-fake-a-server).
+
+`scripts/splice-capture.mjs` deletes byte ranges instead, so every surviving byte is the byte the
+game sent. Removing heroes is safe because a hero entry is a flat object of scalars and nothing else
+in a frame addresses heroes — `bombs`, `hits`, `explosions` and `loot` are all keyed by grid cell,
+and `kinds`/`hps` are whole-grid arrays.
+
+The guards in the drift test that keep this claim true were each arrived at by mutating the encoder
+until they caught it, and **every earlier version failed to**:
+
+- Splicing an empty id list returns the input by construction — the walker short-circuits before
+  parsing, so it proves nothing at all.
+- Re-encoding every recorded frame does exercise the encoder, but all 58 are the 16-bit length form
+  and none is near the 125-byte boundary, so a mutant that re-headered short frames survived it.
+- Synthetic frames in all three length forms, plus one at the boundary, are what finally bite.
+
+The separator guard has the same history: copying the run between two kept entries looks right and
+silently keeps any dropped entry that sat between them. It was caught by asserting every subset of a
+three-entry array, not one case.
+
+If you touch `splice-capture.mjs`, mutate it and watch a test fail before believing the suite.
+
+**Deleting is the only edit that stays honest.** Adding a hero, or changing a value to one the game
+never emitted, needs bytes nobody recorded — at which point the capture is a belief about the wire,
+not a reading of it, and it can no longer fail honestly.
+
+Each scenario also gets its own database (`.offline-user-data-<name>`). Committed sections outlive
+the fixture that produced them, so a shared one means `--account caps` followed by a bare
+`pnpm dev:offline` opens on the caps account's `casa` until the first tick overwrites it.
+
+**4. Nothing needs registering.** `dev-offline.mjs` resolves scenarios by naming convention, so
+committing the fixture pair is the whole wiring step. It also validates the name before it builds
+anything: pnpm appends a run's extra arguments to the end of a `&&` chain, so with the build steps
+ahead of it in `package.json` a mistyped scenario was not caught until seven workspace packages and
+the Electron bundle had been rebuilt. The script owns those steps now, and a bad name costs a
+fraction of a second and a "did you mean".
+
+**5. Regenerate and run the guards.**
+
+```bash
+node apps/desktop/scripts/generate-offline-fixture.mjs
+```
+
+```bash
+npx vitest run --project @bombfarm/desktop apps/desktop/src/main/live-source/offline-fixture-drift.test.ts
+```
+
+### What a scenario still cannot change
+
+The capture is about six seconds of one wave, and every scenario replays the same six seconds. A
+scenario can narrow who is in them and re-deal everyone else, but it cannot produce a longer
+session, a different phase band, a bonus window, or a rotation cycle — see
+[what it cannot do](#what-it-cannot-do). Those need a new recording, not a derived one.
 
 ## Why it does not fake a server
 
@@ -112,11 +228,11 @@ Set any of these before the command; the script only fills in what you left blan
 | Variable | Default in offline mode | What it does |
 | --- | --- | --- |
 | `BFC_GAME_READER` | `fixture` | `fixture` reads a payload file; `memory` uses the real reader |
-| `BFC_FIXTURE_ACCOUNT_FILE` | `tests/fixtures/account-offline.json` | Any `AccountPayload`-shaped JSON |
+| `BFC_FIXTURE_ACCOUNT_FILE` | `tests/fixtures/account-offline.json` | Any `AccountPayload`-shaped JSON. `--account <name>` sets this, and is the one override that BEATS a value already in your environment |
 | `BFC_LIVE_SOURCE` | `replay` | `replay` reads a capture; anything else uses the real tap |
-| `BFC_REPLAY_CAPTURE` | the committed `live-capture.bfcc` | Any `.bfcc` capture |
+| `BFC_REPLAY_CAPTURE` | the committed `live-capture.bfcc` | Any `.bfcc` capture. A scenario with its own capture sets this for you |
 | `BFC_RENDERER_PORT` | `3100` | Renderer dev-server port |
-| `BFC_USER_DATA_DIR` | `.offline-user-data/` at the repo root | Where this mode's database lives |
+| `BFC_USER_DATA_DIR` | `.offline-user-data/` at the repo root, or `.offline-user-data-<name>/` for a named scenario | Where this mode's database lives |
 
 Paths must be **Windows-style** (`C:/...` or `C:\...`). A Git-Bash path like `/c/Users/...` reaches
 `readFileSync` unchanged and throws.
@@ -135,14 +251,16 @@ Remove-Item Env:BFC_GAME_READER, Env:BFC_FIXTURE_ACCOUNT_FILE, Env:BFC_LIVE_SOUR
 ```
 
 The specific failure worth recognising: an account fixture whose `casa` section holds only the
-house object leaves the Live screen listing **hero ids with no names**, and the House panel
-reporting that no house data was sent — `normalizeRotation` found no per-hero rotation state to
-join the roster against. The script checks for this and warns by name at startup.
+house object leaves the Live screen listing **hero ids with no names**, and the Resting heading
+with a bare count and no rest-slot, cycle or skip readings beside it — `normalizeRotation` found no
+per-hero rotation state to join the roster against. The script checks for this and warns by name at
+startup.
 
 ### Its database is its own
 
-This mode keeps its account database in `.offline-user-data/` at the repo root, not in the shared
-`Bomb Farm Companion (Dev)` profile. Committed sections outlive the fixture that produced them, so
+This mode keeps its account database at the repo root, not in the shared
+`Bomb Farm Companion (Dev)` profile — and each scenario keeps its own (`.offline-user-data/` for the
+default, `.offline-user-data-<name>/` for a named one). Committed sections outlive the fixture that produced them, so
 without that separation a `casa` section written by one fixture reaches the Live screen on a later
 run driven by a different one — the same id-only rows, from a cause the banner cannot show you.
 Delete the directory to reset.

@@ -1,8 +1,10 @@
 import { describe, expect, it } from 'vitest';
 import { loadFixtureJson } from './helpers/sheet-math-fixtures';
 import {
+  CASA_SLOTS_MAX,
   CASA_SLOTS_PER_HOUSE,
   DEFAULT_CASA_SLOTS,
+  FIELD_SLOTS_MAX,
   resolveCasaSlots,
 } from '@bombfarm/domain/casa-slots';
 
@@ -48,5 +50,17 @@ describe('resolveCasaSlots', () => {
     expect(resolveCasaSlots({ slots: 0 }, null)).toBe(1);
     expect(resolveCasaSlots({ slots: -3 }, null)).toBe(1);
     expect(resolveCasaSlots({ slots: Number.NaN }, null)).toBe(9);
+  });
+});
+
+describe('the two ceilings', () => {
+  it('the rest-slot ceiling is the top of the ladder, and stays that way if the ladder changes', () => {
+    expect(CASA_SLOTS_MAX).toBe(Math.max(...CASA_SLOTS_PER_HOUSE));
+    expect(CASA_SLOTS_MAX).toBe(9);
+  });
+
+  it('the field ceiling is the wiki field size, and is not the House ladder wearing its name', () => {
+    expect(FIELD_SLOTS_MAX).toBe(9);
+    expect(resolveCasaSlots({ slots: FIELD_SLOTS_MAX }, 0)).toBe(FIELD_SLOTS_MAX);
   });
 });

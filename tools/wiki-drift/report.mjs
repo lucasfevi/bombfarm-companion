@@ -7,43 +7,54 @@ import { DATA_URL, FASES_NOMES_URL } from './fetch-endpoints.mjs';
 export const TRACKER_MARKER = '<!-- bfc-wiki-drift-tracker -->';
 
 /**
- * Which differing sections back a committed companion artifact today (design §2.6). Keyed by
- * `${endpoint}.${section}`. `data.bolsa`/`combate`/`ritual`/`skill_tree`/`stat_kinds` and
- * `fasesNomes.disponivel`/`mundos`/`sufixos`/`zonas` back nothing today and are deliberately
- * absent from this map — `skill_tree` in particular backs no committed JSON but is the section
- * the wiki drift check reasoned from, so it still sits inside the baseline; its absence here
- * only affects how the "backs no artifact" note reads.
+ * Which committed files carry values from each wiki section (design §2.6). Keyed by
+ * `${endpoint}.${section}`; values are repo-relative paths, and `renderIssueBody` prints them, so
+ * a drift issue names where to look without anyone opening this file.
+ *
+ * NOT only the generated JSON artifacts. A wiki value that lives as a hand-maintained constant in
+ * source belongs here too — `data.rotacao`'s field and House ceilings are exactly that, and
+ * listing only `phase-wiki.json` for it sent a reader to a file that does not hold them.
+ *
+ * `data.bolsa`/`combate`/`ritual`/`skill_tree`/`stat_kinds` and `fasesNomes.disponivel`/`mundos`/
+ * `sufixos`/`zonas` back nothing today and are deliberately absent — `skill_tree` in particular
+ * backs no committed file but is the section the wiki drift check reasoned from, so it still sits
+ * inside the baseline; its absence here only affects how the "backs nothing" note reads.
  */
 export const ARTIFACT_BACKED_SECTIONS = {
-  // packages/domain/src/data/phase-wiki.json (lines, gateSecsPorAto); packages/domain/src/data/phases.json (lines)
-  'data.fases': ['phase-wiki.json', 'phases.json'],
-  // packages/domain/src/data/phase-wiki.json (props, propsPorAto, bossHpMult, repHpMult, jaula)
-  'data.entidades': ['phase-wiki.json'],
-  // packages/domain/src/data/phase-wiki.json (heroChestRarityByAto, chestRarityDist, DROP_RATES,
-  // KEY_GATE_COST, RETURN_BONUS_ADD, RETURN_BONUS_ADD_VIP)
-  'data.drops': ['phase-wiki.json'],
-  // packages/domain/src/data/phase-wiki.json (itemPorFase, xpFaseIni, xpFaseFim)
-  'data.herois': ['phase-wiki.json'],
-  // packages/domain/src/data/phase-wiki.json (WIKI_GEMS: chestDropRate, rankDistByAto, list —
-  // also aliased as GEM_RANK_DIST_BY_ATO / GEM_LIST)
-  'data.gemas': ['phase-wiki.json'],
-  // packages/domain/src/data/phase-wiki.json (LOOT_ABILITY_VALUES / lootAbilities)
-  'data.habilidades': ['phase-wiki.json'],
-  // packages/domain/src/data/phase-wiki.json (DROP_RATES.time / drops.timechestDropRate,
-  // TIMECHEST_RARITY_BY_ATO / timechestRarityByAto)
-  'data.rotacao': ['phase-wiki.json'],
-  // packages/domain/src/data/catalog.json (defs, sets, levels, version — version === itens.versao_catalogo)
-  'data.itens': ['catalog.json'],
-  // packages/domain/src/data/catalog.json (slots)
-  'data.slots': ['catalog.json'],
-  // packages/domain/src/data/catalog.json (itemStats)
-  'data.item_stats': ['catalog.json'],
-  // packages/domain/src/data/catalog.json (rarities)
-  'data.raridades': ['catalog.json'],
-  // packages/domain/src/data/phase-wiki.json (atoLabels)
-  'fasesNomes.atos': ['phase-wiki.json'],
-  // packages/domain/src/data/phase-wiki.json (phaseNames)
-  'fasesNomes.fases': ['phase-wiki.json'],
+  // lines, gateSecsPorAto (phase-wiki.json); lines (phases.json)
+  'data.fases': ['packages/domain/src/data/phase-wiki.json', 'packages/domain/src/data/phases.json'],
+  // props, propsPorAto, bossHpMult, repHpMult, jaula
+  'data.entidades': ['packages/domain/src/data/phase-wiki.json'],
+  // heroChestRarityByAto, chestRarityDist, DROP_RATES, KEY_GATE_COST, RETURN_BONUS_ADD,
+  // RETURN_BONUS_ADD_VIP
+  'data.drops': ['packages/domain/src/data/phase-wiki.json'],
+  // itemPorFase, xpFaseIni, xpFaseFim
+  'data.herois': ['packages/domain/src/data/phase-wiki.json'],
+  // WIKI_GEMS: chestDropRate, rankDistByAto, list — also aliased as GEM_RANK_DIST_BY_ATO / GEM_LIST
+  'data.gemas': ['packages/domain/src/data/phase-wiki.json'],
+  // LOOT_ABILITY_VALUES / lootAbilities
+  'data.habilidades': ['packages/domain/src/data/phase-wiki.json'],
+  // DROP_RATES.time / drops.timechestDropRate, TIMECHEST_RARITY_BY_ATO / timechestRarityByAto
+  // (phase-wiki.json); FIELD_SLOTS_MAX from `campo`, CASA_SLOTS_PER_HOUSE / CASA_SLOTS_MAX from
+  // `casas[].slots` (casa-slots.ts); HOUSES cycle endpoints from `casas[].cycle_secs_base` /
+  // `cycle_secs_max`, HOUSE_MAX_LEVEL from `casa_max_level` (model/house.ts)
+  'data.rotacao': [
+    'packages/domain/src/data/phase-wiki.json',
+    'packages/domain/src/casa-slots.ts',
+    'packages/domain/src/model/house.ts',
+  ],
+  // defs, sets, levels, version — version === itens.versao_catalogo
+  'data.itens': ['packages/domain/src/data/catalog.json'],
+  // slots
+  'data.slots': ['packages/domain/src/data/catalog.json'],
+  // itemStats
+  'data.item_stats': ['packages/domain/src/data/catalog.json'],
+  // rarities
+  'data.raridades': ['packages/domain/src/data/catalog.json'],
+  // atoLabels
+  'fasesNomes.atos': ['packages/domain/src/data/phase-wiki.json'],
+  // phaseNames
+  'fasesNomes.fases': ['packages/domain/src/data/phase-wiki.json'],
 };
 
 const FORBIDDEN_INTERPRETATION_PHRASES = ['means', 'because', 'probably', 'likely', 'you should'];
@@ -154,8 +165,17 @@ export function renderIssueBody({ diffs, observedAt, runUrl }) {
     lines.push('');
   }
 
-  const differingLabels = [...changed, ...added, ...removed].map(sectionLabel);
+  const differingLabels = [...new Set([...changed, ...added, ...removed].map(sectionLabel))];
   const backedLabels = differingLabels.filter((label) => ARTIFACT_BACKED_SECTIONS[label]);
+  // Naming the files is still reporting, not triage: this is the map's own content, printed. It
+  // says where the differing section's values are committed, never what to change or whether to.
+  if (backedLabels.length > 0) {
+    lines.push('Committed files carrying values from the differing sections:');
+    for (const label of backedLabels) {
+      lines.push(`- ${label}: ${ARTIFACT_BACKED_SECTIONS[label].join(', ')}`);
+    }
+    lines.push('');
+  }
   if (differingLabels.length > 0 && backedLabels.length === 0) {
     lines.push('None of the differing sections back a committed companion artifact today.');
     lines.push('');

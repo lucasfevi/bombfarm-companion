@@ -1,4 +1,5 @@
 import type { FieldDrop, RotationHeroSnapshot, RotationNormalizeResult } from '@bombfarm/contracts';
+import { CASA_SLOTS_MAX } from './casa-slots';
 
 export interface RecoveringHero {
   readonly hero: RotationHeroSnapshot;
@@ -14,6 +15,9 @@ export interface RotationHousePanel {
   readonly activeHouseIndex?: number;
   readonly activeHouseLevel?: number;
   readonly slots?: number;
+  /** The most rest slots any House gives, so a caller can say whether {@link slots} is at the
+   *  ceiling. Carried only alongside {@link slots} — a cap beside an unknown count says nothing. */
+  readonly slotsMax?: number;
   readonly cycleSeconds?: number;
   readonly rescuesLeft?: number;
   readonly rescuesMax?: number;
@@ -74,6 +78,13 @@ export function recoverySecondsFor(hero: RotationHeroSnapshot, cycleSeconds: num
   return (1 - fraction) * cycleSeconds;
 }
 
+/** The account's own ladder when the wire sent one, so an account whose houses differ from the
+ *  wiki bundle is measured against its own ceiling rather than a stale constant. */
+function slotsCeiling(slotsPerHouse: readonly number[] | undefined): number {
+  const usable = (slotsPerHouse ?? []).filter((slots) => Number.isFinite(slots) && slots > 0);
+  return usable.length > 0 ? Math.max(...usable) : CASA_SLOTS_MAX;
+}
+
 function buildHousePanel(snapshot: RotationNormalizeResult['snapshot']): RotationHousePanel {
   const house = snapshot.house;
   const activeHouseIndex = house?.activeHouseIndex;
@@ -86,7 +97,7 @@ function buildHousePanel(snapshot: RotationNormalizeResult['snapshot']): Rotatio
 
   return {
     ...(identityKnown ? { activeHouseIndex, activeHouseLevel: houseLevels[activeHouseIndex] } : {}),
-    ...(house?.slots !== undefined ? { slots: house.slots } : {}),
+    ...(house?.slots !== undefined ? { slots: house.slots, slotsMax: slotsCeiling(house.slotsPerHouse) } : {}),
     ...(house?.cycleSeconds !== undefined ? { cycleSeconds: house.cycleSeconds } : {}),
     ...(snapshot.rescuesLeft !== undefined ? { rescuesLeft: snapshot.rescuesLeft } : {}),
     ...(snapshot.rescuesMax !== undefined ? { rescuesMax: snapshot.rescuesMax } : {}),

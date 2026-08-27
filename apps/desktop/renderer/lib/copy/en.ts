@@ -170,30 +170,27 @@ export const en = {
     'Security software likely blocked the part of the app that reads the game. It keeps trying on its own.',
   liveGapReasonConsentMissing: 'You have not allowed the app to read your account and connect to the game yet.',
 
+  liveHeroesTitle: 'Heroes',
   liveListOnFieldTitle: 'Field',
-  liveListRecoveringTitle: 'Recovering',
-  liveListQueuedTitle: 'Waiting for a rest slot',
+  liveListRecoveringTitle: 'Resting',
+  liveListQueuedTitle: 'Idle',
   liveListBenchedTitle: 'Benched',
   liveListEmptyLine: 'No heroes here right now.',
+  liveEnergyLabel: 'Energy',
+  liveFieldSlotsHint: 'Upgrade field slots in your skill tree',
+  liveRestingSlotsHint: 'Upgrade to a later house for more rest slots',
+  liveRestingCycleValue: 'Full rest cycle {duration}',
+  liveRestingSkipsValue: '{left} of {max} skips left today',
+  liveRestingSkipsNone: 'No skips left today',
   liveUnclassifiedCount: 'Heroes not sorted into a list: {n}',
   liveFieldExitPendingCount: 'Heroes just off the field, still updating: {n}',
 
-  // liveHouse* — the house panel
-  liveHouseTitle: 'House',
-  liveHouseActiveLabel: 'Active house',
-  liveHouseLevelLabel: 'Level',
-  liveHouseSlotsLabel: 'Rest slots',
-  liveHouseCycleLabel: 'Full rest cycle',
-  liveHouseRescuesLabel: 'Daily rescues',
-  liveHouseRescuesValue: '{left} of {max} left today',
-  liveHouseAbsent: 'House data has not been sent for this account.',
-
-  // liveCountdown* — field/rest countdowns, and the qualifiers that mark one as estimated or paused
+  // liveCountdown* — field/rest countdowns, and the qualifiers that mark one as estimated or paused.
+  // Every countdown reads in one colour, so a qualifier is the only thing that marks one.
   liveFieldCountdownLabel: 'Field time remaining',
   liveRecoveryCountdownLabel: 'Rest time remaining',
   liveCountdownEstimatedQualifier: 'estimate, not a direct reading',
   liveCountdownPausedQualifier: 'not currently counting down',
-  liveCountdownLegend: 'Countdowns with a dashed underline are estimates, not direct readings.',
 
   // liveNeverRead* — nothing has been read from the account yet this session
   liveNeverReadTitle: 'Nothing read from your account yet',

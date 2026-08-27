@@ -17,7 +17,7 @@
     "pretest:render-count": "cross-env NODE_ENV=production BFC_FLAVOR=dev BFC_GAME_READER=fixture pnpm build",
     "build": "pnpm build:electron && pnpm build:renderer",
     "dev": "pnpm build:electron && node scripts/dev.mjs",
-    "dev:offline": "pnpm predev && pnpm build:electron && node scripts/dev-offline.mjs",
+    "dev:offline": "node scripts/dev-offline.mjs",
     "typecheck": "tsc -p tsconfig.main.json --noEmit && tsc -p renderer/tsconfig.json --noEmit",
     "lint": "pnpm --dir ../.. exec eslint apps/desktop/src apps/desktop/renderer",
     "test:smoke": "playwright test -c playwright.config.ts --project=electron-smoke",

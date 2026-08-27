@@ -14,7 +14,7 @@ export function RecoveryCountdown({ testId, model }: { testId: string; model: Li
     <CountdownValue
       testId={testId}
       formatted={formatLiveDurationSeconds(model.secondsRemaining)}
-      muted={!model.advancing}
+      qualified={!model.advancing}
       qualifier={t.liveCountdownPausedQualifier}
     />
   );
