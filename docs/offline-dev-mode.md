@@ -16,13 +16,41 @@ it applied, and every one of them is overridable.
 
 | Surface | Source | Fidelity |
 | --- | --- | --- |
-| Account, Planning, Inventory | `payload-20260812-8heroes.json` — 8 heroes, 30 items, all five sections `resolved` | Real captured bodies |
+| Account, Planning, Inventory | `apps/desktop/tests/fixtures/account-offline.json` — 8 heroes, 30 items, all five sections `resolved` | Real captured bodies |
 | Live | `live-capture.bfcc` — 60 records decoding to 58 ticks, replayed at ~10 Hz | Real captured bytes, looped |
 | Consent flow | Unchanged | Real |
 
 You still have to grant consent in the app before anything appears — the nav is empty until you
 do, exactly as in a real run. That is deliberate: the consent gate is part of what you want to be
 able to exercise.
+
+### The account fixture is generated, and re-keyed on purpose
+
+`account-offline.json` is built by `apps/desktop/scripts/generate-offline-fixture.mjs`, which
+drives the real route projections and the real `assembleAccountPayload` over the committed
+calibration bodies. Regenerate it after either changes:
+
+```bash
+node scripts/generate-offline-fixture.mjs
+```
+
+Two things about it are worth knowing, because both are load-bearing and neither is obvious.
+
+**Its `casa` section is the whole `/rotation` body**, per-hero rotation state included — not just
+the inner `casa` child. `/rotation` projects identity, so that is what a real read produces, and a
+fixture carrying only the house object leaves `normalizeRotation` with no heroes and the Live
+screen with nothing to fold frames onto. Running the real projection is what keeps this true as
+the projection changes.
+
+**Its hero ids are re-keyed onto the replay capture's ids.** The account bodies and the capture
+come from two different accounts with disjoint ids, and left alone the Live screen counts the
+capture's heroes on the field while listing none of them — the roster join finds nothing, so it
+looks broken rather than empty. Only the opaque id is substituted: every level, energy value,
+name, rarity and rotation state stays as captured, and the capture's own bytes are never touched.
+
+The capture shows nine distinct heroes on the field across its run and the roster holds eight, so
+one capture hero stays unknown to the roster. That is a state the real app already handles — a
+roster read older than the field it is describing.
 
 ## Why it does not fake a server
 
@@ -66,7 +94,7 @@ Set any of these before the command; the script only fills in what you left blan
 | Variable | Default in offline mode | What it does |
 | --- | --- | --- |
 | `BFC_GAME_READER` | `fixture` | `fixture` reads a payload file; `memory` uses the real reader |
-| `BFC_FIXTURE_ACCOUNT_FILE` | the 8-hero / 30-item payload | Any `AccountPayload`-shaped JSON |
+| `BFC_FIXTURE_ACCOUNT_FILE` | `tests/fixtures/account-offline.json` | Any `AccountPayload`-shaped JSON |
 | `BFC_LIVE_SOURCE` | `replay` | `replay` reads a capture; anything else uses the real tap |
 | `BFC_REPLAY_CAPTURE` | the committed `live-capture.bfcc` | Any `.bfcc` capture |
 | `BFC_RENDERER_PORT` | `3100` | Renderer dev-server port |
@@ -98,6 +126,13 @@ Worth knowing before you trust a screen you developed against it.
   hand-authoring one reintroduces exactly the failure mode described above.
 - **No error responses.** Cooldown, unauthorized and malformed-body handling are covered by unit
   tests, not by this mode.
+- **Its gear predates the level→set re-key.** The calibration bodies were captured 2026-08-12, and
+  the 2026-08-15 patch moved every one of the 30 levels — so this fixture shows `wooden` and
+  `forest` items at level 10 where the live game now gives `ember`. It is a correct record of that
+  date, which is why `fixture-set-level-agreement.test.ts` excludes it by name rather than
+  repairing it. Fine for layout and interaction work; do not read a set/level pairing off it. The
+  repo holds no post-patch API-payload capture to regenerate from — the newer captures are save
+  exports, a different shape.
 
 ## Guard rails
 

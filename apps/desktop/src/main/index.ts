@@ -425,6 +425,12 @@ async function bootstrap(): Promise<void> {
   // no commit site), so this callback never fires outside fixture-mode test builds.
   gameReader.onAccountCommitted = () => {
     notifier.notifyIfChanged();
+    // Fixture mode has no `accountRefresh` behind it, and that is the only other caller of
+    // `ingestRotation` — so without this the Live screen folds frames onto an empty roster and
+    // shows nothing at all while ticks are arriving. Safe by the same reasoning as the comment
+    // above: this callback provably never fires outside fixture mode.
+    const committed = gameReader?.getAccountView();
+    if (committed) liveSource?.ingestRotation(committed);
   };
 
   registerIpcHandlers();

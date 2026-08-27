@@ -17,18 +17,18 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const repoRoot = path.resolve(__dirname, '..', '..', '..');
 
 /**
- * The richest account fixture committed anywhere in the repo: 8 heroes, all five sections
- * resolved, and 30 inventory rows. `apps/desktop`'s own `tests/fixtures/account-full.json` has
- * two heroes and no items, which makes for a thin Inventory screen to develop against.
+ * Built by `scripts/generate-offline-fixture.mjs` from the committed calibration bodies, through
+ * the real route projections: 8 heroes, 30 items, all five sections resolved, and — the part that
+ * matters for the Live screen — a `casa` section carrying the whole `/rotation` body, per-hero
+ * rotation state included, rather than only its inner `casa` child.
  */
 const DEFAULT_ACCOUNT_FIXTURE = path.join(
   repoRoot,
-  'packages',
-  'domain',
+  'apps',
+  'desktop',
   'tests',
   'fixtures',
-  'sheet-math',
-  'payload-20260812-8heroes.json',
+  'account-offline.json',
 );
 
 function useDefault(name, value) {
