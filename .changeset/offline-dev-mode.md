@@ -1,5 +1,5 @@
 ---
-'@bombfarm/desktop': minor
+"@bombfarm/desktop": minor
 ---
 
 Add `pnpm dev:offline` — the desktop app with no game running and no server reachable.
