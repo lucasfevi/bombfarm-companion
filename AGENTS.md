@@ -38,6 +38,16 @@ pnpm --filter @bombfarm/web test
 pnpm test:smoke   # Windows — builds static renderer + launches Electron
 ```
 
+## Running the desktop app without the game
+
+```bash
+pnpm dev:offline
+```
+
+Fixture account, replayed live capture, no game process and no server needed — see
+[`docs/offline-dev-mode.md`](docs/offline-dev-mode.md) for what it covers, what it cannot show,
+and how it runs beside a real install. Plain `pnpm dev` is the real read path.
+
 `pnpm build` is not optional and has to come first: the workspace packages publish their types
 and entry points from `dist/` (`packages/domain`'s `exports` map, for one, points every subpath
 at `./dist/**`), so on a freshly cloned tree `pnpm typecheck`, `pnpm lint` and three of the vitest
