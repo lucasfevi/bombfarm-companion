@@ -46,6 +46,7 @@ function walk(dir: string, extensions: readonly string[]): string[] {
         entry.name === 'out' ||
         entry.name === 'dist' ||
         entry.name === '.next' ||
+        entry.name === '.next-dev' ||
         entry.name === '.claude'
       )
         continue;

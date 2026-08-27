@@ -10,7 +10,14 @@ import eslintPluginTailwindcss from 'eslint-plugin-tailwindcss';
 
 export default tseslint.config(
   {
-    ignores: ['**/.next/**', '**/node_modules/**', '**/out/**', '**/next-env.d.ts', '**/coverage/**'],
+    ignores: [
+      '**/.next/**',
+      '**/.next-dev/**',
+      '**/node_modules/**',
+      '**/out/**',
+      '**/next-env.d.ts',
+      '**/coverage/**',
+    ],
   },
   eslint.configs.recommended,
   ...tseslint.configs.recommendedTypeChecked,

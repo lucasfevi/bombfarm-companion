@@ -3,6 +3,7 @@ import { availableParallelism } from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import type { NextConfig } from 'next';
+import { PHASE_DEVELOPMENT_SERVER } from 'next/constants.js';
 import type { Configuration as WebpackConfig } from 'webpack';
 
 const projectRoot = path.dirname(fileURLToPath(import.meta.url));
@@ -28,6 +29,7 @@ const DEV_WATCH_IGNORED = [
   '**/node_modules/**',
   '**/.git/**',
   '**/.next/**',
+  '**/.next-dev/**',
   '**/.storybook/**',
   '**/e2e/perf/out/**',
   '**/e2e/**',
@@ -149,4 +151,18 @@ const nextConfig: NextConfig = {
   },
 };
 
-export default nextConfig;
+/**
+ * `next dev` and `next build` write mutually incompatible trees, and `next build` wipes the
+ * whole dist directory before it writes. Under the default shared `.next` the two collide on
+ * the same paths — dev keeps `server/pages/_app/build-manifest.json` (a directory per entry),
+ * build writes `server/pages/_app.js` (a file). A build therefore deletes the manifests the
+ * running dev server holds open, and every later Fast Refresh dies with
+ * `ENOENT ... .next/server/pages/_app/build-manifest.json` until the server is restarted.
+ *
+ * That is routine here, not misuse: `pnpm build` is the documented first step of any session
+ * (see AGENTS.md), so it lands while a dev server is up whenever both run against one tree.
+ * Giving dev its own dist directory makes the two disjoint.
+ */
+export default function config(phase: string): NextConfig {
+  return phase === PHASE_DEVELOPMENT_SERVER ? { ...nextConfig, distDir: '.next-dev' } : nextConfig;
+}

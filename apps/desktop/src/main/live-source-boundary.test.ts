@@ -26,7 +26,14 @@ function walk(dir: string, extensions: readonly string[]): string[] {
   for (const entry of readdirSync(dir, { withFileTypes: true })) {
     const full = join(dir, entry.name);
     if (entry.isDirectory()) {
-      if (entry.name === 'node_modules' || entry.name === 'out' || entry.name === 'dist' || entry.name === '.next') continue;
+      if (
+        entry.name === 'node_modules' ||
+        entry.name === 'out' ||
+        entry.name === 'dist' ||
+        entry.name === '.next' ||
+        entry.name === '.next-dev'
+      )
+        continue;
       files.push(...walk(full, extensions));
     } else if (entry.isFile() && extensions.includes(extname(entry.name))) {
       files.push(full);
