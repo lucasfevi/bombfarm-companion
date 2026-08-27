@@ -33,10 +33,6 @@ import type { TestContext } from 'vitest';
 const CAPTURE_DATE_PATTERN = /(?:^|\/)(?:save|payload)-(\d{4})(\d{2})(\d{2})-/;
 
 /**
- * The capture date embedded in a fixture name, as `YYYY-MM-DD`. Works on a bare filename
- * (`save-20260813-5heroes.json`) or a `dir/filename` path — both forms already occur across the
- * corpus (`loadFixtureJson`'s two call shapes, `NON_CURRENT_REGIME_CAPTURES`'s `dir/file` labels).
- *
  * Throws rather than returning `undefined` on a name it cannot parse: a silent `undefined` here
  * would make {@link isBefore} vacuously `false` for a typo'd or non-capture filename, which is
  * the false-all-clear this module exists to avoid elsewhere.
@@ -53,17 +49,15 @@ export function captureDateOf(fixtureName: string): string {
   return `${year}-${month}-${day}`;
 }
 
-/** True when `fixtureName`'s embedded capture date is strictly before `regimeBoundary` (`YYYY-MM-DD`, ISO order). */
 export function isBefore(fixtureName: string, regimeBoundary: string): boolean {
+  // Both sides are zero-padded YYYY-MM-DD, so lexicographic string comparison is date comparison.
   return captureDateOf(fixtureName) < regimeBoundary;
 }
 
 /**
- * Skips the current test, loudly, when `fixtureName` predates `regimeBoundary` — a runtime
- * `context.skip()`, not a `.skip(...)` literal, so it needs no entry in the static skip manifests
- * `tools/fixture-corpus-parity.test.mjs` / `source-surface.test.ts` police: those guard against a
- * skip nobody explained, and the explanation here is the message itself, generated from the
- * capture's own date rather than hand-maintained.
+ * A runtime `context.skip()`, not a `.skip(...)` literal — needs no entry in the static skip
+ * manifests (`tools/fixture-corpus-parity.test.mjs`, `source-surface.test.ts`), which police
+ * skips nobody explained; the explanation here is generated from the capture's own date instead.
  *
  * @param ctx The test's {@link TestContext} (the callback's first argument in `it('...', (ctx) => ...)`).
  * @param fixtureName The capture this test's assertions read specific numbers from.

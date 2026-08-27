@@ -29,14 +29,12 @@ import { assertWorkspaceDistBuilt } from './require-workspace-dist.mjs';
 // `Cannot find module '../dist/assemble.js'` that points nowhere near `pnpm build`.
 assertWorkspaceDistBuilt('tools');
 
-const { buildFixtures } = await import('../packages/game-api/scripts/generate-domain-fixtures.mjs');
+const { buildFixtures, serializeFixture } = await import(
+  '../packages/game-api/scripts/generate-domain-fixtures.mjs'
+);
 
 const root = resolve(fileURLToPath(new URL('..', import.meta.url)));
 const API_FIXTURES_DIR = join(root, 'packages/domain/tests/fixtures/api');
-
-function serialize(payload) {
-  return `${JSON.stringify(payload, null, 2)}\n`;
-}
 
 describe('derived api fixtures match packages/game-api/scripts/generate-domain-fixtures.mjs (drift guard)', () => {
   const built = buildFixtures();
@@ -58,11 +56,11 @@ describe('derived api fixtures match packages/game-api/scripts/generate-domain-f
     ).toEqual(committedNames);
   });
 
-  for (const { name, payload } of buildFixtures()) {
+  for (const { name, payload } of built) {
     it(`${name}: committed bytes equal the generator's current output`, () => {
       const committedPath = join(API_FIXTURES_DIR, name);
       const committed = readFileSync(committedPath, 'utf8');
-      const regenerated = serialize(payload);
+      const regenerated = serializeFixture(payload);
       expect(
         committed,
         `${name} has drifted from \`node scripts/generate-domain-fixtures.mjs\` (run from packages/game-api) — ` +

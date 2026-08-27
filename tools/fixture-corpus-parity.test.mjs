@@ -163,7 +163,7 @@ describe('cross-package fixture corpus parity (MP5 F1)', () => {
   };
 
   it('skip/todo directives across the test roots are exactly the declared manifests (MFR-18, TD-8)', () => {
-    const SKIP_PATTERN = '\\b(describe|it|test)\\.(skip|todo)\\b';
+    const SKIP_PATTERN = '\\b(describe|it|test)\\.(skip|todo)\\b|\\bxit[(]|\\bxdescribe[(]';
     const SKIP_PATTERN_GLOBAL = new RegExp(SKIP_PATTERN, 'g');
     const scanRoots = ['packages/domain/tests', 'apps/web/src/tests', 'apps/web/e2e', 'apps/desktop'];
     const actual = {};
@@ -424,5 +424,24 @@ describe('cross-package fixture corpus parity (MP5 F1)', () => {
       unexpectedDuplicates,
       `fixture content committed at more than one path: ${unexpectedDuplicates.map((g) => g.join(' == ')).join('; ')}`,
     ).toEqual([]);
+  });
+
+  // The domain package's own skip-directive pattern (packages/domain/tests/source-surface.test.ts)
+  // is a hand-copied JS RegExp equivalent of this file's ERE string, with nothing else keeping the
+  // two in sync — read both files' source and compare the literal pattern text.
+  it('the skip-directive pattern here matches packages/domain/tests/source-surface.test.ts exactly', () => {
+    const selfSource = readFileSync(join(root, 'tools/fixture-corpus-parity.test.mjs'), 'utf8');
+    const selfMatch = /const SKIP_PATTERN = '([^']+)'/.exec(selfSource);
+    expect(selfMatch, "could not find this file's own SKIP_PATTERN literal").not.toBeNull();
+
+    const siblingPath = join(root, 'packages/domain/tests/source-surface.test.ts');
+    const siblingSource = readFileSync(siblingPath, 'utf8');
+    const siblingMatch = /const SKIP_PATTERN = \/(.+)\/;/.exec(siblingSource);
+    expect(siblingMatch, 'could not find SKIP_PATTERN in source-surface.test.ts').not.toBeNull();
+
+    expect(
+      selfMatch[1].replace(/\\\\/g, '\\'),
+      'the skip-directive pattern here and in source-surface.test.ts have diverged',
+    ).toBe(siblingMatch[1]);
   });
 });

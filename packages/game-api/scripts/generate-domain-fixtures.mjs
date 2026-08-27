@@ -49,9 +49,8 @@ function okOutcomesFromBodies(bodies) {
 
 /**
  * Every derived `packages/domain/tests/fixtures/api/*.json` file, as `{ name, payload }` pairs —
- * `name` is the committed filename, `payload` the object that must serialize (via
- * `JSON.stringify(payload, null, 2) + '\n'`, applied identically by both the writer below and the
- * drift guard) to that file's exact committed bytes.
+ * `name` is the committed filename, `payload` the object that {@link serializeFixture} turns into
+ * that file's exact committed bytes.
  *
  * @returns {{ name: string, payload: unknown }[]}
  */
@@ -92,9 +91,18 @@ export function buildFixtures() {
   return fixtures;
 }
 
+/**
+ * The exact byte format every committed `packages/domain/tests/fixtures/api/*.json` file must
+ * match — shared with `tools/derived-fixture-drift.test.mjs` so there is one definition, not a
+ * hand-copied second one that could silently drift from this one.
+ */
+export function serializeFixture(payload) {
+  return `${JSON.stringify(payload, null, 2)}\n`;
+}
+
 function writeFixture(name, payload) {
   const path = fileURLToPath(new URL(`../../domain/tests/fixtures/api/${name}`, import.meta.url));
-  writeFileSync(path, `${JSON.stringify(payload, null, 2)}\n`, 'utf8');
+  writeFileSync(path, serializeFixture(payload), 'utf8');
   console.log('wrote', path);
 }
 
