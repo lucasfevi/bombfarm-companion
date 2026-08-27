@@ -5,6 +5,8 @@ import { usePathname } from 'next/navigation';
 import { useAppLang } from '@/shared/context/app-lang';
 import { SiteHeader } from './site-header';
 import { GuideSection } from './guide-section';
+import { ReferralNotice } from './referral-notice';
+import { readReferralNoticeHidden, writeReferralNoticeHidden } from './referral-notice-storage';
 import { ImportHeroesDialog } from '@/features/import';
 import { Footer } from './footer';
 import type { HeroRecord } from '@/shared/lib/storage';
@@ -43,6 +45,7 @@ export function AppShellInner({
       return true;
     }
   });
+  const [showReferralNotice, setShowReferralNotice] = useState(() => !readReferralNoticeHidden());
 
   useEffect(() => {
     if (importDialogOpen) {
@@ -69,6 +72,11 @@ export function AppShellInner({
     [applyAccountImport, flashToast, setHeroes, setImportDialogOpen],
   );
 
+  function dismissReferralNotice() {
+    setShowReferralNotice(false);
+    writeReferralNoticeHidden();
+  }
+
   function toggleGuide(next: boolean) {
     setShowGuide(next);
     try {
@@ -88,6 +96,8 @@ export function AppShellInner({
         onToggleGuide={onSectionPage ? undefined : toggleGuide}
         onLangChange={setLang}
       />
+
+      {showReferralNotice ? <ReferralNotice t={t} onDismiss={dismissReferralNotice} /> : null}
 
       <ImportHeroesDialog
         open={importDialogOpen}

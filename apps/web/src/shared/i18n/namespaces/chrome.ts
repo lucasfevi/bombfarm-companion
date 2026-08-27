@@ -41,6 +41,11 @@ export const en = {
   referralCopied: "Referral code copied",
   referralTitle: "Copy my referral code — we both get a reward once you clear stage 151",
   referralCopyManual: "Clipboard unavailable — the code is selected, press Ctrl+C",
+  referralNoticeTitle: "Do you like BombFarm Companion? Support it!",
+  referralNoticeBody: "If BombFarm Companion has been useful to you: paste my code on the game's invite screen. Each account can use one referral code.",
+  referralNoticeReward: "When you clear stage 151 we both get a reward that includes at least one Hero Cage. BombFarm Companion stays free and complete either way.",
+  referralNoticeCopy: "Copy the code",
+  referralNoticeDismiss: "Got it",
 };
 
 export const pt: typeof en = {
@@ -86,4 +91,9 @@ export const pt: typeof en = {
   referralCopied: "Código de indicação copiado",
   referralTitle: "Copiar meu código de indicação — nós dois ganhamos uma recompensa quando você passar da fase 151",
   referralCopyManual: "Área de transferência indisponível — o código está selecionado, aperte Ctrl+C",
+  referralNoticeTitle: "Curtiu o BombFarm Companion? Apoia aí!",
+  referralNoticeBody: "Se o BombFarm Companion tem te ajudado: cola o meu código na tela de convite do jogo. Cada conta usa um código de indicação só.",
+  referralNoticeReward: "Quando você passar da fase 151, a gente ganha uma recompensa que inclui pelo menos uma Jaula de Herói. O BombFarm Companion continua completo e de graça de qualquer jeito.",
+  referralNoticeCopy: "Copiar o código",
+  referralNoticeDismiss: "Entendi",
 };
