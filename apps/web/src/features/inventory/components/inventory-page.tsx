@@ -13,7 +13,7 @@ import { inventoryLabels } from '../model/inventory-labels';
 const EMPTY_VIEW: InventoryView = { items: [], groups: [], skipped: 0 };
 
 export function InventoryPage() {
-  const { t } = useAppLang();
+  const { t, lang } = useAppLang();
   // The store's import stamp is the change signal, not the data: a save import writes both the
   // optimizer snapshot (which moves this) and the display list, so re-reading on it keeps the two
   // in step without a second store slice. Read in an effect, never during render — this route
@@ -26,7 +26,7 @@ export function InventoryPage() {
     setView(inventoryViewFromStorage(loadInventoryView()));
   }, [importedAt]);
 
-  const labels = useMemo(() => inventoryLabels(t, heroes), [t, heroes]);
+  const labels = useMemo(() => inventoryLabels(t, lang, heroes), [t, lang, heroes]);
 
   return (
     <div className="mx-auto flex w-full max-w-app flex-col gap-4 p-4">

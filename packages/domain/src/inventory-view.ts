@@ -1,19 +1,60 @@
 import catalog from './data/catalog.json';
 
 const defById = new Map(catalog.defs.map((definition) => [definition.id, definition]));
+
+/** Forge upgrade `+0…+15`: `mult = 1 + 0.08 × N` (wiki `itens.forja.bonus`). Duplicated from
+ *  `gear/catalog.ts` rather than imported — that module pulls in the whole loadout model, and
+ *  this one is loaded by the desktop's renderer for a display list. */
+const FORGE_BONUS = 0.08;
+const FORGE_MAX = 15;
 const rarityByIdx = new Map(catalog.rarities.map((rarity) => [rarity.idx, rarity]));
 const statNames: readonly string[] = catalog.itemStats;
 
-export type ItemKind = 'equipment' | 'gem' | 'key' | 'material' | 'other';
+export type ItemKind = 'equipment' | 'chest' | 'gem' | 'time' | 'key' | 'stone' | 'other';
 
-export const ITEM_KINDS: readonly ItemKind[] = ['equipment', 'gem', 'key', 'material', 'other'];
+export const ITEM_KINDS: readonly ItemKind[] = [
+  'equipment',
+  'gem',
+  'key',
+  'time',
+  'stone',
+  'chest',
+  'other',
+];
+
+/**
+ * The wire's `category` code → kind. Read off a 63-save corpus where the six codes partition
+ * every one of 11,785 item rows with no overlap and no gaps: 0 gear, 1 chest, 2 gem, 3 time
+ * part, 4 map key, 5 skill stone. This is the game's own classification, so it outranks both the
+ * `def_id` prefix and the catalog lookup below.
+ */
+const KIND_BY_CATEGORY: Record<number, ItemKind> = {
+  0: 'equipment',
+  1: 'chest',
+  2: 'gem',
+  3: 'time',
+  4: 'key',
+  5: 'stone',
+};
+
+/** Only gear varies per instance (level, forge, rolled stats). Everything else is fungible, so a
+ *  wall of 11 identical keys is one card carrying a count. */
+export function isStackableKind(kind: ItemKind): boolean {
+  return kind !== 'equipment';
+}
+
+/** `dmg` is an absolute number; every other item stat is a fraction to be shown as a percent. */
+export type ItemStatUnit = 'flat' | 'pct';
 
 export type InventoryViewStat = {
   /** Catalog stat name (`dmg`, `sorte`, …); `null` when the wire's stat code is off the end of
    *  the catalog's `itemStats`, which is what a new stat looks like from here. */
   name: string | null;
   code: number;
+  unit: ItemStatUnit;
+  /** The roll before the forge multiplier. */
   value: number;
+  /** The roll with `+N` forge applied — the number the game shows on the item. */
   effective: number;
 };
 
@@ -45,9 +86,26 @@ export type InventoryViewItem = {
   defResolved: boolean;
 };
 
+/**
+ * One card's worth of inventory. Gear is always `count: 1` — two swords with different forge
+ * levels are different objects. Every other kind collapses to one entry per `def_id`, since the
+ * rows are identical in everything a player can act on.
+ */
+export type InventoryEntry = {
+  /** Stable across renders and across a reload: the item id for gear, the stack id otherwise. */
+  key: string;
+  /** The row itself for gear; the first row of the stack otherwise. */
+  item: InventoryViewItem;
+  count: number;
+  /** Sell value of the whole entry — one item's worth for gear, the stack's total otherwise. */
+  sellValueGold: number;
+};
+
 export type InventoryGroup = {
   kind: ItemKind;
-  items: InventoryViewItem[];
+  entries: InventoryEntry[];
+  /** Rows behind this group, which is larger than `entries.length` wherever a stack collapsed. */
+  count: number;
 };
 
 export type InventoryView = {
@@ -78,27 +136,36 @@ function asString(value: unknown, fallback = ''): string {
 const KIND_BY_DEF_PREFIX: readonly (readonly [string, ItemKind])[] = [
   ['gem_', 'gem'],
   ['map_key_', 'key'],
-  ['time_part_', 'material'],
+  ['time_part_', 'time'],
+  ['skill_stone_', 'stone'],
+  ['chest_', 'chest'],
 ];
 
 /**
- * Three sources, strongest first. `category: 0` is the one code corroborated against the catalog
- * — every category-0 row in the calibration capture resolves to a gear definition. The `def_id`
- * prefixes come next, since they name a kind explicitly. A `def_id` the catalog resolves is gear
- * by construction (the catalog holds the 240 gear definitions and nothing else), which is what
- * classifies a row that carries no `category` at all — the save-export shape does exactly that.
+ * Three sources, strongest first. The wire's own `category` is authoritative and total — see
+ * {@link KIND_BY_CATEGORY}. The `def_id` prefixes come next, since they name a kind explicitly
+ * and are what classify a row that carries no `category` at all (the save-export shape). Last, a
+ * `def_id` the catalog resolves is gear by construction, since the catalog holds the gear
+ * definitions and nothing else.
  *
  * Everything else lands in `other`. Defaulting an unrecognised row to `equipment` would file it
  * under a gear slot it does not have and hide the very rows worth looking at after a patch adds
  * an item type.
  */
 export function resolveItemKind(categoryCode: number | null, defId: string): ItemKind {
-  if (categoryCode === 0) return 'equipment';
+  if (categoryCode !== null) {
+    const byCategory = KIND_BY_CATEGORY[categoryCode];
+    if (byCategory) return byCategory;
+  }
   for (const [prefix, kind] of KIND_BY_DEF_PREFIX) {
     if (defId.startsWith(prefix)) return kind;
   }
   if (defById.has(defId)) return 'equipment';
   return 'other';
+}
+
+function statUnit(name: string | null): ItemStatUnit {
+  return name === 'dmg' ? 'flat' : 'pct';
 }
 
 function mapStats(raw: unknown): InventoryViewStat[] {
@@ -109,14 +176,45 @@ function mapStats(raw: unknown): InventoryViewStat[] {
     const code = Math.round(asNumber(entry.stat ?? entry.code, -1));
     if (code < 0) continue;
     const value = asNumber(entry.value, 0);
+    const name = statNames[code] ?? null;
     stats.push({
-      name: statNames[code] ?? null,
+      name,
       code,
+      unit: statUnit(name),
       value,
       effective: asNumber(entry.effective, value),
     });
   }
   return stats;
+}
+
+/**
+ * The rolls the catalog says a gear definition carries at this level and forge, in wire shape.
+ * Only reached when a row arrives with no `stats` of its own — a save export always carries
+ * them, and where both exist they agree exactly (checked across a capture: 346 of 346 stats
+ * match `scaledValores` to floating-point tolerance), so this is a gap-filler and never a
+ * second opinion.
+ */
+function catalogStats(defId: string, rarityIdx: number, level: number, upgrade: number): InventoryViewStat[] {
+  const definition = defById.get(defId);
+  if (!definition) return [];
+  const nativeMult = (catalog.nivelMult as Record<string, number>)[String(definition.nativeLevel)] ?? 1;
+  const itemMult = (catalog.nivelMult as Record<string, number>)[String(level)] ?? nativeMult;
+  const forge = 1 + FORGE_BONUS * Math.max(0, Math.min(FORGE_MAX, Math.round(upgrade)));
+  const scale = itemMult / nativeMult;
+  const statCount = rarityByIdx.get(rarityIdx)?.statCount ?? 1;
+
+  return definition.valores.slice(0, statCount).map((roll) => {
+    const code = statNames.indexOf(roll.stat);
+    const value = roll.valor * scale;
+    return {
+      name: roll.stat,
+      code: code >= 0 ? code : -1,
+      unit: statUnit(roll.stat),
+      value,
+      effective: value * forge,
+    };
+  });
 }
 
 /**
@@ -143,6 +241,9 @@ export function mapInventoryViewItem(raw: unknown): InventoryViewItem | null {
   const definition = defById.get(defId);
   const equippedBy = asString(raw.equipped_on ?? raw.equippedBy);
   const rarityIdx = Math.round(asNumber(raw.rarity ?? raw.rarityIdx, 0));
+  const level = asNumber(raw.level, definition?.nativeLevel ?? 0);
+  const upgrade = Math.round(asNumber(raw.upgrade, 0));
+  const stats = mapStats(raw.stats);
 
   return {
     id,
@@ -153,8 +254,8 @@ export function mapInventoryViewItem(raw: unknown): InventoryViewItem | null {
     rarityIdx,
     rarityCode: rarityByIdx.get(rarityIdx)?.code ?? null,
     slot: definition?.slot ?? null,
-    level: asNumber(raw.level, definition?.nativeLevel ?? 0),
-    upgrade: Math.round(asNumber(raw.upgrade, 0)),
+    level,
+    upgrade,
     power: asNumber(raw.power, 0),
     sellValueGold: asNumber(raw.sell_value ?? raw.sellValueGold, 0),
     sellable: raw.sellable !== false,
@@ -164,7 +265,7 @@ export function mapInventoryViewItem(raw: unknown): InventoryViewItem | null {
     equipped: equippedBy.length > 0,
     equippedBy: equippedBy.length > 0 ? equippedBy : null,
     inStash: raw.in_stash === true || raw.inStash === true,
-    stats: mapStats(raw.stats),
+    stats: stats.length > 0 ? stats : catalogStats(defId, rarityIdx, level, upgrade),
     defResolved: Boolean(definition),
   };
 }
@@ -200,6 +301,16 @@ export function mapInventoryHeroes(rawHeroes: readonly unknown[] | undefined): M
   return byId;
 }
 
+/** Two rows stack when a player could not tell them apart: same definition, same rarity. */
+function stackKey(item: InventoryViewItem): string {
+  return `${item.defId}|${item.rarityIdx}`;
+}
+
+/**
+ * Groups by kind, and within every kind but gear collapses identical rows into one counted
+ * entry. Group order follows {@link ITEM_KINDS}, not first-seen order, so the page does not
+ * reshuffle between two saves that happen to list their rows differently.
+ */
 export function groupInventoryByKind(items: readonly InventoryViewItem[]): InventoryGroup[] {
   const byKind = new Map<ItemKind, InventoryViewItem[]>();
   for (const item of items) {
@@ -207,10 +318,30 @@ export function groupInventoryByKind(items: readonly InventoryViewItem[]): Inven
     if (bucket) bucket.push(item);
     else byKind.set(item.kind, [item]);
   }
-  return ITEM_KINDS.filter((kind) => byKind.has(kind)).map((kind) => ({
-    kind,
-    items: byKind.get(kind) ?? [],
-  }));
+
+  return ITEM_KINDS.filter((kind) => byKind.has(kind)).map((kind) => {
+    const rows = byKind.get(kind) ?? [];
+    return { kind, entries: entriesFor(kind, rows), count: rows.length };
+  });
+}
+
+function entriesFor(kind: ItemKind, rows: readonly InventoryViewItem[]): InventoryEntry[] {
+  if (!isStackableKind(kind)) {
+    return rows.map((item) => ({ key: item.id, item, count: 1, sellValueGold: item.sellValueGold }));
+  }
+
+  const stacks = new Map<string, InventoryEntry>();
+  for (const item of rows) {
+    const key = stackKey(item);
+    const existing = stacks.get(key);
+    if (existing) {
+      existing.count += 1;
+      existing.sellValueGold += item.sellValueGold;
+    } else {
+      stacks.set(key, { key, item, count: 1, sellValueGold: item.sellValueGold });
+    }
+  }
+  return [...stacks.values()];
 }
 
 /** Raw `/inventory` items (or a save export's `items[]`) to the grouped view both shells render. */
@@ -226,4 +357,79 @@ export function buildInventoryView(rawItems: readonly unknown[] | undefined): In
   }
 
   return { items, groups: groupInventoryByKind(items), skipped };
+}
+
+export type InventoryFilter = {
+  /** Free text, matched against whatever the caller says an item reads as. */
+  text: string;
+  /** Empty means every kind — an explicit "all" beats making the caller list all seven. */
+  kinds: readonly ItemKind[];
+  rarities: readonly number[];
+  equippedOnly: boolean;
+};
+
+export const EMPTY_INVENTORY_FILTER: InventoryFilter = {
+  text: '',
+  kinds: [],
+  rarities: [],
+  equippedOnly: false,
+};
+
+export function isEmptyInventoryFilter(filter: InventoryFilter): boolean {
+  return (
+    filter.text.trim() === '' &&
+    filter.kinds.length === 0 &&
+    filter.rarities.length === 0 &&
+    !filter.equippedOnly
+  );
+}
+
+/** Diacritic- and case-insensitive, so "epico" finds "Épico" and "gelo" finds "Geleira". */
+function fold(text: string): string {
+  return text
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase();
+}
+
+/**
+ * Narrows a view, then regroups. Regrouping rather than filtering the groups in place is what
+ * keeps a stack's count honest: filtering to `equipped` must not leave a key card reading ×11
+ * when 11 keys are not what survived.
+ *
+ * `searchText` is the caller's: item names are localized, and this package holds no i18n.
+ */
+export function filterInventoryView(
+  view: InventoryView,
+  filter: InventoryFilter,
+  searchText: (item: InventoryViewItem) => string,
+): InventoryView {
+  if (isEmptyInventoryFilter(filter)) return view;
+
+  const needles = fold(filter.text).split(/\s+/).filter(Boolean);
+  const kinds = filter.kinds.length > 0 ? new Set(filter.kinds) : null;
+  const rarities = filter.rarities.length > 0 ? new Set(filter.rarities) : null;
+
+  const items = view.items.filter((item) => {
+    if (kinds && !kinds.has(item.kind)) return false;
+    if (rarities && !rarities.has(item.rarityIdx)) return false;
+    if (filter.equippedOnly && !item.equipped) return false;
+    if (needles.length === 0) return true;
+    const haystack = fold(searchText(item));
+    return needles.every((needle) => haystack.includes(needle));
+  });
+
+  return { items, groups: groupInventoryByKind(items), skipped: view.skipped };
+}
+
+/** Rarity indices present in a view, ascending — the rarity filter's own options, so a chip is
+ *  never offered for a tier the account does not hold. */
+export function rarityIndicesInView(view: InventoryView): number[] {
+  return [...new Set(view.items.map((item) => item.rarityIdx))].sort((a, b) => a - b);
+}
+
+/** Kinds present in a view, in {@link ITEM_KINDS} order. */
+export function kindsInView(view: InventoryView): ItemKind[] {
+  const present = new Set(view.items.map((item) => item.kind));
+  return ITEM_KINDS.filter((kind) => present.has(kind));
 }

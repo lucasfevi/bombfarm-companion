@@ -6,30 +6,53 @@ export const en = {
   inventoryGroupEquipment: "Gear",
   inventoryGroupGem: "Gems",
   inventoryGroupKey: "Keys",
-  inventoryGroupMaterial: "Materials",
+  inventoryGroupTime: "House parts",
+  inventoryGroupStone: "Skill stones",
+  inventoryGroupChest: "Chests",
   inventoryGroupOther: "Other",
 
-  inventoryBadgeStash: "Stash",
   inventoryBadgeLocked: "Locked",
   inventoryBadgeMarketBlocked: "Market-blocked",
   inventoryBadgeUnresolved: "Not in catalog",
 
   inventoryDetailSetSlot: "{set} · {slot}",
   inventoryDetailLevel: "Lv {level}",
-  inventoryDetailSellValue: "{gold} gold",
 
-  inventoryEquippedByLead: "Equipped by",
   inventoryEquippedByHero: "{hero} · Lv {level}",
-  inventoryEquippedByUnknown: "a hero not in your roster",
+  inventoryEquippedByUnknown: "Equipped",
+
+  inventoryGemAmethyst: "Amethyst",
+  inventoryGemAquamarine: "Aquamarine",
+  inventoryGemCitrine: "Citrine",
+  inventoryGemDiamond: "Diamond",
+  inventoryGemEmerald: "Emerald",
+  inventoryGemOceanite: "Oceanite",
+  inventoryGemRoselite: "Roselite",
+  inventoryGemRuby: "Ruby",
+  inventoryGemSapphire: "Sapphire",
+  inventoryGemTopaz: "Topaz",
+
+  inventoryChestItem: "Item chest · Lv {level}",
+  inventoryChestGem: "Gem chest",
+  inventoryChestKey: "Key chest",
+  inventoryChestSkill: "Skill stone chest",
+  inventoryChestTime: "House part chest",
+
+  inventorySearchPlaceholder: "Search items…",
+  inventorySearchLabel: "Search your inventory",
+  inventoryFilterAll: "All",
+  inventoryFilterEquipped: "Equipped",
+  inventoryFilterClear: "Clear",
+  inventoryFilterCount: "{shown} of {total}",
+  inventoryFilterNoMatches: "No items match those filters.",
 
   inventoryUnknownCategory: "unrecognized category {codes}",
   inventorySkipped: "{count} row(s) could not be read and are not shown.",
 
   inventoryEmptyTitle: "No items imported yet",
-  inventoryEmptyBody: "Import a save file and every item it carries shows up here — gear, keys, and anything the catalog does not name yet.",
+  inventoryEmptyBody: "Import a save file and every item it carries shows up here — gear, gems, keys, house parts, skill stones and chests.",
 
   inventoryCount: "{count} items",
-  inventoryFilterAll: "All",
 };
 
 export const pt: typeof en = {
@@ -40,28 +63,51 @@ export const pt: typeof en = {
   inventoryGroupEquipment: "Equipamentos",
   inventoryGroupGem: "Gemas",
   inventoryGroupKey: "Chaves",
-  inventoryGroupMaterial: "Materiais",
+  inventoryGroupTime: "Peças de Casa",
+  inventoryGroupStone: "Pedras de habilidade",
+  inventoryGroupChest: "Baús",
   inventoryGroupOther: "Outros",
 
-  inventoryBadgeStash: "Depósito",
   inventoryBadgeLocked: "Bloqueado",
   inventoryBadgeMarketBlocked: "Sem mercado",
   inventoryBadgeUnresolved: "Fora do catálogo",
 
   inventoryDetailSetSlot: "{set} · {slot}",
   inventoryDetailLevel: "Nv {level}",
-  inventoryDetailSellValue: "{gold} de ouro",
 
-  inventoryEquippedByLead: "Equipado por",
   inventoryEquippedByHero: "{hero} · Nv {level}",
-  inventoryEquippedByUnknown: "um herói fora do seu elenco",
+  inventoryEquippedByUnknown: "Equipado",
+
+  inventoryGemAmethyst: "Ametista",
+  inventoryGemAquamarine: "Água-marinha",
+  inventoryGemCitrine: "Citrino",
+  inventoryGemDiamond: "Diamante",
+  inventoryGemEmerald: "Esmeralda",
+  inventoryGemOceanite: "Oceanita",
+  inventoryGemRoselite: "Roselita",
+  inventoryGemRuby: "Rubi",
+  inventoryGemSapphire: "Safira",
+  inventoryGemTopaz: "Topázio",
+
+  inventoryChestItem: "Baú de item · Nv {level}",
+  inventoryChestGem: "Baú de gemas",
+  inventoryChestKey: "Baú de chaves",
+  inventoryChestSkill: "Baú de pedras",
+  inventoryChestTime: "Baú de peças de Casa",
+
+  inventorySearchPlaceholder: "Buscar itens…",
+  inventorySearchLabel: "Buscar no inventário",
+  inventoryFilterAll: "Todos",
+  inventoryFilterEquipped: "Equipados",
+  inventoryFilterClear: "Limpar",
+  inventoryFilterCount: "{shown} de {total}",
+  inventoryFilterNoMatches: "Nenhum item corresponde a esses filtros.",
 
   inventoryUnknownCategory: "categoria não reconhecida {codes}",
   inventorySkipped: "{count} linha(s) não puderam ser lidas e não aparecem aqui.",
 
   inventoryEmptyTitle: "Nenhum item importado ainda",
-  inventoryEmptyBody: "Importe um save e todos os itens aparecem aqui — equipamentos, chaves e o que o catálogo ainda não nomeia.",
+  inventoryEmptyBody: "Importe um save e todos os itens aparecem aqui — equipamentos, gemas, chaves, peças de Casa, pedras de habilidade e baús.",
 
   inventoryCount: "{count} itens",
-  inventoryFilterAll: "Todos",
 };

@@ -3,12 +3,14 @@ export { HeroAvatar } from './hero-avatar';
 export { HeroIdentity, type HeroIdentityVariant } from './hero-identity';
 export { HeroIdentityChip } from './hero-identity-chip';
 export { ItemIcon } from './item-icon';
+export { InventoryItemIcon } from './inventory-item-icon';
 export { InventoryGrid } from './inventory-grid';
 export type {
   InventoryBadge,
   InventoryEquippedBy,
   InventoryGridLabels,
   InventoryGridProps,
+  InventoryToolbarLabels,
 } from './inventory-grid';
 export { AbilityIcon } from './ability-icon';
 export { PropIcon } from './prop-icon';
@@ -35,6 +37,8 @@ export {
 export {
   inventoryCardRecipe,
   inventoryBadgeRecipe,
+  inventoryChipRecipe,
+  inventoryCountClass,
   inventoryGridClass,
   type InventoryCardTone,
   type InventoryBadgeTone,

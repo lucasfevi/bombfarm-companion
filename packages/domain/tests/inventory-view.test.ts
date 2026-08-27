@@ -2,13 +2,21 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { mapInventoryItem } from '@bombfarm/domain/inventory';
+import { scaledValores } from '@bombfarm/domain/gear';
 import {
   buildInventoryView,
   groupInventoryByKind,
   mapInventoryHeroes,
   mapInventoryViewItem,
   resolveItemKind,
+  filterInventoryView,
+  isStackableKind,
+  kindsInView,
+  rarityIndicesInView,
+  EMPTY_INVENTORY_FILTER,
   ITEM_KINDS,
+  type InventoryViewItem,
+  type ItemKind,
 } from '@bombfarm/domain/inventory-view';
 
 function loadPayloadItems(): unknown[] {
@@ -32,7 +40,7 @@ describe('buildInventoryView over the calibration capture', () => {
 
   it('files the capture as 27 equipment and 3 keys, and nothing else', () => {
     const view = buildInventoryView(loadPayloadItems());
-    const counts = Object.fromEntries(view.groups.map((group) => [group.kind, group.items.length]));
+    const counts = Object.fromEntries(view.groups.map((group) => [group.kind, group.count]));
     expect(counts).toEqual({ equipment: 27, key: 3 });
   });
 
@@ -49,7 +57,7 @@ describe('buildInventoryView over the calibration capture', () => {
     expect(gloves!.inStash).toBe(false);
     expect(gloves!.equippedBy).toBe('555');
     expect(gloves!.rarityCode).toBe('comum');
-    expect(gloves!.stats).toEqual([{ name: 'dmg', code: 0, value: 19.25, effective: 19.25 }]);
+    expect(gloves!.stats).toEqual([{ name: 'dmg', code: 0, unit: 'flat', value: 19.25, effective: 19.25 }]);
   });
 
   it('reads sell_value through the digit string the wire sends rather than dropping it to zero', () => {
@@ -83,13 +91,13 @@ describe('resolveItemKind', () => {
   });
 
   it('still prefers an explicit prefix over the catalog fallback', () => {
-    expect(resolveItemKind(null, 'time_part_incomum')).toBe('material');
+    expect(resolveItemKind(null, 'time_part_incomum')).toBe('time');
     expect(resolveItemKind(null, 'map_key_incomum')).toBe('key');
   });
 
-  it('does not let a missing category promote a gem or material out of its prefix bucket', () => {
+  it('does not let a missing category promote a gem or house part out of its prefix bucket', () => {
     expect(resolveItemKind(null, 'gem_ruby')).toBe('gem');
-    expect(resolveItemKind(null, 'time_part_gear')).toBe('material');
+    expect(resolveItemKind(null, 'time_part_gear')).toBe('time');
   });
 });
 
@@ -122,7 +130,7 @@ describe('mapInventoryViewItem', () => {
       category: 0,
       stats: [{ stat: 99, value: 1, effective: 2 }],
     });
-    expect(item!.stats).toEqual([{ name: null, code: 99, value: 1, effective: 2 }]);
+    expect(item!.stats).toEqual([{ name: null, code: 99, unit: 'pct', value: 1, effective: 2 }]);
   });
 
   it('treats a missing sellable flag as sellable and a missing tradable flag as not tradable', () => {
@@ -143,9 +151,9 @@ describe('groupInventoryByKind', () => {
     expect(groupInventoryByKind(items).map((group) => group.kind)).toEqual(['equipment', 'key', 'other']);
   });
 
-  it('returns no groups for an empty inventory rather than five empty ones', () => {
+  it('returns no groups for an empty inventory rather than one empty group per kind', () => {
     expect(groupInventoryByKind([])).toEqual([]);
-    expect(ITEM_KINDS.length).toBe(5);
+    expect(ITEM_KINDS.length).toBe(7);
   });
 });
 
@@ -230,7 +238,7 @@ describe('mapInventoryViewItem across the storage round trip', () => {
     expect(reloaded.sellValueGold).toBe(1234);
     expect(reloaded.marketBlocked).toBe(true);
     expect(reloaded.inStash).toBe(true);
-    expect(reloaded.stats).toEqual([{ name: 'velocidade', code: 2, value: 10, effective: 12 }]);
+    expect(reloaded.stats).toEqual([{ name: 'velocidade', code: 2, unit: 'pct', value: 10, effective: 12 }]);
   });
 });
 
@@ -254,5 +262,209 @@ describe('mapInventoryHeroes', () => {
 
   it('returns an empty map when the payload carries no heroes array', () => {
     expect(mapInventoryHeroes(undefined).size).toBe(0);
+  });
+});
+
+/**
+ * The wire's `category` is the game's own classification and partitions every row. These six
+ * codes are read off a 63-save corpus; before this, only code 0 was known and a chest or a skill
+ * stone fell through to `other`.
+ */
+describe('resolveItemKind reads the wire category as the total classifier', () => {
+  const CODES: [number, string, ItemKind][] = [
+    [0, 'steel_luva', 'equipment'],
+    [1, 'chest_item_90', 'chest'],
+    [2, 'gem_oceanite', 'gem'],
+    [3, 'time_part_lendaria', 'time'],
+    [4, 'map_key_mitico', 'key'],
+    [5, 'skill_stone_comum', 'stone'],
+  ];
+
+  it.each(CODES)('files category %i (%s) as %s', (code, defId, kind) => {
+    expect(resolveItemKind(code, defId)).toBe(kind);
+  });
+
+  it('still classifies a chest and a skill stone from the def_id when no category is sent', () => {
+    expect(resolveItemKind(null, 'chest_gem_2')).toBe('chest');
+    expect(resolveItemKind(null, 'skill_stone_mitico')).toBe('stone');
+  });
+});
+
+describe('stacking', () => {
+  const rows = (defId: string, rarity: number, count: number, sell = 220) =>
+    Array.from(
+      { length: count },
+      (_, index) =>
+        mapInventoryViewItem({
+          id: `${defId}-${index}`,
+          def_id: defId,
+          category: 4,
+          rarity,
+          sell_value: String(sell),
+        })!,
+    );
+
+  it('collapses identical keys into one counted entry, and sums the stack sell value', () => {
+    const groups = groupInventoryByKind(rows('map_key_epico', 3, 11));
+    const keys = groups.find((group) => group.kind === 'key')!;
+
+    expect(keys.count).toBe(11);
+    expect(keys.entries).toHaveLength(1);
+    expect(keys.entries[0].count).toBe(11);
+    expect(keys.entries[0].sellValueGold).toBe(11 * 220);
+  });
+
+  it('keeps two rarities of the same family apart', () => {
+    const keys = groupInventoryByKind([
+      ...rows('map_key_epico', 3, 4),
+      ...rows('map_key_raro', 2, 2),
+    ]).find((group) => group.kind === 'key')!;
+    expect(keys.entries.map((entry) => entry.count).sort()).toEqual([2, 4]);
+  });
+
+  it('never stacks gear, because forge and level make two swords different objects', () => {
+    expect(isStackableKind('equipment')).toBe(false);
+    const gear = [
+      mapInventoryViewItem({ id: 'a', def_id: 'ember_luva', category: 0, rarity: 0, upgrade: 0 })!,
+      mapInventoryViewItem({ id: 'b', def_id: 'ember_luva', category: 0, rarity: 0, upgrade: 12 })!,
+    ];
+    const group = groupInventoryByKind(gear)[0];
+    expect(group.entries).toHaveLength(2);
+    expect(group.entries.every((entry) => entry.count === 1)).toBe(true);
+  });
+});
+
+describe('item stats', () => {
+  it('marks dmg flat and every other roll percent, so a caller knows which to suffix', () => {
+    const item = mapInventoryViewItem({
+      id: '1',
+      def_id: 'steel_luva',
+      category: 0,
+      rarity: 2,
+      level: 20,
+      upgrade: 8,
+      stats: [
+        { stat: 0, value: 55, effective: 90.2 },
+        { stat: 5, value: 0.4, effective: 0.656 },
+      ],
+    })!;
+    expect(item.stats.map((stat) => [stat.name, stat.unit])).toEqual([
+      ['dmg', 'flat'],
+      ['penetracao', 'pct'],
+    ]);
+  });
+
+  /**
+   * The fallback is a second implementation of the planner's own `scaledValores`, kept separate
+   * only so this module does not pull in the loadout model. Pinning the two together is what
+   * stops them drifting after a catalog rescale.
+   */
+  it('derives the same rolls the planner would, when a row arrives with none', () => {
+    const derived = mapInventoryViewItem({
+      id: '1',
+      def_id: 'steel_luva',
+      category: 0,
+      rarity: 2,
+      level: 20,
+      upgrade: 8,
+    })!;
+    const planner = scaledValores('steel_luva', 2, 20, 8);
+
+    expect(derived.stats).toHaveLength(planner.length);
+    for (const [index, stat] of derived.stats.entries()) {
+      expect(stat.name).toBe(planner[index].stat);
+      expect(stat.effective).toBeCloseTo(planner[index].valor, 9);
+      expect(stat.unit).toBe(planner[index].unit);
+    }
+  });
+
+  it('honours the rarity stat count, so a Comum shows one roll and a Raro three', () => {
+    const at = (rarity: number) =>
+      mapInventoryViewItem({ id: String(rarity), def_id: 'steel_luva', category: 0, rarity, level: 20 })!.stats
+        .length;
+    expect(at(0)).toBe(1);
+    expect(at(2)).toBe(3);
+    expect(at(5)).toBe(6);
+  });
+
+  it('applies the forge to the catalog fallback, so a +10 does not read as a +0', () => {
+    const plain = mapInventoryViewItem({ id: '1', def_id: 'steel_luva', category: 0, rarity: 2, level: 20 })!;
+    const forged = mapInventoryViewItem({
+      id: '2',
+      def_id: 'steel_luva',
+      category: 0,
+      rarity: 2,
+      level: 20,
+      upgrade: 10,
+    })!;
+    expect(forged.stats[0].effective).toBeCloseTo(plain.stats[0].effective * 1.8, 6);
+  });
+});
+
+describe('filterInventoryView', () => {
+  const view = () =>
+    buildInventoryView([
+      { id: '1', def_id: 'glacier_arma', category: 0, rarity: 4, level: 60, equipped_on: 'h1' },
+      { id: '2', def_id: 'ember_luva', category: 0, rarity: 0, level: 10 },
+      { id: '3', def_id: 'map_key_epico', category: 4, rarity: 3 },
+      { id: '4', def_id: 'map_key_epico', category: 4, rarity: 3 },
+    ]);
+
+  const nameOf = (item: InventoryViewItem) => item.defId;
+
+  it('returns the same view object when nothing is filtered, so React skips the rerender', () => {
+    const original = view();
+    expect(filterInventoryView(original, EMPTY_INVENTORY_FILTER, nameOf)).toBe(original);
+  });
+
+  it('narrows on free text, ignoring case', () => {
+    const filtered = filterInventoryView(view(), { ...EMPTY_INVENTORY_FILTER, text: 'GLACIER' }, nameOf);
+    expect(filtered.items.map((item) => item.id)).toEqual(['1']);
+  });
+
+  it('ignores accents, so a plain-ASCII query still finds an accented name', () => {
+    const accented = (item: InventoryViewItem) => (item.rarityIdx === 3 ? 'Épico' : 'Comum');
+    const filtered = filterInventoryView(view(), { ...EMPTY_INVENTORY_FILTER, text: 'epico' }, accented);
+    expect(filtered.items).toHaveLength(2);
+  });
+
+  it('requires every word, so two terms narrow rather than widen', () => {
+    const byName = (item: InventoryViewItem) => `${item.defId} rarity${item.rarityIdx}`;
+    expect(
+      filterInventoryView(view(), { ...EMPTY_INVENTORY_FILTER, text: 'map rarity3' }, byName).items,
+    ).toHaveLength(2);
+    expect(
+      filterInventoryView(view(), { ...EMPTY_INVENTORY_FILTER, text: 'map rarity4' }, byName).items,
+    ).toHaveLength(0);
+  });
+
+  it('narrows on kind and on rarity', () => {
+    expect(
+      filterInventoryView(view(), { ...EMPTY_INVENTORY_FILTER, kinds: ['key'] }, nameOf).items,
+    ).toHaveLength(2);
+    expect(
+      filterInventoryView(view(), { ...EMPTY_INVENTORY_FILTER, rarities: [0] }, nameOf).items,
+    ).toHaveLength(1);
+  });
+
+  it('narrows to equipped items only', () => {
+    const filtered = filterInventoryView(view(), { ...EMPTY_INVENTORY_FILTER, equippedOnly: true }, nameOf);
+    expect(filtered.items.map((item) => item.id)).toEqual(['1']);
+  });
+
+  /** The bug this guards: filtering the GROUPS rather than the items would leave a key stack
+   *  still reading its unfiltered count. */
+  it('recounts a stack after filtering rather than carrying the old count', () => {
+    const filtered = filterInventoryView(view(), { ...EMPTY_INVENTORY_FILTER, rarities: [3] }, nameOf);
+    const keys = filtered.groups.find((group) => group.kind === 'key')!;
+    expect(keys.entries[0].count).toBe(2);
+
+    const none = filterInventoryView(view(), { ...EMPTY_INVENTORY_FILTER, kinds: ['gem'] }, nameOf);
+    expect(none.groups).toEqual([]);
+  });
+
+  it('offers only the kinds and rarities the account actually holds', () => {
+    expect(kindsInView(view())).toEqual(['equipment', 'key']);
+    expect(rarityIndicesInView(view())).toEqual([0, 3, 4]);
   });
 });

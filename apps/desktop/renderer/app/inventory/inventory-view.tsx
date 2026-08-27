@@ -12,18 +12,19 @@ import { useMemo } from 'react';
 import { Banner, EmptyState, Panel, PanelHeader } from '@bombfarm/ui';
 import { InventoryGrid } from '@bombfarm/game-art';
 import { buildInventoryView, mapInventoryHeroes } from '@bombfarm/domain/inventory-view';
-import { useCopy } from '../../lib/copy';
+import { useCopy, useLocale } from '../../lib/copy';
 import { useAccountView } from '../../lib/planning/use-account-view';
 import { inventoryLabels } from './inventory-labels';
 
 export function InventoryView() {
   const t = useCopy();
+  const { lang } = useLocale();
   const accountViewState = useAccountView();
 
   const view = accountViewState.status === 'loaded' ? accountViewState.view : null;
   const inventory = useMemo(() => buildInventoryView(view?.payload.items), [view]);
   const heroes = useMemo(() => mapInventoryHeroes(view?.payload.heroes), [view]);
-  const labels = useMemo(() => inventoryLabels(t, heroes), [t, heroes]);
+  const labels = useMemo(() => inventoryLabels(t, lang, heroes), [t, lang, heroes]);
 
   if (accountViewState.status === 'loading') {
     return (

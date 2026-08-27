@@ -25,6 +25,8 @@ export const artFrameRecipe = cva(`${artFrameBase} ${artFrameRadiusClass}`, {
     fill: {
       neutral: 'bg-[color-mix(in_oklch,var(--bg)_55%,var(--surface))]',
       rarity: '',
+      /** The game's own slot plate goes in as an image layer, so the frame paints nothing. */
+      plate: 'bg-[color:var(--bg)]',
     },
     rarity: {
       0: 'border-rar-0',

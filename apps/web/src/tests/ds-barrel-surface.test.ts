@@ -130,6 +130,12 @@ describe('design-system barrel surface (frozen)', () => {
 // InventoryGrid (2026-08-26): the inventory surface both shells render. It lives here rather than
 // in @bombfarm/ui because it composes ItemIcon and the rarity classes, which are game vocabulary;
 // it carries no strings of its own, so each shell supplies its own locale.
+//
+// InventoryItemIcon + inventoryChipRecipe/inventoryCountClass (2026-08-27): the grid grew a
+// search-and-filter toolbar and per-kind cards. `InventoryItemIcon` is a sibling of `ItemIcon`
+// rather than a widening of it: it lays the game's own rarity slot plate under the sprite, and
+// it takes an `InventoryViewItem` — which a gem or a key satisfies and an `EquippedItem` cannot,
+// since those carry no gear slot.
 const FROZEN_GAME_ART_BARREL_VALUE_EXPORTS = [
   'AbilityIcon',
   'ArtFrame',
@@ -145,6 +151,7 @@ const FROZEN_GAME_ART_BARREL_VALUE_EXPORTS = [
   'HeroIdentity',
   'HeroIdentityChip',
   'HouseIcon',
+  'InventoryItemIcon',
   'ItemIcon',
   'PropIcon',
   'abilityIconRecipe',
@@ -153,6 +160,8 @@ const FROZEN_GAME_ART_BARREL_VALUE_EXPORTS = [
   'iconMetaGlyphRecipe',
   'inventoryBadgeRecipe',
   'inventoryCardRecipe',
+  'inventoryChipRecipe',
+  'inventoryCountClass',
   'inventoryGridClass',
   'rarityDotClass',
   'rarityTextClass',
