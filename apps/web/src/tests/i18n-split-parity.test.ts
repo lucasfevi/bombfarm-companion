@@ -301,8 +301,18 @@ const KEYS_REMOVED: readonly string[] = [
  * game, or the planner is), and the action for each. New strings only — nothing existing was
  * reworded, and in particular `importIssuesCount` and the three `importPoint*` strings are
  * untouched.
+ *
+ * The first-run referral notice (2026-08-27) adds five `referralNotice*` keys — the topbar chip
+ * and the footer line state the code and the mutual reward, but neither has room to say what a
+ * player has to do with it or that the game accepts one code per account, once. New strings
+ * only; the existing `referral*` keys behind those two surfaces are untouched.
  */
 const KEYS_ADDED: readonly string[] = [
+  'referralNoticeTitle',
+  'referralNoticeBody',
+  'referralNoticeReward',
+  'referralNoticeCopy',
+  'referralNoticeDismiss',
   'importBlockedTitle',
   'importBlockedBody',
   'importBlockedOldSave',
