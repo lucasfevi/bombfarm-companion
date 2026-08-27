@@ -244,6 +244,8 @@ export const en = {
   inventorySortCount: 'Quantity',
   inventorySortAscending: 'Ascending',
   inventorySortDescending: 'Descending',
+  inventorySortThenBy: 'then by {terms}',
+  inventorySortTerm: '{key} {direction}',
   inventoryUnknownCategory: 'a kind this app does not recognise yet ({codes})',
   inventorySkipped: '{count} entries could not be read and are not shown.',
   inventoryEmptyTitle: 'No items read yet',

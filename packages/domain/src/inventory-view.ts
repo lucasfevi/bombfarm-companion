@@ -278,6 +278,8 @@ export type InventoryHero = {
   level: number;
   /** Rank letter (`A`, `S`, …); empty when the hero has not been ranked. */
   rank: string;
+  /** Gems-to-stars ritual count. */
+  stars: number;
   /** Cosmetic skin index, for the avatar. */
   skin: number;
 };
@@ -301,6 +303,7 @@ export function mapInventoryHeroes(rawHeroes: readonly unknown[] | undefined): M
       rarityIdx: Math.round(asNumber(raw.rarity ?? raw.rarityIdx, 0)),
       level: asNumber(raw.level, 1),
       rank: asString(raw.rank),
+      stars: Math.round(asNumber(raw.stars, 0)),
       skin: Math.round(asNumber(raw.skin, 0)),
     });
   }
@@ -461,55 +464,89 @@ export function heroIdsInView(view: InventoryView): string[] {
 
 export type InventorySortKey = 'rarity' | 'level' | 'value' | 'name' | 'count';
 export type InventorySortDirection = 'asc' | 'desc';
-export type InventorySort = { key: InventorySortKey; direction: InventorySortDirection };
+export type InventorySortTerm = { key: InventorySortKey; direction: InventorySortDirection };
+
+/** Most significant term first. */
+export type InventorySort = readonly InventorySortTerm[];
 
 export const INVENTORY_SORT_KEYS: readonly InventorySortKey[] = ['rarity', 'level', 'value', 'name', 'count'];
 
-/** Best-first, which is what a player scanning for an upgrade wants before anything else. */
-export const DEFAULT_INVENTORY_SORT: InventorySort = { key: 'rarity', direction: 'desc' };
+/**
+ * Best-first, then newest-first within a tier — what a player scanning for an upgrade wants
+ * before anything else, and the reason the default is two terms rather than one: rarity alone
+ * leaves a Lendária nv10 sitting above a Lendária nv100.
+ */
+export const DEFAULT_INVENTORY_SORT: InventorySort = [
+  { key: 'rarity', direction: 'desc' },
+  { key: 'level', direction: 'desc' },
+];
+
+/** Beyond three, the tail terms stop being something a reader can hold in their head. */
+const MAX_SORT_TERMS = 3;
+
+/**
+ * Folds a newly chosen term into the existing order. The new key becomes the MOST significant
+ * one and every previously chosen key slides down a rank, which is what makes picking "level
+ * ascending" and then "rarity descending" mean *rarity descending, ties broken by level
+ * ascending* rather than throwing the first choice away.
+ *
+ * Re-choosing the key that is already primary just sets its direction — flipping asc/desc must
+ * not reshuffle the terms under it.
+ */
+export function withSortTerm(sort: InventorySort, term: InventorySortTerm): InventorySort {
+  const rest = sort.filter((existing) => existing.key !== term.key);
+  return [term, ...rest].slice(0, MAX_SORT_TERMS);
+}
+
+/** The direction currently applied to `key`, or `null` when it is not part of the order. */
+export function sortDirectionFor(sort: InventorySort, key: InventorySortKey): InventorySortDirection | null {
+  return sort.find((term) => term.key === key)?.direction ?? null;
+}
+
+function sortValue(entry: InventoryEntry, key: InventorySortKey): number {
+  switch (key) {
+    case 'rarity':
+      return entry.item.rarityIdx;
+    case 'level':
+      return entry.item.level;
+    case 'value':
+      return entry.sellValueGold;
+    case 'count':
+      return entry.count;
+    case 'name':
+      return 0;
+  }
+}
 
 /**
  * Sorts within each group rather than across the whole view: the groups are the page's structure,
  * and a sort that reordered them would put a key between two swords.
  *
  * `nameOf` is the caller's, since item names are localized and this package holds no i18n. It is
- * also the tie-break for every other key, so a rarity sort still lists a set together rather than
- * in whatever order the save happened to send.
+ * also the final tie-break for every other key, so a rarity sort still lists a set together
+ * rather than in whatever order the save happened to send.
  */
 export function sortInventoryView(
   view: InventoryView,
   sort: InventorySort,
   nameOf: (item: InventoryViewItem) => string,
 ): InventoryView {
-  const sign = sort.direction === 'asc' ? 1 : -1;
-
-  const rank = (entry: InventoryEntry): number => {
-    switch (sort.key) {
-      case 'rarity':
-        return entry.item.rarityIdx;
-      case 'level':
-        return entry.item.level;
-      case 'value':
-        return entry.sellValueGold;
-      case 'count':
-        return entry.count;
-      case 'name':
-        return 0;
+  const compare = (a: InventoryEntry, b: InventoryEntry): number => {
+    for (const term of sort) {
+      const sign = term.direction === 'asc' ? 1 : -1;
+      const delta =
+        term.key === 'name'
+          ? nameOf(a.item).localeCompare(nameOf(b.item))
+          : sortValue(a, term.key) - sortValue(b, term.key);
+      if (delta !== 0) return sign * delta;
     }
+
+    const byName = nameOf(a.item).localeCompare(nameOf(b.item));
+    if (byName !== 0) return byName;
+    // Last resort: the stack key. Without it two identically-named entries can swap places
+    // between renders, and a grid that reshuffles under a hover reads as a bug.
+    return a.key.localeCompare(b.key);
   };
 
-  const groups = view.groups.map((group) => ({
-    ...group,
-    entries: [...group.entries].sort((a, b) => {
-      const delta = rank(a) - rank(b);
-      if (delta !== 0) return sign * delta;
-      const byName = nameOf(a.item).localeCompare(nameOf(b.item));
-      if (byName !== 0) return sort.key === 'name' ? sign * byName : byName;
-      // Last resort: the stack key. Without it two identically-named entries can swap places
-      // between renders, and a grid that reshuffles under a hover reads as a bug.
-      return a.key.localeCompare(b.key);
-    }),
-  }));
-
-  return { ...view, groups };
+  return { ...view, groups: view.groups.map((group) => ({ ...group, entries: [...group.entries].sort(compare) })) };
 }

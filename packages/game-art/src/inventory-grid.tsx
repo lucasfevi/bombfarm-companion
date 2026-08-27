@@ -8,18 +8,21 @@ import {
   isEmptyInventoryFilter,
   kindsInView,
   rarityIndicesInView,
+  sortDirectionFor,
   sortInventoryView,
+  withSortTerm,
   type InventoryEntry,
   type InventoryFilter,
   type InventoryGroup,
   type InventorySort,
+  type InventorySortDirection,
   type InventorySortKey,
   type InventoryView,
   type InventoryViewItem,
   type InventoryViewStat,
   type ItemKind,
 } from '@bombfarm/domain/inventory-view';
-import { cn } from '@bombfarm/ui';
+import { cn, Icon, Select } from '@bombfarm/ui';
 import { GoldIcon } from './gold-icon';
 import { HeroAvatar } from './hero-avatar';
 import { InventoryItemIcon } from './inventory-item-icon';
@@ -61,6 +64,8 @@ export interface InventoryEquippedBy {
   rarityIdx: number;
   /** Already-localized, e.g. "Lv 127". Empty when the level is not known. */
   level: string;
+  /** Gems-to-stars ritual, 0..3. */
+  stars: number;
   skin: number;
   /** The caller has no record of this hero — draw the name as a note, with no avatar. */
   unknown: boolean;
@@ -93,6 +98,10 @@ export interface InventoryToolbarLabels {
   sortKey: (key: InventorySortKey) => string;
   sortAscending: string;
   sortDescending: string;
+  /** One tie-break term, e.g. "Level ascending". */
+  sortTerm: (key: InventorySortKey, direction: InventorySortDirection) => string;
+  /** Joins the tie-break terms into the "then by …" line under the control. */
+  sortThenBy: (terms: readonly string[]) => string;
 }
 
 export interface InventoryGridLabels {
@@ -142,35 +151,48 @@ function toggle<T>(list: readonly T[], value: T): T[] {
 /** Four is what a Mítico rolls; showing all six of a future tier would push the footer around. */
 const MAX_STAT_LINES = 4;
 
+/** The ritual caps at three; anything past that is a bad read, not a taller row of stars. */
+const MAX_HERO_STARS = 3;
+
 /**
- * The equipping hero, compressed onto the footer's single line: avatar, rank, name in the hero's
- * rarity colour, level. Deliberately not {@link HeroIdentity} — that block is two or three lines
- * by design, and this has to sit beside the sell value without growing the card.
+ * The equipping hero, as the roster's own identity block at card scale: avatar beside two lines —
+ * rank, name and stars on the first, level on the second.
+ *
+ * Deliberately not {@link HeroIdentity}: that block carries a rarity WORD of its own and sizes
+ * for a roster row, where this has to sit beside the sell value in a card footer. What it does
+ * borrow is the alignment rule — rank and name share a baseline, so a bold `S` does not ride
+ * above the name next to it.
  */
 function EquippedByRow({ hero }: { hero: InventoryEquippedBy }) {
   if (hero.unknown) {
     return <span className="min-w-0 truncate text-xs text-muted">{hero.name}</span>;
   }
 
+  const stars = Math.max(0, Math.min(MAX_HERO_STARS, Math.round(hero.stars)));
+
   return (
     <span className="flex min-w-0 items-center gap-1.5">
       <HeroAvatar skin={hero.skin} rarityIdx={hero.rarityIdx} size="xs" name={hero.name} className="shrink-0" />
-      {hero.rank ? (
-        <span className="shrink-0 text-[11px] leading-none font-black tracking-tight text-accent">
-          {hero.rank}
+      <span className="flex min-w-0 flex-col gap-0.5">
+        <span className="flex min-w-0 items-baseline gap-1">
+          {hero.rank ? (
+            <span className="shrink-0 text-[11px] font-black tracking-tight text-accent">{hero.rank}</span>
+          ) : null}
+          <span
+            className={cn('min-w-0 truncate text-xs font-bold', rarityTextClass(hero.rarityIdx) ?? 'text-ink')}
+          >
+            {hero.name}
+          </span>
+          {stars > 0 ? (
+            <span className="shrink-0 text-[10px] tracking-tight text-rar-4" aria-hidden>
+              {'★'.repeat(stars)}
+            </span>
+          ) : null}
         </span>
-      ) : null}
-      <span
-        className={cn(
-          'min-w-0 truncate text-xs leading-none font-bold',
-          rarityTextClass(hero.rarityIdx) ?? 'text-ink',
-        )}
-      >
-        {hero.name}
+        {hero.level ? (
+          <span className="text-[10px] leading-none tabular-nums text-muted">{hero.level}</span>
+        ) : null}
       </span>
-      {hero.level ? (
-        <span className="shrink-0 text-[10px] leading-none text-muted tabular-nums">{hero.level}</span>
-      ) : null}
     </span>
   );
 }
@@ -199,6 +221,7 @@ function InventoryCard({
         <span className="flex min-w-0 flex-1 flex-col gap-0.5">
           <span className="flex min-w-0 items-start gap-1.5">
             <span
+              data-testid="inventory-card-name"
               className={cn(
                 'min-w-0 flex-1 truncate text-sm font-semibold',
                 rarityTextClass(item.rarityIdx) ?? 'text-ink',
@@ -228,7 +251,9 @@ function InventoryCard({
             return (
               <span key={stat.code} className={inventoryStatRowClass}>
                 <span className={inventoryStatLabelClass}>{text.label}</span>
-                <span className={inventoryStatValueClass}>{text.value}</span>
+                <span data-testid="inventory-stat-value" className={inventoryStatValueClass}>
+                  {text.value}
+                </span>
               </span>
             );
           })}
@@ -237,7 +262,10 @@ function InventoryCard({
 
       {/* `mt-auto` is what pins this row to the bottom edge whatever sits above it, so a Comum
           carrying one stat and a Mítico carrying four still line their footers up across a row. */}
-      <span className="mt-auto flex items-center justify-between gap-2 border-t border-line/60 pt-2">
+      <span
+        data-testid="inventory-card-footer"
+        className="mt-auto flex items-center justify-between gap-2 border-t border-line/60 pt-2"
+      >
         {equippedBy ? <EquippedByRow hero={equippedBy} /> : <span />}
         {entry.sellValueGold > 0 ? (
           <span className="flex shrink-0 items-center gap-1 text-xs tabular-nums text-muted">
@@ -249,13 +277,20 @@ function InventoryCard({
     </>
   );
 
+  // A stable hook for the desktop smoke, which drives the real window: the card is otherwise
+  // only addressable by its generated class shape, and that moves whenever the recipe does.
   if (!interactive) {
-    return <div className={inventoryCardRecipe({ tone, interactive: false })}>{body}</div>;
+    return (
+      <div data-testid="inventory-card" className={inventoryCardRecipe({ tone, interactive: false })}>
+        {body}
+      </div>
+    );
   }
 
   return (
     <button
       type="button"
+      data-testid="inventory-card"
       className={inventoryCardRecipe({ tone, interactive: true })}
       onClick={() => onSelect?.(item)}
     >
@@ -293,7 +328,9 @@ function InventoryToolbar({
   }, [view, labels]);
   const dirty = !isEmptyInventoryFilter(filter);
 
-  const ascending = sort.direction === 'asc';
+  const primary = sort[0] ?? DEFAULT_INVENTORY_SORT[0];
+  const ascending = primary.direction === 'asc';
+  const secondary = sort.slice(1);
 
   return (
     <div className="flex flex-col gap-2 pb-3">
@@ -307,10 +344,21 @@ function InventoryToolbar({
           className={cn(inventoryFieldClass, 'min-w-40 flex-1')}
         />
 
+        {/* One control, two halves: the key and the direction share an outline so the pair reads
+            as "sorted by X, descending". Choosing a key promotes it to primary and demotes the
+            previous one to a tie-break — see `withSortTerm`. */}
         <span className={inventorySortGroupClass}>
-          <select
-            value={sort.key}
-            onChange={(event) => onSortChange({ ...sort, key: event.target.value as InventorySortKey })}
+          <Select
+            size="compact"
+            value={primary.key}
+            onChange={(event) =>
+              onSortChange(
+                withSortTerm(sort, {
+                  key: event.target.value as InventorySortKey,
+                  direction: sortDirectionFor(sort, event.target.value as InventorySortKey) ?? 'desc',
+                }),
+              )
+            }
             aria-label={labels.toolbar.sortLabel}
             className={inventorySortSelectClass}
           >
@@ -319,15 +367,17 @@ function InventoryToolbar({
                 {labels.toolbar.sortKey(key)}
               </option>
             ))}
-          </select>
+          </Select>
           <button
             type="button"
-            onClick={() => onSortChange({ ...sort, direction: ascending ? 'desc' : 'asc' })}
+            onClick={() =>
+              onSortChange(withSortTerm(sort, { key: primary.key, direction: ascending ? 'desc' : 'asc' }))
+            }
             aria-label={ascending ? labels.toolbar.sortAscending : labels.toolbar.sortDescending}
             title={ascending ? labels.toolbar.sortAscending : labels.toolbar.sortDescending}
             className={inventorySortDirectionClass}
           >
-            <span aria-hidden>{ascending ? '↑' : '↓'}</span>
+            <Icon name={ascending ? 'chevron-up' : 'chevron-down'} size="sm" />
           </button>
         </span>
 
@@ -344,6 +394,16 @@ function InventoryToolbar({
           </button>
         ) : null}
       </div>
+
+      {/* The tie-breaks are invisible otherwise: the control only ever shows the primary key, so
+          without this line "rarity, then level" looks identical to "rarity". */}
+      {secondary.length > 0 ? (
+        <p className="text-[11px] text-muted">
+          {labels.toolbar.sortThenBy(
+            secondary.map((term) => labels.toolbar.sortTerm(term.key, term.direction)),
+          )}
+        </p>
+      ) : null}
 
       <div className="flex flex-wrap items-center gap-1.5">
         <button
@@ -395,13 +455,13 @@ function InventoryToolbar({
         {/* A select rather than a chip per hero: a mature account fields dozens, and that many
             chips would push the grid below the fold before a single item was shown. */}
         {heroes.length > 0 ? (
-          <select
+          <Select
+            size="compact"
             value={filter.heroIds[0] ?? ''}
             onChange={(event) =>
               onFilterChange({ ...filter, heroIds: event.target.value ? [event.target.value] : [] })
             }
             aria-label={labels.toolbar.heroLabel}
-            className={cn(inventoryFieldClass, 'cursor-pointer py-1 text-xs')}
           >
             <option value="">{labels.toolbar.allHeroes}</option>
             {heroes.map((hero) => (
@@ -409,7 +469,7 @@ function InventoryToolbar({
                 {hero.name}
               </option>
             ))}
-          </select>
+          </Select>
         ) : null}
       </div>
     </div>

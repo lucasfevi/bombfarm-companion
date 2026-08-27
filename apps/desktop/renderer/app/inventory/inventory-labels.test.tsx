@@ -32,7 +32,7 @@ const ROWS = [
 ];
 
 const HEROES = mapInventoryHeroes([
-  { id: 'h1', name: 'Kendo', rarity: 5, level: 157, rank: 'S', skin: 3 },
+  { id: 'h1', name: 'Kendo', rarity: 5, level: 157, rank: 'S', skin: 3, stars: 2 },
 ]);
 
 function item(id: string): InventoryViewItem {
@@ -86,6 +86,7 @@ describe('desktop inventory labels', () => {
       rank: 'S',
       rarityIdx: 5,
       level: 'Level 157',
+      stars: 2,
       skin: 3,
       unknown: false,
     });
@@ -97,6 +98,7 @@ describe('desktop inventory labels', () => {
       rank: '',
       rarityIdx: -1,
       level: '',
+      stars: 0,
       skin: 0,
       unknown: true,
     });

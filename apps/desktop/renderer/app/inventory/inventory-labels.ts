@@ -140,7 +140,15 @@ function equippedBy(
 
   const hero = heroes.get(item.equippedBy);
   if (!hero) {
-    return { name: t.inventoryEquippedByUnknown, rank: '', rarityIdx: -1, level: '', skin: 0, unknown: true };
+    return {
+      name: t.inventoryEquippedByUnknown,
+      rank: '',
+      rarityIdx: -1,
+      level: '',
+      stars: 0,
+      skin: 0,
+      unknown: true,
+    };
   }
 
   return {
@@ -148,6 +156,7 @@ function equippedBy(
     rank: hero.rank,
     rarityIdx: hero.rarityIdx,
     level: fill(t.inventoryDetailLevel, { level: hero.level }),
+    stars: hero.stars,
     skin: hero.skin,
     unknown: false,
   };
@@ -192,6 +201,12 @@ export function inventoryLabels(
       sortKey: (key) => t[SORT_KEY[key]],
       sortAscending: t.inventorySortAscending,
       sortDescending: t.inventorySortDescending,
+      sortTerm: (key, direction) =>
+        fill(t.inventorySortTerm, {
+          key: t[SORT_KEY[key]],
+          direction: (direction === 'asc' ? t.inventorySortAscending : t.inventorySortDescending).toLowerCase(),
+        }),
+      sortThenBy: (terms) => fill(t.inventorySortThenBy, { terms: terms.join(', ') }),
     },
     unknownCategoryNote: (codes) => fill(t.inventoryUnknownCategory, { codes: codes.join(', ') }),
     skippedNote: (count) => fill(t.inventorySkipped, { count }),

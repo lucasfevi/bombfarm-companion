@@ -15,6 +15,8 @@ import {
   heroIdsInView,
   rarityIndicesInView,
   sortInventoryView,
+  withSortTerm,
+  sortDirectionFor,
   EMPTY_INVENTORY_FILTER,
   DEFAULT_INVENTORY_SORT,
   type InventorySort,
@@ -249,7 +251,7 @@ describe('mapInventoryViewItem across the storage round trip', () => {
 describe('mapInventoryHeroes', () => {
   it('keys hero identity by the id an item equippedBy holds', () => {
     const heroes = mapInventoryHeroes([
-      { id: 'h1', name: 'Kendo', rarity: 5, level: 157, rank: 'S', skin: 3 },
+      { id: 'h1', name: 'Kendo', rarity: 5, level: 157, rank: 'S', skin: 3, stars: 2 },
       { id: 'h2', name: 'Dano', rarity: 3, level: 60 },
     ]);
     expect(heroes.get('h1')).toEqual({
@@ -258,6 +260,7 @@ describe('mapInventoryHeroes', () => {
       rarityIdx: 5,
       level: 157,
       rank: 'S',
+      stars: 2,
       skin: 3,
     });
 
@@ -268,7 +271,15 @@ describe('mapInventoryHeroes', () => {
   it('falls back to the hero id as a name and skips rows with no id at all', () => {
     const heroes = mapInventoryHeroes([{ id: 'h3' }, { name: 'no id' }, null]);
     expect(heroes.size).toBe(1);
-    expect(heroes.get('h3')).toEqual({ id: 'h3', name: 'h3', rarityIdx: 0, level: 1, rank: '', skin: 0 });
+    expect(heroes.get('h3')).toEqual({
+      id: 'h3',
+      name: 'h3',
+      rarityIdx: 0,
+      level: 1,
+      rank: '',
+      stars: 0,
+      skin: 0,
+    });
   });
 
   it('returns an empty map when the payload carries no heroes array', () => {
@@ -531,34 +542,47 @@ describe('sortInventoryView', () => {
       .groups.find((group) => group.kind === 'equipment')
       ?.entries.map((entry) => entry.item.id);
 
-  it('defaults to best-first, which is what a player scanning for an upgrade wants', () => {
-    expect(DEFAULT_INVENTORY_SORT).toEqual({ key: 'rarity', direction: 'desc' });
+  it('defaults to rarity descending, then level descending', () => {
+    expect(DEFAULT_INVENTORY_SORT).toEqual([
+      { key: 'rarity', direction: 'desc' },
+      { key: 'level', direction: 'desc' },
+    ]);
     expect(gearOrder(DEFAULT_INVENTORY_SORT)).toEqual(['1', '3', '2']);
   });
 
-  it.each([
-    ['rarity', 'asc', ['2', '3', '1']],
-    ['rarity', 'desc', ['1', '3', '2']],
-    ['level', 'asc', ['2', '3', '1']],
-    ['value', 'desc', ['1', '3', '2']],
-    ['name', 'asc', ['3', '2', '1']],
-  ] as const)('sorts by %s %s', (key, direction, expected) => {
-    expect(gearOrder({ key, direction })).toEqual([...expected]);
+  /** Rarity alone leaves a Lendária nv10 above a Lendária nv100, which is the wrong answer for
+   *  the question the default is meant to serve. */
+  it('breaks a rarity tie by the second term rather than by name', () => {
+    const sameRarity = buildInventoryView([
+      { id: 'low', def_id: 'ash_arma', category: 0, rarity: 4, level: 80 },
+      { id: 'high', def_id: 'void_arma', category: 0, rarity: 4, level: 300 },
+    ]);
+    const order = sortInventoryView(sameRarity, DEFAULT_INVENTORY_SORT, nameOf).groups[0].entries.map(
+      (entry) => entry.item.id,
+    );
+    expect(order).toEqual(['high', 'low']);
   });
 
-  /** The groups are the page's structure; a sort that reordered them would file a key between
-   *  two swords. */
+  it.each([
+    [[{ key: 'rarity', direction: 'asc' }], ['2', '3', '1']],
+    [[{ key: 'level', direction: 'asc' }], ['2', '3', '1']],
+    [[{ key: 'value', direction: 'desc' }], ['1', '3', '2']],
+    [[{ key: 'name', direction: 'asc' }], ['3', '2', '1']],
+  ] as [InventorySort, string[]][])('sorts by %j', (sort, expected) => {
+    expect(gearOrder(sort)).toEqual(expected);
+  });
+
   it('reorders within a group and never across groups', () => {
-    const sorted = sortInventoryView(view(), { key: 'value', direction: 'desc' }, nameOf);
+    const sorted = sortInventoryView(view(), [{ key: 'value', direction: 'desc' }], nameOf);
     expect(sorted.groups.map((group) => group.kind)).toEqual(['equipment', 'key']);
   });
 
-  it('breaks a tie by name, so a rarity sort still lists a set together', () => {
+  it('falls back to the name, then the stack key, so the grid never reshuffles between renders', () => {
     const tied = buildInventoryView([
       { id: 'b', def_id: 'glacier_bota', category: 0, rarity: 2, level: 60 },
       { id: 'a', def_id: 'glacier_arma', category: 0, rarity: 2, level: 60 },
     ]);
-    const order = sortInventoryView(tied, { key: 'rarity', direction: 'desc' }, nameOf).groups[0].entries.map(
+    const order = sortInventoryView(tied, [{ key: 'rarity', direction: 'desc' }], nameOf).groups[0].entries.map(
       (entry) => entry.item.id,
     );
     expect(order).toEqual(['a', 'b']);
@@ -566,8 +590,70 @@ describe('sortInventoryView', () => {
 
   it('leaves the item list itself untouched — only the grouped entries move', () => {
     const original = view();
-    const sorted = sortInventoryView(original, { key: 'value', direction: 'asc' }, nameOf);
+    const sorted = sortInventoryView(original, [{ key: 'value', direction: 'asc' }], nameOf);
     expect(sorted.items).toBe(original.items);
     expect(sorted.skipped).toBe(original.skipped);
+  });
+});
+
+describe('withSortTerm', () => {
+  /**
+   * The rule the user asked for, in one test: choosing level ascending and then rarity descending
+   * means *rarity descending, ties broken by level ascending* — the first choice is demoted, not
+   * discarded.
+   */
+  it('promotes the newly chosen key and demotes the previous one to a tie-break', () => {
+    let sort: InventorySort = [];
+    sort = withSortTerm(sort, { key: 'level', direction: 'asc' });
+    sort = withSortTerm(sort, { key: 'rarity', direction: 'desc' });
+
+    expect(sort).toEqual([
+      { key: 'rarity', direction: 'desc' },
+      { key: 'level', direction: 'asc' },
+    ]);
+  });
+
+  it('applies that order: rarity first, then level ascending inside a tier', () => {
+    const items = buildInventoryView([
+      { id: 'epic-hi', def_id: 'ash_arma', category: 0, rarity: 4, level: 80 },
+      { id: 'epic-lo', def_id: 'void_arma', category: 0, rarity: 4, level: 20 },
+      { id: 'rare', def_id: 'clay_arma', category: 0, rarity: 2, level: 300 },
+    ]);
+    const sort = withSortTerm(withSortTerm([], { key: 'level', direction: 'asc' }), {
+      key: 'rarity',
+      direction: 'desc',
+    });
+    const order = sortInventoryView(items, sort, (item) => item.defId).groups[0].entries.map(
+      (entry) => entry.item.id,
+    );
+    expect(order).toEqual(['epic-lo', 'epic-hi', 'rare']);
+  });
+
+  it('re-choosing the primary key only flips its direction, leaving the tie-breaks in place', () => {
+    const sort = withSortTerm(DEFAULT_INVENTORY_SORT, { key: 'rarity', direction: 'asc' });
+    expect(sort).toEqual([
+      { key: 'rarity', direction: 'asc' },
+      { key: 'level', direction: 'desc' },
+    ]);
+  });
+
+  it('never lets a key appear twice', () => {
+    let sort: InventorySort = DEFAULT_INVENTORY_SORT;
+    sort = withSortTerm(sort, { key: 'level', direction: 'asc' });
+    expect(sort.map((term) => term.key)).toEqual(['level', 'rarity']);
+  });
+
+  it('caps the depth, because a fourth tie-break is not something a reader can hold', () => {
+    let sort: InventorySort = [];
+    for (const key of ['name', 'count', 'value', 'level', 'rarity'] as const) {
+      sort = withSortTerm(sort, { key, direction: 'desc' });
+    }
+    expect(sort).toHaveLength(3);
+    expect(sort[0].key).toBe('rarity');
+  });
+
+  it('reports the direction a key is sorted in, or null when it is not in the order', () => {
+    expect(sortDirectionFor(DEFAULT_INVENTORY_SORT, 'rarity')).toBe('desc');
+    expect(sortDirectionFor(DEFAULT_INVENTORY_SORT, 'name')).toBeNull();
   });
 });

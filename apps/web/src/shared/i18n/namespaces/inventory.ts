@@ -57,6 +57,9 @@ export const en = {
   inventorySortAscending: "Ascending",
   inventorySortDescending: "Descending",
 
+  inventorySortThenBy: "then by {terms}",
+  inventorySortTerm: "{key} {direction}",
+
   inventoryUnknownCategory: "unrecognized category {codes}",
   inventorySkipped: "{count} row(s) could not be read and are not shown.",
 
@@ -124,6 +127,9 @@ export const pt: typeof en = {
   inventorySortCount: "Quantidade",
   inventorySortAscending: "Crescente",
   inventorySortDescending: "Decrescente",
+
+  inventorySortThenBy: "depois por {terms}",
+  inventorySortTerm: "{key} {direction}",
 
   inventoryUnknownCategory: "categoria não reconhecida {codes}",
   inventorySkipped: "{count} linha(s) não puderam ser lidas e não aparecem aqui.",

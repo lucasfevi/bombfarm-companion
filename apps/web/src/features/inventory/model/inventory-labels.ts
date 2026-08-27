@@ -153,6 +153,7 @@ function equippedBy(
       rank: '',
       rarityIdx: -1,
       level: '',
+      stars: 0,
       skin: 0,
       unknown: true,
     };
@@ -163,6 +164,7 @@ function equippedBy(
     rank: hero.rank ?? '',
     rarityIdx: RARITIES.indexOf(hero.rarity),
     level: sub(strings.inventoryDetailLevel, { level: hero.level }),
+    stars: hero.stars,
     skin: hero.skin ?? 0,
     unknown: false,
   };
@@ -218,6 +220,15 @@ export function inventoryLabels(
       sortKey: (key) => strings[SORT_KEY[key]] as string,
       sortAscending: strings.inventorySortAscending,
       sortDescending: strings.inventorySortDescending,
+      sortTerm: (key, direction) =>
+        sub(strings.inventorySortTerm, {
+          key: strings[SORT_KEY[key]] as string,
+          direction: (direction === 'asc'
+            ? strings.inventorySortAscending
+            : strings.inventorySortDescending
+          ).toLowerCase(),
+        }),
+      sortThenBy: (terms) => sub(strings.inventorySortThenBy, { terms: terms.join(', ') }),
     },
     unknownCategoryNote: (codes) => sub(strings.inventoryUnknownCategory, { codes: codes.join(', ') }),
     skippedNote: (count) => sub(strings.inventorySkipped, { count }),

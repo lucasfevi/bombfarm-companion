@@ -243,6 +243,8 @@ export const ptBR: Copy = {
   inventorySortCount: 'Quantidade',
   inventorySortAscending: 'Crescente',
   inventorySortDescending: 'Decrescente',
+  inventorySortThenBy: 'depois por {terms}',
+  inventorySortTerm: '{key} {direction}',
   inventoryUnknownCategory: 'um tipo que este app ainda não reconhece ({codes})',
   inventorySkipped: '{count} entradas não puderam ser lidas e não aparecem aqui.',
   inventoryEmptyTitle: 'Nenhum item lido ainda',
