@@ -74,7 +74,9 @@ export const TEAM_BUFF_FIELDS = [
  * here — storing the raw figure lets the UI field this feeds show the true total even when it
  * exceeds the cap, rather than silently rounding it off before the user ever sees it.
  */
-export function computeTeamBuffsFromDeployed(heroes: HeroRecord[]): Record<TeamBuffId, number> {
+export function computeTeamBuffsFromDeployed(
+  heroes: readonly Pick<HeroRecord, 'deployed' | 'abilities'>[],
+): Record<TeamBuffId, number> {
   const out = zeroTeamBuffs();
   const contributors = heroes.filter((hero) => hero.deployed);
   for (const buffId of TEAM_BUFF_ABILITY_IDS) {

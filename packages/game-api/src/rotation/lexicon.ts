@@ -4,28 +4,20 @@
  * — this table is the one place that vocabulary is translated into this codebase's own English
  * domain field names. `normalize.ts` and everything else under `rotation/` reference a wire token
  * only through {@link wireKey}/{@link stateSymbolForToken} below, never as an inline string
- * literal — {@link PORTUGUESE_WIRE_TOKENS} is what `vocabulary-guard.ts` builds its forbidden
- * pattern from, so a literal here would make the guard unable to forbid itself out of its own
- * scan surface.
+ * literal — {@link ROTATION_WIRE_LEXICON} is what `../wire-glossary.js` collects Portuguese tokens
+ * from for `vocabulary-guard.ts`'s forbidden pattern, so a literal here would make the guard
+ * unable to forbid itself out of its own scan surface.
  *
  * This only covers the rotation boundary this feature builds. It does not migrate the many
  * pre-existing Portuguese identifiers elsewhere in the tree (`packages/domain`'s `SchemaLevel`
  * key lists, `packages/contracts`'s `RawHeroEnergy`, and others) — that is separate, out-of-scope
- * work.
+ * work. The combat websocket's own wire vocabulary lives in `../live-frame/lexicon.ts`, built on
+ * the same generic machinery from `../wire-lexicon.js`.
  */
 
-export type WireVocabularyOrigin = 'portuguese' | 'english';
-export type WireVocabularyKind = 'key' | 'enum_value';
+import { createWireKeyLookup, type WireLexiconEntry, type WireVocabularyOrigin } from '../wire-lexicon.js';
 
-export interface WireLexiconEntry {
-  /** Stable, code-facing identifier used to look this entry up — never the wire token itself. */
-  readonly symbol: string;
-  readonly wireToken: string;
-  readonly kind: WireVocabularyKind;
-  readonly domainField: string;
-  readonly description: string;
-  readonly origin: WireVocabularyOrigin;
-}
+export type { WireLexiconEntry, WireVocabularyKind, WireVocabularyOrigin } from '../wire-lexicon.js';
 
 /** Every declared `/rotation` wire KEY — the union of `ROTATION_LEVEL`, `ROTATION_HERO_LEVEL` and
  *  `CASA_LEVEL` in `packages/game-api/src/fingerprints.ts` (itself importing `CASA_LEVEL` from
@@ -239,13 +231,7 @@ const STATE_ENTRIES: ReadonlyArray<{
 /** Looks up a declared `/rotation` wire key by its stable symbol. The only sanctioned way for
  *  `normalize.ts` (or anything else in `rotation/` other than this file) to obtain a wire key
  *  string — see the module doc comment. */
-export function wireKey(symbol: RotationWireSymbol): string {
-  const entry = KEY_ENTRIES.find((candidate) => candidate.symbol === symbol);
-  if (!entry) {
-    throw new Error(`[rotation-lexicon] no entry declared for wire key symbol "${symbol}"`);
-  }
-  return entry.wireToken;
-}
+export const wireKey = createWireKeyLookup<RotationWireSymbol>(KEY_ENTRIES, 'rotation-lexicon');
 
 /** The domain symbol for a wire `state` token, or `undefined` for anything not in
  *  {@link STATE_ENTRIES} — an unrecognized token is a normalizer validation failure, not a
@@ -254,8 +240,8 @@ export function stateSymbolForToken(token: string): RotationStateSymbol | undefi
   return STATE_ENTRIES.find((candidate) => candidate.wireToken === token)?.symbol;
 }
 
-/** The full lexicon, keys and state values together, in declaration order — the source both
- *  {@link renderWireGlossary} and `vocabulary-guard.ts`'s forbidden-token pattern are built from. */
+/** The full lexicon, keys and state values together, in declaration order — the source
+ *  `../wire-glossary.js` and `vocabulary-guard.ts`'s forbidden-token pattern are built from. */
 export const ROTATION_WIRE_LEXICON: readonly WireLexiconEntry[] = [
   ...KEY_ENTRIES.map((entry) => ({ ...entry, kind: 'key' as const })),
   ...STATE_ENTRIES.map((entry) => ({
@@ -265,48 +251,3 @@ export const ROTATION_WIRE_LEXICON: readonly WireLexiconEntry[] = [
     origin: 'portuguese' as const,
   })),
 ];
-
-/** Every Portuguese-origin wire token declared above — keys and `state` values alike. The
- *  vocabulary guard's forbidden-identifier pattern is built from exactly this list, never from a
- *  hand-written literal, so the guard cannot drift from the table that is supposed to be its only
- *  source of truth. */
-export const PORTUGUESE_WIRE_TOKENS: readonly string[] = ROTATION_WIRE_LEXICON.filter(
-  (entry) => entry.origin === 'portuguese',
-).map((entry) => entry.wireToken);
-
-function glossaryTable(title: string, rows: readonly WireLexiconEntry[]): readonly string[] {
-  const lines = [`## ${title}`, '', '| Wire token | Domain field | Description | Origin |', '| --- | --- | --- | --- |'];
-  for (const row of rows) {
-    const origin = row.origin === 'portuguese' ? 'Portuguese' : 'English';
-    lines.push(`| \`${row.wireToken}\` | \`${row.domainField}\` | ${row.description} | ${origin} |`);
-  }
-  lines.push('');
-  return lines;
-}
-
-/**
- * Renders this lexicon as the `docs/wire-vocabulary.md` markdown body. Pure — no filesystem
- * access, no clock — so `tools/generate-wire-glossary.mjs` can write its return value verbatim,
- * and the staleness test can compare it byte-for-byte against the committed doc.
- */
-export function renderWireGlossary(): string {
-  const header = [
-    '# Rotation wire vocabulary',
-    '',
-    '<!-- generated — do not edit by hand, run `pnpm generate:wire-vocabulary` -->',
-    '',
-    "The `/rotation` route mixes Portuguese and English wire vocabulary. This is the one place " +
-      "that vocabulary is translated into this codebase's own English domain field names — see " +
-      '`packages/game-api/src/rotation/lexicon.ts`. It covers only the rotation boundary; the ' +
-      'rest of the tree still carries pre-existing Portuguese identifiers that this table does ' +
-      'not inventory.',
-    '',
-  ];
-
-  const keyRows = ROTATION_WIRE_LEXICON.filter((entry) => entry.kind === 'key');
-  const enumRows = ROTATION_WIRE_LEXICON.filter((entry) => entry.kind === 'enum_value');
-
-  const body = [...glossaryTable('Keys', keyRows), ...glossaryTable('`state` values', enumRows)];
-
-  return [...header, ...body].join('\n').trimEnd() + '\n';
-}

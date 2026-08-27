@@ -83,14 +83,19 @@ function loadCorpus(): CorpusMember[] | null {
  * finds (not equality) — a rename or deletion shrinking the sweep must fail here, but a new
  * capture landing later must NOT require editing this list, or the dynamic-discovery property
  * above is worthless. See `sheet-math/README.md` for what each capture is.
+ *
+ * RE-POINTED when the five 2026-08-16/17 captures were retired. They were the only entries here
+ * that no math suite could still read, and the list had never picked up the four captures that
+ * replaced them — so the sweep had been shrinking toward one file while reading as if it covered
+ * the corpus. It now names the current ones, which makes the subset assertion bite on what the
+ * repo actually ships rather than on what it shipped in August.
  */
 const EXPECTED_CORPUS_FILES = [
   'save-20260813-5heroes.json',
-  'save-20260816-8heroes.json',
-  'save-20260816-respec-cdr-crit.json',
-  'save-20260816-9heroes-redistrib.json',
-  'save-20260816-5heroes-gear-cdr-crit.json',
-  'save-20260817-11heroes.json',
+  'save-20260818-12heroes.json',
+  'save-20260819-respec-crit-cdr.json',
+  'save-20260822-15heroes-tree-crit-dmg.json',
+  'save-20260823-13heroes-crit-points.json',
 ] as const;
 
 /**

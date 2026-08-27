@@ -11,6 +11,15 @@ const SECTION_ALIGN = 0x1000;
 const FILE_ALIGN = 0x200;
 const LEA_LEN = 7; // REX prefix + 0x8D opcode + ModRM + 4-byte rip-relative displacement
 
+const CHAIN_ANCHOR = 'chain depth anchor';
+const CHAIN_BEGIN_BASE = 0x50000;
+
+// resolveFunctionStart's loop examines MAX_CHAIN_DEPTH entries: the fragment itself, then up to
+// MAX_CHAIN_DEPTH - 1 chained links before the cap forces it to give up. Hardcoded rather than
+// imported so a refactor that shifts the loop's off-by-one, not just the constant, still fails
+// these tests.
+const MAX_RESOLVABLE_CHAIN_LINKS = 7;
+
 function align(value: number, alignment: number): number {
   return value % alignment === 0 ? value : value + (alignment - (value % alignment));
 }
@@ -28,6 +37,114 @@ interface Fixture {
   readonly decoyFuncRva: number;
   readonly fragFuncRva: number;
   readonly nulFuncRva: number;
+}
+
+interface PeImageParts {
+  readonly text: Buffer;
+  readonly textVa: number;
+  readonly rdata: Buffer;
+  readonly rdataVa: number;
+  readonly excTableRva: number;
+  readonly excTableLen: number;
+  readonly addressOfEntryPoint: number;
+  readonly timeDateStamp: number;
+}
+
+/**
+ * Writes the DOS/COFF/optional headers, the exception data directory entry, and the `.text`/
+ * `.rdata` section headers for a minimal two-section PE32+ image, then copies both sections'
+ * bytes into place.
+ */
+function assemblePeImage(parts: PeImageParts): { image: Buffer; sizeOfImage: number } {
+  const { text, textVa, rdata, rdataVa, excTableRva, excTableLen, addressOfEntryPoint, timeDateStamp } = parts;
+  const textLen = text.length;
+  const rdataLen = rdata.length;
+
+  const headerSize = align(0x198, FILE_ALIGN);
+  const textFileOff = headerSize;
+  const textRawLen = align(textLen, FILE_ALIGN);
+  const rdataFileOff = textFileOff + textRawLen;
+  const rdataRawLen = align(rdataLen, FILE_ALIGN);
+  const imageSize = rdataFileOff + rdataRawLen;
+  const sizeOfImage = align(rdataVa + rdataLen, SECTION_ALIGN);
+
+  const image = Buffer.alloc(imageSize);
+
+  image.writeUInt16LE(0x5a4d, 0);
+  image.writeUInt32LE(0x40, 0x3c);
+
+  image.writeUInt32LE(0x00004550, 0x40);
+  image.writeUInt16LE(0x8664, 0x44);
+  image.writeUInt16LE(2, 0x46);
+  image.writeUInt32LE(timeDateStamp, 0x48);
+  image.writeUInt32LE(0, 0x4c);
+  image.writeUInt32LE(0, 0x50);
+  image.writeUInt16LE(0xf0, 0x54);
+  image.writeUInt16LE(0x0022, 0x56);
+
+  const optOff = 0x58;
+  image.writeUInt16LE(0x20b, optOff);
+  image.writeUInt8(14, optOff + 2);
+  image.writeUInt8(0, optOff + 3);
+  image.writeUInt32LE(textRawLen, optOff + 4);
+  image.writeUInt32LE(rdataRawLen, optOff + 8);
+  image.writeUInt32LE(0, optOff + 12);
+  image.writeUInt32LE(addressOfEntryPoint, optOff + 16);
+  image.writeUInt32LE(textVa, optOff + 20);
+  image.writeBigUInt64LE(0x140000000n, optOff + 24);
+  image.writeUInt32LE(SECTION_ALIGN, optOff + 32);
+  image.writeUInt32LE(FILE_ALIGN, optOff + 36);
+  image.writeUInt16LE(6, optOff + 40);
+  image.writeUInt16LE(0, optOff + 42);
+  image.writeUInt16LE(0, optOff + 44);
+  image.writeUInt16LE(0, optOff + 46);
+  image.writeUInt16LE(6, optOff + 48);
+  image.writeUInt16LE(0, optOff + 50);
+  image.writeUInt32LE(0, optOff + 52);
+  image.writeUInt32LE(sizeOfImage, optOff + 56);
+  image.writeUInt32LE(headerSize, optOff + 60);
+  image.writeUInt32LE(0, optOff + 64);
+  image.writeUInt16LE(3, optOff + 68);
+  image.writeUInt16LE(0, optOff + 70);
+  image.writeBigUInt64LE(0x100000n, optOff + 72);
+  image.writeBigUInt64LE(0x1000n, optOff + 80);
+  image.writeBigUInt64LE(0x100000n, optOff + 88);
+  image.writeBigUInt64LE(0x1000n, optOff + 96);
+  image.writeUInt32LE(0, optOff + 104);
+  image.writeUInt32LE(16, optOff + 108);
+
+  const dataDirOff = optOff + 112;
+  image.writeUInt32LE(excTableRva, dataDirOff + 3 * 8);
+  image.writeUInt32LE(excTableLen, dataDirOff + 3 * 8 + 4);
+
+  const sectionHeadersOff = optOff + 0xf0;
+  function writeSectionHeader(
+    offset: number,
+    name: string,
+    virtualSize: number,
+    virtualAddress: number,
+    rawSize: number,
+    rawPointer: number,
+    characteristics: number,
+  ): void {
+    image.write(name, offset, 8, 'latin1');
+    image.writeUInt32LE(virtualSize, offset + 8);
+    image.writeUInt32LE(virtualAddress, offset + 12);
+    image.writeUInt32LE(rawSize, offset + 16);
+    image.writeUInt32LE(rawPointer, offset + 20);
+    image.writeUInt32LE(0, offset + 24);
+    image.writeUInt32LE(0, offset + 28);
+    image.writeUInt16LE(0, offset + 32);
+    image.writeUInt16LE(0, offset + 34);
+    image.writeUInt32LE(characteristics, offset + 36);
+  }
+  writeSectionHeader(sectionHeadersOff, '.text', textLen, textVa, textRawLen, textFileOff, 0x60000020);
+  writeSectionHeader(sectionHeadersOff + 40, '.rdata', rdataLen, rdataVa, rdataRawLen, rdataFileOff, 0x40000040);
+
+  text.copy(image, textFileOff);
+  rdata.copy(image, rdataFileOff);
+
+  return { image, sizeOfImage };
 }
 
 /**
@@ -129,90 +246,17 @@ function buildFixtureImage(): Fixture {
   rdata.writeUInt8(0x21, fragUnwindOff);
   writeRuntimeFunction(fragChainOff, realFuncRva, realFuncEndRva, realUnwindRva);
 
-  const headerSize = align(0x198, FILE_ALIGN);
-  const textFileOff = headerSize;
-  const textRawLen = align(textLen, FILE_ALIGN);
-  const rdataFileOff = textFileOff + textRawLen;
-  const rdataRawLen = align(rdataLen, FILE_ALIGN);
-  const imageSize = rdataFileOff + rdataRawLen;
-  const sizeOfImage = align(RDATA_VA + rdataLen, SECTION_ALIGN);
   const timeDateStamp = 0x63a1b2c3;
-
-  const image = Buffer.alloc(imageSize);
-
-  image.writeUInt16LE(0x5a4d, 0);
-  image.writeUInt32LE(0x40, 0x3c);
-
-  image.writeUInt32LE(0x00004550, 0x40);
-  image.writeUInt16LE(0x8664, 0x44);
-  image.writeUInt16LE(2, 0x46);
-  image.writeUInt32LE(timeDateStamp, 0x48);
-  image.writeUInt32LE(0, 0x4c);
-  image.writeUInt32LE(0, 0x50);
-  image.writeUInt16LE(0xf0, 0x54);
-  image.writeUInt16LE(0x0022, 0x56);
-
-  const optOff = 0x58;
-  image.writeUInt16LE(0x20b, optOff);
-  image.writeUInt8(14, optOff + 2);
-  image.writeUInt8(0, optOff + 3);
-  image.writeUInt32LE(textRawLen, optOff + 4);
-  image.writeUInt32LE(rdataRawLen, optOff + 8);
-  image.writeUInt32LE(0, optOff + 12);
-  image.writeUInt32LE(realFuncRva, optOff + 16);
-  image.writeUInt32LE(TEXT_VA, optOff + 20);
-  image.writeBigUInt64LE(0x140000000n, optOff + 24);
-  image.writeUInt32LE(SECTION_ALIGN, optOff + 32);
-  image.writeUInt32LE(FILE_ALIGN, optOff + 36);
-  image.writeUInt16LE(6, optOff + 40);
-  image.writeUInt16LE(0, optOff + 42);
-  image.writeUInt16LE(0, optOff + 44);
-  image.writeUInt16LE(0, optOff + 46);
-  image.writeUInt16LE(6, optOff + 48);
-  image.writeUInt16LE(0, optOff + 50);
-  image.writeUInt32LE(0, optOff + 52);
-  image.writeUInt32LE(sizeOfImage, optOff + 56);
-  image.writeUInt32LE(headerSize, optOff + 60);
-  image.writeUInt32LE(0, optOff + 64);
-  image.writeUInt16LE(3, optOff + 68);
-  image.writeUInt16LE(0, optOff + 70);
-  image.writeBigUInt64LE(0x100000n, optOff + 72);
-  image.writeBigUInt64LE(0x1000n, optOff + 80);
-  image.writeBigUInt64LE(0x100000n, optOff + 88);
-  image.writeBigUInt64LE(0x1000n, optOff + 96);
-  image.writeUInt32LE(0, optOff + 104);
-  image.writeUInt32LE(16, optOff + 108);
-
-  const dataDirOff = optOff + 112;
-  image.writeUInt32LE(excTableRva, dataDirOff + 3 * 8);
-  image.writeUInt32LE(excTableLen, dataDirOff + 3 * 8 + 4);
-
-  const sectionHeadersOff = optOff + 0xf0;
-  function writeSectionHeader(
-    offset: number,
-    name: string,
-    virtualSize: number,
-    virtualAddress: number,
-    rawSize: number,
-    rawPointer: number,
-    characteristics: number,
-  ): void {
-    image.write(name, offset, 8, 'latin1');
-    image.writeUInt32LE(virtualSize, offset + 8);
-    image.writeUInt32LE(virtualAddress, offset + 12);
-    image.writeUInt32LE(rawSize, offset + 16);
-    image.writeUInt32LE(rawPointer, offset + 20);
-    image.writeUInt32LE(0, offset + 24);
-    image.writeUInt32LE(0, offset + 28);
-    image.writeUInt16LE(0, offset + 32);
-    image.writeUInt16LE(0, offset + 34);
-    image.writeUInt32LE(characteristics, offset + 36);
-  }
-  writeSectionHeader(sectionHeadersOff, '.text', textLen, TEXT_VA, textRawLen, textFileOff, 0x60000020);
-  writeSectionHeader(sectionHeadersOff + 40, '.rdata', rdataLen, RDATA_VA, rdataRawLen, rdataFileOff, 0x40000040);
-
-  text.copy(image, textFileOff);
-  rdata.copy(image, rdataFileOff);
+  const { image, sizeOfImage } = assemblePeImage({
+    text,
+    textVa: TEXT_VA,
+    rdata,
+    rdataVa: RDATA_VA,
+    excTableRva,
+    excTableLen,
+    addressOfEntryPoint: realFuncRva,
+    timeDateStamp,
+  });
 
   return {
     image,
@@ -224,6 +268,129 @@ function buildFixtureImage(): Fixture {
     fragFuncRva,
     nulFuncRva,
   };
+}
+
+interface ChainFixture {
+  readonly image: Buffer;
+  readonly fragFuncRva: number;
+  readonly chainFuncRvas: readonly number[];
+}
+
+function at<T>(list: readonly T[], index: number): T {
+  const value = list[index];
+  if (value === undefined) throw new Error(`image-scan test fixture: index ${index.toString()} out of bounds`);
+  return value;
+}
+
+function chainByteLength(entryCount: number, cyclic: boolean): number {
+  let total = 0;
+  for (let i = 0; i < entryCount; i += 1) total += i === entryCount - 1 && !cyclic ? 4 : 16;
+  return total;
+}
+
+/**
+ * Lays down `beginAddresses.length` chained `RUNTIME_FUNCTION`/`UNWIND_INFO` pairs starting at
+ * `startOffset`: entry 0 chains to entry 1, entry 1 to entry 2, and so on. The last entry is
+ * terminal (no `UNW_FLAG_CHAININFO`) unless `cyclic`, in which case it chains back to entry 0
+ * instead of ever terminating.
+ */
+function writeChain(
+  rdata: Buffer,
+  rdataVa: number,
+  startOffset: number,
+  beginAddresses: readonly number[],
+  cyclic: boolean,
+): { unwindRvas: number[] } {
+  const count = beginAddresses.length;
+  const offsets: number[] = [];
+  let cursor = startOffset;
+  for (let i = 0; i < count; i += 1) {
+    offsets.push(cursor);
+    cursor += i === count - 1 && !cyclic ? 4 : 16;
+  }
+  const unwindRvas = offsets.map((offset) => rdataVa + offset);
+
+  for (let i = 0; i < count; i += 1) {
+    const terminal = i === count - 1 && !cyclic;
+    const offset = at(offsets, i);
+    rdata.writeUInt8(terminal ? 0x01 : 0x21, offset);
+    if (terminal) continue;
+
+    const nextIndex = i === count - 1 ? 0 : i + 1;
+    const begin = at(beginAddresses, nextIndex);
+    rdata.writeUInt32LE(begin, offset + 4);
+    rdata.writeUInt32LE(begin + 1, offset + 8);
+    rdata.writeUInt32LE(at(unwindRvas, nextIndex), offset + 12);
+  }
+
+  return { unwindRvas };
+}
+
+/**
+ * Builds a standalone PE32+ image whose only referenced literal is `CHAIN_ANCHOR`, read by a
+ * single `lea` inside a fragment function (`fragFuncRva`) whose `RUNTIME_FUNCTION` starts a chain
+ * of `links` further entries (`chainFuncRvas`, synthetic addresses that exist only in the
+ * exception-table metadata). `resolveFunctionStart` never touches `.text` for a chained entry, so
+ * entries past the fragment need no real code or section backing — only a `beginAddress` and an
+ * `UNWIND_INFO` to chase.
+ */
+function buildChainDepthFixture(links: number, cyclic: boolean): ChainFixture {
+  const entryCount = links + 1;
+
+  const fragFuncOff = 0;
+  const fragFuncLen = LEA_LEN + 1;
+  const textLen = fragFuncLen;
+
+  const RDATA_VA = TEXT_VA + align(textLen, SECTION_ALIGN);
+
+  const anchorBuf = withNul(CHAIN_ANCHOR);
+  const anchorOff = 0;
+  const excTableOff = anchorOff + anchorBuf.length;
+  const excTableLen = 12;
+  const chainOff = excTableOff + excTableLen;
+  const rdataLen = chainOff + chainByteLength(entryCount, cyclic);
+
+  const anchorRva = RDATA_VA + anchorOff;
+  const excTableRva = RDATA_VA + excTableOff;
+
+  const fragFuncRva = TEXT_VA + fragFuncOff;
+  const fragFuncEndRva = TEXT_VA + textLen;
+
+  const beginAddresses = [
+    fragFuncRva,
+    ...Array.from({ length: entryCount - 1 }, (_, i) => CHAIN_BEGIN_BASE + i * 0x10),
+  ];
+
+  const text = Buffer.alloc(textLen);
+  function writeLea(offset: number, targetRva: number): void {
+    text.writeUInt8(0x48, offset);
+    text.writeUInt8(0x8d, offset + 1);
+    text.writeUInt8(0x05, offset + 2);
+    const nextInstrRva = TEXT_VA + offset + LEA_LEN;
+    text.writeInt32LE(targetRva - nextInstrRva, offset + 3);
+  }
+  writeLea(fragFuncOff, anchorRva);
+  text.writeUInt8(0xc3, fragFuncOff + LEA_LEN);
+
+  const rdata = Buffer.alloc(rdataLen);
+  anchorBuf.copy(rdata, anchorOff);
+  const { unwindRvas } = writeChain(rdata, RDATA_VA, chainOff, beginAddresses, cyclic);
+  rdata.writeUInt32LE(fragFuncRva, excTableOff);
+  rdata.writeUInt32LE(fragFuncEndRva, excTableOff + 4);
+  rdata.writeUInt32LE(at(unwindRvas, 0), excTableOff + 8);
+
+  const { image } = assemblePeImage({
+    text,
+    textVa: TEXT_VA,
+    rdata,
+    rdataVa: RDATA_VA,
+    excTableRva,
+    excTableLen,
+    addressOfEntryPoint: fragFuncRva,
+    timeDateStamp: 0x63a1b2c3,
+  });
+
+  return { image, fragFuncRva, chainFuncRvas: beginAddresses.slice(1) };
 }
 
 describe('parsePe', () => {
@@ -270,6 +437,34 @@ describe('discoverHookCandidates', () => {
     const candidates = discoverHookCandidates(parsePe(fixture.image));
 
     expect(candidates.some((candidate) => candidate.rva === fixture.nulFuncRva)).toBe(false);
+  });
+});
+
+describe('resolveFunctionStart chain-depth cap', () => {
+  it('gives up on a chain one link past the cap, contributing no candidate at all', () => {
+    const fixture = buildChainDepthFixture(MAX_RESOLVABLE_CHAIN_LINKS + 1, false);
+    const candidates = discoverHookCandidates(parsePe(fixture.image), [CHAIN_ANCHOR]);
+
+    expect(candidates.some((candidate) => candidate.rva === fixture.fragFuncRva)).toBe(false);
+    const terminalRva = fixture.chainFuncRvas[fixture.chainFuncRvas.length - 1];
+    expect(candidates.some((candidate) => candidate.rva === terminalRva)).toBe(false);
+  });
+
+  it('still resolves a chain exactly at the cap, to the terminal function', () => {
+    const fixture = buildChainDepthFixture(MAX_RESOLVABLE_CHAIN_LINKS, false);
+    const candidates = discoverHookCandidates(parsePe(fixture.image), [CHAIN_ANCHOR]);
+
+    const terminalRva = fixture.chainFuncRvas[fixture.chainFuncRvas.length - 1];
+    const winner = candidates.find((candidate) => candidate.rva === terminalRva);
+    expect(winner?.anchors).toEqual([CHAIN_ANCHOR]);
+  });
+
+  it('terminates on a cyclic chain instead of looping forever, contributing no candidate', () => {
+    const fixture = buildChainDepthFixture(1, true);
+    const candidates = discoverHookCandidates(parsePe(fixture.image), [CHAIN_ANCHOR]);
+
+    expect(candidates.some((candidate) => candidate.rva === fixture.fragFuncRva)).toBe(false);
+    expect(candidates.some((candidate) => candidate.rva === fixture.chainFuncRvas[0])).toBe(false);
   });
 });
 

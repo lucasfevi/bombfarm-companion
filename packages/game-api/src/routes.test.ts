@@ -1,11 +1,10 @@
 import { describe, expect, it } from 'vitest';
 import type { AccountSection } from '@bombfarm/contracts';
-import type { GrantedConsent } from './consent.js';
 import { createPacingGate, type PacingClock } from './pacing.js';
 import type { HttpResponse, HttpTransport } from './request.js';
 import { ROUTES, readSection, type RouteDescriptor, type SectionFailureReason } from './routes.js';
 import { SessionToken, grantSession } from './session.js';
-import { loadFixtureJson, required } from './test-fixtures.js';
+import { grantedConsent, loadFixtureJson, required } from './test-fixtures.js';
 
 const bodies = loadFixtureJson('api-bodies.json');
 
@@ -20,7 +19,7 @@ function routeFor(path: RouteDescriptor['path']): RouteDescriptor {
   );
 }
 
-const GRANTED: GrantedConsent = { decision: 'granted', grantedAt: '2026-08-12T13:15:38.000Z', textVersion: 1 };
+const GRANTED = grantedConsent('2026-08-12T13:15:38.000Z');
 const session = grantSession(GRANTED, { accountId: '486', token: SessionToken.create('sentinel-routes-test') });
 
 function createTestClock(): PacingClock {

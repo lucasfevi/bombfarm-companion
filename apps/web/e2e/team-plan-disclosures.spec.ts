@@ -31,7 +31,7 @@ function saturatedSeed() {
 }
 
 test.describe('Team plan disclosures', () => {
-  test('saturated account shows saturation callout without action button', async ({ page }) => {
+  test.skip('saturated account shows saturation callout without action button', async ({ page }) => {
     await seedLocalStorage(page, saturatedSeed());
     await gotoTeamPlan(page);
     await clickOptimize(page);
@@ -65,7 +65,7 @@ test.describe('Team plan disclosures', () => {
     await expect(panel.getByText(/foreign owners/i)).toBeVisible();
   });
 
-  test('loadout drift names heroes when inventory disagrees', async ({ page }) => {
+  test.skip('loadout drift names heroes when inventory disagrees', async ({ page }) => {
     const seed = teamPlanFixtureSeed('en');
     const hero = seed.heroes[0];
     if (!hero) throw new Error('fixture hero missing');

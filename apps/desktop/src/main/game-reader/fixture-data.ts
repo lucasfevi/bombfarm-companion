@@ -1,7 +1,6 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import type { RawGameState, RawHeroEnergy, RawHeroRecord, RawInventoryBag } from '@bombfarm/contracts';
-import { buildSnapshot } from '@bombfarm/game-data';
 
 export interface FixtureBundle {
   state: RawGameState;
@@ -37,22 +36,4 @@ export function loadFixtureBundle(): FixtureBundle {
     heroRecords: [loadJson(path.join(dir, 'hero-record.json')) as RawHeroRecord],
     heroEnergies: [loadJson(path.join(dir, 'hero-energy.json')) as RawHeroEnergy],
   };
-}
-
-export function buildFixtureSnapshot(takenAt: string) {
-  const fixtures = loadFixtureBundle();
-  return buildSnapshot({
-    takenAt,
-    source: 'live',
-    state: fixtures.state,
-    inventory: fixtures.inventory,
-    heroRecords: fixtures.heroRecords,
-    heroEnergies: fixtures.heroEnergies,
-  });
-}
-
-export function rotateFixtureState(base: RawGameState, tick: number): RawGameState {
-  const next = structuredClone(base);
-  next.gold = String(Number(next.gold ?? 0) + tick);
-  return next;
 }

@@ -19,7 +19,7 @@ export interface TapInterceptor {
 export interface TapSession {
   readonly pid: number;
   installInterceptor(address: number): TapInterceptor;
-  detach(): void;
+  detach(): Promise<void>;
 }
 
 export interface TapRuntime {

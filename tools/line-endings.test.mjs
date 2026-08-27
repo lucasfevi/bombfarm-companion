@@ -1,5 +1,5 @@
 import { execFileSync } from 'node:child_process';
-import { readFileSync } from 'node:fs';
+import { closeSync, existsSync, openSync, readFileSync, readSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
@@ -59,14 +59,30 @@ export function parseEolReport(output) {
     .filter((line) => line.trim() !== '')
     .map((line) => {
       const separator = line.lastIndexOf('\t');
-      const columns = line.slice(0, separator).trim().split(/\s+/);
-      return { indexEol: columns[0], path: line.slice(separator + 1) };
+      const head = line.slice(0, separator);
+      const columns = head.trim().split(/\s+/);
+      // The `attr/` column carries space-separated attributes of its own (`attr/text=auto eol=lf`),
+      // so it runs to the end of the head rather than being one whitespace-delimited column.
+      const attrStart = head.indexOf('attr/');
+      const attributes = attrStart === -1 ? [] : head.slice(attrStart + 'attr/'.length).trim().split(/\s+/).filter(Boolean);
+      return { indexEol: columns[0], attributes, path: line.slice(separator + 1) };
     });
+}
+
+/**
+ * A file `.gitattributes` declares `binary` reports `attr/-text`. Git still classifies its bytes,
+ * so one can come back `i/mixed` when the content happens to look like text — which is precisely
+ * the sniffing this declaration exists to overrule, not a policy violation. Declaring a file
+ * binary is a deliberate, reviewable edit to `.gitattributes`, so honouring it here cannot be
+ * used to smuggle a real text file past the rule.
+ */
+function isDeclaredBinary(entry) {
+  return entry.attributes.includes('-text');
 }
 
 /** Entries whose stored eol is not LF (or a legitimately exempt kind). */
 export function findOffenders(entries) {
-  return entries.filter((entry) => !ALLOWED_INDEX_EOL.has(entry.indexEol));
+  return entries.filter((entry) => !ALLOWED_INDEX_EOL.has(entry.indexEol) && !isDeclaredBinary(entry));
 }
 
 let cachedEntries = null;
@@ -130,17 +146,22 @@ describe('line-ending policy — LF everywhere in the index', () => {
   it('red state demonstrated: a planted CRLF and a planted mixed entry are both caught', () => {
     const planted = parseEolReport(
       [
-        'i/lf    w/lf    attr/                 \tsrc/fine.ts',
+        'i/lf    w/lf    attr/text=auto eol=lf \tsrc/fine.ts',
         'i/crlf  w/crlf  attr/                 \tsrc/with spaces/bad.ts',
         'i/mixed w/mixed attr/                 \tsrc/worse.ts',
         'i/-text w/-text attr/                 \tpublic/art.png',
         'i/none  w/none  attr/                 \tdata/oneline.json',
+        'i/mixed w/mixed attr/-text            \tfixtures/capture.bin',
+        'i/crlf  w/crlf  attr/text=auto eol=lf \tsrc/declared-text.ts',
       ].join('\n'),
     );
-    expect(planted).toHaveLength(5);
+    expect(planted).toHaveLength(7);
+    // A file `.gitattributes` declares binary is exempt; declaring one `text` cannot buy an
+    // exemption, so the escape hatch is exactly as wide as a reviewed `.gitattributes` edit.
     expect(findOffenders(planted).map((entry) => entry.path)).toEqual([
       'src/with spaces/bad.ts',
       'src/worse.ts',
+      'src/declared-text.ts',
     ]);
   });
 });
@@ -158,5 +179,72 @@ describe('line-ending policy — the attributes that keep it that way', () => {
 
   it('keeps the husky hooks on LF', () => {
     expect(attributes).toMatch(/^\.husky\/\*\s+text\s+eol=lf\s*$/m);
+  });
+});
+
+const BOM_FIX_HINT = [
+  '.editorconfig sets `charset = utf-8`, which in EditorConfig means UTF-8',
+  '*without* a BOM (`utf-8-bom` is the separate value). An EditorConfig-aware editor',
+  'will strip a leading BOM on its next save of the file, landing as a one-byte',
+  "content diff in a commit that says nothing about encoding. Neither `git ls-files",
+  "--eol` nor `.gitattributes` can see this at all — `text=auto eol=lf` normalizes",
+  'line terminators only, and `git add --renormalize` leaves a BOM untouched. Fix:',
+  '',
+  '  strip the leading `ef bb bf` bytes with a byte-exact rewrite (read into a',
+  '  Buffer, drop the first 3 bytes, write the Buffer back) — never a text',
+  '  read/write or an in-place stream edit, either of which can rewrite endings too.',
+].join('\n');
+
+/** True when `buffer`'s first three bytes are the UTF-8 BOM (`ef bb bf`). */
+export function hasUtf8Bom(buffer) {
+  return buffer.length >= 3 && buffer[0] === 0xef && buffer[1] === 0xbb && buffer[2] === 0xbf;
+}
+
+function readFirstThreeBytes(path) {
+  const fd = openSync(path, 'r');
+  try {
+    const buffer = Buffer.alloc(3);
+    readSync(fd, buffer, 0, 3, 0);
+    return buffer;
+  } finally {
+    closeSync(fd);
+  }
+}
+
+describe('encoding policy — no UTF-8 BOM on a tracked text file', () => {
+  // A BOM is a content byte, not a line-ending, so it is invisible to both the index-eol
+  // guard above and to `.gitattributes` — this reads the first three bytes of each tracked
+  // text file straight off disk instead. See BOM_FIX_HINT for why an EditorConfig-clean
+  // repo can still grow one silently.
+  function trackedTextFiles() {
+    return readIndexEolEntries().filter((entry) => !isDeclaredBinary(entry));
+  }
+
+  it('checks a non-vacuous number of tracked text files', () => {
+    const checked = trackedTextFiles().filter((entry) => existsSync(join(root, entry.path)));
+    expect(
+      checked.length,
+      `Only ${checked.length} tracked text file(s) were found on disk from ${root}. ` +
+        'The guard cannot see the repository.',
+    ).toBeGreaterThan(MINIMUM_TRACKED_FILES);
+  });
+
+  it('no tracked text file starts with a UTF-8 BOM', () => {
+    const offenders = trackedTextFiles()
+      .filter((entry) => existsSync(join(root, entry.path)))
+      .filter((entry) => hasUtf8Bom(readFirstThreeBytes(join(root, entry.path))))
+      .map((entry) => entry.path);
+
+    expect(
+      offenders,
+      `${offenders.length} tracked file(s) start with a UTF-8 BOM:\n` +
+        `${offenders.map((path) => `  ${path}`).join('\n')}\n\n${BOM_FIX_HINT}`,
+    ).toEqual([]);
+  });
+
+  it('red state demonstrated: hasUtf8Bom catches a planted BOM and not a clean or short buffer', () => {
+    expect(hasUtf8Bom(Buffer.from([0xef, 0xbb, 0xbf, 0x7b, 0x7d]))).toBe(true);
+    expect(hasUtf8Bom(Buffer.from('export const x = 1;'))).toBe(false);
+    expect(hasUtf8Bom(Buffer.from([0xef, 0xbb]))).toBe(false);
   });
 });

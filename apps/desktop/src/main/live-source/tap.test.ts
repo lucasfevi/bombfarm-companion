@@ -6,8 +6,9 @@ import { describe, expect, it, afterEach } from 'vitest';
 import { buildHttpResponse, buildServerTextFrame } from './fixtures/generate-replay-stream.js';
 import type { LogPort as HookCacheLogPort } from './hook-cache.js';
 import { RuntimePort } from './runtime.js';
-import type { LogPort as RuntimeLogPort, TapInterceptor, TapReadEvent, TapRuntime, TapSession } from './runtime.js';
-import { createHookCandidateSource, Tap } from './tap.js';
+import type { TapInterceptor, TapReadEvent, TapRuntime, TapSession } from './runtime.js';
+import type { FrameCapture } from './frame-capture.js';
+import { createHookCandidateSource, SESSION_DETACH_TIMEOUT_MS, Tap } from './tap.js';
 import type {
   Clock,
   HookCandidateResolution,
@@ -73,8 +74,10 @@ class FakeClock implements Clock {
 
 class FakeProcessLister implements ProcessLister {
   processes: TapTargetProcess[] = [];
+  listCalls = 0;
 
   list(processName: string): Promise<readonly TapTargetProcess[]> {
+    this.listCalls += 1;
     return Promise.resolve(this.processes.filter((p) => p.name === processName));
   }
 }
@@ -131,8 +134,9 @@ class FakeSession implements TapSession {
     return interceptor;
   }
 
-  detach(): void {
+  detach(): Promise<void> {
     this.detachCount += 1;
+    return Promise.resolve();
   }
 }
 
@@ -159,9 +163,11 @@ function createHarness(options: HarnessOptions = {}) {
   const runtime = new FakeRuntime();
   const events: LiveEvent[] = [];
   const infos: Record<string, unknown>[] = [];
+  const warnings: Record<string, unknown>[] = [];
+  const httpBodies: Array<{ readonly body: Buffer; readonly atMs: number }> = [];
   let consent = options.consent ?? true;
 
-  const sharedLog: RuntimeLogPort = { info: (record) => infos.push(record) };
+  const sharedLog = { info: (record: Record<string, unknown>) => infos.push(record), warn: (record: Record<string, unknown>) => warnings.push(record) };
   const runtimePort = new RuntimePort({
     resolve: options.resolveRuntime ?? (() => Promise.resolve(runtime)),
     log: sharedLog,
@@ -175,6 +181,7 @@ function createHarness(options: HarnessOptions = {}) {
     consent: () => consent,
     clock,
     onEvent: (event) => events.push(event),
+    onHttpBody: (body, atMs) => httpBodies.push({ body, atMs }),
     log: sharedLog,
     pollIntervalMs: options.pollIntervalMs ?? 1_000,
   });
@@ -188,6 +195,8 @@ function createHarness(options: HarnessOptions = {}) {
     runtimePort,
     events,
     infos,
+    warnings,
+    httpBodies,
     setConsent: (value: boolean) => {
       consent = value;
     },
@@ -300,6 +309,67 @@ describe('Tap: ambiguous discovery', () => {
     }
     expect(tap.getCurrency().kind).toBe('live');
     expect(candidates.committed).toEqual([{ pid: 555, address: 0x3000, buildId: 'build-ambiguous' }]);
+  });
+});
+
+describe('Tap: frame capture receives only the confirmed winner\'s bytes', () => {
+  class FakeCapture implements FrameCapture {
+    pushed: { ctx: string | number; bytes: Buffer }[] = [];
+
+    push(ctx: string | number, bytes: Uint8Array): void {
+      this.pushed.push({ ctx, bytes: Buffer.from(bytes) });
+    }
+
+    close(): void {
+      /* not exercised here */
+    }
+  }
+
+  it("captures the confirming read and later winner reads, with their ctx, never a losing candidate's bytes", async () => {
+    const clock = new FakeClock();
+    const processes = new FakeProcessLister();
+    const candidates = new FakeHookCandidateSource();
+    const runtime = new FakeRuntime();
+    const runtimePort = new RuntimePort({ resolve: () => Promise.resolve(runtime) });
+    const capture = new FakeCapture();
+
+    const tap = new Tap({
+      processName: PROCESS_NAME,
+      runtime: runtimePort,
+      processes,
+      candidates,
+      consent: () => true,
+      clock,
+      onEvent: () => undefined,
+      pollIntervalMs: 1_000,
+      capture,
+    });
+
+    processes.processes = [{ pid: 777, name: PROCESS_NAME }];
+    candidates.resolveResult = { addresses: [0x1000, 0x2000], fromCache: false, buildId: 'build-capture' };
+
+    tap.start();
+    await clock.advance(0);
+
+    const session = runtime.sessions[0];
+    if (!session) throw new Error('test setup: no session');
+    const loser = session.interceptorsByAddress.get(0x1000);
+    const winner = session.interceptorsByAddress.get(0x2000);
+    if (!loser || !winner) throw new Error('test setup: expected two interceptors');
+
+    const confirmingBytes = snapFrameBytes();
+    winner.fire({ ctx: 'winner-conn', bytes: confirmingBytes });
+    expect(capture.pushed).toEqual([{ ctx: 'winner-conn', bytes: confirmingBytes }]);
+
+    loser.fire({ ctx: 'loser-conn', bytes: snapFrameBytes() });
+    expect(capture.pushed).toEqual([{ ctx: 'winner-conn', bytes: confirmingBytes }]);
+
+    const laterWinningBytes = snapFrameBytes();
+    winner.fire({ ctx: 'winner-conn', bytes: laterWinningBytes });
+    expect(capture.pushed).toEqual([
+      { ctx: 'winner-conn', bytes: confirmingBytes },
+      { ctx: 'winner-conn', bytes: laterWinningBytes },
+    ]);
   });
 });
 
@@ -491,8 +561,9 @@ describe('Tap: a throwing attach or install does not kill the poll loop', () => 
       installInterceptor(_address: number): TapInterceptor {
         throw new Error('installInterceptor: address out of range');
       }
-      detach(): void {
+      detach(): Promise<void> {
         this.detachCount += 1;
+        return Promise.resolve();
       }
     }
     const sessions: ThrowingInstallSession[] = [];
@@ -522,6 +593,41 @@ describe('Tap: a throwing attach or install does not kill the poll loop', () => 
 
     expect(sessions.length).toBeGreaterThan(1);
     for (const session of sessions) expect(session.detachCount).toBeGreaterThan(0);
+  });
+});
+
+describe('Tap: observed HTTP bodies reach onHttpBody', () => {
+  it('forwards a reassembled HTTP body once the response completes, stamped with the tap clock', async () => {
+    const { tap, clock, processes, candidates, runtime, httpBodies } = createHarness();
+    processes.processes = [{ pid: 6_001, name: PROCESS_NAME }];
+    candidates.resolveResult = { addresses: [0xa000], fromCache: false, buildId: null };
+
+    tap.start();
+    await clock.advance(0);
+    const interceptor = runtime.sessions[0]?.interceptorsByAddress.get(0xa000);
+    if (!interceptor) throw new Error('test setup: interceptor not installed');
+
+    const json = JSON.stringify({ field_size: 3 });
+    interceptor.fire({ ctx: 'rest-0', bytes: buildHttpResponse(200, 'OK', json) });
+
+    expect(httpBodies).toHaveLength(1);
+    expect(httpBodies[0]?.body.toString('utf8')).toBe(json);
+    expect(httpBodies[0]?.atMs).toBe(clock.now());
+  });
+
+  it('never calls onHttpBody for a status-only response with no body', async () => {
+    const { tap, clock, processes, candidates, runtime, httpBodies } = createHarness();
+    processes.processes = [{ pid: 6_002, name: PROCESS_NAME }];
+    candidates.resolveResult = { addresses: [0xb000], fromCache: false, buildId: null };
+
+    tap.start();
+    await clock.advance(0);
+    const interceptor = runtime.sessions[0]?.interceptorsByAddress.get(0xb000);
+    if (!interceptor) throw new Error('test setup: interceptor not installed');
+
+    interceptor.fire({ ctx: 'rest-0', bytes: buildHttpResponse(204, 'No Content', '') });
+
+    expect(httpBodies).toEqual([]);
   });
 });
 
@@ -669,6 +775,81 @@ describe('Tap: consent gate', () => {
     await clock.advance(0);
 
     expect(runtime.sessions).toHaveLength(0);
+    expect(tap.getCurrency()).toMatchObject({ kind: 'gap', reason: 'consentMissing' });
+  });
+
+  it('honours a revoke that lands while the process list is still being fetched', async () => {
+    const harness = createHarness({ consent: true });
+    harness.processes.processes = [{ pid: 666, name: PROCESS_NAME }];
+
+    const realList = harness.processes.list.bind(harness.processes);
+    harness.processes.list = (processName: string) => {
+      harness.setConsent(false);
+      return realList(processName);
+    };
+
+    harness.tap.start();
+    await harness.clock.advance(0);
+
+    expect(harness.runtime.sessions).toHaveLength(0);
+    expect(harness.tap.getCurrency()).toMatchObject({ kind: 'gap', reason: 'consentMissing' });
+  });
+
+  it('performs zero process-list calls while consent is withheld, even with a matching process running', async () => {
+    const { tap, clock, processes } = createHarness({ consent: false });
+    processes.processes = [{ pid: 666, name: PROCESS_NAME }];
+
+    tap.start();
+    await clock.advance(0);
+    await clock.advance(1_000);
+    await clock.advance(1_000);
+
+    expect(processes.listCalls).toBe(0);
+  });
+
+  it('logs nothing naming a pid or the process while consent is withheld', async () => {
+    const { tap, clock, processes, infos } = createHarness({ consent: false });
+    processes.processes = [{ pid: 666, name: PROCESS_NAME }];
+
+    tap.start();
+    await clock.advance(0);
+
+    expect(infos.some((record) => record.event === 'tap.target_selected')).toBe(false);
+    expect(infos.every((record) => !('pid' in record))).toBe(true);
+  });
+
+  it('begins probing once consent is granted, without a restart', async () => {
+    const { tap, clock, processes, candidates, runtime, setConsent } = createHarness({ consent: false });
+    processes.processes = [{ pid: 9_001, name: PROCESS_NAME }];
+    candidates.resolveResult = { addresses: [0x1000], fromCache: false, buildId: null };
+
+    tap.start();
+    await clock.advance(0);
+    expect(processes.listCalls).toBe(0);
+
+    setConsent(true);
+    tap.pollNow();
+    await clock.advance(0);
+
+    expect(processes.listCalls).toBeGreaterThan(0);
+    expect(runtime.sessions).toHaveLength(1);
+  });
+
+  it('stops probing again once consent is revoked', async () => {
+    const { tap, clock, processes, setConsent } = createHarness({ consent: true, pollIntervalMs: 1_000 });
+    processes.processes = [];
+
+    tap.start();
+    await clock.advance(0);
+    await clock.advance(1_000);
+    const callsBeforeRevoke = processes.listCalls;
+    expect(callsBeforeRevoke).toBeGreaterThan(0);
+
+    setConsent(false);
+    await clock.advance(1_000);
+    await clock.advance(1_000);
+
+    expect(processes.listCalls).toBe(callsBeforeRevoke);
     expect(tap.getCurrency()).toMatchObject({ kind: 'gap', reason: 'consentMissing' });
   });
 });
@@ -922,5 +1103,70 @@ describe('Tap: teardown', () => {
     const sessionCountAfterTeardown = runtime.sessions.length;
     await clock.advance(100_000);
     expect(runtime.sessions.length).toBe(sessionCountAfterTeardown);
+  });
+
+  it('does not resolve until the session detach promise settles', async () => {
+    const { tap, clock, processes, candidates, runtime } = createHarness();
+    processes.processes = [{ pid: 1_213, name: PROCESS_NAME }];
+    candidates.resolveResult = { addresses: [0x1000], fromCache: false, buildId: null };
+
+    tap.start();
+    await clock.advance(0);
+    const session = runtime.sessions[0];
+    if (!session) throw new Error('test setup: no session');
+
+    let release: (() => void) | undefined;
+    session.detach = () => {
+      session.detachCount += 1;
+      return new Promise<void>((resolve) => {
+        release = resolve;
+      });
+    };
+
+    let resolved = false;
+    const teardownPromise = tap.teardown();
+    void teardownPromise.then(() => {
+      resolved = true;
+    });
+
+    await flushMicrotasks();
+    expect(session.detachCount).toBe(1);
+    expect(resolved).toBe(false);
+
+    release?.();
+    await teardownPromise;
+    expect(resolved).toBe(true);
+  });
+
+  it('abandons a session detach that never settles once the timeout elapses, and still resolves', async () => {
+    const { tap, clock, processes, candidates, runtime, infos } = createHarness();
+    processes.processes = [{ pid: 1_214, name: PROCESS_NAME }];
+    candidates.resolveResult = { addresses: [0x1000], fromCache: false, buildId: null };
+
+    tap.start();
+    await clock.advance(0);
+    const session = runtime.sessions[0];
+    if (!session) throw new Error('test setup: no session');
+    session.detach = () => {
+      session.detachCount += 1;
+      return new Promise<void>(() => undefined);
+    };
+
+    let resolved = false;
+    const teardownPromise = tap.teardown();
+    void teardownPromise.then(() => {
+      resolved = true;
+    });
+
+    await flushMicrotasks();
+    expect(resolved).toBe(false);
+
+    await clock.advance(SESSION_DETACH_TIMEOUT_MS);
+    await teardownPromise;
+
+    expect(resolved).toBe(true);
+    expect(infos).toContainEqual(
+      expect.objectContaining({ event: 'tap.session_detach_timed_out', pid: 1_214 }),
+    );
   });
 });

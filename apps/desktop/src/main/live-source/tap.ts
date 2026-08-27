@@ -1,11 +1,12 @@
 import type { LiveCurrency, LiveEvent, LiveGapReason } from '@bombfarm/contracts';
 import { liveGap } from '@bombfarm/contracts';
+import type { FrameCapture } from './frame-capture.js';
 import { discoverHookCandidates, parsePe, READ_HOOK_ANCHORS } from './image-scan.js';
 import type { ParsedPe } from './image-scan.js';
 import { lookupHook, readHookCacheFile, storeHook, writeHookCacheFile } from './hook-cache.js';
 import type { LogPort as HookCacheLogPort } from './hook-cache.js';
 import type { RuntimePort, TapInterceptor, TapReadEvent, TapSession } from './runtime.js';
-import { TlsConnections, type TapEvent } from './tls-stream.js';
+import { TlsConnections, type FrameRingPort, type TapEvent } from './tls-stream.js';
 
 /**
  * Attach loop, live-proof validation, silence watch, and the consent gate — the orchestration
@@ -54,9 +55,10 @@ export interface Clock {
 
 export interface LogPort {
   info(record: Record<string, unknown>): void;
+  warn(record: Record<string, unknown>): void;
 }
 
-const NOOP_LOG_PORT: LogPort = { info: () => undefined };
+const NOOP_LOG_PORT: LogPort = { info: () => undefined, warn: () => undefined };
 
 /** Once per attach, not once per rescan: a validation timeout only ever fires for the attempt
  *  that is currently in flight. */
@@ -67,6 +69,12 @@ export const VALIDATION_WINDOW_MS = 20_000;
  *  looks for. */
 export const STALENESS_CHECK_INTERVAL_MS = 15_000;
 export const STALENESS_THRESHOLD_MS = 45_000;
+/** Bounds how long a teardown waits on the real session detach (the frida IPC that unloads the
+ *  injected script) — long enough for a healthy runtime to finish, short enough that a wedged
+ *  instrumentation process cannot freeze `consent:revoke` and the settings UI behind it. Teardown
+ *  proceeds regardless once this elapses, degrading to the same fire-and-forget outcome as before
+ *  this bound existed. */
+export const SESSION_DETACH_TIMEOUT_MS = 2_000;
 
 const DEFAULT_POLL_INTERVAL_MS = 5_000;
 
@@ -86,6 +94,18 @@ export interface TapDeps {
   readonly onEvent: (event: LiveEvent) => void;
   readonly log?: LogPort;
   readonly pollIntervalMs?: number;
+  /** Fed every decoded frame payload across every candidate stream, so a parse failure can be
+   *  dumped with the bytes leading into it. Optional so every existing construction site and test
+   *  is unaffected. */
+  readonly ring?: FrameRingPort;
+  /** Fed the confirmed winner's raw bytes only — candidate bytes from a losing address never came
+   *  from the game's real stream and must never end up in a replay fixture. Optional for the same
+   *  reason as {@link ring}. */
+  readonly capture?: FrameCapture;
+  /** Fed a reassembled HTTP response body the moment `TlsConnections` delivers one (never a
+   *  status-only response — see {@link TapEvent}'s `body` field), stamped with this same clock.
+   *  Optional so every existing construction site and test is unaffected. */
+  readonly onHttpBody?: (body: Buffer, atMs: number) => void;
 }
 
 function chooseTarget(candidates: readonly TapTargetProcess[]): TapTargetProcess {
@@ -146,6 +166,14 @@ export class Tap {
     if (this.#started) return;
     this.#started = true;
     this.#emitCurrency(this.#currency);
+    this.#schedulePoll(0);
+  }
+
+  /** Re-checks consent right away instead of leaving it to the next scheduled poll — called when
+   *  the consent record changes, so a fresh grant does not sit idle for up to a full interval. */
+  pollNow(): void {
+    if (this.#stopped) return;
+    if (this.#pollTimer !== null) this.#deps.clock.clearTimeout(this.#pollTimer);
     this.#schedulePoll(0);
   }
 
@@ -216,11 +244,32 @@ export class Tap {
     }, delayMs);
   }
 
+  /** Consent is the first thing checked, before the process list is ever touched — enumerating
+   *  and identifying the player's running processes is itself something consent must cover, not
+   *  just the eventual attach. */
   async #pollTick(): Promise<void> {
     if (this.#stopped) return;
 
+    if (!this.#deps.consent()) {
+      this.#reportGap('consentMissing');
+      if (!this.#isStopped()) {
+        this.#schedulePoll(this.#deps.pollIntervalMs ?? DEFAULT_POLL_INTERVAL_MS);
+      }
+      return;
+    }
+
     const found = await this.#deps.processes.list(this.#deps.processName);
     if (this.#isStopped()) return;
+
+    // Re-checked after the await: listing processes is a subprocess spawn, and a revoke landing
+    // during it must not be overtaken by an attach this tick already decided to make.
+    if (!this.#deps.consent()) {
+      this.#reportGap('consentMissing');
+      if (!this.#isStopped()) {
+        this.#schedulePoll(this.#deps.pollIntervalMs ?? DEFAULT_POLL_INTERVAL_MS);
+      }
+      return;
+    }
 
     if (this.#session && this.#activePid !== null) {
       if (!this.#teardownInFlight && !found.some((p) => p.pid === this.#activePid)) {
@@ -239,11 +288,7 @@ export class Tap {
           pid: target.pid,
           candidateCount: found.length,
         });
-        if (!this.#deps.consent()) {
-          this.#reportGap('consentMissing');
-        } else {
-          await this.#attemptAttach(target.pid);
-        }
+        await this.#attemptAttach(target.pid);
       }
     }
 
@@ -294,7 +339,7 @@ export class Tap {
       return;
     }
     if (this.#isStopped()) {
-      session.detach();
+      await this.#detachSessionWithTimeout(session);
       return;
     }
 
@@ -327,7 +372,11 @@ export class Tap {
         this.#candidates.clear();
         return false;
       }
-      const stream = new TlsConnections({ now: () => this.#deps.clock.now() });
+      const stream = new TlsConnections({
+        now: () => this.#deps.clock.now(),
+        log: this.#log,
+        ...(this.#deps.ring !== undefined ? { ring: this.#deps.ring } : {}),
+      });
       interceptor.onRead((event) => {
         this.#onCandidateRead(address, event);
       });
@@ -345,6 +394,7 @@ export class Tap {
   #onCandidateRead(address: number, event: TapReadEvent): void {
     if (this.#winner !== null) {
       if (address !== this.#winner.address) return;
+      this.#deps.capture?.push(event.ctx, event.bytes);
       this.#emitTapEvents(this.#winner.stream.push(event.ctx, event.bytes));
       return;
     }
@@ -356,6 +406,7 @@ export class Tap {
     if (events.length === 0) return;
 
     this.#confirmWinner(address, candidate.stream);
+    this.#deps.capture?.push(event.ctx, event.bytes);
     this.#emitTapEvents(events);
   }
 
@@ -396,6 +447,9 @@ export class Tap {
   #emitTapEvents(events: readonly TapEvent[]): void {
     for (const event of events) {
       this.#lastTrafficAt = this.#deps.clock.now();
+      if (event.kind === 'http' && event.body !== undefined) {
+        this.#deps.onHttpBody?.(event.body, this.#deps.clock.now());
+      }
       if (event.kind !== 'tick') continue;
       this.#sequence += 1;
       this.#lastFrameAt = this.#deps.clock.now();
@@ -475,7 +529,7 @@ export class Tap {
     return this.#currency;
   }
 
-  #teardownSession(): Promise<void> {
+  async #teardownSession(): Promise<void> {
     this.#teardownInFlight = true;
     try {
       if (this.#validationTimer !== null) {
@@ -492,13 +546,41 @@ export class Tap {
       this.#lastFrameAt = null;
       this.#lastTrafficAt = null;
       if (this.#session) {
-        this.#session.detach();
+        const session = this.#session;
         this.#session = null;
+        await this.#detachSessionWithTimeout(session);
       }
     } finally {
       this.#teardownInFlight = false;
     }
-    return Promise.resolve();
+  }
+
+  #detachSessionWithTimeout(session: TapSession): Promise<void> {
+    return new Promise((resolve) => {
+      let settled = false;
+      const finish = (): void => {
+        if (settled) return;
+        settled = true;
+        resolve();
+      };
+
+      const timer = this.#deps.clock.setTimeout(() => {
+        this.#log.info({ scope: 'live-source', event: 'tap.session_detach_timed_out', pid: session.pid });
+        finish();
+      }, SESSION_DETACH_TIMEOUT_MS);
+
+      session.detach().then(
+        () => {
+          this.#deps.clock.clearTimeout(timer);
+          finish();
+        },
+        (error: unknown) => {
+          this.#deps.clock.clearTimeout(timer);
+          this.#log.info({ scope: 'live-source', event: 'tap.session_detach_failed', pid: session.pid, error: String(error) });
+          finish();
+        },
+      );
+    });
   }
 }
 

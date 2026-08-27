@@ -22,5 +22,5 @@
 # trade: it rescues blame on the hundreds of reformatted files at the cost of a
 # handful of lines in the few pre-existing files the same PR edited.
 
-# (empty — the LF normalization SHA is added once #115 lands on develop; see
-# docs/line-endings.md)
+# chore: normalize the repo to LF line endings and enforce it (#115)
+b16b0357cfc4f16f1be006bb8d8ee3c19744a664

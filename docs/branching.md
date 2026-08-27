@@ -10,12 +10,52 @@ This repo uses a two-branch integration model. Feature work lands on **`develop`
 | --- | --- |
 | `develop` | Default integration branch — feature PRs target here |
 | `main` | Release-only — reachable via a release PR from `develop` or the hotfix path below |
-| `feat/*`, `fix/*` | Short-lived work branches |
-| `gh-pages` | Machine branch — CI-owned visual-report host; exempt from protection and the local guard |
+| `<type>/*` | Short-lived work branches — see [Branch names](#branch-names) |
+| `release/next` | Machine branch — changesets release PR; exempt from the naming rule |
+| `gh-pages` | Machine branch — CI-owned visual-report host; exempt from protection, the local guard, and the naming rule |
+
+## Branch names
+
+Work branches are named **`<type>/<kebab-case-summary>`**, using the same types commitlint accepts
+for commit subjects. The branch then reads like the commit that will land it.
+
+| Part | Rule |
+| --- | --- |
+| `<type>` | One of `build`, `chore`, `ci`, `docs`, `feat`, `fix`, `perf`, `refactor`, `revert`, `style`, `test` — the `@commitlint/config-conventional` set, no others |
+| separator | A single `/`, exactly one segment on each side |
+| `<summary>` | Lowercase kebab-case, two to five words, describing the change — not a ticket id alone, and no trailing random suffix |
+
+```
+^(build|chore|ci|docs|feat|fix|perf|refactor|revert|style|test)/[a-z0-9]+(-[a-z0-9]+)*$
+```
+
+Good: `feat/rotation-pool-redesign`, `fix/stale-vip-window`, `docs/comments-hard-truth`.
+Bad: `comments`, `lucas/wip`, `feat/ACS-06`, `claude/code-comment-policy-924368`.
+
+Exempt: `main`, `develop`, `release/next`, `gh-pages`, and `backup/*` snapshots.
+
+This is enforced — the [local guard](#local-guard) refuses a push from a branch that does not match.
+
+### Rename a generated branch before the first push
+
+Tooling that opens a branch for you — an agent harness, an issue-to-branch helper — hands you a
+generated name with a random suffix. That name is not conventional and tells a reader nothing, so
+**rename it as soon as you know what the change is**, before anything is pushed:
+
+```bash
+git branch -m docs/comments-hard-truth
+```
+
+If it was already pushed, push the new name and delete the old one — but only while no PR is open
+against it; retarget or reopen the PR rather than force-moving a branch someone is reviewing.
+
+```bash
+git push origin -u docs/comments-hard-truth && git push origin --delete claude/old-generated-name
+```
 
 ## Allowed merge directions
 
-- **`feat/*` → `develop`** — normal feature work
+- **`<type>/*` → `develop`** — normal feature work
 - **`develop` → `main`** — release PR (handled by release automation)
 - **`fix/*` → `main` → back-merge `main` → `develop`** — the **only** sanctioned route into `main` outside a release PR
 
@@ -106,10 +146,15 @@ vercel ls bombfarm-companion
 
 ## Local guard
 
-A Husky pre-push hook (`.husky/pre-push` → `tools/pre-push-guard.mjs`) refuses direct pushes to `main` and `develop` from a local clone, with a message pointing at the PR flow.
+A Husky pre-push hook (`.husky/pre-push` → `tools/pre-push-guard.mjs`) refuses two things from a local clone:
+
+1. **Direct pushes to `main` and `develop`**, with a message pointing at the PR flow.
+2. **Branch names that do not match [the pattern above](#branch-names)**, with the `git branch -m` command to fix it.
 
 - **Bypass:** `git push --no-verify` (documented escape hatch for legitimate release actions)
 - **`gh-pages` is not guarded** — the hook's protected list excludes it; CI pushes from a temp clone without Husky installed
+- **Deleting a badly-named branch is always allowed** — a delete-push carries an all-zero local sha, and refusing it would trap you halfway through the rename it is asking for
+- **`release/next` and `backup/*` are exempt from the naming rule**, since neither is hand-authored work
 
 ## Migration
 

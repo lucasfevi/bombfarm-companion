@@ -163,8 +163,17 @@ const fixture = JSON.parse(readFileSync(fixturePath, 'utf8')) as {
  * on it but said nothing, and the reset table rendered an unclamped BEFORE against a clamped
  * AFTER. The new string is the one place that explains it and names the fix. No existing key
  * changed: the counter, `pointsUnspentBanked` and the reset-advice line are all untouched.
+ *
+ * The field-contention notice (2026-08-23) adds `farmRankingContentionTitle` and
+ * `farmRankingContentionDesc` (both in `KEYS_ADDED`). The farm board's field cap is now priced
+ * over the distribution of how many heroes hold full energy rather than over their mean, which
+ * makes "how often is a rested hero benched behind a full field" a number the board actually
+ * knows (`FarmRateRow.fieldContentionPct`). The banner is the one place that reports it and names
+ * the fix — dropping the weakest heroes from the rotation pool. No existing key changed.
  */
 const KEYS_REMOVED: readonly string[] = [
+  'importSyncSummary',
+  'importRemovedNote',
   'accountTargetPropHint',
   'accountFarmSection',
   'accountFarmPhaseLabel',
@@ -274,8 +283,35 @@ const KEYS_REMOVED: readonly string[] = [
  * `farmRankingFilterItemLevelAll`, `farmRankingFilterItemLevelOption`. Nothing existing was
  * reworded — the item-level COLUMN header (`farmRankingColItemLevel`) is a different string and
  * is untouched.
+ *
+ * The field-contention notice (2026-08-23) adds `farmRankingContentionTitle` and
+ * `farmRankingContentionDesc` — a banner shown above the rotation pool when the field is full
+ * often enough to matter. New strings only; nothing existing was reworded.
+ *
+ * `importSyncSummary` is REMOVED (2026-08-25). The created/updated/removed breakdown was
+ * bookkeeping from when an import was a merge the player curated; the save is the source of truth
+ * now, so the split between created and updated is not a decision they make or a number they act
+ * on. `importRemovedNote` goes with it: it existed to explain what "Removed" meant, and under a
+ * source-of-truth import a sentence about why absent heroes leave is not something the player
+ * decides or acts on either. The removal BEHAVIOUR is unchanged.
+ *
+ * The blocked-hero explanation (2026-08-25) adds seven `importBlocked*` keys. A hero the planner
+ * cannot rebuild used to be dimmed and nothing else, which reads as a rendering glitch rather
+ * than an explanation; the dialog now names the heroes, both causes (the save is older than the
+ * game, or the planner is), and the action for each. New strings only — nothing existing was
+ * reworded, and in particular `importIssuesCount` and the three `importPoint*` strings are
+ * untouched.
  */
 const KEYS_ADDED: readonly string[] = [
+  'importBlockedTitle',
+  'importBlockedBody',
+  'importBlockedOldSave',
+  'importBlockedAppBehind',
+  'importBlockedRest',
+  'importBlockedBadge',
+  'importBlockedTooltip',
+  'farmRankingContentionTitle',
+  'farmRankingContentionDesc',
   'farmRankingFilterItemLevelLabel',
   'farmRankingFilterItemLevelAll',
   'farmRankingFilterItemLevelOption',

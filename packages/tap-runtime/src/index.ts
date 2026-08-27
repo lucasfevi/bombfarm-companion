@@ -20,7 +20,7 @@ export interface TapInterceptor {
 export interface TapSession {
   readonly pid: number;
   installInterceptor(address: number): TapInterceptor;
-  detach(): void;
+  detach(): Promise<void>;
 }
 
 export interface TapRuntime {
@@ -133,12 +133,10 @@ class FridaTapSession implements TapSession {
     return new FridaTapInterceptor(address, this.#script, this.#listeners);
   }
 
-  detach(): void {
-    if (this.#detached) return;
+  detach(): Promise<void> {
+    if (this.#detached) return Promise.resolve();
     this.#detached = true;
-    this.#teardown().catch((error: unknown) => {
-      this.#log.info({ scope: 'tap-runtime', event: 'session.teardown_failed', pid: this.pid, error: String(error) });
-    });
+    return this.#teardown();
   }
 
   async #teardown(): Promise<void> {

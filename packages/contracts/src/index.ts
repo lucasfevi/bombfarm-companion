@@ -1,8 +1,8 @@
 import type { AppFlavor, UpdateChannel } from './flavors.js';
 import type { SettingsWriteResult } from './locale.js';
-import type { LiveEvent, LiveView } from './live-source.js';
+import type { LiveDiagnosticsDumpOutcome, LiveEvent, LiveView } from './live-source.js';
 
-export { accountChangeKey } from './account-change-key.js';
+export { accountChangeKey, canonicalStringify } from './account-change-key.js';
 /** MP3 F4 (`AD-049`) — the desktop locale token, its one domain/BCP-47 mapping, and the pure
  *  startup resolution. `locale.ts` itself imports `AppSettings`/`DEFAULT_SETTINGS` back from this
  *  file (see its own doc comment) — safe because every such value is read only inside a function
@@ -31,6 +31,8 @@ export type {
   CountdownBasis,
   FieldCountdown,
   LiveCurrency,
+  LiveDiagnosticsDumpOutcome,
+  LiveDiagnosticsDumpReason,
   LiveEvent,
   LiveFrame,
   LiveGapReason,
@@ -41,7 +43,7 @@ export type {
   LiveView,
   RecoveryCountdown,
 } from './live-source.js';
-export { isActionableGap, isLiveCurrency, liveGap } from './live-source.js';
+export { isActionableGap, isConnectedCurrency, isLiveCurrency, liveGap, LIVE_DISPLAY_REFRESH_MS } from './live-source.js';
 export type {
   AccountStoreReason,
   AccountStoreStatus,
@@ -292,7 +294,6 @@ export interface IpcChannels {
   'settings:usePortuguese': { args: []; result: SettingsWriteResult };
   'storage:health': { args: []; result: { binding: string; ok: boolean } };
   'game:getStatus': { args: []; result: GameStatusInfo };
-  'game:getSnapshot': { args: []; result: GameSnapshotPayload };
   'account:get': { args: []; result: AccountView };
   /** MP2 F2 — consent for the game-API account reader (LAR-01, LAR-03…05). All four are
    *  zero-arg by design (TD-10): the existing `bfc:invoke` bridge forwards no arguments, so the
@@ -303,6 +304,9 @@ export interface IpcChannels {
   'consent:decline': { args: []; result: ConsentRecord };
   'consent:revoke': { args: []; result: ConsentRecord };
   'live:get': { args: []; result: LiveView };
+  /** The manual counterpart to the ring's existing parse-failure trigger (`frame-ring.ts`) — a
+   *  player-initiated write of the same scrubbed dump, so it can be attached to a bug report. */
+  'live:dumpDiagnostics': { args: []; result: LiveDiagnosticsDumpOutcome };
 }
 
 export type IpcInvokeChannel = keyof IpcChannels;
@@ -319,25 +323,23 @@ export const IPC_CHANNELS = [
   'settings:usePortuguese',
   'storage:health',
   'game:getStatus',
-  'game:getSnapshot',
   'account:get',
   'consent:get',
   'consent:accept',
   'consent:decline',
   'consent:revoke',
   'live:get',
+  'live:dumpDiagnostics',
 ] as const satisfies readonly IpcInvokeChannel[];
 
 export type IpcEventChannel =
   | 'game:status'
-  | 'snapshot:updated'
   | 'consent:changed'
   | 'account:changed'
   | 'live:event';
 
 export interface IpcEvents {
   'game:status': GameStatusInfo;
-  'snapshot:updated': GameSnapshotPayload;
   /** Fired whenever the consent record changes, from any cause (accept/decline/revoke). */
   'consent:changed': ConsentRecord;
   /**
@@ -356,7 +358,6 @@ export const IPC_EVENT_CHANNELS = [
   'game:status',
   'consent:changed',
   'account:changed',
-  'snapshot:updated',
   'live:event',
 ] as const satisfies readonly IpcEventChannel[];
 

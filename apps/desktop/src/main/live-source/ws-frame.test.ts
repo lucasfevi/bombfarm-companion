@@ -2,7 +2,7 @@ import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { buildOversized64BitLengthFrame } from './fixtures/generate-replay-stream.js';
-import { DecodedFrame, FrameDecoder, OPCODE } from './ws-frame.js';
+import { DecodedFrame, FrameDecodeError, FrameDecoder, OPCODE } from './ws-frame.js';
 
 /** `__dirname`, not `import.meta.url`: `tsconfig.main.json` builds this tree to CommonJS. */
 const HERE = __dirname;
@@ -104,6 +104,46 @@ describe('FrameDecoder', () => {
   it('throws on a 64-bit payload length above Number.MAX_SAFE_INTEGER', () => {
     const decoder = new FrameDecoder();
     expect(() => decoder.push(buildOversized64BitLengthFrame())).toThrow();
+  });
+
+  it('carries the frames already decoded in the same push on the thrown error, instead of losing them', () => {
+    const a = buildFrame({ fin: true, opcode: OPCODE.text, payload: Buffer.from('one') });
+    const b = buildFrame({ fin: true, opcode: OPCODE.text, payload: Buffer.from('two') });
+    const malformed = buildOversized64BitLengthFrame();
+    const decoder = new FrameDecoder();
+
+    let caught: unknown;
+    try {
+      decoder.push(Buffer.concat([a, b, malformed]));
+    } catch (error) {
+      caught = error;
+    }
+
+    expect(caught).toBeInstanceOf(FrameDecodeError);
+    const decoded = (caught as FrameDecodeError).decoded;
+    expect(decoded).toHaveLength(2);
+    expect(decoded[0]?.payload.toString('utf8')).toBe('one');
+    expect(decoded[1]?.payload.toString('utf8')).toBe('two');
+  });
+
+  it('carries a remainder on the thrown error that starts at the malformed frame and still holds the frame trailing it', () => {
+    const a = buildFrame({ fin: true, opcode: OPCODE.text, payload: Buffer.from('one') });
+    const malformed = buildOversized64BitLengthFrame();
+    const b = buildFrame({ fin: true, opcode: OPCODE.text, payload: Buffer.from('two') });
+    const decoder = new FrameDecoder();
+
+    let caught: unknown;
+    try {
+      decoder.push(Buffer.concat([a, malformed, b]));
+    } catch (error) {
+      caught = error;
+    }
+
+    expect(caught).toBeInstanceOf(FrameDecodeError);
+    const frameError = caught as FrameDecodeError;
+    expect(frameError.decoded).toHaveLength(1);
+    expect(frameError.decoded[0]?.payload.toString('utf8')).toBe('one');
+    expect(frameError.remainder).toEqual(Buffer.concat([malformed, b]));
   });
 
   it('imports nothing that can open a network connection', () => {

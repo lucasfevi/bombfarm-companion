@@ -26,7 +26,11 @@ export function LanguageSection({
 
   return (
     <SettingsSection title={t.settingsLanguageSectionTitle}>
-      <SettingsRow label={t.settingsLanguageLabel} help={t.settingsLanguageHelp}>
+      <SettingsRow
+        label={t.settingsLanguageLabel}
+        help={t.settingsLanguageHelp}
+        className="[&_label_[data-select]]:w-56"
+      >
         <Select
           value={locale}
           onChange={(event) => {

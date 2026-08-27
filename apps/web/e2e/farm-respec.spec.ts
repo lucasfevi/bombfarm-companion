@@ -210,7 +210,14 @@ test.describe('Farm Respec Advisor', () => {
   test('changing a rotation-pool input while re-ranked reverts the panel and the table, with no stale gain figure left on screen', async ({ page }) => {
     await optimizeButton(page).click();
     await expect(panel(page)).toBeVisible();
-    const oldGainText = (await headline(page).textContent()) ?? '';
+
+    // The PANEL's gold tile, not the toolbar headline. The headline is a live lower bound that
+    // gets recomputed for whatever pool is selected, so it can legitimately read the same string
+    // before and after — it did exactly that here ("At least 2.4% more per hour" both times),
+    // which made a global search for it prove nothing. The tile carries the SOLVED proposal, is
+    // rendered only inside the panel, and therefore has to be gone once the panel is invalidated.
+    const proposalText = (await page.getByTestId('farm-respec-metric-gold').textContent()) ?? '';
+    expect(proposalText.trim()).not.toBe('');
 
     await page.getByTestId('farm-respec-rerank').getByRole('switch').click();
     await expect(table(page).locator('table')).toHaveAttribute('data-farm-mode', 'proposed');
@@ -221,9 +228,8 @@ test.describe('Farm Respec Advisor', () => {
 
     await expect(panel(page)).toBeHidden();
     await expect(table(page).locator('table')).toHaveAttribute('data-farm-mode', 'current');
-    if (oldGainText.trim() !== '') {
-      await expect(page.getByText(oldGainText, { exact: true })).toHaveCount(0);
-    }
+    await expect(page.getByTestId('farm-respec-metric-gold')).toHaveCount(0);
+    await expect(page.getByText(proposalText, { exact: true })).toHaveCount(0);
   });
 
   // 7. PT — the toolbar, panel and tiles render in Portuguese, no EN leakage.

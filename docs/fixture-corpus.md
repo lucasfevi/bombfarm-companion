@@ -232,14 +232,39 @@ it is `0.02` now, HALF the pre-2026-08-15 `0.1`. See `POINT_GAIN` in
 `packages/domain/src/model/rarity-constants.ts` for the full measurement and the wiki-mirror
 corroboration.
 
-**Retired as non-subjects of the level-budget invariant** (still committed, still read by the
-structural suites — see each file's own README row for what it may/may not prove):
-`save-20260816-5heroes-gear-cdr-crit.json`, `save-20260816-9heroes-redistrib.json`,
-`save-20260816-respec-cdr-crit.json` (already excluded, pre-redistribution) and
-`save-20260817-11heroes.json`. All four were captured inside the three-day flat-regime window (or
-before it), so none of them solve under today's percent-of-base model — the same "no single model
-reproduces both this file and the current game" reasoning §5 and §6 already apply to the
-pre-2026-08-15 captures.
+**Deleted 2026-08-25** (they were first retired as non-subjects of the level-budget invariant,
+then removed outright): `save-20260816-8heroes.json`, `save-20260816-respec-cdr-crit.json`,
+`save-20260816-9heroes-redistrib.json`, `save-20260816-5heroes-gear-cdr-crit.json` and
+`save-20260817-11heroes.json`. All five were captured inside the three-day flat-regime window or
+immediately before it, so none of them solve under today's percent-of-base model — the same "no
+single model reproduces both this file and the current game" reasoning §5 and §6 already apply to
+the pre-2026-08-15 captures. Once every sheet-math suite had excluded them by name, what remained
+was structural coverage (hero shapes, gear shapes, inventory, roster size), and the four
+current-regime captures below carry all of it on larger rosters.
+
+RECORDED LOSS, per this document's own rule that a deletion is written down rather than silently
+taken: the before/after point-delta respec pair, the ITEM half of the flat crit/CDR matched-pair
+argument, and the post-redistribution catalog as live data. The full record — provenance,
+committed SHA-256s, and what each file proved — is in the corpus README's
+`RETIRED — the five 2026-08-16 / 2026-08-17 captures` section. None of the shipped model rests on
+them: every constant they established has since been re-measured under the current regime or is
+superseded by the revert.
+
+Their removal also settled a mis-diagnosis worth recording. Running today's `inferSpentPoints`
+over these files recovers more points than several heroes' levels allow — up to 109 on a level-42
+hero — which had been read as the captures themselves carrying heroes that over-spent. **A hero can
+never spend more points than its level, and none of these did.** Every affected hero carries
+`stat_points_available: 0`, the game's own statement that it has spent exactly its level: Minato is
+level 42 with nothing unspent, so the game says 42 and the inversion says 109.
+
+What over-spends is the INVERSION, which makes it a defect in the sheet math rather than in the
+data — today's model against an older regime's capture, with the excess landing in `critChance`,
+`cdr` and `penetration`, exactly the columns these patches reshaped, and a `PointInferenceIssue` on
+every affected hero. It is not harmless: an over-recovered vector is wrong information, and PR #183's
+Respec Advisor budget escape was one flowing out into a recommendation.
+`points-within-level-budget.test.ts` now asserts the form of the invariant that survives a regime
+change — an inversion reporting NO issue never exceeds the ceiling — over the whole fixture tree,
+with no exclusion list.
 
 **Added, the new sheet-math anchor pair:**
 

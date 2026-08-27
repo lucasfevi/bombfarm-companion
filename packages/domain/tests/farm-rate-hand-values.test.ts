@@ -105,6 +105,56 @@ function handAllocateHouse(terms: readonly number[], houseSlots: number): number
   return activity;
 }
 
+/**
+ * The FIELD-QUEUE scale, hand-written independently of `fieldQueueOutcome` in farm-rate.ts.
+ *
+ * The game admits heroes FIFO by who finished resting first, which is identity-blind, so the squad
+ * keeps the share of its wanted field time the slots can actually serve: `E[min(c, X)] / E[X]`
+ * over the Poisson-binomial `X`. Demand is solved rather than assumed — a benched hero does not
+ * drain, so its cycle stretches and its demand exceeds its duty cycle. Writing
+ * `phi = u / (1 - u)`, a common admission share `s` gives `demand = phi / (phi + s)`, which is
+ * exactly `u` when `s = 1`.
+ *
+ * Written as a plain loop over an explicit pmf rather than mirroring the production structure, so
+ * a shared bug in the convolution would not cancel out on both sides.
+ */
+function handFieldQueueScale(onField: readonly number[], fieldSlots: number): number {
+  const count = onField.length;
+  if (count === 0 || !Number.isFinite(fieldSlots) || fieldSlots >= count) return 1;
+
+  const pmfOf = (demand: readonly number[]): number[] => {
+    let pmf = [1];
+    for (const p of demand) {
+      const next = new Array<number>(pmf.length + 1).fill(0);
+      pmf.forEach((mass, k) => {
+        next[k] += mass * (1 - p);
+        next[k + 1] += mass * p;
+      });
+      pmf = next;
+    }
+    return pmf;
+  };
+  const servedOver = (demand: readonly number[]): { wanted: number; served: number } => {
+    const pmf = pmfOf(demand);
+    const wanted = demand.reduce((sum, p) => sum + p, 0);
+    const served = pmf.reduce((sum, mass, k) => sum + mass * Math.min(fieldSlots, k), 0);
+    return { wanted, served };
+  };
+
+  const phi = onField.map((u) => (u >= 1 ? Infinity : u <= 0 ? 0 : u / (1 - u)));
+  let demand = onField.slice();
+  for (let round = 0; round < 200; round++) {
+    const { wanted, served } = servedOver(demand);
+    const share = wanted > 0 ? served / wanted : 1;
+    const next = phi.map((p) => (p === Infinity ? 1 : p <= 0 ? 0 : p / (p + share)));
+    const delta = Math.max(...next.map((v, i) => Math.abs(v - demand[i])));
+    demand = next;
+    if (delta < 1e-15) break;
+  }
+  const { wanted, served } = servedOver(demand);
+  return wanted > 0 ? served / wanted : 1;
+}
+
 /** The whole squad reduction, hand-written independently of buildRow in farm-rate.ts. */
 function handComputeRow(stoneHp: number, mitig: number, goldComum: number, phase: number, gate: boolean, ato: number): HandRow {
   const unconstrained = heroFacts.map((hero: HeroFarmFacts) => {
@@ -135,11 +185,13 @@ function handComputeRow(stoneHp: number, mitig: number, goldComum: number, phase
     FORTUNA_AURA_CAP,
     perHero.reduce((sum, x) => sum + x.onField * LOOT_ABILITY_VALUES.fortuna.perLevel * x.hero.fortunaLevel, 0),
   );
-  // The FIELD cap, applied after the House ceiling — to the heroes the House can keep fed.
-  const concurrencyScale = heroesOnField > 0 ? Math.min(1, squad.fieldSlots / heroesOnField) : 1;
+  // The FIELD QUEUE, applied after the House ceiling — to the heroes the House can keep fed.
+  const concurrencyScale = handFieldQueueScale(
+    perHero.map((x) => x.onField),
+    squad.fieldSlots,
+  );
   const propsPerSec = concurrencyScale * shareDenom;
   const bossPerSec = concurrencyScale * bossRateSum;
-  const propsPerHour = 3600 * propsPerSec;
 
   const expectedHtk = perHero.reduce((sum, x) => {
     const share = shareDenom > 0 ? x.term / shareDenom : 0;
@@ -156,6 +208,9 @@ function handComputeRow(stoneHp: number, mitig: number, goldComum: number, phase
   const propCount = propCountForAto(ato);
   const clearSecs = propCount / propsPerSec + (gate ? 1 / bossPerSec : 0);
   const cyclesPerHour = Number.isFinite(clearSecs) && clearSecs > 0 ? 3600 / clearSecs : 0;
+  // The boss is part of a gate cycle and drops nothing, so the hourly prop rate follows the
+  // cycle, not the raw prop rate. Non-gate keeps the plain expression bit-for-bit.
+  const propsPerHour = gate ? cyclesPerHour * propCount : 3600 * propsPerSec;
 
   const eGold = goldComum * goldShareFactor;
   const goldMult = squad.teamCoinMult * (1 + fortunaAura) * 1; // bonus = 1 ('off')
@@ -298,17 +353,24 @@ describe('phase 10 — gate hand-computed values (spec.md P1-2 AC-2)', () => {
     expect(propHp(line.hp, BOSS_HP_MULT_WIKI)).toBe(line.hp * 10);
   });
 
-  it('the boss pays ZERO gold/chest/gem/time/xp — only clearSecs/cyclesPerHour/keysPerHour differ from a props-only clear', () => {
-    // Recompute clearSecs with the boss term removed (props-only clear, as on a non-gate row).
+  it('the boss pays ZERO loot of its own, but its seconds still cost every hourly rate', () => {
+    // The same row with the boss term removed (a props-only clear, as on a non-gate row).
     const propsOnlyHand = handComputeRow(line.hp, line.mitig, line.goldComum, 10, false, line.ato);
-    // Every loot column is identical whether or not the boss term is included in clearSecs —
-    // because loot is driven by propsPerHour, which never includes the boss.
-    expect(propsOnlyHand.propsPerHour).toBeCloseTo(hand.propsPerHour, 9);
-    expect(propsOnlyHand.goldPerHour).toBeCloseTo(hand.goldPerHour, 6);
-    expect(propsOnlyHand.chestsPerHour).toBeCloseTo(hand.chestsPerHour, 9);
-    expect(propsOnlyHand.xpPerHour).toBeCloseTo(hand.xpPerHour, 6);
-    // Only clearSecs (and what derives from it) differs — the boss term genuinely adds seconds.
     expect(propsOnlyHand.clearSecs).toBeLessThan(hand.clearSecs);
+
+    // PER CYCLE the boss changes nothing: it drops no props, so it pays no gold, chest or XP.
+    const perCycle = (r: typeof hand, rate: number) => rate / (3600 / r.clearSecs);
+    expect(perCycle(hand, hand.propsPerHour)).toBeCloseTo(perCycle(propsOnlyHand, propsOnlyHand.propsPerHour), 9);
+    expect(perCycle(hand, hand.goldPerHour)).toBeCloseTo(perCycle(propsOnlyHand, propsOnlyHand.goldPerHour), 6);
+    expect(perCycle(hand, hand.xpPerHour)).toBeCloseTo(perCycle(propsOnlyHand, propsOnlyHand.xpPerHour), 6);
+
+    // PER HOUR everything is lower, by exactly the boss's share of the cycle — fewer cycles fit.
+    const cycleRatio = propsOnlyHand.clearSecs / hand.clearSecs;
+    expect(cycleRatio).toBeLessThan(1);
+    expect(hand.propsPerHour / propsOnlyHand.propsPerHour).toBeCloseTo(cycleRatio, 12);
+    expect(hand.goldPerHour / propsOnlyHand.goldPerHour).toBeCloseTo(cycleRatio, 12);
+    expect(hand.chestsPerHour / propsOnlyHand.chestsPerHour).toBeCloseTo(cycleRatio, 12);
+    expect(hand.xpPerHour / propsOnlyHand.xpPerHour).toBeCloseTo(cycleRatio, 12);
   });
 });
 

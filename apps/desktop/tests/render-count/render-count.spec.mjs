@@ -144,15 +144,17 @@ async function launchApp(env) {
   }
 }
 
-async function dismissConsent(page) {
+async function acceptConsent(page) {
+  // Accept: the app shows a permission gate with no navigation until consent is granted, so
+  // nothing below is reachable otherwise.
   const modal = page.getByTestId('consent-modal');
   await expect(modal).toBeVisible({ timeout: 30_000 });
-  await page.getByTestId('consent-decline').click();
+  await page.getByTestId('consent-accept').click();
   await expect(modal).toBeHidden({ timeout: 15_000 });
 }
 
 async function goToPlanning(page) {
-  await dismissConsent(page);
+  await acceptConsent(page);
   await page.getByRole('button', { name: 'Planning' }).click();
   await page.waitForSelector('[data-testid="planning-view"]', { timeout: 15_000 });
 }

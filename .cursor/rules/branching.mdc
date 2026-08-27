@@ -8,3 +8,7 @@ alwaysApply: true
 **Canonical hard truth:** [`docs/branching.md`](../../docs/branching.md)
 
 Feature work branches from and merges into `develop`; `main` is release-only.
+
+Work branches are named `<type>/<kebab-case-summary>` with a commitlint type (`feat`, `fix`,
+`docs`, `chore`, `ci`, `test`, `refactor`, `perf`, `build`, `style`, `revert`). A generated branch
+name with a random suffix gets renamed before the first push.

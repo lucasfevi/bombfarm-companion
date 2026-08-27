@@ -1,7 +1,6 @@
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it, vi } from 'vitest';
-import type { GrantedConsent } from './consent.js';
 import { ConsentedSessionRequiredError, RAW, SessionToken, grantSession, type ConsentedSession } from './session.js';
 import {
   buildHttpRequest,
@@ -13,8 +12,9 @@ import {
   type HttpTransport,
   type RequestOutcome,
 } from './request.js';
+import { grantedConsent } from './test-fixtures.js';
 
-const GRANTED: GrantedConsent = { decision: 'granted', grantedAt: '2026-08-12T13:15:38.000Z', textVersion: 1 };
+const GRANTED = grantedConsent('2026-08-12T13:15:38.000Z');
 const SENTINEL_TOKEN = 'sentinel-3c8f0a71-do-not-leak';
 const session = grantSession(GRANTED, { accountId: '486', token: SessionToken.create(SENTINEL_TOKEN) });
 

@@ -63,25 +63,22 @@ test.describe('app boot smoke', () => {
       await expect(page.getByTestId('flavor-badge')).toHaveText('DEV');
       await expect(page.getByTestId('app-version')).toHaveText(/^v\d+\.\d+\.\d+/);
 
-      // Planning is the default tab, so the raw payload dump needs an explicit nav click.
-      // Diagnostics is offered in the development flavors only and the renderer learns its flavor
-      // from an async `app:getEnvironment`, so wait for the three-item development nav rather than
-      // racing it — the environment reaching the DOM is already asserted above. Located by
-      // position, not by label: packages/ui ships no testid on these buttons and the labels are
-      // translated, which is the same reasoning i18n.spec.mjs's own nav helper records.
-      // The consent modal's backdrop covers the sidebar, so it has to go before any nav click.
-      // Decline rather than accept, matching every other spec here: accepting switches on the
-      // account refresh path, which would shadow the fixture reader this smoke is asserting.
+      // Accept, matching every other spec here: the app shows a permission gate with no nav
+      // instead of its content until consent is granted, so nothing below is reachable otherwise.
       const consentModal = page.getByTestId('consent-modal');
       await expect(consentModal).toBeVisible({ timeout: 30_000 });
-      await page.getByTestId('consent-decline').click();
+      await page.getByTestId('consent-accept').click();
       await expect(consentModal).toBeHidden({ timeout: 15_000 });
+
+      // Live is the default tab in every flavor now, so its testids must be reachable the moment
+      // consent clears — no nav click. The renderer has no real game process to attach to here, so
+      // the honest "nothing read yet" empty state is exactly what should render, never four empty
+      // lists standing in for an account that was never read.
+      await expect(page.getByTestId('live-view')).toBeVisible({ timeout: 30_000 });
+      await expect(page.getByTestId('live-view')).toContainText('Nothing read from your account yet');
 
       const navButtons = page.locator('nav[aria-label="Main"] button');
       await expect(navButtons).toHaveCount(3, { timeout: 30_000 });
-      await navButtons.nth(1).click();
-      const snapshotJson = await page.getByTestId('game-snapshot-json').innerText();
-      expect(snapshotJson).toContain('"gold"');
 
       // MP3 F1 (AD-032) — the renderer's @bombfarm/domain value import reached the DOM.
       await expect(page.getByTestId('domain-label-probe')).toHaveText('Common');

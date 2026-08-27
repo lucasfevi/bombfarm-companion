@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { isIpcChannel, isIpcEventChannel, IPC_CHANNELS, IPC_EVENT_CHANNELS } from './index.js';
-import { isActionableGap, liveGap, type LiveGapReason } from './live-source.js';
+import { isActionableGap, liveGap, LIVE_DISPLAY_REFRESH_MS, type LiveEvent, type LiveGapReason } from './live-source.js';
 
 /** Exhaustive over `LiveGapReason` via a `satisfies` record: adding a reason without adding it
  *  here is a compile error, not a silently-actionable gap. */
@@ -69,12 +69,28 @@ describe('live IPC surface', () => {
     expect(IPC_EVENT_CHANNELS).toContain('live:event');
   });
 
+  it('registers live:dumpDiagnostics as an invoke channel', () => {
+    expect(isIpcChannel('live:dumpDiagnostics')).toBe(true);
+    expect(IPC_CHANNELS).toContain('live:dumpDiagnostics');
+  });
+
   it('keeps the pre-existing channels the live seam does not retire', () => {
-    expect(isIpcChannel('game:getSnapshot')).toBe(true);
-    expect(isIpcEventChannel('snapshot:updated')).toBe(true);
     expect(isIpcChannel('consent:get')).toBe(true);
     expect(isIpcChannel('consent:accept')).toBe(true);
     expect(isIpcChannel('consent:decline')).toBe(true);
     expect(isIpcChannel('consent:revoke')).toBe(true);
+  });
+});
+
+describe('LIVE_DISPLAY_REFRESH_MS', () => {
+  it('is the one constant both the main process and the renderer pace the fast channel to', () => {
+    expect(LIVE_DISPLAY_REFRESH_MS).toBe(250);
+  });
+});
+
+describe('LiveEvent — the fastUpdate variant', () => {
+  it('carries field, recovery and the live on-field id set, and nothing else', () => {
+    const event: LiveEvent = { type: 'fastUpdate', field: [], recovery: [], onFieldHeroIds: [] };
+    expect(Object.keys(event).sort()).toEqual(['field', 'onFieldHeroIds', 'recovery', 'type']);
   });
 });

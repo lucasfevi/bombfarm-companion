@@ -12,10 +12,11 @@ import {
   type IpcEventChannel,
   type IpcEvents,
   type IpcInvokeChannel,
+  type LiveDiagnosticsDumpOutcome,
   type LiveView,
   type SettingsWriteResult,
 } from '@bombfarm/contracts';
-import { type ConsentEvent, createPacingGate, initialConsent, reduceConsent } from '@bombfarm/game-api';
+import { createPacingGate, initialConsent } from '@bombfarm/game-api';
 import { createAccountNotifier, resolveAccountView } from './account-view.js';
 import { applyAppIdentity } from './app-identity.js';
 import { createBootRecord } from './boot-record.js';
@@ -23,10 +24,14 @@ import { fuseSecondsForCdr } from './domain-edge.js';
 import { InvalidFlavorError, resolveAppEnv, RENDERER_DEV_URL, type AppEnv } from './env.js';
 import { GameReaderService } from './game-reader/game-reader-service.js';
 import { createAccountRefresh, type AccountRefreshHandle } from './game-api/account-refresh.js';
+import { createConsentApplier } from './game-api/consent-applier.js';
 import { createConsentStore, type ConsentStore } from './game-api/consent-store.js';
+import { createLiveConsentGate } from './game-api/live-consent-gate.js';
 import { createSettingsStore, type SettingsStore } from './game-api/settings-store.js';
 import { nodeHttpsTransport } from './game-api/https-transport.js';
 import { readSessionToken, sessionCfgPath } from './game-api/session-token-file.js';
+import { createTriggeredRefresh, type TriggeredRefresh } from './game-api/triggered-refresh.js';
+import { createLiveFastPublisher, type LiveFastPublisher } from './live-source/live-fast-publisher.js';
 import { LiveSource } from './live-source/live-source.js';
 import { configureLogging, log } from './logging.js';
 import { createAccountStore, type AccountStore } from './storage/account-store.js';
@@ -40,6 +45,8 @@ let accountRefresh: AccountRefreshHandle | null = null;
 let consentStore: ConsentStore | null = null;
 let settingsStore: SettingsStore | null = null;
 let liveSource: LiveSource | null = null;
+let liveFastPublisher: LiveFastPublisher | null = null;
+let triggeredRefresh: TriggeredRefresh | null = null;
 // MP3 F4 (AD-053) — the resolved language, held in a module-level `let` exactly as
 // `consentStore`'s own value is. Defaults to `DEFAULT_SETTINGS` until `bootstrap()` resolves it
 // (inside `whenReady()`, where `app.getLocale()` is documented valid) so `settings:get` never
@@ -51,15 +58,37 @@ function emitEvent<C extends IpcEventChannel>(channel: C, payload: IpcEvents[C])
 }
 
 /** Reads, transitions, persists, and announces one consent event — the single path every
- *  consent:* handler below goes through (LAR-01/03…05). */
-function applyConsentEvent(event: ConsentEvent): ConsentRecord {
-  const current = consentStore?.read() ?? initialConsent();
-  const next = reduceConsent(current, event);
-  consentStore?.write(next);
-  emitEvent('consent:changed', next);
-  accountRefresh?.onConsentChanged(next);
-  return next;
-}
+ *  consent:* handler below goes through (LAR-01/03…05). Every dep below reads the module-level
+ *  `let` bindings lazily, through its own closure, because they are still null at this point in
+ *  the module and are only assigned once `bootstrap()` runs. */
+const applyConsentEvent = createConsentApplier({
+  read: () => consentStore?.read() ?? initialConsent(),
+  write: (next) => {
+    consentStore?.write(next);
+  },
+  beforeLosingConsent: [
+    async () => {
+      await liveSource?.forceDetach();
+    },
+  ],
+  afterApplied: [
+    (next) => {
+      emitEvent('consent:changed', next);
+    },
+    (next) => {
+      accountRefresh?.onConsentChanged(next);
+    },
+    () => {
+      liveSource?.pollNow();
+    },
+    () => {
+      gameReader?.pollNow();
+    },
+  ],
+  onError: (error) => {
+    log.error({ scope: 'main', event: 'consent.pre_persist_hook_failed', error: String(error) });
+  },
+});
 
 /**
  * MP3 F4 (`AD-051`/`AD-052`, design.md §4.1) — the one path both `settings:useEnglish` and
@@ -76,7 +105,14 @@ function applyLocale(next: AppLocale): SettingsWriteResult {
 
 function defaultLiveView(): LiveView {
   const now = new Date().toISOString();
-  return { currency: liveGap('neverAttached', now), field: [], recovery: [], rotation: null, updatedAt: now };
+  return {
+    currency: liveGap('neverAttached', now),
+    field: [],
+    recovery: [],
+    rotation: null,
+    onFieldHeroIds: [],
+    updatedAt: now,
+  };
 }
 
 function registerIpcHandlers(): void {
@@ -104,30 +140,19 @@ function registerIpcHandlers(): void {
       status: 'not_running' as const,
       updatedAt: new Date().toISOString(),
     },
-    'game:getSnapshot': () => gameReader?.getSnapshot() ?? {
-      status: {
-        status: 'not_running' as const,
-        updatedAt: new Date().toISOString(),
-      },
-      mapped: null,
-      raw: { state: null, inventory: null },
-    },
     // MP3 F3 (AD-043) — the handler's pre-F3 body now lives, verbatim, in account-view.ts's
     // resolveAccountView(); this is a one-line call to it. See that file for the T-fix-6
     // precedence comment this used to carry inline.
     'account:get': (): AccountView => resolveAccountView({ gameReader, consentStore, accountRefresh, accountStore }),
     'consent:get': (): ConsentRecord => consentStore?.read() ?? initialConsent(),
-    'consent:accept': (): ConsentRecord => applyConsentEvent({ type: 'accept', now: new Date().toISOString() }),
-    'consent:decline': (): ConsentRecord => applyConsentEvent({ type: 'decline' }),
-    // The tap must be torn down before the revoke is recorded, not after and not concurrently —
-    // otherwise an already-attached tap keeps reading real game traffic past the moment consent
-    // says it should have stopped, since the tap's own poll loop only re-checks consent before
-    // attaching, never against a session already in progress.
-    'consent:revoke': async (): Promise<ConsentRecord> => {
-      await liveSource?.forceDetach();
-      return applyConsentEvent({ type: 'revoke' });
-    },
+    'consent:accept': (): Promise<ConsentRecord> =>
+      applyConsentEvent({ type: 'accept', now: new Date().toISOString(), locale: currentSettings.locale }),
+    'consent:decline': (): Promise<ConsentRecord> =>
+      applyConsentEvent({ type: 'decline', locale: currentSettings.locale }),
+    'consent:revoke': (): Promise<ConsentRecord> => applyConsentEvent({ type: 'revoke' }),
     'live:get': (): LiveView => liveSource?.getView() ?? defaultLiveView(),
+    'live:dumpDiagnostics': (): LiveDiagnosticsDumpOutcome =>
+      liveSource?.dumpDiagnostics() ?? { written: false, reason: 'no-source' },
   };
 
   ipcMain.handle('bfc:invoke', (_event, channel: string) => {
@@ -218,14 +243,20 @@ async function bootstrap(): Promise<void> {
     items: initialRestore.payload.fidelity.items.status,
   });
 
-  gameReader = new GameReaderService(userDataDir, {}, { isPackaged: resolveAppEnv().isPackaged });
-  gameReader.setAccountStore(accountStore);
-
   // MP2 F2 — the consented game-API account reader. Independent of the game reader's own
   // memory/fixture ticking: consent gates every request structurally (LAR-01/AD-025/AD-028),
   // so this cycle issues nothing at all until the player has accepted the first-run modal (T9).
-  // Constructed before registerIpcHandlers() so the consent:* handlers never see a null store.
+  // Constructed before registerIpcHandlers() so the consent:* handlers never see a null store,
+  // and before the game reader so its own live-mode process lookups can be gated by the same
+  // predicate the live tap already checks.
   consentStore = createConsentStore(accountOpen.db);
+
+  gameReader = new GameReaderService(
+    userDataDir,
+    {},
+    { isPackaged: resolveAppEnv().isPackaged, consent: createLiveConsentGate(consentStore) },
+  );
+  gameReader.setAccountStore(accountStore);
 
   // MP3 F4 (AD-052/AD-053) — same db handle consentStore takes. Resolved ONCE, here, inside
   // whenReady() (bootstrap()'s own calling context), where app.getLocale() is documented to be
@@ -234,19 +265,50 @@ async function bootstrap(): Promise<void> {
   settingsStore = createSettingsStore(accountOpen.db);
 
   liveSource = new LiveSource({
-    consent: () => consentStore?.read().decision === 'granted',
+    consent: createLiveConsentGate(consentStore),
     userDataDir,
+    flavor: resolveAppEnv().flavor,
     log,
   });
+  // The raw per-frame stream stays internal to main (the game reader still needs every tick);
+  // only `currency` crosses IPC immediately here. Field/recovery/on-field membership cross via
+  // `liveFastPublisher` below instead, paced to LIVE_DISPLAY_REFRESH_MS rather than the tap's own
+  // ~10Hz — publishing raw frames across IPC for the renderer to throttle is work in the wrong
+  // process.
+  // liveSource itself only ever raises 'frame' or 'currency' — 'fastUpdate' is constructed
+  // downstream, by liveFastPublisher, from a separate emit callback, never by LiveSource.
   liveSource.subscribe((event) => {
-    emitEvent('live:event', event);
     if (event.type === 'frame') {
       gameReader?.ingestLiveTick(event.frame);
-    } else {
+    } else if (event.type === 'currency') {
       gameReader?.ingestLiveCurrency(event.currency);
+      emitEvent('live:event', event);
     }
   });
   liveSource.start();
+
+  // `refreshNow` is read lazily so construction order doesn't matter — `accountRefresh` itself is
+  // assigned later in this function.
+  triggeredRefresh = createTriggeredRefresh({
+    refreshNow: () => accountRefresh?.refreshNow() ?? Promise.resolve(null),
+    now: () => Date.now(),
+  });
+  liveFastPublisher = createLiveFastPublisher({
+    getView: () => liveSource?.getView() ?? defaultLiveView(),
+    emit: (event) => {
+      emitEvent('live:event', event);
+    },
+    scheduler: {
+      schedule: (callback, intervalMs) => {
+        const timer = setInterval(callback, intervalMs);
+        return () => {
+          clearInterval(timer);
+        };
+      },
+    },
+    onFieldMembershipDiverged: () => triggeredRefresh?.notify(),
+  });
+  liveFastPublisher.start();
 
   const storedSettings = settingsStore.read();
   const systemLocale = app.getLocale();
@@ -279,7 +341,15 @@ async function bootstrap(): Promise<void> {
     // `BFC_TOKEN_PATH_OVERRIDE` escape hatch (T-fix-4) can ever apply — and, symmetrically,
     // cannot apply in a packaged build no matter what is set in its environment. See
     // `session-token-file.ts`'s `SessionCfgPathDeps` doc comment.
-    readToken: (consent) => readSessionToken(consent, undefined, sessionCfgPath({ isPackaged: resolveAppEnv().isPackaged })),
+    readToken: (consent) => {
+      const result = readSessionToken(consent, undefined, sessionCfgPath({ isPackaged: resolveAppEnv().isPackaged }));
+      if (result.ok) {
+        const redact = (text: string): string => result.token.redactFrom(text);
+        log.setCredentialRedactor(redact);
+        liveSource?.setCredentialRedactor(redact);
+      }
+      return result;
+    },
     // account-refresh.ts itself is unmodified (TD-10, MP2 owns that file's commit semantics) —
     // only what the listener does changed: it used to emit unconditionally on every commit
     // (AD-031 fact 2); it now asks the notifier, which emits only on a real change.
@@ -396,6 +466,9 @@ if (!gotLock) {
     gameReader = null;
     accountRefresh?.stop();
     accountRefresh = null;
+    liveFastPublisher?.stop();
+    liveFastPublisher = null;
+    triggeredRefresh = null;
     void liveSource?.teardown();
     liveSource = null;
     consentStore = null;
@@ -406,5 +479,6 @@ if (!gotLock) {
     storage = null;
     accountStore?.close();
     accountStore = null;
+    log.flush();
   });
 }

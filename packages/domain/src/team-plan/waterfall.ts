@@ -30,6 +30,7 @@ export type WaterfallResult = {
   moveList: MoveAction[];
   pointResets: {
     heroId: string;
+    ptsBefore: Record<string, number>;
     pts: Record<string, number>;
     gainPct: number;
     rosterGainDps: number;
@@ -169,6 +170,7 @@ export function buildForgeList(
 
 function buildPointResets(
   acceptedHeroIds: string[],
+  currentPtsByHeroId: Record<string, PointAlloc>,
   finalPtsByHeroId: Record<string, PointAlloc>,
   gearStateEval: RosterEvaluation,
   respecStateEval: RosterEvaluation,
@@ -189,6 +191,7 @@ function buildPointResets(
     const level = heroLevelById.get(heroId) ?? 0;
     return {
       heroId,
+      ptsBefore: currentPtsByHeroId[heroId] ?? {},
       pts: finalPtsByHeroId[heroId] ?? {},
       gainPct,
       rosterGainDps: gainByHeroId[heroId] ?? 0,
@@ -338,6 +341,7 @@ export function buildWaterfall(input: BuildWaterfallInput): WaterfallResult {
     moveList: buildMoveList(currentAssignment, finalAssignment, itemById, contexts),
     pointResets: buildPointResets(
       respec.acceptedHeroIds,
+      pts,
       finalPtsByHeroId,
       gearEvaluation,
       respec.evaluation,

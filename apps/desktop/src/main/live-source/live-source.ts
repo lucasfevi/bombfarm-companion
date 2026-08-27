@@ -1,25 +1,36 @@
-import { readFileSync } from 'node:fs';
+import { closeSync, openSync, readFileSync, writeFileSync, writeSync } from 'node:fs';
 import path from 'node:path';
 import type {
+  AccountSection,
   AccountView,
+  AppFlavor,
   FieldCountdown,
+  FieldDrop,
   LiveCurrency,
+  LiveDiagnosticsDumpOutcome,
   LiveEvent,
   LiveTick,
   LiveTickHero,
   LiveView,
-  RecoveryCountdown,
   RotationSnapshot,
 } from '@bombfarm/contracts';
-import { isLiveCurrency, liveGap } from '@bombfarm/contracts';
-import { normalizeRotation } from '@bombfarm/game-api';
+import { isConnectedCurrency, isLiveCurrency, liveGap } from '@bombfarm/contracts';
+import { identifyObservedBody, normalizeRotation } from '@bombfarm/game-api';
 import {
+  advanceRecoveryClock,
   createInitialFieldCountdownState,
-  freezeRecoveryCountdowns,
+  extractRosterHeroAbilities,
   ingestFieldCountdownTick,
+  resolveFieldDrainMultipliers,
+  type DrainDisagreementReport,
+  type DrainMultipliers,
   type FieldCountdownState,
+  type RosterHeroAbilities,
 } from '@bombfarm/domain/live';
 import { runPowerShellAsync, runPowerShellSync, stripExeSuffix } from '../game-reader/process.js';
+import { createFrameCapture, readFrameCaptureEnabledFromEnv } from './frame-capture.js';
+import { FrameRing } from './frame-ring.js';
+import type { LogPort } from './log-port.js';
 import { RuntimePort } from './runtime.js';
 import {
   createHookCandidateSource,
@@ -40,31 +51,120 @@ import {
  * a rewrite of how the sample is produced.
  */
 
-export interface LogPort {
-  info(record: Record<string, unknown>): void;
-  warn(record: Record<string, unknown>): void;
-}
-
 const NOOP_LOG_PORT: LogPort = { info: () => undefined, warn: () => undefined };
 
 const DEFAULT_PROCESS_NAME = process.env.BFC_GAME_PROCESS ?? 'BombFarm.exe';
 
+/** ~10 frames/second at ~2 KB/frame: 50 frames is a 5-second window, big enough to see what led
+ *  into a parse failure without holding more raw payload in memory than that. */
+const FRAME_RING_MAX_FRAMES = 50;
+const FRAME_RING_MAX_BYTES = 500_000;
+
+/** Same ~2 KB/frame, ~10 frames/second basis, sized for a several-minute farming run (~1000s) so
+ *  one capture session can seed a realistic replay fixture without an unbounded dev-machine file. */
+const FRAME_CAPTURE_MAX_BYTES = 20_000_000;
+
+function nodeFrameDumpWritePort(): { write(destination: string, contents: string): void } {
+  return { write: (destination, contents) => { writeFileSync(destination, contents, 'utf8'); } };
+}
+
+/** Holds one open file handle across pushes instead of paying an open+write+close per frame.
+ *  `close()` clears the handle rather than leaving it open, so reusing this port afterward (a
+ *  consent-revoke reattach, say) reopens it lazily on the next append and keeps appending
+ *  correctly. */
+/**
+ * One process writes one capture file. The first open truncates, because the format carries a
+ * header exactly once and a run that appended to a previous run's file would bury a second header
+ * mid-stream — which the reader cannot distinguish from a corrupt record, so it stops there and
+ * silently discards everything after it. Reopening after `close()` appends, since that is the
+ * same capture continuing across a tap teardown (a consent revoke reattaches the same instance).
+ */
+function nodeFrameCaptureAppendPort(destination: string): { append(bytes: Uint8Array): void; close(): void } {
+  let fd: number | null = null;
+  let openedThisProcess = false;
+
+  function closeHandle(): void {
+    if (fd === null) return;
+    closeSync(fd);
+    fd = null;
+  }
+
+  return {
+    append: (bytes) => {
+      if (fd === null) {
+        fd = openSync(destination, openedThisProcess ? 'a' : 'w');
+        openedThisProcess = true;
+      }
+      try {
+        // writeSync is not obliged to consume the whole buffer, and a short write would truncate a
+        // length-prefixed record and desync every record after it.
+        let written = 0;
+        while (written < bytes.length) {
+          written += writeSync(fd, bytes, written, bytes.length - written);
+        }
+      } catch (error) {
+        closeHandle();
+        throw error;
+      }
+    },
+    close: closeHandle,
+  };
+}
+
+function heroPathWithoutIndex(path: string): string {
+  return path.replace(/heroes\[\d+\]/g, 'heroes[]');
+}
+
+function reportRotationDrops(log: LogPort, drops: readonly FieldDrop[]): void {
+  for (const drop of drops) {
+    log.warn({
+      scope: 'live-source',
+      event: 'rotation.field_dropped',
+      path: heroPathWithoutIndex(drop.path),
+      reason: drop.reason,
+    });
+  }
+}
+
+/** The background checker's only output: the law and the independently observed rate disagreed
+ *  by more than its margin. Never drives the display — see `ingestFieldCountdownTick`'s own doc
+ *  comment for why the check exists at all. */
+function reportDrainDisagreements(log: LogPort, disagreements: readonly DrainDisagreementReport[]): void {
+  for (const disagreement of disagreements) {
+    log.warn({
+      scope: 'live-source',
+      event: 'drain.rate_disagreement',
+      heroId: disagreement.heroId,
+      observedDrainPerSecond: disagreement.observedDrainPerSecond,
+      modelledDrainPerSecond: disagreement.modelledDrainPerSecond,
+    });
+  }
+}
+
 export interface TapHandle {
   start(): void;
   teardown(): Promise<void>;
+  pollNow(): void;
 }
 
 export interface LiveSourceDeps {
   /** Checked at the attach site by the underlying tap, never inferred from construction order. */
   readonly consent: () => boolean;
   readonly userDataDir: string;
+  /** Gates the frame capture inside the default tap factory — irrelevant, and safe to omit, when
+   *  `createTap` overrides that factory entirely. Defaults to `'prod'`, the flavor capture never
+   *  runs under. */
+  readonly flavor?: AppFlavor;
   readonly processName?: string;
   readonly log?: LogPort;
   readonly now?: () => number;
   /** Test seam: overrides how the underlying attach mechanism is built. Production leaves this
    *  unset and gets a real tap wired against this machine's process list and instrumentation
    *  runtime. */
-  readonly createTap?: (onEvent: (event: LiveEvent) => void) => TapHandle;
+  readonly createTap?: (
+    onEvent: (event: LiveEvent) => void,
+    onHttpBody: (body: Buffer, atMs: number) => void,
+  ) => TapHandle;
 }
 
 function createProcessLister(): ProcessLister {
@@ -105,13 +205,35 @@ function createProcessImageSource(): ProcessImageSource {
   };
 }
 
+function createFrameRing(deps: { readonly userDataDir: string; readonly log: LogPort }): FrameRing {
+  return new FrameRing({
+    maxFrames: FRAME_RING_MAX_FRAMES,
+    maxBytes: FRAME_RING_MAX_BYTES,
+    dumpPath: path.join(deps.userDataDir, 'live-frame-dump.json'),
+    writePort: nodeFrameDumpWritePort(),
+    log: deps.log,
+  });
+}
+
 function createDefaultTapFactory(deps: {
   readonly consent: () => boolean;
   readonly userDataDir: string;
   readonly processName: string;
+  readonly flavor: AppFlavor;
   readonly log: LogPort;
-}): (onEvent: (event: LiveEvent) => void) => TapHandle {
-  return (onEvent) => {
+  readonly ring: FrameRing;
+}): (onEvent: (event: LiveEvent) => void, onHttpBody: (body: Buffer, atMs: number) => void) => TapHandle {
+  const ring = deps.ring;
+
+  const capture = createFrameCapture({
+    flavor: deps.flavor,
+    enabled: readFrameCaptureEnabledFromEnv(process.env),
+    maxBytes: FRAME_CAPTURE_MAX_BYTES,
+    appendPort: nodeFrameCaptureAppendPort(path.join(deps.userDataDir, 'live-frame-capture.bin')),
+    log: deps.log,
+  });
+
+  return (onEvent, onHttpBody) => {
     const tap = new Tap({
       processName: deps.processName,
       runtime: new RuntimePort({ log: deps.log }),
@@ -124,13 +246,22 @@ function createDefaultTapFactory(deps: {
       consent: deps.consent,
       clock: createSystemClock(),
       onEvent,
+      onHttpBody,
       log: deps.log,
+      ring,
+      capture,
     });
     return {
       start: () => {
         tap.start();
       },
-      teardown: () => tap.teardown(),
+      teardown: async () => {
+        await tap.teardown();
+        capture.close();
+      },
+      pollNow: () => {
+        tap.pollNow();
+      },
     };
   };
 }
@@ -147,38 +278,88 @@ function fieldHeroesFromRotation(rotation: RotationSnapshot): readonly LiveTickH
 export class LiveSource {
   readonly #log: LogPort;
   readonly #now: () => number;
-  readonly #createTap: (onEvent: (event: LiveEvent) => void) => TapHandle;
+  readonly #createTap: (
+    onEvent: (event: LiveEvent) => void,
+    onHttpBody: (body: Buffer, atMs: number) => void,
+  ) => TapHandle;
+  /** `null` under the `createTap` test seam, which bypasses the default factory and therefore
+   *  never owns a ring of its own. */
+  readonly #ring: FrameRing | null;
 
   #tap: TapHandle;
   #listeners: Array<(event: LiveEvent) => void> = [];
 
   #currency: LiveCurrency;
   #rotation: RotationSnapshot | null = null;
+  /** When the currently-applied {@link #rotation} was captured — self-fetched or tap-observed,
+   *  compared by this value alone so whichever is newer wins regardless of which method happened
+   *  to be called second. */
+  #rotationAtMs: number | null = null;
+  /** The `/roster` heroes array from the most recent self-fetched read, reused to join name/grade
+   *  onto a tap-observed rotation body — which arrives with no roster of its own — so an observed
+   *  update does not blank names the app already knows. */
+  #lastRosterRaw: unknown = undefined;
+  /** Extracted alongside {@link #lastRosterRaw} from the same self-fetched read, keyed by id — the
+   *  source `#ingestTick` reads each tick to resolve real per-hero {@link DrainMultipliers} for
+   *  whoever the tap reports on the field, since a tap frame alone carries no ability ranks. Ability
+   *  ranks only — never the full save-parse `HeroRecord`, which main may not build. */
+  #rosterHeroById: ReadonlyMap<string, RosterHeroAbilities> = new Map();
   #fieldState: FieldCountdownState = createInitialFieldCountdownState();
   #field: readonly FieldCountdown[] = [];
-  #recovery: readonly RecoveryCountdown[] = [];
   #updatedAt: string;
 
   constructor(deps: LiveSourceDeps) {
     this.#log = deps.log ?? NOOP_LOG_PORT;
     this.#now = deps.now ?? Date.now;
-    this.#createTap =
-      deps.createTap ??
-      createDefaultTapFactory({
+    if (deps.createTap) {
+      this.#createTap = deps.createTap;
+      this.#ring = null;
+    } else {
+      const ring = createFrameRing({ userDataDir: deps.userDataDir, log: this.#log });
+      this.#ring = ring;
+      this.#createTap = createDefaultTapFactory({
         consent: deps.consent,
         userDataDir: deps.userDataDir,
         processName: deps.processName ?? DEFAULT_PROCESS_NAME,
+        flavor: deps.flavor ?? 'prod',
         log: this.#log,
+        ring,
       });
+    }
     this.#currency = liveGap('neverAttached', this.#nowIso());
     this.#updatedAt = this.#nowIso();
-    this.#tap = this.#createTap((event) => {
-      this.#handleTapEvent(event);
-    });
+    this.#tap = this.#createTap(
+      (event) => {
+        this.#handleTapEvent(event);
+      },
+      (body, atMs) => {
+        this.#handleObservedHttpBody(body, atMs);
+      },
+    );
   }
 
   start(): void {
     this.#tap.start();
+  }
+
+  /** Owns the frame ring, so this is the one place `index.ts` can hand it the same single-slot
+   *  credential redactor the boundary log gets, keeping the ring's dump provably free of the
+   *  session token — not just `account_id`/`player_name`. */
+  setCredentialRedactor(redact: ((text: string) => string) | null): void {
+    this.#ring?.setCredentialRedactor(redact);
+  }
+
+  /** Mirrors `AccountRefreshHandle.onConsentChanged`: called from the same consent-changed path
+   *  in index.ts, so a grant is picked up without waiting out the tap's poll interval. Consent
+   *  itself is always re-read from the gate the tap already holds — this only wakes the loop. */
+  pollNow(): void {
+    this.#tap.pollNow();
+  }
+
+  /** `no-source` (never `dumpToDisk`'s own concern) covers the `createTap` test seam and the
+   *  window before any tap has attached, where there is no ring to own the dump at all. */
+  dumpDiagnostics(): LiveDiagnosticsDumpOutcome {
+    return this.#ring?.dumpToDisk('manual') ?? { written: false, reason: 'no-source' };
   }
 
   subscribe(listener: (event: LiveEvent) => void): () => void {
@@ -188,13 +369,19 @@ export class LiveSource {
     };
   }
 
+  /** Recovery runs on the server's own clock, not on combat frames, so it is advanced here — on
+   *  every call, not only when a new frame or rotation read arrives — rather than cached alongside
+   *  `#field`. See {@link advanceRecoveryClock} for what `connected` decides. */
   getView(): LiveView {
-    const recovery = isLiveCurrency(this.#currency) ? this.#recovery : freezeRecoveryCountdowns(this.#fieldState);
+    const connected = isConnectedCurrency(this.#currency);
+    const { state, recovery } = advanceRecoveryClock(this.#fieldState, this.#now(), connected);
+    this.#fieldState = state;
     return {
       currency: this.#currency,
       field: this.#field,
       recovery,
       rotation: this.#rotation,
+      onFieldHeroIds: this.#fieldState.onFieldHeroIdsSorted,
       updatedAt: this.#updatedAt,
     };
   }
@@ -202,16 +389,109 @@ export class LiveSource {
   /** The REST rotation projection: the base view every countdown falls back to when no live tap
    *  frame is available. Left untouched (never set to an empty snapshot) until a `/rotation` read
    *  actually resolves, so {@link LiveView.rotation} stays `null` rather than lying about having
-   *  seen an account with no heroes. */
-  ingestRotation(view: AccountView): void {
+   *  seen an account with no heroes. `atMs` defaults to "now" — a self-fetched read is applied at
+   *  the moment this app finished reading it — but is overridable so a caller can prove the
+   *  newest-wins rule against {@link ingestObservedRotation} deterministically. */
+  ingestRotation(view: AccountView, atMs: number = this.#now()): void {
     if (view.payload.casa === undefined) return;
-    const { snapshot } = normalizeRotation(view.payload.casa, view.payload.heroes);
+    const rosterHeroAbilities = extractRosterHeroAbilities(view.payload.heroes);
+    this.#applyRotationBody(view.payload.casa, atMs, { rosterRaw: view.payload.heroes, rosterHeroAbilities });
+  }
+
+  /** The tap-observed counterpart to {@link ingestRotation} — same fold, a body identified from
+   *  the client's own traffic instead of a request this app made. `atMs` decides which of the two
+   *  wins when both are current: whichever timestamp is newer, never whichever call happened
+   *  second. */
+  ingestObservedRotation(body: unknown, atMs: number): void {
+    this.#applyRotationBody(body, atMs);
+  }
+
+  /** `selfFetched`, when present, carries the read's own `/roster` array (plus the ability ranks
+   *  extracted from it) — assigned to {@link #lastRosterRaw} / {@link #rosterHeroById} only on this
+   *  same branch, below the staleness check, so a read rejected as older than what is already
+   *  applied never overwrites either. The three halves of one read are accepted or rejected
+   *  together. */
+  #applyRotationBody(
+    body: unknown,
+    atMs: number,
+    selfFetched?: { readonly rosterRaw: unknown; readonly rosterHeroAbilities: readonly RosterHeroAbilities[] },
+  ): void {
+    if (this.#rotationAtMs !== null && atMs < this.#rotationAtMs) {
+      this.#log.info({ scope: 'live-source', event: 'rotation.stale_ignored', atMs, appliedAtMs: this.#rotationAtMs });
+      return;
+    }
+    this.#rotationAtMs = atMs;
+    if (selfFetched) {
+      this.#lastRosterRaw = selfFetched.rosterRaw;
+      this.#rosterHeroById = new Map(selfFetched.rosterHeroAbilities.map((hero) => [hero.id, hero]));
+    }
+    const { snapshot, drops } = normalizeRotation(body, this.#lastRosterRaw);
+    reportRotationDrops(this.#log, drops);
     this.#rotation = snapshot;
-    if (isLiveCurrency(this.#currency)) {
+    // Frames only arrive while a battle is running, so an attached tap sitting on a menu reports
+    // `live` and produces nothing. Keying this on the currency alone left the panel with a perfectly
+    // good snapshot and no countdowns at all; what must not be overwritten is measured frame data
+    // that actually exists, which is what `#field` being non-empty means.
+    if (isLiveCurrency(this.#currency) && this.#field.length > 0) {
       this.#touch();
       return;
     }
     this.#ingestTick({ heroes: fieldHeroesFromRotation(snapshot) }, this.#now(), 'rest');
+  }
+
+  /** Reads the client's own traffic before this app's own requests: {@link identifyObservedBody}
+   *  is the strict, shape-only discriminator (the tap sees responses with no URL, so a path is
+   *  never available to identify by) — a match resolves to exactly one route or not at all, never
+   *  a guess. Only the rotation route is wired downstream this slice; every other identified
+   *  section is named in the log and otherwise left alone, the seam the next one plugs into. */
+  #handleObservedHttpBody(bodyBuf: Buffer, atMs: number): void {
+    let parsed: unknown;
+    try {
+      parsed = JSON.parse(bodyBuf.toString('utf8'));
+    } catch {
+      this.#log.warn({ scope: 'live-source', event: 'observed_body.malformed_json', byteLength: bodyBuf.length });
+      return;
+    }
+
+    const identification = identifyObservedBody(parsed);
+    if (identification.kind === 'unidentified') {
+      this.#log.warn({ scope: 'live-source', event: 'observed_body.unidentified', byteLength: bodyBuf.length });
+      return;
+    }
+    if (identification.kind === 'ambiguous') {
+      this.#log.warn({
+        scope: 'live-source',
+        event: 'observed_body.ambiguous',
+        sections: identification.sections,
+        byteLength: bodyBuf.length,
+      });
+      return;
+    }
+
+    this.#log.info({
+      scope: 'live-source',
+      event: 'observed_body.identified',
+      section: identification.section,
+      byteLength: bodyBuf.length,
+    });
+    this.#dispatchObservedBody(identification.section, parsed, atMs);
+  }
+
+  #dispatchObservedBody(section: AccountSection, body: unknown, atMs: number): void {
+    switch (section) {
+      case 'casa':
+        this.ingestObservedRotation(body, atMs);
+        return;
+      case 'account':
+      case 'heroes':
+      case 'skills':
+      case 'items':
+        return;
+      default: {
+        const exhaustive: never = section;
+        return exhaustive;
+      }
+    }
   }
 
   /** Consent revoke has to win the race against a tap already attached: the tap's own poll loop
@@ -221,32 +501,58 @@ export class LiveSource {
    *  first poll — is the only way to force an immediate stop, while this object, the one the rest
    *  of the app holds, never changes identity. */
   async forceDetach(): Promise<void> {
-    await this.#tap.teardown();
-    this.#tap = this.#createTap((event) => {
-      this.#handleTapEvent(event);
-    });
-    this.#tap.start();
+    // Replacement must run even if teardown rejects (e.g. an in-flight attach's resolve() throws),
+    // or #tap is left pointing at an instance whose poll loop is permanently stopped.
+    try {
+      await this.#tap.teardown();
+    } finally {
+      this.#tap = this.#createTap(
+        (event) => {
+          this.#handleTapEvent(event);
+        },
+        (body, atMs) => {
+          this.#handleObservedHttpBody(body, atMs);
+        },
+      );
+      this.#tap.start();
+    }
   }
 
   async teardown(): Promise<void> {
     await this.#tap.teardown();
   }
 
+  // The tap itself only ever raises 'frame' or 'currency' — 'fastUpdate' is a channel this class's
+  // own consumers publish downstream (see live-fast-publisher.ts), never one the tap produces —
+  // so the branch below is exhaustive over what can actually arrive here.
   #handleTapEvent(event: LiveEvent): void {
     if (event.type === 'currency') {
       this.#currency = event.currency;
       this.#touch();
-    } else {
+    } else if (event.type === 'frame') {
       this.#ingestTick(event.frame.tick, Date.parse(event.frame.at));
     }
     this.#publish(event);
   }
 
   #ingestTick(tick: LiveTick, atMs: number, sampleSource: 'tap' | 'rest' = 'tap'): void {
-    const result = ingestFieldCountdownTick(this.#fieldState, { tick, rotation: this.#rotation, atMs, sampleSource });
+    const onFieldHeroes: RosterHeroAbilities[] = [];
+    for (const heroOnField of tick.heroes) {
+      const hero = this.#rosterHeroById.get(heroOnField.id);
+      if (hero !== undefined) onFieldHeroes.push(hero);
+    }
+    const modelledDrainMultipliers: ReadonlyMap<string, DrainMultipliers> = resolveFieldDrainMultipliers(onFieldHeroes);
+
+    const result = ingestFieldCountdownTick(this.#fieldState, {
+      tick,
+      rotation: this.#rotation,
+      atMs,
+      modelledDrainMultipliers,
+      sampleSource,
+    });
     this.#fieldState = result.state;
     this.#field = result.field;
-    this.#recovery = result.recovery;
+    reportDrainDisagreements(this.#log, result.disagreements);
     this.#touch();
   }
 

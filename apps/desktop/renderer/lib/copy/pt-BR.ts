@@ -16,17 +16,13 @@ import type { Copy } from './index';
 export const ptBR: Copy = {
   // shell* — AppShell navigation and status chrome
   shellPlanningNavLabel: 'Planejamento',
-  shellDiagnosticsNavLabel: 'Diagnóstico',
   shellStatusConnected: 'Conectado',
   shellStatusNotRunning: 'O jogo não está aberto',
   shellStatusStale: 'Desatualizado',
   shellLoadingLabel: 'Carregando…',
-  shellDiagnosticsSnapshotTitle: 'Estado atual (bruto e processado)',
 
   // empty* — placeholder states shown before real data has arrived
   emptyBridgeUnavailableTitle: 'Ponte de comunicação indisponível',
-  emptyNoSnapshotTitle: 'Nenhum estado capturado ainda',
-  emptyNoSnapshotDescription: 'Aguardando a primeira leitura do jogo.',
 
   // Account section names, in player language — never the raw section key
   sectionNameAccount: 'sua fase da fazenda',
@@ -124,6 +120,86 @@ export const ptBR: Copy = {
     'Seu local de salvamento não pode ser gravado, então isso não vai sobreviver a um reinício.',
   settingsLanguageReasonUnknown: 'Essa escolha não pôde ser salva, então não vai sobreviver a um reinício.',
 
+  // settingsConsent* — o controle de revogar o acesso à conta (Configurações só é alcançável já permitido)
+  settingsConsentSectionTitle: 'Acesso à conta',
+  settingsConsentStatusGranted: 'Acesso: permitido',
+  settingsConsentHelpGranted: 'O companion lê sua conta e permanece conectado ao cliente do jogo.',
+  settingsConsentRevokeAction: 'Desativar',
+
+  // settingsDiagnostics* — o controle manual de gravação do anel de quadros (um recurso de relatório de erro)
+  settingsDiagnosticsSectionTitle: 'Diagnóstico',
+  settingsDiagnosticsSaveLabel: 'Salvar arquivo para relatório de erro',
+  settingsDiagnosticsSaveHelp:
+    'Grava um arquivo local com detalhes do tráfego recente do jogo. Nada é enviado a lugar nenhum — você decide se e quando compartilhar.',
+  settingsDiagnosticsSaveAction: 'Salvar arquivo',
+  settingsDiagnosticsSavedTitle: 'Arquivo salvo',
+  settingsDiagnosticsSavedBody: 'Arquivo de diagnóstico salvo em {path}.',
+  settingsDiagnosticsNotSavedTitle: 'Nada foi salvo',
+  settingsDiagnosticsReasonRateLimited: 'Você acabou de salvar um. Espere alguns segundos e tente de novo.',
+  settingsDiagnosticsReasonWriteFailed: 'Não foi possível gravar o arquivo. Verifique o local de salvamento e tente de novo.',
+  settingsDiagnosticsReasonNoSource: 'Ainda não há nada para salvar. O app ainda não se conectou ao jogo.',
+
+  // consentGate* — o portão de permissão mostrado no lugar do conteúdo do app quando o acesso não é permitido
+  consentGateTitle: 'Este app precisa da sua permissão para funcionar',
+  consentGateBody:
+    'Desculpe — o companion não tem nada a mostrar sem acesso à sua conta. Ele lê sua conta e se conecta ao programa do jogo em execução, e não fará nenhuma das duas coisas até que você permita.',
+  consentGateReadAgainAction: 'Ler o aviso novamente',
+  consentGateLanguageLabel: 'Idioma',
+
   // error* — MP3 F4 §2.8
   errorAccountReadFailedDescription: 'Tente novamente depois que o jogo terminar de carregar, ou reinicie o app.',
+
+  // live* — a tela Ao Vivo: rótulo de navegação e a linha de status de atualização no topo do painel
+  liveNavLabel: 'Ao vivo',
+  liveStatusLiveLabel: 'Transmitindo ao vivo do jogo',
+  liveStatusNotLiveLabel: 'Não ao vivo — mostrando o último estado conhecido',
+
+  // liveGapReason* — uma causa para cada LiveGapReason (@bombfarm/contracts), mapeada de forma
+  // exaustiva por LIVE_GAP_REASON_COPY_KEY abaixo.
+  liveGapReasonClientNotStreaming:
+    'O jogo está aberto, mas não está enviando nada no momento — pode estar em um menu, parado ou deslogado. O app continua tentando por conta própria.',
+  liveGapReasonNeverAttached: 'O app ainda não se conectou ao jogo nesta sessão. Ele continua tentando por conta própria.',
+  liveGapReasonAttachFailed: 'O app tentou se conectar ao jogo e não conseguiu. Ele continua tentando por conta própria.',
+  liveGapReasonDetached: 'O app estava conectado, mas o jogo foi fechado. Ele continua tentando por conta própria.',
+  liveGapReasonHookSilent:
+    'A conexão ficou muda sozinha, mesmo com o jogo ainda aberto. O app continua tentando.',
+  liveGapReasonRuntimeUnavailable: 'A parte do app que lê o jogo não conseguiu carregar. Ele continua tentando por conta própria.',
+  liveGapReasonRuntimeUnavailableQuarantine:
+    'Um antivírus provavelmente bloqueou a parte do app que lê o jogo. Ele continua tentando por conta própria.',
+  liveGapReasonConsentMissing: 'Você ainda não permitiu que o app leia sua conta e se conecte ao jogo.',
+
+  // liveList* — os títulos das quatro listas de heróis, mais as linhas compartilhadas por todas elas
+  liveListOnFieldTitle: 'No campo',
+  liveListRecoveringTitle: 'Recuperando energia',
+  liveListQueuedTitle: 'Na fila para descansar',
+  liveListBenchedTitle: 'No banco',
+  liveListEmptyLine: 'Nenhum herói aqui no momento.',
+  liveUnclassifiedCount: 'Heróis não classificados em nenhuma lista: {n}',
+  liveFieldExitPendingCount: 'Heróis que acabaram de sair do campo, ainda atualizando: {n}',
+
+  // liveOccupancy* — ocupação do campo, informada como dado neutro, nunca como alerta
+  liveOccupancyLabel: 'Campo',
+  liveOccupancyValue: 'Vagas de campo em uso: {occupied} de {total}',
+  liveOccupancyValueUnknownTotal: 'Heróis no campo: {occupied}',
+
+  // liveHouse* — o painel da casa
+  liveHouseTitle: 'Casa',
+  liveHouseActiveLabel: 'Casa ativa',
+  liveHouseLevelLabel: 'Nível',
+  liveHouseSlotsLabel: 'Vagas de descanso',
+  liveHouseCycleLabel: 'Ciclo completo de descanso',
+  liveHouseRescuesLabel: 'Resgates diários',
+  liveHouseRescuesValue: '{left} de {max} restantes hoje',
+  liveHouseAbsent: 'Os dados da casa ainda não foram enviados para esta conta.',
+
+  // liveCountdown* — contagens de campo/descanso, e os qualificadores que marcam uma como estimada ou pausada
+  liveFieldCountdownLabel: 'Tempo restante no campo',
+  liveRecoveryCountdownLabel: 'Tempo restante de descanso',
+  liveCountdownEstimatedQualifier: 'estimativa, não uma leitura direta',
+  liveCountdownPausedQualifier: 'não está contando no momento',
+  liveCountdownLegend: 'Contagens regressivas com sublinhado tracejado são estimativas, não leituras diretas.',
+
+  // liveNeverRead* — nada foi lido da conta ainda nesta sessão
+  liveNeverReadTitle: 'Nada foi lido da sua conta ainda',
+  liveNeverReadDescription: 'Abra o jogo com o companion em execução, para que ele tenha algo para ler.',
 };

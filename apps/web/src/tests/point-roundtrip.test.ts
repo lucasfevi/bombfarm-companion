@@ -34,15 +34,15 @@ const EXPORT_FILE = 'save-20260823-13heroes-crit-points.json';
 /**
  * All 13 heroes of the post-2026-08-23 corpus file — the suite's entire subject set.
  *
- * `save-20260818-12heroes.json` and `save-20260819-respec-crit-cdr.json` are NO LONGER subjects,
- * for the same reason `save-20260816-8heroes.json`, `save-20260816-respec-cdr-crit.json`,
- * `save-20260816-9heroes-redistrib.json`, `save-20260816-5heroes-gear-cdr-crit.json` and
- * `save-20260817-11heroes.json` stopped being ones before them: the 2026-08-23 patch restated
- * both crit-chance ABILITIES in flat points (see the `critChanceFlat` ability kind), and no
- * single model reproduces a capture from either side of that change. All of them stay committed
- * for the structural suites and for the provenance they carry — the flat-regime respec pair
- * pinned the (superseded) flat per-point rates, and the 08-18 file was the whole-roster witness
- * for the percent-of-base revert.
+ * `save-20260818-12heroes.json` and `save-20260819-respec-crit-cdr.json` are NO LONGER subjects:
+ * the 2026-08-23 patch restated both crit-chance ABILITIES in flat points (see the
+ * `critChanceFlat` ability kind), and no single model reproduces a capture from either side of
+ * that change. They stay committed for the structural suites and for the provenance they carry —
+ * the 08-18 file was the whole-roster witness for the percent-of-base revert.
+ *
+ * The five 2026-08-16/17 captures that stopped being subjects before them have since been retired
+ * from the corpus outright. They had been carried for structural coverage that the four
+ * current-regime captures now provide, and no suite could still read their sheet arithmetic.
  *
  * This file is the first whole-roster witness for the flat crit-chance ABILITY: every one of the
  * 13 heroes is issue-free with a budget landing exactly on `level`, and three of them carry
