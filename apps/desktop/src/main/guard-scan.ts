@@ -17,7 +17,7 @@
  * `stripComments` is **not** shared: `i18n-guards` documents a deliberate divergence in its copy.
  */
 import { readFileSync, readdirSync } from 'node:fs';
-import { extname, join } from 'node:path';
+import { extname, join, resolve } from 'node:path';
 
 export type FileEntry = { path: string; source: string };
 
@@ -31,6 +31,11 @@ export type FileEntry = { path: string; source: string };
  *
  * `.next-dev` is where `next dev` writes; `.next` is where `next build` writes. Both are build
  * output — see `apps/web/next.config.ts` for why they are separate directories.
+ *
+ * `.git` matters more than it looks: in a worktree it is a *file* (so it never recursed and the
+ * omission stayed invisible), but in a normal checkout it is a directory holding hundreds of
+ * files, some with scanned extensions. `i18n-guards`' `walk(REPO_ROOT, …)` read every one of
+ * them and tested it as if it were application source.
  */
 const SKIPPED_DIRECTORIES: ReadonlySet<string> = new Set([
   'node_modules',
@@ -39,7 +44,23 @@ const SKIPPED_DIRECTORIES: ReadonlySet<string> = new Set([
   '.next',
   '.next-dev',
   '.claude',
+  '.git',
+  '.turbo',
+  'coverage',
+  'test-results',
+  'playwright-report',
+  'storybook-static',
 ]);
+
+/**
+ * electron-builder's output — hundreds of MB of unpacked app, and a repo-root scan that reads
+ * files inside it has already broken `package:dev` once by holding `app.asar` open.
+ *
+ * Matched by full path, NOT by the name `release`: `tools/release/` is real tracked source (the
+ * changeset and release-plan tooling, 35 files), and a bare-name skip would quietly drop it out
+ * of every repo-root guard scan — narrowing a guard while appearing to tidy one.
+ */
+const PACKAGED_OUTPUT_DIR = resolve(__dirname, '..', '..', 'release');
 
 export function isTestFile(path: string): boolean {
   return /\.(test|spec)\.(ts|tsx|mjs)$/.test(path);
@@ -50,7 +71,7 @@ export function walk(dir: string, extensions: readonly string[]): string[] {
   for (const entry of readdirSync(dir, { withFileTypes: true })) {
     const full = join(dir, entry.name);
     if (entry.isDirectory()) {
-      if (SKIPPED_DIRECTORIES.has(entry.name)) continue;
+      if (SKIPPED_DIRECTORIES.has(entry.name) || full === PACKAGED_OUTPUT_DIR) continue;
       files.push(...walk(full, extensions));
     } else if (entry.isFile() && extensions.includes(extname(entry.name))) {
       files.push(full);
