@@ -20,10 +20,13 @@ export default defineConfig({
     //      needs packages/game-api/dist (and, transitively, packages/domain/dist too). Project-wide
     //      is the wrong granularity for either.
     //
-    // The guard is not weakened, only relocated: both files call assertWorkspaceDistBuilt('tools')
-    // at top level, before their dynamic import, so an unbuilt package still fails loudly with the
-    // module's actionable message instead of dying at collection under a summary reading "N
-    // passed" with zero failures. tools/require-workspace-dist.test.mjs asserts both halves of
-    // that arrangement for both files, so deleting either per-file call turns it red.
+    // The guard is not weakened, only relocated: both files call assertWorkspaceDistBuilt at top
+    // level, before their dynamic import, on their OWN key (not a shared 'tools' key — the two
+    // files need different packages, and a shared list would over- or under-demand for one of
+    // them) — see tools/require-workspace-dist.mjs's REQUIRED_DIST_PACKAGES. An unbuilt package
+    // still fails loudly with the module's actionable message instead of dying at collection under
+    // a summary reading "N passed" with zero failures. tools/require-workspace-dist.test.mjs
+    // asserts both halves of that arrangement for both files, so deleting either per-file call
+    // turns it red.
   },
 });

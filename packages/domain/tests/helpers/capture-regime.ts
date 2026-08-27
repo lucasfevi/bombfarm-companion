@@ -30,7 +30,9 @@
  */
 import type { TestContext } from 'vitest';
 
-const CAPTURE_DATE_PATTERN = /(?:^|\/)(?:save|payload)-(\d{4})(\d{2})(\d{2})-/;
+// `(?:^|[/\\])` rather than `(?:^|\/)`: callers build the `dir/filename` shape with `path.join`,
+// which emits `\` on Windows, and this repo is developed and CI'd on Windows.
+const CAPTURE_DATE_PATTERN = /(?:^|[/\\])(?:save|payload)-(\d{4})(\d{2})(\d{2})-/;
 
 /**
  * Throws rather than returning `undefined` on a name it cannot parse: a silent `undefined` here

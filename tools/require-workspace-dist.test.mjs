@@ -30,46 +30,78 @@ const repoRoot = path.join(__dirname, '..');
 const guardModule = path.join(__dirname, 'require-workspace-dist.mjs');
 
 /**
- * Every vitest project that wires the guard up, and HOW. Kept as data so the wiring assertions
- * below and the required-list table can be checked against each other: a project listed here but
- * missing from REQUIRED_DIST_PACKAGES (or the reverse) is a drift bug.
+ * Every vitest project that wires the guard up, and HOW, plus the `REQUIRED_DIST_PACKAGES` key(s)
+ * that consumer resolves. Kept as data so the wiring assertions below and the required-list table
+ * can be checked against each other: a key listed here but missing from REQUIRED_DIST_PACKAGES (or
+ * the reverse) is a drift bug.
  *
- * Two projects run it project-wide as `globalSetup`; every CI invocation of those two builds the
- * workspace packages first (`ci-desktop.yml` builds before `pnpm vitest run --project
- * '!@bombfarm/web'`, `ci-fidelity.yml` builds before `pnpm vitest run --project tools`), so a
- * project-wide throw never fires in a job that did not need a build.
+ * Two projects run it project-wide as `globalSetup`, one key per project; every CI invocation of
+ * those two builds the workspace packages first (`ci-desktop.yml` builds before `pnpm vitest run
+ * --project '!@bombfarm/web'`, `ci-fidelity.yml` builds before `pnpm vitest run --project tools`),
+ * so a project-wide throw never fires in a job that did not need a build.
  *
- * `tools` carries it per-file instead (`globalSetupConfig: null`). `globalSetup` runs once per
- * PROJECT before collection regardless of any filename filter, and
- * `.github/workflows/line-endings.yml` runs `pnpm vitest run --project tools line-endings`
- * build-free by design — a project-wide guard there failed a job that needed no build. Two of the
- * project's files each need one required package — `advice-change-key-coverage.test.mjs` needs
- * `domain`, `derived-fixture-drift.test.mjs` needs `game-api` (and transitively `domain`, through
- * `@bombfarm/domain/wiki-assets`) — so the assert lives in both, each calling the same shared
- * check for the whole `tools` list.
+ * `tools` carries it per-file instead (`globalSetupConfig: null`), with one key per FILE rather
+ * than one key for the whole project. `globalSetup` runs once per PROJECT before collection
+ * regardless of any filename filter, and `.github/workflows/line-endings.yml` runs `pnpm vitest
+ * run --project tools line-endings` build-free by design — a project-wide guard there failed a job
+ * that needed no build. But per-file keys are not just about that job: the project's two
+ * build-dependent files need DIFFERENT packages (`advice-change-key-coverage.test.mjs` needs only
+ * `domain`; `derived-fixture-drift.test.mjs` needs `domain` AND `game-api`), so a single shared
+ * `tools` list would either under-demand for one file or over-demand for the other. Each file calls
+ * the assert on its own key.
  */
 const WIRED_PROJECTS = [
-  { project: '@bombfarm/desktop', globalSetupConfig: 'apps/desktop/vitest.config.ts' },
-  { project: '@bombfarm/game-api', globalSetupConfig: 'packages/game-api/vitest.config.ts' },
-  { project: 'tools', globalSetupConfig: null },
+  {
+    project: '@bombfarm/desktop',
+    globalSetupConfig: 'apps/desktop/vitest.config.ts',
+    requiredDistKeys: ['@bombfarm/desktop'],
+  },
+  {
+    project: '@bombfarm/game-api',
+    globalSetupConfig: 'packages/game-api/vitest.config.ts',
+    requiredDistKeys: ['@bombfarm/game-api'],
+  },
+  {
+    project: 'tools',
+    globalSetupConfig: null,
+    requiredDistKeys: ['tools/advice-change-key-coverage.test.mjs', 'tools/derived-fixture-drift.test.mjs'],
+  },
 ];
+
+/** Every `REQUIRED_DIST_PACKAGES` key, across every consumer, project-wide or per-file. */
+const ALL_REQUIRED_DIST_KEYS = WIRED_PROJECTS.flatMap(({ requiredDistKeys }) => requiredDistKeys);
+
+/**
+ * The subset of `WIRED_PROJECTS` that actually wires `setup` up as `globalSetup` — `tools` is
+ * deliberately excluded: it calls {@link assertWorkspaceDistBuilt} per-file instead (see above), so
+ * `setup({ name: 'tools' })` is never a real call vitest makes, and `'tools'` is not even a key
+ * `requiredDistPackages` recognizes any more (its two files are).
+ */
+const GLOBAL_SETUP_PROJECTS = WIRED_PROJECTS.filter(({ globalSetupConfig }) => globalSetupConfig);
 
 /** The `tools` project's per-file wiring — the config that must NOT carry it, and the files that must. */
 const TOOLS_CONFIG = 'tools/vitest.config.ts';
 const TOOLS_GUARDED_FILES = [
   {
     file: 'tools/advice-change-key-coverage.test.mjs',
+    requiredPackages: ['domain'],
     dynamicImportTarget: "'../apps/desktop/renderer/lib/planning/hero-advice.ts'",
     dynamicImportPattern: /await import\(\s*'\.\.\/apps\/desktop\/renderer\/lib\/planning\/hero-advice\.ts'\s*\)/,
     staticImportPattern: /^import\b[^\n]*hero-advice\.ts/m,
   },
   {
     file: 'tools/derived-fixture-drift.test.mjs',
+    requiredPackages: ['domain', 'game-api'],
     dynamicImportTarget: "'../packages/game-api/scripts/generate-domain-fixtures.mjs'",
     dynamicImportPattern: /await import\(\s*'\.\.\/packages\/game-api\/scripts\/generate-domain-fixtures\.mjs'\s*\)/,
     staticImportPattern: /^import\b[^\n]*generate-domain-fixtures\.mjs/m,
   },
 ];
+
+/** Escapes a literal string for use inside a `new RegExp(...)`. */
+function escapeForRegExp(literal) {
+  return literal.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
 
 /**
  * The guard is exercised against injected fixture roots, never against real build output:
@@ -107,18 +139,17 @@ afterAll(() => {
 });
 
 describe('REQUIRED_DIST_PACKAGES', () => {
-  it('is the measured set each project needs built', () => {
+  it('is the measured set each consumer needs built', () => {
     expect(REQUIRED_DIST_PACKAGES).toEqual({
       '@bombfarm/desktop': ['contracts', 'domain', 'game-api', 'game-data', 'tap-runtime'],
       '@bombfarm/game-api': ['domain'],
-      tools: ['domain', 'game-api'],
+      'tools/advice-change-key-coverage.test.mjs': ['domain'],
+      'tools/derived-fixture-drift.test.mjs': ['domain', 'game-api'],
     });
   });
 
-  it('covers exactly the projects that wire the guard up — no more, no fewer', () => {
-    expect(Object.keys(REQUIRED_DIST_PACKAGES).sort()).toEqual(
-      WIRED_PROJECTS.map(({ project }) => project).sort(),
-    );
+  it('covers exactly the keys that wire the guard up — no more, no fewer', () => {
+    expect(Object.keys(REQUIRED_DIST_PACKAGES).sort()).toEqual([...ALL_REQUIRED_DIST_KEYS].sort());
   });
 
   it('names packages that exist in the workspace (the anchor, not the artifact)', () => {
@@ -137,15 +168,17 @@ describe('REQUIRED_DIST_PACKAGES', () => {
 });
 
 describe('guard wiring (every consumer reaches this one module)', () => {
-  for (const { project, globalSetupConfig } of WIRED_PROJECTS) {
+  for (const { project, globalSetupConfig, requiredDistKeys } of WIRED_PROJECTS) {
     if (globalSetupConfig) {
       it(`${globalSetupConfig} runs the shared guard as globalSetup`, () => {
         expect(globalSetupTargets(globalSetupConfig)).toEqual([guardModule]);
       });
     }
 
-    it(`${project} declares a required-dist list`, () => {
-      expect(() => requiredDistPackages(project)).not.toThrow();
+    it(`${project} declares a required-dist list for every one of its keys`, () => {
+      for (const key of requiredDistKeys) {
+        expect(() => requiredDistPackages(key), key).not.toThrow();
+      }
     });
   }
 
@@ -160,16 +193,28 @@ describe('guard wiring (every consumer reaches this one module)', () => {
       expect(globalSetupTargets(TOOLS_CONFIG)).toEqual([]);
     });
 
-    for (const { file, dynamicImportTarget, dynamicImportPattern, staticImportPattern } of TOOLS_GUARDED_FILES) {
+    for (const {
+      file,
+      requiredPackages,
+      dynamicImportTarget,
+      dynamicImportPattern,
+      staticImportPattern,
+    } of TOOLS_GUARDED_FILES) {
       describe(file, () => {
         const guardedSource = readFileSync(path.join(repoRoot, file), 'utf8');
+        const ownCallText = `assertWorkspaceDistBuilt('${file}');`;
+        const ownCallPattern = new RegExp(`^${escapeForRegExp(ownCallText)}$`, 'm');
 
         it('imports the shared guard', () => {
           expect(guardedSource).toMatch(/from '\.\/require-workspace-dist\.mjs'/);
         });
 
-        it(`calls assertWorkspaceDistBuilt('tools') at top level`, () => {
-          expect(guardedSource).toMatch(/^assertWorkspaceDistBuilt\('tools'\);$/m);
+        it(`calls assertWorkspaceDistBuilt('${file}') at top level — its OWN key, not a shared 'tools' key`, () => {
+          expect(guardedSource).toMatch(ownCallPattern);
+        });
+
+        it('requires exactly its own measured packages, not the whole tools project\'s union', () => {
+          expect(requiredDistPackages(file)).toEqual(requiredPackages);
         });
 
         /**
@@ -182,7 +227,7 @@ describe('guard wiring (every consumer reaches this one module)', () => {
         it(`pulls ${dynamicImportTarget} in by dynamic import, after the assert — never by a hoisted static import`, () => {
           expect(guardedSource).not.toMatch(staticImportPattern);
 
-          const assertIndex = guardedSource.indexOf("assertWorkspaceDistBuilt('tools');");
+          const assertIndex = guardedSource.indexOf(ownCallText);
           const dynamicImportIndex = guardedSource.search(dynamicImportPattern);
           expect(assertIndex).toBeGreaterThan(-1);
           expect(dynamicImportIndex).toBeGreaterThan(assertIndex);
@@ -239,26 +284,32 @@ describe('missingDistPackages', () => {
       'game-data',
       'tap-runtime',
     ]);
-    // Same root, different project: game-api needs domain alone and is satisfied; tools needs
-    // domain AND game-api, so it is still short one.
+    // Same root, different key: game-api needs domain alone and is satisfied, and so does
+    // advice-change-key-coverage.test.mjs; derived-fixture-drift.test.mjs needs domain AND
+    // game-api, so it is still short one.
     expect(missingDistPackages('@bombfarm/game-api', root)).toEqual([]);
-    expect(missingDistPackages('tools', root)).toEqual(['game-api']);
+    expect(missingDistPackages('tools/advice-change-key-coverage.test.mjs', root)).toEqual([]);
+    expect(missingDistPackages('tools/derived-fixture-drift.test.mjs', root)).toEqual(['game-api']);
   });
 
-  it('reports domain for game-api, and domain+game-api in declaration order for tools, when only the others are built', () => {
+  it('reports domain for game-api and for advice-change-key-coverage, and domain+game-api in declaration order for derived-fixture-drift, when only the others are built', () => {
     const root = makeRoot('no-domain', ['contracts', 'game-data', 'pricing', 'ui']);
     expect(missingDistPackages('@bombfarm/game-api', root)).toEqual(['domain']);
-    expect(missingDistPackages('tools', root)).toEqual(['domain', 'game-api']);
+    expect(missingDistPackages('tools/advice-change-key-coverage.test.mjs', root)).toEqual(['domain']);
+    expect(missingDistPackages('tools/derived-fixture-drift.test.mjs', root)).toEqual(['domain', 'game-api']);
+  });
+
+  it('advice-change-key-coverage.test.mjs is satisfied by domain alone even when game-api is entirely absent (the false positive this closes)', () => {
+    const root = makeRoot('game-api-absent', ['domain']);
+    expect(missingDistPackages('tools/advice-change-key-coverage.test.mjs', root)).toEqual([]);
   });
 });
 
 describe('assertWorkspaceDistBuilt', () => {
-  it('throws when nothing is built, for every wired project', () => {
+  it('throws when nothing is built, for every wired key', () => {
     const root = makeRoot('throw-none', []);
-    for (const { project } of WIRED_PROJECTS) {
-      expect(() => assertWorkspaceDistBuilt(project, root), project).toThrow(
-        /require-workspace-dist/,
-      );
+    for (const key of ALL_REQUIRED_DIST_KEYS) {
+      expect(() => assertWorkspaceDistBuilt(key, root), key).toThrow(/require-workspace-dist/);
     }
   });
 
@@ -287,26 +338,26 @@ describe('assertWorkspaceDistBuilt', () => {
     expect(message).toContain('@bombfarm/desktop');
   });
 
-  it('names the failing project — three projects share this code and their lists differ', () => {
+  it('names the failing key — four keys share this code and their lists differ', () => {
     const root = makeRoot('project-named', []);
-    for (const { project } of WIRED_PROJECTS) {
+    for (const key of ALL_REQUIRED_DIST_KEYS) {
       let message = '';
       try {
-        assertWorkspaceDistBuilt(project, root);
+        assertWorkspaceDistBuilt(key, root);
       } catch (error) {
         message = error.message;
       }
-      expect(message).toContain(project);
+      expect(message).toContain(key);
       expect(message).toContain('pnpm build');
       expect(message).toContain(path.join(root, 'domain', 'dist'));
     }
   });
 
-  it('returns cleanly when everything the project needs is built', () => {
+  it('returns cleanly when everything a key needs is built', () => {
     const root = makeRoot('ok', REQUIRED_DIST_PACKAGES['@bombfarm/desktop']);
-    for (const { project } of WIRED_PROJECTS) {
-      expect(() => assertWorkspaceDistBuilt(project, root), project).not.toThrow();
-      expect(assertWorkspaceDistBuilt(project, root)).toBeUndefined();
+    for (const key of ALL_REQUIRED_DIST_KEYS) {
+      expect(() => assertWorkspaceDistBuilt(key, root), key).not.toThrow();
+      expect(assertWorkspaceDistBuilt(key, root)).toBeUndefined();
     }
   });
 });
@@ -338,12 +389,12 @@ describe('setup (the globalSetup hook)', () => {
    * So the wiring is observed with the filesystem mocked out instead: gutting `setup` fails
    * these tests.
    */
-  it('delegates to the assert against the real PACKAGES_ROOT, for every wired project', async () => {
+  it('delegates to the assert against the real PACKAGES_ROOT, for every globalSetup-wired project', async () => {
     vi.resetModules();
     vi.doMock('node:fs', () => ({ existsSync: () => false }));
 
     const fresh = await import('./require-workspace-dist.mjs');
-    for (const { project } of WIRED_PROJECTS) {
+    for (const { project } of GLOBAL_SETUP_PROJECTS) {
       expect(() => fresh.setup({ name: project }), project).toThrow(/require-workspace-dist/);
     }
   });
@@ -353,7 +404,7 @@ describe('setup (the globalSetup hook)', () => {
     vi.doMock('node:fs', () => ({ existsSync: () => true }));
 
     const fresh = await import('./require-workspace-dist.mjs');
-    for (const { project } of WIRED_PROJECTS) {
+    for (const { project } of GLOBAL_SETUP_PROJECTS) {
       expect(() => fresh.setup({ name: project }), project).not.toThrow();
     }
   });

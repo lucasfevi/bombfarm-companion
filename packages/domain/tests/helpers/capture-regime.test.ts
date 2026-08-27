@@ -20,6 +20,19 @@ describe('captureDateOf', () => {
     expect(captureDateOf('farm-rate/save-20260815-486-7heroes.json')).toBe('2026-08-15');
   });
 
+  it('resolves the same date for a bare filename, a forward-slash path and a backslash path', () => {
+    // `path.join('sheet-math', 'save-...')` emits `\` on Windows, where this repo is developed
+    // and CI'd — a `dir/filename` path built that way must parse identically to the POSIX shape.
+    const bare = captureDateOf('save-20260813-5heroes.json');
+    const forwardSlash = captureDateOf('sheet-math/save-20260813-5heroes.json');
+    const backslash = captureDateOf('sheet-math\\save-20260813-5heroes.json');
+    expect({ bare, forwardSlash, backslash }).toEqual({
+      bare: '2026-08-13',
+      forwardSlash: '2026-08-13',
+      backslash: '2026-08-13',
+    });
+  });
+
   it('throws on a name with no embedded capture date, rather than returning undefined', () => {
     expect(() => captureDateOf('export-capture.json')).toThrow(/does not carry/);
     expect(() => captureDateOf('pair.json')).toThrow(/does not carry/);

@@ -95,8 +95,14 @@ describe('fixture corpus bounds: every committed fixture json is governed or a n
     const offenders: string[] = [];
     for (const file of allJsonFiles) {
       const parts = file.split('/');
-      const dir = parts.length >= 2 ? parts[parts.length - 2] : null;
-      if (dir !== null && GOVERNED_CAPTURE_DIRS.includes(dir)) continue;
+      // "governed" means DIRECTLY inside a top-level governed directory (`sheet-math/x.json`),
+      // matching the two completeness guards this bound relies on: both enumerate their directory
+      // with a non-recursive `readdirSync`, so a file nested one level deeper
+      // (`sheet-math/sub/x.json`) is invisible to them and must NOT be treated as governed here —
+      // it would pass this guard while no README/digest check ever looks at it. `parts.length ===
+      // 2` (not `>= 2`) is what enforces "directly", not just "somewhere under a same-named dir".
+      const isDirectlyInGovernedDir = parts.length === 2 && GOVERNED_CAPTURE_DIRS.includes(parts[0]);
+      if (isDirectlyInGovernedDir) continue;
       if (file in EXCEPTIONS) continue;
       offenders.push(file);
     }

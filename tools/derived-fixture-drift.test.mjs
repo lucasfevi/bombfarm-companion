@@ -23,11 +23,15 @@ import { assertWorkspaceDistBuilt } from './require-workspace-dist.mjs';
 
 // Per-file build guard, same posture as tools/advice-change-key-coverage.test.mjs: this is the
 // only other file in the `tools` project that needs a workspace package's dist/, so a project-wide
-// globalSetup would still be the wrong granularity (see tools/vitest.config.ts). The two lines
-// below must stay in this order: `buildFixtures` is loaded via a dynamic import so this assert
-// runs first and names the actually-missing package, instead of a bare
-// `Cannot find module '../dist/assemble.js'` that points nowhere near `pnpm build`.
-assertWorkspaceDistBuilt('tools');
+// globalSetup would still be the wrong granularity (see tools/vitest.config.ts). Called on this
+// file's OWN key: it needs BOTH `domain` and `game-api` (the generator script resolves
+// `../dist/assemble.js` by relative path and reaches `@bombfarm/domain/wiki-assets`), which is
+// more than advice-change-key-coverage.test.mjs needs — a shared `tools` list would either
+// under-demand for this file or over-demand for that one. The two lines below must stay in this
+// order: `buildFixtures` is loaded via a dynamic import so this assert runs first and names the
+// actually-missing package, instead of a bare `Cannot find module '../dist/assemble.js'` that
+// points nowhere near `pnpm build`.
+assertWorkspaceDistBuilt('tools/derived-fixture-drift.test.mjs');
 
 const { buildFixtures, serializeFixture } = await import(
   '../packages/game-api/scripts/generate-domain-fixtures.mjs'
