@@ -29,6 +29,8 @@ import * as GameArt from '@bombfarm/game-art';
 // BrandMark (L5, desktop/web UI sync): the header mark's five shapes, inlined as a component
 // instead of a binary asset both apps would need their own copy step for. AppShell gained an
 // optional `brand` slot for it; the web's own header keeps its `<Image src="/favicon.svg">`.
+// formatNumber / formatCompactNumber: the compact metric formatter, moved here from the web
+// app so the desktop renderer can share the exact same implementation.
 const FROZEN_BARREL_VALUE_EXPORTS = [
   'AbilityCard',
   'Accordion',
@@ -103,6 +105,8 @@ const FROZEN_BARREL_VALUE_EXPORTS = [
   'dataTableHeadButtonClass',
   'dataTableHeadClass',
   'fileDropZoneRecipe',
+  'formatCompactNumber',
+  'formatNumber',
   'initialToastQueueState',
   'metricScoreboardDeltaRecipe',
   'metricScoreboardValueRecipe',
