@@ -128,7 +128,6 @@ describe('cross-package fixture corpus parity (MP5 F1)', () => {
     'apps/web/e2e/team-plan-states.spec.ts': 1,
     'apps/web/src/tests/farm-respec-fixture.test.ts': 3,
     'apps/web/src/tests/import-inventory-sync.test.ts': 1,
-    'apps/web/src/tests/import-save.test.ts': 1,
     'apps/web/src/tests/points-rank-golden.test.ts': 2,
     'packages/domain/tests/api-payload-parse.test.ts': 2,
     'packages/domain/tests/farm-basis-parity.test.ts': 2,

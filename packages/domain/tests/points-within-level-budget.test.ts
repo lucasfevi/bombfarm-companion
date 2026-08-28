@@ -21,12 +21,24 @@
  * 1. **Corpus sweep** — every committed capture under `tests/fixtures/**`, discovered by walking
  *    the tree rather than by a hand-maintained list, so a capture dropped in later is covered
  *    without editing this file.
- * 2. **The Golpe Brutal case** — no committed capture carries the ability (checked: zero hits for
- *    `golpe_brutal` across `packages/domain/tests/fixtures/**` and `apps/web/src/tests/fixtures/**`),
- *    so layer 1 cannot exercise the very bug this file exists for. Layer 2 closes that with the
- *    game-observed numbers from the hero itself, in save units — the same practice
- *    `save-units.test.ts` already uses for Bellatrix's `crit_dmg` literal. The values are the
- *    game's own reading, not this model's output (`AD-068`).
+ * 2. **The Golpe Brutal case** — two witnesses, one in the corpus and one constructed.
+ *
+ *    The corpus one is Buff S #1 (L85 ★　0, `stat_points_available: 0`, Golpe Brutal 20/20) in
+ *    `sheet-math/save-20260823-13heroes-crit-points.json`, which is the single file layer 1
+ *    sweeps. Its budget is saturated, so layer 1 DOES exercise this bug: modelling the ability
+ *    as anything other than +4 flat per rank charges the difference to crit-damage points and
+ *    the sweep goes red (measured — dropping the ability to zero recovers 101 points on an L85
+ *    hero). An earlier version of this comment claimed no committed capture carried the ability
+ *    at all; that was already false when written and is the reason the claim is now asserted
+ *    rather than described.
+ *
+ *    The constructed one is Ivo, kept because Buff S #1 does not isolate the observation. Buff
+ *    S #1's crit-damage move needs the tree's `crit_dmg_add` subtracted before the flat +0.8
+ *    appears, and it is one hero in one capture that corpus churn can retire. Ivo carries no
+ *    gear and no other sheet ability, so the whole delta is the ability, and it survives the
+ *    corpus changing under it. Both use save units and the game's own reading, not this model's
+ *    output — the practice `save-units.test.ts` uses for Bellatrix's `crit_dmg` literal
+ *    (`AD-068`).
  */
 import { readFileSync, readdirSync } from 'node:fs';
 import { dirname, join, relative } from 'node:path';
@@ -374,7 +386,75 @@ function inferIvo() {
   });
 }
 
-describe('Golpe Brutal is flat — the observation the corpus cannot carry', () => {
+/**
+ * Buff S #1, id in `sheet-math/save-20260823-13heroes-crit-points.json` — the corpus witness.
+ * L85 ★0, `stat_points_available: 0`, Golpe Brutal 20/20, plus Misericordia and Fôlego de
+ * Mineiro (an execute threshold and a drain rate: neither touches the sheet). `GearBonuses`
+ * carries no crit-damage term at all, and the hero is ★0, so this column admits exactly three
+ * contributors beyond birth: the tree, the ability, and crit-damage stat points.
+ */
+const BUFF_S_CAPTURE = 'sheet-math/save-20260823-13heroes-crit-points.json';
+const BUFF_S_NAME = 'Buff S #1';
+const BUFF_S_RANKS = 20;
+
+function buffSCapture(): Record<string, unknown> {
+  const raw: unknown = JSON.parse(readFileSync(join(FIXTURES_DIR, ...BUFF_S_CAPTURE.split('/')), 'utf8'));
+  if (!isObject(raw)) throw new Error(`${BUFF_S_CAPTURE} is not an object`);
+  return raw;
+}
+
+describe('Golpe Brutal is flat — the corpus witness', () => {
+  it('the capture still carries the ability on a saturated hero, so layer 1 sweeps it', () => {
+    const raw = buffSCapture();
+    const heroes = (raw.heroes as Array<Record<string, unknown>>).filter(
+      (hero) => (hero.abilities as Array<{ code: string; level: number }>).some(
+        (ability) => ability.code === 'golpe_brutal' && ability.level > 0,
+      ),
+    );
+    expect(heroes.map((hero) => hero.name), `${BUFF_S_CAPTURE} golpe_brutal owners`).toEqual([BUFF_S_NAME]);
+    const [hero] = heroes;
+    expect(hero.stars, 'stars — no star rescale on this column').toBe(0);
+    expect(hero.stat_points_available, 'a saturated budget is what makes the ceiling a live bound').toBe(0);
+    expect(NON_CURRENT_REGIME_CAPTURES).not.toContain(BUFF_S_CAPTURE);
+  });
+
+  it('the whole crit-damage move is the tree plus 20 ranks × 4 flat, with nothing left over', () => {
+    const raw = buffSCapture();
+    const totals = (raw.skills as { totals: Record<string, number> }).totals;
+    const hero = (raw.heroes as Array<Record<string, unknown>>).find((h) => h.name === BUFF_S_NAME)!;
+    const birth = (hero.birth_stats as Record<string, number>).crit_dmg;
+    const observed = (hero.stats as Record<string, number>).crit_dmg - birth;
+    const residual = observed - totals.crit_dmg_add;
+    // Percent-of-base would put `20 × 0.04 × birth` here — `0.8 × 1.731…`, off by 58%.
+    expect(residual, `${observed} moved, minus ${totals.crit_dmg_add} of tree`).toBeCloseTo(
+      (BUFF_S_RANKS * 4) / 100,
+      9,
+    );
+    expect(residual).not.toBeCloseTo(((BUFF_S_RANKS * 4) / 100) * birth, 3);
+  });
+
+  it('inference charges none of it to stat points, and the L85 budget stays inside its ceiling', () => {
+    const raw = buffSCapture();
+    const hero = extractHero(raw, BUFF_S_NAME);
+    if (!hero.birth) throw new Error(`${BUFF_S_NAME} must carry birth_stats`);
+    const totalsRaw = (raw.skills as { totals: Record<string, unknown> }).totals;
+    const { pts } = inferSpentPoints({
+      birth: hero.birth,
+      level: hero.level,
+      stars: hero.stars,
+      sheetOther: hero.sheetOther,
+      loadout: hero.loadout,
+      tree: treeTotalsFromSave(totalsRaw),
+      sheet: hero.sheet,
+      statPointsAvailable: hero.statPointsAvailable,
+    });
+    expect(pts.critDmg, 'crit-damage points recovered for a hero that spent none').toBe(0);
+    const recovered = SHEET_KEYS.reduce((sum, key) => sum + pts[key], 0);
+    expect(recovered, `recovered ${recovered} points for L${hero.level}`).toBeLessThanOrEqual(hero.level);
+  });
+});
+
+describe('Golpe Brutal is flat — the isolated construction', () => {
   it('recovers 0 crit-damage points — the whole +0.8 belongs to the ability', () => {
     const { pts, issues } = inferIvo();
     expect(pts.critDmg).toBe(0);
