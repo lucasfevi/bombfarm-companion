@@ -1,5 +1,444 @@
 # @bombfarm/desktop
 
+## 0.5.0
+
+### Minor Changes
+
+- fae49fb: The first-run consent dialog now discloses that the desktop companion attaches to the running
+  Bomb Farm client to read the traffic it is already exchanging with the game's server, in addition
+  to calling the game's own API with the session token the game already saves on your machine. The
+  dialog also explains that this attaching technique is what can cause antivirus software to flag or
+  quarantine the companion, and that the warning is about the technique, not a virus.
+
+  Because the disclosure changed, everyone who already accepted the previous version is asked to
+  review and accept the new one before the companion reads their account again.
+
+  A new Account access control in Settings makes the disclosure's "reversible" promise real: turning
+  access off stops the reads and detaches from the game client immediately, and turning it back on
+  re-shows the same disclosure so the player reviews it again before allowing.
+
+  The dialog is now shown in Portuguese as well as English, and the recorded decision remembers which
+  language it was shown in, so an agreement is always traceable to the exact wording the player read.
+
+  The desktop app no longer runs without this permission. Declining now shows a screen explaining
+  that the companion has nothing to show without account access, with a control to read the
+  disclosure again and accept. That screen carries its own language switch, so a player whose
+  computer language does not match the language they read can still understand what they are
+  agreeing to.
+
+- dec4425: The desktop window now draws Windows' native Minimize/Maximize/Close overlay directly on top of
+  the app's own top bar instead of a separate OS title bar above it — the top bar is draggable, and
+  its brand, nav, and PT/EN toggle stay clickable. The header reserves room for the overlay buttons
+  at runtime, from the actual area Windows hands back, rather than a hardcoded width.
+- dec4425: The desktop app's shell now uses the same sticky top-bar shape as the web planner — a brand
+  lockup, a segmented Live/Planning/Settings pill, and a right-hand actions area — instead of its
+  former left icon rail. The desktop's PT/EN language switch moved from Settings-only into that top
+  bar (Settings keeps its own control too; both stay in sync), and the nav no longer carries icons.
+
+  The web's segmented nav pill and its bordered PT/EN toggle are extracted into two new shared
+  `@bombfarm/ui` primitives, `AppNav` and `SegmentedToggle`, so both apps render identical chrome
+  from one implementation. The web's own header keeps its exact appearance and behavior; only its
+  internals now call the shared primitives.
+
+- d7c1565: Inventory cards that show the whole item, and a way to find one
+
+  Every card now carries the game's own art: the lit rarity plate behind the icon, at the size the
+  planner draws gear, and a real sprite for the things that had none — gems, keys, house parts,
+  skill stones and chests. Gear lists the stats it actually gives you, with the forge already
+  applied, so a +12 reads as what you get rather than what it rolled. The bottom of every card is a
+  fixed row: the hero wearing it on the left, in their own rarity colour with their level, and what
+  it sells for on the right, beside the coin.
+
+  Each kind of item now gets the card it deserves. A gem has no level and no forge, so it no longer
+  shows "Lv 0" — it shows its name and its tier and nothing it does not have. And because a stack of
+  27 identical keys is one thing you own rather than 27, everything but gear is grouped into a
+  single card with a count and the stack's total value. Chests and skill stones get their own
+  sections rather than falling into "Other", which is where the app used to put them.
+
+  Above the grid there is now a search box, sorting, and filters — by kind, by rarity, by the hero
+  wearing it, by set, and equipped-only — so finding one item among several hundred does not mean
+  scrolling. Search matches the item's name in your own language as well as the game's internal id.
+
+  Filtering by set is how you filter by level: every set sits at exactly one item level, so the list
+  reads "Lv 30 · Coal" and is ordered by level. It starts with everything chosen, shows how many
+  pieces of each set you own — 41 beside Coal tells you it is most of your gear before you have
+  filtered anything — and offers whichever of "Clear" and "Select all" would actually change
+  something. Only gear has a set, so narrowing here shows gear alone.
+
+  The English planner also stops showing Portuguese item names. Gear was being named by
+  title-casing the game's own slot token, so an English player saw "Gold · Elmo" where they should
+  have seen "Gold · Helm".
+
+- d7c1565: An Inventory screen that shows every item you own, not just the gear
+
+  Both the planner and the desktop app now have an Inventory tab listing everything the account
+  carries, grouped by kind — gear, gems, keys, materials — with each item's level, forge, set and
+  slot, what it sells for, whether it is stashed or locked, and the hero wearing it. Each card is
+  framed in its item's rarity colour, and the hero on the "equipped by" line is named in the hero's
+  own rarity colour with their level, so you can tell at a glance whose gear you are looking at.
+
+  Until now the only item list either app kept was the optimizer's pool, which holds gear and
+  nothing else: keys and anything else you own were read from the save and then dropped on the
+  floor. That pool is unchanged and still gear-only — the optimizer wants exactly the items it can
+  equip — so this is a second, separate list rather than a widening of the first.
+
+  Items the app cannot name yet get their own group instead of being quietly filed as gear. The
+  item list this app ships covers gear only, so a key, or an item type a future game update
+  introduces, has no name to show; those appear under "Other", labelled as unrecognised and
+  carrying the kind number the game sent, rather than being shown as a piece of gear with a slot it
+  does not have. Guessing would be worse than admitting the gap: it would put an unequippable item
+  in front of you as if it were equippable.
+
+- dec4425: The Live screen's hero row now shows the hero's level, matching the three-line identity block
+  (rank+name / rarity / level) the web planner already shows for a rotation-pool hero — previously
+  the row stopped at rarity.
+
+  Under the hood, that three-line block is now one shared component (`HeroIdentity`, new in
+  `@bombfarm/game-art`) built from primitives rather than a full hero record, so the Live screen (a
+  partial, streaming roster join) and the web planner (a complete `HeroRecord`) render identical
+  chrome from the same source. `HeroIdentityChip` is now a thin adapter over it for `HeroRecord`
+  callers; its own rendered output for the web planner is unchanged.
+
+- dec4425: The Live screen now shows who is on the field, not only what they are called. A hero row carries
+  a rarity-tinted avatar tile, the rank letter, the name, its stars and its rarity — the same
+  identity the Planning roster shows.
+
+  Rarity and stars reach it the way the name and rank already did: joined from the roster by id in
+  the main process, where the entry carrying them was already being read. They follow the same
+  absence rule as the fields beside them, so a hero the roster has not caught up with renders as
+  its id against a neutral frame rather than with anything invented to fill the gap, and a grade
+  still never appears without the name it arrived with.
+
+  The portrait itself is the same for every hero. The in-game skin index is not carried on this
+  data path, so rarity is what distinguishes one tile from another today.
+
+- 1d9d79f: The desktop app now opens on a Live screen showing what your account is doing right now, instead
+  of the Planning screen you had to navigate away from to see anything current.
+
+  The screen shows four hero lists — on field, recovering, queued, benched — the active house (its
+  level, slots, cycle time, and how many daily rescues are left), and field occupancy as plain
+  information (heroes on field against the field size, with no warning styling and no implication
+  that an open slot is a mistake). Every list renders even when it has nothing in it, with a line
+  explaining why, because a hidden empty list and a missing section would look identical and
+  "nobody is currently recovering" is real information worth showing. A hero whose name has not
+  synced yet still renders, by its id.
+
+  A status line at the top says whether the screen is reading live frames from the game or falling
+  back to the slower authenticated read, and if it is not live, says why in plain language — the
+  game is open but idle, the app has not connected yet this session, security software is the likely
+  reason the connection failed, and so on. The one case with a real fix (you have not allowed the
+  app to read your account) offers a control to review that permission again; every other case is
+  already retried automatically every few seconds, so the screen does not offer a button that would
+  not do anything.
+
+  Three honesty properties carry through the whole screen. A value the game never sent renders as a
+  visible gap, never as a substituted zero, dash, or "Unknown" — and a value that is genuinely zero
+  still renders as zero, so the two read differently on screen. A hero's remaining field time is
+  either measured from observed frames or estimated from stats, and an estimate is marked with a
+  muted, non-layout-shifting treatment (plus a screen-reader-only label) so it can never be mistaken
+  for a measurement, even as the game's own reporting flips between the two while you watch. A
+  recovery countdown that has stopped advancing is shown as paused rather than left to look like it
+  is still ticking down on its own.
+
+  Every string on the new screen ships in Brazilian Portuguese as well as English, matching the rest
+  of the app.
+
+  The developer-only Diagnostics tab and its raw-payload dump are removed, along with the two
+  internal channels that fed them. This is a deliberate loss with no replacement in this change — the
+  Settings screen's own "save a bug report file" control is a different feature and is unaffected.
+
+  Field occupancy now counts a hero the live frames show on the field even before the slower account
+  read has caught up to it, so "slots in use" never reads lower than what is genuinely deployed. A
+  hero walking off the field is reported with its own calm, self-resolving line rather than the
+  message reserved for data the app genuinely could not read.
+
+  The screen also keeps up with the game far better than a polling app could. While you play, the
+  game client is constantly fetching your own account state from its server, and the companion is
+  already reading that same traffic — so it now recognises those responses and updates from them
+  directly, instead of asking the server again for something it just watched arrive. Benching a
+  hero, or sending one out to the field, shows up in the companion without waiting out a refresh
+  cycle, and without adding a single request of its own.
+
+  This is opportunistic by nature: it only learns what your game actually asks for, so the
+  companion's own paced reads remain in place for everything else — before the game has fetched a
+  route for the first time, and whenever you leave the app open without playing. A response the
+  companion cannot confidently recognise, which is what a game update looks like from here, is
+  discarded rather than guessed at, and the app falls back to reading for itself.
+
+  A hero's remaining field time now counts steadily down instead of leaping up and down as heroes
+  rotate on and off the field. When the app cannot measure a hero's drain directly it estimates it —
+  but that estimate was never given the hero's own drain-reduction data, so it assumed no reduction
+  at all and ran up to 40% out. It now uses each hero's real abilities and the field's actual aura.
+  The app also stops discarding a hero's measurements every time some unrelated hero steps on or off
+  the field, and only does so when that hero's own drain conditions genuinely change. Where no rate
+  can be measured or estimated at all, no countdown is shown rather than one built from a number
+  known to be wrong.
+
+- bd36215: Add `pnpm dev:offline` — the desktop app with no game running and no server reachable.
+
+  The account sections come from a committed fixture payload instead of the five REST routes, and
+  the live tick stream is replayed from a recorded byte capture through the same decoder the real
+  tap uses, rather than from a hook into the game process. Replay mode never lists processes and
+  never loads the instrumentation runtime, so a dev build in this mode can run beside a packaged
+  build tapping the real game.
+
+  Both overrides are refused in a packaged build: `isReplayLiveSourceEnabled` takes `isPackaged` as
+  an argument rather than reading it, so a real install has no path into either whatever its
+  environment says.
+
+- dec4425: Desktop Planning now shows the same hero art as the web planner: a rarity-tinted avatar in the
+  roster list and on the selected hero's detail card, plus the rarity label coloured to match. The
+  hero-avatar/rank/rarity/gear/ability icon components moved out of the web app into a new shared
+  `@bombfarm/game-art` package so both apps render identical chrome; the web planner's own call
+  sites are unchanged.
+
+### Patch Changes
+
+- f8f6832: Stopping the tap now waits for the read hook to actually be removed
+
+  Withdrawing consent stops the tap before the withdrawal is recorded. That stop was only ever
+  _started_, though: detaching a session kicked off the script unload and returned immediately, so
+  the app recorded the revoke and told the player the tap had stopped while the injected read hook
+  was still resident and could still deliver a frame.
+
+  Detaching now returns a promise that settles once the unload and the underlying detach have both
+  finished, and the tap waits for it. Because that wait crosses into the instrumented process, it is
+  bounded: a runtime that does not answer within a couple of seconds is abandoned with a log record
+  rather than holding the settings screen open indefinitely. The guarantee is now the one the code
+  claims, and the one case where it cannot be kept says so out loud.
+
+- f8f6832: Withdrawing consent stops the live tap on any route out of a granted record, not just the one
+
+  Withdrawing consent has always had to stop the tap reading _before_ the withdrawal is recorded,
+  because the tap only consults consent when deciding whether to attach and never re-checks a session
+  already in progress. That ordering used to live in a single IPC handler, wired for one specific
+  event, while every other consumer of a consent change was notified from the shared path.
+
+  It now lives in that shared path too, and is keyed on the transition rather than on the event: any
+  record the read gate currently accepts, moving to one it rejects, tears the session down first —
+  whichever route gets it there. A future second exit from a granted record inherits the guarantee
+  instead of needing someone to remember it, and the failure it would otherwise have caused, the tap
+  reading on past the moment permission was withdrawn, is silent — exactly the kind that should not
+  depend on memory.
+
+- 1d9d79f: Field countdowns are computed from the drain law, not measured from the frame stream
+
+  Every earlier attempt at this fix — fitting a rate from the frame stream, smoothing it, blending
+  it with a modelled fallback, then rebasing it on a shared frame clock — reduced the stutter without
+  removing it, because it was solving the wrong problem. The drain rate is not something that needs
+  measuring: it is a published rule the app already implements (own drain-reduction and the team's
+  Fôlego de Mineiro aura, additive, capped, floored) and already resolves the inputs for. A hero's
+  remaining field time is exactly `energy ÷ drainRate` — exact on the very first reading, with no
+  clock, no warm-up, and no way to jitter.
+
+  The frame-counting clock, the per-frame energy-delta tracking, the shared frames-to-seconds
+  constant, the skipped-frame heuristics, the trust gates, and the never-rising clamp that
+  compensated for their noise are gone — none of it is needed once the number is derived rather than
+  observed. `basis` now reports `'modelled'` for every field countdown; that used to mean an
+  estimate standing in for a better one, and now means exactly what it always should have: derived
+  from the rule, not sampled from noisy frame arrivals.
+
+  The measured rate lives on as a background check: computed cheaply from the same frames, it never
+  feeds the display, and logs once if it disagrees with the law by more than a small margin — the
+  one way the app would ever notice a hero carrying both drain-reduction effects behaving
+  differently than the additive rule predicts, a combination nothing has measured yet.
+
+- dec4425: Dragging the window by its header no longer stutters or snaps back. The header carried a sticky
+  position, a stacking context and a backdrop blur inherited from the web planner, none of which
+  applies in a shell whose main region is the only thing that scrolls, and all of which put the
+  header on its own compositing layer — the layer the OS drags once the header is the title bar.
+
+  The header also now matches the caption strip beside it exactly, instead of sitting a shade
+  darker than it.
+
+  On the Live screen, the four field lists — on field, recovering, queued, benched — sit two to a
+  row instead of four full-width rows, so the whole field reads without scrolling past whichever
+  list is longest. They still stack on a narrow window.
+
+- f8f6832: A corrupt live frame no longer takes the good frames sharing its network read down with it
+
+  A single TLS read routinely carries several combat frames. When one of them failed to decode, the
+  frames already decoded ahead of it were delivered, but every remaining byte of that read was thrown
+  away — including whole valid frames that had already arrived behind the corrupt one. The loss was
+  silent: the live panel just missed a beat, and a diagnostics dump came back missing frames it
+  should have held.
+
+  Measured on the committed synthetic stream at a 4 KiB chunk size, 32 of 34 frames decoded. The two
+  casualties were the frame sitting entirely inside the discarded remainder and the one straddling
+  the chunk boundary. The decode failure now carries those unconsumed bytes with it, so they reach
+  the same frame-boundary resync scan that already recovers the rest of the connection. The same
+  fixture now decodes 33 of 34 — the deliberately malformed frame is the only loss, which is the most
+  any decoder can do.
+
+- 5a4620b: The Live screen is one Heroes panel of cards, each with its energy
+
+  The four hero lists — Field, Recovering, Waiting for a rest slot, Benched — were four separate
+  panels laid out two-across, so the screen read as four things that happened to be about heroes
+  rather than one roster in four states. They are now four subsections of a single Heroes panel,
+  stacked in the order a hero moves through them: Field, Resting, Idle, Benched. Each heading reads
+  its own count against its own cap — "Field · 7/9", "Resting · 3/5", "Idle · 4".
+
+  Each hero is a card in a grid that reflows to the window rather than a row in a list, so a full
+  field of nine no longer forces a column of nine lines beside three empty panels. Benched heroes are
+  drained of colour, which is the one state that means "not in the rotation at all".
+
+  Every card now carries an energy bar. That is what makes one Idle section enough: the list holds
+  both a hero at full energy waiting for a field slot and a hero part-filled waiting for a rest slot,
+  and until now nothing on the screen told them apart. The reading is floored, never rounded, so only
+  a hero at exactly full energy reads 100%; a hero whose energy was never sent says so rather than
+  drawing an empty bar that would claim zero.
+
+  Both caps say what raises them, while the account is below them — buying field slots in the skill
+  tree, moving up to a later house for rest slots. The rest-slot ceiling comes from the account's own per-house ladder when
+  the game sends one, so an account that differs from the reference values is measured against itself.
+  Each hint stays silent when its cap is unknown, rather than giving advice with no fact under it.
+
+  The House panel is gone, and every reading it carried now heads the Resting section, where the
+  heroes those readings are about actually are: the rest slots they are competing for, how long a full
+  refill takes, and how many skips the day has left — "no skips left today" once the day is spent,
+  rather than counting zero of fifteen. The active house and its level are no longer shown; they
+  named a house by a raw zero-based index and changed nothing a player does from this screen.
+
+  Countdowns now all read in one colour. They did not before: a field time the app had to model
+  rather than read, and a rest clock that was not advancing, were both dimmed, and a legend at the
+  bottom of the screen explained a dashed underline that no longer existed. A number that dims as the
+  live tap comes and goes reads as a different kind of number when it is the same reading from a
+  second-best basis. Screen readers still hear which countdowns are estimates and which are paused,
+  and the legend is gone.
+
+- 7d3a951: Live frames decode into the fields they were always meant to fill, and the desktop log stops
+  repeating itself
+
+  The live combat decoder read field names the game does not send. Measured against a real captured
+  session: across 381 frames it produced **zero** hero energy values, zero room-HP readings, and 336
+  hit entries with no damage on any of them — the wire sends `e`, `room_hp` and `d` where the decoder
+  read `energy`, `roomHp` and `amount`, and `gold` arrives as a string of digits that was being passed
+  straight into a number-typed field. Nothing errored, because frames decoded fine and carried the
+  expected message type; the live panel simply had nothing to show. The synthetic test fixture was
+  hand-written against the same assumed names, so it agreed with the decoder and both disagreed with
+  the game.
+
+  The wire vocabulary now lives in one lexicon beside the existing rotation one, so abbreviations are
+  translated to names that say what the value is — `heroes[].e` is an energy fraction, `heroes[].w` a
+  move speed, `hits[].d` damage — and the generated wire glossary covers both routes. Money is
+  coerced from its wire string and a malformed value is dropped rather than becoming `NaN`. A capture
+  from a real session is committed as a fixture, so this class of drift fails a test instead of
+  emptying a panel.
+
+  The shared desktop log gained two guarantees with no bypass: every record is redacted before it
+  reaches the transport, and repeated records collapse to one line plus an exact count. At ten frames
+  a second a single undeduplicated field-drop was 36,000 identical lines an hour; it is now one line
+  and a count. The session token can be scrubbed from any log record without the token type ever
+  handing its raw value to a caller. Rotation field drops that used to be discarded are now reported
+  once per field rather than once per hero affected.
+
+  Supporting this: a bounded in-memory ring of recent frames, dumped scrubbed on a decode failure, and
+  a dev-flavor-only raw capture behind an explicit flag. Both write local files beside the user data;
+  neither transmits anything. A decode failure no longer discards the good frames that shared a
+  network read with the corrupt one — previously all of them were lost, including the ones the crash
+  dump existed to preserve.
+
+  Settings gained a Diagnostics section with a "Save a bug report file" button, so a player can
+  trigger the same scrubbed dump on demand instead of only after a decode failure. A rate-limited or
+  failed write is reported as such, never as a silent success.
+
+- dec4425: Live screen and header polish from direct feedback on the running app
+
+  `AppShell` gains an optional `brand` slot, and the shared design system exports a `BrandMark` —
+  an inline rendering of the header mark's five shapes rather than a binary asset either app would
+  need its own copy step for. The desktop now shows it beside its title, matching the web's own
+  header mark.
+
+  The desktop's Live screen showed two vertical scrollbars: the real one on its hero lists, plus an
+  always-reserved empty gutter meant for the web's own page scroll. That gutter rule now lives only
+  in the web's stylesheet.
+
+  On the Live screen: hero avatars beside the three-line stacked identity are bigger, so the row
+  reads as one block instead of a small icon dwarfed by its own text. The dashed underline under
+  field/rest countdowns is gone from both the modelled and direct-reading states — the row already
+  never reflowed when the basis flips (that's what the shared underline was protecting), and the
+  text colour plus a screen-reader-only qualifier still carry the distinction. The standalone "Field
+  slots in use" panel is gone; its count now lives in the on-field list's own header, as a plain
+  `occupied/total` (or just `occupied` when the field size hasn't been sent). The on-field list
+  itself is renamed "Field" ("Campo"), the name the retired panel used.
+
+- f8f6832: Re-granting consent brings the live tap back even if a previous teardown failed
+
+  Forcing the tap down stopped the old one and then replaced it. If the stop threw — which it can,
+  when an attach is in flight and the instrumentation runtime fails to resolve at that moment — the
+  replacement never happened, leaving the live source holding a tap whose poll loop was permanently
+  stopped. Every later wake-up returned immediately, so re-granting consent produced nothing: the
+  live panel stayed empty until the app was restarted, with only a log line to say why. The
+  replacement now happens on both paths, while the failure itself still surfaces.
+
+  Separately, decoding a network read no longer recurses once per malformed frame or once per HTTP
+  response inside it. Recovering from a bad frame had been made to hand the rest of the read back to
+  the frame-boundary resync, and reading back-to-back HTTP responses had always called itself — both
+  grew the call stack in step with what a single read happened to contain, so a large enough one
+  would have crashed the app outright. Both now iterate.
+
+- 1d9d79f: The resting countdown now ticks in real time instead of jumping once a minute
+
+  A resting hero's recovery countdown carried no time term at all — it was recomputed only when the
+  account was re-read, roughly once a minute, and sat perfectly still in between while still
+  reporting itself as advancing. It looked like a running clock and was actually a value that jumped
+  once a minute and held flat the rest of the time.
+
+  Recovery is a straight linear ramp over the house cycle, so it is now interpolated in real time
+  from the last read: `remaining(now) = remainingAtRead - (now - readAt)`, floored at zero. Unlike
+  the field countdown this is a subtraction, not a division, so a small timing error stays small.
+
+  A hero recovers in the house on the server's own clock whether or not a battle is running, so the
+  countdown advances whenever the app is still in touch with the game at all — not only while combat
+  frames are streaming. It freezes, and reports itself as not advancing, only when the read path
+  itself is down (the hook has gone silent, or the app was never attached); a paused combat stream
+  with everything else still reachable is not treated as a loss of contact.
+
+- 475e639: The account refresh cycle now stops issuing requests once the game is closed
+
+  The account refresh cycle gated only on player consent and a readable session token file. The
+  token file persists on disk after the game process exits, so the cycle kept issuing authenticated
+  requests to the game's servers — every minute foregrounded, every five minutes backgrounded —
+  long after there was nothing running to talk to.
+
+  It now also checks whether the game is currently running, using the same live status the game
+  reader already reports, and skips the cycle when it is not — consent still gates independently, so
+  neither check can substitute for the other. The cycle keeps ticking either way, so the very next
+  run after the game starts back up proceeds normally with no restart needed. Separately, the flag
+  recorded alongside each commit is now read fresh at commit time instead of a stale literal, so a
+  cycle spanning the moment the game exits reports that correctly too.
+
+- Updated dependencies [f8f6832]
+- Updated dependencies [fae49fb]
+- Updated dependencies [dec4425]
+- Updated dependencies [0e769ac]
+- Updated dependencies [e637f31]
+- Updated dependencies [1d9d79f]
+- Updated dependencies [659fcc5]
+- Updated dependencies [0e769ac]
+- Updated dependencies [681643e]
+- Updated dependencies [d7c1565]
+- Updated dependencies [d7c1565]
+- Updated dependencies [dec4425]
+- Updated dependencies [dec4425]
+- Updated dependencies [dec4425]
+- Updated dependencies [5a4620b]
+- Updated dependencies [7d3a951]
+- Updated dependencies [dec4425]
+- Updated dependencies [1d9d79f]
+- Updated dependencies [82f93dd]
+- Updated dependencies [550b376]
+- Updated dependencies [1d9d79f]
+- Updated dependencies [dec4425]
+- Updated dependencies [d5a412c]
+  - @bombfarm/tap-runtime@0.2.1
+  - @bombfarm/contracts@0.4.0
+  - @bombfarm/game-api@0.3.0
+  - @bombfarm/ui@0.5.0
+  - @bombfarm/domain@0.8.0
+  - @bombfarm/game-art@0.2.0
+  - @bombfarm/game-data@0.0.8
+
 ## 0.4.4
 
 ### Patch Changes

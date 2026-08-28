@@ -1,5 +1,214 @@
 # @bombfarm/web
 
+## 0.9.0
+
+### Minor Changes
+
+- d7c1565: Inventory cards that show the whole item, and a way to find one
+
+  Every card now carries the game's own art: the lit rarity plate behind the icon, at the size the
+  planner draws gear, and a real sprite for the things that had none — gems, keys, house parts,
+  skill stones and chests. Gear lists the stats it actually gives you, with the forge already
+  applied, so a +12 reads as what you get rather than what it rolled. The bottom of every card is a
+  fixed row: the hero wearing it on the left, in their own rarity colour with their level, and what
+  it sells for on the right, beside the coin.
+
+  Each kind of item now gets the card it deserves. A gem has no level and no forge, so it no longer
+  shows "Lv 0" — it shows its name and its tier and nothing it does not have. And because a stack of
+  27 identical keys is one thing you own rather than 27, everything but gear is grouped into a
+  single card with a count and the stack's total value. Chests and skill stones get their own
+  sections rather than falling into "Other", which is where the app used to put them.
+
+  Above the grid there is now a search box, sorting, and filters — by kind, by rarity, by the hero
+  wearing it, by set, and equipped-only — so finding one item among several hundred does not mean
+  scrolling. Search matches the item's name in your own language as well as the game's internal id.
+
+  Filtering by set is how you filter by level: every set sits at exactly one item level, so the list
+  reads "Lv 30 · Coal" and is ordered by level. It starts with everything chosen, shows how many
+  pieces of each set you own — 41 beside Coal tells you it is most of your gear before you have
+  filtered anything — and offers whichever of "Clear" and "Select all" would actually change
+  something. Only gear has a set, so narrowing here shows gear alone.
+
+  The English planner also stops showing Portuguese item names. Gear was being named by
+  title-casing the game's own slot token, so an English player saw "Gold · Elmo" where they should
+  have seen "Gold · Helm".
+
+- d7c1565: An Inventory screen that shows every item you own, not just the gear
+
+  Both the planner and the desktop app now have an Inventory tab listing everything the account
+  carries, grouped by kind — gear, gems, keys, materials — with each item's level, forge, set and
+  slot, what it sells for, whether it is stashed or locked, and the hero wearing it. Each card is
+  framed in its item's rarity colour, and the hero on the "equipped by" line is named in the hero's
+  own rarity colour with their level, so you can tell at a glance whose gear you are looking at.
+
+  Until now the only item list either app kept was the optimizer's pool, which holds gear and
+  nothing else: keys and anything else you own were read from the save and then dropped on the
+  floor. That pool is unchanged and still gear-only — the optimizer wants exactly the items it can
+  equip — so this is a second, separate list rather than a widening of the first.
+
+  Items the app cannot name yet get their own group instead of being quietly filed as gear. The
+  item list this app ships covers gear only, so a key, or an item type a future game update
+  introduces, has no name to show; those appear under "Other", labelled as unrecognised and
+  carrying the kind number the game sent, rather than being shown as a piece of gear with a slot it
+  does not have. Guessing would be worse than admitting the gap: it would put an unequippable item
+  in front of you as if it were equippable.
+
+- dec4425: The Live screen's hero row now shows the hero's level, matching the three-line identity block
+  (rank+name / rarity / level) the web planner already shows for a rotation-pool hero — previously
+  the row stopped at rarity.
+
+  Under the hood, that three-line block is now one shared component (`HeroIdentity`, new in
+  `@bombfarm/game-art`) built from primitives rather than a full hero record, so the Live screen (a
+  partial, streaming roster join) and the web planner (a complete `HeroRecord`) render identical
+  chrome from the same source. `HeroIdentityChip` is now a thin adapter over it for `HeroRecord`
+  callers; its own rendered output for the web planner is unchanged.
+
+- dec4425: Desktop Planning now shows the same hero art as the web planner: a rarity-tinted avatar in the
+  roster list and on the selected hero's detail card, plus the rarity label coloured to match. The
+  hero-avatar/rank/rarity/gear/ability icon components moved out of the web app into a new shared
+  `@bombfarm/game-art` package so both apps render identical chrome; the web planner's own call
+  sites are unchanged.
+
+### Patch Changes
+
+- 681643e: Say why a hero could not be imported, instead of only dimming it.
+
+  A hero the planner cannot rebuild was shown greyed out and nothing else, which states that something is different without saying what — it reads as a rendering glitch, and there is no way to tell whether your account is damaged.
+
+  The import dialog now names those heroes and both things that cause it: the save was exported before a game update that changed how stats are calculated, or the game has been updated more recently than the planner has. Each comes with what to do — export a fresh save if the game is still open, and if a fresh save does the same thing, the planner is the one that is behind and an update is on the way. The row itself says it cannot be imported, with that hero's own details in the tooltip, and stays listed rather than disappearing.
+
+  Also drops the sync bookkeeping from the import dialog — the "Created N · Updated N · Removed N" line and the sentence explaining what "Removed" meant. Both were from when an import was a merge you curated; the save is the source of truth now, so neither is something you decide or act on. Heroes absent from the save are still removed, exactly as before. The dialog's sections are also evenly spaced now, instead of each carrying its own margin.
+
+- dec4425: The desktop app's shell now uses the same sticky top-bar shape as the web planner — a brand
+  lockup, a segmented Live/Planning/Settings pill, and a right-hand actions area — instead of its
+  former left icon rail. The desktop's PT/EN language switch moved from Settings-only into that top
+  bar (Settings keeps its own control too; both stay in sync), and the nav no longer carries icons.
+
+  The web's segmented nav pill and its bordered PT/EN toggle are extracted into two new shared
+  `@bombfarm/ui` primitives, `AppNav` and `SegmentedToggle`, so both apps render identical chrome
+  from one implementation. The web's own header keeps its exact appearance and behavior; only its
+  internals now call the shared primitives.
+
+- 0e769ac: Report how often the Farm board's field slots are the bottleneck.
+
+  `FarmRateRow` gains `fieldContentionPct` — the share of wall clock spent with a rested hero benched because every field slot is taken. On a 14-hero roster at 9 field slots that is 26% of the time, which the board previously had no way to say: `concurrencyScale` compares mean occupancy against the cap, and a mean of 8.08 against 9 slots reads as "the cap never binds".
+
+  The Farm board surfaces it above the rotation pool when it exceeds 5%, naming more field slots as the direct fix and stating plainly that the gold/hr estimate does not model the wait. It does not suggest that benching heroes helps, because measurement says it does not: dropping the five weakest from a 14-hero pool takes contention to 0% and gold/hr from 19.97M to 17.17M.
+
+  `concurrencyScale` itself is unchanged, deliberately. Correcting it requires knowing which hero takes a freed slot, and the game fixes no such rule. Across seven roster/slot regimes measured against a 240-hour simulation with uniformly-random deployment, the existing expression is within 6.7% and no simple closed form tested beat it. The frequency needs no such assumption — uniformly-random and strongest-first deployment differ by up to 24% in throughput but under 3 points in contention — which is why it is reportable when a corrected magnitude is not.
+
+- e637f31: Stop the field-contention notice giving impossible advice and denying its own math.
+
+  The banner told every contended player two things that are no longer true. It said the gold/hr estimate does not model the wait, which stopped being the case one PR later, when `concurrencyScale` became the queue's served share `E[min(fieldSlots, X)] / E[X]` and started charging exactly that wait into every rate on the board — the copy was never updated with the math under it. And it prescribed more field slots unconditionally, which is not advice to a player already holding the maximum of nine.
+
+  It now reports the cost instead of denying it. The two figures diverge hard and that is the point: on a 14-hero roster at 9 slots somebody is benched 26.1% of the wall clock, and it costs 1.2% of the rate, because a saturated queue is not an idle one. A player reading the frequency as the loss overstates it twentyfold.
+
+  At the cap, a second variant says the wait is structural and names no purchase. It reads the existing `FIELD_SLOTS_MAX`, and the doc there now records the property that makes it safe to consume: it is a ceiling to REPORT against, never a clamp. `resolveFieldSlots` still records whatever the save carries, so a patch that raises the track shows up as a value above nine rather than being truncated to it.
+
+  No rate changes, and no behaviour change in `@bombfarm/domain` at all. `concurrencyScale` and `fieldContentionPct` are untouched — the cost the banner now prints is a factor the board already applied.
+
+- 659fcc5: Charge the field queue for the heroes it makes wait.
+
+  Heroes join the field FIFO, by who finished resting first. `concurrencyScale` compared the MEAN demand against the cap — `min(1, fieldSlots / heroesOnField)` — which charges nothing whenever the average fits, however often the peaks do not. Since `min` is concave, that form can only ever run optimistic.
+
+  FIFO is identity-blind: the queue does not read a hero's power, so the loss needs no assumption about who takes a freed slot, which is the reason this factor was left approximate until now. The scale is the served share of demand, `E[min(fieldSlots, X)] / E[X]`, over the same Poisson-binomial the contention diagnostic already solves.
+
+  Worth 2% on a lightly contended roster and 9.6% on a hard-contended one, and EXACTLY zero where the field cannot fill. Against nine hours of telemetry on a 9-slot account the board's error falls from +21.2% to +9.5%; on an account whose field never fills, every number is byte-identical. It does not close the remaining throughput gap — that is per-hero cadence, measured and tracked out of band — but it is the part with a known mechanism behind it.
+
+  Marginal stat values move accordingly: a point of Energy buys uptime, and uptime is what the queue rations, so Energy is worth slightly less at the margin once the field saturates. Attack, Speed and CDR are untouched to the digit.
+
+  Also fixes a latent budget escape the change surfaced: the Respec Advisor could propose a build spending more points than the hero owns. Five of the six search seeds build from the budget, but the `'current'` seed passed the hero's own vector through unclamped, and every local-search move is a transfer — so an over-spent hero carried its excess into the recommendation. It went unnoticed because a budget-built seed happened to win; re-scoring the candidates moved the winner and it surfaced. Now clamped at the seed, guarded by a test that forces the current seed to win rather than hoping it does.
+
+- ccf1e8a: Explain the referral code once, on the first visit, instead of only showing it.
+
+  The code was already in the topbar and the footer, but neither surface has room to say what a player is supposed to do with it. A code with no explanation is a string of characters next to a copy button.
+
+  A notice now appears once below the topbar, on whichever page the first visit lands on: paste the code on the game's invite screen, each account uses one referral code, and once you clear stage 151 both sides get a reward that includes at least one Hero Cage. It carries the code with a copy button of its own and a dismiss button, and it does not come back — copying counts as dismissing, so the usual path closes it in one click. A failed clipboard write leaves the code selected for a manual copy and keeps the notice open, since removing it would take the selection with it.
+
+  The notice is half the app's width and centered, with both controls on a row of their own beneath the text, so it reads as a notice rather than a second header bar.
+
+- 0e769ac: Charge gate rows for the boss's seconds.
+
+  A gate cycle is the map plus the boss, and the boss drops no props. `clearSecs` counted it; `propsPerHour` did not — it was `3600 × propsPerSec`, the raw prop-clearing rate. The two numbers on a single row therefore described different clocks, and because gold, chests, keys, gems, time pieces, stone chests and XP are all `propsPerHour × <per-prop>`, every one of them read high on every gate by the boss's share of the cycle.
+
+  That share grows with phase, because the boss's HP multiplier outpaces a squad's damage faster than the props do: about 2% at the first gate, 7–8% by the fifties, and 10% at the late ones on both accounts measured. A phase-130 gate printed roughly 10% more gold per hour than its own clear time allowed.
+
+  `propsPerHour` is now derived from the cycle (`cyclesPerHour × propsPerMap`), so it always agrees with the row's `clearSecs`. Non-gate rows are unchanged to the bit — the two expressions are algebraically equal off a gate but not bit-equal in IEEE754, so the branch is kept rather than simplified.
+
+  Ranking shifts slightly against gates as a result, which is the point: gates were being credited with loot they had no time to collect. On the test corpus the best solo phase moves from the gate at 30 to 29, which pays 101.8k/h against the gate's corrected 94.7k/h.
+
+- dec4425: Live screen and header polish from direct feedback on the running app
+
+  `AppShell` gains an optional `brand` slot, and the shared design system exports a `BrandMark` —
+  an inline rendering of the header mark's five shapes rather than a binary asset either app would
+  need its own copy step for. The desktop now shows it beside its title, matching the web's own
+  header mark.
+
+  The desktop's Live screen showed two vertical scrollbars: the real one on its hero lists, plus an
+  always-reserved empty gutter meant for the web's own page scroll. That gutter rule now lives only
+  in the web's stylesheet.
+
+  On the Live screen: hero avatars beside the three-line stacked identity are bigger, so the row
+  reads as one block instead of a small icon dwarfed by its own text. The dashed underline under
+  field/rest countdowns is gone from both the modelled and direct-reading states — the row already
+  never reflowed when the basis flips (that's what the shared underline was protecting), and the
+  text colour plus a screen-reader-only qualifier still carry the distinction. The standalone "Field
+  slots in use" panel is gone; its count now lives in the on-field list's own header, as a plain
+  `occupied/total` (or just `occupied` when the field size hasn't been sent). The on-field list
+  itself is renamed "Field" ("Campo"), the name the retired panel used.
+
+- 550b376: Say when an imported save is missing account data, instead of planning around a guess
+
+  Some values only your save can supply — your skill tree, your House and its level, the phase you
+  are on, and the furthest phase you have reached. Every panel that shows them is read-only, so a
+  save that leaves one out leaves the planner permanently wrong about it, with nothing on screen
+  saying so.
+
+  The furthest phase is the one that costs money. Without it, the planner has no ceiling to respect
+  and considers all 600 phases, so the Farm Respec Advisor can tell you to spend real gold moving
+  toward a phase you cannot enter yet — and nothing in the recommendation hints that it is
+  unbounded.
+
+  An import that is missing any of the five now says which ones, in a banner under the header on
+  every page, and asks for a fresh export. The import still goes through: your roster, your gear and
+  everything else in the save land exactly as before, and the banner is the only thing that changes.
+  Nothing already stored is discarded or rewritten — an account saved before this existed keeps
+  working untouched and stays quiet until you import again.
+
+- d5a412c: Team plan: the Point reset table's "Before" column now comes from the plan, not the live roster
+
+  A plan outlives the roster it was scored against — the player can respec, re-import or edit
+  points before opening a hero's panel. The hero panel read those "before" numbers straight out of
+  the store, so it paired this run's proposed allocation with whatever the hero held at render
+  time and printed a reset whose deltas never happened, sitting directly above a stat breakdown
+  computed from the older allocation.
+
+  `TeamPlan.pointResets[]` gains `ptsBefore`, the vector the run actually scored, and the panel
+  reads it. The two tables in a hero's panel now describe the same starting point.
+
+- Updated dependencies [dec4425]
+- Updated dependencies [0e769ac]
+- Updated dependencies [e637f31]
+- Updated dependencies [1d9d79f]
+- Updated dependencies [659fcc5]
+- Updated dependencies [0e769ac]
+- Updated dependencies [681643e]
+- Updated dependencies [d7c1565]
+- Updated dependencies [d7c1565]
+- Updated dependencies [dec4425]
+- Updated dependencies [dec4425]
+- Updated dependencies [5a4620b]
+- Updated dependencies [dec4425]
+- Updated dependencies [1d9d79f]
+- Updated dependencies [82f93dd]
+- Updated dependencies [550b376]
+- Updated dependencies [1d9d79f]
+- Updated dependencies [dec4425]
+- Updated dependencies [d5a412c]
+  - @bombfarm/ui@0.5.0
+  - @bombfarm/domain@0.8.0
+  - @bombfarm/game-art@0.2.0
+
 ## 0.8.0
 
 ### Minor Changes
