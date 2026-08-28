@@ -78,6 +78,28 @@ function solveSpentPoints(hero: SaveHeroSheet, tree: TreeSheetTotals): Record<Sh
   };
 }
 
+/**
+ * `treeTotalsFromSave` reads `skills.totals`, not the whole document. Handing it the document
+ * typechecks — both are `Record<string, unknown>` — and returns the identity tree in silence,
+ * which is how this file spent its life peeling a zero tree. {@link TREE_BEARING_KEYS} is the
+ * guard that makes the mistake go red instead.
+ */
+function fixtureTree(doc: Record<string, unknown>): TreeSheetTotals {
+  const skills = doc.skills;
+  const totals =
+    typeof skills === 'object' && skills !== null
+      ? ((skills as Record<string, unknown>).totals ?? {})
+      : {};
+  return treeTotalsFromSave(totals as Record<string, unknown>);
+}
+
+/**
+ * The five columns `save-20260813-5heroes.json`'s own `skills.totals` populates — `dmg_static`
+ * 1.2094754277978, `energia_add`, `speed_add`, `crit_chance_add` and `luck_add` all non-zero.
+ * `crit_dmg_add` is 0 in this capture, and penetration and cooldown have no tree term at all.
+ */
+const TREE_BEARING_KEYS: readonly SheetKey[] = ['attack', 'energy', 'speed', 'critChance', 'luck'];
+
 describe('peelSheetStages — Birth + Δs sum to Total', () => {
   // MP5 F1 (AD-068 class (b) — structural): re-pointed onto the post-patch export. The claim
   // — Birth + Δ columns sum to Total — is the purest invariant in the corpus and holds for
@@ -85,12 +107,21 @@ describe('peelSheetStages — Birth + Δs sum to Total', () => {
   const file = 'save-20260813-5heroes.json';
   const data = loadFixtureJson(file);
 
+  it(`${file} :: the skill tree read from the capture is not the identity tree`, () => {
+    const tree = fixtureTree(data);
+    expect(tree.danoStatic, 'dmg_static').toBeCloseTo(1.2094754277978, 12);
+    expect(tree.energyPct, 'energia_add').toBeCloseTo(28.44491522, 8);
+    expect(tree.speedPct, 'speed_add').toBeCloseTo(0.2364078, 8);
+    expect(tree.critChancePct, 'crit_chance_add').toBeCloseTo(3.5504587, 8);
+    expect(tree.luckFlatPct, 'luck_add').toBeCloseTo(3.6082037, 8);
+  });
+
   it(`${file} :: every birth-capable hero — stages sum to composeSheetFromBirth`, () => {
     const heroes = (data as { heroes: Array<{ name: string }> }).heroes;
     for (const raw of heroes) {
       const hero = extractHero(data, raw.name);
       if (!hero.birth) continue;
-      const tree = treeTotalsFromSave(data);
+      const tree = fixtureTree(data);
       const pts = solveSpentPoints(hero, tree);
       const input = {
         birth: hero.birth,
@@ -117,13 +148,16 @@ describe('peelSheetStages — Birth + Δs sum to Total', () => {
         expect(row.total, `${hero.name} ${key} total`).toBeCloseTo(composed[key], 6);
         expect(Math.abs(sum - composed[key]), `${hero.name} ${key}`).toBeLessThanOrEqual(SUM_TOL);
       }
+      for (const key of TREE_BEARING_KEYS) {
+        expect(stages[key].deltaTree, `${hero.name} ${key} Δ tree`).not.toBe(0);
+      }
     }
   });
 
   it('speed has zero Δ level and Δ stars (AD-BSP-19)', () => {
     const hero = extractHero(data, 'Bellatrix');
     if (!hero.birth) throw new Error('Bellatrix missing birth');
-    const tree = treeTotalsFromSave(data);
+    const tree = fixtureTree(data);
     const pts = solveSpentPoints(hero, tree);
     const row = peelSheetStages({
       birth: hero.birth,
