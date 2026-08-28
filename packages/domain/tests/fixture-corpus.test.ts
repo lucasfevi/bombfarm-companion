@@ -13,6 +13,7 @@ import { dirname, join, relative } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 import { SHEET_KEYS } from '@bombfarm/domain/planner-constants';
+import { isJson, listFiles } from './helpers/list-files';
 import { SHEET_ABS_TOL } from './helpers/sheet-math-fixtures';
 
 const here = dirname(fileURLToPath(import.meta.url));
@@ -26,17 +27,6 @@ function isObject(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null;
 }
 
-function listFiles(dir: string, predicate: (name: string) => boolean, acc: string[] = []): string[] {
-  for (const entry of readdirSync(dir, { withFileTypes: true })) {
-    const full = join(dir, entry.name);
-    if (entry.isDirectory()) {
-      listFiles(full, predicate, acc);
-    } else if (entry.isFile() && predicate(entry.name)) {
-      acc.push(full);
-    }
-  }
-  return acc;
-}
 
 function sha256(path: string): string {
   return createHash('sha256').update(readFileSync(path)).digest('hex');
@@ -53,7 +43,7 @@ const COMPUTED_PATH_ALLOWLIST: Record<string, string> = {};
 
 describe('sheet-math fixture corpus guard (MP5 F1)', () => {
   const sheetMathJsonFiles = readdirSync(SHEET_MATH_DIR).filter((f) => f.endsWith('.json'));
-  const allFixtureJsonFiles = listFiles(FIXTURES_DIR, (name) => name.endsWith('.json'));
+  const allFixtureJsonFiles = listFiles(FIXTURES_DIR, isJson);
 
   it('non-vacuity: sheet-math/ has at least 2 committed captures', () => {
     expect(

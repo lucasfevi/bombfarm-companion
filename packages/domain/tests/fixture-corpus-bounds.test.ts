@@ -18,10 +18,10 @@
  * reproduced that blind spot with no failure and no edit required; this version has no such gap,
  * because every committed fixture `.json` is accounted for by name, not by pattern.
  */
-import { readdirSync } from 'node:fs';
 import { dirname, join, relative } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
+import { isJson, listFiles } from './helpers/list-files';
 
 const here = dirname(fileURLToPath(import.meta.url));
 const FIXTURES_DIR = join(here, 'fixtures');
@@ -72,20 +72,9 @@ const EXCEPTIONS: Record<string, string> = {
     "pre-existing storage-roundtrip snapshot with zero domain-side consumer of this copy — apps/web owns the live one this mirrors (see fixture-corpus.test.ts's orphan-sweep comment)",
 };
 
-function listJsonFiles(dir: string, acc: string[] = []): string[] {
-  for (const entry of readdirSync(dir, { withFileTypes: true })) {
-    const full = join(dir, entry.name);
-    if (entry.isDirectory()) {
-      listJsonFiles(full, acc);
-    } else if (entry.isFile() && entry.name.endsWith('.json')) {
-      acc.push(full);
-    }
-  }
-  return acc;
-}
 
 describe('fixture corpus bounds: every committed fixture json is governed or a named exception', () => {
-  const allJsonFiles = listJsonFiles(FIXTURES_DIR).map((f) => relative(FIXTURES_DIR, f).replace(/\\/g, '/'));
+  const allJsonFiles = listFiles(FIXTURES_DIR, isJson).map((f) => relative(FIXTURES_DIR, f).replace(/\\/g, '/'));
 
   it('non-vacuity: the walk finds committed fixture JSON', () => {
     expect(allJsonFiles.length, `walked ${FIXTURES_DIR}`).toBeGreaterThan(0);
