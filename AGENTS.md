@@ -50,7 +50,7 @@ and how it runs beside a real install. Plain `pnpm dev` is the real read path.
 
 These commands bound their own load, and share one budget with any other Bomb Farm run on the
 machine — a second checkout or session running the same sequence makes both smaller rather than
-letting them multiply. `node tools/cpu-budget.mjs` says what is running and what each run is
+letting them multiply. `node tools/cpu-budget-report.mjs` says what is running and what each run is
 getting; `BFC_CPU_BUDGET` raises or lowers the total. See
 [`docs/machine-load.md`](docs/machine-load.md).
 

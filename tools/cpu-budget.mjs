@@ -2,7 +2,6 @@ import { mkdirSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'nod
 import { availableParallelism, tmpdir } from 'node:os';
 import path from 'node:path';
 import process from 'node:process';
-import { pathToFileURL } from 'node:url';
 
 /**
  * One CPU budget for the whole machine, divided among the heavy runs currently executing.
@@ -28,6 +27,12 @@ import { pathToFileURL } from 'node:url';
  * Every failure mode here fails OPEN, back to the caller's own cap: an unwritable temp
  * directory, a malformed lease, a pid check that throws. Shrinking a run is an optimisation,
  * and an optimisation that can break the build is not worth having.
+ *
+ * NO `import.meta` IN THIS FILE, and no top-level side effects. `apps/web/playwright.config.ts`
+ * imports it, and Playwright transpiles a config's local imports to CommonJS, where `import.meta`
+ * is a SyntaxError — not at import time, but when Playwright loads the config, which is every
+ * e2e run. That is why the `node tools/cpu-budget-report.mjs` diagnostic lives in its own file
+ * rather than behind a main-module check here. `cpu-budget.test.mjs` guards this.
  */
 
 const LEASE_DIR_ENV = 'BFC_CPU_LEASE_DIR';
@@ -166,7 +171,7 @@ function claimLease(kind) {
  * Next — and is never exceeded. This only ever lowers it, and never below 1.
  *
  * @param {number} cap
- * @param {string} kind Recorded in the lease, so `node tools/cpu-budget.mjs` can say what holds a share.
+ * @param {string} kind Recorded in the lease, so the report below can say what holds a share.
  * @returns {number}
  */
 export function cappedWorkers(cap, kind) {
@@ -193,18 +198,3 @@ export function cpuLeaseReport() {
   };
 }
 
-if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
-  const report = cpuLeaseReport();
-  const lines = [
-    `budget        ${report.budget} of ${availableParallelism()} cores`,
-    `lease dir     ${report.leaseDir}`,
-    `sharing       ${report.sharingApplies ? 'on' : 'off (CI)'}`,
-    `active runs   ${report.leases.length}`,
-    `share per run ${report.leases.length ? report.sharePerRun : report.budget}`,
-  ];
-  for (const lease of report.leases) {
-    const ageSeconds = Math.round((Date.now() - Number(lease.startedAt)) / 1000);
-    lines.push(`  pid ${lease.pid} — ${lease.kind} (${ageSeconds}s)`);
-  }
-  process.stdout.write(`${lines.join('\n')}\n`);
-}

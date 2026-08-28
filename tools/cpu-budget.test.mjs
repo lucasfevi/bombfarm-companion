@@ -1,8 +1,9 @@
 import { spawnSync } from 'node:child_process';
+import esbuild from 'esbuild';
 import { mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
 import { availableParallelism, tmpdir } from 'node:os';
 import path from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { cappedWorkers, cpuLeaseReport, machineCpuBudget } from './cpu-budget.mjs';
 
@@ -187,6 +188,63 @@ describe('cpuLeaseReport', () => {
     const report = cpuLeaseReport();
     expect(report.leases).toHaveLength(2);
     expect(report.sharePerRun).toBe(4);
+  });
+});
+
+describe('importability from a Playwright config', () => {
+  /**
+   * Playwright transpiles a config's local imports to CommonJS, where `import.meta` is a
+   * SyntaxError. A main-module check at the bottom of the module was enough to break every e2e
+   * job with `Cannot use 'import.meta' outside a module` — while `pnpm build`, `pnpm typecheck`,
+   * `pnpm lint` and `pnpm test` all stayed green, because none of them load a Playwright config.
+   * The diagnostic lives in `cpu-budget-report.mjs` for this reason.
+   */
+  /**
+   * Transformed rather than grepped. A text search cannot tell the hazard from the header comment
+   * warning about it, and it would keep passing if the transform's rules ever changed. esbuild's
+   * CJS transform reports the same construct Playwright's loader chokes on.
+   */
+  async function cjsTransformWarnings(source) {
+    const { warnings } = await esbuild.transform(source, {
+      format: 'cjs',
+      platform: 'node',
+      loader: 'js',
+    });
+    return warnings.map((warning) => warning.text);
+  }
+
+  it('survives the ESM-to-CommonJS transform a Playwright config loader applies', async () => {
+    const source = readFileSync(path.join(HERE, 'cpu-budget.mjs'), 'utf8');
+    expect(await cjsTransformWarnings(source)).toEqual([]);
+  });
+
+  it('would have caught the regression — the same transform flags import.meta', async () => {
+    const warnings = await cjsTransformWarnings('export const a = 1;\nif (import.meta.url) {}');
+    expect(warnings.join(' ')).toContain('import.meta');
+  });
+
+  /**
+   * Top-level side effects would run inside Playwright's config loader, and inside every worker
+   * that re-loads the config. Claiming a share must stay something a caller asks for.
+   */
+  it('does nothing on import until a caller asks for a share', () => {
+    // A fresh process, because this file imported the module before any test ran.
+    const moduleUrl = pathToFileURL(path.join(HERE, 'cpu-budget.mjs')).href;
+    const childEnv = { ...process.env, BFC_CPU_LEASE_DIR: leaseDir };
+    delete childEnv.BFC_CPU_LEASE;
+    delete childEnv.CI;
+    const result = spawnSync(
+      process.execPath,
+      [
+        '--input-type=module',
+        '-e',
+        `import ${JSON.stringify(moduleUrl)};\nprocess.stdout.write(String(process.env.BFC_CPU_LEASE ?? 'none'));`,
+      ],
+      { encoding: 'utf8', env: childEnv },
+    );
+    expect(result.status).toBe(0);
+    expect(result.stdout).toBe('none');
+    expect(leaseFiles()).toEqual([]);
   });
 });
 

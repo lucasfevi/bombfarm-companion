@@ -54,7 +54,7 @@ can break the build is not worth having.
 ## Seeing what is running
 
 ```bash
-node tools/cpu-budget.mjs
+node tools/cpu-budget-report.mjs
 ```
 
 ```
@@ -96,3 +96,22 @@ BFC_CPU_BUDGET=16 pnpm test
   caller keeps the ceiling it computed. CI behaviour is unchanged by all of this.
 - **Nothing here bounds a tool that was never capped.** A new parallel tool needs its own ceiling
   passed through `cappedWorkers(cap, kind)`; the budget divides ceilings, it does not invent them.
+
+## Editing `cpu-budget.mjs`: no `import.meta`, no top-level side effects
+
+`apps/web/playwright.config.ts` imports it, and **Playwright transpiles a config's local imports to
+CommonJS**, where `import.meta` is a SyntaxError. It does not fail at import — it fails when
+Playwright loads the config, which is every e2e run.
+
+This is easy to reintroduce and impossible to notice locally, because **none of `pnpm build`,
+`pnpm typecheck`, `pnpm lint` or `pnpm test` loads a Playwright config.** A main-module check at the
+bottom of the module passed all four and broke every e2e job with
+`Cannot use 'import.meta' outside a module`. That is why the diagnostic lives in
+[`tools/cpu-budget-report.mjs`](../tools/cpu-budget-report.mjs) instead.
+
+`cpu-budget.test.mjs` guards both halves — no `import.meta` in the module, and nothing claimed on
+import. After touching either file, load the config the way Playwright does:
+
+```bash
+pnpm --filter @bombfarm/web exec playwright test --list --project=smoke
+```
