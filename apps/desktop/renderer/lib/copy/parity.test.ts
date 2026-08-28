@@ -1,6 +1,6 @@
 /**
- * `AD-050`'s three proofs that `en.ts` and `pt-BR.ts` never diverge in key set or placeholder set
- * (MIN-03, MIN-04). Proof 1 (compile) is the `Copy` annotation itself
+ * Three proofs that `en.ts` and `pt-BR.ts` never diverge in key set or placeholder set.
+ * Proof 1 (compile) is the `Copy` annotation itself
  * (`export const ptBR: Copy = { … }` in `pt-BR.ts`) — it is demonstrated, not asserted here, by
  * temporarily deleting/mistyping a key and recording the `TS2741`/`TS2353` message verbatim
  * (task notes), then restoring. Proofs 2 and 3 below are independent, permanent, runtime checks:
@@ -12,7 +12,7 @@ import { en } from './en';
 import { ptBR } from './pt-BR';
 
 /**
- * Legitimately identical pairs between `en` and `ptBR` (`AD-041`'s declared-table genre). Kept
+ * Legitimately identical pairs between `en` and `ptBR` (a declared table, not an inferred one). Kept
  * deliberately short and reviewed: a future addition here is a reviewed diff, never a silent
  * weakening of the "no leakage" assertion below.
  *
@@ -35,7 +35,7 @@ function placeholderSet(value: string): Set<string> {
   return new Set(Array.from(matches, (match) => match[1]));
 }
 
-describe('en/ptBR key-set parity (AD-050 proof 2, MIN-03)', () => {
+describe('en/ptBR key-set parity', () => {
   it('en and ptBR declare the exact same set of keys', () => {
     expect(Object.keys(en).sort()).toEqual(Object.keys(ptBR).sort());
   });
@@ -47,7 +47,7 @@ describe('en/ptBR key-set parity (AD-050 proof 2, MIN-03)', () => {
   });
 });
 
-describe('en/ptBR placeholder parity (AD-050 proof 3)', () => {
+describe('en/ptBR placeholder parity', () => {
   // sub() (copy/index.ts) leaves an unmatched {token} visibly unreplaced in the UI, and
   // docs/naming.md makes placeholder keys a data contract (renaming one is spec Out of Scope) —
   // so a per-key placeholder-set mismatch is a defect no type can catch.
@@ -72,7 +72,7 @@ describe('en/ptBR placeholder parity (AD-050 proof 3)', () => {
   });
 });
 
-describe('MIN-04 — no PT leakage in EN, no EN leakage in PT', () => {
+describe('no PT leakage in EN, no EN leakage in PT', () => {
   it('every key differs between en and ptBR, except the declared identical-pair allowlist', () => {
     const unexpectedlyIdentical: string[] = [];
     for (const key of Object.keys(en) as (keyof typeof en)[]) {

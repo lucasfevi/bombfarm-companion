@@ -34,7 +34,7 @@ function noopSleep() {
   return vi.fn(async () => {});
 }
 
-describe('fetch-endpoints.mjs — module shape (MWD-03)', () => {
+describe('fetch-endpoints.mjs — module shape', () => {
   const source = readFileSync(MODULE_PATH, 'utf8');
 
   it('declares exactly the two wiki endpoint URLs as module constants, no other absolute URL', () => {
@@ -127,7 +127,7 @@ describe('fetchEndpoints — eight failure shapes, each unreachable with a disti
   }
 });
 
-describe('fetchEndpoints — retry is bounded and counted (MWD-24)', () => {
+describe('fetchEndpoints — retry is bounded and counted', () => {
   it('every attempt fails ⇒ exactly 3 calls to the injected fetch, then unreachable', async () => {
     const fetchImpl = vi.fn(async () => statusResponse(500));
     const sleep = noopSleep();

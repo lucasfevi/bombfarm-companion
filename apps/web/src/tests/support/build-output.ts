@@ -56,7 +56,7 @@ export function requireBuildOutput(outRoot: string, assertion: string): boolean 
 }
 
 /**
- * `pnpm perf:build:profile` (RES-05) leaves a marker in `out/`. That build disables
+ * `pnpm perf:build:profile` leaves a marker in `out/`. That build disables
  * minification, so webpack keeps exports it would otherwise drop — byte-level exclusion
  * assertions report phantom regressions against it, and it is never deployed.
  *

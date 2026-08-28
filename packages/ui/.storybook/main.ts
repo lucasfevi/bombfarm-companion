@@ -8,7 +8,7 @@ const config: StorybookConfig = {
     options: {},
   },
   staticDirs: [],
-  // No `@bombfarm/domain` alias here — DS-09 forbids `packages/ui` importing domain.
+  // No `@bombfarm/domain` alias here — the reuse boundary forbids `packages/ui` importing domain.
   // `@bombfarm/ui` needs no alias either: stories live inside the package and resolve
   // relatively / via the workspace's own `@bombfarm/ui` -> `src` export map.
   async viteFinal(viteConfig) {

@@ -12,7 +12,7 @@ type SortState = {
   onSort: (key: ImportSortKey) => void;
 };
 
-/** `AD-BSP-26`/`AC-31` — review, not curate: no checkbox column, no select-all header cell. */
+/** Review, not curate: no checkbox column, no select-all header cell. */
 export function ImportCandidateTable({ sorted, sort }: { sorted: ImportCandidate[]; sort: SortState }) {
   const { t, lang } = useAppLang();
   const { sortKey, sortDir, onSort } = sort;

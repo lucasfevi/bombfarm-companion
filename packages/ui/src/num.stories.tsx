@@ -24,7 +24,7 @@ export const Default: Story = {
       // Every real call site wraps Num in a <label> (see InFieldStack / InFieldInline
       // below, and e.g. AccountFarmTargetFields) so the native <input> gets an
       // accessible name for free. This story stood bare, which is a story-authoring
-      // gap, not a Num defect — axe's "label" rule caught it (SBC-12).
+      // gap, not a Num defect — axe's "label" rule caught it.
       <label className="block w-[120px] text-xs text-muted">
         <span>Multiplier</span>
         <Num {...args} value={value} onChange={setValue} />

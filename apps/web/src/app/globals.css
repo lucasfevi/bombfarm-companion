@@ -20,7 +20,7 @@ html {
   scrollbar-gutter: stable;
 }
 
-/* ——— Hero roster details chevron (permanent keep-exception, AD-003) ——— */
+/* ——— Hero roster details chevron (permanent keep-exception) ——— */
 .roster-summary::-webkit-details-marker {
   display: none;
 }

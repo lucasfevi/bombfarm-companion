@@ -1,13 +1,13 @@
 /**
- * MPV-18: every value in `en.ts` must satisfy `docs/i18n.md`'s player-facing plain-language
+ * Every value in `en.ts` must satisfy `docs/i18n.md`'s player-facing plain-language
  * rules — no formulas, no camelCase identifiers, no field paths, no type names. Explicitly
  * covers the section names rendering as player language ("your skill tree"), not the raw
  * `AccountSection` key (`skills`).
  *
- * MPV-07/MPV-17: `ACCOUNT_SECTION_COPY_KEY` maps every `AccountSection` to a copy key,
+ * `ACCOUNT_SECTION_COPY_KEY` maps every `AccountSection` to a copy key,
  * exhaustively.
  *
- * MP3 F4 (design §7 rule 1): the scanner now runs over `pt-BR.ts` too, via one parameterised
+ * design §7 rule 1: the scanner now runs over `pt-BR.ts` too, via one parameterised
  * `describe.each`. The four regexes below use Unicode property escapes and the `u` flag so
  * accented Portuguese (`não`, `ação`, `você`) does not shift a `\b`/`[a-z]` boundary and
  * false-positive — fixed here, in the rule, per the absolute instruction: never exempt a key.
@@ -67,7 +67,7 @@ export function findCopyViolations(entries: Record<string, string>): CopyViolati
 describe.each([
   ['en', en],
   ['pt-BR', ptBR],
-] as const)('%s satisfies docs/i18n.md plain-language rules (MPV-18, MIN-05)', (_label, copy) => {
+] as const)('%s satisfies docs/i18n.md plain-language rules', (_label, copy) => {
   it('every real copy value is free of camelCase identifiers, field paths, type names and formula characters', () => {
     const violations = findCopyViolations(copy);
     expect(violations, JSON.stringify(violations, null, 2)).toEqual([]);
@@ -110,7 +110,7 @@ describe('the scanner catches each rule on a fixture object, naming the offendin
   });
 });
 
-describe('ACCOUNT_SECTION_COPY_KEY covers every AccountSection exhaustively (MPV-07, MPV-17)', () => {
+describe('ACCOUNT_SECTION_COPY_KEY covers every AccountSection exhaustively', () => {
   it('has one entry per ACCOUNT_SECTIONS member, each pointing at a real key in en', () => {
     for (const section of ACCOUNT_SECTIONS) {
       const copyKey = ACCOUNT_SECTION_COPY_KEY[section];
@@ -119,7 +119,7 @@ describe('ACCOUNT_SECTION_COPY_KEY covers every AccountSection exhaustively (MPV
     }
   });
 
-  it('every section renders as player language, non-empty text (MPV-18)', () => {
+  it('every section renders as player language, non-empty text', () => {
     for (const section of ACCOUNT_SECTIONS) {
       const copyKey = ACCOUNT_SECTION_COPY_KEY[section];
       const text = en[copyKey as keyof Copy];

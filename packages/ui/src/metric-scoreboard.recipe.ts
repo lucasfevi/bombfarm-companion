@@ -2,7 +2,7 @@ import { cva } from 'class-variance-authority';
 
 /**
  * MetricScoreboard chrome — parity with the former inline `CompareMetricsStrip`
- * (`features/planner/components/build-column.tsx`). Fixed layout bundles (DS-05)
+ * (`features/planner/components/build-column.tsx`). Fixed layout bundles
  * plus two cva recipes whose variants emit full class strings (empty `base`),
  * per the design-system convention for differing-base variants.
  */

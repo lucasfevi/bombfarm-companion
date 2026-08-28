@@ -58,7 +58,7 @@ describe('buildFixtureAccountPayload', () => {
   });
 });
 
-describe('AD-039 — BFC_FIXTURE_ACCOUNT_FILE override', () => {
+describe('the fixture seam — BFC_FIXTURE_ACCOUNT_FILE override', () => {
   let dir: string;
   let overridePath: string;
   const overridePayload = {

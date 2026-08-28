@@ -297,7 +297,7 @@ export async function gotoAccountPage(page: Page): Promise<void> {
 }
 
 /**
- * Roster-scaling probe for `RES-06`. Same active hero and account as `importedRoster`,
+ * Roster-scaling probe. Same active hero and account as `importedRoster`,
  * padded to 30 heroes so a perf capture can answer whether render counts scale with
  * roster size or are flat.
  *

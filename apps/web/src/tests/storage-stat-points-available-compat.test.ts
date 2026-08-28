@@ -1,6 +1,6 @@
 /**
  * `statPointsAvailable` backward-compat proof — follows the same additive-optional-field
- * pattern as `luckFlatPct` (`AccountShared.tree`, MP5 F3) and `luck` before it
+ * pattern as `luckFlatPct` (`AccountShared.tree`) and `luck` before it
  * (`storage-luck-compat.test.ts`): a genuine pre-`statPointsAvailable` `bf-hp-heroes-v1` blob
  * (no `statPointsAvailable` key on the hero) must still load cleanly through `loadHeroes` /
  * `normalizeHero` (the "user's existing localStorage from a previous version" path), default

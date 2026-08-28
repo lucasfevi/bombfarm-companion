@@ -1,5 +1,5 @@
 /**
- * MP5 F4 (T4) — the export corpus check and its three named red states.
+ * (T4) — the export corpus check and its three named red states.
  *
  * The spec's sharpest finding (spec.md Problem Statement) is that the PREVIOUS route fingerprint
  * was authored from an already-drifted capture and its only cross-check was a subset assertion —
@@ -123,14 +123,14 @@ function cloneCorpus(corpus: Record<string, unknown>): Record<string, unknown> {
   return JSON.parse(JSON.stringify(corpus)) as Record<string, unknown>;
 }
 
-describe('EXPORT_FINGERPRINT — corpus check (MSG-08, MSG-18)', () => {
+describe('EXPORT_FINGERPRINT — corpus check', () => {
   const corpus = loadCorpus();
   const representative = loadRedStateRepresentative();
 
-  it('MSG-30: sourceArtifact names the committed artifact and its capture', () => {
+  it('sourceArtifact names the committed artifact and its capture', () => {
     // Provenance, not the corpus this fingerprint is CHECKED against — deliberately left pointing
     // at the 2026-08-13 capture even though the sweep below now runs over every save export.
-    // MSG-30 records where the key set was AUTHORED FROM, which does not change just because more
+    // This records where the key set was AUTHORED FROM, which does not change just because more
     // captures are now checked against it.
     expect(EXPORT_FINGERPRINT.root).toBe('save');
     expect(EXPORT_FINGERPRINT.sourceArtifact).toContain('save-20260813-5heroes.json');
@@ -158,20 +158,20 @@ describe('EXPORT_FINGERPRINT — corpus check (MSG-08, MSG-18)', () => {
     expect(discoveredFiles).not.toContain('payload-20260812-8heroes.json');
   });
 
-  it('every discovered save-export capture is ok:true — equality modulo allowance, never a subset (MSG-08)', () => {
+  it('every discovered save-export capture is ok:true — equality modulo allowance, never a subset', () => {
     if (!corpus) return;
     for (const { file, body } of corpus) {
       expect(checkSchema(body, EXPORT_FINGERPRINT), `capture: ${file}`).toEqual({ ok: true });
     }
   });
 
-  it('non-vacuity: save.heroes and save.items are non-empty in the representative capture (MSG-06)', () => {
+  it('non-vacuity: save.heroes and save.items are non-empty in the representative capture', () => {
     if (!representative) return;
     assertNonEmptyCorpusArray(representative.heroes as unknown[], 'save.heroes');
     assertNonEmptyCorpusArray(representative.items as unknown[], 'save.items');
   });
 
-  it('non-vacuity: item.slot is present on at least one export item and absent on at least one (AD-087)', () => {
+  it('non-vacuity: item.slot is present on at least one export item and absent on at least one', () => {
     if (!representative) return;
     assertOptionalKeyWitnessedBothWays(
       representative.items as Record<string, unknown>[],
@@ -217,7 +217,7 @@ describe('EXPORT_FINGERPRINT — corpus check (MSG-08, MSG-18)', () => {
     });
   });
 
-  it('MSG-09/MSG-10: fails loudly under CI=1 when the corpus directory is renamed away', () => {
+  it('fails loudly under CI=1 when the corpus directory is renamed away', () => {
     const missingPath = join(DOMAIN_ROOT, 'tests/fixtures/does-not-exist-sheet-math');
     vi.stubEnv('CI', '1');
     try {
@@ -240,7 +240,7 @@ describe('EXPORT_FINGERPRINT — corpus check (MSG-08, MSG-18)', () => {
   });
 });
 
-describe('POST_UPDATE_SAVE_KEYS — the one catalogue (MSG-17)', () => {
+describe('POST_UPDATE_SAVE_KEYS — the one catalogue', () => {
   /** Walks a SchemaFingerprint's declared levels to confirm `path` lands on a declared KEY —
    * never a hand-typed guess. A second, hand-copied list of the same paths could not pass this. */
   function resolvesToDeclaredKey(fingerprint: SchemaFingerprint, path: string): boolean {
@@ -277,7 +277,7 @@ describe('POST_UPDATE_SAVE_KEYS — the one catalogue (MSG-17)', () => {
   });
 });
 
-describe('missingPostUpdateKeys — the positive discriminator (MSG-11)', () => {
+describe('missingPostUpdateKeys — the positive discriminator', () => {
   const corpus = loadCorpus();
 
   it('is positive only: value 0/false/null/[] all count as present, never treated as missing', () => {

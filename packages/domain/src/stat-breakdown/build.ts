@@ -30,7 +30,7 @@ import type {
   StatBreakdown,
 } from './types';
 
-// DEC-06/AC-19: keyed by SHEET_PANEL_KEYS (8, incl. luck) — the display-surface list, not the
+// Keyed by SHEET_PANEL_KEYS (8, incl. luck) — the display-surface list, not the
 // 7-key combat/mismatch SHEET_DISPLAY_KEYS.
 const SHEET_BUILDERS: Record<SheetPanelKey, (f: PipelineFacts) => StatBreakdown> = {
   attack: ledgerAttack,

@@ -9,13 +9,13 @@ const desktopRoot = path.join(__dirname, '..', '..');
 const ACCOUNT_FULL_FIXTURE = path.join(__dirname, '..', 'fixtures', 'account-full.json');
 
 /**
- * MP3 F3 (design.md `AD-048`, tasks.md T7) — LHP-15 end to end, both directions in one run.
+ * (design.md, tasks.md T7) — LHP-15 end to end, both directions in one run.
  *
  * **Why ~100 quiet commits produce zero `account:changed` events, and that is correct, not a
  * broken wiring.** `GameReaderService`'s fixture ticker (`BFC_GAME_READER=fixture`) commits an
  * account every `pollAttachedMs` (50 ms) with a fresh `capturedAt` and an otherwise
- * byte-identical body — ~20 commits/s, ~100 in 5 s. `AD-043`'s notifier gates `account:changed`
- * on `accountChangeKey(payload)`, which never reads `capturedAt` (`AD-044`), so every one of
+ * byte-identical body — ~20 commits/s, ~100 in 5 s. The notifier gates `account:changed`
+ * on `accountChangeKey(payload)`, which never reads `capturedAt`, so every one of
  * those commits produces the SAME key as the last emitted one and is suppressed. The **positive**
  * half of this same run then rewrites the fixture file with a genuinely different value and
  * asserts exactly one notification follows — proving the negative half's zero isn't because
@@ -118,7 +118,7 @@ function raiseFirstHeroBaseAttackAtomically(fixtureCopyPath) {
   fs.renameSync(tmpPath, fixtureCopyPath);
 }
 
-test.describe('auto-recompute smoke (MP3 F3) — 100 quiet commits, then one real change', () => {
+test.describe('auto-recompute smoke — 100 quiet commits, then one real change', () => {
   test('~100 fixture commits produce 0 account:changed events; one atomic rewrite produces exactly 1, and the rendered advice changes', async () => {
     const userDataDir = fs.mkdtempSync(path.join(os.tmpdir(), 'bfc-auto-recompute-'));
     // The committed apps/desktop/tests/fixtures/account-full.json is NEVER written to — every
@@ -139,7 +139,7 @@ test.describe('auto-recompute smoke (MP3 F3) — 100 quiet commits, then one rea
 
         const gainBefore = await page.getByTestId('next-point-gain').innerText();
 
-        // Install the counter FROM THE TEST — zero production probe surface (AD-048). Installed
+        // Install the counter FROM THE TEST — zero production probe surface. Installed
         // only after the view has already rendered once, so it counts exactly the notifications
         // that happen from this point forward.
         await page.evaluate(() => {

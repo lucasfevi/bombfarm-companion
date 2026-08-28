@@ -33,7 +33,7 @@ function fakeFsPort(files: Record<string, { text: string; mtimeMs: number }>): F
   };
 }
 
-describe('sessionCfgPath — resolves exactly %APPDATA%/Godot/app_userdata/BombFarm/session.cfg (LAR-11)', () => {
+describe('sessionCfgPath — resolves exactly %APPDATA%/Godot/app_userdata/BombFarm/session.cfg', () => {
   it('uses process.env.APPDATA when set', () => {
     const original = process.env.APPDATA;
     process.env.APPDATA = 'C:\\Users\\tester\\AppData\\Roaming';
@@ -151,7 +151,7 @@ describe('readSessionToken — every failure mode is a distinct named result, no
 describe('readSessionToken — absorbs a throwing FsPort into a named result, never propagates the throw', () => {
   it('a statSync/readFileSync that throws still resolves to not_found, not an uncaught exception', () => {
     // Documents the "throws if invoked" port pattern the account-refresh suite relies on for
-    // the unasked/declined cases (LAR-01/LAR-04): those cases never call readSessionToken at
+    // the unasked/declined cases: those cases never call readSessionToken at
     // all, so a throwing port there is never reached. Here, called correctly with a GrantedConsent,
     // readSessionToken must still degrade a throwing port to a named result rather than throw.
     const fs = throwingFsPort();

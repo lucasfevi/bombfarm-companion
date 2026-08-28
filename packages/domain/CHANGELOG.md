@@ -1372,12 +1372,12 @@ auto` DOM node even offscreen, which is also the likely cause of the scrollbar/s
   each hero's next-point ranking, and reset advice, computed through `@bombfarm/domain`'s advisor
   pipeline — the same engine the web planner runs.
 
-  `packages/domain/src/roster-dps.ts`'s `pipelineForHero` is now a public export (`AD-032`): the
+  `packages/domain/src/roster-dps.ts`'s `pipelineForHero` is now a public export: the
   only `HeroRecord`-shaped entry to the pipeline, and the one mapping both surfaces use. Its body is
   byte-unchanged; a layer-1 parity test (`packages/domain/tests/pipeline-for-hero-parity.test.ts`)
   and a layer-2 source-derived key-set guard (`tools/advisor-input-parity.test.mjs`) together prove
   the desktop and the web compute identical ranked stats and gains for the same account payload,
-  for every observed `crit_dmg_mult`. The one known, pinned divergence (`treeCritDmgMult`, `AD-038`)
+  for every observed `crit_dmg_mult`. The one known, pinned divergence (`treeCritDmgMult`)
   is documented at the export site and asserted not to widen or silently close — it is not fixed
   here, because doing so would change the web planner's own rendered numbers.
 
@@ -1389,12 +1389,12 @@ auto` DOM node even offscreen, which is also the likely cause of the scrollbar/s
   backing data is not trustworthy.
 
   **No behaviour change for the web planner.** `apps/web` is untouched — zero files changed, source
-  and tests alike. `packages/ui` is untouched too (`DS-09` intact): every control on the new screen
+  and tests alike. `packages/ui` is untouched too (the reuse boundary intact): every control on the new screen
   composes existing `@bombfarm/ui` primitives.
 
   Two known, recorded limitations ship with this feature rather than being silently claimed:
   `degraded` sections are implemented and unit-tested but currently unreachable end to end (the
-  account-restore merge prefers a stale body over a degraded live read, `AD-037`); and the manual
+  account-restore merge prefers a stale body over a degraded live read — the stale-over-degraded merge rule); and the manual
   refresh affordance (`account:refresh`, `READ_PACING.manualRefreshFloorMs`) was not taken in this
   pass and remains unimplemented, not merely deferred.
 
@@ -1525,7 +1525,7 @@ auto` DOM node even offscreen, which is also the likely cause of the scrollbar/s
   `@bombfarm/contracts` gains `AccountPayload` plus its per-section fidelity types
   (`AccountSection`, `SectionStatus`, `SectionFidelity`, `AccountFidelity`, `AccountFidelityGrade`,
   `AccountFidelityReport`) — the typed shape both the web upload path and the future desktop
-  live-memory reader (MP2 F2) will target. It declares no `export_version` / `generated_at`; those
+  live-memory reader will target. It declares no `export_version` / `generated_at`; those
   stay file-only.
 
   `@bombfarm/domain`'s `parseSaveFile` is now a five-line file adapter over a new exported entry
@@ -1652,7 +1652,7 @@ auto` DOM node even offscreen, which is also the likely cause of the scrollbar/s
 - c498b77: Import and expose the account's farm phase (`account.phase`) as an editable Account field, and model Abisso's damage multiplier (`abissoBase^currentPhase`) in the combat pipeline instead of dropping it silently.
 - 52e69d6: Fix Glass Cannon and Tempo Dobrado sheet math: move crit-damage ×2, energy ×0.5, and speed ×1.33333 from combat multipliers to the sheet layer (matching the game), fixing corrupted spent-point inference on keystone accounts.
 - dc14dd9: The Phases page's squad table now ranks and sums by your account's actual casa slot count instead of a hardcoded "Top 9" — a smaller or larger house now shows the right number of heroes, with the section heading and DPS tooltip updated to match.
-- f76884a: Fix `peelSheetSources` dropping all three keystone sheet effects, which broke its documented AC-10 sum identity on keystone accounts — energy by a factor of 2, speed by ~0.80x and crit damage by 0.72–0.85x. Both keystone contributions land on the skill-tree line, matching the game's own stat tooltip.
+- f76884a: Fix `peelSheetSources` dropping all three keystone sheet effects, which broke its documented sum identity on keystone accounts — energy by a factor of 2, speed by ~0.80x and crit damage by 0.72–0.85x. Both keystone contributions land on the skill-tree line, matching the game's own stat tooltip.
 - 3d3d70e: Add `gameSheetView`, a display-time clamp matching the game's exported sheet (crit chance at 100%, CDR at 80%; penetration is never clamped). The Planner's Stats panel now shows an "Over cap" column so a player can see how much of an over-cap stat is being wasted, without changing the underlying uncapped `total` the telescoping columns sum to. The Team Plan hero panel now shows two stacked stat grids — "Hero sheet" (capped, matching the in-game panel) and "Combat stats" (uncapped, aura-inclusive) — instead of one combat-only grid.
 
   Fix `selectTreeSheetTotals` (the planner store's `TreeSheetTotals` builder used by level/stars/gear recomposition and by Team Plan scoring), which had been missed by the prior keystone sheet-math correction: it hardcoded `critDmgMult: 1` and never carried `glassCannon`/`tempoDobrado` through at all, so every hero sheet recomposed from store state — including the whole Team Plan objective — ran Glass Cannon and Tempo Dobrado free even for accounts that own them. Glass Cannon's crit-damage multiplier (`skills.totals.crit_dmg_mult`) is now persisted on import (`TreeState.critDmgMult`, defaulting to `1` for existing saves) instead of re-derived from the `glassCannon` boolean, matching how `abissoBase` is already persisted.

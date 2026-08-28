@@ -6,7 +6,7 @@ import { formatNumber } from '@/shared/lib/format-number';
 
 const LANGS: Lang[] = ['en', 'pt'];
 
-describe('optimizeResultDisplay (AC-13)', () => {
+describe('optimizeResultDisplay', () => {
   for (const lang of LANGS) {
     const t = STRINGS[lang];
 

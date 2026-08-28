@@ -7,7 +7,7 @@ export const DOMAIN_ROOT = join(here, '..', '..');
 export const DIST_ROOT = join(DOMAIN_ROOT, 'dist');
 
 /**
- * `AD-032` makes `packages/domain/dist` a real build prerequisite, not an optional
+ * This makes `packages/domain/dist` a real build prerequisite, not an optional
  * artifact. Unlike `apps/web`'s `requireBuildOutput` (a multi-minute `next build`, tolerated
  * as a local-developer skip), the prerequisite here is one fast package build
  * (`pnpm --filter @bombfarm/domain build`) — so there is deliberately **no** local-skip

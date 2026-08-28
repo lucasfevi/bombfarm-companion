@@ -1,7 +1,7 @@
 /**
- * MP3 F4 — MIN-16's language control, built from three shipped `@bombfarm/ui` primitives
+ * The language control, built from three shipped `@bombfarm/ui` primitives
  * (`SettingsSection` → `SettingsRow` → `Select`) and zero bespoke controls
- * (`docs/base-ui-first.md`). MIN-11's surface half: the not-persisted warning is an
+ * (`docs/base-ui-first.md`). The failure-surfaced half: the not-persisted warning is an
  * always-mounted `Banner` toggled with `invisible`/`aria-hidden` (`docs/no-layout-shift.md` rule
  * 1, `FieldRequired`'s own pattern) rather than a conditionally mounted paragraph that would
  * shift the section's own height on every switch.

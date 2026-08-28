@@ -26,7 +26,7 @@ function sectionChangedDiff(endpoint, section) {
   };
 }
 
-describe('renderSummary — exactly one outcome line, for all four outcomes (MWD-27)', () => {
+describe('renderSummary — exactly one outcome line, for all four outcomes', () => {
   const cases = [
     { outcome: 'ok', args: {} },
     { outcome: 'drift', args: { diffs: [sectionChangedDiff('data', 'fases')] } },
@@ -43,7 +43,7 @@ describe('renderSummary — exactly one outcome line, for all four outcomes (MWD
   }
 });
 
-describe('renderSummary — unreachable / baseline-missing are attributable from the summary alone (MWD-29)', () => {
+describe('renderSummary — unreachable / baseline-missing are attributable from the summary alone', () => {
   it('unreachable names the reason token and the URL', () => {
     const text = renderSummary({ outcome: 'unreachable', reason: 'http-500', url: DATA_URL });
     expect(text).toContain('http-500');
@@ -59,7 +59,7 @@ describe('renderSummary — unreachable / baseline-missing are attributable from
   });
 });
 
-describe('renderSummary — drift names every differing section with both hashes (MWD-06, MWD-20)', () => {
+describe('renderSummary — drift names every differing section with both hashes', () => {
   it('a changed section is named with baseline and observed hash', () => {
     const diffs = [sectionChangedDiff('data', 'fases')];
     const text = renderSummary({ outcome: 'drift', diffs });
@@ -91,7 +91,7 @@ describe('renderSummary — drift names every differing section with both hashes
   });
 });
 
-describe('renderSummary / renderIssueBody — no interpretation, ever (MWD-06)', () => {
+describe('renderSummary / renderIssueBody — no interpretation, ever', () => {
   it('the forbidden-phrase list is the one the spec names', () => {
     expect(FORBIDDEN_INTERPRETATION_PHRASES_FOR_TEST).toEqual([
       'means', 'because', 'probably', 'likely', 'you should',
@@ -120,7 +120,7 @@ describe('renderSummary / renderIssueBody — no interpretation, ever (MWD-06)',
   });
 });
 
-describe('renderIssueTitle — stable prefix + differing-section count (MWD-43)', () => {
+describe('renderIssueTitle — stable prefix + differing-section count', () => {
   it('the stable prefix is a literal', () => {
     expect(renderIssueTitle([sectionChangedDiff('data', 'fases')])).toMatch(/^Wiki data drift — /);
   });
@@ -140,7 +140,7 @@ describe('renderIssueTitle — stable prefix + differing-section count (MWD-43)'
   });
 });
 
-describe('renderIssueBody — every required element present, individually asserted (MWD-20)', () => {
+describe('renderIssueBody — every required element present, individually asserted', () => {
   const diffs = [
     sectionChangedDiff('data', 'fases'),
     { kind: 'versao-catalogo-changed', endpoint: 'data', section: null, from: 4, to: 5 },
@@ -269,7 +269,7 @@ describe('renderIssueBody — the issue names where the differing values are com
   });
 });
 
-describe('MWD-44 — drift confined to a section that backs no committed artifact is still reported', () => {
+describe('drift confined to a section that backs no committed artifact is still reported', () => {
   it('names a section that backs no committed artifact in the body, and does not suppress the alert', () => {
     const diffs = [sectionChangedDiff('data', 'skill_tree')];
     const body = renderIssueBody({ diffs, observedAt: '2026-08-14T05:17:00.000Z', runUrl: 'https://example.invalid/run' });

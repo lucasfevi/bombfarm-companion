@@ -1,6 +1,6 @@
 /**
  * Dependency-injected — no Electron import anywhere in this file or in `account-view.ts` itself
- * (design.md `AD-043`). Fakes stand in for `GameReaderService`/`ConsentStore`/
+ * (design.md, the single-source change-signal decision). Fakes stand in for `GameReaderService`/`ConsentStore`/
  * `AccountRefreshHandle`/`AccountStore` via the structural interfaces `account-view.ts` declares.
  */
 import { describe, expect, it, vi } from 'vitest';
@@ -71,7 +71,7 @@ function fakeAccountRefresh(view: AccountView | null): AccountRefreshLike {
   return { getLastView: () => view };
 }
 
-describe('resolveCachedAccountView — the pure-read half of AD-043', () => {
+describe('resolveCachedAccountView — the pure-read half of the single-source change-signal decision', () => {
   it('never commits: with every producer returning nothing, it returns null', () => {
     const result = resolveCachedAccountView({
       gameReader: fakeGameReader('not_running', null),
@@ -125,7 +125,7 @@ describe('resolveCachedAccountView — the pure-read half of AD-043', () => {
   });
 });
 
-describe('resolveAccountView — AD-043 point 1: byte-for-byte the pre-F3 account:get behaviour', () => {
+describe('resolveAccountView — the single-source change-signal rule, point 1: byte-for-byte the pre-F3 account:get behaviour', () => {
   const fakeAccountStore: AccountCommitterLike = {
     commit: vi.fn((payload: AccountPayload, opts: { gameRunning: boolean }) =>
       makeView({ ...payload, fidelity: fidelity('missing') }, opts.gameRunning),
@@ -171,7 +171,7 @@ describe('resolveAccountView — AD-043 point 1: byte-for-byte the pre-F3 accoun
   });
 });
 
-describe('createAccountNotifier — AD-043 point 2: emits only on change, never commits', () => {
+describe('createAccountNotifier — the single-source change-signal rule, point 2: emits only on change, never commits', () => {
   it('a null cached view suppresses: no commit attempted, no throw, getSuppressedCount() increments', () => {
     const emit = vi.fn();
     const commitSpy = vi.fn();
@@ -236,7 +236,7 @@ describe('createAccountNotifier — AD-043 point 2: emits only on change, never 
     expect(notifier.getSuppressedCount()).toBe(1);
   });
 
-  it('a status-only change is emitted (MAR-09)', () => {
+  it('a status-only change is emitted', () => {
     const emit = vi.fn();
     let view = makeView(makePayload({ fidelity: fidelity('resolved') }));
     const notifier = createAccountNotifier({

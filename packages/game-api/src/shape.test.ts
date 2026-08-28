@@ -1,5 +1,5 @@
 /**
- * MP5 F4 (T5) — `checkShape` over the real committed route bodies. The `an unknown extra key ->
+ * T5 — `checkShape` over the real committed route bodies. The `an unknown extra key ->
  * ok:true` case below is INVERTED, not deleted (design §2.1): the old assertion actively asserted
  * the bug this feature exists to fix — a shape.ts header that said "an extra key is additive and
  * logged, never a failure." It no longer is.
@@ -13,7 +13,7 @@ import { fixturePath, loadFixtureJson, required, requireFixture } from './test-f
 const bodiesPresent = requireFixture(fixturePath('api-bodies.json'), 'checkShape route body checks');
 const bodies = bodiesPresent ? loadFixtureJson('api-bodies.json') : null;
 
-describe('checkShape — per route, over the committed bodies (LAR-19, LAR-20, MP5 F4)', () => {
+describe('checkShape — per route, over the committed bodies', () => {
   for (const route of ROUTES) {
     const fingerprint = ROUTE_FINGERPRINTS[route.section];
 
@@ -38,7 +38,7 @@ describe('checkShape — per route, over the committed bodies (LAR-19, LAR-20, M
       }
     });
 
-    it(`${route.path}: an unknown extra key -> ok:false, naming it as added (INVERTED — was ok:true, MP5 F4)`, () => {
+    it(`${route.path}: an unknown extra key -> ok:false, naming it as added (INVERTED — was ok:true)`, () => {
       if (!bodies) return;
       const body = bodies[route.path] ?? {};
       const withExtra = { ...body, a_brand_new_field_the_fingerprint_does_not_know: true };

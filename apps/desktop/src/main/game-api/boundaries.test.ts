@@ -39,7 +39,7 @@ function isTestFile(file: string): boolean {
 }
 
 // -------------------------------------------------------------------------------------------
-// Guard 1 — no write surface (LAR-13, LAR-24). Every source file that can reach the network:
+// Guard 1 — no write surface. Every source file that can reach the network:
 // packages/game-api/src (the classification/typing half) AND apps/desktop/src/main (the one
 // real socket, https-transport.ts, plus everything around it) — the scan used to cover only the
 // former, which is exactly why a hard-coded non-GET method in https-transport.ts was invisible
@@ -73,7 +73,7 @@ function foldStringConcatenation(text: string): string {
  *  semver build-metadata string already is above. */
 const LOOPBACK_IPS = new Set(['127.0.0.1', '0.0.0.0']);
 
-describe('Guard 1 — no write surface anywhere the network can be reached (D24, LAR-13, LAR-24)', () => {
+describe('Guard 1 — no write surface anywhere the network can be reached (D24)', () => {
   const sourceFiles = [...walkTsFiles(GAME_API_SRC), ...walkTsFiles(DESKTOP_MAIN)].filter((f) => !isTestFile(f));
 
   it('scans a non-empty set of non-test source files, including apps/desktop/src/main', () => {
@@ -105,21 +105,21 @@ describe('Guard 1 — no write surface anywhere the network can be reached (D24,
         }
       }
     }
-    expect(offenders, `LAR-13: only api.bombfarm.net is allowed. Offenders: ${JSON.stringify(offenders)}`).toEqual([]);
+    expect(offenders, `Only api.bombfarm.net is allowed. Offenders: ${JSON.stringify(offenders)}`).toEqual([]);
   });
 
-  it('contains no dotted-quad IP literal (TD-9 — no Cloudflare fixed-IP fallback)', () => {
+  it('contains no dotted-quad IP literal (no Cloudflare fixed-IP fallback)', () => {
     // Negative lookahead excludes the game build string '0.1.0.0+2026-08-11T21:38:23Z'
     // (fingerprints.ts) — semver build metadata, not an IP; a real IP is never followed by '+'.
     const ipPattern = /\b(?:\d{1,3}\.){3}\d{1,3}\b(?!\+)/;
     const offenders = sourceFiles
       .map((file) => ({ file, match: ipPattern.exec(readFileSync(file, 'utf8')) }))
       .filter((r) => r.match !== null && !LOOPBACK_IPS.has(r.match[0]));
-    expect(offenders, `LAR-24/TD-9: no IP fallback. Offenders: ${JSON.stringify(offenders.map((o) => o.file))}`).toEqual([]);
+    expect(offenders, `No IP fallback. Offenders: ${JSON.stringify(offenders.map((o) => o.file))}`).toEqual([]);
   });
 
   it('https-transport.ts forwards HttpRequest.method verbatim in every https.request call — no literal, template, or computed method value of its own', () => {
-    // Closes the "computed value" half of the obfuscation class (LAR-13): rather than trying to
+    // Closes the "computed value" half of the obfuscation class: rather than trying to
     // evaluate an arbitrary expression (`String.fromCharCode(...)`, a reassigned variable, a
     // ternary, ...), this simply forbids the one file that owns the socket from doing anything
     // except forwarding the compile-time-literal-typed `req.method` it was handed.
@@ -151,16 +151,16 @@ describe('Guard 1 — no write surface anywhere the network can be reached (D24,
       const methodFieldMatch = /\bmethod\s*:\s*([^,\n}]+)/.exec(optionsBlock);
       expect(methodFieldMatch, `https-transport.ts call #${String(index + 1)} must set an explicit method field on its https.request options`).not.toBeNull();
       const methodValue = methodFieldMatch?.[1]?.trim();
-      expect(methodValue, `LAR-13: https-transport.ts call #${String(index + 1)} must forward req.method verbatim, got "${String(methodValue)}"`).toBe('req.method');
+      expect(methodValue, `https-transport.ts call #${String(index + 1)} must forward req.method verbatim, got "${String(methodValue)}"`).toBe('req.method');
     });
   });
 });
 
 // -------------------------------------------------------------------------------------------
-// Guard 2 — one socket (AD-024, TD-11). Only https-transport.ts may import a transport library.
+// Guard 2 — one socket. Only https-transport.ts may import a transport library.
 // -------------------------------------------------------------------------------------------
 
-describe('Guard 2 — https-transport.ts is the sole transport-library importer (AD-024)', () => {
+describe('Guard 2 — https-transport.ts is the sole transport-library importer', () => {
   // Explicit, minimal allow-list: electron-updater's own GitHub calls and renderer/** are out of
   // scope for this guard (they are not on the account-read path this feature owns).
   const scannedFiles = [...walkTsFiles(GAME_API_SRC), ...walkTsFiles(DESKTOP_MAIN)].filter((f) => !isTestFile(f));
@@ -185,7 +185,7 @@ describe('Guard 2 — https-transport.ts is the sole transport-library importer 
         offenders.push(file);
       }
     }
-    expect(offenders, `AD-024: https-transport.ts is the only socket. Offenders: ${JSON.stringify(offenders)}`).toEqual([]);
+    expect(offenders, `https-transport.ts is the only socket. Offenders: ${JSON.stringify(offenders)}`).toEqual([]);
   });
 
   it('https-transport.ts itself does import node:https (sanity — the guard is not vacuous)', () => {
@@ -195,10 +195,10 @@ describe('Guard 2 — https-transport.ts is the sole transport-library importer 
 });
 
 // -------------------------------------------------------------------------------------------
-// Guard 3 — no unconsented path (LAR-06, LAR-11).
+// Guard 3 — no unconsented path.
 // -------------------------------------------------------------------------------------------
 
-describe('Guard 3 — no path to the network or the token file bypasses consent (LAR-06, LAR-11)', () => {
+describe('Guard 3 — no path to the network or the token file bypasses consent', () => {
   const allFiles = [...walkTsFiles(GAME_API_SRC), ...walkTsFiles(DESKTOP_MAIN)];
   const nonTestFiles = allFiles.filter((f) => !isTestFile(f));
 
@@ -217,13 +217,13 @@ describe('Guard 3 — no path to the network or the token file bypasses consent 
       }
       return readFileSync(file, 'utf8').includes('app_userdata');
     });
-    expect(offenders, `LAR-11: only session-token-file.ts opens the token file's directory. Offenders: ${JSON.stringify(offenders)}`).toEqual([]);
+    expect(offenders, `Only session-token-file.ts opens the token file's directory. Offenders: ${JSON.stringify(offenders)}`).toEqual([]);
   });
 
   it('the token is dereferenced via [RAW] only in request.ts among non-test files', () => {
     const derefPattern = /\.token\[RAW\]/;
     const offenders = nonTestFiles.filter((file) => file !== REQUEST_FILE && derefPattern.test(readFileSync(file, 'utf8')));
-    expect(offenders, `LAR-12: request.ts is the only reader of the raw token. Offenders: ${JSON.stringify(offenders)}`).toEqual([]);
+    expect(offenders, `request.ts is the only reader of the raw token. Offenders: ${JSON.stringify(offenders)}`).toEqual([]);
   });
 
   it('every caller of requestGet()/readSection() obtained its session via grantSession() (a ConsentedSession)', () => {
@@ -237,7 +237,7 @@ describe('Guard 3 — no path to the network or the token file bypasses consent 
         offenders.push(file);
       }
     }
-    expect(offenders, `LAR-06: every network call site must be typed to a ConsentedSession. Offenders: ${JSON.stringify(offenders)}`).toEqual([]);
+    expect(offenders, `Every network call site must be typed to a ConsentedSession. Offenders: ${JSON.stringify(offenders)}`).toEqual([]);
   });
 
   it('sanity: at least one file does call requestGet/readSection (the guard above is not vacuous)', () => {

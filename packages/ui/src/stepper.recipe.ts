@@ -1,7 +1,7 @@
 /**
  * Stepper / rank-control / check class sets — parity with the former
  * `control-chrome.ts` exports. These are fixed (no variants), so they stay as
- * documented recipe constants (design DS-05) inside the reuse boundary.
+ * documented recipe constants inside the reuse boundary.
  */
 
 export const stepperClass = 'inline-flex items-center gap-1.5';

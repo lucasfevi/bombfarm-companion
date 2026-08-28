@@ -13,7 +13,7 @@ function firstHeroId(model: ReturnType<typeof buildPlanningModel>): string {
   return entry.hero.id;
 }
 
-describe('NextPointPanel (MPV-02, MPV-03, MPV-09)', () => {
+describe('NextPointPanel', () => {
   it('renders next-point-ranking, next-point-top-stat and next-point-gain when usable', () => {
     const model = buildPlanningModel(syntheticAccountView());
     const heroId = firstHeroId(model);
@@ -30,7 +30,7 @@ describe('NextPointPanel (MPV-02, MPV-03, MPV-09)', () => {
     if (!advice) throw new Error('expected a hero');
     const html = renderToStaticMarkup(createElement(NextPointPanel, { model, heroId }));
     // Every stat row should be present, in some order rendered — the exact ordering is proven
-    // at the model layer (withhold-matrix.test.ts's MPV-03 layer 3); here we only assert the
+    // at the model layer (withhold-matrix.test.ts's layer 3); here we only assert the
     // renderer does not drop any ranking entries.
     expect((html.match(/<tr/g) ?? []).length).toBeGreaterThan(1);
   });
@@ -45,12 +45,12 @@ describe('NextPointPanel (MPV-02, MPV-03, MPV-09)', () => {
 });
 
 /**
- * MP3 F4 — MIN-10 unit half (design §4.3): a language switch is a display change, not an account
+ * The no-recompute-on-language-change unit half (design §4.3): a language switch is a display change, not an account
  * change, and must trigger zero advice recomputation. `resetAdviceComputeCount()` in
  * `beforeEach` — F3's module-level-state warning applies verbatim (recompute-sequences.test.ts's
  * own convention, reused here).
  */
-describe('a locale switch over a mounted planning tree recomputes nothing (MIN-10)', () => {
+describe('a locale switch over a mounted planning tree recomputes nothing', () => {
   beforeEach(() => {
     resetAdviceComputeCount();
   });

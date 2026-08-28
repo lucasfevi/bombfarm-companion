@@ -5,7 +5,7 @@ import { ROUTES, readSection, type SectionOutcome } from './routes.js';
 import type { ConsentedSession } from './session.js';
 
 /**
- * The client (LAR-09 client half). Holds no per-section state at all: every call walks `ROUTES`
+ * The client. Holds no per-section state at all: every call walks `ROUTES`
  * fresh and returns a brand-new outcome map. A change between two cycles is reflected because
  * there is nothing here that could serve a stale value — the only place "last known good" exists
  * in this product is F3's `commit()`.

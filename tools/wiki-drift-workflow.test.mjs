@@ -7,7 +7,7 @@ const root = resolve(fileURLToPath(new URL('..', import.meta.url)));
 const WIKI_DRIFT_YML_PATH = join(root, '.github/workflows/wiki-drift.yml');
 
 /**
- * MP5 F5 — the workflow-shape guard, the pre-merge proof that the scheduled job cannot be
+ * The workflow-shape guard, the pre-merge proof that the scheduled job cannot be
  * quietly neutered. Every predicate below is a pure function over workflow *text*, asserted
  * twice: `true` against `readFileSync` of the real file on disk, and `false` against a *string
  * mutation of that same text* — never a synthetic hand-written fixture that could drift away
@@ -221,7 +221,7 @@ describe('wiki-drift.yml shape guard — 15 mutations, each turning its predicat
   });
 });
 
-describe('wiki-drift.yml — MWD-08: writes nothing under packages/**, no commit, no PR', () => {
+describe('wiki-drift.yml — writes nothing under packages/**, no commit, no PR', () => {
   it('carries no git push, git commit, gh pr create, or a write path under packages/ (outside comments)', () => {
     const code = stripCommentLines(realText);
     expect(code).not.toMatch(/\bgit push\b/);
@@ -237,7 +237,7 @@ describe('wiki-drift.yml — MWD-08: writes nothing under packages/**, no commit
 });
 
 // =============================================================================================
-// MWD-02: zero third-party imports across tools/wiki-drift/*.mjs — pure predicate, red state
+// Zero third-party imports across tools/wiki-drift/*.mjs — pure predicate, red state
 // demonstrated against a fixture string (design §5.6), independent of the T7 per-file scan.
 // =============================================================================================
 
@@ -246,7 +246,7 @@ function noThirdPartyImports(source) {
   return specifiers.every((s) => s.startsWith('node:') || s.startsWith('./'));
 }
 
-describe('tools/wiki-drift/*.mjs — zero third-party import specifiers (MWD-02)', () => {
+describe('tools/wiki-drift/*.mjs — zero third-party import specifiers', () => {
   const files = ['fingerprint.mjs', 'fetch-endpoints.mjs', 'report.mjs', 'issue.mjs', 'check.mjs'];
 
   for (const file of files) {

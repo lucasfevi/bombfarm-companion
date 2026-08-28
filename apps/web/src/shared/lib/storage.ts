@@ -356,12 +356,12 @@ export function patchHeroInList(heroes: HeroRecord[], saved: HeroRecord): HeroRe
  * them. Unlike `upsertHero`, this writes once and never touches the active hero.
  */
 /**
- * BSPW5-08 (BSP-48/50/52, AD-BSP-25): a full roster sync, not just create/update.
+ * A full roster sync, not just create/update.
  *
  * `saveSourceIds` — when supplied — is the save's OWN complete hero-id set (never derived
- * from `records`, DEC-06): any existing hero whose `sourceId` is absent from it is removed
+ * from `records`): any existing hero whose `sourceId` is absent from it is removed
  * in the same write. A blocked candidate contributes its `sourceId` to that set but no
- * `record`, so it is kept-but-not-updated (AC-28), never removed for merely failing to
+ * `record`, so it is kept-but-not-updated, never removed for merely failing to
  * parse. `reconcileActiveHero` re-points (or clears, if the roster empties) the active id
  * only when a removal actually happened — it is already the exact function `loadHeroes`
  * uses, so no new re-pointing policy is introduced.
@@ -369,7 +369,7 @@ export function patchHeroInList(heroes: HeroRecord[], saved: HeroRecord): HeroRe
  * `saveSourceIds` is optional and defaults to the CURRENT roster's own sourceIds — a
  * guaranteed removal no-op — so every existing caller that does not pass it (today's
  * `use-import-candidates.ts`, a feature file this wave does not touch) keeps today's exact
- * create/update-only behavior; `removed` is always `0` in that case. AC-27: this sync takes
+ * create/update-only behavior; `removed` is always `0` in that case. This sync takes
  * only heroes/records/sourceIds — no account identifier or save-generation timestamp field
  * is part of its input shape at all, so none can gate a removal.
  *

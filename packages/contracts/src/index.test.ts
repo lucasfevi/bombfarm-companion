@@ -21,7 +21,7 @@ type _AllInvokeChannelsListed = AssertNever<Exclude<import('./index.js').IpcInvo
 type _AllEventChannelsListed = AssertNever<Exclude<import('./index.js').IpcEventChannel, (typeof IPC_EVENT_CHANNELS)[number]>>;
 
 describe('contracts IPC surface', () => {
-  it('lists stable invoke channels, including the four MP2 F2 consent channels', () => {
+  it('lists stable invoke channels, including the four consent channels', () => {
     expect(IPC_CHANNELS).toEqual([
       'app:getFlavor',
       'app:getEnvironment',

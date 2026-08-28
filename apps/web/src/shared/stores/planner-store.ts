@@ -52,17 +52,17 @@ const composeSlices: StateCreator<
 });
 
 /**
- * Root planner store. Pure defaults only — no localStorage at module scope (W4-01).
+ * Root planner store. Pure defaults only — no localStorage at module scope.
  * Persistence is attachPlannerPersistence + hydratePlannerStore (later tasks).
  *
  * Middleware: subscribeWithSelector is always outer; devtools sits inside it and is
- * aliased away entirely for production builds — see devtools-middleware.ts (RES-02).
+ * aliased away entirely for production builds — see devtools-middleware.ts.
  */
 export const usePlannerStore = create<PlannerStore>()(
   subscribeWithSelector(withOptionalDevtools(composeSlices)),
 );
 
-/** Snapshot of initial slice defaults for Vitest isolation (ASM-04). */
+/** Snapshot of initial slice defaults for Vitest isolation. */
 const initialPlannerState = usePlannerStore.getState();
 
 type TestCleanup = () => void;

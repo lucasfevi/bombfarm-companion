@@ -68,7 +68,7 @@ function extractQuotedListLines(text) {
   return out;
 }
 
-describe('fidelity-gate-required aggregator (design.md R-2/R-3, SBC-19/AD-018 idiom)', () => {
+describe('fidelity-gate-required aggregator (design.md R-2/R-3)', () => {
   const workflowText = readFileSync(CI_FIDELITY_PATH, 'utf8');
   const jobBlock = extractJobBlock(workflowText, 'fidelity-gate-required');
 
@@ -115,7 +115,7 @@ describe('fidelity-gate-required aggregator (design.md R-2/R-3, SBC-19/AD-018 id
   );
 });
 
-describe('the fidelity-gate job step itself (FID-09, FID-10, edge case 5)', () => {
+describe('the fidelity-gate job step itself (edge case 5)', () => {
   const workflowText = readFileSync(CI_FIDELITY_PATH, 'utf8');
   const jobBlock = extractJobBlock(workflowText, 'fidelity-gate');
   const steps = extractSteps(jobBlock ?? '');
@@ -141,7 +141,7 @@ describe('the fidelity-gate job step itself (FID-09, FID-10, edge case 5)', () =
   });
 });
 
-describe('path-filter parity (FID-08)', () => {
+describe('path-filter parity', () => {
   const workflowText = readFileSync(CI_FIDELITY_PATH, 'utf8');
   const FID_08_PATHS = ['apps/desktop/**', 'packages/game-data/**', 'packages/domain/**'];
 
@@ -159,7 +159,7 @@ describe('path-filter parity (FID-08)', () => {
     expect([...pushPaths].sort()).toEqual([...filterPaths].sort());
   });
 
-  it('both lists contain all three FID-08 paths (apps/desktop, packages/game-data, packages/domain)', () => {
+  it('both lists contain all three fidelity-relevant paths (apps/desktop, packages/game-data, packages/domain)', () => {
     for (const p of FID_08_PATHS) {
       expect(workflowText).toContain(`'${p}'`);
     }
@@ -221,7 +221,7 @@ function hasExistsSyncGuardedReturn(text) {
  *
  * Anchored to the start of a line (only leading whitespace before the token) so prose that
  * merely contains the word "test" or "it" followed by a parenthesis in a comment — e.g. this
- * very file's helper doc-comment "cannot be reassembled wrongly per-test (design TD-1)" over in
+ * very file's helper doc-comment "cannot be reassembled wrongly per-test" over in
  * `fidelity-gate.ts` — can never be mistaken for a call site. This is the same self-trip hazard
  * `--passWithNoTests` caused against a bare `toContain` check on workflow comment text; real
  * `it(`/`test(` declarations in this codebase always start their line.

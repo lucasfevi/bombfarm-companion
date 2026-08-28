@@ -82,7 +82,7 @@ test.describe('app boot smoke', () => {
       const navButtons = page.locator('nav[aria-label="Main"] button');
       await expect(navButtons).toHaveCount(4, { timeout: 30_000 });
 
-      // MP3 F1 (AD-032) — the renderer's @bombfarm/domain value import reached the DOM.
+      // the renderer's @bombfarm/domain value import reached the DOM.
       await expect(page.getByTestId('domain-label-probe')).toHaveText('Common');
 
       const ping = await page.evaluate(async () => {

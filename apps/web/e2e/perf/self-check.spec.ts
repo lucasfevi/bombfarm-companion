@@ -27,7 +27,7 @@ const EVIDENCE_PATH = path.join(process.cwd(), 'e2e/perf/out/t2-self-check-evide
 /** Locked after prod-profile name spike failed (see evidence.prodProfileSpike). */
 /**
  * Mirrors `perf.spec.ts`. Was hardcoded to `dev-strict` while that was the only mode;
- * once `RES-05` added `prod-profile`, a fixed value made the written evidence claim a
+ * once the perf-profile build flag added `prod-profile`, a fixed value made the written evidence claim a
  * mode the run did not use.
  */
 const CAPTURE_MODE: 'dev-strict' | 'prod-profile' =
@@ -44,12 +44,12 @@ test.describe('perf harness self-check', () => {
 
     await page.goto('/')
 
-    // Settle: planner region visible (AD-012).
+    // Settle: planner region visible.
     const heroStrip = page.getByRole('region', { name: /herói atual|current hero/i })
     await expect(heroStrip).toBeVisible({ timeout: 60_000 })
     await selectSavedHero(page, 'Cora')
 
-    // Settle after picker apply (AD-012).
+    // Settle after picker apply.
     await page.waitForTimeout(1100)
 
     const afterBoot = await readPerfApi(page)
@@ -119,7 +119,7 @@ test.describe('perf harness self-check', () => {
         w1SpikeMinifiedRatio: 0.487,
         note:
           'W1 spike (2026-07-29) rejected prod-profile: `next build --profile` still mangled ~49% ' +
-          'of component keys. RES-05 resolved it — pairing that flag with PERF_PROFILE=1, which ' +
+          'of component keys. The perf-profile build flag resolved it — pairing that flag with PERF_PROFILE=1, which ' +
           'disables minification for the measurement build only, retains the names. Both modes ' +
           'are now supported; see apps/web docs and e2e/perf harness notes.',
       },

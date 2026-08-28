@@ -95,7 +95,7 @@ function depsEqual(left: readonly unknown[], right: readonly unknown[]): boolean
   return true;
 }
 
-/** Module-level single-entry cache — one store instance (AD-012); reset via resetFarmRankingCache. */
+/** Module-level single-entry cache — one store instance; reset via resetFarmRankingCache. */
 let cache: { deps: readonly unknown[]; result: FarmRankingResult } | null = null;
 let computeCount = 0;
 
@@ -196,7 +196,7 @@ function computeFarmRanking(state: PlannerStore): FarmRankingResult {
 }
 
 /**
- * Module-level single-entry memoized selector (MOD-18 shape). Returns the SAME object
+ * Module-level single-entry memoized selector. Returns the SAME object
  * identity on a cache hit, so `usePlannerStore(selectFarmRankingRows)` needs no `useShallow` —
  * and must not have one: shallow-comparing 600 rows on every store write is the exact cost this
  * memoization exists to avoid (the `selectAdvisorPipeline` carve-out in `state-management.md`).

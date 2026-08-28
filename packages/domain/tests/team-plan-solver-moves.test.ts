@@ -106,7 +106,7 @@ describe('generateMoves', () => {
   });
 
   it.skip('orders moves by heroDps desc then heroId asc then slot then itemId', () => {
-    // MP5 F1 (AD-068 class (b) — structural, RECORDED FIX): the deleted fixture's hero name
+    // The ground-truth rule's class (b) (structural, RECORDED FIX): the deleted fixture's hero name
     // 'Torin' was hardcoded to receive the elevated heroDps that makes this ordering
     // discriminate. No corpus hero is named Torin, and the original `if (torinFirst >= 0 &&
     // otherFirst >= 0)` guard would have silently made the inner assertion never run against

@@ -135,7 +135,7 @@ function runCli({ dir, baselinePath, portsModulePath, args = [], env = {} }) {
   return result;
 }
 
-describe('check.mjs — exit codes at the process boundary (MWD-27, MWD-37)', () => {
+describe('check.mjs — exit codes at the process boundary', () => {
   it('ok → exit 0', () => {
     const dir = makeTempDir();
     const baselinePath = validScratchBaselinePath(dir);
@@ -178,7 +178,7 @@ describe('check.mjs — exit codes at the process boundary (MWD-27, MWD-37)', ()
   });
 });
 
-describe('check.mjs — ok creates no issue, comments on none (MWD-07)', () => {
+describe('check.mjs — ok creates no issue, comments on none', () => {
   it('zero api.github.com calls on a clean run', () => {
     const dir = makeTempDir();
     const baselinePath = validScratchBaselinePath(dir);
@@ -195,7 +195,7 @@ describe('check.mjs — ok creates no issue, comments on none (MWD-07)', () => {
   });
 });
 
-describe('check.mjs — drift also exits non-zero, both channels in the same case (MWD-21)', () => {
+describe('check.mjs — drift also exits non-zero, both channels in the same case', () => {
   it('drift with a working issue API ⇒ exit 1 AND an issue call is made', () => {
     const dir = makeTempDir();
     const baselinePath = validScratchBaselinePath(dir);
@@ -214,7 +214,7 @@ describe('check.mjs — drift also exits non-zero, both channels in the same cas
   });
 });
 
-describe('check.mjs — an issue-API failure still exits non-zero and says so (MWD-23)', () => {
+describe('check.mjs — an issue-API failure still exits non-zero and says so', () => {
   it('drift + a failing issue API ⇒ still exit 1, summary says the alert could not be filed', () => {
     const dir = makeTempDir();
     const baselinePath = validScratchBaselinePath(dir);
@@ -233,7 +233,7 @@ describe('check.mjs — an issue-API failure still exits non-zero and says so (M
   });
 });
 
-describe('check.mjs --write (MWD-35, MWD-36, MWD-37)', () => {
+describe('check.mjs --write', () => {
   it('fetches, fingerprints and rewrites only the given baseline path — no other change, no issue', () => {
     const dir = makeTempDir();
     const baselinePath = join(dir, 'scratch-write.json');
@@ -251,7 +251,7 @@ describe('check.mjs --write (MWD-35, MWD-36, MWD-37)', () => {
     expect(githubCalls).toEqual([]);
   });
 
-  it('run twice against the same payload ⇒ byte-identical output (MWD-36)', () => {
+  it('run twice against the same payload ⇒ byte-identical output', () => {
     const dir = makeTempDir();
     const baselinePath = join(dir, 'scratch-write.json');
     const { modulePath } = writeStubPortsModule(dir);

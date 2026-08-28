@@ -13,7 +13,7 @@ function issue(saturatedStats: ('critChance' | 'cdr')[]): PointInferenceIssue[] 
   return [{ kind: 'budgetMismatch', recovered: 10, budget: 12, difference: 2, saturatedStats }];
 }
 
-describe('pointIssueCopyKey (BSP-04b, AC-35)', () => {
+describe('pointIssueCopyKey', () => {
   it('returns null when there is no budgetMismatch issue', () => {
     expect(pointIssueCopyKey([])).toBeNull();
     expect(pointIssueCopyKey([{ kind: 'negativePoints', key: 'attack', raw: -1 }])).toBeNull();
@@ -42,7 +42,7 @@ describe('pointIssueCopyKey (BSP-04b, AC-35)', () => {
 
 const LANGS: Lang[] = ['en', 'pt'];
 
-describe('pointIssueCopyText (BSP-04b, AC-35)', () => {
+describe('pointIssueCopyText', () => {
   for (const lang of LANGS) {
     const t = STRINGS[lang];
 
@@ -67,7 +67,7 @@ describe('pointIssueCopyText (BSP-04b, AC-35)', () => {
   }
 });
 
-describe('rejectionText (BSP-06, DEC-09, AC-36)', () => {
+describe('rejectionText', () => {
   for (const lang of LANGS) {
     const t = STRINGS[lang];
 
@@ -84,7 +84,6 @@ describe('rejectionText (BSP-06, DEC-09, AC-36)', () => {
       expect(text).not.toBe(t.importRejectedNotASaveFile);
     });
 
-    // MP5 F4 (MSG-14)
     it(`${lang}: unsupportedSaveShape renders the generic message, distinct from notASaveFile`, () => {
       const rejected: ParseRejection = { reason: 'unsupportedSaveShape', heroNames: [] };
       expect(rejectionText(t, rejected)).toBe(t.importRejectedUnsupportedShape);

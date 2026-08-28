@@ -52,7 +52,7 @@ function expectNoNaN(row: ReturnType<typeof computeFarmRateRow>): void {
   }
 }
 
-describe('empty pool (spec.md P1-5 AC-1)', () => {
+describe('empty pool', () => {
   it('every rate 0, clearSecs Infinity, expectedHtk Infinity, oneShot false, infeasible true, concurrencyScale 1, sorteFraction is the tree contribution alone, fortunaAura 0', () => {
     const squad = computeSquadFarmFacts([], account);
     expect(squad.houseSlotDemand).toBe(0);
@@ -77,7 +77,7 @@ describe('empty pool (spec.md P1-5 AC-1)', () => {
   });
 });
 
-describe('all heroes degenerate (spec.md P1-5 AC-4)', () => {
+describe('all heroes degenerate', () => {
   it('is identical to the zero-hero row except sorteFraction/fortunaAura still reflect the degenerate heroes', () => {
     const emptySquad = computeSquadFarmFacts([], account);
     const emptyRow = computeFarmRateRow(42, emptySquad)!;
@@ -215,7 +215,7 @@ describe('gate over timer, and the strict > boundary (design.md §4.6, spec.md E
   });
 });
 
-describe('unbounded clear on a non-gate row is also infeasible (spec.md Edge Cases / P1-5 AC-6)', () => {
+describe('unbounded clear on a non-gate row is also infeasible', () => {
   it('a zero-hero non-gate row has clearSecs Infinity and infeasible true', () => {
     const squad = computeSquadFarmFacts([], account);
     const row = computeFarmRateRow(42, squad)!;
@@ -225,7 +225,7 @@ describe('unbounded clear on a non-gate row is also infeasible (spec.md Edge Cas
   });
 });
 
-describe('account.slots absent (spec.md P1-5 AC-7)', () => {
+describe('account.slots absent', () => {
   it('both slot counts fall back to DEFAULT_CASA_SLOTS — not 0, not Infinity', () => {
     const heroFacts = computeHeroFarmFacts({ heroes, account });
     // `fieldSlots: null` too: with `slots` absent AND no `skills.field_slots`, the field cap has
@@ -296,7 +296,7 @@ describe("non-gate keysPerHour is 0, not -0, when the squad is degenerate (spec.
   });
 });
 
-describe('out-of-range phase for computeFarmRateRow (spec.md P1-5 AC-5)', () => {
+describe('out-of-range phase for computeFarmRateRow', () => {
   it.each([0, 601, -1, NaN, 42.5])('phase %p returns null, never a clamped row', (phase) => {
     const squad = computeSquadFarmFacts([], account);
     expect(computeFarmRateRow(phase, squad)).toBeNull();

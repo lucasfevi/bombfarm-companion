@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * RES-05 — capture perf against the **production-profile** build (`captureMode:
+ * Captures perf against the **production-profile** build (`captureMode:
  * prod-profile`), as opposed to `perf-host.mjs`, which measures `dev-strict`.
  *
  * The two instruments answer different questions and their numbers are NOT comparable:

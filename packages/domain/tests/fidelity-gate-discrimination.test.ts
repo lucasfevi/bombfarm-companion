@@ -1,5 +1,5 @@
 /**
- * MP2 F4 — the discrimination (mutation) suite. Anti-self-greening device 3 (design §5): eight
+ * The discrimination (mutation) suite. Anti-self-greening device 3 (design §5): eight
  * committed-pair mutants, each a deep clone mutated in memory (the loaded fixture itself is
  * never mutated), each asserted to fail `runFidelityGate` with a specific `error.code` AND
  * specific message substrings — asserting only a message would let a mutant die for the wrong
@@ -11,7 +11,7 @@ import { runFidelityGate } from './helpers/fidelity-gate';
 import { FidelityGateError } from './helpers/fidelity-gate-error';
 
 /**
- * The real committed pair. MP5 F1 (design.md §8): re-pointed onto the post-patch pair — the
+ * The real committed pair. F1 (design.md §8): re-pointed onto the post-patch pair — the
  * mutation target must be a GEARED hero (mutant 1 raises a gear level, and there is no gear to
  * raise on a naked hero). `Bellatrix` (sourceId `20402`, 8/8 geared) replaces the deleted
  * fixture's `Bram`.

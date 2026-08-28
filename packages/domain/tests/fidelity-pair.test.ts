@@ -22,7 +22,7 @@ interface FidelityPairManifestForTest {
 
 const STAMP: FrameStamp = { capturedAt: '2026-08-13T14:26:40.000Z' };
 
-// MP5 F1 (MFR-13): this file must carry no reference to the sibling fixture corpus directory.
+// This file must carry no reference to the sibling fixture corpus directory.
 // The unscrubbed source export lives only outside this repo and must not be committed to
 // this public repo, so the two assertions that used to diff export-capture.json against a
 // same-account copy of the pre-scrub source are replaced by the self-contained conjunction

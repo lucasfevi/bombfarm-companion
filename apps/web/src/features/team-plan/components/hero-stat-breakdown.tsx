@@ -12,12 +12,12 @@ const BREAKDOWN_STAT_KEYS = SHEET_PANEL_KEYS.filter(
 ) as readonly (keyof TeamPlanHeroStats)[];
 
 /**
- * Sheet grid only: Luck never reaches `HeroSheet`/combat (BSP-42, AD-BSP-20, AD-BSP-21 —
- * excluded from DPS scoring, `REOPT_KEYS`, and this display never feeds back into either), so
+ * Sheet grid only: Luck never reaches `HeroSheet`/combat — excluded from DPS scoring,
+ * `REOPT_KEYS`, and this display never feeds back into either — so
  * there is no meaningful Combat-stats row for it — a combat row would either duplicate the
  * sheet value or invent a combat transformation that doesn't exist. Display-only, ordered by
  * `SHEET_PANEL_KEYS` so it lands right after Speed, matching the Planner sheet table's own
- * Luck row placement (`DEC-06`, `AC-19`).
+ * Luck row placement.
  */
 const SHEET_ONLY_STAT_KEYS = SHEET_PANEL_KEYS as readonly (keyof TeamPlanHeroStats)[];
 

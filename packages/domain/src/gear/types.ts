@@ -32,7 +32,7 @@ export type SheetStats = {
   critDmg: number;
   penetration: number;
   cdr: number;
-  /** % — AD-BSP-19a: a fraction in the save (`stats.luck`), percent here (× 100). */
+  /** % — a fraction in the save (`stats.luck`), percent here (× 100). */
   luck: number;
 };
 

@@ -38,11 +38,11 @@ describe('ACCOUNT_SECTIONS', () => {
 });
 
 describe('deriveAccountFidelity', () => {
-  it('grades full with no degraded sections when fidelity is absent (ACS-05.5)', () => {
+  it('grades full with no degraded sections when fidelity is absent', () => {
     expect(deriveAccountFidelity(undefined)).toEqual({ grade: 'full', degradedSections: [] });
   });
 
-  it('grades full with no degraded sections when every section is resolved (ACS-05.2)', () => {
+  it('grades full with no degraded sections when every section is resolved', () => {
     expect(deriveAccountFidelity(allResolved())).toEqual({ grade: 'full', degradedSections: [] });
   });
 
@@ -74,21 +74,21 @@ describe('deriveAccountFidelity', () => {
     });
   });
 
-  it('grades unavailable naming all five sections when none is resolved (all missing) (ACS-05.4)', () => {
+  it('grades unavailable naming all five sections when none is resolved (all missing)', () => {
     expect(deriveAccountFidelity(allWith(MISSING))).toEqual({
       grade: 'unavailable',
       degradedSections: ['account', 'heroes', 'skills', 'casa', 'items'],
     });
   });
 
-  it('grades unavailable naming all five sections when none is resolved (all stale) (ACS-05.4)', () => {
+  it('grades unavailable naming all five sections when none is resolved (all stale)', () => {
     expect(deriveAccountFidelity(allWith(STALE))).toEqual({
       grade: 'unavailable',
       degradedSections: ['account', 'heroes', 'skills', 'casa', 'items'],
     });
   });
 
-  it('grades degraded when four sections are stale and one is resolved (ACS-05.3)', () => {
+  it('grades degraded when four sections are stale and one is resolved', () => {
     const fidelity: AccountFidelity = {
       account: STALE,
       heroes: STALE,

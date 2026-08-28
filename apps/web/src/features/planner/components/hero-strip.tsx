@@ -20,9 +20,9 @@ import { HeroStripMetrics } from './hero-strip-metrics';
 import { HeroStripUpgrades } from './hero-strip-upgrades';
 
 /**
- * `DEC-01` — the exact warn border color `importResetWarningClass` uses, isolated here since
+ * The exact warn border color `importResetWarningClass` uses, isolated here since
  * that recipe constant otherwise bundles surface/padding/typography this strip does not want.
- * Same `border` width as the neutral state — the swap costs no layout (`DEC-03`).
+ * Same `border` width as the neutral state — the swap costs no layout.
  */
 const heroStripWarnBorderClass = 'border-[color-mix(in_oklch,var(--warn)_45%,var(--line))]';
 

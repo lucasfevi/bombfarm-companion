@@ -1,5 +1,5 @@
 /**
- * MOD-21 tripwire — must pass unmodified at every W4/W5+ commit.
+ * Storage round-trip tripwire — must pass unmodified at every W4/W5+ commit.
  * Fixture: as `writeJson` serializes after normalizeHero/Account (build 35fe328).
  */
 import { readFileSync } from 'node:fs';
@@ -34,7 +34,7 @@ function memoryLocalStorage() {
   };
 }
 
-describe('storage round-trip (MOD-21)', () => {
+describe('storage round-trip', () => {
   beforeEach(() => {
     vi.stubGlobal('localStorage', memoryLocalStorage());
     resetPlannerStoreForTests();

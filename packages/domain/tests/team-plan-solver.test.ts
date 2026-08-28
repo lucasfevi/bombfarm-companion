@@ -41,7 +41,7 @@ describe('runTeamPlan', () => {
     expect(JSON.stringify(stripElapsed(first.plan))).toBe(JSON.stringify(stripElapsed(second.plan)));
   });
 
-  // MP5 F1 (AD-068 class (b) — structural): re-pointed onto payload-20260812-8heroes.json.
+  // (the ground-truth rule, class (b) — structural): re-pointed onto payload-20260812-8heroes.json.
   // This was originally two tests — one per deleted fixture (`save-20260731-11heroes.json`,
   // `save-20260801-crit-dmg-tree.json`). Both now name the same post-patch subject and would
   // be an exact duplicate (same input, same assertion) if both were kept; the second is
@@ -150,7 +150,7 @@ describe('runTeamPlan', () => {
     expect(result.plan.run.elapsedMs).toBeGreaterThanOrEqual(0);
   });
 
-  // AD-016's 45s bound is a ceiling, not a target — MP5 F1 does not loosen it even though the
+  // The solver's 45-second bound is a ceiling, not a target — re-pointing this fixture does not loosen it even though the
   // smaller post-patch roster (8 heroes vs the deleted fixture's 11) makes this measurably
   // faster (~69ms observed locally, vs the ~13-15s the old 11-hero fixture used to take).
   it('completes payload-20260812-8heroes.json under 45 seconds', () => {

@@ -7,7 +7,7 @@ function render<T extends (...args: never[]) => unknown>(component: T, props: Pa
   return renderToStaticMarkup(createElement(component as never, props as never));
 }
 
-describe('SettingsSection — TST-25', () => {
+describe('SettingsSection — a titled region with an optional description', () => {
   it('renders the title as an h2 by default', () => {
     const html = render(SettingsSection, { title: 'Notifications', children: null });
     expect(html).toMatch(/<h2[^>]*>Notifications<\/h2>/);
@@ -42,7 +42,7 @@ describe('SettingsSection — TST-25', () => {
   });
 });
 
-describe('SettingsRow — TST-26 composes Fields', () => {
+describe('SettingsRow — composes Fields', () => {
   it('renders the label text', () => {
     const html = render(SettingsRow, { label: 'Auto-dismiss', children: null });
     expect(html).toContain('Auto-dismiss');
@@ -85,7 +85,7 @@ describe('SettingsRow — TST-26 composes Fields', () => {
   });
 });
 
-describe('SaveBar — TST-27', () => {
+describe('SaveBar — dirty/saving states with Save and Discard', () => {
   it('disables both actions when not dirty', () => {
     const html = render(SaveBar, { dirty: false, onSave: () => {}, onDiscard: () => {} });
     // `(?<!-)` excludes base-ui's own `data-disabled=""` state attribute, counting only the native `disabled=""`.

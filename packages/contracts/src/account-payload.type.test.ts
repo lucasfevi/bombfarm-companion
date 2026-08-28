@@ -1,5 +1,7 @@
 /**
- * Type-level assertions for the `AccountPayload` / fidelity contract (ACS-04, ACS-06.1).
+ * Type-level assertions for the `AccountPayload` / fidelity contract — per-section
+ * provenance, and file-only concerns (export_version, generated_at) staying out of the
+ * type, in the adapter instead.
  *
  * Vitest transpiles this file with esbuild, which strips types and never typechecks —
  * so every `@ts-expect-error` below is only enforced by `pnpm --filter @bombfarm/contracts
@@ -31,7 +33,7 @@ describe('AccountPayload / fidelity — type-level assertions', () => {
     expect(missing.capturedAt).toBeUndefined();
   });
 
-  it('accepts a degraded section carrying capturedAt, missingKeys and addedKeys (mp2-live-account-read T6, LAR-19, MP5 F4)', () => {
+  it('accepts a degraded section carrying capturedAt, missingKeys and addedKeys (mp2-live-account-read T6)', () => {
     const degraded: SectionFidelity = {
       status: 'degraded',
       capturedAt: '2026-08-12T00:00:00.000Z',
@@ -80,7 +82,7 @@ describe('AccountPayload / fidelity — type-level assertions', () => {
     expect(degraded.addedKeys).toEqual([]);
   });
 
-  it('accepts a degraded section whose drift is ENTIRELY an added key — empty missingKeys, non-empty addedKeys (MP5 F4)', () => {
+  it('accepts a degraded section whose drift is ENTIRELY an added key — empty missingKeys, non-empty addedKeys', () => {
     const degraded: SectionFidelity = {
       status: 'degraded',
       capturedAt: '2026-08-12T00:00:00.000Z',
@@ -117,26 +119,26 @@ describe('AccountPayload / fidelity — type-level assertions', () => {
 
 // --- Compile-time-only assertions below: no runtime behaviour, enforced by `tsc` only. ---
 
-// @ts-expect-error - capturedAt is required when status is "resolved" (ACS-04)
+// @ts-expect-error - capturedAt is required when status is "resolved"
 const _missingCapturedAt: SectionFidelity = { status: 'resolved' };
 
-// @ts-expect-error - capturedAt must be absent when status is "missing" (ACS-04)
+// @ts-expect-error - capturedAt must be absent when status is "missing"
 const _capturedAtOnMissing: SectionFidelity = { status: 'missing', capturedAt: '2026-08-12T00:00:00.000Z' };
 
-// @ts-expect-error - "partial" is not one of the four SectionStatus literals (ACS-04)
+// @ts-expect-error - "partial" is not one of the four SectionStatus literals
 const _invalidStatusLiteral: SectionFidelity = { status: 'partial', capturedAt: '2026-08-12T00:00:00.000Z' };
 
-// @ts-expect-error - a degraded section requires capturedAt (LAR-19, mp2-live-account-read T6)
+// @ts-expect-error - a degraded section requires capturedAt (mp2-live-account-read T6)
 const _degradedWithoutCapturedAt: SectionFidelity = { status: 'degraded', missingKeys: ['gold'], addedKeys: [] };
 
-// @ts-expect-error - a degraded section requires missingKeys (LAR-19, mp2-live-account-read T6)
+// @ts-expect-error - a degraded section requires missingKeys (mp2-live-account-read T6)
 const _degradedWithoutMissingKeys: SectionFidelity = {
   status: 'degraded',
   capturedAt: '2026-08-12T00:00:00.000Z',
   addedKeys: [],
 };
 
-// @ts-expect-error - a degraded section requires addedKeys (MP5 F4) — an incomplete drift report
+// @ts-expect-error - a degraded section requires addedKeys — an incomplete drift report
 // (missingKeys present, addedKeys silently dropped) must be unrepresentable
 const _degradedWithoutAddedKeys: SectionFidelity = {
   status: 'degraded',
@@ -154,7 +156,7 @@ const _missingKeysOnResolved: SectionFidelity = {
 const _addedKeysOnResolved: SectionFidelity = {
   status: 'resolved',
   capturedAt: '2026-08-12T00:00:00.000Z',
-  // @ts-expect-error - addedKeys is not a member of the resolved/stale branch (MP5 F4)
+  // @ts-expect-error - addedKeys is not a member of the resolved/stale branch
   addedKeys: ['refunds'],
 };
 
@@ -173,9 +175,9 @@ const _missingSectionKey: AccountFidelity = {
 const _nonStringCapturedAt: SectionFidelity = { status: 'resolved', capturedAt: 1755014400000 };
 
 const _examplePayload: AccountPayload = {};
-// @ts-expect-error - AccountPayload does not declare export_version (ACS-06.1)
+// @ts-expect-error - AccountPayload does not declare export_version — file-only concerns stay in the adapter
 // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment -- the point of this line is the tsc error above
 const _exportVersion = _examplePayload.export_version;
-// @ts-expect-error - AccountPayload does not declare generated_at (ACS-06.1)
+// @ts-expect-error - AccountPayload does not declare generated_at — file-only concerns stay in the adapter
 // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment -- the point of this line is the tsc error above
 const _generatedAt = _examplePayload.generated_at;

@@ -1,11 +1,11 @@
 /**
- * BSPW4-10 — the shared point-allocation scorer and search, in two tiers sharing one
- * invariant (`AC-57`): `reoptDps >= currentDps`, always, by construction.
+ * The shared point-allocation scorer and search, in two tiers sharing one
+ * invariant: `reoptDps >= currentDps`, always, by construction.
  *
- * `findGateCandidate` (Tier 1) is `AD-BSP-08` verbatim — bounded greedy, seed-compared
- * against the current vector — and is the tier wired into `computeAdvisorPipeline`
- * (`ASM-09`). `optimizeBuild` (Tier 2) is a multi-start, best-improvement local search;
- * the Points tab "Optimize build" control calls it on demand (`AC-64m`).
+ * `findGateCandidate` (Tier 1) is the specified algorithm verbatim — bounded greedy, seed-compared
+ * against the current vector — and is the tier wired into `computeAdvisorPipeline`.
+ * `optimizeBuild` (Tier 2) is a multi-start, best-improvement local search;
+ * the Points tab "Optimize build" control calls it on demand.
  *
  * Shared primitives (the affine scorer, `REOPT_KEYS`, the greedy walk) live in
  * `points-reopt-core.ts`; Tier 2's seeds/neighbourhood/local-search live in
@@ -49,11 +49,11 @@ export {
 } from './points-reopt-search';
 
 export type ReoptInput = {
-  /** Full 8-key current allocation. `pts.luck` is copied through untouched (`AD-BSP-21`). */
+  /** Full 8-key current allocation. `pts.luck` is copied through untouched. */
   pts: Record<SheetKey, number>;
-  /** The pipeline's already-computed effective combat sheet (`AC-57g` — no extra `derive`). */
+  /** The pipeline's already-computed effective combat sheet. */
   effective: HeroSheet;
-  /** The pipeline's already-computed marginal +1pt deltas (`AC-57g`). */
+  /** The pipeline's already-computed marginal +1pt deltas. */
   effectiveDelta: EffectiveDeltas;
   context: Context;
   /**
@@ -69,41 +69,41 @@ export type ReoptInput = {
 };
 
 export type ReoptResult = {
-  /** Full 8-key vector. `luck` is copied from the input untouched (`AD-BSP-21`). */
+  /** Full 8-key vector. `luck` is copied from the input untouched. */
   pts: Record<SheetKey, number>;
-  /** Budget the search could not place because every candidate scored <= 0 (`ASM-03`). */
+  /** Budget the search could not place because every candidate scored <= 0. */
   unallocated: number;
   currentDps: number;
   reoptDps: number;
-  /** `(reoptDps / currentDps - 1) x 100`, floored at 0 by the seed comparison (`DEC-06`). */
+  /** `(reoptDps / currentDps - 1) x 100`, floored at 0 by the seed comparison. */
   gainPct: number;
   /** True when the seed comparison kept the player's own vector (`S1`). */
   keptCurrent: boolean;
-  /** Neighbourhood moves applied — always 0 for Tier 1 (no neighbourhood, `AC-57c`). */
+  /** Neighbourhood moves applied — always 0 for Tier 1 (no neighbourhood). */
   localSearchMoves: number;
-  /** `sustainedDps`-equivalent calls spent; bounded per tier (`AC-57d`, `AC-64b`). */
+  /** `sustainedDps`-equivalent calls spent; bounded per tier. */
   evaluations: number;
-  /** `'gate'` (Tier 1, automatic) or `'full'` (Tier 2, on demand). `BSPW4-15`, `AC-70b`. */
+  /** `'gate'` (Tier 1, automatic) or `'full'` (Tier 2, on demand). */
   tier: 'gate' | 'full';
-  /** `true` for Tier 1 (a lower bound); `false` for Tier 2 (best found). `AC-70b`. */
+  /** `true` for Tier 1 (a lower bound); `false` for Tier 2 (best found). */
   gainIsLowerBound: boolean;
-  /** Crit chance / cdr already saturated in the returned vector's sheet (`AC-61`). */
+  /** Crit chance / cdr already saturated in the returned vector's sheet. */
   cappedStats: ('critChance' | 'cdr')[];
-  /** `true` when an evaluation or sweep bound truncated the search (`AC-64c`). */
+  /** `true` when an evaluation or sweep bound truncated the search. */
   budgetExhausted: boolean;
-  /** Tier 2 only. Which of the seven seeds produced the winning vector (`AC-64g`). */
+  /** Tier 2 only. Which of the seven seeds produced the winning vector. */
   winningSeed?: string;
-  /** Tier 2 only. Local-search sweeps consumed (`AC-64`). */
+  /** Tier 2 only. Local-search sweeps consumed. */
   sweeps?: number;
 };
 
 /**
- * Tier 1 — the reset gate. `AD-BSP-08` verbatim: greedy repeated best `rankNextPoint` from
- * zero, seed-compared against the current vector (`S1`), better wins, ties favour `S1`
- * (`ASM-02`). No neighbourhood, no local search, no extra seeds (`AC-57c`). Reuses the
- * pipeline's already-computed `effective`/`effectiveDelta` — no extra `derive` pass (`AC-57g`).
+ * Tier 1 — the reset gate. The specified algorithm verbatim: greedy repeated best `rankNextPoint` from
+ * zero, seed-compared against the current vector (`S1`), better wins, ties favour `S1`.
+ * No neighbourhood, no local search, no extra seeds. Reuses the
+ * pipeline's already-computed `effective`/`effectiveDelta` — no extra `derive` pass.
  *
- * `reoptDps >= currentDps` holds by construction (`AC-57`): `S1` is evaluated first and ties
+ * `reoptDps >= currentDps` holds by construction: `S1` is evaluated first and ties
  * resolve in its favour, so the returned candidate can never score below the player's own.
  */
 export function findGateCandidate(input: ReoptInput): ReoptResult {
@@ -120,7 +120,7 @@ export function findGateCandidate(input: ReoptInput): ReoptResult {
   const cappedOnEntry = cappedStatsOf(effective);
 
   if (budget <= 0) {
-    // AC-57f: fast path — no seed generated, evaluations <= 1.
+    // Fast path — no seed generated, evaluations <= 1.
     const dps = sustainedDps(effective, context);
     return {
       pts: { ...pts },
@@ -139,7 +139,7 @@ export function findGateCandidate(input: ReoptInput): ReoptResult {
   }
 
   let evaluations = 0;
-  // S1: the player's current vector, evaluated first (AC-57, the tie-break anchor).
+  // S1: the player's current vector, evaluated first (the tie-break anchor).
   const s1Score = sustainedDps(effective, context);
   evaluations += 1;
 
@@ -166,7 +166,7 @@ export function findGateCandidate(input: ReoptInput): ReoptResult {
   // budget - budgetOf(winnerPts), not a keptCurrent/greedy.unallocated branch: keeping S1 does
   // not imply nothing was left on the table — a hero whose spent points score no positive
   // candidate keeps S1 (score tie) while those points still sit somewhere worthless
-  // (AC-57f's fast path only fires at budget <= 0).
+  // (the fast path only fires at budget <= 0).
   const unallocated = Math.max(0, budget - budgetOf(winnerPts));
   const winnerSheet = keptCurrent ? effective : buildCandidateSheet(effective, pts, effectiveDelta, winnerPts);
 
@@ -187,12 +187,12 @@ export function findGateCandidate(input: ReoptInput): ReoptResult {
 }
 
 /**
- * Tier 2 — on-demand multi-start optimiser. Seven seeds (`AC-62`) x best-improvement local
- * search over a three-family neighbourhood (`AC-63`), bounded by `REOPT_FULL_MAX_SWEEPS` per
- * seed and `REOPT_FULL_MAX_EVALUATIONS` overall (`AC-64`, `AC-64b`). Called from the
- * Points tab "Optimize build" control (`AC-64m`).
+ * Tier 2 — on-demand multi-start optimiser. Seven seeds x best-improvement local
+ * search over a three-family neighbourhood, bounded by `REOPT_FULL_MAX_SWEEPS` per
+ * seed and `REOPT_FULL_MAX_EVALUATIONS` overall. Called from the
+ * Points tab "Optimize build" control.
  *
- * `AC-64a` (tier monotonicity): this tier's seed set and neighbourhood are supersets of
+ * Tier monotonicity: this tier's seed set and neighbourhood are supersets of
  * Tier 1's (`S1`/`S2` are shared seeds; Tier 1 has no neighbourhood at all), so
  * `optimizeBuild.reoptDps >= findGateCandidate.reoptDps` holds structurally on the same input.
  */

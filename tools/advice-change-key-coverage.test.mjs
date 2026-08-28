@@ -1,5 +1,5 @@
 /**
- * MP3 F3 (design.md §3 `AD-044`, §10 hazard 1, tasks.md T5) — **the most important test in this
+ * design.md §3, §10 hazard 1, tasks.md T5 — **the most important test in this
  * feature.** A tier-1 key that misses an input `pipelineForHero` reads serves a plausible
  * **wrong** number, computed from data that has since changed, rendered as current (the `D24`
  * failure). It is invisible to every other test in the repo, because the number is plausible and
@@ -100,7 +100,7 @@ function extractPipelineInputRootPaths(source) {
   return paths;
 }
 
-describe('CHANGE_KEY_INPUTS covers every root path pipelineForHero actually reads (AD-044)', () => {
+describe('CHANGE_KEY_INPUTS covers every root path pipelineForHero actually reads', () => {
   const rosterDpsSource = readFileSync(ROSTER_DPS_PATH, 'utf8');
   const extractedPaths = extractPipelineInputRootPaths(rosterDpsSource);
 
@@ -277,13 +277,13 @@ describe('per-field mutation — a path listed but not actually read by the key 
   }
 });
 
-describe("gameRunning (MAR-05) — the field is not a payload field at all, so it cannot enter either key", () => {
+describe("gameRunning — the field is not a payload field at all, so it cannot enter either key", () => {
   // Scoped deliberately to the PRODUCTION decision-logic modules (not their tests, and not the
   // `fixtures/` test-support builders, which must set `gameRunning` on every synthetic
   // `AccountView` purely because the TYPE requires it — that is supplying a required field, not
   // reading one for a decision). `apps/desktop/src/main/index.ts` and `account-view.ts`
-  // legitimately compute it from `gameReader.getStatus()` for chrome — the sanctioned reading
-  // (`AD-031`) — and are outside this guard's scope on purpose.
+  // legitimately compute it from `gameReader.getStatus()` for chrome — the sanctioned reading —
+  // and are outside this guard's scope on purpose.
   const PLANNING_LIB_DIR = join(root, 'apps/desktop/renderer/lib/planning');
   const PRODUCTION_FILES = ['account-model.ts', 'hero-advice.ts', 'account-view-store.ts', 'use-account-view.ts', 'types.ts'];
   const ACCOUNT_CHANGE_KEY_PATH = join(root, 'packages/contracts/src/account-change-key.ts');
@@ -296,9 +296,9 @@ describe("gameRunning (MAR-05) — the field is not a payload field at all, so i
     }
     expect(
       offenders,
-      `gameRunning appears in ${offenders.join(', ')} — AD-031: the field is hardcoded true on the ` +
+      `gameRunning appears in ${offenders.join(', ')} — the field is hardcoded true on the ` +
         'account-refresh.ts API path and carries no information; a planning module reading it would ' +
-        'silently violate MAR-05 ("holds unchanged whether or not the game is running").',
+        'silently violate the invariant that state holds unchanged whether or not the game is running.',
     ).toEqual([]);
   });
 
@@ -315,7 +315,7 @@ describe("gameRunning (MAR-05) — the field is not a payload field at all, so i
   });
 
   it('demonstrates the red state: a mock module containing a gameRunning read is caught by the same substring check (observed here, not committed as a permanent mutation)', () => {
-    const mutant = "if (view.gameRunning) { /* would violate MAR-05 */ }";
+    const mutant = "if (view.gameRunning) { /* would violate the same invariant */ }";
     expect(mutant.includes('gameRunning')).toBe(true);
   });
 });

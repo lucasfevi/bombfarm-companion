@@ -9,8 +9,8 @@ export type {
 } from './types';
 
 /**
- * Collapsible primitive — compound wrap over `@base-ui/react/collapsible`
- * (UAC-02). Single disclosure; shares the trigger recipe + chevron with
+ * Collapsible primitive — compound wrap over `@base-ui/react/collapsible`.
+ * Single disclosure; shares the trigger recipe + chevron with
  * `Accordion`.
  */
 export const Collapsible = { Root: CollapsibleRoot, Trigger: CollapsibleTrigger, Panel: CollapsiblePanel };

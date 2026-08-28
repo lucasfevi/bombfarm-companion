@@ -41,7 +41,7 @@ export function PhasesExplorer({ t, lang }: { t: Strings; lang: Lang }) {
   const farmRows = usePlannerStore(selectFarmBoardRows);
   // FIELD concurrency — who can be on the field at once, not the House recovery number
   // (`account.slots`). `account.slots` here is only the pre-`skills.field_slots` fallback
-  // (`AD-063`, same convention as `SquadFarmFacts` in `farm-rate.ts`).
+  // (same convention as `SquadFarmFacts` in `farm-rate.ts`).
   const squadSlots = account.fieldSlots ?? account.slots ?? DEFAULT_CASA_SLOTS;
 
   const teamCoinPct = account.tree.teamCoinPct ?? 0;

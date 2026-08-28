@@ -44,7 +44,7 @@ function createRespondingWorker(
   };
 }
 
-// MP5 F1 (AD-068 class (b) — structural): re-pointed onto payload-20260812-8heroes.json. Every
+// Class (b) — structural: re-pointed onto payload-20260812-8heroes.json. Every
 // assertion here is about the runner's worker-message plumbing (status transitions, JSON
 // round-trip, supersession) — none pins a captured value.
 describe('createTeamPlanRunner', () => {

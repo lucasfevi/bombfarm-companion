@@ -16,7 +16,7 @@ export interface SegmentedToggleProps {
 
 /**
  * SegmentedToggle — the bordered flush button group behind the web's PT/EN language control,
- * promoted as a generic two-or-more-option control. No language semantics live here (DS-09):
+ * promoted as a generic two-or-more-option control. No language semantics live here:
  * callers supply their own `options`/`value`/`onChange`.
  */
 export function SegmentedToggle({ options, value, onChange, ariaLabel, className }: SegmentedToggleProps) {

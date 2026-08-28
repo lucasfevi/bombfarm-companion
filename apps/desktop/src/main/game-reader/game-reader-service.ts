@@ -61,7 +61,7 @@ export class GameReaderService {
   private windowProvider: (() => BrowserWindow | null) | null = null;
   private accountStore: AccountCommitter | null = null;
   private lastAccountView: AccountView | null = null;
-  /** MP3 F3 (`AD-043` point 3) — fired after `tickFixture` commits, so a caller sees the FRESH
+  /** F3 (the account:changed true-change-signal rule, point 3) — fired after `tickFixture` commits, so a caller sees the FRESH
    * `lastAccountView` through `getAccountView()`, never the previous tick's (a callback invoked
    * from inside `commit()` itself would read the stale value one tick early — see
    * `account-view.ts`'s notifier doc comment for why). Optional and unset in production; only
@@ -113,7 +113,7 @@ export class GameReaderService {
     const mode = config.mode ?? resolveDefaultMode(this.isPackaged);
     this.config = { ...DEFAULT_CONFIG, ...config, mode };
 
-    // Never restore `status` from disk (design R-2 / APS-03): a cold boot with the game
+    // Never restore `status` from disk (design R-2): a cold boot with the game
     // closed always reports `not_running`, never a previous session's `connected`.
     const now = new Date().toISOString();
     this.status = {

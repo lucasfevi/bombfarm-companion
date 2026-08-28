@@ -5,7 +5,7 @@ export default defineConfig({
     include: [
       'src/**/*.test.ts',
       'scripts/**/*.test.mjs',
-      // MP3 F2 (design hazard 9, T2) — renderer pure modules and presentational components,
+      // (design hazard 9, T2) — renderer pure modules and presentational components,
       // run node-env with `renderToStaticMarkup` (the `packages/ui/vitest.config.ts` precedent).
       'renderer/lib/**/*.test.ts',
       'renderer/lib/**/*.test.tsx',
@@ -21,7 +21,7 @@ export default defineConfig({
     globalSetup: ['../../tools/require-workspace-dist.mjs'],
     server: {
       deps: {
-        // AD-033: packages/domain/dist is a BUNDLER-target artifact, not Node-native ESM.
+        // packages/domain/dist is a BUNDLER-target artifact, not Node-native ESM.
         // domain's source uses 278 extensionless/directory-index relative imports (B7,
         // design.md), and tsc emits dist/**/*.js with the same specifiers verbatim. Every
         // bundler resolves them; Node's native ESM loader does not (measured: 47/56 subpaths

@@ -19,7 +19,7 @@ import { judgeStoredSection } from './stale-sections.js';
 export interface AccountStoreDeps {
   log?: LogPort;
   /** When set, a one-time legacy `last-snapshot.json` import is attempted at construction
-   * (APS-10) — only when `account_section` is empty and it has never run before. */
+   * — only when `account_section` is empty and it has never run before. */
   userDataDir?: string;
   legacyFs?: FsPort;
 }
@@ -82,7 +82,7 @@ function unavailableRestore(status: AccountStoreStatus, reason: AccountStoreReas
  * The whole feature over the `SqliteDb` port (design.md §5). `open` is the result of
  * `openAccountDatabase` — its own status/reason propagate untouched when the store cannot
  * read anything (schema too new, no binding, not writable). `restore()` never constructs a
- * `resolved` section — every section it returns is built from row presence alone (AD-025).
+ * `resolved` section — every section it returns is built from row presence alone.
  */
 export function createAccountStore(open: OpenResult, deps: AccountStoreDeps = {}): AccountStore {
   const log = deps.log ?? NOOP_LOG;
@@ -181,7 +181,7 @@ export function createAccountStore(open: OpenResult, deps: AccountStoreDeps = {}
   }
 
   /**
-   * MP5 F4 (`MSG-24`): runs after the per-section loop, one `BEGIN`/`COMMIT`, wrapped in
+   * Runs after the per-section loop, one `BEGIN`/`COMMIT`, wrapped in
    * `try/catch`. A failed delete logs and changes NO verdict — every section in `sections` has
    * already been reported `missing` above and its body was never placed in `sectionBodies`, so a
    * row surviving on disk here is inert until the next `restore()` re-judges and retries the
@@ -225,8 +225,8 @@ export function createAccountStore(open: OpenResult, deps: AccountStoreDeps = {}
 
   /**
    * Writes section `S` iff `payload.fidelity?.[S]?.status === 'resolved'` and `payload[S]`
-   * is present — an allow-list of exactly one status (design TD-7), so a future/unknown
-   * status (e.g. `degraded`, `AD-023`) is never written by default. `capturedAt` is stored
+   * is present — an allow-list of exactly one status, so a future/unknown
+   * status (e.g. `degraded`) is never written by default. `capturedAt` is stored
    * verbatim. All writes for one poll run inside one transaction; a throw mid-poll rolls
    * back the whole poll, leaving every previously stored section untouched.
    */
@@ -291,7 +291,7 @@ export function createAccountStore(open: OpenResult, deps: AccountStoreDeps = {}
   }
 
   /**
-   * APS-10, run once at construction. Only attempted when `account_section` is empty and the
+   * Run once at construction. Only attempted when `account_section` is empty and the
    * `legacy_snapshot_migrated` meta flag is unset; the flag is set afterwards regardless of
    * whether the file yielded anything importable, so a later boot never re-attempts even if
    * the file is still present. Reuses `persist()` verbatim — the legacy payload is just

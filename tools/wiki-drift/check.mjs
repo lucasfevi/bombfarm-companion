@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// MP5 F5 — the CLI entry point. Wires the four pure modules together, owns the exit code and the
+// The CLI entry point. Wires the four pure modules together, owns the exit code and the
 // run summary, and is the only place `--write` is honoured.
 //
 // Stage order is fixed and cannot be reordered without breaking a test: (1) read + validate the

@@ -27,7 +27,7 @@ function loadFixture(): Record<string, unknown> | null {
   return JSON.parse(readFileSync(FIXTURE_PATH, 'utf8')) as Record<string, unknown>;
 }
 
-describe('account.max_phase — the fixture, both entry points (spec.md P1-6 AC-1)', () => {
+describe('account.max_phase — the fixture, both entry points (spec.md)', () => {
   const raw = loadFixture();
 
   it('parseAccountPayload(save-20260813-5heroes.json).account.maxPhase === 42', () => {
@@ -43,7 +43,7 @@ describe('account.max_phase — the fixture, both entry points (spec.md P1-6 AC-
   });
 });
 
-describe('account.max_phase — source precedence (spec.md P1-6 AC-2)', () => {
+describe('account.max_phase — source precedence (spec.md)', () => {
   it('account.max_phase present ⇒ used', () => {
     const result = parseAccountPayload({ heroes: [], account: { max_phase: 55 } }, []);
     expect(result.account.maxPhase).toBe(55);
@@ -84,7 +84,7 @@ describe('account.max_phase — source precedence (spec.md P1-6 AC-2)', () => {
   });
 });
 
-describe('account.max_phase — normalization (spec.md P1-6 AC-3)', () => {
+describe('account.max_phase — normalization (spec.md)', () => {
   it('non-integer 41.7 rounds to 42', () => {
     const result = parseAccountPayload({ heroes: [], account: { max_phase: 41.7 } }, []);
     expect(result.account.maxPhase).toBe(42);
@@ -111,7 +111,7 @@ describe('account.max_phase — normalization (spec.md P1-6 AC-3)', () => {
   });
 });
 
-describe('account.max_phase — rejection paths yield null (spec.md P1-6 AC-4)', () => {
+describe('account.max_phase — rejection paths yield null (spec.md)', () => {
   it('notASaveFile ⇒ maxPhase null, matching EMPTY_ACCOUNT_DATA', () => {
     const result = parseSaveFile({ not_a_save: true, max_phase: 99 }, []);
     expect(result.rejected?.reason).toBe('notASaveFile');

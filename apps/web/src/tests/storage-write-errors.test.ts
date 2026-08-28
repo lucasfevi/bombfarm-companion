@@ -77,7 +77,7 @@ const sampleHero = (): HeroRecord => ({
   sourceId: 'src-1',
 });
 
-describe('storage write failures (MOD-45)', () => {
+describe('storage write failures', () => {
   beforeEach(() => {
     clearStorageWriteErrorListenersForTests();
   });

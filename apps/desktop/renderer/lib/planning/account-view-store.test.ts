@@ -56,7 +56,7 @@ describe('accept — the pure reducer (design.md §4.4)', () => {
     expect(result.status).toBe('bridge-unavailable');
   });
 
-  it('pushed ⇒ accepted iff accountChangeKey differs from state.key (MAR-03\'s accept gate)', () => {
+  it('pushed ⇒ accepted iff accountChangeKey differs from state.key', () => {
     const view = viewWithHeroLevel(20);
     const accepted = accept(initialAccountViewState, { kind: 'pushed', view });
     expect(accepted.status).toBe('loaded');
@@ -77,7 +77,7 @@ describe('accept — the pure reducer (design.md §4.4)', () => {
     expect(changed.applied).toBe(2);
   });
 
-  it('fetched ⇒ discarded when issuedAt !== state.applied (MAR-11, and the boot-race edge case — one rule covers both)', () => {
+  it('fetched ⇒ discarded when issuedAt !== state.applied (latest-wins discards an older in-flight result — the same rule covers the boot-race edge case)', () => {
     // A push landed (applied: 0 -> 1) BEFORE the initial account:get (issued at applied=0)
     // resolves. The stale fetched arrival must not overwrite the newer pushed view.
     const pushedView = viewWithHeroLevel(99);
@@ -129,13 +129,13 @@ describe('accept — the pure reducer (design.md §4.4)', () => {
   });
 });
 
-describe('MAR-13 (amended by AD-047) — two arrivals in quick succession settle to the newer view and move the advice compute count by exactly 1', () => {
+describe('two arrivals in quick succession settle to the newer view and move the advice compute count by exactly 1', () => {
   beforeEach(() => {
     resetAdviceComputeCount();
   });
 
   it('settles to the newer view, and getAdviceComputeCount() moves by exactly 1', () => {
-    // AD-047: a React render count is not observable in apps/desktop's node-env Vitest project
+    // A React render count is not observable in apps/desktop's node-env Vitest project
     // (renderToStaticMarkup never runs useEffect — use-account-view.ts's own comment). Asserted
     // instead as: one settled state, carrying the newer view, plus exactly one advice
     // computation — not a render count.

@@ -97,7 +97,7 @@ export const MultipleOpen: Story = {
   ),
 };
 
-/** Long PT/EN label wraps in the label column; the chevron slot stays fixed (UAC-05). */
+/** Long PT/EN label wraps in the label column; the chevron slot stays fixed. */
 export const LongContentOverflow: Story = {
   render: () => (
     <div className="w-[22rem]">

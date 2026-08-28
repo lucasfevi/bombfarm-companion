@@ -70,7 +70,7 @@ export type SessionTokenFileResult =
 
 /**
  * `_consent` is read only by the type system — a `ConsentRecord` that is not statically known to
- * be `granted` cannot be passed here at all (`LAR-01` enforcement half). The value itself carries
+ * be `granted` cannot be passed here at all (consent enforcement half). The value itself carries
  * no information this function needs at runtime.
  */
 export function readSessionToken(

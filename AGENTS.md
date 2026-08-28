@@ -85,6 +85,47 @@ that project with a filename filter). `apps/web` and `packages/domain` alias `@b
   format). Internal-only changes (CI config, tests, docs) don't need one; if a changeset genuinely
   doesn't apply, label the PR `skip-changeset` instead of skipping silently.
 
+## HARD RULE: no planning identifiers, no planning-doc paths
+
+**This repository is public. The planning tree that drives it is not.** Nothing you write here may
+carry a reference that only the private planning tree can resolve.
+
+Two shapes are forbidden, in **source, tests, test names, assertion messages, comments, JSDoc,
+markdown, commit messages, branch names, changesets, and PR/issue text**:
+
+1. **Planning identifiers** — anything shaped `PREFIX-NUMBER`: `AD-036`, `AC-38`, `LFS-04`,
+   `MSG-12`, `BSP-23a`, `MPV-01`, `DEC-03`, `W0-14`, `MP5 F4`, and any prefix a future feature
+   invents. **The list is open-ended — do not treat any enumeration of prefixes as complete.**
+2. **Paths into the planning tree** — `design.md §7.2`, `spec.md`, `tasks.md`, `validation.md`,
+   `.specs/`, PRD references, and milestone or wave numbers used as citations.
+
+**Write what it means, not what it is called.** The reasoning is welcome; the code for it is not.
+
+| Don't write | Write |
+| --- | --- |
+| `// AD-036: gate on per-section usability` | `// gate on per-section usability, not the fidelity grade` |
+| `describe('isUsable (AD-036)')` | `describe('isUsable')` |
+| `// see design.md §7.2` | state the rule, or say nothing |
+| `it('MSG-24 store failure ≠ drop')` | `it('store failure ≠ drop')` |
+
+**Genuine external standards are fine and must not be "cleaned":** `SHA-256`, `UTF-8`, `BCP-47`,
+`ISO-8601`, `RFC-*`. They share the shape and are not planning ids.
+
+**Two deliberate exceptions.** Guard sources and their red-state fixtures must name the tokens they
+forbid — `tools/`'s hygiene guards and `pre-push-guard.test.mjs`'s `feat/ACS-06` fixture are code,
+not prose. Do not "clean" them; you will break the guard while appearing to tidy it.
+
+**Why this is a hard rule and not a preference.** These identifiers reached this repo ~2,900 times
+before anyone counted, and two prior leaks happened *despite* an explicit instruction in the
+authoring prompt. Once a PR exists, GitHub pins its history at `refs/pull/N/head` and a force-push
+hides the leak without removing it. **Scrub before opening the PR, not after.**
+
+Before pushing:
+
+```bash
+git grep -nIP "\b(?!SHA-|UTF-|BCP-|ISO-|RFC-)[A-Z][A-Z0-9]{1,6}-[0-9]{1,3}[a-z]?\b" -- apps packages tools
+```
+
 ## Comments
 
 **Hard truth: [`docs/comments.md`](docs/comments.md).** Read it before adding one.

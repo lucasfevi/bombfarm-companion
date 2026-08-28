@@ -98,7 +98,7 @@ describe('computeRosterAuras', () => {
     expect(half.folego_mineiro).toBe(full.folego_mineiro / 2);
   });
 
-  it('raw sum can exceed the aura cap; combineTeamAuraPct applies the cap once (ASM-RGO-02, Fault 4)', () => {
+  it('raw sum can exceed the aura cap; combineTeamAuraPct applies the cap once (Fault 4)', () => {
     const contexts = [
       ctx('a', 'optimize', { grito_guerra: 60 }),
       ctx('b', 'optimize', { grito_guerra: 60 }),

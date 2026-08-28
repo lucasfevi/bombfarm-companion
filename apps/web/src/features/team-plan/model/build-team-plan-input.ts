@@ -30,7 +30,7 @@ export function buildTeamPlanInputFromStore(state: PlannerStore): TeamPlanInput 
       mitigationPct: state.mitigationPct,
       slots: state.slots,
       // FIELD concurrency cap, not the House recovery number above — `state.slots` is a
-      // pre-`skills.field_slots` fallback only (`AD-063`; same convention as `SquadFarmFacts`
+      // pre-`skills.field_slots` fallback only (same convention as `SquadFarmFacts`
       // in `farm-rate.ts`), not a synonym for it.
       fieldSlots: state.fieldSlots ?? state.slots,
       // The scorer's duty cycle divides by this — the save's own House cycle when it carried

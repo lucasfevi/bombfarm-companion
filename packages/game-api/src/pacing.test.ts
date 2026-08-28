@@ -23,7 +23,7 @@ function createFakeClock(): PacingClock & { readonly sleepCalls: number[] } {
   };
 }
 
-describe('READ_PACING — every value carries a provenance comment (LAR-21)', () => {
+describe('READ_PACING — every value carries a provenance comment', () => {
   const source = readFileSync(fileURLToPath(new URL('./pacing.ts', import.meta.url)), 'utf8');
   const lines = source.split('\n');
 
@@ -126,7 +126,7 @@ describe('createPacingGate — single-flight, strict serial order, no wall clock
   });
 });
 
-describe('createPacingGate — cooldown backoff ladder (LAR-22)', () => {
+describe('createPacingGate — cooldown backoff ladder', () => {
   const table: ReadonlyArray<{ readonly trips: number; readonly expectedDelayMs: number }> = [
     { trips: 1, expectedDelayMs: 60_000 },
     { trips: 2, expectedDelayMs: 120_000 },
@@ -186,7 +186,7 @@ describe('createPacingGate — cooldown backoff ladder (LAR-22)', () => {
   });
 });
 
-describe('createPacingGate — unauthorized halts the cycle (LAR-23)', () => {
+describe('createPacingGate — unauthorized halts the cycle', () => {
   it('unauthorized sets halted, distinct from ready or a backoff window', () => {
     const clock = createFakeClock();
     const gate = createPacingGate(clock);
@@ -221,7 +221,7 @@ describe('createPacingGate — unauthorized halts the cycle (LAR-23)', () => {
   });
 });
 
-describe('createPacingGate — cycle interval (LAR-21)', () => {
+describe('createPacingGate — cycle interval', () => {
   it('the background interval is longer than the foreground interval', () => {
     expect(READ_PACING.cycleBackgroundMs).toBeGreaterThan(READ_PACING.cycleForegroundMs);
   });

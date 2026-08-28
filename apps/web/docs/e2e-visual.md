@@ -8,7 +8,7 @@ Browser-level smoke and visual baselines for the static export. Unit math stays 
 > `describe.skip` → `describe` after reviewing/updating `e2e/__screenshots__/`.
 > Smoke e2e remains required and active.
 >
-> **Why it stayed skipped through the `birth-stats-points-reset` Wave 6 UI pass** (`DEC-13`):
+> **Why it stayed skipped through the `birth-stats-points-reset` Wave 6 UI pass**:
 > that wave changed the DOM on purpose across most panels — exactly the case where blind
 > baseline acceptance is worst, since a whole-set diff carries no signal. Its own e2e coverage
 > moved to Playwright smoke specs (role / accessible name / text / class assertions) plus the
@@ -28,7 +28,7 @@ Browser-level smoke and visual baselines for the static export. Unit math stays 
 > and dead-points line, the import dialog's checkbox-free layout and sync summary, and the
 > updated quick-guide copy. All of it is currently covered by smoke specs only.
 >
-> **`/team-plan` (roster gear optimizer, RGO-24):** no committed visual baseline yet. The visual
+> **`/team-plan` (roster gear optimizer):** no committed visual baseline yet. The visual
 > project remains globally `describe.skip`; agents may not run `test:e2e:update` or accept
 > baselines. Before enabling `e2e/visual.spec.ts` for this route, a human should review:
 > empty states (no roster / no inventory / all leave alone), the three-column scope board
@@ -64,7 +64,7 @@ Browser-level smoke and visual baselines for the static export. Unit math stays 
 > above the table. Smoke coverage lives in `e2e/farm-respec.spec.ts` (nine scenarios).
 >
 > **Promote-to-600 evidence:** a lightweight same-session
-> Playwright timing (not the formal MOD-33 `e2e/perf/` commit-instrumentation harness — recorded
+> Playwright timing (not the formal profiler-re-run `e2e/perf/` commit-instrumentation harness — recorded
 > here as an evidence artifact, not a threshold gate) clicked the unlocked-only filter off
 > (42 -> 600 rows) and back on (600 -> 42 rows) on the same page, three repetitions, host
 > `dev-strict`: promote averaged **~273ms** (250/276/294ms), the same-session control (the

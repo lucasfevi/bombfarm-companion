@@ -45,11 +45,11 @@ export type ImportCandidate = {
   /** True when this hero already exists — import will refresh gear only. */
   isGearRefresh: boolean;
   issues: string[];
-  /** Typed `inferSpentPoints` issues, structurally unflattened (DEC-04, BSP-04b copy home). */
+  /** Typed `inferSpentPoints` issues, structurally unflattened. */
   pointIssues: PointInferenceIssue[];
   /**
-   * BSPW5-05 (AC-11): an unresolvable gear reference or a missing `stats` block — never an
-   * unknown ability (`AC-14`, non-blocking). `importHeroes` MUST NOT create or update a
+   * An unresolvable gear reference or a missing `stats` block — never an
+   * unknown ability (non-blocking). `importHeroes` MUST NOT create or update a
    * blocked hero; other heroes in the same file import normally.
    */
   blocked: boolean;
@@ -66,7 +66,7 @@ export type AccountImportData = {
     teamCoinPct?: number;
     /** `skills.totals.xp_mult` verbatim (not a percentage). Absent/non-finite/zero → 1 (no XP boost). */
     xpMult?: number;
-    /** `luck_add × 100` — flat percentage points (AD-BSP-22, ASM-01, BSPW5-03). */
+    /** `luck_add × 100` — flat percentage points. */
     luckFlatPct: number;
     /**
      * `team_dmg_add × 100` — the tree's "Squad damage" percentage, one of the two factors
@@ -113,7 +113,7 @@ export type AccountImportData = {
    * SPEC_DEVIATION (design.md §5.1 specifies this field as *required*, precisely so every
    * construction site is a forced compile error). Kept optional instead: `apps/web/src/tests/
    * {account-slice,persist-account}.test.ts` construct `AccountImportData` literals without this
-   * field, and both `spec.md` P2-3 AC-5 and `tasks.md` §0.5 forbid touching any file under
+   * field, and both `spec.md` and `tasks.md` §0.5 forbid touching any file under
    * `apps/web/src` in this item ("zero web source files in the diff"). A required field would
    * force edits there to keep `pnpm typecheck` green, which the two constraints together rule
    * out. `mapAccountData`'s both return paths and `EMPTY_ACCOUNT_DATA` still set it explicitly on
@@ -136,11 +136,11 @@ export type AccountImportData = {
 };
 
 /**
- * `AD-BSP-05` — a whole-file reject. `notASaveFile` is today's shape-check behaviour,
- * now typed; `missingBirthStats` is BSPW5-01: any hero object in `heroes[]` lacking a
+ * A whole-file reject. `notASaveFile` is today's shape-check behaviour,
+ * now typed; `missingBirthStats`: any hero object in `heroes[]` lacking a
  * usable `birth_stats` block rejects the whole file, not just that hero.
  *
- * MP5 F4 (`AD-088`): `unsupportedSaveShape` — a save file lacking the current game version's
+ * `unsupportedSaveShape` — a save file lacking the current game version's
  * post-update keys (`skills.refunds`, `skills.totals.vagas_campo`, `skills.totals.bag_tabs_bonus`)
  * is rejected before any hero/item/account value is read. Web-only: the gate lives in
  * {@link parseSaveFile} alone, never in {@link parseAccountPayload} — `apps/desktop` imports only
@@ -168,7 +168,7 @@ export type ParseResult = {
    *
    * Asserted by {@link parseSaveFile} ALONE, never by {@link parseAccountPayload} — the same
    * split the `unsupportedSaveShape` gate above makes, and for the same reason: a payload
-   * legitimately omits whole sections per poll (`AD-036`).
+   * legitimately omits whole sections per poll.
    */
   accountMissingRequired: readonly RequiredAccountField[];
 };
@@ -212,9 +212,9 @@ function mapAccountPhase(raw: Record<string, unknown>): number | null {
  * `account.max_phase` — the furthest phase this account has reached. Falls back to
  * `skills.max_phase`; the 2026-08-13 export carries both and they agree (42 / 42). Preferring
  * `account` follows the design; the fallback covers a payload that carries `skills` without
- * `account`, which `AD-036`'s per-section fidelity model makes a real shape.
+ * `account`, which the per-section fidelity model makes a real shape.
  *
- * Same latent-divergence family as `field_slots` vs `skills.totals.vagas_campo` (`AD-063`) —
+ * Same latent-divergence family as `field_slots` vs `skills.totals.vagas_campo` —
  * this reader RECORDS the two sources and does not reconcile them.
  */
 function mapAccountMaxPhase(raw: Record<string, unknown>): number | null {
@@ -306,11 +306,11 @@ function mapAccountData(raw: Record<string, unknown>): AccountImportData {
   const phase = mapAccountPhase(raw);
   const maxPhase = mapAccountMaxPhase(raw);
   // Read off `skills`, not `casa` — the field cap is a skill-tree quantity and is present even on
-  // a payload that omits `casa` entirely (`AD-036` per-section fidelity).
+  // a payload that omits `casa` entirely (per-section fidelity).
   const fieldSlots = resolveFieldSlots(skills);
   const { playerName, accountId } = mapAccountIdentity(raw);
 
-  // MOD-36: single-pass optional-field parse — stays null unless the save carries `totals`.
+  // Single-pass optional-field parse — stays null unless the save carries `totals`.
   let tree: AccountImportData['tree'] = null;
   if (totals) {
     tree = {
@@ -321,7 +321,7 @@ function mapAccountData(raw: Record<string, unknown>): AccountImportData {
       energy: asNumber(totals.energia_add) * 100,
       teamCoinPct: asNumber(totals.coin_add ?? totals.team_coin_add) * 100,
       xpMult: asNumber(totals.xp_mult, 1) || 1,
-      // BSPW5-03 (ASM-01): flat Luck percentage points — absent key defaults to 0.
+      // Flat Luck percentage points — absent key defaults to 0.
       luckFlatPct: asNumber(totals.luck_add) * 100,
       squadDmgPct: asNumber(totals.team_dmg_add) * 100,
       geoMult: asNumber(totals.geo_mult, 1) || 1,
@@ -330,7 +330,7 @@ function mapAccountData(raw: Record<string, unknown>): AccountImportData {
     };
   }
 
-  // MOD-36: single-pass optional-field parse — both stay null unless the save carries `casa`.
+  // Single-pass optional-field parse — both stay null unless the save carries `casa`.
   let houseIdx: number | null = null;
   let houseLevel: number | null = null;
   if (casa) {
@@ -383,19 +383,19 @@ const EMPTY_ACCOUNT_DATA: AccountImportData = {
 
 /**
  * Normalises a raw file object into an `AccountPayload` with no projection, validation, or
- * key-stripping (design TD-2) — `parseAccountPayload` below re-validates every field itself.
+ * key-stripping — `parseAccountPayload` below re-validates every field itself.
  * File-only keys (`export_version`, `generated_at`) ride along at runtime; the shared *type*
- * simply never declares them (ACS-06).
+ * simply never declares them.
  */
 function toAccountPayload(raw: unknown): AccountPayload {
   return isObject(raw) ? raw : {};
 }
 
 /**
- * MSG-11 positive discriminator, order-preserved: this mirrors — never imports — the exact
+ * Positive discriminator, order-preserved: this mirrors — never imports — the exact
  * `notASaveFile` predicate `parseAccountPayload` runs internally, so the gate below can run
  * strictly BEFORE that function without touching its body at all (`parseAccountPayload` is
- * byte-unchanged by this feature — `AD-088`, proven by a source guard, not by argument).
+ * byte-unchanged by this feature, proven by a source guard, not by argument).
  */
 function looksLikeASaveFile(payload: AccountPayload): boolean {
   const raw: unknown = payload;
@@ -403,10 +403,10 @@ function looksLikeASaveFile(payload: AccountPayload): boolean {
 }
 
 /**
- * The file adapter over {@link parseAccountPayload} (ACS-02: unchanged name, signature,
+ * The file adapter over {@link parseAccountPayload} (unchanged name, signature,
  * observable output for every input this gate accepts).
  *
- * MP5 F4 (`MSG-11`…`MSG-13`, `AD-088`) adds ONE gate here, and only here: a value that claims to
+ * Adds ONE gate here, and only here: a value that claims to
  * be a complete save export but lacks the keys the current game version writes
  * (`POST_UPDATE_SAVE_KEYS`) is rejected before any hero, item or account value is read — never
  * migrated, never partially parsed. The gate is positive-only (asks `has(newKey)`, never
@@ -414,7 +414,7 @@ function looksLikeASaveFile(payload: AccountPayload): boolean {
  * `notASaveFile` (a value that does not even look like a save keeps today's exact rejection,
  * unchanged) and BEFORE `missingBirthStats` (a pre-patch or truncated file is never misdiagnosed
  * as a birth-stats problem). `parseAccountPayload` — the payload entry point `apps/desktop`
- * actually imports — is untouched: a payload legitimately omits sections per-poll (`AD-036`),
+ * actually imports — is untouched: a payload legitimately omits sections per-poll,
  * and gating it there would reject every degraded desktop cycle.
  */
 export function parseSaveFile(raw: unknown, existing: HeroRecord[]): ParseResult {
@@ -425,8 +425,8 @@ export function parseSaveFile(raw: unknown, existing: HeroRecord[]): ParseResult
     if (missingKeys.length > 0) {
       return {
         candidates: [],
-        // MSG-15: the diagnosis is not lost to the generic player-facing copy (T8) — it lives
-        // here, in `warnings` (data, never rendered by the desktop, `AD-040`), naming exactly
+        // The diagnosis is not lost to the generic player-facing copy (T8) — it lives
+        // here, in `warnings` (data, never rendered by the desktop), naming exactly
         // which path-qualified keys were absent.
         warnings: [
           `This save is missing key(s) the current game version writes (${missingKeys.join(', ')}) ` +
@@ -460,7 +460,7 @@ export function parseSaveFile(raw: unknown, existing: HeroRecord[]): ParseResult
 
 /**
  * A section the payload's `fidelity` block calls `resolved` but that carries no data at all is
- * treated as a programming error, not a silent downgrade (spec.md edge cases, design TD-6):
+ * treated as a programming error, not a silent downgrade (spec.md edge cases):
  * surfaced as a warning, never thrown, never changing the derived grade (which stays a pure
  * function of `fidelity` alone in `deriveAccountFidelity`). The file adapter above never sets
  * `fidelity`, so this is provably empty on the file path.
@@ -497,7 +497,7 @@ export function parseAccountPayload(payload: AccountPayload, existing: HeroRecor
     };
   }
 
-  // AD-BSP-05: whole-file birth scan BEFORE any per-hero work — a partial birth block on
+  // Whole-file birth scan BEFORE any per-hero work — a partial birth block on
   // even one hero rejects the whole file rather than composing a sheet from an invented
   // default (spec.md edge cases). "Any hero missing" (not "every hero missing") is the
   // correct gate — a mixed save (some heroes with birth_stats, some without) still rejects.
@@ -559,7 +559,7 @@ export function parseAccountPayload(payload: AccountPayload, existing: HeroRecor
     existing.filter((hero): hero is HeroRecord & { sourceId: string } => !!hero.sourceId).map((hero) => [hero.sourceId, hero]),
   );
 
-  // BSPW5-04: map the skill tree once, up front — inferSpentPoints (per hero, below) needs
+  // Map the skill tree once, up front — inferSpentPoints (per hero, below) needs
   // TreeSheetTotals, so it can no longer be mapped lazily at the end via mapAccountData.
   // treeTotalsFromSave(totals ?? {}) already yields the correct identity defaults
   // (danoStatic 1, everything else 0) when `skills.totals` is absent.
@@ -587,8 +587,8 @@ export function parseAccountPayload(payload: AccountPayload, existing: HeroRecor
     const deployed = bool(rawHero.in_field);
     const battleAllowed = bool(rawHero.battle_allowed, true);
     const stars = asNumber(rawHero.stars, 0);
-    // BSPW5-06 (BSP-55, DEC-05): an out-of-range skin degrades to the neutral placeholder
-    // (0), never a nearest-index clamp (AD-BSP-29) — absence (undefined/null) is normal
+    // An out-of-range skin degrades to the neutral placeholder
+    // (0), never a nearest-index clamp — absence (undefined/null) is normal
     // and stays silent; only a genuinely present, unusable value raises an issue.
     const rawSkin = rawHero.skin;
     const skinProvided = rawSkin !== undefined && rawSkin !== null;
@@ -605,7 +605,7 @@ export function parseAccountPayload(payload: AccountPayload, existing: HeroRecor
       const code = asString(ability.code);
       const lvl = Math.max(0, Math.round(asNumber(ability.level, 0)));
       if (!ABILITIES.some((definition) => definition.id === code)) {
-        // BSP-33/-32a: warn regardless of level — a level-0 unknown slot (e.g. a new
+        // Warn regardless of level — a level-0 unknown slot (e.g. a new
         // ability the planner hasn't caught up with yet) is exactly how slots 17/18
         // stayed invisible before this fix. Degrades gracefully when `slot` is absent
         // or not a finite number — never throws.
@@ -621,15 +621,15 @@ export function parseAccountPayload(payload: AccountPayload, existing: HeroRecor
     // the save's own numeric equip_slot, which uses a different ordering).
     let blocked = false;
     const loadout: Loadout = emptyLoadout();
-    // MOD-36: genuine accumulator — counts equipped slots filled while looping `items`.
+    // Genuine accumulator — counts equipped slots filled while looping `items`.
     let gearCount = 0;
     for (const item of items) {
       if (asString(item.equipped_on) !== sourceId) continue;
       const defId = asString(item.def_id);
       const definition = defById.get(defId);
       if (!definition) {
-        // BSPW5-05 (AC-11): unresolvable gear blocks the hero — never invent an empty slot
-        // and silently feed a wrong sheet into point inference (AD-BSP-24).
+        // Unresolvable gear blocks the hero — never invent an empty slot
+        // and silently feed a wrong sheet into point inference.
         issues.push(`Unrecognized item "${defId}" — hero blocked from import.`);
         blocked = true;
         continue;
@@ -652,7 +652,7 @@ export function parseAccountPayload(payload: AccountPayload, existing: HeroRecor
       critDmgFlat: mods.sheetCritDmgFlat,
     };
 
-    // BSPW5-04 (ASM-02): birth-backed composition — birth_stats is guaranteed usable here,
+    // Birth-backed composition — birth_stats is guaranteed usable here,
     // the whole-file gate above already rejected any save where it was not. naked and the
     // tree-inclusive, zero-points gearedOverride are pure functions of birth/level/stars/
     // sheetOther/loadout/tree — neither needs the save's `stats` block at all; only the
@@ -671,7 +671,7 @@ export function parseAccountPayload(payload: AccountPayload, existing: HeroRecor
 
     // Stats: the save's `stats` block is the hero's final (geared + spent-points, tree-
     // inclusive) sheet — invert it against the birth-backed naked/gearedOverride above to
-    // recover the integer spent-points vector (BSPW5-05, DEC-04). A hero with no `stats`
+    // recover the integer spent-points vector. A hero with no `stats`
     // block cannot be point-inferred (T5 turns this into a blocking candidate).
     const statsRaw = isObject(rawHero.stats) ? rawHero.stats : null;
     // Read regardless of whether `stats` is present — a blocked (no-`stats`) hero still carries
@@ -687,8 +687,8 @@ export function parseAccountPayload(payload: AccountPayload, existing: HeroRecor
       pts = inferred.pts;
       pointIssues = inferred.issues;
       if (inferred.issues.length > 0) {
-        // DEC-04: one neutral English string on issues[]; the typed pointIssues[] above is
-        // what Wave 6's BSP-04b copy actually names a saturated stat from.
+        // One neutral English string on issues[]; the typed pointIssues[] above is
+        // what Wave 6's copy actually names a saturated stat from.
         issues.push('Spent stat points could not be exactly matched to this save — the closest integer allocation was used.');
       }
       // The game grants exactly one point per level and `stat_points_available` is what is left
@@ -714,7 +714,7 @@ export function parseAccountPayload(payload: AccountPayload, existing: HeroRecor
       }
       power = asNumber(statsRaw.power);
     } else {
-      // BSPW5-05 (AC-11): a hero with birth_stats but no `stats` cannot be point-inferred —
+      // A hero with birth_stats but no `stats` cannot be point-inferred —
       // block rather than guess with an invented sheet (never an unknown-ability-style warn).
       issues.push('Missing stats block — hero blocked from import (cannot infer spent points).');
       pts = ZERO_PTS();

@@ -3,7 +3,7 @@
  * different: Cora (geared, star-scaled, two abilities, a non-zero spent-point vector), Lorne
  * (naked, one on-sheet ability, zero points), Brenna (one item, one on-sheet ability, zero
  * points) and Weird (unknown ability, unrecognized item, stats that do NOT invert — the
- * red-state hero AC-15/AC-16 need).
+ * red-state hero the NaN-safety and non-finite-luck-coercion tests need).
  *
  * The first three carry a self-consistency claim: their `stats` block is what
  * `composeSheetFromBirth` produces from their own birth/level/stars/items/tree at the stated
@@ -27,10 +27,11 @@ export function baseSave() {
           { code: 'detonacao_dupla', level: 10, max: 10, slot: 11 },
           { code: 'passagem_bastao', level: 10, max: 10, slot: 13 },
         ],
-        // BSPW5-04: birth_stats + stats below are self-consistent — Cora spent exactly
+        // birth_stats + stats below are self-consistent — Cora spent exactly
         // { attack: 2, critChance: 1 } (budget 3, stat_points_available 44 -> 47-44=3),
         // computed by feeding composeSheetFromBirth this exact birth/level/stars/loadout/
-        // tree and converting back to save units (AD-BSP-19a). A clean, issue-free hero.
+        // tree and converting back to save units, each stat per its own save-to-planner
+        // unit conversion. A clean, issue-free hero.
         stat_points_available: 44,
         birth_stats: {
           dmg: 60,
@@ -87,7 +88,7 @@ export function baseSave() {
           { code: 'marcha_acelerada', level: 0, max: 10, slot: 3 },
           { code: 'olho_clinico', level: 10, max: 10, slot: 10 },
         ],
-        // BSPW5-04: birth_stats + stats are self-consistent at zero spent points
+        // birth_stats + stats are self-consistent at zero spent points
         // (stat_points_available 11 == level -> budget 0), same derivation as Cora above,
         // and now asserted forward by `the fixture reproduces its own authored stats` below.
         //
@@ -156,7 +157,7 @@ export function baseSave() {
         rarity: 2,
         stars: 0,
         abilities: [{ code: 'ponta_diamante', level: 10, max: 10, slot: 5 }],
-        // BSPW5-04: birth_stats + stats are self-consistent at zero spent points
+        // birth_stats + stats are self-consistent at zero spent points
         // (stat_points_available 30 == level -> budget 0), same derivation as Cora above,
         // and now asserted forward by `the fixture reproduces its own authored stats` below.
         //
@@ -165,7 +166,7 @@ export function baseSave() {
         // this block never picked up — and `crit_chance`, `crit_dmg`, `penetration` and
         // `cooldown_reduction` had each drifted with the `gold_anel` catalog rescale and the
         // same half-`crit_dmg_add` error as Lorne. The inversion recovered 23 points against a
-        // budget of 0, so the importer BLOCKED her, which is why `AC-11` below had been
+        // budget of 0, so the importer BLOCKED her, which is why the check below had been
         // skipped: it asserts Brenna is not blocked.
         stat_points_available: 30,
         birth_stats: {
@@ -226,9 +227,10 @@ export function baseSave() {
       levels: [20, 20, 6, 0, 0],
       slots: 9,
     },
-    // MP5 F4: post-patch skills shape — parseSaveFile's positive discriminator (MSG-11) requires
-    // skills.refunds / skills.totals.vagas_campo / skills.totals.bag_tabs_bonus to be present, or
-    // the whole file is rejected. No retired keystone field survives here (F2/F3's own removal).
+    // MP5 F4: post-patch skills shape — parseSaveFile's positive discriminator on the new keys
+    // requires skills.refunds / skills.totals.vagas_campo / skills.totals.bag_tabs_bonus to be
+    // present, or the whole file is rejected. No retired keystone field survives here (F2/F3's
+    // own removal).
     skills: {
       refunds: {},
       totals: {

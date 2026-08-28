@@ -60,7 +60,7 @@ let triggeredRefresh: TriggeredRefresh | null = null;
 /** Fixture mode only — see `gameReader.onAccountCommitted` for why a re-ingest of an unchanged
  *  rotation is not free. */
 let lastIngestedRotationBody: string | null = null;
-// MP3 F4 (AD-053) — the resolved language, held in a module-level `let` exactly as
+// The resolved language, held in a module-level `let` exactly as
 // `consentStore`'s own value is. Defaults to `DEFAULT_SETTINGS` until `bootstrap()` resolves it
 // (inside `whenReady()`, where `app.getLocale()` is documented valid) so `settings:get` never
 // races a caller that arrives before boot finishes.
@@ -71,7 +71,7 @@ function emitEvent<C extends IpcEventChannel>(channel: C, payload: IpcEvents[C])
 }
 
 /** Reads, transitions, persists, and announces one consent event — the single path every
- *  consent:* handler below goes through (LAR-01/03…05). Every dep below reads the module-level
+ *  consent:* handler below goes through. Every dep below reads the module-level
  *  `let` bindings lazily, through its own closure, because they are still null at this point in
  *  the module and are only assigned once `bootstrap()` runs. */
 const applyConsentEvent = createConsentApplier({
@@ -104,11 +104,11 @@ const applyConsentEvent = createConsentApplier({
 });
 
 /**
- * MP3 F4 (`AD-051`/`AD-052`, design.md §4.1) — the one path both `settings:useEnglish` and
+ * design.md §4.1 — the one path both `settings:useEnglish` and
  * `settings:usePortuguese` go through (the `applyConsentEvent` shape, `index.ts:40-47`, applied
  * to a payload with two possible values instead of an enum event). APPLIES first, always, THEN
  * persists — `currentSettings` is reassigned before the store is ever touched, so the returned
- * `settings` is the applied value on every branch (MIN-11's "the language still applies for the
+ * `settings` is the applied value on every branch ("the language still applies for the
  * session" is then structural, not a branch someone has to remember to write).
  */
 function applyLocale(next: AppLocale): SettingsWriteResult {
@@ -143,7 +143,7 @@ function registerIpcHandlers(): void {
       };
     },
     'app:ping': () => ({ ok: true as const, from: 'main' as const }),
-    // MP3 F4 (AD-053) — the resolved settings (stored override, else OS detection, else
+    // The resolved settings (stored override, else OS detection, else
     // DEFAULT_SETTINGS.locale), not the constant this has returned since MP1.
     'settings:get': (): AppSettings => currentSettings,
     'settings:useEnglish': (): SettingsWriteResult => applyLocale('en'),
@@ -153,7 +153,7 @@ function registerIpcHandlers(): void {
       status: 'not_running' as const,
       updatedAt: new Date().toISOString(),
     },
-    // MP3 F3 (AD-043) — the handler's pre-F3 body now lives, verbatim, in account-view.ts's
+    // The handler's pre-F3 body now lives, verbatim, in account-view.ts's
     // resolveAccountView(); this is a one-line call to it. See that file for the T-fix-6
     // precedence comment this used to carry inline.
     'account:get': (): AccountView => resolveAccountView({ gameReader, consentStore, accountRefresh, accountStore }),
@@ -275,8 +275,8 @@ async function bootstrap(): Promise<void> {
     items: initialRestore.payload.fidelity.items.status,
   });
 
-  // MP2 F2 — the consented game-API account reader. Independent of the game reader's own
-  // memory/fixture ticking: consent gates every request structurally (LAR-01/AD-025/AD-028),
+  // The consented game-API account reader. Independent of the game reader's own
+  // memory/fixture ticking: consent gates every request structurally,
   // so this cycle issues nothing at all until the player has accepted the first-run modal (T9).
   // Constructed before registerIpcHandlers() so the consent:* handlers never see a null store,
   // and before the game reader so its own live-mode process lookups can be gated by the same
@@ -290,10 +290,10 @@ async function bootstrap(): Promise<void> {
   );
   gameReader.setAccountStore(accountStore);
 
-  // MP3 F4 (AD-052/AD-053) — same db handle consentStore takes. Resolved ONCE, here, inside
+  // Same db handle consentStore takes. Resolved ONCE, here, inside
   // whenReady() (bootstrap()'s own calling context), where app.getLocale() is documented to be
-  // valid. A stored override always wins over the OS (MIN-09); source is logged so "why did it
-  // open in English?" is answerable from a log line rather than a guess (MIN-06/MIN-07).
+  // valid. A stored override always wins over the OS; source is logged so "why did it
+  // open in English?" is answerable from a log line rather than a guess.
   settingsStore = createSettingsStore(accountOpen.db);
 
   // Replay mode swaps the whole attach mechanism for a reader over a committed byte capture, so
@@ -375,7 +375,7 @@ async function bootstrap(): Promise<void> {
     sleep: (ms) => new Promise((resolve) => setTimeout(resolve, ms)),
   });
 
-  // MP3 F3 (AD-043) — declared before accountRefresh so its onView callback can close over it;
+  // Declared before accountRefresh so its onView callback can close over it;
   // assigned once every producer it reads (gameReader, consentStore, accountRefresh) exists.
   // Both producers below "ping" the notifier and ignore their own payload argument for that call
   // — the notifier always re-resolves the CURRENT cached view itself (resolveCachedAccountView),
@@ -404,9 +404,9 @@ async function bootstrap(): Promise<void> {
       }
       return result;
     },
-    // account-refresh.ts itself is unmodified (TD-10, MP2 owns that file's commit semantics) —
-    // only what the listener does changed: it used to emit unconditionally on every commit
-    // (AD-031 fact 2); it now asks the notifier, which emits only on a real change.
+    // account-refresh.ts itself is unmodified (MP2 owns that file's commit semantics) —
+    // only what the listener does changed: it used to emit unconditionally on every commit;
+    // it now asks the notifier, which emits only on a real change.
     onView: (view) => {
       notifier?.notifyIfChanged();
       liveSource?.ingestRotation(view);
@@ -422,7 +422,7 @@ async function bootstrap(): Promise<void> {
     },
   });
 
-  // MP3 F3 (AD-043 point 3) — fixture mode's ~20×/s ticker is the second producer that can
+  // Fixture mode's ~20×/s ticker is the second producer that can
   // commit an account; wired the same way, ignoring its own payload argument for the same
   // reason. Production's live-tap-backed reader never commits (GameReaderService.tickLive() has
   // no commit site), so this callback never fires outside fixture-mode test builds.
@@ -500,7 +500,7 @@ if (env.envConflict) {
 
 log.info(createBootRecord(env, 'main'));
 
-// MP3 F1 (AD-032) — proves the main process can compute with @bombfarm/domain: a value
+// Proves the main process can compute with @bombfarm/domain: a value
 // import from the built package, called once at boot. No behaviour depends on this; F2/F3
 // are what actually use the edge. See src/main/domain-edge.ts.
 log.info({ scope: 'main', event: 'domain.edge_ready', fuseSecondsAtZeroCdr: fuseSecondsForCdr(0) });
@@ -550,7 +550,7 @@ if (!gotLock) {
     liveSource = null;
     lastIngestedRotationBody = null;
     consentStore = null;
-    // MP3 F4 — settingsStore borrows accountOpen.db, which accountStore.close() already owns
+    // settingsStore borrows accountOpen.db, which accountStore.close() already owns
     // below; it holds no timer and opens no handle of its own, so it must not gain a close().
     settingsStore = null;
     storage?.close();

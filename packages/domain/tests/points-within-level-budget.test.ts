@@ -37,8 +37,7 @@
  *    appears, and it is one hero in one capture that corpus churn can retire. Ivo carries no
  *    gear and no other sheet ability, so the whole delta is the ability, and it survives the
  *    corpus changing under it. Both use save units and the game's own reading, not this model's
- *    output — the practice `save-units.test.ts` uses for Bellatrix's `crit_dmg` literal
- *    (`AD-068`).
+ *    output — the practice `save-units.test.ts` uses for Bellatrix's `crit_dmg` literal.
  */
 import { readFileSync, readdirSync } from 'node:fs';
 import { dirname, join, relative } from 'node:path';

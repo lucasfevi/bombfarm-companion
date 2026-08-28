@@ -1,16 +1,16 @@
-/** The five independently-resolvable sections of an account payload (AD-019 rule 3). */
+/** The five independently-resolvable sections of an account payload. */
 export type AccountSection = 'account' | 'heroes' | 'skills' | 'casa' | 'items';
 
 /**
  * `resolved` — read in this capture. `stale` — last-known-good, older than this capture.
  * `missing` — never seen, or not recoverable at all. `degraded` — the source answered with a
- * shape that no longer matches its fingerprint (LAR-19); the body is carried alongside the status
+ * shape that no longer matches its fingerprint; the body is carried alongside the status
  * regardless, but it is only trustworthy when nothing this section reads was lost — see
  * `isTrustworthySection` for the added-vs-missing distinction that decides that.
  */
 export type SectionStatus = 'resolved' | 'stale' | 'missing' | 'degraded';
 
-/** ISO-8601 `capturedAt` is required for anything that is not `missing` (ACS-04). */
+/** ISO-8601 `capturedAt` is required for anything that is not `missing`. */
 export type SectionFidelity =
   | { readonly status: 'resolved' | 'stale'; readonly capturedAt: string }
   | { readonly status: 'missing'; readonly capturedAt?: undefined }
@@ -18,9 +18,9 @@ export type SectionFidelity =
       readonly status: 'degraded';
       readonly capturedAt: string;
       /** Fingerprint keys the response did not carry — named so a game update is diagnosable
-       *  from a user's log without a debugger (LAR-19/LAR-20). */
+       *  from a user's log without a debugger. */
       readonly missingKeys: readonly string[];
-      /** MP5 F4: fingerprint keys the response carried that were NOT declared — named for the
+      /** Fingerprint keys the response carried that were NOT declared — named for the
        *  same reason `missingKeys` is. Required, not optional: an incomplete drift report (one
        *  collection present, the other silently dropped) becomes unrepresentable. */
       readonly addedKeys: readonly string[];
@@ -68,6 +68,6 @@ export interface AccountPayload {
   readonly casa?: Record<string, unknown> | undefined;
   /** `/inventory` items. Absent ⇒ the "no items list" warning, then parsing continues. */
   readonly items?: readonly unknown[] | undefined;
-  /** Absent means "not asserted" and grades as `full` (ACS-05.5 — the file adapter's case). */
+  /** Absent means "not asserted" and grades as `full` (the file adapter's case). */
   readonly fidelity?: AccountFidelity | undefined;
 }

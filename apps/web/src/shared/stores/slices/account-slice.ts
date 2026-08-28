@@ -255,7 +255,7 @@ export const createAccountSlice: StateCreator<
     if (data.phase != null) {
       // Same clamp `setFarmPhase` relies on downstream reads for (AD-BSP style: reuse, don't
       // reimplement) — and the same mitigation-sync/skipPhaseMitigationSync contract as
-      // `setFarmPhase` below, so an import landing mid hero-switch (ASM-10's suppression
+      // `setFarmPhase` below, so an import landing mid hero-switch (the suppression
       // window) doesn't fight it.
       const phase = effectiveFarmPhase(data.phase);
       patch.phase = phase;

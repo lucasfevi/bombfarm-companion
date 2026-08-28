@@ -1,7 +1,8 @@
 #!/usr/bin/env node
 /**
- * Generates the assembled-payload fixtures `packages/domain/tests` uses to prove LAR-08/09/16/17
- * (T7). Committed here so the fixtures can be regenerated and diffed rather than hand-written —
+ * Generates the assembled-payload fixtures `packages/domain/tests` uses to prove full-depth
+ * parsing, change reflection, and honest partial/grade delivery (T7). Committed here so the
+ * fixtures can be regenerated and diffed rather than hand-written —
  * run `pnpm --filter @bombfarm/game-api build` first, then `node scripts/generate-domain-fixtures.mjs`
  * from `packages/game-api`.
  *
@@ -48,12 +49,12 @@ export function buildFixtures() {
   const after = loadBodies('api-bodies-after.json');
   const fixtures = [];
 
-  // All five sections resolved, over the before/after body pairs (LAR-09's change-detection pair).
+  // All five sections resolved, over the before/after body pairs (the change-detection pair).
   fixtures.push({ name: 'assembled-payload-before.json', payload: assembleAccountPayload(okOutcomesFromBodies(before), NOW) });
   fixtures.push({ name: 'assembled-payload-after.json', payload: assembleAccountPayload(okOutcomesFromBodies(after), NOW) });
 
   // Partial: the `account` route failed this cycle (a transport-level failure), the other four
-  // resolved — grades `degraded`, and every resolved section still carries and parses (LAR-16/17).
+  // resolved — grades `degraded`, and every resolved section still carries and parses.
   const partialOutcomes = okOutcomesFromBodies(before);
   partialOutcomes.account = { kind: 'failed', reason: 'transport_error' };
   fixtures.push({ name: 'assembled-payload-partial.json', payload: assembleAccountPayload(partialOutcomes, NOW) });

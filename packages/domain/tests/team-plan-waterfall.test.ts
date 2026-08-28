@@ -40,7 +40,7 @@ function ptsWithResets(
   return pts;
 }
 
-// MP5 F1 (AD-068 class (b) — structural): re-pointed onto payload-20260812-8heroes.json
+// (the ground-truth rule, class (b) — structural): re-pointed onto payload-20260812-8heroes.json
 // (default subject) and save-20260813-5heroes.json (forge-specific assertions, per
 // design.md §6.3 — the payload's uniform-0 upgrades cannot exercise a forge/no-forge choice).
 describe('buildWaterfall', () => {
@@ -87,7 +87,7 @@ describe('buildWaterfall', () => {
   });
 
   it.skip('includes forge entries for items below forgeFloor on the fixture', () => {
-    // MP5 F1 (AD-068 class (a)): forge-specific — takes save-20260813-5heroes.json (item
+    // (the ground-truth rule, class (a)): forge-specific — takes save-20260813-5heroes.json (item
     // upgrades {0, 8}), not the default payload subject, whose upgrades are uniformly 0 and
     // so cannot exercise a genuine forge/no-forge choice (design.md §6.3).
     const { plan } = waterfallFromFixture('save-20260813-5heroes.json');
@@ -198,7 +198,7 @@ describe('buildWaterfall', () => {
     }
   });
 
-  // MP5 F1 — DELETED, not re-pointed (AD-068; T5's explicit instruction). This was the one
+  // DELETED, not re-pointed (the ground-truth rule; T5's explicit instruction). This was the one
   // non-quarantined skip directive in the two test trees. Its subject (save-20260801-crit-dmg-
   // tree.json, hero 37446) dies with the rest of the pre-wipe corpus, and nobody has looked for
   // a fresh empirical example on the new substrate — re-pointing it onto a substrate nobody has

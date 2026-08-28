@@ -2,7 +2,7 @@ import { cva } from 'class-variance-authority';
 
 /**
  * FileDropZone chrome — byte-for-byte from `import-heroes-dialog.tsx` idle/dragOver
- * class strings (W6 T4.1 / ASM-13). Empty cva `base`; variants emit full strings.
+ * class strings (W6 T4.1). Empty cva `base`; variants emit full strings.
  */
 export const fileDropZoneRecipe = cva('', {
   variants: {

@@ -1,10 +1,10 @@
 /**
- * BSPW4-15 / AC-04 / AC-13 — the two-tier copy contract, enforced over the strings themselves
+ * The two-tier copy contract, enforced over the strings themselves
  * (data), not a rendered component. Tier 1 (the automatic gate — `resetAdviceRoster*` /
  * `resetAdviceGain*`) may only claim a LOWER BOUND and must name Optimize build as the
  * definitive answer. Tier 2 (`optimizeBuild*` / `previewApply*`, on demand) may claim the best
  * allocation ITS OWN search found, but never optimality, and never frames a result larger than
- * Tier 1's estimate as a correction or an inconsistency — `AC-64a` already guarantees
+ * Tier 1's estimate as a correction or an inconsistency — tier monotonicity already guarantees
  * `optimizeBuild.reoptDps >= findGateCandidate.reoptDps` structurally, so a larger Tier 2
  * number is expected behaviour.
  */
@@ -68,7 +68,7 @@ const TIER2_KEYS = [
   'previewRespecNote',
 ] as const;
 
-describe('i18n copy contract — Tier 1 (reset advice gate) never over-claims (AC-04)', () => {
+describe('i18n copy contract — Tier 1 (reset advice gate) never over-claims', () => {
   for (const lang of LANGS) {
     const t = STRINGS[lang];
 
@@ -116,7 +116,7 @@ describe('i18n copy contract — Tier 1 (reset advice gate) never over-claims (A
   }
 });
 
-describe('i18n copy contract — Tier 2 (Optimize build) claims "best found", never "optimal" (AC-13)', () => {
+describe('i18n copy contract — Tier 2 (Optimize build) claims "best found", never "optimal"', () => {
   for (const lang of LANGS) {
     const t = STRINGS[lang];
 
@@ -158,7 +158,7 @@ describe('i18n copy contract — key naming keeps the two tiers apart', () => {
   });
 });
 
-describe('i18n copy contract — Luck row states it is loot-facing, not scored for DPS (AC-23)', () => {
+describe('i18n copy contract — Luck row states it is loot-facing, not scored for DPS', () => {
   for (const lang of LANGS) {
     const t = STRINGS[lang];
 
