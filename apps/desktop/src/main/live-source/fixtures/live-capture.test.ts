@@ -154,8 +154,7 @@ describe('live-capture.bfcc drives the real decode path: records -> TlsConnectio
   ): { readonly joined: readonly JoinedPayout[]; readonly unjoined: readonly UnjoinedPayout[] } {
     const joined: JoinedPayout[] = [];
     const unjoined: UnjoinedPayout[] = [];
-    for (let i = 0; i < ticks.length; i += 1) {
-      const cur = ticks[i]!;
+    for (const [i, cur] of ticks.entries()) {
       const prev = i > 0 ? ticks[i - 1] : undefined;
       for (const pop of cur.loot ?? []) {
         if (pop.gold === undefined) continue;

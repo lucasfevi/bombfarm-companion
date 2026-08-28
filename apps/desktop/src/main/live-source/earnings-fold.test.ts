@@ -23,6 +23,11 @@ function makeClock(startAt = 0): { now: () => number; advance: (ms: number) => v
   };
 }
 
+function requireNumber(value: number | null): number {
+  if (value === null) throw new Error('expected a non-null number');
+  return value;
+}
+
 function makeFold(overrides: Partial<EarningsFoldDeps> = {}): EarningsFold {
   return new EarningsFold({
     now: () => 0,
@@ -103,7 +108,7 @@ describe('EarningsFold: streamed clock', () => {
     const rateAfterTenSeconds = fold.goldSession;
 
     expect(rateAfterTenSeconds).not.toBeNull();
-    expect(rateAfterTenSeconds!).toBeLessThan(rateAfterOneSecond!);
+    expect(requireNumber(rateAfterTenSeconds)).toBeLessThan(requireNumber(rateAfterOneSecond));
   });
 
   it('freezes the streamed clock across a stream gap so the rate does not fall across it', () => {
@@ -125,7 +130,7 @@ describe('EarningsFold: streamed clock', () => {
     const uncappedRate = (1_000 / uncappedSeconds) * 3600;
     // Only the capped 2 seconds ever get credited, never the real 5-minute gap, so the actual rate
     // stays far above what crediting the whole gap would have collapsed it to.
-    expect(fold.goldSession!).toBeGreaterThan(uncappedRate * 10);
+    expect(requireNumber(fold.goldSession)).toBeGreaterThan(uncappedRate * 10);
   });
 });
 
@@ -161,7 +166,7 @@ describe('EarningsFold: xpMult normalization', () => {
     const tick = baseTick({ phase: 1, loot: [{ cell: 0, gold: 1 }] });
     const doubled = foldAfterOneEarningTick({ xpPerProp: () => 10 }, tick, 2);
     const baseline = foldAfterOneEarningTick({ xpPerProp: () => 10 }, tick, 1);
-    expect(doubled.xpSession).toBe(baseline.xpSession! * 2);
+    expect(doubled.xpSession).toBe(requireNumber(baseline.xpSession) * 2);
   });
 });
 
@@ -211,7 +216,7 @@ describe('EarningsFold: per-tick phase', () => {
     const expectedXp = 1 * 10 * 1 + 1 * 100 * 1;
     expect(fold.xpSession).not.toBeNull();
     // Recover the accumulated XP total from the per-hour rate using the known streamed time.
-    const xpTotal = (fold.xpSession! * fold.sessionSeconds) / 3600;
+    const xpTotal = (requireNumber(fold.xpSession) * fold.sessionSeconds) / 3600;
     expect(xpTotal).toBeCloseTo(expectedXp, 6);
   });
 });

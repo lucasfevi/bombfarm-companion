@@ -177,7 +177,9 @@ export class EarningsFold {
    *  the player was not actually away for. */
   #windowBuckets(): readonly Bucket[] {
     const cutoff = this.#deps.now() - TEN_MINUTES_MS;
-    while (this.#buckets.length > 0 && this.#buckets[0]!.startedAtMs < cutoff) this.#buckets.shift();
+    for (let oldest = this.#buckets[0]; oldest && oldest.startedAtMs < cutoff; oldest = this.#buckets[0]) {
+      this.#buckets.shift();
+    }
     return this.#buckets;
   }
 
