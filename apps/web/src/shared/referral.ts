@@ -6,4 +6,4 @@
  * copy states the mutual benefit rather than presenting it as a one-way favour.
  * Update here — every surface reads this constant.
  */
-export const REFERRAL_CODE = 'F-S7999UQC';
+export const REFERRAL_CODE = 'F-X7BTKJPP';
