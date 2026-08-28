@@ -391,6 +391,7 @@ async function bootstrap(): Promise<void> {
     store: accountStore,
     log,
     now: () => new Date().toISOString(),
+    isGameRunning: () => gameReader?.getStatus().status === 'connected',
     // Threads Electron's real `app.isPackaged` (via `resolveAppEnv()`) so `sessionCfgPath`'s
     // `BFC_TOKEN_PATH_OVERRIDE` escape hatch (T-fix-4) can ever apply — and, symmetrically,
     // cannot apply in a packaged build no matter what is set in its environment. See
