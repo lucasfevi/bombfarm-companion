@@ -1,10 +1,23 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { createElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import type { LiveEarnings } from '@bombfarm/contracts';
 import { en } from '../../lib/copy/en';
 import type { ReachedLiveFreshness } from './freshness-line';
 import { EarningsPanel } from './earnings-panel';
+
+// `useCopy()` is a hook, so it needs an active React dispatcher — fine for the `renderToStaticMarkup`
+// calls below (a real render), but not for calling `EarningsPanel` directly as a plain function the
+// way the reset-control wiring test at the bottom does. Mocking it the same way
+// `diagnostics-section-wiring.test.tsx` does covers both: `renderToStaticMarkup` still renders real
+// English copy, and the direct call no longer needs a dispatcher at all. `sub()` keeps its real
+// interpolation so the coverage-label and duration assertions exercise the genuine template
+// substitution, not a stub.
+vi.mock('../../lib/copy', () => ({
+  useCopy: () => en,
+  sub: (template: string, values: Record<string, string | number>) =>
+    template.replace(/\{(\w+)\}/g, (fallback: string, key: string) => String(values[key] ?? fallback)),
+}));
 
 const LIVE: ReachedLiveFreshness = { kind: 'live' };
 const GAP: ReachedLiveFreshness = {
@@ -144,5 +157,23 @@ describe('EarningsPanel — session duration and reset live in the header', () =
   it('renders a real reset button', () => {
     const out = html(earnings());
     expect(out).toMatch(/<button[^>]*data-testid="live-earnings-reset"/);
+  });
+});
+
+describe('EarningsPanel — the reset control invokes the bridge exactly once', () => {
+  it('activating the rendered control calls onReset exactly once', () => {
+    const onReset = vi.fn();
+    const root = EarningsPanel({ freshness: LIVE, earnings: earnings(), onReset }) as unknown as {
+      props: { children: unknown[] };
+    };
+    const header = root.props.children[0] as { props: { children: { props: { children: unknown[] } } } };
+    const headerRight = header.props.children;
+    const button = headerRight.props.children[1] as { props: { onClick: () => void; 'data-testid': string } };
+
+    expect(button.props['data-testid']).toBe('live-earnings-reset');
+    expect(button.props.onClick).toBe(onReset);
+
+    button.props.onClick();
+    expect(onReset).toHaveBeenCalledTimes(1);
   });
 });
