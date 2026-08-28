@@ -330,6 +330,9 @@ export class LiveSource {
   /** The last `skills.totals.xp_mult` seen from {@link ingestRotation}, sticky across a read that
    *  omits the section — never reset to `undefined` just because one read's fidelity was partial. */
   #xpMult: number | undefined;
+  /** `undefined` means no binding has been observed yet, the state a `null` read from the store
+   *  must never be mistaken for — see {@link #trackAccountBinding}. */
+  #lastBinding: string | undefined;
 
   constructor(deps: LiveSourceDeps) {
     this.#log = deps.log ?? NOOP_LOG_PORT;
@@ -439,9 +442,21 @@ export class LiveSource {
    *  newest-wins rule against {@link ingestObservedRotation} deterministically. */
   ingestRotation(view: AccountView, atMs: number = this.#now()): void {
     this.#xpMult = readXpMult(view.payload.skills) ?? this.#xpMult;
+    this.#trackAccountBinding(view.store.binding);
     if (view.payload.casa === undefined) return;
     const rosterHeroAbilities = extractRosterHeroAbilities(view.payload.heroes);
     this.#applyRotationBody(view.payload.casa, atMs, { rosterRaw: view.payload.heroes, rosterHeroAbilities });
+  }
+
+  /** A `null` binding is transient (the store between reads, not a different account) and must
+   *  never overwrite the last real one or itself count as a change. The first real binding this
+   *  session ever sees is not a change either — only a later, *different* one is. */
+  #trackAccountBinding(binding: string | null): void {
+    if (binding === null) return;
+    if (this.#lastBinding !== undefined && binding !== this.#lastBinding) {
+      this.#earningsFold.reset('accountChange');
+    }
+    this.#lastBinding = binding;
   }
 
   /** The tap-observed counterpart to {@link ingestRotation} — same fold, a body identified from

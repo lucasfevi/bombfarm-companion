@@ -154,7 +154,10 @@ function heroIdsFromCasaBody(casa: Record<string, unknown>): string[] {
 /** Every hero named in `casa`'s own `heroesList` also gets a minimal roster record, so the
  *  multipliers `LiveSource` resolves for them are never merely absent — matching a real account,
  *  where a rotation body and its roster describe the same heroes. */
-function buildAccountView(casa: Record<string, unknown>, opts: { readonly skills?: Record<string, unknown> } = {}): AccountView {
+function buildAccountView(
+  casa: Record<string, unknown>,
+  opts: { readonly binding?: string | null; readonly skills?: Record<string, unknown> } = {},
+): AccountView {
   return {
     payload: {
       casa,
@@ -162,7 +165,7 @@ function buildAccountView(casa: Record<string, unknown>, opts: { readonly skills
       ...(opts.skills !== undefined ? { skills: opts.skills } : {}),
     },
     gameRunning: true,
-    store: { status: 'ok', reason: null, binding: 'sqlite' },
+    store: { status: 'ok', reason: null, binding: opts.binding === undefined ? 'sqlite' : opts.binding },
   };
 }
 
@@ -1000,5 +1003,82 @@ describe('LiveSource: earnings', () => {
     const earnings = source.getView().earnings;
     expect(earnings?.xpSession).not.toBeNull();
     expect(earnings?.xpSession).not.toBe(0);
+  });
+
+  it('an account change (a different non-null store binding) clears session totals AND the 10-minute window', () => {
+    const { source, pushFrame, goLive } = createHarness();
+    source.start();
+    source.ingestRotation(buildAccountView(bodyWithHeroes([]), { binding: 'account-a' }));
+    goLive();
+
+    pushFrame({ heroes: [], phase: 1, gold: 500, loot: [{ cell: 0, gold: 100 }] });
+    pushFrame({ heroes: [], phase: 1, gold: 500 });
+    const before = source.getView().earnings;
+    expect(before?.goldSession).toBeGreaterThan(0);
+    expect(before?.gold10).toBeGreaterThan(0);
+
+    source.ingestRotation(buildAccountView(bodyWithHeroes([]), { binding: 'account-b' }));
+
+    const after = source.getView().earnings;
+    expect(after?.goldSession).toBeNull();
+    expect(after?.sessionSeconds).toBe(0);
+    expect(after?.gold10).toBeNull();
+    expect(after?.xp10).toBeNull();
+    expect(after?.coverageSeconds).toBe(0);
+  });
+
+  it('re-ingesting the same binding clears nothing', () => {
+    const { source, pushFrame, goLive } = createHarness();
+    source.start();
+    source.ingestRotation(buildAccountView(bodyWithHeroes([]), { binding: 'account-a' }));
+    goLive();
+
+    pushFrame({ heroes: [], phase: 1, gold: 500, loot: [{ cell: 0, gold: 100 }] });
+    pushFrame({ heroes: [], phase: 1, gold: 500 });
+    const before = source.getView().earnings;
+    expect(before?.goldSession).toBeGreaterThan(0);
+
+    source.ingestRotation(buildAccountView(bodyWithHeroes([]), { binding: 'account-a' }));
+
+    const after = source.getView().earnings;
+    expect(after?.goldSession).toBe(before?.goldSession);
+    expect(after?.gold10).toBe(before?.gold10);
+    expect(after?.sessionSeconds).toBe(before?.sessionSeconds);
+  });
+
+  it('the very first binding observed this session is not itself an account change', () => {
+    const { source, pushFrame, goLive } = createHarness();
+    source.start();
+    goLive();
+
+    pushFrame({ heroes: [], phase: 1, gold: 500, loot: [{ cell: 0, gold: 100 }] });
+    pushFrame({ heroes: [], phase: 1, gold: 500 });
+    const before = source.getView().earnings;
+    expect(before?.goldSession).toBeGreaterThan(0);
+
+    // First-ever binding observation — must not be treated as a change from "no binding yet".
+    source.ingestRotation(buildAccountView(bodyWithHeroes([]), { binding: 'account-a' }));
+
+    const after = source.getView().earnings;
+    expect(after?.goldSession).toBe(before?.goldSession);
+    expect(after?.gold10).toBe(before?.gold10);
+  });
+
+  it('a transient null binding does not read as an account change', () => {
+    const { source, pushFrame, goLive } = createHarness();
+    source.start();
+    source.ingestRotation(buildAccountView(bodyWithHeroes([]), { binding: 'account-a' }));
+    goLive();
+
+    pushFrame({ heroes: [], phase: 1, gold: 500, loot: [{ cell: 0, gold: 100 }] });
+    pushFrame({ heroes: [], phase: 1, gold: 500 });
+    const before = source.getView().earnings;
+    expect(before?.goldSession).toBeGreaterThan(0);
+
+    source.ingestRotation(buildAccountView(bodyWithHeroes([]), { binding: null }));
+
+    const after = source.getView().earnings;
+    expect(after?.goldSession).toBe(before?.goldSession);
+    expect(after?.gold10).toBe(before?.gold10);
   });
 });
