@@ -31,7 +31,7 @@ const chrome = {
   panelNeedClass: '',
   panelAlignedClass:
     'border-[color-mix(in_oklch,var(--up)_45%,var(--line))] shadow-[inset_3px_0_0_var(--up)]',
-  // m2-storybook-ci (T7, SBC-12): was 'opacity-[0.78]' pre-migration — raised to
+  // m2-storybook-ci (T7): was 'opacity-[0.78]' pre-migration — raised to
   // 0.85 because dimmed muted text measured 4.25:1 contrast, under WCAG AA's
   // 4.5:1 floor. See packages/ui/src/panel-field.recipe.ts for the computation.
   panelUnverifiedClass: 'opacity-[0.85]',
@@ -163,7 +163,7 @@ const passthrough: Array<keyof typeof pf & keyof typeof chrome> = [
   'importActionsEndClass',
 ];
 
-describe('account house stack recipe (AHK-12)', () => {
+describe('account house stack recipe', () => {
   it('exports house stack classes', () => {
     expect(pf.accountHouseStackClass).toContain('[&_label_[data-select]]:w-[14rem]');
     expect(pf.accountHouseStackClass).toContain('[&_label_[data-num]]:w-[14rem]');
@@ -173,7 +173,7 @@ describe('account house stack recipe (AHK-12)', () => {
     expect(pf.accountTreeValueClass).toContain('tabular-nums');
   });
 
-  // MSC-17/MSC-18 — the keystone control/status recipe classes and stack variant
+  // The keystone control/status recipe classes and stack variant
   // are gone, not weakened: absence asserted by name, and the trailing template-literal
   // segment that used to enable them no longer appears anywhere in stackFieldsClass.
   it('no longer exports the keystone control/status recipe classes', () => {

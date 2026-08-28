@@ -1,6 +1,5 @@
 /**
- * Type-level assertions for the "stored is never resolved" invariant (APS-06 type half,
- * APS-03, APS-04). Vitest transpiles this file with esbuild, which strips types and never
+ * Type-level assertions for the "stored is never resolved" invariant. Vitest transpiles this file with esbuild, which strips types and never
  * typechecks — so every `@ts-expect-error` below is only enforced by `pnpm --filter
  * @bombfarm/contracts typecheck`, which runs `tsc -p tsconfig.typecheck.json --noEmit` (the only
  * tsconfig for this package that includes `src/**\/*.test.ts`). An unused

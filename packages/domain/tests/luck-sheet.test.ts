@@ -23,9 +23,9 @@ import {
 } from '@bombfarm/domain/gear';
 import { BASE_ROLLS, POINT_GAIN, STAT_LABELS, rankNextPoint, type Context, type HeroSheet } from '@bombfarm/domain/model';
 
-// Wave 6 (DEC-12, BSPW6-AC-24) rewrites this block's W2 AC-02 assertion: SHEET_DISPLAY_KEYS
+// Wave 6 rewrites this block's SHEET_DISPLAY_KEYS assertion: SHEET_DISPLAY_KEYS
 // (7, combat/mismatch) no longer stands alone — SHEET_PANEL_KEYS (8, display surfaces) now
-// exists beside it (DEC-06), and Luck displays via the latter, not the former.
+// exists beside it, and Luck displays via the latter, not the former.
 describe('SHEET_PANEL_KEYS / SHEET_DISPLAY_KEYS — the 8/7 split (BSPW2-AC-02, BSPW6-AC-24)', () => {
   it('SHEET_PANEL_KEYS has all 8 keys in in-game display order (luck after speed)', () => {
     expect(SHEET_PANEL_KEYS).toEqual([
@@ -185,7 +185,7 @@ describe('applyPoints consumes POINT_GAIN.luckPctOfBase from the production path
   });
 });
 
-describe('luck never reaches DPS scoring (BSPW2-AC-11, BSPW2-AC-12, AD-BSP-20)', () => {
+describe('luck never reaches DPS scoring (BSPW2-AC-11, BSPW2-AC-12)', () => {
   it('STAT_LABELS has exactly seven keys and never contains luck', () => {
     expect(Object.keys(STAT_LABELS)).toHaveLength(7);
     expect(Object.keys(STAT_LABELS)).not.toContain('luck');
@@ -214,7 +214,7 @@ describe('luck never reaches DPS scoring (BSPW2-AC-11, BSPW2-AC-12, AD-BSP-20)',
     };
     // A variable (not a fresh literal) of the wider Record<SheetKey, number> shape —
     // exactly how advisor-pipeline.ts passes equippedResult.effectiveDelta through,
-    // which is why the type system alone does not keep luck out (ASM-10).
+    // which is why the type system alone does not keep luck out.
     const effectiveDeltas: Record<SheetKey, number> = {
       attack: 1,
       energy: 1,

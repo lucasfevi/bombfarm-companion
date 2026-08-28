@@ -83,7 +83,7 @@ export default tseslint.config(
       // W6: no component defined inside another component's render.
       'react/no-unstable-nested-components': 'error',
       // W4: bare usePlannerStore() subscribes to the entire store — always pass a selector.
-      // ASM-05 (W5): selectAdvisorPipeline is intentionally used WITHOUT useShallow — it returns
+      // selectAdvisorPipeline is intentionally used WITHOUT useShallow — it returns
       // stable identity on cache hits; shallow compare would defeat it.
       'no-restricted-syntax': [
         'error',
@@ -115,7 +115,7 @@ export default tseslint.config(
         },
       ],
       // A companion guardrail. `id-length` uses min:3, so it is blind to 3-letter
-      // abbreviations like `fmt`/`idx`/`cmp` — which spec AC-2 named ("`fmt` →
+      // abbreviations like `fmt`/`idx`/`cmp` — which the spec named ("`fmt` →
       // spelled format helpers", "loop counters → `index`") but no rule caught.
       // Each name below is at zero occurrences in non-test `src/`; the denylist
       // keeps it that way. Declarations only, so external data fields such as
@@ -399,7 +399,7 @@ export default tseslint.config(
     files: ['*.{mjs,js}', 'vitest.config.ts', 'next.config.ts'],
     ...tseslint.configs.disableTypeChecked,
   },
-  // Grandfathered raw react-icons call sites (ICO-25, ASM-11). Burn-down: delete
+  // Grandfathered raw react-icons call sites. Burn-down: delete
   // entries as planner features migrate to <Icon />. Any NEW web file errors.
   {
     files: ['src/**/*.{ts,tsx}'],

@@ -271,13 +271,14 @@ export function normalizeSkin(skin: unknown): number {
 }
 
 /**
- * BSPW5-06 (DEC-05) — parse-boundary predicate: is `skin` already a value
+ * Parse-boundary predicate: is `skin` already a value
  * `0…HERO_SKIN_COUNT-1` that needs no clamping? Detection is deliberately separate from
  * {@link normalizeSkin}'s clamp: clamping an out-of-range import value to the NEAREST
  * valid index (what `normalizeSkin` does for stored records) would silently render a
- * DIFFERENT hero's face — the exact failure `AD-BSP-29` says raising the bound did not
- * fix. The import path uses this predicate to fall back to the neutral `0` placeholder
- * instead and raise a per-hero issue naming the unknown value.
+ * DIFFERENT hero's face — the same failure seen when `normalizeSkin`'s clamp bound was
+ * too low and every out-of-range hero collapsed onto the same face; raising the bound
+ * alone did not fix it. The import path uses this predicate to fall back to the neutral
+ * `0` placeholder instead and raise a per-hero issue naming the unknown value.
  */
 export function isKnownSkin(skin: unknown): boolean {
   if (typeof skin !== 'number' || !Number.isFinite(skin)) return false;

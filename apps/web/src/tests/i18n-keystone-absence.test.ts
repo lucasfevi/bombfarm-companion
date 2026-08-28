@@ -25,7 +25,7 @@ const KEYSTONE_KEYS_REMOVED = [
   'bdTermAbisso',
 ] as const;
 
-// MSC-05, MSC-06 — the 12 deleted keys are gone from BOTH languages, and no *surviving*
+// The 12 deleted keys are gone from BOTH languages, and no *surviving*
 // string in either language still names a keystone. Two of the three keystone display
 // names (`Abisso`, `Glass Cannon`, `Tempo Dobrado`) are official in-game terms kept
 // untranslated in both languages (docs/i18n.md rule 2), so an EN-only sweep would look
@@ -70,7 +70,7 @@ function flattenStrings(value: unknown, out: string[] = []): string[] {
   return out;
 }
 
-describe('i18n keystone absence (MSC-05/MSC-06)', () => {
+describe('i18n keystone absence', () => {
   const enValues = flattenStrings(STRINGS.en);
   const ptValues = flattenStrings(STRINGS.pt);
 

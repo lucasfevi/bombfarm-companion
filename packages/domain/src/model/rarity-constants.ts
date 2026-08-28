@@ -155,7 +155,7 @@ export const POINT_GAIN = {
 export const STAT_CAPS = {
   critChance: 100,
   /**
-   * BSPW4-09: `penetration` is a **mitigation threshold**, not a sheet clamp — the
+   * `penetration` is a **mitigation threshold**, not a sheet clamp — the
    * game does NOT cap sheet penetration at 100. Bellatrix's real sheet pen is
    * `141.22613536827` (`save-20260801-crit-dmg-tree.json`) and the export reports it raw; every
    * stage of the pipeline (`composeSheetFromBirth`, `peelSheetSources`, `applyGear`,

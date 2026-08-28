@@ -1,5 +1,5 @@
 /**
- * BSPW5-08 — importHeroes as a full roster sync. AC-23...AC-28.
+ * importHeroes as a full roster sync.
  * Isolation model: a per-file in-memory localStorage stub, same pattern as
  * storage-import-only.test.ts's memoryLocalStorage().
  */
@@ -78,7 +78,7 @@ function record(sourceId: string, patch: Partial<HeroRecord> = {}) {
   return { ...rest, sourceId };
 }
 
-describe('importHeroes — full roster sync (BSPW5-08)', () => {
+describe('importHeroes — full roster sync', () => {
   beforeEach(() => {
     vi.stubGlobal('localStorage', memoryLocalStorage());
   });
@@ -87,7 +87,7 @@ describe('importHeroes — full roster sync (BSPW5-08)', () => {
     vi.unstubAllGlobals();
   });
 
-  it('AC-23/AC-24: a hero absent from saveSourceIds is removed in the same write as creates/updates; removed is exact', () => {
+  it('a hero absent from saveSourceIds is removed in the same write as creates/updates; removed is exact', () => {
     saveHeroes([hero('a', 'save-a'), hero('b', 'save-b')]);
     const result = importHeroes(
       loadHeroes(),
@@ -100,7 +100,7 @@ describe('importHeroes — full roster sync (BSPW5-08)', () => {
     expect(result.heroes.map((h) => h.sourceId).sort()).toEqual(['save-a', 'save-c']);
   });
 
-  it('DEC-06: removal is keyed off saveSourceIds, NEVER off records — a hero present in the set but absent from records survives untouched', () => {
+  it('removal is keyed off saveSourceIds, NEVER off records — a hero present in the set but absent from records survives untouched', () => {
     const existingB = hero('b', 'save-b', { name: 'Original B' });
     saveHeroes([hero('a', 'save-a'), existingB]);
     // save-b is in saveSourceIds (the save still reports it) but has no record this call
@@ -114,7 +114,7 @@ describe('importHeroes — full roster sync (BSPW5-08)', () => {
     expect(survivor?.id).toBe('b');
   });
 
-  it('AC-28: a blocked candidate (sourceId in the set, no record) is kept, not removed', () => {
+  it('a blocked candidate (sourceId in the set, no record) is kept, not removed', () => {
     saveHeroes([hero('a', 'save-a'), hero('blocked-hero', 'save-blocked')]);
     // The blocked candidate contributes its sourceId to the set but no record (design.md).
     const result = importHeroes(loadHeroes(), [record('save-a')], new Set(['save-a', 'save-blocked']));
@@ -122,7 +122,7 @@ describe('importHeroes — full roster sync (BSPW5-08)', () => {
     expect(result.heroes.some((h) => h.sourceId === 'save-blocked')).toBe(true);
   });
 
-  it('AC-26: one call both removes an absent hero and creates a new one', () => {
+  it('one call both removes an absent hero and creates a new one', () => {
     saveHeroes([hero('stale', 'save-stale')]);
     const result = importHeroes(loadHeroes(), [record('save-new')], new Set(['save-new']));
     expect(result.created).toBe(1);
@@ -139,14 +139,14 @@ describe('importHeroes — full roster sync (BSPW5-08)', () => {
     expect(survivor).toEqual(untouched);
   });
 
-  it('AC-25: active hero is re-pointed via reconcileActiveHero when it was removed', () => {
+  it('active hero is re-pointed via reconcileActiveHero when it was removed', () => {
     saveHeroes([hero('a', 'save-a'), hero('b', 'save-b')]);
     setActiveHeroId('b');
     importHeroes(loadHeroes(), [record('save-a')], new Set(['save-a']));
     expect(getActiveHeroId()).toBe('a');
   });
 
-  it('AC-25: active key is cleared when the roster becomes empty', () => {
+  it('active key is cleared when the roster becomes empty', () => {
     saveHeroes([hero('a', 'save-a')]);
     setActiveHeroId('a');
     importHeroes(loadHeroes(), [], new Set());
@@ -177,13 +177,13 @@ describe('importHeroes — full roster sync (BSPW5-08)', () => {
     expect(result.heroes).toHaveLength(0);
   });
 
-  it('AC-27: the sync mechanism never reads account_id or generated_at (source inspection — importHeroes takes no such input)', () => {
+  it('the sync mechanism never reads account_id or generated_at (source inspection — importHeroes takes no such input)', () => {
     const content = readFileSync(join(WEB_PACKAGE_ROOT, 'src/shared/lib/storage.ts'), 'utf8');
     expect(content).not.toMatch(/account_id/);
     expect(content).not.toMatch(/generated_at/);
   });
 
-  it('AC-27 (behavioral): two calls with the same heroes/records/sourceIds produce identical results regardless of any unrelated caller-side metadata', () => {
+  it('behavioral: two calls with the same heroes/records/sourceIds produce identical results regardless of any unrelated caller-side metadata', () => {
     saveHeroes([hero('a', 'save-a')]);
     const before = loadHeroes();
     const resultOld = importHeroes(before, [record('save-b')], new Set(['save-a', 'save-b']));

@@ -6,7 +6,7 @@ import { WEB_PACKAGE_ROOT } from './helpers/web-package-root';
 /**
  * No component's *own* props exceed 8 members (error; no allowlist escape hatch).
  *
- * SPEC_DEVIATION: spec AC-5 (modular-architecture-w7-domain-style-sweep) said the W7
+ * SPEC_DEVIATION: the spec said the W7
  * allowlist SHALL be empty. The user explicitly approved a narrower counting rule as the
  * mechanism to get there honestly: only *non-DOM* props count toward the 8-prop budget.
  * Native HTML/ARIA attribute names (and `aria-*`/`data-*` props) that a component simply

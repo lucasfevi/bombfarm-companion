@@ -60,7 +60,7 @@ export type AdvisorPipelineInput = {
   treeCritDmg: number;
   treeSpeed: number;
   treeEnergy: number;
-  /** `skills.totals.luck_add × 100` — flat Luck percentage points (BSPW5-03, ASM-01). */
+  /** `skills.totals.luck_add × 100` — flat Luck percentage points. */
   treeLuckFlatPct: number;
   teamBuffs: Record<TeamBuffId, number>;
   houseIdx: number;
@@ -111,7 +111,7 @@ export type AdvisorPipelineResult = {
   speedMult: number;
   critDmgMult: number;
   teamCritFlat: number;
-  /** The whole skill tree, once (BSPW4-04, BSPW4-06) — surfaced for Wave 6's breakdown. */
+  /** The whole skill tree, once — surfaced for Wave 6's breakdown. */
   treeSheet: TreeSheetTotals;
   A: DeriveResult;
   B: DeriveResult | null;
@@ -304,8 +304,8 @@ export function computeAdvisorPipeline(input: AdvisorPipelineInput): AdvisorPipe
   const mitF = mitigationFactor(mitPct / 100, effective.penetration);
   const predCrit = predHit * (1 + effective.critDmg / 100);
   const avgHit = predHit * critFactor(effective.critChance, effective.critDmg);
-  // The tree must apply here too, exactly once (BSPW4-04, BSPW4-06) — `adjusted`/`geared` are already
-  // tree-inclusive (AD-BSP-12), and AC-33/AC-34 now scale `delta.attack`/`delta.energy` by
+  // The tree must apply here too, exactly once — `adjusted`/`geared` are already
+  // tree-inclusive, and `delta.attack`/`delta.energy` now scale by
   // the same tree factors. Without this, `expectedSheet` (the pure gear+points catalog
   // projection used by the Gear tab's sheet-mismatch check) would silently diverge from
   // `adjusted` by exactly the tree's factor for every hero with any spent attack/energy
@@ -324,7 +324,7 @@ export function computeAdvisorPipeline(input: AdvisorPipelineInput): AdvisorPipe
 
   const gateRows: GateRow[] = buildGateRows(effective, context, field, dmgMult, gateAttackMult);
 
-  // AC-64l/AC-69/AC-70: Tier 1 only, reusing this call's own effective/effectiveDelta (no
+  // Tier 1 only, reusing this call's own effective/effectiveDelta (no
   // extra derive pass); always scored sustainedDps — findGateCandidate has no rankMode input
   // for a caller to set, so this is unaffected by the UI's rankMode regardless.
   const gate = findGateCandidate({

@@ -6,7 +6,7 @@
 // `packages/domain/vitest.config.ts`), never through this package's own `exports` map. A
 // green local test run therefore proves NOTHING about whether the new map is correct — only
 // an *executed* resolution, run through Node's own resolver (not Vitest's module runner),
-// is real evidence (MDW-18). See design.md's discussion of the blocker the domain-edge
+// is real evidence. See design.md's discussion of the blocker the domain-edge
 // asymmetry finding does not name — B7 — and "Notes for the Verifier".
 //
 // Re-measured the floor below (56 -> 54): deleting the 20 quarantined test files
@@ -166,7 +166,7 @@ describe('@bombfarm/domain exports map — resolves to dist', () => {
     expect(declarationCount).toBe(sourceModuleCount);
   });
 
-  // Verified tsc behaviour (design.md fact #2), not an assumption — pinned here (MDW-19).
+  // Verified tsc behaviour (design.md fact #2), not an assumption — pinned here.
   it('dist/data carries catalog.json and phase-wiki.json', () => {
     expect(existsSync(join(DIST_ROOT, 'data', 'catalog.json'))).toBe(true);
     expect(existsSync(join(DIST_ROOT, 'data', 'phase-wiki.json'))).toBe(true);

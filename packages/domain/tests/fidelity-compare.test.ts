@@ -154,7 +154,7 @@ describe('compareAccountResults — ordering (rejection -> roster -> per-hero ->
   });
 });
 
-describe('compareAccountResults — per-hero sheet compare (FID-01, FID-03)', () => {
+describe('compareAccountResults — per-hero sheet compare', () => {
   for (const block of SHEET_BLOCKS) {
     for (const key of SHEET_KEYS as readonly SheetKey[]) {
       it(`${block}.${key}: a delta exactly at SHEET_ABS_TOL passes; one increment beyond fails`, () => {
@@ -229,7 +229,7 @@ describe('compareAccountResults — non-sheet exact hero fields', () => {
   }
 });
 
-describe('compareAccountResults — roster membership (FID-04)', () => {
+describe('compareAccountResults — roster membership', () => {
   it('rosterMismatch lists live-only and export-only with name and id, and states recapturing both sides is the fix', () => {
     const live = makeResult({ candidates: [makeCandidate('hero-1', 'Alpha'), makeCandidate('hero-2', 'Beta')] });
     const exported = makeResult({ candidates: [makeCandidate('hero-1', 'Alpha'), makeCandidate('hero-3', 'Gamma')] });
@@ -244,7 +244,7 @@ describe('compareAccountResults — roster membership (FID-04)', () => {
   });
 });
 
-describe('compareAccountResults — account-level equality (FID-02, ASM-4)', () => {
+describe('compareAccountResults — account-level equality', () => {
   // Re-pointed from a deleted exponent-base field onto tree.danoTotal (T4/T8), a surviving
   // TreeSheetTotals member. The claim under test ("the comparator names the
   // mismatching path") is unchanged; only the field whose mismatch demonstrates it changed.
@@ -318,7 +318,7 @@ describe('compareAccountResults — account-level equality (FID-02, ASM-4)', () 
     expect(err.message).toContain('inventory');
   });
 
-  it('accountMismatch fires on a per-item field difference (ASM-4)', () => {
+  it('accountMismatch fires on a per-item field difference', () => {
     const item = { id: 'i1', defId: 'd1', rarityIdx: 0, level: 10, upgrade: 0, slot: null, equipped: false, equippedBy: null, defResolved: false, marketBlocked: false };
     const live = makeResult({ inventory: [{ ...item, upgrade: 0 }] });
     const exported = makeResult({ inventory: [{ ...item, upgrade: 5 }] });

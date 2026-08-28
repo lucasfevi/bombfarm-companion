@@ -19,7 +19,7 @@ export const en = {
     cdr: "Cooldown Red.",
     luck: "Luck",
   },
-  // AC-23: the Points Luck row's own hint — states plainly why it never appears in
+  // The Points Luck row's own hint — states plainly why it never appears in
   // Next point or Optimize build, so the absence reads as intentional, not a bug.
   pointsLuckHint: "Loot-facing — not scored for DPS, so it never shows up in Next point or Optimize build.",
 };

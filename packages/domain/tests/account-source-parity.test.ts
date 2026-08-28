@@ -1,6 +1,6 @@
-// ACS-01: proves the source-neutral entry point split preserves `parseSaveFile`'s observable
+// Proves the source-neutral entry point split preserves `parseSaveFile`'s observable
 // behaviour byte-for-byte — `parseSaveFile` and `parseAccountPayload` still agree on every
-// canonical fixture. The ground-truth rule: the pre-refactor inline `ParseResult` digests (ACS-02)
+// canonical fixture. The ground-truth rule: the pre-refactor inline `ParseResult` digests
 // and the `vera-01-points-reset.json` warnings snapshot are DELETED here, not regenerated —
 // they were SHA-256 hashes / a golden snapshot of *our own output* captured against a
 // pre-refactor HEAD and a since-deleted pre-wipe account. Re-hashing or re-snapshotting them
@@ -31,7 +31,7 @@ const CANONICAL_FIXTURES = ['save-20260813-5heroes.json', 'payload-20260812-8her
  *  reaches that assertion through both entry points instead of being intercepted by the gate. */
 const POST_PATCH_SKILLS = { refunds: {}, totals: { vagas_campo: 0, bag_tabs_bonus: 0 } };
 
-describe('parseAccountPayload and parseSaveFile agree on every canonical fixture (ACS-01)', () => {
+describe('parseAccountPayload and parseSaveFile agree on every canonical fixture', () => {
   for (const fixture of CANONICAL_FIXTURES) {
     it(`${fixture}: identical ParseResult with an empty existing[]`, () => {
       const raw = loadFixtureJson(fixture);
@@ -102,7 +102,7 @@ describe('parseAccountPayload and parseSaveFile agree on every canonical fixture
   });
 });
 
-describe('rejections are preserved through the seam (ACS-03)', () => {
+describe('rejections are preserved through the seam', () => {
   it('heroes omitted: notASaveFile through both entry points', () => {
     const payload = { not_a_save: true };
     const viaFile = parseSaveFile(payload, []);
@@ -266,7 +266,7 @@ describe('edge cases (spec.md Edge Cases)', () => {
   });
 });
 
-describe('file-only fields stay in the adapter (ACS-06.2)', () => {
+describe('file-only fields stay in the adapter', () => {
   it('a file object carrying export_version/generated_at parses identically to one without them', () => {
     const withFileFields = {
       export_version: 3,

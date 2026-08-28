@@ -1,6 +1,6 @@
 /**
  * The degraded-input guard (design §4.2). Decides, before any comparison, whether a
- * live capture is even gradeable. FID-05/06/07.
+ * live capture is even gradeable.
  */
 import type { AccountFidelity, AccountPayload, AccountSection, SectionFidelity } from '@bombfarm/contracts';
 import { ACCOUNT_SECTIONS, deriveAccountFidelity } from '@bombfarm/domain/account-fidelity';
@@ -19,10 +19,10 @@ function isUsableSectionShape(value: unknown): value is SectionFidelity {
 }
 
 /**
- * The FID-05/06/07 gate, ordered presence-check → shape-check → grade-check.
+ * The gate, ordered presence-check → shape-check → grade-check.
  *
- * 1. `payload.fidelity` absent ⇒ `unverifiableFidelity` (FID-07). `deriveAccountFidelity` is
- *    deliberately never consulted for this branch — `ACS-05.5` makes it grade an absent block
+ * 1. `payload.fidelity` absent ⇒ `unverifiableFidelity`. `deriveAccountFidelity` is
+ *    deliberately never consulted for this branch — that makes it grade an absent block
  *    `full`, which is correct for the file adapter and exactly the default this guard forbids
  *    for a live capture.
  * 2. Any of the five `ACCOUNT_SECTIONS` keys missing from the block, or shaped so that

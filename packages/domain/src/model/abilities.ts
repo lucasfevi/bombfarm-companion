@@ -47,7 +47,7 @@ export type AbilityEffect =
    * `crit_dmg` multiplier by `+0.04` per level. Added to the sheet, NOT pooled multiplicatively
    * against the hero's roll.
    *
-   * Supersedes the former `critDmgPctOfBase` kind (AD-BSP-32 / DEC-05), which read the
+   * Supersedes the former `critDmgPctOfBase` kind, which read the
    * wiki's "+4% dano crítico" as 4% *of the hero's crit-damage base*. The live save says
    * otherwise: Ivo (id `21076`, L38, `golpe_brutal` 20/20, account 11882 capture 2026-08-15) has
    * `birth_stats.crit_dmg` 1.45238210566148 and `stats.crit_dmg` 2.25238210566148 — a delta of
@@ -125,14 +125,14 @@ export const ABILITY_QUOTA: Record<RarityKey, number> = {
   Mítico: 6,
 };
 
-/** Every catalog ability caps at this rank (AD-BSP-18; save `abilities[].max` is 20 on 13/13 codes). */
+/** Every catalog ability caps at this rank (save `abilities[].max` is 20 on 13/13 codes). */
 export const ABILITY_LEVEL_MAX = 20;
 
 /**
- * Spendable ability-point budget (AD-BSP-23). `ability_points_total === level` (points
+ * Spendable ability-point budget. `ability_points_total === level` (points
  * *granted*), but spendable is capped by slots: `min(level, quota × 20)`. Points past the
  * cap are granted and permanently unusable — e.g. Bram L49 → 40 spendable, 9 dead; a Mítico
- * hero (6 slots × 20 = 120 needed) can never fully max at the L100 level cap (AD-BSP-23a).
+ * hero (6 slots × 20 = 120 needed) can never fully max at the L100 level cap.
  */
 export function abilityPointBudget(rarity: RarityKey, level: number): number {
   return Math.min(level, ABILITY_QUOTA[rarity] * ABILITY_LEVEL_MAX);
@@ -235,7 +235,7 @@ export interface Milestone {
  * Crit milestone table: points needed to reach crit chance / crit dmg targets (points scale
  * off the base roll) and the resulting hit multiplier.
  *
- * BSPW4-07 (AC-47): pass the hero's own **naked** `critChance`/`critDmg` (lv1 ★0,
+ * Pass the hero's own **naked** `critChance`/`critDmg` (lv1 ★0,
  * planner units) as `base` to compute against the hero's actual birth roll. WITHOUT `base`,
  * this falls back to `BASE_ROLLS[rarity]` — a **rarity-average estimate**, not the hero's own
  * roll. A well-rolled hero (e.g. Bellatrix's crit chance 9.51 vs Raro's rarity midpoint 7) needs

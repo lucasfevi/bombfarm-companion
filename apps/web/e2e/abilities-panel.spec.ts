@@ -67,7 +67,7 @@ test.describe('abilities panel (ABX residual)', () => {
     await expect(page.getByRole('heading', { name: /^Ability picker$/i })).toHaveCount(0);
   });
 
-  test('granted vs spendable ability points (AC-38) — the Bram worked case: L49 -> 40 spendable, 9 dead', async ({
+  test('granted vs spendable ability points — the Bram worked case: L49 -> 40 spendable, 9 dead', async ({
     page,
   }) => {
     const heroed = {
@@ -112,7 +112,7 @@ test.describe('abilities panel (ABX residual)', () => {
     await expect(panel.getByText(/20 spendable/i)).toBeVisible();
   });
 
-  test('stepping a sheet crit-chance ability preserves the hero\'s own roll, not the rarity midpoint (DEC-04)', async ({
+  test('stepping a sheet crit-chance ability preserves the hero\'s own roll, not the rarity midpoint', async ({
     page,
   }) => {
     // Bellatrix's actual birth crit-chance roll (9.51) vs Raro's rarity midpoint (7) — the

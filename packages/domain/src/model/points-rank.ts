@@ -25,8 +25,8 @@ function normalizeRankOpts(options?: PointBases | RankOptions): RankOptions {
 }
 
 /**
- * BSPW4-09 (AC-56): the ONLY non-damage consumer of `STAT_CAPS.penetration`.
- * Sheet penetration is never clamped (`AC-53`) — this caps the *ranking* only, because past
+ * The ONLY non-damage consumer of `STAT_CAPS.penetration`.
+ * Sheet penetration is never clamped — this caps the *ranking* only, because past
  * 100% mitigation is already fully bypassed and an additional point buys no further gain
  * there. That is a scoring decision, not a second sheet clamp.
  */

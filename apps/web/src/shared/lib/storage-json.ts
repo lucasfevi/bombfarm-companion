@@ -13,7 +13,7 @@ const writeErrorListeners = new Set<StorageWriteErrorListener>();
 /**
  * Register a listener for localStorage write failures (quota / private mode).
  * Returns an unsubscribe function. Each listener invocation is individually
- * try/caught so one bad listener cannot break the save path (ASM-11).
+ * try/caught so one bad listener cannot break the save path.
  */
 export function onStorageWriteError(listener: StorageWriteErrorListener): () => void {
   writeErrorListeners.add(listener);

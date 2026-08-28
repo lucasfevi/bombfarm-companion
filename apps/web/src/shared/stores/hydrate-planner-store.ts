@@ -12,7 +12,7 @@ import {
 import { usePlannerStore } from '@/shared/stores/planner-store';
 
 /**
- * Ordered, idempotent boot read (ASM-06). No-op when already booted (StrictMode).
+ * Ordered, idempotent boot read. No-op when already booted (StrictMode).
  * Order: DROP STALE ACCOUNT → heroes → active id → account → lang →
  * phases → inventory → scope → setBooted(true) last. The drop reads raw localStorage strings and
  * must run before any `normalize*` call — see `stale-account.ts`'s own header for why.

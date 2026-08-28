@@ -44,7 +44,7 @@ const ZERO_TREE: TreeSheetTotals = {
 };
 
 describe('computeCombatMults', () => {
-  it('the ComputeCombatMultsInput type no longer accepts a tree damage/energy term (AC-29)', () => {
+  it('the ComputeCombatMultsInput type no longer accepts a tree damage/energy term', () => {
     // Compile-time guard: `treeDanoTotal` / `treeEnergy` must be gone from the type, not
     // merely unused. This assigns a value of the exact input shape `computeCombatMults`
     // accepts; adding either field back would fail `pnpm typecheck`, not this assertion.
@@ -275,7 +275,7 @@ describe('derive', () => {
     expect(Number.isFinite(result.dps)).toBe(true);
   });
 
-  it('AC-30/AC-31: effective ≡ the real save sheet at pts=0 — the tree is applied exactly once', () => {
+  it('effective ≡ the real save sheet at pts=0 — the tree is applied exactly once', () => {
     // The load-bearing double-count regression guard (M1/M2 in spec.md's discrimination note).
     // (the ground-truth rule's class (a) + (b)): re-pointed onto save-20260813-5heroes.json's Bellatrix
     // (8/8 geared) — the only post-patch corpus hero pattern available. RECORDED LOSS: every
@@ -325,13 +325,13 @@ describe('derive', () => {
       mitigationPct: 6.7,
     });
 
-    // AC-30: five formerly-doubled stats derive to the game's own displayed sheet, exactly.
+    // Five formerly-doubled stats derive to the game's own displayed sheet, exactly.
     for (const key of ['speed', 'critChance', 'critDmg', 'energy'] as const) {
       expect(result.effective[key], key).toBeCloseTo(bellatrix.sheet[key], 6);
     }
     expect(result.effective.attack).toBeCloseTo(bellatrix.sheet.attack, 6);
 
-    // AC-31: hit reproduces predictHitDamage from `effective` alone — no dmg_static anywhere
+    // hit reproduces predictHitDamage from `effective` alone — no dmg_static anywhere
     // in the expression (dmgMult is 1 here, so a correct hit is the raw predicted hit).
     const expectedHit = predictHitDamage(
       result.effective.attack,
@@ -342,7 +342,7 @@ describe('derive', () => {
     expect(result.hit).toBeCloseTo(expectedHit, 6);
   });
 
-  it('AC-32: dps for save-20260813’s Bellatrix drops by exactly dmg_static vs the old double-counting form', () => {
+  it('dps for save-20260813’s Bellatrix drops by exactly dmg_static vs the old double-counting form', () => {
     // (the ground-truth rule's class (a)): re-pointed onto save-20260813-5heroes.json's Bellatrix.
     const raw = loadFixtureJson('save-20260813-5heroes.json');
     const bellatrix = extractHero(raw, 'Bellatrix', 42);
@@ -393,7 +393,7 @@ describe('derive', () => {
     expect(fixed.dps).toBeCloseTo(doubleCountedDps / danoStatic, 6);
   });
 
-  it('AC-33: delta.attack scales by treeSheet.danoStatic (the sheet the delta is added to is post-dmg_static)', () => {
+  it('delta.attack scales by treeSheet.danoStatic (the sheet the delta is added to is post-dmg_static)', () => {
     const naked = sampleNaked();
     const tree: TreeSheetTotals = { ...ZERO_TREE, danoStatic: 1.78324567735483 };
     const result = derive({
@@ -417,12 +417,12 @@ describe('derive', () => {
     });
     // attackPointGain(10) × starsMult(1) × danoStatic = (10 × (1+0.04×9)) × 1.25 × 1.78324567735483
     // The 1.25 stays a LITERAL, not `starsMult(1)` — this assertion's whole value is being
-    // computed independently of the code under test (see the AC-34 companion below).
+    // computed independently of the code under test (see the companion assertion below).
     const expected = 10 * (1 + 0.04 * 9) * 1.25 * 1.78324567735483;
     expect(result.delta.attack).toBeCloseTo(expected, 9);
   });
 
-  it('AC-34/BSPW5-11 (DISC-01): delta.energy needs NO explicit tree factor — gem already carries energia_add once naked is tree-free', () => {
+  it('delta.energy needs NO explicit tree factor — gem already carries energia_add once naked is tree-free', () => {
     // Rebuilt for Wave 5 (was a pre-tree `geared` shape — `{...naked, energy: naked.energy
     // * 1.2}` — that cannot occur once import is birth-backed; L-05: the INPUT
     // changes, the assertion rigour does not). `naked` here already stands in for
@@ -468,7 +468,7 @@ describe('derive', () => {
     expect(doubleCountedEnergyPct / result.delta.energy).toBeCloseTo(1 + energyPct / 100, 6);
   });
 
-  it('AC-37/AC-39: pooled deltas (speed/critChance/critDmg/pen/cdr/luck) are unchanged from main — no tree divisor', () => {
+  it('pooled deltas (speed/critChance/critDmg/pen/cdr/luck) are unchanged from main — no tree divisor', () => {
     // Explicit literals, computed independently of the implementation, so this proves the
     // wave's neutrality claim on the GAP-W4-01 axis rather than merely restating the source.
     const naked = sampleNaked();
@@ -511,7 +511,7 @@ describe('derive', () => {
     expect(result.delta.luck).toBeCloseTo(0.03 * naked.luck, 9);
   });
 
-  it('the DeriveInput type no longer accepts the four scattered tree fields (AC-29)', () => {
+  it('the DeriveInput type no longer accepts the four scattered tree fields', () => {
     const input: DeriveInput = {
       geared: sampleNaked(),
       naked: sampleNaked(),

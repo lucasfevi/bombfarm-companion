@@ -38,7 +38,7 @@ describe('cross-package fixture corpus parity', () => {
   // whole-tree duplicate-content sweep at the bottom of this file cannot close on its own, since
   // it only catches a re-added file that happens to duplicate existing content byte-for-byte, not
   // a genuinely new one.
-  it('web sheet-math holds no fixture JSON (MFR-06): domain is the sole committed copy', () => {
+  it('web sheet-math holds no fixture JSON: domain is the sole committed copy', () => {
     let entries;
     try {
       entries = readdirSync(WEB_SHEET_MATH);
@@ -68,7 +68,7 @@ describe('cross-package fixture corpus parity', () => {
     ).toBe(apiPayloadHash);
   });
 
-  it('no legacy/archive/__old__ path segment exists anywhere in the tracked tree (MFR-01 AC-6)', () => {
+  it('no legacy/archive/__old__ path segment exists anywhere in the tracked tree', () => {
     const files = trackedFiles();
     expect(files.length).toBeGreaterThan(0);
     const offenders = files.filter((f) => /(^|\/)(legacy|archive|__old__)(\/|$)/.test(f));
@@ -96,7 +96,7 @@ describe('cross-package fixture corpus parity', () => {
   });
 
   /**
-   * MFR-18 was a HARD ZERO: no skipped test under these roots, ever. It is now an exact
+   * This guard was a HARD ZERO: no skipped test under these roots, ever. It is now an exact
    * per-file manifest, for one bounded reason, and it is still a real guard — a skip added outside
    * these lists fails, and so does a manifested file whose skips are removed without updating the
    * count.
@@ -161,7 +161,7 @@ describe('cross-package fixture corpus parity', () => {
     'apps/web/e2e/visual.spec.ts': 3,
   };
 
-  it('skip/todo directives across the test roots are exactly the declared manifests (MFR-18)', () => {
+  it('skip/todo directives across the test roots are exactly the declared manifests', () => {
     const SKIP_PATTERN = '\\b(describe|it|test)\\.(skip|todo)\\b|\\bxit[(]|\\bxdescribe[(]';
     const SKIP_PATTERN_GLOBAL = new RegExp(SKIP_PATTERN, 'g');
     const scanRoots = ['packages/domain/tests', 'apps/web/src/tests', 'apps/web/e2e', 'apps/desktop'];
@@ -201,7 +201,7 @@ describe('cross-package fixture corpus parity', () => {
     }
   });
 
-  // The full identifier list MFR-15 names. Matches are counted the same way tasks.md's
+  // The full identifier list this guard names. Matches are counted the same way tasks.md's
   // own baseline was captured: `git grep -ncE '<pattern>' | sum(field 2)`. Unchanged since F1 —
   // T11 re-measures the constant and adds the per-file packages/domain map
   // below; it does not touch the pattern or the counting method.
@@ -240,7 +240,7 @@ describe('cross-package fixture corpus parity', () => {
       });
   }
 
-  // (T10) — MFR-15 reaches its final form here. F1 shipped a whole-tree
+  // (T10) — this guard reaches its final form here. F1 shipped a whole-tree
   // total-count guard (850, then re-measured to 526); its Verifier proved a count-preserving
   // cross-surface move survives a bare total (Probe A — a match deleted from one file and added
   // to another leaves the sum unchanged). F2 tightened `packages/domain` to the per-file map
@@ -278,7 +278,7 @@ describe('cross-package fixture corpus parity', () => {
     'tools/save-acceptance-guards.test.mjs': 3,
   };
 
-  it('keystone-identifier handoff: the whole tree decomposes into exactly five surfaces, packages/ui a hard zero (MFR-15)', () => {
+  it('keystone-identifier handoff: the whole tree decomposes into exactly five surfaces, packages/ui a hard zero', () => {
     const total = grepCounts(null).reduce((sum, row) => sum + row.count, 0);
     const domainTotal = grepCounts('packages/domain').reduce((sum, row) => sum + row.count, 0);
     const webTotal = grepCounts('apps/web').reduce((sum, row) => sum + row.count, 0);
@@ -352,7 +352,7 @@ describe('cross-package fixture corpus parity', () => {
     'packages/domain/tests/stat-breakdown.test.ts': 2,
   };
 
-  it('keystone-identifier handoff count: packages/domain matches fall on an exact, pinned per-file map (MFR-15)', () => {
+  it('keystone-identifier handoff count: packages/domain matches fall on an exact, pinned per-file map', () => {
     const rows = grepCounts('packages/domain');
     expect(rows.length, 'non-vacuity: packages/domain must contain at least one match today').toBeGreaterThan(0);
 

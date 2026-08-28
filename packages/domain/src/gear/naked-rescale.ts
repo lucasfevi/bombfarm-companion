@@ -12,7 +12,7 @@ import { SHEET_KEYS } from '../planner-constants';
 /**
  * The naked (unequipped, in-game) sheet midpoints per rarity. Attack scales with level
  * and stars; Energy / Crit % / Crit Dmg / Pen / CDR / Luck scale with stars; Speed does not.
- * Luck has no `other` term and no level term (AD-BSP-19, ASM-02, ASM-04).
+ * Luck has no `other` term and no level term.
  * The two flat sheet-ability addends (Olho Clínico's crit points, Golpe Brutal's crit damage)
  * are added after the star factor rather than pooled, matching `nakedFromBirth`.
  */
@@ -34,7 +34,7 @@ export function defaultNaked(
     critDmg: base.critDmg * mult + otherClamped(other.critDmgFlat),
     penetration: base.penetration * (1 + otherClamped(other.penetration)) * mult,
     cdr: base.cdr * (1 + otherClamped(other.cdr)) * mult,
-    // AD-BSP-19: star-scaled, no `other` term (ASM-02) and level-independent (ASM-04).
+    // Star-scaled, no `other` term and level-independent.
     luck: base.luck * mult,
   };
 }
@@ -67,7 +67,7 @@ export function rescaleNakedPen(
  * FLAT difference in the ability's contribution — not a ratio, because crit damage is
  * flat-additive (`POINT_GAIN.critDmgFlat`). The hero's own roll is preserved exactly, which is
  * what `rescaleNakedPen` achieves by ratio for the pooled pen ability and what
- * a rarity-midpoint reset would not (DEC-06).
+ * a rarity-midpoint reset would not.
  *
  * Arguments are the previous/next ability Σ in planner percentage points
  * (`AbilityMods.sheetCritDmgFlat`), not fractions.
@@ -101,7 +101,7 @@ export function rescaleNakedCritChance(
 }
 
 /**
- * `DEC-04` — picks and applies the correct sheet-ability rescaler for a level
+ * Picks and applies the correct sheet-ability rescaler for a level
  * change, dispatching on `AbilityEffect['kind']`. Moving the *decision* here makes it
  * unit-testable; `use-hero-build-actions.ts` (which has no test harness — no React component
  * test framework in this repo) becomes a one-line caller. Returns `naked` unchanged for every
@@ -163,7 +163,7 @@ export function rescaleNakedForStars(
 /**
  * Spyable catalog apply for hero rescale. Same-module `applyGear` calls are not
  * interceptable via `vi.spyOn(module, 'applyGear')`; tests spy this object instead
- * to assert both catalog calls receive non-empty sheetOther (LVL-06).
+ * to assert both catalog calls receive non-empty sheetOther.
  */
 export const rescaleCatalogApply = { applyGear };
 

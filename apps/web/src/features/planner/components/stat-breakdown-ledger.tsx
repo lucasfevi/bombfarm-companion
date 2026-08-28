@@ -5,7 +5,7 @@ import { groupLabel, ledgerStepNote } from '../model/breakdown-labels';
 
 /**
  * Claim on top; notes under the label; running math right-aligned under the claim.
- * (AC-25, AC-26): ledger step amounts / running totals at 2 dp; the `×` factor
+ * Ledger step amounts / running totals at 2 dp; the `×` factor
  * stays at 3 dp (already correct — this sweep asserts it, not assumes it).
  */
 export function LedgerBody({

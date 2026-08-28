@@ -65,11 +65,11 @@ export function canonicalStringify(value: unknown): string {
  *
  * `AccountView.gameRunning` cannot leak into this key even by accident: the function's only
  * input is `payload`, and `gameRunning` is not a field of `AccountPayload` at all — it lives on
- * `AccountView`, one level up (MAR-05).
+ * `AccountView`, one level up.
  *
  * **Canonical, not insertion-order.** A producer that re-materialises a section body with a
  * different key order (same values) must not look like a change — an insertion-order key would
- * make it one, silently failing MAR-04 while every "a change is detected" test stays green
+ * make it one, and the failure would go unnoticed while every "a change is detected" test stays green
  * (design.md §2.4's last probe).
  */
 export function accountChangeKey(payload: AccountPayload): string {

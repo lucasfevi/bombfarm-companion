@@ -314,7 +314,7 @@ describe('defaultNaked (static naked sheet)', () => {
   });
 });
 
-describe('defaultNaked vs nakedFromBirth (BSPW4-07, AC-48)', () => {
+describe('defaultNaked vs nakedFromBirth', () => {
   it('differ for a hero whose birth rolls are not the rarity midpoint (Bellatrix crit chance 9.51 vs Raro 7)', () => {
     // defaultNaked is the hand-built-hero rarity-midpoint FALLBACK (Wave 2's stated
     // position — a real hero's luck/crit chance comes from birth_stats, not the midpoint).
@@ -394,7 +394,7 @@ describe('rescaleNakedForLevel', () => {
     expect(next.energy).toBe(custom.energy);
   });
 
-  it('leaves luck untouched — level does not scale luck (BSPW2-AC-06, ASM-04)', () => {
+  it('leaves luck untouched — level does not scale luck (BSPW2-AC-06)', () => {
     const custom: SheetStats = { ...naked(), luck: 8.4 };
     const next = rescaleNakedForLevel(custom, 1, 26);
     expect(next.luck).toBe(custom.luck);
@@ -444,7 +444,7 @@ describe('rescaleNakedCritDmg', () => {
   });
 });
 
-describe('rescaleNakedCritChance (BSPW4-07, AC-44)', () => {
+describe('rescaleNakedCritChance', () => {
   it('swaps only the crit-chance addend, preserving other stats', () => {
     const custom: SheetStats = { ...naked(), attack: 999, critChance: 9.51 };
     const next = rescaleNakedCritChance(custom, 0, 20); // Olho Clínico rank 10 → +20 crit points
@@ -465,7 +465,7 @@ describe('rescaleNakedCritChance (BSPW4-07, AC-44)', () => {
     expect(next.critChance).toBeCloseTo(10 + 8, 6);
   });
 
-  it('AC-45: preserves a non-midpoint hero’s own roll, where a rarity-midpoint reset would discard it', () => {
+  it('preserves a non-midpoint hero’s own roll, where a rarity-midpoint reset would discard it', () => {
     // Bellatrix's actual birth crit-chance roll (9.51) vs Raro's rarity midpoint (7) — a 36%
     // error (spec.md's evidence table). Swapping the flat addend must move the sheet by the
     // addend alone and leave the roll underneath untouched.
@@ -507,7 +507,7 @@ describe('rescaleHeroForLevel / rescaleHeroForStars (residual + re-apply)', () =
     return next;
   }
 
-  it('LVL-01/02: level change rescales naked and applies residual + re-apply with sheetOther', () => {
+  it('level change rescales naked and applies residual + re-apply with sheetOther', () => {
     const from = 1;
     const to = 26;
     const loadout = flatWeaponLoadout();
@@ -522,7 +522,7 @@ describe('rescaleHeroForLevel / rescaleHeroForStars (residual + re-apply)', () =
     expect(result.geared).toEqual(expectedGeared(n0, expectedNaked, geared, loadout, other));
   });
 
-  it('AC-21: rescale keeps full precision — result is not truncated to 1 dp', () => {
+  it('rescale keeps full precision — result is not truncated to 1 dp', () => {
     const from = 1;
     const to = 26;
     const loadout = flatWeaponLoadout();
@@ -542,7 +542,7 @@ describe('rescaleHeroForLevel / rescaleHeroForStars (residual + re-apply)', () =
     expect(Number(result.geared.penetration.toFixed(1))).not.toBe(result.geared.penetration);
   });
 
-  it('LVL-02 residual=0: new geared equals applyGear(newNaked, loadout, sheetOther) exactly', () => {
+  it('residual=0: new geared equals applyGear(newNaked, loadout, sheetOther) exactly', () => {
     const loadout = flatWeaponLoadout();
     const other = pontaOther();
     const n0 = naked();
@@ -552,7 +552,7 @@ describe('rescaleHeroForLevel / rescaleHeroForStars (residual + re-apply)', () =
     expect(result.geared).toEqual(applyGear(newNaked, loadout, other));
   });
 
-  it('LVL-02 residual≠0: residual is preserved after level rescale (not wiped to catalog)', () => {
+  it('residual≠0: residual is preserved after level rescale (not wiped to catalog)', () => {
     const loadout = flatWeaponLoadout();
     const other = pontaOther();
     const n0 = naked();
@@ -586,7 +586,7 @@ describe('rescaleHeroForLevel / rescaleHeroForStars (residual + re-apply)', () =
     expect(result.geared).toEqual(expected);
   });
 
-  it('LVL-03: flat weapon — geared attack delta equals naked attack delta within rounding', () => {
+  it('flat weapon — geared attack delta equals naked attack delta within rounding', () => {
     const loadout = flatWeaponLoadout();
     const other = emptySheetOther();
     const n0 = naked();
@@ -599,7 +599,7 @@ describe('rescaleHeroForLevel / rescaleHeroForStars (residual + re-apply)', () =
     expect(gearedDelta).toBeCloseTo(nakedDelta, 1);
   });
 
-  it('LVL-04: level change does not invent energy growth; non-attack stats follow applyGear', () => {
+  it('level change does not invent energy growth; non-attack stats follow applyGear', () => {
     const loadout = flatWeaponLoadout();
     const other = pontaOther();
     const n0 = naked();
@@ -615,7 +615,7 @@ describe('rescaleHeroForLevel / rescaleHeroForStars (residual + re-apply)', () =
     expect(result.geared.cdr).toBeCloseTo(newCatalog.cdr, 8);
   });
 
-  it('LVL-05: unchanged level returns the same naked and geared references', () => {
+  it('unchanged level returns the same naked and geared references', () => {
     const loadout = flatWeaponLoadout();
     const other = pontaOther();
     const n0 = naked();
@@ -625,7 +625,7 @@ describe('rescaleHeroForLevel / rescaleHeroForStars (residual + re-apply)', () =
     expect(result.geared).toBe(geared);
   });
 
-  it('LVL-06: non-empty sheetOther is used in both catalogs (residual formula)', () => {
+  it('non-empty sheetOther is used in both catalogs (residual formula)', () => {
     const loadout = flatWeaponLoadout();
     const other = pontaOther();
     const n0 = naked();
@@ -654,7 +654,7 @@ describe('rescaleHeroForLevel / rescaleHeroForStars (residual + re-apply)', () =
     );
   });
 
-  it('STAR-01/02/03: stars rescale naked (Speed exempt), then residual + re-apply', () => {
+  it('stars rescale naked (Speed exempt), then residual + re-apply', () => {
     const loadout = flatWeaponLoadout();
     const other = pontaOther();
     const n0 = naked();
@@ -674,7 +674,7 @@ describe('rescaleHeroForLevel / rescaleHeroForStars (residual + re-apply)', () =
     );
   });
 
-  it('STAR-04: stars 0→1→0 round-trips naked and geared within tolerance', () => {
+  it('stars 0→1→0 round-trips naked and geared within tolerance', () => {
     const loadout = flatWeaponLoadout();
     const other = pontaOther();
     const n0 = naked();

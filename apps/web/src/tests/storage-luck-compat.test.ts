@@ -1,5 +1,5 @@
 /**
- * BSPW2-05 — the rule-3/rule-4 backward-compat proof for `luck`.
+ * The rule-3/rule-4 backward-compat proof for `luck`.
  *
  * This is deliberately NOT the tripwire fixture (Wave 1 L-03): a byte-identity
  * fixture asserts output ≡ input under the current (eight-key) schema; this suite asserts
@@ -32,7 +32,7 @@ function memoryLocalStorage() {
 // Real pre-BSPW2 bytes for `hero-2` — seven-key naked / gearedOverride / pts, no `luck`.
 // Rarity corrected to the valid RarityKey "Épico" (the shared W1 fixture literal stores the
 // unaccented "Epico", which is not a BASE_ROLLS key and is unrelated to this wave's scope —
-// AC-15 exercises rankNextPoint via BASE_ROLLS[hero.rarity] and would throw on that typo).
+// this test exercises rankNextPoint via BASE_ROLLS[hero.rarity] and would throw on that typo).
 const LEGACY_HERO_2_JSON =
   '{"id":"hero-2","name":"Brick","updatedAt":1700000000002,"rarity":"Épico","level":30,"stars":2,' +
   '"naked":{"attack":150,"energy":180,"speed":40,"critChance":8,"critDmg":80,"penetration":0,"cdr":5},' +
@@ -45,7 +45,7 @@ const LEGACY_HERO_2_JSON =
 
 const LEGACY_HERO_2 = JSON.parse(LEGACY_HERO_2_JSON) as Record<string, unknown>;
 
-describe('legacy luck compat (BSPW2-05)', () => {
+describe('legacy luck compat', () => {
   beforeEach(() => {
     vi.stubGlobal('localStorage', memoryLocalStorage());
     resetPlannerStoreForTests();
@@ -57,7 +57,7 @@ describe('legacy luck compat (BSPW2-05)', () => {
     vi.restoreAllMocks();
   });
 
-  it('loads a pre-luck save with luck === 0 on naked/gearedOverride/pts, every other field intact (BSPW2-AC-14)', () => {
+  it('loads a pre-luck save with luck === 0 on naked/gearedOverride/pts, every other field intact', () => {
     localStorage.setItem('bf-hp-heroes-v1', JSON.stringify([LEGACY_HERO_2]));
 
     let heroes: ReturnType<typeof loadHeroes> = [];
@@ -86,7 +86,7 @@ describe('legacy luck compat (BSPW2-05)', () => {
     expect(hero.sourceId).toBe(LEGACY_HERO_2.sourceId);
   });
 
-  it('no derived pipeline value is NaN after hydrating a legacy record (BSPW2-AC-15) — fails without the normalizer', () => {
+  it('no derived pipeline value is NaN after hydrating a legacy record — fails without the normalizer', () => {
     localStorage.setItem('bf-hp-heroes-v1', JSON.stringify([LEGACY_HERO_2]));
     const heroes = loadHeroes();
     const hero = heroes[0];
@@ -108,7 +108,7 @@ describe('legacy luck compat (BSPW2-05)', () => {
     expect(Number.isFinite(pipeline.spentDelta)).toBe(true);
   });
 
-  it('coerces a non-finite or non-numeric stored luck (null, "3", NaN) to 0 (BSPW2-AC-16)', () => {
+  it('coerces a non-finite or non-numeric stored luck (null, "3", NaN) to 0', () => {
     const variants: unknown[] = [null, '3', NaN];
     for (const badLuck of variants) {
       const raw = JSON.parse(LEGACY_HERO_2_JSON) as Record<string, unknown>;
@@ -118,7 +118,7 @@ describe('legacy luck compat (BSPW2-05)', () => {
     }
   });
 
-  it('re-save emits "luck":0 on all three sub-objects and never creates a -v2 key (BSPW2-AC-17)', () => {
+  it('re-save emits "luck":0 on all three sub-objects and never creates a -v2 key', () => {
     localStorage.setItem('bf-hp-heroes-v1', JSON.stringify([LEGACY_HERO_2]));
     const heroes = loadHeroes();
 
@@ -131,7 +131,7 @@ describe('legacy luck compat (BSPW2-05)', () => {
     expect(localStorage.getItem('bf-hp-heroes-v2')).toBeNull();
   });
 
-  it('fills luck silently — no console warning or error (BSPW2-AC-18)', () => {
+  it('fills luck silently — no console warning or error', () => {
     const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
     const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
 

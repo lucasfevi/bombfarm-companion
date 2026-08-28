@@ -46,9 +46,9 @@ export type SheetPanelKey = SheetKey;
 /**
  * The seven sheet stats scored for DPS and consumed by `sheetsClose` and the
  * mismatch tab-status predicate. Equals `SHEET_KEYS` minus `luck`, which is modelled
- * and stored (AD-BSP-19) but excluded from combat scoring (BSPW4-12, AD-BSP-20). Wave 6
+ * and stored but excluded from combat scoring. Wave 6
  * added `SHEET_PANEL_KEYS` above for the eight-key display surfaces — this list stays
- * scoped to the combat / mismatch consumers named above (DEC-06).
+ * scoped to the combat / mismatch consumers named above.
  */
 export const SHEET_DISPLAY_KEYS = [
   'attack',
@@ -92,7 +92,7 @@ export const RANK_ORDER = ['S', 'A', 'B', 'C', 'D', 'E', 'F'] as const;
 
 /**
  * Apply a partial point step to a single stat (full form — the user's Q-1 decision
- * overrides `DEC-05`: ±1 shares the **same** clamp as ±5, not just its floor). Two rules,
+ * widens the old floor-only rule: ±1 shares the **same** clamp as ±5, not just its floor). Two rules,
  * expressed once so every stepper shares them (`clampPointStep` takes `delta`, not a sign):
  *
  * - **Floor** — `pts[key]` never goes below 0, for any `delta` (positive or negative). A

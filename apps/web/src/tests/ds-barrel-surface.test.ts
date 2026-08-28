@@ -6,7 +6,7 @@ import * as GameArt from '@bombfarm/game-art';
 // exports today. Type-only exports are erased at runtime and are not part of
 // this list; they are covered separately by ds-compound-namespaces.test.ts's
 // compile-time assertion. A dropped or renamed value export while replacing a
-// module with a directory (ASM-03) fails this test (W6-01).
+// module with a directory fails this test.
 // M2-icons: Icon, iconSources, isIconName added (UI-chrome only; no game glyphs).
 // M2-shell-status (2026-08-11): StatusChip, EmptyState added — StatusChip is
 // the single implementation of INV-1 connection states; EmptyState covers

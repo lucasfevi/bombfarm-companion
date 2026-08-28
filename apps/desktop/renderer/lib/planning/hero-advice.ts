@@ -90,7 +90,8 @@ function canonicalKey(value: unknown): string {
  * Tier 1, per-hero. **By value, never by identity** — the spec's own edge case: "the same hero
  * appears twice across cycles with an identical record but a new object identity" would recompute
  * every cycle under an identity comparison (a `useMemo` on `candidate.record` would have made
- * exactly this mistake), silently passing MAR-01 while failing MAR-04. Covers exactly the
+ * exactly this mistake), silently passing the planning-relevant-change-recomputes check while
+ * failing the identical-cycles-produce-zero-extra-computations check. Covers exactly the
  * `hero.*` right-hand sides in `CHANGE_KEY_INPUTS`.
  */
 export function heroChangeKey(hero: HeroRecord): string {
@@ -200,8 +201,9 @@ export function adviceForHero(model: PlanningModel, heroId: string): HeroAdvice 
   });
 
   // Any change to any section's usability — in EITHER direction — drops the whole cache,
-  // not just the affected hero's entry. This is what makes MAR-08 ("recomputed from the new data
-  // rather than the pre-degradation cache") literally true instead of argued, and it is what the
+  // not just the affected hero's entry. This is what makes the resolved → degraded → resolved
+  // requirement ("recomputed from the new data rather than the pre-degradation cache") literally
+  // true instead of argued, and it is what the
   // consent-revoked edge case ("SHALL NOT be recomputed from the last good account") needs.
   const usabilityKey = usabilityKeyOf(model);
   if (usabilityKey !== lastUsabilityKey) {

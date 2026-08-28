@@ -1,9 +1,9 @@
 /**
- * The cross-source comparator (design §4.3). FID-01…04.
+ * The cross-source comparator (design §4.3).
  *
  * Order is a requirement, not an implementation detail: rejection → roster membership →
  * per-hero sheet compare → account-level equality. A roster mismatch must never let a single
- * hero comparison start (`opts.onHeroCompared` proves it — FID-04's Independent Test).
+ * hero comparison start (`opts.onHeroCompared` proves it).
  */
 import type { AccountPayload } from '@bombfarm/contracts';
 import type { AccountImportData, ImportCandidate, ParseResult } from '@bombfarm/domain/import-save';

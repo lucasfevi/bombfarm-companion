@@ -28,7 +28,7 @@ export type CombatMults = {
 };
 
 /**
- * `treeEnergy` and `treeDanoTotal` are GONE (DEC-01) — both now live on the sheet
+ * `treeEnergy` and `treeDanoTotal` are GONE — both now live on the sheet
  * only (`applySkillTree`), never in a combat multiplier.
  */
 export type ComputeCombatMultsInput = {
@@ -135,8 +135,8 @@ export type DeriveResult = {
  * upstream to produce `geared`/`naked`) — never again here. Exactly one
  * tree factor genuinely belongs to a per-point delta rather than the sheet:
  * `treeSheet.danoStatic` scales `delta.attack` because the sheet the delta is added to is
- * already post-`dmg_static` (AD-BSP-12) and attack has no ratio-based analogue to cancel it.
- * `delta.energy` needs no explicit tree factor (BSPW5-11/DISC-01) — `gem = geared.energy /
+ * already post-`dmg_static` and attack has no ratio-based analogue to cancel it.
+ * `delta.energy` needs no explicit tree factor — `gem = geared.energy /
  * naked.energy` already carries `energia_add` once `naked` is `nakedFromBirth`'s tree-free
  * output; an explicit `(1 + energyPct/100)` on top would double it.
  */
@@ -173,7 +173,7 @@ export function derive(input: DeriveInput): DeriveResult {
   const baseCrit = naked.critChance - Math.max(0, sheetOther.critChanceFlat);
   const star = starsMult(stars);
   const atkPt = attackPointGain(level) * star;
-  // GAP-W4-01 (resolved, BSPW5-11/DISC-01): the six pooled shared-divisor deltas below
+  // GAP-W4-01 (resolved): the six pooled shared-divisor deltas below
   // (speed/critChance/critDmg/penetration/cdr/luck) needed no Wave 5 change — dividing by
   // (1 + sheetOther[key]) only was already exact once `naked` became `nakedFromBirth`'s
   // tree-free output. Energy was the ONE exception the W4 comment got wrong: `gem =
@@ -182,9 +182,9 @@ export function derive(input: DeriveInput): DeriveResult {
   // when `naked` was still tree-contaminated (it cancelled inside `gem` then) became a
   // second application once Wave 5 shipped a genuinely tree-free `naked` — a 1.81x
   // overstatement of every energy point on `save-20260801-crit-dmg-tree.json`
-  // (`energia_add = 0.812711865`). Removed below; AC-33 is the end-to-end proof.
+  // (`energia_add = 0.812711865`). Removed below.
   const delta: Record<SheetKey, number> = {
-    // AD-BSP-12: the sheet the delta is added to already carries dmg_static once — scale
+    // The sheet the delta is added to already carries dmg_static once — scale
     // the per-point gain by it too, or attack points would under-count against the sheet.
     // `delta.attack` has no `gem` analogue (energy's own ratio-based factor), so this
     // explicit `danoStatic` factor is NOT redundant and stays exactly as-is.
@@ -196,7 +196,7 @@ export function derive(input: DeriveInput): DeriveResult {
     critDmg: POINT_GAIN.critDmgFlat,
     penetration: (POINT_GAIN.penetrationPctOfBase * naked.penetration) / oPen,
     cdr: (POINT_GAIN.cdrPctOfBase * naked.cdr) / oCdr,
-    // Luck has no `other` term (ASM-02) — no divisor, unlike the shared-pool stats above.
+    // Luck has no `other` term — no divisor, unlike the shared-pool stats above.
     luck: POINT_GAIN.luckPctOfBase * naked.luck,
   };
   const adjusted: SheetStats = { ...gearedX };
@@ -221,7 +221,7 @@ export function derive(input: DeriveInput): DeriveResult {
     critDmg: delta.critDmg * critDmgMult,
     penetration: delta.penetration,
     cdr: delta.cdr,
-    // No combat multiplier — Luck never reaches DPS scoring (AD-BSP-20).
+    // No combat multiplier — Luck never reaches DPS scoring.
     luck: delta.luck,
   };
   return {

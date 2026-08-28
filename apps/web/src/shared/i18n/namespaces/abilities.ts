@@ -20,7 +20,7 @@ export const en = {
   abilitiesSlots: "{used} / {max} abilities",
   abilitiesSelected: "Selected",
   abilitiesNone: "None selected yet",
-  // AD-BSP-23a/AC-38 — granted (hero level) vs spendable (abilityPointBudget) are two
+  // Granted (hero level) vs spendable (abilityPointBudget) are two
   // different caps; Bram (L49 -> 40 spendable, 9 dead) is the worked case.
   abilitiesGrantedSpendable: "{granted} granted · {spendable} spendable",
   abilitiesDeadPoints: "{dead} granted but unusable (slot cap)",

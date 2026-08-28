@@ -161,7 +161,7 @@ describe('recompute budget — the measured figure, asserted against itself', ()
 
   it(
     // One 60 Hz animation frame (16 ms) — the threshold below which the recompute cannot drop a
-    // frame, which is what MAR-15's "the window stays interactive" means. F1
+    // frame, which is what "the window stays interactive" means. F1
     // re-measured on the post-patch 8-hero payload fixture (Node v24.16.0, Windows 11 Pro
     // 26200, dev machine, warm, 5 warm-up iterations discarded): median ~0.6 ms, p95 ~0.85 ms,
     // over several 20-run samples — reproduced here over this test's own 20-run sample. 16 ms

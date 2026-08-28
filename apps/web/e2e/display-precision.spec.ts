@@ -2,7 +2,7 @@ import { test, expect, type Page } from '@playwright/test';
 import { seedLocalStorage, selectSavedHero, type SeededState } from './fixtures/seed';
 
 /**
- * `BSPW6-05` (`AC-25`, `AC-26`) — sheet magnitudes at 2 dp, `×` multiplier chips at 3 dp.
+ * Sheet magnitudes at 2 dp, `×` multiplier chips at 3 dp.
  * A self-contained hero (not `seed-cora`) so the fixture values below are exact and
  * predictable: no gear, no tree, no team buffs — only `pts.speed` drives the one ratio
  * chip this suite checks.
@@ -89,7 +89,7 @@ function activePanel(page: Page) {
   return page.locator('[data-slot="tabs-panel"][data-state="active"]');
 }
 
-test.describe('display precision sweep (BSPW6-05, AC-25, AC-26)', () => {
+test.describe('display precision sweep', () => {
   test('sheet table Birth column renders at 2 dp for a known fixture value', async ({ page }) => {
     await seedLocalStorage(page, precisionHero());
     await page.goto('/');
@@ -108,7 +108,7 @@ test.describe('display precision sweep (BSPW6-05, AC-25, AC-26)', () => {
     await expect(attackRow).not.toContainText('123.456');
   });
 
-  test('sheet table shows a Luck row (AC-19)', async ({ page }) => {
+  test('sheet table shows a Luck row', async ({ page }) => {
     await seedLocalStorage(page, precisionHero());
     await page.goto('/');
     await selectSavedHero(page, 'Precision');

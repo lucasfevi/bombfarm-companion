@@ -1,5 +1,5 @@
 /**
- * (design.md §3, §10 hazard 6, tasks.md T5) — MAR-15's main-loop half: the
+ * (design.md §3, §10 hazard 6, tasks.md T5) — the main-loop half: the
  * strongest available structural form of "the recompute does not block the Electron main event
  * loop long enough to delay IPC" is that main never calls the functions that would block it at
  * all. `pipelineForHero`, `computeAdvisorPipeline` and `parseAccountPayload` appearing zero times
@@ -52,7 +52,7 @@ function listProductionTsFiles(dir) {
   return out;
 }
 
-describe('main computes nothing (MAR-15) — pipelineForHero/computeAdvisorPipeline/parseAccountPayload appear zero times under apps/desktop/src/main', () => {
+describe('main computes nothing — pipelineForHero/computeAdvisorPipeline/parseAccountPayload appear zero times under apps/desktop/src/main', () => {
   const files = listProductionTsFiles(MAIN_DIR);
 
   it('the scan actually covers a real, non-trivial file set (sanity — otherwise this test proves nothing)', () => {
@@ -74,7 +74,7 @@ describe('main computes nothing (MAR-15) — pipelineForHero/computeAdvisorPipel
       `${offenders.join('; ')} — main is provably NOT supposed to compute advice: the ` +
         'renderer recomputes, memoised; main only resolves the current account view and decides ' +
         'whether it changed. A call to any of these three functions from apps/desktop/src/main would ' +
-        'put pure-compute work back on the Electron main event loop, which is exactly what MAR-15 ' +
+        'put pure-compute work back on the Electron main event loop, which is exactly what this guard ' +
         'forbids (blocking the loop long enough to delay IPC).',
     ).toEqual([]);
   });

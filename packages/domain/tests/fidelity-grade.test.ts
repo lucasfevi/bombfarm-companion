@@ -29,16 +29,16 @@ function expectFidelityError(fn: () => void, code: string): FidelityGateError {
 }
 
 describe('assertCaptureFullFidelity', () => {
-  it('throws unverifiableFidelity when the payload carries no fidelity block at all (FID-07)', () => {
+  it('throws unverifiableFidelity when the payload carries no fidelity block at all', () => {
     const err = expectFidelityError(() => assertCaptureFullFidelity(payloadWith(undefined), 'live'), 'unverifiableFidelity');
     expect(err.message).toContain('live');
     expect(err.message).toContain('unverifiable');
     expect(err.message).toContain('not "full"');
   });
 
-  it('pins the intentional divergence from ACS-05.5: deriveAccountFidelity(undefined) still grades full', () => {
+  it('pins the intentional divergence: deriveAccountFidelity(undefined) still grades full', () => {
     // The guard does NOT delegate the absent-block decision to deriveAccountFidelity —
-    // ACS-05.5 is correct for the file adapter and would be wrong here.
+    // that behavior is correct for the file adapter and would be wrong here.
     expect(deriveAccountFidelity(undefined)).toEqual({ grade: 'full', degradedSections: [] });
   });
 

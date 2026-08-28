@@ -21,7 +21,7 @@ export const en = {
   importGearSlots: "Gear slots filled",
   importIssuesCount: "{count} issue(s)",
   importWarnings: "File warnings",
-  // AD-BSP-26/AC-31: the string survives unchanged; {count} now means the candidate count
+  // The string survives unchanged; {count} now means the candidate count
   // (review-then-confirm), not a selection.
   importConfirm: "Import {count} hero(es)",
   importNoneSelected: "Select at least one hero to import.",
@@ -32,11 +32,11 @@ export const en = {
   importHouseName: "Name",
   importHouseLevel: "Level",
   importHouseRest: "Rest time",
-  // AC-35 — the three budgetMismatch branches, selected by pointIssueCopyKey.
+  // The three budgetMismatch branches, selected by pointIssueCopyKey.
   importPointShortfall: "Spent points don't fully add up on the sheet — a small shortfall, not a real stat difference.",
   importPointOneSaturated: "Spent points don't fully add up — the missing points are likely in {stat}, which is already at its cap.",
   importPointBothSaturated: "Spent points don't fully add up, and both Crit % and CDR are already capped, so the exact split between them can't be recovered.",
-  // DEC-09/AC-36 — parseSaveFile's structured whole-file rejection, replacing the
+  // parseSaveFile's structured whole-file rejection, replacing the
   // reset-warning block below.
   importRejectedNotASaveFile: "This file doesn't look like a BombFarm save-file export.",
   importRejectedMissingBirthStats: "This save is missing birth stats needed for accurate points for: {names}. Re-export from an updated game version.",

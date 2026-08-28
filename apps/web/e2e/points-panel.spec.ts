@@ -92,7 +92,7 @@ test.describe('points panel UX', () => {
     ).toBeVisible();
   });
 
-  // Rewritten (user Q-1 override of DEC-05): ±1 now shares the SAME budget ceiling as ±5, so
+  // Rewritten (user Q-1 override): ±1 now shares the SAME budget ceiling as ±5, so
   // overspend is no longer reachable via either stepper — only by a hero record that already
   // has more spent than its level (e.g. the level was lowered in-game after the points were
   // spent). The text-warn counter stays live UI for that path (it is not deleted).
@@ -152,7 +152,7 @@ test.describe('points panel UX', () => {
     await expect(panel.getByText(/39 \/ 38 pontos/i)).toBeVisible();
   });
 
-  test('+5 / −5 apply a partial step at the budget ceiling / at zero (AC-17)', async ({
+  test('+5 / −5 apply a partial step at the budget ceiling / at zero', async ({
     page,
   }) => {
     const pts = { ...zeroPts(), energy: 35, critChance: 3 };
@@ -248,10 +248,10 @@ test.describe('points panel UX', () => {
   });
 });
 
-test.describe('points panel preview / apply (BSPW6-02)', () => {
+test.describe('points panel preview / apply', () => {
   const HEROES_KEY = 'bf-hp-heroes-v1';
 
-  test('Optimize build produces a preview without writing pts or localStorage (AC-08, AC-09)', async ({
+  test('Optimize build produces a preview without writing pts or localStorage', async ({
     page,
   }) => {
     const pts = { ...zeroPts(), cdr: 38 };
@@ -263,7 +263,7 @@ test.describe('points panel preview / apply (BSPW6-02)', () => {
     const panel = pointsPanel(page);
     // Draft persistence is debounced (AUTOSAVE_MS = 700). Hydrate may flush a
     // normalize-on-load rewrite (battleAllowed/skin/updatedAt) on first settle —
-    // wait for that BEFORE the baseline so AC-09's byte compare is about Optimize,
+    // wait for that BEFORE the baseline so the byte compare is about Optimize,
     // not about the hydrate flush racing the assertion (Verifier M1 / round-2).
     await page.waitForTimeout(900);
     const storageBefore = await page.evaluate((key) => localStorage.getItem(key), HEROES_KEY);
@@ -279,16 +279,16 @@ test.describe('points panel preview / apply (BSPW6-02)', () => {
     await panel.getByRole('button', { name: /^Otimizar build$/i }).click();
 
     await expect(previewCell).toBeVisible();
-    // Immediate in-memory proof: Optimize must not call setPts (AC-08). A redistributed
+    // Immediate in-memory proof: Optimize must not call setPts. A redistributed
     // Apply-as-Optimize mutant would move CDR off 38 while still keeping Σ = 38.
     await expect(cdrSpent).toHaveText('38');
-    // AC-09: wait past AUTOSAVE_MS so a setPts mutant cannot hide behind the debounce.
+    // Wait past AUTOSAVE_MS so a setPts mutant cannot hide behind the debounce.
     await page.waitForTimeout(900);
     const storageAfter = await page.evaluate((key) => localStorage.getItem(key), HEROES_KEY);
     expect(storageAfter).toBe(storageBefore);
   });
 
-  test('Next point ranking stays keyed off the stored pts, not the preview (AC-14)', async ({ page }) => {
+  test('Next point ranking stays keyed off the stored pts, not the preview', async ({ page }) => {
     const pts = { ...zeroPts(), cdr: 38 };
     await seedLocalStorage(page, pointsHero({ level: 38, pts }));
     await page.goto('/');
@@ -306,7 +306,7 @@ test.describe('points panel preview / apply (BSPW6-02)', () => {
     expect(after).toBe(before);
   });
 
-  test('Apply preview writes pts, updates the After column, shows the respec note, and clears the preview (AC-11, AC-12)', async ({
+  test('Apply preview writes pts, updates the After column, shows the respec note, and clears the preview', async ({
     page,
   }) => {
     const pts = { ...zeroPts(), cdr: 38 };
@@ -378,7 +378,7 @@ test.describe('points panel preview / apply (BSPW6-02)', () => {
   });
 });
 
-test.describe('points panel reset advice gain line + Optimize build result (BSPW6-02, AC-06, AC-07, AC-15)', () => {
+test.describe('points panel reset advice gain line + Optimize build result', () => {
   // pts.cdr = level is a deliberately bad single-stat dump — confirmed directly against
   // computeAdvisorPipeline (not guessed): resetAdvice.recommend is true with a ~251% gate
   // gainPct for this seeded hero. pts.attack = level is confirmed the opposite: recommend is
@@ -411,7 +411,7 @@ test.describe('points panel reset advice gain line + Optimize build result (BSPW
     await expect(gainLine).not.toBeVisible();
   });
 
-  test('Optimize build is present and enabled regardless of the gain-line state (AC-07)', async ({
+  test('Optimize build is present and enabled regardless of the gain-line state', async ({
     page,
   }) => {
     const pts = { ...zeroPts(), attack: 38 };
@@ -456,7 +456,7 @@ test.describe('points panel reset advice gain line + Optimize build result (BSPW
     await expect(panel.getByText(/checagem rápida encontrou um possível ganho/i)).toBeVisible();
   });
 
-  test('Optimize build is disabled with a reason only when there is no pool at all (AC-15)', async ({
+  test('Optimize build is disabled with a reason only when there is no pool at all', async ({
     page,
   }) => {
     // `reoptBudget` is 0 only when the level pool AND the placed points are both 0. A level-0

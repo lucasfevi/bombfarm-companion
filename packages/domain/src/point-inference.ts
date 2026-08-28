@@ -1,6 +1,6 @@
 /**
- * BSPW4-03 — recover the integer spent-point vector from a hero's sheet, inverting the
- * `AD-BSP-19` block. Every failure mode is a typed issue, never a throw, a
+ * Recover the integer spent-point vector from a hero's sheet, inverting the
+ * composition pipeline. Every failure mode is a typed issue, never a throw, a
  * silent scale, or a redistributed residual.
  */
 import { nakedFromBirth, type BirthStats, type TreeSheetTotals } from './birth-sheet';
@@ -11,7 +11,7 @@ import type { Loadout, SheetOtherPct, SheetStats } from './gear/types';
 import { SHEET_KEYS, type SheetKey } from './planner-constants';
 
 /**
- * `DEC-04` — six orders of magnitude above the measured worst residual (8.9e-13) and six
+ * Six orders of magnitude above the measured worst residual (8.9e-13) and six
  * orders below a half-point, so a real solved value never gets mistaken for non-integer.
  */
 export const POINT_INFERENCE_EPS = 1e-6;
@@ -142,7 +142,7 @@ export function inferSpentPoints(input: InferSpentPointsInput): PointInferenceRe
     luck: solveShared(pool.luck, naked.luck, bonuses.luckPct, 0, POINT_GAIN.luckPctOfBase),
   };
 
-  // A capped sheet value (critChance/cdr — BSPW4-09: NOT penetration, which the game never
+  // A capped sheet value (critChance/cdr — NOT penetration, which the game never
   // clamps on the sheet) destroys the information needed to solve backward exactly once
   // ability+gear alone already reach the cap: `sheet.critChance`/`sheet.cdr` (hence `pool.*`
   // above) is the CLAMPED observed value, not the true (higher) uncapped pool subtotal, so

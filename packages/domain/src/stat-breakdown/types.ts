@@ -39,16 +39,16 @@ export type LedgerNote =
 /**
  * The four in-game lines, plus a `combat` bucket for the multiplicative sources that
  * sit below the sheet (`abilities` / `team` / `abilitiesTeam`) — real combat bonuses, not one
- * of the four sheet-building lines (DEC-07).
+ * of the four sheet-building lines.
  */
 export type LedgerGroup = 'hero' | 'gear' | 'ability' | 'skillTree' | 'combat';
 
 /**
- * Exhaustive map from every `LedgerSource` to the game line it belongs to (`DEC-07`).
+ * Exhaustive map from every `LedgerSource` to the game line it belongs to.
  * A display **grouping** over the existing ledger steps, not a re-cut: the arithmetic already
- * matches the game's decomposition (`AC-41`/`AC-42`, W4) — only the naming was missing. The
+ * matches the game's decomposition (W4) — only the naming was missing. The
  * `Record` shape is exhaustive at compile time, so a future `LedgerSource` cannot be silently
- * ungrouped (`AC-28`).
+ * ungrouped.
  */
 export const LEDGER_SOURCE_GROUP: Record<LedgerSource, LedgerGroup> = {
   base: 'hero',
@@ -109,7 +109,7 @@ export interface PipelineFacts {
   treeCritChance: number;
   treeCritDmg: number;
   treeEnergy: number;
-  /** `skills.totals.luck_add × 100` — flat Luck percentage points (AD-BSP-22, `ledgerLuck`). */
+  /** `skills.totals.luck_add × 100` — flat Luck percentage points (see `ledgerLuck`). */
   treeLuckFlatPct: number;
   context: Context;
   dmgMult: number;

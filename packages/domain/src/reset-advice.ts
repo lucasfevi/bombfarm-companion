@@ -1,7 +1,7 @@
 /**
- * BSPW4-11 — the sustained-DPS reset-recommendation predicate.
+ * The sustained-DPS reset-recommendation predicate.
  * Pure; consumes whatever `{ currentDps, reoptDps }` the caller supplies — `computeAdvisorPipeline`
- * feeds it Tier 1's own `findGateCandidate` output (`AC-69`), never an idealised reallocation,
+ * feeds it Tier 1's own `findGateCandidate` output, never an idealised reallocation,
  * so the gate can never promise a gain the optimiser will not deliver.
  */
 
@@ -9,7 +9,7 @@
 export const RESET_RECOMMEND_DPS_PCT = 1;
 
 /**
- * `ASM-04` — the model's own residual is ~1e-11 relative, ~1e-7 percentage points at realistic
+ * The model's own residual is ~1e-11 relative, ~1e-7 percentage points at realistic
  * DPS magnitudes. `1e-6` sits comfortably above that residue and six orders below anything a
  * player could perceive, so exact-threshold builds are not misclassified by floating-point noise
  * without opening the gate to a false positive.

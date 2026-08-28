@@ -10,12 +10,12 @@ async function openImportDialog(page: import('@playwright/test').Page) {
 }
 
 /**
- * `AD-BSP-26`/`AC-31` — the dialog reviews a full roster sync; it no longer curates
- * a selection. `AC-33`/`DEC-08` — confirming removes any existing hero absent from
+ * The dialog reviews a full roster sync; it no longer curates
+ * a selection. Confirming removes any existing hero absent from
  * the save's own sourceId set, in the same write.
  */
-test.describe('import dialog reviews, does not curate (BSPW6-07)', () => {
-  test.skip('has no selection checkboxes; status switches are read-only (AC-31)', async ({ page }) => {
+test.describe('import dialog reviews, does not curate', () => {
+  test.skip('has no selection checkboxes; status switches are read-only', async ({ page }) => {
     await page.goto('/');
     await openImportDialog(page);
     await page.locator('input[type="file"]').setInputFiles(sampleSave);
@@ -27,7 +27,7 @@ test.describe('import dialog reviews, does not curate (BSPW6-07)', () => {
     await expect(dialog.locator('input[type="checkbox"][disabled]')).toHaveCount(3);
   });
 
-  test('confirm is enabled with no selection action required (AC-31)', async ({ page }) => {
+  test('confirm is enabled with no selection action required', async ({ page }) => {
     await page.goto('/');
     await openImportDialog(page);
     await page.locator('input[type="file"]').setInputFiles(sampleSave);
@@ -40,7 +40,7 @@ test.describe('import dialog reviews, does not curate (BSPW6-07)', () => {
     await expect(confirm).toHaveText(/importar 3 herói/i);
   });
 
-  test.skip('importing a save that omits a previously-imported hero removes exactly that hero (AC-33, DEC-08)', async ({
+  test.skip('importing a save that omits a previously-imported hero removes exactly that hero', async ({
     page,
   }) => {
     // seed-orphan's sourceId (9999) is absent from sample-save.json's three heroes
@@ -110,7 +110,7 @@ test.describe('import dialog reviews, does not curate (BSPW6-07)', () => {
     await expect(dialog.getByText(/não existem mais no jogo/i)).toHaveCount(0);
   });
 
-  test('a rejected save shows the rejection reason, not "no heroes found" (AC-36)', async ({
+  test('a rejected save shows the rejection reason, not "no heroes found"', async ({
     page,
   }) => {
     await page.goto('/');

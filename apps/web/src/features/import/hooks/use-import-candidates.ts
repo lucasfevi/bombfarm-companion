@@ -32,13 +32,13 @@ export type UseImportCandidatesArgs = {
 };
 
 /**
- * `AD-BSP-26` — the dialog reviews a full roster sync; it no longer curates a
+ * The dialog reviews a full roster sync; it no longer curates a
  * selection. `selected`/`toggle`/`toggleAll`/`allSelected`/`someSelected` are gone (T13):
  * confirm is enabled whenever at least one candidate exists, and every non-blocked candidate
  * is written. `handleConfirm` passes the save's own `sourceId` set as `importHeroes`' third
- * argument (`DEC-08`) — a blocked candidate is excluded from `records` but its `sourceId`
+ * argument — a blocked candidate is excluded from `records` but its `sourceId`
  * still counts toward that set, so an existing hero with that `sourceId` is preserved, not
- * removed (`W5 AC-28`).
+ * removed (`W5`).
  */
 export function useImportCandidates({
   existing,
@@ -123,7 +123,7 @@ export function useImportCandidates({
     const records = candidates
       .filter((candidate) => !candidate.blocked)
       .map((candidate) => ({ ...candidate.record, sourceId: candidate.sourceId }));
-    // DEC-08: the save's own sourceId set, blocked candidates included — importHeroes removes
+    // The save's own sourceId set, blocked candidates included — importHeroes removes
     // any existing hero whose sourceId is absent from it, in the same write.
     const saveSourceIds = new Set(candidates.map((candidate) => candidate.sourceId));
     const result = importHeroes(usePlannerStore.getState().heroes, records, saveSourceIds);

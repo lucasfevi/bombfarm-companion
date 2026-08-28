@@ -9,7 +9,7 @@
  *
  * The single documented exception, `treeCritDmgMult`, closed: the field was
  * removed from both surfaces along with the rest of the deleted keystone mechanics, so the two
- * key sets are equal with no pinned exception (MSC-15). This test still fails if the gap
+ * key sets are equal with no pinned exception. This test still fails if the gap
  * **widens** (a new field forwarded by one path only) — demonstrated below.
  */
 import { readFileSync } from 'node:fs';

@@ -1,5 +1,5 @@
 /**
- * (T9) — SUPERSEDES `MSC-10` for keystone-carrying records. F3's version of
+ * (T9) — SUPERSEDES the old discard-and-keep rule for keystone-carrying records. F3's version of
  * this file (`storage-legacy-keystone-fields.test.ts`) asserted a keystone-carrying
  * `bf-hp-account-v1` value "loads and keeps every survivor" — the exact opposite of the drop-the-whole-record rule.
  * Under this feature, a stored planner account carrying any of the five retired `TreeState`
@@ -46,7 +46,7 @@ const LEGACY_ACCOUNT_JSON =
 
 const LEGACY_HEROES_JSON = '[{"id":"h1","name":"Legacy","sourceId":"save-1","naked":{},"loadout":{}}]';
 
-describe('legacy keystone-carrying account is dropped whole (supersedes MSC-10 for these five fields)', () => {
+describe('legacy keystone-carrying account is dropped whole (supersedes the old discard-and-keep rule for these five fields)', () => {
   beforeEach(() => {
     vi.stubGlobal('localStorage', memoryLocalStorage());
     resetPlannerStoreForTests();

@@ -450,8 +450,8 @@ describe('Guard 5 — renderer/lib/planning/** never mentions locale (no recompu
     expect(
       offenders,
       'A "locale" reference under renderer/lib/planning/** means a language switch could enter ' +
-        'a memo dependency or a change key — F3\'s MAR-03/MAR-04 broken from the other side, ' +
-        'silently, with everything still looking right.',
+        'a memo dependency or a change key — breaking the no-recompute-on-irrelevant-change ' +
+        'guarantee from the other side, silently, with everything still looking right.',
     ).toEqual([]);
   });
 

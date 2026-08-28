@@ -10,7 +10,7 @@
  * own tests. This is why `dropStaleLocalAccount()` must run BEFORE any `normalize*` call —
  * `hydratePlannerStore()` runs it as its first statement, ahead of `loadHeroes()`.
  *
- * Supersedes `MSC-10` for keystone-carrying records: F3's
+ * Supersedes the earlier discard-and-keep rule for keystone-carrying records: F3's
  * `storage-legacy-keystone-fields.test.ts` asserted such a record loads and keeps every
  * survivor. Under this feature it is dropped whole instead — see that file's own rewritten
  * header for the supersession statement.

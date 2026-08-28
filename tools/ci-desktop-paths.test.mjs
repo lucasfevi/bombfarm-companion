@@ -59,7 +59,7 @@ describe('ci-desktop.yml — the two path-filter lists stay in sync', () => {
     expect(filterPaths).toContain('packages/domain/**');
   });
 
-  // (MWD-15) — without this entry, a PR editing only wiki-drift.yml would run no guard
+  // Without this entry, a PR editing only wiki-drift.yml would run no guard
   // at all: the shape guard (tools/wiki-drift-workflow.test.mjs) is a `tools` unit test, reached
   // only through this workflow's own `quality` job.
   it('both lists carry .github/workflows/wiki-drift.yml — its own shape guard must run', () => {
@@ -74,12 +74,12 @@ describe('ci-desktop.yml — the two path-filter lists stay in sync', () => {
 
 /**
  * `@bombfarm/domain` is now a built package, joining the five workspace packages
- * `ci-desktop.yml` already builds/typechecks/lints ahead of the desktop job (MDW-29). These
+ * `ci-desktop.yml` already builds/typechecks/lints ahead of the desktop job. These
  * assertions read the exact `run:` lines of the three steps, so a future edit that drops
  * domain from one of them (while leaving the path filters above intact) fails loudly instead
  * of silently building the desktop shell against a stale/missing dist.
  */
-describe('ci-desktop.yml — @bombfarm/domain joins the desktop build/typecheck/lint steps (MDW-29)', () => {
+describe('ci-desktop.yml — @bombfarm/domain joins the desktop build/typecheck/lint steps', () => {
   const workflowText = readFileSync(CI_DESKTOP_PATH, 'utf8');
 
   function extractStepRun(anchorName) {
