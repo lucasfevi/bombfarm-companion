@@ -1,8 +1,10 @@
 import { Panel, PanelHeader } from '@bombfarm/ui';
 import { FIELD_SLOTS_MAX } from '@bombfarm/domain/casa-slots';
+import type { LiveEarnings } from '@bombfarm/contracts';
 import { sub, useCopy, useLocale } from '../../lib/copy';
 import { formatCount } from '../../lib/format';
 import type { LiveFastModel, LiveHeroFact, LiveRecoveringHeroFact, LiveSlowModel } from '../../lib/live/live-model';
+import { EarningsPanel } from './earnings-panel';
 import { FieldCountdown } from './field-countdown';
 import { FreshnessLine, type ReachedLiveFreshness } from './freshness-line';
 import { HeroSection } from './hero-section';
@@ -13,11 +15,15 @@ export function LivePanel({
   freshness,
   slow,
   fast,
+  earnings = null,
+  onResetEarnings = () => undefined,
   onReopenConsent,
 }: {
   freshness: ReachedLiveFreshness;
   slow: LiveSlowModel;
   fast: LiveFastModel;
+  earnings?: LiveEarnings | null;
+  onResetEarnings?: () => void;
   onReopenConsent?: () => void;
 }) {
   const t = useCopy();
@@ -35,6 +41,7 @@ export function LivePanel({
   return (
     <div data-testid="live-panel" className="flex flex-col gap-4">
       <FreshnessLine freshness={freshness} onReopenConsent={onReopenConsent} />
+      <EarningsPanel earnings={earnings} onReset={onResetEarnings} />
       <Panel data-testid="live-heroes">
         <PanelHeader title={t.liveHeroesTitle} />
         <div className="flex flex-col gap-4">

@@ -24,10 +24,13 @@ import { ptBR } from './pt-BR';
 // equivalent `heroAvatarCol` string is likewise "Avatar" in both its `en` and `pt` namespaces).
 // inventoryDetailSetSlot: pure layout, no words — two placeholders joined by a separator, and
 // both of the values it joins are themselves already localised before they reach it.
+// liveEarningsRowXp: "XP" is used as-is in Brazilian Portuguese gaming copy — the web planner's
+// own farm-ranking column header for the same figure is likewise "XP" in both languages.
 const IDENTICAL_IN_BOTH_LANGUAGES: readonly (keyof typeof en)[] = [
   'ageShortSeconds',
   'planningRosterColumnAvatar',
   'inventoryDetailSetSlot',
+  'liveEarningsRowXp',
 ];
 
 function placeholderSet(value: string): Set<string> {

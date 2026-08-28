@@ -225,6 +225,20 @@ export const en = {
   // liveNeverRead* — nothing has been read from the account yet this session
   liveNeverReadTitle: 'Nothing read from your account yet',
   liveNeverReadDescription: 'Open the game with the companion running, so it has something to read.',
+
+  // liveEarnings* — the Earnings panel: measured gold/XP figures, sent as finished values and
+  // only ever formatted here, never recomputed.
+  liveEarningsTitle: 'Earnings',
+  liveEarningsSessionDurationValue: 'Session {duration}',
+  liveEarningsResetAction: 'Reset session',
+  liveEarningsColumnCurrent: 'Current',
+  liveEarningsColumnRecent: 'Last {minutes} min',
+  liveEarningsColumnSession: 'Session',
+  liveEarningsRowGold: 'Gold',
+  liveEarningsRowXp: 'XP',
+  liveEarningsXpHelpLabel: 'About this XP figure',
+  liveEarningsXpHelpBody: 'Calculated from the props your heroes destroyed, not read directly from the game.',
+
   // inventory* — the Inventory screen: every item the account carries, grouped by kind
   inventoryNavLabel: 'Inventory',
   inventoryTitle: 'Inventory',

@@ -226,6 +226,20 @@ export const ptBR: Copy = {
   // liveNeverRead* — nada foi lido da conta ainda nesta sessão
   liveNeverReadTitle: 'Nada foi lido da sua conta ainda',
   liveNeverReadDescription: 'Abra o jogo com o companion em execução, para que ele tenha algo para ler.',
+
+  // liveEarnings* — o painel de Ganhos: valores medidos de ouro/XP, enviados já prontos e só
+  // formatados aqui, nunca recalculados.
+  liveEarningsTitle: 'Ganhos',
+  liveEarningsSessionDurationValue: 'Sessão {duration}',
+  liveEarningsResetAction: 'Reiniciar sessão',
+  liveEarningsColumnCurrent: 'Atual',
+  liveEarningsColumnRecent: 'Últimos {minutes} min',
+  liveEarningsColumnSession: 'Sessão',
+  liveEarningsRowGold: 'Ouro',
+  liveEarningsRowXp: 'XP',
+  liveEarningsXpHelpLabel: 'Sobre esse número de XP',
+  liveEarningsXpHelpBody: 'Calculado a partir dos props que seus heróis destruíram, não lido diretamente do jogo.',
+
   // inventory* — a tela de Inventário: todos os itens da conta, agrupados por tipo
   inventoryNavLabel: 'Inventário',
   inventoryTitle: 'Inventário',
