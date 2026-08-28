@@ -7,13 +7,13 @@
  * byte / add one skip / add one keystone reference in a scratch state, observe the named failure,
  * revert) — see `docs/fixture-corpus.md` and `validation.md` for the observed messages.
  */
-import { createHash } from 'node:crypto';
 import { readFileSync, readdirSync } from 'node:fs';
 import { dirname, join, relative } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 import { SHEET_KEYS } from '@bombfarm/domain/planner-constants';
 import { isJson, listFiles } from './helpers/list-files';
+import { assertProvenanceComplete, assertRecordedDigests } from './helpers/readme-provenance';
 import { SHEET_ABS_TOL } from './helpers/sheet-math-fixtures';
 
 const here = dirname(fileURLToPath(import.meta.url));
@@ -27,10 +27,6 @@ function isObject(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null;
 }
 
-
-function sha256(path: string): string {
-  return createHash('sha256').update(readFileSync(path)).digest('hex');
-}
 
 /**
  * A short, commented allowlist for fixtures read through a computed/templated path rather than a
@@ -92,35 +88,11 @@ describe('sheet-math fixture corpus guard (MP5 F1)', () => {
   });
 
   it('provenance completeness, both directions: every sheet-math/ file has a README row, every row names a file that exists', () => {
-    const readmeText = readFileSync(README_PATH, 'utf8');
-    const headingMatches = [...readmeText.matchAll(/^## `([^`]+)`$/gm)].map((m) => m[1]);
-    const namedFiles = new Set(headingMatches);
-
-    const dataFiles = sheetMathJsonFiles; // README.md itself is not a data file
-    const missingRows = dataFiles.filter((f) => !namedFiles.has(f));
-    const danglingRows = headingMatches.filter((f) => !dataFiles.includes(f));
-
-    expect(missingRows, `sheet-math files with no README row: ${missingRows.join(', ')}`).toEqual([]);
-    expect(danglingRows, `README rows naming a file that does not exist: ${danglingRows.join(', ')}`).toEqual([]);
+    assertProvenanceComplete(README_PATH, sheetMathJsonFiles, 'sheet-math');
   });
 
   it('committed-file digest: each sheet-math/ file\'s SHA-256 equals the value its README row records', () => {
-    const readmeText = readFileSync(README_PATH, 'utf8');
-    const sections = readmeText.split(/^## /m).slice(1);
-    const recordedByFile = new Map<string, string>();
-    for (const section of sections) {
-      const nameMatch = section.match(/^`([^`]+)`/);
-      const shaMatch = section.match(/SHA-256 \(committed file\) \| `([0-9a-f]{64})`/);
-      if (nameMatch && shaMatch) recordedByFile.set(nameMatch[1], shaMatch[1]);
-    }
-    const mismatches: string[] = [];
-    for (const file of sheetMathJsonFiles) {
-      const recorded = recordedByFile.get(file);
-      expect(recorded, `${file} has no parsable SHA-256 (committed file) row`).toBeDefined();
-      const actual = sha256(join(SHEET_MATH_DIR, file));
-      if (actual !== recorded) mismatches.push(`${file}: recorded ${recorded}, actual ${actual}`);
-    }
-    expect(mismatches, mismatches.join('\n')).toEqual([]);
+    assertRecordedDigests(SHEET_MATH_DIR, README_PATH, sheetMathJsonFiles);
   });
 
   // Scoped to sheet-math/ — the corpus this feature actually manages (MFR-04's subject is the
