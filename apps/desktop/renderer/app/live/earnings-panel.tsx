@@ -56,57 +56,62 @@ export function EarningsPanel({
           </Button>
         </span>
       </PanelHeader>
-      <table className="w-full table-fixed border-collapse text-sm">
+      <table className="w-full min-w-[28rem] table-fixed border-collapse text-sm">
         <caption className="sr-only">{t.liveEarningsTitle}</caption>
+        {/* Percentage widths, not content-fitted px: no column may resize as the coverage label
+            grows from its shortest form toward "Last 10 min" / "Últimos 10 min", or as the
+            current-balance cell gains an age suffix once the stream gaps (docs/no-layout-shift.md
+            rule 7, docs/content-fit-ui.md rule 1 — sized for the longer of the two languages and
+            the longest realistic value, a compact balance plus its age). */}
         <colgroup>
-          <col />
-          <col className="w-20" />
-          <col className="w-48" />
-          <col className="w-20" />
+          <col className="w-[24%]" />
+          <col className="w-[30%]" />
+          <col className="w-[26%]" />
+          <col className="w-[20%]" />
         </colgroup>
         <thead>
           <tr className="text-left text-xs text-muted">
             <th scope="col" />
-            <th scope="col" data-testid="live-earnings-column-current">
+            <th scope="col" data-testid="live-earnings-column-current" className="whitespace-nowrap">
               {t.liveEarningsColumnCurrent}
             </th>
-            <th scope="col" data-testid="live-earnings-column-recent">
+            <th scope="col" data-testid="live-earnings-column-recent" className="whitespace-nowrap">
               {recentLabel}
             </th>
-            <th scope="col" data-testid="live-earnings-column-session">
+            <th scope="col" data-testid="live-earnings-column-session" className="whitespace-nowrap">
               {t.liveEarningsColumnSession}
             </th>
           </tr>
         </thead>
         <tbody>
           <tr>
-            <th scope="row" className="text-left font-normal">
+            <th scope="row" className="text-left font-normal whitespace-nowrap">
               {t.liveEarningsRowGold}
             </th>
-            <td data-testid="live-earnings-gold-current" className="tabular-nums">
+            <td data-testid="live-earnings-gold-current" className="tabular-nums whitespace-nowrap">
               {currentGold}
             </td>
-            <td data-testid="live-earnings-gold-10" className="tabular-nums">
+            <td data-testid="live-earnings-gold-10" className="tabular-nums whitespace-nowrap">
               {rateCell(earnings?.gold10)}
             </td>
-            <td data-testid="live-earnings-gold-session" className="tabular-nums">
+            <td data-testid="live-earnings-gold-session" className="tabular-nums whitespace-nowrap">
               {rateCell(earnings?.goldSession)}
             </td>
           </tr>
           <tr>
-            <th scope="row" className="text-left font-normal">
+            <th scope="row" className="text-left font-normal whitespace-nowrap">
               <span className="inline-flex items-center gap-1">
                 {t.liveEarningsRowXp}
                 <HelpTip label={t.liveEarningsXpHelpLabel}>{t.liveEarningsXpHelpBody}</HelpTip>
               </span>
             </th>
-            <td data-testid="live-earnings-xp-current" className="tabular-nums">
+            <td data-testid="live-earnings-xp-current" className="tabular-nums whitespace-nowrap">
               {EM_DASH}
             </td>
-            <td data-testid="live-earnings-xp-10" className="tabular-nums">
+            <td data-testid="live-earnings-xp-10" className="tabular-nums whitespace-nowrap">
               {rateCell(earnings?.xp10)}
             </td>
-            <td data-testid="live-earnings-xp-session" className="tabular-nums">
+            <td data-testid="live-earnings-xp-session" className="tabular-nums whitespace-nowrap">
               {rateCell(earnings?.xpSession)}
             </td>
           </tr>
