@@ -116,7 +116,7 @@ describe('buildLiveFreshness', () => {
     expect(buildLiveFreshness({ kind: 'live', lastFrameAt: 't', sinceAt: 't' })).toEqual({ kind: 'live' });
   });
 
-  it('carries the gap reason, actionable flag and likelyQuarantine through', () => {
+  it('carries the gap reason, actionable flag, sinceAt and likelyQuarantine through', () => {
     const freshness = buildLiveFreshness({
       kind: 'gap',
       reason: 'runtimeUnavailable',
@@ -125,7 +125,13 @@ describe('buildLiveFreshness', () => {
       likelyQuarantine: true,
     });
 
-    expect(freshness).toEqual({ kind: 'gap', reason: 'runtimeUnavailable', actionable: false, likelyQuarantine: true });
+    expect(freshness).toEqual({
+      kind: 'gap',
+      reason: 'runtimeUnavailable',
+      actionable: false,
+      sinceAt: 't',
+      likelyQuarantine: true,
+    });
   });
 
   it('omits likelyQuarantine entirely when the source did not report it — not a false default', () => {

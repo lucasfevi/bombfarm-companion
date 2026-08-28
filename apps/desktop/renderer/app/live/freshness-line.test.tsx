@@ -18,38 +18,38 @@ describe('FreshnessLine — one status line stating live or not, and why', () =>
   });
 
   it('states not-live plus the player-language cause for a non-actionable gap', () => {
-    const html = render({ kind: 'gap', reason: 'clientNotStreaming', actionable: false });
+    const html = render({ kind: 'gap', reason: 'clientNotStreaming', actionable: false, sinceAt: 't' });
     expect(html).toContain(en.liveStatusNotLiveLabel);
     expect(html).toContain(en.liveGapReasonClientNotStreaming);
   });
 
   it('says security software is the likely cause when runtimeUnavailable carries likelyQuarantine', () => {
-    const html = render({ kind: 'gap', reason: 'runtimeUnavailable', actionable: false, likelyQuarantine: true });
+    const html = render({ kind: 'gap', reason: 'runtimeUnavailable', actionable: false, sinceAt: 't', likelyQuarantine: true });
     expect(html).toContain(en.liveGapReasonRuntimeUnavailableQuarantine);
     expect(html).not.toContain(en.liveGapReasonRuntimeUnavailable + '<');
   });
 
   it('uses the plain runtimeUnavailable cause when likelyQuarantine is false or absent', () => {
-    const html = render({ kind: 'gap', reason: 'runtimeUnavailable', actionable: false });
+    const html = render({ kind: 'gap', reason: 'runtimeUnavailable', actionable: false, sinceAt: 't' });
     expect(html).toContain(en.liveGapReasonRuntimeUnavailable);
   });
 });
 
 describe('FreshnessLine — no action that cannot help', () => {
   it('offers no control for a reason the app is already retrying on its own', () => {
-    const html = render({ kind: 'gap', reason: 'detached', actionable: true }, () => {});
+    const html = render({ kind: 'gap', reason: 'detached', actionable: true, sinceAt: 't' }, () => {});
     expect(html).not.toContain('<button');
     expect(html).not.toContain('data-testid="live-freshness-reopen-consent"');
   });
 
   it('offers the read-the-disclosure-again control only for consentMissing, reusing the existing copy', () => {
-    const html = render({ kind: 'gap', reason: 'consentMissing', actionable: true }, () => {});
+    const html = render({ kind: 'gap', reason: 'consentMissing', actionable: true, sinceAt: 't' }, () => {});
     expect(html).toContain('data-testid="live-freshness-reopen-consent"');
     expect(html).toContain(en.consentGateReadAgainAction);
   });
 
   it('does not render the action if no callback was supplied, even for consentMissing', () => {
-    const html = render({ kind: 'gap', reason: 'consentMissing', actionable: true });
+    const html = render({ kind: 'gap', reason: 'consentMissing', actionable: true, sinceAt: 't' });
     expect(html).not.toContain('data-testid="live-freshness-reopen-consent"');
   });
 });

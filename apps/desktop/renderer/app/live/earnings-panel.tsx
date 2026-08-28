@@ -2,6 +2,8 @@ import type { ReactNode } from 'react';
 import type { LiveEarnings } from '@bombfarm/contracts';
 import { Button, formatCompactNumber, Panel, PanelHeader } from '@bombfarm/ui';
 import { sub, useCopy } from '../../lib/copy';
+import { formatCapturedAt } from '../../lib/format';
+import type { ReachedLiveFreshness } from './freshness-line';
 import { formatLiveDurationSeconds } from './format-live-duration';
 
 const EM_DASH = '—';
@@ -17,9 +19,11 @@ function rateCell(value: number | null | undefined): ReactNode {
 }
 
 export function EarningsPanel({
+  freshness,
   earnings,
   onReset,
 }: {
+  freshness: ReachedLiveFreshness;
   earnings: LiveEarnings | null;
   onReset: () => void;
 }) {
@@ -30,7 +34,15 @@ export function EarningsPanel({
   const recentLabel = sub(t.liveEarningsColumnRecent, { minutes: coverageMinutesLabel(coverageSeconds) });
 
   const balance = earnings?.goldBalance ?? null;
-  const currentGold: ReactNode = balance === null ? EM_DASH : formatCompactNumber(balance, 1);
+  // While the stream is live, the balance comes straight from the tick. Otherwise it is the
+  // frozen last-known reading — shown alongside how long it has been frozen for, the same
+  // posture the app already takes with restored data (`formatCapturedAt`).
+  const currentGold: ReactNode =
+    balance === null
+      ? EM_DASH
+      : freshness.kind === 'live'
+        ? formatCompactNumber(balance, 1)
+        : `${formatCompactNumber(balance, 1)} · ${formatCapturedAt(freshness.sinceAt, t)}`;
 
   return (
     <Panel data-testid="live-earnings">

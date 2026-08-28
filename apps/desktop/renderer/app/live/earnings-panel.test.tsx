@@ -2,7 +2,16 @@ import { describe, expect, it } from 'vitest';
 import { createElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import type { LiveEarnings } from '@bombfarm/contracts';
+import type { ReachedLiveFreshness } from './freshness-line';
 import { EarningsPanel } from './earnings-panel';
+
+const LIVE: ReachedLiveFreshness = { kind: 'live' };
+const GAP: ReachedLiveFreshness = {
+  kind: 'gap',
+  reason: 'detached',
+  actionable: true,
+  sinceAt: new Date(Date.now() - 2 * 60_000).toISOString(),
+};
 
 function earnings(overrides: Partial<LiveEarnings> = {}): LiveEarnings {
   return {
@@ -17,8 +26,8 @@ function earnings(overrides: Partial<LiveEarnings> = {}): LiveEarnings {
   };
 }
 
-function html(data: LiveEarnings | null) {
-  return renderToStaticMarkup(createElement(EarningsPanel, { earnings: data, onReset: () => undefined }));
+function html(data: LiveEarnings | null, freshness: ReachedLiveFreshness = LIVE) {
+  return renderToStaticMarkup(createElement(EarningsPanel, { freshness, earnings: data, onReset: () => undefined }));
 }
 
 /** Reads the text content of the one element carrying `data-testid="{testId}"`, regardless of
@@ -42,7 +51,7 @@ describe('EarningsPanel — every cell in every state', () => {
   });
 
   it('no data at all: every rate/balance position is an em dash, never 0', () => {
-    const out = html(null);
+    const out = html(null, GAP);
 
     for (const testId of [
       'live-earnings-gold-current',
@@ -82,6 +91,23 @@ describe('EarningsPanel — the coverage label states its true span, never a cla
   ])('coverageSeconds=%d renders "Last %d min"', (coverageSeconds, minutes) => {
     const out = html(earnings({ coverageSeconds }));
     expect(cellText(out, 'live-earnings-column-recent')).toBe(`Last ${String(minutes)} min`);
+  });
+});
+
+describe('EarningsPanel — current gold and its age', () => {
+  it('live: shows the tick balance, with no age attached', () => {
+    const out = html(earnings({ goldBalance: 42 }), LIVE);
+    expect(cellText(out, 'live-earnings-gold-current')).toBe('42');
+  });
+
+  it('stale: shows the last known balance together with a rendered age', () => {
+    const out = html(earnings({ goldBalance: 42 }), GAP);
+    expect(cellText(out, 'live-earnings-gold-current')).toBe('42 · 2m ago');
+  });
+
+  it('no data: an em dash, never a stale reading pinned to a fabricated age', () => {
+    const out = html(null, GAP);
+    expect(cellText(out, 'live-earnings-gold-current')).toBe('—');
   });
 });
 

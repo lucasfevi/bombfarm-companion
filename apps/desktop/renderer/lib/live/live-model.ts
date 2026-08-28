@@ -67,6 +67,9 @@ export type LiveFreshness =
       readonly reason: LiveGapReason;
       readonly actionable: boolean;
       readonly likelyQuarantine?: boolean;
+      /** When this gap began — the age of any figure the Live screen freezes for the duration of
+       *  the gap (e.g. the last known gold balance). */
+      readonly sinceAt: string;
     };
 
 export const LOADING_LIVE_FRESHNESS: LiveFreshness = { kind: 'loading' };
@@ -148,6 +151,7 @@ export function buildLiveFreshness(currency: LiveCurrency): LiveFreshness {
     kind: 'gap',
     reason: currency.reason,
     actionable: currency.actionable,
+    sinceAt: currency.sinceAt,
     ...(currency.likelyQuarantine !== undefined ? { likelyQuarantine: currency.likelyQuarantine } : {}),
   };
 }

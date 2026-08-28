@@ -41,7 +41,7 @@ export function LivePanel({
   return (
     <div data-testid="live-panel" className="flex flex-col gap-4">
       <FreshnessLine freshness={freshness} onReopenConsent={onReopenConsent} />
-      <EarningsPanel earnings={earnings} onReset={onResetEarnings} />
+      <EarningsPanel freshness={freshness} earnings={earnings} onReset={onResetEarnings} />
       <Panel data-testid="live-heroes">
         <PanelHeader title={t.liveHeroesTitle} />
         <div className="flex flex-col gap-4">

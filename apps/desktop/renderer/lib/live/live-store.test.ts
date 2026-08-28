@@ -366,7 +366,7 @@ describe('createLiveStore — account:changed triggers the slow re-fetch', () =>
     await flushMicrotasks();
 
     // The currency event landed first and must survive the racing bootstrap.
-    expect(store.getModel().freshness).toEqual({ kind: 'gap', reason: 'detached', actionable: false });
+    expect(store.getModel().freshness).toEqual({ kind: 'gap', reason: 'detached', actionable: false, sinceAt: 't' });
 
     emitAccountChanged();
     resolveNextGet(liveView());
