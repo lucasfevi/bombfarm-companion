@@ -198,3 +198,61 @@ describe('EarningsFold: per-tick phase', () => {
     expect(xpTotal).toBeCloseTo(expectedXp, 6);
   });
 });
+
+describe('EarningsFold: 10-minute rolling window', () => {
+  it('yields null, never 0 or NaN, when no streamed time has accrued yet', () => {
+    const fold = makeFold();
+    expect(fold.gold10).toBeNull();
+    expect(fold.xp10).toBeNull();
+    expect(fold.goldSession).toBeNull();
+    expect(fold.xpSession).toBeNull();
+    expect(fold.coverageSeconds).toBe(0);
+  });
+
+  it('evicts a bucket once it ages past 10 real minutes, shrinking coverage', () => {
+    const clock = makeClock();
+    const fold = makeFold({ now: clock.now });
+    fold.consumeTick(baseTick({ loot: [{ cell: 0, gold: 100 }] }), 1);
+    clock.advance(1_000);
+    fold.consumeTick(baseTick({}), 2);
+    const coverageJustAfter = fold.coverageSeconds;
+    expect(coverageJustAfter).toBeGreaterThan(0);
+    expect(fold.gold10).toBeGreaterThan(0);
+
+    clock.advance(10 * 60 * 1000 + 1_000);
+    fold.consumeTick(baseTick({}), 3);
+
+    // The only gold-bearing bucket aged out; what remains is just the bucket this very tick
+    // started, which streamed a capped 2 seconds and paid out nothing.
+    expect(fold.gold10).toBe(0);
+    expect(fold.coverageSeconds).toBeLessThan(coverageJustAfter);
+  });
+
+  it('a gap smaller than the 10-minute window evicts nothing', () => {
+    const clock = makeClock();
+    const fold = makeFold({ now: clock.now });
+    fold.consumeTick(baseTick({ loot: [{ cell: 0, gold: 100 }] }), 1);
+    clock.advance(1_000);
+    fold.consumeTick(baseTick({}), 2);
+    const coverageBefore = fold.coverageSeconds;
+
+    clock.advance(5 * 60 * 1000);
+    fold.consumeTick(baseTick({}), 3);
+
+    expect(fold.gold10).not.toBeNull();
+    expect(fold.gold10).toBeGreaterThan(0);
+    expect(fold.coverageSeconds).toBeGreaterThan(coverageBefore);
+  });
+
+  it('never lets the bucket ring grow past its capacity, even across a long session with no window read in between', () => {
+    const clock = makeClock();
+    const fold = makeFold({ now: clock.now });
+    const totalSeconds = 2 * 60 * 60;
+    for (let second = 0; second < totalSeconds; second += 1) {
+      fold.consumeTick(baseTick({ loot: [{ cell: 0, gold: 1 }] }), second + 1);
+      clock.advance(1_000);
+    }
+
+    expect(fold.coverageSeconds).toBeLessThanOrEqual(601);
+  });
+});

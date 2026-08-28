@@ -17,6 +17,20 @@ const MS_PER_HOUR = 3_600_000;
  *  never the whole gap, so a rate computed across it does not collapse toward zero. */
 export const MAX_TICK_GAP_MS = 2_000;
 
+const BUCKET_SPAN_MS = 1_000;
+const TEN_MINUTES_MS = 10 * 60 * 1000;
+/** 600 one-second buckets to cover the 10-minute rolling window, plus the one still filling — a
+ *  hard cap so a long session's ring cannot grow without bound even if eviction were ever skipped. */
+const RING_CAPACITY = TEN_MINUTES_MS / BUCKET_SPAN_MS + 1;
+
+interface Bucket {
+  startedAtMs: number;
+  gold: number;
+  props: number;
+  xp: number;
+  streamedMs: number;
+}
+
 export interface EarningsFoldDeps {
   readonly now: () => number;
   readonly xpPerProp: (phase: number) => number;
@@ -42,6 +56,8 @@ export class EarningsFold {
   #xpTotal = 0;
   #streamedMs = 0;
 
+  #buckets: Bucket[] = [];
+
   constructor(deps: EarningsFoldDeps) {
     this.#deps = deps;
   }
@@ -58,23 +74,76 @@ export class EarningsFold {
     const now = this.#deps.now();
     const gapMs = this.#lastTickAt === null ? 0 : now - this.#lastTickAt;
     this.#lastTickAt = now;
-    this.#streamedMs += Math.max(0, Math.min(gapMs, MAX_TICK_GAP_MS));
+    const streamedDelta = Math.max(0, Math.min(gapMs, MAX_TICK_GAP_MS));
+    this.#streamedMs += streamedDelta;
+
+    const bucket = this.#bucketFor(now);
+    bucket.streamedMs += streamedDelta;
 
     let propsThisTick = 0;
     for (const pop of tick.loot ?? []) {
       if (pop.gold === undefined || !Number.isFinite(pop.gold)) continue;
       this.#goldTotal += pop.gold;
+      bucket.gold += pop.gold;
       propsThisTick += 1;
     }
+    bucket.props += propsThisTick;
 
     if (propsThisTick > 0 && tick.phase !== undefined) {
-      this.#xpTotal += propsThisTick * this.#deps.xpPerProp(tick.phase) * normalizedXpMult(xpMult);
+      const xp = propsThisTick * this.#deps.xpPerProp(tick.phase) * normalizedXpMult(xpMult);
+      this.#xpTotal += xp;
+      bucket.xp += xp;
     }
+  }
+
+  /** One bucket per wall-clock second, keyed by its own start — reused across every tick that
+   *  lands in the same second, appended for the first tick of a new one. Capacity is enforced here
+   *  rather than only by the real-time eviction {@link #windowBuckets} does, so the ring is bounded
+   *  even across a session long enough that eviction alone would not have caught up yet. */
+  #bucketFor(now: number): Bucket {
+    const startedAtMs = Math.floor(now / BUCKET_SPAN_MS) * BUCKET_SPAN_MS;
+    const last = this.#buckets[this.#buckets.length - 1];
+    if (last && last.startedAtMs === startedAtMs) return last;
+
+    const bucket: Bucket = { startedAtMs, gold: 0, props: 0, xp: 0, streamedMs: 0 };
+    this.#buckets.push(bucket);
+    if (this.#buckets.length > RING_CAPACITY) this.#buckets.shift();
+    return bucket;
+  }
+
+  /** Evicts by real time, not streamed time — a long real-world break ages a bucket out on its own
+   *  even though no tick has arrived to observe it, which is what lets {@link coverageSeconds}
+   *  shrink between ticks and keeps a resumed session from diluting `gold10`/`xp10` with minutes
+   *  the player was not actually away for. */
+  #windowBuckets(): readonly Bucket[] {
+    const cutoff = this.#deps.now() - TEN_MINUTES_MS;
+    while (this.#buckets.length > 0 && this.#buckets[0]!.startedAtMs < cutoff) this.#buckets.shift();
+    return this.#buckets;
+  }
+
+  #windowRate(pick: (bucket: Bucket) => number): number | null {
+    const buckets = this.#windowBuckets();
+    let sum = 0;
+    let streamedMs = 0;
+    for (const bucket of buckets) {
+      sum += pick(bucket);
+      streamedMs += bucket.streamedMs;
+    }
+    if (streamedMs === 0) return null;
+    return (sum / streamedMs) * MS_PER_HOUR;
   }
 
   #sessionRate(total: number): number | null {
     if (this.#streamedMs === 0) return null;
     return (total / this.#streamedMs) * MS_PER_HOUR;
+  }
+
+  get gold10(): number | null {
+    return this.#windowRate((bucket) => bucket.gold);
+  }
+
+  get xp10(): number | null {
+    return this.#windowRate((bucket) => bucket.xp);
   }
 
   get goldSession(): number | null {
@@ -83,6 +152,15 @@ export class EarningsFold {
 
   get xpSession(): number | null {
     return this.#sessionRate(this.#xpTotal);
+  }
+
+  /** The real-time span the surviving buckets actually cover, so the UI can say what the 10-minute
+   *  figure really represents instead of always claiming a full 10 minutes. */
+  get coverageSeconds(): number {
+    const buckets = this.#windowBuckets();
+    const oldest = buckets[0];
+    if (!oldest) return 0;
+    return (this.#deps.now() - oldest.startedAtMs) / 1000;
   }
 
   get sessionSeconds(): number {
