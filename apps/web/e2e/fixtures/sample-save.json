@@ -24,15 +24,15 @@
         "luck": 0.0429471685082873
       },
       "stats": {
-        "dmg": 1470.4,
-        "energia": 836.4,
+        "dmg": 1093.05471100747,
+        "energia": 627.3000000000001,
         "speed": 50.3,
-        "crit_chance": 0.127,
-        "crit_dmg": 1.6236,
-        "penetration": 1.1,
-        "cooldown_reduction": 0.0314,
+        "crit_chance": 0.09670783654146835,
+        "crit_dmg": 1.5871570614843733,
+        "penetration": 0.4796511627906977,
+        "cooldown_reduction": 0.023549999999999995,
         "power": 13133.6,
-        "luck": 0.0995
+        "luck": 0.0715637258287293
       }
     },
     {
@@ -60,8 +60,8 @@
         "dmg": 150.5,
         "energia": 202.3,
         "speed": 49.7,
-        "crit_chance": 0.1005,
-        "crit_dmg": 1.547,
+        "crit_chance": 0.2957588868363141,
+        "crit_dmg": 1.6534528814285916,
         "penetration": 1.53,
         "cooldown_reduction": 0.0068,
         "power": 996.2
@@ -87,13 +87,13 @@
         "luck": 0
       },
       "stats": {
-        "dmg": 420,
+        "dmg": 268.4066156717534,
         "energia": 310,
         "speed": 48.5,
-        "crit_chance": 0.06,
-        "crit_dmg": 1.5,
-        "penetration": 65,
-        "cooldown_reduction": 0.02,
+        "crit_chance": 0.05222012668234047,
+        "crit_dmg": 1.6141602769219299,
+        "penetration": 64.0553633217993,
+        "cooldown_reduction": 0.020524591760000002,
         "power": 2500
       }
     }

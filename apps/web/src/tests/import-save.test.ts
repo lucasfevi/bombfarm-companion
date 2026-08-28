@@ -226,6 +226,16 @@ function baseSave() {
         abilities: [{ code: 'ponta_diamante', level: 10, max: 10, slot: 5 }],
         // BSPW5-04: birth_stats + stats are self-consistent at zero spent points
         // (stat_points_available 30 == level -> budget 0), same derivation as Cora above.
+        //
+        // RE-DERIVED 2026-08-28 (issue #206). The `stats` block below was computed under an older
+        // sheet model, and today's inversion recovered 23 points against her budget of ZERO — so
+        // the importer blocked her, and the AC-11 case asserting she is NOT blocked had to be
+        // disabled. Recomputed by feeding `composeSheetFromBirth` this exact birth/level/stars/
+        // loadout/tree with an all-zero point vector, then converting back to save units
+        // (AD-BSP-19a). Four values moved and four did not: `energia`, `speed`,
+        // `cooldown_reduction` and `luck` are byte-identical, which is the useful negative — the
+        // drift was in the attack level curve, the crit-chance and crit-damage tree terms, and
+        // Ponta de Diamante's penetration, and nowhere else.
         stat_points_available: 30,
         birth_stats: {
           dmg: 70,
@@ -238,12 +248,12 @@ function baseSave() {
           luck: 0.02,
         },
         stats: {
-          dmg: 449.2676662818946,
+          dmg: 297.67428195364795,
           energia: 182.69491524,
           speed: 45.196223468,
-          crit_chance: 0.0792547431075,
-          crit_dmg: 1.598076923,
-          penetration: 6.935999999999999,
+          crit_chance: 0.0681667431075,
+          crit_dmg: 1.696153846,
+          penetration: 6.6,
           cooldown_reduction: 0.015,
           power: 2500,
           luck: 0.0594647275,
@@ -676,20 +686,7 @@ describe('parseSaveFile', () => {
     expect(Object.keys(weird.record.abilities)).toHaveLength(0);
   });
 
-  /**
-   * STILL DISABLED, and the reason is now known precisely (issue #206). This is the one entry in
-   * the F8 worklist that is NOT about a dated capture: `baseSave()` is synthetic, and hero 1004
-   * (Brenna, level 30, `stat_points_available: 30`, so a budget of exactly 0) carries a `stats`
-   * block derived under an older sheet model. Today's inversion recovers 23 points against that
-   * zero budget, so the importer blocks her — measured, not assumed.
-   *
-   * Re-deriving her `stats` from `composeSheetFromBirth` at zero points is the fix, and it is
-   * mechanical, but it is a fixture-derivation job rather than the regime judgement the rest of
-   * this worklist needed, so it is left for whoever regenerates the synthetic saves rather than
-   * folded in here. Hero 1002 (Lorne) is on the same edge — he imports, but with a
-   * closest-integer-allocation issue that says the same thing more quietly.
-   */
-  it.skip('AC-11: a save with one bad item def_id yields blocked === true for that hero and false for the rest', () => {
+  it('AC-11: a save with one bad item def_id yields blocked === true for that hero and false for the rest', () => {
     const { candidates } = parseSaveFile(baseSave(), []);
     const weird = candidates.find((c) => c.sourceId === '1003')!;
     expect(weird.blocked).toBe(true);

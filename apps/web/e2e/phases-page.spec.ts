@@ -47,7 +47,7 @@ test.describe('Phases page', () => {
     expect(view?.phase).toBe(151);
   });
 
-  test.skip('import from the shell refreshes phases roster intel', async ({ page }) => {
+  test('import from the shell refreshes phases roster intel', async ({ page }) => {
     await seedLocalStorage(page, { heroes: [], lang: 'en' });
     await page.goto('/farm');
 

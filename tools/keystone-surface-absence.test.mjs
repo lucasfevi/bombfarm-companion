@@ -216,7 +216,7 @@ const CRIT_DMG_MULT_MAP = {
   'apps/web/src/tests/storage-stat-points-available-compat.test.ts': [104],
   // +12 (line numbers only) from the MFR-06 repurpose and the skip-counting fix's explanatory
   // comments above both hits. Count and kind unchanged.
-  'tools/fixture-corpus-parity.test.mjs': [223, 275],
+  'tools/fixture-corpus-parity.test.mjs': [179, 231],
   // Self-map. The last four shifted +3 (line numbers only) when the account-shared entry above
   // gained its three-line explanation; count and kind are unchanged.
   // Line numbers only — the House-ceiling regression repair (PR #86 finding, house.ts:38) added

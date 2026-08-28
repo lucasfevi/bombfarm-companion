@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test';
-import { teamPlanFixtureSeed } from './fixtures/team-plan-seed';
+import { teamPlanFixtureSeed, teamPlanRichSeed } from './fixtures/team-plan-seed';
 import { seedLocalStorage } from './fixtures/seed';
 import {
   clickOptimize,
@@ -42,8 +42,11 @@ test.describe('Team plan optimize run', () => {
     await expect(page.getByRole('heading', { name: /^Search summary$/i, level: 2 })).toHaveCount(1);
   });
 
-  test.skip('budget exhausted shows truncation notice', async ({ page }) => {
-    await seedLocalStorage(page, teamPlanFixtureSeed('en'));
+  // The RICH seed: truncation needs a search big enough for a cap of 5 to actually cut it short.
+  // The structural seed's three gearless heroes finish inside that budget, so the notice never
+  // appeared and this case was disabled (issue #206).
+  test('budget exhausted shows truncation notice', async ({ page }) => {
+    await seedLocalStorage(page, teamPlanRichSeed('en'));
     await setE2eMaxEvaluations(page, 5);
     await gotoTeamPlan(page);
     await clickOptimize(page);
