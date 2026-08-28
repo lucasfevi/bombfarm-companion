@@ -54,18 +54,18 @@ describe('EarningsFold: sequence guard', () => {
   it('counts a repeated tick (same sequence) exactly once', () => {
     const clock = makeClock();
     const fold = makeFold({ now: clock.now });
-    fold.consumeTick(baseTick({ loot: [{ cell: 0, gold: 100 }] }), 1);
+    fold.consumeTick(baseTick({ loot: [{ cell: 0, gold: 100 }] }), 1, undefined);
     clock.advance(1_000);
-    fold.consumeTick(baseTick({ loot: [{ cell: 0, gold: 100 }] }), 1);
+    fold.consumeTick(baseTick({ loot: [{ cell: 0, gold: 100 }] }), 1, undefined);
     clock.advance(1_000);
-    fold.consumeTick(baseTick({}), 2);
+    fold.consumeTick(baseTick({}), 2, undefined);
 
     // Only one of the two sequence-1 pushes should have landed.
     const singleClock = makeClock();
     const singleFold = makeFold({ now: singleClock.now });
-    singleFold.consumeTick(baseTick({ loot: [{ cell: 0, gold: 100 }] }), 1);
+    singleFold.consumeTick(baseTick({ loot: [{ cell: 0, gold: 100 }] }), 1, undefined);
     singleClock.advance(2_000);
-    singleFold.consumeTick(baseTick({}), 2);
+    singleFold.consumeTick(baseTick({}), 2, undefined);
 
     expect(fold.goldSession).not.toBeNull();
     expect(fold.goldSession).toBe(singleFold.goldSession);
@@ -74,17 +74,17 @@ describe('EarningsFold: sequence guard', () => {
   it('ignores an out-of-order tick (a lower sequence than already consumed)', () => {
     const clock = makeClock();
     const fold = makeFold({ now: clock.now });
-    fold.consumeTick(baseTick({ loot: [{ cell: 0, gold: 100 }] }), 5);
+    fold.consumeTick(baseTick({ loot: [{ cell: 0, gold: 100 }] }), 5, undefined);
     clock.advance(1_000);
-    fold.consumeTick(baseTick({ loot: [{ cell: 0, gold: 999 }] }), 3);
+    fold.consumeTick(baseTick({ loot: [{ cell: 0, gold: 999 }] }), 3, undefined);
     clock.advance(1_000);
-    fold.consumeTick(baseTick({}), 6);
+    fold.consumeTick(baseTick({}), 6, undefined);
 
     const expectedClock = makeClock();
     const expected = makeFold({ now: expectedClock.now });
-    expected.consumeTick(baseTick({ loot: [{ cell: 0, gold: 100 }] }), 5);
+    expected.consumeTick(baseTick({ loot: [{ cell: 0, gold: 100 }] }), 5, undefined);
     expectedClock.advance(2_000);
-    expected.consumeTick(baseTick({}), 6);
+    expected.consumeTick(baseTick({}), 6, undefined);
 
     expect(fold.goldSession).not.toBeNull();
     expect(fold.goldSession).toBe(expected.goldSession);
@@ -96,15 +96,15 @@ describe('EarningsFold: streamed clock', () => {
     const clock = makeClock();
     const fold = makeFold({ now: clock.now });
 
-    fold.consumeTick(baseTick({ loot: [{ cell: 0, gold: 3_600_000 }] }), 1);
+    fold.consumeTick(baseTick({ loot: [{ cell: 0, gold: 3_600_000 }] }), 1, undefined);
     clock.advance(1_000);
-    fold.consumeTick(baseTick({ idle: true }), 2);
+    fold.consumeTick(baseTick({ idle: true }), 2, undefined);
     const rateAfterOneSecond = fold.goldSession;
     expect(rateAfterOneSecond).not.toBeNull();
     expect(fold.sessionSeconds).toBeGreaterThan(0);
 
     clock.advance(9_000);
-    fold.consumeTick(baseTick({ idle: true }), 3);
+    fold.consumeTick(baseTick({ idle: true }), 3, undefined);
     const rateAfterTenSeconds = fold.goldSession;
 
     expect(rateAfterTenSeconds).not.toBeNull();
@@ -115,14 +115,14 @@ describe('EarningsFold: streamed clock', () => {
     const clock = makeClock();
     const fold = makeFold({ now: clock.now });
 
-    fold.consumeTick(baseTick({ loot: [{ cell: 0, gold: 1_000 }] }), 1);
+    fold.consumeTick(baseTick({ loot: [{ cell: 0, gold: 1_000 }] }), 1, undefined);
     clock.advance(100);
-    fold.consumeTick(baseTick({}), 2);
+    fold.consumeTick(baseTick({}), 2, undefined);
     const secondsBeforeGap = fold.sessionSeconds;
 
     const gapMs = 5 * 60 * 1000;
     clock.advance(gapMs);
-    fold.consumeTick(baseTick({}), 3);
+    fold.consumeTick(baseTick({}), 3, undefined);
 
     expect(fold.sessionSeconds).toBeCloseTo(secondsBeforeGap + MAX_TICK_GAP_MS / 1000, 6);
 
@@ -136,19 +136,19 @@ describe('EarningsFold: streamed clock', () => {
 
 /** Feeds one earning tick, then a follow-up empty tick a second later so `streamedMs` is nonzero
  *  and `xpSession`/`goldSession` report a real rate instead of `null`. */
-function foldAfterOneEarningTick(deps: Partial<EarningsFoldDeps>, tick: LiveTick, xpMult?: number): EarningsFold {
+function foldAfterOneEarningTick(deps: Partial<EarningsFoldDeps>, tick: LiveTick, xpMult: number | undefined): EarningsFold {
   const clock = makeClock();
   const fold = makeFold({ ...deps, now: clock.now });
   fold.consumeTick(tick, 1, xpMult);
   clock.advance(1_000);
-  fold.consumeTick(baseTick({}), 2);
+  fold.consumeTick(baseTick({}), 2, undefined);
   return fold;
 }
 
 describe('EarningsFold: xpMult normalization', () => {
   it('treats an absent xpMult as 1', () => {
     const tick = baseTick({ phase: 1, loot: [{ cell: 0, gold: 1 }] });
-    const withImplicitOne = foldAfterOneEarningTick({ xpPerProp: () => 10 }, tick);
+    const withImplicitOne = foldAfterOneEarningTick({ xpPerProp: () => 10 }, tick, undefined);
     const explicit = foldAfterOneEarningTick({ xpPerProp: () => 10 }, tick, 1);
     expect(withImplicitOne.xpSession).not.toBeNull();
     expect(withImplicitOne.xpSession).toBe(explicit.xpSession);
@@ -184,9 +184,10 @@ describe('EarningsFold: payout parsing', () => {
         ],
       }),
       1,
+      undefined,
     );
     clock.advance(1_000);
-    fold.consumeTick(baseTick({}), 2);
+    fold.consumeTick(baseTick({}), 2, undefined);
 
     expect(fold.goldSession).not.toBeNull();
     expect(Number.isNaN(fold.goldSession)).toBe(false);
@@ -194,9 +195,9 @@ describe('EarningsFold: payout parsing', () => {
 
     const expectedClock = makeClock();
     const expected = makeFold({ now: expectedClock.now });
-    expected.consumeTick(baseTick({ phase: 1, loot: [{ cell: 2, gold: 500 }] }), 1);
+    expected.consumeTick(baseTick({ phase: 1, loot: [{ cell: 2, gold: 500 }] }), 1, undefined);
     expectedClock.advance(1_000);
-    expected.consumeTick(baseTick({}), 2);
+    expected.consumeTick(baseTick({}), 2, undefined);
     expect(fold.goldSession).toBe(expected.goldSession);
   });
 });
@@ -207,11 +208,11 @@ describe('EarningsFold: per-tick phase', () => {
     const clock = makeClock();
     const fold = makeFold({ xpPerProp, now: clock.now });
 
-    fold.consumeTick(baseTick({ phase: 1, loot: [{ cell: 0, gold: 1 }] }), 1);
+    fold.consumeTick(baseTick({ phase: 1, loot: [{ cell: 0, gold: 1 }] }), 1, undefined);
     clock.advance(1_000);
-    fold.consumeTick(baseTick({ phase: 2, loot: [{ cell: 0, gold: 1 }] }), 2);
+    fold.consumeTick(baseTick({ phase: 2, loot: [{ cell: 0, gold: 1 }] }), 2, undefined);
     clock.advance(1_000);
-    fold.consumeTick(baseTick({}), 3);
+    fold.consumeTick(baseTick({}), 3, undefined);
 
     const expectedXp = 1 * 10 * 1 + 1 * 100 * 1;
     expect(fold.xpSession).not.toBeNull();
@@ -234,15 +235,15 @@ describe('EarningsFold: 10-minute rolling window', () => {
   it('evicts a bucket once it ages past 10 real minutes, shrinking coverage', () => {
     const clock = makeClock();
     const fold = makeFold({ now: clock.now });
-    fold.consumeTick(baseTick({ loot: [{ cell: 0, gold: 100 }] }), 1);
+    fold.consumeTick(baseTick({ loot: [{ cell: 0, gold: 100 }] }), 1, undefined);
     clock.advance(1_000);
-    fold.consumeTick(baseTick({}), 2);
+    fold.consumeTick(baseTick({}), 2, undefined);
     const coverageJustAfter = fold.coverageSeconds;
     expect(coverageJustAfter).toBeGreaterThan(0);
     expect(fold.gold10).toBeGreaterThan(0);
 
     clock.advance(10 * 60 * 1000 + 1_000);
-    fold.consumeTick(baseTick({}), 3);
+    fold.consumeTick(baseTick({}), 3, undefined);
 
     // The only gold-bearing bucket aged out; what remains is just the bucket this very tick
     // started, which streamed a capped 2 seconds and paid out nothing.
@@ -253,13 +254,13 @@ describe('EarningsFold: 10-minute rolling window', () => {
   it('a gap smaller than the 10-minute window evicts nothing', () => {
     const clock = makeClock();
     const fold = makeFold({ now: clock.now });
-    fold.consumeTick(baseTick({ loot: [{ cell: 0, gold: 100 }] }), 1);
+    fold.consumeTick(baseTick({ loot: [{ cell: 0, gold: 100 }] }), 1, undefined);
     clock.advance(1_000);
-    fold.consumeTick(baseTick({}), 2);
+    fold.consumeTick(baseTick({}), 2, undefined);
     const coverageBefore = fold.coverageSeconds;
 
     clock.advance(5 * 60 * 1000);
-    fold.consumeTick(baseTick({}), 3);
+    fold.consumeTick(baseTick({}), 3, undefined);
 
     expect(fold.gold10).not.toBeNull();
     expect(fold.gold10).toBeGreaterThan(0);
@@ -271,7 +272,7 @@ describe('EarningsFold: 10-minute rolling window', () => {
     const fold = makeFold({ now: clock.now });
     const totalSeconds = 2 * 60 * 60;
     for (let second = 0; second < totalSeconds; second += 1) {
-      fold.consumeTick(baseTick({ loot: [{ cell: 0, gold: 1 }] }), second + 1);
+      fold.consumeTick(baseTick({ loot: [{ cell: 0, gold: 1 }] }), second + 1, undefined);
       clock.advance(1_000);
     }
 
@@ -330,9 +331,9 @@ describe('EarningsFold: session lifecycle', () => {
   it('reset control: zeroes session totals and the session clock, but keeps the 10-minute window', () => {
     const clock = makeClock();
     const fold = makeFold({ now: clock.now });
-    fold.consumeTick(baseTick({ phase: 1, loot: [{ cell: 0, gold: 100 }] }), 1);
+    fold.consumeTick(baseTick({ phase: 1, loot: [{ cell: 0, gold: 100 }] }), 1, undefined);
     clock.advance(1_000);
-    fold.consumeTick(baseTick({}), 2);
+    fold.consumeTick(baseTick({}), 2, undefined);
     expect(fold.goldSession).not.toBeNull();
     const gold10BeforeReset = fold.gold10;
     const coverageBeforeReset = fold.coverageSeconds;
@@ -350,9 +351,9 @@ describe('EarningsFold: session lifecycle', () => {
   it('account change: zeroes session totals, the session clock, AND clears the 10-minute window', () => {
     const clock = makeClock();
     const fold = makeFold({ now: clock.now });
-    fold.consumeTick(baseTick({ phase: 1, loot: [{ cell: 0, gold: 100 }] }), 1);
+    fold.consumeTick(baseTick({ phase: 1, loot: [{ cell: 0, gold: 100 }] }), 1, undefined);
     clock.advance(1_000);
-    fold.consumeTick(baseTick({}), 2);
+    fold.consumeTick(baseTick({}), 2, undefined);
     expect(fold.gold10).not.toBeNull();
 
     fold.reset('accountChange');
@@ -372,17 +373,17 @@ describe('EarningsFold: session lifecycle', () => {
 
     // Same wave both times, so the guard does not skip the diff — but a payout claims a
     // destruction the grid never confirms (the cell stays occupied), so the counts diverge.
-    fold.consumeTick({ heroes: [], wave: 1, kinds: [0] }, 1);
+    fold.consumeTick({ heroes: [], wave: 1, kinds: [0] }, 1, undefined);
     clock.advance(100);
-    fold.consumeTick({ heroes: [], wave: 1, kinds: [0], loot: [{ cell: 0, gold: 100 }] }, 2);
+    fold.consumeTick({ heroes: [], wave: 1, kinds: [0], loot: [{ cell: 0, gold: 100 }] }, 2, undefined);
     expect(warn).toHaveBeenCalledTimes(1);
 
     fold.reset('reset');
     warn.mockClear();
 
-    fold.consumeTick({ heroes: [], wave: 10, kinds: [0] }, 3);
+    fold.consumeTick({ heroes: [], wave: 10, kinds: [0] }, 3, undefined);
     clock.advance(100);
-    fold.consumeTick({ heroes: [], wave: 10, kinds: [0], loot: [{ cell: 0, gold: 100 }] }, 4);
+    fold.consumeTick({ heroes: [], wave: 10, kinds: [0], loot: [{ cell: 0, gold: 100 }] }, 4, undefined);
     expect(warn).toHaveBeenCalledTimes(1);
   });
 });

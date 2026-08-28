@@ -44,6 +44,11 @@ class FakeTap implements TapHandle {
   }
 }
 
+function requireNumber(value: number | null): number {
+  if (value === null) throw new Error('expected a non-null number');
+  return value;
+}
+
 function createHarness(opts: { readonly log?: LogPort } = {}) {
   const taps: FakeTap[] = [];
   let sequence = 0;
@@ -149,12 +154,20 @@ function heroIdsFromCasaBody(casa: Record<string, unknown>): string[] {
 /** Every hero named in `casa`'s own `heroesList` also gets a minimal roster record, so the
  *  multipliers `LiveSource` resolves for them are never merely absent — matching a real account,
  *  where a rotation body and its roster describe the same heroes. */
-function buildAccountView(casa: Record<string, unknown>): AccountView {
+function buildAccountView(casa: Record<string, unknown>, opts: { readonly skills?: Record<string, unknown> } = {}): AccountView {
   return {
-    payload: { casa, heroes: heroIdsFromCasaBody(casa).map(minimalRosterHero) },
+    payload: {
+      casa,
+      heroes: heroIdsFromCasaBody(casa).map(minimalRosterHero),
+      ...(opts.skills !== undefined ? { skills: opts.skills } : {}),
+    },
     gameRunning: true,
     store: { status: 'ok', reason: null, binding: 'sqlite' },
   };
+}
+
+function skillsWithXpMult(xpMult: number): Record<string, unknown> {
+  return { totals: { xp_mult: xpMult } };
 }
 
 /** Every validated field present except whatever `extra` overrides, so a test can isolate exactly
@@ -950,5 +963,42 @@ describe('LiveSource: earnings', () => {
     expect(after?.sessionSeconds).toBe(0);
     expect(after?.gold10).toBe(before?.gold10);
     expect(after?.goldBalance).toBe(before?.goldBalance);
+  });
+
+  it('an ingested skills.totals.xp_mult reaches the published xp10/xpSession, scaling them exactly', () => {
+    function xpAfterOneEarningTick(xpMult: number | undefined): { readonly xp10: number; readonly xpSession: number } {
+      const { source, pushFrame, goLive } = createHarness();
+      source.start();
+      if (xpMult !== undefined) {
+        source.ingestRotation(buildAccountView(bodyWithHeroes([]), { skills: skillsWithXpMult(xpMult) }));
+      }
+      goLive();
+      pushFrame({ heroes: [], phase: 1, loot: [{ cell: 0, gold: 1 }] });
+      pushFrame({ heroes: [], phase: 1 });
+
+      const earnings = source.getView().earnings;
+      return { xp10: requireNumber(earnings?.xp10 ?? null), xpSession: requireNumber(earnings?.xpSession ?? null) };
+    }
+
+    const baseline = xpAfterOneEarningTick(undefined);
+    const doubled = xpAfterOneEarningTick(2);
+
+    expect(baseline.xpSession).toBeGreaterThan(0);
+    expect(doubled.xpSession).toBe(baseline.xpSession * 2);
+    expect(doubled.xp10).toBe(baseline.xp10 * 2);
+  });
+
+  it('an absent or zero xp_mult still normalizes to 1, never zeroing the published XP figure', () => {
+    const { source, pushFrame, goLive } = createHarness();
+    source.start();
+    source.ingestRotation(buildAccountView(bodyWithHeroes([]), { skills: skillsWithXpMult(0) }));
+    goLive();
+
+    pushFrame({ heroes: [], phase: 1, loot: [{ cell: 0, gold: 1 }] });
+    pushFrame({ heroes: [], phase: 1 });
+
+    const earnings = source.getView().earnings;
+    expect(earnings?.xpSession).not.toBeNull();
+    expect(earnings?.xpSession).not.toBe(0);
   });
 });

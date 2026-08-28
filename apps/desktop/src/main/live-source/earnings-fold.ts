@@ -81,7 +81,7 @@ export class EarningsFold {
    * sequence does not advance past the last one consumed is ignored outright, which is the real
    * defence against the offline replay loop restarting the capture from its first record.
    */
-  consumeTick(tick: LiveTick, sequence: number, xpMult?: number): void {
+  consumeTick(tick: LiveTick, sequence: number, xpMult: number | undefined): void {
     if (sequence <= this.#lastSequence) return;
     this.#lastSequence = sequence;
 

@@ -16,7 +16,7 @@ import type {
   RotationSnapshot,
 } from '@bombfarm/contracts';
 import { isConnectedCurrency, isLiveCurrency, liveGap } from '@bombfarm/contracts';
-import { identifyObservedBody, normalizeRotation } from '@bombfarm/game-api';
+import { identifyObservedBody, isPlainObject, normalizeRotation } from '@bombfarm/game-api';
 import {
   advanceRecoveryClock,
   createInitialFieldCountdownState,
@@ -278,6 +278,17 @@ function fieldHeroesFromRotation(rotation: RotationSnapshot): readonly LiveTickH
     }));
 }
 
+/** `skills.totals.xp_mult` is present even on a read where `casa` did not resolve — the same
+ *  per-section fidelity `import-save.ts` notes for reading its own field-slots figure off `skills`
+ *  rather than `casa` — so it is read unconditionally, never gated on the rotation fold below. */
+function readXpMult(skills: Record<string, unknown> | undefined): number | undefined {
+  if (!isPlainObject(skills)) return undefined;
+  const totals = skills.totals;
+  if (!isPlainObject(totals)) return undefined;
+  const value = totals.xp_mult;
+  return typeof value === 'number' && Number.isFinite(value) ? value : undefined;
+}
+
 export class LiveSource {
   readonly #log: LogPort;
   readonly #now: () => number;
@@ -316,6 +327,9 @@ export class LiveSource {
    *  stays `null` until then too, rather than reporting a rate computed over zero real ticks. */
   #goldBalance: number | null = null;
   #earningsStarted = false;
+  /** The last `skills.totals.xp_mult` seen from {@link ingestRotation}, sticky across a read that
+   *  omits the section — never reset to `undefined` just because one read's fidelity was partial. */
+  #xpMult: number | undefined;
 
   constructor(deps: LiveSourceDeps) {
     this.#log = deps.log ?? NOOP_LOG_PORT;
@@ -424,6 +438,7 @@ export class LiveSource {
    *  the moment this app finished reading it — but is overridable so a caller can prove the
    *  newest-wins rule against {@link ingestObservedRotation} deterministically. */
   ingestRotation(view: AccountView, atMs: number = this.#now()): void {
+    this.#xpMult = readXpMult(view.payload.skills) ?? this.#xpMult;
     if (view.payload.casa === undefined) return;
     const rosterHeroAbilities = extractRosterHeroAbilities(view.payload.heroes);
     this.#applyRotationBody(view.payload.casa, atMs, { rosterRaw: view.payload.heroes, rosterHeroAbilities });
@@ -561,7 +576,7 @@ export class LiveSource {
       this.#currency = event.currency;
       this.#touch();
     } else if (event.type === 'frame') {
-      this.#earningsFold.consumeTick(event.frame.tick, event.frame.sequence);
+      this.#earningsFold.consumeTick(event.frame.tick, event.frame.sequence, this.#xpMult);
       this.#earningsStarted = true;
       if (event.frame.tick.gold !== undefined) this.#goldBalance = event.frame.tick.gold;
       this.#ingestTick(event.frame.tick, Date.parse(event.frame.at));
