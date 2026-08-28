@@ -1,9 +1,9 @@
 /**
  * The optimizer characterization and discrimination suite — proof it does real work, not a
  * hardcoded "dump everything into one stat" that would coincidentally pass every other test.
- * Every literal here is a MEASUREMENT against the committed fixture, re-derived from `design.md`
- * §2.3, never a literal carried over from the PRD's uncommitted capture (design.md §0.1 — those
- * numbers do not reproduce on this corpus and are deliberately absent from this file).
+ * Every literal here is a MEASUREMENT against the committed fixture, never one carried over from
+ * the uncommitted capture the original planning notes used — those numbers do not reproduce on
+ * this corpus and are deliberately absent from this file.
  *
  * Covers: the solver beating both naive builds, the recommended-phase band, and the chest
  * objective reporting a higher chest rate at a different phase than the gold objective.

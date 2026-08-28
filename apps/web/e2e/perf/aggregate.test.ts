@@ -1,5 +1,5 @@
 /**
- * Unit tests for MOD-33 aggregation — derived from spec metric definition + P1-harness AC 9.
+ * Unit tests for aggregation — derived from spec metric definition + P1-harness AC 9.
  */
 import { describe, expect, it } from 'vitest'
 import type { CommitRecord } from './collect-commits'

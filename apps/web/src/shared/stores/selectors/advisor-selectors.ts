@@ -7,7 +7,7 @@ import { selectEffectiveTeamBuffs } from '@/shared/stores/selectors/account-sele
 import type { PlannerStore } from '@/shared/stores/planner-store';
 
 /**
- * Module-level single-entry cache — valid because the planner is client-only (AD-012)
+ * Module-level single-entry cache — valid because the planner is client-only
  * with exactly one store instance. Reset in Vitest via resetAdvisorPipelineCache().
  */
 let advisorPipelineComputeCount = 0;

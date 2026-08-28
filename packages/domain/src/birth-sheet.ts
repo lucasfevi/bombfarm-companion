@@ -1,11 +1,11 @@
 /**
- * AD-BSP-19, as code — the game's own birth → naked → displayed-sheet formula block.
+ * The game's own birth → naked → displayed-sheet formula block, as code.
  *
  * `P = 1 + 0.04 × (level − 1)` (levelPowerMult) · `S = 1 + 0.25 × ★` (starsMult, ★ exempt for speed).
  * Pooled keys (speed, critChance, critDmg, penetration, cdr) fold gear + points + tree `_add`
  * terms into one shared `sharedForward` pool (already `gear/apply.ts`); attack and energy are
- * multiplicative-subtotal shapes; luck's tree term is a flat percentage-point addend
- * (AD-BSP-22). See `docs/architecture.md` ownership rule 2 — pure math, no React.
+ * multiplicative-subtotal shapes; luck's tree term is a flat percentage-point addend.
+ * See `docs/architecture.md` ownership rule 2 — pure math, no React.
  */
 import { levelPowerMult } from './model/combat';
 import { applyPoints } from './gear/apply';
@@ -14,7 +14,7 @@ import type { Loadout, PointAlloc, SheetOtherPct, SheetStats } from './gear/type
 import { ZERO_PTS } from './planner-constants';
 
 /**
- * lv1 ★0 rolls in PLANNER units (AD-BSP-19a already applied — crit chance/luck/CDR are
+ * lv1 ★0 rolls in PLANNER units (already unit-converted — crit chance/luck/CDR are
  * percent, penetration is 1:1, crit dmg is `(x − 1) × 100` excess percentage points).
  * Same shape as {@link SheetStats} deliberately — they are interchangeable at the type
  * level, so unit discipline lives in the save→planner converter and its test, not here.
@@ -23,7 +23,7 @@ export type BirthStats = SheetStats;
 
 /**
  * `skills.totals` in the units the planner store already uses. `luckFlatPct` is wired from
- * the account slice as of Wave 5 (`skills.totals.luck_add × 100`, BSPW5-03).
+ * the account slice as of Wave 5 (`skills.totals.luck_add × 100`).
  */
 export type TreeSheetTotals = {
   /** `dmg_static` — raw multiplier on the attack subtotal. Store: `treeDanoTotal`. */
@@ -39,7 +39,7 @@ export type TreeSheetTotals = {
    * the crit-damage stat point and Golpe Brutal. Store: `treeCritDmg`.
    */
   critDmgPct: number;
-  /** `luck_add × 100` — FLAT percentage points, added after gear and points (AD-BSP-22). */
+  /** `luck_add × 100` — FLAT percentage points, added after gear and points. */
   luckFlatPct: number;
 };
 
@@ -49,11 +49,11 @@ function poolFactor(percent: number): number {
 }
 
 /**
- * Hero + Ability sheet: no gear, no points, no skill tree (DEC-03). Attack scales by
+ * Hero + Ability sheet: no gear, no points, no skill tree. Attack scales by
  * level and stars; energy/critChance/critDmg/penetration/cdr/luck scale by stars only;
  * speed is never star-scaled (level-stars-sheet.md). Pooled keys (those present on
  * {@link SheetOtherPct}) fold in the on-sheet ability contribution multiplicatively;
- * luck takes no `sheetOther` term (AD-BSP-19).
+ * luck takes no `sheetOther` term.
  *
  * Crit damage and crit chance are the exceptions: their on-sheet ability contributions
  * (`sheetOther.critDmgFlat` / `sheetOther.critChanceFlat` — Golpe Brutal and Olho Clínico) are
@@ -93,7 +93,7 @@ export function nakedFromBirth(
  * same base the tree/ability additions already use in `derive.ts`); `energia_add` multiplies
  * the energy subtotal; `dmg_static` multiplies the attack subtotal; `luck_add` and
  * `crit_dmg_add` are flat percentage-point addends. Penetration and cdr receive exactly `0` —
- * `skills.totals` has no node for either today (AD-BSP-22's forward-safety clause).
+ * `skills.totals` has no node for either today (a forward-safety clause).
  *
  * `crit_dmg_add` read percent-of-base until a save carrying a nonzero value settled it: all 15
  * heroes on that account gained the SAME `+8.1730769` percentage points — matching
@@ -138,7 +138,7 @@ export type ComposeSheetFromBirthInput = {
 /**
  * The full birth → displayed-sheet chain: `nakedFromBirth` → `applyPoints` (existing
  * shared pool) → `applySkillTree`. Reuses `applyPoints` rather than reimplementing the
- * pool (DEC-03) — the tree `_add` keys are algebraically additive pool members, so this
+ * pool — the tree `_add` keys are algebraically additive pool members, so this
  * composition is exact through the existing gear/points machinery.
  *
  * Deliberately UNCAPPED — `critChance`/`cdr` can exceed `STAT_CAPS` here even though the

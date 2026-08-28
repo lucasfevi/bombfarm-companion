@@ -37,7 +37,7 @@ const COLUMN_WIDTH_REM: Record<string, number> = {
 
 type Props = {
   rows: readonly FarmRateRow[];
-  /** Grouped rather than two flat props (MOD-17's 8-prop cap left no room once reRankActive
+  /** Grouped rather than two flat props (the 8-prop cap left no room once reRankActive
    *  joined) — the board's own sort state is already this exact shape. */
   sort: { key: FarmSortKey; direction: FarmSortDir };
   onSort: (key: FarmSortKey) => void;

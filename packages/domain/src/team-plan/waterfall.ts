@@ -211,7 +211,7 @@ function heroStatsFromEffective(effective: HeroSheet | undefined): TeamPlanHeroS
     critDmg: effective?.critDmg ?? 0,
     penetration: effective?.penetration ?? 0,
     cdr: effective?.cdr ?? 0,
-    // Luck never reaches HeroSheet / combat (BSP-42, AD-BSP-20) — always 0 on the combat side.
+    // Luck never reaches HeroSheet / combat — always 0 on the combat side.
     luck: 0,
   };
 }

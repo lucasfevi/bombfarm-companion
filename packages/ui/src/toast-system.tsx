@@ -77,7 +77,7 @@ import {
   toastViewportClass,
 } from './toast-system.recipe';
 
-/** Fixed icon per variant — meaning is never carried by color alone (§6, TST-13). */
+/** Fixed icon per variant — meaning is never carried by color alone (§6). */
 const TOAST_VARIANT_ICON = {
   success: 'check-circle',
   error: 'x-circle',
@@ -98,7 +98,7 @@ export type ToastContextValue = {
 
 const ToastContext = createContext<ToastContextValue | null>(null);
 
-/** Throws when called outside `ToastProvider` (TST-11) — mirrors `useTooltipCtx`'s convention. */
+/** Throws when called outside `ToastProvider` — mirrors `useTooltipCtx`'s convention. */
 export function useToast(): ToastContextValue {
   const ctx = useContext(ToastContext);
   if (!ctx) throw new Error('useToast must be used inside a ToastProvider');
@@ -110,8 +110,8 @@ export type ToastProviderProps = {
 };
 
 /**
- * Owns the reducer state and the single `setTimeout` that drives auto-dismiss
- * (TST-11). Render `<ToastViewport />` once anywhere inside the provider tree
+ * Owns the reducer state and the single `setTimeout` that drives auto-dismiss.
+ * Render `<ToastViewport />` once anywhere inside the provider tree
  * to actually display toasts — the provider itself renders only `children`.
  */
 export function ToastProvider({ children }: ToastProviderProps) {
@@ -173,10 +173,10 @@ export type ToastItemProps = {
 
 /**
  * A single toast — pure function of `toast`, no context/portal dependency,
- * so it renders identically via `renderToStaticMarkup` (structural coverage
- * for TST-13/14/15/16). `toast.action` is a single optional object per
+ * so it renders identically via `renderToStaticMarkup` (structural coverage).
+ * `toast.action` is a single optional object per
  * `ToastInput`'s type, not an array — passing more than one action is a
- * compile-time type error (TST-15), not a runtime truncation.
+ * compile-time type error, not a runtime truncation.
  */
 export function ToastItem({ toast, onDismiss, className }: ToastItemProps) {
   const isError = toast.variant === 'error';
@@ -246,7 +246,7 @@ export function ToastItem({ toast, onDismiss, className }: ToastItemProps) {
 /**
  * Renders the visible stack (newest-on-top — `visible` is already
  * newest-first) plus a "+N more" affordance that expands to the full
- * overflow list (TST-12). Portals to `document.body` so a transformed
+ * overflow list. Portals to `document.body` so a transformed
  * ancestor (Motion-driven panels elsewhere in this package) can never trap
  * `position: fixed` toasts inside its own stacking context. Needs a client
  * mount check for `document`; verified via Storybook (`toast-system.stories.tsx`)

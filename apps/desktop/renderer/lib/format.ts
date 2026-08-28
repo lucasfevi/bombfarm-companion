@@ -1,5 +1,5 @@
 /**
- * The one number/date formatter for the renderer (design.md §6, TD-12). MP3 F4 (`AD-054`): every
+ * The one number/date formatter for the renderer (design.md §6). Every
  * formatter now follows the chosen language — this file owns no words of its own. The five
  * relative-age strings and the two short-age suffixes render through `sub()` against copy keys
  * the caller supplies (`en.ts`'s `age*` keys); the number formatters take the locale and resolve
@@ -25,7 +25,7 @@ export function formatAge(staleAgeMs: number, t: AgeCopy): string {
 }
 
 /**
- * Human-relative age of an ISO-8601 `capturedAt` timestamp (MPV-04 — restored data is stamped
+ * Human-relative age of an ISO-8601 `capturedAt` timestamp (restored data is stamped
  * with its capture time, never presented as current). `now` defaults to `Date.now()` and is
  * otherwise injectable for tests.
  */

@@ -1,10 +1,10 @@
 /**
  * Proves the API-assembled payload (mp2-live-account-read, T7) parses through F1's UNCHANGED
- * `parseAccountPayload` at full sheet depth (LAR-08), that a change between two cycles is
- * reflected (LAR-09), that the grade is F1's own `deriveAccountFidelity` and never recomputed
- * here (LAR-16), that a partial payload still delivers and parses every section that resolved
- * (LAR-17), and that an absent `skills` section is refused rather than parsed as a zeroed tree
- * (LAR-10's specific D24 failure).
+ * `parseAccountPayload` at full sheet depth, that a change between two cycles is
+ * reflected, that the grade is F1's own `deriveAccountFidelity` and never recomputed
+ * here, that a partial payload still delivers and parses every section that resolved,
+ * and that an absent `skills` section is refused rather than parsed as a zeroed tree
+ * (D24's specific failure).
  *
  * The fixtures are the real, committed output of `assembleAccountPayload` driven over the real,
  * scrubbed 2026-08-12 capture — see `packages/game-api/scripts/generate-domain-fixtures.mjs`.
@@ -53,7 +53,7 @@ describe('the committed fixtures carry no account identity (D19 — the repo is 
  * matters at this seam: a hero the model cannot invert is REFUSED LOUDLY, with a reason, and
  * never silently dropped from the candidate list or handed on carrying a vector.
  */
-describe('the API-assembled payload parses into ImportCandidates at full sheet depth (LAR-08)', () => {
+describe('the API-assembled payload parses into ImportCandidates at full sheet depth', () => {
   const result = parseAccountPayload(before, []);
 
   it('rejected is null', () => {
@@ -114,7 +114,7 @@ describe('the API-assembled payload parses into ImportCandidates at full sheet d
   });
 });
 
-describe('change detection over the committed before/after pair (LAR-09)', () => {
+describe('change detection over the committed before/after pair', () => {
   const beforeResult = parseAccountPayload(before, []);
   const afterResult = parseAccountPayload(after, []);
 
@@ -153,7 +153,7 @@ describe('change detection over the committed before/after pair (LAR-09)', () =>
   });
 });
 
-describe('a partial payload (one section missing) still grades degraded and still parses every resolved section (LAR-16, LAR-17)', () => {
+describe('a partial payload (one section missing) still grades degraded and still parses every resolved section', () => {
   it('deriveAccountFidelity grades the partial payload degraded, naming the missing section', () => {
     const report = deriveAccountFidelity(partial.fidelity as AccountFidelity);
     expect(report.grade).toBe('degraded');

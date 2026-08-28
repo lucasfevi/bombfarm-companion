@@ -1,19 +1,23 @@
 import { ConsentedSessionRequiredError, RAW, isConsentedSession, type ConsentedSession } from './session.js';
 
 /**
- * The one request function (LAR-13, LAR-23…25). Adapted from the internal automation prototype's
+ * The one request function (one host, HTTPS, GET only; every pacing failure gets a distinct
+ * named status). Adapted from the internal automation prototype's
  * API client — the header set and the 15 s timeout are reused; `FALLBACK_IPS` and the IP-retry
- * loop are deliberately not ported (TD-9, LAR-24).
+ * loop are deliberately not ported (transport failure gets a named status, not an IP fallback).
  *
  * `host`/`method` are literal types so a different value is not expressible at the call site
- * (LAR-13's compile-time half). `isTrustedHttpRequest` is the runtime half of that same
- * invariant — belt-and-suspenders per `AD-025`'s "type AND runtime" shape, exercised directly in
+ * (the one-host/HTTPS/GET-only invariant's compile-time half). `isTrustedHttpRequest` is the
+ * runtime half of that same
+ * invariant — belt-and-suspenders per the illegal-states-unrepresentable rule's "type AND
+ * runtime" shape, exercised directly in
  * `request.test.ts` against a request corrupted through an unsafe cast (the only way a mismatched
  * host could ever reach this module, since `buildHttpRequest` always builds the trusted target).
  *
  * `buildHttpRequest` also runs `isConsentedSession` on its `session` argument before touching the
  * token — the same three-mechanism pattern applied one hop downstream of `grantSession` itself
- * (`AD-025`/`AD-028`): a `ConsentedSession` forged with `as unknown as ConsentedSession` is well
+ * (the same unrepresentable-illegal-states rule, and consent as a capability whose token is
+ * redacted by its type): a `ConsentedSession` forged with `as unknown as ConsentedSession` is well
  * typed at its call site but carries none of `grantSession`'s runtime brand, so it is rejected
  * here rather than sailing through into a fully-formed authenticated request.
  */
@@ -92,7 +96,7 @@ export function buildHttpRequest(
 }
 
 /**
- * Runtime half of LAR-13's host/method invariant — see the module doc comment above. The
+ * Runtime half of the one-host/HTTPS/GET-only invariant — see the module doc comment above. The
  * parameter is typed structurally as `{ host: string; method: string }` rather than `HttpRequest`
  * on purpose: against `HttpRequest`'s literal types this comparison is statically always true,
  * which is exactly the case (a value that bypassed the type system via an unsafe cast) this guard
@@ -118,8 +122,8 @@ function extractRetryHint(body: string): string | null {
   }
 }
 
-/** Maps a raw response into a `RequestOutcome` — every branch names a distinct, closed reason
- *  (LAR-25). Order matters: size, then auth, then cooldown (status OR shape), then generic error,
+/** Maps a raw response into a `RequestOutcome` — every branch names a distinct, closed reason.
+ *  Order matters: size, then auth, then cooldown (status OR shape), then generic error,
  *  then success. */
 function classifyResponse(status: number, body: string): RequestOutcome {
   const bytes = Buffer.byteLength(body, 'utf8');
@@ -174,7 +178,7 @@ export async function sendGet(req: HttpRequest, transport: HttpTransport): Promi
   return classifyResponse(response.status, response.body);
 }
 
-/** The one request function (LAR-13). No `node:https`, no `fetch` — the transport is injected. */
+/** The one request function (one host, HTTPS, GET only). No `node:https`, no `fetch` — the transport is injected. */
 export async function requestGet(
   session: ConsentedSession,
   transport: HttpTransport,

@@ -1,14 +1,14 @@
 /**
- * MP5 F2 (T10, `AD-073`) — the absence guard. Makes MKR-10 and MKR-21 machine-checkable, and is
+ * The absence guard. Makes the src/tests retired-identifier scans machine-checkable, and is
  * the ONLY mechanism that can catch a stale removed-arm property in an untypechecked test file:
  * `packages/domain/tsconfig.typecheck.json` covers six `fidelity-*` files, and esbuild silently
  * drops excess object-literal properties at runtime, so a stale property on the other 53 test
  * files would compile, run, and pass.
  *
- * A literal zero-matches assertion over `packages/domain/tests` is unreachable (MKR-16 forbids
- * editing any fixture, and two carriers under `fixtures/` belong to F3's still-shipping web
+ * A literal zero-matches assertion over `packages/domain/tests` is unreachable (fixtures may
+ * never be edited, and two carriers under `fixtures/` belong to F3's still-shipping web
  * surface; two more are F1's own guard and its manifest, which must name the forbidden keys to
- * forbid them; MP5 F4 adds one more — its own purpose-built rejection fixture, which must contain
+ * forbid them; this feature adds one more — its own purpose-built rejection fixture, which must contain
  * the retired fields verbatim). This suite pins an exact PER-FILE map instead of a bare count — a
  * count-only check would miss a match moving from an allowlisted file to a new one while the sum
  * holds.
@@ -32,19 +32,19 @@ const TESTS_ROOT = join(DOMAIN_ROOT, 'tests');
 const SELF_FILENAME = 'source-surface.test.ts';
 
 /**
- * `packages/domain/src` pattern (AC-10 / MKR-10) — deliberately case-insensitive and singular
- * `keystone`, so it also catches a stale cross-reference to the name of a deleted test file
- * (MKR-31). Includes the bare `critDmgMult` identifier, whose ONLY surviving occurrences are
+ * `packages/domain/src` pattern — deliberately case-insensitive and singular
+ * `keystone`, so it also catches a stale cross-reference to the name of a deleted test file.
+ * Includes the bare `critDmgMult` identifier, whose ONLY surviving occurrences are
  * the pinned 12-line combat pass-through (design §2.5) — everything else naming it was deleted.
  */
 const SRC_PATTERN =
   /keystone|abisso|glass.?cannon|tempo.?dobrado|critDmgMult|crit_dmg_mult|abissoBase|abisso_base/i;
 
 /**
- * `packages/domain/tests` pattern (MKR-21, spec.md P1 AC-3) — the SAME token set MINUS the bare
+ * `packages/domain/tests` pattern — the SAME token set MINUS the bare
  * `critDmgMult` identifier. Every surviving suite legitimately keeps `critDmgMult: 1` /
- * `critDmgMult: mults.critDmgMult` (MKR-22, MKR-26) across many files — that pass-through is
- * combat-layer content, not deleted-arm content, and spec.md's own MKR-21 AC-3 pattern never
+ * `critDmgMult: mults.critDmgMult` across many files — that pass-through is
+ * combat-layer content, not deleted-arm content, and this pattern never
  * included the bare identifier in the first place.
  */
 const TESTS_PATTERN = /keystone|abisso|glass.?cannon|tempo.?dobrado|crit_dmg_mult|abissoBase|abisso_base/i;
@@ -63,9 +63,9 @@ const SKIP_PATTERN = /\b(describe|it|test)\.(skip|todo)\b|\bxit[(]|\bxdescribe[(
 const SKIP_PATTERN_GLOBAL = new RegExp(SKIP_PATTERN.source, 'g');
 
 /**
- * MKR-20 was a HARD ZERO: no skipped test anywhere in this package, ever. It became an exact
- * per-file manifest for one bounded reason — the F8 stale-capture debt — and that debt is now
- * PAID. This package has no skipped test again.
+ * This guard was a HARD ZERO: no skipped test anywhere in this package, ever. It became an exact
+ * per-file manifest for one bounded reason — the stale-capture debt — and that debt is now PAID.
+ * This package has no skipped test again.
  *
  * Committed fixtures captured before the 2026-08-18 patch lost 40-100% of their rosters to the
  * importer's stat-point budget refusal, so 38 assertions here described rosters that no longer
@@ -139,13 +139,13 @@ const SRC_ALLOWLIST: Record<string, number[]> = {
 /**
  * `packages/domain/tests` — five files outside F2's reach, each commented with its owner:
  * - `fixtures/i18n-strings-main.json`, `fixtures/storage-roundtrip-20260729.json`: F3's web
- *   i18n / storage-roundtrip snapshots, living inside `fixtures/`, which MKR-16 forbids editing.
+ *   i18n / storage-roundtrip snapshots, living inside `fixtures/`, which may never be edited.
  * - `fixtures/sheet-math/README.md`: F1's provenance manifest, which must name the forbidden
  *   keys to forbid them.
  * - `fixture-corpus.test.ts`: F1's own corpus guard, whose `FORBIDDEN_KEYS` array must contain
  *   the literal key names to function.
  * - `fixtures/rejection/pre-update-save.json`: F4's own purpose-built rejection fixture
- *   (`MSG-12`/`MSG-13`, `packages/domain/tests/save-acceptance.test.ts`) — it must contain the
+ *   (`packages/domain/tests/save-acceptance.test.ts`) — it must contain the
  *   retired fields verbatim to prove `parseSaveFile` rejects a save shaped like this. Its sibling
  *   `truncated-save.json` carries none of them (an empty `skills.totals`) and needs no entry.
  */
@@ -167,7 +167,7 @@ function matchingLines(absPath: string, pattern: RegExp): number[] {
   return hits;
 }
 
-describe('source-surface — the deleted-arm absence guard (MP5 F2 T10, AD-073)', () => {
+describe('source-surface — the deleted-arm absence guard (T10)', () => {
   const srcFiles = listFiles(SRC_ROOT);
   const testFiles = listFiles(TESTS_ROOT).filter((f) => !f.endsWith(SELF_FILENAME));
 
@@ -176,7 +176,7 @@ describe('source-surface — the deleted-arm absence guard (MP5 F2 T10, AD-073)'
     expect(testFiles.length, `scanned ${TESTS_ROOT}`).toBeGreaterThanOrEqual(50);
   });
 
-  it('packages/domain/src: the pattern matches exactly the pinned per-file, per-line allowlist (MKR-10)', () => {
+  it('packages/domain/src: the pattern matches exactly the pinned per-file, per-line allowlist', () => {
     const actual: Record<string, number[]> = {};
     for (const file of srcFiles) {
       const rel = relative(SRC_ROOT, file).split('\\').join('/');
@@ -193,7 +193,7 @@ describe('source-surface — the deleted-arm absence guard (MP5 F2 T10, AD-073)'
     }
   });
 
-  it('packages/domain/tests: the pattern matches exactly the four allowlisted files, with their exact counts (MKR-21, AD-073)', () => {
+  it('packages/domain/tests: the pattern matches exactly the four allowlisted files, with their exact counts', () => {
     const actual: Record<string, number> = {};
     for (const file of testFiles) {
       const rel = relative(TESTS_ROOT, file).split('\\').join('/');
@@ -210,7 +210,7 @@ describe('source-surface — the deleted-arm absence guard (MP5 F2 T10, AD-073)'
     }
   });
 
-  it('skip directives in packages/domain are exactly the declared F8 manifest (MKR-20)', () => {
+  it('skip directives in packages/domain are exactly the declared F8 manifest', () => {
     const actual: Record<string, number> = {};
     for (const file of [...srcFiles, ...testFiles]) {
       const rel = relative(DOMAIN_ROOT, file).split(sep).join('/');

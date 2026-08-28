@@ -1,7 +1,7 @@
 /**
- * MP3 F4 — MIN-16 (the control is a `@bombfarm/ui` primitive) and MIN-11's surface half (the
- * not-persisted warning). Both locales rendered via `renderToStaticMarkup` (node env, no jsdom —
- * `AD-047`); red state demonstrated for the ignored-`persisted` mutation.
+ * Tests the control-is-a-primitive rule (the control is a `@bombfarm/ui` primitive) and the
+ * not-persisted warning's surface half. Both locales rendered via `renderToStaticMarkup` (node
+ * env, no jsdom); red state demonstrated for the ignored-`persisted` mutation.
  */
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
@@ -11,7 +11,7 @@ import { renderToStaticMarkup } from 'react-dom/server';
 import { CopyProvider } from '../../lib/copy';
 import { LanguageSection } from './language-section';
 
-describe('LanguageSection source — zero bespoke controls of its own (MIN-16, docs/base-ui-first.md)', () => {
+describe('LanguageSection source — zero bespoke controls of its own (docs/base-ui-first.md)', () => {
   // Scans this component's OWN source for a literal, hand-authored <select>/<input>/<button>/
   // <label> — the same genre as planning-guards.test.ts's "No local controls" guard. The rendered
   // HTML necessarily contains a <button>/<label> (Select's Base UI trigger, SettingsRow's own
@@ -30,10 +30,10 @@ describe('LanguageSection source — zero bespoke controls of its own (MIN-16, d
   });
 });
 
-describe('LanguageSection renders SettingsSection -> SettingsRow -> Select, both locales (MIN-16, MIN-01)', () => {
+describe('LanguageSection renders SettingsSection -> SettingsRow -> Select, both locales', () => {
   // Base UI's Select only puts the CURRENTLY SELECTED option's label into static markup — the
   // popup/list is portal-rendered and not part of renderToStaticMarkup's output (no jsdom in
-  // this project, AD-047). So "the two option labels differ between them" is proven the
+  // this project). So "the two option labels differ between them" is proven the
   // observable way: render the SAME selected value ('pt-BR') under each UI language and show the
   // rendered label text differs — the option label follows the CopyProvider, not the value.
   it("the 'pt-BR' option's own label differs between an English-language UI and a PT-BR-language UI", () => {
@@ -79,7 +79,7 @@ describe('LanguageSection renders SettingsSection -> SettingsRow -> Select, both
   });
 });
 
-describe('LanguageSection — the not-persisted Banner is an always-mounted slot (MIN-11, docs/no-layout-shift.md rule 1)', () => {
+describe('LanguageSection — the not-persisted Banner is an always-mounted slot (docs/no-layout-shift.md rule 1)', () => {
   it('persisted (persistWarning: null): the slot is present, empty, and hidden', () => {
     const html = renderToStaticMarkup(
       createElement(CopyProvider, {
@@ -125,7 +125,7 @@ describe('LanguageSection — the not-persisted Banner is an always-mounted slot
 
   it('red state demonstrated (recorded here, never left in the real onLocaleChange): ignoring result.persisted renders no warning even on failure', () => {
     // The rejected shape — an onLocaleChange that always clears persistWarning regardless of the
-    // write result. If LanguageSection's caller were written this way, MIN-11's Banner would
+    // write result. If LanguageSection's caller were written this way, the not-persisted Banner would
     // never render no matter how the write actually went.
     function ignoringOnLocaleChange(_next: 'en' | 'pt-BR'): void {
       // pretends the write always succeeds — never calls setPersistWarning(result.reason)

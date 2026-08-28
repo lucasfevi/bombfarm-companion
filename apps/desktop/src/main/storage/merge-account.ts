@@ -10,7 +10,7 @@ export interface MergeOpts {
 }
 
 /**
- * APS-06's teeth: serves live sections over stored last-known-good, per section, in
+ * Serves live sections over stored last-known-good, per section, in
  * `ACCOUNT_SECTIONS` order. Pure — no DB, no clock.
  *
  * `resolved` and `degraded` are both "this cycle actually read and parsed something", but a

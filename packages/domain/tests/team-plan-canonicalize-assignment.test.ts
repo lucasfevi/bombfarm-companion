@@ -100,7 +100,7 @@ describe('canonicalizeAssignment', () => {
     // The two group members are stored at +0 and +12 with a forge floor of 12, so canonicalizing
     // genuinely rewrites which physical item each hero wears (their `upgrade` fields differ) —
     // yet both clamp to the same effective upgrade, so the objective must be bit-identical.
-    // MP5 F1 (AD-068 class (b) — structural): re-pointed onto save-20260819-11882-7heroes.json.
+    // (the ground-truth rule, class (b) — structural): re-pointed onto save-20260819-11882-7heroes.json.
     // The fixture only supplies two real hero contexts here; both inventory items (upgrade 0
     // and 12) are hand-constructed, not read from the corpus, so which file backs the heroes
     // does not change what this test discriminates.
@@ -356,7 +356,7 @@ describe('buildWaterfall canonicalizes at the applied floor', () => {
    * silently reverts while still reporting the improved objective.
    */
   function forgeFloorMismatchInput() {
-    // MP5 F1 (AD-068 class (b) — structural): re-pointed onto save-20260819-11882-7heroes.json.
+    // (the ground-truth rule, class (b) — structural): re-pointed onto save-20260819-11882-7heroes.json.
     // Every item's upgrade is overwritten below (forged to +12, then worn/spare/ballast are
     // hand-constructed at +0/+10/+0) — the fixture supplies only real heroes and one real
     // equipped item identity to build from, not any of the asserted upgrade values.

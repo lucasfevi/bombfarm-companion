@@ -39,7 +39,7 @@ describe('account slice', () => {
     expect(s.targetProp).toBe('stone');
   });
 
-  // MSC-03 — the three keystone setters are unrepresentable, not merely avoided: absent from
+  // The three keystone setters are unrepresentable, not merely avoided: absent from
   // AccountSlice's TYPE (a TS2339 compile error to reference one — proven by
   // `pnpm --filter @bombfarm/web typecheck`) AND `undefined` on the runtime store object. The
   // type check alone does not prove the runtime object; this asserts it directly.
@@ -50,7 +50,7 @@ describe('account slice', () => {
     expect(state.setTreeAbisso).toBeUndefined();
   });
 
-  it('AC-10: applyAccountImport writes luckFlatPct (no per-field tree setter)', () => {
+  it('applyAccountImport writes luckFlatPct (no per-field tree setter)', () => {
     usePlannerStore.getState().applyAccountImport({
       tree: { ...sampleTree, luckFlatPct: 5.3 },
       houseIdx: null,
@@ -60,7 +60,7 @@ describe('account slice', () => {
     expect(usePlannerStore.getState().treeLuckFlatPct).toBe(5.3);
   });
 
-  it('AC-10: normalizeAccount defaults tree.luckFlatPct to 0 when the field is absent (pre-Wave-5 record)', () => {
+  it('normalizeAccount defaults tree.luckFlatPct to 0 when the field is absent (pre-Wave-5 record)', () => {
     const preWave5Tree = {
       danoTotal: 1.2,
       critChance: 5,
@@ -328,7 +328,7 @@ describe('account slice', () => {
       expect(after.mitigationPct).toBe(before.mitigationPct);
     });
 
-    it('does not fight the hero-draft mitigation-sync suppression flag (ASM-10)', () => {
+    it('does not fight the hero-draft mitigation-sync suppression flag', () => {
       usePlannerStore.getState().setMitigationPct(42);
       usePlannerStore.getState().setSkipPhaseMitigationSync(true);
       usePlannerStore.getState().applyAccountImport({

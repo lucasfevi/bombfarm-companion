@@ -1,10 +1,11 @@
 /**
  * The provenance display (design.md §5, §7.2). Names every section in
- * `AccountFidelityReport.degradedSections`, in the report's own order (MPV-07), and for a
- * `degraded` section, its `missingKeys` in a diagnosable form distinct from `missing` (MPV-08,
- * latent per `AD-037` — implemented and unit-tested; unreachable end to end today).
+ * `AccountFidelityReport.degradedSections`, in the report's own order, and for a
+ * `degraded` section, its `missingKeys` in a diagnosable form distinct from `missing` (latent
+ * since degraded and its missingKeys do not survive mergeStoredIntoLive — implemented and
+ * unit-tested; unreachable end to end today).
  *
- * WHEN the derived grade is `full` THEN this renders nothing at all (MPV-06) — the always-mounted
+ * WHEN the derived grade is `full` THEN this renders nothing at all — the always-mounted
  * slot lives one level up in `planning-view.tsx`, which only mounts this component when
  * `degradedSections` is non-empty, so there is no empty Banner shell to reserve space for.
  */

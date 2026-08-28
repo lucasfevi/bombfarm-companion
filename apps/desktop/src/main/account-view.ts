@@ -1,5 +1,5 @@
 /**
- * `AD-043` — the single resolved source both `account:get` and `account:changed` speak from.
+ * The single resolved source both `account:get` and `account:changed` speak from.
  * Flat under `src/main/`, alongside `domain-edge.ts`/`boot-record.ts` (the same convention).
  * Imports **no Electron module** and takes every producer by structural injection, so this is
  * unit-testable without launching an app.
@@ -47,7 +47,7 @@ export interface ResolveAccountViewDeps extends AccountViewDeps {
  * Pure read — the verbatim body of `index.ts`'s pre-F3 `account:get` handler (`index.ts:77-98`),
  * split at the point a fallback commit would otherwise happen. **No commit, no SQLite, no
  * throw.** Safe to call from the commit path itself, which is exactly what the notifier does
- * (`AD-043` point 2) — this is the half of the split that keeps the notifier from ever reaching
+ * this is the half of the split that keeps the notifier from ever reaching
  * a database that `before-quit` may have already closed (the fixture-tick-after-db-close crash
  * fixed in PR #69, `2dcfb73`).
  */
@@ -55,7 +55,7 @@ export function resolveCachedAccountView(deps: AccountViewDeps): AccountView | n
   // gameRunning always comes fresh from the game reader's current status — never from a
   // cached view, so a stale cached commit can never misreport whether the game is running.
   const gameRunning = deps.gameReader?.getStatus().status === 'connected';
-  // The game-API cycle (MP2 F2) is the freshest live producer, but only once it has
+  // The game-API cycle is the freshest live producer, but only once it has
   // actually read something — i.e. once consent is granted. Before that, every cycle it
   // runs (including the very first one at boot, and every one thereafter while declined/
   // unasked/revoked) commits nothing but an all-`missing` "not consented" placeholder
@@ -81,8 +81,8 @@ export function resolveCachedAccountView(deps: AccountViewDeps): AccountView | n
 
 /**
  * `resolveCachedAccountView(deps)` else `accountStore.commit({}, {gameRunning})` else the
- * unavailable-store literal — `account:get`'s full pre-F3 behaviour, unchanged
- * (`AD-043` point 1). `index.ts`'s handler becomes a one-line call to this.
+ * unavailable-store literal — `account:get`'s full pre-F3 behaviour, unchanged.
+ * `index.ts`'s handler becomes a one-line call to this.
  */
 export function resolveAccountView(deps: ResolveAccountViewDeps): AccountView {
   const cached = resolveCachedAccountView(deps);
@@ -108,7 +108,7 @@ export interface AccountNotifier {
 }
 
 /**
- * `AD-043` point 2 — the gate that makes `account:changed` a true change signal. Calls
+ * The gate that makes `account:changed` a true change signal. Calls
  * **`resolveCachedAccountView` only**, never the committing form, so this can run on the commit
  * path (up to 20×/s in fixture mode, and during `before-quit`) without ever being able to write
  * to SQLite or reach a store `before-quit` has already closed. A `null` cached view suppresses:

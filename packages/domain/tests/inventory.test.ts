@@ -20,7 +20,7 @@ function firstGearItem(raw: unknown): Record<string, unknown> {
 }
 
 describe('mapInventoryItem', () => {
-  // MP5 F1 (AD-068 class (a) — read from the capture): re-pointed onto
+  // Class (a) — read from the capture: re-pointed onto
   // payload-20260812-8heroes.json, whose first category:0 item is a different real gear
   // item (ember_luva, not ember_calca) — every expected value below is read from it, not
   // carried over from the deleted fixture.

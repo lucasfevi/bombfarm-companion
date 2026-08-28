@@ -1,15 +1,15 @@
 /**
- * The Portuguese (Brazil) translation of `en.ts` (MP3 F4, `AD-050`). `Copy` is a value-widening
+ * The Portuguese (Brazil) translation of `en.ts`. `Copy` is a value-widening
  * mapped type (`export type Copy = { readonly [K in keyof typeof en]: string }` — `index.ts`), so
  * this file is annotated `: Copy`, never `as Copy`/`satisfies Copy`/an index signature: the
  * annotation is what makes a missing key here a compile error naming the key (`TS2741`) and a
- * typo'd extra key a compile error too (`TS2353`) — both directions of MIN-03.
+ * typo'd extra key a compile error too (`TS2353`) — both directions of the same compile-time guarantee.
  *
  * Key set and every `{placeholder}` must match `en.ts` exactly — `parity.test.ts` proves both at
  * runtime as a second, independent line of defence (a future widening of `Copy` must not silently
  * disable the compile-time proof). Natural PT-BR at the concept level, not word-for-word English
  * calques (`docs/i18n.md`, "Portuguese chrome quality"); no invented aliases for official in-game
- * names (those come from `@bombfarm/domain/game-labels`, `AD-056` — this file carries none).
+ * names (those come from `@bombfarm/domain/game-labels` — this file carries none).
  */
 import type { Copy } from './index';
 
@@ -103,7 +103,7 @@ export const ptBR: Copy = {
   ageDays: 'há {n}d',
   // 's' for seconds is the same abbreviation in PT-BR as in English — a legitimately identical
   // pair, declared in index.ts's IDENTICAL_IN_BOTH_LANGUAGES table rather than left to look like
-  // an untranslated leftover (MIN-04).
+  // an untranslated leftover.
   ageShortSeconds: '{n}s',
   ageShortMinutes: '{n}min',
 
@@ -147,7 +147,7 @@ export const ptBR: Copy = {
   consentGateReadAgainAction: 'Ler o aviso novamente',
   consentGateLanguageLabel: 'Idioma',
 
-  // error* — MP3 F4 §2.8
+  // error* — §2.8
   errorAccountReadFailedDescription: 'Tente novamente depois que o jogo terminar de carregar, ou reinicie o app.',
 
   // live* — a tela Ao Vivo: rótulo de navegação e a linha de status de atualização no topo do painel

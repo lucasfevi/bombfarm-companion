@@ -32,8 +32,7 @@ function validBaseline() {
 }
 
 // =============================================================================================
-// compareFingerprints — the six named single-mutation red states + the green direction (MWD-05,
-// MWD-10..13, MWD-36)
+// compareFingerprints — the six named single-mutation red states + the green direction
 // =============================================================================================
 
 describe('compareFingerprints — green direction', () => {
@@ -155,7 +154,7 @@ describe('compareFingerprints — six named single-mutation red states', () => {
   });
 });
 
-describe('compareFingerprints — MWD-09: whole sectionNames list, no allowlist, no subset', () => {
+describe('compareFingerprints — whole sectionNames list, no allowlist, no subset', () => {
   it('a baseline that omits one observed section yields section-added, not silence', () => {
     const baselineFp = fingerprintPayload(DATA_URL, apiDataCapture);
     const shrunkBaselineFp = {
@@ -177,7 +176,7 @@ describe('compareFingerprints — MWD-09: whole sectionNames list, no allowlist,
 });
 
 // =============================================================================================
-// readBaseline — baseline-missing for every invalid shape (MWD-13)
+// readBaseline — baseline-missing for every invalid shape
 // =============================================================================================
 
 describe('readBaseline — the green path', () => {
@@ -189,7 +188,7 @@ describe('readBaseline — the green path', () => {
   });
 });
 
-describe('readBaseline — baseline-missing red states, each its own assertion (MWD-13)', () => {
+describe('readBaseline — baseline-missing red states, each its own assertion', () => {
   it('absent (no text at all) ⇒ baseline-missing', () => {
     expect(readBaseline(undefined).ok).toBe(false);
   });
@@ -261,10 +260,10 @@ describe('readBaseline — baseline-missing red states, each its own assertion (
 });
 
 // =============================================================================================
-// serializeBaseline — deterministic emission, byte round-trip (MWD-36)
+// serializeBaseline — deterministic emission, byte round-trip
 // =============================================================================================
 
-describe('serializeBaseline — deterministic emission (MWD-36)', () => {
+describe('serializeBaseline — deterministic emission', () => {
   it('emits sorted keys, 2-space indent, trailing newline', () => {
     const text = serializeBaseline(validBaseline());
     expect(text.endsWith('\n')).toBe(true);

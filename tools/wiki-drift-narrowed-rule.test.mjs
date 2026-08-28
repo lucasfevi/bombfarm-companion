@@ -9,7 +9,7 @@ const SCAN_ROOTS = ['apps', 'packages'];
 const HOSTNAME_PATTERN = 'wiki\\.bombfarm\\.net';
 
 /**
- * MP5 F5 — the narrowed-rule guard, clauses A and B. Reuses this repo's established pattern for
+ * The narrowed-rule guard, clauses A and B. Reuses this repo's established pattern for
  * a repo-wide identifier-absence guard: `execFileSync('git', ['grep', …])` plus a pinned census
  * that fails on widening **and** on silent narrowing, applied here to the wiki-client surface.
  *
@@ -191,7 +191,6 @@ describe('Clause B — the comparison logic itself fails in both directions (syn
 
 // =============================================================================================
 // Clause C — the three amended files agree: both halves of the rule, plus the workflow filename
-// (MWD-34, `AD-095` clause C)
 // =============================================================================================
 
 const WORKFLOW_FILENAME = '.github/workflows/wiki-drift.yml';
@@ -234,7 +233,7 @@ describe('Clause C — AGENTS.md, apps/web/docs/architecture.md and docs/wiki-dr
   }
 });
 
-describe('Clause C — red states: losing any one of the three elements turns the file non-compliant (MWD-34)', () => {
+describe('Clause C — red states: losing any one of the three elements turns the file non-compliant', () => {
   const realAgentsText = readFileSync(join(root, 'AGENTS.md'), 'utf8');
 
   it('dropping the "no client in app code" half turns hasNoClientInAppCodeHalf false', () => {
@@ -259,7 +258,7 @@ describe('Clause C — red states: losing any one of the three elements turns th
 });
 
 // =============================================================================================
-// MWD-32 — reference hygiene: no research-repo name, no bot-repo name, no specs-directory path, no
+// Reference hygiene: no research-repo name, no bot-repo name, no specs-directory path, no
 // private decision identifier, in any file this feature authored end-to-end
 // =============================================================================================
 
@@ -307,7 +306,7 @@ function referenceHygieneOffenses(text) {
   return FORBIDDEN_REFERENCE_PATTERNS.filter(({ pattern }) => pattern.test(text)).map((p) => p.name);
 }
 
-describe('MWD-32 — reference hygiene: no sibling-repo name, specs-directory path, or private decision id', () => {
+describe('reference hygiene: no sibling-repo name, specs-directory path, or private decision id', () => {
   for (const file of FULLY_AUTHORED_FILES) {
     it(`${file} carries none of the forbidden references`, () => {
       const text = readFileSync(join(root, file), 'utf8');

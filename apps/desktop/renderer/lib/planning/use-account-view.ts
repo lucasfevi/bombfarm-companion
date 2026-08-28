@@ -1,5 +1,5 @@
 /**
- * The **only** `bfc.invoke('account:get')` call site (design.md §1, §7.1) — and, since MP3 F3,
+ * The **only** `bfc.invoke('account:get')` call site (design.md §1, §7.1) — and now also
  * the **only** `bfc.on('account:changed', …)` subscription site. `useAccountView()` stays one
  * `useState` + one `useEffect` (F2's own structural shape, still enforced by
  * `use-account-view.test.ts`): the effect fires the mount `account:get` (kept — see the boot-race
@@ -72,10 +72,10 @@ export function useAccountView(): AccountViewState {
         }
       });
 
-    // MP3 F3 — the one `account:changed` subscription site. Fires on a genuine change only
-    // (`AD-043`); `accept()`'s own accept gate (tier-0 key comparison) is a second, redundant-but-
+    // The one `account:changed` subscription site. Fires on a genuine change only;
+    // `accept()`'s own accept gate (tier-0 key comparison) is a second, redundant-but-
     // harmless line of defence against a no-op push. One effect, one cleanup: the `cancelled`
-    // latch and the unsubscribe below both live in the SAME cleanup function (MAR-12) — there is
+    // latch and the unsubscribe below both live in the SAME cleanup function — there is
     // no second subscription path.
     const unsubscribe = bridge.on('account:changed', (view) => {
       if (!cancelled) setState((prev) => accept(prev, { kind: 'pushed', view }));

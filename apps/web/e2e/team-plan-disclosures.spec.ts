@@ -10,7 +10,7 @@ import {
 
 function saturatedSeed() {
   const base = teamPlanRichSeed('en');
-  // MP5 F1 (AD-069, extended by orchestrator ruling): re-tuned for the post-patch 5-hero
+  // Extended by orchestrator ruling: re-tuned for the post-patch 5-hero
   // export. `slots` alone can no longer force saturation — this roster's own sumDuty tops out
   // at ~0.99 at the export's real house (Casa I L7), strictly below the minimum slots value
   // (evaluateRoster clamps slots to >= 1), so no slots override could reach the saturated

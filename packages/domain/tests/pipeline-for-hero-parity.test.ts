@@ -1,7 +1,7 @@
 /**
- * Layer 1 of MP3 F2's desktop/web parity proof (design.md §9, MPV-03, MPV-21). One committed
+ * Layer 1 of the desktop/web parity proof (design.md §9). One committed
  * fixture payload, through the source-neutral entry point (`parseAccountPayload`) and the
- * exported `pipelineForHero` (`AD-032`), compared against a `computeAdvisorPipeline` call
+ * exported `pipelineForHero`, compared against a `computeAdvisorPipeline` call
  * assembled field-for-field with `apps/web/src/shared/stores/selectors/advisor-selectors.ts`'s
  * own field list — the same genre as the existing, untouched `apps/web/src/tests/roster-dps.test.ts`,
  * which already proves `computeHeroSoloDps` matches a direct pipeline call for one hero, extended
@@ -22,7 +22,7 @@ import { loadFixtureJson } from './helpers/sheet-math-fixtures';
 
 const FIXTURE = 'save-20260813-5heroes.json';
 
-describe('pipelineForHero ≡ computeAdvisorPipeline assembled from advisor-selectors.ts field list (MPV-03 layer 1)', () => {
+describe('pipelineForHero ≡ computeAdvisorPipeline assembled from advisor-selectors.ts field list (layer 1)', () => {
   const raw = loadFixtureJson(FIXTURE);
   const parsed = parseAccountPayload(raw, []);
 
@@ -76,7 +76,7 @@ describe('pipelineForHero ≡ computeAdvisorPipeline assembled from advisor-sele
     const viaExportedPipeline = pipelineForHero(hero, account, phase, mitigationPct);
 
     // Assembled field-for-field with advisor-selectors.ts's `selectAdvisorPipeline` — the web's
-    // own field list, now identical on both sides (MKR-24/26). `birth` is read the same way the
+    // own field list, now identical on both sides. `birth` is read the same way the
     // web store reads it; `statPointsAvailable` is no longer part of that field list (it dropped
     // out of `AdvisorPipelineInput`), so it is no longer assembled here either.
     const viaWebFieldList = computeAdvisorPipeline({
@@ -106,9 +106,9 @@ describe('pipelineForHero ≡ computeAdvisorPipeline assembled from advisor-sele
     });
 
     // Not a snapshot, not a deep-equal on the whole result: ranking order, each gainPct,
-    // best.stat and dps — the fields MPV-03 actually promises are identical. Both paths now
-    // receive byte-identical arguments, so MKR-26's "unconditional identity" is tightened from
-    // a 9-decimal closeness bound to exact identity (design TD-9).
+    // best.stat and dps — the fields the parity guarantee actually promises are identical. Both paths now
+    // receive byte-identical arguments, so the parity suite's "unconditional identity" is tightened from
+    // a 9-decimal closeness bound to exact identity.
     expect(viaExportedPipeline.ranking.map((entry) => entry.stat)).toEqual(
       viaWebFieldList.ranking.map((entry) => entry.stat),
     );
@@ -119,7 +119,7 @@ describe('pipelineForHero ≡ computeAdvisorPipeline assembled from advisor-sele
     expect(viaExportedPipeline.dps).toBe(viaWebFieldList.dps);
   });
 
-  // MKR-27: the old red state passed a field the exported pipeline could never produce; that
+  // The old red state passed a field the exported pipeline could never produce; that
   // field is gone now, so the red state is re-pointed onto a SURVIVING field (treeDanoTotal)
   // instead. The old red state must not reappear under a new name.
   it('red state (demonstrated, then restored): a widened treeDanoTotal gap makes dps disagree', () => {

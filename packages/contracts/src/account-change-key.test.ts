@@ -42,7 +42,7 @@ describe('accountChangeKey — the probe table (design.md §2.4)', () => {
     expect(a).toBe(b);
   });
 
-  it('skills.status resolved → stale, body byte-identical ⇒ different key (MAR-09)', () => {
+  it('skills.status resolved → stale, body byte-identical ⇒ different key', () => {
     const resolved = basePayload(CAPTURED_AT_A);
     const stale: AccountPayload = {
       ...resolved,
@@ -80,7 +80,7 @@ describe('accountChangeKey — the probe table (design.md §2.4)', () => {
     expect(keyDegradedB).not.toBe(keyDegradedA);
   });
 
-  it('MP5 F4: two payloads differing ONLY in addedKeys produce different keys (AD-044 — must never false-negative)', () => {
+  it('two payloads differing ONLY in addedKeys produce different keys (two-tier change detection — must never false-negative)', () => {
     const resolved = basePayload(CAPTURED_AT_A);
     const { skills: _resolvedSkills, ...restPayload } = resolved;
     const degradedNoAdded: AccountPayload = {
@@ -122,10 +122,10 @@ describe('accountChangeKey — the probe table (design.md §2.4)', () => {
     expect(accountChangeKey(absent)).not.toBe(accountChangeKey(presentEmpty));
   });
 
-  it('two AccountViews differing only in gameRunning ⇒ same key — gameRunning is not a payload field at all (AD-031)', () => {
+  it('two AccountViews differing only in gameRunning ⇒ same key — gameRunning is not a payload field at all', () => {
     // accountChangeKey's signature only accepts a payload, so this is asserted at the type/call
     // level: the same payload keyed twice produces the same key regardless of what a caller's
-    // gameRunning flag says elsewhere on the AccountView. This is the proof that MAR-05
+    // gameRunning flag says elsewhere on the AccountView. This is the proof the auto-update invariant
     // ("holds unchanged whether or not the game is running") rests on: the field is structurally
     // incapable of entering the key, not merely absent from today's call sites.
     const payload = basePayload(CAPTURED_AT_A);
@@ -150,7 +150,7 @@ describe('accountChangeKey — the probe table (design.md §2.4)', () => {
     expect(accountChangeKey(ordered)).toBe(accountChangeKey(reordered));
 
     // The insertion-order variant WOULD have differed — this is why canonical is worth its cost
-    // (design.md AD-044), not just an assertion that the real function happens to agree.
+    // (design.md's two-tier change detection), not just an assertion that the real function happens to agree.
     expect(JSON.stringify(ordered)).not.toBe(JSON.stringify(reordered));
   });
 

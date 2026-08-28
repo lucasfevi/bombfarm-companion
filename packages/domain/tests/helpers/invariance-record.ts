@@ -1,11 +1,11 @@
 /**
- * MP5 F2 (T2, `AD-076`) — the pre-deletion characterization baseline recorder.
+ * The pre-deletion characterization baseline recorder.
  *
- * Walks F1's two corpus fixtures, every hero in each, and calls the functions `MKR-11` names,
+ * Walks F1's two corpus fixtures, every hero in each, and calls the functions the characterization baseline names,
  * projecting an EXPLICIT, hand-written key list per function — the SURVIVING numeric surface
  * only. Deleted-arm members are excluded BY CONSTRUCTION. A recorder that serialised whole
  * objects would fail trivially the moment a member is deleted, proving nothing about the
- * numbers (`AD-076`).
+ * numbers.
  *
  * Pure — no wall-clock read, no PRNG, no filesystem write, no network. Grep-asserted by
  * `invariance-baseline.test.ts`'s verification criterion.
@@ -47,14 +47,14 @@ import type { HeroRecord, AccountShared } from '@bombfarm/domain/shims/storage';
 import { extractHero, loadFixtureJson, type SaveHeroSheet } from './sheet-math-fixtures';
 import { teamPlanInputFromFixture } from './team-plan-fixtures';
 
-/** The two corpus files F1 committed — read only, never edited (MKR-16). */
+/** The two corpus files F1 committed — read only, never edited. */
 export const CORPUS_FILES = [
   'save-20260813-5heroes.json',
   'payload-20260812-8heroes.json',
 ] as const;
 
 /**
- * Sign- and precision-preserving number encoder (`AD-076`). `JSON.stringify` is unusable — it
+ * Sign- and precision-preserving number encoder. `JSON.stringify` is unusable — it
  * emits `0` for `-0` and `null` for `NaN`/`±Infinity`. ECMAScript guarantees
  * `Number(v.toString()) === v` exactly for every finite double, so `v.toString()` is bit-exact
  * for the general case; the four special cases below are handled explicitly.
@@ -67,7 +67,7 @@ export function encodeNumber(v: number): string {
   return v.toString();
 }
 
-/** Round-trips `encodeNumber`'s output back to the original value (self-test, MKR-11). */
+/** Round-trips `encodeNumber`'s output back to the original value (self-test). */
 export function decodeNumber(s: string): number {
   if (s === '-0') return -0;
   if (s === 'NaN') return NaN;
@@ -110,7 +110,7 @@ type LedgerStepRecord = {
 type LedgerRecord = { total: string; steps: LedgerStepRecord[] };
 type FormulaRecord = { substituted: string; value: string };
 
-/** One hero's projected surviving surface — every field named by `MKR-11`, no deleted-arm member. */
+/** One hero's projected surviving surface — every field the characterization baseline names, no deleted-arm member. */
 type HeroRecordEntry = {
   naked: SheetRecord;
   applySkillTree: SheetRecord;
@@ -156,9 +156,9 @@ type HeroRecordEntry = {
     hit: string;
   };
   /**
-   * `pipelineForHero` (`AD-032`) — the app's own call path. Its internal
+   * `pipelineForHero` — the app's own call path. Its internal
    * `computeAdvisorPipeline` call IS this recorded slice (same call, same numbers): the fields
-   * MKR-11 names for `computeAdvisorPipeline` (`ranking`, `best`, `dps`, `active`, `predHit`,
+   * the characterization baseline names for `computeAdvisorPipeline` (`ranking`, `best`, `dps`, `active`, `predHit`,
    * `effective`, `pointDelta`, `resetAdvice`) are all present below, so a single call proves
    * both subjects rather than duplicating the (expensive) pipeline call.
    */
@@ -355,7 +355,7 @@ function recordHero(
     mitigationPct,
   });
 
-  // pipelineForHero — the app's own call path (AD-032). Build a HeroRecord/AccountShared the
+  // pipelineForHero — the app's own call path. Build a HeroRecord/AccountShared the
   // same shape pipeline-for-hero-parity.test.ts builds.
   const hero: HeroRecord = {
     id: saveHero.sourceId,

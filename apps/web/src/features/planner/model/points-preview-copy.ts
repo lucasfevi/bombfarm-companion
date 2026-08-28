@@ -14,7 +14,7 @@ export type OptimizeResultDisplay =
   | { kind: 'delta'; node: ReactNode; tone: 'up' };
 
 /**
- * `AC-13` — selects the Tier 2 result line, branching on `gainPct`, deliberately NOT on
+ * Selects the Tier 2 result line, branching on `gainPct`, deliberately NOT on
  * `ReoptResult.keptCurrent`.
  *
  * `keptCurrent` is `winner.name === 'current'` (`points-reopt.ts`) — which seed LINEAGE won,

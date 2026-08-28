@@ -37,7 +37,7 @@ import { WEB_PACKAGE_ROOT } from './helpers/web-package-root';
  * `STRINGS` against a frozen snapshot is to catch UNINTENDED copy drift. If the fixture is
  * regenerated inside the same PR that changes the copy, the comparison degrades to
  * `STRINGS == STRINGS` — permanently green, permanently blind to the very drift it exists to
- * catch. So between re-baselines the fixture stays byte-unchanged (MOD-03, `docs/naming.md`),
+ * catch. So between re-baselines the fixture stays byte-unchanged (`docs/naming.md`),
  * and every feature that adds, removes, or rewords a string declares the change explicitly in
  * exactly one of the three lists below, with a comment naming the feature and explaining the
  * change. That declare-every-delta discipline is what makes an undeclared drift fail loudly.
@@ -45,7 +45,7 @@ import { WEB_PACKAGE_ROOT } from './helpers/web-package-root';
  * A re-baseline resets those lists to empty once they have accumulated across enough features
  * that they stop reading as a meaningful diff and start reading as bookkeeping for its own
  * sake — this one followed ten named lists and 114 declared entries in this file. It does not
- * loosen the comparison itself (still an exact match, not `objectContaining` — see AD-081, and
+ * loosen the comparison itself (still an exact match, not `objectContaining`, and
  * the note below on why that alternative is rejected); it only clears the backlog of old
  * entries and gives the mechanism a fresh floor to accumulate from.
  */
@@ -570,7 +570,7 @@ const namespaces = [
 ] as const;
 
 describe('i18n split parity', () => {
-  // The fixture (apps/web/src/tests/fixtures/i18n-strings-main.json) is MOD-03-frozen
+  // The fixture (apps/web/src/tests/fixtures/i18n-strings-main.json) is frozen
   // (docs/naming.md:74) between re-baselines (see the file-top comment for the 2026-08-17
   // one). Parity is measured against the fixture minus KEYS_REMOVED — every undeclared drift
   // stays fatal in both directions.

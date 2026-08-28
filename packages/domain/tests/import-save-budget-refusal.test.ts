@@ -8,7 +8,7 @@
  *
  * WHY THIS BLOCKS RATHER THAN CLAMPS. Clamping would have to invent which stat loses the excess,
  * which is a second wrong answer wearing a legal shape, and `point-inference.ts`'s own contract
- * (`BSP-04a`) forbids a silent scale or a redistributed residual. Blocking is the same call the
+ * forbids a silent scale or a redistributed residual. Blocking is the same call the
  * missing-`stats` case makes two lines away, for the same reason: an invented allocation is worse
  * than no hero. It is not theoretical — the Respec Advisor budget escape fixed in PR #183 was an
  * over-recovered vector reaching a recommendation.
@@ -55,7 +55,7 @@ function oneHeroSave(statsOverride: Record<string, number> = {}) {
       },
     ],
     items: [],
-    // The positive discriminator (MSG-11) requires these three paths present, or the whole file
+    // The positive discriminator requires these three paths present, or the whole file
     // is rejected before any hero is read. Values are irrelevant; presence is the whole test.
     skills: { refunds: {}, totals: { vagas_campo: 0, bag_tabs_bonus: 0 }, levels: {} },
     casa: { active_casa: 1, cycle_secs: 1000, levels: [1, 0, 0, 0, 0], slots: 1 },

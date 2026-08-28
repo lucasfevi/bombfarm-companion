@@ -1,7 +1,7 @@
 /**
  * Display-time clamp matching the game's EXPORTED sheet: `critChance` at
  * `STAT_CAPS.critChance` (100), `cdr` at `STAT_CAPS.cdr` (80). Penetration is deliberately
- * excluded — BSPW4-09 (`STAT_CAPS.penetration`'s own doc comment, `model/rarity-constants.ts`):
+ * excluded — see `STAT_CAPS.penetration`'s own doc comment (`model/rarity-constants.ts`):
  * the game does NOT clamp sheet penetration, and several real exports carry it well past 100
  * (e.g. Isolde at 286.85).
  *

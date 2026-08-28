@@ -13,8 +13,8 @@ export type PointsPreview = { pts: Record<SheetKey, number>; result: ReoptResult
 export type OptimizeAvailability = { disabled: boolean; disabledReason: string | null };
 
 /**
- * `DEC-10` — Optimize / Apply / Clear plus typed preview notices (`DEC-03`, `AC-13`).
- * Preview state lives in `points-table.tsx` (`DEC-02`). Apply/Clear stay mounted and
+ * Optimize / Apply / Clear plus typed preview notices.
+ * Preview state lives in `points-table.tsx`. Apply/Clear stay mounted and
  * `disabled`. Notices are a left-aligned rail under the actions — each line animates
  * through `PointsPreviewNotice` instead of an always-reserved invisible slot.
  */

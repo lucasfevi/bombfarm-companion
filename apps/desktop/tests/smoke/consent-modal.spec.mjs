@@ -49,7 +49,7 @@ async function launchApp(env) {
   return { app, page };
 }
 
-test.describe('consent modal smoke (MP2 F2, LAR-01/03, Success Criterion "shown once, survives restart")', () => {
+test.describe('consent modal smoke (Success Criterion "shown once, survives restart")', () => {
   test('shows on first run with the required disclosure, accepting closes it, and a relaunch of the same profile does not show it again', async () => {
     const userDataDir = fs.mkdtempSync(path.join(os.tmpdir(), 'bfc-consent-modal-'));
 

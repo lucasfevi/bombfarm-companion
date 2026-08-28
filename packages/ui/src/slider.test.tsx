@@ -7,7 +7,7 @@ function render(props: Parameters<typeof Slider>[0]) {
   return renderToStaticMarkup(createElement(Slider, props));
 }
 
-describe('Slider — TST-23 base-ui wrap', () => {
+describe('Slider — base-ui wrap', () => {
   it('renders a slider input with min/max/step wired through', () => {
     const html = render({ value: 30, min: 0, max: 60, step: 5, label: 'Price TTL' });
     expect(html).toContain('min="0"');
@@ -31,7 +31,7 @@ describe('Slider — TST-23 base-ui wrap', () => {
   });
 });
 
-describe('Slider — TST-24 accessible name', () => {
+describe('Slider — accessible name', () => {
   it('derives the input accessible name from label', () => {
     const html = render({ value: 10, label: 'Price TTL' });
     expect(html).toContain('aria-label="Price TTL"');

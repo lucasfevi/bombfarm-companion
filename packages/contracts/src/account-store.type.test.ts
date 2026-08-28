@@ -1,9 +1,8 @@
 /**
- * Type-level assertions for the "stored is never resolved" invariant (AD-025, APS-06 type half,
- * APS-03, APS-04). Vitest transpiles this file with esbuild, which strips types and never
+ * Type-level assertions for the "stored is never resolved" invariant. Vitest transpiles this file with esbuild, which strips types and never
  * typechecks — so every `@ts-expect-error` below is only enforced by `pnpm --filter
  * @bombfarm/contracts typecheck`, which runs `tsc -p tsconfig.typecheck.json --noEmit` (the only
- * tsconfig for this package that includes `src/**\/*.test.ts`, `AD-021`). An unused
+ * tsconfig for this package that includes `src/**\/*.test.ts`). An unused
  * `@ts-expect-error` directive is itself a `tsc` error, so a widened type here fails the build
  * rather than passing silently.
  */
@@ -73,7 +72,7 @@ describe('stored-account serving types — runtime shape assertions', () => {
 // --- Compile-time-only assertions below: no runtime behaviour, enforced by `tsc` only. ---
 
 // 1. `{status:'resolved', capturedAt}` is not assignable to StoredSectionFidelity — `resolved`
-//    is not a member of the narrowed union (the core AD-025 claim).
+//    is not a member of the narrowed union (the core invariant here).
 // @ts-expect-error - StoredSectionFidelity has no `resolved` member
 const _resolvedNotStorable: StoredSectionFidelity = { status: 'resolved', capturedAt: '2026-08-12T00:00:00.000Z' };
 

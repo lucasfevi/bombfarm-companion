@@ -2,8 +2,8 @@ import { cva, type VariantProps } from 'class-variance-authority';
 
 /**
  * Panel / field / dialog / setup-banner / import chrome — migrated from the
- * former `chrome.ts`. Fixed layout bundles stay as documented recipe constants
- * (design DS-05); cva is applied only where genuine variants exist (panel
+ * former `chrome.ts`. Fixed layout bundles stay as documented recipe constants;
+ * cva is applied only where genuine variants exist (panel
  * focus/need/unverified, setup-banner warn/ok). All strings preserve parity.
  */
 
@@ -17,7 +17,7 @@ const panelNeedClass = '';
 export const panelAlignedClass =
   'border-[color-mix(in_oklch,var(--up)_45%,var(--line))] shadow-[inset_3px_0_0_var(--up)]';
 /**
- * m2-storybook-ci (T7, SBC-12): was `opacity-[0.78]`. `mutedClass` text composited
+ * m2-storybook-ci (T7): was `opacity-[0.78]`. `mutedClass` text composited
  * at 0.78 alpha over the panel's `bg-surface` (itself alpha-blended over the page's
  * `bg-bg`) measured 4.25:1 (OKLCH -> linear-sRGB -> WCAG relative luminance), just
  * under the 4.5:1 AA floor. 0.85 measures 4.81:1.

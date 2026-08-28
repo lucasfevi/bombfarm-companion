@@ -5,14 +5,14 @@ import { buildPlanningModel } from '../../lib/planning/account-model';
 import { syntheticAccountView } from '../../lib/planning/fixtures/synthetic-views';
 import { FidelityNotice } from './fidelity-notice';
 
-describe('FidelityNotice (MPV-06, MPV-07, MPV-08)', () => {
-  it('renders nothing when grade is full (MPV-06)', () => {
+describe('FidelityNotice', () => {
+  it('renders nothing when grade is full', () => {
     const model = buildPlanningModel(syntheticAccountView());
     const html = renderToStaticMarkup(createElement(FidelityNotice, { model }));
     expect(html).toBe('');
   });
 
-  it('names every degraded section, in report order (MPV-07)', () => {
+  it('names every degraded section, in report order', () => {
     const model = buildPlanningModel(
       syntheticAccountView({ sectionStatuses: { skills: 'missing', items: 'missing' } }),
     );
@@ -24,7 +24,7 @@ describe('FidelityNotice (MPV-06, MPV-07, MPV-08)', () => {
     expect(html.indexOf('fidelity-section-skills')).toBeLessThan(html.indexOf('fidelity-section-items'));
   });
 
-  it('a degraded section additionally surfaces missingKeys (MPV-08)', () => {
+  it('a degraded section additionally surfaces missingKeys', () => {
     const model = buildPlanningModel(
       syntheticAccountView({
         sectionStatuses: { skills: 'degraded' },

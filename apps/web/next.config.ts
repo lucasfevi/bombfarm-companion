@@ -47,7 +47,7 @@ const DEV_WATCH_IGNORED = [
 ] as const;
 
 /**
- * RES-05 — set by `pnpm perf:build:profile` to produce a *measurement* build: production
+ * Set by `pnpm perf:build:profile` to produce a *measurement* build: production
  * React (via `next build --profile`) with component names retained. Off for every normal
  * build, so shipped output is unaffected.
  */
@@ -104,7 +104,7 @@ const nextConfig: NextConfig = {
   },
   webpack: (config: WebpackConfig, { dev }) => {
     if (!dev && PERF_PROFILE) {
-      // RES-05 — perf-measurement build only, never a shipped artifact.
+      // Perf-measurement build only, never a shipped artifact.
       //
       // `next build --profile` swaps in React's profiling build so the Profiler API
       // reports in production, but it does not stop SWC mangling function names — and
@@ -122,7 +122,7 @@ const nextConfig: NextConfig = {
       config.optimization = { ...config.optimization, minimize: false };
     }
     if (!dev) {
-      // RES-02 — keep zustand's `devtools` middleware out of the production bundle.
+      // Keep zustand's `devtools` middleware out of the production bundle.
       // The runtime `NODE_ENV` guard is not enough on its own: webpack marks a
       // statically-imported binding as used at module-graph time, so the middleware
       // ships whole even though the branch using it is provably dead. Measured leak:

@@ -2,7 +2,7 @@ import type { AccountSection } from '@bombfarm/contracts';
 import { checkSectionShape, SECTION_FINGERPRINTS } from '@bombfarm/game-api';
 
 /**
- * MP5 F4 (T10, `AD-089`) — the desktop's half of the stale-data drop. The web's
+ * (T10) — the desktop's half of the stale-data drop. The web's
  * `stale-account.ts` carries the `TreeState` field vocabulary over the SAME dead keystone
  * mechanic; this file carries the raw SAVE vocabulary a pre-patch `skills` row still holds.
  * They are DIFFERENT vocabularies over the same retired mechanic, not copies of each other
@@ -18,7 +18,7 @@ function isObject(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
 }
 
-/** `MSG-19`: presence, not truthiness (the web drop's own rule, `MSG-21`) — `key in totals`,
+/** Presence, not truthiness (the web drop's own rule) — `key in totals`,
  *  never `totals[key]`. Only the `skills` section carries this vocabulary; every other section
  *  relies solely on the fingerprint trigger below. */
 function retiredKeyTriggers(section: AccountSection, body: unknown): string[] {
@@ -33,12 +33,12 @@ function retiredKeyTriggers(section: AccountSection, body: unknown): string[] {
 }
 
 /**
- * `MSG-19`/`MSG-20`: a stored `skills` section body predates the 2026-08-13 game patch — and
+ * A stored `skills` section body predates the 2026-08-13 game patch — and
  * must be dropped, never served — when it carries a retired `skills.totals` key (path-qualified
  * presence) **or** fails `SECTION_FINGERPRINTS.skills` with an unexpected ADDED key. Both
  * triggers are POSITIVE tests on things that ARE there (design §5.5) — a section missing new
  * post-patch keys is deliberately never a trigger here; that "are the new keys present" question
- * belongs to the export accept/reject gate (`MSG-11`…`MSG-18`, `missingPostUpdateKeys`), not to
+ * belongs to the export accept/reject gate (`missingPostUpdateKeys`), not to
  * this best-effort, never-throws storage read.
  *
  * The fingerprint trigger is scoped to `skills` only, not every section: the 2026-08-13 patch
@@ -47,8 +47,7 @@ function retiredKeyTriggers(section: AccountSection, body: unknown): string[] {
  * false positives against this codebase's own long-standing partial/synthetic stored bodies
  * (`account-store-persist.test.ts`, `legacy-snapshot.test.ts`, `account-refresh.test.ts`, …:
  * `AccountStore` performs no normalization of its own and never required those bodies to be
- * schema-complete). `triggers` is a list of path-qualified key names only — never a stored value
- * (`MSG-28`).
+ * schema-complete). `triggers` is a list of path-qualified key names only — never a stored value.
  *
  * A retired `skills.totals` key is, by construction, ALSO an unrecognized key under the exact-
  * match schema check (`checkSchema` descends into `totals` and flags any key `SKILLS_TOTALS_LEVEL`
@@ -69,7 +68,7 @@ function sanitizeForFingerprint(body: unknown): unknown {
 }
 
 /**
- * `MSG-19`-style, but for a DIFFERENT contract change: a stored `casa` row written before
+ * The same positive-check style, but for a DIFFERENT contract change: a stored `casa` row written before
  * the `/rotation` route started yielding its whole body holds the bare house object directly
  * (no nested `casa` key) — under the current contract that shape reads as a rotation body that
  * lost `field_size`/`heroes`/`rescues_left`/`rescues_max`, four of its five keys, which is exactly

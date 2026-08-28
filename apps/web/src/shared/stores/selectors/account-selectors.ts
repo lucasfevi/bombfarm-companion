@@ -42,7 +42,7 @@ export const selectTreeBagTabsBonus = (state: PlannerStore) => state.treeBagTabs
  * deriving by default closes that gap without taking away the override as a deliberate "what if"
  * planning affordance.
  *
- * Module-level single-entry cache (AD-012 shape, matching `selectAdvisorPipeline`/
+ * Module-level single-entry cache (matching `selectAdvisorPipeline`/
  * `selectFarmRankingRows`) — returns the SAME reference while neither `state.heroes` nor
  * `state.teamBuffsOverride` changed, so every dep tuple that used to read `state.teamBuffs`
  * directly can depend on this selector's result instead of listing `heroes`/`teamBuffsOverride`
@@ -137,7 +137,7 @@ export function selectAccountShared(state: PlannerStore): AccountShared {
     playerName: state.playerName,
     accountId: state.accountId,
     // Omitted, not written as `null`, so a pre-rule account round-trips byte-identically
-    // (`storage-roundtrip.test.ts`, the MOD-21 tripwire).
+    // (`storage-roundtrip.test.ts`, the round-trip tripwire).
     ...(state.missingRequiredFields != null
       ? { missingRequiredFields: state.missingRequiredFields }
       : {}),

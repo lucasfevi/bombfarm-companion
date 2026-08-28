@@ -1,6 +1,6 @@
 /**
  * Mechanical, behaviour-free extraction of the prop-HTK and gate-window row tables out of
- * `advisor-pipeline.ts`, to buy line budget before T5 and T11 add to that file (`AC-36`).
+ * `advisor-pipeline.ts`, to buy line budget before T5 and T11 add to that file.
  * No literal or formula changed — see `advisor-pipeline.test.ts` for the discrimination
  * check proving this is a pure move.
  */
@@ -61,7 +61,7 @@ export type ResetAdvice = {
   gainPct: number;
 };
 
-/** BSPW4-11/BSPW4-15 (AC-70a/AC-70b) — Tier 1's own gate result, never an idealised reallocation. */
+/** Tier 1's own gate result, never an idealised reallocation. */
 export function buildResetAdvice(gate: ReoptResult): ResetAdvice {
   return {
     recommend: shouldRecommendReset({ currentDps: gate.currentDps, reoptDps: gate.reoptDps }),

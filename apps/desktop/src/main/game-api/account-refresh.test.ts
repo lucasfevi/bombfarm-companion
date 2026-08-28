@@ -92,7 +92,7 @@ function fixedReadToken(accountId: string, token: SessionToken, mtimeMs: number)
   return { fn, callCount: () => calls };
 }
 
-/** A schema-conforming `/roster` hero — `ROUTE_FINGERPRINTS.heroes`'s `hero` level (MP5 F4, T5).
+/** A schema-conforming `/roster` hero — `ROUTE_FINGERPRINTS.heroes`'s `hero` level (T5).
  *  These bodies predate T5's deepened, exact-key fingerprints; a missing key now makes
  *  `checkShape` mark the whole route `drift` instead of `resolved`, which this test suite reads
  *  through `fidelityOf(...).status`. */
@@ -283,7 +283,7 @@ function baseDeps(overrides: Partial<AccountRefreshDeps> & { store: AccountStore
   };
 }
 
-describe('account-refresh — unasked consent (LAR-01)', () => {
+describe('account-refresh — unasked consent', () => {
   it('ran against at least one SQLite binding', () => {
     expect(AVAILABLE_BINDINGS.length).toBeGreaterThan(0);
   });
@@ -336,7 +336,7 @@ describe('account-refresh — a grant that predates the current disclosure', () 
   });
 });
 
-describe('account-refresh — declined consent (LAR-04)', () => {
+describe('account-refresh — declined consent', () => {
   it('issues zero requests and commits nothing', async () => {
     const open = openTestAccountDb(firstBinding());
     const store = createAccountStore(open);
@@ -431,7 +431,7 @@ describe('account-refresh — session token unavailable', () => {
   });
 });
 
-describe('account-refresh — consent changing to granted (LAR-03)', () => {
+describe('account-refresh — consent changing to granted', () => {
   it('starts a cycle immediately via onConsentChanged, without calling start() or restarting anything', async () => {
     const open = openTestAccountDb(firstBinding());
     const store = createAccountStore(open);
@@ -462,7 +462,7 @@ describe('account-refresh — consent changing to granted (LAR-03)', () => {
   });
 });
 
-describe('account-refresh — revoke mid-cycle (LAR-05)', () => {
+describe('account-refresh — revoke mid-cycle', () => {
   it('aborts the in-flight request, commits what was already read, and requests nothing further', async () => {
     const open = openTestAccountDb(firstBinding());
     const store = createAccountStore(open);
@@ -548,7 +548,7 @@ describe('account-refresh — revoke mid-cycle (LAR-05)', () => {
     expect(gate.state).toBe('halted');
 
     // Second cycle, same mtimeMs — the cache still matches, so nothing resets the gate: it
-    // stays halted, exactly as LAR-23 requires (never cleared by the normal cadence).
+    // stays halted, exactly as the 401/403 terminal-state rule requires (never cleared by the normal cadence).
     await refresh.refreshNow();
     expect(gate.state).toBe('halted');
 
@@ -561,7 +561,7 @@ describe('account-refresh — revoke mid-cycle (LAR-05)', () => {
   });
 });
 
-describe('account-refresh — the token is contained (LAR-11)', () => {
+describe('account-refresh — the token is contained', () => {
   it('writes the token to no file, no SQLite row and no IPC-shaped view', async () => {
     const open = openTestAccountDb(firstBinding());
     if (!open.db) throw new Error('expected an open db for this binding');
@@ -587,7 +587,7 @@ describe('account-refresh — the token is contained (LAR-11)', () => {
   });
 });
 
-describe('account-refresh — a failed roster is served as stale with the STORED capturedAt (LAR-15)', () => {
+describe('account-refresh — a failed roster is served as stale with the STORED capturedAt', () => {
   it('over the real AccountStore.commit(), a later failed cycle does not overwrite the earlier resolved capturedAt', async () => {
     const open = openTestAccountDb(firstBinding());
     const store = createAccountStore(open);
@@ -629,7 +629,7 @@ describe('account-refresh — a failed roster is served as stale with the STORED
   });
 });
 
-describe('account-refresh — a drifted section is logged with path-qualified keys and no player data (MSG-27)', () => {
+describe('account-refresh — a drifted section is logged with path-qualified keys and no player data', () => {
   it('a /state response missing one key and carrying one unrecognized key logs section.drift naming both, never a response value', async () => {
     const open = openTestAccountDb(firstBinding());
     const store = createAccountStore(open);

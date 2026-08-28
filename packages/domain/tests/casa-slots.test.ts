@@ -16,7 +16,7 @@ describe('resolveCasaSlots', () => {
   });
 
   it('returns casa.slots when present on the real fixture', () => {
-    // MP5 F1 (AD-068 class (a) — read from the capture): re-pointed onto the post-patch
+    // Class (a) — read from the capture: re-pointed onto the post-patch
     // export. `casa.active_casa: 1` (0-based houseIdx 0), `casa.slots: 3`.
     const raw = loadFixtureJson('save-20260813-5heroes.json');
     const casa = (raw as { casa: unknown }).casa;

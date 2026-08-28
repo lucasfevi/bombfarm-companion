@@ -24,7 +24,7 @@ export function detectAvailableBindings(): SqliteBinding[] {
 
 const ALL_BINDINGS: SqliteBinding[] = ['better-sqlite3', 'node:sqlite'];
 
-/** Prints a visible warning for every binding that could not be probed (AD-002, Risk R-5) —
+/** Prints a visible warning for every binding that could not be probed (Risk R-5) —
  * a skipped binding must never vanish silently from the test output. */
 export function warnForUnavailableBindings(available: SqliteBinding[]): void {
   for (const binding of ALL_BINDINGS) {
@@ -77,7 +77,7 @@ export interface RecordedSqliteCall {
 }
 
 /** Wraps a real SqliteDb, recording every exec/prepare/close call for assertions like
- * "no transaction was opened" (APS-07) or "no SELECT against account_section ran" (APS-09). */
+ * "no transaction was opened" or "no SELECT against account_section ran". */
 export function wrapWithRecording(db: SqliteDb): { db: SqliteDb; calls: RecordedSqliteCall[] } {
   const calls: RecordedSqliteCall[] = [];
   const wrapped: SqliteDb = {

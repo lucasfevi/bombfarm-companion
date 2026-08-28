@@ -2,7 +2,7 @@ import { isGranted } from './consent.js';
 import type { GrantedConsent } from './consent.js';
 
 /**
- * `SessionToken` — the credential value that must never leak (`AD-028`, `LAR-12`). Redaction is a
+ * `SessionToken` — the credential value that must never leak. Redaction is a
  * property of the *type*: `toString`, `toJSON` and the Node `util.inspect` custom hook all render
  * `'[redacted]'`, and the raw value lives in a true private class field (`#value`) so it is not an
  * own enumerable property — `Object.keys`, `Object.entries` and object spread all expose nothing.
@@ -65,7 +65,7 @@ export class SessionToken {
 }
 
 /** Thrown at runtime when a caller reaches `grantSession` with a non-`granted` record without
- *  going through the type system (`AD-025`'s "independent mechanisms, not one"). */
+ *  going through the type system (the "independent mechanisms, not one" rule). */
 export class ConsentRequiredError extends Error {
   constructor() {
     super('ConsentRequiredError: a game-api session requires a granted consent record');
@@ -87,7 +87,7 @@ export class ConsentRequiredError extends Error {
  * spread and `Object.assign` skip it, same as `SessionToken#value`), or stamped onto a
  * pre-existing object at all — there is no syntax that adds a private field to an object after
  * the fact from outside the declaring class. This is exactly `SessionToken#value`'s pattern,
- * copied rather than reinvented (`AD-025`, `AD-028`, `TD-2`).
+ * copied rather than reinvented.
  */
 class ConsentedSessionRecord {
   readonly accountId: string;
@@ -114,13 +114,13 @@ class ConsentedSessionRecord {
 /**
  * The capability. There is no value of this type reachable except through `grantSession`, and
  * `grantSession` only accepts a `granted` consent record — "no call before consent" is therefore
- * a type, not a rule anyone has to remember (`AD-025`, `TD-2`).
+ * a type, not a rule anyone has to remember.
  */
 export type ConsentedSession = ConsentedSessionRecord;
 
 /**
  * The ONLY constructor for `ConsentedSession`. A `ConsentRecord` that is not statically known to
- * be `granted` fails to compile (`LAR-06`); a record that reaches here at runtime without being
+ * be `granted` fails to compile; a record that reaches here at runtime without being
  * granted — a JS caller, or a value cast through `unknown` — throws `ConsentRequiredError`.
  */
 export function grantSession(
@@ -136,7 +136,7 @@ export function grantSession(
 /** Thrown at runtime when `request.ts` (`buildHttpRequest`/`requestGet`) is handed a value typed
  *  as `ConsentedSession` that was not actually minted by `grantSession` — e.g. a value forged
  *  with `{ ... } as unknown as ConsentedSession`. This applies the same "type AND runtime, not
- *  type OR runtime" pattern `AD-025`/`AD-028` already apply to `grantSession` itself, one hop
+ *  type OR runtime" pattern already applies to `grantSession` itself, one hop
  *  downstream, at the layer that actually reads the token and builds the outbound request. */
 export class ConsentedSessionRequiredError extends Error {
   constructor() {

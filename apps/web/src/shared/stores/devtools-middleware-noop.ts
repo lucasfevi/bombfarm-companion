@@ -9,7 +9,7 @@ export type SubscribeCreator<T> = StateCreator<T, [['zustand/subscribeWithSelect
  * point: it keeps the devtools implementation out of the production module graph, which
  * a runtime `NODE_ENV` guard cannot do on its own.
  *
- * Must keep the same exported signature as the module it replaces. See `RES-02`.
+ * Must keep the same exported signature as the module it replaces.
  */
 export function withOptionalDevtools<T>(creator: SubscribeCreator<T>): SubscribeCreator<T> {
   return creator;

@@ -23,14 +23,14 @@ function trackedFiles() {
 }
 
 /**
- * MP5 F1 (T9) — cross-package, cross-repo hygiene. `tools/` is the established home for
+ * (T9) — cross-package, cross-repo hygiene. `tools/` is the established home for
  * cross-package source scans (`design-system-gate.test.mjs`, `ci-desktop-paths.test.mjs`,
  * `web-domain-source-resolution.test.mjs`). Every red state below has been demonstrated
  * manually in a scratch state (perturb one byte, restore a deleted fixture, add one skip, add
  * one keystone reference) — see `docs/fixture-corpus.md` / `validation.md` for the observed
  * failure messages.
  */
-describe('cross-package fixture corpus parity (MP5 F1)', () => {
+describe('cross-package fixture corpus parity', () => {
   // Domain became the corpus's sole committed copy when the six sheet-math captures were
   // deduped off apps/web (5a17fc94) — this replaces the old byte-identity-across-trees check,
   // whose premise (two committed copies) that same commit deliberately eliminated. What is left
@@ -38,7 +38,7 @@ describe('cross-package fixture corpus parity (MP5 F1)', () => {
   // whole-tree duplicate-content sweep at the bottom of this file cannot close on its own, since
   // it only catches a re-added file that happens to duplicate existing content byte-for-byte, not
   // a genuinely new one.
-  it('web sheet-math holds no fixture JSON (MFR-06): domain is the sole committed copy', () => {
+  it('web sheet-math holds no fixture JSON: domain is the sole committed copy', () => {
     let entries;
     try {
       entries = readdirSync(WEB_SHEET_MATH);
@@ -53,7 +53,7 @@ describe('cross-package fixture corpus parity (MP5 F1)', () => {
     ).toEqual([]);
   });
 
-  it('one capture, N checked copies (AD-070): export-capture.json and payload-20260812-8heroes.json are checked byte-identical invariants, not drift', () => {
+  it('one capture, N checked copies: export-capture.json and payload-20260812-8heroes.json are checked byte-identical invariants, not drift', () => {
     const exportCaptureHash = sha256(join(FIDELITY_DIR, 'export-capture.json'));
     const domainExportHash = sha256(join(DOMAIN_SHEET_MATH, 'save-20260813-5heroes.json'));
     expect(exportCaptureHash, 'fidelity-gate/export-capture.json vs sheet-math/save-20260813-5heroes.json').toBe(
@@ -68,7 +68,7 @@ describe('cross-package fixture corpus parity (MP5 F1)', () => {
     ).toBe(apiPayloadHash);
   });
 
-  it('no legacy/archive/__old__ path segment exists anywhere in the tracked tree (MFR-01 AC-6)', () => {
+  it('no legacy/archive/__old__ path segment exists anywhere in the tracked tree', () => {
     const files = trackedFiles();
     expect(files.length).toBeGreaterThan(0);
     const offenders = files.filter((f) => /(^|\/)(legacy|archive|__old__)(\/|$)/.test(f));
@@ -96,7 +96,7 @@ describe('cross-package fixture corpus parity (MP5 F1)', () => {
   });
 
   /**
-   * MFR-18 / TD-8 was a HARD ZERO: no skipped test under these roots, ever. It became an exact
+   * This guard was a HARD ZERO: no skipped test under these roots, ever. It became an exact
    * per-file manifest for one bounded reason — the F8 stale-capture debt — and that debt is now
    * PAID: the list below is empty, and every skip in the tree is a deliberate one declared in
    * `SKIPS_NOT_F8`.
@@ -131,7 +131,7 @@ describe('cross-package fixture corpus parity (MP5 F1)', () => {
     'apps/web/e2e/visual.spec.ts': 3,
   };
 
-  it('skip/todo directives across the test roots are exactly the declared manifests (MFR-18, TD-8)', () => {
+  it('skip/todo directives across the test roots are exactly the declared manifests', () => {
     const SKIP_PATTERN = '\\b(describe|it|test)\\.(skip|todo)\\b|\\bxit[(]|\\bxdescribe[(]';
     const SKIP_PATTERN_GLOBAL = new RegExp(SKIP_PATTERN, 'g');
     const scanRoots = ['packages/domain/tests', 'apps/web/src/tests', 'apps/web/e2e', 'apps/desktop'];
@@ -171,9 +171,9 @@ describe('cross-package fixture corpus parity (MP5 F1)', () => {
     }
   });
 
-  // The full identifier list AD-069/MFR-15 names. Matches are counted the same way tasks.md's
+  // The full identifier list this guard names. Matches are counted the same way tasks.md's
   // own baseline was captured: `git grep -ncE '<pattern>' | sum(field 2)`. Unchanged since F1 —
-  // MP5 F2 (T11, AD-074) re-measures the constant and adds the per-file packages/domain map
+  // T11 re-measures the constant and adds the per-file packages/domain map
   // below; it does not touch the pattern or the counting method.
   const PATTERN =
     'abisso|abissoBase|abisso_base|glassCannon|treeGlassCannon|tempoDobrado|treeTempoDobrado|critDmgMult|crit_dmg_mult|keystones';
@@ -186,7 +186,7 @@ describe('cross-package fixture corpus parity (MP5 F1)', () => {
    * mapped `.changeset/*.md` entries below vanish when the batch is consumed, and the text
    * reappears inside three typed surfaces, one of which (`packages/ui`) is asserted a hard zero.
    * Excluding both keeps the five-surface decomposition measuring live source, which is what
-   * `AD-082` set out to prove; its own surface 5 already reads "release-note history".
+   * the five-surface check set out to prove; its own surface 5 already reads "release-note history".
    */
   const EXCLUDE_RELEASE_PROSE = [':(exclude)**/CHANGELOG.md', ':(exclude).changeset/*.md'];
 
@@ -210,25 +210,25 @@ describe('cross-package fixture corpus parity (MP5 F1)', () => {
       });
   }
 
-  // MP5 F3 (T10, AD-082) — MFR-15 reaches its final form here. F1 shipped a whole-tree
+  // (T10) — this guard reaches its final form here. F1 shipped a whole-tree
   // total-count guard (850, then re-measured to 526); its Verifier proved a count-preserving
   // cross-surface move survives a bare total (Probe A — a match deleted from one file and added
   // to another leaves the sum unchanged). F2 tightened `packages/domain` to the per-file map
-  // below and explicitly handed the rest to F3 (`AD-074`): "when F3 lands, apps/web/apps/desktop/
+  // below and explicitly handed the rest to F3: "when F3 lands, apps/web/apps/desktop/
   // packages/ui reach zero and the total-count clause can be replaced by the literal five-surface
   // check for the whole tree." F3 is the feature that makes it reachable, so F3 completes it: the
   // total-count assertion is REPLACED — not supplemented — by an explicit five-surface
   // decomposition. Four of the five surfaces (apps/web, apps/desktop, packages/ui, tools/+docs/+
   // CHANGELOGs) are scanned in full per-file/per-line detail by the sibling guard
-  // `tools/keystone-surface-absence.test.mjs` (kept separate per `TD-2` — two distinct concerns,
+  // `tools/keystone-surface-absence.test.mjs` (kept separate — two distinct concerns,
   // "has the corpus drifted?" here vs. "is the mechanic gone?" there — in one file would make
   // both harder to read and harder to delete when MP5 closes). This test re-derives the SAME
   // five numbers independently (not by importing the sibling file) and asserts the whole tree
   // decomposes into exactly those five surfaces with nothing left over — the two guards
   // corroborate one another rather than sharing code.
-  // Surface 5 ("tools + docs + CHANGELOGs" in AD-082's table) is every match outside the four
+  // Surface 5 ("tools + docs + CHANGELOGs" in the five-surface check's table) is every match outside the four
   // typed surfaces above — root `docs/`, `.changeset/*.md`, `packages/contracts` (F4's
-  // `missingKeys: ['totals.crit_dmg_mult']`, `AD-080` allowlist #6) and this file's own pattern
+  // `missingKeys: ['totals.crit_dmg_mult']`, allowlist #6) and this file's own pattern
   // self-reference. None of these carry a live, editable, or rendered keystone surface; each is
   // provenance, release-note history, or a guard naming what it forbids. Pinned as a committed
   // per-file map (not a bare count) so a move within this residual still fails by name.
@@ -243,19 +243,19 @@ describe('cross-package fixture corpus parity (MP5 F1)', () => {
     'packages/contracts/src/account-change-key.test.ts': 1,
     'tools/fixture-corpus-parity.test.mjs': 2,
     'tools/keystone-surface-absence.test.mjs': 10,
-    // MP5 F4/T7 — the acceptance-gate absence-proving guard (MSG-11) must name the tokens it
+    // T7 — the acceptance-gate absence-proving guard must name the tokens it
     // scans source for. New here at T12's re-pin.
     'tools/save-acceptance-guards.test.mjs': 3,
   };
 
-  it('keystone-identifier handoff: the whole tree decomposes into exactly five surfaces, packages/ui a hard zero (MFR-15, AD-082)', () => {
+  it('keystone-identifier handoff: the whole tree decomposes into exactly five surfaces, packages/ui a hard zero', () => {
     const total = grepCounts(null).reduce((sum, row) => sum + row.count, 0);
     const domainTotal = grepCounts('packages/domain').reduce((sum, row) => sum + row.count, 0);
     const webTotal = grepCounts('apps/web').reduce((sum, row) => sum + row.count, 0);
     const desktopTotal = grepCounts('apps/desktop').reduce((sum, row) => sum + row.count, 0);
     const uiTotal = grepCounts('packages/ui').reduce((sum, row) => sum + row.count, 0);
 
-    expect(uiTotal, 'packages/ui: hard zero, no allowlist (AD-082)').toBe(0);
+    expect(uiTotal, 'packages/ui: hard zero, no allowlist').toBe(0);
 
     // Surface 5, pinned per-file: apps/web/apps/desktop/packages/ui/packages/domain are scanned
     // by their own precise checks (here and in tools/keystone-surface-absence.test.mjs); every
@@ -286,13 +286,13 @@ describe('cross-package fixture corpus parity (MP5 F1)', () => {
     ).toBe(total);
   });
 
-  // MP5 F2 (T11, AD-074), re-measured by MP5 F3 (T10, AD-082): packages/domain is the surface
+  // T11, re-measured by T10: packages/domain is the surface
   // where every reference is provably accounted for from inside the package
   // (source-surface.test.ts pins the src/tests split) — this guard mirrors that map from
   // outside, at the whole-tree level a total count cannot reach: a count-preserving move (delete
   // a match from one packages/domain file, add it to another, or to docs/) fails HERE by naming
   // the file. Re-measured at 3d7a290 (F2's follow-up commit dropped the five team-plan-* test
-  // files' matches, moving this map from 22 files to 17 — AD-079 #5).
+  // files' matches, moving this map from 22 files to 17).
   const DOMAIN_MATCH_MAP = {
     'packages/domain/src/advisor-pipeline.ts': 4,
     'packages/domain/src/derive.ts': 6,
@@ -308,7 +308,7 @@ describe('cross-package fixture corpus parity (MP5 F1)', () => {
     'packages/domain/tests/fidelity-compare.test.ts': 1,
     'packages/domain/tests/fixture-corpus.test.ts': 2,
     'packages/domain/tests/fixtures/i18n-strings-main.json': 9,
-    // MP5 F4/T7 (MSG-12): the committed pre-patch rejection fixture — deliberately carries the
+    // T7: the committed pre-patch rejection fixture — deliberately carries the
     // retired mechanic's tokens, that is its whole purpose. Added here at T12 alongside the
     // identifier guard's own re-pin; every other entry in this map is unmoved (raw git grep
     // output in the commit body).
@@ -321,7 +321,7 @@ describe('cross-package fixture corpus parity (MP5 F1)', () => {
     'packages/domain/tests/stat-breakdown.test.ts': 2,
   };
 
-  it('keystone-identifier handoff count: packages/domain matches fall on an exact, pinned per-file map (MFR-15, AD-074)', () => {
+  it('keystone-identifier handoff count: packages/domain matches fall on an exact, pinned per-file map', () => {
     const rows = grepCounts('packages/domain');
     expect(rows.length, 'non-vacuity: packages/domain must contain at least one match today').toBeGreaterThan(0);
 
@@ -336,7 +336,7 @@ describe('cross-package fixture corpus parity (MP5 F1)', () => {
     }
   });
 
-  // The general safety net behind the two named invariants above (AD-070): no OTHER capture may
+  // The general safety net behind the two named invariants above: no OTHER capture may
   // be committed at more than one path. Content-hash based, not filename based — a rename or a
   // re-serialization of the same account state would otherwise slip past a name-only check.
   // Scoped to the tree's fixture directories rather than every tracked file, so an incidental
@@ -354,7 +354,7 @@ describe('cross-package fixture corpus parity (MP5 F1)', () => {
     'tools/wiki-drift/__fixtures__',
   ];
 
-  // The two pairs the tests above already name and require (AD-070) are documented, intentional
+  // The two pairs the tests above already name and require are documented, intentional
   // duplication, not drift — every other cross-path match is unexpected.
   const KNOWN_DUPLICATE_PAIRS = [
     [
@@ -368,7 +368,7 @@ describe('cross-package fixture corpus parity (MP5 F1)', () => {
   ];
   const KNOWN_DUPLICATE_KEYS = new Set(KNOWN_DUPLICATE_PAIRS.map((pair) => [...pair].sort().join('|')));
 
-  it('no fixture JSON is committed at more than one path beyond the two AD-070 invariants above', () => {
+  it('no fixture JSON is committed at more than one path beyond the two named invariants above', () => {
     const files = trackedFiles().filter(
       (f) => f.endsWith('.json') && FIXTURE_ROOTS.some((fixtureRoot) => f === fixtureRoot || f.startsWith(`${fixtureRoot}/`)),
     );

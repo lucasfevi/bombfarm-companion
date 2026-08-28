@@ -91,7 +91,7 @@ export function useHeroBuildActions() {
       if (ability && isSheetAbility(ability)) {
         const prevMods = abilityMods(abilities);
         const nextMods = abilityMods(nextAbilities);
-        // DEC-04/BSP-31a: every sheet-ability kind goes through the dispatcher, which
+        // Every sheet-ability kind goes through the dispatcher, which
         // preserves the hero's own roll. It returns naked unchanged for every non-sheet
         // kind, matching the old no-op fallthrough.
         setNaked(nakedAfterSheetAbilityChange(nakedRef.current, ability.effect.kind, prevMods, nextMods));
@@ -124,7 +124,7 @@ export function useHeroBuildActions() {
     const next = resetHeroAbilities(previous);
     const prevMods = abilityMods(previous);
     const nextMods = abilityMods(next);
-    // DEC-04/BSP-31a: same dispatcher as setAbilityLevel — preserves the hero's own crit roll.
+    // Same dispatcher as setAbilityLevel — preserves the hero's own crit roll.
     if (prevMods.sheetCritChanceFlat !== nextMods.sheetCritChanceFlat) {
       setNaked(nakedAfterSheetAbilityChange(nakedRef.current, 'critChanceFlat', prevMods, nextMods));
     }

@@ -1,7 +1,7 @@
 /**
- * MP3 F3 (design.md §5, §8, T3) — the scripted sequences the milestone is judged on: the spec's
- * own Independent Test verbatim (MAR-01/03/04), per-hero recompute counting (MAR-16), and the
- * fidelity-transition suite (MAR-06…10). Every test here calls `resetAdviceComputeCount()` in
+ * design.md §5, §8, T3 — the scripted sequences the milestone is judged on: the spec's
+ * own Independent Test verbatim, per-hero recompute counting, and the
+ * fidelity-transition suite. Every test here calls `resetAdviceComputeCount()` in
  * `beforeEach` — the cache and counter are module-level state (`hero-advice.ts`'s own doc
  * comment): skipping the reset lets file execution order decide the result.
  */
@@ -73,7 +73,7 @@ beforeEach(() => {
   resetAdviceComputeCount();
 });
 
-describe("the spec's Independent Test, verbatim (MAR-01/03/04): identical, relevant change, irrelevant change, identical ⇒ 1, 2, 2, 2", () => {
+describe("the spec's Independent Test, verbatim: identical, relevant change, irrelevant change, identical ⇒ 1, 2, 2, 2", () => {
   it('counts exactly 1, 2, 2, 2 across the four steps — the value-changed half and the reference-stable half both asserted', () => {
     const base = syntheticAccountView();
     const heroId = firstHero(buildPlanningModel(base)).hero.id;
@@ -110,7 +110,7 @@ describe("the spec's Independent Test, verbatim (MAR-01/03/04): identical, relev
   });
 });
 
-describe('MAR-16 — only the heroes whose inputs actually changed are recomputed', () => {
+describe('only the heroes whose inputs actually changed are recomputed', () => {
   const heroIds = Array.from({ length: 11 }, (_, index) => `hero-${String(index)}`);
 
   it("one hero's level change ⇒ exactly 1 additional compute across an 11-hero roster", () => {
@@ -139,7 +139,7 @@ describe('MAR-16 — only the heroes whose inputs actually changed are recompute
 });
 
 describe('the fidelity-transition suite (design.md §5) — scripted sequences, not a static matrix (F2 owns that)', () => {
-  it('resolved → stale on skills (MAR-06): the status and the withhold decision are read from the SAME model — structurally, never one cycle behind', () => {
+  it('resolved → stale on skills: the status and the withhold decision are read from the SAME model — structurally, never one cycle behind', () => {
     const view = syntheticAccountView();
     const model1 = buildPlanningModel(view);
     const hero = firstHero(model1);
@@ -157,15 +157,16 @@ describe('the fidelity-transition suite (design.md §5) — scripted sequences, 
     // `stale` is still usable (isUsable = resolved || stale), so the advice is not withheld —
     // both the status and the withhold flag come from model2, the one model this render reads,
     // so they cannot be out of sync by construction. Body is byte-identical, so this is also a
-    // cache hit (AD-046 clears only on a USABILITY transition, and stale/resolved share the same
-    // usable=true — MAR-09's "counts as a change" claim is proven at tier 0 and the render, not
-    // by forcing a numeric recompute here; see T1's probe and the render reading `skillsSection`).
+    // cache hit (the advice cache clears only on a USABILITY transition, and stale/resolved share the same
+    // usable=true — the status-only-change claim ("counts as a change") is proven at tier 0 and
+    // the render, not by forcing a numeric recompute here; see T1's probe and the render reading
+    // `skillsSection`).
     expect(skillsSection.status).toBe('stale');
     expect(advice2.withheld).toBe(false);
     expect(getAdviceComputeCount()).toBe(1);
   });
 
-  it('resolved → missing on skills (MAR-07): every tree-dependent number withdrawn, and the identity-tree fallback value is absent too', () => {
+  it('resolved → missing on skills: every tree-dependent number withdrawn, and the identity-tree fallback value is absent too', () => {
     const view = syntheticAccountView();
     const model1 = buildPlanningModel(view);
     const hero = firstHero(model1);
@@ -187,7 +188,7 @@ describe('the fidelity-transition suite (design.md §5) — scripted sequences, 
     expect(JSON.stringify(advice2)).not.toContain(wrong.dps.toFixed(2));
   });
 
-  it('resolved → degraded → resolved over a byte-identical body (MAR-08): the counter increments on the return leg (AD-046)', () => {
+  it('resolved → degraded → resolved over a byte-identical body: the counter increments on the return leg', () => {
     const view = syntheticAccountView();
     const model1 = buildPlanningModel(view);
     const hero = firstHero(model1);
@@ -201,9 +202,9 @@ describe('the fidelity-transition suite (design.md §5) — scripted sequences, 
     expect(getAdviceComputeCount()).toBe(1); // withheld never increments the counter
 
     // Byte-identical body — the SAME skills.totals as the original `view`, only the status moved
-    // back to resolved. Without AD-046's usability-key clear, this would be a cache hit (the
+    // back to resolved. Without the advice cache's usability-key clear, this would be a cache hit (the
     // hero/shared keys never actually changed value). WITH it, the cache was dropped on the
-    // unusable→usable transition, forcing a genuine recompute — the case AD-046 exists for.
+    // unusable→usable transition, forcing a genuine recompute — the case this whole-cache-drop rule exists for.
     const resolvedAgain = withSectionStatus(view, 'skills', 'resolved');
     const model3 = buildPlanningModel(resolvedAgain);
     const advice3 = adviceForHero(model3, hero.hero.id);
@@ -211,7 +212,7 @@ describe('the fidelity-transition suite (design.md §5) — scripted sequences, 
     expect(getAdviceComputeCount()).toBe(2);
   });
 
-  it('all five sections → missing (MAR-10): the roster itself disappears, so no numeric node is reachable at all', () => {
+  it('all five sections → missing: the roster itself disappears, so no numeric node is reachable at all', () => {
     const view = syntheticAccountView();
     const model1 = buildPlanningModel(view);
     const hero = firstHero(model1);
@@ -234,7 +235,8 @@ describe('the fidelity-transition suite (design.md §5) — scripted sequences, 
 
     // Once real (different) data returns, the value is freshly computed, never the pre-drop one.
     // (The recovery-with-UNCHANGED-data case — byte-identical body, cache legitimately reused
-    // because the answer would be identical either way — is MAR-08's dedicated test above, over
+    // because the answer would be identical either way — is the resolved → degraded → resolved
+    // test above, over
     // a transition where heroes stays usable throughout so the cache-clear check actually runs.)
     const changed = mutateHeroField(view, hero.hero.id, { level: hero.hero.level + 5 });
     const model3 = buildPlanningModel(changed);
@@ -281,7 +283,7 @@ describe('the fidelity-transition suite (design.md §5) — scripted sequences, 
     expect(model2.rejected?.reason).toBe('missingBirthStats');
     expect(model2.heroes).toEqual([]);
     // No hero left in the model to query — zero pipeline calls is structural here, the same way
-    // MAR-10's zero numeric nodes is: an empty roster, not a withheld query.
+    // the all-five-sections-missing case's zero numeric nodes is: an empty roster, not a withheld query.
     expect(getAdviceComputeCount()).toBe(1);
   });
 });

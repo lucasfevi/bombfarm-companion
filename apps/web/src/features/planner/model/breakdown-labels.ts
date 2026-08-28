@@ -13,7 +13,7 @@ import {
 } from '@bombfarm/domain/stat-breakdown';
 import { sub, type Strings } from '@/shared/i18n';
 
-// AC-21/DEC-06: Luck joins the pct set now that `statFull.luck` / `statShort.luck` exist
+// Luck joins the pct set now that `statFull.luck` / `statShort.luck` exist
 // (T5) and `isSheetKey` below is widened to cover it (T11) — renders at 2 dp with `%` on
 // every SHEET_PANEL_KEYS surface.
 export const SHEET_PCT_KEYS: ReadonlySet<SheetPanelKey> = new Set([
@@ -54,10 +54,10 @@ export function derivedLabel(strings: Strings, statId: Exclude<BreakdownStatId, 
 }
 
 /**
- * `SHEET_PANEL_KEYS`-scoped (8, incl. `luck` — `DEC-06`, `AC-19`). `t.statFull` / `t.statShort`
+ * `SHEET_PANEL_KEYS`-scoped (8, incl. `luck`). `t.statFull` / `t.statShort`
  * have carried a `luck` entry since Wave 6's i18n task (T5), so every `SheetPanelKey` has a
  * label; `rowValue` still special-cases `luck` ahead of this guard because `facts.effective`
- * (`HeroSheet`) has no `luck` field to index (`AD-BSP-20`).
+ * (`HeroSheet`) has no `luck` field to index.
  */
 export function isSheetKey(statId: BreakdownStatId): statId is SheetPanelKey {
   return (SHEET_PANEL_KEYS as readonly string[]).includes(statId);
@@ -77,7 +77,7 @@ export function formatBreakdownValue(
   if (statId === 'bombsPerSecond') return `${formatNumber(value, 2)}/s`;
   if (statId === 'uptime') return `${formatNumber(value, 1)}%`;
   if (statId === 'activeDps' || statId === 'sustainedDps') return formatNumber(value, 0);
-  // BSP-29/AC-25: sheet magnitudes at 2 dp — the Effective panel's sheet group and the
+  // Sheet magnitudes at 2 dp — the Effective panel's sheet group and the
   // breakdown registry.
   if (isSheetKey(statId)) {
     return `${formatNumber(value, 2)}${SHEET_PCT_KEYS.has(statId) ? '%' : ''}`;
@@ -86,7 +86,7 @@ export function formatBreakdownValue(
 }
 
 export function rowValue(statId: BreakdownStatId, facts: PipelineFacts): number {
-  // Luck has no HeroSheet field (AD-BSP-20) — its row resolves from `adjusted.luck` (DEC-06).
+  // Luck has no HeroSheet field — its row resolves from `adjusted.luck`.
   if (statId === 'luck') return facts.adjusted.luck;
   if (isSheetKey(statId)) return facts.effective[statId];
   const breakdown = buildStatBreakdown(statId, facts);
@@ -119,11 +119,11 @@ export function sourceLabel(strings: Strings, source: LedgerSource): string {
 }
 
 /**
- * `BSP-20`/`AC-29` — names each ledger step's GAME line (Hero / Gear / Ability / Skill tree),
- * not its raw `LedgerSource`. `LEDGER_SOURCE_GROUP` (`DEC-07`) folds `base`/`level`/`stars`/
+ * Names each ledger step's GAME line (Hero / Gear / Ability / Skill tree),
+ * not its raw `LedgerSource`. `LEDGER_SOURCE_GROUP` folds `base`/`level`/`stars`/
  * `points` into Hero, `sheetAbilities` into Ability, `gear`/`tree` stay themselves. The
  * `combat` group (`abilities`/`team`/`abilitiesTeam`) is deliberately NOT one of the four game
- * lines (`DEC-07`) — those steps keep their existing, more specific `sourceLabel` copy rather
+ * lines — those steps keep their existing, more specific `sourceLabel` copy rather
  * than being folded into a generic fifth label.
  */
 export function groupLabel(strings: Strings, source: LedgerSource): string {

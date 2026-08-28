@@ -2,8 +2,7 @@ import type { AccountFidelity, AccountPayload, AccountSection, SectionFidelity }
 import type { SectionOutcome } from './routes.js';
 
 /**
- * Assembles one cycle's outcomes into an `AccountPayload` (LAR-07 assembly half, LAR-14, LAR-15,
- * LAR-17, LAR-19 reporting half). Deliberately shorter than the retired memory-era version: there
+ * Assembles one cycle's outcomes into an `AccountPayload`. Deliberately shorter than the retired memory-era version: there
  * is no carry-over here, no grade, and no history parameter — `assembleAccountPayload.length` is
  * 2, closing `R-1` by signature. F3's `commit()` is the single place last-known-good exists.
  *
@@ -26,7 +25,7 @@ import type { SectionOutcome } from './routes.js';
  *
  * A `failed` outcome for `skills` still produces a payload with no `skills` key at all —
  * `'skills' in payload === false`, not `payload.skills === undefined` — which is the specific
- * failure `D24` was written about (LAR-10): the parser must never mistake absence for an empty,
+ * failure `D24` was written about: the parser must never mistake absence for an empty,
  * zeroed skill tree. `drift` is deliberately not held to that rule any more — it carries a real,
  * usable body, not a fabricated one.
  */

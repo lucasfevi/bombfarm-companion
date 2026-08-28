@@ -15,7 +15,7 @@ import {
   treeTotalsFromSave,
 } from './helpers/sheet-math-fixtures';
 
-// MP5 F1 (AD-068 class (b) — structural): re-pointed onto save-20260813-5heroes.json (default
+// F1 (ground-truth-rule class (b) — structural): re-pointed onto save-20260813-5heroes.json (default
 // subject for Bellatrix-specific tests — the export's Bellatrix is L42, not the deleted
 // crit-dmg-tree fixture's L62) and payload-20260812-8heroes.json (the whole-roster test). Every
 // assertion compares two independently-computed structures or checks a structural property —

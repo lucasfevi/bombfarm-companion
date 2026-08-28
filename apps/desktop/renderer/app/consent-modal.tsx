@@ -11,7 +11,7 @@ import { Button, Dialog } from '@bombfarm/ui';
 import { useLocale } from '../lib/copy';
 
 /**
- * The first-run consent modal (MP2 F2, LAR-01 surface half, LAR-03 surface half). Holds no
+ * The first-run consent modal. Holds no
  * logic of its own — the text comes from `consentTextFor(locale)` and the show/hide decision
  * from `shouldShowConsentModal`, both pure and unit-tested in `packages/game-api`. This
  * component's own behaviour (it shows once, its answer survives restart) is covered only by the

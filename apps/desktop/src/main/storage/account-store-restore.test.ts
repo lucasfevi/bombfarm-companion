@@ -29,7 +29,7 @@ function seedBoundAccountId(db: SqliteDb, key: string): void {
 }
 
 /** A post-patch `skills.totals` — used as the base for both clean and stale skills fixtures
- *  below (MP5 F4, T10). */
+ *  below (T10). */
 function cleanSkillsTotals(overrides: Record<string, unknown> = {}): Record<string, unknown> {
   return {
     team_dmg_add: 1,
@@ -61,7 +61,7 @@ function cleanSkillsBody(totalsOverrides: Record<string, unknown> = {}): Record<
 }
 
 /** A post-patch `account` section body (`SECTION_FINGERPRINTS.account`'s 13 `STATE_LEVEL` keys)
- *  — MP5 F4's schema gate (`MSG-19`/`MSG-20`) now drops a stored section whose body doesn't
+ *  — the schema gate now drops a stored section whose body doesn't
  *  match its fingerprint, so every fixture below that predates this file's F4 tests had to move
  *  off the old `{phase: N}` shorthand onto a schema-conforming body. Each test still puts its
  *  adversarial VALUE (a huge integer, an empty string, a non-boolean, …) into a real declared
@@ -163,7 +163,7 @@ function cleanHero(id: string, name: string): Record<string, unknown> {
 }
 
 /** Wraps a real `SqliteDb` so every `DELETE FROM account_section` statement throws on `run()` —
- *  simulates the `MSG-24` "store failure during the drop's own cleanup" edge case without
+ *  simulates the "store failure during the drop's own cleanup" edge case without
  *  touching the real file. Every other statement passes through untouched. */
 function wrapFailingDelete(db: SqliteDb): SqliteDb {
   return {
@@ -242,7 +242,7 @@ describe('createAccountStore().restore()', () => {
       const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'bfc-account-store-'));
       const dbPath = path.join(dir, 'account.db');
       try {
-        // MP5 F4's schema gate (MSG-19/20) now drops a section whose body carries an
+        // The schema gate now drops a section whose body carries an
         // unrecognized KEY, so "adversarial" here means an adversarial VALUE in a real declared
         // key, not an arbitrary shape — schema conformance and value-fidelity are different
         // concerns, and this test is only about the second one.
@@ -322,7 +322,7 @@ describe('createAccountStore().restore()', () => {
     });
 
     it('performs no normalization of its own — recognized-key bodies round-trip byte-equal, values and key order both', () => {
-      // MP5 F4's schema gate (MSG-19/20) now drops a section whose body carries an unrecognized
+      // The schema gate now drops a section whose body carries an unrecognized
       // KEY — that is a different concern (schema conformance) from what this test asserts (no
       // coercion/defaulting/reordering of VALUES `decodeStoredSection` recognizes). A wrong-typed
       // value in a real declared key still proves no value-level normalization happens.
@@ -499,9 +499,9 @@ describe('createAccountStore().restore()', () => {
       store.close();
     });
 
-    // --- MP5 F4 (T10): the stale-section drop (`MSG-19`, `MSG-20`, `MSG-23`…`MSG-26`, `MSG-28`) ---
+    // --- (T10): the stale-section drop ---
 
-    it('MSG-19/20/25 per-section: a keystone-carrying skills row is dropped and its row deleted; a clean sibling heroes row survives byte-identical', () => {
+    it('per-section: a keystone-carrying skills row is dropped and its row deleted; a clean sibling heroes row survives byte-identical', () => {
       const open = openTestAccountDb(binding);
       if (!open.db) throw new Error('expected a usable db');
       const staleSkillsBody = cleanSkillsBody({ keystones: [], abisso_base: 1.05, crit_dmg_mult: 2 });
@@ -534,7 +534,7 @@ describe('createAccountStore().restore()', () => {
       store.close();
     });
 
-    it('MSG-23 idempotent: a second restore() after a drop reports the same result and drops nothing further', () => {
+    it('idempotent: a second restore() after a drop reports the same result and drops nothing further', () => {
       const open = openTestAccountDb(binding);
       if (!open.db) throw new Error('expected a usable db');
       seedSectionRow(open.db, '', 'skills', cleanSkillsBody({ crit_dmg_mult: 1 }), '2026-08-12T00:00:00.000Z');
@@ -552,7 +552,7 @@ describe('createAccountStore().restore()', () => {
       store.close();
     });
 
-    it('MSG-24 store failure ≠ drop: a failing DELETE during cleanup still reports the section missing and never throws', () => {
+    it('store failure ≠ drop: a failing DELETE during cleanup still reports the section missing and never throws', () => {
       const open = openTestAccountDb(binding);
       if (!open.db) throw new Error('expected a usable db');
       seedSectionRow(open.db, '', 'skills', cleanSkillsBody({ crit_dmg_mult: 1 }), '2026-08-12T00:00:00.000Z');
@@ -580,7 +580,7 @@ describe('createAccountStore().restore()', () => {
       store.close();
     });
 
-    it('MSG-28: the row_dropped log payload names field paths only — a seeded gold sentinel never appears in it', () => {
+    it('the row_dropped log payload names field paths only — a seeded gold sentinel never appears in it', () => {
       const open = openTestAccountDb(binding);
       if (!open.db) throw new Error('expected a usable db');
       const sentinelGold = 918273645;
@@ -636,7 +636,7 @@ describe('createAccountStore().restore()', () => {
     }).not.toThrow();
   });
 
-  it('never constructs a resolved status literal in its source (AD-025 guard)', () => {
+  it('never constructs a resolved status literal in its source (illegal-state guard)', () => {
     const source = fs.readFileSync(path.join(__dirname, 'account-store.ts'), 'utf8');
     expect(source).not.toMatch(/status:\s*['"]resolved['"]/);
   });

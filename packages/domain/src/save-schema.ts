@@ -1,5 +1,7 @@
 /**
- * MP5 F4 (`AD-086`, `AD-087`) — the declared-path schema engine and the shared level catalogue.
+ * The declared-path schema engine and the shared level catalogue — the schema vocabulary lives
+ * in @bombfarm/domain, with @bombfarm/game-api taking the edge; the fingerprint model is exact
+ * keys, two enumerated escapes, and declared descent.
  *
  * The fingerprint model that shipped before this feature (`RouteFingerprint.requiredKeys`) was a
  * flat top-level key list checked as a subset: `Object.keys(body)` at the top level only, missing
@@ -38,7 +40,7 @@ export interface SchemaFingerprint {
   readonly level: SchemaLevel;
   readonly gameBuild: string;
   readonly capturedAt: string;
-  /** MSG-30: the committed artifact and capture this key set was authored from. */
+  /** The committed artifact and capture this key set was authored from. */
   readonly sourceArtifact: string;
 }
 
@@ -98,7 +100,7 @@ function checkLevel(
         });
         break;
       case 'valueMap':
-        // MSG-07: presence + container kind only. Entries are game data, never schema.
+        // Presence + container kind only — declared value maps are not descended into. Entries are game data, never schema.
         if (!isPlainObject(childValue)) missing.push(childPath);
         break;
       case 'valueList':
@@ -122,7 +124,7 @@ export function checkSchema(value: unknown, fingerprint: SchemaFingerprint): Sch
 }
 
 /**
- * MSG-06 / AD-087 anti-vacuity #1: a declared array that is empty in a committed corpus checked
+ * Anti-vacuity #1: a declared array that is empty in a committed corpus checked
  * `every element` vacuously — nothing was actually asserted. Callers (T4/T5's corpus suites) run
  * this against the real fixture arrays; this file has no corpus of its own yet.
  */
@@ -136,7 +138,7 @@ export function assertNonEmptyCorpusArray(array: readonly unknown[], path: strin
 }
 
 /**
- * AD-087 anti-vacuity #2: an `optional` key is a reviewable escape only if the committed corpus
+ * Anti-vacuity #2: an `optional` key is a reviewable escape only if the committed corpus
  * demonstrates BOTH sides — at least one element carrying it, at least one lacking it. A key that
  * is never omitted should not be `optional`; a key that is never carried is dead.
  */
@@ -160,8 +162,8 @@ export function assertOptionalKeyWitnessedBothWays(
 //
 // Measured from `packages/game-api/src/__fixtures__/api-bodies.json` (API, scrubbed 2026-08-12)
 // and `packages/domain/tests/fixtures/sheet-math/save-20260813-5heroes.json` (export, scrubbed
-// 2026-08-13). Key-set identical across both sources — this is the "one catalogue" MSG-17 asks
-// for the export fingerprint and route fingerprints to both compose from.
+// 2026-08-13). Key-set identical across both sources — this is the one shared catalogue the
+// export fingerprint and route fingerprints both compose from.
 
 const SKILLS_TOTALS_LEVEL: SchemaLevel = {
   keys: [
@@ -183,7 +185,7 @@ const SKILLS_TOTALS_LEVEL: SchemaLevel = {
 const SKILLS_LEVEL: SchemaLevel = {
   keys: ['levels', 'refunds', 'field_slots', 'bag_tabs', 'gold', 'max_phase', 'totals'],
   children: {
-    // Skill-node ids / refund entries are game data, not schema (MSG-07) — only presence matters.
+    // Skill-node ids / refund entries are game data, not schema — only presence matters.
     levels: { kind: 'valueMap' },
     refunds: { kind: 'valueMap' },
     totals: { kind: 'object', level: SKILLS_TOTALS_LEVEL },
@@ -250,7 +252,7 @@ const ITEM_LEVEL: SchemaLevel = {
 const CASA_LEVEL: SchemaLevel = {
   keys: ['active_casa', 'levels', 'cycle_secs', 'slots', 'slots_per_house', 'cycle_secs_per_house', 'upgrade_cost'],
   children: {
-    // House-indexed arrays are game data, not schema (MSG-07) — only presence/container kind matters.
+    // House-indexed arrays are game data, not schema — only presence/container kind matters.
     levels: { kind: 'valueList' },
     slots_per_house: { kind: 'valueList' },
     cycle_secs_per_house: { kind: 'valueList' },
@@ -267,7 +269,7 @@ export const SCHEMA_LEVELS = {
   casa: CASA_LEVEL,
 } as const satisfies Record<string, SchemaLevel>;
 
-// --- The export fingerprint (MSG-11…MSG-18) --------------------------------------------------
+// --- The export fingerprint ---------------------------------------------------------------
 
 /**
  * `save.account` — the export's own account block. A strict subset of the five API route's
@@ -292,8 +294,8 @@ const EXPORT_LEVEL: SchemaLevel = {
 };
 
 /**
- * MSG-18: the save-export file's own shape, fingerprinted alongside the five API routes from the
- * SAME shared level catalogue above. MSG-30: names the committed artifact and capture this key
+ * The save-export file's own shape, fingerprinted alongside the five API routes from the
+ * SAME shared level catalogue above. Names the committed artifact and capture this key
  * set was authored from — no numeric build id is documented for this capture (unlike the API
  * captures' `GAME_BUILD` semver+timestamp); the capture date and its `CAPTURE_LOG.md` row are the
  * only provenance recorded for it, per `packages/domain/tests/fixtures/sheet-math/README.md`.
@@ -309,7 +311,7 @@ export const EXPORT_FINGERPRINT: SchemaFingerprint = {
 };
 
 /**
- * MSG-17: the ONE catalogue the export fingerprint and the import discriminator both read — a
+ * The ONE catalogue the export fingerprint and the import discriminator both read — a
  * second, hand-copied list must not exist. Path-qualified, relative to `EXPORT_FINGERPRINT.root`
  * ('save'), so a caller checking presence against a raw save body strips the 'save.' prefix
  * these paths do not carry (the raw body itself has no 'save' wrapper key).
@@ -327,7 +329,7 @@ function hasDeclaredPath(value: unknown, path: string): boolean {
 }
 
 /**
- * MSG-11: the positive discriminator. Asks `has(path)` for each of `POST_UPDATE_SAVE_KEYS`,
+ * The positive discriminator. Asks `has(path)` for each of `POST_UPDATE_SAVE_KEYS`,
  * never `!has(oldPath)` — a key's VALUE never matters (`0`/`false`/`null`/`[]` all count as
  * present), only its presence in the raw, unnormalised body. Returns the path-qualified subset
  * that is absent; empty means every new key was found, i.e. accept.

@@ -68,24 +68,24 @@ describe('AppShell', () => {
     expect(out).not.toContain('data-testid="flavor-badge"');
   });
 
-  it('renders navigation, main, and contentinfo landmarks when items are present (SHL-01)', () => {
+  it('renders navigation, main, and contentinfo landmarks when items are present', () => {
     const out = html({ items: NAV_ITEMS, children: 'body' });
     expect(out).toMatch(/<nav[^>]*aria-label="Main"/);
     expect(out).toContain('<main');
     expect(out).toContain('<footer');
   });
 
-  it('renders no navigation landmark when items is empty (SHL-04)', () => {
+  it('renders no navigation landmark when items is empty', () => {
     const out = html({ items: [], children: 'body' });
     expect(out).not.toContain('<nav');
   });
 
-  it('renders no navigation landmark when items is omitted (SHL-04)', () => {
+  it('renders no navigation landmark when items is omitted', () => {
     const out = html({ children: 'body' });
     expect(out).not.toContain('<nav');
   });
 
-  it('sets aria-current="page" on exactly one item matching activeId (SHL-03)', () => {
+  it('sets aria-current="page" on exactly one item matching activeId', () => {
     const out = html({ items: NAV_ITEMS, activeId: 'stats', children: 'body' });
     const matches = out.match(/aria-current="page"/g) ?? [];
     expect(matches).toHaveLength(1);
@@ -128,7 +128,7 @@ describe('AppShell', () => {
     expect(out).not.toContain('data-testid="actions-slot"');
   });
 
-  it('produces no empty status-bar children when status/progress/version are all absent (SHL-08)', () => {
+  it('produces no empty status-bar children when status/progress/version are all absent', () => {
     const out = html({ children: 'body' });
     expect(out).toMatch(/<footer[^>]*><\/footer>/);
   });

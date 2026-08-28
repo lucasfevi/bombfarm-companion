@@ -1,10 +1,10 @@
-// Pure grade derivation over an account's per-section provenance (ACS-05). No I/O, no
+// Pure grade derivation over an account's per-section provenance. No I/O, no
 // payload access — F3/F4 (and MP3) import this without dragging in the 1 MB catalog that
 // import-save.ts pulls in.
 
 import type { AccountFidelity, AccountFidelityReport, AccountPayload, AccountSection } from '@bombfarm/contracts';
 
-/** The five account sections, in canonical order (ACS-04 runtime half). */
+/** The five account sections, in canonical order (runtime half). */
 export const ACCOUNT_SECTIONS = [
   'account',
   'heroes',
@@ -15,7 +15,7 @@ export const ACCOUNT_SECTIONS = [
 
 /**
  * Derives one overall grade plus the names of every non-`resolved` section, from an
- * optional per-section fidelity block. Absent `fidelity` (the file adapter's case, ACS-05.5)
+ * optional per-section fidelity block. Absent `fidelity` (the file adapter's case)
  * grades `full` with an empty list — same rule as an all-`resolved` block. A fidelity block
  * missing a section key at runtime (an untyped producer) is treated as non-`resolved`, never
  * thrown on.

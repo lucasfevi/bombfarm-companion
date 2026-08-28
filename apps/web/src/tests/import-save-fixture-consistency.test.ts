@@ -107,6 +107,6 @@ describe('baseSave() is self-consistent — authored stats vs authored inputs', 
       tree: saveTree(save),
     });
     const drifted = SHEET_KEYS.filter((key) => Math.abs(hero.sheet[key] - composed[key]) > SELF_CONSISTENCY_TOL);
-    expect(drifted.length, 'Weird exists to fail inversion; a clean Weird makes AC-15/AC-16 vacuous').toBeGreaterThan(0);
+    expect(drifted.length, 'Weird exists to fail inversion; a clean Weird makes the NaN-safety and non-finite-luck-coercion checks vacuous').toBeGreaterThan(0);
   });
 });

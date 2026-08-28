@@ -7,7 +7,7 @@ import { required } from './test-fixtures.js';
 const repoRoot = resolve(__dirname, '../../..');
 const gameApiRoot = resolve(__dirname, '..');
 
-describe('packages/game-api <-> @bombfarm/domain edge (MP5 F4, AD-086)', () => {
+describe('packages/game-api <-> @bombfarm/domain edge', () => {
   it('@bombfarm/domain is a declared workspace dependency, not a phantom hoist', () => {
     const manifest = JSON.parse(
       readFileSync(resolve(gameApiRoot, 'package.json'), 'utf8'),

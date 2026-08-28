@@ -2,12 +2,12 @@ import type { TestRunnerConfig } from '@storybook/test-runner';
 import { checkA11y, injectAxe } from 'axe-playwright';
 
 /**
- * SBC-14/15/16 — smoke-renders every story against a built, statically served
+ * Smoke-renders every story against a built, statically served
  * Storybook (see `test-storybook` in package.json, which serves `storybook-static/`
  * before pointing the runner at it) and asserts zero a11y violations via
  * `@storybook/addon-a11y`'s underlying `axe-playwright` engine.
  *
- * No global rule allowlist (SBC-13) — if a rule ever needs to be disabled for a
+ * No global rule allowlist — if a rule ever needs to be disabled for a
  * single story, that goes in the story file itself with a written reason, not here.
  */
 const config: TestRunnerConfig = {

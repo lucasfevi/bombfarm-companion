@@ -116,7 +116,7 @@ describe('readLegacySnapshotPayload', () => {
   });
 });
 
-describe('createAccountStore — legacy import at construction (APS-10)', () => {
+describe('createAccountStore — legacy import at construction', () => {
   it('imports state and inventory items once; restore() serves them stale with the legacy timestamp', () => {
     const open = openTestAccountDb('node:sqlite');
     const store = createAccountStore(open, {
@@ -210,7 +210,7 @@ describe('createAccountStore — legacy import at construction (APS-10)', () => 
   });
 });
 
-describe('source guard: no module under apps/desktop/src writes last-snapshot.json (APS-10)', () => {
+describe('source guard: no module under apps/desktop/src writes last-snapshot.json', () => {
   // The one sanctioned mention is in a comment/read in legacy-snapshot.ts (the reader) and
   // account-store.ts (the one-time-import orchestrator, which only ever calls the reader and
   // never itself opens the file) — neither writes it. Any other file naming the legacy

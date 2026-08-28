@@ -229,7 +229,7 @@ export const CAPTURE_REGISTRY: Record<string, CaptureRow> = {
   'fidelity-gate/export-capture.json': {
     capturedOn: '2026-08-13',
     retention: 'structural',
-    note: 'A byte-identical pin of sheet-math/save-20260813-5heroes.json (AD-070); same regime as it.',
+    note: 'A byte-identical pin of sheet-math/save-20260813-5heroes.json — one capture, two checked copies; same regime as it.',
   },
   'fidelity-gate/live-capture.json': {
     capturedOn: '2026-08-13',

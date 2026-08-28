@@ -36,7 +36,7 @@ function baseInput(overrides: Partial<AdvisorPipelineInput> = {}): AdvisorPipeli
     level: 1,
     stars: 0,
     // No tree by default: `geared: { ...naked }` above is a "no gear, no tree" baseline.
-    // BSPW4-04 (AC-33/AC-34) makes `adjusted`/`expectedSheet` genuinely tree-aware, so a
+    // The skill-tree wave makes `adjusted`/`expectedSheet` genuinely tree-aware, so a
     // nonzero default here would no longer be a no-op the way it was pre-wave (when both
     // sides ignored the tree uniformly) — it would silently make `geared`/`expectedSheet`
     // internally inconsistent for every test that doesn't override `geared`. Tests that
@@ -209,7 +209,7 @@ describe('computeAdvisorPipeline', () => {
 
   it('keeps adjusted ≈ expectedSheet under a REAL nonzero tree, when geared is tree-consistent', () => {
     // The regression this test targets: `expectedSheet` must apply the same skill-tree
-    // treatment `adjusted` does (both derive.ts's AC-33/AC-34 delta scaling and
+    // treatment `adjusted` does (both derive.ts's delta scaling and
     // computeAdvisorPipeline's own expectedSheet computation), or every hero with a spent
     // attack/energy point and a real account tree would show a false "sheet mismatch".
     const naked = sampleNaked();
@@ -293,10 +293,10 @@ describe('computeAdvisorPipeline', () => {
     expect(preview.B!.dps).not.toBeCloseTo(preview.dps, 0);
   });
 
-  it('ranks crit chance at zero gain when the SHEET already fills the 100% cap (BSP-22)', () => {
+  it('ranks crit chance at zero gain when the SHEET already fills the 100% cap', () => {
     // REWRITTEN (was: reached the cap THROUGH `treeCritChance: 25` on top of a naked 80% —
     // `derive` no longer adds a tree addend to `effective.critChance`, since the tree is
-    // applied once, at the sheet, by `applySkillTree` upstream (BSP-23c). This test now
+    // applied once, at the sheet, by `applySkillTree` upstream. This test now
     // reaches 100% through `geared.critChance` directly — the sheet the account tree would
     // already have produced — so the cap assertion is proven through the correct source.
     const naked = { ...sampleNaked(), critChance: 80 };
@@ -395,13 +395,13 @@ describe('computeAdvisorPipeline', () => {
     expect(penRank?.gainPct).toBe(0);
   });
 
-  it('spentDelta counts luck points against the level budget (BSPW2-AC-29, AD-BSP-19)', () => {
+  it('spentDelta counts luck points against the level budget', () => {
     const pts = { ...ZERO_PTS(), attack: 2, luck: 4 };
     const out = computeAdvisorPipeline(baseInput({ pts }));
     expect(out.spentDelta).toBe(6);
   });
 
-  it('AC-17: sheetOther.critDmgFlat is wired from golpe_brutal, and does NOT scale the point delta', () => {
+  it('sheetOther.critDmgFlat is wired from golpe_brutal, and does NOT scale the point delta', () => {
     // Golpe Brutal is a FLAT sheet addend (POINT_GAIN.critDmgFlat), already baked into
     // naked/geared by rescaleNakedCritDmg — items never separately roll crit dmg. The
     // discriminating signal for this builder is therefore `sheetOther.critDmgFlat` itself.
@@ -415,8 +415,8 @@ describe('computeAdvisorPipeline', () => {
     expect(withGolpe.pointDelta.critDmg).toBeCloseTo(5, 10);
   });
 
-  describe('resetAdvice (BSPW4-11, BSPW4-15, AC-64l)', () => {
-    it('AC-64l: surfaces resetAdvice built from Tier 1, with tier/gainIsLowerBound fixed', () => {
+  describe('resetAdvice', () => {
+    it('surfaces resetAdvice built from Tier 1, with tier/gainIsLowerBound fixed', () => {
       const out = computeAdvisorPipeline(baseInput());
       expect(out.resetAdvice.tier).toBe('gate');
       expect(out.resetAdvice.gainIsLowerBound).toBe(true);
@@ -425,7 +425,7 @@ describe('computeAdvisorPipeline', () => {
       expect(out.resetAdvice.reoptDps).toBeGreaterThanOrEqual(out.resetAdvice.currentDps);
     });
 
-    it('AC-69: reoptDps is the sustained DPS of the vector findGateCandidate actually returns, agreeing with the optimiser on a saturated-crit-chance hero', () => {
+    it('reoptDps is the sustained DPS of the vector findGateCandidate actually returns, agreeing with the optimiser on a saturated-crit-chance hero', () => {
       // Points parked in an already-saturated stat (crit chance at cap) cannot recover any
       // DPS through the gate — the pipeline's own resetAdvice.gainPct must equal what a
       // direct findGateCandidate call on the same inputs reports, not an idealised guess.
@@ -447,7 +447,7 @@ describe('computeAdvisorPipeline', () => {
       expect(out.resetAdvice.reoptDps).toBeCloseTo(direct.reoptDps, 6);
     });
 
-    it('AC-70: the gate is unaffected by rankMode — farm mode with a target prop produces byte-identical resetAdvice to dps mode', () => {
+    it('the gate is unaffected by rankMode — farm mode with a target prop produces byte-identical resetAdvice to dps mode', () => {
       // rankMode still exists on AdvisorPipelineInput (the persisted UI setting), but this
       // pipeline no longer reads it for anything — the pipeline computes one hero's advice and
       // the farm objective needs the whole rotation, so they cannot be the same call. This case
@@ -460,7 +460,7 @@ describe('computeAdvisorPipeline', () => {
     });
   });
 
-  it('AC-64m: AdvisorPipelineResult has no optimizeBuild field — Tier 2 ships unwired', () => {
+  it('AdvisorPipelineResult has no optimizeBuild field — Tier 2 ships unwired', () => {
     const out = computeAdvisorPipeline(baseInput());
     expect('optimizeBuild' in out).toBe(false);
   });

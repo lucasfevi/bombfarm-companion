@@ -17,8 +17,8 @@ import type {
 
 export function ledgerAttack(facts: PipelineFacts): StatBreakdown {
   const steps: LedgerStep[] = [];
-  // AD-BSP-12: dmg_static (a raw multiplier) → percent form for pushBirthThenGear's uniform
-  // contract, so the 'tree' step is sourced from the sheet, not added on top of it (AC-42).
+  // dmg_static (a raw multiplier) → percent form for pushBirthThenGear's uniform
+  // contract, so the 'tree' step is sourced from the sheet, not added on top of it.
   pushBirthThenGear(steps, 'attack', facts, (facts.treeDanoTotal - 1) * 100);
   pushAdd(steps, 'points', facts.pts.attack * facts.delta.attack);
   // Grito de Guerra is a team aura (issue #132) — `facts.attackMult` is already the full roster
@@ -31,7 +31,7 @@ export function ledgerAttack(facts: PipelineFacts): StatBreakdown {
 
 export function ledgerEnergy(facts: PipelineFacts): StatBreakdown {
   const steps: LedgerStep[] = [];
-  // AD-BSP-22: energia_add multiplies the Hero+Gear subtotal.
+  // energia_add multiplies the Hero+Gear subtotal.
   pushBirthThenGear(steps, 'energy', facts, facts.treeEnergy);
   pushAdd(steps, 'points', facts.pts.energy * facts.delta.energy);
   return { kind: 'ledger', total: facts.effective.energy, steps };
@@ -40,8 +40,8 @@ export function ledgerEnergy(facts: PipelineFacts): StatBreakdown {
 export function ledgerSpeed(facts: PipelineFacts): StatBreakdown {
   const steps: LedgerStep[] = [];
   const baseSpeed = facts.naked.speed / (1 + facts.sheetOther.speed);
-  // AD-BSP-19/22: speed_add joins the shared pool — pushBirthThenGear carries the 'tree'
-  // step, split from the observed gear delta rather than added on top of it (AC-41).
+  // speed_add joins the shared pool — pushBirthThenGear carries the 'tree'
+  // step, split from the observed gear delta rather than added on top of it.
   pushBirthThenGear(steps, 'speed', facts, facts.treeSpeed);
   pushAddPctOfBase(
     steps,
@@ -61,8 +61,8 @@ export function ledgerCritChance(facts: PipelineFacts): StatBreakdown {
   // Olho Clínico's points are flat and outside the pool, so they come off before the base the
   // pooled sources (gear, the stat point, the tree) all scale.
   const baseCrit = facts.naked.critChance - Math.max(0, facts.sheetOther.critChanceFlat);
-  // AD-BSP-19/22: crit_chance_add joins the shared pool — 'tree' now lives inside
-  // pushBirthThenGear, split from the observed gear delta (AC-41).
+  // crit_chance_add joins the shared pool — 'tree' now lives inside
+  // pushBirthThenGear, split from the observed gear delta.
   pushBirthThenGear(steps, 'critChance', facts, facts.treeCritChance);
   pushAddPctOfBase(
     steps,
@@ -80,7 +80,7 @@ export function ledgerCritChance(facts: PipelineFacts): StatBreakdown {
 export function ledgerCritDmg(facts: PipelineFacts): StatBreakdown {
   const steps: LedgerStep[] = [];
   // Every crit-damage term is a flat percentage-point addend — the tree node (inside
-  // pushBirthThenGear, AC-41) as much as the point (POINT_GAIN.critDmgFlat) — so neither
+  // pushBirthThenGear) as much as the point (POINT_GAIN.critDmgFlat) — so neither
   // line carries `pctOfBase` provenance.
   pushBirthThenGear(steps, 'critDmg', facts, facts.treeCritDmg);
   pushAdd(steps, 'points', facts.pts.critDmg * POINT_GAIN.critDmgFlat);
@@ -102,13 +102,13 @@ export function ledgerPenetration(facts: PipelineFacts): StatBreakdown {
 }
 
 /**
- * Luck's ledger (`AC-22`, `DEC-06`) — the shortest of the eight stats, and the one that makes
- * `AC-29`'s four lines legible in a single stat: Hero (birth roll, already star-scaled — `naked`
+ * Luck's ledger — the shortest of the eight stats, and the one that makes
+ * the four lines legible in a single stat: Hero (birth roll, already star-scaled — `naked`
  * is tree-free per Wave 5's `nakedFromBirth`), Gear (`gearSortePct`), Ability — always 0 since
- * Olho Lapidador is `{ kind: 'none' }` (`BSP-47`) but pushed explicitly (unlike `pushAdd`'s
+ * Olho Lapidador is `{ kind: 'none' }` but pushed explicitly (unlike `pushAdd`'s
  * near-zero skip) so the line renders, Points (`pts.luck × luckPctOfBase × naked.luck`,
  * `derive.ts`'s own `delta.luck` formula) and Skill tree (`luck_add`, a FLAT percentage-point
- * addend — `AD-BSP-22`, the one shape that differs from every other stat's shared-pool tree
+ * addend — the one shape that differs from every other stat's shared-pool tree
  * term). `facts.geared` (when present) is tree-inclusive, points-free, matching every other
  * ledger's `gearedFor` convention — the gear step peels the tree amount back out of it. Without
  * `facts.geared`, the residual `adjusted.luck − pointsAmount` is exact by construction, because
@@ -125,9 +125,9 @@ export function ledgerLuck(facts: PipelineFacts): StatBreakdown {
   const pureGearAmount = gearedLuck - treeAmount - nakedLuck;
   pushAdd(steps, 'gear', pureGearAmount);
 
-  // BSP-47: Olho Lapidador (Luck's only sheet ability) is `{ kind: 'none' }` — always zero.
+  // Olho Lapidador (Luck's only sheet ability) is `{ kind: 'none' }` — always zero.
   // Pushed explicitly so the Ability line renders even at 0, matching the game's own tooltip
-  // (AC-22, AC-29). `pushAdd` would silently skip a near-zero amount; this does not.
+  // `pushAdd` would silently skip a near-zero amount; this does not.
   const afterGear = steps.at(-1) ?? steps[0];
   steps.push({ source: 'sheetAbilities', op: '+', amount: 0, running: afterGear.running });
 

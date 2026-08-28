@@ -180,7 +180,7 @@ describe('rankNextPoint', () => {
     expect(ranking[0].gainPct).toBeGreaterThanOrEqual(ranking[6].gainPct);
   });
 
-  it('AC-46: BASE_ROLLS does not influence the ranking when effectiveDeltas is supplied (L-02, GAP-W2-01)', () => {
+  it('BASE_ROLLS does not influence the ranking when effectiveDeltas is supplied (L-02, GAP-W2-01)', () => {
     // The behavioural property, not a grep: a hostile rarity ('Mítico' on a Comum-rolled
     // sheet — the rarities have very different BASE_ROLLS) must produce a byte-identical
     // ranking to the honest 'Comum' rarity, proving `deltaForStat` never falls back to
@@ -429,7 +429,7 @@ describe('splitHouseRest', () => {
   });
 });
 
-describe('critMilestones (BSPW4-07, AC-47)', () => {
+describe('critMilestones', () => {
   it('uses the supplied per-hero base when given one, differing from the rarity-average fallback', () => {
     // Bellatrix's own birth crit chance (9.51) is well above Raro's rarity midpoint (7) —
     // pointsNeeded to reach the same targets must differ between the two paths.

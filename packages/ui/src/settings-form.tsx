@@ -18,7 +18,7 @@ const HEADING_TAG = { 2: 'h2', 3: 'h3', 4: 'h4' } as const;
 export type SettingsSectionProps = PropsWithChildren<{
   title: string;
   description?: string;
-  /** Heading tag for `title` — defaults to `h2`, mirroring `EmptyState`'s `headingLevel` (SHL-17). */
+  /** Heading tag for `title` — defaults to `h2`, mirroring `EmptyState`'s `headingLevel`. */
   headingLevel?: 2 | 3 | 4;
   className?: string;
 }>;
@@ -53,7 +53,7 @@ export type SettingsRowProps = PropsWithChildren<{
 
 /**
  * SettingsRow — label + optional help text + control slot. Composes `Fields`
- * (TST-26) rather than hand-rolling the label/control grid: the row is a
+ * rather than hand-rolling the label/control grid: the row is a
  * single-`<label>` `Fields` instance, so it inherits `stackFieldsClass`'s
  * two-column layout, `data-num`/`data-select` control alignment, and
  * `data-field-hint` styling for free.

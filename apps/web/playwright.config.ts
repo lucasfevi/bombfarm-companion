@@ -7,7 +7,7 @@ const prebuilt = process.env.E2E_PREBUILT === '1';
 const blobReporter = process.env.PLAYWRIGHT_BLOB === '1';
 /**
  * Perf harness captureMode. W1's spike locked `dev-strict` because production builds
- * minified component names; RES-05 solved that (`PERF_PROFILE=1 next build --profile`
+ * minified component names; that was solved (`PERF_PROFILE=1 next build --profile`
  * with minification disabled), so `prod-profile` is now available and is the mode any
  * claim about production behavior must use. `dev-strict` is retained unchanged — the
  * W1/W8 baselines are expressed in it and must stay comparable.

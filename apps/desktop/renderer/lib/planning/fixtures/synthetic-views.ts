@@ -1,6 +1,6 @@
 /**
- * Synthetic `AccountView` builders for the withhold matrix (T4) and for MPV-08's latent test
- * (`AD-037` — `degraded` never survives `mergeStoredIntoLive`, so this is the *only* path that
+ * Synthetic `AccountView` builders for the withhold matrix (T4) and for the degraded-surfaces-missingKeys
+ * rule's latent test (`degraded` never survives `mergeStoredIntoLive`, so this is the *only* path that
  * can exercise it; see `withhold-matrix.test.ts`'s dedicated `it` for that).
  *
  * The hero payload's `dmg_static` is `3624.70` — `mapAccountData`'s own header comment (design.md
@@ -54,7 +54,7 @@ export function syntheticHeroesPayload(overrides: {
   const hero = rawHero(overrides.heroId ?? 'h1', overrides.heroName ?? 'Alpha');
   if (overrides.blocked) {
     // No `stats` block ⇒ `parseAccountPayload` blocks the hero (cannot infer spent points),
-    // MPV-10's per-hero row — the hero still parses and renders, only its numbers withhold.
+    // the per-hero withhold rule's per-hero row — the hero still parses and renders, only its numbers withhold.
     const { stats: _stats, ...blockedHero } = hero;
     return [blockedHero];
   }
@@ -74,7 +74,7 @@ function sectionFidelity(
         status: 'degraded',
         capturedAt: NOW,
         missingKeys: missingKeys ?? ['totals.dmg_static'],
-        // MP5 F4: required, not optional (SectionFidelity's degraded member). Defaults to empty —
+        // Required, not optional (SectionFidelity's degraded member). Defaults to empty —
         // every existing caller of this fixture builder keeps describing a missing-key-only drift
         // unless it opts into an added-key one via `addedKeysBySection`/the third parameter here.
         addedKeys: addedKeys ?? [],
@@ -100,7 +100,7 @@ export function buildFidelity(
 export type SyntheticViewOptions = {
   sectionStatuses?: Partial<Record<AccountSection, SectionStatus>>;
   missingKeysBySection?: Partial<Record<AccountSection, readonly string[]>>;
-  /** MP5 F4: mirrors `missingKeysBySection` for the `addedKeys` half of a degraded section. */
+  /** Mirrors `missingKeysBySection` for the `addedKeys` half of a degraded section. */
   addedKeysBySection?: Partial<Record<AccountSection, readonly string[]>>;
   storeStatus?: AccountStoreStatus;
   storeReason?: AccountStoreReason | null;
@@ -120,7 +120,7 @@ export function syntheticAccountPayload(options: SyntheticViewOptions = {}): Acc
     heroes: omit.has('heroes') ? undefined : syntheticHeroesPayload({ heroId, blocked: options.heroBlocked }),
     skills: omit.has('skills')
       ? undefined
-      // MP5 F4: post-patch skills.totals shape — no crit_dmg_mult (F2's stale-field trap; this
+      // Post-patch skills.totals shape — no crit_dmg_mult (F2's stale-field trap; this
       // literal is never modelled downstream, so this was a dead key, not a load-bearing one).
       : { totals: { dmg_static: REAL_DMG_STATIC, vagas_campo: 0, bag_tabs_bonus: 0, crit_chance_add: 0.1 } },
     casa: omit.has('casa') ? undefined : { active_casa: 2, levels: [10, 16] },
@@ -141,10 +141,10 @@ export function syntheticAccountView(options: SyntheticViewOptions = {}): Accoun
   };
 }
 
-// --- MP3 F3 additions (design.md §5, T3) — the transition-sequence and per-hero mutation
+// --- Additions (design.md §5, T3) — the transition-sequence and per-hero mutation
 // building blocks for `recompute-sequences.test.ts`. F2's builders above are unmodified. ---
 
-/** An N-hero roster, each hero a distinct id, for MAR-16's "only the changed hero recomputes"
+/** An N-hero roster, each hero a distinct id, for the "only the changed hero recomputes"
  *  and "a shared-tree change recomputes every hero" tests. Bodies are otherwise identical to
  *  `rawHero`'s single-hero shape, just repeated under distinct ids/names. */
 export function syntheticRosterAccountView(heroIds: readonly string[]): AccountView {
@@ -153,7 +153,7 @@ export function syntheticRosterAccountView(heroIds: readonly string[]): AccountV
     payload: {
       account: { phase: 71 },
       heroes,
-      // MP5 F4: post-patch skills.totals shape, matching syntheticAccountPayload above.
+      // Post-patch skills.totals shape, matching syntheticAccountPayload above.
       skills: { totals: { dmg_static: REAL_DMG_STATIC, vagas_campo: 0, bag_tabs_bonus: 0, crit_chance_add: 0.1 } },
       casa: { active_casa: 2, levels: [10, 16] },
       items: [],
@@ -166,7 +166,7 @@ export function syntheticRosterAccountView(heroIds: readonly string[]): AccountV
 
 /**
  * A new `AccountView` with one hero's raw record patched (e.g. `{ level: 41 }`) — every other
- * hero's raw record is untouched. Used by MAR-16's "changing one hero recomputes exactly one
+ * hero's raw record is untouched. Used by the "changing one hero recomputes exactly one
  * hero" test and by the per-field mutation half of T5's key-coverage guard.
  */
 export function mutateHeroField(view: AccountView, heroId: string, patch: Record<string, unknown>): AccountView {
@@ -182,7 +182,7 @@ export function mutateHeroField(view: AccountView, heroId: string, patch: Record
  * A new `AccountView` with an extra field folded into the raw `account` body (e.g.
  * `{ gold: 999 }`). `import-save.ts`'s `mapAccountData` reads only `phase`/`houseIdx`/
  * `houseLevel`/`tree` (from `skills`)/`slots` from this section, so any other key is confined to
- * a field the advisor pipeline never reads — the MAR-03 "irrelevant field" building block.
+ * a field the advisor pipeline never reads — the "irrelevant field" building block.
  */
 export function mutateAccountIrrelevantField(view: AccountView, patch: Record<string, unknown>): AccountView {
   const account = view.payload.account ?? {};
@@ -191,7 +191,7 @@ export function mutateAccountIrrelevantField(view: AccountView, patch: Record<st
 
 /**
  * A new `AccountView` with `skills.totals` patched (e.g. `{ dmg_static: 9999 }`) — the
- * shared-tree mutation building block for MAR-16's "a shared-tree change recomputes every hero"
+ * shared-tree mutation building block for the "a shared-tree change recomputes every hero"
  * test and for the per-field mutation half of T5's key-coverage guard over `account.tree.*`.
  */
 export function mutateSkillsTotals(view: AccountView, patch: Record<string, unknown>): AccountView {
@@ -209,7 +209,7 @@ export function mutateSkillsTotals(view: AccountView, patch: Record<string, unkn
 /**
  * A new `AccountView` with exactly one section's fidelity `status` flipped — the body and every
  * other section's fidelity are left untouched unless `bodyPatch` is supplied. The scripted
- * fidelity-transition building block (MAR-06/07/08/09/10, design.md §5): callers apply this
+ * fidelity-transition building block (design.md §5): callers apply this
  * repeatedly to walk a sequence like `resolved → degraded → resolved`.
  */
 export function withSectionStatus(

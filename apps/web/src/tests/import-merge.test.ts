@@ -133,7 +133,7 @@ describe('recomputeGearedSheet', () => {
 });
 
 /**
- * BSPW5-07 (BSP-05, AD-BSP-13): mergeImportedHero is a full OVERWRITE, not a gear-refresh
+ * mergeImportedHero is a full OVERWRITE, not a gear-refresh
  * merge. `existing` supplies only id/sourceId/altLoadout; everything else comes from
  * `incoming` — including fields the old body used to preserve (naked/pts/level/stars/
  * rarity/abilities).
@@ -157,7 +157,7 @@ describe('mergeImportedHero', () => {
       deployed: false,
       battleAllowed: false,
       skin: 1,
-      // The single field that must survive the overwrite (AC-18) — distinctive so a bug
+      // The single field that must survive the overwrite — distinctive so a bug
       // that drops or overwrites it is easy to spot.
       altLoadout: weaponLoadout(),
     });
@@ -187,7 +187,7 @@ describe('mergeImportedHero', () => {
     );
   }
 
-  it('AC-17: overwrites naked, gearedOverride, pts, level, stars, abilities, rarity, loadout, name, skin, rank, power, deployed, battleAllowed from incoming', () => {
+  it('overwrites naked, gearedOverride, pts, level, stars, abilities, rarity, loadout, name, skin, rank, power, deployed, battleAllowed from incoming', () => {
     const existing = existingWithStaleData();
     const incoming = incomingFresh();
     const merged = mergeImportedHero(existing, incoming);
@@ -208,7 +208,7 @@ describe('mergeImportedHero', () => {
     expect(merged.battleAllowed).toBe(incoming.battleAllowed);
   });
 
-  it('AC-18: id, sourceId and altLoadout are preserved from existing — altLoadout is the only planner-only field kept', () => {
+  it('id, sourceId and altLoadout are preserved from existing — altLoadout is the only planner-only field kept', () => {
     const existing = existingWithStaleData();
     const incoming = incomingFresh();
     const merged = mergeImportedHero(existing, incoming);
@@ -226,7 +226,7 @@ describe('mergeImportedHero', () => {
     expect(merged.updatedAt).toBeGreaterThanOrEqual(before);
   });
 
-  it('AC-19: name/skin A -> B survives the overwrite (BSP-39 / AD-BSP-17 regression guard)', () => {
+  it('name/skin A -> B survives the overwrite (regression guard)', () => {
     const existing = hero({ id: 'local-1', name: 'A', sourceId: 'game-1', skin: 1 });
     const incoming = asIncoming(hero({ id: 'x', name: 'B', sourceId: 'game-1', skin: 5 }));
     const merged = mergeImportedHero(existing, incoming);
@@ -244,7 +244,7 @@ describe('mergeImportedHero', () => {
     expect(merged.rarity).not.toBe(existing.rarity);
   });
 
-  it('AC-21: does not call recomputeGearedSheet — gearedOverride is incoming\'s value verbatim, not applyGear(naked, loadout)', () => {
+  it('does not call recomputeGearedSheet — gearedOverride is incoming\'s value verbatim, not applyGear(naked, loadout)', () => {
     const existing = existingWithStaleData();
     const incoming = incomingFresh();
     const merged = mergeImportedHero(existing, incoming);
@@ -253,7 +253,7 @@ describe('mergeImportedHero', () => {
     expect(merged.gearedOverride).not.toEqual(wouldHaveRecomputed);
   });
 
-  it('AC-22: merge does not reintroduce any field W1 deleted; its key set matches the canonical HeroRecord shape', () => {
+  it('merge does not reintroduce any field W1 deleted; its key set matches the canonical HeroRecord shape', () => {
     const existing = existingWithStaleData();
     const incoming = incomingFresh();
     const merged = mergeImportedHero(existing, incoming);
@@ -271,15 +271,15 @@ describe('mergeImportedHero', () => {
   // the current capture keep the claim intact: different accounts is not the property being
   // tested, different pts vectors is.
   //
-  // MP5 F1 (AD-068 class (a) + (b)): re-pointed onto the two post-patch corpus files. The
+  // (the ground-truth rule, class (a) + (b)): re-pointed onto the two post-patch corpus files. The
   // deleted vera-01 -> vera-03 pair was a before/after snapshot of the SAME hero — that family
   // is unreproducible post-wipe (`stat_points_available` is 0 on every corpus hero, so no
-  // point-delta pair exists). Design (AD-068, §6.1): two real heroes from two genuinely
+  // point-delta pair exists). Design (the ground-truth rule, §6.1): two real heroes from two genuinely
   // different accounts is a STRONGER merge subject than two snapshots of one — it still proves
   // the overwrite is not stale (different pts vectors) and still proves the merged
   // naked/pts/loadout faithfully reconstruct a real save's `stats`, without needing the same
   // hero twice.
-  it('AC-20/BSP-27: re-import Sora -> Doran — merged naked+pts reconstruct the new save (no stale decimals)', () => {
+  it('re-import Sora -> Doran — merged naked+pts reconstruct the new save (no stale decimals)', () => {
     // Re-pointed onto the post-2026-08-18-revert capture (issue #132); the 2026-08-16
     // redistribution export this used to read is now flat-regime and no longer a subject —
     // see `docs/fixture-corpus.md` §9.
@@ -294,7 +294,7 @@ describe('mergeImportedHero', () => {
     // Proves the merge is not stale from Zane's pts — Doran's differ.
     expect(merged.pts).not.toEqual(existing.pts);
 
-    // ASM-02: gearedOverride is deliberately the ZERO-points sheet, so comparing it
+    // gearedOverride is deliberately the ZERO-points sheet, so comparing it
     // directly to the save's own points-inclusive `stats` would be wrong by construction.
     // Reconstruct the full sheet the same way computeAdvisorPipeline's expectedSheet does
     // (naked -> applyPoints -> applySkillTree) to prove merge's stored naked/pts/loadout
@@ -323,7 +323,7 @@ describe('mergeImportedHero', () => {
   });
 });
 
-describe('importHeroes re-import overwrite (BSPW5-07 through storage)', () => {
+describe('importHeroes re-import overwrite (through storage)', () => {
   beforeEach(() => {
     vi.stubGlobal('localStorage', memoryLocalStorage());
   });

@@ -1,23 +1,23 @@
 /**
- * BSPW4-02 — the game's own four tooltip lines (Hero / Gear / Ability / Skill tree) per
+ * The game's own four tooltip lines (Hero / Gear / Ability / Skill tree) per
  * sheet key, derived from the same inputs `composeSheetFromBirth` consumes. The four
- * lines always sum to `composeSheetFromBirth`'s value for that key (AC-10).
+ * lines always sum to `composeSheetFromBirth`'s value for that key.
  *
  * The in-game "Hero" line bundles the player's spent points with the birth roll (there is
  * no separate "Points" tooltip row) — proven against the Bellatrix crit-damage tooltip
- * (`554.9184% = (1.67344467136338−1)×2×(1+39×0.08)×100`, AC-15). That AC-15 arithmetic is
+ * (`554.9184% = (1.67344467136338−1)×2×(1+39×0.08)×100`). That arithmetic is
  * HISTORICAL: it was read off `save-20260801-crit-dmg-tree.json`, a PRE-2026-08-13-patch
  * capture (deleted in the MP5 corpus rebaseline), and it was correct for that build — crit
  * damage was a shared-pool percentage of the roll then, and that file fits it to float
  * precision on all three of its crit-damage-bearing heroes. The patch changed the shape: on
  * every post-patch capture crit damage is FLAT (`POINT_GAIN.critDmgFlat`), which is why the
- * `critDmg` block below no longer goes through `pooledLines`. The *bundling* claim AC-15
+ * `critDmg` block below no longer goes through `pooledLines`. The *bundling* claim
  * actually makes — points ride the Hero line — is unaffected and still holds.
  *
  * "Ability" is the pool's on-sheet-ability share (`base × sheetOther[key]`); for attack/energy
  * there is no ability pool term, so `ability` is structurally `0` there, and for crit chance and
  * crit damage the ability contribution is a flat addend rather than a share. The skill-tree line
- * uses the SAME `base = naked[key]/(1+sheetOther[key])` the additive `AD-BSP-22` shapes use in
+ * uses the SAME `base = naked[key]/(1+sheetOther[key])` the additive skills.totals shapes use in
  * `applySkillTree` — not the full hero+gear+ability subtotal — except for the
  * multiplicative-subtotal keys (attack, energy) and the flat-addend keys (crit damage, luck).
  */
@@ -67,7 +67,7 @@ export function peelSheetSources(input: PeelSheetSourcesInput): SheetSourceLines
   // Attack: additive points bundled into Hero; tree multiplies the subtotal.
   // Gear carries both Dano regimes — the nv50+ % of naked attack plus any flat
   // rolls — so the Gear line still reports the items' whole contribution and
-  // `hero + gear` stays exactly the pre-tree subtotal (AC-10 sum identity).
+  // `hero + gear` stays exactly the pre-tree subtotal (sum identity).
   const atkPt = attackPointGain(level) * star;
   const attackNaked = birth.attack * levelPowerMult(level) * star;
   const attackHero = attackNaked + pts.attack * atkPt;
@@ -93,7 +93,7 @@ export function peelSheetSources(input: PeelSheetSourcesInput): SheetSourceLines
 
   const speed = pooledLines(
     birth.speed,
-    1, // AD-BSP-19: speed is never star-scaled.
+    1, // speed is never star-scaled.
     sheetOther.speed,
     bonuses.speedPct,
     POINT_GAIN.speedPctOfBase,
@@ -124,7 +124,7 @@ export function peelSheetSources(input: PeelSheetSourcesInput): SheetSourceLines
     ability: Math.max(0, sheetOther.critDmgFlat),
     skillTree: tree.critDmgPct,
   };
-  // AD-BSP-22: skills.totals has no node for penetration or cdr — tree line is exactly 0.
+  // skills.totals has no node for penetration or cdr — tree line is exactly 0.
   const penetration = pooledLines(
     birth.penetration,
     star,
@@ -135,7 +135,7 @@ export function peelSheetSources(input: PeelSheetSourcesInput): SheetSourceLines
     0,
   );
   const cdr = pooledLines(birth.cdr, star, sheetOther.cdr, bonuses.cdrPct, POINT_GAIN.cdrPctOfBase, pts.cdr, 0);
-  // Luck's tree term is a flat percentage-point addend (AD-BSP-22), not base × pct.
+  // Luck's tree term is a flat percentage-point addend, not base × pct.
   const luck: SourceLines = {
     ...pooledLines(birth.luck, star, 0, bonuses.luckPct, POINT_GAIN.luckPctOfBase, pts.luck, 0),
     skillTree: tree.luckFlatPct,

@@ -19,8 +19,8 @@ import {
 } from '@/shared/game-art';
 
 /**
- * RES-10 — memoised, mirroring its sibling `RosterRow` (deleted with the dead roster tree
- * in RES-01, which had carried this boundary since W5).
+ * Memoised, mirroring its sibling `RosterRow` (deleted with the dead roster tree,
+ * which had carried this boundary since W5).
  *
  * Sorting the roster rebuilds `sortedHeroes` as a new array, but the individual `hero`
  * objects keep their identity and `selected`/`powerShown` are unchanged for most rows, so

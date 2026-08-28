@@ -1,7 +1,7 @@
 import type { AccountFidelity, AccountPayload, AccountSection } from './account-payload.js';
 
 /**
- * `accountChangeKey` — tier 0 of MP3 F3's two-tier change detection (design.md `AD-044`). It
+ * `accountChangeKey` — tier 0 of the two-tier change detection (design.md). It
  * gates **both** main's `account:changed` emit and the renderer's accept gate with the same
  * answer to "did anything in this `AccountPayload` actually change?"
  *
@@ -61,17 +61,16 @@ export function canonicalStringify(value: unknown): string {
  *
  * `capturedAt` is never read here — not filtered out downstream, never reached at all. It is the
  * only timestamp an `AccountPayload` carries (`account-payload.ts`'s own doc comment) and it
- * carries zero planning information; reading it would make every poll cycle look like a change
- * (`AD-031`).
+ * carries zero planning information; reading it would make every poll cycle look like a change.
  *
  * `AccountView.gameRunning` cannot leak into this key even by accident: the function's only
  * input is `payload`, and `gameRunning` is not a field of `AccountPayload` at all — it lives on
- * `AccountView`, one level up (MAR-05).
+ * `AccountView`, one level up.
  *
  * **Canonical, not insertion-order.** A producer that re-materialises a section body with a
  * different key order (same values) must not look like a change — an insertion-order key would
- * make it one, silently failing MAR-04 while every "a change is detected" test stays green
- * (design.md §2.4's last probe, `AD-044`).
+ * make it one, and the failure would go unnoticed while every "a change is detected" test stays green
+ * (design.md §2.4's last probe).
  */
 export function accountChangeKey(payload: AccountPayload): string {
   const fidelity: AccountFidelity | undefined = payload.fidelity;
@@ -79,15 +78,15 @@ export function accountChangeKey(payload: AccountPayload): string {
 
   const parts = ACCOUNT_SECTIONS.map((section) => {
     // `'section' in payload` — distinct from "the value is undefined" (assemble.ts's own
-    // distinction between an absent key and an explicit undefined; D24/LAR-10 is why it matters
+    // distinction between an absent key and an explicit undefined; D24 is why it matters
     // here too: a section that was never asserted must key differently from one asserted empty).
     const present = section in untyped;
     const sectionFidelity = fidelity?.[section];
     const status = sectionFidelity?.status ?? 'missing';
     const missingKeys =
       sectionFidelity && sectionFidelity.status === 'degraded' ? sectionFidelity.missingKeys : [];
-    // MP5 F4: folded in alongside missingKeys — a drift whose ADDED set changes (a game update
-    // adds yet another undeclared key) must also re-emit a change (AD-044: may false-positive,
+    // Folded in alongside missingKeys — a drift whose ADDED set changes (a game update
+    // adds yet another undeclared key) must also re-emit a change (may false-positive,
     // must never false-negative).
     const addedKeys =
       sectionFidelity && sectionFidelity.status === 'degraded' ? sectionFidelity.addedKeys : [];

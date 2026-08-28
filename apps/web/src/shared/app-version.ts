@@ -5,7 +5,7 @@ export interface ResolveVersionLabelInput {
   override?: string;
 }
 
-/** Build the user-facing version label (REL-23 / REL-24). */
+/** Build the user-facing version label. */
 export function resolveVersionLabel({
   version,
   isProduction,

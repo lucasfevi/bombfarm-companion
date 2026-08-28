@@ -7,7 +7,8 @@ import {
 } from '@bombfarm/domain/save-schema';
 
 /**
- * MP5 F4 — deepened per-route schema fingerprints (`AD-086`). The spec's sharpest finding
+ * Deepened per-route schema fingerprints — the schema vocabulary lives in @bombfarm/domain,
+ * with this package taking the edge. The spec's sharpest finding
  * (spec.md Problem Statement) is that the fingerprint this replaces — a flat top-level required-
  * key LIST checked as a SUBSET — was authored from the already-drifted 2026-08-12 capture and
  * silently adopted the new shape as its own baseline: the `skills` section's required-key list
@@ -16,10 +17,10 @@ import {
  * checks.
  *
  * `RouteFingerprint` is now an alias of `@bombfarm/domain/save-schema`'s `SchemaFingerprint`:
- * every declared level names its COMPLETE key set (an added key is fatal, `MSG-02`/`MSG-03`), and
- * descent reaches the nested paths that actually drifted (`skills.totals`, `MSG-01`).
+ * every declared level names its COMPLETE key set (an added key is fatal), and
+ * descent reaches the nested paths that actually drifted (`skills.totals`).
  *
- * MSG-30: the required key sets below are the real top-level (and now nested) keys of the
+ * The required key sets below are the real top-level (and now nested) keys of the
  * 2026-08-12 anchor-calibration capture, taken out of band, then scrubbed and copied into
  * `src/__fixtures__/api-bodies.json` — each fingerprint below names that artifact and capture
  * directly via `sourceArtifact`, rather than only in this file-level comment.
@@ -143,7 +144,7 @@ export const ROUTE_FINGERPRINTS: Readonly<Record<AccountSection, RouteFingerprin
 
 /** A section fingerprint is either object-rooted (checked via `checkSchema` directly) or
  *  array-rooted (each element checked via `checkSchema`, indexed `root[i]…` — `heroes[3].in_market`,
- *  design §AD-087's own path example). Composed entirely from `@bombfarm/domain`'s exported
+ *  the fingerprint model's own path example). Composed entirely from `@bombfarm/domain`'s exported
  *  primitives; no new schema-engine surface is added to `packages/domain`. */
 export type SectionFingerprint =
   | ({ readonly kind: 'object' } & SchemaFingerprint)
@@ -183,7 +184,7 @@ export const SECTION_FINGERPRINTS: Readonly<Record<AccountSection, SectionFinger
  * delegates straight to `checkSchema`; `array`-kind checks every element (indexed `root[i]…`,
  * never `root.root[i]…`) and never passes vacuously on an empty array being "nothing to check" —
  * an empty array here IS a valid `ok:true` at runtime (an account can legitimately have zero
- * stored heroes mid-refresh); the anti-vacuity requirement (`MSG-06`) applies to the COMMITTED
+ * stored heroes mid-refresh); the anti-vacuity requirement applies to the COMMITTED
  * CORPUS the suite checks against, not to every runtime value this function is handed.
  */
 export function checkSectionShape(value: unknown, fingerprint: SectionFingerprint): ReturnType<typeof checkSchema> {

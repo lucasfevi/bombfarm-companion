@@ -1,6 +1,6 @@
 'use client';
 
-// Store-backed compat hook — provider removed in W4 (MOD-22).
+// Store-backed compat hook — provider removed in W4.
 import { usePlannerStore, selectLang, selectStrings } from '@/shared/stores';
 import type { Lang, Strings } from '@/shared/i18n';
 
@@ -10,7 +10,7 @@ type AppLangValue = {
   t: Strings;
 };
 
-/** Compat hook — same return shape as the former context provider (W4-07). */
+/** Compat hook — same return shape as the former context provider. */
 export function useAppLang(): AppLangValue {
   const lang = usePlannerStore(selectLang);
   const strings = usePlannerStore(selectStrings);

@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { STRINGS } from '@/shared/i18n';
 
 describe('explain-math roster team-plan section', () => {
-  it('documents duty and minimum forge in EN and PT (RGO-22)', () => {
+  it('documents duty and minimum forge in EN and PT', () => {
     const enProse = STRINGS.en.explainSections[8].p.join(' ');
     const ptProse = STRINGS.pt.explainSections[8].p.join(' ');
     const enCode = STRINGS.en.explainSections[8].code ?? '';

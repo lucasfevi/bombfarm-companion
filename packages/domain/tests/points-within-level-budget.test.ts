@@ -39,7 +39,7 @@
  *    Ivo wears eight items. The constructed one carries no gear and no other sheet ability, so the
  *    whole delta is the ability, and it survives the corpus changing under it. All three use save
  *    units and the game's own reading, not this model's output — the practice
- *    `save-units.test.ts` uses for Bellatrix's `crit_dmg` literal (`AD-068`).
+ *    `save-units.test.ts` uses for Bellatrix's `crit_dmg` literal.
  */
 import { readFileSync, readdirSync } from 'node:fs';
 import { dirname, join, relative } from 'node:path';

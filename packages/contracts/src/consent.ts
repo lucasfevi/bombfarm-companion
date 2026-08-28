@@ -1,5 +1,5 @@
 /**
- * Consent decision state (mp2-live-account-read, LAR-01, LAR-03…05). Owned here — not in
+ * Consent decision state (mp2-live-account-read). Owned here — not in
  * `@bombfarm/game-api`, where the reducer that operates on it lives — because it crosses the
  * `apps/desktop` main↔renderer IPC boundary (`consent:get`/`accept`/`decline`/`revoke` results,
  * `consent:changed` events) and `AGENTS.md` makes `@bombfarm/contracts` the one home for IPC
@@ -10,8 +10,9 @@
  * depend on game-api for the type — but game-api already depends on contracts for
  * `AccountSection`, so that would be a circular package dependency neither `tsc` nor `pnpm -r
  * build`'s topological ordering can resolve. Reason: this type is the canonical definition, and
- * `packages/game-api/src/consent.ts` imports it back type-only — the same AD-020 shape
- * (consumer -> contracts, type-only), applied in the direction that actually builds.
+ * `packages/game-api/src/consent.ts` imports it back type-only — the same type-only,
+ * consumer-to-contracts shape `@bombfarm/domain` uses for `@bombfarm/contracts`, applied in
+ * the direction that actually builds.
  */
 import type { AppLocale } from './locale.js';
 

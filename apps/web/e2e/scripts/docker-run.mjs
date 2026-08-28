@@ -7,7 +7,7 @@
  *   node e2e/scripts/docker-run.mjs smoke             # behavioral specs only
  *   node e2e/scripts/docker-run.mjs visual            # visual baselines only
  *   node e2e/scripts/docker-run.mjs update            # refresh changed snapshots
- *   node e2e/scripts/docker-run.mjs perf              # MOD-33 profiler harness (PERF=1)
+ *   node e2e/scripts/docker-run.mjs perf              # profiler harness (PERF=1)
  *   node e2e/scripts/docker-run.mjs build-image       # rebuild the local e2e image
  *   node e2e/scripts/docker-run.mjs shell             # interactive shell in the e2e container
  *   node e2e/scripts/docker-run.mjs test -- --grep x  # extra args after `--` → playwright
@@ -34,7 +34,7 @@ Modes:
   smoke        Behavioral specs only
   visual       Visual baseline specs only
   update       Refresh changed snapshots (review diffs before committing)
-  perf         MOD-33 profiler harness (dev-strict / next:dev, PERF=1 --project=perf)
+  perf         Profiler harness (dev-strict / next:dev, PERF=1 --project=perf)
   build-image  Rebuild the local Docker e2e image
   shell        Interactive bash in the e2e container
 

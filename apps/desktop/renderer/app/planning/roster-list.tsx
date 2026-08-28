@@ -1,8 +1,8 @@
 /**
- * The roster (design.md §7.2, MPV-12/13/14/15). Every row sourced from the parsed `HeroRecord`;
+ * The roster (design.md §7.2). Every row sourced from the parsed `HeroRecord`;
  * no local table markup — `DataTable` only (`Root scrollable` — the modern, non-deprecated form
  * of `TableScroller`, which `@typescript-eslint/no-deprecated` forbids). Selection is a
- * `Button`, so the only interactive control here is a shipped primitive (MPV-14).
+ * `Button`, so the only interactive control here is a shipped primitive.
  */
 import { Button, Chip, DataTable, cn } from '@bombfarm/ui';
 import { rarityLabel } from '@bombfarm/domain/game-labels';

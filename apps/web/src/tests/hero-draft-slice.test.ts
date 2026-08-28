@@ -90,7 +90,7 @@ describe('hero-draft slice', () => {
     expect(s.abilities).toEqual({ fireball: 3 });
   });
 
-  it('draft state and setters no longer expose observed-hit fields (BSPW1-AC-02)', () => {
+  it('draft state and setters no longer expose observed-hit fields (BSPW1)', () => {
     const s = usePlannerStore.getState();
     expect('obsHit' in s).toBe(false);
     expect('obsCrit' in s).toBe(false);

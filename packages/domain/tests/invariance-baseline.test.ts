@@ -1,18 +1,18 @@
 /**
- * What survives of MP5 F2's characterization baseline: the RECORDER, and the properties of the
- * recorder itself.
+ * What survives of the pre-deletion characterization baseline: the RECORDER, and the properties
+ * of the recorder itself.
  *
  * `recordInvarianceSurface` walks the whole surviving numeric surface of the corpus and encodes
  * every leaf with `encodeNumber`, a sign- and precision-preserving encoding chosen so a
  * comparison can be exact rather than tolerant — a decimal-digit tolerance would silently absorb
  * exactly the class of drift this was built to catch (a 5e-3 error still rounds "close"), and a
- * deep-equality comparison would treat `0` and `-0` as equal, which is the one corner (MKR-18) it
+ * deep-equality comparison would treat `0` and `-0` as equal, which is the one corner it
  * must not paper over. What remains asserted here is that the encoding round-trips exactly, that
  * the record's shape is complete for every hero, and that the recorded scalar count clears a
  * committed floor so a partially-empty recorder fails rather than passes.
  *
  * THE COMMITTED BASELINE IS DELETED (issue #206). `fixtures/invariance/baseline.json` was a
- * pre-deletion recording of ~2791 scalars, compared bit-exactly to prove that ONE deletion — F2's
+ * pre-deletion recording of ~2791 scalars, compared bit-exactly to prove that ONE deletion — the
  * retired damage arms, which this file is deliberately not allowed to name (see the note below) —
  * changed no surviving value. That deletion shipped, and the model has moved
  * repeatedly since — the baseline was re-recorded seven times chasing it — so the file could no
@@ -20,7 +20,7 @@
  * deletion it was recorded for. The seven re-recordings' footprints, which is the part worth
  * keeping, are preserved in `docs/fixture-corpus.md` §12.
  *
- * Named `invariance-*`, deliberately never named after any deleted arm (design TD-5) — a file
+ * Named `invariance-*`, deliberately never named after any deleted arm — a file
  * named after one would trip this feature's own absence guard (`source-surface.test.ts`).
  */
 import { readFileSync } from 'node:fs';
@@ -36,7 +36,7 @@ import {
   type InvarianceRecord,
 } from './helpers/invariance-record';
 
-describe('invariance baseline — the pre-deletion characterization harness (MP5 F2 T2)', () => {
+describe('invariance baseline — the pre-deletion characterization harness', () => {
   it('self-test: encodeNumber round-trips exactly for every finite double, and the four special cases', () => {
     const samples = [0, -0, 1, -1, 0.1, 1e21, -1e21, 1.008, 4 / 3, Number.MIN_VALUE, Number.MAX_VALUE, NaN, Infinity, -Infinity];
     for (const v of samples) {
@@ -50,13 +50,13 @@ describe('invariance baseline — the pre-deletion characterization harness (MP5
     }
   });
 
-  it('encodeNumber distinguishes -0 from +0 — the AC-8/MKR-18 corner', () => {
+  it('encodeNumber distinguishes -0 from +0', () => {
     expect(encodeNumber(-0)).toBe('-0');
     expect(encodeNumber(0)).toBe('0');
     expect(encodeNumber(-0)).not.toBe(encodeNumber(0));
   });
 
-  it('byte-reproducibility: two recordings in this session serialise identically (MKR-11)', () => {
+  it('byte-reproducibility: two recordings in this session serialise identically', () => {
     const first = serializeRecord(recordInvarianceSurface());
     const second = serializeRecord(recordInvarianceSurface());
     expect(second).toBe(first);

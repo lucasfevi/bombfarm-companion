@@ -35,7 +35,7 @@ import { teamPlanInputFromFixture, TEAM_PLAN_FIXTURE, TEAM_PLAN_LARGE_FIXTURE } 
  * any committed save happens to trigger it.
  */
 
-// MP5 F1 (AD-068 class (b) — structural): re-pointed onto the post-patch corpus. This grid's
+// F1 (ground-truth-rule class (b) — structural): re-pointed onto the post-patch corpus. This grid's
 // invariant (assertStepInvariants) is checked at every cell regardless of which file backs it,
 // so the re-point itself carries no loss; only the three named FULL_BUDGET_CASES keys (specific
 // configs the plan's authors measured as reproducing the option-B bug on the OLD fixture) are

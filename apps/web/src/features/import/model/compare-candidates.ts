@@ -55,7 +55,7 @@ export function compareCandidates(
 }
 
 /**
- * `BSP-04b` / `AC-35` — selects which cap-saturation copy branch a candidate's
+ * Selects which cap-saturation copy branch a candidate's
  * `budgetMismatch` issue (if any) needs. Three branches over `saturatedStats`:
  * neither saturated → the plain shortfall; exactly one → names it as the likely
  * destination of the missing points; both → the split cannot be recovered.
@@ -75,7 +75,7 @@ export function pointIssueCopyKey(issues: PointInferenceIssue[]): PointIssueCopy
   return 'shortfall';
 }
 
-/** Renders `pointIssueCopyKey`'s branch as EN/PT copy (`BSP-04b`, `AC-35`). */
+/** Renders `pointIssueCopyKey`'s branch as EN/PT copy. */
 export function pointIssueCopyText(strings: Strings, issues: PointInferenceIssue[]): string | null {
   const key = pointIssueCopyKey(issues);
   if (key === null) return null;
@@ -85,10 +85,10 @@ export function pointIssueCopyText(strings: Strings, issues: PointInferenceIssue
 }
 
 /**
- * `BSP-06`/`DEC-09`/`AC-36` — `parseSaveFile`'s structured whole-file `rejected` field,
+ * `parseSaveFile`'s structured whole-file `rejected` field,
  * rendered EN+PT in place of the removed `importResetWarning*` block.
  *
- * MP5 F4 (`MSG-14`): `unsupportedSaveShape` renders the generic, patch-durable string — the
+ * `unsupportedSaveShape` renders the generic, patch-durable string — the
  * other two branches are unchanged.
  */
 export function rejectionText(strings: Strings, rejected: ParseRejection): string {

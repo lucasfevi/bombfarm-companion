@@ -42,7 +42,7 @@ function requireDesktopBundle(): boolean {
   return false;
 }
 
-describe('apps/desktop main process <-> @bombfarm/domain edge (MP3 F1, AD-032)', () => {
+describe('apps/desktop main process <-> @bombfarm/domain edge', () => {
   it('@bombfarm/domain is a declared workspace dependency, not a phantom', () => {
     const manifest = JSON.parse(
       readFileSync(resolve(desktopRoot, 'package.json'), 'utf8'),
@@ -98,7 +98,7 @@ describe('apps/desktop main process <-> @bombfarm/domain edge (MP3 F1, AD-032)',
     expect(bundle).not.toMatch(/require\(['"]@bombfarm\/domain/);
   });
 
-  it('the desktop bundle does not drag in the team-plan solver (AD-016 budget)', () => {
+  it('the desktop bundle does not drag in the team-plan solver', () => {
     if (!requireDesktopBundle()) return;
 
     const bundle = readFileSync(mainBundlePath, 'utf8');

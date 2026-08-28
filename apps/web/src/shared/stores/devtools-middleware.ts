@@ -12,7 +12,7 @@ export type SubscribeCreator<T> = StateCreator<T, [['zustand/subscribeWithSelect
  * `NODE_ENV` guard alone is not enough: webpack marks a statically-imported binding as
  * used at module-graph time, so `zustand/middleware` ships whole even when the branch
  * that uses it is provably dead. Measured cost of that leak: **1,517 B gzip**
- * (3,563 B raw). See `RES-02`.
+ * (3,563 B raw).
  *
  * The `NODE_ENV` check below is kept as defence in depth — if the alias is ever removed
  * or silently stops matching, behavior stays correct and only the bytes come back.

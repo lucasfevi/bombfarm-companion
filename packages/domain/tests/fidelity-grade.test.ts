@@ -29,16 +29,16 @@ function expectFidelityError(fn: () => void, code: string): FidelityGateError {
 }
 
 describe('assertCaptureFullFidelity', () => {
-  it('throws unverifiableFidelity when the payload carries no fidelity block at all (FID-07)', () => {
+  it('throws unverifiableFidelity when the payload carries no fidelity block at all', () => {
     const err = expectFidelityError(() => assertCaptureFullFidelity(payloadWith(undefined), 'live'), 'unverifiableFidelity');
     expect(err.message).toContain('live');
     expect(err.message).toContain('unverifiable');
     expect(err.message).toContain('not "full"');
   });
 
-  it('pins the intentional divergence from ACS-05.5: deriveAccountFidelity(undefined) still grades full', () => {
-    // The guard does NOT delegate the absent-block decision to deriveAccountFidelity (design
-    // TD-3) — ACS-05.5 is correct for the file adapter and would be wrong here.
+  it('pins the intentional divergence: deriveAccountFidelity(undefined) still grades full', () => {
+    // The guard does NOT delegate the absent-block decision to deriveAccountFidelity —
+    // that behavior is correct for the file adapter and would be wrong here.
     expect(deriveAccountFidelity(undefined)).toEqual({ grade: 'full', degradedSections: [] });
   });
 
@@ -120,7 +120,7 @@ describe('assertCaptureFullFidelity', () => {
     }
   });
 
-  it('accepts a cast-in future "degraded" status as a valid shape and names it verbatim (AD-023 forward-compat, zero edits here)', () => {
+  it('accepts a cast-in future "degraded" status as a valid shape and names it verbatim (forward-compat, zero edits here)', () => {
     const futureSection = { status: 'degraded', capturedAt: CAPTURED_AT } as unknown as SectionFidelity;
     const fidelity = { ...allResolved(), items: futureSection };
     const err = expectFidelityError(() => assertCaptureFullFidelity(payloadWith(fidelity), 'live'), 'notFullFidelity');

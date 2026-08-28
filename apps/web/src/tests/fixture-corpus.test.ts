@@ -1,5 +1,5 @@
 /**
- * MP5 F1 (T9) — the post-patch corpus guard. Mirrors `fixtures-scrubbed.test.ts`'s directory-walk
+ * (T9) — the post-patch corpus guard. Mirrors `fixtures-scrubbed.test.ts`'s directory-walk
  * shape. Every assertion here would have been RED on every commit before T8's deletion — that is
  * the point: the corpus guard is written last, once nothing references the old corpus any more.
  *
@@ -61,7 +61,7 @@ const COMPUTED_PATH_ALLOWLIST: Record<string, string> = {
     'read only by packages/domain tests (farm-point-rank, team-plan-step-monotonicity, points-within-level-budget); no web-side scorer suite exists to name it',
 };
 
-describe('sheet-math fixture corpus guard (MP5 F1)', () => {
+describe('sheet-math fixture corpus guard', () => {
   const sheetMathJsonFiles = readdirSync(SHEET_MATH_DIR).filter((f) => f.endsWith('.json'));
   const allFixtureJsonFiles = listFiles(FIXTURES_DIR, (name) => name.endsWith('.json'));
 
@@ -137,7 +137,7 @@ describe('sheet-math fixture corpus guard (MP5 F1)', () => {
     expect(mismatches, mismatches.join('\n')).toEqual([]);
   });
 
-  // Scoped to sheet-math/ — the corpus this feature actually manages (MFR-04's subject is the
+  // Scoped to sheet-math/ — the corpus this feature actually manages (the subject is the
   // 17 fixtures orphaned by the quarantined-suite deletion, not a repo-wide fixture audit).
   // `fixtures/i18n-strings-main.json` and `fixtures/storage-roundtrip-20260729.json` are
   // pre-existing, unrelated fixtures with zero domain-side consumers (only apps/web's own

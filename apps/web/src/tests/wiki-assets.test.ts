@@ -65,7 +65,7 @@ describe('wiki-assets', () => {
     expect(known.record.skin).toBe(8);
     expect(skinIssues(known)).toEqual([]);
 
-    // One past the end must NOT clamp to the nearest index (AD-BSP-29) — a nearest-index
+    // One past the end must NOT clamp to the nearest index — a nearest-index
     // clamp would render a different hero's face, the exact failure this whole change is about.
     const unknown = withSkin(9).candidates[0];
     expect(unknown.record.skin).toBe(0);

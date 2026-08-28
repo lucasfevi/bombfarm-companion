@@ -17,7 +17,7 @@ import {
   notificationTitleRowClass,
 } from './notification-center.recipe';
 
-/** Same fixed icon-per-variant mapping as `ToastItem` (TST-13's rule extends to the history view). */
+/** Same fixed icon-per-variant mapping as `ToastItem` (that rule extends to the history view). */
 const NOTIFICATION_VARIANT_ICON = {
   success: 'check-circle',
   error: 'x-circle',
@@ -47,7 +47,7 @@ export type NotificationCenterProps = {
 };
 
 /**
- * NotificationCenter — fully controlled ring-buffer *view* (TST-19). The
+ * NotificationCenter — fully controlled ring-buffer *view*. The
  * ring buffer itself (capping, persistence) is `toast-queue.ts`'s
  * `NOTIFICATION_BUFFER_LIMIT` / M5's NotificationService; this component only
  * renders whatever `items` it's given.
@@ -62,7 +62,7 @@ export function NotificationCenter({
   className,
 }: NotificationCenterProps) {
   if (items.length === 0) {
-    // TST-21 — the shared EmptyState, not a bespoke empty message.
+    // The shared EmptyState, not a bespoke empty message.
     return <EmptyState title={emptyLabel} className={className} />;
   }
 

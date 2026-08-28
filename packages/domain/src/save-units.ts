@@ -1,5 +1,5 @@
 /**
- * BSPW5-02 (AD-BSP-19a, DEC-09) — the ONE shared save→planner unit-conversion site.
+ * The ONE shared save→planner unit-conversion site.
  * `stats` and `birth_stats` share the same key set and unit table — `saveSheetUnits` and
  * `birthFromSave` are the same function under two names, kept separate only so call sites
  * read clearly (`docs/architecture.md` ownership rule 2 — pure math, no React).
@@ -20,7 +20,7 @@ function asNumber(value: unknown, fallback = 0): number {
   return typeof value === 'number' && Number.isFinite(value) ? value : fallback;
 }
 
-/** AD-BSP-19a — the single conversion table, shared by both `stats` and `birth_stats`. */
+/** The single conversion table, shared by both `stats` and `birth_stats`. */
 export function saveSheetUnits(raw: Record<string, unknown>): SheetStats {
   return {
     attack: asNumber(raw.dmg),
@@ -34,7 +34,7 @@ export function saveSheetUnits(raw: Record<string, unknown>): SheetStats {
   };
 }
 
-/** Same table as {@link saveSheetUnits} — named for `birth_stats` call sites (AC-08). */
+/** Same table as {@link saveSheetUnits} — named for `birth_stats` call sites. */
 export function birthFromSave(raw: Record<string, unknown>): BirthStats {
   return saveSheetUnits(raw);
 }
@@ -65,7 +65,7 @@ const BIRTH_STATS_KEYS = [
 
 /**
  * WHEN a hero object carries a `birth_stats` block with all 8 save keys present and
- * finite THEN it can compose a birth sheet (`AD-BSP-05`). A partial block — missing key
+ * finite THEN it can compose a birth sheet. A partial block — missing key
  * or a non-finite value (NaN, Infinity, string, null) — is NOT usable; the whole save
  * rejects rather than composing from an invented default (spec.md edge cases).
  */

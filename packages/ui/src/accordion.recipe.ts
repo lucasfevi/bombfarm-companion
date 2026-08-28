@@ -1,7 +1,7 @@
 import { cva, type VariantProps } from 'class-variance-authority';
 
 /**
- * Accordion / Collapsible shared trigger chrome (UAC-03). One recipe serves
+ * Accordion / Collapsible shared trigger chrome. One recipe serves
  * both the `ExplainSection` uppercase-accent header look (`tone: 'section'`,
  * absorbing the former section-summary chrome from `panel-field.recipe.ts`)
  * and the compact per-row stat-breakdown trigger the sibling
@@ -9,8 +9,8 @@ import { cva, type VariantProps } from 'class-variance-authority';
  * rotation is bound to the trigger's own
  * `data-panel-open` attribute via a descendant selector — no `group` needed.
  *
- * Fixed layout bundles (no real variants) are documented recipe constants
- * (DS-05) — imported directly from this module, not re-exported from the
+ * Fixed layout bundles (no real variants) are documented recipe constants —
+ * imported directly from this module, not re-exported from the
  * barrel.
  */
 
@@ -61,6 +61,6 @@ export const accordionLedgerBodyClass =
 /** Consumer-supplied panel body padding (kept off the animated panel itself, spec A8). */
 export const accordionBodyClass = 'w-full p-4';
 
-/** Fixed chevron icon slot — `shrink-0` fixed size so it never causes header reflow (UAC-05); rotation keyed on the trigger's `data-panel-open` (see `accordionRecipe`). */
+/** Fixed chevron icon slot — `shrink-0` fixed size so it never causes header reflow; rotation keyed on the trigger's `data-panel-open` (see `accordionRecipe`). */
 export const accordionIconClass =
   'shrink-0 size-4 text-accent motion-safe:transition-transform motion-safe:duration-150 motion-reduce:transition-none';

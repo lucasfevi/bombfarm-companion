@@ -9,7 +9,7 @@ import {
   toDomainLang,
 } from './locale.js';
 
-describe('APP_LOCALES / the two mapping tables (AD-053/AD-054/AD-056)', () => {
+describe('APP_LOCALES / the two mapping tables', () => {
   it('APP_LOCALES is exactly the closed AppLocale union', () => {
     expect(APP_LOCALES).toEqual(['en', 'pt-BR']);
   });
@@ -28,7 +28,7 @@ describe('APP_LOCALES / the two mapping tables (AD-053/AD-054/AD-056)', () => {
     expect(BCP47_BY_LOCALE).toEqual({ en: 'en-US', 'pt-BR': 'pt-BR' });
   });
 
-  it('toDomainLang is the one mapping (AD-056)', () => {
+  it('toDomainLang is the one mapping', () => {
     expect(toDomainLang('en')).toBe('en');
     expect(toDomainLang('pt-BR')).toBe('pt');
   });
@@ -48,14 +48,14 @@ describe('isAppLocale', () => {
   );
 });
 
-describe('resolveStartupLocale (AD-053)', () => {
+describe('resolveStartupLocale', () => {
   it.each([
     // Portuguese variants — every one resolves to pt-BR/system, not only exact pt-BR.
     ['pt-BR', 'pt-BR', 'system'],
     ['pt_BR', 'pt-BR', 'system'],
     ['PT-br', 'pt-BR', 'system'],
     ['pt', 'pt-BR', 'system'],
-    // pt-PT: the token names the translation that exists (AD-053), not the player's region — a
+    // pt-PT: the token names the translation that exists, not the player's region — a
     // pt-PT player reads PT-BR far better than English, and it is a fully overridable default.
     ['pt-PT', 'pt-BR', 'system'],
     ['pt-AO', 'pt-BR', 'system'],
@@ -78,14 +78,14 @@ describe('resolveStartupLocale (AD-053)', () => {
       const result = resolveStartupLocale({ stored: null, systemLocale });
       // Both locale AND source are asserted on every row: { locale: 'en', source: 'system' } and
       // { locale: 'en', source: 'default' } have identical `locale` output, so asserting locale
-      // alone would let the two branches be silently merged — exactly the MIN-06/MIN-07
-      // distinction this table exists to protect.
+      // alone would let the two branches be silently merged — exactly the distinction between
+      // the system-resolved locale and the safe-default fallback that this table exists to protect.
       expect(result.locale).toBe(expectedLocale);
       expect(result.source).toBe(expectedSource);
     },
   );
 
-  it("stored 'en' beats a conflicting pt-BR system locale — source: 'stored', the OS is not consulted (MIN-09)", () => {
+  it("stored 'en' beats a conflicting pt-BR system locale — source: 'stored', the OS is not consulted", () => {
     const result = resolveStartupLocale({ stored: 'en', systemLocale: 'pt-BR' });
     expect(result).toEqual({ locale: 'en', source: 'stored' });
   });

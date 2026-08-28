@@ -485,7 +485,8 @@ The last four resolutions were not re-points, and each is worth naming:
   browser specs about importing had nothing to assert on — and `import-save.test.ts`'s own
   `baseSave()` blocked its Brenna for the same reason. Both were recomputed by feeding
   `composeSheetFromBirth` each hero's own birth/level/stars/loadout/tree with an all-zero point
-  vector and converting back to save units (AD-BSP-19a). Every hero now imports with zero issues.
+  vector and converting back to save units via the single shared conversion table. Every hero now
+  imports with zero issues.
   The useful negative on the synthetic Brenna: `energia`, `speed`, `cooldown_reduction` and `luck`
   came back byte-identical, so the drift was in the attack level curve, the crit-chance and
   crit-damage tree terms, and Ponta de Diamante's penetration, and nowhere else.
@@ -853,18 +854,19 @@ with the same discipline. That diff was:
 
 Verbatim, as it stood in `invariance-baseline.test.ts`'s header at deletion:
 
-MP5 F2 (T2, `AD-076`) — the pre-deletion characterization baseline. The mechanism that makes
+The pre-deletion characterization baseline — an explicitly projected record with a
+sign-preserving number encoder. The mechanism that makes
 MP5's headline risk ("F2 edits fidelity-gated sheet math while deleting fields, and numbers
 drift silently") assertable rather than reviewable: a committed pre-deletion recording of the
 entire SURVIVING numeric surface, compared bit-exactly against every post-deletion commit.
 
-Named `invariance-*`, deliberately never named after any deleted arm (design TD-5) — a file
+Named `invariance-*`, deliberately never named after any deleted arm — a file
 named after one would trip this feature's own absence guard (T10's `source-surface.test.ts`).
 
 A decimal-digit-tolerance assertion style is deliberately never used in this file: it would
 silently absorb exactly the class of drift this suite exists to catch (a 5e-3 error still
 rounds "close"). A deep-equality assertion is never used for numbers either — it treats `0`
-and `-0` as equal, which is the one corner (MKR-18) this suite must not paper over. Every
+and `-0` as equal, which is the one corner this suite must not paper over. Every
 numeric leaf in the record is pre-encoded by `encodeNumber` (sign- and precision-preserving),
 so the top-level comparison is exact string equality on the canonical JSON serialisation, and
 the walk below decodes leaves back to numbers for a same-value comparison (`Object.is`) only
@@ -931,7 +933,7 @@ and the throughput hanging off that (`sustainedDps`, `derive.dps`, `pipelineForH
 NOT moved, and the proof this was a House-cycle change and nothing else: every sheet key on
 every subject (`applySkillTree`, `composeSheetFromBirth`, `sheetsFromBirth`, `peelSheetStages`,
 `peelSheetSources`), every `inferSpentPoints` value, and `avgHitBase` — rest seconds enter
-after the damage math, never inside it. The MKR-14 `formulaDmg` entries were again held at
+after the damage math, never inside it. The permitted-delta `formulaDmg` entries were again held at
 their PRE-deletion values through this re-record, so `PERMITTED_DELTAS` stays a live exception.
 
 ---
@@ -998,7 +1000,7 @@ RE-RECORDED (1) at the flat-crit-damage fix (`POINT_GAIN.critDmgFlat`). Exactly 
 
 NOT moved, and the proof this was a crit-damage change and nothing else: every
 `inferSpentPoints.*` value on all 13 heroes (the recovered point vectors are unchanged), and
-every non-`critDmg` sheet key on every hero and every subject. The MKR-14 `formulaDmg`
+every non-`critDmg` sheet key on every hero and every subject. The permitted-delta `formulaDmg`
 entries below were deliberately held at their PRE-deletion values through the re-record, so
 `PERMITTED_DELTAS` stays a live exception rather than becoming a silently-satisfied no-op.
 

@@ -202,7 +202,7 @@ test.describe('effective stats panel (EST / ESB)', () => {
     const panel = effectivePanel(page, 'en');
     const attackBtn = panel.getByRole('button', { name: /Show breakdown of Attack/i });
     await attackBtn.click();
-    // BSPW6-06/BSP-20: steps now name their GAME line (Hero/Gear/Ability/Skill tree,
+    // Steps now name their GAME line (Hero/Gear/Ability/Skill tree,
     // LEDGER_SOURCE_GROUP), not the raw source — Attack's base+level+stars+points steps all
     // read "Hero" (the old "Level" line-item name is gone by design).
     await expect(panel.getByText(/^Hero$/i).first()).toBeVisible();
@@ -213,7 +213,7 @@ test.describe('effective stats panel (EST / ESB)', () => {
     await expect(panel.locator('code').filter({ hasText: /max\(2/ })).toBeVisible();
   });
 
-  test('EN+PT: a stat with a real sheet ability + tree bonus shows all four game lines: Hero / Gear / Ability / Skill tree (AC-29, AC-30)', async ({
+  test('EN+PT: a stat with a real sheet ability + tree bonus shows all four game lines: Hero / Gear / Ability / Skill tree', async ({
     page,
   }) => {
     // Attack structurally never gets an Ability line (its sheetOther is hardcoded 0 in

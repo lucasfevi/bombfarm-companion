@@ -1,5 +1,5 @@
 /**
- * MOD-33 scenario catalogue — declarative records for the perf harness.
+ * Scenario catalogue — declarative records for the perf harness.
  * Concrete selectors are discovered at run time and recorded for perf-baseline.md.
  */
 import type { Locator, Page } from '@playwright/test'
@@ -29,7 +29,7 @@ const TAB_NAME: Record<PlannerTabId, RegExp> = {
   points: /pontos|points/i,
 }
 
-/** Ensure the named planner tab is active (AD-019 — pin start tab explicitly). */
+/** Ensure the named planner tab is active (pin start tab explicitly). */
 export async function ensurePlannerTab(page: Page, tab: PlannerTabId): Promise<void> {
   const loc = page.getByRole('tab', { name: TAB_NAME[tab] })
   await loc.waitFor({ state: 'visible' })
@@ -51,7 +51,7 @@ export const scenarios: Scenario[] = [
       reason:
         'N/A — unreachable: setHeroName is only called programmatically (apply/new-hero); ' +
         'no hero-name text input in src/components/** (import-only roster). ' +
-        'Fan-out proxy: MOD-18 unit assertion (heroName write → zero computeAdvisorPipeline).',
+        'Fan-out proxy: unit assertion (heroName write → zero computeAdvisorPipeline).',
     },
     precondition: async () => {
       throw new Error('P-01 is skipped')

@@ -1,7 +1,7 @@
 /**
- * MP5 F4 (T9, `AD-089`) — SUPERSEDES `MSC-10` for keystone-carrying records. F3's version of
+ * (T9) — SUPERSEDES the old discard-and-keep rule for keystone-carrying records. F3's version of
  * this file (`storage-legacy-keystone-fields.test.ts`) asserted a keystone-carrying
- * `bf-hp-account-v1` value "loads and keeps every survivor" — the exact opposite of `MSG-21`.
+ * `bf-hp-account-v1` value "loads and keeps every survivor" — the exact opposite of the drop-the-whole-record rule.
  * Under this feature, a stored planner account carrying any of the five retired `TreeState`
  * fields is dropped WHOLE, never discarded-and-kept: `dropStaleLocalAccount()` runs as the first
  * statement of `hydratePlannerStore()`, before `loadAccountShared`/`loadHeroes` ever see the raw
@@ -31,7 +31,7 @@ function memoryLocalStorage() {
 }
 
 // A pre-change bf-hp-account-v1 value carrying all five keystone-derived tree fields — the
-// exact shape TreeState required before MP5 F3. Same string this file used pre-rewrite. A JSON
+// exact shape TreeState required before this change. Same string this file used pre-rewrite. A JSON
 // string, not a TS literal, so it does not hit the excess-property check a typed literal would
 // now trip (same reasoning as storage-legacy-obs-fields.test.ts's context.obsHit/obsCrit case).
 const LEGACY_ACCOUNT_JSON =
@@ -46,7 +46,7 @@ const LEGACY_ACCOUNT_JSON =
 
 const LEGACY_HEROES_JSON = '[{"id":"h1","name":"Legacy","sourceId":"save-1","naked":{},"loadout":{}}]';
 
-describe('legacy keystone-carrying account is dropped whole (MP5 F4, AD-089 — supersedes MSC-10 for these five fields)', () => {
+describe('legacy keystone-carrying account is dropped whole (supersedes the old discard-and-keep rule for these five fields)', () => {
   beforeEach(() => {
     vi.stubGlobal('localStorage', memoryLocalStorage());
     resetPlannerStoreForTests();
@@ -59,7 +59,7 @@ describe('legacy keystone-carrying account is dropped whole (MP5 F4, AD-089 — 
   });
 
   it('drops the whole account instead of loading it with the five keystone fields merely discarded — the app starts from defaults', () => {
-    // The store's actual "existing empty state" (MSG-22) — captured on the pristine, never-
+    // The store's actual "existing empty state" — captured on the pristine, never-
     // hydrated store `beforeEach` just reset to. Not necessarily `DEFAULT_ACCOUNT()` verbatim:
     // this snapshot goes through whatever `selectAccountShared` currently derives (issue #132:
     // an unset `teamBuffsOverride` reads back as `{}` here, not a real roster-derived total,
@@ -77,7 +77,7 @@ describe('legacy keystone-carrying account is dropped whole (MP5 F4, AD-089 — 
     // before ever being normalized and served.
     const account = selectAccountShared(usePlannerStore.getState());
     expect(account).toEqual(emptyStateAccount);
-    // No placeholder/zeroed roster either — the existing empty state (MSG-22).
+    // No placeholder/zeroed roster either — the existing empty state.
     expect(usePlannerStore.getState().heroes).toEqual([]);
   });
 
@@ -104,7 +104,7 @@ describe('legacy keystone-carrying account is dropped whole (MP5 F4, AD-089 — 
     expect(localStorage.getItem('bf-hp-heroes-v2')).toBeNull();
   });
 
-  it('a keystone field with an all-false/zero value still triggers the drop — presence, not truthiness (MSG-21)', () => {
+  it('a keystone field with an all-false/zero value still triggers the drop — presence, not truthiness', () => {
     const allFalseJson =
       '{"tree":{"danoTotal":1,"critChance":0,"critDmg":0,"speed":0,"energy":0,"teamCoinPct":0,' +
       '"glassCannon":false,"tempoDobrado":false,"abisso":false,"abissoBase":0,"critDmgMult":1,' +

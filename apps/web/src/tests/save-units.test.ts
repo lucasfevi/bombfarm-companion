@@ -1,5 +1,5 @@
 /**
- * BSPW5-02 — AD-BSP-19a's single shared unit-conversion site (DEC-09). Every assertion
+ * The single shared unit-conversion site. Every assertion
  * here is a hand-computed literal, never a round-trip through another converter — a shared
  * converter that only proves itself against its own inverse could cancel its own error on
  * both sides (design.md's stated risk).
@@ -7,7 +7,7 @@
 import { describe, expect, it } from 'vitest';
 import { birthFromSave, hasUsableBirthStats, saveSheetUnits, treeTotalsFromSave } from '@bombfarm/domain/save-units';
 
-describe('saveSheetUnits / birthFromSave (AC-08 — hand-computed literals)', () => {
+describe('saveSheetUnits / birthFromSave (hand-computed literals)', () => {
   it('dmg / energia / speed convert 1:1', () => {
     const converted = saveSheetUnits({ dmg: 1470.4, energia: 836.4, speed: 50.3 });
     expect(converted.attack).toBe(1470.4);
@@ -31,20 +31,20 @@ describe('saveSheetUnits / birthFromSave (AC-08 — hand-computed literals)', ()
     expect(saveSheetUnits({ crit_dmg: 1.6236 }).critDmg).toBeCloseTo(62.36, 9);
   });
 
-  it('AC-08: Bellatrix\'s birth_stats.crit_dmg 1.67344467136338 converts to 67.344467136338…', () => {
+  it('Bellatrix\'s birth_stats.crit_dmg 1.67344467136338 converts to 67.344467136338…', () => {
     const converted = birthFromSave({ crit_dmg: 1.67344467136338 });
     expect(converted.critDmg).toBeCloseTo(67.344467136338, 9);
   });
 
-  it('AC-08: Bellatrix\'s birth_stats.luck converts to percent, not a fraction', () => {
+  it('Bellatrix\'s birth_stats.luck converts to percent, not a fraction', () => {
     // Real fixture value (save-20260813-5heroes.json, Bellatrix birth_stats.luck) —
-    // MP5 F1 (AD-068 class (a) — re-read from the post-patch capture).
+    // The ground-truth rule's class (a) (re-read from the post-patch capture).
     const converted = birthFromSave({ luck: 0.0922693386123672 });
     expect(converted.luck).toBeCloseTo(9.22693386123672, 9);
     expect(converted.luck).not.toBeCloseTo(0.0922693386123672, 3);
   });
 
-  it('saveSheetUnits and birthFromSave are the same table (DEC-09)', () => {
+  it('saveSheetUnits and birthFromSave are the same table', () => {
     const raw = {
       dmg: 123.194610565468,
       energia: 230.190706065598,

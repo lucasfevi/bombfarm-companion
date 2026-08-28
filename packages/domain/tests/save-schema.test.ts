@@ -14,7 +14,7 @@ function fingerprint(root: string, level: SchemaLevel): SchemaFingerprint {
 }
 
 /** A valid `skills.totals` body built from the exported level's own key list (engine test only —
- * MSG-10's "written down as literals" applies to the T4/T5 corpus checks, not this generic
+ * the "written down as literals" baseline rule applies to the T4/T5 corpus checks, not this generic
  * mechanics suite). */
 function validSkillsTotals(): Record<string, number> {
   return Object.fromEntries(SCHEMA_LEVELS.skillsTotals.keys.map((key) => [key, 1]));
@@ -55,7 +55,7 @@ function validCasa(overrides: Record<string, unknown> = {}): Record<string, unkn
   };
 }
 
-describe('checkSchema — the declared-path engine (MSG-01…MSG-07)', () => {
+describe('checkSchema — the declared-path engine', () => {
   it('returns exactly {ok:true} with no missingKeys/addedKeys property on a matching body', () => {
     const result = checkSchema(validSkills(), fingerprint('skills', SCHEMA_LEVELS.skills));
     expect(result).toEqual({ ok: true });
@@ -70,7 +70,7 @@ describe('checkSchema — the declared-path engine (MSG-01…MSG-07)', () => {
     expect(result).toEqual({ ok: false, missingKeys: ['skills.gold'], addedKeys: [] });
   });
 
-  it('a removed NESTED key is reported path-qualified (MSG-01) — skills.totals.vagas_campo', () => {
+  it('a removed NESTED key is reported path-qualified — skills.totals.vagas_campo', () => {
     const body = validSkills();
     const totals = body.totals as Record<string, unknown>;
     delete totals.vagas_campo;
@@ -78,13 +78,13 @@ describe('checkSchema — the declared-path engine (MSG-01…MSG-07)', () => {
     expect(result).toEqual({ ok: false, missingKeys: ['skills.totals.vagas_campo'], addedKeys: [] });
   });
 
-  it('an added TOP-LEVEL key is fatal, demonstrated separately from the nested case (MSG-02, MSG-03)', () => {
+  it('an added TOP-LEVEL key is fatal, demonstrated separately from the nested case', () => {
     const body = { ...validSkills(), something_new: 1 };
     const result = checkSchema(body, fingerprint('skills', SCHEMA_LEVELS.skills));
     expect(result).toEqual({ ok: false, missingKeys: [], addedKeys: ['skills.something_new'] });
   });
 
-  it('an added NESTED key is fatal, path-qualified (MSG-02)', () => {
+  it('an added NESTED key is fatal, path-qualified', () => {
     const body = validSkills();
     (body.totals as Record<string, unknown>).something_new = 1;
     const result = checkSchema(body, fingerprint('skills', SCHEMA_LEVELS.skills));
@@ -103,7 +103,7 @@ describe('checkSchema — the declared-path engine (MSG-01…MSG-07)', () => {
     }
   });
 
-  it('exact-key model: an allowance key and an optional key are never reported added; anything else is (MSG-04)', () => {
+  it('exact-key model: an allowance key and an optional key are never reported added; anything else is', () => {
     const level: SchemaLevel = { keys: ['a'], optional: ['b'], allowance: ['c'] };
     const okBody = checkSchema({ a: 1, b: 2, c: 3 }, fingerprint('root', level));
     expect(okBody).toEqual({ ok: true });
@@ -128,7 +128,7 @@ describe('checkSchema — the declared-path engine (MSG-01…MSG-07)', () => {
     expect(result).toEqual({ ok: true });
   });
 
-  it('declared value map (MSG-07): added/removed entries inside stay ok — only presence + container kind matter', () => {
+  it('declared value map: added/removed entries inside stay ok — only presence + container kind matter', () => {
     const emptied = validSkills();
     emptied.levels = {};
     emptied.refunds = { newEntry: 1, anotherEntry: 2 };
@@ -201,7 +201,7 @@ describe('checkSchema — the declared-path engine (MSG-01…MSG-07)', () => {
     expect(result).toEqual({ ok: true });
   });
 
-  it('every element of a declared array is checked, indexed root.path[i].key (MSG-06)', () => {
+  it('every element of a declared array is checked, indexed root.path[i].key', () => {
     const level: SchemaLevel = {
       keys: ['heroes'],
       children: { heroes: { kind: 'array', element: SCHEMA_LEVELS.hero } },
@@ -224,7 +224,7 @@ describe('checkSchema — the declared-path engine (MSG-01…MSG-07)', () => {
   });
 });
 
-describe('assertNonEmptyCorpusArray — MSG-06 anti-vacuity #1', () => {
+describe('assertNonEmptyCorpusArray — anti-vacuity #1', () => {
   it('throws, naming the path, when the array is empty', () => {
     expect(() => assertNonEmptyCorpusArray([], 'save.heroes')).toThrow(/save\.heroes/);
   });
@@ -234,7 +234,7 @@ describe('assertNonEmptyCorpusArray — MSG-06 anti-vacuity #1', () => {
   });
 });
 
-describe('assertOptionalKeyWitnessedBothWays — AD-087 anti-vacuity #2', () => {
+describe('assertOptionalKeyWitnessedBothWays — anti-vacuity #2', () => {
   it('throws when the key is never present in the corpus (dead optional)', () => {
     const elements = [{ a: 1 }, { a: 2 }];
     expect(() => assertOptionalKeyWitnessedBothWays(elements, 'slot', 'save.items')).toThrow(/never present/);

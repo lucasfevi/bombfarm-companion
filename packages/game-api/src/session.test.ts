@@ -7,7 +7,7 @@ import { consentRecord, grantedConsent } from './test-fixtures.js';
 
 const SENTINEL = 'sentinel-7f3a9c2e-do-not-leak';
 
-describe('SessionToken — a token cannot be printed (LAR-12)', () => {
+describe('SessionToken — a token cannot be printed', () => {
   const cases: ReadonlyArray<{ readonly label: string; readonly render: (t: SessionToken) => string }> = [
     { label: 'String()', render: (t) => String(t) },
     {
@@ -103,7 +103,7 @@ describe('SessionToken#redactFrom', () => {
   });
 });
 
-describe('grantSession — runtime enforcement (AD-025: independent of the compile-time check)', () => {
+describe('grantSession — runtime enforcement (independent of the compile-time check)', () => {
   const NOW = '2026-08-12T13:15:38.000Z';
   const creds = { accountId: '486', token: SessionToken.create(SENTINEL) };
 

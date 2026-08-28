@@ -2,7 +2,7 @@ import type { AppLocale, ConsentDecision, ConsentRecord } from '@bombfarm/contra
 import { CONSENT_TEXT_VERSION } from './consent-text.js';
 
 /**
- * Consent — the pure state machine (LAR-01, LAR-03…05). No I/O, no clock: `now` is injected by
+ * Consent — the pure state machine. No I/O, no clock: `now` is injected by
  * the caller (`account-refresh.ts` in `apps/desktop`), never read here.
  *
  * `ConsentDecision`/`ConsentRecord` are defined in `@bombfarm/contracts`, not here — they cross

@@ -21,7 +21,7 @@ export interface AppNavProps {
 /**
  * AppNav — the segmented nav pill shared by the web's site header and the desktop's `AppShell`.
  * Renders nothing when `items` is empty, so a consent-gated desktop screen mounts no `<nav>` at
- * all (matches `AppShell`'s pre-existing SHL-04 behavior).
+ * all (matches `AppShell`'s pre-existing behavior).
  */
 export function AppNav({ items, ariaLabel = 'Main', onSelect, renderItem, className }: AppNavProps) {
   if (items.length === 0) return null;
