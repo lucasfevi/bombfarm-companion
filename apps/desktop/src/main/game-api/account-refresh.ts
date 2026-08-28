@@ -144,7 +144,7 @@ export function createAccountRefresh(deps: AccountRefreshDeps): AccountRefreshHa
   }
 
   function commitAndNotify(payload: Parameters<AccountCommitter['commit']>[0]): AccountView {
-    const view = deps.store.commit(payload, { gameRunning: true });
+    const view = deps.store.commit(payload, { gameRunning: deps.isGameRunning() });
     lastView = view;
     deps.onView?.(view);
     return view;

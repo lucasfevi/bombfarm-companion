@@ -605,6 +605,33 @@ describe('account-refresh — game not running', () => {
   });
 });
 
+describe('account-refresh — the game-running flag is read fresh at commit time', () => {
+  it('commits gameRunning: false when the game exits partway through a cycle', async () => {
+    const open = openTestAccountDb(firstBinding());
+    const store = createAccountStore(open);
+    const { fn: readToken } = fixedReadToken('486', SessionTokenClass.create(SENTINEL_TOKEN), 1000);
+    let gameRunning = true;
+    const transport: HttpTransport = (req) => {
+      if (req.path === '/roster') {
+        gameRunning = false;
+      }
+      return Promise.resolve({ status: 200, body: JSON.stringify(BODIES[req.path] ?? {}) });
+    };
+    const deps = baseDeps({
+      store,
+      consentStore: fixedConsentStore(GRANTED),
+      transport,
+      readToken,
+      isGameRunning: () => gameRunning,
+    });
+    const refresh = createAccountRefresh(deps);
+
+    const view = await refresh.refreshNow();
+
+    expect(view?.gameRunning).toBe(false);
+  });
+});
+
 describe('account-refresh — consent changing to granted', () => {
   it('starts a cycle immediately via onConsentChanged, without calling start() or restarting anything', async () => {
     const open = openTestAccountDb(firstBinding());
