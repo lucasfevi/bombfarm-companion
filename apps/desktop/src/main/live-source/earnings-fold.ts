@@ -38,6 +38,14 @@ export interface EarningsFoldDeps {
 }
 
 /**
+ * `reset` is "start counting this session again" — the rolling 10-minute window is defined by the
+ * clock, not by a start point, so it is left alone. `accountChange` means the samples gathered so
+ * far are about a different player; a window blending two accounts would show a figure belonging
+ * to neither, so it is cleared along with the session totals.
+ */
+export type EarningsResetTrigger = 'reset' | 'accountChange';
+
+/**
  * Absent, non-finite, and a literal `0` all mean "no boost" — the same normalization
  * `packages/domain/src/import-save.ts` applies to `xp_mult` twice, so a boost multiplier can never
  * silently zero every XP figure it touches.
@@ -103,6 +111,18 @@ export class EarningsFold {
     }
 
     this.#crossCheckGrid(tick);
+  }
+
+  reset(trigger: EarningsResetTrigger): void {
+    this.#goldTotal = 0;
+    this.#xpTotal = 0;
+    this.#streamedMs = 0;
+    this.#payoutProps = 0;
+    this.#gridClears = 0;
+    this.#divergenceLogged = false;
+    this.#lastKinds = undefined;
+    this.#lastWave = undefined;
+    if (trigger === 'accountChange') this.#buckets = [];
   }
 
   /**

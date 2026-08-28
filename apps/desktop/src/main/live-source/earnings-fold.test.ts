@@ -310,3 +310,74 @@ describe('EarningsFold: grid cross-check', () => {
     );
   });
 });
+
+describe('EarningsFold: session lifecycle', () => {
+  it('app start: a fresh fold has session totals zeroed and the rolling window empty', () => {
+    const fold = makeFold();
+    expect(fold.goldSession).toBeNull();
+    expect(fold.xpSession).toBeNull();
+    expect(fold.sessionSeconds).toBe(0);
+    expect(fold.gold10).toBeNull();
+    expect(fold.xp10).toBeNull();
+    expect(fold.coverageSeconds).toBe(0);
+  });
+
+  it('reset control: zeroes session totals and the session clock, but keeps the 10-minute window', () => {
+    const clock = makeClock();
+    const fold = makeFold({ now: clock.now });
+    fold.consumeTick(baseTick({ phase: 1, loot: [{ cell: 0, gold: 100 }] }), 1);
+    clock.advance(1_000);
+    fold.consumeTick(baseTick({}), 2);
+    expect(fold.goldSession).not.toBeNull();
+    const gold10BeforeReset = fold.gold10;
+    const coverageBeforeReset = fold.coverageSeconds;
+    expect(gold10BeforeReset).not.toBeNull();
+
+    fold.reset('reset');
+
+    expect(fold.goldSession).toBeNull();
+    expect(fold.xpSession).toBeNull();
+    expect(fold.sessionSeconds).toBe(0);
+    expect(fold.gold10).toBe(gold10BeforeReset);
+    expect(fold.coverageSeconds).toBe(coverageBeforeReset);
+  });
+
+  it('account change: zeroes session totals, the session clock, AND clears the 10-minute window', () => {
+    const clock = makeClock();
+    const fold = makeFold({ now: clock.now });
+    fold.consumeTick(baseTick({ phase: 1, loot: [{ cell: 0, gold: 100 }] }), 1);
+    clock.advance(1_000);
+    fold.consumeTick(baseTick({}), 2);
+    expect(fold.gold10).not.toBeNull();
+
+    fold.reset('accountChange');
+
+    expect(fold.goldSession).toBeNull();
+    expect(fold.xpSession).toBeNull();
+    expect(fold.sessionSeconds).toBe(0);
+    expect(fold.gold10).toBeNull();
+    expect(fold.xp10).toBeNull();
+    expect(fold.coverageSeconds).toBe(0);
+  });
+
+  it('after a reset, a fresh divergence between grid clears and payouts is still logged (the flag reset too)', () => {
+    const warn = vi.fn();
+    const clock = makeClock();
+    const fold = makeFold({ now: clock.now, log: { info: () => undefined, warn } });
+
+    // Same wave both times, so the guard does not skip the diff — but a payout claims a
+    // destruction the grid never confirms (the cell stays occupied), so the counts diverge.
+    fold.consumeTick({ heroes: [], wave: 1, kinds: [0] }, 1);
+    clock.advance(100);
+    fold.consumeTick({ heroes: [], wave: 1, kinds: [0], loot: [{ cell: 0, gold: 100 }] }, 2);
+    expect(warn).toHaveBeenCalledTimes(1);
+
+    fold.reset('reset');
+    warn.mockClear();
+
+    fold.consumeTick({ heroes: [], wave: 10, kinds: [0] }, 3);
+    clock.advance(100);
+    fold.consumeTick({ heroes: [], wave: 10, kinds: [0], loot: [{ cell: 0, gold: 100 }] }, 4);
+    expect(warn).toHaveBeenCalledTimes(1);
+  });
+});
