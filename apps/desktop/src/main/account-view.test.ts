@@ -236,7 +236,7 @@ describe('createAccountNotifier — the single-source change-signal rule, point 
     expect(notifier.getSuppressedCount()).toBe(1);
   });
 
-  it('a status-only change is emitted (MAR-09)', () => {
+  it('a status-only change is emitted', () => {
     const emit = vi.fn();
     let view = makeView(makePayload({ fidelity: fidelity('resolved') }));
     const notifier = createAccountNotifier({

@@ -95,7 +95,7 @@ describe('sheet-math fixture corpus guard', () => {
     assertRecordedDigests(SHEET_MATH_DIR, README_PATH, sheetMathJsonFiles);
   });
 
-  // Scoped to sheet-math/ — the corpus this feature actually manages (MFR-04's subject is the
+  // Scoped to sheet-math/ — the corpus this feature actually manages (the subject is the
   // 17 fixtures orphaned by the quarantined-suite deletion, not a repo-wide fixture audit).
   // `fixtures/i18n-strings-main.json` and `fixtures/storage-roundtrip-20260729.json` are
   // pre-existing, unrelated fixtures with zero domain-side consumers (only apps/web's own

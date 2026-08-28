@@ -100,7 +100,7 @@ export interface FrameStamp {
 /**
  * Deterministic export → live framing (design §1.1): lifts the five `AccountPayload` sections
  * out of a scrubbed export object, drops the two file-only keys (`export_version`,
- * `generated_at` — ACS-06), and attaches a five-section `fidelity` block stamped `resolved` at
+ * `generated_at` — file-only concerns stay in the adapter), and attaches a five-section `fidelity` block stamped `resolved` at
  * `stamp.capturedAt`. Calling this twice on the same input produces byte-identical output
  * (T1's `Done when` — the regeneration proof for the committed `live-capture.json`).
  */
@@ -305,8 +305,8 @@ export function loadFidelityPair(dir: string = DEFAULT_FIXTURES_DIR): FidelityPa
     throw new FidelityGateError('fixtureMalformed', `Live capture "${livePath}" did not parse to a JSON object.`, { path: livePath });
   }
 
-  // The export-capture file carries the two file-only keys (`export_version`, `generated_at`,
-  // ACS-06); the AccountPayload type never declares them, so they simply ride along at runtime
+  // The export-capture file carries the two file-only keys (`export_version`, `generated_at`);
+  // the AccountPayload type never declares them, so they simply ride along at runtime
   // (same contract `toAccountPayload` relies on in `import-save.ts`).
   const exportPayload = exportRaw as unknown as AccountPayload;
   const livePayload = liveRaw as unknown as AccountPayload;

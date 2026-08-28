@@ -1,5 +1,5 @@
 /**
- * Slot counts resolved from a save (RGO-3, ASM-S02).
+ * Slot counts resolved from a save (ASM-S02).
  *
  * TWO DIFFERENT GAME CONCEPTS, two different keys — do not collapse them:
  *

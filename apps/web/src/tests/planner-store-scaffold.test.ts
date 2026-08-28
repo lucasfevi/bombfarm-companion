@@ -27,7 +27,7 @@ describe('planner store scaffold (W4 T2)', () => {
     expect(typeof state.setPhasesViewPhase).toBe('function');
   });
 
-  it('imports with localStorage absent from globalThis (W4-01)', async () => {
+  it('imports with localStorage absent from globalThis', async () => {
     expect(typeof globalThis.localStorage).toBe('undefined');
     expect(() => usePlannerStore.getState()).not.toThrow();
 

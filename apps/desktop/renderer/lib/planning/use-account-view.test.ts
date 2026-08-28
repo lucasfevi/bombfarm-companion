@@ -107,7 +107,7 @@ describe("useAccountView — subscription lives in the SAME effect (source-level
     expect(source).toContain("bridge.on('account:changed'");
   });
 
-  it('one cleanup latches `cancelled` AND calls the bfc.on unsubscribe (MAR-12) — not two separate cleanup paths', async () => {
+  it('one cleanup latches `cancelled` AND calls the bfc.on unsubscribe — not two separate cleanup paths', async () => {
     const fs = await import('node:fs');
     const path = await import('node:path');
     const source = fs.readFileSync(path.join(__dirname, 'use-account-view.ts'), 'utf8');

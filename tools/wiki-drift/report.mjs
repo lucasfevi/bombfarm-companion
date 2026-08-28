@@ -69,8 +69,7 @@ function sectionLabel(diff) {
 
 /**
  * One outcome line, plus (for `drift`) every differing section named with both hashes, and (for
- * `unreachable`/`baseline-missing`) the reason — attributable from this text alone (MWD-06,
- * MWD-27, MWD-29).
+ * `unreachable`/`baseline-missing`) the reason — attributable from this text alone.
  *
  * @param {{ outcome: 'ok'|'drift'|'unreachable'|'baseline-missing', diffs?: Array<object>, reason?: string, url?: string, observedAt?: string, runUrl?: string }} args
  */

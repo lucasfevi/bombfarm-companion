@@ -1,7 +1,7 @@
 /**
  * The pre-deletion characterization baseline recorder.
  *
- * Walks F1's two corpus fixtures, every hero in each, and calls the functions `MKR-11` names,
+ * Walks F1's two corpus fixtures, every hero in each, and calls the functions the characterization baseline names,
  * projecting an EXPLICIT, hand-written key list per function — the SURVIVING numeric surface
  * only. Deleted-arm members are excluded BY CONSTRUCTION. A recorder that serialised whole
  * objects would fail trivially the moment a member is deleted, proving nothing about the
@@ -47,7 +47,7 @@ import type { HeroRecord, AccountShared } from '@bombfarm/domain/shims/storage';
 import { extractHero, loadFixtureJson, type SaveHeroSheet } from './sheet-math-fixtures';
 import { teamPlanInputFromFixture } from './team-plan-fixtures';
 
-/** The two corpus files F1 committed — read only, never edited (MKR-16). */
+/** The two corpus files F1 committed — read only, never edited. */
 export const CORPUS_FILES = [
   'save-20260813-5heroes.json',
   'payload-20260812-8heroes.json',
@@ -67,7 +67,7 @@ export function encodeNumber(v: number): string {
   return v.toString();
 }
 
-/** Round-trips `encodeNumber`'s output back to the original value (self-test, MKR-11). */
+/** Round-trips `encodeNumber`'s output back to the original value (self-test). */
 export function decodeNumber(s: string): number {
   if (s === '-0') return -0;
   if (s === 'NaN') return NaN;
@@ -110,7 +110,7 @@ type LedgerStepRecord = {
 type LedgerRecord = { total: string; steps: LedgerStepRecord[] };
 type FormulaRecord = { substituted: string; value: string };
 
-/** One hero's projected surviving surface — every field named by `MKR-11`, no deleted-arm member. */
+/** One hero's projected surviving surface — every field the characterization baseline names, no deleted-arm member. */
 type HeroRecordEntry = {
   naked: SheetRecord;
   applySkillTree: SheetRecord;
@@ -158,7 +158,7 @@ type HeroRecordEntry = {
   /**
    * `pipelineForHero` — the app's own call path. Its internal
    * `computeAdvisorPipeline` call IS this recorded slice (same call, same numbers): the fields
-   * MKR-11 names for `computeAdvisorPipeline` (`ranking`, `best`, `dps`, `active`, `predHit`,
+   * the characterization baseline names for `computeAdvisorPipeline` (`ranking`, `best`, `dps`, `active`, `predHit`,
    * `effective`, `pointDelta`, `resetAdvice`) are all present below, so a single call proves
    * both subjects rather than duplicating the (expensive) pipeline call.
    */

@@ -1,5 +1,5 @@
 /**
- * BSPW3-13 (AC-25/-25a/-25b) — stored ability levels survive the rank-20 catalog migration.
+ * Stored ability levels survive the rank-20 catalog migration.
  *
  * `local-data-compat.md` rule 7 ("Prove it") over a real stored payload. This is
  * deliberately NOT `storage-roundtrip.test.ts` / `storage-roundtrip-20260729.json` — that
@@ -45,7 +45,7 @@ const STORED_HERO_JSON =
 
 const STORED_HERO = JSON.parse(STORED_HERO_JSON) as Record<string, unknown>;
 
-describe('stored ability levels survive the rank-20 catalog migration (BSPW3-13)', () => {
+describe('stored ability levels survive the rank-20 catalog migration', () => {
   beforeEach(() => {
     vi.stubGlobal('localStorage', memoryLocalStorage());
   });
@@ -54,7 +54,7 @@ describe('stored ability levels survive the rank-20 catalog migration (BSPW3-13)
     vi.unstubAllGlobals();
   });
 
-  it('AC-25: both levels survive verbatim through loadHeroes() over a stubbed localStorage', () => {
+  it('both levels survive verbatim through loadHeroes() over a stubbed localStorage', () => {
     localStorage.setItem('bf-hp-heroes-v1', JSON.stringify([STORED_HERO]));
 
     let heroes: HeroRecord[] = [];
@@ -70,7 +70,7 @@ describe('stored ability levels survive the rank-20 catalog migration (BSPW3-13)
     expect(hero.abilities).toEqual(STORED_HERO.abilities);
   });
 
-  it('AC-25a: abilityMods on the loaded record reflects the corrected (not double-counted) W3 curve', () => {
+  it('abilityMods on the loaded record reflects the corrected (not double-counted) W3 curve', () => {
     localStorage.setItem('bf-hp-heroes-v1', JSON.stringify([STORED_HERO]));
     const hero = loadHeroes()[0];
 
@@ -84,7 +84,7 @@ describe('stored ability levels survive the rank-20 catalog migration (BSPW3-13)
     expect(mods.sheetPenetrationRaw).toBeCloseTo(10, 10);
   });
 
-  it('AC-25: the storage key stays bf-hp-heroes-v1 (additive change, no -v2 bump)', () => {
+  it('the storage key stays bf-hp-heroes-v1 (additive change, no -v2 bump)', () => {
     localStorage.setItem('bf-hp-heroes-v1', JSON.stringify([STORED_HERO]));
     loadHeroes();
     expect(localStorage.getItem('bf-hp-heroes-v1')).not.toBeNull();

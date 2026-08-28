@@ -35,7 +35,7 @@ export type TreeState = {
   /** Account-wide team_coin total as % (Ouro por Alvo nodes) — scales gold per prop. */
   teamCoinPct: number;
   /**
-   * Flat Luck percentage points from `skills.totals.luck_add × 100` (AD-BSP-22, ASM-01).
+   * Flat Luck percentage points from `skills.totals.luck_add × 100`.
    * Additive on `bf-hp-account-v1` — optional (not `number`) so pre-Wave-5 literals (e.g.
    * `e2e/fixtures/seed.ts`, out of this wave's touch scope) keep typechecking; every read
    * site defaults absence to `0` and `normalizeTree`'s rebuild fills it on load. Import-sourced
@@ -197,7 +197,7 @@ export const DEFAULT_ACCOUNT = (): AccountShared => ({
  * Fixed-field-list rebuild (the `normalizeHero`/`obsHit`/`obsCrit` pattern) — every field is
  * named explicitly, so any stale/unknown key on `raw` (a pre-change record's `glassCannon`,
  * `tempoDobrado`, `abisso`, `abissoBase`, `critDmgMult`, or the older `geo`) is silently
- * discarded rather than spread through. MSC-10 depends on this: a spread merge (`{ ...base,
+ * discarded rather than spread through. This matters: a spread merge (`{ ...base,
  * ...rest }`) would let those keys leak into the result even after they left `TreeState`.
  */
 function normalizeTree(raw?: Partial<TreeState> | null): TreeState {

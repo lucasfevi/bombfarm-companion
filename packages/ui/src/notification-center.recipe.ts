@@ -11,7 +11,7 @@ export const notificationHeaderClass = 'flex items-center justify-end';
 export const notificationClearButtonClass =
   'rounded-sm px-2 py-1 text-xs font-semibold text-muted transition-colors hover:text-ink';
 
-/** TST-22 — scrolls internally, never grows the container unbounded (NFR-2). */
+/** Scrolls internally, never grows the container unbounded (NFR-2). */
 export const notificationListClass = 'flex max-h-96 min-w-0 flex-col gap-1 overflow-y-auto';
 
 export const notificationRowClass =

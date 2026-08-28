@@ -19,7 +19,7 @@ import { judgeStoredSection } from './stale-sections.js';
 export interface AccountStoreDeps {
   log?: LogPort;
   /** When set, a one-time legacy `last-snapshot.json` import is attempted at construction
-   * (APS-10) — only when `account_section` is empty and it has never run before. */
+   * — only when `account_section` is empty and it has never run before. */
   userDataDir?: string;
   legacyFs?: FsPort;
 }
@@ -291,7 +291,7 @@ export function createAccountStore(open: OpenResult, deps: AccountStoreDeps = {}
   }
 
   /**
-   * APS-10, run once at construction. Only attempted when `account_section` is empty and the
+   * Run once at construction. Only attempted when `account_section` is empty and the
    * `legacy_snapshot_migrated` meta flag is unset; the flag is set afterwards regardless of
    * whether the file yielded anything importable, so a later boot never re-attempts even if
    * the file is still present. Reuses `persist()` verbatim — the legacy payload is just

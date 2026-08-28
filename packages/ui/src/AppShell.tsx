@@ -23,7 +23,7 @@ export interface AppShellProps extends PropsWithChildren {
   title?: string;
   /** Flavor badge — kept from M0; the desktop Playwright smoke test asserts `data-testid="flavor-badge"`. */
   badge?: string | null;
-  /** Omitted/empty renders no nav landmark (SHL-04). */
+  /** Omitted/empty renders no nav landmark. */
   items?: AppShellNavItem[];
   activeId?: string;
   onNavigate?: (id: string) => void;

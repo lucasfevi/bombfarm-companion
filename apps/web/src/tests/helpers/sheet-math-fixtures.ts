@@ -41,7 +41,7 @@ export type SaveHeroSheet = {
   sheetOther: SheetOtherPct;
   /** Inventory sheet in planner units (crit/cdr as %, critDmg as +%). */
   sheet: SheetStats;
-  /** lv1 ★0 rolls in planner units (AD-BSP-19a) — undefined on pre-`birth_stats` fixtures. */
+  /** lv1 ★0 rolls in planner units — undefined on pre-`birth_stats` fixtures. */
   birth: BirthStats | undefined;
 };
 
@@ -58,9 +58,9 @@ function str(v: unknown, fallback = ''): string {
 }
 
 /**
- * AD-BSP-19a — deduplicated onto the shared `save-units.ts` site (DEC-09, T1). This helper
+ * The save-unit conversion — deduplicated onto the shared `save-units.ts` site (T1). This helper
  * keeps its own names so existing test call sites read the same; `save-units.test.ts` is
- * the discriminating guard on the literal conversions (AC-08), not this re-export.
+ * the discriminating guard on the literal conversions, not this re-export.
  */
 
 /** Map save `stats` → planner `SheetStats` (same as import-save). */
@@ -68,7 +68,7 @@ export function mapSaveStats(statsRaw: Record<string, unknown>): SheetStats {
   return saveSheetUnits(statsRaw);
 }
 
-/** Map save `birth_stats` → planner `BirthStats` — same table as {@link mapSaveStats} (AC-08). */
+/** Map save `birth_stats` → planner `BirthStats` — same table as {@link mapSaveStats}. */
 export function birthFromSaveUnits(birthRaw: Record<string, unknown>): BirthStats {
   return birthFromSave(birthRaw);
 }

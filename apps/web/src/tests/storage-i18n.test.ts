@@ -396,7 +396,7 @@ describe('sheet ability copy (on-sheet names follow Lang)', () => {
     expect(t.abilitiesTip).toMatch(/Ponta de Diamante/);
     expect(t.abilitiesTip).toMatch(/Golpe Brutal/);
     expect(t.abilitiesTip).toMatch(/stats do herói no jogo/);
-    // BSPW3-11/AC-22: the budget rule is min(level, slots x 20) — "slots x 10" is falsified.
+    // the budget rule is min(level, slots x 20) — "slots x 10" is falsified.
     expect(t.abilitiesTip).toMatch(/slots da raridade × 20/);
     expect(t.abilitiesTip).not.toMatch(/× 10/);
     expect(t.sheetAbilityTag).toBe('Altera atributos');
@@ -411,7 +411,7 @@ describe('sheet ability copy (on-sheet names follow Lang)', () => {
     expect(t.abilitiesTip).toMatch(/Keen Eye/);
     expect(t.abilitiesTip).toMatch(/Brutal Strike/);
     expect(t.abilitiesTip).toMatch(/in-game stats/);
-    // BSPW3-11/AC-22: the budget rule is min(level, slots x 20) — "slots x 10" is falsified.
+    // the budget rule is min(level, slots x 20) — "slots x 10" is falsified.
     expect(t.abilitiesTip).toMatch(/rarity slots × 20/);
     expect(t.abilitiesTip).not.toMatch(/× 10/);
     expect(t.sheetAbilityTag).toBe('Affects stats');

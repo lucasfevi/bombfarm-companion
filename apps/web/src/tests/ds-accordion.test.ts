@@ -7,8 +7,8 @@ import {
 } from '@bombfarm/ui/accordion.recipe';
 
 /**
- * Class-string parity guard for `accordionRecipe` + the layout constants
- * (UAC-03/04/06/07). Repo Vitest is `environment: 'node'` with no DOM — this
+ * Class-string parity guard for `accordionRecipe` + the layout constants.
+ * Repo Vitest is `environment: 'node'` with no DOM — this
  * is the only automated coverage for the recipe; rendered ARIA/keyboard is
  * delegated to Base UI and covered by Storybook + Playwright e2e (spec A13).
  */
@@ -63,13 +63,13 @@ describe('accordionRecipe — size axis', () => {
   });
 });
 
-describe('accordionRecipe — defaultVariants (UAC-03 "current chrome")', () => {
+describe('accordionRecipe — defaultVariants ("current chrome")', () => {
   it('bare call === explicit {tone: section, size: default}', () => {
     expect(accordionRecipe()).toBe(accordionRecipe({ tone: 'section', size: 'default' }));
   });
 });
 
-describe('accordionRecipe — rotating chevron + reduced-motion (UAC-04/06)', () => {
+describe('accordionRecipe — rotating chevron + reduced-motion', () => {
   it('carries the data-panel-open descendant rotation selector', () => {
     expect(accordionRecipe()).toContain('[&[data-panel-open]_[data-accordion-icon]]:rotate-180');
   });

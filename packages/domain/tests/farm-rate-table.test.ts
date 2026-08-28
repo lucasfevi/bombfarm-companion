@@ -22,7 +22,7 @@ const { heroes, account } = loadFarmRateFixture();
 const heroFacts = computeHeroFarmFacts({ heroes, account });
 const squad = computeSquadFarmFacts(heroFacts, account);
 
-describe('computeFarmRateTable — 600 rows, ascending, every field present (spec.md P1-1 AC-1)', () => {
+describe('computeFarmRateTable — 600 rows, ascending, every field present', () => {
   it('returns exactly 600 rows in ascending phase order', () => {
     const rows = computeFarmRateTable(squad);
     expect(rows).toHaveLength(600);
@@ -37,7 +37,7 @@ describe('computeFarmRateTable — 600 rows, ascending, every field present (spe
   });
 });
 
-describe('computeFarmRateTable — non-gate vs gate column rules (spec.md P1-1 AC-2/AC-3)', () => {
+describe('computeFarmRateTable — non-gate vs gate column rules', () => {
   it('non-gate phase 42: gemsPerHour/timePiecesPerHour === 0, keysPerHour >= 0, gateTimerSecs null', () => {
     const rows = computeFarmRateTable(squad);
     const row = rows.find((r) => r.phase === 42)!;
@@ -60,7 +60,7 @@ describe('computeFarmRateTable — non-gate vs gate column rules (spec.md P1-1 A
   });
 });
 
-describe('computeFarmRateTable — finite sweep across all three return-bonus modes (spec.md P1-1 AC-4)', () => {
+describe('computeFarmRateTable — finite sweep across all three return-bonus modes', () => {
   const modes: ReturnBonusMode[] = ['off', 'on', 'vip'];
 
   it('every rate is a finite number; only clearSecs may be Infinity, and only when infeasible', () => {
@@ -133,7 +133,7 @@ describe('computeFarmRateTable — jaula window is constant across every row (de
   });
 });
 
-describe('computeFarmRateRow — out-of-range phase returns null, never clamps (spec.md P1-5 AC-5)', () => {
+describe('computeFarmRateRow — out-of-range phase returns null, never clamps', () => {
   it.each([0, 601, -1, NaN, 42.5])('phase %p ⇒ null', (phase) => {
     expect(computeFarmRateRow(phase, squad)).toBeNull();
   });

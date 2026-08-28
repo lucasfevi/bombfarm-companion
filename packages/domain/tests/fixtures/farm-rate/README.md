@@ -2,7 +2,7 @@
 
 Captures whose only consumer is the farm-rate throughput model. Deliberately NOT under
 `sheet-math/`: that directory is a cross-package corpus, committed once here and read directly by
-`apps/web` via relative path — `tools/fixture-corpus-parity.test.mjs`'s MFR-06 check fails if
+`apps/web` via relative path — `tools/fixture-corpus-parity.test.mjs`'s check fails if
 `apps/web/src/tests/fixtures/sheet-math/` ever commits a copy of its own — and an orphan sweep
 requiring a live reader in BOTH packages. This capture has exactly one reader, in
 `@bombfarm/domain`, so parking it there would have forced a contrived web-side copy and a

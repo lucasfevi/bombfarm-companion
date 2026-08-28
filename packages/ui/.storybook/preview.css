@@ -8,7 +8,7 @@
    brace glob here breaks the build with "Invalid declaration". Prose only. */
 @import '../src/styles.css';
 
-/* Fonts (ASM-03): the old `apps/web/.storybook/decorators.tsx` sourced fonts via
+/* Fonts: the old `apps/web/.storybook/decorators.tsx` sourced fonts via
    `next/font/google`, a Next-compiler transform with no Vite equivalent. Self-host
    instead via `@fontsource` — no CDN, offline-safe, no CSP issue — and keep setting
    the same two CSS variables `styles.css` resolves `font-sans` / `font-mono` through.

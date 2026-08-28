@@ -77,7 +77,7 @@ export interface RecordedSqliteCall {
 }
 
 /** Wraps a real SqliteDb, recording every exec/prepare/close call for assertions like
- * "no transaction was opened" (APS-07) or "no SELECT against account_section ran" (APS-09). */
+ * "no transaction was opened" or "no SELECT against account_section ran". */
 export function wrapWithRecording(db: SqliteDb): { db: SqliteDb; calls: RecordedSqliteCall[] } {
   const calls: RecordedSqliteCall[] = [];
   const wrapped: SqliteDb = {

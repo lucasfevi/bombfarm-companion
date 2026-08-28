@@ -58,7 +58,7 @@ function stepFails(stepText) {
   return /\bexit\s+1\b/.test(stepText);
 }
 
-describe('design-system-required aggregator (SBC-19/SBC-20)', () => {
+describe('design-system-required aggregator', () => {
   const workflowText = readFileSync(CI_WEB_PATH, 'utf8');
   const jobBlock = extractJobBlock(workflowText, 'design-system-required');
 
@@ -90,7 +90,7 @@ describe('design-system-required aggregator (SBC-19/SBC-20)', () => {
   });
 
   it(
-    'SBC-20: no step treats a skipped design-system result as success when the web filter matched — ' +
+    'no step treats a skipped design-system result as success when the web filter matched — ' +
       'the exact anti-pattern e2e-web.yml\'s e2e-visual aggregator has today (a step whose `if` ' +
       'branches on result == \'skipped\' and whose `run` does not fail)',
     () => {

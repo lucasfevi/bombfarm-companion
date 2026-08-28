@@ -11,7 +11,7 @@
  * A decimal-digit-tolerance assertion style is deliberately never used in this file: it would
  * silently absorb exactly the class of drift this suite exists to catch (a 5e-3 error still
  * rounds "close"). A deep-equality assertion is never used for numbers either — it treats `0`
- * and `-0` as equal, which is the one corner (MKR-18) this suite must not paper over. Every
+ * and `-0` as equal, which is the one corner this suite must not paper over. Every
  * numeric leaf in the record is pre-encoded by `encodeNumber` (sign- and precision-preserving),
  * so the top-level comparison is exact string equality on the canonical JSON serialisation, and
  * the walk below decodes leaves back to numbers for a same-value comparison (`Object.is`) only
@@ -78,7 +78,7 @@
  * NOT moved, and the proof this was a House-cycle change and nothing else: every sheet key on
  * every subject (`applySkillTree`, `composeSheetFromBirth`, `sheetsFromBirth`, `peelSheetStages`,
  * `peelSheetSources`), every `inferSpentPoints` value, and `avgHitBase` — rest seconds enter
- * after the damage math, never inside it. The MKR-14 `formulaDmg` entries were again held at
+ * after the damage math, never inside it. The `formulaDmg` entries were again held at
  * their PRE-deletion values through this re-record, so `PERMITTED_DELTAS` stays a live exception.
  *
  * ---
@@ -145,7 +145,7 @@
  *
  * NOT moved, and the proof this was a crit-damage change and nothing else: every
  * `inferSpentPoints.*` value on all 13 heroes (the recovered point vectors are unchanged), and
- * every non-`critDmg` sheet key on every hero and every subject. The MKR-14 `formulaDmg`
+ * every non-`critDmg` sheet key on every hero and every subject. The `formulaDmg`
  * entries below were deliberately held at their PRE-deletion values through the re-record, so
  * `PERMITTED_DELTAS` stays a live exception rather than becoming a silently-satisfied no-op.
  */
@@ -165,7 +165,7 @@ import {
 const BASELINE_PATH = join(__dirname, 'fixtures', 'invariance', 'baseline.json');
 
 /**
- * `formulaDmg`'s `substituted` string is the SOLE enumerated non-numeric delta (MKR-14). It is
+ * `formulaDmg`'s `substituted` string is the SOLE enumerated non-numeric delta. It is
  * pinned as an exact string TRANSFORM of the pre-deletion value — dropping the deleted third
  * factor's ` × 1.000` term (formatted to 3 decimals; the corpus never carried that factor's
  * source data, so it was always exactly `1`) while the `= <value>` tail stays byte-identical —
@@ -178,7 +178,7 @@ const PERMITTED_DELTAS: {
   expectedPost: (pre: string) => string;
 }[] = [
   {
-    reason: 'MKR-14 — formulaDmg drops its × 1.000 third factor once the multiplier is deleted',
+    reason: 'formulaDmg drops its × 1.000 third factor once the multiplier is deleted',
     matchPath: (path) => path.endsWith('.buildStatBreakdown.derived.dmg.substituted'),
     expectedPost: (pre) => pre.replace(' × 1.000 =', ' ='),
   },
@@ -227,7 +227,7 @@ function firstDivergingPath(
   }
 
   // Numeric-string leaves round-trip through decodeNumber; compare with Object.is so -0/+0 and
-  // NaN are never silently treated as equal (MKR-18).
+  // NaN are never silently treated as equal.
   if (typeof actual === 'string' && typeof expected === 'string') {
     const da = decodeNumber(actual);
     const de = decodeNumber(expected);
@@ -253,13 +253,13 @@ describe('invariance baseline — the pre-deletion characterization harness (T2)
     }
   });
 
-  it('encodeNumber distinguishes -0 from +0 — the AC-8/MKR-18 corner', () => {
+  it('encodeNumber distinguishes -0 from +0', () => {
     expect(encodeNumber(-0)).toBe('-0');
     expect(encodeNumber(0)).toBe('0');
     expect(encodeNumber(-0)).not.toBe(encodeNumber(0));
   });
 
-  it('byte-reproducibility: two recordings in this session serialise identically (MKR-11)', () => {
+  it('byte-reproducibility: two recordings in this session serialise identically', () => {
     const first = serializeRecord(recordInvarianceSurface());
     const second = serializeRecord(recordInvarianceSurface());
     expect(second).toBe(first);
@@ -304,7 +304,7 @@ describe('invariance baseline — the pre-deletion characterization harness (T2)
     expect(() => readFileSync(BASELINE_PATH, 'utf8')).not.toThrow();
   });
 
-  it.skip('post-deletion output is bit-identical to the committed pre-deletion baseline (MKR-12), with formulaDmg.substituted as the sole enumerated exception (MKR-14)', () => {
+  it.skip('post-deletion output is bit-identical to the committed pre-deletion baseline, with formulaDmg.substituted as the sole enumerated exception', () => {
     const expectedJson = readFileSync(BASELINE_PATH, 'utf8');
     const actualJson = serializeRecord(record);
 

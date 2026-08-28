@@ -13,7 +13,7 @@ const abilSheetClass = 'border-[color-mix(in_oklch,var(--up)_35%,var(--line))]';
 const abilSheetOnClass =
   'border-[color-mix(in_oklch,var(--up)_50%,var(--line))] bg-[color-mix(in_oklch,var(--up)_8%,var(--bg))]';
 /**
- * m2-storybook-ci (T7, SBC-12): was `opacity-[0.42]`. Locked-out text (inherited
+ * m2-storybook-ci (T7): was `opacity-[0.42]`. Locked-out text (inherited
  * `--color-ink` on `--color-bg`, both unchanged) composited at 0.42 alpha over the
  * card's own `bg-bg` background — identical to the page backdrop, so the opacity
  * blend only dims the text — measured 3.54:1, below WCAG AA's 4.5:1 for normal text.

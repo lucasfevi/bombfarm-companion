@@ -24,7 +24,7 @@ function loadOverridePayload(isPackaged: boolean): AccountPayload | null {
  * The F2 seam (design.md §8): gives the account store a writer before F2's live memory
  * reader exists, so the restart round-trip can be demonstrated end to end. Deliberately
  * partial — `skills`/`casa` have no fixture and stay `missing`, so the smoke exercises the
- * partial-poll rules (APS-05/06/07), not only the happy path.
+ * partial-poll rules, not only the happy path.
  */
 export function buildFixtureAccountPayload(now: string, isPackaged = false): AccountPayload {
   const override = loadOverridePayload(isPackaged);

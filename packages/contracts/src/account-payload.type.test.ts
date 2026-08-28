@@ -1,5 +1,7 @@
 /**
- * Type-level assertions for the `AccountPayload` / fidelity contract (ACS-04, ACS-06.1).
+ * Type-level assertions for the `AccountPayload` / fidelity contract — per-section
+ * provenance, and file-only concerns (export_version, generated_at) staying out of the
+ * type, in the adapter instead.
  *
  * Vitest transpiles this file with esbuild, which strips types and never typechecks —
  * so every `@ts-expect-error` below is only enforced by `pnpm --filter @bombfarm/contracts
@@ -117,13 +119,13 @@ describe('AccountPayload / fidelity — type-level assertions', () => {
 
 // --- Compile-time-only assertions below: no runtime behaviour, enforced by `tsc` only. ---
 
-// @ts-expect-error - capturedAt is required when status is "resolved" (ACS-04)
+// @ts-expect-error - capturedAt is required when status is "resolved"
 const _missingCapturedAt: SectionFidelity = { status: 'resolved' };
 
-// @ts-expect-error - capturedAt must be absent when status is "missing" (ACS-04)
+// @ts-expect-error - capturedAt must be absent when status is "missing"
 const _capturedAtOnMissing: SectionFidelity = { status: 'missing', capturedAt: '2026-08-12T00:00:00.000Z' };
 
-// @ts-expect-error - "partial" is not one of the four SectionStatus literals (ACS-04)
+// @ts-expect-error - "partial" is not one of the four SectionStatus literals
 const _invalidStatusLiteral: SectionFidelity = { status: 'partial', capturedAt: '2026-08-12T00:00:00.000Z' };
 
 // @ts-expect-error - a degraded section requires capturedAt (mp2-live-account-read T6)
@@ -173,9 +175,9 @@ const _missingSectionKey: AccountFidelity = {
 const _nonStringCapturedAt: SectionFidelity = { status: 'resolved', capturedAt: 1755014400000 };
 
 const _examplePayload: AccountPayload = {};
-// @ts-expect-error - AccountPayload does not declare export_version (ACS-06.1)
+// @ts-expect-error - AccountPayload does not declare export_version — file-only concerns stay in the adapter
 // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment -- the point of this line is the tsc error above
 const _exportVersion = _examplePayload.export_version;
-// @ts-expect-error - AccountPayload does not declare generated_at (ACS-06.1)
+// @ts-expect-error - AccountPayload does not declare generated_at — file-only concerns stay in the adapter
 // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment -- the point of this line is the tsc error above
 const _generatedAt = _examplePayload.generated_at;

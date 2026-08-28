@@ -13,8 +13,8 @@ export type {
 } from './types';
 
 /**
- * Accordion primitive — compound wrap over `@base-ui/react/accordion`
- * (UAC-01). Multi-item disclosure; `multiple` (default `false`) is
+ * Accordion primitive — compound wrap over `@base-ui/react/accordion`.
+ * Multi-item disclosure; `multiple` (default `false`) is
  * one-at-a-time. Dressed by `accordionRecipe` (shared with `Collapsible`).
  */
 export const Accordion = {

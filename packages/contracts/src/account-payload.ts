@@ -10,7 +10,7 @@ export type AccountSection = 'account' | 'heroes' | 'skills' | 'casa' | 'items';
  */
 export type SectionStatus = 'resolved' | 'stale' | 'missing' | 'degraded';
 
-/** ISO-8601 `capturedAt` is required for anything that is not `missing` (ACS-04). */
+/** ISO-8601 `capturedAt` is required for anything that is not `missing`. */
 export type SectionFidelity =
   | { readonly status: 'resolved' | 'stale'; readonly capturedAt: string }
   | { readonly status: 'missing'; readonly capturedAt?: undefined }
@@ -68,6 +68,6 @@ export interface AccountPayload {
   readonly casa?: Record<string, unknown> | undefined;
   /** `/inventory` items. Absent ⇒ the "no items list" warning, then parsing continues. */
   readonly items?: readonly unknown[] | undefined;
-  /** Absent means "not asserted" and grades as `full` (ACS-05.5 — the file adapter's case). */
+  /** Absent means "not asserted" and grades as `full` (the file adapter's case). */
   readonly fidelity?: AccountFidelity | undefined;
 }

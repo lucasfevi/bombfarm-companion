@@ -26,15 +26,15 @@ export const uiIconRegistry = {
   check: HiMiniCheck,
   // Button coffee / coffee-full stories
   coffee: BiCoffee,
-  // toast/notification `success` variant (m2-toast-settings, TST-13)
+  // toast/notification `success` variant (m2-toast-settings)
   'check-circle': HiMiniCheckCircle,
-  // toast/notification `error` variant (m2-toast-settings, TST-13)
+  // toast/notification `error` variant (m2-toast-settings)
   'x-circle': HiMiniXCircle,
-  // toast/notification `warning` variant (m2-toast-settings, TST-13)
+  // toast/notification `warning` variant (m2-toast-settings)
   'exclamation-triangle': HiMiniExclamationTriangle,
-  // toast/notification `info` variant (m2-toast-settings, TST-13)
+  // toast/notification `info` variant (m2-toast-settings)
   'information-circle': HiMiniInformationCircle,
-  // toast/notification `progress` variant spinner (m2-toast-settings, TST-13)
+  // toast/notification `progress` variant spinner (m2-toast-settings)
   'arrow-path': HiMiniArrowPath,
   // DeltaTable locked-row glyph — replaces a Chip + HelpTip pair on a row a table can't change
   'lock-closed': HiMiniLockClosed,

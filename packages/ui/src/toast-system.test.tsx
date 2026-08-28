@@ -21,7 +21,7 @@ function renderItem(entry: ToastEntry) {
   return renderToStaticMarkup(createElement(ToastItem, { toast: entry, onDismiss: () => {} }));
 }
 
-describe('ToastProvider — TST-11', () => {
+describe('ToastProvider — owns reducer state and the single setTimeout', () => {
   it('renders its children', () => {
     const html = renderToStaticMarkup(
       createElement(ToastProvider, { children: createElement('p', null, 'hello') }),
@@ -40,7 +40,7 @@ describe('ToastProvider — TST-11', () => {
   });
 });
 
-describe('ToastItem — TST-13 fixed icon + token per variant', () => {
+describe('ToastItem — fixed icon + token per variant', () => {
   const variants: ToastVariant[] = ['success', 'error', 'warning', 'info', 'progress'];
   const iconByVariant: Record<ToastVariant, string> = {
     success: 'check-circle',
@@ -66,7 +66,7 @@ describe('ToastItem — TST-13 fixed icon + token per variant', () => {
   });
 });
 
-describe('ToastItem — TST-14 aria-live politeness', () => {
+describe('ToastItem — aria-live politeness', () => {
   it('is assertive for error', () => {
     const html = renderItem(makeEntry({ variant: 'error' }));
     expect(html).toContain('aria-live="assertive"');
@@ -79,7 +79,7 @@ describe('ToastItem — TST-14 aria-live politeness', () => {
   });
 });
 
-describe('ToastItem — TST-16 progress bar', () => {
+describe('ToastItem — progress bar', () => {
   it('renders role="progressbar" with correct aria-valuenow/min/max', () => {
     const html = renderItem(makeEntry({ variant: 'progress', progress: 42 }));
     expect(html).toContain('role="progressbar"');
@@ -121,7 +121,7 @@ describe('ToastItem — action + dismiss', () => {
   });
 });
 
-describe('TST-15 — action is a single object, not an array (type-level)', () => {
+describe('action is a single object, not an array (type-level)', () => {
   it('ToastInput.action is typed as one ToastActionButton, so passing an array fails to typecheck', () => {
     // Evidence lives in the type itself (toast-queue.ts `ToastInput.action?: ToastActionButton`),
     // not at runtime — `packages/ui`'s tsconfig excludes *.test.tsx from `tsc --noEmit`, so a
@@ -134,7 +134,7 @@ describe('TST-15 — action is a single object, not an array (type-level)', () =
   });
 });
 
-describe('TST-17 — no raw palette classes, no --bf-* anywhere in this module\'s output', () => {
+describe('no raw palette classes, no --bf-* anywhere in this module\'s output', () => {
   it('rendered markup contains no raw palette token', () => {
     const html = renderItem(makeEntry({ variant: 'progress', progress: 50, action: { label: 'Cancel', onAction: () => {} } }));
     expect(html).not.toMatch(/emerald|amber|slate|zinc/);

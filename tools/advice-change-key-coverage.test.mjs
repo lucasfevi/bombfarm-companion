@@ -277,7 +277,7 @@ describe('per-field mutation — a path listed but not actually read by the key 
   }
 });
 
-describe("gameRunning (MAR-05) — the field is not a payload field at all, so it cannot enter either key", () => {
+describe("gameRunning — the field is not a payload field at all, so it cannot enter either key", () => {
   // Scoped deliberately to the PRODUCTION decision-logic modules (not their tests, and not the
   // `fixtures/` test-support builders, which must set `gameRunning` on every synthetic
   // `AccountView` purely because the TYPE requires it — that is supplying a required field, not
@@ -298,7 +298,7 @@ describe("gameRunning (MAR-05) — the field is not a payload field at all, so i
       offenders,
       `gameRunning appears in ${offenders.join(', ')} — the field is hardcoded true on the ` +
         'account-refresh.ts API path and carries no information; a planning module reading it would ' +
-        'silently violate MAR-05 ("holds unchanged whether or not the game is running").',
+        'silently violate the invariant that state holds unchanged whether or not the game is running.',
     ).toEqual([]);
   });
 
@@ -315,7 +315,7 @@ describe("gameRunning (MAR-05) — the field is not a payload field at all, so i
   });
 
   it('demonstrates the red state: a mock module containing a gameRunning read is caught by the same substring check (observed here, not committed as a permanent mutation)', () => {
-    const mutant = "if (view.gameRunning) { /* would violate MAR-05 */ }";
+    const mutant = "if (view.gameRunning) { /* would violate the same invariant */ }";
     expect(mutant.includes('gameRunning')).toBe(true);
   });
 });

@@ -69,7 +69,7 @@ function forceTick(service: GameReaderService): void {
   (service as unknown as { tick(): void }).tick();
 }
 
-describe('GameReaderService — cold boot status (design R-2 / APS-03)', () => {
+describe('GameReaderService — cold boot status (design R-2)', () => {
   it('reports not_running on construction in live mode, never a restored connected status', () => {
     const service = new GameReaderService('/fake/user-data', { mode: 'live' }, { consent: () => true });
     expect(service.getStatus().status).toBe('not_running');

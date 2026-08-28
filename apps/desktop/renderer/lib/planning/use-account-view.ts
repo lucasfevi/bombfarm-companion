@@ -75,7 +75,7 @@ export function useAccountView(): AccountViewState {
     // The one `account:changed` subscription site. Fires on a genuine change only;
     // `accept()`'s own accept gate (tier-0 key comparison) is a second, redundant-but-
     // harmless line of defence against a no-op push. One effect, one cleanup: the `cancelled`
-    // latch and the unsubscribe below both live in the SAME cleanup function (MAR-12) — there is
+    // latch and the unsubscribe below both live in the SAME cleanup function — there is
     // no second subscription path.
     const unsubscribe = bridge.on('account:changed', (view) => {
       if (!cancelled) setState((prev) => accept(prev, { kind: 'pushed', view }));

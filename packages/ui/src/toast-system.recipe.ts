@@ -32,7 +32,7 @@ export const toastItemRecipe = cva(toastItemBase, {
 
 export type ToastItemVariant = NonNullable<VariantProps<typeof toastItemRecipe>['variant']>;
 
-/** Icon color per variant (TST-13) — paired with a distinct icon glyph, never color alone (§6). */
+/** Icon color per variant — paired with a distinct icon glyph, never color alone (§6). */
 export const toastIconClassByVariant: Record<ToastVariant, string> = {
   success: 'text-up',
   error: 'text-down',

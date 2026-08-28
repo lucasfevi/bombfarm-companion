@@ -92,7 +92,7 @@ describe('runFidelityGate — executed-work floor (device 2, edge against a vacu
   });
 });
 
-describe('runFidelityGate — degraded input short-circuits before any parsing (FID-05 ordering)', () => {
+describe('runFidelityGate — degraded input short-circuits before any parsing', () => {
   it('a degraded live capture throws notFullFidelity; onHeroCompared and parseAccountPayload are never invoked', () => {
     const parseSpy = vi.spyOn(importSave, 'parseAccountPayload');
     const onHeroCompared = vi.fn();

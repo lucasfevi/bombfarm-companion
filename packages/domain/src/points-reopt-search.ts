@@ -1,6 +1,6 @@
 /**
- * BSPW4-10 Tier 2 internals — the seven seeds (`AC-62`), the three-family neighbourhood
- * (`AC-63`) and best-improvement local search. Split out of `points-reopt.ts` to keep that
+ * Tier 2 internals — the seven seeds, the three-family neighbourhood
+ * and best-improvement local search. Split out of `points-reopt.ts` to keep that
  * file under the 300-line ESLint cap; `optimizeBuild` (Tier 2's public entry point) orchestrates
  * these from there.
  */
@@ -100,7 +100,7 @@ function refundReplaceWalk(
   return current;
 }
 
-/** `AC-62`: the seven seeds, generated in this fixed order. */
+/** The seven seeds, generated in this fixed order. */
 export function buildSeeds(
   pts: Record<SheetKey, number>,
   budget: number,
@@ -157,7 +157,7 @@ export function buildSeeds(
 
 type MoveFn = (pts: Record<SheetKey, number>) => Record<SheetKey, number> | null;
 
-/** `AC-63`: the three-family neighbourhood, generated in this fixed order (260 probes). */
+/** The three-family neighbourhood, generated in this fixed order (260 probes). */
 export function generateMoves(): MoveFn[] {
   const moves: MoveFn[] = [];
 
@@ -226,9 +226,9 @@ export type LocalSearchResult = {
 };
 
 /**
- * `AC-63b`: best-improvement — evaluate every probe in a sweep, apply the single best
+ * Best-improvement — evaluate every probe in a sweep, apply the single best
  * strictly-improving move, repeat. Monotone by construction, therefore terminating. A sweep
- * that finds no improving move IS the local-optimality postcondition (`AC-63c`): the loop
+ * that finds no improving move IS the local-optimality postcondition: the loop
  * only exits early (before `REOPT_FULL_MAX_SWEEPS`) via that exact condition.
  */
 export function localSearch(
@@ -266,7 +266,7 @@ export function localSearch(
       }
     }
     if (truncated) break;
-    if (!bestCandidate) break; // AC-63c: no strictly improving move — local optimum.
+    if (!bestCandidate) break; // No strictly improving move — local optimum.
     current = bestCandidate;
     score = bestScore;
     movesApplied += 1;

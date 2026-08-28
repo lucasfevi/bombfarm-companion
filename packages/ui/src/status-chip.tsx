@@ -20,7 +20,7 @@ const STATUS_TONE: Record<GameConnectionStatus, ChipVariant> = {
 };
 
 /**
- * StatusChip — single implementation of INV-1 connection states (SHL-10..14).
+ * StatusChip — single implementation of INV-1 connection states.
  * Built on `chipRecipe` (reuses `small-active` / `small-warn`, extends with the
  * additive `small-muted` tone for `not_running`) rather than a parallel chip.
  * The dot is decorative and carries no text node so `role="status"` text stays

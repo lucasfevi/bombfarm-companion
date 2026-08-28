@@ -12,7 +12,7 @@ const sampleItems: NotificationCenterItem[] = [
   { id: '2', variant: 'error', title: 'Connection lost', description: 'Game closed unexpectedly.', timeLabel: '5m ago' },
 ];
 
-describe('NotificationCenter — TST-19 fully controlled', () => {
+describe('NotificationCenter — fully controlled', () => {
   it('renders exactly the given items', () => {
     const html = render({ items: sampleItems, onDismiss: () => {}, emptyLabel: 'No notifications yet' });
     expect(html).toContain('Price pass complete');
@@ -44,7 +44,7 @@ describe('NotificationCenter — TST-19 fully controlled', () => {
   });
 });
 
-describe('NotificationCenter — TST-20 row content', () => {
+describe('NotificationCenter — row content', () => {
   it('renders title, description, and the preformatted timeLabel', () => {
     const html = render({ items: sampleItems, onDismiss: () => {}, emptyLabel: 'No notifications yet' });
     expect(html).toContain('Connection lost');
@@ -69,7 +69,7 @@ describe('NotificationCenter — TST-20 row content', () => {
   });
 });
 
-describe('NotificationCenter — TST-21 empty state', () => {
+describe('NotificationCenter — empty state', () => {
   it('renders EmptyState (an h2 title) when items is empty', () => {
     const html = render({ items: [], onDismiss: () => {}, emptyLabel: 'No notifications yet' });
     expect(html).toMatch(/<h2[^>]*>No notifications yet<\/h2>/);
@@ -81,7 +81,7 @@ describe('NotificationCenter — TST-21 empty state', () => {
   });
 });
 
-describe('NotificationCenter — TST-22 bounded scroll container', () => {
+describe('NotificationCenter — bounded scroll container', () => {
   it('the list container has an internal scroll + max-height, not unbounded growth', () => {
     const html = render({ items: sampleItems, onDismiss: () => {}, emptyLabel: 'No notifications yet' });
     expect(html).toContain('overflow-y-auto');

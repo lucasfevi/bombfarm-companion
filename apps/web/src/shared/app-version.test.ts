@@ -59,7 +59,7 @@ describe('resolveVersionLabel', () => {
     ).toBe('v0.10.0-dev.abcdef1');
   });
 
-  it('tracks package.json version bumps without other edits (REL-25)', () => {
+  it('tracks package.json version bumps without other edits', () => {
     const label = resolveVersionLabel({
       version: webPackage.version,
       isProduction: true,

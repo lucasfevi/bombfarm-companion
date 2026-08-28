@@ -5,13 +5,13 @@ import {
   shouldRecommendReset,
 } from '@bombfarm/domain/reset-advice';
 
-describe('shouldRecommendReset (BSPW4-11)', () => {
-  it('exports the named constants (ASM-04)', () => {
+describe('shouldRecommendReset (the 5% reset predicate)', () => {
+  it('exports the named constants', () => {
     expect(RESET_RECOMMEND_DPS_PCT).toBe(1);
     expect(RESET_GATE_EPSILON_PCT).toBe(1e-6);
   });
 
-  it('AC-67: 0.9% -> false, exactly 1.0% -> true, 10% -> true', () => {
+  it('0.9% -> false, exactly 1.0% -> true, 10% -> true', () => {
     const table: Array<[number, boolean]> = [
       [0.9, false],
       [1.0, true],
@@ -24,7 +24,7 @@ describe('shouldRecommendReset (BSPW4-11)', () => {
     }
   });
 
-  it('AC-68: currentDps of 0, NaN or Infinity returns false rather than Infinity/NaN gain', () => {
+  it('currentDps of 0, NaN or Infinity returns false rather than Infinity/NaN gain', () => {
     expect(shouldRecommendReset({ currentDps: 0, reoptDps: 100 })).toBe(false);
     expect(shouldRecommendReset({ currentDps: Number.NaN, reoptDps: 100 })).toBe(false);
     expect(shouldRecommendReset({ currentDps: Number.POSITIVE_INFINITY, reoptDps: 100 })).toBe(false);
@@ -36,7 +36,7 @@ describe('shouldRecommendReset (BSPW4-11)', () => {
     expect(shouldRecommendReset({ currentDps: 100, reoptDps: Number.POSITIVE_INFINITY })).toBe(false);
   });
 
-  it('AC-66: implements gainPct >= RESET_RECOMMEND_DPS_PCT - RESET_GATE_EPSILON_PCT exactly', () => {
+  it('implements gainPct >= RESET_RECOMMEND_DPS_PCT - RESET_GATE_EPSILON_PCT exactly', () => {
     const currentDps = 1000;
     const justBelow = currentDps * (1 + (RESET_RECOMMEND_DPS_PCT - RESET_GATE_EPSILON_PCT * 2) / 100);
     const justAtEps = currentDps * (1 + (RESET_RECOMMEND_DPS_PCT - RESET_GATE_EPSILON_PCT / 2) / 100);

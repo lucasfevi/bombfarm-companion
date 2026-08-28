@@ -7,7 +7,7 @@ export interface EmptyStateProps extends PropsWithChildren {
   title: string;
   description?: string;
   action?: ReactNode;
-  /** Heading tag for `title` — defaults to `h2` so it nests correctly under different pages (SHL-17). */
+  /** Heading tag for `title` — defaults to `h2` so it nests correctly under different pages. */
   headingLevel?: 2 | 3 | 4;
   className?: string;
 }

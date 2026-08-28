@@ -17,7 +17,7 @@ function makeToast(overrides: Partial<ToastInput> & Pick<ToastInput, 'key'>): To
   return { variant: 'info', title: overrides.key, ...overrides };
 }
 
-describe('toastQueueReducer — TST-02 coalescing', () => {
+describe('toastQueueReducer — coalescing', () => {
   it('replaces a toast with a matching key in place, preserving stack position', () => {
     let state = initialToastQueueState;
     state = push(state, makeToast({ key: 'a', title: 'A' }), 1000);
@@ -64,7 +64,7 @@ describe('toastQueueReducer — TST-02 coalescing', () => {
   });
 });
 
-describe('toastQueueReducer — TST-03 new-key insertion order', () => {
+describe('toastQueueReducer — new-key insertion order', () => {
   it('inserts a toast with a new key newest-first', () => {
     let state = initialToastQueueState;
     state = push(state, makeToast({ key: 'a' }), 1);
@@ -76,7 +76,7 @@ describe('toastQueueReducer — TST-03 new-key insertion order', () => {
   });
 });
 
-describe('toastQueueReducer — TST-04 overflow', () => {
+describe('toastQueueReducer — overflow', () => {
   it('marks at most MAX_VISIBLE_TOASTS as visible with a correct overflowCount', () => {
     let state = initialToastQueueState;
     expect(MAX_VISIBLE_TOASTS).toBe(3);
@@ -115,7 +115,7 @@ describe('toastQueueReducer — TST-04 overflow', () => {
   });
 });
 
-describe('toastQueueReducer — TST-05 explicit now', () => {
+describe('toastQueueReducer — explicit now', () => {
   it('never reads Date.now — identical actions replay deterministically regardless of wall-clock time', () => {
     let stateA = initialToastQueueState;
     stateA = push(stateA, makeToast({ key: 'a' }), 12345);
@@ -126,7 +126,7 @@ describe('toastQueueReducer — TST-05 explicit now', () => {
   });
 });
 
-describe('toastQueueReducer — TST-06 expire()', () => {
+describe('toastQueueReducer — expire()', () => {
   it('drops an elapsed info toast on expire(now)', () => {
     let state = initialToastQueueState;
     state = push(state, makeToast({ key: 'info-1', variant: 'info' }), 0);
@@ -183,7 +183,7 @@ describe('toastQueueReducer — TST-06 expire()', () => {
   });
 });
 
-describe('toastQueueReducer — TST-07 progress completion replaces by key', () => {
+describe('toastQueueReducer — progress completion replaces by key', () => {
   it('a completion toast pushed with the same key replaces the progress toast in place', () => {
     let state = initialToastQueueState;
     state = push(state, makeToast({ key: 'price-pass', variant: 'progress', title: 'Pricing…', progress: 40 }), 0);
@@ -215,7 +215,7 @@ describe('toastQueueReducer — TST-07 progress completion replaces by key', () 
   });
 });
 
-describe('toastQueueReducer — TST-08 threshold-gated announce', () => {
+describe('toastQueueReducer — threshold-gated announce', () => {
   it('announces once when crossing from 49% to 51% (crosses the 50 threshold)', () => {
     let state = initialToastQueueState;
     state = push(state, makeToast({ key: 'p', variant: 'progress', progress: 49 }), 0);
@@ -254,7 +254,7 @@ describe('toastQueueReducer — TST-08 threshold-gated announce', () => {
   });
 });
 
-describe('toastQueueReducer — TST-09 dismiss', () => {
+describe('toastQueueReducer — dismiss', () => {
   it('removes exactly the toast with the matching id', () => {
     let state = initialToastQueueState;
     state = push(state, makeToast({ key: 'a' }), 0);
@@ -275,7 +275,7 @@ describe('toastQueueReducer — TST-09 dismiss', () => {
   });
 });
 
-describe('toastQueueReducer — TST-10 notification buffer', () => {
+describe('toastQueueReducer — notification buffer', () => {
   it('appends every distinct toast to the buffer', () => {
     let state = initialToastQueueState;
     state = push(state, makeToast({ key: 'a' }), 0);

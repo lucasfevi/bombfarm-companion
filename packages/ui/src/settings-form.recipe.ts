@@ -1,7 +1,7 @@
 /**
  * Settings primitives chrome — fixed layout bundles. `SettingsRow`
  * composes `Fields`'s `stackFieldsClass` for its label/control grid rather
- * than reimplementing it (TST-26); these classes only dress the section
+ * than reimplementing it; these classes only dress the section
  * shell and the row's own label/hint text.
  */
 

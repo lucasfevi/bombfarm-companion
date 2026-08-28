@@ -74,7 +74,7 @@ function findSection(sections: readonly SectionUsability[], section: AccountSect
 /**
  * The per-section usability rule's six-row table (design.md §3). Order matters: `nothing-persisted` and `rejected`
  * take priority over `no-roster` (a rejection names its own reason, never a generic empty
- * roster — spec.md edge case, `AD-BSP-05`); `store-unavailable` is checked only once a usable
+ * roster — spec.md edge case); `store-unavailable` is checked only once a usable
  * roster exists, because it is an additional notice layered over otherwise-normal rendering
  * (spec.md edge case: "still render live sections if any resolved"), not an exclusive state.
  */

@@ -154,7 +154,7 @@ describe('peelSheetStages — Birth + Δs sum to Total', () => {
     }
   });
 
-  it('speed has zero Δ level and Δ stars (AD-BSP-19)', () => {
+  it('speed has zero Δ level and Δ stars', () => {
     const hero = extractHero(data, 'Bellatrix');
     if (!hero.birth) throw new Error('Bellatrix missing birth');
     const tree = fixtureTree(data);

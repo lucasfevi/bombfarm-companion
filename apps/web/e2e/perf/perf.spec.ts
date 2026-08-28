@@ -36,7 +36,7 @@ const WARMUP_DISCARD = Math.max(
   Number.parseInt(process.env.PERF_WARMUP_DISCARD ?? '2', 10) || 0,
 )
 /**
- * RES-06 roster-scaling probe. `importedRoster` (3 heroes) is the default and the fixture
+ * Roster-scaling probe. `importedRoster` (3 heroes) is the default and the fixture
  * every existing baseline is expressed against — never change it. `PERF_FIXTURE=large`
  * swaps in a 30-hero roster with the same active hero and account, to test whether render
  * counts scale with roster size or are flat.
@@ -45,7 +45,7 @@ const USE_LARGE_ROSTER = process.env.PERF_FIXTURE === 'large'
 const FIXTURE_NAME = USE_LARGE_ROSTER ? 'largeRoster' : 'importedRoster'
 const FIXTURE = USE_LARGE_ROSTER ? largeRoster : importedRoster
 /**
- * RES-05 — `dev-strict` is the W1/W8 baseline instrument: `next dev` + StrictMode, which
+ * `dev-strict` is the W1/W8 baseline instrument: `next dev` + StrictMode, which
  * double-invokes render and is *not* production. `prod-profile` runs against
  * `pnpm perf:build:profile` output — production React with component names retained —
  * and is the instrument any claim about production behavior must use. The two are not

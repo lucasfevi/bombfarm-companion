@@ -17,7 +17,7 @@ const panelNeedClass = '';
 export const panelAlignedClass =
   'border-[color-mix(in_oklch,var(--up)_45%,var(--line))] shadow-[inset_3px_0_0_var(--up)]';
 /**
- * m2-storybook-ci (T7, SBC-12): was `opacity-[0.78]`. `mutedClass` text composited
+ * m2-storybook-ci (T7): was `opacity-[0.78]`. `mutedClass` text composited
  * at 0.78 alpha over the panel's `bg-surface` (itself alpha-blended over the page's
  * `bg-bg`) measured 4.25:1 (OKLCH -> linear-sRGB -> WCAG relative luminance), just
  * under the 4.5:1 AA floor. 0.85 measures 4.81:1.

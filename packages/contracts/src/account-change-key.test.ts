@@ -42,7 +42,7 @@ describe('accountChangeKey — the probe table (design.md §2.4)', () => {
     expect(a).toBe(b);
   });
 
-  it('skills.status resolved → stale, body byte-identical ⇒ different key (MAR-09)', () => {
+  it('skills.status resolved → stale, body byte-identical ⇒ different key', () => {
     const resolved = basePayload(CAPTURED_AT_A);
     const stale: AccountPayload = {
       ...resolved,
@@ -125,7 +125,7 @@ describe('accountChangeKey — the probe table (design.md §2.4)', () => {
   it('two AccountViews differing only in gameRunning ⇒ same key — gameRunning is not a payload field at all', () => {
     // accountChangeKey's signature only accepts a payload, so this is asserted at the type/call
     // level: the same payload keyed twice produces the same key regardless of what a caller's
-    // gameRunning flag says elsewhere on the AccountView. This is the proof that MAR-05
+    // gameRunning flag says elsewhere on the AccountView. This is the proof the auto-update invariant
     // ("holds unchanged whether or not the game is running") rests on: the field is structurally
     // incapable of entering the key, not merely absent from today's call sites.
     const payload = basePayload(CAPTURED_AT_A);

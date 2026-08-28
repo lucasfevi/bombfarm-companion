@@ -38,7 +38,7 @@ export function HeroAbilitiesTab() {
   const abilityPointsSpent = Object.values(abilities).reduce((sum, points) => sum + (points || 0), 0);
   const abilitySlotsMax = ABILITY_QUOTA[rarity];
   const abilityPointsMax = abilityPointBudget(rarity, level);
-  // AC-38/AD-BSP-23a: granted (hero level) vs spendable (slot-capped budget) — Bram is the
+  // Granted (hero level) vs spendable (slot-capped budget) — Bram is the
   // worked case (L49 -> 40 spendable, 9 dead).
   const abilityPointsDead = Math.max(0, level - abilityPointsMax);
   const abilitySlotsUsed = heroAbilitySlotsUsed(abilities);
@@ -63,7 +63,7 @@ export function HeroAbilitiesTab() {
             <span className={mutedClass}>
               {sub(t.abilitiesGrantedSpendable, { granted: level, spendable: abilityPointsMax })}
             </span>
-            {/* DEC-03: always mounted — toggles invisible + aria-hidden, never mount/unmount. */}
+            {/* Always mounted — toggles invisible + aria-hidden, never mount/unmount. */}
             <span
               className={cn(warnClass, abilityPointsDead <= 0 && 'invisible')}
               aria-hidden={abilityPointsDead <= 0}

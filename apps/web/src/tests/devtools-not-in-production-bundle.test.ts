@@ -4,7 +4,7 @@ import { join, resolve } from 'node:path';
 import { isPerfProfileBuild, requireBuildOutput } from './support/build-output';
 
 /**
- * RES-02 — zustand's `devtools` middleware must not reach the production bundle.
+ * Zustand's `devtools` middleware must not reach the production bundle.
  *
  * The runtime `NODE_ENV` guard cannot achieve this alone: webpack marks a statically
  * imported binding as used at module-graph time, so the middleware shipped whole even
@@ -23,7 +23,7 @@ const read = (relative: string) => readFileSync(resolve(root, relative), 'utf8')
 const REAL = 'src/shared/stores/devtools-middleware.ts';
 const NOOP = 'src/shared/stores/devtools-middleware-noop.ts';
 
-describe('RES-02 devtools is excluded from the production bundle', () => {
+describe('devtools is excluded from the production bundle', () => {
   it('both middleware modules still exist at the paths next.config.ts aliases', () => {
     expect(existsSync(resolve(root, REAL)), `${REAL} is missing — the alias cannot match`).toBe(
       true,

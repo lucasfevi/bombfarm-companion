@@ -16,7 +16,7 @@ export const chipRecipe = cva('', {
       on: `${chipBase} border-accent bg-[color-mix(in_oklch,var(--accent)_16%,var(--surface))]`,
       small: `${chipSmallBase} border-line bg-surface`,
       'small-active': `${chipSmallBase} border-up bg-[color-mix(in_oklch,var(--up)_14%,var(--surface))] text-up`,
-      // m2-storybook-ci (T7, SBC-12): plain `text-warn` on `bg-surface` measured
+      // m2-storybook-ci (T7): plain `text-warn` on `bg-surface` measured
       // 3.31:1 (OKLCH -> linear-sRGB -> WCAG relative luminance), below the 4.5:1
       // AA floor for this 10px text. Lightened via `color-mix` toward white (still
       // driven by the `--warn` token, not a hardcoded literal, per design

@@ -47,7 +47,7 @@ export const Open: Story = {
   ),
 };
 
-/** Long PT label wraps in the label column; the chevron slot stays fixed (UAC-05). */
+/** Long PT label wraps in the label column; the chevron slot stays fixed. */
 export const LongContentOverflow: Story = {
   render: () => (
     <div className="w-[20rem]">

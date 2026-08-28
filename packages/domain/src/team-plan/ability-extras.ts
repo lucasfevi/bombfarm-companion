@@ -22,7 +22,7 @@ export type UnmodelledAbilityEntry = {
   assumptionBased?: boolean;
 };
 
-/** Heroes carrying unmodelled / assumption-based abilities for RGO-17 disclosures. */
+/** Heroes carrying unmodelled / assumption-based abilities for unmodelled-ability disclosures. */
 export function unmodelledAbilitiesInScope(contexts: HeroPlanContext[]): UnmodelledAbilityEntry[] {
   const out: UnmodelledAbilityEntry[] = [];
 

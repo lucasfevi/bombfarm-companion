@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * RES-05 — build the perf *measurement* bundle.
+ * Build the perf *measurement* bundle.
  *
  * `next build --profile` swaps in React's profiling build so the Profiler API reports in
  * production. On its own that is not enough for this harness: SWC still mangles function

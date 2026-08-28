@@ -113,7 +113,7 @@ export function assertProvenanceLadder(pair: FidelityPair): void {
 }
 
 /**
- * The export side has no fidelity block on the file-adapter path (`ACS-05.5`) — that is normal,
+ * The export side has no fidelity block on the file-adapter path — that is normal,
  * not degraded, so absence is not asserted here. If a fidelity block IS present (a future,
  * fidelity-aware export), it is still held to the full guard.
  */

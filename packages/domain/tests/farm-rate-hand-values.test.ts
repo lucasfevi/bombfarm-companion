@@ -236,7 +236,7 @@ function handComputeRow(stoneHp: number, mitig: number, goldComum: number, phase
   };
 }
 
-describe('phase 42 — non-gate hand-computed values (spec.md P1-2 AC-1)', () => {
+describe('phase 42 — non-gate hand-computed values', () => {
   const line = wikiPhaseLine(42)!;
 
   it('published inputs: hp and mitig match spec.md exactly; ato/gate/propCount as stated', () => {
@@ -298,7 +298,7 @@ describe('phase 42 — non-gate hand-computed values (spec.md P1-2 AC-1)', () =>
   });
 });
 
-describe('phase 10 — gate hand-computed values (spec.md P1-2 AC-2)', () => {
+describe('phase 10 — gate hand-computed values', () => {
   const line = wikiPhaseLine(10)!;
 
   it('published inputs: hp and mitig match spec.md exactly; ato/gate/timer as stated', () => {

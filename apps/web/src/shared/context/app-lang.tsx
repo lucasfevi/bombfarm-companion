@@ -10,7 +10,7 @@ type AppLangValue = {
   t: Strings;
 };
 
-/** Compat hook — same return shape as the former context provider (W4-07). */
+/** Compat hook — same return shape as the former context provider. */
 export function useAppLang(): AppLangValue {
   const lang = usePlannerStore(selectLang);
   const strings = usePlannerStore(selectStrings);

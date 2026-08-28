@@ -217,5 +217,5 @@ describe('writeHeroBattleAllowed', () => {
  * Pre: each autosave tick → loadHeroes() → 1× getItem+JSON.parse of bf-hp-heroes-v1
  *      + N× normalizeHero (and migrateGearedOverride/applyGear when needed) across the roster.
  * Post: 0× parse of bf-hp-heroes-v1 + 1× normalizeHero for the record being saved
- *      + 1× setItem heroes + 1× setItem active pointer (unchanged, ASM-07).
+ *      + 1× setItem heroes + 1× setItem active pointer (unchanged).
  */
