@@ -66,7 +66,9 @@ export class EarningsFold {
 
   #buckets: Bucket[] = [];
 
-  #payoutProps = 0;
+  /** Payouts counted only on a tick where the grid diff below also ran — the counterpart
+   *  {@link #gridClears} is compared against, so the two always cover an identical set of ticks. */
+  #crossCheckPayoutProps = 0;
   #gridClears = 0;
   #divergenceLogged = false;
   #lastKinds: readonly number[] | undefined;
@@ -102,7 +104,6 @@ export class EarningsFold {
       propsThisTick += 1;
     }
     bucket.props += propsThisTick;
-    this.#payoutProps += propsThisTick;
 
     if (propsThisTick > 0 && tick.phase !== undefined) {
       const xp = propsThisTick * this.#deps.xpPerProp(tick.phase) * normalizedXpMult(xpMult);
@@ -110,14 +111,14 @@ export class EarningsFold {
       bucket.xp += xp;
     }
 
-    this.#crossCheckGrid(tick);
+    this.#crossCheckGrid(tick, propsThisTick);
   }
 
   reset(trigger: EarningsResetTrigger): void {
     this.#goldTotal = 0;
     this.#xpTotal = 0;
     this.#streamedMs = 0;
-    this.#payoutProps = 0;
+    this.#crossCheckPayoutProps = 0;
     this.#gridClears = 0;
     this.#divergenceLogged = false;
     this.#lastKinds = undefined;
@@ -133,24 +134,31 @@ export class EarningsFold {
    * The wave guard is load-bearing: a wave rollover replaces the whole grid, so diffing a fresh
    * map's layout against the old one reads unrelated cells as spawns and clears that never
    * happened, rather than the one real prop the old map's last frame never got to report cleared.
+   *
+   * Every map completion ends in exactly this kind of rollover, which permanently hides that map's
+   * last clear from the diff — so {@link #crossCheckPayoutProps} only counts a tick's payouts when
+   * the diff actually ran for that same tick. Comparing it against `#gridClears` then means both
+   * counters cover the identical set of ticks, and a divergence means the one-payout-per-prop
+   * assumption itself broke, not that a map happened to end.
    */
-  #crossCheckGrid(tick: LiveTick): void {
+  #crossCheckGrid(tick: LiveTick, propsThisTick: number): void {
     if (tick.kinds && this.#lastKinds && tick.wave === this.#lastWave) {
       let clears = 0;
       for (let i = 0; i < this.#lastKinds.length; i += 1) {
         if ((this.#lastKinds[i] ?? -1) >= 0 && tick.kinds[i] === -1) clears += 1;
       }
       this.#gridClears += clears;
+      this.#crossCheckPayoutProps += propsThisTick;
     }
     this.#lastKinds = tick.kinds;
     this.#lastWave = tick.wave;
 
-    if (!this.#divergenceLogged && this.#gridClears !== this.#payoutProps) {
+    if (!this.#divergenceLogged && this.#gridClears !== this.#crossCheckPayoutProps) {
       this.#deps.log.warn({
         scope: 'live-source',
         event: 'earnings.grid_payout_divergence',
         gridClears: this.#gridClears,
-        payoutProps: this.#payoutProps,
+        payoutProps: this.#crossCheckPayoutProps,
       });
       this.#divergenceLogged = true;
     }

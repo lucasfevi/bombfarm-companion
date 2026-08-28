@@ -286,33 +286,47 @@ describe('EarningsFold: grid cross-check', () => {
     const clock = makeClock();
     const fold = makeFold({ now: clock.now, log: { info: () => undefined, warn } });
 
-    fold.consumeTick({ heroes: [], wave: 1, kinds: [0, -1, 0] }, 1);
+    fold.consumeTick({ heroes: [], wave: 1, kinds: [0, -1, 0] }, 1, undefined);
     clock.advance(100);
     // A fresh map spawns with an unrelated layout: cell 0 held a prop and is now empty, but that
     // is the new map simply not spawning one there, not a destruction — nothing paid out either.
-    fold.consumeTick({ heroes: [], wave: 2, kinds: [-1, 0, 0] }, 2);
+    fold.consumeTick({ heroes: [], wave: 2, kinds: [-1, 0, 0] }, 2, undefined);
 
     expect(warn).not.toHaveBeenCalled();
   });
 
-  it('replaying the committed capture logs the divergence the wave rollover masks exactly once, with both counts', () => {
+  it('replaying the committed capture: the two cross-check counters agree exactly, and no divergence warning fires', () => {
     const warn = vi.fn();
     const clock = makeClock();
     const fold = makeFold({ now: clock.now, log: { info: () => undefined, warn } });
 
     const ticks = replayCommittedCaptureTicks();
     ticks.forEach((tick, index) => {
-      fold.consumeTick(tick, index + 1);
+      fold.consumeTick(tick, index + 1, undefined);
       clock.advance(100);
     });
 
-    // The capture carries 10 loot payouts but only 9 of them share a tick with their cell's own
-    // occupied -> cleared transition; the tenth's clear is masked by a wave rollover (see
-    // live-capture.test.ts), which the wave guard correctly declines to count. That is a genuine,
-    // expected one-payout gap — not a bug — and it must still surface exactly once.
+    // The capture carries 10 loot payouts, but only 9 of them share a tick with their cell's own
+    // occupied -> cleared transition — the tenth's clear is masked by a wave rollover (see
+    // live-capture.test.ts). The cross-check payout counter only counts a payout on a tick where
+    // the grid diff also ran, so the masked payout is excluded from both counters alike: both land
+    // on 9, not 9-vs-10, and the divergence warning never fires.
+    expect(warn).not.toHaveBeenCalled();
+  });
+
+  it('a genuine divergence — a grid clear with no matching payout — still warns with both counts', () => {
+    const warn = vi.fn();
+    const clock = makeClock();
+    const fold = makeFold({ now: clock.now, log: { info: () => undefined, warn } });
+
+    fold.consumeTick({ heroes: [], wave: 1, kinds: [0] }, 1, undefined);
+    clock.advance(100);
+    // Same wave, so the diff runs; the cell clears but no loot entry ever reports it.
+    fold.consumeTick({ heroes: [], wave: 1, kinds: [-1] }, 2, undefined);
+
     expect(warn).toHaveBeenCalledTimes(1);
     expect(warn).toHaveBeenCalledWith(
-      expect.objectContaining({ event: 'earnings.grid_payout_divergence', gridClears: 9, payoutProps: 10 }),
+      expect.objectContaining({ event: 'earnings.grid_payout_divergence', gridClears: 1, payoutProps: 0 }),
     );
   });
 });
