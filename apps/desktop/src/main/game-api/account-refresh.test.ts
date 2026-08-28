@@ -279,6 +279,7 @@ function baseDeps(overrides: Partial<AccountRefreshDeps> & { store: AccountStore
       return `2026-08-12T00:0${String(tick)}:00.000Z`;
     },
     readToken: throwingReadToken(),
+    isGameRunning: () => true,
     ...overrides,
   };
 }
@@ -428,6 +429,233 @@ describe('account-refresh — session token unavailable', () => {
 
     expect(secondView).toBeNull();
     expect(store.restore()).toEqual(beforeSecondCycle);
+  });
+});
+
+describe('account-refresh — game not running', () => {
+  it('issues zero transport calls when the game is not running, even with consent and a readable token', async () => {
+    const open = openTestAccountDb(firstBinding());
+    const store = createAccountStore(open);
+    const transportCalls: string[] = [];
+    const { fn: readToken } = fixedReadToken('486', SessionTokenClass.create(SENTINEL_TOKEN), 1000);
+    const deps = baseDeps({
+      store,
+      consentStore: fixedConsentStore(GRANTED),
+      transport: (req) => {
+        transportCalls.push(req.path);
+        return Promise.reject(new Error('transport must never be called while the game is not running'));
+      },
+      readToken,
+      isGameRunning: () => false,
+    });
+    const refresh = createAccountRefresh(deps);
+
+    const view = await refresh.refreshNow();
+
+    expect(transportCalls).toHaveLength(0);
+    expect(view).toBeNull();
+    expect(refresh.getLastView()).toBeNull();
+  });
+
+  it('does not read the token at all when the game is not running', async () => {
+    const open = openTestAccountDb(firstBinding());
+    const store = createAccountStore(open);
+    const deps = baseDeps({
+      store,
+      consentStore: fixedConsentStore(GRANTED),
+      transport: throwingTransport(),
+      readToken: throwingReadToken(),
+      isGameRunning: () => false,
+    });
+    const refresh = createAccountRefresh(deps);
+
+    const view = await refresh.refreshNow();
+
+    expect(view).toBeNull();
+  });
+
+  it('issues requests once the game is running (consent granted, token readable)', async () => {
+    const open = openTestAccountDb(firstBinding());
+    const store = createAccountStore(open);
+    const transportCalls: string[] = [];
+    const { fn: readToken } = fixedReadToken('486', SessionTokenClass.create(SENTINEL_TOKEN), 1000);
+    const deps = baseDeps({
+      store,
+      consentStore: fixedConsentStore(GRANTED),
+      transport: okTransport(transportCalls),
+      readToken,
+      isGameRunning: () => true,
+    });
+    const refresh = createAccountRefresh(deps);
+
+    await refresh.refreshNow();
+
+    expect(transportCalls.length).toBeGreaterThan(0);
+  });
+
+  it('does not overwrite a resolved section another producer already committed to the same store', async () => {
+    const open = openTestAccountDb(firstBinding());
+    const store = createAccountStore(open);
+    const { fn: readToken } = fixedReadToken('486', SessionTokenClass.create(SENTINEL_TOKEN), 1000);
+
+    const grantedRefresh = createAccountRefresh(
+      baseDeps({ store, consentStore: fixedConsentStore(GRANTED), transport: okTransport(), readToken }),
+    );
+    const firstView = await grantedRefresh.refreshNow();
+    expect(fidelityOf(firstView).account.status).toBe('resolved');
+    const beforeSecondCycle = store.restore();
+
+    const notRunningRefresh = createAccountRefresh(
+      baseDeps({
+        store,
+        consentStore: fixedConsentStore(GRANTED),
+        transport: throwingTransport(),
+        readToken,
+        isGameRunning: () => false,
+      }),
+    );
+    const secondView = await notRunningRefresh.refreshNow();
+
+    expect(secondView).toBeNull();
+    expect(store.restore()).toEqual(beforeSecondCycle);
+  });
+
+  it.each([true, false])(
+    'declined consent still skips with zero transport calls regardless of whether the game is running (isGameRunning=%s)',
+    async (isGameRunning) => {
+      const open = openTestAccountDb(firstBinding());
+      const store = createAccountStore(open);
+      const transportCalls: string[] = [];
+      const { log, records } = createLogSpy();
+      const deps = baseDeps({
+        store,
+        consentStore: fixedConsentStore(DECLINED),
+        transport: (req) => {
+          transportCalls.push(req.path);
+          return Promise.reject(new Error('transport must never be called while consent is declined'));
+        },
+        readToken: throwingReadToken(),
+        isGameRunning: () => isGameRunning,
+        log,
+      });
+      const refresh = createAccountRefresh(deps);
+
+      const view = await refresh.refreshNow();
+
+      expect(transportCalls).toHaveLength(0);
+      expect(view).toBeNull();
+      const skip = records.find((r) => r.record.event === 'cycle.skipped');
+      expect(skip?.record.decision).toBe('declined');
+    },
+  );
+
+  it('the game-not-running skip logs a record distinguishable from both the not-consented and token-unavailable skips', async () => {
+    const open = openTestAccountDb(firstBinding());
+    const store = createAccountStore(open);
+
+    const notConsentedLog = createLogSpy();
+    await createAccountRefresh(
+      baseDeps({
+        store,
+        consentStore: fixedConsentStore(UNASKED),
+        transport: throwingTransport(),
+        readToken: throwingReadToken(),
+        log: notConsentedLog.log,
+      }),
+    ).refreshNow();
+
+    const gameNotRunningLog = createLogSpy();
+    await createAccountRefresh(
+      baseDeps({
+        store,
+        consentStore: fixedConsentStore(GRANTED),
+        transport: throwingTransport(),
+        readToken: throwingReadToken(),
+        isGameRunning: () => false,
+        log: gameNotRunningLog.log,
+      }),
+    ).refreshNow();
+
+    const tokenUnavailableLog = createLogSpy();
+    await createAccountRefresh(
+      baseDeps({
+        store,
+        consentStore: fixedConsentStore(GRANTED),
+        transport: throwingTransport(),
+        readToken: () => ({ ok: false, reason: 'not_found' }),
+        log: tokenUnavailableLog.log,
+      }),
+    ).refreshNow();
+
+    const notConsentedSkip = notConsentedLog.records.find((r) => r.record.event === 'cycle.skipped');
+    const gameNotRunningSkip = gameNotRunningLog.records.find((r) => r.record.event === 'cycle.skipped');
+    const tokenUnavailableSkip = tokenUnavailableLog.records.find((r) => r.record.event === 'token.unavailable');
+
+    expect(notConsentedSkip).toBeDefined();
+    expect(gameNotRunningSkip).toBeDefined();
+    expect(tokenUnavailableSkip).toBeDefined();
+
+    expect(gameNotRunningSkip?.record).not.toEqual(notConsentedSkip?.record);
+    expect(gameNotRunningSkip?.record.reason).toBe('game_not_running');
+    expect(notConsentedSkip?.record.reason).not.toBe('game_not_running');
+    expect(gameNotRunningSkip?.record.event).not.toBe(tokenUnavailableSkip?.record.event);
+  });
+
+  it('resumes issuing requests on the next cycle once the game is running again, with no restart', async () => {
+    const open = openTestAccountDb(firstBinding());
+    const store = createAccountStore(open);
+    const transportCalls: string[] = [];
+    const { fn: readToken } = fixedReadToken('486', SessionTokenClass.create(SENTINEL_TOKEN), 1000);
+    let gameRunning = false;
+    const deps = baseDeps({
+      store,
+      consentStore: fixedConsentStore(GRANTED),
+      transport: okTransport(transportCalls),
+      readToken,
+      isGameRunning: () => gameRunning,
+    });
+    const refresh = createAccountRefresh(deps);
+
+    const firstView = await refresh.refreshNow();
+    expect(transportCalls).toHaveLength(0);
+    expect(firstView).toBeNull();
+
+    const secondView = await refresh.refreshNow();
+    expect(transportCalls).toHaveLength(0);
+    expect(secondView).toBeNull();
+
+    gameRunning = true;
+    const thirdView = await refresh.refreshNow();
+
+    expect(transportCalls.length).toBeGreaterThan(0);
+    expect(fidelityOf(thirdView).account.status).toBe('resolved');
+  });
+});
+
+describe('account-refresh — the game-running flag is read fresh at commit time', () => {
+  it('commits gameRunning: false when the game exits partway through a cycle', async () => {
+    const open = openTestAccountDb(firstBinding());
+    const store = createAccountStore(open);
+    const { fn: readToken } = fixedReadToken('486', SessionTokenClass.create(SENTINEL_TOKEN), 1000);
+    let gameRunning = true;
+    const transport: HttpTransport = (req) => {
+      if (req.path === '/roster') {
+        gameRunning = false;
+      }
+      return Promise.resolve({ status: 200, body: JSON.stringify(BODIES[req.path] ?? {}) });
+    };
+    const deps = baseDeps({
+      store,
+      consentStore: fixedConsentStore(GRANTED),
+      transport,
+      readToken,
+      isGameRunning: () => gameRunning,
+    });
+    const refresh = createAccountRefresh(deps);
+
+    const view = await refresh.refreshNow();
+
+    expect(view?.gameRunning).toBe(false);
   });
 });
 

@@ -19,7 +19,8 @@ import { readSessionToken, type SessionTokenFileResult } from './session-token-f
  * product (`R-1`).
  *
  * Per cycle: read consent → not `granted`? treat every section as `failed('not_consented')` →
- * else read the token (cached against `mtimeMs`) → not readable? treat every section as
+ * else the game not running? treat every section as `failed('game_not_running')` → else read the
+ * token (cached against `mtimeMs`) → not readable? treat every section as
  * `failed('token_unavailable')` → else `grantSession` → read the five routes through the pacing
  * gate, in `ROUTES` order. Either way the cycle ends at the same gate: if every section came back
  * `failed`, a read that found nothing is not evidence the game has nothing, so nothing is
@@ -30,7 +31,9 @@ import { readSessionToken, type SessionTokenFileResult } from './session-token-f
 
 const SECTIONS: readonly AccountSection[] = ['account', 'heroes', 'skills', 'casa', 'items'];
 
-function allSectionsFailed(reason: 'not_consented' | 'token_unavailable'): Record<AccountSection, SectionOutcome> {
+function allSectionsFailed(
+  reason: 'not_consented' | 'game_not_running' | 'token_unavailable',
+): Record<AccountSection, SectionOutcome> {
   const result = {} as Record<AccountSection, SectionOutcome>;
   for (const section of SECTIONS) {
     result[section] = { kind: 'failed', reason };
@@ -73,6 +76,9 @@ export interface AccountRefreshDeps {
   log: LogPort;
   /** Injected clock — the ISO timestamp stamped on every resolved/degraded section this cycle. */
   now(): string;
+  /** Injected so the cycle can gate on the game's current process state without importing
+   *  Electron-touching code. Required — production must always supply a real read. */
+  isGameRunning(): boolean;
   /** Injected so tests never touch the real filesystem. Defaults to the real gated read. */
   readToken?: (consent: GrantedConsent) => SessionTokenFileResult;
   /** Injected wall-clock scheduling seam. Defaults to the real timers. */
@@ -138,7 +144,7 @@ export function createAccountRefresh(deps: AccountRefreshDeps): AccountRefreshHa
   }
 
   function commitAndNotify(payload: Parameters<AccountCommitter['commit']>[0]): AccountView {
-    const view = deps.store.commit(payload, { gameRunning: true });
+    const view = deps.store.commit(payload, { gameRunning: deps.isGameRunning() });
     lastView = view;
     deps.onView?.(view);
     return view;
@@ -171,6 +177,11 @@ export function createAccountRefresh(deps: AccountRefreshDeps): AccountRefreshHa
       if (!isGranted(consent)) {
         deps.log.info({ scope: 'account-refresh', event: 'cycle.skipped', decision: consent.decision });
         return commitIfAnyResolved(allSectionsFailed('not_consented'));
+      }
+
+      if (!deps.isGameRunning()) {
+        deps.log.info({ scope: 'account-refresh', event: 'cycle.skipped', reason: 'game_not_running' });
+        return commitIfAnyResolved(allSectionsFailed('game_not_running'));
       }
 
       const fileResult = readToken(consent);
