@@ -1,5 +1,5 @@
 ---
-'@bombfarm/domain': patch
+"@bombfarm/domain": patch
 ---
 
 Make capture-regime admissibility mechanical, and restore the farm ranking's lost discrimination
