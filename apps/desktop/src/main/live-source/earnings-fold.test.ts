@@ -267,6 +267,22 @@ describe('EarningsFold: 10-minute rolling window', () => {
     expect(fold.coverageSeconds).toBeGreaterThan(coverageBefore);
   });
 
+  it('divides the window rate by streamed time, not by the real-time span the window covers', () => {
+    const clock = makeClock();
+    const fold = makeFold({ now: clock.now });
+
+    fold.consumeTick(baseTick({ loot: [{ cell: 0, gold: 1_000 }] }), 1, undefined);
+    clock.advance(500);
+    fold.consumeTick(baseTick({}), 2, undefined);
+
+    // No further ticks at all for 5 real minutes: streamed time stays fixed at the 0.5s the two
+    // ticks above accrued, while the real span the window covers grows past it by 600x — dividing
+    // by that real span instead would land nowhere near the value asserted below.
+    clock.advance(5 * 60 * 1000);
+
+    expect(fold.gold10).toBe((1_000 / 0.5) * 3600);
+  });
+
   it('never lets the bucket ring grow past its capacity, even across a long session with no window read in between', () => {
     const clock = makeClock();
     const fold = makeFold({ now: clock.now });
