@@ -58,6 +58,12 @@ export class EarningsFold {
 
   #buckets: Bucket[] = [];
 
+  #payoutProps = 0;
+  #gridClears = 0;
+  #divergenceLogged = false;
+  #lastKinds: readonly number[] | undefined;
+  #lastWave: number | undefined;
+
   constructor(deps: EarningsFoldDeps) {
     this.#deps = deps;
   }
@@ -88,11 +94,45 @@ export class EarningsFold {
       propsThisTick += 1;
     }
     bucket.props += propsThisTick;
+    this.#payoutProps += propsThisTick;
 
     if (propsThisTick > 0 && tick.phase !== undefined) {
       const xp = propsThisTick * this.#deps.xpPerProp(tick.phase) * normalizedXpMult(xpMult);
       this.#xpTotal += xp;
       bucket.xp += xp;
+    }
+
+    this.#crossCheckGrid(tick);
+  }
+
+  /**
+   * A second, independent count of prop destructions — via the map's own `kinds` array going from
+   * occupied to cleared — that the XP figure's "every destroyed prop pays out exactly once"
+   * assumption can be checked against, without ever feeding back into a displayed rate.
+   *
+   * The wave guard is load-bearing: a wave rollover replaces the whole grid, so diffing a fresh
+   * map's layout against the old one reads unrelated cells as spawns and clears that never
+   * happened, rather than the one real prop the old map's last frame never got to report cleared.
+   */
+  #crossCheckGrid(tick: LiveTick): void {
+    if (tick.kinds && this.#lastKinds && tick.wave === this.#lastWave) {
+      let clears = 0;
+      for (let i = 0; i < this.#lastKinds.length; i += 1) {
+        if ((this.#lastKinds[i] ?? -1) >= 0 && tick.kinds[i] === -1) clears += 1;
+      }
+      this.#gridClears += clears;
+    }
+    this.#lastKinds = tick.kinds;
+    this.#lastWave = tick.wave;
+
+    if (!this.#divergenceLogged && this.#gridClears !== this.#payoutProps) {
+      this.#deps.log.warn({
+        scope: 'live-source',
+        event: 'earnings.grid_payout_divergence',
+        gridClears: this.#gridClears,
+        payoutProps: this.#payoutProps,
+      });
+      this.#divergenceLogged = true;
     }
   }
 

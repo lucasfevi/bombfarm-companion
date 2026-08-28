@@ -1,7 +1,11 @@
+import { readFileSync } from 'node:fs';
+import { resolve } from 'node:path';
 import type { LiveTick } from '@bombfarm/contracts';
 import { describe, expect, it, vi } from 'vitest';
+import { readCaptureRecords, type CaptureRecord } from './capture-format.js';
 import { EarningsFold, MAX_TICK_GAP_MS, type EarningsFoldDeps } from './earnings-fold.js';
 import type { LogPort } from './log-port.js';
+import { TlsConnections, type TapEvent } from './tls-stream.js';
 
 const NOOP_LOG: LogPort = { info: () => undefined, warn: () => undefined };
 
@@ -26,6 +30,19 @@ function makeFold(overrides: Partial<EarningsFoldDeps> = {}): EarningsFold {
     log: NOOP_LOG,
     ...overrides,
   });
+}
+
+function isTick(event: TapEvent): event is { kind: 'tick'; tick: LiveTick } {
+  return event.kind === 'tick';
+}
+
+function replayCommittedCaptureTicks(): readonly LiveTick[] {
+  const capturePath = resolve(__dirname, 'fixtures', 'live-capture.bfcc');
+  const records: CaptureRecord[] = [...readCaptureRecords(readFileSync(capturePath))];
+  const conn = new TlsConnections();
+  const events: TapEvent[] = [];
+  for (const record of records) events.push(...conn.push(record.ctx, record.bytes));
+  return events.filter(isTick).map((event) => event.tick);
 }
 
 describe('EarningsFold: sequence guard', () => {
@@ -254,5 +271,42 @@ describe('EarningsFold: 10-minute rolling window', () => {
     }
 
     expect(fold.coverageSeconds).toBeLessThanOrEqual(601);
+  });
+});
+
+describe('EarningsFold: grid cross-check', () => {
+  it('the wave guard prevents a wholesale grid replacement with no real destructions from reading as spurious clears', () => {
+    const warn = vi.fn();
+    const clock = makeClock();
+    const fold = makeFold({ now: clock.now, log: { info: () => undefined, warn } });
+
+    fold.consumeTick({ heroes: [], wave: 1, kinds: [0, -1, 0] }, 1);
+    clock.advance(100);
+    // A fresh map spawns with an unrelated layout: cell 0 held a prop and is now empty, but that
+    // is the new map simply not spawning one there, not a destruction — nothing paid out either.
+    fold.consumeTick({ heroes: [], wave: 2, kinds: [-1, 0, 0] }, 2);
+
+    expect(warn).not.toHaveBeenCalled();
+  });
+
+  it('replaying the committed capture logs the divergence the wave rollover masks exactly once, with both counts', () => {
+    const warn = vi.fn();
+    const clock = makeClock();
+    const fold = makeFold({ now: clock.now, log: { info: () => undefined, warn } });
+
+    const ticks = replayCommittedCaptureTicks();
+    ticks.forEach((tick, index) => {
+      fold.consumeTick(tick, index + 1);
+      clock.advance(100);
+    });
+
+    // The capture carries 10 loot payouts but only 9 of them share a tick with their cell's own
+    // occupied -> cleared transition; the tenth's clear is masked by a wave rollover (see
+    // live-capture.test.ts), which the wave guard correctly declines to count. That is a genuine,
+    // expected one-payout gap — not a bug — and it must still surface exactly once.
+    expect(warn).toHaveBeenCalledTimes(1);
+    expect(warn).toHaveBeenCalledWith(
+      expect.objectContaining({ event: 'earnings.grid_payout_divergence', gridClears: 9, payoutProps: 10 }),
+    );
   });
 });
