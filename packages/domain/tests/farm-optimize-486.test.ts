@@ -149,13 +149,13 @@ describe('the chest objective reports a strictly higher chest rate and a differe
   });
 
   // RE-ASKED on the 2026-08-19 roster: 1.426x, inside the same band the retired roster measured
-  // at ~1.40x. The load-bearing half of this claim is the last line — it rules out the PRD's 4x
+  // at ~1.40x. The load-bearing half of this claim is the last line — it rules out the earlier 4x
   // figure, which came from an uncommitted capture nobody can re-read — and a second account
   // landing in the same narrow band is what makes that refutation stick (issue #206).
-  it('the chest ratio (current build\'s own chest ceiling vs the chest-optimal build\'s) is ~1.40x, not the PRD\'s 4x', () => {
+  it('the chest ratio (current build\'s own chest ceiling vs the chest-optimal build\'s) is ~1.40x, not the earlier 4x claim', () => {
     const ratio = chestSolve.proposedChestsPerHour / chestSolve.currentChestsPerHour;
     expect(ratio).toBeGreaterThan(1.3);
     expect(ratio).toBeLessThan(1.5);
-    expect(ratio).not.toBeGreaterThan(2); // rules out the PRD's uncommitted-capture 4x figure.
+    expect(ratio).not.toBeGreaterThan(2); // rules out the earlier uncommitted-capture 4x figure.
   });
 });
