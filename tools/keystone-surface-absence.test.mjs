@@ -1,5 +1,5 @@
 /**
- * The repo-wide keystone identifier guard (MSC-04). Scans exactly the four
+ * The repo-wide retired-identifier guard. Scans exactly the four
  * roots spec.md's own AC and design.md's own clause table both name — `apps/web/**`,
  * `apps/desktop/**`, `packages/ui/**`, `tools/**` — never `packages/domain` (F2's surface, out of
  * F3's touch scope by the git protocol) and never repo-root `docs/` (outside the four stated
@@ -115,37 +115,37 @@ const ALLOWLIST = [
   // EXCLUDE_RELEASE_PROSE for why an entry could not survive a release.)
   // tools/ guard sources that must name the forbidden/closed tokens to forbid/discharge them.
   { file: 'tools/advisor-input-parity.test.mjs', count: 1, owner: 'treeCritDmgMult closed-pin history (T9)' },
-  { file: 'tools/fixture-corpus-parity.test.mjs', count: 8, owner: 'MFR-15 pattern + history + five-surface residual map (this guard\'s sibling)' },
+  { file: 'tools/fixture-corpus-parity.test.mjs', count: 8, owner: 'the declared-surface pattern + history + five-surface residual map (this guard\'s sibling)' },
   // F1's own negative-discriminator guard — must name the forbidden keys to forbid them.
   { file: 'apps/web/src/tests/fixture-corpus.test.ts', count: 3, owner: 'F1 negative-discriminator guard' },
-  // F3's own doc amendments describing the removal (MSC-12 requires the local-data-compat.md
-  // row; account-shared.ts's normalizeTree doc names the discarded stale keys it now discards).
-  // F4/T9 adds a second local-data-compat.md mention (the superseding drop rule).
-  { file: 'apps/web/docs/local-data-compat.md', count: 2, owner: 'F3 Removed-fields row (MSC-12) + F4/T9 stored-data supersession' },
-  { file: 'apps/web/src/shared/lib/account-shared.ts', count: 3, owner: 'F3 normalizeTree doc comment (MSC-10)' },
+  // F3's own doc amendments describing the removal (the local-data-compat.md doc-amendment rule
+  // covers the row; account-shared.ts's normalizeTree doc names the discarded stale keys it now
+  // discards). F4/T9 adds a second local-data-compat.md mention (the superseding drop rule).
+  { file: 'apps/web/docs/local-data-compat.md', count: 2, owner: 'F3 Removed-fields row (local-data-compat.md amendment requirement) + F4/T9 stored-data supersession' },
+  { file: 'apps/web/src/shared/lib/account-shared.ts', count: 3, owner: 'F3 normalizeTree doc comment (field-discard-on-load proof)' },
   { file: 'apps/web/src/tests/fixtures/storage-roundtrip-20260729.json', count: 1, owner: "F3 fixture history log (TreeState fields' stated-exception path)" },
-  // F3's own absence-proving tests (MSC-01/03/05/06/07/10/18) — each must name the token once to
+  // F3's own absence-proving tests — each must name the token once to
   // prove it is gone.
-  // The Account panel became its own page; its MSC-01 DOM proof moved with it, and the page
+  // The Account panel became its own page; its DOM absence proof moved with it, and the page
   // being read-only means one shared EN+PT assertion replaces the old per-language pair.
-  { file: 'apps/web/e2e/account-page.spec.ts', count: 4, owner: 'F3 MSC-01 DOM absence proof' },
-  { file: 'apps/web/src/tests/account-slice.test.ts', count: 3, owner: 'F3 MSC-03 runtime absence proof' },
+  { file: 'apps/web/e2e/account-page.spec.ts', count: 4, owner: 'F3 DOM absence proof (zero remaining controls, both languages)' },
+  { file: 'apps/web/src/tests/account-slice.test.ts', count: 3, owner: 'F3 runtime absence proof (store setters undefined)' },
   { file: 'apps/web/src/tests/advisor-selectors.test.ts', count: 1, owner: 'F3 dep-tuple-length test title' },
-  { file: 'apps/web/src/tests/derive.test.ts', count: 2, owner: 'F3 AC-29 compile-guard + explanatory comments' },
-  { file: 'apps/web/src/tests/ds-panel-field.test.ts', count: 5, owner: 'F3 MSC-18 recipe absence proof' },
+  { file: 'apps/web/src/tests/derive.test.ts', count: 2, owner: 'F3 compile-guard + explanatory comments' },
+  { file: 'apps/web/src/tests/ds-panel-field.test.ts', count: 5, owner: 'F3 recipe absence proof (pin updated, still discriminating)' },
   // Re-measured for the 2026-08-17 fixture re-baseline: i18n-keystone-absence.test.ts now
   // holds KEYSTONE_KEYS_REMOVED's 12 literal keys directly (9 -> 15) instead of importing them
   // from i18n-split-parity.test.ts, which dropped to zero clause-A matches and lost its entry
   // below — its bookkeeping no longer names any keystone identifier (see that file's own
   // top-of-file comment).
-  { file: 'apps/web/src/tests/i18n-keystone-absence.test.ts', count: 15, owner: 'F3 MSC-05/06 value-scan suite + its own copy of the retired-key list' },
+  { file: 'apps/web/src/tests/i18n-keystone-absence.test.ts', count: 15, owner: 'F3 both-languages value-scan suite + its own copy of the retired-key list' },
   { file: 'apps/web/src/tests/import-inventory-sync.test.ts', count: 4, owner: 'F3 explanatory comment (recorded loss)' },
   // `baseSave()` moved to its own helper (issue #117) and took the flipped-literal comment with
   // it; what stays here is the reject-gate's historical note. One entry became two, same total.
   { file: 'apps/web/src/tests/import-save.test.ts', count: 1, owner: 'F4/T7 historical comment' },
   { file: 'apps/web/src/tests/helpers/base-save-fixture.ts', count: 1, owner: 'F4/T7 flipped baseSave() literal' },
   { file: 'apps/web/src/tests/stat-breakdown.test.ts', count: 1, owner: 'F3 explanatory comment' },
-  { file: 'apps/web/src/tests/storage-legacy-keystone-fields.test.ts', count: 9, owner: 'F4/T9 rewritten legacy-drop suite (supersedes MSC-10)' },
+  { file: 'apps/web/src/tests/storage-legacy-keystone-fields.test.ts', count: 9, owner: 'F4/T9 rewritten legacy-drop suite (supersedes the old field-discard-on-load proof)' },
   // F4-owned drop-rule modules (a module that must name the vocabulary it forbids) and
   // their absence-proving / forbidden-token test suites.
   { file: 'apps/desktop/src/main/storage/stale-sections.ts', count: 2, owner: 'F4/T10 desktop drop-rule module' },
@@ -177,7 +177,7 @@ const CRIT_DMG_MULT_MAP = {
   'apps/desktop/renderer/lib/planning/account-view-store.test.ts': [36],
   'apps/desktop/renderer/lib/planning/fixtures/synthetic-views.ts': [123],
   'apps/desktop/renderer/lib/planning/hero-advice.test.ts': [47],
-  'apps/desktop/renderer/lib/planning/withhold-matrix.test.ts': [237, 254],
+  'apps/desktop/renderer/lib/planning/withhold-matrix.test.ts': [238, 255],
   'apps/desktop/src/main/storage/account-store-restore.test.ts': [507, 540, 558, 591],
   'apps/desktop/src/main/storage/stale-sections.test.ts': [66, 81, 84, 88, 98, 105, 111, 123, 128, 164, 224],
   'apps/desktop/src/main/storage/stale-sections.ts': [11],
@@ -204,10 +204,10 @@ const CRIT_DMG_MULT_MAP = {
   // `missingRequiredFields` field with its doc comment, and the domain import that types it,
   // above this line. Match itself is unchanged in count and in kind.
   'apps/web/src/shared/lib/account-shared.ts': [199],
-  'apps/web/src/shared/lib/stale-account.ts': [20],
+  'apps/web/src/shared/lib/stale-account.ts': [21],
   'apps/web/src/tests/advisor-pipeline.test.ts': [85],
   // +2 (line numbers only): the star-multiplier change (0.5 -> 0.25) added two explanatory
-  // lines to the AC-33 expectation above the last three hits. Still FOURTEEN matches,
+  // lines to the expectation above the last three hits. Still FOURTEEN matches,
   // unchanged in kind.
   'apps/web/src/tests/derive.test.ts': [
     71, 73, 134, 162, 200, 230, 254, 293, 307, 359, 398, 436, 482, 514,
@@ -215,15 +215,15 @@ const CRIT_DMG_MULT_MAP = {
   'apps/web/src/tests/fixture-corpus.test.ts': [23, 65],
   'apps/web/src/tests/fixtures/sheet-math/README.md': [6],
   'apps/web/src/tests/fixtures/storage-roundtrip-20260729.json': [3],
-  'apps/web/src/tests/points-reopt.test.ts': [107, 490],
-  'apps/web/src/tests/stale-account-drop.test.ts': [31, 72, 73, 78, 89],
+  'apps/web/src/tests/points-reopt.test.ts': [106, 489],
+  'apps/web/src/tests/stale-account-drop.test.ts': [32, 73, 74, 79, 90],
   'apps/web/src/tests/stat-breakdown.test.ts': [126, 176, 202],
   // +1 (line number only): issue #132's rewrite of the "existing empty state" comment above line
   // 109 added a net one line. Match itself is unchanged in count and in kind.
   'apps/web/src/tests/storage-legacy-keystone-fields.test.ts': [40, 110],
   'apps/web/src/tests/storage-stat-points-available-compat.test.ts': [104],
-  // +12 (line numbers only) from the MFR-06 repurpose and the skip-counting fix's explanatory
-  // comments above both hits. Count and kind unchanged.
+  // +12 (line numbers only) from the corpus-parity repurpose and the skip-counting fix's
+  // explanatory comments above both hits. Count and kind unchanged.
   'tools/fixture-corpus-parity.test.mjs': [209, 261],
   // Self-map. The last four shifted +3 (line numbers only) when the account-shared entry above
   // gained its three-line explanation; count and kind are unchanged.
@@ -243,13 +243,13 @@ const CRIT_DMG_MULT_MAP = {
   // +3 (line numbers only): this file's own star-multiplier note above. Still SEVEN matches —
   // the pattern's own `\b`-escaped literal on the `grepCounts` line is not one of them, because
   // the escape leaves no word boundary before the identifier.
-  // +2 more (line numbers only, last four) from the MFR-06 repurpose/skip-counting-fix note above
-  // the fixture-corpus-parity.test.mjs entry. Count and kind unchanged.
-  'tools/keystone-surface-absence.test.mjs': [13, 161, 164, 286, 291, 301, 310],
+  // +2 more (line numbers only, last four) from the corpus-parity repurpose/skip-counting-fix
+  // note above the fixture-corpus-parity.test.mjs entry. Count and kind unchanged.
+  'tools/keystone-surface-absence.test.mjs': [13, 166, 169, 291, 296, 306, 315],
   'tools/save-acceptance-guards.test.mjs': [53],
 };
 
-describe('keystone surface absence — the repo-wide identifier guard (MSC-04)', () => {
+describe('keystone surface absence — the repo-wide identifier guard', () => {
   it('non-vacuity: the scan roots resolve to a non-empty, non-trivial file set', () => {
     const allFiles = execFileSync('git', ['ls-files', '--', ...SCAN_ROOTS], {
       cwd: root,

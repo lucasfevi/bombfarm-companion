@@ -11,10 +11,10 @@ import { loadFixtureJson } from './helpers/sheet-math-fixtures';
 import { baseSave } from '@/tests/helpers/base-save-fixture';
 
 /**
- * BSPW5-04 test helpers — derive the SAME production-function outputs `parseSaveFile`
+ * Test helpers — derive the SAME production-function outputs `parseSaveFile`
  * is supposed to wire together, from a raw hero JSON object, so tests assert against
  * `nakedFromBirth`/`composeSheetFromBirth`/`inferSpentPoints` directly (definitional,
- * per AC-05/06/07's "SHALL equal ... exactly") rather than reimplementing the math or
+ * per the "SHALL equal ... exactly" requirement) rather than reimplementing the math or
  * hand-computing expected numbers.
  */
 type HeroFixture = {
@@ -88,15 +88,15 @@ function saveTree(save: { skills?: { totals?: Record<string, unknown> } }): Tree
   return treeTotalsFromSave(save.skills?.totals ?? {});
 }
 
-describe('parseSaveFile — birth_stats reject gate (BSPW5-01)', () => {
-  it('AC-04: every hero has birth_stats -> rejected is null and parsing proceeds', () => {
+describe('parseSaveFile — birth_stats reject gate', () => {
+  it('every hero has birth_stats -> rejected is null and parsing proceeds', () => {
     const { rejected, candidates } = parseSaveFile(baseSave(), []);
     expect(rejected).toBeNull();
     expect(candidates.length).toBeGreaterThan(0);
   });
 
-  // MP5 F1 (AD-068 class (a) — read from the capture): re-pointed onto the post-patch export.
-  it('AC-04 (real fixture): a birth-capable save is not rejected', () => {
+  // MP5 F1 (class (a) — read from the capture): re-pointed onto the post-patch export.
+  it('real fixture: a birth-capable save is not rejected', () => {
     const raw = loadFixtureJson('save-20260813-5heroes.json');
     const { rejected, candidates } = parseSaveFile(raw, []);
     expect(rejected).toBeNull();
@@ -107,14 +107,14 @@ describe('parseSaveFile — birth_stats reject gate (BSPW5-01)', () => {
   // capture above without special-casing anything on hero count. Re-pointed off the retired
   // 11-hero 2026-08-17 capture; the replacement is both larger and current-regime, so the claim
   // it makes is strictly stronger than the one it replaces.
-  it('AC-04 (real fixture, largest roster): the 15-hero capture is not rejected', () => {
+  it('real fixture, largest roster: the 15-hero capture is not rejected', () => {
     const raw = loadFixtureJson('save-20260822-15heroes-tree-crit-dmg.json');
     const { rejected, candidates } = parseSaveFile(raw, []);
     expect(rejected).toBeNull();
     expect(candidates).toHaveLength(15);
   });
 
-  // MP5 F1 — RECORDED LOSS (AD-068 "deleted, not weakened"): `gale-01-points-reset.json`
+  // MP5 F1 — RECORDED LOSS ("deleted, not weakened"): `gale-01-points-reset.json`
   // (16 heroes, 0 with birth_stats) is the only fixture that could demonstrate the whole-file
   // reject gate against a REAL pre-birth_stats export. Every post-patch capture carries
   // `birth_stats` on every hero by construction (the field predates the keystone patch), so
@@ -171,7 +171,7 @@ describe('parseSaveFile', () => {
     expect(cora.level).toBe(47);
     expect(cora.rarity).toBe('Incomum');
     expect(cora.rank).toBe('S');
-    // BSPW5-04: birth_stats/stats were derived to be self-consistent (see baseSave()'s
+    // birth_stats/stats were derived to be self-consistent (see baseSave()'s
     // comment) — a well-formed hero imports with zero issues.
     expect(cora.issues).toHaveLength(0);
     expect(cora.pointIssues).toHaveLength(0);
@@ -181,17 +181,17 @@ describe('parseSaveFile', () => {
     expect(cora.record.loadout.amuleto).toEqual({ defId: 'gold_amuleto', rarityIdx: 2, level: 20, upgrade: 10 });
     expect(cora.record.stars).toBe(2);
 
-    // AC-06 (ASM-02): gearedOverride is the tree-inclusive, ZERO-points sheet — composed
+    // gearedOverride is the tree-inclusive, ZERO-points sheet — composed
     // from birth, not copied from the save's `stats` (which is post-points).
     const expectedGeared = expectedGearedOverride(rawCora, cora.record.abilities, cora.record.loadout, tree);
     expect(cora.record.gearedOverride).toEqual(expectedGeared);
 
-    // AC-05: naked equals nakedFromBirth(...) exactly.
+    // naked equals nakedFromBirth(...) exactly.
     const expectedCoraNaked = expectedNaked(rawCora, cora.record.abilities);
     expect(cora.record.naked).toEqual(expectedCoraNaked);
     expect(cora.record.naked.energy).not.toBe(defaultNaked('Incomum', 47, undefined, 2).energy);
 
-    // AC-07: pts is the inferred integer vector, unmodified, and non-zero — Cora spent
+    // pts is the inferred integer vector, unmodified, and non-zero — Cora spent
     // exactly 2 attack + 1 crit chance point (level 47 > stat_points_available 44).
     const expectedPtsVector = expectedPts(rawCora, cora.record.abilities, cora.record.loadout, tree);
     expect(cora.record.pts).toEqual(expectedPtsVector);
@@ -238,7 +238,7 @@ describe('parseSaveFile', () => {
     const rawLorne = asHeroFixture(save.heroes.find((h) => h.id === '1002'));
     const expected = expectedNaked(rawLorne, lorne.record.abilities);
     expect(lorne.record.naked).toEqual(expected);
-    // AC-03 (birth-sheet.ts): Olho's on-sheet crit % multiplies the birth roll — naked
+    // (birth-sheet.ts): Olho's on-sheet crit % multiplies the birth roll — naked
     // crit is above the ability-free birth roll (sheetOther.critChanceFlat > 0).
     const withoutOlho = nakedFromBirth(rawBirth(rawLorne), rawLorne.level, rawLorne.stars ?? 0, emptySheetOther());
     expect(lorne.record.naked.critChance).toBeGreaterThan(withoutOlho.critChance);
@@ -267,18 +267,18 @@ describe('parseSaveFile', () => {
     expect(weird.gearCount).toBe(0);
     expect(weird.issues.some((i) => i.includes('unknown_ability_xyz'))).toBe(true);
     expect(weird.issues.some((i) => i.includes('mystery_item_zzz'))).toBe(true);
-    // AC-26: the message names the save slot too, not just the code.
+    // The message names the save slot too, not just the code.
     expect(weird.issues.some((i) => i.includes('unknown_ability_xyz') && i.includes('slot 1'))).toBe(
       true,
     );
-    // BSPW5-05/AC-11: the unrecognized item blocks the hero (the unknown ability alone
+    // The unrecognized item blocks the hero (the unknown ability alone
     // would not — see the dedicated asymmetry test below).
     expect(weird.blocked).toBe(true);
   });
 
   it('skips hero entries with no id and warns', () => {
     const save = baseSave();
-    // BSPW5-01: the whole-file birth scan runs before the no-id skip (design.md step 2 vs
+    // The whole-file birth scan runs before the no-id skip (design.md step 2 vs
     // step 4), so a hero object entered here needs its own usable birth_stats or the whole
     // save rejects instead of exercising the no-id skip this test targets.
     save.heroes.push({
@@ -335,18 +335,18 @@ describe('parseSaveFile', () => {
     expect(account.tree!.critDmg).toBeCloseTo(19.6153846, 5);
     expect(account.tree!.speed).toBeCloseTo(2.7186897, 5);
     expect(account.tree!.energy).toBeCloseTo(52.2457627, 5);
-    // BSPW5-03/AC-10: skills.totals.luck_add * 100 -> tree.luckFlatPct.
+    // skills.totals.luck_add * 100 -> tree.luckFlatPct.
     expect(account.tree!.luckFlatPct).toBeCloseTo(3.94647275, 5);
   });
 
-  it('AC-10 edge case: luck_add absent from skills.totals defaults luckFlatPct to 0', () => {
+  it('edge case: luck_add absent from skills.totals defaults luckFlatPct to 0', () => {
     const save = baseSave();
     delete (save.skills.totals as { luck_add?: number }).luck_add;
     const { account } = parseSaveFile(save, []);
     expect(account.tree!.luckFlatPct).toBe(0);
   });
 
-  it('returns nulls for account data when casa/skills are absent (payload entry point — a FILE lacking skills entirely is now rejected upstream by MSG-11\'s gate, so this is parseAccountPayload\'s territory, not parseSaveFile\'s)', () => {
+  it('returns nulls for account data when casa/skills are absent (payload entry point — a FILE lacking skills entirely is now rejected upstream by the positive-discriminator gate, so this is parseAccountPayload\'s territory, not parseSaveFile\'s)', () => {
     const { account } = parseAccountPayload({ heroes: [] }, []);
     // Farm Ranking: @bombfarm/domain's mapAccountMaxPhase added the additive, required
     // `maxPhase: number | null` field to AccountImportData — every rejection path is `null`.
@@ -377,7 +377,7 @@ describe('parseSaveFile', () => {
     const rawLorne = asHeroFixture(save.heroes.find((h) => h.id === '1002'));
     const tree = saveTree(save);
     expect(lorne.issues.some((i) => i.includes('Missing stats'))).toBe(true);
-    // naked/gearedOverride are pure functions of birth_stats — no `stats` needed (ASM-02).
+    // naked/gearedOverride are pure functions of birth_stats — no `stats` needed.
     expect(lorne.record.gearedOverride).toEqual(
       expectedGearedOverride(rawLorne, lorne.record.abilities, lorne.record.loadout, tree),
     );
@@ -385,7 +385,7 @@ describe('parseSaveFile', () => {
     // pts cannot be inferred without an observed sheet — defaults to zero, not invented.
     expect(lorne.record.pts).toEqual(ZERO_PTS());
     expect(lorne.pointIssues).toEqual([]);
-    // BSPW5-05/AC-11: missing stats blocks the hero — never a base-rolls placeholder guess.
+    // Missing stats blocks the hero — never a base-rolls placeholder guess.
     expect(lorne.blocked).toBe(true);
   });
 
@@ -396,7 +396,7 @@ describe('parseSaveFile', () => {
     expect(candidates.find((c) => c.sourceId === '1001')!.record.skin).toBe(3);
   });
 
-  it('AC-12/BSP-53: skin 5 (in range) still resolves to skin 5, no issue raised', () => {
+  it('skin 5 (in range) still resolves to skin 5, no issue raised', () => {
     const save = baseSave();
     (save.heroes[0] as { skin?: number }).skin = 5;
     const { candidates } = parseSaveFile(save, []);
@@ -405,7 +405,7 @@ describe('parseSaveFile', () => {
     expect(cora.issues.some((i) => i.toLowerCase().includes('skin'))).toBe(false);
   });
 
-  it('AC-12/DEC-05: an out-of-range skin (99) defaults to the neutral placeholder (0), not a nearest-index clamp', () => {
+  it('an out-of-range skin (99) defaults to the neutral placeholder (0), not a nearest-index clamp', () => {
     const save = baseSave();
     (save.heroes[0] as { skin?: number }).skin = 99;
     const { candidates } = parseSaveFile(save, []);
@@ -421,20 +421,20 @@ describe('parseSaveFile', () => {
     expect(cora.issues.some((i) => i.toLowerCase().includes('skin'))).toBe(false);
   });
 
-  it('AC-26 / BSP-33: an unknown ability at level 0 still pushes an issue naming code and slot', () => {
+  it('an unknown ability at level 0 still pushes an issue naming code and slot', () => {
     const save = baseSave();
     (save.heroes[2] as { abilities?: unknown }).abilities = [
       { code: 'unknown_ability_xyz', level: 0, max: 10, slot: 1 },
     ];
     const { candidates } = parseSaveFile(save, []);
     const weird = candidates.find((c) => c.sourceId === '1003')!;
-    // Previously silent — G1 in the spec's DEC-04 gap list, how slot 17/18 stayed invisible.
+    // Previously silent — G1 in the unknown-ability-code gap list, how slot 17/18 stayed invisible.
     expect(weird.issues.some((i) => i.includes('unknown_ability_xyz') && i.includes('slot 1'))).toBe(
       true,
     );
   });
 
-  it('AC-26 edge case: a missing/non-numeric slot degrades gracefully — no throw', () => {
+  it('edge case: a missing/non-numeric slot degrades gracefully — no throw', () => {
     const save = baseSave();
     (save.heroes[2] as { abilities?: unknown }).abilities = [
       { code: 'unknown_ability_xyz', level: 3 },
@@ -447,11 +447,11 @@ describe('parseSaveFile', () => {
     expect(abilityIssue).not.toContain('slot');
   });
 
-  it('AC-27: the hero is still imported and the unknown ability contributes nothing', () => {
+  it('the hero is still imported and the unknown ability contributes nothing', () => {
     const { candidates } = parseSaveFile(baseSave(), []);
     const weird = candidates.find((c) => c.sourceId === '1003')!;
     // "Imported" here means parseSaveFile still produces a candidate for the hero (never
-    // silently dropped) — Weird happens to also be `blocked` (AC-11) via her separate
+    // silently dropped) — Weird happens to also be `blocked` via her separate
     // unrecognized-item issue, unrelated to the unknown ability this AC is about.
     expect(weird).toBeDefined();
     expect(weird.record.abilities).not.toHaveProperty('unknown_ability_xyz');
@@ -463,7 +463,7 @@ describe('parseSaveFile', () => {
   // there: it fails on `baseSave()`, an inline synthetic fixture, and it failed because Brenna's
   // authored `stats` had drifted far enough that the importer refused her. Recomputing that block
   // (see her hero above) is the whole fix — there is nothing to re-capture.
-  it('AC-11: a save with one bad item def_id yields blocked === true for that hero and false for the rest', () => {
+  it('a save with one bad item def_id yields blocked === true for that hero and false for the rest', () => {
     const { candidates } = parseSaveFile(baseSave(), []);
     const weird = candidates.find((c) => c.sourceId === '1003')!;
     expect(weird.blocked).toBe(true);
@@ -473,7 +473,7 @@ describe('parseSaveFile', () => {
     }
   });
 
-  it('AC-11/AC-14: unresolvable gear blocks the hero; an unknown ability code alone does not', () => {
+  it('unresolvable gear blocks the hero; an unknown ability code alone does not', () => {
     const save = baseSave();
     // Cora is otherwise clean (T4's self-consistent fixture) — add ONLY an unknown
     // ability, no bad gear, to isolate the non-blocking side of the asymmetry.
@@ -489,7 +489,7 @@ describe('parseSaveFile', () => {
     expect(weird.blocked).toBe(true);
   });
 
-  it('AC-09: naked.luck and gearedOverride.luck are non-zero for a hero with non-zero birth_stats.luck', () => {
+  it('naked.luck and gearedOverride.luck are non-zero for a hero with non-zero birth_stats.luck', () => {
     const { candidates } = parseSaveFile(baseSave(), []);
     const cora = candidates.find((c) => c.sourceId === '1001')!;
     // baseSave()'s Cora carries birth_stats.luck: 0.02 (non-zero).
@@ -497,7 +497,7 @@ describe('parseSaveFile', () => {
     expect(cora.record.gearedOverride.luck).toBeGreaterThan(0);
   });
 
-  it('AC-15/AC-16: a hero with a budgetMismatch keeps its typed issues, and an OVER-budget one is refused', () => {
+  it('a hero with a budgetMismatch keeps its typed issues, and an OVER-budget one is refused', () => {
     // Weird's birth_stats/stats are deliberately inconsistent (unlike Cora/Lorne/Brenna) —
     // inferSpentPoints cannot cleanly recover an integer vector matching the budget.
     const save = baseSave();
@@ -506,10 +506,10 @@ describe('parseSaveFile', () => {
     const rawWeird = asHeroFixture(save.heroes.find((h) => h.id === '1003'));
     const tree = saveTree(save);
 
-    // DEC-04: still imported, present in candidates.
+    // Still imported, present in candidates.
     expect(weird).toBeDefined();
 
-    // AC-16: the typed PointInferenceIssue[] reaches pointIssues structurally unflattened —
+    // The typed PointInferenceIssue[] reaches pointIssues structurally unflattened —
     // including a budgetMismatch entry with a saturatedStats array.
     const budgetMismatch = weird.pointIssues.find(
       (issue): issue is Extract<(typeof weird.pointIssues)[number], { kind: 'budgetMismatch' }> =>
@@ -518,12 +518,12 @@ describe('parseSaveFile', () => {
     expect(budgetMismatch).toBeDefined();
     expect(Array.isArray(budgetMismatch?.saturatedStats)).toBe(true);
 
-    // DEC-04: one neutral English string also lands on issues[].
+    // One neutral English string also lands on issues[].
     expect(
       weird.issues.some((i) => i.includes('could not be exactly matched')),
     ).toBe(true);
 
-    // AC-15 RESTATED (2026-08-25). It used to read: `record.pts` equals `inferSpentPoints(...).pts`
+    // Restated 2026-08-25. It used to read: `record.pts` equals `inferSpentPoints(...).pts`
     // EXACTLY — no rescale, no clamp to budget, even though it disagrees with the budget. That is
     // still true when the inversion lands UNDER the budget (cap saturation yields a build the game
     // can grant, so it is stored as recovered — pinned in `import-save-budget-refusal.test.ts`).
@@ -539,7 +539,7 @@ describe('parseSaveFile', () => {
     expect(weird.record.pts).toEqual(ZERO_PTS());
   });
 
-  // MP5 F1 — RECORDED LOSS (AD-068 "deleted, not weakened"): AC-28's claim needs a real save
+  // MP5 F1 — RECORDED LOSS ("deleted, not weakened"): this claim needs a real save
   // hero with an ability array entry AT level 0. Neither post-patch corpus file has one (every
   // ability entry on every hero in both `save-20260813-5heroes.json` and
   // `payload-20260812-8heroes.json` is level >= 17) — unreproducible from the new corpus. See
@@ -547,8 +547,8 @@ describe('parseSaveFile', () => {
   // synthetic `keeps zero-level ability slots in the hero pool` test above (baseSave()'s Lorne,
   // `marcha_acelerada: 0`), which is not fixture-dependent.
 
-  it('AC-06 / BSP-38: rank 20 and a mid-curve rank both survive parseSaveFile unclamped', () => {
-    // MP5 F1 (AD-068 class (a) — read from the capture): re-pointed onto
+  it('rank 20 and a mid-curve rank both survive parseSaveFile unclamped', () => {
+    // MP5 F1 (class (a) — read from the capture): re-pointed onto
     // payload-20260812-8heroes.json — the payload's 8 heroes carry the highest ability-level
     // variety in the new corpus.
     const raw = loadFixtureJson('payload-20260812-8heroes.json');

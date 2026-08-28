@@ -113,7 +113,7 @@ describe('ROUTE_FINGERPRINTS', () => {
       const body = afterBodies[route.path];
       expect(body, `missing fixture body for ${route.path} in api-bodies-after.json`).toBeDefined();
       // client.test.ts:47 already documents the relationship: "differs from api-bodies.json in
-      // exactly five dimensions (LAR-09)" — a VALUE twin from the same capture session, not a
+      // exactly five dimensions" — a VALUE twin from the same capture session, not a
       // schema twin. checkSchema only ever inspects key sets, never values, so this passing
       // confirms the key space held stable across the in-game state change between captures.
       expect(checkSchema(body, fingerprint)).toEqual({ ok: true });
