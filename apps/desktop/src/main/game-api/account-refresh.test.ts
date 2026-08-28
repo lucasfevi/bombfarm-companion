@@ -493,6 +493,33 @@ describe('account-refresh — game not running', () => {
     expect(transportCalls.length).toBeGreaterThan(0);
   });
 
+  it('does not overwrite a resolved section another producer already committed to the same store', async () => {
+    const open = openTestAccountDb(firstBinding());
+    const store = createAccountStore(open);
+    const { fn: readToken } = fixedReadToken('486', SessionTokenClass.create(SENTINEL_TOKEN), 1000);
+
+    const grantedRefresh = createAccountRefresh(
+      baseDeps({ store, consentStore: fixedConsentStore(GRANTED), transport: okTransport(), readToken }),
+    );
+    const firstView = await grantedRefresh.refreshNow();
+    expect(fidelityOf(firstView).account.status).toBe('resolved');
+    const beforeSecondCycle = store.restore();
+
+    const notRunningRefresh = createAccountRefresh(
+      baseDeps({
+        store,
+        consentStore: fixedConsentStore(GRANTED),
+        transport: throwingTransport(),
+        readToken,
+        isGameRunning: () => false,
+      }),
+    );
+    const secondView = await notRunningRefresh.refreshNow();
+
+    expect(secondView).toBeNull();
+    expect(store.restore()).toEqual(beforeSecondCycle);
+  });
+
   it.each([true, false])(
     'declined consent still skips with zero transport calls regardless of whether the game is running (isGameRunning=%s)',
     async (isGameRunning) => {
