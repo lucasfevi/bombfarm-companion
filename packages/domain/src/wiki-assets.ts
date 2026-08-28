@@ -1,4 +1,4 @@
-import catalog from './data/catalog.json';
+import catalog from './data/catalog.json' with { type: 'json' };
 import type { Slot } from './gear';
 import type { DropRateId } from './phase-wiki';
 
