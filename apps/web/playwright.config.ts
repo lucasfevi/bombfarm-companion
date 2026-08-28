@@ -1,5 +1,6 @@
 import { availableParallelism } from 'node:os';
 import { defineConfig, devices } from '@playwright/test';
+import { cappedWorkers } from '../../tools/cpu-budget.mjs';
 
 const PORT = 4321;
 const BASE_URL = `http://localhost:${PORT}`;
@@ -30,7 +31,9 @@ export default defineConfig({
   // each a browser process tree, not a thread. Capped for the same reason as
   // `vitest.workers.ts`: the ceiling here is browser startup and the static
   // server, not core count, so extra workers buy little and only add heat.
-  workers: process.env.CI ? 2 : Math.max(1, Math.min(4, availableParallelism())),
+  // `cappedWorkers` lowers it further while other Bomb Farm runs are executing,
+  // since that cap bounds one run and not the machine — see `tools/cpu-budget.mjs`.
+  workers: process.env.CI ? 2 : cappedWorkers(Math.min(4, availableParallelism()), 'playwright:web'),
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 1 : 0,
   reporter: blobReporter

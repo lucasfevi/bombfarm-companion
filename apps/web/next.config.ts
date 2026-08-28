@@ -5,6 +5,7 @@ import { fileURLToPath } from 'node:url';
 import type { NextConfig } from 'next';
 import { PHASE_DEVELOPMENT_SERVER } from 'next/constants.js';
 import type { Configuration as WebpackConfig } from 'webpack';
+import { cappedWorkers } from '../../tools/cpu-budget.mjs';
 
 const projectRoot = path.dirname(fileURLToPath(import.meta.url));
 const webPackage = JSON.parse(
@@ -69,8 +70,12 @@ const PERF_PROFILE = process.env.PERF_PROFILE === '1';
  *
  * CI is unaffected in practice: GitHub-hosted runners report 2–4 cores, so the
  * `min` already resolves below the cap there.
+ *
+ * `cappedWorkers` lowers this further while other Bomb Farm runs are executing — the pool
+ * above bounds one build, not the machine, and several builds at once each took it whole.
+ * See `tools/cpu-budget.mjs`; it is a no-op for a build that has the machine to itself.
  */
-const BUILD_WORKERS = Math.max(1, Math.min(4, availableParallelism() - 1));
+const BUILD_WORKERS = cappedWorkers(Math.min(4, availableParallelism() - 1), 'next:build');
 
 const nextConfig: NextConfig = {
   // Client-only planner (localStorage). Ready for Vercel; no Node runtime needed.

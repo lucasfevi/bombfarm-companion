@@ -48,6 +48,12 @@ Fixture account, replayed live capture, no game process and no server needed —
 [`docs/offline-dev-mode.md`](docs/offline-dev-mode.md) for what it covers, what it cannot show,
 and how it runs beside a real install. Plain `pnpm dev` is the real read path.
 
+These commands bound their own load, and share one budget with any other Bomb Farm run on the
+machine — a second checkout or session running the same sequence makes both smaller rather than
+letting them multiply. `node tools/cpu-budget.mjs` says what is running and what each run is
+getting; `BFC_CPU_BUDGET` raises or lowers the total. See
+[`docs/machine-load.md`](docs/machine-load.md).
+
 `pnpm build` is not optional and has to come first: the workspace packages publish their types
 and entry points from `dist/` (`packages/domain`'s `exports` map, for one, points every subpath
 at `./dist/**`), so on a freshly cloned tree `pnpm typecheck`, `pnpm lint` and three of the vitest

@@ -1,4 +1,5 @@
 import { availableParallelism } from 'node:os';
+import { cappedWorkers } from './tools/cpu-budget.mjs';
 
 /**
  * Worker cap shared by the root run and the heavy per-package configs.
@@ -23,6 +24,11 @@ import { availableParallelism } from 'node:os';
  * 41.5s wall — the predicted no-op on wall time, one fewer core held for the whole run.
  *
  * Going below 3 does cost real wall time (the 105s of CPU no longer fits under the ~41s
- * critical path), so 3 is the floor worth holding, not a starting point for trimming further.
+ * critical path), so 3 is the floor worth holding for a run that has the machine to itself.
+ *
+ * `cappedWorkers` is what makes "to itself" true rather than assumed. The 3 above bounds ONE
+ * run; several suites running at once on one machine each took 3 and multiplied, which is the
+ * load this cap was supposed to prevent. A lone run still gets 3 — the budget is wider than
+ * that — and concurrent runs divide one budget instead of each claiming it whole.
  */
-export const MAX_TEST_WORKERS = Math.max(1, Math.min(3, availableParallelism()));
+export const MAX_TEST_WORKERS = cappedWorkers(Math.min(3, availableParallelism()), 'vitest');
