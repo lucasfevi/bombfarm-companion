@@ -106,7 +106,7 @@ describe('structural guard — farm-rate.ts import allowlist', () => {
     expect(source).not.toMatch(/from\s+['"]\.\/derive['"]/);
   });
 
-  it('DOES import pipelineForHero from ./roster-dps (AD-032 — the sole pipeline entry)', () => {
+  it('DOES import pipelineForHero from ./roster-dps (the sole pipeline entry)', () => {
     if (!requireFixture(FARM_RATE_SRC, 'farm-rate.ts import-allowlist scan')) return;
     const source = readFileSync(FARM_RATE_SRC, 'utf8');
     expect(source).toMatch(/pipelineForHero/);

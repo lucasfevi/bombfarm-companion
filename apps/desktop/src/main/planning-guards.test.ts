@@ -1,9 +1,9 @@
 /**
- * Source guards for MP3 F2 (design.md §6, §11, MPV-14/16/18/21/22). Home: `apps/desktop/src/main`
+ * Source guards for design.md §6, §11. Home: `apps/desktop/src/main`
  * (not `tools/`) — every assertion here needs the desktop's own `apps/desktop` tree walked with
  * TypeScript-aware file listing, matching the `contracts-import-is-type-only.test.ts` genre
  * (`packages/domain/tests/`) rather than the `.mjs`-only `tools/` convention; `tools/` is reserved
- * here for the DS-09 extension to `design-system-gate.test.mjs` (T6's second file) and for T7's
+ * here for the reuse-boundary extension to `design-system-gate.test.mjs` (T6's second file) and for T7's
  * spec-list guard, which both need to read outside `apps/desktop`.
  *
  * Every scan strips comments first — several of these guards are described in this repo's own
@@ -11,9 +11,9 @@
  * here), and a bare substring match would flag that prose as a violation of the very rule it is
  * documenting. Stripping comments means each guard asserts real code, not text.
  */
-import { readdirSync, readFileSync } from 'node:fs';
-import { extname, join, resolve, sep } from 'node:path';
+import { join, resolve, sep } from 'node:path';
 import { describe, expect, it } from 'vitest';
+import { guardScanner } from './guard-scan';
 
 const DESKTOP_ROOT = resolve(__dirname, '../..');
 const RENDERER_ROOT = join(DESKTOP_ROOT, 'renderer');
@@ -24,46 +24,7 @@ const PLANNING_APP_ROOT = join(RENDERER_ROOT, 'app', 'planning');
  *  this file is also picked up by `tsconfig.main.json`'s CommonJS build. */
 const SELF_PATH = __filename;
 
-type FileEntry = { path: string; source: string };
-
-function isTestFile(path: string): boolean {
-  return /\.(test|spec)\.(ts|tsx|mjs)$/.test(path);
-}
-
-function walk(dir: string, extensions: readonly string[]): string[] {
-  const files: string[] = [];
-  for (const entry of readdirSync(dir, { withFileTypes: true })) {
-    const full = join(dir, entry.name);
-    if (entry.isDirectory()) {
-      // `.claude` is skipped wholesale (not just `.claude/worktrees`): it holds only local,
-      // git-excluded agent/session state — nothing under it is committed application source a
-      // guard should ever scan. This `walk()` currently only ever runs against DESKTOP_ROOT
-      // (a sibling of repo-root `.claude`, so this branch is inert today), but it is reproduced
-      // verbatim from the same copy `i18n-guards.test.ts` took (see that file's own header) and
-      // whose REPO_ROOT-walking guard did hit this hole in practice — kept consistent here so a
-      // future REPO_ROOT-scoped guard added to this file doesn't reintroduce it silently.
-      if (
-        entry.name === 'node_modules' ||
-        entry.name === 'out' ||
-        entry.name === 'dist' ||
-        entry.name === '.next' ||
-        entry.name === '.claude'
-      )
-        continue;
-      files.push(...walk(full, extensions));
-    } else if (entry.isFile() && extensions.includes(extname(entry.name))) {
-      files.push(full);
-    }
-  }
-  return files;
-}
-
-function readAll(dir: string, extensions: readonly string[], opts: { includeTests?: boolean } = {}): FileEntry[] {
-  return walk(dir, extensions)
-    .filter((path) => path !== SELF_PATH)
-    .filter((path) => (opts.includeTests ? true : !isTestFile(path)))
-    .map((path) => ({ path, source: readFileSync(path, 'utf8') }));
-}
+const { readAll } = guardScanner(SELF_PATH);
 
 /** Strips `//` line comments and `/* *\/` block comments (dumb text slicing, not a full parser —
  *  the repo's own established convention here, per `contracts-import-is-type-only.test.ts`). */
@@ -106,7 +67,7 @@ describe('D22 survives D24 — no upload affordance anywhere under apps/desktop 
   });
 });
 
-describe('One mapping (design hazard 2, MPV-21) — pipelineForHero is the only HeroRecord-to-advice entry', () => {
+describe('One mapping (design hazard 2) — pipelineForHero is the only HeroRecord-to-advice entry', () => {
   it('computeAdvisorPipeline is never imported or called from apps/desktop source (test files excluded — they legitimately compute the fallback-to-prove-absent value)', () => {
     const offenders = ALL_DESKTOP_SOURCE()
       .filter((file) => /computeAdvisorPipeline\s*\(|\bimport\s*\{[^}]*\bcomputeAdvisorPipeline\b/.test(stripComments(file.source)))
@@ -115,7 +76,7 @@ describe('One mapping (design hazard 2, MPV-21) — pipelineForHero is the only 
       offenders,
       `Found computeAdvisorPipeline referenced outside a test in: ${offenders.join(', ')}. ` +
         `The desktop must map a HeroRecord to advice through the exported pipelineForHero only — ` +
-        `assembling computeAdvisorPipeline's input directly is exactly the second mapping AD-032 exists to prevent.`,
+        `assembling computeAdvisorPipeline's input directly is exactly the second mapping this guard exists to prevent.`,
     ).toEqual([]);
   });
 
@@ -152,7 +113,7 @@ describe('No default-filling (design §4.3) — DEFAULT_TREE/DEFAULT_CONTEXT nev
   });
 });
 
-describe('No local controls under renderer/app/planning/** (MPV-14)', () => {
+describe('No local controls under renderer/app/planning/**', () => {
   const planningComponentFiles = readAll(PLANNING_APP_ROOT, ['.tsx']);
 
   it('no <button, <select, <table or <input element literal', () => {
@@ -167,7 +128,7 @@ describe('No local controls under renderer/app/planning/** (MPV-14)', () => {
     expect(
       offenders,
       `Found a bespoke <button>/<select>/<table>/<input> element under renderer/app/planning/** ` +
-        `in: ${offenders.join(', ')}. Every control there must be a @bombfarm/ui primitive (MPV-14).`,
+        `in: ${offenders.join(', ')}. Every control there must be a @bombfarm/ui primitive.`,
     ).toEqual([]);
   });
 
@@ -176,7 +137,7 @@ describe('No local controls under renderer/app/planning/** (MPV-14)', () => {
   });
 });
 
-describe('Copy guard (MPV-16, design §6) — no player-facing literal outside lib/copy/', () => {
+describe('Copy guard (design §6) — no player-facing literal outside lib/copy/', () => {
   // Fixed here and justified: these are never player-facing text (a DOM hook, a Tailwind class
   // list, a link target, an id, an ARIA role/type token, a React list key). Widening this list
   // later needs a comment naming which AC it weakens.

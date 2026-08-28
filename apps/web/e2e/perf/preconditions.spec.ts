@@ -1,5 +1,5 @@
 /**
- * Preconditions spec — boots the seeded app and asserts each MOD-33 affordance
+ * Preconditions spec — boots the seeded app and asserts each affordance
  * is visible and enabled before the measurement harness relies on it.
  */
 import fs from 'node:fs'
@@ -21,7 +21,7 @@ async function bootSettled(page: import('@playwright/test').Page) {
   await expect(heroStrip).toBeVisible({ timeout: 60_000 })
   // Force applyHero via the picker — StrictMode + collector can race the boot microtask.
   await selectSavedHero(page, 'Cora')
-  // AD-012: planner visible AND 1000 ms with no new commit.
+  // planner visible AND 1000 ms with no new commit.
   await page.evaluate(() => window.__BFHP_PERF__?.reset())
   await page.waitForFunction(() => {
     const api = window.__BFHP_PERF__

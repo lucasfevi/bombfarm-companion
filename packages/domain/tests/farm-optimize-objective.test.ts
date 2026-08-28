@@ -11,9 +11,12 @@ import {
   type FarmObjectiveScales,
 } from '@bombfarm/domain/farm-optimize-objective';
 import { computeHeroFarmFacts, computeSquadFarmFacts, computeFarmRateRow } from '@bombfarm/domain/farm-rate';
-import { loadFarmRateFixture } from './helpers/farm-rate-fixtures';
+import { assertInRegime } from './helpers/capture-regime';
+import { FARM_OPTIMIZE_FIXTURE, loadFarmRateFixture } from './helpers/farm-rate-fixtures';
 
-const { heroes, account, maxPhase } = loadFarmRateFixture();
+assertInRegime(`sheet-math/${FARM_OPTIMIZE_FIXTURE}`, 'sheet');
+
+const { heroes, account, maxPhase } = loadFarmRateFixture(FARM_OPTIMIZE_FIXTURE);
 const heroFacts = computeHeroFarmFacts({ heroes, account });
 const squad = computeSquadFarmFacts(heroFacts, account);
 const row = computeFarmRateRow(1, squad, { maxPhase })!;
@@ -140,43 +143,29 @@ describe('farmObjectiveScales — the frozen blend normalizers, exported (lifted
     expect(lifted.chestScale).toBeCloseTo(scan.chestScale, 6);
   });
 
-  // Re-recorded twice, both times because the MODEL moved rather than these numbers being wrong:
-  //   pre-#86            gold 264 997.32   chests 2.0490
-  //   + House ceiling    gold 247 444.39   chests 1.7474   (-6.6% / -14.7%)
-  //   + cadence fix      gold 180 744.87   chests 1.2806   (-27% / -27%)
-  //
-  // The House step moved the two by DIFFERENT factors; the cadence step moved them by the same
-  // one. Both are expected. Each scale is a maximum over the whole 1..42 sweep, so an asymmetric
-  // shift means the two currencies' argmax phases moved apart — which the House fix does, since
-  // its greedy slot allocation is phase-dependent (it ranks heroes by props-delivered-per-
-  // deployment, which moves with mitigation). The cadence fix instead rescales every hero's
-  // plant rate by a phase-INDEPENDENT factor (`fuse` and `w` carry no phase term), so it
-  // multiplies both currencies uniformly and leaves the argmaxes where they were.
-  //
-  // Safe to re-record because the sibling test above — an independent brute-force
-  // `currentBuildScales()` scan — still agrees with `farmObjectiveScales` to 6 decimals on the
-  // same model. What changed is the model, not the agreement between the two routes to it.
-  it("on the committed fixture (maxPhase 42): goldScale ≈ 184 616.99, chestScale ≈ 1.27450", () => {
-    // RE-MEASURED for the 2026-08-18 crit-chance/CDR revert (issue #132).
-    // RE-MEASURED again for issue #132's team-aura roster shape.
-    // RE-MEASURED 2026-08-20 for rotation-priced team auras + the HOP_DENSITY_EXPONENT refit.
-    // Both raise throughput on this fixture: its only Folego carrier is in the pool but not
-    // deployed, so the board used to price his aura at zero, and ato-2 hops were being shortened
-    // by a square-root density law the capture does not support. Gold and chests move together,
-    // which is why the argmax-preservation argument above still holds.
-    // RE-MEASURED 2026-08-21 for the additive drain-reduction fix: this fixture's only Folego
-    // carrier (Jon) also carries his own Bateria Extra, and the two reductions now add (0.62
-    // combined) instead of multiplying (0.656), raising his field time and so the fixture's
-    // throughput ceiling on every currency together.
-    // RE-MEASURED 2026-08-23 for the crit-chance ability shape: two of this fixture's five
-    // heroes carry Olho Clínico 20, whose contribution goes from a percentage of their roll to
-    // a flat +40 crit points, so the squad's average hit and its whole throughput ceiling rise.
-    // Only `goldScale` moved: chests are a per-prop drop rate, so `chestScale` — chests per
-    // prop rather than per hour — is invariant to how fast the squad clears, and it is
-    // byte-identical at 1.2745. That is the load-bearing negative here: the shape change
-    // reaches throughput through the average hit and nowhere else.
+  /**
+   * The drift canary: two constants nothing else in the suite pins, so any change to the
+   * throughput model that nobody meant to make shows up here as a number moving.
+   *
+   * RE-BASED onto `save-20260819-11882-7heroes.json` (issue #206) — the retired 2026-08-13
+   * capture had left its regime, and the pinned figures had been re-recorded six times as the
+   * model moved beneath them. That whole history described the OLD roster and is preserved in
+   * `docs/fixture-corpus.md` rather than carried forward here, where it would describe a fixture
+   * this test no longer reads.
+   *
+   * BOTH scales are `…PerHour` maxima over the sweep — `goldPick.row.goldPerHour` and
+   * `chestPick.row.chestsPerHour` — so anything that scales squad throughput moves both, and the
+   * two moving by DIFFERENT factors is the interesting signal: it means the change was
+   * phase-dependent and pushed the two currencies' argmax phases apart.
+   *
+   * Safe to re-record when the model genuinely moves, for the same reason as before: the sibling
+   * test above is an independent brute-force scan that must still agree to 6 decimals, so a
+   * re-record can only ever restate the model, never paper over a disagreement between the two
+   * routes to it.
+   */
+  it('on the committed fixture (maxPhase 52): goldScale ≈ 1 331 737.54, chestScale ≈ 4.185706', () => {
     const scales = farmObjectiveScales(squad, { maxPhase });
-    expect(scales.goldScale).toBeCloseTo(184616.99, 1);
-    expect(scales.chestScale).toBeCloseTo(1.2745, 3);
+    expect(scales.goldScale).toBeCloseTo(1331737.54, 1);
+    expect(scales.chestScale).toBeCloseTo(4.185706, 5);
   });
 });

@@ -11,7 +11,7 @@ function firstHeroId(model: ReturnType<typeof buildPlanningModel>): string {
   return entry.hero.id;
 }
 
-describe('HeroDetail (MPV-02, MPV-09, MPV-13)', () => {
+describe('HeroDetail (next-point ranking per hero; tree-dependent advice withheld when skills unresolved; selection updates without re-reading the account)', () => {
   it('renders hero-detail and hero-detail-name testids with the selected hero\'s name', () => {
     const model = buildPlanningModel(syntheticAccountView());
     const heroId = firstHeroId(model);

@@ -1,4 +1,4 @@
-// MP5 F5 — the wiki fingerprint: a hash definition, a baseline schema, its validation, and the
+// The wiki fingerprint: a hash definition, a baseline schema, its validation, and the
 // comparison. Node built-ins only.
 //
 // The hash definition below is copied verbatim, not improved. The maintainer's out-of-band wiki
@@ -44,7 +44,7 @@ export function fingerprintPayload(url, payload) {
   };
 }
 
-// --- Baseline schema, validation, comparison (MWD-05, MWD-09..13, MWD-36) -------------------
+// --- Baseline schema, validation, comparison -------------------
 
 function isPlainObject(value) {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
@@ -66,7 +66,7 @@ function endpointFingerprintError(entry) {
   const sortedSectionShaKeys = Object.keys(entry.sectionSha256).sort();
   const sortedSectionNames = [...entry.sectionNames].sort();
   if (JSON.stringify(sortedSectionShaKeys) !== JSON.stringify(sortedSectionNames)) {
-    // The non-vacuity guarantee (MWD-09): sectionNames must be exactly the sorted keys of
+    // The non-vacuity guarantee: sectionNames must be exactly the sorted keys of
     // sectionSha256 — a baseline cannot declare a section it carries no hash for, or vice versa.
     return 'sectionNames-sectionSha256-mismatch';
   }
@@ -116,7 +116,7 @@ export function readBaseline(text) {
 
 /**
  * Compares one baseline endpoint fingerprint against one observed endpoint fingerprint, over the
- * *whole* sectionNames list — no allowlist, no subset (MWD-09). A section present in `observed`
+ * *whole* sectionNames list — no allowlist, no subset. A section present in `observed`
  * but not in `baseline` is `section-added`; the reverse is `section-removed`; a shared section
  * whose hash differs is `section-changed`; a whole-payload hash mismatch is `payload-changed`
  * (this fires alone, with zero `section-changed`, on a key-reorder with no value change);

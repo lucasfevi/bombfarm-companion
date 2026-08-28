@@ -17,9 +17,14 @@
  * `bf-hp-critcdr-repool-migrated-v1` is the 2026-08-18 patch's reversal of the crit-chance
  * marker above — crit chance and CDR moved back to percent-of-base three days later, so an
  * existing roster needs a second one-shot replay in the opposite direction.
+ *
+ * `bf-hp-inventory-view-v1` is the inventory surface's own list — every row a save carries, not
+ * just the gear the optimizer pools. A NEW key rather than a widened `bf-hp-inventory-v1`, so no
+ * migration runs and the solver's snapshot type is untouched; an absent key simply reads empty.
  */
 export const PERSISTED_KEY_BASELINE = [
   'bf-hp-inventory-v1',
+  'bf-hp-inventory-view-v1',
   'bf-hp-phases-view-v1',
   'bf-hp-heroes-v1',
   'bf-hp-account-v1',

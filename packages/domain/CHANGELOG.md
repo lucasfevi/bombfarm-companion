@@ -1,5 +1,304 @@
 # @bombfarm/domain
 
+## 0.8.0
+
+### Minor Changes
+
+- d7c1565: Inventory cards that show the whole item, and a way to find one
+
+  Every card now carries the game's own art: the lit rarity plate behind the icon, at the size the
+  planner draws gear, and a real sprite for the things that had none — gems, keys, house parts,
+  skill stones and chests. Gear lists the stats it actually gives you, with the forge already
+  applied, so a +12 reads as what you get rather than what it rolled. The bottom of every card is a
+  fixed row: the hero wearing it on the left, in their own rarity colour with their level, and what
+  it sells for on the right, beside the coin.
+
+  Each kind of item now gets the card it deserves. A gem has no level and no forge, so it no longer
+  shows "Lv 0" — it shows its name and its tier and nothing it does not have. And because a stack of
+  27 identical keys is one thing you own rather than 27, everything but gear is grouped into a
+  single card with a count and the stack's total value. Chests and skill stones get their own
+  sections rather than falling into "Other", which is where the app used to put them.
+
+  Above the grid there is now a search box, sorting, and filters — by kind, by rarity, by the hero
+  wearing it, by set, and equipped-only — so finding one item among several hundred does not mean
+  scrolling. Search matches the item's name in your own language as well as the game's internal id.
+
+  Filtering by set is how you filter by level: every set sits at exactly one item level, so the list
+  reads "Lv 30 · Coal" and is ordered by level. It starts with everything chosen, shows how many
+  pieces of each set you own — 41 beside Coal tells you it is most of your gear before you have
+  filtered anything — and offers whichever of "Clear" and "Select all" would actually change
+  something. Only gear has a set, so narrowing here shows gear alone.
+
+  The English planner also stops showing Portuguese item names. Gear was being named by
+  title-casing the game's own slot token, so an English player saw "Gold · Elmo" where they should
+  have seen "Gold · Helm".
+
+- d7c1565: An Inventory screen that shows every item you own, not just the gear
+
+  Both the planner and the desktop app now have an Inventory tab listing everything the account
+  carries, grouped by kind — gear, gems, keys, materials — with each item's level, forge, set and
+  slot, what it sells for, whether it is stashed or locked, and the hero wearing it. Each card is
+  framed in its item's rarity colour, and the hero on the "equipped by" line is named in the hero's
+  own rarity colour with their level, so you can tell at a glance whose gear you are looking at.
+
+  Until now the only item list either app kept was the optimizer's pool, which holds gear and
+  nothing else: keys and anything else you own were read from the save and then dropped on the
+  floor. That pool is unchanged and still gear-only — the optimizer wants exactly the items it can
+  equip — so this is a second, separate list rather than a widening of the first.
+
+  Items the app cannot name yet get their own group instead of being quietly filed as gear. The
+  item list this app ships covers gear only, so a key, or an item type a future game update
+  introduces, has no name to show; those appear under "Other", labelled as unrecognised and
+  carrying the kind number the game sent, rather than being shown as a piece of gear with a slot it
+  does not have. Guessing would be worse than admitting the gap: it would put an unequippable item
+  in front of you as if it were equippable.
+
+- 1d9d79f: The desktop app now opens on a Live screen showing what your account is doing right now, instead
+  of the Planning screen you had to navigate away from to see anything current.
+
+  The screen shows four hero lists — on field, recovering, queued, benched — the active house (its
+  level, slots, cycle time, and how many daily rescues are left), and field occupancy as plain
+  information (heroes on field against the field size, with no warning styling and no implication
+  that an open slot is a mistake). Every list renders even when it has nothing in it, with a line
+  explaining why, because a hidden empty list and a missing section would look identical and
+  "nobody is currently recovering" is real information worth showing. A hero whose name has not
+  synced yet still renders, by its id.
+
+  A status line at the top says whether the screen is reading live frames from the game or falling
+  back to the slower authenticated read, and if it is not live, says why in plain language — the
+  game is open but idle, the app has not connected yet this session, security software is the likely
+  reason the connection failed, and so on. The one case with a real fix (you have not allowed the
+  app to read your account) offers a control to review that permission again; every other case is
+  already retried automatically every few seconds, so the screen does not offer a button that would
+  not do anything.
+
+  Three honesty properties carry through the whole screen. A value the game never sent renders as a
+  visible gap, never as a substituted zero, dash, or "Unknown" — and a value that is genuinely zero
+  still renders as zero, so the two read differently on screen. A hero's remaining field time is
+  either measured from observed frames or estimated from stats, and an estimate is marked with a
+  muted, non-layout-shifting treatment (plus a screen-reader-only label) so it can never be mistaken
+  for a measurement, even as the game's own reporting flips between the two while you watch. A
+  recovery countdown that has stopped advancing is shown as paused rather than left to look like it
+  is still ticking down on its own.
+
+  Every string on the new screen ships in Brazilian Portuguese as well as English, matching the rest
+  of the app.
+
+  The developer-only Diagnostics tab and its raw-payload dump are removed, along with the two
+  internal channels that fed them. This is a deliberate loss with no replacement in this change — the
+  Settings screen's own "save a bug report file" control is a different feature and is unaffected.
+
+  Field occupancy now counts a hero the live frames show on the field even before the slower account
+  read has caught up to it, so "slots in use" never reads lower than what is genuinely deployed. A
+  hero walking off the field is reported with its own calm, self-resolving line rather than the
+  message reserved for data the app genuinely could not read.
+
+  The screen also keeps up with the game far better than a polling app could. While you play, the
+  game client is constantly fetching your own account state from its server, and the companion is
+  already reading that same traffic — so it now recognises those responses and updates from them
+  directly, instead of asking the server again for something it just watched arrive. Benching a
+  hero, or sending one out to the field, shows up in the companion without waiting out a refresh
+  cycle, and without adding a single request of its own.
+
+  This is opportunistic by nature: it only learns what your game actually asks for, so the
+  companion's own paced reads remain in place for everything else — before the game has fetched a
+  route for the first time, and whenever you leave the app open without playing. A response the
+  companion cannot confidently recognise, which is what a game update looks like from here, is
+  discarded rather than guessed at, and the app falls back to reading for itself.
+
+  A hero's remaining field time now counts steadily down instead of leaping up and down as heroes
+  rotate on and off the field. When the app cannot measure a hero's drain directly it estimates it —
+  but that estimate was never given the hero's own drain-reduction data, so it assumed no reduction
+  at all and ran up to 40% out. It now uses each hero's real abilities and the field's actual aura.
+  The app also stops discarding a hero's measurements every time some unrelated hero steps on or off
+  the field, and only does so when that hero's own drain conditions genuinely change. Where no rate
+  can be measured or estimated at all, no countdown is shown rather than one built from a number
+  known to be wrong.
+
+- dec4425: Desktop Planning now shows the same hero art as the web planner: a rarity-tinted avatar in the
+  roster list and on the selected hero's detail card, plus the rarity label coloured to match. The
+  hero-avatar/rank/rarity/gear/ability icon components moved out of the web app into a new shared
+  `@bombfarm/game-art` package so both apps render identical chrome; the web planner's own call
+  sites are unchanged.
+
+### Patch Changes
+
+- 0e769ac: Report how often the Farm board's field slots are the bottleneck.
+
+  `FarmRateRow` gains `fieldContentionPct` — the share of wall clock spent with a rested hero benched because every field slot is taken. On a 14-hero roster at 9 field slots that is 26% of the time, which the board previously had no way to say: `concurrencyScale` compares mean occupancy against the cap, and a mean of 8.08 against 9 slots reads as "the cap never binds".
+
+  The Farm board surfaces it above the rotation pool when it exceeds 5%, naming more field slots as the direct fix and stating plainly that the gold/hr estimate does not model the wait. It does not suggest that benching heroes helps, because measurement says it does not: dropping the five weakest from a 14-hero pool takes contention to 0% and gold/hr from 19.97M to 17.17M.
+
+  `concurrencyScale` itself is unchanged, deliberately. Correcting it requires knowing which hero takes a freed slot, and the game fixes no such rule. Across seven roster/slot regimes measured against a 240-hour simulation with uniformly-random deployment, the existing expression is within 6.7% and no simple closed form tested beat it. The frequency needs no such assumption — uniformly-random and strongest-first deployment differ by up to 24% in throughput but under 3 points in contention — which is why it is reportable when a corrected magnitude is not.
+
+- e637f31: Stop the field-contention notice giving impossible advice and denying its own math.
+
+  The banner told every contended player two things that are no longer true. It said the gold/hr estimate does not model the wait, which stopped being the case one PR later, when `concurrencyScale` became the queue's served share `E[min(fieldSlots, X)] / E[X]` and started charging exactly that wait into every rate on the board — the copy was never updated with the math under it. And it prescribed more field slots unconditionally, which is not advice to a player already holding the maximum of nine.
+
+  It now reports the cost instead of denying it. The two figures diverge hard and that is the point: on a 14-hero roster at 9 slots somebody is benched 26.1% of the wall clock, and it costs 1.2% of the rate, because a saturated queue is not an idle one. A player reading the frequency as the loss overstates it twentyfold.
+
+  At the cap, a second variant says the wait is structural and names no purchase. It reads the existing `FIELD_SLOTS_MAX`, and the doc there now records the property that makes it safe to consume: it is a ceiling to REPORT against, never a clamp. `resolveFieldSlots` still records whatever the save carries, so a patch that raises the track shows up as a value above nine rather than being truncated to it.
+
+  No rate changes, and no behaviour change in `@bombfarm/domain` at all. `concurrencyScale` and `fieldContentionPct` are untouched — the cost the banner now prints is a factor the board already applied.
+
+- 1d9d79f: Field countdowns are computed from the drain law, not measured from the frame stream
+
+  Every earlier attempt at this fix — fitting a rate from the frame stream, smoothing it, blending
+  it with a modelled fallback, then rebasing it on a shared frame clock — reduced the stutter without
+  removing it, because it was solving the wrong problem. The drain rate is not something that needs
+  measuring: it is a published rule the app already implements (own drain-reduction and the team's
+  Fôlego de Mineiro aura, additive, capped, floored) and already resolves the inputs for. A hero's
+  remaining field time is exactly `energy ÷ drainRate` — exact on the very first reading, with no
+  clock, no warm-up, and no way to jitter.
+
+  The frame-counting clock, the per-frame energy-delta tracking, the shared frames-to-seconds
+  constant, the skipped-frame heuristics, the trust gates, and the never-rising clamp that
+  compensated for their noise are gone — none of it is needed once the number is derived rather than
+  observed. `basis` now reports `'modelled'` for every field countdown; that used to mean an
+  estimate standing in for a better one, and now means exactly what it always should have: derived
+  from the rule, not sampled from noisy frame arrivals.
+
+  The measured rate lives on as a background check: computed cheaply from the same frames, it never
+  feeds the display, and logs once if it disagrees with the law by more than a small margin — the
+  one way the app would ever notice a hero carrying both drain-reduction effects behaving
+  differently than the additive rule predicts, a combination nothing has measured yet.
+
+- 659fcc5: Charge the field queue for the heroes it makes wait.
+
+  Heroes join the field FIFO, by who finished resting first. `concurrencyScale` compared the MEAN demand against the cap — `min(1, fieldSlots / heroesOnField)` — which charges nothing whenever the average fits, however often the peaks do not. Since `min` is concave, that form can only ever run optimistic.
+
+  FIFO is identity-blind: the queue does not read a hero's power, so the loss needs no assumption about who takes a freed slot, which is the reason this factor was left approximate until now. The scale is the served share of demand, `E[min(fieldSlots, X)] / E[X]`, over the same Poisson-binomial the contention diagnostic already solves.
+
+  Worth 2% on a lightly contended roster and 9.6% on a hard-contended one, and EXACTLY zero where the field cannot fill. Against nine hours of telemetry on a 9-slot account the board's error falls from +21.2% to +9.5%; on an account whose field never fills, every number is byte-identical. It does not close the remaining throughput gap — that is per-hero cadence, measured and tracked out of band — but it is the part with a known mechanism behind it.
+
+  Marginal stat values move accordingly: a point of Energy buys uptime, and uptime is what the queue rations, so Energy is worth slightly less at the margin once the field saturates. Attack, Speed and CDR are untouched to the digit.
+
+  Also fixes a latent budget escape the change surfaced: the Respec Advisor could propose a build spending more points than the hero owns. Five of the six search seeds build from the budget, but the `'current'` seed passed the hero's own vector through unclamped, and every local-search move is a transfer — so an over-spent hero carried its excess into the recommendation. It went unnoticed because a budget-built seed happened to win; re-scoring the candidates moved the winner and it surfaced. Now clamped at the seed, guarded by a test that forces the current seed to win rather than hoping it does.
+
+- 0e769ac: Charge gate rows for the boss's seconds.
+
+  A gate cycle is the map plus the boss, and the boss drops no props. `clearSecs` counted it; `propsPerHour` did not — it was `3600 × propsPerSec`, the raw prop-clearing rate. The two numbers on a single row therefore described different clocks, and because gold, chests, keys, gems, time pieces, stone chests and XP are all `propsPerHour × <per-prop>`, every one of them read high on every gate by the boss's share of the cycle.
+
+  That share grows with phase, because the boss's HP multiplier outpaces a squad's damage faster than the props do: about 2% at the first gate, 7–8% by the fifties, and 10% at the late ones on both accounts measured. A phase-130 gate printed roughly 10% more gold per hour than its own clear time allowed.
+
+  `propsPerHour` is now derived from the cycle (`cyclesPerHour × propsPerMap`), so it always agrees with the row's `clearSecs`. Non-gate rows are unchanged to the bit — the two expressions are algebraically equal off a gate but not bit-equal in IEEE754, so the branch is kept rather than simplified.
+
+  Ranking shifts slightly against gates as a result, which is the point: gates were being credited with loot they had no time to collect. On the test corpus the best solo phase moves from the gate at 30 to 29, which pays 101.8k/h against the gate's corrected 94.7k/h.
+
+- 681643e: Refuse to import a hero whose recovered spent-point vector exceeds its budget.
+
+  The game grants exactly one stat point per level, and a save states how many are still unspent — so `level - stat_points_available` is not an estimate of a hero's budget, it is the budget. An inversion that lands above it has charged an ability or gear contribution to spent points: the hero did not over-spend, the sheet math did.
+
+  Until now the importer flagged that and stored the vector anyway. It now blocks the hero instead, the same call the missing-`stats` case already makes, and for the same reason: an invented allocation is worse than no hero. That is not theoretical — the Respec Advisor budget escape fixed in the previous release was an over-recovered vector reaching a recommendation.
+
+  Only over-recovery blocks. Under-recovery is the cap-saturation case, which yields a build the game can actually grant, so it stays a warning.
+
+  No hero from a current save is affected: every hero whose sheet today's model inverts cleanly lands exactly on its budget.
+
+- 5a4620b: The Live screen is one Heroes panel of cards, each with its energy
+
+  The four hero lists — Field, Recovering, Waiting for a rest slot, Benched — were four separate
+  panels laid out two-across, so the screen read as four things that happened to be about heroes
+  rather than one roster in four states. They are now four subsections of a single Heroes panel,
+  stacked in the order a hero moves through them: Field, Resting, Idle, Benched. Each heading reads
+  its own count against its own cap — "Field · 7/9", "Resting · 3/5", "Idle · 4".
+
+  Each hero is a card in a grid that reflows to the window rather than a row in a list, so a full
+  field of nine no longer forces a column of nine lines beside three empty panels. Benched heroes are
+  drained of colour, which is the one state that means "not in the rotation at all".
+
+  Every card now carries an energy bar. That is what makes one Idle section enough: the list holds
+  both a hero at full energy waiting for a field slot and a hero part-filled waiting for a rest slot,
+  and until now nothing on the screen told them apart. The reading is floored, never rounded, so only
+  a hero at exactly full energy reads 100%; a hero whose energy was never sent says so rather than
+  drawing an empty bar that would claim zero.
+
+  Both caps say what raises them, while the account is below them — buying field slots in the skill
+  tree, moving up to a later house for rest slots. The rest-slot ceiling comes from the account's own per-house ladder when
+  the game sends one, so an account that differs from the reference values is measured against itself.
+  Each hint stays silent when its cap is unknown, rather than giving advice with no fact under it.
+
+  The House panel is gone, and every reading it carried now heads the Resting section, where the
+  heroes those readings are about actually are: the rest slots they are competing for, how long a full
+  refill takes, and how many skips the day has left — "no skips left today" once the day is spent,
+  rather than counting zero of fifteen. The active house and its level are no longer shown; they
+  named a house by a raw zero-based index and changed nothing a player does from this screen.
+
+  Countdowns now all read in one colour. They did not before: a field time the app had to model
+  rather than read, and a rest clock that was not advancing, were both dimmed, and a legend at the
+  bottom of the screen explained a dashed underline that no longer existed. A number that dims as the
+  live tap comes and goes reads as a different kind of number when it is the same reading from a
+  second-best basis. Screen readers still hear which countdowns are estimates and which are paused,
+  and the legend is gone.
+
+- 82f93dd: Make capture-regime admissibility mechanical, and restore the farm ranking's lost discrimination
+  subjects.
+
+  Test-and-fixture work only — no shipped behaviour changes. The corpus now declares, per capture,
+  which regime it was taken under and which mechanics it may still be the source of a number for
+  (`packages/domain/tests/helpers/capture-regime.ts`), enforced in both directions by a new guard,
+  with waivers verified against the capture's own heroes and retention held to a hard bound.
+
+  Two in-regime captures land with it — one a second account with a House that binds, the other
+  holding both sides of the one-shot contrast the farm ranking suite is built around. All 58
+  disabled tests are resolved: most re-pointed with their finding re-asked of a different account
+  first rather than re-recorded, three recorded as losses with the measurement that killed them, and
+  two frozen refactor-parity artifacts deleted outright because the refactors they proved had long
+  since shipped. Two synthetic fixtures had drifted the same way as the captures and were recomputed
+  from the current model. See `docs/fixture-corpus.md` §11–§12.
+
+- 550b376: Say when an imported save is missing account data, instead of planning around a guess
+
+  Some values only your save can supply — your skill tree, your House and its level, the phase you
+  are on, and the furthest phase you have reached. Every panel that shows them is read-only, so a
+  save that leaves one out leaves the planner permanently wrong about it, with nothing on screen
+  saying so.
+
+  The furthest phase is the one that costs money. Without it, the planner has no ceiling to respect
+  and considers all 600 phases, so the Farm Respec Advisor can tell you to spend real gold moving
+  toward a phase you cannot enter yet — and nothing in the recommendation hints that it is
+  unbounded.
+
+  An import that is missing any of the five now says which ones, in a banner under the header on
+  every page, and asks for a fresh export. The import still goes through: your roster, your gear and
+  everything else in the save land exactly as before, and the banner is the only thing that changes.
+  Nothing already stored is discarded or rewritten — an account saved before this existed keeps
+  working untouched and stays quiet until you import again.
+
+- 1d9d79f: The resting countdown now ticks in real time instead of jumping once a minute
+
+  A resting hero's recovery countdown carried no time term at all — it was recomputed only when the
+  account was re-read, roughly once a minute, and sat perfectly still in between while still
+  reporting itself as advancing. It looked like a running clock and was actually a value that jumped
+  once a minute and held flat the rest of the time.
+
+  Recovery is a straight linear ramp over the house cycle, so it is now interpolated in real time
+  from the last read: `remaining(now) = remainingAtRead - (now - readAt)`, floored at zero. Unlike
+  the field countdown this is a subtraction, not a division, so a small timing error stays small.
+
+  A hero recovers in the house on the server's own clock whether or not a battle is running, so the
+  countdown advances whenever the app is still in touch with the game at all — not only while combat
+  frames are streaming. It freezes, and reports itself as not advancing, only when the read path
+  itself is down (the hook has gone silent, or the app was never attached); a paused combat stream
+  with everything else still reachable is not treated as a loss of contact.
+
+- d5a412c: Team plan: the Point reset table's "Before" column now comes from the plan, not the live roster
+
+  A plan outlives the roster it was scored against — the player can respec, re-import or edit
+  points before opening a hero's panel. The hero panel read those "before" numbers straight out of
+  the store, so it paired this run's proposed allocation with whatever the hero held at render
+  time and printed a reset whose deltas never happened, sitting directly above a stat breakdown
+  computed from the older allocation.
+
+  `TeamPlan.pointResets[]` gains `ptsBefore`, the vector the run actually scored, and the panel
+  reads it. The two tables in a hero's panel now describe the same starting point.
+
+- Updated dependencies [fae49fb]
+- Updated dependencies [dec4425]
+- Updated dependencies [7d3a951]
+- Updated dependencies [1d9d79f]
+  - @bombfarm/contracts@0.4.0
+
 ## 0.7.0
 
 ### Minor Changes
@@ -1372,12 +1671,12 @@ auto` DOM node even offscreen, which is also the likely cause of the scrollbar/s
   each hero's next-point ranking, and reset advice, computed through `@bombfarm/domain`'s advisor
   pipeline — the same engine the web planner runs.
 
-  `packages/domain/src/roster-dps.ts`'s `pipelineForHero` is now a public export (`AD-032`): the
+  `packages/domain/src/roster-dps.ts`'s `pipelineForHero` is now a public export: the
   only `HeroRecord`-shaped entry to the pipeline, and the one mapping both surfaces use. Its body is
   byte-unchanged; a layer-1 parity test (`packages/domain/tests/pipeline-for-hero-parity.test.ts`)
   and a layer-2 source-derived key-set guard (`tools/advisor-input-parity.test.mjs`) together prove
   the desktop and the web compute identical ranked stats and gains for the same account payload,
-  for every observed `crit_dmg_mult`. The one known, pinned divergence (`treeCritDmgMult`, `AD-038`)
+  for every observed `crit_dmg_mult`. The one known, pinned divergence (`treeCritDmgMult`)
   is documented at the export site and asserted not to widen or silently close — it is not fixed
   here, because doing so would change the web planner's own rendered numbers.
 
@@ -1389,12 +1688,12 @@ auto` DOM node even offscreen, which is also the likely cause of the scrollbar/s
   backing data is not trustworthy.
 
   **No behaviour change for the web planner.** `apps/web` is untouched — zero files changed, source
-  and tests alike. `packages/ui` is untouched too (`DS-09` intact): every control on the new screen
+  and tests alike. `packages/ui` is untouched too (the reuse boundary intact): every control on the new screen
   composes existing `@bombfarm/ui` primitives.
 
   Two known, recorded limitations ship with this feature rather than being silently claimed:
   `degraded` sections are implemented and unit-tested but currently unreachable end to end (the
-  account-restore merge prefers a stale body over a degraded live read, `AD-037`); and the manual
+  account-restore merge prefers a stale body over a degraded live read — the stale-over-degraded merge rule); and the manual
   refresh affordance (`account:refresh`, `READ_PACING.manualRefreshFloorMs`) was not taken in this
   pass and remains unimplemented, not merely deferred.
 
@@ -1525,7 +1824,7 @@ auto` DOM node even offscreen, which is also the likely cause of the scrollbar/s
   `@bombfarm/contracts` gains `AccountPayload` plus its per-section fidelity types
   (`AccountSection`, `SectionStatus`, `SectionFidelity`, `AccountFidelity`, `AccountFidelityGrade`,
   `AccountFidelityReport`) — the typed shape both the web upload path and the future desktop
-  live-memory reader (MP2 F2) will target. It declares no `export_version` / `generated_at`; those
+  live-memory reader will target. It declares no `export_version` / `generated_at`; those
   stay file-only.
 
   `@bombfarm/domain`'s `parseSaveFile` is now a five-line file adapter over a new exported entry
@@ -1652,7 +1951,7 @@ auto` DOM node even offscreen, which is also the likely cause of the scrollbar/s
 - c498b77: Import and expose the account's farm phase (`account.phase`) as an editable Account field, and model Abisso's damage multiplier (`abissoBase^currentPhase`) in the combat pipeline instead of dropping it silently.
 - 52e69d6: Fix Glass Cannon and Tempo Dobrado sheet math: move crit-damage ×2, energy ×0.5, and speed ×1.33333 from combat multipliers to the sheet layer (matching the game), fixing corrupted spent-point inference on keystone accounts.
 - dc14dd9: The Phases page's squad table now ranks and sums by your account's actual casa slot count instead of a hardcoded "Top 9" — a smaller or larger house now shows the right number of heroes, with the section heading and DPS tooltip updated to match.
-- f76884a: Fix `peelSheetSources` dropping all three keystone sheet effects, which broke its documented AC-10 sum identity on keystone accounts — energy by a factor of 2, speed by ~0.80x and crit damage by 0.72–0.85x. Both keystone contributions land on the skill-tree line, matching the game's own stat tooltip.
+- f76884a: Fix `peelSheetSources` dropping all three keystone sheet effects, which broke its documented sum identity on keystone accounts — energy by a factor of 2, speed by ~0.80x and crit damage by 0.72–0.85x. Both keystone contributions land on the skill-tree line, matching the game's own stat tooltip.
 - 3d3d70e: Add `gameSheetView`, a display-time clamp matching the game's exported sheet (crit chance at 100%, CDR at 80%; penetration is never clamped). The Planner's Stats panel now shows an "Over cap" column so a player can see how much of an over-cap stat is being wasted, without changing the underlying uncapped `total` the telescoping columns sum to. The Team Plan hero panel now shows two stacked stat grids — "Hero sheet" (capped, matching the in-game panel) and "Combat stats" (uncapped, aura-inclusive) — instead of one combat-only grid.
 
   Fix `selectTreeSheetTotals` (the planner store's `TreeSheetTotals` builder used by level/stars/gear recomposition and by Team Plan scoring), which had been missed by the prior keystone sheet-math correction: it hardcoded `critDmgMult: 1` and never carried `glassCannon`/`tempoDobrado` through at all, so every hero sheet recomposed from store state — including the whole Team Plan objective — ran Glass Cannon and Tempo Dobrado free even for accounts that own them. Glass Cannon's crit-damage multiplier (`skills.totals.crit_dmg_mult`) is now persisted on import (`TreeState.critDmgMult`, defaulting to `1` for existing saves) instead of re-derived from the `glassCannon` boolean, matching how `abissoBase` is already persisted.

@@ -6,7 +6,7 @@
  * constants below, never the search machinery itself).
  */
 import { generateMoves, REOPT_FULL_MAX_SWEEPS } from './points-reopt-search';
-import { REOPT_KEYS } from './points-reopt-core';
+import { clampPtsToBudget, REOPT_KEYS } from './points-reopt-core';
 import { squadFactsFromBases, type HeroFarmBasis, type SquadFarmFacts, type FarmRateOptions } from './farm-rate';
 import { bestFarmPhase, type FarmObjectiveScales, type FarmPhasePick, type ResolvedFarmObjective } from './farm-optimize-objective';
 import type { SheetKey } from './planner-constants';
@@ -140,7 +140,18 @@ function buildSeedAssignment(
   energyShare: number | null,
 ): Map<string, Record<SheetKey, number>> {
   const assignment = new Map<string, Record<SheetKey, number>>();
-  if (energyShare === null) return assignment; // 'current': every hero defaults to basis.pts.
+  if (energyShare === null) {
+    // 'current' — the one seed not built FROM the budget, so it is the one that has to be clamped
+    // TO it. Every local-search move is a transfer, so whatever total this seed carries is the
+    // total the proposal carries; an over-spent hero would otherwise walk its excess straight
+    // into a recommendation the game will not sell. A no-op on any hero spending within its
+    // budget, which is every hero real data produces (see `clampPtsToBudget`).
+    for (const basis of bases) {
+      if (!searchableSet.has(basis.heroId)) continue;
+      assignment.set(basis.heroId, clampPtsToBudget(basis.pts, budgetById.get(basis.heroId) ?? 0));
+    }
+    return assignment;
+  }
   for (const basis of bases) {
     if (!searchableSet.has(basis.heroId)) continue;
     const budget = budgetById.get(basis.heroId) ?? 0;

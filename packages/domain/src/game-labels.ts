@@ -6,7 +6,7 @@ import type { Lang } from './shims/i18n';
 import type { RarityKey, StatKey } from './model';
 import { type Slot } from './gear';
 import type { TeamBuffId } from './team-buffs';
-import catalog from './data/catalog.json';
+import catalog from './data/catalog.json' with { type: 'json' };
 
 type Bilingual = { pt: string; en: string };
 

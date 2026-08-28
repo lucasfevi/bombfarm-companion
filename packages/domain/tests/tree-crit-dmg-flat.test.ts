@@ -1,7 +1,8 @@
 /**
  * The skill tree's `crit_dmg_add` is a FLAT percentage-point addend, not percent-of-base.
  *
- * It was modelled percent-of-base on the strength of `AD-BSP-22`'s reading alone: every capture
+ * It was modelled percent-of-base on the strength of an earlier reading of the skills.totals
+ * shapes alone: every capture
  * in the corpus carried `crit_dmg_add: 0`, so nothing could tell the two shapes apart and both
  * `applySkillTree` and `point-inference` said so in comments. `save-20260822-15heroes-tree-crit-dmg.json`
  * was the first capture with a nonzero value (`0.081730769`) and separated them outright; this

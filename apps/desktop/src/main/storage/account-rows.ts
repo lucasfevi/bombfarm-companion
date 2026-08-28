@@ -2,7 +2,7 @@ import type { AccountSection } from '@bombfarm/contracts';
 
 /**
  * `invalid_json`/`wrong_container` are `decodeStoredSection`'s own two failure modes, unchanged
- * by MP5 F4. `stale_retired_vocabulary` is a THIRD member added alongside them (`AD-089`) — never
+ * by this feature. `stale_retired_vocabulary` is a THIRD member added alongside them — never
  * produced by `decodeStoredSection` itself, which stays a pure format decoder. `account-store.ts`'s
  * `restore()` uses it to tag its `account.row_dropped` log line with the same "why this section
  * isn't served" vocabulary as `account.row_discarded`, after `judgeStoredSection`
@@ -17,7 +17,7 @@ const ARRAY_SECTIONS: ReadonlySet<AccountSection> = new Set(['heroes', 'items'])
 /**
  * Decodes a stored row's `body` text for `section`. Never throws for any input string.
  * Performs no field-level normalization, defaulting, key-stripping or coercion — an
- * unfamiliar extra key and the original key order both survive untouched (design TD-1: the
+ * unfamiliar extra key and the original key order both survive untouched (the
  * desktop normalizes nothing; payload-level normalization is F1's `parseAccountPayload`).
  */
 export function decodeStoredSection(section: AccountSection, text: string): DecodedSection {
@@ -47,7 +47,7 @@ export interface AccountKeyResolution {
 }
 
 /**
- * The account-scoping rule (design TD-4). `incoming === null` means "no live account id is
+ * The account-scoping rule. `incoming === null` means "no live account id is
  * knowable right now" (cold start) and always defers to whatever is already bound. A bound
  * key of `null` or `''` both mean "unset". A different incoming key is a mismatch: reads
  * under the stale bound key report `missing` for everything, and writes start a new key

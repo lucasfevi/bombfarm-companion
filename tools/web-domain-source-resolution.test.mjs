@@ -9,9 +9,9 @@ const VITEST_CONFIG_PATH = resolve(root, 'apps/web/vitest.config.ts');
 const NEXT_CONFIG_PATH = resolve(root, 'apps/web/next.config.ts');
 
 /**
- * `AD-032` flips `@bombfarm/domain`'s own `exports` map to `dist/`. `AD-034` keeps `apps/web`
+ * One decision flips `@bombfarm/domain`'s own `exports` map to `dist/`; another keeps `apps/web`
  * on **source** resolution instead — the public planner's production build runs on Vercel,
- * which (`AD-020`) never builds workspace packages, and `dist/` is gitignored. Web reaches
+ * which never builds workspace packages, and `dist/` is gitignored. Web reaches
  * domain source through three independent entries that shadow the package's own `exports` map
  * entirely: `apps/web/tsconfig.json`'s `paths` (TypeScript, and — via `JsConfigPathsPlugin` —
  * Next's webpack/Turbopack too), `apps/web/vitest.config.ts`'s `resolve.alias`, and
@@ -27,12 +27,12 @@ const NEXT_CONFIG_PATH = resolve(root, 'apps/web/next.config.ts');
  */
 const REMOVAL_WARNING =
   'Removing this entry moves the PUBLIC PLANNER onto packages/domain/dist, a directory ' +
-  "Vercel's production build (AD-020) never produces — dist/ is gitignored and Vercel runs a " +
-  'plain `next build` with no workspace-package build step. See AD-032 (the exports flip that ' +
-  "made these entries load-bearing) and AD-034 (the decision to keep apps/web on domain's " +
-  'source instead of migrating it to dist).';
+  "Vercel's production build never produces — dist/ is gitignored and Vercel runs a " +
+  'plain `next build` with no workspace-package build step. See the exports flip that ' +
+  "made these entries load-bearing, and the decision to keep apps/web on domain's " +
+  'source instead of migrating it to dist.';
 
-describe('apps/web stays on @bombfarm/domain SOURCE resolution (AD-034)', () => {
+describe('apps/web stays on @bombfarm/domain SOURCE resolution', () => {
   it(`apps/web/tsconfig.json's "paths" still maps @bombfarm/domain to packages/domain/src. ${REMOVAL_WARNING}`, () => {
     const text = readFileSync(TSCONFIG_PATH, 'utf8');
     const tsconfig = JSON.parse(text);

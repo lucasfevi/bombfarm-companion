@@ -34,7 +34,7 @@ export type GearPool = {
     marketBlocked: number;
     unresolvedDef: number;
     leaveAlone: number;
-    /** Equipped on a hero absent from the roster (RGO-30). */
+    /** Equipped on a hero absent from the roster. */
     foreignOwner: number;
   };
 };
@@ -174,8 +174,8 @@ export type TeamPlanInput = {
 
 /**
  * The subset of `HeroSheet` shown in the per-hero stat breakdown — excludes the per-point rates.
- * `luck` rides along here too (`HeroSheet` itself has no `luck` field — it never reaches combat,
- * BSP-42/AD-BSP-20/AD-BSP-21) so combat rows always report it as `0`; only the sheet rows
+ * `luck` rides along here too (`HeroSheet` itself has no `luck` field — it never reaches combat)
+ * so combat rows always report it as `0`; only the sheet rows
  * (`HeroScore.adjusted`, which IS a `SheetStats`) carry a real value. Display-only — this type
  * feeds the Team Plan hero panel, never the optimizer/scoring/point search.
  */
@@ -197,7 +197,7 @@ export type TeamPlanPerHeroRow = {
   before: number;
   after: number;
   delta: number;
-  /** Combat-effective stats (`HeroScore.effective`) — team auras applied, uncapped (BSPW4-09-adjacent: matches `teamPlanHeroDeltaNote`). */
+  /** Combat-effective stats (`HeroScore.effective`) — team auras applied, uncapped (matches `teamPlanHeroDeltaNote`). */
   combatStatsBefore: TeamPlanHeroStats;
   combatStatsAfter: TeamPlanHeroStats;
   /** Sheet stats (`HeroScore.adjusted`) — no combat multipliers/auras, uncapped here; the UI applies `gameSheetView` (`sheet-view.ts`) before display. */
@@ -232,6 +232,9 @@ export type TeamPlan = {
   moveList: MoveAction[];
   pointResets: {
     heroId: string;
+    /** The allocation this run scored. A plan outlives the roster it was built from, so reading
+     *  the hero's live points instead pairs {@link pts} with a start nothing here measured. */
+    ptsBefore: Record<string, number>;
     pts: Record<string, number>;
     /** Per-hero sustained % change, MAY be negative — the roster can still gain. Not floored. */
     gainPct: number;
@@ -241,7 +244,7 @@ export type TeamPlan = {
     resetCostGold: number;
   }[];
   perHero: TeamPlanPerHeroRow[];
-  /** Per-hero proposed loadouts — the payload of the confirmed altLoadout push (RGO-18). */
+  /** Per-hero proposed loadouts — display only until the user confirms the altLoadout push. */
   proposedLoadouts: Record<string, Loadout>;
   regime: RosterRegime;
   sumDuty: number;

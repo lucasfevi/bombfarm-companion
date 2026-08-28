@@ -28,7 +28,7 @@ export type CombatMults = {
 };
 
 /**
- * `treeEnergy` and `treeDanoTotal` are GONE (BSP-23c, DEC-01) — both now live on the sheet
+ * `treeEnergy` and `treeDanoTotal` are GONE — both now live on the sheet
  * only (`applySkillTree`), never in a combat multiplier.
  */
 export type ComputeCombatMultsInput = {
@@ -54,8 +54,18 @@ export function combineTeamAuraPct(ownPct: number, othersPct: number, cap: numbe
 }
 
 /**
+ * The Fôlego de Mineiro half of {@link computeCombatMults}, factored out so the live field
+ * countdown (`resolveFieldDrainMultipliers`) can derive the same capped team drain multiplier
+ * from a live on-field set without reimplementing the cap/floor arithmetic.
+ */
+export function teamDrainMultFromTeamBuffs(teamBuffs: Record<TeamBuffId, number>): number {
+  const folegoPct = combineTeamAuraPct(0, teamBuffs.folego_mineiro || 0, TEAM_BUFF_CAP.folego_mineiro);
+  return Math.max(0.01, 1 - folegoPct / 100);
+}
+
+/**
  * Team / combat multipliers used by the advisor pipeline. The skill tree no longer
- * contributes anything here (BSP-23c) — `dmg_static` and `energia_add` are sheet-level
+ * contributes anything here — `dmg_static` and `energia_add` are sheet-level
  * factors applied once by `applySkillTree`, not a second time on top of the combat sheet.
  *
  * `teamBuffs` must be the FULL roster total for every aura, including whichever hero `mods`
@@ -68,10 +78,9 @@ export function computeCombatMults(input: ComputeCombatMultsInput): CombatMults 
   const { mods, teamBuffs, extraDmgPct } = input;
   const gritoPct = combineTeamAuraPct(0, teamBuffs.grito_guerra || 0, TEAM_BUFF_CAP.grito_guerra);
   const marchaPct = combineTeamAuraPct(0, teamBuffs.marcha_acelerada || 0, TEAM_BUFF_CAP.marcha_acelerada);
-  const folegoPct = combineTeamAuraPct(0, teamBuffs.folego_mineiro || 0, TEAM_BUFF_CAP.folego_mineiro);
   const teamCritFlat = combineTeamAuraPct(0, teamBuffs.pressagio_mortal || 0, TEAM_BUFF_CAP.pressagio_mortal);
   return {
-    teamDrainMult: Math.max(0.01, 1 - folegoPct / 100),
+    teamDrainMult: teamDrainMultFromTeamBuffs(teamBuffs),
     teamCritFlat,
     attackMult: 1 + gritoPct / 100,
     speedMult: 1 + marchaPct / 100,
@@ -100,7 +109,7 @@ export type DeriveInput = {
    *  crit points — see `CombatMults.teamCritFlat`. There is no separate "own" input here,
    *  matching `attackMult`/`speedMult`: the combination happens once, in `computeCombatMults`. */
   teamCritFlat: number;
-  /** The whole skill tree, once (BSP-23c) — replaces the four scattered tree inputs. */
+  /** The whole skill tree, once — replaces the four scattered tree inputs. */
   treeSheet: TreeSheetTotals;
   penetrationPp: number;
   context: Context;
@@ -123,11 +132,11 @@ export type DeriveResult = {
  * Full pipeline from a geared sheet to effective stats and DPS numbers.
  *
  * The skill tree is applied exactly ONCE, at the sheet level (`applySkillTree`, called
- * upstream to produce `geared`/`naked`) — never again here (BSP-22, BSP-23c). Exactly one
+ * upstream to produce `geared`/`naked`) — never again here. Exactly one
  * tree factor genuinely belongs to a per-point delta rather than the sheet:
  * `treeSheet.danoStatic` scales `delta.attack` because the sheet the delta is added to is
- * already post-`dmg_static` (AD-BSP-12) and attack has no ratio-based analogue to cancel it.
- * `delta.energy` needs no explicit tree factor (BSPW5-11/DISC-01) — `gem = geared.energy /
+ * already post-`dmg_static` and attack has no ratio-based analogue to cancel it.
+ * `delta.energy` needs no explicit tree factor — `gem = geared.energy /
  * naked.energy` already carries `energia_add` once `naked` is `nakedFromBirth`'s tree-free
  * output; an explicit `(1 + energyPct/100)` on top would double it.
  */
@@ -164,7 +173,7 @@ export function derive(input: DeriveInput): DeriveResult {
   const baseCrit = naked.critChance - Math.max(0, sheetOther.critChanceFlat);
   const star = starsMult(stars);
   const atkPt = attackPointGain(level) * star;
-  // GAP-W4-01 (resolved, BSPW5-11/DISC-01): the six pooled shared-divisor deltas below
+  // GAP-W4-01 (resolved): the six pooled shared-divisor deltas below
   // (speed/critChance/critDmg/penetration/cdr/luck) needed no Wave 5 change — dividing by
   // (1 + sheetOther[key]) only was already exact once `naked` became `nakedFromBirth`'s
   // tree-free output. Energy was the ONE exception the W4 comment got wrong: `gem =
@@ -173,9 +182,9 @@ export function derive(input: DeriveInput): DeriveResult {
   // when `naked` was still tree-contaminated (it cancelled inside `gem` then) became a
   // second application once Wave 5 shipped a genuinely tree-free `naked` — a 1.81x
   // overstatement of every energy point on `save-20260801-crit-dmg-tree.json`
-  // (`energia_add = 0.812711865`). Removed below; AC-33 is the end-to-end proof.
+  // (`energia_add = 0.812711865`). Removed below.
   const delta: Record<SheetKey, number> = {
-    // AD-BSP-12: the sheet the delta is added to already carries dmg_static once — scale
+    // The sheet the delta is added to already carries dmg_static once — scale
     // the per-point gain by it too, or attack points would under-count against the sheet.
     // `delta.attack` has no `gem` analogue (energy's own ratio-based factor), so this
     // explicit `danoStatic` factor is NOT redundant and stays exactly as-is.
@@ -187,7 +196,7 @@ export function derive(input: DeriveInput): DeriveResult {
     critDmg: POINT_GAIN.critDmgFlat,
     penetration: (POINT_GAIN.penetrationPctOfBase * naked.penetration) / oPen,
     cdr: (POINT_GAIN.cdrPctOfBase * naked.cdr) / oCdr,
-    // Luck has no `other` term (ASM-02) — no divisor, unlike the shared-pool stats above.
+    // Luck has no `other` term — no divisor, unlike the shared-pool stats above.
     luck: POINT_GAIN.luckPctOfBase * naked.luck,
   };
   const adjusted: SheetStats = { ...gearedX };
@@ -212,7 +221,7 @@ export function derive(input: DeriveInput): DeriveResult {
     critDmg: delta.critDmg * critDmgMult,
     penetration: delta.penetration,
     cdr: delta.cdr,
-    // No combat multiplier — Luck never reaches DPS scoring (BSP-42, AD-BSP-20).
+    // No combat multiplier — Luck never reaches DPS scoring.
     luck: delta.luck,
   };
   return {

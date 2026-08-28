@@ -6,7 +6,7 @@ import type { RosterSortKey } from '@/features/roster/components/roster-sort-hea
 import type { HeroRecord } from '@/shared/lib/storage';
 
 /**
- * RES-03 — `compareRosterHeroes` had no dedicated unit test. It was refactored in W7
+ * `compareRosterHeroes` had no dedicated unit test. It was refactored in W7
  * (switch-assign `let` → extracted early-return `compareByKey`) with only indirect e2e
  * coverage, and it drives every roster/hero-picker sort.
  *

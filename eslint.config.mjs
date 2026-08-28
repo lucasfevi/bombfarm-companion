@@ -23,6 +23,15 @@ const plannerOriginPackages = [
   'packages/ui/**/*.{ts,tsx}',
 ];
 
+/**
+ * `game-art` was extracted verbatim from `apps/web/src/shared/game-art/` (T5), which lints under
+ * `recommendedTypeChecked` (`apps/web/eslint.config.mjs`) and never carried
+ * `exactOptionalPropertyTypes`/`noUncheckedIndexedAccess` (`apps/web/tsconfig.json`). Same tier as
+ * `plannerOriginPackages`, kept as its own list rather than folded in — that array is the literal
+ * scope `docs/typescript-planner-origin.md` documents as exactly `domain`+`ui`, unchanged by T5.
+ */
+const gameArtPackage = ['packages/game-art/**/*.{ts,tsx}'];
+
 /** Ban raw react-icons / SVG imports outside the Icon seam (ICO-23, ICO-24, D12). */
 const rawIconImportRule = [
   'error',
@@ -48,12 +57,14 @@ export default tseslint.config(
       '**/dist/**',
       '**/out/**',
       '**/.next/**',
+      '**/.next-dev/**',
       '**/release/**',
       '**/node_modules/**',
       '**/next-env.d.ts',
       // Tests are excluded from package tsconfigs; lint via web Vitest instead.
       // Stories are excluded too, but stay linted — see the stories block below.
       'packages/ui/**/*.{test,spec}.{ts,tsx}',
+      'packages/game-art/**/*.{test,spec}.{ts,tsx}',
     ],
   },
   eslint.configs.recommended,
@@ -90,6 +101,23 @@ export default tseslint.config(
     },
   },
   {
+    files: gameArtPackage,
+    extends: [...tseslint.configs.recommendedTypeChecked],
+    languageOptions: {
+      parserOptions: {
+        projectService: true,
+        tsconfigRootDir: import.meta.dirname,
+      },
+      globals: globals.browser,
+    },
+    rules: {
+      '@typescript-eslint/no-unused-vars': [
+        'error',
+        { argsIgnorePattern: '^_', varsIgnorePattern: '^_' },
+      ],
+    },
+  },
+  {
     files: ['apps/desktop/src/**/*.ts', 'apps/desktop/renderer/**/*.{ts,tsx}'],
     extends: [...tseslint.configs.strictTypeChecked],
     languageOptions: {
@@ -106,7 +134,7 @@ export default tseslint.config(
     },
   },
   {
-    files: ['packages/ui/**/*.{ts,tsx}', 'apps/desktop/renderer/**/*.{ts,tsx}'],
+    files: ['packages/ui/**/*.{ts,tsx}', 'packages/game-art/**/*.{ts,tsx}', 'apps/desktop/renderer/**/*.{ts,tsx}'],
     plugins: { 'react-hooks': reactHooks },
     languageOptions: {
       globals: globals.browser,
@@ -116,11 +144,12 @@ export default tseslint.config(
     },
   },
   {
-    files: ['packages/ui/**/*.{ts,tsx}'],
+    files: ['packages/ui/**/*.{ts,tsx}', 'packages/game-art/**/*.{ts,tsx}'],
     plugins: { tailwindcss: eslintPluginTailwindcss },
     settings: {
       tailwindcss: {
-        // Web app owns the Tailwind v4 entry; recipes in packages/ui are scanned from there.
+        // Web app owns the Tailwind v4 entry; recipes in packages/ui and packages/game-art
+        // are scanned from there.
         cssConfigPath: webTailwindCss,
       },
     },

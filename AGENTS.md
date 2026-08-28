@@ -38,6 +38,22 @@ pnpm --filter @bombfarm/web test
 pnpm test:smoke   # Windows — builds static renderer + launches Electron
 ```
 
+## Running the desktop app without the game
+
+```bash
+pnpm dev:offline
+```
+
+Fixture account, replayed live capture, no game process and no server needed — see
+[`docs/offline-dev-mode.md`](docs/offline-dev-mode.md) for what it covers, what it cannot show,
+and how it runs beside a real install. Plain `pnpm dev` is the real read path.
+
+These commands bound their own load, and share one budget with any other Bomb Farm run on the
+machine — a second checkout or session running the same sequence makes both smaller rather than
+letting them multiply. `node tools/cpu-budget-report.mjs` says what is running and what each run is
+getting; `BFC_CPU_BUDGET` raises or lowers the total. See
+[`docs/machine-load.md`](docs/machine-load.md).
+
 `pnpm build` is not optional and has to come first: the workspace packages publish their types
 and entry points from `dist/` (`packages/domain`'s `exports` map, for one, points every subpath
 at `./dist/**`), so on a freshly cloned tree `pnpm typecheck`, `pnpm lint` and three of the vitest
@@ -53,6 +69,9 @@ that project with a filename filter). `apps/web` and `packages/domain` alias `@b
 
 - Conventional Commits (`feat:`, `fix:`, `chore:`, …) — enforced by commitlint
 - Feature work branches from and merges into `develop`; `main` is release-only — see [`docs/branching.md`](docs/branching.md)
+- **Branch names are `<type>/<kebab-case-summary>`** with a commitlint type (`feat/rotation-pool-redesign`,
+  `docs/comments-hard-truth`). When tooling hands you a generated name with a random suffix, rename it
+  with `git branch -m <type>/<summary>` before the first push — see [`docs/branching.md`](docs/branching.md#branch-names)
 - IPC types live in `@bombfarm/contracts`; both main and renderer import from there
 - No Node integration in the renderer; use preload `contextBridge`
 - TypeScript strict at the monorepo base; planner-origin packages `@bombfarm/domain`
@@ -72,25 +91,71 @@ that project with a filename filter). `apps/web` and `packages/domain` alias `@b
   format). Internal-only changes (CI config, tests, docs) don't need one; if a changeset genuinely
   doesn't apply, label the PR `skip-changeset` instead of skipping silently.
 
+## HARD RULE: no planning identifiers, no planning-doc paths
+
+**This repository is public. The planning tree that drives it is not.** Nothing you write here may
+carry a reference that only the private planning tree can resolve.
+
+Two shapes are forbidden, in **source, tests, test names, assertion messages, comments, JSDoc,
+markdown, commit messages, branch names, changesets, and PR/issue text**:
+
+1. **Planning identifiers** — anything shaped `PREFIX-NUMBER`: `AD-036`, `AC-38`, `LFS-04`,
+   `MSG-12`, `BSP-23a`, `MPV-01`, `DEC-03`, `W0-14`, `MP5 F4`, and any prefix a future feature
+   invents. **The list is open-ended — do not treat any enumeration of prefixes as complete.**
+2. **Paths into the planning tree** — `design.md §7.2`, `spec.md`, `tasks.md`, `validation.md`,
+   `.specs/`, PRD references, and milestone or wave numbers used as citations.
+
+**Write what it means, not what it is called.** The reasoning is welcome; the code for it is not.
+
+| Don't write | Write |
+| --- | --- |
+| `// AD-036: gate on per-section usability` | `// gate on per-section usability, not the fidelity grade` |
+| `describe('isUsable (AD-036)')` | `describe('isUsable')` |
+| `// see design.md §7.2` | state the rule, or say nothing |
+| `it('MSG-24 store failure ≠ drop')` | `it('store failure ≠ drop')` |
+
+**Genuine external standards are fine and must not be "cleaned":** `SHA-256`, `UTF-8`, `BCP-47`,
+`ISO-8601`, `RFC-*`. They share the shape and are not planning ids.
+
+**Two deliberate exceptions.** Guard sources and their red-state fixtures must name the tokens they
+forbid — `tools/`'s hygiene guards and `pre-push-guard.test.mjs`'s `feat/ACS-06` fixture are code,
+not prose. Do not "clean" them; you will break the guard while appearing to tidy it.
+
+**Why this is a hard rule and not a preference.** These identifiers reached this repo ~2,900 times
+before anyone counted, and two prior leaks happened *despite* an explicit instruction in the
+authoring prompt. Once a PR exists, GitHub pins its history at `refs/pull/N/head` and a force-push
+hides the leak without removing it. **Scrub before opening the PR, not after.**
+
+Before pushing:
+
+```bash
+git grep -nIP "\b(?!SHA-|UTF-|BCP-|ISO-|RFC-)[A-Z][A-Z0-9]{1,6}-[0-9]{1,3}[a-z]?\b" -- apps packages tools
+```
+
 ## Comments
 
-Write almost no comments. A well-named function and well-named variables should make code
-self-explanatory; a comment restating what the next line does is noise, not documentation.
+**Hard truth: [`docs/comments.md`](docs/comments.md).** Read it before adding one.
 
-Add a comment only when:
+Write almost no comments. **Code and tests are the documentation** — a well-named function with
+well-named variables says what it does, and behaviour you want to explain belongs in a test with a
+sentence for a name, where it is proven and fails when it stops being true. A comment restating
+the next line is a second copy of the logic that nothing keeps in sync.
 
-- **The logic is genuinely too complex to follow by reading it.** Even then, treat this as a
-  signal before reaching for a comment: a function that needs prose to be understood usually
-  needs to be broken into smaller, well-named pieces instead. Reach for a comment only after
-  refactoring is not the fix — the code is inherently intricate (a bitwise trick, a tight
-  numerical routine) and no decomposition removes that.
-- **There is specific business logic that isn't explicit from the code itself** — a game-balance
-  constant, a workaround for an external quirk, a non-obvious invariant the surrounding code
-  depends on. Here a short comment explaining *why* earns its place.
+**Wanting to comment is a finding about the code, not a documentation need.** Treat it like a
+300-line function: the fix is to extract a named function, name an intermediate value, or split
+the file. Reach for prose only once you have established that decomposition is not the fix.
 
-If you touch a file that carries many comments, treat that as a prompt to revisit them against
-this rule while you're in there: remove ones that just narrate what the code already says, and
-keep only the few that explain real complexity or non-obvious business logic.
+Two shapes earn a comment, and both explain *why*, never *what*:
+
+- **Inherent complexity that no decomposition removes** — a bitwise trick, a tight numerical
+  routine, an algorithm whose correctness argument is invisible in its steps.
+- **Business logic the code cannot show** — a game-balance constant and where its value came from,
+  a workaround for an external quirk, a non-obvious invariant the surrounding code depends on.
+
+**Clean up the file you touch.** A comment-heavy file you open is in scope: delete the narration,
+keep the few that earn their place. Don't turn it into a whole-file rewrite of code you aren't
+otherwise changing — that buries the real diff. Deliberately no lint rule enforces this; no
+threshold can tell a constant's provenance from noise, so review carries it.
 
 ## Out-of-scope findings — ask before you file
 

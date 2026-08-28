@@ -78,7 +78,7 @@ export function AdviceColumn() {
       <>
           <div className={adviceSplitClass}>
             {/* Remount on hero switch — the cleanest way to reset PointsTable's local preview
-                state (DEC-02) per hero without an effect (design.md's "useEffect-free
+                state per hero without an effect (design.md's "useEffect-free
                 consequence of keying"). */}
             <PointsTable key={activeHeroId ?? 'none'} />
             <NextPointRanking />

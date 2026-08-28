@@ -38,13 +38,13 @@ export const en = {
   // stat is wrong: the residual lands wherever the mis-attribution happens to fall, so naming a
   // stat would send the player chasing the symptom.
   pointsOverBudgetWarning: "These stat points don't add up: {spent} points on a level-{level} hero, and the game grants only one per level. Import a fresh save export — if it still reads this way, please report it on Discord.",
-  // BSPW4-15/AC-04 — Tier 1 (the automatic gate) is a lower bound: "at least ~{pct}%", never a
+  // Tier 1 (the automatic gate) is a lower bound: "at least ~{pct}%", never a
   // bare percentage or a future-tense promise, and it names Optimize build as the definitive
   // answer. `{pct}` is Tier 1's own gainPct, already floored at 0 by the seed comparison.
   resetAdviceGainLine: "A fast check found a possible gain of at least ~{pct}%. Optimize build gives the definitive answer.",
   pointsStepMinusFiveAria: "Remove 5 points from {stat}",
   pointsStepPlusFiveAria: "Add 5 points to {stat}",
-  // BSPW4-15/AC-07/AC-13 — Tier 2 (on-demand) may claim the best allocation ITS search found;
+  // Tier 2 (on-demand) may claim the best allocation ITS search found;
   // never "optimal", and a result larger than the badge's is expected, not a correction.
   optimizeBuildButton: "Optimize build",
   optimizeBuildResultLine: "Best allocation this search found: about {pct}% more sustained DPS.",

@@ -1,5 +1,5 @@
 /**
- * MOD-33 measurement driver — 7 reps per scenario, writes perf-baseline.raw.json.
+ * Measurement driver — 7 reps per scenario, writes perf-baseline.raw.json.
  *
  * Window: opens at first input; closes 1500 ms after last input.
  * Zero commits ⇒ hard failure (never write a zero baseline).
@@ -36,7 +36,7 @@ const WARMUP_DISCARD = Math.max(
   Number.parseInt(process.env.PERF_WARMUP_DISCARD ?? '2', 10) || 0,
 )
 /**
- * RES-06 roster-scaling probe. `importedRoster` (3 heroes) is the default and the fixture
+ * Roster-scaling probe. `importedRoster` (3 heroes) is the default and the fixture
  * every existing baseline is expressed against — never change it. `PERF_FIXTURE=large`
  * swaps in a 30-hero roster with the same active hero and account, to test whether render
  * counts scale with roster size or are flat.
@@ -45,7 +45,7 @@ const USE_LARGE_ROSTER = process.env.PERF_FIXTURE === 'large'
 const FIXTURE_NAME = USE_LARGE_ROSTER ? 'largeRoster' : 'importedRoster'
 const FIXTURE = USE_LARGE_ROSTER ? largeRoster : importedRoster
 /**
- * RES-05 — `dev-strict` is the W1/W8 baseline instrument: `next dev` + StrictMode, which
+ * `dev-strict` is the W1/W8 baseline instrument: `next dev` + StrictMode, which
  * double-invokes render and is *not* production. `prod-profile` runs against
  * `pnpm perf:build:profile` output — production React with component names retained —
  * and is the instrument any claim about production behavior must use. The two are not
@@ -98,7 +98,7 @@ async function harvestCommits(page: import('@playwright/test').Page): Promise<Co
   return api.commits
 }
 
-/** AD-012-style quiescence: ≥ quietMs with no new commits after reset. */
+/** Quiescence: ≥ quietMs with no new commits after reset. */
 async function waitForQuiet(
   page: import('@playwright/test').Page,
   quietMs = 1000,
@@ -179,7 +179,7 @@ async function runScenarioReps(
 test.describe.configure({ mode: 'serial', retries: 2 })
 
 test.describe('perf measurement driver', () => {
-  test('capture all MOD-33 scenarios ×7', async ({ page }, testInfo) => {
+  test('capture all perf scenarios ×7', async ({ page }, testInfo) => {
     test.setTimeout(900_000)
     if (testInfo.retry > 0) {
       // eslint-disable-next-line no-console

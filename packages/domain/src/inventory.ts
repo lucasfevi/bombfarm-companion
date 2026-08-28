@@ -1,4 +1,4 @@
-import catalog from './data/catalog.json';
+import catalog from './data/catalog.json' with { type: 'json' };
 
 const defById = new Map(catalog.defs.map((definition) => [definition.id, definition]));
 
@@ -63,7 +63,7 @@ export function mapInventoryItem(raw: Record<string, unknown>): InventoryItem | 
   };
 }
 
-/** Coerce persisted / partial inventory JSON into a safe snapshot (RGO-29). */
+/** Coerce persisted / partial inventory JSON into a safe snapshot. */
 export function normalizeInventorySnapshot(raw: unknown): InventorySnapshot {
   if (raw == null || typeof raw === 'string' || typeof raw === 'number') {
     return { ...EMPTY_SNAPSHOT, items: [] };

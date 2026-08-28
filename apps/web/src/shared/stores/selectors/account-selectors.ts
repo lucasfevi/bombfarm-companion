@@ -28,6 +28,7 @@ export const selectTargetProp = (state: PlannerStore) => state.targetProp;
 export const selectMaxPhase = (state: PlannerStore) => state.maxPhase;
 export const selectPlayerName = (state: PlannerStore) => state.playerName;
 export const selectAccountId = (state: PlannerStore) => state.accountId;
+export const selectMissingRequiredFields = (state: PlannerStore) => state.missingRequiredFields;
 export const selectTreeSquadDmgPct = (state: PlannerStore) => state.treeSquadDmgPct;
 export const selectTreeGeoMult = (state: PlannerStore) => state.treeGeoMult;
 export const selectTreeFieldSlotsBonus = (state: PlannerStore) => state.treeFieldSlotsBonus;
@@ -41,7 +42,7 @@ export const selectTreeBagTabsBonus = (state: PlannerStore) => state.treeBagTabs
  * deriving by default closes that gap without taking away the override as a deliberate "what if"
  * planning affordance.
  *
- * Module-level single-entry cache (AD-012 shape, matching `selectAdvisorPipeline`/
+ * Module-level single-entry cache (matching `selectAdvisorPipeline`/
  * `selectFarmRankingRows`) — returns the SAME reference while neither `state.heroes` nor
  * `state.teamBuffsOverride` changed, so every dep tuple that used to read `state.teamBuffs`
  * directly can depend on this selector's result instead of listing `heroes`/`teamBuffsOverride`
@@ -135,6 +136,11 @@ export function selectAccountShared(state: PlannerStore): AccountShared {
     maxPhase: state.maxPhase,
     playerName: state.playerName,
     accountId: state.accountId,
+    // Omitted, not written as `null`, so a pre-rule account round-trips byte-identically
+    // (`storage-roundtrip.test.ts`, the round-trip tripwire).
+    ...(state.missingRequiredFields != null
+      ? { missingRequiredFields: state.missingRequiredFields }
+      : {}),
   };
   return accountSharedCache;
 }
@@ -170,6 +176,7 @@ export function selectAccountTuple(state: PlannerStore) {
     state.maxPhase,
     state.playerName,
     state.accountId,
+    state.missingRequiredFields,
   ] as const;
 }
 

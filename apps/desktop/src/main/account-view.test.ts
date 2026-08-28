@@ -1,10 +1,12 @@
 /**
  * Dependency-injected — no Electron import anywhere in this file or in `account-view.ts` itself
- * (design.md `AD-043`). Fakes stand in for `GameReaderService`/`ConsentStore`/
+ * (design.md, the single-source change-signal decision). Fakes stand in for `GameReaderService`/`ConsentStore`/
  * `AccountRefreshHandle`/`AccountStore` via the structural interfaces `account-view.ts` declares.
  */
 import { describe, expect, it, vi } from 'vitest';
 import type { AccountPayload, AccountView, ConsentRecord, GameStatusInfo } from '@bombfarm/contracts';
+import { CONSENT_TEXT_VERSION } from '@bombfarm/game-api';
+import { consentRecord } from '@bombfarm/game-api/test-fixtures';
 import {
   createAccountNotifier,
   resolveAccountView,
@@ -58,15 +60,18 @@ function fakeGameReader(status: GameStatusInfo['status'], view: AccountView | nu
   };
 }
 
-function fakeConsentSource(decision: ConsentRecord['decision']): ConsentSourceLike {
-  return { read: () => ({ decision, textVersion: 1 }) };
+function fakeConsentSource(
+  decision: ConsentRecord['decision'],
+  textVersion = CONSENT_TEXT_VERSION,
+): ConsentSourceLike {
+  return { read: () => consentRecord({ decision, grantedAt: NOW, textVersion }) };
 }
 
 function fakeAccountRefresh(view: AccountView | null): AccountRefreshLike {
   return { getLastView: () => view };
 }
 
-describe('resolveCachedAccountView — the pure-read half of AD-043', () => {
+describe('resolveCachedAccountView — the pure-read half of the single-source change-signal decision', () => {
   it('never commits: with every producer returning nothing, it returns null', () => {
     const result = resolveCachedAccountView({
       gameReader: fakeGameReader('not_running', null),
@@ -98,6 +103,17 @@ describe('resolveCachedAccountView — the pure-read half of AD-043', () => {
     expect(result?.payload.heroes).toEqual([{ id: 'from-refresh' }]);
   });
 
+  it('falls back to the game reader when the stored grant predates the current disclosure, because the refresh cycle only produces a not-consented placeholder for it', () => {
+    const gameReaderView = makeView(makePayload({ heroes: [{ id: 'from-game-reader' }] }));
+    const placeholderView = makeView(makePayload({ heroes: [{ id: 'not-consented-placeholder' }] }));
+    const result = resolveCachedAccountView({
+      gameReader: fakeGameReader('connected', gameReaderView),
+      consentStore: fakeConsentSource('granted', CONSENT_TEXT_VERSION - 1),
+      accountRefresh: fakeAccountRefresh(placeholderView),
+    });
+    expect(result?.payload.heroes).toEqual([{ id: 'from-game-reader' }]);
+  });
+
   it('gameRunning is always the FRESH game-reader status, never the cached view\'s own gameRunning', () => {
     const staleTrueView = makeView(makePayload(), true);
     const result = resolveCachedAccountView({
@@ -109,7 +125,7 @@ describe('resolveCachedAccountView — the pure-read half of AD-043', () => {
   });
 });
 
-describe('resolveAccountView — AD-043 point 1: byte-for-byte the pre-F3 account:get behaviour', () => {
+describe('resolveAccountView — the single-source change-signal rule, point 1: byte-for-byte the pre-F3 account:get behaviour', () => {
   const fakeAccountStore: AccountCommitterLike = {
     commit: vi.fn((payload: AccountPayload, opts: { gameRunning: boolean }) =>
       makeView({ ...payload, fidelity: fidelity('missing') }, opts.gameRunning),
@@ -155,7 +171,7 @@ describe('resolveAccountView — AD-043 point 1: byte-for-byte the pre-F3 accoun
   });
 });
 
-describe('createAccountNotifier — AD-043 point 2: emits only on change, never commits', () => {
+describe('createAccountNotifier — the single-source change-signal rule, point 2: emits only on change, never commits', () => {
   it('a null cached view suppresses: no commit attempted, no throw, getSuppressedCount() increments', () => {
     const emit = vi.fn();
     const commitSpy = vi.fn();
@@ -220,7 +236,7 @@ describe('createAccountNotifier — AD-043 point 2: emits only on change, never 
     expect(notifier.getSuppressedCount()).toBe(1);
   });
 
-  it('a status-only change is emitted (MAR-09)', () => {
+  it('a status-only change is emitted', () => {
     const emit = vi.fn();
     let view = makeView(makePayload({ fidelity: fidelity('resolved') }));
     const notifier = createAccountNotifier({

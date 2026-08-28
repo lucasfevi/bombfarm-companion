@@ -21,11 +21,11 @@ import { PointsResetAdvice } from './points-reset-advice';
 import { hasApplicableGain } from '../model/points-preview-copy';
 
 /**
- * Points panel shell (`DEC-10` split): header (title, spent/level counter, Reset), the stat
- * table (rows via `PointsStatRow`, `SHEET_PANEL_KEYS` — 8, incl. Luck, `DEC-06`/`AC-19`), and
+ * Points panel shell (split): header (title, spent/level counter, Reset), the stat
+ * table (rows via `PointsStatRow`, `SHEET_PANEL_KEYS` — 8, incl. Luck), and
  * the preview / Optimize build controls (`PointsPreviewActions`).
  *
- * Preview `{ pts, result }` is `useState` here (`DEC-02`) — never a store field, never
+ * Preview `{ pts, result }` is `useState` here — never a store field, never
  * `localStorage`. It is cleared by the SAME handler every `pts` mutation goes through
  * (`handlePtsMutate`) and, per-hero, by keying this whole component on `activeHeroId` at its
  * call site (`AdviceColumn`) — a remount, not an effect (design.md: "a useEffect-free
@@ -51,7 +51,7 @@ export function PointsTable() {
   }
 
   function handleOptimize() {
-    // ASM-02: on demand, in the click handler only — never render, a selector, or an effect.
+    // On demand, in the click handler only — never render, a selector, or an effect.
     const result = optimizeBuild({
       pts,
       effective: pipeline.effective,
@@ -68,7 +68,7 @@ export function PointsTable() {
     // Spec edge case: a search with no measurable gain is a no-op, not a rewrite of an
     // equally-scoring reshuffle — and no respec note for zero player benefit.
     if (hasApplicableGain(preview.result)) {
-      // AD-BSP-21: preview.pts already echoes pts.luck untouched — no special-casing needed.
+      // preview.pts already echoes pts.luck untouched — no special-casing needed.
       setPts(preview.pts);
       setJustApplied(true);
     }
@@ -129,7 +129,7 @@ export function PointsTable() {
           <colgroup>
             <col />
             <col className="w-42" />
-            {/* content-fit-ui.md: widened for the 2 dp precision sweep (BSP-29). */}
+            {/* content-fit-ui.md: widened for the 2 dp precision sweep. */}
             <col className="w-16" />
             <col className="w-24" />
             <col className="w-24" />

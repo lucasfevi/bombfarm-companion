@@ -21,6 +21,7 @@ export default defineConfig({
         'planning-advice.spec.mjs',
         'auto-recompute.spec.mjs',
         'i18n.spec.mjs',
+        'inventory.spec.mjs',
       ],
     },
     {

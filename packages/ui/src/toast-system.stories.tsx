@@ -108,7 +108,7 @@ export const CoalescingProgress: Story = {
   ),
 };
 
-/** Beyond `MAX_VISIBLE_TOASTS` (3), the rest collapse into a "+N more" affordance that expands (TST-12). */
+/** Beyond `MAX_VISIBLE_TOASTS` (3), the rest collapse into a "+N more" affordance that expands. */
 function OverflowDemo() {
   const { push } = useToast();
   return (

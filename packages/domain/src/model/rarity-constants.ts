@@ -47,7 +47,7 @@ export const BASE_ROLLS: Record<RarityKey, BaseRoll> = {
 // Ataque +10 native × levelPowerMult(level) · Energia +8 native · Velocidade / Sorte /
 // Crit chance / Pen / CDR add a bonus that is a percentage OF THE BASE ROLL
 // (+2% / +3% / +2% / +2% / +2%).
-// Sorte (Luck): BSP-46 — measured against the Wave 0 fixtures at ≤8e-16 residual,
+// Sorte (Luck): measured against the Wave 0 fixtures at ≤8e-16 residual,
 // ★0 gear-free (vera-02-pts-luck-1.json) and confirmed exactly at ★1 with gear
 // (bellatrix-02-pts-each-1.json). +3% of the hero's birth roll, × starsMult.
 //
@@ -155,7 +155,7 @@ export const POINT_GAIN = {
 export const STAT_CAPS = {
   critChance: 100,
   /**
-   * BSPW4-09 (BSP-60): `penetration` is a **mitigation threshold**, not a sheet clamp — the
+   * `penetration` is a **mitigation threshold**, not a sheet clamp — the
    * game does NOT cap sheet penetration at 100. Bellatrix's real sheet pen is
    * `141.22613536827` (`save-20260801-crit-dmg-tree.json`) and the export reports it raw; every
    * stage of the pipeline (`composeSheetFromBirth`, `peelSheetSources`, `applyGear`,

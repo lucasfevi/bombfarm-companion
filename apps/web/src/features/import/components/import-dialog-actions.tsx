@@ -4,7 +4,7 @@ import { sub, type Strings } from '@/shared/i18n';
 import { Button } from '@bombfarm/ui';
 import { importActionsClass, importActionsEndClass } from '@bombfarm/ui/panel-field.recipe';
 
-/** `AD-BSP-26`/`AC-31` — confirm is enabled whenever at least one candidate exists; the
+/** Confirm is enabled whenever at least one candidate exists; the
  *  `{count}` placeholder in `t.importConfirm` is the candidate count, not a selection. */
 export function ImportDialogActions({
   showTryAnother,

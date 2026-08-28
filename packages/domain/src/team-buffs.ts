@@ -7,7 +7,7 @@ import type { HeroRecord } from './shims/storage';
  * (`gate_power`, not `team_*`), its "Só ele" scope column, and this catalog's `effectText`
  * (missing the "do TIME" every genuine aura below carries) all agree it is self-scoped, not a
  * team aura. `fortuna`/`brecha` are genuine `team_gold`/`team_pen` auras missing from this list,
- * but both carry `effect: { kind: 'none' }` (BSP-47/ASM-06) and nothing downstream reads them —
+ * but both carry `effect: { kind: 'none' }` and nothing downstream reads them —
  * adding them here would be new modelling, not a fix.
  */
 export const TEAM_BUFF_ABILITY_IDS = [
@@ -74,7 +74,9 @@ export const TEAM_BUFF_FIELDS = [
  * here — storing the raw figure lets the UI field this feeds show the true total even when it
  * exceeds the cap, rather than silently rounding it off before the user ever sees it.
  */
-export function computeTeamBuffsFromDeployed(heroes: HeroRecord[]): Record<TeamBuffId, number> {
+export function computeTeamBuffsFromDeployed(
+  heroes: readonly Pick<HeroRecord, 'deployed' | 'abilities'>[],
+): Record<TeamBuffId, number> {
   const out = zeroTeamBuffs();
   const contributors = heroes.filter((hero) => hero.deployed);
   for (const buffId of TEAM_BUFF_ABILITY_IDS) {

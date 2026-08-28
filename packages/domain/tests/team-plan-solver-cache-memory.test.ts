@@ -24,10 +24,10 @@ import { buildPool, poolEntryForItem } from '@bombfarm/domain/team-plan/pool';
 import { baselineAssignmentFromInput } from '@bombfarm/domain/team-plan/waterfall';
 import { applyMove, type AssignmentState } from '@bombfarm/domain/team-plan/solver-assignment';
 import { generateMoves } from '@bombfarm/domain/team-plan/solver-moves';
-import { teamPlanInputFromFixture } from './helpers/team-plan-fixtures';
+import { teamPlanInputFromFixture, TEAM_PLAN_FIXTURE } from './helpers/team-plan-fixtures';
 
-// MP5 F1 (AD-068 class (b) — structural): re-pointed onto payload-20260812-8heroes.json.
-const FIXTURE = 'payload-20260812-8heroes.json';
+// (the ground-truth rule, class (b) — structural): re-pointed onto save-20260819-11882-7heroes.json.
+const FIXTURE = TEAM_PLAN_FIXTURE;
 
 function setup(fixture: string = FIXTURE) {
   const input = teamPlanInputFromFixture(fixture, 10);
@@ -163,11 +163,11 @@ describe('solver cache memory', () => {
  */
 describe('interchangeable items: one candidate at a time, multiplicity preserved', () => {
   it('offers exactly one representative per group but still equips every copy', () => {
-    // MP5 F1 (AD-068 class (a) — read from the capture): re-pointed onto
-    // payload-20260812-8heroes.json, which carries real duplicate spares (measured: 6
+    // (the ground-truth rule, class (a) — read from the capture): re-pointed onto
+    // save-20260819-11882-7heroes.json, which carries real duplicate spares (measured: 6
     // pool-key groups with 2-3 copies each) — richer duplicate coverage than the deleted
     // `SaveFile_BombFarm.json` this test used to read.
-    const ctx = setup('payload-20260812-8heroes.json');
+    const ctx = setup(TEAM_PLAN_FIXTURE);
     const poolKey = (id: string) => {
       const item = ctx.itemById.get(id);
       if (!item?.slot) return null;

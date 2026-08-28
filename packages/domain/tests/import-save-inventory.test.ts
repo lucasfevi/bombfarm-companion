@@ -4,8 +4,8 @@ import { loadFixtureJson } from './helpers/sheet-math-fixtures';
 import { minimalHero } from './helpers/minimal-save-hero';
 
 /**
- * MP5 F4: the minimal `skills` shape that satisfies `parseSaveFile`'s positive discriminator
- * (MSG-11) — presence of `refunds`/`vagas_campo`/`bag_tabs_bonus` only, no other content. Every
+ * The minimal `skills` shape that satisfies `parseSaveFile`'s positive discriminator
+ * — presence of `refunds`/`vagas_campo`/`bag_tabs_bonus` only, no other content. Every
  * inline literal below that used to omit `skills` entirely now carries this, or the whole file
  * (not just the item/hero under test) would reject before this suite's own assertions run.
  */
@@ -27,7 +27,7 @@ function categoryHistogram(raw: unknown): Record<number, number> {
 }
 
 describe('parseSaveFile inventory pass', () => {
-  // MP5 F1 (AD-068 class (a) — read from the capture): re-pointed onto payload-20260812-8heroes
+  // F1 (ground-truth-rule class (a) — read from the capture): re-pointed onto payload-20260812-8heroes
   // for its larger, richer inventory (27 catalogued vs the export's 17).
   it('payload-20260812-8heroes: gear, equipped, spare, histogram, and slots', () => {
     const raw = loadFixtureJson('payload-20260812-8heroes.json');
@@ -40,7 +40,7 @@ describe('parseSaveFile inventory pass', () => {
     expect(account.slots).toBe(3);
   });
 
-  // MP5 F1 (AD-068 class (a)): re-pointed onto save-20260813-5heroes (the export).
+  // F1 (ground-truth-rule class (a)): re-pointed onto save-20260813-5heroes (the export).
   it('save-20260813-5heroes: gear, equipped, and spare counts', () => {
     const raw = loadFixtureJson('save-20260813-5heroes.json');
     const { inventory, rejected } = parseSaveFile(raw, []);
@@ -104,10 +104,15 @@ describe('parseSaveFile inventory pass', () => {
     expect(warnings.some((warning) => warning.includes('market-blocked'))).toBe(true);
   });
 
+  // Re-pointed off `save-20260813-5heroes.json` (issue #206): that capture is behind the
+  // stat-point budget refusal, so 2 of its 5 heroes come through blocked and the "nothing is
+  // blocked" half of this claim describes a roster the importer no longer produces. The 2026-08-19
+  // capture parses 7 of 7 clean, which is what makes the claim assertable again rather than
+  // merely re-recorded.
   it('does not change hero candidate count on the real fixture', () => {
-    const raw = loadFixtureJson('save-20260813-5heroes.json');
+    const raw = loadFixtureJson('save-20260819-11882-7heroes.json');
     const withoutInventory = parseSaveFile(raw, []);
-    expect(withoutInventory.candidates.length).toBeGreaterThan(0);
+    expect(withoutInventory.candidates.length).toBe(7);
     expect(withoutInventory.candidates.every((candidate) => !candidate.blocked)).toBe(true);
   });
 

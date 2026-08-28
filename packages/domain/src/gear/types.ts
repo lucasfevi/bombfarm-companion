@@ -1,4 +1,4 @@
-import catalog from '../data/catalog.json';
+import catalog from '../data/catalog.json' with { type: 'json' };
 
 export type Slot = (typeof catalog.slots)[number];
 export type ItemStat = (typeof catalog.itemStats)[number];
@@ -32,7 +32,7 @@ export type SheetStats = {
   critDmg: number;
   penetration: number;
   cdr: number;
-  /** % — AD-BSP-19a: a fraction in the save (`stats.luck`), percent here (× 100). */
+  /** % — a fraction in the save (`stats.luck`), percent here (× 100). */
   luck: number;
 };
 

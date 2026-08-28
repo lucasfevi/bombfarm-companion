@@ -7,6 +7,19 @@ import { extractChangelogSection } from './changelog-section.mjs';
  * @typedef {{ name: string, oldVersion: string | null, newVersion: string | null }} VersionDiff
  */
 
+const DESKTOP_PACKAGE_NAME = '@bombfarm/desktop';
+
+export const ANTIVIRUS_NOTICE =
+  "> **Antivirus notice.** Your antivirus may flag or quarantine this build. The desktop companion attaches to the running Bomb Farm client to read the data that client is already exchanging with the game's server, and attaching to another running program is the technique behavior-based detection looks for. The warning is about that technique, not about a virus.";
+
+/**
+ * @param {VersionDiff} diff
+ * @returns {boolean}
+ */
+function isReleased(diff) {
+  return Boolean(diff.newVersion) && diff.oldVersion !== diff.newVersion;
+}
+
 /**
  * @param {VersionDiff[]} diffs
  * @param {string} rootDir
@@ -20,8 +33,13 @@ export async function buildAggregatedReleaseNotes(diffs, rootDir) {
 
   const sections = [];
 
+  const desktopDiff = diffs.find((diff) => diff.name === DESKTOP_PACKAGE_NAME);
+  if (desktopDiff && isReleased(desktopDiff)) {
+    sections.push(ANTIVIRUS_NOTICE);
+  }
+
   for (const diff of [...diffs].sort((left, right) => left.name.localeCompare(right.name))) {
-    if (!diff.newVersion || diff.oldVersion === diff.newVersion) {
+    if (!isReleased(diff)) {
       continue;
     }
 

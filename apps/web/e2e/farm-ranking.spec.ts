@@ -413,3 +413,75 @@ test.describe('Farm Ranking board', () => {
       .toBe(87);
   });
 });
+
+/**
+ * The field-contention notice. `importedRoster` is 3 heroes, so it can only contend once
+ * `fieldSlots` drops below 3 — which makes the same fixture serve both the silent case (the one
+ * that must never nag) and the speaking one.
+ */
+test.describe('field-contention notice', () => {
+  const notice = (page: Page) => page.getByTestId('farm-contention-notice');
+
+  test('stays silent when every hero fits on the field at once', async ({ page }) => {
+    await seedLocalStorage(page, { ...importedRoster, account: accountWithMaxPhase, lang: 'en' });
+    await page.goto('/farm');
+    await expect(page.getByTestId('farm-ranking')).toBeVisible();
+    await expect(notice(page)).toHaveCount(0);
+  });
+
+  test('names the share of wall clock, the slot count and what the wait costs, when the field binds', async ({
+    page,
+  }) => {
+    await seedLocalStorage(page, {
+      ...importedRoster,
+      account: { ...accountWithMaxPhase, fieldSlots: 1 },
+      lang: 'en',
+    });
+    await page.goto('/farm');
+    await expect(page.getByTestId('farm-ranking')).toBeVisible();
+
+    await expect(notice(page)).toBeVisible();
+    await expect(notice(page)).toContainText(/Your field is the bottleneck/i);
+    // Every placeholder resolved — an unsubstituted `{pct}` is the failure this guards.
+    await expect(notice(page)).not.toContainText(/\{/);
+    await expect(notice(page)).toContainText(/% of the time a rested hero waits on the bench/i);
+    // The estimate CHARGES this wait (`concurrencyScale`), so the notice reports the cost. The
+    // sentence it must never print again is the one claiming the estimate ignores it.
+    await expect(notice(page)).toContainText(/gold\/hr estimate already charges this wait/i);
+    await expect(notice(page)).not.toContainText(/does not model this wait/i);
+    // One slot of nine: the advice is actionable, so the cap is named as a target.
+    await expect(notice(page)).toContainText(/all 1 of your field slots are taken/i);
+    await expect(notice(page)).toContainText(/the cap is 9/i);
+    // And it does NOT promise that benching heroes raises the total, because it does not.
+    await expect(notice(page)).toContainText(/usually lowers the total as well/i);
+  });
+
+  test('stops prescribing field slots once the player is at the cap', async ({ page }) => {
+    // Nine slots against three heroes cannot contend, so the roster has to outgrow the cap for
+    // the maxed-field copy to be reachable at all — which is exactly the player who complained.
+    // FORTY-FIVE, not a dozen: these seeded heroes carry small energy pools, so each holds the
+    // field a short fraction of a House cycle. Measured against the board's own compute, the pool
+    // reaches 5% contention only past ~30 (12 -> 0.01%, 24 -> 1.07%, 30 -> 2.76%, 45 -> 16.33%).
+    await seedLocalStorage(page, {
+      ...importedRoster,
+      heroes: Array.from({ length: 45 }, (_, index) => ({
+        ...importedRoster.heroes[index % importedRoster.heroes.length],
+        id: `contend-${index}`,
+        name: `Contender ${index}`,
+      })),
+      account: { ...accountWithMaxPhase, fieldSlots: 9 },
+      lang: 'en',
+    });
+    await page.goto('/farm');
+    await expect(page.getByTestId('farm-ranking')).toBeVisible();
+
+    await expect(notice(page)).toBeVisible();
+    await expect(notice(page)).toContainText(/Your field is saturated/i);
+    await expect(notice(page)).not.toContainText(/\{/);
+    await expect(notice(page)).toContainText(/9 is the maximum/i);
+    await expect(notice(page)).toContainText(/no more slots to buy/i);
+    // The impossible instruction, in either wording.
+    await expect(notice(page)).not.toContainText(/More field slots is the direct fix/i);
+    await expect(notice(page)).toContainText(/gold\/hr estimate already charges this wait/i);
+  });
+});

@@ -1,6 +1,6 @@
 {
   "name": "@bombfarm/web",
-  "version": "0.8.0",
+  "version": "0.9.0",
   "private": true,
   "sideEffects": [
     "src/features/team-plan/index.ts",
@@ -8,9 +8,12 @@
   ],
   "description": "Bomb Farm Companion web planner (static Next export)",
   "scripts": {
+    "predev": "node scripts/copy-wiki-assets.mjs",
     "dev": "next dev --turbopack",
     "dev:webpack": "next dev",
+    "prebuild": "node scripts/copy-wiki-assets.mjs",
     "build": "next build",
+    "prebuild:e2e": "node scripts/copy-wiki-assets.mjs",
     "build:e2e": "cross-env BFC_VERSION_LABEL_OVERRIDE=v0.0.0-e2e next build",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "lint": "eslint src",
@@ -30,6 +33,7 @@
   "dependencies": {
     "@base-ui/react": "^1.6.0",
     "@bombfarm/domain": "workspace:*",
+    "@bombfarm/game-art": "workspace:*",
     "@bombfarm/ui": "workspace:*",
     "@dnd-kit/core": "^6.3.1",
     "@dnd-kit/utilities": "^3.2.2",

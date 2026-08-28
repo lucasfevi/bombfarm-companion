@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * Host-OS iteration runner for the MOD-33 perf project (not the capture source of truth).
+ * Host-OS iteration runner for the perf project (not the capture source of truth).
  * Sets PERF=1 and forwards args to Playwright. Prefer `pnpm perf:capture` (Docker) for baselines.
  */
 import { spawnSync } from 'node:child_process';

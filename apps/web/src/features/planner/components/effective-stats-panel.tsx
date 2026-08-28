@@ -13,7 +13,7 @@ const SHEET_COMBAT_DELTA_EPS = 1e-9;
 
 function sheetKeysWithCombatDelta(facts: PipelineFacts): SheetPanelKey[] {
   return SHEET_PANEL_KEYS.filter((key) => {
-    // Luck never reaches HeroSheet / combat mults (AD-BSP-20) — always equal to sheet Total.
+    // Luck never reaches HeroSheet / combat mults — always equal to sheet Total.
     if (key === 'luck') return false;
     return Math.abs(facts.effective[key] - facts.adjusted[key]) > SHEET_COMBAT_DELTA_EPS;
   });

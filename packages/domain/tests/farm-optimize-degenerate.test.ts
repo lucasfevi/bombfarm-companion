@@ -7,9 +7,12 @@
 import { describe, expect, it } from 'vitest';
 import { solveFarmRespec, type FarmRespecResult, type FarmRespecInput } from '@bombfarm/domain/farm-optimize';
 import type { AccountShared, HeroRecord } from '@bombfarm/domain/shims/storage';
-import { loadFarmRateFixture } from './helpers/farm-rate-fixtures';
+import { assertInRegime } from './helpers/capture-regime';
+import { FARM_OPTIMIZE_FIXTURE, loadFarmRateFixture } from './helpers/farm-rate-fixtures';
 
-const { heroes, account, maxPhase } = loadFarmRateFixture();
+assertInRegime(`sheet-math/${FARM_OPTIMIZE_FIXTURE}`, 'sheet');
+
+const { heroes, account, maxPhase } = loadFarmRateFixture(FARM_OPTIMIZE_FIXTURE);
 
 /** `Number.isNaN`/`Number.isFinite` sweep over every numeric field of a result, including
  *  `heroes[]` and `plateau` — no field in this suite may ever surface a NaN, and no field
@@ -79,9 +82,9 @@ describe('empty pool', () => {
 
 describe('every enabled hero degenerate', () => {
   it('allDegenerate is a DIFFERENT named outcome from nothingToGain', () => {
-    const jon = heroes.find((h) => h.name === 'Jon')!;
-    const stillJon: HeroRecord = { ...jon, birth: { ...jon.birth!, speed: 0 } };
-    const result = solveFarmRespec({ heroes: [stillJon], account, maxPhase });
+    const fenn = heroes.find((h) => h.name === 'Fenn')!;
+    const stillFenn: HeroRecord = { ...fenn, birth: { ...fenn.birth!, speed: 0 } };
+    const result = solveFarmRespec({ heroes: [stillFenn], account, maxPhase });
     expect(result.outcome).toBe('allDegenerate');
     expect(result.outcome).not.toBe('nothingToGain');
     expect(result.keptCurrent).toBe(true);
@@ -98,7 +101,7 @@ describe('every enabled hero degenerate', () => {
 
 describe('exactly one searchable hero', () => {
   it('the solve succeeds with a single-element change set and an empty frontier', () => {
-    const oneId = [heroes.find((h) => h.name === 'Jon')!.id];
+    const oneId = [heroes.find((h) => h.name === 'Fenn')!.id];
     const result = solveFarmRespec({ heroes, account, maxPhase, enabledHeroIds: oneId });
     expect(result.heroes).toHaveLength(1);
     expect(result.frontier).toHaveLength(0);
@@ -122,14 +125,14 @@ describe('two searchable heroes — the frontier is capped by |S|', () => {
 
 describe('every reoptBudget is 0', () => {
   it("noBudget, keptCurrent, evaluations <= 1, recommendedPhase is the current build's argmax", () => {
-    const jon = heroes.find((h) => h.name === 'Jon')!;
+    const fenn = heroes.find((h) => h.name === 'Fenn')!;
     // level 5, all 5 points already sunk into luck ⇒ level - luck = 0 AND budgetOf(pts) = 0.
-    const zeroBudgetJon: HeroRecord = {
-      ...jon,
+    const zeroBudgetHero: HeroRecord = {
+      ...fenn,
       level: 5,
       pts: { attack: 0, energy: 0, speed: 0, critChance: 0, critDmg: 0, penetration: 0, cdr: 0, luck: 5 },
     };
-    const result = solveFarmRespec({ heroes: [zeroBudgetJon], account, maxPhase });
+    const result = solveFarmRespec({ heroes: [zeroBudgetHero], account, maxPhase });
     expect(result.outcome).toBe('noBudget');
     expect(result.keptCurrent).toBe(true);
     expect(result.evaluations).toBeLessThanOrEqual(1);
@@ -167,7 +170,11 @@ describe('currentObjective <= 0 ⇒ gainPct 0, no division by zero', () => {
 });
 
 describe('the objective rises but goldPerHour falls ⇒ paybackHours null, never negative, never Infinity', () => {
-  it('the chest-optimal build on the fixture reproduces the measured 259,413 < 264,997 gold/hr crossover', () => {
+  // RE-ASKED on the 2026-08-19 roster after the retired 2026-08-13 one left its regime (issue
+  // #206): 1,137,440 < 1,331,738 gold/hr, where it was 259,413 < 264,997 there. Different
+  // account, different magnitude, same crossover — optimising for chests really does cost gold,
+  // and `paybackHours` really does go null rather than negative when it does.
+  it('the chest-optimal build trades gold away — proposedGoldPerHour falls and paybackHours is null', () => {
     const result = solveFarmRespec({ heroes, account, objective: { kind: 'chests' }, maxPhase });
     expect(result.outcome).toBe('improved');
     expect(result.proposedGoldPerHour).toBeLessThan(result.currentGoldPerHour);
@@ -178,17 +185,17 @@ describe('the objective rises but goldPerHour falls ⇒ paybackHours null, never
 
 describe('one degenerate hero among healthy ones', () => {
   it('the degenerate hero is pinned (searchable: false, unchanged), the others still solve', () => {
-    const jon = heroes.find((h) => h.name === 'Jon')!;
-    const stillJon: HeroRecord = { ...jon, id: 'still-jon', birth: { ...jon.birth!, speed: 0 } };
-    const mixed = [...heroes, stillJon];
+    const fenn = heroes.find((h) => h.name === 'Fenn')!;
+    const stillFenn: HeroRecord = { ...fenn, id: 'still-fenn', birth: { ...fenn.birth!, speed: 0 } };
+    const mixed = [...heroes, stillFenn];
     const result = solveFarmRespec({ heroes: mixed, account, maxPhase });
 
-    const stillEntry = result.heroes.find((h) => h.heroId === 'still-jon')!;
+    const stillEntry = result.heroes.find((h) => h.heroId === 'still-fenn')!;
     expect(stillEntry.degenerate).toBe(true);
     expect(stillEntry.searchable).toBe(false);
     expect(stillEntry.changed).toBe(false);
 
-    const others = result.heroes.filter((h) => h.heroId !== 'still-jon');
+    const others = result.heroes.filter((h) => h.heroId !== 'still-fenn');
     expect(others.some((h) => h.changed)).toBe(true);
     expect(result.outcome).toBe('improved');
     assertResultIsFinite(result);
@@ -197,8 +204,8 @@ describe('one degenerate hero among healthy ones', () => {
 
 describe('duplicate hero ids', () => {
   it('both are counted, exactly as the estimator does today — no crash, no dedup', () => {
-    const jon = heroes.find((h) => h.name === 'Jon')!;
-    const duplicated = [...heroes, { ...jon }];
+    const fenn = heroes.find((h) => h.name === 'Fenn')!;
+    const duplicated = [...heroes, { ...fenn }];
     expect(() => solveFarmRespec({ heroes: duplicated, account, maxPhase })).not.toThrow();
     const result = solveFarmRespec({ heroes: duplicated, account, maxPhase });
     expect(result.heroes).toHaveLength(heroes.length + 1);

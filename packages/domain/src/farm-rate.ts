@@ -447,7 +447,7 @@ function basesForAccount(
   const treeLuckFlatPct = account.tree.luckFlatPct ?? 0;
 
   return enabledHeroes.map((hero) => {
-    // AD-032: the sole HeroRecord entry to the pipeline. phase=1 (not null) + mitigationPct=0
+    // The sole HeroRecord entry to the pipeline. phase=1 (not null) + mitigationPct=0
     // is deliberate — `effectiveMitigationPct` only honors mitigationPct=0 when phase is a
     // positive number; with `null` it substitutes phase 1's wiki mitigation instead (design.md §0).
     const pipeline = pipelineForHero(hero, account, 1, 0);
@@ -817,6 +817,148 @@ function allocateHouseSlots(
   return activity;
 }
 
+/** Rounds are cheap and convergence is fast (under 10 on every roster measured); this cap is a
+ *  non-termination guard, not a tuning knob. */
+const FIELD_ROUNDS_MAX = 64;
+const FIELD_DEMAND_EPSILON = 1e-13;
+
+/**
+ * `P(more heroes hold full energy than the field has room for)` — how much of the rotation's wall
+ * clock is spent with a rested hero benched behind a full field.
+ *
+ * A DIAGNOSTIC, NOT A THROUGHPUT TERM. Nothing multiplies by it, and deliberately so: what the
+ * contention COSTS depends on which hero gets the free slot, and that is a behaviour the game does
+ * not fix (a player redeploys whoever they notice; only an automation would rank by damage). The
+ * FREQUENCY does not depend on that choice — it is a property of the energy cycles alone — which
+ * is exactly why this is reportable when a correction factor is not. Measured across seven
+ * roster/slot regimes, uniformly-random deployment and strongest-first deployment differ by up to
+ * 24% in throughput and under 3 points in this figure.
+ *
+ * THE MODEL. Each hero holds full energy independently with its own House-allocated duty cycle, so
+ * the number wanting the field is Poisson-binomial. Demand is solved for rather than assumed: a
+ * benched hero does not drain, so its cycle stretches and its demand runs ABOVE its duty cycle
+ * (8.30 against a `Σ uptime` of 8.08 on account 486 at 9 slots). Writing `phi_h = u_h / (1 - u_h)`
+ * — the hero's field time measured in House cycles — a common admission share `s` stretches the
+ * cycle to `demand_h = phi_h / (phi_h + s)`, which collapses to `u_h` exactly when `s = 1`. `phi`
+ * is why no `restSeconds` is needed: the House cycle is common to every hero and cancels, the same
+ * reason {@link allocateHouseSlots} runs off `uptime` alone.
+ *
+ * The share is COMMON to every hero rather than per-hero, which is what keeps this free of any
+ * deployment order. Against a 240h simulation with uniformly-random deployment: 24.0% predicted
+ * against 24.4% measured at 9 slots, 0% against 0% wherever the field cannot fill, and worst case
+ * 7 points out on a small pool at a hard cap.
+ */
+/**
+ * One-entry memo. The fixed point costs `O(rounds × heroes²)` per call and {@link buildRow} calls
+ * it once per phase, but its inputs are the House-ALLOCATED duty cycles, which only move when the
+ * House ranking moves — on a roster whose House is slack they are identical on all 600 rows, and
+ * even when it binds they change across bands of phases rather than every row. Recomputing an
+ * unchanged answer 600 times per table put the optimizer 4x slower (5.7s → 23.5s on a 13-hero
+ * capture, same 7352 evaluations) and timed the Farm Respec panel out in e2e.
+ *
+ * Safe because the function is pure: same inputs, same output, so the memo cannot change a
+ * result — only skip re-deriving one. Size one is deliberate; the access pattern is a long run of
+ * repeats, not a working set.
+ */
+/**
+ * What the field queue does to a rotation: how much of the demand it serves, and how often
+ * somebody is left waiting. Both fall out of the same demand fixed point, so they are solved
+ * together rather than twice.
+ */
+type FieldQueueOutcome = {
+  /** `E[min(slots, X)] / E[X]` — the share of wanted field time the queue actually grants. */
+  servedFraction: number;
+  /** `P(X > slots)` — how often a rested hero is left behind a full field. */
+  contention: number;
+};
+
+const UNCONTENDED_FIELD: FieldQueueOutcome = Object.freeze({ servedFraction: 1, contention: 0 });
+
+let contentionMemo: { slots: number; uptime: readonly number[]; value: FieldQueueOutcome } | null = null;
+
+/** Bumped once per fixed point actually SOLVED (memo misses only). Tests read it to prove the
+ *  cost tracks distinct House allocations rather than row count. Mutable by design, same test
+ *  API as `energySwitchPointCallCount`. */
+export let fieldContentionSolveCount = 0;
+
+export function resetFieldContentionSolveCount(): void {
+  fieldContentionSolveCount = 0;
+}
+
+function sameUptimeVector(left: readonly number[], right: readonly number[]): boolean {
+  if (left.length !== right.length) return false;
+  for (let index = 0; index < left.length; index++) {
+    if (left[index] !== right[index]) return false;
+  }
+  return true;
+}
+
+function fieldQueueOutcome(effectiveUptime: readonly number[], fieldSlots: number): FieldQueueOutcome {
+  const count = effectiveUptime.length;
+  // A non-finite slot count means "no field constraint", matching `allocateHouseSlots`'s budget.
+  if (count === 0 || !Number.isFinite(fieldSlots)) return UNCONTENDED_FIELD;
+  const slots = Math.max(0, fieldSlots);
+  // Every hero fits even standing together: no distribution can cross the cap.
+  if (slots >= count) return UNCONTENDED_FIELD;
+
+  if (contentionMemo !== null && contentionMemo.slots === slots && sameUptimeVector(contentionMemo.uptime, effectiveUptime)) {
+    return contentionMemo.value;
+  }
+
+  fieldContentionSolveCount += 1;
+
+  const phi = effectiveUptime.map((uptime) =>
+    uptime >= 1 ? Infinity : uptime <= 0 ? 0 : uptime / (1 - uptime),
+  );
+
+  const poissonBinomial = (demand: readonly number[]): number[] => {
+    let pmf: number[] = [1];
+    for (const probability of demand) {
+      const extended = new Array<number>(pmf.length + 1).fill(0);
+      for (let taken = 0; taken < pmf.length; taken++) {
+        extended[taken] += pmf[taken] * (1 - probability);
+        extended[taken + 1] += pmf[taken] * probability;
+      }
+      pmf = extended;
+    }
+    return pmf;
+  };
+
+  let demand = effectiveUptime.slice();
+  for (let round = 0; round < FIELD_ROUNDS_MAX; round++) {
+    const pmf = poissonBinomial(demand);
+    let wanted = 0;
+    for (const value of demand) wanted += value;
+    let served = 0;
+    for (let taken = 0; taken < pmf.length; taken++) served += pmf[taken] * Math.min(slots, taken);
+    const share = wanted > 0 ? served / wanted : 1;
+    let delta = 0;
+    const next = demand.slice();
+    for (let index = 0; index < count; index++) {
+      next[index] = phi[index] === Infinity ? 1 : phi[index] <= 0 ? 0 : phi[index] / (phi[index] + share);
+      delta = Math.max(delta, Math.abs(next[index] - demand[index]));
+    }
+    demand = next;
+    if (delta < FIELD_DEMAND_EPSILON) break;
+  }
+
+  const pmf = poissonBinomial(demand);
+  let contention = 0;
+  let wanted = 0;
+  let served = 0;
+  for (const value of demand) wanted += value;
+  for (let taken = 0; taken < pmf.length; taken++) {
+    served += pmf[taken] * Math.min(slots, taken);
+    if (taken > slots) contention += pmf[taken];
+  }
+  const value: FieldQueueOutcome = {
+    servedFraction: wanted > 0 ? Math.min(1, Math.max(0, served / wanted)) : 1,
+    contention: Math.min(1, Math.max(0, contention)),
+  };
+  contentionMemo = { slots, uptime: effectiveUptime.slice(), value };
+  return value;
+}
+
 /** See {@link HeroFarmFacts.plantsPerSecByAto} for why the array may be absent. */
 function plantsPerSecForAto(hero: HeroFarmFacts, ato: number): number {
   return hero.plantsPerSecByAto?.[atoIndex(ato)] ?? hero.plantsPerSec;
@@ -876,6 +1018,8 @@ export type FarmRateRow = {
    *  {@link gemsPerHour}, which stayed at `0.00005`. */
   stoneChestsPerHour: number;
   xpPerHour: number;
+  /** Props destroyed per hour, over the WHOLE cycle — on a gate that includes the boss, which
+   *  drops none. Always consistent with {@link clearSecs}: `cyclesPerHour × propsPerMap`. */
   propsPerHour: number;
   cyclesPerHour: number; // 0 when clearSecs is not finite
   /** Seconds to clear the map (+ gate boss). `Infinity` when the squad cannot clear it. */
@@ -902,12 +1046,41 @@ export type FarmRateRow = {
    */
   heroesOnField: number;
   /**
-   * The FIELD-slot cap actually applied: `min(1, fieldSlots / heroesOnField)`; `1` when
-   * `heroesOnField === 0`. Applied AFTER the House ceiling — the House decides how many heroes
-   * the rotation can keep fed, and only then does the field cap ask whether they all fit.
-   * Capping raw `uptimeSum` instead would charge the roster twice for the same shortage.
+   * The share of wanted field time the queue actually grants: `E[min(fieldSlots, X)] / E[X]`,
+   * with `X` the Poisson-binomial number of House-fed heroes holding full energy. `1` when the
+   * field cannot fill. Applied AFTER the House ceiling — the House decides how many heroes the
+   * rotation can keep fed, and only then does the field ask whether they all fit. Capping raw
+   * `uptimeSum` instead would charge the roster twice for the same shortage.
+   *
+   * WHY THE EXPECTATION AND NOT `min(1, fieldSlots / heroesOnField)`, which this used to be:
+   * the game admits heroes to the field FIFO, by who finished resting first. That rule is
+   * IDENTITY-BLIND — it does not read a hero's power — so the loss needs no assumption about who
+   * takes a freed slot, and the whole reason this factor was left approximate is gone. Comparing
+   * a mean against the cap misses every loss where occupancy fluctuates across a cap its average
+   * sits under, and `min` is concave, so it can only ever run optimistic:
+   * `E[min(c, X)] <= min(c, E[X])`.
+   *
+   * Worth 2% on a lightly contended 13-hero roster and 9.6% on a 16-hero one against the same 9
+   * slots, and EXACTLY nothing where the field cannot fill, which is the sharp check on it. It
+   * does not close the board's remaining throughput gap — that is per-hero cadence, measured
+   * against live telemetry held out of band — but it is the part with a known mechanism behind it.
+   *
+   * Do NOT reintroduce a deployment-order term on top. Strongest-first scored better against a
+   * simulation that itself deployed strongest-first, and read ~12% off once that assumption was
+   * dropped; it is an AUTOMATION's behaviour layered over FIFO, not the game's.
    */
   concurrencyScale: number;
+  /**
+   * `P(more heroes hold full energy than the field has room for)`, a FRACTION × 100 — how much of
+   * the rotation's wall clock is spent with a rested hero benched behind a full field.
+   *
+   * Reported for the player, not used as a term — {@link concurrencyScale} carries the throughput
+   * cost, and both come out of the same demand fixed point in {@link fieldQueueOutcome}. A
+   * frequency and a magnitude answer different questions: 44% of the time somebody is waiting is
+   * what tells a player to buy field slots, while the 7% it costs is what the estimate needs.
+   * `0` exactly when the field cannot fill.
+   */
+  fieldContentionPct: number;
   /**
    * `min(FORTUNA_AURA_CAP, Σ (uptime_h × activity_h) × perLevel × level_h)`, a FRACTION.
    *
@@ -963,10 +1136,12 @@ function buildRow(line: WikiPhaseLine, squad: SquadFarmFacts, options: FarmRateO
   let heroesOnField = 0;
   let fortunaWeightedSum = 0;
   const terms = new Array<number>(perHero.length).fill(0);
+  const effectiveUptime = new Array<number>(perHero.length).fill(0);
   for (let i = 0; i < perHero.length; i++) {
     const hero = squad.heroes[i];
     const onField = hero.uptime * activity[i];
     terms[i] = perHero[i].fullTerm * activity[i];
+    effectiveUptime[i] = onField;
     shareDenom += terms[i];
     bossRateSum += perHero[i].fullBossTerm * activity[i];
     heroesOnField += onField;
@@ -975,13 +1150,14 @@ function buildRow(line: WikiPhaseLine, squad: SquadFarmFacts, options: FarmRateO
   }
   const fortunaAura = Math.min(FORTUNA_AURA_CAP, fortunaWeightedSum);
 
-  // Constraint 2 — field slots, applied to what the House can actually keep fed (never to the
+  // Constraint 2 — the field queue, applied to what the House can actually keep fed (never to the
   // unconstrained `uptimeSum`, which would double-charge the same shortage).
-  const concurrencyScale = heroesOnField > 0 ? Math.min(1, squad.fieldSlots / heroesOnField) : 1;
+  const fieldQueue = heroesOnField > 0 ? fieldQueueOutcome(effectiveUptime, squad.fieldSlots) : UNCONTENDED_FIELD;
+  const concurrencyScale = fieldQueue.servedFraction;
+  const fieldContention = fieldQueue.contention;
 
   const propsPerSec = concurrencyScale * shareDenom;
   const bossPerSec = concurrencyScale * bossRateSum;
-  const propsPerHour = 3600 * propsPerSec;
 
   const veiaOuroPerLevel = LOOT_ABILITY_VALUES.veia_ouro.perLevel;
   let goldSelfMixSum = 0;
@@ -1005,6 +1181,14 @@ function buildRow(line: WikiPhaseLine, squad: SquadFarmFacts, options: FarmRateO
   const propCount = propCountForAto(line.ato);
   const clearSecs = propCount / propsPerSec + (line.gate ? 1 / bossPerSec : 0);
   const cyclesPerHour = Number.isFinite(clearSecs) && clearSecs > 0 ? 3600 / clearSecs : 0;
+
+  // A gate cycle is the map PLUS the boss, and the boss drops no props. Deriving the hourly rate
+  // from the cycle rather than from `propsPerSec` is what keeps it consistent with `clearSecs` —
+  // the boss-free `3600 × propsPerSec` reads up to ~10% high on late gates, and stays positive on
+  // a row whose boss the squad cannot kill at all (`clearSecs === Infinity`).
+  // Non-gate rows keep the old expression verbatim: algebraically it is the same value, but the
+  // rearrangement is not bit-equal in IEEE754 and would churn every row (design.md §2.1).
+  const propsPerHour = line.gate ? cyclesPerHour * propCount : 3600 * propsPerSec;
 
   const eGold = line.goldComum * GOLD_SHARE_FACTOR;
   const goldMult = squad.teamCoinMult * (1 + fortunaAura) * bonus;
@@ -1056,6 +1240,7 @@ function buildRow(line: WikiPhaseLine, squad: SquadFarmFacts, options: FarmRateO
     expectedHtk,
     heroesOnField: normalizeZero(heroesOnField),
     concurrencyScale,
+    fieldContentionPct: normalizeZero(fieldContention * 100),
     fortunaAura: normalizeZero(fortunaAura),
   };
 }

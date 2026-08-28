@@ -1,9 +1,9 @@
 /**
- * BSPW1-AC-04a…d — obsHit/obsCrit were removed from HeroRecord (AD-BSP-30, BSP-56).
+ * obsHit/obsCrit were removed from HeroRecord.
  * Proves a save captured BEFORE that removal still loads: no throw, the fields are
  * discarded on normalize, the discard is silent, and the re-save drops the keys
  * without bumping the storage key. Input is the real pre-edit `hero-2` bytes that
- * `storage-roundtrip-20260729.json` lost in the same commit (ASM-04).
+ * `storage-roundtrip-20260729.json` lost in the same commit.
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { loadHeroes, normalizeHero, saveHeroes, type HeroRecord } from '@/shared/lib/storage';
@@ -23,7 +23,7 @@ function memoryLocalStorage() {
 }
 
 // Real pre-edit bytes for `hero-2`, captured from storage-roundtrip-20260729.json
-// before BSP-56 dropped obsHit/obsCrit from the fixture.
+// before obsHit/obsCrit were dropped from the fixture.
 const LEGACY_HERO_2_JSON =
   '{"id":"hero-2","name":"Brick","updatedAt":1700000000002,"rarity":"Epico","level":30,"stars":2,' +
   '"naked":{"attack":150,"energy":180,"speed":40,"critChance":8,"critDmg":80,"penetration":0,"cdr":5},' +
@@ -37,7 +37,7 @@ const LEGACY_HERO_2_JSON =
 
 const LEGACY_HERO_2 = JSON.parse(LEGACY_HERO_2_JSON) as Record<string, unknown>;
 
-describe('legacy obsHit/obsCrit discard (BSPW1-04)', () => {
+describe('legacy obsHit/obsCrit discard', () => {
   beforeEach(() => {
     vi.stubGlobal('localStorage', memoryLocalStorage());
   });
@@ -47,7 +47,7 @@ describe('legacy obsHit/obsCrit discard (BSPW1-04)', () => {
     vi.restoreAllMocks();
   });
 
-  it('loads a pre-removal save without throwing and discards the fields (BSPW1-AC-04a)', () => {
+  it('loads a pre-removal save without throwing and discards the fields', () => {
     localStorage.setItem('bf-hp-heroes-v1', JSON.stringify([LEGACY_HERO_2]));
 
     let heroes: ReturnType<typeof loadHeroes> = [];
@@ -65,7 +65,7 @@ describe('legacy obsHit/obsCrit discard (BSPW1-04)', () => {
     expect(hero.level).toBe(LEGACY_HERO_2.level);
     expect(hero.stars).toBe(LEGACY_HERO_2.stars);
     // BSPW2: naked/gearedOverride/pts are seven-key legacy sub-objects — normalizeSheetStats /
-    // normalizePointAlloc (BSP-40) fill the additive `luck` key to 0 on load, same as every
+    // normalizePointAlloc fill the additive `luck` key to 0 on load, same as every
     // other new field.
     expect(hero.naked).toEqual({ ...(LEGACY_HERO_2.naked as Record<string, unknown>), luck: 0 });
     expect(hero.loadout).toEqual(LEGACY_HERO_2.loadout);
@@ -78,9 +78,9 @@ describe('legacy obsHit/obsCrit discard (BSPW1-04)', () => {
     expect(hero.sourceId).toBe(LEGACY_HERO_2.sourceId);
   });
 
-  it('discards context.obsHit/obsCrit from the pre-HeroRecord legacy shape (BSPW1-AC-04b)', () => {
+  it('discards context.obsHit/obsCrit from the pre-HeroRecord legacy shape', () => {
     // A JSON string, not a TS literal — it is what localStorage actually holds,
-    // and it sidesteps the excess-property check a typed literal would now hit (ASM-04).
+    // and it sidesteps the excess-property check a typed literal would now hit.
     const legacyWithContextJson =
       '{"id":"x","name":"Legacy","context":{"houseIdx":0,"houseLevel":0,"phase":null,' +
       '"mitigationPct":1,"rankMode":"dps","targetProp":null,"obsHit":1234,"obsCrit":2000}}';
@@ -96,7 +96,7 @@ describe('legacy obsHit/obsCrit discard (BSPW1-04)', () => {
     expect('obsCrit' in hero).toBe(false);
   });
 
-  it('drops the keys on re-save and never creates a -v2 key (BSPW1-AC-04c)', () => {
+  it('drops the keys on re-save and never creates a -v2 key', () => {
     localStorage.setItem('bf-hp-heroes-v1', JSON.stringify([LEGACY_HERO_2]));
     const heroes = loadHeroes();
 
@@ -109,7 +109,7 @@ describe('legacy obsHit/obsCrit discard (BSPW1-04)', () => {
     expect(localStorage.getItem('bf-hp-heroes-v2')).toBeNull();
   });
 
-  it('discards the fields silently — no console warning or error (BSPW1-AC-04d)', () => {
+  it('discards the fields silently — no console warning or error', () => {
     const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
     const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
 

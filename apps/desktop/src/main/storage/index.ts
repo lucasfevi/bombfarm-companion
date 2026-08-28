@@ -15,14 +15,14 @@ export interface Storage {
   close(): void;
 }
 
-/** The intersection of `node:sqlite` and `better-sqlite3`'s statement API (TD-3). */
+/** The intersection of `node:sqlite` and `better-sqlite3`'s statement API. */
 export interface SqliteStatement {
   run(...params: unknown[]): unknown;
   get(...params: unknown[]): unknown;
   all(...params: unknown[]): unknown[];
 }
 
-/** The intersection of `node:sqlite` and `better-sqlite3`'s database-handle API (TD-3). */
+/** The intersection of `node:sqlite` and `better-sqlite3`'s database-handle API. */
 export interface SqliteDb {
   exec(sql: string): void;
   prepare(sql: string): SqliteStatement;
@@ -30,7 +30,7 @@ export interface SqliteDb {
 }
 
 /** Structured logging, injected so `storage/*.ts` never imports `../logging.js` directly —
- * `electron-log/main.js` cannot be imported outside a running Electron process (`AD-024`), and
+ * `electron-log/main.js` cannot be imported outside a running Electron process, and
  * this module must stay importable on `ubuntu-latest` with no running app. */
 export interface LogPort {
   info(record: Record<string, unknown>): void;
@@ -119,7 +119,7 @@ export function createStorage(dbPath: string): Storage {
 }
 
 // ---------------------------------------------------------------------------------------------
-// Account database — the platform boundary for MP2 F3 persistence.
+// Account database — the platform boundary for persistence.
 // ---------------------------------------------------------------------------------------------
 
 /** `(dbPath) => { db, binding }`, throwing when the path cannot be opened at all. */
@@ -135,7 +135,7 @@ function isNotWritableError(err: unknown): boolean {
   return false;
 }
 
-/** Try better-sqlite3 first (verbatim `AD-002` fallback shape); fall back to node:sqlite. */
+/** Try better-sqlite3 first (the fallback shape decided for the SQLite binding at M0); fall back to node:sqlite. */
 function defaultSqliteOpener(dbPath: string): { db: SqliteDb; binding: SqliteBinding } {
   const betterDb = tryOpenRawBetterSqlite3(dbPath);
   if (betterDb) {

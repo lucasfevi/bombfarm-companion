@@ -1,5 +1,5 @@
 /**
- * MP3 F3 (design.md §3 `AD-044`, §10 hazard 1, tasks.md T5) — **the most important test in this
+ * design.md §3, §10 hazard 1, tasks.md T5 — **the most important test in this
  * feature.** A tier-1 key that misses an input `pipelineForHero` reads serves a plausible
  * **wrong** number, computed from data that has since changed, rendered as current (the `D24`
  * failure). It is invisible to every other test in the repo, because the number is plausible and
@@ -22,7 +22,11 @@ import { assertWorkspaceDistBuilt } from './require-workspace-dist.mjs';
 
 // The build-prerequisite guard, per-file rather than as the `tools` project's `globalSetup`
 // (see tools/vitest.config.ts for why: .github/workflows/line-endings.yml runs this project
-// build-free by design, and this is the ONLY one of its 33 files that needs a build).
+// build-free by design, and this is one of exactly two of its files that need a build —
+// tools/derived-fixture-drift.test.mjs is the other, needing packages/game-api/dist instead).
+// Called on this file's OWN key, not a shared `tools` key: this file needs only `domain`, and a
+// list wide enough to also cover derived-fixture-drift.test.mjs's `game-api` need would demand a
+// build this file never actually requires.
 //
 // The two lines below must stay in this order and this shape. `hero-advice.ts` imports
 // `@bombfarm/domain/account-fidelity` and `/roster-dps`, which resolve through the real
@@ -30,7 +34,7 @@ import { assertWorkspaceDistBuilt } from './require-workspace-dist.mjs';
 // first with `Cannot find package '@bombfarm/domain/account-fidelity'`, which points nowhere
 // near the fix. Top-level `await import(...)` runs in statement order, so the assert fires
 // first and the failure names the unbuilt package and `pnpm build`.
-assertWorkspaceDistBuilt('tools');
+assertWorkspaceDistBuilt('tools/advice-change-key-coverage.test.mjs');
 
 const { CHANGE_KEY_INPUTS, heroChangeKey, sharedChangeKey } = await import(
   '../apps/desktop/renderer/lib/planning/hero-advice.ts'
@@ -96,7 +100,7 @@ function extractPipelineInputRootPaths(source) {
   return paths;
 }
 
-describe('CHANGE_KEY_INPUTS covers every root path pipelineForHero actually reads (AD-044)', () => {
+describe('CHANGE_KEY_INPUTS covers every root path pipelineForHero actually reads', () => {
   const rosterDpsSource = readFileSync(ROSTER_DPS_PATH, 'utf8');
   const extractedPaths = extractPipelineInputRootPaths(rosterDpsSource);
 
@@ -273,13 +277,13 @@ describe('per-field mutation — a path listed but not actually read by the key 
   }
 });
 
-describe("gameRunning (MAR-05) — the field is not a payload field at all, so it cannot enter either key", () => {
+describe("gameRunning — the field is not a payload field at all, so it cannot enter either key", () => {
   // Scoped deliberately to the PRODUCTION decision-logic modules (not their tests, and not the
   // `fixtures/` test-support builders, which must set `gameRunning` on every synthetic
   // `AccountView` purely because the TYPE requires it — that is supplying a required field, not
   // reading one for a decision). `apps/desktop/src/main/index.ts` and `account-view.ts`
-  // legitimately compute it from `gameReader.getStatus()` for chrome — the sanctioned reading
-  // (`AD-031`) — and are outside this guard's scope on purpose.
+  // legitimately compute it from `gameReader.getStatus()` for chrome — the sanctioned reading —
+  // and are outside this guard's scope on purpose.
   const PLANNING_LIB_DIR = join(root, 'apps/desktop/renderer/lib/planning');
   const PRODUCTION_FILES = ['account-model.ts', 'hero-advice.ts', 'account-view-store.ts', 'use-account-view.ts', 'types.ts'];
   const ACCOUNT_CHANGE_KEY_PATH = join(root, 'packages/contracts/src/account-change-key.ts');
@@ -292,9 +296,9 @@ describe("gameRunning (MAR-05) — the field is not a payload field at all, so i
     }
     expect(
       offenders,
-      `gameRunning appears in ${offenders.join(', ')} — AD-031: the field is hardcoded true on the ` +
+      `gameRunning appears in ${offenders.join(', ')} — the field is hardcoded true on the ` +
         'account-refresh.ts API path and carries no information; a planning module reading it would ' +
-        'silently violate MAR-05 ("holds unchanged whether or not the game is running").',
+        'silently violate the invariant that state holds unchanged whether or not the game is running.',
     ).toEqual([]);
   });
 
@@ -311,7 +315,7 @@ describe("gameRunning (MAR-05) — the field is not a payload field at all, so i
   });
 
   it('demonstrates the red state: a mock module containing a gameRunning read is caught by the same substring check (observed here, not committed as a permanent mutation)', () => {
-    const mutant = "if (view.gameRunning) { /* would violate MAR-05 */ }";
+    const mutant = "if (view.gameRunning) { /* would violate the same invariant */ }";
     expect(mutant.includes('gameRunning')).toBe(true);
   });
 });

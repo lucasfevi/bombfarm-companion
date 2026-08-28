@@ -14,18 +14,26 @@ import type { ConsentStore } from './consent-store.js';
 import { readSessionToken, type SessionTokenFileResult } from './session-token-file.js';
 
 /**
- * The cycle (LAR-01 enforcement half, LAR-03…05, LAR-11, LAR-15 carry-over half). Ties the pure
+ * The cycle. Ties the pure
  * `packages/game-api` pieces to F3's `AccountStore.commit()` — the only carry-over seam in the
  * product (`R-1`).
  *
- * Per cycle: read consent → not `granted`? commit an all-`missing` payload and issue nothing →
- * else read the token (cached against `mtimeMs`) → `grantSession` → read the five routes through
- * the pacing gate, in `ROUTES` order → `assembleAccountPayload` → `store.commit(...)`.
+ * Per cycle: read consent → not `granted`? treat every section as `failed('not_consented')` →
+ * else the game not running? treat every section as `failed('game_not_running')` → else read the
+ * token (cached against `mtimeMs`) → not readable? treat every section as
+ * `failed('token_unavailable')` → else `grantSession` → read the five routes through the pacing
+ * gate, in `ROUTES` order. Either way the cycle ends at the same gate: if every section came back
+ * `failed`, a read that found nothing is not evidence the game has nothing, so nothing is
+ * committed and `AccountStore` — shared with the game reader — is left exactly as it was.
+ * Otherwise (any section `ok` or `drift`) `assembleAccountPayload` → `store.commit(...)`, same as
+ * before, partial data included.
  */
 
 const SECTIONS: readonly AccountSection[] = ['account', 'heroes', 'skills', 'casa', 'items'];
 
-function allSectionsFailed(reason: 'not_consented' | 'token_unavailable'): Record<AccountSection, SectionOutcome> {
+function allSectionsFailed(
+  reason: 'not_consented' | 'game_not_running' | 'token_unavailable',
+): Record<AccountSection, SectionOutcome> {
   const result = {} as Record<AccountSection, SectionOutcome>;
   for (const section of SECTIONS) {
     result[section] = { kind: 'failed', reason };
@@ -68,6 +76,9 @@ export interface AccountRefreshDeps {
   log: LogPort;
   /** Injected clock — the ISO timestamp stamped on every resolved/degraded section this cycle. */
   now(): string;
+  /** Injected so the cycle can gate on the game's current process state without importing
+   *  Electron-touching code. Required — production must always supply a real read. */
+  isGameRunning(): boolean;
   /** Injected so tests never touch the real filesystem. Defaults to the real gated read. */
   readToken?: (consent: GrantedConsent) => SessionTokenFileResult;
   /** Injected wall-clock scheduling seam. Defaults to the real timers. */
@@ -84,9 +95,11 @@ export interface AccountRefreshDeps {
 export interface AccountRefreshHandle {
   start(): void;
   stop(): void;
+  /** Runs one cycle and returns the most recently *committed* view — unchanged from before this
+   *  call if the cycle resolved no section at all, `null` if nothing has ever been committed. */
   refreshNow(): Promise<AccountView | null>;
   onConsentChanged(record: ConsentRecord): void;
-  /** The most recently committed view, or `null` before any cycle has run. */
+  /** The most recently committed view, or `null` before any cycle has committed one. */
   getLastView(): AccountView | null;
 }
 
@@ -131,10 +144,26 @@ export function createAccountRefresh(deps: AccountRefreshDeps): AccountRefreshHa
   }
 
   function commitAndNotify(payload: Parameters<AccountCommitter['commit']>[0]): AccountView {
-    const view = deps.store.commit(payload, { gameRunning: true });
+    const view = deps.store.commit(payload, { gameRunning: deps.isGameRunning() });
     lastView = view;
     deps.onView?.(view);
     return view;
+  }
+
+  /** A cycle that read nothing is not evidence the account data is gone — `AccountStore` is
+   *  shared with the game reader, so committing a `missing` placeholder here would overwrite (or
+   *  degrade to `stale`) whatever that other producer already resolved. Only a cycle where at
+   *  least one section actually came back (`ok` or `drift`) is real data worth persisting. */
+  function commitIfAnyResolved(outcomes: Record<AccountSection, SectionOutcome>): AccountView | null {
+    const resolvedNothing = SECTIONS.every((section) => outcomes[section].kind === 'failed');
+    if (resolvedNothing) {
+      deps.log.info({ scope: 'account-refresh', event: 'cycle.no-data' });
+      return lastView;
+    }
+    const payload = assembleAccountPayload(outcomes, deps.now());
+    commitAndNotify(payload);
+    deps.log.info({ scope: 'account-refresh', event: 'cycle.committed' });
+    return lastView;
   }
 
   async function runCycle(): Promise<AccountView | null> {
@@ -146,18 +175,19 @@ export function createAccountRefresh(deps: AccountRefreshDeps): AccountRefreshHa
       const consent = deps.consentStore.read();
 
       if (!isGranted(consent)) {
-        const payload = assembleAccountPayload(allSectionsFailed('not_consented'), deps.now());
-        commitAndNotify(payload);
         deps.log.info({ scope: 'account-refresh', event: 'cycle.skipped', decision: consent.decision });
-        return lastView;
+        return commitIfAnyResolved(allSectionsFailed('not_consented'));
+      }
+
+      if (!deps.isGameRunning()) {
+        deps.log.info({ scope: 'account-refresh', event: 'cycle.skipped', reason: 'game_not_running' });
+        return commitIfAnyResolved(allSectionsFailed('game_not_running'));
       }
 
       const fileResult = readToken(consent);
       if (!fileResult.ok) {
-        const payload = assembleAccountPayload(allSectionsFailed('token_unavailable'), deps.now());
-        commitAndNotify(payload);
         deps.log.warn({ scope: 'account-refresh', event: 'token.unavailable', reason: fileResult.reason });
-        return lastView;
+        return commitIfAnyResolved(allSectionsFailed('token_unavailable'));
       }
 
       if (!cachedToken || cachedToken.mtimeMs !== fileResult.mtimeMs) {
@@ -182,7 +212,7 @@ export function createAccountRefresh(deps: AccountRefreshDeps): AccountRefreshHa
         // contract rather than racing five parallel calls against it.
         const outcome = await readSection(session, abortableTransport, deps.gate, route);
         if (outcome.kind === 'drift') {
-          // MP5 F4 (MSG-27): the only runtime consumer of `readSection`'s drift outcome — routes.ts
+          // the only runtime consumer of `readSection`'s drift outcome — routes.ts
           // itself stays a pure library with no LogPort. Path-qualified key names only, never a
           // response value: `missingKeys`/`addedKeys` are produced by `checkShape`/`checkSchema`
           // as key paths by construction, so there is no player data (a gold amount, a hero name)
@@ -199,10 +229,7 @@ export function createAccountRefresh(deps: AccountRefreshDeps): AccountRefreshHa
       }
       currentAbort = null;
 
-      const payload = assembleAccountPayload(outcomes, deps.now());
-      commitAndNotify(payload);
-      deps.log.info({ scope: 'account-refresh', event: 'cycle.committed' });
-      return lastView;
+      return commitIfAnyResolved(outcomes);
     } finally {
       running = false;
     }
@@ -222,7 +249,7 @@ export function createAccountRefresh(deps: AccountRefreshDeps): AccountRefreshHa
     },
     refreshNow: runCycle,
     onConsentChanged(record: ConsentRecord) {
-      if (record.decision === 'granted') {
+      if (isGranted(record)) {
         void runCycle().finally(scheduleNext);
       } else if (record.decision === 'revoked') {
         currentAbort?.abort();

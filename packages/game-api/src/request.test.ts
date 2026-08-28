@@ -1,7 +1,6 @@
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it, vi } from 'vitest';
-import type { GrantedConsent } from './consent.js';
 import { ConsentedSessionRequiredError, RAW, SessionToken, grantSession, type ConsentedSession } from './session.js';
 import {
   buildHttpRequest,
@@ -13,8 +12,9 @@ import {
   type HttpTransport,
   type RequestOutcome,
 } from './request.js';
+import { grantedConsent } from './test-fixtures.js';
 
-const GRANTED: GrantedConsent = { decision: 'granted', grantedAt: '2026-08-12T13:15:38.000Z', textVersion: 1 };
+const GRANTED = grantedConsent('2026-08-12T13:15:38.000Z');
 const SENTINEL_TOKEN = 'sentinel-3c8f0a71-do-not-leak';
 const session = grantSession(GRANTED, { accountId: '486', token: SessionToken.create(SENTINEL_TOKEN) });
 
@@ -29,7 +29,7 @@ function forgeConsentedSession(): ConsentedSession {
   } as unknown as ConsentedSession;
 }
 
-describe('buildHttpRequest/requestGet — reject a session forged through an unsafe cast (AD-025/AD-028, request-layer brand check)', () => {
+describe('buildHttpRequest/requestGet — reject a session forged through an unsafe cast (request-layer brand check)', () => {
   it('buildHttpRequest throws ConsentedSessionRequiredError for a forged session, before building any header', () => {
     const forged = forgeConsentedSession();
     expect(() => buildHttpRequest(forged, '/state')).toThrow(ConsentedSessionRequiredError);
@@ -77,7 +77,7 @@ describe('buildHttpRequest — the token is read through RAW exactly once, nowhe
   });
 });
 
-describe('isTrustedHttpRequest / sendGet — refuses a mismatched target before invoking the transport (LAR-13, LAR-24)', () => {
+describe('isTrustedHttpRequest / sendGet — refuses a mismatched target before invoking the transport', () => {
   it('isTrustedHttpRequest is true for the real target', () => {
     expect(isTrustedHttpRequest(buildHttpRequest(session, '/state'))).toBe(true);
   });
@@ -119,7 +119,7 @@ describe('isTrustedHttpRequest / sendGet — refuses a mismatched target before 
   });
 });
 
-describe('RequestOutcome classification — every response class maps to its own named kind (LAR-25)', () => {
+describe('RequestOutcome classification — every response class maps to its own named kind', () => {
   const cases: ReadonlyArray<{
     readonly label: string;
     readonly response: HttpResponse;
@@ -147,7 +147,7 @@ describe('RequestOutcome classification — every response class maps to its own
     });
   }
 
-  it('401 and 403 are both "unauthorized", distinct from "http_error" (LAR-23)', async () => {
+  it('401 and 403 are both "unauthorized", distinct from "http_error"', async () => {
     const outcome401 = await requestGet(session, fakeTransport({ status: 401, body: '{}' }), '/state');
     const outcome404 = await requestGet(session, fakeTransport({ status: 404, body: '{}' }), '/state');
     expect(outcome401.kind).toBe('unauthorized');
@@ -170,7 +170,7 @@ describe('RequestOutcome classification — every response class maps to its own
   });
 });
 
-describe('no forbidden transport imports in this module (LAR-24; re-checked by T10s guard)', () => {
+describe('no forbidden transport imports in this module (re-checked by T10s guard)', () => {
   it('request.ts does not import node:https, node:http, undici, axios, or name fetch', () => {
     const source = readFileSync(fileURLToPath(new URL('./request.ts', import.meta.url)), 'utf8');
     expect(source).not.toMatch(/from ['"]node:https['"]/);

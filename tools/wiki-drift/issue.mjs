@@ -1,4 +1,4 @@
-// MP5 F5 — open-or-update exactly one tracker issue, over an injected fetch. Reimplements the
+// Open-or-update exactly one tracker issue, over an injected fetch. Reimplements the
 // marker-scoped upsert algorithm (list -> filter by marker -> update-or-create) as a plain node
 // module rather than inline workflow JavaScript, precisely so its behaviour under conditions —
 // no open marked issue / one open marked issue / only a closed marked issue / the API call fails

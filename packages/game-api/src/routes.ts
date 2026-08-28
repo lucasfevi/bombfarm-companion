@@ -7,8 +7,7 @@ import type { ConsentedSession } from './session.js';
 import { isPlainObject } from './type-guards.js';
 
 /**
- * The five GET readers and their projections into the section a shape the contract expects
- * (LAR-07 route half, LAR-19/20 detection half, LAR-25 section half).
+ * The five GET readers and their projections into the section a shape the contract expects.
  */
 export interface RouteDescriptor {
   readonly section: AccountSection;
@@ -57,13 +56,14 @@ export const ROUTES: readonly RouteDescriptor[] = [
 ];
 
 /**
- * A closed vocabulary for "why this section has no body this cycle" (LAR-25). The first seven
+ * A closed vocabulary for "why this section has no body this cycle". The first seven
  * members are produced by `readSection` below, driven by `RequestOutcome` (T3) and the shape
- * guard (T5). The last three — `not_consented`, `token_unavailable`, `aborted` — are produced by
- * `apps/desktop/src/main/game-api/account-refresh.ts` (T8): they describe states that never reach
- * a route at all (no consent, no token, or a revoke that cancelled this route before it started),
- * so `routes.ts` cannot be the one to produce them. Both halves are covered by tests — the first
- * seven here, the last three in T8's suite — so no member of this union ships unreachable.
+ * guard (T5). The last four — `not_consented`, `game_not_running`, `token_unavailable`,
+ * `aborted` — are produced by `apps/desktop/src/main/game-api/account-refresh.ts` (T8): they
+ * describe states that never reach a route at all (no consent, the game not running, no token,
+ * or a revoke that cancelled this route before it started), so `routes.ts` cannot be the one to
+ * produce them. Both halves are covered by tests — the first seven here, the last four in T8's
+ * suite — so no member of this union ships unreachable.
  */
 export type SectionFailureReason =
   | 'unauthorized'
@@ -74,6 +74,7 @@ export type SectionFailureReason =
   | 'transport_error'
   | 'empty_roster'
   | 'not_consented'
+  | 'game_not_running'
   | 'token_unavailable'
   | 'aborted';
 

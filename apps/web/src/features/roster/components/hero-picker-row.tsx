@@ -4,6 +4,7 @@ import { memo } from 'react';
 import type { HeroRecord } from '@/shared/lib/storage';
 import { RARITIES } from '@bombfarm/domain/planner-constants';
 import type { Lang, Strings } from '@/shared/i18n';
+import { sub } from '@/shared/i18n';
 import { rarityLabel } from '@bombfarm/domain/game-labels';
 import { cn, DataTable } from '@bombfarm/ui';
 import { usePlannerStore } from '@/shared/stores';
@@ -18,8 +19,8 @@ import {
 } from '@/shared/game-art';
 
 /**
- * RES-10 — memoised, mirroring its sibling `RosterRow` (deleted with the dead roster tree
- * in RES-01, which had carried this boundary since W5).
+ * Memoised, mirroring its sibling `RosterRow` (deleted with the dead roster tree,
+ * which had carried this boundary since W5).
  *
  * Sorting the roster rebuilds `sortedHeroes` as a new array, but the individual `hero`
  * objects keep their identity and `selected`/`powerShown` are unchanged for most rows, so
@@ -116,7 +117,13 @@ export const HeroPickerRow = memo(function HeroPickerRow({
         {formatNumber(powerShown, 0)}
       </DataTable.Cell>
       <DataTable.Cell className={cn('max-[720px]:hidden py-2', inactiveChrome)} nowrap={false} data-roster-wrap>
-        <HeroGearIcons loadout={hero.loadout} lang={lang} t={t} />
+        <HeroGearIcons
+          loadout={hero.loadout}
+          lang={lang}
+          emptySlotAriaLabel={(slotName) => sub(t.gearSlotEmptyAria, { slot: slotName })}
+          emptySlotTip={t.gearSlotEmptyTip}
+          lvLabel={t.rankLv}
+        />
       </DataTable.Cell>
       <DataTable.Cell className={cn('max-[960px]:hidden py-2', inactiveChrome)} nowrap={false} data-roster-wrap>
         <HeroAbilityIcons abilities={hero.abilities} lang={lang} />

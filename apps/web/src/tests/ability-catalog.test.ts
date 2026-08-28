@@ -1,5 +1,5 @@
 /**
- * Ability catalog sync (BSP-32, -32a, -36, -36a, -37 family, -38) — W3.
+ * Ability catalog sync (36, 36a, 37 family, 38) — W3.
  * Grows across T1 → T4 as the catalog completes; each task adds only the ACs it proves.
  */
 import { describe, expect, it } from 'vitest';
@@ -26,8 +26,8 @@ const IDENTITY_MODS = {
   gateAttackMult: 1,
 };
 
-describe('catalog completeness (T2, BSP-32 / BSP-32a)', () => {
-  it('AC-01: ABILITIES has exactly 20 entries in slot order', () => {
+describe('catalog completeness (T2)', () => {
+  it('ABILITIES has exactly 20 entries in slot order', () => {
     expect(ABILITIES.map((a) => a.id)).toEqual([
       'bateria_extra',
       'caca_hero',
@@ -52,8 +52,8 @@ describe('catalog completeness (T2, BSP-32 / BSP-32a)', () => {
     ]);
   });
 
-  it('AC-02: save slot === ABILITIES.findIndex(id) + 1 for every owned code in the fixture', () => {
-    // MP5 F1 (AD-068 class (b) — structural): re-pointed onto payload-20260812-8heroes.json.
+  it('save slot === ABILITIES.findIndex(id) + 1 for every owned code in the fixture', () => {
+    // Re-pointed onto payload-20260812-8heroes.json (the ground-truth rule's class (b) — structural).
     // RECORDED LOSS: the payload's 8 heroes own 11 distinct ability codes, not the deleted
     // fixture's 13 — two codes (of the 20-entry catalog) lose their in-fixture slot check.
     // The claim itself (slot === catalog index + 1) still re-points cleanly for every code
@@ -78,24 +78,24 @@ describe('catalog completeness (T2, BSP-32 / BSP-32a)', () => {
     }
   });
 
-  it('AC-09b: brecha is { kind: none }, not penetrationPp — on-sheet status not proven (W0-14:219, ASM-06)', () => {
+  it('brecha is { kind: none }, not penetrationPp — on-sheet status not proven', () => {
     const brecha = ABILITIES.find((a) => a.id === 'brecha');
     expect(brecha?.effect).toEqual({ kind: 'none' });
   });
 
-  it("AC-14 (re-asserted): SHEET_ABILITIES is unchanged by the three new kind:'none' entries", () => {
+  it("SHEET_ABILITIES is unchanged by the three new kind:'none' entries (re-asserted)", () => {
     expect(SHEET_ABILITIES.map((a) => a.id)).toEqual(['ponta_diamante', 'olho_clinico', 'golpe_brutal']);
   });
 });
 
-describe('rank-20 migration (T3, AD-BSP-18, BSPW3-02/-03)', () => {
-  it('AC-05: every AbilityDef.max is 20', () => {
+describe('rank-20 migration', () => {
+  it('every AbilityDef.max is 20', () => {
     for (const a of ABILITIES) {
       expect(a.max, a.id).toBe(20);
     }
   });
 
-  // Every row traces to a W0-14 line citation; perLevel x 20 reproduces the wiki's
+  // Every row traces to a wiki citation; perLevel x 20 reproduces the wiki's
   // "total at cap" column exactly — including marcha_acelerada at 3.7, not the naive-halved 4.0.
   const MID_CURVE_ABILITIES: Array<{
     id: string;
@@ -103,8 +103,8 @@ describe('rank-20 migration (T3, AD-BSP-18, BSPW3-02/-03)', () => {
     wikiTotalAtCap: number;
     citation: string;
   }> = [
-    { id: 'bateria_extra', perLevel: 1, wikiTotalAtCap: 20, citation: 'W0-14:200' },
-    { id: 'marcha_acelerada', perLevel: 0.185, wikiTotalAtCap: 3.7, citation: 'W0-14:202' },
+    { id: 'bateria_extra', perLevel: 1, wikiTotalAtCap: 20, citation: 'wiki ability table' },
+    { id: 'marcha_acelerada', perLevel: 0.185, wikiTotalAtCap: 3.7, citation: 'wiki ability table' },
     // 2026-08-23 patch restated both crit-chance abilities in FLAT crit points, and the patch
     // note states the at-cap totals outright: "+40 pontos de Crítico" and "+20 pontos".
     {
@@ -113,23 +113,23 @@ describe('rank-20 migration (T3, AD-BSP-18, BSPW3-02/-03)', () => {
       wikiTotalAtCap: 20,
       citation: 'wiki habilidades 2026-08-23 (published; no capture owns this ability)',
     },
-    { id: 'ponta_diamante', perLevel: 1, wikiTotalAtCap: 20, citation: 'W0-14:205' },
-    { id: 'misericordia', perLevel: 1.25, wikiTotalAtCap: 25, citation: 'W0-14:206' },
-    { id: 'explosao_ampla', perLevel: 0.1, wikiTotalAtCap: 2, citation: 'W0-14:207' },
-    { id: 'contra_relogio', perLevel: 2, wikiTotalAtCap: 40, citation: 'W0-14:208' },
+    { id: 'ponta_diamante', perLevel: 1, wikiTotalAtCap: 20, citation: 'wiki ability table' },
+    { id: 'misericordia', perLevel: 1.25, wikiTotalAtCap: 25, citation: 'wiki ability table' },
+    { id: 'explosao_ampla', perLevel: 0.1, wikiTotalAtCap: 2, citation: 'wiki ability table' },
+    { id: 'contra_relogio', perLevel: 2, wikiTotalAtCap: 40, citation: 'wiki ability table' },
     {
       id: 'olho_clinico',
       perLevel: 2,
       wikiTotalAtCap: 40,
       citation: 'measured, account 486 2026-08-23 export',
     },
-    { id: 'detonacao_dupla', perLevel: 1.5, wikiTotalAtCap: 30, citation: 'W0-14:210' },
-    { id: 'folego_mineiro', perLevel: 1, wikiTotalAtCap: 20, citation: 'W0-14:211' },
-    { id: 'grito_guerra', perLevel: 1, wikiTotalAtCap: 20, citation: 'W0-14:215' },
+    { id: 'detonacao_dupla', perLevel: 1.5, wikiTotalAtCap: 30, citation: 'wiki ability table' },
+    { id: 'folego_mineiro', perLevel: 1, wikiTotalAtCap: 20, citation: 'wiki ability table' },
+    { id: 'grito_guerra', perLevel: 1, wikiTotalAtCap: 20, citation: 'wiki ability table' },
   ];
 
   it.each(MID_CURVE_ABILITIES)(
-    'AC-08 / AC-08a ($citation): $id perLevel is $perLevel and x20 equals the wiki total at cap ($wikiTotalAtCap)',
+    '$id perLevel is $perLevel and x20 equals the wiki total at cap ($wikiTotalAtCap) — $citation',
     ({ id, perLevel, wikiTotalAtCap }) => {
       const def = ABILITIES.find((a) => a.id === id)!;
       expect(def.effect).toMatchObject({ perLevel });
@@ -137,7 +137,7 @@ describe('rank-20 migration (T3, AD-BSP-18, BSPW3-02/-03)', () => {
     },
   );
 
-  it('AC-08b: marcha_acelerada at rank 13 is 2.405, not the naive-halved 2.6', () => {
+  it('marcha_acelerada at rank 13 is 2.405, not the naive-halved 2.6', () => {
     // Marcha Acelerada is a team aura (issue #132) — abilityMods no longer folds it into a
     // hero's own mods at all; TEAM_BUFF_PER_LEVEL is the live rate the roster-wide total uses.
     expect(TEAM_BUFF_PER_LEVEL.marcha_acelerada * 13).toBeCloseTo(2.405, 10);
@@ -145,7 +145,7 @@ describe('rank-20 migration (T3, AD-BSP-18, BSPW3-02/-03)', () => {
     expect(TEAM_BUFF_PER_LEVEL.marcha_acelerada * 13).not.toBeCloseTo(2.6, 6);
   });
 
-  it('AC-08b: every changed SELF ability at rank 13 matches perLevel x 13, not old-value x 13', () => {
+  it('every changed SELF ability at rank 13 matches perLevel x 13, not old-value x 13', () => {
     // Grito de Guerra, Marcha Acelerada, Fôlego de Mineiro and Presságio Mortal are team auras
     // (issue #132) — abilityMods no longer folds any of them into a hero's own mods, so they
     // are covered by TEAM_BUFF_PER_LEVEL (above) and the MID_CURVE_ABILITIES catalog check
@@ -169,8 +169,8 @@ describe('rank-20 migration (T3, AD-BSP-18, BSPW3-02/-03)', () => {
     expect(mods).toMatchObject(IDENTITY_MODS);
   });
 
-  it('AC-06 / BSP-38: rank 20 and a mid-curve rank both survive unclamped through abilityMods', () => {
-    // explosao_ampla @20 exists in the fixture — see AC-25 for the storage round-trip proof;
+  it('rank 20 and a mid-curve rank both survive unclamped through abilityMods', () => {
+    // explosao_ampla @20 exists in the fixture — proven by the storage round-trip test;
     // this checks the pure catalog math handles it without clamping.
     expect(abilityMods({ explosao_ampla: 20 }).rangeCells).toBeCloseTo(2, 10);
   });
@@ -185,7 +185,7 @@ describe('rank-20 migration (T3, AD-BSP-18, BSPW3-02/-03)', () => {
     expect(abilityMods({ passagem_bastao: 20 })).toMatchObject(IDENTITY_MODS);
   });
 
-  it('AC-09a: caca_hero and fantasma keep { kind: none } — no numeric perLevel invented for uncaptured inputs', () => {
+  it('caca_hero and fantasma keep { kind: none } — no numeric perLevel invented for uncaptured inputs', () => {
     const cacaHero = ABILITIES.find((a) => a.id === 'caca_hero')!;
     const fantasma = ABILITIES.find((a) => a.id === 'fantasma')!;
     expect(cacaHero.effect).toEqual({ kind: 'none' });
@@ -194,7 +194,7 @@ describe('rank-20 migration (T3, AD-BSP-18, BSPW3-02/-03)', () => {
 });
 
 describe('golpe_brutal — critDmgFlat (flat crit damage, POINT_GAIN.critDmgFlat)', () => {
-  it('AC-12: is a rank-20 onSheet critDmgFlat ability with perLevel 4 (planner percentage points)', () => {
+  it('is a rank-20 onSheet critDmgFlat ability with perLevel 4 (planner percentage points)', () => {
     const def = ABILITIES.find((a) => a.id === 'golpe_brutal');
     expect(def).toBeDefined();
     expect(def).toMatchObject({
@@ -203,7 +203,7 @@ describe('golpe_brutal — critDmgFlat (flat crit damage, POINT_GAIN.critDmgFlat
     });
   });
 
-  it('AC-13: abilityMods sheetCritDmgFlat is exact at rank 1 / 13 / 20 (flat planner pp)', () => {
+  it('abilityMods sheetCritDmgFlat is exact at rank 1 / 13 / 20 (flat planner pp)', () => {
     // Rank 20 must land on exactly 80 — the +0.8 `crit_dmg` delta observed on Ivo
     // (id 21076, L38, account 11882 capture 2026-08-15), in planner units.
     expect(abilityMods({ golpe_brutal: 1 }).sheetCritDmgFlat).toBe(4);
@@ -211,15 +211,15 @@ describe('golpe_brutal — critDmgFlat (flat crit damage, POINT_GAIN.critDmgFlat
     expect(abilityMods({ golpe_brutal: 20 }).sheetCritDmgFlat).toBe(80);
   });
 
-  it('AC-14: SHEET_ABILITIES is exactly ponta_diamante, olho_clinico, golpe_brutal', () => {
+  it('SHEET_ABILITIES is exactly ponta_diamante, olho_clinico, golpe_brutal', () => {
     expect(SHEET_ABILITIES.map((a) => a.id)).toEqual(['ponta_diamante', 'olho_clinico', 'golpe_brutal']);
   });
 
-  it('AC-15: COMBAT_ABILITIES does not contain golpe_brutal, asserted by name', () => {
+  it('COMBAT_ABILITIES does not contain golpe_brutal, asserted by name', () => {
     expect(COMBAT_ABILITIES.map((a) => a.id)).not.toContain('golpe_brutal');
   });
 
-  it('AC-16: golpe_brutal contributes to the sheet exactly once — every combat field stays at identity', () => {
+  it('golpe_brutal contributes to the sheet exactly once — every combat field stays at identity', () => {
     // isSheetAbility must recognize it directly (fails loudly if reverted to the old kind list — M1).
     const def = ABILITIES.find((a) => a.id === 'golpe_brutal')!;
     expect(isSheetAbility(def)).toBe(true);
@@ -233,25 +233,25 @@ describe('golpe_brutal — critDmgFlat (flat crit damage, POINT_GAIN.critDmgFlat
     expect(mods.dmgMult).toBe(IDENTITY_MODS.dmgMult);
   });
 
-  // MP5 F1 — RECORDED LOSS (AD-068 "deleted, not weakened"): AC-20's real-fixture proof
+  // RECORDED LOSS (the ground-truth rule: "deleted, not weakened"): the real-fixture proof
   // (Korin, id 43040, golpe_brutal rank 1) needs a hero who OWNS golpe_brutal. Neither
   // post-patch corpus file has one — scanned exhaustively, no hero in
   // `save-20260813-5heroes.json` or `payload-20260812-8heroes.json` carries the code.
   // Unreproducible from the new corpus. The golpe_brutal MATH itself stays covered by the
-  // synthetic AC-12/AC-13/AC-16 tests above (catalog definition, abilityMods output, identity
+  // synthetic tests above (catalog definition, abilityMods output, identity
   // of every other combat field) — only the real-save recomposition proof is lost. See
   // docs/fixture-corpus.md.
 });
 
-describe('sheetOther.critDmgFlat wiring — all four production builders (AC-17)', () => {
-  // advisor-pipeline.ts is proven behaviorally in advisor-pipeline.test.ts (AC-17).
+describe('sheetOther.critDmgFlat wiring — all four production builders', () => {
+  // advisor-pipeline.ts is proven behaviorally in advisor-pipeline.test.ts.
   //
   // The other three builders feed `applyGear` (import-merge.ts, storage.ts) or `reverseSheet`
   // with ZERO_PTS_TEMPLATE (import-save.ts). `applyGear`'s critDmg field is a direct
   // `naked.critDmg` pass-through (items never roll crit damage — gear/apply.ts), and
   // `reverseSheet`'s crit-damage term subtracts `pts.critDmg × POINT_GAIN.critDmgFlat`,
   // which is 0 at zero spent points. So at today's call sites this is not a behavioral gap.
-  // Wiring it anyway is still correct (AC-17's literal requirement, and defensive against a
+  // Wiring it anyway is still correct (the literal requirement, and defensive against a
   // future caller that does pass real points), so these three are guarded with a source
   // presence check rather than a false behavioral claim — disclosed, not silently assumed.
   it('import-save.ts reads mods.sheetCritDmgFlat into its sheetOther builder', () => {

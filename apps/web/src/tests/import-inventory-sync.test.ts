@@ -6,12 +6,14 @@ import { importHeroes } from '@/shared/lib/storage';
 import { resetPlannerStoreForTests, usePlannerStore } from '@/shared/stores';
 import { WEB_PACKAGE_ROOT } from './helpers/web-package-root';
 
-// MP5 F1 (AD-068 class (a) — read from the capture): re-pointed onto
-// payload-20260812-8heroes.json (27 catalogued items vs the export's 17 — the larger
-// inventory keeps these sync assertions discriminating, per design.md §6.1).
+// Re-pointed onto save-20260819-11882-7heroes.json (issue #206). The previous subject,
+// payload-20260812-8heroes.json, is behind the stat-point budget refusal: 4 of its 8 heroes come
+// through blocked, which is what disabled the "nothing is blocked" case below. This capture is
+// better on both axes these assertions care about — 54 catalogued items against 27, and 7 of 7
+// heroes accepted.
 const fixturePath = join(
   WEB_PACKAGE_ROOT,
-  '../../packages/domain/tests/fixtures/sheet-math/payload-20260812-8heroes.json',
+  '../../packages/domain/tests/fixtures/sheet-math/save-20260819-11882-7heroes.json',
 );
 
 function loadFixture(): Record<string, unknown> {
@@ -41,7 +43,7 @@ describe('import inventory sync', () => {
   it('replaceInventoryFromImport replaces the snapshot wholesale', () => {
     const { inventory } = parseSaveFile(loadFixture(), []);
     usePlannerStore.getState().replaceInventoryFromImport(inventory);
-    expect(usePlannerStore.getState().inventory.items).toHaveLength(27);
+    expect(usePlannerStore.getState().inventory.items).toHaveLength(54);
     usePlannerStore.getState().replaceInventoryFromImport(inventory.slice(0, 1));
     expect(usePlannerStore.getState().inventory.items).toHaveLength(1);
   });
@@ -75,7 +77,7 @@ describe('import inventory sync', () => {
   it('applyAccountImport sets slots from save data', () => {
     const { account } = parseSaveFile(loadFixture(), []);
     usePlannerStore.getState().applyAccountImport(account);
-    expect(usePlannerStore.getState().slots).toBe(3);
+    expect(usePlannerStore.getState().slots).toBe(5);
   });
 
   it('applyAccountImport never overwrites forgeFloor', () => {
@@ -92,12 +94,12 @@ describe('import inventory sync', () => {
     expect(usePlannerStore.getState().forgeFloor).toBe(15);
   });
 
-  // MP5 F1 (AD-068 class (a) — read from the capture): re-pointed onto the post-patch export's
+  // (the ground-truth rule's class (a) — read from the capture): re-pointed onto the post-patch export's
   // real phase (24) — `phase-151.json` is deleted with the rest of the pre-wipe corpus
-  // (AD-061; `max_phase 42` post-wipe cannot reproduce a phase-151 subject at all).
+  // (the blanket corpus deletion, not triaged; `max_phase 42` post-wipe cannot reproduce a phase-151 subject at all).
   // RECORDED LOSS: the Abisso half of the deleted assertion (`treeAbisso`/`treeAbissoBase`
   // flowing from a real save's `abisso_base`) is unreproducible — no post-patch capture
-  // carries `abisso_base` at all (the 2026-08-13 patch removed the keystone). MP5 F3 later
+  // carries `abisso_base` at all (the 2026-08-13 patch removed the keystone). This feature later
   // removed Abisso detection itself (it had been covered by `abisso-glass-cannon.test.ts`,
   // deleted at F3's T2) — the mechanic no longer exists anywhere in the pipeline. See
   // docs/fixture-corpus.md.
@@ -109,7 +111,7 @@ describe('import inventory sync', () => {
     expect(usePlannerStore.getState().phase).toBe(24);
   });
 
-  it('blocked heroes still sync roster without inventory when list is empty', () => {
+  it('no hero is blocked, and an empty inventory list still syncs the roster', () => {
     const { candidates } = parseSaveFile(loadFixture(), []);
     const blocked = candidates.find((candidate) => candidate.blocked);
     expect(blocked).toBeUndefined();

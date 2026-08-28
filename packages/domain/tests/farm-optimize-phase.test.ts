@@ -14,9 +14,12 @@ import {
   computeFarmRateRow,
   type HeroFarmFacts,
 } from '@bombfarm/domain/farm-rate';
-import { loadFarmRateFixture } from './helpers/farm-rate-fixtures';
+import { assertInRegime } from './helpers/capture-regime';
+import { FARM_OPTIMIZE_FIXTURE, loadFarmRateFixture } from './helpers/farm-rate-fixtures';
 
-const { heroes, account, maxPhase } = loadFarmRateFixture();
+assertInRegime(`sheet-math/${FARM_OPTIMIZE_FIXTURE}`, 'sheet');
+
+const { heroes, account, maxPhase } = loadFarmRateFixture(FARM_OPTIMIZE_FIXTURE);
 const heroFacts = computeHeroFarmFacts({ heroes, account });
 const squad = computeSquadFarmFacts(heroFacts, account);
 
@@ -50,31 +53,60 @@ describe('bestFarmPhase — maxPhase bounds the candidate set', () => {
   });
 });
 
+/**
+ * A RECORDED LOSS, not a weakening nobody noticed (issue #206). This block used to assert the
+ * discriminating form — an infeasible row carrying the HIGHEST NOMINAL rate in the whole sweep is
+ * still not picked, so a naive nominal argmax would have got it wrong. That case was a property
+ * of the retired `save-20260813-5heroes.json` account, which was weak enough that its phase-50
+ * gate was both unclearable and the best-paying row on the board.
+ *
+ * It does not reproduce on either in-regime capture, and this was measured before it was given
+ * up rather than assumed: on `save-20260819-11882-7heroes.json` the best feasible row pays
+ * 1,331,738/h against 574,153/h for the best infeasible one, and on the 11-hero 2026-08-25
+ * capture it is 31,862,424 against 3,446,961. Both accounts clear far past their own gold peak,
+ * so nothing infeasible is ever in contention. Weakening the roster does not create the case
+ * either — cutting every hero's attack to a hundredth moves the infeasible boundary down but
+ * moves the peak with it (measured across factors 0.5 down to 0.01).
+ *
+ * What is left is the claim without the discrimination: the pick is never infeasible, over a
+ * sweep that genuinely contains infeasible rows. Restoring the stronger form needs an
+ * early-account capture — a roster whose best-paying phase is one it cannot clear.
+ */
 describe('bestFarmPhase — infeasible rows never win', () => {
-  it('an infeasible phase with the highest nominal rate is not picked — the fixture\'s own phase 50 gate', () => {
-    const gateRow = computeFarmRateRow(50, squad)!;
-    expect(gateRow.infeasible).toBe(true);
+  it('the pick is never an infeasible row, over a sweep that contains plenty of them', () => {
+    const infeasiblePhases: number[] = [];
+    for (let phase = 1; phase <= 600; phase += 1) {
+      const row = computeFarmRateRow(phase, squad);
+      if (row?.infeasible) infeasiblePhases.push(phase);
+    }
+    expect(infeasiblePhases.length, 'no infeasible row in the sweep — this guard has no subject').toBeGreaterThan(10);
 
     const pick = bestFarmPhase(squad, goldObjective, scales, { maxPhase: null });
     expect(pick).not.toBeNull();
-    expect(pick!.phase).not.toBe(50);
     expect(pick!.row.infeasible).toBe(false);
+    expect(infeasiblePhases).not.toContain(pick!.phase);
   });
 });
 
 describe('bestFarmPhase — the non-unimodality pin', () => {
+  // The gold curve on this roster dips hard into phase 50 (578,613/h — a gate, cleared but slowly)
+  // and spikes at 51 (1,331,738/h), then declines. Both neighbours are FEASIBLE here, where on the
+  // retired roster the left neighbour was infeasible: the trough is what makes the curve
+  // non-unimodal, and it does not need to be an unclearable phase to do it.
   it('phase 51 is a strict local maximum under the current build (> phases 50 and 52)', () => {
     const row50 = computeFarmRateRow(50, squad)!;
     const row51 = computeFarmRateRow(51, squad)!;
     const row52 = computeFarmRateRow(52, squad)!;
-    expect(row50.infeasible).toBe(true);
     expect(row51.infeasible).toBe(false);
+    expect(row51.goldPerHour).toBeGreaterThan(row50.goldPerHour);
     expect(row51.goldPerHour).toBeGreaterThan(row52.goldPerHour);
   });
 
-  it('a stride-10 subsampled sweep returns a different, lower-valued phase than the full sweep', () => {
+  // Stride 3, not stride 10: this roster's argmax is phase 51, and a stride-10 sweep starting at
+  // phase 1 lands on 51 exactly, so it would have found the peak by luck and proved nothing.
+  it('a stride-3 subsampled sweep returns a different, lower-valued phase than the full sweep', () => {
     const fullSweep = bestFarmPhase(squad, goldObjective, scales, { maxPhase: null });
-    const strided = bestFarmPhase(squad, goldObjective, scales, { maxPhase: null, phaseStride: 10 });
+    const strided = bestFarmPhase(squad, goldObjective, scales, { maxPhase: null, phaseStride: 3 });
     expect(fullSweep).not.toBeNull();
     expect(strided).not.toBeNull();
     expect(strided!.phase).not.toBe(fullSweep!.phase);
@@ -83,20 +115,22 @@ describe('bestFarmPhase — the non-unimodality pin', () => {
 });
 
 describe('bestFarmPhase — changing the objective changes the pick', () => {
-  it('the gold pick sits in 26–34 and the chest pick is phase 1', () => {
-    // The band's upper edge moved 32 → 34 at the 2026-08-23 crit-chance ability shape: two of
-    // this fixture's heroes carry Olho Clínico 20, so the squad hits harder and its gold argmax
-    // walks up into phases it previously could not clear fast enough to be worth farming. The
-    // claim this test makes is unchanged — the gold pick is a mid-game phase and the chest pick
-    // is phase 1, and the two never coincide.
+  // RE-ASKED on the 2026-08-19 roster (issue #206): gold picks 51, chests picks 1. The retired
+  // 2026-08-13 roster picked somewhere in 26–34, and pinning that band was always the weakest
+  // part of this test — it is a property of one account's strength, not of the objective.
+  //
+  // What the two accounts agree on, and what is asserted instead, is the DIRECTION: chests want
+  // the cheapest phase there is, because the chest rate is dominated by how many props you can
+  // open per hour, while gold wants the deepest phase the squad can still clear quickly, because
+  // gold per prop rises with phase. So the chest pick is phase 1 on both, the gold pick is
+  // strictly deeper on both, and the two never coincide.
+  it('the objectives pull opposite ways: chests pick phase 1, gold picks strictly deeper', () => {
     const goldPick = bestFarmPhase(squad, goldObjective, scales, { maxPhase });
     const chestPick = bestFarmPhase(squad, chestObjective, scales, { maxPhase });
     expect(goldPick).not.toBeNull();
     expect(chestPick).not.toBeNull();
-    expect(goldPick!.phase).toBeGreaterThanOrEqual(26);
-    expect(goldPick!.phase).toBeLessThanOrEqual(34);
     expect(chestPick!.phase).toBe(1);
-    expect(goldPick!.phase).not.toBe(chestPick!.phase);
+    expect(goldPick!.phase).toBeGreaterThan(chestPick!.phase);
   });
 });
 

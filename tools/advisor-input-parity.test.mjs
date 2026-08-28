@@ -1,15 +1,15 @@
 /**
- * Layer 2 of MP3 F2's desktop/web parity proof (design.md §9, MPV-03, MPV-22). Reads
+ * Layer 2 of the desktop/web parity proof (design.md §9). Reads
  * `packages/domain/src/roster-dps.ts` and
  * `apps/web/src/shared/stores/selectors/advisor-selectors.ts` as text, extracts the object keys
  * each passes to `computeAdvisorPipeline`, and asserts the two sets are exactly equal. Home:
- * `tools/`, so `apps/web` gains zero files for this guard (the `AD-034` precedent) —
+ * `tools/`, so `apps/web` gains zero files for this guard —
  * deliberately dumb text slicing, not a full parse, matching `tools/ci-desktop-paths.test.mjs`
  * and `tools/design-system-gate.test.mjs`.
  *
- * `AD-038` (the single documented exception, `treeCritDmgMult`) closed at MP5 F3: the field was
+ * The single documented exception, `treeCritDmgMult`, closed: the field was
  * removed from both surfaces along with the rest of the deleted keystone mechanics, so the two
- * key sets are equal with no pinned exception (MSC-15). This test still fails if the gap
+ * key sets are equal with no pinned exception. This test still fails if the gap
  * **widens** (a new field forwarded by one path only) — demonstrated below.
  */
 import { readFileSync } from 'node:fs';
@@ -71,7 +71,7 @@ function extractPipelineInputKeys(source, callName) {
   return keys;
 }
 
-describe('advisor-selectors.ts and roster-dps.ts pass source-derived-equal keys to computeAdvisorPipeline (AD-038)', () => {
+describe('advisor-selectors.ts and roster-dps.ts pass source-derived-equal keys to computeAdvisorPipeline', () => {
   const rosterDpsSource = readFileSync(ROSTER_DPS_PATH, 'utf8');
   const advisorSelectorsSource = readFileSync(ADVISOR_SELECTORS_PATH, 'utf8');
 
@@ -83,7 +83,7 @@ describe('advisor-selectors.ts and roster-dps.ts pass source-derived-equal keys 
     expect(advisorSelectorsKeys.size).toBeGreaterThan(10);
   });
 
-  it('the key sets are exactly equal (AD-038 closed: MP5 removed treeCritDmgMult from both surfaces)', () => {
+  it('the key sets are exactly equal (the treeCritDmgMult exception closed: MP5 removed it from both surfaces)', () => {
     const onlyInRosterDps = [...rosterDpsKeys].filter((key) => !advisorSelectorsKeys.has(key));
     const onlyInAdvisorSelectors = [...advisorSelectorsKeys].filter((key) => !rosterDpsKeys.has(key));
 

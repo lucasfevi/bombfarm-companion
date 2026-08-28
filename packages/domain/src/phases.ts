@@ -1,4 +1,4 @@
-import phases from './data/phases.json';
+import phases from './data/phases.json' with { type: 'json' };
 
 export type PhaseLine = (typeof phases.lines)[number];
 export type PropDef = (typeof phases.props)[number];

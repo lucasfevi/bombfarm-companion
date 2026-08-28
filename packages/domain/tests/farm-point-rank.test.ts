@@ -1,7 +1,19 @@
 /**
- * The farm-mode next-point scorer. Every case here is measured on the committed fixture
- * (`save-20260813-5heroes.json`, pool = all 5 heroes, gold objective, return bonus off,
- * `maxPhase 42` unless stated) — figures are recorded from a real run, not hand-derived.
+ * The farm-mode next-point scorer. Every case here is measured on
+ * `save-20260825-11heroes-one-shot-spread.json` (pool = all 11 heroes, gold objective, return bonus
+ * off, `maxPhase 42` unless stated) — figures are recorded from a real run, not hand-derived.
+ *
+ * RE-POINTED off `save-20260813-5heroes.json` (issues #171, #206). Two things forced it, and they
+ * are the same thing seen from either end. That capture is out of regime for `sheet` math
+ * (`helpers/capture-regime.ts`), so under the corpus's admissibility rule no assertion in this
+ * file could legitimately read a number off it. And independently, its roster had stopped being
+ * able to state this file's central claim: the 2026-08-23 patch moved Bellatrix into the one-shot
+ * regime and Perrin across the attack/energy boundary, leaving no hero on the far side of either
+ * contrast, and seven tests disabled recording that.
+ *
+ * The 11-hero capture holds both sides of both contrasts on one roster — nine geared heroes that
+ * one-shot a phase-42 prop, and two naked young ones (Hale L2, Joric L5) that do not — so the
+ * discrimination is restored with real subjects rather than pinned flips.
  */
 import { describe, expect, it } from 'vitest';
 import {
@@ -13,9 +25,16 @@ import {
 import { pipelineForHero } from '@bombfarm/domain/roster-dps';
 import { RANK_STATS } from '@bombfarm/domain/model';
 import type { HeroRecord } from '@bombfarm/domain/shims/storage';
-import { loadFarmRateFixture } from './helpers/farm-rate-fixtures';
+import { assertInRegime } from './helpers/capture-regime';
+import { FARM_RANK_FIXTURE, loadFarmRateFixture } from './helpers/farm-rate-fixtures';
 
-const { heroes, account, maxPhase } = loadFarmRateFixture();
+// Module scope, and throwing rather than skipping: every test below reads a number off this one
+// capture, so there is no per-test judgement to make and nothing to skip into. If the fixture is
+// ever swapped for one behind a boundary, this file fails loudly instead of asserting a stale
+// number — which is the failure mode `helpers/capture-regime.ts` exists to close.
+assertInRegime(`sheet-math/${FARM_RANK_FIXTURE}`, 'sheet');
+
+const { heroes, account, maxPhase } = loadFarmRateFixture(FARM_RANK_FIXTURE);
 const bases = computeHeroFarmBases({ heroes, account });
 
 function heroByName(name: string): HeroRecord {
@@ -41,154 +60,127 @@ function assertResultIsFinite(result: FarmPointRankResult): void {
   }
 }
 
+function gainOf(result: FarmPointRankResult, stat: string): number {
+  return result.rows!.find((row) => row.stat === stat)!.gainPct;
+}
+
+/** The nine geared heroes that clear a phase-42 prop in one hit on this roster. */
+const ONE_SHOTTERS = ['Minato', 'Jon', 'Bellatrix2', 'IDK', 'WB #1', 'WB #2', 'WB #3', 'LE + FO', 'Bellatrix'];
+/** The two naked young heroes that do not. */
+const NON_ONE_SHOTTERS = ['Hale', 'Joric'];
+
 describe('rankNextPointForFarm — discrimination: a one-shotting squad inverts the two ranking modes', () => {
   const bellatrix = heroByName('Bellatrix');
 
-  // RE-TUNED at the 2026-08-15 patch, and AGAIN at the 2026-08-23 crit-chance ability shape.
-  // Bellatrix crossed OUT of the one-shot regime at the first (crit chance going flat cut her
-  // damage) and has now crossed back IN at the second: Olho Clinico 20 gives her a flat +40 crit
-  // points instead of ~43% of a 5.08 roll, and she one-shots a phase-42 prop again. So maxPhase
-  // 42 joins the sweep rather than standing outside it.
   it.each([42, 20, 5, 1])('at maxPhase %i: farm scores attack exactly 0 while energy and speed are positive', (mp) => {
     const result = rankNextPointForFarm({ bases, account, heroId: bellatrix.id, maxPhase: mp });
     expect(result.outcome).toBe('ranked');
-    const rows = result.rows!;
-    const attack = rows.find((r) => r.stat === 'attack')!;
-    const energy = rows.find((r) => r.stat === 'energy')!;
-    const speed = rows.find((r) => r.stat === 'speed')!;
-    expect(attack.gainPct).toBe(0);
-    expect(energy.gainPct).toBeGreaterThan(0);
-    expect(speed.gainPct).toBeGreaterThan(0);
+    expect(gainOf(result, 'attack')).toBe(0);
+    expect(gainOf(result, 'energy')).toBeGreaterThan(0);
+    expect(gainOf(result, 'speed')).toBeGreaterThan(0);
     assertResultIsFinite(result);
   });
 
   it.each([42, 5, 1])('at maxPhase %i: Jon still one-shots — attack exactly 0, energy and speed positive', (mp) => {
-    const jon = heroByName('Jon');
-    const result = rankNextPointForFarm({ bases, account, heroId: jon.id, maxPhase: mp });
+    const result = rankNextPointForFarm({ bases, account, heroId: heroByName('Jon').id, maxPhase: mp });
     expect(result.outcome).toBe('ranked');
-    const rows = result.rows!;
-    expect(rows.find((r) => r.stat === 'attack')!.gainPct).toBe(0);
-    expect(rows.find((r) => r.stat === 'energy')!.gainPct).toBeGreaterThan(0);
-    expect(rows.find((r) => r.stat === 'speed')!.gainPct).toBeGreaterThan(0);
+    expect(gainOf(result, 'attack')).toBe(0);
+    expect(gainOf(result, 'energy')).toBeGreaterThan(0);
+    expect(gainOf(result, 'speed')).toBeGreaterThan(0);
     assertResultIsFinite(result);
   });
 
   /**
-   * THE FLIP, RECORDED. This case used to assert the opposite — "Bellatrix does NOT one-shot at
-   * maxPhase 42" — and it was the file's only non-one-shotting subject, the other half of the
-   * discrimination the whole describe block is named for. The 2026-08-23 patch moved her across
-   * the boundary, so the fixture no longer contains a hero that fails to one-shot at any phase
-   * this fixture can reach, and the "does not one-shot" half of the contrast has no subject left.
-   *
-   * Asserted as a boundary crossing rather than deleted, so the day a weaker hero or a stiffer
-   * phase puts a subject back on this side, the change is visible. Restoring the contrast needs a
-   * capture this corpus does not have — tracked in issue #171, not worked around here.
+   * THE OTHER HALF OF THE CONTRAST, restored (issue #171). An attack point scoring 0 only means
+   * "this hero already one-shots" if some hero on the same roster, at the same phase, scores it
+   * above 0 — otherwise a regression that zeroed attack unconditionally would read as a squad of
+   * one-shotters and pass. These two are that control.
    */
-  it('the flip: Bellatrix one-shots at maxPhase 42 too, so the fixture has no non-one-shotting subject left', () => {
-    const result = rankNextPointForFarm({ bases, account, heroId: bellatrix.id, maxPhase: 42 });
-    expect(result.rows!.find((r) => r.stat === 'attack')!.gainPct).toBe(0);
-
-    // Non-vacuity: an attack point scoring 0 has to mean "already one-shots", not "the ranker
-    // returned zeros" — every other fixture hero at this phase is checked for the same thing, and
-    // at least one still scores attack above 0, so a global collapse to zero would fail here.
-    const others = heroes
-      .filter((h) => h.id !== bellatrix.id)
-      .map((h) => rankNextPointForFarm({ bases, account, heroId: h.id, maxPhase: 42 }))
-      .map((r) => r.rows!.find((row) => row.stat === 'attack')!.gainPct);
-    expect(others.some((gain) => gain > 0)).toBe(true);
+  it.each(NON_ONE_SHOTTERS)('%s does NOT one-shot at maxPhase 42 — an attack point scores strictly above 0', (name) => {
+    const result = rankNextPointForFarm({ bases, account, heroId: heroByName(name).id, maxPhase: 42 });
+    expect(result.outcome).toBe('ranked');
+    expect(gainOf(result, 'attack')).toBeGreaterThan(0);
+    assertResultIsFinite(result);
   });
 
-  it('farm ranks ENERGY first at maxPhase 42 — the order INVERTED when cadence stopped assuming every plant is walk-bound', () => {
-    const result = rankNextPointForFarm({ bases, account, heroId: bellatrix.id, maxPhase: 42 });
-    const rows = result.rows!;
-    // This test used to assert speed first, energy second. The inversion is the point, and it is
-    // a consequence of fixing the cadence model rather than of tuning anything.
-    //
-    // The retired `cycle = max(fuse, E_D_CELLS / walkSpeed)` put EVERY plant on the walk branch
-    // at fixture speeds, so a speed point shortened every single cycle and speed looked
-    // dominant (1.1170). Averaging over the measured hop distribution, roughly 45% of plants are
-    // short enough to be fuse-bound, where speed buys nothing at all — so speed's marginal value
-    // falls by ~41% (1.1170 → 0.6612) while energy barely moves (0.8999 → 0.9011, since a point
-    // of energy still buys the same extra field seconds). Energy overtakes it.
-    //
-    // The same correction is why `cdr` stopped scoring exactly 0 further down this file: the
-    // fuse-bound mass that speed cannot help is precisely the mass CDR can.
-    // RE-MEASURED for the 2026-08-18 revert (issue #132) — crit chance/CDR moved back to
-    // percent-of-base, shifting both figures slightly; the energy-first order is unchanged.
-    //
-    // RE-MEASURED again for issue #132's team-aura roster shape: this fixture's
-    // account.teamBuffs is zeroTeamBuffs(), so Jon (folego_mineiro 18 own rank, elsewhere in
-    // this same 5-hero roster) loses the own-rank leak the old model let through — his uptime
-    // falls, which shifts the squad-level House-allocation contention every hero's farm ranking
-    // reads, Bellatrix included, even though nothing about HER build changed. That ripple moves
-    // attack enough to overtake speed for second place (0.802 vs 0.700) — the title is trimmed
-    // to the part of the claim that still holds (energy first); the full order is asserted below
-    // instead of pinning a "second place" that is no longer the discriminating claim.
-    // RE-MEASURED 2026-08-20 for rotation-priced team auras (Jon's folego_mineiro is now credited
-    // over the rotation instead of read off an empty deployed line-up) and the
-    // HOP_DENSITY_EXPONENT refit. Both move every hero's plant rate and the squad House
-    // allocation together, so the RANKING claim under test is unaffected — only the magnitudes.
-    // RE-MEASURED 2026-08-21 for the additive drain-reduction fix, same Jon-uptime -> squad
-    // House allocation ripple as the case above — the energy-first order is unaffected.
-    // RE-MEASURED 2026-08-23 for the crit-chance ability shape. Bellatrix crossed back into the
-    // one-shot regime (see the flip case above), so `attack` drops out of the top three entirely
-    // at exactly 0 and `cdr` takes third. The energy-first claim in the title is unaffected, which
-    // is the whole point of pinning the order rather than a single magnitude.
-    expect(rows[0]).toEqual({ stat: 'energy', label: 'Energia', gainPct: 0.8924520259542712 });
-    expect(rows[1]).toEqual({ stat: 'speed', label: 'Velocidade', gainPct: 0.7474749693929805 });
-    expect(rows[2]).toEqual({ stat: 'cdr', label: 'Red. de Cooldown', gainPct: 0.005521998430846331 });
-    expect(rows.find((r) => r.stat === 'attack')!.gainPct).toBe(0);
+  it('both sides are populated at maxPhase 42 — nine heroes at exactly 0, two strictly above it', () => {
+    const gains = new Map(
+      heroes.map((hero) => [
+        hero.name,
+        gainOf(rankNextPointForFarm({ bases, account, heroId: hero.id, maxPhase: 42 }), 'attack'),
+      ]),
+    );
+    expect([...gains].filter(([, gain]) => gain === 0).map(([name]) => name).sort()).toEqual([...ONE_SHOTTERS].sort());
+    expect([...gains].filter(([, gain]) => gain > 0).map(([name]) => name).sort()).toEqual([...NON_ONE_SHOTTERS].sort());
   });
 
-  it('DPS mode scores attack first and speed exactly 0 on the same hero (the inversion)', () => {
+  it('farm ranks ENERGY first for Bellatrix at maxPhase 42 — the order INVERTED when cadence stopped assuming every plant is walk-bound', () => {
+    const rows = rankNextPointForFarm({ bases, account, heroId: bellatrix.id, maxPhase: 42 }).rows!;
+    // This claim used to be "speed first, energy second". The inversion is the point, and it is a
+    // consequence of fixing the cadence model rather than of tuning anything: the retired
+    // `cycle = max(fuse, E_D_CELLS / walkSpeed)` put EVERY plant on the walk branch, so a speed
+    // point shortened every cycle. Averaging over the measured hop distribution, roughly 45% of
+    // plants are fuse-bound, where speed buys nothing — which is also why `cdr` stopped scoring
+    // exactly 0: the fuse-bound mass speed cannot help is precisely the mass CDR can.
+    //
+    // On THIS roster speed edges energy for Bellatrix specifically (she is the fastest clearer of
+    // the nine), so the energy-first claim is asserted where it holds — over the eight other
+    // one-shotters — and her own order is pinned as the exception rather than smoothed over.
+    expect(rows.map((r) => r.stat)).toEqual(['speed', 'energy', 'cdr', 'attack', 'critDmg', 'critChance', 'penetration']);
+    const energyFirst = ONE_SHOTTERS.filter(
+      (name) => rankNextPointForFarm({ bases, account, heroId: heroByName(name).id, maxPhase: 42 }).rows![0].stat === 'energy',
+    );
+    expect(energyFirst.sort()).toEqual(ONE_SHOTTERS.filter((name) => name !== 'Bellatrix').sort());
+  });
+
+  it('DPS mode scores attack first and speed exactly 0 on a hero farm scores attack at 0 (the inversion)', () => {
+    const jon = heroByName('Jon');
+    expect(gainOf(rankNextPointForFarm({ bases, account, heroId: jon.id, maxPhase: 42 }), 'attack')).toBe(0);
+
     const line = account.context;
     if (line.phase == null) throw new Error('fixture must carry account.context.phase for this test');
-    const dps = pipelineForHero(bellatrix, account, line.phase, line.mitigationPct);
+    const dps = pipelineForHero(jon, account, line.phase, line.mitigationPct);
     expect(dps.ranking[0].stat).toBe('attack');
     expect(dps.ranking[0].gainPct).toBeGreaterThan(0);
-    const speed = dps.ranking.find((r) => r.stat === 'speed')!;
-    expect(speed.gainPct).toBe(0);
+    expect(dps.ranking.find((r) => r.stat === 'speed')!.gainPct).toBe(0);
   });
 });
 
 describe('rankNextPointForFarm — anti-"energy always wins" sensor', () => {
-  // RE-TUNED at the 2026-08-15 patch. This used to sweep ['Lyra', 'Perrin'] at maxPhase 42.
-  // Perrin L4 no longer demonstrates the claim there — measured attack 0.128027 against energy
-  // 0.142847, a genuine flip driven by the flat crit change, not by this sensor's logic. Rather
-  // than pin a hero that no longer shows the effect, the sensor keeps the subject that does and
-  // gains two more phases, so it discriminates on THREE points instead of two.
-  it.each([42, 20, 10])('Lyra (not one-shotting): farm ranks attack strictly above energy at maxPhase %i', (mp) => {
-    const hero = heroByName('Lyra');
-    const result = rankNextPointForFarm({ bases, account, heroId: hero.id, maxPhase: mp });
+  /**
+   * The sensor exists to prove "energy always wins" is false, and it had lost its last subject
+   * (issue #171): the 2026-08-23 patch flipped Perrin L4, the only hero on the old fixture that
+   * ranked attack over energy, onto the energy side. Hale L2 restores it on three phases — a
+   * naked level-2 hero far enough from one-shotting that another point of damage is still the
+   * best thing she can be given.
+   */
+  it.each([42, 20, 10])('Hale (not one-shotting): farm ranks attack strictly above energy at maxPhase %i', (mp) => {
+    const result = rankNextPointForFarm({ bases, account, heroId: heroByName('Hale').id, maxPhase: mp });
     expect(result.outcome).toBe('ranked');
-    const rows = result.rows!;
-    const attack = rows.find((r) => r.stat === 'attack')!;
-    const energy = rows.find((r) => r.stat === 'energy')!;
-    expect(attack.gainPct).toBeGreaterThan(energy.gainPct);
-    expect(rows[0].stat).toBe('attack');
+    expect(gainOf(result, 'attack')).toBeGreaterThan(gainOf(result, 'energy'));
+    expect(result.rows![0].stat).toBe('attack');
   });
 
-  it('Perrin L4 FLIPPED AGAIN at maxPhase 42 — recorded, not hidden', () => {
-    // The sensor exists to prove "energy always wins" is false. Perrin flipped OUT of that claim
-    // at the 2026-08-15 patch (attack 0.127926 < energy 0.142735), BACK into it at the 2026-08-18
-    // revert, and OUT again at the 2026-08-23 crit-chance ability shape — energy 0.115902 now
-    // edges attack 0.102167. He carries no Olho Clinico himself; what moves him is the squad-level
-    // House allocation every hero's farm ranking reads, which the two Olho heroes elsewhere in
-    // this roster shifted by clearing faster.
-    //
-    // With Bellatrix having crossed into the one-shot regime as well (see the flip case above),
-    // no hero on this fixture ranks attack over energy any more, so this sensor currently has no
-    // subject that demonstrates its claim. It is kept, pinned to the flipped values, so the next
-    // move is visible; restoring a real subject needs a capture this corpus does not have
-    // (issue #171).
-    const result = rankNextPointForFarm({ bases, account, heroId: heroByName('Perrin').id, maxPhase: 42 });
-    const rows = result.rows!;
-    expect(rows.find((r) => r.stat === 'attack')!.gainPct).toBeCloseTo(0.10216737518200514, 5);
-    expect(rows.find((r) => r.stat === 'energy')!.gainPct).toBeCloseTo(0.11590179936651346, 5);
-    expect(rows[0].stat).toBe('energy');
-    // The margin is thin (13%), which is why this is a sensor and not a claim about the game:
-    // it takes very little to move him back.
-    expect(rows[1].stat).toBe('attack');
+  /**
+   * An energy point on the weakest hero in a queued field is worth LESS THAN NOTHING, and that is
+   * a claim about the FIFO field queue rather than about Hale. Energy buys field uptime; the
+   * queue rations uptime; so stacking it on the hero who clears slowest keeps her holding a slot
+   * that a faster hero would have converted into more gold. Nothing else in the suite pins a
+   * negative marginal value, and it is the one direction a naive "more stat is more output"
+   * model can never produce — so it is asserted here rather than left as an observation.
+   */
+  it('Hale at maxPhase 42: an energy point is NEGATIVE — the field queue can make uptime cost the squad', () => {
+    const result = rankNextPointForFarm({ bases, account, heroId: heroByName('Hale').id, maxPhase: 42 });
+    expect(gainOf(result, 'energy')).toBeLessThan(0);
+    expect(gainOf(result, 'energy')).toBeCloseTo(-0.002392859991595664, 9);
+    // Not a collapse: the same point on every other hero is worth something positive.
+    const others = heroes.filter((h) => h.name !== 'Hale');
+    for (const hero of others) {
+      expect(
+        gainOf(rankNextPointForFarm({ bases, account, heroId: hero.id, maxPhase: 42 }), 'energy'),
+        `${hero.name} energy gain`,
+      ).toBeGreaterThan(0);
+    }
   });
 });
 
@@ -205,21 +197,18 @@ describe('rankNextPointForFarm — cdr scores SMALL BUT POSITIVE under farm (it 
   // So CDR is no longer free to ignore, but it stays far below speed and energy because it only
   // pays on the short-hop mass. Asserted as a shape (positive, small, never top) rather than
   // per-hero constants: the exact values move with any re-fit of the distribution.
-  it.each(['Bellatrix', 'Jon', 'Lyra', 'Perrin'])('%s: cdr gainPct >= 0 and never ranks first', (name) => {
-    const hero = heroByName(name);
-    const result = rankNextPointForFarm({ bases, account, heroId: hero.id, maxPhase: 42 });
-    const rows = result.rows!;
-    const cdr = rows.find((r) => r.stat === 'cdr')!;
-    expect(cdr.gainPct).toBeGreaterThanOrEqual(0);
-    expect(rows[0].stat).not.toBe('cdr');
-    expect(cdr.gainPct).toBeLessThan(rows[0].gainPct);
+  it.each(['Bellatrix', 'Jon', 'Hale', 'Joric'])('%s: cdr gainPct >= 0 and never ranks first', (name) => {
+    const result = rankNextPointForFarm({ bases, account, heroId: heroByName(name).id, maxPhase: 42 });
+    const cdr = gainOf(result, 'cdr');
+    expect(cdr).toBeGreaterThanOrEqual(0);
+    expect(result.rows![0].stat).not.toBe('cdr');
+    expect(cdr).toBeLessThan(result.rows![0].gainPct);
   });
 
   it('at least one fixture hero now scores cdr strictly above 0 — the fuse-bound branch is reachable', () => {
-    const anyPositive = ['Bellatrix', 'Jon', 'Lyra', 'Perrin'].some((name) => {
-      const result = rankNextPointForFarm({ bases, account, heroId: heroByName(name).id, maxPhase: 42 });
-      return result.rows!.find((r) => r.stat === 'cdr')!.gainPct > 0;
-    });
+    const anyPositive = ['Bellatrix', 'Jon', 'Hale', 'Joric'].some(
+      (name) => gainOf(rankNextPointForFarm({ bases, account, heroId: heroByName(name).id, maxPhase: 42 }), 'cdr') > 0,
+    );
     expect(anyPositive).toBe(true);
   });
 });
@@ -313,13 +302,12 @@ describe('rankNextPointForFarm — design.md §4.4 edge/degenerate cases, full t
     assertResultIsFinite(result);
   });
 
-  it('a pool of exactly one hero (the ranked one) still ranks — solo Bellatrix argmaxes at phase 33', () => {
+  it('a pool of exactly one hero (the ranked one) still ranks', () => {
     const soloBases = computeHeroFarmBases({ heroes, account, enabledHeroIds: [bellatrix.id] });
     const result = rankNextPointForFarm({ bases: soloBases, account, heroId: bellatrix.id, maxPhase: 42 });
     expect(result.outcome).toBe('ranked');
-    // 30 until the 2026-08-23 crit-chance ability shape: a stronger Bellatrix clears deeper
-    // phases fast enough that the gold argmax walks up three.
-    expect(result.phase).toBe(33);
+    // Solo, she is no longer competing for field slots, so the gold argmax walks up to the cap.
+    expect(result.phase).toBe(42);
     expect(result.rows).toHaveLength(RANK_STATS.length);
     expect(result.evaluations).toBe(8);
     assertResultIsFinite(result);
@@ -374,11 +362,11 @@ describe('rankNextPointForFarm — an unknown maxPhase considers all 600 phases'
 describe('rankNextPointForFarm — deterministic tie order', () => {
   const bellatrix = heroByName('Bellatrix');
 
-  it('the four keys tied at 0 on Bellatrix come back in RANK_STATS relative order', () => {
+  it('the keys tied at 0 on Bellatrix come back in RANK_STATS relative order', () => {
     const result = rankNextPointForFarm({ bases, account, heroId: bellatrix.id, maxPhase: 42 });
     const tiedStats = result.rows!.filter((r) => r.gainPct === 0).map((r) => r.stat);
-    const expectedOrder = RANK_STATS.filter((stat) => tiedStats.includes(stat));
-    expect(tiedStats).toEqual(expectedOrder);
+    expect(tiedStats.length, 'no ties to order — this guard needs a hero with some').toBeGreaterThan(1);
+    expect(tiedStats).toEqual(RANK_STATS.filter((stat) => tiedStats.includes(stat)));
   });
 
   it('the tie order is unchanged when the bases array is reversed', () => {
@@ -424,11 +412,10 @@ describe('rankNextPointForFarm — evaluation budget', () => {
 });
 
 describe('rankNextPointForFarm — finite sweep over every fixture hero and every objective kind', () => {
-  it.each(['Bellatrix', 'Jon', 'Lyra', 'Perrin'])('%s: never NaN, never Infinity, for gold/chests/blend', (name) => {
+  it.each([...ONE_SHOTTERS, ...NON_ONE_SHOTTERS])('%s: never NaN, never Infinity, for gold/chests/blend', (name) => {
     const hero = heroByName(name);
     for (const objective of [{ kind: 'gold' as const }, { kind: 'chests' as const }, { kind: 'blend' as const, weight: 0.5 }]) {
-      const result = rankNextPointForFarm({ bases, account, heroId: hero.id, objective, maxPhase });
-      assertResultIsFinite(result);
+      assertResultIsFinite(rankNextPointForFarm({ bases, account, heroId: hero.id, objective, maxPhase }));
     }
   });
 });

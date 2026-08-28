@@ -56,7 +56,7 @@ function sheetAbilityFlatFor(statKey: SheetDisplayKey, otherPct: SheetOtherPct):
  * Reconstruct lv1 ★0 roll by peeling level / stars / sheet-ability factors from naked.
  *
  * `naked` here is today's contaminated (tree-inclusive) value (GAP-W4-01) — this function
- * deliberately gains NO tree divisor (DEC-03, consistent with `derive`'s `AC-37`). The
+ * deliberately gains NO tree divisor (consistent with `derive`). The
  * returned "birth" figure therefore still carries a residual tree contamination until Wave 5
  * writes a genuinely tree-free `naked` via `nakedFromBirth`; `pushBirthThenGear`'s tree/gear
  * split (below) works regardless, because it is anchored to the *observed* `naked`/`geared`
@@ -93,7 +93,7 @@ function sheetAbilityNote(statKey: SheetDisplayKey): LedgerNote | undefined {
 /**
  * Birth roll (lv1 ★0) → level → stars → sheet abilities (Olho / Ponta) → gear → tree.
  * Running total after sheet abilities equals naked[statKey]; after gear+tree it equals
- * geared[statKey] (BSPW4-06, AC-40/41/42).
+ * geared[statKey].
  *
  * `treePct` is the skill-tree contribution for this key, in the SAME percent units for every
  * key: `energia_add`/`speed_add`/`crit_chance_add`/`crit_dmg_add` are already percent
@@ -101,16 +101,16 @@ function sheetAbilityNote(statKey: SheetDisplayKey): LedgerNote | undefined {
  * `(danoStatic − 1) × 100` so this function has one uniform contract. Units are uniform;
  * placement is not — crit damage's is a flat addend, see below.
  *
- * Two placements, matching AD-BSP-12/22 (`BSP-23c`, single application):
+ * Two placements, each applied exactly once:
  * - **attack / energy** — tree multiplies the WHOLE Hero+Gear(+Ability) subtotal. Pure gear is
  *   recovered by DIVIDING the tree factor out of the observed `geared` value (not subtracting),
  *   then the 'tree' step is a `pushMul` on top of that pure subtotal — sourced from the sheet,
- *   not an independent add-on (AC-41, AC-42).
- * - **speed / critChance / critDmg** — tree joins the SAME additive shared pool as gear
- *   (AD-BSP-19). The observed `geared − naked` delta is split into the tree's own share
+ *   not an independent add-on.
+ * - **speed / critChance / critDmg** — tree joins the SAME additive shared pool as gear.
+ *   The observed `geared − naked` delta is split into the tree's own share
  *   (`treePct% × pool base`) and the remainder, which is the true gear contribution — both
  *   pushed as separate steps off the same base, so no cross term is introduced.
- * - **penetration / cdr** — `treePct` is always 0 (AD-BSP-22); the split degenerates to the
+ * - **penetration / cdr** — `treePct` is always 0; the split degenerates to the
  *   original ungear-only behaviour.
  */
 export function pushBirthThenGear(
@@ -261,10 +261,10 @@ export function teamAddNote(amount: number, cap: number): LedgerNote | undefined
   return amount >= cap - EPS ? 'capped' : undefined;
 }
 
-/** Fold ledger steps to the final running value (ESB-10). */
+/** Fold ledger steps to the final running value. */
 export function foldLedger(steps: LedgerStep[]): number {
   if (steps.length === 0) return 0;
-  // MOD-36: genuine accumulator — folds each step's op onto the running total in sequence;
+  // Genuine accumulator — folds each step's op onto the running total in sequence;
   // the running value depends on its own prior value, so a `reduce` copy would read the same.
   let running = steps[0].running;
   for (let index = 1; index < steps.length; index++) {

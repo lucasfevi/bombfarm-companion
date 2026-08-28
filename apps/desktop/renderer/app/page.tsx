@@ -1,29 +1,43 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 import type {
   AppEnvironmentInfo,
   AppLocale,
-  GameSnapshotPayload,
   GameStatusInfo,
+  LiveDiagnosticsDumpOutcome,
   SettingsWriteReason,
 } from '@bombfarm/contracts';
 import { DEFAULT_SETTINGS } from '@bombfarm/contracts';
-import { AppShell, EmptyState, StatusChip } from '@bombfarm/ui';
-// MP3 F1 (AD-032) — proves the renderer can import @bombfarm/domain: a value import from a
+import { AppShell, BrandMark, SegmentedToggle, StatusChip } from '@bombfarm/ui';
+// Proves the renderer can import @bombfarm/domain: a value import from a
 // FILE subpath that itself value-imports ./data/catalog.json, so a dist missing the JSON data
 // fails the static export build rather than surfacing later at runtime (spec edge case). This
-// is a probe, not planning UI — F2 (mp3-planning-views) is what actually renders advice. MP3 F4
+// is a probe, not planning UI — F2 (mp3-planning-views) is what actually renders advice. It also
 // gives it a second purpose: proving the LANGUAGE reaches the domain edge, not just a value.
 import { rarityLabel } from '@bombfarm/domain/game-labels';
+import type { ConsentRecord } from '@bombfarm/game-api';
 import { CopyProvider, useCopy, useLocale, type Copy } from '../lib/copy';
 import { formatAge } from '../lib/format';
+import { useOverlayInset } from '../lib/window-overlay';
 import { navItemsFor } from './nav-items';
+import { ConsentGate, isConsentGateVisible } from './consent-gate';
 import { ConsentModal } from './consent-modal';
+import { LiveView } from './live/live-view';
 import { PlanningView } from './planning/planning-view';
+import { InventoryView } from './inventory/inventory-view';
+import { ConsentSection } from './settings/consent-section';
+import { DiagnosticsSection } from './settings/diagnostics-section';
 import { LanguageSection } from './settings/language-section';
 
-const DEFAULT_NAV_ID = 'planning';
+const DEFAULT_NAV_ID = 'live';
+
+// Matches the shipped Settings language `Select` (the primitive-control rule) — same two locales, same
+// `onLocaleChange`, kept in sync only because both read/write the one `locale` state in `HomePage`.
+const LOCALE_OPTIONS: ReadonlyArray<{ id: AppLocale; label: string }> = [
+  { id: 'pt-BR', label: 'PT' },
+  { id: 'en', label: 'EN' },
+];
 
 function statusLabel(status: GameStatusInfo['status'], t: Copy): string {
   switch (status) {
@@ -43,10 +57,10 @@ function getBridge(): NonNullable<Window['bfc']> | null {
 }
 
 export default function HomePage() {
-  // MP3 F4 — locale state lives here, ABOVE CopyProvider, because CopyProvider needs it as a
+  // Locale state lives here, ABOVE CopyProvider, because CopyProvider needs it as a
   // prop; it cannot be read from the context it itself creates.
   const [locale, setLocale] = useState<AppLocale | null>(null);
-  // MIN-11's surface half — null iff the last write persisted (or none has been attempted yet).
+  // The unwritable-settings-surfaced rule's surface half — null iff the last write persisted (or none has been attempted yet).
   const [persistWarning, setPersistWarning] = useState<SettingsWriteReason | null>(null);
 
   useEffect(() => {
@@ -69,14 +83,14 @@ export default function HomePage() {
 
   useEffect(() => {
     if (!locale) return;
-    // layout.tsx ships lang="en" as the static-export default (TD-9) — a prebuilt static export
+    // layout.tsx ships lang="en" as the static-export default — a prebuilt static export
     // cannot know the locale at build time. This is where the RUNTIME value is set. Not
-    // unit-observable (renderToStaticMarkup never runs useEffect, AD-047) — asserted in T7's smoke.
+    // unit-observable (renderToStaticMarkup never runs useEffect) — asserted in T7's smoke.
     document.documentElement.lang = locale;
   }, [locale]);
 
-  // MIN-08/MIN-11 — the shipped Select drives this. Applies first, always (result.settings.locale
-  // is the applied value on every branch, AD-051/AD-052), then surfaces whether it persisted.
+  // The shipped Select drives this. Applies first, always (result.settings.locale
+  // is the applied value on every branch), then surfaces whether it persisted.
   const onLocaleChange = (next: AppLocale) => {
     const bridge = getBridge();
     if (!bridge) return;
@@ -109,74 +123,103 @@ function HomePageContent({
 }) {
   const t = useCopy();
   const { lang } = useLocale();
+  const overlayInset = useOverlayInset();
   const [activeNavId, setActiveNavId] = useState(DEFAULT_NAV_ID);
   const [environment, setEnvironment] = useState<AppEnvironmentInfo | null>(null);
   const [status, setStatus] = useState<GameStatusInfo | null>(null);
-  const [snapshot, setSnapshot] = useState<GameSnapshotPayload | null>(null);
-  const [error, setError] = useState<string | null>(null);
+  const [consent, setConsent] = useState<ConsentRecord | null>(null);
+  const [consentForceOpen, setConsentForceOpen] = useState(false);
+  const [diagnosticsDumpResult, setDiagnosticsDumpResult] = useState<LiveDiagnosticsDumpOutcome | null>(null);
 
   useEffect(() => {
     const bridge = getBridge();
-    if (!bridge) {
-      setError(t.emptyBridgeUnavailableTitle);
-      return;
-    }
+    if (!bridge) return;
+
+    void bridge
+      .invoke('consent:get')
+      .then((current) => {
+        setConsent(current);
+      })
+      .catch(() => {});
+
+    return bridge.on('consent:changed', (next) => {
+      setConsent(next);
+    });
+  }, []);
+
+  const onConsentRevoke = () => {
+    const bridge = getBridge();
+    if (!bridge) return;
+    void bridge.invoke('consent:revoke').then((next) => {
+      setConsent(next);
+    });
+  };
+
+  const onConsentReallow = () => {
+    setConsentForceOpen(true);
+  };
+
+  const onSaveDiagnostics = () => {
+    const bridge = getBridge();
+    if (!bridge) return;
+    void bridge.invoke('live:dumpDiagnostics').then((result) => {
+      setDiagnosticsDumpResult(result);
+    });
+  };
+
+  const onConsentDecided = () => {
+    setConsentForceOpen(false);
+  };
+
+  useEffect(() => {
+    const bridge = getBridge();
+    if (!bridge) return;
 
     void (async () => {
       try {
-        const [nextEnvironment, initialStatus, initialSnapshot] = await Promise.all([
+        const [nextEnvironment, initialStatus] = await Promise.all([
           bridge.invoke('app:getEnvironment'),
           bridge.invoke('game:getStatus'),
-          bridge.invoke('game:getSnapshot'),
         ]);
         setEnvironment(nextEnvironment);
         setStatus(initialStatus);
-        setSnapshot(initialSnapshot);
-      } catch (err) {
-        setError(err instanceof Error ? err.message : String(err));
+      } catch {
+        // Left null — the shell already renders a loading state, and `game:status` below
+        // keeps arriving on its own regardless of whether this initial read succeeded.
       }
     })();
 
-    const offStatus = bridge.on('game:status', (next) => {
+    return bridge.on('game:status', (next) => {
       setStatus(next);
     });
-    // Deliberately does not touch status: main emits `game:status` first whenever the status
-    // actually changed, and every snapshot carries a status object with a fresh read timestamp,
-    // so setting it here re-introduced a new reference — and a full re-render — on every poll.
-    const offSnapshot = bridge.on('snapshot:updated', (next) => {
-      setSnapshot(next);
-    });
+  }, []);
 
-    return () => {
-      offStatus();
-      offSnapshot();
-    };
-    // `t.emptyBridgeUnavailableTitle` is a stable reference from the copy context (F2 mounts one
-    // locale) — listed to satisfy exhaustive-deps without changing the once-on-mount behaviour.
-  }, [t.emptyBridgeUnavailableTitle]);
-
-  const rawJson = useMemo(() => {
-    if (!snapshot) return null;
-    return JSON.stringify(
-      {
-        status: snapshot.status,
-        mapped: snapshot.mapped,
-        raw: snapshot.raw,
-      },
-      null,
-      2,
-    );
-  }, [snapshot]);
+  const consentLoaded = consent !== null;
+  const gated = isConsentGateVisible(consent);
+  const granted = consentLoaded && !gated;
 
   return (
     <>
-      <ConsentModal />
+      <ConsentModal forceOpen={consentForceOpen} onDecided={onConsentDecided} />
       <AppShell
         title={environment?.productName}
         badge={environment?.badgeLabel ?? null}
-        items={navItemsFor(environment?.flavor ?? null, t)}
+        items={granted ? navItemsFor(t) : []}
         activeId={activeNavId}
         onNavigate={setActiveNavId}
+        brand={<BrandMark />}
+        draggable
+        overlayInset={overlayInset}
+        actions={
+          <SegmentedToggle
+            options={LOCALE_OPTIONS}
+            value={locale}
+            onChange={(id) => {
+              if (id === 'en' || id === 'pt-BR') onLocaleChange(id);
+            }}
+            ariaLabel={t.consentGateLanguageLabel}
+          />
+        }
         status={
           <span data-testid="game-status-chip">
             {status ? (
@@ -211,28 +254,20 @@ function HomePageContent({
           <span data-testid="domain-label-probe" className="sr-only">
             {rarityLabel('Comum', lang)}
           </span>
-          {activeNavId === 'settings' ? (
-            <LanguageSection locale={locale} onLocaleChange={onLocaleChange} persistWarning={persistWarning} />
-          ) : activeNavId === 'diagnostics' ? (
-            <section className="space-y-4">
-              {error ? (
-                <EmptyState title={t.emptyBridgeUnavailableTitle} description={error} />
-              ) : rawJson ? (
-                <div className="space-y-2">
-                  <h2 className="text-sm font-medium text-muted">{t.shellDiagnosticsSnapshotTitle}</h2>
-                  <pre
-                    data-testid="game-snapshot-json"
-                    className="max-h-[480px] overflow-auto rounded-lg border border-line bg-bg-2 p-4 text-xs leading-relaxed"
-                  >
-                    {rawJson}
-                  </pre>
-                </div>
-              ) : (
-                <EmptyState title={t.emptyNoSnapshotTitle} description={t.emptyNoSnapshotDescription} />
-              )}
-            </section>
-          ) : (
+          {!consentLoaded ? null : gated ? (
+            <ConsentGate locale={locale} onLocaleChange={onLocaleChange} onReadAgain={onConsentReallow} />
+          ) : activeNavId === 'settings' ? (
+            <>
+              <LanguageSection locale={locale} onLocaleChange={onLocaleChange} persistWarning={persistWarning} />
+              <ConsentSection onRevoke={onConsentRevoke} />
+              <DiagnosticsSection onSave={onSaveDiagnostics} result={diagnosticsDumpResult} />
+            </>
+          ) : activeNavId === 'planning' ? (
             <PlanningView />
+          ) : activeNavId === 'inventory' ? (
+            <InventoryView />
+          ) : (
+            <LiveView onReopenConsent={onConsentReallow} />
           )}
         </div>
       </AppShell>

@@ -2,12 +2,14 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import { Banner, EmptyState, Panel } from '@bombfarm/ui';
-import type { Lang, Strings } from '@/shared/i18n';
+import { FIELD_SLOTS_MAX } from '@bombfarm/domain/casa-slots';
+import { sub, type Lang, type Strings } from '@/shared/i18n';
 import {
   deriveFarmPoolEntries,
   selectFarmBoardRows,
   selectFarmReRankActive,
   selectFarmReturnBonus,
+  selectFieldSlots,
   selectHeroes,
   selectMaxPhase,
   selectPhasesViewPhase,
@@ -19,11 +21,13 @@ import {
   DEFAULT_SORT,
   defaultFarmFilters,
   pickBestFarmRow,
+  pickContentionNotice,
   sortFarmRows,
   type FarmFilters,
   type FarmSortDir,
   type FarmSortKey,
 } from '@/features/phases/model/farm-ranking-view';
+import { formatMitigationPct } from '@/features/phases/model/farm-ranking-format';
 import { FarmRankingFilters } from './farm-ranking-filters';
 import { FarmRotationPool } from './farm-rotation-pool';
 import { FarmReturnBonus } from './farm-return-bonus';
@@ -34,7 +38,7 @@ import { FarmRespecRerankToggle } from './farm-respec-rerank-toggle';
 
 /**
  * The board — filters + rotation pool + return bonus + table, or one of the four
- * empty states. Sort/filter state is `useState` here (MOD-13 — ephemeral, not
+ * empty states. Sort/filter state is `useState` here (ephemeral, not
  * persisted); the pool and return bonus are store fields read via
  * `usePlannerStore(selectFarmBoardRows)` WITHOUT `useShallow` (the `selectAdvisorPipeline`
  * carve-out — shallow-comparing 600 rows on every write would defeat the memo).
@@ -50,6 +54,7 @@ export function FarmRankingBoard({ t, lang }: { t: Strings; lang: Lang }) {
   );
   const returnBonus = usePlannerStore(selectFarmReturnBonus);
   const maxPhase = usePlannerStore(selectMaxPhase);
+  const fieldSlots = usePlannerStore(selectFieldSlots);
   const currentPhase = usePlannerStore(selectPhasesViewPhase);
   const phasesViewPhaseChosen = usePlannerStore(selectPhasesViewPhaseChosen);
   const setPhasesViewPhase = usePlannerStore((state) => state.setPhasesViewPhase);
@@ -91,6 +96,15 @@ export function FarmRankingBoard({ t, lang }: { t: Strings; lang: Lang }) {
     );
   }
 
+  // The row the player is actually looking at — contention is per-row, never an aggregate.
+  const contention = useMemo(() => {
+    if (result.reason != null) return null;
+    return pickContentionNotice(
+      result.rows.find((candidate) => candidate.phase === currentPhase) ?? pickBestFarmRow(visibleRows),
+      fieldSlots,
+    );
+  }, [result.reason, result.rows, currentPhase, visibleRows, fieldSlots]);
+
   const empty =
     result.reason === 'no-roster'
       ? { title: t.farmRankingEmptyNoRosterTitle, description: t.farmRankingEmptyNoRosterDesc }
@@ -114,6 +128,30 @@ export function FarmRankingBoard({ t, lang }: { t: Strings; lang: Lang }) {
             lang={lang}
             t={t}
           />
+        </div>
+      ) : null}
+      {contention ? (
+        <div className="mb-3" data-testid="farm-contention-notice">
+          <Banner
+            tone="warn"
+            title={
+              contention.atMaxSlots
+                ? t.farmRankingContentionTitleMaxSlots
+                : t.farmRankingContentionTitle
+            }
+          >
+            {sub(
+              contention.atMaxSlots
+                ? t.farmRankingContentionDescMaxSlots
+                : t.farmRankingContentionDesc,
+              {
+                pct: `${formatMitigationPct(contention.pct)}%`,
+                cost: `${formatMitigationPct(contention.costPct)}%`,
+                slots: String(fieldSlots ?? '—'),
+                max: String(FIELD_SLOTS_MAX),
+              },
+            )}
+          </Banner>
         </div>
       ) : null}
       <FarmRespecToolbar t={t} />

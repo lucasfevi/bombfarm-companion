@@ -1,7 +1,8 @@
 import { SessionToken } from './session.js';
 
 /**
- * Pure INI parse for `session.cfg` (LAR-11 parse half). Adapted from the internal automation
+ * Pure INI parse for `session.cfg` (the one-path, memory-only, never-persisted token's parse
+ * half). Adapted from the internal automation
  * prototype's API client with two deliberate changes: this returns a result union
  * instead of throwing (the desktop needs a *status* to report, not an exception to catch), and
  * the token is wrapped in `SessionToken` at the moment of parse — no plain string of it exists
@@ -9,7 +10,7 @@ import { SessionToken } from './session.js';
  * per the test coverage matrix).
  *
  * String in, result out — no filesystem here. `apps/desktop/src/main/game-api/session-token-file.ts`
- * owns the `readFileSync` half (`AD-024`).
+ * owns the `readFileSync` half (apps/desktop keeps only the syscall boundary).
  */
 export type SessionCfgParseReason = 'no_auth_section' | 'no_token' | 'no_account_id';
 

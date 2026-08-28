@@ -11,6 +11,7 @@ const INVENTORY_KEY = 'bf-hp-inventory-v1';
 const PHASES_VIEW_KEY = 'bf-hp-phases-view-v1';
 const LANG_KEY = 'bf_lang';
 const GUIDE_HIDDEN_KEY = 'bf_guide_hidden';
+const REFERRAL_NOTICE_HIDDEN_KEY = 'bf_referral_notice_hidden';
 
 /**
  * One-shot storage-migration markers, seeded as already-done.
@@ -40,6 +41,8 @@ export type SeededState = {
   lang?: 'pt' | 'en';
   /** When true (default), suppress the first-run guide overlay. */
   guideHidden?: boolean;
+  /** When true (default), suppress the first-run referral notice below the topbar. */
+  referralNoticeHidden?: boolean;
   /** Seeds bf-hp-phases-view-v1 — phase, farmPool and farmReturnBonus. */
   phasesView?: PhasesViewState;
 };
@@ -217,11 +220,24 @@ export async function seedLocalStorage(page: Page, state: SeededState): Promise<
     lang: state.lang ?? 'pt',
     // Default hide guide; only show when guideHidden is explicitly false.
     guideHidden: state.guideHidden !== false,
+    // Same default as the guide: a first-run notice on top of every seeded page would
+    // shift the layout every other spec measures.
+    referralNoticeHidden: state.referralNoticeHidden !== false,
     phasesView: state.phasesView ?? null,
   };
 
   await page.addInitScript(
-    ({ heroes, activeHeroId, account, inventory, lang, guideHidden, phasesView, keys }) => {
+    ({
+      heroes,
+      activeHeroId,
+      account,
+      inventory,
+      lang,
+      guideHidden,
+      referralNoticeHidden,
+      phasesView,
+      keys,
+    }) => {
       localStorage.setItem(keys.heroes, JSON.stringify(heroes));
       if (activeHeroId) localStorage.setItem(keys.active, activeHeroId);
       else localStorage.removeItem(keys.active);
@@ -231,6 +247,7 @@ export async function seedLocalStorage(page: Page, state: SeededState): Promise<
       else localStorage.removeItem(keys.inventory);
       localStorage.setItem(keys.lang, lang);
       localStorage.setItem(keys.guideHidden, guideHidden ? '1' : '0');
+      localStorage.setItem(keys.referralNoticeHidden, referralNoticeHidden ? '1' : '0');
       if (phasesView) localStorage.setItem(keys.phasesView, JSON.stringify(phasesView));
       else localStorage.removeItem(keys.phasesView);
       // Re-asserted on every navigation, exactly like the heroes key above — see
@@ -246,6 +263,7 @@ export async function seedLocalStorage(page: Page, state: SeededState): Promise<
         inventory: INVENTORY_KEY,
         lang: LANG_KEY,
         guideHidden: GUIDE_HIDDEN_KEY,
+        referralNoticeHidden: REFERRAL_NOTICE_HIDDEN_KEY,
         phasesView: PHASES_VIEW_KEY,
         migrationMarkers: [...MIGRATION_MARKER_KEYS],
       },
@@ -279,7 +297,7 @@ export async function gotoAccountPage(page: Page): Promise<void> {
 }
 
 /**
- * Roster-scaling probe for `RES-06`. Same active hero and account as `importedRoster`,
+ * Roster-scaling probe. Same active hero and account as `importedRoster`,
  * padded to 30 heroes so a perf capture can answer whether render counts scale with
  * roster size or are flat.
  *

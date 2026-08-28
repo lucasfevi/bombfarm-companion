@@ -37,7 +37,7 @@ export type HeroDraftSlice = {
   heroSkin: number;
   /** Banked, unspent stat points from the save (`HeroRecord.statPointsAvailable`). Display-only — not user-editable. */
   statPointsAvailable: number;
-  /** Suppresses phase→mitigation sync during applyHero / reset (ASM-10). */
+  /** Suppresses phase→mitigation sync during applyHero / reset. */
   skipPhaseMitigationSync: boolean;
 
   setHeroName: (value: string) => void;

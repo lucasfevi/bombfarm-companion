@@ -11,8 +11,8 @@ export type StoredAccountFidelity = { readonly [S in AccountSection]: StoredSect
 export type AccountStoreStatus = 'ok' | 'degraded' | 'unavailable';
 
 export type AccountStoreReason =
-  | 'empty' // nothing persisted yet (APS-04)
-  | 'schema_too_new' // APS-09
+  | 'empty' // nothing persisted yet
+  | 'schema_too_new'
   | 'corrupt_rebuilt'
   | 'not_writable'
   | 'no_sqlite_binding'

@@ -3,7 +3,9 @@ import { availableParallelism } from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import type { NextConfig } from 'next';
+import { PHASE_DEVELOPMENT_SERVER } from 'next/constants.js';
 import type { Configuration as WebpackConfig } from 'webpack';
+import { cappedWorkers } from '../../tools/cpu-budget.mjs';
 
 const projectRoot = path.dirname(fileURLToPath(import.meta.url));
 const webPackage = JSON.parse(
@@ -28,6 +30,7 @@ const DEV_WATCH_IGNORED = [
   '**/node_modules/**',
   '**/.git/**',
   '**/.next/**',
+  '**/.next-dev/**',
   '**/.storybook/**',
   '**/e2e/perf/out/**',
   '**/e2e/**',
@@ -45,7 +48,7 @@ const DEV_WATCH_IGNORED = [
 ] as const;
 
 /**
- * RES-05 — set by `pnpm perf:build:profile` to produce a *measurement* build: production
+ * Set by `pnpm perf:build:profile` to produce a *measurement* build: production
  * React (via `next build --profile`) with component names retained. Off for every normal
  * build, so shipped output is unaffected.
  */
@@ -67,8 +70,12 @@ const PERF_PROFILE = process.env.PERF_PROFILE === '1';
  *
  * CI is unaffected in practice: GitHub-hosted runners report 2–4 cores, so the
  * `min` already resolves below the cap there.
+ *
+ * `cappedWorkers` lowers this further while other Bomb Farm runs are executing — the pool
+ * above bounds one build, not the machine, and several builds at once each took it whole.
+ * See `tools/cpu-budget.mjs`; it is a no-op for a build that has the machine to itself.
  */
-const BUILD_WORKERS = Math.max(1, Math.min(4, availableParallelism() - 1));
+const BUILD_WORKERS = cappedWorkers(Math.min(4, availableParallelism() - 1), 'next:build');
 
 const nextConfig: NextConfig = {
   // Client-only planner (localStorage). Ready for Vercel; no Node runtime needed.
@@ -81,7 +88,7 @@ const nextConfig: NextConfig = {
     NEXT_PUBLIC_APP_VERSION_LABEL_OVERRIDE: process.env.BFC_VERSION_LABEL_OVERRIDE ?? '',
   },
   reactStrictMode: true,
-  transpilePackages: ['@bombfarm/domain', '@bombfarm/ui'],
+  transpilePackages: ['@bombfarm/domain', '@bombfarm/ui', '@bombfarm/game-art'],
   // Pin Turbopack's resolve root to the pnpm workspace root.
   // apps/web alone breaks when `next` is hoisted to the repo root (`Next.js package not found`).
   turbopack: {
@@ -102,7 +109,7 @@ const nextConfig: NextConfig = {
   },
   webpack: (config: WebpackConfig, { dev }) => {
     if (!dev && PERF_PROFILE) {
-      // RES-05 — perf-measurement build only, never a shipped artifact.
+      // Perf-measurement build only, never a shipped artifact.
       //
       // `next build --profile` swaps in React's profiling build so the Profiler API
       // reports in production, but it does not stop SWC mangling function names — and
@@ -120,7 +127,7 @@ const nextConfig: NextConfig = {
       config.optimization = { ...config.optimization, minimize: false };
     }
     if (!dev) {
-      // RES-02 — keep zustand's `devtools` middleware out of the production bundle.
+      // Keep zustand's `devtools` middleware out of the production bundle.
       // The runtime `NODE_ENV` guard is not enough on its own: webpack marks a
       // statically-imported binding as used at module-graph time, so the middleware
       // ships whole even though the branch using it is provably dead. Measured leak:
@@ -149,4 +156,18 @@ const nextConfig: NextConfig = {
   },
 };
 
-export default nextConfig;
+/**
+ * `next dev` and `next build` write mutually incompatible trees, and `next build` wipes the
+ * whole dist directory before it writes. Under the default shared `.next` the two collide on
+ * the same paths — dev keeps `server/pages/_app/build-manifest.json` (a directory per entry),
+ * build writes `server/pages/_app.js` (a file). A build therefore deletes the manifests the
+ * running dev server holds open, and every later Fast Refresh dies with
+ * `ENOENT ... .next/server/pages/_app/build-manifest.json` until the server is restarted.
+ *
+ * That is routine here, not misuse: `pnpm build` is the documented first step of any session
+ * (see AGENTS.md), so it lands while a dev server is up whenever both run against one tree.
+ * Giving dev its own dist directory makes the two disjoint.
+ */
+export default function config(phase: string): NextConfig {
+  return phase === PHASE_DEVELOPMENT_SERVER ? { ...nextConfig, distDir: '.next-dev' } : nextConfig;
+}

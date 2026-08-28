@@ -42,7 +42,7 @@ export type PhasesSlice = {
   farmRespecProposal: FarmRespecProposal | null;
   /** EPHEMERAL. */
   farmRespecStatus: FarmRespecStatus;
-  /** EPHEMERAL — the re-rank toggle (MOD-13, the sort/filter precedent). */
+  /** EPHEMERAL — the re-rank toggle (the sort/filter precedent). */
   farmRespecReRank: boolean;
   /** EPHEMERAL — lets the player close the panel without turning re-rank on. */
   farmRespecPanelOpen: boolean;

@@ -63,7 +63,7 @@ export function formatOneShot(oneShot: boolean, labels: { yes: string; no: strin
 
 /**
  * Re-exported, not defined here: the Account page prints the same label and cannot import from
- * this feature (MOD-09 denies cross-feature edges), so the definition moved to
+ * this feature (cross-feature edges are denied), so the definition moved to
  * `@/shared/lib/phase-label`. Kept as a re-export so this module stays the board's one import
  * surface for its formatters.
  */

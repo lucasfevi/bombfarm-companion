@@ -3,6 +3,7 @@ import type { RankMode } from '@bombfarm/domain/model';
 import { DEFAULT_CASA_SLOTS } from '@bombfarm/domain/casa-slots';
 import { effectiveFarmPhase } from '@bombfarm/domain/farm-context';
 import type { AccountImportData } from '@bombfarm/domain/import-save';
+import type { RequiredAccountField } from '@bombfarm/domain/account-required-fields';
 import { phaseLine } from '@bombfarm/domain/phases';
 import type { TeamBuffId } from '@bombfarm/domain/team-buffs';
 import {
@@ -92,6 +93,8 @@ export type AccountSlice = {
    *  imported save carried neither (both are optional export keys). */
   playerName: string | null;
   accountId: string | null;
+  /** See {@link AccountShared.missingRequiredFields} for what `null` vs `[]` mean. */
+  missingRequiredFields: readonly RequiredAccountField[] | null;
 
   setTeamBuffsOverride: (value: Record<TeamBuffId, number> | null) => void;
   setHouseIdx: (value: number) => void;
@@ -102,7 +105,7 @@ export type AccountSlice = {
   setTargetProp: (value: string | null) => void;
 
   hydrateAccount: (shared: AccountShared) => void;
-  applyAccountImport: (data: AccountImportData) => void;
+  applyAccountImport: (data: AccountImportData, missingRequired?: readonly RequiredAccountField[]) => void;
 };
 
 const defaultTree = DEFAULT_TREE();
@@ -141,6 +144,7 @@ export const createAccountSlice: StateCreator<
   maxPhase: null,
   playerName: null,
   accountId: null,
+  missingRequiredFields: null,
 
   setTeamBuffsOverride: (value) => {
     if (teamBuffsOverrideEqual(get().teamBuffsOverride, value)) return;
@@ -208,10 +212,11 @@ export const createAccountSlice: StateCreator<
       maxPhase: shared.maxPhase ?? null,
       playerName: shared.playerName ?? null,
       accountId: shared.accountId ?? null,
+      missingRequiredFields: shared.missingRequiredFields ?? null,
     });
   },
 
-  applyAccountImport: (data) => {
+  applyAccountImport: (data, missingRequired) => {
     const patch: Partial<AccountSlice> = {};
     if (data.tree) {
       patch.treeDanoTotal = data.tree.danoTotal;
@@ -250,7 +255,7 @@ export const createAccountSlice: StateCreator<
     if (data.phase != null) {
       // Same clamp `setFarmPhase` relies on downstream reads for (AD-BSP style: reuse, don't
       // reimplement) — and the same mitigation-sync/skipPhaseMitigationSync contract as
-      // `setFarmPhase` below, so an import landing mid hero-switch (ASM-10's suppression
+      // `setFarmPhase` below, so an import landing mid hero-switch (the suppression
       // window) doesn't fight it.
       const phase = effectiveFarmPhase(data.phase);
       patch.phase = phase;
@@ -275,6 +280,9 @@ export const createAccountSlice: StateCreator<
     // carries no identity must not leave the previous account's name in the page header.
     patch.playerName = data.playerName ?? null;
     patch.accountId = data.accountId ?? null;
+    // `[]`, never `null`: reaching this function means an import happened, so "never checked"
+    // is over even when the caller supplies no verdict.
+    patch.missingRequiredFields = missingRequired ?? [];
     if (Object.keys(patch).length > 0) set(patch);
   },
 });

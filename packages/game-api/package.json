@@ -1,12 +1,16 @@
 {
   "name": "@bombfarm/game-api",
-  "version": "0.2.5",
+  "version": "0.3.0",
   "private": true,
   "type": "module",
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
       "import": "./dist/index.js"
+    },
+    "./test-fixtures": {
+      "types": "./dist/test-fixtures.d.ts",
+      "import": "./dist/test-fixtures.js"
     }
   },
   "scripts": {

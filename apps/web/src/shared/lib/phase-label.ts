@@ -6,7 +6,7 @@ import { formatPhaseCoord } from '@bombfarm/domain/phase-wiki';
  *
  * Lives in `shared/lib` rather than in the Phases feature because the Account page's header
  * prints the same label for the account's current and furthest phase, and cross-feature imports
- * are denied (MOD-09). One definition, so the two surfaces cannot drift into different spellings
+ * are denied. One definition, so the two surfaces cannot drift into different spellings
  * of the same phase.
  *
  * `@bombfarm/domain`'s own `formatPhaseLabel` renders the number WITHOUT the `#`

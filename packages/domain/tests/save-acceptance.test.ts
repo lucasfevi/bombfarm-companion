@@ -1,7 +1,7 @@
 /**
- * MP5 F4 (T7) — the positive acceptance gate in `parseSaveFile`, `MSG-11`…`MSG-13`, `MSG-15`.
+ * T7 — the positive acceptance gate in `parseSaveFile`.
  *
- * MSG-12's core claim lives here: a discriminator keyed off the ABSENCE of the old keys would
+ * The core claim here: a discriminator keyed off the ABSENCE of the old keys would
  * accept a truncated/hand-edited file (which also lacks them). This suite proves the real
  * discriminator is positive — keyed off PRESENCE of the new keys — by asserting the truncated
  * and the complete post-patch row in the SAME test, so the distinction is visible in one place.
@@ -31,12 +31,12 @@ function loadCorpus(): Record<string, unknown> | null {
   return loadJson(CORPUS_PATH) as Record<string, unknown>;
 }
 
-describe('parseSaveFile — the positive acceptance gate (MSG-11, MSG-12, MSG-13)', () => {
+describe('parseSaveFile — the positive acceptance gate', () => {
   const preUpdate = loadRejectionFixture('pre-update-save.json');
   const truncated = loadRejectionFixture('truncated-save.json');
   const corpus = loadCorpus();
 
-  it('MSG-12: truncated AND complete post-patch rows, in the SAME test — proves the discriminator is positive, not "lacks the old keys"', () => {
+  it('truncated AND complete post-patch rows, in the SAME test — proves the discriminator is positive, not "lacks the old keys"', () => {
     if (!truncated || !corpus) return;
 
     const truncatedResult = parseSaveFile(truncated, []);
@@ -53,7 +53,7 @@ describe('parseSaveFile — the positive acceptance gate (MSG-11, MSG-12, MSG-13
     expect(truncatedResult.rejected).not.toEqual(completeResult.rejected);
   });
 
-  it('MSG-13: a pre-patch export (old keys present, new keys absent) is rejected — no hero, item or account value reaches the caller', () => {
+  it('a pre-patch export (old keys present, new keys absent) is rejected — no hero, item or account value reaches the caller', () => {
     if (!preUpdate) return;
     const result = parseSaveFile(preUpdate, []);
 
@@ -90,7 +90,7 @@ describe('parseSaveFile — the positive acceptance gate (MSG-11, MSG-12, MSG-13
     expect(result.rejected).toEqual({ reason: 'notASaveFile', heroNames: [] });
   });
 
-  it('MSG-15: the rejection names the absent path-qualified keys in warnings (data, not rendered copy — AD-040)', () => {
+  it('the rejection names the absent path-qualified keys in warnings (data, not rendered copy)', () => {
     if (!preUpdate) return;
     const { warnings } = parseSaveFile(preUpdate, []);
     expect(warnings).toHaveLength(1);

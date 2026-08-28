@@ -1,5 +1,5 @@
 import { test, expect, type Page, type Locator } from '@playwright/test';
-import { teamPlanFixtureSeed } from './fixtures/team-plan-seed';
+import { teamPlanRichSeed } from './fixtures/team-plan-seed';
 import { seedLocalStorage } from './fixtures/seed';
 import {
   clickOptimize,
@@ -25,7 +25,9 @@ async function expandAllHeroRows(panel: Locator) {
 
 test.describe('Team plan per-hero proposed gear', () => {
   test.beforeEach(async ({ page }) => {
-    await seedLocalStorage(page, teamPlanFixtureSeed('en'));
+    // The RICH seed: every case in this file is about an item being kept, moved or forged,
+    // and the structural seed's heroes arrive wearing nothing at all (issue #206).
+    await seedLocalStorage(page, teamPlanRichSeed('en'));
     await gotoTeamPlan(page);
     await clickOptimize(page);
     await waitForOptimizeDone(page);

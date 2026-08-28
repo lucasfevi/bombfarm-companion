@@ -1,11 +1,13 @@
 /**
- * The roster (design.md §7.2, MPV-12/13/14/15). Every row sourced from the parsed `HeroRecord`;
+ * The roster (design.md §7.2). Every row sourced from the parsed `HeroRecord`;
  * no local table markup — `DataTable` only (`Root scrollable` — the modern, non-deprecated form
  * of `TableScroller`, which `@typescript-eslint/no-deprecated` forbids). Selection is a
- * `Button`, so the only interactive control here is a shipped primitive (MPV-14).
+ * `Button`, so the only interactive control here is a shipped primitive.
  */
-import { Button, Chip, DataTable } from '@bombfarm/ui';
+import { Button, Chip, DataTable, cn } from '@bombfarm/ui';
 import { rarityLabel } from '@bombfarm/domain/game-labels';
+import { RARITIES } from '@bombfarm/domain/planner-constants';
+import { HeroAvatar, rarityTextClass } from '@bombfarm/game-art';
 import { useCopy, useLocale } from '../../lib/copy';
 import { formatCount } from '../../lib/format';
 import type { RosterEntry } from '../../lib/planning/types';
@@ -27,6 +29,9 @@ export function RosterList({
       <DataTable.Table data-testid="roster-list">
         <DataTable.Head>
           <DataTable.Row>
+            <DataTable.Header className="w-14" aria-label={t.planningRosterColumnAvatar}>
+              <span className="sr-only">{t.planningRosterColumnAvatar}</span>
+            </DataTable.Header>
             <DataTable.Header>{t.planningRosterColumnName}</DataTable.Header>
             <DataTable.Header align="right">{t.planningRosterColumnLevel}</DataTable.Header>
             <DataTable.Header align="right">{t.planningRosterColumnStars}</DataTable.Header>
@@ -36,8 +41,17 @@ export function RosterList({
         <DataTable.Body>
           {heroes.map((entry) => {
             const selected = entry.hero.id === selectedHeroId;
+            const rarIdx = RARITIES.indexOf(entry.hero.rarity);
             return (
               <DataTable.Row key={entry.hero.id} data-testid={`roster-row-${entry.hero.id}`} aria-selected={selected}>
+                <DataTable.Cell className="w-14 px-1" nowrap={false}>
+                  <HeroAvatar
+                    skin={entry.hero.skin ?? 0}
+                    rarityIdx={rarIdx}
+                    size="sm"
+                    name={entry.hero.name}
+                  />
+                </DataTable.Cell>
                 <DataTable.RowHeader>
                   <Button
                     type="button"
@@ -46,7 +60,7 @@ export function RosterList({
                     onClick={() => {
                       onSelect(entry.hero.id);
                     }}
-                    className="w-full justify-start text-left"
+                    className="w-full justify-start text-left text-[13px] leading-none font-bold normal-case text-ink"
                   >
                     {entry.hero.name}
                   </Button>
@@ -58,7 +72,9 @@ export function RosterList({
                   {formatCount(entry.hero.stars, locale)}
                 </DataTable.Cell>
                 <DataTable.Cell>
-                  <Chip variant="small">{rarityLabel(entry.hero.rarity, lang)}</Chip>
+                  <Chip variant="small" className={cn(rarityTextClass(rarIdx) ?? 'text-muted')}>
+                    {rarityLabel(entry.hero.rarity, lang)}
+                  </Chip>
                 </DataTable.Cell>
               </DataTable.Row>
             );

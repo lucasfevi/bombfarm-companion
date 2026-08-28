@@ -1,5 +1,5 @@
 /**
- * Browser-side React commit collector for the MOD-33 perf harness.
+ * Browser-side React commit collector for the profiler-re-run perf harness.
  * Must stay dependency-free — installed via Playwright `addInitScript` before app scripts.
  *
  * Fiber tags and PerformedWork match React 19 / DevTools `didFiberRender` for counted types.

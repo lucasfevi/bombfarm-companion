@@ -1,8 +1,8 @@
 /**
- * Next-point ranking (design.md §7.2, MPV-02/03/09). `ranking` is rendered in the engine's own
+ * Next-point ranking (design.md §7.2). `ranking` is rendered in the engine's own
  * order — never filtered (design risk row: filtering would be a second mapping).
  */
-import { DataTable, Panel, Tooltip } from '@bombfarm/ui';
+import { DataTable, Panel, PanelHeader, Tooltip } from '@bombfarm/ui';
 import { STAT_NAME_COPY_KEY, useCopy, useLocale } from '../../lib/copy';
 import { formatDps, formatGainPct } from '../../lib/format';
 import { adviceForHero } from '../../lib/planning/hero-advice';
@@ -24,7 +24,7 @@ export function NextPointPanel({ model, heroId }: { model: PlanningModel; heroId
 
   return (
     <Panel>
-      <h2 className="text-base font-semibold text-ink">{t.adviceNextPointTitle}</h2>
+      <PanelHeader title={t.adviceNextPointTitle} />
       <Tooltip.Provider delay={180} closeDelay={80}>
         <DataTable.Root scrollable maxRows={7} rowHeight="2rem">
           <DataTable.Table data-testid="next-point-ranking">

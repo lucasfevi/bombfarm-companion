@@ -1,5 +1,5 @@
 /**
- * Design-system public entry (DS-09).
+ * Design-system public entry.
  *
  * The single import surface for the UI primitives + `cn()`. Primitives wrap
  * `@base-ui/react` where an interactive equivalent exists and encode the
@@ -12,7 +12,7 @@
  *
  * The cva recipe functions + variant types are exported for the few call sites
  * that dress a non-primitive element (e.g. a Ko-fi `<a>`, a Base UI
- * `Dialog.Close`). The fixed layout bundles (DS-05 documented recipe constants)
+ * `Dialog.Close`). The fixed layout bundles (documented recipe constants)
  * are intentionally NOT re-exported here — import them from the matching
  * `*.recipe.ts` module inside this boundary.
  */
@@ -28,6 +28,12 @@ export {
 export { cn } from './cn';
 export { AppShell } from './AppShell';
 export type { AppShellProps, AppShellNavItem } from './AppShell';
+export { BrandMark } from './brand-mark';
+export type { BrandMarkProps } from './brand-mark';
+export { AppNav } from './app-nav';
+export type { AppNavItem, AppNavProps } from './app-nav';
+export { SegmentedToggle } from './segmented-toggle';
+export type { SegmentedToggleOption, SegmentedToggleProps } from './segmented-toggle';
 export { StatusChip, type StatusChipProps, type GameConnectionStatus } from './status-chip';
 export { EmptyState, type EmptyStateProps } from './empty-state';
 export { cssVariables, tokens, colorTokens, breakpoints, motionTokens, contrastPairs, DEFAULT_HUE } from './tokens';
@@ -39,10 +45,17 @@ export { Stepper, type StepperProps } from './stepper';
 export { RankControl } from './rank-control';
 export { AbilityCard, type AbilityCardProps } from './ability-card';
 export { Panel, type PanelProps } from './panel';
+export { PanelHeader, type PanelHeaderProps } from './panel-header';
 export { Fields, type FieldsProps, type FieldsLayout } from './fields';
 export { Bar, type BarProps } from './bar';
 export { Num } from './num';
-export { Select, type SelectProps } from './select';
+export {
+  Select,
+  SelectMultiple,
+  type SelectProps,
+  type SelectMultipleProps,
+  type SelectMultipleHeader,
+} from './select';
 export { Switch, type SwitchProps } from './switch';
 export { Accordion } from './accordion';
 export type {

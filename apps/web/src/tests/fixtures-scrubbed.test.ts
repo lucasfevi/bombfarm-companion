@@ -1,7 +1,8 @@
-// Privacy guard for the web planner's own fixture copies — the mirror of
+// Privacy guard for the web planner's own committed fixtures — the mirror of
 // `packages/domain/tests/fixtures-scrubbed.test.ts`. `apps/web/src/tests/fixtures/sheet-math`
-// is a separate committed copy of the same captures, so scrubbing only the domain tree would
-// have left the identical values public here.
+// no longer commits its own captures (domain is the sole copy, enforced by
+// `tools/fixture-corpus-parity.test.mjs`); this guard's remaining subjects are
+// whatever other fixture JSON the web tree commits on its own.
 //
 // The field list is duplicated rather than imported: `@bombfarm/domain`'s test helpers are not
 // part of its published surface, and this package must not reach into another package's

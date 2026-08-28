@@ -2,7 +2,10 @@
 
 import { useMemo, useState } from 'react';
 import { parseSaveFile, type AccountImportData, type ImportCandidate, type ParseRejection } from '@bombfarm/domain/import-save';
+import type { RequiredAccountField } from '@bombfarm/domain/account-required-fields';
 import type { InventoryItem } from '@bombfarm/domain/inventory';
+import type { InventoryViewItem } from '@bombfarm/domain/inventory-view';
+import { saveInventoryView } from '@/shared/lib/inventory-view-storage';
 import { importHeroes, type HeroRecord } from '@/shared/lib/storage';
 import { usePlannerStore } from '@/shared/stores';
 import type { Strings } from '@/shared/i18n';
@@ -18,6 +21,7 @@ export type ImportDialogResult = {
   updated: number;
   removed: number;
   account: AccountImportData | null;
+  accountMissingRequired: readonly RequiredAccountField[];
 };
 
 export type UseImportCandidatesArgs = {
@@ -28,13 +32,13 @@ export type UseImportCandidatesArgs = {
 };
 
 /**
- * `AD-BSP-26`/`BSP-49` — the dialog reviews a full roster sync; it no longer curates a
+ * The dialog reviews a full roster sync; it no longer curates a
  * selection. `selected`/`toggle`/`toggleAll`/`allSelected`/`someSelected` are gone (T13):
  * confirm is enabled whenever at least one candidate exists, and every non-blocked candidate
  * is written. `handleConfirm` passes the save's own `sourceId` set as `importHeroes`' third
- * argument (`DEC-08`) — a blocked candidate is excluded from `records` but its `sourceId`
+ * argument — a blocked candidate is excluded from `records` but its `sourceId`
  * still counts toward that set, so an existing hero with that `sourceId` is preserved, not
- * removed (`W5 AC-28`).
+ * removed (`W5`).
  */
 export function useImportCandidates({
   existing,
@@ -47,7 +51,9 @@ export function useImportCandidates({
   const [rejected, setRejected] = useState<ParseRejection | null>(null);
   const [fileError, setFileError] = useState<string | null>(null);
   const [accountData, setAccountData] = useState<AccountImportData | null>(null);
+  const [accountMissingRequired, setAccountMissingRequired] = useState<readonly RequiredAccountField[]>([]);
   const [inventoryItems, setInventoryItems] = useState<InventoryItem[]>([]);
+  const [inventoryViewItems, setInventoryViewItems] = useState<InventoryViewItem[]>([]);
   const [sortKey, setSortKey] = useState<ImportSortKey>('power');
   const [sortDir, setSortDir] = useState<ImportSortDir>('desc');
 
@@ -62,7 +68,9 @@ export function useImportCandidates({
     setRejected(null);
     setFileError(null);
     setAccountData(null);
+    setAccountMissingRequired([]);
     setInventoryItems([]);
+    setInventoryViewItems([]);
     setSortKey('power');
     setSortDir('desc');
   }
@@ -87,12 +95,16 @@ export function useImportCandidates({
       account,
       rejected: rejectedResult,
       inventory,
+      inventoryView,
+      accountMissingRequired: missingRequired,
     } = parseSaveFile(raw, existing);
     setCandidates(found);
     setWarnings(warn);
     setRejected(rejectedResult);
     setAccountData(account);
+    setAccountMissingRequired(missingRequired);
     setInventoryItems(inventory);
+    setInventoryViewItems(inventoryView);
     setSortKey('power');
     setSortDir('desc');
   }
@@ -111,12 +123,13 @@ export function useImportCandidates({
     const records = candidates
       .filter((candidate) => !candidate.blocked)
       .map((candidate) => ({ ...candidate.record, sourceId: candidate.sourceId }));
-    // DEC-08: the save's own sourceId set, blocked candidates included — importHeroes removes
-    // any existing hero whose sourceId is absent from it, in the same write (BSP-48).
+    // The save's own sourceId set, blocked candidates included — importHeroes removes
+    // any existing hero whose sourceId is absent from it, in the same write.
     const saveSourceIds = new Set(candidates.map((candidate) => candidate.sourceId));
     const result = importHeroes(usePlannerStore.getState().heroes, records, saveSourceIds);
     usePlannerStore.getState().replaceInventoryFromImport(inventoryItems);
-    onImported({ ...result, account: accountData });
+    saveInventoryView(inventoryViewItems);
+    onImported({ ...result, account: accountData, accountMissingRequired });
     handleClose(false);
   }
 

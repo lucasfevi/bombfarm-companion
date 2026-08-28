@@ -1,5 +1,82 @@
 # @bombfarm/ui
 
+## 0.5.0
+
+### Minor Changes
+
+- dec4425: The desktop app's shell now uses the same sticky top-bar shape as the web planner — a brand
+  lockup, a segmented Live/Planning/Settings pill, and a right-hand actions area — instead of its
+  former left icon rail. The desktop's PT/EN language switch moved from Settings-only into that top
+  bar (Settings keeps its own control too; both stay in sync), and the nav no longer carries icons.
+
+  The web's segmented nav pill and its bordered PT/EN toggle are extracted into two new shared
+  `@bombfarm/ui` primitives, `AppNav` and `SegmentedToggle`, so both apps render identical chrome
+  from one implementation. The web's own header keeps its exact appearance and behavior; only its
+  internals now call the shared primitives.
+
+- d7c1565: Inventory cards that show the whole item, and a way to find one
+
+  Every card now carries the game's own art: the lit rarity plate behind the icon, at the size the
+  planner draws gear, and a real sprite for the things that had none — gems, keys, house parts,
+  skill stones and chests. Gear lists the stats it actually gives you, with the forge already
+  applied, so a +12 reads as what you get rather than what it rolled. The bottom of every card is a
+  fixed row: the hero wearing it on the left, in their own rarity colour with their level, and what
+  it sells for on the right, beside the coin.
+
+  Each kind of item now gets the card it deserves. A gem has no level and no forge, so it no longer
+  shows "Lv 0" — it shows its name and its tier and nothing it does not have. And because a stack of
+  27 identical keys is one thing you own rather than 27, everything but gear is grouped into a
+  single card with a count and the stack's total value. Chests and skill stones get their own
+  sections rather than falling into "Other", which is where the app used to put them.
+
+  Above the grid there is now a search box, sorting, and filters — by kind, by rarity, by the hero
+  wearing it, by set, and equipped-only — so finding one item among several hundred does not mean
+  scrolling. Search matches the item's name in your own language as well as the game's internal id.
+
+  Filtering by set is how you filter by level: every set sits at exactly one item level, so the list
+  reads "Lv 30 · Coal" and is ordered by level. It starts with everything chosen, shows how many
+  pieces of each set you own — 41 beside Coal tells you it is most of your gear before you have
+  filtered anything — and offers whichever of "Clear" and "Select all" would actually change
+  something. Only gear has a set, so narrowing here shows gear alone.
+
+  The English planner also stops showing Portuguese item names. Gear was being named by
+  title-casing the game's own slot token, so an English player saw "Gold · Elmo" where they should
+  have seen "Gold · Helm".
+
+### Patch Changes
+
+- dec4425: Dragging the window by its header no longer stutters or snaps back. The header carried a sticky
+  position, a stacking context and a backdrop blur inherited from the web planner, none of which
+  applies in a shell whose main region is the only thing that scrolls, and all of which put the
+  header on its own compositing layer — the layer the OS drags once the header is the title bar.
+
+  The header also now matches the caption strip beside it exactly, instead of sitting a shade
+  darker than it.
+
+  On the Live screen, the four field lists — on field, recovering, queued, benched — sit two to a
+  row instead of four full-width rows, so the whole field reads without scrolling past whichever
+  list is longest. They still stack on a narrow window.
+
+- dec4425: Live screen and header polish from direct feedback on the running app
+
+  `AppShell` gains an optional `brand` slot, and the shared design system exports a `BrandMark` —
+  an inline rendering of the header mark's five shapes rather than a binary asset either app would
+  need its own copy step for. The desktop now shows it beside its title, matching the web's own
+  header mark.
+
+  The desktop's Live screen showed two vertical scrollbars: the real one on its hero lists, plus an
+  always-reserved empty gutter meant for the web's own page scroll. That gutter rule now lives only
+  in the web's stylesheet.
+
+  On the Live screen: hero avatars beside the three-line stacked identity are bigger, so the row
+  reads as one block instead of a small icon dwarfed by its own text. The dashed underline under
+  field/rest countdowns is gone from both the modelled and direct-reading states — the row already
+  never reflowed when the basis flips (that's what the shared underline was protecting), and the
+  text colour plus a screen-reader-only qualifier still carry the distinction. The standalone "Field
+  slots in use" panel is gone; its count now lives in the on-field list's own header, as a plain
+  `occupied/total` (or just `occupied` when the field size hasn't been sent). The on-field list
+  itself is renamed "Field" ("Campo"), the name the retired panel used.
+
 ## 0.4.0
 
 ### Minor Changes
@@ -363,7 +440,7 @@ auto` DOM node even offscreen, which is also the likely cause of the scrollbar/s
 ### Minor Changes
 
 - fc7fcf1: **Every player-facing and internal surface that could still express the five removed keystones is
-  gone.** `@bombfarm/domain` stopped modelling Abisso, Glass Cannon and Tempo Dobrado (MP5 F2); this
+  gone.** `@bombfarm/domain` stopped modelling Abisso, Glass Cannon and Tempo Dobrado; this
   change removes the last ways a player or a maintainer could still see, toggle, persist or key on
   them.
 

@@ -115,8 +115,8 @@ function buildFixture(opts: FixtureOpts = {}) {
   const treeDanoTotal = opts.treeDanoTotal ?? 1;
   const extraDmgPct = opts.extraDmgPct ?? 0;
 
-  // BSPW4-06 (AC-40/41): the real imported sheet is ALWAYS tree-inclusive (the skill tree is
-  // applied exactly once, in the sheet — BSP-23c). A default `geared` that ignores treeXxx
+  // The real imported sheet is ALWAYS tree-inclusive (the skill tree is
+  // applied exactly once, in the sheet). A default `geared` that ignores treeXxx
   // would make `derive`'s single-application `effective` disagree with a ledger that (rightly)
   // shows a 'tree' step — bake the SAME single application into the default fixture so the two
   // stay consistent, matching what a real save's `stats` block already does. Matches
@@ -437,7 +437,7 @@ describe('stat-breakdown builder', () => {
     }
   });
 
-  it('F9 — attack tree step is × dmg_static on the Hero+Gear+Ability subtotal (AC-42)', () => {
+  it('F9 — attack tree step is × dmg_static on the Hero+Gear+Ability subtotal', () => {
     const { facts } = buildFixture({
       pts: { ...ZERO_PTS(), attack: 2 },
       treeDanoTotal: 1.2,
@@ -454,7 +454,7 @@ describe('stat-breakdown builder', () => {
       const tree = atk.steps.find((s) => s.source === 'tree');
       expect(tree?.op).toBe('×');
       expect(tree?.amount).toBeCloseTo(1.2, 6);
-      // formulaDmg no longer contains treeDanoTotal (AC-42).
+      // formulaDmg no longer contains treeDanoTotal.
       const dmg = buildStatBreakdown('dmg', facts);
       expect(dmg.kind).toBe('formula');
       if (dmg.kind === 'formula') {
@@ -463,7 +463,7 @@ describe('stat-breakdown builder', () => {
     }
   });
 
-  it('F10 — critChance / critDmg tree steps are additive-pool, sourced before combat mults (AC-41)', () => {
+  it('F10 — critChance / critDmg tree steps are additive-pool, sourced before combat mults', () => {
     const { facts } = buildFixture({
       pts: { ...ZERO_PTS(), critChance: 1, critDmg: 1 },
       treeCritChance: 6,
@@ -509,7 +509,7 @@ describe('stat-breakdown builder', () => {
   });
 });
 
-describe('LEDGER_SOURCE_GROUP is exhaustive over LedgerSource (BSP-20, AC-28, DEC-07)', () => {
+describe('LEDGER_SOURCE_GROUP is exhaustive over LedgerSource', () => {
   const ALL_SOURCES: LedgerSource[] = [
     'base',
     'level',
@@ -547,7 +547,7 @@ describe('LEDGER_SOURCE_GROUP is exhaustive over LedgerSource (BSP-20, AC-28, DE
   });
 });
 
-describe('ledgerLuck (BSP-44, AC-22, DEC-06)', () => {
+describe('ledgerLuck', () => {
   it('Hero / Gear / Ability(0) / Points / Skill tree lines recompose to adjusted.luck within 0.01', () => {
     const naked = sampleNaked();
     const pts = { ...ZERO_PTS(), luck: 4 };

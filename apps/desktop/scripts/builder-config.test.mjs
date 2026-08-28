@@ -81,6 +81,7 @@ describe('createBuilderConfig', () => {
         ]);
         expect(config.win).toEqual({
           target: [{ target: 'nsis', arch: ['x64'] }],
+          icon: 'assets/icon.ico',
         });
         expect(config.nsis).toEqual({
           oneClick: true,

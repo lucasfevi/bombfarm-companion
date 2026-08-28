@@ -288,7 +288,7 @@ describe('eligibleForHero', () => {
   });
 });
 
-// MP5 F1 (AD-068 class (a) for the pooled-count claim, class (b) for the rest): re-pointed
+// (the ground-truth rule, class (a) for the pooled-count claim, class (b) for the rest): re-pointed
 // onto the post-patch corpus. The pooled-count is read from the new capture, not carried over —
 // 27 for the payload (its own catalogued-item count; the search space collapsed from the
 // deleted fixture's 58), 17 for the export.

@@ -1,13 +1,13 @@
 /**
- * MP2 F4 — the fidelity-gate loader and the deterministic export→live framing helper.
+ * The fidelity-gate loader and the deterministic export→live framing helper.
  *
  * `frameLiveCapture` / `scrubPersonalFields` (T1) are pure, non-throwing transforms used both
  * to build the committed `live-capture.json` and, pre-F2, to prove that file is exactly what
- * the framing function produces from the committed export (design §1.1, `AD-026`).
+ * the framing function produces from the committed export (design §1.1).
  *
  * `loadFidelityPair` (T2) is the fail-loud entry point: every failure mode throws a typed
  * `FidelityGateError` (`design.md` §4.1) — there is no "return null/undefined" branch for a
- * caller to forget to check (`AD-025`'s pattern applied here).
+ * caller to forget to check.
  */
 import { existsSync, readFileSync, statSync } from 'node:fs';
 import { join } from 'node:path';
@@ -20,9 +20,9 @@ const PAIR_MANIFEST_FILE = 'pair.json';
 const DOCS_LINK = 'docs/fidelity-gate.md';
 
 /**
- * The provenance token this design ladders strictness off (`design.md` §1.2, `AD-026`).
+ * The provenance token this design ladders strictness off (`design.md` §1.2).
  *
- * `api-assembled` was added when MP2 F2 shipped as an API source rather than the memory reader
+ * `api-assembled` was added once API ingest shipped as a source rather than the memory reader
  * the ladder was first written for. `memory-assembled` is deliberately kept, not renamed: it is
  * a merged tripwire whose meaning would be rewritten retroactively by a rename, and telemetry is
  * still memory-sourced, so it keeps a real future subject.
@@ -100,7 +100,7 @@ export interface FrameStamp {
 /**
  * Deterministic export → live framing (design §1.1): lifts the five `AccountPayload` sections
  * out of a scrubbed export object, drops the two file-only keys (`export_version`,
- * `generated_at` — ACS-06), and attaches a five-section `fidelity` block stamped `resolved` at
+ * `generated_at` — file-only concerns stay in the adapter), and attaches a five-section `fidelity` block stamped `resolved` at
  * `stamp.capturedAt`. Calling this twice on the same input produces byte-identical output
  * (T1's `Done when` — the regeneration proof for the committed `live-capture.json`).
  */
@@ -275,7 +275,7 @@ function assertScrubbed(payload: unknown, label: string): void {
 /**
  * Reads `pair.json` plus both captures from `dir` (default: the committed fixture directory),
  * validates the manifest, and returns a fully-typed `FidelityPair`. Every failure mode throws a
- * `FidelityGateError` — there is no falsy/partial return value (`AD-025`).
+ * `FidelityGateError` — there is no falsy/partial return value.
  */
 export function loadFidelityPair(dir: string = DEFAULT_FIXTURES_DIR): FidelityPair {
   if (!existsSync(dir) || !statSync(dir).isDirectory()) {
@@ -305,8 +305,8 @@ export function loadFidelityPair(dir: string = DEFAULT_FIXTURES_DIR): FidelityPa
     throw new FidelityGateError('fixtureMalformed', `Live capture "${livePath}" did not parse to a JSON object.`, { path: livePath });
   }
 
-  // The export-capture file carries the two file-only keys (`export_version`, `generated_at`,
-  // ACS-06); the AccountPayload type never declares them, so they simply ride along at runtime
+  // The export-capture file carries the two file-only keys (`export_version`, `generated_at`);
+  // the AccountPayload type never declares them, so they simply ride along at runtime
   // (same contract `toAccountPayload` relies on in `import-save.ts`).
   const exportPayload = exportRaw as unknown as AccountPayload;
   const livePayload = liveRaw as unknown as AccountPayload;

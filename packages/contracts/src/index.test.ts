@@ -21,7 +21,7 @@ type _AllInvokeChannelsListed = AssertNever<Exclude<import('./index.js').IpcInvo
 type _AllEventChannelsListed = AssertNever<Exclude<import('./index.js').IpcEventChannel, (typeof IPC_EVENT_CHANNELS)[number]>>;
 
 describe('contracts IPC surface', () => {
-  it('lists stable invoke channels, including the four MP2 F2 consent channels', () => {
+  it('lists stable invoke channels, including the four consent channels', () => {
     expect(IPC_CHANNELS).toEqual([
       'app:getFlavor',
       'app:getEnvironment',
@@ -31,13 +31,13 @@ describe('contracts IPC surface', () => {
       'settings:usePortuguese',
       'storage:health',
       'game:getStatus',
-      'game:getSnapshot',
       'account:get',
       'consent:get',
       'consent:accept',
       'consent:decline',
       'consent:revoke',
       'live:get',
+      'live:dumpDiagnostics',
     ]);
   });
 
@@ -46,7 +46,6 @@ describe('contracts IPC surface', () => {
       'game:status',
       'consent:changed',
       'account:changed',
-      'snapshot:updated',
       'live:event',
     ]);
   });
@@ -66,7 +65,6 @@ describe('contracts IPC surface', () => {
     expect(isIpcEventChannel('game:status')).toBe(true);
     expect(isIpcEventChannel('consent:changed')).toBe(true);
     expect(isIpcEventChannel('account:changed')).toBe(true);
-    expect(isIpcEventChannel('snapshot:updated')).toBe(true);
     expect(isIpcEventChannel('not-an-event')).toBe(false);
   });
 

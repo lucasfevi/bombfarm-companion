@@ -1,5 +1,5 @@
 /**
- * Slot counts resolved from a save (RGO-3, ASM-S02).
+ * Slot counts resolved from a save (ASM-S02).
  *
  * TWO DIFFERENT GAME CONCEPTS, two different keys — do not collapse them:
  *
@@ -20,6 +20,21 @@ export const CASA_SLOTS_PER_HOUSE = [3, 5, 7, 9, 9] as const;
 
 /** Casa III+ default when neither `casa.slots` nor `slots_per_house[houseIdx]` applies. */
 export const DEFAULT_CASA_SLOTS = 9;
+
+/** The most rest slots any House gives — the top of the {@link CASA_SLOTS_PER_HOUSE} ladder. */
+export const CASA_SLOTS_MAX = Math.max(...CASA_SLOTS_PER_HOUSE);
+
+/**
+ * The widest the field can ever be, from the wiki's `rotacao.campo` (`skill_tree.field_size`
+ * agrees, and the last `vagas_campo` node reads "campo cheio" at this count). The tree starts at
+ * `field_base_slots: 1` and adds eight of those nodes; an account below this can still buy one.
+ *
+ * A CEILING TO REPORT AGAINST, never a clamp: {@link resolveFieldSlots} still records whatever
+ * the save carries, so a game patch that raises the track shows up as a value above this rather
+ * than being silently truncated to it. Advice is what needs it — telling a player to buy field
+ * slots they cannot buy is worse than saying nothing.
+ */
+export const FIELD_SLOTS_MAX = 9;
 
 function isObject(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null;
@@ -67,7 +82,7 @@ export function resolveCasaSlots(casa: unknown, houseIdx: number | null): number
  * `null` when the save does not carry the key, so a caller can keep its own fallback rather
  * than inherit an invented number here.
  *
- * `AD-063` convention, followed verbatim: the save carries BOTH `skills.field_slots` and
+ * This convention, followed verbatim: the save carries BOTH `skills.field_slots` and
  * `skills.totals.vagas_campo` and they disagree (6 vs 5 on account 486, 3 vs 2 on the
  * 2026-08-13 export). This reader RECORDS `field_slots` and does not reconcile the pair —
  * `vagas_campo` is the skill tree's own purchased-node total, `field_slots` is the count the

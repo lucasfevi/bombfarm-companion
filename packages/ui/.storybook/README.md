@@ -2,7 +2,7 @@
 
 Local Storybook harness owned by `@bombfarm/ui` itself, on `@storybook/react-vite`.
 See [`docs/design-system.md`](../../../docs/design-system.md) for variant tables and
-the DS-09 reuse boundary.
+the reuse boundary.
 
 `packages/ui` used to be consumed-only by `apps/web`'s Storybook (`@storybook/nextjs`);
 the catalog now lives with the package it documents (m2-storybook-ci).
@@ -47,8 +47,8 @@ aggregator, which fails on `skipped`/`cancelled` too, not only `failure`) gates 
    `./src/**/*.stories.@(ts|tsx)` — package-relative, no absolute path out to
    `apps/web`.
 2. **Import boundary** — import only from `@bombfarm/ui` (barrel) or modules inside
-   `packages/ui/src`. Never import from `apps/web` features or `@bombfarm/domain` (DS-09
-   — a story that needs `@bombfarm/domain` is a boundary violation to report, not to
+   `packages/ui/src`. Never import from `apps/web` features or `@bombfarm/domain`
+   (a story that needs `@bombfarm/domain` is a boundary violation to report, not to
    alias around).
 3. **Dark-only preview** — [`preview.css`](preview.css) imports `../src/styles.css`
    directly (Tailwind v4 + its own `@source` scan of `packages/ui/src` — no separate

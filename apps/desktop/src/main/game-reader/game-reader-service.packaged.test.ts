@@ -34,6 +34,7 @@ vi.mock('./fixture-data.js', async (importOriginal) => {
   };
 });
 
+import type { AccountView } from '@bombfarm/contracts';
 import { GameReaderService } from './game-reader-service.js';
 
 describe('GameReaderService — packaged boot, fixtures unresolvable (live mode)', () => {
@@ -51,11 +52,16 @@ describe('GameReaderService — packaged boot, fixtures unresolvable (live mode)
 });
 
 describe('GameReaderService — fixture mode, fixtures genuinely missing', () => {
-  it('throws a clear error only when the fixture loader is actually reached', () => {
+  it('recovers to a stale status instead of throwing when the account payload fixture bundle cannot be loaded', () => {
     const service = new GameReaderService('/fake/user-data', { mode: 'fixture' });
-    expect(() => (service as unknown as { getFixtureBundle(): unknown }).getFixtureBundle()).toThrow(
-      /game-data fixtures directory not found/,
-    );
+    const fakeView: AccountView = { payload: {}, gameRunning: true, store: { status: 'ok', reason: null, binding: 'node:sqlite' } };
+    service.setAccountStore({ commit: () => fakeView });
+
+    expect(() => {
+      service.start();
+      service.stop();
+    }).not.toThrow();
+    expect(service.getStatus().status).toBe('stale');
   });
 });
 

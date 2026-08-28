@@ -9,20 +9,20 @@ const desktopRoot = path.join(__dirname, '..', '..');
 const ACCOUNT_FULL_FIXTURE = path.join(__dirname, '..', 'fixtures', 'account-full.json');
 
 /**
- * MP3 F3 (design.md `AD-048`, tasks.md T7) — LHP-15 end to end, both directions in one run.
+ * (design.md, tasks.md T7) — LHP-15 end to end, both directions in one run.
  *
  * **Why ~100 quiet commits produce zero `account:changed` events, and that is correct, not a
  * broken wiring.** `GameReaderService`'s fixture ticker (`BFC_GAME_READER=fixture`) commits an
  * account every `pollAttachedMs` (50 ms) with a fresh `capturedAt` and an otherwise
- * byte-identical body — ~20 commits/s, ~100 in 5 s. `AD-043`'s notifier gates `account:changed`
- * on `accountChangeKey(payload)`, which never reads `capturedAt` (`AD-044`), so every one of
+ * byte-identical body — ~20 commits/s, ~100 in 5 s. The notifier gates `account:changed`
+ * on `accountChangeKey(payload)`, which never reads `capturedAt`, so every one of
  * those commits produces the SAME key as the last emitted one and is suppressed. The **positive**
  * half of this same run then rewrites the fixture file with a genuinely different value and
  * asserts exactly one notification follows — proving the negative half's zero isn't because
  * nothing is wired, but because nothing relevant changed.
  *
  * Launcher shape reused verbatim from `planning-advice.spec.mjs` (its `BFC_TOKEN_PATH_OVERRIDE`,
- * its `BFC_GAME_PROCESS` pin, its `dismissConsent()` decline and the reasoning below — read, not
+ * its `BFC_GAME_PROCESS` pin, its `acceptConsent()` helper and the reasoning below — read, not
  * edited) and `account-restart.spec.mjs`'s `mkdtempSync` + `BFC_USER_DATA_DIR` pattern and its
  * `page.evaluate(() => window.bfc.invoke(...))` idiom.
  */
@@ -51,12 +51,11 @@ async function launchApp(env) {
       BFC_GAME_PROCESS: 'bfc-smoke-no-such-process.exe',
       // SAFETY (T-fix-4, planning-advice.spec.mjs's own comment, reproduced here because this
       // spec launches independently): redirects session-token-file.ts's sessionCfgPath() away
-      // from the real %APPDATA%/Godot/app_userdata/BombFarm/session.cfg. dismissConsent() below
-      // declines, so this is defense-in-depth rather than load-bearing today — but if consent
-      // were ever accepted (here or by a future edit), the next account-refresh cycle would
-      // otherwise open whichever real session.cfg exists on the machine running this suite and
-      // issue a live, authenticated request using the real player's token, purely as a side
-      // effect of a test run. Pointed at a path that deliberately does not exist:
+      // from the real %APPDATA%/Godot/app_userdata/BombFarm/session.cfg. acceptConsent() below
+      // grants, so this is load-bearing: without it the next account-refresh cycle would open
+      // whichever real session.cfg exists on the machine running this suite and issue a live,
+      // authenticated request using the real player's token, purely as a side effect of a test
+      // run. Pointed at a path that deliberately does not exist:
       // readSessionToken degrades that to token_unavailable (no network call at all).
       BFC_TOKEN_PATH_OVERRIDE: path.join(desktopRoot, 'tests', 'smoke', '.no-such-session.cfg'),
       ...env,
@@ -67,21 +66,19 @@ async function launchApp(env) {
   return { app, page };
 }
 
-async function dismissConsent(page) {
-  // Decline, never accept (planning-advice.spec.mjs's reasoning, reproduced): accepting switches
-  // on accountRefresh, whose token_unavailable view then unconditionally shadows the fixture
-  // reader through mergeStoredIntoLive (index.ts:94-98 prefers accountRefresh.getLastView() once
-  // consent is granted) and can never be `resolved` — the exact defect T-fix-6 fixed from the
-  // other side. Declining keeps consentGranted false, so account:get/the notifier never even look
-  // at accountRefresh's view; both serve the fixture reader's own (genuinely resolved) cache.
+async function acceptConsent(page) {
+  // Accept: the app shows a permission gate instead of its content until consent is granted, so
+  // nothing below is reachable otherwise. Accepting is safe for a fixture-backed suite now that a
+  // refresh cycle which resolves no section commits nothing — it can no longer overwrite the
+  // fixture reader's resolved sections with a token_unavailable placeholder.
   const modal = page.getByTestId('consent-modal');
   await expect(modal).toBeVisible({ timeout: 30_000 });
-  await page.getByTestId('consent-decline').click();
+  await page.getByTestId('consent-accept').click();
   await expect(modal).toBeHidden({ timeout: 15_000 });
 }
 
 async function goToPlanning(page) {
-  await dismissConsent(page);
+  await acceptConsent(page);
   await page.getByRole('button', { name: 'Planning' }).click();
   await page.waitForSelector('[data-testid="planning-view"]', { timeout: 15_000 });
 }
@@ -121,7 +118,7 @@ function raiseFirstHeroBaseAttackAtomically(fixtureCopyPath) {
   fs.renameSync(tmpPath, fixtureCopyPath);
 }
 
-test.describe('auto-recompute smoke (MP3 F3) — 100 quiet commits, then one real change', () => {
+test.describe('auto-recompute smoke — 100 quiet commits, then one real change', () => {
   test('~100 fixture commits produce 0 account:changed events; one atomic rewrite produces exactly 1, and the rendered advice changes', async () => {
     const userDataDir = fs.mkdtempSync(path.join(os.tmpdir(), 'bfc-auto-recompute-'));
     // The committed apps/desktop/tests/fixtures/account-full.json is NEVER written to — every
@@ -142,7 +139,7 @@ test.describe('auto-recompute smoke (MP3 F3) — 100 quiet commits, then one rea
 
         const gainBefore = await page.getByTestId('next-point-gain').innerText();
 
-        // Install the counter FROM THE TEST — zero production probe surface (AD-048). Installed
+        // Install the counter FROM THE TEST — zero production probe surface. Installed
         // only after the view has already rendered once, so it counts exactly the notifications
         // that happen from this point forward.
         await page.evaluate(() => {

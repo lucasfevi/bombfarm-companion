@@ -8,7 +8,8 @@ import type {
   PacingClock,
   SessionToken,
 } from '@bombfarm/game-api';
-import { SessionToken as SessionTokenClass, createPacingGate } from '@bombfarm/game-api';
+import { CONSENT_TEXT_VERSION, SessionToken as SessionTokenClass, createPacingGate } from '@bombfarm/game-api';
+import { consentRecord, grantedConsent } from '@bombfarm/game-api/test-fixtures';
 import type { AccountStore } from '../storage/account-store.js';
 import { createAccountStore } from '../storage/account-store.js';
 import type { SqliteBinding, SqliteDb, SqliteStatement } from '../storage/index.js';
@@ -40,9 +41,9 @@ function firstBinding(): SqliteBinding {
 
 const SENTINEL_TOKEN = 'sentinel-account-refresh-8b1e4d92-do-not-leak';
 
-const GRANTED: GrantedConsent = { decision: 'granted', grantedAt: '2026-08-12T13:15:38.000Z', textVersion: 1 };
-const DECLINED: ConsentRecord = { decision: 'declined', textVersion: 1 };
-const UNASKED: ConsentRecord = { decision: 'unasked', textVersion: 1 };
+const GRANTED = grantedConsent('2026-08-12T13:15:38.000Z');
+const DECLINED = consentRecord({ decision: 'declined' });
+const UNASKED = consentRecord({ decision: 'unasked' });
 
 function noopLog(): { info: () => void; warn: () => void; error: () => void } {
   return { info: () => undefined, warn: () => undefined, error: () => undefined };
@@ -91,7 +92,7 @@ function fixedReadToken(accountId: string, token: SessionToken, mtimeMs: number)
   return { fn, callCount: () => calls };
 }
 
-/** A schema-conforming `/roster` hero — `ROUTE_FINGERPRINTS.heroes`'s `hero` level (MP5 F4, T5).
+/** A schema-conforming `/roster` hero — `ROUTE_FINGERPRINTS.heroes`'s `hero` level (T5).
  *  These bodies predate T5's deepened, exact-key fingerprints; a missing key now makes
  *  `checkShape` mark the whole route `drift` instead of `resolved`, which this test suite reads
  *  through `fidelityOf(...).status`. */
@@ -278,16 +279,17 @@ function baseDeps(overrides: Partial<AccountRefreshDeps> & { store: AccountStore
       return `2026-08-12T00:0${String(tick)}:00.000Z`;
     },
     readToken: throwingReadToken(),
+    isGameRunning: () => true,
     ...overrides,
   };
 }
 
-describe('account-refresh — unasked consent (LAR-01)', () => {
+describe('account-refresh — unasked consent', () => {
   it('ran against at least one SQLite binding', () => {
     expect(AVAILABLE_BINDINGS.length).toBeGreaterThan(0);
   });
 
-  it('issues zero transport calls and zero FsPort/readToken calls', async () => {
+  it('issues zero transport calls, zero FsPort/readToken calls, and commits nothing', async () => {
     const open = openTestAccountDb(firstBinding());
     const store = createAccountStore(open);
     const transportCalls: string[] = [];
@@ -305,12 +307,38 @@ describe('account-refresh — unasked consent (LAR-01)', () => {
     const view = await refresh.refreshNow();
 
     expect(transportCalls).toEqual([]);
-    expect(view).not.toBeNull();
+    // Every section came back `failed('not_consented')` — a read that found nothing is not
+    // evidence the data is gone, so the cycle commits nothing at all.
+    expect(view).toBeNull();
+    expect(refresh.getLastView()).toBeNull();
   });
 });
 
-describe('account-refresh — declined consent (LAR-04)', () => {
-  it('issues zero requests and commits an all-missing payload so the stored account keeps serving', async () => {
+describe('account-refresh — a grant that predates the current disclosure', () => {
+  it('issues zero transport calls and commits nothing, exactly as an unanswered first run does', async () => {
+    const open = openTestAccountDb(firstBinding());
+    const store = createAccountStore(open);
+    const transportCalls: string[] = [];
+    const deps = baseDeps({
+      store,
+      consentStore: fixedConsentStore({ ...GRANTED, textVersion: CONSENT_TEXT_VERSION - 1 }),
+      transport: (req) => {
+        transportCalls.push(req.path);
+        return Promise.reject(new Error('transport must never be called under a superseded grant'));
+      },
+      readToken: throwingReadToken(),
+    });
+    const refresh = createAccountRefresh(deps);
+
+    const view = await refresh.refreshNow();
+
+    expect(transportCalls).toEqual([]);
+    expect(view).toBeNull();
+  });
+});
+
+describe('account-refresh — declined consent', () => {
+  it('issues zero requests and commits nothing', async () => {
     const open = openTestAccountDb(firstBinding());
     const store = createAccountStore(open);
     const deps = baseDeps({
@@ -323,16 +351,315 @@ describe('account-refresh — declined consent (LAR-04)', () => {
 
     const view = await refresh.refreshNow();
 
-    expect(view).not.toBeNull();
-    for (const section of ['account', 'heroes', 'skills', 'casa', 'items'] as const) {
-      expect(fidelityOf(view)[section].status).toBe('missing');
-    }
-    // The app stays usable: commit() was still called and returned a servable view.
-    expect(view?.store).toBeDefined();
+    expect(view).toBeNull();
+    expect(refresh.getLastView()).toBeNull();
+  });
+
+  it('does not overwrite a resolved section another producer already committed to the same store', async () => {
+    const open = openTestAccountDb(firstBinding());
+    const store = createAccountStore(open);
+    const { fn: readToken } = fixedReadToken('486', SessionTokenClass.create(SENTINEL_TOKEN), 1000);
+
+    // Stand-in for the game reader: a granted cycle over the same store resolves and commits
+    // real data first.
+    const grantedRefresh = createAccountRefresh(
+      baseDeps({ store, consentStore: fixedConsentStore(GRANTED), transport: okTransport(), readToken }),
+    );
+    const firstView = await grantedRefresh.refreshNow();
+    expect(fidelityOf(firstView).account.status).toBe('resolved');
+    const beforeSecondCycle = store.restore();
+
+    // A later cycle under declined consent must leave that data exactly as it was.
+    const declinedRefresh = createAccountRefresh(
+      baseDeps({
+        store,
+        consentStore: fixedConsentStore(DECLINED),
+        transport: throwingTransport(),
+        readToken: throwingReadToken(),
+      }),
+    );
+    const secondView = await declinedRefresh.refreshNow();
+
+    expect(secondView).toBeNull();
+    expect(store.restore()).toEqual(beforeSecondCycle);
   });
 });
 
-describe('account-refresh — consent changing to granted (LAR-03)', () => {
+describe('account-refresh — session token unavailable', () => {
+  it('issues zero requests and commits nothing', async () => {
+    const open = openTestAccountDb(firstBinding());
+    const store = createAccountStore(open);
+    const deps = baseDeps({
+      store,
+      consentStore: fixedConsentStore(GRANTED),
+      transport: throwingTransport(),
+      readToken: () => ({ ok: false, reason: 'not_found' }),
+    });
+    const refresh = createAccountRefresh(deps);
+
+    const view = await refresh.refreshNow();
+
+    expect(view).toBeNull();
+    expect(refresh.getLastView()).toBeNull();
+  });
+
+  it('does not overwrite a resolved section another producer already committed to the same store', async () => {
+    const open = openTestAccountDb(firstBinding());
+    const store = createAccountStore(open);
+    const { fn: readToken } = fixedReadToken('486', SessionTokenClass.create(SENTINEL_TOKEN), 1000);
+
+    const grantedRefresh = createAccountRefresh(
+      baseDeps({ store, consentStore: fixedConsentStore(GRANTED), transport: okTransport(), readToken }),
+    );
+    const firstView = await grantedRefresh.refreshNow();
+    expect(fidelityOf(firstView).account.status).toBe('resolved');
+    const beforeSecondCycle = store.restore();
+
+    // A later cycle that cannot read the session token file must leave that data exactly as it
+    // was, rather than degrading it with an all-missing placeholder.
+    const strandedRefresh = createAccountRefresh(
+      baseDeps({
+        store,
+        consentStore: fixedConsentStore(GRANTED),
+        transport: throwingTransport(),
+        readToken: () => ({ ok: false, reason: 'not_found' }),
+      }),
+    );
+    const secondView = await strandedRefresh.refreshNow();
+
+    expect(secondView).toBeNull();
+    expect(store.restore()).toEqual(beforeSecondCycle);
+  });
+});
+
+describe('account-refresh — game not running', () => {
+  it('issues zero transport calls when the game is not running, even with consent and a readable token', async () => {
+    const open = openTestAccountDb(firstBinding());
+    const store = createAccountStore(open);
+    const transportCalls: string[] = [];
+    const { fn: readToken } = fixedReadToken('486', SessionTokenClass.create(SENTINEL_TOKEN), 1000);
+    const deps = baseDeps({
+      store,
+      consentStore: fixedConsentStore(GRANTED),
+      transport: (req) => {
+        transportCalls.push(req.path);
+        return Promise.reject(new Error('transport must never be called while the game is not running'));
+      },
+      readToken,
+      isGameRunning: () => false,
+    });
+    const refresh = createAccountRefresh(deps);
+
+    const view = await refresh.refreshNow();
+
+    expect(transportCalls).toHaveLength(0);
+    expect(view).toBeNull();
+    expect(refresh.getLastView()).toBeNull();
+  });
+
+  it('does not read the token at all when the game is not running', async () => {
+    const open = openTestAccountDb(firstBinding());
+    const store = createAccountStore(open);
+    const deps = baseDeps({
+      store,
+      consentStore: fixedConsentStore(GRANTED),
+      transport: throwingTransport(),
+      readToken: throwingReadToken(),
+      isGameRunning: () => false,
+    });
+    const refresh = createAccountRefresh(deps);
+
+    const view = await refresh.refreshNow();
+
+    expect(view).toBeNull();
+  });
+
+  it('issues requests once the game is running (consent granted, token readable)', async () => {
+    const open = openTestAccountDb(firstBinding());
+    const store = createAccountStore(open);
+    const transportCalls: string[] = [];
+    const { fn: readToken } = fixedReadToken('486', SessionTokenClass.create(SENTINEL_TOKEN), 1000);
+    const deps = baseDeps({
+      store,
+      consentStore: fixedConsentStore(GRANTED),
+      transport: okTransport(transportCalls),
+      readToken,
+      isGameRunning: () => true,
+    });
+    const refresh = createAccountRefresh(deps);
+
+    await refresh.refreshNow();
+
+    expect(transportCalls.length).toBeGreaterThan(0);
+  });
+
+  it('does not overwrite a resolved section another producer already committed to the same store', async () => {
+    const open = openTestAccountDb(firstBinding());
+    const store = createAccountStore(open);
+    const { fn: readToken } = fixedReadToken('486', SessionTokenClass.create(SENTINEL_TOKEN), 1000);
+
+    const grantedRefresh = createAccountRefresh(
+      baseDeps({ store, consentStore: fixedConsentStore(GRANTED), transport: okTransport(), readToken }),
+    );
+    const firstView = await grantedRefresh.refreshNow();
+    expect(fidelityOf(firstView).account.status).toBe('resolved');
+    const beforeSecondCycle = store.restore();
+
+    const notRunningRefresh = createAccountRefresh(
+      baseDeps({
+        store,
+        consentStore: fixedConsentStore(GRANTED),
+        transport: throwingTransport(),
+        readToken,
+        isGameRunning: () => false,
+      }),
+    );
+    const secondView = await notRunningRefresh.refreshNow();
+
+    expect(secondView).toBeNull();
+    expect(store.restore()).toEqual(beforeSecondCycle);
+  });
+
+  it.each([true, false])(
+    'declined consent still skips with zero transport calls regardless of whether the game is running (isGameRunning=%s)',
+    async (isGameRunning) => {
+      const open = openTestAccountDb(firstBinding());
+      const store = createAccountStore(open);
+      const transportCalls: string[] = [];
+      const { log, records } = createLogSpy();
+      const deps = baseDeps({
+        store,
+        consentStore: fixedConsentStore(DECLINED),
+        transport: (req) => {
+          transportCalls.push(req.path);
+          return Promise.reject(new Error('transport must never be called while consent is declined'));
+        },
+        readToken: throwingReadToken(),
+        isGameRunning: () => isGameRunning,
+        log,
+      });
+      const refresh = createAccountRefresh(deps);
+
+      const view = await refresh.refreshNow();
+
+      expect(transportCalls).toHaveLength(0);
+      expect(view).toBeNull();
+      const skip = records.find((r) => r.record.event === 'cycle.skipped');
+      expect(skip?.record.decision).toBe('declined');
+    },
+  );
+
+  it('the game-not-running skip logs a record distinguishable from both the not-consented and token-unavailable skips', async () => {
+    const open = openTestAccountDb(firstBinding());
+    const store = createAccountStore(open);
+
+    const notConsentedLog = createLogSpy();
+    await createAccountRefresh(
+      baseDeps({
+        store,
+        consentStore: fixedConsentStore(UNASKED),
+        transport: throwingTransport(),
+        readToken: throwingReadToken(),
+        log: notConsentedLog.log,
+      }),
+    ).refreshNow();
+
+    const gameNotRunningLog = createLogSpy();
+    await createAccountRefresh(
+      baseDeps({
+        store,
+        consentStore: fixedConsentStore(GRANTED),
+        transport: throwingTransport(),
+        readToken: throwingReadToken(),
+        isGameRunning: () => false,
+        log: gameNotRunningLog.log,
+      }),
+    ).refreshNow();
+
+    const tokenUnavailableLog = createLogSpy();
+    await createAccountRefresh(
+      baseDeps({
+        store,
+        consentStore: fixedConsentStore(GRANTED),
+        transport: throwingTransport(),
+        readToken: () => ({ ok: false, reason: 'not_found' }),
+        log: tokenUnavailableLog.log,
+      }),
+    ).refreshNow();
+
+    const notConsentedSkip = notConsentedLog.records.find((r) => r.record.event === 'cycle.skipped');
+    const gameNotRunningSkip = gameNotRunningLog.records.find((r) => r.record.event === 'cycle.skipped');
+    const tokenUnavailableSkip = tokenUnavailableLog.records.find((r) => r.record.event === 'token.unavailable');
+
+    expect(notConsentedSkip).toBeDefined();
+    expect(gameNotRunningSkip).toBeDefined();
+    expect(tokenUnavailableSkip).toBeDefined();
+
+    expect(gameNotRunningSkip?.record).not.toEqual(notConsentedSkip?.record);
+    expect(gameNotRunningSkip?.record.reason).toBe('game_not_running');
+    expect(notConsentedSkip?.record.reason).not.toBe('game_not_running');
+    expect(gameNotRunningSkip?.record.event).not.toBe(tokenUnavailableSkip?.record.event);
+  });
+
+  it('resumes issuing requests on the next cycle once the game is running again, with no restart', async () => {
+    const open = openTestAccountDb(firstBinding());
+    const store = createAccountStore(open);
+    const transportCalls: string[] = [];
+    const { fn: readToken } = fixedReadToken('486', SessionTokenClass.create(SENTINEL_TOKEN), 1000);
+    let gameRunning = false;
+    const deps = baseDeps({
+      store,
+      consentStore: fixedConsentStore(GRANTED),
+      transport: okTransport(transportCalls),
+      readToken,
+      isGameRunning: () => gameRunning,
+    });
+    const refresh = createAccountRefresh(deps);
+
+    const firstView = await refresh.refreshNow();
+    expect(transportCalls).toHaveLength(0);
+    expect(firstView).toBeNull();
+
+    const secondView = await refresh.refreshNow();
+    expect(transportCalls).toHaveLength(0);
+    expect(secondView).toBeNull();
+
+    gameRunning = true;
+    const thirdView = await refresh.refreshNow();
+
+    expect(transportCalls.length).toBeGreaterThan(0);
+    expect(fidelityOf(thirdView).account.status).toBe('resolved');
+  });
+});
+
+describe('account-refresh — the game-running flag is read fresh at commit time', () => {
+  it('commits gameRunning: false when the game exits partway through a cycle', async () => {
+    const open = openTestAccountDb(firstBinding());
+    const store = createAccountStore(open);
+    const { fn: readToken } = fixedReadToken('486', SessionTokenClass.create(SENTINEL_TOKEN), 1000);
+    let gameRunning = true;
+    const transport: HttpTransport = (req) => {
+      if (req.path === '/roster') {
+        gameRunning = false;
+      }
+      return Promise.resolve({ status: 200, body: JSON.stringify(BODIES[req.path] ?? {}) });
+    };
+    const deps = baseDeps({
+      store,
+      consentStore: fixedConsentStore(GRANTED),
+      transport,
+      readToken,
+      isGameRunning: () => gameRunning,
+    });
+    const refresh = createAccountRefresh(deps);
+
+    const view = await refresh.refreshNow();
+
+    expect(view?.gameRunning).toBe(false);
+  });
+});
+
+describe('account-refresh — consent changing to granted', () => {
   it('starts a cycle immediately via onConsentChanged, without calling start() or restarting anything', async () => {
     const open = openTestAccountDb(firstBinding());
     const store = createAccountStore(open);
@@ -363,7 +690,7 @@ describe('account-refresh — consent changing to granted (LAR-03)', () => {
   });
 });
 
-describe('account-refresh — revoke mid-cycle (LAR-05)', () => {
+describe('account-refresh — revoke mid-cycle', () => {
   it('aborts the in-flight request, commits what was already read, and requests nothing further', async () => {
     const open = openTestAccountDb(firstBinding());
     const store = createAccountStore(open);
@@ -449,7 +776,7 @@ describe('account-refresh — revoke mid-cycle (LAR-05)', () => {
     expect(gate.state).toBe('halted');
 
     // Second cycle, same mtimeMs — the cache still matches, so nothing resets the gate: it
-    // stays halted, exactly as LAR-23 requires (never cleared by the normal cadence).
+    // stays halted, exactly as the 401/403 terminal-state rule requires (never cleared by the normal cadence).
     await refresh.refreshNow();
     expect(gate.state).toBe('halted');
 
@@ -462,7 +789,7 @@ describe('account-refresh — revoke mid-cycle (LAR-05)', () => {
   });
 });
 
-describe('account-refresh — the token is contained (LAR-11)', () => {
+describe('account-refresh — the token is contained', () => {
   it('writes the token to no file, no SQLite row and no IPC-shaped view', async () => {
     const open = openTestAccountDb(firstBinding());
     if (!open.db) throw new Error('expected an open db for this binding');
@@ -488,7 +815,7 @@ describe('account-refresh — the token is contained (LAR-11)', () => {
   });
 });
 
-describe('account-refresh — a failed roster is served as stale with the STORED capturedAt (LAR-15)', () => {
+describe('account-refresh — a failed roster is served as stale with the STORED capturedAt', () => {
   it('over the real AccountStore.commit(), a later failed cycle does not overwrite the earlier resolved capturedAt', async () => {
     const open = openTestAccountDb(firstBinding());
     const store = createAccountStore(open);
@@ -530,7 +857,7 @@ describe('account-refresh — a failed roster is served as stale with the STORED
   });
 });
 
-describe('account-refresh — a drifted section is logged with path-qualified keys and no player data (MSG-27)', () => {
+describe('account-refresh — a drifted section is logged with path-qualified keys and no player data', () => {
   it('a /state response missing one key and carrying one unrecognized key logs section.drift naming both, never a response value', async () => {
     const open = openTestAccountDb(firstBinding());
     const store = createAccountStore(open);

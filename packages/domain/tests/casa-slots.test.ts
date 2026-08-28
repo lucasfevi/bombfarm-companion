@@ -1,9 +1,12 @@
 import { describe, expect, it } from 'vitest';
 import { loadFixtureJson } from './helpers/sheet-math-fixtures';
 import {
+  CASA_SLOTS_MAX,
   CASA_SLOTS_PER_HOUSE,
   DEFAULT_CASA_SLOTS,
+  FIELD_SLOTS_MAX,
   resolveCasaSlots,
+  resolveFieldSlots,
 } from '@bombfarm/domain/casa-slots';
 
 describe('resolveCasaSlots', () => {
@@ -13,7 +16,7 @@ describe('resolveCasaSlots', () => {
   });
 
   it('returns casa.slots when present on the real fixture', () => {
-    // MP5 F1 (AD-068 class (a) — read from the capture): re-pointed onto the post-patch
+    // Class (a) — read from the capture: re-pointed onto the post-patch
     // export. `casa.active_casa: 1` (0-based houseIdx 0), `casa.slots: 3`.
     const raw = loadFixtureJson('save-20260813-5heroes.json');
     const casa = (raw as { casa: unknown }).casa;
@@ -48,5 +51,23 @@ describe('resolveCasaSlots', () => {
     expect(resolveCasaSlots({ slots: 0 }, null)).toBe(1);
     expect(resolveCasaSlots({ slots: -3 }, null)).toBe(1);
     expect(resolveCasaSlots({ slots: Number.NaN }, null)).toBe(9);
+  });
+});
+
+describe('the two ceilings', () => {
+  it('the rest-slot ceiling is the top of the ladder, and stays that way if the ladder changes', () => {
+    expect(CASA_SLOTS_MAX).toBe(Math.max(...CASA_SLOTS_PER_HOUSE));
+    expect(CASA_SLOTS_MAX).toBe(9);
+  });
+
+  it('the field ceiling is the wiki field size, and is not the House ladder wearing its name', () => {
+    expect(FIELD_SLOTS_MAX).toBe(9);
+    expect(resolveCasaSlots({ slots: FIELD_SLOTS_MAX }, 0)).toBe(FIELD_SLOTS_MAX);
+  });
+
+  it('the field ceiling does NOT clamp resolveFieldSlots — a raised track surfaces, not truncates', () => {
+    // It is advice's ceiling, not the reader's. A patch that adds a tenth slot shows up as a 10
+    // the board caps the field at, rather than the account silently farming nine.
+    expect(resolveFieldSlots({ field_slots: FIELD_SLOTS_MAX + 1 })).toBe(FIELD_SLOTS_MAX + 1);
   });
 });

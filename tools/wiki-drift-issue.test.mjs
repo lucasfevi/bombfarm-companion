@@ -57,7 +57,7 @@ class FakeGitHubIssues {
   };
 }
 
-describe('upsertTrackerIssue — request shape (MWD-17..23)', () => {
+describe('upsertTrackerIssue — request shape', () => {
   it('the list call is GET /repos/{repo}/issues?state=open&per_page=100 with the required headers', async () => {
     const fetchImpl = vi.fn(async () => ({
       ok: true, status: 200, headers: noHeaders(), json: async () => [],
@@ -98,7 +98,7 @@ describe('upsertTrackerIssue — request shape (MWD-17..23)', () => {
   });
 });
 
-describe('upsertTrackerIssue — entries carrying a pull_request key are dropped (MWD-17)', () => {
+describe('upsertTrackerIssue — entries carrying a pull_request key are dropped', () => {
   it('a PR whose body contains the marker yields created, not updated', async () => {
     const fetchImpl = vi.fn(async (url, options = {}) => {
       const method = options.method ?? 'GET';
@@ -124,7 +124,7 @@ describe('upsertTrackerIssue — entries carrying a pull_request key are dropped
   });
 });
 
-describe('upsertTrackerIssue — the five cases (MWD-17, MWD-18, MWD-22, MWD-23)', () => {
+describe('upsertTrackerIssue — the five cases', () => {
   it('no open marked issue ⇒ exactly 1 POST, 0 PATCH', async () => {
     const store = new FakeGitHubIssues();
     const result = await upsertTrackerIssue({
@@ -150,7 +150,7 @@ describe('upsertTrackerIssue — the five cases (MWD-17, MWD-18, MWD-22, MWD-23)
     expect(store.calls.post).toBe(0);
   });
 
-  it('two consecutive calls against the same injected state ⇒ exactly one open marked issue afterwards (MWD-19 unit half)', async () => {
+  it('two consecutive calls against the same injected state ⇒ exactly one open marked issue afterwards (unit half)', async () => {
     const store = new FakeGitHubIssues();
     const first = await upsertTrackerIssue({
       fetchImpl: store.fetchImpl, token: TOKEN, repo: REPO, marker: MARKER, title: 'Wiki data drift — 1 section(s) differ',
@@ -178,7 +178,7 @@ describe('upsertTrackerIssue — the five cases (MWD-17, MWD-18, MWD-22, MWD-23)
     expect(openMarked[0].body).toBe(`${MARKER}\nobserved at: 2026-08-14T06:17:00.000Z`);
   });
 
-  it('only a closed marked issue exists ⇒ 1 POST; the closed issue is never PATCHed or reopened (MWD-22)', async () => {
+  it('only a closed marked issue exists ⇒ 1 POST; the closed issue is never PATCHed or reopened', async () => {
     const store = new FakeGitHubIssues();
     store.issues.push({
       number: 3, title: 'resolved', body: `${MARKER}\nresolved body`, state: 'closed', pull_request: null,
@@ -195,14 +195,14 @@ describe('upsertTrackerIssue — the five cases (MWD-17, MWD-18, MWD-22, MWD-23)
     expect(closedIssue.body).toBe(`${MARKER}\nresolved body`);
   });
 
-  it('a non-2xx on the list call ⇒ failed, with the reason (MWD-23)', async () => {
+  it('a non-2xx on the list call ⇒ failed, with the reason', async () => {
     const fetchImpl = vi.fn(async () => ({ ok: false, status: 403, headers: noHeaders(), json: async () => ({}) }));
     const result = await upsertTrackerIssue({ fetchImpl, token: TOKEN, repo: REPO, marker: MARKER, title: 't', body: 'b' });
     expect(result.action).toBe('failed');
     expect(result.reason).toContain('403');
   });
 
-  it('a thrown error on the create call ⇒ failed, with the reason (MWD-23)', async () => {
+  it('a thrown error on the create call ⇒ failed, with the reason', async () => {
     const fetchImpl = vi.fn(async (url, options = {}) => {
       if ((options.method ?? 'GET') === 'GET') {
         return { ok: true, status: 200, headers: noHeaders(), json: async () => [] };
@@ -214,7 +214,7 @@ describe('upsertTrackerIssue — the five cases (MWD-17, MWD-18, MWD-22, MWD-23)
     expect(result.reason).toContain('network exploded');
   });
 
-  it('a non-2xx on the update call ⇒ failed, with the reason (MWD-23)', async () => {
+  it('a non-2xx on the update call ⇒ failed, with the reason', async () => {
     const fetchImpl = vi.fn(async (url, options = {}) => {
       const method = options.method ?? 'GET';
       if (method === 'GET') {

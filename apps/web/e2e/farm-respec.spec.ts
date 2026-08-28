@@ -7,8 +7,8 @@ import { seedLocalStorage, type SeededState } from './fixtures/seed';
  * flow `farm-ranking.spec.ts` scenario 11 drives. It carries an `account` block with a
  * `max_phase`, which is what makes the recommended-phase assertion reproducible;
  * `e2e/fixtures/sample-save.json` is a different, 3-hero account with no `max_phase` and cannot
- * stand in for it (`docs/fixture-corpus.md`). Not copied into `e2e/fixtures/` — that would be a
- * second copy of a scrubbed capture that drifts.
+ * stand in for it (`docs/fixture-corpus.md`). Read from the domain package's own committed
+ * capture rather than a local copy — a second copy would drift from it.
  *
  * SWAPPED to the 2026-08-23 capture. The 5-hero 2026-08-13 one drove every case here until that
  * patch restated the crit-chance abilities in points; under today's sheet math its best reachable
@@ -19,7 +19,10 @@ import { seedLocalStorage, type SeededState } from './fixtures/seed';
  * the 2026-08-23 capture has it (3.66% lower bound, 11.09% solved) while also being the only
  * capture whose sheet math today's model reproduces.
  */
-const account486 = path.join(process.cwd(), 'src/tests/fixtures/sheet-math/save-20260823-13heroes-crit-points.json');
+const account486 = path.join(
+  process.cwd(),
+  '../../packages/domain/tests/fixtures/sheet-math/save-20260823-13heroes-crit-points.json',
+);
 
 const table = (page: Page) => page.locator('[data-testid="farm-ranking-table"]');
 const rows = (page: Page) => table(page).locator('tbody tr');
@@ -210,7 +213,14 @@ test.describe('Farm Respec Advisor', () => {
   test('changing a rotation-pool input while re-ranked reverts the panel and the table, with no stale gain figure left on screen', async ({ page }) => {
     await optimizeButton(page).click();
     await expect(panel(page)).toBeVisible();
-    const oldGainText = (await headline(page).textContent()) ?? '';
+
+    // The PANEL's gold tile, not the toolbar headline. The headline is a live lower bound that
+    // gets recomputed for whatever pool is selected, so it can legitimately read the same string
+    // before and after — it did exactly that here ("At least 2.4% more per hour" both times),
+    // which made a global search for it prove nothing. The tile carries the SOLVED proposal, is
+    // rendered only inside the panel, and therefore has to be gone once the panel is invalidated.
+    const proposalText = (await page.getByTestId('farm-respec-metric-gold').textContent()) ?? '';
+    expect(proposalText.trim()).not.toBe('');
 
     await page.getByTestId('farm-respec-rerank').getByRole('switch').click();
     await expect(table(page).locator('table')).toHaveAttribute('data-farm-mode', 'proposed');
@@ -221,9 +231,8 @@ test.describe('Farm Respec Advisor', () => {
 
     await expect(panel(page)).toBeHidden();
     await expect(table(page).locator('table')).toHaveAttribute('data-farm-mode', 'current');
-    if (oldGainText.trim() !== '') {
-      await expect(page.getByText(oldGainText, { exact: true })).toHaveCount(0);
-    }
+    await expect(page.getByTestId('farm-respec-metric-gold')).toHaveCount(0);
+    await expect(page.getByText(proposalText, { exact: true })).toHaveCount(0);
   });
 
   // 7. PT — the toolbar, panel and tiles render in Portuguese, no EN leakage.

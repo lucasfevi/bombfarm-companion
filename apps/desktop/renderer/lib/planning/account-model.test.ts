@@ -63,7 +63,7 @@ function required<T>(value: T | null | undefined, message: string): T {
   return value;
 }
 
-describe('isUsable (AD-036)', () => {
+describe('isUsable', () => {
   const cases: [string, SectionFidelity, boolean][] = [
     ['resolved', { status: 'resolved', capturedAt: NOW }, true],
     ['stale', { status: 'stale', capturedAt: NOW }, true],
@@ -76,7 +76,7 @@ describe('isUsable (AD-036)', () => {
   });
 });
 
-describe('ADVICE_REQUIRES (AD-041 table)', () => {
+describe('ADVICE_REQUIRES', () => {
   it('matches design.md §3 exactly', () => {
     expect(ADVICE_REQUIRES).toEqual({
       rosterRow: ['heroes'],
@@ -97,7 +97,7 @@ describe('buildPlanningModel has no React import (design §4)', () => {
   });
 });
 
-describe('availability (AD-036 six-row table)', () => {
+describe('availability (six-row table)', () => {
   it('nothing-persisted when store.reason is "empty"', () => {
     const model = buildPlanningModel(view(basePayload(resolvedFidelity()), { reason: 'empty' }));
     expect(model.availability).toBe('nothing-persisted');
@@ -146,7 +146,7 @@ describe('availability (AD-036 six-row table)', () => {
   });
 });
 
-describe("a fully-stale restored account is available, not unavailable (AD-036's resolution of the MPV-01/MPV-11 contradiction)", () => {
+describe("a fully-stale restored account is available, not unavailable (gated by per-section usability, resolving the render-from-persisted-data vs unavailable-renders-no-numbers contradiction)", () => {
   it('deriveAccountFidelity grades "unavailable" while the model computes availability "partial"/"complete" from the same fidelity — see account-restart.spec.mjs:117-130, which already asserts this post-restart shape in CI', () => {
     const allStale: AccountFidelity = {
       account: { status: 'stale', capturedAt: NOW },
@@ -156,7 +156,7 @@ describe("a fully-stale restored account is available, not unavailable (AD-036's
       items: { status: 'stale', capturedAt: NOW },
     };
 
-    // The grade question and the availability question are not the same question (AD-036).
+    // The grade question and the availability question are not the same question.
     expect(deriveAccountFidelity(allStale).grade).toBe('unavailable');
 
     const model = buildPlanningModel(view(basePayload(allStale), { status: 'ok', reason: null }));
@@ -224,7 +224,7 @@ describe('no DEFAULT_TREE()/DEFAULT_CONTEXT() — a null input withholds instead
   });
 });
 
-describe('sections are in ACCOUNT_SECTIONS order and carry capturedAt/missingKeys correctly (MPV-04, MPV-07, MPV-08)', () => {
+describe('sections are in ACCOUNT_SECTIONS order and carry capturedAt/missingKeys correctly', () => {
   it('a degraded section surfaces missingKeys, distinct from a missing one', () => {
     const payload = basePayload(
       resolvedFidelity({

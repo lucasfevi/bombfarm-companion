@@ -59,7 +59,7 @@ function heroInputFromExtract(hero: ReturnType<typeof extractHero>): TeamPlanHer
   };
 }
 
-// MP5 F1 (AD-068 class (b) — structural): every assertion in this file compares evaluateRoster
+// The ground-truth rule's class (b) (structural): every assertion in this file compares evaluateRoster
 // outputs against each other or checks structural properties (regime membership, determinism,
 // clamping, perHero key counts) — none pins a value read from a specific deleted hero. Re-points
 // cleanly onto payload-20260812-8heroes.json (default subject) and save-20260813-5heroes.json

@@ -55,7 +55,7 @@ function view(p: AccountPayload): AccountView {
   return { payload: p, gameRunning: false, store: { status: 'ok', reason: null, binding: 'better-sqlite3' } };
 }
 
-describe('adviceForHero — withhold gate (AD-041)', () => {
+describe('adviceForHero — withhold gate', () => {
   it('withholds when skills is not usable, naming skills among the withheld sections', () => {
     const model = buildPlanningModel(view(payload(resolvedFidelity({ skills: { status: 'missing' } }))));
     const advice = adviceForHero(model, 'h1');

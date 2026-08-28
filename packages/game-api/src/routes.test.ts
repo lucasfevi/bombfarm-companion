@@ -1,11 +1,10 @@
 import { describe, expect, it } from 'vitest';
 import type { AccountSection } from '@bombfarm/contracts';
-import type { GrantedConsent } from './consent.js';
 import { createPacingGate, type PacingClock } from './pacing.js';
 import type { HttpResponse, HttpTransport } from './request.js';
 import { ROUTES, readSection, type RouteDescriptor, type SectionFailureReason } from './routes.js';
 import { SessionToken, grantSession } from './session.js';
-import { loadFixtureJson, required } from './test-fixtures.js';
+import { grantedConsent, loadFixtureJson, required } from './test-fixtures.js';
 
 const bodies = loadFixtureJson('api-bodies.json');
 
@@ -20,7 +19,7 @@ function routeFor(path: RouteDescriptor['path']): RouteDescriptor {
   );
 }
 
-const GRANTED: GrantedConsent = { decision: 'granted', grantedAt: '2026-08-12T13:15:38.000Z', textVersion: 1 };
+const GRANTED = grantedConsent('2026-08-12T13:15:38.000Z');
 const session = grantSession(GRANTED, { accountId: '486', token: SessionToken.create('sentinel-routes-test') });
 
 function createTestClock(): PacingClock {
@@ -64,7 +63,7 @@ describe('ROUTES — total, injective mapping over the five AccountSections', ()
   });
 });
 
-describe('ROUTES — projections over the committed body (LAR-07 route half)', () => {
+describe('ROUTES — projections over the committed body (the five routes → AccountPayload half)', () => {
   it('/state (account) projects the whole body', () => {
     const body = bodyFor('/state');
     const projected = routeFor('/state').project(body);
@@ -187,7 +186,7 @@ describe('readSection — /rotation returning a non-object body still fails, nev
   });
 });
 
-describe('readSection — every SectionFailureReason producible from routes.ts is reached by at least one path (LAR-25)', () => {
+describe('readSection — every SectionFailureReason producible from routes.ts is reached by at least one path', () => {
   const stateRoute = routeFor('/state');
 
   const cases: ReadonlyArray<{
@@ -224,8 +223,8 @@ describe('readSection — every SectionFailureReason producible from routes.ts i
 
     expect(outcome.kind).toBe('drift');
     if (outcome.kind === 'drift') {
-      // MP5 F4 (T5): missingKeys is now path-qualified from the fingerprint's root
-      // ('account.gold', not bare 'gold') — MSG-01/MSG-05's own requirement.
+      // T5: missingKeys is now path-qualified from the fingerprint's root
+      // ('account.gold', not bare 'gold') — the path-qualified-missing-keys requirement.
       expect(outcome.missingKeys).toContain('account.gold');
     }
   });

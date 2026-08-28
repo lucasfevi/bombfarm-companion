@@ -1,4 +1,4 @@
-import { readFileSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
@@ -26,7 +26,7 @@ function sectionChangedDiff(endpoint, section) {
   };
 }
 
-describe('renderSummary — exactly one outcome line, for all four outcomes (MWD-27)', () => {
+describe('renderSummary — exactly one outcome line, for all four outcomes', () => {
   const cases = [
     { outcome: 'ok', args: {} },
     { outcome: 'drift', args: { diffs: [sectionChangedDiff('data', 'fases')] } },
@@ -43,7 +43,7 @@ describe('renderSummary — exactly one outcome line, for all four outcomes (MWD
   }
 });
 
-describe('renderSummary — unreachable / baseline-missing are attributable from the summary alone (MWD-29)', () => {
+describe('renderSummary — unreachable / baseline-missing are attributable from the summary alone', () => {
   it('unreachable names the reason token and the URL', () => {
     const text = renderSummary({ outcome: 'unreachable', reason: 'http-500', url: DATA_URL });
     expect(text).toContain('http-500');
@@ -59,7 +59,7 @@ describe('renderSummary — unreachable / baseline-missing are attributable from
   });
 });
 
-describe('renderSummary — drift names every differing section with both hashes (MWD-06, MWD-20)', () => {
+describe('renderSummary — drift names every differing section with both hashes', () => {
   it('a changed section is named with baseline and observed hash', () => {
     const diffs = [sectionChangedDiff('data', 'fases')];
     const text = renderSummary({ outcome: 'drift', diffs });
@@ -91,7 +91,7 @@ describe('renderSummary — drift names every differing section with both hashes
   });
 });
 
-describe('renderSummary / renderIssueBody — no interpretation, ever (MWD-06)', () => {
+describe('renderSummary / renderIssueBody — no interpretation, ever', () => {
   it('the forbidden-phrase list is the one the spec names', () => {
     expect(FORBIDDEN_INTERPRETATION_PHRASES_FOR_TEST).toEqual([
       'means', 'because', 'probably', 'likely', 'you should',
@@ -120,7 +120,7 @@ describe('renderSummary / renderIssueBody — no interpretation, ever (MWD-06)',
   });
 });
 
-describe('renderIssueTitle — stable prefix + differing-section count (MWD-43)', () => {
+describe('renderIssueTitle — stable prefix + differing-section count', () => {
   it('the stable prefix is a literal', () => {
     expect(renderIssueTitle([sectionChangedDiff('data', 'fases')])).toMatch(/^Wiki data drift — /);
   });
@@ -140,7 +140,7 @@ describe('renderIssueTitle — stable prefix + differing-section count (MWD-43)'
   });
 });
 
-describe('renderIssueBody — every required element present, individually asserted (MWD-20)', () => {
+describe('renderIssueBody — every required element present, individually asserted', () => {
   const diffs = [
     sectionChangedDiff('data', 'fases'),
     { kind: 'versao-catalogo-changed', endpoint: 'data', section: null, from: 4, to: 5 },
@@ -192,7 +192,7 @@ describe('ARTIFACT_BACKED_SECTIONS — the itens mapping is measured, not assume
   });
 
   it('data.itens is a backed section pointing at catalog.json', () => {
-    expect(ARTIFACT_BACKED_SECTIONS['data.itens']).toContain('catalog.json');
+    expect(ARTIFACT_BACKED_SECTIONS['data.itens']).toContain('packages/domain/src/data/catalog.json');
   });
 
   it('data.skill_tree backs no committed artifact today — absent from the map', () => {
@@ -200,7 +200,76 @@ describe('ARTIFACT_BACKED_SECTIONS — the itens mapping is measured, not assume
   });
 });
 
-describe('MWD-44 — drift confined to a section that backs no committed artifact is still reported', () => {
+describe('ARTIFACT_BACKED_SECTIONS — every path is one a reader can actually open', () => {
+  it('every value is a repo-relative path to a file that exists', () => {
+    const missing = Object.entries(ARTIFACT_BACKED_SECTIONS).flatMap(([label, files]) =>
+      files.filter((file) => !existsSync(join(root, '..', file))).map((file) => `${label}: ${file}`),
+    );
+    expect(missing).toEqual([]);
+  });
+
+  it('no value is a bare basename — the issue body prints these verbatim', () => {
+    const bare = Object.entries(ARTIFACT_BACKED_SECTIONS).flatMap(([label, files]) =>
+      files.filter((file) => !file.includes('/')).map((file) => `${label}: ${file}`),
+    );
+    expect(bare).toEqual([]);
+  });
+});
+
+describe('ARTIFACT_BACKED_SECTIONS — a wiki value held as a source constant is registered too', () => {
+  // The gap this closes: `rotacao` carries the field cap and the House slot ladder, both of which
+  // live as constants rather than in any generated JSON. Listing only phase-wiki.json for it sent
+  // a reader to a file that does not hold them.
+  it('data.rotacao names the source files carrying its ceilings, not only the generated JSON', () => {
+    expect(ARTIFACT_BACKED_SECTIONS['data.rotacao']).toEqual([
+      'packages/domain/src/data/phase-wiki.json',
+      'packages/domain/src/casa-slots.ts',
+      'packages/domain/src/model/house.ts',
+    ]);
+  });
+
+  it('those files really do hold the constants named — a path alone would not prove it', () => {
+    const casaSlots = readFileSync(join(root, '../packages/domain/src/casa-slots.ts'), 'utf8');
+    const house = readFileSync(join(root, '../packages/domain/src/model/house.ts'), 'utf8');
+    expect(casaSlots).toContain('FIELD_SLOTS_MAX');
+    expect(casaSlots).toContain('CASA_SLOTS_PER_HOUSE');
+    expect(house).toContain('HOUSE_MAX_LEVEL');
+  });
+});
+
+describe('renderIssueBody — the issue names where the differing values are committed', () => {
+  it('lists the backing files for each differing section that has any', () => {
+    const body = renderIssueBody({
+      diffs: [sectionChangedDiff('data', 'rotacao')],
+      observedAt: '2026-08-14T05:17:00.000Z',
+      runUrl: 'https://example.invalid/run',
+    });
+    expect(body).toContain('Committed files carrying values from the differing sections:');
+    expect(body).toContain('packages/domain/src/casa-slots.ts');
+    expect(body).toContain('packages/domain/src/model/house.ts');
+  });
+
+  it('omits the block entirely when nothing that differs backs a committed file', () => {
+    const body = renderIssueBody({
+      diffs: [sectionChangedDiff('data', 'skill_tree')],
+      observedAt: '2026-08-14T05:17:00.000Z',
+      runUrl: 'https://example.invalid/run',
+    });
+    expect(body).not.toContain('Committed files carrying values');
+  });
+
+  it('names each differing section once, however many diffs carry its label', () => {
+    const body = renderIssueBody({
+      diffs: [sectionChangedDiff('data', 'itens'), sectionChangedDiff('data', 'itens')],
+      observedAt: '2026-08-14T05:17:00.000Z',
+      runUrl: 'https://example.invalid/run',
+    });
+    const listed = body.match(/^- data\.itens: /gm) ?? [];
+    expect(listed).toHaveLength(1);
+  });
+});
+
+describe('drift confined to a section that backs no committed artifact is still reported', () => {
   it('names a section that backs no committed artifact in the body, and does not suppress the alert', () => {
     const diffs = [sectionChangedDiff('data', 'skill_tree')];
     const body = renderIssueBody({ diffs, observedAt: '2026-08-14T05:17:00.000Z', runUrl: 'https://example.invalid/run' });

@@ -1,5 +1,5 @@
 /**
- * MP5 F1 (T9) — the post-patch corpus guard. Mirrors `fixtures-scrubbed.test.ts`'s directory-walk
+ * (T9) — the post-patch corpus guard. Mirrors `fixtures-scrubbed.test.ts`'s directory-walk
  * shape. Every assertion here would have been RED on every commit before T8's deletion — that is
  * the point: the corpus guard is written last, once nothing references the old corpus any more.
  *
@@ -17,7 +17,7 @@ import { SHEET_ABS_TOL } from './helpers/sheet-math-fixtures';
 
 const here = dirname(fileURLToPath(import.meta.url));
 const FIXTURES_DIR = join(here, 'fixtures');
-const SHEET_MATH_DIR = join(FIXTURES_DIR, 'sheet-math');
+const SHEET_MATH_DIR = join(here, '../../../../packages/domain/tests/fixtures/sheet-math');
 const README_PATH = join(SHEET_MATH_DIR, 'README.md');
 
 const FORBIDDEN_KEYS = ['keystones', 'abisso_base', 'crit_dmg_mult'] as const;
@@ -49,9 +49,19 @@ function sha256(path: string): string {
  * somewhere in packages/domain/tests (verified by the orphan sweep below, which fails loudly if
  * that stops being true).
  */
-const COMPUTED_PATH_ALLOWLIST: Record<string, string> = {};
+const COMPUTED_PATH_ALLOWLIST: Record<string, string> = {
+  // Domain-only by design. Its reason for existing is the farm RANKING discrimination — a roster
+  // holding both one-shotting and non-one-shotting heroes at the same phase (issue #171) — and
+  // that scorer has no web-side suite of its own. Naming it in a web test purely to satisfy this
+  // sweep would be the contrived cross-tree copy the corpus guards exist to prevent. Its live
+  // readers are `packages/domain/tests/farm-point-rank.test.ts` (via `FARM_RANK_FIXTURE`),
+  // `team-plan-step-monotonicity.test.ts` (via `TEAM_PLAN_LARGE_FIXTURE`) and the corpus sweep in
+  // `points-within-level-budget.test.ts`, and the domain-side orphan sweep holds it to that.
+  'save-20260825-11heroes-one-shot-spread.json':
+    'read only by packages/domain tests (farm-point-rank, team-plan-step-monotonicity, points-within-level-budget); no web-side scorer suite exists to name it',
+};
 
-describe('sheet-math fixture corpus guard (MP5 F1)', () => {
+describe('sheet-math fixture corpus guard', () => {
   const sheetMathJsonFiles = readdirSync(SHEET_MATH_DIR).filter((f) => f.endsWith('.json'));
   const allFixtureJsonFiles = listFiles(FIXTURES_DIR, (name) => name.endsWith('.json'));
 
@@ -127,7 +137,7 @@ describe('sheet-math fixture corpus guard (MP5 F1)', () => {
     expect(mismatches, mismatches.join('\n')).toEqual([]);
   });
 
-  // Scoped to sheet-math/ — the corpus this feature actually manages (MFR-04's subject is the
+  // Scoped to sheet-math/ — the corpus this feature actually manages (the subject is the
   // 17 fixtures orphaned by the quarantined-suite deletion, not a repo-wide fixture audit).
   // `fixtures/i18n-strings-main.json` and `fixtures/storage-roundtrip-20260729.json` are
   // pre-existing, unrelated fixtures with zero domain-side consumers (only apps/web's own

@@ -4,13 +4,14 @@ import { uiIconRegistry } from './ui-registry';
 
 // m2-toast-settings (2026-08-11): check-circle, x-circle, exclamation-triangle,
 // information-circle, arrow-path added — one fixed icon per toast/notification
-// variant (success/error/warning/info/progress), TST-13.
+// variant (success/error/warning/info/progress).
 // DeltaTable (2026-08-20): lock-closed added — the shared stat-ledger primitive's
 // locked-row glyph, replacing a Chip + HelpTip pair.
 const MIGRATED_UI_NAMES = [
   'chevron-down',
   'chevron-up',
   'x-mark',
+  'check',
   'coffee',
   'check-circle',
   'x-circle',
@@ -18,6 +19,8 @@ const MIGRATED_UI_NAMES = [
   'information-circle',
   'arrow-path',
   'lock-closed',
+  'sort-ascending',
+  'sort-descending',
 ] as const;
 
 describe('icon registries — budget and membership', () => {
@@ -25,7 +28,7 @@ describe('icon registries — budget and membership', () => {
     expect(Object.keys(uiIconRegistry).length).toBeLessThanOrEqual(24);
   });
 
-  it('maps exactly the nine ui-chrome glyphs', () => {
+  it('maps exactly the declared ui-chrome glyphs', () => {
     expect(Object.keys(uiIconRegistry).sort()).toEqual([...MIGRATED_UI_NAMES].sort());
   });
 

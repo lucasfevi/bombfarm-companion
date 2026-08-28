@@ -2,24 +2,15 @@ import type { BrowserWindow } from 'electron';
 import type {
   AccountPayload,
   AccountView,
-  GameSnapshotPayload,
   GameStatusInfo,
-  IpcEventChannel,
   LiveCurrency,
   LiveFrame,
   LiveTick,
 } from '@bombfarm/contracts';
 import { isLiveCurrency } from '@bombfarm/contracts';
-import { buildSnapshot } from '@bombfarm/game-data';
 import { tickToRawGameState } from '../live-source/tick-to-raw-state.js';
 import { log } from '../logging.js';
 import { buildFixtureAccountPayload } from './fixture-account.js';
-import type { FixtureBundle } from './fixture-data.js';
-import {
-  buildFixtureSnapshot,
-  loadFixtureBundle,
-  rotateFixtureState,
-} from './fixture-data.js';
 import { findProcessId } from './process.js';
 
 /** The subset of `AccountStore` the game reader needs to persist a fixture tick's payload. */
@@ -58,13 +49,19 @@ function ageMsSince(sinceAtIso: string | undefined, nowMs: number): number | und
 export class GameReaderService {
   private readonly config: GameReaderConfig;
   private readonly isPackaged: boolean;
+  /** Checked at the top of every live tick, before `findProcessId` ever runs — enumerating and
+   *  identifying the player's game process is itself something consent must cover, the same gate
+   *  the live tap applies to its own process lister. Defaults to *denied*: a caller that forgets
+   *  to wire this probes the player's processes ungated, which is the defect this field exists to
+   *  prevent, so the safe direction is the one that costs a test rather than the one that costs a
+   *  player. */
+  private readonly consent: () => boolean;
   private status: GameStatusInfo;
-  private payload: GameSnapshotPayload;
   private timer: NodeJS.Timeout | null = null;
   private windowProvider: (() => BrowserWindow | null) | null = null;
   private accountStore: AccountCommitter | null = null;
   private lastAccountView: AccountView | null = null;
-  /** MP3 F3 (`AD-043` point 3) — fired after `tickFixture` commits, so a caller sees the FRESH
+  /** F3 (the account:changed true-change-signal rule, point 3) — fired after `tickFixture` commits, so a caller sees the FRESH
    * `lastAccountView` through `getAccountView()`, never the previous tick's (a callback invoked
    * from inside `commit()` itself would read the stale value one tick early — see
    * `account-view.ts`'s notifier doc comment for why). Optional and unset in production; only
@@ -85,16 +82,19 @@ export class GameReaderService {
    *  moment the tap itself reports a gap, instead of replaying the last frame as `connected`
    *  forever. */
   private latestLiveCurrency: LiveCurrency | null = null;
-  /** `sequence` of the `latestLiveTick` frame `tickLive()` last ran the adapt+build chain on.
+  /** `sequence` of the `latestLiveTick` frame `tickLive()` last ran `tickToRawGameState()` on.
    *  The tap's frame cadence is far coarser than `pollAttachedMs`, so most polls see the exact
-   *  same cached frame; re-running `tickToRawGameState()`/`buildSnapshot()` on byte-identical
-   *  input every ~50ms just to discover nothing changed is wasted work `tickLive()` now skips.
-   *  Keyed on `sequence` rather than `takenAt`: two distinct frames can share the same
-   *  millisecond timestamp under batched delivery, and a timestamp comparison would then drop
-   *  the second one. */
+   *  same cached frame; re-running the parse on byte-identical input every ~50ms just to
+   *  discover nothing changed is wasted work `tickLive()` now skips. Keyed on `sequence` rather
+   *  than `takenAt`: two distinct frames can share the same millisecond timestamp under batched
+   *  delivery, and a timestamp comparison would then drop the second one. */
   private lastProcessedFrameSequence: number | null = null;
-  private fixtureTick = 0;
-  private fixtureBundle: FixtureBundle | null = null;
+  /** Fixture mode only — the first streamed gold reading, so the fixture account's own balance is
+   *  advanced by what the stream has EARNED rather than replaced by another account's total. */
+  private firstStreamedGold: number | null = null;
+  /** Fixture mode only — the highest balance already committed, so a dropped or re-baselined
+   *  reading cannot persist a lower one. See {@link GameReaderService.withStreamedGold}. */
+  private lastStreamedGoldBalance: number | null = null;
   /** Flipped once by `stop()`, never reset (until a hypothetical future `start()` re-arms it).
    * The explicit half of the shutdown-ordering contract: `clearTimeout` alone only stops a
    * tick that has not yet started firing — this flag additionally makes `tick()` a no-op for
@@ -106,13 +106,14 @@ export class GameReaderService {
   constructor(
     _userDataDir: string,
     config: Partial<GameReaderConfig> = {},
-    deps: { isPackaged?: boolean } = {},
+    deps: { isPackaged?: boolean; consent?: () => boolean } = {},
   ) {
     this.isPackaged = deps.isPackaged ?? false;
+    this.consent = deps.consent ?? (() => false);
     const mode = config.mode ?? resolveDefaultMode(this.isPackaged);
     this.config = { ...DEFAULT_CONFIG, ...config, mode };
 
-    // Never restore `status` from disk (design R-2 / APS-03): a cold boot with the game
+    // Never restore `status` from disk (design R-2): a cold boot with the game
     // closed always reports `not_running`, never a previous session's `connected`.
     const now = new Date().toISOString();
     this.status = {
@@ -120,11 +121,6 @@ export class GameReaderService {
       updatedAt: now,
       processName: this.config.processName,
     };
-    this.payload = {
-      status: this.status,
-      mapped: null,
-      raw: { state: null, inventory: null },
-    } satisfies GameSnapshotPayload;
   }
 
   setWindowProvider(provider: () => BrowserWindow | null): void {
@@ -179,16 +175,24 @@ export class GameReaderService {
     }
   }
 
+  /** Re-checks consent right away instead of leaving it to the next scheduled poll — called from
+   *  the same consent-changed path the live tap's own `pollNow()` is, so a fresh grant is not
+   *  reflected only up to `pollDetachedMs` later. */
+  pollNow(): void {
+    if (this.stopped) return;
+    if (this.timer) {
+      clearTimeout(this.timer);
+      this.timer = null;
+    }
+    this.scheduleNext(0);
+  }
+
   getStatus(): GameStatusInfo {
     return this.status;
   }
 
   getMode(): GameReaderMode {
     return this.config.mode;
-  }
-
-  getSnapshot(): GameSnapshotPayload {
-    return this.payload;
   }
 
   private scheduleNext(delayMs: number): void {
@@ -224,47 +228,54 @@ export class GameReaderService {
     }
   }
 
-  /** Only fixture mode ever reaches this — a non-fixture run must never touch the filesystem
-   * for these (dev/CI-only) fixtures, let alone throw if they are not resolvable, as a packaged
-   * install's would not be. Loaded at most once per instance; `tickFixture()` runs on a fast
-   * poll and must not re-read the fixture files on every tick. */
-  private getFixtureBundle(): FixtureBundle {
-    this.fixtureBundle ??= loadFixtureBundle();
-    return this.fixtureBundle;
+  /**
+   * The fixture account is a still photograph: its gold never moves, so anything built on a
+   * balance over time — a rate, a session total — reads zero forever against it. The replay tap is
+   * already delivering the capture's own gold, tick by tick, and `tickFixture` is the only place
+   * in this mode that writes an account, so this is where the two meet.
+   *
+   * The baseline stays the FIXTURE's gold, advanced by what the stream has earned since its first
+   * frame. Using the capture's own balance instead would be a different account's, and would show
+   * as the displayed total lurching to an unrelated number the moment the first frame lands.
+   */
+  private withStreamedGold(payload: AccountPayload): AccountPayload {
+    const streamed = this.latestLiveTick?.tick.gold;
+    const account = payload.account;
+    if (streamed === undefined || account === undefined) return payload;
+
+    const baseline = Number(account.gold);
+    if (!Number.isFinite(baseline)) return payload;
+
+    this.firstStreamedGold ??= streamed;
+    const candidate = baseline + Math.max(0, streamed - this.firstStreamedGold);
+
+    // A high-water mark rather than a reset of the baseline. Every reading this commits is
+    // persisted, so a balance that fell would be written to disk — and re-baselining on a
+    // dropped reading is precisely how that happens: `gained` collapses to zero and the account
+    // loses everything the session had earned. Clamping instead means no upstream reset,
+    // whatever its cause, can make the stored balance go backwards.
+    const balance = Math.max(candidate, this.lastStreamedGoldBalance ?? candidate);
+    this.lastStreamedGoldBalance = balance;
+    if (balance === baseline) return payload;
+
+    // Back to the digit string the wire uses, which is what every reader of this field expects.
+    return { ...payload, account: { ...account, gold: String(balance) } };
   }
 
   private tickFixture(): void {
-    this.fixtureTick += 1;
     const takenAt = new Date().toISOString();
-    const fixtures = this.getFixtureBundle();
-    const state = rotateFixtureState(fixtures.state, this.fixtureTick);
-    const built = buildSnapshot({
-      takenAt,
-      source: 'live',
-      state,
-      inventory: fixtures.inventory,
-      heroRecords: fixtures.heroRecords,
-      heroEnergies: fixtures.heroEnergies,
-    });
 
     this.updateStatus({
       status: 'connected',
       updatedAt: takenAt,
       processName: 'fixture',
     });
-    this.updateSnapshot({
-      status: this.status,
-      mapped: built.snapshot,
-      raw: {
-        state,
-        inventory: fixtures.inventory,
-      },
-    });
 
     if (this.accountStore) {
-      this.lastAccountView = this.accountStore.commit(buildFixtureAccountPayload(takenAt, this.isPackaged), {
-        gameRunning: true,
-      });
+      this.lastAccountView = this.accountStore.commit(
+        this.withStreamedGold(buildFixtureAccountPayload(takenAt, this.isPackaged)),
+        { gameRunning: true },
+      );
       this.onAccountCommitted?.();
     }
   }
@@ -272,13 +283,24 @@ export class GameReaderService {
   /**
    * The non-fixture path. Status comes from real process detection (`findProcessId`) — it is
    * never inferred from whether a live-tap frame has arrived, since the tap can lag attach by a
-   * few polls and reporting `not_running` for that gap would be dishonest. The snapshot channel,
-   * separately, reflects whatever the live tap has delivered through `ingestLiveTick()` — this
-   * never fabricates a reading of its own; with no frame yet, or once the tap's own currency
-   * says it has stopped delivering (`ingestLiveCurrency()`), it reports `stale` and leaves the
-   * previous snapshot in place rather than replaying a frozen one as `connected`.
+   * few polls and reporting `not_running` for that gap would be dishonest. Whether the tap's
+   * latest tick actually parses into a `RawGameState` gates `connected` vs `stale`, separately
+   * from process detection — with no frame yet, or once the tap's own currency says it has
+   * stopped delivering (`ingestLiveCurrency()`), it reports `stale` rather than replaying a
+   * frozen reading as `connected`.
    */
   private tickLive(): void {
+    if (!this.consent()) {
+      this.latestLiveTick = null;
+      this.lastProcessedFrameSequence = null;
+      this.updateStatus({
+        status: 'not_running',
+        updatedAt: new Date().toISOString(),
+        processName: this.config.processName,
+      });
+      return;
+    }
+
     const pid = findProcessId(this.config.processName);
     if (!pid) {
       this.latestLiveTick = null;
@@ -327,18 +349,12 @@ export class GameReaderService {
       return;
     }
 
-    const built = buildSnapshot({ takenAt, source: 'live', state: raw });
     this.lastProcessedFrameSequence = sequence;
 
     this.updateStatus({
       status: 'connected',
       updatedAt: takenAt,
       processName: this.config.processName,
-    });
-    this.updateSnapshot({
-      status: this.status,
-      mapped: built.snapshot,
-      raw: { state: raw, inventory: null },
     });
   }
 
@@ -356,43 +372,14 @@ export class GameReaderService {
       next.staleAgeMs !== this.status.staleAgeMs ||
       next.processName !== this.status.processName;
     this.status = next;
-    this.payload = { ...this.payload, status: next };
     if (changed) {
-      this.emit('game:status', next);
+      this.emit(next);
     }
   }
 
-  private updateSnapshot(next: GameSnapshotPayload): void {
-    const changed = JSON.stringify(next.raw) !== JSON.stringify(this.payload.raw);
-    this.payload = next;
-    if (changed) {
-      this.emit('snapshot:updated', next);
-    }
-  }
-
-  private emit(channel: 'game:status', payload: GameStatusInfo): void;
-  private emit(channel: 'snapshot:updated', payload: GameSnapshotPayload): void;
-  private emit(channel: IpcEventChannel, payload: GameStatusInfo | GameSnapshotPayload): void {
+  private emit(payload: GameStatusInfo): void {
     const window = this.windowProvider?.();
-    window?.webContents.send(`bfc:event:${channel}`, payload);
-    log.debug({ scope: 'game-reader', event: channel });
+    window?.webContents.send('bfc:event:game:status', payload);
+    log.debug({ scope: 'game-reader', event: 'game:status' });
   }
-}
-
-export function createInitialFixturePayload(): GameSnapshotPayload {
-  const takenAt = new Date().toISOString();
-  const built = buildFixtureSnapshot(takenAt);
-  const fixtures = loadFixtureBundle();
-  return {
-    status: {
-      status: 'connected',
-      updatedAt: takenAt,
-      processName: 'fixture',
-    },
-    mapped: built.snapshot,
-    raw: {
-      state: fixtures.state,
-      inventory: fixtures.inventory,
-    },
-  };
 }

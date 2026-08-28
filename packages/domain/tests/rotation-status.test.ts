@@ -7,6 +7,7 @@ import type {
   RotationSnapshot,
 } from '@bombfarm/contracts';
 import { classifyRotation, type RotationStatus } from '@bombfarm/domain/rotation-status';
+import { CASA_SLOTS_MAX } from '@bombfarm/domain/casa-slots';
 import { loadFixtureJson } from './helpers/sheet-math-fixtures';
 
 const CYCLE_SECONDS = 1190.5263157894735;
@@ -29,7 +30,8 @@ function totalClassified(status: RotationStatus): number {
     status.recovering.length +
     status.queued.length +
     status.benched.length +
-    status.unclassifiedCount
+    status.unclassifiedCount +
+    status.fieldExitPendingCount
   );
 }
 
@@ -117,6 +119,7 @@ describe('classifyRotation — fixture baseline', () => {
       activeHouseIndex: 0,
       activeHouseLevel: 4,
       slots: 3,
+      slotsMax: 9,
       cycleSeconds: 1190.5263157894735,
       rescuesLeft: 7,
       rescuesMax: 15,
@@ -406,6 +409,97 @@ describe('classifyRotation — edge cases', () => {
   });
 });
 
+describe('classifyRotation — liveOnField overrides a stale snapshot', () => {
+  it('a hero the frames show on the field is placed there even though the snapshot never marked it inField', () => {
+    const heroes: RotationHeroSnapshot[] = [
+      { id: 'joined', activity: 'ready', energyFraction: 1 },
+      { id: 'other', activity: 'benched' },
+    ];
+    const status = classifyRotation(snapshotResult({ heroes }), new Set(['joined']));
+
+    expect(heroIds(status.onField)).toEqual(['joined']);
+    expect(heroIds(status.queued)).toEqual([]);
+  });
+
+  it('a hero the frames show has left the field is withheld from every list until the snapshot resolves it, not left on-field and not guessed into another', () => {
+    const heroes: RotationHeroSnapshot[] = [{ id: 'departed', activity: 'inField', energyFraction: 0.4 }];
+    const status = classifyRotation(snapshotResult({ heroes }), new Set());
+
+    expect(status.onField).toHaveLength(0);
+    expect(status.recovering).toHaveLength(0);
+    expect(status.queued).toHaveLength(0);
+    expect(status.benched).toHaveLength(0);
+    expect(totalClassified(status)).toBe(1);
+  });
+
+  it('a routine field exit is counted in fieldExitPendingCount, never in unclassifiedCount — the counter reserved for data the normalizer genuinely could not read', () => {
+    const heroes: RotationHeroSnapshot[] = [{ id: 'departed', activity: 'inField', energyFraction: 0.4 }];
+    const status = classifyRotation(snapshotResult({ heroes }), new Set());
+
+    expect(status.fieldExitPendingCount).toBe(1);
+    expect(status.unclassifiedCount).toBe(0);
+  });
+
+  it('a hero the snapshot calls inField and the frames still show on the field stays on the field, unaffected', () => {
+    const heroes: RotationHeroSnapshot[] = [{ id: 'staying', activity: 'inField', energyFraction: 0.6 }];
+    const status = classifyRotation(snapshotResult({ heroes }), new Set(['staying']));
+
+    expect(heroIds(status.onField)).toEqual(['staying']);
+    expect(status.unclassifiedCount).toBe(0);
+    expect(status.fieldExitPendingCount).toBe(0);
+  });
+
+  it('a hero the frames show on the field that the snapshot has never carried is added to onField with only its id, not dropped', () => {
+    const heroes: RotationHeroSnapshot[] = [{ id: 'known', activity: 'inField', energyFraction: 0.5 }];
+    const status = classifyRotation(snapshotResult({ heroes, fieldSize: 2 }), new Set(['known', 'brand-new']));
+
+    expect(heroIds(status.onField)).toEqual(['known', 'brand-new']);
+    expect(status.onField.find((hero) => hero.id === 'brand-new')).toEqual({ id: 'brand-new' });
+  });
+
+  it('a hero absent from the snapshot but present on the live field counts toward occupancy, so the reading is never lower than what is genuinely deployed', () => {
+    const heroes: RotationHeroSnapshot[] = [{ id: 'known', activity: 'inField', energyFraction: 0.5 }];
+    const status = classifyRotation(snapshotResult({ heroes, fieldSize: 2 }), new Set(['known', 'brand-new']));
+
+    expect(status.occupancy).toEqual({ occupied: 2, fieldSize: 2 });
+  });
+
+  it('heroes untouched by the live set — never inField per the snapshot either — classify exactly as they would with no live set at all', () => {
+    const heroes: RotationHeroSnapshot[] = [
+      { id: 'benched-1', activity: 'benched' },
+      { id: 'recovering-1', activity: 'resting', recovering: true, energyFraction: 0.5 },
+    ];
+    const withoutLive = classifyRotation(snapshotResult({ heroes, house: { cycleSeconds: CYCLE_SECONDS } }));
+    const withLive = classifyRotation(
+      snapshotResult({ heroes, house: { cycleSeconds: CYCLE_SECONDS } }),
+      new Set(['some-other-hero-on-field']),
+    );
+
+    expect(heroIds(withLive.benched)).toEqual(heroIds(withoutLive.benched));
+    expect(withLive.recovering.map((entry) => entry.hero.id)).toEqual(
+      withoutLive.recovering.map((entry) => entry.hero.id),
+    );
+  });
+
+  it('omitting liveOnField entirely classifies on activity alone, identically to before this parameter existed', () => {
+    const heroes: RotationHeroSnapshot[] = [{ id: 'f1', activity: 'inField', energyFraction: 0.3 }];
+    const status = classifyRotation(snapshotResult({ heroes }));
+
+    expect(heroIds(status.onField)).toEqual(['f1']);
+    expect(status.unclassifiedCount).toBe(0);
+  });
+
+  it('list ordering among heroes that stay on the field is unaffected by a liveOnField set', () => {
+    const heroes: RotationHeroSnapshot[] = [
+      { id: 'full', activity: 'inField', energyFraction: 0.9 },
+      { id: 'empty', activity: 'inField', energyFraction: 0.1 },
+    ];
+    const status = classifyRotation(snapshotResult({ heroes }), new Set(['full', 'empty']));
+
+    expect(heroIds(status.onField)).toEqual(['empty', 'full']);
+  });
+});
+
 describe('classifyRotation — the captured full-and-waiting state', () => {
   const captured = loadFixtureJson('rotation-snapshot-ready.json', 'api') as unknown as RotationNormalizeResult;
 
@@ -464,5 +558,28 @@ describe('classifyRotation — the captured full-and-waiting state', () => {
     for (const entry of status.recovering) {
       expect(entry.recoverySeconds).toBeCloseTo((1 - (entry.hero.energyFraction ?? 0)) * 922.1052631578947, 6);
     }
+  });
+});
+
+describe('classifyRotation — the rest-slot ceiling', () => {
+  it('takes the ceiling from the account own ladder when the wire sent one', () => {
+    const status = classifyRotation(snapshotResult({ house: { slots: 3, slotsPerHouse: [3, 5, 7] } }));
+    expect(status.house.slotsMax).toBe(7);
+  });
+
+  it('falls back to the wiki ladder when the wire sent no per-house slots', () => {
+    const status = classifyRotation(snapshotResult({ house: { slots: 3 } }));
+    expect(status.house.slotsMax).toBe(CASA_SLOTS_MAX);
+  });
+
+  it('ignores unusable entries rather than letting one collapse the ceiling', () => {
+    const status = classifyRotation(snapshotResult({ house: { slots: 3, slotsPerHouse: [0, 5, Number.NaN] } }));
+    expect(status.house.slotsMax).toBe(5);
+  });
+
+  it('carries no ceiling when the slot count itself is unknown — a cap beside nothing says nothing', () => {
+    const status = classifyRotation(snapshotResult({ house: { cycleSeconds: CYCLE_SECONDS } }));
+    expect(status.house.slots).toBeUndefined();
+    expect(status.house.slotsMax).toBeUndefined();
   });
 });

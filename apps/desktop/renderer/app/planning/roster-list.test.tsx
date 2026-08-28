@@ -12,7 +12,7 @@ function buildRoster() {
   return model.heroes;
 }
 
-describe('RosterList (MPV-12, MPV-14, MPV-15)', () => {
+describe('RosterList (rows carry name/level/stars/rarity, @bombfarm/ui controls, scrollable roster)', () => {
   it('renders the roster-list testid and one roster-row-<heroId> per hero', () => {
     const heroes = buildRoster();
     const html = renderToStaticMarkup(
@@ -24,7 +24,7 @@ describe('RosterList (MPV-12, MPV-14, MPV-15)', () => {
     }
   });
 
-  it('each row carries name, level, stars and rarity (MPV-12)', () => {
+  it('each row carries name, level, stars and rarity', () => {
     const heroes = buildRoster();
     const html = renderToStaticMarkup(
       createElement(RosterList, { heroes, selectedHeroId: null, onSelect: () => {} }),
@@ -36,7 +36,7 @@ describe('RosterList (MPV-12, MPV-14, MPV-15)', () => {
     expect(html).toContain(String(entry.hero.stars));
   });
 
-  it('selection is a Button primitive, not a bare <tr onClick> (MPV-14)', () => {
+  it('selection is a Button primitive, not a bare <tr onClick>', () => {
     const heroes = buildRoster();
     const html = renderToStaticMarkup(
       createElement(RosterList, { heroes, selectedHeroId: null, onSelect: () => {} }),
@@ -54,7 +54,7 @@ describe('RosterList (MPV-12, MPV-14, MPV-15)', () => {
     expect(html).not.toContain('overflow-y: auto');
   });
 
-  it("MP3 F4 (MIN-12/AD-056): the rarity Chip follows the CopyProvider's locale, via useLocale()", () => {
+  it("the rarity Chip follows the CopyProvider's locale, via useLocale()", () => {
     const heroes = buildRoster();
     const enHtml = renderToStaticMarkup(
       createElement(CopyProvider, {
@@ -77,11 +77,11 @@ describe('RosterList (MPV-12, MPV-14, MPV-15)', () => {
 });
 
 /**
- * MP3 F4 — MIN-14: localisation is display-layer only (docs/i18n.md rule 3). For one rarity, one
+ * Localisation is display-layer only (docs/i18n.md rule 3). For one rarity, one
  * ability and one slot, the label differs between languages AND the key value passed in is `===`
  * the value returned — the stored/schema key is demonstrably unchanged by localising its label.
  */
-describe('game-labels helpers (MIN-14 — stored key unchanged, display-layer only)', () => {
+describe('game-labels helpers (stored key unchanged, display-layer only)', () => {
   it('rarityLabel: label differs, key is returned unchanged from either call', () => {
     const key = 'Épico' as const;
     expect(rarityLabel(key, 'en')).not.toBe(rarityLabel(key, 'pt'));

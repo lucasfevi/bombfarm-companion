@@ -1,5 +1,6 @@
 /**
- * MP5 F4 (T9) — `dropStaleLocalAccount()` unit coverage: `MSG-21`…`MSG-25`, `MSG-28`.
+ * T9 — `dropStaleLocalAccount()` unit coverage: presence-not-truthiness triggers, the four
+ * dropped key families, the clean-data-preserved control, and diagnosable drop logging.
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { readFileSync } from 'node:fs';
@@ -67,7 +68,7 @@ describe('dropStaleLocalAccount', () => {
     expect(report.triggers.length).toBeGreaterThan(0);
   });
 
-  it('MSG-21 discriminating case: every retired field at its all-falsy value still triggers the drop — presence, not truthiness', () => {
+  it('discriminating case: every retired field at its all-falsy value still triggers the drop — presence, not truthiness', () => {
     // LEGACY_ACCOUNT_JSON above (and every other fixture in this file) carries at least one
     // truthy retired value (critDmgMult: 2, glassCannon: true, …) — a truthiness-checking
     // implementation (`tree.critDmgMult` instead of `'critDmgMult' in tree`) would pass every
@@ -161,7 +162,7 @@ describe('dropStaleLocalAccount', () => {
     expect(store.has('bf-hp-account-v1')).toBe(false);
   });
 
-  it('MSG-25 clean control: storage-roundtrip-20260729.json is NOT dropped — every key stays byte-identical', () => {
+  it('clean control: storage-roundtrip-20260729.json is NOT dropped — every key stays byte-identical', () => {
     localStorage.setItem('bf-hp-heroes-v1', CLEAN_FIXTURE['bf-hp-heroes-v1']);
     localStorage.setItem('bf-hp-active-hero-v1', CLEAN_FIXTURE['bf-hp-active-hero-v1']);
     localStorage.setItem('bf-hp-account-v1', CLEAN_FIXTURE['bf-hp-account-v1']);
@@ -174,7 +175,7 @@ describe('dropStaleLocalAccount', () => {
     expect(localStorage.getItem('bf-hp-account-v1')).toBe(CLEAN_FIXTURE['bf-hp-account-v1']);
   });
 
-  it('MSG-28: the log payload names field paths only — a seeded gold amount and hero name never appear in it', () => {
+  it('the log payload names field paths only — a seeded gold amount and hero name never appear in it', () => {
     const infoSpy = vi.spyOn(console, 'info').mockImplementation(() => {});
     const sentinelHeroName = 'Bellatrix-Sentinel-9182';
     const sentinelGold = 918273645;

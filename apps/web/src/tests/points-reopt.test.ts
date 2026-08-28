@@ -1,6 +1,5 @@
 /**
- * BSPW4-10 — Tier 1 (AC-51/AC-52, AC-57..AC-59, AC-61b, AC-72) and Tier 2
- * (AC-62..AC-64i, AC-70b) on the shared scorer / search.
+ * Tier 1 and Tier 2 tests for the shared scorer / search.
  */
 import { describe, expect, it } from 'vitest';
 import {
@@ -26,7 +25,7 @@ import { SHEET_KEYS, ZERO_PTS, type SheetKey } from '@bombfarm/domain/planner-co
 import { zeroTeamBuffs } from '@bombfarm/domain/team-buffs';
 import { extractHero, loadFixtureJson, treeTotalsFromSave } from '@/tests/helpers/sheet-math-fixtures';
 
-// MP5 F1 (AD-068 class (b) — structural, using real heroes as generic input rather than
+// (the ground-truth rule, class (b) — structural, using real heroes as generic input rather than
 // pinning any of their captured values as an expected output): re-pointed onto
 // payload-20260812-8heroes.json's 8 real heroes (design.md §6.2 — "the largest single
 // re-point in the feature"). The deleted 21 hero-name literals spanned two now-deleted
@@ -141,7 +140,7 @@ function syntheticHero(): { pts: Record<SheetKey, number>; effective: HeroSheet;
   return { pts, effective, effectiveDelta };
 }
 
-describe('REOPT_KEYS (AC-72)', () => {
+describe('REOPT_KEYS', () => {
   it('has exactly seven members, excludes luck, and matches SHEET_KEYS minus luck as a set', () => {
     expect(REOPT_KEYS).toHaveLength(7);
     expect(REOPT_KEYS).not.toContain('luck');
@@ -150,8 +149,8 @@ describe('REOPT_KEYS (AC-72)', () => {
   });
 });
 
-describe('findGateCandidate — Tier 1 (BSPW4-10)', () => {
-  it('AC-57f/AC-64h: budget 0 returns the input vector, gainPct 0, evaluations <= 1, no seed generated', () => {
+describe('findGateCandidate — Tier 1', () => {
+  it('budget 0 returns the input vector, gainPct 0, evaluations <= 1, no seed generated', () => {
     const { effective, effectiveDelta } = syntheticHero();
     const result = gate({ pts: ZERO_PTS(), effective, effectiveDelta, context });
     expect(result.pts).toEqual(ZERO_PTS());
@@ -160,7 +159,7 @@ describe('findGateCandidate — Tier 1 (BSPW4-10)', () => {
     expect(result.keptCurrent).toBe(true);
   });
 
-  it('AC-57c: is AD-BSP-08 verbatim — no localSearchMoves, tier "gate", gainIsLowerBound true', () => {
+  it('is the greedy repeated-best-rankNextPoint algorithm verbatim — no localSearchMoves, tier "gate", gainIsLowerBound true', () => {
     const { pts, effective, effectiveDelta } = syntheticHero();
     const result = gate({ pts, effective, effectiveDelta, context });
     expect(result.localSearchMoves).toBe(0);
@@ -170,7 +169,7 @@ describe('findGateCandidate — Tier 1 (BSPW4-10)', () => {
     expect(result.sweeps).toBeUndefined();
   });
 
-  it('AC-57d: evaluations <= 1 + 10*B and <= 1024, on a real fixture hero and at a synthetic B=100', () => {
+  it('evaluations <= 1 + 10*B and <= 1024, on a real fixture hero and at a synthetic B=100', () => {
     const real = realHeroDerive('payload-20260812-8heroes.json', 'Bellatrix', 27);
     const budget = REOPT_KEYS.reduce((sum, key) => sum + real.pts[key], 0);
     const realResult = gate({ pts: real.pts, effective: real.effective, effectiveDelta: real.effectiveDelta, context });
@@ -184,7 +183,7 @@ describe('findGateCandidate — Tier 1 (BSPW4-10)', () => {
     expect(bigResult.evaluations).toBeLessThanOrEqual(REOPT_GATE_MAX_EVALUATIONS);
   });
 
-  it('AC-57e: cost context recorded beside the pipeline\'s existing ~240 sustained-DPS evaluations', () => {
+  it('cost context recorded beside the pipeline\'s existing ~240 sustained-DPS evaluations', () => {
     // energySwitchPoint's 60-iteration binary search x 4 sustainedDps calls/iteration = 240.
     const PIPELINE_EXISTING_EVALUATIONS = 240;
     const { pts, effective, effectiveDelta } = syntheticHero();
@@ -194,14 +193,14 @@ describe('findGateCandidate — Tier 1 (BSPW4-10)', () => {
     expect(REOPT_GATE_MAX_EVALUATIONS / PIPELINE_EXISTING_EVALUATIONS).toBeCloseTo(4.2666, 3);
   });
 
-  it('AC-57g: reuses the given effective/effectiveDelta — never calls derive again (no geared/naked input exists on ReoptInput)', () => {
+  it('reuses the given effective/effectiveDelta — never calls derive again (no geared/naked input exists on ReoptInput)', () => {
     const { pts, effective, effectiveDelta } = syntheticHero();
     // Structural: ReoptInput has no `naked`/`geared`/`sheetOther` fields for derive() to need.
     const result = gate({ pts, effective, effectiveDelta, context });
     expect(result).toBeDefined();
   });
 
-  it('AC-51/AC-52: skips candidates scoring <= 0; when the budget outruns any positive candidate, reports unallocated > 0', () => {
+  it('skips candidates scoring <= 0; when the budget outruns any positive candidate, reports unallocated > 0', () => {
     // Only crit chance has a positive effectiveDelta, and it caps after 2 points (98 -> 100).
     // Current (S1) wastes its whole budget in a zero-delta stat (penetration) — worse than
     // greedy's partial allocation, so greedy wins, but 3 of its 5 points have nowhere to go.
@@ -235,7 +234,7 @@ describe('findGateCandidate — Tier 1 (BSPW4-10)', () => {
     expect(result.reoptDps).toBeGreaterThan(result.currentDps);
   });
 
-  it('AC-58/AC-58a: budget is Σ pts over REOPT_KEYS; pts.luck copied through; Σ result.pts equals budget - unallocated', () => {
+  it('budget is Σ pts over REOPT_KEYS; pts.luck copied through; Σ result.pts equals budget - unallocated', () => {
     const { pts, effective, effectiveDelta } = syntheticHero();
     const hostilePts = { ...pts, luck: 42 };
     const result = gate({ pts: hostilePts, effective, effectiveDelta, context });
@@ -245,7 +244,7 @@ describe('findGateCandidate — Tier 1 (BSPW4-10)', () => {
     expect(resultSum).toBe(budget - result.unallocated);
   });
 
-  it('AC-59 (GAP-W2-01): pts.luck=0 vs a hostile pts.luck=9999 produce byte-identical DPS entries', () => {
+  it('(GAP-W2-01): pts.luck=0 vs a hostile pts.luck=9999 produce byte-identical DPS entries', () => {
     const { pts, effective, effectiveDelta } = syntheticHero();
     const honest = gate({ pts: { ...pts, luck: 0 }, effective, effectiveDelta, context });
     const hostile = gate({ pts: { ...pts, luck: 9999 }, effective, effectiveDelta, context });
@@ -259,7 +258,7 @@ describe('findGateCandidate — Tier 1 (BSPW4-10)', () => {
     expect(honest.pts.luck).toBe(0);
   });
 
-  it('AC-61b: penetration above STAT_CAPS.penetration is not clamped; the search simply scores no further gain there', () => {
+  it('penetration above STAT_CAPS.penetration is not clamped; the search simply scores no further gain there', () => {
     const effective: HeroSheet = {
       rarity: 'Raro',
       attack: 500,
@@ -291,7 +290,7 @@ describe('findGateCandidate — Tier 1 (BSPW4-10)', () => {
     expect(effective.penetration).toBeGreaterThan(100); // sanity: genuinely uncapped input
   });
 
-  it('AC-57a: reoptDps >= currentDps and gainPct >= 0 across every one of the 8 real hero-instances', () => {
+  it('reoptDps >= currentDps and gainPct >= 0 across every one of the 8 real hero-instances', () => {
     for (const { file, names } of FIXTURES) {
       for (const [name, level] of names) {
         const real = realHeroDerive(file, name, level);
@@ -307,7 +306,7 @@ describe('findGateCandidate — Tier 1 (BSPW4-10)', () => {
     }
   });
 
-  it('AC-57b: re-scoring result.pts reproduces result.reoptDps exactly', () => {
+  it('re-scoring result.pts reproduces result.reoptDps exactly', () => {
     const { pts, effective, effectiveDelta } = syntheticHero();
     const result = gate({ pts, effective, effectiveDelta, context });
     // Rebuild the candidate sheet the same way the scorer does and re-score it directly.
@@ -328,7 +327,7 @@ describe('findGateCandidate — Tier 1 (BSPW4-10)', () => {
 });
 
 /**
- * The bilinear-ridge scenario (design.md's Neighbourhood argument, AC-62b/AC-63a). All 80
+ * The bilinear-ridge scenario (design.md's Neighbourhood argument). All 80
  * budget points sit in attack (a real, valuable stat, not a zero-delta decoy) so any
  * neighbourhood transfer away from it has a genuine opportunity cost; crit chance/dmg start
  * near zero. `S5`'s restricted-greedy first phase accumulates up to `floor(B/2) = 40` points
@@ -363,18 +362,18 @@ function ridgeHero(): { pts: Record<SheetKey, number>; effective: HeroSheet; eff
   return { pts, effective, effectiveDelta };
 }
 
-describe('optimizeBuild — Tier 2 (BSPW4-10)', () => {
-  it('AC-62b: S5 (critPairHalf) wins the bilinear-ridge build, and S2 alone (Tier 1) scores lower', () => {
+describe('optimizeBuild — Tier 2', () => {
+  it('S5 (critPairHalf) wins the bilinear-ridge build, and S2 alone (Tier 1) scores lower', () => {
     const { pts, effective, effectiveDelta } = ridgeHero();
     const tier1 = gate({ pts, effective, effectiveDelta, context }); // S1 vs S2 only
     const tier2 = full({ pts, effective, effectiveDelta, context });
 
     expect(tier2.winningSeed).toBe('critPairHalf');
-    // Both DPS figures stated, per AC-62b's requirement that the test show greedy losing.
+    // Both DPS figures stated, so the test shows greedy losing directly.
     expect(tier2.reoptDps).toBeGreaterThan(tier1.reoptDps);
   });
 
-  it('AC-63c: the returned vector admits no further strictly improving move (re-verified independently)', () => {
+  it('the returned vector admits no further strictly improving move (re-verified independently)', () => {
     const { pts, effective, effectiveDelta } = ridgeHero();
     const result = full({ pts, effective, effectiveDelta, context });
     expect(result.budgetExhausted).toBe(false);
@@ -398,7 +397,7 @@ describe('optimizeBuild — Tier 2 (BSPW4-10)', () => {
     }
   });
 
-  it('AC-64a: tier monotonicity — optimizeBuild.reoptDps >= findGateCandidate.reoptDps on the same input', () => {
+  it('tier monotonicity — optimizeBuild.reoptDps >= findGateCandidate.reoptDps on the same input', () => {
     for (const { file, names } of FIXTURES) {
       for (const [name, level] of names) {
         const real = realHeroDerive(file, name, level);
@@ -411,7 +410,7 @@ describe('optimizeBuild — Tier 2 (BSPW4-10)', () => {
     }
   });
 
-  it('AC-57/AC-57a for Tier 2: reoptDps >= currentDps and gainPct >= 0 across all 8 real hero-instances', () => {
+  it('for Tier 2: reoptDps >= currentDps and gainPct >= 0 across all 8 real hero-instances', () => {
     for (const { file, names } of FIXTURES) {
       for (const [name, level] of names) {
         const real = realHeroDerive(file, name, level);
@@ -422,7 +421,7 @@ describe('optimizeBuild — Tier 2 (BSPW4-10)', () => {
     }
   });
 
-  it('AC-64b: evaluations <= REOPT_FULL_MAX_EVALUATIONS, on a real fixture hero and at a synthetic B=100', () => {
+  it('evaluations <= REOPT_FULL_MAX_EVALUATIONS, on a real fixture hero and at a synthetic B=100', () => {
     const real = realHeroDerive('payload-20260812-8heroes.json', 'Bellatrix', 27);
     const realResult = full({ pts: real.pts, effective: real.effective, effectiveDelta: real.effectiveDelta, context });
     expect(realResult.evaluations).toBeLessThanOrEqual(REOPT_FULL_MAX_EVALUATIONS);
@@ -433,14 +432,14 @@ describe('optimizeBuild — Tier 2 (BSPW4-10)', () => {
     expect(bigResult.evaluations).toBeLessThanOrEqual(REOPT_FULL_MAX_EVALUATIONS);
   });
 
-  it('AC-64f: determinism — two identical calls return deeply equal results, including winningSeed/evaluations/sweeps', () => {
+  it('determinism — two identical calls return deeply equal results, including winningSeed/evaluations/sweeps', () => {
     const { pts, effective, effectiveDelta } = ridgeHero();
     const first = full({ pts, effective, effectiveDelta, context });
     const second = full({ pts, effective, effectiveDelta, context });
     expect(second).toEqual(first);
   });
 
-  it('AC-64g: a constructed tie resolves to the earlier candidate (S1 current, when nothing can improve it)', () => {
+  it('a constructed tie resolves to the earlier candidate (S1 current, when nothing can improve it)', () => {
     const { effective } = syntheticHero();
     // Zero budget makes every seed identical to "current" — the fast path already asserts
     // this, but exercise it through the full seed/local-search path with budget > 0 where
@@ -453,7 +452,7 @@ describe('optimizeBuild — Tier 2 (BSPW4-10)', () => {
     expect(result.pts).toEqual(pts);
   });
 
-  it('AC-64i/AC-64j: the same hero and budget under two different loadouts (via effective/effectiveDelta) produce different optimal vectors', () => {
+  it('gear awareness, asserted not implied — the same hero and budget under two different loadouts (via effective/effectiveDelta) produce different optimal vectors', () => {
     const pts: Record<SheetKey, number> = { ...ZERO_PTS(), speed: 10 };
     const flatAttackLoadout: HeroSheet = {
       rarity: 'Raro', attack: 2000, energy: 500, speed: 55, critChance: 10, critDmg: 80, penetration: 8, cdr: 10,
@@ -470,7 +469,7 @@ describe('optimizeBuild — Tier 2 (BSPW4-10)', () => {
     expect(flatResult.pts).not.toEqual(critResult.pts);
   });
 
-  it('AC-64k: derive\'s delta vector is independent of pts (same naked/sheetOther/level/stars/gem, different pts, same delta)', () => {
+  it('derive\'s delta vector is independent of pts (same naked/sheetOther/level/stars/gem, different pts, same delta)', () => {
     const naked = { attack: 200, energy: 300, speed: 55, critChance: 10, critDmg: 80, penetration: 5, cdr: 4, luck: 15 };
     const mults = computeCombatMults({
       mods: abilityMods({}),
@@ -500,13 +499,13 @@ describe('optimizeBuild — Tier 2 (BSPW4-10)', () => {
     expect(atSpent.delta).toEqual(atZero.delta);
   });
 
-  it('AC-64m: optimizeBuild ships unwired — computeAdvisorPipeline is not imported by this module', () => {
+  it('optimizeBuild ships unwired — computeAdvisorPipeline is not imported by this module', () => {
     // Structural: points-reopt.ts has zero dependency on advisor-pipeline.ts (verified by the
     // module graph typechecking without one); Wave 6 wires Tier 2 to the Points tab.
     expect(typeof optimizeBuild).toBe('function');
   });
 
-  it('AC-64d: median of 20 runs on a real fixture hero is under 250ms (loose canary, not the budget)', () => {
+  it('median of 20 runs on a real fixture hero is under 250ms (loose canary, not the budget)', () => {
     const real = realHeroDerive('payload-20260812-8heroes.json', 'Bellatrix', 27);
     const times: number[] = [];
     for (let index = 0; index < 20; index++) {
@@ -519,7 +518,7 @@ describe('optimizeBuild — Tier 2 (BSPW4-10)', () => {
     expect(median).toBeLessThan(250);
   });
 
-  it('AC-58/AC-59 for Tier 2: budget/Luck handling matches Tier 1', () => {
+  it('for Tier 2: budget/Luck handling matches Tier 1', () => {
     const { pts, effective, effectiveDelta } = ridgeHero();
     const hostile = full({ pts: { ...pts, luck: 9999 }, effective, effectiveDelta, context });
     const honest = full({ pts: { ...pts, luck: 0 }, effective, effectiveDelta, context });

@@ -7,7 +7,7 @@ import { cn } from '@bombfarm/ui';
 import { renderTemplateWithPct } from '../model/render-template-with-pct';
 
 /**
- * `AC-06` — the Tier 1 gain line. Always mounted (`DEC-03`), toggling `invisible` +
+ * The Tier 1 gain line. Always mounted, toggling `invisible` +
  * `aria-hidden` on `resetAdvice.recommend` so the Points panel never reflows when a reset
  * starts (or stops) being worth it. Copy is the lower-bound form enforced by
  * `i18n-copy-contract.test.ts` — never a bare percentage, always naming Optimize build.

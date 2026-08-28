@@ -1,4 +1,4 @@
-import catalog from './data/catalog.json';
+import catalog from './data/catalog.json' with { type: 'json' };
 import type { Slot } from './gear';
 import type { DropRateId } from './phase-wiki';
 
@@ -33,6 +33,10 @@ const SLOT_ART: Record<Slot, string> = {
   anel: 'ring',
   amuleto: 'amulet',
 };
+
+/** Rarity index → the game's own slug for per-rarity art. Used by the slot plates, the keys,
+ *  the house parts and the crystals — the client files all four under these six words. */
+const RARITY_SLUG = ['common', 'uncommon', 'rare', 'epic', 'legendary', 'mythic'] as const;
 
 /** Rarity index → crystal overlay slug (Comum has no overlay). */
 const CRYSTAL_SLUG: Record<number, string | null> = {
@@ -77,6 +81,73 @@ export function itemIconSrc(defId: string): string | null {
   const slotEn = SLOT_ART[definition.slot];
   if (!slotEn) return null;
   return `${WIKI_ASSETS_BASE}/items/lvl${definition.nativeLevel}_${slotEn}_${definition.set}.png`;
+}
+
+/**
+ * The game's own inventory slot plate for a rarity — the lit backdrop an item icon sits on.
+ * Carried from the client bundle, where the same six files are also staged under the server's
+ * wiki asset tree. These replace the hand-rolled CSS gradients that used to approximate them.
+ */
+export function raritySlotPlateSrc(rarityIdx: number): string | null {
+  const slug = RARITY_SLUG[Math.round(rarityIdx)];
+  return slug ? `${WIKI_ASSETS_BASE}/background/slot_background_${slug}.png` : null;
+}
+
+/**
+ * Icon for a non-gear item, by its `def_id`. Every family the game files art for is here:
+ *
+ *  - **gems** are named art, one sprite per stone.
+ *  - **house parts** are the game's own name for what a save calls `time_part_*`; the wiki
+ *    tree files them under the rarity, and the five parts run Incomum..Mítico.
+ *  - **keys** are per-rarity, already bundled for the drop table.
+ *  - **skill stones** are per-rarity, and are the one family filed under the game's Portuguese
+ *    name (`pedra_habilidade`) rather than an English one; they are renamed on the way in, the
+ *    same way the per-difficulty drop sprites are.
+ *  - **chests** fall back to the neutral item chest, then to the family the id names — a gem
+ *    chest and a key chest have their own art, a levelled item chest does not.
+ */
+export function itemKindIconSrc(defId: string, rarityIdx: number): string | null {
+  if (defId.startsWith('gem_')) return `${WIKI_ASSETS_BASE}/gems/${defId}.png`;
+
+  if (defId.startsWith('time_part_')) {
+    const slug = CRYSTAL_SLUG[Math.round(rarityIdx)];
+    return slug ? `${WIKI_ASSETS_BASE}/houseparts/houseparts_${slug}.png` : null;
+  }
+
+  if (defId.startsWith('map_key_')) {
+    const slug = CRYSTAL_SLUG[Math.round(rarityIdx)];
+    return slug ? `${WIKI_ASSETS_BASE}/key/key_${slug}.png` : null;
+  }
+
+  if (defId.startsWith('skill_stone_')) {
+    const slug = RARITY_SLUG[Math.round(rarityIdx)];
+    return slug ? `${WIKI_ASSETS_BASE}/stones/skill_stone_${slug}.png` : null;
+  }
+
+  if (defId.startsWith('chest_')) {
+    // Every family but the item chest is drawn per tier, and `rarityIdx` already carries the tier
+    // the id's tail encodes (see `chestRarityIdx`). Band and rarity index are the same number —
+    // the relationship `GATE_KEY_RARITY_INDEX` makes explicit — so one slug lookup serves all.
+    const band = DIFFICULTY_SLUG[Math.round(rarityIdx) - 1];
+    if (defId.startsWith('chest_gem')) {
+      return `${WIKI_ASSETS_BASE}/chests/gem_chest_${band ?? 'normal'}.png`;
+    }
+    if (defId.startsWith('chest_skill')) {
+      return `${WIKI_ASSETS_BASE}/chests/skill_stone_chest_${band ?? 'normal'}.png`;
+    }
+    if (defId.startsWith('chest_key')) {
+      const slug = CRYSTAL_SLUG[Math.round(rarityIdx)];
+      return slug ? `${WIKI_ASSETS_BASE}/key/key_${slug}.png` : chestIconSrc();
+    }
+    // A time chest pays out house parts, and the game files its icon as the House itself rather
+    // than as a chest — the same reason `dropIconSrc('time', …)` returns a House. Without this
+    // branch a `chest_time_*` row fell through to the neutral wooden chest, which is the art for
+    // an ITEM chest and says nothing about what is inside.
+    if (defId.startsWith('chest_time')) return band ? `${WIKI_ASSETS_BASE}/houses/house_${band}.png` : chestIconSrc();
+    return chestIconSrc();
+  }
+
+  return null;
 }
 
 export function rarityCrystalSrc(rarityIdx: number): string | null {
@@ -200,13 +271,14 @@ export function normalizeSkin(skin: unknown): number {
 }
 
 /**
- * BSPW5-06 (BSP-55, DEC-05) — parse-boundary predicate: is `skin` already a value
+ * Parse-boundary predicate: is `skin` already a value
  * `0…HERO_SKIN_COUNT-1` that needs no clamping? Detection is deliberately separate from
  * {@link normalizeSkin}'s clamp: clamping an out-of-range import value to the NEAREST
  * valid index (what `normalizeSkin` does for stored records) would silently render a
- * DIFFERENT hero's face — the exact failure `AD-BSP-29` says raising the bound did not
- * fix. The import path uses this predicate to fall back to the neutral `0` placeholder
- * instead and raise a per-hero issue naming the unknown value.
+ * DIFFERENT hero's face — the same failure seen when `normalizeSkin`'s clamp bound was
+ * too low and every out-of-range hero collapsed onto the same face; raising the bound
+ * alone did not fix it. The import path uses this predicate to fall back to the neutral
+ * `0` placeholder instead and raise a per-hero issue naming the unknown value.
  */
 export function isKnownSkin(skin: unknown): boolean {
   if (typeof skin !== 'number' || !Number.isFinite(skin)) return false;

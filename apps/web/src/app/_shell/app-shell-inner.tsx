@@ -5,11 +5,15 @@ import { usePathname } from 'next/navigation';
 import { useAppLang } from '@/shared/context/app-lang';
 import { SiteHeader } from './site-header';
 import { GuideSection } from './guide-section';
+import { ReferralNotice } from './referral-notice';
+import { readReferralNoticeHidden, writeReferralNoticeHidden } from './referral-notice-storage';
 import { ImportHeroesDialog } from '@/features/import';
 import { Footer } from './footer';
 import type { HeroRecord } from '@/shared/lib/storage';
 import { pickHeroAfterImport } from '@bombfarm/domain/pick-hero-after-import';
 import type { AccountImportData } from '@bombfarm/domain/import-save';
+import type { RequiredAccountField } from '@bombfarm/domain/account-required-fields';
+import { AccountMissingFieldsBanner } from '@/features/account';
 import { sub } from '@/shared/i18n';
 import { workspaceShellClass } from '@bombfarm/ui/panel-field.recipe';
 import { usePlannerStore, selectStrings, commitActiveHero } from '@/shared/stores';
@@ -25,7 +29,8 @@ export function AppShellInner({
   const onFarm = pathname.startsWith('/farm');
   const onTeamPlan = pathname.startsWith('/team-plan');
   const onAccount = pathname.startsWith('/account');
-  const onSectionPage = onFarm || onTeamPlan || onAccount;
+  const onInventory = pathname.startsWith('/inventory');
+  const onSectionPage = onFarm || onTeamPlan || onAccount || onInventory;
   const { lang, setLang, t } = useAppLang();
   const importDialogOpen = usePlannerStore((state) => state.importDialogOpen);
   const setImportDialogOpen = usePlannerStore((state) => state.setImportDialogOpen);
@@ -43,6 +48,7 @@ export function AppShellInner({
       return true;
     }
   });
+  const [showReferralNotice, setShowReferralNotice] = useState(() => !readReferralNoticeHidden());
 
   useEffect(() => {
     if (importDialogOpen) {
@@ -56,18 +62,24 @@ export function AppShellInner({
       created: number;
       updated: number;
       account?: AccountImportData | null;
+      accountMissingRequired?: readonly RequiredAccountField[];
     }) => {
-      const { heroes: merged, created, updated, account } = result;
+      const { heroes: merged, created, updated, account, accountMissingRequired } = result;
       setHeroes(merged);
       const picked = pickHeroAfterImport(merged, usePlannerStore.getState().activeHeroId);
       if (picked) commitActiveHero(picked);
-      if (account) applyAccountImport(account);
+      if (account) applyAccountImport(account, accountMissingRequired);
       const strings = selectStrings(usePlannerStore.getState());
       flashToast(sub(strings.importResultToast, { created, updated }));
       setImportDialogOpen(false);
     },
     [applyAccountImport, flashToast, setHeroes, setImportDialogOpen],
   );
+
+  function dismissReferralNotice() {
+    setShowReferralNotice(false);
+    writeReferralNoticeHidden();
+  }
 
   function toggleGuide(next: boolean) {
     setShowGuide(next);
@@ -88,6 +100,10 @@ export function AppShellInner({
         onToggleGuide={onSectionPage ? undefined : toggleGuide}
         onLangChange={setLang}
       />
+
+      {showReferralNotice ? <ReferralNotice t={t} onDismiss={dismissReferralNotice} /> : null}
+
+      <AccountMissingFieldsBanner />
 
       <ImportHeroesDialog
         open={importDialogOpen}

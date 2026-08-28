@@ -7,9 +7,12 @@
  */
 import { describe, expect, it } from 'vitest';
 import { solveFarmRespec } from '@bombfarm/domain/farm-optimize';
-import { loadFarmRateFixture } from './helpers/farm-rate-fixtures';
+import { assertInRegime } from './helpers/capture-regime';
+import { FARM_OPTIMIZE_FIXTURE, loadFarmRateFixture } from './helpers/farm-rate-fixtures';
 
-const { heroes, account, maxPhase } = loadFarmRateFixture();
+assertInRegime(`sheet-math/${FARM_OPTIMIZE_FIXTURE}`, 'sheet');
+
+const { heroes, account, maxPhase } = loadFarmRateFixture(FARM_OPTIMIZE_FIXTURE);
 
 describe('goldGainPct / chestsGainPct — signed, never clamped', () => {
   it('a GAIN on both currencies under the gold objective: goldGainPct and chestsGainPct both positive and finite', () => {
@@ -29,6 +32,8 @@ describe('goldGainPct / chestsGainPct — signed, never clamped', () => {
     expect(result.chestsGainPct).toBeGreaterThan(0);
   });
 
+  // RE-ASKED on the 2026-08-19 roster (issue #206): goldGainPct -14.59%, chestsGainPct +42.64%.
+  // The finding is the SIGN, not the magnitude, and the sign survived the change of account.
   it('a LOSS: the chests objective trades gold away — goldGainPct is NEGATIVE, not clamped to 0', () => {
     const result = solveFarmRespec({ heroes, account, objective: { kind: 'chests' }, maxPhase });
     expect(result.proposedGoldPerHour).toBeLessThan(result.currentGoldPerHour);

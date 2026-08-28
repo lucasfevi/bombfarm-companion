@@ -1,6 +1,6 @@
 /**
- * BSPW4-10 — primitives shared by both tiers: the affine scorer, the DPS-key set, and the
- * bounded greedy walk (`AD-BSP-08`'s algorithm, reused as Tier 2's `S2`/`S5` seed generator).
+ * Primitives shared by both tiers: the affine scorer, the DPS-key set, and the
+ * bounded greedy walk (repeated-best-rankNextPoint algorithm, reused as Tier 2's `S2`/`S5` seed generator).
  * Split out so `points-reopt.ts` (Tier 1 + orchestration) and `points-reopt-search.ts`
  * (Tier 2 internals) can both depend on it without a cycle between them.
  */
@@ -8,10 +8,10 @@ import { rankNextPoint, STAT_CAPS, type Context, type EffectiveDeltas, type Hero
 import type { SheetKey } from './planner-constants';
 
 /**
- * `AD-BSP-21` — Luck is excluded from the reallocatable budget and from both sides of the
- * search: it is not part of `HeroSheet`/`StatKey` at all (`AD-BSP-20`), so a search built on
+ * Luck is excluded from the reallocatable budget and from both sides of the
+ * search: it is not part of `HeroSheet`/`StatKey` at all, so a search built on
  * `HeroSheet` structurally cannot touch it. The seven literal keys below are `SHEET_KEYS` minus
- * `luck` — matches `points-rank.ts`'s hand-written `stats` array as a SET (`AC-72`'s own test
+ * `luck` — matches `points-rank.ts`'s hand-written `stats` array as a SET (a test
  * asserts the set equality against a `SHEET_KEYS.filter` at runtime, in a test file, where
  * there is no risk of the cycle below).
  *
@@ -33,18 +33,18 @@ export const REOPT_KEYS: readonly Exclude<SheetKey, 'luck'>[] = [
   'cdr',
 ];
 
-/** `AD-BSP-08` verbatim: bounded, automatic, drives the `HeroStrip` warn badge. */
+/** Verbatim: bounded, automatic, drives the `HeroStrip` warn badge. */
 export const REOPT_GATE_MAX_EVALUATIONS = 1024;
 
 /**
  * Reconstruct the affine combat sheet for a candidate point vector from the pipeline's
- * already-computed `effective` sheet and per-point `effectiveDelta` (`AC-64j`/`AC-64k`):
+ * already-computed `effective` sheet and per-point `effectiveDelta`:
  * `sheet[key] = effective[key] + (candidatePts[key] - basePts[key]) x effectiveDelta[key]`.
  * `effectiveDelta` is independent of `pts` (derived from `naked`/`sheetOther`/`level`/`stars`/
  * `gem` only), which is what makes this affine reconstruction exact rather than approximate.
  * Caps are NOT applied here: `sustainedDps`'s own `critFactor`/`mitigationFactor`/`fuseSeconds`
  * already clamp crit chance / penetration / cdr internally, so a candidate that over-allocates
- * past a cap simply scores its excess at zero (`AC-61b`, `BSPW4-09`'s finding).
+ * past a cap simply scores its excess at zero.
  */
 export function buildCandidateSheet(
   effective: HeroSheet,
@@ -80,7 +80,7 @@ export function budgetOf(pts: Record<SheetKey, number>): number {
  *
  * - **The level pool.** A hero's total is its level — `clampPointStep`'s ceiling for the manual
  *   steppers and the denominator of the Points panel's `spent / level` counter — and Luck is
- *   outside the search's reach (`AD-BSP-21`), so the seven DPS keys may hold at most
+ *   outside the search's reach, so the seven DPS keys may hold at most
  *   `level - pts.luck` between them. This term does not depend on how `pts` currently splits,
  *   which is what makes re-optimizing the same hero a fixed point.
  * - **What is already placed.** An over-spent hero (the one reachable overspend, per
@@ -145,6 +145,39 @@ export function resetBudget(pts: Record<SheetKey, number>, level: number): numbe
   return Math.max(0, Math.min(budgetOf(pts), level));
 }
 
+/**
+ * `pts` with its reallocatable spend brought down to `budget`, shedding from the LAST
+ * {@link REOPT_KEYS} first. Luck is untouched — it is outside the reallocatable budget.
+ *
+ * WHY THIS EXISTS. A search seeded from a hero's CURRENT build inherits that build's total, and
+ * every move the local search makes is a transfer, so the total never changes again. Seeds built
+ * from the budget are therefore safe by construction and the current-build seed is not: a hero
+ * spending more than {@link reoptBudget} allows carries the excess all the way into the proposal,
+ * and the advisor recommends a build the game will not sell. That went unnoticed because a
+ * budget-built seed happened to win; a change to the objective moved the winner and it surfaced.
+ *
+ * The state is UNREACHABLE in real play — the game grants one point per level and a level never
+ * goes down, owner-confirmed, and the 13-hero 2026-08-23 capture spends exactly its level on all
+ * thirteen. So this is a guard against malformed input, not a rule with gameplay meaning, and the
+ * shed ORDER only has to be deterministic rather than clever: no real roster reaches it, and a
+ * roster that does is already describing a hero that cannot exist.
+ */
+export function clampPtsToBudget(
+  pts: Record<SheetKey, number>,
+  budget: number,
+): Record<SheetKey, number> {
+  let excess = budgetOf(pts) - Math.max(0, budget);
+  if (excess <= 0) return pts;
+  const out = { ...pts };
+  for (let index = REOPT_KEYS.length - 1; index >= 0 && excess > 0; index--) {
+    const key = REOPT_KEYS[index];
+    const shed = Math.min(out[key], excess);
+    out[key] -= shed;
+    excess -= shed;
+  }
+  return out;
+}
+
 export type GreedyWalkResult = {
   pts: Record<SheetKey, number>;
   score: number;
@@ -154,8 +187,8 @@ export type GreedyWalkResult = {
 };
 
 /**
- * `AD-BSP-08` verbatim: repeated best `rankNextPoint`. `rankNextPoint` itself has no mode
- * parameter any more — it always scores sustained DPS (`AC-70`) — so this module never exposes
+ * Verbatim: repeated best `rankNextPoint`. `rankNextPoint` itself has no mode
+ * parameter any more — it always scores sustained DPS — so this module never exposes
  * a rankMode parameter either, and there is nothing for a caller to set incorrectly.
  * `startScore` seeds the exact incremental product chain (`gainPct` is defined as
  * `(sustainedDps(next)/sustainedDps(current) - 1) x 100`, so chaining it through accepted steps
@@ -176,7 +209,7 @@ export function greedyWalk(
   let evaluations = 0;
   let remaining = budget;
   let budgetExhausted = false;
-  const STEP_COST = 10; // AC-57d: 1 baseline + 7 candidates + 2 CDR marginal-fuse calls.
+  const STEP_COST = 10; // 1 baseline + 7 candidates + 2 CDR marginal-fuse calls.
 
   while (remaining > 0) {
     if (evaluations + STEP_COST > evaluationBudget) {
@@ -187,7 +220,7 @@ export function greedyWalk(
     const ranking = rankNextPoint(sheet, context, { effectiveDeltas: effectiveDelta });
     evaluations += STEP_COST;
     const best = ranking[0];
-    if (!best || best.gainPct <= 0) break; // AC-51/AC-52: never spend into a zero-gain stat.
+    if (!best || best.gainPct <= 0) break; // never spend into a zero-gain stat.
     score *= 1 + best.gainPct / 100;
     current = { ...current, [best.stat]: current[best.stat] + 1 };
     remaining -= 1;

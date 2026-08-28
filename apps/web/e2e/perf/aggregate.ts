@@ -1,5 +1,5 @@
 /**
- * Pure aggregation for the MOD-33 metric definition.
+ * Pure aggregation for the render-perf metric definition.
  * Window slicing, tallies, medians, determinism — unit-tested without a browser.
  */
 import type { CommitRecord } from './collect-commits'
@@ -24,7 +24,7 @@ export interface ScenarioMetrics {
   medianTotalCommitDurationMs: number
   minTotalCommitDurationMs: number
   maxTotalCommitDurationMs: number
-  /** false ⇒ excluded from the MOD-34 gate; spread retained on repetitions. */
+  /** false ⇒ excluded from the determinism gate; spread retained on repetitions. */
   deterministic: boolean
   skipped?: { reason: string }
 }

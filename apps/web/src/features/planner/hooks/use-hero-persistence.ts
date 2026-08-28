@@ -63,7 +63,7 @@ export type HeroPersistEffectInput = {
 };
 
 /**
- * Boot apply for active hero (MOD-46 / W4-09).
+ * Boot apply for active hero.
  * Debounced saves live in shared/stores/persistence (draft-field subscription).
  */
 export function useHeroPersistEffects(input: HeroPersistEffectInput): void {

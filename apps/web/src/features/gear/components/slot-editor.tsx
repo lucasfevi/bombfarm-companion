@@ -12,10 +12,9 @@ import {
 } from '@bombfarm/domain/gear';
 import { sub, type Lang, type Strings } from '@/shared/i18n';
 import { itemRarityLabel, setName, slotLabel } from '@bombfarm/domain/game-labels';
-import { artFrameRadiusClass } from '@/shared/game-art/game-art.recipe';
 
 import { Button, Select, cn } from '@bombfarm/ui';
-import { ItemIcon } from '@/shared/game-art';
+import { artFrameRadiusClass, ItemIcon } from '@/shared/game-art';
 
 export type SlotPatchHandler = (slot: Slot, patch: Partial<EquippedItem> | null) => void;
 
@@ -83,7 +82,7 @@ export const SlotEditor = memo(function SlotEditor({
       ) : null}
       <div className="flex justify-center">
         {equipped ? (
-          <ItemIcon equipped={equipped} size="xl" className="shrink-0" />
+          <ItemIcon item={equipped} size="xl" className="shrink-0" />
         ) : (
           <span className="flex w-16 aspect-[18/19] max-[720px]:w-14 shrink-0 items-center justify-center rounded-sm border border-dashed border-line bg-[color-mix(in_oklch,var(--bg)_55%,var(--surface))] px-0.5">
             <b className={slotHeadLabelClass}>{slotLabel(slot, lang)}</b>

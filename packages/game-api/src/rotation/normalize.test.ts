@@ -231,15 +231,18 @@ describe('normalizeRotation — the unmutated fixture', () => {
 });
 
 describe('roster join', () => {
-  it('all 8 fixture heroes resolve with a name and grade from /roster', () => {
+  it('all 8 fixture heroes resolve with a name, grade, rarity, stars and skin from /roster', () => {
     expect(baseline.heroes).toHaveLength(8);
     for (const hero of baseline.heroes) {
       expect(hero.name, `hero ${hero.id} should have a name from /roster`).toBeDefined();
       expect(hero.grade, `hero ${hero.id} should have a grade from /roster`).toBeDefined();
+      expect(hero.rarity, `hero ${hero.id} should have a rarity from /roster`).toBeDefined();
+      expect(hero.stars, `hero ${hero.id} should have a stars from /roster`).toBeDefined();
+      expect(hero.skin, `hero ${hero.id} should have a skin from /roster`).toBeDefined();
     }
   });
 
-  it('a hero with no matching /roster entry resolves with an absent name/grade, an unchanged id, and no drop event', () => {
+  it('a hero with no matching /roster entry resolves with an absent name/grade/rarity/stars/skin, an unchanged id, and no drop event', () => {
     const rosterArray = rosterHeroes as ReadonlyArray<Record<string, unknown>>;
     const trimmedRoster = rosterArray.filter((entry) => entry['id'] !== '555');
     const result = normalizeRotation(rotationBody, trimmedRoster);
@@ -251,6 +254,87 @@ describe('roster join', () => {
     expect(hero.id).toBe('555');
     expect(hero.name).toBeUndefined();
     expect(hero.grade).toBeUndefined();
+    expect(hero.rarity).toBeUndefined();
+    expect(hero.stars).toBeUndefined();
+    expect(hero.skin).toBeUndefined();
+  });
+
+  it('a wrong-typed roster rarity/stars is omitted rather than coerced, with no drop event', () => {
+    const rosterArray = rosterHeroes as ReadonlyArray<Record<string, unknown>>;
+    const patchedRoster = rosterArray.map((entry) =>
+      entry['id'] === '555' ? { ...entry, rarity: 'legendary', stars: 'lots' } : entry,
+    );
+    const result = normalizeRotation(rotationBody, patchedRoster);
+    expect(result.drops).toEqual([]);
+    const hero = required(
+      result.snapshot.heroes.find((candidate) => candidate.id === '555'),
+      'hero 555 missing from snapshot',
+    );
+    expect(hero.rarity).toBeUndefined();
+    expect(hero.stars).toBeUndefined();
+    // A wrong-typed rarity/stars costs only that hero's identity fields — name/grade still join.
+    expect(hero.name).toBeDefined();
+    expect(hero.grade).toBeDefined();
+  });
+
+  it('a negative roster rarity/stars is omitted as out of range, with no drop event', () => {
+    const rosterArray = rosterHeroes as ReadonlyArray<Record<string, unknown>>;
+    const patchedRoster = rosterArray.map((entry) =>
+      entry['id'] === '555' ? { ...entry, rarity: -1, stars: -1 } : entry,
+    );
+    const result = normalizeRotation(rotationBody, patchedRoster);
+    expect(result.drops).toEqual([]);
+    const hero = required(
+      result.snapshot.heroes.find((candidate) => candidate.id === '555'),
+      'hero 555 missing from snapshot',
+    );
+    expect(hero.rarity).toBeUndefined();
+    expect(hero.stars).toBeUndefined();
+  });
+
+  it('a wrong-typed roster skin is omitted rather than coerced, with no drop event', () => {
+    const rosterArray = rosterHeroes as ReadonlyArray<Record<string, unknown>>;
+    const patchedRoster = rosterArray.map((entry) =>
+      entry['id'] === '555' ? { ...entry, skin: 'flashy' } : entry,
+    );
+    const result = normalizeRotation(rotationBody, patchedRoster);
+    expect(result.drops).toEqual([]);
+    const hero = required(
+      result.snapshot.heroes.find((candidate) => candidate.id === '555'),
+      'hero 555 missing from snapshot',
+    );
+    expect(hero.skin).toBeUndefined();
+    // A wrong-typed skin costs only that hero's skin — name/grade/rarity/stars still join.
+    expect(hero.name).toBeDefined();
+    expect(hero.grade).toBeDefined();
+  });
+
+  it('a roster skin outside the known avatar set is omitted, unlike rarity/stars which have no declared ceiling', () => {
+    const rosterArray = rosterHeroes as ReadonlyArray<Record<string, unknown>>;
+    const patchedRoster = rosterArray.map((entry) =>
+      entry['id'] === '555' ? { ...entry, skin: 999 } : entry,
+    );
+    const result = normalizeRotation(rotationBody, patchedRoster);
+    expect(result.drops).toEqual([]);
+    const hero = required(
+      result.snapshot.heroes.find((candidate) => candidate.id === '555'),
+      'hero 555 missing from snapshot',
+    );
+    expect(hero.skin).toBeUndefined();
+  });
+
+  it('a negative roster skin is omitted as out of range, with no drop event', () => {
+    const rosterArray = rosterHeroes as ReadonlyArray<Record<string, unknown>>;
+    const patchedRoster = rosterArray.map((entry) =>
+      entry['id'] === '555' ? { ...entry, skin: -1 } : entry,
+    );
+    const result = normalizeRotation(rotationBody, patchedRoster);
+    expect(result.drops).toEqual([]);
+    const hero = required(
+      result.snapshot.heroes.find((candidate) => candidate.id === '555'),
+      'hero 555 missing from snapshot',
+    );
+    expect(hero.skin).toBeUndefined();
   });
 });
 

@@ -89,6 +89,6 @@ describe('parseSessionCfg — malformed files, never throwing', () => {
 const parsed = parseSessionCfg(REAL_SHAPE);
 if (parsed.ok) {
   // @ts-expect-error - parsed.token is a SessionToken, not a string; no plain string of the
-  // token exists above this module (LAR-11 parse half)
+  // token exists above this module
   const _asString: string = parsed.token;
 }

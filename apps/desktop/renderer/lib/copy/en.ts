@@ -1,5 +1,5 @@
 /**
- * Every player-facing string in the desktop renderer, flat and typed (`AD-040`). Read only
+ * Every player-facing string in the desktop renderer, flat and typed. Read only
  * through `useCopy()` (`./index.ts`) — never `import { en }` directly at a call site. That is
  * what keeps F4's PT-BR swap a body replacement instead of an N-file edit.
  *
@@ -14,19 +14,15 @@
 export const en = {
   // shell* — AppShell navigation and status chrome
   shellPlanningNavLabel: 'Planning',
-  shellDiagnosticsNavLabel: 'Diagnostics',
   shellStatusConnected: 'Connected',
   shellStatusNotRunning: 'Game not running',
   shellStatusStale: 'Stale',
   shellLoadingLabel: 'Loading…',
-  shellDiagnosticsSnapshotTitle: 'Current snapshot (raw and mapped)',
 
-  // empty* — placeholder states shown before real data has arrived (page.tsx's Diagnostics tab)
+  // empty* — placeholder states shown before real data has arrived
   emptyBridgeUnavailableTitle: 'Preload bridge unavailable',
-  emptyNoSnapshotTitle: 'No snapshot yet',
-  emptyNoSnapshotDescription: 'Waiting on the first read from the game.',
 
-  // Account section names, in player language — never the raw section key (MPV-07, MPV-18)
+  // Account section names, in player language — never the raw section key
   sectionNameAccount: 'your farm phase',
   sectionNameHeroes: 'your heroes',
   sectionNameSkills: 'your skill tree',
@@ -34,6 +30,7 @@ export const en = {
   sectionNameItems: 'your gear',
 
   // planning* — the Planning screen
+  planningRosterColumnAvatar: 'Avatar',
   planningRosterColumnName: 'Hero',
   planningRosterColumnLevel: 'Level',
   planningRosterColumnStars: 'Stars',
@@ -76,7 +73,7 @@ export const en = {
   statNameCdr: 'Cooldown reduction',
   planningLoadingTitle: 'Loading your account…',
 
-  // withheld* — the always-mounted notice slot for a withheld quantity (MPV-09/10, no-layout-shift)
+  // withheld* — the always-mounted notice slot for a withheld quantity (no-layout-shift)
   withheldRosterRowTitle: 'Roster withheld',
   withheldGearSummaryTitle: 'Gear summary withheld',
   withheldDpsTitle: 'DPS withheld',
@@ -95,7 +92,7 @@ export const en = {
   storeReasonNoSqliteBinding: 'this build cannot save on this system',
   storeReasonAccountMismatch: 'a different account is currently running',
 
-  // age* — relative-age words for format.ts (MP3 F4, AD-054). format.ts owns no words of its
+  // age* — relative-age words for format.ts. format.ts owns no words of its
   // own; every one of its five relative-age buckets renders through one of these, via sub().
   // Singular/plural-agnostic by construction (design §7 rule 3) — no plural engine is built.
   ageJustNow: 'just now',
@@ -105,7 +102,7 @@ export const en = {
   ageShortSeconds: '{n}s',
   ageShortMinutes: '{n}m',
 
-  // settings* — the language control (MP3 F4, MIN-16)
+  // settings* — the language control (a @bombfarm/ui primitive)
   settingsNavLabel: 'Settings',
   settingsLanguageSectionTitle: 'Language',
   settingsLanguageLabel: 'App language',
@@ -114,12 +111,147 @@ export const en = {
   settingsLanguageOptionPortuguese: 'Portuguese (Brazil)',
   settingsLanguageNotSavedTitle: 'Language changed, but not saved',
   // One key per SettingsWriteReason (@bombfarm/contracts), mapped exhaustively by
-  // SETTINGS_WRITE_REASON_COPY_KEY below (MIN-11).
+  // SETTINGS_WRITE_REASON_COPY_KEY below.
   settingsLanguageReasonNoStore: 'Your save location is unavailable, so this will not survive a restart.',
   settingsLanguageReasonNotWritable: 'Your save location is not writable, so this will not survive a restart.',
   settingsLanguageReasonUnknown: 'This choice could not be saved, so it will not survive a restart.',
 
-  // error* — MP3 F4 §2.8: a main-process error crosses the boundary as a key, never as
+  // settingsConsent* — the account access revoke control (Settings is reachable only once granted)
+  settingsConsentSectionTitle: 'Account access',
+  settingsConsentStatusGranted: 'Access: allowed',
+  settingsConsentHelpGranted: 'The companion reads your account and stays attached to the game client.',
+  settingsConsentRevokeAction: 'Turn off',
+
+  // settingsDiagnostics* — the manual frame-ring dump control (a bug-report affordance)
+  settingsDiagnosticsSectionTitle: 'Diagnostics',
+  settingsDiagnosticsSaveLabel: 'Save a bug report file',
+  settingsDiagnosticsSaveHelp:
+    'Writes a local file with details about recent game traffic. Nothing is sent anywhere — you choose if and when to share it.',
+  settingsDiagnosticsSaveAction: 'Save file',
+  settingsDiagnosticsSavedTitle: 'File saved',
+  settingsDiagnosticsSavedBody: 'Wrote a diagnostics file to {path}.',
+  settingsDiagnosticsNotSavedTitle: 'Nothing saved',
+  // One key per LiveDiagnosticsDumpReason (@bombfarm/contracts), mapped exhaustively by
+  // DIAGNOSTICS_DUMP_REASON_COPY_KEY below.
+  settingsDiagnosticsReasonRateLimited: 'You just saved one. Wait a few seconds and try again.',
+  settingsDiagnosticsReasonWriteFailed: 'The file could not be written. Check your save location and try again.',
+  settingsDiagnosticsReasonNoSource: 'There is nothing to save yet. The app has not connected to the game.',
+
+  // consentGate* — the permission gate shown instead of app content when access is not allowed
+  consentGateTitle: 'This app needs your permission to work',
+  consentGateBody:
+    'Sorry — the companion has nothing to show without access to your account. It reads your account and attaches to the running game client, and it will not do either until you allow it.',
+  consentGateReadAgainAction: 'Read the disclosure again',
+  consentGateLanguageLabel: 'Language',
+
+  // error* — §2.8: a main-process error crosses the boundary as a key, never as
   // pre-rendered English. The raw message is kept as diagnostic data only.
   errorAccountReadFailedDescription: 'Try again after the game finishes loading, or restart the app.',
+
+  // live* — the Live screen: nav label and the top-of-panel freshness status line
+  liveNavLabel: 'Live',
+  liveStatusLiveLabel: 'Streaming live from the game',
+  liveStatusNotLiveLabel: 'Not live — showing the last known state',
+
+  // liveGapReason* — one cause per LiveGapReason (@bombfarm/contracts), exhaustively mapped by
+  // LIVE_GAP_REASON_COPY_KEY below. Every reason but consentMissing describes a gap the app is
+  // already retrying on its own, so no "try again" action is offered for those. consentMissing
+  // is the one reason with a real action, and it reuses the existing disclosure control rather
+  // than a second copy key.
+  liveGapReasonClientNotStreaming:
+    'The game is open, but it is not sending anything right now — a menu, an idle screen, or being logged out. The app keeps trying on its own.',
+  liveGapReasonNeverAttached: 'The app has not connected to the game yet this session. It keeps trying on its own.',
+  liveGapReasonAttachFailed: 'The app tried to connect to the game and could not. It keeps trying on its own.',
+  liveGapReasonDetached: 'The app was connected, but the game closed. It keeps trying on its own.',
+  liveGapReasonHookSilent:
+    'The connection went quiet on its own, even though the game is still open. The app keeps trying.',
+  liveGapReasonRuntimeUnavailable: 'The part of the app that reads the game could not load. It keeps trying on its own.',
+  liveGapReasonRuntimeUnavailableQuarantine:
+    'Security software likely blocked the part of the app that reads the game. It keeps trying on its own.',
+  liveGapReasonConsentMissing: 'You have not allowed the app to read your account and connect to the game yet.',
+
+  liveHeroesTitle: 'Heroes',
+  liveListOnFieldTitle: 'Field',
+  liveListRecoveringTitle: 'Resting',
+  liveListQueuedTitle: 'Idle',
+  liveListBenchedTitle: 'Benched',
+  liveListEmptyLine: 'No heroes here right now.',
+  liveEnergyLabel: 'Energy',
+  liveFieldSlotsHint: 'Upgrade field slots in your skill tree',
+  liveRestingSlotsHint: 'Upgrade to a later house for more rest slots',
+  liveRestingCycleValue: 'Full rest cycle {duration}',
+  liveRestingSkipsValue: '{left} of {max} skips left today',
+  liveRestingSkipsNone: 'No skips left today',
+  liveUnclassifiedCount: 'Heroes not sorted into a list: {n}',
+  liveFieldExitPendingCount: 'Heroes just off the field, still updating: {n}',
+
+  // liveCountdown* — field/rest countdowns, and the qualifiers that mark one as estimated or paused.
+  // Every countdown reads in one colour, so a qualifier is the only thing that marks one.
+  liveFieldCountdownLabel: 'Field time remaining',
+  liveRecoveryCountdownLabel: 'Rest time remaining',
+  liveCountdownEstimatedQualifier: 'estimate, not a direct reading',
+  liveCountdownPausedQualifier: 'not currently counting down',
+
+  // liveNeverRead* — nothing has been read from the account yet this session
+  liveNeverReadTitle: 'Nothing read from your account yet',
+  liveNeverReadDescription: 'Open the game with the companion running, so it has something to read.',
+  // inventory* — the Inventory screen: every item the account carries, grouped by kind
+  inventoryNavLabel: 'Inventory',
+  inventoryTitle: 'Inventory',
+  inventoryGroupEquipment: 'Gear',
+  inventoryGroupGem: 'Gems',
+  inventoryGroupKey: 'Keys',
+  inventoryGroupOther: 'Other',
+  inventoryBadgeLocked: 'Locked',
+  inventoryBadgeMarketBlocked: 'Cannot be traded away',
+  inventoryBadgeUnresolved: 'Not in the item list yet',
+  inventoryDetailSetSlot: '{set} · {slot}',
+  inventoryDetailLevel: 'Level {level}',
+  inventoryEquippedByHero: '{hero} · Level {level}',
+  inventoryGroupTime: 'House parts',
+  inventoryGroupStone: 'Skill stones',
+  inventoryGroupChest: 'Chests',
+  inventoryGemAmethyst: 'Amethyst',
+  inventoryGemAquamarine: 'Aquamarine',
+  inventoryGemCitrine: 'Citrine',
+  inventoryGemDiamond: 'Diamond',
+  inventoryGemEmerald: 'Emerald',
+  inventoryGemOceanite: 'Oceanite',
+  inventoryGemRoselite: 'Roselite',
+  inventoryGemRuby: 'Ruby',
+  inventoryGemSapphire: 'Sapphire',
+  inventoryGemTopaz: 'Topaz',
+  inventoryChestItem: 'Item chest · Lv {level}',
+  inventoryChestGem: 'Gem chest',
+  inventoryChestKey: 'Key chest',
+  inventoryChestSkill: 'Skill stone chest',
+  inventoryChestTime: 'House part chest',
+  inventorySearchPlaceholder: 'Search items…',
+  inventorySearchLabel: 'Search your inventory',
+  inventoryFilterAll: 'All',
+  inventoryFilterEquipped: 'Equipped',
+  inventoryFilterClear: 'Clear',
+  inventoryFilterCount: '{shown} of {total}',
+  inventoryFilterNoMatches: 'No items match those filters.',
+  inventoryEquippedByUnknown: 'Equipped',
+  inventoryFilterHeroLabel: 'Filter by hero',
+  inventoryFilterAllHeroes: 'All heroes',
+  inventorySortLabel: 'Sort by',
+  inventorySortRarity: 'Rarity',
+  inventorySortLevel: 'Level',
+  inventorySortValue: 'Value',
+  inventorySortName: 'Name',
+  inventorySortCount: 'Quantity',
+  inventorySortAscending: 'Ascending',
+  inventorySortDescending: 'Descending',
+  inventoryFilterSetsLabel: 'Filter by set',
+  inventoryFilterAllSets: 'All sets',
+  inventoryFilterSetsOwned: 'Sets you own',
+  inventoryFilterSetsSelected: '{chosen} of {total} sets',
+  inventoryFilterSelectAllSets: 'Select all',
+  inventorySetOption: 'Level {level} · {set}',
+  inventoryUnknownCategory: 'a kind this app does not recognise yet ({codes})',
+  inventorySkipped: '{count} entries could not be read and are not shown.',
+  inventoryEmptyTitle: 'No items read yet',
+  inventoryEmptyDescription: 'Open the game with the companion running, so it has something to read.',
 } as const;

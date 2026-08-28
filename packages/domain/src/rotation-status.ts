@@ -1,4 +1,5 @@
 import type { FieldDrop, RotationHeroSnapshot, RotationNormalizeResult } from '@bombfarm/contracts';
+import { CASA_SLOTS_MAX } from './casa-slots';
 
 export interface RecoveringHero {
   readonly hero: RotationHeroSnapshot;
@@ -14,6 +15,9 @@ export interface RotationHousePanel {
   readonly activeHouseIndex?: number;
   readonly activeHouseLevel?: number;
   readonly slots?: number;
+  /** The most rest slots any House gives, so a caller can say whether {@link slots} is at the
+   *  ceiling. Carried only alongside {@link slots} — a cap beside an unknown count says nothing. */
+  readonly slotsMax?: number;
   readonly cycleSeconds?: number;
   readonly rescuesLeft?: number;
   readonly rescuesMax?: number;
@@ -24,7 +28,15 @@ export interface RotationStatus {
   readonly recovering: readonly RecoveringHero[];
   readonly queued: readonly RotationHeroSnapshot[];
   readonly benched: readonly RotationHeroSnapshot[];
+  /** A hero the normalizer genuinely could not classify — an unrecognized or missing `activity`.
+   *  Never a hero whose only problem is that the live tap and the snapshot disagree; that is
+   *  {@link fieldExitPendingCount}, a routine condition, not this one. */
   readonly unclassifiedCount: number;
+  /** A hero `snapshot` still calls `inField` that the live tap's on-field set no longer names —
+   *  it has left, its destination is not yet known, and the next frame or slow refresh resolves it
+   *  within seconds. Routine and self-resolving, so it is counted separately from
+   *  {@link unclassifiedCount} rather than folded into a counter meant for unusable data. */
+  readonly fieldExitPendingCount: number;
   readonly occupancy: RotationOccupancy;
   readonly house: RotationHousePanel;
   readonly drops: readonly FieldDrop[];
@@ -66,6 +78,13 @@ export function recoverySecondsFor(hero: RotationHeroSnapshot, cycleSeconds: num
   return (1 - fraction) * cycleSeconds;
 }
 
+/** The account's own ladder when the wire sent one, so an account whose houses differ from the
+ *  wiki bundle is measured against its own ceiling rather than a stale constant. */
+function slotsCeiling(slotsPerHouse: readonly number[] | undefined): number {
+  const usable = (slotsPerHouse ?? []).filter((slots) => Number.isFinite(slots) && slots > 0);
+  return usable.length > 0 ? Math.max(...usable) : CASA_SLOTS_MAX;
+}
+
 function buildHousePanel(snapshot: RotationNormalizeResult['snapshot']): RotationHousePanel {
   const house = snapshot.house;
   const activeHouseIndex = house?.activeHouseIndex;
@@ -78,7 +97,7 @@ function buildHousePanel(snapshot: RotationNormalizeResult['snapshot']): Rotatio
 
   return {
     ...(identityKnown ? { activeHouseIndex, activeHouseLevel: houseLevels[activeHouseIndex] } : {}),
-    ...(house?.slots !== undefined ? { slots: house.slots } : {}),
+    ...(house?.slots !== undefined ? { slots: house.slots, slotsMax: slotsCeiling(house.slotsPerHouse) } : {}),
     ...(house?.cycleSeconds !== undefined ? { cycleSeconds: house.cycleSeconds } : {}),
     ...(snapshot.rescuesLeft !== undefined ? { rescuesLeft: snapshot.rescuesLeft } : {}),
     ...(snapshot.rescuesMax !== undefined ? { rescuesMax: snapshot.rescuesMax } : {}),
@@ -89,8 +108,22 @@ function buildHousePanel(snapshot: RotationNormalizeResult['snapshot']): Rotatio
  * Sorts the normalized `/rotation` snapshot's heroes into panel-ready lists. Classification keys
  * off `activity` alone, never `inHouse` — a hero benched at the house still carries `inHouse:
  * true`, so that field cannot distinguish "benched" from "queued to recover".
+ *
+ * `liveOnField`, when given, is the live tap's own on-field id set and overrules `activity` for
+ * field membership: a hero it names is on the field even if `snapshot` disagrees, and a hero
+ * `snapshot` still calls `inField` that it does NOT name has left — and where it went is not yet
+ * known, so it is withheld from every list (counted in `fieldExitPendingCount`, never
+ * `unclassifiedCount`) rather than guessed into one. A hero `liveOnField` names that `snapshot`
+ * has never carried at all — acquired or first deployed since the last slow read — is added to
+ * `onField` with nothing but its id, rather than dropped: every hero the frames show on the field
+ * is on the field and counted, whether or not the snapshot has caught up to it yet. Omit
+ * `liveOnField` entirely to classify on `snapshot` alone, unchanged from before this parameter
+ * existed.
  */
-export function classifyRotation(result: RotationNormalizeResult): RotationStatus {
+export function classifyRotation(
+  result: RotationNormalizeResult,
+  liveOnField?: ReadonlySet<string>,
+): RotationStatus {
   const { snapshot } = result;
   const cycleSeconds = snapshot.house?.cycleSeconds;
 
@@ -100,8 +133,19 @@ export function classifyRotation(result: RotationNormalizeResult): RotationStatu
   const queuedReady: RotationHeroSnapshot[] = [];
   const benched: RotationHeroSnapshot[] = [];
   let unclassifiedCount = 0;
+  let fieldExitPendingCount = 0;
+  const liveIdsMatchedToSnapshot = new Set<string>();
 
   snapshot.heroes.forEach((hero) => {
+    if (liveOnField !== undefined && liveOnField.has(hero.id)) {
+      liveIdsMatchedToSnapshot.add(hero.id);
+      onField.push(hero);
+      return;
+    }
+    if (liveOnField !== undefined && hero.activity === 'inField') {
+      fieldExitPendingCount += 1;
+      return;
+    }
     switch (hero.activity) {
       case 'inField':
         onField.push(hero);
@@ -135,6 +179,12 @@ export function classifyRotation(result: RotationNormalizeResult): RotationStatu
     }
   });
 
+  if (liveOnField !== undefined) {
+    for (const id of liveOnField) {
+      if (!liveIdsMatchedToSnapshot.has(id)) onField.push({ id });
+    }
+  }
+
   const byEmptiestFirst = byEnergyFraction('ascending');
   const byFullestFirst = byEnergyFraction('descending');
 
@@ -150,6 +200,7 @@ export function classifyRotation(result: RotationNormalizeResult): RotationStatu
     queued: [...queuedResting, ...queuedReady],
     benched,
     unclassifiedCount,
+    fieldExitPendingCount,
     occupancy: {
       occupied: onField.length,
       ...(snapshot.fieldSize !== undefined ? { fieldSize: snapshot.fieldSize } : {}),

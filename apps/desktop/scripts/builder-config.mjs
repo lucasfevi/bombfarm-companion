@@ -78,6 +78,7 @@ export function createBuilderConfig(flavor) {
     generateUpdatesFilesForAllChannels: publish !== null,
     win: {
       target: [{ target: 'nsis', arch: ['x64'] }],
+      icon: 'assets/icon.ico',
     },
     nsis: {
       oneClick: true,

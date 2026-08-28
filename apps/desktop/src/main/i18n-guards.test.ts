@@ -1,18 +1,20 @@
 /**
- * MP3 F4 — the assertions this repo writes down rather than reviews for (`AD-055`/`AD-056`).
+ * The assertions this repo writes down rather than reviews for: the pinned prose-literal
+ * exception list, and the single game-terms language mapping.
  * Lives in `apps/desktop/src/main/`, NOT `tools/`, for two reasons: the scans need the desktop
  * tree walked (`planning-guards.test.ts`'s own precedent, same home, same genre), and keeping
  * `tools/` untouched keeps `ci-fidelity.yml`'s `--project tools` step out of this feature's blast
  * radius entirely (design §11 — that step is the exact surface F3 broke).
  *
- * `walk`/`readAll`/`stripComments`/`SELF_PATH` below are read from `planning-guards.test.ts`'s
- * own copy (not imported — that file exports nothing, by the same convention this one follows)
- * and reproduced here rather than factored into a shared module, matching its own stated reason:
- * each guard file owns its scan.
+ * `walk`/`readAll`/`isTestFile` come from `guard-scan.ts`, shared with the other guards in this
+ * folder. `stripComments` stays local — this file's copy carries a deliberate divergence, noted
+ * on the function itself.
  */
-import { readFileSync, readdirSync } from 'node:fs';
-import { extname, join, resolve, sep } from 'node:path';
+import { readFileSync } from 'node:fs';
+import { join, resolve, sep } from 'node:path';
 import { describe, expect, it } from 'vitest';
+import { guardScanner, isTestFile, walk } from './guard-scan';
+import { CONSENT_TEXT, CONSENT_TEXT_VERSION, type ConsentText } from '@bombfarm/game-api';
 
 const DESKTOP_ROOT = resolve(__dirname, '../..');
 const RENDERER_ROOT = join(DESKTOP_ROOT, 'renderer');
@@ -23,45 +25,7 @@ const REPO_ROOT = resolve(DESKTOP_ROOT, '..', '..');
  *  shapes as plain JS string literals. */
 const SELF_PATH = __filename;
 
-type FileEntry = { path: string; source: string };
-
-function isTestFile(path: string): boolean {
-  return /\.(test|spec)\.(ts|tsx|mjs)$/.test(path);
-}
-
-function walk(dir: string, extensions: readonly string[]): string[] {
-  const files: string[] = [];
-  for (const entry of readdirSync(dir, { withFileTypes: true })) {
-    const full = join(dir, entry.name);
-    if (entry.isDirectory()) {
-      // `.claude` is skipped wholesale, not just `.claude/worktrees`: it holds only local,
-      // git-excluded agent/session state (`.claude/launch.json` is gitignored dev-server config;
-      // `.claude/worktrees/*` are full sibling copies of this repo's source tree used by other
-      // agent sessions) — nothing under it is committed application source a guard should ever
-      // scan. Without this, a REPO_ROOT walk descends into every one of those sibling copies and
-      // can trip a guard against a file that isn't part of this working tree at all.
-      if (
-        entry.name === 'node_modules' ||
-        entry.name === 'out' ||
-        entry.name === 'dist' ||
-        entry.name === '.next' ||
-        entry.name === '.claude'
-      )
-        continue;
-      files.push(...walk(full, extensions));
-    } else if (entry.isFile() && extensions.includes(extname(entry.name))) {
-      files.push(full);
-    }
-  }
-  return files;
-}
-
-function readAll(dir: string, extensions: readonly string[], opts: { includeTests?: boolean } = {}): FileEntry[] {
-  return walk(dir, extensions)
-    .filter((path) => path !== SELF_PATH)
-    .filter((path) => (opts.includeTests ? true : !isTestFile(path)))
-    .map((path) => ({ path, source: readFileSync(path, 'utf8') }));
-}
+const { readAll } = guardScanner(SELF_PATH);
 
 /**
  * Strips `//` line comments and `/* *\/` block comments (dumb text slicing, not a full parser —
@@ -79,7 +43,7 @@ function stripComments(source: string): string {
 }
 
 // ---------------------------------------------------------------------------------------------
-// Guard 1 — prose-shaped literals across .ts AND .tsx, in BOTH processes (AD-055)
+// Guard 1 — prose-shaped literals across .ts AND .tsx, in BOTH processes
 // ---------------------------------------------------------------------------------------------
 
 /** Two adjacent alphabetic words separated by a space — the one property that separates prose
@@ -153,10 +117,10 @@ const GUARD_1_EXCLUDE = (path: string): boolean =>
   isTestFile(path) ||
   path.includes(`fixtures${sep}`) ||
   path === SELF_PATH ||
-  // layout.tsx is explicitly UNCHANGED by design (TD-9 — a prebuilt static export cannot know
-  // the locale; page.tsx sets documentElement.lang at runtime instead). Its <head> `metadata`
+  // layout.tsx is explicitly UNCHANGED by design — a prebuilt static export cannot know
+  // the locale; page.tsx sets documentElement.lang at runtime instead. Its <head> `metadata`
   // (browser-tab title / SEO description) is Next.js page metadata, not shell UI copy, and is
-  // out of MIN-01's "the desktop shell" scope the same way it is out of F4's edit list.
+  // out of the every-string-renders-in-PT-BR requirement's "the desktop shell" scope the same way it is out of F4's edit list.
   path.endsWith(join('app', 'layout.tsx')) ||
   // A PowerShell cmdlet string built for execSync() (game-reader/process.ts) — assigned to a
   // local variable first, so it is one indirection away from the NON_PROSE_CALL_CONTEXT check
@@ -172,10 +136,10 @@ const GUARD_1_EXCLUDE = (path: string): boolean =>
   // execSync() argument.
   path.endsWith(join('live-source', 'image-scan.ts'));
 
-describe('Guard 1 — no player-facing literal outside the i18n source (MIN-02, AD-055)', () => {
+describe('Guard 1 — no player-facing literal outside the i18n source', () => {
   // What this rule CANNOT catch, stated rather than glossed (design §9, hazard 2): a one-word
   // player-facing literal ('Loading'), and the one-letter s/m abbreviations §2.3 names. Those are
-  // covered BEHAVIOURALLY instead, by format.test.ts's both-locales assertions (AD-054) — a
+  // covered BEHAVIOURALLY instead, by format.test.ts's both-locales assertions — a
   // guard that claims more than it proves is worse than one that states its edge.
   const rendererFiles = readAll(RENDERER_ROOT, ['.ts', '.tsx']).filter((file) => !GUARD_1_EXCLUDE(file.path));
   const mainFiles = readAll(MAIN_ROOT, ['.ts']).filter((file) => !GUARD_1_EXCLUDE(file.path));
@@ -187,7 +151,7 @@ describe('Guard 1 — no player-facing literal outside the i18n source (MIN-02, 
     expect(
       offenders.map((entry) => `${entry.file.path}: ${entry.violations.join(', ')}`),
       'A player-facing literal inlined outside lib/copy/ means a screen that is English no ' +
-        'matter what language the player chose (MIN-02).',
+        'matter what language the player chose.',
     ).toEqual([]);
   });
 
@@ -198,7 +162,7 @@ describe('Guard 1 — no player-facing literal outside the i18n source (MIN-02, 
     expect(
       offenders.map((entry) => `${entry.file.path}: ${entry.violations.join(', ')}`),
       'A player-facing literal inlined in the main process means a screen that is English no ' +
-        'matter what language the player chose (MIN-02) — main already speaks in codes ' +
+        'matter what language the player chose — main already speaks in codes ' +
         '(AccountStoreReason, SectionStatus, …); a new English sentence here is a regression.',
     ).toEqual([]);
   });
@@ -241,7 +205,7 @@ describe('Guard 1 — no player-facing literal outside the i18n source (MIN-02, 
 });
 
 // ---------------------------------------------------------------------------------------------
-// Guard 2 — the pinned exception table (AD-055, AD-038's shape)
+// Guard 2 — the pinned exception table
 // ---------------------------------------------------------------------------------------------
 
 interface PinnedException {
@@ -256,44 +220,46 @@ interface PinnedException {
  * fixing it means editing a file this feature must not touch. Fails if the list WIDENS (a new
  * untranslated string reachable from the desktop) and fails if it is SILENTLY CLOSED (an entry
  * that no longer exists in its owning file, i.e. someone fixed it upstream without updating this
- * record) — `AD-038`'s shape, applied to an i18n boundary.
+ * record) — applied to an i18n boundary.
  */
 const PINNED_EXCEPTIONS: readonly PinnedException[] = [
   {
-    text: 'aria-label="Main"',
-    owner: join(REPO_ROOT, 'packages', 'ui', 'src', 'AppShell.tsx'),
-    permittedBy: 'AD-055 — packages/ui may not change (DS-09)',
+    // The nav landmark, and its default accessible name, moved out of AppShell.tsx into the
+    // shared AppNav primitive it now composes — same hardcoded "Main", new owning file.
+    text: "ariaLabel = 'Main'",
+    owner: join(REPO_ROOT, 'packages', 'ui', 'src', 'app-nav.tsx'),
+    permittedBy: 'the pinned literal-exception list — packages/ui may not change (reuse boundary)',
     reachable: true,
   },
   {
     text: 'aria-label="Increment"',
     owner: join(REPO_ROOT, 'packages', 'ui', 'src', 'num.tsx'),
-    permittedBy: 'AD-055',
+    permittedBy: 'the pinned literal-exception list',
     reachable: true,
   },
   {
     text: 'aria-label="Decrement"',
     owner: join(REPO_ROOT, 'packages', 'ui', 'src', 'num.tsx'),
-    permittedBy: 'AD-055',
+    permittedBy: 'the pinned literal-exception list',
     reachable: true,
   },
   {
     text: 'aria-label="Dismiss"',
     owner: join(REPO_ROOT, 'packages', 'ui', 'src', 'toast-system.tsx'),
-    permittedBy: 'AD-055 — the desktop renders no toast today; reachable: false so mounting one later is a test failure, not a silent regression',
+    permittedBy: 'the pinned literal-exception list — the desktop renders no toast today; reachable: false so mounting one later is a test failure, not a silent regression',
     reachable: false,
   },
 ];
 
-describe('Guard 2 — the pinned packages/ui + consent-text exception table (AD-055, AD-038 shape)', () => {
+describe('Guard 2 — the pinned packages/ui exception table', () => {
   it('every reachable exception still exists verbatim in its owning file — a widened list is a failure', () => {
     // "Widens" is proven the other direction here: this table IS the allowlist. A new untranslated
     // string reachable from the desktop is caught by Guard 1 above (it scans renderer + main, and
     // packages/ui/apps/web are out of its scan root entirely — so the only way a NEW packages/ui
     // exception could reach the desktop unnoticed is if it were added to THIS table without
     // Guard 1 ever having flagged it, which cannot happen: Guard 1 does not scan packages/ui at
-    // all, by design (DS-09 boundary) — the width of this specific table is instead bounded by
-    // hand, reviewed at PR time, exactly as AD-038's own precedent is.
+    // all, by design (the reuse boundary) — the width of this specific table is instead bounded by
+    // hand, reviewed at PR time.
     expect(PINNED_EXCEPTIONS.length).toBe(4);
   });
 
@@ -319,17 +285,6 @@ describe('Guard 2 — the pinned packages/ui + consent-text exception table (AD-
     ).toEqual([]);
   });
 
-  it('the CONSENT_TEXT exception is recorded (AD-028) — not scanned mechanically, since packages/game-api is out of Guard 1\'s root, but named here so the boundary is documented in one place', () => {
-    const consentTextPath = join(REPO_ROOT, 'packages', 'game-api', 'src', 'consent-text.ts');
-    const source = readFileSync(consentTextPath, 'utf8');
-    // The five body paragraphs, title and two button labels are all untranslated by design
-    // (AD-028 — the consent record carries a textVersion, so a PT-BR rendering could constitute
-    // wording the player never agreed to). Asserted structurally: the file still exports the
-    // same shape, so a future edit that removes this constant entirely is caught here too.
-    expect(source).toContain('export const CONSENT_TEXT');
-    expect(source).toContain("title: 'Read your Bomb Farm account?'");
-  });
-
   it('red state demonstrated: a pinned entry with a deliberately wrong owning-file path is caught (widening/staleness check)', () => {
     const fixtureExceptions: readonly PinnedException[] = [
       { text: 'aria-label="Main"', owner: join(REPO_ROOT, 'packages', 'ui', 'src', 'does-not-exist.tsx'), permittedBy: 'x', reachable: true },
@@ -347,10 +302,46 @@ describe('Guard 2 — the pinned packages/ui + consent-text exception table (AD-
 });
 
 // ---------------------------------------------------------------------------------------------
+// Guard 2b — the consent disclosure is bilingual, not exempt
+// ---------------------------------------------------------------------------------------------
+
+/**
+ * The consent disclosure used to be a pinned Guard 2 exception: English only, by a recorded
+ * decision that a translated rendering could constitute wording the player never actually agreed
+ * to. That decision no longer holds — the disclosure is locale-keyed now, and the consent record
+ * traces a past agreement to the exact language it was shown in instead. This guard pins the shape
+ * that reversal depends on: both languages present, both bound to the one version number the
+ * record stamps, matched in structure, and never accidentally the same text.
+ */
+describe('Guard 2b — CONSENT_TEXT is bilingual, both locales tied to one version', () => {
+  it('both en and pt-BR entries exist', () => {
+    expect(CONSENT_TEXT.en).toBeDefined();
+    expect(CONSENT_TEXT['pt-BR']).toBeDefined();
+  });
+
+  it('both are stamped with the one version the consent record stores', () => {
+    expect(CONSENT_TEXT.en.version).toBe(CONSENT_TEXT_VERSION);
+    expect(CONSENT_TEXT['pt-BR'].version).toBe(CONSENT_TEXT_VERSION);
+  });
+
+  it('both carry the same number of clauses', () => {
+    expect(CONSENT_TEXT['pt-BR'].body.length).toBe(CONSENT_TEXT.en.body.length);
+  });
+
+  it('pt-BR is not accidentally the en text', () => {
+    expect(CONSENT_TEXT['pt-BR'].title).not.toBe(CONSENT_TEXT.en.title);
+    const flatten = (text: ConsentText): string =>
+      text.body.map((clause) => `${clause.heading}\n${clause.text}`).join('\n');
+
+    expect(flatten(CONSENT_TEXT['pt-BR'])).not.toBe(flatten(CONSENT_TEXT.en));
+  });
+});
+
+// ---------------------------------------------------------------------------------------------
 // Guard 3 — i18next appears nowhere (the spec's own success criterion)
 // ---------------------------------------------------------------------------------------------
 
-describe('Guard 3 — i18next/react-i18next appear nowhere (AD-030/AD-032, E4 stays closed)', () => {
+describe('Guard 3 — i18next/react-i18next appear nowhere (E4 stays closed)', () => {
   it('zero occurrences across every package.json, pnpm-lock.yaml, and every .ts/.tsx/.mjs/.json source file', () => {
     const packageJsonFiles = walk(REPO_ROOT, ['.json']).filter(
       (path) => path.endsWith(`${sep}package.json`) || path === join(REPO_ROOT, 'package.json'),
@@ -372,9 +363,9 @@ describe('Guard 3 — i18next/react-i18next appear nowhere (AD-030/AD-032, E4 st
     }
     expect(
       offenders,
-      'i18next / react-i18next found. AD-032 chose the planner\'s typed strings map instead — ' +
-        'adding this library back reopens epic OQ E4, which AD-030/AD-032 closed. The planner\'s ' +
-        'typed map is the mechanism; this is the executable form of "E4 is closed".',
+      'i18next / react-i18next found. The decision to adopt the planner\'s typed strings map ' +
+        'instead means bringing this library back would reopen epic OQ E4, which that decision closed. ' +
+        'The planner\'s typed map is the mechanism; this is the executable form of "E4 is closed".',
     ).toEqual([]);
   });
 
@@ -384,7 +375,7 @@ describe('Guard 3 — i18next/react-i18next appear nowhere (AD-030/AD-032, E4 st
 });
 
 // ---------------------------------------------------------------------------------------------
-// Guard 4 — no literal `lang` argument to any game-labels helper (AD-056)
+// Guard 4 — no literal `lang` argument to any game-labels helper
 // ---------------------------------------------------------------------------------------------
 
 /** Every exported helper in packages/domain/src/game-labels.ts that takes a `lang: Lang` (or
@@ -423,7 +414,7 @@ function findLiteralLangArgs(source: string): string[] {
   return offenders;
 }
 
-describe("Guard 4 — no game-labels helper ever receives a literal 'en'/'pt' lang argument (AD-056, docs/i18n.md rule 4)", () => {
+describe("Guard 4 — no game-labels helper ever receives a literal 'en'/'pt' lang argument (docs/i18n.md rule 4)", () => {
   const desktopFiles = readAll(DESKTOP_ROOT, ['.ts', '.tsx']);
 
   it('apps/desktop/**: zero literal lang arguments to any game-labels helper', () => {
@@ -433,7 +424,7 @@ describe("Guard 4 — no game-labels helper ever receives a literal 'en'/'pt' la
     expect(
       offenders.map((entry) => `${entry.file.path}: ${entry.violations.join(', ')}`),
       "toDomainLang is the ONE place the 'pt-BR' -> 'pt' mapping is written (docs/i18n.md rule " +
-        "4, AD-056). A literal 'en'/'pt' at a call site is a second, unreviewable mapping — the " +
+        "4). A literal 'en'/'pt' at a call site is a second, unreviewable mapping — the " +
         'exact defect this guard exists to make impossible to add.',
     ).toEqual([]);
   });
@@ -445,10 +436,10 @@ describe("Guard 4 — no game-labels helper ever receives a literal 'en'/'pt' la
 });
 
 // ---------------------------------------------------------------------------------------------
-// Guard 5 — the planning layer is locale-free (MIN-10, design §4.3)
+// Guard 5 — the planning layer is locale-free, so a language change causes no refresh or recompute (design §4.3)
 // ---------------------------------------------------------------------------------------------
 
-describe('Guard 5 — renderer/lib/planning/** never mentions locale (MIN-10, structural half)', () => {
+describe('Guard 5 — renderer/lib/planning/** never mentions locale (no recompute on language change, structural half)', () => {
   const PLANNING_ROOT = join(RENDERER_ROOT, 'lib', 'planning');
   const planningFiles = readAll(PLANNING_ROOT, ['.ts', '.tsx'], { includeTests: true });
 
@@ -459,8 +450,8 @@ describe('Guard 5 — renderer/lib/planning/** never mentions locale (MIN-10, st
     expect(
       offenders,
       'A "locale" reference under renderer/lib/planning/** means a language switch could enter ' +
-        'a memo dependency or a change key — F3\'s MAR-03/MAR-04 broken from the other side, ' +
-        'silently, with everything still looking right (MIN-10).',
+        'a memo dependency or a change key — breaking the no-recompute-on-irrelevant-change ' +
+        'guarantee from the other side, silently, with everything still looking right.',
     ).toEqual([]);
   });
 

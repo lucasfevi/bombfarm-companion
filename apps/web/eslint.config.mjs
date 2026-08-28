@@ -10,7 +10,14 @@ import eslintPluginTailwindcss from 'eslint-plugin-tailwindcss';
 
 export default tseslint.config(
   {
-    ignores: ['**/.next/**', '**/node_modules/**', '**/out/**', '**/next-env.d.ts', '**/coverage/**'],
+    ignores: [
+      '**/.next/**',
+      '**/.next-dev/**',
+      '**/node_modules/**',
+      '**/out/**',
+      '**/next-env.d.ts',
+      '**/coverage/**',
+    ],
   },
   eslint.configs.recommended,
   ...tseslint.configs.recommendedTypeChecked,
@@ -73,22 +80,22 @@ export default tseslint.config(
       // Prefer named Tailwind utilities over equivalent arbitrary values
       // (e.g. tracking-[0.05em] → tracking-wider). Autofixable.
       'tailwindcss/no-unnecessary-arbitrary-value': 'error',
-      // MOD-32 (W6): no component defined inside another component's render.
+      // W6: no component defined inside another component's render.
       'react/no-unstable-nested-components': 'error',
-      // MOD-16 (W4): bare usePlannerStore() subscribes to the entire store — always pass a selector.
-      // ASM-05 (W5): selectAdvisorPipeline is intentionally used WITHOUT useShallow — it returns
-      // stable identity on cache hits; shallow compare would defeat MOD-18.
+      // W4: bare usePlannerStore() subscribes to the entire store — always pass a selector.
+      // selectAdvisorPipeline is intentionally used WITHOUT useShallow — it returns
+      // stable identity on cache hits; shallow compare would defeat it.
       'no-restricted-syntax': [
         'error',
         {
           selector: "CallExpression[callee.name='usePlannerStore'][arguments.length=0]",
           message:
-            'Bare usePlannerStore() is forbidden (MOD-16). Pass a selector, e.g. usePlannerStore(selectHeroes).',
+            'Bare usePlannerStore() is forbidden. Pass a selector, e.g. usePlannerStore(selectHeroes).',
         },
       ],
-      // W1 guardrail (MOD-23) — warn in W1; W7 flips to error.
+      // W1 guardrail — warn in W1; W7 flips to error.
       'unicorn/filename-case': ['error', { case: 'kebabCase' }],
-      // W1 guardrail (MOD-26) — warn in W1; W7 flips to error.
+      // W1 guardrail — warn in W1; W7 flips to error.
       // W7 id-length exceptions (reviewed, minimal — see size-ledger/spec):
       //   'cn'  — classnames-merge helper (@/shared/lib/cn); clsx/tailwind-merge-ecosystem
       //           convention, imported at 60+ call sites across every component tree level.
@@ -107,8 +114,8 @@ export default tseslint.config(
           exceptions: ['_', 'cn', 'en', 'pt'],
         },
       ],
-      // MOD-26 companion. `id-length` uses min:3, so it is blind to 3-letter
-      // abbreviations like `fmt`/`idx`/`cmp` — which spec AC-2 named ("`fmt` →
+      // A companion guardrail. `id-length` uses min:3, so it is blind to 3-letter
+      // abbreviations like `fmt`/`idx`/`cmp` — which the spec named ("`fmt` →
       // spelled format helpers", "loop counters → `index`") but no rule caught.
       // Each name below is at zero occurrences in non-test `src/`; the denylist
       // keeps it that way. Declarations only, so external data fields such as
@@ -155,12 +162,12 @@ export default tseslint.config(
         'dst',
         'buf',
       ],
-      // W1 guardrail (MOD-29) — warn in W1; W7 flips to error (residuals allowlisted below).
+      // W1 guardrail — warn in W1; W7 flips to error (residuals allowlisted below).
       'max-lines': [
         'error',
         { max: 300, skipBlankLines: true, skipComments: true },
       ],
-      // MOD-17 (W5): ≤8 props — enforced by src/tests/mod-17-max-props.test.ts
+      // W5: ≤8 props — enforced by src/tests/mod-17-max-props.test.ts
       // (warn-equivalent allowlist for DS Switch/Select; W7 burns allowlist).
       // Cross-feature allowlist is four dated edges only (Approach A / Q-1).
       'boundaries/element-types': [
@@ -169,7 +176,7 @@ export default tseslint.config(
           default: 'disallow',
           checkAllOrigins: true,
           policies: [
-            // MOD-08: app → features → shared (+ workspace packages via external)
+            // app → features → shared (+ workspace packages via external)
             {
               from: { element: { type: 'app' } },
               allow: {
@@ -187,7 +194,7 @@ export default tseslint.config(
                 },
               },
             },
-            // MOD-09: feature → shared only (cross-feature denied by default)
+            // feature → shared only (cross-feature denied by default)
             {
               from: { element: { type: 'feature' } },
               allow: {
@@ -291,7 +298,7 @@ export default tseslint.config(
           ],
         },
       ],
-      // MOD-12: public API barrels + DS-05 recipe carve-out (Q-5).
+      // Public API barrels + the design-system recipe carve-out (Q-5).
       'boundaries/entry-point': [
         'error',
         {
@@ -302,8 +309,10 @@ export default tseslint.config(
               allow: 'index.{ts,tsx}',
             },
             {
+              // The recipe and every component now live in @bombfarm/game-art (a workspace
+              // package, reached as an external module); this folder is just the re-export barrel.
               target: { element: { type: 'shared-game-art' } },
-              allow: '{index.{ts,tsx},game-art.recipe.ts}',
+              allow: 'index.{ts,tsx}',
             },
             {
               target: {
@@ -322,8 +331,8 @@ export default tseslint.config(
       ],
     },
   },
-  // MOD-26: tests excluded from id-length.
-  // Tests may deep-import internals under frozen assertions (MOD-03); stories too.
+  // Tests excluded from id-length.
+  // Tests may deep-import internals under frozen assertions; stories too.
   {
     files: [
       'src/**/__tests__/**',
@@ -333,13 +342,13 @@ export default tseslint.config(
     ],
     rules: {
       'id-length': 'off',
-      // Same MOD-26 scope carve-out as `id-length`: conventions apply to non-test `src/`.
+      // The same scope carve-out as `id-length`: conventions apply to non-test `src/`.
       'id-denylist': 'off',
       'boundaries/element-types': 'off',
       'boundaries/entry-point': 'off',
     },
   },
-  // MOD-29: feature/UI components ≤200 (tighter than the 300 hard cap).
+  // Feature/UI components ≤200 (tighter than the 300 hard cap).
   {
     files: ['src/features/**/components/**/*.{ts,tsx}', 'src/app/_shell/**/*.{ts,tsx}'],
     ignores: ['src/**/use-*.ts'],
@@ -350,7 +359,7 @@ export default tseslint.config(
       ],
     },
   },
-  // MOD-29: hooks ≤150.
+  // Hooks ≤150.
   {
     files: ['src/**/use-*.ts'],
     rules: {
@@ -360,12 +369,12 @@ export default tseslint.config(
       ],
     },
   },
-  // W7 max-lines allowlist (MOD-29 error-flip residual, reviewed historically):
+  // W7 max-lines allowlist (error-flip residual, reviewed historically):
   //
   // src/tests/** — Vitest suites for gear/import-save/model/stat-breakdown/storage-i18n
   // legitimately run long (comprehensive fixture-driven assertions covering every branch
   // of the domain math they lock down). Splitting a test file is not W7 scope (no task
-  // covers it) and MOD-03 forbids touching assertions to "shrink" a suite. Current max
+  // covers it) and touching assertions to "shrink" a suite is forbidden. Current max
   // observed (ESLint count, skipBlank/skipComments): storage-i18n.test.ts at 644 lines.
   // Raised cap, not disabled — a genuinely runaway test file still trips this.
   {
@@ -390,13 +399,12 @@ export default tseslint.config(
     files: ['*.{mjs,js}', 'vitest.config.ts', 'next.config.ts'],
     ...tseslint.configs.disableTypeChecked,
   },
-  // Grandfathered raw react-icons call sites (ICO-25, ASM-11). Burn-down: delete
+  // Grandfathered raw react-icons call sites. Burn-down: delete
   // entries as planner features migrate to <Icon />. Any NEW web file errors.
   {
     files: ['src/**/*.{ts,tsx}'],
     ignores: [
       'src/app/_shell/site-header.tsx',
-      'src/app/_shell/topbar.tsx',
       'src/app/_shell/footer.tsx',
       'src/features/gear/components/slot-editor.tsx',
       'src/features/import/components/import-heroes-dialog.tsx',

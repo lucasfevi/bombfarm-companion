@@ -49,7 +49,7 @@ async function launchApp(env) {
   return { app, page };
 }
 
-test.describe('consent modal smoke (MP2 F2, LAR-01/03, Success Criterion "shown once, survives restart")', () => {
+test.describe('consent modal smoke (Success Criterion "shown once, survives restart")', () => {
   test('shows on first run with the required disclosure, accepting closes it, and a relaunch of the same profile does not show it again', async () => {
     const userDataDir = fs.mkdtempSync(path.join(os.tmpdir(), 'bfc-consent-modal-'));
 
@@ -61,7 +61,12 @@ test.describe('consent modal smoke (MP2 F2, LAR-01/03, Success Criterion "shown 
         await expect(modal).toBeVisible({ timeout: 30_000 });
 
         const body = page1.getByTestId('consent-modal-body');
-        await expect(body).toContainText('no disruptive action is taken without your approval');
+        await expect(body).toContainText(
+          'it attaches to the running game client to read the traffic that client is already exchanging with that server',
+        );
+        await expect(body).toContainText(
+          'Attaching to another running program is the technique behavior-based detection looks for',
+        );
 
         await page1.getByTestId('consent-accept').click();
         await expect(modal).toBeHidden({ timeout: 15_000 });
@@ -91,7 +96,7 @@ test.describe('consent modal smoke (MP2 F2, LAR-01/03, Success Criterion "shown 
     }
   });
 
-  test('declining leaves the app usable and records the decision', async () => {
+  test('declining records the decision and gates the app, and the gate leads back to a grant', async () => {
     const userDataDir = fs.mkdtempSync(path.join(os.tmpdir(), 'bfc-consent-modal-decline-'));
 
     try {
@@ -103,15 +108,23 @@ test.describe('consent modal smoke (MP2 F2, LAR-01/03, Success Criterion "shown 
         await page.getByTestId('consent-decline').click();
         await expect(modal).toBeHidden({ timeout: 15_000 });
 
-        // Declining does not block window creation or the rest of the UI (LAR-04).
-        await expect(page.getByTestId('app-ready')).toBeVisible();
-
         const record = await page.evaluate(async () => window.bfc.invoke('consent:get'));
         expect(record.decision).toBe('declined');
 
-        // The stored account still serves (an empty/all-missing view, not an error).
-        const view = await page.evaluate(async () => window.bfc.invoke('account:get'));
-        expect(view.payload.fidelity).toBeDefined();
+        // The window still opens, but there is nothing in it: the companion has no data source
+        // that does not need consent, so it says so instead of rendering an empty planner.
+        await expect(page.getByTestId('app-ready')).toBeVisible();
+        await expect(page.getByTestId('consent-gate')).toBeVisible({ timeout: 15_000 });
+        await expect(page.locator('nav[aria-label="Main"] button')).toHaveCount(0);
+
+        // The gate is not a dead end, and the only way out of it is through the disclosure.
+        await page.getByTestId('consent-gate-read-again').click();
+        await expect(modal).toBeVisible({ timeout: 15_000 });
+        await page.getByTestId('consent-accept').click();
+
+        await expect(page.getByTestId('consent-gate')).toHaveCount(0, { timeout: 15_000 });
+        const afterAccept = await page.evaluate(async () => window.bfc.invoke('consent:get'));
+        expect(afterAccept.decision).toBe('granted');
       } finally {
         await app.close().catch(() => undefined);
       }

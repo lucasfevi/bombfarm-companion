@@ -2,13 +2,12 @@ import { readdirSync, readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 import { createGameApiClient } from './client.js';
-import type { GrantedConsent } from './consent.js';
 import { createPacingGate, type PacingClock } from './pacing.js';
 import type { HttpTransport } from './request.js';
 import { SessionToken, grantSession } from './session.js';
-import { loadFixtureJson, required } from './test-fixtures.js';
+import { grantedConsent, loadFixtureJson, required } from './test-fixtures.js';
 
-const GRANTED: GrantedConsent = { decision: 'granted', grantedAt: '2026-08-12T13:15:38.000Z', textVersion: 1 };
+const GRANTED = grantedConsent('2026-08-12T13:15:38.000Z');
 const session = grantSession(GRANTED, { accountId: '486', token: SessionToken.create('sentinel-client-test') });
 
 function createTestClock(): PacingClock {
@@ -44,7 +43,7 @@ describe('the committed fixtures are scrubbed (D19 — the repo is public)', () 
   }
 });
 
-describe('api-bodies-after.json differs from api-bodies.json in exactly five dimensions (LAR-09)', () => {
+describe('api-bodies-after.json differs from api-bodies.json in exactly five dimensions', () => {
   const before = loadFixtureJson('api-bodies.json');
   const after = loadFixtureJson('api-bodies-after.json');
 
@@ -100,7 +99,7 @@ describe('api-bodies-after.json differs from api-bodies.json in exactly five dim
   });
 });
 
-describe('createGameApiClient — holds no per-section cache (LAR-09 client half)', () => {
+describe('createGameApiClient — holds no per-section cache (client half)', () => {
   it('one instance driven over two body sets returns the second, then the first bodies again return the first values', async () => {
     const client = createGameApiClient();
     const before = loadFixtureJson('api-bodies.json');

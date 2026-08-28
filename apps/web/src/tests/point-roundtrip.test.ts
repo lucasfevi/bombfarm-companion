@@ -1,18 +1,18 @@
 /**
- * MP5 F1 (`AD-071`) — the point round-trip invariant, replacing the deleted before/after
+ * The point round-trip invariant, replacing the deleted before/after
  * point-spend fixture family (`brenna-06/07`, `gale-02/03`, `vera-02/03`; all unreproducible
  * from a single post-wipe snapshot — `stat_points_available` is `0` on every corpus hero).
  *
- * **Why this is not circular (`AD-068`'s ground-truth rule, satisfied):** the game observes
+ * **Why this is not circular (the ground-truth rule, satisfied):** the game observes
  * each hero's `stats` object directly and writes it into the export. That is a game
  * observation, not our output — `@bombfarm/domain` has to *land on it*. The forward chain
  * (`nakedFromBirth` → `applyPoints` → `applySkillTree`, wired here as `composeSheetFromBirth`)
  * consumes `inferSpentPoints`'s recovered point split only as an intermediate; the split is
  * never the assertion target. The assertion target — the expected value in every comparison
- * below — is `saveSheetUnits(hero.stats)`, the game's own reading. `AD-068` bans pasting our
- * own model's output in as an expected value; here the expected value is the game's.
+ * below — is `saveSheetUnits(hero.stats)`, the game's own reading. The ground-truth rule bans
+ * pasting our own model's output in as an expected value; here the expected value is the game's.
  *
- * **The exactness bar (`AD-071`)**: literal bit-exactness (`Object.is`) is measurably
+ * **The exactness bar**: literal bit-exactness (`Object.is`) is measurably
  * unachievable across the board — IEEE-754 association order differs between the game's own
  * accumulation and this forward chain's, producing residuals from ~1e-15 to ~1.4e-12 on most
  * heroes. The bar is therefore four claims, stronger together than either a bare `Object.is`
@@ -34,15 +34,15 @@ const EXPORT_FILE = 'save-20260823-13heroes-crit-points.json';
 /**
  * All 13 heroes of the post-2026-08-23 corpus file — the suite's entire subject set.
  *
- * `save-20260818-12heroes.json` and `save-20260819-respec-crit-cdr.json` are NO LONGER subjects,
- * for the same reason `save-20260816-8heroes.json`, `save-20260816-respec-cdr-crit.json`,
- * `save-20260816-9heroes-redistrib.json`, `save-20260816-5heroes-gear-cdr-crit.json` and
- * `save-20260817-11heroes.json` stopped being ones before them: the 2026-08-23 patch restated
- * both crit-chance ABILITIES in flat points (see the `critChanceFlat` ability kind), and no
- * single model reproduces a capture from either side of that change. All of them stay committed
- * for the structural suites and for the provenance they carry — the flat-regime respec pair
- * pinned the (superseded) flat per-point rates, and the 08-18 file was the whole-roster witness
- * for the percent-of-base revert.
+ * `save-20260818-12heroes.json` and `save-20260819-respec-crit-cdr.json` are NO LONGER subjects:
+ * the 2026-08-23 patch restated both crit-chance ABILITIES in flat points (see the
+ * `critChanceFlat` ability kind), and no single model reproduces a capture from either side of
+ * that change. They stay committed for the structural suites and for the provenance they carry —
+ * the 08-18 file was the whole-roster witness for the percent-of-base revert.
+ *
+ * The five 2026-08-16/17 captures that stopped being subjects before them have since been retired
+ * from the corpus outright. They had been carried for structural coverage that the four
+ * current-regime captures now provide, and no suite could still read their sheet arithmetic.
  *
  * This file is the first whole-roster witness for the flat crit-chance ABILITY: every one of the
  * 13 heroes is issue-free with a budget landing exactly on `level`, and three of them carry
@@ -127,7 +127,7 @@ const FIXTURE_TREE = treeTotalsFromSave(
 const TREE_CRIT_CHANCE_PCT = FIXTURE_TREE.critChancePct;
 const TREE_CRIT_DMG_PCT = FIXTURE_TREE.critDmgPct;
 
-describe('point round trip (AD-071) — birth + inferred points + gear + tree reproduces the observed stats', () => {
+describe('point round trip — birth + inferred points + gear + tree reproduces the observed stats', () => {
   it('non-vacuity: iterates exactly 13 heroes and 104 key comparisons', () => {
     expect(SUBJECTS.length, 'expected exactly 13 heroes on the 2026-08-23 capture').toBe(13);
     expect(PREPARED.length).toBe(13);
@@ -177,7 +177,7 @@ describe('point round trip (AD-071) — birth + inferred points + gear + tree re
   // Vitest's decimal-place fuzzy-equality matcher is banned in this file (grep-enforced): its
   // default precision is 2 decimal digits ⇒ ~5e-3 tolerance, which would silently accept an
   // error orders of magnitude looser than SHEET_ABS_TOL (1e-6) — exactly the kind of loosened
-  // assertion AD-068 forbids substituting for a real one. One test per issue-free hero so a
+  // assertion the ground-truth rule forbids substituting for a real one. One test per issue-free hero so a
   // failure names both the hero (the test title) and the key (expectSheetsClose's message).
   it.each(PREPARED.filter((p) => p.inference.issues.length === 0).map((p) => [subjectLabel(p.subject), p] as const))(
     'claim B — %s: forward sheet lands within SHEET_ABS_TOL of the observed stats on all 8 SHEET_KEYS',

@@ -1,5 +1,5 @@
 /**
- * The only asynchrony in MP3 F3, isolated into a pure reducer (design.md §4.4, `AD-047`) so it
+ * The only asynchrony in this feature, isolated into a pure reducer (design.md §4.4) so it
  * is testable at all: `apps/desktop`'s Vitest project is node-environment with
  * `renderToStaticMarkup`, which never runs `useEffect` — see `use-account-view.ts`'s own comment
  * (kept from F2). No React import — assert it by reading the source, F2's own technique
@@ -27,13 +27,13 @@ export const initialAccountViewState: AccountViewState = { status: 'loading', ap
  * accepted view's tier-0 `accountChangeKey`. Four rules, in order:
  *
  * 1. `bridge-missing` ⇒ `bridge-unavailable`. Never throws (F2's behaviour, preserved).
- * 2. `pushed` ⇒ accepted iff `accountChangeKey(view.payload) !== state.key` (MAR-03's accept
+ * 2. `pushed` ⇒ accepted iff `accountChangeKey(view.payload) !== state.key` (the accept
  *    gate). Main is single-threaded, so anything it pushes is, by construction, the newest thing
  *    it knows — never conditioned on `issuedAt`.
  * 3. `fetched` ⇒ **discarded** when `issuedAt !== state.applied` — i.e. a push landed while this
  *    `account:get` was in flight. Main materialises the `get`'s value at handler time, so any
  *    later emit is strictly later in main's own timeline: discarding is correct regardless of
- *    which the renderer observes first (MAR-11, and the spec's "first `account:changed` arrives
+ *    which the renderer observes first (the spec's "first `account:changed` arrives
  *    before the initial `account:get` resolves" edge case — one rule covers both).
  * 4. `fetch-failed` ⇒ surfaces an error **only** if nothing has been applied yet. A failed read
  *    never blanks a good screen already on it.

@@ -1,9 +1,11 @@
 # Bundled art provenance
 
-`apps/web/public/wiki-assets/` is sourced from the Grimório's static assets, served under
-`/wiki/static/assets/`. Most of it is a byte-for-byte mirror at the same subpath, so a refresh is
-a straight re-fetch. The drop sprites are the exception on two counts, and this table is what a
-refresh has to be driven from.
+`packages/game-art/assets/` is sourced from the Grimório's static assets, served under
+`/wiki/static/assets/`. Both `apps/web` and `apps/desktop` copy this directory into their own
+`public/wiki-assets/` at build time (`apps/*/scripts/copy-wiki-assets.mjs`) so it serves at
+`/wiki-assets/...` — see [`docs/design-system.md`](design-system.md)'s Game art section. Most of
+it is a byte-for-byte mirror at the same subpath, so a refresh is a straight re-fetch. The drop
+sprites are the exception on two counts, and this table is what a refresh has to be driven from.
 
 ## Why these are renamed
 
@@ -19,7 +21,7 @@ this table is for.
 
 ## Drop sprites
 
-| Local path (`public/wiki-assets/…`) | Upstream | Notes |
+| Local path (`packages/game-art/assets/…`) | Upstream | Notes |
 | --- | --- | --- |
 | `chests/item_chest.png` | `icons/chest_0.png` | Not difficulty-scaled — one sprite for every band |
 | `chests/gem_chest_easy.png` | *(game client)* `ui/chests/gems/gem_chest_facil.png` | Not published by the wiki |
@@ -41,6 +43,27 @@ this table is for.
 `key/key_*.png` is deliberately **not** in this table: those mirror upstream at the same subpath
 and are filed by rarity, which is what the art actually is. The planner's band→rarity step lives
 in `GATE_KEY_RARITY_INDEX`, not in a filename.
+
+## Inventory art
+
+The Inventory screen shows every item the account carries, not just gear, so it needs art for the
+five non-gear families and for the plate an item sits on. Four directories were added for it.
+
+`background/` is the one that replaced code: the six plates are the game's own inventory slot
+backdrops, and the card used to approximate them with hand-written CSS gradients
+(`--rar-slot-*-glow/mid/edge`). The real plates are better art and one fewer thing to maintain.
+
+| Local path (`packages/game-art/assets/…`) | Upstream | Notes |
+| --- | --- | --- |
+| `background/slot_background_{common,uncommon,rare,epic,legendary,mythic}.png` | `background/slot_background_*.png` | Same subpath and names |
+| `gems/gem_*.png` | `icons/gem_*_icon.png` | `_icon` dropped so the filename is the `def_id` verbatim, which is how `itemKindIconSrc` reaches it |
+| `houseparts/houseparts_{uncommon,rare,epic,legendary,mythic}.png` | `houseparts/houseparts_*.png` | The game's name for what a save calls `time_part_*` |
+| `stones/skill_stone_{common,uncommon,rare,epic,legendary,mythic}.png` | *(game client)* `ui/icons/pedra_habilidades/pedra_habilidade_0N_*.png` | Not published by the wiki; renamed from the Portuguese and from a 1-based index |
+
+The skill stones are the second family after the gem chests that the wiki does not publish, and
+the only one filed under a Portuguese name with a 1-based index (`01_comum`…`06_mitico`). They
+are renamed on the way in for the same two reasons the drop sprites are, and the index→rarity
+step is `01` → rarity 0, so a refresh must not read the number as the rarity.
 
 ## Everything else
 

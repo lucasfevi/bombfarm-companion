@@ -5,6 +5,7 @@ import { RARITIES } from '@bombfarm/domain/planner-constants';
 import { rarityLabel } from '@bombfarm/domain/game-labels';
 import { formatNumber } from '@/shared/lib/format-number';
 import type { Lang, Strings } from '@/shared/i18n';
+import { sub } from '@/shared/i18n';
 import { cn, DataTable, Switch, Tooltip } from '@bombfarm/ui';
 import { MAX_STARS } from '@bombfarm/domain/gear';
 import {
@@ -88,12 +89,47 @@ export function ImportCandidateRow({
         {formatNumber(candidate.power, 0)}
       </DataTable.Cell>
       <DataTable.Cell className={cn('max-[720px]:hidden py-2', inactiveChrome)} nowrap={false} data-roster-wrap>
-        <HeroGearIcons loadout={candidate.record.loadout} lang={lang} t={t} />
+        <HeroGearIcons
+          loadout={candidate.record.loadout}
+          lang={lang}
+          emptySlotAriaLabel={(slotName) => sub(t.gearSlotEmptyAria, { slot: slotName })}
+          emptySlotTip={t.gearSlotEmptyTip}
+          lvLabel={t.rankLv}
+        />
       </DataTable.Cell>
       <DataTable.Cell className={cn('max-[960px]:hidden py-2', inactiveChrome)} nowrap={false} data-roster-wrap>
         <HeroAbilityIcons abilities={candidate.record.abilities} lang={lang} />
       </DataTable.Cell>
       <DataTable.Cell className="max-[720px]:hidden">
+        {candidate.blocked ? (
+          // A blocked hero is not going to be imported, so showing it as ACTIVE/INACTIVE answers a
+          // question nobody asked and hides the one that matters. The row-level reason lives here;
+          // the two things the player can DO about it are in `ImportBlockedNotice`, stated once
+          // rather than repeated on every row.
+          <Tooltip.Root>
+            <Tooltip.Trigger
+              render={<span />}
+              className="inline-flex items-center text-[11px] leading-none font-bold tracking-wider text-warn uppercase"
+              data-testid="import-blocked-badge"
+            >
+              {t.importBlockedBadge}
+            </Tooltip.Trigger>
+            <Tooltip.Portal>
+              <Tooltip.Positioner sideOffset={6}>
+                <Tooltip.Popup>
+                  <p className="m-0 max-w-70 text-[12px]">{t.importBlockedTooltip}</p>
+                  {candidate.issues.length > 0 ? (
+                    <ul className="m-0 mt-1.5 list-disc pl-4 text-[11px] leading-1.45 text-muted">
+                      {candidate.issues.map((issue, index) => (
+                        <li key={index}>{issue}</li>
+                      ))}
+                    </ul>
+                  ) : null}
+                </Tooltip.Popup>
+              </Tooltip.Positioner>
+            </Tooltip.Portal>
+          </Tooltip.Root>
+        ) : (
         <Tooltip.Root>
           <Tooltip.Trigger render={<span />} className="inline-flex items-center gap-1.5">
             <Switch
@@ -122,6 +158,7 @@ export function ImportCandidateRow({
             </Tooltip.Positioner>
           </Tooltip.Portal>
         </Tooltip.Root>
+        )}
       </DataTable.Cell>
     </DataTable.Row>
   );

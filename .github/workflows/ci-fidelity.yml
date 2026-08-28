@@ -98,6 +98,13 @@ jobs:
       - name: Build domain (tools project needs dist)
         run: pnpm --filter @bombfarm/domain build
 
+      # derived-fixture-drift.test.mjs re-derives the committed api fixtures by importing the
+      # generator, which reaches @bombfarm/game-api's assemble/routes/normalize through dist.
+      # Its build-output guard names this package and throws rather than letting the test collect
+      # and silently not run, which is how it caught this step being absent.
+      - name: Build game-api (drift guard re-derives fixtures through its dist)
+        run: pnpm --filter @bombfarm/game-api build
+
       # The guard on this workflow itself (tools/fidelity-gate.test.mjs) and the no-skip source
       # guard over the six F4 files both live in the tools project.
       - name: Fidelity gate guard (tools project)

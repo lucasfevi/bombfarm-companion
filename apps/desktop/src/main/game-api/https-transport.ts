@@ -2,7 +2,7 @@ import https from 'node:https';
 import type { HttpRequest, HttpResponse, HttpTransport } from '@bombfarm/game-api';
 
 /**
- * The only socket (`AD-024`, `TD-11`). Converts an `HttpRequest` into an `HttpResponse` or
+ * The only socket (apps/desktop's syscall boundary). Converts an `HttpRequest` into an `HttpResponse` or
  * throws — `request.ts` (packages/game-api) classifies whatever comes back or gets thrown.
  * No header construction (the headers arrive built), no retry, no IP fallback, no response
  * classification. A byte cap is enforced while streaming so an oversized body is never buffered

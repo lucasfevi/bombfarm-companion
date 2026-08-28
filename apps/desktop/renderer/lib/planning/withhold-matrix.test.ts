@@ -2,7 +2,7 @@
  * The feature's correctness core (design.md §5, §11 hazard 1). Exhaustive by construction over
  * `AdviceQuantity` × `SectionStatus` × `AccountSection` (derived from `ADVICE_REQUIRES` and
  * `ACCOUNT_SECTIONS`, never a hand-written list) — a new section or quantity adds rows
- * automatically (`AD-041`'s payoff).
+ * automatically — the payoff of declaring advice dependencies as data, not as ifs.
  */
 import { describe, expect, it } from 'vitest';
 import type { SectionFidelity, SectionStatus } from '@bombfarm/contracts';
@@ -45,7 +45,7 @@ function firstHero(model: PlanningModel) {
 
 /** What `pipelineForHero` would return if `skills` had silently defaulted to the identity tree
  *  (`import-save.ts`'s zero-tree fallback: `danoStatic: 1`, everything else 0/false) — the exact
- *  number MPV-09 says must never reach the screen labelled as advice. */
+ *  number the skills-unresolved-withholds-advice rule says must never reach the screen labelled as advice. */
 function identityTreeResult(hero: HeroRecord, phase: number, mitigationPct: number) {
   return computeAdvisorPipeline({
     naked: hero.naked,
@@ -100,7 +100,7 @@ describe('withhold matrix — exhaustive by construction (AdviceQuantity × Acco
   });
 });
 
-describe('MPV-09/MPV-10 — the absence assertion: the identity-tree fallback DPS never reaches HeroAdvice', () => {
+describe('the absence assertion: the identity-tree fallback DPS never reaches HeroAdvice', () => {
   it('skills: missing ⇒ advice withheld, and the identity-tree DPS is structurally unreachable (no `dps` field on Withheld)', () => {
     const view = syntheticAccountView({ sectionStatuses: { skills: 'missing' } });
     const model = buildPlanningModel(view);
@@ -135,13 +135,13 @@ describe('MPV-09/MPV-10 — the absence assertion: the identity-tree fallback DP
     expect(totals?.dmg_static).toBe(REAL_DMG_STATIC);
   });
 
-  it('MPV-10: heroes not usable withholds rosterRow (and therefore everything else) — the affected rows rule', () => {
+  it('heroes not usable withholds rosterRow (and therefore everything else) — the affected rows rule', () => {
     const view = syntheticAccountView({ sectionStatuses: { heroes: 'missing' } });
     const model = buildPlanningModel(view);
     expect(isQuantityUsable(model.sections, 'rosterRow')).toBe(false);
   });
 
-  it('MPV-10: items not usable withholds gearSummary and the dps-bundle quantities, but not rosterRow', () => {
+  it('items not usable withholds gearSummary and the dps-bundle quantities, but not rosterRow', () => {
     const view = syntheticAccountView({ sectionStatuses: { items: 'missing' } });
     const model = buildPlanningModel(view);
     expect(isQuantityUsable(model.sections, 'rosterRow')).toBe(true);
@@ -149,12 +149,12 @@ describe('MPV-09/MPV-10 — the absence assertion: the identity-tree fallback DP
     expect(isQuantityUsable(model.sections, 'dps')).toBe(false);
   });
 
-  it('MPV-10: a per-hero candidate.blocked withholds that hero only, and the row is still rendered', () => {
+  it('a per-hero candidate.blocked withholds that hero only, and the row is still rendered', () => {
     const view = syntheticAccountView({ heroBlocked: true });
     const model = buildPlanningModel(view);
     const hero = firstHero(model);
     expect(hero.blocked).toBe(true);
-    // The row still exists (MPV-10: "the row is still rendered and marked") — the model does
+    // The row still exists ("the row is still rendered and marked") — the model does
     // not drop the hero, it only marks its numbers withheld.
     const advice = adviceForHero(model, hero.hero.id);
     expect(advice.withheld).toBe(true);
@@ -194,7 +194,7 @@ describe('degraded shape: added-only vs missing-key (isTrustworthySection)', () 
   });
 });
 
-describe('MPV-06 — full resolution shows no degradation', () => {
+describe('full resolution shows no degradation', () => {
   it('all five sections resolved ⇒ grade "full", every quantity usable, no hero withheld', () => {
     const view = syntheticAccountView();
     const model = buildPlanningModel(view);
@@ -206,12 +206,13 @@ describe('MPV-06 — full resolution shows no degradation', () => {
     const hero = firstHero(model);
     const advice = adviceForHero(model, hero.hero.id);
     expect(advice.withheld).toBe(false);
-    // Design §3 AD-036 consequence: on the desktop this is only reachable while the game runs
+    // Design §3 consequence of gating advice by per-section usability, not by the report grade:
+    // on the desktop this is only reachable while the game runs
     // and all five routes resolved. That is correct, not a defect — recorded here, not asserted.
   });
 });
 
-describe('MPV-07 — degraded sections named in report order', () => {
+describe('degraded sections named in report order', () => {
   it('report.degradedSections lists every non-resolved section, in ACCOUNT_SECTIONS order', () => {
     const view = syntheticAccountView({
       sectionStatuses: { skills: 'missing', items: 'degraded' },
@@ -223,12 +224,12 @@ describe('MPV-07 — degraded sections named in report order', () => {
   });
 });
 
-describe("MPV-08 — degraded surfaces missingKeys distinctly from missing — LATENT, see AD-037", () => {
+describe("degraded surfaces missingKeys distinctly from missing — LATENT, not reachable through the live merge yet", () => {
   it('a synthetic AccountView carrying {status: "degraded", missingKeys: [...]} is distinguishable in the model from a "missing" section', () => {
-    // AD-037: `mergeStoredIntoLive` (apps/desktop/src/main/storage/merge-account.ts:29-43) never
+    // `mergeStoredIntoLive` (apps/desktop/src/main/storage/merge-account.ts:29-43) never
     // writes `degraded` into the merged fidelity block and never carries `missingKeys` — every
     // route into the renderer (account:get) goes through that merge, so no end-to-end path can
-    // reach this state today. This test is the correct and complete evidence under AD-037: a
+    // reach this state today. This test is the correct and complete evidence for that gap: a
     // synthetic AccountView built directly (bypassing the merge, since `buildPlanningModel`
     // takes an `AccountView` as its own input) proves the view-model branch is implemented and
     // distinguishable, without changing `merge-account.ts` to force reachability.
@@ -261,7 +262,7 @@ describe("MPV-08 — degraded surfaces missingKeys distinctly from missing — L
   });
 });
 
-describe("MPV-11 — a restored all-stale account renders advice, and only no-roster renders zero numbers (AD-036)", () => {
+describe("a restored all-stale account renders advice, and only no-roster renders zero numbers (gated by per-section usability, not by the report grade)", () => {
   it('availability "no-roster" gives zero numeric nodes (no heroes to compute from)', () => {
     const view = syntheticAccountView({ sectionStatuses: { heroes: 'missing' } });
     const model = buildPlanningModel(view);
@@ -282,7 +283,7 @@ describe("MPV-11 — a restored all-stale account renders advice, and only no-ro
   });
 });
 
-describe('MPV-03 layer 3 — the model renders what pipelineForHero computed, for the same fixture', () => {
+describe('layer 3 — the model renders what pipelineForHero computed, for the same fixture', () => {
   it("adviceForHero's ranking equals pipelineForHero's own output when called directly with the model's own shared/phase/mitigationPct", () => {
     const view = syntheticAccountView();
     const model = buildPlanningModel(view);

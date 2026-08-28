@@ -1,7 +1,7 @@
 /**
- * MP5 F4 (T8) — `importRejectedUnsupportedShape` (`MSG-14`): the generic invalid-save message,
+ * (T8) — `importRejectedUnsupportedShape`: the generic invalid-save message,
  * asserted in EN and PT-BR through `rejectionText`, and guarded against every forbidden token so
- * it stays accurate — and reusable unchanged — after the next patch (`AD-062`).
+ * it stays accurate — and reusable unchanged — after the next patch.
  */
 import { describe, expect, it } from 'vitest';
 import type { ParseRejection } from '@bombfarm/domain/import-save';
@@ -39,7 +39,7 @@ const FORBIDDEN_TOKENS = [
 const DATE_PATTERN = /\d{4}-\d{2}-\d{2}/;
 const BARE_VERSION_PATTERN = /\bv?\d+\.\d+(\.\d+)?\b/i;
 
-describe('importRejectedUnsupportedShape — the generic rejection copy (MSG-14)', () => {
+describe('importRejectedUnsupportedShape — the generic rejection copy', () => {
   for (const lang of LANGS) {
     const t = STRINGS[lang];
 

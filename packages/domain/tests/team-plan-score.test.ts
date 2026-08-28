@@ -57,7 +57,7 @@ function heroInputFromExtract(hero: ReturnType<typeof extractHero>): TeamPlanHer
   };
 }
 
-// MP5 F1 (AD-068 class (b) — structural): re-pointed onto save-20260813-5heroes.json's
+// (the ground-truth rule's class (b) — structural): re-pointed onto save-20260813-5heroes.json's
 // Bellatrix (L42, not the deleted crit-dmg-tree fixture's L62). Every fixture-backed assertion
 // here compares scoreHeroLoadout against an independently-computed reference (a spy call count,
 // or computeAdvisorPipeline / composeSheetFromBirth run on the same inputs) — none pins a

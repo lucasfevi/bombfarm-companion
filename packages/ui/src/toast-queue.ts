@@ -39,7 +39,7 @@ export type ToastInput = {
   /**
    * Explicit auto-dismiss override in ms (or `null` to force manual dismiss).
    * Honoured only for `success`/`info` — `warning`/`error`/`progress` never
-   * auto-expire on a timer regardless of this value (§11, TST-06). Wiring
+   * auto-expire on a timer regardless of this value (§11). Wiring
    * this to a user preference is M5 SET-1; here it is just a prop.
    */
   autoDismissMs?: number | null;
@@ -47,7 +47,7 @@ export type ToastInput = {
 
 export type ToastEntry = ToastInput & {
   id: string;
-  /** Preserved across coalescing replaces (TST-02). */
+  /** Preserved across coalescing replaces. */
   createdAt: number;
   updatedAt: number;
   /** Epoch ms deadline, or `null` if this toast never auto-expires. */
@@ -67,7 +67,7 @@ export type ToastQueueState = {
   buffer: NotificationEntry[];
   /**
    * Transient: true only when this dispatch was a progress toast crossing a
-   * 0/50/100% announcement threshold (TST-08). Always false after
+   * 0/50/100% announcement threshold. Always false after
    * dismiss/expire/clear. Consumers read it once per dispatch; it is not
    * "sticky" state to clear manually.
    */
@@ -101,7 +101,7 @@ const VARIANT_DEFAULT_AUTO_DISMISS_MS: Record<ToastVariant, number | null> = {
   progress: null,
 };
 
-/** Variants that never auto-expire on a timer, no matter what `autoDismissMs` a caller passes (TST-06). */
+/** Variants that never auto-expire on a timer, no matter what `autoDismissMs` a caller passes. */
 const NEVER_AUTO_EXPIRES: ReadonlySet<ToastVariant> = new Set(['warning', 'error', 'progress']);
 
 function computeExpiresAt(variant: ToastVariant, now: number, autoDismissMs: number | null | undefined): number | null {
@@ -113,7 +113,7 @@ function computeExpiresAt(variant: ToastVariant, now: number, autoDismissMs: num
 
 const PROGRESS_ANNOUNCE_THRESHOLDS = [0, 50, 100] as const;
 
-/** True when `nextProgress` crosses a 0/50/100 threshold that `prevProgress` hadn't reached yet (TST-08). */
+/** True when `nextProgress` crosses a 0/50/100 threshold that `prevProgress` hadn't reached yet. */
 function crossesAnnounceThreshold(prevProgress: number | undefined, nextProgress: number | undefined): boolean {
   if (nextProgress === undefined) return false;
   const prev = prevProgress ?? -1;

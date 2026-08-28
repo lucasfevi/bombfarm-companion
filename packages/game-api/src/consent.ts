@@ -1,8 +1,8 @@
-import type { ConsentDecision, ConsentRecord } from '@bombfarm/contracts';
-import { CONSENT_TEXT } from './consent-text.js';
+import type { AppLocale, ConsentDecision, ConsentRecord } from '@bombfarm/contracts';
+import { CONSENT_TEXT_VERSION } from './consent-text.js';
 
 /**
- * Consent — the pure state machine (LAR-01, LAR-03…05). No I/O, no clock: `now` is injected by
+ * Consent — the pure state machine. No I/O, no clock: `now` is injected by
  * the caller (`account-refresh.ts` in `apps/desktop`), never read here.
  *
  * `ConsentDecision`/`ConsentRecord` are defined in `@bombfarm/contracts`, not here — they cross
@@ -19,26 +19,33 @@ export interface GrantedConsent extends ConsentRecord {
 }
 
 export type ConsentEvent =
-  | { readonly type: 'accept'; readonly now: string }
-  | { readonly type: 'decline' }
+  | { readonly type: 'accept'; readonly now: string; readonly locale: AppLocale }
+  | { readonly type: 'decline'; readonly locale: AppLocale }
   | { readonly type: 'revoke' };
 
 /** A fresh consent record: nothing asked yet, stamped with the disclosure text version in force. */
 export function initialConsent(): ConsentRecord {
-  return { decision: 'unasked', textVersion: CONSENT_TEXT.version };
+  return { decision: 'unasked', textVersion: CONSENT_TEXT_VERSION };
 }
 
 /**
  * Every legal transition, `now` injected:
  * `unasked -> granted | declined`; `granted -> revoked`; `declined -> granted`
- * (the player may change their mind); `revoked -> granted`.
+ * (the player may change their mind); `revoked -> granted`. `accept`/`decline` also carry the
+ * locale the disclosure was rendered in, stamped onto the record as `textLocale` — provenance
+ * only; `isGranted` never looks at it.
  */
 export function reduceConsent(record: ConsentRecord, event: ConsentEvent): ConsentRecord {
   switch (event.type) {
     case 'accept':
-      return { decision: 'granted', grantedAt: event.now, textVersion: CONSENT_TEXT.version };
+      return {
+        decision: 'granted',
+        grantedAt: event.now,
+        textVersion: CONSENT_TEXT_VERSION,
+        textLocale: event.locale,
+      };
     case 'decline':
-      return { decision: 'declined', textVersion: CONSENT_TEXT.version };
+      return { decision: 'declined', textVersion: CONSENT_TEXT_VERSION, textLocale: event.locale };
     case 'revoke':
       return { decision: 'revoked', textVersion: record.textVersion };
     default: {
@@ -49,16 +56,25 @@ export function reduceConsent(record: ConsentRecord, event: ConsentEvent): Conse
 }
 
 /**
- * Unasked always shows the modal. A `granted` record whose `textVersion` predates the current
- * `CONSENT_TEXT.version` shows it again — a new disclosure cannot ride on an old agreement.
+ * Defined as the negation of `isGranted` for anything claiming to be granted, so the modal and the
+ * read gate can never disagree: whatever `isGranted` rejects is something the player still has to
+ * be asked about, including a record whose `grantedAt` is missing.
  */
 export function shouldShowConsentModal(record: ConsentRecord): boolean {
   if (record.decision === 'unasked') return true;
-  if (record.decision === 'granted' && record.textVersion < CONSENT_TEXT.version) return true;
-  return false;
+  return record.decision === 'granted' && !isGranted(record);
 }
 
-/** The type guard `grantSession` (T2) requires before it can even attempt a runtime construction. */
+/**
+ * The type guard `grantSession` (T2) requires before it can even attempt a runtime construction.
+ * Strict equality on `textVersion`, not `>=`: a record stamped with a version newer than this
+ * build understands must also fail, so a downgraded build re-prompts instead of assuming a grant
+ * it cannot have shown.
+ */
 export function isGranted(record: ConsentRecord): record is GrantedConsent {
-  return record.decision === 'granted' && typeof record.grantedAt === 'string';
+  return (
+    record.decision === 'granted' &&
+    typeof record.grantedAt === 'string' &&
+    record.textVersion === CONSENT_TEXT_VERSION
+  );
 }

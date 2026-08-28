@@ -74,8 +74,9 @@ repo). This job's monthly cost is a small fraction of a single one of those runs
 into `InventoryItem.iconUrl`, from the item's instance level. Nothing ever rendered that field, and
 both the builder and the field are now **deleted**: item art is bundled-only. The item-icon and
 ability-icon components read `itemIconSrc`/`abilityIconSrc` from
-`packages/domain/src/wiki-assets.ts`, which resolve local files under
-`apps/web/public/wiki-assets/`, never a live wiki URL.
+`packages/domain/src/wiki-assets.ts`, which resolve local files bundled in
+`packages/game-art/assets/` (copied into each app's own `public/wiki-assets/` at build time, see
+`docs/design-system.md`'s Game art section), never a live wiki URL.
 
 No shipped code composes a wiki URL at runtime any more. The narrowed-rule guard's hostname census
 (`tools/wiki-drift-narrowed-rule.test.mjs`) is correspondingly **7 files, 11 matches** — credit

@@ -5,6 +5,7 @@
  * per-prop one-shot derivation — guarded by `farm-ranking-guards.test.ts`.
  */
 import type { FarmRateRow } from '@bombfarm/domain/farm-rate';
+import { FIELD_SLOTS_MAX } from '@bombfarm/domain/casa-slots';
 import type { Strings } from '@/shared/i18n';
 
 export type FarmSortKey =
@@ -182,4 +183,53 @@ export function pickBestFarmRow(rows: readonly FarmRateRow[]): FarmRateRow | nul
     }
   }
   return best;
+}
+
+/**
+ * Under this, the field is contending too little for a banner to earn its place. Every roster
+ * with more heroes than field slots contends a little; a notice reading "0.1% of the time" is
+ * noise that teaches people to ignore the notice that matters.
+ */
+export const CONTENTION_NOTICE_MIN_PCT = 5;
+
+export type ContentionNotice = {
+  /** Share of wall clock with a rested hero benched behind a full field — PERCENT. */
+  pct: number;
+  /** What that wait takes off the unconstrained rate, `(1 - concurrencyScale) × 100` — PERCENT. */
+  costPct: number;
+  /** Whether the field is already at {@link FIELD_SLOTS_MAX}, so "buy more slots" is not advice. */
+  atMaxSlots: boolean;
+};
+
+/**
+ * The field-contention notice for the row the player is looking at, or `null` when there is
+ * nothing worth saying.
+ *
+ * PER-ROW, NEVER AGGREGATED: `fieldContentionPct` is phase-dependent (the House allocation it
+ * reads is), so this takes the one row being shown rather than reducing over the table. The board
+ * feeds it the current phase's row, falling back to the best one before a phase is chosen.
+ *
+ * FREQUENCY AND COST ARE DIFFERENT ANSWERS, and the notice carries both because they diverge
+ * hard: 26% of wall clock with somebody benched costs 1.2% of the rate, because the queue is
+ * saturated rather than idle. The frequency is what tells a player their field binds; the cost is
+ * what stops them reading that frequency as 26% of their gold. The cost is `concurrencyScale`,
+ * which `buildRow` already multiplies into every rate — so the notice REPORTS a charge the
+ * estimate has taken, and must never claim the estimate is optimistic by this amount.
+ *
+ * It does not promise that benching heroes helps, because it usually does not: on a 14-hero
+ * roster at 9 slots, dropping the five weakest takes contention 26.1% -> 0% and gold/hr
+ * 19.97M -> 17.17M.
+ */
+export function pickContentionNotice(
+  row: FarmRateRow | null | undefined,
+  fieldSlots: number | null | undefined,
+): ContentionNotice | null {
+  if (!row || row.infeasible) return null;
+  if (!(row.fieldContentionPct >= CONTENTION_NOTICE_MIN_PCT)) return null;
+  const scale = Number.isFinite(row.concurrencyScale) ? row.concurrencyScale : 1;
+  return {
+    pct: row.fieldContentionPct,
+    costPct: Math.min(100, Math.max(0, (1 - scale) * 100)),
+    atMaxSlots: fieldSlots != null && fieldSlots >= FIELD_SLOTS_MAX,
+  };
 }

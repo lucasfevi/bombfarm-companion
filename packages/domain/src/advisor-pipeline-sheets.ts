@@ -17,7 +17,7 @@ export type ResolveDeriveSheetsInput = {
   treeCritDmg: number;
   treeSpeed: number;
   treeEnergy: number;
-  /** `skills.totals.luck_add × 100` — flat Luck percentage points (BSPW5-03, ASM-01). */
+  /** `skills.totals.luck_add × 100` — flat Luck percentage points. */
   treeLuckFlatPct: number;
   /**
    * When set, naked/geared for derive are recomposed from birth (tree-inclusive zero-pts

@@ -5,10 +5,6 @@ import {
   type HeroRecord,
 } from '@/shared/lib/storage';
 
-export function writeRoster(heroes: HeroRecord[]): void {
-  saveHeroes(heroes);
-}
-
 export function writeActiveHeroId(heroId: string | null): void {
   writeActiveHeroIdStorage(heroId);
 }

@@ -11,7 +11,7 @@ const apiData = JSON.parse(readFileSync(join(FIXTURES, 'api-data.captured.json')
 const fasesNomes = JSON.parse(readFileSync(join(FIXTURES, 'fases-nomes.captured.json'), 'utf8'));
 
 // Published by the maintainer's out-of-band wiki sync manifest — reproduced here as literals so a
-// reviewer can compare by eye without running anything (MWD-04).
+// reviewer can compare by eye without running anything.
 const API_DATA_PAYLOAD_SHA256 = 'a96761a2ac3da630ada92e69ec99f613bd9ee00416e01209791f0d3ac86769ac';
 const API_DATA_SECTION_SHA256 = {
   bolsa: '32e0d7a1eeb1e027b19c8efe0c9731792167b68346fc626adf5e1cb4bda7c6fb',
@@ -57,7 +57,7 @@ describe('sha256Json — the raw hash primitive', () => {
   });
 });
 
-describe('fingerprintPayload — /wiki/api/data frozen capture (MWD-04)', () => {
+describe('fingerprintPayload — /wiki/api/data frozen capture', () => {
   const fp = fingerprintPayload('https://wiki.bombfarm.net/wiki/api/data', apiData);
 
   it('reproduces the published whole-payload sha256 exactly', () => {

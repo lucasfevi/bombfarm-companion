@@ -37,7 +37,7 @@ import { WEB_PACKAGE_ROOT } from './helpers/web-package-root';
  * `STRINGS` against a frozen snapshot is to catch UNINTENDED copy drift. If the fixture is
  * regenerated inside the same PR that changes the copy, the comparison degrades to
  * `STRINGS == STRINGS` — permanently green, permanently blind to the very drift it exists to
- * catch. So between re-baselines the fixture stays byte-unchanged (MOD-03, `docs/naming.md`),
+ * catch. So between re-baselines the fixture stays byte-unchanged (`docs/naming.md`),
  * and every feature that adds, removes, or rewords a string declares the change explicitly in
  * exactly one of the three lists below, with a comment naming the feature and explaining the
  * change. That declare-every-delta discipline is what makes an undeclared drift fail loudly.
@@ -45,7 +45,7 @@ import { WEB_PACKAGE_ROOT } from './helpers/web-package-root';
  * A re-baseline resets those lists to empty once they have accumulated across enough features
  * that they stop reading as a meaningful diff and start reading as bookkeeping for its own
  * sake — this one followed ten named lists and 114 declared entries in this file. It does not
- * loosen the comparison itself (still an exact match, not `objectContaining` — see AD-081, and
+ * loosen the comparison itself (still an exact match, not `objectContaining`, and
  * the note below on why that alternative is rejected); it only clears the backlog of old
  * entries and gives the mechanism a fresh floor to accumulate from.
  */
@@ -163,8 +163,21 @@ const fixture = JSON.parse(readFileSync(fixturePath, 'utf8')) as {
  * on it but said nothing, and the reset table rendered an unclamped BEFORE against a clamped
  * AFTER. The new string is the one place that explains it and names the fix. No existing key
  * changed: the counter, `pointsUnspentBanked` and the reset-advice line are all untouched.
+ *
+ * The field-contention notice (2026-08-23) adds `farmRankingContentionTitle` and
+ * `farmRankingContentionDesc` (both in `KEYS_ADDED`). The farm board's field cap is now priced
+ * over the distribution of how many heroes hold full energy rather than over their mean, which
+ * makes "how often is a rested hero benched behind a full field" a number the board actually
+ * knows (`FarmRateRow.fieldContentionPct`). The banner is the one place that reports it. No
+ * existing key changed.
+ *
+ * That notice is reworded and gains `farmRankingContentionTitleMaxSlots` /
+ * `farmRankingContentionDescMaxSlots` (2026-08-27) — see the `KEYS_ADDED` note above for why both
+ * original strings change.
  */
 const KEYS_REMOVED: readonly string[] = [
+  'importSyncSummary',
+  'importRemovedNote',
   'accountTargetPropHint',
   'accountFarmSection',
   'accountFarmPhaseLabel',
@@ -274,8 +287,129 @@ const KEYS_REMOVED: readonly string[] = [
  * `farmRankingFilterItemLevelAll`, `farmRankingFilterItemLevelOption`. Nothing existing was
  * reworded — the item-level COLUMN header (`farmRankingColItemLevel`) is a different string and
  * is untouched.
+ *
+ * The field-contention notice (2026-08-23) adds `farmRankingContentionTitle` and
+ * `farmRankingContentionDesc` — a banner shown above the rotation pool when the field is full
+ * often enough to matter. New strings only; nothing existing was reworded.
+ *
+ * That notice is REWORDED and gains a maxed-field variant (2026-08-27):
+ * `farmRankingContentionTitleMaxSlots` and `farmRankingContentionDescMaxSlots`. Both original
+ * strings change. `farmRankingContentionDesc` claimed the gold/hr estimate does not model the
+ * wait, which stopped being true when `concurrencyScale` became the queue's served share and
+ * started charging exactly that wait; it now reports the cost instead of denying it. And it
+ * prescribed more field slots unconditionally, which is not advice to a player already at the
+ * cap — the new variant says the wait is structural for them.
+ *
+ * `importSyncSummary` is REMOVED (2026-08-25). The created/updated/removed breakdown was
+ * bookkeeping from when an import was a merge the player curated; the save is the source of truth
+ * now, so the split between created and updated is not a decision they make or a number they act
+ * on. `importRemovedNote` goes with it: it existed to explain what "Removed" meant, and under a
+ * source-of-truth import a sentence about why absent heroes leave is not something the player
+ * decides or acts on either. The removal BEHAVIOUR is unchanged.
+ *
+ * The blocked-hero explanation (2026-08-25) adds seven `importBlocked*` keys. A hero the planner
+ * cannot rebuild used to be dimmed and nothing else, which reads as a rendering glitch rather
+ * than an explanation; the dialog now names the heroes, both causes (the save is older than the
+ * game, or the planner is), and the action for each. New strings only — nothing existing was
+ * reworded, and in particular `importIssuesCount` and the three `importPoint*` strings are
+ * untouched.
+ *
+ * The first-run referral notice (2026-08-27) adds five `referralNotice*` keys — the topbar chip
+ * and the footer line state the code and the mutual reward, but neither has room to say what a
+ * player has to do with it or that the game accepts one code per account, once. New strings
+ * only; the existing `referral*` keys behind those two surfaces are untouched.
+ *
+ * The missing-required-save-field banner (issue #141) adds `accountMissingFieldsTitle` and
+ * `accountMissingFieldsBody`. Every account panel is read-only, so a save that omits the skill
+ * tree, the House, the House level, the current phase or the furthest phase leaves the planner
+ * permanently wrong about it with nothing on screen saying so. The banner names the fields and
+ * asks for a fresh export; it borrows the Account page's own labels for the field names rather
+ * than adding five more keys.
+ *
+ * The inventory surface (2026-08-26) adds `navInventory` and the `inventory*` block: a new
+ * route listing every item a save carries, not just the gear the optimizer pools. The five
+ * `inventoryGroup*` keys name the item kinds; `inventoryGroupOther` and
+ * `inventoryUnknownCategory` exist because the catalog names gear only, so an item type a patch
+ * adds is shown and labelled unknown rather than silently filed as gear.
  */
 const KEYS_ADDED: readonly string[] = [
+  'accountMissingFieldsTitle',
+  'accountMissingFieldsBody',
+  'referralNoticeTitle',
+  'referralNoticeBody',
+  'referralNoticeReward',
+  'referralNoticeCopy',
+  'referralNoticeDismiss',
+  'navInventory',
+  'inventoryTitle',
+  'inventoryTip',
+  'inventoryGroupEquipment',
+  'inventoryGroupGem',
+  'inventoryGroupKey',
+  'inventoryGroupTime',
+  'inventoryGroupStone',
+  'inventoryGroupChest',
+  'inventoryGroupOther',
+  'inventoryBadgeLocked',
+  'inventoryBadgeMarketBlocked',
+  'inventoryBadgeUnresolved',
+  'inventoryDetailSetSlot',
+  'inventoryDetailLevel',
+  'inventoryEquippedByHero',
+  'inventoryEquippedByUnknown',
+  'inventoryGemAmethyst',
+  'inventoryGemAquamarine',
+  'inventoryGemCitrine',
+  'inventoryGemDiamond',
+  'inventoryGemEmerald',
+  'inventoryGemOceanite',
+  'inventoryGemRoselite',
+  'inventoryGemRuby',
+  'inventoryGemSapphire',
+  'inventoryGemTopaz',
+  'inventoryChestItem',
+  'inventoryChestGem',
+  'inventoryChestKey',
+  'inventoryChestSkill',
+  'inventoryChestTime',
+  'inventorySearchPlaceholder',
+  'inventorySearchLabel',
+  'inventoryFilterAll',
+  'inventoryFilterEquipped',
+  'inventoryFilterClear',
+  'inventoryFilterCount',
+  'inventoryFilterNoMatches',
+  'inventoryFilterHeroLabel',
+  'inventoryFilterAllHeroes',
+  'inventorySortLabel',
+  'inventorySortRarity',
+  'inventorySortLevel',
+  'inventorySortValue',
+  'inventorySortName',
+  'inventorySortCount',
+  'inventorySortAscending',
+  'inventorySortDescending',
+  'inventoryFilterSetsLabel',
+  'inventoryFilterAllSets',
+  'inventoryFilterSetsOwned',
+  'inventoryFilterSetsSelected',
+  'inventoryFilterSelectAllSets',
+  'inventorySetOption',
+  'inventoryUnknownCategory',
+  'inventorySkipped',
+  'inventoryEmptyTitle',
+  'inventoryEmptyBody',
+  'importBlockedTitle',
+  'importBlockedBody',
+  'importBlockedOldSave',
+  'importBlockedAppBehind',
+  'importBlockedRest',
+  'importBlockedBadge',
+  'importBlockedTooltip',
+  'farmRankingContentionTitle',
+  'farmRankingContentionDesc',
+  'farmRankingContentionTitleMaxSlots',
+  'farmRankingContentionDescMaxSlots',
   'farmRankingFilterItemLevelLabel',
   'farmRankingFilterItemLevelAll',
   'farmRankingFilterItemLevelOption',
@@ -436,7 +570,7 @@ const namespaces = [
 ] as const;
 
 describe('i18n split parity', () => {
-  // The fixture (apps/web/src/tests/fixtures/i18n-strings-main.json) is MOD-03-frozen
+  // The fixture (apps/web/src/tests/fixtures/i18n-strings-main.json) is frozen
   // (docs/naming.md:74) between re-baselines (see the file-top comment for the 2026-08-17
   // one). Parity is measured against the fixture minus KEYS_REMOVED — every undeclared drift
   // stays fatal in both directions.

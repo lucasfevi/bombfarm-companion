@@ -23,7 +23,7 @@ Before this was pinned, endings drifted per file: 532 tracked files were stored 
 | --- | --- | --- |
 | Git | [`.gitattributes`](../.gitattributes) | `* text=auto eol=lf` normalizes the index and pins the checkout; binary extensions are enumerated explicitly so auto-detection can never rewrite one |
 | Editor | [`.editorconfig`](../.editorconfig) | `end_of_line = lf`, UTF-8, final newline — stops drift at the keystroke |
-| Guard | [`tools/line-endings.test.mjs`](../tools/line-endings.test.mjs) | Reads `git ls-files --eol` and fails on any `i/crlf` or `i/mixed` entry |
+| Guard | [`tools/line-endings.test.mjs`](../tools/line-endings.test.mjs) | Reads `git ls-files --eol` and fails on any `i/crlf` or `i/mixed` entry, and fails on a leading UTF-8 BOM in any tracked text file |
 
 ### Where the guard runs
 
@@ -53,17 +53,19 @@ terminator at all, which today is exactly `packages/domain/src/data/catalog.json
 `phases.json`, the two minified files an emitter writes and `.editorconfig` exempts from
 the final-newline rule. If git cannot be run it **fails**; it does not skip.
 
-## Known exception: seven files still carry a UTF-8 BOM
+## Resolved: the UTF-8 BOM exception
 
-Seven tracked source files begin with `ef bb bf` (five `apps/web/src/features/*/index.ts`
-barrels plus `packages/ui/src/cn.ts` and `escape-reg-exp.ts`). `.editorconfig` sets
-`charset = utf-8`, which in EditorConfig means UTF-8 **without** a BOM — `utf-8-bom` is the
-separate value — so an EditorConfig-aware editor will strip those three bytes on the next
-save and produce a surprise one-byte diff. Neither `.gitattributes` nor the guard covers
-this: `text=auto eol=lf` normalizes terminators only, and `git ls-files --eol` reports
-nothing about a BOM. Tracked in
-[issue #114](https://github.com/lucasfevi/bombfarm-companion/issues/114); deliberately not
-fixed here, since it is a content change rather than a line-ending one.
+Six tracked source files (four `apps/web/src/features/*/index.ts` barrels plus
+`packages/ui/src/cn.ts` and `packages/ui/src/escape-reg-exp.ts`) used to begin with
+`ef bb bf`. `.editorconfig` sets `charset = utf-8`, which in EditorConfig means UTF-8
+**without** a BOM — `utf-8-bom` is the separate value — so an EditorConfig-aware editor
+would strip those three bytes on the next save and produce a surprise one-byte diff.
+
+The BOMs were stripped with a byte-exact rewrite, and the guard now checks every tracked
+text file for one. That check reads the first three bytes off disk rather than asking git,
+because a BOM is a content byte and not a terminator: `text=auto eol=lf` normalizes
+terminators only, `git ls-files --eol` reports nothing about a BOM, and
+`git add --renormalize` leaves one untouched.
 
 ## Adding a binary format
 

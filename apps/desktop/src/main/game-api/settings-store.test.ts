@@ -11,7 +11,7 @@ const EN: AppSettings = { schemaVersion: 1, locale: 'en' };
 const PT_BR: AppSettings = { schemaVersion: 1, locale: 'pt-BR' };
 
 describe.each(availableBindings)('createSettingsStore over the real account_meta table (%s)', (binding) => {
-  it('read() returns null when no row has ever been written — never a default (AD-052)', () => {
+  it('read() returns null when no row has ever been written — never a default', () => {
     const open = openTestAccountDb(binding);
     const store = createSettingsStore(open.db);
     expect(store.read()).toBeNull();
@@ -85,13 +85,13 @@ describe.each(availableBindings)('createSettingsStore over the real account_meta
   });
 });
 
-describe('createSettingsStore(null) — a db that never opened (AD-052)', () => {
+describe('createSettingsStore(null) — a db that never opened', () => {
   it('read() returns null without throwing', () => {
     const store = createSettingsStore(null);
     expect(store.read()).toBeNull();
   });
 
-  it("write() reports { persisted: false, reason: 'no_store' } WITH the applied settings — never swallowed (MIN-11)", () => {
+  it("write() reports { persisted: false, reason: 'no_store' } WITH the applied settings — never swallowed", () => {
     const store = createSettingsStore(null);
     let result: ReturnType<typeof store.write> | undefined;
     expect(() => {
@@ -101,7 +101,7 @@ describe('createSettingsStore(null) — a db that never opened (AD-052)', () => 
   });
 });
 
-describe('createSettingsStore over a db whose INSERT throws (MIN-11)', () => {
+describe('createSettingsStore over a db whose INSERT throws', () => {
   /** A minimal fake `SqliteDb` whose `run()` throws — simulates a read-only volume or a locked
    *  db, independent of which real SQLite binding is available in this environment. */
   function throwingDb(): SqliteDb {
@@ -127,10 +127,10 @@ describe('createSettingsStore over a db whose INSERT throws (MIN-11)', () => {
     expect(result).toEqual({ settings: EN, persisted: false, reason: 'not_writable' });
   });
 
-  it('demonstrates the red state (recorded here, never left in settings-store.ts): swallowing the failure like consent-store.ts would lose the MIN-11 signal', () => {
+  it('demonstrates the red state (recorded here, never left in settings-store.ts): swallowing the failure like consent-store.ts would lose the failure-surfaced signal', () => {
     // The rejected shape — write() swallowing the throw and returning void, exactly like
     // consent-store.ts's write(). If settings-store.ts were written this way, the caller could
-    // never distinguish "persisted" from "not persisted", and MIN-11's Banner would never render.
+    // never distinguish "persisted" from "not persisted", and the failure-surfaced Banner would never render.
     function swallowingWrite(db: SqliteDb, settings: AppSettings): void {
       try {
         db.prepare('INSERT INTO account_meta (key, value) VALUES (?, ?)').run('settings_v1', JSON.stringify(settings));

@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test';
-import { teamPlanFixtureSeed } from './fixtures/team-plan-seed';
+import { teamPlanFixtureSeed, teamPlanRichSeed } from './fixtures/team-plan-seed';
 import { importedRoster, seedLocalStorage } from './fixtures/seed';
 import {
   clickOptimize,
@@ -57,9 +57,11 @@ test.describe('Team plan page states', () => {
     await expect(page.getByRole('button', { name: /Try again/i })).toBeVisible();
   });
 
+  // The RICH seed: cancelling needs a run still in flight when the click lands. The structural
+  // seed's three gearless heroes finish before the modal is even reachable (issue #206).
   test('optimizing modal can cancel the run', async ({ page }) => {
     await setE2eMaxEvaluations(page, 50_000);
-    await seedLocalStorage(page, teamPlanFixtureSeed('en'));
+    await seedLocalStorage(page, teamPlanRichSeed('en'));
     await gotoTeamPlan(page);
     await clickOptimize(page);
     await expect(page.getByRole('dialog', { name: /Building plan/i })).toBeVisible();

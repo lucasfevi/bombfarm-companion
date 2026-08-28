@@ -1,4 +1,4 @@
-// MP5 F5 — the only network-touching module. Both the network call (`fetchImpl`) and the delay
+// The only network-touching module. Both the network call (`fetchImpl`) and the delay
 // between retries (`sleep`) are parameters, so no test in this repo ever waits or dials out.
 //
 // Stage order matters (see check.mjs): this module answers only "did the two endpoints answer
