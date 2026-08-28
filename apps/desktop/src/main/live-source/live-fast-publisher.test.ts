@@ -1,4 +1,4 @@
-import type { FieldCountdown, LiveEvent, LiveView, RecoveryCountdown, RotationSnapshot } from '@bombfarm/contracts';
+import { LIVE_DISPLAY_REFRESH_MS, type FieldCountdown, type LiveEarnings, type LiveEvent, type LiveView, type RecoveryCountdown, type RotationSnapshot } from '@bombfarm/contracts';
 import { describe, expect, it } from 'vitest';
 import {
   createLiveFastPublisher,
@@ -7,10 +7,23 @@ import {
   sameIdList,
 } from './live-fast-publisher.js';
 
-type ViewSlice = Pick<LiveView, 'field' | 'recovery' | 'onFieldHeroIds' | 'rotation'>;
+type ViewSlice = Pick<LiveView, 'field' | 'recovery' | 'onFieldHeroIds' | 'rotation' | 'earnings'>;
 
 function view(overrides: Partial<ViewSlice> = {}): ViewSlice {
-  return { field: [], recovery: [], onFieldHeroIds: [], rotation: null, ...overrides };
+  return { field: [], recovery: [], onFieldHeroIds: [], rotation: null, earnings: null, ...overrides };
+}
+
+function earnings(overrides: Partial<LiveEarnings> = {}): LiveEarnings {
+  return {
+    goldBalance: 1_000,
+    gold10: 1_000,
+    goldSession: 1_000,
+    xp10: 100,
+    xpSession: 100,
+    coverageSeconds: 60,
+    sessionSeconds: 60,
+    ...overrides,
+  };
 }
 
 function harness(getView: () => ViewSlice, onFieldMembershipDiverged?: () => void) {
@@ -46,7 +59,7 @@ describe('createLiveFastPublisher — publishes only when the fast channel actua
     for (let i = 0; i < 20; i += 1) fireTick();
 
     expect(emitted).toHaveLength(1);
-    expect(emitted[0]).toEqual({ type: 'fastUpdate', field: [], recovery: [], onFieldHeroIds: [] });
+    expect(emitted[0]).toEqual({ type: 'fastUpdate', field: [], recovery: [], onFieldHeroIds: [], earnings: null });
   });
 
   it('a genuine change in field countdowns republishes; an unrelated re-poll with identical content does not', () => {
@@ -90,6 +103,55 @@ describe('createLiveFastPublisher — publishes only when the fast channel actua
     fireTick();
 
     expect(emitted).toHaveLength(2);
+  });
+
+  it('carries earnings through as a finished value, unchanged from what getView returned', () => {
+    const value = earnings({ goldBalance: 12_345, gold10: 6_000, xpSession: 42 });
+    const { publisher, emitted, fireTick } = harness(() => view({ earnings: value }));
+    publisher.start();
+    fireTick();
+
+    expect(emitted).toHaveLength(1);
+    expect(emitted[0]).toMatchObject({ type: 'fastUpdate', earnings: value });
+  });
+
+  it('an earnings-only change republishes, even with field/recovery/onFieldHeroIds unchanged', () => {
+    let currentEarnings: LiveEarnings | null = null;
+    const { publisher, emitted, fireTick } = harness(() => view({ earnings: currentEarnings }));
+    publisher.start();
+    fireTick();
+    expect(emitted).toHaveLength(1);
+
+    currentEarnings = earnings();
+    fireTick();
+
+    expect(emitted).toHaveLength(2);
+    expect(emitted[1]).toMatchObject({ type: 'fastUpdate', earnings: currentEarnings });
+  });
+
+  it('the publish cadence is unchanged: still one scheduled callback at the same interval, earnings included', () => {
+    let scheduledIntervalMs: number | null = null;
+    const emitted: LiveEvent[] = [];
+    let tick: (() => void) | null = null;
+    const publisher = createLiveFastPublisher({
+      getView: () => view({ earnings: earnings() }),
+      emit: (event) => emitted.push(event),
+      scheduler: {
+        schedule: (callback, intervalMs) => {
+          scheduledIntervalMs = intervalMs;
+          tick = callback;
+          return () => {
+            tick = null;
+          };
+        },
+      },
+    });
+    publisher.start();
+    const fireTick = () => tick?.();
+
+    expect(scheduledIntervalMs).toBe(LIVE_DISPLAY_REFRESH_MS);
+    fireTick();
+    expect(emitted).toHaveLength(1);
   });
 
   it('stop() cancels the schedule — a later manual tick call is a no-op', () => {

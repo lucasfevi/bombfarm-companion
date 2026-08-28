@@ -29,6 +29,7 @@ function liveView(overrides: Partial<LiveView> = {}): LiveView {
     recovery: [],
     rotation: rotationSnapshot(),
     onFieldHeroIds: ['on-field'],
+    earnings: null,
     updatedAt: 't0',
     ...overrides,
   };
@@ -40,6 +41,7 @@ function fastUpdateEvent(secondsRemaining: number, onFieldHeroIds: readonly stri
     field: [{ heroId: 'on-field', secondsRemaining, drainPerSecond: 1, basis: 'observed' }],
     recovery: [],
     onFieldHeroIds,
+    earnings: null,
   };
 }
 
@@ -159,7 +161,7 @@ describe('createLiveStore — applies each arrival as it lands, with no display 
     store.subscribe((model) => notifications.push(model));
 
     for (let i = 0; i < 20; i += 1) {
-      emit({ type: 'fastUpdate', field: [], recovery: [], onFieldHeroIds: [] });
+      emit({ type: 'fastUpdate', field: [], recovery: [], onFieldHeroIds: [], earnings: null });
     }
 
     expect(notifications).toHaveLength(0);
@@ -368,7 +370,7 @@ describe('createLiveStore — a fastUpdate carries on-field membership live, app
     await flushMicrotasks();
     expect(store.getModel().slow?.onField.map((hero) => hero.id)).toEqual(['on-field']);
 
-    emit({ type: 'fastUpdate', field: [], recovery: [], onFieldHeroIds: [] });
+    emit({ type: 'fastUpdate', field: [], recovery: [], onFieldHeroIds: [], earnings: null });
 
     const model = store.getModel();
     expect(model.slow?.onField).toEqual([]);

@@ -905,3 +905,30 @@ describe('LiveSource: the background drain-rate checker', () => {
     expect(warnRecords.filter((record) => record.event === 'drain.rate_disagreement')).toHaveLength(0);
   });
 });
+
+describe('LiveSource: earnings', () => {
+  it('is null in the view before the first tap frame of the session', () => {
+    const { source } = createHarness();
+    source.start();
+
+    expect(source.getView().earnings).toBeNull();
+  });
+
+  it('publishes a finished LiveEarnings once tap frames carry loot, with the current gold balance', () => {
+    const { source, pushFrame, goLive } = createHarness();
+    source.start();
+    goLive();
+
+    pushFrame({ heroes: [], phase: 1, gold: 10_100, loot: [{ cell: 0, gold: 100 }] });
+    pushFrame({ heroes: [], phase: 1, gold: 10_100 });
+
+    const earnings = source.getView().earnings;
+    expect(earnings).not.toBeNull();
+    expect(earnings?.goldBalance).toBe(10_100);
+    expect(earnings?.goldSession).not.toBeNull();
+    expect(earnings?.goldSession).toBeGreaterThan(0);
+    expect(earnings?.gold10).toBe(earnings?.goldSession);
+    expect(Number.isFinite(earnings?.sessionSeconds)).toBe(true);
+    expect(Number.isFinite(earnings?.coverageSeconds)).toBe(true);
+  });
+});

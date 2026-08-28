@@ -88,6 +88,7 @@ export type LiveEvent =
       readonly field: readonly FieldCountdown[];
       readonly recovery: readonly RecoveryCountdown[];
       readonly onFieldHeroIds: readonly string[];
+      readonly earnings: LiveEarnings | null;
     };
 
 /**
@@ -190,6 +191,29 @@ export interface RecoveryCountdown {
   readonly advancing: boolean;
 }
 
+/**
+ * Measured gold- and XP-per-hour, folded entirely in the main process from the live tick stream —
+ * the renderer receives only these finished values, never the raw ticks or any of the arithmetic
+ * over them. `null` on every rate field means no streamed time has accrued to divide by yet, not a
+ * zero rate.
+ */
+export interface LiveEarnings {
+  readonly goldBalance: number | null;
+  /** Per hour, over the last 10 real minutes (or less — see {@link coverageSeconds}). */
+  readonly gold10: number | null;
+  /** Per hour, over the whole session. */
+  readonly goldSession: number | null;
+  /** Per hour, over the last 10 real minutes. */
+  readonly xp10: number | null;
+  /** Per hour, over the whole session. */
+  readonly xpSession: number | null;
+  /** The real-time span the 10-minute figures actually cover — less than 600 immediately after a
+   *  session starts, or after a long enough stream gap has aged old samples out. */
+  readonly coverageSeconds: number;
+  /** Streamed seconds since the session started (or was last reset), never real elapsed time. */
+  readonly sessionSeconds: number;
+}
+
 export interface LiveView {
   readonly currency: LiveCurrency;
   readonly field: readonly FieldCountdown[];
@@ -201,6 +225,8 @@ export interface LiveView {
    *  available, never merely "absent because nothing is live". Authoritative over `rotation`'s own
    *  per-hero activity for field membership the moment the two disagree. */
   readonly onFieldHeroIds: readonly string[];
+  /** `null` before the first tap frame of the session has arrived. */
+  readonly earnings: LiveEarnings | null;
   readonly updatedAt: string;
 }
 

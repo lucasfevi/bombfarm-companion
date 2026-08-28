@@ -8,6 +8,7 @@ import type {
   FieldDrop,
   LiveCurrency,
   LiveDiagnosticsDumpOutcome,
+  LiveEarnings,
   LiveEvent,
   LiveTick,
   LiveTickHero,
@@ -27,7 +28,9 @@ import {
   type FieldCountdownState,
   type RosterHeroAbilities,
 } from '@bombfarm/domain/live';
+import { xpPerProp } from '@bombfarm/domain/phase-wiki';
 import { runPowerShellAsync, runPowerShellSync, stripExeSuffix } from '../game-reader/process.js';
+import { EarningsFold } from './earnings-fold.js';
 import { createFrameCapture, readFrameCaptureEnabledFromEnv } from './frame-capture.js';
 import { FrameRing } from './frame-ring.js';
 import type { LogPort } from './log-port.js';
@@ -308,9 +311,16 @@ export class LiveSource {
   #field: readonly FieldCountdown[] = [];
   #updatedAt: string;
 
+  readonly #earningsFold: EarningsFold;
+  /** `null` until the first tap frame of the session has been folded — {@link LiveView.earnings}
+   *  stays `null` until then too, rather than reporting a rate computed over zero real ticks. */
+  #goldBalance: number | null = null;
+  #earningsStarted = false;
+
   constructor(deps: LiveSourceDeps) {
     this.#log = deps.log ?? NOOP_LOG_PORT;
     this.#now = deps.now ?? Date.now;
+    this.#earningsFold = new EarningsFold({ now: this.#now, xpPerProp, log: this.#log });
     if (deps.createTap) {
       this.#createTap = deps.createTap;
       this.#ring = null;
@@ -382,7 +392,21 @@ export class LiveSource {
       recovery,
       rotation: this.#rotation,
       onFieldHeroIds: this.#fieldState.onFieldHeroIdsSorted,
+      earnings: this.#buildEarnings(),
       updatedAt: this.#updatedAt,
+    };
+  }
+
+  #buildEarnings(): LiveEarnings | null {
+    if (!this.#earningsStarted) return null;
+    return {
+      goldBalance: this.#goldBalance,
+      gold10: this.#earningsFold.gold10,
+      goldSession: this.#earningsFold.goldSession,
+      xp10: this.#earningsFold.xp10,
+      xpSession: this.#earningsFold.xpSession,
+      coverageSeconds: this.#earningsFold.coverageSeconds,
+      sessionSeconds: this.#earningsFold.sessionSeconds,
     };
   }
 
@@ -530,6 +554,9 @@ export class LiveSource {
       this.#currency = event.currency;
       this.#touch();
     } else if (event.type === 'frame') {
+      this.#earningsFold.consumeTick(event.frame.tick, event.frame.sequence);
+      this.#earningsStarted = true;
+      if (event.frame.tick.gold !== undefined) this.#goldBalance = event.frame.tick.gold;
       this.#ingestTick(event.frame.tick, Date.parse(event.frame.at));
     }
     this.#publish(event);

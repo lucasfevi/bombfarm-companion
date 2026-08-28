@@ -128,6 +128,7 @@ function defaultLiveView(): LiveView {
     recovery: [],
     rotation: null,
     onFieldHeroIds: [],
+    earnings: null,
     updatedAt: now,
   };
 }

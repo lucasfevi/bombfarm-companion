@@ -36,6 +36,7 @@ export type {
   LiveCurrency,
   LiveDiagnosticsDumpOutcome,
   LiveDiagnosticsDumpReason,
+  LiveEarnings,
   LiveEvent,
   LiveFrame,
   LiveGapReason,
