@@ -146,6 +146,10 @@ jobs:
         with:
           name: bombfarm-companion-prod-${{ needs.plan.outputs.desktop_version }}-${{ github.sha }}
           path: apps/desktop/release/prod/**
+          # Only exists to hand the build off from this (windows) job to `publish`
+          # (ubuntu) in the same run; the installer itself lands on the GitHub
+          # Release, so nothing needs this artifact to survive past that handoff.
+          retention-days: 1
 
   publish:
     name: Publish GitHub release
