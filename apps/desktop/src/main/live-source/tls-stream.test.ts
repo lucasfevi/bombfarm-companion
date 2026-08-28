@@ -679,6 +679,33 @@ describe('toLiveTick: wire money is dropped unless it is a well-formed digit str
   });
 });
 
+describe('toLiveTick: kinds/hps are absent, not empty arrays, when the wire omits them', () => {
+  it('leaves both undefined when the wire carries neither token', () => {
+    const tick = toLiveTick({});
+
+    expect(tick.kinds).toBeUndefined();
+    expect(tick.hps).toBeUndefined();
+    expect('kinds' in tick).toBe(false);
+    expect('hps' in tick).toBe(false);
+  });
+
+  it('decodes kinds alone and leaves hps undefined when only kinds arrives', () => {
+    const tick = toLiveTick({ [wireKey('kindsList')]: [0, -1, 3] });
+
+    expect(tick.kinds).toEqual([0, -1, 3]);
+    expect(tick.hps).toBeUndefined();
+    expect('hps' in tick).toBe(false);
+  });
+
+  it('decodes hps alone and leaves kinds undefined when only hps arrives', () => {
+    const tick = toLiveTick({ [wireKey('hpsList')]: [10, -1, 20] });
+
+    expect(tick.hps).toEqual([10, -1, 20]);
+    expect(tick.kinds).toBeUndefined();
+    expect('kinds' in tick).toBe(false);
+  });
+});
+
 describe('findWsFrameStart', () => {
   it('rejects a 64-bit length candidate during resync and finds the real frame after it', () => {
     const fake = buildOversized64BitLengthFrame();
