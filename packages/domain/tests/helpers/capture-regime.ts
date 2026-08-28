@@ -67,6 +67,9 @@ export const REGIME_BOUNDARIES = {
     'crit chance and cooldown reduction were restated BACK to percent-of-base, and the item ' +
     "catalog's crit/cooldown bases were rescaled by the same factor",
   '2026-08-23': 'Olho Clinico and Pressagio Mortal were restated from percent-of-roll to flat crit POINTS',
+  '2026-08-28':
+    'weapons gained a flat 5x on the Dano ladder (`itens.arma_dmg_mult`), and the ladder itself '  +
+    'gained a step every 50 item levels (`itens.dmg_step_niveis`) - 186 of 240 def Dano values moved',
 } as const;
 
 export type RegimeBoundary = keyof typeof REGIME_BOUNDARIES;
@@ -103,8 +106,12 @@ export const MECHANICS = {
     since: '2026-08-18',
     what: 'which stats each gear slot rolls, and at what base',
   },
+  itemDamage: {
+    since: '2026-08-28',
+    what: 'the Dano a gear item contributes, and how it scales with item level',
+  },
   sheet: {
-    since: '2026-08-23',
+    since: '2026-08-28',
     what: 'a whole composed hero sheet, or anything derived from one (throughput, ranking, team plans)',
   },
 } as const satisfies Record<string, { since: RegimeBoundary; what: string }>;
@@ -187,7 +194,9 @@ export const CAPTURE_REGISTRY: Record<string, CaptureRow> = {
     waivers: {
       critChance: 'no hero owns olho_clinico or pressagio_mortal, so the 2026-08-23 restatement cannot reach this roster',
       critDamage: 'no hero owns olho_clinico or pressagio_mortal, so the 2026-08-23 restatement cannot reach this roster',
-      sheet: 'no hero owns olho_clinico or pressagio_mortal, so the 2026-08-23 restatement cannot reach this roster',
+      // The `sheet` waiver this row used to carry is GONE: it excused only the 2026-08-23
+      // ability restatement, and 2026-08-28 moved the mechanic's boundary past it for a reason
+      // that reaches every roster with a weapon on it. Five of these seven heroes wear one.
     },
     note:
       'A second, disjoint account (7 heroes: 5 geared, 2 naked; Comum/Incomum/Raro), and the only ' +
@@ -216,6 +225,17 @@ export const CAPTURE_REGISTRY: Record<string, CaptureRow> = {
       'The one-shot SPREAD: nine geared late-level heroes that one-shot a phase-42 prop and two ' +
       'naked young ones (Hale L2, Joric L5) that do not, on a roster carrying three rank-20 ' +
       'olho_clinico heroes. The only committed capture holding both sides of that contrast.',
+  },
+  'sheet-math/save-20260828-4heroes-postpatch.json': {
+    capturedOn: '2026-08-28',
+    retention: 'value',
+    note:
+      'The only capture past the 2026-08-28 damage boundary, and the witness that the weapon 5x ' +
+      'is the GAME and not just the wiki: two heroes wear an ember_arma exporting value 96.25 ' +
+      'where the pre-patch ladder said 19.25, and all four heroes invert with no issue. A fresh ' +
+      'account, so it is thin on purpose-adjacent coverage: every item is level 10 (where the ' +
+      '50-level Dano step is 1, leaving that half of the boundary WITHOUT a committed witness), ' +
+      'every upgrade is 0, every hero is star-0, and max_phase is 21.',
   },
   'farm-rate/save-20260815-486-7heroes.json': {
     capturedOn: '2026-08-15',
