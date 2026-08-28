@@ -135,7 +135,10 @@ const ALLOWLIST = [
   // top-of-file comment).
   { file: 'apps/web/src/tests/i18n-keystone-absence.test.ts', count: 15, owner: 'F3 MSC-05/06 value-scan suite + its own copy of the retired-key list' },
   { file: 'apps/web/src/tests/import-inventory-sync.test.ts', count: 4, owner: 'F3 explanatory comment (recorded loss)' },
-  { file: 'apps/web/src/tests/import-save.test.ts', count: 2, owner: 'F4/T7 flipped baseSave() literal + historical comment' },
+  // `baseSave()` moved to its own helper (issue #117) and took the flipped-literal comment with
+  // it; what stays here is the reject-gate's historical note. One entry became two, same total.
+  { file: 'apps/web/src/tests/import-save.test.ts', count: 1, owner: 'F4/T7 historical comment' },
+  { file: 'apps/web/src/tests/helpers/base-save-fixture.ts', count: 1, owner: 'F4/T7 flipped baseSave() literal' },
   { file: 'apps/web/src/tests/stat-breakdown.test.ts', count: 1, owner: 'F3 explanatory comment' },
   { file: 'apps/web/src/tests/storage-legacy-keystone-fields.test.ts', count: 9, owner: 'F4/T9 AD-089 rewritten legacy-drop suite (supersedes MSC-10)' },
   // F4-owned drop-rule modules (AD-090: "a module that must name the vocabulary it forbids") and
@@ -237,7 +240,7 @@ const CRIT_DMG_MULT_MAP = {
   // the escape leaves no word boundary before the identifier.
   // +2 more (line numbers only, last four) from the MFR-06 repurpose/skip-counting-fix note above
   // the fixture-corpus-parity.test.mjs entry. Count and kind unchanged.
-  'tools/keystone-surface-absence.test.mjs': [13, 158, 161, 283, 288, 298, 307],
+  'tools/keystone-surface-absence.test.mjs': [13, 161, 164, 286, 291, 301, 310],
   'tools/save-acceptance-guards.test.mjs': [53],
 };
 
@@ -253,7 +256,7 @@ describe('keystone surface absence — the repo-wide identifier guard (MP5 F3, M
   });
 
   it('the clause-A allowlist is exactly the enumerated set (non-wideable)', () => {
-    expect(ALLOWLIST.length).toBe(26);
+    expect(ALLOWLIST.length).toBe(27);
     expect(ALLOWLIST.every((entry) => entry.file && entry.count > 0 && entry.owner)).toBe(true);
   });
 

@@ -32,9 +32,10 @@ export const FARM_RANK_FIXTURE = 'save-20260825-11heroes-one-shot-spread.json';
  * `capture-regime-registry.test.ts` verifies (no hero owns either ability the 2026-08-23 patch
  * restated).
  *
- * Chosen over {@link FARM_RANK_FIXTURE} for two reasons that both matter here. Its House BINDS —
- * 5 recovery slots against 7 heroes — which is the regime a respec search should be exercised
- * under and one no previous capture provided. And it is SMALL: `solveFarmRespec` over its 7
+ * Chosen over {@link FARM_RANK_FIXTURE} for two reasons that both matter here. It is a DIFFERENT
+ * ACCOUNT from every other in-regime capture, so a band that holds on both is evidence about the
+ * optimizer rather than about one player's build — which is exactly the check the re-enabled
+ * findings in `farm-optimize-486.test.ts` rest on. And it is SMALL: `solveFarmRespec` over its 7
  * heroes runs in ~1s against ~12s for the 11-hero roster, across roughly a dozen call sites.
  */
 export const FARM_OPTIMIZE_FIXTURE = 'save-20260819-11882-7heroes.json';

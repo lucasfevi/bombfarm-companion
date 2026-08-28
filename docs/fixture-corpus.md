@@ -83,7 +83,12 @@ replacement**: §6 below, the round-trip invariant.
 - **`luck-sheet.test.ts`'s `luck per-point value against Wave 0 fixtures` block** (2 tests, Vera
   ★0 and Bellatrix ★1) — the point-delta before/after family (§5).
 - **`ability-catalog.test.ts`'s AC-20** (Korin, id 43040, `golpe_brutal` rank 1 recomposition
-  proof) — no hero in either post-patch capture owns `golpe_brutal` (scanned exhaustively).
+  proof) — no hero in either post-patch capture owned `golpe_brutal` at the time (scanned
+  exhaustively). **That is no longer true of the corpus**: four captures now carry the ability,
+  `save-20260818-12heroes.json` (Doran 20/20) and `save-20260823-13heroes-crit-points.json`
+  (`Buff S #1` 20/20) among them, and the flat shape is asserted directly in
+  `points-within-level-budget.test.ts`. Whether AC-20 itself should be re-instated on one of them
+  is an open call, not settled by this correction.
 - **`ability-catalog.test.ts`'s AC-02** re-measured, not deleted: the payload's 8 heroes own 11
   distinct ability codes, not the deleted fixture's 13 — **two codes lose their in-fixture slot
   check** (the claim itself still re-points cleanly for the 11 that remain).
@@ -147,7 +152,7 @@ That structurally kills every family below; none of them can be rebuilt from a s
 | Point-delta before/after | `brenna-06/07`, `gale-02/03`, `vera-02/03`, and (same mechanism) `vera-01→vera-02`, `bellatrix-01→bellatrix-02` | `stat_points_available` is `0` on every post-wipe hero — no zero-point "before" state exists | One hero exported at points-reset, then again after +5 in one stat |
 | Ability toggle | `dara-05-olho-0` / `-olho-10` | One snapshot cannot hold two ability levels for the same hero | One hero exported at `olho_clinico` 0, then again at 10 |
 | Gear swap | `brenna-01` / `brenna-03` | One snapshot cannot hold two loadouts for the same hero | One hero exported with one gear slot swapped |
-| Ability-slot coverage | `bellatrix-02-pts-each-1.json` (13 owned codes) | The new corpus's 8 payload heroes own 11 distinct codes; no hero owns `golpe_brutal` at all | Any account owning the missing codes |
+| Ability-slot coverage | `bellatrix-02-pts-each-1.json` (13 owned codes) | The new corpus's 8 payload heroes own 11 distinct codes. (This cell used to add "no hero owns `golpe_brutal` at all" — false since 2026-08-18: four captures carry it.) | Any account owning the missing codes |
 | Dead ability points | `bellatrix-02-pts-each-1.json` (Bram L49 Incomum → 9 dead) | No post-patch corpus hero exceeds `quota × 20` | A low-rarity hero above level 40 |
 | Pre-`birth_stats` whole-file reject | `gale-01-points-reset.json` (16 heroes, 0 with `birth_stats`) | Every post-patch export carries `birth_stats` on every hero by construction | Not restorable — the field predates the keystone patch entirely |
 | High-phase mitigation | `phase-151.json` | `max_phase` caps at 42 post-wipe | Out of scope — `AD-061` accepts this loss permanently; see §4 |
@@ -388,12 +393,23 @@ account.
 
 ### 11.5 Two captures added
 
-- **`save-20260819-11882-7heroes.json`** — a second, disjoint account. Seven heroes (five geared,
-  two naked; three rarities), all accepted with zero skips and zero warnings, and a House that
-  **binds**: five recovery slots against seven heroes, a regime the corpus had never held. It is
-  also the corpus's first `golpe_brutal` witness (Ivo L51, 20/20 — closing the gap
-  `points-within-level-budget.test.ts` layer 2 was written to work around) and its first real
-  `fortuna` heroes.
+- **`save-20260819-11882-7heroes.json`** — a second, disjoint account, and the **only in-regime
+  capture that is not account 486**. Seven heroes (five geared, two naked; three rarities), all
+  accepted with zero skips and zero warnings, wearing 40 items between them. That cross-account
+  property is what the re-enabled optimizer findings rest on: a band holding on two unrelated
+  accounts is evidence about the model rather than about one player's build. It also carries
+  `fortuna` at two different ranks on one roster (Ivo 20/20, Gale 8/20), which no other capture
+  does, so a per-rank claim about the gold multiplier can be read off real heroes rather than
+  `withAbilityLevels` mutations.
+
+  **Two claims made about this capture were wrong and are retracted here rather than quietly
+  edited.** It was described as the corpus's first `golpe_brutal` witness: false — five captures
+  carry the ability, the earliest being `save-20260818-12heroes.json` (Doran L55), which #209
+  established independently while this work was in flight. And it was described as the first
+  roster with a House that *binds*: also false — `casa.slots` is below the roster size on nearly
+  every capture, and the retired 2026-08-13 export is more contended (3 slots / 5 heroes) than this
+  one (5 / 7). Neither error changed a test; both were prose asserting a distinctiveness the
+  measurement does not support.
 - **`save-20260825-11heroes-one-shot-spread.json`** — the one-shot **spread**: nine geared
   late-level heroes that one-shot a phase-42 prop and two naked young ones (Hale L2, Joric L5) that
   do not. The only committed capture holding both sides of that contrast, which is what issue #171

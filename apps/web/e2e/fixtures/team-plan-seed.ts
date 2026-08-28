@@ -20,10 +20,9 @@ const CORPUS = path.join(process.cwd(), '../../packages/domain/tests/fixtures/sh
 const fixturePath = path.join(CORPUS, 'save-20260813-5heroes.json');
 
 /**
- * The RICH seed: 7 heroes of 7 accepted, 40 items worn across five of them, 54 in the bag, and a
- * House that binds (5 recovery slots against 7 heroes). This is what the forge, kept-item,
- * saturation and search-budget specs need — a plan with real gear to move around and enough
- * search space that a tight evaluation cap actually truncates.
+ * The RICH seed: 7 heroes of 7 accepted, 40 items worn across five of them, 54 in the bag. This is
+ * what the forge, kept-item, saturation and search-budget specs need — a plan with real gear to
+ * move around, and enough search space that a tight evaluation cap actually truncates.
  *
  * Kept separate from {@link teamPlanFixtureSeed} rather than replacing it: this roster has seven
  * distinct hero names, so it cannot carry the duplicate-name case, and swapping it in wholesale

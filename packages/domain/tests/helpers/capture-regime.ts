@@ -190,9 +190,10 @@ export const CAPTURE_REGISTRY: Record<string, CaptureRow> = {
       sheet: 'no hero owns olho_clinico or pressagio_mortal, so the 2026-08-23 restatement cannot reach this roster',
     },
     note:
-      'A second, disjoint account (7 heroes: 5 geared, 2 naked; Comum/Incomum/Raro) whose House ' +
-      'BINDS — 5 recovery slots against 7 heroes. The corpus had never held a binding House. Also ' +
-      "the corpus's only golpe_brutal witness (Ivo L51, 20/20) and its only real fortuna heroes.",
+      'A second, disjoint account (7 heroes: 5 geared, 2 naked; Comum/Incomum/Raro), and the only ' +
+      'in-regime capture that is not account 486 — so it is what makes a claim cross-account ' +
+      'rather than about one build. All 7 import clean, wearing 40 items between them. Also the ' +
+      'only capture carrying fortuna at two different ranks (Ivo 20/20, Gale 8/20).',
   },
   'sheet-math/save-20260822-15heroes-tree-crit-dmg.json': {
     capturedOn: '2026-08-22',

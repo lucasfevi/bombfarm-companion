@@ -15,8 +15,10 @@ import { loadFixtureJson } from './sheet-math-fixtures';
  * donor to take an item from, no forge candidate, no pair of point resets to order.
  *
  * This capture comes through 7 of 7 unblocked with 40 items worn across 5 heroes and 54 in the
- * bag, and its House BINDS (5 recovery slots against 7 heroes) — a contended roster the corpus
- * never had.
+ * bag — a plan needs items to keep, move and forge, and it has them. Picked over the two larger
+ * in-regime captures, which are equally well geared, because it is a different ACCOUNT from the
+ * rest of the corpus and because the solver runs an order of magnitude faster on 7 heroes than on
+ * 11 or 13, across a group of suites that call it dozens of times.
  */
 export const TEAM_PLAN_FIXTURE = 'save-20260819-11882-7heroes.json';
 
