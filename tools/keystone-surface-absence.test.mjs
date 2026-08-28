@@ -214,7 +214,9 @@ const CRIT_DMG_MULT_MAP = {
   // 109 added a net one line. Match itself is unchanged in count and in kind.
   'apps/web/src/tests/storage-legacy-keystone-fields.test.ts': [40, 110],
   'apps/web/src/tests/storage-stat-points-available-compat.test.ts': [104],
-  'tools/fixture-corpus-parity.test.mjs': [198, 250],
+  // +12 (line numbers only) from the MFR-06 repurpose and the skip-counting fix's explanatory
+  // comments above both hits. Count and kind unchanged.
+  'tools/fixture-corpus-parity.test.mjs': [210, 262],
   // Self-map. The last four shifted +3 (line numbers only) when the account-shared entry above
   // gained its three-line explanation; count and kind are unchanged.
   // Line numbers only — the House-ceiling regression repair (PR #86 finding, house.ts:38) added
@@ -233,7 +235,9 @@ const CRIT_DMG_MULT_MAP = {
   // +3 (line numbers only): this file's own star-multiplier note above. Still SEVEN matches —
   // the pattern's own `\b`-escaped literal on the `grepCounts` line is not one of them, because
   // the escape leaves no word boundary before the identifier.
-  'tools/keystone-surface-absence.test.mjs': [13, 158, 161, 279, 284, 294, 303],
+  // +2 more (line numbers only, last four) from the MFR-06 repurpose/skip-counting-fix note above
+  // the fixture-corpus-parity.test.mjs entry. Count and kind unchanged.
+  'tools/keystone-surface-absence.test.mjs': [13, 158, 161, 283, 288, 298, 307],
   'tools/save-acceptance-guards.test.mjs': [53],
 };
 

@@ -49,7 +49,16 @@ const SRC_PATTERN =
  */
 const TESTS_PATTERN = /keystone|abisso|glass.?cannon|tempo.?dobrado|crit_dmg_mult|abissoBase|abisso_base/i;
 
-const SKIP_PATTERN = /\.skip\(|\.todo\(|\bxit\(|\bxdescribe\(/;
+/**
+ * Anchored to `describe|it|test` immediately before `.skip`/`.todo`, plus the legacy `xit`/
+ * `xdescribe` call aliases — matching `tools/fixture-corpus-parity.test.mjs`'s sibling pattern
+ * exactly (a cross-file check there fails if the two diverge). Anchoring, rather than an
+ * unanchored `.skip`/`.todo` substring match, is what excludes `capture-regime.ts`'s runtime
+ * `context.skip` call — a per-test decision made at run time, not the static suite-skip directive
+ * this guard is about. (Deliberately worded without a trailing open-paren above: this file's own
+ * `SKIP_PATTERN` would otherwise match its own explanatory prose.)
+ */
+const SKIP_PATTERN = /\b(describe|it|test)\.(skip|todo)\b|\bxit[(]|\bxdescribe[(]/;
 /** The same pattern, global, so the manifest below can COUNT matches and not just detect one. */
 const SKIP_PATTERN_GLOBAL = new RegExp(SKIP_PATTERN.source, 'g');
 
@@ -82,7 +91,7 @@ const F8_SKIP_MANIFEST: Record<string, number> = {
   'tests/farm-optimize-objective.test.ts': 1,
   'tests/farm-optimize-phase.test.ts': 1,
   'tests/farm-optimize-rate-gain-pct.test.ts': 1,
-  'tests/farm-point-rank.test.ts': 4,
+  'tests/farm-point-rank.test.ts': 7,
   'tests/farm-rate-gate-throughput.test.ts': 1,
   'tests/import-save-inventory.test.ts': 1,
   'tests/invariance-baseline.test.ts': 1,

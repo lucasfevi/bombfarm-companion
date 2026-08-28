@@ -14,7 +14,10 @@
         "recovering": true,
         "battleAllowed": true,
         "name": "Nyx",
-        "grade": "A"
+        "grade": "A",
+        "rarity": 1,
+        "stars": 0,
+        "skin": 5
       },
       {
         "id": "584",
@@ -28,7 +31,10 @@
         "recovering": false,
         "battleAllowed": true,
         "name": "Bellatrix",
-        "grade": "D"
+        "grade": "D",
+        "rarity": 1,
+        "stars": 0,
+        "skin": 5
       },
       {
         "id": "5217",
@@ -42,7 +48,10 @@
         "recovering": true,
         "battleAllowed": true,
         "name": "Cora",
-        "grade": "E"
+        "grade": "E",
+        "rarity": 1,
+        "stars": 0,
+        "skin": 5
       },
       {
         "id": "8818",
@@ -56,7 +65,10 @@
         "recovering": true,
         "battleAllowed": true,
         "name": "Wren",
-        "grade": "S"
+        "grade": "S",
+        "rarity": 1,
+        "stars": 0,
+        "skin": 5
       },
       {
         "id": "9367",
@@ -70,7 +82,10 @@
         "recovering": false,
         "battleAllowed": false,
         "name": "Lyra",
-        "grade": "A"
+        "grade": "A",
+        "rarity": 0,
+        "stars": 0,
+        "skin": 1
       },
       {
         "id": "12091",
@@ -84,7 +99,10 @@
         "recovering": false,
         "battleAllowed": false,
         "name": "Mira",
-        "grade": "B"
+        "grade": "B",
+        "rarity": 0,
+        "stars": 0,
+        "skin": 1
       },
       {
         "id": "12092",
@@ -98,7 +116,10 @@
         "recovering": false,
         "battleAllowed": false,
         "name": "Bryn",
-        "grade": "D"
+        "grade": "D",
+        "rarity": 0,
+        "stars": 0,
+        "skin": 2
       },
       {
         "id": "12094",
@@ -112,7 +133,10 @@
         "recovering": false,
         "battleAllowed": true,
         "name": "Devin",
-        "grade": "D"
+        "grade": "D",
+        "rarity": 0,
+        "stars": 0,
+        "skin": 2
       }
     ],
     "house": {

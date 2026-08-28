@@ -22,7 +22,11 @@ import { assertWorkspaceDistBuilt } from './require-workspace-dist.mjs';
 
 // The build-prerequisite guard, per-file rather than as the `tools` project's `globalSetup`
 // (see tools/vitest.config.ts for why: .github/workflows/line-endings.yml runs this project
-// build-free by design, and this is the ONLY one of its 33 files that needs a build).
+// build-free by design, and this is one of exactly two of its files that need a build —
+// tools/derived-fixture-drift.test.mjs is the other, needing packages/game-api/dist instead).
+// Called on this file's OWN key, not a shared `tools` key: this file needs only `domain`, and a
+// list wide enough to also cover derived-fixture-drift.test.mjs's `game-api` need would demand a
+// build this file never actually requires.
 //
 // The two lines below must stay in this order and this shape. `hero-advice.ts` imports
 // `@bombfarm/domain/account-fidelity` and `/roster-dps`, which resolve through the real
@@ -30,7 +34,7 @@ import { assertWorkspaceDistBuilt } from './require-workspace-dist.mjs';
 // first with `Cannot find package '@bombfarm/domain/account-fidelity'`, which points nowhere
 // near the fix. Top-level `await import(...)` runs in statement order, so the assert fires
 // first and the failure names the unbuilt package and `pnpm build`.
-assertWorkspaceDistBuilt('tools');
+assertWorkspaceDistBuilt('tools/advice-change-key-coverage.test.mjs');
 
 const { CHANGE_KEY_INPUTS, heroChangeKey, sharedChangeKey } = await import(
   '../apps/desktop/renderer/lib/planning/hero-advice.ts'

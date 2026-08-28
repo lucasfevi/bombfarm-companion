@@ -3,7 +3,7 @@
 // fields degrade gracefully (skip the hero or the affected part, never throw)
 // so a save file from any account — not just the one used to build this — works.
 
-import catalog from './data/catalog.json';
+import catalog from './data/catalog.json' with { type: 'json' };
 import { resolveCasaSlots, resolveFieldSlots } from './casa-slots';
 import { mapInventoryItem, type InventoryItem } from './inventory';
 import { mapInventoryViewItem, type InventoryViewItem } from './inventory-view';

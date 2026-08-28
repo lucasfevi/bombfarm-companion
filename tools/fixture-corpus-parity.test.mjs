@@ -31,19 +31,26 @@ function trackedFiles() {
  * failure messages.
  */
 describe('cross-package fixture corpus parity (MP5 F1)', () => {
-  it('byte identity across trees (MFR-06): every filename in both sheet-math/ directories hashes equal', () => {
-    const domainNames = new Set(readdirSync(DOMAIN_SHEET_MATH));
-    const webNames = new Set(readdirSync(WEB_SHEET_MATH));
-    const shared = [...domainNames].filter((n) => webNames.has(n));
-    expect(shared.length, 'shared-name set between the two sheet-math/ directories').toBeGreaterThan(0);
-
-    const mismatches = [];
-    for (const name of shared) {
-      const domainHash = sha256(join(DOMAIN_SHEET_MATH, name));
-      const webHash = sha256(join(WEB_SHEET_MATH, name));
-      if (domainHash !== webHash) mismatches.push(name);
+  // Domain became the corpus's sole committed copy when the six sheet-math captures were
+  // deduped off apps/web (5a17fc94) — this replaces the old byte-identity-across-trees check,
+  // whose premise (two committed copies) that same commit deliberately eliminated. What is left
+  // to guard is the opposite direction: nothing re-adds a fixture JSON at the web path, a gap the
+  // whole-tree duplicate-content sweep at the bottom of this file cannot close on its own, since
+  // it only catches a re-added file that happens to duplicate existing content byte-for-byte, not
+  // a genuinely new one.
+  it('web sheet-math holds no fixture JSON (MFR-06): domain is the sole committed copy', () => {
+    let entries;
+    try {
+      entries = readdirSync(WEB_SHEET_MATH);
+    } catch (err) {
+      if (err.code !== 'ENOENT') throw err;
+      entries = [];
     }
-    expect(mismatches, `divergent files: ${mismatches.join(', ')}`).toEqual([]);
+    const jsonFiles = entries.filter((name) => name.endsWith('.json'));
+    expect(
+      jsonFiles,
+      `fixture JSON committed under ${WEB_SHEET_MATH} — domain is the sole copy: ${jsonFiles.join(', ')}`,
+    ).toEqual([]);
   });
 
   it('one capture, N checked copies (AD-070): export-capture.json and payload-20260812-8heroes.json are checked byte-identical invariants, not drift', () => {
@@ -156,24 +163,29 @@ describe('cross-package fixture corpus parity (MP5 F1)', () => {
   };
 
   it('skip/todo directives across the test roots are exactly the declared manifests (MFR-18, TD-8)', () => {
-    const SKIP_PATTERN = '\\b(describe|it|test)\\.(skip|todo)\\b';
+    const SKIP_PATTERN = '\\b(describe|it|test)\\.(skip|todo)\\b|\\bxit[(]|\\bxdescribe[(]';
+    const SKIP_PATTERN_GLOBAL = new RegExp(SKIP_PATTERN, 'g');
     const scanRoots = ['packages/domain/tests', 'apps/web/src/tests', 'apps/web/e2e', 'apps/desktop'];
     const actual = {};
     for (const scanRoot of scanRoots) {
-      let lines = [];
+      let files = [];
       try {
-        const out = execFileSync('git', ['grep', '-cE', SKIP_PATTERN, '--', scanRoot], {
+        // `-l` lists matching files, not lines: `-c` counts matching LINES, which undercounts a
+        // file carrying two skip directives on one physical line. Occurrences are counted below
+        // instead, the same way the sibling guard (packages/domain/tests/source-surface.test.ts)
+        // does it, by reading the whole file and matching the pattern globally.
+        const out = execFileSync('git', ['grep', '-lE', SKIP_PATTERN, '--', scanRoot], {
           cwd: root,
           encoding: 'utf8',
         });
-        lines = out.split('\n').filter(Boolean);
+        files = out.split('\n').filter(Boolean);
       } catch (err) {
         // git grep exits 1 when it finds nothing in that root — that is a root with no skips.
         if (err.status !== 1) throw err;
       }
-      for (const line of lines) {
-        const at = line.lastIndexOf(':');
-        actual[line.slice(0, at)] = Number(line.slice(at + 1));
+      for (const file of files) {
+        const hits = readFileSync(join(root, file), 'utf8').match(SKIP_PATTERN_GLOBAL);
+        actual[file] = hits ? hits.length : 0;
       }
     }
 
@@ -354,5 +366,82 @@ describe('cross-package fixture corpus parity (MP5 F1)', () => {
     for (const file of expectedFiles) {
       expect(actual[file], `${file}: match count`).toBe(DOMAIN_MATCH_MAP[file]);
     }
+  });
+
+  // The general safety net behind the two named invariants above (AD-070): no OTHER capture may
+  // be committed at more than one path. Content-hash based, not filename based — a rename or a
+  // re-serialization of the same account state would otherwise slip past a name-only check.
+  // Scoped to the tree's fixture directories rather than every tracked file, so an incidental
+  // match (an empty `{}` config, a shared license header) can't produce a false positive.
+  const FIXTURE_ROOTS = [
+    'apps/desktop/renderer/lib/planning/fixtures',
+    'apps/desktop/src/main/live-source/fixtures',
+    'apps/desktop/tests/fixtures',
+    'apps/web/e2e/fixtures',
+    'apps/web/src/tests/fixtures',
+    'packages/domain/tests/fixtures',
+    'packages/game-api/src/__fixtures__',
+    'packages/game-data/fixtures',
+    'tools/release/__fixtures__',
+    'tools/wiki-drift/__fixtures__',
+  ];
+
+  // The two pairs the tests above already name and require (AD-070) are documented, intentional
+  // duplication, not drift — every other cross-path match is unexpected.
+  const KNOWN_DUPLICATE_PAIRS = [
+    [
+      'packages/domain/tests/fixtures/fidelity-gate/export-capture.json',
+      'packages/domain/tests/fixtures/sheet-math/save-20260813-5heroes.json',
+    ],
+    [
+      'packages/domain/tests/fixtures/api/assembled-payload-before.json',
+      'packages/domain/tests/fixtures/sheet-math/payload-20260812-8heroes.json',
+    ],
+  ];
+  const KNOWN_DUPLICATE_KEYS = new Set(KNOWN_DUPLICATE_PAIRS.map((pair) => [...pair].sort().join('|')));
+
+  it('no fixture JSON is committed at more than one path beyond the two AD-070 invariants above', () => {
+    const files = trackedFiles().filter(
+      (f) => f.endsWith('.json') && FIXTURE_ROOTS.some((fixtureRoot) => f === fixtureRoot || f.startsWith(`${fixtureRoot}/`)),
+    );
+    expect(files.length, 'walked the fixture roots for .json files').toBeGreaterThan(0);
+
+    const byHash = new Map();
+    for (const file of files) {
+      const hash = sha256(join(root, file));
+      const group = byHash.get(hash) ?? [];
+      group.push(file);
+      byHash.set(hash, group);
+    }
+
+    const unexpectedDuplicates = [];
+    for (const group of byHash.values()) {
+      if (group.length < 2) continue;
+      if (KNOWN_DUPLICATE_KEYS.has([...group].sort().join('|'))) continue;
+      unexpectedDuplicates.push(group);
+    }
+    expect(
+      unexpectedDuplicates,
+      `fixture content committed at more than one path: ${unexpectedDuplicates.map((g) => g.join(' == ')).join('; ')}`,
+    ).toEqual([]);
+  });
+
+  // The domain package's own skip-directive pattern (packages/domain/tests/source-surface.test.ts)
+  // is a hand-copied JS RegExp equivalent of this file's ERE string, with nothing else keeping the
+  // two in sync — read both files' source and compare the literal pattern text.
+  it('the skip-directive pattern here matches packages/domain/tests/source-surface.test.ts exactly', () => {
+    const selfSource = readFileSync(join(root, 'tools/fixture-corpus-parity.test.mjs'), 'utf8');
+    const selfMatch = /const SKIP_PATTERN = '([^']+)'/.exec(selfSource);
+    expect(selfMatch, "could not find this file's own SKIP_PATTERN literal").not.toBeNull();
+
+    const siblingPath = join(root, 'packages/domain/tests/source-surface.test.ts');
+    const siblingSource = readFileSync(siblingPath, 'utf8');
+    const siblingMatch = /const SKIP_PATTERN = \/(.+)\/;/.exec(siblingSource);
+    expect(siblingMatch, 'could not find SKIP_PATTERN in source-surface.test.ts').not.toBeNull();
+
+    expect(
+      selfMatch[1].replace(/\\\\/g, '\\'),
+      'the skip-directive pattern here and in source-surface.test.ts have diverged',
+    ).toBe(siblingMatch[1]);
   });
 });

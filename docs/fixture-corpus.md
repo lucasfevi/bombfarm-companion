@@ -10,8 +10,10 @@ on the deleted corpus onto a new post-patch corpus, and records here what that c
 
 ## 1. What the corpus is now
 
-Two captures, committed to both `packages/domain/tests/fixtures/sheet-math/` and
-`apps/web/src/tests/fixtures/sheet-math/`, byte-identical across trees:
+Two captures, committed once to `packages/domain/tests/fixtures/sheet-math/`. `apps/web` reads
+this same directory by relative path rather than holding its own copy — the two trees carried a
+byte-identical duplicate until it was deduped, and `tools/fixture-corpus-parity.test.mjs` now
+fails if that duplicate ever comes back:
 
 - **`save-20260813-5heroes.json`** — a scrubbed 2026-08-13 save export, account 486 (post-wipe),
   5 heroes (Jon L38 4/8 geared, Bellatrix L42 8/8 geared, two Perrins L4/L3 naked, Lyra L2 naked).
@@ -282,3 +284,42 @@ twin) is inverted, not deleted: it now discriminates percent-of-base FROM flat, 
 matched-pair argument in reverse — identical gear/ability/tree inputs must produce EQUAL deltas
 under a flat model and PROPORTIONAL (to the birth roll) deltas under percent-of-base, and the
 2026-08-18 capture shows the latter.
+
+## 10. Four properties added on top of the F1 corpus, and one gap they exposed
+
+Four gaps stood between the corpus as F1 left it and a corpus that (a) keeps a structural test
+from failing when a capture's numbers age out, (b) makes a stale-numbers value assertion expire
+loudly instead of quietly passing, (c) bounds and inventories every capture family the same way,
+and (d) proves a derived (non-captured) fixture still matches the command that produces it.
+
+**(a)/(b) — `packages/domain/tests/helpers/capture-regime.ts`.** A single, reusable primitive: a
+value-asserting test names the capture it reads and the regime boundary its numbers depend on
+(`skipIfBefore(ctx, fixtureName, regimeBoundary, reason)`), and the test skips itself — loudly,
+with the capture's own date in the message — the moment that boundary is not yet met. It replaces
+no existing test (this repo's regime boundaries do not collapse to one date — see §9 above and
+`points-within-level-budget.test.ts`'s own exclusion list — so a blanket retrofit would misclassify
+some suites); it is the primitive a NEW value-asserting test should reach for, proven against a
+real capture in `capture-regime-expiry.test.ts`. Calling it is also what makes a value test
+IDENTIFIABLE as one, separate from a structural test reading the same fixture that calls neither
+it nor asserts a specific number.
+
+**(c) — `farm-rate-fixture-corpus.test.ts` and `fixture-corpus-bounds.test.ts`.** The completeness
+guard `fixture-corpus.test.ts` already ran for `sheet-math/` (every capture has a README row,
+every row names a file that exists, every row's digest matches) now also runs for `farm-rate/`,
+the one other directory holding real external captures under the same README shape. A second
+guard bounds the set of directories that may hold one: any committed file named with the corpus's
+own `save-YYYYMMDD-`/`payload-YYYYMMDD-` convention must live inside a directory this guard
+declares governed, so a capture landing in a new, uninventoried directory fails by construction
+instead of by nobody noticing.
+
+**(d) — `tools/derived-fixture-drift.test.mjs`.** Imports `buildFixtures()` from
+`packages/game-api/scripts/generate-domain-fixtures.mjs` (refactored to expose that function
+without writing anything on import) and diffs its in-memory output against the six committed
+`packages/domain/tests/fixtures/api/*.json` files byte-for-byte. Turning this on surfaced a real,
+pre-existing gap rather than a hypothetical one: five of the six committed files had drifted from
+the generator days before this guard existed — the route projection gained hero `rarity`/`stars`/
+`skin` fields the committed fixtures predate — invisible until this guard read them side by side.
+That drift is a live, open finding as of this guard landing, not something this feature corrects:
+regenerating the committed files could conflict with the pinned duplicate this document's §1
+describes (`assembled-payload-before.json` == `sheet-math/payload-20260812-8heroes.json`), which
+is a call for whoever owns that pin, not a rule this guard enforces itself.

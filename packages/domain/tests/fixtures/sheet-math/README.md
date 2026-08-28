@@ -1,9 +1,12 @@
 # `sheet-math` fixture provenance
 
-The post-2026-08-13-patch corpus. Every fixture in this directory (and its byte-identical copy at
-`apps/web/src/tests/fixtures/sheet-math/`) satisfies the positive discriminator: it carries at
-least one of `skills.refunds`, `skills.totals.vagas_campo`, `skills.totals.bag_tabs_bonus`, and
-none of `keystones`, `abisso_base`, `crit_dmg_mult` — enforced by `fixture-corpus.test.ts`.
+The post-2026-08-13-patch corpus. This directory is the sole committed copy — `apps/web` reads it
+directly by relative path rather than holding a copy of its own, and
+`tools/fixture-corpus-parity.test.mjs` fails if one is ever committed there again.
+
+Every fixture here satisfies the positive discriminator: it carries at least one of
+`skills.refunds`, `skills.totals.vagas_campo`, `skills.totals.bag_tabs_bonus`, and none of
+`keystones`, `abisso_base`, `crit_dmg_mult` — enforced by `fixture-corpus.test.ts`.
 
 For what this deletion cost, the unreproducible fixture families it replaced, and the round-trip
 invariant's one accepted residual gap, see
@@ -34,7 +37,7 @@ that file lands later in this feature — expected, not a defect of this manifes
 | Capture log entry | none — this fixture predates MP5 and has no dedicated capture-log entry; it was already committed and already scrubbed of `account_id`/`player_name` (`D19`) before this feature. Recorded as a limitation, not papered over |
 | Scrub | none applied by this feature — the source file was already scrubbed when it was committed |
 | SHA-256 (unscrubbed source) | not applicable — no unscrubbed predecessor exists in either repo; the earliest committed form is already scrubbed |
-| SHA-256 (committed file) | `72e806c17877812b626ddb0dfb09c7b8c3b99d32a5a2553874cabf07ca867589` (identical to `packages/domain/tests/fixtures/api/assembled-payload-before.json`, checked by `tools/fixture-corpus-parity.test.mjs`) |
+| SHA-256 (committed file) | `d9bfac297f188a10ff6885d00844a9f99c21e2a1171f667ea9d8ee4783003435` (identical to `packages/domain/tests/fixtures/api/assembled-payload-before.json`, checked by `tools/fixture-corpus-parity.test.mjs`) |
 | May prove | whole-roster round trip with **zero** inference issues on all 8 heroes; battle-allowed vs. not-battle-allowed hero handling; the larger inventory (27 catalogued items) for team-plan search and import-sync assertions |
 | May **not** prove | save-file shape (no `export_version`/`generated_at`); the duplicate-hero-name a11y case (all 8 names are distinct); item-upgrade variety for forge assertions (every upgrade is `0`); high-phase mitigation; before/after point deltas, ability-toggle or gear-swap pairs (same single-snapshot limits as the export) |
 

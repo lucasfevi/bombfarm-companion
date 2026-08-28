@@ -7,8 +7,8 @@ import { seedLocalStorage, type SeededState } from './fixtures/seed';
  * flow `farm-ranking.spec.ts` scenario 11 drives. It carries an `account` block with a
  * `max_phase`, which is what makes the recommended-phase assertion reproducible;
  * `e2e/fixtures/sample-save.json` is a different, 3-hero account with no `max_phase` and cannot
- * stand in for it (`docs/fixture-corpus.md`). Not copied into `e2e/fixtures/` — that would be a
- * second copy of a scrubbed capture that drifts.
+ * stand in for it (`docs/fixture-corpus.md`). Read from the domain package's own committed
+ * capture rather than a local copy — a second copy would drift from it.
  *
  * SWAPPED to the 2026-08-23 capture. The 5-hero 2026-08-13 one drove every case here until that
  * patch restated the crit-chance abilities in points; under today's sheet math its best reachable
@@ -19,7 +19,10 @@ import { seedLocalStorage, type SeededState } from './fixtures/seed';
  * the 2026-08-23 capture has it (3.66% lower bound, 11.09% solved) while also being the only
  * capture whose sheet math today's model reproduces.
  */
-const account486 = path.join(process.cwd(), 'src/tests/fixtures/sheet-math/save-20260823-13heroes-crit-points.json');
+const account486 = path.join(
+  process.cwd(),
+  '../../packages/domain/tests/fixtures/sheet-math/save-20260823-13heroes-crit-points.json',
+);
 
 const table = (page: Page) => page.locator('[data-testid="farm-ranking-table"]');
 const rows = (page: Page) => table(page).locator('tbody tr');

@@ -1,4 +1,4 @@
-import catalog from '../data/catalog.json';
+import catalog from '../data/catalog.json' with { type: 'json' };
 
 export type Slot = (typeof catalog.slots)[number];
 export type ItemStat = (typeof catalog.itemStats)[number];

@@ -1,4 +1,4 @@
-import catalog from '../data/catalog.json';
+import catalog from '../data/catalog.json' with { type: 'json' };
 import type { Lang } from '../shims/i18n';
 import { formatItemDisplay } from '../game-labels';
 import type {

@@ -22,7 +22,9 @@ import {
 } from '@bombfarm/domain/save-units';
 import { expect } from 'vitest';
 
-const FIXTURES_DIR = join(__dirname, '..', 'fixtures', 'sheet-math');
+// Reads the domain package's own committed captures across the package boundary by relative
+// path, rather than keeping a second copy here that could drift from it.
+const FIXTURES_DIR = join(__dirname, '../../../../../packages/domain/tests/fixtures/sheet-math');
 const defById = new Map(catalog.defs.map((d) => [d.id, d]));
 const RARITY_BY_IDX: RarityKey[] = ['Comum', 'Incomum', 'Raro', 'Épico', 'Lendária', 'Mítico'];
 

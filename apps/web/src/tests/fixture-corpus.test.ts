@@ -17,7 +17,7 @@ import { SHEET_ABS_TOL } from './helpers/sheet-math-fixtures';
 
 const here = dirname(fileURLToPath(import.meta.url));
 const FIXTURES_DIR = join(here, 'fixtures');
-const SHEET_MATH_DIR = join(FIXTURES_DIR, 'sheet-math');
+const SHEET_MATH_DIR = join(here, '../../../../packages/domain/tests/fixtures/sheet-math');
 const README_PATH = join(SHEET_MATH_DIR, 'README.md');
 
 const FORBIDDEN_KEYS = ['keystones', 'abisso_base', 'crit_dmg_mult'] as const;
