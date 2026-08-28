@@ -2,6 +2,7 @@ import type {
   CountdownBasis,
   FieldCountdown,
   LiveCurrency,
+  LiveEarnings,
   LiveGapReason,
   RecoveryCountdown,
   RotationHeroSnapshot,
@@ -80,12 +81,16 @@ export interface LiveModel {
   readonly freshness: LiveFreshness;
   readonly slow: LiveSlowModel | null;
   readonly fast: LiveFastModel;
+  /** Straight from `LiveView`/`LiveEvent` — `null` exactly when the source says so, never a
+   *  computed or defaulted stand-in. */
+  readonly earnings: LiveEarnings | null;
 }
 
 export const INITIAL_LIVE_MODEL: LiveModel = {
   freshness: LOADING_LIVE_FRESHNESS,
   slow: null,
   fast: EMPTY_LIVE_FAST_MODEL,
+  earnings: null,
 };
 
 function heroFact(hero: RotationHeroSnapshot): LiveHeroFact {

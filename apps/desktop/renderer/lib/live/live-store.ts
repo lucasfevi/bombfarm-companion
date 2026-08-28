@@ -1,4 +1,4 @@
-import type { FieldCountdown, LiveEvent, LiveView, RecoveryCountdown, RotationSnapshot } from '@bombfarm/contracts';
+import type { FieldCountdown, LiveEarnings, LiveEvent, LiveView, RecoveryCountdown, RotationSnapshot } from '@bombfarm/contracts';
 import {
   BRIDGE_UNAVAILABLE_LIVE_FRESHNESS,
   EMPTY_LIVE_FAST_MODEL,
@@ -26,6 +26,8 @@ export interface LiveInternalState {
   /** The live tap's on-field id set (or its REST-derived stand-in) — main-computed, like `field`
    *  and `recovery`, and fed straight to `classifyRotation` when the slow model is built. */
   readonly onFieldHeroIds: readonly string[];
+  /** Straight from the same arrival as `field`/`recovery` — never folded or defaulted here. */
+  readonly earnings: LiveEarnings | null;
   /** Set once any real data — the first `live:get` bootstrap or a `live:event` — has been
    *  applied. Guards only the FIRST bootstrap: subscription happens before that read resolves,
    *  so an event can legitimately arrive first, and the bootstrap resolving afterward must not
@@ -50,6 +52,7 @@ export const initialLiveInternalState: LiveInternalState = {
   field: [],
   recovery: [],
   onFieldHeroIds: [],
+  earnings: null,
   hasAppliedArrival: false,
   hasBootstrapped: false,
   revision: 0,
@@ -93,6 +96,20 @@ function sameRecoveryCountdowns(a: readonly RecoveryCountdown[], b: readonly Rec
   });
 }
 
+function sameEarnings(a: LiveEarnings | null, b: LiveEarnings | null): boolean {
+  if (a === b) return true;
+  if (a === null || b === null) return false;
+  return (
+    a.goldBalance === b.goldBalance &&
+    a.gold10 === b.gold10 &&
+    a.goldSession === b.goldSession &&
+    a.xp10 === b.xp10 &&
+    a.xpSession === b.xpSession &&
+    a.coverageSeconds === b.coverageSeconds &&
+    a.sessionSeconds === b.sessionSeconds
+  );
+}
+
 export function applyLiveArrival(state: LiveInternalState, arrival: LiveArrival): LiveInternalState {
   switch (arrival.kind) {
     case 'bridge-missing': {
@@ -113,13 +130,15 @@ export function applyLiveArrival(state: LiveInternalState, arrival: LiveArrival)
       const nextField = applyRest ? view.field : state.field;
       const nextRecovery = applyRest ? view.recovery : state.recovery;
       const nextOnFieldHeroIds = applyRest ? view.onFieldHeroIds : state.onFieldHeroIds;
+      const nextEarnings = applyRest ? view.earnings : state.earnings;
       const unchanged =
         state.hasBootstrapped &&
         view.rotation === state.rotation &&
         sameFreshness(nextFreshness, state.freshness) &&
         nextField === state.field &&
         nextRecovery === state.recovery &&
-        sameIdList(nextOnFieldHeroIds, state.onFieldHeroIds);
+        sameIdList(nextOnFieldHeroIds, state.onFieldHeroIds) &&
+        sameEarnings(nextEarnings, state.earnings);
       if (unchanged) return state;
       return {
         ...state,
@@ -128,6 +147,7 @@ export function applyLiveArrival(state: LiveInternalState, arrival: LiveArrival)
         field: nextField,
         recovery: nextRecovery,
         onFieldHeroIds: nextOnFieldHeroIds,
+        earnings: nextEarnings,
         hasAppliedArrival: true,
         hasBootstrapped: true,
         revision: state.revision + 1,
@@ -146,13 +166,15 @@ export function applyLiveArrival(state: LiveInternalState, arrival: LiveArrival)
           state.hasAppliedArrival &&
           sameFieldCountdowns(state.field, event.field) &&
           sameRecoveryCountdowns(state.recovery, event.recovery) &&
-          sameIdList(state.onFieldHeroIds, event.onFieldHeroIds);
+          sameIdList(state.onFieldHeroIds, event.onFieldHeroIds) &&
+          sameEarnings(state.earnings, event.earnings);
         if (unchanged) return state;
         return {
           ...state,
           field: event.field,
           recovery: event.recovery,
           onFieldHeroIds: event.onFieldHeroIds,
+          earnings: event.earnings,
           hasAppliedArrival: true,
           revision: state.revision + 1,
         };
@@ -200,7 +222,12 @@ export function deriveLiveModel(
   state: LiveInternalState,
   slowModelCache: (rotation: RotationSnapshot | null, onFieldHeroIds: readonly string[]) => LiveSlowModel | null,
 ): LiveModel {
-  return { freshness: state.freshness, slow: slowModelCache(state.rotation, state.onFieldHeroIds), fast: deriveFastModel(state) };
+  return {
+    freshness: state.freshness,
+    slow: slowModelCache(state.rotation, state.onFieldHeroIds),
+    fast: deriveFastModel(state),
+    earnings: state.earnings,
+  };
 }
 
 export interface LiveStore {
