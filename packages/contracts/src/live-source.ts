@@ -47,6 +47,12 @@ export interface LiveTick {
   readonly hits?: readonly LiveHit[];
   readonly bonusSeconds?: number;
   readonly bonusMultiplier?: number;
+  /** Parallel array over the map's slots, index-for-index with {@link hps}; `-1` marks an empty or
+   *  cleared slot. Values on occupied slots index the prop catalogue. */
+  readonly kinds?: readonly number[];
+  /** Parallel array over the map's slots, index-for-index with {@link kinds}; `-1` marks an empty
+   *  or cleared slot. No consumer interprets the values on occupied slots. */
+  readonly hps?: readonly number[];
 }
 
 /**

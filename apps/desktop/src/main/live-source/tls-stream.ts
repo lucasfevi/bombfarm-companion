@@ -139,6 +139,8 @@ export function toLiveTick(raw: Record<string, unknown>): LiveTick {
   const hitsRaw = readOptionalArray(raw, wireKey('hitsList'));
   const bonusSeconds = readNumber(raw, wireKey('bonusSeconds'));
   const bonusMultiplier = readNumber(raw, wireKey('bonusMultiplier'));
+  const kindsRaw = readOptionalArray(raw, wireKey('kindsList'));
+  const hpsRaw = readOptionalArray(raw, wireKey('hpsList'));
 
   return {
     heroes: readArray(raw, wireKey('heroesList')).map(mapHero).filter(isDefined),
@@ -151,6 +153,8 @@ export function toLiveTick(raw: Record<string, unknown>): LiveTick {
     ...(hitsRaw !== undefined ? { hits: hitsRaw.map(mapHit).filter(isDefined) } : {}),
     ...(bonusSeconds !== undefined ? { bonusSeconds } : {}),
     ...(bonusMultiplier !== undefined ? { bonusMultiplier } : {}),
+    ...(kindsRaw !== undefined ? { kinds: kindsRaw.filter((value): value is number => typeof value === 'number') } : {}),
+    ...(hpsRaw !== undefined ? { hps: hpsRaw.filter((value): value is number => typeof value === 'number') } : {}),
   };
 }
 
