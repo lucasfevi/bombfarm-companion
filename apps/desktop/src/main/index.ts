@@ -171,6 +171,10 @@ function registerIpcHandlers(): void {
     'live:get': (): LiveView => liveSource?.getView() ?? defaultLiveView(),
     'live:dumpDiagnostics': (): LiveDiagnosticsDumpOutcome =>
       liveSource?.dumpDiagnostics() ?? { written: false, reason: 'no-source' },
+    'live:resetEarnings': (): null => {
+      liveSource?.resetEarnings();
+      return null;
+    },
     // `disabledUpdateStatus` is the pre-bootstrap answer as well as the dev-flavor one: a
     // renderer that asks before `bootstrap()` has built the service gets the same inert status it
     // would get from an unpackaged run, never a throw.

@@ -38,6 +38,7 @@ describe('contracts IPC surface', () => {
       'consent:revoke',
       'live:get',
       'live:dumpDiagnostics',
+      'live:resetEarnings',
       'updates:get',
       'updates:check',
       'updates:download',

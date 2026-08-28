@@ -410,6 +410,13 @@ export class LiveSource {
     };
   }
 
+  /** The renderer holds no session accumulators of its own — this is the one place they can be
+   *  zeroed, so the reset control can never drift from the figures it resets. The rolling 10-minute
+   *  window is untouched: see {@link EarningsFold.reset}. */
+  resetEarnings(): void {
+    this.#earningsFold.reset('reset');
+  }
+
   /** The REST rotation projection: the base view every countdown falls back to when no live tap
    *  frame is available. Left untouched (never set to an empty snapshot) until a `/rotation` read
    *  actually resolves, so {@link LiveView.rotation} stays `null` rather than lying about having

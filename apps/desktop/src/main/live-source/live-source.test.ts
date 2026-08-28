@@ -931,4 +931,24 @@ describe('LiveSource: earnings', () => {
     expect(Number.isFinite(earnings?.sessionSeconds)).toBe(true);
     expect(Number.isFinite(earnings?.coverageSeconds)).toBe(true);
   });
+
+  it('resetEarnings zeroes the session figures but leaves the 10-minute window intact', () => {
+    const { source, pushFrame, goLive } = createHarness();
+    source.start();
+    goLive();
+
+    pushFrame({ heroes: [], phase: 1, gold: 10_100, loot: [{ cell: 0, gold: 100 }] });
+    pushFrame({ heroes: [], phase: 1, gold: 10_100 });
+    const before = source.getView().earnings;
+    expect(before?.goldSession).toBeGreaterThan(0);
+    expect(before?.gold10).toBeGreaterThan(0);
+
+    source.resetEarnings();
+
+    const after = source.getView().earnings;
+    expect(after?.goldSession).toBeNull();
+    expect(after?.sessionSeconds).toBe(0);
+    expect(after?.gold10).toBe(before?.gold10);
+    expect(after?.goldBalance).toBe(before?.goldBalance);
+  });
 });
