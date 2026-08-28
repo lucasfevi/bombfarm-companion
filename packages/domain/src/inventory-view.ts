@@ -1,4 +1,4 @@
-import catalog from './data/catalog.json';
+import catalog from './data/catalog.json' with { type: 'json' };
 
 const defById = new Map(catalog.defs.map((definition) => [definition.id, definition]));
 
