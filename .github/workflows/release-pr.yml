@@ -388,28 +388,54 @@ jobs:
             exit 1
           fi
 
-      - name: Resolve artifact naming
+      - name: Resolve beta version
         id: meta
         shell: bash
         run: |
           version=$(node -p "require('./apps/desktop/package.json').version")
-          sha7=${HEAD_SHA:0:7}
           echo "version=${version}" >> "$GITHUB_OUTPUT"
-          echo "artifact_name=bombfarm-companion-beta-${version}-${sha7}" >> "$GITHUB_OUTPUT"
-        env:
-          HEAD_SHA: ${{ needs.version-and-pr.outputs.head_sha }}
 
-      - name: Upload beta installer artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: ${{ steps.meta.outputs.artifact_name }}
-          path: apps/desktop/release/beta/**
+      - name: Publish GitHub beta prerelease
+        id: publish
+        if: success()
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ steps.meta.outputs.version }}
+          HEAD_SHA: ${{ needs.version-and-pr.outputs.head_sha }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          tag="desktop-v${VERSION}-beta.${GITHUB_RUN_NUMBER}"
+          echo "tag=${tag}" >> "$GITHUB_OUTPUT"
+
+          cleanup_failed_release() {
+            gh release delete "$tag" --yes --cleanup-tag 2>/dev/null || true
+          }
+
+          if gh release view "$tag" >/dev/null 2>&1; then
+            gh release delete "$tag" --yes --cleanup-tag
+          fi
+
+          gh release create "$tag" \
+            --prerelease \
+            --draft \
+            --title "Desktop ${VERSION} beta (${HEAD_SHA:0:7})"
+
+          trap cleanup_failed_release ERR
+
+          for asset in apps/desktop/release/beta/*; do
+            [ -f "$asset" ] || continue
+            gh release upload "$tag" "$asset"
+          done
+
+          gh release edit "$tag" --draft=false
+          trap - ERR
 
       - name: Upsert beta installer PR comment
         if: success()
         uses: actions/github-script@v7
         env:
-          ARTIFACT_NAME: ${{ steps.meta.outputs.artifact_name }}
+          RELEASE_URL: ${{ github.server_url }}/${{ github.repository }}/releases/tag/${{ steps.publish.outputs.tag }}
           DESKTOP_VERSION: ${{ steps.meta.outputs.version }}
           HEAD_SHA: ${{ needs.version-and-pr.outputs.head_sha }}
           RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
@@ -423,7 +449,7 @@ jobs:
               '',
               '## Beta installer',
               '',
-              `- Artifact: \`${process.env.ARTIFACT_NAME}\``,
+              `- Release: ${process.env.RELEASE_URL}`,
               `- Desktop version: \`${process.env.DESKTOP_VERSION}\``,
               `- Head SHA: \`${headSha}\` (\`${headSha.slice(0, 7)}\`)`,
               `- Workflow run: ${process.env.RUN_URL}`,
@@ -457,7 +483,7 @@ jobs:
             -f status=completed \
             -f conclusion=success \
             -f output[title]="Beta installer built" \
-            -f output[summary]="Beta installer artifact uploaded for this release head."
+            -f output[summary]="Beta installer published to the beta prerelease for this release head."
 
       - name: Publish beta-installer check run (failure)
         if: failure()
@@ -472,41 +498,7 @@ jobs:
             -f status=completed \
             -f conclusion=failure \
             -f output[title]="Beta installer failed" \
-            -f output[summary]="Beta packaging failed. No artifact was uploaded."
-
-      - name: Publish GitHub beta prerelease
-        if: success()
-        env:
-          GH_TOKEN: ${{ github.token }}
-          VERSION: ${{ steps.meta.outputs.version }}
-          HEAD_SHA: ${{ needs.version-and-pr.outputs.head_sha }}
-        shell: bash
-        run: |
-          set -euo pipefail
-          tag="desktop-v${VERSION}-beta.${GITHUB_RUN_NUMBER}"
-
-          cleanup_failed_release() {
-            gh release delete "$tag" --yes --cleanup-tag 2>/dev/null || true
-          }
-
-          if gh release view "$tag" >/dev/null 2>&1; then
-            gh release delete "$tag" --yes --cleanup-tag
-          fi
-
-          gh release create "$tag" \
-            --prerelease \
-            --draft \
-            --title "Desktop ${VERSION} beta (${HEAD_SHA:0:7})"
-
-          trap cleanup_failed_release ERR
-
-          for asset in apps/desktop/release/beta/*; do
-            [ -f "$asset" ] || continue
-            gh release upload "$tag" "$asset"
-          done
-
-          gh release edit "$tag" --draft=false
-          trap - ERR
+            -f output[summary]="Beta packaging or publish failed. No installer was published."
 
   summary:
     name: Release summary
