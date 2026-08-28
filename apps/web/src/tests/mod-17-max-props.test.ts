@@ -4,13 +4,13 @@ import path from 'node:path';
 import { WEB_PACKAGE_ROOT } from './helpers/web-package-root';
 
 /**
- * MOD-17 — no component's *own* props exceed 8 members (error; no allowlist escape hatch).
+ * No component's *own* props exceed 8 members (error; no allowlist escape hatch).
  *
  * SPEC_DEVIATION: spec AC-5 (modular-architecture-w7-domain-style-sweep) said the W7
  * allowlist SHALL be empty. The user explicitly approved a narrower counting rule as the
  * mechanism to get there honestly: only *non-DOM* props count toward the 8-prop budget.
  * Native HTML/ARIA attribute names (and `aria-*`/`data-*` props) that a component simply
- * forwards to an underlying element or Base UI primitive are excluded — MOD-17's intent
+ * forwards to an underlying element or Base UI primitive are excluded — the rule's intent
  * is catching prop-drilled god-components, not penalizing thin DOM pass-through
  * primitives. `switch.tsx`'s `SwitchProps` is 14 props, all but two (`onCheckedChange`,
  * `size`) standard HTML/ARIA attributes forwarded to Base UI; `select.tsx`'s
@@ -21,7 +21,7 @@ import { WEB_PACKAGE_ROOT } from './helpers/web-package-root';
  */
 const MAX_PROPS = 8;
 
-/** Reviewed empty — no component is exempted from the 8-prop budget (MOD-17, error). */
+/** Reviewed empty — no component is exempted from the 8-prop budget (error). */
 const ALLOWLIST_FILES = new Set<string>([]);
 
 /** W5-migrated components — must stay ≤8 and never live under ALLOWLIST_FILES.
@@ -160,7 +160,7 @@ function countPropsFor(fileRel: string, exportName: string): number {
     .filter((s) => s && !s.startsWith('...') && s !== 'children' && !isDomProp(s)).length;
 }
 
-describe('MOD-17 max props (error, non-DOM props only, no allowlist)', () => {
+describe('max props (error, non-DOM props only, no allowlist)', () => {
   it('migrated six each declare ≤ 8 own props and are not allowlisted', () => {
     for (const key of MIGRATED_SIX) {
       const [file, name] = key.split('::');
@@ -176,6 +176,6 @@ describe('MOD-17 max props (error, non-DOM props only, no allowlist)', () => {
       hits,
       hits.map((h) => `${h.key} (${h.count} own props)`).join('\n') || 'ok',
     ).toEqual([]);
-    expect(ALLOWLIST_FILES.size, 'allowlist must stay empty (MOD-17 error, W7)').toBe(0);
+    expect(ALLOWLIST_FILES.size, 'allowlist must stay empty (error, W7)').toBe(0);
   });
 });

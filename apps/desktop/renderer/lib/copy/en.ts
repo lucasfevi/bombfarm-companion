@@ -1,5 +1,5 @@
 /**
- * Every player-facing string in the desktop renderer, flat and typed (`AD-040`). Read only
+ * Every player-facing string in the desktop renderer, flat and typed. Read only
  * through `useCopy()` (`./index.ts`) — never `import { en }` directly at a call site. That is
  * what keeps F4's PT-BR swap a body replacement instead of an N-file edit.
  *
@@ -22,7 +22,7 @@ export const en = {
   // empty* — placeholder states shown before real data has arrived
   emptyBridgeUnavailableTitle: 'Preload bridge unavailable',
 
-  // Account section names, in player language — never the raw section key (MPV-07, MPV-18)
+  // Account section names, in player language — never the raw section key
   sectionNameAccount: 'your farm phase',
   sectionNameHeroes: 'your heroes',
   sectionNameSkills: 'your skill tree',
@@ -73,7 +73,7 @@ export const en = {
   statNameCdr: 'Cooldown reduction',
   planningLoadingTitle: 'Loading your account…',
 
-  // withheld* — the always-mounted notice slot for a withheld quantity (MPV-09/10, no-layout-shift)
+  // withheld* — the always-mounted notice slot for a withheld quantity (no-layout-shift)
   withheldRosterRowTitle: 'Roster withheld',
   withheldGearSummaryTitle: 'Gear summary withheld',
   withheldDpsTitle: 'DPS withheld',
@@ -92,7 +92,7 @@ export const en = {
   storeReasonNoSqliteBinding: 'this build cannot save on this system',
   storeReasonAccountMismatch: 'a different account is currently running',
 
-  // age* — relative-age words for format.ts (MP3 F4, AD-054). format.ts owns no words of its
+  // age* — relative-age words for format.ts. format.ts owns no words of its
   // own; every one of its five relative-age buckets renders through one of these, via sub().
   // Singular/plural-agnostic by construction (design §7 rule 3) — no plural engine is built.
   ageJustNow: 'just now',
@@ -102,7 +102,7 @@ export const en = {
   ageShortSeconds: '{n}s',
   ageShortMinutes: '{n}m',
 
-  // settings* — the language control (MP3 F4, MIN-16)
+  // settings* — the language control (a @bombfarm/ui primitive)
   settingsNavLabel: 'Settings',
   settingsLanguageSectionTitle: 'Language',
   settingsLanguageLabel: 'App language',
@@ -111,7 +111,7 @@ export const en = {
   settingsLanguageOptionPortuguese: 'Portuguese (Brazil)',
   settingsLanguageNotSavedTitle: 'Language changed, but not saved',
   // One key per SettingsWriteReason (@bombfarm/contracts), mapped exhaustively by
-  // SETTINGS_WRITE_REASON_COPY_KEY below (MIN-11).
+  // SETTINGS_WRITE_REASON_COPY_KEY below.
   settingsLanguageReasonNoStore: 'Your save location is unavailable, so this will not survive a restart.',
   settingsLanguageReasonNotWritable: 'Your save location is not writable, so this will not survive a restart.',
   settingsLanguageReasonUnknown: 'This choice could not be saved, so it will not survive a restart.',
@@ -144,7 +144,7 @@ export const en = {
   consentGateReadAgainAction: 'Read the disclosure again',
   consentGateLanguageLabel: 'Language',
 
-  // error* — MP3 F4 §2.8: a main-process error crosses the boundary as a key, never as
+  // error* — §2.8: a main-process error crosses the boundary as a key, never as
   // pre-rendered English. The raw message is kept as diagnostic data only.
   errorAccountReadFailedDescription: 'Try again after the game finishes loading, or restart the app.',
 

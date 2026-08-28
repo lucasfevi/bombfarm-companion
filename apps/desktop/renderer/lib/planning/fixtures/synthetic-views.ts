@@ -1,6 +1,6 @@
 /**
- * Synthetic `AccountView` builders for the withhold matrix (T4) and for MPV-08's latent test
- * (`AD-037` — `degraded` never survives `mergeStoredIntoLive`, so this is the *only* path that
+ * Synthetic `AccountView` builders for the withhold matrix (T4) and for the degraded-surfaces-missingKeys
+ * rule's latent test (`degraded` never survives `mergeStoredIntoLive`, so this is the *only* path that
  * can exercise it; see `withhold-matrix.test.ts`'s dedicated `it` for that).
  *
  * The hero payload's `dmg_static` is `3624.70` — `mapAccountData`'s own header comment (design.md
@@ -54,7 +54,7 @@ export function syntheticHeroesPayload(overrides: {
   const hero = rawHero(overrides.heroId ?? 'h1', overrides.heroName ?? 'Alpha');
   if (overrides.blocked) {
     // No `stats` block ⇒ `parseAccountPayload` blocks the hero (cannot infer spent points),
-    // MPV-10's per-hero row — the hero still parses and renders, only its numbers withhold.
+    // the per-hero withhold rule's per-hero row — the hero still parses and renders, only its numbers withhold.
     const { stats: _stats, ...blockedHero } = hero;
     return [blockedHero];
   }
@@ -74,7 +74,7 @@ function sectionFidelity(
         status: 'degraded',
         capturedAt: NOW,
         missingKeys: missingKeys ?? ['totals.dmg_static'],
-        // MP5 F4: required, not optional (SectionFidelity's degraded member). Defaults to empty —
+        // Required, not optional (SectionFidelity's degraded member). Defaults to empty —
         // every existing caller of this fixture builder keeps describing a missing-key-only drift
         // unless it opts into an added-key one via `addedKeysBySection`/the third parameter here.
         addedKeys: addedKeys ?? [],
@@ -100,7 +100,7 @@ export function buildFidelity(
 export type SyntheticViewOptions = {
   sectionStatuses?: Partial<Record<AccountSection, SectionStatus>>;
   missingKeysBySection?: Partial<Record<AccountSection, readonly string[]>>;
-  /** MP5 F4: mirrors `missingKeysBySection` for the `addedKeys` half of a degraded section. */
+  /** Mirrors `missingKeysBySection` for the `addedKeys` half of a degraded section. */
   addedKeysBySection?: Partial<Record<AccountSection, readonly string[]>>;
   storeStatus?: AccountStoreStatus;
   storeReason?: AccountStoreReason | null;
@@ -120,7 +120,7 @@ export function syntheticAccountPayload(options: SyntheticViewOptions = {}): Acc
     heroes: omit.has('heroes') ? undefined : syntheticHeroesPayload({ heroId, blocked: options.heroBlocked }),
     skills: omit.has('skills')
       ? undefined
-      // MP5 F4: post-patch skills.totals shape — no crit_dmg_mult (F2's stale-field trap; this
+      // Post-patch skills.totals shape — no crit_dmg_mult (F2's stale-field trap; this
       // literal is never modelled downstream, so this was a dead key, not a load-bearing one).
       : { totals: { dmg_static: REAL_DMG_STATIC, vagas_campo: 0, bag_tabs_bonus: 0, crit_chance_add: 0.1 } },
     casa: omit.has('casa') ? undefined : { active_casa: 2, levels: [10, 16] },
@@ -141,7 +141,7 @@ export function syntheticAccountView(options: SyntheticViewOptions = {}): Accoun
   };
 }
 
-// --- MP3 F3 additions (design.md §5, T3) — the transition-sequence and per-hero mutation
+// --- Additions (design.md §5, T3) — the transition-sequence and per-hero mutation
 // building blocks for `recompute-sequences.test.ts`. F2's builders above are unmodified. ---
 
 /** An N-hero roster, each hero a distinct id, for MAR-16's "only the changed hero recomputes"
@@ -153,7 +153,7 @@ export function syntheticRosterAccountView(heroIds: readonly string[]): AccountV
     payload: {
       account: { phase: 71 },
       heroes,
-      // MP5 F4: post-patch skills.totals shape, matching syntheticAccountPayload above.
+      // Post-patch skills.totals shape, matching syntheticAccountPayload above.
       skills: { totals: { dmg_static: REAL_DMG_STATIC, vagas_campo: 0, bag_tabs_bonus: 0, crit_chance_add: 0.1 } },
       casa: { active_casa: 2, levels: [10, 16] },
       items: [],

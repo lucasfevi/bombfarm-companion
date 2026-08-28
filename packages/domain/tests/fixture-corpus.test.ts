@@ -1,5 +1,5 @@
 /**
- * MP5 F1 (T9) — the post-patch corpus guard. Mirrors `fixtures-scrubbed.test.ts`'s directory-walk
+ * (T9) — the post-patch corpus guard. Mirrors `fixtures-scrubbed.test.ts`'s directory-walk
  * shape. Every assertion here would have been RED on every commit before T8's deletion — that is
  * the point: the corpus guard is written last, once nothing references the old corpus any more.
  *
@@ -37,7 +37,7 @@ function isObject(value: unknown): value is Record<string, unknown> {
  */
 const COMPUTED_PATH_ALLOWLIST: Record<string, string> = {};
 
-describe('sheet-math fixture corpus guard (MP5 F1)', () => {
+describe('sheet-math fixture corpus guard', () => {
   const sheetMathJsonFiles = readdirSync(SHEET_MATH_DIR).filter((f) => f.endsWith('.json'));
   const allFixtureJsonFiles = listFiles(FIXTURES_DIR, isJson);
 
@@ -48,11 +48,11 @@ describe('sheet-math fixture corpus guard (MP5 F1)', () => {
     ).toBeGreaterThanOrEqual(2);
   });
 
-  it('negative discriminator: no fixture JSON under fixtures/** carries keystones, abisso_base or crit_dmg_mult (MP5 F4: except its own deliberate rejection fixture)', () => {
+  it('negative discriminator: no fixture JSON under fixtures/** carries keystones, abisso_base or crit_dmg_mult (except its own deliberate rejection fixture)', () => {
     expect(allFixtureJsonFiles.length, `walked ${FIXTURES_DIR}`).toBeGreaterThan(0);
     const offenders: string[] = [];
     for (const file of allFixtureJsonFiles) {
-      // MP5 F4 (`MSG-12`/`MSG-13`): `fixtures/rejection/pre-update-save.json` is a DELIBERATE
+      // `fixtures/rejection/pre-update-save.json` is a DELIBERATE
       // carrier of the retired vocabulary — it exists specifically to prove `parseSaveFile`
       // rejects a save shaped like this. It is not a captured corpus member this guard's
       // "the corpus has moved on" claim is about; excluded the same way `source-surface.test.ts`'s

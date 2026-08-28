@@ -1,5 +1,5 @@
 /**
- * BSPW5-02 — AD-BSP-19a's single shared unit-conversion site (DEC-09). Every assertion
+ * BSPW5-02 — the single shared unit-conversion site (DEC-09). Every assertion
  * here is a hand-computed literal, never a round-trip through another converter — a shared
  * converter that only proves itself against its own inverse could cancel its own error on
  * both sides (design.md's stated risk).
@@ -38,7 +38,7 @@ describe('saveSheetUnits / birthFromSave (AC-08 — hand-computed literals)', ()
 
   it('AC-08: Bellatrix\'s birth_stats.luck converts to percent, not a fraction', () => {
     // Real fixture value (save-20260813-5heroes.json, Bellatrix birth_stats.luck) —
-    // MP5 F1 (AD-068 class (a) — re-read from the post-patch capture).
+    // (the ground-truth rule's class (a) — re-read from the post-patch capture).
     const converted = birthFromSave({ luck: 0.0922693386123672 });
     expect(converted.luck).toBeCloseTo(9.22693386123672, 9);
     expect(converted.luck).not.toBeCloseTo(0.0922693386123672, 3);

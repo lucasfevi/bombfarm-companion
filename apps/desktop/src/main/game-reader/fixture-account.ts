@@ -3,7 +3,7 @@ import type { AccountFidelity, AccountPayload, SectionFidelity } from '@bombfarm
 import { loadFixtureBundle } from './fixture-data.js';
 
 /**
- * `AD-039` (MP3 F2, design.md §3) — a test-only fixture-source override. Honoured **only** when
+ * (design.md §3) — a test-only fixture-source override. Honoured **only** when
  * not packaged and `BFC_GAME_READER === 'fixture'` (already a test-only mode); reads an
  * `AccountPayload`-shaped JSON file from `BFC_FIXTURE_ACCOUNT_FILE` verbatim, in place of the
  * committed `hero-record.json` fixture bundle. Not new ingest — no route, no anchor, no reader,

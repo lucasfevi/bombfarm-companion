@@ -293,10 +293,10 @@ describe('computeAdvisorPipeline', () => {
     expect(preview.B!.dps).not.toBeCloseTo(preview.dps, 0);
   });
 
-  it('ranks crit chance at zero gain when the SHEET already fills the 100% cap (BSP-22)', () => {
+  it('ranks crit chance at zero gain when the SHEET already fills the 100% cap', () => {
     // REWRITTEN (was: reached the cap THROUGH `treeCritChance: 25` on top of a naked 80% —
     // `derive` no longer adds a tree addend to `effective.critChance`, since the tree is
-    // applied once, at the sheet, by `applySkillTree` upstream (BSP-23c). This test now
+    // applied once, at the sheet, by `applySkillTree` upstream. This test now
     // reaches 100% through `geared.critChance` directly — the sheet the account tree would
     // already have produced — so the cap assertion is proven through the correct source.
     const naked = { ...sampleNaked(), critChance: 80 };

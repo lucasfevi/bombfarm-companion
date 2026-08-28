@@ -1,5 +1,5 @@
 /**
- * MP5 F1 (T9) — the post-patch corpus guard. Mirrors `fixtures-scrubbed.test.ts`'s directory-walk
+ * (T9) — the post-patch corpus guard. Mirrors `fixtures-scrubbed.test.ts`'s directory-walk
  * shape. Every assertion here would have been RED on every commit before T8's deletion — that is
  * the point: the corpus guard is written last, once nothing references the old corpus any more.
  *
@@ -51,7 +51,7 @@ function sha256(path: string): string {
  */
 const COMPUTED_PATH_ALLOWLIST: Record<string, string> = {};
 
-describe('sheet-math fixture corpus guard (MP5 F1)', () => {
+describe('sheet-math fixture corpus guard', () => {
   const sheetMathJsonFiles = readdirSync(SHEET_MATH_DIR).filter((f) => f.endsWith('.json'));
   const allFixtureJsonFiles = listFiles(FIXTURES_DIR, (name) => name.endsWith('.json'));
 

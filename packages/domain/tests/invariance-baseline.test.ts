@@ -1,10 +1,11 @@
 /**
- * MP5 F2 (T2, `AD-076`) — the pre-deletion characterization baseline. The mechanism that makes
+ * T2 — the pre-deletion characterization baseline, an explicitly projected record with a
+ * sign-preserving number encoder. The mechanism that makes
  * MP5's headline risk ("F2 edits fidelity-gated sheet math while deleting fields, and numbers
  * drift silently") assertable rather than reviewable: a committed pre-deletion recording of the
  * entire SURVIVING numeric surface, compared bit-exactly against every post-deletion commit.
  *
- * Named `invariance-*`, deliberately never named after any deleted arm (design TD-5) — a file
+ * Named `invariance-*`, deliberately never named after any deleted arm — a file
  * named after one would trip this feature's own absence guard (T10's `source-surface.test.ts`).
  *
  * A decimal-digit-tolerance assertion style is deliberately never used in this file: it would
@@ -238,7 +239,7 @@ function firstDivergingPath(
   return { path, actual, expected };
 }
 
-describe('invariance baseline — the pre-deletion characterization harness (MP5 F2 T2)', () => {
+describe('invariance baseline — the pre-deletion characterization harness (T2)', () => {
   it('self-test: encodeNumber round-trips exactly for every finite double, and the four special cases', () => {
     const samples = [0, -0, 1, -1, 0.1, 1e21, -1e21, 1.008, 4 / 3, Number.MIN_VALUE, Number.MAX_VALUE, NaN, Infinity, -Infinity];
     for (const v of samples) {

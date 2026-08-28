@@ -68,7 +68,7 @@ function extractQuotedListLines(text) {
   return out;
 }
 
-describe('fidelity-gate-required aggregator (design.md R-2/R-3, SBC-19/AD-018 idiom)', () => {
+describe('fidelity-gate-required aggregator (design.md R-2/R-3, SBC-19 idiom)', () => {
   const workflowText = readFileSync(CI_FIDELITY_PATH, 'utf8');
   const jobBlock = extractJobBlock(workflowText, 'fidelity-gate-required');
 

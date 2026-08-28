@@ -1,5 +1,6 @@
 /**
- * MP3 F4 — the assertions this repo writes down rather than reviews for (`AD-055`/`AD-056`).
+ * The assertions this repo writes down rather than reviews for: the pinned prose-literal
+ * exception list, and the single game-terms language mapping.
  * Lives in `apps/desktop/src/main/`, NOT `tools/`, for two reasons: the scans need the desktop
  * tree walked (`planning-guards.test.ts`'s own precedent, same home, same genre), and keeping
  * `tools/` untouched keeps `ci-fidelity.yml`'s `--project tools` step out of this feature's blast
@@ -42,7 +43,7 @@ function stripComments(source: string): string {
 }
 
 // ---------------------------------------------------------------------------------------------
-// Guard 1 — prose-shaped literals across .ts AND .tsx, in BOTH processes (AD-055)
+// Guard 1 — prose-shaped literals across .ts AND .tsx, in BOTH processes
 // ---------------------------------------------------------------------------------------------
 
 /** Two adjacent alphabetic words separated by a space — the one property that separates prose
@@ -116,10 +117,10 @@ const GUARD_1_EXCLUDE = (path: string): boolean =>
   isTestFile(path) ||
   path.includes(`fixtures${sep}`) ||
   path === SELF_PATH ||
-  // layout.tsx is explicitly UNCHANGED by design (TD-9 — a prebuilt static export cannot know
-  // the locale; page.tsx sets documentElement.lang at runtime instead). Its <head> `metadata`
+  // layout.tsx is explicitly UNCHANGED by design — a prebuilt static export cannot know
+  // the locale; page.tsx sets documentElement.lang at runtime instead. Its <head> `metadata`
   // (browser-tab title / SEO description) is Next.js page metadata, not shell UI copy, and is
-  // out of MIN-01's "the desktop shell" scope the same way it is out of F4's edit list.
+  // out of the every-string-renders-in-PT-BR requirement's "the desktop shell" scope the same way it is out of F4's edit list.
   path.endsWith(join('app', 'layout.tsx')) ||
   // A PowerShell cmdlet string built for execSync() (game-reader/process.ts) — assigned to a
   // local variable first, so it is one indirection away from the NON_PROSE_CALL_CONTEXT check
@@ -135,10 +136,10 @@ const GUARD_1_EXCLUDE = (path: string): boolean =>
   // execSync() argument.
   path.endsWith(join('live-source', 'image-scan.ts'));
 
-describe('Guard 1 — no player-facing literal outside the i18n source (MIN-02, AD-055)', () => {
+describe('Guard 1 — no player-facing literal outside the i18n source', () => {
   // What this rule CANNOT catch, stated rather than glossed (design §9, hazard 2): a one-word
   // player-facing literal ('Loading'), and the one-letter s/m abbreviations §2.3 names. Those are
-  // covered BEHAVIOURALLY instead, by format.test.ts's both-locales assertions (AD-054) — a
+  // covered BEHAVIOURALLY instead, by format.test.ts's both-locales assertions — a
   // guard that claims more than it proves is worse than one that states its edge.
   const rendererFiles = readAll(RENDERER_ROOT, ['.ts', '.tsx']).filter((file) => !GUARD_1_EXCLUDE(file.path));
   const mainFiles = readAll(MAIN_ROOT, ['.ts']).filter((file) => !GUARD_1_EXCLUDE(file.path));
@@ -150,7 +151,7 @@ describe('Guard 1 — no player-facing literal outside the i18n source (MIN-02, 
     expect(
       offenders.map((entry) => `${entry.file.path}: ${entry.violations.join(', ')}`),
       'A player-facing literal inlined outside lib/copy/ means a screen that is English no ' +
-        'matter what language the player chose (MIN-02).',
+        'matter what language the player chose.',
     ).toEqual([]);
   });
 
@@ -161,7 +162,7 @@ describe('Guard 1 — no player-facing literal outside the i18n source (MIN-02, 
     expect(
       offenders.map((entry) => `${entry.file.path}: ${entry.violations.join(', ')}`),
       'A player-facing literal inlined in the main process means a screen that is English no ' +
-        'matter what language the player chose (MIN-02) — main already speaks in codes ' +
+        'matter what language the player chose — main already speaks in codes ' +
         '(AccountStoreReason, SectionStatus, …); a new English sentence here is a regression.',
     ).toEqual([]);
   });
@@ -204,7 +205,7 @@ describe('Guard 1 — no player-facing literal outside the i18n source (MIN-02, 
 });
 
 // ---------------------------------------------------------------------------------------------
-// Guard 2 — the pinned exception table (AD-055, AD-038's shape)
+// Guard 2 — the pinned exception table
 // ---------------------------------------------------------------------------------------------
 
 interface PinnedException {
@@ -219,7 +220,7 @@ interface PinnedException {
  * fixing it means editing a file this feature must not touch. Fails if the list WIDENS (a new
  * untranslated string reachable from the desktop) and fails if it is SILENTLY CLOSED (an entry
  * that no longer exists in its owning file, i.e. someone fixed it upstream without updating this
- * record) — `AD-038`'s shape, applied to an i18n boundary.
+ * record) — applied to an i18n boundary.
  */
 const PINNED_EXCEPTIONS: readonly PinnedException[] = [
   {
@@ -227,25 +228,25 @@ const PINNED_EXCEPTIONS: readonly PinnedException[] = [
     // shared AppNav primitive it now composes — same hardcoded "Main", new owning file.
     text: "ariaLabel = 'Main'",
     owner: join(REPO_ROOT, 'packages', 'ui', 'src', 'app-nav.tsx'),
-    permittedBy: 'AD-055 — packages/ui may not change (DS-09)',
+    permittedBy: 'the pinned literal-exception list — packages/ui may not change (reuse boundary)',
     reachable: true,
   },
   {
     text: 'aria-label="Increment"',
     owner: join(REPO_ROOT, 'packages', 'ui', 'src', 'num.tsx'),
-    permittedBy: 'AD-055',
+    permittedBy: 'the pinned literal-exception list',
     reachable: true,
   },
   {
     text: 'aria-label="Decrement"',
     owner: join(REPO_ROOT, 'packages', 'ui', 'src', 'num.tsx'),
-    permittedBy: 'AD-055',
+    permittedBy: 'the pinned literal-exception list',
     reachable: true,
   },
   {
     text: 'aria-label="Dismiss"',
     owner: join(REPO_ROOT, 'packages', 'ui', 'src', 'toast-system.tsx'),
-    permittedBy: 'AD-055 — the desktop renders no toast today; reachable: false so mounting one later is a test failure, not a silent regression',
+    permittedBy: 'the pinned literal-exception list — the desktop renders no toast today; reachable: false so mounting one later is a test failure, not a silent regression',
     reachable: false,
   },
 ];
@@ -257,8 +258,8 @@ describe('Guard 2 — the pinned packages/ui exception table', () => {
     // packages/ui/apps/web are out of its scan root entirely — so the only way a NEW packages/ui
     // exception could reach the desktop unnoticed is if it were added to THIS table without
     // Guard 1 ever having flagged it, which cannot happen: Guard 1 does not scan packages/ui at
-    // all, by design (DS-09 boundary) — the width of this specific table is instead bounded by
-    // hand, reviewed at PR time, exactly as AD-038's own precedent is.
+    // all, by design (the reuse boundary) — the width of this specific table is instead bounded by
+    // hand, reviewed at PR time.
     expect(PINNED_EXCEPTIONS.length).toBe(4);
   });
 
@@ -340,7 +341,7 @@ describe('Guard 2b — CONSENT_TEXT is bilingual, both locales tied to one versi
 // Guard 3 — i18next appears nowhere (the spec's own success criterion)
 // ---------------------------------------------------------------------------------------------
 
-describe('Guard 3 — i18next/react-i18next appear nowhere (AD-030/AD-032, E4 stays closed)', () => {
+describe('Guard 3 — i18next/react-i18next appear nowhere (E4 stays closed)', () => {
   it('zero occurrences across every package.json, pnpm-lock.yaml, and every .ts/.tsx/.mjs/.json source file', () => {
     const packageJsonFiles = walk(REPO_ROOT, ['.json']).filter(
       (path) => path.endsWith(`${sep}package.json`) || path === join(REPO_ROOT, 'package.json'),
@@ -362,9 +363,9 @@ describe('Guard 3 — i18next/react-i18next appear nowhere (AD-030/AD-032, E4 st
     }
     expect(
       offenders,
-      'i18next / react-i18next found. AD-032 chose the planner\'s typed strings map instead — ' +
-        'adding this library back reopens epic OQ E4, which AD-030/AD-032 closed. The planner\'s ' +
-        'typed map is the mechanism; this is the executable form of "E4 is closed".',
+      'i18next / react-i18next found. The decision to adopt the planner\'s typed strings map ' +
+        'instead means bringing this library back would reopen epic OQ E4, which that decision closed. ' +
+        'The planner\'s typed map is the mechanism; this is the executable form of "E4 is closed".',
     ).toEqual([]);
   });
 
@@ -374,7 +375,7 @@ describe('Guard 3 — i18next/react-i18next appear nowhere (AD-030/AD-032, E4 st
 });
 
 // ---------------------------------------------------------------------------------------------
-// Guard 4 — no literal `lang` argument to any game-labels helper (AD-056)
+// Guard 4 — no literal `lang` argument to any game-labels helper
 // ---------------------------------------------------------------------------------------------
 
 /** Every exported helper in packages/domain/src/game-labels.ts that takes a `lang: Lang` (or
@@ -413,7 +414,7 @@ function findLiteralLangArgs(source: string): string[] {
   return offenders;
 }
 
-describe("Guard 4 — no game-labels helper ever receives a literal 'en'/'pt' lang argument (AD-056, docs/i18n.md rule 4)", () => {
+describe("Guard 4 — no game-labels helper ever receives a literal 'en'/'pt' lang argument (docs/i18n.md rule 4)", () => {
   const desktopFiles = readAll(DESKTOP_ROOT, ['.ts', '.tsx']);
 
   it('apps/desktop/**: zero literal lang arguments to any game-labels helper', () => {
@@ -423,7 +424,7 @@ describe("Guard 4 — no game-labels helper ever receives a literal 'en'/'pt' la
     expect(
       offenders.map((entry) => `${entry.file.path}: ${entry.violations.join(', ')}`),
       "toDomainLang is the ONE place the 'pt-BR' -> 'pt' mapping is written (docs/i18n.md rule " +
-        "4, AD-056). A literal 'en'/'pt' at a call site is a second, unreviewable mapping — the " +
+        "4). A literal 'en'/'pt' at a call site is a second, unreviewable mapping — the " +
         'exact defect this guard exists to make impossible to add.',
     ).toEqual([]);
   });
@@ -435,10 +436,10 @@ describe("Guard 4 — no game-labels helper ever receives a literal 'en'/'pt' la
 });
 
 // ---------------------------------------------------------------------------------------------
-// Guard 5 — the planning layer is locale-free (MIN-10, design §4.3)
+// Guard 5 — the planning layer is locale-free, so a language change causes no refresh or recompute (design §4.3)
 // ---------------------------------------------------------------------------------------------
 
-describe('Guard 5 — renderer/lib/planning/** never mentions locale (MIN-10, structural half)', () => {
+describe('Guard 5 — renderer/lib/planning/** never mentions locale (no recompute on language change, structural half)', () => {
   const PLANNING_ROOT = join(RENDERER_ROOT, 'lib', 'planning');
   const planningFiles = readAll(PLANNING_ROOT, ['.ts', '.tsx'], { includeTests: true });
 
@@ -450,7 +451,7 @@ describe('Guard 5 — renderer/lib/planning/** never mentions locale (MIN-10, st
       offenders,
       'A "locale" reference under renderer/lib/planning/** means a language switch could enter ' +
         'a memo dependency or a change key — F3\'s MAR-03/MAR-04 broken from the other side, ' +
-        'silently, with everything still looking right (MIN-10).',
+        'silently, with everything still looking right.',
     ).toEqual([]);
   });
 

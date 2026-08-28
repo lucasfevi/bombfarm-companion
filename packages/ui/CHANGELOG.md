@@ -363,7 +363,7 @@ auto` DOM node even offscreen, which is also the likely cause of the scrollbar/s
 ### Minor Changes
 
 - fc7fcf1: **Every player-facing and internal surface that could still express the five removed keystones is
-  gone.** `@bombfarm/domain` stopped modelling Abisso, Glass Cannon and Tempo Dobrado (MP5 F2); this
+  gone.** `@bombfarm/domain` stopped modelling Abisso, Glass Cannon and Tempo Dobrado; this
   change removes the last ways a player or a maintainer could still see, toggle, persist or key on
   them.
 

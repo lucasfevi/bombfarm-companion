@@ -201,7 +201,7 @@ describe('compareAccountResults — per-hero sheet compare (FID-01, FID-03)', ()
   });
 });
 
-describe('compareAccountResults — non-sheet exact hero fields (design TD-4)', () => {
+describe('compareAccountResults — non-sheet exact hero fields', () => {
   const cases: Array<[string, Partial<ImportCandidate['record']>, Partial<ImportCandidate['record']>]> = [
     ['level', { level: 10 }, { level: 11 }],
     ['stars', { stars: 0 }, { stars: 1 }],
@@ -245,8 +245,8 @@ describe('compareAccountResults — roster membership (FID-04)', () => {
 });
 
 describe('compareAccountResults — account-level equality (FID-02, ASM-4)', () => {
-  // AD-075 (MP5 F2 T4/T8): re-pointed from a deleted exponent-base field onto tree.danoTotal,
-  // a surviving TreeSheetTotals member. The claim under test ("the comparator names the
+  // Re-pointed from a deleted exponent-base field onto tree.danoTotal (T4/T8), a surviving
+  // TreeSheetTotals member. The claim under test ("the comparator names the
   // mismatching path") is unchanged; only the field whose mismatch demonstrates it changed.
   it('accountMismatch names tree.danoTotal on a mismatch', () => {
     const live = makeResult({ account: makeAccount({ tree: { ...makeAccount().tree!, danoTotal: 1.2 } }) });
@@ -255,7 +255,7 @@ describe('compareAccountResults — account-level equality (FID-02, ASM-4)', () 
     expect(err.message).toContain('tree.danoTotal');
   });
 
-  // AD-075 (MP5 F2 T4): re-pointed from tree.critDmgMult onto tree.critChance — a surviving
+  // Re-pointed from tree.critDmgMult onto tree.critChance (T4) — a surviving
   // TreeSheetTotals member. See the previous case's comment for why makeAccount() itself is
   // untouched here.
   it('accountMismatch names tree.critChance on a mismatch', () => {

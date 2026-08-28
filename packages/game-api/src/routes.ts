@@ -7,8 +7,7 @@ import type { ConsentedSession } from './session.js';
 import { isPlainObject } from './type-guards.js';
 
 /**
- * The five GET readers and their projections into the section a shape the contract expects
- * (LAR-07 route half, LAR-19/20 detection half, LAR-25 section half).
+ * The five GET readers and their projections into the section a shape the contract expects.
  */
 export interface RouteDescriptor {
   readonly section: AccountSection;
@@ -57,7 +56,7 @@ export const ROUTES: readonly RouteDescriptor[] = [
 ];
 
 /**
- * A closed vocabulary for "why this section has no body this cycle" (LAR-25). The first seven
+ * A closed vocabulary for "why this section has no body this cycle". The first seven
  * members are produced by `readSection` below, driven by `RequestOutcome` (T3) and the shape
  * guard (T5). The last three — `not_consented`, `token_unavailable`, `aborted` — are produced by
  * `apps/desktop/src/main/game-api/account-refresh.ts` (T8): they describe states that never reach

@@ -9,7 +9,7 @@ const SCAN_ROOTS = ['apps', 'packages'];
 const HOSTNAME_PATTERN = 'wiki\\.bombfarm\\.net';
 
 /**
- * MP5 F5 — the narrowed-rule guard, clauses A and B. Reuses this repo's established pattern for
+ * The narrowed-rule guard, clauses A and B. Reuses this repo's established pattern for
  * a repo-wide identifier-absence guard: `execFileSync('git', ['grep', …])` plus a pinned census
  * that fails on widening **and** on silent narrowing, applied here to the wiki-client surface.
  *
@@ -191,7 +191,7 @@ describe('Clause B — the comparison logic itself fails in both directions (syn
 
 // =============================================================================================
 // Clause C — the three amended files agree: both halves of the rule, plus the workflow filename
-// (MWD-34, `AD-095` clause C)
+// (MWD-34, clause C)
 // =============================================================================================
 
 const WORKFLOW_FILENAME = '.github/workflows/wiki-drift.yml';

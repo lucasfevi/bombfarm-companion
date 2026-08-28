@@ -1,27 +1,30 @@
 /**
- * MP5 F3 — the repo-wide keystone identifier guard (MSC-04, `AD-080`). Scans exactly the four
+ * The repo-wide keystone identifier guard (MSC-04). Scans exactly the four
  * roots spec.md's own AC and design.md's own clause table both name — `apps/web/**`,
  * `apps/desktop/**`, `packages/ui/**`, `tools/**` — never `packages/domain` (F2's surface, out of
  * F3's touch scope by the git protocol) and never repo-root `docs/` (outside the four stated
- * roots; `AD-080`'s two `docs/base-ui-first.md` / `docs/content-fit-ui.md` allowlist entries
+ * roots; this guard's two `docs/base-ui-first.md` / `docs/content-fit-ui.md` allowlist entries
  * describe provenance lines that live outside this guard's actual scan surface, so they need no
  * entry here — see `validation.md` for the measurement).
  *
- * Two clauses, per `AD-080`:
+ * Two clauses:
  *   A — hard zero for `keystone`/`abisso`/`glassCannon`/`tempoDobrado` (and their casing/
  *       underscore/display-string variants) outside an explicit, non-wideable, per-file allowlist.
  *   B — a pinned `file → sorted line numbers` map for `critDmgMult`/`crit_dmg_mult`, because
- *       `packages/domain` deliberately kept the always-`1` combat pass-through (`AD-073`) and
- *       `apps/web` legitimately reads it (`advice-column.tsx`) — a hard zero on this token would
- *       force deleting a surviving public signature, crossing F3's own Out of Scope.
+ *       `packages/domain` deliberately kept the always-`1` combat pass-through (the two absence
+ *       greps are pinned per file, not weakened to a count) and `apps/web` legitimately reads it
+ *       (`advice-column.tsx`) — a hard zero on this token would force deleting a surviving public
+ *       signature, crossing F3's own Out of Scope.
  *
  * `packages/ui` carries NO allowlist entry in either clause — that is the one surface where F3
- * can prove the deletion is total, and the surface the DS-09 story is about (`AD-082`).
+ * can prove the deletion is total, and the surface the reuse-boundary story is about (the literal
+ * five-surface check this guard reaches its final form as).
  *
- * Re-pinned for MP5 F4 (`AD-090`, T12): both maps below were re-derived from the tree at F4's
- * T11 tip with the exact `git grep` commands this file runs — see the commit body for the raw
- * output. Re-pinned once, from the settled tree — never widened beyond what T9/T10/T11 actually
- * added, and never re-pinned mid-feature (T9–T11 deliberately left this file red).
+ * F4 re-pins F3's identifier guard here, and packages/ui stays at zero (T12): both maps below
+ * were re-derived from the tree at F4's T11 tip with the exact `git grep` commands this file
+ * runs — see the commit body for the raw output. Re-pinned once, from the settled tree — never
+ * widened beyond what T9/T10/T11 actually added, and never re-pinned mid-feature (T9–T11
+ * deliberately left this file red).
  */
 import { execFileSync } from 'node:child_process';
 import { resolve } from 'node:path';
@@ -42,11 +45,11 @@ const SCAN_ROOTS = ['apps/web', 'apps/desktop', 'packages/ui', 'tools'];
  * never held a token before and on a third whose count moved 3 -> 17, none of them a live
  * surface, while `develop` was green on identical source.
  *
- * This guard polices editable source. `AD-080`'s allowlist already classes CHANGELOGs as
- * "historical release prose" and `AD-082`'s surface 5 as "release-note history", so dropping
+ * This guard polices editable source. This guard's allowlist already classes CHANGELOGs as
+ * "historical release prose" and its surface 5 as "release-note history", so dropping
  * them keeps the stated intent and removes only the part that cannot hold still across a
  * release. Note this preserves `packages/ui`'s hard zero in substance — its generated release
- * notes were never the surface `AD-082` is about.
+ * notes were never the surface this guard is about.
  */
 const EXCLUDE_RELEASE_PROSE = [':(exclude)**/CHANGELOG.md', ':(exclude).changeset/*.md'];
 
@@ -83,14 +86,15 @@ const CLAUSE_A_PATTERN =
  *   - F1's provenance manifest
  *   - CHANGELOGs (historical release prose)
  *   - This guard's own source, and the sibling `tools/` guards that must name the tokens they
- *     forbid or discharge (`AD-038`'s closed pin, F1's own negative-discriminator guard)
+ *     forbid or discharge (the closed pin on pipelineForHero's treeCritDmgMult gap, F1's own
+ *     negative-discriminator guard)
  *   - F3's OWN absence-proving tests and doc amendments — a test/doc that proves a keystone
  *     field or control is gone necessarily names it once. This category did not exist when
- *     `AD-080` was designed (before F3's suites and doc edits existed); it is measured here,
+ *     this guard was designed (before F3's suites and doc edits existed); it is measured here,
  *     not estimated. `packages/ui` gets none of this category — its bar is a hard zero with no
  *     exception, matched by construction (T5 re-skinned every story, no absence test needed to
  *     name the literal).
- *   - F4-owned drop-rule modules and their absence-proving tests (`AD-090`) — `stale-sections.ts`
+ *   - F4-owned drop-rule modules and their absence-proving tests — `stale-sections.ts`
  *     (desktop) and `stale-account.ts` (web) must each name the retired vocabulary they detect
  *     and delete; their test files, T7's `save-acceptance-guards.test.mjs`, and T8's
  *     `import-rejection-copy.test.ts` / `import.ts` forbidden-token comment all prove the same
@@ -99,8 +103,9 @@ const CLAUSE_A_PATTERN =
  *     onto the post-patch schema, so neither carries a clause-A token anymore.
  */
 const ALLOWLIST = [
-  // The frozen i18n fixture (MOD-03, docs/naming.md:74) used to carry a clause-A entry here
-  // (AD-081, count 32) while it still held retired keystone strings as historical baseline. The
+  // The frozen i18n fixture (adapted storage tests, docs/naming.md:74) used to carry a clause-A
+  // entry here (narrowed by one enumerated constant applied to three assertions, count 32) while
+  // it still held retired keystone strings as historical baseline. The
   // 2026-08-17 re-baseline (docs/naming.md:74, apps/web/src/tests/i18n-split-parity.test.ts)
   // regenerated it from live STRINGS, so it now carries zero clause-A matches — REMOVED rather
   // than pinned at 0, per this guard's own "stale entry" check below.
@@ -109,16 +114,16 @@ const ALLOWLIST = [
   // (CHANGELOGs used to be pinned here; they are excluded from the scan now — see
   // EXCLUDE_RELEASE_PROSE for why an entry could not survive a release.)
   // tools/ guard sources that must name the forbidden/closed tokens to forbid/discharge them.
-  { file: 'tools/advisor-input-parity.test.mjs', count: 1, owner: 'AD-038 closed-pin history (T9)' },
+  { file: 'tools/advisor-input-parity.test.mjs', count: 1, owner: 'treeCritDmgMult closed-pin history (T9)' },
   { file: 'tools/fixture-corpus-parity.test.mjs', count: 8, owner: 'MFR-15 pattern + history + five-surface residual map (this guard\'s sibling)' },
   // F1's own negative-discriminator guard — must name the forbidden keys to forbid them.
   { file: 'apps/web/src/tests/fixture-corpus.test.ts', count: 3, owner: 'F1 negative-discriminator guard' },
   // F3's own doc amendments describing the removal (MSC-12 requires the local-data-compat.md
   // row; account-shared.ts's normalizeTree doc names the discarded stale keys it now discards).
-  // F4/T9 (AD-089) adds a second local-data-compat.md mention (the superseding drop rule).
-  { file: 'apps/web/docs/local-data-compat.md', count: 2, owner: 'F3 Removed-fields row (MSC-12) + F4/T9 AD-089 supersession' },
+  // F4/T9 adds a second local-data-compat.md mention (the superseding drop rule).
+  { file: 'apps/web/docs/local-data-compat.md', count: 2, owner: 'F3 Removed-fields row (MSC-12) + F4/T9 stored-data supersession' },
   { file: 'apps/web/src/shared/lib/account-shared.ts', count: 3, owner: 'F3 normalizeTree doc comment (MSC-10)' },
-  { file: 'apps/web/src/tests/fixtures/storage-roundtrip-20260729.json', count: 1, owner: 'F3 fixture history log (AD-083)' },
+  { file: 'apps/web/src/tests/fixtures/storage-roundtrip-20260729.json', count: 1, owner: "F3 fixture history log (TreeState fields' stated-exception path)" },
   // F3's own absence-proving tests (MSC-01/03/05/06/07/10/18) — each must name the token once to
   // prove it is gone.
   // The Account panel became its own page; its MSC-01 DOM proof moved with it, and the page
@@ -140,19 +145,19 @@ const ALLOWLIST = [
   { file: 'apps/web/src/tests/import-save.test.ts', count: 1, owner: 'F4/T7 historical comment' },
   { file: 'apps/web/src/tests/helpers/base-save-fixture.ts', count: 1, owner: 'F4/T7 flipped baseSave() literal' },
   { file: 'apps/web/src/tests/stat-breakdown.test.ts', count: 1, owner: 'F3 explanatory comment' },
-  { file: 'apps/web/src/tests/storage-legacy-keystone-fields.test.ts', count: 9, owner: 'F4/T9 AD-089 rewritten legacy-drop suite (supersedes MSC-10)' },
-  // F4-owned drop-rule modules (AD-090: "a module that must name the vocabulary it forbids") and
+  { file: 'apps/web/src/tests/storage-legacy-keystone-fields.test.ts', count: 9, owner: 'F4/T9 rewritten legacy-drop suite (supersedes MSC-10)' },
+  // F4-owned drop-rule modules (a module that must name the vocabulary it forbids) and
   // their absence-proving / forbidden-token test suites.
-  { file: 'apps/desktop/src/main/storage/stale-sections.ts', count: 2, owner: 'F4/T10 desktop drop-rule module (AD-089)' },
+  { file: 'apps/desktop/src/main/storage/stale-sections.ts', count: 2, owner: 'F4/T10 desktop drop-rule module' },
   { file: 'apps/desktop/src/main/storage/stale-sections.test.ts', count: 6, owner: 'F4/T10 desktop drop-rule absence proof (incl. the sole-cause discriminating case)' },
   { file: 'apps/desktop/src/main/storage/account-store-restore.test.ts', count: 2, owner: 'F4/T10 stale-section drop integration test' },
-  { file: 'apps/web/src/shared/lib/stale-account.ts', count: 5, owner: 'F4/T9 web drop-rule module (AD-089)' },
+  { file: 'apps/web/src/shared/lib/stale-account.ts', count: 5, owner: 'F4/T9 web drop-rule module' },
   { file: 'apps/web/src/tests/stale-account-drop.test.ts', count: 8, owner: 'F4/T9 web drop-rule absence proof (incl. the presence-vs-truthiness discriminating case)' },
-  { file: 'apps/web/src/shared/i18n/namespaces/import.ts', count: 1, owner: 'F4/T8 forbidden-token comment (MSG-14)' },
+  { file: 'apps/web/src/shared/i18n/namespaces/import.ts', count: 1, owner: 'F4/T8 forbidden-token comment (generic rejection message, no keystone/version/date/field path)' },
   { file: 'apps/web/src/tests/import-rejection-copy.test.ts', count: 3, owner: 'F4/T8 forbidden-token guard test' },
-  { file: 'tools/save-acceptance-guards.test.mjs', count: 7, owner: 'F4/T7 acceptance-gate absence proof (MSG-11)' },
+  { file: 'tools/save-acceptance-guards.test.mjs', count: 7, owner: 'F4/T7 acceptance-gate absence proof (positive discriminator on the new keys)' },
   // This guard's own source — its filename, doc comment and error messages necessarily name
-  // the tokens it forbids (the same self-reference AD-080 allowlist #10 anticipates). Count
+  // the tokens it forbids (the same self-reference this guard's allowlist #10 anticipates). Count
   // moved 11 -> 14 with the 2026-08-17 fixture re-baseline's explanatory comments above (this
   // file's own entries, not a scanned-file content change).
   { file: 'tools/keystone-surface-absence.test.mjs', count: 14, owner: 'this guard, self-reference' },
@@ -163,7 +168,7 @@ const ALLOWLIST = [
 /**
  * `critDmgMult` names two populations (§0.3): the deleted `TreeState`-derived field (gone
  * everywhere) and the kept `CombatMults`/`DeriveInput`/`AdvisorPipelineResult`/`PipelineFacts`
- * combat pass-through (`AD-073`, hardcoded `1`). This map does not distinguish them by meaning —
+ * combat pass-through (pinned per file rather than weakened to a count, hardcoded `1`). This map does not distinguish them by meaning —
  * it pins every surviving line, of either population, so a house move (delete from one line, add
  * on another) fails by name. `packages/ui` has zero lines and needs no entry.
  */
@@ -244,7 +249,7 @@ const CRIT_DMG_MULT_MAP = {
   'tools/save-acceptance-guards.test.mjs': [53],
 };
 
-describe('keystone surface absence — the repo-wide identifier guard (MP5 F3, MSC-04, AD-080)', () => {
+describe('keystone surface absence — the repo-wide identifier guard (MSC-04)', () => {
   it('non-vacuity: the scan roots resolve to a non-empty, non-trivial file set', () => {
     const allFiles = execFileSync('git', ['ls-files', '--', ...SCAN_ROOTS], {
       cwd: root,

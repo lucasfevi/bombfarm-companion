@@ -7,7 +7,7 @@ const root = resolve(fileURLToPath(new URL('..', import.meta.url)));
 const WIKI_DRIFT_YML_PATH = join(root, '.github/workflows/wiki-drift.yml');
 
 /**
- * MP5 F5 — the workflow-shape guard, the pre-merge proof that the scheduled job cannot be
+ * The workflow-shape guard, the pre-merge proof that the scheduled job cannot be
  * quietly neutered. Every predicate below is a pure function over workflow *text*, asserted
  * twice: `true` against `readFileSync` of the real file on disk, and `false` against a *string
  * mutation of that same text* — never a synthetic hand-written fixture that could drift away

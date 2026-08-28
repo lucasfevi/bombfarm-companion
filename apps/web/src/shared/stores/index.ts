@@ -1,5 +1,5 @@
 /**
- * Public API for the planner store (MOD-05 / MOD-12).
+ * Public API for the planner store.
  * Outside code imports hooks and named selectors only — never raw setState/getState.
  */
 export { usePlannerStore, resetPlannerStoreForTests } from '@/shared/stores/planner-store';

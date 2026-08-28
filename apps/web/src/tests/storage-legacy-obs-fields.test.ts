@@ -1,5 +1,5 @@
 /**
- * BSPW1-AC-04a…d — obsHit/obsCrit were removed from HeroRecord (AD-BSP-30, BSP-56).
+ * BSPW1-AC-04a…d — obsHit/obsCrit were removed from HeroRecord (AD-BSP-30).
  * Proves a save captured BEFORE that removal still loads: no throw, the fields are
  * discarded on normalize, the discard is silent, and the re-save drops the keys
  * without bumping the storage key. Input is the real pre-edit `hero-2` bytes that
@@ -23,7 +23,7 @@ function memoryLocalStorage() {
 }
 
 // Real pre-edit bytes for `hero-2`, captured from storage-roundtrip-20260729.json
-// before BSP-56 dropped obsHit/obsCrit from the fixture.
+// before obsHit/obsCrit were dropped from the fixture.
 const LEGACY_HERO_2_JSON =
   '{"id":"hero-2","name":"Brick","updatedAt":1700000000002,"rarity":"Epico","level":30,"stars":2,' +
   '"naked":{"attack":150,"energy":180,"speed":40,"critChance":8,"critDmg":80,"penetration":0,"cdr":5},' +
@@ -65,7 +65,7 @@ describe('legacy obsHit/obsCrit discard (BSPW1-04)', () => {
     expect(hero.level).toBe(LEGACY_HERO_2.level);
     expect(hero.stars).toBe(LEGACY_HERO_2.stars);
     // BSPW2: naked/gearedOverride/pts are seven-key legacy sub-objects — normalizeSheetStats /
-    // normalizePointAlloc (BSP-40) fill the additive `luck` key to 0 on load, same as every
+    // normalizePointAlloc fill the additive `luck` key to 0 on load, same as every
     // other new field.
     expect(hero.naked).toEqual({ ...(LEGACY_HERO_2.naked as Record<string, unknown>), luck: 0 });
     expect(hero.loadout).toEqual(LEGACY_HERO_2.loadout);

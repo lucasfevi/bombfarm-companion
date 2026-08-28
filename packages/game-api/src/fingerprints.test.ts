@@ -1,5 +1,5 @@
 /**
- * MP5 F4 (T5) — the deepened route fingerprint corpus check and its three named red states.
+ * (T5) — the deepened route fingerprint corpus check and its three named red states.
  *
  * Replaces the previous subset assertion (`for (const key of fingerprint's flat required-key
  * list) expect(bodyKeys.has(key)).toBe(true)`) — unfalsifiable on either an addition or a
@@ -33,11 +33,11 @@ function deepClone<T>(value: T): T {
   return JSON.parse(JSON.stringify(value)) as T;
 }
 
-describe('ROUTE_FINGERPRINTS (LAR-18, MP5 F4)', () => {
+describe('ROUTE_FINGERPRINTS', () => {
   for (const section of Object.keys(ROUTE_FINGERPRINTS) as AccountSection[]) {
     const fingerprint = ROUTE_FINGERPRINTS[section];
 
-    it(`${section}: has a non-empty root/level, a game build, an ISO capturedAt, and names its sourceArtifact (MSG-30)`, () => {
+    it(`${section}: has a non-empty root/level, a game build, an ISO capturedAt, and names its sourceArtifact`, () => {
       expect(fingerprint.root.length).toBeGreaterThan(0);
       expect(fingerprint.level.keys.length).toBeGreaterThan(0);
       expect(fingerprint.gameBuild.length).toBeGreaterThan(0);
@@ -47,7 +47,7 @@ describe('ROUTE_FINGERPRINTS (LAR-18, MP5 F4)', () => {
     });
   }
 
-  it('every fingerprinted route body is ok:true — equality modulo allowance, never a subset (MSG-08)', () => {
+  it('every fingerprinted route body is ok:true — equality modulo allowance, never a subset', () => {
     if (!bodies) return;
     for (const route of ROUTES) {
       const fingerprint = ROUTE_FINGERPRINTS[route.section];
@@ -120,7 +120,7 @@ describe('ROUTE_FINGERPRINTS (LAR-18, MP5 F4)', () => {
     }
   });
 
-  it('non-vacuity: /roster.heroes, /inventory.items, /rotation.heroes are non-empty in the committed corpus (MSG-06)', () => {
+  it('non-vacuity: /roster.heroes, /inventory.items, /rotation.heroes are non-empty in the committed corpus', () => {
     if (!bodies) return;
     const roster = required(bodies['/roster'], 'missing /roster body');
     const inventory = required(bodies['/inventory'], 'missing /inventory body');
@@ -130,7 +130,7 @@ describe('ROUTE_FINGERPRINTS (LAR-18, MP5 F4)', () => {
     expect((rotation.heroes as unknown[]).length, 'rotation.heroes').toBeGreaterThan(0);
   });
 
-  it('non-vacuity: item.slot is present on at least one /inventory item and absent on at least one (AD-087)', () => {
+  it('non-vacuity: item.slot is present on at least one /inventory item and absent on at least one', () => {
     if (!bodies) return;
     const items = required(bodies['/inventory'], 'missing /inventory body').items as Record<string, unknown>[];
     const withSlot = items.filter((item) => 'slot' in item);
@@ -139,7 +139,7 @@ describe('ROUTE_FINGERPRINTS (LAR-18, MP5 F4)', () => {
     expect(withoutSlot.length, 'items WITHOUT slot').toBeGreaterThan(0);
   });
 
-  it('MSG-29: no runtime override exists — no env var and no refresh function name the fingerprint', () => {
+  it('no runtime override exists — no env var and no refresh function name the fingerprint', () => {
     // Mirrors the literal verification command (`git grep -nE
     // 'process\.env\.[A-Z_]*FINGERPRINT|refreshFingerprint' packages/game-api/src`) as an
     // in-suite assertion so it runs on every `pnpm --filter @bombfarm/game-api test`, not only
@@ -150,7 +150,7 @@ describe('ROUTE_FINGERPRINTS (LAR-18, MP5 F4)', () => {
     expect(overridePattern.test(readFileSyncSelf('routes.ts'))).toBe(false);
   });
 
-  it('CI=1 fails loudly when the primary corpus artifact is absent (MSG-09/MSG-10)', () => {
+  it('CI=1 fails loudly when the primary corpus artifact is absent', () => {
     const missingPath = fixturePath('api-bodies.json').replace('api-bodies.json', 'does-not-exist.json');
     vi.stubEnv('CI', '1');
     try {

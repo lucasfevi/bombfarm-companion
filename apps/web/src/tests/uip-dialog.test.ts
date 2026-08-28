@@ -31,7 +31,7 @@ describe('dialog recipe parity', () => {
   });
 });
 
-describe('Dialog shell DS-09 imports', () => {
+describe('Dialog shell reuse-boundary imports', () => {
   for (const file of [
     'dialog/dialog-root.tsx',
     'dialog/dialog-portal.tsx',

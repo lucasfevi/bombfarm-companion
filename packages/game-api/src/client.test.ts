@@ -43,7 +43,7 @@ describe('the committed fixtures are scrubbed (D19 — the repo is public)', () 
   }
 });
 
-describe('api-bodies-after.json differs from api-bodies.json in exactly five dimensions (LAR-09)', () => {
+describe('api-bodies-after.json differs from api-bodies.json in exactly five dimensions', () => {
   const before = loadFixtureJson('api-bodies.json');
   const after = loadFixtureJson('api-bodies-after.json');
 
@@ -99,7 +99,7 @@ describe('api-bodies-after.json differs from api-bodies.json in exactly five dim
   });
 });
 
-describe('createGameApiClient — holds no per-section cache (LAR-09 client half)', () => {
+describe('createGameApiClient — holds no per-section cache (client half)', () => {
   it('one instance driven over two body sets returns the second, then the first bodies again return the first values', async () => {
     const client = createGameApiClient();
     const before = loadFixtureJson('api-bodies.json');

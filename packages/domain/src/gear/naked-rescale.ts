@@ -67,7 +67,7 @@ export function rescaleNakedPen(
  * FLAT difference in the ability's contribution — not a ratio, because crit damage is
  * flat-additive (`POINT_GAIN.critDmgFlat`). The hero's own roll is preserved exactly, which is
  * what `rescaleNakedPen` achieves by ratio for the pooled pen ability and what
- * a rarity-midpoint reset would not (DEC-06 / BSP-31a).
+ * a rarity-midpoint reset would not (DEC-06).
  *
  * Arguments are the previous/next ability Σ in planner percentage points
  * (`AbilityMods.sheetCritDmgFlat`), not fractions.
@@ -101,7 +101,7 @@ export function rescaleNakedCritChance(
 }
 
 /**
- * `DEC-04` / `BSP-31a` — picks and applies the correct sheet-ability rescaler for a level
+ * `DEC-04` — picks and applies the correct sheet-ability rescaler for a level
  * change, dispatching on `AbilityEffect['kind']`. Moving the *decision* here makes it
  * unit-testable; `use-hero-build-actions.ts` (which has no test harness — no React component
  * test framework in this repo) becomes a one-line caller. Returns `naked` unchanged for every

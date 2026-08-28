@@ -3,7 +3,7 @@ import type { SettingsWriteResult } from './locale.js';
 import type { LiveDiagnosticsDumpOutcome, LiveEvent, LiveView } from './live-source.js';
 
 export { accountChangeKey, canonicalStringify } from './account-change-key.js';
-/** MP3 F4 (`AD-049`) — the desktop locale token, its one domain/BCP-47 mapping, and the pure
+/** The desktop locale token, its one domain/BCP-47 mapping, and the pure
  *  startup resolution. `locale.ts` itself imports `AppSettings`/`DEFAULT_SETTINGS` back from this
  *  file (see its own doc comment) — safe because every such value is read only inside a function
  *  body, never at either module's top level, so the two modules finish initialising before either
@@ -283,10 +283,10 @@ export interface IpcChannels {
   'app:getFlavor': { args: []; result: AppFlavor };
   'app:getEnvironment': { args: []; result: AppEnvironmentInfo };
   'app:ping': { args: []; result: { ok: true; from: 'main' } };
-  /** MP3 F4 — the resolved settings: a stored override, else OS detection, else
-   *  `DEFAULT_SETTINGS.locale`. No longer the constant it returned since MP1 (`AD-053`). */
+  /** The resolved settings: a stored override, else OS detection, else
+   *  `DEFAULT_SETTINGS.locale`. No longer the constant it returned since MP1. */
   'settings:get': { args: []; result: AppSettings };
-  /** MP3 F4 (`AD-051`) — verb-shaped, following the consent quartet's shape: the existing
+  /** Verb-shaped, following the consent quartet's shape: the existing
    *  `bfc:invoke` bridge forwards no arguments (`preload/index.ts:18`), so the channel name
    *  itself *is* the value rather than a payload the bridge would need to widen to carry.
    *  `isIpcChannel` is already the allowlist validator for it. */
@@ -295,8 +295,8 @@ export interface IpcChannels {
   'storage:health': { args: []; result: { binding: string; ok: boolean } };
   'game:getStatus': { args: []; result: GameStatusInfo };
   'account:get': { args: []; result: AccountView };
-  /** MP2 F2 — consent for the game-API account reader (LAR-01, LAR-03…05). All four are
-   *  zero-arg by design (TD-10): the existing `bfc:invoke` bridge forwards no arguments, so the
+  /** Consent for the game-API account reader. All four are
+   *  zero-arg by design: the existing `bfc:invoke` bridge forwards no arguments, so the
    *  player's answer is three verbs (`accept`/`decline`/`revoke`) rather than one call taking a
    *  decision parameter. Every result is the new `ConsentRecord`, never the raw `SessionToken`. */
   'consent:get': { args: []; result: ConsentRecord };
@@ -343,8 +343,8 @@ export interface IpcEvents {
   /** Fired whenever the consent record changes, from any cause (accept/decline/revoke). */
   'consent:changed': ConsentRecord;
   /**
-   * MP3 F3 (`AD-043`) — fired when the account genuinely **changed**, not on every commit.
-   * Two producers can trigger it: the MP2 F2 account-refresh cycle (the 60 s game-API poll) and,
+   * Fired when the account genuinely **changed**, not on every commit.
+   * Two producers can trigger it: the account-refresh cycle (the 60 s game-API poll) and,
    * in fixture-mode test builds only, `GameReaderService`'s fixture ticker. Both are gated by the
    * same `accountChangeKey(payload)` comparison (`packages/contracts/src/account-change-key.ts`)
    * against the last-emitted key — a commit whose key is unchanged from the last emit is

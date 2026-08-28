@@ -1,5 +1,6 @@
 /**
- * MP5 F4 (design §5.7, `MSG-09`/`MSG-10`) — the shared "green without executing" guard, lifted
+ * design §5.7 (missing artifact is a hard CI=1 failure, never an early-out; both directions
+ * recorded in validation.md) — the shared "green without executing" guard, lifted
  * from `apps/web/src/tests/support/build-output.ts`'s `requireBuildOutput` into a
  * fixture-agnostic form so every artifact-dependent suite in this feature routes through the
  * same shape: F4 has FOUR guarded artifacts (the two API bodies, the export corpus, the

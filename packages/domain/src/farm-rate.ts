@@ -447,7 +447,7 @@ function basesForAccount(
   const treeLuckFlatPct = account.tree.luckFlatPct ?? 0;
 
   return enabledHeroes.map((hero) => {
-    // AD-032: the sole HeroRecord entry to the pipeline. phase=1 (not null) + mitigationPct=0
+    // The sole HeroRecord entry to the pipeline. phase=1 (not null) + mitigationPct=0
     // is deliberate — `effectiveMitigationPct` only honors mitigationPct=0 when phase is a
     // positive number; with `null` it substitutes phase 1's wiki mitigation instead (design.md §0).
     const pipeline = pipelineForHero(hero, account, 1, 0);

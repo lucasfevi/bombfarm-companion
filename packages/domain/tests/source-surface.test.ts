@@ -1,5 +1,5 @@
 /**
- * MP5 F2 (T10, `AD-073`) — the absence guard. Makes MKR-10 and MKR-21 machine-checkable, and is
+ * (T10) — the absence guard. Makes MKR-10 and MKR-21 machine-checkable, and is
  * the ONLY mechanism that can catch a stale removed-arm property in an untypechecked test file:
  * `packages/domain/tsconfig.typecheck.json` covers six `fidelity-*` files, and esbuild silently
  * drops excess object-literal properties at runtime, so a stale property on the other 53 test
@@ -8,7 +8,7 @@
  * A literal zero-matches assertion over `packages/domain/tests` is unreachable (MKR-16 forbids
  * editing any fixture, and two carriers under `fixtures/` belong to F3's still-shipping web
  * surface; two more are F1's own guard and its manifest, which must name the forbidden keys to
- * forbid them; MP5 F4 adds one more — its own purpose-built rejection fixture, which must contain
+ * forbid them; this feature adds one more — its own purpose-built rejection fixture, which must contain
  * the retired fields verbatim). This suite pins an exact PER-FILE map instead of a bare count — a
  * count-only check would miss a match moving from an allowlisted file to a new one while the sum
  * holds.
@@ -167,7 +167,7 @@ const SRC_ALLOWLIST: Record<string, number[]> = {
  * - `fixture-corpus.test.ts`: F1's own corpus guard, whose `FORBIDDEN_KEYS` array must contain
  *   the literal key names to function.
  * - `fixtures/rejection/pre-update-save.json`: F4's own purpose-built rejection fixture
- *   (`MSG-12`/`MSG-13`, `packages/domain/tests/save-acceptance.test.ts`) — it must contain the
+ *   (`packages/domain/tests/save-acceptance.test.ts`) — it must contain the
  *   retired fields verbatim to prove `parseSaveFile` rejects a save shaped like this. Its sibling
  *   `truncated-save.json` carries none of them (an empty `skills.totals`) and needs no entry.
  */
@@ -189,7 +189,7 @@ function matchingLines(absPath: string, pattern: RegExp): number[] {
   return hits;
 }
 
-describe('source-surface — the deleted-arm absence guard (MP5 F2 T10, AD-073)', () => {
+describe('source-surface — the deleted-arm absence guard (T10)', () => {
   const srcFiles = listFiles(SRC_ROOT);
   const testFiles = listFiles(TESTS_ROOT).filter((f) => !f.endsWith(SELF_FILENAME));
 
@@ -215,7 +215,7 @@ describe('source-surface — the deleted-arm absence guard (MP5 F2 T10, AD-073)'
     }
   });
 
-  it('packages/domain/tests: the pattern matches exactly the four allowlisted files, with their exact counts (MKR-21, AD-073)', () => {
+  it('packages/domain/tests: the pattern matches exactly the four allowlisted files, with their exact counts (MKR-21)', () => {
     const actual: Record<string, number> = {};
     for (const file of testFiles) {
       const rel = relative(TESTS_ROOT, file).split('\\').join('/');

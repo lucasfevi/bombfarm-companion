@@ -105,7 +105,7 @@ export function ledgerPenetration(facts: PipelineFacts): StatBreakdown {
  * Luck's ledger (`AC-22`, `DEC-06`) — the shortest of the eight stats, and the one that makes
  * `AC-29`'s four lines legible in a single stat: Hero (birth roll, already star-scaled — `naked`
  * is tree-free per Wave 5's `nakedFromBirth`), Gear (`gearSortePct`), Ability — always 0 since
- * Olho Lapidador is `{ kind: 'none' }` (`BSP-47`) but pushed explicitly (unlike `pushAdd`'s
+ * Olho Lapidador is `{ kind: 'none' }` but pushed explicitly (unlike `pushAdd`'s
  * near-zero skip) so the line renders, Points (`pts.luck × luckPctOfBase × naked.luck`,
  * `derive.ts`'s own `delta.luck` formula) and Skill tree (`luck_add`, a FLAT percentage-point
  * addend — `AD-BSP-22`, the one shape that differs from every other stat's shared-pool tree
@@ -125,7 +125,7 @@ export function ledgerLuck(facts: PipelineFacts): StatBreakdown {
   const pureGearAmount = gearedLuck - treeAmount - nakedLuck;
   pushAdd(steps, 'gear', pureGearAmount);
 
-  // BSP-47: Olho Lapidador (Luck's only sheet ability) is `{ kind: 'none' }` — always zero.
+  // Olho Lapidador (Luck's only sheet ability) is `{ kind: 'none' }` — always zero.
   // Pushed explicitly so the Ability line renders even at 0, matching the game's own tooltip
   // (AC-22, AC-29). `pushAdd` would silently skip a near-zero amount; this does not.
   const afterGear = steps.at(-1) ?? steps[0];

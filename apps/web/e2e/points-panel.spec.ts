@@ -152,7 +152,7 @@ test.describe('points panel UX', () => {
     await expect(panel.getByText(/39 \/ 38 pontos/i)).toBeVisible();
   });
 
-  test('+5 / −5 apply a partial step at the budget ceiling / at zero (BSP-25, AC-17)', async ({
+  test('+5 / −5 apply a partial step at the budget ceiling / at zero (AC-17)', async ({
     page,
   }) => {
     const pts = { ...zeroPts(), energy: 35, critChance: 3 };

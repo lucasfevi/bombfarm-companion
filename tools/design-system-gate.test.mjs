@@ -106,7 +106,7 @@ describe('design-system-required aggregator (SBC-19/SBC-20)', () => {
 });
 
 /**
- * MP3 F2 (MPV-22, design.md §11 hazard 4) — DS-09's reuse boundary, checked from the source side
+ * (design.md §11 hazard 4) — the reuse boundary, checked from the source side
  * as a companion to `pnpm lint`'s `boundaries/element-types` rule (which is lint-enforced, not
  * grep-checked, per `docs/design-system.md`). This extends the file rather than replacing it —
  * every assertion above is unchanged.
@@ -125,7 +125,7 @@ function listFiles(dir, extensions) {
   return files;
 }
 
-describe('DS-09 reuse boundary — packages/ui takes no @bombfarm/domain or i18n edge (MPV-22)', () => {
+describe('reuse boundary — packages/ui takes no @bombfarm/domain or i18n edge', () => {
   const PACKAGES_UI_SRC = join(root, 'packages/ui/src');
   const sourceFiles = listFiles(PACKAGES_UI_SRC, ['.ts', '.tsx']).filter((file) => !/\.(test|stories)\.tsx?$/.test(file));
 
@@ -133,7 +133,7 @@ describe('DS-09 reuse boundary — packages/ui takes no @bombfarm/domain or i18n
     const offenders = sourceFiles.filter((file) => /from\s+['"]@bombfarm\/domain/.test(readFileSync(file, 'utf8')));
     expect(
       offenders,
-      `packages/ui must not import @bombfarm/domain (DS-09). Found in: ${offenders.join(', ')}.`,
+      `packages/ui must not import @bombfarm/domain. Found in: ${offenders.join(', ')}.`,
     ).toEqual([]);
   });
 
@@ -143,7 +143,7 @@ describe('DS-09 reuse boundary — packages/ui takes no @bombfarm/domain or i18n
     );
     expect(
       offenders,
-      `packages/ui must not import an i18n module (DS-09). Found in: ${offenders.join(', ')}.`,
+      `packages/ui must not import an i18n module. Found in: ${offenders.join(', ')}.`,
     ).toEqual([]);
   });
 

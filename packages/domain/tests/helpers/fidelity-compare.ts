@@ -1,5 +1,5 @@
 /**
- * MP2 F4 — the cross-source comparator (design §4.3). FID-01…04.
+ * The cross-source comparator (design §4.3). FID-01…04.
  *
  * Order is a requirement, not an implementation detail: rejection → roster membership →
  * per-hero sheet compare → account-level equality. A roster mismatch must never let a single
@@ -15,7 +15,7 @@ import { FidelityGateError } from './fidelity-gate-error';
 const SHEET_BLOCKS = ['naked', 'gearedOverride', 'birth'] as const;
 type SheetBlock = (typeof SHEET_BLOCKS)[number];
 
-/** Non-sheet `record` fields compared for EXACT equality (design §4.3 rule 3, TD-4). */
+/** Non-sheet `record` fields compared for EXACT equality (design §4.3 rule 3). */
 const EXACT_RECORD_FIELDS = ['level', 'stars', 'rarity', 'pts', 'loadout', 'abilities', 'statPointsAvailable'] as const;
 
 export interface CompareCounts {

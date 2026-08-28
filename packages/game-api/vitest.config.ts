@@ -14,7 +14,7 @@ export default defineConfig({
     // enforced only by `pnpm --filter @bombfarm/game-api typecheck:tests` (tsconfig.typecheck.json).
     server: {
       deps: {
-        // AD-033 (MP5 F4, AD-086): packages/domain/dist is a BUNDLER-target artifact, not
+        // packages/domain/dist is a BUNDLER-target artifact, not
         // Node-native ESM. domain's source uses extensionless/directory-index relative imports
         // and tsc emits dist/**/*.js with the same specifiers verbatim. Every bundler resolves
         // them; Node's native ESM loader does not (measured: 47/56 subpaths fail to load —

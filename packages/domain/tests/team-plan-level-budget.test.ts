@@ -9,7 +9,7 @@
  * those same points, so each pass re-granted the whole allowance and the proposed point reset
  * climbed past the hero's level — visibly, on the Team Plan page's own Point Reset table.
  *
- * MP5 F1 (AD-068 class (b) — structural): payload-20260812-8heroes.json supplies a realistic
+ * Class (b) — structural: payload-20260812-8heroes.json supplies a realistic
  * loadout/sheetOther baseline only; the levels asserted against are read off the fixture hero
  * rather than pinned, so no hero identity or captured value is asserted here.
  */

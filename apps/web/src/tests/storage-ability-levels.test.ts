@@ -3,7 +3,7 @@
  *
  * `local-data-compat.md` rule 7 ("Prove it") over a real stored payload. This is
  * deliberately NOT `storage-roundtrip.test.ts` / `storage-roundtrip-20260729.json` — that
- * fixture is the frozen MOD-21 byte-identity tripwire (output ≡ input under the current
+ * fixture is the frozen byte-identity tripwire (output ≡ input under the current
  * schema) and L-03 forbids one file serving both that role and this wave's compat proof
  * (output ≠ input under the OLD, pre-rank-20 `abilityMods` interpretation).
  *

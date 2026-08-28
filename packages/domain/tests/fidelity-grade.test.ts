@@ -37,8 +37,8 @@ describe('assertCaptureFullFidelity', () => {
   });
 
   it('pins the intentional divergence from ACS-05.5: deriveAccountFidelity(undefined) still grades full', () => {
-    // The guard does NOT delegate the absent-block decision to deriveAccountFidelity (design
-    // TD-3) — ACS-05.5 is correct for the file adapter and would be wrong here.
+    // The guard does NOT delegate the absent-block decision to deriveAccountFidelity —
+    // ACS-05.5 is correct for the file adapter and would be wrong here.
     expect(deriveAccountFidelity(undefined)).toEqual({ grade: 'full', degradedSections: [] });
   });
 
@@ -120,7 +120,7 @@ describe('assertCaptureFullFidelity', () => {
     }
   });
 
-  it('accepts a cast-in future "degraded" status as a valid shape and names it verbatim (AD-023 forward-compat, zero edits here)', () => {
+  it('accepts a cast-in future "degraded" status as a valid shape and names it verbatim (forward-compat, zero edits here)', () => {
     const futureSection = { status: 'degraded', capturedAt: CAPTURED_AT } as unknown as SectionFidelity;
     const fidelity = { ...allResolved(), items: futureSection };
     const err = expectFidelityError(() => assertCaptureFullFidelity(payloadWith(fidelity), 'live'), 'notFullFidelity');

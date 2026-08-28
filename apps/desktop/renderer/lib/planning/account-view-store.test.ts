@@ -129,13 +129,13 @@ describe('accept — the pure reducer (design.md §4.4)', () => {
   });
 });
 
-describe('MAR-13 (amended by AD-047) — two arrivals in quick succession settle to the newer view and move the advice compute count by exactly 1', () => {
+describe('MAR-13 — two arrivals in quick succession settle to the newer view and move the advice compute count by exactly 1', () => {
   beforeEach(() => {
     resetAdviceComputeCount();
   });
 
   it('settles to the newer view, and getAdviceComputeCount() moves by exactly 1', () => {
-    // AD-047: a React render count is not observable in apps/desktop's node-env Vitest project
+    // A React render count is not observable in apps/desktop's node-env Vitest project
     // (renderToStaticMarkup never runs useEffect — use-account-view.ts's own comment). Asserted
     // instead as: one settled state, carrying the newer view, plus exactly one advice
     // computation — not a render count.

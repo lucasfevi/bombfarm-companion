@@ -522,7 +522,7 @@ describe('rescaleHeroForLevel / rescaleHeroForStars (residual + re-apply)', () =
     expect(result.geared).toEqual(expectedGeared(n0, expectedNaked, geared, loadout, other));
   });
 
-  it('AC-21: rescale keeps full precision — result is not truncated to 1 dp (BSP-28)', () => {
+  it('AC-21: rescale keeps full precision — result is not truncated to 1 dp', () => {
     const from = 1;
     const to = 26;
     const loadout = flatWeaponLoadout();

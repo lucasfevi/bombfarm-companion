@@ -1,5 +1,5 @@
 /**
- * BSPW4-11 (BSP-07, BSP-59) — the sustained-DPS reset-recommendation predicate.
+ * BSPW4-11 — the sustained-DPS reset-recommendation predicate.
  * Pure; consumes whatever `{ currentDps, reoptDps }` the caller supplies — `computeAdvisorPipeline`
  * feeds it Tier 1's own `findGateCandidate` output (`AC-69`), never an idealised reallocation,
  * so the gate can never promise a gain the optimiser will not deliver.

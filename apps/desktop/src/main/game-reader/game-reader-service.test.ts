@@ -344,7 +344,7 @@ describe('GameReaderService — pollNow nudges an immediate re-check', () => {
   });
 });
 
-describe('GameReaderService — account store wiring (T10, design §8/TD-8)', () => {
+describe('GameReaderService — account store wiring (T10, design §8)', () => {
   const FAKE_VIEW: AccountView = {
     payload: {},
     gameRunning: true,

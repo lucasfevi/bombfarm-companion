@@ -77,7 +77,7 @@ export function formatBreakdownValue(
   if (statId === 'bombsPerSecond') return `${formatNumber(value, 2)}/s`;
   if (statId === 'uptime') return `${formatNumber(value, 1)}%`;
   if (statId === 'activeDps' || statId === 'sustainedDps') return formatNumber(value, 0);
-  // BSP-29/AC-25: sheet magnitudes at 2 dp — the Effective panel's sheet group and the
+  // AC-25: sheet magnitudes at 2 dp — the Effective panel's sheet group and the
   // breakdown registry.
   if (isSheetKey(statId)) {
     return `${formatNumber(value, 2)}${SHEET_PCT_KEYS.has(statId) ? '%' : ''}`;
@@ -119,7 +119,7 @@ export function sourceLabel(strings: Strings, source: LedgerSource): string {
 }
 
 /**
- * `BSP-20`/`AC-29` — names each ledger step's GAME line (Hero / Gear / Ability / Skill tree),
+ * `AC-29` — names each ledger step's GAME line (Hero / Gear / Ability / Skill tree),
  * not its raw `LedgerSource`. `LEDGER_SOURCE_GROUP` (`DEC-07`) folds `base`/`level`/`stars`/
  * `points` into Hero, `sheetAbilities` into Ability, `gear`/`tree` stay themselves. The
  * `combat` group (`abilities`/`team`/`abilitiesTeam`) is deliberately NOT one of the four game

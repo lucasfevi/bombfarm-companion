@@ -37,14 +37,14 @@ export type LedgerNote =
   | 'brutalStrike';
 
 /**
- * `BSP-20`'s four in-game lines, plus a `combat` bucket for the multiplicative sources that
+ * The four in-game lines, plus a `combat` bucket for the multiplicative sources that
  * sit below the sheet (`abilities` / `team` / `abilitiesTeam`) — real combat bonuses, not one
  * of the four sheet-building lines (DEC-07).
  */
 export type LedgerGroup = 'hero' | 'gear' | 'ability' | 'skillTree' | 'combat';
 
 /**
- * Exhaustive map from every `LedgerSource` to the game line it belongs to (`BSP-20`, `DEC-07`).
+ * Exhaustive map from every `LedgerSource` to the game line it belongs to (`DEC-07`).
  * A display **grouping** over the existing ledger steps, not a re-cut: the arithmetic already
  * matches the game's decomposition (`AC-41`/`AC-42`, W4) — only the naming was missing. The
  * `Record` shape is exhaustive at compile time, so a future `LedgerSource` cannot be silently

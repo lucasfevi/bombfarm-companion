@@ -133,7 +133,7 @@ describe('recomputeGearedSheet', () => {
 });
 
 /**
- * BSPW5-07 (BSP-05, AD-BSP-13): mergeImportedHero is a full OVERWRITE, not a gear-refresh
+ * BSPW5-07 (AD-BSP-13): mergeImportedHero is a full OVERWRITE, not a gear-refresh
  * merge. `existing` supplies only id/sourceId/altLoadout; everything else comes from
  * `incoming` — including fields the old body used to preserve (naked/pts/level/stars/
  * rarity/abilities).
@@ -226,7 +226,7 @@ describe('mergeImportedHero', () => {
     expect(merged.updatedAt).toBeGreaterThanOrEqual(before);
   });
 
-  it('AC-19: name/skin A -> B survives the overwrite (BSP-39 / AD-BSP-17 regression guard)', () => {
+  it('AC-19: name/skin A -> B survives the overwrite (BSPW5-07 / AD-BSP-17 regression guard)', () => {
     const existing = hero({ id: 'local-1', name: 'A', sourceId: 'game-1', skin: 1 });
     const incoming = asIncoming(hero({ id: 'x', name: 'B', sourceId: 'game-1', skin: 5 }));
     const merged = mergeImportedHero(existing, incoming);
@@ -271,15 +271,15 @@ describe('mergeImportedHero', () => {
   // the current capture keep the claim intact: different accounts is not the property being
   // tested, different pts vectors is.
   //
-  // MP5 F1 (AD-068 class (a) + (b)): re-pointed onto the two post-patch corpus files. The
+  // (the ground-truth rule, class (a) + (b)): re-pointed onto the two post-patch corpus files. The
   // deleted vera-01 -> vera-03 pair was a before/after snapshot of the SAME hero — that family
   // is unreproducible post-wipe (`stat_points_available` is 0 on every corpus hero, so no
-  // point-delta pair exists). Design (AD-068, §6.1): two real heroes from two genuinely
+  // point-delta pair exists). Design (the ground-truth rule, §6.1): two real heroes from two genuinely
   // different accounts is a STRONGER merge subject than two snapshots of one — it still proves
   // the overwrite is not stale (different pts vectors) and still proves the merged
   // naked/pts/loadout faithfully reconstruct a real save's `stats`, without needing the same
   // hero twice.
-  it('AC-20/BSP-27: re-import Sora -> Doran — merged naked+pts reconstruct the new save (no stale decimals)', () => {
+  it('AC-20: re-import Sora -> Doran — merged naked+pts reconstruct the new save (no stale decimals)', () => {
     // Re-pointed onto the post-2026-08-18-revert capture (issue #132); the 2026-08-16
     // redistribution export this used to read is now flat-regime and no longer a subject —
     // see `docs/fixture-corpus.md` §9.

@@ -1,5 +1,5 @@
 /**
- * The only asynchrony in MP3 F3, isolated into a pure reducer (design.md §4.4, `AD-047`) so it
+ * The only asynchrony in this feature, isolated into a pure reducer (design.md §4.4) so it
  * is testable at all: `apps/desktop`'s Vitest project is node-environment with
  * `renderToStaticMarkup`, which never runs `useEffect` — see `use-account-view.ts`'s own comment
  * (kept from F2). No React import — assert it by reading the source, F2's own technique

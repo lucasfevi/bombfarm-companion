@@ -116,7 +116,7 @@ function buildFixture(opts: FixtureOpts = {}) {
   const extraDmgPct = opts.extraDmgPct ?? 0;
 
   // BSPW4-06 (AC-40/41): the real imported sheet is ALWAYS tree-inclusive (the skill tree is
-  // applied exactly once, in the sheet — BSP-23c). A default `geared` that ignores treeXxx
+  // applied exactly once, in the sheet). A default `geared` that ignores treeXxx
   // would make `derive`'s single-application `effective` disagree with a ledger that (rightly)
   // shows a 'tree' step — bake the SAME single application into the default fixture so the two
   // stay consistent, matching what a real save's `stats` block already does.
@@ -513,7 +513,7 @@ describe('stat-breakdown builder', () => {
   });
 });
 
-describe('LEDGER_SOURCE_GROUP is exhaustive over LedgerSource (BSP-20, AC-28, DEC-07)', () => {
+describe('LEDGER_SOURCE_GROUP is exhaustive over LedgerSource (AC-28, DEC-07)', () => {
   const ALL_SOURCES: LedgerSource[] = [
     'base',
     'level',
@@ -551,7 +551,7 @@ describe('LEDGER_SOURCE_GROUP is exhaustive over LedgerSource (BSP-20, AC-28, DE
   });
 });
 
-describe('ledgerLuck (BSP-44, AC-22, DEC-06)', () => {
+describe('ledgerLuck (AC-22, DEC-06)', () => {
   it('Hero / Gear / Ability(0) / Points / Skill tree lines recompose to adjusted.luck within 0.01', () => {
     const naked = sampleNaked();
     const pts = { ...ZERO_PTS(), luck: 4 };

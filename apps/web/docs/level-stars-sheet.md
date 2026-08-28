@@ -1,7 +1,7 @@
 # Level / stars sheet sync
 
 **Status:** hard truth  
-**Sources:** AD-004; feature `level-stars-auto-stats`
+**Sources:** the hero-planner-absorption decision; feature `level-stars-auto-stats`
 
 Changing **level** or **stars** must keep naked, geared, and derived combat consistent without forcing a save reimport.
 
@@ -32,7 +32,7 @@ Use the shared helpers `rescaleHeroForLevel` / `rescaleHeroForStars` (or equival
 
 ## Star mult (capture-backed)
 
-`starsMult = 1 + STAR_MULT_PER_STAR × ★` (0..`MAX_STARS`), i.e. `1 + 0.25 × ★` over 0..3 today — ×1.75 at max stars. Applies to intrinsic Attack, Energy, Crit %, Crit Dmg, Penetration, CDR before items. **Speed does not scale** (Bram geared + Orin unequipped, 2026-07-23). Luck scales with ★ and is on the planner sheet model (BSP-40, AD-BSP-19); it is not displayed until BSP-44 (Wave 6).
+`starsMult = 1 + STAR_MULT_PER_STAR × ★` (0..`MAX_STARS`), i.e. `1 + 0.25 × ★` over 0..3 today — ×1.75 at max stars. Applies to intrinsic Attack, Energy, Crit %, Crit Dmg, Penetration, CDR before items. **Speed does not scale** (Bram geared + Orin unequipped, 2026-07-23). Luck scales with ★ and is on the planner sheet model (carrying a luck key across SheetStats/SheetKey/PointAlloc and the stored HeroRecord, AD-BSP-19); it is not displayed until Wave 6.
 
 The per-★ share is the wiki's `gemas.mult_por_estrela` and it **moves between patches** — it was `0.5` (×2.5 at max stars) until a patch halved it. The 2026-07-23 capture above measured the SCOPE (which stats scale, and that Speed does not), and that has held across the change; only the magnitude moved. Read the magnitude from `STAR_MULT_PER_STAR` in `packages/domain/src/gear/catalog.ts`, never from a number written into prose — including this paragraph.
 
@@ -49,7 +49,7 @@ The per-★ share is the wiki's `gemas.mult_por_estrela` and it **moves between 
 `naked` (the Locked strategy above) is **Hero + Ability, tree-free** after Wave 4 —
 `nakedFromBirth` never bakes the account skill tree in; a separate stage
 (`applySkillTree`) applies it exactly once, on top, to produce the displayed sheet
-(`BSP-23c`, `AD-BSP-12`). The pooled per-point bases this file's rescale helpers read
+(`AD-BSP-12`). The pooled per-point bases this file's rescale helpers read
 from stay today's (`GAP-W2-01`-era) contaminated values until Wave 5 rewires import to
 call `nakedFromBirth` directly — this doc's rescale strategy is unaffected either way,
 since `rescaleNakedForLevel` / `rescaleNakedForStars` only ever touch `naked` as an
@@ -57,7 +57,7 @@ opaque `SheetStats`, never re-deriving it from birth rolls.
 
 `rescaleNakedCrit(naked, rarity, otherCrit, stars)` — the rarity-midpoint reset used by
 `use-hero-build-actions.ts` when a sheet ability's `other` term changes — is
-**`@deprecated`** (`BSP-31a`). It resets naked crit % to `BASE_ROLLS[rarity]`, discarding
+**`@deprecated`**. It resets naked crit % to `BASE_ROLLS[rarity]`, discarding
 the hero's own birth roll; a well-rolled hero (Bellatrix's crit chance 9.51 vs Raro's
 rarity midpoint 7, a 36% error) gets silently corrupted. `rescaleNakedCritChance(naked,
 oldOtherPct, newOtherPct)` replaces it with the same ratio form `rescaleNakedPen` /

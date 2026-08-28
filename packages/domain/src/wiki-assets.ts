@@ -271,7 +271,7 @@ export function normalizeSkin(skin: unknown): number {
 }
 
 /**
- * BSPW5-06 (BSP-55, DEC-05) — parse-boundary predicate: is `skin` already a value
+ * BSPW5-06 (DEC-05) — parse-boundary predicate: is `skin` already a value
  * `0…HERO_SKIN_COUNT-1` that needs no clamping? Detection is deliberately separate from
  * {@link normalizeSkin}'s clamp: clamping an out-of-range import value to the NEAREST
  * valid index (what `normalizeSkin` does for stored records) would silently render a

@@ -13,7 +13,7 @@ import type { AccountShared } from '@bombfarm/domain/shims/storage';
 import type { Availability, AdviceQuantity, PlanningModel, RosterEntry, SectionUsability } from './types';
 
 /**
- * `AD-036`: the withhold gate is per-section usability, not `AccountFidelityReport.grade`. A
+ * The withhold gate is per-section usability, not `AccountFidelityReport.grade`. A
  * `degraded` section is usable only when `isTrustworthySection` says its body lost nothing.
  */
 export function isUsable(fidelity: SectionFidelity): boolean {
@@ -22,8 +22,8 @@ export function isUsable(fidelity: SectionFidelity): boolean {
 }
 
 /**
- * `AD-041` — advice dependencies as data, not `if`s. Derived from `pipelineForHero`'s inputs
- * (design.md §3 `AD-041` table). Every withhold decision is `requires.every(isUsable)`; no call
+ * Advice dependencies as data, not `if`s. Derived from `pipelineForHero`'s inputs
+ * (design.md §3's table). Every withhold decision is `requires.every(isUsable)`; no call
  * site re-derives this rule.
  */
 export const ADVICE_REQUIRES: Record<AdviceQuantity, readonly AccountSection[]> = {
@@ -39,7 +39,7 @@ function sectionsFor(sections: readonly SectionUsability[], quantity: AdviceQuan
   return sections.filter((section) => required.includes(section.section));
 }
 
-/** Whether every section `quantity` depends on is currently usable (`AD-041`). */
+/** Whether every section `quantity` depends on is currently usable. */
 export function isQuantityUsable(sections: readonly SectionUsability[], quantity: AdviceQuantity): boolean {
   return sectionsFor(sections, quantity).every((section) => section.usable);
 }
@@ -72,7 +72,7 @@ function findSection(sections: readonly SectionUsability[], section: AccountSect
 }
 
 /**
- * `AD-036`'s six-row table (design.md §3). Order matters: `nothing-persisted` and `rejected`
+ * The per-section usability rule's six-row table (design.md §3). Order matters: `nothing-persisted` and `rejected`
  * take priority over `no-roster` (a rejection names its own reason, never a generic empty
  * roster — spec.md edge case, `AD-BSP-05`); `store-unavailable` is checked only once a usable
  * roster exists, because it is an additional notice layered over otherwise-normal rendering

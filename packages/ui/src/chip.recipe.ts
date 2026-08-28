@@ -19,7 +19,7 @@ export const chipRecipe = cva('', {
       // m2-storybook-ci (T7, SBC-12): plain `text-warn` on `bg-surface` measured
       // 3.31:1 (OKLCH -> linear-sRGB -> WCAG relative luminance), below the 4.5:1
       // AA floor for this 10px text. Lightened via `color-mix` toward white (still
-      // driven by the `--warn` token, not a hardcoded literal, per DS-09/design
+      // driven by the `--warn` token, not a hardcoded literal, per design
       // system rules) rather than changing the shared `--color-warn` custom
       // property, which borders/icons elsewhere also read and which isn't in this
       // feature's scope. 20% white measures 4.80:1.

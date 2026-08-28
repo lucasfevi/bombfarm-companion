@@ -108,7 +108,7 @@ test.describe('display precision sweep (BSPW6-05, AC-25, AC-26)', () => {
     await expect(attackRow).not.toContainText('123.456');
   });
 
-  test('sheet table shows a Luck row (BSP-44, AC-19)', async ({ page }) => {
+  test('sheet table shows a Luck row (AC-19)', async ({ page }) => {
     await seedLocalStorage(page, precisionHero());
     await page.goto('/');
     await selectSavedHero(page, 'Precision');
@@ -118,7 +118,7 @@ test.describe('display precision sweep (BSPW6-05, AC-25, AC-26)', () => {
       has: page.getByRole('heading', { name: /^Stats$/i, level: 2 }),
     });
     const luckRow = stats.locator('tr').filter({ hasText: /^Luck/ });
-    // birth.luck = 12.345 -> "12.35" at 2 dp (BSP-29).
+    // birth.luck = 12.345 -> "12.35" at 2 dp (the 2-decimal-place sheet-stat formatting rule).
     await expect(luckRow).toContainText('12.35');
   });
 

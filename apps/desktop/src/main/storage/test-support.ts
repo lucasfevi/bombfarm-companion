@@ -24,7 +24,7 @@ export function detectAvailableBindings(): SqliteBinding[] {
 
 const ALL_BINDINGS: SqliteBinding[] = ['better-sqlite3', 'node:sqlite'];
 
-/** Prints a visible warning for every binding that could not be probed (AD-002, Risk R-5) —
+/** Prints a visible warning for every binding that could not be probed (Risk R-5) —
  * a skipped binding must never vanish silently from the test output. */
 export function warnForUnavailableBindings(available: SqliteBinding[]): void {
   for (const binding of ALL_BINDINGS) {

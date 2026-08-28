@@ -14,7 +14,7 @@ describe('abilityPointBudget (BSPW3-11, AD-BSP-23)', () => {
     expect(abilityPointBudget('Lendária', 200)).toBe(100);
   });
 
-  // AC-23a — boundary cases, re-pointed onto the post-patch corpus (MP5 F1, AD-068 class
+  // AC-23a — boundary cases, re-pointed onto the post-patch corpus (the ground-truth rule class
   // (a) — read from the capture). RECORDED LOSS: the deleted `Bram L49 -> 40 spendable / 9
   // dead` and `Torin L45 -> 40 / 5` rows named heroes of the deleted account whose level
   // exceeded `quota × 20` (the "dead point" boundary). No hero on either post-patch corpus
@@ -45,7 +45,7 @@ describe('abilityPointBudget (BSPW3-11, AD-BSP-23)', () => {
   });
 
   it('AC-23b: spent === min(level, quota x 20) holds 13/13 across both post-patch corpus files (equality, not <=)', () => {
-    // MP5 F1 (AD-068 class (a) — read from the capture): re-pointed onto both corpus files
+    // (the ground-truth rule class (a) — read from the capture): re-pointed onto both corpus files
     // combined (5 export heroes + 8 payload heroes). The hero count is read from the two
     // fixtures, not hand-copied — 13, verified against packages/domain/tests/point-roundtrip.test.ts's
     // own independently-measured 13-hero floor.

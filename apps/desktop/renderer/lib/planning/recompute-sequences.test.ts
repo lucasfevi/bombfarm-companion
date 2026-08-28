@@ -1,5 +1,5 @@
 /**
- * MP3 F3 (design.md §5, §8, T3) — the scripted sequences the milestone is judged on: the spec's
+ * design.md §5, §8, T3 — the scripted sequences the milestone is judged on: the spec's
  * own Independent Test verbatim (MAR-01/03/04), per-hero recompute counting (MAR-16), and the
  * fidelity-transition suite (MAR-06…10). Every test here calls `resetAdviceComputeCount()` in
  * `beforeEach` — the cache and counter are module-level state (`hero-advice.ts`'s own doc
@@ -157,7 +157,7 @@ describe('the fidelity-transition suite (design.md §5) — scripted sequences, 
     // `stale` is still usable (isUsable = resolved || stale), so the advice is not withheld —
     // both the status and the withhold flag come from model2, the one model this render reads,
     // so they cannot be out of sync by construction. Body is byte-identical, so this is also a
-    // cache hit (AD-046 clears only on a USABILITY transition, and stale/resolved share the same
+    // cache hit (the advice cache clears only on a USABILITY transition, and stale/resolved share the same
     // usable=true — MAR-09's "counts as a change" claim is proven at tier 0 and the render, not
     // by forcing a numeric recompute here; see T1's probe and the render reading `skillsSection`).
     expect(skillsSection.status).toBe('stale');
@@ -187,7 +187,7 @@ describe('the fidelity-transition suite (design.md §5) — scripted sequences, 
     expect(JSON.stringify(advice2)).not.toContain(wrong.dps.toFixed(2));
   });
 
-  it('resolved → degraded → resolved over a byte-identical body (MAR-08): the counter increments on the return leg (AD-046)', () => {
+  it('resolved → degraded → resolved over a byte-identical body (MAR-08): the counter increments on the return leg', () => {
     const view = syntheticAccountView();
     const model1 = buildPlanningModel(view);
     const hero = firstHero(model1);
@@ -201,9 +201,9 @@ describe('the fidelity-transition suite (design.md §5) — scripted sequences, 
     expect(getAdviceComputeCount()).toBe(1); // withheld never increments the counter
 
     // Byte-identical body — the SAME skills.totals as the original `view`, only the status moved
-    // back to resolved. Without AD-046's usability-key clear, this would be a cache hit (the
+    // back to resolved. Without the advice cache's usability-key clear, this would be a cache hit (the
     // hero/shared keys never actually changed value). WITH it, the cache was dropped on the
-    // unusable→usable transition, forcing a genuine recompute — the case AD-046 exists for.
+    // unusable→usable transition, forcing a genuine recompute — the case this whole-cache-drop rule exists for.
     const resolvedAgain = withSectionStatus(view, 'skills', 'resolved');
     const model3 = buildPlanningModel(resolvedAgain);
     const advice3 = adviceForHero(model3, hero.hero.id);

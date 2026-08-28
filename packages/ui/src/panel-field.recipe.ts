@@ -2,8 +2,8 @@ import { cva, type VariantProps } from 'class-variance-authority';
 
 /**
  * Panel / field / dialog / setup-banner / import chrome — migrated from the
- * former `chrome.ts`. Fixed layout bundles stay as documented recipe constants
- * (design DS-05); cva is applied only where genuine variants exist (panel
+ * former `chrome.ts`. Fixed layout bundles stay as documented recipe constants;
+ * cva is applied only where genuine variants exist (panel
  * focus/need/unverified, setup-banner warn/ok). All strings preserve parity.
  */
 

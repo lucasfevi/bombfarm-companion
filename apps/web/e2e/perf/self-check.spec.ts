@@ -44,12 +44,12 @@ test.describe('perf harness self-check', () => {
 
     await page.goto('/')
 
-    // Settle: planner region visible (AD-012).
+    // Settle: planner region visible.
     const heroStrip = page.getByRole('region', { name: /herói atual|current hero/i })
     await expect(heroStrip).toBeVisible({ timeout: 60_000 })
     await selectSavedHero(page, 'Cora')
 
-    // Settle after picker apply (AD-012).
+    // Settle after picker apply.
     await page.waitForTimeout(1100)
 
     const afterBoot = await readPerfApi(page)

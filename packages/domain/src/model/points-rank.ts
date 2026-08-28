@@ -25,7 +25,7 @@ function normalizeRankOpts(options?: PointBases | RankOptions): RankOptions {
 }
 
 /**
- * BSPW4-09 (BSP-58/60, AC-56): the ONLY non-damage consumer of `STAT_CAPS.penetration`.
+ * BSPW4-09 (AC-56): the ONLY non-damage consumer of `STAT_CAPS.penetration`.
  * Sheet penetration is never clamped (`AC-53`) — this caps the *ranking* only, because past
  * 100% mitigation is already fully bypassed and an additional point buys no further gain
  * there. That is a scoring decision, not a second sheet clamp.
@@ -119,7 +119,7 @@ export function rankNextPoint(hero: HeroSheet, context: Context, optionsOrBases?
 
 /** Energy at which one energy point equals one attack point (given current attack). */
 export function energySwitchPoint(hero: HeroSheet, context: Context): number {
-  // MOD-36: genuine accumulators — binary-search bounds narrowed each iteration below;
+  // Genuine accumulators — binary-search bounds narrowed each iteration below;
   // each bound's next value depends on its own (and the loop's) prior state.
   let low = 10;
   let high = 6000;

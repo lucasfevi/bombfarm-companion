@@ -387,12 +387,12 @@
   each hero's next-point ranking, and reset advice, computed through `@bombfarm/domain`'s advisor
   pipeline — the same engine the web planner runs.
 
-  `packages/domain/src/roster-dps.ts`'s `pipelineForHero` is now a public export (`AD-032`): the
+  `packages/domain/src/roster-dps.ts`'s `pipelineForHero` is now a public export: the
   only `HeroRecord`-shaped entry to the pipeline, and the one mapping both surfaces use. Its body is
   byte-unchanged; a layer-1 parity test (`packages/domain/tests/pipeline-for-hero-parity.test.ts`)
   and a layer-2 source-derived key-set guard (`tools/advisor-input-parity.test.mjs`) together prove
   the desktop and the web compute identical ranked stats and gains for the same account payload,
-  for every observed `crit_dmg_mult`. The one known, pinned divergence (`treeCritDmgMult`, `AD-038`)
+  for every observed `crit_dmg_mult`. The one known, pinned divergence (`treeCritDmgMult`)
   is documented at the export site and asserted not to widen or silently close — it is not fixed
   here, because doing so would change the web planner's own rendered numbers.
 
@@ -404,12 +404,12 @@
   backing data is not trustworthy.
 
   **No behaviour change for the web planner.** `apps/web` is untouched — zero files changed, source
-  and tests alike. `packages/ui` is untouched too (`DS-09` intact): every control on the new screen
+  and tests alike. `packages/ui` is untouched too (reuse boundary intact): every control on the new screen
   composes existing `@bombfarm/ui` primitives.
 
   Two known, recorded limitations ship with this feature rather than being silently claimed:
   `degraded` sections are implemented and unit-tested but currently unreachable end to end (the
-  account-restore merge prefers a stale body over a degraded live read, `AD-037`); and the manual
+  account-restore merge prefers a stale body over a degraded live read); and the manual
   refresh affordance (`account:refresh`, `READ_PACING.manualRefreshFloorMs`) was not taken in this
   pass and remains unimplemented, not merely deferred.
 
@@ -476,7 +476,7 @@
   patched up. Clean stored data is left byte-unchanged. Neither surface gains a new upload affordance.
 
 - fc7fcf1: **Every player-facing and internal surface that could still express the five removed keystones is
-  gone.** `@bombfarm/domain` stopped modelling Abisso, Glass Cannon and Tempo Dobrado (MP5 F2); this
+  gone.** `@bombfarm/domain` stopped modelling Abisso, Glass Cannon and Tempo Dobrado; this
   change removes the last ways a player or a maintainer could still see, toggle, persist or key on
   them.
 

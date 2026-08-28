@@ -37,7 +37,7 @@ import {
 
 // This suite must pass on the UNSPLIT tree (Phase 1) and stay green through every
 // Phase 2 compound carve-out — that is what makes it a gate rather than a
-// description of today's shape (MOD-28, W6-01, PRD AC 8).
+// description of today's shape (W6-01, PRD AC 8).
 
 describe('compound namespace shape (frozen)', () => {
   it('Dialog exposes exactly Root, Portal, Backdrop, Popup, Head, Title, Close, in order', () => {

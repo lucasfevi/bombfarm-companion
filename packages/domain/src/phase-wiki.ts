@@ -249,7 +249,7 @@ export function gameDifficultyLabel(ato: number, lang: 'en' | 'pt'): string {
 export function listMapsForAto(ato: number, lang: 'en' | 'pt' = 'en'): PhaseMapOption[] {
   const band = Math.max(1, Math.min(5, Math.round(ato)));
   const options: PhaseMapOption[] = [];
-  // MOD-36: loop counter — scans every wiki phase line to collect this ato's maps.
+  // Loop counter — scans every wiki phase line to collect this ato's maps.
   for (let phaseCursor = 1; phaseCursor <= MAX_PHASE; phaseCursor++) {
     const line = wikiPhaseLine(phaseCursor);
     if (!line || line.ato !== band) continue;
@@ -287,7 +287,7 @@ export function phaseMapCoord(phase: number): { ato: number; mundo: number; subI
 export function phaseSubIndex(phase: number): number {
   const line = wikiPhaseLine(phase);
   if (!line) return phase;
-  // MOD-36: genuine accumulator — counts prior phases sharing this (ato, mundo) band.
+  // Genuine accumulator — counts prior phases sharing this (ato, mundo) band.
   let index = 0;
   for (let phaseCursor = 1; phaseCursor <= phase; phaseCursor++) {
     const row = wikiPhaseLine(phaseCursor);

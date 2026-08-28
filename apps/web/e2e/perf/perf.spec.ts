@@ -1,5 +1,5 @@
 /**
- * MOD-33 measurement driver — 7 reps per scenario, writes perf-baseline.raw.json.
+ * Measurement driver — 7 reps per scenario, writes perf-baseline.raw.json.
  *
  * Window: opens at first input; closes 1500 ms after last input.
  * Zero commits ⇒ hard failure (never write a zero baseline).
@@ -98,7 +98,7 @@ async function harvestCommits(page: import('@playwright/test').Page): Promise<Co
   return api.commits
 }
 
-/** AD-012-style quiescence: ≥ quietMs with no new commits after reset. */
+/** Quiescence: ≥ quietMs with no new commits after reset. */
 async function waitForQuiet(
   page: import('@playwright/test').Page,
   quietMs = 1000,
@@ -179,7 +179,7 @@ async function runScenarioReps(
 test.describe.configure({ mode: 'serial', retries: 2 })
 
 test.describe('perf measurement driver', () => {
-  test('capture all MOD-33 scenarios ×7', async ({ page }, testInfo) => {
+  test('capture all perf scenarios ×7', async ({ page }, testInfo) => {
     test.setTimeout(900_000)
     if (testInfo.retry > 0) {
       // eslint-disable-next-line no-console

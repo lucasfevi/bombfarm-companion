@@ -38,7 +38,7 @@ export const EnglishSelected: Story = {
   args: { initialValue: 'en' },
 };
 
-/** Three options — the shape is not language-specific (DS-09). */
+/** Three options — the shape is not language-specific. */
 export const ThreeOptions: Story = {
   render: () => <ThreeOptionDemo />,
 };

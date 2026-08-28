@@ -8,7 +8,7 @@ import {
   DEFAULT_CONTEXT,
 } from '@/shared/lib/storage';
 
-describe('save-failure toast (MOD-45)', () => {
+describe('save-failure toast', () => {
   it('toastSaveFailed is present in EN and PT', () => {
     expect(STRINGS.en.toastSaveFailed).toBe(
       'Could not save — browser storage is full or unavailable',

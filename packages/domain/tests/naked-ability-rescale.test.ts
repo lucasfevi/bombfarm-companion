@@ -19,7 +19,7 @@ const naked = (): SheetStats => ({
   luck: 20,
 });
 
-describe('nakedAfterSheetAbilityChange (DEC-04, BSP-31a)', () => {
+describe('nakedAfterSheetAbilityChange (DEC-04, BSPW4-07)', () => {
   it("critChanceFlat dispatches to rescaleNakedCritChance — preserves a non-midpoint hero's own roll (AC-45's discriminating case)", () => {
     const bellatrixCritChance = 9.51; // vs Raro's rarity midpoint (7) — a 36% error if reset.
     const custom: SheetStats = { ...naked(), critChance: bellatrixCritChance };

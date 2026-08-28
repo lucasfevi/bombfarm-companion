@@ -53,7 +53,7 @@ function makeHero(id: string, sourceId: string): HeroRecord {
   });
 }
 
-describe('roster-in / roster-out mutators (MOD-44)', () => {
+describe('roster-in / roster-out mutators', () => {
   beforeEach(() => {
     vi.stubGlobal('localStorage', memoryLocalStorage());
   });

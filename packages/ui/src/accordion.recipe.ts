@@ -9,8 +9,8 @@ import { cva, type VariantProps } from 'class-variance-authority';
  * rotation is bound to the trigger's own
  * `data-panel-open` attribute via a descendant selector — no `group` needed.
  *
- * Fixed layout bundles (no real variants) are documented recipe constants
- * (DS-05) — imported directly from this module, not re-exported from the
+ * Fixed layout bundles (no real variants) are documented recipe constants —
+ * imported directly from this module, not re-exported from the
  * barrel.
  */
 

@@ -13,9 +13,9 @@ const ACCOUNT_FULL_FIXTURE = path.join(__dirname, '..', 'fixtures', 'account-ful
  * read, not edited).
  *
  * Scenario A proves the milestone's headline claim end to end: a seeded, birth-carrying account
- * (via the `AD-039` `BFC_FIXTURE_ACCOUNT_FILE` seam) renders real next-point advice with the
- * game "not running", and selecting a second hero updates the detail area (MPV-01, MPV-02,
- * MPV-13).
+ * (via the `BFC_FIXTURE_ACCOUNT_FILE` seam) renders real next-point advice with the
+ * game "not running", and selecting a second hero updates the detail area without re-reading
+ * the account.
  *
  * Scenario B proves the withhold rule end to end, but via the state this repo's actual committed
  * fixture (`packages/game-data/fixtures/hero-record.json`) triggers — not the one tasks.md's own
@@ -85,7 +85,7 @@ async function goToPlanning(page) {
   await page.waitForSelector('[data-testid="planning-view"]', { timeout: 15_000 });
 }
 
-test.describe('planning advice smoke (MP3 F2)', () => {
+test.describe('planning advice smoke', () => {
   test('Scenario A — a seeded birth-carrying account renders real advice, and selecting a hero updates the detail area', async () => {
     // Isolated per-test user-data dir (account-restart.spec.mjs's pattern) — never the
     // developer's real %APPDATA% flavor directory, so the ConsentModal starts unanswered and
@@ -111,7 +111,7 @@ test.describe('planning advice smoke (MP3 F2)', () => {
         expect(firstDetailName.length).toBeGreaterThan(0);
 
         // Select the second hero — the detail area must update without a full page transition and
-        // without re-reading the account (MPV-13, use-account-view.test.ts's own invoke-count
+        // without re-reading the account (use-account-view.test.ts's own invoke-count
         // guarantee at the unit layer; this is the end-to-end half).
         await page.getByTestId('roster-row-h-borealis').getByRole('button').click();
         await expect(page.getByTestId('hero-detail-name')).not.toHaveText(firstDetailName, { timeout: 10_000 });

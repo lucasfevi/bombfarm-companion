@@ -28,7 +28,7 @@ import { SHEET_KEYS, ZERO_PTS, type SheetKey } from '@bombfarm/domain/planner-co
 import { zeroTeamBuffs } from '@bombfarm/domain/team-buffs';
 import { extractHero, loadFixtureJson, treeTotalsFromSave } from './helpers/sheet-math-fixtures';
 
-// MP5 F1 (AD-068 class (b) — structural, using real heroes as generic input rather than
+// (the ground-truth rule, class (b) — structural, using real heroes as generic input rather than
 // pinning any of their captured values as an expected output): re-pointed onto
 // payload-20260812-8heroes.json's 8 real heroes (design.md §6.2 — "the largest single
 // re-point in the feature"). The deleted 21 hero-name literals spanned two now-deleted

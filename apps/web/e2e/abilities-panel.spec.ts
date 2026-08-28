@@ -112,7 +112,7 @@ test.describe('abilities panel (ABX residual)', () => {
     await expect(panel.getByText(/20 spendable/i)).toBeVisible();
   });
 
-  test('stepping a sheet crit-chance ability preserves the hero\'s own roll, not the rarity midpoint (DEC-04, BSP-31a)', async ({
+  test('stepping a sheet crit-chance ability preserves the hero\'s own roll, not the rarity midpoint (DEC-04)', async ({
     page,
   }) => {
     // Bellatrix's actual birth crit-chance roll (9.51) vs Raro's rarity midpoint (7) — the

@@ -6,7 +6,7 @@ import { importHeroes } from '@/shared/lib/storage';
 import { resetPlannerStoreForTests, usePlannerStore } from '@/shared/stores';
 import { WEB_PACKAGE_ROOT } from './helpers/web-package-root';
 
-// MP5 F1 (AD-068 class (a) — read from the capture): re-pointed onto
+// (the ground-truth rule's class (a) — read from the capture): re-pointed onto
 // payload-20260812-8heroes.json (27 catalogued items vs the export's 17 — the larger
 // inventory keeps these sync assertions discriminating, per design.md §6.1).
 const fixturePath = join(
@@ -92,12 +92,12 @@ describe('import inventory sync', () => {
     expect(usePlannerStore.getState().forgeFloor).toBe(15);
   });
 
-  // MP5 F1 (AD-068 class (a) — read from the capture): re-pointed onto the post-patch export's
+  // (the ground-truth rule's class (a) — read from the capture): re-pointed onto the post-patch export's
   // real phase (24) — `phase-151.json` is deleted with the rest of the pre-wipe corpus
-  // (AD-061; `max_phase 42` post-wipe cannot reproduce a phase-151 subject at all).
+  // (the blanket corpus deletion, not triaged; `max_phase 42` post-wipe cannot reproduce a phase-151 subject at all).
   // RECORDED LOSS: the Abisso half of the deleted assertion (`treeAbisso`/`treeAbissoBase`
   // flowing from a real save's `abisso_base`) is unreproducible — no post-patch capture
-  // carries `abisso_base` at all (the 2026-08-13 patch removed the keystone). MP5 F3 later
+  // carries `abisso_base` at all (the 2026-08-13 patch removed the keystone). This feature later
   // removed Abisso detection itself (it had been covered by `abisso-glass-cannon.test.ts`,
   // deleted at F3's T2) — the mechanic no longer exists anywhere in the pipeline. See
   // docs/fixture-corpus.md.

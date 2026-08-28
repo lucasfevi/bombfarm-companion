@@ -1,5 +1,5 @@
 /**
- * Next-point ranking (design.md §7.2, MPV-02/03/09). `ranking` is rendered in the engine's own
+ * Next-point ranking (design.md §7.2). `ranking` is rendered in the engine's own
  * order — never filtered (design risk row: filtering would be a second mapping).
  */
 import { DataTable, Panel, PanelHeader, Tooltip } from '@bombfarm/ui';

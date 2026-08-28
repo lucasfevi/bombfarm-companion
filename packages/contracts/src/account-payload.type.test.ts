@@ -31,7 +31,7 @@ describe('AccountPayload / fidelity — type-level assertions', () => {
     expect(missing.capturedAt).toBeUndefined();
   });
 
-  it('accepts a degraded section carrying capturedAt, missingKeys and addedKeys (mp2-live-account-read T6, LAR-19, MP5 F4)', () => {
+  it('accepts a degraded section carrying capturedAt, missingKeys and addedKeys (mp2-live-account-read T6)', () => {
     const degraded: SectionFidelity = {
       status: 'degraded',
       capturedAt: '2026-08-12T00:00:00.000Z',
@@ -80,7 +80,7 @@ describe('AccountPayload / fidelity — type-level assertions', () => {
     expect(degraded.addedKeys).toEqual([]);
   });
 
-  it('accepts a degraded section whose drift is ENTIRELY an added key — empty missingKeys, non-empty addedKeys (MP5 F4)', () => {
+  it('accepts a degraded section whose drift is ENTIRELY an added key — empty missingKeys, non-empty addedKeys', () => {
     const degraded: SectionFidelity = {
       status: 'degraded',
       capturedAt: '2026-08-12T00:00:00.000Z',
@@ -126,17 +126,17 @@ const _capturedAtOnMissing: SectionFidelity = { status: 'missing', capturedAt: '
 // @ts-expect-error - "partial" is not one of the four SectionStatus literals (ACS-04)
 const _invalidStatusLiteral: SectionFidelity = { status: 'partial', capturedAt: '2026-08-12T00:00:00.000Z' };
 
-// @ts-expect-error - a degraded section requires capturedAt (LAR-19, mp2-live-account-read T6)
+// @ts-expect-error - a degraded section requires capturedAt (mp2-live-account-read T6)
 const _degradedWithoutCapturedAt: SectionFidelity = { status: 'degraded', missingKeys: ['gold'], addedKeys: [] };
 
-// @ts-expect-error - a degraded section requires missingKeys (LAR-19, mp2-live-account-read T6)
+// @ts-expect-error - a degraded section requires missingKeys (mp2-live-account-read T6)
 const _degradedWithoutMissingKeys: SectionFidelity = {
   status: 'degraded',
   capturedAt: '2026-08-12T00:00:00.000Z',
   addedKeys: [],
 };
 
-// @ts-expect-error - a degraded section requires addedKeys (MP5 F4) — an incomplete drift report
+// @ts-expect-error - a degraded section requires addedKeys — an incomplete drift report
 // (missingKeys present, addedKeys silently dropped) must be unrepresentable
 const _degradedWithoutAddedKeys: SectionFidelity = {
   status: 'degraded',
@@ -154,7 +154,7 @@ const _missingKeysOnResolved: SectionFidelity = {
 const _addedKeysOnResolved: SectionFidelity = {
   status: 'resolved',
   capturedAt: '2026-08-12T00:00:00.000Z',
-  // @ts-expect-error - addedKeys is not a member of the resolved/stale branch (MP5 F4)
+  // @ts-expect-error - addedKeys is not a member of the resolved/stale branch
   addedKeys: ['refunds'],
 };
 

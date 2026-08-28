@@ -13,7 +13,7 @@ const writeErrorListeners = new Set<StorageWriteErrorListener>();
 /**
  * Register a listener for localStorage write failures (quota / private mode).
  * Returns an unsubscribe function. Each listener invocation is individually
- * try/caught so one bad listener cannot break the save path (MOD-45, ASM-11).
+ * try/caught so one bad listener cannot break the save path (ASM-11).
  */
 export function onStorageWriteError(listener: StorageWriteErrorListener): () => void {
   writeErrorListeners.add(listener);
@@ -47,7 +47,7 @@ export function readJson<T>(key: string, fallback: T): T {
   }
 }
 
-/** Returns true on success, false on any setItem throw — never rethrows (MOD-45). */
+/** Returns true on success, false on any setItem throw — never rethrows. */
 export function writeJson(key: string, value: unknown): boolean {
   try {
     localStorage.setItem(key, JSON.stringify(value));

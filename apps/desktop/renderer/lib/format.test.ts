@@ -1,5 +1,6 @@
 /**
- * MP3 F4 (`AD-054`) rewrites every assertion here to prove the locale actually reaches `Intl` —
+ * Formatting follows the locale, bounded to the four shipped formatters — this suite rewrites
+ * every assertion here to prove the locale actually reaches `Intl` —
  * grouping and decimal separators must differ between `en` and `pt-BR`, not just the words. This
  * is a STRENGTHENING of the pre-F4 suite (which asserted English-only), not a weakening: the old
  * cases are kept, `t`/`locale` parameters are threaded through, and each numeric formatter now
@@ -10,7 +11,7 @@ import { en } from './copy/en';
 import { ptBR } from './copy/pt-BR';
 import { formatAge, formatCapturedAt, formatCount, formatDps, formatEnergyPercent, formatGainPct } from './format';
 
-describe('formatAge (both locales, AD-054)', () => {
+describe('formatAge (both locales)', () => {
   it('formats zero as 0s in English', () => {
     expect(formatAge(0, en)).toBe('0s');
   });
@@ -36,7 +37,7 @@ describe('formatAge (both locales, AD-054)', () => {
   });
 });
 
-describe('formatCapturedAt (MPV-04 — restored data is stamped, never presented as current)', () => {
+describe('formatCapturedAt (restored data is stamped, never presented as current)', () => {
   const now = Date.parse('2026-08-12T12:00:00.000Z');
 
   it('a zero-age capture reads as "just now" (English)', () => {
@@ -68,7 +69,7 @@ describe('formatCapturedAt (MPV-04 — restored data is stamped, never presented
   });
 });
 
-describe('formatGainPct (both locales, different decimal/sign convention, AD-054)', () => {
+describe('formatGainPct (both locales, different decimal/sign convention)', () => {
   it('signs a positive gain (English — period decimal separator)', () => {
     expect(formatGainPct(4.567, 'en')).toBe('+4.6%');
   });
@@ -94,7 +95,7 @@ describe('formatGainPct (both locales, different decimal/sign convention, AD-054
   });
 });
 
-describe('formatDps (both locales, different grouping separator, AD-054)', () => {
+describe('formatDps (both locales, different grouping separator)', () => {
   it('rounds and thousands-groups with a comma (English)', () => {
     expect(formatDps(1234567.8, 'en')).toBe('1,234,568');
   });
@@ -108,7 +109,7 @@ describe('formatDps (both locales, different grouping separator, AD-054)', () =>
   });
 });
 
-describe('formatCount (both locales, different grouping separator, AD-054)', () => {
+describe('formatCount (both locales, different grouping separator)', () => {
   it('rounds and thousands-groups with a comma (English)', () => {
     expect(formatCount(2500, 'en')).toBe('2,500');
   });
@@ -122,7 +123,7 @@ describe('formatCount (both locales, different grouping separator, AD-054)', () 
   });
 });
 
-describe('formatEnergyPercent (both locales, AD-054)', () => {
+describe('formatEnergyPercent (both locales)', () => {
   it('renders a whole percentage in each locale', () => {
     expect(formatEnergyPercent(0.42, 'en')).toBe('42%');
     expect(formatEnergyPercent(0.42, 'pt-BR')).toBe('42%');

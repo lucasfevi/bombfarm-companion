@@ -1,5 +1,5 @@
 /**
- * Design-system public entry (DS-09).
+ * Design-system public entry.
  *
  * The single import surface for the UI primitives + `cn()`. Primitives wrap
  * `@base-ui/react` where an interactive equivalent exists and encode the
@@ -12,7 +12,7 @@
  *
  * The cva recipe functions + variant types are exported for the few call sites
  * that dress a non-primitive element (e.g. a Ko-fi `<a>`, a Base UI
- * `Dialog.Close`). The fixed layout bundles (DS-05 documented recipe constants)
+ * `Dialog.Close`). The fixed layout bundles (documented recipe constants)
  * are intentionally NOT re-exported here — import them from the matching
  * `*.recipe.ts` module inside this boundary.
  */

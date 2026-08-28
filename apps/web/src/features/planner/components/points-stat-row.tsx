@@ -12,11 +12,11 @@ const fiveStepBtnClass = 'h-6 min-w-[1.75rem] px-1 py-0 text-[10px] leading-none
 
 /**
  * One Points stat row: label, −5 / −1 / value / +1 / +5, per-point gain, after value.
- * `DEC-10` split (component-per-file, `MOD-24`/`MOD-28`). Every step routes through
- * `clampPointStep` (`BSP-25`) — the user's Q-1 decision means ±1 shares the SAME clamp as ±5
+ * `DEC-10` split (component-per-file, T1.6, T2.*, T5.*, T6.2). Every step routes through
+ * `clampPointStep` — the user's Q-1 decision means ±1 shares the SAME clamp as ±5
  * (floor at 0, ceiling at `level`), not just the floor `DEC-05` proposed.
  */
-/** The row's three numeric readouts, bundled to keep `PointsStatRow` at MOD-17's 8-prop cap. */
+/** The row's three numeric readouts, bundled to keep `PointsStatRow` at the 8-prop cap. */
 export type PointsStatRowValues = {
   perPt: number;
   after: number;
@@ -75,7 +75,7 @@ export function PointsStatRow({
           </Button>
         </div>
       </DataTable.Cell>
-      {/* BSP-29/AC-25: sheet magnitudes at 2 dp (Points Δ per point and after). */}
+      {/* AC-25: sheet magnitudes at 2 dp (Points Δ per point and after). */}
       <DataTable.Cell align="right" numeric className={mutedClass}>
         {formatNumber(perPtValue, 2)}
       </DataTable.Cell>

@@ -101,7 +101,7 @@ function fixtureTree(doc: Record<string, unknown>): TreeSheetTotals {
 const TREE_BEARING_KEYS: readonly SheetKey[] = ['attack', 'energy', 'speed', 'critChance', 'luck'];
 
 describe('peelSheetStages — Birth + Δs sum to Total', () => {
-  // MP5 F1 (AD-068 class (b) — structural): re-pointed onto the post-patch export. The claim
+  // F1 (ground-truth-rule class (b) — structural): re-pointed onto the post-patch export. The claim
   // — Birth + Δ columns sum to Total — is the purest invariant in the corpus and holds for
   // any birth-capable hero, so it re-points cleanly with no loss.
   const file = 'save-20260813-5heroes.json';

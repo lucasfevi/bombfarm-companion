@@ -55,7 +55,7 @@ const EXCEPTIONS: Record<string, string> = {
   'farm-basis-parity-expected.json':
     "a frozen expected-output literal (computeHeroFarmFacts + computeFarmRates), not a raw account capture — see farm-basis-parity.test.ts's own header comment for provenance",
   'fidelity-gate/export-capture.json':
-    'provenance is pair.json plus the pinned cross-directory duplicate check in tools/fixture-corpus-parity.test.mjs (AD-070), not a README manifest',
+    'provenance is pair.json plus the pinned cross-directory duplicate check in tools/fixture-corpus-parity.test.mjs, not a README manifest',
   'fidelity-gate/live-capture.json':
     "export-capture.json's paired live-memory read; same provenance as that entry",
   'fidelity-gate/pair.json':
@@ -66,8 +66,8 @@ const EXCEPTIONS: Record<string, string> = {
   'live-capture-energy-fractions.json':
     'a live memory-scan capture consumed by live/field-countdown.test.ts, named for its content rather than the save-/payload- convention',
   'rejection/pre-update-save.json':
-    'a purpose-built rejection fixture (MSG-12/13) that must contain the retired fields verbatim to prove parseSaveFile rejects a save shaped like this',
-  'rejection/truncated-save.json': 'sibling rejection fixture (MSG-13) — an empty skills.totals, no retired fields to carry',
+    'a purpose-built rejection fixture that must contain the retired fields verbatim to prove parseSaveFile rejects a save shaped like this',
+  'rejection/truncated-save.json': 'sibling rejection fixture — an empty skills.totals, no retired fields to carry',
   'storage-roundtrip-20260729.json':
     "pre-existing storage-roundtrip snapshot with zero domain-side consumer of this copy — apps/web owns the live one this mirrors (see fixture-corpus.test.ts's orphan-sweep comment)",
 };

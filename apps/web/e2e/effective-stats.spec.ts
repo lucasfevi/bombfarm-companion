@@ -202,7 +202,7 @@ test.describe('effective stats panel (EST / ESB)', () => {
     const panel = effectivePanel(page, 'en');
     const attackBtn = panel.getByRole('button', { name: /Show breakdown of Attack/i });
     await attackBtn.click();
-    // BSPW6-06/BSP-20: steps now name their GAME line (Hero/Gear/Ability/Skill tree,
+    // BSPW6-06: steps now name their GAME line (Hero/Gear/Ability/Skill tree,
     // LEDGER_SOURCE_GROUP), not the raw source — Attack's base+level+stars+points steps all
     // read "Hero" (the old "Level" line-item name is gone by design).
     await expect(panel.getByText(/^Hero$/i).first()).toBeVisible();

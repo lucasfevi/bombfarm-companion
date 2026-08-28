@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { STRINGS } from '@/shared/i18n';
 
 /**
- * MP5 F3 — the 12 keys that feature deleted. Kept here as a standalone, permanent record: this
+ * The 12 keys that feature deleted. Kept here as a standalone, permanent record: this
  * suite's job is "these identifiers must never come back to STRINGS", independent of whatever
  * the i18n-split-parity fixture currently looks like. It used to be imported from
  * `i18n-split-parity.test.ts`, which also used it to compute a delta against the frozen
@@ -32,7 +32,7 @@ const KEYSTONE_KEYS_REMOVED = [
 // complete while the PT hints and the Sim/Não status readouts survived — this suite scans
 // both languages independently and neither can satisfy it alone.
 //
-// Widened post-MP5-F3 (MP5 F3 follow-up): the original regex covered the three
+// Widened later (a follow-up fix): the original regex covered the three
 // field-identifier-adjacent display names removed alongside KEYSTONE_KEYS_REMOVED, but missed
 // the other two retired damage-multiplier sources' display names entirely — `Juro` (O15, Juro
 // Composto) and `Avalanche` (G07) shipped only inside `accountTip`'s prose, as parenthetical
@@ -70,12 +70,12 @@ function flattenStrings(value: unknown, out: string[] = []): string[] {
   return out;
 }
 
-describe('i18n keystone absence (MP5 F3, MSC-05/MSC-06)', () => {
+describe('i18n keystone absence (MSC-05/MSC-06)', () => {
   const enValues = flattenStrings(STRINGS.en);
   const ptValues = flattenStrings(STRINGS.pt);
 
   // Non-vacuity first: a broken/short-circuited walk must not pass by scanning nothing.
-  // Floor: measured at 544 flattened string leaves per language as of MP5 F3 (both languages
+  // Floor: measured at 544 flattened string leaves per language as of this feature (both languages
   // measure identically — Strings = typeof en enforces the same key/array structure). 500
   // leaves headroom for future string additions while still catching a walk that silently
   // stopped descending into explainSections' p[] arrays (a shallow scan measures ~90).

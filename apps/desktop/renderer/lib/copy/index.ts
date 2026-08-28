@@ -1,13 +1,13 @@
 /**
- * The copy seam (`AD-040`). One module per language, reached through two hooks (`useCopy()`,
+ * The copy seam. One module per language, reached through two hooks (`useCopy()`,
  * `useLocale()`), keyed by an exhaustive type. Components read `const t = useCopy()` and use
  * `t.someKey` — never a literal, never a raw import of `en`/`ptBR`.
  *
- * MP3 F4 (`mp3-i18n`, `AD-050`) is the swap `AD-040` reserved this seam for: `Copy` widens from
+ * `mp3-i18n` is the swap this seam was reserved for: `Copy` widens from
  * `typeof en`'s string-literal values to plain `string` (one line, below) so a second language can
  * satisfy it; `STRINGS` maps `AppLocale -> Copy`; `CopyProvider` takes a required `locale` prop.
- * `useCopy()`'s signature and return type are UNCHANGED — that is the whole reason `AD-040` used a
- * hook — so no component call site changes.
+ * `useCopy()`'s signature and return type are UNCHANGED — that is the whole reason a hook was
+ * used — so no component call site changes.
  */
 import { createContext, createElement, useContext, useMemo, type ReactNode } from 'react';
 import type {
@@ -26,17 +26,17 @@ import { en } from './en';
 import { ptBR } from './pt-BR';
 
 /**
- * `AD-050` — a value-widening mapped type, one line. `en.ts` keeps its `as const` (so its own
+ * A value-widening mapped type, one line. `en.ts` keeps its `as const` (so its own
  * values stay `readonly` string *literals* for every other purpose); `Copy`'s own values widen to
  * plain `string` so `pt-BR.ts`'s `const ptBR: Copy = { … }` annotation can be satisfied by
  * different (Portuguese) string values while still requiring the exact same key set — a missing
  * key is `TS2741`, an extra/typo'd key is `TS2353`, both naming the key.
  *
- * Rejected, and why (`AD-050`): `as Copy` on `ptBR` would suppress both errors — a typo'd key
+ * Rejected, and why: `as Copy` on `ptBR` would suppress both errors — a typo'd key
  * would leave the real key silently missing. `satisfies Copy` checks assignability but keeps the
  * literal type and, critically, gives a weaker (sometimes absent) message on an *extra* key. An
  * index signature (`[key: string]: string`) makes every key optional-by-construction, destroying
- * MIN-03 outright — any of the three is forbidden by name in tasks.md.
+ * the fail-the-build-on-a-missing-key guarantee outright — any of the three is forbidden by name in tasks.md.
  */
 export type Copy = { readonly [K in keyof typeof en]: string };
 export type CopyKey = keyof Copy;
@@ -44,7 +44,7 @@ export type CopyKey = keyof Copy;
 export const STRINGS: Record<AppLocale, Copy> = { en, 'pt-BR': ptBR };
 
 /**
- * `AD-040` scope rule + MPV-07/MPV-17: a new `AccountSection` added to the contract without a
+ * The exhaustive-copy-key scope rule: a new `AccountSection` added to the contract without a
  * matching entry here is a compile error, not a nameless chip in the fidelity notice. `CopyKey`
  * values are a subtype of `string`, so this also satisfies `Record<AccountSection, string>`.
  */
@@ -75,9 +75,9 @@ export const STORE_REASON_COPY_KEY = {
 } as const satisfies Record<AccountStoreReason, CopyKey>;
 
 /**
- * Every `SettingsWriteReason` (`@bombfarm/contracts`, MP3 F4), mapped exhaustively — a new reason
+ * Every `SettingsWriteReason` (`@bombfarm/contracts`), mapped exhaustively — a new reason
  * is a compile error, matching the four other exhaustive maps in this file. Read by
- * `app/settings/language-section.tsx`'s not-persisted `Banner` (MIN-11).
+ * `app/settings/language-section.tsx`'s not-persisted `Banner`.
  */
 export const SETTINGS_WRITE_REASON_COPY_KEY = {
   no_store: 'settingsLanguageReasonNoStore',
@@ -166,7 +166,7 @@ export function useCopy(): Copy {
 }
 
 /**
- * `AD-056` — the values here are already mapped through `toDomainLang`/`BCP47_BY_LOCALE`, so no
+ * The values here are already mapped through `toDomainLang`/`BCP47_BY_LOCALE`, so no
  * component ever performs the `'pt-BR' -> 'pt'` (or the BCP-47) mapping itself.
  */
 export function useLocale(): { locale: AppLocale; lang: DomainLang; bcp47: string } {

@@ -10,10 +10,10 @@ import type {
 } from '@bombfarm/contracts';
 import { DEFAULT_SETTINGS } from '@bombfarm/contracts';
 import { AppShell, BrandMark, SegmentedToggle, StatusChip } from '@bombfarm/ui';
-// MP3 F1 (AD-032) — proves the renderer can import @bombfarm/domain: a value import from a
+// Proves the renderer can import @bombfarm/domain: a value import from a
 // FILE subpath that itself value-imports ./data/catalog.json, so a dist missing the JSON data
 // fails the static export build rather than surfacing later at runtime (spec edge case). This
-// is a probe, not planning UI — F2 (mp3-planning-views) is what actually renders advice. MP3 F4
+// is a probe, not planning UI — F2 (mp3-planning-views) is what actually renders advice. It also
 // gives it a second purpose: proving the LANGUAGE reaches the domain edge, not just a value.
 import { rarityLabel } from '@bombfarm/domain/game-labels';
 import type { ConsentRecord } from '@bombfarm/game-api';
@@ -32,7 +32,7 @@ import { LanguageSection } from './settings/language-section';
 
 const DEFAULT_NAV_ID = 'live';
 
-// Matches the shipped Settings language `Select` (MIN-16) — same two locales, same
+// Matches the shipped Settings language `Select` (the primitive-control rule) — same two locales, same
 // `onLocaleChange`, kept in sync only because both read/write the one `locale` state in `HomePage`.
 const LOCALE_OPTIONS: ReadonlyArray<{ id: AppLocale; label: string }> = [
   { id: 'pt-BR', label: 'PT' },
@@ -57,10 +57,10 @@ function getBridge(): NonNullable<Window['bfc']> | null {
 }
 
 export default function HomePage() {
-  // MP3 F4 — locale state lives here, ABOVE CopyProvider, because CopyProvider needs it as a
+  // Locale state lives here, ABOVE CopyProvider, because CopyProvider needs it as a
   // prop; it cannot be read from the context it itself creates.
   const [locale, setLocale] = useState<AppLocale | null>(null);
-  // MIN-11's surface half — null iff the last write persisted (or none has been attempted yet).
+  // The unwritable-settings-surfaced rule's surface half — null iff the last write persisted (or none has been attempted yet).
   const [persistWarning, setPersistWarning] = useState<SettingsWriteReason | null>(null);
 
   useEffect(() => {
@@ -83,14 +83,14 @@ export default function HomePage() {
 
   useEffect(() => {
     if (!locale) return;
-    // layout.tsx ships lang="en" as the static-export default (TD-9) — a prebuilt static export
+    // layout.tsx ships lang="en" as the static-export default — a prebuilt static export
     // cannot know the locale at build time. This is where the RUNTIME value is set. Not
-    // unit-observable (renderToStaticMarkup never runs useEffect, AD-047) — asserted in T7's smoke.
+    // unit-observable (renderToStaticMarkup never runs useEffect) — asserted in T7's smoke.
     document.documentElement.lang = locale;
   }, [locale]);
 
-  // MIN-08/MIN-11 — the shipped Select drives this. Applies first, always (result.settings.locale
-  // is the applied value on every branch, AD-051/AD-052), then surfaces whether it persisted.
+  // The shipped Select drives this. Applies first, always (result.settings.locale
+  // is the applied value on every branch), then surfaces whether it persisted.
   const onLocaleChange = (next: AppLocale) => {
     const bridge = getBridge();
     if (!bridge) return;

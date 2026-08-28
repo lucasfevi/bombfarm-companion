@@ -6,7 +6,7 @@ export const en = {
   bdSrcGear: "Gear",
   bdSrcPoints: "Points",
   bdSrcTree: "Skill tree",
-  // BSP-20/AC-29/AC-30 — the four in-game lines a ledger step's group folds to
+  // AC-29/AC-30 — the four in-game lines a ledger step's group folds to
   // (LEDGER_SOURCE_GROUP, DEC-07): base/level/stars/points -> Hero, gear -> Gear (reused),
   // sheetAbilities -> Ability, tree -> Skill tree (reused).
   bdSrcHero: "Hero",

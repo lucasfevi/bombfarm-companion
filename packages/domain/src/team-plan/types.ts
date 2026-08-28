@@ -175,7 +175,7 @@ export type TeamPlanInput = {
 /**
  * The subset of `HeroSheet` shown in the per-hero stat breakdown — excludes the per-point rates.
  * `luck` rides along here too (`HeroSheet` itself has no `luck` field — it never reaches combat,
- * BSP-42/AD-BSP-20/AD-BSP-21) so combat rows always report it as `0`; only the sheet rows
+ * AD-BSP-20/AD-BSP-21) so combat rows always report it as `0`; only the sheet rows
  * (`HeroScore.adjusted`, which IS a `SheetStats`) carry a real value. Display-only — this type
  * feeds the Team Plan hero panel, never the optimizer/scoring/point search.
  */

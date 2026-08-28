@@ -17,7 +17,7 @@ export function recomputeGearedSheet(
 }
 
 /**
- * BSPW5-07 (BSP-05, AD-BSP-13): re-import OVERWRITE, not a gear-refresh merge. The incoming
+ * BSPW5-07 (AD-BSP-13): re-import OVERWRITE, not a gear-refresh merge. The incoming
  * birth-backed record (naked, gearedOverride, pts, level, stars, abilities, rarity, loadout,
  * name, skin, rank, power, deployed, battleAllowed) is authoritative — re-deriving
  * `gearedOverride` from `applyGear` (via `recomputeGearedSheet`) would drop the tree

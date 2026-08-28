@@ -26,7 +26,7 @@ const DRIFT_MISSING_TOTALS: SectionOutcome = {
   missingKeys: ['totals'],
   addedKeys: [],
 };
-// MP5 F4 (T6): a drift outcome whose ONLY finding is an added key — proves addedKeys threads
+// T6: a drift outcome whose ONLY finding is an added key — proves addedKeys threads
 // through assembleAccountPayload independently of missingKeys, not merely alongside it.
 const DRIFT_ADDED_REFUNDS: SectionOutcome = {
   kind: 'drift',
@@ -65,7 +65,7 @@ describe('assembleAccountPayload — arity and no history/grade (R-1 closed by s
   });
 });
 
-describe('assembleAccountPayload — per-outcome mapping (LAR-14, LAR-15)', () => {
+describe('assembleAccountPayload — per-outcome mapping', () => {
   it('ok -> body present, fidelity resolved with the injected capturedAt', () => {
     const payload = assembleAccountPayload(ALL_OK, NOW);
     expect(payload.account).toEqual({ gold: 100 });
@@ -86,7 +86,7 @@ describe('assembleAccountPayload — per-outcome mapping (LAR-14, LAR-15)', () =
     });
   });
 
-  it('MP5 F4: drift -> addedKeys passes through UNCHANGED, independently of missingKeys', () => {
+  it('drift -> addedKeys passes through UNCHANGED, independently of missingKeys', () => {
     const outcomes: Record<AccountSection, SectionOutcome> = { ...ALL_OK, skills: DRIFT_ADDED_REFUNDS };
     const payload = assembleAccountPayload(outcomes, NOW);
 
@@ -120,7 +120,7 @@ describe('assembleAccountPayload — per-outcome mapping (LAR-14, LAR-15)', () =
   });
 });
 
-describe('assembleAccountPayload — the skills-never-fabricated rule (LAR-10, D24)', () => {
+describe('assembleAccountPayload — the skills-never-fabricated rule (D24)', () => {
   it("emits no 'skills' key at all when the skills outcome is failed — key absent, not undefined", () => {
     const outcomes: Record<AccountSection, SectionOutcome> = { ...ALL_OK, skills: FAILED };
     const payload = assembleAccountPayload(outcomes, NOW);
@@ -136,7 +136,7 @@ describe('assembleAccountPayload — the skills-never-fabricated rule (LAR-10, D
   });
 });
 
-describe('assembleAccountPayload — the outcome matrix (LAR-17)', () => {
+describe('assembleAccountPayload — the outcome matrix', () => {
   it('all five ok -> every section present with a body', () => {
     const payload = assembleAccountPayload(ALL_OK, NOW);
     for (const section of ['account', 'heroes', 'skills', 'casa', 'items'] as const) {

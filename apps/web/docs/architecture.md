@@ -3,7 +3,7 @@
 **Status:** hard truth
 **Sources:** modular-architecture programme W1–W7 (`app/` + `features/` + `shared/` layered tree, lint-enforced boundaries, Zustand root store); app shell ADR [`adr/013-app-shell-route-group.md`](adr/013-app-shell-route-group.md); performance rules in [`react-performance.md`](../../../docs/react-performance.md); design-system layout in [`design-system.md`](../../../docs/design-system.md); state rules in [`state-management.md`](state-management.md); naming rules in [`naming.md`](../../../docs/naming.md)
 
-Rewritten for the post-W7 tree (`MOD-38`). Every path below was verified against the shipped repo, not carried forward from an earlier draft.
+Rewritten for the post-W7 tree. Every path below was verified against the shipped repo, not carried forward from an earlier draft.
 
 ## The three layers
 
@@ -19,7 +19,7 @@ Dependency direction is one-way and downward: `app` → `features` → `shared`.
 
 - **`src/app/(app)/layout.tsx`** wraps every user route in `ClientAppShell` — a single **client mount gate** (`ClientMountGate`), shared header/footer/lang, the import dialog, and the `@planner` parallel slot. Do **not** add per-page mount gates.
 - **`src/app/(app)/@planner/default.tsx`** renders `@/features/planner` and stays mounted (hidden + `inert`) while browsing `/farm` — the planner never remounts on navigation.
-- The mount gate hydrates the Zustand planner store (`hydratePlannerStore()`) and attaches persistence *before* the `@planner` slot mounts. Do **not** use `next/dynamic(..., { ssr: false })` — Next 15.5 surfaces that as `BAILOUT_TO_CLIENT_SIDE_RENDERING` and can blank the page (AD-012).
+- The mount gate hydrates the Zustand planner store (`hydratePlannerStore()`) and attaches persistence *before* the `@planner` slot mounts. Do **not** use `next/dynamic(..., { ssr: false })` — Next 15.5 surfaces that as `BAILOUT_TO_CLIENT_SIDE_RENDERING` and can blank the page.
 - `src/app/_shell/` holds the shell itself: `client-app-shell.tsx`, `client-mount-gate.tsx`, `app-shell-inner.tsx`, `site-header.tsx`, `topbar.tsx`, `footer.tsx`, `guide-section.tsx`, `clarity.tsx`, `site-nav-link.tsx`.
 - Composer (`src/features/planner/components/hero-planner.tsx`) is **layout compose + wiring only** — 46 lines today. There is no numeric line-budget target for the composer specifically; it is enforced the same way every other component file is (see **Lint enforcement**).
 
@@ -46,7 +46,7 @@ Six feature slices, each with a required `index.ts` public-API barrel — nothin
 | --- | --- | --- |
 | `design-system/` | Presentational primitives with no game-domain knowledge (now `@bombfarm/ui`) | Anything importing `@bombfarm/domain` or a feature |
 | `game-art/` | Game-aware presentational components — icons, art frames, gold-value display that couple game type data (rarity, item type) with rendering | Generic (non-game) primitives → `@bombfarm/ui`; game math → `@bombfarm/domain` |
-| `stores/` | State read or written by **two or more** features, or persisted to `localStorage` | State only one feature reads → `useState` in that feature (MOD-13) |
+| `stores/` | State read or written by **two or more** features, or persisted to `localStorage` | State only one feature reads → `useState` in that feature |
 | `domain/` | Pure functions over game types, zero React, unit-testable in isolation (now `@bombfarm/domain`) | Anything importing React or `shared/stores` |
 | `i18n/` | User-facing strings, split by namespace | Game term maps stay in `@bombfarm/domain` game-labels ([`i18n.md`](../../../docs/i18n.md)) |
 | `lib/` | Generic utilities with no game meaning (`cn`, `format-number`, `storage.ts`) — may reach `domain/` only because the storage adapter carries game types through its call signatures | Anything with independent game meaning → `domain/` |
@@ -59,9 +59,9 @@ Six feature slices, each with a required `index.ts` public-API barrel — nothin
 Both are `error` in `eslint.config.mjs`, not aspirational:
 
 - **`boundaries/element-types`** — declares `app`, `feature` (captured per-slice), and the seven `shared-*` types above, then whitelists exactly the edges this section describes (`app → features/shared-*`, `feature → shared-*` only, `shared-design-system → itself + shared-lib` only, `shared-domain →` itself/`i18n`/`lib` only, never React or a feature). Everything not explicitly allowed is `disallow` by default.
-- **`boundaries/entry-point`** — every feature's public surface is its `index.{ts,tsx}`; every `shared/design-system` and `shared/game-art` module's surface is its `index.ts` (plus `*.recipe.ts` for design-system, a DS-05 carve-out); `shared/domain`, `shared/i18n`, `shared/lib`, `shared/context`, `shared/stores` allow `**` (deep imports OK — no single-barrel requirement there).
+- **`boundaries/entry-point`** — every feature's public surface is its `index.{ts,tsx}`; every `shared/design-system` and `shared/game-art` module's surface is its `index.ts` (plus `*.recipe.ts` for design-system, a documented carve-out); `shared/domain`, `shared/i18n`, `shared/lib`, `shared/context`, `shared/stores` allow `**` (deep imports OK — no single-barrel requirement there).
 
-File-size lint budgets (also `error`, not a "rough target"): general `src/` file cap **300 lines**; `src/features/**/components/**` and `src/app/_shell/**` **200 lines**; hook files (`src/**/use-*.ts`) **150 lines**. Two named, reviewed overages remain allowlisted: `src/tests/**` (**650**, comprehensive fixture-driven Vitest suites — splitting is out of scope and `MOD-03` forbids touching assertions to shrink a suite) and `src/shared/lib/storage.ts` (**350**, a pre-existing persistence/migration module, not touched by the component-decomposition waves).
+File-size lint budgets (also `error`, not a "rough target"): general `src/` file cap **300 lines**; `src/features/**/components/**` and `src/app/_shell/**` **200 lines**; hook files (`src/**/use-*.ts`) **150 lines**. Two named, reviewed overages remain allowlisted: `src/tests/**` (**650**, comprehensive fixture-driven Vitest suites — splitting is out of scope and touching assertions to shrink a suite is forbidden) and `src/shared/lib/storage.ts` (**350**, a pre-existing persistence/migration module, not touched by the component-decomposition waves).
 
 ## Routes
 
@@ -83,13 +83,13 @@ One root store (`src/shared/stores/planner-store.ts`), composed of five named sl
 | `phases` | explorer view phase, Farm Ranking rotation-pool overrides and return-bonus mode (`bf-hp-phases-view-v1`) |
 | `hero-draft` | active hero edit fields |
 
-**Selectors are the public read API** (`src/shared/stores/selectors/`, one file per slice-family plus `advisor-selectors.ts`, `tab-status-selectors.ts` and `farm-ranking-selectors.ts`). A bare `usePlannerStore()` call with no selector is forbidden (subscribes to everything); every read goes through a named selector or an inline field selector. Selectors returning objects or arrays use `useShallow` — except **`selectAdvisorPipeline`** and **`selectFarmRankingRows`**, both module-level single-entry **memoized selectors** (`state-management.md` MOD-18) that already return a stable object identity on cache hits; wrapping either in `useShallow` would shallow-compare dozens/hundreds of fields on every store write and defeat the memoization. `selectFarmRankingRows` is also the only file in `apps/web` that imports `@bombfarm/domain/farm-rate` (enforced by a structural guard — see `farm-ranking-guards.test.ts`) — it calls `computeFarmRates` once per relevant store change over a 15-member dependency tuple. Full rules: [`state-management.md`](state-management.md).
+**Selectors are the public read API** (`src/shared/stores/selectors/`, one file per slice-family plus `advisor-selectors.ts`, `tab-status-selectors.ts` and `farm-ranking-selectors.ts`). A bare `usePlannerStore()` call with no selector is forbidden (subscribes to everything); every read goes through a named selector or an inline field selector. Selectors returning objects or arrays use `useShallow` — except **`selectAdvisorPipeline`** and **`selectFarmRankingRows`**, both module-level single-entry **memoized selectors** (`state-management.md`) that already return a stable object identity on cache hits; wrapping either in `useShallow` would shallow-compare dozens/hundreds of fields on every store write and defeat the memoization. `selectFarmRankingRows` is also the only file in `apps/web` that imports `@bombfarm/domain/farm-rate` (enforced by a structural guard — see `farm-ranking-guards.test.ts`) — it calls `computeFarmRates` once per relevant store change over a 15-member dependency tuple. Full rules: [`state-management.md`](state-management.md).
 
 Persistence is `localStorage` only, via `src/shared/lib/storage.ts`, driven by explicit `subscribeWithSelector` subscriptions in `src/shared/stores/persistence/` — **not** `zustand/persist` (confirmed zero matches for `zustand/persist` in `src/`). No game-server / Electron / memory readers exist in this app package. Public-save compatibility: [`local-data-compat.md`](local-data-compat.md).
 
 **Residual finding (recorded, not fixed here — out of scope for a docs-only wave):** the `devtools` production guard does not actually tree-shake. `planner-store.ts` imports `devtools` unconditionally at module top and only skips *calling* it under `NODE_ENV === 'production'`; webpack's tree-shaking decides module inclusion from the unminified import graph before Terser folds that now-constant branch, so the whole `devtools` module still ships to production (confirmed present in the shipped bundle). Byte cost is small (≈1.5 kB gzip) and does not blow any bundle budget, but the guard should eventually become a real conditional import.
 
-## MOD-05 — package extraction (landed in MP1)
+## Package extraction (landed in MP1)
 
 `shared/design-system/` and pure domain math now live as workspace packages `@bombfarm/ui` and `@bombfarm/domain`. Web imports them via `workspace:*`; desktop continues to consume `@bombfarm/ui` (`AppShell`). Layering rules for package paths are still being re-wired in ESLint (tracked under `mp1-ci-vercel-rebrand`).
 
@@ -103,4 +103,4 @@ Persistence is `localStorage` only, via `src/shared/lib/storage.ts`, driven by e
 6. Per-tab soft/warn chrome is pure logic in [`packages/domain/src/planner-tab-status.ts`](../../../packages/domain/src/planner-tab-status.ts) (`computePlannerTabStatuses`); UI shows a **dot + DS Tooltip** for the active hero's own trust/setup state — never an in-flow banner for that ([`animation.md`](../../../docs/animation.md) rule 8 carves out one narrow, reviewed exception for roster-scoped advice about other heroes; it does not apply to per-tab chrome). Matrix: **Hero** soft = default sheet and/or unspent ability points; **Gear** soft = no items — no warn tier (Stats moved to Points and is read-only there, so Gear no longer flags a sheet mismatch); **Account** never badges (skill tree ×1 is a valid default); **Points** soft = missing gear/sheet and/or unspent points (`level − spent`), warn = the Tier-1 reset gate recommends a points reset (`resetAdviceRecommend`, ≥1% sustained DPS gain — see [`explain-math.md`](explain-math.md)/`reset-advice.ts`).
 7. **Lang + import chrome** — the session slice owns `lang` and `importDialogOpen`; `useAppLang()` is a thin store-backed compat hook (no provider). Shell import dialog and phases/planner consumers read roster + draft via store selectors.
 8. Cross-feature / persisted state lives in `src/shared/stores/` (see [`state-management.md`](state-management.md)). Editable hero draft lives in the `hero-draft` slice.
-9. Compound design-system primitives (`Dialog`, `Collapsible`, `Accordion`, `Tabs`, `Tooltip`, `DataTable`) are directories, one file per part plus a namespace `index.ts` — see [`design-system.md`](../../../docs/design-system.md) for the full convention (AD-021).
+9. Compound design-system primitives (`Dialog`, `Collapsible`, `Accordion`, `Tabs`, `Tooltip`, `DataTable`) are directories, one file per part plus a namespace `index.ts` — see [`design-system.md`](../../../docs/design-system.md) for the full convention.

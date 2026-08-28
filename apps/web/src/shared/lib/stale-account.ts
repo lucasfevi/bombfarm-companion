@@ -1,5 +1,6 @@
 /**
- * MP5 F4 (T9) — the web's half of `AD-062`/`AD-089`: a locally stored planner account that
+ * T9 — the web's half of the pre-patch hard-invalidation rule and the raw-bytes stored-data
+ * judgment: a locally stored planner account that
  * predates the 2026-08-13 game reset is dropped whole, never migrated, never served.
  *
  * Reads RAW `localStorage` strings, never `loadAccountShared`/`normalizeAccount` — F3's
@@ -9,13 +10,13 @@
  * own tests. This is why `dropStaleLocalAccount()` must run BEFORE any `normalize*` call —
  * `hydratePlannerStore()` runs it as its first statement, ahead of `loadHeroes()`.
  *
- * Supersedes `MSC-10` for keystone-carrying records (`AD-089`): F3's
+ * Supersedes `MSC-10` for keystone-carrying records: F3's
  * `storage-legacy-keystone-fields.test.ts` asserted such a record loads and keeps every
  * survivor. Under this feature it is dropped whole instead — see that file's own rewritten
  * header for the supersession statement.
  */
 
-/** The five retired `TreeState` fields (MP5 F2/F3 removed them from the type) plus the legacy
+/** The five retired `TreeState` fields (removed them from the type) plus the legacy
  *  `keystones` list a pre-removal record may still carry. */
 export const RETIRED_TREE_FIELDS = ['abisso', 'abissoBase', 'critDmgMult', 'glassCannon', 'tempoDobrado', 'keystones'] as const;
 
@@ -37,7 +38,7 @@ export const DROPPED_KEYS = [
 
 export interface DropReport {
   readonly dropped: boolean;
-  /** Path-qualified field names that triggered the drop — never a stored value (MSG-28). */
+  /** Path-qualified field names that triggered the drop — never a stored value. */
   readonly triggers: readonly string[];
   readonly cleared: readonly string[];
 }
@@ -46,7 +47,7 @@ function isObject(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
 }
 
-/** MSG-21: trigger is field PRESENCE, not truthiness — an all-`false` tree still predates the
+/** Trigger is field PRESENCE, not truthiness — an all-`false` tree still predates the
  *  wipe. `field in tree`, never `tree[field]`. */
 function treeTriggers(tree: unknown, label: string): string[] {
   if (!isObject(tree)) return [];
@@ -57,7 +58,7 @@ function treeTriggers(tree: unknown, label: string): string[] {
   return hits;
 }
 
-/** MSG-24: an unavailable/throwing `localStorage.getItem` contributes no trigger — a store
+/** An unavailable/throwing `localStorage.getItem` contributes no trigger — a store
  *  failure must never be reported as a drop, and must never throw into the caller. */
 function safeGetItem(key: string): string | null {
   try {
@@ -116,13 +117,13 @@ export function dropStaleLocalAccount(): DropReport {
       localStorage.removeItem(key);
       cleared.push(key);
     } catch {
-      // MSG-24 / the quota edge case: one key's removeItem throw must not abort the rest, and
+      // The store-failure-never-throws rule / the quota edge case: one key's removeItem throw must not abort the rest, and
       // must not let the caller proceed as if the drop fully succeeded when it partially did —
       // `cleared` reports exactly what was actually removed.
     }
   }
 
-  // MSG-28: field names only, never a stored value — a hero name or gold amount never reaches
+  // Field names only, never a stored value — a hero name or gold amount never reaches
   // this payload because `triggers`/`cleared`/`DROPPED_KEYS` are all key/path names by
   // construction, not data read from the records themselves.
   console.info('[stale-account] dropped a stored planner account that predates the game reset', {

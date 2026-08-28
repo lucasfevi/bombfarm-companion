@@ -1,13 +1,13 @@
 /**
  * `PlanningModel` + a hero id → `HeroAdvice | Withheld` (design.md §4.3, §7.1). The **only**
- * caller of `pipelineForHero` in the desktop tree (MPV-21) — `computeAdvisorPipeline` is never
+ * caller of `pipelineForHero` in the desktop tree — `computeAdvisorPipeline` is never
  * assembled here or anywhere else under `apps/desktop`.
  *
- * MP3 F3 (design.md §7, `AD-044`/`AD-046`) adds a value-keyed per-hero memo on top of F2's
+ * design.md §7 adds a value-keyed per-hero memo on top of F2's
  * withhold gate: `heroChangeKey`/`sharedChangeKey` are tier 1 of the two-tier change detection
  * (tier 0, `accountChangeKey`, lives in `@bombfarm/contracts` and gates whether a new
  * `AccountView` is even accepted at all — see `account-view-store.ts`). `adviceForHero`'s
- * signature is unchanged by design (TD-6), so no component under `apps/desktop/renderer/app` is
+ * signature is unchanged by design, so no component under `apps/desktop/renderer/app` is
  * edited by this feature.
  */
 import { ACCOUNT_SECTIONS } from '@bombfarm/domain/account-fidelity';
@@ -18,7 +18,7 @@ import type { HeroAdvice, PlanningModel, Withheld } from './types';
 
 /**
  * `CHANGE_KEY_INPUTS` — every root path `pipelineForHero` (`packages/domain/src/roster-dps.ts`)
- * reads, declared as data (`AD-041`'s genre) rather than left implicit in `heroChangeKey`'s and
+ * reads, declared as data rather than left implicit in `heroChangeKey`'s and
  * `sharedChangeKey`'s bodies, so `tools/advice-change-key-coverage.test.mjs` (T5) can guard this
  * list against `roster-dps.ts`'s own source rather than trust that the two were kept in sync by
  * hand. Each entry is the literal right-hand-side expression `roster-dps.ts` passes (with any
@@ -146,7 +146,7 @@ type CacheEntry = { readonly heroKey: string; readonly advice: HeroAdvice };
 
 /**
  * Module-level cache and counter — mirrors `apps/web/src/shared/stores/selectors/advisor-selectors.ts:7-10`
- * exactly, generalised from one entry to a roster (`TD-5`). Justified the same way the web
+ * exactly, generalised from one entry to a roster. Justified the same way the web
  * precedent is: valid because the desktop renderer is one `BrowserWindow` with one planning
  * surface (the web's justification is "client-only, exactly one store instance" — the desktop
  * equivalent). `resetAdviceComputeCount()` is the same test escape hatch; every test that reads
@@ -169,7 +169,7 @@ export function resetAdviceComputeCount(): void {
   lastUsabilityKey = null;
 }
 
-/** The five sections' `usable` booleans, in `ACCOUNT_SECTIONS` order — `AD-046`'s clear key. */
+/** The five sections' `usable` booleans, in `ACCOUNT_SECTIONS` order — the cache-clear key. */
 function usabilityKeyOf(model: PlanningModel): string {
   return ACCOUNT_SECTIONS.map((section) => {
     const found = model.sections.find((candidate) => candidate.section === section);
@@ -199,7 +199,7 @@ export function adviceForHero(model: PlanningModel, heroId: string): HeroAdvice 
     sections: withheldSections(model.sections, 'dps'),
   });
 
-  // AD-046: any change to any section's usability — in EITHER direction — drops the whole cache,
+  // Any change to any section's usability — in EITHER direction — drops the whole cache,
   // not just the affected hero's entry. This is what makes MAR-08 ("recomputed from the new data
   // rather than the pre-degradation cache") literally true instead of argued, and it is what the
   // consent-revoked edge case ("SHALL NOT be recomputed from the last good account") needs.

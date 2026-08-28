@@ -1,8 +1,8 @@
 /**
- * MP2 F4 — the gate entry point and the provenance ladder (design §4.4, §1.2, `AD-026`).
+ * The gate entry point and the provenance ladder (design §4.4, §1.2).
  *
  * `runFidelityGate` is the one function that runs the whole gate, so the ordering (guard →
- * parse → compare → executed-work floor) cannot be reassembled wrongly per-test (design TD-1).
+ * parse → compare → executed-work floor) cannot be reassembled wrongly per-test.
  */
 import { parseAccountPayload } from '@bombfarm/domain/import-save';
 import type { AccountPayload } from '@bombfarm/contracts';
@@ -29,7 +29,7 @@ export interface GateAssertion {
 }
 
 /**
- * Strictness ladder (design §1.2, `AD-026`): every branch is non-empty and exercised now —
+ * Strictness ladder (design §1.2): every branch is non-empty and exercised now —
  * `export-derived` for real (the committed pair), `memory-assembled` and `api-assembled`
  * against synthetic manifests — so changing the token can neither silently drop the
  * export-derived checks nor land on an untested stub.

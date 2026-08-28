@@ -1,5 +1,5 @@
 /**
- * BSPW5-08 (BSP-48/50/52, AD-BSP-25) — importHeroes as a full roster sync. AC-23...AC-28.
+ * BSPW5-08 — importHeroes as a full roster sync. AC-23...AC-28.
  * Isolation model: a per-file in-memory localStorage stub, same pattern as
  * storage-import-only.test.ts's memoryLocalStorage().
  */
@@ -131,7 +131,7 @@ describe('importHeroes — full roster sync (BSPW5-08)', () => {
     expect(result.heroes[0]?.sourceId).toBe('save-new');
   });
 
-  it('BSP-52: every OTHER hero is left byte-identical apart from its own update, when one is removed and one is created', () => {
+  it('every OTHER hero is left byte-identical apart from its own update, when one is removed and one is created', () => {
     const untouched = hero('untouched-id', 'save-untouched', { name: 'Untouched', level: 42 });
     saveHeroes([hero('stale-id', 'save-stale'), untouched]);
     const result = importHeroes(loadHeroes(), [record('save-new')], new Set(['save-new', 'save-untouched']));

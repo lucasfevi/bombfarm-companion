@@ -1,4 +1,4 @@
-// MP5 F5 — the wiki fingerprint: a hash definition, a baseline schema, its validation, and the
+// The wiki fingerprint: a hash definition, a baseline schema, its validation, and the
 // comparison. Node built-ins only.
 //
 // The hash definition below is copied verbatim, not improved. The maintainer's out-of-band wiki

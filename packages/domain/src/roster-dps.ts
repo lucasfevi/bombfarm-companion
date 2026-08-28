@@ -31,8 +31,8 @@ export type RosterDpsInput = {
 };
 
 /**
- * The only `HeroRecord`-shaped entry to `computeAdvisorPipeline` (`AD-032`). Exported so a
- * second surface (the desktop renderer, MP3 F2) maps a `HeroRecord` to advice through this one
+ * The only `HeroRecord`-shaped entry to `computeAdvisorPipeline`. Exported so a
+ * second surface (the desktop renderer) maps a `HeroRecord` to advice through this one
  * function instead of assembling its own `AdvisorPipelineInput` — one mapping, not two.
  */
 export function pipelineForHero(
@@ -89,7 +89,7 @@ export function computeHeroSoloDps(
 /**
  * Top heroes by solo DPS — an omitted `limit` falls back to `account.fieldSlots` (FIELD
  * concurrency, `skills.field_slots`), then `account.slots` (HOUSE recovery, `casa.slots` —
- * a pre-`skills.field_slots` fallback only, same `AD-063` convention as `SquadFarmFacts` in
+ * a pre-`skills.field_slots` fallback only, same convention as `SquadFarmFacts` in
  * `farm-rate.ts`), then {@link DEFAULT_CASA_SLOTS}. The squad this ranks is who can be ON THE
  * FIELD at once, not who the House can refill at once.
  */

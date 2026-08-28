@@ -23,7 +23,7 @@ export function formulaMitF(facts: PipelineFacts): FormulaBreakdown {
 }
 
 /**
- * BSP-23c/AC-42: `dmgMult` no longer carries `treeDanoTotal` — the tree's `dmg_static` factor
+ * BSPW4-04, BSPW4-06/AC-42: `dmgMult` no longer carries `treeDanoTotal` — the tree's `dmg_static` factor
  * now lives on the sheet (`ledgerAttack`'s 'tree' step), applied exactly once. This formula's
  * substituted string must not imply a second application.
  */

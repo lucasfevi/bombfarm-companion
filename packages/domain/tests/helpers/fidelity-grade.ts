@@ -1,5 +1,5 @@
 /**
- * MP2 F4 — the degraded-input guard (design §4.2). Decides, before any comparison, whether a
+ * The degraded-input guard (design §4.2). Decides, before any comparison, whether a
  * live capture is even gradeable. FID-05/06/07.
  */
 import type { AccountFidelity, AccountPayload, AccountSection, SectionFidelity } from '@bombfarm/contracts';
@@ -24,13 +24,13 @@ function isUsableSectionShape(value: unknown): value is SectionFidelity {
  * 1. `payload.fidelity` absent ⇒ `unverifiableFidelity` (FID-07). `deriveAccountFidelity` is
  *    deliberately never consulted for this branch — `ACS-05.5` makes it grade an absent block
  *    `full`, which is correct for the file adapter and exactly the default this guard forbids
- *    for a live capture (design TD-3).
+ *    for a live capture.
  * 2. Any of the five `ACCOUNT_SECTIONS` keys missing from the block, or shaped so that
  *    `status` is not a non-empty string, or `capturedAt` absent on anything but `missing` ⇒
  *    `unverifiableFidelity` naming the offending section.
  * 3. `deriveAccountFidelity(fidelity).grade !== 'full'` ⇒ `notFullFidelity`, message listing
  *    every non-`resolved` section in `ACCOUNT_SECTIONS` order as `` `<section>: <status>` ``,
- *    using the section's *literal* status string — so a future `degraded` status (`AD-023`)
+ *    using the section's *literal* status string — so a future `degraded` status
  *    prints correctly with zero edits to this file.
  */
 export function assertCaptureFullFidelity(payload: AccountPayload, label: string): void {

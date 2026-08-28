@@ -129,7 +129,7 @@ export function PointsTable() {
           <colgroup>
             <col />
             <col className="w-42" />
-            {/* content-fit-ui.md: widened for the 2 dp precision sweep (BSP-29). */}
+            {/* content-fit-ui.md: widened for the 2 dp precision sweep. */}
             <col className="w-16" />
             <col className="w-24" />
             <col className="w-24" />

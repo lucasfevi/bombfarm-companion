@@ -275,9 +275,9 @@ describe('derive', () => {
     expect(Number.isFinite(result.dps)).toBe(true);
   });
 
-  it('AC-30/AC-31: effective ≡ the real save sheet at pts=0 — the tree is applied exactly once (BSP-22)', () => {
+  it('AC-30/AC-31: effective ≡ the real save sheet at pts=0 — the tree is applied exactly once', () => {
     // The load-bearing double-count regression guard (M1/M2 in spec.md's discrimination note).
-    // MP5 F1 (AD-068 class (a) + (b)): re-pointed onto save-20260813-5heroes.json's Bellatrix
+    // (the ground-truth rule's class (a) + (b)): re-pointed onto save-20260813-5heroes.json's Bellatrix
     // (8/8 geared) — the only post-patch corpus hero pattern available. RECORDED LOSS: every
     // post-patch capture has `crit_dmg_add: 0` (skills.totals), so this can no longer
     // discriminate a crit-damage-specific double-count the way the deleted crit-dmg-tree
@@ -343,7 +343,7 @@ describe('derive', () => {
   });
 
   it('AC-32: dps for save-20260813’s Bellatrix drops by exactly dmg_static vs the old double-counting form', () => {
-    // MP5 F1 (AD-068 class (a)): re-pointed onto save-20260813-5heroes.json's Bellatrix.
+    // (the ground-truth rule's class (a)): re-pointed onto save-20260813-5heroes.json's Bellatrix.
     const raw = loadFixtureJson('save-20260813-5heroes.json');
     const bellatrix = extractHero(raw, 'Bellatrix', 42);
     const totals = (raw.skills as { totals: Record<string, unknown> }).totals;
@@ -424,7 +424,7 @@ describe('derive', () => {
 
   it('AC-34/BSPW5-11 (DISC-01): delta.energy needs NO explicit tree factor — gem already carries energia_add once naked is tree-free', () => {
     // Rebuilt for Wave 5 (was a pre-tree `geared` shape — `{...naked, energy: naked.energy
-    // * 1.2}` — that cannot occur once import is birth-backed; MOD-03/L-05: the INPUT
+    // * 1.2}` — that cannot occur once import is birth-backed; L-05: the INPUT
     // changes, the assertion rigour does not). `naked` here already stands in for
     // `nakedFromBirth`'s genuinely tree-free output; `geared` must therefore be
     // TREE-INCLUSIVE (post gear AND post skill tree, exactly what `applySkillTree`

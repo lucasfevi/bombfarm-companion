@@ -1,5 +1,5 @@
 /**
- * Ability catalog sync (BSP-32, -32a, -36, -36a, -37 family, -38) — W3.
+ * Ability catalog sync (36, 36a, 37 family, 38) — W3.
  * Grows across T1 → T4 as the catalog completes; each task adds only the ACs it proves.
  */
 import { describe, expect, it } from 'vitest';
@@ -26,7 +26,7 @@ const IDENTITY_MODS = {
   gateAttackMult: 1,
 };
 
-describe('catalog completeness (T2, BSP-32 / BSP-32a)', () => {
+describe('catalog completeness (T2)', () => {
   it('AC-01: ABILITIES has exactly 20 entries in slot order', () => {
     expect(ABILITIES.map((a) => a.id)).toEqual([
       'bateria_extra',
@@ -53,7 +53,7 @@ describe('catalog completeness (T2, BSP-32 / BSP-32a)', () => {
   });
 
   it('AC-02: save slot === ABILITIES.findIndex(id) + 1 for every owned code in the fixture', () => {
-    // MP5 F1 (AD-068 class (b) — structural): re-pointed onto payload-20260812-8heroes.json.
+    // Re-pointed onto payload-20260812-8heroes.json (the ground-truth rule's class (b) — structural).
     // RECORDED LOSS: the payload's 8 heroes own 11 distinct ability codes, not the deleted
     // fixture's 13 — two codes (of the 20-entry catalog) lose their in-fixture slot check.
     // The claim itself (slot === catalog index + 1) still re-points cleanly for every code
@@ -169,7 +169,7 @@ describe('rank-20 migration (T3, AD-BSP-18, BSPW3-02/-03)', () => {
     expect(mods).toMatchObject(IDENTITY_MODS);
   });
 
-  it('AC-06 / BSP-38: rank 20 and a mid-curve rank both survive unclamped through abilityMods', () => {
+  it('AC-06: rank 20 and a mid-curve rank both survive unclamped through abilityMods', () => {
     // explosao_ampla @20 exists in the fixture — see AC-25 for the storage round-trip proof;
     // this checks the pure catalog math handles it without clamping.
     expect(abilityMods({ explosao_ampla: 20 }).rangeCells).toBeCloseTo(2, 10);
@@ -233,7 +233,7 @@ describe('golpe_brutal — critDmgFlat (flat crit damage, POINT_GAIN.critDmgFlat
     expect(mods.dmgMult).toBe(IDENTITY_MODS.dmgMult);
   });
 
-  // MP5 F1 — RECORDED LOSS (AD-068 "deleted, not weakened"): AC-20's real-fixture proof
+  // RECORDED LOSS (the ground-truth rule: "deleted, not weakened"): AC-20's real-fixture proof
   // (Korin, id 43040, golpe_brutal rank 1) needs a hero who OWNS golpe_brutal. Neither
   // post-patch corpus file has one — scanned exhaustively, no hero in
   // `save-20260813-5heroes.json` or `payload-20260812-8heroes.json` carries the code.

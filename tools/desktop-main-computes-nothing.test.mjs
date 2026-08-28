@@ -1,9 +1,9 @@
 /**
- * MP3 F3 (design.md §3 `AD-042`, §10 hazard 6, tasks.md T5) — MAR-15's main-loop half: the
+ * (design.md §3, §10 hazard 6, tasks.md T5) — MAR-15's main-loop half: the
  * strongest available structural form of "the recompute does not block the Electron main event
  * loop long enough to delay IPC" is that main never calls the functions that would block it at
  * all. `pipelineForHero`, `computeAdvisorPipeline` and `parseAccountPayload` appearing zero times
- * under `apps/desktop/src/main/**` is what `AD-042`'s placement decision is asserted by.
+ * under `apps/desktop/src/main/**` is what the renderer-recomputes, main-detects-changes placement decision is asserted by.
  *
  * A separate file from `advice-change-key-coverage.test.mjs` (T5's "pick one and state why"):
  * that file guards a renderer-side value (tier-1 key exhaustiveness); this one guards a main-side
@@ -71,7 +71,7 @@ describe('main computes nothing (MAR-15) — pipelineForHero/computeAdvisorPipel
     }
     expect(
       offenders,
-      `${offenders.join('; ')} — main is provably NOT supposed to compute advice (AD-042): the ` +
+      `${offenders.join('; ')} — main is provably NOT supposed to compute advice: the ` +
         'renderer recomputes, memoised; main only resolves the current account view and decides ' +
         'whether it changed. A call to any of these three functions from apps/desktop/src/main would ' +
         'put pure-compute work back on the Electron main event loop, which is exactly what MAR-15 ' +

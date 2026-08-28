@@ -37,7 +37,7 @@ import { findGateCandidate } from './points-reopt';
 import type { TeamBuffId } from './team-buffs';
 
 /** Increments each time the pipeline invokes `energySwitchPoint` (tests / DEBUG). */
-// MOD-36: mutable by design — Vitest imports and reassigns/reads this counter directly
+// mutable by design — Vitest imports and reassigns/reads this counter directly
 // (memoization-invariant assertions); a const/closure cell would break that test API.
 export let energySwitchPointCallCount = 0;
 
@@ -111,7 +111,7 @@ export type AdvisorPipelineResult = {
   speedMult: number;
   critDmgMult: number;
   teamCritFlat: number;
-  /** The whole skill tree, once (BSP-23c) — surfaced for Wave 6's breakdown. */
+  /** The whole skill tree, once (BSPW4-04, BSPW4-06) — surfaced for Wave 6's breakdown. */
   treeSheet: TreeSheetTotals;
   A: DeriveResult;
   B: DeriveResult | null;
@@ -304,7 +304,7 @@ export function computeAdvisorPipeline(input: AdvisorPipelineInput): AdvisorPipe
   const mitF = mitigationFactor(mitPct / 100, effective.penetration);
   const predCrit = predHit * (1 + effective.critDmg / 100);
   const avgHit = predHit * critFactor(effective.critChance, effective.critDmg);
-  // The tree must apply here too, exactly once (BSP-23c) — `adjusted`/`geared` are already
+  // The tree must apply here too, exactly once (BSPW4-04, BSPW4-06) — `adjusted`/`geared` are already
   // tree-inclusive (AD-BSP-12), and AC-33/AC-34 now scale `delta.attack`/`delta.energy` by
   // the same tree factors. Without this, `expectedSheet` (the pure gear+points catalog
   // projection used by the Gear tab's sheet-mismatch check) would silently diverge from

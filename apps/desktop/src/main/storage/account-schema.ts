@@ -6,8 +6,7 @@ export const SCHEMA_VERSION = 1;
 /**
  * The five account sections, in canonical order. `packages/domain`'s `ACCOUNT_SECTIONS`
  * (`account-fidelity.ts`) is the authoritative copy — this is a deliberate desktop-local
- * duplicate because `apps/desktop` cannot import `@bombfarm/domain` (`AD-024`, `AD-020` is
- * type-only). See `_AccountSectionsExhaustive` below for the guard that keeps the two in sync.
+ * duplicate because `apps/desktop` cannot import `@bombfarm/domain`. See `_AccountSectionsExhaustive` below for the guard that keeps the two in sync.
  */
 export const ACCOUNT_SECTIONS = [
   'account',
@@ -20,7 +19,7 @@ export const ACCOUNT_SECTIONS = [
 type AssertExhaustive<T extends never> = T;
 
 /**
- * Compile-time-only (TD-5). If a sixth `AccountSection` is ever added to `@bombfarm/contracts`
+ * Compile-time-only. If a sixth `AccountSection` is ever added to `@bombfarm/contracts`
  * without updating the tuple above, `Exclude<AccountSection, (typeof ACCOUNT_SECTIONS)[number]>`
  * evaluates to that new literal instead of `never`, and this line fails
  * `pnpm --filter @bombfarm/desktop typecheck` with "does not satisfy the constraint 'never'".
@@ -30,7 +29,7 @@ export type AccountSectionsExhaustive = AssertExhaustive<
 >;
 
 /**
- * No status column, by design (`AD-025`): status is derived from row presence at the read
+ * No status column, by design: status is derived from row presence at the read
  * boundary, so a stored section can never round-trip as `resolved`. Composite primary key is
  * the whole of "schema should not forbid multi-account" (spec Out of Scope row 2) — one column,
  * no UI, no migration, no selection logic.

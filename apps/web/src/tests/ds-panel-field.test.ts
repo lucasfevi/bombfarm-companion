@@ -173,7 +173,7 @@ describe('account house stack recipe (AHK-12)', () => {
     expect(pf.accountTreeValueClass).toContain('tabular-nums');
   });
 
-  // MP5 F3 (MSC-17/MSC-18) — the keystone control/status recipe classes and stack variant
+  // MSC-17/MSC-18 — the keystone control/status recipe classes and stack variant
   // are gone, not weakened: absence asserted by name, and the trailing template-literal
   // segment that used to enable them no longer appears anywhere in stackFieldsClass.
   it('no longer exports the keystone control/status recipe classes', () => {

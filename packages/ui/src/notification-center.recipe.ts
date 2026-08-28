@@ -1,5 +1,5 @@
 /**
- * NotificationCenter chrome — fixed layout bundle (DS-05), no genuine
+ * NotificationCenter chrome — fixed layout bundle, no genuine
  * variants beyond the shared per-variant icon color already defined for the
  * toast system (`toast-system.recipe.ts`'s `toastIconClassByVariant`).
  */

@@ -1,11 +1,11 @@
 /**
- * MP5 F2 (T2, `AD-076`) — the pre-deletion characterization baseline recorder.
+ * The pre-deletion characterization baseline recorder.
  *
  * Walks F1's two corpus fixtures, every hero in each, and calls the functions `MKR-11` names,
  * projecting an EXPLICIT, hand-written key list per function — the SURVIVING numeric surface
  * only. Deleted-arm members are excluded BY CONSTRUCTION. A recorder that serialised whole
  * objects would fail trivially the moment a member is deleted, proving nothing about the
- * numbers (`AD-076`).
+ * numbers.
  *
  * Pure — no wall-clock read, no PRNG, no filesystem write, no network. Grep-asserted by
  * `invariance-baseline.test.ts`'s verification criterion.
@@ -54,7 +54,7 @@ export const CORPUS_FILES = [
 ] as const;
 
 /**
- * Sign- and precision-preserving number encoder (`AD-076`). `JSON.stringify` is unusable — it
+ * Sign- and precision-preserving number encoder. `JSON.stringify` is unusable — it
  * emits `0` for `-0` and `null` for `NaN`/`±Infinity`. ECMAScript guarantees
  * `Number(v.toString()) === v` exactly for every finite double, so `v.toString()` is bit-exact
  * for the general case; the four special cases below are handled explicitly.
@@ -156,7 +156,7 @@ type HeroRecordEntry = {
     hit: string;
   };
   /**
-   * `pipelineForHero` (`AD-032`) — the app's own call path. Its internal
+   * `pipelineForHero` — the app's own call path. Its internal
    * `computeAdvisorPipeline` call IS this recorded slice (same call, same numbers): the fields
    * MKR-11 names for `computeAdvisorPipeline` (`ranking`, `best`, `dps`, `active`, `predHit`,
    * `effective`, `pointDelta`, `resetAdvice`) are all present below, so a single call proves
@@ -355,7 +355,7 @@ function recordHero(
     mitigationPct,
   });
 
-  // pipelineForHero — the app's own call path (AD-032). Build a HeroRecord/AccountShared the
+  // pipelineForHero — the app's own call path. Build a HeroRecord/AccountShared the
   // same shape pipeline-for-hero-parity.test.ts builds.
   const hero: HeroRecord = {
     id: saveHero.sourceId,

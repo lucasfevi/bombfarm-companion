@@ -1,6 +1,6 @@
 // ACS-01: proves the source-neutral entry point split preserves `parseSaveFile`'s observable
 // behaviour byte-for-byte — `parseSaveFile` and `parseAccountPayload` still agree on every
-// canonical fixture. MP5 F1 (`AD-068`): the pre-refactor inline `ParseResult` digests (ACS-02)
+// canonical fixture. The ground-truth rule: the pre-refactor inline `ParseResult` digests (ACS-02)
 // and the `vera-01-points-reset.json` warnings snapshot are DELETED here, not regenerated —
 // they were SHA-256 hashes / a golden snapshot of *our own output* captured against a
 // pre-refactor HEAD and a since-deleted pre-wipe account. Re-hashing or re-snapshotting them
@@ -9,8 +9,8 @@
 // The `__snapshots__/account-source-parity.test.ts.snap` file (whose only entry was the deleted
 // warnings snapshot) is deleted in the same commit.
 //
-// MP5 F4 (`AD-088`) narrows the equality claim: it now holds for every ACCEPTED input, not every
-// input full stop. `parseSaveFile` gates on `MSG-11`'s positive discriminator BEFORE delegating;
+// The acceptance gate narrows the equality claim: it now holds for every ACCEPTED input, not every
+// input full stop. `parseSaveFile` gates on the positive discriminator BEFORE delegating;
 // `parseAccountPayload` never gates. A `heroes`-carrying input lacking the new keys is exactly
 // where the two now deliberately diverge — asserted directly below, in both directions, rather
 // than left as an unstated exception to the headline equality claim.
@@ -22,12 +22,12 @@ import type { HeroRecord } from '@bombfarm/domain/shims/storage';
 import { loadFixtureJson } from './helpers/sheet-math-fixtures';
 import { minimalHero } from './helpers/minimal-save-hero';
 
-// MP5 F1 (AD-068 class (b) — structural): re-pointed onto the post-patch corpus. The claim
+// (the ground-truth rule, class (b) — structural): re-pointed onto the post-patch corpus. The claim
 // itself (`parseSaveFile` ≡ `parseAccountPayload`) is unchanged; only the fixture names moved.
 const CANONICAL_FIXTURES = ['save-20260813-5heroes.json', 'payload-20260812-8heroes.json'] as const;
 
-/** MP5 F4: the minimal `skills` shape that satisfies `parseSaveFile`'s positive discriminator
- *  (MSG-11), so a synthetic payload built for an UNRELATED assertion (e.g. missingBirthStats)
+/** The minimal `skills` shape that satisfies `parseSaveFile`'s positive discriminator,
+ *  so a synthetic payload built for an UNRELATED assertion (e.g. missingBirthStats)
  *  reaches that assertion through both entry points instead of being intercepted by the gate. */
 const POST_PATCH_SKILLS = { refunds: {}, totals: { vagas_campo: 0, bag_tabs_bonus: 0 } };
 
@@ -166,17 +166,17 @@ describe('rejections are preserved through the seam (ACS-03)', () => {
   });
 });
 
-describe('MP5 F4 (AD-088): the deliberate parseSaveFile / parseAccountPayload divergence', () => {
+describe('the deliberate parseSaveFile / parseAccountPayload divergence', () => {
   it('a heroes-carrying input lacking the new keys: parseSaveFile rejects unsupportedSaveShape, parseAccountPayload still runs its own checks — asserted in BOTH directions', () => {
     // No `skills` at all — carries `heroes` (so it is not notASaveFile) but is missing every
-    // one of MSG-11's positive-discriminator keys.
+    // one of the positive-discriminator keys.
     const payload = { heroes: [minimalHero('1', 'HasBirth')] };
 
     const viaFile = parseSaveFile(payload, []);
     const viaEntryPoint = parseAccountPayload(payload, []);
 
     // Direction 1: parseSaveFile gates BEFORE reaching any per-hero work — zero candidates,
-    // zero inventory, the new reason, no diagnosis lost (it lands in warnings, MSG-15).
+    // zero inventory, the new reason, no diagnosis lost (it lands in warnings).
     expect(viaFile.rejected).toEqual({ reason: 'unsupportedSaveShape', heroNames: [] });
     expect(viaFile.candidates).toEqual([]);
     expect(viaFile.inventory).toEqual([]);
@@ -203,10 +203,10 @@ describe('edge cases (spec.md Edge Cases)', () => {
     expect(warnings.some((warning) => warning.includes('no "items" list'))).toBe(true);
   });
 
-  // MP5 F4: `skills` entirely absent is now definitionally `unsupportedSaveShape` through
-  // `parseSaveFile` (MSG-11) — this null-defaulting behaviour is `parseAccountPayload`'s
-  // territory now, exactly like a degraded/omitted poll section (AD-036), not a file's.
-  it('skills/casa absent: tree/houseIdx/houseLevel stay null (MOD-36) — via parseAccountPayload, the entry point that legitimately omits sections', () => {
+  // `skills` entirely absent is now definitionally `unsupportedSaveShape` through
+  // `parseSaveFile` — this null-defaulting behaviour is `parseAccountPayload`'s
+  // territory now, exactly like a degraded/omitted poll section, not a file's.
+  it('skills/casa absent: tree/houseIdx/houseLevel stay null — via parseAccountPayload, the entry point that legitimately omits sections', () => {
     const payload = { heroes: [minimalHero('1')] };
     const { account } = parseAccountPayload(payload, []);
     expect(account.tree).toBeNull();
@@ -240,7 +240,7 @@ describe('edge cases (spec.md Edge Cases)', () => {
     );
   });
 
-  it('a resolved-but-absent section warns without silently downgrading the derived grade (spec.md edge case, TD-6)', () => {
+  it('a resolved-but-absent section warns without silently downgrading the derived grade (spec.md edge case)', () => {
     const fidelity = {
       account: { status: 'resolved' as const, capturedAt: '2026-08-12T00:00:00.000Z' },
       heroes: { status: 'resolved' as const, capturedAt: '2026-08-12T00:00:00.000Z' },
@@ -258,7 +258,7 @@ describe('edge cases (spec.md Edge Cases)', () => {
         (warning) => warning.includes('"casa"') && warning.includes('resolved') && warning.includes('no'),
       ),
     ).toBe(true);
-    // The grade stays a pure function of `fidelity` alone (TD-6/TD-7) — it is computed
+    // The grade stays a pure function of `fidelity` alone — it is computed
     // separately, never read off ParseResult — so "all resolved" still grades `full` even
     // though one of those sections had nothing to back it up. The warning is the ONLY
     // signal of the mismatch; the grade itself is never silently downgraded.

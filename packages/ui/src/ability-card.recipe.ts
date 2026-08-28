@@ -59,7 +59,7 @@ export const abilityChipRecipe = cva('', {
 
 export type AbilityChipVariant = VariantProps<typeof abilityChipRecipe>;
 
-/** Fixed ability layout bundles (no variants) — documented recipe constants (DS-05). */
+/** Fixed ability layout bundles (no variants) — documented recipe constants. */
 export const abilGridClass =
   'grid grid-cols-[repeat(auto-fill,minmax(min(100%,240px),1fr))] gap-2';
 export const abilSelectedClass =

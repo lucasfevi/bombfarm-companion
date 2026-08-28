@@ -13,8 +13,8 @@ export type StepperProps = {
 };
 
 /**
- * Stepper primitive — −/value/+ trio. Buttons delegate to `@base-ui/react`
- * (DS-06); classes come from the stepper recipe. `className` merges via `cn()`.
+ * Stepper primitive — −/value/+ trio. Buttons delegate to `@base-ui/react`;
+ * classes come from the stepper recipe. `className` merges via `cn()`.
  */
 export function Stepper({
   value,

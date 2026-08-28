@@ -1,13 +1,13 @@
 import { describe, expect, it } from 'vitest';
 import { clampPointStep, SHEET_KEYS, ZERO_PTS, type SheetKey } from '@bombfarm/domain/planner-constants';
 
-/** A hand-authored `Σ pts < level` fixture — BSP-25's "remaining-unspent" branch, which no
+/** A hand-authored `Σ pts < level` fixture — the "remaining-unspent" branch, which no
  *  real save exercises (every imported hero either has `spentDelta === level` or overspends). */
 function partiallySpent(): Record<SheetKey, number> {
   return { ...ZERO_PTS(), attack: 20, energy: 10, critChance: 3 };
 }
 
-describe('clampPointStep (BSP-25, AC-17, AC-18 — full form per the user Q-1 override of DEC-05)', () => {
+describe('clampPointStep (AC-17, AC-18 — full form per the user Q-1 override of DEC-05)', () => {
   it('floors at 0 for a -1 step at pts=0', () => {
     const pts = ZERO_PTS();
     const next = clampPointStep(pts, 'attack', -1, 38);

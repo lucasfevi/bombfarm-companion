@@ -26,7 +26,7 @@ import { applyMove, type AssignmentState } from '@bombfarm/domain/team-plan/solv
 import { generateMoves } from '@bombfarm/domain/team-plan/solver-moves';
 import { teamPlanInputFromFixture } from './helpers/team-plan-fixtures';
 
-// MP5 F1 (AD-068 class (b) — structural): re-pointed onto payload-20260812-8heroes.json.
+// Class (b) — structural: re-pointed onto payload-20260812-8heroes.json.
 const FIXTURE = 'payload-20260812-8heroes.json';
 
 function setup(fixture: string = FIXTURE) {
@@ -163,7 +163,7 @@ describe('solver cache memory', () => {
  */
 describe('interchangeable items: one candidate at a time, multiplicity preserved', () => {
   it.skip('offers exactly one representative per group but still equips every copy', () => {
-    // MP5 F1 (AD-068 class (a) — read from the capture): re-pointed onto
+    // Class (a) — read from the capture: re-pointed onto
     // payload-20260812-8heroes.json, which carries real duplicate spares (measured: 6
     // pool-key groups with 2-3 copies each) — richer duplicate coverage than the deleted
     // `SaveFile_BombFarm.json` this test used to read.

@@ -14,7 +14,7 @@ import type { ConsentStore } from './consent-store.js';
 import { readSessionToken, type SessionTokenFileResult } from './session-token-file.js';
 
 /**
- * The cycle (LAR-01 enforcement half, LAR-03…05, LAR-11, LAR-15 carry-over half). Ties the pure
+ * The cycle. Ties the pure
  * `packages/game-api` pieces to F3's `AccountStore.commit()` — the only carry-over seam in the
  * product (`R-1`).
  *
@@ -201,7 +201,7 @@ export function createAccountRefresh(deps: AccountRefreshDeps): AccountRefreshHa
         // contract rather than racing five parallel calls against it.
         const outcome = await readSection(session, abortableTransport, deps.gate, route);
         if (outcome.kind === 'drift') {
-          // MP5 F4 (MSG-27): the only runtime consumer of `readSection`'s drift outcome — routes.ts
+          // the only runtime consumer of `readSection`'s drift outcome — routes.ts
           // itself stays a pure library with no LogPort. Path-qualified key names only, never a
           // response value: `missingKeys`/`addedKeys` are produced by `checkShape`/`checkSchema`
           // as key paths by construction, so there is no player data (a gold amount, a hero name)

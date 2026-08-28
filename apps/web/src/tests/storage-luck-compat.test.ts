@@ -1,7 +1,7 @@
 /**
- * BSPW2-05 — the rule-3/rule-4 backward-compat proof for `luck` (BSP-40).
+ * BSPW2-05 — the rule-3/rule-4 backward-compat proof for `luck`.
  *
- * This is deliberately NOT the MOD-21 tripwire fixture (Wave 1 L-03): a byte-identity
+ * This is deliberately NOT the tripwire fixture (Wave 1 L-03): a byte-identity
  * fixture asserts output ≡ input under the current (eight-key) schema; this suite asserts
  * the opposite property — that a genuine STALE seven-key payload loads with `luck` filled
  * to 0, and that no derived value ever becomes NaN.

@@ -64,7 +64,7 @@ Browser-level smoke and visual baselines for the static export. Unit math stays 
 > above the table. Smoke coverage lives in `e2e/farm-respec.spec.ts` (nine scenarios).
 >
 > **Promote-to-600 evidence:** a lightweight same-session
-> Playwright timing (not the formal MOD-33 `e2e/perf/` commit-instrumentation harness — recorded
+> Playwright timing (not the formal profiler-re-run `e2e/perf/` commit-instrumentation harness — recorded
 > here as an evidence artifact, not a threshold gate) clicked the unlocked-only filter off
 > (42 -> 600 rows) and back on (600 -> 42 rows) on the same page, three repetitions, host
 > `dev-strict`: promote averaged **~273ms** (250/276/294ms), the same-session control (the

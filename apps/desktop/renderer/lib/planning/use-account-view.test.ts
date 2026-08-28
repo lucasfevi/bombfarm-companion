@@ -32,7 +32,7 @@ function fakeBridge(resolveWith: AccountView) {
   };
 }
 
-describe('createAccountViewLoader — invokes account:get exactly once (MPV-13)', () => {
+describe('createAccountViewLoader — invokes account:get exactly once', () => {
   it('load() called three times still invokes the bridge exactly once', async () => {
     const view = fakeAccountView();
     const { bridge, calls } = fakeBridge(view);
@@ -96,7 +96,7 @@ describe('useAccountView — structural guarantee that the fetch effect runs onc
   });
 });
 
-describe("useAccountView — MP3 F3's subscription lives in the SAME effect (source-level, the same genre as the checks above)", () => {
+describe("useAccountView — subscription lives in the SAME effect (source-level, the same genre as the checks above)", () => {
   it('subscribes to account:changed exactly once, inside the one useEffect — no second subscription path', async () => {
     const fs = await import('node:fs');
     const path = await import('node:path');

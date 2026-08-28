@@ -82,7 +82,7 @@ export function resolveCasaSlots(casa: unknown, houseIdx: number | null): number
  * `null` when the save does not carry the key, so a caller can keep its own fallback rather
  * than inherit an invented number here.
  *
- * `AD-063` convention, followed verbatim: the save carries BOTH `skills.field_slots` and
+ * This convention, followed verbatim: the save carries BOTH `skills.field_slots` and
  * `skills.totals.vagas_campo` and they disagree (6 vs 5 on account 486, 3 vs 2 on the
  * 2026-08-13 export). This reader RECORDS `field_slots` and does not reconcile the pair —
  * `vagas_campo` is the skill tree's own purchased-node total, `field_slots` is the count the

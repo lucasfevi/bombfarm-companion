@@ -3,7 +3,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 
 /**
- * W6-12 / MOD-28 — at most one React component declaration per `.tsx` file.
+ * W6-12 — at most one React component declaration per `.tsx` file.
  * Stories excluded. Namespace `index.ts` files are not scanned (not components).
  *
  * Component = PascalCase `function` declaration, or PascalCase `const` bound to
@@ -41,7 +41,7 @@ function componentNames(src: string): string[] {
   return [...names].sort();
 }
 
-describe('one component per file (MOD-28)', () => {
+describe('one component per file', () => {
   it('prints an empty offender list', () => {
     const offenders: { file: string; names: string[] }[] = [];
 

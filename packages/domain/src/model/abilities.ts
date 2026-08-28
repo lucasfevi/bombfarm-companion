@@ -47,7 +47,7 @@ export type AbilityEffect =
    * `crit_dmg` multiplier by `+0.04` per level. Added to the sheet, NOT pooled multiplicatively
    * against the hero's roll.
    *
-   * Supersedes the former `critDmgPctOfBase` kind (AD-BSP-32 / BSP-37d, DEC-05), which read the
+   * Supersedes the former `critDmgPctOfBase` kind (AD-BSP-32 / DEC-05), which read the
    * wiki's "+4% dano crítico" as 4% *of the hero's crit-damage base*. The live save says
    * otherwise: Ivo (id `21076`, L38, `golpe_brutal` 20/20, account 11882 capture 2026-08-15) has
    * `birth_stats.crit_dmg` 1.45238210566148 and `stats.crit_dmg` 2.25238210566148 — a delta of
@@ -235,7 +235,7 @@ export interface Milestone {
  * Crit milestone table: points needed to reach crit chance / crit dmg targets (points scale
  * off the base roll) and the resulting hit multiplier.
  *
- * BSPW4-07 (BSP-31a, AC-47): pass the hero's own **naked** `critChance`/`critDmg` (lv1 ★0,
+ * BSPW4-07 (AC-47): pass the hero's own **naked** `critChance`/`critDmg` (lv1 ★0,
  * planner units) as `base` to compute against the hero's actual birth roll. WITHOUT `base`,
  * this falls back to `BASE_ROLLS[rarity]` — a **rarity-average estimate**, not the hero's own
  * roll. A well-rolled hero (e.g. Bellatrix's crit chance 9.51 vs Raro's rarity midpoint 7) needs

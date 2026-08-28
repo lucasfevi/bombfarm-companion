@@ -1,5 +1,6 @@
 /**
- * Compile-time assertions for `HttpRequest`'s literal host/method (LAR-13). Enforced only by
+ * Compile-time assertions for `HttpRequest`'s literal host/method (the one-host/HTTPS/GET-only
+ * invariant). Enforced only by
  * `pnpm --filter @bombfarm/game-api typecheck:tests` — see `session.type.test.ts` for why.
  */
 import { describe, expect, it } from 'vitest';

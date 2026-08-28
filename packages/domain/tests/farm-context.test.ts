@@ -56,7 +56,7 @@ describe('farm-context', () => {
 
 describe('farmContextForHero', () => {
   it('matches computeAdvisorPipeline context for a fixture hero (AD-RGO-27)', () => {
-    // MP5 F1 (AD-068 class (b) — structural: the claim is that two independently-computed
+    // (the ground-truth rule, class (b) — structural: the claim is that two independently-computed
     // contexts for the same hero agree, not any particular numeric value): re-pointed onto
     // the post-patch export's geared hero, Bellatrix L42 (8/8).
     const raw = loadFixtureJson('save-20260813-5heroes.json');

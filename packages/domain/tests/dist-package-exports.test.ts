@@ -1,4 +1,4 @@
-// `AD-032` — `@bombfarm/domain`'s `exports` map now targets `dist/` instead of `src/`.
+// `@bombfarm/domain`'s `exports` map now targets `dist/` instead of `src/`.
 //
 // Before this feature the map was DEAD CONFIGURATION: every one of the in-use
 // `@bombfarm/domain[/subpath]` specifiers resolved through a tsconfig `paths` entry
@@ -6,11 +6,11 @@
 // `packages/domain/vitest.config.ts`), never through this package's own `exports` map. A
 // green local test run therefore proves NOTHING about whether the new map is correct — only
 // an *executed* resolution, run through Node's own resolver (not Vitest's module runner),
-// is real evidence (MDW-18). See design.md "The blocker AD-029 does not name — B7" and
-// "Notes for the Verifier".
+// is real evidence (MDW-18). See design.md's discussion of the blocker the domain-edge
+// asymmetry finding does not name — B7 — and "Notes for the Verifier".
 //
-// MP5 F1 re-measured the floor below (56 -> 54): deleting the 20 quarantined test files
-// (mp5-fixture-rebaseline, unrelated to AD-032) removed the repo's only usages of two
+// Re-measured the floor below (56 -> 54): deleting the 20 quarantined test files
+// (mp5-fixture-rebaseline, unrelated to the dist-exports change) removed the repo's only usages of two
 // `@bombfarm/domain[/subpath]` specifiers, so the true count of distinct specifiers in the
 // repo genuinely shrank. This is a floor derived from the live repo tree, not a fixture value
 // — re-measuring it is not a fixture re-point.
@@ -114,7 +114,7 @@ process.stdout.write(JSON.stringify(results));
   return JSON.parse(stdout) as ResolveResult[];
 }
 
-describe('@bombfarm/domain exports map — resolves to dist (AD-032)', () => {
+describe('@bombfarm/domain exports map — resolves to dist', () => {
   requireDomainDist();
 
   it('finds at least 53 distinct @bombfarm/domain[/subpath] specifiers across apps/**, packages/**, tools/**', () => {
@@ -221,7 +221,7 @@ describe('@bombfarm/domain exports map — resolves to dist (AD-032)', () => {
 
     expect(
       tsconfigBase.compilerOptions?.skipLibCheck,
-      "tsconfig.base.json's skipLibCheck must stay true (AD-033): under moduleResolution " +
+      "tsconfig.base.json's skipLibCheck must stay true: under moduleResolution " +
         "NodeNext, domain's emitted .d.ts carry extensionless relative specifiers (B7) that " +
         'TypeScript resolves fully but REPORTS on (TS2834/TS2835) unless .d.ts errors are ' +
         'skipped. Turning this off floods every NodeNext consumer (apps/desktop main process) ' +

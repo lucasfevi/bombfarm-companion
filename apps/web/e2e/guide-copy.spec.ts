@@ -1,7 +1,7 @@
 import { test, expect } from '@playwright/test';
 import { seedLocalStorage } from './fixtures/seed';
 
-/** `BSP-06`/`AD-BSP-06`/`AD-BSP-26`/`AC-37` — the guide no longer asks anyone to reset
+/** `AD-BSP-06`/`AD-BSP-26`/`AC-37` — the guide no longer asks anyone to reset
  *  in-game before exporting, and step 2 describes the full sync including removal. */
 test.describe('guide copy (BSPW6-08)', () => {
   test('PT: step 1 drops the mandatory reset; step 2 drops "tick the heroes you want"', async ({

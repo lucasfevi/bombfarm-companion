@@ -1,9 +1,9 @@
 /**
- * Source guards for MP3 F2 (design.md §6, §11, MPV-14/16/18/21/22). Home: `apps/desktop/src/main`
+ * Source guards for design.md §6, §11. Home: `apps/desktop/src/main`
  * (not `tools/`) — every assertion here needs the desktop's own `apps/desktop` tree walked with
  * TypeScript-aware file listing, matching the `contracts-import-is-type-only.test.ts` genre
  * (`packages/domain/tests/`) rather than the `.mjs`-only `tools/` convention; `tools/` is reserved
- * here for the DS-09 extension to `design-system-gate.test.mjs` (T6's second file) and for T7's
+ * here for the reuse-boundary extension to `design-system-gate.test.mjs` (T6's second file) and for T7's
  * spec-list guard, which both need to read outside `apps/desktop`.
  *
  * Every scan strips comments first — several of these guards are described in this repo's own
@@ -67,7 +67,7 @@ describe('D22 survives D24 — no upload affordance anywhere under apps/desktop 
   });
 });
 
-describe('One mapping (design hazard 2, MPV-21) — pipelineForHero is the only HeroRecord-to-advice entry', () => {
+describe('One mapping (design hazard 2) — pipelineForHero is the only HeroRecord-to-advice entry', () => {
   it('computeAdvisorPipeline is never imported or called from apps/desktop source (test files excluded — they legitimately compute the fallback-to-prove-absent value)', () => {
     const offenders = ALL_DESKTOP_SOURCE()
       .filter((file) => /computeAdvisorPipeline\s*\(|\bimport\s*\{[^}]*\bcomputeAdvisorPipeline\b/.test(stripComments(file.source)))
@@ -76,7 +76,7 @@ describe('One mapping (design hazard 2, MPV-21) — pipelineForHero is the only 
       offenders,
       `Found computeAdvisorPipeline referenced outside a test in: ${offenders.join(', ')}. ` +
         `The desktop must map a HeroRecord to advice through the exported pipelineForHero only — ` +
-        `assembling computeAdvisorPipeline's input directly is exactly the second mapping AD-032 exists to prevent.`,
+        `assembling computeAdvisorPipeline's input directly is exactly the second mapping this guard exists to prevent.`,
     ).toEqual([]);
   });
 
@@ -113,7 +113,7 @@ describe('No default-filling (design §4.3) — DEFAULT_TREE/DEFAULT_CONTEXT nev
   });
 });
 
-describe('No local controls under renderer/app/planning/** (MPV-14)', () => {
+describe('No local controls under renderer/app/planning/**', () => {
   const planningComponentFiles = readAll(PLANNING_APP_ROOT, ['.tsx']);
 
   it('no <button, <select, <table or <input element literal', () => {
@@ -128,7 +128,7 @@ describe('No local controls under renderer/app/planning/** (MPV-14)', () => {
     expect(
       offenders,
       `Found a bespoke <button>/<select>/<table>/<input> element under renderer/app/planning/** ` +
-        `in: ${offenders.join(', ')}. Every control there must be a @bombfarm/ui primitive (MPV-14).`,
+        `in: ${offenders.join(', ')}. Every control there must be a @bombfarm/ui primitive.`,
     ).toEqual([]);
   });
 
@@ -137,7 +137,7 @@ describe('No local controls under renderer/app/planning/** (MPV-14)', () => {
   });
 });
 
-describe('Copy guard (MPV-16, design §6) — no player-facing literal outside lib/copy/', () => {
+describe('Copy guard (design §6) — no player-facing literal outside lib/copy/', () => {
   // Fixed here and justified: these are never player-facing text (a DOM hook, a Tailwind class
   // list, a link target, an id, an ARIA role/type token, a React list key). Widening this list
   // later needs a comment naming which AC it weakens.

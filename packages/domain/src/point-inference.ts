@@ -1,6 +1,6 @@
 /**
  * BSPW4-03 — recover the integer spent-point vector from a hero's sheet, inverting the
- * `AD-BSP-19` block. `BSP-04a`: every failure mode is a typed issue, never a throw, a
+ * `AD-BSP-19` block. Every failure mode is a typed issue, never a throw, a
  * silent scale, or a redistributed residual.
  */
 import { nakedFromBirth, type BirthStats, type TreeSheetTotals } from './birth-sheet';
@@ -24,7 +24,7 @@ export type PointInferenceIssue =
       recovered: number;
       budget: number;
       difference: number;
-      /** Cap-saturated stats, for Wave 5's BSP-04b copy. Empty when none. */
+      /** Cap-saturated stats, for Wave 5's copy. Empty when none. */
       saturatedStats: ('critChance' | 'cdr')[];
     };
 

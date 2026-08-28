@@ -1,7 +1,9 @@
 import type { RequestOutcome } from './request.js';
 
 /**
- * Read pacing (LAR-21, LAR-22, LAR-23 halt half). Every value here is **unmeasured** — the
+ * Read pacing — single-flight with a min gap and cycle interval, cooldown getting bounded
+ * backoff instead of a storm, and 401/403 halting into a distinct terminal state. Every value
+ * here is **unmeasured** — the
  * server's actual read-rate tolerance has never been measured (spec.md, Assumptions & Open
  * Questions). Each constant below carries its own provenance comment for exactly that reason: a
  * bare number here is how an invented figure becomes folklore (`pacing.test.ts` reads this
@@ -61,7 +63,7 @@ export class PacingRefusedError extends Error {
 }
 
 /** Thrown by `nextCycleDelayMs` while halted — the cycle must not schedule itself again until
- *  `resetAuth()` is called (LAR-23). */
+ *  `resetAuth()` is called. */
 export class PacingHaltedError extends Error {
   constructor() {
     super('PacingHaltedError: the cycle is halted on an unresolved unauthorized response');
@@ -81,7 +83,7 @@ export interface PacingGate {
   /** Throws `PacingHaltedError` while halted. Otherwise the configured cycle interval, or the
    *  remaining backoff window if that is longer. */
   nextCycleDelayMs(focused: boolean): number;
-  /** The only two legitimate callers, per LAR-23: a changed token file, or an explicit user
+  /** The only two legitimate callers: a changed token file, or an explicit user
    *  retry. Never a timer. */
   resetAuth(): void;
 }

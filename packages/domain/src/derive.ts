@@ -28,7 +28,7 @@ export type CombatMults = {
 };
 
 /**
- * `treeEnergy` and `treeDanoTotal` are GONE (BSP-23c, DEC-01) — both now live on the sheet
+ * `treeEnergy` and `treeDanoTotal` are GONE (DEC-01) — both now live on the sheet
  * only (`applySkillTree`), never in a combat multiplier.
  */
 export type ComputeCombatMultsInput = {
@@ -65,7 +65,7 @@ export function teamDrainMultFromTeamBuffs(teamBuffs: Record<TeamBuffId, number>
 
 /**
  * Team / combat multipliers used by the advisor pipeline. The skill tree no longer
- * contributes anything here (BSP-23c) — `dmg_static` and `energia_add` are sheet-level
+ * contributes anything here — `dmg_static` and `energia_add` are sheet-level
  * factors applied once by `applySkillTree`, not a second time on top of the combat sheet.
  *
  * `teamBuffs` must be the FULL roster total for every aura, including whichever hero `mods`
@@ -109,7 +109,7 @@ export type DeriveInput = {
    *  crit points — see `CombatMults.teamCritFlat`. There is no separate "own" input here,
    *  matching `attackMult`/`speedMult`: the combination happens once, in `computeCombatMults`. */
   teamCritFlat: number;
-  /** The whole skill tree, once (BSP-23c) — replaces the four scattered tree inputs. */
+  /** The whole skill tree, once — replaces the four scattered tree inputs. */
   treeSheet: TreeSheetTotals;
   penetrationPp: number;
   context: Context;
@@ -132,7 +132,7 @@ export type DeriveResult = {
  * Full pipeline from a geared sheet to effective stats and DPS numbers.
  *
  * The skill tree is applied exactly ONCE, at the sheet level (`applySkillTree`, called
- * upstream to produce `geared`/`naked`) — never again here (BSP-22, BSP-23c). Exactly one
+ * upstream to produce `geared`/`naked`) — never again here. Exactly one
  * tree factor genuinely belongs to a per-point delta rather than the sheet:
  * `treeSheet.danoStatic` scales `delta.attack` because the sheet the delta is added to is
  * already post-`dmg_static` (AD-BSP-12) and attack has no ratio-based analogue to cancel it.
@@ -221,7 +221,7 @@ export function derive(input: DeriveInput): DeriveResult {
     critDmg: delta.critDmg * critDmgMult,
     penetration: delta.penetration,
     cdr: delta.cdr,
-    // No combat multiplier — Luck never reaches DPS scoring (BSP-42, AD-BSP-20).
+    // No combat multiplier — Luck never reaches DPS scoring (AD-BSP-20).
     luck: delta.luck,
   };
   return {

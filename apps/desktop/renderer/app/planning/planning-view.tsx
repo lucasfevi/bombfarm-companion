@@ -4,8 +4,8 @@
  * The Planning screen (design.md §1, §7.2). Composes `@bombfarm/ui` primitives against the pure
  * `renderer/lib/planning/*` modules — nothing is recomputed in a component. `selectedHeroId` is
  * leaf-owned here (`docs/react-performance.md` rule 1); the account is read once via
- * `useAccountView()` and the parsed model is a `useMemo` over the `AccountView` reference (TD-4:
- * the desktop renderer does not enable the React Compiler, so this hand memoisation is correct,
+ * `useAccountView()` and the parsed model is a `useMemo` over the `AccountView` reference (the
+ * desktop renderer does not enable the React Compiler, so this hand memoisation is correct,
  * not a violation of the rule that forbids it in `apps/web`).
  */
 import { useMemo, useState } from 'react';
@@ -24,7 +24,7 @@ export function PlanningView() {
   const [selectedHeroId, setSelectedHeroId] = useState<string | null>(null);
 
   const view = accountViewState.status === 'loaded' ? accountViewState.view : null;
-  // Keyed by the `AccountView` reference (TD-4) — the IPC boundary structurally clones on every
+  // Keyed by the `AccountView` reference — the IPC boundary structurally clones on every
   // real invoke, so identity only ever changes when there is genuinely a new view to parse.
   const model = useMemo(() => (view ? buildPlanningModel(view) : null), [view]);
 
@@ -45,7 +45,7 @@ export function PlanningView() {
   }
 
   if (accountViewState.status === 'error') {
-    // MP3 F4 (design §2.8): the raw Error message crossing from main is untranslatable English —
+    // (design §2.8): the raw Error message crossing from main is untranslatable English —
     // it is kept as DIAGNOSTIC data only (a data- attribute the copy guard allowlists, since it
     // is a variable, never a string literal) and never rendered as player-facing body copy. The
     // spec's own edge case: a main-process error crosses the boundary as a key or code, not as

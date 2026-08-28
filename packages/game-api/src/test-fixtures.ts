@@ -9,7 +9,7 @@ export type FixtureName = 'api-bodies.json' | 'api-bodies-after.json';
  * Resolves a committed `src/__fixtures__/*.json` fixture to an absolute filesystem path — never
  * `import`ed, so nothing under `src/__fixtures__/**` lands in `dist` (T5 Done-when). Exposed
  * separately from {@link loadFixtureJson} so callers (T5's `fingerprints.test.ts`/`shape.test.ts`)
- * can run it through {@link requireFixture} BEFORE reading it (`MSG-09`).
+ * can run it through {@link requireFixture} BEFORE reading it.
  */
 export function fixturePath(name: FixtureName): string {
   return fileURLToPath(new URL(`./__fixtures__/${name}`, import.meta.url));
@@ -21,7 +21,7 @@ export function loadFixtureJson(name: FixtureName): Record<string, Record<string
 }
 
 /**
- * MP5 F4 (T5) — package-local copy of `packages/domain/tests/helpers/require-fixture.ts`'s
+ * (T5) — package-local copy of `packages/domain/tests/helpers/require-fixture.ts`'s
  * `requireBuildOutput` shape (design §5.7). NOT re-pointed at the shared domain helper: unlike
  * `apps/desktop`'s renderer tsconfig (no `rootDir`), `packages/game-api/tsconfig.json` sets
  * `"rootDir": "src"` and has no test-file exclusion, so `tsc -p tsconfig.json` fails with

@@ -32,15 +32,15 @@ export const en = {
   importHouseName: "Name",
   importHouseLevel: "Level",
   importHouseRest: "Rest time",
-  // BSP-04b/AC-35 — the three budgetMismatch branches, selected by pointIssueCopyKey.
+  // AC-35 — the three budgetMismatch branches, selected by pointIssueCopyKey.
   importPointShortfall: "Spent points don't fully add up on the sheet — a small shortfall, not a real stat difference.",
   importPointOneSaturated: "Spent points don't fully add up — the missing points are likely in {stat}, which is already at its cap.",
   importPointBothSaturated: "Spent points don't fully add up, and both Crit % and CDR are already capped, so the exact split between them can't be recovered.",
-  // BSP-06/DEC-09/AC-36 — parseSaveFile's structured whole-file rejection, replacing the
+  // DEC-09/AC-36 — parseSaveFile's structured whole-file rejection, replacing the
   // reset-warning block below.
   importRejectedNotASaveFile: "This file doesn't look like a BombFarm save-file export.",
   importRejectedMissingBirthStats: "This save is missing birth stats needed for accurate points for: {names}. Re-export from an updated game version.",
-  // MP5 F4 (MSG-14): the positive-discriminator rejection — deliberately generic. Names no
+  // The positive-discriminator rejection — deliberately generic. Names no
   // keystone, node id, version, date or field path, so it stays accurate after the next patch.
   importRejectedUnsupportedShape: "The planner can't use this save file. Export a fresh save from the game and import that one.",
   // A blocked candidate used to be dimmed and nothing else, which reads as a rendering glitch

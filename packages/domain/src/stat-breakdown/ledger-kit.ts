@@ -101,7 +101,7 @@ function sheetAbilityNote(statKey: SheetDisplayKey): LedgerNote | undefined {
  * `(danoStatic − 1) × 100` so this function has one uniform contract. Units are uniform;
  * placement is not — crit damage's is a flat addend, see below.
  *
- * Two placements, matching AD-BSP-12/22 (`BSP-23c`, single application):
+ * Two placements, matching AD-BSP-12/22 (single application):
  * - **attack / energy** — tree multiplies the WHOLE Hero+Gear(+Ability) subtotal. Pure gear is
  *   recovered by DIVIDING the tree factor out of the observed `geared` value (not subtracting),
  *   then the 'tree' step is a `pushMul` on top of that pure subtotal — sourced from the sheet,
@@ -264,7 +264,7 @@ export function teamAddNote(amount: number, cap: number): LedgerNote | undefined
 /** Fold ledger steps to the final running value (ESB-10). */
 export function foldLedger(steps: LedgerStep[]): number {
   if (steps.length === 0) return 0;
-  // MOD-36: genuine accumulator — folds each step's op onto the running total in sequence;
+  // Genuine accumulator — folds each step's op onto the running total in sequence;
   // the running value depends on its own prior value, so a `reduce` copy would read the same.
   let running = steps[0].running;
   for (let index = 1; index < steps.length; index++) {

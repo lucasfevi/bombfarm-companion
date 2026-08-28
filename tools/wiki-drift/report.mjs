@@ -1,4 +1,4 @@
-// MP5 F5 — rendering. Every function here is pure text assembly: it names WHICH sections
+// Rendering. Every function here is pure text assembly: it names WHICH sections
 // differ, with WHICH hashes, and reports the ONE outcome the run reached. It never says what a
 // difference means or what to do about it — that is F6's job (triage), not this feature's.
 

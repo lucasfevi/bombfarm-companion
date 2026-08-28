@@ -1,14 +1,16 @@
 /**
- * `AD-045`'s anti-drift deliverable (design.md §2.2, §3, tasks.md T6). The measured figures —
+ * The recompute budget's anti-drift deliverable — measured, not invented (design.md §2.2, §3,
+ * tasks.md T6). The measured figures —
  * full-roster **~0.6 ms median / ~0.85 ms p95**, per-hero **~0.07 ms** — are written here and in
  * the CI `console.log` line: places that must agree, so a bound that quietly drifts from the
- * shipped code is a visible diff rather than a silent one (the `AD-016` failure mode this exists
- * to close). MP5 F1 (`AD-069`) re-measured these on the post-patch 8-hero payload fixture — the
+ * shipped code is a visible diff rather than a silent one (the silent-drift failure mode this
+ * exists to close). F1 — owner of the two out-of-tree consumers of the deleted corpus — re-measured
+ * these on the post-patch 8-hero payload fixture — the
  * deleted 11-hero fixture's figures (1.068 ms / 1.244 ms / 0.239 ms) no longer apply.
  *
  * Reads the domain package's own real-account fixture across the package boundary by relative
  * path — `packages/domain/tests/fixtures/sheet-math/payload-20260812-8heroes.json` (8 heroes, 27
- * catalogued items). MP5 F1 (`AD-069`) re-points this from the deleted pre-wipe 11-hero save
+ * catalogued items). F1 re-points this from the deleted pre-wipe 11-hero save
  * fixture onto the post-patch payload fixture — the richest real-sized roster artifact left in
  * the corpus. It does **not** add a file to `packages/domain` (absolute constraint 3):
  * duplicating the fixture here would create a second copy that drifts from the one
@@ -23,7 +25,7 @@ import { phaseLine } from '@bombfarm/domain/phases';
 import { zeroTeamBuffs } from '@bombfarm/domain/team-buffs';
 import { DEFAULT_TARGET_PROP } from '@bombfarm/domain/farm-context';
 import type { HeroRecord, AccountShared } from '@bombfarm/domain/shims/storage';
-// MP5 F4 (T4) — re-pointed at the shared helper (design §5.7). Cross-package relative import of
+// T4 — re-pointed at the shared helper (design §5.7). Cross-package relative import of
 // a TEST-ONLY source file: packages/domain's package.json `exports` map only publishes `dist/**`,
 // so this cannot be a package-name import (`@bombfarm/domain/...`) — the helper is not part of
 // the built package. The relative path mirrors FIXTURE_PATH below, which already crosses this
@@ -87,7 +89,7 @@ function percentile95(values: readonly number[]): number {
   return sorted[index] ?? 0;
 }
 
-describe('recompute budget — the measured figure, asserted against itself (AD-045)', () => {
+describe('recompute budget — the measured figure, asserted against itself', () => {
   const raw = loadRecomputeBudgetFixture();
   const parsed = parseAccountPayload(raw, []);
 
@@ -159,7 +161,7 @@ describe('recompute budget — the measured figure, asserted against itself (AD-
 
   it(
     // One 60 Hz animation frame (16 ms) — the threshold below which the recompute cannot drop a
-    // frame, which is what MAR-15's "the window stays interactive" means. MP5 F1 (`AD-069`)
+    // frame, which is what MAR-15's "the window stays interactive" means. F1
     // re-measured on the post-patch 8-hero payload fixture (Node v24.16.0, Windows 11 Pro
     // 26200, dev machine, warm, 5 warm-up iterations discarded): median ~0.6 ms, p95 ~0.85 ms,
     // over several 20-run samples — reproduced here over this test's own 20-run sample. 16 ms
@@ -168,7 +170,7 @@ describe('recompute budget — the measured figure, asserted against itself (AD-
     'full 8-hero roster completes in < 16 ms (one 60 Hz frame) — measured ~0.6 ms median / ~0.85 ms p95',
     () => {
       const { medianMs, p95Ms } = measureFullRosterMedianMs();
-      // AD-045 requires the observed value in the CI log, not only a pass/fail bit
+      // The measured-not-invented recompute budget requires the observed value in the CI log, not only a pass/fail bit
       // (team-plan-solver.test.ts's own precedent). This repo's eslint config has no `no-console`
       // rule, so no disable comment is needed here (unlike the domain suite's own copy of this
       // pattern, which predates that check).
@@ -181,7 +183,7 @@ describe('recompute budget — the measured figure, asserted against itself (AD-
 
   it(
     // Exists so the bound keeps discriminating if the fixture ever shrinks: the whole-roster
-    // bound alone would stop meaning anything against a 1-hero fixture. MP5 F1 re-measured:
+    // bound alone would stop meaning anything against a 1-hero fixture. F1 re-measured:
     // per-hero ~0.07 ms — 2 ms is ~28x that.
     'normalised per hero completes in < 2 ms — measured ~0.07 ms per hero',
     () => {
@@ -193,7 +195,7 @@ describe('recompute budget — the measured figure, asserted against itself (AD-
   );
 
   it.skip('demonstrates the red state: looping the roster 80x blows the whole-roster budget (observed, then discarded — not committed as a permanent mutation)', () => {
-    // MP5 F1: the multiplier is re-measured, not scaled arithmetically — the smaller 8-hero
+    // F1: the multiplier is re-measured, not scaled arithmetically — the smaller 8-hero
     // fixture runs fast enough (~0.6 ms/iteration) that the old 20x loop (~12 ms) no longer
     // reliably clears the 16 ms bound. 40x (~24 ms at the observed median, ~21 ms at the
     // observed low end) does, with margin.

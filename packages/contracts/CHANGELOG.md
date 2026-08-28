@@ -230,7 +230,7 @@
   `@bombfarm/contracts` gains `AccountPayload` plus its per-section fidelity types
   (`AccountSection`, `SectionStatus`, `SectionFidelity`, `AccountFidelity`, `AccountFidelityGrade`,
   `AccountFidelityReport`) — the typed shape both the web upload path and the future desktop
-  live-memory reader (MP2 F2) will target. It declares no `export_version` / `generated_at`; those
+  live-memory reader will target. It declares no `export_version` / `generated_at`; those
   stay file-only.
 
   `@bombfarm/domain`'s `parseSaveFile` is now a five-line file adapter over a new exported entry
