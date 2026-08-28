@@ -130,6 +130,20 @@ no exclusion list, that any inversion reporting no issue stays inside the ceilin
 | May prove | **the per-POINT crit-chance and CDR rates, and their split** — Sora owns no items and no crit/cooldown ability, so her entire sheet move between the two files is the stat-point term alone: her crit multiplier moves `1.0309330166 → 1.1309330166` and her cooldown multiplier `1.0000000000 → 1.1000000000` on exactly 10 moved points, both by exactly `+0.1`. Every other stat (attack, energy, speed, luck, penetration, crit damage) solves to zero points for her, so the 10 are provably all crit chance + cooldown. Combined with the external crit-chance anchor (0.02, corroborated by the wiki mirror's `ponto_inc` table), this pins the split at 5 + 5 and both rates at `0.02` each |
 | May **not** prove | anything the sibling export cannot — it is the same account ~2 hours later. In particular the respec touched one ★0 hero, so star scaling of the point term stays unobserved |
 
+## `save-20260819-11882-7heroes.json`
+
+| Field | Value |
+| --- | --- |
+| Source capture | live save export, captured externally from the game client — a **second, disjoint account**, not 486 |
+| Capture date | 2026-08-19 |
+| Account | 11882, `phase: 51`, `max_phase: 52` — 7 heroes, all `battle_allowed: true`, across three rarities: Ivo L51 Incomum 8/8, Isolde L55 Comum 8/8, Fenn L64 Raro 8/8, Gale L48 Raro 8/8, Ulric L45 Raro 8/8, Doran L6 Comum naked, Kael L2 Comum naked. Casa II at level 4 — `casa.slots: 5` and `skills.field_slots: 5` against 7 heroes |
+| Capture log entry | *Second-account re-baseline*, 2026-08-19 row (tracked externally to this repo) |
+| Scrub | `account.account_id`, `account.player_name` removed; re-serialized as 2-space JSON to match this directory — nothing else changed |
+| SHA-256 (unscrubbed source) | `2a05deb28ccaee5da7bd734159b2ca737e25372e90ba2667f34b0054180dfb57` |
+| SHA-256 (committed file) | `63904862df96ff849b09622af1c6f7bfe9245b38e19d0f1bd17d1cda979f46a0` |
+| May prove | **a second, disjoint ACCOUNT in the current regime** — every other in-regime capture is account 486, so this is the corpus's only cross-account check that a claim is about the model rather than about one player's build; a whole-roster clean import — **7 of 7 heroes accepted with zero skips and zero warnings**, all wearing gear (40 items across five of them, 54 in the bag), which is what the team-plan suites need and what 486's older captures stopped providing once the budget refusal took hold; **`fortuna` at TWO DIFFERENT RANKS on one roster** (Ivo 20/20, Gale 8/20) — the only capture that has this, so a per-rank claim about the gold multiplier can be read off real heroes instead of `withAbilityLevels` mutations; a **five-geared / two-naked** split; and a whole-roster exact solve — all 7 heroes recover **exactly `level`** points with zero inference issues |
+| May **not** prove | either ability the 2026-08-23 patch restated (no hero owns `olho_clinico` or `pressagio_mortal` — which is also precisely why this capture carries a verified `sheet` waiver in `helpers/capture-regime.ts` rather than expiring at that boundary); star scaling of anything (every hero is ★0); before/after point deltas (`stat_points_available` is `0` on every hero); high-phase mitigation (`max_phase` caps at 52) |
+
 ## `save-20260822-15heroes-tree-crit-dmg.json`
 
 | Field | Value |
@@ -157,3 +171,17 @@ no exclusion list, that any inversion reporting no issue stays inside the ceilin
 | SHA-256 (committed file) | `0c7bd67a30fda0f839b86c6dd38d21f0b3c41de519ca87c34e18c3a4fcee8552` |
 | May prove | **the crit-chance ABILITY shape** — the first capture taken after the patch that restated Olho Clínico and Presságio Mortal in flat crit POINTS. Perrin is the discriminating hero: `olho_clinico` 13/20, no gear, no crit-chance points, so his exported `crit_chance × 100` is exactly `6.02142890221474 + 13 × 2 + 6.02142890221474 × 0.08042584275 = 32.5057073962346` — the flat addend, its exclusion from the shared pool, and the tree reading the PRE-ability roll, all pinned by one hero. Minato (gear crit `+3.7869%`) and Jon (`+15.1474%`) add the gear leg: both solve to exactly zero crit-chance points under the pool-excluded reading and to fractional negatives if the `+40` rides inside the pool. Percent-of-base fits none of the three. All 13 heroes solve to a whole-number point vector with zero inference issues, each landing exactly on `level`. Also carries the ROLL RANGES the same patch changed, in `heroes[].stat_ranges` (`dmg 150–200` / `energia 140–240` for a Raro), which is what caught `BASE_ROLLS`' attack and energy columns drifting |
 | May **not** prove | star scaling of either flat sheet-ability addend (every hero is ★0); Presságio Mortal's own value (no hero on any capture owns it — its rate is the wiki's published one); the per-POINT crit-chance/CDR rates (nobody here holds a crit-chance or cooldown point — see `save-20260819-respec-crit-cdr.json`) |
+
+## `save-20260825-11heroes-one-shot-spread.json`
+
+| Field | Value |
+| --- | --- |
+| Source capture | live save export, captured externally from the game client |
+| Capture date | 2026-08-25 |
+| Account | 486, `phase: 71`, `max_phase: 161` — 11 heroes, all `battle_allowed: true`: nine geared 8/8 (Minato L107 Raro, Jon L107 Raro, Bellatrix2 L122 Incomum, IDK L97 Raro, WB #1 L101 Comum, WB #2 L92 Comum, WB #3 L76 Comum, LE + FO L61 Incomum, Bellatrix L113 Épico) and two naked young ones (Hale L2 Comum, Joric L5 Raro). Three carry `olho_clinico` 20/20 (Minato, Jon, IDK). Casa IV at level 2 — `casa.slots: 9`, `skills.field_slots: 9` |
+| Capture log entry | *One-shot spread re-baseline*, 2026-08-25 row (tracked externally to this repo) |
+| Scrub | `account.account_id`, `account.player_name` removed; re-serialized as 2-space JSON to match this directory — nothing else changed |
+| SHA-256 (unscrubbed source) | `40b7daa5fa924896db8d66330322eede9d363cb121bb19325d98ea4691247db7` |
+| SHA-256 (committed file) | `f0b15c6b1eca1c1303b3affe3782f12de5be9523eb85ccf7b392a5b97f2f1f23` |
+| May prove | **both sides of the one-shot contrast on one roster**, which is what no other committed capture holds and what issue #171 was filed for: at `maxPhase 42` the nine geared heroes one-shot the prop and score an attack point at exactly `0`, while Hale L2 and Joric L5 do not one-shot and score attack strictly above `0`. Hale is also the **anti-"energy always wins" subject** — her attack point outranks an energy point and ranks first. Being captured after 2026-08-23 with three rank-20 `olho_clinico` heroes, it is a whole-roster witness for the flat crit-POINTS ability shape on a bigger roster than the 13-hero capture, and all 11 heroes recover **exactly `level`** points with zero inference issues |
+| May **not** prove | star scaling of either flat sheet-ability addend (every hero is ★0); Presságio Mortal (no hero owns it); the per-POINT crit-chance/CDR rates (no hero here holds a crit-chance or cooldown point); before/after point deltas (`stat_points_available` is `0` on every hero) |

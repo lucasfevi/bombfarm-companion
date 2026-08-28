@@ -15,7 +15,7 @@ async function openImportDialog(page: import('@playwright/test').Page) {
  * the save's own sourceId set, in the same write.
  */
 test.describe('import dialog reviews, does not curate', () => {
-  test.skip('has no selection checkboxes; status switches are read-only', async ({ page }) => {
+  test('has no selection checkboxes; status switches are read-only', async ({ page }) => {
     await page.goto('/');
     await openImportDialog(page);
     await page.locator('input[type="file"]').setInputFiles(sampleSave);
@@ -40,7 +40,7 @@ test.describe('import dialog reviews, does not curate', () => {
     await expect(confirm).toHaveText(/importar 3 herói/i);
   });
 
-  test.skip('importing a save that omits a previously-imported hero removes exactly that hero', async ({
+  test('importing a save that omits a previously-imported hero removes exactly that hero', async ({
     page,
   }) => {
     // seed-orphan's sourceId (9999) is absent from sample-save.json's three heroes

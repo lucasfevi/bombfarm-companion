@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test';
-import { teamPlanFixtureSeed } from './fixtures/team-plan-seed';
+import { teamPlanFixtureSeed, teamPlanRichSeed } from './fixtures/team-plan-seed';
 import { seedLocalStorage } from './fixtures/seed';
 import {
   clickOptimize,
@@ -9,7 +9,7 @@ import {
 } from './fixtures/team-plan-e2e';
 
 function saturatedSeed() {
-  const base = teamPlanFixtureSeed('en');
+  const base = teamPlanRichSeed('en');
   // Extended by orchestrator ruling: re-tuned for the post-patch 5-hero
   // export. `slots` alone can no longer force saturation — this roster's own sumDuty tops out
   // at ~0.99 at the export's real house (Casa I L7), strictly below the minimum slots value
@@ -31,7 +31,7 @@ function saturatedSeed() {
 }
 
 test.describe('Team plan disclosures', () => {
-  test.skip('saturated account shows saturation callout without action button', async ({ page }) => {
+  test('saturated account shows saturation callout without action button', async ({ page }) => {
     await seedLocalStorage(page, saturatedSeed());
     await gotoTeamPlan(page);
     await clickOptimize(page);
@@ -65,7 +65,7 @@ test.describe('Team plan disclosures', () => {
     await expect(panel.getByText(/foreign owners/i)).toBeVisible();
   });
 
-  test.skip('loadout drift names heroes when inventory disagrees', async ({ page }) => {
+  test('loadout drift names heroes when inventory disagrees', async ({ page }) => {
     const seed = teamPlanFixtureSeed('en');
     const hero = seed.heroes[0];
     if (!hero) throw new Error('fixture hero missing');
@@ -78,7 +78,13 @@ test.describe('Team plan disclosures', () => {
     await clickOptimize(page);
     await waitForOptimizeDone(page);
     const panel = disclosuresPanel(page);
+    // Scoped to the drift paragraph, not the whole panel: this roster also raises an
+    // "Unmodelled abilities in scope" line that happens to name a hero, so a panel-wide search
+    // for the name matched two elements and failed on strict mode. The claim is that the DRIFT
+    // notice names the hero, so that is the element it is asserted on.
+    const drift = panel.getByText(/Stored loadout differs from the inventory snapshot/i);
+    await expect(drift).toBeVisible();
     await expect(panel.getByText(/inventory as authoritative/i)).toBeVisible();
-    await expect(panel.getByText(new RegExp(hero.name, 'i'))).toBeVisible();
+    await expect(drift).toContainText(new RegExp(hero.name, 'i'));
   });
 });

@@ -1,5 +1,5 @@
 import { test, expect, type Page, type Locator } from '@playwright/test';
-import { teamPlanFixtureSeed } from './fixtures/team-plan-seed';
+import { teamPlanRichSeed } from './fixtures/team-plan-seed';
 import { seedLocalStorage } from './fixtures/seed';
 import {
   clickOptimize,
@@ -25,13 +25,15 @@ async function expandAllHeroRows(panel: Locator) {
 
 test.describe('Team plan per-hero proposed gear', () => {
   test.beforeEach(async ({ page }) => {
-    await seedLocalStorage(page, teamPlanFixtureSeed('en'));
+    // The RICH seed: every case in this file is about an item being kept, moved or forged,
+    // and the structural seed's heroes arrive wearing nothing at all (issue #206).
+    await seedLocalStorage(page, teamPlanRichSeed('en'));
     await gotoTeamPlan(page);
     await clickOptimize(page);
     await waitForOptimizeDone(page);
   });
 
-  test.skip('forge annotations show at floor 10 and disappear at floor 0', async ({ page }) => {
+  test('forge annotations show at floor 10 and disappear at floor 0', async ({ page }) => {
     const panel = heroDeltaPanel(page);
     await expandAllHeroRows(panel);
     await expect(panel.getByText(/Forge from \+\d+ to \+\d+/i).first()).toBeVisible();
@@ -52,7 +54,7 @@ test.describe('Team plan per-hero proposed gear', () => {
     await expect(panel.locator('img').first()).toBeVisible();
   });
 
-  test.skip('kept items stay visible and say they are existing with no change', async ({ page }) => {
+  test('kept items stay visible and say they are existing with no change', async ({ page }) => {
     for (let i = 0; i < 10; i++) {
       await page.getByRole('button', { name: /Min forge \(\+\) −/i }).click();
     }

@@ -20,24 +20,26 @@
  *    to a single file; this one sweeps them all.
  * 1. **Corpus sweep** — every committed capture under `tests/fixtures/**`, discovered by walking
  *    the tree rather than by a hand-maintained list, so a capture dropped in later is covered
- *    without editing this file.
- * 2. **The Golpe Brutal case** — two witnesses, one in the corpus and one constructed.
+ *    without editing this file. Which captures are ADMISSIBLE is likewise not decided here: it is
+ *    read off the corpus-wide registry in `helpers/capture-regime.ts`.
+ * 2. **The Golpe Brutal case** — three witnesses now, two in the corpus and one constructed.
  *
- *    The corpus one is Buff S #1 (L85 ★　0, `stat_points_available: 0`, Golpe Brutal 20/20) in
- *    `sheet-math/save-20260823-13heroes-crit-points.json`, which is the single file layer 1
- *    sweeps. Its budget is saturated, so layer 1 DOES exercise this bug: modelling the ability
- *    as anything other than +4 flat per rank charges the difference to crit-damage points and
- *    the sweep goes red (measured — dropping the ability to zero recovers 101 points on an L85
- *    hero). An earlier version of this comment claimed no committed capture carried the ability
- *    at all; that was already false when written and is the reason the claim is now asserted
- *    rather than described.
+ *    The corpus ones are Buff S #1 (L85 ★0, `stat_points_available: 0`, Golpe Brutal 20/20) in
+ *    `sheet-math/save-20260823-13heroes-crit-points.json`, and Ivo (L51, 20/20) in
+ *    `sheet-math/save-20260819-11882-7heroes.json`. Both budgets are saturated, so layer 1 DOES
+ *    exercise this bug: modelling the ability as anything other than +4 flat per rank charges the
+ *    difference to crit-damage points and the sweep goes red (measured — dropping the ability to
+ *    zero recovers 101 points on the L85 hero). An earlier version of this comment claimed no
+ *    committed capture carried the ability at all; that was already false when written, and is the
+ *    reason the claim is now asserted rather than described.
  *
- *    The constructed one is Ivo, kept because Buff S #1 does not isolate the observation. Buff
- *    S #1's crit-damage move needs the tree's `crit_dmg_add` subtracted before the flat +0.8
- *    appears, and it is one hero in one capture that corpus churn can retire. Ivo carries no
- *    gear and no other sheet ability, so the whole delta is the ability, and it survives the
- *    corpus changing under it. Both use save units and the game's own reading, not this model's
- *    output — the practice `save-units.test.ts` uses for Bellatrix's `crit_dmg` literal.
+ *    The constructed one is Ivo again — the same hero, four days earlier at L38, reconstructed —
+ *    kept because neither corpus witness ISOLATES the observation. Buff S #1's crit-damage move
+ *    needs the tree's `crit_dmg_add` subtracted before the flat +0.8 appears, and the committed
+ *    Ivo wears eight items. The constructed one carries no gear and no other sheet ability, so the
+ *    whole delta is the ability, and it survives the corpus changing under it. All three use save
+ *    units and the game's own reading, not this model's output — the practice
+ *    `save-units.test.ts` uses for Bellatrix's `crit_dmg` literal.
  */
 import { readFileSync, readdirSync } from 'node:fs';
 import { dirname, join, relative } from 'node:path';
@@ -46,6 +48,7 @@ import { describe, expect, it } from 'vitest';
 import { inferSpentPoints } from '@bombfarm/domain/point-inference';
 import { parseAccountPayload } from '@bombfarm/domain/import-save';
 import { SHEET_KEYS } from '@bombfarm/domain/planner-constants';
+import { capturesOutOfRegimeFor } from './helpers/capture-regime';
 import { extractHero, treeTotalsFromSave, type SaveHeroSheet } from './helpers/sheet-math-fixtures';
 
 const here = dirname(fileURLToPath(import.meta.url));
@@ -59,48 +62,26 @@ const FIXTURES_DIR = join(here, 'fixtures');
 const SKIPPED_DIRS = ['rejection'];
 
 /**
- * Captures whose crit-chance/CDR shape does not match the CURRENT game, spanning two regime
- * boundaries — renamed and extended from the original `PRE_2026_08_15_PATCH_CAPTURES` list, which
- * covered only the first one:
+ * Captures whose sheet shape does not match the CURRENT game. This used to be a list maintained
+ * here by hand, re-derived at every patch; it is now DERIVED from the corpus-wide registry in
+ * `helpers/capture-regime.ts` (issue #137), which is the single place the boundaries are written
+ * down and which fails if a committed capture has no declared regime at all.
  *
- * - **Pre-2026-08-15**: crit chance and cooldown were multiplicative shares of the hero's roll,
- *   same shape as today, but the item catalog and stat redistribution that followed make their
- *   committed gear match no catalog this repo can ship.
- * - **2026-08-15 .. 2026-08-18 (flat regime)**: crit chance and cooldown were flat addends for
- *   exactly three days (commit 0418a82 / PR #102), reverted by the 2026-08-18 patch which also
- *   rescaled the item catalog's `crit`/`cooldown` bases. A capture from this window solves this
- *   invariant only under the flat model, not the current percent-of-base one.
+ * `'sheet'` is the mechanic this invariant asks for, and it is the strictest one: layer 1 reads a
+ * whole composed hero sheet, so it folds in every boundary — the 2026-08-15 flat crit/cooldown
+ * window and its 2026-08-18 revert, the 2026-08-16 item redistribution, and the 2026-08-23
+ * restatement of the crit abilities into flat points.
  *
- * They all stay committed — ~50 structural suites read them for hero shapes, inventory and
- * team-plan inputs, none of which either patch touched — but none of them are subjects of THIS
- * invariant, because no single model can reproduce a mix of pre-flat, flat and post-flat captures
- * at once. Sweeping them here would assert that today's sheet math explains a different regime's
- * game.
+ * Excluded captures all stay committed — ~50 structural suites read them for hero shapes,
+ * inventory and team-plan inputs, none of which any patch touched — but none of them are subjects
+ * of THIS invariant, because no single model can reproduce a mix of regimes at once. Sweeping them
+ * here would assert that today's sheet math explains a different regime's game.
  *
- * Named explicitly, never pattern-matched: a capture added later is swept by default, which is
- * the property that makes layer 1 worth having. Their own sheet arithmetic is no longer covered
- * anywhere — that is the accepted cost of each patch, recorded in `docs/fixture-corpus.md`.
+ * A capture added later is swept BY DEFAULT: the registry judges it by its own capture date, so
+ * nothing has to be edited here for a fresh capture to become a subject, and an old one cannot be
+ * swept by omission.
  */
-const NON_CURRENT_REGIME_CAPTURES = [
-  'sheet-math/save-20260813-5heroes.json',
-  'sheet-math/payload-20260812-8heroes.json',
-  'api/assembled-payload-after.json',
-  'api/assembled-payload-before.json',
-  'api/assembled-payload-partial.json',
-  'api/assembled-payload-drift.json',
-  'farm-rate/save-20260815-486-7heroes.json',
-  'fidelity-gate/export-capture.json',
-  'fidelity-gate/live-capture.json',
-  // The five 2026-08-16/17 captures that used to sit here — two excluded for the stat
-  // REDISTRIBUTION that reshuffled 239 of 240 slot definitions, three for the flat crit/cooldown
-  // regime — have been retired from the corpus outright, so there is nothing left to exclude.
-  // Pre-2026-08-23: Olho Clínico was a percentage of the hero's crit-chance roll and became
-  // flat crit POINTS. All three carry three rank-20/18 Olho heroes apiece, so their crit-chance
-  // column solves only under the shape they were taken in.
-  'sheet-math/save-20260818-12heroes.json',
-  'sheet-math/save-20260819-respec-crit-cdr.json',
-  'sheet-math/save-20260822-15heroes-tree-crit-dmg.json',
-];
+const NON_CURRENT_REGIME_CAPTURES = capturesOutOfRegimeFor('sheet');
 
 function isObject(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null;
@@ -157,26 +138,22 @@ const SUBJECTS = collectSubjects();
 
 describe('spent stat points never exceed the hero level (corpus sweep)', () => {
   /**
-   * Non-vacuity, re-measured after the 2026-08-18 patch narrowed the swept set a second time.
-   * Excluding every non-current-regime capture ({@link NON_CURRENT_REGIME_CAPTURES}) leaves the
-   * THREE post-revert exports — `save-20260818-12heroes.json` (12 heroes),
-   * `save-20260819-respec-crit-cdr.json` (12) and `save-20260822-15heroes-tree-crit-dmg.json`
-   * (15) — all under `sheet-math/`.
-   *
-   * The directory-spread half of this guard is therefore GONE, not merely relaxed, and the count
-   * is what carries it instead. It comes back on its own the moment a post-patch capture lands in
-   * another directory, which is why the exclusion list is explicit and the walk is not.
+   * Non-vacuity. The 2026-08-18 and 2026-08-23 patches had narrowed the swept set to ONE capture
+   * and 13 heroes — a guard one deletion from vacuity, which this file's own header called out.
+   * Two in-regime captures put it back to three files and 31 heroes.
    *
    * The per-file breakdown is asserted, not just the total: a total alone would stay green if one
    * capture stopped being swept while another grew, which is the failure this guard exists for.
    */
-  it('non-vacuity: the walk finds every post-revert capture, with heroes in them', () => {
+  it('non-vacuity: the walk finds every in-regime capture, with heroes in them', () => {
     const byFile = new Map<string, number>();
     for (const s of SUBJECTS) byFile.set(s.file, (byFile.get(s.file) ?? 0) + 1);
     expect(Object.fromEntries([...byFile].sort()), `walked ${FIXTURES_DIR}`).toEqual({
+      'sheet-math/save-20260819-11882-7heroes.json': 7,
       'sheet-math/save-20260823-13heroes-crit-points.json': 13,
+      'sheet-math/save-20260825-11heroes-one-shot-spread.json': 11,
     });
-    expect(SUBJECTS.length).toBe(13);
+    expect(SUBJECTS.length).toBe(31);
     const dirs = new Set(SUBJECTS.map((s) => s.file.split('/')[0]));
     expect(dirs, `capture directories reached: ${[...dirs].join(', ')}`).toEqual(new Set(['sheet-math']));
   });

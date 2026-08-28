@@ -67,7 +67,7 @@ test.describe('core client flow', () => {
     expect(footerBox!.height).toBeLessThan(120);
   });
 
-  test.skip('import → select → level/stars → DPS updates → explain toggle', async ({ page }) => {
+  test('import → select → level/stars → DPS updates → explain toggle', async ({ page }) => {
     await page.goto('/');
 
     // PW-05.1 — empty workspace visible; hero strip metrics hidden
@@ -150,7 +150,7 @@ test.describe('core client flow', () => {
     await expect(page.getByRole('region', { name: /herói atual/i })).toBeHidden();
   });
 
-  test.skip('hero picker gear column shows eight slot icons', async ({ page }) => {
+  test('hero picker gear column shows eight slot icons', async ({ page }) => {
     await page.goto('/');
     await importSampleSave(page);
 

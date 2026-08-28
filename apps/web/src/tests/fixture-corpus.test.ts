@@ -49,7 +49,17 @@ function sha256(path: string): string {
  * somewhere in packages/domain/tests (verified by the orphan sweep below, which fails loudly if
  * that stops being true).
  */
-const COMPUTED_PATH_ALLOWLIST: Record<string, string> = {};
+const COMPUTED_PATH_ALLOWLIST: Record<string, string> = {
+  // Domain-only by design. Its reason for existing is the farm RANKING discrimination — a roster
+  // holding both one-shotting and non-one-shotting heroes at the same phase (issue #171) — and
+  // that scorer has no web-side suite of its own. Naming it in a web test purely to satisfy this
+  // sweep would be the contrived cross-tree copy the corpus guards exist to prevent. Its live
+  // readers are `packages/domain/tests/farm-point-rank.test.ts` (via `FARM_RANK_FIXTURE`),
+  // `team-plan-step-monotonicity.test.ts` (via `TEAM_PLAN_LARGE_FIXTURE`) and the corpus sweep in
+  // `points-within-level-budget.test.ts`, and the domain-side orphan sweep holds it to that.
+  'save-20260825-11heroes-one-shot-spread.json':
+    'read only by packages/domain tests (farm-point-rank, team-plan-step-monotonicity, points-within-level-budget); no web-side scorer suite exists to name it',
+};
 
 describe('sheet-math fixture corpus guard', () => {
   const sheetMathJsonFiles = readdirSync(SHEET_MATH_DIR).filter((f) => f.endsWith('.json'));

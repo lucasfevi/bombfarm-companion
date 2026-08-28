@@ -15,9 +15,12 @@ import {
   type HeroFarmFacts,
 } from '@bombfarm/domain/farm-rate';
 import { propCountForAto } from '@bombfarm/domain/phase-wiki';
-import { loadFarmRateFixture } from './helpers/farm-rate-fixtures';
+import { assertInRegime } from './helpers/capture-regime';
+import { FARM_OPTIMIZE_FIXTURE, loadFarmRateFixture } from './helpers/farm-rate-fixtures';
 
-const { heroes, account } = loadFarmRateFixture();
+assertInRegime(`sheet-math/${FARM_OPTIMIZE_FIXTURE}`, 'sheet');
+
+const { heroes, account } = loadFarmRateFixture(FARM_OPTIMIZE_FIXTURE);
 
 describe('every row propsPerHour agrees with that row own clearSecs', () => {
   const rows = computeFarmRates({
@@ -28,7 +31,10 @@ describe('every row propsPerHour agrees with that row own clearSecs', () => {
     maxPhase: 130,
   }).rows.filter((row) => !row.infeasible && row.propsPerHour > 0);
 
-  it.skip('the fixture reaches gate rows at all', () => {
+  // Non-vacuity for the per-row loop below: with no gate row in the sweep, every case under it
+  // would be a non-gate row and the boss-seconds claim this file is named for would be asserted
+  // nowhere. Measured 7 gates (phases 10..70) on the 2026-08-19 roster (issue #206).
+  it('the fixture reaches gate rows at all', () => {
     expect(rows.filter((row) => row.gate).length).toBeGreaterThanOrEqual(4);
   });
 

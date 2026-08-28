@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { runTeamPlan } from '@bombfarm/domain/team-plan/solver';
 import type { ScopeState } from '@bombfarm/domain/team-plan/types';
-import { teamPlanInputFromFixture } from './helpers/team-plan-fixtures';
+import { teamPlanInputFromFixture, TEAM_PLAN_FIXTURE, TEAM_PLAN_LARGE_FIXTURE } from './helpers/team-plan-fixtures';
 
 /** Every other hero donates, so the plan can source gear off a hero it does not optimize. */
 function planWithAlternatingDonors(file: string) {
@@ -19,8 +19,8 @@ function planWithAlternatingDonors(file: string) {
 }
 
 describe('move list origins', () => {
-  it.skip('reports the donor hero, not the inventory, as the source of a worn item', () => {
-    const { input, donors, plan } = planWithAlternatingDonors('payload-20260812-8heroes.json');
+  it('reports the donor hero, not the inventory, as the source of a worn item', () => {
+    const { input, donors, plan } = planWithAlternatingDonors(TEAM_PLAN_FIXTURE);
     const itemById = new Map(input.inventory.map((item) => [item.id, item]));
 
     const fromDonor = plan.moveList.filter(
@@ -33,7 +33,7 @@ describe('move list origins', () => {
   });
 
   it('pairs every donor-sourced equip with an unequip off its current wearer', () => {
-    const { input, donors, plan } = planWithAlternatingDonors('payload-20260812-8heroes.json');
+    const { input, donors, plan } = planWithAlternatingDonors(TEAM_PLAN_FIXTURE);
     const itemById = new Map(input.inventory.map((item) => [item.id, item]));
     const unequipByItemId = new Map(
       plan.moveList.filter((move) => move.phase === 'unequip').map((move) => [move.itemId, move]),
@@ -48,7 +48,7 @@ describe('move list origins', () => {
   });
 
   it('never claims an equipped item comes from the inventory', () => {
-    for (const file of ['payload-20260812-8heroes.json', 'save-20260813-5heroes.json']) {
+    for (const file of [TEAM_PLAN_FIXTURE, TEAM_PLAN_LARGE_FIXTURE]) {
       const { input, plan } = planWithAlternatingDonors(file);
       const itemById = new Map(input.inventory.map((item) => [item.id, item]));
       for (const move of plan.moveList) {
@@ -59,8 +59,8 @@ describe('move list origins', () => {
     }
   });
 
-  it.skip('leaves a donor item that the plan does not take where it is', () => {
-    const { input, donors, plan } = planWithAlternatingDonors('payload-20260812-8heroes.json');
+  it('leaves a donor item that the plan does not take where it is', () => {
+    const { input, donors, plan } = planWithAlternatingDonors(TEAM_PLAN_FIXTURE);
     const itemById = new Map(input.inventory.map((item) => [item.id, item]));
     const moved = new Set(plan.moveList.map((move) => move.itemId));
     const untouchedDonorItems = input.inventory.filter(

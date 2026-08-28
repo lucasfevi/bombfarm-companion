@@ -96,68 +96,38 @@ describe('cross-package fixture corpus parity', () => {
   });
 
   /**
-   * This guard was a HARD ZERO: no skipped test under these roots, ever. It is now an exact
-   * per-file manifest, for one bounded reason, and it is still a real guard — a skip added outside
-   * these lists fails, and so does a manifested file whose skips are removed without updating the
-   * count.
+   * This guard was a HARD ZERO: no skipped test under these roots, ever. It became an exact
+   * per-file manifest for one bounded reason — the F8 stale-capture debt — and that debt is now
+   * PAID: the list below is empty, and every skip in the tree is a deliberate one declared in
+   * `SKIPS_NOT_F8`.
    *
-   * WHAT IS SKIPPED AND WHY. Every F8 entry fails on FIXTURE data, not on the code under test. Ten
-   * committed fixtures across six suites were captured before the 2026-08-18 patch, and the
-   * importer now refuses a hero whose sheet inverts above its stat-point budget — so those captures
-   * lose 40-100% of their rosters, and an assertion about their rosters describes something that no
-   * longer exists. Re-recording the numbers would turn tests that encode real findings into rubber
-   * stamps against a different roster.
+   * WHAT THE DEBT WAS. Ten committed fixtures across six suites were captured before the
+   * 2026-08-18 patch, and the importer now refuses a hero whose sheet inverts above its
+   * stat-point budget — so those captures lost 40-100% of their rosters, and 58 assertions about
+   * those rosters described something that no longer existed.
    *
-   * WHEN THEY COME BACK: live-field-status F8, where these tests are being reviewed anyway. The
-   * sibling manifest in `packages/domain/tests/source-surface.test.ts` carries the same list for
-   * the domain package; this one is the whole picture, across all four roots.
+   * HOW IT WAS PAID (issues #137, #171, #206). Two in-regime captures landed —
+   * `save-20260819-11882-7heroes.json` (a second account, 7 of 7 accepted, 40 items worn, a
+   * BINDING House) and `save-20260825-11heroes-one-shot-spread.json` (both sides of the one-shot
+   * contrast on one roster) — plus a re-derivation of the two SYNTHETIC fixtures that had drifted
+   * the same way (`apps/web/e2e/fixtures/sample-save.json`, which was blocking 2 of its 3 heroes,
+   * and `import-save.test.ts`'s own `baseSave()`).
    *
-   * The F8 list is the worklist. Do not grow it for any other reason — a skip that is not this
-   * debt goes in `SKIPS_NOT_F8` below, with its own reason, so the worklist stays exactly what F8
-   * has to work through.
+   * Every finding was re-ASKED of a different account before its test came back, never
+   * re-recorded: the inverted-intuition result, the [4, 9] gain band, the ~1.4x chest ratio, the
+   * gold/chest crossover and the signed gain percents all REPRODUCE. Three did not, and are
+   * recorded as losses in the files that carried them with the measurement that killed each. Two
+   * frozen refactor-parity artifacts were deleted outright — the refactors they proved had
+   * shipped, so re-freezing them would have proved nothing. `docs/fixture-corpus.md` §11-§12 is
+   * the full record.
+   *
+   * KEEP THIS LIST EMPTY. A skip that is stale-capture debt goes here, so the worklist is visible
+   * again; a skip that is not goes in `SKIPS_NOT_F8` below, with its own reason.
    */
-  const F8_SKIP_MANIFEST = {
-    'apps/desktop/renderer/lib/planning/recompute-budget.test.ts': 1,
-    'apps/web/e2e/farm-ranking.spec.ts': 1,
-    'apps/web/e2e/import-dialog.spec.ts': 2,
-    'apps/web/e2e/phases-page.spec.ts': 1,
-    'apps/web/e2e/smoke.spec.ts': 2,
-    'apps/web/e2e/team-plan-disclosures.spec.ts': 2,
-    'apps/web/e2e/team-plan-lists.spec.ts': 2,
-    'apps/web/e2e/team-plan-run.spec.ts': 1,
-    'apps/web/e2e/team-plan-states.spec.ts': 1,
-    'apps/web/src/tests/farm-respec-fixture.test.ts': 3,
-    'apps/web/src/tests/import-inventory-sync.test.ts': 1,
-    'apps/web/src/tests/points-rank-golden.test.ts': 2,
-    'packages/domain/tests/api-payload-parse.test.ts': 2,
-    'packages/domain/tests/farm-basis-parity.test.ts': 2,
-    'packages/domain/tests/farm-optimize-486.test.ts': 4,
-    'packages/domain/tests/farm-optimize-degenerate.test.ts': 1,
-    'packages/domain/tests/farm-optimize-objective.test.ts': 1,
-    'packages/domain/tests/farm-optimize-phase.test.ts': 1,
-    'packages/domain/tests/farm-optimize-rate-gain-pct.test.ts': 1,
-    'packages/domain/tests/farm-point-rank.test.ts': 7,
-    'packages/domain/tests/farm-rate-gate-throughput.test.ts': 1,
-    'packages/domain/tests/import-save-inventory.test.ts': 1,
-    'packages/domain/tests/invariance-baseline.test.ts': 1,
-    'packages/domain/tests/points-rank-golden.test.ts': 2,
-    'packages/domain/tests/team-plan-canonicalize-assignment.test.ts': 1,
-    'packages/domain/tests/team-plan-move-origin.test.ts': 2,
-    'packages/domain/tests/team-plan-solver-cache-memory.test.ts': 3,
-    'packages/domain/tests/team-plan-solver-moves.test.ts': 3,
-    'packages/domain/tests/team-plan-solver.test.ts': 2,
-    'packages/domain/tests/team-plan-step-monotonicity.test.ts': 1,
-    'packages/domain/tests/team-plan-waterfall.test.ts': 2,
-  };
+  const F8_SKIP_MANIFEST = {};
 
-  /**
-   * Skips that predate the F8 debt and are not part of it. Kept separate so the list above stays
-   * an accurate worklist rather than a bucket.
-   *
-   * `visual.spec.ts` is a deliberate `describe.skip` on the whole suite, held until its screenshot
-   * baselines are reviewed — its own file header carries the reason and the re-enable step.
-   */
   const SKIPS_NOT_F8 = {
+    'apps/desktop/renderer/lib/planning/recompute-budget.test.ts': 1,
     'apps/web/e2e/visual.spec.ts': 3,
   };
 
@@ -338,7 +308,6 @@ describe('cross-package fixture corpus parity', () => {
     'packages/domain/tests/fidelity-compare.test.ts': 1,
     'packages/domain/tests/fixture-corpus.test.ts': 2,
     'packages/domain/tests/fixtures/i18n-strings-main.json': 9,
-    'packages/domain/tests/fixtures/invariance/baseline.json': 13,
     // T7: the committed pre-patch rejection fixture — deliberately carries the
     // retired mechanic's tokens, that is its whole purpose. Added here at T12 alongside the
     // identifier guard's own re-pin; every other entry in this map is unmoved (raw git grep

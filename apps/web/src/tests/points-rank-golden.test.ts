@@ -1,42 +1,22 @@
 /**
- * Golden characterization of today's DPS next-point ranking, recorded from the tree BEFORE the
- * one-shot heuristic is deleted. The deletion that follows must reproduce these figures
- * byte-for-byte — this file is the proof, not a claim. Values were read off a real run of the
- * current (pre-deletion) code, not hand-derived.
+ * Golden characterization of the DPS next-point ranking: two heroes' full rankings, pinned to
+ * full precision, so any unintended change to a per-point rate or to the duty cycle surfaces as a
+ * number that moved rather than as nothing at all. Values are read off a real run, never
+ * hand-derived.
  *
- * RE-RECORDED for the corrected House cycle table. The `HOUSES` endpoints were a whole-minute
- * reconstruction and ran short of the real cycle by a full minute per house; the wiki's
- * `rotacao.casas[].cycle_secs_base`/`cycle_secs_max` replaced them. This fixture's account
- * carries no `casa.cycle_secs`, so it resolves rest through the table and every duty cycle moved.
- * The footprint is:
+ * RE-POINTED onto `save-20260819-11882-7heroes.json` (issue #206). The retired
+ * `save-20260813-5heroes.json` had left its regime, and the two subjects pinned on it were
+ * disabled rather than re-recorded — a golden pinned to a capture the model can no longer solve
+ * is not a canary, it is a number nobody can act on. Its re-recording history (the House cycle
+ * correction, the 2026-08-18 crit/CDR revert, the 2026-08-23 ability shape) described that
+ * roster and is kept in `docs/fixture-corpus.md` rather than carried onto this one.
  *
- * - **`energy` on all three subjects**, and only `energy` at any meaningful magnitude — a longer
- *   House cycle means a larger share of the rotation is spent refilling, so a point of Energy
- *   (which buys field seconds) is worth more than it was. It moves UP on every subject and never
- *   changes rank order.
- * - Three 13th-significant-digit re-associations off the changed uptime feeding the same shared
- *   computation: `penetration` on Bellatrix and Lyra, `critDmg` on Jon. Not on every subject,
- *   and nowhere near enough to reorder.
- * - `attack`, `critChance`, `cdr` and `speed` are byte-identical on every subject — the proof
- *   this was a duty-cycle change and touched no per-point rate.
- *
- * ---
- * RE-RECORDED for the 2026-08-18 crit-chance/CDR revert (issue #132). Diffed value by value
- * against the previous golden first; the footprint is:
- *
- * - **`critChance` and `cdr` on every subject**, moving in both directions and RE-ORDERING —
- *   under the flat model `cdr` outranked `critChance` on all four subjects; under the reverted
- *   percent-of-base model `critChance` now outranks `cdr` on all four. A pooled stat's marginal
- *   value scales with the hero's own roll again, so a hero with a well-rolled crit chance and a
- *   thin cooldown roll gets more from a crit-chance point than a flat rate ever gave it.
- * - **`critDmg` moved too, on every subject**, purely as a SECOND-ORDER effect: `critFactor`
- *   couples crit chance and crit damage (`avgHit = base × (1 + critChance/100 × (critDmg/100 −
- *   1))`), so a hero's crit-damage marginal value shifts whenever her crit-chance baseline does,
- *   even though crit damage's own per-point rate (flat, `POINT_GAIN.critDmgFlat`) never changed.
- * - `attack` / `energy` / `penetration` moved in the 12th–13th significant digit only on some
- *   subjects (IEEE-754 re-association off the changed crit-chance/cdr baseline feeding the same
- *   shared computation) — not on every subject, and never enough to change rank order. `speed`
- *   is byte-identical (0) on every subject, as it always is once it hits its own ranking floor.
+ * WHAT A GOLDEN CAN AND CANNOT SAY, restated because it is easy to lose: these figures are this
+ * model's own output, so they are not evidence about the game and re-recording them proves
+ * nothing on its own. What they buy is a diff. When one of them moves, the change was reached by
+ * something, and the useful work is naming what — which is why every past re-record here is
+ * accompanied by a footprint (which stats moved, on which subjects, and by how much) rather than
+ * just a new number.
  */
 import { describe, expect, it } from 'vitest';
 import { parseAccountPayload } from '@bombfarm/domain/import-save';
@@ -46,9 +26,18 @@ import { zeroTeamBuffs } from '@bombfarm/domain/team-buffs';
 import { DEFAULT_TARGET_PROP } from '@bombfarm/domain/farm-context';
 import { rankNextPoint, STAT_CAPS, POINT_GAIN, type HeroSheet, type Context, type PointValue } from '@bombfarm/domain/model';
 import type { HeroRecord, AccountShared } from '@bombfarm/domain/shims/storage';
+// One registry, read across the package boundary by relative path — the same way this tree's
+// own sheet-math helper reads the domain package's committed captures rather than copying them.
+import { assertInRegime } from '../../../../packages/domain/tests/helpers/capture-regime';
 import { loadFixtureJson } from './helpers/sheet-math-fixtures';
 
-const FIXTURE = 'save-20260813-5heroes.json';
+const FIXTURE = 'save-20260819-11882-7heroes.json';
+
+// A golden is our own output by construction, so it can never be a claim about the game —
+// its whole value is catching an unintended model change as a number that moved. That value
+// is real only while the capture underneath it is one the model can still solve, which is why
+// this is re-pointed rather than re-recorded in place (issue #206).
+assertInRegime(`sheet-math/${FIXTURE}`, 'sheet');
 
 const pick = (rows: readonly PointValue[]) => rows.map((r) => ({ stat: r.stat, gainPct: r.gainPct }));
 
@@ -94,58 +83,39 @@ describe('DPS next-point ranking — golden fixture (pre-deletion, pinned byte-f
     return { ...candidate.record, id: candidate.sourceId, updatedAt: 0 };
   }
 
-  it.skip('Bellatrix L42 — full ranking pinned to full precision', () => {
-    // RE-MEASURED for the 2026-08-23 crit-chance ability shape. Bellatrix carries
-    // `olho_clinico` 20/20 off a 5.081 birth roll: percent-of-base gave her `+4.36` crit points,
-    // flat gives her `+40`, so her crit rate goes from single digits to the mid-forties and the
-    // whole crit branch of the derivative moves with it. `critDmg` jumps from 0.452 to 1.685 and
-    // OVERTAKES `energy` — crit damage is worth more the more often it lands. This fixture's
-    // sheet numbers are a pre-patch capture; the ranking is characterization, not a claim about
-    // what the game would print for her today.
-    const result = pipelineForHero(heroByName('Bellatrix'), account, phase, mitigationPct);
+  /**
+   * Gale L48, geared, is the discriminating subject: he is the ONLY hero on this roster whose
+   * energy point outranks his attack point, and the margin is thin (1.7311 vs 1.7126, ~1.1%).
+   * A change that shifted either rate even slightly would reorder him while leaving the other six
+   * heroes' orders intact — which is exactly what a golden is for.
+   */
+  it('Gale L48 (geared) — full ranking pinned to full precision, energy first', () => {
+    const result = pipelineForHero(heroByName('Gale'), account, phase, mitigationPct);
     expect(pick(result.ranking)).toEqual([
-      { stat: 'attack', gainPct: 2.124613721702251 },
-      { stat: 'critDmg', gainPct: 1.6848046058554278 },
-      { stat: 'energy', gainPct: 1.419237680643981 },
-      { stat: 'critChance', gainPct: 0.05757950726386074 },
-      { stat: 'cdr', gainPct: 0.03270868386004988 },
-      { stat: 'penetration', gainPct: 0.0018927950043989838 },
+      { stat: 'energy', gainPct: 1.7311496794442327 },
+      { stat: 'attack', gainPct: 1.7125841501893335 },
+      { stat: 'critDmg', gainPct: 0.4459730294051445 },
+      { stat: 'critChance', gainPct: 0.09916082858885122 },
+      { stat: 'cdr', gainPct: 0.04603364218642714 },
+      { stat: 'penetration', gainPct: 0.0019944659124915276 },
       { stat: 'speed', gainPct: 0 },
     ]);
   });
 
-  it.skip('Jon L38 — full ranking pinned to full precision', () => {
-    // RE-MEASURED for issue #132 (team-aura roster shape): Jon carries folego_mineiro 18
-    // himself. This fixture's account.teamBuffs is zeroTeamBuffs() (farm-rate-fixtures.ts
-    // reproduces production's post-import default, before the team-buffs auto-fill button is
-    // ever pressed) — so under the confirmed rule Jon's own rank now correctly contributes
-    // NOTHING to his own drain (it only exists inside a real roster total), where the old
-    // model let a hero's own rank leak through into their own mods regardless of context. His
-    // uptime/duty shifts accordingly, moving every gainPct downstream of it.
-    const result = pipelineForHero(heroByName('Jon'), account, phase, mitigationPct);
+  /**
+   * Kael L2, naked, is the opposite end: nothing equipped, two points spent, and attack ahead of
+   * energy by more than 2x. Pinning both ends means a change that only reaches geared heroes, or
+   * only reaches the level term, shows up on exactly one of the two.
+   */
+  it('Kael L2 (naked) — full ranking pinned to full precision, attack dominant', () => {
+    const result = pipelineForHero(heroByName('Kael'), account, phase, mitigationPct);
     expect(pick(result.ranking)).toEqual([
-      { stat: 'attack', gainPct: 2.7210974575787805 },
-      { stat: 'energy', gainPct: 2.5026538249044217 },
-      { stat: 'critDmg', gainPct: 0.3844374051138466 },
-      { stat: 'critChance', gainPct: 0.06045133145873294 },
-      { stat: 'cdr', gainPct: 0.01848900890673022 },
-      { stat: 'penetration', gainPct: 0.0008367710927048577 },
-      { stat: 'speed', gainPct: 0 },
-    ]);
-  });
-
-  it('Lyra L2 — full ranking pinned to full precision', () => {
-    // RE-MEASURED for the 2026-08-23 crit-chance ability shape. Lyra carries `olho_clinico` at
-    // rank 2 only, so her crit rate moves by `+4` points rather than Bellatrix's `+40` and the
-    // rank ORDER is unchanged — the same shape change, at a magnitude that does not reorder.
-    const result = pipelineForHero(heroByName('Lyra'), account, phase, mitigationPct);
-    expect(pick(result.ranking)).toEqual([
-      { stat: 'attack', gainPct: 14.75414905657837 },
-      { stat: 'energy', gainPct: 6.1320901572672115 },
-      { stat: 'critDmg', gainPct: 0.47049017889033706 },
-      { stat: 'critChance', gainPct: 0.0508105727768271 },
-      { stat: 'cdr', gainPct: 0.03458638173732265 },
-      { stat: 'penetration', gainPct: 0.0008296399027551971 },
+      { stat: 'attack', gainPct: 15.948186475064418 },
+      { stat: 'energy', gainPct: 7.106169237061066 },
+      { stat: 'critDmg', gainPct: 0.21177885060466028 },
+      { stat: 'critChance', gainPct: 0.038417584566374785 },
+      { stat: 'cdr', gainPct: 0.030742187784227326 },
+      { stat: 'penetration', gainPct: 0.00040830708942785066 },
       { stat: 'speed', gainPct: 0 },
     ]);
   });

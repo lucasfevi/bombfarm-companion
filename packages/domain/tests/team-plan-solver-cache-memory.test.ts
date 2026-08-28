@@ -24,10 +24,10 @@ import { buildPool, poolEntryForItem } from '@bombfarm/domain/team-plan/pool';
 import { baselineAssignmentFromInput } from '@bombfarm/domain/team-plan/waterfall';
 import { applyMove, type AssignmentState } from '@bombfarm/domain/team-plan/solver-assignment';
 import { generateMoves } from '@bombfarm/domain/team-plan/solver-moves';
-import { teamPlanInputFromFixture } from './helpers/team-plan-fixtures';
+import { teamPlanInputFromFixture, TEAM_PLAN_FIXTURE } from './helpers/team-plan-fixtures';
 
-// Class (b) — structural: re-pointed onto payload-20260812-8heroes.json.
-const FIXTURE = 'payload-20260812-8heroes.json';
+// (the ground-truth rule, class (b) — structural): re-pointed onto save-20260819-11882-7heroes.json.
+const FIXTURE = TEAM_PLAN_FIXTURE;
 
 function setup(fixture: string = FIXTURE) {
   const input = teamPlanInputFromFixture(fixture, 10);
@@ -77,7 +77,7 @@ function totalCached(budget: SolverBudget): number {
 }
 
 describe('solver cache memory', () => {
-  it.skip('never stores more than the cap, however many assignments are evaluated', () => {
+  it('never stores more than the cap, however many assignments are evaluated', () => {
     const ctx = setup();
     // A small explicit cap so the invariant is provable without generating 5,000 states.
     // `maxCacheEntries` is the same knob a host would use; the production default is asserted
@@ -132,7 +132,7 @@ describe('solver cache memory', () => {
     expect(cached.evaluations).toBe(before);
   }, 120_000);
 
-  it.skip('the spare pool is redundant in the key: identical slots imply an identical pool', () => {
+  it('the spare pool is redundant in the key: identical slots imply an identical pool', () => {
     const ctx = setup();
     const assignments = walk(ctx.baseline, 400, ctx);
     const bySlots = new Map<string, string>();
@@ -162,12 +162,12 @@ describe('solver cache memory', () => {
  * than by the move list.
  */
 describe('interchangeable items: one candidate at a time, multiplicity preserved', () => {
-  it.skip('offers exactly one representative per group but still equips every copy', () => {
-    // Class (a) — read from the capture: re-pointed onto
-    // payload-20260812-8heroes.json, which carries real duplicate spares (measured: 6
+  it('offers exactly one representative per group but still equips every copy', () => {
+    // (the ground-truth rule, class (a) — read from the capture): re-pointed onto
+    // save-20260819-11882-7heroes.json, which carries real duplicate spares (measured: 6
     // pool-key groups with 2-3 copies each) — richer duplicate coverage than the deleted
     // `SaveFile_BombFarm.json` this test used to read.
-    const ctx = setup('payload-20260812-8heroes.json');
+    const ctx = setup(TEAM_PLAN_FIXTURE);
     const poolKey = (id: string) => {
       const item = ctx.itemById.get(id);
       if (!item?.slot) return null;
