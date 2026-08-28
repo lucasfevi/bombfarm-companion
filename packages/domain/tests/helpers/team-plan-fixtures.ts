@@ -1,7 +1,39 @@
 import { parseSaveFile } from '@bombfarm/domain/import-save';
 import { treeTotalsFromSave } from '@bombfarm/domain/save-units';
 import type { TeamPlanHeroInput, TeamPlanInput } from '@bombfarm/domain/team-plan/types';
+import { assertInRegime } from './capture-regime';
 import { loadFixtureJson } from './sheet-math-fixtures';
+
+/**
+ * The in-regime roster for the team-plan suites (issue #206).
+ *
+ * The two captures these suites used to read are behind the importer's stat-point budget refusal,
+ * and the damage is not subtle: `payload-20260812-8heroes.json` loses half its roster (8 heroes
+ * in, 4 unblocked out) and every one of the survivors comes through with an EMPTY loadout, so a
+ * gear planner was being exercised on a roster wearing nothing. `save-20260813-5heroes.json` is
+ * the same story at 5 -> 3. That is what the disabled tests in this group were recording: no
+ * donor to take an item from, no forge candidate, no pair of point resets to order.
+ *
+ * This capture comes through 7 of 7 unblocked with 40 items worn across 5 heroes and 54 in the
+ * bag, and its House BINDS (5 recovery slots against 7 heroes) — a contended roster the corpus
+ * never had.
+ */
+export const TEAM_PLAN_FIXTURE = 'save-20260819-11882-7heroes.json';
+
+/**
+ * The larger in-regime roster, for the two claims the 7-hero one cannot carry: it produces five
+ * point resets where the smaller produces one, so anything asserting an ORDER over resets needs
+ * this one.
+ */
+export const TEAM_PLAN_LARGE_FIXTURE = 'save-20260825-11heroes-one-shot-spread.json';
+
+// Asserted once here rather than repeated in each of the seven suites that read these two: the
+// constants are the single point where the choice of capture is made, so this is the single point
+// where it can be wrong. Throws rather than skips — a value suite pointed at an expired capture
+// should fail loudly, not report a green run with a quiet skip in it.
+for (const fixture of [TEAM_PLAN_FIXTURE, TEAM_PLAN_LARGE_FIXTURE]) {
+  assertInRegime(`sheet-math/${fixture}`, 'sheet');
+}
 
 export function teamPlanInputFromFixture(file: string, forgeFloor = 10): TeamPlanInput {
   const raw = loadFixtureJson(file);

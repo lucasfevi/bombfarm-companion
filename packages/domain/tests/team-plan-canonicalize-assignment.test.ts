@@ -16,7 +16,7 @@ import {
   buildWaterfall,
 } from '@bombfarm/domain/team-plan/waterfall';
 import { farmFromAccount } from '@bombfarm/domain/team-plan/waterfall-guards';
-import { teamPlanInputFromFixture } from './helpers/team-plan-fixtures';
+import { teamPlanInputFromFixture, TEAM_PLAN_FIXTURE } from './helpers/team-plan-fixtures';
 
 function item(partial: Partial<InventoryItem> & Pick<InventoryItem, 'id'>): InventoryItem {
   return {
@@ -100,11 +100,11 @@ describe('canonicalizeAssignment', () => {
     // The two group members are stored at +0 and +12 with a forge floor of 12, so canonicalizing
     // genuinely rewrites which physical item each hero wears (their `upgrade` fields differ) —
     // yet both clamp to the same effective upgrade, so the objective must be bit-identical.
-    // MP5 F1 (AD-068 class (b) — structural): re-pointed onto payload-20260812-8heroes.json.
+    // MP5 F1 (AD-068 class (b) — structural): re-pointed onto save-20260819-11882-7heroes.json.
     // The fixture only supplies two real hero contexts here; both inventory items (upgrade 0
     // and 12) are hand-constructed, not read from the corpus, so which file backs the heroes
     // does not change what this test discriminates.
-    const input = teamPlanInputFromFixture('payload-20260812-8heroes.json', 12);
+    const input = teamPlanInputFromFixture(TEAM_PLAN_FIXTURE, 12);
     const built = buildHeroPlanContexts(input.heroes, input.account, input.scopeByHeroId);
     if (built.blocked) throw new Error('fixture blocked');
     const contexts = built.contexts.filter((ctx) => ctx.scope === 'optimize').slice(0, 2);
@@ -356,11 +356,11 @@ describe('buildWaterfall canonicalizes at the applied floor', () => {
    * silently reverts while still reporting the improved objective.
    */
   function forgeFloorMismatchInput() {
-    // MP5 F1 (AD-068 class (b) — structural): re-pointed onto payload-20260812-8heroes.json.
+    // MP5 F1 (AD-068 class (b) — structural): re-pointed onto save-20260819-11882-7heroes.json.
     // Every item's upgrade is overwritten below (forged to +12, then worn/spare/ballast are
     // hand-constructed at +0/+10/+0) — the fixture supplies only real heroes and one real
     // equipped item identity to build from, not any of the asserted upgrade values.
-    const base = teamPlanInputFromFixture('payload-20260812-8heroes.json', 10);
+    const base = teamPlanInputFromFixture(TEAM_PLAN_FIXTURE, 10);
     const rosterHeroIds = new Set(base.heroes.map((hero) => hero.heroId));
     // Forge everything to +12 so the ONLY sub-floor items in play are the ones added below.
     const forged = base.inventory.map((entry) => ({
@@ -398,7 +398,7 @@ describe('buildWaterfall canonicalizes at the applied floor', () => {
     return { input, worn, spare };
   }
 
-  it.skip('keeps the upgrade and reports an objective the proposed loadouts reproduce', () => {
+  it('keeps the upgrade and reports an objective the proposed loadouts reproduce', () => {
     const { input, worn, spare } = forgeFloorMismatchInput();
     const built = buildHeroPlanContexts(input.heroes, input.account, input.scopeByHeroId);
     if (built.blocked) throw new Error('fixture blocked');

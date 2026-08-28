@@ -104,10 +104,15 @@ describe('parseSaveFile inventory pass', () => {
     expect(warnings.some((warning) => warning.includes('market-blocked'))).toBe(true);
   });
 
-  it.skip('does not change hero candidate count on the real fixture', () => {
-    const raw = loadFixtureJson('save-20260813-5heroes.json');
+  // Re-pointed off `save-20260813-5heroes.json` (issue #206): that capture is behind the
+  // stat-point budget refusal, so 2 of its 5 heroes come through blocked and the "nothing is
+  // blocked" half of this claim describes a roster the importer no longer produces. The 2026-08-19
+  // capture parses 7 of 7 clean, which is what makes the claim assertable again rather than
+  // merely re-recorded.
+  it('does not change hero candidate count on the real fixture', () => {
+    const raw = loadFixtureJson('save-20260819-11882-7heroes.json');
     const withoutInventory = parseSaveFile(raw, []);
-    expect(withoutInventory.candidates.length).toBeGreaterThan(0);
+    expect(withoutInventory.candidates.length).toBe(7);
     expect(withoutInventory.candidates.every((candidate) => !candidate.blocked)).toBe(true);
   });
 

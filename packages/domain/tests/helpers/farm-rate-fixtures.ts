@@ -16,6 +16,29 @@ import { loadFixtureJson } from './sheet-math-fixtures';
 
 export const FARM_RATE_FIXTURE = 'save-20260813-5heroes.json';
 
+/**
+ * The in-regime roster for suites that assert RANKING outcomes rather than shapes. Eleven heroes
+ * captured 2026-08-25, holding both sides of the one-shot contrast at once — nine geared heroes
+ * that one-shot a phase-42 prop and two naked young ones that do not (issue #171). Split from
+ * {@link FARM_RATE_FIXTURE} rather than replacing it: the 2026-08-13 capture is out of regime for
+ * `sheet` (see `helpers/capture-regime.ts`), so a value assertion may not read it, but the ~40
+ * structural suites that read it for roster shape are unaffected and stay where they are.
+ */
+export const FARM_RANK_FIXTURE = 'save-20260825-11heroes-one-shot-spread.json';
+
+/**
+ * The in-regime roster for the RESPEC OPTIMIZER suites. A second, disjoint account captured
+ * 2026-08-19, in regime for `sheet` on a waiver its registry row states and
+ * `capture-regime-registry.test.ts` verifies (no hero owns either ability the 2026-08-23 patch
+ * restated).
+ *
+ * Chosen over {@link FARM_RANK_FIXTURE} for two reasons that both matter here. Its House BINDS —
+ * 5 recovery slots against 7 heroes — which is the regime a respec search should be exercised
+ * under and one no previous capture provided. And it is SMALL: `solveFarmRespec` over its 7
+ * heroes runs in ~1s against ~12s for the 11-hero roster, across roughly a dozen call sites.
+ */
+export const FARM_OPTIMIZE_FIXTURE = 'save-20260819-11882-7heroes.json';
+
 export type FarmRateFixture = {
   heroes: HeroRecord[];
   account: AccountShared;

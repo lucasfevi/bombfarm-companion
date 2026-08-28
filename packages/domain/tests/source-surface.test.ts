@@ -68,41 +68,34 @@ const SKIP_PATTERN_GLOBAL = new RegExp(SKIP_PATTERN.source, 'g');
  * this list fails, and so does a manifested file whose skips are removed without updating it.
  *
  * WHAT IS SKIPPED AND WHY. Every entry below fails on FIXTURE data, not on the code under test.
- * Nine committed fixtures across five suites were captured before the 2026-08-18 patch, and the
- * importer now refuses a hero whose sheet inverts above its stat-point budget — so those captures
- * lose 40-100% of their rosters, and an assertion about their rosters describes something that no
- * longer exists. Re-recording the numbers would turn tests that encode real findings ("all-attack
- * scores BELOW the current build", "Perrin L4 FLIPPED AGAIN") into rubber stamps against a
- * different roster.
+ * Committed fixtures captured before the 2026-08-18 patch lose 40-100% of their rosters to the
+ * importer's stat-point budget refusal, so an assertion about those rosters describes something
+ * that no longer exists. Re-recording the numbers would turn tests that encode real findings into
+ * rubber stamps against a different roster.
  *
- * WHEN THEY COME BACK: live-field-status F8, where these tests are being reviewed anyway. Each one
- * needs the same judgement rather than a re-record — does the finding still reproduce on a
- * current-regime capture? If yes, re-point it; if no, delete it and say so. Six of the nine
- * fixtures can be replaced from a current save export; four need a capture of a different kind
- * (the API-bodies trio and the fidelity-gate pair).
+ * WORKED DOWN FROM 38 TO 5 (issues #137, #171, #206). Two in-regime captures landed and every
+ * suite that could be re-asked of them was — with the finding re-asked first, not the number
+ * re-recorded. "All-attack scores BELOW the current build" REPRODUCES on a different account
+ * (1,085,794 < 1,331,738 where it was 212,284 < 264,997), as do the [4, 9] gain band, the ~1.4x
+ * chest ratio, the chests-cost-gold crossover and the signed gain percents. "Perrin L4 FLIPPED
+ * AGAIN" was retired outright: it was a pinned flip standing in for a subject the corpus had
+ * lost, and `save-20260825-11heroes-one-shot-spread.json` supplies a real one (issue #171).
+ *
+ * THE FIVE THAT ARE LEFT each need a decision rather than more of the same work.
+ * `api-payload-parse` reads the four `api/assembled-payload-*.json` files, which are DERIVED from
+ * the 2026-08-12 payload whose heroes the importer blocks — "every candidate is unblocked" cannot
+ * be made true by re-pointing, only by regenerating them from an in-regime account.
+ * `farm-basis-parity` and `invariance-baseline` each compare against a large frozen artifact
+ * recorded to prove one past refactor was output-preserving; both refactors shipped and the model
+ * has moved since, so the artifacts cannot match and re-freezing them would prove nothing about
+ * what they were recorded for. Re-freeze as a forward drift canary, or delete and say so.
  *
  * This list is the worklist. Do not grow it for any other reason.
  */
 const F8_SKIP_MANIFEST: Record<string, number> = {
   'tests/api-payload-parse.test.ts': 2,
   'tests/farm-basis-parity.test.ts': 2,
-  'tests/farm-optimize-486.test.ts': 4,
-  'tests/farm-optimize-degenerate.test.ts': 1,
-  'tests/farm-optimize-objective.test.ts': 1,
-  'tests/farm-optimize-phase.test.ts': 1,
-  'tests/farm-optimize-rate-gain-pct.test.ts': 1,
-  'tests/farm-point-rank.test.ts': 7,
-  'tests/farm-rate-gate-throughput.test.ts': 1,
-  'tests/import-save-inventory.test.ts': 1,
   'tests/invariance-baseline.test.ts': 1,
-  'tests/points-rank-golden.test.ts': 2,
-  'tests/team-plan-canonicalize-assignment.test.ts': 1,
-  'tests/team-plan-move-origin.test.ts': 2,
-  'tests/team-plan-solver-cache-memory.test.ts': 3,
-  'tests/team-plan-solver-moves.test.ts': 3,
-  'tests/team-plan-solver.test.ts': 2,
-  'tests/team-plan-step-monotonicity.test.ts': 1,
-  'tests/team-plan-waterfall.test.ts': 2,
 };
 
 function listFiles(dir: string, acc: string[] = []): string[] {

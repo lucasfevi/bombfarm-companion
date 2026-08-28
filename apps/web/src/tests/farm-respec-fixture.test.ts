@@ -15,18 +15,26 @@ import {
   selectFarmRespecGate,
 } from '@/shared/stores/selectors/farm-ranking-selectors';
 import { resetPlannerStoreForTests, usePlannerStore } from '@/shared/stores';
+import { assertInRegime } from '../../../../packages/domain/tests/helpers/capture-regime';
 import { loadFixtureJson } from './helpers/sheet-math-fixtures';
 
 /**
- * Loads `save-20260813-5heroes.json` through the SAME path the shell's real import dialog uses
+ * Loads `save-20260819-11882-7heroes.json` through the SAME path the shell's real import dialog uses
  * (`useImportCandidates.handleConfirm`, `app-shell-inner.tsx`'s `handleImported`):
  * `parseSaveFile` -> `importHeroes` -> `setHeroes` + `applyAccountImport`. This is the committed
- * account-486 corpus, shared byte-identically with `packages/domain`'s own fixture tree
- * (`docs/fixture-corpus.md`), and it is the only fixture with an `account` block that carries a
- * `max_phase` — `e2e/fixtures/sample-save.json` cannot stand in for it.
+ * committed corpus, shared byte-identically with `packages/domain`'s own fixture tree
+ * (`docs/fixture-corpus.md`), and it carries the `account` block with a `max_phase` that
+ * `e2e/fixtures/sample-save.json` cannot stand in for.
+ *
+ * RE-POINTED off `save-20260813-5heroes.json` (issue #206). Three of this file's claims were
+ * disabled against that capture, and the reason was written into the first one at the time:
+ * two of its five heroes carry an ILLEGAL build (Jon spends 44 points at level 38, Bellatrix 46
+ * at 42), the search clamps candidates to the legal budget, and so the illegal current build
+ * out-scored everything reachable. The advisor was being characterised against an account the
+ * game cannot produce. This capture is legal on all 7 heroes.
  */
 function importFixtureIntoStore(): void {
-  const raw = loadFixtureJson('save-20260813-5heroes.json');
+  const raw = loadFixtureJson('save-20260819-11882-7heroes.json');
   const { candidates, account } = parseSaveFile(raw, []);
   const records = candidates
     .filter((candidate) => !candidate.blocked)
@@ -44,7 +52,9 @@ function topGoldPhase(rows: readonly FarmRateRow[]): number {
   return farmable.reduce((best, row) => (row.goldPerHour > best.goldPerHour ? row : best)).phase;
 }
 
-describe('Farm Respec Advisor — fixture integration (account-486, save-20260813-5heroes.json)', () => {
+assertInRegime('sheet-math/save-20260819-11882-7heroes.json', 'sheet');
+
+describe('Farm Respec Advisor — fixture integration (save-20260819-11882-7heroes.json)', () => {
   beforeEach(() => {
     resetPlannerStoreForTests();
     resetFarmRankingCache();
@@ -55,51 +65,27 @@ describe('Farm Respec Advisor — fixture integration (account-486, save-2026081
     importFixtureIntoStore();
   });
 
-  it.skip('Tier 1 stays QUIET on this account — the banner stopped surfacing at the 2026-08-23 patch', () => {
-    // Tier 1 (findGateCandidate) is a cheap LOWER-BOUND estimate, and it is compared against
-    // FARM_RESPEC_MIN_GAIN_PCT (1%) to decide whether the recommendation banner appears at all.
-    // This fixture's account has now sat on both sides of that line, and the history is the point:
-    //
-    //   ~0.76%  quiet   issue #132's crit/CDR + reoptBudget-clamp pass
-    //   ~1.55%  surfaced the team-aura roster shape (Jon's own-rank drain leak removed)
-    //   ~0.077% quiet   the 2026-08-23 crit-chance ability shape  <- asserted here
-    //
-    // The last move is the largest, and it is a real behaviour change rather than a wobble: two of
-    // this roster's heroes carry Olho Clinico, whose flat +40 crit points lift the CURRENT build's
-    // throughput much more than they lift the best reachable re-allocation of the same points. The
-    // headroom a respec could recover shrinks accordingly, and the honest estimate lands two orders
-    // of magnitude below the threshold. The banner correctly does not appear for this account.
-    //
-    // The Playwright suite (`e2e/farm-respec.spec.ts`) needs the banner to APPEAR to drive the UI
-    // at all, so it moved to the 2026-08-23 capture, which has real headroom (3.66% lower bound).
-    // The split is deliberate: this file keeps exercising the solver on a thin-headroom account
-    // and pins the quiet state, the e2e exercises the panel on one with headroom.
-    //   0%      quiet   the 2026-08-24 FIFO field queue  <- asserted here
-    //
-    // WHY IT WENT TO EXACTLY ZERO, and why that is the fixture's fault rather than the model's.
-    // Two of this capture's five heroes spend more stat points than their level allows (Jon 44 at
-    // 38, Bellatrix 46 at 42) — a state the game cannot produce, since it grants one point per
-    // level and a level never goes down. The search now clamps every candidate to the LEGAL
-    // budget, so on this roster the illegal current build out-scores everything Tier 1 can reach
-    // and the honest answer is "no gain". Tier 2, exploring further, still finds a legal build
-    // worth ~6.5%, which is why the lower-bound case below still passes.
-    //
-    // The contract under test is unchanged and still holds: the banner does not surface. What
-    // changed is the REASON — from "a real but tiny gain" to "no reachable gain at all" — so the
-    // non-vacuity check below moves off `gainPct > 0` onto the two facts that still discriminate.
-    // This is the clearest argument yet for retiring this capture; tracked as its own cleanup.
+  /**
+   * INVERTED, and the inversion is the finding (issue #206). This used to assert the banner stays
+   * QUIET, and the reason had been traced in the comment it carried: the retired capture's own
+   * current build was ILLEGAL, so once the search clamped candidates to the legal point budget the
+   * illegal build out-scored everything reachable and Tier 1 honestly reported no gain — 0%.
+   *
+   * On a legal account the advisor does what it is for. Tier 1's lower bound clears the 1%
+   * threshold comfortably and the banner surfaces. Both directions are asserted rather than the
+   * one that happens to hold: `shouldSurface` must agree with the comparison against the
+   * threshold, so this stays a real test whichever side a future account lands on.
+   */
+  it('Tier 1 surfaces on a legal account, and shouldSurface agrees with the threshold', () => {
     const gate = selectFarmRespecGate(usePlannerStore.getState());
     expect(gate.reason).toBeNull();
-    expect(gate.result?.gainPct).toBe(0);
-    expect(gate.result?.gainPct).toBeLessThan(FARM_RESPEC_MIN_GAIN_PCT);
-    expect(gate.shouldSurface).toBe(false);
-
-    // Non-vacuity: `shouldSurface` is false because the gate RAN and found nothing above the
-    // threshold, not because it bailed out. A null reason and a non-null result together prove it
-    // ran; `outcome` naming the specific terminal state proves it reached a considered answer
-    // rather than erroring into a default.
     expect(gate.result).not.toBeNull();
-    expect(gate.result?.outcome).toBe('nothingToGain');
+    expect(gate.result!.gainPct).toBeGreaterThan(FARM_RESPEC_MIN_GAIN_PCT);
+    expect(gate.shouldSurface).toBe(gate.result!.gainPct >= FARM_RESPEC_MIN_GAIN_PCT);
+    expect(gate.shouldSurface).toBe(true);
+    // Non-vacuity: the gate RAN and reached a considered terminal state rather than erroring
+    // into a default — a null reason and a non-null outcome together prove it.
+    expect(gate.result!.outcome).toBe('improved');
   });
 
   it('Tier 1 is a lower bound: gainIsLowerBound is true and its gain never exceeds Tier 2\'s', () => {
@@ -109,11 +95,14 @@ describe('Farm Respec Advisor — fixture integration (account-486, save-2026081
     expect(gate.result!.gainPct).toBeLessThanOrEqual(solve.gainPct);
   });
 
-  it.skip('the recommended phase lands in the 26-28 band, and the measured gain is at least 5% and finite', () => {
+  // The 26-28 band was a property of the retired capture's own strength, not of the advisor.
+  // This account's `max_phase` is 52 and the solver recommends staying at its ceiling, so what is
+  // asserted is the relation to the cap — which is the part that transfers between accounts.
+  it("the recommended phase lands at the account's reachable ceiling, and the measured gain is at least 5% and finite", () => {
     const solve = runFarmRespecSolve(usePlannerStore.getState());
     expect(solve.recommendedPhase).not.toBeNull();
-    expect(solve.recommendedPhase).toBeGreaterThanOrEqual(26);
-    expect(solve.recommendedPhase).toBeLessThanOrEqual(28);
+    expect(solve.recommendedPhase).toBeGreaterThanOrEqual(51);
+    expect(solve.recommendedPhase).toBeLessThanOrEqual(52);
     expect(Number.isFinite(solve.gainPct)).toBe(true);
     expect(solve.gainPct).toBeGreaterThanOrEqual(5);
   });
@@ -157,9 +146,23 @@ describe('Farm Respec Advisor — fixture integration (account-486, save-2026081
     }
   });
 
-  it.skip('re-rank moves the top-by-gold phase into the 26-28 band, away from the current build\'s top phase', () => {
+  /**
+   * A RECORDED LOSS with a weaker claim in its place (issue #206). This used to assert that
+   * re-ranking MOVES the board's top-by-gold row — off phase X and into the 26-28 band. On this
+   * account it does not: the proposed build is worth ~7% more gold per hour, but it is worth more
+   * AT THE SAME PHASE (51, the account's own ceiling), so the argmax does not move at all.
+   *
+   * That is a real property of a maxed-out account rather than a defect, and it is not something
+   * a different in-regime capture obviously fixes — the 11-hero one also argmaxes at a single
+   * clear peak. So what is asserted is the part that must be true for the toggle to mean
+   * anything: re-rank actually re-prices the board. The stronger "the pick moves" form needs an
+   * account whose respec changes which phase is worth farming.
+   */
+  it('re-rank re-prices the board — the proposed rows differ from the current ones', () => {
     const state = usePlannerStore.getState();
-    const currentTop = topGoldPhase(selectFarmBoardRows(state).rows);
+    const currentRows = selectFarmBoardRows(state).rows;
+    const currentTop = topGoldPhase(currentRows);
+    const currentTopGold = currentRows.find((row) => row.phase === currentTop)!.goldPerHour;
 
     const solve = runFarmRespecSolve(usePlannerStore.getState());
     usePlannerStore.setState({
@@ -167,11 +170,13 @@ describe('Farm Respec Advisor — fixture integration (account-486, save-2026081
       farmRespecStatus: 'done',
     });
     usePlannerStore.getState().setFarmRespecReRank(true);
-    const proposedTop = topGoldPhase(selectFarmBoardRows(usePlannerStore.getState()).rows);
+    const proposedRows = selectFarmBoardRows(usePlannerStore.getState()).rows;
+    const proposedTop = topGoldPhase(proposedRows);
+    const proposedTopGold = proposedRows.find((row) => row.phase === proposedTop)!.goldPerHour;
 
-    expect(proposedTop).not.toBe(currentTop);
-    expect(proposedTop).toBeGreaterThanOrEqual(26);
-    expect(proposedTop).toBeLessThanOrEqual(28);
+    expect(proposedTopGold).toBeGreaterThan(currentTopGold);
+    // Non-vacuity: the toggle reached the board, not just the banner — some row's rate moved.
+    expect(proposedRows.map((row) => row.goldPerHour)).not.toEqual(currentRows.map((row) => row.goldPerHour));
   });
 
   it('the frontier is non-empty on this multi-searchable-hero fixture and is cost-ascending', () => {

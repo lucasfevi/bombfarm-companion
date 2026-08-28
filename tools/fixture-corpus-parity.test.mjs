@@ -108,16 +108,40 @@ describe('cross-package fixture corpus parity (MP5 F1)', () => {
    * longer exists. Re-recording the numbers would turn tests that encode real findings into rubber
    * stamps against a different roster.
    *
-   * WHEN THEY COME BACK: live-field-status F8, where these tests are being reviewed anyway. The
-   * sibling manifest in `packages/domain/tests/source-surface.test.ts` carries the same list for
-   * the domain package; this one is the whole picture, across all four roots.
+   * WORKED DOWN FROM 58 TO 16 (issues #137, #171, #206). Two in-regime captures landed —
+   * `save-20260819-11882-7heroes.json` (a second account, 7 of 7 accepted, 40 items worn, a
+   * BINDING House) and `save-20260825-11heroes-one-shot-spread.json` (both sides of the one-shot
+   * contrast on one roster) — and every value suite that could be re-asked of them was. Each
+   * finding was re-asked before being re-enabled, not re-recorded: the inverted-intuition result,
+   * the gain band, the chest ratio, the gold/chest crossover and the signed gain percents all
+   * REPRODUCE on a different account. Three did not and are recorded as losses in the files that
+   * carried them (the infeasible-row nominal argmax, the 26-28 phase band, and re-rank moving the
+   * board's top phase), with the measurement that killed each one.
+   *
+   * WHAT IS LEFT, and why each one is not just more of the same work:
+   *
+   *  - the twelve `apps/web/e2e/**` entries need a Playwright run to re-drive, not a vitest one;
+   *  - `api-payload-parse` (2) needs the four `api/assembled-payload-*.json` files REGENERATED
+   *    from an in-regime account — they are derived from the 2026-08-12 payload, whose heroes the
+   *    importer now blocks, so "every candidate is unblocked" cannot be made true by re-pointing;
+   *  - `farm-basis-parity` (2) and `invariance-baseline` (1) each compare against a large frozen
+   *    artifact recorded to prove ONE past refactor/deletion was output-preserving. Both refactors
+   *    shipped and the model has moved several times since, so the artifacts cannot match and
+   *    re-freezing them would prove nothing about what they were recorded for. Each needs a
+   *    decision — re-freeze as a forward drift canary, or delete and say so — not a re-point;
+   *  - `apps/web/src/tests/import-save.test.ts` (1) is the odd one out and NOT a capture problem:
+   *    its `baseSave()` is synthetic, and hero 1004's stats block was derived under an older sheet
+   *    model (today's inversion recovers 23 points against a budget of 0). Its own header records
+   *    the measurement.
+   *
+   * The sibling manifest in `packages/domain/tests/source-surface.test.ts` carries the same list
+   * for the domain package; this one is the whole picture, across all four roots.
    *
    * The F8 list is the worklist. Do not grow it for any other reason — a skip that is not this
    * debt goes in `SKIPS_NOT_F8` below, with its own reason, so the worklist stays exactly what F8
    * has to work through.
    */
   const F8_SKIP_MANIFEST = {
-    'apps/desktop/renderer/lib/planning/recompute-budget.test.ts': 1,
     'apps/web/e2e/farm-ranking.spec.ts': 1,
     'apps/web/e2e/import-dialog.spec.ts': 2,
     'apps/web/e2e/phases-page.spec.ts': 1,
@@ -126,29 +150,10 @@ describe('cross-package fixture corpus parity (MP5 F1)', () => {
     'apps/web/e2e/team-plan-lists.spec.ts': 2,
     'apps/web/e2e/team-plan-run.spec.ts': 1,
     'apps/web/e2e/team-plan-states.spec.ts': 1,
-    'apps/web/src/tests/farm-respec-fixture.test.ts': 3,
-    'apps/web/src/tests/import-inventory-sync.test.ts': 1,
     'apps/web/src/tests/import-save.test.ts': 1,
-    'apps/web/src/tests/points-rank-golden.test.ts': 2,
     'packages/domain/tests/api-payload-parse.test.ts': 2,
     'packages/domain/tests/farm-basis-parity.test.ts': 2,
-    'packages/domain/tests/farm-optimize-486.test.ts': 4,
-    'packages/domain/tests/farm-optimize-degenerate.test.ts': 1,
-    'packages/domain/tests/farm-optimize-objective.test.ts': 1,
-    'packages/domain/tests/farm-optimize-phase.test.ts': 1,
-    'packages/domain/tests/farm-optimize-rate-gain-pct.test.ts': 1,
-    'packages/domain/tests/farm-point-rank.test.ts': 7,
-    'packages/domain/tests/farm-rate-gate-throughput.test.ts': 1,
-    'packages/domain/tests/import-save-inventory.test.ts': 1,
     'packages/domain/tests/invariance-baseline.test.ts': 1,
-    'packages/domain/tests/points-rank-golden.test.ts': 2,
-    'packages/domain/tests/team-plan-canonicalize-assignment.test.ts': 1,
-    'packages/domain/tests/team-plan-move-origin.test.ts': 2,
-    'packages/domain/tests/team-plan-solver-cache-memory.test.ts': 3,
-    'packages/domain/tests/team-plan-solver-moves.test.ts': 3,
-    'packages/domain/tests/team-plan-solver.test.ts': 2,
-    'packages/domain/tests/team-plan-step-monotonicity.test.ts': 1,
-    'packages/domain/tests/team-plan-waterfall.test.ts': 2,
   };
 
   /**
@@ -157,8 +162,16 @@ describe('cross-package fixture corpus parity (MP5 F1)', () => {
    *
    * `visual.spec.ts` is a deliberate `describe.skip` on the whole suite, held until its screenshot
    * baselines are reviewed — its own file header carries the reason and the re-enable step.
+   *
+   * `recompute-budget.test.ts` was RECLASSIFIED out of the F8 worklist (issue #206). Its one skip
+   * is not stale-fixture debt: it is a red-state demonstration that deliberately loops the roster
+   * 80x to blow the very budget its siblings assert, and its own comment says so — "it is not
+   * itself a regression guard, it is evidence the regression guard has teeth". Running it in CI
+   * would burn 80x the work to assert the opposite of the bound, so it stays skipped on its own
+   * merits rather than waiting on a capture that would not change anything about it.
    */
   const SKIPS_NOT_F8 = {
+    'apps/desktop/renderer/lib/planning/recompute-budget.test.ts': 1,
     'apps/web/e2e/visual.spec.ts': 3,
   };
 

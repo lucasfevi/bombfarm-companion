@@ -1,0 +1,2643 @@
+{
+  "account": {
+    "bag_capacity": 50,
+    "bag_tabs": 2,
+    "gold": "1023703",
+    "items_count": 22,
+    "locked": true,
+    "max_phase": 52,
+    "phase": 51
+  },
+  "casa": {
+    "active_casa": 2,
+    "cycle_secs": 1070.52631578947,
+    "cycle_secs_per_house": [
+      1140,
+      1070.52631578947,
+      960,
+      840,
+      660
+    ],
+    "levels": [
+      20,
+      4,
+      0,
+      0,
+      0
+    ],
+    "slots": 5,
+    "slots_per_house": [
+      3,
+      5,
+      7,
+      9,
+      9
+    ],
+    "upgrade_cost": [
+      1,
+      2
+    ]
+  },
+  "export_version": 1,
+  "generated_at": 1787151593,
+  "heroes": [
+    {
+      "abilities": [
+        {
+          "code": "golpe_brutal",
+          "level": 20,
+          "max": 20,
+          "slot": 17
+        },
+        {
+          "code": "fortuna",
+          "level": 20,
+          "max": 20,
+          "slot": 19
+        }
+      ],
+      "ability_points_spent": 40,
+      "ability_points_total": 51,
+      "ability_reroll_cost": "102000",
+      "ability_reroll_stone": "skill_stone_incomum",
+      "battle_allowed": true,
+      "birth_stats": {
+        "cooldown_reduction": 0.0182390208313341,
+        "crit_chance": 0.0534286119341424,
+        "crit_dmg": 1.45238210566148,
+        "dmg": 82.2142039269445,
+        "energia": 138.256430916227,
+        "luck": 0.0641957551041329,
+        "penetration": 1.73976337895646,
+        "speed": 48.9204762919326
+      },
+      "id": "21076",
+      "in_field": false,
+      "in_market": false,
+      "level": 51,
+      "marketable": false,
+      "name": "Ivo",
+      "rank": "D",
+      "rarity": 1,
+      "skin": 5,
+      "skin_birth": 0,
+      "slots": [
+        "246335",
+        "316430",
+        "335647",
+        "297973",
+        "297914",
+        "342521",
+        "164706",
+        "315507"
+      ],
+      "stars": 0,
+      "stat_points_available": 0,
+      "stat_ranges": {
+        "cooldown_reduction": {
+          "max": 0.03,
+          "min": 0.005
+        },
+        "crit_chance": {
+          "max": 0.09,
+          "min": 0.03
+        },
+        "crit_dmg": {
+          "max": 1.7,
+          "min": 1.45
+        },
+        "dmg": {
+          "max": 110,
+          "min": 65
+        },
+        "energia": {
+          "max": 160,
+          "min": 120
+        },
+        "luck": {
+          "max": 0.07,
+          "min": 0.01
+        },
+        "penetration": {
+          "max": 2.5,
+          "min": 0.5
+        },
+        "speed": {
+          "max": 51.5,
+          "min": 47
+        }
+      },
+      "stats": {
+        "cooldown_reduction": 0.0188609434338422,
+        "crit_chance": 0.0551215472773706,
+        "crit_dmg": 2.25238210566148,
+        "dmg": 2136.95803574084,
+        "energia": 515.933350352528,
+        "luck": 0.168566708513233,
+        "penetration": 3.42524614048948,
+        "power": 17973.9854668185,
+        "speed": 49.3909853121094
+      },
+      "xp": "283869"
+    },
+    {
+      "abilities": [
+        {
+          "code": "explosao_ampla",
+          "level": 20,
+          "max": 20,
+          "slot": 8
+        }
+      ],
+      "ability_points_spent": 20,
+      "ability_points_total": 55,
+      "ability_reroll_cost": "55000",
+      "ability_reroll_stone": "skill_stone_comum",
+      "battle_allowed": true,
+      "birth_stats": {
+        "cooldown_reduction": 0.00832204495834941,
+        "crit_chance": 0.03669513010861,
+        "crit_dmg": 1.5208504263513,
+        "dmg": 66.7826897887589,
+        "energia": 110.022805084584,
+        "luck": 0.0160325811126281,
+        "penetration": 1.27916988935916,
+        "speed": 46.6069367981534
+      },
+      "id": "24930",
+      "in_field": false,
+      "in_market": false,
+      "level": 55,
+      "marketable": false,
+      "name": "Isolde",
+      "rank": "B",
+      "rarity": 0,
+      "skin": 5,
+      "skin_birth": 3,
+      "slots": [
+        "370785",
+        "371703",
+        "353481",
+        "381142",
+        "250839",
+        "213666",
+        "377754",
+        "278817"
+      ],
+      "stars": 0,
+      "stat_points_available": 0,
+      "stat_ranges": {
+        "cooldown_reduction": {
+          "max": 0.02,
+          "min": 0
+        },
+        "crit_chance": {
+          "max": 0.08,
+          "min": 0.02
+        },
+        "crit_dmg": {
+          "max": 1.6,
+          "min": 1.4
+        },
+        "dmg": {
+          "max": 70,
+          "min": 40
+        },
+        "energia": {
+          "max": 120,
+          "min": 80
+        },
+        "luck": {
+          "max": 0.05,
+          "min": 0
+        },
+        "penetration": {
+          "max": 1.5,
+          "min": 0
+        },
+        "speed": {
+          "max": 50,
+          "min": 46
+        }
+      },
+      "stats": {
+        "cooldown_reduction": 0.00873366585829081,
+        "crit_chance": 0.0379429265192851,
+        "crit_dmg": 1.5208504263513,
+        "dmg": 2211.7206450153,
+        "energia": 507.7297221737,
+        "luck": 0.108239443298433,
+        "penetration": 2.22473227157345,
+        "power": 27768.561387212,
+        "speed": 47.1858245019844
+      },
+      "xp": "121854"
+    },
+    {
+      "abilities": [
+        {
+          "code": "bateria_extra",
+          "level": 20,
+          "max": 20,
+          "slot": 1
+        },
+        {
+          "code": "misericordia",
+          "level": 20,
+          "max": 20,
+          "slot": 7
+        },
+        {
+          "code": "contra_relogio",
+          "level": 20,
+          "max": 20,
+          "slot": 9
+        }
+      ],
+      "ability_points_spent": 60,
+      "ability_points_total": 64,
+      "ability_reroll_cost": "192000",
+      "ability_reroll_stone": "skill_stone_raro",
+      "battle_allowed": true,
+      "birth_stats": {
+        "cooldown_reduction": 0.0160668322758786,
+        "crit_chance": 0.0846216710851249,
+        "crit_dmg": 1.67127583786901,
+        "dmg": 199.986249460923,
+        "energia": 159.433825889933,
+        "luck": 0.0243461754356469,
+        "penetration": 2.85439609722686,
+        "speed": 51.3503731907545
+      },
+      "id": "33151",
+      "in_field": true,
+      "in_market": false,
+      "level": 64,
+      "marketable": false,
+      "name": "Fenn",
+      "rank": "C",
+      "rarity": 2,
+      "skin": 5,
+      "skin_birth": 0,
+      "slots": [
+        "297910",
+        "184604",
+        "272894",
+        "305382",
+        "325611",
+        "238784",
+        "297978",
+        "297976"
+      ],
+      "stars": 0,
+      "stat_points_available": 0,
+      "stat_ranges": {
+        "cooldown_reduction": {
+          "max": 0.04,
+          "min": 0.01
+        },
+        "crit_chance": {
+          "max": 0.1,
+          "min": 0.04
+        },
+        "crit_dmg": {
+          "max": 1.8,
+          "min": 1.5
+        },
+        "dmg": {
+          "max": 200,
+          "min": 150
+        },
+        "energia": {
+          "max": 240,
+          "min": 140
+        },
+        "luck": {
+          "max": 0.1,
+          "min": 0.02
+        },
+        "penetration": {
+          "max": 4,
+          "min": 1
+        },
+        "speed": {
+          "max": 53.5,
+          "min": 48.5
+        }
+      },
+      "stats": {
+        "cooldown_reduction": 0.0168615220418801,
+        "crit_chance": 0.0881967597276329,
+        "crit_dmg": 1.67127583786901,
+        "dmg": 3410.60755807132,
+        "energia": 681.808622039128,
+        "luck": 0.114963396962858,
+        "penetration": 5.47587347292001,
+        "power": 29912.169592249,
+        "speed": 52.0530226331855
+      },
+      "xp": "451293"
+    },
+    {
+      "abilities": [
+        {
+          "code": "detonacao_dupla",
+          "level": 20,
+          "max": 20,
+          "slot": 11
+        },
+        {
+          "code": "grito_guerra",
+          "level": 20,
+          "max": 20,
+          "slot": 16
+        },
+        {
+          "code": "fortuna",
+          "level": 8,
+          "max": 20,
+          "slot": 19
+        }
+      ],
+      "ability_points_spent": 48,
+      "ability_points_total": 48,
+      "ability_reroll_cost": "144000",
+      "ability_reroll_stone": "skill_stone_raro",
+      "battle_allowed": true,
+      "birth_stats": {
+        "cooldown_reduction": 0.024155155439942,
+        "crit_chance": 0.0909226115387724,
+        "crit_dmg": 1.57476981642349,
+        "dmg": 158.142079728164,
+        "energia": 201.587335852872,
+        "luck": 0.0667972387386241,
+        "penetration": 1.86317098122115,
+        "speed": 51.7345858495435
+      },
+      "id": "46338",
+      "in_field": false,
+      "in_market": false,
+      "level": 48,
+      "marketable": false,
+      "name": "Gale",
+      "rank": "C",
+      "rarity": 2,
+      "skin": 5,
+      "skin_birth": 2,
+      "slots": [
+        "346240",
+        "368539",
+        "372739",
+        "298859",
+        "278575",
+        "312611",
+        "349695",
+        "347663"
+      ],
+      "stars": 0,
+      "stat_points_available": 0,
+      "stat_ranges": {
+        "cooldown_reduction": {
+          "max": 0.04,
+          "min": 0.01
+        },
+        "crit_chance": {
+          "max": 0.1,
+          "min": 0.04
+        },
+        "crit_dmg": {
+          "max": 1.8,
+          "min": 1.5
+        },
+        "dmg": {
+          "max": 200,
+          "min": 150
+        },
+        "energia": {
+          "max": 240,
+          "min": 140
+        },
+        "luck": {
+          "max": 0.1,
+          "min": 0.02
+        },
+        "penetration": {
+          "max": 4,
+          "min": 1
+        },
+        "speed": {
+          "max": 53.5,
+          "min": 48.5
+        }
+      },
+      "stats": {
+        "cooldown_reduction": 0.0250602694046072,
+        "crit_chance": 0.094014381699867,
+        "crit_dmg": 1.57476981642349,
+        "dmg": 2418.24029466941,
+        "energia": 576.644217308548,
+        "luck": 0.168451160731286,
+        "penetration": 3.76211484528174,
+        "power": 21134.7555910832,
+        "speed": 52.1668300732924
+      },
+      "xp": "160528"
+    },
+    {
+      "abilities": [
+        {
+          "code": "passagem_bastao",
+          "level": 6,
+          "max": 20,
+          "slot": 13
+        }
+      ],
+      "ability_points_spent": 6,
+      "ability_points_total": 6,
+      "ability_reroll_cost": "6000",
+      "ability_reroll_stone": "skill_stone_comum",
+      "battle_allowed": true,
+      "birth_stats": {
+        "cooldown_reduction": 0.0003497998519742,
+        "crit_chance": 0.0463048506088058,
+        "crit_dmg": 1.42374742527724,
+        "dmg": 63.6237033008126,
+        "energia": 115.228946772993,
+        "luck": 0.00036009982705713,
+        "penetration": 1.4441188767615,
+        "speed": 48.0358132234414
+      },
+      "id": "51375",
+      "in_field": false,
+      "in_market": false,
+      "level": 6,
+      "marketable": false,
+      "name": "Doran",
+      "rank": "D",
+      "rarity": 0,
+      "skin": 2,
+      "skin_birth": 2,
+      "slots": [
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null
+      ],
+      "stars": 0,
+      "stat_points_available": 0,
+      "stat_ranges": {
+        "cooldown_reduction": {
+          "max": 0.02,
+          "min": 0
+        },
+        "crit_chance": {
+          "max": 0.08,
+          "min": 0.02
+        },
+        "crit_dmg": {
+          "max": 1.6,
+          "min": 1.4
+        },
+        "dmg": {
+          "max": 70,
+          "min": 40
+        },
+        "energia": {
+          "max": 120,
+          "min": 80
+        },
+        "luck": {
+          "max": 0.05,
+          "min": 0
+        },
+        "penetration": {
+          "max": 1.5,
+          "min": 0
+        },
+        "speed": {
+          "max": 50,
+          "min": 46
+        }
+      },
+      "stats": {
+        "cooldown_reduction": 0.0003497998519742,
+        "crit_chance": 0.0463048506088058,
+        "crit_dmg": 1.42374742527724,
+        "dmg": 213.325062415882,
+        "energia": 190.481749429233,
+        "luck": 0.0885177733270571,
+        "penetration": 1.4441188767615,
+        "power": 1353.83631115232,
+        "speed": 48.3764944512024
+      },
+      "xp": "88"
+    },
+    {
+      "abilities": [
+        {
+          "code": "caca_hero",
+          "level": 2,
+          "max": 20,
+          "slot": 2
+        }
+      ],
+      "ability_points_spent": 2,
+      "ability_points_total": 2,
+      "ability_reroll_cost": "2000",
+      "ability_reroll_stone": "skill_stone_comum",
+      "battle_allowed": true,
+      "birth_stats": {
+        "cooldown_reduction": 0.016268854443076,
+        "crit_chance": 0.0431853077267386,
+        "crit_dmg": 1.45351063688223,
+        "dmg": 42.7030541412053,
+        "energia": 96.891618824267,
+        "luck": 0.0315272599721825,
+        "penetration": 0.380738069196691,
+        "speed": 48.4082753065885
+      },
+      "id": "51605",
+      "in_field": true,
+      "in_market": false,
+      "level": 2,
+      "marketable": false,
+      "name": "Kael",
+      "rank": "D",
+      "rarity": 0,
+      "skin": 0,
+      "skin_birth": 0,
+      "slots": [
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null
+      ],
+      "stars": 0,
+      "stat_points_available": 0,
+      "stat_ranges": {
+        "cooldown_reduction": {
+          "max": 0.02,
+          "min": 0
+        },
+        "crit_chance": {
+          "max": 0.08,
+          "min": 0.02
+        },
+        "crit_dmg": {
+          "max": 1.6,
+          "min": 1.4
+        },
+        "dmg": {
+          "max": 70,
+          "min": 40
+        },
+        "energia": {
+          "max": 120,
+          "min": 80
+        },
+        "luck": {
+          "max": 0.05,
+          "min": 0
+        },
+        "penetration": {
+          "max": 1.5,
+          "min": 0
+        },
+        "speed": {
+          "max": 50,
+          "min": 46
+        }
+      },
+      "stats": {
+        "cooldown_reduction": 0.016268854443076,
+        "crit_chance": 0.0431853077267386,
+        "crit_dmg": 1.45351063688223,
+        "dmg": 93.7736715292554,
+        "energia": 160.168825417073,
+        "luck": 0.119684933472183,
+        "penetration": 0.380738069196691,
+        "power": 599.205223043562,
+        "speed": 48.7515981225992
+      },
+      "xp": "159"
+    },
+    {
+      "abilities": [
+        {
+          "code": "caca_hero",
+          "level": 20,
+          "max": 20,
+          "slot": 2
+        },
+        {
+          "code": "contra_relogio",
+          "level": 5,
+          "max": 20,
+          "slot": 9
+        },
+        {
+          "code": "folego_mineiro",
+          "level": 20,
+          "max": 20,
+          "slot": 12
+        }
+      ],
+      "ability_points_spent": 45,
+      "ability_points_total": 45,
+      "ability_reroll_cost": "135000",
+      "ability_reroll_stone": "skill_stone_raro",
+      "battle_allowed": true,
+      "birth_stats": {
+        "cooldown_reduction": 0.0180936878757162,
+        "crit_chance": 0.0855978384880887,
+        "crit_dmg": 1.7951748620597,
+        "dmg": 199.349949430802,
+        "energia": 182.26505685657,
+        "luck": 0.0521868901237181,
+        "penetration": 2.57187716161537,
+        "speed": 52.2401968132984
+      },
+      "id": "52834",
+      "in_field": true,
+      "in_market": false,
+      "level": 45,
+      "marketable": true,
+      "name": "Ulric",
+      "rank": "S",
+      "rarity": 2,
+      "skin": 0,
+      "skin_birth": 0,
+      "slots": [
+        "346206",
+        "361674",
+        "365124",
+        "300173",
+        "361672",
+        "361671",
+        "168867",
+        "357660"
+      ],
+      "stars": 0,
+      "stat_points_available": 0,
+      "stat_ranges": {
+        "cooldown_reduction": {
+          "max": 0.04,
+          "min": 0.01
+        },
+        "crit_chance": {
+          "max": 0.1,
+          "min": 0.04
+        },
+        "crit_dmg": {
+          "max": 1.8,
+          "min": 1.5
+        },
+        "dmg": {
+          "max": 200,
+          "min": 150
+        },
+        "energia": {
+          "max": 240,
+          "min": 140
+        },
+        "luck": {
+          "max": 0.1,
+          "min": 0.02
+        },
+        "penetration": {
+          "max": 4,
+          "min": 1
+        },
+        "speed": {
+          "max": 53.5,
+          "min": 48.5
+        }
+      },
+      "stats": {
+        "cooldown_reduction": 0.0187716735591171,
+        "crit_chance": 0.0883100857435301,
+        "crit_dmg": 1.7951748620597,
+        "dmg": 2254.24598729692,
+        "energia": 614.389205856597,
+        "luck": 0.150888820399435,
+        "penetration": 5.06351175578833,
+        "power": 20157.2742027906,
+        "speed": 52.7426343543761
+      },
+      "xp": "199417"
+    }
+  ],
+  "items": [
+    {
+      "category": 5,
+      "def_id": "skill_stone_comum",
+      "equip_slot": null,
+      "equipped_on": null,
+      "id": "77297",
+      "in_stash": true,
+      "level": 0,
+      "locked": false,
+      "market_state": 0,
+      "power": 0,
+      "rarity": 0,
+      "sell_value": "100",
+      "sellable": true,
+      "set": "",
+      "stats": [],
+      "tradable": false,
+      "upgrade": 0
+    },
+    {
+      "category": 0,
+      "def_id": "ember_amuleto",
+      "equip_slot": null,
+      "equipped_on": null,
+      "id": "95072",
+      "in_stash": false,
+      "level": 10,
+      "locked": false,
+      "market_state": 0,
+      "power": 215.342215298726,
+      "rarity": 1,
+      "sell_value": "140",
+      "sellable": true,
+      "set": "ember",
+      "slot": 7,
+      "stats": [
+        {
+          "effective": 0.050512,
+          "stat": 3,
+          "value": 0.0308
+        },
+        {
+          "effective": 31.57,
+          "stat": 0,
+          "value": 19.25
+        }
+      ],
+      "tradable": false,
+      "upgrade": 8
+    },
+    {
+      "category": 0,
+      "def_id": "ember_anel",
+      "equip_slot": 6,
+      "equipped_on": "21076",
+      "id": "164706",
+      "in_stash": false,
+      "level": 10,
+      "locked": false,
+      "market_state": 0,
+      "power": 2.848469805989,
+      "rarity": 1,
+      "sell_value": "140",
+      "sellable": true,
+      "set": "ember",
+      "slot": 6,
+      "stats": [
+        {
+          "effective": 0.0105619772,
+          "stat": 4,
+          "value": 0.00644023
+        },
+        {
+          "effective": 0.2296,
+          "stat": 5,
+          "value": 0.14
+        }
+      ],
+      "tradable": false,
+      "upgrade": 8
+    },
+    {
+      "category": 0,
+      "def_id": "ember_anel",
+      "equip_slot": 6,
+      "equipped_on": "52834",
+      "id": "168867",
+      "in_stash": false,
+      "level": 10,
+      "locked": false,
+      "market_state": 0,
+      "power": 2.848469805989,
+      "rarity": 1,
+      "sell_value": "140",
+      "sellable": true,
+      "set": "ember",
+      "slot": 6,
+      "stats": [
+        {
+          "effective": 0.0105619772,
+          "stat": 4,
+          "value": 0.00644023
+        },
+        {
+          "effective": 0.2296,
+          "stat": 5,
+          "value": 0.14
+        }
+      ],
+      "tradable": false,
+      "upgrade": 8
+    },
+    {
+      "category": 0,
+      "def_id": "gold_arma",
+      "equip_slot": null,
+      "equipped_on": null,
+      "id": "174187",
+      "in_stash": false,
+      "level": 20,
+      "locked": false,
+      "market_state": 0,
+      "power": 426.694586729596,
+      "rarity": 0,
+      "sell_value": "200",
+      "sellable": true,
+      "set": "gold",
+      "slot": 0,
+      "stats": [
+        {
+          "effective": 63.14,
+          "stat": 0,
+          "value": 38.5
+        }
+      ],
+      "tradable": false,
+      "upgrade": 8
+    },
+    {
+      "category": 5,
+      "def_id": "skill_stone_comum",
+      "equip_slot": null,
+      "equipped_on": null,
+      "id": "179690",
+      "in_stash": true,
+      "level": 0,
+      "locked": false,
+      "market_state": 0,
+      "power": 0,
+      "rarity": 0,
+      "sell_value": "100",
+      "sellable": true,
+      "set": "",
+      "stats": [],
+      "tradable": false,
+      "upgrade": 0
+    },
+    {
+      "category": 0,
+      "def_id": "gold_elmo",
+      "equip_slot": 1,
+      "equipped_on": "33151",
+      "id": "184604",
+      "in_stash": false,
+      "level": 20,
+      "locked": false,
+      "market_state": 0,
+      "power": 18.5330154648236,
+      "rarity": 0,
+      "sell_value": "200",
+      "sellable": true,
+      "set": "gold",
+      "slot": 1,
+      "stats": [
+        {
+          "effective": 0.1148,
+          "stat": 1,
+          "value": 0.07
+        }
+      ],
+      "tradable": false,
+      "upgrade": 8
+    },
+    {
+      "category": 0,
+      "def_id": "ember_luva",
+      "equip_slot": null,
+      "equipped_on": null,
+      "id": "200114",
+      "in_stash": false,
+      "level": 10,
+      "locked": false,
+      "market_state": 0,
+      "power": 216.066706162437,
+      "rarity": 1,
+      "sell_value": "140",
+      "sellable": true,
+      "set": "ember",
+      "slot": 5,
+      "stats": [
+        {
+          "effective": 31.57,
+          "stat": 0,
+          "value": 19.25
+        },
+        {
+          "effective": 0.2296,
+          "stat": 5,
+          "value": 0.14
+        }
+      ],
+      "tradable": false,
+      "upgrade": 8
+    },
+    {
+      "category": 0,
+      "def_id": "gold_luva",
+      "equip_slot": 5,
+      "equipped_on": "24930",
+      "id": "213666",
+      "in_stash": false,
+      "level": 20,
+      "locked": false,
+      "market_state": 0,
+      "power": 426.694586729596,
+      "rarity": 0,
+      "sell_value": "200",
+      "sellable": true,
+      "set": "gold",
+      "slot": 5,
+      "stats": [
+        {
+          "effective": 63.14,
+          "stat": 0,
+          "value": 38.5
+        }
+      ],
+      "tradable": false,
+      "upgrade": 8
+    },
+    {
+      "category": 0,
+      "def_id": "gold_luva",
+      "equip_slot": 5,
+      "equipped_on": "33151",
+      "id": "238784",
+      "in_stash": false,
+      "level": 20,
+      "locked": false,
+      "market_state": 0,
+      "power": 426.694586729596,
+      "rarity": 0,
+      "sell_value": "200",
+      "sellable": true,
+      "set": "gold",
+      "slot": 5,
+      "stats": [
+        {
+          "effective": 63.14,
+          "stat": 0,
+          "value": 38.5
+        }
+      ],
+      "tradable": false,
+      "upgrade": 8
+    },
+    {
+      "category": 0,
+      "def_id": "gold_arma",
+      "equip_slot": 0,
+      "equipped_on": "21076",
+      "id": "246335",
+      "in_stash": false,
+      "level": 20,
+      "locked": false,
+      "market_state": 0,
+      "power": 428.17406123515,
+      "rarity": 1,
+      "sell_value": "280",
+      "sellable": true,
+      "set": "gold",
+      "slot": 0,
+      "stats": [
+        {
+          "effective": 63.14,
+          "stat": 0,
+          "value": 38.5
+        },
+        {
+          "effective": 0.0211239544,
+          "stat": 4,
+          "value": 0.01288046
+        }
+      ],
+      "tradable": false,
+      "upgrade": 8
+    },
+    {
+      "category": 2,
+      "def_id": "gem_sapphire",
+      "equip_slot": null,
+      "equipped_on": null,
+      "id": "248524",
+      "in_stash": true,
+      "level": 0,
+      "locked": false,
+      "market_state": 0,
+      "power": 0,
+      "rarity": 2,
+      "sell_value": "180",
+      "sellable": true,
+      "set": "",
+      "stats": [],
+      "tradable": true,
+      "upgrade": 0
+    },
+    {
+      "category": 2,
+      "def_id": "gem_emerald",
+      "equip_slot": null,
+      "equipped_on": null,
+      "id": "249381",
+      "in_stash": true,
+      "level": 0,
+      "locked": false,
+      "market_state": 0,
+      "power": 0,
+      "rarity": 2,
+      "sell_value": "180",
+      "sellable": true,
+      "set": "",
+      "stats": [],
+      "tradable": true,
+      "upgrade": 0
+    },
+    {
+      "category": 0,
+      "def_id": "ember_bota",
+      "equip_slot": 4,
+      "equipped_on": "24930",
+      "id": "250839",
+      "in_stash": false,
+      "level": 10,
+      "locked": false,
+      "market_state": 0,
+      "power": 11.7448984345342,
+      "rarity": 2,
+      "sell_value": "180",
+      "sellable": true,
+      "set": "ember",
+      "slot": 4,
+      "stats": [
+        {
+          "effective": 0.0012628,
+          "stat": 2,
+          "value": 0.00077
+        },
+        {
+          "effective": 0.0574,
+          "stat": 1,
+          "value": 0.035
+        },
+        {
+          "effective": 0.050512,
+          "stat": 3,
+          "value": 0.0308
+        }
+      ],
+      "tradable": true,
+      "upgrade": 8
+    },
+    {
+      "category": 0,
+      "def_id": "gold_peito",
+      "equip_slot": 2,
+      "equipped_on": "33151",
+      "id": "272894",
+      "in_stash": false,
+      "level": 20,
+      "locked": false,
+      "market_state": 0,
+      "power": 6.86571911481474,
+      "rarity": 2,
+      "sell_value": "360",
+      "sellable": true,
+      "set": "gold",
+      "slot": 2,
+      "stats": [
+        {
+          "effective": 0.4592,
+          "stat": 5,
+          "value": 0.28
+        },
+        {
+          "effective": 0.0307260888,
+          "stat": 6,
+          "value": 0.01873542
+        },
+        {
+          "effective": 0.0025256,
+          "stat": 2,
+          "value": 0.00154
+        }
+      ],
+      "tradable": true,
+      "upgrade": 8
+    },
+    {
+      "category": 0,
+      "def_id": "ember_bota",
+      "equip_slot": 4,
+      "equipped_on": "46338",
+      "id": "278575",
+      "in_stash": false,
+      "level": 10,
+      "locked": false,
+      "market_state": 0,
+      "power": 10.0433072596786,
+      "rarity": 1,
+      "sell_value": "140",
+      "sellable": true,
+      "set": "ember",
+      "slot": 4,
+      "stats": [
+        {
+          "effective": 0.0012628,
+          "stat": 2,
+          "value": 0.00077
+        },
+        {
+          "effective": 0.0574,
+          "stat": 1,
+          "value": 0.035
+        }
+      ],
+      "tradable": false,
+      "upgrade": 8
+    },
+    {
+      "category": 0,
+      "def_id": "gold_amuleto",
+      "equip_slot": 7,
+      "equipped_on": "24930",
+      "id": "278817",
+      "in_stash": false,
+      "level": 20,
+      "locked": false,
+      "market_state": 0,
+      "power": 431.294196637575,
+      "rarity": 1,
+      "sell_value": "280",
+      "sellable": true,
+      "set": "gold",
+      "slot": 7,
+      "stats": [
+        {
+          "effective": 0.101024,
+          "stat": 3,
+          "value": 0.0616
+        },
+        {
+          "effective": 63.14,
+          "stat": 0,
+          "value": 38.5
+        }
+      ],
+      "tradable": false,
+      "upgrade": 8
+    },
+    {
+      "category": 0,
+      "def_id": "gold_arma",
+      "equip_slot": 0,
+      "equipped_on": "33151",
+      "id": "297910",
+      "in_stash": false,
+      "level": 20,
+      "locked": false,
+      "market_state": 0,
+      "power": 428.17406123515,
+      "rarity": 1,
+      "sell_value": "280",
+      "sellable": true,
+      "set": "gold",
+      "slot": 0,
+      "stats": [
+        {
+          "effective": 63.14,
+          "stat": 0,
+          "value": 38.5
+        },
+        {
+          "effective": 0.0211239544,
+          "stat": 4,
+          "value": 0.01288046
+        }
+      ],
+      "tradable": false,
+      "upgrade": 8
+    },
+    {
+      "category": 0,
+      "def_id": "ember_bota",
+      "equip_slot": 4,
+      "equipped_on": "21076",
+      "id": "297914",
+      "in_stash": false,
+      "level": 10,
+      "locked": false,
+      "market_state": 0,
+      "power": 11.7448984345342,
+      "rarity": 2,
+      "sell_value": "180",
+      "sellable": true,
+      "set": "ember",
+      "slot": 4,
+      "stats": [
+        {
+          "effective": 0.0012628,
+          "stat": 2,
+          "value": 0.00077
+        },
+        {
+          "effective": 0.0574,
+          "stat": 1,
+          "value": 0.035
+        },
+        {
+          "effective": 0.050512,
+          "stat": 3,
+          "value": 0.0308
+        }
+      ],
+      "tradable": true,
+      "upgrade": 8
+    },
+    {
+      "category": 0,
+      "def_id": "ember_calca",
+      "equip_slot": 3,
+      "equipped_on": "21076",
+      "id": "297973",
+      "in_stash": false,
+      "level": 10,
+      "locked": false,
+      "market_state": 0,
+      "power": 1.12422839709075,
+      "rarity": 1,
+      "sell_value": "140",
+      "sellable": true,
+      "set": "ember",
+      "slot": 3,
+      "stats": [
+        {
+          "effective": 0.0153630444,
+          "stat": 6,
+          "value": 0.00936771
+        },
+        {
+          "effective": 0.0012628,
+          "stat": 2,
+          "value": 0.00077
+        }
+      ],
+      "tradable": false,
+      "upgrade": 8
+    },
+    {
+      "category": 0,
+      "def_id": "gold_amuleto",
+      "equip_slot": 7,
+      "equipped_on": "33151",
+      "id": "297976",
+      "in_stash": false,
+      "level": 20,
+      "locked": false,
+      "market_state": 0,
+      "power": 431.294196637575,
+      "rarity": 1,
+      "sell_value": "280",
+      "sellable": true,
+      "set": "gold",
+      "slot": 7,
+      "stats": [
+        {
+          "effective": 0.101024,
+          "stat": 3,
+          "value": 0.0616
+        },
+        {
+          "effective": 63.14,
+          "stat": 0,
+          "value": 38.5
+        }
+      ],
+      "tradable": false,
+      "upgrade": 8
+    },
+    {
+      "category": 0,
+      "def_id": "gold_anel",
+      "equip_slot": 6,
+      "equipped_on": "33151",
+      "id": "297978",
+      "in_stash": false,
+      "level": 20,
+      "locked": false,
+      "market_state": 0,
+      "power": 5.6990575269333,
+      "rarity": 1,
+      "sell_value": "280",
+      "sellable": true,
+      "set": "gold",
+      "slot": 6,
+      "stats": [
+        {
+          "effective": 0.0211239544,
+          "stat": 4,
+          "value": 0.01288046
+        },
+        {
+          "effective": 0.4592,
+          "stat": 5,
+          "value": 0.28
+        }
+      ],
+      "tradable": false,
+      "upgrade": 8
+    },
+    {
+      "category": 0,
+      "def_id": "gold_calca",
+      "equip_slot": 3,
+      "equipped_on": "46338",
+      "id": "298859",
+      "in_stash": false,
+      "level": 20,
+      "locked": false,
+      "market_state": 0,
+      "power": 0.568405293495744,
+      "rarity": 0,
+      "sell_value": "200",
+      "sellable": true,
+      "set": "gold",
+      "slot": 3,
+      "stats": [
+        {
+          "effective": 0.01873542,
+          "stat": 6,
+          "value": 0.01873542
+        }
+      ],
+      "tradable": false,
+      "upgrade": 0
+    },
+    {
+      "category": 0,
+      "def_id": "gold_calca",
+      "equip_slot": 3,
+      "equipped_on": "52834",
+      "id": "300173",
+      "in_stash": false,
+      "level": 20,
+      "locked": false,
+      "market_state": 0,
+      "power": 0.568405293495744,
+      "rarity": 0,
+      "sell_value": "200",
+      "sellable": true,
+      "set": "gold",
+      "slot": 3,
+      "stats": [
+        {
+          "effective": 0.01873542,
+          "stat": 6,
+          "value": 0.01873542
+        }
+      ],
+      "tradable": false,
+      "upgrade": 0
+    },
+    {
+      "category": 0,
+      "def_id": "gold_calca",
+      "equip_slot": 3,
+      "equipped_on": "33151",
+      "id": "305382",
+      "in_stash": false,
+      "level": 20,
+      "locked": false,
+      "market_state": 0,
+      "power": 1.37112885019246,
+      "rarity": 1,
+      "sell_value": "280",
+      "sellable": true,
+      "set": "gold",
+      "slot": 3,
+      "stats": [
+        {
+          "effective": 0.01873542,
+          "stat": 6,
+          "value": 0.01873542
+        },
+        {
+          "effective": 0.00154,
+          "stat": 2,
+          "value": 0.00154
+        }
+      ],
+      "tradable": false,
+      "upgrade": 0
+    },
+    {
+      "category": 0,
+      "def_id": "gold_luva",
+      "equip_slot": null,
+      "equipped_on": null,
+      "id": "310839",
+      "in_stash": false,
+      "level": 20,
+      "locked": false,
+      "market_state": 0,
+      "power": 260.179626054631,
+      "rarity": 0,
+      "sell_value": "200",
+      "sellable": true,
+      "set": "gold",
+      "slot": 5,
+      "stats": [
+        {
+          "effective": 38.5,
+          "stat": 0,
+          "value": 38.5
+        }
+      ],
+      "tradable": false,
+      "upgrade": 0
+    },
+    {
+      "category": 0,
+      "def_id": "gold_luva",
+      "equip_slot": 5,
+      "equipped_on": "46338",
+      "id": "312611",
+      "in_stash": false,
+      "level": 20,
+      "locked": false,
+      "market_state": 0,
+      "power": 432.96462558935,
+      "rarity": 1,
+      "sell_value": "280",
+      "sellable": true,
+      "set": "gold",
+      "slot": 5,
+      "stats": [
+        {
+          "effective": 63.14,
+          "stat": 0,
+          "value": 38.5
+        },
+        {
+          "effective": 0.4592,
+          "stat": 5,
+          "value": 0.28
+        }
+      ],
+      "tradable": false,
+      "upgrade": 8
+    },
+    {
+      "category": 0,
+      "def_id": "gold_amuleto",
+      "equip_slot": 7,
+      "equipped_on": "21076",
+      "id": "315507",
+      "in_stash": false,
+      "level": 20,
+      "locked": false,
+      "market_state": 0,
+      "power": 431.294196637575,
+      "rarity": 1,
+      "sell_value": "280",
+      "sellable": true,
+      "set": "gold",
+      "slot": 7,
+      "stats": [
+        {
+          "effective": 0.101024,
+          "stat": 3,
+          "value": 0.0616
+        },
+        {
+          "effective": 63.14,
+          "stat": 0,
+          "value": 38.5
+        }
+      ],
+      "tradable": false,
+      "upgrade": 8
+    },
+    {
+      "category": 0,
+      "def_id": "gold_elmo",
+      "equip_slot": 1,
+      "equipped_on": "21076",
+      "id": "316430",
+      "in_stash": false,
+      "level": 20,
+      "locked": false,
+      "market_state": 0,
+      "power": 21.9548007837013,
+      "rarity": 1,
+      "sell_value": "280",
+      "sellable": true,
+      "set": "gold",
+      "slot": 1,
+      "stats": [
+        {
+          "effective": 0.1148,
+          "stat": 1,
+          "value": 0.07
+        },
+        {
+          "effective": 0.101024,
+          "stat": 3,
+          "value": 0.0616
+        }
+      ],
+      "tradable": false,
+      "upgrade": 8
+    },
+    {
+      "category": 0,
+      "def_id": "gold_bota",
+      "equip_slot": 4,
+      "equipped_on": "33151",
+      "id": "325611",
+      "in_stash": false,
+      "level": 20,
+      "locked": false,
+      "market_state": 0,
+      "power": 19.8694700529438,
+      "rarity": 1,
+      "sell_value": "280",
+      "sellable": true,
+      "set": "gold",
+      "slot": 4,
+      "stats": [
+        {
+          "effective": 0.0025256,
+          "stat": 2,
+          "value": 0.00154
+        },
+        {
+          "effective": 0.1148,
+          "stat": 1,
+          "value": 0.07
+        }
+      ],
+      "tradable": false,
+      "upgrade": 8
+    },
+    {
+      "category": 0,
+      "def_id": "gold_peito",
+      "equip_slot": 2,
+      "equipped_on": "21076",
+      "id": "335647",
+      "in_stash": false,
+      "level": 20,
+      "locked": false,
+      "market_state": 0,
+      "power": 3.37927533639458,
+      "rarity": 1,
+      "sell_value": "280",
+      "sellable": true,
+      "set": "gold",
+      "slot": 2,
+      "stats": [
+        {
+          "effective": 0.28,
+          "stat": 5,
+          "value": 0.28
+        },
+        {
+          "effective": 0.01873542,
+          "stat": 6,
+          "value": 0.01873542
+        }
+      ],
+      "tradable": false,
+      "upgrade": 0
+    },
+    {
+      "category": 0,
+      "def_id": "gold_luva",
+      "equip_slot": 5,
+      "equipped_on": "21076",
+      "id": "342521",
+      "in_stash": false,
+      "level": 20,
+      "locked": false,
+      "market_state": 0,
+      "power": 432.96462558935,
+      "rarity": 1,
+      "sell_value": "280",
+      "sellable": true,
+      "set": "gold",
+      "slot": 5,
+      "stats": [
+        {
+          "effective": 63.14,
+          "stat": 0,
+          "value": 38.5
+        },
+        {
+          "effective": 0.4592,
+          "stat": 5,
+          "value": 0.28
+        }
+      ],
+      "tradable": false,
+      "upgrade": 8
+    },
+    {
+      "category": 0,
+      "def_id": "gold_arma",
+      "equip_slot": 0,
+      "equipped_on": "52834",
+      "id": "346206",
+      "in_stash": false,
+      "level": 20,
+      "locked": false,
+      "market_state": 0,
+      "power": 428.17406123515,
+      "rarity": 1,
+      "sell_value": "280",
+      "sellable": true,
+      "set": "gold",
+      "slot": 0,
+      "stats": [
+        {
+          "effective": 63.14,
+          "stat": 0,
+          "value": 38.5
+        },
+        {
+          "effective": 0.0211239544,
+          "stat": 4,
+          "value": 0.01288046
+        }
+      ],
+      "tradable": false,
+      "upgrade": 8
+    },
+    {
+      "category": 0,
+      "def_id": "gold_arma",
+      "equip_slot": 0,
+      "equipped_on": "46338",
+      "id": "346240",
+      "in_stash": false,
+      "level": 20,
+      "locked": false,
+      "market_state": 0,
+      "power": 428.17406123515,
+      "rarity": 1,
+      "sell_value": "280",
+      "sellable": true,
+      "set": "gold",
+      "slot": 0,
+      "stats": [
+        {
+          "effective": 63.14,
+          "stat": 0,
+          "value": 38.5
+        },
+        {
+          "effective": 0.0211239544,
+          "stat": 4,
+          "value": 0.01288046
+        }
+      ],
+      "tradable": false,
+      "upgrade": 8
+    },
+    {
+      "category": 0,
+      "def_id": "gold_amuleto",
+      "equip_slot": 7,
+      "equipped_on": "46338",
+      "id": "347663",
+      "in_stash": false,
+      "level": 20,
+      "locked": false,
+      "market_state": 0,
+      "power": 431.294196637575,
+      "rarity": 1,
+      "sell_value": "280",
+      "sellable": true,
+      "set": "gold",
+      "slot": 7,
+      "stats": [
+        {
+          "effective": 0.101024,
+          "stat": 3,
+          "value": 0.0616
+        },
+        {
+          "effective": 63.14,
+          "stat": 0,
+          "value": 38.5
+        }
+      ],
+      "tradable": false,
+      "upgrade": 8
+    },
+    {
+      "category": 0,
+      "def_id": "gold_anel",
+      "equip_slot": 6,
+      "equipped_on": "46338",
+      "id": "349695",
+      "in_stash": false,
+      "level": 20,
+      "locked": false,
+      "market_state": 0,
+      "power": 3.47402714642635,
+      "rarity": 1,
+      "sell_value": "280",
+      "sellable": true,
+      "set": "gold",
+      "slot": 6,
+      "stats": [
+        {
+          "effective": 0.01288046,
+          "stat": 4,
+          "value": 0.01288046
+        },
+        {
+          "effective": 0.28,
+          "stat": 5,
+          "value": 0.28
+        }
+      ],
+      "tradable": false,
+      "upgrade": 0
+    },
+    {
+      "category": 3,
+      "def_id": "time_part_incomum",
+      "equip_slot": null,
+      "equipped_on": null,
+      "id": "351352",
+      "in_stash": true,
+      "level": 0,
+      "locked": false,
+      "market_state": 0,
+      "power": 0,
+      "rarity": 1,
+      "sell_value": "140",
+      "sellable": true,
+      "set": "",
+      "stats": [],
+      "tradable": true,
+      "upgrade": 0
+    },
+    {
+      "category": 3,
+      "def_id": "time_part_incomum",
+      "equip_slot": null,
+      "equipped_on": null,
+      "id": "351394",
+      "in_stash": true,
+      "level": 0,
+      "locked": false,
+      "market_state": 0,
+      "power": 0,
+      "rarity": 1,
+      "sell_value": "140",
+      "sellable": true,
+      "set": "",
+      "stats": [],
+      "tradable": true,
+      "upgrade": 0
+    },
+    {
+      "category": 0,
+      "def_id": "gold_peito",
+      "equip_slot": 2,
+      "equipped_on": "24930",
+      "id": "353481",
+      "in_stash": false,
+      "level": 20,
+      "locked": false,
+      "market_state": 0,
+      "power": 6.86571911481474,
+      "rarity": 2,
+      "sell_value": "360",
+      "sellable": true,
+      "set": "gold",
+      "slot": 2,
+      "stats": [
+        {
+          "effective": 0.4592,
+          "stat": 5,
+          "value": 0.28
+        },
+        {
+          "effective": 0.0307260888,
+          "stat": 6,
+          "value": 0.01873542
+        },
+        {
+          "effective": 0.0025256,
+          "stat": 2,
+          "value": 0.00154
+        }
+      ],
+      "tradable": true,
+      "upgrade": 8
+    },
+    {
+      "category": 0,
+      "def_id": "gold_amuleto",
+      "equip_slot": 7,
+      "equipped_on": "52834",
+      "id": "357660",
+      "in_stash": false,
+      "level": 20,
+      "locked": false,
+      "market_state": 0,
+      "power": 431.294196637575,
+      "rarity": 1,
+      "sell_value": "280",
+      "sellable": true,
+      "set": "gold",
+      "slot": 7,
+      "stats": [
+        {
+          "effective": 0.101024,
+          "stat": 3,
+          "value": 0.0616
+        },
+        {
+          "effective": 63.14,
+          "stat": 0,
+          "value": 38.5
+        }
+      ],
+      "tradable": false,
+      "upgrade": 8
+    },
+    {
+      "category": 0,
+      "def_id": "gold_luva",
+      "equip_slot": 5,
+      "equipped_on": "52834",
+      "id": "361671",
+      "in_stash": false,
+      "level": 20,
+      "locked": false,
+      "market_state": 0,
+      "power": 432.96462558935,
+      "rarity": 1,
+      "sell_value": "280",
+      "sellable": true,
+      "set": "gold",
+      "slot": 5,
+      "stats": [
+        {
+          "effective": 63.14,
+          "stat": 0,
+          "value": 38.5
+        },
+        {
+          "effective": 0.4592,
+          "stat": 5,
+          "value": 0.28
+        }
+      ],
+      "tradable": false,
+      "upgrade": 8
+    },
+    {
+      "category": 0,
+      "def_id": "gold_bota",
+      "equip_slot": 4,
+      "equipped_on": "52834",
+      "id": "361672",
+      "in_stash": false,
+      "level": 20,
+      "locked": false,
+      "market_state": 0,
+      "power": 19.8694700529438,
+      "rarity": 1,
+      "sell_value": "280",
+      "sellable": true,
+      "set": "gold",
+      "slot": 4,
+      "stats": [
+        {
+          "effective": 0.0025256,
+          "stat": 2,
+          "value": 0.00154
+        },
+        {
+          "effective": 0.1148,
+          "stat": 1,
+          "value": 0.07
+        }
+      ],
+      "tradable": false,
+      "upgrade": 8
+    },
+    {
+      "category": 0,
+      "def_id": "gold_elmo",
+      "equip_slot": 1,
+      "equipped_on": "52834",
+      "id": "361674",
+      "in_stash": false,
+      "level": 20,
+      "locked": false,
+      "market_state": 0,
+      "power": 21.9548007837013,
+      "rarity": 1,
+      "sell_value": "280",
+      "sellable": true,
+      "set": "gold",
+      "slot": 1,
+      "stats": [
+        {
+          "effective": 0.1148,
+          "stat": 1,
+          "value": 0.07
+        },
+        {
+          "effective": 0.101024,
+          "stat": 3,
+          "value": 0.0616
+        }
+      ],
+      "tradable": false,
+      "upgrade": 8
+    },
+    {
+      "category": 0,
+      "def_id": "gold_amuleto",
+      "equip_slot": null,
+      "equipped_on": null,
+      "id": "364969",
+      "in_stash": false,
+      "level": 20,
+      "locked": false,
+      "market_state": 0,
+      "power": 262.694074194775,
+      "rarity": 1,
+      "sell_value": "280",
+      "sellable": true,
+      "set": "gold",
+      "slot": 7,
+      "stats": [
+        {
+          "effective": 0.0616,
+          "stat": 3,
+          "value": 0.0616
+        },
+        {
+          "effective": 38.5,
+          "stat": 0,
+          "value": 38.5
+        }
+      ],
+      "tradable": false,
+      "upgrade": 0
+    },
+    {
+      "category": 0,
+      "def_id": "gold_peito",
+      "equip_slot": 2,
+      "equipped_on": "52834",
+      "id": "365124",
+      "in_stash": false,
+      "level": 20,
+      "locked": false,
+      "market_state": 0,
+      "power": 3.37927533639458,
+      "rarity": 1,
+      "sell_value": "280",
+      "sellable": true,
+      "set": "gold",
+      "slot": 2,
+      "stats": [
+        {
+          "effective": 0.28,
+          "stat": 5,
+          "value": 0.28
+        },
+        {
+          "effective": 0.01873542,
+          "stat": 6,
+          "value": 0.01873542
+        }
+      ],
+      "tradable": false,
+      "upgrade": 0
+    },
+    {
+      "category": 0,
+      "def_id": "ember_anel",
+      "equip_slot": null,
+      "equipped_on": null,
+      "id": "366638",
+      "in_stash": false,
+      "level": 10,
+      "locked": false,
+      "market_state": 0,
+      "power": 0.331466270189367,
+      "rarity": 0,
+      "sell_value": "100",
+      "sellable": true,
+      "set": "ember",
+      "slot": 6,
+      "stats": [
+        {
+          "effective": 0.00644023,
+          "stat": 4,
+          "value": 0.00644023
+        }
+      ],
+      "tradable": false,
+      "upgrade": 0
+    },
+    {
+      "category": 3,
+      "def_id": "time_part_incomum",
+      "equip_slot": null,
+      "equipped_on": null,
+      "id": "366663",
+      "in_stash": true,
+      "level": 0,
+      "locked": false,
+      "market_state": 0,
+      "power": 0,
+      "rarity": 1,
+      "sell_value": "140",
+      "sellable": true,
+      "set": "",
+      "stats": [],
+      "tradable": true,
+      "upgrade": 0
+    },
+    {
+      "category": 0,
+      "def_id": "gold_elmo",
+      "equip_slot": 1,
+      "equipped_on": "46338",
+      "id": "368539",
+      "in_stash": false,
+      "level": 20,
+      "locked": false,
+      "market_state": 0,
+      "power": 21.9548007837013,
+      "rarity": 1,
+      "sell_value": "280",
+      "sellable": true,
+      "set": "gold",
+      "slot": 1,
+      "stats": [
+        {
+          "effective": 0.1148,
+          "stat": 1,
+          "value": 0.07
+        },
+        {
+          "effective": 0.101024,
+          "stat": 3,
+          "value": 0.0616
+        }
+      ],
+      "tradable": false,
+      "upgrade": 8
+    },
+    {
+      "category": 0,
+      "def_id": "gold_arma",
+      "equip_slot": 0,
+      "equipped_on": "24930",
+      "id": "370785",
+      "in_stash": false,
+      "level": 20,
+      "locked": false,
+      "market_state": 0,
+      "power": 428.17406123515,
+      "rarity": 1,
+      "sell_value": "280",
+      "sellable": true,
+      "set": "gold",
+      "slot": 0,
+      "stats": [
+        {
+          "effective": 63.14,
+          "stat": 0,
+          "value": 38.5
+        },
+        {
+          "effective": 0.0211239544,
+          "stat": 4,
+          "value": 0.01288046
+        }
+      ],
+      "tradable": false,
+      "upgrade": 8
+    },
+    {
+      "category": 0,
+      "def_id": "gold_elmo",
+      "equip_slot": 1,
+      "equipped_on": "24930",
+      "id": "371703",
+      "in_stash": false,
+      "level": 20,
+      "locked": false,
+      "market_state": 0,
+      "power": 21.9548007837013,
+      "rarity": 1,
+      "sell_value": "280",
+      "sellable": true,
+      "set": "gold",
+      "slot": 1,
+      "stats": [
+        {
+          "effective": 0.1148,
+          "stat": 1,
+          "value": 0.07
+        },
+        {
+          "effective": 0.101024,
+          "stat": 3,
+          "value": 0.0616
+        }
+      ],
+      "tradable": false,
+      "upgrade": 8
+    },
+    {
+      "category": 0,
+      "def_id": "gold_peito",
+      "equip_slot": 2,
+      "equipped_on": "46338",
+      "id": "372739",
+      "in_stash": false,
+      "level": 20,
+      "locked": false,
+      "market_state": 0,
+      "power": 3.37927533639458,
+      "rarity": 1,
+      "sell_value": "280",
+      "sellable": true,
+      "set": "gold",
+      "slot": 2,
+      "stats": [
+        {
+          "effective": 0.28,
+          "stat": 5,
+          "value": 0.28
+        },
+        {
+          "effective": 0.01873542,
+          "stat": 6,
+          "value": 0.01873542
+        }
+      ],
+      "tradable": false,
+      "upgrade": 0
+    },
+    {
+      "category": 0,
+      "def_id": "gold_peito",
+      "equip_slot": null,
+      "equipped_on": null,
+      "id": "375528",
+      "in_stash": false,
+      "level": 20,
+      "locked": false,
+      "market_state": 0,
+      "power": 3.37927533639458,
+      "rarity": 1,
+      "sell_value": "280",
+      "sellable": true,
+      "set": "gold",
+      "slot": 2,
+      "stats": [
+        {
+          "effective": 0.28,
+          "stat": 5,
+          "value": 0.28
+        },
+        {
+          "effective": 0.01873542,
+          "stat": 6,
+          "value": 0.01873542
+        }
+      ],
+      "tradable": false,
+      "upgrade": 0
+    },
+    {
+      "category": 0,
+      "def_id": "gold_anel",
+      "equip_slot": 6,
+      "equipped_on": "24930",
+      "id": "377754",
+      "in_stash": false,
+      "level": 20,
+      "locked": false,
+      "market_state": 0,
+      "power": 3.47402714642635,
+      "rarity": 1,
+      "sell_value": "280",
+      "sellable": true,
+      "set": "gold",
+      "slot": 6,
+      "stats": [
+        {
+          "effective": 0.01288046,
+          "stat": 4,
+          "value": 0.01288046
+        },
+        {
+          "effective": 0.28,
+          "stat": 5,
+          "value": 0.28
+        }
+      ],
+      "tradable": false,
+      "upgrade": 0
+    },
+    {
+      "category": 0,
+      "def_id": "gold_calca",
+      "equip_slot": 3,
+      "equipped_on": "24930",
+      "id": "381142",
+      "in_stash": false,
+      "level": 20,
+      "locked": false,
+      "market_state": 0,
+      "power": 1.37112885019246,
+      "rarity": 1,
+      "sell_value": "280",
+      "sellable": true,
+      "set": "gold",
+      "slot": 3,
+      "stats": [
+        {
+          "effective": 0.01873542,
+          "stat": 6,
+          "value": 0.01873542
+        },
+        {
+          "effective": 0.00154,
+          "stat": 2,
+          "value": 0.00154
+        }
+      ],
+      "tradable": false,
+      "upgrade": 0
+    },
+    {
+      "category": 0,
+      "def_id": "ember_amuleto",
+      "equip_slot": null,
+      "equipped_on": null,
+      "id": "381557",
+      "in_stash": false,
+      "level": 10,
+      "locked": false,
+      "market_state": 0,
+      "power": 1.03051153284559,
+      "rarity": 0,
+      "sell_value": "100",
+      "sellable": true,
+      "set": "ember",
+      "slot": 7,
+      "stats": [
+        {
+          "effective": 0.0308,
+          "stat": 3,
+          "value": 0.0308
+        }
+      ],
+      "tradable": false,
+      "upgrade": 0
+    },
+    {
+      "category": 0,
+      "def_id": "ember_arma",
+      "equip_slot": null,
+      "equipped_on": null,
+      "id": "382418",
+      "in_stash": false,
+      "level": 10,
+      "locked": false,
+      "market_state": 0,
+      "power": 130.089813027316,
+      "rarity": 0,
+      "sell_value": "100",
+      "sellable": true,
+      "set": "ember",
+      "slot": 0,
+      "stats": [
+        {
+          "effective": 19.25,
+          "stat": 0,
+          "value": 19.25
+        }
+      ],
+      "tradable": false,
+      "upgrade": 0
+    },
+    {
+      "category": 4,
+      "def_id": "map_key_incomum",
+      "equip_slot": null,
+      "equipped_on": null,
+      "id": "382638",
+      "in_stash": true,
+      "level": 0,
+      "locked": false,
+      "market_state": 0,
+      "power": 0,
+      "rarity": 1,
+      "sell_value": "140",
+      "sellable": true,
+      "set": "",
+      "stats": [],
+      "tradable": false,
+      "upgrade": 0
+    },
+    {
+      "category": 0,
+      "def_id": "coal_peito",
+      "equip_slot": null,
+      "equipped_on": null,
+      "id": "383015",
+      "in_stash": false,
+      "level": 30,
+      "locked": false,
+      "market_state": 0,
+      "power": 4.21427957085507,
+      "rarity": 0,
+      "sell_value": "300",
+      "sellable": true,
+      "set": "coal",
+      "slot": 2,
+      "stats": [
+        {
+          "effective": 0.42,
+          "stat": 5,
+          "value": 0.42
+        }
+      ],
+      "tradable": false,
+      "upgrade": 0
+    },
+    {
+      "category": 0,
+      "def_id": "gold_luva",
+      "equip_slot": null,
+      "equipped_on": null,
+      "id": "383020",
+      "in_stash": false,
+      "level": 20,
+      "locked": false,
+      "market_state": 0,
+      "power": 263.607240105594,
+      "rarity": 1,
+      "sell_value": "280",
+      "sellable": true,
+      "set": "gold",
+      "slot": 5,
+      "stats": [
+        {
+          "effective": 38.5,
+          "stat": 0,
+          "value": 38.5
+        },
+        {
+          "effective": 0.28,
+          "stat": 5,
+          "value": 0.28
+        }
+      ],
+      "tradable": false,
+      "upgrade": 0
+    },
+    {
+      "category": 0,
+      "def_id": "gold_peito",
+      "equip_slot": null,
+      "equipped_on": null,
+      "id": "383035",
+      "in_stash": false,
+      "level": 20,
+      "locked": false,
+      "market_state": 0,
+      "power": 3.37927533639458,
+      "rarity": 1,
+      "sell_value": "280",
+      "sellable": true,
+      "set": "gold",
+      "slot": 2,
+      "stats": [
+        {
+          "effective": 0.28,
+          "stat": 5,
+          "value": 0.28
+        },
+        {
+          "effective": 0.01873542,
+          "stat": 6,
+          "value": 0.01873542
+        }
+      ],
+      "tradable": false,
+      "upgrade": 0
+    },
+    {
+      "category": 0,
+      "def_id": "ember_arma",
+      "equip_slot": null,
+      "equipped_on": null,
+      "id": "383040",
+      "in_stash": false,
+      "level": 10,
+      "locked": false,
+      "market_state": 0,
+      "power": 132.333313334599,
+      "rarity": 3,
+      "sell_value": "220",
+      "sellable": true,
+      "set": "ember",
+      "slot": 0,
+      "stats": [
+        {
+          "effective": 19.25,
+          "stat": 0,
+          "value": 19.25
+        },
+        {
+          "effective": 0.00644023,
+          "stat": 4,
+          "value": 0.00644023
+        },
+        {
+          "effective": 0.14,
+          "stat": 5,
+          "value": 0.14
+        },
+        {
+          "effective": 0.00936771,
+          "stat": 6,
+          "value": 0.00936771
+        }
+      ],
+      "tradable": false,
+      "upgrade": 0
+    },
+    {
+      "category": 0,
+      "def_id": "ember_arma",
+      "equip_slot": null,
+      "equipped_on": null,
+      "id": "383042",
+      "in_stash": false,
+      "level": 10,
+      "locked": false,
+      "market_state": 0,
+      "power": 132.333313334599,
+      "rarity": 3,
+      "sell_value": "220",
+      "sellable": true,
+      "set": "ember",
+      "slot": 0,
+      "stats": [
+        {
+          "effective": 19.25,
+          "stat": 0,
+          "value": 19.25
+        },
+        {
+          "effective": 0.00644023,
+          "stat": 4,
+          "value": 0.00644023
+        },
+        {
+          "effective": 0.14,
+          "stat": 5,
+          "value": 0.14
+        },
+        {
+          "effective": 0.00936771,
+          "stat": 6,
+          "value": 0.00936771
+        }
+      ],
+      "tradable": false,
+      "upgrade": 0
+    }
+  ],
+  "skills": {
+    "bag_tabs": 2,
+    "field_slots": 5,
+    "gold": "1023703",
+    "levels": {
+      "D01": 10,
+      "D02": 10,
+      "D03": 3,
+      "D05": 10,
+      "D06": 3,
+      "D09": 2,
+      "E01": 10,
+      "E02": 10,
+      "E03": 3,
+      "E05": 10,
+      "E06": 3,
+      "E09": 3,
+      "H01": 10,
+      "H04": 10,
+      "H05": 1,
+      "H06": 10,
+      "N01": 1,
+      "N02": 5,
+      "N03": 1,
+      "N04": 5,
+      "N05": 1,
+      "N06": 5,
+      "N07": 1,
+      "N08": 2,
+      "O01": 10,
+      "O02": 10,
+      "O03": 5,
+      "O05": 10,
+      "O06": 5,
+      "O09": 5,
+      "P05": 10,
+      "S01": 5,
+      "S03": 10,
+      "S06": 3
+    },
+    "max_phase": 52,
+    "refunds": {
+      "D01": "55619",
+      "D02": "372458",
+      "D03": "658924",
+      "D05": "372458",
+      "D06": "658924",
+      "D09": "544816",
+      "E01": "55619",
+      "E02": "372458",
+      "E03": "658924",
+      "E05": "372458",
+      "E06": "658924",
+      "E09": "658924",
+      "H01": "8305",
+      "H04": "7496",
+      "H05": "1500",
+      "H06": "8305",
+      "N01": "1500",
+      "N02": "28928",
+      "N03": "34414",
+      "N04": "61842",
+      "N05": "67327",
+      "N06": "94756",
+      "N07": "100241",
+      "N08": "110831",
+      "O01": "44794",
+      "O02": "267667",
+      "O03": "654312",
+      "O05": "267667",
+      "O06": "654312",
+      "O09": "654312",
+      "P05": "372995",
+      "S01": "21508",
+      "S03": "372995",
+      "S06": "659972"
+    },
+    "totals": {
+      "bag_tabs_bonus": 0,
+      "coin_add": 0.7806249999,
+      "crit_chance_add": 0,
+      "crit_dmg_add": 0,
+      "dmg_static": 1.438,
+      "energia_add": 0.6530720341,
+      "geo_mult": 1,
+      "luck_add": 0.0881576735,
+      "speed_add": 0.00709223399999999,
+      "team_dmg_add": 0.438,
+      "vagas_campo": 4,
+      "xp_mult": 1.212
+    }
+  }
+}

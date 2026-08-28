@@ -12,7 +12,7 @@ import {
 } from '@bombfarm/domain/team-plan/solver-assignment';
 import { generateMoves } from '@bombfarm/domain/team-plan/solver-moves';
 import type { TeamPlanInput, HeroPlanContext } from '@bombfarm/domain/team-plan/types';
-import { teamPlanInputFromFixture } from './helpers/team-plan-fixtures';
+import { teamPlanInputFromFixture, TEAM_PLAN_FIXTURE } from './helpers/team-plan-fixtures';
 
 function assertMoveConstraints(
   state: AssignmentState,
@@ -40,8 +40,8 @@ function assertMoveConstraints(
 }
 
 describe('generateMoves', () => {
-  it.skip('includes assign, swap, and unassign families on a real fixture', () => {
-    const input = teamPlanInputFromFixture('payload-20260812-8heroes.json');
+  it('includes assign, swap, and unassign families on a real fixture', () => {
+    const input = teamPlanInputFromFixture(TEAM_PLAN_FIXTURE);
     const built = buildHeroPlanContexts(input.heroes, input.account, input.scopeByHeroId);
     expect(built.blocked).toBe(false);
     if (built.blocked) return;
@@ -74,7 +74,7 @@ describe('generateMoves', () => {
   });
 
   it('produces identical move arrays on repeated calls', () => {
-    const input = teamPlanInputFromFixture('payload-20260812-8heroes.json');
+    const input = teamPlanInputFromFixture(TEAM_PLAN_FIXTURE);
     const built = buildHeroPlanContexts(input.heroes, input.account, input.scopeByHeroId);
     if (built.blocked) throw new Error('blocked');
     const rosterIds = new Set(input.heroes.map((h) => h.heroId));
@@ -105,7 +105,7 @@ describe('generateMoves', () => {
     expect(JSON.stringify(first)).toBe(JSON.stringify(second));
   });
 
-  it.skip('orders moves by heroDps desc then heroId asc then slot then itemId', () => {
+  it('orders moves by heroDps desc then heroId asc then slot then itemId', () => {
     // MP5 F1 (AD-068 class (b) — structural, RECORDED FIX): the deleted fixture's hero name
     // 'Torin' was hardcoded to receive the elevated heroDps that makes this ordering
     // discriminate. No corpus hero is named Torin, and the original `if (torinFirst >= 0 &&
@@ -113,7 +113,7 @@ describe('generateMoves', () => {
     // the new corpus (findIndex returns -1 for both sides) — a genuine vacuous-assertion risk
     // caught by T5's inversion check, not a pre-existing bug shipped as-is. Fixed by picking a
     // real, always-present hero (the first built context) instead of a name.
-    const input = teamPlanInputFromFixture('payload-20260812-8heroes.json');
+    const input = teamPlanInputFromFixture(TEAM_PLAN_FIXTURE);
     const built = buildHeroPlanContexts(input.heroes, input.account, input.scopeByHeroId);
     if (built.blocked) throw new Error('blocked');
     const rosterIds = new Set(input.heroes.map((h) => h.heroId));
@@ -164,8 +164,8 @@ describe('generateMoves', () => {
     expect(source).not.toContain('Date.now');
   });
 
-  it.skip('assign moves satisfy level and slot constraints on the real fixture', () => {
-    const input = teamPlanInputFromFixture('payload-20260812-8heroes.json');
+  it('assign moves satisfy level and slot constraints on the real fixture', () => {
+    const input = teamPlanInputFromFixture(TEAM_PLAN_FIXTURE);
     const built = buildHeroPlanContexts(input.heroes, input.account, input.scopeByHeroId);
     if (built.blocked) throw new Error('blocked');
     const rosterIds = new Set(input.heroes.map((h) => h.heroId));

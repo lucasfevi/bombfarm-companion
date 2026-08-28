@@ -323,3 +323,159 @@ That drift is a live, open finding as of this guard landing, not something this 
 regenerating the committed files could conflict with the pinned duplicate this document's §1
 describes (`assembled-payload-before.json` == `sheet-math/payload-20260812-8heroes.json`), which
 is a call for whoever owns that pin, not a rule this guard enforces itself.
+
+## 11. Capture regime, made mechanical (issues #137, #171, #206)
+
+§9 and §10 record the same problem twice from two directions: the game reshaped sheet arithmetic
+four times in ten days, every patch left another capture behind, and *which* captures were still
+admissible lived in prose and in one hand-maintained list inside a single test file. Nothing
+stopped a retired capture from feeding a different suite whose assertions ran through the very math
+it could no longer support, and nothing answered "is this fixture still admissible?" without
+redoing the regime analysis by hand.
+
+### 11.1 The registry
+
+`packages/domain/tests/helpers/capture-regime.ts` now carries three declarations and the functions
+that read them:
+
+- **`REGIME_BOUNDARIES`** — every balance patch that reshaped sheet arithmetic, and what it moved.
+  The only place a boundary date is written down.
+- **`MECHANICS`** — what a value assertion can be *about* (`critChance`, `critDamage`, `cooldown`,
+  `itemStats`, `sheet`), each pointing at the boundary its numbers must be at or past. `sheet` is
+  the catch-all and the strictest, because a composed hero sheet folds in every other mechanic;
+  anything derived from one — throughput, ranking, team plans, respec advice — asks for it.
+- **`CAPTURE_REGISTRY`** — one row per committed capture: the date, whether it may still be the
+  source of a number, any waiver, and what it is retained for.
+
+A suite names the mechanic its numbers depend on and gets that mechanic's boundary. It never
+repeats a date, so the next patch is one edit in the registry rather than a sweep of every suite.
+`skipUnlessInRegime(ctx, capture, mechanic)` skips a single test loudly; `assertInRegime(capture,
+mechanic)` throws, and is what a module-scope fixture choice uses — there is no test to skip yet at
+that point, and defaulting to "run anyway" is exactly the quiet pass the mechanism exists to
+prevent.
+
+### 11.2 The structural / value split is the whole design
+
+A capture leaving its regime does not stop being a real account. Its hero shapes, gear shapes,
+inventory and team-plan inputs are as true as the day it was taken, and roughly fifty structural
+suites read it for exactly those. What expires is only the arithmetic. So an out-of-regime capture
+stays committed and stays readable, and what the registry withdraws is its admissibility as the
+*source of a number*.
+
+### 11.3 Waivers are verified, not trusted
+
+A capture can predate a boundary and still be untouched by it. `save-20260819-11882-7heroes.json`
+is the case: the 2026-08-23 patch restated two named abilities, and no hero on that roster owns
+either, so the boundary cannot reach it. That is written as a `waivers` entry — and
+`capture-regime-registry.test.ts` re-derives the precondition from the capture's own heroes and
+fails if it does not hold. Corroborating evidence, measured before the waiver was granted: all
+seven heroes recover **exactly `level`** points with zero inference issues, and the capture's
+`stat_ranges` for Comum/Incomum/Raro are byte-identical to the 2026-08-23 and 2026-08-25 captures'.
+
+### 11.4 The retention rule
+
+Stated as a number, in `capture-regime-registry.test.ts`: at most **nine** out-of-regime captures
+may be retained. A capture that has left its regime is kept only while a structural suite still
+reads it — the orphan sweep in `fixture-corpus.test.ts` holds it to that — and adding a tenth fails
+the bound rather than passing review unnoticed. Retiring one, or raising the bound, is then a
+deliberate edit with a reason recorded here.
+
+The registry's own completeness is enforced in both directions: a committed capture with no row
+fails, and a row naming a deleted file fails. What counts as a capture is mechanical — a committed
+fixture JSON carrying a `heroes` array, whatever directory it sits in and whatever it is named,
+with `rejection/` excluded because those two files exist to be *rejected* rather than to record an
+account.
+
+### 11.5 Two captures added
+
+- **`save-20260819-11882-7heroes.json`** — a second, disjoint account. Seven heroes (five geared,
+  two naked; three rarities), all accepted with zero skips and zero warnings, and a House that
+  **binds**: five recovery slots against seven heroes, a regime the corpus had never held. It is
+  also the corpus's first `golpe_brutal` witness (Ivo L51, 20/20 — closing the gap
+  `points-within-level-budget.test.ts` layer 2 was written to work around) and its first real
+  `fortuna` heroes.
+- **`save-20260825-11heroes-one-shot-spread.json`** — the one-shot **spread**: nine geared
+  late-level heroes that one-shot a phase-42 prop and two naked young ones (Hale L2, Joric L5) that
+  do not. The only committed capture holding both sides of that contrast, which is what issue #171
+  needed.
+
+Their arrival also un-narrowed `points-within-level-budget.test.ts`'s corpus sweep, which the
+2026-08-23 patch had reduced to one capture and thirteen heroes — a guard one deletion from
+vacuous, as its own header said. It is three captures and thirty-one heroes now.
+
+### 11.6 What was re-asked, what reproduced, and what did not
+
+The disabled tests were not re-recorded. Each finding was re-asked of an in-regime capture first,
+and only re-enabled if it still held. These reproduced on a **different account**, with their
+recorded bands unchanged, which is what makes them evidence rather than a rubber stamp:
+
+| Finding | Retired 2026-08-13 roster | 2026-08-19 roster |
+| --- | --- | --- |
+| all-attack scores below the current build | 212,284 < 264,997 | 1,085,794 < 1,331,738 |
+| all-attack is the worst of the four builds | yes | yes |
+| `gainPct` inside the recorded band [4, 9] | ~6.19% | 7.21% |
+| chest ratio inside [1.3, 1.5], ruling out the PRD's 4x | ~1.40x | 1.426x |
+| the chests objective costs gold (`paybackHours` null) | 259,413 < 264,997 | 1,137,440 < 1,331,738 |
+| `goldGainPct` is negative, not clamped to 0 | negative | -14.59% (chests +42.64%) |
+
+Three did **not** reproduce, and are recorded as losses in the files that carried them rather than
+weakened quietly:
+
+- **An infeasible row carrying the highest nominal rate is still not picked.** That discrimination
+  was a property of an early account weak enough that its best-paying phase was one it could not
+  clear. Measured on both in-regime captures: best feasible 1,331,738/h against best infeasible
+  574,153/h, and 31,862,424 against 3,446,961. Weakening the roster does not create the case either
+  (measured across attack factors 0.5 down to 0.01) — the infeasible boundary and the peak move
+  together. What is left is the claim without the discrimination.
+- **The 26-34 gold-pick band.** A property of one account's strength. What both accounts agree on,
+  and what is asserted instead, is the direction: chests pick phase 1, gold picks strictly deeper.
+- **Re-rank moves the board's top-by-gold phase.** On a maxed-out account the proposed build is
+  worth ~7% more *at the same phase*, so the argmax does not move. The weaker claim in its place is
+  that re-rank re-prices the board at all.
+
+### 11.7 What is still disabled, and why each one is a decision
+
+Sixteen skip directives remain, from fifty-eight. Twelve are `apps/web/e2e/**` and need a
+Playwright run to re-drive rather than a vitest one. The other four each need a call, not more of
+the same work:
+
+- **`api-payload-parse` (2)** — reads the four `api/assembled-payload-*.json` files, which are
+  *derived* from the 2026-08-12 payload whose heroes the importer now blocks. "Every candidate is
+  unblocked" cannot be made true by re-pointing, only by regenerating them from an in-regime
+  account.
+- **`farm-basis-parity` (2)** and **`invariance-baseline` (1)** — each compares against a large
+  frozen artifact recorded to prove one past refactor or deletion was output-preserving. Both
+  shipped, and the model has moved several times since, so the artifacts cannot match and
+  re-freezing them would prove nothing about what they were recorded for. Re-freeze as a
+  forward-looking drift canary, or delete and say so.
+- **`apps/web/src/tests/import-save.test.ts` (1)** — the odd one out, and not a capture problem at
+  all. Its `baseSave()` is synthetic, and hero 1004's `stats` block was derived under an older
+  sheet model: today's inversion recovers 23 points against a budget of 0, so the importer blocks
+  her. Re-deriving her sheet from `composeSheetFromBirth` at zero points is the fix.
+
+`apps/desktop/renderer/lib/planning/recompute-budget.test.ts` was **reclassified** out of the
+worklist rather than resolved: its one skip is a red-state demonstration that deliberately loops
+the roster 80x to blow the budget its siblings assert. Its own comment says it "is not itself a
+regression guard, it is evidence the regression guard has teeth" — it was never stale-fixture debt.
+
+### 11.8 Re-recording histories moved out of the test files
+
+Two long re-recording logs described the retired 2026-08-13 roster and would have been misleading
+carried onto a different capture, so they are kept here instead.
+
+**`farmObjectiveScales` on `save-20260813-5heroes.json`** (`farm-optimize-objective.test.ts`), each
+step a model change rather than a wrong number: pre-#86 gold 264,997.32 / chests 2.0490; + House
+ceiling 247,444.39 / 1.7474; + cadence fix 180,744.87 / 1.2806; + the 2026-08-18 crit/CDR revert;
++ rotation-priced team auras and the `HOP_DENSITY_EXPONENT` refit; + the additive drain-reduction
+fix; + the 2026-08-23 crit-chance ability shape (gold to 184,616.99); + the FIFO field queue, which
+moved **both** scales by the same 0.087% (184,616.99 to 184,456.14 and 1.27461 to 1.27299). A note
+in that file had claimed `chestScale` was a per-prop figure and therefore invariant to clear speed;
+it is `chestPick.row.chestsPerHour`, a per-hour figure exactly like `goldScale`, and the correction
+is recorded here so it is not re-derived a third time.
+
+**The DPS golden rankings** (`points-rank-golden.test.ts`, both trees) were re-recorded for the
+House cycle table correction — where only `energy` moved on every subject, and `attack`,
+`critChance`, `cdr` and `speed` stayed byte-identical, which is what proved it a duty-cycle change
+touching no per-point rate — and again for the 2026-08-18 revert, where `critChance` and `cdr`
+moved in both directions and *re-ordered* on every subject, with `critDmg` following as a
+second-order effect through `critFactor`'s coupling.
