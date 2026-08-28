@@ -1,5 +1,6 @@
 import type { LiveHit, LiveLootPop, LiveTick, LiveTickHero } from '@bombfarm/contracts';
 import { isPlainObject, liveFrameWireKey as wireKey } from '@bombfarm/game-api';
+import { inflateSync } from 'node:zlib';
 import type { FrameDumpReason } from './frame-ring.js';
 import { DecodedFrame, FrameDecodeError, FrameDecoder, OPCODE } from './ws-frame.js';
 
@@ -46,6 +47,49 @@ const IDLE_SWEEP_TTL_MS = 5 * 60 * 1000;
 
 function isSnapMessage(value: unknown): value is Record<string, unknown> {
   return isPlainObject(value) && value[wireKey('messageType')] === wireKey('snapMessageType');
+}
+
+type PayloadDecodeOutcome =
+  | { readonly kind: 'decoded'; readonly json: unknown }
+  | { readonly kind: 'unparseable' }
+  | { readonly kind: 'undecodable'; readonly firstByte: number };
+
+/**
+ * The server's own combat-frame compression is application-level, not RFC 7692
+ * permessage-deflate: RSV1 is never set and every payload still carries a full zlib header
+ * (`78 ..`), so decoding it is a plain header-aware zlib inflate, not the raw/headerless inflate
+ * permessage-deflate would need, and there is nothing to negotiate in the handshake either way.
+ *
+ * Each payload is its own independent zlib stream — the server keeps no compression context
+ * across frames — so this never carries state between calls, and a skipped or malformed frame
+ * costs nothing to the ones that follow.
+ */
+function decodeSnapPayload(payload: Buffer): PayloadDecodeOutcome {
+  const firstByte = payload.length > 0 ? payload.readUInt8(0) : undefined;
+
+  if (firstByte === 0x7b) {
+    try {
+      return { kind: 'decoded', json: JSON.parse(payload.toString('utf8')) };
+    } catch {
+      return { kind: 'unparseable' };
+    }
+  }
+
+  if (firstByte === 0x78) {
+    let inflated: Buffer;
+    try {
+      inflated = inflateSync(payload);
+    } catch {
+      return { kind: 'undecodable', firstByte };
+    }
+    try {
+      return { kind: 'decoded', json: JSON.parse(inflated.toString('utf8')) };
+    } catch {
+      return { kind: 'unparseable' };
+    }
+  }
+
+  return { kind: 'undecodable', firstByte: firstByte ?? 0 };
 }
 
 function readNumber(raw: Record<string, unknown>, key: string): number | undefined {
@@ -165,7 +209,8 @@ interface ResyncCandidate {
 
 function parseResyncCandidate(buf: Buffer, offset: number): ResyncCandidate | undefined {
   if (buf.length < offset + 2) return undefined;
-  if (buf.readUInt8(offset) !== 0x81) return undefined;
+  const opcodeByte = buf.readUInt8(offset);
+  if (opcodeByte !== 0x81 && opcodeByte !== 0x82) return undefined;
 
   const byte1 = buf.readUInt8(offset + 1);
   if ((byte1 & 0x80) !== 0) return undefined;
@@ -179,11 +224,8 @@ function parseResyncCandidate(buf: Buffer, offset: number): ResyncCandidate | un
 }
 
 function looksLikeSnapMessage(payload: Buffer): boolean {
-  try {
-    return isSnapMessage(JSON.parse(payload.toString('utf8')));
-  } catch {
-    return false;
-  }
+  const outcome = decodeSnapPayload(payload);
+  return outcome.kind === 'decoded' && isSnapMessage(outcome.json);
 }
 
 interface WsFrameScanResult {
@@ -323,6 +365,8 @@ export class TlsConnections {
   readonly #idleSweepTtlMs: number;
   readonly #ring: FrameRingPort | undefined;
   readonly #log: TlsConnectionsLogPort | undefined;
+  #undecodablePayloadCount = 0;
+  #hasWarnedUndecodablePayload = false;
 
   constructor(deps: TlsConnectionsDeps = {}) {
     this.#now = deps.now ?? Date.now;
@@ -438,13 +482,26 @@ export class TlsConnections {
 
   #handleFrame(frame: DecodedFrame, events: TapEvent[]): void {
     this.#ring?.push(frame.payload);
-    if (frame.opcode !== OPCODE.text) return;
-    let json: unknown;
-    try {
-      json = JSON.parse(frame.payload.toString('utf8'));
-    } catch {
+    if (frame.opcode !== OPCODE.text && frame.opcode !== OPCODE.binary) return;
+
+    const outcome = decodeSnapPayload(frame.payload);
+    if (outcome.kind === 'undecodable') {
+      this.#reportUndecodablePayload(outcome.firstByte);
       return;
     }
-    if (isSnapMessage(json)) events.push({ kind: 'tick', tick: toLiveTick(json) });
+    if (outcome.kind === 'unparseable') return;
+    if (isSnapMessage(outcome.json)) events.push({ kind: 'tick', tick: toLiveTick(outcome.json) });
+  }
+
+  #reportUndecodablePayload(firstByte: number): void {
+    this.#undecodablePayloadCount += 1;
+    if (this.#hasWarnedUndecodablePayload) return;
+    this.#hasWarnedUndecodablePayload = true;
+    this.#log?.warn({
+      scope: 'live-source',
+      event: 'live-source.undecodable_payload',
+      count: this.#undecodablePayloadCount,
+      firstByte,
+    });
   }
 }
