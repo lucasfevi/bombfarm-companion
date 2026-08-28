@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { createElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import type { LiveEarnings } from '@bombfarm/contracts';
+import { en } from '../../lib/copy/en';
 import type { ReachedLiveFreshness } from './freshness-line';
 import { EarningsPanel } from './earnings-panel';
 
@@ -108,6 +109,24 @@ describe('EarningsPanel — current gold and its age', () => {
   it('no data: an em dash, never a stale reading pinned to a fabricated age', () => {
     const out = html(null, GAP);
     expect(cellText(out, 'live-earnings-gold-current')).toBe('—');
+  });
+});
+
+describe('EarningsPanel — the XP marker is always mounted and reachable', () => {
+  it.each([
+    ['live, with data', LIVE, earnings()] as const,
+    ['not live, with a prior reading', GAP, earnings()] as const,
+    ['no data at all', GAP, null] as const,
+  ])('%s: the help control is in the DOM, keyboard-reachable, with an accessible name', (_label, freshness, data) => {
+    const out = html(data, freshness);
+    const tagMatch = out.match(new RegExp(`<button[^>]*aria-label="${en.liveEarningsXpHelpLabel}"[^>]*>`));
+
+    expect(tagMatch).not.toBeNull();
+    const tag = tagMatch?.[0] ?? '';
+    // Always mounted and interactive — never the sr-only-until-hover treatment: no real
+    // `disabled` attribute and no negative tabIndex.
+    expect(tag).not.toContain('disabled=');
+    expect(tag).not.toContain('tabindex="-1"');
   });
 });
 

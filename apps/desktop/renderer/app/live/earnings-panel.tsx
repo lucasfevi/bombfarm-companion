@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react';
 import type { LiveEarnings } from '@bombfarm/contracts';
-import { Button, formatCompactNumber, Panel, PanelHeader } from '@bombfarm/ui';
+import { Button, formatCompactNumber, HelpTip, Panel, PanelHeader } from '@bombfarm/ui';
 import { sub, useCopy } from '../../lib/copy';
 import { formatCapturedAt } from '../../lib/format';
 import type { ReachedLiveFreshness } from './freshness-line';
@@ -95,7 +95,10 @@ export function EarningsPanel({
           </tr>
           <tr>
             <th scope="row" className="text-left font-normal">
-              {t.liveEarningsRowXp}
+              <span className="inline-flex items-center gap-1">
+                {t.liveEarningsRowXp}
+                <HelpTip label={t.liveEarningsXpHelpLabel}>{t.liveEarningsXpHelpBody}</HelpTip>
+              </span>
             </th>
             <td data-testid="live-earnings-xp-current" className="tabular-nums">
               {EM_DASH}
