@@ -86,6 +86,31 @@ describe('SpriteLoop', () => {
     expect(currentSrc(container)).toBe(FRAMES[0]);
   });
 
+  it('holds the first frame still and never advances when animate is false', () => {
+    act(() => {
+      root.render(createElement(SpriteLoop, { frames: FRAMES, frameDurationMs: FRAME_MS, animate: false }));
+    });
+    expect(currentSrc(container)).toBe(FRAMES[0]);
+
+    act(() => {
+      vi.advanceTimersByTime(FRAME_MS * 5);
+    });
+    expect(currentSrc(container)).toBe(FRAMES[0]);
+  });
+
+  it('resumes advancing once animate turns true again', () => {
+    act(() => {
+      root.render(createElement(SpriteLoop, { frames: FRAMES, frameDurationMs: FRAME_MS, animate: false }));
+    });
+    act(() => {
+      root.render(createElement(SpriteLoop, { frames: FRAMES, frameDurationMs: FRAME_MS, animate: true }));
+    });
+    act(() => {
+      vi.advanceTimersByTime(FRAME_MS);
+    });
+    expect(currentSrc(container)).toBe(FRAMES[1]);
+  });
+
   it('cleans up its interval and its media-query listener on unmount', () => {
     const removeEventListener = vi.fn();
     window.matchMedia = vi.fn().mockReturnValue({

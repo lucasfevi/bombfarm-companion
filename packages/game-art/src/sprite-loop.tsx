@@ -7,6 +7,8 @@ export interface SpriteLoopProps {
   frames: readonly string[];
   /** How long each frame stays on screen, in ms. */
   frameDurationMs: number;
+  /** Set false to hold the first frame still instead of looping. Defaults to true. */
+  animate?: boolean;
   className?: string;
   width?: number;
   height?: number;
@@ -18,10 +20,12 @@ function prefersReducedMotion(): boolean {
 }
 
 /** Preloading, reduced-motion-aware pixel-art frame loop — static on the first frame when
- *  reduce is set, looping otherwise. Shared by every sprite animation in the app. */
-export function SpriteLoop({ frames, frameDurationMs, className, width, height }: SpriteLoopProps) {
+ *  reduce is set or `animate` is false, looping otherwise. Shared by every sprite animation in
+ *  the app. */
+export function SpriteLoop({ frames, frameDurationMs, animate = true, className, width, height }: SpriteLoopProps) {
   const [frame, setFrame] = useState(0);
   const [reduced, setReduced] = useState(false);
+  const held = reduced || !animate;
 
   useEffect(() => {
     for (const frameSrc of frames) {
@@ -39,14 +43,14 @@ export function SpriteLoop({ frames, frameDurationMs, className, width, height }
   }, []);
 
   useEffect(() => {
-    if (reduced) return;
+    if (held) return;
     const intervalId = window.setInterval(() => {
       setFrame((current) => (current + 1) % frames.length);
     }, frameDurationMs);
     return () => window.clearInterval(intervalId);
-  }, [reduced, frames, frameDurationMs]);
+  }, [held, frames, frameDurationMs]);
 
-  const frameSrc = frames[reduced ? 0 : frame] ?? frames[0];
+  const frameSrc = frames[held ? 0 : frame] ?? frames[0];
 
   return (
     <img

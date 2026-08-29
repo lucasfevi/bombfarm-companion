@@ -1,7 +1,8 @@
 import { Button, EmptyState } from '@bombfarm/ui';
+import { SpriteLoop } from '@bombfarm/game-art';
 import { LIVE_GAP_REASON_COPY_KEY, useCopy } from '../../lib/copy';
 import type { ReachedLiveFreshness } from './freshness-line';
-import { WaitingCue } from './waiting-cue';
+import { HERO6_MENU_IDLE_FRAME_MS, HERO6_MENU_IDLE_FRAMES } from './hero6-menu-idle';
 
 export function NeverReadEmptyState({
   freshness,
@@ -36,7 +37,14 @@ export function NeverReadEmptyState({
         ) : undefined
       }
     >
-      <WaitingCue pending={pending} />
+      <SpriteLoop
+        frames={HERO6_MENU_IDLE_FRAMES}
+        frameDurationMs={HERO6_MENU_IDLE_FRAME_MS}
+        animate={pending}
+        width={55}
+        height={64}
+        className="mt-2"
+      />
     </EmptyState>
   );
 }

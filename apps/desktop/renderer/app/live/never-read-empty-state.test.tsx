@@ -1,10 +1,11 @@
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { createElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import type { LiveGapReason } from '@bombfarm/contracts';
 import { en } from '../../lib/copy/en';
 import { NeverReadEmptyState } from './never-read-empty-state';
 import type { ReachedLiveFreshness } from './freshness-line';
+import { HERO6_MENU_IDLE_FRAMES } from './hero6-menu-idle';
 
 // `useCopy()` is a hook, so it needs an active React dispatcher — fine for the
 // `renderToStaticMarkup` calls below, but not for calling `NeverReadEmptyState` directly as a
@@ -99,33 +100,14 @@ describe('NeverReadEmptyState — the reopen-consent control', () => {
   });
 });
 
-describe('NeverReadEmptyState — the waiting cue', () => {
-  afterEach(() => {
-    Reflect.deleteProperty(globalThis, 'window');
-  });
-
-  it('animates for a gap reason the app is retrying on its own', () => {
-    const out = html({ kind: 'gap', reason: 'detached', actionable: true, sinceAt: 't' });
-    expect(out).toContain('animate-pulse');
-  });
-
-  it('animates while reading the account for the first time', () => {
-    const out = html({ kind: 'live' });
-    expect(out).toContain('animate-pulse');
-  });
-
-  it('is absent while consent is missing — nothing is actually in progress there', () => {
-    const out = html({ kind: 'gap', reason: 'consentMissing', actionable: true, sinceAt: 't' });
-    expect(out).not.toContain('bg-accent');
-    expect(out).not.toContain('animate-pulse');
-  });
-
-  it('renders the static form, not absent and not animating, when reduced motion is set', () => {
-    (globalThis as unknown as { window: { matchMedia: (query: string) => { matches: boolean } } }).window = {
-      matchMedia: () => ({ matches: true }),
-    };
-    const out = html({ kind: 'gap', reason: 'detached', actionable: true, sinceAt: 't' });
-    expect(out).toContain('bg-accent');
-    expect(out).not.toContain('animate-pulse');
+describe('NeverReadEmptyState — the waiting sprite', () => {
+  it('renders the sprite loop’s first frame in every reached state', () => {
+    for (const freshness of [
+      { kind: 'live' as const },
+      { kind: 'gap' as const, reason: 'detached' as const, actionable: true, sinceAt: 't' },
+      { kind: 'gap' as const, reason: 'consentMissing' as const, actionable: true, sinceAt: 't' },
+    ]) {
+      expect(html(freshness)).toContain(HERO6_MENU_IDLE_FRAMES[0]);
+    }
   });
 });
