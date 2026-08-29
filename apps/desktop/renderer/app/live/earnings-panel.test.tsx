@@ -223,6 +223,26 @@ describe('EarningsPanel — labels', () => {
   });
 });
 
+describe('EarningsPanel — live figures reserve their own width', () => {
+  it('every compact-number figure and the elapsed duration sit in a fixed, right-aligned box', () => {
+    const out = html(earnings());
+
+    // Sized from `formatCompactNumber`'s widest realistic output ("999.9m") — every gold/XP
+    // figure in the headline, the session-average line, and the six tiles below share it.
+    const compactBoxes = out.match(/class="inline-block w-\[6ch\] text-right tabular-nums"/g) ?? [];
+    expect(compactBoxes.length).toBeGreaterThanOrEqual(8);
+
+    // The elapsed-duration tile grows wider than any compact number, so it gets its own box.
+    expect(out).toMatch(/class="inline-block w-\[8ch\] text-right tabular-nums"/);
+  });
+
+  it('still reserves the box for the null/em-dash state, so arriving data cannot shift anything either', () => {
+    const out = html(null, GAP);
+    const compactBoxes = out.match(/class="inline-block w-\[6ch\] text-right tabular-nums"/g) ?? [];
+    expect(compactBoxes.length).toBeGreaterThanOrEqual(8);
+  });
+});
+
 describe('EarningsPanel — the panel keeps an accessible name without a visible title', () => {
   it('renders no visible heading, but names the landmark via aria-label with the same copy', () => {
     const out = html(earnings());

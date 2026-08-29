@@ -9,21 +9,43 @@ import { formatLiveDurationSeconds } from './format-live-duration';
 const EM_DASH = '—';
 const MAX_COVERAGE_MINUTES = 10;
 
+/**
+ * Reserves width for a live-updating number so its own growth cannot shift what comes after it —
+ * sized to `formatCompactNumber`'s widest realistic output ("999.9m") — and right-aligns the
+ * digits inside that reservation so they don't visually jump in place either. `wide` covers the
+ * elapsed-duration tile, whose own longest realistic form (a double-digit-hour AFK session,
+ * "23:59:59") is wider than any compact number here.
+ */
+function NumericValue({ children, wide = false }: { children: ReactNode; wide?: boolean }) {
+  if (wide) {
+    return <span className="inline-block w-[8ch] text-right tabular-nums">{children}</span>;
+  }
+  return <span className="inline-block w-[6ch] text-right tabular-nums">{children}</span>;
+}
+
+/** Splits a `sub()`-style `{token}` template around one placeholder so a JSX value (not just a
+ *  string) can be embedded where the placeholder was — `sub()` itself only ever produces text. */
+function splitOnPlaceholder(template: string, token: string): [string, string] {
+  const marker = `{${token}}`;
+  const index = template.indexOf(marker);
+  return index === -1 ? [template, ''] : [template.slice(0, index), template.slice(index + marker.length)];
+}
+
 /** The rolling window is capped at 600s (10 real minutes) and starts shorter — floored, not
  *  rounded up, so the label never claims more coverage than the figures actually rest on. */
 function coverageMinutesLabel(coverageSeconds: number): number {
   return Math.min(MAX_COVERAGE_MINUTES, Math.max(1, Math.floor(coverageSeconds / 60)));
 }
 
-function numberText(value: number | null | undefined): string {
-  return value == null ? EM_DASH : formatCompactNumber(value, 1);
+function numberText(value: number | null | undefined): ReactNode {
+  return <NumericValue>{value == null ? EM_DASH : formatCompactNumber(value, 1)}</NumericValue>;
 }
 
 function rateValue(value: number | null | undefined, unit: string): ReactNode {
-  if (value == null) return EM_DASH;
+  if (value == null) return <NumericValue>{EM_DASH}</NumericValue>;
   return (
     <>
-      {formatCompactNumber(value, 1)}
+      <NumericValue>{formatCompactNumber(value, 1)}</NumericValue>
       <span className="text-muted text-[0.6em] font-normal">{unit}</span>
     </>
   );
@@ -33,10 +55,10 @@ function rateValue(value: number | null | undefined, unit: string): ReactNode {
  *  figures spell their unit out ("gold / hr") rather than tiles' tight "/h", so it reads as two
  *  words rather than running the number and "gold" together. */
 function headlineRateValue(value: number | null | undefined, unit: string): ReactNode {
-  if (value == null) return EM_DASH;
+  if (value == null) return <NumericValue>{EM_DASH}</NumericValue>;
   return (
     <>
-      {formatCompactNumber(value, 1)}
+      <NumericValue>{formatCompactNumber(value, 1)}</NumericValue>
       <span className="text-muted text-[0.6em] font-normal">{` ${unit}`}</span>
     </>
   );
@@ -103,18 +125,34 @@ export function EarningsPanel({
   // A stored-reading fallback ages by its own capture time; a tick-frozen balance instead ages by
   // the stream's own gap (`freshness.sinceAt`). The two never both apply — the main process only
   // ever populates one of `goldBalance`'s two sources at a time.
-  const currentGold: ReactNode =
+  const currentGoldAge: ReactNode =
     balance === null
-      ? EM_DASH
+      ? null
       : balanceCapturedAt !== null
-        ? `${formatCompactNumber(balance, 1)} · ${formatCapturedAt(balanceCapturedAt, t)}`
+        ? ` · ${formatCapturedAt(balanceCapturedAt, t)}`
         : freshness.kind === 'live'
-          ? formatCompactNumber(balance, 1)
-          : `${formatCompactNumber(balance, 1)} · ${formatCapturedAt(freshness.sinceAt, t)}`;
+          ? null
+          : ` · ${formatCapturedAt(freshness.sinceAt, t)}`;
+  const currentGold: ReactNode =
+    balance === null ? (
+      <NumericValue>{EM_DASH}</NumericValue>
+    ) : (
+      <>
+        <NumericValue>{formatCompactNumber(balance, 1)}</NumericValue>
+        {currentGoldAge}
+      </>
+    );
 
-  const sessionAverageText = sub(t.liveEarningsSessionAverageValue, {
-    value: earnings?.goldSession == null ? EM_DASH : `${formatCompactNumber(earnings.goldSession, 1)}${t.liveEarningsRateUnit}`,
-  });
+  const [sessionAveragePrefix, sessionAverageSuffix] = splitOnPlaceholder(t.liveEarningsSessionAverageValue, 'value');
+  const sessionAverageValue: ReactNode =
+    earnings?.goldSession == null ? (
+      <NumericValue>{EM_DASH}</NumericValue>
+    ) : (
+      <>
+        <NumericValue>{formatCompactNumber(earnings.goldSession, 1)}</NumericValue>
+        {t.liveEarningsRateUnit}
+      </>
+    );
 
   return (
     <Panel data-testid="live-earnings" aria-label={t.liveEarningsTitle}>
@@ -138,7 +176,9 @@ export function EarningsPanel({
               <RecentWindowLabel longest={recentWindowLongest} text={recentWindowText} />
               <span aria-hidden>·</span>
               <span data-testid="live-earnings-session-average" className="text-[10.5px] tabular-nums whitespace-nowrap">
-                {sessionAverageText}
+                {sessionAveragePrefix}
+                {sessionAverageValue}
+                {sessionAverageSuffix}
               </span>
             </div>
           </div>
@@ -168,7 +208,7 @@ export function EarningsPanel({
           <Tile
             testId="live-earnings-elapsed"
             label={t.liveEarningsElapsedLabel}
-            value={formatLiveDurationSeconds(sessionSeconds)}
+            value={<NumericValue wide>{formatLiveDurationSeconds(sessionSeconds)}</NumericValue>}
             className="text-[23px] font-bold text-ink"
           />
           <Tile
