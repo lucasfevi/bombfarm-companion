@@ -70,7 +70,7 @@ export function HeroRow({
     <li
       data-testid={`live-hero-row-${hero.id}`}
       data-muted={muted ? '' : undefined}
-      className="grid grid-cols-[0.5rem_12rem_minmax(0,1fr)_2.25rem_4rem] items-center gap-2 rounded-sm border border-line bg-[color-mix(in_oklch,var(--surface)_92%,transparent)] px-2 py-1 data-[muted]:opacity-60 data-[muted]:grayscale"
+      className="grid grid-cols-[0.5rem_8rem_minmax(0,1fr)_2.25rem_4rem] items-center gap-2 rounded-sm border border-line bg-[color-mix(in_oklch,var(--surface)_92%,transparent)] px-2 py-1 data-[muted]:opacity-60 data-[muted]:grayscale"
     >
       <span className="flex items-center">
         <RowStateDot state={state} />
@@ -78,18 +78,22 @@ export function HeroRow({
       </span>
       <span className="flex min-w-0 items-center gap-2">
         <HeroAvatar skin={hero.skin ?? 0} rarityIdx={hero.rarity ?? NEUTRAL_RARITY_IDX} size="xs" name={name} />
-        <span className="min-w-0 flex-1 truncate text-[12px] leading-none font-bold">
-          <span data-testid={`live-hero-row-${hero.id}-name`} className={nameColorClass}>
-            {name}
+        <span className="flex min-w-0 flex-1 flex-col justify-center gap-0.5">
+          <span className="flex min-w-0 items-baseline gap-1">
+            {rank ? (
+              <span className="shrink-0 text-[11px] leading-none font-black tracking-tight text-accent">{rank}</span>
+            ) : (
+              <span className="shrink-0 text-[11px] leading-none font-black tracking-tight text-muted">—</span>
+            )}
+            <span className="min-w-0 flex-1 truncate text-[12px] leading-none font-bold">
+              <span data-testid={`live-hero-row-${hero.id}-name`} className={nameColorClass}>
+                {name}
+              </span>
+            </span>
           </span>
-        </span>
-        {rank ? (
-          <span className="shrink-0 text-[11px] leading-none font-black tracking-tight text-accent">{rank}</span>
-        ) : (
-          <span className="shrink-0 text-[11px] leading-none font-black tracking-tight text-muted">—</span>
-        )}
-        <span className="shrink-0 text-[10px] leading-none text-muted tabular-nums">
-          {sub(t.liveHeroLevelValue, { level: hero.level ?? 0 })}
+          <span className="text-[10px] leading-none text-muted tabular-nums">
+            {sub(t.liveHeroLevelValue, { level: hero.level ?? 0 })}
+          </span>
         </span>
       </span>
       <EnergyBar testId={energyTestId} fraction={hero.energyFraction} />

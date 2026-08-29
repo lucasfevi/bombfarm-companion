@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { createElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { heroAvatarSrc } from '@bombfarm/domain/wiki-assets';
-import { STRINGS } from '../../lib/copy';
+import { STRINGS, sub } from '../../lib/copy';
 import { HeroRow } from './hero-row';
 
 const en = STRINGS.en;
@@ -190,5 +190,32 @@ describe('HeroRow — every row shares one fixed column grid', () => {
     const nameWrapper = /<span class="([^"]*)"><span[^>]*data-testid="live-hero-row-hero-7-name"/.exec(html)?.[1];
     expect(nameWrapper).toMatch(/\btruncate\b/);
     expect(html).toContain('A Genuinely Very Long Hero Name That Keeps Going');
+  });
+
+  it('stacks the rank and name on one line, with the level on a second line, both beside the avatar', () => {
+    const html = renderToStaticMarkup(
+      createElement(HeroRow, { state: 'on-field', hero: { id: 'hero-7', name: 'Astra', grade: 'A', level: 42 } }),
+    );
+
+    const avatarIndex = html.indexOf('<img');
+    expect(avatarIndex).toBeGreaterThan(-1);
+
+    const afterAvatar = html.slice(avatarIndex);
+    const columnMatch = /<span class="([^"]*\bflex-col\b[^"]*)">/.exec(afterAvatar);
+    expect(columnMatch).toBeTruthy();
+    const columnIndex = avatarIndex + (columnMatch?.index ?? 0);
+
+    const afterColumn = html.slice(columnIndex);
+    const lineMatch = /<span class="([^"]*\bitems-baseline\b[^"]*)">/.exec(afterColumn);
+    expect(lineMatch).toBeTruthy();
+    const lineIndex = columnIndex + (lineMatch?.index ?? 0);
+
+    const rankIndex = html.indexOf('>A<', lineIndex);
+    const nameIndex = html.indexOf('data-testid="live-hero-row-hero-7-name"', lineIndex);
+    const levelIndex = html.indexOf(sub(STRINGS.en.liveHeroLevelValue, { level: 42 }), nameIndex);
+
+    expect(rankIndex).toBeGreaterThan(lineIndex);
+    expect(nameIndex).toBeGreaterThan(rankIndex);
+    expect(levelIndex).toBeGreaterThan(nameIndex);
   });
 });
