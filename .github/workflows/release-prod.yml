@@ -193,7 +193,10 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           VERSION: ${{ needs.plan.outputs.desktop_version }}
         run: |
-          TAG="desktop-v${VERSION}"
+          TAG=$(node --input-type=module -e "
+            import { buildDesktopTag } from './tools/release/release-tag.mjs';
+            process.stdout.write(buildDesktopTag(process.env.VERSION));
+          ")
 
           if git ls-remote --tags origin "refs/tags/${TAG}" | grep -q .; then
             echo "::error::Git tag ${TAG} already exists on origin"
@@ -262,7 +265,11 @@ jobs:
           fi
 
           if [ "$PUBLISH_RESULT" = "success" ]; then
-            echo "GitHub Release \`desktop-v${VERSION}\` published." >> "$GITHUB_STEP_SUMMARY"
+            TAG=$(node --input-type=module -e "
+              import { buildDesktopTag } from './tools/release/release-tag.mjs';
+              process.stdout.write(buildDesktopTag(process.env.VERSION));
+            ")
+            echo "GitHub Release \`${TAG}\` published." >> "$GITHUB_STEP_SUMMARY"
           else
             echo "GitHub Release publish result: \`${PUBLISH_RESULT}\`." >> "$GITHUB_STEP_SUMMARY"
           fi
