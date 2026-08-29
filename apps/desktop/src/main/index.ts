@@ -366,6 +366,9 @@ async function bootstrap(): Promise<void> {
     refreshNow: () => accountRefresh?.refreshNow() ?? Promise.resolve(null),
     now: () => Date.now(),
   });
+  // The scheduled cadence can otherwise leave the first read waiting out a full cycle after the
+  // game becomes detected as running, which arrives too late to catch at boot.
+  gameReader.onConnected = () => triggeredRefresh?.notify();
   liveFastPublisher = createLiveFastPublisher({
     getView: () => liveSource?.getView() ?? defaultLiveView(),
     emit: (event) => {

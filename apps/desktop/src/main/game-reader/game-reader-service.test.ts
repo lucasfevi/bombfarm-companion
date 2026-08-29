@@ -548,6 +548,77 @@ describe('GameReaderService — status pushes', () => {
   });
 });
 
+describe('GameReaderService — onConnected fires only on a transition into connected', () => {
+  it('fires exactly once when a poll first reports connected', () => {
+    mockedFindProcessId.mockReturnValue(4242);
+    const service = new GameReaderService('/fake/user-data', { mode: 'live' }, { consent: () => true });
+    const onConnected = vi.fn();
+    service.onConnected = onConnected;
+    service.ingestLiveTick(liveFrame({ heroes: [], gold: 500 }));
+    service.ingestLiveCurrency(liveCurrency());
+
+    forceTick(service);
+
+    expect(service.getStatus().status).toBe('connected');
+    expect(onConnected).toHaveBeenCalledTimes(1);
+  });
+
+  it('does not fire again while later polls keep reporting connected', () => {
+    mockedFindProcessId.mockReturnValue(4242);
+    const service = new GameReaderService('/fake/user-data', { mode: 'live' }, { consent: () => true });
+    const onConnected = vi.fn();
+    service.onConnected = onConnected;
+    service.ingestLiveTick(liveFrame({ heroes: [], gold: 500 }));
+    service.ingestLiveCurrency(liveCurrency());
+
+    forceTick(service);
+    forceTick(service);
+    forceTick(service);
+
+    expect(service.getStatus().status).toBe('connected');
+    expect(onConnected).toHaveBeenCalledTimes(1);
+  });
+
+  it('does not fire on a transition into a non-connected status', () => {
+    mockedFindProcessId.mockReturnValue(null);
+    const service = new GameReaderService('/fake/user-data', { mode: 'live' }, { consent: () => true });
+    const onConnected = vi.fn();
+    service.onConnected = onConnected;
+
+    forceTick(service);
+
+    expect(service.getStatus().status).toBe('not_running');
+    expect(onConnected).not.toHaveBeenCalled();
+  });
+
+  it('fires again on a second transition after dropping back to a non-connected status in between', () => {
+    mockedFindProcessId.mockReturnValue(4242);
+    const service = new GameReaderService('/fake/user-data', { mode: 'live' }, { consent: () => true });
+    const onConnected = vi.fn();
+    service.onConnected = onConnected;
+    service.ingestLiveTick(liveFrame({ heroes: [], gold: 500 }));
+    service.ingestLiveCurrency(liveCurrency());
+
+    forceTick(service);
+    expect(onConnected).toHaveBeenCalledTimes(1);
+
+    mockedFindProcessId.mockReturnValue(null);
+    forceTick(service);
+    expect(onConnected).toHaveBeenCalledTimes(1);
+
+    mockedFindProcessId.mockReturnValue(4242);
+    // The not_running branch wipes the cached tick/currency (the same honesty
+    // "consent withdrawn" already has), so a reconnect needs a fresh frame before it can settle
+    // on connected again rather than a stale one.
+    service.ingestLiveTick(liveFrame({ heroes: [], gold: 500 }, '2026-08-22T00:00:01.000Z', 2));
+    service.ingestLiveCurrency(liveCurrency('2026-08-22T00:00:01.000Z'));
+    forceTick(service);
+
+    expect(service.getStatus().status).toBe('connected');
+    expect(onConnected).toHaveBeenCalledTimes(2);
+  });
+});
+
 /**
  * A gold-per-hour readout needs a balance that moves. The fixture account is a still photograph,
  * so before this the balance sat at its captured value for the whole session and any rate built
