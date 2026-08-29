@@ -1,7 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import { runTeamPlan } from '@bombfarm/domain/team-plan/solver';
 import type { ScopeState } from '@bombfarm/domain/team-plan/types';
-import { teamPlanInputFromFixture, TEAM_PLAN_FIXTURE, TEAM_PLAN_LARGE_FIXTURE } from './helpers/team-plan-fixtures';
+import { TEAM_PLAN_FIXTURE, TEAM_PLAN_LARGE_FIXTURE, holdTeamPlanSuiteUntilInRegime, teamPlanInputFromFixture } from './helpers/team-plan-fixtures';
+
+holdTeamPlanSuiteUntilInRegime();
 
 /** Every other hero donates, so the plan can source gear off a hero it does not optimize. */
 function planWithAlternatingDonors(file: string) {

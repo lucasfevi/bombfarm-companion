@@ -26,7 +26,7 @@ import { zeroTeamBuffs } from '@bombfarm/domain/team-buffs';
 import { DEFAULT_TARGET_PROP } from '@bombfarm/domain/farm-context';
 import { rankNextPoint, STAT_CAPS, POINT_GAIN, type HeroSheet, type Context, type PointValue } from '@bombfarm/domain/model';
 import type { HeroRecord, AccountShared } from '@bombfarm/domain/shims/storage';
-import { assertInRegime } from './helpers/capture-regime';
+import { holdSuiteUntilInRegime } from './helpers/capture-regime';
 import { loadFixtureJson } from './helpers/sheet-math-fixtures';
 
 const FIXTURE = 'save-20260819-11882-7heroes.json';
@@ -35,7 +35,7 @@ const FIXTURE = 'save-20260819-11882-7heroes.json';
 // its whole value is catching an unintended model change as a number that moved. That value
 // is real only while the capture underneath it is one the model can still solve, which is why
 // this is re-pointed rather than re-recorded in place (issue #206).
-assertInRegime(`sheet-math/${FIXTURE}`, 'sheet');
+holdSuiteUntilInRegime(`sheet-math/${FIXTURE}`, 'sheet');
 
 const pick = (rows: readonly PointValue[]) => rows.map((r) => ({ stat: r.stat, gainPct: r.gainPct }));
 

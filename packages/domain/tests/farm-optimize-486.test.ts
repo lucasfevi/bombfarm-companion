@@ -24,10 +24,10 @@ import { resolveFarmObjective, bestFarmPhase, type FarmObjectiveScales } from '@
 import { computeHeroFarmBases, heroFactsFromBasis, squadFactsFromBases, type HeroFarmBasis } from '@bombfarm/domain/farm-rate';
 import { reoptBudget, REOPT_KEYS } from '@bombfarm/domain/points-reopt-core';
 import type { SheetKey } from '@bombfarm/domain/planner-constants';
-import { assertInRegime } from './helpers/capture-regime';
+import { holdSuiteUntilInRegime } from './helpers/capture-regime';
 import { FARM_OPTIMIZE_FIXTURE, loadFarmRateFixture } from './helpers/farm-rate-fixtures';
 
-assertInRegime(`sheet-math/${FARM_OPTIMIZE_FIXTURE}`, 'sheet');
+holdSuiteUntilInRegime(`sheet-math/${FARM_OPTIMIZE_FIXTURE}`, 'sheet');
 
 const { heroes, account, maxPhase } = loadFarmRateFixture(FARM_OPTIMIZE_FIXTURE);
 const dummyScales: FarmObjectiveScales = { goldScale: 1, chestScale: 1 };

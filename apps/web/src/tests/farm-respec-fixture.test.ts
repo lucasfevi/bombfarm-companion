@@ -15,7 +15,7 @@ import {
   selectFarmRespecGate,
 } from '@/shared/stores/selectors/farm-ranking-selectors';
 import { resetPlannerStoreForTests, usePlannerStore } from '@/shared/stores';
-import { assertInRegime } from '../../../../packages/domain/tests/helpers/capture-regime';
+import { holdSuiteUntilInRegime } from '../../../../packages/domain/tests/helpers/capture-regime';
 import { loadFixtureJson } from './helpers/sheet-math-fixtures';
 
 /**
@@ -52,7 +52,7 @@ function topGoldPhase(rows: readonly FarmRateRow[]): number {
   return farmable.reduce((best, row) => (row.goldPerHour > best.goldPerHour ? row : best)).phase;
 }
 
-assertInRegime('sheet-math/save-20260819-11882-7heroes.json', 'sheet');
+holdSuiteUntilInRegime('sheet-math/save-20260819-11882-7heroes.json', 'sheet');
 
 describe('Farm Respec Advisor — fixture integration (save-20260819-11882-7heroes.json)', () => {
   beforeEach(() => {

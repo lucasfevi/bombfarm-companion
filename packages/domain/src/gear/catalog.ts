@@ -60,12 +60,15 @@ export function scaledValores(defId: string, rarityIdx: number, level: number, u
   if (!definition) return [] as ScaledValor[];
   const nativeMult = (catalog.nivelMult as Record<string, number>)[String(definition.nativeLevel)] ?? 1;
   const itemMult = (catalog.nivelMult as Record<string, number>)[String(level)] ?? nativeMult;
+  const nativeDmgMult = (catalog.dmgNivelMult as Record<string, number>)[String(definition.nativeLevel)] ?? 1;
+  const itemDmgMult = (catalog.dmgNivelMult as Record<string, number>)[String(level)] ?? nativeDmgMult;
   const forja = upgradeMult(upgrade);
   const scale = (itemMult / nativeMult) * forja;
+  const dmgScale = (itemDmgMult / nativeDmgMult) * forja;
   const count = ITEM_RARITIES[rarityIdx]?.statCount ?? 1;
   return definition.valores.slice(0, count).map((roll): ScaledValor => {
     if (roll.stat !== 'dmg') return { stat: roll.stat, valor: roll.valor * scale, unit: 'pct' };
-    return { stat: roll.stat, valor: roll.valor * scale, unit: 'flat' };
+    return { stat: roll.stat, valor: roll.valor * dmgScale, unit: 'flat' };
   });
 }
 

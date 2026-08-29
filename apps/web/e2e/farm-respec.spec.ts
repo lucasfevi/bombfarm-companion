@@ -99,7 +99,7 @@ test.describe('Farm Respec Advisor', () => {
 
   // 1. The callout appears with a lower-bound gain and nothing else; the recommended phase it
   // used to restate is the panel's Phase tile, so the band is asserted there instead.
-  test('the toolbar callout is the lower-bound gain alone; the panel names a phase in 50-54', async ({ page }) => {
+  test('the toolbar callout is the lower-bound gain alone; the panel names a phase in 53-57', async ({ page }) => {
     await expect(toolbar(page)).toBeVisible();
     await expect(headline(page)).toContainText(/at least/i);
     // The phase, the cost and the payback all moved into the panel — none of them may creep back.
@@ -113,10 +113,16 @@ test.describe('Farm Respec Advisor', () => {
     expect(phases.length, `no phase number found in "${phaseText}"`).toBeGreaterThan(0);
     // The tile reads `current -> recommended`; the recommendation is the last one it prints.
     const recommended = phases[phases.length - 1];
-    // The solver lands on 52 for this account; asserted as a narrow band rather than a point so
-    // a last-digit move in an unrelated constant does not fail a test about the UI.
-    expect(recommended).toBeGreaterThanOrEqual(50);
-    expect(recommended).toBeLessThanOrEqual(54);
+    // The solver lands on 55 for this account, up from 52 before the 2026-08-28 damage patch made
+    // weapons worth five times as much: a stronger roster clears higher, so the phase it should
+    // farm rises. Asserted as a narrow band rather than a point so a last-digit move in an
+    // unrelated constant does not fail a test about the UI.
+    //
+    // This band is a UI anchor, not a measurement. The capture behind it is out of regime for
+    // sheet math (see `docs/fixture-corpus.md` §13), so the number is here to keep the assertion
+    // from going vacuous, and it moves whenever the model does.
+    expect(recommended).toBeGreaterThanOrEqual(53);
+    expect(recommended).toBeLessThanOrEqual(57);
   });
 
   // 2. Optimize expands the panel IN PLACE — DOM order between the toolbar and the table's
@@ -191,8 +197,8 @@ test.describe('Farm Respec Advisor', () => {
   });
 
   // 5. Re-rank moves the top-ranked phase into the recommended band, closes the panel, and marks the
-  // table as showing the proposed build.
-  test('re-rank moves the top-ranked phase into 50-54, closes the panel, and marks the table', async ({ page }) => {
+  // table as showing the proposed build. Same band, and the same caveat, as the Phase tile above.
+  test('re-rank moves the top-ranked phase into 53-57, closes the panel, and marks the table', async ({ page }) => {
     const beforePhase = await firstRowPhase(page);
 
     await optimizeButton(page).click();
@@ -205,8 +211,8 @@ test.describe('Farm Respec Advisor', () => {
 
     const afterPhase = await firstRowPhase(page);
     expect(afterPhase).not.toBe(beforePhase);
-    expect(afterPhase).toBeGreaterThanOrEqual(50);
-    expect(afterPhase).toBeLessThanOrEqual(54);
+    expect(afterPhase).toBeGreaterThanOrEqual(53);
+    expect(afterPhase).toBeLessThanOrEqual(57);
   });
 
   // 6. Invalidation: with re-rank on, changing an input reverts everything — no stale figure.

@@ -10,7 +10,10 @@ import { computeHeroFarmBases } from '@bombfarm/domain/farm-rate';
 import { resolveFarmObjective } from '@bombfarm/domain/farm-optimize-objective';
 import { reoptBudget } from '@bombfarm/domain/points-reopt-core';
 import type { HeroRecord } from '@bombfarm/domain/shims/storage';
-import { loadFarmRateFixture } from './helpers/farm-rate-fixtures';
+import { FARM_OPTIMIZE_FIXTURE, loadFarmRateFixture } from './helpers/farm-rate-fixtures';
+import { holdSuiteUntilInRegime } from './helpers/capture-regime';
+
+holdSuiteUntilInRegime(`sheet-math/${FARM_OPTIMIZE_FIXTURE}`, 'sheet');
 
 const { heroes, account, maxPhase } = loadFarmRateFixture();
 

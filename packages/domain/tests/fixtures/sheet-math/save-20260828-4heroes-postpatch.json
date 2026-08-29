@@ -1,0 +1,854 @@
+{
+  "account": {
+    "bag_capacity": 25,
+    "bag_tabs": 1,
+    "gold": "4072",
+    "items_count": 5,
+    "locked": false,
+    "max_phase": 21,
+    "phase": 21
+  },
+  "casa": {
+    "active_casa": 1,
+    "cycle_secs": 1196.84210526316,
+    "cycle_secs_per_house": [
+      1196.84210526316,
+      1080,
+      960,
+      840,
+      660
+    ],
+    "levels": [
+      2,
+      0,
+      0,
+      0,
+      0
+    ],
+    "slots": 3,
+    "slots_per_house": [
+      3,
+      5,
+      7,
+      9,
+      9
+    ],
+    "upgrade_cost": [
+      1
+    ]
+  },
+  "export_version": 1,
+  "generated_at": 1787958725,
+  "heroes": [
+    {
+      "abilities": [
+        {
+          "code": "bateria_extra",
+          "level": 12,
+          "max": 20,
+          "slot": 1
+        },
+        {
+          "code": "folego_mineiro",
+          "level": 2,
+          "max": 20,
+          "slot": 12
+        }
+      ],
+      "ability_points_spent": 14,
+      "ability_points_total": 14,
+      "ability_reroll_cost": "28000",
+      "ability_reroll_stone": "skill_stone_incomum",
+      "battle_allowed": true,
+      "birth_stats": {
+        "cooldown_reduction": 0.0101675134266197,
+        "crit_chance": 0.0842058882791388,
+        "crit_dmg": 1.52756082571399,
+        "dmg": 86.5216409251296,
+        "energia": 146.372628060935,
+        "luck": 0.0292909013095842,
+        "penetration": 1.32323792547765,
+        "speed": 50.8119997507135
+      },
+      "id": "2801",
+      "in_field": false,
+      "in_market": false,
+      "level": 14,
+      "marketable": false,
+      "name": "Jon",
+      "rank": "C",
+      "rarity": 1,
+      "skin": 5,
+      "skin_birth": 1,
+      "slots": [
+        "9178",
+        "11934",
+        "22238",
+        null,
+        null,
+        "23873",
+        null,
+        null
+      ],
+      "stars": 0,
+      "stat_points_available": 0,
+      "stat_ranges": {
+        "cooldown_reduction": {
+          "max": 0.03,
+          "min": 0.005
+        },
+        "crit_chance": {
+          "max": 0.09,
+          "min": 0.03
+        },
+        "crit_dmg": {
+          "max": 1.7,
+          "min": 1.45
+        },
+        "dmg": {
+          "max": 110,
+          "min": 65
+        },
+        "energia": {
+          "max": 160,
+          "min": 120
+        },
+        "luck": {
+          "max": 0.07,
+          "min": 0.01
+        },
+        "penetration": {
+          "max": 2.5,
+          "min": 0.5
+        },
+        "speed": {
+          "max": 51.5,
+          "min": 47
+        }
+      },
+      "stats": {
+        "cooldown_reduction": 0.0102627597438214,
+        "crit_chance": 0.0842058882791388,
+        "crit_dmg": 1.52756082571399,
+        "dmg": 387.043538916507,
+        "energia": 214.605850801188,
+        "luck": 0.0326735921095842,
+        "penetration": 1.6937445446114,
+        "power": 2574.48265914357,
+        "speed": 50.8119997507135
+      },
+      "xp": "12024"
+    },
+    {
+      "abilities": [
+        {
+          "code": "passagem_bastao",
+          "level": 6,
+          "max": 20,
+          "slot": 13
+        }
+      ],
+      "ability_points_spent": 6,
+      "ability_points_total": 6,
+      "ability_reroll_cost": "6000",
+      "ability_reroll_stone": "skill_stone_comum",
+      "battle_allowed": true,
+      "birth_stats": {
+        "cooldown_reduction": 0.00874423504136577,
+        "crit_chance": 0.0395325871724759,
+        "crit_dmg": 1.51811181455923,
+        "dmg": 66.2057119062329,
+        "energia": 116.256333818571,
+        "luck": 0.0411025329902664,
+        "penetration": 0.569364145869237,
+        "speed": 48.172186388078
+      },
+      "id": "2807",
+      "in_field": false,
+      "in_market": false,
+      "level": 6,
+      "marketable": false,
+      "name": "Thane",
+      "rank": "A",
+      "rarity": 0,
+      "skin": 2,
+      "skin_birth": 3,
+      "slots": [
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null
+      ],
+      "stars": 0,
+      "stat_points_available": 0,
+      "stat_ranges": {
+        "cooldown_reduction": {
+          "max": 0.02,
+          "min": 0
+        },
+        "crit_chance": {
+          "max": 0.08,
+          "min": 0.02
+        },
+        "crit_dmg": {
+          "max": 1.6,
+          "min": 1.4
+        },
+        "dmg": {
+          "max": 70,
+          "min": 40
+        },
+        "energia": {
+          "max": 120,
+          "min": 80
+        },
+        "luck": {
+          "max": 0.05,
+          "min": 0
+        },
+        "penetration": {
+          "max": 1.5,
+          "min": 0
+        },
+        "speed": {
+          "max": 50,
+          "min": 46
+        }
+      },
+      "stats": {
+        "cooldown_reduction": 0.00874423504136577,
+        "crit_chance": 0.0395325871724759,
+        "crit_dmg": 1.51811181455923,
+        "dmg": 159.019197001853,
+        "energia": 124.017429268759,
+        "luck": 0.0444852237902664,
+        "penetration": 0.569364145869237,
+        "power": 940.197604059748,
+        "speed": 48.172186388078
+      },
+      "xp": "1062"
+    },
+    {
+      "abilities": [
+        {
+          "code": "olho_clinico",
+          "level": 6,
+          "max": 20,
+          "slot": 10
+        },
+        {
+          "code": "brecha",
+          "level": 8,
+          "max": 20,
+          "slot": 20
+        }
+      ],
+      "ability_points_spent": 14,
+      "ability_points_total": 14,
+      "ability_reroll_cost": "28000",
+      "ability_reroll_stone": "skill_stone_incomum",
+      "battle_allowed": true,
+      "birth_stats": {
+        "cooldown_reduction": 0.0229996814097483,
+        "crit_chance": 0.0483164911601546,
+        "crit_dmg": 1.59513969671139,
+        "dmg": 81.3271047682474,
+        "energia": 152.468867281669,
+        "luck": 0.0438912142774654,
+        "penetration": 1.88955103961974,
+        "speed": 50.5586355595339
+      },
+      "id": "7312",
+      "in_field": false,
+      "in_market": false,
+      "level": 14,
+      "marketable": false,
+      "name": "Bellatrix",
+      "rank": "A",
+      "rarity": 1,
+      "skin": 5,
+      "skin_birth": 1,
+      "slots": [
+        "19277",
+        "28325",
+        "25953",
+        "31896",
+        "27049",
+        "16133",
+        null,
+        null
+      ],
+      "stars": 0,
+      "stat_points_available": 0,
+      "stat_ranges": {
+        "cooldown_reduction": {
+          "max": 0.03,
+          "min": 0.005
+        },
+        "crit_chance": {
+          "max": 0.09,
+          "min": 0.03
+        },
+        "crit_dmg": {
+          "max": 1.7,
+          "min": 1.45
+        },
+        "dmg": {
+          "max": 110,
+          "min": 65
+        },
+        "energia": {
+          "max": 160,
+          "min": 120
+        },
+        "luck": {
+          "max": 0.07,
+          "min": 0.01
+        },
+        "penetration": {
+          "max": 2.5,
+          "min": 0.5
+        },
+        "speed": {
+          "max": 51.5,
+          "min": 47
+        }
+      },
+      "stats": {
+        "cooldown_reduction": 0.0232151357552872,
+        "crit_chance": 0.168316491160155,
+        "crit_dmg": 1.59513969671139,
+        "dmg": 378.753059210123,
+        "energia": 221.336678169757,
+        "luck": 0.0472739050774654,
+        "penetration": 2.15408818516651,
+        "power": 2720.2160512723,
+        "speed": 50.6364958582956
+      },
+      "xp": "7034"
+    },
+    {
+      "abilities": [
+        {
+          "code": "caca_hero",
+          "level": 0,
+          "max": 20,
+          "slot": 2
+        },
+        {
+          "code": "olho_clinico",
+          "level": 8,
+          "max": 20,
+          "slot": 10
+        }
+      ],
+      "ability_points_spent": 8,
+      "ability_points_total": 8,
+      "ability_reroll_cost": "16000",
+      "ability_reroll_stone": "skill_stone_incomum",
+      "battle_allowed": true,
+      "birth_stats": {
+        "cooldown_reduction": 0.0246507541654628,
+        "crit_chance": 0.0896897443586536,
+        "crit_dmg": 1.46180578291626,
+        "dmg": 76.4663853169005,
+        "energia": 143.230783842239,
+        "luck": 0.0170232685115484,
+        "penetration": 1.23520013379661,
+        "speed": 51.0136915637044
+      },
+      "id": "7636",
+      "in_field": false,
+      "in_market": false,
+      "level": 8,
+      "marketable": false,
+      "name": "Minato",
+      "rank": "C",
+      "rarity": 1,
+      "skin": 5,
+      "skin_birth": 0,
+      "slots": [
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null
+      ],
+      "stars": 0,
+      "stat_points_available": 0,
+      "stat_ranges": {
+        "cooldown_reduction": {
+          "max": 0.03,
+          "min": 0.005
+        },
+        "crit_chance": {
+          "max": 0.09,
+          "min": 0.03
+        },
+        "crit_dmg": {
+          "max": 1.7,
+          "min": 1.45
+        },
+        "dmg": {
+          "max": 110,
+          "min": 65
+        },
+        "energia": {
+          "max": 160,
+          "min": 120
+        },
+        "luck": {
+          "max": 0.07,
+          "min": 0.01
+        },
+        "penetration": {
+          "max": 2.5,
+          "min": 0.5
+        },
+        "speed": {
+          "max": 51.5,
+          "min": 47
+        }
+      },
+      "stats": {
+        "cooldown_reduction": 0.0246507541654628,
+        "crit_chance": 0.249689744358654,
+        "crit_dmg": 1.46180578291626,
+        "dmg": 210.290821865914,
+        "energia": 152.792652415693,
+        "luck": 0.0204059593115484,
+        "penetration": 1.23520013379661,
+        "power": 1438.38423601548,
+        "speed": 51.0136915637044
+      },
+      "xp": "1014"
+    }
+  ],
+  "items": [
+    {
+      "category": 0,
+      "def_id": "ember_arma",
+      "equip_slot": 0,
+      "equipped_on": "2801",
+      "id": "9178",
+      "in_stash": false,
+      "level": 10,
+      "locked": false,
+      "market_state": 0,
+      "power": 650.449065136578,
+      "rarity": 0,
+      "sell_value": "100",
+      "sellable": true,
+      "set": "ember",
+      "slot": 0,
+      "stats": [
+        {
+          "effective": 96.25,
+          "stat": 0,
+          "value": 96.25
+        }
+      ],
+      "tradable": false,
+      "upgrade": 0
+    },
+    {
+      "category": 0,
+      "def_id": "ember_elmo",
+      "equip_slot": 1,
+      "equipped_on": "2801",
+      "id": "11934",
+      "in_stash": false,
+      "level": 10,
+      "locked": false,
+      "market_state": 0,
+      "power": 5.74731469158019,
+      "rarity": 0,
+      "sell_value": "100",
+      "sellable": true,
+      "set": "ember",
+      "slot": 1,
+      "stats": [
+        {
+          "effective": 0.035,
+          "stat": 1,
+          "value": 0.035
+        }
+      ],
+      "tradable": false,
+      "upgrade": 0
+    },
+    {
+      "category": 0,
+      "def_id": "ember_luva",
+      "equip_slot": 5,
+      "equipped_on": "7312",
+      "id": "16133",
+      "in_stash": false,
+      "level": 10,
+      "locked": false,
+      "market_state": 0,
+      "power": 130.089813027316,
+      "rarity": 0,
+      "sell_value": "100",
+      "sellable": true,
+      "set": "ember",
+      "slot": 5,
+      "stats": [
+        {
+          "effective": 19.25,
+          "stat": 0,
+          "value": 19.25
+        }
+      ],
+      "tradable": false,
+      "upgrade": 0
+    },
+    {
+      "category": 5,
+      "def_id": "skill_stone_incomum",
+      "equip_slot": null,
+      "equipped_on": null,
+      "id": "17154",
+      "in_stash": true,
+      "level": 0,
+      "locked": false,
+      "market_state": 0,
+      "power": 0,
+      "rarity": 1,
+      "sell_value": "140",
+      "sellable": true,
+      "set": "",
+      "stats": [],
+      "tradable": false,
+      "upgrade": 0
+    },
+    {
+      "category": 0,
+      "def_id": "ember_arma",
+      "equip_slot": 0,
+      "equipped_on": "7312",
+      "id": "19277",
+      "in_stash": false,
+      "level": 10,
+      "locked": false,
+      "market_state": 0,
+      "power": 650.449065136578,
+      "rarity": 0,
+      "sell_value": "100",
+      "sellable": true,
+      "set": "ember",
+      "slot": 0,
+      "stats": [
+        {
+          "effective": 96.25,
+          "stat": 0,
+          "value": 96.25
+        }
+      ],
+      "tradable": false,
+      "upgrade": 0
+    },
+    {
+      "category": 0,
+      "def_id": "ember_peito",
+      "equip_slot": 2,
+      "equipped_on": "2801",
+      "id": "22238",
+      "in_stash": false,
+      "level": 10,
+      "locked": false,
+      "market_state": 0,
+      "power": 1.68923172362156,
+      "rarity": 1,
+      "sell_value": "140",
+      "sellable": true,
+      "set": "ember",
+      "slot": 2,
+      "stats": [
+        {
+          "effective": 0.14,
+          "stat": 5,
+          "value": 0.14
+        },
+        {
+          "effective": 0.00936771,
+          "stat": 6,
+          "value": 0.00936771
+        }
+      ],
+      "tradable": false,
+      "upgrade": 0
+    },
+    {
+      "category": 0,
+      "def_id": "ember_luva",
+      "equip_slot": 5,
+      "equipped_on": "2801",
+      "id": "23873",
+      "in_stash": false,
+      "level": 10,
+      "locked": false,
+      "market_state": 0,
+      "power": 131.649096468532,
+      "rarity": 1,
+      "sell_value": "140",
+      "sellable": true,
+      "set": "ember",
+      "slot": 5,
+      "stats": [
+        {
+          "effective": 19.25,
+          "stat": 0,
+          "value": 19.25
+        },
+        {
+          "effective": 0.14,
+          "stat": 5,
+          "value": 0.14
+        }
+      ],
+      "tradable": false,
+      "upgrade": 0
+    },
+    {
+      "category": 0,
+      "def_id": "ember_peito",
+      "equip_slot": 2,
+      "equipped_on": "7312",
+      "id": "25953",
+      "in_stash": false,
+      "level": 10,
+      "locked": false,
+      "market_state": 0,
+      "power": 1.40475985695161,
+      "rarity": 0,
+      "sell_value": "100",
+      "sellable": true,
+      "set": "ember",
+      "slot": 2,
+      "stats": [
+        {
+          "effective": 0.14,
+          "stat": 5,
+          "value": 0.14
+        }
+      ],
+      "tradable": false,
+      "upgrade": 0
+    },
+    {
+      "category": 0,
+      "def_id": "ember_luva",
+      "equip_slot": null,
+      "equipped_on": null,
+      "id": "26276",
+      "in_stash": false,
+      "level": 10,
+      "locked": true,
+      "market_state": 0,
+      "power": 130.089813027316,
+      "rarity": 0,
+      "sell_value": "100",
+      "sellable": true,
+      "set": "ember",
+      "slot": 5,
+      "stats": [
+        {
+          "effective": 19.25,
+          "stat": 0,
+          "value": 19.25
+        }
+      ],
+      "tradable": false,
+      "upgrade": 0
+    },
+    {
+      "category": 0,
+      "def_id": "ember_bota",
+      "equip_slot": 4,
+      "equipped_on": "7312",
+      "id": "27049",
+      "in_stash": false,
+      "level": 10,
+      "locked": false,
+      "market_state": 0,
+      "power": 0.401168966002388,
+      "rarity": 0,
+      "sell_value": "100",
+      "sellable": true,
+      "set": "ember",
+      "slot": 4,
+      "stats": [
+        {
+          "effective": 0.00077,
+          "stat": 2,
+          "value": 0.00077
+        }
+      ],
+      "tradable": false,
+      "upgrade": 0
+    },
+    {
+      "category": 0,
+      "def_id": "ember_arma",
+      "equip_slot": null,
+      "equipped_on": null,
+      "id": "27611",
+      "in_stash": false,
+      "level": 10,
+      "locked": false,
+      "market_state": 0,
+      "power": 650.449065136578,
+      "rarity": 0,
+      "sell_value": "100",
+      "sellable": true,
+      "set": "ember",
+      "slot": 0,
+      "stats": [
+        {
+          "effective": 96.25,
+          "stat": 0,
+          "value": 96.25
+        }
+      ],
+      "tradable": false,
+      "upgrade": 0
+    },
+    {
+      "category": 0,
+      "def_id": "ember_elmo",
+      "equip_slot": 1,
+      "equipped_on": "7312",
+      "id": "28325",
+      "in_stash": false,
+      "level": 10,
+      "locked": false,
+      "market_state": 0,
+      "power": 5.74731469158019,
+      "rarity": 0,
+      "sell_value": "100",
+      "sellable": true,
+      "set": "ember",
+      "slot": 1,
+      "stats": [
+        {
+          "effective": 0.035,
+          "stat": 1,
+          "value": 0.035
+        }
+      ],
+      "tradable": false,
+      "upgrade": 0
+    },
+    {
+      "category": 0,
+      "def_id": "ember_calca",
+      "equip_slot": 3,
+      "equipped_on": "7312",
+      "id": "31896",
+      "in_stash": false,
+      "level": 10,
+      "locked": false,
+      "market_state": 0,
+      "power": 0.685399714540381,
+      "rarity": 1,
+      "sell_value": "140",
+      "sellable": true,
+      "set": "ember",
+      "slot": 3,
+      "stats": [
+        {
+          "effective": 0.00936771,
+          "stat": 6,
+          "value": 0.00936771
+        },
+        {
+          "effective": 0.00077,
+          "stat": 2,
+          "value": 0.00077
+        }
+      ],
+      "tradable": false,
+      "upgrade": 0
+    },
+    {
+      "category": 4,
+      "def_id": "map_key_incomum",
+      "equip_slot": null,
+      "equipped_on": null,
+      "id": "38443",
+      "in_stash": true,
+      "level": 0,
+      "locked": false,
+      "market_state": 0,
+      "power": 0,
+      "rarity": 1,
+      "sell_value": "140",
+      "sellable": true,
+      "set": "",
+      "stats": [],
+      "tradable": false,
+      "upgrade": 0
+    },
+    {
+      "category": 4,
+      "def_id": "map_key_incomum",
+      "equip_slot": null,
+      "equipped_on": null,
+      "id": "39306",
+      "in_stash": true,
+      "level": 0,
+      "locked": false,
+      "market_state": 0,
+      "power": 0,
+      "rarity": 1,
+      "sell_value": "140",
+      "sellable": true,
+      "set": "",
+      "stats": [],
+      "tradable": true,
+      "upgrade": 0
+    }
+  ],
+  "skills": {
+    "bag_tabs": 1,
+    "field_slots": 2,
+    "gold": "4072",
+    "levels": {
+      "E01": 1,
+      "H04": 10,
+      "H05": 3,
+      "H06": 10,
+      "N01": 1
+    },
+    "max_phase": 21,
+    "refunds": {
+      "E01": "10045",
+      "H04": "7496",
+      "H05": "2194",
+      "H06": "8305",
+      "N01": "1500"
+    },
+    "totals": {
+      "bag_tabs_bonus": 0,
+      "coin_add": 0.0625,
+      "crit_chance_add": 0,
+      "crit_dmg_add": 0,
+      "dmg_static": 1.05,
+      "energia_add": 0.0667584741,
+      "geo_mult": 1,
+      "luck_add": 0.0033826908,
+      "speed_add": 0,
+      "team_dmg_add": 0.05,
+      "vagas_campo": 1,
+      "xp_mult": 1
+    }
+  }
+}

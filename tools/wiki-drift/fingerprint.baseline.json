@@ -1,8 +1,8 @@
 {
-  "capturedAt": "2026-08-23T19:44:45.060Z",
+  "capturedAt": "2026-08-28T23:49:00.249Z",
   "endpoints": {
     "data": {
-      "payloadSha256": "5d4a10ec62fd842ebe54f9f2c722b03c4e0c468d463e4e033e7846209c1821f8",
+      "payloadSha256": "594b5e3feda963163083ee398d5168ce3336dd70edb4c2f1f2a2ed02e0da8f54",
       "sectionNames": [
         "bolsa",
         "combate",
@@ -39,11 +39,11 @@
         "fases": "5490ccd7957eb3f9befaea292bd6954deaadb3ea61dc2d172d3a152e63e1175e",
         "gemas": "611140ce2878ce4290580a2efaea428a765313efcf58e08b5a1459985df0bc83",
         "habilidades": "5cdba151b8ce5e4487b11713c7abef34624b6b8cb79a7511487409c2fa957f11",
-        "herois": "716f927ab6594a2590f064ba85f723c53310e3b4638c458e4c85f68514581546",
+        "herois": "346e64df6e27771ccfb3de37c74ac0974e0b0b91ea8d0ba591551f0e1cda6745",
         "inventario": "7f24baca797e73d31ef4f2ec86deea3e7f559edcd822a465dd77c7e253a20cb9",
         "item_stats": "94041e8cad48122447a273106df9ecccec1c44d569659737dfd73fa44bb7cd79",
-        "itens": "b523fe716247f36a3e3e621af7b43042b864d63c8e6cd4f3195c930a794b5ea5",
-        "mercado": "c0521b30c7b0cc61041a148a6e5e6e0fda56f9f886cf638ede9a8e0b87b3eb9a",
+        "itens": "3c62de2a14ac4dc705f23e3443986d3ffe9658fafd921c0f8998e760c75f11dc",
+        "mercado": "7eff8c0504100cd6357eb3fd515258c2ecf2023946ea1240154d26e9bd2e1a6a",
         "pedra": "baedadf2ed982b0c12570e2c82d6b4ce2f305d6c9ff401fc5b9f70f714196a43",
         "premios": "818075c989f12e5cc03434ac09e54ac60ba15a191f79ed15cff198d52113fc28",
         "raridades": "e014307c9fa181014e6669a97b435adf1813069b2cba314bb8623ee89b0bd070",

@@ -1,7 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import { runTeamPlan } from '@bombfarm/domain/team-plan/solver';
 import type { TeamPlanInput, ScopeState } from '@bombfarm/domain/team-plan/types';
-import { teamPlanInputFromFixture, TEAM_PLAN_FIXTURE, TEAM_PLAN_LARGE_FIXTURE } from './helpers/team-plan-fixtures';
+import { TEAM_PLAN_FIXTURE, TEAM_PLAN_LARGE_FIXTURE, holdTeamPlanSuiteUntilInRegime, teamPlanInputFromFixture } from './helpers/team-plan-fixtures';
+
+holdTeamPlanSuiteUntilInRegime();
 
 /**
  * Regression grid for the roster gear optimizer step-monotonicity bug: the plan must never

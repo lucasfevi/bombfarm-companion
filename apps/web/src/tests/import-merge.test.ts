@@ -15,6 +15,9 @@ import { saveSheetUnits, treeTotalsFromSave } from '@bombfarm/domain/save-units'
 import { SHEET_KEYS, ZERO_PTS_TEMPLATE } from '@bombfarm/domain/planner-constants';
 import { importHeroes, loadHeroes, normalizeHero, type HeroRecord } from '@/shared/lib/storage';
 import { loadFixtureJson } from './helpers/sheet-math-fixtures';
+import { skipUnlessInRegime } from '../../../../packages/domain/tests/helpers/capture-regime';
+
+const MERGE_CAPTURE = 'save-20260818-12heroes.json';
 
 const sheet = (patch: Partial<SheetStats> = {}): SheetStats => ({
   attack: 100,
@@ -279,11 +282,16 @@ describe('mergeImportedHero', () => {
   // the overwrite is not stale (different pts vectors) and still proves the merged
   // naked/pts/loadout faithfully reconstruct a real save's `stats`, without needing the same
   // hero twice.
-  it('re-import Sora -> Doran — merged naked+pts reconstruct the new save (no stale decimals)', () => {
+  it('re-import Sora -> Doran — merged naked+pts reconstruct the new save (no stale decimals)', (ctx) => {
     // Re-pointed onto the post-2026-08-18-revert capture (issue #132); the 2026-08-16
     // redistribution export this used to read is now flat-regime and no longer a subject —
     // see `docs/fixture-corpus.md` §9.
-    const raw = loadFixtureJson('save-20260818-12heroes.json');
+    //
+    // HELD at the 2026-08-28 damage boundary: Doran is 8/8 geared, so reconstructing his sheet
+    // is a `sheet` claim, and this capture can no longer back one. Every other assertion in this
+    // file is structural and still runs. Returns on the first geared post-2026-08-28 capture.
+    skipUnlessInRegime(ctx, `sheet-math/${MERGE_CAPTURE}`, 'sheet');
+    const raw = loadFixtureJson(MERGE_CAPTURE);
     const { candidates } = parseSaveFile(raw, []);
     const sora = candidates.find((c) => c.record.name === 'Sora')!; // L10, a small pts vector
     const existing = normalizeHero({ ...sora.record, id: 'local-sora', updatedAt: 1 });

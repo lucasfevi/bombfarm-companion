@@ -22,7 +22,9 @@ import { scoreHeroLoadout } from '@bombfarm/domain/team-plan/score';
 import { finalPtsFromOptimizeBuild } from '@bombfarm/domain/team-plan/waterfall';
 import { farmFromAccount } from '@bombfarm/domain/team-plan/waterfall-guards';
 import type { RosterEvaluation } from '@bombfarm/domain/team-plan/types';
-import { teamPlanInputFromFixture } from './helpers/team-plan-fixtures';
+import { holdTeamPlanSuiteUntilInRegime, teamPlanInputFromFixture } from './helpers/team-plan-fixtures';
+
+holdTeamPlanSuiteUntilInRegime();
 
 function sumPts(pts: Record<string, number>): number {
   return SHEET_KEYS.reduce((sum, key) => sum + (pts[key] ?? 0), 0);

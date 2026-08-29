@@ -15,6 +15,7 @@
  * the file that proves it should stay next to the two that record the others.
  */
 import { describe, expect, it } from 'vitest';
+import { holdSuiteUntilInRegime } from './helpers/capture-regime';
 import { applySkillTree, nakedFromBirth } from '@bombfarm/domain/birth-sheet';
 import { emptySheetOther, starsMult } from '@bombfarm/domain/gear';
 import { inferSpentPoints } from '@bombfarm/domain/point-inference';
@@ -22,6 +23,8 @@ import { SHEET_KEYS } from '@bombfarm/domain/planner-constants';
 import { extractHero, loadFixtureJson, treeTotalsFromSave } from './helpers/sheet-math-fixtures';
 
 const CAPTURE = 'save-20260823-13heroes-crit-points.json';
+
+holdSuiteUntilInRegime(`sheet-math/${CAPTURE}`, 'sheet');
 
 const raw = loadFixtureJson(CAPTURE);
 const heroesRaw = raw.heroes as Record<string, unknown>[];
