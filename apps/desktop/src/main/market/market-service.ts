@@ -9,7 +9,7 @@ import {
 } from '@bombfarm/contracts';
 import {
   MARKET_APP_ID,
-  isMarketSnapshot,
+  readMarketSnapshot,
   parsePriceOverview,
   priceOverviewUrl,
   type MarketEntry,
@@ -120,12 +120,15 @@ export function createMarketService(deps: MarketServiceDeps): MarketService {
   function loadCache(): void {
     const record = readMarketCache(io, deps.cachePath);
     if (record === null) return;
-    if (!isMarketSnapshot(record.snapshot)) {
+    // Normalised, not merely validated: a snapshot cached before native quotes existed outlives
+    // the rollout on disk, and its entries carry no `lowestNative` for pricing to read.
+    const cached = readMarketSnapshot(record.snapshot);
+    if (cached === null) {
       deps.log.warn({ scope: 'market', event: 'cache.malformed' });
       return;
     }
     etag = record.etag;
-    adopt(record.snapshot, 'cache', record.adoptedUtc, null);
+    adopt(cached, 'cache', record.adoptedUtc, null);
     deps.log.info({ scope: 'market', event: 'cache.loaded', publishedUtc: view.publishedUtc });
     publish();
   }
@@ -165,13 +168,14 @@ export function createMarketService(deps: MarketServiceDeps): MarketService {
       return noteCheckFailure('malformed', checkedUtc);
     }
 
-    if (!isMarketSnapshot(parsed)) {
+    const snapshot = readMarketSnapshot(parsed);
+    if (snapshot === null) {
       deps.log.warn({ scope: 'market', event: 'snapshot.rejected_shape' });
       return noteCheckFailure('malformed', checkedUtc);
     }
 
     etag = response.etag;
-    adopt(parsed, 'network', checkedUtc, checkedUtc);
+    adopt(snapshot, 'network', checkedUtc, checkedUtc);
     persist();
     deps.log.info({ scope: 'market', event: 'snapshot.adopted', publishedUtc: view.publishedUtc });
     publish();

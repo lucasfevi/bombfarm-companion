@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { resolveKey } from '@bombfarm/pricing';
 import type { MarketEntry, MarketSnapshot } from '@bombfarm/pricing';
 import type { LogPort } from '../storage/index.js';
 import type { MarketCacheIo } from './market-cache.js';
@@ -145,6 +146,53 @@ describe('market snapshot fetch', () => {
     expect(view.publishedUtc).toBe('2026-08-29T00:00:00.000Z');
     expect(h.files.get(CACHE_PATH)).toContain(GLOVES);
     expect(h.pushes).toHaveLength(1);
+  });
+
+  /**
+   * A version 2 body carries no `lowestNative` on any entry, and the published file is one until
+   * the sweep next runs. Adopting it unchanged put `undefined` where pricing indexes a currency,
+   * and the Inventory screen died on render — every one of its smoke tests, while every unit test
+   * stayed green because they all build version 3 entries.
+   */
+  it('brings a version 2 body up to shape, so pricing can read a currency off every entry', async () => {
+    const legacy = snapshotWith([entry(GLOVES, 'k1', null, null)]) as unknown as Record<string, unknown>;
+    legacy.schemaVersion = 2;
+    delete legacy.nativeCurrencies;
+    for (const row of legacy.entries as Record<string, unknown>[]) {
+      delete row.lowestNative;
+      delete row.nativeQuotedUtc;
+    }
+
+    const h = harness({ respond: () => ok(legacy) });
+
+    const view = await h.service.refreshSnapshot();
+
+    expect(view.snapshot?.entries[0]?.lowestNative).toEqual({});
+    expect(() => resolveKey('k1', view.snapshot, 'BRL')).not.toThrow();
+    expect(resolveKey('k1', view.snapshot, 'BRL').basis).toBe('converted');
+  });
+
+  it('brings a version 2 body up to shape when it comes off disk, not just off the network', () => {
+    const legacy = snapshotWith([entry(GLOVES, 'k1', null, null)]) as unknown as Record<string, unknown>;
+    legacy.schemaVersion = 2;
+    for (const row of legacy.entries as Record<string, unknown>[]) delete row.lowestNative;
+
+    const h = harness({
+      respond: () => {
+        throw new Error('offline');
+      },
+      files: {
+        [CACHE_PATH]: JSON.stringify({
+          etag: 'v1',
+          adoptedUtc: '2026-08-29T00:00:00.000Z',
+          snapshot: legacy,
+        }),
+      },
+    });
+
+    h.service.start();
+
+    expect(() => resolveKey('k1', h.service.getView().snapshot, 'BRL')).not.toThrow();
   });
 
   it('prices from the cache on a cold start with no network at all', () => {
