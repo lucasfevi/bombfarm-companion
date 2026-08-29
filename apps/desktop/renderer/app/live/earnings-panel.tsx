@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react';
 import type { LiveEarnings } from '@bombfarm/contracts';
-import { Button, formatCompactNumber, HelpTip, Icon, Panel, PanelHeader } from '@bombfarm/ui';
+import { Button, formatCompactNumber, HelpTip, Icon, Panel } from '@bombfarm/ui';
 import { sub, useCopy } from '../../lib/copy';
 import { formatCapturedAt } from '../../lib/format';
 import type { ReachedLiveFreshness } from './freshness-line';
@@ -117,8 +117,7 @@ export function EarningsPanel({
   });
 
   return (
-    <Panel data-testid="live-earnings">
-      <PanelHeader title={t.liveEarningsTitle} />
+    <Panel data-testid="live-earnings" aria-label={t.liveEarningsTitle}>
       <div className="flex flex-col gap-4">
         <div className="flex items-start justify-between gap-4 rounded-lg border border-line/55 p-4">
           <div className="flex flex-col gap-1.5">

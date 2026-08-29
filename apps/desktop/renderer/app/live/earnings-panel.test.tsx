@@ -223,6 +223,18 @@ describe('EarningsPanel — labels', () => {
   });
 });
 
+describe('EarningsPanel — the panel keeps an accessible name without a visible title', () => {
+  it('renders no visible heading, but names the landmark via aria-label with the same copy', () => {
+    const out = html(earnings());
+
+    expect(out).not.toContain('<h2');
+    expect(out).not.toMatch(/>\s*Earnings\s*</);
+    const sectionMatch = out.match(/<section[^>]*data-testid="live-earnings"[^>]*>/);
+    expect(sectionMatch).not.toBeNull();
+    expect(sectionMatch?.[0]).toContain(`aria-label="${en.liveEarningsTitle}"`);
+  });
+});
+
 describe('EarningsPanel — the two headline figures share one baseline', () => {
   it('the gold and xp headline values are children of one items-baseline container', () => {
     const out = html(earnings());
