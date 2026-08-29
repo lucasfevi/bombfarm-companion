@@ -1,5 +1,5 @@
 ---
-'@bombfarm/pricing': minor
+"@bombfarm/pricing": minor
 ---
 
 Publish a Steam Community Market snapshot the apps can price any owned item from.
