@@ -147,6 +147,9 @@ describe('design-system barrel surface (frozen)', () => {
 // The toolbar and stat-panel classes (2026-08-27) are exported for the same reason every other
 // recipe here is: both shells render the grid, and a shell that wants to match its chrome needs
 // the tokens rather than a copy of the class strings.
+//
+// SpriteLoop: the preloading, reduced-motion-aware pixel-art frame loop generalised out of the
+// web-only hero6 bomb-activation sprite, so the desktop app can reuse the same implementation.
 const FROZEN_GAME_ART_BARREL_VALUE_EXPORTS = [
   'AbilityIcon',
   'ArtFrame',
@@ -164,6 +167,7 @@ const FROZEN_GAME_ART_BARREL_VALUE_EXPORTS = [
   'HouseIcon',
   'ItemIcon',
   'PropIcon',
+  'SpriteLoop',
   'abilityIconRecipe',
   'artFrameRadiusClass',
   'artFrameRecipe',

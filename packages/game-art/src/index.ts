@@ -1,4 +1,5 @@
 export { ArtFrame, type ArtFrameSize } from './art-frame';
+export { SpriteLoop, type SpriteLoopProps } from './sprite-loop';
 export { HeroAvatar } from './hero-avatar';
 export { HeroIdentity, type HeroIdentityVariant } from './hero-identity';
 export { HeroIdentityChip } from './hero-identity-chip';
