@@ -136,3 +136,59 @@ describe('HeroRow — the muted treatment', () => {
     ).toBe(renderToStaticMarkup(createElement(HeroRow, { state: 'benched', hero: { id: 'hero-7' } })));
   });
 });
+
+describe('HeroRow — the energy reading beside the bar', () => {
+  it('prints the same whole percentage the track fills to, for every exact hundredth', () => {
+    const disagreeing = Array.from({ length: 101 }, (_, i) => i).filter((i) => {
+      const html = renderToStaticMarkup(
+        createElement(HeroRow, { state: 'queued', hero: { id: 'hero-7', energyFraction: i / 100 } }),
+      );
+      const fillWidth = /style="width:([^"]*)"/.exec(html)?.[1]?.trim();
+      const reading = /data-testid="live-energy-hero-7-value"[^>]*>([^<]*)</.exec(html)?.[1];
+      return fillWidth !== `${String(i)}%` || reading !== `${String(i)}%`;
+    });
+    expect(disagreeing).toEqual([]);
+  });
+
+  it('reads as missing, never as 0%, when the fraction was never sent at all', () => {
+    const withData = renderToStaticMarkup(
+      createElement(HeroRow, { state: 'queued', hero: { id: 'hero-7', energyFraction: 0 } }),
+    );
+    const withoutData = renderToStaticMarkup(createElement(HeroRow, { state: 'queued', hero: { id: 'hero-7' } }));
+    expect(/data-testid="live-energy-hero-7-value"[^>]*>([^<]*)</.exec(withData)?.[1]).toBe('0%');
+    expect(/data-testid="live-energy-hero-7-value"[^>]*>([^<]*)</.exec(withoutData)?.[1]).toBe(en.fidelityStatusMissing);
+  });
+});
+
+describe('HeroRow — every row shares one fixed column grid', () => {
+  it('renders the identical grid-template-columns class regardless of state, name length, or countdown presence', () => {
+    const short = renderToStaticMarkup(createElement(HeroRow, { state: 'queued', hero: { id: 'short-id', name: 'Zo' } }));
+    const long = renderToStaticMarkup(
+      createElement(HeroRow, {
+        state: 'on-field',
+        hero: { id: 'long-id', name: 'A Genuinely Very Long Hero Name', grade: 'S', level: 60 },
+        trailing: createElement('span', { 'data-testid': 'trailing-probe' }, '1:23'),
+      }),
+    );
+    const gridClassOf = (html: string, id: string) =>
+      new RegExp(`<li[^>]*data-testid="live-hero-row-${id}"[^>]*class="([^"]*)"`).exec(html)?.[1];
+
+    const shortClass = gridClassOf(short, 'short-id');
+    const longClass = gridClassOf(long, 'long-id');
+    expect(shortClass).toBeTruthy();
+    expect(shortClass).toContain('grid-cols-[');
+    expect(shortClass).toBe(longClass);
+  });
+
+  it('wraps the name in a truncating box rather than letting it widen the identity column', () => {
+    const html = renderToStaticMarkup(
+      createElement(HeroRow, {
+        state: 'queued',
+        hero: { id: 'hero-7', name: 'A Genuinely Very Long Hero Name That Keeps Going' },
+      }),
+    );
+    const nameWrapper = /<span class="([^"]*)"><span[^>]*data-testid="live-hero-row-hero-7-name"/.exec(html)?.[1];
+    expect(nameWrapper).toMatch(/\btruncate\b/);
+    expect(html).toContain('A Genuinely Very Long Hero Name That Keeps Going');
+  });
+});

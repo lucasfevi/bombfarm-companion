@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react';
 import { HeroAvatar, rarityTextClass } from '@bombfarm/game-art';
-import { sub, useCopy, type Copy } from '../../lib/copy';
+import { sub, useCopy, useLocale, type Copy } from '../../lib/copy';
+import { formatEnergyPercent } from '../../lib/format';
 import type { LiveHeroFact } from '../../lib/live/live-model';
 import { EnergyBar } from './energy-bar';
 
@@ -31,6 +32,20 @@ function rowStateLabel(state: LiveRotationRowState, t: Copy): string {
   return t.liveListBenchedTitle;
 }
 
+/** The energy reading beside the bar — its own fixed grid column (see `HeroRow`) rather than part
+ *  of `EnergyBar`, so this column's width never depends on whether the row also has a countdown. */
+function EnergyReading({ testId, fraction }: { testId: string; fraction: number | undefined }) {
+  const t = useCopy();
+  const { locale } = useLocale();
+  const known = fraction !== undefined;
+
+  return (
+    <span data-testid={testId} className="block text-right text-[10px] leading-none tabular-nums text-muted">
+      {known ? formatEnergyPercent(fraction, locale) : t.fidelityStatusMissing}
+    </span>
+  );
+}
+
 export function HeroRow({
   state,
   hero,
@@ -49,31 +64,37 @@ export function HeroRow({
   const rank = hero.name !== undefined ? hero.grade?.trim() : undefined;
   const name = hero.name ?? hero.id;
   const nameColorClass = hero.rarity !== undefined ? (rarityTextClass(hero.rarity) ?? 'text-ink') : 'text-ink';
+  const energyTestId = `live-energy-${hero.id}`;
 
   return (
     <li
       data-testid={`live-hero-row-${hero.id}`}
       data-muted={muted ? '' : undefined}
-      className="flex min-w-0 items-center gap-2 rounded-sm border border-line bg-[color-mix(in_oklch,var(--surface)_92%,transparent)] px-2 py-1 data-[muted]:opacity-60 data-[muted]:grayscale"
+      className="grid grid-cols-[0.5rem_12rem_minmax(0,1fr)_2.25rem_4rem] items-center gap-2 rounded-sm border border-line bg-[color-mix(in_oklch,var(--surface)_92%,transparent)] px-2 py-1 data-[muted]:opacity-60 data-[muted]:grayscale"
     >
-      <RowStateDot state={state} />
-      <span className="sr-only">{rowStateLabel(state, t)}</span>
-      <HeroAvatar skin={hero.skin ?? 0} rarityIdx={hero.rarity ?? NEUTRAL_RARITY_IDX} size="xs" name={name} />
-      <span className="min-w-0 max-w-32 shrink truncate text-[12px] leading-none font-bold">
-        <span data-testid={`live-hero-row-${hero.id}-name`} className={nameColorClass}>
-          {name}
+      <span className="flex items-center">
+        <RowStateDot state={state} />
+        <span className="sr-only">{rowStateLabel(state, t)}</span>
+      </span>
+      <span className="flex min-w-0 items-center gap-2">
+        <HeroAvatar skin={hero.skin ?? 0} rarityIdx={hero.rarity ?? NEUTRAL_RARITY_IDX} size="xs" name={name} />
+        <span className="min-w-0 flex-1 truncate text-[12px] leading-none font-bold">
+          <span data-testid={`live-hero-row-${hero.id}-name`} className={nameColorClass}>
+            {name}
+          </span>
+        </span>
+        {rank ? (
+          <span className="shrink-0 text-[11px] leading-none font-black tracking-tight text-accent">{rank}</span>
+        ) : (
+          <span className="shrink-0 text-[11px] leading-none font-black tracking-tight text-muted">—</span>
+        )}
+        <span className="shrink-0 text-[10px] leading-none text-muted tabular-nums">
+          {sub(t.liveHeroLevelValue, { level: hero.level ?? 0 })}
         </span>
       </span>
-      {rank ? (
-        <span className="shrink-0 text-[11px] leading-none font-black tracking-tight text-accent">{rank}</span>
-      ) : (
-        <span className="shrink-0 text-[11px] leading-none font-black tracking-tight text-muted">—</span>
-      )}
-      <span className="shrink-0 text-[10px] leading-none text-muted tabular-nums">
-        {sub(t.liveHeroLevelValue, { level: hero.level ?? 0 })}
-      </span>
-      <EnergyBar testId={`live-energy-${hero.id}`} fraction={hero.energyFraction} />
-      {trailing !== undefined ? <span className="flex shrink-0 items-center gap-1">{trailing}</span> : null}
+      <EnergyBar testId={energyTestId} fraction={hero.energyFraction} />
+      <EnergyReading testId={`${energyTestId}-value`} fraction={hero.energyFraction} />
+      {trailing !== undefined ? <span className="flex items-center gap-1">{trailing}</span> : null}
     </li>
   );
 }
