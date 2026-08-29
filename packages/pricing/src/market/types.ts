@@ -1,0 +1,149 @@
+import type { ItemKind } from '@bombfarm/contracts';
+
+export const MARKET_APP_ID = 4892010;
+
+/**
+ * Steam's facet schema for the app: facet name -> the tag values that currently have market
+ * matches. Read live from `market/appfilters/<appid>`. Treat it as a hint, never as the
+ * authority — it has been measured omitting a tag that had a live, sellable listing.
+ */
+export type AppFilters = Record<string, string[]>;
+
+/** One `market/search/render` row, narrowed to the fields the snapshot keeps. */
+export interface SearchRow {
+  hashName: string;
+  name: string;
+  /** Lowest active listing in USD cents, or null when the row carries no price. */
+  sellPriceCents: number | null;
+  listings: number;
+  iconUrl: string | null;
+  type: string | null;
+}
+
+export interface SearchPage {
+  totalCount: number;
+  rows: SearchRow[];
+}
+
+/** The facets a `search/render` call can be narrowed by. Absent keys are unfiltered. */
+export interface SearchFilters {
+  set?: string;
+  slot?: string;
+  rarity?: string;
+  category?: string;
+  level?: string;
+  act?: string;
+}
+
+export const FACET_NAMES = ['category', 'set', 'slot', 'rarity', 'level', 'act'] as const;
+export type FacetName = (typeof FACET_NAMES)[number];
+
+/**
+ * A market listing reconciled against the committed catalog. Facet values are assigned by
+ * construction — the row came back from a query already narrowed to that tag — never by parsing
+ * `hashName`, whose format Steam does not commit to and which the game has already changed once.
+ */
+export interface MarketEntry {
+  hashName: string;
+  name: string;
+  /**
+   * The stable identity an app looks a price up by. Equipment keys on its catalog def and
+   * rarity; everything else keys on its Steam category plus whichever facets actually
+   * distinguish it (a chest by level or act, a key by rarity, a skin by nothing).
+   */
+  key: string;
+  /** The catalog def, where the catalog has one. Null for chests, cages, skins and gems. */
+  defId: string | null;
+  kind: ItemKind | null;
+  /** Steam's own category tag (`equip`, `chest`, `gem`, `key`, `skin`, `stone`, `time`). */
+  category: string | null;
+  set: string | null;
+  /** Catalog slot code (`arma`, `elmo`, …), translated from Steam's English slot tag. */
+  slot: string | null;
+  rarityIdx: number | null;
+  level: number | null;
+  /** Difficulty an act-scoped item belongs to (Hero Cage, Skill Stone Chest). */
+  act: number | null;
+  lowestUsd: number | null;
+  listings: number;
+  iconUrl: string | null;
+  fetchedUtc: string;
+}
+
+export type AnomalyKind =
+  | 'unknown-slot-tag'
+  | 'unknown-rarity-tag'
+  | 'unknown-category-tag'
+  | 'unknown-set-tag'
+  | 'untagged-equipment'
+  | 'unresolved-rarity'
+  | 'ambiguous-tag'
+  | 'rate-limited';
+
+/**
+ * Something the sweep saw that the catalog cannot explain. Every one of these is a reason the
+ * snapshot may under-report, so the workflow surfaces them rather than letting a silently
+ * mis-mapped tag price an item wrong.
+ */
+export interface Anomaly {
+  kind: AnomalyKind;
+  detail: string;
+}
+
+export interface MarketCoverage {
+  /** Every row the market carried, whatever it turned out to be. */
+  marketRows: number;
+  /** Rows that earned a `key`, so an app can price them. */
+  keyedRows: number;
+  /** Of those, how many have at least one live listing. */
+  pricedRows: number;
+  /** Rows with no key at all — the market is carrying something nothing here understands. */
+  unkeyedRows: number;
+  /** Catalog def+rarity keys that exist at all (`defs` x `rarities`). */
+  catalogKeys: number;
+  /** Of those, how many the market carries. */
+  matchedCatalogKeys: number;
+  searchCalls: number;
+}
+
+export interface MarketSnapshot {
+  schemaVersion: 2;
+  generatedUtc: string;
+  appId: number;
+  baseCurrency: 'USD';
+  /** ISO currency -> units per 1 USD. */
+  fx: Record<string, number>;
+  /** Every reconciled market row, catalog-matched or not. */
+  entries: MarketEntry[];
+  /** `key` -> the entry an app should quote: the most liquid, then the cheapest. */
+  index: Record<string, number>;
+  /**
+   * `key` -> the other entries sharing it. The game renamed its items after launch and Steam
+   * hashes are immutable, so `Ember Amulet (Rare)` and `Ember Amulet Lv 10 (Rare)` are two live
+   * hashes with byte-identical facets. Both are kept: hiding one would hide real supply.
+   */
+  alternates: Record<string, number[]>;
+  /** Catalog def+rarity keys with no market row at all. */
+  unlisted: string[];
+  anomalies: Anomaly[];
+  coverage: MarketCoverage;
+}
+
+/** The key for a catalog equipment item: what an owned `InventoryItem` looks its price up by. */
+export function priceKey(defId: string, rarityIdx: number): string {
+  return `${defId}#${String(rarityIdx)}`;
+}
+
+/**
+ * The key for a market row the catalog has no def for — a chest, a hero cage, a skill stone, a
+ * gem, a skin.
+ *
+ * Keyed on the hash name rather than on the facets, because the facets do not identify these:
+ * `Hero Cage (Act 1)` and `Skill Stone Chest (Act 1)` are both `category=chest, act=1` and
+ * nothing else, so a facet-built key would have quietly merged two different items into one
+ * price. A Steam hash never changes meaning, which makes it the only stable identity available
+ * for an item the catalog does not describe.
+ */
+export function categoryKey(category: string, hashName: string): string {
+  return `${category}#${hashName}`;
+}

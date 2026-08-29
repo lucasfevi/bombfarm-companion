@@ -1,0 +1,103 @@
+name: Market prices
+
+# Builds the shared Steam Community Market snapshot for this app's items and publishes it as
+# `market-prices.json`. This is the ONLY place that calls Steam — see docs/market-prices.md.
+# The shipped apps download the published snapshot and never talk to Steam themselves, the same
+# rule the wiki data follows.
+#
+# Two publish targets, because they reach different clients:
+#   - the rolling `market-prices` release, for the desktop app (no CORS involved)
+#   - the `market-data` branch, because GitHub release assets send no Access-Control-Allow-Origin
+#     and the static web planner is a browser
+#
+# It writes nothing under packages/** and never commits to the default branch — asserted by
+# tools/market-prices-workflow.test.mjs.
+
+on:
+  schedule:
+    - cron: '23 */6 * * *' # every 6h, off the hour (queue delay)
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: market-prices
+  cancel-in-progress: false # overlapping runs must serialise; both publish the same asset
+
+env:
+  GH_TOKEN: ${{ github.token }}
+  RELEASE_TAG: market-prices
+  SNAPSHOT: market-prices.json
+  DATA_BRANCH: market-data
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    # Steam blocks the runner IP after a few hundred calls; the sweep's circuit breaker exits
+    # well before this, but cap the job so a stuck run cannot burn GitHub's 6h default and skip
+    # the publish steps.
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      # tools/market-snapshot/build.mjs imports @bombfarm/pricing from dist.
+      - name: Build the pricing package
+        run: pnpm -r --filter @bombfarm/contracts --filter @bombfarm/pricing build
+
+      - name: Ensure the rolling release exists
+        run: |
+          gh release view "$RELEASE_TAG" >/dev/null 2>&1 || \
+            gh release create "$RELEASE_TAG" \
+              --title "Market price snapshot" \
+              --notes "Auto-generated Steam Community Market snapshot for Bomb Farm items. Rebuilt every 6h. Not an app release." \
+              --latest=false
+
+      - name: Download the previous snapshot (resume)
+        run: gh release download "$RELEASE_TAG" --pattern "$SNAPSHOT" --dir . || echo "no prior snapshot"
+
+      - name: Build the snapshot
+        run: node tools/market-snapshot/build.mjs
+
+      # Always publish whatever progress exists: the builder keeps the previous prices for any
+      # partition a rate-limited run could not reach, so a partial run still advances coverage.
+      - name: Publish to the rolling release
+        if: always()
+        run: |
+          if [ -f "$SNAPSHOT" ]; then
+            gh release upload "$RELEASE_TAG" "$SNAPSHOT" --clobber
+          else
+            echo "no $SNAPSHOT produced; nothing to publish"
+          fi
+
+      - name: Publish to the data branch
+        if: always()
+        continue-on-error: true
+        run: |
+          set -euo pipefail
+          [ -f "$SNAPSHOT" ] || { echo "no $SNAPSHOT produced; nothing to publish"; exit 0; }
+
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          tmp=$(mktemp -d)
+          # A fresh orphan commit every time, force-pushed: the branch is derived data with no
+          # value in its history, and 1,460 commits a year of a growing JSON would bloat every
+          # clone of this repository forever.
+          git -C "$tmp" init -q -b "$DATA_BRANCH"
+          cp "$SNAPSHOT" "$tmp/$SNAPSHOT"
+          git -C "$tmp" add "$SNAPSHOT"
+          git -C "$tmp" commit -q -m "chore(market): snapshot ${{ github.run_id }}"
+          git -C "$tmp" push --force \
+            "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}.git" \
+            "$DATA_BRANCH"
