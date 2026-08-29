@@ -207,6 +207,7 @@ export const ptBR: Copy = {
   liveListQueuedTitle: 'Ociosos',
   liveListBenchedTitle: 'No banco',
   liveListEmptyLine: 'Nenhum herói aqui no momento.',
+  liveHeroLevelValue: 'Nv {level}',
   liveEnergyLabel: 'Energia',
   liveFieldSlotsHint: 'Compre mais vagas de campo na sua árvore de habilidades',
   liveRestingSlotsHint: 'Ative uma casa superior para mais vagas de descanso',
