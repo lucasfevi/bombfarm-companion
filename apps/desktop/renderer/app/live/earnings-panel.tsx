@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react';
 import type { LiveEarnings } from '@bombfarm/contracts';
-import { Button, formatCompactNumber, HelpTip, Icon, Panel } from '@bombfarm/ui';
+import { formatCompactNumber, HelpTip, Icon, Panel } from '@bombfarm/ui';
 import { sub, useCopy } from '../../lib/copy';
 import { formatCapturedAt } from '../../lib/format';
 import type { ReachedLiveFreshness } from './freshness-line';
@@ -142,16 +142,15 @@ export function EarningsPanel({
               </span>
             </div>
           </div>
-          <Button
+          <button
             type="button"
-            variant="ghost"
-            className="p-1"
             data-testid="live-earnings-reset"
             aria-label={t.liveEarningsResetAria}
             onClick={onReset}
+            className="grid place-items-center rounded-sm border-0 bg-transparent p-0 text-muted transition-colors hover:text-ink focus-visible:[outline-style:solid] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
           >
-            <Icon name="arrow-path" size="xs" />
-          </Button>
+            <Icon name="arrow-path" size="sm" />
+          </button>
         </div>
         <div className="grid grid-cols-[repeat(auto-fit,minmax(9rem,1fr))] gap-3">
           <Tile
