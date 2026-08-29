@@ -38,3 +38,14 @@ at boot. That waiting state itself is also friendlier while it lasts — its spr
 twice the size, and a small rotating line of flavour text sits beneath it whenever a read is
 genuinely in progress (never while consent is what is actually blocking), in both English and
 Portuguese, and holding still under reduced motion.
+
+The panel's chrome is quieter still: the visible "Earnings" title is gone (the landmark keeps the
+same name for screen readers, carried on the panel itself instead of a heading), and the reset
+control dropped its button outline and padding, now showing as a slightly larger bare icon that
+still focuses and announces itself like any other button. Every live figure — both headline rates,
+the session-average line, and all six tiles below — now sits in a box reserved for its widest
+realistic form, so a rate ticking up through the compact-number ranges no longer nudges anything
+beside it. The XP figure's old "?" control, which opened a click popover while also showing the
+browser's own native tooltip underneath it, is gone; the "xp / hr" label itself is now the trigger,
+underlined with dots, opening the same explanation on hover or keyboard focus, with no native
+tooltip left to compete with it.
