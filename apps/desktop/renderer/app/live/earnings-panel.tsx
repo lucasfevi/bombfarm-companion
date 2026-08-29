@@ -248,7 +248,7 @@ export function EarningsPanel({
             onClick={onReset}
             className="grid place-items-center rounded-sm border-0 bg-transparent p-0 text-muted transition-colors hover:text-ink focus-visible:[outline-style:solid] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
           >
-            <Icon name="arrow-path" size="sm" />
+            <Icon name="arrow-path" size="md" />
           </button>
         </div>
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">

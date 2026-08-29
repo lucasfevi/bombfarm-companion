@@ -66,3 +66,5 @@ reflowing row onto a fixed three-column grid, giving two even rows of three inst
 tiles that could all land on one line on a wide window; on a narrower window the tiles settle into
 two columns instead of crowding three into too little space. The heroes panel below keeps spanning
 the full width of the tab.
+
+The reset icon has grown one size further, still a bare, real button with no border or background.
