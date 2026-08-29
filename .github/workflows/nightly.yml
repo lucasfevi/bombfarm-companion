@@ -43,6 +43,7 @@ jobs:
           import { execSync } from 'node:child_process';
           import { readFileSync, writeFileSync } from 'node:fs';
           import { buildNightlyVersion, buildNightlyTag } from './tools/release/nightly-version.mjs';
+          import { nightlyPartsFromTag } from './tools/release/release-tag.mjs';
 
           const headSha = execSync('git rev-parse HEAD', { encoding: 'utf8' }).trim();
           const sha7 = headSha.slice(0, 7);
@@ -106,24 +107,15 @@ jobs:
           }
 
           /**
+           * The trailing identifier of a `-nightly.<yyyymmdd>.<sha7>` prerelease. Reads the
+           * parsed version rather than slicing the tag, so it is indifferent to the tag prefix
+           * and cannot match a beta.
+           *
            * @param {string} tag
            * @returns {string | null}
            */
           function extractSha7FromNightlyTag(tag) {
-            if (!tag.startsWith('desktop-v')) {
-              return null;
-            }
-
-            const version = tag.slice('desktop-v'.length);
-            const marker = '-nightly.';
-            const index = version.indexOf(marker);
-            if (index === -1) {
-              return null;
-            }
-
-            const tail = version.slice(index + marker.length);
-            const parts = tail.split('.');
-            return parts.length >= 2 ? parts[parts.length - 1] : null;
+            return nightlyPartsFromTag(tag)?.sha7 ?? null;
           }
           NODE
 

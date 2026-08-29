@@ -1,5 +1,4 @@
-const NIGHTLY_TAG_PREFIX = 'desktop-v';
-const NIGHTLY_MARKER = '-nightly.';
+import { nightlyPartsFromTag } from './release-tag.mjs';
 
 /**
  * @typedef {{ tag: string, createdAt: string | Date }} ReleaseRecord
@@ -30,30 +29,15 @@ export function selectNightlyReleasesToPrune(releases, keep = 7) {
 }
 
 /**
+ * Reads the parsed version rather than matching tag substrings, so a beta tag can never be
+ * mistaken for a nightly one — and so tags still carrying the pre-2026-08-29 prefix stay prunable
+ * (`versionFromDesktopTag` reads both).
+ *
  * @param {string} tag
  * @returns {boolean}
  */
 function isNightlyPrereleaseTag(tag) {
-  if (!tag.startsWith(NIGHTLY_TAG_PREFIX)) {
-    return false;
-  }
-
-  const version = tag.slice(NIGHTLY_TAG_PREFIX.length);
-  if (!version.includes(NIGHTLY_MARKER)) {
-    return false;
-  }
-
-  if (version.includes('-beta.')) {
-    return false;
-  }
-
-  const prereleaseIndex = version.indexOf('-');
-  if (prereleaseIndex === -1) {
-    return false;
-  }
-
-  const prerelease = version.slice(prereleaseIndex + 1);
-  return prerelease.startsWith('nightly.');
+  return nightlyPartsFromTag(tag) !== null;
 }
 
 /**

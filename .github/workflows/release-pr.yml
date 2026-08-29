@@ -361,11 +361,29 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
+      # Before packaging, not after: the version has to reach electron-builder as
+      # BFC_VERSION_OVERRIDE so it lands in the installer and in beta.yml. Resolved from the
+      # run number, so consecutive betas of one release compare as newer instead of all
+      # shipping as the same bare package.json version.
+      - name: Resolve beta version
+        id: meta
+        shell: bash
+        run: |
+          set -euo pipefail
+          version=$(node --input-type=module -e "
+            import { readFileSync } from 'node:fs';
+            import { buildBetaVersion } from './tools/release/release-tag.mjs';
+            const baseVersion = JSON.parse(readFileSync('apps/desktop/package.json', 'utf8')).version;
+            process.stdout.write(buildBetaVersion({ baseVersion, runNumber: process.env.GITHUB_RUN_NUMBER }));
+          ")
+          echo "version=${version}" >> "$GITHUB_OUTPUT"
+
       - name: Package beta installer
         run: pnpm --filter @bombfarm/desktop package:beta
         env:
           NODE_ENV: production
           BFC_FLAVOR: beta
+          BFC_VERSION_OVERRIDE: ${{ steps.meta.outputs.version }}
 
       - name: List beta release output
         id: list
@@ -388,13 +406,6 @@ jobs:
             exit 1
           fi
 
-      - name: Resolve beta version
-        id: meta
-        shell: bash
-        run: |
-          version=$(node -p "require('./apps/desktop/package.json').version")
-          echo "version=${version}" >> "$GITHUB_OUTPUT"
-
       - name: Publish GitHub beta prerelease
         id: publish
         if: success()
@@ -405,7 +416,10 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          tag="desktop-v${VERSION}-beta.${GITHUB_RUN_NUMBER}"
+          tag=$(node --input-type=module -e "
+            import { buildDesktopTag } from './tools/release/release-tag.mjs';
+            process.stdout.write(buildDesktopTag(process.env.VERSION));
+          ")
           echo "tag=${tag}" >> "$GITHUB_OUTPUT"
 
           cleanup_failed_release() {

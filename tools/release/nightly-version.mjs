@@ -1,3 +1,5 @@
+import { buildDesktopTag } from './release-tag.mjs';
+
 /**
  * @param {{ baseVersion: string, date: Date, commitSha: string }} options
  * @returns {string}
@@ -31,7 +33,7 @@ export function buildNightlyVersion({ baseVersion, date, commitSha }) {
  * @returns {string}
  */
 export function buildNightlyTag(version) {
-  return `desktop-v${version}`;
+  return buildDesktopTag(version);
 }
 
 /**

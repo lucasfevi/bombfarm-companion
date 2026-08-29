@@ -1,3 +1,4 @@
+import semver from 'semver';
 import { describe, expect, it } from 'vitest';
 import { buildNightlyTag, buildNightlyVersion } from './nightly-version.mjs';
 
@@ -64,9 +65,22 @@ describe('buildNightlyVersion', () => {
 });
 
 describe('buildNightlyTag', () => {
-  it('prefixes the desktop tag with desktop-v', () => {
-    expect(buildNightlyTag('0.0.0-nightly.20250805.abcdef1')).toBe(
-      'desktop-v0.0.0-nightly.20250805.abcdef1',
-    );
+  it('prefixes the desktop tag with a bare v', () => {
+    expect(buildNightlyTag('0.0.0-nightly.20250805.abcdef1')).toBe('v0.0.0-nightly.20250805.abcdef1');
+  });
+
+  // The property the prefix exists for: electron-updater walks the releases feed and drops every
+  // entry whose tag semver cannot parse, so an unparseable tag is a release the app cannot see.
+  it('produces a tag semver can parse back to the version', () => {
+    const version = buildNightlyVersion({
+      baseVersion: '1.2.3',
+      date: new Date('2025-08-05T00:00:00Z'),
+      commitSha: 'abcdef1234567',
+    });
+    expect(semver.valid(buildNightlyTag(version))).toBe(version);
+  });
+
+  it('refuses a version semver cannot parse rather than emitting an unreadable tag', () => {
+    expect(() => buildNightlyTag('not-a-version')).toThrow(/not valid semver/);
   });
 });
