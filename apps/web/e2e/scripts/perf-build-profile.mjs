@@ -22,6 +22,17 @@ import { spawnSync } from 'node:child_process';
 import { existsSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 
+// Spawning `next` directly skips the npm lifecycle, so `prebuild` never runs — and the planner
+// resolves `@bombfarm/pricing` from its build output rather than from source. Doing it here
+// rather than in the workflow keeps a local run from a clean tree working too.
+const deps = spawnSync(
+  'pnpm',
+  ['--filter', '@bombfarm/contracts', '--filter', '@bombfarm/pricing', 'build'],
+  { stdio: 'inherit', shell: true },
+);
+
+if (deps.status !== 0) process.exit(deps.status ?? 1);
+
 const result = spawnSync('next', ['build', '--profile'], {
   stdio: 'inherit',
   shell: true,
