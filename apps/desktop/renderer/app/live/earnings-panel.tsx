@@ -14,9 +14,6 @@ const MAX_COVERAGE_MINUTES = 10;
  *  means something. Thresholded on the raw millisecond age, never on the formatted string. */
 const FRESH_BALANCE_AGE_MS = 60_000;
 
-/** `formatCompactNumber`'s widest realistic output — matches the `NumericValue` reservation. */
-const WIDEST_COMPACT_NUMBER = '999.9m';
-
 /**
  * Reserves width for a live-updating number so its own growth cannot shift what comes after it —
  * sized to `formatCompactNumber`'s widest realistic output ("999.9m") — and right-aligns the
@@ -104,39 +101,42 @@ function Tile({
   label,
   value,
   className,
-  reserve,
+  secondLineTestId,
+  secondLineText = '',
+  secondLineReserve = '',
 }: {
   testId: string;
   label: ReactNode;
   value: ReactNode;
   className: string;
-  /** When set, mounts an invisible sibling carrying the widest realistic form of `value` so a
-   *  later, wider `value` (the current-gold age suffix arriving) cannot shift anything — the same
-   *  always-mounted-slot technique as {@link RecentWindowLabel}, kept out of the visible span's own
-   *  subtree so it never leaks into that span's text content. */
-  reserve?: ReactNode;
+  /** Test id for the always-mounted second line beneath the value — only the current-gold tile
+   *  passes one; the other five tiles leave it unset and render the same reserved-but-blank line,
+   *  so every tile in the grid keeps the same height whether or not it ever has anything to say
+   *  on that second line. */
+  secondLineTestId?: string;
+  /** The second line's real text, shown at its own natural width. */
+  secondLineText?: string;
+  /** The longest realistic form of the second line, mounted invisibly so its width is reserved
+   *  before `secondLineText` ever needs it — the current-gold age's own longest form ("23h ago"),
+   *  or empty for a tile that never has a second line to show. */
+  secondLineReserve?: string;
 }) {
   return (
     <div className="rounded-lg border border-line/55 p-3 flex flex-col gap-1">
       <span className="text-[10.5px] uppercase tracking-[0.06em] text-muted whitespace-nowrap">{label}</span>
-      {reserve !== undefined ? (
-        <span className="relative grid">
-          <span aria-hidden className="invisible col-start-1 row-start-1 block text-right tabular-nums whitespace-nowrap">
-            <span className={className}>{reserve}</span>
-          </span>
-          <span className="col-start-1 row-start-1 block text-right tabular-nums whitespace-nowrap">
-            <span data-testid={testId} className={className}>
-              {value}
-            </span>
-          </span>
+      <span className="block text-right tabular-nums whitespace-nowrap">
+        <span data-testid={testId} className={className}>
+          {value}
         </span>
-      ) : (
-        <span className="block text-right tabular-nums whitespace-nowrap">
-          <span data-testid={testId} className={className}>
-            {value}
-          </span>
+      </span>
+      <span className="relative grid text-right text-[10.5px] leading-none text-muted tabular-nums whitespace-nowrap">
+        <span aria-hidden className="invisible col-start-1 row-start-1">
+          {secondLineReserve || ' '}
         </span>
-      )}
+        <span data-testid={secondLineTestId} className="col-start-1 row-start-1">
+          {secondLineText}
+        </span>
+      </span>
     </div>
   );
 }
@@ -173,14 +173,12 @@ export function EarningsPanel({
   // {n}<letter>"), so any two-digit bucket reserves the same width as the others — hours' realistic
   // ceiling (just under a day) stands in for all three.
   const currentGoldAgeLongest = sub(t.ageHours, { n: 23 });
-  const currentGold: ReactNode =
-    balance === null
-      ? EM_DASH
-      : currentGoldAgeText !== null
-        ? `${formatCompactNumber(balance, 1)} · ${currentGoldAgeText}`
-        : formatCompactNumber(balance, 1);
-  const currentGoldReserve: ReactNode | undefined =
-    balance === null ? undefined : `${WIDEST_COMPACT_NUMBER} · ${currentGoldAgeLongest}`;
+  const currentGoldValue: ReactNode = tileNumberText(balance);
+  // The age line only ever has something to reserve or show once there is a balance to attach it
+  // to — with no balance the value already reads an em dash, and an age under it would pin a
+  // fabricated reading to a figure that isn't there.
+  const currentGoldAgeReserve = balance !== null ? currentGoldAgeLongest : '';
+  const currentGoldAgeShown = balance !== null ? (currentGoldAgeText ?? '') : '';
 
   const [sessionAveragePrefix, sessionAverageSuffix] = splitOnPlaceholder(t.liveEarningsSessionAverageValue, 'value');
   const sessionAverageValue: ReactNode =
@@ -255,9 +253,11 @@ export function EarningsPanel({
           <Tile
             testId="live-earnings-gold-current"
             label={t.liveEarningsCurrentGoldLabel}
-            value={currentGold}
-            reserve={currentGoldReserve}
+            value={currentGoldValue}
             className="text-[23px] font-bold text-gold"
+            secondLineTestId="live-earnings-gold-current-age"
+            secondLineText={currentGoldAgeShown}
+            secondLineReserve={currentGoldAgeReserve}
           />
           <Tile
             testId="live-earnings-gold-session-total"

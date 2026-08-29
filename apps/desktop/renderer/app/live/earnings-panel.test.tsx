@@ -315,37 +315,43 @@ describe('EarningsPanel — the two headline figures share one baseline', () => 
 });
 
 describe('EarningsPanel — current gold and its age', () => {
-  it('live: shows the tick balance, with no age attached', () => {
+  it('live: shows the tick balance, with no age line beneath it', () => {
     const out = html(earnings({ goldBalance: 42 }), LIVE);
     expect(cellText(out, 'live-earnings-gold-current')).toBe('42');
+    expect(cellText(out, 'live-earnings-gold-current-age')).toBe('');
   });
 
-  it('stale: shows the last known balance together with a rendered age', () => {
+  it('stale: the value and its age render as two separate lines, not one combined string', () => {
     const out = html(earnings({ goldBalance: 42 }), GAP);
-    expect(cellText(out, 'live-earnings-gold-current')).toBe('42 · 2m ago');
+    expect(cellText(out, 'live-earnings-gold-current')).toBe('42');
+    expect(cellText(out, 'live-earnings-gold-current-age')).toBe('2m ago');
   });
 
-  it('no data: an em dash, never a stale reading pinned to a fabricated age', () => {
+  it('no data: an em dash for the value, and no fabricated age on the line beneath it', () => {
     const out = html(null, GAP);
     expect(cellText(out, 'live-earnings-gold-current')).toBe('—');
+    expect(cellText(out, 'live-earnings-gold-current-age')).toBe('');
   });
 
   it('stored fallback: shows its own captured-at age even while the stream itself reports live', () => {
     const capturedAt = new Date(Date.now() - 10 * 60_000).toISOString();
     const out = html(earnings({ goldBalance: 42, goldBalanceCapturedAt: capturedAt }), LIVE);
-    expect(cellText(out, 'live-earnings-gold-current')).toBe('42 · 10m ago');
+    expect(cellText(out, 'live-earnings-gold-current')).toBe('42');
+    expect(cellText(out, 'live-earnings-gold-current-age')).toBe('10m ago');
   });
 
   it('stored fallback takes precedence over the stream gap age when both are present', () => {
     const capturedAt = new Date(Date.now() - 10 * 60_000).toISOString();
     const out = html(earnings({ goldBalance: 42, goldBalanceCapturedAt: capturedAt }), GAP);
-    expect(cellText(out, 'live-earnings-gold-current')).toBe('42 · 10m ago');
+    expect(cellText(out, 'live-earnings-gold-current')).toBe('42');
+    expect(cellText(out, 'live-earnings-gold-current-age')).toBe('10m ago');
   });
 
   it('fresh: a reading only seconds old shows no age at all — the "just now" case is suppressed', () => {
     const capturedAt = new Date(Date.now() - 5_000).toISOString();
     const out = html(earnings({ goldBalance: 42, goldBalanceCapturedAt: capturedAt }), LIVE);
     expect(cellText(out, 'live-earnings-gold-current')).toBe('42');
+    expect(cellText(out, 'live-earnings-gold-current-age')).toBe('');
   });
 
   it('fresh via the stream gap too: a just-lost tick reads no age either', () => {
@@ -357,18 +363,36 @@ describe('EarningsPanel — current gold and its age', () => {
     };
     const out = html(earnings({ goldBalance: 42 }), freshGap);
     expect(cellText(out, 'live-earnings-gold-current')).toBe('42');
+    expect(cellText(out, 'live-earnings-gold-current-age')).toBe('');
   });
 
-  it('reserves an invisible sizer for the widest realistic number-plus-age combination even while fresh and showing no age', () => {
+  it('reserves an invisible sizer for the age line\'s longest realistic form even while fresh and showing none', () => {
     const out = html(earnings({ goldBalance: 42 }), LIVE);
-    expect(cellText(out, 'live-earnings-gold-current')).toBe('42');
+    expect(cellText(out, 'live-earnings-gold-current-age')).toBe('');
     // The sizer sits outside the tagged cell (a sibling), so it never pollutes `cellText` above.
-    expect(out).toMatch(/aria-hidden="true" class="invisible[^"]*"><span[^>]*>999\.9m · 23h ago<\/span>/);
+    expect(out).toMatch(/aria-hidden="true" class="invisible[^"]*">23h ago<\/span>/);
   });
 
-  it('reserves nothing when there is no balance to report at all', () => {
+  it('reserves nothing on the age line when there is no balance to report at all', () => {
     const out = html(null, GAP);
-    expect(out).not.toMatch(/>999\.9m/);
+    expect(out).not.toMatch(/>23h ago</);
+  });
+
+  it("the value's own box carries no age-sized reservation — its shape matches every other tile", () => {
+    const out = html(earnings({ goldBalance: 42 }), GAP);
+    const valueWrapper = out.match(/<span class="[^"]*"[^>]*><span[^>]*data-testid="live-earnings-gold-current"/)?.[0] ?? '';
+    expect(valueWrapper).not.toMatch(/w-\[\d+ch\]/);
+    expect(valueWrapper).not.toContain('relative grid');
+  });
+});
+
+describe('EarningsPanel — the six tiles stay a uniform grid even though only one has an age line', () => {
+  it('every tile renders the same reserved second-line wrapper, so the grid rows never grow unevenly', () => {
+    const out = html(earnings());
+    const secondLineWrapper = /class="relative grid text-right text-\[10\.5px\] leading-none text-muted tabular-nums whitespace-nowrap"/g;
+    const matches = out.match(secondLineWrapper) ?? [];
+    // One per tile — six total — regardless of whether that tile's line ever shows real text.
+    expect(matches.length).toBe(6);
   });
 });
 
