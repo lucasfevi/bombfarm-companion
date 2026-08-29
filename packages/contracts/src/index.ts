@@ -1,6 +1,7 @@
 import type { AppFlavor, UpdateChannel } from './flavors.js';
 import type { SettingsWriteResult } from './locale.js';
 import type { LiveDiagnosticsDumpOutcome, LiveEvent, LiveView } from './live-source.js';
+import type { UpdateStatus } from './update.js';
 
 export { accountChangeKey, canonicalStringify } from './account-change-key.js';
 /** The desktop locale token, its one domain/BCP-47 mapping, and the pure
@@ -9,6 +10,8 @@ export { accountChangeKey, canonicalStringify } from './account-change-key.js';
  *  body, never at either module's top level, so the two modules finish initialising before either
  *  is actually called. */
 export * from './locale.js';
+export { disabledUpdateStatus } from './update.js';
+export type { UpdateErrorReason, UpdatePhase, UpdateStatus } from './update.js';
 export { isTrustworthySection } from './account-payload.js';
 export type {
   AccountFidelity,
@@ -307,6 +310,15 @@ export interface IpcChannels {
   /** The manual counterpart to the ring's existing parse-failure trigger (`frame-ring.ts`) — a
    *  player-initiated write of the same scrubbed dump, so it can be attached to a bug report. */
   'live:dumpDiagnostics': { args: []; result: LiveDiagnosticsDumpOutcome };
+  /** Zero-arg like every channel above: the `bfc:invoke` bridge forwards no arguments, so the
+   *  channel name is the verb. Each returns the status the call left behind, and the same value
+   *  also arrives on `updates:changed` for every observer. */
+  'updates:get': { args: []; result: UpdateStatus };
+  'updates:check': { args: []; result: UpdateStatus };
+  'updates:download': { args: []; result: UpdateStatus };
+  /** Quits and relaunches into the installer. Returns the status it acted on; when the phase is
+   *  not `ready` it is a no-op and the unchanged status comes back. */
+  'updates:installOnRestart': { args: []; result: UpdateStatus };
 }
 
 export type IpcInvokeChannel = keyof IpcChannels;
@@ -330,13 +342,18 @@ export const IPC_CHANNELS = [
   'consent:revoke',
   'live:get',
   'live:dumpDiagnostics',
+  'updates:get',
+  'updates:check',
+  'updates:download',
+  'updates:installOnRestart',
 ] as const satisfies readonly IpcInvokeChannel[];
 
 export type IpcEventChannel =
   | 'game:status'
   | 'consent:changed'
   | 'account:changed'
-  | 'live:event';
+  | 'live:event'
+  | 'updates:changed';
 
 export interface IpcEvents {
   'game:status': GameStatusInfo;
@@ -352,6 +369,9 @@ export interface IpcEvents {
    */
   'account:changed': AccountView;
   'live:event': LiveEvent;
+  /** Every transition of the updater state machine, including the ones nobody asked for
+   *  (download progress, the six-hourly background check). */
+  'updates:changed': UpdateStatus;
 }
 
 export const IPC_EVENT_CHANNELS = [
@@ -359,6 +379,7 @@ export const IPC_EVENT_CHANNELS = [
   'consent:changed',
   'account:changed',
   'live:event',
+  'updates:changed',
 ] as const satisfies readonly IpcEventChannel[];
 
 export function isIpcChannel(value: string): value is IpcInvokeChannel {

@@ -137,6 +137,36 @@ export const en = {
   settingsDiagnosticsReasonWriteFailed: 'The file could not be written. Check your save location and try again.',
   settingsDiagnosticsReasonNoSource: 'There is nothing to save yet. The app has not connected to the game.',
 
+  // settingsUpdates* — the update check/download/install control (`UpdateStatus`, @bombfarm/contracts)
+  settingsUpdatesSectionTitle: 'Updates',
+  settingsUpdatesCurrentVersionLabel: 'Installed version',
+  settingsUpdatesChannelHelp: 'Update channel: {channel}.',
+  settingsUpdatesCheckLabel: 'Check for updates',
+  settingsUpdatesCheckHelp: 'Also checks on its own shortly after the app opens, and every six hours it stays open.',
+  settingsUpdatesCheckAction: 'Check now',
+  settingsUpdatesDownloadLabel: 'A new version is waiting',
+  settingsUpdatesDownloadHelp: 'Downloading does not interrupt anything — you install it when you are ready.',
+  settingsUpdatesDownloadAction: 'Download',
+  settingsUpdatesInstallLabel: 'Finish updating',
+  settingsUpdatesInstallHelp: 'Takes a few seconds. The app reopens on its own.',
+  settingsUpdatesInstallAction: 'Restart and install',
+  settingsUpdatesStatusChecking: 'Checking for updates…',
+  settingsUpdatesStatusUpToDate: 'You are on the latest version.',
+  settingsUpdatesStatusAvailableTitle: 'Version {version} is available',
+  settingsUpdatesStatusAvailableBody: 'Download it now, or leave it — the app will ask again later.',
+  settingsUpdatesStatusDownloading: 'Downloading version {version}… {percent}%',
+  settingsUpdatesStatusReadyTitle: 'Version {version} is ready to install',
+  settingsUpdatesStatusReadyBody: 'The app closes and reopens on the new version. Nothing you have saved is lost.',
+  settingsUpdatesStatusDisabled:
+    'Updates are off in this build. Installed Nightly, Beta and stable builds update themselves; a local development build does not.',
+  settingsUpdatesErrorTitle: 'Could not check for updates',
+  // One key per UpdateErrorReason (@bombfarm/contracts), mapped exhaustively by
+  // UPDATE_ERROR_REASON_COPY_KEY below.
+  settingsUpdatesReasonOffline: 'Could not reach the update server. Check your internet connection and try again.',
+  settingsUpdatesReasonRateLimited: 'The update server is asking us to slow down. Wait a few minutes and try again.',
+  settingsUpdatesReasonNoRelease: 'There is no published release for this build yet.',
+  settingsUpdatesReasonUnknown: 'Something went wrong. Try again, and save a bug report file below if it keeps failing.',
+
   // consentGate* — the permission gate shown instead of app content when access is not allowed
   consentGateTitle: 'This app needs your permission to work',
   consentGateBody:
