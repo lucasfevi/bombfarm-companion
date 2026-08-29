@@ -30,6 +30,7 @@ const GAP: ReachedLiveFreshness = {
 function earnings(overrides: Partial<LiveEarnings> = {}): LiveEarnings {
   return {
     goldBalance: 12_345,
+    goldBalanceCapturedAt: null,
     gold10: 100_000,
     goldSession: 90_000,
     xp10: 5_000,
@@ -122,6 +123,18 @@ describe('EarningsPanel — current gold and its age', () => {
   it('no data: an em dash, never a stale reading pinned to a fabricated age', () => {
     const out = html(null, GAP);
     expect(cellText(out, 'live-earnings-gold-current')).toBe('—');
+  });
+
+  it('stored fallback: shows its own captured-at age even while the stream itself reports live', () => {
+    const capturedAt = new Date(Date.now() - 10 * 60_000).toISOString();
+    const out = html(earnings({ goldBalance: 42, goldBalanceCapturedAt: capturedAt }), LIVE);
+    expect(cellText(out, 'live-earnings-gold-current')).toBe('42 · 10m ago');
+  });
+
+  it('stored fallback takes precedence over the stream gap age when both are present', () => {
+    const capturedAt = new Date(Date.now() - 10 * 60_000).toISOString();
+    const out = html(earnings({ goldBalance: 42, goldBalanceCapturedAt: capturedAt }), GAP);
+    expect(cellText(out, 'live-earnings-gold-current')).toBe('42 · 10m ago');
   });
 });
 

@@ -199,6 +199,10 @@ export interface RecoveryCountdown {
  */
 export interface LiveEarnings {
   readonly goldBalance: number | null;
+  /** When {@link goldBalance} came from the most recent stored account reading rather than a live
+   *  tick — `null` whenever the stream supplied it (or there is no balance at all), so the
+   *  renderer shows an age next to the balance only for the fallback, never for a tick-frozen one. */
+  readonly goldBalanceCapturedAt: string | null;
   /** Per hour, over the last 10 real minutes (or less — see {@link coverageSeconds}). */
   readonly gold10: number | null;
   /** Per hour, over the whole session. */

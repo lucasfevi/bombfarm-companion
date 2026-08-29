@@ -52,6 +52,7 @@ function fastUpdateEvent(
 function earnings(overrides: Partial<LiveEarnings> = {}): LiveEarnings {
   return {
     goldBalance: 12_345,
+    goldBalanceCapturedAt: null,
     gold10: 100_000,
     goldSession: 90_000,
     xp10: 5_000,

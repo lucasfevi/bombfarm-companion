@@ -1,4 +1,4 @@
-import type { AccountView, LiveCurrency, LiveEvent, LiveFrame, LiveTick } from '@bombfarm/contracts';
+import type { AccountView, LiveCurrency, LiveEvent, LiveFrame, LiveTick, SectionFidelity } from '@bombfarm/contracts';
 import { liveGap } from '@bombfarm/contracts';
 import { wireKey } from '@bombfarm/game-api';
 import { describe, expect, it } from 'vitest';
@@ -156,13 +156,30 @@ function heroIdsFromCasaBody(casa: Record<string, unknown>): string[] {
  *  where a rotation body and its roster describe the same heroes. */
 function buildAccountView(
   casa: Record<string, unknown>,
-  opts: { readonly binding?: string | null; readonly skills?: Record<string, unknown> } = {},
+  opts: {
+    readonly binding?: string | null;
+    readonly skills?: Record<string, unknown>;
+    readonly account?: Record<string, unknown>;
+    readonly accountFidelity?: SectionFidelity;
+  } = {},
 ): AccountView {
   return {
     payload: {
       casa,
       heroes: heroIdsFromCasaBody(casa).map(minimalRosterHero),
       ...(opts.skills !== undefined ? { skills: opts.skills } : {}),
+      ...(opts.account !== undefined ? { account: opts.account } : {}),
+      ...(opts.accountFidelity !== undefined
+        ? {
+            fidelity: {
+              account: opts.accountFidelity,
+              heroes: { status: 'missing' },
+              skills: { status: 'missing' },
+              casa: { status: 'missing' },
+              items: { status: 'missing' },
+            },
+          }
+        : {}),
     },
     gameRunning: true,
     store: { status: 'ok', reason: null, binding: opts.binding === undefined ? 'sqlite' : opts.binding },
@@ -1080,5 +1097,70 @@ describe('LiveSource: earnings', () => {
     const after = source.getView().earnings;
     expect(after?.goldSession).toBe(before?.goldSession);
     expect(after?.gold10).toBe(before?.gold10);
+  });
+});
+
+describe('LiveSource: current gold falls back to the stored account reading', () => {
+  it('a view ingested with no ticks yields the stored balance and its capture time', () => {
+    const { source } = createHarness();
+    source.start();
+
+    source.ingestRotation(
+      buildAccountView(bodyWithHeroes([]), {
+        account: { gold: '48123' },
+        accountFidelity: { status: 'resolved', capturedAt: '2026-08-20T00:00:00.000Z' },
+      }),
+    );
+
+    const earnings = source.getView().earnings;
+    expect(earnings?.goldBalance).toBe(48_123);
+    expect(earnings?.goldBalanceCapturedAt).toBe('2026-08-20T00:00:00.000Z');
+  });
+
+  it('a tick arriving afterwards takes precedence over the stored fallback', () => {
+    const { source, pushFrame, goLive } = createHarness();
+    source.start();
+    source.ingestRotation(
+      buildAccountView(bodyWithHeroes([]), {
+        account: { gold: '48123' },
+        accountFidelity: { status: 'resolved', capturedAt: '2026-08-20T00:00:00.000Z' },
+      }),
+    );
+    goLive();
+
+    pushFrame({ heroes: [], phase: 1, gold: 999 });
+
+    const earnings = source.getView().earnings;
+    expect(earnings?.goldBalance).toBe(999);
+    expect(earnings?.goldBalanceCapturedAt).toBeNull();
+  });
+
+  it('a non-numeric stored gold is ignored rather than producing NaN', () => {
+    const { source } = createHarness();
+    source.start();
+
+    source.ingestRotation(
+      buildAccountView(bodyWithHeroes([]), {
+        account: { gold: 'not-a-number' },
+        accountFidelity: { status: 'resolved', capturedAt: '2026-08-20T00:00:00.000Z' },
+      }),
+    );
+
+    const earnings = source.getView().earnings;
+    expect(earnings).toBeNull();
+  });
+
+  it('a missing account section yields no balance and no timestamp', () => {
+    const { source } = createHarness();
+    source.start();
+
+    source.ingestRotation(
+      buildAccountView(bodyWithHeroes([]), {
+        accountFidelity: { status: 'missing' },
+      }),
+    );
+
+    const earnings = source.getView().earnings;
+    expect(earnings).toBeNull();
   });
 });

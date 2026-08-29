@@ -34,15 +34,18 @@ export function EarningsPanel({
   const recentLabel = sub(t.liveEarningsColumnRecent, { minutes: coverageMinutesLabel(coverageSeconds) });
 
   const balance = earnings?.goldBalance ?? null;
-  // While the stream is live, the balance comes straight from the tick. Otherwise it is the
-  // frozen last-known reading — shown alongside how long it has been frozen for, the same
-  // posture the app already takes with restored data (`formatCapturedAt`).
+  const balanceCapturedAt = earnings?.goldBalanceCapturedAt ?? null;
+  // A stored-reading fallback ages by its own capture time; a tick-frozen balance instead ages by
+  // the stream's own gap (`freshness.sinceAt`). The two never both apply — the main process only
+  // ever populates one of `goldBalance`'s two sources at a time.
   const currentGold: ReactNode =
     balance === null
       ? EM_DASH
-      : freshness.kind === 'live'
-        ? formatCompactNumber(balance, 1)
-        : `${formatCompactNumber(balance, 1)} · ${formatCapturedAt(freshness.sinceAt, t)}`;
+      : balanceCapturedAt !== null
+        ? `${formatCompactNumber(balance, 1)} · ${formatCapturedAt(balanceCapturedAt, t)}`
+        : freshness.kind === 'live'
+          ? formatCompactNumber(balance, 1)
+          : `${formatCompactNumber(balance, 1)} · ${formatCapturedAt(freshness.sinceAt, t)}`;
 
   return (
     <Panel data-testid="live-earnings">

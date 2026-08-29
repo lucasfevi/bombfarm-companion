@@ -16,6 +16,7 @@ function view(overrides: Partial<ViewSlice> = {}): ViewSlice {
 function earnings(overrides: Partial<LiveEarnings> = {}): LiveEarnings {
   return {
     goldBalance: 1_000,
+    goldBalanceCapturedAt: null,
     gold10: 1_000,
     goldSession: 1_000,
     xp10: 100,

@@ -14,6 +14,7 @@ import type {
   LiveTickHero,
   LiveView,
   RotationSnapshot,
+  SectionFidelity,
 } from '@bombfarm/contracts';
 import { isConnectedCurrency, isLiveCurrency, liveGap } from '@bombfarm/contracts';
 import { identifyObservedBody, isPlainObject, normalizeRotation } from '@bombfarm/game-api';
@@ -289,6 +290,20 @@ function readXpMult(skills: Record<string, unknown> | undefined): number | undef
   return typeof value === 'number' && Number.isFinite(value) ? value : undefined;
 }
 
+/** `/state`'s gold, the same digit-string wire encoding `tls-stream.ts`'s `readWireMoney` parses —
+ *  a non-numeric value is ignored rather than becoming `NaN`. */
+function readAccountGold(account: Record<string, unknown> | undefined): number | undefined {
+  if (!isPlainObject(account)) return undefined;
+  const value = account.gold;
+  if (typeof value !== 'string' || !/^\d+$/.test(value)) return undefined;
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : undefined;
+}
+
+function readSectionCapturedAt(fidelity: SectionFidelity | undefined): string | undefined {
+  return fidelity && fidelity.status !== 'missing' ? fidelity.capturedAt : undefined;
+}
+
 export class LiveSource {
   readonly #log: LogPort;
   readonly #now: () => number;
@@ -326,6 +341,12 @@ export class LiveSource {
   /** `null` until the first tap frame of the session has been folded — {@link LiveView.earnings}
    *  stays `null` until then too, rather than reporting a rate computed over zero real ticks. */
   #goldBalance: number | null = null;
+  /** The most recent stored `/state` gold reading — {@link #buildEarnings} falls back to this
+   *  whenever no live tick has ever set {@link #goldBalance} this session, so a game-closed read
+   *  shows a real (if aging) balance instead of an em dash. */
+  #accountGoldBalance: number | null = null;
+  /** When {@link #accountGoldBalance} was captured. `null` only alongside a `null` balance. */
+  #accountGoldCapturedAt: string | null = null;
   #earningsStarted = false;
   /** The last `skills.totals.xp_mult` seen from {@link ingestRotation}, sticky across a read that
    *  omits the section — never reset to `undefined` just because one read's fidelity was partial. */
@@ -415,9 +436,10 @@ export class LiveSource {
   }
 
   #buildEarnings(): LiveEarnings | null {
-    if (!this.#earningsStarted) return null;
+    if (!this.#earningsStarted && this.#accountGoldBalance === null) return null;
     return {
-      goldBalance: this.#goldBalance,
+      goldBalance: this.#goldBalance ?? this.#accountGoldBalance,
+      goldBalanceCapturedAt: this.#goldBalance === null ? this.#accountGoldCapturedAt : null,
       gold10: this.#earningsFold.gold10,
       goldSession: this.#earningsFold.goldSession,
       xp10: this.#earningsFold.xp10,
@@ -443,6 +465,11 @@ export class LiveSource {
   ingestRotation(view: AccountView, atMs: number = this.#now()): void {
     this.#xpMult = readXpMult(view.payload.skills) ?? this.#xpMult;
     this.#trackAccountBinding(view.store.binding);
+    const accountGold = readAccountGold(view.payload.account);
+    if (accountGold !== undefined) {
+      this.#accountGoldBalance = accountGold;
+      this.#accountGoldCapturedAt = readSectionCapturedAt(view.payload.fidelity?.account) ?? null;
+    }
     if (view.payload.casa === undefined) return;
     const rosterHeroAbilities = extractRosterHeroAbilities(view.payload.heroes);
     this.#applyRotationBody(view.payload.casa, atMs, { rosterRaw: view.payload.heroes, rosterHeroAbilities });
