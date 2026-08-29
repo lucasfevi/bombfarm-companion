@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react';
 import type { LiveEarnings } from '@bombfarm/contracts';
-import { formatCompactNumber, HelpTip, Icon, Panel } from '@bombfarm/ui';
+import { formatCompactNumber, Icon, Panel, Tooltip } from '@bombfarm/ui';
 import { sub, useCopy } from '../../lib/copy';
 import { formatCapturedAt } from '../../lib/format';
 import type { ReachedLiveFreshness } from './freshness-line';
@@ -167,9 +167,29 @@ export function EarningsPanel({
               </span>
               <span className="inline-flex items-baseline gap-1 tabular-nums">
                 <span data-testid="live-earnings-xp-10" className="text-[19px] font-bold text-info">
-                  {headlineRateValue(earnings?.xp10, t.liveEarningsXpHeadlineUnit)}
+                  {numberText(earnings?.xp10)}
                 </span>
-                <HelpTip label={t.liveEarningsXpHelpLabel}>{t.liveEarningsXpHelpBody}</HelpTip>
+                <Tooltip.Provider>
+                  <Tooltip.Root>
+                    <Tooltip.Trigger
+                      type="button"
+                      data-testid="live-earnings-xp-help-trigger"
+                      aria-label={`${t.liveEarningsXpHeadlineUnit}: ${t.liveEarningsXpHelpBody}`}
+                      className="border-0 bg-transparent p-0 text-muted text-[0.6em] font-normal underline decoration-dotted underline-offset-2 cursor-help hover:text-ink focus-visible:rounded-sm focus-visible:[outline-style:solid] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+                    >
+                      {t.liveEarningsXpHeadlineUnit}
+                    </Tooltip.Trigger>
+                    <Tooltip.Portal>
+                      <Tooltip.Positioner sideOffset={6}>
+                        <Tooltip.Popup>
+                          <p className="m-0" data-testid="live-earnings-xp-help-body">
+                            {t.liveEarningsXpHelpBody}
+                          </p>
+                        </Tooltip.Popup>
+                      </Tooltip.Positioner>
+                    </Tooltip.Portal>
+                  </Tooltip.Root>
+                </Tooltip.Provider>
               </span>
             </div>
             <div className="flex items-center gap-1.5 text-muted">

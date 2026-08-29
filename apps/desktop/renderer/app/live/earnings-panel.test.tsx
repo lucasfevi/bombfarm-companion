@@ -134,7 +134,8 @@ describe('EarningsPanel — every cell in every state', () => {
     const out = html(earnings());
 
     expect(cellText(out, 'live-earnings-gold-10')).toBe('100k gold / hr');
-    expect(cellText(out, 'live-earnings-xp-10')).toBe('5k xp / hr');
+    expect(cellText(out, 'live-earnings-xp-10')).toBe('5k');
+    expect(cellText(out, 'live-earnings-xp-help-trigger')).toBe(en.liveEarningsXpHeadlineUnit);
     expect(cellText(out, 'live-earnings-gold-current')).toBe('12.3k');
     expect(cellText(out, 'live-earnings-gold-session-total')).toBe('75k');
     expect(cellText(out, 'live-earnings-xp-session-total')).toBe('3.8k');
@@ -169,7 +170,7 @@ describe('EarningsPanel — every cell in every state', () => {
     expect(cellText(out, 'live-earnings-xp-session')).toBe('—');
     expect(cellText(out, 'live-earnings-gold-session-total')).toBe('—');
     expect(cellText(out, 'live-earnings-gold-session')).toBe('90k/h');
-    expect(cellText(out, 'live-earnings-xp-10')).toBe('5k xp / hr');
+    expect(cellText(out, 'live-earnings-xp-10')).toBe('5k');
     expect(cellText(out, 'live-earnings-xp-session-total')).toBe('3.8k');
   });
 });
@@ -302,16 +303,30 @@ describe('EarningsPanel — the XP marker is always mounted and reachable', () =
     ['live, with data', LIVE, earnings()] as const,
     ['not live, with a prior reading', GAP, earnings()] as const,
     ['no data at all', GAP, null] as const,
-  ])('%s: the help control is in the DOM, keyboard-reachable, with an accessible name', (_label, freshness, data) => {
-    const out = html(data, freshness);
-    const tagMatch = out.match(new RegExp(`<button[^>]*aria-label="${en.liveEarningsXpHelpLabel}"[^>]*>`));
+  ])(
+    '%s: the "xp / hr" trigger is in the DOM, keyboard-reachable, dotted-underlined, with no native tooltip',
+    (_label, freshness, data) => {
+      const out = html(data, freshness);
+      const tagMatch = out.match(/<button[^>]*data-testid="live-earnings-xp-help-trigger"[^>]*>/);
 
-    expect(tagMatch).not.toBeNull();
-    const tag = tagMatch?.[0] ?? '';
-    // Always mounted and interactive — never the sr-only-until-hover treatment: no real
-    // `disabled` attribute and no negative tabIndex.
-    expect(tag).not.toContain('disabled=');
-    expect(tag).not.toContain('tabindex="-1"');
+      expect(tagMatch).not.toBeNull();
+      const tag = tagMatch?.[0] ?? '';
+      expect(tag).toContain(`aria-label="${en.liveEarningsXpHeadlineUnit}: ${en.liveEarningsXpHelpBody}"`);
+      expect(tag).toMatch(/class="[^"]*\bunderline\b[^"]*\bdecoration-dotted\b[^"]*"/);
+      // Always mounted and interactive — never the sr-only-until-hover treatment: no real
+      // `disabled` attribute and no negative tabIndex.
+      expect(tag).not.toContain('disabled=');
+      expect(tag).not.toContain('tabindex="-1"');
+      // The old `?` control set BOTH an `aria-label` and a native `title` — a duplicate,
+      // competing hover tooltip. Only the ARIA one may remain.
+      expect(tag).not.toContain('title=');
+    },
+  );
+
+  it('carries the real help copy, reachable through the trigger (Base UI mounts the popup only once open, so this reads the unrendered element tree rather than static markup)', () => {
+    const root = EarningsPanel({ freshness: LIVE, earnings: earnings(), onReset: () => undefined });
+    const body = findElementByTestId(root, 'live-earnings-xp-help-body');
+    expect(body?.props.children).toBe(en.liveEarningsXpHelpBody);
   });
 });
 
