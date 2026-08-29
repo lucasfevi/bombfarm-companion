@@ -1,9 +1,11 @@
 'use client';
 
+import { useMemo } from 'react';
+
 import { Panel, StatList } from '@bombfarm/ui';
 import { panelHClass, panelTitleClass, tipClass } from '@bombfarm/ui/panel-field.recipe';
 import { useAppLang } from '@/shared/context/app-lang';
-import { formatNumber } from '@/shared/lib/format-number';
+import { formatNumber, numberFormatterFor } from '@/shared/lib/format-number';
 import { sub } from '@/shared/i18n';
 import { formatClearTime } from '../model/phases-page';
 import type { HeroPhaseFit } from '@bombfarm/domain/phase-intel';
@@ -23,6 +25,7 @@ export function PhasesHeroPanel({
   onSelectHero: (h: HeroRecord) => void;
 }) {
   const { t, lang } = useAppLang();
+  const boundFormatNumber = useMemo(() => numberFormatterFor(lang), [lang]);
 
   return (
     <Panel className="min-w-0">
@@ -35,7 +38,7 @@ export function PhasesHeroPanel({
         lang={lang}
         heroes={heroes}
         hero={hero}
-        formatNumber={formatNumber}
+        formatNumber={boundFormatNumber}
         onSelectHero={onSelectHero}
       />
       {heroFit ? (
@@ -48,23 +51,23 @@ export function PhasesHeroPanel({
                 value: heroFit.penOk ? (
                   <span className="text-up">{t.phasesPenOk}</span>
                 ) : (
-                  sub(t.phasesPenShort, { gap: formatNumber(heroFit.penGap, 1) })
+                  sub(t.phasesPenShort, { gap: formatNumber(heroFit.penGap, lang, 1) })
                 ),
               },
               {
                 id: 'normalHit',
                 label: t.phasesNormalHit,
-                value: formatNumber(heroFit.normalHit, 0),
+                value: formatNumber(heroFit.normalHit, lang, 0),
               },
               {
                 id: 'critHit',
                 label: t.phasesCritHit,
-                value: formatNumber(heroFit.critHit, 0),
+                value: formatNumber(heroFit.critHit, lang, 0),
               },
               {
                 id: 'avgHit',
                 label: t.phasesAvgHit,
-                value: formatNumber(heroFit.avgHit, 0),
+                value: formatNumber(heroFit.avgHit, lang, 0),
               },
               {
                 id: 'fieldTime',

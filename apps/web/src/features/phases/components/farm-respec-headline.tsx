@@ -1,5 +1,7 @@
 'use client';
 
+import type { Lang } from '@/shared/i18n';
+
 import type { FarmRespecResult } from '@bombfarm/domain/farm-optimize';
 import { sub, type Strings } from '@/shared/i18n';
 import { formatGainPct } from '@/features/phases/model/farm-respec-format';
@@ -13,10 +15,10 @@ import { formatGainPct } from '@/features/phases/model/farm-respec-format';
  * Only ever mounted by the toolbar when Tier 1 says there is something to say; this component
  * has no visibility logic of its own.
  */
-export function FarmRespecHeadline({ t, result }: { t: Strings; result: FarmRespecResult }) {
+export function FarmRespecHeadline({ t, lang, result }: { t: Strings; lang: Lang; result: FarmRespecResult }) {
   return (
     <span data-testid="farm-respec-headline" className="text-[12px] font-bold text-accent">
-      {sub(t.farmRespecHeadlineGain, { pct: formatGainPct(result.gainPct) })}
+      {sub(t.farmRespecHeadlineGain, { pct: formatGainPct(result.gainPct, lang) })}
     </span>
   );
 }

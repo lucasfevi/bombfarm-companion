@@ -65,9 +65,27 @@ export interface MarketEntry {
   /** Difficulty an act-scoped item belongs to (Hero Cage, Skill Stone Chest). */
   act: number | null;
   lowestUsd: number | null;
+  /**
+   * Lowest live listing in each currency Steam quoted itself, ISO code -> major units.
+   *
+   * Steam prices each region independently rather than converting, so a native quote is the
+   * number on the page this entry links to and a converted one is not: measured 2026-08-29,
+   * native BRL ran 0.6-1.2% above `lowestUsd` times the day's rate, per item and not uniformly.
+   *
+   * Sparse on purpose. `priceoverview` is the only endpoint that honours a currency and it
+   * under-reports, so an absent key means "not quoted", never "not listed" — `lowestUsd` remains
+   * the authority on whether anything is for sale.
+   */
+  lowestNative: Record<string, number | null>;
   listings: number;
   iconUrl: string | null;
   fetchedUtc: string;
+  /**
+   * When `lowestNative` was last read, which is not `fetchedUtc`. The quote pass runs after the
+   * enumeration and is the first thing a rate-limited run drops, so a fresh row can carry a
+   * native price from hours earlier; collapsing the two would date that price to this run.
+   */
+  nativeQuotedUtc: string | null;
 }
 
 export type AnomalyKind =
@@ -107,10 +125,16 @@ export interface MarketCoverage {
 }
 
 export interface MarketSnapshot {
-  schemaVersion: 2;
+  schemaVersion: 3;
   generatedUtc: string;
   appId: number;
   baseCurrency: 'USD';
+  /**
+   * Currencies this run asked Steam to quote directly, in the order it asked. Named here rather
+   * than inferred from the entries so that a run where every quote failed still says what it was
+   * trying to do, instead of reading as a snapshot that never wanted native prices.
+   */
+  nativeCurrencies: string[];
   /** ISO currency -> units per 1 USD. */
   fx: Record<string, number>;
   /** Every reconciled market row, catalog-matched or not. */

@@ -1,10 +1,10 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { HiMiniTrash } from 'react-icons/hi2';
 import { sub } from '@/shared/i18n';
 import { useAppLang } from '@/shared/context/app-lang';
-import { formatNumber } from '@/shared/lib/format-number';
+import { numberFormatterFor } from '@/shared/lib/format-number';
 import {
   usePlannerStore,
   selectHeroName,
@@ -28,6 +28,7 @@ const heroStripWarnBorderClass = 'border-[color-mix(in_oklch,var(--warn)_45%,var
 
 export function HeroStrip() {
   const { t, lang } = useAppLang();
+  const boundFormatNumber = useMemo(() => numberFormatterFor(lang), [lang]);
   const { applyHero, handleDeleteHero } = useHeroDraftActions();
 
   const heroes = usePlannerStore((state) => state.heroes);
@@ -82,7 +83,7 @@ export function HeroStrip() {
         heroId={heroId}
         lang={lang}
         t={t}
-        formatNumber={formatNumber}
+        formatNumber={boundFormatNumber}
         onSelectHero={onSelectHero}
       />
 

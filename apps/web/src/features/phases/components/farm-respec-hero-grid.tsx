@@ -56,7 +56,7 @@ export function FarmRespecHeroGrid({
           <p className="m-0 text-[11px] text-muted">
             <GoldValue>
               {sub(t.farmRespecUnchangedGroupNote, {
-                gold: formatGold(result.unchangedRespecCostGold),
+                gold: formatGold(result.unchangedRespecCostGold, lang),
               })}
             </GoldValue>
           </p>

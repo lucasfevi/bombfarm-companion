@@ -5,6 +5,7 @@ declare global {
     bfc?: {
       invoke: <C extends import('@bombfarm/contracts').IpcInvokeChannel>(
         channel: C,
+        ...args: import('@bombfarm/contracts').IpcInvokeArgs<C>
       ) => Promise<import('@bombfarm/contracts').IpcInvokeResult<C>>;
       on: <C extends import('@bombfarm/contracts').IpcEventChannel>(
         channel: C,

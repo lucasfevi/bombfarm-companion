@@ -145,8 +145,8 @@ export function FarmRankingBoard({ t, lang }: { t: Strings; lang: Lang }) {
                 ? t.farmRankingContentionDescMaxSlots
                 : t.farmRankingContentionDesc,
               {
-                pct: `${formatMitigationPct(contention.pct)}%`,
-                cost: `${formatMitigationPct(contention.costPct)}%`,
+                pct: `${formatMitigationPct(contention.pct, lang)}%`,
+                cost: `${formatMitigationPct(contention.costPct, lang)}%`,
                 slots: String(fieldSlots ?? '—'),
                 max: String(FIELD_SLOTS_MAX),
               },
@@ -154,7 +154,7 @@ export function FarmRankingBoard({ t, lang }: { t: Strings; lang: Lang }) {
           </Banner>
         </div>
       ) : null}
-      <FarmRespecToolbar t={t} />
+      <FarmRespecToolbar t={t} lang={lang} />
       <FarmRespecPanel t={t} lang={lang} />
       {result.reason !== 'no-roster' ? (
         <div className="mb-2 flex flex-wrap items-start justify-between gap-3 border-b border-line pb-3">

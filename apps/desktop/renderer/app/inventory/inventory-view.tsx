@@ -8,17 +8,37 @@
  * structurally clones on every push, so that reference is the only cheap identity to key on, and
  * the desktop renderer does not enable the React Compiler, so the hand memoisation is load-bearing.
  */
-import { useMemo } from 'react';
-import { Banner, EmptyState, Panel, PanelHeader } from '@bombfarm/ui';
-import { InventoryGrid } from '@bombfarm/game-art';
-import { buildInventoryView, mapInventoryHeroes } from '@bombfarm/domain/inventory-view';
-import { useCopy, useLocale } from '../../lib/copy';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { Banner, Button, EmptyState, Panel, PanelHeader } from '@bombfarm/ui';
+import { InventoryGrid, InventoryTable } from '@bombfarm/game-art';
+import {
+  buildInventoryView,
+  mapInventoryHeroes,
+  type InventoryEntry,
+} from '@bombfarm/domain/inventory-view';
+import { resolveItemPrice } from '@bombfarm/pricing';
+import { sub, useCopy, useLocale } from '../../lib/copy';
 import { useAccountView } from '../../lib/planning/use-account-view';
-import { inventoryLabels } from './inventory-labels';
+import { useMarketSnapshot } from '../../lib/market/use-market-snapshot';
+import { inventoryLabels, inventoryTableLabels } from './inventory-labels';
+import { marketPriceLabels } from './market-labels';
+import { ItemPriceRefresh } from './item-price-refresh';
+
+type Layout = 'cards' | 'list';
+
+const LAYOUT_STORAGE_KEY = 'bfc-inventory-layout';
+
+function loadLayout(): Layout {
+  try {
+    return window.localStorage.getItem(LAYOUT_STORAGE_KEY) === 'list' ? 'list' : 'cards';
+  } catch {
+    return 'cards';
+  }
+}
 
 export function InventoryView() {
   const t = useCopy();
-  const { lang } = useLocale();
+  const { lang, locale } = useLocale();
   const accountViewState = useAccountView();
 
   const view = accountViewState.status === 'loaded' ? accountViewState.view : null;
@@ -30,6 +50,63 @@ export function InventoryView() {
   const inventory = useMemo(() => buildInventoryView(view?.payload.items), [view?.payload.items]);
   const heroes = useMemo(() => mapInventoryHeroes(view?.payload.heroes), [view?.payload.heroes]);
   const labels = useMemo(() => inventoryLabels(t, lang, heroes), [t, lang, heroes]);
+  const tableLabels = useMemo(() => inventoryTableLabels(t, lang, heroes), [t, lang, heroes]);
+
+  const { snapshot, refreshItem } = useMarketSnapshot();
+  const [layout, setLayout] = useState<Layout>('cards');
+
+  useEffect(() => {
+    setLayout(loadLayout());
+  }, []);
+
+  const chooseLayout = useCallback((next: Layout) => {
+    setLayout(next);
+    try {
+      window.localStorage.setItem(LAYOUT_STORAGE_KEY, next);
+    } catch {
+      // A layout preference is not worth failing a render over.
+    }
+  }, []);
+
+  const priceLabels = useMemo(() => marketPriceLabels(t, locale), [t, locale]);
+
+  const priceOf = useMemo(
+    () =>
+      snapshot == null
+        ? undefined
+        : (entry: InventoryEntry) =>
+            resolveItemPrice(
+              {
+                defId: entry.item.defId,
+                rarity: entry.item.rarityIdx,
+                tradable: entry.item.tradable,
+              },
+              snapshot,
+              'BRL',
+            ),
+    [snapshot],
+  );
+
+  const renderPriceAction = useMemo(
+    () =>
+      priceOf == null
+        ? undefined
+        : (entry: InventoryEntry) => {
+            const price = priceOf(entry);
+            // Nothing to refresh for an item the market cannot carry at all.
+            if (price.state === 'not-tradable' || price.key == null) return null;
+            const name = labels.itemName(entry.item);
+            return (
+              <ItemPriceRefresh
+                target={{ kind: 'key', key: price.key }}
+                itemName={name}
+                label={sub(t.marketRefreshItem, { item: name })}
+                onRefresh={refreshItem}
+              />
+            );
+          },
+    [priceOf, labels, t, refreshItem],
+  );
 
   if (accountViewState.status === 'loading') {
     return (
@@ -63,7 +140,43 @@ export function InventoryView() {
     <div data-testid="inventory-view">
       <Panel>
         <PanelHeader title={t.inventoryTitle} />
-        <InventoryGrid view={inventory} labels={labels} />
+        <div className="flex items-center gap-1 pb-3" role="group" aria-label={t.inventoryViewLabel}>
+          <Button
+            variant={layout === 'cards' ? 'primary' : 'ghost'}
+            aria-pressed={layout === 'cards'}
+            onClick={() => {
+              chooseLayout('cards');
+            }}
+          >
+            {t.inventoryViewCards}
+          </Button>
+          <Button
+            variant={layout === 'list' ? 'primary' : 'ghost'}
+            aria-pressed={layout === 'list'}
+            onClick={() => {
+              chooseLayout('list');
+            }}
+          >
+            {t.inventoryViewList}
+          </Button>
+        </div>
+        {layout === 'list' ? (
+          <InventoryTable
+            view={inventory}
+            labels={tableLabels}
+            priceOf={priceOf}
+            priceLabels={priceOf == null ? undefined : priceLabels}
+            renderPriceAction={renderPriceAction}
+          />
+        ) : (
+          <InventoryGrid
+            view={inventory}
+            labels={labels}
+            priceOf={priceOf}
+            priceLabels={priceOf == null ? undefined : priceLabels}
+            renderPriceAction={renderPriceAction}
+          />
+        )}
       </Panel>
     </div>
   );

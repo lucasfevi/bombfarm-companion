@@ -18,6 +18,13 @@ export interface PriceableItem {
   tradable: boolean;
 }
 
+/**
+ * Where `amount` came from. `native` is the number Steam shows on `listingUrl`; `converted` is
+ * `lowestUsd` at the day's rate, which Steam's regional pricing does not track exactly. A UI that
+ * links to the listing should say which of the two it is showing.
+ */
+export type PriceBasis = 'native' | 'converted';
+
 export interface ResolvedPrice {
   state: PriceState;
   key: string | null;
@@ -28,6 +35,12 @@ export interface ResolvedPrice {
   /** `lowestUsd` converted into `currency`, or null when unpriced. */
   amount: number | null;
   currency: string;
+  basis: PriceBasis;
+  /**
+   * When the quoted `amount` was read from Steam: the native quote's own timestamp when
+   * `basis` is `native`, the enumeration's when it is `converted`. Null when unpriced.
+   */
+  quotedUtc: string | null;
   listings: number;
   /**
    * Other live hashes carrying the same item. The game renamed its items after launch and Steam
@@ -50,6 +63,8 @@ const unpriced = (
   lowestUsd: null,
   amount: null,
   currency,
+  basis: 'converted',
+  quotedUtc: null,
   listings: entry?.listings ?? 0,
   alternateHashNames: [],
 });
@@ -82,9 +97,29 @@ export function resolveKey(
     .map((other) => snapshot.entries[other]?.hashName)
     .filter((hashName): hashName is string => hashName != null);
 
+  // The enumeration decides whether anything is for sale, and the native quote never overrides
+  // that. `priceoverview` under-reports — it answers with no price at all for items the search
+  // endpoint carries as live — so treating its silence as "unlisted" would delist real supply.
   if (entry.lowestUsd == null) return unpriced('no-listing', key, entry, code, url);
 
+  const native = entry.lowestNative[code] ?? null;
   const rate = snapshot.fx[code] ?? (code === 'USD' ? 1 : null);
+
+  if (native != null) {
+    return {
+      state: 'priced',
+      key,
+      hashName: entry.hashName,
+      listingUrl: url,
+      lowestUsd: entry.lowestUsd,
+      amount: native,
+      currency: code,
+      basis: 'native',
+      quotedUtc: entry.nativeQuotedUtc,
+      listings: entry.listings,
+      alternateHashNames,
+    };
+  }
 
   return {
     state: 'priced',
@@ -94,6 +129,8 @@ export function resolveKey(
     lowestUsd: entry.lowestUsd,
     amount: entry.lowestUsd * (rate ?? 1),
     currency: rate == null ? 'USD' : code,
+    basis: 'converted',
+    quotedUtc: entry.fetchedUtc,
     listings: entry.listings,
     alternateHashNames,
   };

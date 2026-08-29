@@ -22,6 +22,7 @@ import {
   EMPTY_INVENTORY_FILTER,
   DEFAULT_INVENTORY_SORT,
   type InventorySort,
+  type InventorySortDirection,
   type InventoryFilter,
   ITEM_KINDS,
   type InventoryViewItem,
@@ -764,5 +765,52 @@ describe('setsInView and the set filter', () => {
 
   it('counts as a dirty filter once any set is named', () => {
     expect(isEmptyInventoryFilter({ ...EMPTY_INVENTORY_FILTER, sets: ['coal'] })).toBe(false);
+  });
+});
+
+describe('sorting by market price', () => {
+  const view = () =>
+    buildInventoryView([
+      { id: 'cheap', def_id: 'glacier_arma', category: 0, rarity: 4, level: 60 },
+      { id: 'dear', def_id: 'ember_luva', category: 0, rarity: 4, level: 60 },
+      { id: 'unpriced', def_id: 'clay_bota', category: 0, rarity: 4, level: 60 },
+    ]);
+
+  const nameOf = (item: InventoryViewItem) => item.defId;
+  const prices: Record<string, number | null> = { cheap: 5, dear: 90, unpriced: null };
+  const marketValueOf = (entry: { item: InventoryViewItem }) => prices[entry.item.id] ?? null;
+
+  const order = (direction: InventorySortDirection) =>
+    sortInventoryView(view(), [{ key: 'market', direction }], nameOf, marketValueOf)
+      .groups.find((group) => group.kind === 'equipment')
+      ?.entries.map((entry) => entry.item.id);
+
+  it('orders by the price the market quotes', () => {
+    expect(order('asc')?.slice(0, 2)).toEqual(['cheap', 'dear']);
+    expect(order('desc')?.slice(0, 2)).toEqual(['dear', 'cheap']);
+  });
+
+  it('sinks an unpriced item to the bottom in BOTH directions', () => {
+    // Carrying it by the sign would put everything the market says nothing about above every
+    // real price the moment a player asked for cheapest-first.
+    expect(order('asc')?.at(-1)).toBe('unpriced');
+    expect(order('desc')?.at(-1)).toBe('unpriced');
+  });
+
+  it('falls through to the next term when neither entry has a price', () => {
+    const none = () => null;
+    const sorted = sortInventoryView(
+      view(),
+      [{ key: 'market', direction: 'desc' }, { key: 'name', direction: 'asc' }],
+      nameOf,
+      none,
+    );
+    expect(sorted.groups.find((group) => group.kind === 'equipment')?.entries.map((e) => e.item.defId))
+      .toEqual(['clay_bota', 'ember_luva', 'glacier_arma']);
+  });
+
+  it('treats every entry as unpriced when no accessor is supplied', () => {
+    const sorted = sortInventoryView(view(), [{ key: 'market', direction: 'desc' }], nameOf);
+    expect(sorted.groups.find((group) => group.kind === 'equipment')?.entries).toHaveLength(3);
   });
 });

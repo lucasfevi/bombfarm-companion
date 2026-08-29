@@ -2,6 +2,7 @@
 
 import { Tooltip, cn } from '@bombfarm/ui';
 import { rosterIconTooltipTriggerClass } from '@/shared/game-art';
+import { useAppLang } from '@/shared/context/app-lang';
 import { formatCompactNumber, formatNumber } from '@/shared/lib/format-number';
 
 /**
@@ -22,6 +23,7 @@ export function AbbreviatedNumber({
   disableFocus?: boolean;
   className?: string;
 }) {
+  const { lang } = useAppLang();
   const sign = signed && value >= 0 ? '+' : '';
   return (
     <Tooltip.Root>
@@ -31,14 +33,14 @@ export function AbbreviatedNumber({
         className={cn(rosterIconTooltipTriggerClass, className)}
       >
         {sign}
-        {formatCompactNumber(value, decimals)}
+        {formatCompactNumber(value, lang, decimals)}
       </Tooltip.Trigger>
       <Tooltip.Portal>
         <Tooltip.Positioner sideOffset={6}>
           <Tooltip.Popup>
             <p className="m-0 font-mono">
               {sign}
-              {formatNumber(value, 0)}
+              {formatNumber(value, lang, 0)}
             </p>
           </Tooltip.Popup>
         </Tooltip.Positioner>

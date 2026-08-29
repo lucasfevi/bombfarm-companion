@@ -14,12 +14,23 @@ export type {
   InventoryStatText,
   InventoryToolbarLabels,
 } from './inventory-grid';
+export { InventoryTable, nextInventorySort } from './inventory-table';
+export type {
+  InventoryTableColumnLabels,
+  InventoryTableLabels,
+  InventoryTableProps,
+} from './inventory-table';
 export { AbilityIcon } from './ability-icon';
 export { PropIcon } from './prop-icon';
 export { DropIcon } from './drop-icon';
 export { HeroAbilityIcons } from './hero-ability-icons';
 export { HeroGearIcons } from './hero-gear-icons';
 export { GoldValue } from './gold-value';
+export {
+  MarketPrice,
+  type MarketPriceLabels,
+  type MarketPriceView,
+} from './market-price';
 export { GoldIcon } from './gold-icon';
 export { ChestIcon } from './chest-icon';
 export { ClockIcon } from './clock-icon';
@@ -56,3 +67,19 @@ export {
   type InventoryCardTone,
   type InventoryBadgeTone,
 } from './inventory-grid.recipe';
+export {
+  inventoryTableActionButtonClass,
+  inventoryTableBlankClass,
+  inventoryTableForgeClass,
+  inventoryTableGoldClass,
+  inventoryTableGroupCountClass,
+  inventoryTableGroupHeaderClass,
+  inventoryTableHeroClass,
+  inventoryTableHeroNameClass,
+  inventoryTableItemNameClass,
+  inventoryTableNameClass,
+  inventoryTableResultCountClass,
+  inventoryTableRowClass,
+  inventoryTableSkippedNoteClass,
+  inventoryTableToolbarClass,
+} from './inventory-table.recipe';

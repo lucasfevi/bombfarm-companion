@@ -28,11 +28,10 @@ import {
   selectTreeXpMult,
 } from '@/shared/stores';
 
-const pct = (value: number) => `+${formatNumber(value, 2)}%`;
-const mult = (value: number) => `×${formatNumber(value, 3)}`;
-
 export function AccountTreePanel() {
-  const { t } = useAppLang();
+  const { t, lang } = useAppLang();
+  const pct = (value: number) => `+${formatNumber(value, lang, 2)}%`;
+  const mult = (value: number) => `×${formatNumber(value, lang, 3)}`;
   const danoTotal = usePlannerStore(selectTreeDanoTotal);
   const squadDmgPct = usePlannerStore(selectTreeSquadDmgPct);
   const geoMult = usePlannerStore(selectTreeGeoMult);
@@ -57,9 +56,9 @@ export function AccountTreePanel() {
       // says the third is the product of the first two. `dmg_static` is exactly
       // `(1 + team_dmg_add) × geo_mult`, so the working is printed rather than asserted.
       tip: sub(t.accountTotalDmgTip, {
-        squad: formatNumber(squadDmgPct, 2),
-        geo: formatNumber(geoMult, 3),
-        total: formatNumber(danoTotal, 3),
+        squad: formatNumber(squadDmgPct, lang, 2),
+        geo: formatNumber(geoMult, lang, 3),
+        total: formatNumber(danoTotal, lang, 3),
       }),
       value: mult(danoTotal),
     },
@@ -85,7 +84,7 @@ export function AccountTreePanel() {
 
   const rewardItems: StatListItem[] = [
     { id: 'gold', label: t.treeTeamCoin, tip: t.treeTeamCoinHint, value: pct(teamCoinPct) },
-    { id: 'luck', label: t.accountLuckFlat, value: `+${formatNumber(luckFlatPct, 2)} pp` },
+    { id: 'luck', label: t.accountLuckFlat, value: `+${formatNumber(luckFlatPct, lang, 2)} pp` },
     { id: 'xp', label: t.treeXpMult, value: mult(xpMult) },
     { id: 'bag-tabs', label: t.accountBagTabs, value: `+${bagTabsBonus}` },
   ];

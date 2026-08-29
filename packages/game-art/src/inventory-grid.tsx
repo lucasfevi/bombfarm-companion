@@ -1,4 +1,4 @@
-import { memo, useMemo, useState } from "react";
+import { memo, useMemo, useState, type ReactNode } from "react";
 import {
   DEFAULT_INVENTORY_SORT,
   EMPTY_INVENTORY_FILTER,
@@ -25,6 +25,7 @@ import {
 } from "@bombfarm/domain/inventory-view";
 import { cn, Icon, Select, SelectMultiple, Tooltip } from "@bombfarm/ui";
 import { GoldIcon } from "./gold-icon";
+import { MarketPrice, type MarketPriceLabels, type MarketPriceView } from "./market-price";
 import { HeroAvatar } from "./hero-avatar";
 import { ItemIcon } from "./item-icon";
 import { rarityTextClass } from "./game-art.recipe";
@@ -170,6 +171,10 @@ export interface InventoryGridProps {
   labels: InventoryGridLabels;
   onSelectItem?: (item: InventoryViewItem) => void;
   className?: string;
+  /** Omitted by a shell with no market snapshot, which then renders exactly as it did before. */
+  priceOf?: (entry: InventoryEntry) => MarketPriceView | null;
+  priceLabels?: MarketPriceLabels;
+  renderPriceAction?: (entry: InventoryEntry) => ReactNode;
 }
 
 function unknownCategoryCodes(group: InventoryGroup): number[] {
@@ -323,10 +328,16 @@ const InventoryCard = memo(function InventoryCard({
   entry,
   labels,
   onSelect,
+  price,
+  priceLabels,
+  priceAction,
 }: {
   entry: InventoryEntry;
   labels: InventoryGridLabels;
   onSelect?: (item: InventoryViewItem) => void;
+  price?: MarketPriceView | null;
+  priceLabels?: MarketPriceLabels;
+  priceAction?: ReactNode;
 }) {
   const { item, count } = entry;
   const rarity = labels.itemRarity(item);
@@ -340,6 +351,9 @@ const InventoryCard = memo(function InventoryCard({
   const stats = item.stats.slice(0, MAX_STAT_LINES);
   const tone = inventoryCardTone(item.rarityIdx, item.kind !== 'other');
   const interactive = Boolean(onSelect);
+  // Reserved for every card once the shell prices at all, so a listed item does not make its row
+  // taller than the one beside it.
+  const pricedColumn = priceLabels != null;
 
   const body = (
     <>
@@ -424,8 +438,12 @@ const InventoryCard = memo(function InventoryCard({
         </span>
       ) : null}
 
-      {/* `mt-auto` is what pins this row to the bottom edge whatever sits above it, so a Comum
-          carrying one stat and a Mítico carrying four still line their footers up across a row. */}
+    </>
+  );
+
+  // `mt-auto` is what pins this row to the bottom edge whatever sits above it, so a Comum
+  // carrying one stat and a Mítico carrying four still line their footers up across a row.
+  const footer = (
       <span
         data-testid="inventory-card-footer"
         className={inventoryFooterClass}
@@ -442,14 +460,28 @@ const InventoryCard = memo(function InventoryCard({
         ) : (
           <span />
         )}
-        {entry.sellValueGold > 0 ? (
-          <span className="flex shrink-0 items-center gap-1 text-xs tabular-nums text-muted">
-            <GoldIcon className="size-3.5" />
-            {labels.gold(entry.sellValueGold)}
+        {/* One right-hand column, market price above gold. The column is what the footer ends
+            with, so the gold value stays on the footer's bottom edge whether or not a price sits
+            over it, and the reserved line keeps every footer the same height — a card that grew
+            only when its item happened to be listed would make the grid jump row to row. */}
+        {entry.sellValueGold > 0 || pricedColumn ? (
+          <span className="flex shrink-0 flex-col items-end gap-0.5">
+            {pricedColumn ? (
+              <span className="flex min-h-4 items-center">
+                {price != null && priceLabels != null ? (
+                  <MarketPrice price={price} labels={priceLabels} action={priceAction} />
+                ) : null}
+              </span>
+            ) : null}
+            {entry.sellValueGold > 0 ? (
+              <span className="flex items-center gap-1 text-xs tabular-nums text-muted">
+                <GoldIcon className="size-3.5" />
+                {labels.gold(entry.sellValueGold)}
+              </span>
+            ) : null}
           </span>
         ) : null}
       </span>
-    </>
   );
 
   // A stable hook for the desktop smoke, which drives the real window: the card is otherwise
@@ -461,19 +493,27 @@ const InventoryCard = memo(function InventoryCard({
         className={inventoryCardRecipe({ tone, interactive: false })}
       >
         {body}
+        {footer}
       </div>
     );
   }
 
+  // The footer sits OUTSIDE the button: it carries a link out to the market, and an anchor inside
+  // a button is invalid and unreliable to click. The button keeps the whole body above it.
   return (
-    <button
-      type="button"
+    <div
       data-testid="inventory-card"
       className={inventoryCardRecipe({ tone, interactive: true })}
-      onClick={() => onSelect?.(item)}
     >
-      {body}
-    </button>
+      <button
+        type="button"
+        className="flex min-w-0 flex-1 flex-col gap-2 text-left"
+        onClick={() => onSelect?.(item)}
+      >
+        {body}
+      </button>
+      {footer}
+    </div>
   );
 });
 
@@ -763,6 +803,9 @@ export function InventoryGrid({
   labels,
   onSelectItem,
   className,
+  priceOf,
+  priceLabels,
+  renderPriceAction,
 }: InventoryGridProps) {
   const [filter, setFilter] = useState<InventoryFilter>(EMPTY_INVENTORY_FILTER);
   const [sort, setSort] = useState<InventorySort>(DEFAULT_INVENTORY_SORT);
@@ -772,8 +815,8 @@ export function InventoryGrid({
     [view, filter, labels]
   );
   const sorted = useMemo(
-    () => sortInventoryView(filtered, sort, labels.itemName),
-    [filtered, sort, labels]
+    () => sortInventoryView(filtered, sort, labels.itemName, (entry) => priceOf?.(entry)?.amount ?? null),
+    [filtered, sort, labels, priceOf]
   );
 
   if (view.items.length === 0) {
@@ -847,6 +890,9 @@ export function InventoryGrid({
                       entry={entry}
                       labels={labels}
                       onSelect={onSelectItem}
+                      price={priceOf?.(entry) ?? null}
+                      priceLabels={priceLabels}
+                      priceAction={renderPriceAction?.(entry)}
                     />
                   ))}
                 </div>

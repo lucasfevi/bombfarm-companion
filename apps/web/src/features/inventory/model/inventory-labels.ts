@@ -4,6 +4,7 @@ import type {
   InventoryGridLabels,
   InventoryHeroOption,
   InventoryStatText,
+  InventoryTableLabels,
 } from '@bombfarm/game-art';
 import type {
   InventorySortKey,
@@ -114,8 +115,8 @@ function itemStat(stat: InventoryViewStat, lang: Lang): InventoryStatText {
   const label = stat.name ? itemStatLabel(stat.name, lang) : String(stat.code);
   const value =
     stat.unit === 'flat'
-      ? `+${formatNumber(stat.effective, 1)}`
-      : `+${formatNumber(stat.effective * 100, 2)}%`;
+      ? `+${formatNumber(stat.effective, lang, 1)}`
+      : `+${formatNumber(stat.effective * 100, lang, 2)}%`;
   return { label, value };
 }
 
@@ -125,6 +126,7 @@ const SORT_KEY: Record<InventorySortKey, keyof Strings> = {
   value: 'inventorySortValue',
   name: 'inventorySortName',
   count: 'inventorySortCount',
+  market: 'inventorySortMarket',
 };
 
 function badges(item: InventoryViewItem, strings: Strings): InventoryBadge[] {
@@ -225,8 +227,8 @@ export function inventoryLabels(
     heroOption: (heroId) => heroOption(heroId, heroBySourceId, strings),
     setOption: (group) =>
       sub(strings.inventorySetOption, { level: group.level, set: setName(group.set, lang) }),
-    setOptionCount: (group) => formatNumber(group.count, 0),
-    gold: (amount) => formatNumber(amount, 0),
+    setOptionCount: (group) => formatNumber(group.count, lang, 0),
+    gold: (amount) => formatNumber(amount, lang, 0),
     searchText: (item) => searchText(item, strings, lang),
     toolbar: {
       searchPlaceholder: strings.inventorySearchPlaceholder,
@@ -252,5 +254,50 @@ export function inventoryLabels(
     unknownCategoryNote: (codes) => sub(strings.inventoryUnknownCategory, { codes: codes.join(', ') }),
     skippedNote: (count) => sub(strings.inventorySkipped, { count }),
     empty: { title: strings.inventoryEmptyTitle, description: strings.inventoryEmptyBody },
+  };
+}
+
+/**
+ * The table's labels, derived from the cards' rather than written twice. The two layouts show the
+ * same items and must name them identically; the column headers reuse the sort-key labels because
+ * a column and the sort it triggers are the same idea said once.
+ */
+export function inventoryTableLabels(
+  strings: Strings,
+  lang: Lang,
+  heroes: readonly HeroRecord[] = [],
+): InventoryTableLabels {
+  const grid = inventoryLabels(strings, lang, heroes);
+
+  return {
+    caption: strings.inventoryTableCaption,
+    groupTitle: grid.groupTitle,
+    itemName: grid.itemName,
+    itemRarity: grid.itemRarity,
+    itemForge: grid.itemForge,
+    equippedBy: grid.equippedBy,
+    gold: grid.gold,
+    searchText: grid.searchText,
+    column: {
+      name: strings.inventorySortName,
+      rarity: strings.inventorySortRarity,
+      level: strings.inventorySortLevel,
+      count: strings.inventorySortCount,
+      value: strings.inventorySortValue,
+      market: strings.inventorySortMarket,
+      equippedBy: strings.inventoryColumnEquippedBy,
+      actions: strings.inventoryColumnActions,
+    },
+    rowAction: (itemLabel) => sub(strings.inventoryRowAction, { item: itemLabel }),
+    searchPlaceholder: strings.inventorySearchPlaceholder,
+    searchLabel: strings.inventorySearchLabel,
+    resultCount: (shown, total) => sub(strings.inventoryFilterCount, { shown, total }),
+    clear: strings.inventoryFilterClear,
+    filteredEmpty: {
+      title: strings.inventoryFilterNoMatches,
+      description: strings.inventoryFilterClear,
+    },
+    empty: { title: strings.inventoryEmptyTitle, description: strings.inventoryEmptyBody },
+    skippedNote: (count) => sub(strings.inventorySkipped, { count }),
   };
 }

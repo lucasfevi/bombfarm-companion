@@ -63,6 +63,7 @@ export default tseslint.config(
         { type: 'shared-stores', pattern: 'src/shared/stores' },
         { type: 'shared-i18n', pattern: 'src/shared/i18n' },
         { type: 'shared-lib', pattern: 'src/shared/lib' },
+        { type: 'shared-hooks', pattern: 'src/shared/hooks' },
       ],
     },
     rules: {
@@ -189,6 +190,7 @@ export default tseslint.config(
                       'shared-stores',
                       'shared-i18n',
                       'shared-lib',
+                      'shared-hooks',
                     ],
                   },
                 },
@@ -206,6 +208,7 @@ export default tseslint.config(
                       'shared-stores',
                       'shared-i18n',
                       'shared-lib',
+                      'shared-hooks',
                     ],
                   },
                 },
@@ -291,6 +294,16 @@ export default tseslint.config(
                 },
               },
             },
+            {
+              from: { element: { type: 'shared-hooks' } },
+              allow: {
+                to: {
+                  element: {
+                    type: ['shared-hooks', 'shared-stores', 'shared-i18n', 'shared-lib'],
+                  },
+                },
+              },
+            },
             // Workspace packages (@bombfarm/ui, @bombfarm/domain) + npm deps
             {
               allow: { to: { module: { origin: 'external' } } },
@@ -317,7 +330,13 @@ export default tseslint.config(
             {
               target: {
                 element: {
-                  type: ['shared-i18n', 'shared-lib', 'shared-context', 'shared-stores'],
+                  type: [
+                    'shared-i18n',
+                    'shared-lib',
+                    'shared-context',
+                    'shared-stores',
+                    'shared-hooks',
+                  ],
                 },
               },
               allow: '**',

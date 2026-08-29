@@ -18,8 +18,10 @@ import {
   appFiltersUrl,
   buildSnapshot,
   discoverMarket,
-  isMarketSnapshot,
+  readMarketSnapshot,
+  parsePriceOverview,
   parseSearchPage,
+  quoteNative,
   reconcile,
   steamRarityFor,
   steamSlotFor,
@@ -43,6 +45,21 @@ const USER_AGENT = 'Bomb Farm Companion market snapshot (+https://github.com/luc
 const OUT = process.env.OUT ?? 'market-prices.json';
 const APP_ID = process.env.APP_ID ? Number(process.env.APP_ID) : MARKET_APP_ID;
 const DELAY_MS = process.env.DELAY_MS ? Number(process.env.DELAY_MS) : 1500;
+/**
+ * Currencies to ask Steam to quote directly. `search/render` ignores its own `currency` parameter
+ * — measured 2026-08-29, it answered a BRL request with `$3.65 USD` — so a currency that must
+ * match the page an item links to costs one `priceoverview` call per item.
+ */
+/**
+ * The quote endpoint has a tighter per-IP budget than the search one. A full 53-row BRL pass at
+ * 3.5s drew zero 429s when measured; the search pass's 1.5s would put it near 40 calls a minute,
+ * which is over the rate this endpoint has been seen to tolerate.
+ */
+const QUOTE_DELAY_MS = process.env.QUOTE_DELAY_MS ? Number(process.env.QUOTE_DELAY_MS) : 3500;
+const NATIVE_CURRENCIES = (process.env.NATIVE_CURRENCIES ?? 'BRL')
+  .split(',')
+  .map((code) => code.trim().toUpperCase())
+  .filter(Boolean);
 
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 const log = (message) => console.log(`[market-snapshot] ${message}`);
@@ -94,8 +111,10 @@ function steamTagsFor(catalog) {
 function loadPrior() {
   if (!existsSync(OUT)) return null;
   try {
-    const parsed = JSON.parse(readFileSync(OUT, 'utf-8'));
-    if (!isMarketSnapshot(parsed)) {
+    // Normalised, not merely validated: the file on disk is whatever the last run published, and
+    // a version 2 one carries no native quotes for the merge to reason about.
+    const parsed = readMarketSnapshot(JSON.parse(readFileSync(OUT, 'utf-8')));
+    if (parsed == null) {
       log(`ignoring ${OUT}: not a recognised snapshot`);
       return null;
     }
@@ -134,6 +153,27 @@ async function fetchSearchPage(url) {
   if (!res.ok) return { ok: false, rateLimited: false };
   try {
     return { ok: true, page: parseSearchPage(await res.json()) };
+  } catch {
+    return { ok: false, rateLimited: false };
+  }
+}
+
+async function fetchPriceOverview(url) {
+  let res;
+  try {
+    res = await fetch(url, {
+      headers: { 'User-Agent': USER_AGENT, Accept: 'application/json' },
+      signal: AbortSignal.timeout(30_000),
+    });
+  } catch {
+    return { ok: false, rateLimited: false };
+  }
+  if (res.status === 429 || res.status === 502 || res.status === 503) {
+    return { ok: false, rateLimited: true };
+  }
+  if (!res.ok) return { ok: false, rateLimited: false };
+  try {
+    return { ok: true, lowest: parsePriceOverview(await res.json()) };
   } catch {
     return { ok: false, rateLimited: false };
   }
@@ -201,13 +241,35 @@ async function main() {
 
   const generatedUtc = new Date().toISOString();
   const reconciled = reconcile(discovery.rows, catalog, generatedUtc);
+
+  // Only rows the enumeration found a listing for: an unlisted row has nothing to quote, and the
+  // per-item call is the expensive half of the sweep.
+  const quotable = reconciled.entries.filter((entry) => entry.lowestUsd != null);
+  const quoted = await quoteNative(APP_ID, quotable.map((entry) => entry.hashName), NATIVE_CURRENCIES, {
+    fetchPriceOverview,
+    sleep,
+    baseDelayMs: QUOTE_DELAY_MS,
+    log,
+  });
+  log(
+    `quoted ${quoted.quotes.size}/${quotable.length} rows in ${NATIVE_CURRENCIES.join(', ')} ` +
+      `over ${quoted.calls} calls (${quoted.unquoted} unquoted by Steam` +
+      `${quoted.complete ? '' : ', PARTIAL — rate limited'})`,
+  );
+
+  const withQuotes = reconciled.entries.map((entry) => {
+    const native = quoted.quotes.get(entry.hashName);
+    return native == null ? entry : { ...entry, lowestNative: native, nativeQuotedUtc: quoted.quotedUtc };
+  });
+
   const snapshot = buildSnapshot({
-    entries: reconciled.entries,
+    entries: withQuotes,
     prior,
     catalog,
     fx: await fetchFx(prior),
-    anomalies: [...discovery.anomalies, ...reconciled.anomalies],
-    searchCalls: discovery.searchCalls,
+    nativeCurrencies: NATIVE_CURRENCIES,
+    anomalies: [...discovery.anomalies, ...reconciled.anomalies, ...quoted.anomalies],
+    searchCalls: discovery.searchCalls + quoted.calls,
     enumerationComplete: discovery.enumerationComplete,
     now: Date.now,
     appId: APP_ID,

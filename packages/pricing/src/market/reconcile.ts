@@ -118,6 +118,8 @@ export function reconcile(
       rarityIdx,
       level,
       act,
+      lowestNative: {},
+      nativeQuotedUtc: null,
       lowestUsd: discovered.row.sellPriceCents == null ? null : discovered.row.sellPriceCents / 100,
       listings: discovered.row.listings,
       iconUrl: discovered.row.iconUrl,

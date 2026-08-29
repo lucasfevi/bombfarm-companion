@@ -5,6 +5,7 @@ import {
   isIpcEventChannel,
   type IpcEventChannel,
   type IpcEvents,
+  type IpcInvokeArgs,
   type IpcInvokeChannel,
   type IpcInvokeResult,
 } from '@bombfarm/contracts';
@@ -14,8 +15,9 @@ log.info({ scope: 'preload', event: 'boot' });
 
 async function invoke<C extends IpcInvokeChannel>(
   channel: C,
+  ...args: IpcInvokeArgs<C>
 ): Promise<IpcInvokeResult<C>> {
-  return ipcRenderer.invoke('bfc:invoke', channel) as Promise<IpcInvokeResult<C>>;
+  return ipcRenderer.invoke('bfc:invoke', channel, ...args) as Promise<IpcInvokeResult<C>>;
 }
 
 function on<C extends IpcEventChannel>(

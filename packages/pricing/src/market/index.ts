@@ -16,10 +16,14 @@ export {
 } from './types.js';
 export {
   SEARCH_PAGE_SIZE,
+  STEAM_CURRENCY_IDS,
   appFiltersUrl,
   listingUrl,
   parseAppFilters,
+  parseMoneyAmount,
+  parsePriceOverview,
   parseSearchPage,
+  priceOverviewUrl,
   searchRenderUrl,
 } from './endpoints.js';
 export {
@@ -50,12 +54,20 @@ export {
   type CatalogView,
   type Reconciliation,
 } from './reconcile.js';
-export { buildSnapshot, isMarketSnapshot, mergeEntries, type SnapshotParts } from './snapshot.js';
+export {
+  buildSnapshot,
+  isMarketSnapshot,
+  mergeEntries,
+  readMarketSnapshot,
+  type SnapshotParts,
+} from './snapshot.js';
+export { quoteNative, type QuoteDeps, type QuoteFetchResult, type QuoteResult } from './quote.js';
 export {
   keyForItem,
   marketEntryFor,
   resolveItemPrice,
   resolveKey,
+  type PriceBasis,
   type PriceState,
   type PriceableItem,
   type ResolvedPrice,

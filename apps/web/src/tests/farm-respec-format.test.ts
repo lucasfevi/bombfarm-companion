@@ -23,12 +23,12 @@ describe('farm-respec-format', () => {
       [0, '0.0'],
       [5, '5.0'],
     ])('formats %s as %s', (value, expected) => {
-      expect(formatGainPct(value)).toBe(expected);
+      expect(formatGainPct(value, 'en')).toBe(expected);
     });
 
     it('non-finite input renders the dash, never NaN or Infinity text', () => {
-      expect(formatGainPct(Number.NaN)).toBe('—');
-      expect(formatGainPct(Number.POSITIVE_INFINITY)).toBe('—');
+      expect(formatGainPct(Number.NaN, 'en')).toBe('—');
+      expect(formatGainPct(Number.POSITIVE_INFINITY, 'en')).toBe('—');
     });
   });
 
@@ -38,11 +38,11 @@ describe('farm-respec-format', () => {
       [0, '0'],
       [1500, '1,500'],
     ])('formats %s as %s (whole numbers, thousands separator)', (value, expected) => {
-      expect(formatGold(value)).toBe(expected);
+      expect(formatGold(value, 'en')).toBe(expected);
     });
 
     it('non-finite input renders the dash', () => {
-      expect(formatGold(Number.NaN)).toBe('—');
+      expect(formatGold(Number.NaN, 'en')).toBe('—');
     });
   });
 
@@ -51,30 +51,30 @@ describe('farm-respec-format', () => {
       [2.4482758383687027, '2.4'],
       [0, '0.0'],
     ])('formats %s as %s', (value, expected) => {
-      expect(formatHours(value)).toBe(expected);
+      expect(formatHours(value, 'en')).toBe(expected);
     });
 
     it('non-finite input renders the dash', () => {
-      expect(formatHours(Number.POSITIVE_INFINITY)).toBe('—');
+      expect(formatHours(Number.POSITIVE_INFINITY, 'en')).toBe('—');
     });
   });
 
   describe('formatSignedPct', () => {
     it('a positive change gets a plus sign, one decimal', () => {
-      expect(formatSignedPct(12.793113950535506)).toBe('+12.8');
+      expect(formatSignedPct(12.793113950535506, 'en')).toBe('+12.8');
     });
 
     it('a negative change gets a minus sign, magnitude only after it', () => {
-      expect(formatSignedPct(-10.649355160356)).toBe('-10.6');
+      expect(formatSignedPct(-10.649355160356, 'en')).toBe('-10.6');
     });
 
     it('zero gets no sign', () => {
-      expect(formatSignedPct(0)).toBe('0.0');
+      expect(formatSignedPct(0, 'en')).toBe('0.0');
     });
 
     it('non-finite input renders the dash, never NaN or Infinity text', () => {
-      expect(formatSignedPct(Number.NaN)).toBe('—');
-      expect(formatSignedPct(Number.POSITIVE_INFINITY)).toBe('—');
+      expect(formatSignedPct(Number.NaN, 'en')).toBe('—');
+      expect(formatSignedPct(Number.POSITIVE_INFINITY, 'en')).toBe('—');
     });
   });
 });

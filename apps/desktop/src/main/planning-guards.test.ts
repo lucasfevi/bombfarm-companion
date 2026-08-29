@@ -161,11 +161,17 @@ describe('Copy guard (design §6) — no player-facing literal outside lib/copy/
     return violations;
   }
 
-  /** JSX text nodes: text directly between `>` and `<`, excluding pure whitespace/punctuation. */
+  /**
+   * JSX text nodes: text directly between `>` and `<`, excluding pure whitespace/punctuation.
+   *
+   * The `>` must not be the tail of an arrow. A prop typed `(x: T) => Promise<U>` otherwise reads
+   * as the text node `Promise`, which is a type annotation and not player-facing copy — the first
+   * `.tsx` here to take an async callback prop tripped this.
+   */
   function findTextNodeViolations(source: string): string[] {
     const stripped = stripComments(source);
     const violations: string[] = [];
-    for (const match of stripped.matchAll(/>([^<>{}\n]+)</g)) {
+    for (const match of stripped.matchAll(/(?<!=)>([^<>{}\n]+)</g)) {
       const captured = match[1];
       if (captured === undefined) continue;
       const text = captured.trim();
@@ -208,6 +214,15 @@ describe('Copy guard (design §6) — no player-facing literal outside lib/copy/
 
     const badTextNodeFixture = '<h2 className="text-base">Next-point ranking</h2>';
     expect(findTextNodeViolations(badTextNodeFixture)).toEqual(['Next-point ranking']);
+  });
+
+  it('reads an arrow return type as a type and not as copy, while still catching text after it', () => {
+    // Both halves matter: dropping the arrow case must not also drop a real violation sitting
+    // next to one, which is the way this exemption would quietly stop guarding.
+    expect(findTextNodeViolations('onRefresh: (t: Target) => Promise<Result>;')).toEqual([]);
+    expect(
+      findTextNodeViolations('type F = () => Promise<void>;\nconst x = <p className="a">Sell it</p>;'),
+    ).toEqual(['Sell it']);
   });
 
   it("allowlisted props (data-testid, className, href, id, role, type, key) are not flagged even though they are string literals", () => {

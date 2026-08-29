@@ -527,14 +527,21 @@ export function heroIdsInView(view: InventoryView): string[] {
   return ids;
 }
 
-export type InventorySortKey = 'rarity' | 'level' | 'value' | 'name' | 'count';
+export type InventorySortKey = 'rarity' | 'level' | 'value' | 'name' | 'count' | 'market';
 export type InventorySortDirection = 'asc' | 'desc';
 export type InventorySortTerm = { key: InventorySortKey; direction: InventorySortDirection };
 
 /** Most significant term first. */
 export type InventorySort = readonly InventorySortTerm[];
 
-export const INVENTORY_SORT_KEYS: readonly InventorySortKey[] = ['rarity', 'level', 'value', 'name', 'count'];
+export const INVENTORY_SORT_KEYS: readonly InventorySortKey[] = [
+  'rarity',
+  'level',
+  'value',
+  'name',
+  'count',
+  'market',
+];
 
 /**
  * Best-first, then newest-first within a tier — what a player scanning for an upgrade wants
@@ -579,6 +586,7 @@ function sortValue(entry: InventoryEntry, key: InventorySortKey): number {
     case 'count':
       return entry.count;
     case 'name':
+    case 'market':
       return 0;
   }
 }
@@ -595,10 +603,25 @@ export function sortInventoryView(
   view: InventoryView,
   sort: InventorySort,
   nameOf: (item: InventoryViewItem) => string,
+  marketValueOf?: (entry: InventoryEntry) => number | null,
 ): InventoryView {
   const compare = (a: InventoryEntry, b: InventoryEntry): number => {
     for (const term of sort) {
       const sign = term.direction === 'asc' ? 1 : -1;
+
+      if (term.key === 'market') {
+        const left = marketValueOf?.(a) ?? null;
+        const right = marketValueOf?.(b) ?? null;
+        // Unpriced entries sink to the bottom in BOTH directions. Letting the sign carry them
+        // would put the items the market says nothing about above every real price the moment a
+        // player asked for cheapest-first, which reads as the sort being broken.
+        if (left == null && right == null) continue;
+        if (left == null) return 1;
+        if (right == null) return -1;
+        if (left !== right) return sign * (left - right);
+        continue;
+      }
+
       const delta =
         term.key === 'name'
           ? nameOf(a.item).localeCompare(nameOf(b.item))

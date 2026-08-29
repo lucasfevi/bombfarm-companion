@@ -11,6 +11,7 @@ import * as teamPlan from './namespaces/team-plan';
 import * as importNs from './namespaces/import';
 import * as stats from './namespaces/stats';
 import * as inventory from './namespaces/inventory';
+import * as market from './namespaces/market';
 
 const en = {
   ...chrome.en,
@@ -25,6 +26,7 @@ const en = {
   ...importNs.en,
   ...stats.en,
   ...inventory.en,
+  ...market.en,
 };
 const pt = {
   ...chrome.pt,
@@ -39,6 +41,7 @@ const pt = {
   ...importNs.pt,
   ...stats.pt,
   ...inventory.pt,
+  ...market.pt,
 };
 
 export type Strings = typeof en;

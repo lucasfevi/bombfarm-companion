@@ -22,6 +22,8 @@ import * as phases from '@/shared/i18n/namespaces/phases';
 import * as teamPlan from '@/shared/i18n/namespaces/team-plan';
 import * as importNs from '@/shared/i18n/namespaces/import';
 import * as stats from '@/shared/i18n/namespaces/stats';
+import * as market from '@/shared/i18n/namespaces/market';
+import * as inventory from '@/shared/i18n/namespaces/inventory';
 import { WEB_PACKAGE_ROOT } from './helpers/web-package-root';
 
 /**
@@ -331,8 +333,46 @@ const KEYS_REMOVED: readonly string[] = [
  * `inventoryGroup*` keys name the item kinds; `inventoryGroupOther` and
  * `inventoryUnknownCategory` exist because the catalog names gear only, so an item type a patch
  * adds is shown and labelled unknown rather than silently filed as gear.
+ *
+ * The market-price data layer (2026-08-29) adds the `market*` block. Two of the strings exist
+ * because Steam prices each region independently instead of converting: a native quote is the
+ * number on the page an item links to, a converted one is derived from USD and is not, so the
+ * tooltip has to say which of the two it is showing. The `marketAge*` set is the vocabulary of
+ * the relative-age formatter, which dates a quote by its OWN timestamp rather than the
+ * snapshot's — a rate-limited run republishes the file while leaving an individual quote hours
+ * older, and dating it to the file would claim a freshness the quote does not have.
+ *
+ * The inventory list layout (2026-08-29) adds the `inventoryView*`, `inventoryColumn*`,
+ * `inventoryTableCaption`, `inventoryRowAction` and `inventorySortMarket` keys. The table is a
+ * second layout over the same items, so its column headers reuse the existing sort-key labels
+ * rather than adding a parallel set; only the two columns the cards have no equivalent for
+ * (equipped-by, row actions) and the table's own accessible caption are new. `inventoryRowAction`
+ * takes the item name because a row control repeats down the page, and a column of identically
+ * named buttons names nothing to a screen reader. `inventorySortMarket` is the new sort key that
+ * orders by what the market is asking for an item.
  */
 const KEYS_ADDED: readonly string[] = [
+  'inventorySortMarket',
+  'inventoryViewLabel',
+  'inventoryViewCards',
+  'inventoryViewList',
+  'inventoryTableCaption',
+  'inventoryColumnEquippedBy',
+  'inventoryColumnActions',
+  'inventoryRowAction',
+  'marketNoListings',
+  'marketNotOnMarket',
+  'marketNotTradable',
+  'marketQuoteNativeTooltip',
+  'marketQuoteConvertedTooltip',
+  'marketRefreshLabel',
+  'marketRefreshName',
+  'marketPricesUpdated',
+  'marketAgeJustNow',
+  'marketAgeMinutes',
+  'marketAgeHours',
+  'marketAgeDays',
+  'marketAgeUnknown',
   'accountMissingFieldsTitle',
   'accountMissingFieldsBody',
   'referralNoticeTitle',
@@ -555,18 +595,27 @@ function diffLeafPaths(a: unknown, b: unknown, path: string[] = [], out: string[
   return out;
 }
 
+/**
+ * Every namespace module, named — the name is what the duplicate-key failure prints, and a
+ * bare module reference leaves it saying nothing about where the collision came from.
+ *
+ * A namespace missing here is not guarded at all: `inventory` was absent from this list from the
+ * day it landed, so its keys could have shadowed another namespace's silently.
+ */
 const namespaces = [
-  chrome,
-  planner,
-  gear,
-  abilities,
-  account,
-  advice,
-  breakdown,
-  phases,
-  teamPlan,
-  importNs,
-  stats,
+  ['chrome', chrome],
+  ['planner', planner],
+  ['gear', gear],
+  ['abilities', abilities],
+  ['account', account],
+  ['advice', advice],
+  ['breakdown', breakdown],
+  ['phases', phases],
+  ['teamPlan', teamPlan],
+  ['import', importNs],
+  ['stats', stats],
+  ['market', market],
+  ['inventory', inventory],
 ] as const;
 
 describe('i18n split parity', () => {
@@ -586,11 +635,11 @@ describe('i18n split parity', () => {
 
   it('namespace key sets are pairwise disjoint', () => {
     const seen = new Map<string, string>();
-    for (const ns of namespaces) {
+    for (const [name, ns] of namespaces) {
       for (const key of Object.keys(ns.en)) {
         const prior = seen.get(key);
-        expect(prior, `duplicate key ${key} also in ${prior}`).toBeUndefined();
-        seen.set(key, 'present');
+        expect(prior, `duplicate key ${key}: in ${name} and already in ${prior}`).toBeUndefined();
+        seen.set(key, name);
       }
     }
   });
