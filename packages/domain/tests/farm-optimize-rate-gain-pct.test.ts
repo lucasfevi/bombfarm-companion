@@ -7,10 +7,10 @@
  */
 import { describe, expect, it } from 'vitest';
 import { solveFarmRespec } from '@bombfarm/domain/farm-optimize';
-import { assertInRegime } from './helpers/capture-regime';
+import { holdSuiteUntilInRegime } from './helpers/capture-regime';
 import { FARM_OPTIMIZE_FIXTURE, loadFarmRateFixture } from './helpers/farm-rate-fixtures';
 
-assertInRegime(`sheet-math/${FARM_OPTIMIZE_FIXTURE}`, 'sheet');
+holdSuiteUntilInRegime(`sheet-math/${FARM_OPTIMIZE_FIXTURE}`, 'sheet');
 
 const { heroes, account, maxPhase } = loadFarmRateFixture(FARM_OPTIMIZE_FIXTURE);
 

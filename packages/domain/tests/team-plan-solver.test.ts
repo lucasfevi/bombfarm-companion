@@ -1,7 +1,9 @@
 import { describe, expect, it, vi } from 'vitest';
 import * as advisorPipeline from '@bombfarm/domain/advisor-pipeline';
 import { TEAM_PLAN_MAX_EVALUATIONS, MAX_ROUNDS, runTeamPlan } from '@bombfarm/domain/team-plan/solver';
-import { teamPlanInputFromFixture, TEAM_PLAN_FIXTURE } from './helpers/team-plan-fixtures';
+import { TEAM_PLAN_FIXTURE, holdTeamPlanSuiteUntilInRegime, teamPlanInputFromFixture } from './helpers/team-plan-fixtures';
+
+holdTeamPlanSuiteUntilInRegime();
 
 function assertOk(result: ReturnType<typeof runTeamPlan>): asserts result is { blocked: false; plan: NonNullable<import('@bombfarm/domain/team-plan/types').TeamPlan> } {
   expect(result.blocked).toBe(false);

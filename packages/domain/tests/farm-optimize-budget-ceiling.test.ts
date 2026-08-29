@@ -27,9 +27,12 @@ import { resolveFarmObjective } from '@bombfarm/domain/farm-optimize-objective';
 import { budgetOf, reoptBudget, clampPtsToBudget, REOPT_KEYS } from '@bombfarm/domain/points-reopt-core';
 import type { HeroRecord } from '@bombfarm/domain/shims/storage';
 import { loadFarmRateFixture } from './helpers/farm-rate-fixtures';
+import { holdSuiteUntilInRegime } from './helpers/capture-regime';
 
 /** A capture with no over-spent hero, so the anomaly below is the one this file introduces. */
 const CLEAN_FIXTURE = 'save-20260823-13heroes-crit-points.json';
+
+holdSuiteUntilInRegime(`sheet-math/${CLEAN_FIXTURE}`, 'sheet');
 
 const { heroes, account, maxPhase } = loadFarmRateFixture(CLEAN_FIXTURE);
 

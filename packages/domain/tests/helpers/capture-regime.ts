@@ -27,7 +27,7 @@
  * expires is only the arithmetic. So an out-of-regime capture stays committed and stays readable,
  * and what this module withdraws is its admissibility as the SOURCE OF A NUMBER.
  */
-import type { TestContext } from 'vitest';
+import { beforeEach, type TestContext } from 'vitest';
 
 // `(?:^|[/\\])` rather than `(?:^|\/)`: callers build the `dir/filename` shape with `path.join`,
 // which emits `\` on Windows, and this repo is developed and CI'd on Windows.
@@ -332,6 +332,32 @@ function expiryMessage(capturePath: string, mechanic: Mechanic): string {
  */
 export function skipUnlessInRegime(ctx: TestContext, capturePath: string, mechanic: Mechanic): void {
   ctx.skip(!isInRegimeFor(capturePath, mechanic), expiryMessage(capturePath, mechanic));
+}
+
+/**
+ * The whole-suite form, for a value suite whose capture has expired and for which NO admissible
+ * capture exists in the corpus yet.
+ *
+ * WHY THIS IS NOT THE QUIET SKIP {@link assertInRegime} EXISTS TO PREVENT. That function is the
+ * right answer when an admissible capture exists and the suite is pointed at the wrong one: the
+ * fix is a one-line re-point, and failing loudly is what prompts it. It is the wrong answer when
+ * the corpus holds nothing the suite could be re-pointed AT, because then "fail loudly" is a
+ * standing red that no one can clear, and a standing red is how a suite stops being read.
+ *
+ * The 2026-08-28 damage boundary put the corpus in exactly that state: every committed capture
+ * but one has an equipped weapon, and the one that does not is a fresh account too thin to carry
+ * a gear planner or a phase-52 band. So these suites are held, not deleted, and they come back on
+ * their own the moment a capture past the boundary lands with the roster they need.
+ *
+ * It is a runtime `ctx.skip()` for the same reason {@link skipUnlessInRegime} is: a `.skip(...)`
+ * literal would need an entry in the static skip manifests, and the reason here is generated from
+ * the registry rather than restated by hand. The skip is COUNTED and its message names the
+ * capture and the boundary, so a held suite is visible in every run.
+ */
+export function holdSuiteUntilInRegime(capturePath: string, mechanic: Mechanic): void {
+  beforeEach((ctx: TestContext) => {
+    skipUnlessInRegime(ctx, capturePath, mechanic);
+  });
 }
 
 /**

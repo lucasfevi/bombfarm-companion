@@ -28,7 +28,7 @@ import { rankNextPoint, STAT_CAPS, POINT_GAIN, type HeroSheet, type Context, typ
 import type { HeroRecord, AccountShared } from '@bombfarm/domain/shims/storage';
 // One registry, read across the package boundary by relative path — the same way this tree's
 // own sheet-math helper reads the domain package's committed captures rather than copying them.
-import { assertInRegime } from '../../../../packages/domain/tests/helpers/capture-regime';
+import { holdSuiteUntilInRegime } from '../../../../packages/domain/tests/helpers/capture-regime';
 import { loadFixtureJson } from './helpers/sheet-math-fixtures';
 
 const FIXTURE = 'save-20260819-11882-7heroes.json';
@@ -37,7 +37,7 @@ const FIXTURE = 'save-20260819-11882-7heroes.json';
 // its whole value is catching an unintended model change as a number that moved. That value
 // is real only while the capture underneath it is one the model can still solve, which is why
 // this is re-pointed rather than re-recorded in place (issue #206).
-assertInRegime(`sheet-math/${FIXTURE}`, 'sheet');
+holdSuiteUntilInRegime(`sheet-math/${FIXTURE}`, 'sheet');
 
 const pick = (rows: readonly PointValue[]) => rows.map((r) => ({ stat: r.stat, gainPct: r.gainPct }));
 

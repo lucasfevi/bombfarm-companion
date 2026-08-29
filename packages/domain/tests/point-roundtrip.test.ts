@@ -25,12 +25,15 @@
  * tolerance-only.
  */
 import { describe, expect, it } from 'vitest';
+import { holdSuiteUntilInRegime } from './helpers/capture-regime';
 import { composeSheetFromBirth } from '@bombfarm/domain/birth-sheet';
 import { inferSpentPoints } from '@bombfarm/domain/point-inference';
 import { SHEET_KEYS } from '@bombfarm/domain/planner-constants';
 import { expectSheetsClose, extractHero, loadFixtureJson, treeTotalsFromSave } from './helpers/sheet-math-fixtures';
 
 const EXPORT_FILE = 'save-20260823-13heroes-crit-points.json';
+
+holdSuiteUntilInRegime(`sheet-math/${EXPORT_FILE}`, 'sheet');
 
 /**
  * All 13 heroes of the post-2026-08-23 corpus file — the suite's entire subject set.

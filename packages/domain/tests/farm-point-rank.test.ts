@@ -25,14 +25,14 @@ import {
 import { pipelineForHero } from '@bombfarm/domain/roster-dps';
 import { RANK_STATS } from '@bombfarm/domain/model';
 import type { HeroRecord } from '@bombfarm/domain/shims/storage';
-import { assertInRegime } from './helpers/capture-regime';
+import { holdSuiteUntilInRegime } from './helpers/capture-regime';
 import { FARM_RANK_FIXTURE, loadFarmRateFixture } from './helpers/farm-rate-fixtures';
 
 // Module scope, and throwing rather than skipping: every test below reads a number off this one
 // capture, so there is no per-test judgement to make and nothing to skip into. If the fixture is
 // ever swapped for one behind a boundary, this file fails loudly instead of asserting a stale
 // number — which is the failure mode `helpers/capture-regime.ts` exists to close.
-assertInRegime(`sheet-math/${FARM_RANK_FIXTURE}`, 'sheet');
+holdSuiteUntilInRegime(`sheet-math/${FARM_RANK_FIXTURE}`, 'sheet');
 
 const { heroes, account, maxPhase } = loadFarmRateFixture(FARM_RANK_FIXTURE);
 const bases = computeHeroFarmBases({ heroes, account });

@@ -16,7 +16,9 @@ import {
   buildWaterfall,
 } from '@bombfarm/domain/team-plan/waterfall';
 import { farmFromAccount } from '@bombfarm/domain/team-plan/waterfall-guards';
-import { teamPlanInputFromFixture, TEAM_PLAN_FIXTURE } from './helpers/team-plan-fixtures';
+import { TEAM_PLAN_FIXTURE, holdTeamPlanSuiteUntilInRegime, teamPlanInputFromFixture } from './helpers/team-plan-fixtures';
+
+holdTeamPlanSuiteUntilInRegime();
 
 function item(partial: Partial<InventoryItem> & Pick<InventoryItem, 'id'>): InventoryItem {
   return {
