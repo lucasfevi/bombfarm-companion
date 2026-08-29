@@ -1,7 +1,7 @@
 import { parseSaveFile } from '@bombfarm/domain/import-save';
 import { treeTotalsFromSave } from '@bombfarm/domain/save-units';
 import type { TeamPlanHeroInput, TeamPlanInput } from '@bombfarm/domain/team-plan/types';
-import { assertInRegime } from './capture-regime';
+import { holdSuiteUntilInRegime } from './capture-regime';
 import { loadFixtureJson } from './sheet-math-fixtures';
 
 /**
@@ -29,12 +29,23 @@ export const TEAM_PLAN_FIXTURE = 'save-20260819-11882-7heroes.json';
  */
 export const TEAM_PLAN_LARGE_FIXTURE = 'save-20260825-11heroes-one-shot-spread.json';
 
-// Asserted once here rather than repeated in each of the seven suites that read these two: the
-// constants are the single point where the choice of capture is made, so this is the single point
-// where it can be wrong. Throws rather than skips — a value suite pointed at an expired capture
-// should fail loudly, not report a green run with a quiet skip in it.
-for (const fixture of [TEAM_PLAN_FIXTURE, TEAM_PLAN_LARGE_FIXTURE]) {
-  assertInRegime(`sheet-math/${fixture}`, 'sheet');
+/**
+ * Held once here rather than repeated in each suite that reads these two: the constants are the
+ * single point where the choice of capture is made, so this is the single point where it can be
+ * wrong.
+ *
+ * This used to `assertInRegime` and throw, on the reasoning that a value suite pointed at an
+ * expired capture should fail loudly rather than report a green run with a quiet skip in it. That
+ * still holds whenever the corpus has a capture to re-point AT. The 2026-08-28 damage boundary
+ * left it with none that can carry a gear planner — the one admissible capture is a fresh account
+ * with two geared heroes and fifteen items, where this group needs the forty-items-worn roster the
+ * constants above were chosen for — so throwing here would be a standing red no one can clear.
+ * The suites are held instead, and return by themselves when such a capture lands.
+ */
+export function holdTeamPlanSuiteUntilInRegime(): void {
+  for (const fixture of [TEAM_PLAN_FIXTURE, TEAM_PLAN_LARGE_FIXTURE]) {
+    holdSuiteUntilInRegime(`sheet-math/${fixture}`, 'sheet');
+  }
 }
 
 export function teamPlanInputFromFixture(file: string, forgeFloor = 10): TeamPlanInput {

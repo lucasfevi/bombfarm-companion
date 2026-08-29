@@ -24,6 +24,16 @@ section, a removed section, or a catalog-version change — is **drift**. The ru
 four outcomes and raises the alert on two independent channels: the job itself fails, and a single
 tracking issue is opened or updated. Neither channel alone is the whole signal.
 
+### `versao_catalogo` is not a change signal
+
+The fingerprint records the catalog version, and a change in it is drift — but the converse does
+not hold, and assuming it does will miss a patch. The 2026-08-28 damage patch restated 186 of the
+240 item definitions and added three fields to `itens`, and `versao_catalogo` **stayed at 4**
+through all of it. The section hashes caught it; the version field would not have.
+
+So the version is one more field that can move, never a cheap pre-check that lets a run skip
+hashing the sections. Nothing in this job treats it as one, and nothing downstream should either.
+
 ## 3. Accepting a drift
 
 1. Confirm the change is real — check it in the live game, or on the wiki itself.

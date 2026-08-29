@@ -12,7 +12,9 @@ import {
 } from '@bombfarm/domain/team-plan/solver-assignment';
 import { generateMoves } from '@bombfarm/domain/team-plan/solver-moves';
 import type { TeamPlanInput, HeroPlanContext } from '@bombfarm/domain/team-plan/types';
-import { teamPlanInputFromFixture, TEAM_PLAN_FIXTURE } from './helpers/team-plan-fixtures';
+import { TEAM_PLAN_FIXTURE, holdTeamPlanSuiteUntilInRegime, teamPlanInputFromFixture } from './helpers/team-plan-fixtures';
+
+holdTeamPlanSuiteUntilInRegime();
 
 function assertMoveConstraints(
   state: AssignmentState,

@@ -4,7 +4,9 @@ const defById = new Map(catalog.defs.map((definition) => [definition.id, definit
 
 /** Forge upgrade `+0…+15`: `mult = 1 + 0.08 × N` (wiki `itens.forja.bonus`). Duplicated from
  *  `gear/catalog.ts` rather than imported — that module pulls in the whole loadout model, and
- *  this one is loaded by the desktop's renderer for a display list. */
+ *  this one is loaded by the desktop's renderer for a display list. The Dano ladder
+ *  (`dmgNivelMult`) is duplicated for the same reason; `inventory-view.test.ts` fails if the two
+ *  copies ever disagree. */
 const FORGE_BONUS = 0.08;
 const FORGE_MAX = 15;
 const rarityByIdx = new Map(catalog.rarities.map((rarity) => [rarity.idx, rarity]));
@@ -220,13 +222,16 @@ function catalogStats(defId: string, rarityIdx: number, level: number, upgrade: 
   if (!definition) return [];
   const nativeMult = (catalog.nivelMult as Record<string, number>)[String(definition.nativeLevel)] ?? 1;
   const itemMult = (catalog.nivelMult as Record<string, number>)[String(level)] ?? nativeMult;
+  const nativeDmgMult = (catalog.dmgNivelMult as Record<string, number>)[String(definition.nativeLevel)] ?? 1;
+  const itemDmgMult = (catalog.dmgNivelMult as Record<string, number>)[String(level)] ?? nativeDmgMult;
   const forge = 1 + FORGE_BONUS * Math.max(0, Math.min(FORGE_MAX, Math.round(upgrade)));
   const scale = itemMult / nativeMult;
+  const dmgScale = itemDmgMult / nativeDmgMult;
   const statCount = rarityByIdx.get(rarityIdx)?.statCount ?? 1;
 
   return definition.valores.slice(0, statCount).map((roll) => {
     const code = statNames.indexOf(roll.stat);
-    const value = roll.valor * scale;
+    const value = roll.valor * (roll.stat === 'dmg' ? dmgScale : scale);
     return {
       name: roll.stat,
       code: code >= 0 ? code : -1,

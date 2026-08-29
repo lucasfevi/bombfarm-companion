@@ -1004,3 +1004,44 @@ every non-`critDmg` sheet key on every hero and every subject. The permitted-del
 entries below were deliberately held at their PRE-deletion values through the re-record, so
 `PERMITTED_DELTAS` stays a live exception rather than becoming a silently-satisfied no-op.
 
+
+## 13. The 2026-08-28 damage boundary, and the coverage held behind it
+
+**What moved.** Weapons gained a flat ×5 on the Dano ladder (`itens.arma_dmg_mult`), and the
+ladder gained a step every 50 item levels (`itens.dmg_step_niveis`). 186 of the 240 item
+definitions changed, `dmg` the only field that did. Confirmed against the game, not just the wiki:
+`sheet-math/save-20260828-4heroes-postpatch.json` exports `ember_arma` at `value: 96.25` where the
+pre-patch ladder said 19.25, and all four of its heroes invert with no issue.
+
+**Why it took the whole corpus with it.** Every other committed capture has at least one equipped
+weapon, so the ×5 reaches all of them, and none can be waived past the boundary the way three were
+waived past 2026-08-23. `capturesOutOfRegimeFor('sheet')` is now every capture but one.
+
+**Nothing was deleted.** The suites below are *held*, not retired — `holdSuiteUntilInRegime`
+registers a runtime skip whose message is generated from the registry, so each one names the
+capture it wants and the boundary it is behind, and each returns by itself when an admissible
+capture lands. This is the one departure from §11's "throws rather than skips" rule, and it is
+narrow: that rule is right whenever the corpus holds a capture to re-point AT, and here it holds
+none, so throwing would be a standing red nobody could clear.
+
+**826 domain tests and 29 web tests are held.** What they cover, and what each needs to come back:
+
+| Held | Needs |
+| --- | --- |
+| team-plan solver (8 suites) | a geared roster — the constants were chosen for 40 items worn and 54 in the bag; the one admissible capture has 2 geared heroes and 15 items |
+| farm-optimize (10 suites) | the phase-52 account its measured bands were recorded on |
+| `point-roundtrip` (domain + web) | a whole-roster geared capture; its live stand-in for the current regime is `postpatch-damage-model.test.ts`, on four heroes |
+| `tree-crit-dmg-flat` (domain + web) | a capture with a nonzero `skills.totals.crit_dmg_add` |
+| `points-rank-golden` (domain + web) | a geared hero to re-record the golden against |
+| `farm-point-rank`, `farm-rate-gate-throughput`, `invariance-baseline`, `farm-respec-fixture` | the same geared roster |
+| `import-merge`, one assertion | an 8/8-geared hero to reconstruct |
+
+**What the corpus sweep lost, concretely.** `points-within-level-budget.test.ts` swept three
+captures and 31 heroes; it now sweeps one and four. That guard is back to being one deletion from
+vacuity, which is the state §11 was written to get it out of — the difference is that the registry
+now says so mechanically rather than leaving it to be noticed.
+
+**The half of the boundary with no witness at all.** Every item on the admissible capture is level
+10, where the Dano step is 1. The weapon ×5 is game-confirmed; the 50-level step rests on the wiki
+alone, and `postpatch-damage-model.test.ts` says so in the name of the assertion that reads it. A
+capture holding one item at level 50 or past settles it.

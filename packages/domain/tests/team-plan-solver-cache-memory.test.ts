@@ -24,7 +24,9 @@ import { buildPool, poolEntryForItem } from '@bombfarm/domain/team-plan/pool';
 import { baselineAssignmentFromInput } from '@bombfarm/domain/team-plan/waterfall';
 import { applyMove, type AssignmentState } from '@bombfarm/domain/team-plan/solver-assignment';
 import { generateMoves } from '@bombfarm/domain/team-plan/solver-moves';
-import { teamPlanInputFromFixture, TEAM_PLAN_FIXTURE } from './helpers/team-plan-fixtures';
+import { TEAM_PLAN_FIXTURE, holdTeamPlanSuiteUntilInRegime, teamPlanInputFromFixture } from './helpers/team-plan-fixtures';
+
+holdTeamPlanSuiteUntilInRegime();
 
 // (the ground-truth rule, class (b) — structural): re-pointed onto save-20260819-11882-7heroes.json.
 const FIXTURE = TEAM_PLAN_FIXTURE;

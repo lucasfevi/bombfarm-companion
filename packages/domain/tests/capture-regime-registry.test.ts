@@ -188,7 +188,12 @@ describe('capture registry — every waiver is verified against the capture, not
 });
 
 describe('capture registry — the derived exclusion lists', () => {
-  it('capturesOutOfRegimeFor("sheet") is every capture but the four that reach 2026-08-23', () => {
+  /**
+   * The 2026-08-28 damage boundary took the corpus down to ONE admissible sheet capture. Every
+   * other committed capture has at least one equipped weapon, and the weapon 5x reaches all of
+   * them, so none can be waived past it the way three were waived past 2026-08-23.
+   */
+  it('capturesOutOfRegimeFor("sheet") is every capture but the one past 2026-08-28', () => {
     expect(capturesOutOfRegimeFor('sheet')).toEqual([
       'api/assembled-payload-after.json',
       'api/assembled-payload-before.json',
@@ -200,12 +205,15 @@ describe('capture registry — the derived exclusion lists', () => {
       'sheet-math/payload-20260812-8heroes.json',
       'sheet-math/save-20260813-5heroes.json',
       'sheet-math/save-20260818-12heroes.json',
+      'sheet-math/save-20260819-11882-7heroes.json',
       'sheet-math/save-20260819-respec-crit-cdr.json',
       'sheet-math/save-20260822-15heroes-tree-crit-dmg.json',
+      'sheet-math/save-20260823-13heroes-crit-points.json',
+      'sheet-math/save-20260825-11heroes-one-shot-spread.json',
     ]);
   });
 
-  it('a later boundary excludes more than an earlier one — cooldown (2026-08-18) admits what sheet (2026-08-23) refuses', () => {
+  it('a later boundary excludes more than an earlier one — cooldown (2026-08-18) admits what sheet (2026-08-28) refuses', () => {
     const sheet = new Set(capturesOutOfRegimeFor('sheet'));
     const cooldown = capturesOutOfRegimeFor('cooldown');
     for (const path of cooldown) expect(sheet, `${path} refused for cooldown but admitted for sheet`).toContain(path);

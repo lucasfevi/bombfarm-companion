@@ -41,6 +41,20 @@ that file lands later in this feature — expected, not a defect of this manifes
 | May prove | whole-roster round trip with **zero** inference issues on all 8 heroes; battle-allowed vs. not-battle-allowed hero handling; the larger inventory (27 catalogued items) for team-plan search and import-sync assertions |
 | May **not** prove | save-file shape (no `export_version`/`generated_at`); the duplicate-hero-name a11y case (all 8 names are distinct); item-upgrade variety for forge assertions (every upgrade is `0`); high-phase mitigation; before/after point deltas, ability-toggle or gear-swap pairs (same single-snapshot limits as the export) |
 
+## `save-20260828-4heroes-postpatch.json`
+
+| Field | Value |
+| --- | --- |
+| Source capture | live save export, captured externally from the game client |
+| Capture date | 2026-08-28 |
+| Account | 486 (post-wipe), `phase: 21`, `max_phase: 21` — 4 heroes: Jon L14 (4/8 geared), Bellatrix L14 (6/8 geared), Thane L6 (naked), Minato L8 (naked) |
+| Capture log entry | *Item damage patch — weapon ×5 and the 50-level Dano step*, 2026-08-28 row (tracked externally to this repo) |
+| Scrub | `account.account_id`, `account.player_name` removed via `scrubPersonalFields` (`packages/domain/tests/helpers/fidelity-pair.ts`) — nothing else changed |
+| SHA-256 (unscrubbed source) | `b22813cf2a0d17810ca918c146cfddf8e8fa7ae325f0bb517f9dbb4b58acaf2a` |
+| SHA-256 (committed file) | `d327832b6819aa1482478303dd468f1bdbebbe72d9342f7df9345f1399291715` |
+| May prove | the post-2026-08-28 damage model: the weapon ×5 (`itens.arma_dmg_mult`) against two equipped `ember_arma`, and every item's exported rolls agreeing with `scaledValores` stat for stat; a whole-roster zero-issue point inversion (4/4 heroes); naked-loadout identity (Thane, Minato); post-patch `birth_stats`/`stat_ranges`/`skills`/`casa`/`items` shapes |
+| May **not** prove | the 50-level Dano step (`itens.dmg_step_niveis`) — every item on this capture is level 10, where the step is 1, so the ladder's shape rests on the wiki alone; forge behaviour (every `upgrade` is `0`); stars (every hero is ★0); high-phase mitigation (`max_phase` is 21); before/after point deltas (`stat_points_available` is `0` on every hero); an ability-toggle or gear-swap pair; any rarity above Incomum |
+
 ## RETIRED — the five 2026-08-16 / 2026-08-17 captures
 
 Removed from the corpus on 2026-08-25. Their provenance is kept here because the corpus's rule is

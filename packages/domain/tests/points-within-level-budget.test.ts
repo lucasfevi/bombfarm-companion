@@ -48,7 +48,7 @@ import { describe, expect, it } from 'vitest';
 import { inferSpentPoints } from '@bombfarm/domain/point-inference';
 import { parseAccountPayload } from '@bombfarm/domain/import-save';
 import { SHEET_KEYS } from '@bombfarm/domain/planner-constants';
-import { capturesOutOfRegimeFor } from './helpers/capture-regime';
+import { capturesOutOfRegimeFor, isInRegimeFor } from './helpers/capture-regime';
 import { extractHero, treeTotalsFromSave, type SaveHeroSheet } from './helpers/sheet-math-fixtures';
 
 const here = dirname(fileURLToPath(import.meta.url));
@@ -138,9 +138,11 @@ const SUBJECTS = collectSubjects();
 
 describe('spent stat points never exceed the hero level (corpus sweep)', () => {
   /**
-   * Non-vacuity. The 2026-08-18 and 2026-08-23 patches had narrowed the swept set to ONE capture
-   * and 13 heroes — a guard one deletion from vacuity, which this file's own header called out.
-   * Two in-regime captures put it back to three files and 31 heroes.
+   * Non-vacuity, and it is thinner than it was. The 2026-08-28 damage boundary took the swept set
+   * from three captures and 31 heroes back down to ONE and four: every other committed capture
+   * has an equipped weapon, and the weapon 5x reaches all of them, so none can back a `sheet`
+   * number any more. The sweep returns to its old breadth on the first post-2026-08-28 capture
+   * with a geared roster, and this guard is what will notice that it has.
    *
    * The per-file breakdown is asserted, not just the total: a total alone would stay green if one
    * capture stopped being swept while another grew, which is the failure this guard exists for.
@@ -149,11 +151,9 @@ describe('spent stat points never exceed the hero level (corpus sweep)', () => {
     const byFile = new Map<string, number>();
     for (const s of SUBJECTS) byFile.set(s.file, (byFile.get(s.file) ?? 0) + 1);
     expect(Object.fromEntries([...byFile].sort()), `walked ${FIXTURES_DIR}`).toEqual({
-      'sheet-math/save-20260819-11882-7heroes.json': 7,
-      'sheet-math/save-20260823-13heroes-crit-points.json': 13,
-      'sheet-math/save-20260825-11heroes-one-shot-spread.json': 11,
+      'sheet-math/save-20260828-4heroes-postpatch.json': 4,
     });
-    expect(SUBJECTS.length).toBe(31);
+    expect(SUBJECTS.length).toBe(4);
     const dirs = new Set(SUBJECTS.map((s) => s.file.split('/')[0]));
     expect(dirs, `capture directories reached: ${[...dirs].join(', ')}`).toEqual(new Set(['sheet-math']));
   });
@@ -391,7 +391,11 @@ describe('Golpe Brutal is flat — the corpus witness', () => {
     const [hero] = heroes;
     expect(hero.stars, 'stars — no star rescale on this column').toBe(0);
     expect(hero.stat_points_available, 'a saturated budget is what makes the ceiling a live bound').toBe(0);
-    expect(NON_CURRENT_REGIME_CAPTURES).not.toContain(BUFF_S_CAPTURE);
+    // Names the mechanic this claim actually rests on. The capture left the `sheet` regime at the
+    // 2026-08-28 damage boundary, so it no longer feeds the sweep above — but Golpe Brutal's
+    // arithmetic below reads birth, stats and the tree straight off the capture and never touches
+    // the item catalog, which is why crit damage is the right question and `sheet` is not.
+    expect(isInRegimeFor(BUFF_S_CAPTURE, 'critDamage'), `${BUFF_S_CAPTURE} crit-damage regime`).toBe(true);
   });
 
   it('the whole crit-damage move is the tree plus 20 ranks × 4 flat, with nothing left over', () => {

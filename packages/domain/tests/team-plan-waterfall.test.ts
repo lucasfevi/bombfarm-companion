@@ -13,7 +13,9 @@ import {
 } from '@bombfarm/domain/team-plan/waterfall';
 import { buildHeroPlanContexts, gearedSheetFromContext } from '@bombfarm/domain/team-plan/hero-context';
 import { SHEET_KEYS } from '@bombfarm/domain/planner-constants';
-import { teamPlanInputFromFixture, TEAM_PLAN_FIXTURE } from './helpers/team-plan-fixtures';
+import { TEAM_PLAN_FIXTURE, holdTeamPlanSuiteUntilInRegime, teamPlanInputFromFixture } from './helpers/team-plan-fixtures';
+
+holdTeamPlanSuiteUntilInRegime();
 
 function waterfallFromFixture(file: string, forgeFloor?: number, slots?: number) {
   const input = teamPlanInputFromFixture(file, forgeFloor);
