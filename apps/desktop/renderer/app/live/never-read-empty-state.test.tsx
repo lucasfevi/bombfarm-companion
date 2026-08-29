@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { createElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import type { LiveGapReason } from '@bombfarm/contracts';
@@ -96,5 +96,36 @@ describe('NeverReadEmptyState — the reopen-consent control', () => {
     expect(button?.props['data-testid']).toBe('live-never-read-reopen-consent');
     button?.props.onClick();
     expect(onReopenConsent).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe('NeverReadEmptyState — the waiting cue', () => {
+  afterEach(() => {
+    Reflect.deleteProperty(globalThis, 'window');
+  });
+
+  it('animates for a gap reason the app is retrying on its own', () => {
+    const out = html({ kind: 'gap', reason: 'detached', actionable: true, sinceAt: 't' });
+    expect(out).toContain('animate-pulse');
+  });
+
+  it('animates while reading the account for the first time', () => {
+    const out = html({ kind: 'live' });
+    expect(out).toContain('animate-pulse');
+  });
+
+  it('is absent while consent is missing — nothing is actually in progress there', () => {
+    const out = html({ kind: 'gap', reason: 'consentMissing', actionable: true, sinceAt: 't' });
+    expect(out).not.toContain('bg-accent');
+    expect(out).not.toContain('animate-pulse');
+  });
+
+  it('renders the static form, not absent and not animating, when reduced motion is set', () => {
+    (globalThis as unknown as { window: { matchMedia: (query: string) => { matches: boolean } } }).window = {
+      matchMedia: () => ({ matches: true }),
+    };
+    const out = html({ kind: 'gap', reason: 'detached', actionable: true, sinceAt: 't' });
+    expect(out).toContain('bg-accent');
+    expect(out).not.toContain('animate-pulse');
   });
 });
