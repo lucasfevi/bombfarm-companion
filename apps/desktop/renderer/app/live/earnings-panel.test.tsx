@@ -244,6 +244,23 @@ describe('EarningsPanel — the headline figures reserve their own width', () =>
   });
 });
 
+describe('EarningsPanel — tile order', () => {
+  it('renders the six tiles in the fixed order: current gold, session gold total, session xp total, elapsed, session gold rate, session xp rate', () => {
+    const out = html(earnings());
+    const order = [
+      'live-earnings-gold-current',
+      'live-earnings-gold-session-total',
+      'live-earnings-xp-session-total',
+      'live-earnings-elapsed',
+      'live-earnings-gold-session',
+      'live-earnings-xp-session',
+    ];
+    const positions = order.map((testId) => out.indexOf(`data-testid="${testId}"`));
+    expect(positions.every((position) => position > -1)).toBe(true);
+    expect(positions).toEqual([...positions].sort((a, b) => a - b));
+  });
+});
+
 describe('EarningsPanel — every tile value is right-aligned to the tile edge, with no per-tile width box', () => {
   it('every tile value sits directly inside a right-aligned, full-width, no-fixed-box wrapper', () => {
     const out = html(earnings());

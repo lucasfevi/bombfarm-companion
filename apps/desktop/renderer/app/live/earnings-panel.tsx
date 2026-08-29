@@ -266,16 +266,16 @@ export function EarningsPanel({
             className="text-[23px] font-bold text-gold"
           />
           <Tile
-            testId="live-earnings-elapsed"
-            label={t.liveEarningsElapsedLabel}
-            value={formatLiveDurationSeconds(sessionSeconds)}
-            className="text-[23px] font-bold text-ink"
-          />
-          <Tile
             testId="live-earnings-xp-session-total"
             label={t.liveEarningsXpSessionTotalLabel}
             value={tileNumberText(earnings?.xpSessionTotal)}
             className="text-[23px] font-bold text-info"
+          />
+          <Tile
+            testId="live-earnings-elapsed"
+            label={t.liveEarningsElapsedLabel}
+            value={formatLiveDurationSeconds(sessionSeconds)}
+            className="text-[23px] font-bold text-ink"
           />
           <Tile
             testId="live-earnings-gold-session"
