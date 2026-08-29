@@ -296,6 +296,35 @@ describe('EarningsPanel — current gold and its age', () => {
     const out = html(earnings({ goldBalance: 42, goldBalanceCapturedAt: capturedAt }), GAP);
     expect(cellText(out, 'live-earnings-gold-current')).toBe('42 · 10m ago');
   });
+
+  it('fresh: a reading only seconds old shows no age at all — the "just now" case is suppressed', () => {
+    const capturedAt = new Date(Date.now() - 5_000).toISOString();
+    const out = html(earnings({ goldBalance: 42, goldBalanceCapturedAt: capturedAt }), LIVE);
+    expect(cellText(out, 'live-earnings-gold-current')).toBe('42');
+  });
+
+  it('fresh via the stream gap too: a just-lost tick reads no age either', () => {
+    const freshGap: ReachedLiveFreshness = {
+      kind: 'gap',
+      reason: 'detached',
+      actionable: true,
+      sinceAt: new Date(Date.now() - 5_000).toISOString(),
+    };
+    const out = html(earnings({ goldBalance: 42 }), freshGap);
+    expect(cellText(out, 'live-earnings-gold-current')).toBe('42');
+  });
+
+  it('reserves an invisible sizer for the widest realistic number-plus-age combination even while fresh and showing no age', () => {
+    const out = html(earnings({ goldBalance: 42 }), LIVE);
+    expect(cellText(out, 'live-earnings-gold-current')).toBe('42');
+    // The sizer sits outside the tagged cell (a sibling), so it never pollutes `cellText` above.
+    expect(out).toMatch(/aria-hidden="true" class="invisible[^"]*"><span[^>]*><span[^>]*>999\.9m<\/span> · 23h ago<\/span>/);
+  });
+
+  it('reserves nothing when there is no balance to report at all', () => {
+    const out = html(null, GAP);
+    expect(out).not.toMatch(/>999\.9m/);
+  });
 });
 
 describe('EarningsPanel — the XP marker is always mounted and reachable', () => {

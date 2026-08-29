@@ -49,3 +49,7 @@ beside it. The XP figure's old "?" control, which opened a click popover while a
 browser's own native tooltip underneath it, is gone; the "xp / hr" label itself is now the trigger,
 underlined with dots, opening the same explanation on hover or keyboard focus, with no native
 tooltip left to compete with it.
+
+The current-gold tile's age suffix now stays hidden while a reading is under a minute old, instead
+of printing a "just now" that told the player nothing. Past that threshold it still reserves its
+own space so its arrival never nudges the balance beside it.

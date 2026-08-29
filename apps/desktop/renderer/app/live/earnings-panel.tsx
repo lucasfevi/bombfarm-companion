@@ -9,6 +9,14 @@ import { formatLiveDurationSeconds } from './format-live-duration';
 const EM_DASH = '—';
 const MAX_COVERAGE_MINUTES = 10;
 
+/** Below this age a reading is not meaningfully stale — "just now" tells the player nothing they
+ *  don't already assume, so the age suffix stays suppressed until the underlying gap actually
+ *  means something. Thresholded on the raw millisecond age, never on the formatted string. */
+const FRESH_BALANCE_AGE_MS = 60_000;
+
+/** `formatCompactNumber`'s widest realistic output — matches the `NumericValue` reservation. */
+const WIDEST_COMPACT_NUMBER = '999.9m';
+
 /**
  * Reserves width for a live-updating number so its own growth cannot shift what comes after it —
  * sized to `formatCompactNumber`'s widest realistic output ("999.9m") — and right-aligns the
@@ -87,18 +95,37 @@ function Tile({
   label,
   value,
   className,
+  reserve,
 }: {
   testId: string;
   label: ReactNode;
   value: ReactNode;
   className: string;
+  /** When set, mounts an invisible sibling carrying the widest realistic form of `value` so a
+   *  later, wider `value` (the current-gold age suffix arriving) cannot shift anything — the same
+   *  always-mounted-slot technique as {@link RecentWindowLabel}, kept out of the visible span's own
+   *  subtree so it never leaks into that span's text content. */
+  reserve?: ReactNode;
 }) {
   return (
     <div className="rounded-lg border border-line/55 p-3 flex flex-col gap-1">
       <span className="text-[10.5px] uppercase tracking-[0.06em] text-muted whitespace-nowrap">{label}</span>
-      <span data-testid={testId} className={className}>
-        {value}
-      </span>
+      {reserve !== undefined ? (
+        <span className="relative grid">
+          <span aria-hidden className="invisible col-start-1 row-start-1">
+            <span className={className}>{reserve}</span>
+          </span>
+          <span className="col-start-1 row-start-1">
+            <span data-testid={testId} className={className}>
+              {value}
+            </span>
+          </span>
+        </span>
+      ) : (
+        <span data-testid={testId} className={className}>
+          {value}
+        </span>
+      )}
     </div>
   );
 }
@@ -125,21 +152,30 @@ export function EarningsPanel({
   // A stored-reading fallback ages by its own capture time; a tick-frozen balance instead ages by
   // the stream's own gap (`freshness.sinceAt`). The two never both apply — the main process only
   // ever populates one of `goldBalance`'s two sources at a time.
-  const currentGoldAge: ReactNode =
-    balance === null
-      ? null
-      : balanceCapturedAt !== null
-        ? ` · ${formatCapturedAt(balanceCapturedAt, t)}`
-        : freshness.kind === 'live'
-          ? null
-          : ` · ${formatCapturedAt(freshness.sinceAt, t)}`;
+  const currentGoldAgeSource: string | null =
+    balanceCapturedAt !== null ? balanceCapturedAt : freshness.kind === 'live' ? null : freshness.sinceAt;
+  const currentGoldAgeText: string | null =
+    currentGoldAgeSource !== null && Date.now() - Date.parse(currentGoldAgeSource) >= FRESH_BALANCE_AGE_MS
+      ? formatCapturedAt(currentGoldAgeSource, t)
+      : null;
+  // Minutes and hours share the exact same template shape as days ("{n}<letter> ago" / "há
+  // {n}<letter>"), so any two-digit bucket reserves the same width as the others — hours' realistic
+  // ceiling (just under a day) stands in for all three.
+  const currentGoldAgeLongest = sub(t.ageHours, { n: 23 });
   const currentGold: ReactNode =
     balance === null ? (
       <NumericValue>{EM_DASH}</NumericValue>
     ) : (
       <>
         <NumericValue>{formatCompactNumber(balance, 1)}</NumericValue>
-        {currentGoldAge}
+        {currentGoldAgeText !== null ? ` · ${currentGoldAgeText}` : null}
+      </>
+    );
+  const currentGoldReserve: ReactNode | undefined =
+    balance === null ? undefined : (
+      <>
+        <NumericValue>{WIDEST_COMPACT_NUMBER}</NumericValue>
+        {` · ${currentGoldAgeLongest}`}
       </>
     );
 
@@ -217,6 +253,7 @@ export function EarningsPanel({
             testId="live-earnings-gold-current"
             label={t.liveEarningsCurrentGoldLabel}
             value={currentGold}
+            reserve={currentGoldReserve}
             className="text-[23px] font-bold text-gold"
           />
           <Tile
