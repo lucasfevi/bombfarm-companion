@@ -30,3 +30,11 @@ totals (`goldSessionTotal`/`xpSessionTotal` on `LiveEarnings`) are newly publish
 renderer before this change. Like every other figure on the panel, a total reads as a dash rather
 than a zero before the session has anything to report, and is unaffected by the unrelated
 10-minute rolling window's own eviction.
+
+The very first account read after launch no longer waits out the full scheduled cadence: the app
+now starts a read the moment the game is detected as running, instead of only on the next
+scheduled cycle, so the waiting state on the Live tab clears sooner when the game was already open
+at boot. That waiting state itself is also friendlier while it lasts — its sprite now renders at
+twice the size, and a small rotating line of flavour text sits beneath it whenever a read is
+genuinely in progress (never while consent is what is actually blocking), in both English and
+Portuguese, and holding still under reduced motion.

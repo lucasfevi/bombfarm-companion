@@ -230,6 +230,15 @@ export const ptBR: Copy = {
   liveNeverReadTitle: 'Nada foi lido da sua conta ainda',
   liveNeverReadAccountPendingDescription: 'O app está conectado ao jogo e lendo sua conta agora.',
 
+  // liveNeverReadFlavorLine* — texto de humor, mais discreto e rotativo, abaixo do sprite de
+  // espera, mostrado só enquanto algo está realmente em andamento. Nunca promete um prazo (a
+  // espera pode legitimamente durar um minuto) — é bem-humorado sobre a própria espera.
+  liveNeverReadFlavorLine1: 'Contando o ouro, moeda por moeda.',
+  liveNeverReadFlavorLine2: 'Dando um oi para os seus heróis.',
+  liveNeverReadFlavorLine3: 'Esquentando o ábaco.',
+  liveNeverReadFlavorLine4: 'Esperando com paciência. Bastante paciência.',
+  liveNeverReadFlavorLine5: 'Dando uma cutucada amigável na planilha.',
+
   // liveEarnings* — o painel de Ganhos: valores medidos de ouro/XP, enviados já prontos e só
   // formatados aqui, nunca recalculados.
   liveEarningsTitle: 'Ganhos',

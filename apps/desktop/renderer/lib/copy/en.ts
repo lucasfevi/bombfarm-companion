@@ -229,6 +229,15 @@ export const en = {
   liveNeverReadTitle: 'Nothing read from your account yet',
   liveNeverReadAccountPendingDescription: 'The app is connected to the game and reading your account now.',
 
+  // liveNeverReadFlavorLine* — quieter, rotating flavour text under the waiting sprite, shown
+  // only while something is actually pending. Never a duration promise (the wait can legitimately
+  // run a minute) — playful about waiting itself instead.
+  liveNeverReadFlavorLine1: 'Counting the gold, one coin at a time.',
+  liveNeverReadFlavorLine2: 'Saying hello to your heroes.',
+  liveNeverReadFlavorLine3: 'Warming up the abacus.',
+  liveNeverReadFlavorLine4: 'Waiting patiently. Very patiently.',
+  liveNeverReadFlavorLine5: 'Giving the ledger a friendly nudge.',
+
   // liveEarnings* — the Earnings panel: measured gold/XP figures, sent as finished values and
   // only ever formatted here, never recomputed.
   liveEarningsTitle: 'Earnings',

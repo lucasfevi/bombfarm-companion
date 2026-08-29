@@ -3,6 +3,7 @@ import { SpriteLoop } from '@bombfarm/game-art';
 import { LIVE_GAP_REASON_COPY_KEY, useCopy } from '../../lib/copy';
 import type { ReachedLiveFreshness } from './freshness-line';
 import { HERO6_MENU_IDLE_FRAME_MS, HERO6_MENU_IDLE_FRAMES } from './hero6-menu-idle';
+import { WAITING_FLAVOR_LINE_KEYS, WaitingFlavorLine } from './waiting-flavor-line';
 
 export function NeverReadEmptyState({
   freshness,
@@ -45,6 +46,7 @@ export function NeverReadEmptyState({
         height={128}
         className="mt-3"
       />
+      {pending ? <WaitingFlavorLine lines={WAITING_FLAVOR_LINE_KEYS.map((key) => t[key])} /> : null}
     </EmptyState>
   );
 }
