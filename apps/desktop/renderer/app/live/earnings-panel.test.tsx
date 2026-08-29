@@ -224,23 +224,51 @@ describe('EarningsPanel — labels', () => {
   });
 });
 
-describe('EarningsPanel — live figures reserve their own width', () => {
-  it('every compact-number figure and the elapsed duration sit in a fixed, right-aligned box', () => {
+describe('EarningsPanel — the headline figures reserve their own width', () => {
+  it('the two headline rates and the session-average readout sit in a fixed, right-aligned box — the tiles below do not', () => {
     const out = html(earnings());
 
-    // Sized from `formatCompactNumber`'s widest realistic output ("999.9m") — every gold/XP
-    // figure in the headline, the session-average line, and the six tiles below share it.
+    // Sized from `formatCompactNumber`'s widest realistic output ("999.9m") — gold-10, xp-10,
+    // and the session-average figure share it because they sit mid-sentence in a horizontal row.
+    // The six tiles below deliberately do not: each tile's value is the only, right-aligned thing
+    // in its own box, so a growing number has nothing to push.
     const compactBoxes = out.match(/class="inline-block w-\[6ch\] text-right tabular-nums"/g) ?? [];
-    expect(compactBoxes.length).toBeGreaterThanOrEqual(8);
-
-    // The elapsed-duration tile grows wider than any compact number, so it gets its own box.
-    expect(out).toMatch(/class="inline-block w-\[8ch\] text-right tabular-nums"/);
+    expect(compactBoxes.length).toBe(3);
+    expect(out).not.toMatch(/w-\[8ch\]/);
   });
 
-  it('still reserves the box for the null/em-dash state, so arriving data cannot shift anything either', () => {
+  it('still reserves exactly the same three boxes for the null/em-dash state', () => {
     const out = html(null, GAP);
     const compactBoxes = out.match(/class="inline-block w-\[6ch\] text-right tabular-nums"/g) ?? [];
-    expect(compactBoxes.length).toBeGreaterThanOrEqual(8);
+    expect(compactBoxes.length).toBe(3);
+  });
+});
+
+describe('EarningsPanel — every tile value is right-aligned to the tile edge, with no per-tile width box', () => {
+  it('every tile value sits directly inside a right-aligned, full-width, no-fixed-box wrapper', () => {
+    const out = html(earnings());
+
+    for (const testId of [
+      'live-earnings-gold-current',
+      'live-earnings-gold-session-total',
+      'live-earnings-xp-session-total',
+      'live-earnings-elapsed',
+      'live-earnings-gold-session',
+      'live-earnings-xp-session',
+    ]) {
+      const wrapperPattern = new RegExp(
+        `<span class="[^"]*\\bblock\\b[^"]*\\btext-right\\b[^"]*\\btabular-nums\\b[^"]*"[^>]*><span[^>]*data-testid="${testId}"`,
+      );
+      expect(out).toMatch(wrapperPattern);
+      const wrapperTag = out.match(new RegExp(`<span class="[^"]*"[^>]*><span[^>]*data-testid="${testId}"`))?.[0] ?? '';
+      expect(wrapperTag).not.toMatch(/w-\[\d+ch\]/);
+    }
+  });
+
+  it('a rate tile keeps its unit suffix glued to the digits rather than pinned to the tile edge on its own', () => {
+    const out = html(earnings());
+    expect(cellText(out, 'live-earnings-gold-session')).toBe('90k/h');
+    expect(innerHtml(out, 'live-earnings-gold-session')).toMatch(/^90k<span[^>]*>\/h<\/span>$/);
   });
 });
 
@@ -318,7 +346,7 @@ describe('EarningsPanel — current gold and its age', () => {
     const out = html(earnings({ goldBalance: 42 }), LIVE);
     expect(cellText(out, 'live-earnings-gold-current')).toBe('42');
     // The sizer sits outside the tagged cell (a sibling), so it never pollutes `cellText` above.
-    expect(out).toMatch(/aria-hidden="true" class="invisible[^"]*"><span[^>]*><span[^>]*>999\.9m<\/span> · 23h ago<\/span>/);
+    expect(out).toMatch(/aria-hidden="true" class="invisible[^"]*"><span[^>]*>999\.9m · 23h ago<\/span>/);
   });
 
   it('reserves nothing when there is no balance to report at all', () => {

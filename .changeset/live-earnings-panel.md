@@ -53,3 +53,8 @@ tooltip left to compete with it.
 The current-gold tile's age suffix now stays hidden while a reading is under a minute old, instead
 of printing a "just now" that told the player nothing. Past that threshold it still reserves its
 own space so its arrival never nudges the balance beside it.
+
+Every tile's value is now right-aligned to the tile's own edge, matching the left-aligned label
+above it — previously the values sat in a fixed-width box that made them look inconsistently
+placed from tile to tile. A rate tile's unit stays glued to its digits rather than drifting to the
+tile's far edge on its own.

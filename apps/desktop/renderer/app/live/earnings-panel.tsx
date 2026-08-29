@@ -49,11 +49,20 @@ function numberText(value: number | null | undefined): ReactNode {
   return <NumericValue>{value == null ? EM_DASH : formatCompactNumber(value, 1)}</NumericValue>;
 }
 
-function rateValue(value: number | null | undefined, unit: string): ReactNode {
-  if (value == null) return <NumericValue>{EM_DASH}</NumericValue>;
+/** Tile-only counterpart of {@link numberText} — no fixed-width box: a tile value is right-aligned
+ *  to the tile's own edge and nothing follows it, so a growing number has nothing left to push. */
+function tileNumberText(value: number | null | undefined): ReactNode {
+  return value == null ? EM_DASH : formatCompactNumber(value, 1);
+}
+
+/** Tile-only counterpart of the headline rate value — same reasoning as {@link tileNumberText}:
+ *  the unit suffix sits directly beside the digits so it travels with them instead of a separate
+ *  reservation pinning it to the tile's edge on its own. */
+function tileRateValue(value: number | null | undefined, unit: string): ReactNode {
+  if (value == null) return EM_DASH;
   return (
     <>
-      <NumericValue>{formatCompactNumber(value, 1)}</NumericValue>
+      {formatCompactNumber(value, 1)}
       <span className="text-muted text-[0.6em] font-normal">{unit}</span>
     </>
   );
@@ -112,18 +121,20 @@ function Tile({
       <span className="text-[10.5px] uppercase tracking-[0.06em] text-muted whitespace-nowrap">{label}</span>
       {reserve !== undefined ? (
         <span className="relative grid">
-          <span aria-hidden className="invisible col-start-1 row-start-1">
+          <span aria-hidden className="invisible col-start-1 row-start-1 block text-right tabular-nums whitespace-nowrap">
             <span className={className}>{reserve}</span>
           </span>
-          <span className="col-start-1 row-start-1">
+          <span className="col-start-1 row-start-1 block text-right tabular-nums whitespace-nowrap">
             <span data-testid={testId} className={className}>
               {value}
             </span>
           </span>
         </span>
       ) : (
-        <span data-testid={testId} className={className}>
-          {value}
+        <span className="block text-right tabular-nums whitespace-nowrap">
+          <span data-testid={testId} className={className}>
+            {value}
+          </span>
         </span>
       )}
     </div>
@@ -163,21 +174,13 @@ export function EarningsPanel({
   // ceiling (just under a day) stands in for all three.
   const currentGoldAgeLongest = sub(t.ageHours, { n: 23 });
   const currentGold: ReactNode =
-    balance === null ? (
-      <NumericValue>{EM_DASH}</NumericValue>
-    ) : (
-      <>
-        <NumericValue>{formatCompactNumber(balance, 1)}</NumericValue>
-        {currentGoldAgeText !== null ? ` · ${currentGoldAgeText}` : null}
-      </>
-    );
+    balance === null
+      ? EM_DASH
+      : currentGoldAgeText !== null
+        ? `${formatCompactNumber(balance, 1)} · ${currentGoldAgeText}`
+        : formatCompactNumber(balance, 1);
   const currentGoldReserve: ReactNode | undefined =
-    balance === null ? undefined : (
-      <>
-        <NumericValue>{WIDEST_COMPACT_NUMBER}</NumericValue>
-        {` · ${currentGoldAgeLongest}`}
-      </>
-    );
+    balance === null ? undefined : `${WIDEST_COMPACT_NUMBER} · ${currentGoldAgeLongest}`;
 
   const [sessionAveragePrefix, sessionAverageSuffix] = splitOnPlaceholder(t.liveEarningsSessionAverageValue, 'value');
   const sessionAverageValue: ReactNode =
@@ -259,31 +262,31 @@ export function EarningsPanel({
           <Tile
             testId="live-earnings-gold-session-total"
             label={t.liveEarningsGoldSessionTotalLabel}
-            value={numberText(earnings?.goldSessionTotal)}
+            value={tileNumberText(earnings?.goldSessionTotal)}
             className="text-[23px] font-bold text-gold"
           />
           <Tile
             testId="live-earnings-elapsed"
             label={t.liveEarningsElapsedLabel}
-            value={<NumericValue wide>{formatLiveDurationSeconds(sessionSeconds)}</NumericValue>}
+            value={formatLiveDurationSeconds(sessionSeconds)}
             className="text-[23px] font-bold text-ink"
           />
           <Tile
             testId="live-earnings-xp-session-total"
             label={t.liveEarningsXpSessionTotalLabel}
-            value={numberText(earnings?.xpSessionTotal)}
+            value={tileNumberText(earnings?.xpSessionTotal)}
             className="text-[23px] font-bold text-info"
           />
           <Tile
             testId="live-earnings-gold-session"
             label={t.liveEarningsGoldSessionLabel}
-            value={rateValue(earnings?.goldSession, t.liveEarningsRateUnit)}
+            value={tileRateValue(earnings?.goldSession, t.liveEarningsRateUnit)}
             className="text-[23px] font-bold text-gold/70"
           />
           <Tile
             testId="live-earnings-xp-session"
             label={t.liveEarningsXpSessionLabel}
-            value={rateValue(earnings?.xpSession, t.liveEarningsRateUnit)}
+            value={tileRateValue(earnings?.xpSession, t.liveEarningsRateUnit)}
             className="text-[23px] font-bold text-info/70"
           />
         </div>
