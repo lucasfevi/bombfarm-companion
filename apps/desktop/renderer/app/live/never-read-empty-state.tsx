@@ -41,9 +41,9 @@ export function NeverReadEmptyState({
         frames={HERO6_MENU_IDLE_FRAMES}
         frameDurationMs={HERO6_MENU_IDLE_FRAME_MS}
         animate={pending}
-        width={55}
-        height={64}
-        className="mt-2"
+        width={110}
+        height={128}
+        className="mt-3"
       />
     </EmptyState>
   );
