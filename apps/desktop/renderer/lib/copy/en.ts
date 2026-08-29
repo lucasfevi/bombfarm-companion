@@ -247,7 +247,6 @@ export const en = {
   liveEarningsGoldHeadlineUnit: 'gold / hr',
   liveEarningsXpHeadlineUnit: 'xp / hr',
   liveEarningsRecentWindowLabel: 'last {minutes} min',
-  liveEarningsSessionAverageValue: 'session avg {value}',
   liveEarningsGoldSessionLabel: 'Session gold/hr',
   liveEarningsXpSessionLabel: 'Session XP/hr',
   liveEarningsGoldSessionTotalLabel: 'Session gold',

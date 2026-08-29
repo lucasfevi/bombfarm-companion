@@ -248,7 +248,6 @@ export const ptBR: Copy = {
   liveEarningsGoldHeadlineUnit: 'ouro / h',
   liveEarningsXpHeadlineUnit: 'xp / h',
   liveEarningsRecentWindowLabel: 'últimos {minutes} min',
-  liveEarningsSessionAverageValue: 'média da sessão {value}',
   liveEarningsGoldSessionLabel: 'Ouro/h da sessão',
   liveEarningsXpSessionLabel: 'XP/h da sessão',
   liveEarningsGoldSessionTotalLabel: 'Ouro da sessão',

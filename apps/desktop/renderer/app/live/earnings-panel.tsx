@@ -16,24 +16,19 @@ const FRESH_BALANCE_AGE_MS = 60_000;
 
 /**
  * Reserves width for a live-updating number so its own growth cannot shift what comes after it —
- * sized to `formatCompactNumber`'s widest realistic output ("999.9m") — and right-aligns the
- * digits inside that reservation so they don't visually jump in place either. `wide` covers the
- * elapsed-duration tile, whose own longest realistic form (a double-digit-hour AFK session,
- * "23:59:59") is wider than any compact number here.
+ * sized to `formatCompactNumber`'s widest realistic output ("999.9m"). `align` picks which edge
+ * the digits hug inside that fixed box: `'right'` (every caller but the gold headline figure)
+ * keeps the last digit anchored so a growing number never visually jumps in place; `'left'` (the
+ * gold headline figure alone) keeps the first digit flush with the "last N min" coverage label
+ * sitting directly under it — a right-aligned box would leave that digit trailing an invisible
+ * gap the label doesn't have, since the box's own width does not depend on which edge the text
+ * hugs.
  */
-function NumericValue({ children, wide = false }: { children: ReactNode; wide?: boolean }) {
-  if (wide) {
-    return <span className="inline-block w-[8ch] text-right tabular-nums">{children}</span>;
+function NumericValue({ children, align = 'right' }: { children: ReactNode; align?: 'left' | 'right' }) {
+  if (align === 'left') {
+    return <span className="inline-block w-[6ch] text-left tabular-nums">{children}</span>;
   }
   return <span className="inline-block w-[6ch] text-right tabular-nums">{children}</span>;
-}
-
-/** Splits a `sub()`-style `{token}` template around one placeholder so a JSX value (not just a
- *  string) can be embedded where the placeholder was — `sub()` itself only ever produces text. */
-function splitOnPlaceholder(template: string, token: string): [string, string] {
-  const marker = `{${token}}`;
-  const index = template.indexOf(marker);
-  return index === -1 ? [template, ''] : [template.slice(0, index), template.slice(index + marker.length)];
 }
 
 /** The rolling window is capped at 600s (10 real minutes) and starts shorter — floored, not
@@ -65,14 +60,15 @@ function tileRateValue(value: number | null | undefined, unit: string): ReactNod
   );
 }
 
-/** Same shape as {@link rateValue}, but with a real space before the unit word — the headline
+/** Same shape as {@link tileRateValue}, but with a real space before the unit word — the headline
  *  figures spell their unit out ("gold / hr") rather than tiles' tight "/h", so it reads as two
- *  words rather than running the number and "gold" together. */
+ *  words rather than running the number and "gold" together. Left-aligned (see {@link NumericValue})
+ *  so the digits stay flush with the coverage label under them. */
 function headlineRateValue(value: number | null | undefined, unit: string): ReactNode {
-  if (value == null) return <NumericValue>{EM_DASH}</NumericValue>;
+  if (value == null) return <NumericValue align="left">{EM_DASH}</NumericValue>;
   return (
     <>
-      <NumericValue>{formatCompactNumber(value, 1)}</NumericValue>
+      <NumericValue align="left">{formatCompactNumber(value, 1)}</NumericValue>
       <span className="text-muted text-[0.6em] font-normal">{` ${unit}`}</span>
     </>
   );
@@ -80,12 +76,11 @@ function headlineRateValue(value: number | null | undefined, unit: string): Reac
 
 /**
  * Stacks the real label under an invisible copy of its longest realistic form (the coverage word
- * growing from "1" to "10") so the box is always sized for that longest form — the two headline
- * figures share this one context line, so a single reservation covers both.
+ * growing from "1" to "10") so the box is always sized for that longest form.
  */
 function RecentWindowLabel({ longest, text }: { longest: string; text: string }) {
   return (
-    <span className="relative grid text-[10.5px] tabular-nums whitespace-nowrap">
+    <span className="relative grid text-[10.5px] text-muted tabular-nums whitespace-nowrap">
       <span aria-hidden className="invisible col-start-1 row-start-1">
         {longest}
       </span>
@@ -180,17 +175,6 @@ export function EarningsPanel({
   const currentGoldAgeReserve = balance !== null ? currentGoldAgeLongest : '';
   const currentGoldAgeShown = balance !== null ? (currentGoldAgeText ?? '') : '';
 
-  const [sessionAveragePrefix, sessionAverageSuffix] = splitOnPlaceholder(t.liveEarningsSessionAverageValue, 'value');
-  const sessionAverageValue: ReactNode =
-    earnings?.goldSession == null ? (
-      <NumericValue>{EM_DASH}</NumericValue>
-    ) : (
-      <>
-        <NumericValue>{formatCompactNumber(earnings.goldSession, 1)}</NumericValue>
-        {t.liveEarningsRateUnit}
-      </>
-    );
-
   return (
     <Panel data-testid="live-earnings" aria-label={t.liveEarningsTitle}>
       <div className="flex flex-col gap-4">
@@ -229,15 +213,7 @@ export function EarningsPanel({
                 </Tooltip.Provider>
               </span>
             </div>
-            <div className="flex items-center gap-1.5 text-muted">
-              <RecentWindowLabel longest={recentWindowLongest} text={recentWindowText} />
-              <span aria-hidden>·</span>
-              <span data-testid="live-earnings-session-average" className="text-[10.5px] tabular-nums whitespace-nowrap">
-                {sessionAveragePrefix}
-                {sessionAverageValue}
-                {sessionAverageSuffix}
-              </span>
-            </div>
+            <RecentWindowLabel longest={recentWindowLongest} text={recentWindowText} />
           </div>
           <button
             type="button"

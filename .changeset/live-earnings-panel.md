@@ -68,3 +68,21 @@ two columns instead of crowding three into too little space. The heroes panel be
 the full width of the tab.
 
 The reset icon has grown one size further, still a bare, real button with no border or background.
+
+Three more presentation fixes, now that the earnings panel only spans half the tab width. The
+current-gold tile's age no longer shares a line with the balance — it sits on its own reserved line
+beneath the number, hidden until the reading is genuinely stale, and the balance itself is now
+sized exactly like every other tile's value instead of reserving room for a trailing age that used
+to overflow the narrower tile. All six tiles keep the same height regardless, since every tile
+reserves that second line whether or not it ever has anything to show there.
+
+The headline band's context line no longer repeats the session-average rate — the dedicated session
+gold-rate tile below already says it, so the line now states only the recent window's coverage. That
+line's left edge now lines up with the gold-per-hour figure above it, and the whole band reads
+noticeably more compact with the redundant figure gone.
+
+In the heroes list, every hero's energy bar now starts and ends at the same horizontal position on
+every row: the hero identity block, the bar itself, the percentage reading, and the countdown
+column all sit in one fixed set of grid columns shared by every row, so two heroes at the same
+energy level draw fills of the same length instead of one looking further along than the other
+purely because its name or countdown differed in width.

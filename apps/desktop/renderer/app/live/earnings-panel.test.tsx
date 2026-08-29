@@ -213,34 +213,33 @@ describe('EarningsPanel — labels', () => {
     expect(out).toMatch(/aria-hidden="true" class="invisible[^"]*">last 10 min</);
   });
 
-  it('the context line also states the session average rate', () => {
+  it('carries no session-average readout — the dedicated session gold-rate tile says that now', () => {
     const out = html(earnings({ goldSession: 90_000 }));
-    expect(cellText(out, 'live-earnings-session-average')).toBe('session avg 90k/h');
-  });
-
-  it('the session average reads an em dash rather than a fabricated rate when there is nothing to report', () => {
-    const out = html(earnings({ goldSession: null }));
-    expect(cellText(out, 'live-earnings-session-average')).toBe('session avg —');
+    expect(out).not.toContain('data-testid="live-earnings-session-average"');
+    expect(out).not.toContain('session avg');
   });
 });
 
 describe('EarningsPanel — the headline figures reserve their own width', () => {
-  it('the two headline rates and the session-average readout sit in a fixed, right-aligned box — the tiles below do not', () => {
+  it('the two headline rates sit in a fixed box, one left-aligned and one right-aligned — the tiles below use neither', () => {
     const out = html(earnings());
 
-    // Sized from `formatCompactNumber`'s widest realistic output ("999.9m") — gold-10, xp-10,
-    // and the session-average figure share it because they sit mid-sentence in a horizontal row.
-    // The six tiles below deliberately do not: each tile's value is the only, right-aligned thing
-    // in its own box, so a growing number has nothing to push.
-    const compactBoxes = out.match(/class="inline-block w-\[6ch\] text-right tabular-nums"/g) ?? [];
-    expect(compactBoxes.length).toBe(3);
-    expect(out).not.toMatch(/w-\[8ch\]/);
+    // Sized from `formatCompactNumber`'s widest realistic output ("999.9m"). The gold-10 figure is
+    // left-aligned so its first digit stays flush with the "last N min" label under it; xp-10
+    // stays right-aligned, the tiles' own convention. The six tiles below use neither: each tile's
+    // value is the only, right-aligned thing in its own box, so a growing number has nothing to push.
+    const leftBoxes = out.match(/class="inline-block w-\[6ch\] text-left tabular-nums"/g) ?? [];
+    const rightBoxes = out.match(/class="inline-block w-\[6ch\] text-right tabular-nums"/g) ?? [];
+    expect(leftBoxes.length).toBe(1);
+    expect(rightBoxes.length).toBe(1);
   });
 
-  it('still reserves exactly the same three boxes for the null/em-dash state', () => {
+  it('still reserves exactly the same two boxes for the null/em-dash state', () => {
     const out = html(null, GAP);
-    const compactBoxes = out.match(/class="inline-block w-\[6ch\] text-right tabular-nums"/g) ?? [];
-    expect(compactBoxes.length).toBe(3);
+    const leftBoxes = out.match(/class="inline-block w-\[6ch\] text-left tabular-nums"/g) ?? [];
+    const rightBoxes = out.match(/class="inline-block w-\[6ch\] text-right tabular-nums"/g) ?? [];
+    expect(leftBoxes.length).toBe(1);
+    expect(rightBoxes.length).toBe(1);
   });
 });
 
