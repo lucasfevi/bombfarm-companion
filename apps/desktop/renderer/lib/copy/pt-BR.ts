@@ -250,10 +250,9 @@ export const ptBR: Copy = {
   liveEarningsRecentWindowLabel: 'últimos {minutes} min',
   liveEarningsGoldSessionLabel: 'Ouro/h da sessão',
   liveEarningsXpSessionLabel: 'XP/h da sessão',
-  liveEarningsGoldSessionTotalLabel: 'Ouro da sessão',
-  liveEarningsXpSessionTotalLabel: 'XP da sessão',
+  liveEarningsGoldSessionTotalLabel: 'Total de ouro da sessão',
+  liveEarningsXpSessionTotalLabel: 'Total de XP da sessão',
   liveEarningsElapsedLabel: 'Decorrido',
-  liveEarningsRateUnit: '/h',
   liveEarningsXpHelpLabel: 'Sobre esse número de XP',
   liveEarningsXpHelpBody: 'Calculado a partir dos props que seus heróis destruíram, não lido diretamente do jogo.',
 

@@ -86,3 +86,18 @@ every row: the hero identity block, the bar itself, the percentage reading, and 
 column all sit in one fixed set of grid columns shared by every row, so two heroes at the same
 energy level draw fills of the same length instead of one looking further along than the other
 purely because its name or countdown differed in width.
+
+The earnings panel is restructured again, into two halves side by side split by a thin vertical
+rule. The left half is a single right-aligned stack: the coverage line, the gold-per-hour figure
+with its unit on its own line below, then the XP-per-hour figure the same way, with the XP unit
+line still carrying the hover/focus explanation it always has. The right half drops the bordered
+tiles entirely — its six figures now sit as plain label-over-value pairs, both right-aligned, laid
+out three per row across two rows (current gold, session gold rate, session gold total; elapsed,
+session XP rate, session XP total), with spacing alone doing the separating. The two session-rate
+values dropped their trailing per-hour suffix, since the label above each one already carries it;
+the two session-total labels were reworded to read unmistakably as totals rather than rates sitting
+right next to them. The current-gold reading's age now sits inline beside the balance instead of on
+its own line beneath it, still reserving its own space so its appearance never nudges the balance
+it sits next to. The left half's own width is reserved against both languages' unit strings at
+once, not just whichever is active, so the vertical rule cannot shift when the display language
+changes.

@@ -177,6 +177,17 @@ export function useCopy(): Copy {
 }
 
 /**
+ * Every locale's value for one key, for a control that must reserve layout width against every
+ * language at once rather than only the active one (docs/content-fit-ui.md rule 1) — a fixed-width
+ * box sized from only the current locale's string would resize itself the moment the language
+ * toggles. Consumers stay off the "never a raw import of `en`/`ptBR`" convention this module's own
+ * header states, since `STRINGS` (built from both, right here) is the thing they read instead.
+ */
+export function copyVariants(key: CopyKey): readonly string[] {
+  return Object.values(STRINGS).map((copy) => copy[key]);
+}
+
+/**
  * The values here are already mapped through `toDomainLang`/`BCP47_BY_LOCALE`, so no
  * component ever performs the `'pt-BR' -> 'pt'` (or the BCP-47) mapping itself.
  */

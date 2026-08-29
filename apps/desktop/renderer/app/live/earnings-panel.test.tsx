@@ -9,15 +9,13 @@ import { EarningsPanel } from './earnings-panel';
 // `useCopy()` is a hook, so it needs an active React dispatcher — fine for the `renderToStaticMarkup`
 // calls below (a real render), but not for calling `EarningsPanel` directly as a plain function the
 // way the reset-control wiring test at the bottom does. Mocking it the same way
-// `diagnostics-section-wiring.test.tsx` does covers both: `renderToStaticMarkup` still renders real
-// English copy, and the direct call no longer needs a dispatcher at all. `sub()` keeps its real
-// interpolation so the coverage-label and duration assertions exercise the genuine template
-// substitution, not a stub.
-vi.mock('../../lib/copy', () => ({
-  useCopy: () => en,
-  sub: (template: string, values: Record<string, string | number>) =>
-    template.replace(/\{(\w+)\}/g, (fallback: string, key: string) => String(values[key] ?? fallback)),
-}));
+// `diagnostics-section-wiring.test.tsx` does covers both. `sub()` and `copyVariants()` stay the real
+// implementations (`importOriginal`) so the coverage-label, duration and bilingual-reservation
+// assertions exercise genuine template substitution and genuine per-locale copy, not a stub.
+vi.mock('../../lib/copy', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../../lib/copy')>();
+  return { ...actual, useCopy: () => en };
+});
 
 const LIVE: ReachedLiveFreshness = { kind: 'live' };
 const GAP: ReachedLiveFreshness = {
@@ -50,9 +48,8 @@ function html(data: LiveEarnings | null, freshness: ReachedLiveFreshness = LIVE)
 /**
  * Reads the full text content of the one element carrying `data-testid="{testId}"`, regardless of
  * what else is on the tag (class, other attributes, order) and regardless of markup nested inside
- * it (the rate cells nest a de-emphasised `/h` suffix span inside their value span) — a depth
- * counter over same/other tags between the opening tag and its matching close, concatenating every
- * text token found in between.
+ * it — a depth counter over same/other tags between the opening tag and its matching close,
+ * concatenating every text token found in between.
  */
 function cellText(out: string, testId: string): string {
   const openTag = out.match(new RegExp(`<([a-zA-Z0-9]+)[^>]*data-testid="${testId}"[^>]*>`));
@@ -75,32 +72,6 @@ function cellText(out: string, testId: string): string {
     }
   }
   return text;
-}
-
-/**
- * Same tag/depth walk as {@link cellText}, but returns the raw markup between the opening and
- * closing tag instead of the flattened text — used to prove one element's subtree contains
- * another element's `data-testid`, regardless of how deeply it is nested inside.
- */
-function innerHtml(out: string, testId: string): string {
-  const openTag = out.match(new RegExp(`<([a-zA-Z0-9]+)[^>]*data-testid="${testId}"[^>]*>`));
-  if (!openTag) throw new Error(`no element with data-testid="${testId}" found in:\n${out}`);
-  const tagName = openTag[1];
-  const start = (openTag.index ?? 0) + openTag[0].length;
-  const rest = out.slice(start);
-  const tokenRe = /<\/([a-zA-Z0-9]+)[^>]*>|<([a-zA-Z0-9]+)[^>]*?(\/)?>/g;
-  let depth = 0;
-  let match: RegExpExecArray | null;
-  while ((match = tokenRe.exec(rest))) {
-    const [, closeName, openName, selfClose] = match;
-    if (closeName) {
-      if (depth === 0 && closeName === tagName) return rest.slice(0, match.index);
-      depth -= 1;
-    } else if (openName && !selfClose) {
-      depth += 1;
-    }
-  }
-  throw new Error(`no closing tag found for data-testid="${testId}"`);
 }
 
 /**
@@ -130,18 +101,19 @@ function findElementByTestId(
 }
 
 describe('EarningsPanel — every cell in every state', () => {
-  it('with figures: the headline rates, current balance, and every tile render, each with its own unit suffix', () => {
+  it('with figures: the headline rates, current balance, and every block render, gold rate value carrying no unit', () => {
     const out = html(earnings());
 
-    expect(cellText(out, 'live-earnings-gold-10')).toBe('100k gold / hr');
+    expect(cellText(out, 'live-earnings-gold-10')).toBe('100k');
+    expect(cellText(out, 'live-earnings-gold-10-unit')).toBe(en.liveEarningsGoldHeadlineUnit);
     expect(cellText(out, 'live-earnings-xp-10')).toBe('5k');
     expect(cellText(out, 'live-earnings-xp-help-trigger')).toBe(en.liveEarningsXpHeadlineUnit);
     expect(cellText(out, 'live-earnings-gold-current')).toBe('12.3k');
     expect(cellText(out, 'live-earnings-gold-session-total')).toBe('75k');
     expect(cellText(out, 'live-earnings-xp-session-total')).toBe('3.8k');
     expect(cellText(out, 'live-earnings-elapsed')).toBe('5:00');
-    expect(cellText(out, 'live-earnings-gold-session')).toBe('90k/h');
-    expect(cellText(out, 'live-earnings-xp-session')).toBe('4.5k/h');
+    expect(cellText(out, 'live-earnings-gold-session')).toBe('90k');
+    expect(cellText(out, 'live-earnings-xp-session')).toBe('4.5k');
   });
 
   it('no data at all: every rate/balance/total position is an em dash, never 0', () => {
@@ -158,8 +130,8 @@ describe('EarningsPanel — every cell in every state', () => {
     ]) {
       expect(cellText(out, testId)).toBe('—');
     }
-    // Elapsed is a duration, not a measured rate — it reads 0:00 (see the dedicated test below),
-    // never an em dash, even with no earnings at all.
+    // Elapsed is a duration, not a measured rate — it reads 0:00, never an em dash, even with no
+    // earnings at all.
     expect(cellText(out, 'live-earnings-elapsed')).toBe('0:00');
   });
 
@@ -169,14 +141,41 @@ describe('EarningsPanel — every cell in every state', () => {
     expect(cellText(out, 'live-earnings-gold-10')).toBe('—');
     expect(cellText(out, 'live-earnings-xp-session')).toBe('—');
     expect(cellText(out, 'live-earnings-gold-session-total')).toBe('—');
-    expect(cellText(out, 'live-earnings-gold-session')).toBe('90k/h');
+    expect(cellText(out, 'live-earnings-gold-session')).toBe('90k');
     expect(cellText(out, 'live-earnings-xp-10')).toBe('5k');
     expect(cellText(out, 'live-earnings-xp-session-total')).toBe('3.8k');
   });
 });
 
+describe('EarningsPanel — the two rate values carry no /h suffix, unlike their labels', () => {
+  it('the rate values are bare numbers; the rate labels alone carry the per-hour marker', () => {
+    const out = html(earnings());
+
+    expect(cellText(out, 'live-earnings-gold-session')).not.toMatch(/\/h/);
+    expect(cellText(out, 'live-earnings-xp-session')).not.toMatch(/\/h/);
+    expect(out).toContain(en.liveEarningsGoldSessionLabel);
+    expect(out).toContain(en.liveEarningsXpSessionLabel);
+    expect(en.liveEarningsGoldSessionLabel).toMatch(/\/hr/);
+    expect(en.liveEarningsXpSessionLabel).toMatch(/\/hr/);
+  });
+
+  it('the rate and total labels for gold are unmistakable from one another', () => {
+    expect(en.liveEarningsGoldSessionLabel).not.toBe(en.liveEarningsGoldSessionTotalLabel);
+    expect(en.liveEarningsGoldSessionLabel).toContain('/hr');
+    expect(en.liveEarningsGoldSessionTotalLabel).not.toContain('/hr');
+    expect(en.liveEarningsGoldSessionTotalLabel).toMatch(/total/i);
+  });
+
+  it('the rate and total labels for XP are unmistakable from one another', () => {
+    expect(en.liveEarningsXpSessionLabel).not.toBe(en.liveEarningsXpSessionTotalLabel);
+    expect(en.liveEarningsXpSessionLabel).toContain('/hr');
+    expect(en.liveEarningsXpSessionTotalLabel).not.toContain('/hr');
+    expect(en.liveEarningsXpSessionTotalLabel).toMatch(/total/i);
+  });
+});
+
 describe('EarningsPanel — labels', () => {
-  it('every tile label reads its plain copy string', () => {
+  it('every block label reads its plain copy string', () => {
     const out = html(earnings());
 
     expect(out).toContain(en.liveEarningsCurrentGoldLabel);
@@ -208,51 +207,44 @@ describe('EarningsPanel — labels', () => {
     // The visible text is the short form ("last 1 min"), but an invisible sizer carrying the
     // longest realistic form ("last 10 min") is always mounted alongside it — that reservation,
     // not the visible text, is what keeps the context line from growing when real coverage passes
-    // a digit boundary (see the `RecentWindowLabel` comment in `earnings-panel.tsx`).
+    // a digit boundary.
     expect(cellText(out, 'live-earnings-recent-window-label')).toBe('last 1 min');
     expect(out).toMatch(/aria-hidden="true" class="invisible[^"]*">last 10 min</);
   });
 
-  it('carries no session-average readout — the dedicated session gold-rate tile says that now', () => {
+  it('carries no session-average readout — the dedicated session gold-rate block says that now', () => {
     const out = html(earnings({ goldSession: 90_000 }));
     expect(out).not.toContain('data-testid="live-earnings-session-average"');
     expect(out).not.toContain('session avg');
   });
 });
 
-describe('EarningsPanel — the headline figures reserve their own width', () => {
-  it('the two headline rates sit in a fixed box, one left-aligned and one right-aligned — the tiles below use neither', () => {
-    const out = html(earnings());
-
-    // Sized from `formatCompactNumber`'s widest realistic output ("999.9m"). The gold-10 figure is
-    // left-aligned so its first digit stays flush with the "last N min" label under it; xp-10
-    // stays right-aligned, the tiles' own convention. The six tiles below use neither: each tile's
-    // value is the only, right-aligned thing in its own box, so a growing number has nothing to push.
-    const leftBoxes = out.match(/class="inline-block w-\[6ch\] text-left tabular-nums"/g) ?? [];
-    const rightBoxes = out.match(/class="inline-block w-\[6ch\] text-right tabular-nums"/g) ?? [];
-    expect(leftBoxes.length).toBe(1);
-    expect(rightBoxes.length).toBe(1);
+describe('EarningsPanel — the left column reserves width for both languages, not just the active one', () => {
+  it('the coverage label reserves against both languages\' longest form, even while only English is active', () => {
+    const out = html(earnings({ coverageSeconds: 15 }));
+    // English is the active/visible locale in every test here (mocked `useCopy`), but the
+    // reservation must also hold the Portuguese longest form so switching languages later cannot
+    // move the vertical rule.
+    expect(out).toMatch(/aria-hidden="true" class="invisible[^"]*">últimos 10 min</);
   });
 
-  it('still reserves exactly the same two boxes for the null/em-dash state', () => {
-    const out = html(null, GAP);
-    const leftBoxes = out.match(/class="inline-block w-\[6ch\] text-left tabular-nums"/g) ?? [];
-    const rightBoxes = out.match(/class="inline-block w-\[6ch\] text-right tabular-nums"/g) ?? [];
-    expect(leftBoxes.length).toBe(1);
-    expect(rightBoxes.length).toBe(1);
+  it('the gold headline unit line reserves against both languages\' unit string', () => {
+    const out = html(earnings());
+    expect(cellText(out, 'live-earnings-gold-10-unit')).toBe(en.liveEarningsGoldHeadlineUnit);
+    expect(out).toMatch(/aria-hidden="true" class="invisible[^"]*">ouro \/ h</);
   });
 });
 
-describe('EarningsPanel — tile order', () => {
-  it('renders the six tiles in the fixed order: current gold, session gold total, session xp total, elapsed, session gold rate, session xp rate', () => {
+describe('EarningsPanel — the six blocks stay in the specified row-major order', () => {
+  it('renders: current gold, session gold rate, session gold total, elapsed, session xp rate, session xp total', () => {
     const out = html(earnings());
     const order = [
       'live-earnings-gold-current',
-      'live-earnings-gold-session-total',
-      'live-earnings-xp-session-total',
-      'live-earnings-elapsed',
       'live-earnings-gold-session',
+      'live-earnings-gold-session-total',
+      'live-earnings-elapsed',
       'live-earnings-xp-session',
+      'live-earnings-xp-session-total',
     ];
     const positions = order.map((testId) => out.indexOf(`data-testid="${testId}"`));
     expect(positions.every((position) => position > -1)).toBe(true);
@@ -260,8 +252,8 @@ describe('EarningsPanel — tile order', () => {
   });
 });
 
-describe('EarningsPanel — every tile value is right-aligned to the tile edge, with no per-tile width box', () => {
-  it('every tile value sits directly inside a right-aligned, full-width, no-fixed-box wrapper', () => {
+describe('EarningsPanel — every block value carries no fixed-width reservation of its own', () => {
+  it('right alignment comes from the block container, not a per-value w-[Nch] box', () => {
     const out = html(earnings());
 
     for (const testId of [
@@ -272,19 +264,9 @@ describe('EarningsPanel — every tile value is right-aligned to the tile edge, 
       'live-earnings-gold-session',
       'live-earnings-xp-session',
     ]) {
-      const wrapperPattern = new RegExp(
-        `<span class="[^"]*\\bblock\\b[^"]*\\btext-right\\b[^"]*\\btabular-nums\\b[^"]*"[^>]*><span[^>]*data-testid="${testId}"`,
-      );
-      expect(out).toMatch(wrapperPattern);
-      const wrapperTag = out.match(new RegExp(`<span class="[^"]*"[^>]*><span[^>]*data-testid="${testId}"`))?.[0] ?? '';
-      expect(wrapperTag).not.toMatch(/w-\[\d+ch\]/);
+      const valueTag = out.match(new RegExp(`<span[^>]*data-testid="${testId}"[^>]*>`))?.[0] ?? '';
+      expect(valueTag).not.toMatch(/w-\[\d+ch\]/);
     }
-  });
-
-  it('a rate tile keeps its unit suffix glued to the digits rather than pinned to the tile edge on its own', () => {
-    const out = html(earnings());
-    expect(cellText(out, 'live-earnings-gold-session')).toBe('90k/h');
-    expect(innerHtml(out, 'live-earnings-gold-session')).toMatch(/^90k<span[^>]*>\/h<\/span>$/);
   });
 });
 
@@ -300,33 +282,20 @@ describe('EarningsPanel — the panel keeps an accessible name without a visible
   });
 });
 
-describe('EarningsPanel — the two headline figures share one baseline', () => {
-  it('the gold and xp headline values are children of one items-baseline container', () => {
-    const out = html(earnings());
-    const openTagMatch = out.match(/<div[^>]*data-testid="live-earnings-headline-baseline"[^>]*>/);
-    expect(openTagMatch).not.toBeNull();
-    expect(openTagMatch?.[0]).toMatch(/class="[^"]*items-baseline[^"]*"/);
-
-    const baselineHtml = innerHtml(out, 'live-earnings-headline-baseline');
-    expect(baselineHtml).toContain('data-testid="live-earnings-gold-10"');
-    expect(baselineHtml).toContain('data-testid="live-earnings-xp-10"');
-  });
-});
-
 describe('EarningsPanel — current gold and its age', () => {
-  it('live: shows the tick balance, with no age line beneath it', () => {
+  it('live: shows the tick balance, with no age beside it', () => {
     const out = html(earnings({ goldBalance: 42 }), LIVE);
     expect(cellText(out, 'live-earnings-gold-current')).toBe('42');
     expect(cellText(out, 'live-earnings-gold-current-age')).toBe('');
   });
 
-  it('stale: the value and its age render as two separate lines, not one combined string', () => {
+  it('stale: the value and its age render as two separate elements, not one combined string', () => {
     const out = html(earnings({ goldBalance: 42 }), GAP);
     expect(cellText(out, 'live-earnings-gold-current')).toBe('42');
     expect(cellText(out, 'live-earnings-gold-current-age')).toBe('2m ago');
   });
 
-  it('no data: an em dash for the value, and no fabricated age on the line beneath it', () => {
+  it('no data: an em dash for the value, and no fabricated age beside it', () => {
     const out = html(null, GAP);
     expect(cellText(out, 'live-earnings-gold-current')).toBe('—');
     expect(cellText(out, 'live-earnings-gold-current-age')).toBe('');
@@ -365,7 +334,7 @@ describe('EarningsPanel — current gold and its age', () => {
     expect(cellText(out, 'live-earnings-gold-current-age')).toBe('');
   });
 
-  it('reserves an invisible sizer for the age line\'s longest realistic form even while fresh and showing none', () => {
+  it("reserves an invisible sizer for the age's longest realistic form even while fresh and showing none", () => {
     const out = html(earnings({ goldBalance: 42 }), LIVE);
     expect(cellText(out, 'live-earnings-gold-current-age')).toBe('');
     // The sizer sits outside the tagged cell (a sibling), so it never pollutes `cellText` above.
@@ -377,21 +346,11 @@ describe('EarningsPanel — current gold and its age', () => {
     expect(out).not.toMatch(/>23h ago</);
   });
 
-  it("the value's own box carries no age-sized reservation — its shape matches every other tile", () => {
+  it("the value's own box carries no age-sized reservation — its shape matches every other block", () => {
     const out = html(earnings({ goldBalance: 42 }), GAP);
-    const valueWrapper = out.match(/<span class="[^"]*"[^>]*><span[^>]*data-testid="live-earnings-gold-current"/)?.[0] ?? '';
-    expect(valueWrapper).not.toMatch(/w-\[\d+ch\]/);
-    expect(valueWrapper).not.toContain('relative grid');
-  });
-});
-
-describe('EarningsPanel — the six tiles stay a uniform grid even though only one has an age line', () => {
-  it('every tile renders the same reserved second-line wrapper, so the grid rows never grow unevenly', () => {
-    const out = html(earnings());
-    const secondLineWrapper = /class="relative grid text-right text-\[10\.5px\] leading-none text-muted tabular-nums whitespace-nowrap"/g;
-    const matches = out.match(secondLineWrapper) ?? [];
-    // One per tile — six total — regardless of whether that tile's line ever shows real text.
-    expect(matches.length).toBe(6);
+    const valueTag = out.match(/<span[^>]*data-testid="live-earnings-gold-current"[^>]*>/)?.[0] ?? '';
+    expect(valueTag).not.toMatch(/w-\[\d+ch\]/);
+    expect(valueTag).not.toContain('relative grid');
   });
 });
 
@@ -401,7 +360,7 @@ describe('EarningsPanel — the XP marker is always mounted and reachable', () =
     ['not live, with a prior reading', GAP, earnings()] as const,
     ['no data at all', GAP, null] as const,
   ])(
-    '%s: the "xp / hr" trigger is in the DOM, keyboard-reachable, dotted-underlined, with no native tooltip',
+    '%s: the "xp / h" trigger is in the DOM, keyboard-reachable, dotted-underlined, with no native tooltip',
     (_label, freshness, data) => {
       const out = html(data, freshness);
       const tagMatch = out.match(/<button[^>]*data-testid="live-earnings-xp-help-trigger"[^>]*>/);
@@ -427,8 +386,8 @@ describe('EarningsPanel — the XP marker is always mounted and reachable', () =
   });
 });
 
-describe('EarningsPanel — elapsed and reset live in the headline band', () => {
-  it('the Elapsed tile formats sessionSeconds with the shared live-duration formatter', () => {
+describe('EarningsPanel — elapsed and reset', () => {
+  it('the Elapsed block formats sessionSeconds with the shared live-duration formatter', () => {
     const out = html(earnings({ sessionSeconds: 90 }));
     expect(cellText(out, 'live-earnings-elapsed')).toBe('1:30');
   });
@@ -452,10 +411,18 @@ describe('EarningsPanel — elapsed and reset live in the headline band', () => 
   });
 });
 
-describe('EarningsPanel — the tile grid is a fixed three-column layout', () => {
-  it('lays the six tiles out three per row, narrowing to two columns before that', () => {
+describe('EarningsPanel — the right half is a fixed three-column, two-row grid', () => {
+  it('lays the six blocks out three per row, with no per-block border box', () => {
     const out = html(earnings());
-    expect(out).toContain('class="grid grid-cols-2 gap-3 sm:grid-cols-3"');
+    expect(out).toContain('class="grid grid-cols-3 gap-x-4 gap-y-3"');
+    expect(out).not.toContain('rounded-lg border');
+  });
+
+  it("a block's label is free to wrap onto a second line rather than truncating or overflowing its column — Portuguese's longer labels need it (docs/content-fit-ui.md rule 2)", () => {
+    const out = html(earnings());
+    const labelTag = out.match(/<span class="text-right text-\[10\.5px\] uppercase tracking-\[0\.06em\] text-muted">/);
+    expect(labelTag).not.toBeNull();
+    expect(labelTag?.[0]).not.toMatch(/whitespace-nowrap/);
   });
 });
 
