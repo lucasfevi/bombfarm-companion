@@ -34,6 +34,19 @@ describe('LivePanel — composition', () => {
     expect(html).toContain('data-testid="live-list-on-field-count"');
   });
 
+  it('puts the earnings panel in the first column of a page-level two-column grid, with the heroes panel spanning full width outside it', () => {
+    const html = renderToStaticMarkup(
+      createElement(LivePanel, { freshness: { kind: 'live' }, slow: slowModel(), fast: emptyFast }),
+    );
+    const gridIndex = html.indexOf('class="grid grid-cols-1 gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]"');
+    const earningsIndex = html.indexOf('data-testid="live-earnings"');
+    const heroesIndex = html.indexOf('data-testid="live-heroes"');
+
+    expect(gridIndex).toBeGreaterThan(-1);
+    expect(earningsIndex).toBeGreaterThan(gridIndex);
+    expect(heroesIndex).toBeGreaterThan(earningsIndex);
+  });
+
   it('has no separate House panel — every house reading it carried now heads the Resting section', () => {
     const slow = slowModel({
       recovering: [{ id: 'r1' }, { id: 'r2' }],

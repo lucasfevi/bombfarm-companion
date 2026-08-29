@@ -41,7 +41,9 @@ export function LivePanel({
   return (
     <div data-testid="live-panel" className="flex flex-col gap-4">
       <FreshnessLine freshness={freshness} onReopenConsent={onReopenConsent} />
-      <EarningsPanel freshness={freshness} earnings={earnings} onReset={onResetEarnings} />
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
+        <EarningsPanel freshness={freshness} earnings={earnings} onReset={onResetEarnings} />
+      </div>
       <Panel data-testid="live-heroes">
         <PanelHeader title={t.liveHeroesTitle} />
         <div className="flex flex-col gap-4">

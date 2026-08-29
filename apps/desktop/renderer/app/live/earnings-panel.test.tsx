@@ -429,6 +429,13 @@ describe('EarningsPanel — elapsed and reset live in the headline band', () => 
   });
 });
 
+describe('EarningsPanel — the tile grid is a fixed three-column layout', () => {
+  it('lays the six tiles out three per row, narrowing to two columns before that', () => {
+    const out = html(earnings());
+    expect(out).toContain('class="grid grid-cols-2 gap-3 sm:grid-cols-3"');
+  });
+});
+
 describe('EarningsPanel — the reset control invokes the bridge exactly once', () => {
   it('activating the rendered control calls onReset exactly once', () => {
     const onReset = vi.fn();

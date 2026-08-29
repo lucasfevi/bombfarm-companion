@@ -58,3 +58,11 @@ Every tile's value is now right-aligned to the tile's own edge, matching the lef
 above it — previously the values sat in a fixed-width box that made them look inconsistently
 placed from tile to tile. A rate tile's unit stays glued to its digits rather than drifting to the
 tile's far edge on its own.
+
+The Live tab now gives the earnings panel half the page width, sitting at the top of the tab in the
+first column of a two-column area — the other column is left empty for a companion panel to land in
+later, without the earnings panel itself needing to change. Its six tiles moved from a loosely
+reflowing row onto a fixed three-column grid, giving two even rows of three instead of a stretch of
+tiles that could all land on one line on a wide window; on a narrower window the tiles settle into
+two columns instead of crowding three into too little space. The heroes panel below keeps spanning
+the full width of the tab.

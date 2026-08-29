@@ -251,7 +251,7 @@ export function EarningsPanel({
             <Icon name="arrow-path" size="sm" />
           </button>
         </div>
-        <div className="grid grid-cols-[repeat(auto-fit,minmax(9rem,1fr))] gap-3">
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
           <Tile
             testId="live-earnings-gold-current"
             label={t.liveEarningsCurrentGoldLabel}
