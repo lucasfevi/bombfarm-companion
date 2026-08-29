@@ -224,6 +224,20 @@ export class EarningsFold {
     return this.#sessionRate(this.#xpTotal);
   }
 
+  /** The raw sum {@link goldSession} divides by streamed time — a total, not a rate. Shares
+   *  {@link goldSession}'s own null gate so the two agree on when the session has anything to
+   *  report at all. */
+  get goldSessionTotal(): number | null {
+    return this.#streamedMs === 0 ? null : this.#goldTotal;
+  }
+
+  /** The raw sum {@link xpSession} divides by streamed time — a total, not a rate. Shares
+   *  {@link xpSession}'s own null gate so the two agree on when the session has anything to
+   *  report at all. */
+  get xpSessionTotal(): number | null {
+    return this.#streamedMs === 0 ? null : this.#xpTotal;
+  }
+
   /** The real-time span the surviving buckets actually cover, so the UI can say what the 10-minute
    *  figure really represents instead of always claiming a full 10 minutes. */
   get coverageSeconds(): number {

@@ -21,6 +21,8 @@ function earnings(overrides: Partial<LiveEarnings> = {}): LiveEarnings {
     goldSession: 1_000,
     xp10: 100,
     xpSession: 100,
+    goldSessionTotal: 1_000,
+    xpSessionTotal: 100,
     coverageSeconds: 60,
     sessionSeconds: 60,
     ...overrides,
@@ -114,6 +116,20 @@ describe('createLiveFastPublisher — publishes only when the fast channel actua
 
     expect(emitted).toHaveLength(1);
     expect(emitted[0]).toMatchObject({ type: 'fastUpdate', earnings: value });
+  });
+
+  it('a change confined to the session totals still republishes, even with every rate and window field unchanged', () => {
+    let currentEarnings = earnings({ goldSessionTotal: 1_000, xpSessionTotal: 100 });
+    const { publisher, emitted, fireTick } = harness(() => view({ earnings: currentEarnings }));
+    publisher.start();
+    fireTick();
+    expect(emitted).toHaveLength(1);
+
+    currentEarnings = earnings({ goldSessionTotal: 2_000, xpSessionTotal: 100 });
+    fireTick();
+
+    expect(emitted).toHaveLength(2);
+    expect(emitted[1]).toMatchObject({ type: 'fastUpdate', earnings: currentEarnings });
   });
 
   it('an earnings-only change republishes, even with field/recovery/onFieldHeroIds unchanged', () => {

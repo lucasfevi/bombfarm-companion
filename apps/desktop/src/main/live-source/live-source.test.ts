@@ -963,9 +963,10 @@ describe('LiveSource: earnings', () => {
     expect(earnings?.gold10).toBe(earnings?.goldSession);
     expect(Number.isFinite(earnings?.sessionSeconds)).toBe(true);
     expect(Number.isFinite(earnings?.coverageSeconds)).toBe(true);
+    expect(earnings?.goldSessionTotal).toBe(100);
   });
 
-  it('resetEarnings zeroes the session figures but leaves the 10-minute window intact', () => {
+  it('resetEarnings zeroes the session figures — including the two session totals — but leaves the 10-minute window intact', () => {
     const { source, pushFrame, goLive } = createHarness();
     source.start();
     goLive();
@@ -975,6 +976,7 @@ describe('LiveSource: earnings', () => {
     const before = source.getView().earnings;
     expect(before?.goldSession).toBeGreaterThan(0);
     expect(before?.gold10).toBeGreaterThan(0);
+    expect(before?.goldSessionTotal).toBe(100);
 
     source.resetEarnings();
 
@@ -983,6 +985,8 @@ describe('LiveSource: earnings', () => {
     expect(after?.sessionSeconds).toBe(0);
     expect(after?.gold10).toBe(before?.gold10);
     expect(after?.goldBalance).toBe(before?.goldBalance);
+    expect(after?.goldSessionTotal).toBeNull();
+    expect(after?.xpSessionTotal).toBeNull();
   });
 
   it('an ingested skills.totals.xp_mult reaches the published xp10/xpSession, scaling them exactly', () => {
@@ -1042,6 +1046,8 @@ describe('LiveSource: earnings', () => {
     expect(after?.gold10).toBeNull();
     expect(after?.xp10).toBeNull();
     expect(after?.coverageSeconds).toBe(0);
+    expect(after?.goldSessionTotal).toBeNull();
+    expect(after?.xpSessionTotal).toBeNull();
   });
 
   it('re-ingesting the same binding clears nothing', () => {

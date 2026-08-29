@@ -347,11 +347,49 @@ describe('EarningsFold: grid cross-check', () => {
   });
 });
 
+describe('EarningsFold: session totals (goldSessionTotal / xpSessionTotal)', () => {
+  it('a fresh fold reports null, never a misleading 0, before any streamed time has accrued', () => {
+    const fold = makeFold();
+    expect(fold.goldSessionTotal).toBeNull();
+    expect(fold.xpSessionTotal).toBeNull();
+  });
+
+  it('reports the raw accumulated sum, not divided by streamed time the way the rate is', () => {
+    const tick = baseTick({ phase: 1, loot: [{ cell: 0, gold: 1 }] });
+    const fold = foldAfterOneEarningTick({ xpPerProp: () => 10 }, tick, undefined);
+
+    // The rate divides by streamed time (1 second here, scaled to per-hour); the total does not.
+    expect(fold.goldSessionTotal).toBe(1);
+    expect(fold.xpSessionTotal).toBe(10);
+    expect(fold.goldSession).not.toBe(fold.goldSessionTotal);
+  });
+
+  it('keeps rising across ticks that the rolling 10-minute window would have evicted', () => {
+    const clock = makeClock();
+    const fold = makeFold({ now: clock.now });
+    fold.consumeTick(baseTick({ loot: [{ cell: 0, gold: 100 }] }), 1, undefined);
+    clock.advance(1_000);
+    fold.consumeTick(baseTick({}), 2, undefined);
+    const totalBeforeEviction = fold.goldSessionTotal;
+    expect(totalBeforeEviction).toBe(100);
+
+    // Past the 10-minute window: gold10 evicts its only gold-bearing bucket, but the session
+    // total is not windowed at all and must be untouched by that eviction.
+    clock.advance(10 * 60 * 1000 + 1_000);
+    fold.consumeTick(baseTick({}), 3, undefined);
+
+    expect(fold.gold10).toBe(0);
+    expect(fold.goldSessionTotal).toBe(totalBeforeEviction);
+  });
+});
+
 describe('EarningsFold: session lifecycle', () => {
   it('app start: a fresh fold has session totals zeroed and the rolling window empty', () => {
     const fold = makeFold();
     expect(fold.goldSession).toBeNull();
     expect(fold.xpSession).toBeNull();
+    expect(fold.goldSessionTotal).toBeNull();
+    expect(fold.xpSessionTotal).toBeNull();
     expect(fold.sessionSeconds).toBe(0);
     expect(fold.gold10).toBeNull();
     expect(fold.xp10).toBeNull();
@@ -365,6 +403,7 @@ describe('EarningsFold: session lifecycle', () => {
     clock.advance(1_000);
     fold.consumeTick(baseTick({}), 2, undefined);
     expect(fold.goldSession).not.toBeNull();
+    expect(fold.goldSessionTotal).not.toBeNull();
     const gold10BeforeReset = fold.gold10;
     const coverageBeforeReset = fold.coverageSeconds;
     expect(gold10BeforeReset).not.toBeNull();
@@ -373,6 +412,8 @@ describe('EarningsFold: session lifecycle', () => {
 
     expect(fold.goldSession).toBeNull();
     expect(fold.xpSession).toBeNull();
+    expect(fold.goldSessionTotal).toBeNull();
+    expect(fold.xpSessionTotal).toBeNull();
     expect(fold.sessionSeconds).toBe(0);
     expect(fold.gold10).toBe(gold10BeforeReset);
     expect(fold.coverageSeconds).toBe(coverageBeforeReset);
@@ -385,11 +426,14 @@ describe('EarningsFold: session lifecycle', () => {
     clock.advance(1_000);
     fold.consumeTick(baseTick({}), 2, undefined);
     expect(fold.gold10).not.toBeNull();
+    expect(fold.goldSessionTotal).not.toBeNull();
 
     fold.reset('accountChange');
 
     expect(fold.goldSession).toBeNull();
     expect(fold.xpSession).toBeNull();
+    expect(fold.goldSessionTotal).toBeNull();
+    expect(fold.xpSessionTotal).toBeNull();
     expect(fold.sessionSeconds).toBe(0);
     expect(fold.gold10).toBeNull();
     expect(fold.xp10).toBeNull();

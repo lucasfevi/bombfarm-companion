@@ -211,6 +211,12 @@ export interface LiveEarnings {
   readonly xp10: number | null;
   /** Per hour, over the whole session. */
   readonly xpSession: number | null;
+  /** Session total accumulated so far — a sum, not a rate. Unlike {@link goldSession} this never
+   *  divides by streamed time, so it keeps rising while the rate settles. */
+  readonly goldSessionTotal: number | null;
+  /** Session total accumulated so far — a sum, not a rate. Unlike {@link xpSession} this never
+   *  divides by streamed time, so it keeps rising while the rate settles. */
+  readonly xpSessionTotal: number | null;
   /** The real-time span the 10-minute figures actually cover — less than 600 immediately after a
    *  session starts, or after a long enough stream gap has aged old samples out. */
   readonly coverageSeconds: number;

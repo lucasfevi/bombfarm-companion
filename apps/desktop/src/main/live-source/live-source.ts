@@ -444,6 +444,8 @@ export class LiveSource {
       goldSession: this.#earningsFold.goldSession,
       xp10: this.#earningsFold.xp10,
       xpSession: this.#earningsFold.xpSession,
+      goldSessionTotal: this.#earningsFold.goldSessionTotal,
+      xpSessionTotal: this.#earningsFold.xpSessionTotal,
       coverageSeconds: this.#earningsFold.coverageSeconds,
       sessionSeconds: this.#earningsFold.sessionSeconds,
     };
