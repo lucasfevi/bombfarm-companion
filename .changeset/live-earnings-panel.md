@@ -19,3 +19,14 @@ With the game closed and no live tick ever arriving, the current-gold cell now f
 most recently stored account reading instead of showing a dash, with its age shown alongside it —
 the same posture the panel already took for a balance that went stale mid-session. No new request
 is made to refresh it; the displayed age simply grows while the game stays closed.
+
+The panel has since been redesigned again: a single bordered headline band up top carries the
+dominant gold-per-hour figure and a smaller XP-per-hour figure beside it on a shared text baseline,
+with a context line underneath stating the true coverage of the recent window and the session
+average rate, plus the reset control. Below the band, a reflowing grid of six tiles covers current
+gold, elapsed session time, and both currencies' session totals and session rates. The two session
+totals (`goldSessionTotal`/`xpSessionTotal` on `LiveEarnings`) are newly published by the live fold
+— they were already tracked internally to compute the session rates, but never reached the
+renderer before this change. Like every other figure on the panel, a total reads as a dash rather
+than a zero before the session has anything to report, and is unaffected by the unrelated
+10-minute rolling window's own eviction.

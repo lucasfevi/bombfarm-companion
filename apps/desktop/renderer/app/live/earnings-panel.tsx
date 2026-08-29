@@ -1,6 +1,5 @@
 import type { ReactNode } from 'react';
 import type { LiveEarnings } from '@bombfarm/contracts';
-import { GoldIcon } from '@bombfarm/game-art';
 import { Button, formatCompactNumber, HelpTip, Icon, Panel, PanelHeader } from '@bombfarm/ui';
 import { sub, useCopy } from '../../lib/copy';
 import { formatCapturedAt } from '../../lib/format';
@@ -16,6 +15,10 @@ function coverageMinutesLabel(coverageSeconds: number): number {
   return Math.min(MAX_COVERAGE_MINUTES, Math.max(1, Math.floor(coverageSeconds / 60)));
 }
 
+function numberText(value: number | null | undefined): string {
+  return value == null ? EM_DASH : formatCompactNumber(value, 1);
+}
+
 function rateValue(value: number | null | undefined, unit: string): ReactNode {
   if (value == null) return EM_DASH;
   return (
@@ -26,46 +29,54 @@ function rateValue(value: number | null | undefined, unit: string): ReactNode {
   );
 }
 
+/** Same shape as {@link rateValue}, but with a real space before the unit word — the headline
+ *  figures spell their unit out ("gold / hr") rather than tiles' tight "/h", so it reads as two
+ *  words rather than running the number and "gold" together. */
+function headlineRateValue(value: number | null | undefined, unit: string): ReactNode {
+  if (value == null) return EM_DASH;
+  return (
+    <>
+      {formatCompactNumber(value, 1)}
+      <span className="text-muted text-[0.6em] font-normal">{` ${unit}`}</span>
+    </>
+  );
+}
+
 /**
  * Stacks the real label under an invisible copy of its longest realistic form (the coverage word
- * growing from "1" to "10") so the grid cell is always sized for that longest form — the fixed
- * `<colgroup>` widths that used to reserve this space disappear with the table.
+ * growing from "1" to "10") so the box is always sized for that longest form — the two headline
+ * figures share this one context line, so a single reservation covers both.
  */
-function RecentLabel({ testId, longest, text }: { testId: string; longest: string; text: string }) {
+function RecentWindowLabel({ longest, text }: { longest: string; text: string }) {
   return (
-    <span className="relative grid text-[10.5px] uppercase tracking-[0.06em] text-muted tabular-nums whitespace-nowrap">
+    <span className="relative grid text-[10.5px] tabular-nums whitespace-nowrap">
       <span aria-hidden className="invisible col-start-1 row-start-1">
         {longest}
       </span>
-      <span data-testid={testId} className="col-start-1 row-start-1">
+      <span data-testid="live-earnings-recent-window-label" className="col-start-1 row-start-1">
         {text}
       </span>
     </span>
   );
 }
 
-function Cell({
-  valueTestId,
+function Tile({
+  testId,
+  label,
   value,
   className,
-  icon,
-  label,
 }: {
-  valueTestId: string;
+  testId: string;
+  label: ReactNode;
   value: ReactNode;
   className: string;
-  icon?: ReactNode;
-  label: ReactNode;
 }) {
   return (
-    <div className="flex flex-col items-start gap-1">
-      <span className="inline-flex items-baseline gap-1.5 tabular-nums">
-        {icon}
-        <span data-testid={valueTestId} className={className}>
-          {value}
-        </span>
+    <div className="rounded-lg border border-line/55 p-3 flex flex-col gap-1">
+      <span className="text-[10.5px] uppercase tracking-[0.06em] text-muted whitespace-nowrap">{label}</span>
+      <span data-testid={testId} className={className}>
+        {value}
       </span>
-      {label}
     </div>
   );
 }
@@ -84,10 +95,8 @@ export function EarningsPanel({
   const sessionSeconds = earnings?.sessionSeconds ?? 0;
   const coverageSeconds = earnings?.coverageSeconds ?? 0;
   const minutes = coverageMinutesLabel(coverageSeconds);
-  const goldRecentLabel = sub(t.liveEarningsGoldRecentLabel, { minutes });
-  const goldRecentLongest = sub(t.liveEarningsGoldRecentLabel, { minutes: MAX_COVERAGE_MINUTES });
-  const xpRecentLabel = sub(t.liveEarningsXpRecentLabel, { minutes });
-  const xpRecentLongest = sub(t.liveEarningsXpRecentLabel, { minutes: MAX_COVERAGE_MINUTES });
+  const recentWindowText = sub(t.liveEarningsRecentWindowLabel, { minutes });
+  const recentWindowLongest = sub(t.liveEarningsRecentWindowLabel, { minutes: MAX_COVERAGE_MINUTES });
 
   const balance = earnings?.goldBalance ?? null;
   const balanceCapturedAt = earnings?.goldBalanceCapturedAt ?? null;
@@ -103,13 +112,37 @@ export function EarningsPanel({
           ? formatCompactNumber(balance, 1)
           : `${formatCompactNumber(balance, 1)} · ${formatCapturedAt(freshness.sinceAt, t)}`;
 
+  const sessionAverageText = sub(t.liveEarningsSessionAverageValue, {
+    value: earnings?.goldSession == null ? EM_DASH : `${formatCompactNumber(earnings.goldSession, 1)}${t.liveEarningsRateUnit}`,
+  });
+
   return (
     <Panel data-testid="live-earnings">
-      <PanelHeader title={t.liveEarningsTitle}>
-        <span className="flex items-center gap-3 text-xs text-muted">
-          <span data-testid="live-earnings-session-duration">
-            {sub(t.liveEarningsSessionDurationValue, { duration: formatLiveDurationSeconds(sessionSeconds) })}
-          </span>
+      <PanelHeader title={t.liveEarningsTitle} />
+      <div className="flex flex-col gap-4">
+        <div className="flex items-start justify-between gap-4 rounded-lg border border-line/55 p-4">
+          <div className="flex flex-col gap-1.5">
+            <div data-testid="live-earnings-headline-baseline" className="flex items-baseline gap-3">
+              <span className="inline-flex items-baseline gap-1 tabular-nums">
+                <span data-testid="live-earnings-gold-10" className="text-[38px] font-bold text-gold">
+                  {headlineRateValue(earnings?.gold10, t.liveEarningsGoldHeadlineUnit)}
+                </span>
+              </span>
+              <span className="inline-flex items-baseline gap-1 tabular-nums">
+                <span data-testid="live-earnings-xp-10" className="text-[19px] font-bold text-info">
+                  {headlineRateValue(earnings?.xp10, t.liveEarningsXpHeadlineUnit)}
+                </span>
+                <HelpTip label={t.liveEarningsXpHelpLabel}>{t.liveEarningsXpHelpBody}</HelpTip>
+              </span>
+            </div>
+            <div className="flex items-center gap-1.5 text-muted">
+              <RecentWindowLabel longest={recentWindowLongest} text={recentWindowText} />
+              <span aria-hidden>·</span>
+              <span data-testid="live-earnings-session-average" className="text-[10.5px] tabular-nums whitespace-nowrap">
+                {sessionAverageText}
+              </span>
+            </div>
+          </div>
           <Button
             type="button"
             variant="ghost"
@@ -120,53 +153,43 @@ export function EarningsPanel({
           >
             <Icon name="arrow-path" size="xs" />
           </Button>
-        </span>
-      </PanelHeader>
-      <div className="flex flex-wrap items-stretch gap-y-4">
-        <div className="flex items-stretch">
-          <Cell
-            valueTestId="live-earnings-gold-current"
-            value={currentGold}
-            className="text-[26px] font-semibold text-gold"
-            icon={<GoldIcon className="size-6" />}
-            label={<span className="text-[10.5px] uppercase tracking-[0.06em] text-muted whitespace-nowrap">{t.liveEarningsCurrentGoldLabel}</span>}
-          />
-          <span aria-hidden className="mx-4 w-px shrink-0 self-stretch bg-line/55" />
-          <Cell
-            valueTestId="live-earnings-gold-10"
-            value={rateValue(earnings?.gold10, t.liveEarningsRateUnit)}
-            className="text-xl font-semibold text-gold"
-            label={
-              <RecentLabel testId="live-earnings-gold-10-label" longest={goldRecentLongest} text={goldRecentLabel} />
-            }
-          />
-          <span aria-hidden className="mx-4 w-px shrink-0 self-stretch bg-line/55" />
-          <Cell
-            valueTestId="live-earnings-gold-session"
-            value={rateValue(earnings?.goldSession, t.liveEarningsRateUnit)}
-            className="text-xl font-semibold text-gold/70"
-            label={<span className="text-[10.5px] uppercase tracking-[0.06em] text-muted whitespace-nowrap">{t.liveEarningsGoldSessionLabel}</span>}
-          />
         </div>
-        <div className="flex items-stretch">
-          <span aria-hidden className="mx-4 w-px shrink-0 self-stretch bg-line/55" />
-          <Cell
-            valueTestId="live-earnings-xp-10"
-            value={rateValue(earnings?.xp10, t.liveEarningsRateUnit)}
-            className="text-base font-semibold text-info"
-            label={
-              <span className="inline-flex items-center gap-1">
-                <RecentLabel testId="live-earnings-xp-10-label" longest={xpRecentLongest} text={xpRecentLabel} />
-                <HelpTip label={t.liveEarningsXpHelpLabel}>{t.liveEarningsXpHelpBody}</HelpTip>
-              </span>
-            }
+        <div className="grid grid-cols-[repeat(auto-fit,minmax(9rem,1fr))] gap-3">
+          <Tile
+            testId="live-earnings-gold-current"
+            label={t.liveEarningsCurrentGoldLabel}
+            value={currentGold}
+            className="text-[23px] font-bold text-gold"
           />
-          <span aria-hidden className="mx-4 w-px shrink-0 self-stretch bg-line/55" />
-          <Cell
-            valueTestId="live-earnings-xp-session"
+          <Tile
+            testId="live-earnings-gold-session-total"
+            label={t.liveEarningsGoldSessionTotalLabel}
+            value={numberText(earnings?.goldSessionTotal)}
+            className="text-[23px] font-bold text-gold"
+          />
+          <Tile
+            testId="live-earnings-elapsed"
+            label={t.liveEarningsElapsedLabel}
+            value={formatLiveDurationSeconds(sessionSeconds)}
+            className="text-[23px] font-bold text-ink"
+          />
+          <Tile
+            testId="live-earnings-xp-session-total"
+            label={t.liveEarningsXpSessionTotalLabel}
+            value={numberText(earnings?.xpSessionTotal)}
+            className="text-[23px] font-bold text-info"
+          />
+          <Tile
+            testId="live-earnings-gold-session"
+            label={t.liveEarningsGoldSessionLabel}
+            value={rateValue(earnings?.goldSession, t.liveEarningsRateUnit)}
+            className="text-[23px] font-bold text-gold/70"
+          />
+          <Tile
+            testId="live-earnings-xp-session"
+            label={t.liveEarningsXpSessionLabel}
             value={rateValue(earnings?.xpSession, t.liveEarningsRateUnit)}
-            className="text-base font-semibold text-info/70"
-            label={<span className="text-[10.5px] uppercase tracking-[0.06em] text-muted whitespace-nowrap">{t.liveEarningsXpSessionLabel}</span>}
+            className="text-[23px] font-bold text-info/70"
           />
         </div>
       </div>

@@ -35,6 +35,8 @@ function earnings(overrides: Partial<LiveEarnings> = {}): LiveEarnings {
     goldSession: 90_000,
     xp10: 5_000,
     xpSession: 4_500,
+    goldSessionTotal: 75_000,
+    xpSessionTotal: 3_750,
     coverageSeconds: 120,
     sessionSeconds: 300,
     ...overrides,
@@ -75,47 +77,111 @@ function cellText(out: string, testId: string): string {
   return text;
 }
 
+/**
+ * Same tag/depth walk as {@link cellText}, but returns the raw markup between the opening and
+ * closing tag instead of the flattened text — used to prove one element's subtree contains
+ * another element's `data-testid`, regardless of how deeply it is nested inside.
+ */
+function innerHtml(out: string, testId: string): string {
+  const openTag = out.match(new RegExp(`<([a-zA-Z0-9]+)[^>]*data-testid="${testId}"[^>]*>`));
+  if (!openTag) throw new Error(`no element with data-testid="${testId}" found in:\n${out}`);
+  const tagName = openTag[1];
+  const start = (openTag.index ?? 0) + openTag[0].length;
+  const rest = out.slice(start);
+  const tokenRe = /<\/([a-zA-Z0-9]+)[^>]*>|<([a-zA-Z0-9]+)[^>]*?(\/)?>/g;
+  let depth = 0;
+  let match: RegExpExecArray | null;
+  while ((match = tokenRe.exec(rest))) {
+    const [, closeName, openName, selfClose] = match;
+    if (closeName) {
+      if (depth === 0 && closeName === tagName) return rest.slice(0, match.index);
+      depth -= 1;
+    } else if (openName && !selfClose) {
+      depth += 1;
+    }
+  }
+  throw new Error(`no closing tag found for data-testid="${testId}"`);
+}
+
+/**
+ * Walks the plain React-element tree `EarningsPanel(...)` returns when called directly as a
+ * function (no dispatcher, no actual render) to find the one element carrying `data-testid`.
+ * Independent of exactly how deep the control sits or how many wrapper elements surround it, so a
+ * future layout change does not break this by shifting an index.
+ */
+function findElementByTestId(
+  node: unknown,
+  testId: string,
+): { props: Record<string, unknown> } | null {
+  if (node === null || typeof node !== 'object') return null;
+  const element = node as { props?: Record<string, unknown> };
+  if (element.props && element.props['data-testid'] === testId) {
+    return element as { props: Record<string, unknown> };
+  }
+  const children = element.props?.children;
+  if (Array.isArray(children)) {
+    for (const child of children) {
+      const found = findElementByTestId(child, testId);
+      if (found) return found;
+    }
+    return null;
+  }
+  return findElementByTestId(children, testId);
+}
+
 describe('EarningsPanel — every cell in every state', () => {
-  it('with figures: the current balance and every rate render, rates carrying the /h suffix', () => {
+  it('with figures: the headline rates, current balance, and every tile render, each with its own unit suffix', () => {
     const out = html(earnings());
 
+    expect(cellText(out, 'live-earnings-gold-10')).toBe('100k gold / hr');
+    expect(cellText(out, 'live-earnings-xp-10')).toBe('5k xp / hr');
     expect(cellText(out, 'live-earnings-gold-current')).toBe('12.3k');
-    expect(cellText(out, 'live-earnings-gold-10')).toBe('100k/h');
+    expect(cellText(out, 'live-earnings-gold-session-total')).toBe('75k');
+    expect(cellText(out, 'live-earnings-xp-session-total')).toBe('3.8k');
+    expect(cellText(out, 'live-earnings-elapsed')).toBe('5:00');
     expect(cellText(out, 'live-earnings-gold-session')).toBe('90k/h');
-    expect(cellText(out, 'live-earnings-xp-10')).toBe('5k/h');
     expect(cellText(out, 'live-earnings-xp-session')).toBe('4.5k/h');
   });
 
-  it('no data at all: every rate/balance position is an em dash, never 0', () => {
+  it('no data at all: every rate/balance/total position is an em dash, never 0', () => {
     const out = html(null, GAP);
 
     for (const testId of [
       'live-earnings-gold-current',
       'live-earnings-gold-10',
       'live-earnings-gold-session',
+      'live-earnings-gold-session-total',
       'live-earnings-xp-10',
       'live-earnings-xp-session',
+      'live-earnings-xp-session-total',
     ]) {
       expect(cellText(out, testId)).toBe('—');
     }
+    // Elapsed is a duration, not a measured rate — it reads 0:00 (see the dedicated test below),
+    // never an em dash, even with no earnings at all.
+    expect(cellText(out, 'live-earnings-elapsed')).toBe('0:00');
   });
 
   it('a null carried on only some fields still renders an em dash for exactly those, real numbers for the rest', () => {
-    const out = html(earnings({ gold10: null, xpSession: null }));
+    const out = html(earnings({ gold10: null, xpSession: null, goldSessionTotal: null }));
 
     expect(cellText(out, 'live-earnings-gold-10')).toBe('—');
     expect(cellText(out, 'live-earnings-xp-session')).toBe('—');
+    expect(cellText(out, 'live-earnings-gold-session-total')).toBe('—');
     expect(cellText(out, 'live-earnings-gold-session')).toBe('90k/h');
-    expect(cellText(out, 'live-earnings-xp-10')).toBe('5k/h');
+    expect(cellText(out, 'live-earnings-xp-10')).toBe('5k xp / hr');
+    expect(cellText(out, 'live-earnings-xp-session-total')).toBe('3.8k');
   });
 });
 
 describe('EarningsPanel — labels', () => {
-  it('the three static labels read the plain copy strings', () => {
+  it('every tile label reads its plain copy string', () => {
     const out = html(earnings());
 
-    expect(cellText(out, 'live-earnings-gold-current')).toBeTruthy();
     expect(out).toContain(en.liveEarningsCurrentGoldLabel);
+    expect(out).toContain(en.liveEarningsGoldSessionTotalLabel);
+    expect(out).toContain(en.liveEarningsElapsedLabel);
+    expect(out).toContain(en.liveEarningsXpSessionTotalLabel);
     expect(out).toContain(en.liveEarningsGoldSessionLabel);
     expect(out).toContain(en.liveEarningsXpSessionLabel);
   });
@@ -127,12 +193,11 @@ describe('EarningsPanel — labels', () => {
     [600, 10],
     [700, 10],
   ])(
-    'coverageSeconds=%d: both "last N min" labels state the true span, never a claimed 10 minutes they do not have',
+    'coverageSeconds=%d: the "last N min" context line states the true span, never a claimed 10 minutes it does not have',
     (coverageSeconds, minutes) => {
       const out = html(earnings({ coverageSeconds }));
 
-      expect(cellText(out, 'live-earnings-gold-10-label')).toBe(`gold · last ${String(minutes)} min`);
-      expect(cellText(out, 'live-earnings-xp-10-label')).toBe(`xp · last ${String(minutes)} min`);
+      expect(cellText(out, 'live-earnings-recent-window-label')).toBe(`last ${String(minutes)} min`);
     },
   );
 
@@ -141,11 +206,33 @@ describe('EarningsPanel — labels', () => {
 
     // The visible text is the short form ("last 1 min"), but an invisible sizer carrying the
     // longest realistic form ("last 10 min") is always mounted alongside it — that reservation,
-    // not the visible text, is what keeps the cell from growing when real coverage passes a digit
-    // boundary (see the `RecentLabel` comment in `earnings-panel.tsx`).
-    expect(cellText(out, 'live-earnings-gold-10-label')).toBe('gold · last 1 min');
-    expect(out).toMatch(/aria-hidden="true" class="invisible[^"]*">gold · last 10 min</);
-    expect(out).toMatch(/aria-hidden="true" class="invisible[^"]*">xp · last 10 min</);
+    // not the visible text, is what keeps the context line from growing when real coverage passes
+    // a digit boundary (see the `RecentWindowLabel` comment in `earnings-panel.tsx`).
+    expect(cellText(out, 'live-earnings-recent-window-label')).toBe('last 1 min');
+    expect(out).toMatch(/aria-hidden="true" class="invisible[^"]*">last 10 min</);
+  });
+
+  it('the context line also states the session average rate', () => {
+    const out = html(earnings({ goldSession: 90_000 }));
+    expect(cellText(out, 'live-earnings-session-average')).toBe('session avg 90k/h');
+  });
+
+  it('the session average reads an em dash rather than a fabricated rate when there is nothing to report', () => {
+    const out = html(earnings({ goldSession: null }));
+    expect(cellText(out, 'live-earnings-session-average')).toBe('session avg —');
+  });
+});
+
+describe('EarningsPanel — the two headline figures share one baseline', () => {
+  it('the gold and xp headline values are children of one items-baseline container', () => {
+    const out = html(earnings());
+    const openTagMatch = out.match(/<div[^>]*data-testid="live-earnings-headline-baseline"[^>]*>/);
+    expect(openTagMatch).not.toBeNull();
+    expect(openTagMatch?.[0]).toMatch(/class="[^"]*items-baseline[^"]*"/);
+
+    const baselineHtml = innerHtml(out, 'live-earnings-headline-baseline');
+    expect(baselineHtml).toContain('data-testid="live-earnings-gold-10"');
+    expect(baselineHtml).toContain('data-testid="live-earnings-xp-10"');
   });
 });
 
@@ -196,15 +283,15 @@ describe('EarningsPanel — the XP marker is always mounted and reachable', () =
   });
 });
 
-describe('EarningsPanel — session duration and reset live in the header', () => {
-  it('formats sessionSeconds with the shared live-duration formatter', () => {
+describe('EarningsPanel — elapsed and reset live in the headline band', () => {
+  it('the Elapsed tile formats sessionSeconds with the shared live-duration formatter', () => {
     const out = html(earnings({ sessionSeconds: 90 }));
-    expect(cellText(out, 'live-earnings-session-duration')).toBe('Session 1:30');
+    expect(cellText(out, 'live-earnings-elapsed')).toBe('1:30');
   });
 
   it('renders 0:00 rather than throwing before any tick has arrived', () => {
     const out = html(null);
-    expect(cellText(out, 'live-earnings-session-duration')).toBe('Session 0:00');
+    expect(cellText(out, 'live-earnings-elapsed')).toBe('0:00');
   });
 
   it('renders a real reset button, icon-only with its accessible name from the copy layer', () => {
@@ -224,17 +311,15 @@ describe('EarningsPanel — session duration and reset live in the header', () =
 describe('EarningsPanel — the reset control invokes the bridge exactly once', () => {
   it('activating the rendered control calls onReset exactly once', () => {
     const onReset = vi.fn();
-    const root = EarningsPanel({ freshness: LIVE, earnings: earnings(), onReset }) as unknown as {
-      props: { children: unknown[] };
-    };
-    const header = root.props.children[0] as { props: { children: { props: { children: unknown[] } } } };
-    const headerRight = header.props.children;
-    const button = headerRight.props.children[1] as { props: { onClick: () => void; 'data-testid': string } };
+    const root = EarningsPanel({ freshness: LIVE, earnings: earnings(), onReset });
+    const button = findElementByTestId(root, 'live-earnings-reset') as {
+      props: { onClick: () => void; 'data-testid': string };
+    } | null;
 
-    expect(button.props['data-testid']).toBe('live-earnings-reset');
-    expect(button.props.onClick).toBe(onReset);
+    expect(button).not.toBeNull();
+    expect(button?.props['data-testid']).toBe('live-earnings-reset');
 
-    button.props.onClick();
+    button?.props.onClick();
     expect(onReset).toHaveBeenCalledTimes(1);
   });
 });
