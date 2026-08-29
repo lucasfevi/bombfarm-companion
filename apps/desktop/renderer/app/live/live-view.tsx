@@ -4,6 +4,7 @@ import { EmptyState } from '@bombfarm/ui';
 import { useCopy } from '../../lib/copy';
 import { useLiveModel } from '../../lib/live/use-live-model';
 import { LivePanel } from './live-panel';
+import { NeverReadEmptyState } from './never-read-empty-state';
 
 /** Presentational components under this tree never touch `window.bfc` themselves — same split as
  *  `consent-modal.tsx`'s own `getBridge()`. */
@@ -40,7 +41,7 @@ export function LiveView({ onReopenConsent }: { onReopenConsent?: () => void }) 
   if (slow === null) {
     return (
       <div data-testid="live-view">
-        <EmptyState title={t.liveNeverReadTitle} description={t.liveNeverReadDescription} />
+        <NeverReadEmptyState freshness={freshness} onReopenConsent={onReopenConsent} />
       </div>
     );
   }

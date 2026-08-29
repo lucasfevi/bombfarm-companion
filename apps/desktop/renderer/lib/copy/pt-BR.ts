@@ -223,9 +223,12 @@ export const ptBR: Copy = {
   liveCountdownEstimatedQualifier: 'estimativa, não uma leitura direta',
   liveCountdownPausedQualifier: 'não está contando no momento',
 
-  // liveNeverRead* — nada foi lido da conta ainda nesta sessão
+  // liveNeverRead* — nada foi lido da conta ainda nesta sessão. O motivo de nada ter chegado vem
+  // das strings liveGapReason* acima (esta tela reutiliza o texto em vez de repetir "abra o jogo"
+  // enquanto o app já está funcionando); esta é a única descrição restante, para o caso em que a
+  // transmissão já está ao vivo e só falta a leitura da conta.
   liveNeverReadTitle: 'Nada foi lido da sua conta ainda',
-  liveNeverReadDescription: 'Abra o jogo com o companion em execução, para que ele tenha algo para ler.',
+  liveNeverReadAccountPendingDescription: 'O app está conectado ao jogo e lendo sua conta agora.',
 
   // liveEarnings* — o painel de Ganhos: valores medidos de ouro/XP, enviados já prontos e só
   // formatados aqui, nunca recalculados.

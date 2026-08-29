@@ -222,9 +222,12 @@ export const en = {
   liveCountdownEstimatedQualifier: 'estimate, not a direct reading',
   liveCountdownPausedQualifier: 'not currently counting down',
 
-  // liveNeverRead* — nothing has been read from the account yet this session
+  // liveNeverRead* — nothing has been read from the account yet this session. The reason nothing
+  // has arrived comes from the liveGapReason* copy above (this screen's empty state reuses it
+  // rather than repeating "open the game" while the app is already working); this is the one
+  // description left for the case where the stream is live and only the account read is pending.
   liveNeverReadTitle: 'Nothing read from your account yet',
-  liveNeverReadDescription: 'Open the game with the companion running, so it has something to read.',
+  liveNeverReadAccountPendingDescription: 'The app is connected to the game and reading your account now.',
 
   // liveEarnings* — the Earnings panel: measured gold/XP figures, sent as finished values and
   // only ever formatted here, never recomputed.
