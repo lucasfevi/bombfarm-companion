@@ -45,12 +45,34 @@ function html(data: LiveEarnings | null, freshness: ReachedLiveFreshness = LIVE)
   return renderToStaticMarkup(createElement(EarningsPanel, { freshness, earnings: data, onReset: () => undefined }));
 }
 
-/** Reads the text content of the one element carrying `data-testid="{testId}"`, regardless of
- *  what else is on the tag (class, other attributes) or their order. */
+/**
+ * Reads the full text content of the one element carrying `data-testid="{testId}"`, regardless of
+ * what else is on the tag (class, other attributes, order) and regardless of markup nested inside
+ * it (the rate cells nest a de-emphasised `/h` suffix span inside their value span) — a depth
+ * counter over same/other tags between the opening tag and its matching close, concatenating every
+ * text token found in between.
+ */
 function cellText(out: string, testId: string): string {
-  const match = out.match(new RegExp(`data-testid="${testId}"[^>]*>([^<]*)<`));
-  if (!match) throw new Error(`no element with data-testid="${testId}" found in:\n${out}`);
-  return match[1] ?? '';
+  const openTag = out.match(new RegExp(`<([a-zA-Z0-9]+)[^>]*data-testid="${testId}"[^>]*>`));
+  if (!openTag) throw new Error(`no element with data-testid="${testId}" found in:\n${out}`);
+  const tagName = openTag[1];
+  const rest = out.slice((openTag.index ?? 0) + openTag[0].length);
+  const tokenRe = /<\/([a-zA-Z0-9]+)[^>]*>|<([a-zA-Z0-9]+)[^>]*?(\/)?>|[^<]+/g;
+  let depth = 0;
+  let text = '';
+  let match: RegExpExecArray | null;
+  while ((match = tokenRe.exec(rest))) {
+    const [, closeName, openName, selfClose] = match;
+    if (closeName) {
+      if (depth === 0 && closeName === tagName) break;
+      depth -= 1;
+    } else if (openName) {
+      if (!selfClose) depth += 1;
+    } else {
+      text += match[0];
+    }
+  }
+  return text;
 }
 
 describe('EarningsPanel — every cell in every state', () => {
@@ -62,7 +84,6 @@ describe('EarningsPanel — every cell in every state', () => {
     expect(cellText(out, 'live-earnings-gold-session')).toBe('90k/h');
     expect(cellText(out, 'live-earnings-xp-10')).toBe('5k/h');
     expect(cellText(out, 'live-earnings-xp-session')).toBe('4.5k/h');
-    expect(cellText(out, 'live-earnings-xp-current')).toBe('—');
   });
 
   it('no data at all: every rate/balance position is an em dash, never 0', () => {
@@ -72,7 +93,6 @@ describe('EarningsPanel — every cell in every state', () => {
       'live-earnings-gold-current',
       'live-earnings-gold-10',
       'live-earnings-gold-session',
-      'live-earnings-xp-current',
       'live-earnings-xp-10',
       'live-earnings-xp-session',
     ]) {
@@ -88,24 +108,44 @@ describe('EarningsPanel — every cell in every state', () => {
     expect(cellText(out, 'live-earnings-gold-session')).toBe('90k/h');
     expect(cellText(out, 'live-earnings-xp-10')).toBe('5k/h');
   });
-
-  it('the XP row current cell is a literal em dash in every state — there is no account-level XP total', () => {
-    for (const data of [earnings(), null]) {
-      expect(cellText(html(data), 'live-earnings-xp-current')).toBe('—');
-    }
-  });
 });
 
-describe('EarningsPanel — the coverage label states its true span, never a claimed 10 minutes it does not have', () => {
+describe('EarningsPanel — labels', () => {
+  it('the three static labels read the plain copy strings', () => {
+    const out = html(earnings());
+
+    expect(cellText(out, 'live-earnings-gold-current')).toBeTruthy();
+    expect(out).toContain(en.liveEarningsCurrentGoldLabel);
+    expect(out).toContain(en.liveEarningsGoldSessionLabel);
+    expect(out).toContain(en.liveEarningsXpSessionLabel);
+  });
+
   it.each([
     [15, 1],
     [59, 1],
     [125, 2],
     [600, 10],
     [700, 10],
-  ])('coverageSeconds=%d renders "Last %d min"', (coverageSeconds, minutes) => {
-    const out = html(earnings({ coverageSeconds }));
-    expect(cellText(out, 'live-earnings-column-recent')).toBe(`Last ${String(minutes)} min`);
+  ])(
+    'coverageSeconds=%d: both "last N min" labels state the true span, never a claimed 10 minutes they do not have',
+    (coverageSeconds, minutes) => {
+      const out = html(earnings({ coverageSeconds }));
+
+      expect(cellText(out, 'live-earnings-gold-10-label')).toBe(`gold · last ${String(minutes)} min`);
+      expect(cellText(out, 'live-earnings-xp-10-label')).toBe(`xp · last ${String(minutes)} min`);
+    },
+  );
+
+  it('reserves space for the longest coverage form even while showing the shortest one', () => {
+    const out = html(earnings({ coverageSeconds: 15 }));
+
+    // The visible text is the short form ("last 1 min"), but an invisible sizer carrying the
+    // longest realistic form ("last 10 min") is always mounted alongside it — that reservation,
+    // not the visible text, is what keeps the cell from growing when real coverage passes a digit
+    // boundary (see the `RecentLabel` comment in `earnings-panel.tsx`).
+    expect(cellText(out, 'live-earnings-gold-10-label')).toBe('gold · last 1 min');
+    expect(out).toMatch(/aria-hidden="true" class="invisible[^"]*">gold · last 10 min</);
+    expect(out).toMatch(/aria-hidden="true" class="invisible[^"]*">xp · last 10 min</);
   });
 });
 
@@ -167,9 +207,17 @@ describe('EarningsPanel — session duration and reset live in the header', () =
     expect(cellText(out, 'live-earnings-session-duration')).toBe('Session 0:00');
   });
 
-  it('renders a real reset button', () => {
+  it('renders a real reset button, icon-only with its accessible name from the copy layer', () => {
     const out = html(earnings());
-    expect(out).toMatch(/<button[^>]*data-testid="live-earnings-reset"/);
+    const tagMatch = out.match(/<button[^>]*data-testid="live-earnings-reset"[^>]*>([\s\S]*?)<\/button>/);
+
+    expect(tagMatch).not.toBeNull();
+    const [fullTag, inner] = tagMatch as unknown as [string, string];
+    expect(fullTag).toContain(`aria-label="${en.liveEarningsResetAria}"`);
+    // The icon inside stays decorative — it must not carry a second accessible name (no `label`
+    // passed to `Icon`), or the button would end up with two conflicting accessible names.
+    expect(inner).not.toContain('aria-label');
+    expect(inner).not.toContain('role="img"');
   });
 });
 

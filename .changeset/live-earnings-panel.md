@@ -5,9 +5,11 @@
 "@bombfarm/contracts": patch
 ---
 
-The Live tab now shows an Earnings panel above the heroes panel: gold balance and gold/XP rates
-for the last few minutes and the whole session, plus a session-length readout and a control to
-reset the session figures. Every rate the app has not measured yet reads as a dash, never a zero.
+The Live tab now shows an Earnings panel above the heroes panel: the current gold balance (with the
+in-game coin), gold rates for the last few minutes and the whole session, and the quieter XP
+counterparts of both — one row of figures divided by thin rules, rather than a table. Every rate
+the app has not measured yet reads as a dash, never a zero, and the session control that used to
+read "Reset session" is now an icon button with the same accessible name.
 
 The compact number formatter (`90200` → `90.2k`) moved from the web planner into the shared design
 system so the desktop panel renders the exact same figures the web planner does — the web planner's
