@@ -2,6 +2,7 @@ import path from 'node:path';
 import { app, BrowserWindow, ipcMain, Menu } from 'electron';
 import {
   DEFAULT_SETTINGS,
+  disabledUpdateStatus,
   isIpcChannel,
   liveGap,
   resolveStartupLocale,
@@ -15,6 +16,7 @@ import {
   type LiveDiagnosticsDumpOutcome,
   type LiveView,
   type SettingsWriteResult,
+  type UpdateStatus,
 } from '@bombfarm/contracts';
 import { createPacingGate, initialConsent } from '@bombfarm/game-api';
 import { createAccountNotifier, resolveAccountView } from './account-view.js';
@@ -44,6 +46,7 @@ import {
   resolveReplayCapturePath,
 } from './live-source/replay-tap.js';
 import { configureLogging, log } from './logging.js';
+import { createElectronUpdateService, type UpdateService } from './updates/index.js';
 import { createAccountStore, type AccountStore } from './storage/account-store.js';
 import { createStorage, openAccountDatabase, type Storage } from './storage/index.js';
 
@@ -65,6 +68,7 @@ let lastIngestedRotationBody: string | null = null;
 // (inside `whenReady()`, where `app.getLocale()` is documented valid) so `settings:get` never
 // races a caller that arrives before boot finishes.
 let currentSettings: AppSettings = DEFAULT_SETTINGS;
+let updateService: UpdateService | null = null;
 
 function emitEvent<C extends IpcEventChannel>(channel: C, payload: IpcEvents[C]): void {
   mainWindow?.webContents.send(`bfc:event:${channel}`, payload);
@@ -166,6 +170,16 @@ function registerIpcHandlers(): void {
     'live:get': (): LiveView => liveSource?.getView() ?? defaultLiveView(),
     'live:dumpDiagnostics': (): LiveDiagnosticsDumpOutcome =>
       liveSource?.dumpDiagnostics() ?? { written: false, reason: 'no-source' },
+    // `disabledUpdateStatus` is the pre-bootstrap answer as well as the dev-flavor one: a
+    // renderer that asks before `bootstrap()` has built the service gets the same inert status it
+    // would get from an unpackaged run, never a throw.
+    'updates:get': (): UpdateStatus => updateService?.getStatus() ?? disabledUpdateStatus(app.getVersion()),
+    'updates:check': (): Promise<UpdateStatus> | UpdateStatus =>
+      updateService?.check() ?? disabledUpdateStatus(app.getVersion()),
+    'updates:download': (): Promise<UpdateStatus> | UpdateStatus =>
+      updateService?.download() ?? disabledUpdateStatus(app.getVersion()),
+    'updates:installOnRestart': (): UpdateStatus =>
+      updateService?.installOnRestart() ?? disabledUpdateStatus(app.getVersion()),
   };
 
   ipcMain.handle('bfc:invoke', (_event, channel: string) => {
@@ -459,6 +473,11 @@ async function bootstrap(): Promise<void> {
 
   accountRefresh.start();
   log.info({ scope: 'main', event: 'account-refresh.started' });
+
+  updateService = await createElectronUpdateService((status) => {
+    emitEvent('updates:changed', status);
+  });
+  updateService.start();
 }
 
 function resolveBootEnv(): AppEnv {
@@ -540,6 +559,8 @@ if (!gotLock) {
   // anyway. See fix/fixture-tick-after-db-close — closing storage before stopping the fixture
   // ticker produced an uncaught "database is not open" exception on quit.
   app.on('before-quit', () => {
+    updateService?.stop();
+    updateService = null;
     gameReader?.stop();
     gameReader = null;
     accountRefresh?.stop();

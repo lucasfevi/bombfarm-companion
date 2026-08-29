@@ -7,8 +7,9 @@ import type {
   GameStatusInfo,
   LiveDiagnosticsDumpOutcome,
   SettingsWriteReason,
+  UpdateStatus,
 } from '@bombfarm/contracts';
-import { DEFAULT_SETTINGS } from '@bombfarm/contracts';
+import { DEFAULT_SETTINGS, disabledUpdateStatus } from '@bombfarm/contracts';
 import { AppShell, BrandMark, SegmentedToggle, StatusChip } from '@bombfarm/ui';
 // Proves the renderer can import @bombfarm/domain: a value import from a
 // FILE subpath that itself value-imports ./data/catalog.json, so a dist missing the JSON data
@@ -29,6 +30,7 @@ import { InventoryView } from './inventory/inventory-view';
 import { ConsentSection } from './settings/consent-section';
 import { DiagnosticsSection } from './settings/diagnostics-section';
 import { LanguageSection } from './settings/language-section';
+import { UpdatesSection } from './settings/updates-section';
 
 const DEFAULT_NAV_ID = 'live';
 
@@ -130,6 +132,9 @@ function HomePageContent({
   const [consent, setConsent] = useState<ConsentRecord | null>(null);
   const [consentForceOpen, setConsentForceOpen] = useState(false);
   const [diagnosticsDumpResult, setDiagnosticsDumpResult] = useState<LiveDiagnosticsDumpOutcome | null>(null);
+  // Seeded disabled rather than null so the Updates section renders its final height on first
+  // paint; main answers `updates:get` with the same inert status when no service exists yet.
+  const [updateStatus, setUpdateStatus] = useState<UpdateStatus>(() => disabledUpdateStatus(''));
 
   useEffect(() => {
     const bridge = getBridge();
@@ -169,6 +174,38 @@ function HomePageContent({
 
   const onConsentDecided = () => {
     setConsentForceOpen(false);
+  };
+
+  useEffect(() => {
+    const bridge = getBridge();
+    if (!bridge) return;
+
+    void bridge
+      .invoke('updates:get')
+      .then(setUpdateStatus)
+      .catch(() => {});
+
+    // Every transition arrives here, including the ones nobody clicked for: download progress
+    // and the six-hourly background check.
+    return bridge.on('updates:changed', setUpdateStatus);
+  }, []);
+
+  const onUpdateCheck = () => {
+    const bridge = getBridge();
+    if (!bridge) return;
+    void bridge.invoke('updates:check').then(setUpdateStatus);
+  };
+
+  const onUpdateDownload = () => {
+    const bridge = getBridge();
+    if (!bridge) return;
+    void bridge.invoke('updates:download').then(setUpdateStatus);
+  };
+
+  const onUpdateInstall = () => {
+    const bridge = getBridge();
+    if (!bridge) return;
+    void bridge.invoke('updates:installOnRestart').then(setUpdateStatus);
   };
 
   useEffect(() => {
@@ -261,6 +298,12 @@ function HomePageContent({
               <LanguageSection locale={locale} onLocaleChange={onLocaleChange} persistWarning={persistWarning} />
               <ConsentSection onRevoke={onConsentRevoke} />
               <DiagnosticsSection onSave={onSaveDiagnostics} result={diagnosticsDumpResult} />
+              <UpdatesSection
+                status={updateStatus}
+                onCheck={onUpdateCheck}
+                onDownload={onUpdateDownload}
+                onInstall={onUpdateInstall}
+              />
             </>
           ) : activeNavId === 'planning' ? (
             <PlanningView />

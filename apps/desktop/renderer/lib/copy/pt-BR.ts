@@ -140,6 +140,38 @@ export const ptBR: Copy = {
   settingsDiagnosticsReasonWriteFailed: 'Não foi possível gravar o arquivo. Verifique o local de salvamento e tente de novo.',
   settingsDiagnosticsReasonNoSource: 'Ainda não há nada para salvar. O app ainda não se conectou ao jogo.',
 
+  // settingsUpdates* — o controle de procurar/baixar/instalar atualizações
+  settingsUpdatesSectionTitle: 'Atualizações',
+  settingsUpdatesCurrentVersionLabel: 'Versão instalada',
+  settingsUpdatesChannelHelp: 'Canal de atualização: {channel}.',
+  settingsUpdatesCheckLabel: 'Procurar atualizações',
+  settingsUpdatesCheckHelp:
+    'Também procura sozinho pouco depois de o app abrir, e a cada seis horas enquanto ele ficar aberto.',
+  settingsUpdatesCheckAction: 'Procurar agora',
+  settingsUpdatesDownloadLabel: 'Uma versão nova está esperando',
+  settingsUpdatesDownloadHelp: 'Baixar não interrompe nada — você instala quando quiser.',
+  settingsUpdatesDownloadAction: 'Baixar',
+  settingsUpdatesInstallLabel: 'Terminar a atualização',
+  settingsUpdatesInstallHelp: 'Leva alguns segundos. O app abre de novo sozinho.',
+  settingsUpdatesInstallAction: 'Reiniciar e instalar',
+  settingsUpdatesStatusChecking: 'Procurando atualizações…',
+  settingsUpdatesStatusUpToDate: 'Você está na versão mais recente.',
+  settingsUpdatesStatusAvailableTitle: 'A versão {version} está disponível',
+  settingsUpdatesStatusAvailableBody: 'Baixe agora, ou deixe para depois — o app pergunta de novo mais tarde.',
+  settingsUpdatesStatusDownloading: 'Baixando a versão {version}… {percent}%',
+  settingsUpdatesStatusReadyTitle: 'A versão {version} está pronta para instalar',
+  settingsUpdatesStatusReadyBody: 'O app fecha e abre de novo na versão nova. Nada do que você salvou é perdido.',
+  settingsUpdatesStatusDisabled:
+    'As atualizações estão desligadas nesta versão. As versões Nightly, Beta e estável instaladas se atualizam sozinhas; uma versão de desenvolvimento local não.',
+  settingsUpdatesErrorTitle: 'Não foi possível procurar atualizações',
+  settingsUpdatesReasonOffline:
+    'Não foi possível acessar o servidor de atualizações. Verifique sua conexão e tente de novo.',
+  settingsUpdatesReasonRateLimited:
+    'O servidor de atualizações está pedindo para irmos mais devagar. Espere alguns minutos e tente de novo.',
+  settingsUpdatesReasonNoRelease: 'Ainda não existe uma versão publicada para esta build.',
+  settingsUpdatesReasonUnknown:
+    'Algo deu errado. Tente de novo e, se continuar falhando, salve um arquivo para relatório de erro abaixo.',
+
   // consentGate* — o portão de permissão mostrado no lugar do conteúdo do app quando o acesso não é permitido
   consentGateTitle: 'Este app precisa da sua permissão para funcionar',
   consentGateBody:

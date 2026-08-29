@@ -19,6 +19,7 @@ import type {
   LiveGapReason,
   SectionStatus,
   SettingsWriteReason,
+  UpdateErrorReason,
 } from '@bombfarm/contracts';
 import { BCP47_BY_LOCALE, DEFAULT_SETTINGS, toDomainLang } from '@bombfarm/contracts';
 import type { StatKey } from '@bombfarm/domain/model';
@@ -93,6 +94,16 @@ export const DIAGNOSTICS_DUMP_REASON_COPY_KEY = {
   'write-failed': 'settingsDiagnosticsReasonWriteFailed',
   'no-source': 'settingsDiagnosticsReasonNoSource',
 } as const satisfies Record<LiveDiagnosticsDumpReason, CopyKey>;
+
+/** Every `UpdateErrorReason` (`@bombfarm/contracts`), mapped exhaustively — a new reason is a
+ *  compile error, matching this file's other exhaustive maps. Read by
+ *  `app/settings/updates-section.tsx`'s error `Banner`. */
+export const UPDATE_ERROR_REASON_COPY_KEY = {
+  offline: 'settingsUpdatesReasonOffline',
+  'rate-limited': 'settingsUpdatesReasonRateLimited',
+  'no-release': 'settingsUpdatesReasonNoRelease',
+  unknown: 'settingsUpdatesReasonUnknown',
+} as const satisfies Record<UpdateErrorReason, CopyKey>;
 
 /**
  * Every `LiveGapReason` (`@bombfarm/contracts`), mapped exhaustively — a new reason is a compile
