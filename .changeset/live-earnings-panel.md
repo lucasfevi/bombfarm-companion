@@ -112,3 +112,12 @@ exactly as tall whether or not an age is showing anywhere in them. The gold- and
 dropped "session" (the grid's own rows and columns already say as much) and the two total labels
 lost "da sessão"/their trailing repeat of it, so all six fit their fixed column comfortably in both
 languages.
+
+The left half's own vertical rule could still drift: its column had no width of its own, so a
+compact gold or XP figure switching between digit counts resized the column and slid the rule (and
+the whole six-figure grid beside it) sideways. That column is now a single fixed width, sized from
+the widest of its own possible contents rather than letting its children set it, so neither a
+changing figure nor a language switch can move it again. With the column itself now fixed, the
+per-line width reservations the coverage line and the two unit lines used to carry (each holding
+its own longest form in either language) no longer do anything the column doesn't already cover,
+so they are gone — those lines are now plain right-aligned text.

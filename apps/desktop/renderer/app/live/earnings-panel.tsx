@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react';
 import type { LiveEarnings } from '@bombfarm/contracts';
 import { formatCompactNumber, Icon, Panel, Tooltip } from '@bombfarm/ui';
-import { copyVariants, sub, useCopy } from '../../lib/copy';
+import { sub, useCopy } from '../../lib/copy';
 import { formatCapturedAt } from '../../lib/format';
 import type { ReachedLiveFreshness } from './freshness-line';
 import { formatLiveDurationSeconds } from './format-live-duration';
@@ -25,39 +25,6 @@ function coverageMinutesLabel(coverageSeconds: number): number {
 
 function numberText(value: number | null | undefined): ReactNode {
   return value == null ? EM_DASH : formatCompactNumber(value, 1);
-}
-
-/**
- * Stacks the visible text over an always-mounted invisible copy of EVERY locale's candidate string
- * for that same slot, so the box is exactly as wide as the widest of them regardless of which
- * language is active right now — the reservation `RecentWindowLabel`'s single-locale sizer already
- * used, generalised to cover the case where the two languages themselves differ in width (the
- * headline unit lines below). `candidates` comes from `copyVariants()`, never a raw import of a
- * single locale module, so a reword of either language's string moves this with it.
- */
-function ReservedLine({
-  candidates,
-  testId,
-  text,
-  className,
-}: {
-  candidates: readonly string[];
-  testId?: string;
-  text: ReactNode;
-  className: string;
-}) {
-  return (
-    <span className={className}>
-      {candidates.map((candidate, index) => (
-        <span key={index} aria-hidden className="invisible col-start-1 row-start-1">
-          {candidate}
-        </span>
-      ))}
-      <span data-testid={testId} className="col-start-1 row-start-1">
-        {text}
-      </span>
-    </span>
-  );
 }
 
 /** Right-aligned label/value/age block for the right half's six figures. Every block reserves the
@@ -119,11 +86,6 @@ export function EarningsPanel({
   const coverageSeconds = earnings?.coverageSeconds ?? 0;
   const minutes = coverageMinutesLabel(coverageSeconds);
   const recentWindowText = sub(t.liveEarningsRecentWindowLabel, { minutes });
-  const recentWindowCandidates = copyVariants('liveEarningsRecentWindowLabel').map((template) =>
-    sub(template, { minutes: MAX_COVERAGE_MINUTES }),
-  );
-  const goldUnitCandidates = copyVariants('liveEarningsGoldHeadlineUnit');
-  const xpUnitCandidates = copyVariants('liveEarningsXpHeadlineUnit');
 
   const balance = earnings?.goldBalance ?? null;
   const balanceCapturedAt = earnings?.goldBalanceCapturedAt ?? null;
@@ -151,56 +113,59 @@ export function EarningsPanel({
     <Panel data-testid="live-earnings" aria-label={t.liveEarningsTitle}>
       <div className="flex items-start justify-between gap-6">
         <div className="flex items-stretch gap-6">
-          <div className="flex flex-col items-end gap-1.5 border-r border-line/55 pr-6">
-            <ReservedLine
-              candidates={recentWindowCandidates}
-              testId="live-earnings-recent-window-label"
-              text={recentWindowText}
-              className="relative grid text-right text-[10.5px] text-muted tabular-nums whitespace-nowrap"
-            />
+          {/* Fixed at its widest content rather than sized to whichever child is currently
+              longest — measured against the real rendered font: the gold figure's widest
+              realistic compact form ("999.9m") at its own 38px bold came out widest at ~139.4px,
+              ahead of that same form at the XP figure's 19px, the coverage label's longest form
+              in either language ("últimos 10 min"), and both unit strings in either language.
+              140px (8.75rem) covers it, so neither a changing figure nor a language switch can
+              move the divider after it. */}
+          <div
+            data-testid="live-earnings-headline-column"
+            className="flex w-[8.75rem] shrink-0 flex-col items-end gap-1.5 border-r border-line/55 pr-6"
+          >
+            <span
+              data-testid="live-earnings-recent-window-label"
+              className="text-right text-[10.5px] text-muted tabular-nums whitespace-nowrap"
+            >
+              {recentWindowText}
+            </span>
             <span data-testid="live-earnings-gold-10" className="text-[38px] font-bold leading-none text-gold tabular-nums whitespace-nowrap">
               {numberText(earnings?.gold10)}
             </span>
-            <ReservedLine
-              candidates={goldUnitCandidates}
-              testId="live-earnings-gold-10-unit"
-              text={t.liveEarningsGoldHeadlineUnit}
-              className="relative grid text-right text-[10.5px] text-muted tabular-nums whitespace-nowrap"
-            />
+            <span
+              data-testid="live-earnings-gold-10-unit"
+              className="text-right text-[10.5px] text-muted tabular-nums whitespace-nowrap"
+            >
+              {t.liveEarningsGoldHeadlineUnit}
+            </span>
             <span
               data-testid="live-earnings-xp-10"
               className="text-[19px] font-bold leading-none text-info tabular-nums whitespace-nowrap"
             >
               {numberText(earnings?.xp10)}
             </span>
-            <span className="relative grid text-right text-[10.5px] text-muted tabular-nums whitespace-nowrap">
-              {xpUnitCandidates.map((candidate, index) => (
-                <span key={index} aria-hidden className="invisible col-start-1 row-start-1">
-                  {candidate}
-                </span>
-              ))}
-              <Tooltip.Provider>
-                <Tooltip.Root>
-                  <Tooltip.Trigger
-                    type="button"
-                    data-testid="live-earnings-xp-help-trigger"
-                    aria-label={`${t.liveEarningsXpHeadlineUnit}: ${t.liveEarningsXpHelpBody}`}
-                    className="col-start-1 row-start-1 w-full border-0 bg-transparent p-0 text-right text-muted text-[10.5px] font-normal underline decoration-dotted underline-offset-2 cursor-help hover:text-ink focus-visible:rounded-sm focus-visible:[outline-style:solid] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
-                  >
-                    {t.liveEarningsXpHeadlineUnit}
-                  </Tooltip.Trigger>
-                  <Tooltip.Portal>
-                    <Tooltip.Positioner sideOffset={6}>
-                      <Tooltip.Popup>
-                        <p className="m-0" data-testid="live-earnings-xp-help-body">
-                          {t.liveEarningsXpHelpBody}
-                        </p>
-                      </Tooltip.Popup>
-                    </Tooltip.Positioner>
-                  </Tooltip.Portal>
-                </Tooltip.Root>
-              </Tooltip.Provider>
-            </span>
+            <Tooltip.Provider>
+              <Tooltip.Root>
+                <Tooltip.Trigger
+                  type="button"
+                  data-testid="live-earnings-xp-help-trigger"
+                  aria-label={`${t.liveEarningsXpHeadlineUnit}: ${t.liveEarningsXpHelpBody}`}
+                  className="block w-full border-0 bg-transparent p-0 text-right text-muted text-[10.5px] font-normal underline decoration-dotted underline-offset-2 cursor-help hover:text-ink focus-visible:rounded-sm focus-visible:[outline-style:solid] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+                >
+                  {t.liveEarningsXpHeadlineUnit}
+                </Tooltip.Trigger>
+                <Tooltip.Portal>
+                  <Tooltip.Positioner sideOffset={6}>
+                    <Tooltip.Popup>
+                      <p className="m-0" data-testid="live-earnings-xp-help-body">
+                        {t.liveEarningsXpHelpBody}
+                      </p>
+                    </Tooltip.Popup>
+                  </Tooltip.Positioner>
+                </Tooltip.Portal>
+              </Tooltip.Root>
+            </Tooltip.Provider>
           </div>
           <div className="grid grid-cols-[repeat(3,7rem)] gap-x-4 gap-y-3">
             <Block

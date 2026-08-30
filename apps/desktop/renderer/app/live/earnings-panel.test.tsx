@@ -201,15 +201,11 @@ describe('EarningsPanel — labels', () => {
     },
   );
 
-  it('reserves space for the longest coverage form even while showing the shortest one', () => {
+  it('shows the short coverage form as plain text, growing no invisible sizer of its own — the fixed column already reserves the space', () => {
     const out = html(earnings({ coverageSeconds: 15 }));
 
-    // The visible text is the short form ("last 1 min"), but an invisible sizer carrying the
-    // longest realistic form ("last 10 min") is always mounted alongside it — that reservation,
-    // not the visible text, is what keeps the context line from growing when real coverage passes
-    // a digit boundary.
     expect(cellText(out, 'live-earnings-recent-window-label')).toBe('last 1 min');
-    expect(out).toMatch(/aria-hidden="true" class="invisible[^"]*">last 10 min</);
+    expect(out).not.toMatch(/aria-hidden="true" class="invisible[^"]*">last 10 min/);
   });
 
   it('carries no session-average readout — the dedicated session gold-rate block says that now', () => {
@@ -219,19 +215,31 @@ describe('EarningsPanel — labels', () => {
   });
 });
 
-describe('EarningsPanel — the left column reserves width for both languages, not just the active one', () => {
-  it('the coverage label reserves against both languages\' longest form, even while only English is active', () => {
-    const out = html(earnings({ coverageSeconds: 15 }));
-    // English is the active/visible locale in every test here (mocked `useCopy`), but the
-    // reservation must also hold the Portuguese longest form so switching languages later cannot
-    // move the vertical rule.
-    expect(out).toMatch(/aria-hidden="true" class="invisible[^"]*">últimos 10 min</);
+describe('EarningsPanel — the headline column is a fixed width, not sized to its content', () => {
+  it('the column carries one explicit fixed width, shrink-proof against its flex sibling', () => {
+    const out = html(earnings());
+    expect(out).toContain('data-testid="live-earnings-headline-column"');
+    expect(out).toContain(
+      'class="flex w-[8.75rem] shrink-0 flex-col items-end gap-1.5 border-r border-line/55 pr-6"',
+    );
   });
 
-  it('the gold headline unit line reserves against both languages\' unit string', () => {
-    const out = html(earnings());
+  it('the coverage label and both unit lines carry no per-line reservation of their own — the column width already covers it', () => {
+    const out = html(earnings({ coverageSeconds: 15 }));
+    expect(cellText(out, 'live-earnings-recent-window-label')).toBe('last 1 min');
     expect(cellText(out, 'live-earnings-gold-10-unit')).toBe(en.liveEarningsGoldHeadlineUnit);
-    expect(out).toMatch(/aria-hidden="true" class="invisible[^"]*">ouro \/ h</);
+    expect(out).not.toMatch(/aria-hidden="true" class="invisible[^"]*">(últimos|ouro)/);
+  });
+
+  it('the gold and xp headline figures carry no width reservation of their own — the column supplies it', () => {
+    const out = html(earnings());
+    const goldTag = out.match(/<span[^>]*data-testid="live-earnings-gold-10"[^>]*>/)?.[0] ?? '';
+    const xpTag = out.match(/<span[^>]*data-testid="live-earnings-xp-10"[^>]*>/)?.[0] ?? '';
+
+    for (const tag of [goldTag, xpTag]) {
+      expect(tag).not.toMatch(/w-\[\d+ch\]/);
+      expect(tag).not.toContain('relative grid');
+    }
   });
 });
 

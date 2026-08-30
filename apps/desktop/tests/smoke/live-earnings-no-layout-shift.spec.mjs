@@ -111,68 +111,79 @@ async function switchToPortuguese(page) {
 }
 
 /**
+ * Every test in this file needs the same boot: launch against the replayed fixture account,
+ * dismiss consent, wait for the Earnings panel to actually mount. Pulled out once three tests
+ * needed it rather than three near-identical copies of the same ~25 lines.
+ */
+async function launchEarningsPanelApp(tmpPrefix) {
+  const userDataDir = fs.mkdtempSync(path.join(os.tmpdir(), tmpPrefix));
+  const electronExec = path.join(
+    desktopRoot,
+    'node_modules',
+    'electron',
+    'dist',
+    process.platform === 'win32' ? 'electron.exe' : 'electron',
+  );
+
+  const app = await electron.launch({
+    executablePath: electronExec,
+    args: [desktopRoot],
+    env: {
+      ...process.env,
+      NODE_ENV: 'production',
+      BFC_FLAVOR: 'dev',
+      BFC_GAME_READER: 'fixture',
+      BFC_FIXTURE_ACCOUNT_FILE: ACCOUNT_FULL_FIXTURE,
+      // Dev-only replay live source (`isReplayLiveSourceEnabled`) — an unpackaged launch like
+      // this one, exactly what mounts the Earnings panel's real committed-capture data path
+      // without a game process on the runner.
+      BFC_LIVE_SOURCE: 'replay',
+      BFC_USER_DATA_DIR: userDataDir,
+      // SAFETY, reproduced from `i18n.spec.mjs`: points the session-token read away from the real
+      // %APPDATA%/Godot session file, so an account refresh this spec triggers can never issue a
+      // live, authenticated request using whoever's session happens to exist on the runner.
+      BFC_TOKEN_PATH_OVERRIDE: path.join(desktopRoot, 'tests', 'smoke', '.no-such-session.cfg'),
+      ELECTRON_ENABLE_LOGGING: '1',
+    },
+  });
+
+  const page = await app.firstWindow();
+  await page.waitForSelector('[data-testid="app-ready"]', { timeout: 60_000 });
+
+  const consentModal = page.getByTestId('consent-modal');
+  await expect(consentModal).toBeVisible({ timeout: 30_000 });
+  await page.getByTestId('consent-accept').click();
+  await expect(consentModal).toBeHidden({ timeout: 15_000 });
+
+  // Live is the default tab. The Earnings panel only mounts once the fixture account has resolved
+  // at least once — `slow !== null` in `live-view.tsx` — so wait for one of its own cells rather
+  // than a fixed delay.
+  await expect(page.getByTestId('live-earnings-recent-window-label')).toBeVisible({ timeout: 30_000 });
+  await expect(page.getByTestId('live-earnings')).toBeVisible();
+
+  return { app, page, userDataDir };
+}
+
+/**
  * The "last N min" context-line label (`coverageMinutesLabel`, `earnings-panel.tsx`) only ever
  * reads "last 1 min" through "last 10 min" — its shortest and longest real forms. Reaching "last
  * 10 min" legitimately needs ten real minutes of streamed session time (the fold's window is
  * computed off wall-clock time in the main process, nothing here can accelerate it), far past what
  * a smoke suite can spend on one assertion. The property under test is a CSS one regardless — the
- * label reserves space for its own longest form via an always-mounted invisible sizer
- * (`RecentWindowLabel`, `earnings-panel.tsx`), not a size derived from its current content — so
- * this drives the cell straight to its extreme via the DOM and measures every sibling's box around
- * it. Both the mutation and the measurement happen inside one `page.evaluate` call, with no
- * `await` in between, so nothing here races the live stream's own periodic re-render of that same
- * cell.
+ * label sits right-aligned inside the headline column's own fixed-width box
+ * (`live-earnings-headline-column`, `earnings-panel.tsx`), not sized by its own content, so this
+ * drives the cell straight to its extreme via the DOM and measures every sibling's box around it.
+ * The label's own element is allowed to narrow or widen with its text (it is plain right-aligned
+ * text, not a per-line reservation) — what must hold is its right edge and every other element's
+ * full box, both unchanged. Both the mutation and the measurement happen inside one
+ * `page.evaluate` call, with no `await` in between, so nothing here races the live stream's own
+ * periodic re-render of that same cell.
  */
 test.describe('live earnings panel: no layout shift smoke', () => {
-  test('every sibling cell holds its box as the "last N min" label grows from its shortest to its longest form', async () => {
-    const userDataDir = fs.mkdtempSync(path.join(os.tmpdir(), 'bfc-earnings-layout-'));
-    const electronExec = path.join(
-      desktopRoot,
-      'node_modules',
-      'electron',
-      'dist',
-      process.platform === 'win32' ? 'electron.exe' : 'electron',
-    );
-
-    const app = await electron.launch({
-      executablePath: electronExec,
-      args: [desktopRoot],
-      env: {
-        ...process.env,
-        NODE_ENV: 'production',
-        BFC_FLAVOR: 'dev',
-        BFC_GAME_READER: 'fixture',
-        BFC_FIXTURE_ACCOUNT_FILE: ACCOUNT_FULL_FIXTURE,
-        // Dev-only replay live source (`isReplayLiveSourceEnabled`) — an unpackaged launch like
-        // this one, exactly what mounts the Earnings panel's real committed-capture data path
-        // without a game process on the runner.
-        BFC_LIVE_SOURCE: 'replay',
-        BFC_USER_DATA_DIR: userDataDir,
-        // SAFETY, reproduced from `i18n.spec.mjs`: points the session-token read away from the
-        // real %APPDATA%/Godot session file, so an account refresh this spec triggers can never
-        // issue a live, authenticated request using whoever's session happens to exist on the
-        // runner.
-        BFC_TOKEN_PATH_OVERRIDE: path.join(desktopRoot, 'tests', 'smoke', '.no-such-session.cfg'),
-        ELECTRON_ENABLE_LOGGING: '1',
-      },
-    });
+  test('every sibling cell holds its box (and the shrinking label its right edge) as the "last N min" label grows from its shortest to its longest form', async () => {
+    const { app, page, userDataDir } = await launchEarningsPanelApp('bfc-earnings-layout-');
 
     try {
-      const page = await app.firstWindow();
-      await page.waitForSelector('[data-testid="app-ready"]', { timeout: 60_000 });
-
-      const consentModal = page.getByTestId('consent-modal');
-      await expect(consentModal).toBeVisible({ timeout: 30_000 });
-      await page.getByTestId('consent-accept').click();
-      await expect(consentModal).toBeHidden({ timeout: 15_000 });
-
-      // Live is the default tab. The Earnings panel (and this label cell) only mounts once the
-      // fixture account has resolved at least once — `slow !== null` in `live-view.tsx` — so wait
-      // for the cell itself rather than a fixed delay.
-      const recentWindowCell = page.getByTestId('live-earnings-recent-window-label');
-      await expect(recentWindowCell).toBeVisible({ timeout: 30_000 });
-      await expect(page.getByTestId('live-earnings')).toBeVisible();
-
       const shortText = recentWindowLabel(1);
       const longText = recentWindowLabel(10);
 
@@ -183,7 +194,11 @@ test.describe('live earnings panel: no layout shift smoke', () => {
             for (const el of document.querySelectorAll('[data-testid^="live-earnings"]')) {
               const testId = el.getAttribute('data-testid');
               const rect = el.getBoundingClientRect();
-              boxes[testId] = { x: rect.x, y: rect.y, width: rect.width, height: rect.height };
+              // `right` rather than `x`/`width` separately: the label itself right-aligns inside
+              // a fixed-width column, so its own box may legitimately narrow or widen with its
+              // text — what must hold, for it and for every other cell alike, is its right edge,
+              // its vertical position, and its height.
+              boxes[testId] = { right: rect.x + rect.width, y: rect.y, height: rect.height };
             }
             return boxes;
           }
@@ -203,8 +218,8 @@ test.describe('live earnings panel: no layout shift smoke', () => {
       );
 
       const testIds = Object.keys(shortBoxes);
-      // At minimum: the panel, the headline band's two rate figures, the recent-window label, the
-      // session-average readout, the reset control, and the six tiles (`earnings-panel.tsx`'s own
+      // At minimum: the panel, the headline column, the headline band's two rate figures, the
+      // recent-window label, the reset control, and the six tiles (`earnings-panel.tsx`'s own
       // testids) — asserting there is something real to compare, not an empty pass.
       expect(testIds.length).toBeGreaterThanOrEqual(10);
 
@@ -220,43 +235,9 @@ test.describe('live earnings panel: no layout shift smoke', () => {
   });
 
   test('the six blocks share one width and one height, and no label overflows its fixed column, in English and in Portuguese', async () => {
-    const userDataDir = fs.mkdtempSync(path.join(os.tmpdir(), 'bfc-earnings-blocks-'));
-    const electronExec = path.join(
-      desktopRoot,
-      'node_modules',
-      'electron',
-      'dist',
-      process.platform === 'win32' ? 'electron.exe' : 'electron',
-    );
-
-    const app = await electron.launch({
-      executablePath: electronExec,
-      args: [desktopRoot],
-      env: {
-        ...process.env,
-        NODE_ENV: 'production',
-        BFC_FLAVOR: 'dev',
-        BFC_GAME_READER: 'fixture',
-        BFC_FIXTURE_ACCOUNT_FILE: ACCOUNT_FULL_FIXTURE,
-        BFC_LIVE_SOURCE: 'replay',
-        BFC_USER_DATA_DIR: userDataDir,
-        BFC_TOKEN_PATH_OVERRIDE: path.join(desktopRoot, 'tests', 'smoke', '.no-such-session.cfg'),
-        ELECTRON_ENABLE_LOGGING: '1',
-      },
-    });
+    const { app, page, userDataDir } = await launchEarningsPanelApp('bfc-earnings-blocks-');
 
     try {
-      const page = await app.firstWindow();
-      await page.waitForSelector('[data-testid="app-ready"]', { timeout: 60_000 });
-
-      const consentModal = page.getByTestId('consent-modal');
-      await expect(consentModal).toBeVisible({ timeout: 30_000 });
-      await page.getByTestId('consent-accept').click();
-      await expect(consentModal).toBeHidden({ timeout: 15_000 });
-
-      await expect(page.getByTestId('live-earnings-recent-window-label')).toBeVisible({ timeout: 30_000 });
-      await expect(page.getByTestId('live-earnings')).toBeVisible();
-
       const englishBlocks = await measureBlocks(page);
       assertBlocksHoldTheirShape(englishBlocks);
 
@@ -275,6 +256,59 @@ test.describe('live earnings panel: no layout shift smoke', () => {
 
       const currentGoldBlockPt = portugueseBlocks.find((block) => block.testId === 'live-earnings-block-current-gold');
       expect(currentGoldBlockPt?.labelText).toBe(pt('liveEarningsCurrentGoldLabel'));
+
+      await app.close();
+    } finally {
+      await app.close().catch(() => undefined);
+      fs.rmSync(userDataDir, { recursive: true, force: true });
+    }
+  });
+
+  /**
+   * The bug this whole file exists to catch, isolated: the headline column (`earnings-panel.tsx`'s
+   * `live-earnings-headline-column`) used to size itself to whichever child was currently widest,
+   * so the compact gold/xp figures growing or shrinking between character counts — "1k" versus
+   * "999.9m" versus the em-dash no-data state — resized the column and slid its right-hand border
+   * (the divider the owner actually saw move) sideways along with the whole six-block grid beside
+   * it. Driven the same way the "last N min" test above drives its own cell: straight through the
+   * DOM via `page.evaluate`, since reaching these forms from real streamed data would need either
+   * a specific fixture balance or ten real minutes, neither practical for a smoke suite. The
+   * property under test is a CSS one (a fixed-width box does not care what text is inside it), so
+   * driving it this way exercises the real thing.
+   */
+  test('the headline column holds one width, and its divider one x-position, across the gold/xp figures\' shortest, longest, and no-data forms', async () => {
+    const { app, page, userDataDir } = await launchEarningsPanelApp('bfc-earnings-headline-');
+
+    try {
+      const forms = { short: '1k', long: '999.9m', noData: '—' };
+
+      const measurements = await page.evaluate((figureForms) => {
+        const column = document.querySelector('[data-testid="live-earnings-headline-column"]');
+        const gold = document.querySelector('[data-testid="live-earnings-gold-10"]');
+        const xp = document.querySelector('[data-testid="live-earnings-xp-10"]');
+        if (!column) throw new Error('live-earnings-headline-column not found');
+        if (!gold) throw new Error('live-earnings-gold-10 not found');
+        if (!xp) throw new Error('live-earnings-xp-10 not found');
+
+        const results = {};
+        for (const [stateName, text] of Object.entries(figureForms)) {
+          gold.textContent = text;
+          xp.textContent = text;
+          const rect = column.getBoundingClientRect();
+          // The divider is `border-r` on the column itself, so its x-position IS the column's own
+          // right edge.
+          results[stateName] = { width: rect.width, dividerX: rect.right };
+        }
+        return results;
+      }, forms);
+
+      const detail = JSON.stringify(measurements, null, 2);
+
+      const widths = new Set(Object.values(measurements).map((m) => Math.round(m.width)));
+      expect(widths.size, `headline column width must not change across figure forms:\n${detail}`).toBe(1);
+
+      const dividerXs = new Set(Object.values(measurements).map((m) => Math.round(m.dividerX)));
+      expect(dividerXs.size, `divider x-position must not change across figure forms:\n${detail}`).toBe(1);
 
       await app.close();
     } finally {
