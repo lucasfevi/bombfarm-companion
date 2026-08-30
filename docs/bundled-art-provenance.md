@@ -65,12 +65,23 @@ the only one filed under a Portuguese name with a 1-based index (`01_comum`…`0
 are renamed on the way in for the same two reasons the drop sprites are, and the index→rarity
 step is `01` → rarity 0, so a refresh must not read the number as the rarity.
 
+## Hero sprite sequences
+
+Two subdirectories under `hero/` are frame sequences for `SpriteLoop`, not single mirrored icons,
+and neither is published by the wiki.
+
+| Local path (`packages/game-art/assets/hero/…`) | Upstream | Notes |
+| --- | --- | --- |
+| `hero6-bomb-activation/hero_6_bomb_activation_001.png` … `_018.png` | *(game client)* | Not published by the wiki |
+| `hero6-menu-idle/hero6_idle_menu1.png` … `hero6_idle_menu15.png` | *(game client)* `characters/hero_6/animation/menu_idle/hero6_idle_menu1.png` … `hero6_idle_menu15.png` | Not published by the wiki; upstream numbers frames 1–15 with no zero-padding, so a lexical sort of the directory plays frame 10 right after frame 1 — order the sequence numerically |
+
 ## Everything else
 
-`abilities/`, `env/`, `items/`, `hero/`, `icons/`, `key/` and `nav/` mirror upstream at the same
-subpath under their own upstream names. Two of those names are Portuguese
-(`env/minerio_mithril.png`, `env/crystal_rubi.png`) and all twenty ability sprites are, but those
-filenames are **not free to change**: `propIconSrc` and `abilityIconSrc` build a path by joining a
-prop name or ability id straight onto the directory, and those ids come from the game's own save
-and catalog data. Renaming the files would require an id→filename map, and the id itself would
-stay as it is regardless — it is the game's identifier, not a label.
+`abilities/`, `env/`, `items/`, `icons/`, `key/` and `nav/`, and every `hero/` file outside the two
+sequence subdirectories above, mirror upstream at the same subpath under their own upstream names.
+Two of those names are Portuguese (`env/minerio_mithril.png`, `env/crystal_rubi.png`) and all
+twenty ability sprites are, but those filenames are **not free to change**: `propIconSrc` and
+`abilityIconSrc` build a path by joining a prop name or ability id straight onto the directory, and
+those ids come from the game's own save and catalog data. Renaming the files would require an
+id→filename map, and the id itself would stay as it is regardless — it is the game's identifier,
+not a label.

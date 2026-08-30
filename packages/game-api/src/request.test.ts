@@ -59,7 +59,7 @@ describe('buildHttpRequest — the token is read through RAW exactly once, nowhe
     expect(req.headers.Authorization).toBe(`Bearer ${rawToken}`);
     expect(req.headers['X-Account-Id']).toBe('486');
     expect(req.headers.Accept).toBe('application/json');
-    expect(req.headers.Host).toBe('api.bombfarm.net');
+    expect(req.headers.Host).toBe('app.bombfarm.net');
     expect(req.headers.Connection).toBe('close');
     expect(req.path).not.toContain(rawToken);
 
@@ -72,7 +72,7 @@ describe('buildHttpRequest — the token is read through RAW exactly once, nowhe
   it('defaults the timeout to 15s and always targets the trusted host/method', () => {
     const req = buildHttpRequest(session, '/roster');
     expect(req.timeoutMs).toBe(15_000);
-    expect(req.host).toBe('api.bombfarm.net');
+    expect(req.host).toBe('app.bombfarm.net');
     expect(req.method).toBe('GET');
   });
 });
@@ -114,7 +114,7 @@ describe('isTrustedHttpRequest / sendGet — refuses a mismatched target before 
     const transport = fakeTransport({ status: 200, body: '{"ok":true}' });
     await requestGet(session, transport, '/state');
     const calledWith = transport.mock.calls[0]?.[0] as HttpRequest;
-    expect(calledWith.host).toBe('api.bombfarm.net');
+    expect(calledWith.host).toBe('app.bombfarm.net');
     expect(calledWith.method).toBe('GET');
   });
 });

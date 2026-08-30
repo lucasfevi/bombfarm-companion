@@ -206,6 +206,7 @@ export const en = {
   liveListQueuedTitle: 'Idle',
   liveListBenchedTitle: 'Benched',
   liveListEmptyLine: 'No heroes here right now.',
+  liveHeroLevelValue: 'Lv {level}',
   liveEnergyLabel: 'Energy',
   liveFieldSlotsHint: 'Upgrade field slots in your skill tree',
   liveRestingSlotsHint: 'Upgrade to a later house for more rest slots',
@@ -222,9 +223,38 @@ export const en = {
   liveCountdownEstimatedQualifier: 'estimate, not a direct reading',
   liveCountdownPausedQualifier: 'not currently counting down',
 
-  // liveNeverRead* — nothing has been read from the account yet this session
+  // liveNeverRead* — nothing has been read from the account yet this session. The reason nothing
+  // has arrived comes from the liveGapReason* copy above (this screen's empty state reuses it
+  // rather than repeating "open the game" while the app is already working); this is the one
+  // description left for the case where the stream is live and only the account read is pending.
   liveNeverReadTitle: 'Nothing read from your account yet',
-  liveNeverReadDescription: 'Open the game with the companion running, so it has something to read.',
+  liveNeverReadAccountPendingDescription: 'The app is connected to the game and reading your account now.',
+
+  // liveNeverReadFlavorLine* — quieter, rotating flavour text under the waiting sprite, shown
+  // only while something is actually pending. Never a duration promise (the wait can legitimately
+  // run a minute) — playful about waiting itself instead.
+  liveNeverReadFlavorLine1: 'Counting the gold, one coin at a time.',
+  liveNeverReadFlavorLine2: 'Saying hello to your heroes.',
+  liveNeverReadFlavorLine3: 'Warming up the abacus.',
+  liveNeverReadFlavorLine4: 'Waiting patiently. Very patiently.',
+  liveNeverReadFlavorLine5: 'Giving the ledger a friendly nudge.',
+
+  // liveEarnings* — the Earnings panel: measured gold/XP figures, sent as finished values and
+  // only ever formatted here, never recomputed.
+  liveEarningsTitle: 'Earnings',
+  liveEarningsResetAria: 'Reset session',
+  liveEarningsCurrentGoldLabel: 'Current gold',
+  liveEarningsGoldHeadlineUnit: 'gold / h',
+  liveEarningsXpHeadlineUnit: 'xp / h',
+  liveEarningsRecentWindowLabel: 'last {minutes} min',
+  liveEarningsGoldSessionLabel: 'Gold/hr',
+  liveEarningsXpSessionLabel: 'XP/hr',
+  liveEarningsGoldSessionTotalLabel: 'Gold total',
+  liveEarningsXpSessionTotalLabel: 'XP total',
+  liveEarningsElapsedLabel: 'Elapsed',
+  liveEarningsXpHelpLabel: 'About this XP figure',
+  liveEarningsXpHelpBody: 'Calculated from the props your heroes destroyed, not read directly from the game.',
+
   // inventory* — the Inventory screen: every item the account carries, grouped by kind
   inventoryNavLabel: 'Inventory',
   inventoryTitle: 'Inventory',

@@ -122,6 +122,49 @@ describe('offline mode produces a Live view with something in it', () => {
     expect(source.getView().currency.kind).toBe('live');
     await source.teardown();
   });
+
+  it('publishes finite, non-negative gold and XP earnings figures', async () => {
+    const source = offlineLiveSource();
+    source.ingestRotation(offlineAccountView());
+    source.start();
+    vi.advanceTimersByTime(REPLAY_FRAME_INTERVAL_MS * 60);
+
+    const earnings = source.getView().earnings;
+    expect(earnings).not.toBeNull();
+    for (const value of [earnings?.goldBalance, earnings?.gold10, earnings?.goldSession, earnings?.xp10, earnings?.xpSession]) {
+      expect(Number.isFinite(value)).toBe(true);
+      expect(value as number).toBeGreaterThanOrEqual(0);
+    }
+    await source.teardown();
+  });
+
+  /**
+   * The committed capture is only 60 records — a session runs well past that many frames, so the
+   * replay restarts it from the top. A tap torn down and rebuilt (a consent revoke, here forced
+   * directly) restarts the capture the same way, with a fresh per-instance sequence counter
+   * starting back at 1 — and the fold's own `#lastSequence` remembers what the PREVIOUS tap already
+   * consumed. Advancing the same number of frames both before and after the rebuild means the
+   * second batch's sequence numbers (1..N) are all `<= lastSequence`, so this proves the seam pays
+   * nothing twice: without the guard, session time and gold/XP totals recorded in `before` would
+   * accrue again, only doubled, when it isn't.
+   */
+  it('a restarted capture does not pay its early props twice', async () => {
+    const source = offlineLiveSource();
+    source.ingestRotation(offlineAccountView());
+    source.start();
+    vi.advanceTimersByTime(REPLAY_FRAME_INTERVAL_MS * 30);
+    const before = source.getView().earnings;
+    expect(before?.sessionSeconds).toBeGreaterThan(0);
+
+    await source.forceDetach();
+    vi.advanceTimersByTime(REPLAY_FRAME_INTERVAL_MS * 30);
+
+    const after = source.getView().earnings;
+    expect(after?.sessionSeconds).toBe(before?.sessionSeconds);
+    expect(after?.goldSession).toBe(before?.goldSession);
+    expect(after?.xpSession).toBe(before?.xpSession);
+    await source.teardown();
+  });
 });
 
 /**

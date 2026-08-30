@@ -207,6 +207,7 @@ export const ptBR: Copy = {
   liveListQueuedTitle: 'Ociosos',
   liveListBenchedTitle: 'No banco',
   liveListEmptyLine: 'Nenhum herói aqui no momento.',
+  liveHeroLevelValue: 'Nv {level}',
   liveEnergyLabel: 'Energia',
   liveFieldSlotsHint: 'Compre mais vagas de campo na sua árvore de habilidades',
   liveRestingSlotsHint: 'Ative uma casa superior para mais vagas de descanso',
@@ -223,9 +224,38 @@ export const ptBR: Copy = {
   liveCountdownEstimatedQualifier: 'estimativa, não uma leitura direta',
   liveCountdownPausedQualifier: 'não está contando no momento',
 
-  // liveNeverRead* — nada foi lido da conta ainda nesta sessão
+  // liveNeverRead* — nada foi lido da conta ainda nesta sessão. O motivo de nada ter chegado vem
+  // das strings liveGapReason* acima (esta tela reutiliza o texto em vez de repetir "abra o jogo"
+  // enquanto o app já está funcionando); esta é a única descrição restante, para o caso em que a
+  // transmissão já está ao vivo e só falta a leitura da conta.
   liveNeverReadTitle: 'Nada foi lido da sua conta ainda',
-  liveNeverReadDescription: 'Abra o jogo com o companion em execução, para que ele tenha algo para ler.',
+  liveNeverReadAccountPendingDescription: 'O app está conectado ao jogo e lendo sua conta agora.',
+
+  // liveNeverReadFlavorLine* — texto de humor, mais discreto e rotativo, abaixo do sprite de
+  // espera, mostrado só enquanto algo está realmente em andamento. Nunca promete um prazo (a
+  // espera pode legitimamente durar um minuto) — é bem-humorado sobre a própria espera.
+  liveNeverReadFlavorLine1: 'Contando o ouro, moeda por moeda.',
+  liveNeverReadFlavorLine2: 'Dando um oi para os seus heróis.',
+  liveNeverReadFlavorLine3: 'Esquentando o ábaco.',
+  liveNeverReadFlavorLine4: 'Esperando com paciência. Bastante paciência.',
+  liveNeverReadFlavorLine5: 'Dando uma cutucada amigável na planilha.',
+
+  // liveEarnings* — o painel de Ganhos: valores medidos de ouro/XP, enviados já prontos e só
+  // formatados aqui, nunca recalculados.
+  liveEarningsTitle: 'Ganhos',
+  liveEarningsResetAria: 'Reiniciar sessão',
+  liveEarningsCurrentGoldLabel: 'Ouro atual',
+  liveEarningsGoldHeadlineUnit: 'ouro / h',
+  liveEarningsXpHeadlineUnit: 'xp / h',
+  liveEarningsRecentWindowLabel: 'últimos {minutes} min',
+  liveEarningsGoldSessionLabel: 'Ouro/h',
+  liveEarningsXpSessionLabel: 'XP/h',
+  liveEarningsGoldSessionTotalLabel: 'Total de ouro',
+  liveEarningsXpSessionTotalLabel: 'Total de XP',
+  liveEarningsElapsedLabel: 'Decorrido',
+  liveEarningsXpHelpLabel: 'Sobre esse número de XP',
+  liveEarningsXpHelpBody: 'Calculado a partir dos props que seus heróis destruíram, não lido diretamente do jogo.',
+
   // inventory* — a tela de Inventário: todos os itens da conta, agrupados por tipo
   inventoryNavLabel: 'Inventário',
   inventoryTitle: 'Inventário',

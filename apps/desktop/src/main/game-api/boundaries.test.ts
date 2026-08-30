@@ -89,7 +89,7 @@ describe('Guard 1 — no write surface anywhere the network can be reached (D24)
     expect(offenders, `D24: this app has no write surface — reads only. Offenders: ${JSON.stringify(offenders.map((o) => o.file))}`).toEqual([]);
   });
 
-  it('names no host other than the single api.bombfarm.net constant', () => {
+  it('names no host other than the single app.bombfarm.net constant', () => {
     // Domain-shaped quoted strings with a real TLD — filters out symbol names / filenames like
     // 'bfc.session.raw' or 'api-bodies.json', which are not hosts.
     const hostPattern = /['"]((?:[a-z0-9-]+\.)+(?:net|com|org|io|dev))['"]/gi;
@@ -100,12 +100,12 @@ describe('Guard 1 — no write surface anywhere the network can be reached (D24)
       const re = new RegExp(hostPattern);
       while ((match = re.exec(text))) {
         const host = match[1];
-        if (host && host !== 'api.bombfarm.net') {
+        if (host && host !== 'app.bombfarm.net') {
           offenders.push(`${file}: ${host}`);
         }
       }
     }
-    expect(offenders, `Only api.bombfarm.net is allowed. Offenders: ${JSON.stringify(offenders)}`).toEqual([]);
+    expect(offenders, `Only app.bombfarm.net is allowed. Offenders: ${JSON.stringify(offenders)}`).toEqual([]);
   });
 
   it('contains no dotted-quad IP literal (no Cloudflare fixed-IP fallback)', () => {

@@ -430,7 +430,7 @@ recorded bands unchanged, which is what makes them evidence rather than a rubber
 | all-attack scores below the current build | 212,284 < 264,997 | 1,085,794 < 1,331,738 |
 | all-attack is the worst of the four builds | yes | yes |
 | `gainPct` inside the recorded band [4, 9] | ~6.19% | 7.21% |
-| chest ratio inside [1.3, 1.5], ruling out the PRD's 4x | ~1.40x | 1.426x |
+| chest ratio inside [1.3, 1.5], ruling out the earlier 4x | ~1.40x | 1.426x |
 | the chests objective costs gold (`paybackHours` null) | 259,413 < 264,997 | 1,137,440 < 1,331,738 |
 | `goldGainPct` is negative, not clamped to 0 | negative | -14.59% (chests +42.64%) |
 

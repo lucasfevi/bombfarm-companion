@@ -47,6 +47,12 @@ export interface LiveTick {
   readonly hits?: readonly LiveHit[];
   readonly bonusSeconds?: number;
   readonly bonusMultiplier?: number;
+  /** Parallel array over the map's slots, index-for-index with {@link hps}; `-1` marks an empty or
+   *  cleared slot. Values on occupied slots index the prop catalogue. */
+  readonly kinds?: readonly number[];
+  /** Parallel array over the map's slots, index-for-index with {@link kinds}; `-1` marks an empty
+   *  or cleared slot. No consumer interprets the values on occupied slots. */
+  readonly hps?: readonly number[];
 }
 
 /**
@@ -82,6 +88,7 @@ export type LiveEvent =
       readonly field: readonly FieldCountdown[];
       readonly recovery: readonly RecoveryCountdown[];
       readonly onFieldHeroIds: readonly string[];
+      readonly earnings: LiveEarnings | null;
     };
 
 /**
@@ -184,6 +191,39 @@ export interface RecoveryCountdown {
   readonly advancing: boolean;
 }
 
+/**
+ * Measured gold- and XP-per-hour, folded entirely in the main process from the live tick stream —
+ * the renderer receives only these finished values, never the raw ticks or any of the arithmetic
+ * over them. `null` on every rate field means no streamed time has accrued to divide by yet, not a
+ * zero rate.
+ */
+export interface LiveEarnings {
+  readonly goldBalance: number | null;
+  /** When {@link goldBalance} came from the most recent stored account reading rather than a live
+   *  tick — `null` whenever the stream supplied it (or there is no balance at all), so the
+   *  renderer shows an age next to the balance only for the fallback, never for a tick-frozen one. */
+  readonly goldBalanceCapturedAt: string | null;
+  /** Per hour, over the last 10 real minutes (or less — see {@link coverageSeconds}). */
+  readonly gold10: number | null;
+  /** Per hour, over the whole session. */
+  readonly goldSession: number | null;
+  /** Per hour, over the last 10 real minutes. */
+  readonly xp10: number | null;
+  /** Per hour, over the whole session. */
+  readonly xpSession: number | null;
+  /** Session total accumulated so far — a sum, not a rate. Unlike {@link goldSession} this never
+   *  divides by streamed time, so it keeps rising while the rate settles. */
+  readonly goldSessionTotal: number | null;
+  /** Session total accumulated so far — a sum, not a rate. Unlike {@link xpSession} this never
+   *  divides by streamed time, so it keeps rising while the rate settles. */
+  readonly xpSessionTotal: number | null;
+  /** The real-time span the 10-minute figures actually cover — less than 600 immediately after a
+   *  session starts, or after a long enough stream gap has aged old samples out. */
+  readonly coverageSeconds: number;
+  /** Streamed seconds since the session started (or was last reset), never real elapsed time. */
+  readonly sessionSeconds: number;
+}
+
 export interface LiveView {
   readonly currency: LiveCurrency;
   readonly field: readonly FieldCountdown[];
@@ -195,6 +235,8 @@ export interface LiveView {
    *  available, never merely "absent because nothing is live". Authoritative over `rotation`'s own
    *  per-hero activity for field membership the moment the two disagree. */
   readonly onFieldHeroIds: readonly string[];
+  /** `null` before the first tap frame of the session has arrived. */
+  readonly earnings: LiveEarnings | null;
   readonly updatedAt: string;
 }
 

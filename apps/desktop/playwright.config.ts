@@ -22,6 +22,7 @@ export default defineConfig({
         'auto-recompute.spec.mjs',
         'i18n.spec.mjs',
         'inventory.spec.mjs',
+        'live-earnings-no-layout-shift.spec.mjs',
       ],
     },
     {

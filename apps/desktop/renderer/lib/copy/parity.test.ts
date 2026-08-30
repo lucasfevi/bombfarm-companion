@@ -24,10 +24,13 @@ import { ptBR } from './pt-BR';
 // equivalent `heroAvatarCol` string is likewise "Avatar" in both its `en` and `pt` namespaces).
 // inventoryDetailSetSlot: pure layout, no words — two placeholders joined by a separator, and
 // both of the values it joins are themselves already localised before they reach it.
+// liveEarningsXpHeadlineUnit: "xp / h" — "xp" is the same abbreviation in both languages, and the
+// "/ h" unit marker is not a word either, so the two languages land on the identical string.
 const IDENTICAL_IN_BOTH_LANGUAGES: readonly (keyof typeof en)[] = [
   'ageShortSeconds',
   'planningRosterColumnAvatar',
   'inventoryDetailSetSlot',
+  'liveEarningsXpHeadlineUnit',
 ];
 
 function placeholderSet(value: string): Set<string> {

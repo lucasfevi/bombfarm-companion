@@ -36,6 +36,7 @@ export type {
   LiveCurrency,
   LiveDiagnosticsDumpOutcome,
   LiveDiagnosticsDumpReason,
+  LiveEarnings,
   LiveEvent,
   LiveFrame,
   LiveGapReason,
@@ -310,6 +311,9 @@ export interface IpcChannels {
   /** The manual counterpart to the ring's existing parse-failure trigger (`frame-ring.ts`) — a
    *  player-initiated write of the same scrubbed dump, so it can be attached to a bug report. */
   'live:dumpDiagnostics': { args: []; result: LiveDiagnosticsDumpOutcome };
+  /** Zeroes the session gold/XP totals and the session clock. The rolling 10-minute window is left
+   *  alone — it is defined by the clock, not by a start point. */
+  'live:resetEarnings': { args: []; result: null };
   /** Zero-arg like every channel above: the `bfc:invoke` bridge forwards no arguments, so the
    *  channel name is the verb. Each returns the status the call left behind, and the same value
    *  also arrives on `updates:changed` for every observer. */
@@ -342,6 +346,7 @@ export const IPC_CHANNELS = [
   'consent:revoke',
   'live:get',
   'live:dumpDiagnostics',
+  'live:resetEarnings',
   'updates:get',
   'updates:check',
   'updates:download',

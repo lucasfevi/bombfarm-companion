@@ -1,11 +1,11 @@
-import { LIVE_DISPLAY_REFRESH_MS, type FieldCountdown, type LiveEvent, type LiveView, type RecoveryCountdown, type RotationSnapshot } from '@bombfarm/contracts';
+import { LIVE_DISPLAY_REFRESH_MS, type FieldCountdown, type LiveEarnings, type LiveEvent, type LiveView, type RecoveryCountdown, type RotationSnapshot } from '@bombfarm/contracts';
 
 export interface LiveFastPublisherScheduler {
   readonly schedule: (callback: () => void, intervalMs: number) => () => void;
 }
 
 export interface LiveFastPublisherDeps {
-  readonly getView: () => Pick<LiveView, 'field' | 'recovery' | 'onFieldHeroIds' | 'rotation'>;
+  readonly getView: () => Pick<LiveView, 'field' | 'recovery' | 'onFieldHeroIds' | 'rotation' | 'earnings'>;
   readonly emit: (event: LiveEvent) => void;
   readonly scheduler: LiveFastPublisherScheduler;
   readonly intervalMs?: number;
@@ -24,6 +24,7 @@ interface FastSnapshot {
   readonly field: readonly FieldCountdown[];
   readonly recovery: readonly RecoveryCountdown[];
   readonly onFieldHeroIds: readonly string[];
+  readonly earnings: LiveEarnings | null;
 }
 
 function sameFieldCountdowns(a: readonly FieldCountdown[], b: readonly FieldCountdown[]): boolean {
@@ -58,11 +59,27 @@ export function sameIdList(a: readonly string[], b: readonly string[]): boolean 
   return a.every((id, index) => id === b[index]);
 }
 
+function sameEarnings(a: LiveEarnings | null, b: LiveEarnings | null): boolean {
+  if (a === null || b === null) return a === b;
+  return (
+    a.goldBalance === b.goldBalance &&
+    a.gold10 === b.gold10 &&
+    a.goldSession === b.goldSession &&
+    a.xp10 === b.xp10 &&
+    a.xpSession === b.xpSession &&
+    a.goldSessionTotal === b.goldSessionTotal &&
+    a.xpSessionTotal === b.xpSessionTotal &&
+    a.coverageSeconds === b.coverageSeconds &&
+    a.sessionSeconds === b.sessionSeconds
+  );
+}
+
 function sameFastSnapshot(a: FastSnapshot, b: FastSnapshot): boolean {
   return (
     sameFieldCountdowns(a.field, b.field) &&
     sameRecoveryCountdowns(a.recovery, b.recovery) &&
-    sameIdList(a.onFieldHeroIds, b.onFieldHeroIds)
+    sameIdList(a.onFieldHeroIds, b.onFieldHeroIds) &&
+    sameEarnings(a.earnings, b.earnings)
   );
 }
 
@@ -115,7 +132,7 @@ export function createRotationOnFieldIdsCache(): (rotation: RotationSnapshot | n
 
 /**
  * Polls the already-folded {@link LiveView} on a fixed schedule and republishes the fast channel
- * (`field`, `recovery`, `onFieldHeroIds`) only when its content actually changed since the last
+ * (`field`, `recovery`, `onFieldHeroIds`, `earnings`) only when its content actually changed since the last
  * publish — the throttle the main process owes the renderer per the fast/slow split, so an idle
  * account with nothing changing publishes nothing at all rather than one identical event every
  * tick. `getView()` itself is cheap: it returns state the live source already maintains — its
@@ -135,10 +152,21 @@ export function createLiveFastPublisher(deps: LiveFastPublisherDeps): LiveFastPu
       deps.onFieldMembershipDiverged();
     }
 
-    const next: FastSnapshot = { field: view.field, recovery: view.recovery, onFieldHeroIds: view.onFieldHeroIds };
+    const next: FastSnapshot = {
+      field: view.field,
+      recovery: view.recovery,
+      onFieldHeroIds: view.onFieldHeroIds,
+      earnings: view.earnings,
+    };
     if (lastPublished && sameFastSnapshot(lastPublished, next)) return;
     lastPublished = next;
-    deps.emit({ type: 'fastUpdate', field: next.field, recovery: next.recovery, onFieldHeroIds: next.onFieldHeroIds });
+    deps.emit({
+      type: 'fastUpdate',
+      field: next.field,
+      recovery: next.recovery,
+      onFieldHeroIds: next.onFieldHeroIds,
+      earnings: next.earnings,
+    });
   }
 
   return {

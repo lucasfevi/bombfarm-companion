@@ -68,6 +68,22 @@ export function buildServerTextFrame(payload: Buffer): Buffer {
   return Buffer.concat([Buffer.from([0x81]), lengthBytes, payload]);
 }
 
+export function buildServerBinaryFrame(payload: Buffer): Buffer {
+  if (payload.length > 0xffff) {
+    throw new Error('generate-replay-stream: payload too large for the 16-bit length form');
+  }
+  const lengthBytes =
+    payload.length <= 125
+      ? Buffer.from([payload.length])
+      : (() => {
+          const buf = Buffer.alloc(3);
+          buf.writeUInt8(126, 0);
+          buf.writeUInt16BE(payload.length, 1);
+          return buf;
+        })();
+  return Buffer.concat([Buffer.from([0x82]), lengthBytes, payload]);
+}
+
 export function buildOversized64BitLengthFrame(): Buffer {
   const header = Buffer.alloc(10);
   header.writeUInt8(0x81, 0);

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import type { LiveEvent, LiveView, RotationSnapshot } from '@bombfarm/contracts';
+import type { LiveEarnings, LiveEvent, LiveView, RotationSnapshot } from '@bombfarm/contracts';
 import type { LiveModel } from './live-model';
 import {
   applyLiveArrival,
@@ -29,17 +29,39 @@ function liveView(overrides: Partial<LiveView> = {}): LiveView {
     recovery: [],
     rotation: rotationSnapshot(),
     onFieldHeroIds: ['on-field'],
+    earnings: null,
     updatedAt: 't0',
     ...overrides,
   };
 }
 
-function fastUpdateEvent(secondsRemaining: number, onFieldHeroIds: readonly string[] = ['on-field']): LiveEvent {
+function fastUpdateEvent(
+  secondsRemaining: number,
+  onFieldHeroIds: readonly string[] = ['on-field'],
+  earnings: LiveEarnings | null = null,
+): LiveEvent {
   return {
     type: 'fastUpdate',
     field: [{ heroId: 'on-field', secondsRemaining, drainPerSecond: 1, basis: 'observed' }],
     recovery: [],
     onFieldHeroIds,
+    earnings,
+  };
+}
+
+function earnings(overrides: Partial<LiveEarnings> = {}): LiveEarnings {
+  return {
+    goldBalance: 12_345,
+    goldBalanceCapturedAt: null,
+    gold10: 100_000,
+    goldSession: 90_000,
+    xp10: 5_000,
+    xpSession: 4_500,
+    goldSessionTotal: 75_000,
+    xpSessionTotal: 3_750,
+    coverageSeconds: 120,
+    sessionSeconds: 300,
+    ...overrides,
   };
 }
 
@@ -159,7 +181,7 @@ describe('createLiveStore — applies each arrival as it lands, with no display 
     store.subscribe((model) => notifications.push(model));
 
     for (let i = 0; i < 20; i += 1) {
-      emit({ type: 'fastUpdate', field: [], recovery: [], onFieldHeroIds: [] });
+      emit({ type: 'fastUpdate', field: [], recovery: [], onFieldHeroIds: [], earnings: null });
     }
 
     expect(notifications).toHaveLength(0);
@@ -347,7 +369,7 @@ describe('createLiveStore — account:changed triggers the slow re-fetch', () =>
     await flushMicrotasks();
 
     // The currency event landed first and must survive the racing bootstrap.
-    expect(store.getModel().freshness).toEqual({ kind: 'gap', reason: 'detached', actionable: false });
+    expect(store.getModel().freshness).toEqual({ kind: 'gap', reason: 'detached', actionable: false, sinceAt: 't' });
 
     emitAccountChanged();
     resolveNextGet(liveView());
@@ -355,6 +377,77 @@ describe('createLiveStore — account:changed triggers the slow re-fetch', () =>
 
     // The re-fetch is not a race — it applies the view's currency outright.
     expect(store.getModel().freshness).toEqual({ kind: 'live' });
+  });
+});
+
+describe('createLiveStore — earnings pass straight through, never folded or defaulted', () => {
+  it('null before the first tick, exactly as the bootstrap view reports it', async () => {
+    const { bridge, resolveNextGet } = fakeBridge();
+    const store = createLiveStore({ bridge });
+
+    store.start();
+    resolveNextGet(liveView({ earnings: null }));
+    await flushMicrotasks();
+
+    expect(store.getModel().earnings).toBeNull();
+  });
+
+  it('a bootstrap view carrying earnings publishes that exact object, unchanged', async () => {
+    const { bridge, resolveNextGet } = fakeBridge();
+    const store = createLiveStore({ bridge });
+    const figures = earnings();
+
+    store.start();
+    resolveNextGet(liveView({ earnings: figures }));
+    await flushMicrotasks();
+
+    expect(store.getModel().earnings).toEqual(figures);
+  });
+
+  it('a fastUpdate carrying earnings replaces the previous figures the moment it lands', async () => {
+    const { bridge, emit, resolveNextGet } = fakeBridge();
+    const store = createLiveStore({ bridge });
+
+    store.start();
+    resolveNextGet(liveView({ earnings: earnings({ goldBalance: 1 }) }));
+    await flushMicrotasks();
+
+    emit(fastUpdateEvent(90, ['on-field'], earnings({ goldBalance: 2 })));
+
+    expect(store.getModel().earnings).toEqual(earnings({ goldBalance: 2 }));
+  });
+
+  it('a fastUpdate that changes only earnings still produces a notification', async () => {
+    const { bridge, emit, resolveNextGet } = fakeBridge();
+    const store = createLiveStore({ bridge });
+    const notifications: LiveModel[] = [];
+
+    store.start();
+    resolveNextGet(liveView({ field: [], recovery: [], onFieldHeroIds: [], earnings: earnings({ goldBalance: 1 }) }));
+    await flushMicrotasks();
+    store.subscribe((model) => notifications.push(model));
+
+    emit({ type: 'fastUpdate', field: [], recovery: [], onFieldHeroIds: [], earnings: earnings({ goldBalance: 2 }) });
+
+    expect(notifications).toHaveLength(1);
+    expect(notifications[0]?.earnings).toEqual(earnings({ goldBalance: 2 }));
+  });
+
+  it('a fastUpdate byte-identical in earnings too produces zero notifications', async () => {
+    const { bridge, emit, resolveNextGet } = fakeBridge();
+    const store = createLiveStore({ bridge });
+    const notifications: LiveModel[] = [];
+    const figures = earnings();
+
+    store.start();
+    resolveNextGet(liveView({ field: [], recovery: [], onFieldHeroIds: [], earnings: figures }));
+    await flushMicrotasks();
+    store.subscribe((model) => notifications.push(model));
+
+    emit({ type: 'fastUpdate', field: [], recovery: [], onFieldHeroIds: [], earnings: earnings() });
+
+    expect(notifications).toHaveLength(0);
+    expect(store.getModel().earnings).toEqual(figures);
   });
 });
 
@@ -368,7 +461,7 @@ describe('createLiveStore — a fastUpdate carries on-field membership live, app
     await flushMicrotasks();
     expect(store.getModel().slow?.onField.map((hero) => hero.id)).toEqual(['on-field']);
 
-    emit({ type: 'fastUpdate', field: [], recovery: [], onFieldHeroIds: [] });
+    emit({ type: 'fastUpdate', field: [], recovery: [], onFieldHeroIds: [], earnings: null });
 
     const model = store.getModel();
     expect(model.slow?.onField).toEqual([]);

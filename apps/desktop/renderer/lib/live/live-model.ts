@@ -2,6 +2,7 @@ import type {
   CountdownBasis,
   FieldCountdown,
   LiveCurrency,
+  LiveEarnings,
   LiveGapReason,
   RecoveryCountdown,
   RotationHeroSnapshot,
@@ -66,6 +67,9 @@ export type LiveFreshness =
       readonly reason: LiveGapReason;
       readonly actionable: boolean;
       readonly likelyQuarantine?: boolean;
+      /** When this gap began — the age of any figure the Live screen freezes for the duration of
+       *  the gap (e.g. the last known gold balance). */
+      readonly sinceAt: string;
     };
 
 export const LOADING_LIVE_FRESHNESS: LiveFreshness = { kind: 'loading' };
@@ -80,12 +84,16 @@ export interface LiveModel {
   readonly freshness: LiveFreshness;
   readonly slow: LiveSlowModel | null;
   readonly fast: LiveFastModel;
+  /** Straight from `LiveView`/`LiveEvent` — `null` exactly when the source says so, never a
+   *  computed or defaulted stand-in. */
+  readonly earnings: LiveEarnings | null;
 }
 
 export const INITIAL_LIVE_MODEL: LiveModel = {
   freshness: LOADING_LIVE_FRESHNESS,
   slow: null,
   fast: EMPTY_LIVE_FAST_MODEL,
+  earnings: null,
 };
 
 function heroFact(hero: RotationHeroSnapshot): LiveHeroFact {
@@ -143,6 +151,7 @@ export function buildLiveFreshness(currency: LiveCurrency): LiveFreshness {
     kind: 'gap',
     reason: currency.reason,
     actionable: currency.actionable,
+    sinceAt: currency.sinceAt,
     ...(currency.likelyQuarantine !== undefined ? { likelyQuarantine: currency.likelyQuarantine } : {}),
   };
 }

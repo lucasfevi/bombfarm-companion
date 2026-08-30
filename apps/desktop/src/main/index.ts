@@ -128,6 +128,7 @@ function defaultLiveView(): LiveView {
     recovery: [],
     rotation: null,
     onFieldHeroIds: [],
+    earnings: null,
     updatedAt: now,
   };
 }
@@ -170,6 +171,10 @@ function registerIpcHandlers(): void {
     'live:get': (): LiveView => liveSource?.getView() ?? defaultLiveView(),
     'live:dumpDiagnostics': (): LiveDiagnosticsDumpOutcome =>
       liveSource?.dumpDiagnostics() ?? { written: false, reason: 'no-source' },
+    'live:resetEarnings': (): null => {
+      liveSource?.resetEarnings();
+      return null;
+    },
     // `disabledUpdateStatus` is the pre-bootstrap answer as well as the dev-flavor one: a
     // renderer that asks before `bootstrap()` has built the service gets the same inert status it
     // would get from an unpackaged run, never a throw.
@@ -361,6 +366,9 @@ async function bootstrap(): Promise<void> {
     refreshNow: () => accountRefresh?.refreshNow() ?? Promise.resolve(null),
     now: () => Date.now(),
   });
+  // The scheduled cadence can otherwise leave the first read waiting out a full cycle after the
+  // game becomes detected as running, which arrives too late to catch at boot.
+  gameReader.onConnected = () => triggeredRefresh?.notify();
   liveFastPublisher = createLiveFastPublisher({
     getView: () => liveSource?.getView() ?? defaultLiveView(),
     emit: (event) => {

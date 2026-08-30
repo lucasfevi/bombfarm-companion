@@ -1,6 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import type { LiveTick } from '@bombfarm/contracts';
+import { goldRarityMult } from '@bombfarm/domain/phase-wiki';
 import { describe, expect, it } from 'vitest';
 import { CAPTURE_MAGIC, CAPTURE_VERSION, readCaptureRecords, type CaptureRecord } from '../capture-format.js';
 import { TlsConnections, type TapEvent } from '../tls-stream.js';
@@ -122,6 +123,89 @@ describe('live-capture.bfcc drives the real decode path: records -> TlsConnectio
     expect([...hitKeys].sort()).toEqual(['cell', 'critical', 'damage']);
 
     const tickKeys = new Set(ticks.flatMap((tick) => Object.keys(tick)));
-    expect([...tickKeys].sort()).toEqual(['gold', 'heroes', 'hits', 'idle', 'loot', 'phase', 'roomHp', 'wave']);
+    expect([...tickKeys].sort()).toEqual(['gold', 'heroes', 'hits', 'hps', 'idle', 'kinds', 'loot', 'phase', 'roomHp', 'wave']);
+  });
+
+  it('carries a 304-slot kinds array on every one of the 58 ticks', () => {
+    const { records } = readCommittedRecords();
+    const ticks = replay(records);
+    const ticksWithKinds = ticks.filter((tick) => tick.kinds !== undefined);
+    expect(ticksWithKinds.length).toBe(58);
+    expect(new Set(ticksWithKinds.map((tick) => tick.kinds?.length))).toEqual(new Set([304]));
+  });
+
+  interface JoinedPayout {
+    readonly cell: number;
+    readonly kind: number;
+    readonly gold: number;
+  }
+
+  interface UnjoinedPayout {
+    readonly cell: number;
+    readonly prevWave: number | undefined;
+    readonly curWave: number | undefined;
+  }
+
+  /** Pairs each loot payout with the map cell it stood in: occupied (`kind >= 0`) the tick before,
+   *  cleared (`-1`) the tick it pays out. A payout that cannot be paired this way is returned
+   *  separately rather than dropped, so the one the wave rollover masks stays visible. */
+  function joinLootToClearedCells(
+    ticks: readonly LiveTick[],
+  ): { readonly joined: readonly JoinedPayout[]; readonly unjoined: readonly UnjoinedPayout[] } {
+    const joined: JoinedPayout[] = [];
+    const unjoined: UnjoinedPayout[] = [];
+    for (const [i, cur] of ticks.entries()) {
+      const prev = i > 0 ? ticks[i - 1] : undefined;
+      for (const pop of cur.loot ?? []) {
+        if (pop.gold === undefined) continue;
+        const prevKind = prev?.kinds?.[pop.cell];
+        const curKind = cur.kinds?.[pop.cell];
+        if (prevKind !== undefined && prevKind >= 0 && curKind === -1) {
+          joined.push({ cell: pop.cell, kind: prevKind, gold: pop.gold });
+        } else {
+          unjoined.push({ cell: pop.cell, prevWave: prev?.wave, curWave: cur.wave });
+        }
+      }
+    }
+    return { joined, unjoined };
+  }
+
+  it('joins 9 of the 10 loot payouts to their cell going occupied -> cleared; the tenth is the payout the wave rollover masks', () => {
+    const { records } = readCommittedRecords();
+    const ticks = replay(records);
+    const totalLoot = ticks.flatMap((tick) => tick.loot ?? []).length;
+    expect(totalLoot).toBe(10);
+
+    const { joined, unjoined } = joinLootToClearedCells(ticks);
+    expect(joined.length).toBe(9);
+    expect(unjoined.length).toBe(1);
+
+    // The wave rollover replaces the grid wholesale, so the old map's final payout lands on a cell
+    // that the fresh map immediately re-occupies instead of clearing to -1 — it cannot join by
+    // construction, not because the join logic is wrong.
+    const [masked] = unjoined;
+    expect(masked?.prevWave).not.toBe(masked?.curWave);
+  });
+
+  it('every joined payout divides evenly by goldRarityMult at some rarity index, all sharing the same 1580 gold base', () => {
+    const { records } = readCommittedRecords();
+    const ticks = replay(records);
+    const { joined } = joinLootToClearedCells(ticks);
+    expect(joined.length).toBe(9);
+
+    const RARITY_INDICES = [0, 1, 2, 3, 4, 5];
+    function integerBasesFor(gold: number): ReadonlySet<number> {
+      const bases = new Set<number>();
+      for (const rarity of RARITY_INDICES) {
+        const base = gold / goldRarityMult(rarity);
+        const rounded = Math.round(base);
+        if (Math.abs(base - rounded) < 1e-6) bases.add(rounded);
+      }
+      return bases;
+    }
+
+    const candidateSets = joined.map((payout) => integerBasesFor(payout.gold));
+    const commonBases = [...(candidateSets[0] ?? [])].filter((base) => candidateSets.every((set) => set.has(base)));
+    expect(new Set(commonBases)).toEqual(new Set([1580]));
   });
 });

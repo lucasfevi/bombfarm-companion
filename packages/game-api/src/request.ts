@@ -22,7 +22,7 @@ import { ConsentedSessionRequiredError, RAW, isConsentedSession, type ConsentedS
  * here rather than sailing through into a fully-formed authenticated request.
  */
 
-const HOST = 'api.bombfarm.net';
+const HOST = 'app.bombfarm.net';
 const METHOD = 'GET';
 
 /** Conservative, unmeasured — rejecting a response this large is safer than buffering it whole. */
@@ -164,7 +164,7 @@ export async function sendGet(req: HttpRequest, transport: HttpTransport): Promi
   if (!isTrustedHttpRequest(req)) {
     return {
       kind: 'transport_error',
-      message: `refused: ${req.host} ${req.method} is not the allowed api.bombfarm.net GET`,
+      message: `refused: ${req.host} ${req.method} is not the allowed app.bombfarm.net GET`,
     };
   }
 

@@ -11,9 +11,11 @@ const KNOWN_BODY_DIGESTS: Readonly<Record<'en' | 'pt-BR', Readonly<Record<number
   en: {
     1: '4353ef5f05a0ae24b720b46af0f8967949e8b590495d32d45b727ada1b212779',
     2: '6821259f4832b5e77f0ce6f5b8d8c8ddd8dcda0f91b1887e4308df1db422aac2',
+    3: '899613bee52877b8e3a66e2864500117f8cc239abf0288f0a3964acc5bca8ec4',
   },
   'pt-BR': {
     2: '1aa62c031159c769ae95530b147d7dc2f9eafdc3229f06e27a7d3d56ce0d886d',
+    3: '2045be379089bf57ef168741f42e734de7d31e93bb17179ea97c4b5cd91d54fa',
   },
 };
 
@@ -74,7 +76,7 @@ describe('CONSENT_TEXT.en — clause content', () => {
   it('states the token goes to one host and never into a log', () => {
     const clause = body.find((c) => c.heading === 'Your token stays put.');
     expect(clause).toBeDefined();
-    expect(clause?.text).toContain('api.bombfarm.net');
+    expect(clause?.text).toContain('app.bombfarm.net');
     expect(clause?.text).toMatch(/never into a log/i);
   });
 
@@ -115,7 +117,7 @@ describe('CONSENT_TEXT["pt-BR"] — clause content, the same facts in Portuguese
   it('states the token goes to one host and never into a log', () => {
     const clause = body.find((c) => c.heading === 'Seu token não sai do lugar.');
     expect(clause).toBeDefined();
-    expect(clause?.text).toContain('api.bombfarm.net');
+    expect(clause?.text).toContain('app.bombfarm.net');
     expect(clause?.text).toMatch(/nunca para um log/i);
   });
 
