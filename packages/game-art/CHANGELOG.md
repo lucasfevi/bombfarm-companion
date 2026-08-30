@@ -1,5 +1,102 @@
 # @bombfarm/game-art
 
+## 0.3.0
+
+### Minor Changes
+
+- 48ae346: Give the list layout the cards' own filters, and head the inventory with what it is worth.
+
+  The toolbar moved out of the card layout into a component both layouts render, so the list offers
+  the same search, kind, rarity, hero and set narrowing instead of a search box alone. Only the sort
+  pair is hidden there: that layout sorts through its own column headers, and two controls for one
+  order is one too many.
+
+  A new `Priced` narrowing shows just the items the market is quoting right now. It is the first
+  filter term that is not a property of the item — it depends on a snapshot the domain cannot see —
+  so `filterInventoryView` takes the predicate from the caller, and with no predicate nothing is
+  priced, which is the truthful answer when there is no snapshot to ask.
+
+  The header states the market value of everything owned, over the count it could reach: `20 of 171
+tradable items priced`. Untradable items stay out of that denominator, since the game forbids
+  selling them and counting them would make the coverage read worse than it is. The figure is taken
+  over the whole inventory rather than the filtered view, so narrowing to one set does not restate
+  it as a smaller fortune.
+
+  The items now scroll inside their own region rather than taking the window with them, so the
+  toolbar and the totals stay put while a long inventory moves under them.
+
+- 48ae346: Lead the inventory with what it is worth, and switch layout from the list's own corner.
+
+  The market total is now the largest thing on the screen rather than a line of small print — it is
+  the reason to open the page, so it reads as the headline. How old the prices are moved in beside
+  the coverage line, where it qualifies the figure instead of competing with it.
+
+  Cards or list is two icons in the toolbar's right corner, next to the list they switch, rather
+  than two words above the panel heading. Each keeps its word as its accessible name and its tooltip.
+  The pair is one shared component both shells render: written per shell it was duplicated Tailwind,
+  which the desktop's prose-literal guard is right to object to.
+
+  The web planner's price refresh button is gone. It could only re-download the same six-hourly file
+  — the planner cannot ask Steam anything — so it promised a freshness it had no way to deliver. The
+  desktop keeps its per-item refresh, which really does re-quote.
+
+- 48ae346: Show what the market is asking for each item you own, and offer the inventory as a sortable list
+  beside the cards.
+
+  Every item now carries its Steam Community Market price above the in-game gold value, linking to
+  the listing it came from. The figure is the one Steam quotes in that currency, so it matches the
+  page behind the link; where Steam declined to quote it, the price is converted from USD and marked
+  approximate rather than presented as exact. Each price says how old the quote behind it is, dated
+  by that quote rather than by the file that carried it.
+
+  The new list layout is a real table: sortable column headers that carry `aria-sort` and activate
+  through a real button, numeric columns aligned on their digits, and a per-row action named after
+  its own item so a screen reader hears "Refresh the market price for Coal Boots" rather than a
+  column of identical labels. Sorting reuses the cards' own multi-term model, so picking a second
+  column keeps the first as the tie-break, and it sorts within a kind rather than across — a key
+  never lands between two swords. Items the market has no price for sink to the bottom whichever
+  direction is chosen, instead of crowding out real prices on a cheapest-first sort.
+
+  The chosen layout is remembered per browser. A shell with no snapshot renders exactly as it did
+  before, price column and all.
+
+- b7d837a: Add `SpriteLoop`, a shared preloading, reduced-motion-aware pixel-art frame loop, generalised out
+  of the web team-plan optimizing modal's hero6 bomb-activation animation so both apps can reuse the
+  same implementation. `SpriteLoop` now also takes an `animate` prop to hold the loop on its first
+  frame on demand, independent of reduced-motion. The web modal's own animation is unchanged.
+
+  The desktop Live tab's "waiting for the first account read" screen now shows Hero 6's pixel-art
+  idle animation while the app is reading the account or retrying a connection gap on its own, so a
+  long wait reads as working rather than stalled. The sprite holds still on its first frame while
+  consent is missing, since nothing is actually in progress in that state, and it honours
+  reduced-motion settings.
+
+### Patch Changes
+
+- 48ae346: Show the market price and refresh hints in the app's own tooltip instead of the browser's.
+
+  The Steam price figure and the per-item refresh control carried their explanation on the native
+  `title` attribute, which is OS chrome: unstyled, untouched by the app's theme, on a delay the
+  browser owns, and shown neither on touch nor on keyboard focus — so the quote's basis and age were
+  invisible to anyone not hovering a mouse. Both now use the design-system tooltip, which appears on
+  keyboard focus as well as hover. The price link keeps opening the listing in a new tab and stays
+  reachable by keyboard, and an untradable item still renders nothing at all.
+
+  Lint now rejects the native attribute on a DOM element across the design system, the game-art
+  package, the desktop renderer and the web planner, so the next one cannot land unnoticed.
+
+- Updated dependencies [c3dd984]
+- Updated dependencies [4836894]
+- Updated dependencies [48ae346]
+- Updated dependencies [48ae346]
+- Updated dependencies [b7d837a]
+- Updated dependencies [8ba7408]
+- Updated dependencies [19197cc]
+- Updated dependencies [48ae346]
+- Updated dependencies [48ae346]
+  - @bombfarm/ui@0.6.0
+  - @bombfarm/domain@0.9.0
+
 ## 0.2.1
 
 ### Patch Changes

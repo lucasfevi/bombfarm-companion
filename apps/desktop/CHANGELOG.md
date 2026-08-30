@@ -1,5 +1,406 @@
 # @bombfarm/desktop
 
+## 0.6.0
+
+### Minor Changes
+
+- c3dd984: Update the desktop app from its own release channel, from a new Settings section.
+
+  Installed builds now check for a new version shortly after launch and every six hours they stay
+  open, and Settings gains an Updates section that reports what they found: the installed version
+  and its channel, whether one is available, download progress, and a restart-and-install action
+  once it is ready. A check button covers the time in between.
+
+  Nothing downloads without being asked. Finding a version announces it and stops there, so a
+  player on a metered connection chooses when to spend the bandwidth. The download is
+  resumable-by-retry rather than resumable: a failed one starts over.
+
+  Each installed flavor follows its own channel — Nightly, Beta, and stable never offer each other's
+  builds. A local development build has no channel and no installer to replace, so the section says
+  so plainly instead of showing a control that would do nothing.
+
+  Failures arrive as one of four reasons — unreachable server, rate limit, no published release,
+  or unknown — each translated in both languages, rather than the updater's own English text
+  reaching the screen.
+
+  Settings rows can now hold a read-only value in their control column (`data-settings-value`),
+  alongside the equivalents the Account and math-check stacks already had.
+
+- 4836894: Give the desktop a fixed measure, put the Live tab's two readings side by side at every window
+  size, and close the second scrollbar.
+
+  The app content now stops widening at 1440px and centres itself, so a wide monitor grows the
+  background instead of stretching the panels across it. Below that it fills the window as before.
+
+  On the Live tab, the gold/hr panel and the map panel sit side by side at every size the window can
+  be dragged to, including the smallest. They used to need a window wider than the one the app opens
+  at, so a fresh launch showed them stacked — the split made both columns as wide as the fixed-width
+  gold panel, which is far wider than the map needs. The gold panel now takes its own content width
+  and the map takes the rest, which is also the half that reads better with the extra room. A little
+  spacing came out of both panels to bring the pair inside the smallest window; nothing was removed.
+
+  Settings now reads as a stack of panels like every other tab, instead of loose rows on the page
+  background. Its rows are a label at one edge and a control at the other, so they get a tighter
+  measure of their own rather than the full width — the control no longer sits a screen away from
+  the label it belongs to.
+
+  The window itself can no longer scroll, so the Live tab never shows two scrollbars again. Screen
+  reader labels are positioned elements, and with nothing positioned above them they escaped every
+  attempt to clip the content: a long enough hero list pushed them past the bottom of the window and
+  the window grew a scrollbar of its own beside the one the content already had.
+
+- 48ae346: Price items in the desktop app from the published market snapshot, and let a single item be
+  re-quoted live.
+
+  The main process reads the published snapshot with a conditional request and caches the accepted
+  body beside the flavor's other user data, so a cold start with no network still prices everything
+  the last good run knew about. A 304 costs no body and changes nothing; a failed check leaves the
+  snapshot in hand exactly where it was rather than blanking a screen that had prices on it.
+
+  The desktop app can additionally re-quote one item on demand, which the web planner cannot: Steam
+  sends no cross-origin header, and only the per-item endpoint honours a currency. Quotes are BRL,
+  paced to one call at a time with a floor of several seconds between them, and a rate-limited
+  answer widens an exponential backoff that the next success clears.
+
+  That endpoint under-reports — it has answered with no price for an item carrying a live listing —
+  so a refresh that comes back unquoted reports that it could not refresh and leaves the snapshot's
+  own price standing. It never overwrites a real price with an absence.
+
+- 48ae346: Give the list layout the cards' own filters, and head the inventory with what it is worth.
+
+  The toolbar moved out of the card layout into a component both layouts render, so the list offers
+  the same search, kind, rarity, hero and set narrowing instead of a search box alone. Only the sort
+  pair is hidden there: that layout sorts through its own column headers, and two controls for one
+  order is one too many.
+
+  A new `Priced` narrowing shows just the items the market is quoting right now. It is the first
+  filter term that is not a property of the item — it depends on a snapshot the domain cannot see —
+  so `filterInventoryView` takes the predicate from the caller, and with no predicate nothing is
+  priced, which is the truthful answer when there is no snapshot to ask.
+
+  The header states the market value of everything owned, over the count it could reach: `20 of 171
+tradable items priced`. Untradable items stay out of that denominator, since the game forbids
+  selling them and counting them would make the coverage read worse than it is. The figure is taken
+  over the whole inventory rather than the filtered view, so narrowing to one set does not restate
+  it as a smaller fortune.
+
+  The items now scroll inside their own region rather than taking the window with them, so the
+  toolbar and the totals stay put while a long inventory moves under them.
+
+- 48ae346: Lead the inventory with what it is worth, and switch layout from the list's own corner.
+
+  The market total is now the largest thing on the screen rather than a line of small print — it is
+  the reason to open the page, so it reads as the headline. How old the prices are moved in beside
+  the coverage line, where it qualifies the figure instead of competing with it.
+
+  Cards or list is two icons in the toolbar's right corner, next to the list they switch, rather
+  than two words above the panel heading. Each keeps its word as its accessible name and its tooltip.
+  The pair is one shared component both shells render: written per shell it was duplicated Tailwind,
+  which the desktop's prose-literal guard is right to object to.
+
+  The web planner's price refresh button is gone. It could only re-download the same six-hourly file
+  — the planner cannot ask Steam anything — so it promised a freshness it had no way to deliver. The
+  desktop keeps its per-item refresh, which really does re-quote.
+
+- 48ae346: Show what the market is asking for each item you own, and offer the inventory as a sortable list
+  beside the cards.
+
+  Every item now carries its Steam Community Market price above the in-game gold value, linking to
+  the listing it came from. The figure is the one Steam quotes in that currency, so it matches the
+  page behind the link; where Steam declined to quote it, the price is converted from USD and marked
+  approximate rather than presented as exact. Each price says how old the quote behind it is, dated
+  by that quote rather than by the file that carried it.
+
+  The new list layout is a real table: sortable column headers that carry `aria-sort` and activate
+  through a real button, numeric columns aligned on their digits, and a per-row action named after
+  its own item so a screen reader hears "Refresh the market price for Coal Boots" rather than a
+  column of identical labels. Sorting reuses the cards' own multi-term model, so picking a second
+  column keeps the first as the tie-break, and it sorts within a kind rather than across — a key
+  never lands between two swords. Items the market has no price for sink to the bottom whichever
+  direction is chosen, instead of crowding out real prices on a cheapest-first sort.
+
+  The chosen layout is remembered per browser. A shell with no snapshot renders exactly as it did
+  before, price column and all.
+
+- 19197cc: Add a Map panel to the Live tab, beside the earnings figures: which map is being played (its
+  in-game difficulty coordinate, its flavour name and its phase number), how much of the map's
+  health is left, and how many props are still standing out of the total a fresh map of that phase
+  spawns.
+
+  Every figure comes from the live combat stream and is folded once in the main process, so the
+  panel only ever formats finished values. Health and the prop count are reported independently —
+  one absent from a tick reads as "not sent" rather than zero, and a map with nothing left standing
+  reports zero props rather than a dash. The prop total comes from the phase's own wiki row rather
+  than from the stream, so it is correct immediately instead of only after the first map completes.
+
+  It also reports what the map is worth: XP per prop with the account's own skill-tree multiplier
+  applied, average gold per prop, and average gold for a full clear. Those three are modelled from
+  the map's wiki row rather than measured, and the panel marks them as estimates — the measured
+  gold/hr and XP/hr sit immediately beside them, and the two must not read as the same kind of
+  number. They come from the same `computePhaseIntelGlobal` the web planner's Phases screen uses, so
+  a figure cannot say one thing on the Live tab and another on Phases.
+
+- a863d2f: Remove the Planning tab from the desktop app.
+
+  The desktop nav is now Live, Inventory and Settings. The hero roster, the next-point ranking, the
+  solo DPS figure and the reset advice are gone from the desktop; the web planner still offers all
+  of them, and nothing about how it computes them has changed.
+
+  Two notices that only ever appeared on that screen go with it: the provenance panel that named
+  which parts of your account were remembered rather than freshly read, and the warning that the
+  app's save location is unavailable so nothing will survive a restart. No other screen showed
+  either one.
+
+### Patch Changes
+
+- b7d837a: Fix live data no longer appearing on the Live tab. The game's combat traffic changed to a
+  compressed binary frame instead of the earlier plain-text one, and the app was silently
+  discarding every frame instead of decoding it — the connection stayed marked "connected" the
+  whole time, with nothing to show that data had stopped arriving. Both frame shapes now decode to
+  the same tick, and a payload that still cannot be decoded at all is now logged once per session so
+  this class of breakage is never silent again.
+- 48ae346: Open external links in the default browser instead of inside the desktop app.
+
+  A link to a third-party site — the market listings the inventory now points at — used to open an
+  in-app Chromium window with the app's own privileges, and a link without `target="_blank"` would
+  have navigated the app's own window away from the renderer with no way back. Both now hand the URL
+  to the system browser and leave the app where it was.
+
+  Only `https:` may leave the app. Every other scheme, a malformed URL included, is refused and
+  logged rather than handed to the operating system, and no in-app window is created for an external
+  page at all. The renderer's own bundle keeps navigating normally.
+
+- c0ef094: Fix installed builds closing themselves a moment after launch.
+
+  Every installed build — Nightly, Beta, and stable alike — opened its window, then quit. The
+  updater is the last thing boot starts, and it failed while wiring its logger, which took the whole
+  launch down with it. Local development runs were unaffected, because a build with no installer to
+  replace never starts the updater at all, which is why this reached a release before it was seen.
+
+  Boot no longer treats the updater as load-bearing either. An app that cannot check for updates is
+  still a working app, so a failure there now stops at the Updates section, which says the check
+  failed, instead of closing the window. It reports a failure rather than the no-channel wording a
+  local development build gets — telling someone on an installed build that their flavor does not
+  update would be false, and would hide the problem rather than show it.
+
+  Nothing else about updating changes; it now runs where before it stopped the app.
+
+- b7d837a: Fix every authenticated account read failing. The game's own server moved its API to a new
+  address and withdrew the old one from DNS entirely, so every request the app made was failing
+  outright. The app now targets the new address, and the first-run consent screen's privacy
+  disclosure — which names the address your session token is sent to — has been corrected to match;
+  what it promises (your token goes only to the game's own server, never anywhere else) is unchanged.
+
+  **You will be asked for consent again.** A grant records which disclosure you agreed to, and this
+  one names a different address than the one you saw. Consent given for the old wording is not
+  treated as consent for the new, so the app asks once more rather than assuming. Account reads stay
+  paused until you answer.
+
+- b7d837a: The live tick stream now folds gold and XP into a measured per-hour rate, entirely in the main
+  process: a sequence-guarded accumulator tracks payouts against a 10-minute rolling window and the
+  whole session, with a second independent check that grid-clear counts and payout counts agree. The
+  result publishes on the existing live fast channel as `LiveView.earnings`, and a
+  `live:resetEarnings` call lets the session figures be zeroed without disturbing the rolling window.
+
+  This is the data layer only — no panel reads it yet, so there is nothing new on screen.
+
+- b7d837a: The Live tab now shows an Earnings panel above the heroes panel: the current gold balance (with the
+  in-game coin), gold rates for the last few minutes and the whole session, and the quieter XP
+  counterparts of both — one row of figures divided by thin rules, rather than a table. Every rate
+  the app has not measured yet reads as a dash, never a zero, and the session control that used to
+  read "Reset session" is now an icon button with the same accessible name.
+
+  The compact number formatter (`90200` → `90.2k`) moved from the web planner into the shared design
+  system so the desktop panel renders the exact same figures the web planner does — the web planner's
+  own import path is unchanged.
+
+  With the game closed and no live tick ever arriving, the current-gold cell now falls back to the
+  most recently stored account reading instead of showing a dash, with its age shown alongside it —
+  the same posture the panel already took for a balance that went stale mid-session. No new request
+  is made to refresh it; the displayed age simply grows while the game stays closed.
+
+  The panel has since been redesigned again: a single bordered headline band up top carries the
+  dominant gold-per-hour figure and a smaller XP-per-hour figure beside it on a shared text baseline,
+  with a context line underneath stating the true coverage of the recent window and the session
+  average rate, plus the reset control. Below the band, a reflowing grid of six tiles covers current
+  gold, elapsed session time, and both currencies' session totals and session rates. The two session
+  totals (`goldSessionTotal`/`xpSessionTotal` on `LiveEarnings`) are newly published by the live fold
+  — they were already tracked internally to compute the session rates, but never reached the
+  renderer before this change. Like every other figure on the panel, a total reads as a dash rather
+  than a zero before the session has anything to report, and is unaffected by the unrelated
+  10-minute rolling window's own eviction.
+
+  The very first account read after launch no longer waits out the full scheduled cadence: the app
+  now starts a read the moment the game is detected as running, instead of only on the next
+  scheduled cycle, so the waiting state on the Live tab clears sooner when the game was already open
+  at boot. That waiting state itself is also friendlier while it lasts — its sprite now renders at
+  twice the size, and a small rotating line of flavour text sits beneath it whenever a read is
+  genuinely in progress (never while consent is what is actually blocking), in both English and
+  Portuguese, and holding still under reduced motion.
+
+  The panel's chrome is quieter still: the visible "Earnings" title is gone (the landmark keeps the
+  same name for screen readers, carried on the panel itself instead of a heading), and the reset
+  control dropped its button outline and padding, now showing as a slightly larger bare icon that
+  still focuses and announces itself like any other button. Every live figure — both headline rates,
+  the session-average line, and all six tiles below — now sits in a box reserved for its widest
+  realistic form, so a rate ticking up through the compact-number ranges no longer nudges anything
+  beside it. The XP figure's old "?" control, which opened a click popover while also showing the
+  browser's own native tooltip underneath it, is gone; the "xp / hr" label itself is now the trigger,
+  underlined with dots, opening the same explanation on hover or keyboard focus, with no native
+  tooltip left to compete with it.
+
+  The current-gold tile's age suffix now stays hidden while a reading is under a minute old, instead
+  of printing a "just now" that told the player nothing. Past that threshold it still reserves its
+  own space so its arrival never nudges the balance beside it.
+
+  Every tile's value is now right-aligned to the tile's own edge, matching the left-aligned label
+  above it — previously the values sat in a fixed-width box that made them look inconsistently
+  placed from tile to tile. A rate tile's unit stays glued to its digits rather than drifting to the
+  tile's far edge on its own.
+
+  The Live tab now gives the earnings panel half the page width, sitting at the top of the tab in the
+  first column of a two-column area — the other column is left empty for a companion panel to land in
+  later, without the earnings panel itself needing to change. Its six tiles moved from a loosely
+  reflowing row onto a fixed three-column grid, giving two even rows of three instead of a stretch of
+  tiles that could all land on one line on a wide window; on a narrower window the tiles settle into
+  two columns instead of crowding three into too little space. The heroes panel below keeps spanning
+  the full width of the tab.
+
+  The reset icon has grown one size further, still a bare, real button with no border or background.
+
+  Three more presentation fixes, now that the earnings panel only spans half the tab width. The
+  current-gold tile's age no longer shares a line with the balance — it sits on its own reserved line
+  beneath the number, hidden until the reading is genuinely stale, and the balance itself is now
+  sized exactly like every other tile's value instead of reserving room for a trailing age that used
+  to overflow the narrower tile. All six tiles keep the same height regardless, since every tile
+  reserves that second line whether or not it ever has anything to show there.
+
+  The headline band's context line no longer repeats the session-average rate — the dedicated session
+  gold-rate tile below already says it, so the line now states only the recent window's coverage. That
+  line's left edge now lines up with the gold-per-hour figure above it, and the whole band reads
+  noticeably more compact with the redundant figure gone.
+
+  In the heroes list, every hero's energy bar now starts and ends at the same horizontal position on
+  every row: the hero identity block, the bar itself, the percentage reading, and the countdown
+  column all sit in one fixed set of grid columns shared by every row, so two heroes at the same
+  energy level draw fills of the same length instead of one looking further along than the other
+  purely because its name or countdown differed in width.
+
+  The earnings panel is restructured again, into two halves side by side split by a thin vertical
+  rule. The left half is a single right-aligned stack: the coverage line, the gold-per-hour figure
+  with its unit on its own line below, then the XP-per-hour figure the same way, with the XP unit
+  line still carrying the hover/focus explanation it always has. The right half drops the bordered
+  tiles entirely — its six figures now sit as plain label-over-value pairs, both right-aligned, laid
+  out three per row across two rows (current gold, session gold rate, session gold total; elapsed,
+  session XP rate, session XP total), with spacing alone doing the separating. The two session-rate
+  values dropped their trailing per-hour suffix, since the label above each one already carries it;
+  the two session-total labels were reworded to read unmistakably as totals rather than rates sitting
+  right next to them. The current-gold reading's age now sits inline beside the balance instead of on
+  its own line beneath it, still reserving its own space so its appearance never nudges the balance
+  it sits next to. The left half's own width is reserved against both languages' unit strings at
+  once, not just whichever is active, so the vertical rule cannot shift when the display language
+  changes.
+
+  The right half's six figures now sit on fixed-width columns instead of the fractional ones that let
+  a longer Portuguese label push a column wider than its English counterpart. Every label is a single
+  line now — none of the six may wrap onto a second line any more, so the columns can stay this
+  narrow in both languages without one clipping or nudging its neighbours. The current-gold reading's
+  age moved back off the value line and onto its own third line beneath it, and every one of the six
+  figures — not only current gold — now reserves that same third line, so both rows of the grid stay
+  exactly as tall whether or not an age is showing anywhere in them. The gold- and XP-rate labels
+  dropped "session" (the grid's own rows and columns already say as much) and the two total labels
+  lost "da sessão"/their trailing repeat of it, so all six fit their fixed column comfortably in both
+  languages.
+
+  The left half's own vertical rule could still drift: its column had no width of its own, so a
+  compact gold or XP figure switching between digit counts resized the column and slid the rule (and
+  the whole six-figure grid beside it) sideways. That column is now a single fixed width, sized from
+  the widest of its own possible contents rather than letting its children set it, so neither a
+  changing figure nor a language switch can move it again. With the column itself now fixed, the
+  per-line width reservations the coverage line and the two unit lines used to carry (each holding
+  its own longest form in either language) no longer do anything the column doesn't already cover,
+  so they are gone — those lines are now plain right-aligned text.
+
+  The headline gold-per-hour figure was still overflowing its own column at its widest realistic
+  size, because the column's declared width already counts the padding and border that come out of
+  it, leaving less room for the figure than it needed. The figure now renders a size smaller, and the
+  column is sized to fit its true widest form — this also frees up room on the page, so the earnings
+  panel's half-width layout now starts one column narrower than before.
+
+  Every one of the six figures below the headline drops its reserved third line, so the grid's two
+  rows sit noticeably tighter with no dead space beneath the numbers. Current gold still marks a
+  stale reading, but as a small always-present marker beside the figure instead: dark and out of the
+  way while the reading is fresh, lit up once it's genuinely stale, with the exact age reachable by
+  hovering or focusing it — same as the XP figure's own explanation above. The marker takes up the
+  same space whether or not it's showing, so a reading going stale mid-session never nudges anything
+  beside it.
+
+- b7d837a: The Live tab's "nothing read yet" empty state no longer tells you to open the game when it is
+  already open and the app is simply still attaching — it now states the real reason nothing has
+  arrived (not yet connected this session, waiting on the game, a runtime issue, and so on), reusing
+  the same wording already shown once attached. If consent for reading the account is missing, the
+  empty state now offers the control to grant it again instead of leaving no way forward.
+- 8ba7408: Fix the energy bar and percentage on the Live tab lagging up to a minute behind the countdown
+  printed beside them. The countdown was refreshed four times a second, but the percentage came from
+  the authenticated account read that only lands once a minute, so a hero could sit at "0:00" with a
+  bar still reading 99% — two numbers describing the same hero, disagreeing. Both readings now come
+  from the same fast channel: a hero on the field shows the energy the live stream actually observed,
+  and a hero resting shows the exact inverse of the recovery clock next to it, so the bar reaches full
+  at the instant the clock runs out. Queued and benched heroes have no live reading available and are
+  unchanged.
+- 3da228e: Fix the Live and Inventory tabs falling back to "Loading…" every time you came back to them from
+  another tab. Both screens set their data up and tore it down with the tab itself, so leaving
+  dropped the subscription and threw away everything already on screen; returning started over from
+  an empty screen and waited on a fresh read before it could show anything. Both now follow the game
+  for as long as the window is open and paint current numbers on the first frame back, with no gap
+  for whatever arrived while you were away, and no repeated account or price read on each visit.
+- b7d837a: Add `SpriteLoop`, a shared preloading, reduced-motion-aware pixel-art frame loop, generalised out
+  of the web team-plan optimizing modal's hero6 bomb-activation animation so both apps can reuse the
+  same implementation. `SpriteLoop` now also takes an `animate` prop to hold the loop on its first
+  frame on demand, independent of reduced-motion. The web modal's own animation is unchanged.
+
+  The desktop Live tab's "waiting for the first account read" screen now shows Hero 6's pixel-art
+  idle animation while the app is reading the account or retrying a connection gap on its own, so a
+  long wait reads as working rather than stalled. The sprite holds still on its first frame while
+  consent is missing, since nothing is actually in progress in that state, and it honours
+  reduced-motion settings.
+
+- 48ae346: Show the market price and refresh hints in the app's own tooltip instead of the browser's.
+
+  The Steam price figure and the per-item refresh control carried their explanation on the native
+  `title` attribute, which is OS chrome: unstyled, untouched by the app's theme, on a delay the
+  browser owns, and shown neither on touch nor on keyboard focus — so the quote's basis and age were
+  invisible to anyone not hovering a mouse. Both now use the design-system tooltip, which appears on
+  keyboard focus as well as hover. The price link keeps opening the listing in a new tab and stays
+  reachable by keyboard, and an untradable item still renders nothing at all.
+
+  Lint now rejects the native attribute on a DOM element across the design system, the game-art
+  package, the desktop renderer and the web planner, so the next one cannot land unnoticed.
+
+- Updated dependencies [c3dd984]
+- Updated dependencies [4836894]
+- Updated dependencies [48ae346]
+- Updated dependencies [b7d837a]
+- Updated dependencies [48ae346]
+- Updated dependencies [48ae346]
+- Updated dependencies [48ae346]
+- Updated dependencies [b7d837a]
+- Updated dependencies [b7d837a]
+- Updated dependencies [8ba7408]
+- Updated dependencies [19197cc]
+- Updated dependencies [b7d837a]
+- Updated dependencies [19a8c45]
+- Updated dependencies [48ae346]
+- Updated dependencies [48ae346]
+- Updated dependencies [48ae346]
+  - @bombfarm/contracts@0.5.0
+  - @bombfarm/ui@0.6.0
+  - @bombfarm/game-api@0.3.2
+  - @bombfarm/game-art@0.3.0
+  - @bombfarm/domain@0.9.0
+  - @bombfarm/pricing@0.1.0
+  - @bombfarm/game-data@0.0.9
+
 ## 0.5.1
 
 ### Patch Changes
