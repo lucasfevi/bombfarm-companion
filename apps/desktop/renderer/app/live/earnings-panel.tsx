@@ -8,6 +8,9 @@ import { formatLiveDurationSeconds } from './format-live-duration';
 
 const EM_DASH = '—';
 const MAX_COVERAGE_MINUTES = 10;
+/** Keeps the age line's invisible sizer a non-empty inline box on the five blocks that never
+ *  carry a real age, so every block's third line renders at the same height as current gold's. */
+const AGE_LINE_RESERVE_FALLBACK = ' ';
 
 /** Below this age a reading is not meaningfully stale — "just now" tells the player nothing they
  *  don't already assume, so the age suffix stays suppressed until the underlying gap actually
@@ -57,24 +60,45 @@ function ReservedLine({
   );
 }
 
-/** Right-aligned label-over-value block for the right half's six figures — label and value both
- *  hug the block's own right edge, so each one reads as a single right-anchored unit. */
+/** Right-aligned label/value/age block for the right half's six figures. Every block reserves the
+ *  same three lines — label, value, age — so all six stay the same fixed width (the label's own
+ *  box, not just the column) and the same height whether or not that block ever has an age to
+ *  show. Only current gold ever passes a real `ageTestId`/`ageReserve`/`ageShown`; the rest keep
+ *  the third line's height without claiming a reading they don't have. */
 function Block({
+  blockTestId,
   testId,
   label,
   value,
   className,
+  ageTestId,
+  ageReserve,
+  ageShown,
 }: {
+  blockTestId: string;
   testId: string;
   label: ReactNode;
   value: ReactNode;
   className: string;
+  ageTestId?: string;
+  ageReserve?: string;
+  ageShown?: ReactNode;
 }) {
   return (
-    <div className="flex flex-col items-end gap-0.5">
-      <span className="text-right text-[10.5px] uppercase tracking-[0.06em] text-muted">{label}</span>
+    <div data-testid={blockTestId} className="flex flex-col items-end gap-0.5">
+      <span className="block w-full text-right text-[10.5px] uppercase leading-none tracking-[0.06em] text-muted whitespace-nowrap">
+        {label}
+      </span>
       <span data-testid={testId} className={className}>
         {value}
+      </span>
+      <span className="relative grid text-right text-[10.5px] leading-none text-muted tabular-nums whitespace-nowrap">
+        <span aria-hidden className="invisible col-start-1 row-start-1">
+          {ageReserve || AGE_LINE_RESERVE_FALLBACK}
+        </span>
+        <span data-testid={ageTestId} className="col-start-1 row-start-1">
+          {ageShown ?? ''}
+        </span>
       </span>
     </div>
   );
@@ -178,50 +202,47 @@ export function EarningsPanel({
               </Tooltip.Provider>
             </span>
           </div>
-          <div className="grid grid-cols-3 gap-x-4 gap-y-3">
-            <div className="flex flex-col items-end gap-0.5">
-              <span className="text-[10.5px] uppercase tracking-[0.06em] text-muted whitespace-nowrap">
-                {t.liveEarningsCurrentGoldLabel}
-              </span>
-              <span className="flex items-baseline gap-1 whitespace-nowrap">
-                <span data-testid="live-earnings-gold-current" className="text-[23px] font-bold text-gold tabular-nums">
-                  {currentGoldValue}
-                </span>
-                <span className="relative grid text-[10.5px] leading-none text-muted tabular-nums">
-                  <span aria-hidden className="invisible col-start-1 row-start-1">
-                    {currentGoldAgeReserve || ' '}
-                  </span>
-                  <span data-testid="live-earnings-gold-current-age" className="col-start-1 row-start-1">
-                    {currentGoldAgeShown}
-                  </span>
-                </span>
-              </span>
-            </div>
+          <div className="grid grid-cols-[repeat(3,7rem)] gap-x-4 gap-y-3">
             <Block
+              blockTestId="live-earnings-block-current-gold"
+              testId="live-earnings-gold-current"
+              label={t.liveEarningsCurrentGoldLabel}
+              value={currentGoldValue}
+              className="text-[23px] font-bold text-gold tabular-nums whitespace-nowrap"
+              ageTestId="live-earnings-gold-current-age"
+              ageReserve={currentGoldAgeReserve}
+              ageShown={currentGoldAgeShown}
+            />
+            <Block
+              blockTestId="live-earnings-block-gold-rate"
               testId="live-earnings-gold-session"
               label={t.liveEarningsGoldSessionLabel}
               value={numberText(earnings?.goldSession)}
               className="text-[23px] font-bold text-gold/70 tabular-nums whitespace-nowrap"
             />
             <Block
+              blockTestId="live-earnings-block-gold-total"
               testId="live-earnings-gold-session-total"
               label={t.liveEarningsGoldSessionTotalLabel}
               value={numberText(earnings?.goldSessionTotal)}
               className="text-[23px] font-bold text-gold tabular-nums whitespace-nowrap"
             />
             <Block
+              blockTestId="live-earnings-block-elapsed"
               testId="live-earnings-elapsed"
               label={t.liveEarningsElapsedLabel}
               value={formatLiveDurationSeconds(sessionSeconds)}
               className="text-[23px] font-bold text-ink tabular-nums whitespace-nowrap"
             />
             <Block
+              blockTestId="live-earnings-block-xp-rate"
               testId="live-earnings-xp-session"
               label={t.liveEarningsXpSessionLabel}
               value={numberText(earnings?.xpSession)}
               className="text-[23px] font-bold text-info/70 tabular-nums whitespace-nowrap"
             />
             <Block
+              blockTestId="live-earnings-block-xp-total"
               testId="live-earnings-xp-session-total"
               label={t.liveEarningsXpSessionTotalLabel}
               value={numberText(earnings?.xpSessionTotal)}

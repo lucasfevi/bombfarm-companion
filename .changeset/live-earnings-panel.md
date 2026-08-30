@@ -101,3 +101,14 @@ its own line beneath it, still reserving its own space so its appearance never n
 it sits next to. The left half's own width is reserved against both languages' unit strings at
 once, not just whichever is active, so the vertical rule cannot shift when the display language
 changes.
+
+The right half's six figures now sit on fixed-width columns instead of the fractional ones that let
+a longer Portuguese label push a column wider than its English counterpart. Every label is a single
+line now — none of the six may wrap onto a second line any more, so the columns can stay this
+narrow in both languages without one clipping or nudging its neighbours. The current-gold reading's
+age moved back off the value line and onto its own third line beneath it, and every one of the six
+figures — not only current gold — now reserves that same third line, so both rows of the grid stay
+exactly as tall whether or not an age is showing anywhere in them. The gold- and XP-rate labels
+dropped "session" (the grid's own rows and columns already say as much) and the two total labels
+lost "da sessão"/their trailing repeat of it, so all six fit their fixed column comfortably in both
+languages.

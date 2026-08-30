@@ -8,6 +8,7 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const desktopRoot = path.join(__dirname, '..', '..');
 const ACCOUNT_FULL_FIXTURE = path.join(__dirname, '..', 'fixtures', 'account-full.json');
 const EN_COPY_PATH = path.join(desktopRoot, 'renderer', 'lib', 'copy', 'en.ts');
+const PT_BR_COPY_PATH = path.join(desktopRoot, 'renderer', 'lib', 'copy', 'pt-BR.ts');
 
 /**
  * Reads the real template off the source of truth (`i18n.spec.mjs`'s own established technique)
@@ -23,6 +24,90 @@ function readCopyValue(filePath, key) {
 
 function recentWindowLabel(minutes) {
   return readCopyValue(EN_COPY_PATH, 'liveEarningsRecentWindowLabel').replace('{minutes}', String(minutes));
+}
+
+const en = (key) => readCopyValue(EN_COPY_PATH, key);
+const pt = (key) => readCopyValue(PT_BR_COPY_PATH, key);
+
+/** The six fixed-width blocks, `earnings-panel.tsx`'s own `blockTestId`s — every one of them
+ *  reserves the same three lines (label, value, age) and must land on the same box size. */
+const BLOCK_TEST_IDS = [
+  'live-earnings-block-current-gold',
+  'live-earnings-block-gold-rate',
+  'live-earnings-block-gold-total',
+  'live-earnings-block-elapsed',
+  'live-earnings-block-xp-rate',
+  'live-earnings-block-xp-total',
+];
+
+/**
+ * Measures, for each of the six blocks, its own box and its label's overflow/height — the two
+ * signals that together catch both failure modes this panel has already shipped once each: a
+ * column that resizes (caught by the width/height comparison across blocks) and a label that
+ * wraps instead of fitting (caught per-label: `whitespace-nowrap` means a too-long label
+ * overflows its box rather than growing taller, so `scrollWidth > clientWidth` is the overflow
+ * signal, and a label that DID wrap despite the class would show up as a taller-than-its-siblings
+ * `labelHeight` instead).
+ */
+function measureBlocks(page) {
+  return page.evaluate((blockTestIds) => {
+    return blockTestIds.map((testId) => {
+      const block = document.querySelector(`[data-testid="${testId}"]`);
+      if (!block) throw new Error(`block not found: ${testId}`);
+      const label = block.firstElementChild;
+      if (!label) throw new Error(`label not found in block: ${testId}`);
+      const blockRect = block.getBoundingClientRect();
+      const labelRect = label.getBoundingClientRect();
+      return {
+        testId,
+        width: blockRect.width,
+        height: blockRect.height,
+        labelText: label.textContent,
+        labelScrollWidth: label.scrollWidth,
+        labelClientWidth: label.clientWidth,
+        labelHeight: labelRect.height,
+      };
+    });
+  }, BLOCK_TEST_IDS);
+}
+
+/** Asserts the properties every block must hold regardless of which language is active:
+ *  identical block width, identical block height, no label overflowing its column, and every
+ *  label rendering at the same (single-line) height as its siblings. */
+function assertBlocksHoldTheirShape(blocks) {
+  const detail = JSON.stringify(blocks, null, 2);
+
+  const widths = new Set(blocks.map((block) => Math.round(block.width)));
+  expect(widths.size, `all six blocks must share one width:\n${detail}`).toBe(1);
+
+  const heights = new Set(blocks.map((block) => Math.round(block.height)));
+  expect(heights.size, `all six blocks must share one height:\n${detail}`).toBe(1);
+
+  const labelHeights = new Set(blocks.map((block) => Math.round(block.labelHeight)));
+  expect(labelHeights.size, `every label must render at one single-line height:\n${detail}`).toBe(1);
+
+  for (const block of blocks) {
+    expect(
+      block.labelScrollWidth,
+      `label "${block.labelText}" (${block.testId}) overflowed its fixed-width column`,
+    ).toBeLessThanOrEqual(block.labelClientWidth);
+  }
+}
+
+/** The Live/Planning/Inventory/Settings nav buttons, by position — same technique as
+ *  `i18n.spec.mjs`'s own `navButton` (`packages/ui` ships no `data-testid` on these, by design). */
+function navButton(page, index) {
+  return page.locator('nav[aria-label="Main"] button').nth(index);
+}
+
+async function switchToPortuguese(page) {
+  await navButton(page, 3).click();
+  const select = page.getByRole('combobox', { name: en('settingsLanguageLabel') });
+  await select.waitFor({ state: 'visible', timeout: 10_000 });
+  await select.click();
+  await page.getByRole('option', { name: en('settingsLanguageOptionPortuguese') }).click();
+  await navButton(page, 0).click();
+  await page.waitForSelector('[data-testid="live-earnings"]', { timeout: 15_000 });
 }
 
 /**
@@ -126,6 +211,70 @@ test.describe('live earnings panel: no layout shift smoke', () => {
       for (const testId of testIds) {
         expect(longBoxes[testId], `box for "${testId}" moved or resized`).toEqual(shortBoxes[testId]);
       }
+
+      await app.close();
+    } finally {
+      await app.close().catch(() => undefined);
+      fs.rmSync(userDataDir, { recursive: true, force: true });
+    }
+  });
+
+  test('the six blocks share one width and one height, and no label overflows its fixed column, in English and in Portuguese', async () => {
+    const userDataDir = fs.mkdtempSync(path.join(os.tmpdir(), 'bfc-earnings-blocks-'));
+    const electronExec = path.join(
+      desktopRoot,
+      'node_modules',
+      'electron',
+      'dist',
+      process.platform === 'win32' ? 'electron.exe' : 'electron',
+    );
+
+    const app = await electron.launch({
+      executablePath: electronExec,
+      args: [desktopRoot],
+      env: {
+        ...process.env,
+        NODE_ENV: 'production',
+        BFC_FLAVOR: 'dev',
+        BFC_GAME_READER: 'fixture',
+        BFC_FIXTURE_ACCOUNT_FILE: ACCOUNT_FULL_FIXTURE,
+        BFC_LIVE_SOURCE: 'replay',
+        BFC_USER_DATA_DIR: userDataDir,
+        BFC_TOKEN_PATH_OVERRIDE: path.join(desktopRoot, 'tests', 'smoke', '.no-such-session.cfg'),
+        ELECTRON_ENABLE_LOGGING: '1',
+      },
+    });
+
+    try {
+      const page = await app.firstWindow();
+      await page.waitForSelector('[data-testid="app-ready"]', { timeout: 60_000 });
+
+      const consentModal = page.getByTestId('consent-modal');
+      await expect(consentModal).toBeVisible({ timeout: 30_000 });
+      await page.getByTestId('consent-accept').click();
+      await expect(consentModal).toBeHidden({ timeout: 15_000 });
+
+      await expect(page.getByTestId('live-earnings-recent-window-label')).toBeVisible({ timeout: 30_000 });
+      await expect(page.getByTestId('live-earnings')).toBeVisible();
+
+      const englishBlocks = await measureBlocks(page);
+      assertBlocksHoldTheirShape(englishBlocks);
+
+      // Sanity check that this really did read English text, so a passing assertion above isn't
+      // accidentally measuring the same content twice under two different labels.
+      const currentGoldBlockEn = englishBlocks.find((block) => block.testId === 'live-earnings-block-current-gold');
+      expect(currentGoldBlockEn?.labelText).toBe(en('liveEarningsCurrentGoldLabel'));
+
+      // Portuguese is where this panel has actually wrapped before (longer words, same fixed
+      // column) — switching in place and re-measuring is the whole point of this second pass
+      // rather than only ever checking the English strings.
+      await switchToPortuguese(page);
+
+      const portugueseBlocks = await measureBlocks(page);
+      assertBlocksHoldTheirShape(portugueseBlocks);
+
+      const currentGoldBlockPt = portugueseBlocks.find((block) => block.testId === 'live-earnings-block-current-gold');
+      expect(currentGoldBlockPt?.labelText).toBe(pt('liveEarningsCurrentGoldLabel'));
 
       await app.close();
     } finally {

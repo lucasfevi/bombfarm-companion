@@ -412,17 +412,33 @@ describe('EarningsPanel — elapsed and reset', () => {
 });
 
 describe('EarningsPanel — the right half is a fixed three-column, two-row grid', () => {
-  it('lays the six blocks out three per row, with no per-block border box', () => {
+  it('lays the six blocks out three per row on explicit fixed-width tracks, with no per-block border box', () => {
     const out = html(earnings());
-    expect(out).toContain('class="grid grid-cols-3 gap-x-4 gap-y-3"');
+    // Fixed pixel/rem tracks, not `1fr` — a changing value or a language toggle can never resize
+    // a column. All three tracks share one width so the six blocks stay identically sized too.
+    expect(out).toContain('class="grid grid-cols-[repeat(3,7rem)] gap-x-4 gap-y-3"');
+    expect(out).not.toContain('1fr');
     expect(out).not.toContain('rounded-lg border');
   });
 
-  it("a block's label is free to wrap onto a second line rather than truncating or overflowing its column — Portuguese's longer labels need it (docs/content-fit-ui.md rule 2)", () => {
+  it("a block's label never wraps — it is sized to fit the fixed column in both languages, so it overflows rather than wrapping if it ever doesn't", () => {
     const out = html(earnings());
-    const labelTag = out.match(/<span class="text-right text-\[10\.5px\] uppercase tracking-\[0\.06em\] text-muted">/);
+    const labelTag = out.match(/<span class="block w-full text-right text-\[10\.5px\] uppercase leading-none tracking-\[0\.06em\] text-muted whitespace-nowrap">/);
     expect(labelTag).not.toBeNull();
-    expect(labelTag?.[0]).not.toMatch(/whitespace-nowrap/);
+  });
+
+  it('every one of the six blocks is independently addressable, for layout measurement outside this suite', () => {
+    const out = html(earnings());
+    for (const blockTestId of [
+      'live-earnings-block-current-gold',
+      'live-earnings-block-gold-rate',
+      'live-earnings-block-gold-total',
+      'live-earnings-block-elapsed',
+      'live-earnings-block-xp-rate',
+      'live-earnings-block-xp-total',
+    ]) {
+      expect(out).toContain(`data-testid="${blockTestId}"`);
+    }
   });
 });
 
