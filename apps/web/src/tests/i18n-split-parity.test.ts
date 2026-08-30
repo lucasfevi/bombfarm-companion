@@ -350,8 +350,17 @@ const KEYS_REMOVED: readonly string[] = [
  * takes the item name because a row control repeats down the page, and a column of identically
  * named buttons names nothing to a screen reader. `inventorySortMarket` is the new sort key that
  * orders by what the market is asking for an item.
+ *
+ * The Priced filter and the totals header (2026-08-30): `inventoryFilterPriced` narrows to the
+ * items the market is quoting right now. `inventoryTotalsCoverage` says how much of the inventory
+ * the headline figure actually covers, counted against TRADABLE items rather than all of them —
+ * the game forbids selling the rest, so they were never candidates for a price and counting them
+ * would make the coverage read worse than it is.
  */
 const KEYS_ADDED: readonly string[] = [
+  'inventoryFilterPriced',
+  'inventoryTotalsTitle',
+  'inventoryTotalsCoverage',
   'inventorySortMarket',
   'inventoryViewLabel',
   'inventoryViewCards',

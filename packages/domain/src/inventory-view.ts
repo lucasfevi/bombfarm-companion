@@ -412,6 +412,14 @@ export type InventoryFilter = {
    */
   sets: readonly string[] | null;
   equippedOnly: boolean;
+  /**
+   * Only items the market is currently asking a price for.
+   *
+   * Unlike every other term here this is not a property of the item — it depends on a market
+   * snapshot the domain has no access to — so `filterInventoryView` takes the predicate. With no
+   * predicate nothing is priced, which is the truthful answer when there is no snapshot to ask.
+   */
+  pricedOnly: boolean;
 };
 
 export const EMPTY_INVENTORY_FILTER: InventoryFilter = {
@@ -421,6 +429,7 @@ export const EMPTY_INVENTORY_FILTER: InventoryFilter = {
   heroIds: [],
   sets: null,
   equippedOnly: false,
+  pricedOnly: false,
 };
 
 export function isEmptyInventoryFilter(filter: InventoryFilter): boolean {
@@ -430,7 +439,8 @@ export function isEmptyInventoryFilter(filter: InventoryFilter): boolean {
     filter.rarities.length === 0 &&
     filter.heroIds.length === 0 &&
     filter.sets === null &&
-    !filter.equippedOnly
+    !filter.equippedOnly &&
+    !filter.pricedOnly
   );
 }
 
@@ -453,6 +463,7 @@ export function filterInventoryView(
   view: InventoryView,
   filter: InventoryFilter,
   searchText: (item: InventoryViewItem) => string,
+  isPriced?: (item: InventoryViewItem) => boolean,
 ): InventoryView {
   if (isEmptyInventoryFilter(filter)) return view;
 
@@ -468,6 +479,7 @@ export function filterInventoryView(
     if (heroIds && (item.equippedBy === null || !heroIds.has(item.equippedBy))) return false;
     if (sets && !sets.has(item.set)) return false;
     if (filter.equippedOnly && !item.equipped) return false;
+    if (filter.pricedOnly && !(isPriced?.(item) ?? false)) return false;
     if (needles.length === 0) return true;
     const haystack = fold(searchText(item));
     return needles.every((needle) => haystack.includes(needle));

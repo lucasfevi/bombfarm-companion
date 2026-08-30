@@ -1,21 +1,16 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useState } from 'react';
-import { InventoryGrid, InventoryTable, type MarketPriceLabels } from '@bombfarm/game-art';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { InventoryGrid, InventoryTable, InventoryTotals } from '@bombfarm/game-art';
 import { Button, Panel, PanelHeader } from '@bombfarm/ui';
-import type { InventoryEntry, InventoryView } from '@bombfarm/domain/inventory-view';
-import { resolveItemPrice } from '@bombfarm/pricing';
+import type { InventoryView } from '@bombfarm/domain/inventory-view';
 import { useAppLang } from '@/shared/context/app-lang';
 import { usePlannerStore } from '@/shared/stores';
 import { inventoryViewFromStorage, loadInventoryView } from '@/shared/lib/inventory-view-storage';
-import { useMarketSnapshot } from '@/shared/hooks/use-market-snapshot';
-import {
-  formatMoney,
-  formatPricesUpdated,
-  formatQuoteTooltip,
-  formatUnpricedLabel,
-} from '@/shared/i18n';
+import { formatPricesUpdated } from '@/shared/i18n';
 import { inventoryLabels, inventoryTableLabels } from '../model/inventory-labels';
+import { useInventoryPrices } from '../model/use-inventory-prices';
+import { useFillsViewport } from '../model/use-fills-viewport';
 
 const EMPTY_VIEW: InventoryView = { items: [], groups: [], skipped: 0 };
 
@@ -52,7 +47,9 @@ export function InventoryPage() {
   const [view, setView] = useState<InventoryView>(EMPTY_VIEW);
   const [layout, setLayout] = useState<Layout>('cards');
 
-  const { snapshot, generatedUtc, refresh, isRefreshing } = useMarketSnapshot();
+  const prices = useInventoryPrices(view);
+  const panelRef = useRef<HTMLDivElement>(null);
+  const panelHeight = useFillsViewport(panelRef);
 
   useEffect(() => {
     setView(inventoryViewFromStorage(loadInventoryView()));
@@ -70,37 +67,22 @@ export function InventoryPage() {
   const labels = useMemo(() => inventoryLabels(t, lang, heroes), [t, lang, heroes]);
   const tableLabels = useMemo(() => inventoryTableLabels(t, lang, heroes), [t, lang, heroes]);
 
-  const priceLabels = useMemo<MarketPriceLabels>(
-    () => ({
-      amount: (amount, currency) => formatMoney(amount, lang, currency),
-      title: (price) => formatQuoteTooltip(price, lang),
-      unpriced: (state) => formatUnpricedLabel(state, lang),
-    }),
-    [lang],
-  );
-
-  const priceOf = useMemo(
-    () =>
-      snapshot == null
-        ? undefined
-        : (entry: InventoryEntry) =>
-            resolveItemPrice(
-              {
-                defId: entry.item.defId,
-                rarity: entry.item.rarityIdx,
-                tradable: entry.item.tradable,
-              },
-              snapshot,
-              'BRL',
-            ),
-    [snapshot],
-  );
-
-  const showPrices = priceOf != null;
+  // Both layouts take the same data and the same bounded box; only the labels differ.
+  const shared = {
+    view,
+    priceOf: prices.priceOf,
+    priceLabels: prices.priceOf == null ? undefined : prices.priceLabels,
+    isPricedItem: prices.isPricedItem,
+    className: 'min-h-0 flex-1',
+  };
 
   return (
-    <div className="mx-auto flex w-full max-w-app flex-col gap-4 p-4">
-      <Panel>
+    <div
+      ref={panelRef}
+      className="mx-auto flex w-full max-w-app flex-col gap-4 p-4"
+      style={panelHeight == null ? undefined : { height: panelHeight }}
+    >
+      <Panel className="flex min-h-0 flex-1 flex-col">
         <PanelHeader title={t.inventoryTitle} />
         <p className="pb-3 text-sm text-muted">{t.inventoryTip}</p>
 
@@ -126,13 +108,15 @@ export function InventoryPage() {
             </Button>
           </div>
 
-          {showPrices ? (
+          {prices.totals ? (
             <div className="flex items-center gap-2">
-              <span className="text-xs text-muted">{formatPricesUpdated(generatedUtc, lang)}</span>
+              <span className="text-xs text-muted">
+                {formatPricesUpdated(prices.generatedUtc, lang)}
+              </span>
               <Button
                 variant="ghost"
-                onClick={refresh}
-                disabled={isRefreshing}
+                onClick={prices.refresh}
+                disabled={prices.isRefreshing}
                 aria-label={t.marketRefreshName}
               >
                 {t.marketRefreshLabel}
@@ -141,20 +125,21 @@ export function InventoryPage() {
           ) : null}
         </div>
 
+        {prices.totals ? (
+          <InventoryTotals
+            total={prices.totals.total}
+            currency={prices.currency}
+            priced={prices.totals.priced}
+            tradable={prices.totals.tradable}
+            labels={prices.totalsLabels}
+            className="mb-3"
+          />
+        ) : null}
+
         {layout === 'list' ? (
-          <InventoryTable
-            view={view}
-            labels={tableLabels}
-            priceOf={priceOf}
-            priceLabels={showPrices ? priceLabels : undefined}
-          />
+          <InventoryTable {...shared} labels={tableLabels} />
         ) : (
-          <InventoryGrid
-            view={view}
-            labels={labels}
-            priceOf={priceOf}
-            priceLabels={showPrices ? priceLabels : undefined}
-          />
+          <InventoryGrid {...shared} labels={labels} />
         )}
       </Panel>
     </div>

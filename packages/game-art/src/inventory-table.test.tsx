@@ -41,9 +41,30 @@ const labels: InventoryTableLabels = {
     actions: 'Actions',
   },
   rowAction: (itemName) => `Details for ${itemName}`,
-  searchPlaceholder: 'Search',
-  searchLabel: 'Search items',
-  resultCount: (shown, total) => `${shown}/${total}`,
+  setOption: (group) => group.set,
+  setOptionCount: (group) => String(group.count),
+  toolbar: {
+    searchPlaceholder: 'Search',
+    searchLabel: 'Search items',
+    allKinds: 'All kinds',
+    rarity: (rarityIdx) => RARITIES[rarityIdx] ?? '',
+    equippedOnly: 'Equipped',
+    pricedOnly: 'Priced',
+    clear: 'Clear filters',
+    resultCount: (shown, total) => `${shown}/${total}`,
+    noMatches: 'Nothing matches the filters',
+    heroLabel: 'Hero',
+    allHeroes: 'All heroes',
+    setsLabel: 'Sets',
+    allSets: 'All sets',
+    setsOwned: 'Sets you own',
+    setsSelected: (chosen, total) => `${chosen}/${total} sets`,
+    selectAllSets: 'Select all',
+    sortLabel: 'Sort by',
+    sortKey: (key) => key,
+    sortAscending: 'Ascending',
+    sortDescending: 'Descending',
+  },
   clear: 'Clear filters',
   filteredEmpty: {
     title: 'Nothing matches the filters',
@@ -229,5 +250,30 @@ describe('InventoryTable', () => {
     );
     expect(html).toContain('No items');
     expect(html).not.toContain(labels.filteredEmpty.title);
+  });
+});
+
+describe('InventoryTable toolbar', () => {
+  it('keeps the filters the cards have and drops only the sort control', () => {
+    const html = render();
+    expect(html).toContain('Search');
+    expect(html).toContain('All kinds');
+    // The headers are the sort control here; a second one would order the same rows twice.
+    expect(html).not.toContain('Sort by');
+  });
+
+  it('offers the priced narrowing only where the host can answer it', () => {
+    expect(render()).not.toContain('Priced');
+    expect(render({ isPricedItem: () => true })).toContain('Priced');
+  });
+
+  it('narrows to the priced rows through the host predicate', () => {
+    const html = render({
+      priceOf,
+      priceLabels,
+      isPricedItem: (item) => item.id === 'ring-2',
+      filter: { ...EMPTY_INVENTORY_FILTER, pricedOnly: true },
+    });
+    expect(rowIds(html)).toEqual(['ring-2']);
   });
 });

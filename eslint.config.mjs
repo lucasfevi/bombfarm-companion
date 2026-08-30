@@ -2,6 +2,7 @@ import eslint from '@eslint/js';
 import path from 'node:path';
 import globals from 'globals';
 import tseslint from 'typescript-eslint';
+import react from 'eslint-plugin-react';
 import reactHooks from 'eslint-plugin-react-hooks';
 import eslintPluginTailwindcss from 'eslint-plugin-tailwindcss';
 
@@ -46,6 +47,26 @@ const rawIconImportRule = [
         group: ['*.svg', '**/*.svg'],
         message:
           'Do not import SVG files into app/UI code. Use <Icon name="…" /> from @bombfarm/ui for chrome icons.',
+      },
+    ],
+  },
+];
+
+/**
+ * Ban the native `title` tooltip on DOM elements. `forbid-dom-props` and not a blanket prop ban:
+ * `title` is a real prop on `PanelHeader`, `EmptyState`, `Banner` and `SettingsSection`.
+ */
+const nativeTooltipRule = [
+  'error',
+  {
+    forbid: [
+      {
+        propName: 'title',
+        message:
+          'Native title tooltips are forbidden. Use the design-system Tooltip from @bombfarm/ui ' +
+          '(Tooltip.Provider/Root/Trigger/Portal/Positioner/Popup) — the native one cannot be ' +
+          'styled, ignores the theme, has an uncontrollable delay, and never appears on touch or ' +
+          'for keyboard focus. See docs/design-system.md.',
       },
     ],
   },
@@ -142,6 +163,11 @@ export default tseslint.config(
     rules: {
       ...reactHooks.configs.recommended.rules,
     },
+  },
+  {
+    files: ['packages/ui/**/*.{ts,tsx}', 'packages/game-art/**/*.{ts,tsx}', 'apps/desktop/renderer/**/*.{ts,tsx}'],
+    plugins: { react },
+    rules: { 'react/forbid-dom-props': nativeTooltipRule },
   },
   {
     files: ['packages/ui/**/*.{ts,tsx}', 'packages/game-art/**/*.{ts,tsx}'],

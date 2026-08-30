@@ -3,12 +3,12 @@ import {
   DEFAULT_INVENTORY_SORT,
   EMPTY_INVENTORY_FILTER,
   filterInventoryView,
-  isEmptyInventoryFilter,
   sortDirectionFor,
   sortInventoryView,
   withSortTerm,
   type InventoryEntry,
   type InventoryFilter,
+  type InventorySetGroup,
   type InventorySort,
   type InventorySortKey,
   type InventoryView,
@@ -21,8 +21,13 @@ import { HeroAvatar } from './hero-avatar';
 import { ItemIcon } from './item-icon';
 import { MarketPrice, type MarketPriceLabels, type MarketPriceView } from './market-price';
 import { rarityTextClass } from './game-art.recipe';
-import { inventoryChipRecipe, inventoryFieldClass } from './inventory-grid.recipe';
+import { inventoryChipRecipe } from './inventory-grid.recipe';
 import type { InventoryEquippedBy } from './inventory-grid';
+import {
+  InventoryToolbar,
+  type InventoryHeroOption,
+  type InventoryToolbarLabels,
+} from "./inventory-toolbar";
 import {
   inventoryTableActionButtonClass,
   inventoryTableBlankClass,
@@ -34,10 +39,8 @@ import {
   inventoryTableHeroNameClass,
   inventoryTableItemNameClass,
   inventoryTableNameClass,
-  inventoryTableResultCountClass,
   inventoryTableRowClass,
   inventoryTableSkippedNoteClass,
-  inventoryTableToolbarClass,
 } from './inventory-table.recipe';
 
 export interface InventoryTableColumnLabels {
@@ -69,12 +72,13 @@ export interface InventoryTableLabels {
   /** What free-text search matches against for one item. */
   searchText: (item: InventoryViewItem) => string;
   column: InventoryTableColumnLabels;
+  setOption: (group: InventorySetGroup) => string;
+  setOptionCount: (group: InventorySetGroup) => string;
+  heroOption?: (heroId: string) => InventoryHeroOption;
+  toolbar: InventoryToolbarLabels;
   /** Accessible name for the row's own control. Takes the item name because these repeat down
    *  the page, and a column of identical "Details" buttons names nothing. */
   rowAction: (itemName: string) => string;
-  searchPlaceholder: string;
-  searchLabel: string;
-  resultCount: (shown: number, total: number) => string;
   clear: string;
   /** Shown in place of the rows when the filter is what emptied them. */
   filteredEmpty: { title: string; description: string };
@@ -94,6 +98,9 @@ export interface InventoryTableProps {
   /** `null` for an entry the market says nothing about. Absent drops the price column. */
   priceOf?: (entry: InventoryEntry) => MarketPriceView | null;
   priceLabels?: MarketPriceLabels;
+  /** Whether the market is quoting a price for one item right now — the `Priced` chip's predicate.
+   *  Supplied by the host, which owns the snapshot; absent drops the chip. */
+  isPricedItem?: (item: InventoryViewItem) => boolean;
   /** Per-row refresh control, placed beside the price it refreshes. */
   renderPriceAction?: (entry: InventoryEntry) => ReactNode;
   className?: string;
@@ -290,6 +297,7 @@ export function InventoryTable({
   onSelectItem,
   priceOf,
   priceLabels,
+  isPricedItem,
   renderPriceAction,
   className,
 }: InventoryTableProps) {
@@ -321,8 +329,8 @@ export function InventoryTable({
   }, [priceOf]);
 
   const filtered = useMemo(
-    () => filterInventoryView(view, filter, labels.searchText),
-    [view, filter, labels],
+    () => filterInventoryView(view, filter, labels.searchText, isPricedItem),
+    [view, filter, labels, isPricedItem],
   );
   const sorted = useMemo(
     () => sortInventoryView(filtered, sort, labels.itemName, marketValueOf),
@@ -331,7 +339,6 @@ export function InventoryTable({
 
   const columns = columnsFor(labels, withPrice, withHero, withActions);
   const leading = sort[0] ?? DEFAULT_INVENTORY_SORT[0];
-  const filtering = !isEmptyInventoryFilter(filter);
 
   if (view.items.length === 0) {
     return <EmptyState title={labels.empty.title} description={labels.empty.description} className={className} />;
@@ -339,28 +346,19 @@ export function InventoryTable({
 
   return (
     <div className={cn('flex flex-col', className)}>
-      <div className={inventoryTableToolbarClass}>
-        <input
-          type="search"
-          value={filter.text}
-          onChange={(event) => changeFilter({ ...filter, text: event.target.value })}
-          placeholder={labels.searchPlaceholder}
-          aria-label={labels.searchLabel}
-          className={cn(inventoryFieldClass, 'min-w-40 flex-1')}
-        />
-        <span className={inventoryTableResultCountClass}>
-          {labels.resultCount(sorted.items.length, view.items.length)}
-        </span>
-        {filtering ? (
-          <button
-            type="button"
-            onClick={() => changeFilter(EMPTY_INVENTORY_FILTER)}
-            className={inventoryChipRecipe({ active: false })}
-          >
-            {labels.clear}
-          </button>
-        ) : null}
-      </div>
+      {/* The same toolbar the cards use, minus the sort pair: this layout sorts through its own
+          column headers, and two controls for one order is one too many. */}
+      <InventoryToolbar
+        view={view}
+        labels={labels}
+        filter={filter}
+        onFilterChange={changeFilter}
+        sort={sort}
+        onSortChange={changeSort}
+        shown={sorted.items.length}
+        showSort={false}
+        showPricedOnly={isPricedItem != null}
+      />
 
       {sorted.items.length === 0 ? (
         <EmptyState

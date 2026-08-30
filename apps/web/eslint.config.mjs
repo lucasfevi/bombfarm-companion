@@ -8,6 +8,26 @@ import unicorn from 'eslint-plugin-unicorn';
 import boundaries from 'eslint-plugin-boundaries';
 import eslintPluginTailwindcss from 'eslint-plugin-tailwindcss';
 
+/**
+ * Ban the native `title` tooltip on DOM elements. `forbid-dom-props` and not a blanket prop ban:
+ * `title` is a real prop on `PanelHeader`, `EmptyState`, `Banner` and `SettingsSection`.
+ */
+const nativeTooltipRule = [
+  'error',
+  {
+    forbid: [
+      {
+        propName: 'title',
+        message:
+          'Native title tooltips are forbidden. Use the design-system Tooltip from @bombfarm/ui ' +
+          '(Tooltip.Provider/Root/Trigger/Portal/Positioner/Popup) — the native one cannot be ' +
+          'styled, ignores the theme, has an uncontrollable delay, and never appears on touch or ' +
+          'for keyboard focus. See docs/design-system.md.',
+      },
+    ],
+  },
+];
+
 export default tseslint.config(
   {
     ignores: [
@@ -83,6 +103,7 @@ export default tseslint.config(
       'tailwindcss/no-unnecessary-arbitrary-value': 'error',
       // W6: no component defined inside another component's render.
       'react/no-unstable-nested-components': 'error',
+      'react/forbid-dom-props': nativeTooltipRule,
       // W4: bare usePlannerStore() subscribes to the entire store — always pass a selector.
       // selectAdvisorPipeline is intentionally used WITHOUT useShallow — it returns
       // stable identity on cache hits; shallow compare would defeat it.
@@ -417,6 +438,22 @@ export default tseslint.config(
   {
     files: ['*.{mjs,js}', 'vitest.config.ts', 'next.config.ts'],
     ...tseslint.configs.disableTypeChecked,
+  },
+  // Grandfathered native `title` tooltips, all of them predating the ban. Burn-down: delete an
+  // entry once that file shows the same text through the DS Tooltip instead. Any NEW web file
+  // errors. The overflow-reveal ones (`truncate` / `whitespace-nowrap` spans showing a hero,
+  // ability or map name) and the exact-figure ones in hero-strip-metrics — which is what
+  // `AbbreviatedNumber` already does properly — are the whole list.
+  {
+    files: [
+      'src/app/_shell/site-header.tsx',
+      'src/features/phases/components/phases-hero-switcher.tsx',
+      'src/features/phases/model/phase-fact-items.tsx',
+      'src/features/planner/components/hero-abilities-tab.tsx',
+      'src/features/planner/components/hero-strip-identity.tsx',
+      'src/features/planner/components/hero-strip-metrics.tsx',
+    ],
+    rules: { 'react/forbid-dom-props': 'off' },
   },
   // Grandfathered raw react-icons call sites. Burn-down: delete
   // entries as planner features migrate to <Icon />. Any NEW web file errors.

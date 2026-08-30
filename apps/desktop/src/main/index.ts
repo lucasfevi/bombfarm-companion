@@ -1,5 +1,5 @@
 import path from 'node:path';
-import { app, BrowserWindow, ipcMain, Menu } from 'electron';
+import { app, BrowserWindow, ipcMain, Menu, shell } from 'electron';
 import {
   DEFAULT_SETTINGS,
   disabledUpdateStatus,
@@ -30,6 +30,7 @@ import { applyAppIdentity } from './app-identity.js';
 import { createBootRecord } from './boot-record.js';
 import { fuseSecondsForCdr } from './domain-edge.js';
 import { InvalidFlavorError, resolveAppEnv, RENDERER_DEV_URL, type AppEnv } from './env.js';
+import { applyExternalNavigationPolicy } from './external-navigation.js';
 import { GameReaderService } from './game-reader/game-reader-service.js';
 import {
   registerRendererProtocol,
@@ -254,6 +255,12 @@ async function createMainWindow(): Promise<void> {
       nodeIntegration: false,
       sandbox: false,
     },
+  });
+
+  applyExternalNavigationPolicy(mainWindow.webContents, {
+    openExternal: (url) => shell.openExternal(url),
+    log,
+    internalUrls: env.isDev ? [RENDERER_DEV_URL] : [],
   });
 
   gameReader?.setWindowProvider(() => mainWindow);

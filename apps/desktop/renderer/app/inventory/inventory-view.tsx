@@ -10,11 +10,12 @@
  */
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Banner, Button, EmptyState, Panel, PanelHeader } from '@bombfarm/ui';
-import { InventoryGrid, InventoryTable } from '@bombfarm/game-art';
+import { InventoryGrid, InventoryTable, InventoryTotals } from '@bombfarm/game-art';
 import {
   buildInventoryView,
   mapInventoryHeroes,
   type InventoryEntry,
+  type InventoryViewItem,
 } from '@bombfarm/domain/inventory-view';
 import { resolveItemPrice } from '@bombfarm/pricing';
 import { sub, useCopy, useLocale } from '../../lib/copy';
@@ -87,6 +88,52 @@ export function InventoryView() {
     [snapshot],
   );
 
+  const priceOfItem = useMemo(
+    () =>
+      snapshot == null
+        ? undefined
+        : (item: InventoryViewItem) =>
+            resolveItemPrice(
+              { defId: item.defId, rarity: item.rarityIdx, tradable: item.tradable },
+              snapshot,
+              'BRL',
+            ),
+    [snapshot],
+  );
+
+  const isPricedItem = useMemo(
+    () =>
+      priceOfItem == null ? undefined : (item: InventoryViewItem) => priceOfItem(item).state === 'priced',
+    [priceOfItem],
+  );
+
+  // Over the whole account, not the filtered view — this is what it holds, not what is on screen.
+  const totals = useMemo(() => {
+    if (priceOfItem == null) return null;
+    let total = 0;
+    let priced = 0;
+    let tradable = 0;
+    for (const item of inventory.items) {
+      if (!item.tradable) continue;
+      tradable += 1;
+      const price = priceOfItem(item);
+      if (price.state !== 'priced' || price.amount == null) continue;
+      priced += 1;
+      total += price.amount;
+    }
+    return { total, priced, tradable };
+  }, [priceOfItem, inventory]);
+
+  const totalsLabels = useMemo(
+    () => ({
+      title: t.inventoryTotalsTitle,
+      amount: priceLabels.amount,
+      coverage: (priced: number, tradable: number) =>
+        sub(t.inventoryTotalsCoverage, { priced, tradable }),
+    }),
+    [t, priceLabels],
+  );
+
   const renderPriceAction = useMemo(
     () =>
       priceOf == null
@@ -137,8 +184,8 @@ export function InventoryView() {
   }
 
   return (
-    <div data-testid="inventory-view">
-      <Panel>
+    <div data-testid="inventory-view" className="flex h-full min-h-0 flex-col">
+      <Panel className="flex min-h-0 flex-1 flex-col">
         <PanelHeader title={t.inventoryTitle} />
         <div className="flex items-center gap-1 pb-3" role="group" aria-label={t.inventoryViewLabel}>
           <Button
@@ -160,6 +207,17 @@ export function InventoryView() {
             {t.inventoryViewList}
           </Button>
         </div>
+        {totals ? (
+          <InventoryTotals
+            total={totals.total}
+            currency="BRL"
+            priced={totals.priced}
+            tradable={totals.tradable}
+            labels={totalsLabels}
+            className="mb-3"
+          />
+        ) : null}
+
         {layout === 'list' ? (
           <InventoryTable
             view={inventory}
@@ -167,6 +225,8 @@ export function InventoryView() {
             priceOf={priceOf}
             priceLabels={priceOf == null ? undefined : priceLabels}
             renderPriceAction={renderPriceAction}
+            isPricedItem={isPricedItem}
+            className="min-h-0 flex-1"
           />
         ) : (
           <InventoryGrid
@@ -175,6 +235,8 @@ export function InventoryView() {
             priceOf={priceOf}
             priceLabels={priceOf == null ? undefined : priceLabels}
             renderPriceAction={renderPriceAction}
+            isPricedItem={isPricedItem}
+            className="min-h-0 flex-1"
           />
         )}
       </Panel>

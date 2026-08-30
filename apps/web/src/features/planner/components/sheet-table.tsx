@@ -7,7 +7,8 @@ import { SHEET_PANEL_KEYS } from '@bombfarm/domain/planner-constants';
 import { useAppLang } from '@/shared/context/app-lang';
 import { numberFormatterFor } from '@/shared/lib/format-number';
 import { usePlannerStore, selectAdvisorPipeline } from '@/shared/stores';
-import { DataTable, FieldRequired, Panel } from '@bombfarm/ui';
+import { DataTable, FieldRequired, Panel, Tooltip } from '@bombfarm/ui';
+import { TruncatedHeading } from './truncated-heading';
 import {
   mutedClass,
   panelHClass,
@@ -92,7 +93,8 @@ export function SheetTable() {
         <FieldRequired show={missingBirth}>{t.fieldRequired}</FieldRequired>
       </div>
       <p className={tipClass}>{missingBirth ? t.sheetTipNeedBirth : t.sheetTip}</p>
-      <DataTable.Root scrollable maxRows={11} className="overflow-x-auto">
+      <Tooltip.Provider delay={200} closeDelay={80}>
+        <DataTable.Root scrollable maxRows={11} className="overflow-x-auto">
         <DataTable.Table className="table-fixed min-w-4xl">
           <colgroup>
             <col className="w-30" />
@@ -108,13 +110,13 @@ export function SheetTable() {
               <DataTable.Header>{t.colStat}</DataTable.Header>
               <DataTable.Header align="right">{t.colSheetBirth}</DataTable.Header>
               {deltaHeaders.map(({ key, label }) => (
-                <DataTable.Header key={key} align="right" title={label}>
-                  <span className="min-w-0 truncate">{label}</span>
+                <DataTable.Header key={key} align="right">
+                  <TruncatedHeading text={label} />
                 </DataTable.Header>
               ))}
               <DataTable.Header align="right">{t.colSheetTotal}</DataTable.Header>
-              <DataTable.Header align="right" title={t.colSheetOverCap}>
-                <span className="min-w-0 truncate">{t.colSheetOverCap}</span>
+              <DataTable.Header align="right">
+                <TruncatedHeading text={t.colSheetOverCap} />
               </DataTable.Header>
             </DataTable.Row>
           </DataTable.Head>
@@ -143,7 +145,8 @@ export function SheetTable() {
             })}
           </DataTable.Body>
         </DataTable.Table>
-      </DataTable.Root>
+        </DataTable.Root>
+      </Tooltip.Provider>
     </Panel>
   );
 }

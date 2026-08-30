@@ -443,6 +443,32 @@ describe('filterInventoryView', () => {
     expect(filterInventoryView(original, EMPTY_INVENTORY_FILTER, nameOf)).toBe(original);
   });
 
+  it('narrows to what the market is quoting, through the predicate the caller supplies', () => {
+    const priced = (item: InventoryViewItem) => item.defId === 'glacier_arma';
+    const filtered = filterInventoryView(
+      view(),
+      { ...EMPTY_INVENTORY_FILTER, pricedOnly: true },
+      nameOf,
+      priced,
+    );
+    expect(filtered.items.map((item) => item.id)).toEqual(['1']);
+  });
+
+  it('treats every item as unpriced when no predicate is supplied, rather than as every item priced', () => {
+    // With no snapshot there is nothing quoting anything, and answering "all of them" would show
+    // a screen of items the filter was asked to exclude.
+    const filtered = filterInventoryView(view(), { ...EMPTY_INVENTORY_FILTER, pricedOnly: true }, nameOf);
+    expect(filtered.items).toEqual([]);
+  });
+
+  it('counts the priced narrowing as a filter, so the view is rebuilt rather than returned as-is', () => {
+    const original = view();
+    expect(isEmptyInventoryFilter({ ...EMPTY_INVENTORY_FILTER, pricedOnly: true })).toBe(false);
+    expect(
+      filterInventoryView(original, { ...EMPTY_INVENTORY_FILTER, pricedOnly: true }, nameOf, () => true),
+    ).not.toBe(original);
+  });
+
   it('narrows on free text, ignoring case', () => {
     const filtered = filterInventoryView(view(), { ...EMPTY_INVENTORY_FILTER, text: 'GLACIER' }, nameOf);
     expect(filtered.items.map((item) => item.id)).toEqual(['1']);

@@ -5,14 +5,25 @@ export { HeroIdentity, type HeroIdentityVariant } from './hero-identity';
 export { HeroIdentityChip } from './hero-identity-chip';
 export { ItemIcon, type ItemIconItem } from './item-icon';
 export { InventoryGrid } from './inventory-grid';
+export {
+  InventoryTotals,
+  type InventoryTotalsLabels,
+  type InventoryTotalsProps,
+} from './inventory-totals';
+export {
+  InventoryToolbar,
+  MAX_HERO_STARS,
+  type InventoryHeroOption,
+  type InventoryToolbarLabels,
+  type InventoryToolbarLabelBag,
+  type InventoryToolbarProps,
+} from './inventory-toolbar';
 export type {
   InventoryBadge,
   InventoryEquippedBy,
   InventoryGridLabels,
   InventoryGridProps,
-  InventoryHeroOption,
   InventoryStatText,
-  InventoryToolbarLabels,
 } from './inventory-grid';
 export { InventoryTable, nextInventorySort } from './inventory-table';
 export type {
