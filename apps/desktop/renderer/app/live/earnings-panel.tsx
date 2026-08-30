@@ -110,7 +110,7 @@ export function EarningsPanel({
   const currentGoldAgeShown = balance !== null ? (currentGoldAgeText ?? '') : '';
 
   return (
-    <Panel data-testid="live-earnings" aria-label={t.liveEarningsTitle} className="relative">
+    <Panel data-testid="live-earnings" aria-label={t.liveEarningsTitle} className="relative min-w-0">
       <div className="flex items-stretch gap-6 pr-8">
         {/* Fixed at its widest content rather than sized to whichever child is currently
             longest — measured against the real rendered font: the gold figure's widest

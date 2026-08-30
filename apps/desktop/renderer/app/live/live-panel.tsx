@@ -61,7 +61,11 @@ export function LivePanel({
   return (
     <div data-testid="live-panel" className="flex flex-col gap-4">
       <FreshnessLine freshness={freshness} onReopenConsent={onReopenConsent} />
-      <div className="grid grid-cols-1 gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
+      {/* The earnings panel's own reserved content needs ~595px; at this grid's 16px gap and the
+          shell's 48px of side padding, a column only clears that once the window itself is at
+          least 1350px (595 * 2 + 16 + 48 = 1254, rounded up for headroom) — `lg`'s 1024px default
+          promoted it to half-width some 200+px too early, which is what let it overflow. */}
+      <div className="grid grid-cols-1 gap-4 min-[1350px]:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
         <EarningsPanel freshness={freshness} earnings={earnings} onReset={onResetEarnings} />
       </div>
       <Panel data-testid="live-heroes">

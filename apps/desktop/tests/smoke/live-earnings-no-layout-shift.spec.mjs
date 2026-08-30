@@ -165,6 +165,103 @@ async function launchEarningsPanelApp(tmpPrefix) {
 }
 
 /**
+ * Resizes the real window via its `BrowserWindow` (Playwright's Electron support has no viewport
+ * emulation of its own — a real page's `setViewportSize` isn't available here), then gives the
+ * renderer a couple of frames plus a short settle window before the caller measures anything.
+ */
+async function resizeWindow(app, page, width, height) {
+  await app.evaluate(({ BrowserWindow }, size) => {
+    BrowserWindow.getAllWindows()[0]?.setSize(size.width, size.height);
+  }, { width, height });
+  await page.evaluate(() => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve))));
+  await page.waitForTimeout(150);
+}
+
+/**
+ * Every element inside the earnings panel, checked against the panel's own bounding box — the
+ * direct measurement for "nothing spills past the panel's border" at whatever width the window
+ * currently is.
+ */
+function measureOverflow(page) {
+  return page.evaluate(() => {
+    const panel = document.querySelector('[data-testid="live-earnings"]');
+    if (!panel) throw new Error('live-earnings panel not found');
+    const panelRect = panel.getBoundingClientRect();
+    const EPSILON = 0.5;
+    const offenders = [];
+    for (const el of panel.querySelectorAll('*')) {
+      const rect = el.getBoundingClientRect();
+      if (rect.width === 0 || rect.height === 0) continue;
+      if (rect.left < panelRect.left - EPSILON || rect.right > panelRect.right + EPSILON) {
+        offenders.push({
+          testId: el.getAttribute('data-testid') ?? el.tagName,
+          left: Math.round(rect.left),
+          right: Math.round(rect.right),
+        });
+      }
+    }
+    return { panelLeft: Math.round(panelRect.left), panelRight: Math.round(panelRect.right), offenders };
+  });
+}
+
+/** The reset control's own box, and the headline column's and every block's — measured
+ *  separately so the comparison (does either rectangle overlap the other) happens in Node,
+ *  not baked into the page's own JS. */
+function measureResetAndContentBoxes(page) {
+  return page.evaluate((blockTestIds) => {
+    const rectOf = (el) => {
+      const r = el.getBoundingClientRect();
+      return { left: r.left, right: r.right, top: r.top, bottom: r.bottom };
+    };
+    const button = document.querySelector('[data-testid="live-earnings-reset"]');
+    const headline = document.querySelector('[data-testid="live-earnings-headline-column"]');
+    if (!button || !headline) throw new Error('reset control or headline column not found');
+    const others = [headline, ...blockTestIds.map((id) => document.querySelector(`[data-testid="${id}"]`))].filter(
+      (el) => el,
+    );
+    return { buttonRect: rectOf(button), otherRects: others.map(rectOf) };
+  }, BLOCK_TEST_IDS);
+}
+
+function rectsOverlap(a, b) {
+  return !(a.right <= b.left || a.left >= b.right || a.bottom <= b.top || a.top >= b.bottom);
+}
+
+/**
+ * The same technique the headline-column test below drives its own cell with, factored out so the
+ * responsiveness sweep can repeat it at every width without a second copy of the inline
+ * `page.evaluate`.
+ */
+function measureHeadlineForms(page) {
+  const forms = { short: '1k', long: '999.9m', noData: '—' };
+  return page.evaluate((figureForms) => {
+    const column = document.querySelector('[data-testid="live-earnings-headline-column"]');
+    const gold = document.querySelector('[data-testid="live-earnings-gold-10"]');
+    const xp = document.querySelector('[data-testid="live-earnings-xp-10"]');
+    if (!column) throw new Error('live-earnings-headline-column not found');
+    if (!gold) throw new Error('live-earnings-gold-10 not found');
+    if (!xp) throw new Error('live-earnings-xp-10 not found');
+
+    const results = {};
+    for (const [stateName, text] of Object.entries(figureForms)) {
+      gold.textContent = text;
+      xp.textContent = text;
+      const rect = column.getBoundingClientRect();
+      results[stateName] = { width: rect.width, dividerX: rect.right };
+    }
+    return results;
+  }, forms);
+}
+
+function assertHeadlineHoldsOneShape(measurements) {
+  const detail = JSON.stringify(measurements, null, 2);
+  const widths = new Set(Object.values(measurements).map((m) => Math.round(m.width)));
+  expect(widths.size, `headline column width must not change across figure forms:\n${detail}`).toBe(1);
+  const dividerXs = new Set(Object.values(measurements).map((m) => Math.round(m.dividerX)));
+  expect(dividerXs.size, `divider x-position must not change across figure forms:\n${detail}`).toBe(1);
+}
+
+/**
  * The "last N min" context-line label (`coverageMinutesLabel`, `earnings-panel.tsx`) only ever
  * reads "last 1 min" through "last 10 min" — its shortest and longest real forms. Reaching "last
  * 10 min" legitimately needs ten real minutes of streamed session time (the fold's window is
@@ -280,35 +377,50 @@ test.describe('live earnings panel: no layout shift smoke', () => {
     const { app, page, userDataDir } = await launchEarningsPanelApp('bfc-earnings-headline-');
 
     try {
-      const forms = { short: '1k', long: '999.9m', noData: '—' };
+      const measurements = await measureHeadlineForms(page);
+      assertHeadlineHoldsOneShape(measurements);
 
-      const measurements = await page.evaluate((figureForms) => {
-        const column = document.querySelector('[data-testid="live-earnings-headline-column"]');
-        const gold = document.querySelector('[data-testid="live-earnings-gold-10"]');
-        const xp = document.querySelector('[data-testid="live-earnings-xp-10"]');
-        if (!column) throw new Error('live-earnings-headline-column not found');
-        if (!gold) throw new Error('live-earnings-gold-10 not found');
-        if (!xp) throw new Error('live-earnings-xp-10 not found');
+      await app.close();
+    } finally {
+      await app.close().catch(() => undefined);
+      fs.rmSync(userDataDir, { recursive: true, force: true });
+    }
+  });
 
-        const results = {};
-        for (const [stateName, text] of Object.entries(figureForms)) {
-          gold.textContent = text;
-          xp.textContent = text;
-          const rect = column.getBoundingClientRect();
-          // The divider is `border-r` on the column itself, so its x-position IS the column's own
-          // right edge.
-          results[stateName] = { width: rect.width, dividerX: rect.right };
-        }
-        return results;
-      }, forms);
+  /**
+   * The window has a real minimum width (`minWidth` on the `BrowserWindow`), and the page-level
+   * layout promotes the panel to a half-width column above a breakpoint — both are places a fixed,
+   * non-shrinking layout can end up narrower than its own reserved content. Sweeping real window
+   * widths from that minimum up through a wide one and re-running the shape assertions above at
+   * each one is the direct check: not that the arithmetic behind the breakpoint is right, but that
+   * nothing the panel renders ever ends up wider than the panel itself, at any width the window
+   * can actually be.
+   */
+  test('at every width from the window minimum up, nothing in the panel spills past its own border, the six blocks and headline keep their shape, and the reset control clears every other cell', async () => {
+    const { app, page, userDataDir } = await launchEarningsPanelApp('bfc-earnings-responsive-');
 
-      const detail = JSON.stringify(measurements, null, 2);
+    try {
+      const widths = [960, 1024, 1100, 1200, 1349, 1350, 1400, 1600, 1920];
 
-      const widths = new Set(Object.values(measurements).map((m) => Math.round(m.width)));
-      expect(widths.size, `headline column width must not change across figure forms:\n${detail}`).toBe(1);
+      for (const width of widths) {
+        await resizeWindow(app, page, width, 720);
 
-      const dividerXs = new Set(Object.values(measurements).map((m) => Math.round(m.dividerX)));
-      expect(dividerXs.size, `divider x-position must not change across figure forms:\n${detail}`).toBe(1);
+        const { panelLeft, panelRight, offenders } = await measureOverflow(page);
+        expect(
+          offenders,
+          `width=${width}: elements spilling past the panel (left=${panelLeft}, right=${panelRight}):\n${JSON.stringify(offenders, null, 2)}`,
+        ).toEqual([]);
+
+        assertBlocksHoldTheirShape(await measureBlocks(page));
+        assertHeadlineHoldsOneShape(await measureHeadlineForms(page));
+
+        const { buttonRect, otherRects } = await measureResetAndContentBoxes(page);
+        const overlapping = otherRects.filter((rect) => rectsOverlap(buttonRect, rect));
+        expect(
+          overlapping,
+          `width=${width}: reset control overlaps content:\n${JSON.stringify({ buttonRect, overlapping }, null, 2)}`,
+        ).toEqual([]);
+      }
 
       await app.close();
     } finally {
