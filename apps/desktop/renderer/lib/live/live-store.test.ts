@@ -65,6 +65,10 @@ function earnings(overrides: Partial<LiveEarnings> = {}): LiveEarnings {
     xpSession: 4_500,
     goldSessionTotal: 75_000,
     xpSessionTotal: 3_750,
+    gold10Series: [90_000, 110_000, 100_000],
+    goldPerProp10: 180,
+    propsPerMinute10: 110,
+    propsSessionTotal: 420,
     coverageSeconds: 120,
     sessionSeconds: 300,
     ...overrides,
@@ -437,6 +441,44 @@ describe('createLiveStore — earnings pass straight through, never folded or de
 
     expect(notifications).toHaveLength(1);
     expect(notifications[0]?.earnings).toEqual(earnings({ goldBalance: 2 }));
+  });
+
+  it('a fastUpdate differing only in the trend series still notifies, so the chart keeps moving', async () => {
+    const { bridge, emit, resolveNextGet } = fakeBridge();
+    const store = createLiveStore({ bridge });
+    const notifications: LiveModel[] = [];
+
+    store.start();
+    resolveNextGet(
+      liveView({ field: [], recovery: [], onFieldHeroIds: [], earnings: earnings({ gold10Series: [100, 200] }) }),
+    );
+    await flushMicrotasks();
+    store.subscribe((model) => notifications.push(model));
+
+    const moved = earnings({ gold10Series: [100, 200, 300] });
+    emit({ type: 'fastUpdate', field: [], recovery: [], energies: [], onFieldHeroIds: [], earnings: moved, map: null });
+
+    expect(notifications).toHaveLength(1);
+    expect(store.getModel().earnings?.gold10Series).toEqual([100, 200, 300]);
+  });
+
+  it('a fastUpdate differing only in the measured per-prop figures still notifies', async () => {
+    const { bridge, emit, resolveNextGet } = fakeBridge();
+    const store = createLiveStore({ bridge });
+    const notifications: LiveModel[] = [];
+
+    store.start();
+    resolveNextGet(
+      liveView({ field: [], recovery: [], onFieldHeroIds: [], earnings: earnings({ propsSessionTotal: 400 }) }),
+    );
+    await flushMicrotasks();
+    store.subscribe((model) => notifications.push(model));
+
+    const moved = earnings({ propsSessionTotal: 412 });
+    emit({ type: 'fastUpdate', field: [], recovery: [], energies: [], onFieldHeroIds: [], earnings: moved, map: null });
+
+    expect(notifications).toHaveLength(1);
+    expect(store.getModel().earnings?.propsSessionTotal).toBe(412);
   });
 
   it('a fastUpdate byte-identical in earnings too produces zero notifications', async () => {

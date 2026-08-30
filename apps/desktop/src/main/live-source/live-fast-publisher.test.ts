@@ -23,6 +23,10 @@ function earnings(overrides: Partial<LiveEarnings> = {}): LiveEarnings {
     xpSession: 100,
     goldSessionTotal: 1_000,
     xpSessionTotal: 100,
+    gold10Series: [1_000, 1_000],
+    goldPerProp10: 50,
+    propsPerMinute10: 20,
+    propsSessionTotal: 20,
     coverageSeconds: 60,
     sessionSeconds: 60,
     ...overrides,
@@ -126,6 +130,35 @@ describe('createLiveFastPublisher — publishes only when the fast channel actua
     expect(emitted).toHaveLength(1);
 
     currentEarnings = earnings({ goldSessionTotal: 2_000, xpSessionTotal: 100 });
+    fireTick();
+
+    expect(emitted).toHaveLength(2);
+    expect(emitted[1]).toMatchObject({ type: 'fastUpdate', earnings: currentEarnings });
+  });
+
+  it('a change confined to the trend series still republishes, so the chart cannot freeze mid-session', () => {
+    let currentEarnings = earnings({ gold10Series: [1_000, 1_000] });
+    const { publisher, emitted, fireTick } = harness(() => view({ earnings: currentEarnings }));
+    publisher.start();
+    fireTick();
+    expect(emitted).toHaveLength(1);
+
+    // A quiet stretch: the window average has not moved, and the newest slice is a fresh reading
+    // that says so. Nothing else in the object differs.
+    currentEarnings = earnings({ gold10Series: [1_000, 1_000, 1_000] });
+    fireTick();
+
+    expect(emitted).toHaveLength(2);
+    expect(emitted[1]).toMatchObject({ type: 'fastUpdate', earnings: currentEarnings });
+  });
+
+  it('a change confined to the measured per-prop figures still republishes', () => {
+    let currentEarnings = earnings({ goldPerProp10: 180, propsPerMinute10: 110, propsSessionTotal: 400 });
+    const { publisher, emitted, fireTick } = harness(() => view({ earnings: currentEarnings }));
+    publisher.start();
+    fireTick();
+
+    currentEarnings = earnings({ goldPerProp10: 176, propsPerMinute10: 118, propsSessionTotal: 412 });
     fireTick();
 
     expect(emitted).toHaveLength(2);

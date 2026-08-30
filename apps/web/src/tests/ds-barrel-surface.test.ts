@@ -31,6 +31,9 @@ import * as GameArt from '@bombfarm/game-art';
 // optional `brand` slot for it; the web's own header keeps its `<Image src="/favicon.svg">`.
 // formatNumber / formatCompactNumber: the compact metric formatter, moved here from the web
 // app so the desktop renderer can share the exact same implementation.
+// Sparkline (2026-08-30): a trend line over a series of readings, sized by its container and
+// toned by `currentColor`. Added for the Live tab's 10-minute gold trend; the planner's own
+// history views are the obvious second caller.
 const FROZEN_BARREL_VALUE_EXPORTS = [
   'AbilityCard',
   'Accordion',
@@ -76,6 +79,7 @@ const FROZEN_BARREL_VALUE_EXPORTS = [
   'SettingsSection',
   'Slider',
   'SortableTableHeader',
+  'Sparkline',
   'StatList',
   'StatusChip',
   'Stepper',

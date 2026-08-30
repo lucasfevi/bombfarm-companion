@@ -19,6 +19,13 @@ export const MAX_TICK_GAP_MS = 2_000;
 
 const BUCKET_SPAN_MS = 1_000;
 const TEN_MINUTES_MS = 10 * 60 * 1000;
+const MS_PER_MINUTE = 60_000;
+
+/** How many slices the rolling window is reported as. Chosen for what a trend line can actually
+ *  show — one slice per ten seconds is fine enough to see a rate turn and coarse enough that a
+ *  single unlucky second cannot spike it. */
+export const EARNINGS_SERIES_POINTS = 60;
+const SERIES_SLICE_MS = TEN_MINUTES_MS / EARNINGS_SERIES_POINTS;
 /** 600 one-second buckets to cover the 10-minute rolling window, plus the one still filling — a
  *  hard cap so a long session's ring cannot grow without bound even if eviction were ever skipped. */
 const RING_CAPACITY = TEN_MINUTES_MS / BUCKET_SPAN_MS + 1;
@@ -62,6 +69,7 @@ export class EarningsFold {
 
   #goldTotal = 0;
   #xpTotal = 0;
+  #propsTotal = 0;
   #streamedMs = 0;
 
   #buckets: Bucket[] = [];
@@ -104,6 +112,7 @@ export class EarningsFold {
       propsThisTick += 1;
     }
     bucket.props += propsThisTick;
+    this.#propsTotal += propsThisTick;
 
     if (propsThisTick > 0 && tick.phase !== undefined) {
       const xp = propsThisTick * this.#deps.xpPerProp(tick.phase) * normalizedXpMult(xpMult);
@@ -117,6 +126,7 @@ export class EarningsFold {
   reset(trigger: EarningsResetTrigger): void {
     this.#goldTotal = 0;
     this.#xpTotal = 0;
+    this.#propsTotal = 0;
     this.#streamedMs = 0;
     this.#crossCheckPayoutProps = 0;
     this.#gridClears = 0;
@@ -206,6 +216,65 @@ export class EarningsFold {
   #sessionRate(total: number): number | null {
     if (this.#streamedMs === 0) return null;
     return (total / this.#streamedMs) * MS_PER_HOUR;
+  }
+
+  #windowSum(pick: (bucket: Bucket) => number): number {
+    let sum = 0;
+    for (const bucket of this.#windowBuckets()) sum += pick(bucket);
+    return sum;
+  }
+
+  /**
+   * The window resolved into fixed slices, oldest first. Slices are placed by each bucket's age
+   * against `now()` rather than by its position in the ring, so the newest slice is always the one
+   * ending at this instant and the line does not slide sideways when eviction happens to lag.
+   *
+   * A slice no bucket streamed into is `null` rather than `0`: dividing no gold by no time is not
+   * a rate of zero, and drawing it as one turns a stream gap into a visible collapse in income.
+   *
+   * Slices before the oldest surviving bucket are dropped rather than reported as gaps, so the
+   * series starts where the readings do and covers {@link coverageSeconds}, not always ten
+   * minutes. A gap inside the covered span is a stream that stopped and is kept as one; the
+   * stretch before a session was old enough to fill the window is not a gap in anything and would
+   * otherwise pin every reading of a young session into the last tenth of whatever draws it.
+   */
+  get gold10Series(): readonly (number | null)[] {
+    const now = this.#deps.now();
+    const gold = new Array<number>(EARNINGS_SERIES_POINTS).fill(0);
+    const streamedMs = new Array<number>(EARNINGS_SERIES_POINTS).fill(0);
+    for (const bucket of this.#windowBuckets()) {
+      const index = EARNINGS_SERIES_POINTS - 1 - Math.floor((now - bucket.startedAtMs) / SERIES_SLICE_MS);
+      if (index < 0 || index >= EARNINGS_SERIES_POINTS) continue;
+      gold[index] = (gold[index] ?? 0) + bucket.gold;
+      streamedMs[index] = (streamedMs[index] ?? 0) + bucket.streamedMs;
+    }
+    const series = gold.map((sum, index) => {
+      const streamed = streamedMs[index] ?? 0;
+      return streamed === 0 ? null : (sum / streamed) * MS_PER_HOUR;
+    });
+    const oldestReading = series.findIndex((value) => value !== null);
+    return oldestReading === -1 ? [] : series.slice(oldestReading);
+  }
+
+  /** Gold divided by the props that paid it, over the window — a per-prop figure measured from
+   *  what actually dropped, with no wiki value anywhere in it. Gated on the prop count rather than
+   *  on streamed time: streamed seconds in which nothing broke are not a gold-per-prop of zero. */
+  get goldPerProp10(): number | null {
+    const props = this.#windowSum((bucket) => bucket.props);
+    if (props === 0) return null;
+    return this.#windowSum((bucket) => bucket.gold) / props;
+  }
+
+  get propsPerMinute10(): number | null {
+    const streamedMs = this.#windowSum((bucket) => bucket.streamedMs);
+    if (streamedMs === 0) return null;
+    return (this.#windowSum((bucket) => bucket.props) / streamedMs) * MS_PER_MINUTE;
+  }
+
+  /** Shares {@link goldSessionTotal}'s null gate so every session figure agrees on when the
+   *  session has anything to report at all. */
+  get propsSessionTotal(): number | null {
+    return this.#streamedMs === 0 ? null : this.#propsTotal;
   }
 
   get gold10(): number | null {

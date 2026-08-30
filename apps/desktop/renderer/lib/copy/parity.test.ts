@@ -28,12 +28,16 @@ import { ptBR } from './pt-BR';
 // liveMapXpPerPropLabel: "XP / prop" — "XP" is the same abbreviation in both languages, and
 // "prop" is the loanword the game itself uses in Portuguese (the pt-BR copy already spells it
 // "props" elsewhere in this table), so the two languages land on the identical string.
+// liveEarningsPropsPerMinuteLabel / liveEarningsPropsTotalLabel: "Props / min" and "Props" — same
+// loanword as liveMapXpPerPropLabel above, and "min" abbreviates the same word in both languages.
 const IDENTICAL_IN_BOTH_LANGUAGES: readonly (keyof typeof en)[] = [
   'ageShortSeconds',
   'liveMapXpPerPropLabel',
   'inventoryDetailSetSlot',
   'liveEarningsXpHeadlineUnit',
   'inventoryViewLabel',
+  'liveEarningsPropsPerMinuteLabel',
+  'liveEarningsPropsTotalLabel',
 ];
 
 function placeholderSet(value: string): Set<string> {

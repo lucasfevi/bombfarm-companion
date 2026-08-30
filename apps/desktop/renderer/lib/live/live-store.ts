@@ -144,6 +144,11 @@ function sameMap(a: LiveMap | null, b: LiveMap | null): boolean {
   );
 }
 
+function sameSeries(a: readonly (number | null)[], b: readonly (number | null)[]): boolean {
+  if (a.length !== b.length) return false;
+  return a.every((value, index) => value === b[index]);
+}
+
 function sameEarnings(a: LiveEarnings | null, b: LiveEarnings | null): boolean {
   if (a === b) return true;
   if (a === null || b === null) return false;
@@ -153,8 +158,14 @@ function sameEarnings(a: LiveEarnings | null, b: LiveEarnings | null): boolean {
     a.goldSession === b.goldSession &&
     a.xp10 === b.xp10 &&
     a.xpSession === b.xpSession &&
+    a.goldSessionTotal === b.goldSessionTotal &&
+    a.xpSessionTotal === b.xpSessionTotal &&
+    a.goldPerProp10 === b.goldPerProp10 &&
+    a.propsPerMinute10 === b.propsPerMinute10 &&
+    a.propsSessionTotal === b.propsSessionTotal &&
     a.coverageSeconds === b.coverageSeconds &&
-    a.sessionSeconds === b.sessionSeconds
+    a.sessionSeconds === b.sessionSeconds &&
+    sameSeries(a.gold10Series, b.gold10Series)
   );
 }
 

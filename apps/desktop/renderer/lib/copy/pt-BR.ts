@@ -190,6 +190,18 @@ export const ptBR: Copy = {
   liveEarningsElapsedLabel: 'Decorrido',
   liveEarningsXpHelpLabel: 'Sobre esse número de XP',
   liveEarningsXpHelpBody: 'Calculado a partir dos props que seus heróis destruíram, não lido diretamente do jogo.',
+  liveEarningsSeriesLabel: 'Ouro / h — últimos {minutes} min',
+  liveEarningsSeriesAria: 'Ouro por hora nos últimos {minutes} minutos',
+  liveEarningsSeriesPeakLabel: 'pico {value}',
+  liveEarningsMeasuredNote: 'Medido',
+  liveEarningsMeasuredBody:
+    'Medido a partir do que realmente caiu nos últimos 10 minutos — não estimado. Trocar de mapa mistura o que os dois pagaram até a janela se atualizar.',
+  liveEarningsGoldPerPropLabel: 'Ouro / prop',
+  liveEarningsPropsPerMinuteLabel: 'Props / min',
+  liveEarningsPropsTotalLabel: 'Props',
+  liveEarningsGoldPerPropUnder: '{percent}% abaixo da estimativa',
+  liveEarningsGoldPerPropOver: '{percent}% acima da estimativa',
+  liveEarningsGoldPerPropOnEstimate: 'na estimativa',
 
   // liveMap* — o painel de Mapa: em qual mapa se está jogando e o quanto da run já passou.
   liveMapTitle: 'Mapa',
