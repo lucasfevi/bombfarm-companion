@@ -1,5 +1,108 @@
 # @bombfarm/domain
 
+## 0.9.0
+
+### Minor Changes
+
+- 48ae346: Give the list layout the cards' own filters, and head the inventory with what it is worth.
+
+  The toolbar moved out of the card layout into a component both layouts render, so the list offers
+  the same search, kind, rarity, hero and set narrowing instead of a search box alone. Only the sort
+  pair is hidden there: that layout sorts through its own column headers, and two controls for one
+  order is one too many.
+
+  A new `Priced` narrowing shows just the items the market is quoting right now. It is the first
+  filter term that is not a property of the item — it depends on a snapshot the domain cannot see —
+  so `filterInventoryView` takes the predicate from the caller, and with no predicate nothing is
+  priced, which is the truthful answer when there is no snapshot to ask.
+
+  The header states the market value of everything owned, over the count it could reach: `20 of 171
+tradable items priced`. Untradable items stay out of that denominator, since the game forbids
+  selling them and counting them would make the coverage read worse than it is. The figure is taken
+  over the whole inventory rather than the filtered view, so narrowing to one set does not restate
+  it as a smaller fortune.
+
+  The items now scroll inside their own region rather than taking the window with them, so the
+  toolbar and the totals stay put while a long inventory moves under them.
+
+- 19197cc: Add a Map panel to the Live tab, beside the earnings figures: which map is being played (its
+  in-game difficulty coordinate, its flavour name and its phase number), how much of the map's
+  health is left, and how many props are still standing out of the total a fresh map of that phase
+  spawns.
+
+  Every figure comes from the live combat stream and is folded once in the main process, so the
+  panel only ever formats finished values. Health and the prop count are reported independently —
+  one absent from a tick reads as "not sent" rather than zero, and a map with nothing left standing
+  reports zero props rather than a dash. The prop total comes from the phase's own wiki row rather
+  than from the stream, so it is correct immediately instead of only after the first map completes.
+
+  It also reports what the map is worth: XP per prop with the account's own skill-tree multiplier
+  applied, average gold per prop, and average gold for a full clear. Those three are modelled from
+  the map's wiki row rather than measured, and the panel marks them as estimates — the measured
+  gold/hr and XP/hr sit immediately beside them, and the two must not read as the same kind of
+  number. They come from the same `computePhaseIntelGlobal` the web planner's Phases screen uses, so
+  a figure cannot say one thing on the Live tab and another on Phases.
+
+- 48ae346: Quote market prices in the currency Steam itself prices in, so the figure matches the page it
+  links to.
+
+  The market sweep enumerates through `search/render`, which silently ignores its own `currency`
+  parameter — asked for BRL it answers in USD, relabelled. Only `priceoverview` honours a currency,
+  and the difference is real rather than rounding: Steam prices each region independently, so a
+  native BRL quote ran 0.6-1.2% above the same item converted at the day's rate, varying per item.
+
+  So a third pass asks `priceoverview` once per listed row and stores the answer in the entry's
+  `lowestNative`. `resolveItemPrice` and `resolveKey` prefer it and report `basis: 'native'`; with no
+  quote they convert from USD and report `basis: 'converted'`, which lets a UI mark that figure
+  approximate instead of quietly disagreeing with the listing. Each resolved price also carries the
+  `quotedUtc` of the number actually shown.
+
+  That endpoint under-reports — it returns no price at all for items the search endpoint carries as
+  live — so a missing quote never decides that an item is unlisted; the enumeration keeps that call.
+  A quote is carried across a rate-limited run only while the USD price under it has not moved.
+
+  Inventory sorting gains a `market` key, with unpriced entries sinking to the bottom in both
+  directions rather than crowding out real prices on a cheapest-first sort.
+
+- 48ae346: Let an owned gem, stone, chest or cage find the price the market already had for it.
+
+  Sixteen of the market's rows were keyed by their Steam name because no catalog def described them.
+  An inventory looks a price up by def and rarity, so those rows were collected, priced and
+  published — and unreachable. On a real save that left 41 of 130 tradable items unpriced, and the
+  inventory total understated by every one of them.
+
+  Most of them were knowable after all, from a facet rather than the name: an item chest by its
+  level (`Item Chest (Lv 30)` is `chest_item_30`), a skill stone by its rarity, and the act-scoped
+  chests by their act, which IS their tier — `Hero Cage (Act 1)` is `chest_hero_1` and Incomum.
+  Gems and the chest families take a short explicit table, because nothing in the facets separates a
+  Sapphire from an Emerald or a cage from a time chest; naming them is honest where parsing the hash
+  would pretend Steam guarantees a format. Coverage on a real save goes 89/130 to 94/130, and every
+  item still unpriced is now one the market genuinely does not carry.
+
+  Heroes are priced too. They key on rarity alone — a listing carries nothing else — and the sweep
+  no longer treats Steam's `hero` category as an unknown tag, which had been recorded as an anomaly
+  and would have left any hero listing enumerated but unpriceable.
+
+  `chest_hero_N` now carries its tier in the inventory as the other tiered chests do. It was reading
+  as Comum whatever act it came from, which was wrong on the card, in the tier word, and in any sort
+  by rarity — not only in its price.
+
+### Patch Changes
+
+- 8ba7408: Fix the energy bar and percentage on the Live tab lagging up to a minute behind the countdown
+  printed beside them. The countdown was refreshed four times a second, but the percentage came from
+  the authenticated account read that only lands once a minute, so a hero could sit at "0:00" with a
+  bar still reading 99% — two numbers describing the same hero, disagreeing. Both readings now come
+  from the same fast channel: a hero on the field shows the energy the live stream actually observed,
+  and a hero resting shows the exact inverse of the recovery clock next to it, so the bar reaches full
+  at the instant the clock runs out. Queued and benched heroes have no live reading available and are
+  unchanged.
+- Updated dependencies [c3dd984]
+- Updated dependencies [48ae346]
+- Updated dependencies [b7d837a]
+- Updated dependencies [b7d837a]
+  - @bombfarm/contracts@0.5.0
+
 ## 0.8.1
 
 ### Patch Changes
