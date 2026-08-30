@@ -80,14 +80,15 @@ export function LivePanel({
   return (
     <div data-testid="live-panel" className="flex flex-col gap-4">
       <FreshnessLine freshness={freshness} onReopenConsent={onReopenConsent} />
-      {/* The earnings panel's own reserved content is ~587px now that its headline column's own
-          overflow fix narrowed it by 8px (140px to 132px); at this grid's 16px gap and the
-          shell's 48px of side padding, a column only clears that once the window itself is at
-          least 1334px (587 * 2 + 16 + 48 = 1238, rounded up for headroom — 16px below the
-          previous 1350, the same 8px the column narrowed by, counted on both sides of the split)
-          — `lg`'s 1024px default promoted it to half-width some 200+px too early, which is what
-          let it overflow. */}
-      <div className="grid grid-cols-1 gap-4 min-[1334px]:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
+      {/* `max-content` on the first track, not an equal split: everything in the earnings panel is
+          fixed-width and `whitespace-nowrap`, so an equal split had to make BOTH columns as wide
+          as that panel's ~566px, and the pair only fitted past 1334px — wider than the window's
+          own default, which is why these two started life stacked on first launch. Sized to its
+          content instead, the pair floors at ~945px in Portuguese (the wider of the two
+          languages), under the 960px minimum window width, so this row is two columns at every
+          size the window can take and needs no breakpoint at all. The map takes the remainder:
+          its health bar and economy figures are the two that read better with the extra width. */}
+      <div className="grid grid-cols-[max-content_minmax(0,1fr)] gap-4">
         <EarningsPanel freshness={freshness} earnings={earnings} onReset={onResetEarnings} />
         <MapPanel map={map} />
       </div>

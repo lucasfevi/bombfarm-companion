@@ -31,6 +31,10 @@
 
   --spacing-top: 58px;
   --container-app: 1520px;
+  /* Desktop shell measure. Narrower than `--container-app` because the desktop carries its
+     nav in the header and a status strip under the content, so the same measure reads wider
+     there; 1440 also lets the most common desktop width fill edge to edge with no letterbox. */
+  --container-desktop: 1440px;
 
   /* WIN-1 layout breakpoints (DESIGN_SYSTEM §4). */
   --breakpoint-compact: 1180px;

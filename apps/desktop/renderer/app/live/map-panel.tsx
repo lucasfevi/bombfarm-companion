@@ -97,7 +97,7 @@ export function MapPanel({ map }: { map: LiveMap | null }) {
 
         <div className="flex flex-col gap-2 border-t border-line/55 pt-3">
           <EstimateNote />
-          <div className="grid grid-cols-3 gap-3">
+          <div className="grid grid-cols-3 gap-2">
             <EconomyFigure
               testId="live-map-xp-per-prop"
               label={t.liveMapXpPerPropLabel}

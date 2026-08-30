@@ -285,7 +285,7 @@ function HomePageContent({
             whichever tab happens to be showing — six smoke specs wait on it purely as a boot
             signal. The probe beside it proves a @bombfarm/domain value and the active language
             reached the DOM; it renders nothing a player sees. */}
-        <div data-testid="app-ready" className="h-full space-y-4">
+        <div data-testid="app-ready" className="flex flex-1 flex-col gap-4">
           <span data-testid="domain-label-probe" className="sr-only">
             {rarityLabel('Comum', lang)}
           </span>

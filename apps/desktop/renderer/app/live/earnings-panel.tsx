@@ -125,7 +125,7 @@ export function EarningsPanel({
 
   return (
     <Panel data-testid="live-earnings" aria-label={t.liveEarningsTitle} className="relative min-w-0">
-      <div className="flex items-stretch gap-6 pr-8">
+      <div className="flex items-stretch gap-5 pr-7">
         {/* Fixed at its widest content rather than sized to whichever child is currently
             longest — measured against the real rendered font, `box-sizing: border-box` means
             this width is the WHOLE box, so the border and `pr-6` padding come out of it before
@@ -134,13 +134,13 @@ export function EarningsPanel({
             wider than "bi" together in this typeface, so the extra digit-string length loses to
             the wider single glyph it replaces. At 28px bold that form measures ~102.8px; with a
             ~4px cross-platform rendering margin the column needs ~107px of content, plus the 1px
-            border and the 24px of `pr-6` padding: 107 + 1 + 24 = 132px (8.25rem), 8px narrower
+            border and the 20px of `pr-5` padding: 107 + 1 + 20 = 128px (8rem), 12px narrower
             than the old (undersized) 140px box. Every other line in the column — the XP figure
             at 19px, the coverage label's longest form in either language ("últimos 10 min"), and
             both unit strings — measures well under that. */}
         <div
           data-testid="live-earnings-headline-column"
-          className="flex w-[8.25rem] shrink-0 flex-col items-end gap-1.5 border-r border-line/55 pr-6"
+          className="flex w-[8rem] shrink-0 flex-col items-end gap-1.5 border-r border-line/55 pr-5"
         >
           <span
             data-testid="live-earnings-recent-window-label"
@@ -185,7 +185,7 @@ export function EarningsPanel({
             </Tooltip.Root>
           </Tooltip.Provider>
         </div>
-        <div className="grid grid-cols-[repeat(3,7rem)] gap-x-4 gap-y-3">
+        <div className="grid grid-cols-[repeat(3,7rem)] gap-x-3 gap-y-3">
           <Block
             blockTestId="live-earnings-block-current-gold"
             testId="live-earnings-gold-current"
