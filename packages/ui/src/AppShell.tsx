@@ -10,6 +10,7 @@ import {
   appShellDragStripClass,
   appShellHeaderClass,
   appShellMainClass,
+  appShellMainInnerClass,
   appShellRootClass,
   appShellStatusBarClass,
 } from './AppShell.recipe';
@@ -127,7 +128,9 @@ export function AppShell({
         ) : null}
       </header>
 
-      <main className={appShellMainClass}>{children}</main>
+      <main className={appShellMainClass}>
+        <div className={appShellMainInnerClass}>{children}</div>
+      </main>
 
       <footer className={appShellStatusBarClass}>
         {status ? <div className="flex items-center gap-2">{status}</div> : null}

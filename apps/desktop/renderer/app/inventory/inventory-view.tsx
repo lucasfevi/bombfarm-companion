@@ -201,7 +201,7 @@ export function InventoryView() {
   }
 
   return (
-    <div data-testid="inventory-view" className="flex h-full min-h-0 flex-col">
+    <div data-testid="inventory-view" className="flex min-h-0 flex-1 flex-col">
       <Panel className="flex min-h-0 flex-1 flex-col">
         <PanelHeader title={t.inventoryTitle} />
         {totals ? (

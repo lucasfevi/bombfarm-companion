@@ -228,7 +228,7 @@ describe('EarningsPanel — the headline column is a fixed width, not sized to i
     const out = html(earnings());
     expect(out).toContain('data-testid="live-earnings-headline-column"');
     expect(out).toContain(
-      'class="flex w-[8.25rem] shrink-0 flex-col items-end gap-1.5 border-r border-line/55 pr-6"',
+      'class="flex w-[8rem] shrink-0 flex-col items-end gap-1.5 border-r border-line/55 pr-5"',
     );
   });
 
@@ -470,7 +470,7 @@ describe('EarningsPanel — the right half is a fixed three-column, two-row grid
     const out = html(earnings());
     // Fixed pixel/rem tracks, not `1fr` — a changing value or a language toggle can never resize
     // a column. All three tracks share one width so the six blocks stay identically sized too.
-    expect(out).toContain('class="grid grid-cols-[repeat(3,7rem)] gap-x-4 gap-y-3"');
+    expect(out).toContain('class="grid grid-cols-[repeat(3,7rem)] gap-x-3 gap-y-3"');
     expect(out).not.toContain('1fr');
     expect(out).not.toContain('rounded-lg border');
   });

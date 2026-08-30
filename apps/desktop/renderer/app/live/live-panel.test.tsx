@@ -38,13 +38,25 @@ describe('LivePanel — composition', () => {
     const html = renderToStaticMarkup(
       createElement(LivePanel, { freshness: { kind: 'live' }, slow: slowModel(), fast: emptyFast }),
     );
-    const gridIndex = html.indexOf('class="grid grid-cols-1 gap-4 min-[1334px]:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]"');
+    const gridIndex = html.search(/class="[^"]*grid-cols-\[/);
     const earningsIndex = html.indexOf('data-testid="live-earnings"');
     const heroesIndex = html.indexOf('data-testid="live-heroes"');
 
     expect(gridIndex).toBeGreaterThan(-1);
     expect(earningsIndex).toBeGreaterThan(gridIndex);
     expect(heroesIndex).toBeGreaterThan(earningsIndex);
+  });
+
+  it('gives the earnings column its own content width so the pair never falls back to one column', () => {
+    const html = renderToStaticMarkup(
+      createElement(LivePanel, { freshness: { kind: 'live' }, slow: slowModel(), fast: emptyFast }),
+    );
+    const gridClass = /class="((?:[^"]*\s)?grid\s[^"]*grid-cols-\[[^"]*)"/.exec(html)?.[1] ?? '';
+
+    expect(gridClass).toContain('grid-cols-[max-content_minmax(0,1fr)]');
+    // A width-prefixed column rule is the single-column fallback coming back: the pair fits inside
+    // the smallest window the app can be resized to, so no width may decide how many columns it has.
+    expect(gridClass).not.toMatch(/(?:min-\[|sm:|md:|lg:|xl:|2xl:|compact:|wide:)/);
   });
 
   it('has no separate House panel — every house reading it carried now feeds the Resting tooltip', () => {

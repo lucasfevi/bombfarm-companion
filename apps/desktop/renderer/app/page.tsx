@@ -285,14 +285,14 @@ function HomePageContent({
             whichever tab happens to be showing — six smoke specs wait on it purely as a boot
             signal. The probe beside it proves a @bombfarm/domain value and the active language
             reached the DOM; it renders nothing a player sees. */}
-        <div data-testid="app-ready" className="h-full space-y-4">
+        <div data-testid="app-ready" className="flex flex-1 flex-col gap-4">
           <span data-testid="domain-label-probe" className="sr-only">
             {rarityLabel('Comum', lang)}
           </span>
           {!consentLoaded ? null : gated ? (
             <ConsentGate locale={locale} onLocaleChange={onLocaleChange} onReadAgain={onConsentReallow} />
           ) : activeNavId === 'settings' ? (
-            <>
+            <div data-testid="settings-view" className="mx-auto flex w-full max-w-settings flex-col gap-4">
               <LanguageSection locale={locale} onLocaleChange={onLocaleChange} persistWarning={persistWarning} />
               <ConsentSection onRevoke={onConsentRevoke} />
               <DiagnosticsSection onSave={onSaveDiagnostics} result={diagnosticsDumpResult} />
@@ -302,7 +302,7 @@ function HomePageContent({
                 onDownload={onUpdateDownload}
                 onInstall={onUpdateInstall}
               />
-            </>
+            </div>
           ) : activeNavId === 'inventory' ? (
             <InventoryView />
           ) : (

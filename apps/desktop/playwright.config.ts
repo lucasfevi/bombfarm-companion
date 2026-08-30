@@ -22,6 +22,7 @@ export default defineConfig({
         'i18n.spec.mjs',
         'inventory.spec.mjs',
         'live-earnings-no-layout-shift.spec.mjs',
+        'shell-measure-and-scrollbars.spec.mjs',
       ],
     },
     {
