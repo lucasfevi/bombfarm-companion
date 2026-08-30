@@ -1,44 +1,10 @@
 import { readFileSync } from 'node:fs';
 import path from 'node:path';
-import { describe, expect, it, vi } from 'vitest';
-import { createLiveStoreHolder } from './use-live-model';
-import type { LiveStore } from './live-store';
+import { describe, expect, it } from 'vitest';
 
 function source(): string {
   return readFileSync(path.join(__dirname, 'use-live-model.ts'), 'utf8');
 }
-
-function fakeStore(): LiveStore {
-  return {
-    getModel: vi.fn(),
-    subscribe: vi.fn(() => () => {}),
-    start: vi.fn(),
-    stop: vi.fn(),
-  };
-}
-
-describe('createLiveStoreHolder', () => {
-  it('builds the store once and hands every later caller the same one', () => {
-    const make = vi.fn(fakeStore);
-    const holder = createLiveStoreHolder(make);
-
-    const first = holder();
-    const second = holder();
-    const third = holder();
-
-    expect(make).toHaveBeenCalledTimes(1);
-    expect(second).toBe(first);
-    expect(third).toBe(first);
-  });
-
-  it('does not build the store until it is first asked for', () => {
-    const make = vi.fn(fakeStore);
-
-    createLiveStoreHolder(make);
-
-    expect(make).not.toHaveBeenCalled();
-  });
-});
 
 describe('useLiveModel — structural guarantee that the store outlives the mount', () => {
   it('declares exactly one useEffect, with an empty dependency array', () => {
@@ -52,11 +18,11 @@ describe('useLiveModel — structural guarantee that the store outlives the moun
     expect(source().match(/useState[<(]/g) ?? []).toHaveLength(1);
   });
 
-  it('takes the store from the shared holder rather than building one per mount', () => {
+  it('takes the store from a window-lifetime singleton rather than building one per mount', () => {
     const src = source();
 
+    expect(src).toContain('createLazySingleton(');
     expect(src).toContain('const store = sharedLiveStore();');
-    expect(src.match(/createLiveStore\(/g) ?? []).toHaveLength(1);
     expect(src).not.toMatch(/useEffect\(\(\) => \{[\s\S]*createLiveStore\(/);
   });
 
@@ -73,5 +39,16 @@ describe('useLiveModel — structural guarantee that the store outlives the moun
 
   it('reads the initial snapshot from the store rather than waiting for the first notification', () => {
     expect(source()).toContain('setModel(store.getModel())');
+  });
+
+  it('seeds the very first render from the store, so a remount never paints a loading frame', () => {
+    expect(source()).toContain('useState<LiveModel>(() => sharedLiveStore().getModel())');
+  });
+
+  it('constructs the store without touching window, so the first render can read it', () => {
+    const src = source();
+
+    expect(src).toMatch(/get bridge\(\)/);
+    expect(src).not.toMatch(/createLiveStore\(\{ bridge: \(window/);
   });
 });

@@ -1,13 +1,14 @@
 /**
  * The only `market:getSnapshot` call site and the only `market:changed` subscription site — the
- * shape `use-account-view.ts` established: one `useState`, one `useEffect`, every arrival folded
- * through the pure reducer in `market-store.ts`.
+ * shape `use-account-view.ts` established: a store whose lifetime is the window's, one `useState`,
+ * one `useEffect`, every arrival folded through the pure reducer in `market-store.ts`.
  */
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import type { MarketQuoteResult, MarketQuoteTarget } from '@bombfarm/contracts';
 import type { MarketSnapshot } from '@bombfarm/pricing';
+import { createLazySingleton, createSharedStore, type SharedStore } from '../shared-store';
 import { accept, initialMarketState, quoteTargetId } from './market-store';
-import type { MarketState, MarketView } from './market-store';
+import type { MarketArrival, MarketState, MarketView } from './market-store';
 
 export type { MarketState, MarketView };
 
@@ -52,42 +53,48 @@ export interface MarketSnapshotHook {
   refreshItem: (target: MarketQuoteTarget) => Promise<MarketQuoteResult>;
 }
 
-export function useMarketSnapshot(): MarketSnapshotHook {
-  const [state, setState] = useState<MarketState>(initialMarketState);
-  const [refresher, setRefresher] = useState<ReturnType<typeof createQuoteRefresher> | null>(null);
+/** The refresher is built by `connect` and read back through here, so the in-flight map that
+ *  coalesces duplicate quote requests is shared by every caller for as long as the window lives —
+ *  one per mount would let two screens ask the rate-limited endpoint for the same item at once. */
+export function createMarketSnapshotStore(): {
+  readonly store: SharedStore<MarketState>;
+  readonly refresh: (target: MarketQuoteTarget) => Promise<MarketQuoteResult>;
+} {
+  let refresher: ReturnType<typeof createQuoteRefresher> | null = null;
 
-  useEffect(() => {
-    const bridge = (window as unknown as { bfc?: Bridge }).bfc;
-    if (!bridge) {
-      setState((prev) => accept(prev, { kind: 'bridge-missing' }));
-      return;
-    }
+  const store = createSharedStore<MarketState, MarketArrival>({
+    initial: initialMarketState,
+    accept,
+    connect: (dispatch) => {
+      const bridge = (window as unknown as { bfc?: Bridge }).bfc;
+      if (!bridge) {
+        dispatch({ kind: 'bridge-missing' });
+        return;
+      }
 
-    let cancelled = false;
-    setRefresher(createQuoteRefresher(bridge));
-    const issuedAt = initialMarketState.applied;
+      refresher = createQuoteRefresher(bridge);
+      const issuedAt = initialMarketState.applied;
 
-    bridge
-      .invoke('market:getSnapshot')
-      .then((view) => {
-        if (!cancelled) setState((prev) => accept(prev, { kind: 'fetched', view: asMarketView(view), issuedAt }));
-      })
-      .catch(() => {
-        if (!cancelled) setState((prev) => accept(prev, { kind: 'fetch-failed', issuedAt }));
+      bridge
+        .invoke('market:getSnapshot')
+        .then((view) => {
+          dispatch({ kind: 'fetched', view: asMarketView(view), issuedAt });
+        })
+        .catch(() => {
+          dispatch({ kind: 'fetch-failed', issuedAt });
+        });
+
+      // Never unsubscribed: prices merged while the player is on another tab are still on screen
+      // when they come back, with no second `market:getSnapshot` to wait through.
+      bridge.on('market:changed', (view) => {
+        dispatch({ kind: 'pushed', view: asMarketView(view) });
       });
+    },
+  });
 
-    const unsubscribe = bridge.on('market:changed', (view) => {
-      if (!cancelled) setState((prev) => accept(prev, { kind: 'pushed', view: asMarketView(view) }));
-    });
-
-    return () => {
-      cancelled = true;
-      unsubscribe();
-    };
-  }, []);
-
-  const refreshItem = useCallback(
-    (target: MarketQuoteTarget): Promise<MarketQuoteResult> =>
+  return {
+    store,
+    refresh: (target) =>
       refresher?.refresh(target) ??
       Promise.resolve({
         ok: false as const,
@@ -97,11 +104,32 @@ export function useMarketSnapshot(): MarketSnapshotHook {
         keptAmount: null,
         at: new Date().toISOString(),
       }),
-    [refresher],
-  );
+  };
+}
+
+const sharedMarketSnapshotStore = createLazySingleton(createMarketSnapshotStore);
+
+/** Module scope, so it is the same reference on every render and never re-triggers a consumer's
+ *  memo — what the removed `useCallback` over a `useState`-held refresher was buying. */
+function refreshItem(target: MarketQuoteTarget): Promise<MarketQuoteResult> {
+  return sharedMarketSnapshotStore().refresh(target);
+}
+
+export function useMarketSnapshot(): MarketSnapshotHook {
+  const [state, setState] = useState<MarketState>(() => sharedMarketSnapshotStore().store.getState());
+
+  useEffect(() => {
+    const { store } = sharedMarketSnapshotStore();
+
+    const unsubscribe = store.subscribe(setState);
+    setState(store.getState());
+    store.start();
+
+    return unsubscribe;
+  }, []);
 
   return useMemo(
     () => ({ state, snapshot: state.status === 'ready' ? state.view.snapshot : null, refreshItem }),
-    [state, refreshItem],
+    [state],
   );
 }

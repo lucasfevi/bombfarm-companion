@@ -1,29 +1,25 @@
 import { useEffect, useState } from 'react';
-import { INITIAL_LIVE_MODEL, type LiveModel } from './live-model';
-import { createLiveStore, type LiveBridge, type LiveStore } from './live-store';
+import { createLazySingleton } from '../shared-store';
+import type { LiveModel } from './live-model';
+import { createLiveStore, type LiveBridge } from './live-store';
 
-/**
- * Memoizes one store over every caller, so the store's lifetime is the renderer WINDOW's and not
- * one mount of the Live tab. The tab unmounts whenever the player looks at Inventory or Settings;
- * a store built per mount is torn back down with it, and the next visit starts again from
- * `loading` — the spinner on return, and a hole covering everything that arrived while away.
- * Construction is lazy because it reads `window.bfc`, and this module is evaluated during the
- * static export build, where there is no window.
- */
-export function createLiveStoreHolder(make: () => LiveStore): () => LiveStore {
-  let store: LiveStore | null = null;
-  return () => {
-    store ??= make();
-    return store;
-  };
-}
-
-const sharedLiveStore = createLiveStoreHolder(() =>
-  createLiveStore({ bridge: (window as unknown as { bfc?: LiveBridge }).bfc }),
+/** One store for the renderer window, not one per mount of the Live tab — `shared-store.ts`
+ *  carries the reasoning every seam here is built on. `bridge` is a getter so that constructing
+ *  the store touches no `window`: the first render reads its state, and the static export build
+ *  renders in Node. `createLiveStore` resolves it once, in `start()`. */
+const sharedLiveStore = createLazySingleton(() =>
+  createLiveStore({
+    get bridge(): LiveBridge | undefined {
+      return (window as unknown as { bfc?: LiveBridge }).bfc;
+    },
+  }),
 );
 
 export function useLiveModel(): LiveModel {
-  const [model, setModel] = useState<LiveModel>(INITIAL_LIVE_MODEL);
+  // Seeded from the store, not from `INITIAL_LIVE_MODEL`: on a remount the store already holds
+  // live data, and reading it only in the effect below would paint one committed frame of
+  // `loading` first — the flash this whole seam exists to remove.
+  const [model, setModel] = useState<LiveModel>(() => sharedLiveStore().getModel());
 
   useEffect(() => {
     const store = sharedLiveStore();
