@@ -233,7 +233,10 @@ function rectsOverlap(a, b) {
  * `page.evaluate`.
  */
 function measureHeadlineForms(page) {
-  const forms = { short: '1k', long: '999.9m', noData: '—' };
+  // 'billions' is the formatter's longest reachable digit-string ("999.9bi" is one character
+  // longer than "999.9m"), included here alongside the shorter forms so the column-shape
+  // assertion below covers it too, not just the figure-overflow check further down.
+  const forms = { short: '1k', long: '999.9m', billions: '999.9bi', noData: '—' };
   return page.evaluate((figureForms) => {
     const column = document.querySelector('[data-testid="live-earnings-headline-column"]');
     const gold = document.querySelector('[data-testid="live-earnings-gold-10"]');
@@ -259,6 +262,59 @@ function assertHeadlineHoldsOneShape(measurements) {
   expect(widths.size, `headline column width must not change across figure forms:\n${detail}`).toBe(1);
   const dividerXs = new Set(Object.values(measurements).map((m) => Math.round(m.dividerX)));
   expect(dividerXs.size, `divider x-position must not change across figure forms:\n${detail}`).toBe(1);
+}
+
+/**
+ * `w-[…]` is a `box-sizing: border-box` width, so the declared width is the WHOLE box — the
+ * figure only has whatever is left after the column's own right border and `pr-6` padding come
+ * out of it. `assertHeadlineHoldsOneShape` above proves the box itself never resizes; this proves
+ * the box is actually big enough for what it holds, by comparing the gold figure's own rendered
+ * WIDTH against the column's content-box width (its border box minus its own padding and border)
+ * at both digit-strings the compact formatter can produce at this length — "999.9m" and
+ * "999.9bi" — not just whichever one happens to be typical.
+ *
+ * Width, not an edge position: the column right-aligns its children (`items-end`), which anchors
+ * to the CONTENT box's own edge — a figure too wide for that content box overflows AWAY from that
+ * anchor (here, leftward, past the column's own start and potentially the panel's), not past the
+ * anchor edge itself. An edge-position comparison on the anchored side never catches that; a
+ * width comparison does, regardless of which direction the alignment happens to spill toward.
+ */
+function measureHeadlineFigureOverflow(page, forms) {
+  return page.evaluate((figureForms) => {
+    const column = document.querySelector('[data-testid="live-earnings-headline-column"]');
+    const gold = document.querySelector('[data-testid="live-earnings-gold-10"]');
+    if (!column) throw new Error('live-earnings-headline-column not found');
+    if (!gold) throw new Error('live-earnings-gold-10 not found');
+
+    const style = getComputedStyle(column);
+    const paddingRight = parseFloat(style.paddingRight) || 0;
+    const borderRightWidth = parseFloat(style.borderRightWidth) || 0;
+
+    const results = {};
+    for (const [stateName, text] of Object.entries(figureForms)) {
+      gold.textContent = text;
+      const columnRect = column.getBoundingClientRect();
+      const figureRect = gold.getBoundingClientRect();
+      results[stateName] = {
+        text,
+        figureWidth: figureRect.width,
+        contentWidth: columnRect.width - paddingRight - borderRightWidth,
+      };
+    }
+    return results;
+  }, forms);
+}
+
+function assertHeadlineFigureNeverOverflowsItsColumn(measurements) {
+  const EPSILON = 0.5;
+  for (const [stateName, { text, figureWidth, contentWidth }] of Object.entries(measurements)) {
+    expect(
+      figureWidth,
+      `"${text}" (${stateName}) is wider than the headline column's own content box by ` +
+        `${(figureWidth - contentWidth).toFixed(2)}px — figureWidth=${figureWidth.toFixed(2)}, ` +
+        `contentWidth=${contentWidth.toFixed(2)}`,
+    ).toBeLessThanOrEqual(contentWidth + EPSILON);
+  }
 }
 
 /**
@@ -388,6 +444,28 @@ test.describe('live earnings panel: no layout shift smoke', () => {
   });
 
   /**
+   * The other half of the headline-column bug this file caught: even once the box stops
+   * resizing, `box-sizing: border-box` means its declared width is the WHOLE box, so the figure
+   * only gets whatever is left after the column's own border and padding come out of it — sizing
+   * the box to the figure's own text width (ignoring that subtraction) leaves too little room.
+   * Driven at both digit-strings the compact formatter can produce at this length — "999.9m" and
+   * the one-character-longer "999.9bi" — not just whichever one is typical.
+   */
+  test('the headline gold figure always fits inside the column\'s own content box, at every digit-string length the compact formatter can produce', async () => {
+    const { app, page, userDataDir } = await launchEarningsPanelApp('bfc-earnings-headline-fit-');
+
+    try {
+      const measurements = await measureHeadlineFigureOverflow(page, { millions: '999.9m', billions: '999.9bi' });
+      assertHeadlineFigureNeverOverflowsItsColumn(measurements);
+
+      await app.close();
+    } finally {
+      await app.close().catch(() => undefined);
+      fs.rmSync(userDataDir, { recursive: true, force: true });
+    }
+  });
+
+  /**
    * The window has a real minimum width (`minWidth` on the `BrowserWindow`), and the page-level
    * layout promotes the panel to a half-width column above a breakpoint — both are places a fixed,
    * non-shrinking layout can end up narrower than its own reserved content. Sweeping real window
@@ -400,7 +478,7 @@ test.describe('live earnings panel: no layout shift smoke', () => {
     const { app, page, userDataDir } = await launchEarningsPanelApp('bfc-earnings-responsive-');
 
     try {
-      const widths = [960, 1024, 1100, 1200, 1349, 1350, 1400, 1600, 1920];
+      const widths = [960, 1024, 1100, 1200, 1333, 1334, 1400, 1600, 1920];
 
       for (const width of widths) {
         await resizeWindow(app, page, width, 720);
@@ -413,6 +491,9 @@ test.describe('live earnings panel: no layout shift smoke', () => {
 
         assertBlocksHoldTheirShape(await measureBlocks(page));
         assertHeadlineHoldsOneShape(await measureHeadlineForms(page));
+        assertHeadlineFigureNeverOverflowsItsColumn(
+          await measureHeadlineFigureOverflow(page, { millions: '999.9m', billions: '999.9bi' }),
+        );
 
         const { buttonRect, otherRects } = await measureResetAndContentBoxes(page);
         const overlapping = otherRects.filter((rect) => rectsOverlap(buttonRect, rect));

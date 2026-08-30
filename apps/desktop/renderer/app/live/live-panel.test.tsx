@@ -38,7 +38,7 @@ describe('LivePanel — composition', () => {
     const html = renderToStaticMarkup(
       createElement(LivePanel, { freshness: { kind: 'live' }, slow: slowModel(), fast: emptyFast }),
     );
-    const gridIndex = html.indexOf('class="grid grid-cols-1 gap-4 min-[1350px]:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]"');
+    const gridIndex = html.indexOf('class="grid grid-cols-1 gap-4 min-[1334px]:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]"');
     const earningsIndex = html.indexOf('data-testid="live-earnings"');
     const heroesIndex = html.indexOf('data-testid="live-heroes"');
 

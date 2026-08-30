@@ -220,7 +220,7 @@ describe('EarningsPanel — the headline column is a fixed width, not sized to i
     const out = html(earnings());
     expect(out).toContain('data-testid="live-earnings-headline-column"');
     expect(out).toContain(
-      'class="flex w-[8.75rem] shrink-0 flex-col items-end gap-1.5 border-r border-line/55 pr-6"',
+      'class="flex w-[8.25rem] shrink-0 flex-col items-end gap-1.5 border-r border-line/55 pr-6"',
     );
   });
 
