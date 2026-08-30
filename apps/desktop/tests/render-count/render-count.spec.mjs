@@ -8,15 +8,16 @@ import { aggregateCommits } from './render-count-aggregate.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const desktopRoot = path.join(__dirname, '..', '..');
-const ACCOUNT_FULL_FIXTURE = path.join(__dirname, '..', 'fixtures', 'account-full.json');
+// The offline fixture, not account-full: this instrument measures what a one-item change costs
+// on the Inventory grid, and account-full carries zero items.
+const ACCOUNT_FIXTURE = path.join(__dirname, '..', 'fixtures', 'account-offline.json');
 const OUT_PATH = path.join(__dirname, 'out', 'render-count-capture.json');
 
 /**
- * Render-profiling instrument for the live-tab groundwork. Reuses the launcher shape of
- * `auto-recompute.spec.mjs` (`electronExecutable()`, `launchApp()`, `dismissConsent()`,
- * `goToPlanning()`, and its `raiseFirstHeroBaseAttackAtomically()` mutation — read, not edited)
- * and adds a React commit collector on top, installed on the Electron `BrowserContext` before
- * the first window navigates.
+ * Render-profiling instrument. Reuses the launcher shape of `auto-recompute.spec.mjs`
+ * (`electronExecutable()`, `launchApp()`, `acceptConsent()`, `goToInventory()`, and its
+ * `dropOneGearItemAtomically()` mutation) and adds a React commit collector on top, installed on
+ * the Electron `BrowserContext` before the first window navigates.
  *
  * Measures three things in one run (one Electron launch is expensive; the phases share it,
  * exactly like `auto-recompute.spec.mjs`'s own negative-then-positive structure):
@@ -28,19 +29,18 @@ const OUT_PATH = path.join(__dirname, 'out', 'render-count-capture.json');
  *    `updatedAt`, against the previous one — so on fixture ticks (which call it with a fresh
  *    timestamp every ~50ms) the comparison is always "changed" and `game:status` fires every
  *    tick. `app/page.tsx`'s `bfc.on('game:status', (next) => setStatus(next))` applies every one
- *    of those pushes unconditionally, and that state lives above `PlanningView`, so it recommits
- *    the whole visible tree on a ~50ms cadence regardless of which tab is open or whether account
- *    data changed at all. This is a real, pre-existing defect independent of the
- *    `accountChangeKey` path this instrument was commissioned to watch — out of scope to fix
- *    here (only `game-reader-service.ts`/`app/page.tsx` would need to change, and this task's
- *    brief is instrument-only), so it is recorded as a measurement rather than asserted to zero.
- * 2. The one fixture mutation known to change what the panel prints — raising the first hero's
- *    `birth_stats.dmg` — must commit at least one component more than the phase-1 background
- *    rate accounts for, and its per-component tally is recorded.
- * 3. That same mutation touches exactly one hero out of the fixture's roster, so its total
- *    render count IS the answer to "what does a one-hero change cost" — there is no second,
- *    narrower mutation known to move the rendered output, so this reuses phase 2's capture
- *    rather than inventing one.
+ *    of those pushes unconditionally, and that state lives above the whole content area, so it
+ *    recommits the visible tree on a ~50ms cadence regardless of which tab is open or whether
+ *    account data changed at all. This is a real, pre-existing defect independent of the
+ *    `accountChangeKey` path this instrument watches — only `game-reader-service.ts`/
+ *    `app/page.tsx` would need to change — so it is recorded as a measurement rather than
+ *    asserted to zero.
+ * 2. One fixture mutation that provably changes what the grid draws — dropping a single gear
+ *    item — must commit at least one component more than the phase-1 background rate accounts
+ *    for, and its per-component tally is recorded.
+ * 3. That mutation touches exactly one item out of the fixture's inventory, so its total render
+ *    count IS the answer to "what does a one-item change cost" — this reuses phase 2's capture
+ *    rather than inventing a second, narrower one.
  */
 function electronExecutable() {
   return path.join(
@@ -153,21 +153,20 @@ async function acceptConsent(page) {
   await expect(modal).toBeHidden({ timeout: 15_000 });
 }
 
-async function goToPlanning(page) {
+async function goToInventory(page) {
   await acceptConsent(page);
-  await page.getByRole('button', { name: 'Planning' }).click();
-  await page.waitForSelector('[data-testid="planning-view"]', { timeout: 15_000 });
+  await page.getByRole('button', { name: 'Inventory' }).click();
+  await page.waitForSelector('[data-testid="inventory-view"]', { timeout: 15_000 });
 }
 
-function raiseFirstHeroBaseAttackAtomically(fixtureCopyPath) {
+/** Gear (wire `category` 0) is the one kind the grid never stacks, so exactly one card leaves it.
+ *  Same mutation `auto-recompute.spec.mjs` uses, for the same reason. */
+function dropOneGearItemAtomically(fixtureCopyPath) {
   const payload = JSON.parse(fs.readFileSync(fixtureCopyPath, 'utf8'));
-  const heroes = Array.isArray(payload.heroes) ? payload.heroes : [];
-  const firstHero = heroes[0];
-  if (!firstHero) throw new Error('render-count.spec.mjs: fixture copy has no heroes to mutate');
-  if (!firstHero.birth_stats || typeof firstHero.birth_stats.dmg !== 'number') {
-    throw new Error("render-count.spec.mjs: fixture copy's first hero has no birth_stats.dmg to mutate");
-  }
-  firstHero.birth_stats.dmg = 1000;
+  const items = Array.isArray(payload.items) ? payload.items : [];
+  const index = items.findIndex((item) => item?.category === 0);
+  if (index < 0) throw new Error('render-count.spec.mjs: fixture copy has no gear item to drop');
+  items.splice(index, 1);
 
   const tmpPath = `${fixtureCopyPath}.tmp`;
   fs.writeFileSync(tmpPath, JSON.stringify(payload));
@@ -189,10 +188,10 @@ function raiseFirstHeroBaseAttackAtomically(fixtureCopyPath) {
  */
 
 test.describe('render-count instrument', () => {
-  test('quiet reads render nothing; a one-hero fixture change renders, and the cost is recorded', async () => {
+  test('quiet reads render nothing; a one-item fixture change renders, and the cost is recorded', async () => {
     const userDataDir = fs.mkdtempSync(path.join(os.tmpdir(), 'bfc-render-count-'));
-    const fixtureCopyPath = path.join(userDataDir, 'account-full.json');
-    fs.copyFileSync(ACCOUNT_FULL_FIXTURE, fixtureCopyPath);
+    const fixtureCopyPath = path.join(userDataDir, 'account-offline.json');
+    fs.copyFileSync(ACCOUNT_FIXTURE, fixtureCopyPath);
 
     const capture = {
       capturedAt: new Date().toISOString(),
@@ -200,9 +199,9 @@ test.describe('render-count instrument', () => {
       sawCommit: false,
       quiet: null,
       quietWindowMs: null,
-      oneHeroChange: null,
-      oneHeroChangeWindowMs: null,
-      oneHeroChangeNetOfBackground: null,
+      oneItemChange: null,
+      oneItemChangeWindowMs: null,
+      oneItemChangeNetOfBackground: null,
       unminifiedComponentKeys: null,
     };
 
@@ -213,26 +212,27 @@ test.describe('render-count instrument', () => {
         BFC_USER_DATA_DIR: userDataDir,
       });
       try {
-        await goToPlanning(page);
-        await page.waitForSelector('[data-testid="roster-list"]', { timeout: 20_000 });
-        await expect(page.getByTestId('next-point-gain')).toBeVisible({ timeout: 20_000 });
+        await goToInventory(page);
+        await page.waitForSelector('[data-testid="inventory-card"]', { timeout: 20_000 });
 
         // launchApp() already proved liveness (marker gone + hook attached) right after the
-        // reload; this re-checks the same collector survived the in-app navigation to Planning.
+        // reload; this re-checks the same collector survived the in-app navigation to Inventory.
         const baselineApi = await readCollectorApi(page);
         capture.hookInstalled = baselineApi.hookInstalled;
         capture.sawCommit = baselineApi.sawCommit;
         if (!baselineApi.hookInstalled || !baselineApi.sawCommit) {
           throw new Error(
             'render-count instrument: the collector was alive right after launch but is not ' +
-              'anymore after navigating to Planning.',
+              'anymore after navigating to Inventory.',
           );
         }
 
-        const gainBefore = await page.getByTestId('next-point-gain').innerText();
+        const cards = page.getByTestId('inventory-card');
+        const cardsBefore = await cards.count();
+        expect(cardsBefore).toBeGreaterThan(0);
 
         // The first paint still has a few post-mount effects to settle (measured: tooltip
-        // portal/motion setup for the ranking table's rows) on top of the `game:status` churn
+        // portal/motion setup for the grid's cards) on top of the `game:status` churn
         // described in the module doc comment — and that churn never truly goes quiet, so a
         // "wait until no commits for Nms" primitive (the web perf harness's `waitForQuiet`)
         // cannot work here: it would wait for a state that structurally never occurs. A fixed
@@ -240,11 +240,11 @@ test.describe('render-count instrument', () => {
         // effects, not the ongoing background rate that phase 1 below measures on purpose.
         await page.waitForTimeout(1_000);
 
-        // Phase 1 (quiet window): ~100 fixture commits at pollAttachedMs=50 (~5s), all
-        // planning-identical (only capturedAt moves) — auto-recompute.spec.mjs's own negative
-        // half. See the module doc comment: this is measured, not gated to zero — a real,
-        // unrelated `game:status` re-render source keeps this above zero regardless of account
-        // data.
+        // Phase 1 (quiet window): ~100 fixture commits at pollAttachedMs=50 (~5s), every one
+        // carrying an identical body (only capturedAt moves) — auto-recompute.spec.mjs's own
+        // negative half. See the module doc comment: this is measured, not gated to zero — a
+        // real, unrelated `game:status` re-render source keeps this above zero regardless of
+        // account data.
         const quietWindowMs = 5_000;
         await page.evaluate(() => window.__BFC_RENDER_COUNT__.reset());
         await page.waitForTimeout(quietWindowMs);
@@ -252,46 +252,42 @@ test.describe('render-count instrument', () => {
         capture.quiet = aggregateCommits(quietCommits);
         capture.quietWindowMs = quietWindowMs;
 
-        const gainStillUnchanged = await page.getByTestId('next-point-gain').innerText();
-        expect(gainStillUnchanged).toBe(gainBefore);
+        expect(await cards.count()).toBe(cardsBefore);
 
-        // Phase 2/3 (one real, one-hero change): raises heroes[0].birth_stats.dmg — the mutation
-        // auto-recompute.spec.mjs establishes is the one that actually moves the rendered
-        // output for this fixture.
+        // Phase 2/3 (one real, one-item change): drops one gear item — the mutation
+        // auto-recompute.spec.mjs establishes actually moves the rendered output for this
+        // fixture.
         const changeWindowStart = await page.evaluate(() => {
           window.__BFC_RENDER_COUNT__.reset();
           return performance.now();
         });
-        raiseFirstHeroBaseAttackAtomically(fixtureCopyPath);
+        dropOneGearItemAtomically(fixtureCopyPath);
 
         await expect
-          .poll(async () => page.getByTestId('next-point-gain').innerText(), {
-            timeout: 15_000,
-            intervals: [200],
-          })
-          .not.toBe(gainBefore);
+          .poll(async () => cards.count(), { timeout: 15_000, intervals: [200] })
+          .toBe(cardsBefore - 1);
 
         // Settle tail, mirroring auto-recompute.spec.mjs's post-change window.
         await page.waitForTimeout(1_000);
         const changeWindowEnd = await page.evaluate(() => performance.now());
         const changeCommits = await page.evaluate(() => window.__BFC_RENDER_COUNT__.commits);
-        capture.oneHeroChange = aggregateCommits(changeCommits);
-        capture.oneHeroChangeWindowMs = changeWindowEnd - changeWindowStart;
+        capture.oneItemChange = aggregateCommits(changeCommits);
+        capture.oneItemChangeWindowMs = changeWindowEnd - changeWindowStart;
 
-        expect(capture.oneHeroChange.componentRenders, 'one-hero-change componentRenders').toBeGreaterThan(0);
+        expect(capture.oneItemChange.componentRenders, 'one-item-change componentRenders').toBeGreaterThan(0);
 
         // The same `game:status` churn from phase 1 keeps ticking during this window too — it is
-        // not something the one-hero mutation caused, so it is estimated out here rather than
-        // left to inflate "the cost of a one-hero change". `quiet`'s own rate is the best
+        // not something the one-item mutation caused, so it is estimated out here rather than
+        // left to inflate "the cost of a one-item change". `quiet`'s own rate is the best
         // available estimate of that background floor; this is a measurement aid, not a gate.
         const backgroundRatePerMs = capture.quiet.componentRenders / capture.quietWindowMs;
-        const expectedBackground = Math.round(backgroundRatePerMs * capture.oneHeroChangeWindowMs);
-        capture.oneHeroChangeNetOfBackground = Math.max(
+        const expectedBackground = Math.round(backgroundRatePerMs * capture.oneItemChangeWindowMs);
+        capture.oneItemChangeNetOfBackground = Math.max(
           0,
-          capture.oneHeroChange.componentRenders - expectedBackground,
+          capture.oneItemChange.componentRenders - expectedBackground,
         );
 
-        capture.unminifiedComponentKeys = Object.keys(capture.oneHeroChange.renderTally).filter(looksUnminified);
+        capture.unminifiedComponentKeys = Object.keys(capture.oneItemChange.renderTally).filter(looksUnminified);
 
         await app.close();
       } finally {
@@ -308,9 +304,9 @@ test.describe('render-count instrument', () => {
     // eslint-disable-next-line no-console
     console.log(
       `[render-count] quiet.componentRenders=${capture.quiet.componentRenders} (over ${capture.quietWindowMs}ms) ` +
-        `oneHeroChange.componentRenders=${capture.oneHeroChange.componentRenders} ` +
-        `(netOfBackground=${capture.oneHeroChangeNetOfBackground}) ` +
-        `oneHeroChange.distinctComponents=${capture.oneHeroChange.distinctComponents}`,
+        `oneItemChange.componentRenders=${capture.oneItemChange.componentRenders} ` +
+        `(netOfBackground=${capture.oneItemChangeNetOfBackground}) ` +
+        `oneItemChange.distinctComponents=${capture.oneItemChange.distinctComponents}`,
     );
   });
 });

@@ -1,9 +1,8 @@
 /**
- * The only asynchrony in this feature, isolated into a pure reducer (design.md §4.4) so it
- * is testable at all: `apps/desktop`'s Vitest project is node-environment with
- * `renderToStaticMarkup`, which never runs `useEffect` — see `use-account-view.ts`'s own comment
- * (kept from F2). No React import — assert it by reading the source, F2's own technique
- * (`use-account-view.test.ts`).
+ * The account seam's only asynchrony, isolated into a pure reducer so it is testable at all:
+ * `apps/desktop`'s Vitest project is node-environment with `renderToStaticMarkup`, which never
+ * runs `useEffect` — see `use-account-view.ts`'s own comment. No React import — asserted by
+ * reading the source (`account-view-store.test.ts`).
  */
 import { accountChangeKey } from '@bombfarm/contracts';
 import type { AccountView } from '@bombfarm/contracts';
@@ -23,10 +22,10 @@ export type AccountViewState =
 export const initialAccountViewState: AccountViewState = { status: 'loading', applied: 0, key: null };
 
 /**
- * Pure. `state.applied` is bumped on every ACCEPTED view (design §4.4); `state.key` is the last
+ * Pure. `state.applied` is bumped on every ACCEPTED view; `state.key` is the last
  * accepted view's tier-0 `accountChangeKey`. Four rules, in order:
  *
- * 1. `bridge-missing` ⇒ `bridge-unavailable`. Never throws (F2's behaviour, preserved).
+ * 1. `bridge-missing` ⇒ `bridge-unavailable`. Never throws.
  * 2. `pushed` ⇒ accepted iff `accountChangeKey(view.payload) !== state.key` (the accept
  *    gate). Main is single-threaded, so anything it pushes is, by construction, the newest thing
  *    it knows — never conditioned on `issuedAt`.

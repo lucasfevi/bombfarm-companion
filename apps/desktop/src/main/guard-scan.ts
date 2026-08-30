@@ -1,13 +1,13 @@
 /**
- * Directory walking shared by this folder's source guards (`i18n-guards`, `planning-guards`,
+ * Directory walking shared by this folder's source guards (`i18n-guards`, `source-guards`,
  * `retired-ipc-channel-guards`, `live-source-boundary`).
  *
  * Those files previously each kept their own verbatim copy, on a stated convention that
  * "each guard file owns its scan". The copies drifted and the convention cost more than it
  * bought: adding one ignored directory name (`.next-dev`, when `next dev` moved to its own dist
- * directory) meant editing the same skip list four times, and `planning-guards`' copy already
- * documented itself as carrying a branch that was inert in its own scans purely to stay
- * byte-identical with the others.
+ * directory) meant editing the same skip list four times, and one copy already documented
+ * itself as carrying a branch that was inert in its own scans purely to stay byte-identical
+ * with the others.
  *
  * It lives here rather than in `tools/` deliberately: `ci-fidelity.yml` runs `tools/` as its own
  * vitest project, and the guards' original home note is right that pulling them into it widens

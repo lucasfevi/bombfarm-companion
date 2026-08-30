@@ -6,26 +6,25 @@ import { fileURLToPath } from 'node:url';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const desktopRoot = path.join(__dirname, '..', '..');
-const ACCOUNT_FULL_FIXTURE = path.join(__dirname, '..', 'fixtures', 'account-full.json');
+// The offline fixture, not account-full: this spec measures Inventory column widths across a
+// language switch, and account-full carries zero items so no card would ever render.
+const ACCOUNT_FIXTURE = path.join(__dirname, '..', 'fixtures', 'account-offline.json');
 
 /**
  * The language end to end on a real Electron app, in one run: OS-detected
  * default, live switch, persisted choice, zero recompute, and the only real pixel measurement
- * available in this repo. Launcher shape reused verbatim from `planning-advice.spec.mjs` (its
+ * available in this repo. Launcher shape shared with the other smoke specs (its
  * `BFC_TOKEN_PATH_OVERRIDE`, its `BFC_GAME_PROCESS` pin, its `acceptConsent()` helper and the
- * reasoning below — read, not edited) and `account-restart.spec.mjs`'s `mkdtempSync` +
- * `BFC_USER_DATA_DIR` relaunch pattern.
+ * reasoning below) and `account-restart.spec.mjs`'s `mkdtempSync` + `BFC_USER_DATA_DIR` relaunch
+ * pattern.
  *
- * **FIRST-ITEM PROBE, stated up front (this design's own risk, tasks.md T7's first bullet):** this
- * spec's PT-BR-locale-detection assertions ARE the probe for whether Chromium's `--lang` switch actually moves
- * `app.getLocale()` on the runner. Design could not verify this without executing Electron, and
- * the implementer running this task could not either (Electron may not be launched locally — the
- * repo's own hard constraint). If this spec's `--lang=pt-BR` launch fails specifically on the
- * "renders in PT-BR" / `documentElement.lang === 'pt-BR'` assertions below, that IS the answer:
- * `--lang` proved inert on this runner. The correct response is NOT a `BFC_OS_LOCALE` production
- * env var — it is to rely on `resolveStartupLocale`'s exhaustive unit table
- * (`packages/contracts/src/locale.test.ts`, already exhaustive) and record the smoke limitation
- * in `validation.md`. Do not "fix" this spec by loosening its own assertions.
+ * **This spec's PT-BR-locale-detection assertions ARE the probe** for whether Chromium's `--lang`
+ * switch actually moves `app.getLocale()` on the runner — nothing verifies that without executing
+ * Electron. If the `--lang=pt-BR` launch fails specifically on the "renders in PT-BR" /
+ * `documentElement.lang === 'pt-BR'` assertions below, that IS the answer: `--lang` proved inert
+ * on this runner. The correct response is NOT a `BFC_OS_LOCALE` production env var — it is to
+ * rely on `resolveStartupLocale`'s exhaustive unit table (`packages/contracts/src/locale.test.ts`).
+ * Do not "fix" this spec by loosening its own assertions.
  *
  * Every Portuguese string asserted below is read from `STRINGS['pt-BR'][key]` — via a small,
  * source-scoped regex extraction (`readCopyValue`, this file's own — a `.mjs` smoke cannot import
@@ -72,10 +71,10 @@ async function launchApp(env, extraArgs = []) {
       BFC_FLAVOR: 'dev',
       ELECTRON_ENABLE_LOGGING: '1',
       // Never let a real BombFarm process on the runner machine make "game running" true for
-      // reasons unrelated to this feature (planning-advice.spec.mjs's own reasoning).
+      // reasons unrelated to the language behaviour under test.
       BFC_GAME_PROCESS: 'bfc-smoke-no-such-process.exe',
-      // SAFETY (T-fix-4, reproduced from planning-advice.spec.mjs because this spec launches
-      // independently): redirects session-token-file.ts's sessionCfgPath() away from the real
+      // SAFETY (reproduced in every smoke spec that launches independently): redirects
+      // session-token-file.ts's sessionCfgPath() away from the real
       // %APPDATA%/Godot/app_userdata/BombFarm/session.cfg. acceptConsent() below grants, so this
       // is load-bearing: without it the next account-refresh cycle would open whichever real
       // session.cfg exists on the machine running this suite and issue a live, authenticated
@@ -103,7 +102,7 @@ async function acceptConsent(page) {
   await expect(modal).toBeHidden({ timeout: 15_000 });
 }
 
-/** The Live/Planning/Settings nav buttons live in AppShell's persistent sidebar
+/** The Live/Inventory/Settings nav buttons live in AppShell's persistent sidebar
  *  (`packages/ui/src/AppShell.tsx`), which stays mounted across every `activeNavId` — unlike the
  *  content area, which conditionally mounts/unmounts per tab (`page.tsx`). `packages/ui` ships no
  *  `data-testid` on these buttons (a design-system reuse-boundary rule — it must not change), so they are located by role +
@@ -121,7 +120,7 @@ test.describe('language smoke — detected, switched in place, and remembered', 
       const { app: app1, page: page1 } = await launchApp(
         {
           BFC_GAME_READER: 'fixture',
-          BFC_FIXTURE_ACCOUNT_FILE: ACCOUNT_FULL_FIXTURE,
+          BFC_FIXTURE_ACCOUNT_FILE: ACCOUNT_FIXTURE,
           BFC_USER_DATA_DIR: userDataDir,
         },
         ['--lang=pt-BR'],
@@ -132,14 +131,13 @@ test.describe('language smoke — detected, switched in place, and remembered', 
         // --- The app opened in PT-BR, detected from the OS locale -----------------
         await expect(page1.locator('html')).toHaveAttribute('lang', 'pt-BR');
         await expect(navButton(page1, 0)).toHaveText(pt('liveNavLabel'));
-        await expect(navButton(page1, 1)).toHaveText(pt('shellPlanningNavLabel'));
-        await expect(navButton(page1, 2)).toHaveText(pt('inventoryNavLabel'));
-        await expect(navButton(page1, 3)).toHaveText(pt('settingsNavLabel'));
+        await expect(navButton(page1, 1)).toHaveText(pt('inventoryNavLabel'));
+        await expect(navButton(page1, 2)).toHaveText(pt('settingsNavLabel'));
 
-        // --- Navigate to Planning; the no-layout-shift "before" measurement + the no-recompute sentinel ------
+        // --- Navigate to Inventory; the no-layout-shift "before" measurement + the no-recompute sentinel ------
         await navButton(page1, 1).click();
-        await page1.waitForSelector('[data-testid="planning-view"]', { timeout: 15_000 });
-        await page1.waitForSelector('[data-testid="roster-list"]', { timeout: 20_000 });
+        await page1.waitForSelector('[data-testid="inventory-view"]', { timeout: 15_000 });
+        await page1.waitForSelector('[data-testid="inventory-card"]', { timeout: 20_000 });
 
         // Installed FROM THE TEST — zero production probe surface.
         await page1.evaluate(() => {
@@ -150,23 +148,22 @@ test.describe('language smoke — detected, switched in place, and remembered', 
           window.__bfcI18nSentinel = 1;
         });
 
-        const planningBoxBefore = await page1.getByTestId('planning-view').boundingBox();
-        const rosterBoxBefore = await page1.getByTestId('roster-list').boundingBox();
-        expect(planningBoxBefore).not.toBeNull();
-        expect(rosterBoxBefore).not.toBeNull();
+        const inventoryBoxBefore = await page1.getByTestId('inventory-view').boundingBox();
+        const cardBoxBefore = await page1.getByTestId('inventory-card').first().boundingBox();
+        expect(inventoryBoxBefore).not.toBeNull();
+        expect(cardBoxBefore).not.toBeNull();
 
         // --- Navigate to Settings, drive the shipped Select to English (live switch, no restart) -----
-        await navButton(page1, 3).click();
+        await navButton(page1, 2).click();
         const select = page1.getByRole('combobox', { name: pt('settingsLanguageLabel') });
         await expect(select).toBeVisible({ timeout: 10_000 });
         await select.click();
         await page1.getByRole('option', { name: pt('settingsLanguageOptionEnglish') }).click();
 
-        // The SAME persistent nav node changed in place — Planejamento -> Planning.
+        // The SAME persistent nav node changed in place — Inventário -> Inventory.
         await expect(navButton(page1, 0)).toHaveText(en('liveNavLabel'), { timeout: 10_000 });
-        await expect(navButton(page1, 1)).toHaveText(en('shellPlanningNavLabel'));
-        await expect(navButton(page1, 2)).toHaveText(en('inventoryNavLabel'));
-        await expect(navButton(page1, 3)).toHaveText(en('settingsNavLabel'));
+        await expect(navButton(page1, 1)).toHaveText(en('inventoryNavLabel'));
+        await expect(navButton(page1, 2)).toHaveText(en('settingsNavLabel'));
 
         // No reload occurred — the sentinel stamped before the switch survived it.
         const sentinelAfter = await page1.evaluate(() => window.__bfcI18nSentinel);
@@ -178,19 +175,19 @@ test.describe('language smoke — detected, switched in place, and remembered', 
         const accountChangedCount = await page1.evaluate(() => window.__bfcAccountChanged);
         expect(accountChangedCount).toBe(0);
 
-        // --- No-layout-shift "after" measurement, back on Planning (settings unmounted the content
-        //     area, so this is a fresh mount of planning-view — the width comparison is what
-        //     matters, not node identity) --------------------------------------------------
+        // --- No-layout-shift "after" measurement, back on Inventory (settings unmounted the
+        //     content area, so this is a fresh mount of inventory-view — the width comparison is
+        //     what matters, not node identity) ----------------------------------------------
         await navButton(page1, 1).click();
-        await page1.waitForSelector('[data-testid="planning-view"]', { timeout: 15_000 });
-        await page1.waitForSelector('[data-testid="roster-list"]', { timeout: 15_000 });
-        const planningBoxAfter = await page1.getByTestId('planning-view').boundingBox();
-        const rosterBoxAfter = await page1.getByTestId('roster-list').boundingBox();
-        expect(planningBoxAfter).not.toBeNull();
-        expect(rosterBoxAfter).not.toBeNull();
+        await page1.waitForSelector('[data-testid="inventory-view"]', { timeout: 15_000 });
+        await page1.waitForSelector('[data-testid="inventory-card"]', { timeout: 15_000 });
+        const inventoryBoxAfter = await page1.getByTestId('inventory-view').boundingBox();
+        const cardBoxAfter = await page1.getByTestId('inventory-card').first().boundingBox();
+        expect(inventoryBoxAfter).not.toBeNull();
+        expect(cardBoxAfter).not.toBeNull();
 
-        expect(planningBoxAfter.width).toBe(planningBoxBefore.width);
-        expect(rosterBoxAfter.width).toBe(rosterBoxBefore.width);
+        expect(inventoryBoxAfter.width).toBe(inventoryBoxBefore.width);
+        expect(cardBoxAfter.width).toBe(cardBoxBefore.width);
       } finally {
         await app1.close().catch(() => undefined);
       }
@@ -200,7 +197,7 @@ test.describe('language smoke — detected, switched in place, and remembered', 
       // won" rather than "OS detection happened to run and agree" — the only real proof the chosen language survives a restart, read from settings not the OS.
       // Do NOT "tidy" this away; it is the one thing that separates the two explanations.
       const { app: app2, page: page2 } = await launchApp(
-        { BFC_GAME_READER: 'fixture', BFC_FIXTURE_ACCOUNT_FILE: ACCOUNT_FULL_FIXTURE, BFC_USER_DATA_DIR: userDataDir },
+        { BFC_GAME_READER: 'fixture', BFC_FIXTURE_ACCOUNT_FILE: ACCOUNT_FIXTURE, BFC_USER_DATA_DIR: userDataDir },
         ['--lang=pt-BR'],
       );
       try {
@@ -213,7 +210,7 @@ test.describe('language smoke — detected, switched in place, and remembered', 
         // --- English persists, read from settings, not from the (still pt-BR) OS ---
         await expect(page2.locator('html')).toHaveAttribute('lang', 'en');
         await expect(navButton(page2, 0)).toHaveText(en('liveNavLabel'));
-        await expect(navButton(page2, 1)).toHaveText(en('shellPlanningNavLabel'));
+        await expect(navButton(page2, 1)).toHaveText(en('inventoryNavLabel'));
       } finally {
         await app2.close().catch(() => undefined);
       }

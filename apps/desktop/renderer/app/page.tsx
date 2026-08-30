@@ -13,9 +13,8 @@ import { DEFAULT_SETTINGS, disabledUpdateStatus } from '@bombfarm/contracts';
 import { AppShell, BrandMark, SegmentedToggle, StatusChip } from '@bombfarm/ui';
 // Proves the renderer can import @bombfarm/domain: a value import from a
 // FILE subpath that itself value-imports ./data/catalog.json, so a dist missing the JSON data
-// fails the static export build rather than surfacing later at runtime (spec edge case). This
-// is a probe, not planning UI — F2 (mp3-planning-views) is what actually renders advice. It also
-// gives it a second purpose: proving the LANGUAGE reaches the domain edge, not just a value.
+// fails the static export build rather than surfacing later at runtime. It also carries a
+// second purpose: proving the LANGUAGE reaches the domain edge, not just a value.
 import { rarityLabel } from '@bombfarm/domain/game-labels';
 import type { ConsentRecord } from '@bombfarm/game-api';
 import { CopyProvider, useCopy, useLocale, type Copy } from '../lib/copy';
@@ -25,7 +24,6 @@ import { navItemsFor } from './nav-items';
 import { ConsentGate, isConsentGateVisible } from './consent-gate';
 import { ConsentModal } from './consent-modal';
 import { LiveView } from './live/live-view';
-import { PlanningView } from './planning/planning-view';
 import { InventoryView } from './inventory/inventory-view';
 import { ConsentSection } from './settings/consent-section';
 import { DiagnosticsSection } from './settings/diagnostics-section';
@@ -286,7 +284,7 @@ function HomePageContent({
         {/* `app-ready` marks the renderer as mounted, so it belongs to the shell and not to
             whichever tab happens to be showing — six smoke specs wait on it purely as a boot
             signal. The probe beside it proves a @bombfarm/domain value and the active language
-            reached the DOM; it is not planner UI. */}
+            reached the DOM; it renders nothing a player sees. */}
         <div data-testid="app-ready" className="h-full space-y-4">
           <span data-testid="domain-label-probe" className="sr-only">
             {rarityLabel('Comum', lang)}
@@ -305,8 +303,6 @@ function HomePageContent({
                 onInstall={onUpdateInstall}
               />
             </>
-          ) : activeNavId === 'planning' ? (
-            <PlanningView />
           ) : activeNavId === 'inventory' ? (
             <InventoryView />
           ) : (

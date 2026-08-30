@@ -457,10 +457,6 @@ every skip left in the tree is a deliberate one declared in `SKIPS_NOT_F8`:
 
 - `apps/web/e2e/visual.spec.ts` (3) — a whole-suite `describe.skip`, held until its screenshot
   baselines are reviewed. Its own header carries the re-enable step.
-- `apps/desktop/renderer/lib/planning/recompute-budget.test.ts` (1) — **reclassified**, not
-  resolved. Its skip is a red-state demonstration that deliberately loops the roster 80x to blow
-  the budget its siblings assert; its own comment says it "is not itself a regression guard, it is
-  evidence the regression guard has teeth". It was never stale-fixture debt.
 
 The last four resolutions were not re-points, and each is worth naming:
 

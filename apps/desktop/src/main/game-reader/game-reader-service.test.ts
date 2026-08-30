@@ -527,7 +527,7 @@ describe('GameReaderService — status pushes', () => {
 
     // Every one of those ticks stamps a fresh `updatedAt` while the status itself is unchanged.
     // Comparing whole objects made each one a change, so the renderer took a state update — and
-    // re-rendered everything above the planning tree — at the poll interval.
+    // re-rendered the whole content area — at the poll interval.
     expect(statusPushes(channels)).toBe(afterStart);
   });
 

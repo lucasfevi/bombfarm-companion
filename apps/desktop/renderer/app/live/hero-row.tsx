@@ -41,7 +41,7 @@ function EnergyReading({ testId, fraction }: { testId: string; fraction: number 
 
   return (
     <span data-testid={testId} className="block text-right text-[10px] leading-none tabular-nums text-muted">
-      {known ? formatEnergyPercent(fraction, locale) : t.fidelityStatusMissing}
+      {known ? formatEnergyPercent(fraction, locale) : t.valueNotAvailable}
     </span>
   );
 }
