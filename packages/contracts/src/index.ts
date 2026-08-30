@@ -44,6 +44,7 @@ export type {
   LiveHit,
   LiveLootPop,
   LiveMap,
+  LiveMapEconomy,
   LiveTick,
   LiveTickHero,
   LiveView,

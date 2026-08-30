@@ -1,18 +1,40 @@
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import type { LiveTick } from '@bombfarm/contracts';
-import { propCountForPhase } from '@bombfarm/domain/phase-wiki';
+import { computePhaseIntelGlobal } from '@bombfarm/domain/phase-intel';
 import { describe, expect, it } from 'vitest';
 import { readCaptureRecords, type CaptureRecord } from './capture-format.js';
-import { MapFold } from './map-fold.js';
+import { MapFold, type MapAccountBoosts, type MapWikiFacts } from './map-fold.js';
 import { TlsConnections, type TapEvent } from './tls-stream.js';
 
 function baseTick(overrides: Partial<LiveTick> = {}): LiveTick {
   return { heroes: [], ...overrides };
 }
 
-function makeFold(propsTotalForPhase: (phase: number) => number | null = () => 50): MapFold {
-  return new MapFold({ propsTotalForPhase });
+const STUB_ECONOMY = { xpPerProp: 10, averageGoldPerProp: 100, averageGoldPerClear: 5_000 };
+
+/** The production adapter, duplicated here rather than imported: `live-source.ts` keeps it
+ *  private, and the capture cases below need the real wiki numbers, not a stub. */
+function realWikiFactsFor(phase: number, boosts: MapAccountBoosts): MapWikiFacts | null {
+  const intel = computePhaseIntelGlobal(phase, { teamCoinPct: boosts.teamCoinPct, xpMult: boosts.xpMult });
+  if (!intel) return null;
+  return {
+    propsTotal: intel.propCount,
+    economy: {
+      xpPerProp: intel.xpPerPropActual,
+      averageGoldPerProp: intel.weightedAvgGoldActual,
+      averageGoldPerClear: intel.totalMapGoldActual,
+    },
+  };
+}
+
+function makeFold(
+  wikiFactsFor: (phase: number, boosts: MapAccountBoosts) => MapWikiFacts | null = () => ({
+    propsTotal: 50,
+    economy: STUB_ECONOMY,
+  }),
+): MapFold {
+  return new MapFold({ wikiFactsFor });
 }
 
 function isTick(event: TapEvent): event is { kind: 'tick'; tick: LiveTick } {
@@ -82,7 +104,7 @@ describe('MapFold: the reading it publishes', () => {
   });
 
   it('takes the props total from the phase, never from the grid it was sent', () => {
-    const fold = makeFold((phase) => (phase === 61 ? 75 : null));
+    const fold = makeFold((phase) => (phase === 61 ? { propsTotal: 75, economy: STUB_ECONOMY } : null));
     fold.consumeTick(baseTick({ phase: 61, kinds: grid(304, 10) }), 1);
     expect(fold.current).toMatchObject({ propsAlive: 10, propsTotal: 75 });
   });
@@ -148,10 +170,108 @@ describe('MapFold: sequence guard and reset', () => {
   });
 });
 
+describe('MapFold: the map economy', () => {
+  it('publishes the figures its wiki lookup returned', () => {
+    const fold = makeFold();
+    fold.consumeTick(baseTick({ phase: 61 }), 1);
+    expect(fold.current?.economy).toEqual(STUB_ECONOMY);
+  });
+
+  it('publishes a null economy for a phase the wiki cannot describe, rather than zeros', () => {
+    const fold = makeFold(() => null);
+    fold.consumeTick(baseTick({ phase: 9_999 }), 1);
+    expect(fold.current?.economy).toBeNull();
+  });
+
+  it('applies the account boosts, so the same phase is worth more to a boosted account', () => {
+    const unboosted = makeFold(realWikiFactsFor);
+    unboosted.consumeTick(baseTick({ phase: 61 }), 1);
+
+    const boosted = makeFold(realWikiFactsFor);
+    boosted.setAccountBoosts({ xpMult: 1.5821538462, teamCoinPct: 196.7708333 });
+    boosted.consumeTick(baseTick({ phase: 61 }), 1);
+
+    const plain = unboosted.current?.economy;
+    const rich = boosted.current?.economy;
+    expect(rich?.xpPerProp).toBeGreaterThan(plain?.xpPerProp ?? 0);
+    expect(rich?.averageGoldPerProp).toBeGreaterThan(plain?.averageGoldPerProp ?? 0);
+    expect(rich?.averageGoldPerClear).toBeGreaterThan(plain?.averageGoldPerClear ?? 0);
+  });
+
+  it('recomputes when the boosts change under an unchanged phase — the memo is keyed on both', () => {
+    const fold = makeFold(realWikiFactsFor);
+    fold.consumeTick(baseTick({ phase: 61 }), 1);
+    const before = fold.current?.economy?.xpPerProp ?? 0;
+
+    fold.setAccountBoosts({ xpMult: 2, teamCoinPct: 0 });
+    const after = fold.current?.economy?.xpPerProp ?? 0;
+
+    expect(after).toBeCloseTo(before * 2, 6);
+  });
+
+  it('recomputes when the phase changes under unchanged boosts', () => {
+    const fold = makeFold(realWikiFactsFor);
+    fold.consumeTick(baseTick({ phase: 1 }), 1);
+    const early = fold.current?.economy?.averageGoldPerClear ?? 0;
+    fold.consumeTick(baseTick({ phase: 600 }), 2);
+    const late = fold.current?.economy?.averageGoldPerClear ?? 0;
+    expect(late).toBeGreaterThan(early);
+  });
+
+  it('calls the wiki lookup once across many ticks on one phase, not once per tick', () => {
+    let calls = 0;
+    const fold = makeFold((phase, boosts) => {
+      calls += 1;
+      return realWikiFactsFor(phase, boosts);
+    });
+    for (let sequence = 1; sequence <= 50; sequence += 1) {
+      fold.consumeTick(baseTick({ phase: 61, roomHp: 255 - sequence }), sequence);
+      expect(fold.current?.economy).not.toBeNull();
+    }
+    expect(calls).toBe(1);
+  });
+
+  it('keeps the account boosts across a reset — a reset drops what the stream said, not what the account said', () => {
+    const fold = makeFold(realWikiFactsFor);
+    fold.setAccountBoosts({ xpMult: 2, teamCoinPct: 0 });
+    fold.consumeTick(baseTick({ phase: 61 }), 1);
+    const boosted = fold.current?.economy?.xpPerProp ?? 0;
+
+    fold.reset();
+    fold.consumeTick(baseTick({ phase: 61 }), 1);
+
+    expect(fold.current?.economy?.xpPerProp).toBe(boosted);
+  });
+
+  it('matches the planner’s own figures for the same phase and boosts, so the two surfaces cannot drift', () => {
+    const boosts: MapAccountBoosts = { xpMult: 1.5821538462, teamCoinPct: 196.7708333 };
+    const fold = makeFold(realWikiFactsFor);
+    fold.setAccountBoosts(boosts);
+    fold.consumeTick(baseTick({ phase: 61 }), 1);
+
+    const intel = computePhaseIntelGlobal(61, { xpMult: boosts.xpMult, teamCoinPct: boosts.teamCoinPct });
+    expect(fold.current?.economy).toEqual({
+      xpPerProp: intel?.xpPerPropActual,
+      averageGoldPerProp: intel?.weightedAvgGoldActual,
+      averageGoldPerClear: intel?.totalMapGoldActual,
+    });
+  });
+
+  it('reports gold per clear as gold per prop across every prop the map spawns', () => {
+    const fold = makeFold(realWikiFactsFor);
+    fold.consumeTick(baseTick({ phase: 61 }), 1);
+    const map = fold.current;
+    expect(map?.economy?.averageGoldPerClear).toBeCloseTo(
+      (map?.economy?.averageGoldPerProp ?? 0) * (map?.propsTotal ?? 0),
+      6,
+    );
+  });
+});
+
 describe('MapFold against the committed capture', () => {
   it('tracks a real clear down to its last prop and back up on the wave rollover', () => {
     const ticks = replayCommittedCaptureTicks();
-    const fold = makeFold(propCountForPhase);
+    const fold = makeFold(realWikiFactsFor);
 
     const alive: number[] = [];
     ticks.forEach((tick, index) => {
@@ -170,7 +290,7 @@ describe('MapFold against the committed capture', () => {
 
   it('reads the capture’s phase, and its wiki prop total matches the count the fresh map actually spawned', () => {
     const ticks = replayCommittedCaptureTicks();
-    const fold = makeFold(propCountForPhase);
+    const fold = makeFold(realWikiFactsFor);
     ticks.forEach((tick, index) => {
       fold.consumeTick(tick, index + 1);
     });
@@ -180,7 +300,7 @@ describe('MapFold against the committed capture', () => {
 
   it('holds health inside [0, 1] on every tick, and reports full health on the fresh map', () => {
     const ticks = replayCommittedCaptureTicks();
-    const fold = makeFold(propCountForPhase);
+    const fold = makeFold(realWikiFactsFor);
 
     const readings: number[] = [];
     ticks.forEach((tick, index) => {

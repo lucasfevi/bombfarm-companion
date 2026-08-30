@@ -4,6 +4,7 @@ import {
   type LiveEarnings,
   type LiveEvent,
   type LiveMap,
+  type LiveMapEconomy,
   type LiveView,
   type RecoveryCountdown,
   type RotationSnapshot,
@@ -84,13 +85,24 @@ function sameEarnings(a: LiveEarnings | null, b: LiveEarnings | null): boolean {
   );
 }
 
+function sameMapEconomy(a: LiveMapEconomy | null, b: LiveMapEconomy | null): boolean {
+  if (a === b) return true;
+  if (a === null || b === null) return false;
+  return (
+    a.xpPerProp === b.xpPerProp &&
+    a.averageGoldPerProp === b.averageGoldPerProp &&
+    a.averageGoldPerClear === b.averageGoldPerClear
+  );
+}
+
 function sameMap(a: LiveMap | null, b: LiveMap | null): boolean {
   if (a === null || b === null) return a === b;
   return (
     a.phase === b.phase &&
     a.healthFraction === b.healthFraction &&
     a.propsAlive === b.propsAlive &&
-    a.propsTotal === b.propsTotal
+    a.propsTotal === b.propsTotal &&
+    sameMapEconomy(a.economy, b.economy)
   );
 }
 

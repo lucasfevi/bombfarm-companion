@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { createElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
-import type { LiveMap } from '@bombfarm/contracts';
+import type { LiveMap, LiveMapEconomy } from '@bombfarm/contracts';
 import { en } from '../../lib/copy/en';
 import { ptBR } from '../../lib/copy/pt-BR';
 import { MapPanel } from './map-panel';
@@ -28,8 +28,10 @@ afterEach(() => {
   activeLocale = 'en';
 });
 
+const ECONOMY: LiveMapEconomy = { xpPerProp: 310, averageGoldPerProp: 1_337, averageGoldPerClear: 100_275 };
+
 function liveMap(overrides: Partial<LiveMap> = {}): LiveMap {
-  return { phase: 61, healthFraction: 0.5, propsAlive: 22, propsTotal: 75, ...overrides };
+  return { phase: 61, healthFraction: 0.5, propsAlive: 22, propsTotal: 75, economy: ECONOMY, ...overrides };
 }
 
 function html(map: LiveMap | null): string {
@@ -116,6 +118,51 @@ describe('MapPanel distinguishes "not sent" from zero', () => {
 
   it('still draws the health track with no map, so the panel does not change height once one arrives', () => {
     expect(html(null)).toContain('width:0%');
+  });
+});
+
+describe('MapPanel economy figures', () => {
+  it('prints XP per prop, gold per prop and gold per clear', () => {
+    const markup = html(liveMap());
+    expect(textOf(markup, 'live-map-xp-per-prop')).toBe('310');
+    expect(textOf(markup, 'live-map-gold-per-prop')).toBe('1.3k');
+    expect(textOf(markup, 'live-map-gold-per-clear')).toBe('100.3k');
+  });
+
+  it('dashes all three when the phase has no wiki row, rather than printing zeros', () => {
+    const markup = html(liveMap({ economy: null }));
+    for (const testId of ['live-map-xp-per-prop', 'live-map-gold-per-prop', 'live-map-gold-per-clear']) {
+      expect(textOf(markup, testId)).toBe('—');
+    }
+  });
+
+  it('dashes all three with no map at all', () => {
+    const markup = html(null);
+    for (const testId of ['live-map-xp-per-prop', 'live-map-gold-per-prop', 'live-map-gold-per-clear']) {
+      expect(textOf(markup, testId)).toBe('—');
+    }
+  });
+
+  it('marks them as estimates — they sit beside measured rates and must not read as the same kind of number', () => {
+    const markup = html(liveMap());
+    expect(markup).toContain('data-testid="live-map-estimate-trigger"');
+    expect(markup).toContain(en.liveMapEstimateNote);
+    expect(markup).toContain(en.liveMapEstimateBody);
+  });
+
+  it('says in the estimate note that the figures are averages, not what was earned', () => {
+    // The claim the note has to carry: these are modelled, and the panel next door is measured.
+    expect(en.liveMapEstimateBody.toLowerCase()).toContain('average');
+    expect(ptBR.liveMapEstimateBody.toLowerCase()).toContain('média');
+  });
+
+  it('labels the three figures in the active language', () => {
+    const english = html(liveMap());
+    activeLocale = 'pt-BR';
+    const portuguese = html(liveMap());
+    expect(english).toContain(en.liveMapGoldPerClearLabel);
+    expect(portuguese).toContain(ptBR.liveMapGoldPerClearLabel);
+    expect(en.liveMapGoldPerClearLabel).not.toBe(ptBR.liveMapGoldPerClearLabel);
   });
 });
 

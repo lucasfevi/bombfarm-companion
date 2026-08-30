@@ -13,3 +13,10 @@ panel only ever formats finished values. Health and the prop count are reported 
 one absent from a tick reads as "not sent" rather than zero, and a map with nothing left standing
 reports zero props rather than a dash. The prop total comes from the phase's own wiki row rather
 than from the stream, so it is correct immediately instead of only after the first map completes.
+
+It also reports what the map is worth: XP per prop with the account's own skill-tree multiplier
+applied, average gold per prop, and average gold for a full clear. Those three are modelled from
+the map's wiki row rather than measured, and the panel marks them as estimates — the measured
+gold/hr and XP/hr sit immediately beside them, and the two must not read as the same kind of
+number. They come from the same `computePhaseIntelGlobal` the web planner's Phases screen uses, so
+a figure cannot say one thing on the Live tab and another on Phases.

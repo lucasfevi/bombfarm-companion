@@ -29,13 +29,14 @@ import {
   type FieldCountdownState,
   type RosterHeroAbilities,
 } from '@bombfarm/domain/live';
-import { propCountForPhase, xpPerProp } from '@bombfarm/domain/phase-wiki';
+import { computePhaseIntelGlobal } from '@bombfarm/domain/phase-intel';
+import { xpPerProp } from '@bombfarm/domain/phase-wiki';
 import { runPowerShellAsync, runPowerShellSync, stripExeSuffix } from '../game-reader/process.js';
 import { EarningsFold } from './earnings-fold.js';
 import { createFrameCapture, readFrameCaptureEnabledFromEnv } from './frame-capture.js';
 import { FrameRing } from './frame-ring.js';
 import type { LogPort } from './log-port.js';
-import { MapFold } from './map-fold.js';
+import { MapFold, type MapAccountBoosts, type MapWikiFacts } from './map-fold.js';
 import { RuntimePort } from './runtime.js';
 import {
   createHookCandidateSource,
@@ -280,6 +281,38 @@ function fieldHeroesFromRotation(rotation: RotationSnapshot): readonly LiveTickH
     }));
 }
 
+/**
+ * The one adapter between the live map fold and the planner's own wiki math — the same
+ * `computePhaseIntelGlobal` the web planner's Phases screen reads, so a figure shown on the Live
+ * tab and the same figure on the Phases screen cannot drift into two different numbers.
+ *
+ * `xpPerPropActual` and `weightedAvgGoldActual` are the boost-applied variants; their `*Wiki`
+ * siblings are the unboosted base and are deliberately not what a player-facing panel shows.
+ */
+function wikiFactsFor(phase: number, boosts: MapAccountBoosts): MapWikiFacts | null {
+  const intel = computePhaseIntelGlobal(phase, { teamCoinPct: boosts.teamCoinPct, xpMult: boosts.xpMult });
+  if (!intel) return null;
+  return {
+    propsTotal: intel.propCount,
+    economy: {
+      xpPerProp: intel.xpPerPropActual,
+      averageGoldPerProp: intel.weightedAvgGoldActual,
+      averageGoldPerClear: intel.totalMapGoldActual,
+    },
+  };
+}
+
+/** `skills.totals.coin_add` as PERCENTAGE POINTS, the unit `computePhaseIntelGlobal` takes —
+ *  the same `* 100` conversion, and the same `team_coin_add` fallback name, that the planner's own
+ *  save import applies to this field. */
+function readTeamCoinPct(skills: Record<string, unknown> | undefined): number | undefined {
+  if (!isPlainObject(skills)) return undefined;
+  const totals = skills.totals;
+  if (!isPlainObject(totals)) return undefined;
+  const value = totals.coin_add ?? totals.team_coin_add;
+  return typeof value === 'number' && Number.isFinite(value) ? value * 100 : undefined;
+}
+
 /** `skills.totals.xp_mult` is present even on a read where `casa` did not resolve — the same
  *  per-section fidelity `import-save.ts` notes for reading its own field-slots figure off `skills`
  *  rather than `casa` — so it is read unconditionally, never gated on the rotation fold below. */
@@ -353,6 +386,9 @@ export class LiveSource {
   /** The last `skills.totals.xp_mult` seen from {@link ingestRotation}, sticky across a read that
    *  omits the section — never reset to `undefined` just because one read's fidelity was partial. */
   #xpMult: number | undefined;
+  /** The last `skills.totals.coin_add` seen, sticky across a partial read for the same reason
+   *  {@link #xpMult} is. */
+  #teamCoinPct: number | undefined;
   /** `undefined` means no binding has been observed yet, the state a `null` read from the store
    *  must never be mistaken for — see {@link #trackAccountBinding}. */
   #lastBinding: string | undefined;
@@ -361,7 +397,7 @@ export class LiveSource {
     this.#log = deps.log ?? NOOP_LOG_PORT;
     this.#now = deps.now ?? Date.now;
     this.#earningsFold = new EarningsFold({ now: this.#now, xpPerProp, log: this.#log });
-    this.#mapFold = new MapFold({ propsTotalForPhase: propCountForPhase });
+    this.#mapFold = new MapFold({ wikiFactsFor });
     if (deps.createTap) {
       this.#createTap = deps.createTap;
       this.#ring = null;
@@ -470,6 +506,8 @@ export class LiveSource {
    *  newest-wins rule against {@link ingestObservedRotation} deterministically. */
   ingestRotation(view: AccountView, atMs: number = this.#now()): void {
     this.#xpMult = readXpMult(view.payload.skills) ?? this.#xpMult;
+    this.#teamCoinPct = readTeamCoinPct(view.payload.skills) ?? this.#teamCoinPct;
+    this.#mapFold.setAccountBoosts({ xpMult: this.#xpMult ?? 1, teamCoinPct: this.#teamCoinPct ?? 0 });
     this.#trackAccountBinding(view.store.binding);
     const accountGold = readAccountGold(view.payload.account);
     if (accountGold !== undefined) {
@@ -488,6 +526,10 @@ export class LiveSource {
     if (binding === null) return;
     if (this.#lastBinding !== undefined && binding !== this.#lastBinding) {
       this.#earningsFold.reset('accountChange');
+      // Only the stream-derived half is dropped. The boosts were read from THIS call's payload,
+      // a few lines above — they already belong to the new account, and clearing them here would
+      // report the map's economy at no boost at all until the next rotation read landed. Same
+      // reasoning that leaves `#xpMult` alone across an account change.
       this.#mapFold.reset();
     }
     this.#lastBinding = binding;

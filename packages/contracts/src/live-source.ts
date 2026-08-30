@@ -252,6 +252,31 @@ export interface LiveMap {
    *  appears after the first wave rollover is a denominator missing exactly when it is most
    *  wanted. `null` for a phase with no wiki row. */
   readonly propsTotal: number | null;
+  /**
+   * What this map is worth, per the wiki row for its phase and the account's own boosts.
+   *
+   * These are MODELLED, unlike every field above — which the stream reports directly — and unlike
+   * {@link LiveEarnings}, which is measured from actual payouts. A surface showing both must not
+   * present them as the same kind of number: these say what the map pays on average, not what it
+   * has paid. `null` when the phase has no wiki row.
+   */
+  readonly economy: LiveMapEconomy | null;
+}
+
+/**
+ * Per-map economy figures, modelled from the wiki. Gold is spawn-weighted across the prop mix
+ * rather than a single prop's payout: which props spawn is random, so no exact figure exists to
+ * report — hence "average" in each field's name, and never presented as an observation.
+ */
+export interface LiveMapEconomy {
+  /** XP a single prop awards, with the account's own XP multiplier (the skill tree's `xp_mult`)
+   *  already applied — what the player actually earns, not the wiki's unboosted base. */
+  readonly xpPerProp: number;
+  /** Average gold a single prop pays out, with the account's coin bonus applied. */
+  readonly averageGoldPerProp: number;
+  /** Average gold a full clear of this map pays out: {@link averageGoldPerProp} across every prop
+   *  the map spawns. */
+  readonly averageGoldPerClear: number;
 }
 
 export interface LiveView {

@@ -1,4 +1,13 @@
-import type { FieldCountdown, LiveEarnings, LiveEvent, LiveMap, LiveView, RecoveryCountdown, RotationSnapshot } from '@bombfarm/contracts';
+import type {
+  FieldCountdown,
+  LiveEarnings,
+  LiveEvent,
+  LiveMap,
+  LiveMapEconomy,
+  LiveView,
+  RecoveryCountdown,
+  RotationSnapshot,
+} from '@bombfarm/contracts';
 import {
   BRIDGE_UNAVAILABLE_LIVE_FRESHNESS,
   EMPTY_LIVE_FAST_MODEL,
@@ -99,6 +108,16 @@ function sameRecoveryCountdowns(a: readonly RecoveryCountdown[], b: readonly Rec
   });
 }
 
+function sameMapEconomy(a: LiveMapEconomy | null, b: LiveMapEconomy | null): boolean {
+  if (a === b) return true;
+  if (a === null || b === null) return false;
+  return (
+    a.xpPerProp === b.xpPerProp &&
+    a.averageGoldPerProp === b.averageGoldPerProp &&
+    a.averageGoldPerClear === b.averageGoldPerClear
+  );
+}
+
 function sameMap(a: LiveMap | null, b: LiveMap | null): boolean {
   if (a === b) return true;
   if (a === null || b === null) return false;
@@ -106,7 +125,8 @@ function sameMap(a: LiveMap | null, b: LiveMap | null): boolean {
     a.phase === b.phase &&
     a.healthFraction === b.healthFraction &&
     a.propsAlive === b.propsAlive &&
-    a.propsTotal === b.propsTotal
+    a.propsTotal === b.propsTotal &&
+    sameMapEconomy(a.economy, b.economy)
   );
 }
 

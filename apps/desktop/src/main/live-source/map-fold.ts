@@ -1,11 +1,27 @@
-import type { LiveMap, LiveTick } from '@bombfarm/contracts';
+import type { LiveMap, LiveMapEconomy, LiveTick } from '@bombfarm/contracts';
 
 /** The wire reports room health and per-prop health as a byte, `255` meaning full. */
 const WIRE_HEALTH_FULL = 255;
 
+/** The account-derived multipliers the map's economy is worth under. Both come from the slow
+ *  authenticated read, never from a tick. */
+export interface MapAccountBoosts {
+  /** `skills.totals.xp_mult`. `1` is the identity. */
+  readonly xpMult: number;
+  /** Team Coin, PERCENTAGE POINTS — `skills.totals.coin_add * 100`. `0` is the identity. */
+  readonly teamCoinPct: number;
+}
+
+export const NO_MAP_ACCOUNT_BOOSTS: MapAccountBoosts = { xpMult: 1, teamCoinPct: 0 };
+
+/** What one phase is worth under one set of boosts. `null` for a phase with no wiki row. */
+export interface MapWikiFacts {
+  readonly propsTotal: number;
+  readonly economy: LiveMapEconomy;
+}
+
 export interface MapFoldDeps {
-  /** Props a fresh map of this phase spawns. `null` for a phase with no wiki row. */
-  readonly propsTotalForPhase: (phase: number) => number | null;
+  readonly wikiFactsFor: (phase: number, boosts: MapAccountBoosts) => MapWikiFacts | null;
 }
 
 /**
@@ -23,6 +39,8 @@ export class MapFold {
   #phase: number | undefined;
   #healthFraction: number | null = null;
   #propsAlive: number | null = null;
+  #boosts: MapAccountBoosts = NO_MAP_ACCOUNT_BOOSTS;
+  #wikiFacts: { readonly key: string; readonly facts: MapWikiFacts | null } | null = null;
 
   constructor(deps: MapFoldDeps) {
     this.#deps = deps;
@@ -37,23 +55,46 @@ export class MapFold {
     if (tick.kinds !== undefined) this.#propsAlive = countPropsAlive(tick.kinds);
   }
 
+  /** The account's own multipliers, from the slow authenticated read. Applying them is what makes
+   *  the economy figures the player's rather than the wiki's. */
+  setAccountBoosts(boosts: MapAccountBoosts): void {
+    this.#boosts = boosts;
+  }
+
+  /** Drops what the STREAM said, not what the account said: the boosts are owned by
+   *  {@link setAccountBoosts} and its caller re-supplies them on every read, so clearing them
+   *  here would only ever report an unboosted economy for a while. */
   reset(): void {
     this.#lastSequence = -1;
     this.#phase = undefined;
     this.#healthFraction = null;
     this.#propsAlive = null;
+    this.#wikiFacts = null;
   }
 
   /** `null` until a phase has been reported: every other figure describes a map, and there is
    *  nothing to attach them to before the stream has said which one is being played. */
   get current(): LiveMap | null {
     if (this.#phase === undefined) return null;
+    const facts = this.#factsFor(this.#phase);
     return {
       phase: this.#phase,
       healthFraction: this.#healthFraction,
       propsAlive: this.#propsAlive,
-      propsTotal: this.#deps.propsTotalForPhase(this.#phase),
+      propsTotal: facts?.propsTotal ?? null,
+      economy: facts?.economy ?? null,
     };
+  }
+
+  /** Memoized on the phase and both boosts together — this getter is read on every fast-channel
+   *  poll, and the wiki lookup behind it walks the whole prop mix. All three inputs move rarely
+   *  (a map change, an account read), so one cached entry covers the common case. */
+  #factsFor(phase: number): MapWikiFacts | null {
+    const key = `${String(phase)}|${String(this.#boosts.xpMult)}|${String(this.#boosts.teamCoinPct)}`;
+    if (this.#wikiFacts?.key === key) return this.#wikiFacts.facts;
+    const facts = this.#deps.wikiFactsFor(phase, this.#boosts);
+    this.#wikiFacts = { key, facts };
+    return facts;
   }
 }
 

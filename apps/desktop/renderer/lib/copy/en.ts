@@ -260,6 +260,12 @@ export const en = {
   liveMapHealthLabel: 'Map health',
   liveMapPropsLabel: 'Props alive',
   liveMapUnknownName: 'Unknown map',
+  liveMapXpPerPropLabel: 'XP / prop',
+  liveMapGoldPerPropLabel: 'Gold / prop',
+  liveMapGoldPerClearLabel: 'Gold / clear',
+  liveMapEstimateNote: 'Estimated',
+  liveMapEstimateBody:
+    'Estimated from this map’s wiki values and your own bonuses — the average a prop or a full clear pays out, not what you have actually earned.',
 
   // inventory* — the Inventory screen: every item the account carries, grouped by kind
   inventoryNavLabel: 'Inventory',

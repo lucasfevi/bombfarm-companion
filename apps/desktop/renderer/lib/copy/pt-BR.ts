@@ -261,6 +261,12 @@ export const ptBR: Copy = {
   liveMapHealthLabel: 'Vida do mapa',
   liveMapPropsLabel: 'Props vivos',
   liveMapUnknownName: 'Mapa desconhecido',
+  liveMapXpPerPropLabel: 'XP / prop',
+  liveMapGoldPerPropLabel: 'Ouro / prop',
+  liveMapGoldPerClearLabel: 'Ouro / limpeza',
+  liveMapEstimateNote: 'Estimativa',
+  liveMapEstimateBody:
+    'Estimado a partir dos valores da wiki deste mapa e dos seus próprios bônus — a média que um prop ou uma limpeza completa paga, não o que você realmente ganhou.',
 
   // inventory* — a tela de Inventário: todos os itens da conta, agrupados por tipo
   inventoryNavLabel: 'Inventário',
