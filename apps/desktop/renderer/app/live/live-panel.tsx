@@ -35,6 +35,22 @@ function withLiveEnergy<T extends LiveHeroFact>(hero: T, fast: LiveFastModel): T
   return { ...hero, energyFraction };
 }
 
+/**
+ * How far the measured gold-per-prop sits from what this map is modelled to pay, as a signed
+ * fraction. Computed here because this is the one place holding both panels' data — the earnings
+ * panel is not handed the map to reach into.
+ *
+ * `null` unless both figures exist and the estimate is positive: dividing by a zero estimate is
+ * not a deviation of any size, and the comparison is only worth printing when there are two
+ * numbers to compare.
+ */
+function goldPerPropDeltaOf(earnings: LiveEarnings | null, map: LiveMap | null): number | null {
+  const measured = earnings?.goldPerProp10 ?? null;
+  const estimated = map?.economy?.averageGoldPerProp ?? null;
+  if (measured === null || estimated === null || estimated <= 0) return null;
+  return measured / estimated - 1;
+}
+
 /** One list in state order — field, then resting, then idle, then benched — concatenating each
  *  group without re-sorting inside it, so the classifier's own within-group order survives. */
 function buildRows(slow: LiveSlowModel, fast: LiveFastModel): readonly LiveRow[] {
@@ -89,7 +105,12 @@ export function LivePanel({
           size the window can take and needs no breakpoint at all. The map takes the remainder:
           its health bar and economy figures are the two that read better with the extra width. */}
       <div className="grid grid-cols-[max-content_minmax(0,1fr)] gap-4">
-        <EarningsPanel freshness={freshness} earnings={earnings} onReset={onResetEarnings} />
+        <EarningsPanel
+          freshness={freshness}
+          earnings={earnings}
+          goldPerPropDelta={goldPerPropDeltaOf(earnings, map)}
+          onReset={onResetEarnings}
+        />
         <MapPanel map={map} />
       </div>
       <Panel data-testid="live-heroes">

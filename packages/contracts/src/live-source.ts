@@ -241,6 +241,24 @@ export interface LiveEarnings {
   /** Session total accumulated so far — a sum, not a rate. Unlike {@link xpSession} this never
    *  divides by streamed time, so it keeps rising while the rate settles. */
   readonly xpSessionTotal: number | null;
+  /** The same rolling window {@link gold10} averages, sampled into fixed equal slices oldest-first
+   *  so a consumer can draw the shape of the window without keeping a history of its own. Each
+   *  entry is a gold-per-hour rate over its own slice. A slice the stream did not cover reads
+   *  `null` — a gap, never a `0`, which would draw as income collapsing rather than as a reading
+   *  that was never taken. */
+  readonly gold10Series: readonly (number | null)[];
+  /** Measured over the same rolling window: gold that actually paid out, divided by the props that
+   *  actually paid it. The map panel's own gold-per-prop is the modelled counterpart — this is
+   *  what the run has really been paying. `null` until a prop has paid out inside the window.
+   *
+   *  A window that spans a map change mixes two maps' payouts, so this is only comparable against
+   *  the current map's estimate while the player has stayed on one map. */
+  readonly goldPerProp10: number | null;
+  /** Props destroyed per real minute, measured over the same rolling window against streamed time
+   *  rather than wall-clock time — so a stream gap does not read as a throughput collapse. */
+  readonly propsPerMinute10: number | null;
+  /** Props destroyed since the session started (or was last reset) — a count, not a rate. */
+  readonly propsSessionTotal: number | null;
   /** The real-time span the 10-minute figures actually cover — less than 600 immediately after a
    *  session starts, or after a long enough stream gap has aged old samples out. */
   readonly coverageSeconds: number;

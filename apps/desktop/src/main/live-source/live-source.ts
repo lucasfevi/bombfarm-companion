@@ -498,6 +498,10 @@ export class LiveSource {
       xpSession: this.#earningsFold.xpSession,
       goldSessionTotal: this.#earningsFold.goldSessionTotal,
       xpSessionTotal: this.#earningsFold.xpSessionTotal,
+      gold10Series: this.#earningsFold.gold10Series,
+      goldPerProp10: this.#earningsFold.goldPerProp10,
+      propsPerMinute10: this.#earningsFold.propsPerMinute10,
+      propsSessionTotal: this.#earningsFold.propsSessionTotal,
       coverageSeconds: this.#earningsFold.coverageSeconds,
       sessionSeconds: this.#earningsFold.sessionSeconds,
     };

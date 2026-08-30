@@ -191,6 +191,18 @@ export const en = {
   liveEarningsElapsedLabel: 'Elapsed',
   liveEarningsXpHelpLabel: 'About this XP figure',
   liveEarningsXpHelpBody: 'Calculated from the props your heroes destroyed, not read directly from the game.',
+  liveEarningsSeriesLabel: 'Gold / hr — last {minutes} min',
+  liveEarningsSeriesAria: 'Gold per hour over the last {minutes} minutes',
+  liveEarningsSeriesPeakLabel: 'peak {value}',
+  liveEarningsMeasuredNote: 'Measured',
+  liveEarningsMeasuredBody:
+    'Measured from what actually dropped over the last 10 minutes — not estimated. Moving to another map mixes both maps’ payouts until the window has caught up.',
+  liveEarningsGoldPerPropLabel: 'Gold / prop',
+  liveEarningsPropsPerMinuteLabel: 'Props / min',
+  liveEarningsPropsTotalLabel: 'Props',
+  liveEarningsGoldPerPropUnder: '{percent}% under estimate',
+  liveEarningsGoldPerPropOver: '{percent}% over estimate',
+  liveEarningsGoldPerPropOnEstimate: 'on estimate',
 
   // liveMap* — the Map panel: which map is being played, and how far through it the run is.
   liveMapTitle: 'Map',

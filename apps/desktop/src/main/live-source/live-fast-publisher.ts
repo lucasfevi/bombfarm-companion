@@ -80,6 +80,11 @@ export function sameIdList(a: readonly string[], b: readonly string[]): boolean 
   return a.every((id, index) => id === b[index]);
 }
 
+function sameSeries(a: readonly (number | null)[], b: readonly (number | null)[]): boolean {
+  if (a.length !== b.length) return false;
+  return a.every((value, index) => value === b[index]);
+}
+
 function sameEarnings(a: LiveEarnings | null, b: LiveEarnings | null): boolean {
   if (a === null || b === null) return a === b;
   return (
@@ -90,8 +95,12 @@ function sameEarnings(a: LiveEarnings | null, b: LiveEarnings | null): boolean {
     a.xpSession === b.xpSession &&
     a.goldSessionTotal === b.goldSessionTotal &&
     a.xpSessionTotal === b.xpSessionTotal &&
+    a.goldPerProp10 === b.goldPerProp10 &&
+    a.propsPerMinute10 === b.propsPerMinute10 &&
+    a.propsSessionTotal === b.propsSessionTotal &&
     a.coverageSeconds === b.coverageSeconds &&
-    a.sessionSeconds === b.sessionSeconds
+    a.sessionSeconds === b.sessionSeconds &&
+    sameSeries(a.gold10Series, b.gold10Series)
   );
 }
 
