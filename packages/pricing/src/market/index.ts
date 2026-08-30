@@ -1,7 +1,9 @@
 export {
   FACET_NAMES,
   MARKET_APP_ID,
+  HERO_CATEGORY,
   categoryKey,
+  heroPriceKey,
   priceKey,
   type Anomaly,
   type AnomalyKind,

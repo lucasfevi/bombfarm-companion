@@ -67,7 +67,7 @@ export const LIVE_MARKET_ROWS: DiscoveryRow[] = [
   row('Time Part (Epic)', 1, 578, { category: 'time', rarity: 'epic' }),
   row('Time Part (Rare)', 7, 249, { category: 'time', rarity: 'rare' }),
   row('Time Part (Uncommon)', 9, 212, { category: 'time', rarity: 'uncommon' }),
-  row('Emerald Gem', 2, 962, { category: 'gem' }),
+  row('Emerald Gem', 2, 962, { category: 'gem', rarity: 'rare' }),
   row('Sapphire Gem', 4, 365, { category: 'gem' }),
   row('Skill Stone (Uncommon)', 10, 144, { category: 'stone', rarity: 'uncommon' }),
   row('Item Chest (Lv 10)', 19, 19, { category: 'chest', level: '10' }),

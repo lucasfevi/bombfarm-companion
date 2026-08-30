@@ -1,5 +1,8 @@
 import type { DiscoveryRow } from './discover.js';
 import {
+  ACT_CHEST_DEF_BY_HASH,
+  GEM_DEF_BY_HASH,
+  LEVEL_CHEST_DEF_PREFIX,
   catalogSlotFor,
   defPrefixFor,
   isKnownCategory,
@@ -7,7 +10,7 @@ import {
   rarityIdxFor,
 } from './tags.js';
 import type { Anomaly, MarketCoverage, MarketEntry } from './types.js';
-import { categoryKey, priceKey } from './types.js';
+import { HERO_CATEGORY, categoryKey, heroPriceKey, priceKey } from './types.js';
 
 /** One committed catalog definition, as `catalog.json` records it. */
 export interface CatalogDef {
@@ -104,12 +107,24 @@ export function reconcile(
 
     const act = asNumber(tags.act);
     const level = asNumber(tags.level) ?? def?.level ?? null;
-    const defId = def?.defId ?? categoryDefId(category, rarityIdx, catalog);
+    const defId =
+      def?.defId ?? categoryDefId(category, rarityIdx, catalog, level, act, discovered.row.hashName);
+    // An item chest is tagged by level and carries no rarity at all, while an owned one is rarity
+    // 0 — so keying it needs that 0 supplied here or the two never meet.
+    // An item chest is tagged by level and carries no rarity, while an owned one is rarity 0. An
+    // act chest carries an act, and that act IS its tier — `chest_time_2` is the Raro one.
+    const keyRarityIdx =
+      rarityIdx ??
+      (category === 'chest' && ACT_CHEST_DEF_BY_HASH[discovered.row.hashName] != null
+        ? act
+        : category === 'chest' && level != null
+          ? 0
+          : null);
 
     entries.push({
       hashName: discovered.row.hashName,
       name: discovered.row.name,
-      key: keyFor({ category, defId, rarityIdx, hashName: discovered.row.hashName }),
+      key: keyFor({ category, defId, rarityIdx: keyRarityIdx, hashName: discovered.row.hashName }),
       defId,
       kind: def != null ? 'equipment' : kind,
       category,
@@ -130,13 +145,36 @@ export function reconcile(
   return { entries, anomalies };
 }
 
-/** `map_key_raro`, `time_part_epico` — a fixed prefix plus the rarity's own def_id token. */
+/**
+ * The catalog def an owned copy of this row would carry, so a player's item finds its price.
+ *
+ * Three shapes, each read off a facet rather than the hash name: a fixed prefix plus the rarity's
+ * own token (`map_key_raro`, `time_part_epico`, `skill_stone_epico`), a fixed prefix plus a level
+ * (`chest_item_30`), and gems, which no facet separates and which take an explicit table.
+ *
+ * Returns null for anything whose def cannot be known — the act-scoped chests especially, where
+ * an owned `chest_time_2` numbers a rarity tier and the market row numbers an act. Those stay
+ * keyed by hash, priced but unreachable from an inventory, which is the truthful outcome.
+ */
 function categoryDefId(
   category: string | null,
   rarityIdx: number | null,
   catalog: CatalogView,
+  level: number | null,
+  act: number | null,
+  hashName: string,
 ): string | null {
-  if (category == null || rarityIdx == null) return null;
+  if (category == null) return null;
+
+  if (category === 'gem') return GEM_DEF_BY_HASH[hashName] ?? null;
+
+  if (category === 'chest') {
+    const family = ACT_CHEST_DEF_BY_HASH[hashName];
+    if (family != null) return act == null ? null : `${family}_${String(act)}`;
+    return level == null ? null : `${LEVEL_CHEST_DEF_PREFIX}_${String(level)}`;
+  }
+
+  if (rarityIdx == null) return null;
   const prefix = defPrefixFor(category);
   const token = catalog.rarityTokens[rarityIdx];
   if (prefix == null || token == null) return null;
@@ -149,6 +187,10 @@ function keyFor(parts: {
   rarityIdx: number | null;
   hashName: string;
 }): string {
+  // A hero has no def and needs none: rarity is its whole identity on the market.
+  if (parts.category === HERO_CATEGORY && parts.rarityIdx != null) {
+    return heroPriceKey(parts.rarityIdx);
+  }
   if (parts.defId != null && parts.rarityIdx != null) {
     return priceKey(parts.defId, parts.rarityIdx);
   }

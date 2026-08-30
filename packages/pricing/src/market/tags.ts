@@ -67,6 +67,51 @@ export const EQUIPMENT_CATEGORY_TAG = 'equip';
 export const CATEGORY_DEF_PREFIX: Readonly<Record<string, string>> = {
   key: 'map_key',
   time: 'time_part',
+  // Same prefix-plus-rarity-token shape, witnessed in the account fixtures as
+  // `skill_stone_comum`, `skill_stone_incomum` and `skill_stone_epico`.
+  stone: 'skill_stone',
+};
+
+/**
+ * Item chests key on a LEVEL rather than a rarity — `chest_item_30` against `Item Chest (Lv 30)` —
+ * so they take the level facet where the categories above take the rarity one.
+ *
+ * Deliberately only `item` chests. The act-scoped ones (`Hero Cage (Act 1)`, `Time Chest (Act 1)`)
+ * cannot join them: an owned `chest_time_2` carries a rarity TIER in that tail, not an act, so
+ * pairing the two axes would file one chest under another's price.
+ */
+export const LEVEL_CHEST_DEF_PREFIX = 'chest_item';
+
+/**
+ * The act-scoped chests, by the family their def id uses.
+ *
+ * The act IS the tier: `Hero Cage (Act 1)` is the Incomum cage and an owned copy is
+ * `chest_hero_1`, which the domain reads as rarity 1. So the act facet supplies both halves of
+ * the key and only the family has to be looked up.
+ *
+ * A table rather than a rule, because the facets cannot tell these apart — every row here is
+ * `category=chest` plus an act, and nothing else. Naming them is what stops a Hero Cage taking a
+ * Time Chest's price; `market-parity` fails if the market carries an act chest missing from this.
+ */
+export const ACT_CHEST_DEF_BY_HASH: Readonly<Record<string, string>> = {
+  'Hero Cage (Act 1)': 'chest_hero',
+  'Hero Cage (Act 2)': 'chest_hero',
+  'Time Chest (Act 1)': 'chest_time',
+  'Time Chest (Act 2)': 'chest_time',
+  'Gem Chest (Act 1)': 'chest_gem',
+  'Skill Stone Chest (Act 1)': 'chest_skill',
+};
+
+/**
+ * Gems by name, because no facet separates them: every gem row carries `category=gem` and its
+ * rarity, and nothing else distinguishes Sapphire from Emerald. A short explicit table is honest
+ * about that where parsing the hash would pretend the format is guaranteed — `market-parity`
+ * fails if the market carries a gem this does not name.
+ */
+export const GEM_DEF_BY_HASH: Readonly<Record<string, string>> = {
+  'Aquamarine Gem': 'gem_aquamarine',
+  'Emerald Gem': 'gem_emerald',
+  'Sapphire Gem': 'gem_sapphire',
 };
 
 export function defPrefixFor(steamCategoryTag: string): string | null {
@@ -78,7 +123,7 @@ export function defPrefixFor(steamCategoryTag: string): string | null {
  * what keeps the unmapped-tag warning meaningful: without it every run would report `chest` and
  * `skin` forever and the one run that meets a genuinely new category would look the same.
  */
-export const CATEGORIES_WITHOUT_KIND: readonly string[] = ['chest', 'skin', 'stone'];
+export const CATEGORIES_WITHOUT_KIND: readonly string[] = ['chest', 'skin', 'stone', 'hero'];
 
 export function isKnownCategory(steamCategoryTag: string): boolean {
   return (

@@ -168,7 +168,8 @@ export function resolveItemKind(categoryCode: number | null, defId: string): Ite
 
 /**
  * A chest's `rarity` is 0 on the wire whatever tier it is; the tier lives in the id's tail
- * instead, so `chest_time_2` is the Raro time chest. Deriving it here rather than in a card means
+ * instead, so `chest_time_2` is the Raro time chest. `chest_hero_1` reads the same way — the
+ * market sells it as `Hero Cage (Act 1)`, and that act IS the tier: an Act 1 cage is Incomum. Deriving it here rather than in a card means
  * the border, the plate, the tier word and any future sort all agree without each one knowing the
  * convention.
  *
@@ -177,7 +178,7 @@ export function resolveItemKind(categoryCode: number | null, defId: string): Ite
  * the other three — same id shape, and the only values the corpus holds (`_3`, `_5`) are valid
  * rarity indices.
  */
-const TIERED_CHEST = /^chest_(?:time|gem|skill|key)_(\d)$/;
+const TIERED_CHEST = /^chest_(?:time|gem|skill|key|hero)_(\d)$/;
 
 export function chestRarityIdx(defId: string, wireRarity: number): number {
   const tail = TIERED_CHEST.exec(defId);
