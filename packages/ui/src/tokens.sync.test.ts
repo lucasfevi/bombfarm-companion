@@ -85,6 +85,7 @@ describe('design tokens — CSS sync (TOK-04/05/06/08/12/13)', () => {
     expect(styles).toContain('--spacing-top: 58px');
     expect(styles).toContain('--container-app: 1520px');
     expect(styles).toContain('--container-desktop: 1440px');
+    expect(styles).toContain('--container-settings: 768px');
     expect(styles).toContain('--font-sans:');
     expect(styles).toContain('--font-mono:');
   });

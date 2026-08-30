@@ -292,7 +292,7 @@ function HomePageContent({
           {!consentLoaded ? null : gated ? (
             <ConsentGate locale={locale} onLocaleChange={onLocaleChange} onReadAgain={onConsentReallow} />
           ) : activeNavId === 'settings' ? (
-            <>
+            <div data-testid="settings-view" className="mx-auto flex w-full max-w-settings flex-col gap-4">
               <LanguageSection locale={locale} onLocaleChange={onLocaleChange} persistWarning={persistWarning} />
               <ConsentSection onRevoke={onConsentRevoke} />
               <DiagnosticsSection onSave={onSaveDiagnostics} result={diagnosticsDumpResult} />
@@ -302,7 +302,7 @@ function HomePageContent({
                 onDownload={onUpdateDownload}
                 onInstall={onUpdateInstall}
               />
-            </>
+            </div>
           ) : activeNavId === 'inventory' ? (
             <InventoryView />
           ) : (

@@ -16,6 +16,11 @@ gold panel, which is far wider than the map needs. The gold panel now takes its 
 and the map takes the rest, which is also the half that reads better with the extra room. A little
 spacing came out of both panels to bring the pair inside the smallest window; nothing was removed.
 
+Settings now reads as a stack of panels like every other tab, instead of loose rows on the page
+background. Its rows are a label at one edge and a control at the other, so they get a tighter
+measure of their own rather than the full width — the control no longer sits a screen away from
+the label it belongs to.
+
 The window itself can no longer scroll, so the Live tab never shows two scrollbars again. Screen
 reader labels are positioned elements, and with nothing positioned above them they escaped every
 attempt to clip the content: a long enough hero list pushed them past the bottom of the window and
