@@ -1,10 +1,8 @@
 import { readFileSync } from 'node:fs';
 import path from 'node:path';
-import { beforeEach, describe, expect, it } from 'vitest';
+import { describe, expect, it } from 'vitest';
 import type { AccountFidelity, AccountPayload, AccountView } from '@bombfarm/contracts';
-import { buildPlanningModel } from './account-model';
 import { accept, initialAccountViewState, type AccountViewState, type Arrival } from './account-view-store';
-import { adviceForHero, getAdviceComputeCount, resetAdviceComputeCount } from './hero-advice';
 
 const NOW = '2026-08-12T00:00:00.000Z';
 
@@ -44,7 +42,7 @@ function viewWithHeroLevel(level: number): AccountView {
   return { payload: payloadWithHeroLevel(level), gameRunning: false, store: { status: 'ok', reason: null, binding: 'better-sqlite3' } };
 }
 
-describe('accept — the pure reducer (design.md §4.4)', () => {
+describe('accept — the pure reducer', () => {
   it('has no React import — read from source (F2\'s technique)', () => {
     const source = readFileSync(path.join(__dirname, 'account-view-store.ts'), 'utf8');
     expect(source).not.toMatch(/from ['"]react['"]/);
@@ -126,39 +124,5 @@ describe('accept — the pure reducer (design.md §4.4)', () => {
     // (`staleFetched` toBe `afterPush`).
     if (staleFetched.status !== 'loaded') throw new Error('expected loaded');
     expect(staleFetched.view).not.toBe(pushedView);
-  });
-});
-
-describe('two arrivals in quick succession settle to the newer view and move the advice compute count by exactly 1', () => {
-  beforeEach(() => {
-    resetAdviceComputeCount();
-  });
-
-  it('settles to the newer view, and getAdviceComputeCount() moves by exactly 1', () => {
-    // A React render count is not observable in apps/desktop's node-env Vitest project
-    // (renderToStaticMarkup never runs useEffect — use-account-view.ts's own comment). Asserted
-    // instead as: one settled state, carrying the newer view, plus exactly one advice
-    // computation — not a render count.
-    const olderView = viewWithHeroLevel(20);
-    const newerView = viewWithHeroLevel(21);
-
-    // Two arrivals "in quick succession" — a push, then another push with newer data, exactly as
-    // two account:changed events landing back to back would drive this reducer.
-    const afterFirst = accept(initialAccountViewState, { kind: 'pushed', view: olderView });
-    const settled = accept(afterFirst, { kind: 'pushed', view: newerView });
-
-    expect(settled.status).toBe('loaded');
-    if (settled.status !== 'loaded') throw new Error('expected loaded');
-    expect(settled.view).toBe(newerView);
-
-    // The reducer itself does not compute advice — a caller (the hook + buildPlanningModel +
-    // adviceForHero) does. Driving the settled view (and only the settled view) through that
-    // pipeline once is what "exactly one computation" means here: the OLDER view's advice is
-    // never computed at all, because the reducer discarded it before anything downstream saw it.
-    const model = buildPlanningModel(settled.view);
-    const heroId = model.heroes[0]?.hero.id;
-    if (!heroId) throw new Error('expected a hero in this fixture');
-    adviceForHero(model, heroId);
-    expect(getAdviceComputeCount()).toBe(1);
   });
 });

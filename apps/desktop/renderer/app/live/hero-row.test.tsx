@@ -156,7 +156,7 @@ describe('HeroRow — the energy reading beside the bar', () => {
     );
     const withoutData = renderToStaticMarkup(createElement(HeroRow, { state: 'queued', hero: { id: 'hero-7' } }));
     expect(/data-testid="live-energy-hero-7-value"[^>]*>([^<]*)</.exec(withData)?.[1]).toBe('0%');
-    expect(/data-testid="live-energy-hero-7-value"[^>]*>([^<]*)</.exec(withoutData)?.[1]).toBe(en.fidelityStatusMissing);
+    expect(/data-testid="live-energy-hero-7-value"[^>]*>([^<]*)</.exec(withoutData)?.[1]).toBe(en.valueNotAvailable);
   });
 });
 

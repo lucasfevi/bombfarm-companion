@@ -4,8 +4,8 @@
  * exactly once" and "identity" guarantees are tested directly against `createAccountViewLoader`
  * (the piece `useAccountView`'s effect delegates to and the only part that touches the bridge),
  * plus a source-level check that the hook's effect only ever runs once per mount (an empty
- * dependency array — the same source-text-assertion genre `account-model.test.ts` uses to prove
- * "no React import").
+ * dependency array — the same source-text-assertion genre `account-view-store.test.ts` uses to
+ * prove "no React import").
  */
 import { describe, expect, it } from 'vitest';
 import type { AccountView } from '@bombfarm/contracts';

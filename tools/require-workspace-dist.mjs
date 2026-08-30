@@ -34,33 +34,28 @@ export const PACKAGES_ROOT = join(here, '..', 'packages');
  *   green at 14 files / 203 tests. `contracts` looks like a dependency and is not: every
  *   `@bombfarm/contracts` specifier under `packages/game-api/src` is an `import type`, erased
  *   before it can be resolved.
- * - `tools` has TWO of its 34 files that need a build, and not the same package each — a
- *   project-wide list would either under-demand (calling one file's need sufficient for both) or
- *   over-demand (making every file require the union). So the guard is per-file here, and this
- *   table is keyed per-file to match:
- *   - `tools/advice-change-key-coverage.test.mjs` needs `domain` alone. It pulls in
- *     `apps/desktop/renderer/lib/planning/hero-advice.ts`, which imports
- *     `@bombfarm/domain/account-fidelity` and `/roster-dps`; with `domain/dist` present and
- *     `game-api/dist` moved aside, this file still passes.
+ * - `tools` has exactly ONE of its files that needs a build, and the guard is per-file rather
+ *   than project-wide there so a deliberately build-free job (see `tools/vitest.config.ts`) is
+ *   not failed by a guard it never needed. This table is keyed per-file to match:
  *   - `tools/derived-fixture-drift.test.mjs` needs `domain` AND `game-api`. It imports
  *     `packages/game-api/scripts/generate-domain-fixtures.mjs`, which resolves
  *     `../dist/assemble.js` etc. by relative path (never through `@bombfarm/game-api`'s own
  *     exports map) — so removing `game-api/dist` fails it at collection — and that generator chain
  *     also reaches `@bombfarm/domain/wiki-assets`, so `domain/dist` is required for this file too.
- *   Removing any other package's `dist` leaves both files, and the rest of the project, green.
- *   Each file calls the assert on its own key, not on a shared `tools` key — see
+ *   Removing any other package's `dist` leaves that file, and the rest of the project, green.
+ *   It calls the assert on its own key, not on a shared `tools` key — see
  *   `tools/vitest.config.ts`.
  *
  * A short list here is worse than no guard: an earlier revision checked `domain` alone for the
  * desktop project and handed back a false all-clear while 20+ files still died at collection. A
  * list wider than one file's own need is the mirror-image mistake for `tools`: it hands back a
- * false POSITIVE, demanding a build the file in front of you never needed.
+ * false POSITIVE, demanding a build the file in front of you never needed. Keep the key per-file
+ * even while only one file needs it — a second one will not need the same packages.
  * Re-measure when a project or guarded file gains an import of a new workspace package.
  */
 export const REQUIRED_DIST_PACKAGES = Object.freeze({
   '@bombfarm/desktop': Object.freeze(['contracts', 'domain', 'game-api', 'game-data', 'pricing', 'tap-runtime']),
   '@bombfarm/game-api': Object.freeze(['domain']),
-  'tools/advice-change-key-coverage.test.mjs': Object.freeze(['domain']),
   'tools/derived-fixture-drift.test.mjs': Object.freeze(['domain', 'game-api']),
 });
 
@@ -102,8 +97,8 @@ export function missingDistPackages(key, packagesRoot = PACKAGES_ROOT) {
 
 /**
  * The entry point for both wirings: `globalSetup` for the two project-wide consumers, and a
- * direct top-level call — once per guarded file, each on its OWN key — for the `tools` project's
- * two per-file consumers.
+ * direct top-level call — once per guarded file, on that file's OWN key — for the `tools`
+ * project's per-file consumer.
  *
  * These packages publish their entry points from `dist/` (`packages/domain`'s `exports` map, for
  * one, points every subpath at `./dist/**`), and the keys listed in {@link REQUIRED_DIST_PACKAGES}

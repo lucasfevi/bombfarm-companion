@@ -94,14 +94,14 @@ function assertBlocksHoldTheirShape(blocks) {
   }
 }
 
-/** The Live/Planning/Inventory/Settings nav buttons, by position — same technique as
+/** The Live/Inventory/Settings nav buttons, by position — same technique as
  *  `i18n.spec.mjs`'s own `navButton` (`packages/ui` ships no `data-testid` on these, by design). */
 function navButton(page, index) {
   return page.locator('nav[aria-label="Main"] button').nth(index);
 }
 
 async function switchToPortuguese(page) {
-  await navButton(page, 3).click();
+  await navButton(page, 2).click();
   const select = page.getByRole('combobox', { name: en('settingsLanguageLabel') });
   await select.waitFor({ state: 'visible', timeout: 10_000 });
   await select.click();

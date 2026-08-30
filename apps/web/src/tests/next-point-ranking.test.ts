@@ -106,14 +106,3 @@ describe('hero-strip-metrics.tsx — mode-aware best, same signed format', () =>
     expect(source).toContain('formatSignedGainPct');
   });
 });
-
-describe("apps/desktop's next-point panel is untouched beyond the field rename", () => {
-  it('renders entry.gainPct (the T1 rename) and carries no farm-mode concept', () => {
-    const source = read('../desktop/renderer/app/planning/next-point-panel.tsx');
-    expect(source).toContain('entry.gainPct');
-    expect(source).not.toMatch(/\bfarm\b/i);
-    expect(source).not.toContain('rankFarmNoPool');
-    expect(source).not.toContain('rankFarmNoRate');
-    expect(source).not.toContain('rankFarmAddedToPool');
-  });
-});

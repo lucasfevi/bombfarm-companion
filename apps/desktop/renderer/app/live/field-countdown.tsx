@@ -7,7 +7,7 @@ export function FieldCountdown({ testId, model }: { testId: string; model: LiveF
   const t = useCopy();
 
   if (!model) {
-    return <span data-testid={testId}>{t.fidelityStatusMissing}</span>;
+    return <span data-testid={testId}>{t.valueNotAvailable}</span>;
   }
 
   return (

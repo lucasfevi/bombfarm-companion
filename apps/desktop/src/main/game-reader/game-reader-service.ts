@@ -368,7 +368,7 @@ export class GameReaderService {
    * `updatedAt` is when this status was read, not part of what the status *is* — every poll
    * carries a fresh one, so comparing the whole object made every poll a "change" and pushed a
    * status event at the poll interval forever. The renderer applies each push into state above
-   * the planning tree, so that alone recommitted the whole window ~20 times a second. Compare
+   * the whole content area, so that alone recommitted the whole window ~20 times a second. Compare
    * only the fields a consumer can act on; `this.status` still carries the new timestamp for
    * anyone who asks for it.
    */

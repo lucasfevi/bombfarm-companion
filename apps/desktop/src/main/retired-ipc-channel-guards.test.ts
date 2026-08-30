@@ -25,7 +25,7 @@ const { readAll } = guardScanner(SELF_PATH);
 const INCLUDING_TESTS = { includeTests: true } as const;
 
 /** Strips `//` line comments and `/* *\/` block comments (dumb text slicing, not a full parser —
- *  the repo's own established convention, per `planning-guards.test.ts`). */
+ *  the repo's own established convention, per `source-guards.test.ts`). */
 function stripComments(source: string): string {
   return source.replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/.*$/gm, '');
 }

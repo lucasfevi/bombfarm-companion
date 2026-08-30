@@ -173,7 +173,7 @@ describe('LivePanel — composition', () => {
   it('an on-field hero with no matching fast countdown renders the missing-data string, not a substituted 0', () => {
     const slow = slowModel({ onField: [{ id: 'f1' }] });
     const html = renderToStaticMarkup(createElement(LivePanel, { freshness: { kind: 'live' }, slow, fast: emptyFast }));
-    expect(html).toContain(en.fidelityStatusMissing);
+    expect(html).toContain(en.valueNotAvailable);
   });
 
   it('an on-field hero with a matching fast countdown renders the formatted number', () => {

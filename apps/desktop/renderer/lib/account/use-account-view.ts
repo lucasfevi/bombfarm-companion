@@ -1,12 +1,11 @@
 /**
- * The **only** `bfc.invoke('account:get')` call site (design.md §1, §7.1) — and now also
- * the **only** `bfc.on('account:changed', …)` subscription site. `useAccountView()` stays one
- * `useState` + one `useEffect` (F2's own structural shape, still enforced by
- * `use-account-view.test.ts`): the effect fires the mount `account:get` (kept — see the boot-race
- * comment below) and subscribes to `account:changed`, and every arrival is folded through
- * `account-view-store.ts`'s pure `accept()` reducer via one `setState(prev => accept(prev, …))`
- * call per event. F2's scope was "reads the account once on mount"; F3 owns re-reads and pushes
- * over this same seam without touching a component.
+ * The **only** `bfc.invoke('account:get')` call site, and the **only**
+ * `bfc.on('account:changed', …)` subscription site. `useAccountView()` stays one `useState` +
+ * one `useEffect` (a shape `use-account-view.test.ts` enforces): the effect fires the mount
+ * `account:get` (kept — see the boot-race comment below) and subscribes to `account:changed`,
+ * and every arrival is folded through `account-view-store.ts`'s pure `accept()` reducer via one
+ * `setState(prev => accept(prev, …))` call per event. Re-reads and pushes therefore reach every
+ * screen over this one seam, without touching a component.
  */
 import { useEffect, useState } from 'react';
 import type { AccountView } from '@bombfarm/contracts';
@@ -51,8 +50,8 @@ export function useAccountView(): AccountViewState {
     let cancelled = false;
     const loader = createAccountViewLoader(bridge);
     // The mount fetch's `issuedAt` — always `initialAccountViewState.applied` (0), because this
-    // is the ONE fetch this hook ever issues (design.md §4.4's "the mount fetch is kept, not
-    // removed" — main only pushes on change, and an emit before the renderer subscribed is
+    // is the ONE fetch this hook ever issues. The mount fetch is kept, not removed: main only
+    // pushes on change, and an emit before the renderer subscribed is
     // silently dropped by `webContents.send`, which is why a mount read is still needed even
     // though main also pushes). No `state.applied` read is required here: nothing can have been
     // accepted yet at the moment this synchronous effect body issues the fetch.
@@ -65,7 +64,7 @@ export function useAccountView(): AccountViewState {
       })
       .catch((err: unknown) => {
         // Surface the failure — never an all-zero account, never an empty roster presented as
-        // truth (spec.md edge case). Discarded by accept() itself if a view was already applied.
+        // truth. Discarded by accept() itself if a view was already applied.
         if (!cancelled) {
           const message = err instanceof Error ? err.message : String(err);
           setState((prev) => accept(prev, { kind: 'fetch-failed', message, issuedAt }));

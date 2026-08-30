@@ -13,7 +13,7 @@ import { LanguageSection } from './language-section';
 
 describe('LanguageSection source — zero bespoke controls of its own (docs/base-ui-first.md)', () => {
   // Scans this component's OWN source for a literal, hand-authored <select>/<input>/<button>/
-  // <label> — the same genre as planning-guards.test.ts's "No local controls" guard. The rendered
+  // <label> — a source-scoped control guard, the same genre as source-guards.test.ts. The rendered
   // HTML necessarily contains a <button>/<label> (Select's Base UI trigger, SettingsRow's own
   // <label>) — those belong to the shipped primitives, not to this file, which is exactly why the
   // check is source-scoped rather than DOM-scoped.

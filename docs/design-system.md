@@ -77,7 +77,7 @@ All exported from the barrel [`packages/ui/src/index.ts`](../packages/ui/src/ind
 ### Game art (`packages/game-art/src/`)
 
 Wiki-sourced game assets (heroes, items, abilities, …), shared by the web planner and the desktop
-Planning surfaces. It is its own workspace package rather than part of `packages/ui` because it
+Inventory surfaces. It is its own workspace package rather than part of `packages/ui` because it
 depends on `@bombfarm/domain` (hero/gear shapes, `wiki-assets.ts` URL builders) and `@bombfarm/ui`,
 which DS-09 forbids `packages/ui` itself from doing. **Do not overlay crystal gems** on item art.
 Hero avatars stay square with a **neutral fill + rarity border**. Gear frames are **portrait

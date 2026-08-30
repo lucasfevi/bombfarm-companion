@@ -36,15 +36,15 @@ function checkExact(label, expected, actual) {
 
 checkExact('hookInstalled', baseline.gate.hookInstalled, capture.hookInstalled);
 checkExact('sawCommit', baseline.gate.sawCommit, capture.sawCommit);
-checkExact('oneHeroChange.distinctComponents', baseline.gate.distinctComponents, capture.oneHeroChange.distinctComponents);
+checkExact('oneItemChange.distinctComponents', baseline.gate.distinctComponents, capture.oneItemChange.distinctComponents);
 
 console.log(
   `[render-count:compare] recorded (not gated): quiet.componentRenders=${capture.quiet.componentRenders} ` +
     `(baseline range ${baseline.recordedOnly.quietComponentRendersRange.join('-')}), ` +
-    `oneHeroChange.componentRenders=${capture.oneHeroChange.componentRenders} ` +
-    `(baseline range ${baseline.recordedOnly.oneHeroChangeComponentRendersRange.join('-')}), ` +
-    `oneHeroChangeNetOfBackground=${capture.oneHeroChangeNetOfBackground} ` +
-    `(baseline range ${baseline.recordedOnly.oneHeroChangeNetOfBackgroundRange.join('-')})`,
+    `oneItemChange.componentRenders=${capture.oneItemChange.componentRenders} ` +
+    `(baseline range ${baseline.recordedOnly.oneItemChangeComponentRendersRange.join('-')}), ` +
+    `oneItemChangeNetOfBackground=${capture.oneItemChangeNetOfBackground} ` +
+    `(baseline range ${baseline.recordedOnly.oneItemChangeNetOfBackgroundRange.join('-')})`,
 );
 
 if (failed) {

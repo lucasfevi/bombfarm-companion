@@ -2,9 +2,9 @@
  * The assertions this repo writes down rather than reviews for: the pinned prose-literal
  * exception list, and the single game-terms language mapping.
  * Lives in `apps/desktop/src/main/`, NOT `tools/`, for two reasons: the scans need the desktop
- * tree walked (`planning-guards.test.ts`'s own precedent, same home, same genre), and keeping
- * `tools/` untouched keeps `ci-fidelity.yml`'s `--project tools` step out of this feature's blast
- * radius entirely (design §11 — that step is the exact surface F3 broke).
+ * tree walked (`source-guards.test.ts`'s own precedent, same home, same genre), and keeping
+ * `tools/` untouched keeps `ci-fidelity.yml`'s `--project tools` step out of this file's blast
+ * radius entirely.
  *
  * `walk`/`readAll`/`isTestFile` come from `guard-scan.ts`, shared with the other guards in this
  * folder. `stripComments` stays local — this file's copy carries a deliberate divergence, noted
@@ -21,7 +21,7 @@ const RENDERER_ROOT = join(DESKTOP_ROOT, 'renderer');
 const MAIN_ROOT = join(DESKTOP_ROOT, 'src', 'main');
 const REPO_ROOT = resolve(DESKTOP_ROOT, '..', '..');
 /** This guard file's own path — excluded from every scan below, same reasoning as
- *  `planning-guards.test.ts`'s `SELF_PATH`: its own red-state fixtures contain the forbidden
+ *  `source-guards.test.ts`'s `SELF_PATH`: its own red-state fixtures contain the forbidden
  *  shapes as plain JS string literals. */
 const SELF_PATH = __filename;
 
@@ -29,13 +29,13 @@ const { readAll } = guardScanner(SELF_PATH);
 
 /**
  * Strips `//` line comments and `/* *\/` block comments (dumb text slicing, not a full parser —
- * `planning-guards.test.ts`'s own established convention). **One deliberate divergence from that
+ * `source-guards.test.ts`'s own established convention). **One deliberate divergence from that
  * file's copy**: the line-comment regex here has a `(?<!:)` guard on `//`, because this guard
- * (unlike `planning-guards.test.ts`'s narrow substring checks) scans EVERY string/template
+ * (unlike `source-guards.test.ts`'s narrow substring checks) scans EVERY string/template
  * literal, and without the guard `'http://127.0.0.1:3000'` gets misread as a line comment
  * starting at its own `//`, silently deleting the string's closing quote and corrupting every
  * match downstream — discovered empirically while building Guard 1 below, against
- * `apps/desktop/src/main/env.ts`'s `RENDERER_DEV_URL`. `planning-guards.test.ts` never triggers
+ * `apps/desktop/src/main/env.ts`'s `RENDERER_DEV_URL`. `source-guards.test.ts` never triggers
  * this because it never runs a literal-content scan broad enough to reach a URL string.
  */
 function stripComments(source: string): string {
@@ -58,23 +58,23 @@ const STRING_OR_TEMPLATE_LITERAL = /'((?:[^'\\]|\\.)*)'|"((?:[^"\\]|\\.)*)"|`((?
 
 /**
  * What Guard 1 does NOT treat as player-facing, and why — measured empirically against this
- * repo's actual content while building this guard (tasks.md's own regex, applied literally,
- * false-positives on all four categories below; this is a recorded deviation from the literal
- * spec, not a weakening of what it catches):
+ * repo's actual content while building this guard (the obvious regex, applied literally,
+ * false-positives on all four categories below; this narrows where it looks, not what it
+ * catches):
  *
  * 1. **`className=` values.** Tailwind utility strings are MULTIPLE space-joined single-word
  *    tokens in ONE literal ('flex justify-end gap-2'); the boundary between two tokens can look
- *    like two prose words ('font-mono tabular-nums' contains 'mono tabular'). F2's own
- *    `planning-guards.test.ts` never scans `className` for exactly this reason (its
+ *    like two prose words ('font-mono tabular-nums' contains 'mono tabular'). The copy guard in
+ *    `source-guards.test.ts` never scans `className` for exactly this reason (its
  *    `ALLOWED_PROPS` set).
  * 2. **`'use client'` / `'use server'`** — React/Next.js directives, not prose, exact-matched.
  * 3. **SQL text** (`db.prepare(...)`  bodies: `SELECT`/`INSERT INTO`/`CREATE TABLE`/`PRAGMA`/
  *    `ON CONFLICT`) — recognisable by keyword, and never player-facing.
  * 5. **The immediate first argument to `new Error(...)`, `console.*(...)`, `log.*(...)`, or
- *    `execSync(...)`** — diagnostic/log text, never rendered (design §2.8's own finding: "every
- *    hit is a log field, an internal Error message, or a comment"). The one main-process message
- *    that DID reach the UI (`planning-view.tsx`'s old `accountViewState.message` render) is fixed
- *    structurally in T4, not exempted here — this exclusion is about text that was NEVER rendered.
+ *    `execSync(...)`** — diagnostic/log text, never rendered: every hit is a log field, an
+ *    internal Error message, or a comment. A main-process message that DID reach the UI would be
+ *    fixed structurally, never exempted here — this exclusion is about text that was NEVER
+ *    rendered.
  */
 const CLASS_NAME_CONTEXT = /className=$/;
 const SQL_KEYWORDS = /\b(SELECT|INSERT INTO|CREATE TABLE|PRAGMA|ON CONFLICT|DELETE FROM)\b/;
@@ -436,20 +436,20 @@ describe("Guard 4 — no game-labels helper ever receives a literal 'en'/'pt' la
 });
 
 // ---------------------------------------------------------------------------------------------
-// Guard 5 — the planning layer is locale-free, so a language change causes no refresh or recompute (design §4.3)
+// Guard 5 — the account layer is locale-free, so a language change causes no refresh or recompute
 // ---------------------------------------------------------------------------------------------
 
-describe('Guard 5 — renderer/lib/planning/** never mentions locale (no recompute on language change, structural half)', () => {
-  const PLANNING_ROOT = join(RENDERER_ROOT, 'lib', 'planning');
-  const planningFiles = readAll(PLANNING_ROOT, ['.ts', '.tsx'], { includeTests: true });
+describe('Guard 5 — renderer/lib/account/** never mentions locale (no recompute on language change, structural half)', () => {
+  const ACCOUNT_ROOT = join(RENDERER_ROOT, 'lib', 'account');
+  const accountFiles = readAll(ACCOUNT_ROOT, ['.ts', '.tsx'], { includeTests: true });
 
-  it('zero occurrences of "locale" (case-insensitive) under renderer/lib/planning/**', () => {
-    const offenders = planningFiles
+  it('zero occurrences of "locale" (case-insensitive) under renderer/lib/account/**', () => {
+    const offenders = accountFiles
       .filter((file) => /locale/i.test(stripComments(file.source)))
       .map((file) => file.path);
     expect(
       offenders,
-      'A "locale" reference under renderer/lib/planning/** means a language switch could enter ' +
+      'A "locale" reference under renderer/lib/account/** means a language switch could enter ' +
         'a memo dependency or a change key — breaking the no-recompute-on-irrelevant-change ' +
         'guarantee from the other side, silently, with everything still looking right.',
     ).toEqual([]);

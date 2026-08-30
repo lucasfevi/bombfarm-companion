@@ -173,11 +173,7 @@ const ALLOWLIST = [
  * on another) fails by name. `packages/ui` has zero lines and needs no entry.
  */
 const CRIT_DMG_MULT_MAP = {
-  'apps/desktop/renderer/lib/planning/account-model.test.ts': [46],
-  'apps/desktop/renderer/lib/planning/account-view-store.test.ts': [36],
-  'apps/desktop/renderer/lib/planning/fixtures/synthetic-views.ts': [123],
-  'apps/desktop/renderer/lib/planning/hero-advice.test.ts': [47],
-  'apps/desktop/renderer/lib/planning/withhold-matrix.test.ts': [238, 255],
+  'apps/desktop/renderer/lib/account/account-view-store.test.ts': [34],
   'apps/desktop/src/main/storage/account-store-restore.test.ts': [507, 540, 558, 591],
   'apps/desktop/src/main/storage/stale-sections.test.ts': [66, 81, 84, 88, 98, 105, 111, 123, 128, 164, 224],
   'apps/desktop/src/main/storage/stale-sections.ts': [11],
@@ -224,7 +220,7 @@ const CRIT_DMG_MULT_MAP = {
   'apps/web/src/tests/storage-stat-points-available-compat.test.ts': [104],
   // +12 (line numbers only) from the corpus-parity repurpose and the skip-counting fix's
   // comments above both hits. Count and kind unchanged.
-  'tools/fixture-corpus-parity.test.mjs': [179, 231],
+  'tools/fixture-corpus-parity.test.mjs': [178, 230],
   // Self-map. The last four shifted +3 (line numbers only) when the account-shared entry above
   // gained its three-line explanation; count and kind are unchanged.
   // Line numbers only — the House-ceiling regression repair (PR #86 finding, house.ts:38) added
@@ -245,7 +241,7 @@ const CRIT_DMG_MULT_MAP = {
   // the escape leaves no word boundary before the identifier.
   // +2 more (line numbers only, last four) from the corpus-parity repurpose/skip-counting-fix
   // note above the fixture-corpus-parity.test.mjs entry. Count and kind unchanged.
-  'tools/keystone-surface-absence.test.mjs': [13, 166, 169, 291, 296, 306, 315],
+  'tools/keystone-surface-absence.test.mjs': [13, 166, 169, 287, 292, 302, 311],
   'tools/save-acceptance-guards.test.mjs': [53],
 };
 

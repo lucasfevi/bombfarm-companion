@@ -2,7 +2,7 @@
 
 /**
  * The Inventory screen — every item the account carries, grouped by kind. Reads the account
- * through the same `useAccountView()` seam the Planning screen uses, and hands the raw
+ * through the shared `useAccountView()` seam, and hands the raw
  * `/inventory` rows straight to the domain's grouping. Nothing is recomputed in a component:
  * `buildInventoryView` is a `useMemo` over the `AccountView` reference — the IPC boundary
  * structurally clones on every push, so that reference is the only cheap identity to key on, and
@@ -25,7 +25,7 @@ import {
 } from '@bombfarm/domain/inventory-view';
 import { resolveItemPrice } from '@bombfarm/pricing';
 import { sub, useCopy, useLocale } from '../../lib/copy';
-import { useAccountView } from '../../lib/planning/use-account-view';
+import { useAccountView } from '../../lib/account/use-account-view';
 import { useMarketSnapshot } from '../../lib/market/use-market-snapshot';
 import { inventoryLabels, inventoryTableLabels } from './inventory-labels';
 import { marketPriceLabels } from './market-labels';
@@ -175,7 +175,7 @@ export function InventoryView() {
   if (accountViewState.status === 'loading') {
     return (
       <div data-testid="inventory-view">
-        <EmptyState title={t.planningLoadingTitle} />
+        <EmptyState title={t.accountLoadingTitle} />
       </div>
     );
   }
@@ -189,8 +189,8 @@ export function InventoryView() {
   }
 
   if (accountViewState.status === 'error') {
-    // Same posture as the Planning screen: the raw message from main is untranslatable English,
-    // so it is carried as diagnostic data only and never rendered as player-facing copy.
+    // The raw message from main is untranslatable English, so it is carried as diagnostic data
+    // only and never rendered as player-facing copy.
     return (
       <div data-testid="inventory-view">
         <Banner tone="warn" title={t.errorAccountReadFailed} data-account-error-detail={accountViewState.message}>
