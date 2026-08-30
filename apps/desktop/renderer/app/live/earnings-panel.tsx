@@ -110,121 +110,119 @@ export function EarningsPanel({
   const currentGoldAgeShown = balance !== null ? (currentGoldAgeText ?? '') : '';
 
   return (
-    <Panel data-testid="live-earnings" aria-label={t.liveEarningsTitle}>
-      <div className="flex items-start justify-between gap-6">
-        <div className="flex items-stretch gap-6">
-          {/* Fixed at its widest content rather than sized to whichever child is currently
-              longest — measured against the real rendered font: the gold figure's widest
-              realistic compact form ("999.9m") at its own 38px bold came out widest at ~139.4px,
-              ahead of that same form at the XP figure's 19px, the coverage label's longest form
-              in either language ("últimos 10 min"), and both unit strings in either language.
-              140px (8.75rem) covers it, so neither a changing figure nor a language switch can
-              move the divider after it. */}
-          <div
-            data-testid="live-earnings-headline-column"
-            className="flex w-[8.75rem] shrink-0 flex-col items-end gap-1.5 border-r border-line/55 pr-6"
-          >
-            <span
-              data-testid="live-earnings-recent-window-label"
-              className="text-right text-[10.5px] text-muted tabular-nums whitespace-nowrap"
-            >
-              {recentWindowText}
-            </span>
-            <span data-testid="live-earnings-gold-10" className="text-[38px] font-bold leading-none text-gold tabular-nums whitespace-nowrap">
-              {numberText(earnings?.gold10)}
-            </span>
-            <span
-              data-testid="live-earnings-gold-10-unit"
-              className="text-right text-[10.5px] text-muted tabular-nums whitespace-nowrap"
-            >
-              {t.liveEarningsGoldHeadlineUnit}
-            </span>
-            <span
-              data-testid="live-earnings-xp-10"
-              className="text-[19px] font-bold leading-none text-info tabular-nums whitespace-nowrap"
-            >
-              {numberText(earnings?.xp10)}
-            </span>
-            <Tooltip.Provider>
-              <Tooltip.Root>
-                <Tooltip.Trigger
-                  type="button"
-                  data-testid="live-earnings-xp-help-trigger"
-                  aria-label={`${t.liveEarningsXpHeadlineUnit}: ${t.liveEarningsXpHelpBody}`}
-                  className="block w-full border-0 bg-transparent p-0 text-right text-muted text-[10.5px] font-normal underline decoration-dotted underline-offset-2 cursor-help hover:text-ink focus-visible:rounded-sm focus-visible:[outline-style:solid] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
-                >
-                  {t.liveEarningsXpHeadlineUnit}
-                </Tooltip.Trigger>
-                <Tooltip.Portal>
-                  <Tooltip.Positioner sideOffset={6}>
-                    <Tooltip.Popup>
-                      <p className="m-0" data-testid="live-earnings-xp-help-body">
-                        {t.liveEarningsXpHelpBody}
-                      </p>
-                    </Tooltip.Popup>
-                  </Tooltip.Positioner>
-                </Tooltip.Portal>
-              </Tooltip.Root>
-            </Tooltip.Provider>
-          </div>
-          <div className="grid grid-cols-[repeat(3,7rem)] gap-x-4 gap-y-3">
-            <Block
-              blockTestId="live-earnings-block-current-gold"
-              testId="live-earnings-gold-current"
-              label={t.liveEarningsCurrentGoldLabel}
-              value={currentGoldValue}
-              className="text-[23px] font-bold text-gold tabular-nums whitespace-nowrap"
-              ageTestId="live-earnings-gold-current-age"
-              ageReserve={currentGoldAgeReserve}
-              ageShown={currentGoldAgeShown}
-            />
-            <Block
-              blockTestId="live-earnings-block-gold-rate"
-              testId="live-earnings-gold-session"
-              label={t.liveEarningsGoldSessionLabel}
-              value={numberText(earnings?.goldSession)}
-              className="text-[23px] font-bold text-gold/70 tabular-nums whitespace-nowrap"
-            />
-            <Block
-              blockTestId="live-earnings-block-gold-total"
-              testId="live-earnings-gold-session-total"
-              label={t.liveEarningsGoldSessionTotalLabel}
-              value={numberText(earnings?.goldSessionTotal)}
-              className="text-[23px] font-bold text-gold tabular-nums whitespace-nowrap"
-            />
-            <Block
-              blockTestId="live-earnings-block-elapsed"
-              testId="live-earnings-elapsed"
-              label={t.liveEarningsElapsedLabel}
-              value={formatLiveDurationSeconds(sessionSeconds)}
-              className="text-[23px] font-bold text-ink tabular-nums whitespace-nowrap"
-            />
-            <Block
-              blockTestId="live-earnings-block-xp-rate"
-              testId="live-earnings-xp-session"
-              label={t.liveEarningsXpSessionLabel}
-              value={numberText(earnings?.xpSession)}
-              className="text-[23px] font-bold text-info/70 tabular-nums whitespace-nowrap"
-            />
-            <Block
-              blockTestId="live-earnings-block-xp-total"
-              testId="live-earnings-xp-session-total"
-              label={t.liveEarningsXpSessionTotalLabel}
-              value={numberText(earnings?.xpSessionTotal)}
-              className="text-[23px] font-bold text-info tabular-nums whitespace-nowrap"
-            />
-          </div>
-        </div>
-        <button
-          type="button"
-          data-testid="live-earnings-reset"
-          aria-label={t.liveEarningsResetAria}
-          onClick={onReset}
-          className="grid place-items-center rounded-sm border-0 bg-transparent p-0 text-muted transition-colors hover:text-ink focus-visible:[outline-style:solid] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+    <Panel data-testid="live-earnings" aria-label={t.liveEarningsTitle} className="relative">
+      <div className="flex items-stretch gap-6 pr-8">
+        {/* Fixed at its widest content rather than sized to whichever child is currently
+            longest — measured against the real rendered font: the gold figure's widest
+            realistic compact form ("999.9m") at its own 38px bold came out widest at ~139.4px,
+            ahead of that same form at the XP figure's 19px, the coverage label's longest form
+            in either language ("últimos 10 min"), and both unit strings in either language.
+            140px (8.75rem) covers it, so neither a changing figure nor a language switch can
+            move the divider after it. */}
+        <div
+          data-testid="live-earnings-headline-column"
+          className="flex w-[8.75rem] shrink-0 flex-col items-end gap-1.5 border-r border-line/55 pr-6"
         >
-          <Icon name="arrow-path" size="md" />
-        </button>
+          <span
+            data-testid="live-earnings-recent-window-label"
+            className="text-right text-[10.5px] text-muted tabular-nums whitespace-nowrap"
+          >
+            {recentWindowText}
+          </span>
+          <span data-testid="live-earnings-gold-10" className="text-[38px] font-bold leading-none text-gold tabular-nums whitespace-nowrap">
+            {numberText(earnings?.gold10)}
+          </span>
+          <span
+            data-testid="live-earnings-gold-10-unit"
+            className="text-right text-[10.5px] text-muted tabular-nums whitespace-nowrap"
+          >
+            {t.liveEarningsGoldHeadlineUnit}
+          </span>
+          <span
+            data-testid="live-earnings-xp-10"
+            className="text-[19px] font-bold leading-none text-info tabular-nums whitespace-nowrap"
+          >
+            {numberText(earnings?.xp10)}
+          </span>
+          <Tooltip.Provider>
+            <Tooltip.Root>
+              <Tooltip.Trigger
+                type="button"
+                data-testid="live-earnings-xp-help-trigger"
+                aria-label={`${t.liveEarningsXpHeadlineUnit}: ${t.liveEarningsXpHelpBody}`}
+                className="block w-full border-0 bg-transparent p-0 text-right text-muted text-[10.5px] font-normal underline decoration-dotted underline-offset-2 cursor-help hover:text-ink focus-visible:rounded-sm focus-visible:[outline-style:solid] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+              >
+                {t.liveEarningsXpHeadlineUnit}
+              </Tooltip.Trigger>
+              <Tooltip.Portal>
+                <Tooltip.Positioner sideOffset={6}>
+                  <Tooltip.Popup>
+                    <p className="m-0" data-testid="live-earnings-xp-help-body">
+                      {t.liveEarningsXpHelpBody}
+                    </p>
+                  </Tooltip.Popup>
+                </Tooltip.Positioner>
+              </Tooltip.Portal>
+            </Tooltip.Root>
+          </Tooltip.Provider>
+        </div>
+        <div className="grid grid-cols-[repeat(3,7rem)] gap-x-4 gap-y-3">
+          <Block
+            blockTestId="live-earnings-block-current-gold"
+            testId="live-earnings-gold-current"
+            label={t.liveEarningsCurrentGoldLabel}
+            value={currentGoldValue}
+            className="text-[23px] font-bold text-gold tabular-nums whitespace-nowrap"
+            ageTestId="live-earnings-gold-current-age"
+            ageReserve={currentGoldAgeReserve}
+            ageShown={currentGoldAgeShown}
+          />
+          <Block
+            blockTestId="live-earnings-block-gold-rate"
+            testId="live-earnings-gold-session"
+            label={t.liveEarningsGoldSessionLabel}
+            value={numberText(earnings?.goldSession)}
+            className="text-[23px] font-bold text-gold/70 tabular-nums whitespace-nowrap"
+          />
+          <Block
+            blockTestId="live-earnings-block-gold-total"
+            testId="live-earnings-gold-session-total"
+            label={t.liveEarningsGoldSessionTotalLabel}
+            value={numberText(earnings?.goldSessionTotal)}
+            className="text-[23px] font-bold text-gold tabular-nums whitespace-nowrap"
+          />
+          <Block
+            blockTestId="live-earnings-block-elapsed"
+            testId="live-earnings-elapsed"
+            label={t.liveEarningsElapsedLabel}
+            value={formatLiveDurationSeconds(sessionSeconds)}
+            className="text-[23px] font-bold text-ink tabular-nums whitespace-nowrap"
+          />
+          <Block
+            blockTestId="live-earnings-block-xp-rate"
+            testId="live-earnings-xp-session"
+            label={t.liveEarningsXpSessionLabel}
+            value={numberText(earnings?.xpSession)}
+            className="text-[23px] font-bold text-info/70 tabular-nums whitespace-nowrap"
+          />
+          <Block
+            blockTestId="live-earnings-block-xp-total"
+            testId="live-earnings-xp-session-total"
+            label={t.liveEarningsXpSessionTotalLabel}
+            value={numberText(earnings?.xpSessionTotal)}
+            className="text-[23px] font-bold text-info tabular-nums whitespace-nowrap"
+          />
+        </div>
       </div>
+      <button
+        type="button"
+        data-testid="live-earnings-reset"
+        aria-label={t.liveEarningsResetAria}
+        onClick={onReset}
+        className="absolute right-2 top-2 grid place-items-center rounded-sm border-0 bg-transparent p-0 text-muted transition-colors hover:text-ink focus-visible:[outline-style:solid] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+      >
+        <Icon name="arrow-path" size="md" />
+      </button>
     </Panel>
   );
 }
