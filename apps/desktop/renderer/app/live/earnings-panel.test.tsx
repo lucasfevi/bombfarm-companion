@@ -14,7 +14,9 @@ import { EarningsPanel } from './earnings-panel';
 // assertions exercise genuine template substitution and genuine per-locale copy, not a stub.
 vi.mock('../../lib/copy', async (importOriginal) => {
   const actual = await importOriginal<typeof import('../../lib/copy')>();
-  return { ...actual, useCopy: () => en };
+  // `useLocale()` is stubbed for the same reason and in the same place: the panel reads the
+  // language to format its figures, and the direct-call test has no dispatcher for a hook.
+  return { ...actual, useCopy: () => en, useLocale: () => ({ locale: 'en', lang: 'en', bcp47: 'en-US' }) };
 });
 
 const LIVE: ReachedLiveFreshness = { kind: 'live' };
