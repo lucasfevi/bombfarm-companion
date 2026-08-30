@@ -29,12 +29,13 @@ import {
   type FieldCountdownState,
   type RosterHeroAbilities,
 } from '@bombfarm/domain/live';
-import { xpPerProp } from '@bombfarm/domain/phase-wiki';
+import { propCountForPhase, xpPerProp } from '@bombfarm/domain/phase-wiki';
 import { runPowerShellAsync, runPowerShellSync, stripExeSuffix } from '../game-reader/process.js';
 import { EarningsFold } from './earnings-fold.js';
 import { createFrameCapture, readFrameCaptureEnabledFromEnv } from './frame-capture.js';
 import { FrameRing } from './frame-ring.js';
 import type { LogPort } from './log-port.js';
+import { MapFold } from './map-fold.js';
 import { RuntimePort } from './runtime.js';
 import {
   createHookCandidateSource,
@@ -338,6 +339,7 @@ export class LiveSource {
   #updatedAt: string;
 
   readonly #earningsFold: EarningsFold;
+  readonly #mapFold: MapFold;
   /** `null` until the first tap frame of the session has been folded — {@link LiveView.earnings}
    *  stays `null` until then too, rather than reporting a rate computed over zero real ticks. */
   #goldBalance: number | null = null;
@@ -359,6 +361,7 @@ export class LiveSource {
     this.#log = deps.log ?? NOOP_LOG_PORT;
     this.#now = deps.now ?? Date.now;
     this.#earningsFold = new EarningsFold({ now: this.#now, xpPerProp, log: this.#log });
+    this.#mapFold = new MapFold({ propsTotalForPhase: propCountForPhase });
     if (deps.createTap) {
       this.#createTap = deps.createTap;
       this.#ring = null;
@@ -431,6 +434,7 @@ export class LiveSource {
       rotation: this.#rotation,
       onFieldHeroIds: this.#fieldState.onFieldHeroIdsSorted,
       earnings: this.#buildEarnings(),
+      map: this.#mapFold.current,
       updatedAt: this.#updatedAt,
     };
   }
@@ -484,6 +488,7 @@ export class LiveSource {
     if (binding === null) return;
     if (this.#lastBinding !== undefined && binding !== this.#lastBinding) {
       this.#earningsFold.reset('accountChange');
+      this.#mapFold.reset();
     }
     this.#lastBinding = binding;
   }
@@ -621,6 +626,7 @@ export class LiveSource {
       this.#touch();
     } else if (event.type === 'frame') {
       this.#earningsFold.consumeTick(event.frame.tick, event.frame.sequence, this.#xpMult);
+      this.#mapFold.consumeTick(event.frame.tick, event.frame.sequence);
       this.#earningsStarted = true;
       if (event.frame.tick.gold !== undefined) this.#goldBalance = event.frame.tick.gold;
       this.#ingestTick(event.frame.tick, Date.parse(event.frame.at));

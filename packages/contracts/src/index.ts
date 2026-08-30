@@ -43,6 +43,7 @@ export type {
   LiveGapReason,
   LiveHit,
   LiveLootPop,
+  LiveMap,
   LiveTick,
   LiveTickHero,
   LiveView,

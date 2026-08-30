@@ -168,6 +168,58 @@ describe('offline mode produces a Live view with something in it', () => {
 });
 
 /**
+ * The map reading has its own end-to-end case for the same reason the countdowns above do: every
+ * figure can be correct inside `MapFold` and still never reach `LiveView`, because nothing wired
+ * the fold to the frame stream. These read the folded view, not the fold.
+ */
+describe('offline mode produces a Live map reading', () => {
+  beforeEach(() => {
+    vi.useFakeTimers();
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  it('is null before any frame has been replayed', () => {
+    const source = offlineLiveSource();
+    expect(source.getView().map).toBeNull();
+  });
+
+  it('names the captured phase and counts its props, with no rotation ingested at all — the map does not depend on the roster', async () => {
+    const source = offlineLiveSource();
+    source.start();
+    vi.advanceTimersByTime(REPLAY_FRAME_INTERVAL_MS * 60);
+
+    const map = source.getView().map;
+    expect(map).not.toBeNull();
+    expect(map?.phase).toBe(61);
+    // Phase 61 is an ato-2 map: 75 props when fresh, which is what the capture's own final frame
+    // shows standing after its wave rolls over.
+    expect(map?.propsTotal).toBe(75);
+    expect(map?.propsAlive).toBe(75);
+    expect(map?.healthFraction).toBe(1);
+    await source.teardown();
+  });
+
+  it('reports a partly cleared map partway through the replay, not only the state it ends in', async () => {
+    const source = offlineLiveSource();
+    source.start();
+    vi.advanceTimersByTime(REPLAY_FRAME_INTERVAL_MS * 10);
+
+    const map = source.getView().map;
+    expect(map?.phase).toBe(61);
+    const propsAlive = map?.propsAlive ?? -1;
+    expect(propsAlive).toBeGreaterThan(0);
+    expect(propsAlive).toBeLessThan(75);
+    const health = map?.healthFraction ?? -1;
+    expect(health).toBeGreaterThan(0);
+    expect(health).toBeLessThan(1);
+    await source.teardown();
+  });
+});
+
+/**
  * The offline fixture is generated rather than written, so this pins the one property the
  * generator exists to preserve: `/rotation` projects its whole body into `casa`, and a fixture
  * carrying only the inner `casa` child would leave `normalizeRotation` with no heroes.

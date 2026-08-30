@@ -256,6 +256,12 @@ export const ptBR: Copy = {
   liveEarningsXpHelpLabel: 'Sobre esse número de XP',
   liveEarningsXpHelpBody: 'Calculado a partir dos props que seus heróis destruíram, não lido diretamente do jogo.',
 
+  // liveMap* — o painel de Mapa: em qual mapa se está jogando e o quanto da run já passou.
+  liveMapTitle: 'Mapa',
+  liveMapHealthLabel: 'Vida do mapa',
+  liveMapPropsLabel: 'Props vivos',
+  liveMapUnknownName: 'Mapa desconhecido',
+
   // inventory* — a tela de Inventário: todos os itens da conta, agrupados por tipo
   inventoryNavLabel: 'Inventário',
   inventoryTitle: 'Inventário',

@@ -255,6 +255,12 @@ export const en = {
   liveEarningsXpHelpLabel: 'About this XP figure',
   liveEarningsXpHelpBody: 'Calculated from the props your heroes destroyed, not read directly from the game.',
 
+  // liveMap* — the Map panel: which map is being played, and how far through it the run is.
+  liveMapTitle: 'Map',
+  liveMapHealthLabel: 'Map health',
+  liveMapPropsLabel: 'Props alive',
+  liveMapUnknownName: 'Unknown map',
+
   // inventory* — the Inventory screen: every item the account carries, grouped by kind
   inventoryNavLabel: 'Inventory',
   inventoryTitle: 'Inventory',

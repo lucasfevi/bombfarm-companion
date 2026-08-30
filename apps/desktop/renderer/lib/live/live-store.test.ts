@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import type { LiveEarnings, LiveEvent, LiveView, RotationSnapshot } from '@bombfarm/contracts';
+import type { LiveEarnings, LiveEvent, LiveMap, LiveView, RotationSnapshot } from '@bombfarm/contracts';
 import type { LiveModel } from './live-model';
 import {
   applyLiveArrival,
@@ -30,6 +30,7 @@ function liveView(overrides: Partial<LiveView> = {}): LiveView {
     rotation: rotationSnapshot(),
     onFieldHeroIds: ['on-field'],
     earnings: null,
+    map: null,
     updatedAt: 't0',
     ...overrides,
   };
@@ -39,6 +40,7 @@ function fastUpdateEvent(
   secondsRemaining: number,
   onFieldHeroIds: readonly string[] = ['on-field'],
   earnings: LiveEarnings | null = null,
+  map: LiveMap | null = null,
 ): LiveEvent {
   return {
     type: 'fastUpdate',
@@ -46,6 +48,7 @@ function fastUpdateEvent(
     recovery: [],
     onFieldHeroIds,
     earnings,
+    map,
   };
 }
 
@@ -181,7 +184,7 @@ describe('createLiveStore — applies each arrival as it lands, with no display 
     store.subscribe((model) => notifications.push(model));
 
     for (let i = 0; i < 20; i += 1) {
-      emit({ type: 'fastUpdate', field: [], recovery: [], onFieldHeroIds: [], earnings: null });
+      emit({ type: 'fastUpdate', field: [], recovery: [], onFieldHeroIds: [], earnings: null, map: null });
     }
 
     expect(notifications).toHaveLength(0);
@@ -427,7 +430,7 @@ describe('createLiveStore — earnings pass straight through, never folded or de
     await flushMicrotasks();
     store.subscribe((model) => notifications.push(model));
 
-    emit({ type: 'fastUpdate', field: [], recovery: [], onFieldHeroIds: [], earnings: earnings({ goldBalance: 2 }) });
+    emit({ type: 'fastUpdate', field: [], recovery: [], onFieldHeroIds: [], earnings: earnings({ goldBalance: 2 }), map: null });
 
     expect(notifications).toHaveLength(1);
     expect(notifications[0]?.earnings).toEqual(earnings({ goldBalance: 2 }));
@@ -444,7 +447,7 @@ describe('createLiveStore — earnings pass straight through, never folded or de
     await flushMicrotasks();
     store.subscribe((model) => notifications.push(model));
 
-    emit({ type: 'fastUpdate', field: [], recovery: [], onFieldHeroIds: [], earnings: earnings() });
+    emit({ type: 'fastUpdate', field: [], recovery: [], onFieldHeroIds: [], earnings: earnings(), map: null });
 
     expect(notifications).toHaveLength(0);
     expect(store.getModel().earnings).toEqual(figures);
@@ -461,7 +464,7 @@ describe('createLiveStore — a fastUpdate carries on-field membership live, app
     await flushMicrotasks();
     expect(store.getModel().slow?.onField.map((hero) => hero.id)).toEqual(['on-field']);
 
-    emit({ type: 'fastUpdate', field: [], recovery: [], onFieldHeroIds: [], earnings: null });
+    emit({ type: 'fastUpdate', field: [], recovery: [], onFieldHeroIds: [], earnings: null, map: null });
 
     const model = store.getModel();
     expect(model.slow?.onField).toEqual([]);

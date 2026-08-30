@@ -1,6 +1,6 @@
 import { Panel, PanelHeader } from '@bombfarm/ui';
 import { FIELD_SLOTS_MAX } from '@bombfarm/domain/casa-slots';
-import type { LiveEarnings } from '@bombfarm/contracts';
+import type { LiveEarnings, LiveMap } from '@bombfarm/contracts';
 import { sub, useCopy, useLocale } from '../../lib/copy';
 import { formatCount } from '../../lib/format';
 import type { LiveFastModel, LiveHeroFact, LiveSlowModel } from '../../lib/live/live-model';
@@ -8,6 +8,7 @@ import { EarningsPanel } from './earnings-panel';
 import { FieldCountdown } from './field-countdown';
 import { FreshnessLine, type ReachedLiveFreshness } from './freshness-line';
 import { HeroRow, type LiveRotationRowState } from './hero-row';
+import { MapPanel } from './map-panel';
 import { RecoveryCountdown } from './recovery-countdown';
 import { restingFacts, restingSlotsCount, restingSlotsHint } from './resting-facts';
 import { StateSummaryBar } from './state-summary-bar';
@@ -34,6 +35,7 @@ export function LivePanel({
   slow,
   fast,
   earnings = null,
+  map = null,
   onResetEarnings = () => undefined,
   onReopenConsent,
 }: {
@@ -41,6 +43,7 @@ export function LivePanel({
   slow: LiveSlowModel;
   fast: LiveFastModel;
   earnings?: LiveEarnings | null;
+  map?: LiveMap | null;
   onResetEarnings?: () => void;
   onReopenConsent?: () => void;
 }) {
@@ -70,6 +73,7 @@ export function LivePanel({
           let it overflow. */}
       <div className="grid grid-cols-1 gap-4 min-[1334px]:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
         <EarningsPanel freshness={freshness} earnings={earnings} onReset={onResetEarnings} />
+        <MapPanel map={map} />
       </div>
       <Panel data-testid="live-heroes">
         <PanelHeader title={t.liveHeroesTitle} />
