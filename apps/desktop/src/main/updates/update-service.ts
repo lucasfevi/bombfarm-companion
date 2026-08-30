@@ -208,3 +208,36 @@ export function createUpdateService(deps: UpdateServiceDeps): UpdateService {
     installOnRestart,
   };
 }
+
+/**
+ * The stand-in for a service that could not be built at all — `electron-updater` failed to load,
+ * or constructing the port threw. There is no port to drive, so every action reports the same
+ * failure rather than retrying: nothing that failed to load comes back within a session.
+ *
+ * It reports `error`, not `disabled`. `disabled` is the honest answer for a build with no channel
+ * to check, and printing it here would tell a player on an installed build that their flavor does
+ * not update — which is false, and hides the failure instead of showing it.
+ */
+export function unavailableUpdateService(
+  currentVersion: string,
+  channel: UpdateChannel | null,
+): UpdateService {
+  const status: UpdateStatus = {
+    phase: 'error',
+    currentVersion,
+    channel,
+    availableVersion: null,
+    percent: null,
+    error: 'unknown',
+    lastCheckedAt: null,
+  };
+
+  return {
+    start: () => undefined,
+    stop: () => undefined,
+    getStatus: () => status,
+    check: () => Promise.resolve(status),
+    download: () => Promise.resolve(status),
+    installOnRestart: () => status,
+  };
+}

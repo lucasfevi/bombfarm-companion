@@ -46,7 +46,11 @@ import {
   resolveReplayCapturePath,
 } from './live-source/replay-tap.js';
 import { configureLogging, log } from './logging.js';
-import { createElectronUpdateService, type UpdateService } from './updates/index.js';
+import {
+  createElectronUpdateService,
+  unavailableUpdateService,
+  type UpdateService,
+} from './updates/index.js';
 import { createAccountStore, type AccountStore } from './storage/account-store.js';
 import { createStorage, openAccountDatabase, type Storage } from './storage/index.js';
 
@@ -482,10 +486,21 @@ async function bootstrap(): Promise<void> {
   accountRefresh.start();
   log.info({ scope: 'main', event: 'account-refresh.started' });
 
-  updateService = await createElectronUpdateService((status) => {
-    emitEvent('updates:changed', status);
-  });
-  updateService.start();
+  // The updater is the one subsystem boot can lose and still hand over a working app, so its
+  // failure stops at the Updates section instead of reaching `boot.failed`, which quits. The
+  // stand-in reports the failure where a player can see it, and is emitted rather than merely
+  // held: the renderer reads `updates:get` once on mount, which on this path has already
+  // answered with the pre-bootstrap inert status.
+  try {
+    updateService = await createElectronUpdateService((status) => {
+      emitEvent('updates:changed', status);
+    });
+    updateService.start();
+  } catch (error: unknown) {
+    log.error({ scope: 'main', event: 'updates.unavailable', error: String(error) });
+    updateService = unavailableUpdateService(app.getVersion(), env.descriptor.updateChannel);
+    emitEvent('updates:changed', updateService.getStatus());
+  }
 }
 
 function resolveBootEnv(): AppEnv {

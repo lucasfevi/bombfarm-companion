@@ -4,7 +4,12 @@ import type { UpdateStatus } from '@bombfarm/contracts';
 import { resolveAppEnv } from '../env.js';
 import { createUpdateService, type UpdaterPort, type UpdateScheduler, type UpdateService } from './update-service.js';
 
-export { createUpdateService, CHECK_INTERVAL_MS, FIRST_CHECK_DELAY_MS } from './update-service.js';
+export {
+  createUpdateService,
+  unavailableUpdateService,
+  CHECK_INTERVAL_MS,
+  FIRST_CHECK_DELAY_MS,
+} from './update-service.js';
 export type { UpdaterPort, UpdateScheduler, UpdateService } from './update-service.js';
 export { classifyUpdateError } from './update-error.js';
 

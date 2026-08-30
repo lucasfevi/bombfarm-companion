@@ -4,6 +4,7 @@ import {
   CHECK_INTERVAL_MS,
   FIRST_CHECK_DELAY_MS,
   createUpdateService,
+  unavailableUpdateService,
   type UpdaterPort,
 } from './update-service.js';
 
@@ -311,5 +312,29 @@ describe('createUpdateService: every transition reaches the renderer', () => {
     h.handlers['checking-for-update']?.();
 
     expect(h.emitted[0]).toMatchObject({ channel: 'latest', currentVersion: '1.2.3' });
+  });
+});
+
+describe('unavailableUpdateService', () => {
+  it('reports a failure rather than the no-channel status, which would deny that the build updates', () => {
+    const status = unavailableUpdateService('0.5.1', 'beta').getStatus();
+
+    expect(status.phase).toBe('error');
+    expect(status.error).toBe('unknown');
+    expect(status.channel).toBe('beta');
+    expect(status.currentVersion).toBe('0.5.1');
+  });
+
+  it('re-reports the same failure from every action instead of retrying a port it never had', async () => {
+    const service = unavailableUpdateService('0.5.1', 'nightly');
+    const status = service.getStatus();
+
+    expect(await service.check()).toEqual(status);
+    expect(await service.download()).toEqual(status);
+    expect(service.installOnRestart()).toEqual(status);
+
+    service.start();
+    service.stop();
+    expect(service.getStatus()).toEqual(status);
   });
 });
