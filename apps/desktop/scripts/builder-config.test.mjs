@@ -222,7 +222,11 @@ describe('auto-update wiring', () => {
   });
 
   it('reaches electron-updater from exactly one module, so the disabled path cannot be bypassed', () => {
-    const sources = collectSourceFiles(path.join(desktopRoot, 'src'));
+    // Shipped modules only. A test naming the package is never bundled into the app, so it
+    // cannot reach the updater around the disabled path this guard exists to protect.
+    const sources = collectSourceFiles(path.join(desktopRoot, 'src')).filter(
+      (file) => !/\.test\.(ts|tsx|js|mjs|cjs)$/.test(file),
+    );
     const importers = sources
       .filter((file) => /['"]electron-updater['"]/.test(readFileSync(file, 'utf8')))
       .map((file) => path.relative(desktopRoot, file).split(path.sep).join('/'));
