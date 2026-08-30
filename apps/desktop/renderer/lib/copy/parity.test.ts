@@ -28,8 +28,12 @@ import { ptBR } from './pt-BR';
 // "/ h" unit marker is not a word either, so the two languages land on the identical string.
 // inventoryViewLabel: "Layout" is a loanword carrying the same spelling in pt-BR, and it names
 // the cards/list switch rather than either option — both of which ARE translated.
+// liveMapXpPerPropLabel: "XP / prop" — "XP" is the same abbreviation in both languages, and
+// "prop" is the loanword the game itself uses in Portuguese (the pt-BR copy already spells it
+// "props" elsewhere in this table), so the two languages land on the identical string.
 const IDENTICAL_IN_BOTH_LANGUAGES: readonly (keyof typeof en)[] = [
   'ageShortSeconds',
+  'liveMapXpPerPropLabel',
   'planningRosterColumnAvatar',
   'inventoryDetailSetSlot',
   'liveEarningsXpHeadlineUnit',

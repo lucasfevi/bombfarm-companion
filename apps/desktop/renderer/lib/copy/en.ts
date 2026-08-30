@@ -255,6 +255,18 @@ export const en = {
   liveEarningsXpHelpLabel: 'About this XP figure',
   liveEarningsXpHelpBody: 'Calculated from the props your heroes destroyed, not read directly from the game.',
 
+  // liveMap* — the Map panel: which map is being played, and how far through it the run is.
+  liveMapTitle: 'Map',
+  liveMapHealthLabel: 'Map health',
+  liveMapPropsLabel: 'Props alive',
+  liveMapUnknownName: 'Unknown map',
+  liveMapXpPerPropLabel: 'XP / prop',
+  liveMapGoldPerPropLabel: 'Gold / prop',
+  liveMapGoldPerClearLabel: 'Gold / clear',
+  liveMapEstimateNote: 'Estimated',
+  liveMapEstimateBody:
+    'Estimated from this map’s wiki values and your own bonuses — the average a prop or a full clear pays out, not what you have actually earned.',
+
   // inventory* — the Inventory screen: every item the account carries, grouped by kind
   inventoryNavLabel: 'Inventory',
   inventoryTitle: 'Inventory',

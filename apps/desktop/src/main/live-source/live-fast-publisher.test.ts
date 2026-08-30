@@ -7,10 +7,10 @@ import {
   sameIdList,
 } from './live-fast-publisher.js';
 
-type ViewSlice = Pick<LiveView, 'field' | 'recovery' | 'onFieldHeroIds' | 'rotation' | 'earnings'>;
+type ViewSlice = Pick<LiveView, 'field' | 'recovery' | 'onFieldHeroIds' | 'rotation' | 'earnings' | 'map'>;
 
 function view(overrides: Partial<ViewSlice> = {}): ViewSlice {
-  return { field: [], recovery: [], onFieldHeroIds: [], rotation: null, earnings: null, ...overrides };
+  return { field: [], recovery: [], onFieldHeroIds: [], rotation: null, earnings: null, map: null, ...overrides };
 }
 
 function earnings(overrides: Partial<LiveEarnings> = {}): LiveEarnings {
@@ -62,7 +62,7 @@ describe('createLiveFastPublisher — publishes only when the fast channel actua
     for (let i = 0; i < 20; i += 1) fireTick();
 
     expect(emitted).toHaveLength(1);
-    expect(emitted[0]).toEqual({ type: 'fastUpdate', field: [], recovery: [], onFieldHeroIds: [], earnings: null });
+    expect(emitted[0]).toEqual({ type: 'fastUpdate', field: [], recovery: [], onFieldHeroIds: [], earnings: null, map: null });
   });
 
   it('a genuine change in field countdowns republishes; an unrelated re-poll with identical content does not', () => {

@@ -321,6 +321,23 @@ export function propCountForAto(ato: number): number {
 }
 
 /**
+ * Props a fresh map of this phase spawns, resolved through the phase's own wiki row rather than
+ * from an ato the caller worked out itself.
+ *
+ * Returns `null` for a phase outside the wiki's 1..600 range. That range check is deliberate and
+ * cannot be delegated to {@link wikiPhaseLine}, which clamps instead of refusing: asked about
+ * phase 900 it answers with phase 600's row, and a caller reporting a live phase number would
+ * then print a confident prop count for a map the wiki has never described.
+ */
+export function propCountForPhase(phase: number): number | null {
+  if (!Number.isFinite(phase)) return null;
+  const rounded = Math.round(phase);
+  if (rounded < 1 || rounded > MAX_PHASE) return null;
+  const line = wikiPhaseLine(rounded);
+  return line ? propCountForAto(line.ato) : null;
+}
+
+/**
  * XP per prop kill. Every one of the 600 wiki phase lines carries its own exact integer
  * `xpProp` — that is what the game actually awards, so it is returned verbatim here. The linear
  * `XP_FASE_INI`(phase 1) → `XP_FASE_FIM`(phase 600) interpolation below is now only a fallback

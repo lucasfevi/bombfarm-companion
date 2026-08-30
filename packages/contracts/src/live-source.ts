@@ -47,11 +47,15 @@ export interface LiveTick {
   readonly hits?: readonly LiveHit[];
   readonly bonusSeconds?: number;
   readonly bonusMultiplier?: number;
-  /** Parallel array over the map's slots, index-for-index with {@link hps}; `-1` marks an empty or
-   *  cleared slot. Values on occupied slots index the prop catalogue. */
+  /** One entry per cell of the whole map grid, index-for-index with {@link hps} and in the same
+   *  cell-index space as `loot[].cell` and `hits[].cell`. `-1` marks a cell holding no prop —
+   *  empty ground or a prop already destroyed — so the count of entries that are NOT `-1` is the
+   *  number of props still standing. Values on occupied cells index the prop catalogue. */
   readonly kinds?: readonly number[];
-  /** Parallel array over the map's slots, index-for-index with {@link kinds}; `-1` marks an empty
-   *  or cleared slot. No consumer interprets the values on occupied slots. */
+  /** Remaining prop HP per cell on the wire's own 0-255 scale, index-for-index with {@link kinds}.
+   *  This array carries NO `-1` sentinel: a cell with no prop reads `0`, indistinguishable from a
+   *  prop on its last sliver, so occupancy must be read from {@link kinds} and never from a
+   *  `!== -1` test here. */
   readonly hps?: readonly number[];
 }
 
@@ -89,6 +93,7 @@ export type LiveEvent =
       readonly recovery: readonly RecoveryCountdown[];
       readonly onFieldHeroIds: readonly string[];
       readonly earnings: LiveEarnings | null;
+      readonly map: LiveMap | null;
     };
 
 /**
@@ -224,6 +229,56 @@ export interface LiveEarnings {
   readonly sessionSeconds: number;
 }
 
+/**
+ * What the game is currently being played on, folded in the main process from the live tick
+ * stream — the renderer receives finished figures and only formats them, the same split {@link
+ * LiveEarnings} follows.
+ *
+ * Every field but {@link phase} is independently nullable: the stream can carry a phase on a tick
+ * that omits the grid, and a `null` here means "not reported", never "zero". A map with no props
+ * left standing reports `propsAlive: 0`.
+ */
+export interface LiveMap {
+  /** The phase the stream reports. Names the map: its coordinate, its flavour name, and — via the
+   *  phase's own wiki row — {@link propsTotal}. */
+  readonly phase: number;
+  /** Remaining map health as a fraction in [0, 1], rescaled from the wire's 0-255 `roomHp`. The
+   *  server's own figure over the whole map, not a sum this app derived from per-prop HP. */
+  readonly healthFraction: number | null;
+  /** Props still standing, counted from {@link LiveTick.kinds}. */
+  readonly propsAlive: number | null;
+  /** Props this map spawns when fresh, from the phase's own wiki row rather than from the stream:
+   *  a client that attaches mid-clear never observes a full map, and a denominator that only
+   *  appears after the first wave rollover is a denominator missing exactly when it is most
+   *  wanted. `null` for a phase with no wiki row. */
+  readonly propsTotal: number | null;
+  /**
+   * What this map is worth, per the wiki row for its phase and the account's own boosts.
+   *
+   * These are MODELLED, unlike every field above — which the stream reports directly — and unlike
+   * {@link LiveEarnings}, which is measured from actual payouts. A surface showing both must not
+   * present them as the same kind of number: these say what the map pays on average, not what it
+   * has paid. `null` when the phase has no wiki row.
+   */
+  readonly economy: LiveMapEconomy | null;
+}
+
+/**
+ * Per-map economy figures, modelled from the wiki. Gold is spawn-weighted across the prop mix
+ * rather than a single prop's payout: which props spawn is random, so no exact figure exists to
+ * report — hence "average" in each field's name, and never presented as an observation.
+ */
+export interface LiveMapEconomy {
+  /** XP a single prop awards, with the account's own XP multiplier (the skill tree's `xp_mult`)
+   *  already applied — what the player actually earns, not the wiki's unboosted base. */
+  readonly xpPerProp: number;
+  /** Average gold a single prop pays out, with the account's coin bonus applied. */
+  readonly averageGoldPerProp: number;
+  /** Average gold a full clear of this map pays out: {@link averageGoldPerProp} across every prop
+   *  the map spawns. */
+  readonly averageGoldPerClear: number;
+}
+
 export interface LiveView {
   readonly currency: LiveCurrency;
   readonly field: readonly FieldCountdown[];
@@ -237,6 +292,10 @@ export interface LiveView {
   readonly onFieldHeroIds: readonly string[];
   /** `null` before the first tap frame of the session has arrived. */
   readonly earnings: LiveEarnings | null;
+  /** `null` until a tap frame has reported a phase — the app cannot name a map it has not been
+   *  told the player is on, and a stored account reading is not a substitute: it says where the
+   *  account last was, not what is on screen now. */
+  readonly map: LiveMap | null;
   readonly updatedAt: string;
 }
 

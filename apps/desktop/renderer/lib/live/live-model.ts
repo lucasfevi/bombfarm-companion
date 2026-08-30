@@ -4,6 +4,7 @@ import type {
   LiveCurrency,
   LiveEarnings,
   LiveGapReason,
+  LiveMap,
   RecoveryCountdown,
   RotationHeroSnapshot,
   RotationNormalizeResult,
@@ -87,6 +88,8 @@ export interface LiveModel {
   /** Straight from `LiveView`/`LiveEvent` — `null` exactly when the source says so, never a
    *  computed or defaulted stand-in. */
   readonly earnings: LiveEarnings | null;
+  /** Same rule as {@link earnings}: passed through untouched, `null` only when the source says so. */
+  readonly map: LiveMap | null;
 }
 
 export const INITIAL_LIVE_MODEL: LiveModel = {
@@ -94,6 +97,7 @@ export const INITIAL_LIVE_MODEL: LiveModel = {
   slow: null,
   fast: EMPTY_LIVE_FAST_MODEL,
   earnings: null,
+  map: null,
 };
 
 function heroFact(hero: RotationHeroSnapshot): LiveHeroFact {

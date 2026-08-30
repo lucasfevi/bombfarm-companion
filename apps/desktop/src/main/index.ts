@@ -144,6 +144,7 @@ function defaultLiveView(): LiveView {
     rotation: null,
     onFieldHeroIds: [],
     earnings: null,
+    map: null,
     updatedAt: now,
   };
 }

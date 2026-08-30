@@ -256,6 +256,18 @@ export const ptBR: Copy = {
   liveEarningsXpHelpLabel: 'Sobre esse número de XP',
   liveEarningsXpHelpBody: 'Calculado a partir dos props que seus heróis destruíram, não lido diretamente do jogo.',
 
+  // liveMap* — o painel de Mapa: em qual mapa se está jogando e o quanto da run já passou.
+  liveMapTitle: 'Mapa',
+  liveMapHealthLabel: 'Vida do mapa',
+  liveMapPropsLabel: 'Props vivos',
+  liveMapUnknownName: 'Mapa desconhecido',
+  liveMapXpPerPropLabel: 'XP / prop',
+  liveMapGoldPerPropLabel: 'Ouro / prop',
+  liveMapGoldPerClearLabel: 'Ouro / limpeza',
+  liveMapEstimateNote: 'Estimativa',
+  liveMapEstimateBody:
+    'Estimado a partir dos valores da wiki deste mapa e dos seus próprios bônus — a média que um prop ou uma limpeza completa paga, não o que você realmente ganhou.',
+
   // inventory* — a tela de Inventário: todos os itens da conta, agrupados por tipo
   inventoryNavLabel: 'Inventário',
   inventoryTitle: 'Inventário',

@@ -1,4 +1,13 @@
-import type { FieldCountdown, LiveEarnings, LiveEvent, LiveView, RecoveryCountdown, RotationSnapshot } from '@bombfarm/contracts';
+import type {
+  FieldCountdown,
+  LiveEarnings,
+  LiveEvent,
+  LiveMap,
+  LiveMapEconomy,
+  LiveView,
+  RecoveryCountdown,
+  RotationSnapshot,
+} from '@bombfarm/contracts';
 import {
   BRIDGE_UNAVAILABLE_LIVE_FRESHNESS,
   EMPTY_LIVE_FAST_MODEL,
@@ -28,6 +37,8 @@ export interface LiveInternalState {
   readonly onFieldHeroIds: readonly string[];
   /** Straight from the same arrival as `field`/`recovery` — never folded or defaulted here. */
   readonly earnings: LiveEarnings | null;
+  /** Same rule as `earnings`: carried through from the arrival, never derived here. */
+  readonly map: LiveMap | null;
   /** Set once any real data — the first `live:get` bootstrap or a `live:event` — has been
    *  applied. Guards only the FIRST bootstrap: subscription happens before that read resolves,
    *  so an event can legitimately arrive first, and the bootstrap resolving afterward must not
@@ -53,6 +64,7 @@ export const initialLiveInternalState: LiveInternalState = {
   recovery: [],
   onFieldHeroIds: [],
   earnings: null,
+  map: null,
   hasAppliedArrival: false,
   hasBootstrapped: false,
   revision: 0,
@@ -96,6 +108,28 @@ function sameRecoveryCountdowns(a: readonly RecoveryCountdown[], b: readonly Rec
   });
 }
 
+function sameMapEconomy(a: LiveMapEconomy | null, b: LiveMapEconomy | null): boolean {
+  if (a === b) return true;
+  if (a === null || b === null) return false;
+  return (
+    a.xpPerProp === b.xpPerProp &&
+    a.averageGoldPerProp === b.averageGoldPerProp &&
+    a.averageGoldPerClear === b.averageGoldPerClear
+  );
+}
+
+function sameMap(a: LiveMap | null, b: LiveMap | null): boolean {
+  if (a === b) return true;
+  if (a === null || b === null) return false;
+  return (
+    a.phase === b.phase &&
+    a.healthFraction === b.healthFraction &&
+    a.propsAlive === b.propsAlive &&
+    a.propsTotal === b.propsTotal &&
+    sameMapEconomy(a.economy, b.economy)
+  );
+}
+
 function sameEarnings(a: LiveEarnings | null, b: LiveEarnings | null): boolean {
   if (a === b) return true;
   if (a === null || b === null) return false;
@@ -131,6 +165,7 @@ export function applyLiveArrival(state: LiveInternalState, arrival: LiveArrival)
       const nextRecovery = applyRest ? view.recovery : state.recovery;
       const nextOnFieldHeroIds = applyRest ? view.onFieldHeroIds : state.onFieldHeroIds;
       const nextEarnings = applyRest ? view.earnings : state.earnings;
+      const nextMap = applyRest ? view.map : state.map;
       const unchanged =
         state.hasBootstrapped &&
         view.rotation === state.rotation &&
@@ -138,7 +173,8 @@ export function applyLiveArrival(state: LiveInternalState, arrival: LiveArrival)
         nextField === state.field &&
         nextRecovery === state.recovery &&
         sameIdList(nextOnFieldHeroIds, state.onFieldHeroIds) &&
-        sameEarnings(nextEarnings, state.earnings);
+        sameEarnings(nextEarnings, state.earnings) &&
+        sameMap(nextMap, state.map);
       if (unchanged) return state;
       return {
         ...state,
@@ -148,6 +184,7 @@ export function applyLiveArrival(state: LiveInternalState, arrival: LiveArrival)
         recovery: nextRecovery,
         onFieldHeroIds: nextOnFieldHeroIds,
         earnings: nextEarnings,
+        map: nextMap,
         hasAppliedArrival: true,
         hasBootstrapped: true,
         revision: state.revision + 1,
@@ -167,7 +204,8 @@ export function applyLiveArrival(state: LiveInternalState, arrival: LiveArrival)
           sameFieldCountdowns(state.field, event.field) &&
           sameRecoveryCountdowns(state.recovery, event.recovery) &&
           sameIdList(state.onFieldHeroIds, event.onFieldHeroIds) &&
-          sameEarnings(state.earnings, event.earnings);
+          sameEarnings(state.earnings, event.earnings) &&
+          sameMap(state.map, event.map);
         if (unchanged) return state;
         return {
           ...state,
@@ -175,6 +213,7 @@ export function applyLiveArrival(state: LiveInternalState, arrival: LiveArrival)
           recovery: event.recovery,
           onFieldHeroIds: event.onFieldHeroIds,
           earnings: event.earnings,
+          map: event.map,
           hasAppliedArrival: true,
           revision: state.revision + 1,
         };
@@ -227,6 +266,7 @@ export function deriveLiveModel(
     slow: slowModelCache(state.rotation, state.onFieldHeroIds),
     fast: deriveFastModel(state),
     earnings: state.earnings,
+    map: state.map,
   };
 }
 
