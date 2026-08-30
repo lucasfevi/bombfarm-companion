@@ -361,5 +361,112 @@ describe('advanceRecoveryClock — recovery ticks in real time between account r
   it('reports nothing before any rotation has ever been read', () => {
     const result = advanceRecoveryClock(createInitialFieldCountdownState(), 1_000, true);
     expect(result.recovery).toEqual([]);
+    expect(result.energies).toEqual([]);
+  });
+});
+
+describe('advanceRecoveryClock — the energy reading and the clock beside it are one number', () => {
+  it('energy rises as the clock falls, and reaches full at the exact instant the clock is spent', () => {
+    const rotation = rotationOf([{ id: 'h5', activity: 'resting', recovering: true, energyFraction: 0.9 }], 600);
+    const read = ingestFieldCountdownTick(createInitialFieldCountdownState(), { tick: tick([]), rotation, atMs: 0 });
+
+    const atRead = advanceRecoveryClock(read.state, 0, true);
+    expect(atRead.recovery[0]!.secondsRemaining).toBeCloseTo(60, 9);
+    expect(atRead.energies).toEqual([{ heroId: 'h5', energyFraction: 0.9 }]);
+
+    const halfway = advanceRecoveryClock(atRead.state, 30_000, true);
+    expect(halfway.recovery[0]!.secondsRemaining).toBeCloseTo(30, 9);
+    expect(halfway.energies[0]!.energyFraction).toBeCloseTo(0.95, 9);
+
+    const spent = advanceRecoveryClock(halfway.state, 60_000, true);
+    expect(spent.recovery[0]!.secondsRemaining).toBe(0);
+    expect(spent.energies).toEqual([{ heroId: 'h5', energyFraction: 1 }]);
+  });
+
+  it('a hero whose rest finished long ago never reads part-full, however stale the rotation read is', () => {
+    // The reported defect, in the shape it was seen: two heroes read at 99% and 97% of a 25-minute
+    // cycle, so 15s and 45s of rest left. A whole authenticated cycle later both clocks are spent —
+    // and the percentage beside them must have moved with them rather than still quoting the read.
+    const cycleSeconds = 1_500;
+    const rotation = rotationOf(
+      [
+        { id: 'devin', activity: 'resting', recovering: true, energyFraction: 0.99 },
+        { id: 'yara', activity: 'resting', recovering: true, energyFraction: 0.97 },
+      ],
+      cycleSeconds,
+    );
+    const read = ingestFieldCountdownTick(createInitialFieldCountdownState(), { tick: tick([]), rotation, atMs: 0 });
+
+    const aFullCycleLater = advanceRecoveryClock(read.state, 60_000, true);
+
+    expect(aFullCycleLater.recovery.map((entry) => entry.secondsRemaining)).toEqual([0, 0]);
+    expect(aFullCycleLater.energies).toEqual([
+      { heroId: 'devin', energyFraction: 1 },
+      { heroId: 'yara', energyFraction: 1 },
+    ]);
+  });
+
+  it('freezes with the clock when the connection drops, rather than advancing through unconfirmed time', () => {
+    const rotation = rotationOf([{ id: 'h5', activity: 'resting', recovering: true, energyFraction: 0.5 }], 600);
+    const read = ingestFieldCountdownTick(createInitialFieldCountdownState(), { tick: tick([]), rotation, atMs: 0 });
+
+    const beforeDrop = advanceRecoveryClock(read.state, 60_000, true);
+    expect(beforeDrop.energies[0]!.energyFraction).toBeCloseTo(0.6, 9);
+
+    const disconnected = advanceRecoveryClock(beforeDrop.state, 300_000, false);
+    expect(disconnected.energies[0]!.energyFraction).toBeCloseTo(0.6, 9);
+  });
+
+  it('reports no energy at all when the account read carried no house cycle to measure against', () => {
+    const rotation = rotationOf([{ id: 'h5', activity: 'resting', recovering: true, energyFraction: 0.5 }]);
+    const read = ingestFieldCountdownTick(createInitialFieldCountdownState(), { tick: tick([]), rotation, atMs: 0 });
+
+    const advanced = advanceRecoveryClock(read.state, 60_000, true);
+    expect(advanced.recovery).toEqual([]);
+    expect(advanced.energies).toEqual([]);
+  });
+});
+
+describe('ingestFieldCountdownTick — the on-field energy reading comes from the tick, not the snapshot', () => {
+  it('reports what the tick carried, in hero-id order, ignoring the rotation snapshot entirely', () => {
+    const rotation = rotationOf([
+      { id: 'b', energyMax: 100, energyFraction: 0.9 },
+      { id: 'a', energyMax: 100, energyFraction: 0.9 },
+    ]);
+
+    const result = ingestFieldCountdownTick(createInitialFieldCountdownState(), {
+      tick: tick([
+        { id: 'b', energyFraction: 0.4 },
+        { id: 'a', energyFraction: 0.55 },
+      ]),
+      rotation,
+      atMs: 0,
+    });
+
+    expect(result.energies).toEqual([
+      { heroId: 'a', energyFraction: 0.55 },
+      { heroId: 'b', energyFraction: 0.4 },
+    ]);
+  });
+
+  it('covers a hero that gets no countdown at all — an absent drain law is not an absent energy', () => {
+    const result = ingestFieldCountdownTick(createInitialFieldCountdownState(), {
+      tick: tick([{ id: 'stranger', energyFraction: 0.33 }]),
+      rotation: rotationOf([]),
+      atMs: 0,
+    });
+
+    expect(result.field).toEqual([]);
+    expect(result.energies).toEqual([{ heroId: 'stranger', energyFraction: 0.33 }]);
+  });
+
+  it('omits a hero the tick sent no energy for, rather than standing a zero in for it', () => {
+    const result = ingestFieldCountdownTick(createInitialFieldCountdownState(), {
+      tick: tick([{ id: 'silent' }]),
+      rotation: rotationOf([]),
+      atMs: 0,
+    });
+
+    expect(result.energies).toEqual([]);
   });
 });

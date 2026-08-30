@@ -2,6 +2,7 @@ import type {
   FieldCountdown,
   LiveEarnings,
   LiveEvent,
+  LiveHeroEnergy,
   LiveMap,
   LiveMapEconomy,
   LiveView,
@@ -32,6 +33,10 @@ export interface LiveInternalState {
   readonly rotation: RotationSnapshot | null;
   readonly field: readonly FieldCountdown[];
   readonly recovery: readonly RecoveryCountdown[];
+  /** Per-hero energy on the fast channel, main-computed like `field` and `recovery` — the
+   *  observed reading for a hero on the field, the inverse of the recovery clock for one resting.
+   *  Never folded here. */
+  readonly energies: readonly LiveHeroEnergy[];
   /** The live tap's on-field id set (or its REST-derived stand-in) — main-computed, like `field`
    *  and `recovery`, and fed straight to `classifyRotation` when the slow model is built. */
   readonly onFieldHeroIds: readonly string[];
@@ -62,6 +67,7 @@ export const initialLiveInternalState: LiveInternalState = {
   rotation: null,
   field: [],
   recovery: [],
+  energies: [],
   onFieldHeroIds: [],
   earnings: null,
   map: null,
@@ -105,6 +111,14 @@ function sameRecoveryCountdowns(a: readonly RecoveryCountdown[], b: readonly Rec
   return a.every((entry, index) => {
     const other = b[index];
     return other !== undefined && entry.heroId === other.heroId && entry.secondsRemaining === other.secondsRemaining && entry.advancing === other.advancing;
+  });
+}
+
+function sameHeroEnergies(a: readonly LiveHeroEnergy[], b: readonly LiveHeroEnergy[]): boolean {
+  if (a.length !== b.length) return false;
+  return a.every((entry, index) => {
+    const other = b[index];
+    return other !== undefined && entry.heroId === other.heroId && entry.energyFraction === other.energyFraction;
   });
 }
 
@@ -163,6 +177,7 @@ export function applyLiveArrival(state: LiveInternalState, arrival: LiveArrival)
       const nextFreshness = applyRest ? buildLiveFreshness(view.currency) : state.freshness;
       const nextField = applyRest ? view.field : state.field;
       const nextRecovery = applyRest ? view.recovery : state.recovery;
+      const nextEnergies = applyRest ? view.energies : state.energies;
       const nextOnFieldHeroIds = applyRest ? view.onFieldHeroIds : state.onFieldHeroIds;
       const nextEarnings = applyRest ? view.earnings : state.earnings;
       const nextMap = applyRest ? view.map : state.map;
@@ -172,6 +187,7 @@ export function applyLiveArrival(state: LiveInternalState, arrival: LiveArrival)
         sameFreshness(nextFreshness, state.freshness) &&
         nextField === state.field &&
         nextRecovery === state.recovery &&
+        nextEnergies === state.energies &&
         sameIdList(nextOnFieldHeroIds, state.onFieldHeroIds) &&
         sameEarnings(nextEarnings, state.earnings) &&
         sameMap(nextMap, state.map);
@@ -182,6 +198,7 @@ export function applyLiveArrival(state: LiveInternalState, arrival: LiveArrival)
         rotation: view.rotation,
         field: nextField,
         recovery: nextRecovery,
+        energies: nextEnergies,
         onFieldHeroIds: nextOnFieldHeroIds,
         earnings: nextEarnings,
         map: nextMap,
@@ -203,6 +220,7 @@ export function applyLiveArrival(state: LiveInternalState, arrival: LiveArrival)
           state.hasAppliedArrival &&
           sameFieldCountdowns(state.field, event.field) &&
           sameRecoveryCountdowns(state.recovery, event.recovery) &&
+          sameHeroEnergies(state.energies, event.energies) &&
           sameIdList(state.onFieldHeroIds, event.onFieldHeroIds) &&
           sameEarnings(state.earnings, event.earnings) &&
           sameMap(state.map, event.map);
@@ -211,6 +229,7 @@ export function applyLiveArrival(state: LiveInternalState, arrival: LiveArrival)
           ...state,
           field: event.field,
           recovery: event.recovery,
+          energies: event.energies,
           onFieldHeroIds: event.onFieldHeroIds,
           earnings: event.earnings,
           map: event.map,
@@ -254,7 +273,7 @@ export function createSlowModelCache(): (
  *  (see `LiveSource.getView()`), so the renderer only ever displays what it was sent. */
 function deriveFastModel(state: LiveInternalState): LiveFastModel {
   if (!state.hasAppliedArrival) return EMPTY_LIVE_FAST_MODEL;
-  return buildLiveFastModel(state.field, state.recovery);
+  return buildLiveFastModel(state.field, state.recovery, state.energies);
 }
 
 export function deriveLiveModel(

@@ -19,12 +19,28 @@ interface LiveRow {
   readonly hero: LiveHeroFact;
 }
 
+/**
+ * The fast channel's energy reading replaces the slow model's wherever there is one. The slow
+ * model's figure comes from the rotation snapshot, which is only replaced on the authenticated
+ * cycle — up to a minute apart — while the countdown rendered beside it in the same row moves four
+ * times a second. Left alone, the two disagree for the whole gap, and a hero whose rest has
+ * finished sits at `0:00` beside a bar that still reads 99%.
+ *
+ * A hero the fast channel does not reach — queued, benched — has nothing fresher than the
+ * snapshot and keeps it.
+ */
+function withLiveEnergy<T extends LiveHeroFact>(hero: T, fast: LiveFastModel): T {
+  const energyFraction = fast.energy[hero.id];
+  if (energyFraction === undefined) return hero;
+  return { ...hero, energyFraction };
+}
+
 /** One list in state order — field, then resting, then idle, then benched — concatenating each
  *  group without re-sorting inside it, so the classifier's own within-group order survives. */
-function buildRows(slow: LiveSlowModel): readonly LiveRow[] {
+function buildRows(slow: LiveSlowModel, fast: LiveFastModel): readonly LiveRow[] {
   return [
-    ...slow.onField.map((hero): LiveRow => ({ id: hero.id, state: 'on-field', hero })),
-    ...slow.recovering.map((hero): LiveRow => ({ id: hero.id, state: 'recovering', hero })),
+    ...slow.onField.map((hero): LiveRow => ({ id: hero.id, state: 'on-field', hero: withLiveEnergy(hero, fast) })),
+    ...slow.recovering.map((hero): LiveRow => ({ id: hero.id, state: 'recovering', hero: withLiveEnergy(hero, fast) })),
     ...slow.queued.map((hero): LiveRow => ({ id: hero.id, state: 'queued', hero })),
     ...slow.benched.map((hero): LiveRow => ({ id: hero.id, state: 'benched', hero })),
   ];
@@ -59,7 +75,7 @@ export function LivePanel({
   // does not actually know, is advice given without the fact it rests on.
   const fieldSlotsHint = fieldSize !== undefined && fieldSize < FIELD_SLOTS_MAX ? t.liveFieldSlotsHint : undefined;
 
-  const rows = buildRows(slow);
+  const rows = buildRows(slow, fast);
 
   return (
     <div data-testid="live-panel" className="flex flex-col gap-4">

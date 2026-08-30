@@ -1,4 +1,4 @@
-import { LIVE_DISPLAY_REFRESH_MS, type FieldCountdown, type LiveEarnings, type LiveEvent, type LiveView, type RecoveryCountdown, type RotationSnapshot } from '@bombfarm/contracts';
+import { LIVE_DISPLAY_REFRESH_MS, type FieldCountdown, type LiveEarnings, type LiveEvent, type LiveHeroEnergy, type LiveView, type RecoveryCountdown, type RotationSnapshot } from '@bombfarm/contracts';
 import { describe, expect, it } from 'vitest';
 import {
   createLiveFastPublisher,
@@ -7,10 +7,10 @@ import {
   sameIdList,
 } from './live-fast-publisher.js';
 
-type ViewSlice = Pick<LiveView, 'field' | 'recovery' | 'onFieldHeroIds' | 'rotation' | 'earnings' | 'map'>;
+type ViewSlice = Pick<LiveView, 'field' | 'recovery' | 'energies' | 'onFieldHeroIds' | 'rotation' | 'earnings' | 'map'>;
 
 function view(overrides: Partial<ViewSlice> = {}): ViewSlice {
-  return { field: [], recovery: [], onFieldHeroIds: [], rotation: null, earnings: null, map: null, ...overrides };
+  return { field: [], recovery: [], energies: [], onFieldHeroIds: [], rotation: null, earnings: null, map: null, ...overrides };
 }
 
 function earnings(overrides: Partial<LiveEarnings> = {}): LiveEarnings {
@@ -62,7 +62,7 @@ describe('createLiveFastPublisher — publishes only when the fast channel actua
     for (let i = 0; i < 20; i += 1) fireTick();
 
     expect(emitted).toHaveLength(1);
-    expect(emitted[0]).toEqual({ type: 'fastUpdate', field: [], recovery: [], onFieldHeroIds: [], earnings: null, map: null });
+    expect(emitted[0]).toEqual({ type: 'fastUpdate', field: [], recovery: [], energies: [], onFieldHeroIds: [], earnings: null, map: null });
   });
 
   it('a genuine change in field countdowns republishes; an unrelated re-poll with identical content does not', () => {
@@ -269,5 +269,25 @@ describe('sameIdList', () => {
   it('is order-sensitive, matching how the source always emits a sorted id list', () => {
     expect(sameIdList(['a', 'b'], ['b', 'a'])).toBe(false);
     expect(sameIdList(['a', 'b'], ['a', 'b'])).toBe(true);
+  });
+});
+
+describe('createLiveFastPublisher — per-hero energy is part of the fast channel', () => {
+  it('a changed energy fraction alone republishes, so the bar moves at the same cadence as the countdown', () => {
+    const energies: LiveHeroEnergy[] = [{ heroId: 'h1', energyFraction: 0.5 }];
+    let current: readonly LiveHeroEnergy[] = energies;
+    const { publisher, emitted, fireTick } = harness(() => view({ energies: current }));
+
+    publisher.start();
+    fireTick();
+    expect(emitted).toHaveLength(1);
+
+    fireTick();
+    expect(emitted).toHaveLength(1);
+
+    current = [{ heroId: 'h1', energyFraction: 0.51 }];
+    fireTick();
+    expect(emitted).toHaveLength(2);
+    expect(emitted[1]).toMatchObject({ type: 'fastUpdate', energies: [{ heroId: 'h1', energyFraction: 0.51 }] });
   });
 });

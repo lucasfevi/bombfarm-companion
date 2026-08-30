@@ -141,6 +141,7 @@ function defaultLiveView(): LiveView {
     currency: liveGap('neverAttached', now),
     field: [],
     recovery: [],
+    energies: [],
     rotation: null,
     onFieldHeroIds: [],
     earnings: null,

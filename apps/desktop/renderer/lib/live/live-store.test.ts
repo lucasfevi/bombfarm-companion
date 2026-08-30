@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import type { LiveEarnings, LiveEvent, LiveMap, LiveView, RotationSnapshot } from '@bombfarm/contracts';
+import type { LiveEarnings, LiveEvent, LiveHeroEnergy, LiveMap, LiveView, RotationSnapshot } from '@bombfarm/contracts';
 import type { LiveModel } from './live-model';
 import {
   applyLiveArrival,
@@ -27,6 +27,7 @@ function liveView(overrides: Partial<LiveView> = {}): LiveView {
     currency: { kind: 'live', lastFrameAt: 't0', sinceAt: 't0' },
     field: [{ heroId: 'on-field', secondsRemaining: 90, drainPerSecond: 1, basis: 'modelled' }],
     recovery: [],
+    energies: [],
     rotation: rotationSnapshot(),
     onFieldHeroIds: ['on-field'],
     earnings: null,
@@ -41,11 +42,13 @@ function fastUpdateEvent(
   onFieldHeroIds: readonly string[] = ['on-field'],
   earnings: LiveEarnings | null = null,
   map: LiveMap | null = null,
+  energies: readonly LiveHeroEnergy[] = [],
 ): LiveEvent {
   return {
     type: 'fastUpdate',
     field: [{ heroId: 'on-field', secondsRemaining, drainPerSecond: 1, basis: 'observed' }],
     recovery: [],
+    energies,
     onFieldHeroIds,
     earnings,
     map,
@@ -184,7 +187,7 @@ describe('createLiveStore — applies each arrival as it lands, with no display 
     store.subscribe((model) => notifications.push(model));
 
     for (let i = 0; i < 20; i += 1) {
-      emit({ type: 'fastUpdate', field: [], recovery: [], onFieldHeroIds: [], earnings: null, map: null });
+      emit({ type: 'fastUpdate', field: [], recovery: [], energies: [], onFieldHeroIds: [], earnings: null, map: null });
     }
 
     expect(notifications).toHaveLength(0);
@@ -430,7 +433,7 @@ describe('createLiveStore — earnings pass straight through, never folded or de
     await flushMicrotasks();
     store.subscribe((model) => notifications.push(model));
 
-    emit({ type: 'fastUpdate', field: [], recovery: [], onFieldHeroIds: [], earnings: earnings({ goldBalance: 2 }), map: null });
+    emit({ type: 'fastUpdate', field: [], recovery: [], energies: [], onFieldHeroIds: [], earnings: earnings({ goldBalance: 2 }), map: null });
 
     expect(notifications).toHaveLength(1);
     expect(notifications[0]?.earnings).toEqual(earnings({ goldBalance: 2 }));
@@ -447,7 +450,7 @@ describe('createLiveStore — earnings pass straight through, never folded or de
     await flushMicrotasks();
     store.subscribe((model) => notifications.push(model));
 
-    emit({ type: 'fastUpdate', field: [], recovery: [], onFieldHeroIds: [], earnings: earnings(), map: null });
+    emit({ type: 'fastUpdate', field: [], recovery: [], energies: [], onFieldHeroIds: [], earnings: earnings(), map: null });
 
     expect(notifications).toHaveLength(0);
     expect(store.getModel().earnings).toEqual(figures);
@@ -464,7 +467,7 @@ describe('createLiveStore — a fastUpdate carries on-field membership live, app
     await flushMicrotasks();
     expect(store.getModel().slow?.onField.map((hero) => hero.id)).toEqual(['on-field']);
 
-    emit({ type: 'fastUpdate', field: [], recovery: [], onFieldHeroIds: [], earnings: null, map: null });
+    emit({ type: 'fastUpdate', field: [], recovery: [], energies: [], onFieldHeroIds: [], earnings: null, map: null });
 
     const model = store.getModel();
     expect(model.slow?.onField).toEqual([]);
@@ -473,5 +476,42 @@ describe('createLiveStore — a fastUpdate carries on-field membership live, app
     expect(model.slow?.benched.map((hero) => hero.id)).toEqual(['benched-one']);
     expect(model.slow?.unclassifiedCount).toBe(0);
     expect(model.slow?.fieldExitPendingCount).toBe(1);
+  });
+});
+
+describe('createLiveStore — per-hero energy rides the fast channel', () => {
+  it('a fastUpdate carrying only a changed energy fraction publishes a new model', async () => {
+    const { bridge, emit, resolveNextGet } = fakeBridge();
+    const store = createLiveStore({ bridge });
+    const models: LiveModel[] = [];
+    store.subscribe((model) => models.push(model));
+    store.start();
+
+    resolveNextGet(liveView({ energies: [{ heroId: 'on-field', energyFraction: 0.9 }] }));
+    await flushMicrotasks();
+    expect(store.getModel().fast.energy['on-field']).toBe(0.9);
+
+    const before = models.length;
+    emit(fastUpdateEvent(90, ['on-field'], null, null, [{ heroId: 'on-field', energyFraction: 0.88 }]));
+
+    expect(models.length).toBe(before + 1);
+    expect(store.getModel().fast.energy['on-field']).toBe(0.88);
+  });
+
+  it('an unchanged energy list notifies nothing, exactly as the countdowns beside it do not', async () => {
+    const { bridge, emit, resolveNextGet } = fakeBridge();
+    const store = createLiveStore({ bridge });
+    const models: LiveModel[] = [];
+    store.subscribe((model) => models.push(model));
+    store.start();
+
+    resolveNextGet(liveView());
+    await flushMicrotasks();
+
+    emit(fastUpdateEvent(90, ['on-field'], null, null, [{ heroId: 'on-field', energyFraction: 0.5 }]));
+    const afterFirst = models.length;
+    emit(fastUpdateEvent(90, ['on-field'], null, null, [{ heroId: 'on-field', energyFraction: 0.5 }]));
+
+    expect(models.length).toBe(afterFirst);
   });
 });

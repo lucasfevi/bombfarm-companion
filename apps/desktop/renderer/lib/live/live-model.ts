@@ -4,6 +4,7 @@ import type {
   LiveCurrency,
   LiveEarnings,
   LiveGapReason,
+  LiveHeroEnergy,
   LiveMap,
   RecoveryCountdown,
   RotationHeroSnapshot,
@@ -55,9 +56,13 @@ export interface LiveRecoveryCountdownModel {
 export interface LiveFastModel {
   readonly field: Readonly<Record<string, LiveFieldCountdownModel>>;
   readonly recovery: Readonly<Record<string, LiveRecoveryCountdownModel>>;
+  /** How full each hero the fast channel reaches is, keyed by hero id. Absent for a hero it does
+   *  not reach — see {@link LiveHeroEnergy} for which those are — so a lookup miss means "keep the
+   *  slow model's figure", never "empty". */
+  readonly energy: Readonly<Record<string, number>>;
 }
 
-export const EMPTY_LIVE_FAST_MODEL: LiveFastModel = { field: {}, recovery: {} };
+export const EMPTY_LIVE_FAST_MODEL: LiveFastModel = { field: {}, recovery: {}, energy: {} };
 
 export type LiveFreshness =
   | { readonly kind: 'bridge-unavailable' }
@@ -163,6 +168,7 @@ export function buildLiveFreshness(currency: LiveCurrency): LiveFreshness {
 export function buildLiveFastModel(
   field: readonly FieldCountdown[],
   recovery: readonly RecoveryCountdown[],
+  energies: readonly LiveHeroEnergy[],
 ): LiveFastModel {
   const fieldByHero: Record<string, LiveFieldCountdownModel> = {};
   for (const entry of field) {
@@ -172,5 +178,7 @@ export function buildLiveFastModel(
   for (const entry of recovery) {
     recoveryByHero[entry.heroId] = { heroId: entry.heroId, secondsRemaining: entry.secondsRemaining, advancing: entry.advancing };
   }
-  return { field: fieldByHero, recovery: recoveryByHero };
+  const energyByHero: Record<string, number> = {};
+  for (const entry of energies) energyByHero[entry.heroId] = entry.energyFraction;
+  return { field: fieldByHero, recovery: recoveryByHero, energy: energyByHero };
 }

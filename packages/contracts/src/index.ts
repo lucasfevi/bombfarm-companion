@@ -41,6 +41,7 @@ export type {
   LiveEvent,
   LiveFrame,
   LiveGapReason,
+  LiveHeroEnergy,
   LiveHit,
   LiveLootPop,
   LiveMap,
