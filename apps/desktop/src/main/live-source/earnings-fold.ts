@@ -239,12 +239,16 @@ export class EarningsFold {
   }
 
   /** The real-time span the surviving buckets actually cover, so the UI can say what the 10-minute
-   *  figure really represents instead of always claiming a full 10 minutes. */
+   *  figure really represents instead of always claiming a full 10 minutes. Measured from the
+   *  oldest surviving bucket's own start plus one full bucket-width: that bucket's start is only
+   *  where its one-second span *began*, so counting from there alone always reads one bucket-width
+   *  short of the span the window actually covers — which is why a full window otherwise tops out
+   *  just under 600 rather than reaching it. */
   get coverageSeconds(): number {
     const buckets = this.#windowBuckets();
     const oldest = buckets[0];
     if (!oldest) return 0;
-    return (this.#deps.now() - oldest.startedAtMs) / 1000;
+    return (this.#deps.now() - oldest.startedAtMs + BUCKET_SPAN_MS) / 1000;
   }
 
   get sessionSeconds(): number {

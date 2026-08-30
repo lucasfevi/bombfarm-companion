@@ -294,6 +294,30 @@ describe('EarningsFold: 10-minute rolling window', () => {
 
     expect(fold.coverageSeconds).toBeLessThanOrEqual(601);
   });
+
+  it('a steady-state full window reads its true maximum, not one bucket short of it', () => {
+    const clock = makeClock();
+    const fold = makeFold({ now: clock.now });
+    const totalSeconds = 700;
+    for (let second = 0; second < totalSeconds; second += 1) {
+      fold.consumeTick(baseTick({ loot: [{ cell: 0, gold: 1 }] }), second + 1, undefined);
+      clock.advance(1_000);
+    }
+
+    expect(fold.coverageSeconds).toBeGreaterThanOrEqual(600);
+    expect(Math.floor(fold.coverageSeconds / 60)).toBe(10);
+  });
+
+  it('a window genuinely short of a minute mark still floors down, unmoved by the bucket-width correction', () => {
+    const clock = makeClock();
+    const fold = makeFold({ now: clock.now });
+    fold.consumeTick(baseTick({ loot: [{ cell: 0, gold: 100 }] }), 1, undefined);
+    clock.advance(538_000);
+    fold.consumeTick(baseTick({}), 2, undefined);
+
+    expect(fold.coverageSeconds).toBe(539);
+    expect(Math.floor(fold.coverageSeconds / 60)).toBe(8);
+  });
 });
 
 describe('EarningsFold: grid cross-check', () => {
