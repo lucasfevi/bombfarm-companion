@@ -1,8 +1,14 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { InventoryGrid, InventoryTable, InventoryTotals } from '@bombfarm/game-art';
-import { Button, Panel, PanelHeader } from '@bombfarm/ui';
+import type { InventoryLayout } from '@bombfarm/game-art';
+import {
+  InventoryGrid,
+  InventoryLayoutToggle,
+  InventoryTable,
+  InventoryTotals,
+} from '@bombfarm/game-art';
+import { Panel, PanelHeader } from '@bombfarm/ui';
 import type { InventoryView } from '@bombfarm/domain/inventory-view';
 import { useAppLang } from '@/shared/context/app-lang';
 import { usePlannerStore } from '@/shared/stores';
@@ -14,13 +20,12 @@ import { useFillsViewport } from '../model/use-fills-viewport';
 
 const EMPTY_VIEW: InventoryView = { items: [], groups: [], skipped: 0 };
 
-type Layout = 'cards' | 'list';
-
 const LAYOUT_STORAGE_KEY = 'bf-inventory-layout';
+
 
 /** Which layout a reader last chose. A preference, so a browser that refuses storage just
  *  defaults rather than breaking the page. */
-function loadLayout(): Layout {
+function loadLayout(): InventoryLayout {
   try {
     return window.localStorage.getItem(LAYOUT_STORAGE_KEY) === 'list' ? 'list' : 'cards';
   } catch {
@@ -28,7 +33,7 @@ function loadLayout(): Layout {
   }
 }
 
-function storeLayout(layout: Layout): void {
+function storeLayout(layout: InventoryLayout): void {
   try {
     window.localStorage.setItem(LAYOUT_STORAGE_KEY, layout);
   } catch {
@@ -45,7 +50,7 @@ export function InventoryPage() {
   const importedAt = usePlannerStore((state) => state.inventory.importedAt);
   const heroes = usePlannerStore((state) => state.heroes);
   const [view, setView] = useState<InventoryView>(EMPTY_VIEW);
-  const [layout, setLayout] = useState<Layout>('cards');
+  const [layout, setLayout] = useState<InventoryLayout>('cards');
 
   const prices = useInventoryPrices(view);
   const panelRef = useRef<HTMLDivElement>(null);
@@ -59,7 +64,7 @@ export function InventoryPage() {
     setLayout(loadLayout());
   }, []);
 
-  const chooseLayout = useCallback((next: Layout) => {
+  const chooseLayout = useCallback((next: InventoryLayout) => {
     setLayout(next);
     storeLayout(next);
   }, []);
@@ -67,12 +72,25 @@ export function InventoryPage() {
   const labels = useMemo(() => inventoryLabels(t, lang, heroes), [t, lang, heroes]);
   const tableLabels = useMemo(() => inventoryTableLabels(t, lang, heroes), [t, lang, heroes]);
 
+  const layoutToggle = (
+    <InventoryLayoutToggle
+      layout={layout}
+      onChange={chooseLayout}
+      labels={{
+        group: t.inventoryViewLabel,
+        cards: t.inventoryViewCards,
+        list: t.inventoryViewList,
+      }}
+    />
+  );
+
   // Both layouts take the same data and the same bounded box; only the labels differ.
   const shared = {
     view,
     priceOf: prices.priceOf,
     priceLabels: prices.priceOf == null ? undefined : prices.priceLabels,
     isPricedItem: prices.isPricedItem,
+    toolbarActions: layoutToggle,
     className: 'min-h-0 flex-1',
   };
 
@@ -86,45 +104,10 @@ export function InventoryPage() {
         <PanelHeader title={t.inventoryTitle} />
         <p className="pb-3 text-sm text-muted">{t.inventoryTip}</p>
 
-        <div className="flex flex-wrap items-center justify-between gap-2 pb-3">
-          <div className="flex items-center gap-1" role="group" aria-label={t.inventoryViewLabel}>
-            <Button
-              variant={layout === 'cards' ? 'primary' : 'ghost'}
-              aria-pressed={layout === 'cards'}
-              onClick={() => {
-                chooseLayout('cards');
-              }}
-            >
-              {t.inventoryViewCards}
-            </Button>
-            <Button
-              variant={layout === 'list' ? 'primary' : 'ghost'}
-              aria-pressed={layout === 'list'}
-              onClick={() => {
-                chooseLayout('list');
-              }}
-            >
-              {t.inventoryViewList}
-            </Button>
-          </div>
-
-          {prices.totals ? (
-            <div className="flex items-center gap-2">
-              <span className="text-xs text-muted">
-                {formatPricesUpdated(prices.generatedUtc, lang)}
-              </span>
-              <Button
-                variant="ghost"
-                onClick={prices.refresh}
-                disabled={prices.isRefreshing}
-                aria-label={t.marketRefreshName}
-              >
-                {t.marketRefreshLabel}
-              </Button>
-            </div>
-          ) : null}
-        </div>
-
+        {/* No refresh control here: the planner has no way to ask Steam anything, so a button
+            could only re-download the same six-hourly file and would promise a freshness it
+            cannot deliver. The stamp says how old the prices are, which is the whole truth
+            available. */}
         {prices.totals ? (
           <InventoryTotals
             total={prices.totals.total}
@@ -133,6 +116,7 @@ export function InventoryPage() {
             tradable={prices.totals.tradable}
             labels={prices.totalsLabels}
             className="mb-3"
+            footnote={formatPricesUpdated(prices.generatedUtc, lang)}
           />
         ) : null}
 

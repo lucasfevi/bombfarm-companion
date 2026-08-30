@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useMemo, type ReactNode } from "react";
 import {
   INVENTORY_SORT_KEYS,
   EMPTY_INVENTORY_FILTER,
@@ -128,6 +128,9 @@ export interface InventoryToolbarProps {
   /** Offered only where a market snapshot exists — with no prices to compare, the chip would
    *  empty the screen and say nothing about why. */
   showPricedOnly?: boolean;
+  /** Slot at the row's right edge — the layout toggle sits here, in the corner of the list it
+   *  switches rather than above the panel's own heading. */
+  actions?: ReactNode;
 }
 
 export function InventoryToolbar({
@@ -140,6 +143,7 @@ export function InventoryToolbar({
   shown,
   showSort = true,
   showPricedOnly = false,
+  actions,
 }: InventoryToolbarProps) {
   const kinds = useMemo(() => kindsInView(view), [view]);
   const rarities = useMemo(() => rarityIndicesInView(view), [view]);
@@ -328,6 +332,7 @@ export function InventoryToolbar({
               {labels.toolbar.clear}
             </button>
           ) : null}
+          {actions == null ? null : <span className="ml-auto flex items-center">{actions}</span>}
         </div>
 
         <div className="flex flex-wrap items-center gap-1.5">

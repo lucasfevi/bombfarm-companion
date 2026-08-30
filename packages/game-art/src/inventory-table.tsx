@@ -101,6 +101,8 @@ export interface InventoryTableProps {
   /** Whether the market is quoting a price for one item right now — the `Priced` chip's predicate.
    *  Supplied by the host, which owns the snapshot; absent drops the chip. */
   isPricedItem?: (item: InventoryViewItem) => boolean;
+  /** Slot at the toolbar's right edge, in the corner of the list itself. */
+  toolbarActions?: ReactNode;
   /** Per-row refresh control, placed beside the price it refreshes. */
   renderPriceAction?: (entry: InventoryEntry) => ReactNode;
   className?: string;
@@ -298,6 +300,7 @@ export function InventoryTable({
   priceOf,
   priceLabels,
   isPricedItem,
+  toolbarActions,
   renderPriceAction,
   className,
 }: InventoryTableProps) {
@@ -358,6 +361,7 @@ export function InventoryTable({
         shown={sorted.items.length}
         showSort={false}
         showPricedOnly={isPricedItem != null}
+        actions={toolbarActions}
       />
 
       {sorted.items.length === 0 ? (

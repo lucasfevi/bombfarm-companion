@@ -1,5 +1,6 @@
 'use client';
 
+import { memo } from 'react';
 import { Tooltip } from '@bombfarm/ui';
 
 /**
@@ -12,15 +13,15 @@ import { Tooltip } from '@bombfarm/ui';
  * `Tooltip.Trigger` renders a button by default, which would put a control inside a heading that
  * is not one; `render={<span />}` keeps it inert, and `tabIndex={0}` is what makes the tip
  * reachable without a pointer.
+ *
+ * Memoised because the Sheet table re-renders on every planner edit while these headings never
+ * change: seven of them, each a tooltip subtree rather than the bare `<span>` they replaced, cost
+ * ~8% more component renders across four measured planner scenarios before this.
  */
-export function TruncatedHeading({ text }: { text: string }) {
+export const TruncatedHeading = memo(function TruncatedHeading({ text }: { text: string }) {
   return (
     <Tooltip.Root>
-      <Tooltip.Trigger
-        render={<span />}
-        tabIndex={0}
-        className="block min-w-0 truncate"
-      >
+      <Tooltip.Trigger render={<span />} tabIndex={0} className="block min-w-0 truncate">
         {text}
       </Tooltip.Trigger>
       <Tooltip.Portal>
@@ -32,4 +33,4 @@ export function TruncatedHeading({ text }: { text: string }) {
       </Tooltip.Portal>
     </Tooltip.Root>
   );
-}
+});

@@ -128,6 +128,8 @@ export interface InventoryGridProps {
   /** Whether the market is quoting a price for one item right now — the `Priced` chip's predicate.
    *  Supplied by the host, which owns the snapshot; absent drops the chip. */
   isPricedItem?: (item: InventoryViewItem) => boolean;
+  /** Slot at the toolbar's right edge, in the corner of the list itself. */
+  toolbarActions?: ReactNode;
   renderPriceAction?: (entry: InventoryEntry) => ReactNode;
 }
 
@@ -458,6 +460,7 @@ export function InventoryGrid({
   priceOf,
   priceLabels,
   isPricedItem,
+  toolbarActions,
   renderPriceAction,
 }: InventoryGridProps) {
   const [filter, setFilter] = useState<InventoryFilter>(EMPTY_INVENTORY_FILTER);
@@ -503,6 +506,7 @@ export function InventoryGrid({
         onSortChange={setSort}
         shown={sorted.items.length}
         showPricedOnly={isPricedItem != null}
+        actions={toolbarActions}
       />
 
       {sorted.items.length === 0 ? (

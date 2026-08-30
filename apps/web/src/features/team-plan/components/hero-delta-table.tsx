@@ -80,15 +80,16 @@ export function HeroDeltaTable({ t, lang, plan }: { t: Strings; lang: Lang; plan
                     <div className="ml-auto flex items-center gap-3">
                       <div className="flex flex-col items-end gap-0.5">
                         <span className={metricLabelClass}>{t.teamPlanColBefore}</span>
-                        <AbbreviatedNumber value={row.before} className={metricValueClass} disableFocus />
+                        <AbbreviatedNumber value={row.before} lang={lang} className={metricValueClass} disableFocus />
                       </div>
                       <div className="flex flex-col items-end gap-0.5">
                         <span className={metricLabelClass}>{t.teamPlanColAfter}</span>
-                        <AbbreviatedNumber value={row.after} className={metricValueClass} disableFocus />
+                        <AbbreviatedNumber value={row.after} lang={lang} className={metricValueClass} disableFocus />
                       </div>
                       <div className="flex flex-col items-end gap-0.5">
                         <span className={metricLabelClass}>{t.teamPlanColDelta}</span>
                         <AbbreviatedNumber
+                          lang={lang}
                           value={row.delta}
                           signed
                           disableFocus

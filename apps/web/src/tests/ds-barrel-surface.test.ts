@@ -159,6 +159,7 @@ const FROZEN_GAME_ART_BARREL_VALUE_EXPORTS = [
   'AbilityIcon',
   'ArtFrame',
   'InventoryGrid',
+  'InventoryLayoutToggle',
   'InventoryTable',
   'InventoryToolbar',
   'InventoryTotals',

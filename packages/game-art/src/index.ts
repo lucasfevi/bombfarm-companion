@@ -6,6 +6,11 @@ export { HeroIdentityChip } from './hero-identity-chip';
 export { ItemIcon, type ItemIconItem } from './item-icon';
 export { InventoryGrid } from './inventory-grid';
 export {
+  InventoryLayoutToggle,
+  type InventoryLayout,
+  type InventoryLayoutToggleLabels,
+} from './inventory-layout-toggle';
+export {
   InventoryTotals,
   type InventoryTotalsLabels,
   type InventoryTotalsProps,

@@ -16,6 +16,9 @@ export interface InventoryTotalsProps {
   /** Items the game permits selling at all — the only ones that could ever be priced. */
   tradable: number;
   labels: InventoryTotalsLabels;
+  /** How old the prices behind the figure are — shown beside the coverage, not as a claim of
+   *  its own. */
+  footnote?: string;
   className?: string;
 }
 
@@ -37,22 +40,25 @@ export function InventoryTotals({
   priced,
   tradable,
   labels,
+  footnote,
   className,
 }: InventoryTotalsProps) {
   return (
     <div
       data-testid="inventory-totals"
       className={cn(
-        'flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1 rounded-sm border border-line bg-bg-2 px-3 py-2',
+        'flex flex-col gap-0.5 rounded-sm border border-line bg-bg-2 px-4 py-3',
         className,
       )}
     >
-      <span className="text-[11px] tracking-[0.04em] text-muted uppercase">{labels.title}</span>
-      <span className="flex items-baseline gap-2">
-        <span className="text-sm font-semibold tabular-nums text-ink">
-          {labels.amount(total, currency)}
-        </span>
-        <span className="text-xs text-muted">{labels.coverage(priced, tradable)}</span>
+      <span className="text-[11px] tracking-[0.06em] text-muted uppercase">{labels.title}</span>
+      {/* The figure is the reason to open this screen, so it is the largest thing on it. */}
+      <span className="text-3xl leading-none font-bold tabular-nums text-accent">
+        {labels.amount(total, currency)}
+      </span>
+      <span className="text-xs text-muted">
+        {labels.coverage(priced, tradable)}
+        {footnote == null ? null : <span className="ml-2 opacity-70">{footnote}</span>}
       </span>
     </div>
   );

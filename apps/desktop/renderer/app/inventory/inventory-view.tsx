@@ -9,8 +9,14 @@
  * the desktop renderer does not enable the React Compiler, so the hand memoisation is load-bearing.
  */
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Banner, Button, EmptyState, Panel, PanelHeader } from '@bombfarm/ui';
-import { InventoryGrid, InventoryTable, InventoryTotals } from '@bombfarm/game-art';
+import { Banner, EmptyState, Panel, PanelHeader } from '@bombfarm/ui';
+import {
+  InventoryGrid,
+  InventoryLayoutToggle,
+  InventoryTable,
+  InventoryTotals,
+  type InventoryLayout,
+} from '@bombfarm/game-art';
 import {
   buildInventoryView,
   mapInventoryHeroes,
@@ -25,11 +31,10 @@ import { inventoryLabels, inventoryTableLabels } from './inventory-labels';
 import { marketPriceLabels } from './market-labels';
 import { ItemPriceRefresh } from './item-price-refresh';
 
-type Layout = 'cards' | 'list';
-
 const LAYOUT_STORAGE_KEY = 'bfc-inventory-layout';
 
-function loadLayout(): Layout {
+
+function loadLayout(): InventoryLayout {
   try {
     return window.localStorage.getItem(LAYOUT_STORAGE_KEY) === 'list' ? 'list' : 'cards';
   } catch {
@@ -54,13 +59,13 @@ export function InventoryView() {
   const tableLabels = useMemo(() => inventoryTableLabels(t, lang, heroes), [t, lang, heroes]);
 
   const { snapshot, refreshItem } = useMarketSnapshot();
-  const [layout, setLayout] = useState<Layout>('cards');
+  const [layout, setLayout] = useState<InventoryLayout>('cards');
 
   useEffect(() => {
     setLayout(loadLayout());
   }, []);
 
-  const chooseLayout = useCallback((next: Layout) => {
+  const chooseLayout = useCallback((next: InventoryLayout) => {
     setLayout(next);
     try {
       window.localStorage.setItem(LAYOUT_STORAGE_KEY, next);
@@ -134,6 +139,18 @@ export function InventoryView() {
     [t, priceLabels],
   );
 
+  const layoutToggle = (
+    <InventoryLayoutToggle
+      layout={layout}
+      onChange={chooseLayout}
+      labels={{
+        group: t.inventoryViewLabel,
+        cards: t.inventoryViewCards,
+        list: t.inventoryViewList,
+      }}
+    />
+  );
+
   const renderPriceAction = useMemo(
     () =>
       priceOf == null
@@ -187,26 +204,6 @@ export function InventoryView() {
     <div data-testid="inventory-view" className="flex h-full min-h-0 flex-col">
       <Panel className="flex min-h-0 flex-1 flex-col">
         <PanelHeader title={t.inventoryTitle} />
-        <div className="flex items-center gap-1 pb-3" role="group" aria-label={t.inventoryViewLabel}>
-          <Button
-            variant={layout === 'cards' ? 'primary' : 'ghost'}
-            aria-pressed={layout === 'cards'}
-            onClick={() => {
-              chooseLayout('cards');
-            }}
-          >
-            {t.inventoryViewCards}
-          </Button>
-          <Button
-            variant={layout === 'list' ? 'primary' : 'ghost'}
-            aria-pressed={layout === 'list'}
-            onClick={() => {
-              chooseLayout('list');
-            }}
-          >
-            {t.inventoryViewList}
-          </Button>
-        </div>
         {totals ? (
           <InventoryTotals
             total={totals.total}
@@ -226,6 +223,7 @@ export function InventoryView() {
             priceLabels={priceOf == null ? undefined : priceLabels}
             renderPriceAction={renderPriceAction}
             isPricedItem={isPricedItem}
+            toolbarActions={layoutToggle}
             className="min-h-0 flex-1"
           />
         ) : (
@@ -236,6 +234,7 @@ export function InventoryView() {
             priceLabels={priceOf == null ? undefined : priceLabels}
             renderPriceAction={renderPriceAction}
             isPricedItem={isPricedItem}
+            toolbarActions={layoutToggle}
             className="min-h-0 flex-1"
           />
         )}

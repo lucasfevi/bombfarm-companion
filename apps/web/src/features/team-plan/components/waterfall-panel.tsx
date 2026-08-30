@@ -87,8 +87,8 @@ export function WaterfallPanel({ t, lang, plan }: { t: Strings; lang: Lang; plan
                 <StepCell
                   key={step.id}
                   label={stepLabels[step.id](t)}
-                  value={<AbbreviatedNumber value={step.objective} />}
-                  delta={showDelta ? <AbbreviatedNumber value={step.delta} signed /> : null}
+                  value={<AbbreviatedNumber value={step.objective} lang={lang} />}
+                  delta={showDelta ? <AbbreviatedNumber value={step.delta} lang={lang} signed /> : null}
                   deltaTone={step.delta < 0 ? 'down' : 'up'}
                 />
               );
@@ -100,7 +100,7 @@ export function WaterfallPanel({ t, lang, plan }: { t: Strings; lang: Lang; plan
         <p className="m-0 mt-2 text-center text-[12px] text-muted" role="status">
           {withDeltaPlaceholder(
             t.teamPlanGearDipNote,
-            <AbbreviatedNumber value={plan.gearDipDps} />,
+            <AbbreviatedNumber value={plan.gearDipDps} lang={lang} />,
           )}
         </p>
       ) : null}
