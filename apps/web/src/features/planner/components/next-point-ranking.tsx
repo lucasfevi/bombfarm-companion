@@ -5,7 +5,7 @@ import type { FarmPointRankOutcome } from '@bombfarm/domain/farm-point-rank';
 import { useAppLang } from '@/shared/context/app-lang';
 import { formatNumber } from '@/shared/lib/format-number';
 import { usePlannerStore, selectNextPointRanking } from '@/shared/stores';
-import type { Strings } from '@/shared/i18n';
+import type { Strings, Lang } from '@/shared/i18n';
 import { Bar, Panel, Select } from '@bombfarm/ui';
 import {
   barRowClass,
@@ -23,9 +23,9 @@ import {
  * farm-ranking-board.test.ts's own note), so the logic that would otherwise only be provable by
  * rendering lives in plain, testable functions instead.
  */
-export function formatSignedGainPct(value: number): string {
+export function formatSignedGainPct(value: number, lang: Lang): string {
   const sign = value < 0 ? '−' : '+';
-  return `${sign}${formatNumber(Math.abs(value), 1)}%`;
+  return `${sign}${formatNumber(Math.abs(value), lang, 1)}%`;
 }
 
 /** The bar's fill percent: floored at 2 (never invisible), and a negative farm gain contributes
@@ -42,7 +42,7 @@ export function fallbackNoteText(outcome: FarmPointRankOutcome, strings: Strings
 }
 
 export function NextPointRanking() {
-  const { t } = useAppLang();
+  const { t, lang } = useAppLang();
   const rankMode = usePlannerStore((state) => state.rankMode);
   const setRankMode = usePlannerStore((state) => state.setRankMode);
   const { rows, fallback, addedToPool } = usePlannerStore(selectNextPointRanking);
@@ -72,7 +72,7 @@ export function NextPointRanking() {
             percent={barPercent(row.gainPct, best.gainPct)}
             variant={row === best ? 'best' : 'fill'}
           />
-          <b>{formatSignedGainPct(row.gainPct)}</b>
+          <b>{formatSignedGainPct(row.gainPct, lang)}</b>
         </div>
       ))}
       {fallback != null ? (

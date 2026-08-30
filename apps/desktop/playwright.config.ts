@@ -18,10 +18,11 @@ export default defineConfig({
         'app-boot.spec.mjs',
         'account-restart.spec.mjs',
         'consent-modal.spec.mjs',
-        'planning-advice.spec.mjs',
         'auto-recompute.spec.mjs',
         'i18n.spec.mjs',
         'inventory.spec.mjs',
+        'live-earnings-no-layout-shift.spec.mjs',
+        'shell-measure-and-scrollbars.spec.mjs',
       ],
     },
     {

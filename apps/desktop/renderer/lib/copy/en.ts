@@ -1,11 +1,11 @@
 /**
  * Every player-facing string in the desktop renderer, flat and typed. Read only
  * through `useCopy()` (`./index.ts`) — never `import { en }` directly at a call site. That is
- * what keeps F4's PT-BR swap a body replacement instead of an N-file edit.
+ * what keeps a second language a body replacement instead of an N-file edit.
  *
  * Grouped by the web's own i18n namespace prefixes (`apps/web/src/shared/i18n/namespaces/*`) so
  * a future merge into `STRINGS` (`apps/web/src/shared/i18n/strings.ts`) is mechanical: `shell*`,
- * `planning*`, `fidelity*`, `advice*`, `empty*`, `error*`.
+ * `empty*`, `error*`.
  *
  * Every value here must satisfy `docs/i18n.md`'s player-facing plain-language rules — no
  * formulas, no camelCase identifiers, no field paths, no type names (`copy/en.test.ts` scans
@@ -13,7 +13,6 @@
  */
 export const en = {
   // shell* — AppShell navigation and status chrome
-  shellPlanningNavLabel: 'Planning',
   shellStatusConnected: 'Connected',
   shellStatusNotRunning: 'Game not running',
   shellStatusStale: 'Stale',
@@ -21,80 +20,18 @@ export const en = {
 
   // empty* — placeholder states shown before real data has arrived
   emptyBridgeUnavailableTitle: 'Preload bridge unavailable',
+  // The stand-in the Live screen prints wherever a quantity has not been read yet.
+  valueNotAvailable: 'not available',
 
-  // Account section names, in player language — never the raw section key
-  sectionNameAccount: 'your farm phase',
-  sectionNameHeroes: 'your heroes',
-  sectionNameSkills: 'your skill tree',
-  sectionNameCasa: 'your house',
-  sectionNameItems: 'your gear',
-
-  // planning* — the Planning screen
-  planningRosterColumnAvatar: 'Avatar',
-  planningRosterColumnName: 'Hero',
-  planningRosterColumnLevel: 'Level',
-  planningRosterColumnStars: 'Stars',
-  planningRosterColumnRarity: 'Rarity',
-  planningSelectHeroPrompt: 'Select a hero from the list to see their next-point advice.',
-  planningNoRosterTitle: 'No heroes to plan for yet',
-  planningNoRosterDescription: 'We could not read a usable hero list from your account.',
-  planningNothingPersistedTitle: 'Nothing saved yet',
-  planningNothingPersistedDescription: 'Open the game with the companion running once, so it can remember your account.',
-  planningRejectedTitleMissingBirthStats: 'Your save is missing hero data the app needs',
-  planningRejectedDescriptionMissingBirthStats: 'These heroes could not be read from a recent enough version of the game:',
-  planningRejectedTitleNotASaveFile: 'That does not look like account data',
-  planningStoreUnavailableNotice: 'Nothing will be remembered after the app closes.',
-  planningGearSummaryLabel: 'Gear equipped',
-
-  // fidelity* — provenance / degradation display
-  fidelityNoticeTitle: 'Some of your account is not fully up to date',
-  fidelityMissingKeysLabel: 'Fields the game did not send',
-  fidelityStatusResolved: 'read just now',
-  fidelityStatusStale: 'remembered from your last session',
-  fidelityStatusMissing: 'not available',
-  fidelityStatusDegraded: 'sent in a shape this version does not understand yet',
-
-  // advice* — next-point ranking, DPS, reset advice
-  adviceNextPointTitle: 'Next-point ranking',
-  adviceNextPointStatColumn: 'Stat',
-  adviceNextPointGainColumn: 'Gain',
-  adviceDpsLabel: 'Solo DPS',
-  adviceResetAdviceRecommended: 'A stat reset looks worth it for this hero.',
-  adviceResetAdviceNotRecommended: 'No stat reset needed right now.',
-
-  // Stat names, in player language — pipelineForHero's own PointValue.label is Portuguese-only
-  // (a pre-i18n artifact), so the renderer names each stat itself, keyed by StatKey.
-  statNameEnergy: 'Energy',
-  statNameAttack: 'Attack',
-  statNameCritDmg: 'Crit damage',
-  statNameSpeed: 'Speed',
-  statNameCritChance: 'Crit chance',
-  statNamePenetration: 'Penetration',
-  statNameCdr: 'Cooldown reduction',
-  planningLoadingTitle: 'Loading your account…',
-
-  // withheld* — the always-mounted notice slot for a withheld quantity (no-layout-shift)
-  withheldRosterRowTitle: 'Roster withheld',
-  withheldGearSummaryTitle: 'Gear summary withheld',
-  withheldDpsTitle: 'DPS withheld',
-  withheldNextPointRankingTitle: 'Next-point ranking withheld',
-  withheldResetAdviceTitle: 'Reset advice withheld',
-  withheldBecause: 'Waiting on {sections}.',
+  // account* — the shared account-read states every data screen shows
+  accountLoadingTitle: 'Loading your account…',
 
   // error* — failure paths
   errorAccountReadFailed: 'The account could not be read',
 
-  // store.reason, in player language (AccountStoreReason, exhaustively mapped)
-  storeReasonEmpty: 'nothing has been saved yet',
-  storeReasonSchemaTooNew: 'a newer version of the companion saved this, so this version cannot read it',
-  storeReasonCorruptRebuilt: 'the saved copy was unreadable and had to be rebuilt',
-  storeReasonNotWritable: 'the save location is not writable',
-  storeReasonNoSqliteBinding: 'this build cannot save on this system',
-  storeReasonAccountMismatch: 'a different account is currently running',
-
   // age* — relative-age words for format.ts. format.ts owns no words of its
   // own; every one of its five relative-age buckets renders through one of these, via sub().
-  // Singular/plural-agnostic by construction (design §7 rule 3) — no plural engine is built.
+  // Singular/plural-agnostic by construction — no plural engine is built.
   ageJustNow: 'just now',
   ageMinutes: '{n}m ago',
   ageHours: '{n}h ago',
@@ -137,6 +74,36 @@ export const en = {
   settingsDiagnosticsReasonWriteFailed: 'The file could not be written. Check your save location and try again.',
   settingsDiagnosticsReasonNoSource: 'There is nothing to save yet. The app has not connected to the game.',
 
+  // settingsUpdates* — the update check/download/install control (`UpdateStatus`, @bombfarm/contracts)
+  settingsUpdatesSectionTitle: 'Updates',
+  settingsUpdatesCurrentVersionLabel: 'Installed version',
+  settingsUpdatesChannelHelp: 'Update channel: {channel}.',
+  settingsUpdatesCheckLabel: 'Check for updates',
+  settingsUpdatesCheckHelp: 'Also checks on its own shortly after the app opens, and every six hours it stays open.',
+  settingsUpdatesCheckAction: 'Check now',
+  settingsUpdatesDownloadLabel: 'A new version is waiting',
+  settingsUpdatesDownloadHelp: 'Downloading does not interrupt anything — you install it when you are ready.',
+  settingsUpdatesDownloadAction: 'Download',
+  settingsUpdatesInstallLabel: 'Finish updating',
+  settingsUpdatesInstallHelp: 'Takes a few seconds. The app reopens on its own.',
+  settingsUpdatesInstallAction: 'Restart and install',
+  settingsUpdatesStatusChecking: 'Checking for updates…',
+  settingsUpdatesStatusUpToDate: 'You are on the latest version.',
+  settingsUpdatesStatusAvailableTitle: 'Version {version} is available',
+  settingsUpdatesStatusAvailableBody: 'Download it now, or leave it — the app will ask again later.',
+  settingsUpdatesStatusDownloading: 'Downloading version {version}… {percent}%',
+  settingsUpdatesStatusReadyTitle: 'Version {version} is ready to install',
+  settingsUpdatesStatusReadyBody: 'The app closes and reopens on the new version. Nothing you have saved is lost.',
+  settingsUpdatesStatusDisabled:
+    'Updates are off in this build. Installed Nightly, Beta and stable builds update themselves; a local development build does not.',
+  settingsUpdatesErrorTitle: 'Could not check for updates',
+  // One key per UpdateErrorReason (@bombfarm/contracts), mapped exhaustively by
+  // UPDATE_ERROR_REASON_COPY_KEY below.
+  settingsUpdatesReasonOffline: 'Could not reach the update server. Check your internet connection and try again.',
+  settingsUpdatesReasonRateLimited: 'The update server is asking us to slow down. Wait a few minutes and try again.',
+  settingsUpdatesReasonNoRelease: 'There is no published release for this build yet.',
+  settingsUpdatesReasonUnknown: 'Something went wrong. Try again, and save a bug report file below if it keeps failing.',
+
   // consentGate* — the permission gate shown instead of app content when access is not allowed
   consentGateTitle: 'This app needs your permission to work',
   consentGateBody:
@@ -176,6 +143,7 @@ export const en = {
   liveListQueuedTitle: 'Idle',
   liveListBenchedTitle: 'Benched',
   liveListEmptyLine: 'No heroes here right now.',
+  liveHeroLevelValue: 'Lv {level}',
   liveEnergyLabel: 'Energy',
   liveFieldSlotsHint: 'Upgrade field slots in your skill tree',
   liveRestingSlotsHint: 'Upgrade to a later house for more rest slots',
@@ -192,9 +160,50 @@ export const en = {
   liveCountdownEstimatedQualifier: 'estimate, not a direct reading',
   liveCountdownPausedQualifier: 'not currently counting down',
 
-  // liveNeverRead* — nothing has been read from the account yet this session
+  // liveNeverRead* — nothing has been read from the account yet this session. The reason nothing
+  // has arrived comes from the liveGapReason* copy above (this screen's empty state reuses it
+  // rather than repeating "open the game" while the app is already working); this is the one
+  // description left for the case where the stream is live and only the account read is pending.
   liveNeverReadTitle: 'Nothing read from your account yet',
-  liveNeverReadDescription: 'Open the game with the companion running, so it has something to read.',
+  liveNeverReadAccountPendingDescription: 'The app is connected to the game and reading your account now.',
+
+  // liveNeverReadFlavorLine* — quieter, rotating flavour text under the waiting sprite, shown
+  // only while something is actually pending. Never a duration promise (the wait can legitimately
+  // run a minute) — playful about waiting itself instead.
+  liveNeverReadFlavorLine1: 'Counting the gold, one coin at a time.',
+  liveNeverReadFlavorLine2: 'Saying hello to your heroes.',
+  liveNeverReadFlavorLine3: 'Warming up the abacus.',
+  liveNeverReadFlavorLine4: 'Waiting patiently. Very patiently.',
+  liveNeverReadFlavorLine5: 'Giving the ledger a friendly nudge.',
+
+  // liveEarnings* — the Earnings panel: measured gold/XP figures, sent as finished values and
+  // only ever formatted here, never recomputed.
+  liveEarningsTitle: 'Earnings',
+  liveEarningsResetAria: 'Reset session',
+  liveEarningsCurrentGoldLabel: 'Current gold',
+  liveEarningsGoldHeadlineUnit: 'gold / h',
+  liveEarningsXpHeadlineUnit: 'xp / h',
+  liveEarningsRecentWindowLabel: 'last {minutes} min',
+  liveEarningsGoldSessionLabel: 'Gold/hr',
+  liveEarningsXpSessionLabel: 'XP/hr',
+  liveEarningsGoldSessionTotalLabel: 'Gold total',
+  liveEarningsXpSessionTotalLabel: 'XP total',
+  liveEarningsElapsedLabel: 'Elapsed',
+  liveEarningsXpHelpLabel: 'About this XP figure',
+  liveEarningsXpHelpBody: 'Calculated from the props your heroes destroyed, not read directly from the game.',
+
+  // liveMap* — the Map panel: which map is being played, and how far through it the run is.
+  liveMapTitle: 'Map',
+  liveMapHealthLabel: 'Map health',
+  liveMapPropsLabel: 'Props alive',
+  liveMapUnknownName: 'Unknown map',
+  liveMapXpPerPropLabel: 'XP / prop',
+  liveMapGoldPerPropLabel: 'Gold / prop',
+  liveMapGoldPerClearLabel: 'Gold / clear',
+  liveMapEstimateNote: 'Estimated',
+  liveMapEstimateBody:
+    'Estimated from this map’s wiki values and your own bonuses — the average a prop or a full clear pays out, not what you have actually earned.',
+
   // inventory* — the Inventory screen: every item the account carries, grouped by kind
   inventoryNavLabel: 'Inventory',
   inventoryTitle: 'Inventory',
@@ -230,6 +239,9 @@ export const en = {
   inventorySearchLabel: 'Search your inventory',
   inventoryFilterAll: 'All',
   inventoryFilterEquipped: 'Equipped',
+  inventoryFilterPriced: 'Priced',
+  inventoryTotalsTitle: 'Market value',
+  inventoryTotalsCoverage: '{priced} of {tradable} tradable items priced',
   inventoryFilterClear: 'Clear',
   inventoryFilterCount: '{shown} of {total}',
   inventoryFilterNoMatches: 'No items match those filters.',
@@ -242,6 +254,24 @@ export const en = {
   inventorySortValue: 'Value',
   inventorySortName: 'Name',
   inventorySortCount: 'Quantity',
+  inventorySortMarket: 'Market price',
+  inventoryViewLabel: 'Layout',
+  inventoryViewCards: 'Cards',
+  inventoryViewList: 'List',
+  inventoryTableCaption: 'Every item on the account, as a sortable table',
+  inventoryColumnEquippedBy: 'Equipped by',
+  inventoryColumnActions: 'Actions',
+  inventoryRowAction: 'Details for {item}',
+  marketNoListings: 'No listings',
+  marketNotOnMarket: 'Not on the market',
+  marketRefreshItem: 'Refresh the market price for {item}',
+  marketNativeTooltip: 'Lowest listing on Steam, in {currency} — quoted {age}',
+  marketConvertedTooltip: 'Approximate: converted from USD, so Steam may show a different figure — {age}',
+  marketAgeJustNow: 'just now',
+  marketAgeMinutes: '{count} min ago',
+  marketAgeHours: '{count} h ago',
+  marketAgeDays: '{count} d ago',
+  marketAgeUnknown: 'at an unknown time',
   inventorySortAscending: 'Ascending',
   inventorySortDescending: 'Descending',
   inventoryFilterSetsLabel: 'Filter by set',

@@ -1,8 +1,11 @@
 import path from 'node:path';
-import { app, BrowserWindow, ipcMain, Menu } from 'electron';
+import { app, BrowserWindow, ipcMain, Menu, shell } from 'electron';
 import {
   DEFAULT_SETTINGS,
+  disabledUpdateStatus,
+  emptyMarketSnapshotView,
   isIpcChannel,
+  isMarketQuoteTarget,
   liveGap,
   resolveStartupLocale,
   type AccountView,
@@ -11,10 +14,15 @@ import {
   type ConsentRecord,
   type IpcEventChannel,
   type IpcEvents,
+  type IpcInvokeArgs,
   type IpcInvokeChannel,
+  type IpcInvokeResult,
   type LiveDiagnosticsDumpOutcome,
   type LiveView,
+  type MarketQuoteResult,
+  type MarketQuoteTarget,
   type SettingsWriteResult,
+  type UpdateStatus,
 } from '@bombfarm/contracts';
 import { createPacingGate, initialConsent } from '@bombfarm/game-api';
 import { createAccountNotifier, resolveAccountView } from './account-view.js';
@@ -22,6 +30,7 @@ import { applyAppIdentity } from './app-identity.js';
 import { createBootRecord } from './boot-record.js';
 import { fuseSecondsForCdr } from './domain-edge.js';
 import { InvalidFlavorError, resolveAppEnv, RENDERER_DEV_URL, type AppEnv } from './env.js';
+import { applyExternalNavigationPolicy } from './external-navigation.js';
 import { GameReaderService } from './game-reader/game-reader-service.js';
 import {
   registerRendererProtocol,
@@ -44,6 +53,14 @@ import {
   resolveReplayCapturePath,
 } from './live-source/replay-tap.js';
 import { configureLogging, log } from './logging.js';
+import {
+  createElectronUpdateService,
+  unavailableUpdateService,
+  type UpdateService,
+} from './updates/index.js';
+import { marketCachePath } from './market/market-cache.js';
+import { createMarketService, type MarketService } from './market/market-service.js';
+import { marketHttpGet } from './market/market-transport.js';
 import { createAccountStore, type AccountStore } from './storage/account-store.js';
 import { createStorage, openAccountDatabase, type Storage } from './storage/index.js';
 
@@ -57,6 +74,7 @@ let settingsStore: SettingsStore | null = null;
 let liveSource: LiveSource | null = null;
 let liveFastPublisher: LiveFastPublisher | null = null;
 let triggeredRefresh: TriggeredRefresh | null = null;
+let marketService: MarketService | null = null;
 /** Fixture mode only — see `gameReader.onAccountCommitted` for why a re-ingest of an unchanged
  *  rotation is not free. */
 let lastIngestedRotationBody: string | null = null;
@@ -65,6 +83,7 @@ let lastIngestedRotationBody: string | null = null;
 // (inside `whenReady()`, where `app.getLocale()` is documented valid) so `settings:get` never
 // races a caller that arrives before boot finishes.
 let currentSettings: AppSettings = DEFAULT_SETTINGS;
+let updateService: UpdateService | null = null;
 
 function emitEvent<C extends IpcEventChannel>(channel: C, payload: IpcEvents[C]): void {
   mainWindow?.webContents.send(`bfc:event:${channel}`, payload);
@@ -122,14 +141,35 @@ function defaultLiveView(): LiveView {
     currency: liveGap('neverAttached', now),
     field: [],
     recovery: [],
+    energies: [],
     rotation: null,
     onFieldHeroIds: [],
+    earnings: null,
+    map: null,
     updatedAt: now,
   };
 }
 
+type IpcHandlers = {
+  [C in IpcInvokeChannel]: (...args: IpcInvokeArgs<C>) => IpcInvokeResult<C> | Promise<IpcInvokeResult<C>>;
+};
+
+function refreshMarketItem(target: MarketQuoteTarget): Promise<MarketQuoteResult> {
+  if (!isMarketQuoteTarget(target) || marketService === null) {
+    return Promise.resolve({
+      ok: false,
+      key: null,
+      hashName: null,
+      reason: 'unknown-item',
+      keptAmount: null,
+      at: new Date().toISOString(),
+    });
+  }
+  return marketService.refreshItem(target);
+}
+
 function registerIpcHandlers(): void {
-  const handlers: Record<IpcInvokeChannel, () => unknown> = {
+  const handlers: IpcHandlers = {
     'app:getFlavor': () => resolveAppEnv().flavor,
     'app:getEnvironment': () => {
       const env = resolveAppEnv();
@@ -166,13 +206,30 @@ function registerIpcHandlers(): void {
     'live:get': (): LiveView => liveSource?.getView() ?? defaultLiveView(),
     'live:dumpDiagnostics': (): LiveDiagnosticsDumpOutcome =>
       liveSource?.dumpDiagnostics() ?? { written: false, reason: 'no-source' },
+    'live:resetEarnings': (): null => {
+      liveSource?.resetEarnings();
+      return null;
+    },
+    // `disabledUpdateStatus` is the pre-bootstrap answer as well as the dev-flavor one: a
+    // renderer that asks before `bootstrap()` has built the service gets the same inert status it
+    // would get from an unpackaged run, never a throw.
+    'updates:get': (): UpdateStatus => updateService?.getStatus() ?? disabledUpdateStatus(app.getVersion()),
+    'updates:check': (): Promise<UpdateStatus> | UpdateStatus =>
+      updateService?.check() ?? disabledUpdateStatus(app.getVersion()),
+    'updates:download': (): Promise<UpdateStatus> | UpdateStatus =>
+      updateService?.download() ?? disabledUpdateStatus(app.getVersion()),
+    'updates:installOnRestart': (): UpdateStatus =>
+      updateService?.installOnRestart() ?? disabledUpdateStatus(app.getVersion()),
+    'market:getSnapshot': () => marketService?.getView() ?? emptyMarketSnapshotView(),
+    'market:refreshItem': refreshMarketItem,
   };
 
-  ipcMain.handle('bfc:invoke', (_event, channel: string) => {
+  ipcMain.handle('bfc:invoke', (_event, channel: string, ...args: unknown[]) => {
     if (!isIpcChannel(channel)) {
       throw new Error(`Unknown IPC channel: ${channel}`);
     }
-    return handlers[channel]();
+    const handler = handlers[channel] as (...forwarded: unknown[]) => unknown;
+    return handler(...args);
   });
 }
 
@@ -200,6 +257,12 @@ async function createMainWindow(): Promise<void> {
       nodeIntegration: false,
       sandbox: false,
     },
+  });
+
+  applyExternalNavigationPolicy(mainWindow.webContents, {
+    openExternal: (url) => shell.openExternal(url),
+    log,
+    internalUrls: env.isDev ? [RENDERER_DEV_URL] : [],
   });
 
   gameReader?.setWindowProvider(() => mainWindow);
@@ -347,6 +410,9 @@ async function bootstrap(): Promise<void> {
     refreshNow: () => accountRefresh?.refreshNow() ?? Promise.resolve(null),
     now: () => Date.now(),
   });
+  // The scheduled cadence can otherwise leave the first read waiting out a full cycle after the
+  // game becomes detected as running, which arrives too late to catch at boot.
+  gameReader.onConnected = () => triggeredRefresh?.notify();
   liveFastPublisher = createLiveFastPublisher({
     getView: () => liveSource?.getView() ?? defaultLiveView(),
     emit: (event) => {
@@ -447,6 +513,20 @@ async function bootstrap(): Promise<void> {
     liveSource?.ingestRotation(committed);
   };
 
+  // Public, unauthenticated, and player-data-free: it reads a published price file and Steam's
+  // own per-item quote, carries no session token, and sends nothing about the account. That is
+  // why it is not behind the game-API consent gate the account cycle sits behind.
+  marketService = createMarketService({
+    httpGet: marketHttpGet,
+    cachePath: marketCachePath(userDataDir),
+    log,
+    now: () => Date.now(),
+    sleep: (ms) => new Promise((resolve) => setTimeout(resolve, ms)),
+    onChanged: (view) => {
+      emitEvent('market:changed', view);
+    },
+  });
+
   registerIpcHandlers();
   registerRendererProtocol(path.join(__dirname, '../../renderer/out'));
   await createMainWindow();
@@ -459,6 +539,27 @@ async function bootstrap(): Promise<void> {
 
   accountRefresh.start();
   log.info({ scope: 'main', event: 'account-refresh.started' });
+
+  // The updater is the one subsystem boot can lose and still hand over a working app, so its
+  // failure stops at the Updates section instead of reaching `boot.failed`, which quits. The
+  // stand-in reports the failure where a player can see it, and is emitted rather than merely
+  // held: the renderer reads `updates:get` once on mount, which on this path has already
+  // answered with the pre-bootstrap inert status.
+  try {
+    updateService = await createElectronUpdateService((status) => {
+      emitEvent('updates:changed', status);
+    });
+    updateService.start();
+  } catch (error: unknown) {
+    log.error({ scope: 'main', event: 'updates.unavailable', error: String(error) });
+    updateService = unavailableUpdateService(app.getVersion(), env.descriptor.updateChannel);
+    emitEvent('updates:changed', updateService.getStatus());
+  }
+
+  // Outside that guard on purpose: prices have nothing to do with the updater, and an updater
+  // that could not start is no reason to open the app without them.
+  marketService.start();
+  log.info({ scope: 'main', event: 'market.started' });
 }
 
 function resolveBootEnv(): AppEnv {
@@ -540,12 +641,16 @@ if (!gotLock) {
   // anyway. See fix/fixture-tick-after-db-close — closing storage before stopping the fixture
   // ticker produced an uncaught "database is not open" exception on quit.
   app.on('before-quit', () => {
+    updateService?.stop();
+    updateService = null;
     gameReader?.stop();
     gameReader = null;
     accountRefresh?.stop();
     accountRefresh = null;
     liveFastPublisher?.stop();
     liveFastPublisher = null;
+    marketService?.stop();
+    marketService = null;
     triggeredRefresh = null;
     void liveSource?.teardown();
     liveSource = null;

@@ -1,11 +1,22 @@
-import { LIVE_DISPLAY_REFRESH_MS, type FieldCountdown, type LiveEvent, type LiveView, type RecoveryCountdown, type RotationSnapshot } from '@bombfarm/contracts';
+import {
+  LIVE_DISPLAY_REFRESH_MS,
+  type FieldCountdown,
+  type LiveEarnings,
+  type LiveEvent,
+  type LiveHeroEnergy,
+  type LiveMap,
+  type LiveMapEconomy,
+  type LiveView,
+  type RecoveryCountdown,
+  type RotationSnapshot,
+} from '@bombfarm/contracts';
 
 export interface LiveFastPublisherScheduler {
   readonly schedule: (callback: () => void, intervalMs: number) => () => void;
 }
 
 export interface LiveFastPublisherDeps {
-  readonly getView: () => Pick<LiveView, 'field' | 'recovery' | 'onFieldHeroIds' | 'rotation'>;
+  readonly getView: () => Pick<LiveView, 'field' | 'recovery' | 'energies' | 'onFieldHeroIds' | 'rotation' | 'earnings' | 'map'>;
   readonly emit: (event: LiveEvent) => void;
   readonly scheduler: LiveFastPublisherScheduler;
   readonly intervalMs?: number;
@@ -23,7 +34,10 @@ export interface LiveFastPublisher {
 interface FastSnapshot {
   readonly field: readonly FieldCountdown[];
   readonly recovery: readonly RecoveryCountdown[];
+  readonly energies: readonly LiveHeroEnergy[];
   readonly onFieldHeroIds: readonly string[];
+  readonly earnings: LiveEarnings | null;
+  readonly map: LiveMap | null;
 }
 
 function sameFieldCountdowns(a: readonly FieldCountdown[], b: readonly FieldCountdown[]): boolean {
@@ -53,16 +67,63 @@ function sameRecoveryCountdowns(a: readonly RecoveryCountdown[], b: readonly Rec
   });
 }
 
+function sameHeroEnergies(a: readonly LiveHeroEnergy[], b: readonly LiveHeroEnergy[]): boolean {
+  if (a.length !== b.length) return false;
+  return a.every((entry, index) => {
+    const other = b[index];
+    return other !== undefined && entry.heroId === other.heroId && entry.energyFraction === other.energyFraction;
+  });
+}
+
 export function sameIdList(a: readonly string[], b: readonly string[]): boolean {
   if (a.length !== b.length) return false;
   return a.every((id, index) => id === b[index]);
+}
+
+function sameEarnings(a: LiveEarnings | null, b: LiveEarnings | null): boolean {
+  if (a === null || b === null) return a === b;
+  return (
+    a.goldBalance === b.goldBalance &&
+    a.gold10 === b.gold10 &&
+    a.goldSession === b.goldSession &&
+    a.xp10 === b.xp10 &&
+    a.xpSession === b.xpSession &&
+    a.goldSessionTotal === b.goldSessionTotal &&
+    a.xpSessionTotal === b.xpSessionTotal &&
+    a.coverageSeconds === b.coverageSeconds &&
+    a.sessionSeconds === b.sessionSeconds
+  );
+}
+
+function sameMapEconomy(a: LiveMapEconomy | null, b: LiveMapEconomy | null): boolean {
+  if (a === b) return true;
+  if (a === null || b === null) return false;
+  return (
+    a.xpPerProp === b.xpPerProp &&
+    a.averageGoldPerProp === b.averageGoldPerProp &&
+    a.averageGoldPerClear === b.averageGoldPerClear
+  );
+}
+
+function sameMap(a: LiveMap | null, b: LiveMap | null): boolean {
+  if (a === null || b === null) return a === b;
+  return (
+    a.phase === b.phase &&
+    a.healthFraction === b.healthFraction &&
+    a.propsAlive === b.propsAlive &&
+    a.propsTotal === b.propsTotal &&
+    sameMapEconomy(a.economy, b.economy)
+  );
 }
 
 function sameFastSnapshot(a: FastSnapshot, b: FastSnapshot): boolean {
   return (
     sameFieldCountdowns(a.field, b.field) &&
     sameRecoveryCountdowns(a.recovery, b.recovery) &&
-    sameIdList(a.onFieldHeroIds, b.onFieldHeroIds)
+    sameHeroEnergies(a.energies, b.energies) &&
+    sameIdList(a.onFieldHeroIds, b.onFieldHeroIds) &&
+    sameEarnings(a.earnings, b.earnings) &&
+    sameMap(a.map, b.map)
   );
 }
 
@@ -115,7 +176,7 @@ export function createRotationOnFieldIdsCache(): (rotation: RotationSnapshot | n
 
 /**
  * Polls the already-folded {@link LiveView} on a fixed schedule and republishes the fast channel
- * (`field`, `recovery`, `onFieldHeroIds`) only when its content actually changed since the last
+ * (`field`, `recovery`, `energies`, `onFieldHeroIds`, `earnings`, `map`) only when its content actually changed since the last
  * publish — the throttle the main process owes the renderer per the fast/slow split, so an idle
  * account with nothing changing publishes nothing at all rather than one identical event every
  * tick. `getView()` itself is cheap: it returns state the live source already maintains — its
@@ -135,10 +196,25 @@ export function createLiveFastPublisher(deps: LiveFastPublisherDeps): LiveFastPu
       deps.onFieldMembershipDiverged();
     }
 
-    const next: FastSnapshot = { field: view.field, recovery: view.recovery, onFieldHeroIds: view.onFieldHeroIds };
+    const next: FastSnapshot = {
+      field: view.field,
+      recovery: view.recovery,
+      energies: view.energies,
+      onFieldHeroIds: view.onFieldHeroIds,
+      earnings: view.earnings,
+      map: view.map,
+    };
     if (lastPublished && sameFastSnapshot(lastPublished, next)) return;
     lastPublished = next;
-    deps.emit({ type: 'fastUpdate', field: next.field, recovery: next.recovery, onFieldHeroIds: next.onFieldHeroIds });
+    deps.emit({
+      type: 'fastUpdate',
+      field: next.field,
+      recovery: next.recovery,
+      energies: next.energies,
+      onFieldHeroIds: next.onFieldHeroIds,
+      earnings: next.earnings,
+      map: next.map,
+    });
   }
 
   return {

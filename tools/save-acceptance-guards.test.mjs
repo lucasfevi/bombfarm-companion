@@ -2,7 +2,7 @@
  * (T7) — source guards for the positive acceptance gate.
  *
  * Three independent hard-zero checks, each comment-stripped (this repo's established convention
- * — `apps/desktop/src/main/planning-guards.test.ts`'s `stripComments`) so a doc comment naming a
+ * — `apps/desktop/src/main/source-guards.test.ts`'s `stripComments`) so a doc comment naming a
  * forbidden token to explain why it is forbidden does not trip the guard against itself:
  *
  *   1. No acceptance-path file (`save-schema.ts`, `import-save.ts`) reads a retired keystone
@@ -27,7 +27,7 @@ const IMPORT_SAVE_PATH = join(root, 'packages/domain/src/import-save.ts');
 const DESKTOP_ROOT = join(root, 'apps/desktop');
 
 /** Strips `//` line comments and `/* *\/` block comments — dumb text slicing, this repo's own
- *  established convention (`planning-guards.test.ts`'s `stripComments`), not a full parser. */
+ *  established convention (`source-guards.test.ts`'s `stripComments`), not a full parser. */
 function stripComments(source) {
   return source.replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/.*$/gm, '');
 }

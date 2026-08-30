@@ -21,12 +21,12 @@ function read(relativePath: string): string {
 
 describe('formatSignedGainPct', () => {
   it('a non-negative value renders byte-identical to the pre-farm-mode "+{n}%" string', () => {
-    expect(formatSignedGainPct(2.5)).toBe('+2.5%');
-    expect(formatSignedGainPct(0)).toBe('+0.0%');
+    expect(formatSignedGainPct(2.5, 'en')).toBe('+2.5%');
+    expect(formatSignedGainPct(0, 'en')).toBe('+0.0%');
   });
 
   it('a negative farm gain renders with a minus sign and the absolute magnitude', () => {
-    expect(formatSignedGainPct(-3.14159)).toBe('−3.1%');
+    expect(formatSignedGainPct(-3.14159, 'en')).toBe('−3.1%');
   });
 });
 
@@ -104,16 +104,5 @@ describe('hero-strip-metrics.tsx — mode-aware best, same signed format', () =>
 
   it('applies the same signed formatting rule as the panel', () => {
     expect(source).toContain('formatSignedGainPct');
-  });
-});
-
-describe("apps/desktop's next-point panel is untouched beyond the field rename", () => {
-  it('renders entry.gainPct (the T1 rename) and carries no farm-mode concept', () => {
-    const source = read('../desktop/renderer/app/planning/next-point-panel.tsx');
-    expect(source).toContain('entry.gainPct');
-    expect(source).not.toMatch(/\bfarm\b/i);
-    expect(source).not.toContain('rankFarmNoPool');
-    expect(source).not.toContain('rankFarmNoRate');
-    expect(source).not.toContain('rankFarmAddedToPool');
   });
 });

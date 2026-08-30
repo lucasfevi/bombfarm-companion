@@ -1,4 +1,4 @@
-import type { AccountView, LiveCurrency, LiveEvent, LiveFrame, LiveTick } from '@bombfarm/contracts';
+import type { AccountView, LiveCurrency, LiveEvent, LiveFrame, LiveTick, SectionFidelity } from '@bombfarm/contracts';
 import { liveGap } from '@bombfarm/contracts';
 import { wireKey } from '@bombfarm/game-api';
 import { describe, expect, it } from 'vitest';
@@ -42,6 +42,11 @@ class FakeTap implements TapHandle {
   emitRawHttpBody(bytes: Buffer, atMs: number): void {
     this.onHttpBody(bytes, atMs);
   }
+}
+
+function requireNumber(value: number | null): number {
+  if (value === null) throw new Error('expected a non-null number');
+  return value;
 }
 
 function createHarness(opts: { readonly log?: LogPort } = {}) {
@@ -149,12 +154,40 @@ function heroIdsFromCasaBody(casa: Record<string, unknown>): string[] {
 /** Every hero named in `casa`'s own `heroesList` also gets a minimal roster record, so the
  *  multipliers `LiveSource` resolves for them are never merely absent — matching a real account,
  *  where a rotation body and its roster describe the same heroes. */
-function buildAccountView(casa: Record<string, unknown>): AccountView {
+function buildAccountView(
+  casa: Record<string, unknown>,
+  opts: {
+    readonly binding?: string | null;
+    readonly skills?: Record<string, unknown>;
+    readonly account?: Record<string, unknown>;
+    readonly accountFidelity?: SectionFidelity;
+  } = {},
+): AccountView {
   return {
-    payload: { casa, heroes: heroIdsFromCasaBody(casa).map(minimalRosterHero) },
+    payload: {
+      casa,
+      heroes: heroIdsFromCasaBody(casa).map(minimalRosterHero),
+      ...(opts.skills !== undefined ? { skills: opts.skills } : {}),
+      ...(opts.account !== undefined ? { account: opts.account } : {}),
+      ...(opts.accountFidelity !== undefined
+        ? {
+            fidelity: {
+              account: opts.accountFidelity,
+              heroes: { status: 'missing' },
+              skills: { status: 'missing' },
+              casa: { status: 'missing' },
+              items: { status: 'missing' },
+            },
+          }
+        : {}),
+    },
     gameRunning: true,
-    store: { status: 'ok', reason: null, binding: 'sqlite' },
+    store: { status: 'ok', reason: null, binding: opts.binding === undefined ? 'sqlite' : opts.binding },
   };
+}
+
+function skillsWithXpMult(xpMult: number): Record<string, unknown> {
+  return { totals: { xp_mult: xpMult } };
 }
 
 /** Every validated field present except whatever `extra` overrides, so a test can isolate exactly
@@ -903,5 +936,237 @@ describe('LiveSource: the background drain-rate checker', () => {
     }
 
     expect(warnRecords.filter((record) => record.event === 'drain.rate_disagreement')).toHaveLength(0);
+  });
+});
+
+describe('LiveSource: earnings', () => {
+  it('is null in the view before the first tap frame of the session', () => {
+    const { source } = createHarness();
+    source.start();
+
+    expect(source.getView().earnings).toBeNull();
+  });
+
+  it('publishes a finished LiveEarnings once tap frames carry loot, with the current gold balance', () => {
+    const { source, pushFrame, goLive } = createHarness();
+    source.start();
+    goLive();
+
+    pushFrame({ heroes: [], phase: 1, gold: 10_100, loot: [{ cell: 0, gold: 100 }] });
+    pushFrame({ heroes: [], phase: 1, gold: 10_100 });
+
+    const earnings = source.getView().earnings;
+    expect(earnings).not.toBeNull();
+    expect(earnings?.goldBalance).toBe(10_100);
+    expect(earnings?.goldSession).not.toBeNull();
+    expect(earnings?.goldSession).toBeGreaterThan(0);
+    expect(earnings?.gold10).toBe(earnings?.goldSession);
+    expect(Number.isFinite(earnings?.sessionSeconds)).toBe(true);
+    expect(Number.isFinite(earnings?.coverageSeconds)).toBe(true);
+    expect(earnings?.goldSessionTotal).toBe(100);
+  });
+
+  it('resetEarnings zeroes the session figures — including the two session totals — but leaves the 10-minute window intact', () => {
+    const { source, pushFrame, goLive } = createHarness();
+    source.start();
+    goLive();
+
+    pushFrame({ heroes: [], phase: 1, gold: 10_100, loot: [{ cell: 0, gold: 100 }] });
+    pushFrame({ heroes: [], phase: 1, gold: 10_100 });
+    const before = source.getView().earnings;
+    expect(before?.goldSession).toBeGreaterThan(0);
+    expect(before?.gold10).toBeGreaterThan(0);
+    expect(before?.goldSessionTotal).toBe(100);
+
+    source.resetEarnings();
+
+    const after = source.getView().earnings;
+    expect(after?.goldSession).toBeNull();
+    expect(after?.sessionSeconds).toBe(0);
+    expect(after?.gold10).toBe(before?.gold10);
+    expect(after?.goldBalance).toBe(before?.goldBalance);
+    expect(after?.goldSessionTotal).toBeNull();
+    expect(after?.xpSessionTotal).toBeNull();
+  });
+
+  it('an ingested skills.totals.xp_mult reaches the published xp10/xpSession, scaling them exactly', () => {
+    function xpAfterOneEarningTick(xpMult: number | undefined): { readonly xp10: number; readonly xpSession: number } {
+      const { source, pushFrame, goLive } = createHarness();
+      source.start();
+      if (xpMult !== undefined) {
+        source.ingestRotation(buildAccountView(bodyWithHeroes([]), { skills: skillsWithXpMult(xpMult) }));
+      }
+      goLive();
+      pushFrame({ heroes: [], phase: 1, loot: [{ cell: 0, gold: 1 }] });
+      pushFrame({ heroes: [], phase: 1 });
+
+      const earnings = source.getView().earnings;
+      return { xp10: requireNumber(earnings?.xp10 ?? null), xpSession: requireNumber(earnings?.xpSession ?? null) };
+    }
+
+    const baseline = xpAfterOneEarningTick(undefined);
+    const doubled = xpAfterOneEarningTick(2);
+
+    expect(baseline.xpSession).toBeGreaterThan(0);
+    expect(doubled.xpSession).toBe(baseline.xpSession * 2);
+    expect(doubled.xp10).toBe(baseline.xp10 * 2);
+  });
+
+  it('an absent or zero xp_mult still normalizes to 1, never zeroing the published XP figure', () => {
+    const { source, pushFrame, goLive } = createHarness();
+    source.start();
+    source.ingestRotation(buildAccountView(bodyWithHeroes([]), { skills: skillsWithXpMult(0) }));
+    goLive();
+
+    pushFrame({ heroes: [], phase: 1, loot: [{ cell: 0, gold: 1 }] });
+    pushFrame({ heroes: [], phase: 1 });
+
+    const earnings = source.getView().earnings;
+    expect(earnings?.xpSession).not.toBeNull();
+    expect(earnings?.xpSession).not.toBe(0);
+  });
+
+  it('an account change (a different non-null store binding) clears session totals AND the 10-minute window', () => {
+    const { source, pushFrame, goLive } = createHarness();
+    source.start();
+    source.ingestRotation(buildAccountView(bodyWithHeroes([]), { binding: 'account-a' }));
+    goLive();
+
+    pushFrame({ heroes: [], phase: 1, gold: 500, loot: [{ cell: 0, gold: 100 }] });
+    pushFrame({ heroes: [], phase: 1, gold: 500 });
+    const before = source.getView().earnings;
+    expect(before?.goldSession).toBeGreaterThan(0);
+    expect(before?.gold10).toBeGreaterThan(0);
+
+    source.ingestRotation(buildAccountView(bodyWithHeroes([]), { binding: 'account-b' }));
+
+    const after = source.getView().earnings;
+    expect(after?.goldSession).toBeNull();
+    expect(after?.sessionSeconds).toBe(0);
+    expect(after?.gold10).toBeNull();
+    expect(after?.xp10).toBeNull();
+    expect(after?.coverageSeconds).toBe(0);
+    expect(after?.goldSessionTotal).toBeNull();
+    expect(after?.xpSessionTotal).toBeNull();
+  });
+
+  it('re-ingesting the same binding clears nothing', () => {
+    const { source, pushFrame, goLive } = createHarness();
+    source.start();
+    source.ingestRotation(buildAccountView(bodyWithHeroes([]), { binding: 'account-a' }));
+    goLive();
+
+    pushFrame({ heroes: [], phase: 1, gold: 500, loot: [{ cell: 0, gold: 100 }] });
+    pushFrame({ heroes: [], phase: 1, gold: 500 });
+    const before = source.getView().earnings;
+    expect(before?.goldSession).toBeGreaterThan(0);
+
+    source.ingestRotation(buildAccountView(bodyWithHeroes([]), { binding: 'account-a' }));
+
+    const after = source.getView().earnings;
+    expect(after?.goldSession).toBe(before?.goldSession);
+    expect(after?.gold10).toBe(before?.gold10);
+    expect(after?.sessionSeconds).toBe(before?.sessionSeconds);
+  });
+
+  it('the very first binding observed this session is not itself an account change', () => {
+    const { source, pushFrame, goLive } = createHarness();
+    source.start();
+    goLive();
+
+    pushFrame({ heroes: [], phase: 1, gold: 500, loot: [{ cell: 0, gold: 100 }] });
+    pushFrame({ heroes: [], phase: 1, gold: 500 });
+    const before = source.getView().earnings;
+    expect(before?.goldSession).toBeGreaterThan(0);
+
+    // First-ever binding observation — must not be treated as a change from "no binding yet".
+    source.ingestRotation(buildAccountView(bodyWithHeroes([]), { binding: 'account-a' }));
+
+    const after = source.getView().earnings;
+    expect(after?.goldSession).toBe(before?.goldSession);
+    expect(after?.gold10).toBe(before?.gold10);
+  });
+
+  it('a transient null binding does not read as an account change', () => {
+    const { source, pushFrame, goLive } = createHarness();
+    source.start();
+    source.ingestRotation(buildAccountView(bodyWithHeroes([]), { binding: 'account-a' }));
+    goLive();
+
+    pushFrame({ heroes: [], phase: 1, gold: 500, loot: [{ cell: 0, gold: 100 }] });
+    pushFrame({ heroes: [], phase: 1, gold: 500 });
+    const before = source.getView().earnings;
+    expect(before?.goldSession).toBeGreaterThan(0);
+
+    source.ingestRotation(buildAccountView(bodyWithHeroes([]), { binding: null }));
+
+    const after = source.getView().earnings;
+    expect(after?.goldSession).toBe(before?.goldSession);
+    expect(after?.gold10).toBe(before?.gold10);
+  });
+});
+
+describe('LiveSource: current gold falls back to the stored account reading', () => {
+  it('a view ingested with no ticks yields the stored balance and its capture time', () => {
+    const { source } = createHarness();
+    source.start();
+
+    source.ingestRotation(
+      buildAccountView(bodyWithHeroes([]), {
+        account: { gold: '48123' },
+        accountFidelity: { status: 'resolved', capturedAt: '2026-08-20T00:00:00.000Z' },
+      }),
+    );
+
+    const earnings = source.getView().earnings;
+    expect(earnings?.goldBalance).toBe(48_123);
+    expect(earnings?.goldBalanceCapturedAt).toBe('2026-08-20T00:00:00.000Z');
+  });
+
+  it('a tick arriving afterwards takes precedence over the stored fallback', () => {
+    const { source, pushFrame, goLive } = createHarness();
+    source.start();
+    source.ingestRotation(
+      buildAccountView(bodyWithHeroes([]), {
+        account: { gold: '48123' },
+        accountFidelity: { status: 'resolved', capturedAt: '2026-08-20T00:00:00.000Z' },
+      }),
+    );
+    goLive();
+
+    pushFrame({ heroes: [], phase: 1, gold: 999 });
+
+    const earnings = source.getView().earnings;
+    expect(earnings?.goldBalance).toBe(999);
+    expect(earnings?.goldBalanceCapturedAt).toBeNull();
+  });
+
+  it('a non-numeric stored gold is ignored rather than producing NaN', () => {
+    const { source } = createHarness();
+    source.start();
+
+    source.ingestRotation(
+      buildAccountView(bodyWithHeroes([]), {
+        account: { gold: 'not-a-number' },
+        accountFidelity: { status: 'resolved', capturedAt: '2026-08-20T00:00:00.000Z' },
+      }),
+    );
+
+    const earnings = source.getView().earnings;
+    expect(earnings).toBeNull();
+  });
+
+  it('a missing account section yields no balance and no timestamp', () => {
+    const { source } = createHarness();
+    source.start();
+
+    source.ingestRotation(
+      buildAccountView(bodyWithHeroes([]), {
+        accountFidelity: { status: 'missing' },
+      }),
+    );
+
+    const earnings = source.getView().earnings;
+    expect(earnings).toBeNull();
   });
 });

@@ -15,6 +15,12 @@ const REPO_ROOT = resolve(__dirname, '../../../../..');
 const GAME_API_SRC = join(REPO_ROOT, 'packages/game-api/src');
 const DESKTOP_MAIN = join(REPO_ROOT, 'apps/desktop/src/main');
 const HTTPS_TRANSPORT_FILE = join(DESKTOP_MAIN, 'game-api/https-transport.ts');
+/** The market price path's one socket. Read-only and unauthenticated — it carries no session
+ *  token and reads a published file, not the player's account — so it is exempted from the
+ *  account path's single-socket and single-host rules by file, never by widening either rule for
+ *  the whole tree. Everything else below still applies to it, the no-write-verb scan included. */
+const MARKET_TRANSPORT_FILE = join(DESKTOP_MAIN, 'market/market-transport.ts');
+const MARKET_SNAPSHOT_HOST = 'raw.githubusercontent.com';
 const SESSION_TOKEN_FILE_FILE = join(DESKTOP_MAIN, 'game-api/session-token-file.ts');
 const REQUEST_FILE = join(GAME_API_SRC, 'request.ts');
 const ACCOUNT_REFRESH_FILE = join(DESKTOP_MAIN, 'game-api/account-refresh.ts');
@@ -89,23 +95,43 @@ describe('Guard 1 — no write surface anywhere the network can be reached (D24)
     expect(offenders, `D24: this app has no write surface — reads only. Offenders: ${JSON.stringify(offenders.map((o) => o.file))}`).toEqual([]);
   });
 
-  it('names no host other than the single api.bombfarm.net constant', () => {
-    // Domain-shaped quoted strings with a real TLD — filters out symbol names / filenames like
-    // 'bfc.session.raw' or 'api-bodies.json', which are not hosts.
-    const hostPattern = /['"]((?:[a-z0-9-]+\.)+(?:net|com|org|io|dev))['"]/gi;
+  it('names no host other than app.bombfarm.net, and the market snapshot host only in the market transport', () => {
+    // Two shapes, because a host can be named either as a bare quoted string or as the authority
+    // inside a full URL literal — the bare-string form alone let `'https://elsewhere.com/path'`
+    // through, since the closing quote never followed the TLD.
+    // The bare form filters out symbol names / filenames like 'bfc.session.raw' or
+    // 'api-bodies.json', which are not hosts.
+    const hostPatterns = [
+      /['"]((?:[a-z0-9-]+\.)+(?:net|com|org|io|dev))['"]/gi,
+      /https?:\/\/((?:[a-z0-9-]+\.)+(?:net|com|org|io|dev))/gi,
+    ];
     const offenders: string[] = [];
     for (const file of sourceFiles) {
       const text = readFileSync(file, 'utf8');
-      let match: RegExpExecArray | null;
-      const re = new RegExp(hostPattern);
-      while ((match = re.exec(text))) {
-        const host = match[1];
-        if (host && host !== 'api.bombfarm.net') {
-          offenders.push(`${file}: ${host}`);
+      const allowed = new Set(['app.bombfarm.net', ...(file === MARKET_TRANSPORT_FILE ? [MARKET_SNAPSHOT_HOST] : [])]);
+      for (const pattern of hostPatterns) {
+        const re = new RegExp(pattern);
+        let match: RegExpExecArray | null;
+        while ((match = re.exec(text))) {
+          const host = match[1];
+          if (host && !allowed.has(host.toLowerCase())) {
+            offenders.push(`${file}: ${host}`);
+          }
         }
       }
     }
-    expect(offenders, `Only api.bombfarm.net is allowed. Offenders: ${JSON.stringify(offenders)}`).toEqual([]);
+    expect(offenders, `Only app.bombfarm.net is allowed. Offenders: ${JSON.stringify(offenders)}`).toEqual([]);
+  });
+
+  it('red state demonstrated: a host named inside a URL literal is caught', () => {
+    const pattern = /https?:\/\/((?:[a-z0-9-]+\.)+(?:net|com|org|io|dev))/gi;
+    expect(pattern.exec("const endpoint = 'https://elsewhere.example.com/collect';")?.[1]).toBe('elsewhere.example.com');
+  });
+
+  it('the market transport names one host and sets no HTTP method at all, so it can only ever GET', () => {
+    const text = readFileSync(MARKET_TRANSPORT_FILE, 'utf8');
+    expect(text, 'sanity: the market transport must name the snapshot host it reads').toContain(MARKET_SNAPSHOT_HOST);
+    expect(/\bmethod\s*:/.test(foldStringConcatenation(text)), 'the market transport must never set a method').toBe(false);
   });
 
   it('contains no dotted-quad IP literal (no Cloudflare fixed-IP fallback)', () => {
@@ -169,7 +195,7 @@ describe('Guard 2 — https-transport.ts is the sole transport-library importer'
     expect(scannedFiles.length).toBeGreaterThan(0);
   });
 
-  it('no module outside https-transport.ts imports node:https, node:http, undici, axios or names fetch(', () => {
+  it('no module outside the two transports imports node:https, node:http, undici, axios or names fetch(', () => {
     // Covers a static `from '...'`, a CommonJS `require(...)`, AND a dynamic `import(...)` —
     // the last was missing until the fix-loop-2 Verifier reproduced the original report's "one
     // socket" PoC verbatim (`const https = await import('node:https'); https.request(...)`),
@@ -179,7 +205,7 @@ describe('Guard 2 — https-transport.ts is the sole transport-library importer'
     const fetchPattern = /\bfetch\s*\(/;
     const offenders: string[] = [];
     for (const file of scannedFiles) {
-      if (file === HTTPS_TRANSPORT_FILE) continue;
+      if (file === HTTPS_TRANSPORT_FILE || file === MARKET_TRANSPORT_FILE) continue;
       const text = readFileSync(file, 'utf8');
       if (importPattern.test(text) || fetchPattern.test(text)) {
         offenders.push(file);
@@ -191,6 +217,18 @@ describe('Guard 2 — https-transport.ts is the sole transport-library importer'
   it('https-transport.ts itself does import node:https (sanity — the guard is not vacuous)', () => {
     const text = readFileSync(HTTPS_TRANSPORT_FILE, 'utf8');
     expect(text).toMatch(/from ['"]node:https['"]/);
+  });
+
+  it('market-transport.ts itself does reach the network (sanity — its exemption is not vacuous)', () => {
+    const text = readFileSync(MARKET_TRANSPORT_FILE, 'utf8');
+    expect(text).toMatch(/\bfetch\s*\(/);
+  });
+
+  it('nothing outside market-transport.ts names the market snapshot URL constant', () => {
+    const offenders = scannedFiles.filter(
+      (file) => file !== MARKET_TRANSPORT_FILE && readFileSync(file, 'utf8').includes(MARKET_SNAPSHOT_HOST),
+    );
+    expect(offenders, `Only market-transport.ts names the snapshot host. Offenders: ${JSON.stringify(offenders)}`).toEqual([]);
   });
 });
 

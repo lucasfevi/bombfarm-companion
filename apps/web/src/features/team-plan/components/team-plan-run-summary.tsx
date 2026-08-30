@@ -3,12 +3,12 @@
 import type { TeamPlan } from '@bombfarm/domain/team-plan/types';
 import { Panel } from '@bombfarm/ui';
 import { mutedClass, panelHClass, panelTitleClass } from '@bombfarm/ui/panel-field.recipe';
-import type { Strings } from '@/shared/i18n';
+import type { Strings, Lang } from '@/shared/i18n';
 import { parseEmphasis, sub } from '@/shared/i18n';
 import { formatNumber } from '@/shared/lib/format-number';
 
-function formatElapsedSeconds(elapsedMs: number): string {
-  return formatNumber(elapsedMs / 1000, 1);
+function formatElapsedSeconds(elapsedMs: number, lang: Lang): string {
+  return formatNumber(elapsedMs / 1000, lang, 1);
 }
 
 function seedStartLabel(strings: Strings, seedUsed: string): string {
@@ -40,10 +40,12 @@ function emphasizedLine(text: string) {
 
 export function TeamPlanRunSummary({
   t,
+  lang,
   plan,
   ranOnMainThread,
 }: {
   t: Strings;
+  lang: Lang;
   plan: TeamPlan;
   ranOnMainThread: boolean;
 }) {
@@ -54,9 +56,9 @@ export function TeamPlanRunSummary({
     : t.teamPlanRunSummaryRegimeHintUnder;
 
   const metaLine = sub(t.teamPlanRunMetaFooter, {
-    seconds: formatElapsedSeconds(plan.run.elapsedMs),
+    seconds: formatElapsedSeconds(plan.run.elapsedMs, lang),
     rounds: String(plan.run.rounds),
-    evals: formatNumber(plan.run.evaluations, 0),
+    evals: formatNumber(plan.run.evaluations, lang, 0),
     seed: seedStartLabel(t, plan.run.seedUsed),
   });
 
@@ -76,7 +78,7 @@ export function TeamPlanRunSummary({
           <p className="m-0 text-ink">
             <strong>{t.teamPlanRunSummaryDuty}:</strong>{' '}
             {sub(t.teamPlanRunSummaryDutyValue, {
-              duty: formatNumber(plan.sumDuty, 2),
+              duty: formatNumber(plan.sumDuty, lang, 2),
               slots: String(plan.slots),
             })}
           </p>

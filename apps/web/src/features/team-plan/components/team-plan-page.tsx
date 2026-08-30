@@ -158,10 +158,11 @@ export function TeamPlanPage({
                 <div className="flex flex-col gap-4">
                   <TeamPlanRunSummary
                     t={t}
+                    lang={lang}
                     plan={displayPlan}
                     ranOnMainThread={runner.ranOnMainThread}
                   />
-                  <WaterfallPanel t={t} plan={displayPlan} />
+                  <WaterfallPanel t={t} lang={lang} plan={displayPlan} />
                   <HeroDeltaTable t={t} lang={lang} plan={displayPlan} />
                   <PlanDisclosures
                     t={t}

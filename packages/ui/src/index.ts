@@ -26,6 +26,14 @@ export {
   type IconSize,
 } from './icon';
 export { cn } from './cn';
+export {
+  formatNumber,
+  formatCompactNumber,
+  numberFormatterFor,
+  compactNumberFormatterFor,
+  type BoundNumberFormat,
+  type Lang,
+} from './format-number';
 export { AppShell } from './AppShell';
 export type { AppShellProps, AppShellNavItem } from './AppShell';
 export { BrandMark } from './brand-mark';

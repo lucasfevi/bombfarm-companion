@@ -1,0 +1,104 @@
+/**
+ * The **only** `bfc.invoke('account:get')` call site, and the **only**
+ * `bfc.on('account:changed', …)` subscription site. Both live in the `connect` below, which runs
+ * once for the window rather than once per mount of the screen reading it, and every arrival is
+ * folded through `account-view-store.ts`'s pure `accept()` reducer. Re-reads and pushes therefore
+ * reach every screen over this one seam, without touching a component.
+ */
+import { useEffect, useState } from 'react';
+import type { AccountView } from '@bombfarm/contracts';
+import { createLazySingleton, createSharedStore, type SharedStore } from '../shared-store';
+import { accept, initialAccountViewState } from './account-view-store';
+import type { AccountViewState, Arrival } from './account-view-store';
+
+export type { AccountViewState };
+
+type Bridge = NonNullable<Window['bfc']>;
+
+/**
+ * Wraps `bridge.invoke('account:get')` with an idempotency guard: even if `load()` is called
+ * more than once against the same loader, the underlying `account:get` invoke fires exactly
+ * once and every caller resolves to the same value. `apps/desktop`'s Vitest project has no DOM
+ * and no effect-flushing harness (`renderToStaticMarkup` never runs `useEffect`), so this is
+ * what makes the "invokes `account:get` exactly once" guarantee directly unit-testable —
+ * `use-account-view.test.ts` calls `load()` multiple times against one loader and asserts the
+ * mock bridge's `invoke` was called exactly once, with every resolution the same reference (the
+ * IPC boundary structurally clones on each real invoke, so identity is never mutated in place).
+ */
+export function createAccountViewLoader(bridge: Bridge) {
+  let promise: Promise<AccountView> | null = null;
+  return {
+    load(): Promise<AccountView> {
+      promise ??= bridge.invoke('account:get');
+      return promise;
+    },
+  };
+}
+
+export function createAccountViewStore(): SharedStore<AccountViewState> {
+  return createSharedStore<AccountViewState, Arrival>({
+    initial: initialAccountViewState,
+    accept,
+    connect: (dispatch) => {
+      const bridge = (window as unknown as { bfc?: Bridge }).bfc;
+      if (!bridge) {
+        // Never throw — the existing "Preload bridge unavailable" empty state renders from this.
+        dispatch({ kind: 'bridge-missing' });
+        return;
+      }
+
+      const loader = createAccountViewLoader(bridge);
+      // The boot fetch's `issuedAt` — always `initialAccountViewState.applied` (0), because this
+      // is the ONE fetch this seam ever issues. It is kept, not removed: main only pushes on
+      // change, and an emit before the renderer subscribed is silently dropped by
+      // `webContents.send`, which is why a boot read is still needed even though main also
+      // pushes. No `state.applied` read is required here: nothing can have been accepted yet at
+      // the moment this synchronous body issues the fetch.
+      const issuedAt = initialAccountViewState.applied;
+
+      loader
+        .load()
+        .then((view) => {
+          dispatch({ kind: 'fetched', view, issuedAt });
+        })
+        .catch((err: unknown) => {
+          // Surface the failure — never an all-zero account, never an empty roster presented as
+          // truth. Discarded by accept() itself if a view was already applied.
+          const message = err instanceof Error ? err.message : String(err);
+          dispatch({ kind: 'fetch-failed', message, issuedAt });
+        });
+
+      // The one `account:changed` subscription site. Fires on a genuine change only; `accept()`'s
+      // own accept gate (tier-0 key comparison) is a second, redundant-but-harmless line of
+      // defence against a no-op push. Never unsubscribed — holding it is what keeps the roster
+      // current while the player is on a tab that does not read it.
+      bridge.on('account:changed', (view) => {
+        dispatch({ kind: 'pushed', view });
+      });
+    },
+  });
+}
+
+const sharedAccountViewStore = createLazySingleton(createAccountViewStore);
+
+export function useAccountView(): AccountViewState {
+  // Seeded from the store rather than from `initialAccountViewState`: on a remount the roster is
+  // already in hand, and reading it only in the effect below would paint one committed frame of
+  // "Loading your account…" first.
+  const [state, setState] = useState<AccountViewState>(() => sharedAccountViewStore().getState());
+
+  useEffect(() => {
+    const store = sharedAccountViewStore();
+
+    const unsubscribe = store.subscribe(setState);
+    setState(store.getState());
+    store.start();
+
+    // Unsubscribes this mount only. The store keeps its bridge subscription, so remounting the
+    // Inventory screen shows the roster already in hand rather than "Loading your account…" and
+    // a second `account:get`.
+    return unsubscribe;
+  }, []);
+
+  return state;
+}

@@ -24,7 +24,7 @@ export interface ConsentText {
   readonly declineLabel: string;
 }
 
-export const CONSENT_TEXT_VERSION = 2;
+export const CONSENT_TEXT_VERSION = 3;
 
 export const CONSENT_TEXT: Readonly<Record<AppLocale, ConsentText>> = {
   en: {
@@ -44,7 +44,7 @@ export const CONSENT_TEXT: Readonly<Record<AppLocale, ConsentText>> = {
       },
       {
         heading: 'Your token stays put.',
-        text: 'It is sent only to api.bombfarm.net — never to us, never to anyone else, never ' +
+        text: 'It is sent only to app.bombfarm.net — never to us, never to anyone else, never ' +
           'into a log.',
       },
       {
@@ -79,7 +79,7 @@ export const CONSENT_TEXT: Readonly<Record<AppLocale, ConsentText>> = {
       },
       {
         heading: 'Seu token não sai do lugar.',
-        text: 'É enviado apenas para api.bombfarm.net — nunca para nós, nunca para terceiros, ' +
+        text: 'É enviado apenas para app.bombfarm.net — nunca para nós, nunca para terceiros, ' +
           'nunca para um log.',
       },
       {

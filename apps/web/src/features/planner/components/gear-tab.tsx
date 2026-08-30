@@ -1,8 +1,10 @@
 'use client';
 
+import { useMemo } from 'react';
+
 import { SLOTS } from '@bombfarm/domain/gear';
 import { useAppLang } from '@/shared/context/app-lang';
-import { formatNumber } from '@/shared/lib/format-number';
+import { numberFormatterFor } from '@/shared/lib/format-number';
 import { usePlannerStore } from '@/shared/stores';
 import { useHeroBuildActions } from '../hooks/use-hero-build-actions';
 import { FieldRequired, Panel } from '@bombfarm/ui';
@@ -13,6 +15,7 @@ import { GearCompareSection } from './gear-compare-section';
 
 export function GearTab() {
   const { t, lang } = useAppLang();
+  const boundFormatNumber = useMemo(() => numberFormatterFor(lang), [lang]);
   const { setSlot } = useHeroBuildActions();
   const loadout = usePlannerStore((state) => state.loadout);
 
@@ -27,7 +30,7 @@ export function GearTab() {
           <FieldRequired show={!hasGear}>{t.fieldRequired}</FieldRequired>
         </div>
         <GearSlotsGrid loadout={loadout} t={t} lang={lang} onPatchSlot={onPatchSlot} />
-        {hasGear && <GearSlotStatsGrid loadout={loadout} t={t} formatNumber={formatNumber} />}
+        {hasGear && <GearSlotStatsGrid loadout={loadout} t={t} formatNumber={boundFormatNumber} />}
         <GearCompareSection />
       </Panel>
     </main>

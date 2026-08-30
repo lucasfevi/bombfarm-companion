@@ -77,7 +77,7 @@ All exported from the barrel [`packages/ui/src/index.ts`](../packages/ui/src/ind
 ### Game art (`packages/game-art/src/`)
 
 Wiki-sourced game assets (heroes, items, abilities, …), shared by the web planner and the desktop
-Planning surfaces. It is its own workspace package rather than part of `packages/ui` because it
+Inventory surfaces. It is its own workspace package rather than part of `packages/ui` because it
 depends on `@bombfarm/domain` (hero/gear shapes, `wiki-assets.ts` URL builders) and `@bombfarm/ui`,
 which DS-09 forbids `packages/ui` itself from doing. **Do not overlay crystal gems** on item art.
 Hero avatars stay square with a **neutral fill + rarity border**. Gear frames are **portrait
@@ -128,6 +128,28 @@ Both are **composite shells** (not bare browser widgets):
 Call sites may keep `<option>` children; the primitive converts them to Base UI items and still emits a synthetic `onChange` with `target.value` as a string.
 
 Do **not** restyle native `::-webkit-inner-spin-button` or OS `<select>` menus in `globals.css` — compose these primitives instead. Prefer `Select` / `Num` over raw `<select>` / `<input type="number">` in feature UI. Prefer `Switch` over inventing Button/checkbox toggles for boolean flags.
+
+**Never use the native `title` attribute as a tooltip — use the `Tooltip` compound primitive.** The
+native one is not a weaker version of ours, it is a different thing: OS chrome that cannot be
+styled and ignores every planner token, on a delay the browser owns and the app cannot change,
+which never appears on touch and is not shown on keyboard focus. Whatever it carries is therefore
+invisible to a touch or keyboard user, which is why it is banned outright rather than discouraged.
+
+The ban is lint-enforced by `react/forbid-dom-props` in both `eslint.config.mjs` (covering
+`packages/ui`, `packages/game-art`, `apps/desktop/renderer`) and `apps/web/eslint.config.mjs`
+(covering `apps/web/src`). It targets **DOM elements only**, so `title` stays a legal prop on
+`PanelHeader`, `EmptyState`, `Banner` and `SettingsSection`. Its blind spot is a primitive that
+spreads unknown props onto its own DOM element — `title` passed to one of those is still a native
+tooltip and still forbidden, with only review to catch it. A genuine non-tooltip use of the
+attribute (`<abbr title>`) is an `eslint-disable-next-line` on that one line saying why — never a
+widened rule. `apps/web/eslint.config.mjs` also carries a burn-down list of the six planner files
+that predate the ban; delete an entry as its file migrates.
+
+When the trigger sits inside another interactive element — a link, an `Accordion.Trigger` row —
+swap the rendered tag with `render={<span />}` (or `render={<a … />}` to make the link itself the
+trigger), because `Tooltip.Trigger` renders a `<button>` by default and nesting one inside another
+interactive element is invalid HTML. See the *Tooltip trigger nested inside another interactive
+control* note above.
 
 **Before adding a new interactive primitive or inventing a toggle/control pattern:** follow [`base-ui-first.md`](base-ui-first.md) — check Base UI, wrap with cva + tokens, prefer `Switch` for boolean flags. Prefer `Accordion` / `Collapsible` over inventing `<details>`/`<summary>` disclosures.
 

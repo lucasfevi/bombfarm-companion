@@ -9,6 +9,7 @@ export default defineConfig({
       // run node-env with `renderToStaticMarkup` (the `packages/ui/vitest.config.ts` precedent).
       'renderer/lib/**/*.test.ts',
       'renderer/lib/**/*.test.tsx',
+      'renderer/app/**/*.test.ts',
       'renderer/app/**/*.test.tsx',
     ],
     // Fail once, before collection, when any of the workspace dist builds this project resolves

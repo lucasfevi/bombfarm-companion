@@ -44,11 +44,10 @@ const guardModule = path.join(__dirname, 'require-workspace-dist.mjs');
  * than one key for the whole project. `globalSetup` runs once per PROJECT before collection
  * regardless of any filename filter, and `.github/workflows/line-endings.yml` runs `pnpm vitest
  * run --project tools line-endings` build-free by design — a project-wide guard there failed a job
- * that needed no build. But per-file keys are not just about that job: the project's two
- * build-dependent files need DIFFERENT packages (`advice-change-key-coverage.test.mjs` needs only
- * `domain`; `derived-fixture-drift.test.mjs` needs `domain` AND `game-api`), so a single shared
- * `tools` list would either under-demand for one file or over-demand for the other. Each file calls
- * the assert on its own key.
+ * that needed no build. The key stays per-file even now that only one file needs a build
+ * (`derived-fixture-drift.test.mjs`, which needs `domain` AND `game-api`): a second build-dependent
+ * file will not need the same packages, and a shared `tools` list would then under-demand for one
+ * and over-demand for the other.
  */
 const WIRED_PROJECTS = [
   {
@@ -64,7 +63,7 @@ const WIRED_PROJECTS = [
   {
     project: 'tools',
     globalSetupConfig: null,
-    requiredDistKeys: ['tools/advice-change-key-coverage.test.mjs', 'tools/derived-fixture-drift.test.mjs'],
+    requiredDistKeys: ['tools/derived-fixture-drift.test.mjs'],
   },
 ];
 
@@ -79,16 +78,9 @@ const ALL_REQUIRED_DIST_KEYS = WIRED_PROJECTS.flatMap(({ requiredDistKeys }) => 
  */
 const GLOBAL_SETUP_PROJECTS = WIRED_PROJECTS.filter(({ globalSetupConfig }) => globalSetupConfig);
 
-/** The `tools` project's per-file wiring — the config that must NOT carry it, and the files that must. */
+/** The `tools` project's per-file wiring — the config that must NOT carry it, and the file that must. */
 const TOOLS_CONFIG = 'tools/vitest.config.ts';
 const TOOLS_GUARDED_FILES = [
-  {
-    file: 'tools/advice-change-key-coverage.test.mjs',
-    requiredPackages: ['domain'],
-    dynamicImportTarget: "'../apps/desktop/renderer/lib/planning/hero-advice.ts'",
-    dynamicImportPattern: /await import\(\s*'\.\.\/apps\/desktop\/renderer\/lib\/planning\/hero-advice\.ts'\s*\)/,
-    staticImportPattern: /^import\b[^\n]*hero-advice\.ts/m,
-  },
   {
     file: 'tools/derived-fixture-drift.test.mjs',
     requiredPackages: ['domain', 'game-api'],
@@ -141,9 +133,8 @@ afterAll(() => {
 describe('REQUIRED_DIST_PACKAGES', () => {
   it('is the measured set each consumer needs built', () => {
     expect(REQUIRED_DIST_PACKAGES).toEqual({
-      '@bombfarm/desktop': ['contracts', 'domain', 'game-api', 'game-data', 'tap-runtime'],
+      '@bombfarm/desktop': ['contracts', 'domain', 'game-api', 'game-data', 'pricing', 'tap-runtime'],
       '@bombfarm/game-api': ['domain'],
-      'tools/advice-change-key-coverage.test.mjs': ['domain'],
       'tools/derived-fixture-drift.test.mjs': ['domain', 'game-api'],
     });
   });
@@ -267,6 +258,7 @@ describe('missingDistPackages', () => {
       'domain',
       'game-api',
       'game-data',
+      'pricing',
       'tap-runtime',
     ]);
   });
@@ -282,26 +274,24 @@ describe('missingDistPackages', () => {
       'contracts',
       'game-api',
       'game-data',
+      'pricing',
       'tap-runtime',
     ]);
-    // Same root, different key: game-api needs domain alone and is satisfied, and so does
-    // advice-change-key-coverage.test.mjs; derived-fixture-drift.test.mjs needs domain AND
-    // game-api, so it is still short one.
+    // Same root, different key: game-api needs domain alone and is satisfied;
+    // derived-fixture-drift.test.mjs needs domain AND game-api, so it is still short one.
     expect(missingDistPackages('@bombfarm/game-api', root)).toEqual([]);
-    expect(missingDistPackages('tools/advice-change-key-coverage.test.mjs', root)).toEqual([]);
     expect(missingDistPackages('tools/derived-fixture-drift.test.mjs', root)).toEqual(['game-api']);
   });
 
-  it('reports domain for game-api and for advice-change-key-coverage, and domain+game-api in declaration order for derived-fixture-drift, when only the others are built', () => {
+  it('reports domain for game-api, and domain+game-api in declaration order for derived-fixture-drift, when only the others are built', () => {
     const root = makeRoot('no-domain', ['contracts', 'game-data', 'pricing', 'ui']);
     expect(missingDistPackages('@bombfarm/game-api', root)).toEqual(['domain']);
-    expect(missingDistPackages('tools/advice-change-key-coverage.test.mjs', root)).toEqual(['domain']);
     expect(missingDistPackages('tools/derived-fixture-drift.test.mjs', root)).toEqual(['domain', 'game-api']);
   });
 
-  it('advice-change-key-coverage.test.mjs is satisfied by domain alone even when game-api is entirely absent (the false positive this closes)', () => {
-    const root = makeRoot('game-api-absent', ['domain']);
-    expect(missingDistPackages('tools/advice-change-key-coverage.test.mjs', root)).toEqual([]);
+  it('game-api is satisfied by domain alone even when every other package is entirely absent (the false positive this closes)', () => {
+    const root = makeRoot('only-domain', ['domain']);
+    expect(missingDistPackages('@bombfarm/game-api', root)).toEqual([]);
   });
 });
 

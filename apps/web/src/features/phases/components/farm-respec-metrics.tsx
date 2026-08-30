@@ -24,7 +24,7 @@ export function FarmRespecMetrics({
   const paybackKind = resolvePaybackKind(result);
   const paybackText =
     paybackKind === 'hours'
-      ? sub(t.farmRespecPaybackHours, { hours: formatHours(result.paybackHours ?? 0) })
+      ? sub(t.farmRespecPaybackHours, { hours: formatHours(result.paybackHours ?? 0, lang) })
       : t.farmRespecPaybackNoChange;
   const phaseChange = resolvePhaseChange(result);
   const phaseLabel = (phase: number | null) => (phase != null ? formatPhaseLabel(phase, lang) : '—');
@@ -40,9 +40,9 @@ export function FarmRespecMetrics({
           {t.farmRespecMetricGold}
         </div>
         <div className="text-[13px] font-bold">
-          {formatRate(result.currentGoldPerHour)} → {formatRate(result.proposedGoldPerHour)}{' '}
+          {formatRate(result.currentGoldPerHour, lang)} → {formatRate(result.proposedGoldPerHour, lang)}{' '}
           <span className="text-[10px] font-normal text-muted">
-            ({formatSignedPct(result.goldGainPct)}%)
+            ({formatSignedPct(result.goldGainPct, lang)}%)
           </span>
         </div>
       </div>
@@ -52,9 +52,9 @@ export function FarmRespecMetrics({
           {t.farmRespecMetricChests}
         </div>
         <div className="text-[13px] font-bold">
-          {formatRate(result.currentChestsPerHour)} → {formatRate(result.proposedChestsPerHour)}{' '}
+          {formatRate(result.currentChestsPerHour, lang)} → {formatRate(result.proposedChestsPerHour, lang)}{' '}
           <span className="text-[10px] font-normal text-muted">
-            ({formatSignedPct(result.chestsGainPct)}%)
+            ({formatSignedPct(result.chestsGainPct, lang)}%)
           </span>
         </div>
       </div>
@@ -76,7 +76,7 @@ export function FarmRespecMetrics({
           {t.farmRespecMetricCost}
         </div>
         <div className="text-[13px] font-bold">
-          <GoldValue>{formatGold(result.respecCostGold)}</GoldValue>
+          <GoldValue>{formatGold(result.respecCostGold, lang)}</GoldValue>
         </div>
       </div>
       <div data-testid="farm-respec-metric-payback" className="rounded-sm border border-line p-2">

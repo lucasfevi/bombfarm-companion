@@ -1,29 +1,22 @@
 /**
  * Every value in `en.ts` must satisfy `docs/i18n.md`'s player-facing plain-language
- * rules — no formulas, no camelCase identifiers, no field paths, no type names. Explicitly
- * covers the section names rendering as player language ("your skill tree"), not the raw
- * `AccountSection` key (`skills`).
+ * rules — no formulas, no camelCase identifiers, no field paths, no type names.
  *
- * `ACCOUNT_SECTION_COPY_KEY` maps every `AccountSection` to a copy key,
- * exhaustively.
- *
- * design §7 rule 1: the scanner now runs over `pt-BR.ts` too, via one parameterised
- * `describe.each`. The four regexes below use Unicode property escapes and the `u` flag so
- * accented Portuguese (`não`, `ação`, `você`) does not shift a `\b`/`[a-z]` boundary and
- * false-positive — fixed here, in the rule, per the absolute instruction: never exempt a key.
+ * The scanner runs over `pt-BR.ts` too, via one parameterised `describe.each`. The four regexes
+ * below use Unicode property escapes and the `u` flag so accented Portuguese (`não`, `ação`,
+ * `você`) does not shift a `\b`/`[a-z]` boundary and false-positive — fixed in the rule, never
+ * by exempting a key.
  */
 import { describe, expect, it } from 'vitest';
-import { ACCOUNT_SECTIONS } from '@bombfarm/domain/account-fidelity';
 import { en } from './en';
 import { ptBR } from './pt-BR';
-import { ACCOUNT_SECTION_COPY_KEY, type Copy } from './index';
 
 type CopyViolation = { key: string; reason: 'camelCase identifier' | 'field path' | 'type name' | 'formula character'; value: string };
 
 // A word boundary that is Unicode-aware, unlike ASCII `\b` (which treats every accented letter —
 // `não`, `ação` — as a non-word character and can therefore report a boundary in the WRONG place
 // inside accented PT-BR prose). Implemented as lookaround rather than `\b` for exactly that
-// reason (design §7 rule 1).
+// reason.
 const NOT_WORD_BEFORE = '(?<![\\p{L}0-9_])';
 const NOT_WORD_AFTER = '(?![\\p{L}0-9_])';
 
@@ -32,8 +25,8 @@ const NOT_WORD_AFTER = '(?![\\p{L}0-9_])';
 // which always has a space. `\p{Ll}`/`\p{Lu}` (Unicode letter categories) + the `u` flag, rather
 // than ASCII `[a-z]`/`[A-Z]`, so accented PT-BR words never shift where a boundary is found. The
 // leading boundary is load-bearing: without it, "AccountShared" (a TYPE_NAME, not camelCase)
-// would match on its internal "tS" — this is exactly the accented-boundary hazard §7 rule 1
-// warns about, demonstrated by the "AccountShared" fixture in this file's own red-state test.
+// would match on its internal "tS" — the accented-boundary hazard this rule exists for,
+// demonstrated by the "AccountShared" fixture in this file's own red-state test.
 const CAMEL_CASE = new RegExp(`${NOT_WORD_BEFORE}\\p{Ll}+\\p{Lu}[\\p{L}0-9]*${NOT_WORD_AFTER}`, 'u');
 // `a.b` token shape — an object/field path. Prose sentences end a `.` with a space or EOL, so
 // this never fires on ordinary punctuation, in either language.
@@ -43,11 +36,11 @@ const FIELD_PATH = new RegExp(`${NOT_WORD_BEFORE}[\\p{L}_]\\w*\\.[\\p{L}_]\\w*${
 // this.
 const TYPE_NAME = new RegExp(`${NOT_WORD_BEFORE}\\p{Lu}[\\p{Ll}0-9]+\\p{Lu}[\\p{L}0-9]*${NOT_WORD_AFTER}`, 'u');
 // Assignment/algebra shapes lifted straight from docs/i18n.md's own examples. A bare `+` is the
-// hazard design §7 rule 1 names explicitly for PT-BR ("+1 Penetração" reads as a formula, not
-// prose) — the rule stays language-agnostic, so no PT-BR string may use `+` as a connector either.
+// PT-BR hazard specifically ("+1 Penetração" reads as a formula, not prose) — the rule stays
+// language-agnostic, so no PT-BR string may use `+` as a connector either.
 const FORMULA_CHAR = /[=+*^]|\b(?:max|min)\(/;
 
-/** Exported so `T6`'s broader renderer guard can reuse the same rule set if it chooses to. */
+/** Exported so a broader renderer guard can reuse the same rule set. */
 export function findCopyViolations(entries: Record<string, string>): CopyViolation[] {
   const violations: CopyViolation[] = [];
   for (const [key, value] of Object.entries(entries)) {
@@ -74,8 +67,8 @@ describe.each([
   });
 });
 
-// The red-state fixture test is kept UNMODIFIED (design §10, T2 Done-when) — it demonstrates the
-// scanner catches each rule shape at all, independent of which language object is passed in.
+// Demonstrates the scanner catches each rule shape at all, independent of which language object
+// is passed in.
 describe('the scanner catches each rule on a fixture object, naming the offending key', () => {
   it("red state (demonstrated here, never left in en.ts/pt-BR.ts): the scanner catches each rule on a fixture object, naming the offending key", () => {
     const badFixture = {
@@ -95,7 +88,7 @@ describe('the scanner catches each rule on a fixture object, naming the offendin
     expect(byKey.goodKey).toBeUndefined();
   });
 
-  it('red state demonstrated on accented PT-BR prose too — the fix is the Unicode-aware regex, not a per-key exemption (design §7 rule 1)', () => {
+  it('red state demonstrated on accented PT-BR prose too — the fix is the Unicode-aware regex, not a per-key exemption', () => {
     const badPtBrFixture = {
       goodKey: 'uma frase perfeitamente normal para o jogador, com acentuação',
       badFormulaKey: '+1 Penetração (pontos)/nível',
@@ -107,24 +100,5 @@ describe('the scanner catches each rule on a fixture object, naming the offendin
     expect(byKey.badFormulaKey).toBe('formula character');
     expect(byKey.badCamelCaseKey).toBe('camelCase identifier');
     expect(byKey.goodKey).toBeUndefined();
-  });
-});
-
-describe('ACCOUNT_SECTION_COPY_KEY covers every AccountSection exhaustively', () => {
-  it('has one entry per ACCOUNT_SECTIONS member, each pointing at a real key in en', () => {
-    for (const section of ACCOUNT_SECTIONS) {
-      const copyKey = ACCOUNT_SECTION_COPY_KEY[section];
-      expect(copyKey, `no mapping for section "${section}"`).toBeDefined();
-      expect(Object.prototype.hasOwnProperty.call(en, copyKey)).toBe(true);
-    }
-  });
-
-  it('every section renders as player language, non-empty text', () => {
-    for (const section of ACCOUNT_SECTIONS) {
-      const copyKey = ACCOUNT_SECTION_COPY_KEY[section];
-      const text = en[copyKey as keyof Copy];
-      expect(typeof text).toBe('string');
-      expect((text as string).length).toBeGreaterThan(0);
-    }
   });
 });

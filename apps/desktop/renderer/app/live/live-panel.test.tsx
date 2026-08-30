@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { createElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { FIELD_SLOTS_MAX } from '@bombfarm/domain/casa-slots';
-import { STRINGS, sub } from '../../lib/copy';
+import { STRINGS } from '../../lib/copy';
 import type { LiveFastModel, LiveSlowModel } from '../../lib/live/live-model';
 import { LivePanel } from './live-panel';
 
@@ -22,7 +22,7 @@ function slowModel(overrides: Partial<LiveSlowModel> = {}): LiveSlowModel {
   };
 }
 
-const emptyFast: LiveFastModel = { field: {}, recovery: {} };
+const emptyFast: LiveFastModel = { field: {}, recovery: {}, energy: {} };
 
 describe('LivePanel — composition', () => {
   it('carries the panel root testid, the freshness line, and the field occupancy count', () => {
@@ -31,10 +31,35 @@ describe('LivePanel — composition', () => {
     );
     expect(html).toContain('data-testid="live-panel"');
     expect(html).toContain('data-testid="live-freshness"');
-    expect(html).toContain('data-testid="live-list-on-field-count"');
+    expect(html).toContain('data-testid="live-state-summary-on-field-count"');
   });
 
-  it('has no separate House panel — every house reading it carried now heads the Resting section', () => {
+  it('puts the earnings panel in the first column of a page-level two-column grid, with the heroes panel spanning full width outside it', () => {
+    const html = renderToStaticMarkup(
+      createElement(LivePanel, { freshness: { kind: 'live' }, slow: slowModel(), fast: emptyFast }),
+    );
+    const gridIndex = html.search(/class="[^"]*grid-cols-\[/);
+    const earningsIndex = html.indexOf('data-testid="live-earnings"');
+    const heroesIndex = html.indexOf('data-testid="live-heroes"');
+
+    expect(gridIndex).toBeGreaterThan(-1);
+    expect(earningsIndex).toBeGreaterThan(gridIndex);
+    expect(heroesIndex).toBeGreaterThan(earningsIndex);
+  });
+
+  it('gives the earnings column its own content width so the pair never falls back to one column', () => {
+    const html = renderToStaticMarkup(
+      createElement(LivePanel, { freshness: { kind: 'live' }, slow: slowModel(), fast: emptyFast }),
+    );
+    const gridClass = /class="((?:[^"]*\s)?grid\s[^"]*grid-cols-\[[^"]*)"/.exec(html)?.[1] ?? '';
+
+    expect(gridClass).toContain('grid-cols-[max-content_minmax(0,1fr)]');
+    // A width-prefixed column rule is the single-column fallback coming back: the pair fits inside
+    // the smallest window the app can be resized to, so no width may decide how many columns it has.
+    expect(gridClass).not.toMatch(/(?:min-\[|sm:|md:|lg:|xl:|2xl:|compact:|wide:)/);
+  });
+
+  it('has no separate House panel — every house reading it carried now feeds the Resting tooltip', () => {
     const slow = slowModel({
       recovering: [{ id: 'r1' }, { id: 'r2' }],
       house: { slots: 5, slotsMax: 9, cycleSeconds: 1050, rescuesLeft: 3, rescuesMax: 15 },
@@ -42,64 +67,62 @@ describe('LivePanel — composition', () => {
     const html = renderToStaticMarkup(createElement(LivePanel, { freshness: { kind: 'live' }, slow, fast: emptyFast }));
 
     expect(html).not.toContain('data-testid="live-house"');
-    expect(html).toMatch(/data-testid="live-list-recovering-count"[^>]*>2\/5</);
-    expect(html).toContain(sub(en.liveRestingCycleValue, { duration: '17:30' }));
-    expect(html).toContain(sub(en.liveRestingSkipsValue, { left: '3', max: '15' }));
-    expect(html).toContain(en.liveRestingSlotsHint);
+    expect(html).toMatch(/data-testid="live-state-summary-recovering-count"[^>]*>2\/5</);
+    // A real house reading turns the plain count into a tooltip trigger — the exact fact/hint
+    // text this feeds is `state-summary-bar.test.tsx`'s job and `resting-facts.test.ts`'s for the
+    // underlying "no skips left" vs "0 of 15" wording; Base UI mounts the popup only once open,
+    // so its content is not in this static render at all.
+    expect(html).toMatch(/<button[^>]*data-testid="live-state-summary-recovering"[^>]*>/);
   });
 
-  it('reads the day as spent rather than counting down to it — "no skips left", not "0 of 15"', () => {
-    const slow = slowModel({ house: { slots: 9, slotsMax: 9, rescuesLeft: 0, rescuesMax: 15 } });
-    const html = renderToStaticMarkup(createElement(LivePanel, { freshness: { kind: 'live' }, slow, fast: emptyFast }));
-
-    expect(html).toContain(en.liveRestingSkipsNone);
-    expect(html).not.toContain(sub(en.liveRestingSkipsValue, { left: '0', max: '15' }));
-  });
-
-  it('heads Resting with a plain count, and no facts at all, when the game has sent no house', () => {
+  it('shows the resting count plain, with no tooltip trigger at all, when the game has sent no house', () => {
     const slow = slowModel({ recovering: [{ id: 'r1', energyFraction: 0.5 }] });
     const html = renderToStaticMarkup(createElement(LivePanel, { freshness: { kind: 'live' }, slow, fast: emptyFast }));
 
-    expect(html).toMatch(/data-testid="live-list-recovering-count"[^>]*>1</);
-    expect(html).not.toContain('data-testid="live-list-recovering-facts"');
-    expect(html).not.toContain('data-testid="live-list-recovering-hint"');
-    // An absent house contributes nothing to the heading — never "1/" against an unknown cap.
-    expect(html).not.toMatch(/data-testid="live-list-recovering-count"[^>]*>[^<]*\//);
+    expect(html).toMatch(/data-testid="live-state-summary-recovering-count"[^>]*>1</);
+    const tagMatch = html.match(/<[a-z]+[^>]*data-testid="live-state-summary-recovering"[^>]*>/);
+    expect(tagMatch?.[0]).not.toMatch(/^<button/);
+    // An absent house contributes nothing to the count — never "1/" against an unknown cap.
+    expect(html).not.toMatch(/data-testid="live-state-summary-recovering-count"[^>]*>[^<]*\//);
   });
 
-  it('gathers all four rotation states inside one Heroes panel, in field/resting/idle/benched order', () => {
-    const html = renderToStaticMarkup(
-      createElement(LivePanel, { freshness: { kind: 'live' }, slow: slowModel(), fast: emptyFast }),
-    );
+  it('gathers all four rotation states inside one flat list, in field/resting/idle/benched order — the classifier\'s own within-group order preserved', () => {
+    const slow = slowModel({
+      onField: [{ id: 'f1' }, { id: 'f2' }],
+      recovering: [{ id: 'r1' }, { id: 'r2' }],
+      queued: [{ id: 'q1' }, { id: 'q2' }],
+      benched: [{ id: 'b1' }, { id: 'b2' }],
+    });
+    const html = renderToStaticMarkup(createElement(LivePanel, { freshness: { kind: 'live' }, slow, fast: emptyFast }));
     const heroesPanel = html.indexOf('data-testid="live-heroes"');
     expect(heroesPanel).toBeGreaterThan(-1);
     expect(html).toContain(en.liveHeroesTitle);
 
-    const sections = ['live-list-on-field', 'live-list-recovering', 'live-list-queued', 'live-list-benched'].map((testId) =>
-      html.indexOf(`data-testid="${testId}"`),
-    );
-    expect(sections.every((index) => index > heroesPanel)).toBe(true);
-    expect(sections).toEqual([...sections].sort((a, b) => a - b));
+    const ids = ['f1', 'f2', 'r1', 'r2', 'q1', 'q2', 'b1', 'b2'];
+    const positions = ids.map((id) => html.indexOf(`data-testid="live-hero-row-${id}"`));
+    expect(positions.every((index) => index > heroesPanel)).toBe(true);
+    expect(positions).toEqual([...positions].sort((a, b) => a - b));
   });
 
-  it('mutes the benched section and only the benched section — a hero out of the rotation reads differently from one resting inside it', () => {
+  it('mutes the benched rows and only the benched rows — a hero out of the rotation reads differently from one resting inside it', () => {
     const slow = slowModel({ onField: [{ id: 'f1' }], recovering: [{ id: 'r1' }], queued: [{ id: 'q1' }], benched: [{ id: 'b1' }] });
     const html = renderToStaticMarkup(createElement(LivePanel, { freshness: { kind: 'live' }, slow, fast: emptyFast }));
 
     expect(html.match(/data-muted=""/g)).toHaveLength(1);
     const mutedIndex = html.indexOf('data-muted=""');
-    expect(mutedIndex).toBeGreaterThan(html.indexOf('data-testid="live-list-benched"'));
+    expect(mutedIndex).toBeGreaterThan(html.indexOf('data-testid="live-hero-row-b1"'));
+    expect(mutedIndex).toBeLessThan(html.indexOf('data-testid="live-hero-row-b1-name"'));
   });
 
-  it('there is no separate occupancy panel — the count lives in the on-field section heading', () => {
+  it('there is no separate occupancy panel — the count lives in the summary bar', () => {
     const html = renderToStaticMarkup(
       createElement(LivePanel, { freshness: { kind: 'live' }, slow: slowModel(), fast: emptyFast }),
     );
-    const onFieldPanelStart = html.indexOf('data-testid="live-list-on-field"');
-    const onFieldPanelEnd = html.indexOf('data-testid="live-list-recovering"');
-    const occupancyIndex = html.indexOf('data-testid="live-list-on-field-count"');
-    expect(occupancyIndex).toBeGreaterThan(onFieldPanelStart);
-    expect(occupancyIndex).toBeLessThan(onFieldPanelEnd);
+    const summaryIndex = html.indexOf('data-testid="live-state-summary"');
+    const listIndex = html.indexOf('data-testid="live-hero-list-empty"');
+    const occupancyIndex = html.indexOf('data-testid="live-state-summary-on-field-count"');
+    expect(occupancyIndex).toBeGreaterThan(summaryIndex);
+    expect(occupancyIndex).toBeLessThan(listIndex);
   });
 
   it('renders occupied against the field size when the field size is known', () => {
@@ -110,7 +133,7 @@ describe('LivePanel — composition', () => {
         fast: emptyFast,
       }),
     );
-    expect(html).toMatch(/data-testid="live-list-on-field-count"[^>]*>2\/5</);
+    expect(html).toMatch(/data-testid="live-state-summary-on-field-count"[^>]*>2\/5</);
   });
 
   it('renders occupied-only, never "occupied/undefined", when the field size was never sent', () => {
@@ -121,7 +144,7 @@ describe('LivePanel — composition', () => {
         fast: emptyFast,
       }),
     );
-    expect(html).toMatch(/data-testid="live-list-on-field-count"[^>]*>3</);
+    expect(html).toMatch(/data-testid="live-state-summary-on-field-count"[^>]*>3</);
     expect(html).not.toContain('undefined');
     expect(html).not.toContain('3/');
   });
@@ -134,25 +157,63 @@ describe('LivePanel — composition', () => {
       benched: [{ id: 'b1' }],
     });
     const html = renderToStaticMarkup(createElement(LivePanel, { freshness: { kind: 'live' }, slow, fast: emptyFast }));
-    expect(html).toContain('data-testid="live-hero-card-f1"');
-    expect(html).toContain('data-testid="live-hero-card-f2"');
-    expect(html.indexOf('live-hero-card-f1')).toBeLessThan(html.indexOf('live-hero-card-f2'));
-    expect(html).toContain('data-testid="live-hero-card-r1"');
-    expect(html).toContain('data-testid="live-hero-card-q1"');
-    expect(html).toContain('data-testid="live-hero-card-b1"');
+    expect(html).toContain('data-testid="live-hero-row-f1"');
+    expect(html).toContain('data-testid="live-hero-row-f2"');
+    expect(html.indexOf('live-hero-row-f1')).toBeLessThan(html.indexOf('live-hero-row-f2'));
+    expect(html).toContain('data-testid="live-hero-row-r1"');
+    expect(html).toContain('data-testid="live-hero-row-q1"');
+    expect(html).toContain('data-testid="live-hero-row-b1"');
+  });
+
+  it('an empty account still renders the list\'s own empty line rather than vanishing silently', () => {
+    const html = renderToStaticMarkup(
+      createElement(LivePanel, { freshness: { kind: 'live' }, slow: slowModel(), fast: emptyFast }),
+    );
+    expect(html).toContain('data-testid="live-hero-list-empty"');
+    expect(html).toContain(en.liveListEmptyLine);
+    expect(html).not.toContain('data-testid="live-hero-list"');
+  });
+
+  it('renders the list, not the empty line, once any group has a hero', () => {
+    const html = renderToStaticMarkup(
+      createElement(LivePanel, { freshness: { kind: 'live' }, slow: slowModel({ queued: [{ id: 'q1' }] }), fast: emptyFast }),
+    );
+    expect(html).toContain('data-testid="live-hero-list"');
+    expect(html).not.toContain('data-testid="live-hero-list-empty"');
   });
 
   it('an on-field hero with no matching fast countdown renders the missing-data string, not a substituted 0', () => {
     const slow = slowModel({ onField: [{ id: 'f1' }] });
     const html = renderToStaticMarkup(createElement(LivePanel, { freshness: { kind: 'live' }, slow, fast: emptyFast }));
-    expect(html).toContain(en.fidelityStatusMissing);
+    expect(html).toContain(en.valueNotAvailable);
   });
 
   it('an on-field hero with a matching fast countdown renders the formatted number', () => {
     const slow = slowModel({ onField: [{ id: 'f1' }] });
-    const fast: LiveFastModel = { field: { f1: { heroId: 'f1', secondsRemaining: 30, basis: 'observed' } }, recovery: {} };
+    const fast: LiveFastModel = { field: { f1: { heroId: 'f1', secondsRemaining: 30, basis: 'observed' } }, recovery: {}, energy: {} };
     const html = renderToStaticMarkup(createElement(LivePanel, { freshness: { kind: 'live' }, slow, fast }));
     expect(html).toContain('0:30');
+  });
+
+  it('renders a countdown for an on-field row and a recovering row, and none at all for idle/benched', () => {
+    const slow = slowModel({
+      onField: [{ id: 'f1' }],
+      recovering: [{ id: 'r1' }],
+      queued: [{ id: 'q1' }],
+      benched: [{ id: 'b1' }],
+    });
+    const fast: LiveFastModel = {
+      field: { f1: { heroId: 'f1', secondsRemaining: 30, basis: 'observed' } },
+      recovery: { r1: { heroId: 'r1', secondsRemaining: 45, advancing: true } },
+      energy: {},
+    };
+    const html = renderToStaticMarkup(createElement(LivePanel, { freshness: { kind: 'live' }, slow, fast }));
+    expect(html).toContain('data-testid="live-countdown-field-f1"');
+    expect(html).toContain('data-testid="live-countdown-recovery-r1"');
+    expect(html).not.toContain('data-testid="live-countdown-field-q1"');
+    expect(html).not.toContain('data-testid="live-countdown-recovery-q1"');
+    expect(html).not.toContain('data-testid="live-countdown-field-b1"');
+    expect(html).not.toContain('data-testid="live-countdown-recovery-b1"');
   });
 
   it('carries no countdown legend: every countdown reads the same, so there is no marking left to explain', () => {
@@ -162,7 +223,7 @@ describe('LivePanel — composition', () => {
     expect(html).not.toContain('data-testid="live-countdown-legend"');
   });
 
-  it('points at the skill tree only while the field is narrower than the game allows', () => {
+  it('surfaces the skill-tree hint through the on-field tooltip trigger only while the field is narrower than the game allows', () => {
     const narrow = renderToStaticMarkup(
       createElement(LivePanel, {
         freshness: { kind: 'live' },
@@ -177,12 +238,12 @@ describe('LivePanel — composition', () => {
         fast: emptyFast,
       }),
     );
-    expect(narrow).toContain('data-testid="live-list-on-field-hint"');
-    expect(narrow).toContain(en.liveFieldSlotsHint);
-    expect(full).not.toContain('data-testid="live-list-on-field-hint"');
+    expect(narrow).toMatch(/<button[^>]*data-testid="live-state-summary-on-field"[^>]*>/);
+    const fullTag = full.match(/<[a-z]+[^>]*data-testid="live-state-summary-on-field"[^>]*>/);
+    expect(fullTag?.[0]).not.toMatch(/^<button/);
   });
 
-  it('withholds the hint when the field size was never sent — advice with no cap under it', () => {
+  it('withholds the on-field tooltip when the field size was never sent — advice with no cap under it', () => {
     const html = renderToStaticMarkup(
       createElement(LivePanel, {
         freshness: { kind: 'live' },
@@ -190,10 +251,11 @@ describe('LivePanel — composition', () => {
         fast: emptyFast,
       }),
     );
-    expect(html).not.toContain('data-testid="live-list-on-field-hint"');
+    const tagMatch = html.match(/<[a-z]+[^>]*data-testid="live-state-summary-on-field"[^>]*>/);
+    expect(tagMatch?.[0]).not.toMatch(/^<button/);
   });
 
-  it('gives every hero an energy bar, in all four sections', () => {
+  it('gives every hero an energy bar, in all four states', () => {
     const slow = slowModel({
       onField: [{ id: 'f1', energyFraction: 0.8 }],
       recovering: [{ id: 'r1', energyFraction: 0.3 }],
@@ -206,7 +268,7 @@ describe('LivePanel — composition', () => {
     }
   });
 
-  it('tells a full idle hero from one still filling — the reading that makes one Idle section enough', () => {
+  it('tells a full idle hero from one still filling — the reading that makes one flat list enough', () => {
     const slow = slowModel({ queued: [{ id: 'ready', energyFraction: 1 }, { id: 'waiting', energyFraction: 0.62 }] });
     const html = renderToStaticMarkup(createElement(LivePanel, { freshness: { kind: 'live' }, slow, fast: emptyFast }));
     expect(html).toMatch(/data-testid="live-energy-ready-value"[^>]*>100%</);
@@ -242,5 +304,59 @@ describe('LivePanel — composition', () => {
     expect(none).not.toContain('data-testid="live-field-exit-pending-count"');
     expect(some).toContain('data-testid="live-field-exit-pending-count"');
     expect(some).not.toContain(en.liveUnclassifiedCount.replace('{n}', '3'));
+  });
+});
+
+describe('LivePanel — the energy reading follows the fast channel, not the rotation snapshot', () => {
+  function readPercent(html: string, id: string): string | undefined {
+    return new RegExp(`data-testid="live-energy-${id}-value"[^>]*>([^<]*)<`).exec(html)?.[1];
+  }
+
+  it('a recovering hero whose countdown is spent reads full, not the figure the snapshot was read at', () => {
+    // The reported defect: the rotation snapshot is up to an authenticated cycle old, so its 99%
+    // outlives the rest it described. The fast channel says the rest is over; the row must agree
+    // with the clock printed beside it.
+    const slow = slowModel({ recovering: [{ id: 'devin', energyFraction: 0.99 }] });
+    const fast: LiveFastModel = {
+      field: {},
+      recovery: { devin: { heroId: 'devin', secondsRemaining: 0, advancing: true } },
+      energy: { devin: 1 },
+    };
+
+    const html = renderToStaticMarkup(createElement(LivePanel, { freshness: { kind: 'live' }, slow, fast }));
+
+    expect(html).toContain('0:00');
+    expect(readPercent(html, 'devin')).toBe('100%');
+  });
+
+  it('an on-field hero shows the energy the tap observed rather than the snapshot it was joined against', () => {
+    const slow = slowModel({ onField: [{ id: 'f1', energyFraction: 0.9 }] });
+    const fast: LiveFastModel = { field: {}, recovery: {}, energy: { f1: 0.42 } };
+
+    const html = renderToStaticMarkup(createElement(LivePanel, { freshness: { kind: 'live' }, slow, fast }));
+
+    expect(readPercent(html, 'f1')).toBe('42%');
+  });
+
+  it('a queued or benched hero keeps the snapshot figure — the fast channel reaches neither', () => {
+    const slow = slowModel({
+      queued: [{ id: 'q1', energyFraction: 0.62 }],
+      benched: [{ id: 'b1', energyFraction: 0.5 }],
+    });
+    const fast: LiveFastModel = { field: {}, recovery: {}, energy: {} };
+
+    const html = renderToStaticMarkup(createElement(LivePanel, { freshness: { kind: 'live' }, slow, fast }));
+
+    expect(readPercent(html, 'q1')).toBe('62%');
+    expect(readPercent(html, 'b1')).toBe('50%');
+  });
+
+  it('a hero the fast channel has no reading for keeps the snapshot figure rather than falling to zero', () => {
+    const slow = slowModel({ onField: [{ id: 'f1', energyFraction: 0.77 }] });
+    const fast: LiveFastModel = { field: {}, recovery: {}, energy: { someone_else: 0.1 } };
+
+    const html = renderToStaticMarkup(createElement(LivePanel, { freshness: { kind: 'live' }, slow, fast }));
+
+    expect(readPercent(html, 'f1')).toBe('77%');
   });
 });

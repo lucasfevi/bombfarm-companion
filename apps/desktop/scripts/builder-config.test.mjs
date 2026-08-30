@@ -208,23 +208,33 @@ describe('generateUpdatesFilesForAllChannels', () => {
   });
 });
 
-describe('FLV-18a — no auto-update wiring', () => {
-  it('does not depend on electron-updater', () => {
+describe('auto-update wiring', () => {
+  it('depends on electron-updater', () => {
     const deps = {
       ...desktopPackageJson.dependencies,
       ...desktopPackageJson.devDependencies,
       ...desktopPackageJson.optionalDependencies,
     };
-    expect(deps).not.toHaveProperty('electron-updater');
+    // A runtime dependency, not a dev one: electron-builder ships `dependencies` into the asar,
+    // and the bundler leaves the import for Node to resolve there.
+    expect(desktopPackageJson.dependencies).toHaveProperty('electron-updater');
+    expect(deps['electron-updater']).toMatch(/^\^?6\./);
   });
 
-  it('does not reference autoUpdater in desktop source', () => {
-    const srcRoot = path.join(desktopRoot, 'src');
-    const sources = collectSourceFiles(srcRoot);
-    const offenders = sources.filter((file) => {
-      const text = readFileSync(file, 'utf8');
-      return /\bautoUpdater\b/.test(text);
-    });
-    expect(offenders).toEqual([]);
+  it('reaches electron-updater from exactly one module, so the disabled path cannot be bypassed', () => {
+    // Shipped modules only. A test naming the package is never bundled into the app, so it
+    // cannot reach the updater around the disabled path this guard exists to protect.
+    const sources = collectSourceFiles(path.join(desktopRoot, 'src')).filter(
+      (file) => !/\.test\.(ts|tsx|js|mjs|cjs)$/.test(file),
+    );
+    const importers = sources
+      .filter((file) => /['"]electron-updater['"]/.test(readFileSync(file, 'utf8')))
+      .map((file) => path.relative(desktopRoot, file).split(path.sep).join('/'));
+    expect(importers).toEqual(['src/main/updates/index.ts']);
+  });
+
+  it('declares no publish target for dev, so its build can never point at an update feed', () => {
+    expect(getFlavorDescriptor('dev').updateChannel).toBeNull();
+    expect(createBuilderConfig('dev').publish).toBeNull();
   });
 });

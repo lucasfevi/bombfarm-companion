@@ -12,7 +12,7 @@ describe('buildLiveFastModel — absent is not zero', () => {
       { heroId: 'zeroed-out', secondsRemaining: 0, drainPerSecond: 1, basis: 'observed' },
     ];
 
-    const fast = buildLiveFastModel(field, []);
+    const fast = buildLiveFastModel(field, [], []);
 
     expect(fast.field['zeroed-out']).toEqual({ heroId: 'zeroed-out', secondsRemaining: 0, basis: 'observed' });
     expect('never-reported' in fast.field).toBe(false);
@@ -20,10 +20,18 @@ describe('buildLiveFastModel — absent is not zero', () => {
   });
 
   it('the same distinction holds for recovery countdowns', () => {
-    const fast = buildLiveFastModel([], [{ heroId: 'zeroed-out', secondsRemaining: 0, advancing: true }]);
+    const fast = buildLiveFastModel([], [{ heroId: 'zeroed-out', secondsRemaining: 0, advancing: true }], []);
 
     expect(fast.recovery['zeroed-out']).toEqual({ heroId: 'zeroed-out', secondsRemaining: 0, advancing: true });
     expect('never-reported' in fast.recovery).toBe(false);
+  });
+
+  it('and for energy: a hero at a genuine zero fraction is a key, a hero with no live reading is not', () => {
+    const fast = buildLiveFastModel([], [], [{ heroId: 'drained', energyFraction: 0 }]);
+
+    expect(fast.energy['drained']).toBe(0);
+    expect('never-reported' in fast.energy).toBe(false);
+    expect(fast.energy['never-reported']).toBeUndefined();
   });
 });
 
@@ -116,7 +124,7 @@ describe('buildLiveFreshness', () => {
     expect(buildLiveFreshness({ kind: 'live', lastFrameAt: 't', sinceAt: 't' })).toEqual({ kind: 'live' });
   });
 
-  it('carries the gap reason, actionable flag and likelyQuarantine through', () => {
+  it('carries the gap reason, actionable flag, sinceAt and likelyQuarantine through', () => {
     const freshness = buildLiveFreshness({
       kind: 'gap',
       reason: 'runtimeUnavailable',
@@ -125,7 +133,13 @@ describe('buildLiveFreshness', () => {
       likelyQuarantine: true,
     });
 
-    expect(freshness).toEqual({ kind: 'gap', reason: 'runtimeUnavailable', actionable: false, likelyQuarantine: true });
+    expect(freshness).toEqual({
+      kind: 'gap',
+      reason: 'runtimeUnavailable',
+      actionable: false,
+      sinceAt: 't',
+      likelyQuarantine: true,
+    });
   });
 
   it('omits likelyQuarantine entirely when the source did not report it — not a false default', () => {

@@ -1,24 +1,24 @@
 {
-  "fixture": "account-full",
+  "fixture": "account-offline",
   "captureMode": "production-electron-static-export",
   "gate": {
     "hookInstalled": true,
     "sawCommit": true,
-    "distinctComponents": 60
+    "distinctComponents": 95
   },
   "recordedOnly": {
-    "note": "Re-measured after the planner's hero art reached the desktop. distinctComponents rose 57 to 60: a roster row now draws an avatar in its rarity frame and the detail heading draws the shared identity block, so three component types the tree never had are in it. A one-hero change costs 141 renders against the 135 recorded before, which is those same three drawing for the two fixture heroes and the selected one; it stays inside the range below, so the range is unchanged. A quiet window still costs ZERO. Before that, the live surface replacing the developer diagnostics tab had moved the same figure 60 to 57, because the deleted tab's components no longer existed, and had taken a quiet window from 8970-10350 renders to zero and a one-hero change from 2343-2619 to 135: the old figures were a raw snapshot push landing in state above the planning tree, and that push and its IPC channel are gone. The ranges were wide because that churn was not phase-locked to the measurement window; with it removed they are stable. Three consecutive local runs from fresh builds produced 0/141/60 every time, matching CI. The ranges keep a small margin for a slower CI machine rather than pinning exact values.",
+    "note": "Re-measured from scratch after the instrument moved off the deleted Planning screen and onto Inventory. Everything below is a NEW baseline against a different screen and a different fixture (account-offline: 13 heroes, 221 items) — it is not comparable to the figures this file carried before, and nothing here is a regression against them. A quiet window still costs ZERO, unchanged and for the same reason: the fixture ticker's ~100 commits per 5s all carry an identical body, so no account:changed is emitted at all. The one-item change is dropping a single gear item, which costs 17206 component renders across 8 commits and touches 95 distinct component types — two orders of magnitude above what the old two-hero Planning roster cost, because the grid re-renders all ~220 cards and their per-card subtrees for a change to one of them. That is a real, pre-existing property of the grid this instrument now makes visible; it is not something this move introduced. Three consecutive local runs from one build produced 0/17206/95 every time, byte-identical. The ranges keep a margin for a slower CI machine rather than pinning exact values.",
     "quietComponentRendersRange": [
       0,
       0
     ],
-    "oneHeroChangeComponentRendersRange": [
-      120,
-      150
+    "oneItemChangeComponentRendersRange": [
+      15500,
+      19000
     ],
-    "oneHeroChangeNetOfBackgroundRange": [
-      120,
-      150
+    "oneItemChangeNetOfBackgroundRange": [
+      15500,
+      19000
     ]
   }
 }

@@ -7,7 +7,7 @@ export function RecoveryCountdown({ testId, model }: { testId: string; model: Li
   const t = useCopy();
 
   if (!model) {
-    return <span data-testid={testId}>{t.fidelityStatusMissing}</span>;
+    return <span data-testid={testId}>{t.valueNotAvailable}</span>;
   }
 
   return (

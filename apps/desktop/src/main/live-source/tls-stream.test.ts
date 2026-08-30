@@ -1,9 +1,11 @@
 import type { LiveTick } from '@bombfarm/contracts';
 import { liveFrameWireKey as wireKey } from '@bombfarm/game-api';
+import { deflateSync } from 'node:zlib';
 import { describe, expect, it } from 'vitest';
 import {
   buildHttpResponse,
   buildOversized64BitLengthFrame,
+  buildServerBinaryFrame,
   buildServerTextFrame,
   generateReplayStream,
   type ReplayStream,
@@ -679,6 +681,33 @@ describe('toLiveTick: wire money is dropped unless it is a well-formed digit str
   });
 });
 
+describe('toLiveTick: kinds/hps are absent, not empty arrays, when the wire omits them', () => {
+  it('leaves both undefined when the wire carries neither token', () => {
+    const tick = toLiveTick({});
+
+    expect(tick.kinds).toBeUndefined();
+    expect(tick.hps).toBeUndefined();
+    expect('kinds' in tick).toBe(false);
+    expect('hps' in tick).toBe(false);
+  });
+
+  it('decodes kinds alone and leaves hps undefined when only kinds arrives', () => {
+    const tick = toLiveTick({ [wireKey('kindsList')]: [0, -1, 3] });
+
+    expect(tick.kinds).toEqual([0, -1, 3]);
+    expect(tick.hps).toBeUndefined();
+    expect('hps' in tick).toBe(false);
+  });
+
+  it('decodes hps alone and leaves kinds undefined when only hps arrives', () => {
+    const tick = toLiveTick({ [wireKey('hpsList')]: [10, -1, 20] });
+
+    expect(tick.hps).toEqual([10, -1, 20]);
+    expect(tick.kinds).toBeUndefined();
+    expect('kinds' in tick).toBe(false);
+  });
+});
+
 describe('findWsFrameStart', () => {
   it('rejects a 64-bit length candidate during resync and finds the real frame after it', () => {
     const fake = buildOversized64BitLengthFrame();
@@ -696,5 +725,59 @@ describe('findWsFrameStart', () => {
 
   it('returns undefined when nothing in the buffer parses as a snap message', () => {
     expect(findWsFrameStart(Buffer.from('nothing to see here, move along'))).toBeUndefined();
+  });
+});
+
+describe('TlsConnections: application-level zlib-compressed combat frames', () => {
+  it('decodes a binary frame carrying zlib-compressed snap JSON to the same tick as the plain-text equivalent', () => {
+    const payload = Buffer.from(JSON.stringify({ t: 'snap', heroes: [{ id: 'hero-01' }] }));
+    const textEvents = new TlsConnections().push('text', buildServerTextFrame(payload));
+    const binaryEvents = new TlsConnections().push('binary', buildServerBinaryFrame(deflateSync(payload)));
+
+    expect(binaryEvents).toEqual(textEvents);
+    expect(binaryEvents).toEqual([{ kind: 'tick', tick: { heroes: [{ id: 'hero-01' }] } }]);
+  });
+
+  it('still decodes a plain-text frame with verbatim JSON (the pre-compression path is unaffected)', () => {
+    const conn = new TlsConnections();
+    const frame = buildServerTextFrame(Buffer.from(JSON.stringify({ t: 'snap', heroes: [{ id: 'hero-09' }] })));
+
+    expect(conn.push('plain', frame)).toEqual([{ kind: 'tick', tick: { heroes: [{ id: 'hero-09' }] } }]);
+  });
+
+  it('does not treat a payload whose first byte is neither "{" nor the zlib header as a snap', () => {
+    const conn = new TlsConnections();
+    const handshake = buildHttpResponse(101, 'Switching Protocols', '');
+    const frame = buildServerBinaryFrame(Buffer.from('not a recognised payload shape'));
+
+    expect(conn.push('unrecognised', Buffer.concat([handshake, frame]))).toEqual([{ kind: 'upgrade' }]);
+  });
+
+  it('resyncs onto a compressed binary frame arriving mid-stream', () => {
+    const conn = new TlsConnections();
+    const payload = Buffer.from(JSON.stringify({ t: 'snap', heroes: [{ id: 'hero-05' }] }));
+    const frame = buildServerBinaryFrame(deflateSync(payload));
+    const bytes = Buffer.concat([Buffer.alloc(37, 0x00), frame]);
+
+    expect(conn.push('resync-binary', bytes)).toEqual([{ kind: 'tick', tick: { heroes: [{ id: 'hero-05' }] } }]);
+  });
+
+  it('fires the undecodable-payload diagnostic once, not per frame', () => {
+    const warnings: Record<string, unknown>[] = [];
+    const conn = new TlsConnections({ log: { warn: (record) => warnings.push(record) } });
+    const handshake = buildHttpResponse(101, 'Switching Protocols', '');
+    const badPayload = Buffer.from('not a recognised payload shape');
+    const bad = buildServerBinaryFrame(badPayload);
+
+    conn.push('undecodable', Buffer.concat([handshake, bad, bad, bad]));
+
+    expect(warnings).toEqual([
+      {
+        scope: 'live-source',
+        event: 'live-source.undecodable_payload',
+        count: 1,
+        firstByte: badPayload.readUInt8(0),
+      },
+    ]);
   });
 });

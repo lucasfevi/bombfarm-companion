@@ -37,10 +37,10 @@ export function PhasesHeroFitTable({ propHits }: { propHits: HeroPhaseFit['propH
                 </span>
               </DataTable.Cell>
               <DataTable.Cell align="right" numeric>
-                {formatNumber(row.hp, 0)}
+                {formatNumber(row.hp, lang, 0)}
               </DataTable.Cell>
               <DataTable.Cell align="right" numeric>
-                {Number.isFinite(row.hits) ? formatNumber(row.hits, 0) : '∞'}
+                {Number.isFinite(row.hits) ? formatNumber(row.hits, lang, 0) : '∞'}
               </DataTable.Cell>
             </DataTable.Row>
           ))}

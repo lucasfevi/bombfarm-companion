@@ -68,6 +68,12 @@ export class GameReaderService {
    * fixture mode ever calls `accountStore.commit()` from this class at all. */
   onAccountCommitted?: () => void;
 
+  /** Fired once per transition INTO `connected` from any other status — never on a poll that
+   *  merely repeats an already-connected status, which would fire at `pollAttachedMs` cadence
+   *  for as long as the game stays attached. Optional and unset by default, the same shape as
+   *  `onAccountCommitted`. */
+  onConnected?: () => void;
+
   /** The most recent frame the live tap has delivered, via `ingestLiveTick()`. The tap is
    *  push-based and this class's own `tick()` is a poll loop, so a tick that lands between two
    *  tap frames reports this cached one rather than blocking on a fresh one — and `null` until
@@ -362,11 +368,12 @@ export class GameReaderService {
    * `updatedAt` is when this status was read, not part of what the status *is* — every poll
    * carries a fresh one, so comparing the whole object made every poll a "change" and pushed a
    * status event at the poll interval forever. The renderer applies each push into state above
-   * the planning tree, so that alone recommitted the whole window ~20 times a second. Compare
+   * the whole content area, so that alone recommitted the whole window ~20 times a second. Compare
    * only the fields a consumer can act on; `this.status` still carries the new timestamp for
    * anyone who asks for it.
    */
   private updateStatus(next: GameStatusInfo): void {
+    const wasConnected = this.status.status === 'connected';
     const changed =
       next.status !== this.status.status ||
       next.staleAgeMs !== this.status.staleAgeMs ||
@@ -374,6 +381,9 @@ export class GameReaderService {
     this.status = next;
     if (changed) {
       this.emit(next);
+    }
+    if (next.status === 'connected' && !wasConnected) {
+      this.onConnected?.();
     }
   }
 

@@ -7,7 +7,11 @@ import { uiIconRegistry } from './ui-registry';
 // variant (success/error/warning/info/progress).
 // DeltaTable (2026-08-20): lock-closed added — the shared stat-ledger primitive's
 // locked-row glyph, replacing a Chip + HelpTip pair.
+// Inventory layout toggle (2026-08-30): layout-grid, layout-list — the cards/list switch is two
+// icon buttons rather than two words, so it sits in the toolbar's corner without crowding it.
 const MIGRATED_UI_NAMES = [
+  'layout-grid',
+  'layout-list',
   'chevron-down',
   'chevron-up',
   'x-mark',

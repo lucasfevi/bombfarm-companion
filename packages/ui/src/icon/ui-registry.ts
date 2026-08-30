@@ -9,12 +9,18 @@ import {
   HiMiniInformationCircle,
   HiMiniArrowPath,
   HiMiniLockClosed,
+  HiMiniSquares2X2,
+  HiMiniBars3,
 } from 'react-icons/hi2';
 import { BiCoffee } from 'react-icons/bi';
 import { PiSortAscending, PiSortDescending } from 'react-icons/pi';
 import type { IconGlyph } from './types';
 
 export const uiIconRegistry = {
+  // Inventory layout toggle — cards
+  'layout-grid': HiMiniSquares2X2,
+  // Inventory layout toggle — list
+  'layout-list': HiMiniBars3,
   // select affix, num spinner, accordion/collapsible trigger, sort desc, idle sort stack
   'chevron-down': HiMiniChevronDown,
   // num spinner increment, sort asc, idle sort stack

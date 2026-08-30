@@ -8,14 +8,17 @@ import type {
   FieldDrop,
   LiveCurrency,
   LiveDiagnosticsDumpOutcome,
+  LiveEarnings,
   LiveEvent,
+  LiveHeroEnergy,
   LiveTick,
   LiveTickHero,
   LiveView,
   RotationSnapshot,
+  SectionFidelity,
 } from '@bombfarm/contracts';
 import { isConnectedCurrency, isLiveCurrency, liveGap } from '@bombfarm/contracts';
-import { identifyObservedBody, normalizeRotation } from '@bombfarm/game-api';
+import { identifyObservedBody, isPlainObject, normalizeRotation } from '@bombfarm/game-api';
 import {
   advanceRecoveryClock,
   createInitialFieldCountdownState,
@@ -27,10 +30,14 @@ import {
   type FieldCountdownState,
   type RosterHeroAbilities,
 } from '@bombfarm/domain/live';
+import { computePhaseIntelGlobal } from '@bombfarm/domain/phase-intel';
+import { xpPerProp } from '@bombfarm/domain/phase-wiki';
 import { runPowerShellAsync, runPowerShellSync, stripExeSuffix } from '../game-reader/process.js';
+import { EarningsFold } from './earnings-fold.js';
 import { createFrameCapture, readFrameCaptureEnabledFromEnv } from './frame-capture.js';
 import { FrameRing } from './frame-ring.js';
 import type { LogPort } from './log-port.js';
+import { MapFold, type MapAccountBoosts, type MapWikiFacts } from './map-fold.js';
 import { RuntimePort } from './runtime.js';
 import {
   createHookCandidateSource,
@@ -52,6 +59,10 @@ import {
  */
 
 const NOOP_LOG_PORT: LogPort = { info: () => undefined, warn: () => undefined };
+
+function compareHeroEnergy(a: LiveHeroEnergy, b: LiveHeroEnergy): number {
+  return a.heroId < b.heroId ? -1 : a.heroId > b.heroId ? 1 : 0;
+}
 
 const DEFAULT_PROCESS_NAME = process.env.BFC_GAME_PROCESS ?? 'BombFarm.exe';
 
@@ -275,6 +286,63 @@ function fieldHeroesFromRotation(rotation: RotationSnapshot): readonly LiveTickH
     }));
 }
 
+/**
+ * The one adapter between the live map fold and the planner's own wiki math — the same
+ * `computePhaseIntelGlobal` the web planner's Phases screen reads, so a figure shown on the Live
+ * tab and the same figure on the Phases screen cannot drift into two different numbers.
+ *
+ * `xpPerPropActual` and `weightedAvgGoldActual` are the boost-applied variants; their `*Wiki`
+ * siblings are the unboosted base and are deliberately not what a player-facing panel shows.
+ */
+function wikiFactsFor(phase: number, boosts: MapAccountBoosts): MapWikiFacts | null {
+  const intel = computePhaseIntelGlobal(phase, { teamCoinPct: boosts.teamCoinPct, xpMult: boosts.xpMult });
+  if (!intel) return null;
+  return {
+    propsTotal: intel.propCount,
+    economy: {
+      xpPerProp: intel.xpPerPropActual,
+      averageGoldPerProp: intel.weightedAvgGoldActual,
+      averageGoldPerClear: intel.totalMapGoldActual,
+    },
+  };
+}
+
+/** `skills.totals.coin_add` as PERCENTAGE POINTS, the unit `computePhaseIntelGlobal` takes —
+ *  the same `* 100` conversion, and the same `team_coin_add` fallback name, that the planner's own
+ *  save import applies to this field. */
+function readTeamCoinPct(skills: Record<string, unknown> | undefined): number | undefined {
+  if (!isPlainObject(skills)) return undefined;
+  const totals = skills.totals;
+  if (!isPlainObject(totals)) return undefined;
+  const value = totals.coin_add ?? totals.team_coin_add;
+  return typeof value === 'number' && Number.isFinite(value) ? value * 100 : undefined;
+}
+
+/** `skills.totals.xp_mult` is present even on a read where `casa` did not resolve — the same
+ *  per-section fidelity `import-save.ts` notes for reading its own field-slots figure off `skills`
+ *  rather than `casa` — so it is read unconditionally, never gated on the rotation fold below. */
+function readXpMult(skills: Record<string, unknown> | undefined): number | undefined {
+  if (!isPlainObject(skills)) return undefined;
+  const totals = skills.totals;
+  if (!isPlainObject(totals)) return undefined;
+  const value = totals.xp_mult;
+  return typeof value === 'number' && Number.isFinite(value) ? value : undefined;
+}
+
+/** `/state`'s gold, the same digit-string wire encoding `tls-stream.ts`'s `readWireMoney` parses —
+ *  a non-numeric value is ignored rather than becoming `NaN`. */
+function readAccountGold(account: Record<string, unknown> | undefined): number | undefined {
+  if (!isPlainObject(account)) return undefined;
+  const value = account.gold;
+  if (typeof value !== 'string' || !/^\d+$/.test(value)) return undefined;
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : undefined;
+}
+
+function readSectionCapturedAt(fidelity: SectionFidelity | undefined): string | undefined {
+  return fidelity && fidelity.status !== 'missing' ? fidelity.capturedAt : undefined;
+}
+
 export class LiveSource {
   readonly #log: LogPort;
   readonly #now: () => number;
@@ -306,11 +374,39 @@ export class LiveSource {
   #rosterHeroById: ReadonlyMap<string, RosterHeroAbilities> = new Map();
   #fieldState: FieldCountdownState = createInitialFieldCountdownState();
   #field: readonly FieldCountdown[] = [];
+  /** The on-field half of the fast channel's energy readings — observed on the most recent tick.
+   *  The recovering half is not cached beside it: like `recovery` itself it advances on the
+   *  server's clock rather than on frame arrival, so `getView()` derives it per call. */
+  #fieldEnergies: readonly LiveHeroEnergy[] = [];
   #updatedAt: string;
+
+  readonly #earningsFold: EarningsFold;
+  readonly #mapFold: MapFold;
+  /** `null` until the first tap frame of the session has been folded — {@link LiveView.earnings}
+   *  stays `null` until then too, rather than reporting a rate computed over zero real ticks. */
+  #goldBalance: number | null = null;
+  /** The most recent stored `/state` gold reading — {@link #buildEarnings} falls back to this
+   *  whenever no live tick has ever set {@link #goldBalance} this session, so a game-closed read
+   *  shows a real (if aging) balance instead of an em dash. */
+  #accountGoldBalance: number | null = null;
+  /** When {@link #accountGoldBalance} was captured. `null` only alongside a `null` balance. */
+  #accountGoldCapturedAt: string | null = null;
+  #earningsStarted = false;
+  /** The last `skills.totals.xp_mult` seen from {@link ingestRotation}, sticky across a read that
+   *  omits the section — never reset to `undefined` just because one read's fidelity was partial. */
+  #xpMult: number | undefined;
+  /** The last `skills.totals.coin_add` seen, sticky across a partial read for the same reason
+   *  {@link #xpMult} is. */
+  #teamCoinPct: number | undefined;
+  /** `undefined` means no binding has been observed yet, the state a `null` read from the store
+   *  must never be mistaken for — see {@link #trackAccountBinding}. */
+  #lastBinding: string | undefined;
 
   constructor(deps: LiveSourceDeps) {
     this.#log = deps.log ?? NOOP_LOG_PORT;
     this.#now = deps.now ?? Date.now;
+    this.#earningsFold = new EarningsFold({ now: this.#now, xpPerProp, log: this.#log });
+    this.#mapFold = new MapFold({ wikiFactsFor });
     if (deps.createTap) {
       this.#createTap = deps.createTap;
       this.#ring = null;
@@ -374,16 +470,44 @@ export class LiveSource {
    *  `#field`. See {@link advanceRecoveryClock} for what `connected` decides. */
   getView(): LiveView {
     const connected = isConnectedCurrency(this.#currency);
-    const { state, recovery } = advanceRecoveryClock(this.#fieldState, this.#now(), connected);
+    const { state, recovery, energies: recoveryEnergies } = advanceRecoveryClock(this.#fieldState, this.#now(), connected);
     this.#fieldState = state;
     return {
       currency: this.#currency,
       field: this.#field,
       recovery,
+      // No hero is on the field and recovering at once, so the two halves never collide on a
+      // heroId; the sort is what makes the merged list comparable against the last published one.
+      energies: [...this.#fieldEnergies, ...recoveryEnergies].sort(compareHeroEnergy),
       rotation: this.#rotation,
       onFieldHeroIds: this.#fieldState.onFieldHeroIdsSorted,
+      earnings: this.#buildEarnings(),
+      map: this.#mapFold.current,
       updatedAt: this.#updatedAt,
     };
+  }
+
+  #buildEarnings(): LiveEarnings | null {
+    if (!this.#earningsStarted && this.#accountGoldBalance === null) return null;
+    return {
+      goldBalance: this.#goldBalance ?? this.#accountGoldBalance,
+      goldBalanceCapturedAt: this.#goldBalance === null ? this.#accountGoldCapturedAt : null,
+      gold10: this.#earningsFold.gold10,
+      goldSession: this.#earningsFold.goldSession,
+      xp10: this.#earningsFold.xp10,
+      xpSession: this.#earningsFold.xpSession,
+      goldSessionTotal: this.#earningsFold.goldSessionTotal,
+      xpSessionTotal: this.#earningsFold.xpSessionTotal,
+      coverageSeconds: this.#earningsFold.coverageSeconds,
+      sessionSeconds: this.#earningsFold.sessionSeconds,
+    };
+  }
+
+  /** The renderer holds no session accumulators of its own — this is the one place they can be
+   *  zeroed, so the reset control can never drift from the figures it resets. The rolling 10-minute
+   *  window is untouched: see {@link EarningsFold.reset}. */
+  resetEarnings(): void {
+    this.#earningsFold.reset('reset');
   }
 
   /** The REST rotation projection: the base view every countdown falls back to when no live tap
@@ -393,9 +517,34 @@ export class LiveSource {
    *  the moment this app finished reading it — but is overridable so a caller can prove the
    *  newest-wins rule against {@link ingestObservedRotation} deterministically. */
   ingestRotation(view: AccountView, atMs: number = this.#now()): void {
+    this.#xpMult = readXpMult(view.payload.skills) ?? this.#xpMult;
+    this.#teamCoinPct = readTeamCoinPct(view.payload.skills) ?? this.#teamCoinPct;
+    this.#mapFold.setAccountBoosts({ xpMult: this.#xpMult ?? 1, teamCoinPct: this.#teamCoinPct ?? 0 });
+    this.#trackAccountBinding(view.store.binding);
+    const accountGold = readAccountGold(view.payload.account);
+    if (accountGold !== undefined) {
+      this.#accountGoldBalance = accountGold;
+      this.#accountGoldCapturedAt = readSectionCapturedAt(view.payload.fidelity?.account) ?? null;
+    }
     if (view.payload.casa === undefined) return;
     const rosterHeroAbilities = extractRosterHeroAbilities(view.payload.heroes);
     this.#applyRotationBody(view.payload.casa, atMs, { rosterRaw: view.payload.heroes, rosterHeroAbilities });
+  }
+
+  /** A `null` binding is transient (the store between reads, not a different account) and must
+   *  never overwrite the last real one or itself count as a change. The first real binding this
+   *  session ever sees is not a change either — only a later, *different* one is. */
+  #trackAccountBinding(binding: string | null): void {
+    if (binding === null) return;
+    if (this.#lastBinding !== undefined && binding !== this.#lastBinding) {
+      this.#earningsFold.reset('accountChange');
+      // Only the stream-derived half is dropped. The boosts were read from THIS call's payload,
+      // a few lines above — they already belong to the new account, and clearing them here would
+      // report the map's economy at no boost at all until the next rotation read landed. Same
+      // reasoning that leaves `#xpMult` alone across an account change.
+      this.#mapFold.reset();
+    }
+    this.#lastBinding = binding;
   }
 
   /** The tap-observed counterpart to {@link ingestRotation} — same fold, a body identified from
@@ -530,6 +679,10 @@ export class LiveSource {
       this.#currency = event.currency;
       this.#touch();
     } else if (event.type === 'frame') {
+      this.#earningsFold.consumeTick(event.frame.tick, event.frame.sequence, this.#xpMult);
+      this.#mapFold.consumeTick(event.frame.tick, event.frame.sequence);
+      this.#earningsStarted = true;
+      if (event.frame.tick.gold !== undefined) this.#goldBalance = event.frame.tick.gold;
       this.#ingestTick(event.frame.tick, Date.parse(event.frame.at));
     }
     this.#publish(event);
@@ -552,6 +705,7 @@ export class LiveSource {
     });
     this.#fieldState = result.state;
     this.#field = result.field;
+    this.#fieldEnergies = result.energies;
     reportDrainDisagreements(this.#log, result.disagreements);
     this.#touch();
   }

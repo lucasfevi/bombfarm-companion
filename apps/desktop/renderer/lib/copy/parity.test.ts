@@ -2,8 +2,8 @@
  * Three proofs that `en.ts` and `pt-BR.ts` never diverge in key set or placeholder set.
  * Proof 1 (compile) is the `Copy` annotation itself
  * (`export const ptBR: Copy = { … }` in `pt-BR.ts`) — it is demonstrated, not asserted here, by
- * temporarily deleting/mistyping a key and recording the `TS2741`/`TS2353` message verbatim
- * (task notes), then restoring. Proofs 2 and 3 below are independent, permanent, runtime checks:
+ * temporarily deleting/mistyping a key and recording the `TS2741`/`TS2353` message verbatim,
+ * then restoring. Proofs 2 and 3 below are independent, permanent, runtime checks:
  * they survive a future refactor that widens `Copy` to an index signature, which would silently
  * disable proof 1 without touching either of these.
  */
@@ -17,17 +17,23 @@ import { ptBR } from './pt-BR';
  * weakening of the "no leakage" assertion below.
  *
  * `ageShortSeconds` ('{n}s'): 's' abbreviates seconds identically in English and Portuguese —
- * unlike minutes ('m' vs 'min', design §7 rule 3), there is no PT-BR-specific abbreviation to
- * translate to.
+ * unlike minutes ('m' vs 'min'), there is no PT-BR-specific abbreviation to translate to.
  */
-// planningRosterColumnAvatar: "Avatar" is a loanword — same spelling in pt-BR (the web planner's
-// equivalent `heroAvatarCol` string is likewise "Avatar" in both its `en` and `pt` namespaces).
 // inventoryDetailSetSlot: pure layout, no words — two placeholders joined by a separator, and
 // both of the values it joins are themselves already localised before they reach it.
+// liveEarningsXpHeadlineUnit: "xp / h" — "xp" is the same abbreviation in both languages, and the
+// "/ h" unit marker is not a word either, so the two languages land on the identical string.
+// inventoryViewLabel: "Layout" is a loanword carrying the same spelling in pt-BR, and it names
+// the cards/list switch rather than either option — both of which ARE translated.
+// liveMapXpPerPropLabel: "XP / prop" — "XP" is the same abbreviation in both languages, and
+// "prop" is the loanword the game itself uses in Portuguese (the pt-BR copy already spells it
+// "props" elsewhere in this table), so the two languages land on the identical string.
 const IDENTICAL_IN_BOTH_LANGUAGES: readonly (keyof typeof en)[] = [
   'ageShortSeconds',
-  'planningRosterColumnAvatar',
+  'liveMapXpPerPropLabel',
   'inventoryDetailSetSlot',
+  'liveEarningsXpHeadlineUnit',
+  'inventoryViewLabel',
 ];
 
 function placeholderSet(value: string): Set<string> {
@@ -42,14 +48,14 @@ describe('en/ptBR key-set parity', () => {
 
   it('red state demonstrated: removing a key from one side is caught by the same comparison the real test uses', () => {
     const withoutOneKey: Record<string, string> = { ...en };
-    delete withoutOneKey.shellPlanningNavLabel;
+    delete withoutOneKey.shellStatusConnected;
     expect(Object.keys(withoutOneKey).sort()).not.toEqual(Object.keys(ptBR).sort());
   });
 });
 
 describe('en/ptBR placeholder parity', () => {
   // sub() (copy/index.ts) leaves an unmatched {token} visibly unreplaced in the UI, and
-  // docs/naming.md makes placeholder keys a data contract (renaming one is spec Out of Scope) —
+  // docs/naming.md makes placeholder keys a data contract —
   // so a per-key placeholder-set mismatch is a defect no type can catch.
   it('every key has the identical set of {placeholder} tokens in both languages', () => {
     const mismatches: { key: string; en: string[]; ptBR: string[] }[] = [];
@@ -65,9 +71,9 @@ describe('en/ptBR placeholder parity', () => {
   });
 
   it('red state demonstrated: renaming one placeholder in one language is caught', () => {
-    const mutatedPtBR = { ...ptBR, withheldBecause: ptBR.withheldBecause.replace('{sections}', '{secoes}') };
-    const enTokens = placeholderSet(en.withheldBecause);
-    const ptTokens = placeholderSet(mutatedPtBR.withheldBecause);
+    const mutatedPtBR = { ...ptBR, ageMinutes: ptBR.ageMinutes.replace('{n}', '{q}') };
+    const enTokens = placeholderSet(en.ageMinutes);
+    const ptTokens = placeholderSet(mutatedPtBR.ageMinutes);
     expect([...enTokens]).not.toEqual([...ptTokens]);
   });
 });

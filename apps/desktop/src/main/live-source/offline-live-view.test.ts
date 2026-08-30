@@ -2,6 +2,7 @@ import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import type { AccountPayload, AccountView } from '@bombfarm/contracts';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { xpPerProp } from '@bombfarm/domain/phase-wiki';
 import { LiveSource } from './live-source.js';
 import { createReplayTapFactory, REPLAY_FRAME_INTERVAL_MS } from './replay-tap.js';
 
@@ -120,6 +121,138 @@ describe('offline mode produces a Live view with something in it', () => {
     vi.advanceTimersByTime(REPLAY_FRAME_INTERVAL_MS * 60);
 
     expect(source.getView().currency.kind).toBe('live');
+    await source.teardown();
+  });
+
+  it('publishes finite, non-negative gold and XP earnings figures', async () => {
+    const source = offlineLiveSource();
+    source.ingestRotation(offlineAccountView());
+    source.start();
+    vi.advanceTimersByTime(REPLAY_FRAME_INTERVAL_MS * 60);
+
+    const earnings = source.getView().earnings;
+    expect(earnings).not.toBeNull();
+    for (const value of [earnings?.goldBalance, earnings?.gold10, earnings?.goldSession, earnings?.xp10, earnings?.xpSession]) {
+      expect(Number.isFinite(value)).toBe(true);
+      expect(value as number).toBeGreaterThanOrEqual(0);
+    }
+    await source.teardown();
+  });
+
+  /**
+   * The committed capture is only 60 records — a session runs well past that many frames, so the
+   * replay restarts it from the top. A tap torn down and rebuilt (a consent revoke, here forced
+   * directly) restarts the capture the same way, with a fresh per-instance sequence counter
+   * starting back at 1 — and the fold's own `#lastSequence` remembers what the PREVIOUS tap already
+   * consumed. Advancing the same number of frames both before and after the rebuild means the
+   * second batch's sequence numbers (1..N) are all `<= lastSequence`, so this proves the seam pays
+   * nothing twice: without the guard, session time and gold/XP totals recorded in `before` would
+   * accrue again, only doubled, when it isn't.
+   */
+  it('a restarted capture does not pay its early props twice', async () => {
+    const source = offlineLiveSource();
+    source.ingestRotation(offlineAccountView());
+    source.start();
+    vi.advanceTimersByTime(REPLAY_FRAME_INTERVAL_MS * 30);
+    const before = source.getView().earnings;
+    expect(before?.sessionSeconds).toBeGreaterThan(0);
+
+    await source.forceDetach();
+    vi.advanceTimersByTime(REPLAY_FRAME_INTERVAL_MS * 30);
+
+    const after = source.getView().earnings;
+    expect(after?.sessionSeconds).toBe(before?.sessionSeconds);
+    expect(after?.goldSession).toBe(before?.goldSession);
+    expect(after?.xpSession).toBe(before?.xpSession);
+    await source.teardown();
+  });
+});
+
+/**
+ * The map reading has its own end-to-end case for the same reason the countdowns above do: every
+ * figure can be correct inside `MapFold` and still never reach `LiveView`, because nothing wired
+ * the fold to the frame stream. These read the folded view, not the fold.
+ */
+describe('offline mode produces a Live map reading', () => {
+  beforeEach(() => {
+    vi.useFakeTimers();
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  it('is null before any frame has been replayed', () => {
+    const source = offlineLiveSource();
+    expect(source.getView().map).toBeNull();
+  });
+
+  it('names the captured phase and counts its props, with no rotation ingested at all — the map does not depend on the roster', async () => {
+    const source = offlineLiveSource();
+    source.start();
+    vi.advanceTimersByTime(REPLAY_FRAME_INTERVAL_MS * 60);
+
+    const map = source.getView().map;
+    expect(map).not.toBeNull();
+    expect(map?.phase).toBe(61);
+    // Phase 61 is an ato-2 map: 75 props when fresh, which is what the capture's own final frame
+    // shows standing after its wave rolls over.
+    expect(map?.propsTotal).toBe(75);
+    expect(map?.propsAlive).toBe(75);
+    expect(map?.healthFraction).toBe(1);
+    await source.teardown();
+  });
+
+  it('carries no economy until an account read supplies the phase’s wiki row and the account’s own boosts', async () => {
+    const source = offlineLiveSource();
+    source.start();
+    vi.advanceTimersByTime(REPLAY_FRAME_INTERVAL_MS * 60);
+
+    // Frames alone still name the map and its economy — the wiki row needs only the phase, and
+    // an account that has not been read yet simply means no boosts have been applied yet.
+    const beforeAccount = source.getView().map?.economy;
+    expect(beforeAccount).not.toBeNull();
+
+    source.ingestRotation(offlineAccountView());
+    const afterAccount = source.getView().map?.economy;
+
+    // The offline fixture carries xp_mult 1.58 and coin_add 1.97, so every figure must rise.
+    expect(afterAccount?.xpPerProp ?? 0).toBeGreaterThan(beforeAccount?.xpPerProp ?? 0);
+    expect(afterAccount?.averageGoldPerProp ?? 0).toBeGreaterThan(beforeAccount?.averageGoldPerProp ?? 0);
+    expect(afterAccount?.averageGoldPerClear ?? 0).toBeGreaterThan(beforeAccount?.averageGoldPerClear ?? 0);
+    await source.teardown();
+  });
+
+  it('applies the fixture account’s own xp_mult to XP per prop, not the wiki’s unboosted base', async () => {
+    const source = offlineLiveSource();
+    source.ingestRotation(offlineAccountView());
+    source.start();
+    vi.advanceTimersByTime(REPLAY_FRAME_INTERVAL_MS * 60);
+
+    const payload = JSON.parse(readFileSync(OFFLINE_ACCOUNT, 'utf8')) as AccountPayload;
+    const totals = (payload.skills as { totals?: Record<string, number> } | undefined)?.totals ?? {};
+    const xpMult = totals.xp_mult ?? 1;
+    expect(xpMult).toBeGreaterThan(1);
+
+    // Phase 61's own wiki XP per prop, times the account's multiplier.
+    const map = source.getView().map;
+    expect(map?.economy?.xpPerProp).toBeCloseTo(xpPerProp(61) * xpMult, 6);
+    await source.teardown();
+  });
+
+  it('reports a partly cleared map partway through the replay, not only the state it ends in', async () => {
+    const source = offlineLiveSource();
+    source.start();
+    vi.advanceTimersByTime(REPLAY_FRAME_INTERVAL_MS * 10);
+
+    const map = source.getView().map;
+    expect(map?.phase).toBe(61);
+    const propsAlive = map?.propsAlive ?? -1;
+    expect(propsAlive).toBeGreaterThan(0);
+    expect(propsAlive).toBeLessThan(75);
+    const health = map?.healthFraction ?? -1;
+    expect(health).toBeGreaterThan(0);
+    expect(health).toBeLessThan(1);
     await source.teardown();
   });
 });

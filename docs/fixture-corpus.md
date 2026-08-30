@@ -430,7 +430,7 @@ recorded bands unchanged, which is what makes them evidence rather than a rubber
 | all-attack scores below the current build | 212,284 < 264,997 | 1,085,794 < 1,331,738 |
 | all-attack is the worst of the four builds | yes | yes |
 | `gainPct` inside the recorded band [4, 9] | ~6.19% | 7.21% |
-| chest ratio inside [1.3, 1.5], ruling out the PRD's 4x | ~1.40x | 1.426x |
+| chest ratio inside [1.3, 1.5], ruling out the earlier 4x | ~1.40x | 1.426x |
 | the chests objective costs gold (`paybackHours` null) | 259,413 < 264,997 | 1,137,440 < 1,331,738 |
 | `goldGainPct` is negative, not clamped to 0 | negative | -14.59% (chests +42.64%) |
 
@@ -457,10 +457,6 @@ every skip left in the tree is a deliberate one declared in `SKIPS_NOT_F8`:
 
 - `apps/web/e2e/visual.spec.ts` (3) — a whole-suite `describe.skip`, held until its screenshot
   baselines are reviewed. Its own header carries the re-enable step.
-- `apps/desktop/renderer/lib/planning/recompute-budget.test.ts` (1) — **reclassified**, not
-  resolved. Its skip is a red-state demonstration that deliberately loops the roster 80x to blow
-  the budget its siblings assert; its own comment says it "is not itself a regression guard, it is
-  evidence the regression guard has teeth". It was never stale-fixture debt.
 
 The last four resolutions were not re-points, and each is worth naming:
 

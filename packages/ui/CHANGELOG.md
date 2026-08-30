@@ -1,5 +1,202 @@
 # @bombfarm/ui
 
+## 0.6.0
+
+### Minor Changes
+
+- 4836894: Give the desktop a fixed measure, put the Live tab's two readings side by side at every window
+  size, and close the second scrollbar.
+
+  The app content now stops widening at 1440px and centres itself, so a wide monitor grows the
+  background instead of stretching the panels across it. Below that it fills the window as before.
+
+  On the Live tab, the gold/hr panel and the map panel sit side by side at every size the window can
+  be dragged to, including the smallest. They used to need a window wider than the one the app opens
+  at, so a fresh launch showed them stacked — the split made both columns as wide as the fixed-width
+  gold panel, which is far wider than the map needs. The gold panel now takes its own content width
+  and the map takes the rest, which is also the half that reads better with the extra room. A little
+  spacing came out of both panels to bring the pair inside the smallest window; nothing was removed.
+
+  Settings now reads as a stack of panels like every other tab, instead of loose rows on the page
+  background. Its rows are a label at one edge and a control at the other, so they get a tighter
+  measure of their own rather than the full width — the control no longer sits a screen away from
+  the label it belongs to.
+
+  The window itself can no longer scroll, so the Live tab never shows two scrollbars again. Screen
+  reader labels are positioned elements, and with nothing positioned above them they escaped every
+  attempt to clip the content: a long enough hero list pushed them past the bottom of the window and
+  the window grew a scrollbar of its own beside the one the content already had.
+
+- 48ae346: Lead the inventory with what it is worth, and switch layout from the list's own corner.
+
+  The market total is now the largest thing on the screen rather than a line of small print — it is
+  the reason to open the page, so it reads as the headline. How old the prices are moved in beside
+  the coverage line, where it qualifies the figure instead of competing with it.
+
+  Cards or list is two icons in the toolbar's right corner, next to the list they switch, rather
+  than two words above the panel heading. Each keeps its word as its accessible name and its tooltip.
+  The pair is one shared component both shells render: written per shell it was duplicated Tailwind,
+  which the desktop's prose-literal guard is right to object to.
+
+  The web planner's price refresh button is gone. It could only re-download the same six-hourly file
+  — the planner cannot ask Steam anything — so it promised a freshness it had no way to deliver. The
+  desktop keeps its per-item refresh, which really does re-quote.
+
+### Patch Changes
+
+- c3dd984: Update the desktop app from its own release channel, from a new Settings section.
+
+  Installed builds now check for a new version shortly after launch and every six hours they stay
+  open, and Settings gains an Updates section that reports what they found: the installed version
+  and its channel, whether one is available, download progress, and a restart-and-install action
+  once it is ready. A check button covers the time in between.
+
+  Nothing downloads without being asked. Finding a version announces it and stops there, so a
+  player on a metered connection chooses when to spend the bandwidth. The download is
+  resumable-by-retry rather than resumable: a failed one starts over.
+
+  Each installed flavor follows its own channel — Nightly, Beta, and stable never offer each other's
+  builds. A local development build has no channel and no installer to replace, so the section says
+  so plainly instead of showing a control that would do nothing.
+
+  Failures arrive as one of four reasons — unreachable server, rate limit, no published release,
+  or unknown — each translated in both languages, rather than the updater's own English text
+  reaching the screen.
+
+  Settings rows can now hold a read-only value in their control column (`data-settings-value`),
+  alongside the equivalents the Account and math-check stacks already had.
+
+- b7d837a: The Live tab now shows an Earnings panel above the heroes panel: the current gold balance (with the
+  in-game coin), gold rates for the last few minutes and the whole session, and the quieter XP
+  counterparts of both — one row of figures divided by thin rules, rather than a table. Every rate
+  the app has not measured yet reads as a dash, never a zero, and the session control that used to
+  read "Reset session" is now an icon button with the same accessible name.
+
+  The compact number formatter (`90200` → `90.2k`) moved from the web planner into the shared design
+  system so the desktop panel renders the exact same figures the web planner does — the web planner's
+  own import path is unchanged.
+
+  With the game closed and no live tick ever arriving, the current-gold cell now falls back to the
+  most recently stored account reading instead of showing a dash, with its age shown alongside it —
+  the same posture the panel already took for a balance that went stale mid-session. No new request
+  is made to refresh it; the displayed age simply grows while the game stays closed.
+
+  The panel has since been redesigned again: a single bordered headline band up top carries the
+  dominant gold-per-hour figure and a smaller XP-per-hour figure beside it on a shared text baseline,
+  with a context line underneath stating the true coverage of the recent window and the session
+  average rate, plus the reset control. Below the band, a reflowing grid of six tiles covers current
+  gold, elapsed session time, and both currencies' session totals and session rates. The two session
+  totals (`goldSessionTotal`/`xpSessionTotal` on `LiveEarnings`) are newly published by the live fold
+  — they were already tracked internally to compute the session rates, but never reached the
+  renderer before this change. Like every other figure on the panel, a total reads as a dash rather
+  than a zero before the session has anything to report, and is unaffected by the unrelated
+  10-minute rolling window's own eviction.
+
+  The very first account read after launch no longer waits out the full scheduled cadence: the app
+  now starts a read the moment the game is detected as running, instead of only on the next
+  scheduled cycle, so the waiting state on the Live tab clears sooner when the game was already open
+  at boot. That waiting state itself is also friendlier while it lasts — its sprite now renders at
+  twice the size, and a small rotating line of flavour text sits beneath it whenever a read is
+  genuinely in progress (never while consent is what is actually blocking), in both English and
+  Portuguese, and holding still under reduced motion.
+
+  The panel's chrome is quieter still: the visible "Earnings" title is gone (the landmark keeps the
+  same name for screen readers, carried on the panel itself instead of a heading), and the reset
+  control dropped its button outline and padding, now showing as a slightly larger bare icon that
+  still focuses and announces itself like any other button. Every live figure — both headline rates,
+  the session-average line, and all six tiles below — now sits in a box reserved for its widest
+  realistic form, so a rate ticking up through the compact-number ranges no longer nudges anything
+  beside it. The XP figure's old "?" control, which opened a click popover while also showing the
+  browser's own native tooltip underneath it, is gone; the "xp / hr" label itself is now the trigger,
+  underlined with dots, opening the same explanation on hover or keyboard focus, with no native
+  tooltip left to compete with it.
+
+  The current-gold tile's age suffix now stays hidden while a reading is under a minute old, instead
+  of printing a "just now" that told the player nothing. Past that threshold it still reserves its
+  own space so its arrival never nudges the balance beside it.
+
+  Every tile's value is now right-aligned to the tile's own edge, matching the left-aligned label
+  above it — previously the values sat in a fixed-width box that made them look inconsistently
+  placed from tile to tile. A rate tile's unit stays glued to its digits rather than drifting to the
+  tile's far edge on its own.
+
+  The Live tab now gives the earnings panel half the page width, sitting at the top of the tab in the
+  first column of a two-column area — the other column is left empty for a companion panel to land in
+  later, without the earnings panel itself needing to change. Its six tiles moved from a loosely
+  reflowing row onto a fixed three-column grid, giving two even rows of three instead of a stretch of
+  tiles that could all land on one line on a wide window; on a narrower window the tiles settle into
+  two columns instead of crowding three into too little space. The heroes panel below keeps spanning
+  the full width of the tab.
+
+  The reset icon has grown one size further, still a bare, real button with no border or background.
+
+  Three more presentation fixes, now that the earnings panel only spans half the tab width. The
+  current-gold tile's age no longer shares a line with the balance — it sits on its own reserved line
+  beneath the number, hidden until the reading is genuinely stale, and the balance itself is now
+  sized exactly like every other tile's value instead of reserving room for a trailing age that used
+  to overflow the narrower tile. All six tiles keep the same height regardless, since every tile
+  reserves that second line whether or not it ever has anything to show there.
+
+  The headline band's context line no longer repeats the session-average rate — the dedicated session
+  gold-rate tile below already says it, so the line now states only the recent window's coverage. That
+  line's left edge now lines up with the gold-per-hour figure above it, and the whole band reads
+  noticeably more compact with the redundant figure gone.
+
+  In the heroes list, every hero's energy bar now starts and ends at the same horizontal position on
+  every row: the hero identity block, the bar itself, the percentage reading, and the countdown
+  column all sit in one fixed set of grid columns shared by every row, so two heroes at the same
+  energy level draw fills of the same length instead of one looking further along than the other
+  purely because its name or countdown differed in width.
+
+  The earnings panel is restructured again, into two halves side by side split by a thin vertical
+  rule. The left half is a single right-aligned stack: the coverage line, the gold-per-hour figure
+  with its unit on its own line below, then the XP-per-hour figure the same way, with the XP unit
+  line still carrying the hover/focus explanation it always has. The right half drops the bordered
+  tiles entirely — its six figures now sit as plain label-over-value pairs, both right-aligned, laid
+  out three per row across two rows (current gold, session gold rate, session gold total; elapsed,
+  session XP rate, session XP total), with spacing alone doing the separating. The two session-rate
+  values dropped their trailing per-hour suffix, since the label above each one already carries it;
+  the two session-total labels were reworded to read unmistakably as totals rather than rates sitting
+  right next to them. The current-gold reading's age now sits inline beside the balance instead of on
+  its own line beneath it, still reserving its own space so its appearance never nudges the balance
+  it sits next to. The left half's own width is reserved against both languages' unit strings at
+  once, not just whichever is active, so the vertical rule cannot shift when the display language
+  changes.
+
+  The right half's six figures now sit on fixed-width columns instead of the fractional ones that let
+  a longer Portuguese label push a column wider than its English counterpart. Every label is a single
+  line now — none of the six may wrap onto a second line any more, so the columns can stay this
+  narrow in both languages without one clipping or nudging its neighbours. The current-gold reading's
+  age moved back off the value line and onto its own third line beneath it, and every one of the six
+  figures — not only current gold — now reserves that same third line, so both rows of the grid stay
+  exactly as tall whether or not an age is showing anywhere in them. The gold- and XP-rate labels
+  dropped "session" (the grid's own rows and columns already say as much) and the two total labels
+  lost "da sessão"/their trailing repeat of it, so all six fit their fixed column comfortably in both
+  languages.
+
+  The left half's own vertical rule could still drift: its column had no width of its own, so a
+  compact gold or XP figure switching between digit counts resized the column and slid the rule (and
+  the whole six-figure grid beside it) sideways. That column is now a single fixed width, sized from
+  the widest of its own possible contents rather than letting its children set it, so neither a
+  changing figure nor a language switch can move it again. With the column itself now fixed, the
+  per-line width reservations the coverage line and the two unit lines used to carry (each holding
+  its own longest form in either language) no longer do anything the column doesn't already cover,
+  so they are gone — those lines are now plain right-aligned text.
+
+  The headline gold-per-hour figure was still overflowing its own column at its widest realistic
+  size, because the column's declared width already counts the padding and border that come out of
+  it, leaving less room for the figure than it needed. The figure now renders a size smaller, and the
+  column is sized to fit its true widest form — this also frees up room on the page, so the earnings
+  panel's half-width layout now starts one column narrower than before.
+
+  Every one of the six figures below the headline drops its reserved third line, so the grid's two
+  rows sit noticeably tighter with no dead space beneath the numbers. Current gold still marks a
+  stale reading, but as a small always-present marker beside the figure instead: dark and out of the
+  way while the reading is fresh, lit up once it's genuinely stale, with the exact age reachable by
+  hovering or focusing it — same as the XP figure's own explanation above. The marker takes up the
+  same space whether or not it's showing, so a reading going stale mid-session never nudges anything
+  beside it.
+
 ## 0.5.0
 
 ### Minor Changes

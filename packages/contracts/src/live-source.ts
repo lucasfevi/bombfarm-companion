@@ -47,6 +47,16 @@ export interface LiveTick {
   readonly hits?: readonly LiveHit[];
   readonly bonusSeconds?: number;
   readonly bonusMultiplier?: number;
+  /** One entry per cell of the whole map grid, index-for-index with {@link hps} and in the same
+   *  cell-index space as `loot[].cell` and `hits[].cell`. `-1` marks a cell holding no prop —
+   *  empty ground or a prop already destroyed — so the count of entries that are NOT `-1` is the
+   *  number of props still standing. Values on occupied cells index the prop catalogue. */
+  readonly kinds?: readonly number[];
+  /** Remaining prop HP per cell on the wire's own 0-255 scale, index-for-index with {@link kinds}.
+   *  This array carries NO `-1` sentinel: a cell with no prop reads `0`, indistinguishable from a
+   *  prop on its last sliver, so occupancy must be read from {@link kinds} and never from a
+   *  `!== -1` test here. */
+  readonly hps?: readonly number[];
 }
 
 /**
@@ -72,16 +82,19 @@ export type LiveEvent =
   | { readonly type: 'frame'; readonly frame: LiveFrame }
   | { readonly type: 'currency'; readonly currency: LiveCurrency }
   /**
-   * The fast channel: field/recovery countdowns and the live on-field id set, folded once in the
-   * main process and paced to {@link LIVE_DISPLAY_REFRESH_MS} before crossing IPC — never one of
-   * these per tap frame. Superset of `frame` for what the renderer actually needs, so `frame`
-   * itself never has to reach the renderer at all.
+   * The fast channel: field/recovery countdowns, per-hero energy and the live on-field id set,
+   * folded once in the main process and paced to {@link LIVE_DISPLAY_REFRESH_MS} before crossing
+   * IPC — never one of these per tap frame. Superset of `frame` for what the renderer actually
+   * needs, so `frame` itself never has to reach the renderer at all.
    */
   | {
       readonly type: 'fastUpdate';
       readonly field: readonly FieldCountdown[];
       readonly recovery: readonly RecoveryCountdown[];
+      readonly energies: readonly LiveHeroEnergy[];
       readonly onFieldHeroIds: readonly string[];
+      readonly earnings: LiveEarnings | null;
+      readonly map: LiveMap | null;
     };
 
 /**
@@ -175,6 +188,24 @@ export interface FieldCountdown {
   readonly basis: CountdownBasis;
 }
 
+/**
+ * How full one hero's energy is right now, on the fast channel rather than the authenticated
+ * cycle's rotation snapshot. Covers exactly the heroes some live reading reaches: a hero on the
+ * field, whose energy the tap observes on every tick, and a hero recovering in the house, whose
+ * energy is the inverse of the recovery countdown published beside it. A queued or benched hero
+ * appears here for neither reason and keeps the snapshot's figure — there is nothing fresher to
+ * have.
+ *
+ * The recovering half is modelled, exactly as the recovery countdown it is derived from already
+ * is; deriving both from one number is what stops a hero reading `0:00` and `99%` at once.
+ */
+export interface LiveHeroEnergy {
+  readonly heroId: string;
+  /** In [0, 1] — a fraction of this hero's own maximum, the same scale the rotation snapshot and
+   *  the tick stream both use. */
+  readonly energyFraction: number;
+}
+
 export interface RecoveryCountdown {
   readonly heroId: string;
   readonly secondsRemaining: number;
@@ -184,10 +215,96 @@ export interface RecoveryCountdown {
   readonly advancing: boolean;
 }
 
+/**
+ * Measured gold- and XP-per-hour, folded entirely in the main process from the live tick stream —
+ * the renderer receives only these finished values, never the raw ticks or any of the arithmetic
+ * over them. `null` on every rate field means no streamed time has accrued to divide by yet, not a
+ * zero rate.
+ */
+export interface LiveEarnings {
+  readonly goldBalance: number | null;
+  /** When {@link goldBalance} came from the most recent stored account reading rather than a live
+   *  tick — `null` whenever the stream supplied it (or there is no balance at all), so the
+   *  renderer shows an age next to the balance only for the fallback, never for a tick-frozen one. */
+  readonly goldBalanceCapturedAt: string | null;
+  /** Per hour, over the last 10 real minutes (or less — see {@link coverageSeconds}). */
+  readonly gold10: number | null;
+  /** Per hour, over the whole session. */
+  readonly goldSession: number | null;
+  /** Per hour, over the last 10 real minutes. */
+  readonly xp10: number | null;
+  /** Per hour, over the whole session. */
+  readonly xpSession: number | null;
+  /** Session total accumulated so far — a sum, not a rate. Unlike {@link goldSession} this never
+   *  divides by streamed time, so it keeps rising while the rate settles. */
+  readonly goldSessionTotal: number | null;
+  /** Session total accumulated so far — a sum, not a rate. Unlike {@link xpSession} this never
+   *  divides by streamed time, so it keeps rising while the rate settles. */
+  readonly xpSessionTotal: number | null;
+  /** The real-time span the 10-minute figures actually cover — less than 600 immediately after a
+   *  session starts, or after a long enough stream gap has aged old samples out. */
+  readonly coverageSeconds: number;
+  /** Streamed seconds since the session started (or was last reset), never real elapsed time. */
+  readonly sessionSeconds: number;
+}
+
+/**
+ * What the game is currently being played on, folded in the main process from the live tick
+ * stream — the renderer receives finished figures and only formats them, the same split {@link
+ * LiveEarnings} follows.
+ *
+ * Every field but {@link phase} is independently nullable: the stream can carry a phase on a tick
+ * that omits the grid, and a `null` here means "not reported", never "zero". A map with no props
+ * left standing reports `propsAlive: 0`.
+ */
+export interface LiveMap {
+  /** The phase the stream reports. Names the map: its coordinate, its flavour name, and — via the
+   *  phase's own wiki row — {@link propsTotal}. */
+  readonly phase: number;
+  /** Remaining map health as a fraction in [0, 1], rescaled from the wire's 0-255 `roomHp`. The
+   *  server's own figure over the whole map, not a sum this app derived from per-prop HP. */
+  readonly healthFraction: number | null;
+  /** Props still standing, counted from {@link LiveTick.kinds}. */
+  readonly propsAlive: number | null;
+  /** Props this map spawns when fresh, from the phase's own wiki row rather than from the stream:
+   *  a client that attaches mid-clear never observes a full map, and a denominator that only
+   *  appears after the first wave rollover is a denominator missing exactly when it is most
+   *  wanted. `null` for a phase with no wiki row. */
+  readonly propsTotal: number | null;
+  /**
+   * What this map is worth, per the wiki row for its phase and the account's own boosts.
+   *
+   * These are MODELLED, unlike every field above — which the stream reports directly — and unlike
+   * {@link LiveEarnings}, which is measured from actual payouts. A surface showing both must not
+   * present them as the same kind of number: these say what the map pays on average, not what it
+   * has paid. `null` when the phase has no wiki row.
+   */
+  readonly economy: LiveMapEconomy | null;
+}
+
+/**
+ * Per-map economy figures, modelled from the wiki. Gold is spawn-weighted across the prop mix
+ * rather than a single prop's payout: which props spawn is random, so no exact figure exists to
+ * report — hence "average" in each field's name, and never presented as an observation.
+ */
+export interface LiveMapEconomy {
+  /** XP a single prop awards, with the account's own XP multiplier (the skill tree's `xp_mult`)
+   *  already applied — what the player actually earns, not the wiki's unboosted base. */
+  readonly xpPerProp: number;
+  /** Average gold a single prop pays out, with the account's coin bonus applied. */
+  readonly averageGoldPerProp: number;
+  /** Average gold a full clear of this map pays out: {@link averageGoldPerProp} across every prop
+   *  the map spawns. */
+  readonly averageGoldPerClear: number;
+}
+
 export interface LiveView {
   readonly currency: LiveCurrency;
   readonly field: readonly FieldCountdown[];
   readonly recovery: readonly RecoveryCountdown[];
+  /** Sorted by `heroId`, so a consumer comparing this list against the last one it published is
+   *  comparing content and not the wire's own ordering. */
+  readonly energies: readonly LiveHeroEnergy[];
   /** The slower authenticated projection this view is built on. Null before the first read. */
   readonly rotation: RotationSnapshot | null;
   /** Every hero the live tap most recently showed standing on the field — the REST-derived
@@ -195,6 +312,12 @@ export interface LiveView {
    *  available, never merely "absent because nothing is live". Authoritative over `rotation`'s own
    *  per-hero activity for field membership the moment the two disagree. */
   readonly onFieldHeroIds: readonly string[];
+  /** `null` before the first tap frame of the session has arrived. */
+  readonly earnings: LiveEarnings | null;
+  /** `null` until a tap frame has reported a phase — the app cannot name a map it has not been
+   *  told the player is on, and a stored account reading is not a substitute: it says where the
+   *  account last was, not what is on screen now. */
+  readonly map: LiveMap | null;
   readonly updatedAt: string;
 }
 

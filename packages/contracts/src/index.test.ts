@@ -38,6 +38,13 @@ describe('contracts IPC surface', () => {
       'consent:revoke',
       'live:get',
       'live:dumpDiagnostics',
+      'live:resetEarnings',
+      'updates:get',
+      'updates:check',
+      'updates:download',
+      'updates:installOnRestart',
+      'market:getSnapshot',
+      'market:refreshItem',
     ]);
   });
 
@@ -47,6 +54,8 @@ describe('contracts IPC surface', () => {
       'consent:changed',
       'account:changed',
       'live:event',
+      'updates:changed',
+      'market:changed',
     ]);
   });
 

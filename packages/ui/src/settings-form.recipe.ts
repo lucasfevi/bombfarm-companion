@@ -4,8 +4,11 @@
  * than reimplementing it; these classes only dress the section
  * shell and the row's own label/hint text.
  */
+import { panelClass } from './panel-field.recipe';
 
-export const settingsSectionClass = 'flex min-w-0 flex-col gap-3';
+/** Wears `Panel`'s own chrome rather than a copy of it, so a settings section reads as the same
+ *  kind of box as every other tab's panels instead of as loose rows on the page background. */
+export const settingsSectionClass = `${panelClass} flex min-w-0 flex-col gap-3`;
 export const settingsSectionHeaderClass = 'flex flex-col gap-1';
 export const settingsSectionTitleClass = 'text-[15px] font-bold tracking-[0.01em] text-ink';
 export const settingsSectionDescriptionClass = 'text-sm text-muted';

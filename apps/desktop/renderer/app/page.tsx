@@ -7,14 +7,14 @@ import type {
   GameStatusInfo,
   LiveDiagnosticsDumpOutcome,
   SettingsWriteReason,
+  UpdateStatus,
 } from '@bombfarm/contracts';
-import { DEFAULT_SETTINGS } from '@bombfarm/contracts';
+import { DEFAULT_SETTINGS, disabledUpdateStatus } from '@bombfarm/contracts';
 import { AppShell, BrandMark, SegmentedToggle, StatusChip } from '@bombfarm/ui';
 // Proves the renderer can import @bombfarm/domain: a value import from a
 // FILE subpath that itself value-imports ./data/catalog.json, so a dist missing the JSON data
-// fails the static export build rather than surfacing later at runtime (spec edge case). This
-// is a probe, not planning UI — F2 (mp3-planning-views) is what actually renders advice. It also
-// gives it a second purpose: proving the LANGUAGE reaches the domain edge, not just a value.
+// fails the static export build rather than surfacing later at runtime. It also carries a
+// second purpose: proving the LANGUAGE reaches the domain edge, not just a value.
 import { rarityLabel } from '@bombfarm/domain/game-labels';
 import type { ConsentRecord } from '@bombfarm/game-api';
 import { CopyProvider, useCopy, useLocale, type Copy } from '../lib/copy';
@@ -24,11 +24,11 @@ import { navItemsFor } from './nav-items';
 import { ConsentGate, isConsentGateVisible } from './consent-gate';
 import { ConsentModal } from './consent-modal';
 import { LiveView } from './live/live-view';
-import { PlanningView } from './planning/planning-view';
 import { InventoryView } from './inventory/inventory-view';
 import { ConsentSection } from './settings/consent-section';
 import { DiagnosticsSection } from './settings/diagnostics-section';
 import { LanguageSection } from './settings/language-section';
+import { UpdatesSection } from './settings/updates-section';
 
 const DEFAULT_NAV_ID = 'live';
 
@@ -130,6 +130,9 @@ function HomePageContent({
   const [consent, setConsent] = useState<ConsentRecord | null>(null);
   const [consentForceOpen, setConsentForceOpen] = useState(false);
   const [diagnosticsDumpResult, setDiagnosticsDumpResult] = useState<LiveDiagnosticsDumpOutcome | null>(null);
+  // Seeded disabled rather than null so the Updates section renders its final height on first
+  // paint; main answers `updates:get` with the same inert status when no service exists yet.
+  const [updateStatus, setUpdateStatus] = useState<UpdateStatus>(() => disabledUpdateStatus(''));
 
   useEffect(() => {
     const bridge = getBridge();
@@ -169,6 +172,38 @@ function HomePageContent({
 
   const onConsentDecided = () => {
     setConsentForceOpen(false);
+  };
+
+  useEffect(() => {
+    const bridge = getBridge();
+    if (!bridge) return;
+
+    void bridge
+      .invoke('updates:get')
+      .then(setUpdateStatus)
+      .catch(() => {});
+
+    // Every transition arrives here, including the ones nobody clicked for: download progress
+    // and the six-hourly background check.
+    return bridge.on('updates:changed', setUpdateStatus);
+  }, []);
+
+  const onUpdateCheck = () => {
+    const bridge = getBridge();
+    if (!bridge) return;
+    void bridge.invoke('updates:check').then(setUpdateStatus);
+  };
+
+  const onUpdateDownload = () => {
+    const bridge = getBridge();
+    if (!bridge) return;
+    void bridge.invoke('updates:download').then(setUpdateStatus);
+  };
+
+  const onUpdateInstall = () => {
+    const bridge = getBridge();
+    if (!bridge) return;
+    void bridge.invoke('updates:installOnRestart').then(setUpdateStatus);
   };
 
   useEffect(() => {
@@ -249,21 +284,25 @@ function HomePageContent({
         {/* `app-ready` marks the renderer as mounted, so it belongs to the shell and not to
             whichever tab happens to be showing — six smoke specs wait on it purely as a boot
             signal. The probe beside it proves a @bombfarm/domain value and the active language
-            reached the DOM; it is not planner UI. */}
-        <div data-testid="app-ready" className="space-y-4">
+            reached the DOM; it renders nothing a player sees. */}
+        <div data-testid="app-ready" className="flex flex-1 flex-col gap-4">
           <span data-testid="domain-label-probe" className="sr-only">
             {rarityLabel('Comum', lang)}
           </span>
           {!consentLoaded ? null : gated ? (
             <ConsentGate locale={locale} onLocaleChange={onLocaleChange} onReadAgain={onConsentReallow} />
           ) : activeNavId === 'settings' ? (
-            <>
+            <div data-testid="settings-view" className="mx-auto flex w-full max-w-settings flex-col gap-4">
               <LanguageSection locale={locale} onLocaleChange={onLocaleChange} persistWarning={persistWarning} />
               <ConsentSection onRevoke={onConsentRevoke} />
               <DiagnosticsSection onSave={onSaveDiagnostics} result={diagnosticsDumpResult} />
-            </>
-          ) : activeNavId === 'planning' ? (
-            <PlanningView />
+              <UpdatesSection
+                status={updateStatus}
+                onCheck={onUpdateCheck}
+                onDownload={onUpdateDownload}
+                onInstall={onUpdateInstall}
+              />
+            </div>
           ) : activeNavId === 'inventory' ? (
             <InventoryView />
           ) : (

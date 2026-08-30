@@ -127,7 +127,6 @@ describe('cross-package fixture corpus parity', () => {
   const F8_SKIP_MANIFEST = {};
 
   const SKIPS_NOT_F8 = {
-    'apps/desktop/renderer/lib/planning/recompute-budget.test.ts': 1,
     'apps/web/e2e/visual.spec.ts': 3,
   };
 
@@ -342,7 +341,6 @@ describe('cross-package fixture corpus parity', () => {
   // Scoped to the tree's fixture directories rather than every tracked file, so an incidental
   // match (an empty `{}` config, a shared license header) can't produce a false positive.
   const FIXTURE_ROOTS = [
-    'apps/desktop/renderer/lib/planning/fixtures',
     'apps/desktop/src/main/live-source/fixtures',
     'apps/desktop/tests/fixtures',
     'apps/web/e2e/fixtures',

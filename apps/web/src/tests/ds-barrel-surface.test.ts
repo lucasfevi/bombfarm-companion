@@ -29,6 +29,8 @@ import * as GameArt from '@bombfarm/game-art';
 // BrandMark (L5, desktop/web UI sync): the header mark's five shapes, inlined as a component
 // instead of a binary asset both apps would need their own copy step for. AppShell gained an
 // optional `brand` slot for it; the web's own header keeps its `<Image src="/favicon.svg">`.
+// formatNumber / formatCompactNumber: the compact metric formatter, moved here from the web
+// app so the desktop renderer can share the exact same implementation.
 const FROZEN_BARREL_VALUE_EXPORTS = [
   'AbilityCard',
   'Accordion',
@@ -103,6 +105,12 @@ const FROZEN_BARREL_VALUE_EXPORTS = [
   'dataTableHeadButtonClass',
   'dataTableHeadClass',
   'fileDropZoneRecipe',
+  'formatCompactNumber',
+  'formatNumber',
+  // The number formatters take the reader's language now, so the pair that binds one for the
+  // components which receive an injected formatter ships beside them.
+  'numberFormatterFor',
+  'compactNumberFormatterFor',
   'initialToastQueueState',
   'metricScoreboardDeltaRecipe',
   'metricScoreboardValueRecipe',
@@ -143,10 +151,25 @@ describe('design-system barrel surface (frozen)', () => {
 // The toolbar and stat-panel classes (2026-08-27) are exported for the same reason every other
 // recipe here is: both shells render the grid, and a shell that wants to match its chrome needs
 // the tokens rather than a copy of the class strings.
+//
+// SpriteLoop: the preloading, reduced-motion-aware pixel-art frame loop generalised out of the
+// web-only hero6 bomb-activation sprite, so the desktop app can reuse the same implementation.
+// The market price and table exports (2026-08-29): the inventory grew a second layout, and both
+// shells render it beside the cards. `MarketPrice` is the one place a Steam price is drawn, so
+// the card and the table cannot drift apart on how an approximate figure or a missing listing
+// reads; `nextInventorySort` is the header buttons' pure fold over the domain's multi-term sort,
+// exported so a host driving the table from its own toolbar produces the same order.
 const FROZEN_GAME_ART_BARREL_VALUE_EXPORTS = [
   'AbilityIcon',
   'ArtFrame',
   'InventoryGrid',
+  'InventoryLayoutToggle',
+  'InventoryTable',
+  'InventoryToolbar',
+  'InventoryTotals',
+  'MAX_HERO_STARS',
+  'MarketPrice',
+  'nextInventorySort',
   'ChestIcon',
   'ClockIcon',
   'DropIcon',
@@ -160,6 +183,7 @@ const FROZEN_GAME_ART_BARREL_VALUE_EXPORTS = [
   'HouseIcon',
   'ItemIcon',
   'PropIcon',
+  'SpriteLoop',
   'abilityIconRecipe',
   'artFrameRadiusClass',
   'artFrameRecipe',
@@ -180,6 +204,20 @@ const FROZEN_GAME_ART_BARREL_VALUE_EXPORTS = [
   'inventoryStatRowClass',
   'inventoryStatValueClass',
   'inventoryStatsPanelClass',
+  'inventoryTableActionButtonClass',
+  'inventoryTableBlankClass',
+  'inventoryTableForgeClass',
+  'inventoryTableGoldClass',
+  'inventoryTableGroupCountClass',
+  'inventoryTableGroupHeaderClass',
+  'inventoryTableHeroClass',
+  'inventoryTableHeroNameClass',
+  'inventoryTableItemNameClass',
+  'inventoryTableNameClass',
+  'inventoryTableResultCountClass',
+  'inventoryTableRowClass',
+  'inventoryTableSkippedNoteClass',
+  'inventoryTableToolbarClass',
   'rarityDotClass',
   'rarityTextClass',
   'rosterIconTooltipTriggerClass',

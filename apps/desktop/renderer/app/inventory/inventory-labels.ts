@@ -4,6 +4,7 @@ import type {
   InventoryGridLabels,
   InventoryHeroOption,
   InventoryStatText,
+  InventoryTableLabels,
 } from '@bombfarm/game-art';
 import type {
   InventoryHero,
@@ -119,6 +120,7 @@ const SORT_KEY: Record<InventorySortKey, keyof Copy> = {
   value: 'inventorySortValue',
   name: 'inventorySortName',
   count: 'inventorySortCount',
+  market: 'inventorySortMarket',
 };
 
 function badges(item: InventoryViewItem, t: Copy): InventoryBadge[] {
@@ -221,6 +223,7 @@ export function inventoryLabels(
       allKinds: t.inventoryFilterAll,
       rarity: (rarityIdx) => itemRarityLabel(rarityIdx, lang),
       equippedOnly: t.inventoryFilterEquipped,
+      pricedOnly: t.inventoryFilterPriced,
       clear: t.inventoryFilterClear,
       resultCount: (shown, total) => fill(t.inventoryFilterCount, { shown, total }),
       noMatches: t.inventoryFilterNoMatches,
@@ -239,5 +242,51 @@ export function inventoryLabels(
     unknownCategoryNote: (codes) => fill(t.inventoryUnknownCategory, { codes: codes.join(', ') }),
     skippedNote: (count) => fill(t.inventorySkipped, { count }),
     empty: { title: t.inventoryEmptyTitle, description: t.inventoryEmptyDescription },
+  };
+}
+
+/**
+ * The table's labels, derived from the cards' rather than written twice. Both layouts show the
+ * same items and must name them identically; the column headers reuse the sort-key labels because
+ * a column and the sort it triggers are the same idea said once.
+ */
+export function inventoryTableLabels(
+  t: Copy,
+  lang: 'pt' | 'en',
+  heroes: ReadonlyMap<string, InventoryHero> = new Map(),
+): InventoryTableLabels {
+  const grid = inventoryLabels(t, lang, heroes);
+
+  return {
+    caption: t.inventoryTableCaption,
+    groupTitle: grid.groupTitle,
+    itemName: grid.itemName,
+    itemRarity: grid.itemRarity,
+    itemForge: grid.itemForge,
+    equippedBy: grid.equippedBy,
+    gold: grid.gold,
+    searchText: grid.searchText,
+    column: {
+      name: t.inventorySortName,
+      rarity: t.inventorySortRarity,
+      level: t.inventorySortLevel,
+      count: t.inventorySortCount,
+      value: t.inventorySortValue,
+      market: t.inventorySortMarket,
+      equippedBy: t.inventoryColumnEquippedBy,
+      actions: t.inventoryColumnActions,
+    },
+    rowAction: (itemLabel) => fill(t.inventoryRowAction, { item: itemLabel }),
+    setOption: grid.setOption,
+    setOptionCount: grid.setOptionCount,
+    heroOption: grid.heroOption,
+    toolbar: grid.toolbar,
+    clear: t.inventoryFilterClear,
+    filteredEmpty: {
+      title: t.inventoryFilterNoMatches,
+      description: t.inventoryFilterClear,
+    },
+    empty: { title: t.inventoryEmptyTitle, description: t.inventoryEmptyDescription },
+    skippedNote: (count) => fill(t.inventorySkipped, { count }),
   };
 }

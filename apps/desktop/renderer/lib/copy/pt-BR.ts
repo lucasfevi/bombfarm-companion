@@ -15,7 +15,6 @@ import type { Copy } from './index';
 
 export const ptBR: Copy = {
   // shell* — AppShell navigation and status chrome
-  shellPlanningNavLabel: 'Planejamento',
   shellStatusConnected: 'Conectado',
   shellStatusNotRunning: 'O jogo não está aberto',
   shellStatusStale: 'Desatualizado',
@@ -23,80 +22,16 @@ export const ptBR: Copy = {
 
   // empty* — placeholder states shown before real data has arrived
   emptyBridgeUnavailableTitle: 'Ponte de comunicação indisponível',
+  valueNotAvailable: 'não disponível',
 
-  // Account section names, in player language — never the raw section key
-  sectionNameAccount: 'sua fase da fazenda',
-  sectionNameHeroes: 'seus heróis',
-  sectionNameSkills: 'sua árvore de habilidades',
-  sectionNameCasa: 'sua casa',
-  sectionNameItems: 'seu equipamento',
-
-  // planning* — the Planning screen
-  planningRosterColumnAvatar: 'Avatar',
-  planningRosterColumnName: 'Herói',
-  planningRosterColumnLevel: 'Nível',
-  planningRosterColumnStars: 'Estrelas',
-  planningRosterColumnRarity: 'Raridade',
-  planningSelectHeroPrompt: 'Selecione um herói na lista para ver a recomendação de próximo ponto.',
-  planningNoRosterTitle: 'Nenhum herói disponível para planejar ainda',
-  planningNoRosterDescription: 'Não foi possível ler uma lista de heróis utilizável na sua conta.',
-  planningNothingPersistedTitle: 'Nada salvo ainda',
-  planningNothingPersistedDescription:
-    'Abra o jogo com o companion em execução uma vez, para que ele possa lembrar da sua conta.',
-  planningRejectedTitleMissingBirthStats: 'Seu save está sem dados de herói que o app precisa',
-  planningRejectedDescriptionMissingBirthStats:
-    'Estes heróis não puderam ser lidos de uma versão recente o bastante do jogo:',
-  planningRejectedTitleNotASaveFile: 'Isso não parece ser um dado de conta',
-  planningStoreUnavailableNotice: 'Nada será lembrado depois que o app fechar.',
-  planningGearSummaryLabel: 'Equipamento equipado',
-
-  // fidelity* — provenance / degradation display
-  fidelityNoticeTitle: 'Parte da sua conta não está totalmente atualizada',
-  fidelityMissingKeysLabel: 'Campos que o jogo não enviou',
-  fidelityStatusResolved: 'lido agora mesmo',
-  fidelityStatusStale: 'lembrado da sua última sessão',
-  fidelityStatusMissing: 'não disponível',
-  fidelityStatusDegraded: 'enviado em um formato que esta versão ainda não entende',
-
-  // advice* — next-point ranking, DPS, reset advice
-  adviceNextPointTitle: 'Ranking de próximo ponto',
-  adviceNextPointStatColumn: 'Atributo',
-  adviceNextPointGainColumn: 'Ganho',
-  adviceDpsLabel: 'DPS solo',
-  adviceResetAdviceRecommended: 'Um reset de atributos parece valer a pena para este herói.',
-  adviceResetAdviceNotRecommended: 'Nenhum reset de atributos necessário no momento.',
-
-  // Stat names, in player language
-  statNameEnergy: 'Energia',
-  statNameAttack: 'Ataque',
-  statNameCritDmg: 'Dano crítico',
-  statNameSpeed: 'Velocidade',
-  statNameCritChance: 'Chance de crítico',
-  statNamePenetration: 'Penetração',
-  statNameCdr: 'Redução de recarga',
-  planningLoadingTitle: 'Carregando sua conta…',
-
-  // withheld* — the always-mounted notice slot for a withheld quantity
-  withheldRosterRowTitle: 'Lista de heróis retida',
-  withheldGearSummaryTitle: 'Resumo de equipamento retido',
-  withheldDpsTitle: 'DPS retido',
-  withheldNextPointRankingTitle: 'Ranking de próximo ponto retido',
-  withheldResetAdviceTitle: 'Recomendação de reset retida',
-  withheldBecause: 'Aguardando {sections}.',
+  // account* — the shared account-read states every data screen shows
+  accountLoadingTitle: 'Carregando sua conta…',
 
   // error* — failure paths
   errorAccountReadFailed: 'Não foi possível ler a conta',
 
-  // store.reason, in player language (AccountStoreReason, exhaustively mapped)
-  storeReasonEmpty: 'nada foi salvo ainda',
-  storeReasonSchemaTooNew: 'uma versão mais nova do companion salvou isso, e esta versão não consegue ler',
-  storeReasonCorruptRebuilt: 'a cópia salva estava ilegível e precisou ser reconstruída',
-  storeReasonNotWritable: 'o local de salvamento não pode ser gravado',
-  storeReasonNoSqliteBinding: 'esta versão não consegue salvar neste sistema',
-  storeReasonAccountMismatch: 'uma conta diferente está em execução no momento',
-
   // age* — relative-age words for format.ts. Singular/plural-agnostic by construction, matching
-  // en.ts's own constraint (design §7 rule 3) — 'há {n}m' reads naturally for every n.
+  // en.ts's own constraint — 'há {n}m' reads naturally for every n.
   ageJustNow: 'agora mesmo',
   ageMinutes: 'há {n}m',
   ageHours: 'há {n}h',
@@ -140,6 +75,38 @@ export const ptBR: Copy = {
   settingsDiagnosticsReasonWriteFailed: 'Não foi possível gravar o arquivo. Verifique o local de salvamento e tente de novo.',
   settingsDiagnosticsReasonNoSource: 'Ainda não há nada para salvar. O app ainda não se conectou ao jogo.',
 
+  // settingsUpdates* — o controle de procurar/baixar/instalar atualizações
+  settingsUpdatesSectionTitle: 'Atualizações',
+  settingsUpdatesCurrentVersionLabel: 'Versão instalada',
+  settingsUpdatesChannelHelp: 'Canal de atualização: {channel}.',
+  settingsUpdatesCheckLabel: 'Procurar atualizações',
+  settingsUpdatesCheckHelp:
+    'Também procura sozinho pouco depois de o app abrir, e a cada seis horas enquanto ele ficar aberto.',
+  settingsUpdatesCheckAction: 'Procurar agora',
+  settingsUpdatesDownloadLabel: 'Uma versão nova está esperando',
+  settingsUpdatesDownloadHelp: 'Baixar não interrompe nada — você instala quando quiser.',
+  settingsUpdatesDownloadAction: 'Baixar',
+  settingsUpdatesInstallLabel: 'Terminar a atualização',
+  settingsUpdatesInstallHelp: 'Leva alguns segundos. O app abre de novo sozinho.',
+  settingsUpdatesInstallAction: 'Reiniciar e instalar',
+  settingsUpdatesStatusChecking: 'Procurando atualizações…',
+  settingsUpdatesStatusUpToDate: 'Você está na versão mais recente.',
+  settingsUpdatesStatusAvailableTitle: 'A versão {version} está disponível',
+  settingsUpdatesStatusAvailableBody: 'Baixe agora, ou deixe para depois — o app pergunta de novo mais tarde.',
+  settingsUpdatesStatusDownloading: 'Baixando a versão {version}… {percent}%',
+  settingsUpdatesStatusReadyTitle: 'A versão {version} está pronta para instalar',
+  settingsUpdatesStatusReadyBody: 'O app fecha e abre de novo na versão nova. Nada do que você salvou é perdido.',
+  settingsUpdatesStatusDisabled:
+    'As atualizações estão desligadas nesta versão. As versões Nightly, Beta e estável instaladas se atualizam sozinhas; uma versão de desenvolvimento local não.',
+  settingsUpdatesErrorTitle: 'Não foi possível procurar atualizações',
+  settingsUpdatesReasonOffline:
+    'Não foi possível acessar o servidor de atualizações. Verifique sua conexão e tente de novo.',
+  settingsUpdatesReasonRateLimited:
+    'O servidor de atualizações está pedindo para irmos mais devagar. Espere alguns minutos e tente de novo.',
+  settingsUpdatesReasonNoRelease: 'Ainda não existe uma versão publicada para esta build.',
+  settingsUpdatesReasonUnknown:
+    'Algo deu errado. Tente de novo e, se continuar falhando, salve um arquivo para relatório de erro abaixo.',
+
   // consentGate* — o portão de permissão mostrado no lugar do conteúdo do app quando o acesso não é permitido
   consentGateTitle: 'Este app precisa da sua permissão para funcionar',
   consentGateBody:
@@ -175,6 +142,7 @@ export const ptBR: Copy = {
   liveListQueuedTitle: 'Ociosos',
   liveListBenchedTitle: 'No banco',
   liveListEmptyLine: 'Nenhum herói aqui no momento.',
+  liveHeroLevelValue: 'Nv {level}',
   liveEnergyLabel: 'Energia',
   liveFieldSlotsHint: 'Compre mais vagas de campo na sua árvore de habilidades',
   liveRestingSlotsHint: 'Ative uma casa superior para mais vagas de descanso',
@@ -191,9 +159,50 @@ export const ptBR: Copy = {
   liveCountdownEstimatedQualifier: 'estimativa, não uma leitura direta',
   liveCountdownPausedQualifier: 'não está contando no momento',
 
-  // liveNeverRead* — nada foi lido da conta ainda nesta sessão
+  // liveNeverRead* — nada foi lido da conta ainda nesta sessão. O motivo de nada ter chegado vem
+  // das strings liveGapReason* acima (esta tela reutiliza o texto em vez de repetir "abra o jogo"
+  // enquanto o app já está funcionando); esta é a única descrição restante, para o caso em que a
+  // transmissão já está ao vivo e só falta a leitura da conta.
   liveNeverReadTitle: 'Nada foi lido da sua conta ainda',
-  liveNeverReadDescription: 'Abra o jogo com o companion em execução, para que ele tenha algo para ler.',
+  liveNeverReadAccountPendingDescription: 'O app está conectado ao jogo e lendo sua conta agora.',
+
+  // liveNeverReadFlavorLine* — texto de humor, mais discreto e rotativo, abaixo do sprite de
+  // espera, mostrado só enquanto algo está realmente em andamento. Nunca promete um prazo (a
+  // espera pode legitimamente durar um minuto) — é bem-humorado sobre a própria espera.
+  liveNeverReadFlavorLine1: 'Contando o ouro, moeda por moeda.',
+  liveNeverReadFlavorLine2: 'Dando um oi para os seus heróis.',
+  liveNeverReadFlavorLine3: 'Esquentando o ábaco.',
+  liveNeverReadFlavorLine4: 'Esperando com paciência. Bastante paciência.',
+  liveNeverReadFlavorLine5: 'Dando uma cutucada amigável na planilha.',
+
+  // liveEarnings* — o painel de Ganhos: valores medidos de ouro/XP, enviados já prontos e só
+  // formatados aqui, nunca recalculados.
+  liveEarningsTitle: 'Ganhos',
+  liveEarningsResetAria: 'Reiniciar sessão',
+  liveEarningsCurrentGoldLabel: 'Ouro atual',
+  liveEarningsGoldHeadlineUnit: 'ouro / h',
+  liveEarningsXpHeadlineUnit: 'xp / h',
+  liveEarningsRecentWindowLabel: 'últimos {minutes} min',
+  liveEarningsGoldSessionLabel: 'Ouro/h',
+  liveEarningsXpSessionLabel: 'XP/h',
+  liveEarningsGoldSessionTotalLabel: 'Total de ouro',
+  liveEarningsXpSessionTotalLabel: 'Total de XP',
+  liveEarningsElapsedLabel: 'Decorrido',
+  liveEarningsXpHelpLabel: 'Sobre esse número de XP',
+  liveEarningsXpHelpBody: 'Calculado a partir dos props que seus heróis destruíram, não lido diretamente do jogo.',
+
+  // liveMap* — o painel de Mapa: em qual mapa se está jogando e o quanto da run já passou.
+  liveMapTitle: 'Mapa',
+  liveMapHealthLabel: 'Vida do mapa',
+  liveMapPropsLabel: 'Props vivos',
+  liveMapUnknownName: 'Mapa desconhecido',
+  liveMapXpPerPropLabel: 'XP / prop',
+  liveMapGoldPerPropLabel: 'Ouro / prop',
+  liveMapGoldPerClearLabel: 'Ouro / limpeza',
+  liveMapEstimateNote: 'Estimativa',
+  liveMapEstimateBody:
+    'Estimado a partir dos valores da wiki deste mapa e dos seus próprios bônus — a média que um prop ou uma limpeza completa paga, não o que você realmente ganhou.',
+
   // inventory* — a tela de Inventário: todos os itens da conta, agrupados por tipo
   inventoryNavLabel: 'Inventário',
   inventoryTitle: 'Inventário',
@@ -229,6 +238,9 @@ export const ptBR: Copy = {
   inventorySearchLabel: 'Buscar no inventário',
   inventoryFilterAll: 'Todos',
   inventoryFilterEquipped: 'Equipados',
+  inventoryFilterPriced: 'Com preço',
+  inventoryTotalsTitle: 'Valor de mercado',
+  inventoryTotalsCoverage: '{priced} de {tradable} itens negociáveis com preço',
   inventoryFilterClear: 'Limpar',
   inventoryFilterCount: '{shown} de {total}',
   inventoryFilterNoMatches: 'Nenhum item corresponde a esses filtros.',
@@ -241,6 +253,24 @@ export const ptBR: Copy = {
   inventorySortValue: 'Valor',
   inventorySortName: 'Nome',
   inventorySortCount: 'Quantidade',
+  inventorySortMarket: 'Preço de mercado',
+  inventoryViewLabel: 'Layout',
+  inventoryViewCards: 'Cartões',
+  inventoryViewList: 'Lista',
+  inventoryTableCaption: 'Todos os itens da conta, em tabela ordenável',
+  inventoryColumnEquippedBy: 'Equipado por',
+  inventoryColumnActions: 'Ações',
+  inventoryRowAction: 'Detalhes de {item}',
+  marketNoListings: 'Sem anúncios',
+  marketNotOnMarket: 'Fora do mercado',
+  marketRefreshItem: 'Atualizar o preço de mercado de {item}',
+  marketNativeTooltip: 'Menor anúncio na Steam, em {currency} — cotado {age}',
+  marketConvertedTooltip: 'Aproximado: convertido do dólar, então a Steam pode mostrar outro valor — {age}',
+  marketAgeJustNow: 'agora',
+  marketAgeMinutes: 'há {count} min',
+  marketAgeHours: 'há {count} h',
+  marketAgeDays: 'há {count} d',
+  marketAgeUnknown: 'em momento desconhecido',
   inventorySortAscending: 'Crescente',
   inventorySortDescending: 'Decrescente',
   inventoryFilterSetsLabel: 'Filtrar por set',

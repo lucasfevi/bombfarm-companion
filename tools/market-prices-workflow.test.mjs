@@ -1,0 +1,130 @@
+/**
+ * The shape guard for the scheduled market snapshot job. It holds `contents: write`, so the
+ * things worth pinning are what it must never write: no commit to the default branch, nothing
+ * under `packages/**`, and no second job that could quietly gain those rights later.
+ *
+ * Every predicate is a pure function over workflow text, asserted twice — true against the real
+ * file, false against a mutation of that same text — so none of them can report green while
+ * having stopped discriminating.
+ */
+import { readFileSync } from 'node:fs';
+import { join, resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
+import { describe, expect, it } from 'vitest';
+
+const root = resolve(fileURLToPath(new URL('..', import.meta.url)));
+const WORKFLOW_PATH = join(root, '.github/workflows/market-prices.yml');
+const BUILDER_PATH = join(root, 'tools/market-snapshot/build.mjs');
+
+const workflow = readFileSync(WORKFLOW_PATH, 'utf-8');
+const builder = readFileSync(BUILDER_PATH, 'utf-8');
+
+/** Comments describe the very constraints under test; predicates must read YAML, not prose. */
+function stripCommentLines(text) {
+  return text
+    .split('\n')
+    .filter((line) => !line.trim().startsWith('#'))
+    .join('\n');
+}
+
+function jobNames(text) {
+  const lines = text.split('\n');
+  const jobsIndex = lines.findIndex((line) => line === 'jobs:');
+  if (jobsIndex === -1) return [];
+  const names = [];
+  for (let i = jobsIndex + 1; i < lines.length; i += 1) {
+    const match = lines[i].match(/^ {2}([A-Za-z0-9_-]+):\s*$/);
+    if (match) names.push(match[1]);
+  }
+  return names;
+}
+
+const singleJob = (text) => jobNames(text).length === 1;
+const hasLiveSchedule = (text) =>
+  /^\s*schedule:\s*$/m.test(text) && /^\s*-\s*cron:\s*'[^']+'/m.test(text);
+const serialises = (text) => /cancel-in-progress:\s*false/.test(stripCommentLines(text));
+const isTimeBoxed = (text) => /timeout-minutes:\s*\d+/.test(stripCommentLines(text));
+const publishesWhateverItGot = (text) =>
+  (stripCommentLines(text).match(/if:\s*always\(\)/g) ?? []).length >= 2;
+
+/** The git push spans three backslash-continued lines; fold them so one regex can read it. */
+const joinContinuations = (text) => text.replace(/\\\n\s*/g, ' ');
+
+const shellBody = (text) => joinContinuations(stripCommentLines(text));
+
+/** Nothing in the job may push to a branch this repository releases from. */
+const neverPushesToDefaultBranch = (text) => !/push[^\n]*\b(develop|main)\b/.test(shellBody(text));
+
+/** The published data lives on its own branch and in a release asset, never in the source tree. */
+const neverWritesPackages = (text) => !/packages\//.test(stripCommentLines(text));
+
+const forcePushIsScopedToTheDataBranch = (text) => {
+  const forcePushes = shellBody(text).match(/push --force[^\n]*/g) ?? [];
+  return forcePushes.length > 0 && forcePushes.every((push) => /DATA_BRANCH/.test(push));
+};
+
+/** The workflow with the branch its force-push targets swapped, leaving the rest intact. */
+const pushingTo = (text, branch) =>
+  text.replace(/(push --force[\s\S]*?)"\$DATA_BRANCH"/, `$1"${branch}"`);
+
+describe('the market-prices workflow', () => {
+  it('runs on a live schedule and serialises overlapping runs', () => {
+    expect(hasLiveSchedule(workflow)).toBe(true);
+    expect(hasLiveSchedule(workflow.replace(/^\s*-\s*cron:.*$/m, ''))).toBe(false);
+
+    expect(serialises(workflow)).toBe(true);
+    expect(serialises(workflow.replace('cancel-in-progress: false', 'cancel-in-progress: true'))).toBe(
+      false,
+    );
+  });
+
+  it('is one job, time-boxed well under GitHub six hour default', () => {
+    expect(singleJob(workflow)).toBe(true);
+    expect(singleJob(`${workflow}\n  publish:\n`)).toBe(false);
+
+    expect(isTimeBoxed(workflow)).toBe(true);
+    expect(isTimeBoxed(workflow.replace(/timeout-minutes:\s*\d+/, ''))).toBe(false);
+  });
+
+  it('publishes even when the sweep was cut short, so partial coverage is not thrown away', () => {
+    expect(publishesWhateverItGot(workflow)).toBe(true);
+    expect(publishesWhateverItGot(workflow.replace(/if:\s*always\(\)/g, "if: success()"))).toBe(
+      false,
+    );
+  });
+
+  it('never commits to the default branch and never writes the source tree', () => {
+    expect(neverPushesToDefaultBranch(workflow)).toBe(true);
+    expect(neverPushesToDefaultBranch(pushingTo(workflow, 'develop'))).toBe(false);
+
+    expect(neverWritesPackages(workflow)).toBe(true);
+    expect(neverWritesPackages(`${workflow}\n          cp out.json packages/domain/src/data/\n`)).toBe(
+      false,
+    );
+  });
+
+  it('force-pushes only the derived data branch', () => {
+    expect(forcePushIsScopedToTheDataBranch(workflow)).toBe(true);
+    expect(forcePushIsScopedToTheDataBranch(pushingTo(workflow, 'develop'))).toBe(false);
+  });
+});
+
+describe('the snapshot builder', () => {
+  const pricingSource = (file) =>
+    readFileSync(join(root, 'packages/pricing/src/market', file), 'utf-8');
+  const callsFetch = (source) => /\bfetch\s*\(/.test(source);
+  const SHIPPED = ['discover.ts', 'endpoints.ts', 'reconcile.ts', 'snapshot.ts', 'resolve.ts'];
+
+  it('performs every network call itself, so no shipped package can reach Steam', () => {
+    expect(callsFetch(builder)).toBe(true);
+
+    const shipped = SHIPPED.map(pricingSource).join('\n');
+    expect(callsFetch(shipped)).toBe(false);
+    expect(callsFetch(`${shipped}\nawait fetch(url);`)).toBe(true);
+  });
+
+  it('leaves URL building in the package, so the sweep and the apps address Steam identically', () => {
+    expect(/steamcommunity\.com/.test(pricingSource('endpoints.ts'))).toBe(true);
+    expect(/steamcommunity\.com/.test(builder)).toBe(false);
+  });
+});

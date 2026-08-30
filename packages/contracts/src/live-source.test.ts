@@ -89,8 +89,8 @@ describe('LIVE_DISPLAY_REFRESH_MS', () => {
 });
 
 describe('LiveEvent — the fastUpdate variant', () => {
-  it('carries field, recovery and the live on-field id set, and nothing else', () => {
-    const event: LiveEvent = { type: 'fastUpdate', field: [], recovery: [], onFieldHeroIds: [] };
-    expect(Object.keys(event).sort()).toEqual(['field', 'onFieldHeroIds', 'recovery', 'type']);
+  it('carries field, recovery, per-hero energy, the live on-field id set, earnings, and the map, and nothing else', () => {
+    const event: LiveEvent = { type: 'fastUpdate', field: [], recovery: [], energies: [], onFieldHeroIds: [], earnings: null, map: null };
+    expect(Object.keys(event).sort()).toEqual(['earnings', 'energies', 'field', 'map', 'onFieldHeroIds', 'recovery', 'type']);
   });
 });

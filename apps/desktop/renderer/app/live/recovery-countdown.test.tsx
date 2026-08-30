@@ -14,12 +14,12 @@ describe('RecoveryCountdown — a hero at a genuine zero is not the same as a he
   it('a real zero renders the formatted countdown, not the missing-data string', () => {
     const html = render({ heroId: 'h1', secondsRemaining: 0, advancing: true });
     expect(html).toContain('0:00');
-    expect(html).not.toContain(en.fidelityStatusMissing);
+    expect(html).not.toContain(en.valueNotAvailable);
   });
 
   it('an absent countdown renders the missing-data string, never a substituted 0', () => {
     const html = render(undefined);
-    expect(html).toContain(en.fidelityStatusMissing);
+    expect(html).toContain(en.valueNotAvailable);
     expect(html).not.toMatch(/>\s*0:00\s*</);
   });
 });

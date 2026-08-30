@@ -16,7 +16,7 @@ it applied, and every one of them is overridable.
 
 | Surface | Source | Fidelity |
 | --- | --- | --- |
-| Account, Planning, Inventory | `apps/desktop/tests/fixtures/account-offline.json` — 13 heroes, 221 items, all five sections `resolved` | Real captured bodies |
+| Account, Inventory | `apps/desktop/tests/fixtures/account-offline.json` — 13 heroes, 221 items, all five sections `resolved` | Real captured bodies |
 | Live | `live-capture.bfcc` — 60 records decoding to 58 ticks, replayed at ~10 Hz | Real captured bytes, looped |
 | Consent flow | Unchanged | Real |
 

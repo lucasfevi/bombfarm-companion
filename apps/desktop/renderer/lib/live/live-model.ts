@@ -2,7 +2,10 @@ import type {
   CountdownBasis,
   FieldCountdown,
   LiveCurrency,
+  LiveEarnings,
   LiveGapReason,
+  LiveHeroEnergy,
+  LiveMap,
   RecoveryCountdown,
   RotationHeroSnapshot,
   RotationNormalizeResult,
@@ -53,9 +56,13 @@ export interface LiveRecoveryCountdownModel {
 export interface LiveFastModel {
   readonly field: Readonly<Record<string, LiveFieldCountdownModel>>;
   readonly recovery: Readonly<Record<string, LiveRecoveryCountdownModel>>;
+  /** How full each hero the fast channel reaches is, keyed by hero id. Absent for a hero it does
+   *  not reach — see {@link LiveHeroEnergy} for which those are — so a lookup miss means "keep the
+   *  slow model's figure", never "empty". */
+  readonly energy: Readonly<Record<string, number>>;
 }
 
-export const EMPTY_LIVE_FAST_MODEL: LiveFastModel = { field: {}, recovery: {} };
+export const EMPTY_LIVE_FAST_MODEL: LiveFastModel = { field: {}, recovery: {}, energy: {} };
 
 export type LiveFreshness =
   | { readonly kind: 'bridge-unavailable' }
@@ -66,6 +73,9 @@ export type LiveFreshness =
       readonly reason: LiveGapReason;
       readonly actionable: boolean;
       readonly likelyQuarantine?: boolean;
+      /** When this gap began — the age of any figure the Live screen freezes for the duration of
+       *  the gap (e.g. the last known gold balance). */
+      readonly sinceAt: string;
     };
 
 export const LOADING_LIVE_FRESHNESS: LiveFreshness = { kind: 'loading' };
@@ -80,12 +90,19 @@ export interface LiveModel {
   readonly freshness: LiveFreshness;
   readonly slow: LiveSlowModel | null;
   readonly fast: LiveFastModel;
+  /** Straight from `LiveView`/`LiveEvent` — `null` exactly when the source says so, never a
+   *  computed or defaulted stand-in. */
+  readonly earnings: LiveEarnings | null;
+  /** Same rule as {@link earnings}: passed through untouched, `null` only when the source says so. */
+  readonly map: LiveMap | null;
 }
 
 export const INITIAL_LIVE_MODEL: LiveModel = {
   freshness: LOADING_LIVE_FRESHNESS,
   slow: null,
   fast: EMPTY_LIVE_FAST_MODEL,
+  earnings: null,
+  map: null,
 };
 
 function heroFact(hero: RotationHeroSnapshot): LiveHeroFact {
@@ -143,6 +160,7 @@ export function buildLiveFreshness(currency: LiveCurrency): LiveFreshness {
     kind: 'gap',
     reason: currency.reason,
     actionable: currency.actionable,
+    sinceAt: currency.sinceAt,
     ...(currency.likelyQuarantine !== undefined ? { likelyQuarantine: currency.likelyQuarantine } : {}),
   };
 }
@@ -150,6 +168,7 @@ export function buildLiveFreshness(currency: LiveCurrency): LiveFreshness {
 export function buildLiveFastModel(
   field: readonly FieldCountdown[],
   recovery: readonly RecoveryCountdown[],
+  energies: readonly LiveHeroEnergy[],
 ): LiveFastModel {
   const fieldByHero: Record<string, LiveFieldCountdownModel> = {};
   for (const entry of field) {
@@ -159,5 +178,7 @@ export function buildLiveFastModel(
   for (const entry of recovery) {
     recoveryByHero[entry.heroId] = { heroId: entry.heroId, secondsRemaining: entry.secondsRemaining, advancing: entry.advancing };
   }
-  return { field: fieldByHero, recovery: recoveryByHero };
+  const energyByHero: Record<string, number> = {};
+  for (const entry of energies) energyByHero[entry.heroId] = entry.energyFraction;
+  return { field: fieldByHero, recovery: recoveryByHero, energy: energyByHero };
 }

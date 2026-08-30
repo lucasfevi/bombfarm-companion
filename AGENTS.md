@@ -74,6 +74,9 @@ that project with a filename filter). `apps/web` and `packages/domain` alias `@b
   with `git branch -m <type>/<summary>` before the first push — see [`docs/branching.md`](docs/branching.md#branch-names)
 - IPC types live in `@bombfarm/contracts`; both main and renderer import from there
 - No Node integration in the renderer; use preload `contextBridge`
+- **Reach for a design-system primitive before a native or bespoke control** — `Tooltip` (never the
+  native `title` attribute, which lint rejects), `Select` / `Num`, `Switch` — see
+  [`docs/design-system.md`](docs/design-system.md)
 - TypeScript strict at the monorepo base; planner-origin packages `@bombfarm/domain`
   and `@bombfarm/ui` intentionally keep a documented exception (see
   [`docs/typescript-planner-origin.md`](docs/typescript-planner-origin.md))

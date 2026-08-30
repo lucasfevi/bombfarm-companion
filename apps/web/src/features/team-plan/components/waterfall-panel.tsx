@@ -4,7 +4,7 @@ import type { ReactNode } from 'react';
 import type { TeamPlan as DomainTeamPlan, WaterfallStep } from '@bombfarm/domain/team-plan/types';
 import { Panel, Tooltip, cn } from '@bombfarm/ui';
 import { panelHClass, panelTitleClass } from '@bombfarm/ui/panel-field.recipe';
-import type { Strings } from '@/shared/i18n';
+import type { Strings, Lang } from '@/shared/i18n';
 import { sub } from '@/shared/i18n';
 import { formatCompactNumber, formatNumber } from '@/shared/lib/format-number';
 import { AbbreviatedNumber } from './abbreviated-number';
@@ -27,7 +27,7 @@ function withDeltaPlaceholder(template: string, delta: ReactNode) {
   );
 }
 
-export function WaterfallPanel({ t, plan }: { t: Strings; plan: DomainTeamPlan }) {
+export function WaterfallPanel({ t, lang, plan }: { t: Strings; lang: Lang; plan: DomainTeamPlan }) {
   const totalDelta = plan.planDps - plan.currentDps;
   const totalPct = plan.currentDps > 0 ? (totalDelta / plan.currentDps) * 100 : 0;
   const totalSign = totalDelta >= 0 ? '+' : '';
@@ -61,8 +61,8 @@ export function WaterfallPanel({ t, plan }: { t: Strings; plan: DomainTeamPlan }
                 }
               >
                 {sub(t.teamPlanTotalGainValue, {
-                  delta: `${totalSign}${formatCompactNumber(totalDelta, 1)}`,
-                  pct: `${pctSign}${formatNumber(totalPct, 1)}`,
+                  delta: `${totalSign}${formatCompactNumber(totalDelta, lang, 1)}`,
+                  pct: `${pctSign}${formatNumber(totalPct, lang, 1)}`,
                 })}
               </Tooltip.Trigger>
               <Tooltip.Portal>
@@ -70,8 +70,8 @@ export function WaterfallPanel({ t, plan }: { t: Strings; plan: DomainTeamPlan }
                   <Tooltip.Popup>
                     <p className="m-0 font-mono">
                       {sub(t.teamPlanTotalGainValue, {
-                        delta: `${totalSign}${formatNumber(totalDelta, 0)}`,
-                        pct: `${pctSign}${formatNumber(totalPct, 1)}`,
+                        delta: `${totalSign}${formatNumber(totalDelta, lang, 0)}`,
+                        pct: `${pctSign}${formatNumber(totalPct, lang, 1)}`,
                       })}
                     </p>
                   </Tooltip.Popup>
@@ -87,8 +87,8 @@ export function WaterfallPanel({ t, plan }: { t: Strings; plan: DomainTeamPlan }
                 <StepCell
                   key={step.id}
                   label={stepLabels[step.id](t)}
-                  value={<AbbreviatedNumber value={step.objective} />}
-                  delta={showDelta ? <AbbreviatedNumber value={step.delta} signed /> : null}
+                  value={<AbbreviatedNumber value={step.objective} lang={lang} />}
+                  delta={showDelta ? <AbbreviatedNumber value={step.delta} lang={lang} signed /> : null}
                   deltaTone={step.delta < 0 ? 'down' : 'up'}
                 />
               );
@@ -100,7 +100,7 @@ export function WaterfallPanel({ t, plan }: { t: Strings; plan: DomainTeamPlan }
         <p className="m-0 mt-2 text-center text-[12px] text-muted" role="status">
           {withDeltaPlaceholder(
             t.teamPlanGearDipNote,
-            <AbbreviatedNumber value={plan.gearDipDps} />,
+            <AbbreviatedNumber value={plan.gearDipDps} lang={lang} />,
           )}
         </p>
       ) : null}
