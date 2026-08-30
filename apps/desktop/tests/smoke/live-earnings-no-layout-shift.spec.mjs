@@ -418,6 +418,53 @@ test.describe('live earnings panel: no layout shift smoke', () => {
   });
 
   /**
+   * The current-gold tile's staleness marker (`earnings-panel.tsx`'s
+   * `live-earnings-gold-current-age-trigger`) must cost no layout: it is sized identically whether
+   * it is showing or not, so a reading going stale mid-session never nudges the balance beside it
+   * or resizes the tile around it. Proven two ways: the marker element is always present in the DOM
+   * (never conditionally mounted only once stale — the bug this test also catches), and toggling
+   * its own visibility class between the two states it actually ships (`invisible` vs not, the same
+   * technique `earnings-panel.tsx` uses and the only two classes it ever carries) never changes the
+   * current-gold tile's box, nor any of its five siblings'.
+   */
+  test('the current-gold staleness marker is always mounted, and toggling it between fresh and stale never resizes that tile or any other', async () => {
+    const { app, page, userDataDir } = await launchEarningsPanelApp('bfc-earnings-marker-');
+
+    try {
+      const markerExists = await page.evaluate(
+        () => document.querySelector('[data-testid="live-earnings-gold-current-age-trigger"]') !== null,
+      );
+      expect(
+        markerExists,
+        'the staleness marker must always be mounted (sized whether or not it is shown), never conditionally rendered only once stale',
+      ).toBe(true);
+
+      const fresh = await measureBlocks(page);
+      assertBlocksHoldTheirShape(fresh);
+
+      // The real fixture account may not itself be in a stale state at this point — toggling the
+      // marker's own visibility class directly is the same DOM-mutation technique the headline
+      // tests above already use to reach a state real streamed data cannot practically produce
+      // inside a smoke run.
+      await page.evaluate(() => {
+        const trigger = document.querySelector('[data-testid="live-earnings-gold-current-age-trigger"]');
+        if (!trigger) throw new Error('live-earnings-gold-current-age-trigger not found');
+        trigger.classList.remove('invisible');
+      });
+      const stale = await measureBlocks(page);
+      assertBlocksHoldTheirShape(stale);
+
+      const boxOf = (blocks) => blocks.map((block) => ({ testId: block.testId, width: Math.round(block.width), height: Math.round(block.height) }));
+      expect(boxOf(stale), 'making the staleness marker visible must not resize any of the six tiles').toEqual(boxOf(fresh));
+
+      await app.close();
+    } finally {
+      await app.close().catch(() => undefined);
+      fs.rmSync(userDataDir, { recursive: true, force: true });
+    }
+  });
+
+  /**
    * The bug this whole file exists to catch, isolated: the headline column (`earnings-panel.tsx`'s
    * `live-earnings-headline-column`) used to size itself to whichever child was currently widest,
    * so the compact gold/xp figures growing or shrinking between character counts — "1k" versus

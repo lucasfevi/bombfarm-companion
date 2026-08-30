@@ -121,3 +121,17 @@ changing figure nor a language switch can move it again. With the column itself 
 per-line width reservations the coverage line and the two unit lines used to carry (each holding
 its own longest form in either language) no longer do anything the column doesn't already cover,
 so they are gone — those lines are now plain right-aligned text.
+
+The headline gold-per-hour figure was still overflowing its own column at its widest realistic
+size, because the column's declared width already counts the padding and border that come out of
+it, leaving less room for the figure than it needed. The figure now renders a size smaller, and the
+column is sized to fit its true widest form — this also frees up room on the page, so the earnings
+panel's half-width layout now starts one column narrower than before.
+
+Every one of the six figures below the headline drops its reserved third line, so the grid's two
+rows sit noticeably tighter with no dead space beneath the numbers. Current gold still marks a
+stale reading, but as a small always-present marker beside the figure instead: dark and out of the
+way while the reading is fresh, lit up once it's genuinely stale, with the exact age reachable by
+hovering or focusing it — same as the XP figure's own explanation above. The marker takes up the
+same space whether or not it's showing, so a reading going stale mid-session never nudges anything
+beside it.

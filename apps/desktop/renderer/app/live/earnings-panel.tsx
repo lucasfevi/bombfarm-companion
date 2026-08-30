@@ -8,9 +8,6 @@ import { formatLiveDurationSeconds } from './format-live-duration';
 
 const EM_DASH = '—';
 const MAX_COVERAGE_MINUTES = 10;
-/** Keeps the age line's invisible sizer a non-empty inline box on the five blocks that never
- *  carry a real age, so every block's third line renders at the same height as current gold's. */
-const AGE_LINE_RESERVE_FALLBACK = ' ';
 
 /** Below this age a reading is not meaningfully stale — "just now" tells the player nothing they
  *  don't already assume, so the age suffix stays suppressed until the underlying gap actually
@@ -27,29 +24,23 @@ function numberText(value: number | null | undefined): ReactNode {
   return value == null ? EM_DASH : formatCompactNumber(value, 1);
 }
 
-/** Right-aligned label/value/age block for the right half's six figures. Every block reserves the
- *  same three lines — label, value, age — so all six stay the same fixed width (the label's own
- *  box, not just the column) and the same height whether or not that block ever has an age to
- *  show. Only current gold ever passes a real `ageTestId`/`ageReserve`/`ageShown`; the rest keep
- *  the third line's height without claiming a reading they don't have. */
+/** Right-aligned label/value block for the right half's six figures. Every block reserves the
+ *  same two lines — label, value — so all six stay the same fixed width (the label's own box, not
+ *  just the column) and the same height as each other, with no third line reserved for an age
+ *  none but current gold ever has. Current gold's own staleness signal lives inside its own
+ *  `value`, not as a block-level concern. */
 function Block({
   blockTestId,
   testId,
   label,
   value,
   className,
-  ageTestId,
-  ageReserve,
-  ageShown,
 }: {
   blockTestId: string;
   testId: string;
   label: ReactNode;
   value: ReactNode;
   className: string;
-  ageTestId?: string;
-  ageReserve?: string;
-  ageShown?: ReactNode;
 }) {
   return (
     <div data-testid={blockTestId} className="flex flex-col items-end gap-0.5">
@@ -58,14 +49,6 @@ function Block({
       </span>
       <span data-testid={testId} className={className}>
         {value}
-      </span>
-      <span className="relative grid text-right text-[10.5px] leading-none text-muted tabular-nums whitespace-nowrap">
-        <span aria-hidden className="invisible col-start-1 row-start-1">
-          {ageReserve || AGE_LINE_RESERVE_FALLBACK}
-        </span>
-        <span data-testid={ageTestId} className="col-start-1 row-start-1">
-          {ageShown ?? ''}
-        </span>
       </span>
     </div>
   );
@@ -98,16 +81,46 @@ export function EarningsPanel({
     currentGoldAgeSource !== null && Date.now() - Date.parse(currentGoldAgeSource) >= FRESH_BALANCE_AGE_MS
       ? formatCapturedAt(currentGoldAgeSource, t)
       : null;
-  // Minutes and hours share the exact same template shape as days ("{n}<letter> ago" / "há
-  // {n}<letter>"), so any two-digit bucket reserves the same width as the others — hours' realistic
-  // ceiling (just under a day) stands in for all three.
-  const currentGoldAgeLongest = sub(t.ageHours, { n: 23 });
-  const currentGoldValue: ReactNode = numberText(balance);
-  // The age reservation only ever has something to hold once there is a balance to attach it to —
-  // with no balance the value already reads an em dash, and an age beside it would pin a
-  // fabricated reading to a figure that isn't there.
-  const currentGoldAgeReserve = balance !== null ? currentGoldAgeLongest : '';
-  const currentGoldAgeShown = balance !== null ? (currentGoldAgeText ?? '') : '';
+  // A dash carries nothing to be stale about — gating on `balance` keeps the marker dark rather
+  // than pinning a fabricated reading beside a figure that isn't there.
+  const currentGoldIsStale = balance !== null && currentGoldAgeText !== null;
+  const currentGoldValue: ReactNode = (
+    <>
+      <span className={currentGoldIsStale ? 'text-muted' : 'text-gold'}>{numberText(balance)}</span>
+      <Tooltip.Provider>
+        <Tooltip.Root>
+          {currentGoldIsStale ? (
+            <Tooltip.Trigger
+              type="button"
+              data-testid="live-earnings-gold-current-age-trigger"
+              aria-label={`${t.liveEarningsCurrentGoldLabel}: ${currentGoldAgeText}`}
+              className="inline-flex items-center border-0 bg-transparent p-0 text-muted cursor-help hover:text-ink focus-visible:rounded-sm focus-visible:[outline-style:solid] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+            >
+              <Icon name="information-circle" size="xs" />
+            </Tooltip.Trigger>
+          ) : (
+            <Tooltip.Trigger
+              type="button"
+              data-testid="live-earnings-gold-current-age-trigger"
+              aria-label={`${t.liveEarningsCurrentGoldLabel}: ${currentGoldAgeText ?? ''}`}
+              className="invisible inline-flex items-center border-0 bg-transparent p-0 text-muted"
+            >
+              <Icon name="information-circle" size="xs" />
+            </Tooltip.Trigger>
+          )}
+          <Tooltip.Portal>
+            <Tooltip.Positioner sideOffset={6}>
+              <Tooltip.Popup>
+                <p className="m-0" data-testid="live-earnings-gold-current-age">
+                  {currentGoldAgeText ?? ''}
+                </p>
+              </Tooltip.Popup>
+            </Tooltip.Positioner>
+          </Tooltip.Portal>
+        </Tooltip.Root>
+      </Tooltip.Provider>
+    </>
+  );
 
   return (
     <Panel data-testid="live-earnings" aria-label={t.liveEarningsTitle} className="relative min-w-0">
@@ -177,10 +190,7 @@ export function EarningsPanel({
             testId="live-earnings-gold-current"
             label={t.liveEarningsCurrentGoldLabel}
             value={currentGoldValue}
-            className="text-[23px] font-bold text-gold tabular-nums whitespace-nowrap"
-            ageTestId="live-earnings-gold-current-age"
-            ageReserve={currentGoldAgeReserve}
-            ageShown={currentGoldAgeShown}
+            className="inline-flex items-center gap-1 text-[23px] font-bold tabular-nums whitespace-nowrap"
           />
           <Block
             blockTestId="live-earnings-block-gold-rate"

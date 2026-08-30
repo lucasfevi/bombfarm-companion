@@ -77,27 +77,33 @@ function cellText(out: string, testId: string): string {
 /**
  * Walks the plain React-element tree `EarningsPanel(...)` returns when called directly as a
  * function (no dispatcher, no actual render) to find the one element carrying `data-testid`.
- * Independent of exactly how deep the control sits or how many wrapper elements surround it, so a
- * future layout change does not break this by shifting an index.
+ * Independent of exactly how deep the control sits or how many wrapper elements surround it, and
+ * of whether it is reached through `children` or through some other prop (`Block`'s own `value`,
+ * for the current-gold marker below) — a custom component's props are never invoked here (nothing
+ * in this tree is actually rendered), so any prop holding a nested element is a real place to look.
  */
 function findElementByTestId(
   node: unknown,
   testId: string,
 ): { props: Record<string, unknown> } | null {
   if (node === null || typeof node !== 'object') return null;
-  const element = node as { props?: Record<string, unknown> };
-  if (element.props && element.props['data-testid'] === testId) {
-    return element as { props: Record<string, unknown> };
-  }
-  const children = element.props?.children;
-  if (Array.isArray(children)) {
-    for (const child of children) {
+  if (Array.isArray(node)) {
+    for (const child of node) {
       const found = findElementByTestId(child, testId);
       if (found) return found;
     }
     return null;
   }
-  return findElementByTestId(children, testId);
+  const element = node as { props?: Record<string, unknown> };
+  if (element.props && element.props['data-testid'] === testId) {
+    return element as { props: Record<string, unknown> };
+  }
+  if (!element.props) return null;
+  for (const value of Object.values(element.props)) {
+    const found = findElementByTestId(value, testId);
+    if (found) return found;
+  }
+  return null;
 }
 
 describe('EarningsPanel — every cell in every state', () => {
@@ -290,47 +296,78 @@ describe('EarningsPanel — the panel keeps an accessible name without a visible
   });
 });
 
-describe('EarningsPanel — current gold and its age', () => {
-  it('live: shows the tick balance, with no age beside it', () => {
+/**
+ * The staleness marker's own `<button>` tag, by its dedicated testid — present in static markup
+ * (unlike the tooltip popup it opens, which Base UI mounts only once open; see the XP marker's
+ * own comment below for that same distinction).
+ */
+function goldAgeTriggerTag(out: string): string | null {
+  return out.match(/<button[^>]*data-testid="live-earnings-gold-current-age-trigger"[^>]*>/)?.[0] ?? null;
+}
+
+/**
+ * The tooltip popup's exact age text, read off the unrendered element tree the same way the XP
+ * help body is below — Base UI never puts a closed popup's content into static markup.
+ */
+function goldAgeText(freshness: ReachedLiveFreshness, data: LiveEarnings | null): unknown {
+  const root = EarningsPanel({ freshness, earnings: data, onReset: () => undefined });
+  return findElementByTestId(root, 'live-earnings-gold-current-age')?.props.children;
+}
+
+describe('EarningsPanel — current gold and its staleness marker', () => {
+  it('live: shows the tick balance in its normal gold color, marker hidden, no age to report', () => {
     const out = html(earnings({ goldBalance: 42 }), LIVE);
     expect(cellText(out, 'live-earnings-gold-current')).toBe('42');
-    expect(cellText(out, 'live-earnings-gold-current-age')).toBe('');
+    expect(out).toContain('<span class="text-gold">42</span>');
+    const trigger = goldAgeTriggerTag(out);
+    expect(trigger).toMatch(/class="invisible /);
+    expect(goldAgeText(LIVE, earnings({ goldBalance: 42 }))).toBe('');
   });
 
-  it('stale: the value and its age render as two separate elements, not one combined string', () => {
+  it('stale: the value itself mutes and the marker becomes visible, the exact age reachable through it — not one combined string with the value', () => {
     const out = html(earnings({ goldBalance: 42 }), GAP);
     expect(cellText(out, 'live-earnings-gold-current')).toBe('42');
-    expect(cellText(out, 'live-earnings-gold-current-age')).toBe('2m ago');
+    expect(out).toContain('<span class="text-muted">42</span>');
+    const trigger = goldAgeTriggerTag(out);
+    expect(trigger).not.toBeNull();
+    expect(trigger).not.toMatch(/\binvisible\b/);
+    expect(trigger).toContain('aria-label="Current gold: 2m ago"');
+    expect(goldAgeText(GAP, earnings({ goldBalance: 42 }))).toBe('2m ago');
   });
 
-  it('no data: an em dash for the value, and no fabricated age beside it', () => {
+  it('no data: an em dash for the value, marker stays hidden — no fabricated age beside a dash', () => {
     const out = html(null, GAP);
     expect(cellText(out, 'live-earnings-gold-current')).toBe('—');
-    expect(cellText(out, 'live-earnings-gold-current-age')).toBe('');
+    expect(goldAgeTriggerTag(out)).toMatch(/class="invisible /);
   });
 
   it('stored fallback: shows its own captured-at age even while the stream itself reports live', () => {
     const capturedAt = new Date(Date.now() - 10 * 60_000).toISOString();
-    const out = html(earnings({ goldBalance: 42, goldBalanceCapturedAt: capturedAt }), LIVE);
+    const data = earnings({ goldBalance: 42, goldBalanceCapturedAt: capturedAt });
+    const out = html(data, LIVE);
     expect(cellText(out, 'live-earnings-gold-current')).toBe('42');
-    expect(cellText(out, 'live-earnings-gold-current-age')).toBe('10m ago');
+    expect(goldAgeTriggerTag(out)).not.toMatch(/\binvisible\b/);
+    expect(goldAgeText(LIVE, data)).toBe('10m ago');
   });
 
   it('stored fallback takes precedence over the stream gap age when both are present', () => {
     const capturedAt = new Date(Date.now() - 10 * 60_000).toISOString();
-    const out = html(earnings({ goldBalance: 42, goldBalanceCapturedAt: capturedAt }), GAP);
+    const data = earnings({ goldBalance: 42, goldBalanceCapturedAt: capturedAt });
+    const out = html(data, GAP);
     expect(cellText(out, 'live-earnings-gold-current')).toBe('42');
-    expect(cellText(out, 'live-earnings-gold-current-age')).toBe('10m ago');
+    expect(goldAgeText(GAP, data)).toBe('10m ago');
   });
 
-  it('fresh: a reading only seconds old shows no age at all — the "just now" case is suppressed', () => {
+  it('fresh: a reading only seconds old shows no age at all, marker stays hidden — the "just now" case is suppressed', () => {
     const capturedAt = new Date(Date.now() - 5_000).toISOString();
-    const out = html(earnings({ goldBalance: 42, goldBalanceCapturedAt: capturedAt }), LIVE);
+    const data = earnings({ goldBalance: 42, goldBalanceCapturedAt: capturedAt });
+    const out = html(data, LIVE);
     expect(cellText(out, 'live-earnings-gold-current')).toBe('42');
-    expect(cellText(out, 'live-earnings-gold-current-age')).toBe('');
+    expect(goldAgeTriggerTag(out)).toMatch(/class="invisible /);
+    expect(goldAgeText(LIVE, data)).toBe('');
   });
 
-  it('fresh via the stream gap too: a just-lost tick reads no age either', () => {
+  it('fresh via the stream gap too: a just-lost tick reads no age either, marker stays hidden', () => {
     const freshGap: ReachedLiveFreshness = {
       kind: 'gap',
       reason: 'detached',
@@ -339,26 +376,33 @@ describe('EarningsPanel — current gold and its age', () => {
     };
     const out = html(earnings({ goldBalance: 42 }), freshGap);
     expect(cellText(out, 'live-earnings-gold-current')).toBe('42');
-    expect(cellText(out, 'live-earnings-gold-current-age')).toBe('');
+    expect(goldAgeTriggerTag(out)).toMatch(/class="invisible /);
   });
 
-  it("reserves an invisible sizer for the age's longest realistic form even while fresh and showing none", () => {
-    const out = html(earnings({ goldBalance: 42 }), LIVE);
-    expect(cellText(out, 'live-earnings-gold-current-age')).toBe('');
-    // The sizer sits outside the tagged cell (a sibling), so it never pollutes `cellText` above.
-    expect(out).toMatch(/aria-hidden="true" class="invisible[^"]*">23h ago<\/span>/);
+  it('the marker is always mounted — never conditionally rendered on staleness — across live, stale and no-data states, so its box can never differ between them', () => {
+    for (const [freshness, data] of [
+      [LIVE, earnings({ goldBalance: 42 })],
+      [GAP, earnings({ goldBalance: 42 })],
+      [GAP, null],
+    ] as const) {
+      const out = html(data, freshness);
+      expect(goldAgeTriggerTag(out)).not.toBeNull();
+    }
   });
 
-  it('reserves nothing on the age line when there is no balance to report at all', () => {
-    const out = html(null, GAP);
-    expect(out).not.toMatch(/>23h ago</);
-  });
-
-  it("the value's own box carries no age-sized reservation — its shape matches every other block", () => {
+  it("the value's own box carries no fixed-width reservation of its own — its shape matches every other block", () => {
     const out = html(earnings({ goldBalance: 42 }), GAP);
     const valueTag = out.match(/<span[^>]*data-testid="live-earnings-gold-current"[^>]*>/)?.[0] ?? '';
     expect(valueTag).not.toMatch(/w-\[\d+ch\]/);
     expect(valueTag).not.toContain('relative grid');
+  });
+
+  it('the marker icon stays decorative, so the trigger carries the only accessible name', () => {
+    const out = html(earnings({ goldBalance: 42 }), GAP);
+    const tagMatch = out.match(/<button[^>]*data-testid="live-earnings-gold-current-age-trigger"[^>]*>([\s\S]*?)<\/button>/);
+    const inner = tagMatch?.[1] ?? '';
+    expect(inner).not.toContain('aria-label');
+    expect(inner).not.toContain('role="img"');
   });
 });
 
