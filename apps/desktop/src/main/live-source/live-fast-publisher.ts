@@ -3,6 +3,7 @@ import {
   type FieldCountdown,
   type LiveEarnings,
   type LiveEvent,
+  type LiveHeroEnergy,
   type LiveMap,
   type LiveMapEconomy,
   type LiveView,
@@ -15,7 +16,7 @@ export interface LiveFastPublisherScheduler {
 }
 
 export interface LiveFastPublisherDeps {
-  readonly getView: () => Pick<LiveView, 'field' | 'recovery' | 'onFieldHeroIds' | 'rotation' | 'earnings' | 'map'>;
+  readonly getView: () => Pick<LiveView, 'field' | 'recovery' | 'energies' | 'onFieldHeroIds' | 'rotation' | 'earnings' | 'map'>;
   readonly emit: (event: LiveEvent) => void;
   readonly scheduler: LiveFastPublisherScheduler;
   readonly intervalMs?: number;
@@ -33,6 +34,7 @@ export interface LiveFastPublisher {
 interface FastSnapshot {
   readonly field: readonly FieldCountdown[];
   readonly recovery: readonly RecoveryCountdown[];
+  readonly energies: readonly LiveHeroEnergy[];
   readonly onFieldHeroIds: readonly string[];
   readonly earnings: LiveEarnings | null;
   readonly map: LiveMap | null;
@@ -62,6 +64,14 @@ function sameRecoveryCountdowns(a: readonly RecoveryCountdown[], b: readonly Rec
       entry.secondsRemaining === other.secondsRemaining &&
       entry.advancing === other.advancing
     );
+  });
+}
+
+function sameHeroEnergies(a: readonly LiveHeroEnergy[], b: readonly LiveHeroEnergy[]): boolean {
+  if (a.length !== b.length) return false;
+  return a.every((entry, index) => {
+    const other = b[index];
+    return other !== undefined && entry.heroId === other.heroId && entry.energyFraction === other.energyFraction;
   });
 }
 
@@ -110,6 +120,7 @@ function sameFastSnapshot(a: FastSnapshot, b: FastSnapshot): boolean {
   return (
     sameFieldCountdowns(a.field, b.field) &&
     sameRecoveryCountdowns(a.recovery, b.recovery) &&
+    sameHeroEnergies(a.energies, b.energies) &&
     sameIdList(a.onFieldHeroIds, b.onFieldHeroIds) &&
     sameEarnings(a.earnings, b.earnings) &&
     sameMap(a.map, b.map)
@@ -165,7 +176,7 @@ export function createRotationOnFieldIdsCache(): (rotation: RotationSnapshot | n
 
 /**
  * Polls the already-folded {@link LiveView} on a fixed schedule and republishes the fast channel
- * (`field`, `recovery`, `onFieldHeroIds`, `earnings`, `map`) only when its content actually changed since the last
+ * (`field`, `recovery`, `energies`, `onFieldHeroIds`, `earnings`, `map`) only when its content actually changed since the last
  * publish — the throttle the main process owes the renderer per the fast/slow split, so an idle
  * account with nothing changing publishes nothing at all rather than one identical event every
  * tick. `getView()` itself is cheap: it returns state the live source already maintains — its
@@ -188,6 +199,7 @@ export function createLiveFastPublisher(deps: LiveFastPublisherDeps): LiveFastPu
     const next: FastSnapshot = {
       field: view.field,
       recovery: view.recovery,
+      energies: view.energies,
       onFieldHeroIds: view.onFieldHeroIds,
       earnings: view.earnings,
       map: view.map,
@@ -198,6 +210,7 @@ export function createLiveFastPublisher(deps: LiveFastPublisherDeps): LiveFastPu
       type: 'fastUpdate',
       field: next.field,
       recovery: next.recovery,
+      energies: next.energies,
       onFieldHeroIds: next.onFieldHeroIds,
       earnings: next.earnings,
       map: next.map,

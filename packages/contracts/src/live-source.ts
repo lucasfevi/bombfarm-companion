@@ -82,15 +82,16 @@ export type LiveEvent =
   | { readonly type: 'frame'; readonly frame: LiveFrame }
   | { readonly type: 'currency'; readonly currency: LiveCurrency }
   /**
-   * The fast channel: field/recovery countdowns and the live on-field id set, folded once in the
-   * main process and paced to {@link LIVE_DISPLAY_REFRESH_MS} before crossing IPC — never one of
-   * these per tap frame. Superset of `frame` for what the renderer actually needs, so `frame`
-   * itself never has to reach the renderer at all.
+   * The fast channel: field/recovery countdowns, per-hero energy and the live on-field id set,
+   * folded once in the main process and paced to {@link LIVE_DISPLAY_REFRESH_MS} before crossing
+   * IPC — never one of these per tap frame. Superset of `frame` for what the renderer actually
+   * needs, so `frame` itself never has to reach the renderer at all.
    */
   | {
       readonly type: 'fastUpdate';
       readonly field: readonly FieldCountdown[];
       readonly recovery: readonly RecoveryCountdown[];
+      readonly energies: readonly LiveHeroEnergy[];
       readonly onFieldHeroIds: readonly string[];
       readonly earnings: LiveEarnings | null;
       readonly map: LiveMap | null;
@@ -185,6 +186,24 @@ export interface FieldCountdown {
   /** Energy per second. Fitted from observed frames when `basis` is `observed`. */
   readonly drainPerSecond: number;
   readonly basis: CountdownBasis;
+}
+
+/**
+ * How full one hero's energy is right now, on the fast channel rather than the authenticated
+ * cycle's rotation snapshot. Covers exactly the heroes some live reading reaches: a hero on the
+ * field, whose energy the tap observes on every tick, and a hero recovering in the house, whose
+ * energy is the inverse of the recovery countdown published beside it. A queued or benched hero
+ * appears here for neither reason and keeps the snapshot's figure — there is nothing fresher to
+ * have.
+ *
+ * The recovering half is modelled, exactly as the recovery countdown it is derived from already
+ * is; deriving both from one number is what stops a hero reading `0:00` and `99%` at once.
+ */
+export interface LiveHeroEnergy {
+  readonly heroId: string;
+  /** In [0, 1] — a fraction of this hero's own maximum, the same scale the rotation snapshot and
+   *  the tick stream both use. */
+  readonly energyFraction: number;
 }
 
 export interface RecoveryCountdown {
@@ -283,6 +302,9 @@ export interface LiveView {
   readonly currency: LiveCurrency;
   readonly field: readonly FieldCountdown[];
   readonly recovery: readonly RecoveryCountdown[];
+  /** Sorted by `heroId`, so a consumer comparing this list against the last one it published is
+   *  comparing content and not the wire's own ordering. */
+  readonly energies: readonly LiveHeroEnergy[];
   /** The slower authenticated projection this view is built on. Null before the first read. */
   readonly rotation: RotationSnapshot | null;
   /** Every hero the live tap most recently showed standing on the field — the REST-derived

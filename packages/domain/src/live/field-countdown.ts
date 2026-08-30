@@ -1,5 +1,6 @@
 import type {
   FieldCountdown,
+  LiveHeroEnergy,
   LiveTick,
   RecoveryCountdown,
   RotationHeroSnapshot,
@@ -46,6 +47,10 @@ interface RotationCache {
    *  {@link advanceRecoveryClock}, which is where that adjustment happens. */
   readonly recoveryAtRead: readonly RecoveryCountdown[];
   readonly recoveryReadAtMs: number;
+  /** The house cycle a recovery countdown is measured against — held here so
+   *  {@link advanceRecoveryClock} can invert its own output back into an energy fraction without
+   *  reaching for the snapshot again. `undefined` exactly when no recovery could be computed. */
+  readonly cycleSeconds: number | undefined;
 }
 
 export interface FieldCountdownState {
@@ -88,7 +93,17 @@ function computeRecoveryAtRead(rotation: RotationSnapshot | null): readonly Reco
 function deriveRotationCache(rotation: RotationSnapshot | null, atMs: number): RotationCache {
   const heroSnapshotById = new Map<string, RotationHeroSnapshot>();
   for (const hero of rotation?.heroes ?? []) heroSnapshotById.set(hero.id, hero);
-  return { rotation, heroSnapshotById, recoveryAtRead: computeRecoveryAtRead(rotation), recoveryReadAtMs: atMs };
+  return {
+    rotation,
+    heroSnapshotById,
+    recoveryAtRead: computeRecoveryAtRead(rotation),
+    recoveryReadAtMs: atMs,
+    cycleSeconds: rotation?.house?.cycleSeconds,
+  };
+}
+
+function byHeroId(a: LiveHeroEnergy, b: LiveHeroEnergy): number {
+  return a.heroId < b.heroId ? -1 : a.heroId > b.heroId ? 1 : 0;
 }
 
 export interface FieldCountdownInput {
@@ -106,6 +121,10 @@ export interface FieldCountdownInput {
 export interface FieldCountdownResult {
   readonly state: FieldCountdownState;
   readonly field: readonly FieldCountdown[];
+  /** Every on-field hero the tick carried an energy reading for — observed, not derived, and
+   *  independent of `field`: a hero whose drain multipliers do not resolve gets no countdown but
+   *  still has an energy the tap watched arrive. */
+  readonly energies: readonly LiveHeroEnergy[];
   readonly disagreements: readonly DrainDisagreementReport[];
 }
 
@@ -153,8 +172,12 @@ export function ingestFieldCountdownTick(
 
   const disagreements: DrainDisagreementReport[] = [];
   const field: FieldCountdown[] = [];
+  const energies: LiveHeroEnergy[] = [];
 
   for (const hero of tick.heroes) {
+    if (hero.energyFraction !== undefined) {
+      energies.push({ heroId: hero.id, energyFraction: clampFraction(hero.energyFraction) });
+    }
     const heroSnapshot = heroSnapshotById.get(hero.id);
     const energyMax = heroSnapshot?.energyMax;
     const absoluteEnergyNow =
@@ -195,6 +218,7 @@ export function ingestFieldCountdownTick(
   return {
     state: { onFieldHeroIds: newFieldIds, onFieldHeroIdsSorted, heroDrainStates, rotationCache, recoveryAnchorMs: state.recoveryAnchorMs },
     field,
+    energies: energies.sort(byHeroId),
     disagreements,
   };
 }
@@ -202,6 +226,13 @@ export function ingestFieldCountdownTick(
 export interface AdvanceRecoveryClockResult {
   readonly state: FieldCountdownState;
   readonly recovery: readonly RecoveryCountdown[];
+  /** Each entry of `recovery`, read as an energy rather than as a clock. Derived from the very
+   *  number published beside it — see the inversion in {@link advanceRecoveryClock}. */
+  readonly energies: readonly LiveHeroEnergy[];
+}
+
+function clampFraction(fraction: number): number {
+  return Math.min(Math.max(fraction, 0), 1);
 }
 
 /** A read at least as recent as the pinned anchor keeps the anchor pinned (still frozen); an
@@ -222,7 +253,7 @@ function pinnedAnchorMs(readAtMs: number, priorAnchorMs: number | undefined): nu
  */
 export function advanceRecoveryClock(state: FieldCountdownState, nowMs: number, connected: boolean): AdvanceRecoveryClockResult {
   const cache = state.rotationCache;
-  if (cache === null) return { state, recovery: [] };
+  if (cache === null) return { state, recovery: [], energies: [] };
 
   const readAtMs = cache.recoveryReadAtMs;
   const priorAnchorMs = state.recoveryAnchorMs;
@@ -235,6 +266,20 @@ export function advanceRecoveryClock(state: FieldCountdownState, nowMs: number, 
     advancing: connected,
   }));
 
+  // `computeRecoveryAtRead` built each clock as `(1 - energyFraction) * cycleSeconds`; this is
+  // that same relation read the other way, against the ADVANCED clock rather than the one the
+  // rotation read carried. Both numbers therefore move together by construction — a hero cannot
+  // show a spent clock beside a part-full bar, which is what a snapshot-sourced percentage does
+  // for as long as the authenticated cycle leaves it standing.
+  const cycleSeconds = cache.cycleSeconds;
+  const energies =
+    cycleSeconds === undefined || cycleSeconds <= 0
+      ? []
+      : recovery.map((entry) => ({
+          heroId: entry.heroId,
+          energyFraction: clampFraction(1 - entry.secondsRemaining / cycleSeconds),
+        }));
+
   const nextState = anchorMs === priorAnchorMs ? state : { ...state, recoveryAnchorMs: anchorMs };
-  return { state: nextState, recovery };
+  return { state: nextState, recovery, energies: [...energies].sort(byHeroId) };
 }

@@ -22,7 +22,7 @@ function slowModel(overrides: Partial<LiveSlowModel> = {}): LiveSlowModel {
   };
 }
 
-const emptyFast: LiveFastModel = { field: {}, recovery: {} };
+const emptyFast: LiveFastModel = { field: {}, recovery: {}, energy: {} };
 
 describe('LivePanel — composition', () => {
   it('carries the panel root testid, the freshness line, and the field occupancy count', () => {
@@ -178,7 +178,7 @@ describe('LivePanel — composition', () => {
 
   it('an on-field hero with a matching fast countdown renders the formatted number', () => {
     const slow = slowModel({ onField: [{ id: 'f1' }] });
-    const fast: LiveFastModel = { field: { f1: { heroId: 'f1', secondsRemaining: 30, basis: 'observed' } }, recovery: {} };
+    const fast: LiveFastModel = { field: { f1: { heroId: 'f1', secondsRemaining: 30, basis: 'observed' } }, recovery: {}, energy: {} };
     const html = renderToStaticMarkup(createElement(LivePanel, { freshness: { kind: 'live' }, slow, fast }));
     expect(html).toContain('0:30');
   });
@@ -193,6 +193,7 @@ describe('LivePanel — composition', () => {
     const fast: LiveFastModel = {
       field: { f1: { heroId: 'f1', secondsRemaining: 30, basis: 'observed' } },
       recovery: { r1: { heroId: 'r1', secondsRemaining: 45, advancing: true } },
+      energy: {},
     };
     const html = renderToStaticMarkup(createElement(LivePanel, { freshness: { kind: 'live' }, slow, fast }));
     expect(html).toContain('data-testid="live-countdown-field-f1"');
@@ -291,5 +292,59 @@ describe('LivePanel — composition', () => {
     expect(none).not.toContain('data-testid="live-field-exit-pending-count"');
     expect(some).toContain('data-testid="live-field-exit-pending-count"');
     expect(some).not.toContain(en.liveUnclassifiedCount.replace('{n}', '3'));
+  });
+});
+
+describe('LivePanel — the energy reading follows the fast channel, not the rotation snapshot', () => {
+  function readPercent(html: string, id: string): string | undefined {
+    return new RegExp(`data-testid="live-energy-${id}-value"[^>]*>([^<]*)<`).exec(html)?.[1];
+  }
+
+  it('a recovering hero whose countdown is spent reads full, not the figure the snapshot was read at', () => {
+    // The reported defect: the rotation snapshot is up to an authenticated cycle old, so its 99%
+    // outlives the rest it described. The fast channel says the rest is over; the row must agree
+    // with the clock printed beside it.
+    const slow = slowModel({ recovering: [{ id: 'devin', energyFraction: 0.99 }] });
+    const fast: LiveFastModel = {
+      field: {},
+      recovery: { devin: { heroId: 'devin', secondsRemaining: 0, advancing: true } },
+      energy: { devin: 1 },
+    };
+
+    const html = renderToStaticMarkup(createElement(LivePanel, { freshness: { kind: 'live' }, slow, fast }));
+
+    expect(html).toContain('0:00');
+    expect(readPercent(html, 'devin')).toBe('100%');
+  });
+
+  it('an on-field hero shows the energy the tap observed rather than the snapshot it was joined against', () => {
+    const slow = slowModel({ onField: [{ id: 'f1', energyFraction: 0.9 }] });
+    const fast: LiveFastModel = { field: {}, recovery: {}, energy: { f1: 0.42 } };
+
+    const html = renderToStaticMarkup(createElement(LivePanel, { freshness: { kind: 'live' }, slow, fast }));
+
+    expect(readPercent(html, 'f1')).toBe('42%');
+  });
+
+  it('a queued or benched hero keeps the snapshot figure — the fast channel reaches neither', () => {
+    const slow = slowModel({
+      queued: [{ id: 'q1', energyFraction: 0.62 }],
+      benched: [{ id: 'b1', energyFraction: 0.5 }],
+    });
+    const fast: LiveFastModel = { field: {}, recovery: {}, energy: {} };
+
+    const html = renderToStaticMarkup(createElement(LivePanel, { freshness: { kind: 'live' }, slow, fast }));
+
+    expect(readPercent(html, 'q1')).toBe('62%');
+    expect(readPercent(html, 'b1')).toBe('50%');
+  });
+
+  it('a hero the fast channel has no reading for keeps the snapshot figure rather than falling to zero', () => {
+    const slow = slowModel({ onField: [{ id: 'f1', energyFraction: 0.77 }] });
+    const fast: LiveFastModel = { field: {}, recovery: {}, energy: { someone_else: 0.1 } };
+
+    const html = renderToStaticMarkup(createElement(LivePanel, { freshness: { kind: 'live' }, slow, fast }));
+
+    expect(readPercent(html, 'f1')).toBe('77%');
   });
 });

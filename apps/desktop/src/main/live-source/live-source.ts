@@ -10,6 +10,7 @@ import type {
   LiveDiagnosticsDumpOutcome,
   LiveEarnings,
   LiveEvent,
+  LiveHeroEnergy,
   LiveTick,
   LiveTickHero,
   LiveView,
@@ -58,6 +59,10 @@ import {
  */
 
 const NOOP_LOG_PORT: LogPort = { info: () => undefined, warn: () => undefined };
+
+function compareHeroEnergy(a: LiveHeroEnergy, b: LiveHeroEnergy): number {
+  return a.heroId < b.heroId ? -1 : a.heroId > b.heroId ? 1 : 0;
+}
 
 const DEFAULT_PROCESS_NAME = process.env.BFC_GAME_PROCESS ?? 'BombFarm.exe';
 
@@ -369,6 +374,10 @@ export class LiveSource {
   #rosterHeroById: ReadonlyMap<string, RosterHeroAbilities> = new Map();
   #fieldState: FieldCountdownState = createInitialFieldCountdownState();
   #field: readonly FieldCountdown[] = [];
+  /** The on-field half of the fast channel's energy readings — observed on the most recent tick.
+   *  The recovering half is not cached beside it: like `recovery` itself it advances on the
+   *  server's clock rather than on frame arrival, so `getView()` derives it per call. */
+  #fieldEnergies: readonly LiveHeroEnergy[] = [];
   #updatedAt: string;
 
   readonly #earningsFold: EarningsFold;
@@ -461,12 +470,15 @@ export class LiveSource {
    *  `#field`. See {@link advanceRecoveryClock} for what `connected` decides. */
   getView(): LiveView {
     const connected = isConnectedCurrency(this.#currency);
-    const { state, recovery } = advanceRecoveryClock(this.#fieldState, this.#now(), connected);
+    const { state, recovery, energies: recoveryEnergies } = advanceRecoveryClock(this.#fieldState, this.#now(), connected);
     this.#fieldState = state;
     return {
       currency: this.#currency,
       field: this.#field,
       recovery,
+      // No hero is on the field and recovering at once, so the two halves never collide on a
+      // heroId; the sort is what makes the merged list comparable against the last published one.
+      energies: [...this.#fieldEnergies, ...recoveryEnergies].sort(compareHeroEnergy),
       rotation: this.#rotation,
       onFieldHeroIds: this.#fieldState.onFieldHeroIdsSorted,
       earnings: this.#buildEarnings(),
@@ -693,6 +705,7 @@ export class LiveSource {
     });
     this.#fieldState = result.state;
     this.#field = result.field;
+    this.#fieldEnergies = result.energies;
     reportDrainDisagreements(this.#log, result.disagreements);
     this.#touch();
   }
